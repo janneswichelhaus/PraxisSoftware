@@ -222,4 +222,24 @@ describe('Pannenablauf – Abschluesse', () => {
       expect(abschluss(art, kontext()).text).not.toMatch(/\d{3,}/);
     }
   });
+
+  it('behauptet ohne Reparatur vor Ort weder Absage noch Information (VOR-08)', () => {
+    // Auf dieses „Nein" folgt kein Schritt, der dazu auffordert - der Verlauf
+    // darf es deshalb nicht als geschehen führen.
+    const ergebnis = abschluss('lokalNichtMoeglich', kontext());
+    expect(ergebnis.sperrt).toBe(true);
+    expect(ergebnis.text).toBe('Lokale Werkstatt: Reparatur vor Ort nicht möglich.');
+  });
+});
+
+describe('Pannenablauf – Wortlaut', () => {
+  it('siezt und betont ohne Versalien (VOR-08, WRT-13)', () => {
+    expect(frage('fuehrerschein', vorlage)).toBe('Haben Sie einen Autoführerschein?');
+    expect(frage('depotErreichbar', vorlage)).toContain('letzte Behandlung am Tag und ist');
+  });
+
+  it('spricht in Frage und Abschluss von Behandlung, nicht von Therapie', () => {
+    expect(frage('depotErreichbar', vorlage)).not.toMatch(/Therapie|UND/);
+    expect(abschluss('depotAbgestellt', kontext()).text).toContain('letzte Behandlung des Tages');
+  });
 });

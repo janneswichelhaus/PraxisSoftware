@@ -29,8 +29,9 @@ function alsTreffer(patient: PatientSearchHit): Suchtreffer {
     id: patient.id,
     bezeichnung: `${patient.given_name} ${patient.family_name}`,
     // Das Geburtsdatum ist das Merkmal, an dem sich zwei Namensgleiche
-    // unterscheiden lassen - dafür steht es hier und für nichts sonst.
-    zusatz: patient.date_of_birth ? `geboren ${formatDate(patient.date_of_birth)}` : undefined,
+    // unterscheiden lassen - dafür steht es hier und für nichts sonst. In
+    // derselben Form wie im Kopf der Akte (WRT-15).
+    zusatz: patient.date_of_birth ? `geb. ${formatDate(patient.date_of_birth)}` : undefined,
     abzeichen:
       patient.status === 'inactive' ? <Badge ton="neutral">Nicht in Versorgung</Badge> : undefined,
   };

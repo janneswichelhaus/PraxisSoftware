@@ -42,6 +42,6 @@ test('zeigt in der Akte, dass die Liege mit muss, mit einem Knopf zum Umstellen'
   await page.goto(`${PRUEFSEITE}?ansicht=akte`);
   await expect(page.getByText('Behandlungsliege', { exact: true })).toBeVisible();
   await expect(page.getByText('Mitnehmen', { exact: true })).toBeVisible();
-  const knopf = page.getByRole('button', { name: 'Liege nicht mehr nötig' });
+  const knopf = page.getByRole('button', { name: 'Liege nicht mehr mitnehmen' });
   expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });

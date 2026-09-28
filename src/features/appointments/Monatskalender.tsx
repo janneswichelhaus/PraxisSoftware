@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { monatPlus, monatsBeginn, monatsRaster } from './calendar';
 
 /**
@@ -10,7 +11,12 @@ import { monatPlus, monatsBeginn, monatsRaster } from './calendar';
  * die Wahl eines Tages tut es.
  *
  * Tastatur: Der Fokus liegt beim Öffnen auf dem gewählten Tag, Escape
- * schließt. Jeder Tag trägt seinen vollen Namen für Vorlesesoftware.
+ * schließt. Jeder Tag trägt seinen vollen Namen für Vorlesesoftware. Wohin
+ * der Fokus nach dem Schließen geht - auf den Monatsknopf (KAL-21) -,
+ * entscheidet die Seite, die das Blatt aufgeklappt hat.
+ *
+ * Jeder Tag ist 44 × 44 px groß (KAL-08): sieben davon passen in `max-w-sm`,
+ * und mit Handschuhen trifft man einen 40-px-Tag schlecht.
  */
 
 const WOCHENTAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'] as const;
@@ -66,29 +72,27 @@ export function Monatskalender({
       }}
     >
       <div className="flex items-center justify-between gap-2">
-        <button
-          type="button"
-          aria-label="Vorheriger Monat"
+        <Symbolknopf
+          beschriftung="Vorheriger Monat"
+          className="text-lg"
           onClick={() => setMonat(monatPlus(monat, -1))}
-          className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-11 items-center justify-center text-lg"
         >
           ‹
-        </button>
+        </Symbolknopf>
         <p className="text-ink text-sm font-semibold" aria-live="polite">
           {monatsName(monat)}
         </p>
-        <button
-          type="button"
-          aria-label="Nächster Monat"
+        <Symbolknopf
+          beschriftung="Nächster Monat"
+          className="text-lg"
           onClick={() => setMonat(monatPlus(monat, 1))}
-          className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-11 items-center justify-center text-lg"
         >
           ›
-        </button>
+        </Symbolknopf>
       </div>
       <div className="mt-1 grid grid-cols-7 text-center">
         {WOCHENTAGE.map((w) => (
-          <span key={w} aria-hidden="true" className="text-ink-subtle py-1 text-xs">
+          <span key={w} aria-hidden="true" className="text-ink-muted py-1 text-xs">
             {w}
           </span>
         ))}
@@ -106,13 +110,13 @@ export function Monatskalender({
               aria-current={istHeute ? 'date' : undefined}
               onClick={() => onWaehlen(tag)}
               className={[
-                'rounded-button mx-auto inline-flex size-10 items-center justify-center text-sm tabular-nums',
+                'rounded-button mx-auto inline-flex size-11 items-center justify-center text-sm tabular-nums',
                 istGewaehlt
                   ? 'bg-accent text-surface font-semibold'
                   : imMonat
                     ? 'text-ink hover:bg-surface-sunken'
-                    : 'text-ink-subtle hover:bg-surface-sunken',
-                istHeute && !istGewaehlt ? 'ring-accent font-semibold ring-2 ring-inset' : '',
+                    : 'text-ink-muted hover:bg-surface-sunken',
+                istHeute && !istGewaehlt ? 'border-accent border-2 font-semibold' : '',
               ].join(' ')}
             >
               {Number(tag.slice(8))}

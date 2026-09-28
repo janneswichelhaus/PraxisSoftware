@@ -60,9 +60,11 @@ describe('FahrpufferHinweis', () => {
     ];
     zeige();
     expect(screen.getByText(/ein Übergang ist/)).toBeInTheDocument();
+    // Dasselbe Wort wie in der Tour (TER-23).
     expect(
-      screen.getByText(/10:05 → 10:15: 5 Min. zu wenig, frühester Beginn 10:20 Uhr/),
+      screen.getByText(/10:05 → 10:15: 5 Min. zu knapp, frühester Beginn 10:20 Uhr/),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/zu wenig/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Zur Tour' })).toHaveAttribute(
       'href',
       '/touren?person=anna&tag=2026-09-10',

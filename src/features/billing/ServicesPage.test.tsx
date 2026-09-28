@@ -87,11 +87,12 @@ describe('ServicesPage', () => {
     fetchLeistungen.mockResolvedValue([]);
   });
 
-  it('sagt, dass ohne finalisierte Dokumentation nicht fakturiert wird', async () => {
+  it('sagt, dass ohne finalisierte Dokumentation nicht abgerechnet wird', async () => {
     renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
+    // ABR-26: „abgerechnet" statt „fakturiert".
     expect(
-      await screen.findByText(/Ohne finalisierte Dokumentation wird nicht fakturiert/),
+      await screen.findByText(/Ohne finalisierte Dokumentation wird nicht abgerechnet/),
     ).toBeInTheDocument();
   });
 
@@ -109,7 +110,9 @@ describe('ServicesPage', () => {
     renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
     expect(await screen.findByText('Dokumentiert')).toBeInTheDocument();
-    expect(screen.getByText('Absage innerhalb der Frist')).toBeInTheDocument();
+    // TER-10: derselbe Anlass wie am Termin; ABR-16: eine Art, kein „!".
+    const anlass = screen.getByText('Absage weniger als 24 Stunden vorher');
+    expect(anlass.textContent).toBe('Absage weniger als 24 Stunden vorher');
   });
 
   it('uebernimmt die Vorbelegung des Servers und erfasst die gewaehlten Positionen', async () => {
@@ -228,5 +231,193 @@ describe('ServicesPage', () => {
     // Das Ausfallhonorar traegt daneben sein eigenes Kennzeichen: Es ist
     // keine Behandlung, und das soll man der Zeile ansehen.
     expect(within(zeile!).getAllByText('Ausfallhonorar').length).toBeGreaterThan(0);
+  });
+
+  describe('UXR-010', () => {
+    async function oeffneErfassung(nutzer: ReturnType<typeof userEvent.setup>) {
+      await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
+      return screen.findByLabelText('Menge Krankengymnastik (KG)');
+    }
+
+    it('lässt die Menge leeren und neu tippen - aus „3" wird nicht „13" (ABR-11)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockResolvedValue([vorschlag()]);
+      recordLeistungen.mockResolvedValue(undefined);
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      const menge = await oeffneErfassung(nutzer);
+      await nutzer.clear(menge);
+      expect(menge).toHaveValue('');
+      await nutzer.type(menge, '3');
+      expect(menge).toHaveValue('3');
+
+      await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+      // Derselbe Aufruf wie bisher, mit der getippten Menge.
+      expect(recordLeistungen).toHaveBeenCalledWith('t1', [{ catalog_item_id: 'k1', quantity: 3 }]);
+    });
+
+    it('meldet eine Menge über 10 am Feld, statt sie abweisen zu lassen (ABR-11)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockResolvedValue([vorschlag()]);
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      const menge = await oeffneErfassung(nutzer);
+      await nutzer.clear(menge);
+      await nutzer.type(menge, '12');
+      await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+
+      expect(menge).toHaveAttribute('aria-invalid', 'true');
+      expect(menge).toHaveAccessibleDescription('Bitte eine Zahl von 1 bis 10 eingeben.');
+      expect(menge).toHaveFocus();
+      expect(recordLeistungen).not.toHaveBeenCalled();
+
+      // Leer ist ebenso wenig eine Menge.
+      await nutzer.clear(menge);
+      expect(menge).not.toHaveAttribute('aria-invalid');
+      await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+      expect(menge).toHaveAttribute('aria-invalid', 'true');
+      expect(recordLeistungen).not.toHaveBeenCalled();
+    });
+
+    it('zeigt den Laufzustand beim Erfassen (ZST-20)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockResolvedValue([vorschlag()]);
+      recordLeistungen.mockReturnValue(new Promise(() => undefined));
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      await oeffneErfassung(nutzer);
+      await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+
+      expect(await screen.findByRole('button', { name: 'Wird erfasst …' })).toBeDisabled();
+    });
+
+    it('erklärt, wenn die Preisliste für den Termin keine Position bietet (ABR-30)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockResolvedValue([]);
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
+
+      expect(
+        await screen.findByText('Die geltende Preisliste bietet für diesen Termin keine Position.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /0 Leistungen erfassen/ })).toBeNull();
+    });
+
+    it('führt bei fehlender Preisliste zum Katalog (ABR-17)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockRejectedValue(new KeinKatalog());
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
+
+      expect(
+        await screen.findByText(/Preislisten legt die Praxisinhaber:in an/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Zum Leistungskatalog' })).toHaveAttribute(
+        'href',
+        '/abrechnung/katalog',
+      );
+    });
+
+    it('führt bei ausgeschöpfter Menge zur Akte und nennt, wer sie erhöht (ABR-17)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+      fetchVorschlag.mockResolvedValue([vorschlag()]);
+      recordLeistungen.mockRejectedValue(new KontingentAusgeschoepft());
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      await oeffneErfassung(nutzer);
+      await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+
+      expect(
+        await screen.findByText(/Therapeut:in oder Praxisinhaber:in erhöht die Menge/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Zu den Behandlungsgrundlagen' })).toHaveAttribute(
+        'href',
+        '/patienten/p1/verordnungen?zurueck=%2Fabrechnung%2Fleistungen',
+      );
+    });
+
+    it('trennt noch nicht Abgerechnetes vom Abgerechneten (ABR-27)', async () => {
+      fetchLeistungen.mockResolvedValue([
+        leistung(),
+        leistung({
+          id: 'l2',
+          appointment_id: 't8',
+          patient_name: 'Max Mustermann',
+          status: 'invoiced',
+        }),
+      ]);
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      // Offen: mit Zurücknehmen, sichtbar.
+      expect(
+        await screen.findByRole('button', { name: 'Erfassung zurücknehmen' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Noch nicht abgerechnet. Zurücknehmen geht, solange weder Rechnung noch Entwurf sie enthält.',
+        ),
+      ).toBeInTheDocument();
+      // Abgerechnet: eingeklappt darunter.
+      const abgerechnet = screen.getByText('Max Mustermann').closest('details');
+      expect(abgerechnet).not.toBeNull();
+      expect(abgerechnet).not.toHaveAttribute('open');
+      expect(within(abgerechnet!).getByText('Abgerechnet (1 Termin)')).toBeInTheDocument();
+      expect(screen.getByText('Erika Beispiel').closest('details')).toBeNull();
+    });
+
+    it('zeigt eine Abweisung beim Zurücknehmen im offenen Kasten, samt Weg (ABR-03, ABR-B02)', async () => {
+      const nutzer = userEvent.setup();
+      fetchLeistungen.mockResolvedValue([leistung()]);
+      deleteLeistungen.mockRejectedValue(
+        new Error('Die Erfassung konnte nicht zurückgenommen werden.'),
+      );
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Erfassung zurücknehmen' }));
+      await nutzer.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
+
+      const meldung = await screen.findByRole('alert');
+      expect(meldung).toHaveTextContent(/konnte nicht zurückgenommen werden/);
+      expect(meldung).toHaveTextContent(/erst den Entwurf verwerfen/);
+      expect(screen.getByRole('group', { name: 'Erfassung zurücknehmen' })).toBeInTheDocument();
+    });
+
+    it('stellt offene Termine als Karten mit Kartenaktion dar (ABR-24, ABR-33)', async () => {
+      fetchOffeneTermine.mockResolvedValue([termin()]);
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      const knopf = await screen.findByRole('button', { name: 'Leistungen erfassen' });
+      expect(knopf.className.split(/\s+/)).not.toContain('bg-accent');
+      expect(knopf.closest('.rounded-card')).toHaveClass('bg-surface');
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      fetchOffeneTermine.mockRejectedValue(new Error('Netz weg'));
+
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+      expect(
+        await screen.findByText('Die offenen Termine konnten nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+    });
   });
 });

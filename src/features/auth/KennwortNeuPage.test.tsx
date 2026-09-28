@@ -28,7 +28,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => navigate,
 }));
 
-let sitzung: { user: { id: string } } | null = null;
+let sitzung: { user: { id: string; email?: string } } | null = null;
 
 vi.mock('./sessionContext', () => ({
   useSession: () => ({ session: sitzung, initialising: false, signOut: vi.fn() }),
@@ -203,7 +203,7 @@ describe('KennwortNeuPage — die Befunde aus dem Review', () => {
     renderWithProviders(<KennwortNeuPage />, MIT_LINK);
 
     expect(
-      await screen.findByText(/Auf diesem Gerät ist bereits jemand angemeldet/),
+      await screen.findByText(/Auf diesem Gerät ist bereits ein Konto angemeldet/),
     ).toBeInTheDocument();
     expect(verifyOtp).not.toHaveBeenCalled();
     expect(screen.queryByLabelText(/Neues Kennwort$/)).not.toBeInTheDocument();
@@ -222,11 +222,128 @@ describe('KennwortNeuPage — die Befunde aus dem Review', () => {
   it('lässt die laufende Sitzung in Ruhe, wenn man sich dafür entscheidet', async () => {
     sitzung = { user: { id: 'olivia' } };
     renderWithProviders(<KennwortNeuPage />, MIT_LINK);
-    await screen.findByRole('button', { name: 'Angemeldet bleiben' });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Angemeldet bleiben' }));
-
+    // Ein Seitenwechsel, also ein Link (AUTH-12) - er ersetzt den Eintrag im
+    // Verlauf, damit „Zurück" nicht wieder auf den Link führt.
+    const bleiben = await screen.findByRole('link', { name: 'Angemeldet bleiben' });
+    expect(bleiben).toHaveAttribute('href', '/');
     expect(verifyOtp).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+});
+
+describe('KennwortNeuPage — UXR-002', () => {
+  it('nennt das angemeldete Konto, statt einen anderen Zugang zu behaupten (AUTH-04)', async () => {
+    sitzung = { user: { id: 'olivia', email: 'olivia.office@praxis.invalid' } };
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+
+    const hinweis = await screen.findByText(/olivia\.office@praxis\.invalid/);
+    expect(hinweis).toHaveTextContent(
+      'Auf diesem Gerät ist olivia.office@praxis.invalid angemeldet. Gehört der Link zu einem anderen Konto, endet diese Sitzung; nicht gespeicherte Eingaben gehen dann verloren.',
+    );
+    expect(hinweis).not.toHaveTextContent('eines anderen Zugangs');
+  });
+
+  it('führt nach einem gescheiterten Link zurück in die bestehende Sitzung (AUTH-04)', async () => {
+    verifyOtp.mockResolvedValue({ error: { message: 'Email link is invalid or has expired' } });
+    sitzung = { user: { id: 'olivia', email: 'olivia.office@praxis.invalid' } };
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    await userEvent.click(await screen.findByRole('button', { name: 'Trotzdem fortfahren' }));
+
+    expect(
+      await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/nach dem Abmelden auf der Anmeldemaske/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zurück zur Anwendung' })).toHaveAttribute('href', '/');
+    expect(screen.queryByRole('button', { name: 'Zur Anmeldung' })).toBeNull();
+  });
+
+  it('nennt dem Passwortmanager das Konto zu den Kennwortfeldern (AUTH-05)', async () => {
+    sitzung = { user: { id: 'anna', email: 'anna.beispiel@praxis.invalid' } };
+    const { container } = renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    await userEvent.click(await screen.findByRole('button', { name: 'Trotzdem fortfahren' }));
+    await screen.findByLabelText(/Neues Kennwort$/);
+
+    const benutzername = container.querySelector('input[autocomplete="username"]');
+    expect(benutzername).toHaveValue('anna.beispiel@praxis.invalid');
+    expect(benutzername).toHaveAttribute('hidden');
+    expect(screen.getByText('anna.beispiel@praxis.invalid')).toBeInTheDocument();
+  });
+
+  it('stellt „zu kurz" an das erste Feld und setzt den Fokus dorthin (AUTH-10)', async () => {
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    const erstes = await screen.findByLabelText(/Neues Kennwort$/);
+
+    await userEvent.type(erstes, 'zu-kurz');
+    await userEvent.type(screen.getByLabelText(/wiederholen/), 'zu-kurz');
+    await userEvent.click(screen.getByRole('button', { name: 'Kennwort setzen' }));
+
+    expect(erstes).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByLabelText(/wiederholen/)).not.toHaveAttribute('aria-invalid');
+    expect(erstes).toHaveFocus();
+  });
+
+  it('stellt eine Abweichung an das Wiederholungsfeld', async () => {
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    const erstes = await screen.findByLabelText(/Neues Kennwort$/);
+
+    await userEvent.type(erstes, 'ein-langes-kennwort');
+    await userEvent.type(screen.getByLabelText(/wiederholen/), 'ein-anderes-kennwort');
+    await userEvent.click(screen.getByRole('button', { name: 'Kennwort setzen' }));
+
+    const zweites = screen.getByLabelText(/wiederholen/);
+    expect(zweites).toHaveAttribute('aria-invalid', 'true');
+    expect(erstes).not.toHaveAttribute('aria-invalid');
+    expect(zweites).toHaveFocus();
+  });
+
+  it('meldet einen Fehlschlag des Dienstes über dem Knopf, mit Ausweg (AUTH-10)', async () => {
+    updateUser.mockResolvedValue({ error: { message: 'same_password' } });
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    const erstes = await screen.findByLabelText(/Neues Kennwort$/);
+
+    await userEvent.type(erstes, 'ein-langes-kennwort');
+    await userEvent.type(screen.getByLabelText(/wiederholen/), 'ein-langes-kennwort');
+    await userEvent.click(screen.getByRole('button', { name: 'Kennwort setzen' }));
+
+    const meldung = await screen.findByRole('alert');
+    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen');
+    expect(meldung).toHaveTextContent('vom bisherigen unterscheiden');
+    // Kein Feld ist schuld - keines ist als fehlerhaft markiert.
+    expect(erstes).not.toHaveAttribute('aria-invalid');
+    expect(screen.getByLabelText(/wiederholen/)).not.toHaveAttribute('aria-invalid');
+  });
+
+  it('setzt den Fokus ins Formular, sobald der Link eingelöst ist (AUTH-06)', async () => {
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+
+    expect(await screen.findByLabelText(/Neues Kennwort$/)).toHaveFocus();
+  });
+
+  it('setzt den Fokus auf die Auskunft, wenn der Link nicht mehr gilt (AUTH-06)', async () => {
+    verifyOtp.mockResolvedValue({ error: { message: 'Email link is invalid or has expired' } });
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+
+    const titel = await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.');
+    expect(titel.closest('[tabindex="-1"]')).toHaveFocus();
+  });
+
+  it('trägt Überschrift und Hauptbereich der Vollseite (AUTH-12, AUTH-13)', async () => {
+    renderWithProviders(<KennwortNeuPage />, '/kennwort-neu');
+
+    const titel = await screen.findByRole('heading', { level: 1, name: 'Neues Kennwort setzen' });
+    expect(screen.getByRole('main')).toContainElement(titel);
+  });
+
+  it('führt nach dem Setzen mit einem Link zu „Mein Konto“', async () => {
+    renderWithProviders(<KennwortNeuPage />, MIT_LINK);
+    const erstes = await screen.findByLabelText(/Neues Kennwort$/);
+    await userEvent.type(erstes, 'ein-langes-kennwort');
+    await userEvent.type(screen.getByLabelText(/wiederholen/), 'ein-langes-kennwort');
+    await userEvent.click(screen.getByRole('button', { name: 'Kennwort setzen' }));
+
+    expect(await screen.findByRole('link', { name: 'Weiter zu „Mein Konto“' })).toHaveAttribute(
+      'href',
+      '/mein-konto',
+    );
   });
 });

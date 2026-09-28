@@ -14,10 +14,19 @@ import type { LocationErrorCode } from '@/lib/location/contract';
  * Kartendienst nie gefragt worden war. Wer eine Ursache benennt, die er nicht
  * kennt, schickt die Fehlersuche an die falsche Stelle.
  *
+ * **In der Sprache der Praxis** (TER-07, WRT-03, WRT-13): Seit UXR-003 nennt
+ * kein Satz mehr Secrets, Umgebungsvariablen oder Funktionsnamen, keiner
+ * duzt, und „Kontingent" meint in der Praxis das Verordnungskontingent. Was
+ * für die Einrichtung zu tun ist, gehört in die Entwicklerdokumentation, nicht
+ * vor die Therapeutin. Dass eine fehlende Einrichtung ein eigener Zustand
+ * bleibt und keine Störung, legt ANN-090 fest - geändert hat sich nur der
+ * Wortlaut.
+ *
  * Die Texte stehen seit MAP-004 in einer eigenen Datei, weil sie zwei
  * Komponenten tragen: die Route und die Matrix. Beide Male ist es derselbe
  * Datenweg und damit dieselbe Ursache — zwei Fassungen desselben Satzes wären
- * zwei Fassungen zum Pflegen.
+ * zwei Fassungen zum Pflegen. Das Verorten einer Adresse hat eigene Sätze
+ * (`StartortEinstellung`, `AdresseVerorten`).
  */
 export interface Fehlertext {
   readonly titel: string;
@@ -38,35 +47,35 @@ export const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
   // gilt ein echter Anbieter als nicht eingerichtet - der Schalter aus
   // ADR-019 Punkt 25 steht zu, bis ihn jemand bewusst öffnet.
   not_configured: {
-    titel: 'Kein Kartendienst eingerichtet',
-    erklaerung:
-      'Die Berechnung läuft serverseitig und braucht dafür die Secrets LOCATION_PROVIDER, PTV_API_KEY und LOCATION_DATA_GATE. Alle drei liegen lokal und nie im Repository.',
+    titel: 'Fahrzeiten sind hier noch nicht eingerichtet',
+    erklaerung: 'Liste und Navigation funktionieren trotzdem.',
   },
+  // Der Anbieter hat den Schlüssel der Praxis abgelehnt - gefragt wurde er
+  // also (BEF-027). Behoben wird das bei der Einrichtung, nicht im Alltag.
   unauthorized: {
-    titel: 'Kartendienst weist den Serverschlüssel ab',
-    erklaerung:
-      'Der Kartendienst hat den hinterlegten Serverschlüssel nicht angenommen. Das ist ein Einrichtungsschritt und betrifft nur die Routenberechnung.',
+    titel: 'Der Kartendienst nimmt die Anfrage nicht an',
+    erklaerung: 'Das ist ein Einrichtungsschritt und betrifft nur die Routenberechnung.',
   },
   session_invalid: {
     titel: 'Anmeldung gilt nicht mehr',
-    erklaerung:
-      'Die Routenberechnung braucht eine gültige Sitzung. Melde dich neu an; die Stopps und die Karte bleiben davon unberührt.',
+    erklaerung: 'Bitte neu anmelden – Stopps und Karte bleiben erhalten.',
   },
+  // Geantwortet hat etwas vor der eigenen Berechnung, nicht der Kartendienst
+  // (BEF-027) - das bleibt die Aussage, nur ohne Funktionsnamen.
   function_unavailable: {
-    titel: 'Routenfunktion antwortet nicht',
-    erklaerung:
-      'Die Anfrage hat die Routenfunktion nicht erreicht — geantwortet hat etwas davor. Über den Kartendienst sagt das nichts.',
+    titel: 'Die Route ließ sich gerade nicht berechnen',
+    erklaerung: 'Der Kartendienst wurde dafür gar nicht gefragt. Bitte später erneut versuchen.',
   },
   rate_limited: {
-    titel: 'Kontingent erschöpft',
-    erklaerung: 'Der Kartendienst nimmt gerade keine weitere Anfrage an. Später erneut versuchen.',
+    titel: 'Der Kartendienst ist gerade ausgelastet',
+    erklaerung: 'Bitte später erneut versuchen.',
   },
   not_found: {
     titel: 'Keine Route gefunden',
     erklaerung: 'Zwischen diesen Punkten hat der Kartendienst keinen Weg für das Rad gefunden.',
   },
   invalid_request: {
-    titel: 'Anfrage nicht gültig',
-    erklaerung: 'Die Stopps ließen sich so nicht anfragen. Das ist ein Fehler in der Anwendung.',
+    titel: 'Die Stopps ließen sich so nicht anfragen',
+    erklaerung: 'Das ist ein Fehler in der Anwendung, nicht in Ihren Angaben.',
   },
 };

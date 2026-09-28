@@ -79,7 +79,8 @@ describe('Patientensuche', () => {
     renderWithProviders(<Patientensuche />);
 
     await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');
-    expect(await screen.findByText('geboren 30.04.1957')).toBeInTheDocument();
+    // In derselben Form wie im Kopf der Akte (WRT-15).
+    expect(await screen.findByText('geb. 30.04.1957')).toBeInTheDocument();
   });
 
   it('kennzeichnet eine nicht laufende Versorgung als Text', async () => {

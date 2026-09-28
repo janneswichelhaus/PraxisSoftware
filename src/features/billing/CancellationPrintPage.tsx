@@ -1,13 +1,14 @@
-import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Wortmarke } from '@/components/ui/Wortmarke';
-import { MARKE_RECHNUNGSHOEHE } from '@/components/ui/markeRegeln';
+import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, type Rechnungsansicht } from './api';
+import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
  * Das Stornodokument als Blatt zum Verschicken (ABR-003c).
@@ -23,6 +24,9 @@ import { KeineStammdaten, fetchRechnung, type Rechnungsansicht } from './api';
  *
  * Gedruckt wird wie die Rechnung über den Browser (B14, Weg 1): Die Datei
  * entsteht beim Nutzer, und die Anwendung sieht sie nie.
+ *
+ * Seit UXR-010 steht der Weg zurück in jedem Zustand da (ABR-30), als
+ * Baustein mit seiner Regel für einen mitgereisten Rückweg (ABR-33).
  */
 export function CancellationPrintPage() {
   const { invoiceId = '' } = useParams();
@@ -33,14 +37,33 @@ export function CancellationPrintPage() {
     retry: false,
   });
 
+  return (
+    <>
+      <div className="nicht-drucken">
+        <Rueckweg
+          standard={`/abrechnung/rechnungen/${invoiceId}`}
+          beschriftung="Zurück zur Rechnung"
+        />
+      </div>
+      <Inhalt rechnung={rechnung} />
+    </>
+  );
+}
+
+function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
   if (rechnung.isPending) return <LoadingState label="Stornodokument wird geladen …" />;
 
   if (rechnung.error instanceof KeineStammdaten) {
     return (
-      <Statusmeldung ton="warnung">
-        Es sind noch keine Praxis-Stammdaten erfasst. Ohne Absender lässt sich kein Stornodokument
-        drucken — sie stehen unter „Praxisstammdaten".
-      </Statusmeldung>
+      <div>
+        <Statusmeldung ton="warnung">
+          Es sind noch keine Praxisstammdaten erfasst. Ohne Absender lässt sich kein Stornodokument
+          drucken. Erfassen kann sie die Praxisinhaber:in.
+        </Statusmeldung>
+        <Textlink to="/abrechnung/stammdaten" alleinstehend className="text-sm">
+          Zu den Praxisstammdaten
+        </Textlink>
+      </div>
     );
   }
 
@@ -48,7 +71,8 @@ export function CancellationPrintPage() {
     return (
       <ErrorState
         title="Das Stornodokument konnte nicht geladen werden."
-        description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => rechnung.refetch()}
       />
     );
   }
@@ -56,7 +80,7 @@ export function CancellationPrintPage() {
   if (!rechnung.data.cancellation) {
     return (
       <Statusmeldung ton="warnung">
-        Diese Rechnung ist nicht storniert. Ein Stornodokument entsteht erst mit dem Storno — auf
+        Diese Rechnung ist nicht storniert. Ein Stornodokument entsteht erst mit dem Storno – auf
         der Rechnung selbst.
       </Statusmeldung>
     );
@@ -79,80 +103,31 @@ function Stornoblatt({
 }) {
   const dokument = ansicht.document;
   const absender = dokument.issuer;
-  const empfaenger = dokument.recipient;
 
   return (
     <>
-      <div className="nicht-drucken">
-        <Link
-          to={`/abrechnung/rechnungen/${ansicht.id}`}
-          className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-        >
-          ← Zurück zur Rechnung
-        </Link>
-      </div>
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
+        <Briefkopf
+          absender={absender}
+          empfaenger={dokument.recipient}
+          angaben={
+            <Angaben>
+              <Angabe bezeichnung="Stornonummer" zahl hervorgehoben>
+                {storno.cancellation_number}
+              </Angabe>
+              <Angabe bezeichnung="Datum" zahl>
+                {formatDate(storno.cancelled_on)}
+              </Angabe>
+              <Angabe bezeichnung="Behandelte Person">{dokument.patient.name}</Angabe>
+              <Angabe bezeichnung="Steuernummer" zahl>
+                {absender.tax_number}
+              </Angabe>
+            </Angaben>
+          }
+        />
 
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <Wortmarke hoehe={MARKE_RECHNUNGSHOEHE} fassung="schwarz" />
-          <address className="text-ink-muted text-right text-sm not-italic">
-            <span className="text-ink block font-medium">{absender.legal_name}</span>
-            <span className="block">
-              {`${absender.street} ${absender.house_number ?? ''}`.trim()}
-            </span>
-            <span className="block">
-              {absender.postal_code} {absender.city}
-            </span>
-            {absender.phone ? <span className="block">{absender.phone}</span> : null}
-            {absender.email ? <span className="block">{absender.email}</span> : null}
-          </address>
-        </div>
-
-        <div className="mt-10 flex flex-wrap justify-between gap-8">
-          <div className="min-w-[70mm]">
-            <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
-              {absender.legal_name} · {`${absender.street} ${absender.house_number ?? ''}`.trim()} ·{' '}
-              {absender.postal_code} {absender.city}
-            </p>
-            <address className="mt-3 leading-relaxed not-italic">
-              <span className="block">{empfaenger.name}</span>
-              {empfaenger.street ? (
-                <span className="block">
-                  {`${empfaenger.street} ${empfaenger.house_number ?? ''}`.trim()}
-                </span>
-              ) : null}
-              {empfaenger.postal_code || empfaenger.city ? (
-                <span className="block">
-                  {empfaenger.postal_code} {empfaenger.city}
-                </span>
-              ) : null}
-            </address>
-            {empfaenger.reference ? (
-              <p className="text-ink-muted mt-2 text-sm">Aktenzeichen: {empfaenger.reference}</p>
-            ) : null}
-          </div>
-
-          <dl className="text-sm">
-            <div className="flex gap-3">
-              <dt className="text-ink-muted w-40">Stornonummer</dt>
-              <dd className="text-ink font-medium tabular-nums">{storno.cancellation_number}</dd>
-            </div>
-            <div className="mt-1 flex gap-3">
-              <dt className="text-ink-muted w-40">Datum</dt>
-              <dd className="tabular-nums">{formatDate(storno.cancelled_on)}</dd>
-            </div>
-            <div className="mt-1 flex gap-3">
-              <dt className="text-ink-muted w-40">Behandelte Person</dt>
-              <dd>{dokument.patient.name}</dd>
-            </div>
-            <div className="mt-1 flex gap-3">
-              <dt className="text-ink-muted w-40">Steuernummer</dt>
-              <dd className="tabular-nums">{absender.tax_number}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <h1 className="mt-10 text-lg font-semibold">
+        {/* H4 der Skala (20 px, 700) statt eines Tailwind-Grads daneben (ABR-34). */}
+        <h1 className="text-h4 mt-10 font-bold">
           Stornierung der Rechnung {ansicht.invoice_number}
         </h1>
 
@@ -169,16 +144,17 @@ function Stornoblatt({
         </dl>
 
         {/* Der ausgewiesene Steuerbetrag der stornierten Rechnung gehört auf
-            das Blatt: Er ist es, der beim Empfänger rückgängig zu machen ist. */}
+            das Blatt: Er ist es, der beim Empfänger rückgängig zu machen ist.
+            Auf Papier schwarz (ABR-28). */}
         {dokument.totals.tax_total_cents > 0 ? (
-          <p className="text-ink-muted mt-4 text-sm">
+          <p className="text-ink-muted print:text-ink mt-4 text-sm">
             In dem stornierten Betrag war Umsatzsteuer in Höhe von{' '}
             {formatEuro(dokument.totals.tax_total_cents, dokument.currency)} enthalten.
           </p>
         ) : null}
 
         {ansicht.correction_invoice_number ? (
-          <p className="text-ink-muted mt-4 text-sm">
+          <p className="text-ink-muted print:text-ink mt-4 text-sm">
             Die Leistungen werden mit der Rechnung {ansicht.correction_invoice_number} neu
             abgerechnet.
           </p>
@@ -191,9 +167,9 @@ function Stornoblatt({
             Stornodokument drucken
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Wie bei der Rechnung entsteht die Datei im Druckdialog auf diesem Gerät; die Anwendung
-          legt sie nicht ab. Aufbewahrt wird das Storno als Datensatz mit Nummer, Tag und Grund.
+          legt sie nicht ab. Aufbewahrt wird das Storno in der Anwendung, mit Nummer, Tag und Grund.
         </p>
       </div>
     </>

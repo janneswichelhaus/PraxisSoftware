@@ -14,8 +14,8 @@ import { MARKE_MINDESTHOEHE, MARKE_SEITENVERHAELTNIS } from './markeRegeln';
  *    ein Inline-SVG mit `currentColor` würde die Marke jede beliebige
  *    Textfarbe annehmen lassen — genau das Verbot.
  *
- * Im gewöhnlichen Ausdruck erscheint die Marke nicht: Die Druckregeln in
- * `src/index.css` blenden `header` aus, und dort steht sie. Das
+ * Im gewöhnlichen Ausdruck erscheint die Marke nicht: Die Kopfzeile der
+ * Anwendung trägt `nicht-drucken` (`src/index.css`), und dort steht sie. Das
  * Rechnungsblatt (ABR-003b) setzt sie deshalb selbst — in der schwarzen
  * Fassung, die `marke/README.md` genau für Rechnung und Fax vorsieht, und
  * außerhalb der Kopfzeile.

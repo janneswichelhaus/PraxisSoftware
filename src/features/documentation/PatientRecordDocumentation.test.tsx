@@ -197,9 +197,10 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
 
     const verlauf = await screen.findAllByRole('link', { name: 'Änderungsverlauf' });
     expect(verlauf).toHaveLength(1);
+    // Vom Verlauf aus führt der Rückweg wieder in die Akte (DOK-01).
     expect(verlauf[0]).toHaveAttribute(
       'href',
-      `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf`,
+      `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/verlauf`)}`,
     );
 
     const termine = screen.getAllByRole('link', { name: 'Zum Termin' });
@@ -207,6 +208,43 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     expect(termine[1]!.getAttribute('href')).toMatch(
       /^\/termine\/77777777-7777-4777-8777-000000000002\?zurueck=/,
     );
+  });
+
+  it('zeigt Zustände als Etikett, „Finalisiert“ mit Zeichen (UIK-18, DOK-02)', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    const finalisiert = await screen.findByText('Finalisiert');
+    expect(finalisiert).toHaveTextContent('✓');
+    // Kein Rahmen für Bedienbares an einem Etikett.
+    expect(finalisiert).not.toHaveClass('border-line-strong');
+    expect(
+      screen.getByText('noch nicht finalisiert · wird automatisch finalisiert'),
+    ).toBeInTheDocument();
+  });
+
+  it('steht als Abschnitt mit Überschrift im Label-Stil da (UIK-20, TOK-05)', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    const abschnitt = await screen.findByRole('region', { name: 'Behandlungsdokumentation' });
+    expect(
+      within(abschnitt).getByRole('heading', { level: 2, name: 'Behandlungsdokumentation' }),
+    ).toHaveClass('tracking-label', 'text-xs');
+  });
+
+  it('bietet bei einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+    fetchPatientTreatmentNotesPage.mockRejectedValue(new Error('boom'));
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    expect(await screen.findByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    expect(
+      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+    ).toBeInTheDocument();
   });
 
   it.each([['therapist'], ['office']] as const)(

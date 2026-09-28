@@ -1,5 +1,13 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent, type ReactNode } from 'react';
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from 'react';
 import { Link } from 'react-router-dom';
+import { BEGRIFFE } from '@/lib/begriffe';
 import {
   aufRaster,
   gitterlinien,
@@ -8,7 +16,9 @@ import {
   minuteZuPixel,
   minuteZuZeit,
   pixelZuMinute,
+  rueckfrageOben,
   spalten,
+  trifftPunktauswahl,
   type Zeitband,
 } from './calendar';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -16,6 +26,7 @@ import {
   abweichendeLaengeMinuten,
   abweichendeLaengeText,
   appointmentStatusLabels,
+  appointmentStatusTon,
   appointmentTypeLabels,
   terminBezeichnung,
   type CalendarEntry,
@@ -39,6 +50,8 @@ export interface GitterVorschlag {
   endeMinute: number;
   frage: VerschiebenFrage;
   laeuft: boolean;
+  /** Warum der letzte Versuch gescheitert ist - steht im Kasten (KAL-01). */
+  fehler?: string | undefined;
   onBestaetigen: () => void;
   onAbbrechen: () => void;
 }
@@ -54,7 +67,19 @@ export interface GitterVorschlag {
 export interface GitterAuswahl extends Spanne {
   eintraege: AnlegenEintrag[];
   onSchliessen: () => void;
+  /** Person und Tag der Auswahl für die Kopfzeile der Leiste (KAL-10). */
+  kopf?: string | undefined;
 }
+
+/**
+ * Wohin der Fokus im Gitter wandert, wenn ein Kasten schließt (KAL-21).
+ *
+ * Nach der Rückfrage auf die Kachel, um die es ging; nach der Anlegen-Leiste
+ * auf die Spalte der Auswahl. Ohne dieses Ziel fiel der Fokus auf den
+ * Seitenanfang, vor 1 250 px Raster. Jede Anfrage ist ein neues Objekt - auch
+ * zweimal dieselbe Kachel wird zweimal fokussiert.
+ */
+export type GitterFokus = { kachel: string } | { spalte: string };
 
 /**
  * Zeitgitter des Kalenders (CAL-006).
@@ -71,13 +96,20 @@ export interface GitterAuswahl extends Spanne {
  *
  * Waagerechtes Scrollen ist ausdrücklich erwünscht: bei sechs zeitgleich
  * arbeitenden Personen ist eine gequetschte Spalte unbrauchbar, eine schmale
- * scrollbare dagegen lesbar. Zeitachse und Spaltenköpfe bleiben dabei stehen.
+ * scrollbare dagegen lesbar. Die Zeitachse bleibt dabei stehen.
  *
  * **Die Linien tragen drei Stärken (CAL-011).** Die Stunde bleibt die
  * Orientierung und ist am kräftigsten; die halbe Stunde teilt sie; das
  * Praxisraster steht als feinste Stufe darunter, sobald die Zoomstufe dafür
  * Platz lässt. Ohne diese Abstufung wäre ein durchgehendes Fünf-Minuten-Gitter
  * bloß eine graue Fläche — man sähe jede Linie und keine Uhrzeit.
+ *
+ * **Für Vorlesesoftware ein Bereich mit Gruppen (KAL-16, UIK-17).** Bis dahin
+ * hieß das Gitter `grid`, hatte aber weder Zeilen noch Spaltenköpfe - axe
+ * meldete zwei kritische Verstöße, und `grid` versprach eine Pfeiltasten-
+ * Führung, die es nicht gibt. Jetzt ist es ein benannter Bereich, jede Spalte
+ * eine benannte Gruppe (Person bzw. Tag), und die Kacheln bleiben Links. Ein
+ * echtes Raster mit Zeilen und Pfeiltasten wäre ein eigener Schritt.
  */
 
 /** Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. */
@@ -114,12 +146,34 @@ const LINIE = {
   fein: 'border-line/45',
 } as const;
 
+/**
+ * Zeichen und Farbe des Statusworts in der Kachel (KAL-23) - dieselben
+ * Zeichen wie im `Badge` (DS-001), damit der Zustand auch ohne Farbe lesbar
+ * ist. Eine eigene Zeile statt eines Abzeichens: In einer 144-px-Spalte liefe
+ * die Pille „! Nicht angetroffen" über den Kachelrand, eine Zeile kürzt
+ * dagegen mit Auslassungszeichen, und der ganze Zustand steht im Tooltip.
+ */
+const STATUS_ZEICHEN = { positiv: '✓', warnung: '!', kritisch: '×' } as const;
+const STATUS_FARBE = {
+  positiv: 'text-positiv',
+  warnung: 'text-warnung',
+  kritisch: 'text-danger',
+} as const;
+
 export interface GitterSpalte {
   id: string;
   titel: string;
   unterTitel?: string;
   /** Hervorhebung des heutigen Tages beziehungsweise der eigenen Person. */
   hervorgehoben?: boolean;
+  /**
+   * Das Wort zur Hervorhebung, sichtbar im Kopf (KAL-B01, KAL-03): „heute" am
+   * Tag der Woche, „ich" an der eigenen Spalte. Ein Farbton allein war kaum zu
+   * sehen und für Vorlesesoftware gar nicht da.
+   */
+  zusatz?: string | undefined;
+  /** Der Kopf steht für den heutigen Tag: `aria-current="date"`. */
+  aktuellesDatum?: boolean | undefined;
   /** Arbeitszeit dieser Spalte als Hintergrund. */
   baender: Zeitband[];
   /**
@@ -150,6 +204,12 @@ function ortsHinweis(eintrag: CalendarEntry): string {
   return appointmentTypeLabels[eintrag.appointment_type];
 }
 
+/** Name einer Spalte für Vorlesesoftware: Person bzw. Tag samt Hervorhebung. */
+function spaltenName(s: GitterSpalte): string {
+  const name = [s.titel, s.unterTitel].filter(Boolean).join(' ');
+  return s.zusatz ? `${name}, ${s.zusatz}` : name;
+}
+
 export function CalendarGrid({
   spaltenModell,
   eintraege,
@@ -170,11 +230,13 @@ export function CalendarGrid({
   jetzt = null,
   sprung = 0,
   laedtNach = false,
+  fokus = null,
+  startSpalte = null,
 }: {
   /**
    * Was in der Ecke über der Zeitachse steht (BEF-039): der Knopf zu Ansicht
-   * und Filter. Die Ecke bleibt beim Bildlauf in beide Richtungen stehen -
-   * damit ist er „direkt am Raster" erreichbar, wo immer man gerade ist.
+   * und Filter. Die Ecke bleibt beim waagerechten Bildlauf stehen - damit ist
+   * er „direkt am Raster" erreichbar.
    */
   ecke?: ReactNode;
   /**
@@ -192,7 +254,11 @@ export function CalendarGrid({
    * bleibt die Geste beim Browser.
    */
   onZoom?: ((richtung: 1 | -1) => void) | undefined;
-  /** Der gezeigte Stand ist der alte, der neue laedt noch (FIX-018). */
+  /**
+   * Der gezeigte Stand ist der alte, der neue lädt noch (FIX-018). Das Gitter
+   * meldet es über `aria-busy`; die sichtbare Zeile dazu setzt die Seite
+   * (KAL-18) - eine Deckkraft als Zustand ist im System nicht vorgesehen.
+   */
   laedtNach?: boolean;
   /** Die offene Rückfrage zum Verschieben - im Gitter gezeichnet (FIX-017). */
   vorschlag?: GitterVorschlag | null;
@@ -229,9 +295,21 @@ export function CalendarGrid({
    */
   rueckweg?: string | undefined;
   beschriftung: string;
+  /** Wohin der Fokus nach dem Schließen eines Kastens geht (KAL-21). */
+  fokus?: GitterFokus | null;
+  /**
+   * Die Spalte, die beim ersten Zeichnen eines Ausschnitts neben der
+   * Zeitachse stehen soll (RSP-03) - in der Woche der heutige Tag. Gerollt
+   * wird nur waagerecht und nur einmal je Ausschnitt; senkrecht bleibt die
+   * Seite, wo sie ist, sonst verschwände die Zeile mit Monat und „Jetzt".
+   */
+  startSpalte?: string | null;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
+  const kachelRefs = useRef(new Map<string, HTMLAnchorElement>());
   const gitterRef = useRef<HTMLDivElement>(null);
+  const eckeRef = useRef<HTMLDivElement>(null);
+  const rueckfrageRef = useRef<HTMLDivElement>(null);
   const hoehe = ((fenster.bisMinute - fenster.vonMinute) / 60) * stundenHoehe;
 
   const linien = gitterlinien(stundenHoehe, raster);
@@ -316,6 +394,65 @@ export function CalendarGrid({
     jetztRef.current.scrollIntoView?.({ block: 'center', inline: 'center', behavior: 'smooth' });
   });
 
+  // Die Woche beginnt am Telefon beim heutigen Tag (RSP-03): Bei 390 px sind
+  // zwei, bei 820 px knapp fünf Tagesspalten zu sehen, und am Sonntag lag
+  // „heute" rechts außerhalb. Einmal je Ausschnitt - danach gehört der
+  // waagerechte Bildlauf der Person.
+  const gerollterAusschnitt = useRef<string | null>(null);
+  useEffect(() => {
+    if (!startSpalte) return;
+    const schluessel = `${kontext}|${startSpalte}`;
+    if (gerollterAusschnitt.current === schluessel) return;
+    const kasten = gitterRef.current;
+    const spalte = spaltenRefs.current.get(startSpalte);
+    const erste = spaltenModell[0] ? spaltenRefs.current.get(spaltenModell[0].id) : undefined;
+    if (!kasten || !spalte || !erste) return;
+    gerollterAusschnitt.current = schluessel;
+    // Der Abstand zur ersten Spalte ist genau der Bildlauf, bei dem die Spalte
+    // an der stehenden Zeitachse beginnt - unabhängig vom jetzigen Stand.
+    kasten.scrollLeft = spalte.getBoundingClientRect().left - erste.getBoundingClientRect().left;
+  });
+
+  // Der Fokus nach einem geschlossenen Kasten (KAL-21). Ohne Ziel - die
+  // Kachel ist nach dem Blättern fort - der Knopf in der Ecke.
+  useEffect(() => {
+    if (!fokus) return;
+    const ziel =
+      'kachel' in fokus
+        ? kachelRefs.current.get(fokus.kachel)
+        : spaltenRefs.current.get(fokus.spalte);
+    const ersatz = eckeRef.current?.querySelector<HTMLElement>('button, a');
+    // Ohne Bildlauf: Die Stelle ist im Bild, und ein Sprung nähme sie heraus.
+    (ziel ?? ersatz)?.focus({ preventScroll: true });
+  }, [fokus]);
+
+  // Die Lage des Rückfragekastens aus seiner gemessenen Höhe (KAL-13). Vor
+  // dem Zeichnen gemessen, damit er nicht erst an der falschen Stelle
+  // aufblitzt.
+  const [rueckfrageLage, setRueckfrageLage] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!vorschlag) {
+      if (rueckfrageLage !== null) setRueckfrageLage(null);
+      return;
+    }
+    const kasten = rueckfrageRef.current;
+    const spalte = spaltenRefs.current.get(vorschlag.spalteId);
+    if (!kasten || !spalte) return;
+    const rahmen = spalte.getBoundingClientRect();
+    const lage = rueckfrageOben({
+      kachelOben: minuteZuPixel(vorschlag.startMinute, fenster.vonMinute, stundenHoehe),
+      kachelHoehe: Math.max(
+        AUSWAHL_MINDESTHOEHE,
+        ((vorschlag.endeMinute - vorschlag.startMinute) / 60) * stundenHoehe,
+      ),
+      kastenHoehe: kasten.getBoundingClientRect().height,
+      spaltenHoehe: hoehe,
+      sichtbarVon: Math.max(0, -rahmen.top),
+      sichtbarBis: Math.min(hoehe, window.innerHeight - rahmen.top),
+    });
+    if (lage !== rueckfrageLage) setRueckfrageLage(lage);
+  });
+
   // Zwei Finger zoomen das Raster (BEF-038); der zweite Finger beendet,
   // was der erste begonnen hat - Verschieben und Aufziehen brechen dabei
   // nicht, sie enden ohne Ergebnis.
@@ -336,21 +473,25 @@ export function CalendarGrid({
         // bleiben unter allem, was darüber aufgeht - etwa der Trefferliste der
         // Suche am Telefon (BEF-039). Kein Kasten mehr, nur eine Linie oben
         // und unten: Das Raster reicht bis an den Rand der Fläche (BEF-043).
-        className={`border-line isolate mt-2 overflow-x-auto border-y ${laedtNach ? 'opacity-60' : ''}`}
+        //
         // touch-action: das Gitter scrollt weiterhin, aber eine begonnene Geste
-        // auf einer Kachel wird nicht vom Browser übernommen.
-        style={{ touchAction: 'pan-x pan-y' }}
+        // auf einer Kachel wird nicht vom Browser übernommen - als Klassen
+        // statt als Stil (TOK-17), der Wert ist fest.
+        className="border-line isolate mt-2 touch-pan-x touch-pan-y overflow-x-auto border-y"
       >
         <div
           className="grid min-w-max"
           style={{
             gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${SPALTEN_MINDESTBREITE}, 1fr))`,
           }}
-          role="grid"
+          role="region"
           aria-label={beschriftung}
         >
-          {/* Kopfzeile: bleibt beim senkrechten Bildlauf stehen. */}
-          <div className="bg-surface border-line sticky top-0 left-0 z-30 flex h-11 items-center justify-center border-b">
+          {/* Kopfzeile. */}
+          <div
+            ref={eckeRef}
+            className="bg-surface border-line sticky top-0 left-0 z-30 flex h-11 items-center justify-center border-b"
+          >
             {ecke}
           </div>
           {spaltenModell.map((s) => {
@@ -364,8 +505,19 @@ export function CalendarGrid({
                 >
                   {s.titel}
                 </span>
-                {s.unterTitel ? (
-                  <span className="text-ink-subtle truncate text-xs">{s.unterTitel}</span>
+                {s.unterTitel || s.zusatz ? (
+                  // Die Hervorhebung als Wort neben dem Datum (KAL-B01): „heute"
+                  // bzw. „ich" - ein Farbton allein trägt keine Bedeutung.
+                  <span className="flex min-w-0 items-baseline gap-1 text-xs">
+                    {s.unterTitel ? (
+                      <span className="text-ink-muted truncate">{s.unterTitel}</span>
+                    ) : null}
+                    {s.zusatz ? (
+                      <span className="text-accent shrink-0 font-semibold">
+                        {s.unterTitel ? `· ${s.zusatz}` : s.zusatz}
+                      </span>
+                    ) : null}
+                  </span>
                 ) : null}
               </>
             );
@@ -373,8 +525,10 @@ export function CalendarGrid({
             return (
               <div
                 key={s.id}
+                aria-current={!s.ziel && s.aktuellesDatum ? 'date' : undefined}
                 className={[
-                  'bg-surface border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
+                  s.hervorgehoben ? 'bg-accent-soft' : 'bg-surface',
+                  'border-line sticky top-0 z-20 flex h-11 flex-col justify-center',
                   'border-b border-l',
                   // Traegt der Kopf einen Wechsel, polstert der Link selbst -
                   // sonst waere nur der Text anklickbar und nicht die Spalte.
@@ -385,6 +539,7 @@ export function CalendarGrid({
                   <Link
                     to={s.ziel.to}
                     aria-label={s.ziel.beschriftung}
+                    aria-current={s.aktuellesDatum ? 'date' : undefined}
                     title={s.ziel.beschriftung}
                     className="hover:bg-surface-sunken flex h-full min-w-0 flex-col justify-center px-2 transition-colors"
                   >
@@ -408,7 +563,7 @@ export function CalendarGrid({
               // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
               <div
                 key={m}
-                className="text-ink-subtle absolute right-1 pt-0.5 text-[0.6875rem]"
+                className="text-ink-muted absolute right-1 pt-0.5 text-[0.6875rem]"
                 style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
               >
                 {minuteZuZeit(m)}
@@ -422,7 +577,7 @@ export function CalendarGrid({
               ? halbe.map((m) => (
                   <div
                     key={m}
-                    className="text-ink-subtle/70 absolute right-1 pt-0.5 text-[0.625rem]"
+                    className="text-ink-muted absolute right-1 pt-0.5 text-[0.625rem]"
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   >
                     {minuteZuZeit(m)}
@@ -448,8 +603,11 @@ export function CalendarGrid({
                 }}
                 className={`border-line relative border-l ${onAuswahl ? 'cursor-copy' : ''}`}
                 style={{ height: `${hoehe}px` }}
-                role="gridcell"
-                aria-label={s.titel}
+                role="group"
+                aria-label={spaltenName(s)}
+                // Fokussierbar nur per Programm: Nach dem Schließen der
+                // Anlegen-Leiste kehrt der Fokus hierher zurück (KAL-21).
+                tabIndex={-1}
                 // Nur die freie Fläche: eine Kachel liegt darüber und fängt ihre
                 // eigene Geste ab. Der Hintergrund (Arbeitszeitbänder,
                 // Stundenlinien) ist `pointer-events-none`, damit ein Tipp
@@ -473,11 +631,28 @@ export function CalendarGrid({
                         // Ebenso der Klick nach dem Zoomen mit zwei Fingern (BEF-038).
                         if (zweiFinger.klickUnterdruecken()) return;
                         const kasten = event.currentTarget.getBoundingClientRect();
-                        const roh = pixelZuMinute(
-                          event.clientY - kasten.top,
-                          fenster.vonMinute,
-                          stundenHoehe,
-                        );
+                        const pixel = event.clientY - kasten.top;
+                        // Ein Tipp in die gezeichnete Auswahl ist „dasselbe
+                        // Feld" und hebt sie auf (KAL-09, BEF-036) - nicht nur
+                        // der eine Rasterpunkt, auf dem sie beginnt.
+                        if (
+                          auswahl &&
+                          trifftPunktauswahl(
+                            auswahl,
+                            { spalteId: s.id, pixel },
+                            fenster.vonMinute,
+                            stundenHoehe,
+                            AUSWAHL_MINDESTHOEHE,
+                          )
+                        ) {
+                          onAuswahl({
+                            spalteId: s.id,
+                            vonMinute: auswahl.vonMinute,
+                            bisMinute: auswahl.vonMinute,
+                          });
+                          return;
+                        }
+                        const roh = pixelZuMinute(pixel, fenster.vonMinute, stundenHoehe);
                         const minute = Math.max(
                           fenster.vonMinute,
                           Math.min(fenster.bisMinute, aufRaster(roh, raster)),
@@ -562,6 +737,10 @@ export function CalendarGrid({
                   return (
                     <Kachel
                       key={g.eintrag.id}
+                      linkRef={(el) => {
+                        if (el) kachelRefs.current.set(g.eintrag.id, el);
+                        else kachelRefs.current.delete(g.eintrag.id);
+                      }}
                       gitter={g}
                       fensterVon={fenster.vonMinute}
                       stundenHoehe={stundenHoehe}
@@ -591,7 +770,8 @@ export function CalendarGrid({
                 {/* Die Rueckfrage im Gitter (FIX-017): die neue Kachel am Ziel,
                   der Kasten daneben. Die alte Kachel steht als Umriss weiter
                   oben (`bisher`). Bei den rechten Spalten haengt der Kasten
-                  links an, damit er nicht aus dem Gitter laeuft. */}
+                  links an, damit er nicht aus dem Gitter laeuft; unter oder
+                  ueber der Kachel, je nach gemessener Hoehe (KAL-13). */}
                 {vorschlag && vorschlag.spalteId === s.id
                   ? (() => {
                       const oben = minuteZuPixel(
@@ -600,20 +780,20 @@ export function CalendarGrid({
                         stundenHoehe,
                       );
                       const kachelHoehe = Math.max(
-                        28,
+                        AUSWAHL_MINDESTHOEHE,
                         ((vorschlag.endeMinute - vorschlag.startMinute) / 60) * stundenHoehe,
                       );
                       const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
                       const rechts =
                         spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
-                      // Unter der Kachel, es sei denn, dort ist kein Platz mehr.
-                      const kastenOben =
-                        oben + kachelHoehe + 200 <= hoehe ? oben + kachelHoehe + 4 : undefined;
+                      // Bis zur ersten Messung unter der Kachel; die Messung
+                      // läuft vor dem Zeichnen.
+                      const kastenOben = rueckfrageLage ?? oben + kachelHoehe + 4;
                       return (
                         <>
                           <div
                             data-testid="vorschlag-kachel"
-                            className="border-accent bg-surface text-accent rounded-button ring-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold ring-2"
+                            className="border-accent bg-surface text-accent rounded-button outline-accent absolute inset-x-1 z-40 border-2 px-2 py-1 text-xs font-semibold outline-2"
                             style={{ top: `${oben}px`, height: `${kachelHoehe}px` }}
                             aria-hidden="true"
                           >
@@ -621,18 +801,17 @@ export function CalendarGrid({
                             {minuteZuZeit(vorschlag.endeMinute)}
                           </div>
                           <VerschiebenRueckfrage
+                            ref={rueckfrageRef}
                             frage={vorschlag.frage}
                             laeuft={vorschlag.laeuft}
+                            fehler={vorschlag.fehler}
                             onBestaetigen={vorschlag.onBestaetigen}
                             onAbbrechen={vorschlag.onAbbrechen}
                             className={[
                               'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
                               rechts ? 'right-1' : 'left-1',
-                              kastenOben === undefined ? 'bottom-1' : '',
                             ].join(' ')}
-                            style={
-                              kastenOben === undefined ? undefined : { top: `${kastenOben}px` }
-                            }
+                            style={{ top: `${kastenOben}px` }}
                           />
                         </>
                       );
@@ -641,11 +820,12 @@ export function CalendarGrid({
 
                 {/* Die aufgezogene Spanne (CAL-019): Sie zeigt beide Enden,
                   solange der Zeiger unten ist. Geschrieben ist nichts - das
-                  Menü fragt erst, was daraus werden soll. */}
+                  Menü fragt erst, was daraus werden soll. Flächen in der
+                  weichen Hauptfarbe, ohne Deckkraft (TOK-09). */}
                 {spanne.vorschau && spanne.vorschau.spalteId === s.id ? (
                   <div
                     data-testid="spanne-vorschau"
-                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
+                    className="border-accent bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
                     style={{
                       top: `${minuteZuPixel(spanne.vorschau.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
                       height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((spanne.vorschau.bisMinute - spanne.vorschau.vonMinute) / 60) * stundenHoehe)}px`,
@@ -664,7 +844,7 @@ export function CalendarGrid({
                 {auswahl && auswahl.spalteId === s.id ? (
                   <div
                     data-testid="auswahl-flaeche"
-                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
+                    className="border-accent bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
                     style={{
                       top: `${minuteZuPixel(auswahl.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
                       height: `${Math.max(AUSWAHL_MINDESTHOEHE, ((auswahl.bisMinute - auswahl.vonMinute) / 60) * stundenHoehe)}px`,
@@ -682,7 +862,7 @@ export function CalendarGrid({
                 {ziehen.vorschau && ziehen.vorschau.spalteId === s.id ? (
                   <div
                     data-testid="zieh-vorschau"
-                    className="border-accent bg-accent-soft/70 text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
+                    className="border-accent bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 border-dashed px-2 py-1 text-xs leading-4 font-medium"
                     style={{
                       top: `${minuteZuPixel(ziehen.vorschau.startMinute, fenster.vonMinute, stundenHoehe)}px`,
                       height: `${Math.max(AUSWAHL_MINDESTHOEHE, (ziehen.vorschau.dauer / 60) * stundenHoehe)}px`,
@@ -725,6 +905,7 @@ function Kachel({
   wartet,
   ziehbar,
   rueckweg,
+  linkRef,
   onPointerDown,
   onClickCapture,
 }: {
@@ -741,6 +922,8 @@ function Kachel({
   wartet: boolean;
   ziehbar: boolean;
   rueckweg: string | undefined;
+  /** Für die Fokusführung nach der Rückfrage (KAL-21). */
+  linkRef: (element: HTMLAnchorElement | null) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
 }) {
@@ -752,16 +935,24 @@ function Kachel({
   // greift die Mindesthöhe ohnehin nicht mehr.
   const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * stundenHoehe);
   const vermerk = eintrag.status === 'confirmed' ? null : appointmentStatusLabels[eintrag.status];
+  const ton = appointmentStatusTon[eintrag.status];
   // §8.1: Eine abweichende Länge wird gekennzeichnet - als Bild in der
   // Zeitzeile, als Satz für Vorlesewerkzeuge und im Tooltip (CAL-020).
   const abweichung = abweichendeLaengeMinuten(eintrag);
-  // Der Ort steht als dritte Zeile und zusätzlich im Tooltip: bei einem kurzen
-  // Termin ist die Kachel zu niedrig für drei Zeilen. Ein abweichender Status
-  // gehört deshalb in die zweite Zeile - er ist die wichtigere Auskunft und
-  // darf nicht abgeschnitten werden.
+  // Ein abweichender Status steht in einer eigenen Zeile direkt unter dem
+  // Namen (KAL-23): Er ist die wichtigere Auskunft und wurde in der Zeitzeile
+  // abgeschnitten („Abgeschloss…"). Der Ort steht zuletzt und zusätzlich im
+  // Tooltip - bei einem kurzen Termin ist die Kachel zu niedrig für alles.
+  //
+  // Zustände mit eigenen Farben statt Deckkraft (KAL-18): Abgesagt und der
+  // alte Platz einer Verschiebung sind vertieft und gestrichelt, der Text
+  // bleibt voll lesbar.
+  const abgesagt = eintrag.status === 'cancelled';
+  const zurueckgelassen = gedimmt || bisher;
 
   return (
     <Link
+      ref={linkRef}
       to={mitRueckweg(`/termine/${eintrag.id}`, rueckweg)}
       // Ein Link ist im Browser von Haus aus ziehbar. Diese eingebaute Geste
       // bricht die Zeigerverfolgung sofort mit pointercancel ab - ohne
@@ -791,26 +982,27 @@ function Kachel({
         left: `${links}%`,
         width: `${breite}%`,
         zIndex: stapel,
-        // Bewusst NICHT `none` (UX-010): eine Kachel nimmt auf dem Telefon
-        // fast die ganze Spalte ein: mit `none` liesse sich der Kalender
+      }}
+      className={[
+        'rounded-button absolute block overflow-hidden',
+        'border border-l-4 px-1.5 py-1 text-left transition-colors',
+        abgesagt || zurueckgelassen
+          ? 'bg-surface-sunken border-dashed'
+          : 'bg-surface hover:bg-surface-sunken',
+        // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
+        // wie nichts.
+        wartet ? 'scale-102' : '',
+        wartet || gitter.neu
+          ? 'border-accent border-2'
+          : abgesagt || zurueckgelassen
+            ? 'border-line-strong'
+            : 'border-line',
+        // Bewusst NICHT `touch-none` (UX-010): eine Kachel nimmt auf dem
+        // Telefon fast die ganze Spalte ein: damit liesse sich der Kalender
         // ueber einem Termin gar nicht mehr scrollen. Der Bildlauf bleibt
         // beim Browser; das Verschieben beginnt erst nach dem langen Druck,
         // und der schliesst einen begonnenen Bildlauf aus.
-        ...(ziehbar ? { touchAction: 'pan-x pan-y' } : {}),
-      }}
-      className={[
-        'border-line bg-surface hover:bg-surface-sunken rounded-button absolute block overflow-hidden',
-        'border border-l-4 px-1.5 py-1 text-left transition-colors',
-        eintrag.status === 'cancelled' ? 'opacity-60' : '',
-        gedimmt ? 'opacity-40' : '',
-        // Der alte Platz: gestrichelt und blass, damit niemand ihn fuer den
-        // neuen haelt (FIX-017).
-        bisher ? 'border-dashed opacity-50' : '',
-        // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
-        // wie nichts.
-        wartet ? 'ring-accent scale-[1.02] ring-2' : '',
-        gitter.neu ? 'ring-accent ring-2' : '',
-        ziehbar ? 'cursor-grab' : '',
+        ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : '',
       ]
         .filter(Boolean)
         .join(' ')}
@@ -818,20 +1010,32 @@ function Kachel({
       {/* Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
           und ein Zeichen davor sagt, dass es keine Behandlung ist
           (CAL-015b). Ohne das Zeichen sähe eine Teambesprechung aus wie eine
-          Patient:in mit ungewöhnlichem Namen. */}
+          Patient:in mit ungewöhnlichem Namen. Vorgelesen wird das Wort, nicht
+          das Zeichen (KAL-16). */}
       <span className="text-ink block truncate text-xs font-medium">
         {bisher ? <span className="text-ink-muted">Bisher · </span> : null}
-        {eintrag.kind === 'internal' ? '▪ ' : ''}
+        {eintrag.kind === 'internal' ? (
+          <>
+            <span aria-hidden="true">▪ </span>
+            <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
+          </>
+        ) : null}
         {terminBezeichnung(eintrag)}
       </span>
+      {vermerk ? (
+        <span
+          className={`block truncate text-[0.6875rem] font-medium ${STATUS_FARBE[ton]}`}
+          data-testid="kachel-status"
+        >
+          <span aria-hidden="true">{STATUS_ZEICHEN[ton]} </span>
+          {vermerk}
+        </span>
+      ) : null}
       <span className="text-ink-muted block truncate text-[0.6875rem]">
         {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
         <Laengenzeichen termin={eintrag} knapp />
-        {vermerk ? ` · ${vermerk}` : ''}
       </span>
-      <span className="text-ink-subtle block truncate text-[0.6875rem]">
-        {ortsHinweis(eintrag)}
-      </span>
+      <span className="text-ink-muted block truncate text-[0.6875rem]">{ortsHinweis(eintrag)}</span>
     </Link>
   );
 }

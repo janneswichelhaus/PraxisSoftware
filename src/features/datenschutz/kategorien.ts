@@ -61,10 +61,12 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Behandlungsdokumentation',
     beschreibung: 'Die Dokumentation je Termin in ihrer geltenden Fassung.',
   },
+  // „Versionen" wie in der Dokumentation selbst (WRT-17): Dort heißt es
+  // „Version 1", „Versionen" - die Auskunft sprach von „Fassungen".
   treatment_note_versions: {
-    label: 'Fassungen der Dokumentation',
+    label: 'Versionen der Dokumentation',
     beschreibung:
-      'Frühere Fassungen und Korrekturgründe; die Dokumentation wird nie überschrieben.',
+      'Frühere Versionen und Korrekturgründe; die Dokumentation wird nie überschrieben.',
   },
   patient_questionnaire_responses: {
     label: 'Fragebögen',
@@ -83,7 +85,7 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   },
   patient_files: {
     label: 'Dateien',
-    beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme — ohne den Inhalt selbst.',
+    beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme – ohne den Inhalt selbst.',
   },
   patient_privacy_records: {
     label: 'Datenschutz und Einwilligungen',
@@ -100,7 +102,7 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
-    beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patientin selbst ist.',
+    beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',
   },
   invoices: {
     label: 'Rechnungen',

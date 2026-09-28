@@ -9,29 +9,187 @@ import {
   arbeitszeitBaender,
   aufRaster,
   bereichFuer,
+  ereignisGeaendert,
   fensterMitArbeitszeit,
   gitterlinien,
   isoWochentag,
   kachelBreite,
   blaettern,
   istIsoDatum,
+  leseEingetrageneFehlzeit,
   leseParameter,
   linienAchse,
   minuteZuPixel,
   minuteZuZeit,
+  mitEingetragenerFehlzeit,
   pixelZuMinute,
   position,
+  rueckfrageOben,
   schreibeParameter,
   spalten,
   tageImBereich,
   tagePlus,
   tagesFenster,
+  trifftPunktauswahl,
   wochenBeginn,
   zeitZuMinute,
   zoomSchritt,
   type Arbeitsausnahme,
   type Arbeitsblock,
 } from './calendar';
+
+describe('Ungespeicherte Fehlzeit (KAL-20)', () => {
+  const anfang = {
+    title: '',
+    staff_member_ids: ['a', 'b'],
+    appointment_type: 'practice' as const,
+    date: '2027-05-12',
+    start_time: '09:00',
+    end_time: '',
+    location_id: 'ort-1',
+  };
+
+  it('sieht in der Vorbelegung keine Eingabe', () => {
+    expect(ereignisGeaendert({ ...anfang }, anfang)).toBe(false);
+    // Die Reihenfolge der Beteiligten ist keine Änderung.
+    expect(ereignisGeaendert({ ...anfang, staff_member_ids: ['b', 'a'] }, anfang)).toBe(false);
+  });
+
+  it('erkennt jede getippte oder gewaehlte Abweichung', () => {
+    expect(ereignisGeaendert({ ...anfang, title: 'Teammeeting' }, anfang)).toBe(true);
+    expect(ereignisGeaendert({ ...anfang, staff_member_ids: ['a'] }, anfang)).toBe(true);
+    expect(ereignisGeaendert({ ...anfang, appointment_type: 'video' }, anfang)).toBe(true);
+    expect(ereignisGeaendert({ ...anfang, end_time: '09:30' }, anfang)).toBe(true);
+  });
+});
+
+describe('Meldung einer eingetragenen Fehlzeit (KAL-22)', () => {
+  it('haengt die Art an einen Rueckweg in den Kalender', () => {
+    expect(mitEingetragenerFehlzeit('/kalender?ansicht=tag&datum=2027-05-12', 'fehlzeit')).toBe(
+      '/kalender?ansicht=tag&datum=2027-05-12&eingetragen=fehlzeit',
+    );
+    expect(mitEingetragenerFehlzeit('/kalender', 'dauerfehlzeit')).toBe(
+      '/kalender?eingetragen=dauerfehlzeit',
+    );
+  });
+
+  it('laesst andere Rueckwege unveraendert - dort gibt es keine Stelle fuer die Meldung', () => {
+    expect(mitEingetragenerFehlzeit('/termine/abc', 'fehlzeit')).toBe('/termine/abc');
+  });
+
+  it('liest nur die beiden bekannten Werte und nie einen Namen', () => {
+    expect(leseEingetrageneFehlzeit(new URLSearchParams('eingetragen=fehlzeit'))).toBe('fehlzeit');
+    expect(leseEingetrageneFehlzeit(new URLSearchParams('eingetragen=dauerfehlzeit'))).toBe(
+      'dauerfehlzeit',
+    );
+    expect(leseEingetrageneFehlzeit(new URLSearchParams('eingetragen=Anna'))).toBeNull();
+    expect(leseEingetrageneFehlzeit(new URLSearchParams(''))).toBeNull();
+  });
+
+  it('faellt beim naechsten Schreiben der Parameter weg', () => {
+    const p = leseParameter(
+      new URLSearchParams('ansicht=tag&datum=2027-05-12&eingetragen=fehlzeit'),
+      '2027-05-12',
+    );
+    expect(schreibeParameter(p).has('eingetragen')).toBe(false);
+  });
+});
+
+describe('Zweiter Tipp in die gezeichnete Auswahl (KAL-09)', () => {
+  // Fenster ab 07:00, 96 px je Stunde, Auswahl mindestens 28 px hoch.
+  const FENSTER = 7 * 60;
+  const punkt = { spalteId: 'a', vonMinute: 14 * 60, bisMinute: 14 * 60 };
+  const anker = minuteZuPixel(punkt.vonMinute, FENSTER, 96);
+
+  it('wertet einen Tipp 14 px unter dem Anker als dasselbe Feld', () => {
+    expect(trifftPunktauswahl(punkt, { spalteId: 'a', pixel: anker + 14 }, FENSTER, 96, 28)).toBe(
+      true,
+    );
+  });
+
+  it('laesst einen Tipp 40 px darunter die Spanne aufziehen', () => {
+    expect(trifftPunktauswahl(punkt, { spalteId: 'a', pixel: anker + 40 }, FENSTER, 96, 28)).toBe(
+      false,
+    );
+  });
+
+  it('gilt auch auf der kleinsten Zoomstufe fuer die ganze gezeichnete Flaeche', () => {
+    const oben = minuteZuPixel(punkt.vonMinute, FENSTER, 40);
+    expect(trifftPunktauswahl(punkt, { spalteId: 'a', pixel: oben + 27 }, FENSTER, 40, 28)).toBe(
+      true,
+    );
+  });
+
+  it('zaehlt oberhalb der Auswahl, in einer anderen Spalte und bei einer Spanne nicht', () => {
+    expect(trifftPunktauswahl(punkt, { spalteId: 'a', pixel: anker - 1 }, FENSTER, 96, 28)).toBe(
+      false,
+    );
+    expect(trifftPunktauswahl(punkt, { spalteId: 'b', pixel: anker + 5 }, FENSTER, 96, 28)).toBe(
+      false,
+    );
+    const spanne = { ...punkt, bisMinute: punkt.vonMinute + 40 };
+    expect(trifftPunktauswahl(spanne, { spalteId: 'a', pixel: anker + 5 }, FENSTER, 96, 28)).toBe(
+      false,
+    );
+    expect(trifftPunktauswahl(null, { spalteId: 'a', pixel: anker }, FENSTER, 96, 28)).toBe(false);
+  });
+});
+
+describe('Lage der Verschieben-Rueckfrage (KAL-13)', () => {
+  const sichtbar = { sichtbarVon: 0, sichtbarBis: 1248 };
+
+  it('steht unter der neuen Kachel, wenn der gemessene Kasten dort hinpasst', () => {
+    expect(
+      rueckfrageOben({
+        kachelOben: 300,
+        kachelHoehe: 96,
+        kastenHoehe: 350,
+        spaltenHoehe: 1248,
+        ...sichtbar,
+      }),
+    ).toBe(400);
+  });
+
+  it('steht spaet am Tag ueber der Kachel statt sie zu verdecken', () => {
+    // 17:30 bei 96 px je Stunde ab 07:00: 1008 px von oben.
+    expect(
+      rueckfrageOben({
+        kachelOben: 1008,
+        kachelHoehe: 96,
+        kastenHoehe: 350,
+        spaltenHoehe: 1248,
+        ...sichtbar,
+      }),
+    ).toBe(1008 - 4 - 350);
+  });
+
+  it('bleibt im Raster und im sichtbaren Ausschnitt, wenn weder darunter noch darueber Platz ist', () => {
+    // Kleinste Zoomstufe: 13 Stunden sind 520 px, der Kasten 400 px.
+    const oben = rueckfrageOben({
+      kachelOben: 200,
+      kachelHoehe: 40,
+      kastenHoehe: 400,
+      spaltenHoehe: 520,
+      sichtbarVon: 50,
+      sichtbarBis: 520,
+    });
+    expect(oben).toBe(120);
+    expect(oben + 400).toBeLessThanOrEqual(520);
+    expect(oben).toBeGreaterThanOrEqual(50);
+  });
+
+  it('rechnet ohne gemessene Hoehe wie bisher unter der Kachel', () => {
+    expect(
+      rueckfrageOben({
+        kachelOben: 120,
+        kachelHoehe: 28,
+        kastenHoehe: 0,
+        spaltenHoehe: 1248,
+        ...sichtbar,
+      }),
+    ).toBe(152);
+  });
+});
 
 describe('Kalenderarithmetik', () => {
   it('erkennt gueltige Kalendertage', () => {

@@ -4,19 +4,20 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Feldgruppe, Section } from '@/components/ui/Section';
+import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
   BAUARTEN,
   bauartDatumsBeschriftung,
   bauartLabels,
   istVerordnung,
-  prescriberLabel,
   type Bauart,
   type Heilmittelposition,
   type Prescriber,
   type TreatmentBasisFeld,
 } from './api';
 import { HEILMITTEL, istBestand } from './heilmittel';
-import { grundlageFeldId } from './grundlagenfelder';
+import { HEILMITTEL_FEHLER_ID, grundlageFeldId, spaetestesDatum } from './grundlagenfelder';
+import { verordnerAuswahlname } from './verordnerfelder';
 
 /**
  * Eingabefelder einer Behandlungsgrundlage.
@@ -34,6 +35,11 @@ import { grundlageFeldId } from './grundlagenfelder';
  * „Position hinzufügen", Therapieziel und das zweite Bemerkungsfeld sind
  * weggefallen; die Empfehlung gibt es nicht als manuelle Eingabe
  * (ANN-064, ANN-065, ANN-066 — ANN-014 bleibt für den Bestandstext gültig).
+ *
+ * **Seit UXR-007 steht die Frequenz bei Heilmitteln und Anzahl** (VER-21): Alle
+ * drei schreibt die Praxis vom Rezept ab, und der Blick soll dabei nicht
+ * zwischen Rezeptblock und Formularanfang springen. Jeder Hinweis ist ein
+ * kurzer Satz.
  *
  * Was ein Bestandsdatensatz mitbringt, verschwindet dadurch nicht: Ein
  * Heilmittel außerhalb des Katalogs steht als eigenes, angehaktes Kästchen
@@ -80,7 +86,7 @@ export function TreatmentBasisFormFields({
             name="treatment_basis_kind"
             feldId={grundlageFeldId('treatment_basis_kind')}
             required
-            hint="Eine Verordnung liegt als Rezept vor; ein Selbstzahler vereinbart die Behandlungen mit der Praxis."
+            hint="Eine Verordnung liegt als Rezept vor; bei Selbstzahler vereinbart die Person die Behandlungen mit der Praxis."
             value={werte.treatment_basis_kind}
             error={fehler.treatment_basis_kind}
             onChange={(event) => onChange('treatment_basis_kind', event.target.value)}
@@ -92,34 +98,38 @@ export function TreatmentBasisFormFields({
             ))}
           </Select>
           {verordnung ? (
-            <Select
-              label="Verordner:in *"
-              name="prescriber_id"
-              feldId={grundlageFeldId('prescriber_id')}
-              required
-              value={werte.prescriber_id}
-              error={fehler.prescriber_id}
-              hint={
-                <>
-                  Fehlt die Praxis?{' '}
-                  <Link
-                    to={verordnerAnlegenZiel}
-                    onClick={onVerordnerAnlegenKlick}
-                    className="text-accent hover:underline"
-                  >
-                    Verordner:in anlegen
-                  </Link>
-                </>
-              }
-              onChange={(event) => onChange('prescriber_id', event.target.value)}
-            >
-              <option value="">Bitte auswählen</option>
-              {verordnerinnen.map((verordner) => (
-                <option key={verordner.id} value={verordner.id}>
-                  {prescriberLabel(verordner)}
-                </option>
-              ))}
-            </Select>
+            <div className="flex flex-col gap-1">
+              <Select
+                label="Verordner:in *"
+                name="prescriber_id"
+                feldId={grundlageFeldId('prescriber_id')}
+                required
+                value={werte.prescriber_id}
+                error={fehler.prescriber_id}
+                onChange={(event) => onChange('prescriber_id', event.target.value)}
+              >
+                <option value="">Bitte wählen …</option>
+                {verordnerinnen.map((verordner) => (
+                  <option key={verordner.id} value={verordner.id}>
+                    {verordnerAuswahlname(verordner)}
+                  </option>
+                ))}
+              </Select>
+              {/* Der Weg zur Verordner-Anlage als eigene Aktion unter dem Feld
+                  (VER-12, RSP-06): 44 px hoch statt eines 18-px-Links im
+                  Hinweissatz, der nur an der Farbe zu erkennen war. Die
+                  Eingaben sichert der Entwurf, bevor die Seite wechselt. */}
+              <p className="text-ink-muted flex flex-wrap items-center gap-x-2 text-sm">
+                Verordner:in nicht in der Liste?
+                <Link
+                  to={verordnerAnlegenZiel}
+                  onClick={onVerordnerAnlegenKlick}
+                  className={kartenAktionKlassen('quiet')}
+                >
+                  Neue Verordner:in anlegen
+                </Link>
+              </p>
+            </div>
           ) : null}
           <Field
             label={`${bauartDatumsBeschriftung[bauart]} *`}
@@ -127,40 +137,36 @@ export function TreatmentBasisFormFields({
             feldId={grundlageFeldId('issued_on')}
             type="date"
             required
+            // Die Zukunft bietet die Datumsauswahl gar nicht erst an (VER-15);
+            // verbindlich prüft weiter das Schema.
+            max={spaetestesDatum()}
             value={werte.issued_on}
             error={fehler.issued_on}
             onChange={(event) => onChange('issued_on', event.target.value)}
           />
-          <Field
-            label="Frequenz"
-            name="frequency_note"
-            feldId={grundlageFeldId('frequency_note')}
-            autoComplete="off"
-            hint={
-              verordnung
-                ? 'So, wie sie auf dem Rezept steht — etwa „2x pro Woche".'
-                : 'Wie vereinbart — etwa „1x pro Woche".'
-            }
-            value={werte.frequency_note}
-            error={fehler.frequency_note}
-            onChange={(event) => onChange('frequency_note', event.target.value)}
-          />
         </Feldgruppe>
       </Section>
 
-      {/* Heilmittel und Terminzahl stehen zusammen und oben: Sie sind das,
-          was die Praxis vom Rezept abschreibt. Beide beantworten verschiedene
-          Fragen - was wird behandelt, und wie oft (ANN-064). */}
+      {/* Heilmittel, Terminzahl und Frequenz stehen zusammen und oben: Sie
+          sind das, was die Praxis vom Rezept abschreibt. Heilmittel und Zahl
+          beantworten verschiedene Fragen - was wird behandelt, und wie oft
+          (ANN-064). */}
       <Section
         titel="Heilmittel und Termine"
         hinweis={
           verordnung
-            ? 'Anhaken, was auf dem Rezept steht. Mehrere zugleich sind möglich.'
-            : 'Anhaken, was vereinbart ist. Mehrere zugleich sind möglich.'
+            ? 'Anhaken, was auf dem Rezept steht – auch mehrere zugleich.'
+            : 'Anhaken, was vereinbart ist – auch mehrere zugleich.'
         }
       >
         <Feldgruppe>
-          <fieldset>
+          {/* Der Fehler der Auswahl ist mit Gruppe und erstem Kästchen
+              verbunden (VER-16): Die Fehlerzusammenfassung springt auf das
+              Kästchen, und dort ist zu hören, was fehlt. */}
+          <fieldset
+            aria-describedby={positionsFehler ? HEILMITTEL_FEHLER_ID : undefined}
+            aria-invalid={positionsFehler ? true : undefined}
+          >
             <legend className="text-ink text-sm font-medium">Heilmittel *</legend>
             <div className="mt-2 flex flex-col gap-1">
               {HEILMITTEL.map((heilmittel, index) => (
@@ -169,6 +175,9 @@ export function TreatmentBasisFormFields({
                   // Nur das erste Kästchen trägt die feste Kennung: Die
                   // Fehlerzusammenfassung springt an den Anfang der Gruppe.
                   feldId={index === 0 ? grundlageFeldId('items') : undefined}
+                  {...(index === 0 && positionsFehler
+                    ? { 'aria-describedby': HEILMITTEL_FEHLER_ID, 'aria-invalid': true }
+                    : {})}
                   name={`heilmittel-${index}`}
                   label={heilmittel.beschriftung}
                   checked={gewaehlt(heilmittel.remedy)}
@@ -197,7 +206,11 @@ export function TreatmentBasisFormFields({
                 Fehlerzusammenfassung über dem Formular ist die eine Meldung,
                 die Vorlesesoftware ansagen soll (UX-012). Zwei zugleich
                 verdrängen einander. */}
-            {positionsFehler ? <p className="text-danger mt-1 text-sm">{positionsFehler}</p> : null}
+            {positionsFehler ? (
+              <p id={HEILMITTEL_FEHLER_ID} className="text-danger mt-1 text-sm">
+                {positionsFehler}
+              </p>
+            ) : null}
           </fieldset>
 
           <Field
@@ -208,12 +221,27 @@ export function TreatmentBasisFormFields({
             required
             hint={
               verordnung
-                ? 'Wie viele Behandlungstermine das Rezept hergibt. Mehrere Heilmittel erzeugen keine zusätzlichen Termine.'
-                : 'Wie viele Behandlungstermine vereinbart sind. Mehrere Heilmittel erzeugen keine zusätzlichen Termine.'
+                ? 'Wie viele Termine das Rezept hergibt – mehrere Heilmittel ergeben nicht mehr Termine.'
+                : 'Wie viele Termine vereinbart sind – mehrere Heilmittel ergeben nicht mehr Termine.'
             }
             value={werte.appointment_count}
             error={fehler.appointment_count}
             onChange={(event) => onChange('appointment_count', event.target.value)}
+          />
+
+          <Field
+            label="Frequenz"
+            name="frequency_note"
+            feldId={grundlageFeldId('frequency_note')}
+            autoComplete="off"
+            hint={
+              verordnung
+                ? 'So, wie sie auf dem Rezept steht – etwa „2x pro Woche“.'
+                : 'Wie vereinbart – etwa „1x pro Woche“.'
+            }
+            value={werte.frequency_note}
+            error={fehler.frequency_note}
+            onChange={(event) => onChange('frequency_note', event.target.value)}
           />
         </Feldgruppe>
       </Section>
@@ -240,7 +268,9 @@ export function TreatmentBasisFormFields({
         </Section>
       ) : null}
 
-      <Section titel="Anmerkungen">
+      {/* „Weitere Angaben" statt „Anmerkungen" über dem gleichnamigen Feld
+          (VER-21): Abschnitt und Feld hießen gleich. */}
+      <Section titel="Weitere Angaben">
         <Feldgruppe>
           <TextArea
             label="Anmerkungen"
@@ -249,35 +279,36 @@ export function TreatmentBasisFormFields({
             rows={3}
             hint={
               verordnung
-                ? 'Ein Feld für alles, was zur Verordnung zu sagen ist — der Hinweis vom Rezept ebenso wie „Rezept liegt im Ordner". Für alle Praxisrollen sichtbar.'
-                : 'Ein Feld für alles, was zur Vereinbarung zu sagen ist. Für alle Praxisrollen sichtbar.'
+                ? 'Alles Weitere zur Verordnung, etwa „Rezept liegt im Ordner“ – sichtbar für alle Praxisrollen.'
+                : 'Alles Weitere zur Vereinbarung – sichtbar für alle Praxisrollen.'
             }
             value={werte.note}
             error={fehler.note}
             onChange={(event) => onChange('note', event.target.value)}
           />
-
-          {/* ANN-014 bleibt gültig: Die Anwendung erzeugt keine Empfehlung. Sie
-              zeigt nur, was vor VER-EPIC-002 jemand selbst geschrieben hat -
-              und nimmt dafür keine neue Eingabe mehr entgegen. */}
-          {bestandstexte.length > 0 ? (
-            <div className="border-line rounded-card border p-4">
-              <p className="text-ink text-sm font-medium">Aus dem Bestand</p>
-              <p className="text-ink-subtle mt-1 text-sm">
-                Diese Angaben stammen aus der Zeit vor der Umstellung. Sie werden nicht mehr erfasst
-                und bleiben beim Speichern unverändert stehen.
-              </p>
-              <dl className="mt-3 flex flex-col gap-2">
-                {bestandstexte.map((eintrag) => (
-                  <div key={eintrag.feld}>
-                    <dt className="text-ink-muted text-sm">{eintrag.feld}</dt>
-                    <dd className="text-ink text-sm whitespace-pre-line">{eintrag.text}</dd>
-                  </div>
-                ))}
-              </dl>
-            </div>
-          ) : null}
         </Feldgruppe>
+
+        {/* ANN-014 bleibt gültig: Die Anwendung erzeugt keine Empfehlung. Sie
+            zeigt nur, was vor VER-EPIC-002 jemand selbst geschrieben hat -
+            und nimmt dafür keine neue Eingabe mehr entgegen. Auskunft, keine
+            Eingabe: deshalb ein Unterabschnitt mit Rahmen (VER-19). */}
+        {bestandstexte.length > 0 ? (
+          <Section
+            titel="Aus dem Bestand"
+            ebene={3}
+            hinweis="Diese Angaben stammen aus einer früheren Fassung des Formulars. Sie werden nicht mehr erfasst und bleiben beim Speichern unverändert stehen."
+            rahmen
+          >
+            <dl className="flex flex-col gap-2">
+              {bestandstexte.map((eintrag) => (
+                <div key={eintrag.feld}>
+                  <dt className="text-ink-muted text-sm">{eintrag.feld}</dt>
+                  <dd className="text-ink text-sm whitespace-pre-line">{eintrag.text}</dd>
+                </div>
+              ))}
+            </dl>
+          </Section>
+        ) : null}
       </Section>
     </>
   );

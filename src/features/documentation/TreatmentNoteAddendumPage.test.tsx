@@ -82,10 +82,10 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { TreatmentNoteAddendumPage } = await import('./TreatmentNoteAddendumPage');
 
-function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
     <TreatmentNoteAddendumPage user={testUser(rollen)} />,
-    `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag`,
+    `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag${suche}`,
   );
 }
 
@@ -117,7 +117,45 @@ describe('TreatmentNoteAddendumPage', () => {
         'Synthetisch: Heimprogramm nachgereicht.',
       );
     });
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`));
+    // Der Termin erfährt, was geschehen ist (DOK-15).
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
+      }),
+    );
+  });
+
+  it('behält den mitgereisten Rückweg für „Abbrechen“ und den Weg danach (DOK-01)', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist'], '?zurueck=%2F');
+
+    await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}?zurueck=%2F`,
+    );
+    await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+        state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
+      }),
+    );
+  });
+
+  it('sagt, dass der Nachtrag mit der Frist der Praxis von selbst finalisiert wird (DOK-02)', async () => {
+    rendern();
+
+    expect(await screen.findByLabelText('Nachtrag')).toHaveAccessibleDescription(
+      /bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis\./,
+    );
+  });
+
+  it('zeigt den Ursprung als Akteninhalt auf Papier, nicht vertieft (DOK-19)', async () => {
+    rendern();
+
+    const ursprung = (await screen.findByText(INHALT)).parentElement!;
+    expect(ursprung).toHaveClass('bg-surface', 'border-line');
+    expect(ursprung).not.toHaveClass('bg-surface-sunken');
   });
 
   it('laesst einen leeren Nachtrag nicht abschicken', async () => {
@@ -133,6 +171,12 @@ describe('TreatmentNoteAddendumPage', () => {
 
     expect(await screen.findByText('Noch ein Entwurf')).toBeInTheDocument();
     expect(screen.queryByLabelText('Nachtrag')).toBeNull();
+    // Ein erwartbarer Zustand mit dem Weg dorthin, kein Alarm (DOK-12).
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Entwurf bearbeiten' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation`,
+    );
   });
 
   it('schliesst den Nachtrag zum Nachtrag aus', async () => {
@@ -143,6 +187,11 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     expect(await screen.findByText('Kein Nachtrag zum Nachtrag')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Zum ursprünglichen Eintrag' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${NACHTRAG_ID}/nachtrag`,
+    );
   });
 
   it('meldet einen Serverfehler verstaendlich', async () => {

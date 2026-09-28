@@ -21,6 +21,8 @@ import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { Absturzseite, Startfehlergrenze } from './Absturz';
+import { Vollseite } from './Vollseite';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -57,7 +59,15 @@ function AuthenticatedApp() {
     await signOut();
   }
 
-  if (isPending) return <LoadingState label="Profil wird geladen …" />;
+  // Auch der Ladezustand steht in der Hülle der Vollseiten, mit `main` und
+  // Marke (AUTH-13) - sonst stand hier ein nackter Satz ohne Absender.
+  if (isPending) {
+    return (
+      <Vollseite>
+        <LoadingState label="Profil wird geladen …" />
+      </Vollseite>
+    );
+  }
 
   /**
    * Angemeldet, aber keiner Praxis zugeordnet - der Normalfall direkt nach der
@@ -79,22 +89,20 @@ function AuthenticatedApp() {
   /**
    * Gesperrt (STAFF-003). Ohne diesen Zweig sähe die Person eine vollständige,
    * aber überall leere Anwendung - genau der unklare Zustand aus §13. Der Text
-   * sagt, was los ist und an wen sie sich wendet, mehr nicht.
+   * sagt, was los ist und an wen sie sich wendet, mehr nicht. Entsperren kann
+   * nur die Praxisinhaber:in (`canManageStaffAccounts`, WRT-12).
    */
   if (error instanceof ZugangGesperrtError) {
     return (
-      <main className="mx-auto max-w-sm px-5 py-16">
-        {/* Dieselbe Begruendung wie beim Fehlerkasten unten: eine Vollseite
-            ausserhalb des Anwendungsrahmens traegt die Marke (MARKE-001). */}
-        <Wortmarke hoehe={40} className="mb-6" />
+      <Vollseite titel="Zugang gesperrt">
         <ErrorState
           title="Dieser Zugang ist gesperrt."
-          description="Bitte wenden Sie sich an die Praxisleitung. Ihre bisherige Arbeit bleibt unverändert erhalten."
+          description="Bitte wenden Sie sich an die Praxisinhaber:in. Ihre bisherige Arbeit bleibt unverändert erhalten."
         />
         <Button variant="secondary" className="mt-4 w-full" onClick={() => void abmelden()}>
           Abmelden
         </Button>
-      </main>
+      </Vollseite>
     );
   }
 
@@ -160,34 +168,15 @@ function OeffentlicheRouten() {
 function Gate() {
   const { session, initialising } = useSession();
   const { pathname } = useLocation();
-  if (initialising) return <LoadingState label="Sitzung wird geprüft …" />;
+  if (initialising) {
+    return (
+      <Vollseite>
+        <LoadingState label="Sitzung wird geprüft …" />
+      </Vollseite>
+    );
+  }
   if (!session || istEinloesePfad(pathname)) return <OeffentlicheRouten />;
   return <AuthenticatedApp />;
-}
-
-/**
- * Was ein Renderfehler zeigt (FIX-EPIC-003).
- *
- * Ein Data Router fängt einen geworfenen Fehler selbst ab. Ohne eigenes
- * `errorElement` zeigt er dabei seine eingebaute Seite — englisch, mit
- * Stacktrace, auch im Produktionsbuild. Das wäre in einer Praxis mit
- * Gesundheitsdaten die falsche Antwort gleich zweimal: unverständlich für die
- * Person davor (`PROJECT_PRINCIPLES.md` §13) und gesprächiger, als ein
- * Fehlerbild sein muss (ADR-011).
- *
- * Kein „Erneut versuchen": Was geworfen hat, wirft nach einem Neurendern
- * wieder. Das Neuladen liegt beim Browser, und die Seite sagt es.
- */
-function Absturzseite() {
-  return (
-    <main className="mx-auto max-w-sm px-5 py-16">
-      <Wortmarke hoehe={40} className="mb-6" />
-      <ErrorState
-        title="Da ist etwas schiefgegangen."
-        description="Die Seite konnte nicht angezeigt werden. Bitte laden Sie die Anwendung neu. Ihre gespeicherte Arbeit bleibt unverändert erhalten."
-      />
-    </main>
-  );
 }
 
 /**
@@ -212,6 +201,10 @@ function Absturzseite() {
  * Router im Modulrumpf läse sie beim Import — in der Anwendung derselbe
  * Augenblick, in einem Test aber lange vor dem `pushState`, das die zu
  * prüfende Adresse setzt (`Gate.test.tsx`).
+ *
+ * Was oberhalb des Routers scheitert - der erste Zugriff auf den
+ * Anmeldedienst bei unvollständiger Konfiguration -, fängt die
+ * `Startfehlergrenze` (AUTH-15). Bis UXR-002 blieb dann eine leere Fläche.
  */
 export function App() {
   const [router] = useState(() =>
@@ -219,10 +212,12 @@ export function App() {
   );
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <SessionProvider>
-        <RouterProvider router={router} />
-      </SessionProvider>
-    </QueryClientProvider>
+    <Startfehlergrenze>
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <RouterProvider router={router} />
+        </SessionProvider>
+      </QueryClientProvider>
+    </Startfehlergrenze>
   );
 }

@@ -1,4 +1,5 @@
 import { Section } from '@/components/ui/Section';
+import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { canWriteClinicalPatientFiles, type CurrentUser } from '@/features/session/types';
 import { Dateiliste } from './Dateiliste';
@@ -20,6 +21,11 @@ import { Dateiliste } from './Dateiliste';
  * Dateien eine eigene Frage beantworten („was liegt uns vor") und die
  * Stammdaten die seltenen Verwaltungsvorgänge tragen (AKTE-005). Wer sie
  * dorthin legte, machte aus zwei Antworten eine lange Seite.
+ *
+ * **Fotos der Person gehören nicht hierher (DAT-01).** Sie entstehen mit
+ * Einwilligung und Frist im Behandlungsverlauf; der Hinweis sagt das und führt
+ * hin, bevor jemand ein Knie als „Befund" ablegt - die „scharfe Kante" aus
+ * ADR-017 (Konsequenzen der Fassung 2).
  */
 export function PatientFilesPage() {
   const { patient, user } = usePatientRecord();
@@ -28,21 +34,38 @@ export function PatientFilesPage() {
 
 export function Dateienbereich({ patientId, user }: { patientId: string; user: CurrentUser }) {
   const klinischSchreiben = canWriteClinicalPatientFiles(user.roles);
+  const akte = `/patienten/${patientId}`;
 
   return (
+    // Gerahmt ist nur die Liste - das Hinzufügen darunter ist ein Formular
+    // (UI-002c, DAT-21).
     <Section
       titel="Dateien"
-      rahmen
-      hinweis="Alles, was als Blatt vorliegt: Befunde, Arztbriefe, Einwilligungen, Verträge — und die Verordnungsscans. Ein Scan wird an seiner Verordnung hinzugefügt."
+      hinweis={
+        <>
+          Alles, was als Blatt vorliegt: Befunde, Arztbriefe, Einwilligungen, Verträge – und die
+          Verordnungsscans. Ein Scan wird an seiner Verordnung hinzugefügt. Fotos der Person –
+          Region, Haltung, Narbe – entstehen{' '}
+          <Textlink to={`${akte}/verlauf`}>im Behandlungsverlauf</Textlink> unter „Fotos“.
+        </>
+      }
     >
       <Dateiliste
         patientId={patientId}
         user={user}
         darfHinzufuegen
+        rahmen
         leerHinweis={
           klinischSchreiben
-            ? 'Noch liegt nichts vor. Eine Datei hinzufügen — oder einen Verordnungsscan an seiner Verordnung.'
+            ? 'Noch liegt nichts vor. Eine Datei hinzufügen – oder einen Verordnungsscan an seiner Verordnung.'
             : 'Noch liegt nichts vor. Einwilligungen und Verträge lassen sich hier hinzufügen.'
+        }
+        leerAktion={
+          klinischSchreiben ? (
+            <Textlink to={`${akte}/verordnungen`} alleinstehend>
+              Zu den Behandlungsgrundlagen
+            </Textlink>
+          ) : undefined
         }
       />
     </Section>

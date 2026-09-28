@@ -58,7 +58,24 @@ describe('Instrumente', () => {
 
   it('kennzeichnet ein Instrument ohne Vorlage als inaktiv mit vorlaeufigem Wortlaut', () => {
     render(<InstrumentePage />);
-    expect(screen.getAllByText('inaktiv · Wortlaut vorläufig')).toHaveLength(3);
+    expect(screen.getAllByText('Inaktiv · Wortlaut vorläufig')).toHaveLength(3);
+  });
+
+  it('spricht von Fragen und Fassung und nennt keinen Dateinamen (BEF-15, BEF-16)', () => {
+    const { container } = render(<InstrumentePage />);
+    const anamnese = screen
+      .getByRole('heading', { name: 'Anamnesebogen Version 8 (DIGOTOR)' })
+      .closest('div')?.parentElement as HTMLElement;
+
+    expect(within(anamnese).getByText('Fassung')).toBeInTheDocument();
+    expect(within(anamnese).getByText('46, keine geht in eine Rechnung ein')).toBeInTheDocument();
+    expect(within(anamnese).getByText('DIGOTOR GbR, Version 8, 07/2026')).toBeInTheDocument();
+    expect(within(anamnese).getByText('Wortlaut (46 Fragen)')).toBeInTheDocument();
+    // Was aus dem Inventar stammt, bleibt wörtlich - als Zitat gekennzeichnet.
+    expect(
+      within(anamnese).getByText('Laut Inventar: „Kein Scoring - reine Informationserfassung“'),
+    ).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/Items|\.pdf|gewertet/);
   });
 
   it('zeigt den Wortlaut samt Ankern der Skala', () => {
@@ -69,12 +86,14 @@ describe('Instrumente', () => {
 
   it('zeigt weder Cut-off noch MCID noch MDC (ADR-006 Punkt 11)', () => {
     const { container } = render(<InstrumentePage scores={[mitSchwellenwerten()]} />);
-    expect(screen.getByText('aktiv')).toBeInTheDocument();
+    expect(screen.getByText('Aktiv')).toBeInTheDocument();
     expect(container.textContent).not.toMatch(/SICHTBAR/);
   });
 
   it('sagt es, wenn kein Instrument vorliegt', () => {
     render(<InstrumentePage scores={[]} />);
-    expect(screen.getByRole('status')).toHaveTextContent('Noch liegt kein Instrument vor.');
+    // Ein Leerzustand der Seite, keine Meldung neben einer Aktion (BEF-18).
+    expect(screen.getByText('Noch liegt kein Instrument vor.')).toBeInTheDocument();
+    expect(screen.queryByRole('status')).toBeNull();
   });
 });

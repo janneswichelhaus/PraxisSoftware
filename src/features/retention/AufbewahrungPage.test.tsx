@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as RetentionApi from './api';
 import type * as FilesApi from '@/features/files/api';
@@ -281,7 +281,7 @@ describe('AufbewahrungPage', () => {
       expect(screen.getByText(/Datei liegt noch in der Ablage/)).toBeInTheDocument();
     });
 
-    it('führt alle Aufträge aus und meldet das Ergebnis', async () => {
+    it('führt alle Aufträge erst nach der Rückfrage aus und meldet das Ergebnis (ORG-21)', async () => {
       fetchLoeschauftraege.mockResolvedValue([auftrag(), auftrag({ id: 'o2' })]);
 
       renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
@@ -291,10 +291,34 @@ describe('AufbewahrungPage', () => {
         screen.getByRole('button', { name: 'Alle 2 ausführen und quittieren' }),
       );
 
+      // Endgueltig ist es erst mit der Bestaetigung - ein Fehlgriff loescht nichts.
+      const frage = screen.getByRole('group', { name: 'Alle 2 ausführen und quittieren' });
+      expect(frage).toHaveTextContent('2 Dateien endgültig aus der Ablage entfernen?');
+      expect(fuehreLoeschauftragAus).not.toHaveBeenCalled();
+
+      await userEvent.click(within(frage).getByRole('button', { name: 'Endgültig entfernen' }));
+
       expect(
         await screen.findByText(/2 Löschungen abgeschlossen und quittiert/),
       ).toBeInTheDocument();
       expect(fuehreLoeschauftragAus).toHaveBeenCalledTimes(2);
+    });
+
+    it('lässt nach „Abbrechen“ alles offen (ORG-21)', async () => {
+      fetchLoeschauftraege.mockResolvedValue([auftrag()]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      await screen.findByText(/Eine Datei ist aus der Akte entfernt/);
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Alle 1 ausführen und quittieren' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+      expect(fuehreLoeschauftragAus).not.toHaveBeenCalled();
+      expect(
+        screen.getByRole('button', { name: 'Alle 1 ausführen und quittieren' }),
+      ).toBeInTheDocument();
     });
 
     it('lässt einen gescheiterten Auftrag offen und sagt warum', async () => {
@@ -309,11 +333,69 @@ describe('AufbewahrungPage', () => {
       await userEvent.click(
         screen.getByRole('button', { name: 'Alle 1 ausführen und quittieren' }),
       );
+      await userEvent.click(screen.getByRole('button', { name: 'Endgültig entfernen' }));
 
       expect(
         await screen.findByText(/0 erledigt, 1 offen geblieben: Die Ablage meldet/),
       ).toBeInTheDocument();
     });
+  });
+
+  it('legt um die Karten von Plan und Sperren keinen zweiten Rahmen (RSP-16)', async () => {
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+    await screen.findByText('Klinische Patientenakte');
+
+    for (const titel of ['Aufbewahrungsplan', 'Löschsperren']) {
+      const abschnitt = screen.getByRole('heading', { name: titel }).closest('section')!;
+      // Inhaltsflaeche ist der Rahmen um Auskunft; eine Kartenliste traegt
+      // ihre Rahmen selbst.
+      expect(abschnitt.querySelector('.rounded-card.px-4')).toBeNull();
+    }
+  });
+
+  it('benennt die Angaben des Löschjournals für Vorlesesoftware (UIK-24)', async () => {
+    fetchDeletionRuns.mockResolvedValue([
+      {
+        run_id: 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001',
+        deleted_at: '2026-09-10T03:10:00Z',
+        retention_class: 'auditlog',
+        target_table: 'audit_log',
+        record_count: 12,
+      },
+    ]);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+    const zeile = (await screen.findByText('12 Datensätze')).closest('li')!;
+    for (const spalte of ['Zeitpunkt:', 'Datenklasse:', 'Anzahl:']) {
+      expect(within(zeile).getByText(spalte)).toHaveClass('sr-only');
+    }
+  });
+
+  it('sagt, dass das Journal nur die letzten 50 Einträge zeigt (ORG-22)', async () => {
+    fetchDeletionRuns.mockResolvedValue(
+      Array.from({ length: 50 }, (_, index) => ({
+        run_id: `bbbbbbbb-bbbb-4bbb-8bbb-${String(index).padStart(12, '0')}`,
+        deleted_at: '2026-09-10T03:10:00Z',
+        retention_class: 'auditlog',
+        target_table: 'audit_log',
+        record_count: 1,
+      })),
+    );
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+    expect(await screen.findByText(/Angezeigt werden die letzten 50 Einträge/)).toBeInTheDocument();
+  });
+
+  it('bietet nach einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+    fetchLegalHolds.mockRejectedValueOnce(new Error('kaputt')).mockResolvedValue([]);
+    renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+    const meldung = await screen.findByText('Die Löschsperren konnten nicht geladen werden.');
+    const kasten = meldung.closest('[role="alert"]') as HTMLElement;
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen');
+    await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+
+    expect(await screen.findByText('Keine laufende Löschsperre')).toBeInTheDocument();
   });
 
   describe('Abgleich der Dateiablage (DAT-003, ADR-017 Punkt 27)', () => {
@@ -359,6 +441,22 @@ describe('AufbewahrungPage', () => {
 
       expect(await screen.findByText(/3 Löschaufträge angelegt/)).toBeInTheDocument();
       expect(merkeVerwaisteZurLoeschungVor).toHaveBeenCalled();
+    });
+
+    it('meldet „deckungsgleich“ erst, wenn keine Löschaufträge mehr offen sind (ORG-22)', async () => {
+      // Vorgemerkte Objekte zaehlt der Abgleich nicht mehr - sie liegen aber
+      // noch in der Ablage, bis die Auftraege ausgefuehrt sind.
+      fetchVerwaisteAnzahl.mockResolvedValue(0);
+      fetchLoeschauftraege.mockResolvedValue([auftrag()]);
+
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      expect(
+        await screen.findByText(
+          'Deckungsgleich, sobald die offenen Löschaufträge oben ausgeführt sind',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Beide Speicher sind deckungsgleich')).toBeNull();
     });
   });
 });

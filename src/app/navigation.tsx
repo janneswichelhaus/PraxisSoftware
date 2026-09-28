@@ -51,7 +51,21 @@ export interface Arbeitsbereich {
   /** Pfadanfänge, die zu diesem Bereich gehören. */
   pfade: string[];
   icon: ReactNode;
-  unterpunkte: SubNavEintrag[];
+  unterpunkte: Unterpunkt[];
+}
+
+/**
+ * Ein Punkt des Untermenüs, dazu die Wörter, unter denen die Kopfsuche ihn
+ * findet (ORG-07).
+ *
+ * Die Seiten hinter „Arbeitszeiten" und „Auditlog" tragen mehr als ihren
+ * Namen - Praxisraster, Frist, Zugriffe. Wer danach sucht, fand bis UXR-002
+ * nichts. Die Stichworte stehen hier und nicht im Katalog der Suche, damit
+ * Menüpunkt und Suchtreffer aus einer Quelle kommen; die SubNav liest sie
+ * nicht.
+ */
+export interface Unterpunkt extends SubNavEintrag {
+  stichworte?: readonly string[];
 }
 
 // -----------------------------------------------------------------------------
@@ -150,7 +164,7 @@ const symbole = {
 // Bereiche
 // -----------------------------------------------------------------------------
 
-function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
+function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // Die angebundenen Punkte stehen vorn, die gekennzeichneten Vorschauen
   // dahinter. Wer hier etwas erledigen will, trifft zuerst auf das, was
   // tatsaechlich wirkt.
@@ -158,14 +172,23 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
   // Die Mitarbeiterverwaltung ist fuer alle Praxisrollen lesbar; Anlegen und
   // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001).
   // Eine zweite, vorgetaeuschte Personalakte daneben gibt es bewusst nicht.
-  const eintraege: SubNavEintrag[] = [
+  const eintraege: Unterpunkt[] = [
     { to: '/praxis/team', label: BEGRIFFE.mitarbeitende, end: false },
   ];
   // Arbeitszeiten gehoeren zur Terminverwaltung; ihre Route steht unter
   // derselben Bedingung. trainer landete sonst ohne Aufruf wieder auf `/`
   // (BEF-034).
   if (canManageAppointments(roles)) {
-    eintraege.push({ to: '/praxis/planung', label: BEGRIFFE.arbeitszeiten });
+    eintraege.push({
+      to: '/praxis/planung',
+      label: BEGRIFFE.arbeitszeiten,
+      // Praxisraster, Frist und Startort stehen auf derselben Seite, aber nur
+      // für owner (ORG-07). Anderen Rollen führte die Suche sonst zu
+      // Einstellungen, die sie dort nicht finden.
+      stichworte: isOwner(roles)
+        ? ['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']
+        : ['Planung'],
+    });
   }
   // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
   // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
@@ -177,10 +200,21 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): SubNavEintrag[] {
     eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
   if (isOwner(roles)) {
-    eintraege.push({ to: '/praxis/sicherheit/audit', label: 'Sicherheit' });
+    // Menüpunkt und Seitentitel tragen dasselbe Wort (ORG-07): bis UXR-002
+    // öffnete „Sicherheit" eine Seite namens „Audit". Das alte Wort findet
+    // die Suche weiter.
+    eintraege.push({
+      to: '/praxis/sicherheit/audit',
+      label: 'Auditlog',
+      stichworte: ['Audit', 'Protokoll', 'Zugriffe', 'Sicherheit'],
+    });
     // Aufbewahrung und Loeschung gehoeren zur Praxisleitung wie das Auditlog:
     // beides sind Nachweise, keine Arbeitsvorraete (LOE-002b, ADR-008).
-    eintraege.push({ to: '/praxis/sicherheit/aufbewahrung', label: 'Aufbewahrung' });
+    eintraege.push({
+      to: '/praxis/sicherheit/aufbewahrung',
+      label: 'Aufbewahrung',
+      stichworte: ['Löschung', 'Löschsperre'],
+    });
   }
   eintraege.push(
     { to: '/betrieb/flotte', label: 'Radflotte', vorschau: true, end: false },
@@ -232,7 +266,9 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       icon: symbole.patienten,
       unterpunkte: [
         { to: '/patienten', label: BEGRIFFE.patientInnen, end: false },
-        { to: '/verordner', label: BEGRIFFE.verordnerInnen },
+        // `end: false` wie bei den Patient:innen: Auf dem Formular einer
+        // Verordner:in war sonst kein Punkt markiert (VER-B01, NAV-15).
+        { to: '/verordner', label: BEGRIFFE.verordnerInnen, end: false },
       ],
     });
   }
@@ -272,9 +308,18 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       pfade: ['/abrechnung'],
       icon: symbole.abrechnung,
       unterpunkte: [
-        { to: '/abrechnung', label: 'Rechnungen' },
+        // Die Rechnung selbst, ihr Blatt, das Storno und die Erinnerung liegen
+        // nicht unter `/abrechnung/…` des Eintrags, sondern daneben. Mit
+        // `end: false` leuchtete „Rechnungen" im ganzen Bereich; die Pfade
+        // nennen genau die Seiten, die dazugehören (NAV-15, ABR-29).
+        {
+          to: '/abrechnung',
+          label: 'Rechnungen',
+          pfade: ['/abrechnung/rechnungen', '/abrechnung/erinnerungen'],
+        },
         { to: '/abrechnung/leistungen', label: 'Leistungen' },
-        { to: '/abrechnung/katalog', label: 'Katalog' },
+        // Menüpunkt = Seitentitel (ABR-26).
+        { to: '/abrechnung/katalog', label: 'Leistungskatalog' },
         { to: '/abrechnung/stammdaten', label: 'Praxisstammdaten' },
         { to: '/abrechnung/zahlungen', label: 'Zahlungen' },
         { to: '/abrechnung/auswertung', label: 'Auswertung' },

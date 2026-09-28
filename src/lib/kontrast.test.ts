@@ -87,15 +87,18 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     expect(gamutAbweichung({ L: 0.5, C: 0, H: 0 })).toBe(0);
   });
 
-  // 4.5:1 nach WCAG 1.4.3 fuer normalen Text. Alle drei werden auch in
-  // kleinen Schriftgraden verwendet, deshalb gilt nirgends die Ausnahme fuer
-  // grossen Text (3:1).
-  it.each([['ink'], ['ink-muted'], ['ink-subtle']])(
-    'erreicht mit %s mindestens 4.5:1 als Textfarbe',
-    (token) => {
-      expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
-    },
-  );
+  // 4.5:1 nach WCAG 1.4.3 fuer normalen Text. Beide werden auch in kleinen
+  // Schriftgraden verwendet, deshalb gilt nirgends die Ausnahme fuer grossen
+  // Text (3:1).
+  //
+  // Bis UXR-001 stand hier eine dritte Stufe, `ink-subtle`, mit demselben
+  // Wert wie ink-muted. Das Token ist gestrichen (TOK-07); an die Stelle
+  // dieses Falls tritt der strengere Waechter in src/designsystem.test.ts:
+  // Der Name kommt in src/ gar nicht mehr vor. Eine Farbe, die es nicht gibt,
+  // kann auch keinen Kontrast unterschreiten.
+  it.each([['ink'], ['ink-muted']])('erreicht mit %s mindestens 4.5:1 als Textfarbe', (token) => {
+    expect(schlechtesterKontrast(token)).toBeGreaterThanOrEqual(4.5);
+  });
 
   // accent-hover ist mitgeprueft, weil es nicht nur Knopfflaeche ist: rund ein
   // Dutzend Stellen nutzen `text-accent hover:text-accent-hover`, der Wert

@@ -167,9 +167,11 @@ describe('AppointmentSlipPage', () => {
         'slip',
       ),
     );
-    expect(
-      await screen.findByText(/sind als „Terminzettel ausgehändigt" vermerkt/),
-    ).toBeInTheDocument();
+    // Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist mit der
+    // Frage verschwunden (UIK-21, ZST-16).
+    const bestaetigung = await screen.findByText(/sind als „Terminzettel ausgehändigt“ vermerkt/);
+    expect(bestaetigung).toHaveClass('text-positiv');
+    expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus();
   });
 
   it('vermerkt nichts, wenn der Zettel doch nicht ausgehaendigt wurde', async () => {
@@ -208,12 +210,34 @@ describe('AppointmentSlipPage', () => {
     expect(screen.queryByRole('button', { name: 'Terminzettel drucken' })).not.toBeInTheDocument();
   });
 
-  it('meldet einen nicht lesbaren Datensatz, ohne etwas zu zeigen', async () => {
-    fetchAppointmentSlip.mockRejectedValue(new Error('nope'));
+  it('meldet nicht ladbare Termine als Ladefehler, mit neuem Versuch und Rückweg (TER-11)', async () => {
+    fetchAppointmentSlip.mockRejectedValueOnce(new Error('nope'));
+    const user = userEvent.setup();
+    rendern();
+
+    expect(
+      await screen.findByText('Die Termine konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    // Kein „Nicht gefunden" - im Funkloch wirkte die Akte sonst gelöscht.
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+    expect(screen.queryByText('Max Mustermann')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(
+      await screen.findByRole('heading', { name: 'Ihre nächsten Termine' }),
+    ).toBeInTheDocument();
+  });
+
+  it('meldet eine nicht freigegebene Akte mit ihrem Gegenstand, nicht als „Datensatz"', async () => {
+    fetchPatient.mockResolvedValue(null);
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
-    expect(screen.queryByText('Max Mustermann')).not.toBeInTheDocument();
+    expect(
+      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
   });
 
   it('nimmt den Rückweg vom Druck aus', async () => {
@@ -222,5 +246,12 @@ describe('AppointmentSlipPage', () => {
 
     const zurueck = screen.getByRole('link', { name: '← Zurück zur Akte' });
     expect(zurueck.closest('.nicht-drucken')).not.toBeNull();
+  });
+
+  it('setzt die Überschrift des Blatts in einer Größe des Systems (TER-16)', async () => {
+    rendern();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Ihre nächsten Termine' }),
+    ).toHaveClass('text-h4', 'font-bold');
   });
 });

@@ -1,7 +1,7 @@
 /* Die Bedienelemente von MapLibre auf das Maß dieses Systems bringen.
    Geladen nur mit der Karte (MAP-002), nie im übrigen Anwendungsstand.
 
-   Zwei Dinge weichen ab, wenn man die mitgelieferte CSS des Renderers so
+   Vier Dinge weichen ab, wenn man die mitgelieferte CSS des Renderers so
    lässt, wie sie ist:
 
    1. Die Zoomknöpfe sind 29 px hoch. Die Oberflächen-Checkliste verlangt
@@ -10,12 +10,22 @@
       kein Schönheitsmaß.
    2. Der Rahmen der Knopfgruppe ist ein Schatten. In diesem System entstehen
       Ebenen aus Fläche oder Linie, nie aus einem Schatten - deshalb eine
-      Linie in `--color-line`.
+      Linie, und zwar `--color-line-strong`: Sie umrandet Bedienbares, `line`
+      trennt nur (TOK-10, TER-16).
+   3. MapLibre gibt der Karte „Helvetica Neue, Arial" vor. Darin standen die
+      Stoppnummern, die per Portal in ihren Knoten kommen, und die
+      Quellenangabe. Die Schrift des Systems gilt auch hier (TOK-10).
+   4. Die Quellenangabe schreibt in reinem Schwarz; sie nimmt die zweite
+      Textstufe des Systems.
 
    Die Symbole in den Knöpfen sind Hintergrundbilder und bleiben zentriert. */
 
+.maplibregl-map {
+  font-family: var(--font-sans);
+}
+
 .maplibregl-ctrl-group {
-  border: 1px solid var(--color-line);
+  border: 1px solid var(--color-line-strong);
   border-radius: var(--radius-button);
   background: var(--color-surface);
   box-shadow: none;
@@ -27,8 +37,16 @@
 }
 
 /* Die Quellenangabe ist Lizenzbedingung und bleibt sichtbar - nur ohne
-   Schatten und mit der Linie des Systems. */
+   Schatten und in den Farben des Systems. */
 .maplibregl-ctrl-attrib {
   border-radius: var(--radius-button);
   box-shadow: none;
+}
+
+/* Die kompakte Fassung am Telefon setzt ihre Farbe mit zwei Klassen - sie
+   steht deshalb ausdrücklich dabei. */
+.maplibregl-ctrl-attrib,
+.maplibregl-ctrl-attrib.maplibregl-compact,
+.maplibregl-ctrl-attrib a {
+  color: var(--color-ink-muted);
 }

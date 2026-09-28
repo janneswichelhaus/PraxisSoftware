@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as BillingApi from './api';
+import { KeineStammdaten } from './api';
 import { renderWithProviders } from '@/test-utils';
 import { rechnungsansicht } from './testdaten';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchRechnung = vi.fn();
 
@@ -102,5 +104,71 @@ describe('Stornodokument', () => {
 
     expect(await screen.findByText(/Diese Rechnung ist nicht storniert/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Stornodokument drucken' })).toBeNull();
+  });
+
+  describe('UXR-010', () => {
+    function zeigeMitRoute() {
+      return zeigeMitRouten(
+        [{ path: '/abrechnung/rechnungen/:invoiceId/storno', element: <CancellationPrintPage /> }],
+        '/abrechnung/rechnungen/r1/storno',
+      );
+    }
+
+    it('führt auch ohne Storno zurück zur Rechnung (ABR-30, ABR-33, WRT-07)', async () => {
+      fetchRechnung.mockResolvedValue(
+        rechnungsansicht({ status: 'issued', invoice_number: 'RG-2026-0001' }),
+      );
+      zeigeMitRoute();
+
+      expect(
+        await screen.findByText(/Ein Stornodokument entsteht erst mit dem Storno – auf/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Zurück zur Rechnung/ })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1',
+      );
+    });
+
+    it('führt bei fehlenden Stammdaten dorthin (ABR-17)', async () => {
+      fetchRechnung.mockRejectedValue(new KeineStammdaten());
+      zeigeMitRoute();
+
+      expect(await screen.findByRole('link', { name: 'Zu den Praxisstammdaten' })).toHaveAttribute(
+        'href',
+        '/abrechnung/stammdaten',
+      );
+      expect(screen.getByRole('link', { name: /Zurück zur Rechnung/ })).toBeInTheDocument();
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      fetchRechnung.mockRejectedValue(new Error('Netz weg'));
+      zeige();
+
+      expect(
+        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+    });
+
+    it('trägt denselben Briefkopf wie die Rechnung (ABR-22, ABR-B05, ABR-34)', async () => {
+      fetchRechnung.mockResolvedValue(storniert());
+      zeige();
+
+      const titel = await screen.findByRole('heading', {
+        name: 'Stornierung der Rechnung RG-2026-0001',
+      });
+      expect(titel).toHaveClass('text-h4', 'font-bold');
+      expect(screen.getByText('Stornonummer')).toHaveClass('w-40', 'shrink-0');
+      expect(screen.getByAltText('Own Motion').parentElement).toHaveClass('print:min-h-[33mm]');
+    });
+
+    it('nennt im Kleingedruckten keinen „Datensatz" (WRT-02)', async () => {
+      fetchRechnung.mockResolvedValue(storniert());
+      zeige();
+
+      const hinweis = await screen.findByText(/legt sie nicht ab/);
+      expect(hinweis.textContent).not.toMatch(/Datensatz/);
+      expect(hinweis.textContent).toMatch(/in der Anwendung/);
+    });
   });
 });

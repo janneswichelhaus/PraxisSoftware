@@ -2,11 +2,19 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 
 const navigate = vi.fn();
 const searchPatients = vi.fn();
+const fetchAssignableTherapists = vi.fn();
+
+vi.mock('./api', async (importOriginal) => ({
+  ...(await importOriginal<typeof AppointmentsApi>()),
+  fetchAssignableTherapists: () =>
+    fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+}));
 
 vi.mock('@/features/patients/api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -45,6 +53,9 @@ describe('NewAppointmentStartPage', () => {
     navigate.mockReset();
     searchPatients.mockReset();
     searchPatients.mockResolvedValue([MAX]);
+    fetchAssignableTherapists
+      .mockReset()
+      .mockResolvedValue([{ staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' }]);
   });
 
   // ---------------------------------------------------------------------------
@@ -79,12 +90,43 @@ describe('NewAppointmentStartPage', () => {
     });
   });
 
-  it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', () => {
+  it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', async () => {
     renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
 
-    expect(screen.getByText('2027-05-12')).toBeInTheDocument();
+    // Als Datum, nicht als Kennung (KAL-10) - und mit der Person der Spalte.
+    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
     expect(screen.getByText('09:00–10:00 Uhr')).toBeInTheDocument();
     expect(screen.getByText('Hausbesuch')).toBeInTheDocument();
+    expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
+    expect(screen.getByText('Aus dem Kalender übernommen')).toBeInTheDocument();
+  });
+
+  it('verspricht nur, was wirklich vorbelegt ist (KAL-10)', async () => {
+    // Der Weg über „Termin anlegen" unter „Ansicht und Filter": ohne Uhrzeit.
+    renderWithProviders(
+      <NewAppointmentStartPage />,
+      `/termine/neu?datum=2027-05-12&art=home_visit&person=${STAFF_ANNA}`,
+    );
+
+    expect(
+      screen.getByText(
+        'Zuerst die Patient:in wählen. Datum, behandelnde Person und Terminart sind schon vorbelegt.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('noch offen')).toBeInTheDocument();
+    expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
+  });
+
+  it('fuehrt ueber den Rueckweg in den Kalenderstand zurueck (KAL-19)', () => {
+    renderWithProviders(
+      <NewAppointmentStartPage />,
+      `${VORBELEGT}&zurueck=%2Fkalender%3Fansicht%3Dtag%26datum%3D2027-05-12`,
+    );
+
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      '/kalender?ansicht=tag&datum=2027-05-12',
+    );
   });
 
   it('reicht die Vorbelegung unveraendert an das Terminformular weiter', async () => {
@@ -107,7 +149,10 @@ describe('NewAppointmentStartPage', () => {
     const user = userEvent.setup();
     renderWithProviders(<NewAppointmentStartPage />, '/termine/neu');
 
-    expect(screen.getAllByText('noch offen').length).toBeGreaterThan(0);
+    // Nichts übernommen - dann steht auch nichts da, und nichts wird versprochen.
+    expect(screen.getByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
+    expect(screen.queryByText('Aus dem Kalender übernommen')).toBeNull();
+    expect(fetchAssignableTherapists).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');
     await user.click(await screen.findByRole('option', { name: /Max Mustermann/ }));

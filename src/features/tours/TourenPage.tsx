@@ -9,6 +9,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Select } from '@/components/ui/Select';
+import { formatDate } from '@/lib/datum';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import { fetchStandorte, startpunkt } from './startort';
@@ -33,10 +34,15 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * er wäre eine Wohnadresse beim Kartendienst (§20).
  *
  * Die Liste ist druckbar: Der Browserdruck lässt Karte und Bedienelemente weg
- * und behält Zeit, Name und Anschrift in Fahrtreihenfolge.
+ * und behält Zeit, Name und Anschrift in Fahrtreihenfolge. Das Datum steht
+ * dafür im Titel der Liste (TER-12) - das Feld „Tag" druckt nicht mit, und
+ * ein Blatt von gestern sähe sonst aus wie eins von heute.
  */
 
 type Startwahl = 'standort' | 'erster';
+
+/** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
+const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
 
 export function TourenPage({ user }: { user: CurrentUser }) {
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
@@ -70,11 +76,28 @@ export function TourenPage({ user }: { user: CurrentUser }) {
     if (schluessel === 'person') setPerson(wert);
   }
 
-  const { stopps, laedt, fehler } = useTagesstopps(tag, person);
+  const { stopps, laedt, fehler, erneut } = useTagesstopps(tag, person);
   const praxisstart = startpunkt(standorte.data?.[0]);
   const start = startwahl === 'standort' ? praxisstart : null;
   const fahrten = useFahrten(start, stopps);
   const personName = personen.data?.find((p) => p.staff_member_id === person)?.display_name;
+  // Der Weg zurück aus einem Termin führt in diese Tour, mit Tag und Person -
+  // auch wenn die Adresszeile sie noch nicht trägt (TER-03).
+  const rueckweg = `/touren?${new URLSearchParams({
+    tag,
+    ...(person ? { person } : {}),
+  }).toString()}`;
+
+  // Was die Option „Praxis" über den Startort sagt, steht erst nach dem Laden
+  // fest (TER-11, ZST-09): Vorher behauptete sie „noch nicht verortet", auch
+  // wenn die Abfrage bloß noch lief oder gescheitert war.
+  const praxisOption = standorte.isPending
+    ? 'Praxis'
+    : standorte.isError
+      ? 'Praxis (Startort nicht geladen)'
+      : praxisstart === null
+        ? 'Praxis (ohne Kartenposition)'
+        : 'Praxis';
 
   return (
     <>
@@ -83,7 +106,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           Person, nicht an den Anfang. */}
       <PageHeader
         title="Tour"
-        description="Die Besuche eines Tages in Fahrtreihenfolge — mit Karte, Route und Fahrzeiten."
+        description="Die Besuche eines Tages in Fahrtreihenfolge – mit Karte, Route und Fahrzeiten."
         actions={
           <span className="print:hidden">
             <ButtonLink
@@ -120,26 +143,36 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           onChange={(e) => setStartwahl(e.target.value === 'erster' ? 'erster' : 'standort')}
         >
           <option value="standort" disabled={praxisstart === null}>
-            {praxisstart === null ? 'Praxis (noch nicht verortet)' : 'Praxis'}
+            {praxisOption}
           </option>
           <option value="erster">Erster Besuch</option>
         </Select>
       </div>
 
-      {personen.isError ? (
-        <ErrorState title="Die behandelnden Personen konnten nicht geladen werden." />
-      ) : null}
-      {person === '' ? null : laedt ? (
+      {/* Ohne Personen gibt es keine Tour - das sagt die Seite, statt eine
+          leere Auswahl stehen zu lassen (TER-11, ZST-07). */}
+      {personen.isPending ? (
+        <LoadingState label="Personen werden geladen …" />
+      ) : personen.isError ? (
+        <ErrorState
+          title="Die behandelnden Personen konnten nicht geladen werden."
+          description={NACH_LADEFEHLER}
+          onErneut={() => personen.refetch()}
+        />
+      ) : personen.data.length === 0 ? (
+        <EmptyState title="Keine behandelnde Person hinterlegt" />
+      ) : person === '' ? null : laedt ? (
         <LoadingState label="Tagesroute wird geladen …" />
       ) : fehler ? (
         <ErrorState
           title="Die Tagesroute konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description={NACH_LADEFEHLER}
+          onErneut={erneut}
         />
       ) : stopps.length === 0 ? (
         <EmptyState
           title="An diesem Tag gibt es keine Besuche mit Ort"
-          description="Videotermine und interne Termine haben keinen Weg und stehen deshalb nicht in der Tour."
+          description="Videotermine und Fehlzeiten haben keinen Weg und stehen deshalb nicht in der Tour."
         />
       ) : (
         <>
@@ -148,7 +181,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           </Suspense>
 
           <Section
-            titel={`Tourenliste${personName ? ` · ${personName}` : ''}`}
+            titel={['Tourenliste', personName, formatDate(tag)].filter(Boolean).join(' · ')}
             aktion={
               <Button
                 type="button"
@@ -160,7 +193,9 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               </Button>
             }
           >
-            <div className="mb-4">
+            {/* Routensumme und ihre Meldungen gehören zur Bedienung, nicht
+                aufs Papier (TER-12). */}
+            <div className="mb-4 print:hidden">
               <Routenzusammenfassung
                 laedt={fahrten.route.isFetching}
                 ergebnis={fahrten.route.data}
@@ -176,11 +211,13 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               stopps={stopps}
               zeitzone={zeitzone}
               startGewaehlt={start !== null}
+              rueckweg={rueckweg}
               zwischen={(index) => (
                 <Fahrtabschnitt
                   sekunden={fahrten.zwischen[index]?.sekunden ?? null}
                   pruefung={fahrten.zwischen[index]?.pruefung ?? null}
                   zeitzone={zeitzone}
+                  naechsterBeginn={stopps[index + 1]?.termin.starts_at}
                 />
               )}
             />
@@ -188,11 +225,13 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         </>
       )}
 
-      <p className="text-ink-subtle mt-8 max-w-prose text-xs leading-relaxed print:hidden">
-        Zur Route gehen nur Koordinaten in Fahrtreihenfolge über den eigenen Server an den
-        Kartendienst — kein Name, keine Uhrzeit. Gespeichert wird davon nichts. Echte
-        Patientenadressen erreichen den Kartendienst erst nach dem Gate aus ADR-019 (Vertrag, §203
-        StGB, Datenschutz-Folgenabschätzung).
+      {/* Ohne Projekt- und Technikwörter (WRT-03, TER-07): Was das Gerät
+          verlässt und unter welcher Bedingung echte Adressen dazukommen. */}
+      <p className="text-ink-muted mt-8 max-w-prose text-xs leading-relaxed print:hidden">
+        Zur Route gehen nur Koordinaten in Fahrtreihenfolge an den Kartendienst – kein Name, keine
+        Uhrzeit. Gespeichert wird davon nichts. Echte Patientenadressen erreichen den Kartendienst
+        erst, wenn Vertrag, Schweigepflicht (§ 203 StGB) und Datenschutz-Folgenabschätzung geklärt
+        sind.
       </p>
     </>
   );

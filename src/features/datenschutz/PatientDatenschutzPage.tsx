@@ -1,15 +1,18 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section, Feldgruppe } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { usePatientRecord } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
@@ -58,7 +61,8 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
     return (
       <ErrorState
         title="Die Datenschutzvermerke konnten nicht geladen werden."
-        description="Bitte später erneut versuchen."
+        description="Bitte die Verbindung prüfen und später erneut versuchen."
+        onErneut={() => void vermerke.refetch()}
       />
     );
   }
@@ -76,6 +80,7 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
 }
 
 function Unterlagen({ stand, patientId }: { stand: Datenschutzstand; patientId: string }) {
+  const ort = useLocation();
   const info = stand.datenschutzinformation;
   const veraltet = info !== null && info.fassung !== DATENSCHUTZINFORMATION_FASSUNG;
 
@@ -84,7 +89,15 @@ function Unterlagen({ stand, patientId }: { stand: Datenschutzstand; patientId: 
       titel="Unterlagen"
       hinweis="Beide bleiben Papier. Hier steht nur, dass und wann sie vorlagen."
       aktion={
-        <ButtonLink to={`/patienten/${patientId}/aufnahmeblaetter`} variant="secondary">
+        // Die Blätter führen hierher zurück, samt dem Rückweg der Akte
+        // (PAT-08).
+        <ButtonLink
+          to={mitRueckweg(
+            `/patienten/${patientId}/aufnahmeblaetter`,
+            `${ort.pathname}${ort.search}`,
+          )}
+          variant="secondary"
+        >
           Blätter zum Ausdrucken
         </ButtonLink>
       }
@@ -95,10 +108,14 @@ function Unterlagen({ stand, patientId }: { stand: Datenschutzstand; patientId: 
           {info ? (
             <>
               ausgehändigt am {formatDate(info.am)} · Fassung {info.fassung}
+              {/* Ein Zustand als Etikett mit Zeichen statt einer farbigen
+                  Zeile ohne (PAT-14, DS-001). */}
               {veraltet ? (
-                <span className="text-warnung mt-1 block text-sm">
-                  Inzwischen gilt Fassung {DATENSCHUTZINFORMATION_FASSUNG}.
-                </span>
+                <div className="mt-1">
+                  <Badge ton="warnung">
+                    Inzwischen gilt Fassung {DATENSCHUTZINFORMATION_FASSUNG}
+                  </Badge>
+                </div>
               ) : null}
             </>
           ) : (
@@ -129,14 +146,15 @@ function Einwilligungen({ stand }: { stand: Datenschutzstand }) {
           <li key={e.zweck} className="flex flex-col gap-1 py-3 first:pt-0 last:pb-0">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="text-ink font-medium">{zweckTexte[e.zweck].label}</span>
+              {/* Etiketten beginnen groß, wie überall (WRT-16). */}
               {e.erteilt ? (
-                <Badge ton="positiv">erteilt am {formatDate(e.seit)}</Badge>
+                <Badge ton="positiv">Erteilt am {formatDate(e.seit)}</Badge>
               ) : e.abgelehnt ? (
-                <Badge ton="neutral">abgelehnt am {formatDate(e.seit)}</Badge>
+                <Badge ton="neutral">Abgelehnt am {formatDate(e.seit)}</Badge>
               ) : e.seit ? (
-                <Badge ton="warnung">widerrufen am {formatDate(e.seit)}</Badge>
+                <Badge ton="warnung">Widerrufen am {formatDate(e.seit)}</Badge>
               ) : (
-                <Badge ton="neutral">nicht erteilt</Badge>
+                <Badge ton="neutral">Nicht erteilt</Badge>
               )}
             </div>
             <p className="text-ink-muted text-sm">{zweckTexte[e.zweck].beschreibung}</p>
@@ -148,36 +166,55 @@ function Einwilligungen({ stand }: { stand: Datenschutzstand }) {
 }
 
 /** Eine Auswahl: was ist geschehen? Kodiert als `art` oder `art:zweck`. */
-function moeglicheVermerke(stand: Datenschutzstand): { wert: string; label: string }[] {
-  const liste = [
-    { wert: 'privacy_notice_handed_out', label: 'Datenschutzinformation ausgehändigt' },
-    { wert: 'treatment_contract_signed', label: 'Behandlungsvertrag unterschrieben' },
+interface Vermerkoption {
+  wert: string;
+  /** Beschriftung in der Auswahl. */
+  label: string;
+  /** Derselbe Vorgang als Satzteil der Rückfrage. */
+  zusammenfassung: string;
+}
+
+function moeglicheVermerke(stand: Datenschutzstand): Vermerkoption[] {
+  const liste: Vermerkoption[] = [
+    {
+      wert: 'privacy_notice_handed_out',
+      label: 'Datenschutzinformation ausgehändigt',
+      zusammenfassung: `Datenschutzinformation ausgehändigt, Fassung ${DATENSCHUTZINFORMATION_FASSUNG}`,
+    },
+    {
+      wert: 'treatment_contract_signed',
+      label: 'Behandlungsvertrag unterschrieben',
+      zusammenfassung: 'Behandlungsvertrag unterschrieben',
+    },
   ];
+  function einwilligung(
+    art: 'consent_granted' | 'consent_withdrawn' | 'consent_refused',
+    zweck: Einwilligungszweck,
+  ) {
+    const vorgang = vermerkartTexte[art];
+    const wozu = zweckTexte[zweck].label;
+    liste.push({
+      wert: `${art}:${zweck}`,
+      label: `${vorgang}: ${wozu}`,
+      zusammenfassung: `${vorgang} – ${wozu}`,
+    });
+  }
   for (const e of stand.einwilligungen) {
-    const zweck = zweckTexte[e.zweck].label;
     if (e.erteilt) {
-      liste.push({
-        wert: `consent_withdrawn:${e.zweck}`,
-        label: `Einwilligung widerrufen: ${zweck}`,
-      });
+      einwilligung('consent_withdrawn', e.zweck);
       continue;
     }
-    liste.push({ wert: `consent_granted:${e.zweck}`, label: `Einwilligung erteilt: ${zweck}` });
+    einwilligung('consent_granted', e.zweck);
     // Eine Ablehnung ist ein eigener, erledigter Stand (ADR-017 Punkt 35).
-    if (!e.abgelehnt) {
-      liste.push({
-        wert: `consent_refused:${e.zweck}`,
-        label: `Einwilligung abgelehnt: ${zweck}`,
-      });
-    }
+    if (!e.abgelehnt) einwilligung('consent_refused', e.zweck);
   }
   return liste;
 }
 
 /**
  * Der Widerruf der Fotoeinwilligung löscht die Fotos sofort (ADR-017
- * Punkt 36). Das steht vor dem Vermerken da und auf der Schaltfläche — ein
- * Fehlgriff in der Auswahl soll nicht still die Fotos kosten.
+ * Punkt 36). Das steht vor dem Vermerken da, auf der Schaltfläche und in der
+ * Rückfrage — ein Fehlgriff in der Auswahl soll nicht still die Fotos kosten.
  */
 const FOTO_WIDERRUF = 'consent_withdrawn:patient_photos';
 
@@ -192,6 +229,17 @@ function alsVermerk(wert: string, patientId: string, datum: string): NeuerVermer
   };
 }
 
+/**
+ * Einen Vermerk erfassen (PAT-006, PAT-04).
+ *
+ * **Nichts ist vorbelegt, und nichts wird ohne Rückfrage vermerkt.** Die
+ * Auswahl stand beim Öffnen auf „Datenschutzinformation ausgehändigt" - ein
+ * Tipp auf „Vermerken" schrieb eine Angabe, die sich nie mehr ändern oder
+ * löschen lässt, und der Widerruf der Fotoeinwilligung löschte ohne zweiten
+ * Tipp alle Fotos. Jetzt wählt die Person den Vorgang selbst, und die
+ * Rückfrage nennt ihn samt Datum, bevor er gilt. Löschweg und Serverfunktion
+ * bleiben, wie sie sind (ADR-017 Punkt 36).
+ */
 function VermerkErfassen({
   stand,
   patientId,
@@ -204,18 +252,23 @@ function VermerkErfassen({
   const queryClient = useQueryClient();
   const heute = zeitzone ? todayInTimeZone(zeitzone) : '';
   const optionen = moeglicheVermerke(stand);
-  const [wert, setWert] = useState(optionen[0]!.wert);
+  const [wert, setWert] = useState('');
   const [datum, setDatum] = useState(heute);
   const [gespeichert, setGespeichert] = useState<string | null>(null);
 
   // Nach einer Erteilung wird aus „erteilt" ein „widerrufen" — die Auswahl
   // darf nicht auf einem Wert stehen bleiben, den es nicht mehr gibt.
-  const gewaehlt = optionen.some((o) => o.wert === wert) ? wert : optionen[0]!.wert;
+  const gewaehlt = optionen.find((o) => o.wert === wert);
+  const fotoWiderruf = gewaehlt?.wert === FOTO_WIDERRUF;
+  const knopf = fotoWiderruf ? 'Widerruf vermerken und Fotos löschen' : 'Vermerken';
 
   const mutation = useMutation({
     mutationFn: (vermerk: NeuerVermerk) => vermerkeSpeichern(vermerk),
     onSuccess: async (_daten, vermerk) => {
       setGespeichert(vermerkartTexte[vermerk.art]);
+      // Vermerkt ist vermerkt: Die Auswahl steht wieder auf „Bitte wählen",
+      // damit kein zweiter Tipp denselben Vermerk noch einmal schreibt.
+      setWert('');
       await queryClient.invalidateQueries({ queryKey: ['datenschutzvermerke', patientId] });
       // Ein Vermerk zur Fotoeinwilligung ändert, welche Fotos es gibt und ob
       // neue entstehen dürfen (ADR-017 Punkt 36).
@@ -225,33 +278,35 @@ function VermerkErfassen({
     },
   });
 
-  function absenden(event: FormEvent) {
-    event.preventDefault();
+  function neueEingabe() {
     setGespeichert(null);
-    mutation.mutate(alsVermerk(gewaehlt, patientId, datum));
+    mutation.reset();
   }
 
   return (
     <Section titel="Vermerk erfassen">
-      <form onSubmit={absenden} noValidate>
+      {/* Formularbreite wie überall (PAT-16, UI-001): Am Desktop liefen
+          Auswahl und Datum sonst über die ganze Seite. */}
+      <div className="max-w-xl">
         <Feldgruppe>
           <Select
             label="Was ist geschehen?"
             // Die Fassung steht im Hinweis und nicht in der Auswahl: Bei 375 px
             // schnitt der geschlossene Zustand sie ab.
             hint={
-              gewaehlt === 'privacy_notice_handed_out'
-                ? `Vermerkt wird Fassung ${DATENSCHUTZINFORMATION_FASSUNG} — die auf den Blättern zum Ausdrucken.`
-                : gewaehlt === FOTO_WIDERRUF
-                  ? 'Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht — außer ein Legal Hold hält sie; dann bleiben sie gesperrt bis zu seinem Ende. Neue Fotos braucht eine neue Einwilligung.'
+              gewaehlt?.wert === 'privacy_notice_handed_out'
+                ? `Vermerkt wird Fassung ${DATENSCHUTZINFORMATION_FASSUNG} – die auf den Blättern zum Ausdrucken.`
+                : fotoWiderruf
+                  ? 'Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht – außer eine Löschsperre hält sie; dann bleiben sie gesperrt bis zu ihrem Ende. Neue Fotos brauchen eine neue Einwilligung.'
                   : undefined
             }
-            value={gewaehlt}
+            value={gewaehlt?.wert ?? ''}
             onChange={(e) => {
               setWert(e.target.value);
-              setGespeichert(null);
+              neueEingabe();
             }}
           >
+            <option value="">Bitte wählen …</option>
             {optionen.map((o) => (
               <option key={o.wert} value={o.wert}>
                 {o.label}
@@ -264,23 +319,48 @@ function VermerkErfassen({
             value={datum}
             max={heute || undefined}
             required
-            onChange={(e) => setDatum(e.target.value)}
+            onChange={(e) => {
+              setDatum(e.target.value);
+              neueEingabe();
+            }}
           />
           <div>
-            <Button type="submit" disabled={mutation.isPending || datum === ''}>
-              {mutation.isPending
-                ? 'Wird gespeichert …'
-                : gewaehlt === FOTO_WIDERRUF
-                  ? 'Widerruf vermerken und Fotos löschen'
-                  : 'Vermerken'}
-            </Button>
+            {gewaehlt && datum !== '' ? (
+              <Rueckfrage
+                ausloeser={knopf}
+                ausloeserVariante="primary"
+                bestaetigen={knopf}
+                bestaetigenLaeuft="Wird gespeichert …"
+                fehler={mutation.isError ? mutation.error.message : undefined}
+                onBestaetigen={() => {
+                  setGespeichert(null);
+                  return mutation.mutateAsync(alsVermerk(gewaehlt.wert, patientId, datum));
+                }}
+                onAbbrechen={() => mutation.reset()}
+              >
+                <p>
+                  Vermerken: {gewaehlt.zusammenfassung}, {formatDate(datum)}. Vermerke lassen sich
+                  nicht ändern.
+                </p>
+                {fotoWiderruf ? (
+                  <p className="mt-2 font-medium">
+                    Alle Fotos dieser Person werden sofort gelöscht – außer eine Löschsperre hält
+                    sie.
+                  </p>
+                ) : null}
+              </Rueckfrage>
+            ) : (
+              // Bis ein Vorgang gewählt ist, gibt es nichts zu vermerken.
+              <Button type="button" disabled>
+                {knopf}
+              </Button>
+            )}
           </div>
-          {mutation.isError ? (
-            <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
+          {gespeichert ? (
+            <Statusmeldung ton="erfolg">Vermerkt: {gespeichert}.</Statusmeldung>
           ) : null}
-          {gespeichert ? <Statusmeldung>Vermerkt: {gespeichert}.</Statusmeldung> : null}
         </Feldgruppe>
-      </form>
+      </div>
     </Section>
   );
 }

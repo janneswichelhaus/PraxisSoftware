@@ -87,7 +87,10 @@ describe('NavigationFuerDenTag', () => {
     const gesammelt = verweise();
     render(<NavigationFuerDenTag termine={[hausbesuch('Erste'), hausbesuch('Zweite')]} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Ganzer Tag (2 Stopps)' }));
+    // Die Beschriftung sagt, dass sie die Navigation öffnet (UEB-10).
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Navigation: ganzer Tag (2 Stopps)' }),
+    );
 
     const url = new URL(gesammelt[0]!.href);
     expect(url.searchParams.get('waypoints')).toBe('Erste 12, 72070 Tuebingen, DE');
@@ -96,7 +99,9 @@ describe('NavigationFuerDenTag', () => {
 
   it('zaehlt nur navigierbare Stopps - ein Praxistermin gehoert nicht dazu', async () => {
     render(<NavigationFuerDenTag termine={[hausbesuch(), praxistermin]} />);
-    expect(await screen.findByRole('button', { name: 'Ganzer Tag (1 Stopp)' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Navigation: ganzer Tag (1 Stopp)' }),
+    ).toBeInTheDocument();
   });
 
   it('teilt einen langen Tag in benannte Abschnitte', () => {
@@ -107,9 +112,9 @@ describe('NavigationFuerDenTag', () => {
     // erzwingt `navigation.ts` die kleinere der beiden dokumentierten Zahlen,
     // weil die Anwendung nicht weiss, ob das Tippen in der App oder im
     // mobilen Browser landet - zwölf Stopps ergeben damit drei Abschnitte.
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 1 von 3' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 2 von 3' })).toBeVisible();
-    expect(screen.getByRole('button', { name: 'Ganzer Tag – Abschnitt 3 von 3' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Navigation: Abschnitt 1 von 3' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Navigation: Abschnitt 2 von 3' })).toBeVisible();
+    expect(screen.getByRole('button', { name: 'Navigation: Abschnitt 3 von 3' })).toBeVisible();
   });
 
   it('erscheint nicht, wenn kein Stopp navigierbar ist', () => {

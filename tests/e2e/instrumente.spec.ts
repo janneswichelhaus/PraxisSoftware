@@ -22,7 +22,7 @@ test.describe('Instrumente', () => {
       page.getByRole('heading', { level: 2, name: 'Anamnesebogen Version 8 (DIGOTOR)' }),
     ).toBeVisible();
 
-    await page.getByText('Wortlaut (6 Items)').click();
+    await page.getByText('Wortlaut (6 Fragen)').click();
     await expect(page.getByText('Wie gut können Sie Aktivität 1 heute ausführen?')).toBeVisible();
   });
 

@@ -1,5 +1,8 @@
 import { useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { Textlink } from '@/components/ui/Textlink';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import type { NavigationApp, NavigationTarget } from '@/lib/location/contract';
 import {
@@ -25,6 +28,9 @@ import { zielDesStopps, type Stopp } from './tagesroute';
  * Punkt 20). Ein Knopf am Stopp, der ganze Tag darüber, die Ziel-App
  * weggeklappt — sie gehört der Gerätebewertung, nicht dem Arbeitsschritt
  * (BEF-032), und wird nirgends gespeichert.
+ *
+ * Der Name eines Stopps führt in den Termin, und der Weg zurück kommt in
+ * diese Tour - mit Tag und Person, nicht an ihren Anfang (TER-03).
  */
 
 const ZIEL_APPS: readonly { readonly wert: NavigationApp; readonly label: string }[] = [
@@ -45,19 +51,45 @@ function anschrift(stopp: Stopp): string {
     .join(', ');
 }
 
+/**
+ * Beschriftung des Tagesknopfs: Er übergibt an die Navigations-App und sagt
+ * das (UEB-10) - „Ganzer Tag" allein las sich wie ein Filter. Mit einem
+ * Abschnitt heißt er wie in der Übersicht (`NavigationFuerDenTag`).
+ *
+ * Mit mehreren Abschnitten bleibt „Ganzer Tag" im Namen, anders als in der
+ * Übersicht („Navigation: Abschnitt 1 von 2"): Die Browserprüfung
+ * `tests/e2e/karte.spec.ts` zählt die Tippziele dieser Liste über
+ * `/Navigation zu Stopp|Ganzer Tag/`. Ändert sich das Muster dort, wird
+ * diese Zeile der Übersicht gleich.
+ */
+function tagesknopfText(abschnitt: number, abschnitte: number, stopps: number): string {
+  return abschnitte === 1
+    ? `Navigation: ganzer Tag (${stopps} ${stopps === 1 ? 'Stopp' : 'Stopps'})`
+    : `Navigation: Ganzer Tag – Abschnitt ${abschnitt} von ${abschnitte}`;
+}
+
 export function Tourenliste({
   stopps,
   zeitzone,
   startGewaehlt,
   zwischen,
+  rueckweg,
 }: {
   readonly stopps: readonly Stopp[];
   readonly zeitzone: string;
   readonly startGewaehlt: boolean;
   /** Was zwischen Stopp i und i+1 steht — Fahrzeit und Fahrpuffer (MAP-006c). */
   readonly zwischen?: (index: number) => ReactNode;
+  /**
+   * Wohin der Termin eines Stopps zurückführt (TER-03). Die Tourenseite gibt
+   * Tag und Person ausdrücklich mit, auch wenn die Adresszeile sie noch nicht
+   * trägt; ohne Angabe gilt die aktuelle Adresse.
+   */
+  readonly rueckweg?: string | undefined;
 }) {
   const [app, setApp] = useState<NavigationApp>('google_maps');
+  const ort = useLocation();
+  const hier = rueckweg ?? `${ort.pathname}${ort.search}`;
 
   // Nur Stopps mit Ziel; Praxistermine haben keinen Handoff.
   const ziele = stopps.map(zielDesStopps).filter((ziel): ziel is NavigationTarget => ziel !== null);
@@ -69,7 +101,7 @@ export function Tourenliste({
       {app === 'system' ? (
         <p className="text-ink-muted mb-3 text-sm print:hidden">
           Die Systemnavigation kennt kein Zwischenziel. Für den ganzen Tag gibt es deshalb keinen
-          Knopf — Stopp für Stopp geht es unten.
+          Knopf – Stopp für Stopp geht es unten.
         </p>
       ) : abschnitte > 0 ? (
         <div className="mb-3 flex flex-wrap gap-2 print:hidden">
@@ -80,9 +112,7 @@ export function Tourenliste({
               className={tagKnopf}
               onClick={() => navigationOeffnen(buildNavigationDayUrls(ziele, app)[index]!)}
             >
-              {abschnitte === 1
-                ? `Ganzer Tag (${ziele.length} ${ziele.length === 1 ? 'Stopp' : 'Stopps'})`
-                : `Ganzer Tag – Abschnitt ${index + 1} von ${abschnitte}`}
+              {tagesknopfText(index + 1, abschnitte, ziele.length)}
             </button>
           ))}
         </div>
@@ -103,17 +133,22 @@ export function Tourenliste({
               <div className="flex items-center gap-3 py-3">
                 <Nummer>{stopp.nummer}</Nummer>
                 <div className="min-w-0 flex-1">
-                  <p className="text-ink text-[0.9375rem] font-medium">
+                  {/* Der Name ist der einzige Weg vom Stopp in den Termin:
+                      als Link erkennbar und 44 px hoch (TER-17, RSP-06). Das
+                      Tippziel ist ein eigener Kasten in der Zeile; ohne
+                      `wrap-anywhere` liefe ein langer Name aus ihr heraus. */}
+                  <p className="text-ink text-liste font-medium">
                     <span className="tabular-nums">
                       {formatLocalTimeRange(stopp.termin.starts_at, stopp.termin.ends_at, zeitzone)}
                     </span>{' '}
                     ·{' '}
-                    <Link
-                      to={mitRueckweg(`/termine/${stopp.termin.id}`, '/touren')}
-                      className="hover:underline"
+                    <Textlink
+                      alleinstehend
+                      to={mitRueckweg(`/termine/${stopp.termin.id}`, hier)}
+                      className="wrap-anywhere"
                     >
                       {terminBezeichnung(stopp.termin)}
-                    </Link>
+                    </Textlink>
                   </p>
                   <p className="text-ink-muted text-sm">
                     {anschrift(stopp)}
@@ -136,8 +171,11 @@ export function Tourenliste({
         })}
       </ol>
 
-      <details className="mt-4 print:hidden">
-        <summary className="text-ink-muted marker:text-ink-subtle cursor-pointer text-sm">
+      <details className="group mt-4 print:hidden">
+        {/* 44 px hoch und mit Aufklappzeichen wie jeder Aufklapper (UIK-07,
+            TER-17). */}
+        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+          <Aufklappzeichen />
           Andere Ziel-App prüfen (für die Gerätebewertung)
         </summary>
         <div
@@ -146,9 +184,12 @@ export function Tourenliste({
           className="mt-3 flex flex-wrap gap-2"
         >
           {ZIEL_APPS.map((option) => (
+            // Das Auswahlfeld liegt unsichtbar in der Beschriftung. Den Fokus
+            // zeigt deshalb die Beschriftung (UIK-06, VOR-02): Sonst lag der
+            // Fokusring auf einem Feld von 1 × 1 px.
             <label
               key={option.wert}
-              className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-4 text-[0.9375rem] ${
+              className={`rounded-button text-liste has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center border px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
                 app === option.wert
                   ? 'border-accent bg-accent-soft text-accent font-medium'
                   : 'border-line-strong bg-surface text-ink-muted'
@@ -165,8 +206,9 @@ export function Tourenliste({
             </label>
           ))}
         </div>
-        <p className="text-ink-subtle mt-2 text-sm">
-          Keine Einstellung: Die Wahl gilt für diesen Besuch der Seite und wird nicht gespeichert.
+        <p className="text-ink-muted mt-2 text-sm">
+          Keine Einstellung: Die Wahl gilt, solange diese Seite offen ist, und wird nicht
+          gespeichert.
         </p>
       </details>
     </div>

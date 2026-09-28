@@ -9,6 +9,7 @@ import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const VERORDNUNG = '88888888-8888-4888-8888-000000000002';
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
+const STAFF_TIM = '55555555-5555-4555-8555-000000000004';
 const ORT = '33333333-3333-4333-8333-000000000001';
 
 const patient: PatientsApi.Patient = testPatient({
@@ -110,13 +111,19 @@ describe('AppointmentSeriesPage', () => {
     createAppointmentSeries.mockResolvedValue(3);
   });
 
-  it('zeigt das Kontingent der Verordnung', async () => {
+  it('zeigt die Zahlen der Grundlage mit den Wörtern der Akte (TER-09)', async () => {
     rendern();
     await formularAbwarten();
 
-    expect(screen.getByText('Verordnet')).toBeInTheDocument();
-    expect(screen.getByText('10 Behandlungen')).toBeInTheDocument();
+    // Dieselben Beschriftungen wie an der Grundlagenkarte - beim Selbstzahler
+    // ist nichts „verordnet".
+    expect(screen.getByText('Mögliche Termine')).toBeInTheDocument();
+    expect(screen.getByText('10 · 7 genutzt')).toBeInTheDocument();
+    expect(screen.getByText('Noch planbar')).toBeInTheDocument();
+    expect(screen.getByText('3 Behandlungen')).toBeInTheDocument();
     expect(screen.getByText('2x pro Woche')).toBeInTheDocument();
+    expect(screen.queryByText('Verordnet')).not.toBeInTheDocument();
+    expect(screen.queryByText('Offen')).not.toBeInTheDocument();
   });
 
   it('schlägt das offene Kontingent als Anzahl vor', async () => {
@@ -206,10 +213,66 @@ describe('AppointmentSeriesPage', () => {
       false,
     );
     // In den Terminbereich der Akte, nicht auf die Übersicht: Dort stehen die
-    // eben angelegten Termine (AKTE-003).
+    // eben angelegten Termine (AKTE-003) - mit einer Bestätigung (TER-04).
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/termine`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/termine`, {
+        replace: true,
+        state: { meldung: '3 Termine angelegt.' },
+      }),
     );
+  });
+
+  it('kehrt nach dem Anlegen in den Kalender zurück, wenn der Weg von dort kam (TER-03)', async () => {
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    const user = userEvent.setup();
+    renderWithProviders(
+      <AppointmentSeriesPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/verordnungen/${VERORDNUNG}/serie?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      kalender,
+    );
+
+    await vorschlagen(user);
+    await screen.findByText('Alle 3 Termine sind planbar.');
+    await user.click(screen.getByRole('button', { name: '3 Termine anlegen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(kalender, {
+        replace: true,
+        state: { meldung: '3 Termine angelegt.' },
+      }),
+    );
+  });
+
+  it('übernimmt die Person der Kalenderspalte statt „ich" (KAL-05)', async () => {
+    // Tim ist selbst zuordenbar - und plant trotzdem in Annas Spalte für Anna.
+    fetchAssignableTherapists.mockResolvedValue([
+      { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      { staff_member_id: STAFF_TIM, display_name: 'Tim Teamleitung' },
+    ]);
+    renderWithProviders(
+      <AppointmentSeriesPage user={testUser(['therapist'], 'Tim Teamleitung')} />,
+      `/patienten/${PATIENT_ID}/verordnungen/${VERORDNUNG}/serie?person=${STAFF_ANNA}`,
+    );
+    await formularAbwarten();
+
+    await waitFor(() =>
+      expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_ANNA),
+    );
+  });
+
+  it('lässt eine Person aus der Adresszeile fallen, die nicht zuordenbar ist', async () => {
+    renderWithProviders(
+      <AppointmentSeriesPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/verordnungen/${VERORDNUNG}/serie?person=55555555-5555-4555-8555-000000000009`,
+    );
+    await formularAbwarten();
+
+    await waitFor(() => expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(''));
   });
 
   it('benennt einen hinderlichen Befund und legt nichts an', async () => {
@@ -319,10 +382,12 @@ describe('AppointmentSeriesPage', () => {
     await user.clear(screen.getByLabelText('Anzahl Termine *'));
     await user.type(screen.getByLabelText('Anzahl Termine *'), '5');
 
-    expect(await screen.findByText(/Geplant sind 5 Termine, offen sind 3/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Geplant sind 5 Termine, noch planbar sind 3/),
+    ).toBeInTheDocument();
   });
 
-  it('verlangt eine behandelnde Person, bevor geprüft wird', async () => {
+  it('verlangt eine behandelnde Person, bevor geprüft wird - am Feld und in der Zusammenfassung', async () => {
     fetchAssignableTherapists.mockResolvedValue([]);
     const user = userEvent.setup();
     rendern();
@@ -330,7 +395,53 @@ describe('AppointmentSeriesPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
 
-    expect(await screen.findByText('Bitte eine behandelnde Person wählen.')).toBeInTheDocument();
+    const kasten = (await screen.findByText(/Bitte prüfen Sie diese Angabe/)).closest(
+      '[role="alert"]',
+    ) as HTMLElement;
+    expect(kasten).toHaveFocus();
+    expect(
+      within(kasten).getByRole('link', { name: 'Bitte eine behandelnde Person wählen.' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText('Bitte eine behandelnde Person wählen.')).toHaveLength(2);
+    expect(checkAppointmentSlots).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['ein leeres Feld', ''],
+    ['mehr als 30', '40'],
+  ])('prüft die Anzahl und schlägt bei %s nichts vor (TER-06)', async (_fall, eingabe) => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.type(screen.getByLabelText('Beginn *'), '09:00');
+    await user.clear(screen.getByLabelText('Anzahl Termine *'));
+    if (eingabe) await user.type(screen.getByLabelText('Anzahl Termine *'), eingabe);
+    await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
+
+    expect(await screen.findByText('Bitte eine Zahl von 1 bis 30 eingeben.')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: 'Anzahl Termine: Bitte eine Zahl von 1 bis 30 eingeben.' }),
+    ).toBeInTheDocument();
+    expect(checkAppointmentSlots).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Vorgeschlagene Termine/)).not.toBeInTheDocument();
+  });
+
+  it('meldet einen Termin über Mitternacht am Beginn', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.type(screen.getByLabelText('Beginn *'), '23:30');
+    await user.click(screen.getByRole('button', { name: 'Termine vorschlagen' }));
+
+    expect(
+      await screen.findAllByText(
+        'Der Termin reicht über Mitternacht. Bitte einen früheren Beginn wählen.',
+      ),
+    ).toHaveLength(2);
     expect(checkAppointmentSlots).not.toHaveBeenCalled();
   });
 
@@ -340,9 +451,91 @@ describe('AppointmentSeriesPage', () => {
     expect(screen.getByText('Beispielstrasse 12, 72070 Tuebingen')).toBeInTheDocument();
   });
 
-  it('meldet eine nicht lesbare Verordnung, ohne etwas anzubieten', async () => {
-    fetchTreatmentBasisSlots.mockRejectedValue(new Error('nope'));
+  it('führt bei fehlender Adresse in die Stammdaten und hierher zurück (TER-15)', async () => {
+    fetchPatient.mockResolvedValue({ ...patient, house_number: null });
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.type(screen.getByLabelText('Beginn *'), '09:00');
+
+    const abstecher = screen.getByRole('link', { name: 'Jetzt in den Stammdaten ergänzen' });
+    const ziel = new URL(abstecher.getAttribute('href') ?? '', 'http://test.invalid');
+    expect(ziel.pathname).toBe(`/patienten/${PATIENT_ID}/bearbeiten`);
+    const zurueck = new URL(ziel.searchParams.get('zurueck') ?? '', 'http://test.invalid');
+    expect(zurueck.pathname).toBe(`/patienten/${PATIENT_ID}/verordnungen/${VERORDNUNG}/serie`);
+    expect(zurueck.searchParams.get('beginn')).toBe('09:00');
+    expect(zurueck.searchParams.get('person')).toBe(STAFF_ANNA);
+  });
+
+  it('hält nach einem Vorschlag vor dem Weggehen an (TER-05)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    await vorschlagen(user);
+    await screen.findByText('Alle 3 Termine sind planbar.');
+
+    await user.click(screen.getByRole('link', { name: '← Zurück zur Akte' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Terminserie' });
+    expect(
+      within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+    ).toBeInTheDocument();
+    expect(
+      within(rueckfrage).queryByRole('button', { name: 'Speichern und weitergehen' }),
+    ).not.toBeInTheDocument();
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByText('Vorgeschlagene Termine (3)')).toBeInTheDocument();
+  });
+
+  it('meldet ein unverändertes Formular nicht als ungespeichert', async () => {
+    rendern();
+    await formularAbwarten();
+    await waitFor(() => expect(screen.getByLabelText('Anzahl Termine *')).toHaveValue(3));
+
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(ereignis);
+    expect(ereignis.defaultPrevented).toBe(false);
+  });
+
+  it('meldet nicht ladbare Zahlen als Ladefehler, mit neuem Versuch und Rückweg (TER-09, TER-11)', async () => {
+    fetchTreatmentBasisSlots.mockRejectedValueOnce(new Error('nope'));
+    const user = userEvent.setup();
+    rendern();
+
+    expect(
+      await screen.findByText('Die Zahlen der Grundlage konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await formularAbwarten()).toBeInTheDocument();
+  });
+
+  it('meldet eine nicht freigegebene Akte als „Nicht gefunden"', async () => {
+    fetchPatient.mockResolvedValue(null);
     rendern();
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(
+      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
+    ).toBeInTheDocument();
+  });
+
+  it('wiederholt im Fehlerfenster nicht den Titel (ZST-12)', async () => {
+    createAppointmentSeries.mockRejectedValue(
+      new Error('Die Terminserie konnte nicht angelegt werden.'),
+    );
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    await vorschlagen(user);
+    await screen.findByText('Alle 3 Termine sind planbar.');
+    await user.click(screen.getByRole('button', { name: '3 Termine anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Die Terminserie konnte nicht angelegt werden.',
+    });
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
   });
 });

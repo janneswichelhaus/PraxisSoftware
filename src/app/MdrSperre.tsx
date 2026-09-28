@@ -1,6 +1,7 @@
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Inhaltsflaeche } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import type { MdrEintrag } from './mdr';
 
 /**
@@ -25,24 +26,28 @@ export function MdrSperre({ eintrag }: { eintrag: MdrEintrag }) {
       />
 
       <Inhaltsflaeche className="max-w-prose">
-        <p className="text-ink text-[0.9375rem]">{eintrag.keineAusgabe}</p>
+        <p className="text-ink text-liste">{eintrag.keineAusgabe}</p>
 
         <p className="text-ink-muted mt-4 text-sm">
           Features an der Grenze zur Medizinprodukte-Software dürfen vor einer dokumentierten
           regulatorischen Prüfung nicht produktiv aktiviert werden. Ein Feature-Flag ersetzt diese
-          Prüfung nicht — deshalb gibt es hier keinen Schalter, sondern nur diese Auskunft.
+          Prüfung nicht – deshalb gibt es hier keinen Schalter, sondern nur diese Auskunft.
         </p>
 
-        <dl className="mt-4 text-sm">
-          <dt className="text-ink-subtle">Grundlage</dt>
-          <dd className="text-ink-muted mt-1">
-            <ul className="list-inside list-disc">
-              {eintrag.grundlage.map((fundstelle) => (
-                <li key={fundstelle}>{fundstelle}</li>
-              ))}
-            </ul>
-          </dd>
-        </dl>
+        {/* Die Fundstellen als beschriftete Angabe wie auf jeder Detailseite
+            (NAV-24): Bis UXR-002 stand hier eine eigene `dl` mit eigener
+            Gestaltung. */}
+        <div className="mt-2">
+          <DetailList>
+            <DetailRow label="Grundlage">
+              <ul className="list-inside list-disc">
+                {eintrag.grundlage.map((fundstelle) => (
+                  <li key={fundstelle}>{fundstelle}</li>
+                ))}
+              </ul>
+            </DetailRow>
+          </DetailList>
+        </div>
       </Inhaltsflaeche>
 
       <div className="mt-6">

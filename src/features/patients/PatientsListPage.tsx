@@ -1,17 +1,21 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
+import { Select } from '@/components/ui/Select';
+import { BEGRIFFE } from '@/lib/begriffe';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { Patientensuche } from './Patientensuche';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ageInYears, fetchPatients, fullName, type PatientListenzeile } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
 
-const selectClass =
-  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
+/** Der Vorgang heißt hier wie in der Kopfsuche (PAT-21, ANN-111). */
+const ANLEGEN = `${BEGRIFFE.patientIn} anlegen`;
 
 function parseStatusFilter(value: string | null): StatusFilter {
   return value === 'active' || value === 'inactive' ? value : 'all';
@@ -56,7 +60,7 @@ export function PatientsListPage() {
   const [status, setStatus] = useState<StatusFilter>(() =>
     parseStatusFilter(searchParams.get('status')),
   );
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['patients'],
     queryFn: fetchPatients,
     retry: false,
@@ -66,6 +70,14 @@ export function PatientsListPage() {
     () => (data ?? []).filter((p) => matchesStatus(p, status) && matches(p, query)),
     [data, query, status],
   );
+
+  // Die Akte führt zurück in genau diese Ansicht - mit Suchbegriff und
+  // Statusfilter (PAT-08, UX-012). Vorher stand die Liste nach jeder
+  // geöffneten Akte wieder ungefiltert da; die Namenssuche darüber nahm den
+  // Rückweg schon mit. Ohne Filter braucht es keinen: Die Akte führt dann
+  // ohnehin hierher.
+  const filter = searchParams.toString();
+  const rueckweg = filter ? `/patienten?${filter}` : null;
 
   function updateQuery(value: string) {
     setQuery(value);
@@ -81,8 +93,8 @@ export function PatientsListPage() {
     <>
       <PageHeader
         title="Patient:innen"
-        description="Organisatorische Stammdaten der Praxis."
-        actions={<ButtonLink to="/patienten/neu">Patient anlegen</ButtonLink>}
+        description="Alle Akten der Praxis – Termine, Behandlung, Stammdaten."
+        actions={<ButtonLink to="/patienten/neu">{ANLEGEN}</ButtonLink>}
       />
 
       {/* Die serverseitige Namenssuche wohnt seit UX-013 hier im Bereich
@@ -95,6 +107,9 @@ export function PatientsListPage() {
         <Patientensuche labelSichtbar />
       </div>
 
+      {/* Der Statusfilter ist der Baustein `Select` (PAT-14, UIK-19, TOK-13):
+          48 px hoch wie das Filterfeld daneben, mit derselben Beschriftung -
+          vorher stand ein nachgebautes Feld 4 px niedriger daneben. */}
       <div className="mb-5 flex flex-wrap items-end gap-4">
         <div className="max-w-sm flex-1 basis-56">
           <SearchField
@@ -104,20 +119,16 @@ export function PatientsListPage() {
             onChange={updateQuery}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="patients-status" className="text-ink text-sm font-medium">
-            Status
-          </label>
-          <select
-            id="patients-status"
-            className={selectClass}
+        <div className="w-40">
+          <Select
+            label="Status"
             value={status}
             onChange={(event) => updateStatus(event.target.value as StatusFilter)}
           >
             <option value="all">Alle</option>
             <option value="active">Aktiv</option>
             <option value="inactive">Inaktiv</option>
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -125,14 +136,19 @@ export function PatientsListPage() {
       {isError ? (
         <ErrorState
           title="Die Patientenliste konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          onErneut={() => void refetch()}
         />
       ) : null}
 
       {data && visible.length === 0 ? (
         <EmptyState
           title={data.length === 0 ? 'Noch keine Patient:innen' : 'Keine Treffer'}
-          description={data.length === 0 ? undefined : 'Suche oder Filter anpassen.'}
+          description={
+            data.length === 0
+              ? `Die erste Akte entsteht über „${ANLEGEN}“.`
+              : 'Suche oder Filter anpassen.'
+          }
         />
       ) : null}
 
@@ -143,11 +159,11 @@ export function PatientsListPage() {
             return (
               <li key={patient.id}>
                 <Link
-                  to={`/patienten/${patient.id}`}
+                  to={mitRueckweg(`/patienten/${patient.id}`, rueckweg)}
                   className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
                 >
                   <span className="min-w-0">
-                    <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                    <span className="text-ink text-liste block truncate font-medium">
                       {fullName(patient)}
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
@@ -155,11 +171,9 @@ export function PatientsListPage() {
                       {patient.city ? ` · ${patient.city}` : ''}
                     </span>
                   </span>
-                  {patient.status === 'inactive' ? (
-                    <span className="bg-surface-sunken text-ink-muted rounded-pill shrink-0 px-2.5 py-0.5 text-xs">
-                      inaktiv
-                    </span>
-                  ) : null}
+                  {/* Das Etikett des Systems statt eines Nachbaus (PAT-14,
+                      UIK-18), groß geschrieben wie der Filter (WRT-16). */}
+                  {patient.status === 'inactive' ? <Badge>Inaktiv</Badge> : null}
                 </Link>
               </li>
             );

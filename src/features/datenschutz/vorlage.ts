@@ -99,7 +99,7 @@ export function ablehnungstext(name: string, stand: Aufbewahrungsstand): string 
   teile.push(
     'Unberührt bleiben Ihre übrigen Rechte: Auskunft über die gespeicherten Daten ' +
       '(Art. 15 DSGVO), Berichtigung unrichtiger Angaben (Art. 16 DSGVO) und die ' +
-      'Einschränkung der Verarbeitung (Art. 18 Abs. 1 lit. b DSGVO) — wir verarbeiten die ' +
+      'Einschränkung der Verarbeitung (Art. 18 Abs. 1 lit. b DSGVO) – wir verarbeiten die ' +
       'Daten dann nur noch zur Aufbewahrung. Sie können sich außerdem jederzeit bei der ' +
       'zuständigen Datenschutz-Aufsichtsbehörde beschweren (Art. 77 DSGVO).',
   );

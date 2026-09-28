@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { TextArea } from '@/components/ui/TextArea';
-import { ErrorState } from '@/components/ui/Feedback';
+import { EmptyState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
 import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
@@ -16,9 +18,13 @@ import {
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { Einfuegemeldung } from './Einfuegemeldung';
+import { useEinfuegen } from './einfuegen';
+import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { bausteinEinfuegen } from './textbausteine';
+import { BereitsFinalisiert } from './Zustaende';
 import {
   completeTreatment,
   createTreatmentNote,
@@ -49,16 +55,23 @@ function Abschluss({
   appointment,
   note,
   ohneBehandlung,
+  zumTermin,
+  inzwischen,
 }: {
   appointment: Appointment;
   note: TreatmentNote | null;
   /** Hausbesuch-Szenario 1: Tür geöffnet, Behandlung nicht durchgeführt. */
   ohneBehandlung: boolean;
+  /** Ziel für „Abbrechen“ und nach dem Schreiben: der Termin samt Rückweg (DOK-01). */
+  zumTermin: string;
+  /** Was sich geändert hat, seit die Seite offen ist (DOK-B01). */
+  inzwischen: Statuswechsel | undefined;
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const zone = appointment.organization_time_zone;
-  const zurueck = `/termine/${appointment.id}`;
+  const feldId = useId();
+  const folgeId = useId();
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
@@ -67,6 +80,9 @@ function Abschluss({
   // einer"; die Beschriftung und das unveränderliche Feld brauchen die
   // Unterscheidung.
   const [schreibtAbschluss, setSchreibtAbschluss] = useState(false);
+  // Der eigene Abschluss finalisiert den Eintrag. Das Nachladen danach ist
+  // dann kein „inzwischen finalisiert“ (DOK-B01), sondern die eigene Tat.
+  const selbstAbgeschlossen = useRef(false);
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
@@ -74,6 +90,7 @@ function Abschluss({
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b).
   const geaendert = wert !== gespeichert || bausteine.text !== '';
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
+  const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
 
   // Der Text, wie er in diesem Augenblick im Feld steht - nicht der von
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
@@ -156,15 +173,21 @@ function Abschluss({
       note?.updated_at ?? null,
       ohneBehandlung,
     );
+    selbstAbgeschlossen.current = true;
     await nachSchreiben();
     // Feld, Textbausteine und Bausteinfeld sind währenddessen gesperrt; was
     // gesendet wurde, ist, was auf dem Bildschirm steht.
     return true;
   }
 
-  function weiterZumTermin() {
+  /**
+   * Zurück zum Termin - samt Rückweg (DOK-01, ZST-17) und dem, was geschehen
+   * ist (DOK-15): Der Termin kann es oben melden, statt dass es nur im
+   * Doku-Abschnitt weit unten steht.
+   */
+  function weiterZumTermin(meldung: string) {
     freigeben();
-    void navigate(zurueck);
+    void navigate(zumTermin, { state: { meldung } });
   }
 
   /**
@@ -185,6 +208,8 @@ function Abschluss({
     return meldung === undefined;
   }
 
+  const wechsel = inzwischen && !selbstAbgeschlossen.current ? inzwischen : undefined;
+
   return (
     <>
       <PageHeader
@@ -198,9 +223,13 @@ function Abschluss({
           Kästchen zum Umschalten: Wer diesen Weg gewählt hat, hat die Frage am
           Termin schon beantwortet, und ein zweites Mal danach zu fragen hieße,
           die erste Antwort nicht ernst zu nehmen. Wer sich vertan hat, geht
-          zurück und wählt den anderen Weg. */}
+          zurück und wählt den anderen Weg.
+
+          Ein Hinweis, kein Bedienelement: vertieft, mit der Trennlinie statt
+          des Rahmens für Bedienbares (DOK-19) - so ist er von der Rückfrage
+          des Schutzes darunter zu unterscheiden. */}
       {ohneBehandlung ? (
-        <div className="border-line-strong bg-surface-sunken rounded-card mb-5 max-w-2xl border p-4">
+        <div className="border-line bg-surface-sunken rounded-card mb-5 max-w-2xl border p-4">
           <p className="text-ink text-sm leading-relaxed">
             <strong className="font-medium">
               Vermerk: Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt.
@@ -222,16 +251,27 @@ function Abschluss({
           void schreiben({
             ausfuehren: abschlussSchreiben,
             fehlertitel: 'Nicht abgeschlossen',
-            danach: weiterZumTermin,
+            danach: () =>
+              weiterZumTermin(
+                ohneBehandlung ? 'Ohne Behandlung abgeschlossen.' : 'Behandlung abgeschlossen.',
+              ),
           }).finally(() => setSchreibtAbschluss(false));
         }}
       >
+        {/* Hat sich der Stand geändert, während hier geschrieben wurde, bleibt
+            das Feld stehen und sagt es (DOK-B01). */}
+        {wechsel ? (
+          <Statusmeldung ton="warnung" className="mb-3">
+            {statuswechselText(wechsel, geaendert)}
+          </Statusmeldung>
+        ) : null}
+
         {/* Während eines Schreibvorgangs fügt die Leiste nichts ein: Das Feld
             ist dann festgehalten, und ein eingefügter Baustein stünde auf dem
             Bildschirm, aber nicht im Abschluss (Zweitreview FRB-EPIC-003). */}
         <TextbausteinLeiste
-          onEinfuegen={(text) => {
-            if (!laeuft) setEntwurf(bausteinEinfuegen(wert, text));
+          onEinfuegen={(text, titel) => {
+            if (!laeuft) einfuegen(titel, wert, text);
           }}
         />
 
@@ -243,6 +283,7 @@ function Abschluss({
               : 'Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte.'
           }
           rows={12}
+          feldId={feldId}
           value={wert}
           error={fehler}
           // Während des Abschlusses unveränderlich: Was festgeschrieben wird,
@@ -250,23 +291,33 @@ function Abschluss({
           readOnly={schreibtAbschluss}
           onChange={(event) => {
             setEntwurf(event.target.value);
+            vergessen();
             if (fehler) setFehler(undefined);
           }}
+        />
+
+        <Einfuegemeldung
+          einfuegung={letzte && letzte.nachher === wert ? letzte : null}
+          gesperrt={laeuft}
+          onRueckgaengig={rueckgaengig}
         />
 
         {ohneBehandlung ? null : (
           <BausteinFeld
             bausteine={bausteine}
-            onUebernehmen={(text) => setEntwurf(bausteinEinfuegen(wert, text))}
+            onUebernehmen={(text) => einfuegen('Befund aus Bausteinen', wert, text)}
             gesperrt={laeuft}
             meldung={vorschlagOffen && bausteine.text ? VORSCHLAG_OFFEN : undefined}
           />
         )}
 
         {/* Die Folge steht vor der Schaltfläche, nicht in einer Rückfrage
-            danach: So liest man sie, bevor man tippt (ADR-016 Punkt 4, 5). */}
-        <div className="border-line-strong bg-surface-sunken rounded-card mt-5 border p-4">
-          <p className="text-ink text-sm leading-relaxed">
+            danach: So liest man sie, bevor man tippt (ADR-016 Punkt 4, 5).
+            Wer mit der Tastatur zum Knopf springt, hört sie dort mit
+            (`aria-describedby`, DOK-20). Ein Hinweis, kein Bedienelement:
+            Trennlinie statt Bedienrahmen (DOK-19). */}
+        <div className="border-line bg-surface-sunken rounded-card mt-5 border p-4">
+          <p id={folgeId} className="text-ink text-sm leading-relaxed">
             Mit dem Abschluss geschieht zweierlei in einem Schritt: Der Termin wird als durchgeführt
             geführt, und der Eintrag wird als Version 1 festgeschrieben. Ab dann ist er Bestandteil
             der Patientenakte; jede spätere Änderung braucht eine Begründung und bleibt
@@ -283,7 +334,7 @@ function Abschluss({
         {schutz}
 
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={laeuft}>
+          <Button type="submit" disabled={laeuft} aria-describedby={folgeId}>
             {schreibtAbschluss
               ? 'Wird abgeschlossen …'
               : ohneBehandlung
@@ -300,7 +351,7 @@ function Abschluss({
               void schreiben({
                 ausfuehren: entwurfSichern,
                 fehlertitel: 'Nicht gespeichert',
-                danach: weiterZumTermin,
+                danach: () => weiterZumTermin('Entwurf gespeichert – noch nicht finalisiert.'),
               });
             }}
           >
@@ -310,21 +361,27 @@ function Abschluss({
           {/* Die Rückfrage vor dem Verwerfen stellt seit FIX-011 der
               Navigationsschutz - für diesen Weg wie für jeden anderen aus
               dieser Seite heraus. */}
-          <Link
-            to={zurueck}
-            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
-          >
+          <ButtonLink to={zumTermin} variant="quiet">
             Abbrechen
-          </Link>
+          </ButtonLink>
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Text wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Finalisieren und
         Lesen werden protokolliert.
       </p>
     </>
   );
+}
+
+/** Was die Seite zeigt - den Abschluss oder einen Zustand, der ihn ausschließt. */
+type Abschlusszustand = 'abschluss' | Extract<Statuswechsel, 'abgesagt' | 'finalisiert'>;
+
+function zustandFuer(appointment: Appointment, note: TreatmentNote | null): Abschlusszustand {
+  if (appointment.status === 'cancelled') return 'abgesagt';
+  if (note?.status === 'final') return 'finalisiert';
+  return 'abschluss';
 }
 
 export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
@@ -336,42 +393,62 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
   // braucht keinen zweiten Zustand neben dem Text.
   const ohneBehandlungGewaehlt = suche.get('ohne-behandlung') === '1';
 
+  // Ob der Abschluss steht, entscheidet der erste Stand - danach bleibt er
+  // (DOK-B01). Finalisiert eine Kollegin oder die Frist, sagt das Büro ab,
+  // während hier geschrieben wird, verschwand bisher das Feld samt Text.
+  const ausgangslage = useRef<{ termin: string; abschluss: boolean } | null>(null);
+
   return (
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Eine Behandlung abschließen dürfen ausschließlich therapeutische Rollen."
+      verweigert="Eine Behandlung abschließen dürfen Therapeut:innen und Teamleitung."
     >
-      {({ appointment, dokumentation }) => {
-        if (appointment.status === 'cancelled') {
+      {({ appointment, dokumentation, eingehend, zumTermin }) => {
+        const zustand = zustandFuer(appointment, dokumentation.primary);
+        const warAbschluss =
+          ausgangslage.current?.termin === appointment.id && ausgangslage.current.abschluss;
+        const abschluss = zustand === 'abschluss' || warAbschluss;
+        ausgangslage.current = { termin: appointment.id, abschluss };
+
+        if (abschluss) {
           return (
-            <ErrorState
+            <Abschluss
+              key={appointment.id}
+              appointment={appointment}
+              note={dokumentation.primary}
+              // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
+              // Parameter an einem Praxistermin fällt hier still weg, statt in
+              // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
+              // Server ihn ohnehin ab.
+              ohneBehandlung={
+                ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit'
+              }
+              zumTermin={zumTermin}
+              inzwischen={zustand === 'abschluss' ? undefined : zustand}
+            />
+          );
+        }
+
+        // Erwartbare Zustände stehen ruhig da, mit dem nächsten Schritt
+        // (DOK-12) - kein roter Alarm.
+        if (zustand === 'abgesagt') {
+          return (
+            <EmptyState
               title="Termin abgesagt"
               description="Zu einem abgesagten Termin hat keine Behandlung stattgefunden."
             />
           );
         }
 
-        if (dokumentation.primary?.status === 'final') {
-          return (
-            <ErrorState
-              title="Bereits abgeschlossen"
-              description="Die Dokumentation dieses Termins ist finalisiert. Eine Änderung ist nur als Korrektur mit Begründung möglich, eine Ergänzung als Nachtrag."
-            />
-          );
-        }
-
-        return (
-          <Abschluss
-            appointment={appointment}
-            note={dokumentation.primary}
-            // Der Vermerk gilt am Hausbesuch (ANN-055). Ein verstellter
-            // Parameter an einem Praxistermin fällt hier still weg, statt in
-            // eine Fehlermeldung des Servers zu laufen; verbindlich weist der
-            // Server ihn ohnehin ab.
-            ohneBehandlung={ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit'}
+        // Derselbe Zustand heißt überall gleich: „Bereits finalisiert“ (DOK-08).
+        return dokumentation.primary ? (
+          <BereitsFinalisiert
+            appointmentId={appointment.id}
+            eintrag={dokumentation.primary}
+            eingehend={eingehend}
           />
-        );
+        ) : null;
       }}
     </DocumentationShell>
   );

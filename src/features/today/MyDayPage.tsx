@@ -1,9 +1,14 @@
+import { Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Aufklappzeichen, Card, CardGrid } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
+import { Textlink } from '@/components/ui/Textlink';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -45,7 +50,7 @@ import {
 } from './api';
 import { Tageskarte } from './Tagesliste';
 import { navigationsZiel } from '@/lib/location/navigation';
-import { liegeHeute, liegeText, wegeDesTages } from './tagesstart';
+import { anstehendeFehlzeiten, liegeHeute, liegeText, wegeDesTages } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 
@@ -61,19 +66,34 @@ import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
  * Rufnummer und Zugangshinweis; sie kommen aus einem eigenen, engeren
  * Lesepfad (`list_day_plan`), nicht aus dem Kalender. Der Tagesplan des Teams
  * darunter bleibt die Kalenderabfrage - er braucht keine Adressen.
+ *
+ * Ein Ladefehler bietet hier immer „Erneut versuchen" an, nie ein Neuladen
+ * der Seite: Das verwürfe im Funkloch genau die vorgehaltene Tagesliste
+ * (ANN-021, ZST-04).
  */
 
+/** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
+const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
+
 /**
- * Kurze Ortsangabe eines Termins im Tagesplan des Teams.
+ * Zweite Zeile im Tagesplan des Teams: wer, dann wo (UEB-06).
+ *
+ * Die Person steht vorn, weil der Plan zeigen soll, wer wann wo ist - am
+ * Telefon kürzt `truncate` das Ende der Zeile, und das war bis UXR-003 genau
+ * der Name. Die Terminart steht einmal; bei Praxisterminen folgt ihr der
+ * Standort.
  *
  * Die Kalenderabfrage liefert bewusst keine Besuchsadresse - für die Übersicht
  * über den Tag des Teams ist sie nicht erforderlich (ADR-004,
  * Datenminimierung). Die eigene Tagesliste oben hat sie.
  */
-function ortKurz(termin: CalendarEntry): string {
-  if (termin.appointment_type === 'video') return 'Videotermin';
-  if (termin.appointment_type === 'practice') return termin.location_name ?? '';
-  return 'Hausbesuch';
+function personUndOrt(termin: CalendarEntry): string {
+  const art = appointmentTypeLabels[termin.appointment_type];
+  const ort =
+    termin.appointment_type === 'practice' && termin.location_name
+      ? `${art} ${termin.location_name}`
+      : art;
+  return `${staffName(termin)} · ${ort}`;
 }
 
 function greeting(now = new Date()): string {
@@ -87,6 +107,11 @@ function firstName(displayName: string): string {
   return displayName.split(' ')[0] ?? displayName;
 }
 
+/** Richtungszeichen hinter einem Link, nicht Teil seines Namens (WRT-08). */
+function Pfeil() {
+  return <span aria-hidden="true">→</span>;
+}
+
 function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: string }) {
   return (
     <li>
@@ -97,25 +122,27 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
         <span className="text-ink w-28 shrink-0 text-sm font-medium tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zeitzone)}
         </span>
-        <span className="min-w-0 flex-1">
-          {/* Der Tagesplan des Teams liest den Kalender - dort stehen seit
-              CAL-015b auch Ereignisse ohne Patient:in. */}
-          <span className="text-ink block truncate text-[0.9375rem] font-medium">
-            {terminBezeichnung(termin)}
+        {/* Unter 640 px brechen Längenzeichen und Abzeichen unter den Text
+            um (UEB-06): In derselben Zeile kürzten sie den Namen. */}
+        <span className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
+          <span className="min-w-0 basis-full sm:flex-1">
+            {/* Der Tagesplan des Teams liest den Kalender - dort stehen seit
+                CAL-015b auch Fehlzeiten ohne Patient:in. */}
+            <span className="text-ink text-liste block truncate font-medium">
+              {terminBezeichnung(termin)}
+            </span>
+            <span className="text-ink-muted mt-0.5 block truncate text-sm">
+              {personUndOrt(termin)}
+            </span>
           </span>
-          <span className="text-ink-muted mt-0.5 block truncate text-sm">
-            {appointmentTypeLabels[termin.appointment_type]}
-            {ortKurz(termin) ? ` · ${ortKurz(termin)}` : ''}
-            {` · ${staffName(termin)}`}
-          </span>
+          {/* §8.1: weder 45 noch 60 Minuten - gekennzeichnet, nicht verboten (CAL-020). */}
+          <Laengenzeichen termin={termin} />
+          {termin.status !== 'confirmed' ? (
+            <Badge ton={appointmentStatusTon[termin.status]}>
+              {appointmentStatusLabels[termin.status]}
+            </Badge>
+          ) : null}
         </span>
-        {/* §8.1: weder 45 noch 60 Minuten - gekennzeichnet, nicht verboten (CAL-020). */}
-        <Laengenzeichen termin={termin} />
-        {termin.status !== 'confirmed' ? (
-          <Badge ton={appointmentStatusTon[termin.status]}>
-            {appointmentStatusLabels[termin.status]}
-          </Badge>
-        ) : null}
       </Link>
     </li>
   );
@@ -126,28 +153,40 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
  *
  * Bewusst knapp und ohne Handlungen: Sie beantwortet „wohin danach, und muss
  * dafür etwas mit?" - die volle Karte mit Anschrift und Rufnummern liegt
- * unter „Weitere offene heute". Ein Tap auf den Namen führt in den Termin.
+ * unter „Weitere offene heute". Der Name führt wie auf der Tageskarte in die
+ * Akte (UEB-13): ein Name, ein Ziel.
  */
 function Vorschau({ termin }: { termin: DayPlanEntry }) {
   const zone = termin.organization_time_zone;
   const ort = adressZeilen(termin).join(', ') || ortDesTermins(termin);
+  const person = termin.kind !== 'internal' && termin.patient_id ? termin.patient_id : null;
   return (
     <div className="border-line mt-4 border-t pt-3">
-      <p className="text-ink-muted text-sm font-medium">Danach</p>
-      <p className="text-ink mt-1 text-[0.9375rem]">
+      {/* Überschrift wie „Erster Weg" darüber (UEB-17). */}
+      <h3 className="text-ink-muted text-sm font-medium">Danach</h3>
+      <p className="text-ink text-liste mt-1 min-w-0 wrap-anywhere">
         <span className="font-semibold tabular-nums">
           {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
         </span>{' '}
-        <Link
-          to={mitRueckweg(`/termine/${termin.id}`, '/')}
-          className="hover:text-accent inline-flex min-h-11 items-center font-medium hover:underline"
-        >
-          {termin.kind === 'internal' || !termin.patient_id
-            ? (termin.title ?? 'Termin')
-            : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
-        </Link>
+        {person ? (
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/patienten/${person}`, '/')}
+            className="font-medium"
+          >
+            {`${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
+          </Textlink>
+        ) : (
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/termine/${termin.id}`, '/')}
+            className="font-medium"
+          >
+            {termin.title ?? 'Termin'}
+          </Textlink>
+        )}
       </p>
-      {ort ? <p className="text-ink-muted mt-0.5 text-sm">{ort}</p> : null}
+      {ort ? <p className="text-ink-muted mt-0.5 min-w-0 text-sm wrap-anywhere">{ort}</p> : null}
       {termin.treatment_table_required ? (
         <p className="text-ink mt-0.5 text-sm">
           <span className="text-ink-muted font-medium">Behandlungsliege: </span>mitnehmen
@@ -164,12 +203,51 @@ function ortDesTermins(termin: DayPlanEntry): string {
 }
 
 /**
+ * „Heute außerdem: 13:00–14:00 Uhr Teambesprechung" (UEB-02).
+ *
+ * Fehlzeiten, die noch anstehen, sind keine Besuche und zählen nicht zu
+ * „Offen heute" (ANN-117) - erledigt sind sie aber auch nicht. Sie stehen
+ * deshalb als eigene Zeile unter der Liege bzw. im Leerzustand, bis ihr Ende
+ * erreicht ist. Der Titel führt in den Termin, wie „Fehlzeit öffnen" auf
+ * der Karte.
+ */
+function HeuteAusserdem({
+  fehlzeiten,
+  className = 'mb-3',
+}: {
+  fehlzeiten: readonly DayPlanEntry[];
+  className?: string;
+}) {
+  if (fehlzeiten.length === 0) return null;
+  return (
+    <p className={`text-ink text-liste min-w-0 wrap-anywhere ${className}`}>
+      <span className="font-semibold">Heute außerdem: </span>
+      {fehlzeiten.map((termin, index) => (
+        <Fragment key={termin.id}>
+          {index > 0 ? ' · ' : null}
+          <span className="tabular-nums">
+            {formatLocalTimeRange(termin.starts_at, termin.ends_at, termin.organization_time_zone)}
+          </span>{' '}
+          <Textlink to={mitRueckweg(`/termine/${termin.id}`, '/')}>
+            {termin.title ?? 'Fehlzeit'}
+          </Textlink>
+        </Fragment>
+      ))}
+    </p>
+  );
+}
+
+/**
  * Die eigene Tagesliste: offene Besuche oben, erledigte zusammengefaltet.
  *
  * „Offen" heißt: der Besuch steht noch aus, oder er ist abgeschlossen und die
  * Dokumentation ist noch nicht finalisiert (siehe `istOffen`). Erledigtes
  * verschwindet nicht - es liegt hinter einem Aufklapper, damit die Liste am
- * Nachmittag nicht doppelt so lang ist wie am Morgen.
+ * Nachmittag nicht doppelt so lang ist wie am Morgen. Eine Fehlzeit, die noch
+ * ansteht, ist weder das eine noch das andere (UEB-02, `HeuteAusserdem`).
+ *
+ * Ab 1024 px bleibt die Spalte bei einer Lesebreite (UEB-16): Eine Karte über
+ * 1 128 px stellte das Abzeichen rund 1 000 px neben die Uhrzeit.
  */
 function MeineTagesliste({
   datum,
@@ -188,7 +266,9 @@ function MeineTagesliste({
     data: termine,
     isPending,
     isError,
+    isFetching,
     dataUpdatedAt,
+    refetch,
   } = useQuery({
     queryKey: ['day-plan', datum, staffMemberId],
     queryFn: () => fetchDayPlan(datum, staffMemberId),
@@ -207,7 +287,8 @@ function MeineTagesliste({
     return (
       <ErrorState
         title="Die Tagesliste konnte nicht geladen werden."
-        description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+        description={NACH_LADEFEHLER}
+        onErneut={() => refetch()}
       />
     );
   }
@@ -215,10 +296,18 @@ function MeineTagesliste({
 
   const sortiert = [...termine].sort(nachUhrzeit);
   const offen = sortiert.filter((termin) => istOffen(termin, darfDokumentieren));
-  const erledigt = sortiert.filter((termin) => !istOffen(termin, darfDokumentieren));
+  const ausserdem = anstehendeFehlzeiten(sortiert, Date.now());
+  const erledigt = sortiert.filter(
+    (termin) => !istOffen(termin, darfDokumentieren) && !ausserdem.includes(termin),
+  );
   const wege = wegeDesTages(sortiert);
   const liege = liegeHeute(sortiert);
   const weitere = offen.filter((termin) => termin.id !== wege.erster?.id);
+  // Navigiert wird nur zu Besuchen, die noch ausstehen (UEB-04): Nach dem
+  // Besuch mit offener Doku führte „Ganzer Tag" sonst zurück zur Adresse vom
+  // Vormittag.
+  const nochAnzufahren = offen.filter((termin) => termin.status === 'confirmed');
+  const gabBesuche = sortiert.some((termin) => termin.kind === 'therapy');
 
   /**
    * Die Handlungen einer Karte, ohne die Navigation.
@@ -226,10 +315,11 @@ function MeineTagesliste({
    * Schreiben, ohne abzuschliessen (IDEA-PRX-040): Der Abschluss schreibt die
    * Dokumentation als Version 1 fest; wer waehrend des Besuchs mitschreibt
    * oder den Entwurf spaeter weiterfuehrt, braucht den Weg ohne diese Folge.
-   * Kurz beschriftet, weil die Karte mehrere Ziele nebeneinander traegt - der
-   * zugaengliche Name sagt, was gemeint ist. Auf der Karte des ersten Wegs
-   * ist die Navigation der Hauptknopf; dort bleibt der Abschluss sekundaer
-   * (ein Hauptknopf je Ansicht, UX-EPIC-002).
+   * Kurz beschriftet, weil die Karte mehrere Ziele nebeneinander traegt; der
+   * zugaengliche Name beginnt mit dem sichtbaren Wort, damit auch die
+   * Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3). Auf der Karte des
+   * ersten Wegs ist die Navigation der Hauptknopf; dort bleibt der Abschluss
+   * sekundaer (ein Hauptknopf je Ansicht, UX-EPIC-002).
    */
   function kartenAktionen(termin: DayPlanEntry, abschlussAlsHauptknopf: boolean) {
     const behandlung = termin.kind === 'therapy' && termin.patient_id !== null;
@@ -249,10 +339,9 @@ function MeineTagesliste({
         {darfDokumentieren && behandlung ? (
           <Link
             to={mitRueckweg(`/termine/${termin.id}/dokumentation`, '/')}
-            aria-label="Dokumentation schreiben"
             className={kartenAktionKlassen()}
           >
-            Doku
+            Doku <span className="sr-only">schreiben</span>
           </Link>
         ) : null}
         {/* Die eine Handlung, um die es am Ende jedes Besuchs geht - von der
@@ -270,30 +359,52 @@ function MeineTagesliste({
   }
 
   return (
-    <>
+    <div className="mt-8 lg:max-w-3xl">
       {/* „Stand von …" erscheint nur, wenn die Liste tatsächlich nicht mehr
           frisch ist (UX-011). Dauerhaft angezeigt wäre es Rauschen - wie ein
-          dauerhaftes „verbunden" (ANN-015). */}
+          dauerhaftes „verbunden" (ANN-015). Aktualisiert wird über die
+          Abfrage, nicht über ein Neuladen der Seite, das den Stand verwürfe
+          (ANN-021, UEB-05). */}
       {isError ? (
-        <Statusmeldung ton="warnung" className="mt-4">
-          Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
-          {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr – er kann veraltet
-          sein. Geschrieben wird davon nichts.
-        </Statusmeldung>
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+          <Statusmeldung ton="warnung" className="max-w-prose">
+            Die Tagesliste ließ sich gerade nicht aktualisieren. Angezeigt wird der Stand von{' '}
+            {formatLocalTime(new Date(dataUpdatedAt).toISOString(), zeitzone)} Uhr – er kann
+            veraltet sein.
+          </Statusmeldung>
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            disabled={isFetching}
+            onClick={() => {
+              void refetch();
+            }}
+          >
+            {isFetching ? 'Wird aktualisiert …' : 'Jetzt aktualisieren'}
+          </Button>
+        </div>
       ) : null}
 
       <Section
         titel={offen.length > 0 ? `Offen heute (${offen.length})` : 'Offen heute'}
         hinweis="Ihre Besuche mit Anschrift, Rufnummer und Zugangshinweis."
-        aktion={<NavigationFuerDenTag termine={offen} />}
+        aktion={<NavigationFuerDenTag termine={nochAnzufahren} />}
       >
         {offen.length === 0 ? (
+          // Der Titel sagt, was der Fall ist (UEB-11): „nichts mehr offen"
+          // nur, wenn es heute Besuche gab.
           <EmptyState
-            title="Heute ist nichts mehr offen"
-            description={
-              erledigt.length > 0
-                ? 'Alle Besuche des Tages sind erledigt.'
-                : 'Für heute sind Ihnen keine Termine zugeordnet.'
+            title={
+              gabBesuche
+                ? 'Heute ist nichts mehr offen'
+                : 'Heute sind Ihnen keine Besuche zugeordnet'
+            }
+            description={gabBesuche ? 'Alle Besuche des Tages sind erledigt.' : undefined}
+            aktion={
+              ausserdem.length > 0 ? (
+                <HeuteAusserdem fehlzeiten={ausserdem} className="" />
+              ) : undefined
             }
           />
         ) : wege.erster ? (
@@ -305,6 +416,7 @@ function MeineTagesliste({
               <span className="font-semibold">Liege heute: </span>
               {liegeText(liege)}
             </p>
+            <HeuteAusserdem fehlzeiten={ausserdem} />
 
             <h3 className="text-ink-muted mb-2 text-sm font-medium">
               {wege.istErsterDesTages ? 'Erster Weg' : 'Nächster Weg'}
@@ -321,11 +433,24 @@ function MeineTagesliste({
               }
             />
 
+            {/* ADR-019 Punkt 23: Die Übergabe ist nicht automatisch
+                risikofrei. Wer sie auslöst, soll wissen, was dabei das Gerät
+                verlässt - deshalb direkt unter dem Knopf, der sie auslöst,
+                und in Lesegröße (UEB-11, UEB-17). */}
+            {nochAnzufahren.some((termin) => termin.appointment_type === 'home_visit') ? (
+              <p className="text-ink-muted mt-3 max-w-prose text-sm">
+                „Navigation starten“ öffnet Google Maps im Fahrradmodus. Übergeben wird nur das Ziel
+                – die Kartenposition oder, wo keine vorliegt, die Anschrift ohne Namen –, erst beim
+                Tippen.
+              </p>
+            ) : null}
+
             {wege.danach ? <Vorschau termin={wege.danach} /> : null}
 
             {weitere.length > 0 ? (
-              <details className="mt-4">
-                <summary className="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer items-center text-sm">
+              <details className="group mt-4">
+                <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+                  <Aufklappzeichen />
                   Weitere offene heute ({weitere.length})
                 </summary>
                 <ul className="mt-3 flex flex-col gap-3">
@@ -337,7 +462,9 @@ function MeineTagesliste({
                           <>
                             {/* Ein Hauptknopf je Ansicht: den trägt der erste Weg. */}
                             {kartenAktionen(termin, false)}
-                            <NavigationZumTermin termin={termin} />
+                            {termin.status === 'confirmed' ? (
+                              <NavigationZumTermin termin={termin} />
+                            ) : null}
                           </>
                         }
                       />
@@ -348,40 +475,29 @@ function MeineTagesliste({
             ) : null}
           </>
         ) : (
-          <ul className="flex flex-col gap-3">
-            {offen.map((termin) => (
-              <li key={termin.id}>
-                <Tageskarte
-                  termin={termin}
-                  aktionen={
-                    <>
-                      {kartenAktionen(termin, true)}
-                      <NavigationZumTermin termin={termin} />
-                    </>
-                  }
-                />
-              </li>
-            ))}
-          </ul>
+          <>
+            <HeuteAusserdem fehlzeiten={ausserdem} />
+            {/* Kein Besuch steht mehr aus, offen ist nur noch Dokumentation.
+                Den Hauptknopf trägt dann die erste Karte allein (UEB-04);
+                eine Navigation gibt es an keiner mehr. */}
+            <ul className="flex flex-col gap-3">
+              {offen.map((termin, index) => (
+                <li key={termin.id}>
+                  <Tageskarte termin={termin} aktionen={kartenAktionen(termin, index === 0)} />
+                </li>
+              ))}
+            </ul>
+          </>
         )}
       </Section>
-
-      {/* ADR-019 Punkt 23: Die Übergabe ist nicht automatisch risikofrei. Wer
-          sie auslöst, soll wissen, was dabei das Gerät verlässt. */}
-      {offen.some((termin) => termin.appointment_type === 'home_visit') ? (
-        <p className="text-ink-subtle mt-3 max-w-prose text-xs leading-relaxed">
-          „Navigation starten" öffnet Google Maps im Fahrradmodus und übergibt dabei nur die
-          Kartenposition, ohne sie die Anschrift ohne Namen – keine Uhrzeit, keinen Zugangshinweis,
-          keine Kennung. Die Übergabe passiert erst beim Tippen.
-        </p>
-      ) : null}
 
       {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. */}
       <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
 
       {erledigt.length > 0 ? (
-        <details className="border-line mt-6 border-t pt-3">
-          <summary className="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer items-center text-sm">
+        <details className="group border-line mt-6 border-t pt-3">
+          <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+            <Aufklappzeichen />
             Erledigt heute ({erledigt.length})
           </summary>
           <ul className="mt-3 flex flex-col gap-3">
@@ -393,7 +509,7 @@ function MeineTagesliste({
           </ul>
         </details>
       ) : null}
-    </>
+    </div>
   );
 }
 
@@ -419,6 +535,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     data: termine,
     isPending,
     isError,
+    refetch,
   } = useQuery({
     queryKey: ['appointments', heute, morgen, null, null, 'active'],
     queryFn: () =>
@@ -440,17 +557,20 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const teamplanZugeklappt = eigeneTagesliste && canWriteTreatmentNote(user.roles);
 
   if (!praxisrolle) {
+    // UEB-08: Der Satz sagt, wozu der Zugang heute dient, und nennt den Weg
+    // für alles andere - ohne ein Portal zu versprechen, das erst mit DSN-001
+    // entworfen wird. Der Gruß bleibt beim „Sie", ohne Vornamen.
     return (
       <>
-        <PageHeader
-          title={`${greeting()}, ${firstName(user.profile.display_name)}`}
-          description={formatDatum(heute)}
-        />
+        <PageHeader title={greeting()} description={formatDatum(heute)} />
         <Section titel="Ihr Zugang">
-          <p className="text-ink-muted max-w-prose text-[0.9375rem]">
-            Sie sehen ausschließlich Ihre eigenen Daten. Weitere Bereiche des Patientenportals
-            werden schrittweise ergänzt.
+          <p className="text-ink-muted text-liste max-w-prose">
+            Über diesen Zugang verwalten Sie derzeit Ihr Konto. Termine vereinbaren oder absagen Sie
+            bitte direkt bei der Praxis.
           </p>
+          <ButtonLink to="/mein-konto" variant="secondary" className="mt-4">
+            Mein Konto
+          </ButtonLink>
         </Section>
       </>
     );
@@ -474,49 +594,57 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       {darfTermine ? (
-        <>
-          {isPending ? <LoadingState label="Termine werden geladen …" /> : null}
-          {isError ? (
-            <ErrorState
-              title="Die Termine konnten nicht geladen werden."
-              description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
-            />
-          ) : null}
-
-          {/* UX-EPIC-003: Wer eine eigene Tagesliste hat, braucht den Plan des
-              Teams selten - er liegt dann zugeklappt unter dem eigenen Tag. */}
-          <section className="border-line mt-8 border-t pt-3">
-            <details open={!teamplanZugeklappt}>
-              <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
-                <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-                  Tagesplan des Teams
-                </h2>
-              </summary>
-              <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-                <p className="text-ink-muted max-w-prose text-sm">
-                  Alle Besuche des heutigen Tages.
-                </p>
-                <Link
-                  to={`/kalender?ansicht=tag&datum=${heute}`}
-                  className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center text-[0.9375rem] font-medium"
-                >
-                  Zum Kalender →
-                </Link>
-              </div>
-              <div className="mt-3">
-                {termine && alleHeute.length === 0 ? (
-                  <EmptyState title="Heute sind keine Termine geplant" />
-                ) : (
-                  <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
-                    {alleHeute.map((termin) => (
-                      <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </details>
-          </section>
-        </>
+        // UX-EPIC-003: Wer eine eigene Tagesliste hat, braucht den Plan des
+        // Teams selten - er liegt dann zugeklappt unter dem eigenen Tag.
+        // Laden und Fehler stehen im Aufklapper, an der Stelle der Liste
+        // (UEB-05, ZST-18): Davor gelesen, hielt man den Fehler für einen der
+        // eigenen Termine. Ab 1024 px dieselbe Lesebreite wie der eigene Tag
+        // darüber (UEB-16) - die Übersicht ist eine Spalte.
+        <section className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+          <details open={!teamplanZugeklappt} className="group">
+            {/* Die Überschrift bleibt eine Überschrift - im Label-Stil wie
+                jede Abschnittsüberschrift (UEB-17); dass sich darunter etwas
+                aufklappen lässt, sagt das Zeichen davor (UIK-07). */}
+            <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink`}>
+              <Aufklappzeichen />
+              <h2 className="tracking-label text-xs font-semibold uppercase">
+                Tagesplan des Teams
+              </h2>
+            </summary>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-ink-muted max-w-prose text-sm">
+                Alle Termine und Fehlzeiten des Teams heute.
+              </p>
+              <Textlink
+                alleinstehend
+                to={`/kalender?ansicht=tag&datum=${heute}`}
+                className="text-liste gap-1 font-medium"
+              >
+                Zum Kalender
+                <Pfeil />
+              </Textlink>
+            </div>
+            <div className="mt-3">
+              {isPending ? (
+                <LoadingState label="Tagesplan des Teams wird geladen …" />
+              ) : isError ? (
+                <ErrorState
+                  title="Der Tagesplan des Teams konnte nicht geladen werden."
+                  description={NACH_LADEFEHLER}
+                  onErneut={() => refetch()}
+                />
+              ) : alleHeute.length === 0 ? (
+                <EmptyState title="Heute sind keine Termine geplant" />
+              ) : (
+                <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
+                  {alleHeute.map((termin) => (
+                    <Terminzeile key={termin.id} termin={termin} zeitzone={zeitzone} />
+                  ))}
+                </ul>
+              )}
+            </div>
+          </details>
+        </section>
       ) : null}
 
       <UebersichtVorschau user={user} />
@@ -537,6 +665,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
  * Seite Attrappe. Sie bleiben erreichbar, aber sie drängen sich nicht mehr
  * auf. Die Kennzeichnung „Vorschau" am Aufklapper ist am 2026-09-22 gefallen:
  * Der zugeklappte Block sagt schon durch seine Überschrift, was drin ist.
+ *
+ * Die Links der Karten sind Textlinks mit 44 px Tippziel (UEB-18, RSP-14,
+ * UIK-15). Wo eine Karte Urlaub und Erstattungen zusammen zählt, führt je ein
+ * Link zu beiden - vorher landete eine offene Erstattung beim Urlaub.
  */
 function UebersichtVorschau({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
@@ -561,16 +693,18 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
       zustand.erstattungen.filter((antrag) => antrag.stand === 'eingereicht').length
     : 0;
   const ungelesen = zustand.nachrichten.filter((nachricht) => !nachricht.gelesen).length;
+  const kartenlink = 'gap-1 text-sm font-medium';
 
   return (
-    <section className="border-line mt-10 border-t pt-6">
-      <details>
+    <section className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+      <details className="group">
         {/* Die Überschrift bleibt eine Überschrift: `summary` darf nach dem
             HTML-Inhaltsmodell ein Überschriftenelement enthalten, und nur so
             steht der Block weiter in der Gliederung, die Vorlesesoftware
-            ansteuert. */}
-        <summary className="flex min-h-11 cursor-pointer flex-wrap items-center gap-2">
-          <h2 className="text-ink text-[1.0625rem] font-semibold tracking-[-0.01em]">
+            ansteuert. Gestaltet wie der Tagesplan des Teams (UEB-17). */}
+        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink`}>
+          <Aufklappzeichen />
+          <h2 className="tracking-label text-xs font-semibold uppercase">
             Organisatorisches und Kommunikation
           </h2>
         </summary>
@@ -584,10 +718,10 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
           {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}.
         </p>
 
-        <div className="grid [grid-template-columns:repeat(auto-fill,minmax(min(100%,15rem),1fr))] gap-3">
+        <CardGrid>
           <Card>
             <p className="text-ink-muted text-sm">Mein Rad heute</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {meinRad ? meinRad.name : 'Kein Rad zugeordnet'}
             </p>
             {meinRad ? (
@@ -597,68 +731,70 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
                   : 'Schlüssel im Tresor'}
               </p>
             ) : null}
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Link
-                to="/betrieb/flotte"
-                className="text-accent hover:text-accent-hover text-sm font-medium"
-              >
-                Zur Radflotte →
-              </Link>
-              <Link
-                to="/betrieb/flotte/panne"
-                className="text-danger text-sm font-medium hover:underline"
-              >
+            <div className="mt-2 flex flex-wrap gap-x-4">
+              <Textlink alleinstehend to="/betrieb/flotte" className={kartenlink}>
+                Zur Radflotte
+                <Pfeil />
+              </Textlink>
+              {/* Eine Aktion, keine Störung: Hauptfarbe statt Fehlerfarbe. */}
+              <Textlink alleinstehend to="/betrieb/flotte/panne" className={kartenlink}>
                 Panne melden
-              </Link>
+              </Textlink>
             </div>
           </Card>
 
           <Card>
             <p className="text-ink-muted text-sm">Meine Anträge</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {meineOffenen === 0
                 ? 'Nichts offen'
-                : `${meineOffenen} offen${meineOffenen === 1 ? '' : 'e'}`}
+                : `${meineOffenen} ${meineOffenen === 1 ? 'Antrag' : 'Anträge'} offen`}
             </p>
             <p className="text-ink-muted mt-1 text-sm">Urlaub, Zeitkonto und Erstattungen.</p>
-            <Link
-              to="/betrieb/urlaub"
-              className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-            >
-              Zu meinen Anträgen →
-            </Link>
+            <div className="mt-2 flex flex-wrap gap-x-4">
+              <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
+                Zum Urlaub
+                <Pfeil />
+              </Textlink>
+              <Textlink alleinstehend to="/betrieb/erstattungen" className={kartenlink}>
+                Zu den Erstattungen
+                <Pfeil />
+              </Textlink>
+            </div>
           </Card>
 
           {zuEntscheiden > 0 ? (
             <Card>
               <p className="text-ink-muted text-sm">Zu entscheiden</p>
-              <p className="text-ink mt-1 text-[0.9375rem] font-medium">
-                {zuEntscheiden} Vorgang{zuEntscheiden === 1 ? '' : 'e'}
+              <p className="text-ink text-liste mt-1 font-medium">
+                {zuEntscheiden} {zuEntscheiden === 1 ? 'Vorgang' : 'Vorgänge'}
               </p>
               <p className="text-ink-muted mt-1 text-sm">Urlaubsanträge und Erstattungen.</p>
-              <Link
-                to="/betrieb/urlaub"
-                className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-              >
-                Freigaben öffnen →
-              </Link>
+              <div className="mt-2 flex flex-wrap gap-x-4">
+                <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
+                  Urlaubsanträge
+                  <Pfeil />
+                </Textlink>
+                <Textlink alleinstehend to="/betrieb/erstattungen" className={kartenlink}>
+                  Erstattungen
+                  <Pfeil />
+                </Textlink>
+              </div>
             </Card>
           ) : null}
 
           <Card>
             <p className="text-ink-muted text-sm">Kommunikation</p>
-            <p className="text-ink mt-1 text-[0.9375rem] font-medium">
+            <p className="text-ink text-liste mt-1 font-medium">
               {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
             </p>
             <p className="text-ink-muted mt-1 text-sm">Kanäle und Direktnachrichten.</p>
-            <Link
-              to="/team"
-              className="text-accent hover:text-accent-hover mt-3 inline-block text-sm font-medium"
-            >
-              Zur Kommunikation →
-            </Link>
+            <Textlink alleinstehend to="/team" className={`mt-2 ${kartenlink}`}>
+              Zur Kommunikation
+              <Pfeil />
+            </Textlink>
           </Card>
-        </div>
+        </CardGrid>
       </details>
     </section>
   );

@@ -71,6 +71,12 @@ export function useTagesstopps(tag: string, person: string, stand = '') {
     stopps,
     laedt: person !== '' && (plan.isPending || route.isPending),
     fehler: plan.isError || route.isError,
+    /**
+     * Beide Abfragen noch einmal, statt die Seite neu zu laden (ZST-04,
+     * ANN-021). Das Versprechen endet, wenn beide zurück sind - so zeigt der
+     * Fehlerkasten, dass der Versuch läuft.
+     */
+    erneut: () => Promise.all([plan.refetch(), route.refetch()]),
   };
 }
 

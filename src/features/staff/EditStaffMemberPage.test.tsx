@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as StaffApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -52,7 +52,8 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { EditStaffMemberPage } = await import('./EditStaffMemberPage');
 
-describe('EditStaffMemberPage', () => {
+// Die Tests tippen ganze Formulare; unter Last reichen 5 s dafuer nicht (Muster wie BausteinFeld).
+describe('EditStaffMemberPage', { timeout: 20_000 }, () => {
   beforeEach(() => {
     fetchStaffMember.mockReset();
     updateStaffMember.mockReset();
@@ -103,13 +104,82 @@ describe('EditStaffMemberPage', () => {
     fetchStaffMember.mockResolvedValue(null);
     renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(screen.getByText(/Diese Person gibt es nicht/)).toBeInTheDocument();
+    // Auch ohne Datensatz gibt es Titel und Weg zurueck (ORG-24).
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Stammdaten bearbeiten' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zu den Stammdaten' })).toHaveAttribute(
+      'href',
+      `/praxis/team/${STAFF_ID}`,
+    );
+  });
+
+  it('bietet bei einem Ladefehler einen neuen Versuch an', async () => {
+    const user = userEvent.setup();
+    fetchStaffMember.mockRejectedValueOnce(new Error('kaputt'));
+    renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
+
+    expect(
+      await screen.findByText('Die Mitarbeiterdaten konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByLabelText('Vorname *')).toHaveValue('Anna');
+  });
+
+  it('nennt die Person im Rueckweg und macht Abbrechen zum Link (ORG-24, WRT-02)', async () => {
+    renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
+    await screen.findByLabelText('Vorname *');
+
+    expect(screen.getByRole('link', { name: '← Zurück zu Anna Beispiel' })).toHaveAttribute(
+      'href',
+      `/praxis/team/${STAFF_ID}`,
+    );
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/praxis/team/${STAFF_ID}`,
+    );
+  });
+
+  it('fragt vor dem Weggehen nur, wenn etwas geaendert ist (ORG-03)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <EditStaffMemberPage user={testUser(['owner'])} />,
+      `/praxis/team/${STAFF_ID}/bearbeiten`,
+    );
+
+    const telefon = await screen.findByLabelText('Diensttelefon');
+    await user.clear(telefon);
+    await user.type(telefon, '+49 1');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Eingaben' });
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Diensttelefon')).toHaveValue('+49 1');
+    expect(updateStaffMember).not.toHaveBeenCalled();
+  });
+
+  it('meldet einen Speicherfehler im Fenster und laesst die Eingaben stehen (ORG-15)', async () => {
+    const user = userEvent.setup();
+    updateStaffMember.mockRejectedValue(new Error('Details aus der Datenbank'));
+    renderWithProviders(<EditStaffMemberPage user={testUser(['owner'])} />);
+
+    await screen.findByLabelText('Vorname *');
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Die Stammdaten konnten nicht gespeichert werden.',
+    });
+    expect(fenster).toHaveTextContent('Bitte die Verbindung prüfen und erneut speichern.');
+    expect(screen.queryByText(/Details aus der Datenbank/)).not.toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
   });
 });
 
 // ---------------------------------------------------------------------------
 // E10: das Office pflegt Stammdaten, sieht die Privatangaben aber nicht
 // ---------------------------------------------------------------------------
-describe('EditStaffMemberPage fuer office (E10, ANN-024)', () => {
+describe('EditStaffMemberPage fuer office (E10, ANN-024)', { timeout: 20_000 }, () => {
   beforeEach(() => {
     fetchStaffMember.mockReset();
     updateStaffMember.mockReset();
@@ -139,7 +209,7 @@ describe('EditStaffMemberPage fuer office (E10, ANN-024)', () => {
     expect(screen.queryByLabelText('Private E-Mail')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Geburtsdatum')).not.toBeInTheDocument();
     expect(
-      screen.getByText(/Privatangaben .* pflegt\s*ausschließlich die Praxisinhaberin/s),
+      screen.getByText(/Privatangaben .* pflegt\s*ausschließlich die Praxisinhaber:in/s),
     ).toBeInTheDocument();
   });
 

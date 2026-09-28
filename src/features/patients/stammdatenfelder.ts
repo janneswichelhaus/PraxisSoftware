@@ -17,23 +17,27 @@ export function stammdatenFeldId(feld: StammdatenFeld): string {
  * abarbeitet, geht durch das Formular und nicht kreuz und quer. Die
  * Beschriftungen sind dieselben wie an den Feldern, ohne den Stern - er
  * bedeutet „erforderlich" und ist in einer Fehlerliste kein Teil des Namens.
+ *
+ * „Zugangshinweis" heißt überall gleich - im Formular, in dieser Liste, in den
+ * Stammdaten und im Kopf der Akte (PAT-07, WRT-17). Vorher waren es vier Namen
+ * für ein Feld, und die Fehlerliste nannte eines, das es im Formular nicht gab.
  */
 export const STAMMDATEN_BESCHRIFTUNG: Record<StammdatenFeld, string> = {
   given_name: 'Vorname',
   family_name: 'Nachname',
   date_of_birth: 'Geburtsdatum',
-  email: 'E-Mail',
-  phone: 'Telefon (privat)',
   phone_mobile: 'Mobil',
+  phone: 'Telefon (privat)',
   phone_work: 'Telefon (geschäftlich)',
   fax: 'Telefax',
+  email: 'E-Mail',
   institution: 'Einrichtung',
   street: 'Straße',
   house_number: 'Hausnummer',
   postal_code: 'PLZ',
   city: 'Ort',
   primary_therapist_staff_member_id: 'Feste Therapeut:in',
-  home_visit_access_note: 'Zugang zur Wohnung',
+  home_visit_access_note: 'Zugangshinweis',
   special_note: 'Besonderheit',
   remark: 'Bemerkung',
 };

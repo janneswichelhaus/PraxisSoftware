@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -23,7 +24,8 @@ import {
   type OffenerPosten,
   type Rechnung,
 } from './api';
-import { Zahlungsformular } from './Zahlungsformular';
+import { monatsname, zahlungsTon } from './anzeige';
+import { Zahlungsformular, type Buchung } from './Zahlungsformular';
 
 /**
  * Rechnungen (ABR-003).
@@ -48,9 +50,14 @@ import { Zahlungsformular } from './Zahlungsformular';
  * die es geht, steht dabei im Blick.
  */
 
+/**
+ * Der Zustand einer Rechnung als Ton. „Ausgestellt" ist der Normalfall und
+ * trägt kein Warnzeichen (ABR-16): Das „!" gehört an Handlungsbedarf -
+ * Teilzahlung, Überzahlung -, und „Überfällig" trägt sein „×".
+ */
 const standTon: Record<Rechnung['status'], Ton> = {
   draft: 'neutral',
-  issued: 'warnung',
+  issued: 'neutral',
 };
 
 const standLabels: Record<Rechnung['status'], string> = {
@@ -58,43 +65,17 @@ const standLabels: Record<Rechnung['status'], string> = {
   issued: 'Ausgestellt',
 };
 
-/**
- * Der Zahlungsstand als Farbe.
- *
- * „Bezahlt" ist der ruhige Fall und bekommt deshalb keinen auffälligen Ton;
- * die Überzahlung schon — sie verlangt eine Entscheidung (zurückzahlen oder
- * stehen lassen) und darf nicht wie ein erledigter Vorgang aussehen.
- */
-const zahlungsTon: Record<Rechnung['payment_state'], Ton> = {
-  unpaid: 'neutral',
-  partially_paid: 'warnung',
-  paid: 'positiv',
-  overpaid: 'warnung',
-};
-
-/** „2026-08-01" als „August 2026". */
-function monatsname(iso: string): string {
-  const [jahr, monat] = iso.split('-');
-  const namen = [
-    'Januar',
-    'Februar',
-    'März',
-    'April',
-    'Mai',
-    'Juni',
-    'Juli',
-    'August',
-    'September',
-    'Oktober',
-    'November',
-    'Dezember',
-  ];
-  const index = Number(monat) - 1;
-  return namen[index] === undefined ? iso : `${namen[index]} ${jahr}`;
+/** Die Meldung nach einer Buchung am Posten - dort, wo das Formular stand. */
+interface Buchungsmeldung {
+  text: string;
+  /** Zählt mit, damit auch eine gleichlautende zweite Meldung den Fokus holt. */
+  nummer: number;
 }
 
 export function InvoicesPage({ user }: { user: CurrentUser }) {
   const darfAusstellen = canManageInvoicing(user.roles);
+  const [buchung, setBuchung] = useState<Buchungsmeldung | null>(null);
+  const meldung = useRef<HTMLDivElement>(null);
 
   const posten = useQuery({
     queryKey: ['offene-posten'],
@@ -113,6 +94,13 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
     queryFn: fetchRechnungen,
     retry: false,
   });
+
+  // Nach der Buchung schließt das Formular, und ein vollständig bezahlter
+  // Posten verschwindet ganz. Ohne Meldung am Ort fiele der Fokus an den
+  // Seitenanfang, und ob die Buchung ankam, wäre zu erschließen (ABR-10).
+  useEffect(() => {
+    if (buchung) meldung.current?.focus();
+  }, [buchung]);
 
   return (
     <>
@@ -135,11 +123,18 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
             : 'Ausgestellte Rechnungen, auf die noch Geld fehlt.'
         }
       >
+        {buchung ? (
+          <div ref={meldung} tabIndex={-1} className="mb-3 outline-none">
+            <Statusmeldung ton="erfolg">{buchung.text}</Statusmeldung>
+          </div>
+        ) : null}
+
         {posten.isPending ? <LoadingState label="Offene Posten werden geladen …" /> : null}
         {posten.isError ? (
           <ErrorState
             title="Die offenen Posten konnten nicht geladen werden."
-            description="Bitte später erneut versuchen."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => posten.refetch()}
           />
         ) : null}
         {posten.data && posten.data.length === 0 ? (
@@ -153,6 +148,9 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                 posten={eintrag}
                 darfBuchen={darfAusstellen}
                 zeitzone={user.organizationTimeZone}
+                onGebucht={(text) =>
+                  setBuchung((alt) => ({ text, nummer: (alt?.nummer ?? 0) + 1 }))
+                }
               />
             </li>
           ))}
@@ -167,7 +165,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         {kandidaten.isError ? (
           <ErrorState
             title="Die abzurechnenden Leistungen konnten nicht geladen werden."
-            description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => kandidaten.refetch()}
           />
         ) : null}
         {kandidaten.data && kandidaten.data.length === 0 ? (
@@ -191,7 +190,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         {rechnungen.isError ? (
           <ErrorState
             title="Die Rechnungen konnten nicht geladen werden."
-            description="Bitte später erneut versuchen."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => rechnungen.refetch()}
           />
         ) : null}
         {rechnungen.data && rechnungen.data.length === 0 ? (
@@ -202,7 +202,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           {(rechnungen.data ?? []).map((rechnung) => (
             <li key={rechnung.id} className="py-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-ink text-[0.9375rem] font-medium">
+                <span className="text-ink text-liste font-medium">
                   {rechnung.invoice_number ?? 'Ohne Nummer'}
                 </span>
                 <Badge ton={standTon[rechnung.status]}>{standLabels[rechnung.status]}</Badge>
@@ -214,7 +214,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                   {monatsname(rechnung.period_month)} · {bereichLabels[rechnung.service_area]} ·{' '}
                   {rechnung.patient_name}
                 </span>
-                <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+                <span className="text-ink text-liste ml-auto font-medium tabular-nums">
                   {formatEuro(rechnung.total_cents, rechnung.currency)}
                 </span>
               </div>
@@ -225,7 +225,11 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                   ? ''
                   : ` (${empfaengerartLabels[rechnung.recipient_kind] ?? 'Kostenträger'})`}
                 {rechnung.issued_on ? ` · ausgestellt am ${formatDate(rechnung.issued_on)}` : null}
-                {rechnung.due_on ? ` · zahlbar bis ${formatDate(rechnung.due_on)}` : null}
+                {/* Eine stornierte Rechnung ist keine Forderung mehr; eine
+                    Zahlungsfrist an ihr wäre eine falsche Aussage (ABR-06). */}
+                {rechnung.due_on && !rechnung.cancelled
+                  ? ` · zahlbar bis ${formatDate(rechnung.due_on)}`
+                  : null}
               </p>
 
               {rechnung.status === 'issued' && !rechnung.cancelled ? (
@@ -266,25 +270,41 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
  * ist die Buchung drei Taps entfernt — aufklappen, Betrag stehen lassen oder
  * ändern, buchen — und die Rechnung, um die es geht, bleibt dabei im Blick
  * (`OPTIMIERUNG.md`, „Zahlung buchen: ≤ 3 Taps, Teilzahlung ohne Sonderweg").
+ *
+ * Eine Karte wie jede andere in einer Liste (ABR-33): weiß auf dem Seitengrund
+ * statt eines durchsichtigen Eigenbaus. Ihre zwei Aktionen stehen kompakt
+ * nebeneinander.
  */
 function PostenKarte({
   posten,
   darfBuchen,
   zeitzone,
+  onGebucht,
 }: {
   posten: OffenerPosten;
   darfBuchen: boolean;
   zeitzone: string | null;
+  onGebucht: (meldung: string) => void;
 }) {
   const [offen, setOffen] = useState(false);
 
+  function gebucht(buchung: Buchung) {
+    setOffen(false);
+    const betrag = formatEuro(buchung.betragCent, posten.currency);
+    onGebucht(
+      buchung.richtung === 'refund'
+        ? `Rückzahlung über ${betrag} zu ${posten.invoice_number} gebucht.`
+        : `${betrag} zu ${posten.invoice_number} gebucht.`,
+    );
+  }
+
   return (
-    <div className="border-line rounded-card border p-3">
+    <Card>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{posten.invoice_number}</span>
+        <span className="text-ink text-liste font-medium">{posten.invoice_number}</span>
         {posten.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
         <span className="text-ink-muted text-sm">{posten.recipient_name}</span>
-        <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
+        <span className="text-ink text-liste ml-auto font-medium tabular-nums">
           {formatEuro(posten.outstanding_cents, posten.currency)}
         </span>
       </div>
@@ -299,12 +319,21 @@ function PostenKarte({
           : ''}
       </p>
 
-      <div className="mt-2 flex flex-wrap gap-2">
-        <ButtonLink to={`/abrechnung/rechnungen/${posten.id}`} variant="secondary">
+      <div className="mt-3 flex flex-wrap gap-2">
+        <ButtonLink
+          to={`/abrechnung/rechnungen/${posten.id}`}
+          variant="secondary"
+          groesse="kompakt"
+        >
           Rechnung ansehen
         </ButtonLink>
         {darfBuchen && zeitzone !== null ? (
-          <Button type="button" variant="secondary" onClick={() => setOffen((wert) => !wert)}>
+          <Button
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            onClick={() => setOffen((wert) => !wert)}
+          >
             {offen ? 'Abbrechen' : 'Zahlung buchen'}
           </Button>
         ) : null}
@@ -314,15 +343,23 @@ function PostenKarte({
         <Zahlungsformular
           invoiceId={posten.id}
           offenCent={posten.outstanding_cents}
+          eingegangenCent={posten.paid_cents}
           waehrung={posten.currency}
           zeitzone={zeitzone}
-          onFertig={() => setOffen(false)}
+          onFertig={gebucht}
         />
       ) : null}
-    </div>
+    </Card>
   );
 }
 
+/**
+ * Ein Monat einer Person, der abzurechnen ist.
+ *
+ * „Entwurf anlegen" ist hier eine Kartenaktion und kein Hauptknopf (ABR-24):
+ * Bei zehn offenen Monaten stünden sonst zehn gefüllte Knöpfe untereinander,
+ * und keiner wäre mehr der nächste Schritt.
+ */
 function KandidatenKarte({
   kandidat,
   darfAusstellen,
@@ -344,9 +381,9 @@ function KandidatenKarte({
   });
 
   return (
-    <div className="border-line rounded-card border p-3">
+    <Card>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{kandidat.patient_name}</span>
+        <span className="text-ink text-liste font-medium">{kandidat.patient_name}</span>
         <span className="text-ink-muted text-sm">{monatsname(kandidat.period_month)}</span>
         {/* ABR-009: Eine Rechnung trägt genau einen Bereich; die Zeile sagt,
             welchen sie meint (ADR-009 Punkt 16). */}
@@ -357,7 +394,13 @@ function KandidatenKarte({
         </span>
         {darfAusstellen && !kandidat.has_draft ? (
           <span className="ml-auto">
-            <Button type="button" onClick={() => anlegen.mutate()} disabled={anlegen.isPending}>
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              onClick={() => anlegen.mutate()}
+              disabled={anlegen.isPending}
+            >
               {anlegen.isPending ? 'Wird angelegt …' : 'Entwurf anlegen'}
             </Button>
           </span>
@@ -365,30 +408,33 @@ function KandidatenKarte({
       </div>
 
       {kandidat.has_draft ? (
-        <Statusmeldung className="mt-2">
-          Für diesen Monat und Bereich steht bereits ein Entwurf. Diese Leistungen sind später
-          erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder
-          verworfen ist.
-          {/* BEF-018: Der Hinweis führt jetzt dorthin. Vorher war der Entwurf
-              in der Liste darunter zu suchen — der einzige Ort, an dem die
-              Seite auf etwas verwies, das sie nicht anbot. */}
+        <>
+          <Statusmeldung className="mt-2">
+            Für diesen Monat und Bereich steht bereits ein Entwurf. Diese Leistungen sind später
+            erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder
+            verworfen ist.
+          </Statusmeldung>
+          {/* BEF-018: Der Hinweis führt dorthin - seit UXR-010 als eigene
+              Kartenaktion statt als graue Unterstreichung im Satz (ABR-25). */}
           {kandidat.draft_id ? (
-            <>
-              {' '}
-              <Link className="underline" to={`/abrechnung/rechnungen/${kandidat.draft_id}`}>
+            <div className="mt-3">
+              <ButtonLink
+                to={`/abrechnung/rechnungen/${kandidat.draft_id}`}
+                variant="secondary"
+                groesse="kompakt"
+              >
                 Zum Entwurf
-              </Link>
-              .
-            </>
+              </ButtonLink>
+            </div>
           ) : null}
-        </Statusmeldung>
+        </>
       ) : null}
 
       {anlegen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          {anlegen.error.message}
+          {anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
         </Statusmeldung>
       ) : null}
-    </div>
+    </Card>
   );
 }

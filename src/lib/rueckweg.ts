@@ -1,3 +1,5 @@
+import { BEGRIFFE, BEREICHE } from './begriffe';
+
 /**
  * Der Rückweg: Wo war ich, bevor ich hierhergekommen bin? (UX-012)
  *
@@ -80,6 +82,9 @@ export function mitRueckweg(ziel: string, rueckweg: string | null | undefined): 
   return `${ziel}${trenner}${RUECKWEG_PARAM}=${encodeURIComponent(rueckweg)}`;
 }
 
+/** Das Formular einer Behandlungsgrundlage - neu oder in Bearbeitung (VER-11). */
+const GRUNDLAGENFORMULAR = /^\/patienten\/[^/]+\/verordnungen\/(?:neu|[^/]+\/bearbeiten)$/;
+
 /**
  * Die Beschriftung des Rückwegs, aus dem Pfad abgeleitet.
  *
@@ -90,20 +95,33 @@ export function mitRueckweg(ziel: string, rueckweg: string | null | undefined): 
 export function rueckwegBeschriftung(pfad: string): string {
   const ohneSuche = pfad.split('?')[0] ?? pfad;
 
-  if (ohneSuche === '/') return 'Zurück zur Übersicht';
-  if (ohneSuche.startsWith('/kalender')) return 'Zurück zum Kalender';
-  if (ohneSuche === '/patienten') return 'Zurück zur Patientenliste';
+  // Die Wörter sind die des Menüs und der Seitentitel (NAV-16, ANN-111):
+  // „Patient:innen" statt „Patientenliste", „Behandlungsgrundlagen" statt
+  // „Verordnungen der Akte" - die Adresse behält `verordnungen` (ANN-062).
+  if (ohneSuche === '/') return `Zurück zur ${BEREICHE.heute.label}`;
+  if (ohneSuche.startsWith('/kalender')) return `Zurück zum ${BEREICHE.termine.label}`;
+  if (ohneSuche === '/touren') return 'Zurück zur Tour';
+  if (ohneSuche === '/patienten') return `Zurück zu den ${BEGRIFFE.patientInnen}`;
   if (ohneSuche.startsWith('/patienten/')) {
+    if (GRUNDLAGENFORMULAR.test(ohneSuche)) return 'Zurück zur Grundlage';
     if (ohneSuche.endsWith('/termine')) return 'Zurück zu den Terminen der Akte';
-    if (ohneSuche.endsWith('/verordnungen')) return 'Zurück zu den Verordnungen der Akte';
+    if (ohneSuche.endsWith('/verordnungen')) return 'Zurück zu den Behandlungsgrundlagen';
     if (ohneSuche.endsWith('/verlauf')) return 'Zurück zum Behandlungsverlauf';
     if (ohneSuche.endsWith('/stammdaten')) return 'Zurück zu den Stammdaten';
+    if (ohneSuche.endsWith('/datenschutz')) return 'Zurück zum Datenschutz der Akte';
     if (ohneSuche.endsWith('/terminzettel')) return 'Zurück zum Terminzettel';
     return 'Zurück zur Akte';
   }
   if (ohneSuche === '/termine/neu') return 'Zurück zur Terminanlage';
+  if (ohneSuche === '/termine/dauertermin') return `Zurück zum ${BEGRIFFE.dauertermin}`;
   if (ohneSuche.startsWith('/termine/')) return 'Zurück zum Termin';
   if (ohneSuche.startsWith('/praxis/team')) return 'Zurück zu den Mitarbeitenden';
-  if (ohneSuche.startsWith('/verordner')) return 'Zurück zur Verordnerkartei';
+  if (ohneSuche === '/praxis/planung') return `Zurück zu den ${BEGRIFFE.arbeitszeiten}`;
+  if (ohneSuche.startsWith('/verordner')) return `Zurück zu den ${BEGRIFFE.verordnerInnen}`;
+  if (ohneSuche === '/abrechnung') return 'Zurück zu den Rechnungen';
+  if (ohneSuche === '/abrechnung/zahlungen') return 'Zurück zu den Zahlungen';
+  if (ohneSuche === '/abrechnung/leistungen') return 'Zurück zu den Leistungen';
+  if (ohneSuche === '/team') return `Zurück zur ${BEREICHE.team.label}`;
+  if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';
   return 'Zurück';
 }

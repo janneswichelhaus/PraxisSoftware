@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { DayPlanEntry } from './api';
-import { besucheDesTages, liegeHeute, liegeText, wegeDesTages } from './tagesstart';
+import {
+  anstehendeFehlzeiten,
+  besucheDesTages,
+  liegeHeute,
+  liegeText,
+  wegeDesTages,
+} from './tagesstart';
 
 const HEUTE = '2026-09-26';
 
@@ -129,5 +135,43 @@ describe('Tagesstart (UX-EPIC-003)', () => {
         eintrag({ id: 'a', um: '07:00', status: 'cancelled', treatment_table_required: true }),
       ]),
     ).toEqual({ noetig: false });
+  });
+});
+
+describe('Anstehende Fehlzeiten (UEB-02)', () => {
+  /** Eine Fehlzeit von `von` bis `bis` (UTC), ohne Patient:in. */
+  function fehlzeit(id: string, von: string, bis: string, teil: Partial<DayPlanEntry> = {}) {
+    return eintrag({
+      id,
+      um: von,
+      kind: 'internal',
+      patient_id: null,
+      title: `Fehlzeit ${id}`,
+      ends_at: `${HEUTE}T${bis}:00.000Z`,
+      ...teil,
+    });
+  }
+
+  // 09:00 Uhr in Berlin (Sommerzeit).
+  const JETZT = Date.parse(`${HEUTE}T07:00:00.000Z`);
+
+  it('nennt Fehlzeiten, deren Ende noch nicht erreicht ist, in Uhrzeitfolge', () => {
+    const plan = [
+      fehlzeit('spaeter', '11:00', '12:00'),
+      fehlzeit('laeuft', '06:30', '07:30'),
+      eintrag({ id: 'besuch', um: '08:00' }),
+    ];
+    expect(anstehendeFehlzeiten(plan, JETZT).map((t) => t.id)).toEqual(['laeuft', 'spaeter']);
+  });
+
+  it('laesst vergangene und abgesagte Fehlzeiten weg - und jede Behandlung', () => {
+    const plan = [
+      fehlzeit('vorbei', '05:00', '06:00'),
+      fehlzeit('genau-zu-ende', '06:00', '07:00'),
+      fehlzeit('abgesagt', '10:00', '11:00', { status: 'cancelled' }),
+      eintrag({ id: 'besuch', um: '10:00' }),
+      eintrag({ id: 't', um: '10:00', kind: 'training', patient_id: null }),
+    ];
+    expect(anstehendeFehlzeiten(plan, JETZT)).toEqual([]);
   });
 });

@@ -35,7 +35,16 @@ function dateienSchluessel(patientId: string, grundlageId?: string | null) {
 interface DateienDerAkte {
   dateien: PatientFile[];
   isPending: boolean;
+  /**
+   * Liegt **keine** Liste vor, weil das Laden scheiterte? Scheitert nur ein
+   * späteres Nachladen, bleibt die geladene Liste stehen und das hier falsch
+   * (ZST-03); `veraltet` sagt es dann.
+   */
   isError: boolean;
+  /** Das letzte Nachladen scheiterte; gezeigt wird der zuvor geladene Stand. */
+  veraltet: boolean;
+  /** Ein neuer Versuch aus dem Fehlerkasten (WRT-01, ZST-04). */
+  erneutLaden: () => Promise<unknown>;
   /** Die Rolle darf Dateien überhaupt nicht lesen. */
   verborgen: boolean;
 }
@@ -57,7 +66,9 @@ export function useDateien(
   return {
     dateien: abfrage.data ?? [],
     isPending: abfrage.isPending,
-    isError: abfrage.isError,
+    isError: abfrage.isError && abfrage.data === undefined,
+    veraltet: abfrage.isError && abfrage.data !== undefined,
+    erneutLaden: () => abfrage.refetch(),
     verborgen: !darfLesen,
   };
 }

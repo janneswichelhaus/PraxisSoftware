@@ -1,16 +1,19 @@
-import { useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Card, Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   KeinKatalog,
   KontingentAusgeschoepft,
@@ -23,6 +26,7 @@ import {
   recordLeistungen,
   steuerLabels,
   type OffenerTermin,
+  type Terminleistungen,
   type Vorschlag,
 } from './api';
 
@@ -43,10 +47,14 @@ import {
  * Beides entscheidet der Server — die Seite zeigt nur, was er anbietet.
  */
 
+/** Der Anlass eines Ausfallhonorars - mit denselben Wörtern wie am Termin (TER-10). */
 const anlassLabels: Record<string, string> = {
-  late_cancellation: 'Absage innerhalb der Frist',
+  late_cancellation: 'Absage weniger als 24 Stunden vorher',
   no_show: 'Nicht angetroffen',
 };
+
+/** Die Leistungsakte der Person, dorthin und wieder zurück (ABR-17). */
+const LEISTUNGEN = '/abrechnung/leistungen';
 
 export function ServicesPage() {
   const offene = useQuery({
@@ -62,6 +70,11 @@ export function ServicesPage() {
   });
 
   const gruppen = nachTerminen(leistungen.data ?? []);
+  // Die Liste liefert alle Stände. „Erfasst" verspricht aber, was noch keiner
+  // Rechnung zugeordnet ist; das Abgerechnete steht deshalb eingeklappt
+  // darunter (ABR-27). Getrennt wird nach dem Stand, den der Server liefert.
+  const offen = gruppen.filter((gruppe) => !gruppe.abgerechnet);
+  const abgerechnet = gruppen.filter((gruppe) => gruppe.abgerechnet);
 
   return (
     <>
@@ -72,13 +85,14 @@ export function ServicesPage() {
 
       <Section
         titel="Zu erfassen"
-        hinweis="Dokumentierte Termine und Vorgänge mit Gebührenanlass. Andere stehen hier nicht: Ohne finalisierte Dokumentation wird nicht fakturiert, und einen Weg daran vorbei gibt es nicht."
+        hinweis="Dokumentierte Termine und Termine mit Ausfallhonorar. Andere stehen hier nicht: Ohne finalisierte Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht."
       >
         {offene.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
         {offene.isError ? (
           <ErrorState
             title="Die offenen Termine konnten nicht geladen werden."
-            description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => offene.refetch()}
           />
         ) : null}
         {offene.data && offene.data.length === 0 ? (
@@ -97,65 +111,111 @@ export function ServicesPage() {
         </ul>
       </Section>
 
-      <Section titel="Erfasst" hinweis="Noch keiner Rechnung zugeordnet." rahmen>
+      <Section
+        titel="Erfasst"
+        hinweis="Noch nicht abgerechnet. Zurücknehmen geht, solange weder Rechnung noch Entwurf sie enthält."
+        rahmen
+      >
         {leistungen.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
         {leistungen.isError ? (
           <ErrorState
             title="Die Leistungen konnten nicht geladen werden."
-            description="Bitte später erneut versuchen."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => leistungen.refetch()}
           />
         ) : null}
         {leistungen.data && gruppen.length === 0 ? (
           <EmptyState title="Noch keine Leistung erfasst" />
         ) : null}
+        {leistungen.data && gruppen.length > 0 && offen.length === 0 ? (
+          <EmptyState
+            title="Alles abgerechnet"
+            description="Jede erfasste Leistung steht auf einer ausgestellten Rechnung."
+          />
+        ) : null}
 
-        <ul className="divide-line divide-y">
-          {gruppen.map((gruppe) => (
-            <li key={gruppe.appointmentId} className="py-3">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-ink text-[0.9375rem] font-medium">{gruppe.patientName}</span>
-                <span className="text-ink-muted text-sm tabular-nums">
-                  {formatDate(gruppe.performedOn)}
-                </span>
-                <span className="text-ink ml-auto text-[0.9375rem] font-medium tabular-nums">
-                  {formatEuro(gruppe.summeCent)}
-                </span>
-              </div>
-
-              <ul className="mt-2 flex flex-col gap-1">
-                {gruppe.zeilen.map((zeile) => (
-                  <li key={zeile.id} className="text-ink-muted flex flex-wrap gap-x-2 text-sm">
-                    <span className="tabular-nums">{zeile.quantity} ×</span>
-                    <span>{zeile.label}</span>
-                    <span>({zeile.code})</span>
-                    <span className="tabular-nums">
-                      {formatEuro(zeile.unit_price_cents, zeile.currency)}
-                    </span>
-                    <span>· {steuerLabels[zeile.tax_treatment]}</span>
-                    {zeile.item_kind === 'absence_fee' ? (
-                      <Badge ton="warnung">{artLabels.absence_fee}</Badge>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-
-              {gruppe.abgerechnet ? (
-                <Statusmeldung className="mt-2">
-                  Bereits abgerechnet. Eine Korrektur läuft über Storno und Neuausstellung.
-                </Statusmeldung>
-              ) : (
+        {offen.length > 0 ? (
+          <ul className="divide-line divide-y">
+            {offen.map((gruppe) => (
+              <Leistungsgruppe key={gruppe.appointmentId} gruppe={gruppe}>
                 <div className="mt-2">
                   <Zuruecknehmen appointmentId={gruppe.appointmentId} />
                 </div>
-              )}
-            </li>
-          ))}
-        </ul>
+              </Leistungsgruppe>
+            ))}
+          </ul>
+        ) : null}
+
+        {abgerechnet.length > 0 ? (
+          <Disclosure
+            summary={`Abgerechnet (${abgerechnet.length} ${
+              abgerechnet.length === 1 ? 'Termin' : 'Termine'
+            })`}
+          >
+            <p className="text-ink-muted text-sm">
+              Bereits abgerechnet. Eine Korrektur läuft über Storno und Neuausstellung.
+            </p>
+            <ul className="divide-line divide-y">
+              {abgerechnet.map((gruppe) => (
+                <Leistungsgruppe key={gruppe.appointmentId} gruppe={gruppe} />
+              ))}
+            </ul>
+          </Disclosure>
+        ) : null}
       </Section>
     </>
   );
 }
 
+/** Die Leistungen eines Termins mit ihrer Summe. */
+function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; children?: ReactNode }) {
+  return (
+    <li className="py-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span className="text-ink text-liste font-medium">{gruppe.patientName}</span>
+        <span className="text-ink-muted text-sm tabular-nums">
+          {formatDate(gruppe.performedOn)}
+        </span>
+        <span className="text-ink text-liste ml-auto font-medium tabular-nums">
+          {formatEuro(gruppe.summeCent)}
+        </span>
+      </div>
+
+      <ul className="mt-2 flex flex-col gap-1">
+        {gruppe.zeilen.map((zeile) => (
+          <li key={zeile.id} className="text-ink-muted flex flex-wrap gap-x-2 text-sm">
+            <span className="tabular-nums">{zeile.quantity} ×</span>
+            <span>{zeile.label}</span>
+            <span>({zeile.code})</span>
+            <span className="tabular-nums">
+              {formatEuro(zeile.unit_price_cents, zeile.currency)}
+            </span>
+            <span>· {steuerLabels[zeile.tax_treatment]}</span>
+            {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
+            {zeile.item_kind === 'absence_fee' ? (
+              <Badge ton="neutral">{artLabels.absence_fee}</Badge>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+
+      {children}
+    </li>
+  );
+}
+
+/**
+ * Eine Erfassung zurücknehmen.
+ *
+ * Mit Versprechen (ABR-03, ZST-06): Der Kasten bleibt offen, bis der Server
+ * geantwortet hat, und zeigt einen Fehlschlag. Vorher schloss er sofort, und
+ * eine Abweisung blieb unsichtbar.
+ *
+ * Der häufigste Grund einer Abweisung ist ein Rechnungsentwurf, auf dem die
+ * Leistungen schon stehen - dann ist erst der Entwurf zu verwerfen (ABR-B02).
+ * Die Liste sagt nicht, welche Leistungen auf einem Entwurf stehen; die
+ * Meldung nennt deshalb beide Wege.
+ */
 function Zuruecknehmen({ appointmentId }: { appointmentId: string }) {
   const queryClient = useQueryClient();
   const entfernen = useMutation({
@@ -172,36 +232,52 @@ function Zuruecknehmen({ appointmentId }: { appointmentId: string }) {
       bestaetigen="Zurücknehmen"
       bestaetigenLaeuft="Wird zurückgenommen …"
       laeuft={entfernen.isPending}
-      fehler={entfernen.isError ? entfernen.error.message : undefined}
-      onBestaetigen={() => entfernen.mutate()}
+      fehler={
+        entfernen.isError
+          ? `${entfernen.error.message} Stehen die Leistungen schon auf einem Rechnungsentwurf, bitte erst den Entwurf verwerfen; sonst die Verbindung prüfen und erneut versuchen.`
+          : undefined
+      }
+      onBestaetigen={() => entfernen.mutateAsync()}
+      onAbbrechen={() => entfernen.reset()}
     >
       <p>
         Alle Leistungen dieses Termins werden entfernt, und die genutzte Menge der
         Behandlungsgrundlage geht um denselben Betrag zurück. Der Termin steht danach wieder unter
-        „Zu erfassen".
+        „Zu erfassen“.
       </p>
     </Rueckfrage>
   );
 }
 
+/**
+ * Ein Termin, zu dem Leistungen zu erfassen sind - eine Karte wie jede andere
+ * in einer Liste (ABR-33). „Leistungen erfassen" ist eine Kartenaktion und
+ * kein Hauptknopf: Bei zehn offenen Terminen stünden sonst zehn gefüllte
+ * Knöpfe untereinander (ABR-24).
+ */
 function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
   const [offen, setOffen] = useState(false);
 
   return (
-    <div className="border-line rounded-card border p-3">
+    <Card>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="text-ink text-[0.9375rem] font-medium">{termin.patient_name}</span>
+        <span className="text-ink text-liste font-medium">{termin.patient_name}</span>
         <span className="text-ink-muted text-sm tabular-nums">
           {formatDate(termin.performed_on)}
         </span>
         {termin.fee_basis ? (
-          <Badge ton="warnung">{anlassLabels[termin.fee_basis] ?? 'Gebührenanlass'}</Badge>
+          <Badge ton="neutral">{anlassLabels[termin.fee_basis] ?? 'Ausfallhonorar'}</Badge>
         ) : (
           <Badge ton="neutral">Dokumentiert</Badge>
         )}
         {!offen ? (
           <span className="ml-auto">
-            <Button type="button" onClick={() => setOffen(true)}>
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              onClick={() => setOffen(true)}
+            >
               Leistungen erfassen
             </Button>
           </span>
@@ -209,13 +285,34 @@ function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
       </div>
 
       {offen ? <Erfassungsformular termin={termin} onFertig={() => setOffen(false)} /> : null}
-    </div>
+    </Card>
   );
+}
+
+const MENGENFEHLER = 'Bitte eine Zahl von 1 bis 10 eingeben.';
+
+/**
+ * Die Menge als ganze Zahl von 1 bis 10 - oder `null`.
+ *
+ * Dieselbe Grenze wie in der Datenbank (`check quantity between 1 and 10`);
+ * verbindlich bleibt die dort. Hier steht sie, damit eine falsche Menge am
+ * Feld auffällt statt als „konnten nicht erfasst werden" (ABR-11).
+ */
+function alsMenge(text: string): number | null {
+  const bereinigt = text.trim();
+  if (!/^\d{1,2}$/.test(bereinigt)) return null;
+  const menge = Number(bereinigt);
+  return menge >= 1 && menge <= 10 ? menge : null;
 }
 
 function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFertig: () => void }) {
   const queryClient = useQueryClient();
-  const [mengen, setMengen] = useState<Record<string, number>>({});
+  const kennung = useId();
+  // Die Menge als Text, wie sie im Feld steht (ABR-11). Vorher stand hier eine
+  // Zahl mit `|| 1`: Wer die „1" löschte, bekam sofort wieder „1", und die
+  // nächste Ziffer machte daraus „13".
+  const [mengen, setMengen] = useState<Record<string, string>>({});
+  const [mengenfehler, setMengenfehler] = useState<Record<string, string>>({});
   const [gewaehlt, setGewaehlt] = useState<Record<string, boolean> | null>(null);
 
   const vorschlag = useQuery({
@@ -233,16 +330,8 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
     );
 
   const erfassen = useMutation({
-    mutationFn: () =>
-      recordLeistungen(
-        termin.appointment_id,
-        (vorschlag.data ?? [])
-          .filter((zeile) => auswahl[zeile.catalog_item_id])
-          .map((zeile) => ({
-            catalog_item_id: zeile.catalog_item_id,
-            quantity: mengen[zeile.catalog_item_id] ?? 1,
-          })),
-      ),
+    mutationFn: (positionen: { catalog_item_id: string; quantity: number }[]) =>
+      recordLeistungen(termin.appointment_id, positionen),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['abrechnung-offene-termine'] });
       await queryClient.invalidateQueries({ queryKey: ['abrechnung-leistungen'] });
@@ -254,32 +343,74 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
 
   if (vorschlag.error instanceof KeinKatalog) {
     return (
-      <Statusmeldung ton="warnung" className="mt-3">
-        Für den {formatDate(termin.performed_on)} ist keine Preisliste in Kraft. Ohne sie steht kein
-        Preis fest — erst eine Preisliste mit diesem oder einem früheren Beginn anlegen und in Kraft
-        setzen.
-      </Statusmeldung>
+      <div className="mt-3">
+        <Statusmeldung ton="warnung">
+          Für den {formatDate(termin.performed_on)} ist keine Preisliste in Kraft. Ohne sie steht
+          kein Preis fest. Preislisten legt die Praxisinhaber:in an und setzt sie in Kraft – mit
+          diesem oder einem früheren Beginn.
+        </Statusmeldung>
+        <Textlink to="/abrechnung/katalog" alleinstehend className="text-sm">
+          Zum Leistungskatalog
+        </Textlink>
+      </div>
     );
   }
 
   if (vorschlag.isError) {
     return (
       <Statusmeldung ton="fehler" className="mt-3">
-        {vorschlag.error.message}
+        {vorschlag.error.message} Bitte die Verbindung prüfen und erneut versuchen.
       </Statusmeldung>
     );
   }
 
-  const anzahlGewaehlt = (vorschlag.data ?? []).filter(
-    (zeile) => auswahl[zeile.catalog_item_id],
-  ).length;
+  // Liefert die Preisliste für diesen Anlass nichts, stand hier ein
+  // gesperrtes „0 Leistungen erfassen" ohne Erklärung (ABR-30).
+  if (vorschlag.data.length === 0) {
+    return (
+      <EmptyState
+        title="Die geltende Preisliste bietet für diesen Termin keine Position."
+        aktion={
+          <Button type="button" variant="secondary" groesse="kompakt" onClick={onFertig}>
+            Schließen
+          </Button>
+        }
+      />
+    );
+  }
+
+  const gewaehlteZeilen = vorschlag.data.filter((zeile) => auswahl[zeile.catalog_item_id]);
+  const anzahlGewaehlt = gewaehlteZeilen.length;
+  const feldId = (katalogId: string) => `${kennung}-${katalogId}`;
+
+  function absenden() {
+    if (erfassen.isPending) return;
+    const gefunden: Record<string, string> = {};
+    const positionen: { catalog_item_id: string; quantity: number }[] = [];
+    for (const zeile of gewaehlteZeilen) {
+      // Unberührt heißt: die vorgeschlagene Menge 1 - wie bisher.
+      const menge = alsMenge(mengen[zeile.catalog_item_id] ?? '1');
+      if (menge === null) gefunden[zeile.catalog_item_id] = MENGENFEHLER;
+      else positionen.push({ catalog_item_id: zeile.catalog_item_id, quantity: menge });
+    }
+
+    setMengenfehler(gefunden);
+    const erster = gewaehlteZeilen.find((zeile) => gefunden[zeile.catalog_item_id]);
+    if (erster) {
+      document.getElementById(feldId(erster.catalog_item_id))?.focus();
+      return;
+    }
+    erfassen.mutate(positionen);
+  }
 
   return (
     <div className="mt-3 flex flex-col gap-3">
-      <ul className="flex flex-col gap-2">
+      {/* Die Menge steht neben ihrer Position, nicht 1000 px entfernt am
+          rechten Rand (ABR-23). */}
+      <ul className="flex max-w-xl flex-col gap-2">
         {vorschlag.data.map((zeile) => (
-          <li key={zeile.catalog_item_id} className="flex flex-wrap items-end gap-3">
-            <div className="min-w-0 flex-1">
+          <li key={zeile.catalog_item_id} className="grid grid-cols-[1fr_6rem] items-end gap-3">
+            <div className="min-w-0">
               <Checkbox
                 label={<Positionsbeschriftung zeile={zeile} />}
                 checked={auswahl[zeile.catalog_item_id] ?? false}
@@ -288,22 +419,25 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
                 }
               />
             </div>
-            <div className="w-24">
-              <Field
-                label="Menge"
-                type="number"
-                min={1}
-                max={10}
-                value={String(mengen[zeile.catalog_item_id] ?? 1)}
-                disabled={!auswahl[zeile.catalog_item_id]}
-                onChange={(event) =>
-                  setMengen({
-                    ...mengen,
-                    [zeile.catalog_item_id]: Number(event.target.value) || 1,
-                  })
+            <Field
+              label="Menge"
+              // Jedes Feld heißt „Menge"; für Vorlesesoftware gehört es zu
+              // seiner Position (ABR-11).
+              aria-label={`Menge ${zeile.label} (${zeile.code})`}
+              feldId={feldId(zeile.catalog_item_id)}
+              inputMode="numeric"
+              value={mengen[zeile.catalog_item_id] ?? '1'}
+              disabled={!auswahl[zeile.catalog_item_id]}
+              error={
+                auswahl[zeile.catalog_item_id] ? mengenfehler[zeile.catalog_item_id] : undefined
+              }
+              onChange={(event) => {
+                setMengen({ ...mengen, [zeile.catalog_item_id]: event.target.value });
+                if (mengenfehler[zeile.catalog_item_id]) {
+                  setMengenfehler({ ...mengenfehler, [zeile.catalog_item_id]: '' });
                 }
-              />
-            </div>
+              }}
+            />
           </li>
         ))}
       </ul>
@@ -311,26 +445,42 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
       <div className="flex flex-wrap gap-3">
         <Button
           type="button"
-          onClick={() => erfassen.mutate()}
+          onClick={absenden}
           disabled={anzahlGewaehlt === 0 || erfassen.isPending}
         >
-          {anzahlGewaehlt === 1
-            ? 'Eine Leistung erfassen'
-            : `${anzahlGewaehlt} Leistungen erfassen`}
+          {erfassen.isPending
+            ? 'Wird erfasst …'
+            : anzahlGewaehlt === 1
+              ? 'Eine Leistung erfassen'
+              : `${anzahlGewaehlt} Leistungen erfassen`}
         </Button>
         <Button type="button" variant="secondary" onClick={onFertig}>
           Abbrechen
         </Button>
       </div>
 
+      {/* Wer die Menge an der Grundlage erhöht, darf das Office nicht: Die
+          Meldung nennt die Rollen und führt zur Akte (ABR-17). */}
       {erfassen.error instanceof KontingentAusgeschoepft ? (
-        <Statusmeldung ton="fehler">
-          Die Leistungsmenge der Behandlungsgrundlage ist ausgeschöpft. Die Grenze schützt die
-          Abrechnung: Erst die Menge an der Grundlage erhöhen, dann erneut erfassen.
-        </Statusmeldung>
+        <div>
+          <Statusmeldung ton="fehler">
+            Die Leistungsmenge der Behandlungsgrundlage ist ausgeschöpft. Die Grenze schützt die
+            Abrechnung: Therapeut:in oder Praxisinhaber:in erhöht die Menge an der Grundlage, danach
+            lässt sich erneut erfassen.
+          </Statusmeldung>
+          <Textlink
+            to={mitRueckweg(`/patienten/${termin.patient_id}/verordnungen`, LEISTUNGEN)}
+            alleinstehend
+            className="text-sm"
+          >
+            Zu den Behandlungsgrundlagen
+          </Textlink>
+        </div>
       ) : null}
       {erfassen.isError && !(erfassen.error instanceof KontingentAusgeschoepft) ? (
-        <Statusmeldung ton="fehler">{erfassen.error.message}</Statusmeldung>
+        <Statusmeldung ton="fehler">
+          {erfassen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+        </Statusmeldung>
       ) : null}
     </div>
   );

@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Wortmarke } from '@/components/ui/Wortmarke';
-import { KENNWORT_MINDESTLAENGE, aendereKennwort, kennwortProblem } from '@/features/account/api';
+import { Vollseite } from '@/app/Vollseite';
+import { KENNWORT_MINDESTLAENGE, aendereKennwort } from '@/features/account/api';
+import { kennwortFehler, type Kennwortfehler } from '@/features/account/kennwortFehler';
+import { useFokusNachWechsel } from './fokus';
+import { hinweisAngemeldet } from './fremdeSitzung';
 import { useSession } from './sessionContext';
 import { VerbindungError, loeseLinkEin } from './linkEinloesen';
 
@@ -43,11 +47,17 @@ import { VerbindungError, loeseLinkEin } from './linkEinloesen';
  */
 type Zustand = 'fremde-sitzung' | 'einloesen' | 'ungueltig' | 'verbindung' | 'formular' | 'fertig';
 
+const FELD_KENNWORT = 'kennwort-neu';
+const FELD_WIEDERHOLUNG = 'kennwort-neu-wiederholung';
+
 export function KennwortNeuPage() {
   const [suche] = useSearchParams();
   const navigate = useNavigate();
   const { session } = useSession();
   const tokenHash = suche.get('token_hash');
+  // Das angemeldete Konto - vor dem Einlösen das bisherige, danach das des
+  // Links (AUTH-04, AUTH-05).
+  const konto = session?.user.email;
 
   /**
    * War beim Öffnen schon jemand angemeldet, wird erst gefragt.
@@ -63,8 +73,10 @@ export function KennwortNeuPage() {
   });
   const [kennwort, setKennwort] = useState('');
   const [wiederholung, setWiederholung] = useState('');
-  const [fehler, setFehler] = useState<string | null>(null);
+  const [fehler, setFehler] = useState<Kennwortfehler | null>(null);
+  const [serverfehler, setServerfehler] = useState(false);
   const [pending, setPending] = useState(false);
+  const auskunft = useRef<HTMLDivElement>(null);
 
   /**
    * Der Hash ist einmalig — ein zweiter Versuch verbrennt ihn. In der
@@ -92,6 +104,12 @@ export function KennwortNeuPage() {
       );
   }, [zustand, tokenHash]);
 
+  // Jeder Schritt ersetzt die Knöpfe des vorigen; der Fokus geht dorthin, wo
+  // es weitergeht - ins erste Feld oder auf die neue Auskunft (AUTH-06).
+  useFokusNachWechsel(zustand, () =>
+    zustand === 'formular' ? document.getElementById(FELD_KENNWORT) : auskunft.current,
+  );
+
   function erneutVersuchen() {
     eingeloest.current = false;
     setZustand(tokenHash ? 'einloesen' : 'ungueltig');
@@ -101,57 +119,57 @@ export function KennwortNeuPage() {
     event.preventDefault();
     if (pending) return;
 
-    const problem = kennwortProblem(kennwort, wiederholung);
+    // Der Fehler steht an dem Feld, das ihn verursacht, und der Fokus geht
+    // dorthin (AUTH-10, NAV-13).
+    const problem = kennwortFehler(kennwort, wiederholung);
     if (problem) {
       setFehler(problem);
+      document
+        .getElementById(problem.feld === 'kennwort' ? FELD_KENNWORT : FELD_WIEDERHOLUNG)
+        ?.focus();
       return;
     }
 
     setFehler(null);
+    setServerfehler(false);
     setPending(true);
     try {
       await aendereKennwort(kennwort);
       setZustand('fertig');
     } catch {
-      setFehler('Das Kennwort konnte nicht geändert werden. Bitte erneut versuchen.');
+      setServerfehler(true);
     } finally {
       setPending(false);
     }
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
-      <div className="mb-8">
-        {/* Wie die Anmeldemaske eine Vollseite ausserhalb des
-            Anwendungsrahmens - sie traegt die Marke selbst (MARKE-001). */}
-        <Wortmarke hoehe={40} />
-        <h1 className="text-ink mt-5 text-2xl font-semibold tracking-[-0.01em]">
-          Neues Kennwort setzen
-        </h1>
-      </div>
-
+    <Vollseite
+      titel="Neues Kennwort setzen"
+      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig."
+    >
       {zustand === 'fremde-sitzung' ? (
-        <>
-          <Statusmeldung ton="warnung">
-            Auf diesem Gerät ist bereits jemand angemeldet. Mit diesem Link setzen Sie das Kennwort
-            eines anderen Zugangs; nicht gespeicherte Eingaben der laufenden Sitzung gehen dabei
-            verloren.
-          </Statusmeldung>
+        <div ref={auskunft} tabIndex={-1}>
+          <Statusmeldung ton="warnung">{hinweisAngemeldet(konto)}</Statusmeldung>
           <div className="mt-4 flex flex-col gap-3">
             <Button onClick={() => setZustand(tokenHash ? 'einloesen' : 'ungueltig')}>
               Trotzdem fortfahren
             </Button>
-            <Button variant="secondary" onClick={() => void navigate('/', { replace: true })}>
+            <ButtonLink to="/" replace variant="secondary">
               Angemeldet bleiben
-            </Button>
+            </ButtonLink>
           </div>
-        </>
+        </div>
       ) : null}
 
-      {zustand === 'einloesen' ? <LoadingState label="Der Link wird geprüft …" /> : null}
+      {zustand === 'einloesen' ? (
+        <div ref={auskunft} tabIndex={-1}>
+          <LoadingState label="Der Link wird geprüft …" />
+        </div>
+      ) : null}
 
       {zustand === 'verbindung' ? (
-        <>
+        <div ref={auskunft} tabIndex={-1}>
           <ErrorState
             title="Der Anmeldedienst ist gerade nicht erreichbar."
             description="Ihr Link ist deswegen nicht verbraucht. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut."
@@ -159,31 +177,66 @@ export function KennwortNeuPage() {
           <Button className="mt-4" onClick={erneutVersuchen}>
             Erneut versuchen
           </Button>
-        </>
+        </div>
       ) : null}
 
       {zustand === 'ungueltig' ? (
-        <>
+        <div ref={auskunft} tabIndex={-1}>
+          {/* Besteht noch eine Sitzung, führt der Weg zurück in sie - eine
+              neue Mail gibt es erst nach dem Abmelden (AUTH-04). */}
           <ErrorState
             title="Dieser Link lässt sich nicht mehr verwenden."
-            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie auf der Anmeldemaske einen neuen an."
+            description={
+              session
+                ? 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie nach dem Abmelden auf der Anmeldemaske einen neuen an.'
+                : 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie auf der Anmeldemaske einen neuen an.'
+            }
           />
-          <Button variant="secondary" className="mt-4" onClick={() => void navigate('/')}>
-            Zur Anmeldung
-          </Button>
-        </>
+          {session ? (
+            <ButtonLink to="/" variant="secondary" className="mt-4">
+              Zurück zur Anwendung
+            </ButtonLink>
+          ) : (
+            // Ein Knopf, obwohl es ein Seitenwechsel ist:
+            // `tests/e2e/login.spec.ts` prüft ihn als solchen (UXR-002).
+            <Button variant="secondary" className="mt-4" onClick={() => void navigate('/')}>
+              Zur Anmeldung
+            </Button>
+          )}
+        </div>
       ) : null}
 
       {zustand === 'formular' ? (
         <form onSubmit={(event) => void absenden(event)} noValidate className="flex flex-col gap-4">
+          {konto ? (
+            <>
+              {/* Das Konto zu den Kennwortfeldern (AUTH-05): Der
+                  Passwortmanager ordnet das neue Kennwort sonst keinem
+                  Eintrag zu und füllt beim nächsten Anmelden womöglich das
+                  alte ein. Sichtbar steht es für alle mit mehreren Adressen. */}
+              <input
+                type="email"
+                name="username"
+                autoComplete="username"
+                value={konto}
+                readOnly
+                hidden
+              />
+              <p className="text-ink-muted text-sm">
+                Für das Konto <span className="text-ink font-medium">{konto}</span>
+              </p>
+            </>
+          ) : null}
           <Field
             label="Neues Kennwort"
+            feldId={FELD_KENNWORT}
             hint={`Mindestens ${KENNWORT_MINDESTLAENGE} Zeichen. Eine Wortfolge, die Sie sich merken können, ist besser als ein kurzes Kunstwort.`}
             type="password"
             name="new_password"
             autoComplete="new-password"
             required
             value={kennwort}
+            error={fehler?.feld === 'kennwort' ? fehler.text : undefined}
             onChange={(event) => {
               setKennwort(event.target.value);
               setFehler(null);
@@ -191,17 +244,27 @@ export function KennwortNeuPage() {
           />
           <Field
             label="Neues Kennwort wiederholen"
+            feldId={FELD_WIEDERHOLUNG}
             type="password"
             name="new_password_repeat"
             autoComplete="new-password"
             required
-            error={fehler ?? undefined}
+            error={fehler?.feld === 'wiederholung' ? fehler.text : undefined}
             value={wiederholung}
             onChange={(event) => {
               setWiederholung(event.target.value);
               setFehler(null);
             }}
           />
+          {/* Ein Fehlschlag des Anmeldedienstes gehört keinem Feld, sondern
+              steht über dem Knopf wie auf „Mein Konto" (AUTH-10). Welcher es
+              war, sagt der Dienst hier nicht; der Satz nennt beide Auswege. */}
+          {serverfehler ? (
+            <Statusmeldung ton="fehler">
+              Das Kennwort konnte nicht geändert werden. Bitte die Verbindung prüfen und erneut
+              versuchen – das neue Kennwort muss sich vom bisherigen unterscheiden.
+            </Statusmeldung>
+          ) : null}
           <Button type="submit" disabled={pending} className="mt-2">
             {pending ? 'Wird gesetzt …' : 'Kennwort setzen'}
           </Button>
@@ -209,24 +272,19 @@ export function KennwortNeuPage() {
       ) : null}
 
       {zustand === 'fertig' ? (
-        <>
-          <Statusmeldung>
+        <div ref={auskunft} tabIndex={-1}>
+          <Statusmeldung ton="erfolg">
             Das Kennwort ist gesetzt. Sie sind auf diesem Gerät angemeldet.
           </Statusmeldung>
           <p className="text-ink-muted mt-3 text-sm leading-relaxed">
             Andere Geräte bleiben angemeldet. Wurde das bisherige Kennwort womöglich bekannt,
-            beenden Sie unter „Mein Konto" zusätzlich alle Sitzungen.
+            beenden Sie unter „Mein Konto“ zusätzlich alle Sitzungen.
           </p>
-          <Button className="mt-4" onClick={() => void navigate('/mein-konto')}>
-            Weiter zu „Mein Konto"
-          </Button>
-        </>
+          <ButtonLink to="/mein-konto" className="mt-4">
+            Weiter zu „Mein Konto“
+          </ButtonLink>
+        </div>
       ) : null}
-
-      <p className="text-ink-subtle mt-8 text-xs leading-relaxed">
-        Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte
-        Zugänge sind nicht zulässig.
-      </p>
-    </main>
+    </Vollseite>
   );
 }

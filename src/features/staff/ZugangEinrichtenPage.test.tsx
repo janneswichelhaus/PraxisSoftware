@@ -36,6 +36,43 @@ describe('ZugangEinrichtenPage', () => {
     await waitFor(() => expect(eingerichtet).toHaveBeenCalledTimes(1));
   });
 
+  it('steht in der Huelle der Seiten ausserhalb des Rahmens (AUTH-12)', () => {
+    renderWithProviders(<ZugangEinrichtenPage onEingerichtet={vi.fn()} onAbmelden={vi.fn()} />);
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Zugang einrichten' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('main')).toBeInTheDocument();
+  });
+
+  it('sagt vorher, dass danach ein eigenes Kennwort festzulegen ist (AUTH-08)', () => {
+    renderWithProviders(<ZugangEinrichtenPage onEingerichtet={vi.fn()} onAbmelden={vi.fn()} />);
+    expect(
+      screen.getByText(/Legen Sie danach unter „Mein Konto“ ein eigenes Kennwort fest/),
+    ).toBeInTheDocument();
+  });
+
+  it('bleibt bis zum Wechsel in die Anwendung beim Laufzustand (AUTH-08)', async () => {
+    const user = userEvent.setup();
+    let fertig: () => void = () => undefined;
+    const eingerichtet = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          fertig = resolve;
+        }),
+    );
+    renderWithProviders(
+      <ZugangEinrichtenPage onEingerichtet={eingerichtet} onAbmelden={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Einladung annehmen' }));
+
+    await waitFor(() => expect(eingerichtet).toHaveBeenCalledTimes(1));
+    // Solange das Profil nachlaedt, springt der Knopf nicht zurueck.
+    expect(screen.getByRole('button', { name: 'Zugang wird eingerichtet …' })).toBeDisabled();
+    fertig();
+    expect(await screen.findByRole('button', { name: 'Einladung annehmen' })).toBeEnabled();
+  });
+
   it('nennt bei fehlender Einladung keinen Grund, der Auskunft über die Praxis gäbe', async () => {
     const user = userEvent.setup();
     nimmZugangAn.mockRejectedValue(new KeineEinladungError());
@@ -52,6 +89,32 @@ describe('ZugangEinrichtenPage', () => {
     expect(screen.queryByRole('button', { name: 'Einladung annehmen' })).not.toBeInTheDocument();
   });
 
+  it('nimmt nach dem Fehlen der Einladung den Fokus auf den Hinweis (AUTH-06)', async () => {
+    const user = userEvent.setup();
+    nimmZugangAn.mockRejectedValue(new KeineEinladungError());
+    renderWithProviders(<ZugangEinrichtenPage onEingerichtet={vi.fn()} onAbmelden={vi.fn()} />);
+
+    await user.click(screen.getByRole('button', { name: 'Einladung annehmen' }));
+
+    const meldung = await screen.findByText('Für diesen Zugang liegt keine offene Einladung vor.');
+    await waitFor(() => expect(meldung.closest('[tabindex="-1"]')).toHaveFocus());
+  });
+
+  it('laesst die Einladung erneut pruefen, sobald sie angelegt ist (AUTH-08)', async () => {
+    const user = userEvent.setup();
+    const eingerichtet = vi.fn();
+    nimmZugangAn.mockRejectedValueOnce(new KeineEinladungError()).mockResolvedValue(undefined);
+    renderWithProviders(
+      <ZugangEinrichtenPage onEingerichtet={eingerichtet} onAbmelden={vi.fn()} />,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Einladung annehmen' }));
+    await user.click(await screen.findByRole('button', { name: 'Erneut prüfen' }));
+
+    await waitFor(() => expect(eingerichtet).toHaveBeenCalledTimes(1));
+    expect(nimmZugangAn).toHaveBeenCalledTimes(2);
+  });
+
   it('meldet einen technischen Fehler getrennt und lässt den zweiten Versuch zu', async () => {
     const user = userEvent.setup();
     nimmZugangAn.mockRejectedValue(new Error('kaputt'));
@@ -62,6 +125,7 @@ describe('ZugangEinrichtenPage', () => {
     expect(
       await screen.findByText(/Der Zugang konnte nicht eingerichtet werden/),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Bitte die Verbindung prüfen/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung annehmen' })).toBeInTheDocument();
   });
 

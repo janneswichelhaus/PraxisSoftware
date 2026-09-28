@@ -5,6 +5,7 @@ import type * as BillingApi from './api';
 import { KeineStammdaten } from './api';
 import { renderWithProviders } from '@/test-utils';
 import { rechnungsansicht } from './testdaten';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchRechnung = vi.fn();
 
@@ -49,7 +50,8 @@ describe('Rechnungsblatt', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('01.09.2026')).toBeInTheDocument();
     expect(screen.getByText('86123/45678')).toBeInTheDocument();
-    expect(screen.getByText(/DE02120300000000202051/)).toBeInTheDocument();
+    // ABR-28: in Vierergruppen, wie sie abgetippt wird.
+    expect(screen.getByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
   });
 
   it('zeigt die Marke in der schwarzen Fassung — Rechnung ist genau ihr Fall', async () => {
@@ -181,7 +183,7 @@ describe('Rechnungsblatt', () => {
     fetchRechnung.mockResolvedValue(rechnungsansicht());
     zeige();
 
-    const vermerk = await screen.findByText(/Entwurf — keine Rechnung/);
+    const vermerk = await screen.findByText(/Entwurf – keine Rechnung/);
     expect(vermerk).toBeInTheDocument();
     expect(vermerk.closest('.nicht-drucken')).toBeNull();
     expect(screen.getByRole('heading', { name: 'Rechnungsentwurf' })).toBeInTheDocument();
@@ -211,7 +213,7 @@ describe('Rechnungsblatt', () => {
     fetchRechnung.mockRejectedValue(new KeineStammdaten());
     zeige();
 
-    expect(await screen.findByText(/keine Praxis-Stammdaten/)).toBeInTheDocument();
+    expect(await screen.findByText(/keine Praxisstammdaten/)).toBeInTheDocument();
   });
 
   it('stempelt eine stornierte Rechnung — auch auf Papier', async () => {
@@ -249,5 +251,133 @@ describe('Rechnungsblatt', () => {
     expect(
       await screen.findByText(/Korrekturrechnung zur stornierten Rechnung RG-2026-0001/),
     ).toBeInTheDocument();
+  });
+
+  describe('UXR-010', () => {
+    /** Mit der echten Route: Der Rückweg kennt dann die Kennung der Rechnung. */
+    function zeigeMitRoute() {
+      return zeigeMitRouten(
+        [{ path: '/abrechnung/rechnungen/:invoiceId/druck', element: <InvoicePrintPage /> }],
+        '/abrechnung/rechnungen/r1/druck',
+      );
+    }
+
+    it('führt schon beim Laden zurück zur Rechnung, mit dem Baustein (ABR-30, ABR-33)', async () => {
+      fetchRechnung.mockReturnValue(new Promise(() => undefined));
+      zeigeMitRoute();
+
+      expect(await screen.findByText('Rechnung wird geladen …')).toBeInTheDocument();
+      const zurueck = screen.getByRole('link', { name: /Zurück zur Rechnung/ });
+      expect(zurueck).toHaveAttribute('href', '/abrechnung/rechnungen/r1');
+      expect(zurueck.closest('.nicht-drucken')).not.toBeNull();
+    });
+
+    it('führt bei fehlenden Stammdaten dorthin und zurück (ABR-17, ABR-30)', async () => {
+      fetchRechnung.mockRejectedValue(new KeineStammdaten());
+      zeigeMitRoute();
+
+      expect(await screen.findByRole('link', { name: 'Zu den Praxisstammdaten' })).toHaveAttribute(
+        'href',
+        '/abrechnung/stammdaten',
+      );
+      expect(screen.getByText(/Erfassen kann sie die Praxisinhaber:in/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /Zurück zur Rechnung/ })).toBeInTheDocument();
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      fetchRechnung.mockRejectedValue(new Error('Netz weg'));
+      zeige();
+
+      expect(
+        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+    });
+
+    it('legt die Anschrift ins Fenster des Umschlags (ABR-22)', async () => {
+      // DIN 5008 Form B, Fenster links: 20 mm vom Rand (12 mm Seitenrand plus
+      // 8 mm), 45 mm von oben (33 mm Kopf), 85 × 45 mm. Nur im Druck.
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      const anschrift = (await screen.findByText('Erika Beispiel', { selector: 'span' })).closest(
+        'address',
+      )!.parentElement!;
+      expect(anschrift).toHaveClass('print:ml-[8mm]', 'print:w-[85mm]', 'print:min-h-[45mm]');
+      const kopf = screen.getByAltText('Own Motion').parentElement!;
+      expect(kopf).toHaveClass('print:min-h-[33mm]');
+      // Die Angaben rechts beginnen bei 125 mm und brechen nicht unter die Anschrift.
+      expect(screen.getByText('Rechnungsnummer').closest('dl')!.parentElement).toHaveClass(
+        'print:w-[73mm]',
+        'print:ml-auto',
+      );
+    });
+
+    it('stellt den Entwurfsvermerk unter das Anschriftfeld (ABR-22)', async () => {
+      fetchRechnung.mockResolvedValue(rechnungsansicht());
+      zeige();
+
+      const vermerk = await screen.findByText(/Entwurf – keine Rechnung/);
+      const empfaenger = screen.getByText('Erika Beispiel', { selector: 'address span' });
+      expect(
+        empfaenger.compareDocumentPosition(vermerk) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      // Und der Knopf heißt, was er druckt (ABR-26).
+      expect(screen.getByRole('button', { name: 'Entwurf drucken' })).toBeInTheDocument();
+    });
+
+    it('hält die Wertespalte bei langen Namen und druckt Werte schwarz (ABR-B05, ABR-28)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      const beschriftung = await screen.findByText('Behandelte Person');
+      expect(beschriftung).toHaveClass('w-40', 'shrink-0');
+      expect(screen.getByText(/Bitte überweisen Sie den Betrag/)).toHaveClass('print:text-ink');
+      expect(
+        screen.getByText(/Steuerfreie Heilbehandlung nach § 4 Nr. 14/).closest('ul'),
+      ).toHaveClass('print:text-ink');
+    });
+
+    it('macht die Leistungstabelle mit der Tastatur erreichbar (ABR-B04, UIK-24)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      const rahmen = await screen.findByRole('region', { name: 'Leistungen, waagerecht rollbar' });
+      expect(rahmen).toHaveAttribute('tabindex', '0');
+      expect(rahmen).toHaveClass('overflow-x-auto');
+    });
+
+    it('setzt die Überschrift in der Stufe H4 der Skala (ABR-34)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      expect(await screen.findByRole('heading', { name: 'Rechnung RG-2026-0001' })).toHaveClass(
+        'text-h4',
+        'font-bold',
+      );
+    });
+
+    it('nennt im Kleingedruckten weder Projektkürzel noch „Datensatz" (ABR-26, WRT-02, WRT-03)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      const hinweis = await screen.findByText(/legt sie nicht ab/);
+      expect(hinweis.textContent).not.toMatch(/B14|Datensatz/);
+      expect(hinweis.textContent).toMatch(/in der Anwendung/);
+    });
+
+    it('nennt die Grundlage mit den Wörtern der Akte (ABR-18)', async () => {
+      fetchRechnung.mockResolvedValue(
+        rechnungsansicht(
+          { status: 'issued', invoice_number: 'RG-2026-0009' },
+          { treatment_bases: [{ kind: 'self_pay', issued_on: '2026-09-03', prescriber: null }] },
+        ),
+      );
+      zeige();
+
+      expect(await screen.findByText('Selbstzahler seit 03.09.2026')).toBeInTheDocument();
+      expect(screen.queryByText(/Selbstzahlerin/)).toBeNull();
+    });
   });
 });

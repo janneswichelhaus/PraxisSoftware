@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchZahlungen = vi.fn();
 const storniereZahlung = vi.fn();
@@ -107,5 +108,71 @@ describe('PaymentsPage', () => {
 
     expect(await screen.findByText('RG-2026-0001')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Stornieren' })).not.toBeInTheDocument();
+  });
+
+  describe('UXR-010', () => {
+    it('führt über die Nummer zur Rechnung und nimmt den Rückweg mit (ABR-25, ABR-29)', async () => {
+      // Die Nummer sieht aus wie ein Link und ist 44 px hoch; „Zurück" auf der
+      // Rechnung führt wieder hierher statt zu „Rechnungen".
+      fetchZahlungen.mockResolvedValue([zahlung()]);
+
+      renderWithProviders(<PaymentsPage user={testUser(['office'])} />, '/abrechnung/zahlungen');
+
+      const link = await screen.findByRole('link', { name: 'RG-2026-0001' });
+      expect(link).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1?zurueck=%2Fabrechnung%2Fzahlungen',
+      );
+      expect(link.className).toMatch(/\btext-accent\b/);
+      expect(link.className).toMatch(/\bunderline\b/);
+      expect(link.className).toMatch(/\bmin-h-11\b/);
+    });
+
+    it('lädt nach dem Storno auch die Rechnung und ihre Zahlungen neu (ABR-01)', async () => {
+      // Aus der Rechnung kommt der offene Betrag; ohne sie neu zu laden stand
+      // nach dem Storno weiter der alte da. Der Aufruf selbst bleibt derselbe.
+      const nutzer = userEvent.setup();
+      fetchZahlungen.mockResolvedValue([zahlung()]);
+
+      const { client } = zeigeMitRouten(
+        [
+          {
+            path: '/abrechnung/zahlungen',
+            element: <PaymentsPage user={testUser(['office'])} />,
+          },
+        ],
+        '/abrechnung/zahlungen',
+      );
+      const neuLaden = vi.spyOn(client, 'invalidateQueries');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Stornieren' }));
+      await nutzer.type(screen.getByLabelText('Grund'), 'Doppelt erfasst');
+      await nutzer.click(screen.getByRole('button', { name: 'Storno buchen' }));
+
+      await waitFor(() =>
+        expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['rechnungszahlungen', 'r1'] }),
+      );
+      expect(storniereZahlung).toHaveBeenCalledWith('z1', 'Doppelt erfasst');
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['rechnung', 'r1'] });
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['zahlungen'] });
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['offene-posten'] });
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      const nutzer = userEvent.setup();
+      fetchZahlungen.mockRejectedValueOnce(new Error('Netz weg'));
+
+      renderWithProviders(<PaymentsPage user={testUser(['office'])} />, '/abrechnung/zahlungen');
+
+      expect(
+        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+
+      fetchZahlungen.mockResolvedValue([zahlung()]);
+      await nutzer.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+
+      expect(await screen.findByRole('link', { name: 'RG-2026-0001' })).toBeInTheDocument();
+    });
   });
 });

@@ -41,6 +41,15 @@ import { funktionskatalog, sucheFunktionen, type Funktion } from './funktionen';
 /** Wartezeit, bis eine Eingabe zu einer Anfrage wird (wie in der Patientensuche). */
 const TIPPPAUSE_MS = 250;
 
+/**
+ * Das Kürzel, wie es auf der Tastatur steht: am Mac ⌘, sonst Strg (NAV-16).
+ * Die Suche selbst hört auf beide Tasten.
+ */
+const TASTENKUERZEL =
+  typeof navigator !== 'undefined' && /Macintosh|Mac OS X|iPhone|iPad/.test(navigator.userAgent)
+    ? '⌘ K'
+    : 'Strg K';
+
 type Eintrag =
   { art: 'funktion'; funktion: Funktion } | { art: 'patient'; patient: PatientSearchHit };
 
@@ -119,6 +128,21 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
     document.addEventListener('mousedown', ausserhalb);
     return () => document.removeEventListener('mousedown', ausserhalb);
   }, [offen]);
+
+  // Ein Seitenwechsel schließt die Liste (NAV-08), wie die Suchzeile am
+  // Telefon (AppShell). Bis UXR-002 stand sie nach Enter auf einem anderen
+  // Link weiter über Titel und Untermenü der neuen Seite.
+  useEffect(() => {
+    setOffen(false);
+    setGewaehlt(-1);
+  }, [ort.pathname]);
+
+  // Der Treffer unter den Pfeiltasten gehört ins Bild der Liste, wie in
+  // `SearchCombobox` (UIK-08). `nearest` rollt nur, wenn er es nicht schon ist.
+  useEffect(() => {
+    if (!offen || aktiv < 0) return;
+    document.getElementById(`${feldId}-${aktiv}`)?.scrollIntoView({ block: 'nearest' });
+  }, [offen, aktiv, feldId]);
 
   /**
    * Öffnen ohne Zeigegerät (Strg/Cmd + K).
@@ -228,10 +252,28 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
    */
   const hatOptionen = funktionen.length > 0 || patienten.length > 0;
 
+  // Wer keine Namen suchen kann, liest es auch nicht im Feld (NAV-16): Das
+  // Patientenkonto und die Betreuung fanden bis UXR-002 unter „… oder Name"
+  // nie einen.
+  const gesucht = darfPatienten ? 'Funktion, Bereich oder Name' : 'Funktion oder Bereich';
+
   return (
-    <div ref={huelle} className="relative">
+    <div
+      ref={huelle}
+      className="relative"
+      // Verlässt der Fokus die Suche - Tab, ein anderer Link -, schließt die
+      // Liste (NAV-08), wie in `SearchCombobox`. Ein Tipp in die Liste nimmt
+      // dem Feld den Fokus nicht (siehe `onMouseDown` unten), und ein Fokus
+      // innerhalb der Hülle zählt nicht als Verlassen.
+      onBlur={(event) => {
+        if (!huelle.current?.contains(event.relatedTarget)) {
+          setOffen(false);
+          setGewaehlt(-1);
+        }
+      }}
+    >
       <label htmlFor={feldId} className="sr-only">
-        Funktion, Bereich oder Name suchen
+        {`${gesucht} suchen`}
       </label>
       <input
         id={feldId}
@@ -243,8 +285,8 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
         {...(zeigeListe && hatOptionen ? { 'aria-controls': listeId } : {})}
         aria-autocomplete="list"
         aria-activedescendant={aktiverEintrag ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-subtle rounded-field h-12 w-full border px-4 text-base sm:pr-20"
-        placeholder="Funktion, Bereich oder Name"
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-bedienhoehe w-full border px-4 text-base sm:pointer-fine:pr-20"
+        placeholder={gesucht}
         value={eingabe}
         onChange={(event) => {
           setEingabe(event.target.value);
@@ -255,13 +297,14 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
       />
       {/* Das Kürzel steht am Feld, sonst wüsste niemand davon. Für
           Vorlesesoftware ausgeblendet: Sie liest die Beschriftung, und ein
-          Tastenkürzel im zugänglichen Namen wäre dort nur Text. Auf dem
-          Telefon gibt es keine Strg-Taste — und keinen Platz. */}
+          Tastenkürzel im zugänglichen Namen wäre dort nur Text. Nur mit
+          feinem Zeiger (RSP-09): Am Telefon und am Touch-Tablet gibt es keine
+          Strg-Taste. Am Mac heißt sie ⌘ (NAV-16). */}
       <kbd
         aria-hidden="true"
-        className="border-line text-ink-subtle bg-surface pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 rounded border px-1.5 py-0.5 text-[0.6875rem] sm:block"
+        className="border-line text-ink-muted bg-surface rounded-pill pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 border px-1.5 py-0.5 text-[0.6875rem] sm:pointer-fine:block"
       >
-        Strg K
+        {TASTENKUERZEL}
       </kbd>
 
       {zeigeListe ? (
@@ -270,7 +313,11 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
           // Ab sm: eine Liste unter dem Feld, ohne Schlagschatten (DS-001) -
           // dass sie über der Seite liegt, tragen Rand und Fläche.
           style={{ '--oben': `${unterkante}px` } as CSSProperties}
-          className="border-line-strong bg-surface sm:rounded-card fixed inset-x-0 top-[var(--oben)] bottom-0 z-50 overflow-y-auto border-t pb-20 sm:absolute sm:inset-x-0 sm:top-full sm:bottom-auto sm:mt-1 sm:max-h-[26rem] sm:border sm:pb-0"
+          className="border-line-strong bg-surface sm:rounded-card fixed inset-x-0 top-[var(--oben)] bottom-0 z-50 overflow-y-auto border-t pb-20 sm:absolute sm:inset-x-0 sm:top-full sm:bottom-auto sm:mt-1 sm:max-h-104 sm:border sm:pb-0"
+          // Ein Tipp irgendwo in die Liste - auf eine Gruppenüberschrift, den
+          // Zustandssatz - lässt den Fokus im Feld. Sonst schlösse der
+          // Fokusverlust die Liste unter dem Finger.
+          onMouseDown={(event) => event.preventDefault()}
         >
           {funktionen.length === 0 ? (
             <>
@@ -299,7 +346,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                           .join(' · ') || undefined
                       }
                       abzeichen={
-                        <span className="text-ink-subtle shrink-0 text-xs">
+                        <span className="text-ink-muted shrink-0 text-xs">
                           {funktion.vorschau ? 'Vorschau' : funktion.art}
                         </span>
                       }
@@ -319,15 +366,16 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
                       aktiv={funktionen.length + index === aktiv}
                       bezeichnung={`${patient.given_name} ${patient.family_name}`}
                       // Das Geburtsdatum unterscheidet zwei Namensgleiche -
-                      // dafür steht es hier und für nichts sonst.
+                      // dafür steht es hier und für nichts sonst. „geb." wie
+                      // im Aktenkopf und in der Patientensuche (WRT-15).
                       zusatz={
                         patient.date_of_birth
-                          ? `geboren ${formatDate(patient.date_of_birth)}`
+                          ? `geb. ${formatDate(patient.date_of_birth)}`
                           : undefined
                       }
                       abzeichen={
                         patient.status === 'inactive' ? (
-                          <span className="text-ink-subtle shrink-0 text-xs">
+                          <span className="text-ink-muted shrink-0 text-xs">
                             Nicht in Versorgung
                           </span>
                         ) : undefined
@@ -363,7 +411,7 @@ function Gruppenkopf({ text }: { text: string }) {
   return (
     <p
       aria-hidden="true"
-      className="text-ink-subtle border-line bg-surface-sunken border-y px-3 py-1.5 text-xs font-medium first:border-t-0"
+      className="text-ink-muted border-line bg-surface-sunken border-y px-3 py-1.5 text-xs font-medium first:border-t-0"
     >
       {text}
     </p>
@@ -410,7 +458,7 @@ function Trefferzeile({
       }}
     >
       <span className="min-w-0 flex-1">
-        <span className="text-ink block truncate text-[0.9375rem] font-medium">{bezeichnung}</span>
+        <span className="text-ink text-liste block truncate font-medium">{bezeichnung}</span>
         {zusatz ? <span className="text-ink-muted block truncate text-sm">{zusatz}</span> : null}
       </span>
       {abzeichen}

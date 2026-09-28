@@ -20,7 +20,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   patientenakte: {
     label: 'Klinische Patientenakte',
     beschreibung:
-      'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis und die Stammdaten der Patientin.',
+      'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis und die Stammdaten der Patient:in.',
   },
   patientenfoto: {
     label: 'Patientenfotos',
@@ -53,7 +53,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   },
   beschaeftigtendaten: {
     label: 'Beschäftigtendaten',
-    beschreibung: 'Mitarbeiterdatensätze, Privatangaben und Arbeitszeiten.',
+    beschreibung: 'Stammdaten der Mitarbeitenden, ihre Privatangaben und Arbeitszeiten.',
   },
   accountdaten: {
     label: 'Zugangsdaten',
@@ -62,7 +62,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   abrechnungsdaten: {
     label: 'Abrechnungsdaten',
     beschreibung:
-      'Rechnungen, erfasste Leistungen und der Leistungskatalog. Folgen der steuerlichen Frist, nicht der Frist der Akte — eine ausgestellte Rechnung hält die Akte so lange fest.',
+      'Rechnungen, erfasste Leistungen und der Leistungskatalog. Folgen der steuerlichen Frist, nicht der Frist der Akte – eine ausgestellte Rechnung hält die Akte so lange fest.',
   },
   verordnerkartei: {
     label: 'Verordner:innen',

@@ -1,13 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
+import { todayInTimeZone } from '@/features/appointments/api';
 import { rechnungsansicht } from './testdaten';
 import { ZahlungStehtNoch } from './api';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchRechnung = vi.fn();
 const fetchEmpfaenger = vi.fn();
+const saveEmpfaenger = vi.fn();
 const setzeEmpfaenger = vi.fn();
 const stelleRechnungAus = vi.fn();
 const deleteEntwurf = vi.fn();
@@ -24,6 +27,7 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchRechnung: (id: string) => fetchRechnung(id) as Promise<BillingApi.Rechnungsansicht>,
     fetchEmpfaenger: (id: string) => fetchEmpfaenger(id) as Promise<BillingApi.Empfaenger[]>,
+    saveEmpfaenger: (...args: unknown[]) => saveEmpfaenger(...args) as Promise<void>,
     setzeEmpfaenger: (...args: unknown[]) => setzeEmpfaenger(...args) as Promise<void>,
     stelleRechnungAus: (id: string) => stelleRechnungAus(id) as Promise<string>,
     deleteEntwurf: (id: string) => deleteEntwurf(id) as Promise<void>,
@@ -49,6 +53,7 @@ describe('InvoiceDetailPage', () => {
   beforeEach(() => {
     fetchRechnung.mockReset();
     fetchEmpfaenger.mockReset();
+    saveEmpfaenger.mockReset();
     setzeEmpfaenger.mockReset();
     stelleRechnungAus.mockReset();
     deleteEntwurf.mockReset();
@@ -77,8 +82,10 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByRole('heading', { name: 'Rechnungsentwurf' })).toBeInTheDocument();
-    expect(screen.getByText(/Die Nummer entsteht beim Ausstellen/)).toBeInTheDocument();
+    // Erst auf einen Text warten, dann die Rolle prüfen: Eine Rollenabfrage je
+    // Warteschritt ist auf dieser Seite teuer und riss unter Last die Wartezeit.
+    expect(await screen.findByText(/Die Nummer entsteht beim Ausstellen/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Entwurf · Erika Beispiel' })).toBeInTheDocument();
   });
 
   it('zeigt Leistungen, Summe und die Behandlungsgrundlage ohne Diagnose', async () => {
@@ -181,7 +188,7 @@ describe('InvoiceDetailPage', () => {
     await nutzer.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
     expect(screen.getByText(/es entsteht also keine Lücke/)).toBeInTheDocument();
 
-    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
     expect(deleteEntwurf).toHaveBeenCalledWith('r1');
   });
 
@@ -230,7 +237,10 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByRole('heading', { name: 'RG-2026-0001' })).toBeInTheDocument();
+    expect(await screen.findByText(/Ausgestellt und unveränderlich/)).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Rechnung ausstellen' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Entwurf verwerfen' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Rechnung geht an/)).not.toBeInTheDocument();
@@ -257,7 +267,7 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByText(/noch keine Praxis-Stammdaten erfasst/)).toBeInTheDocument();
+    expect(await screen.findByText(/noch keine Praxisstammdaten erfasst/)).toBeInTheDocument();
   });
 
   describe('Zahlungen (ABR-004)', () => {
@@ -346,14 +356,19 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      await nutzer.selectOptions(
-        await screen.findByLabelText('Art'),
-        'Rückzahlung an den Empfänger',
-      );
+      await nutzer.selectOptions(await screen.findByLabelText('Art'), 'Rückzahlung');
+      // ABR-09: Die Rückzahlung übernimmt nicht den offenen Betrag - als
+      // Rückzahlung wäre er fast immer falsch. Der Hinweis nennt, was
+      // eingegangen ist, und zwar den Wert des Servers.
+      const rueckzahlung = screen.getByLabelText('Rückzahlung');
+      expect(rueckzahlung).toHaveValue('');
+      expect(screen.getByText('Eingegangen: 20,00 €')).toBeInTheDocument();
+
+      await nutzer.type(rueckzahlung, '15,00');
       await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
 
       expect(bucheZahlung).toHaveBeenCalledWith(
-        expect.objectContaining({ richtung: 'refund', betragCent: 2500 }),
+        expect.objectContaining({ richtung: 'refund', betragCent: 1500 }),
       );
     });
 
@@ -375,7 +390,9 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(await screen.findByText('Noch offen')).toBeInTheDocument();
+      // ABR-06: An einer stornierten Rechnung steht keine Forderung mehr.
+      expect(await screen.findByText('Storniert – keine Forderung')).toBeInTheDocument();
+      expect(screen.queryByText('Noch offen')).toBeNull();
       expect(screen.queryByRole('button', { name: 'Zahlung buchen' })).not.toBeInTheDocument();
     });
 
@@ -521,7 +538,10 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      await screen.findByRole('heading', { name: 'RG-2026-0001' });
+      await screen.findByText(/Ausgestellt und unveränderlich/);
+      expect(
+        screen.getByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
+      ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
     });
   });
@@ -589,10 +609,10 @@ describe('InvoiceDetailPage', () => {
 
       expect(await screen.findByText(/Frist bis 04.10.2026 · 25,00 € offen/)).toBeInTheDocument();
       expect(screen.getByText(/Frist bis 24.09.2026 · 45,00 € offen/)).toBeInTheDocument();
-      expect(screen.getAllByRole('link', { name: 'Blatt öffnen' })[0]).toHaveAttribute(
-        'href',
-        '/abrechnung/erinnerungen/e2',
-      );
+      // ABR-25: Der Link nennt das Blatt, das er öffnet.
+      expect(
+        screen.getByRole('link', { name: 'Erinnerung vom 20.09.2026 öffnen' }),
+      ).toHaveAttribute('href', '/abrechnung/erinnerungen/e2');
       expect(screen.queryByText(/Mahnstufe/)).toBeNull();
     });
 
@@ -613,6 +633,463 @@ describe('InvoiceDetailPage', () => {
 
       await screen.findByText(/Stornodokument RG-2026-0002/);
       expect(screen.queryByText('Zahlungserinnerung')).toBeNull();
+    });
+  });
+
+  describe('UXR-010', () => {
+    /** Mit echten Routen: Die Abfrage heißt dann wie in der Anwendung ['rechnung', 'r1']. */
+    function zeigeRechnung(nutzer = testUser(['office'])) {
+      return zeigeMitRouten(
+        [
+          {
+            path: '/abrechnung/rechnungen/:invoiceId',
+            element: <InvoiceDetailPage user={nutzer} />,
+          },
+          { path: '/abrechnung/erinnerungen/:reminderId', element: <p>Erinnerungsblatt</p> },
+          { path: '/abrechnung', element: <p>Rechnungsliste</p> },
+        ],
+        '/abrechnung/rechnungen/r1',
+      );
+    }
+
+    const ausgestellt = (rest: Partial<BillingApi.Rechnungsansicht> = {}) =>
+      ansicht({
+        status: 'issued',
+        invoice_number: 'RG-2026-0001',
+        issued_on: '2026-09-01',
+        due_on: '2026-09-15',
+        paid_cents: 2000,
+        outstanding_cents: 2500,
+        payment_state: 'partially_paid',
+        ...rest,
+      });
+
+    const bezahlt = () =>
+      ausgestellt({ paid_cents: 4500, outstanding_cents: 0, payment_state: 'paid' });
+
+    it('nennt beim Laden keinen falschen Zustand (ABR-05, ZST-09)', async () => {
+      // Vorher stand hier „Rechnungsentwurf – Noch ohne Nummer", auch beim
+      // Laden einer ausgestellten Rechnung.
+      fetchRechnung.mockReturnValue(new Promise(() => undefined));
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByRole('heading', { name: 'Rechnung' })).toBeInTheDocument();
+      expect(screen.getByText('Rechnung wird geladen …')).toBeInTheDocument();
+      expect(screen.queryByText(/Nummer entsteht beim Ausstellen/)).toBeNull();
+    });
+
+    it('nennt im Kopf Nummer, Person, Monat, Betrag und Zahlungsstand (ABR-05)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt({ overdue: true }));
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('August 2026 · 45,00 €')).toBeInTheDocument();
+      const titel = screen.getByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' });
+      expect(
+        within(titel.closest('header')!).getByRole('link', { name: 'Rechnungsblatt öffnen' }),
+      ).toHaveAttribute('href', '/abrechnung/rechnungen/r1/druck');
+
+      // Der Zahlungsstand steht vor dem ersten Abschnitt, nicht erst unter
+      // „Zahlungen" - bei 390 px zwei Bildschirmhöhen tiefer.
+      const stand = screen.getAllByText('Teilweise bezahlt')[0]!;
+      const empfaenger = screen.getByRole('heading', { name: 'Empfänger' });
+      expect(
+        stand.compareDocumentPosition(empfaenger) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getAllByText('Überfällig')[0]).toBeInTheDocument();
+    });
+
+    it('führt mit ganzem Satz zurück zur Liste (NAV-16)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByRole('link', { name: /Zurück zu den Rechnungen/ })).toHaveAttribute(
+        'href',
+        '/abrechnung',
+      );
+    });
+
+    it('nennt die Grundlage mit den Wörtern der Akte (ABR-18)', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht(
+          {},
+          { treatment_bases: [{ kind: 'self_pay', issued_on: '2026-09-03', prescriber: null }] },
+        ),
+      );
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText('Selbstzahler seit 03.09.2026')).toBeInTheDocument();
+      expect(screen.queryByText(/Selbstzahlerin/)).toBeNull();
+    });
+
+    it('gliedert die IBAN und kürzt das Geburtsdatum wie überall (ABR-28, WRT-15)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
+      expect(screen.getByText(/geb\. 17\.09\.1963/)).toBeInTheDocument();
+    });
+
+    it('zeigt an einer bezahlten Rechnung nicht „Bezahlt 0,00 €" (ABR-B01)', async () => {
+      // Der Wert kommt richtig vom Server (0 offen); falsch war die
+      // Beschriftung daneben. Jetzt heißt die Zeile, was sie zeigt.
+      fetchRechnung.mockResolvedValue(bezahlt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      const zeile = (await screen.findByText('Noch offen')).closest('div')!;
+      expect(within(zeile).getByText('0,00 €')).toBeInTheDocument();
+      expect(within(zeile).getByText('Bezahlt')).toBeInTheDocument();
+      expect(screen.queryByText('Bezahlt', { selector: '.font-semibold' })).toBeNull();
+    });
+
+    it('zeigt nach einer Buchung an der Rechnung sofort den neuen offenen Betrag (ABR-01)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValueOnce(ausgestellt()).mockResolvedValue(bezahlt());
+
+      zeigeRechnung();
+
+      expect(await screen.findByText('25,00 €')).toBeInTheDocument();
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      const zeile = (await screen.findByText('0,00 €')).closest('div')!;
+      expect(within(zeile).getByText('Noch offen')).toBeInTheDocument();
+      expect(fetchRechnung).toHaveBeenCalledTimes(2);
+      expect(bucheZahlung).toHaveBeenCalledWith(
+        expect.objectContaining({ invoiceId: 'r1', betragCent: 2500, richtung: 'incoming' }),
+      );
+    });
+
+    it('klappt das Formular an einer bezahlten Rechnung ein (ABR-09)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(bezahlt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      const knopf = await screen.findByRole('button', { name: 'Zahlung buchen' });
+      expect(screen.queryByLabelText('Betrag')).toBeNull();
+      await nutzer.click(knopf);
+      expect(screen.getByLabelText('Betrag')).toHaveValue('');
+    });
+
+    it('bietet das Storno an der Zahlung an und sagt vorher, was zuerst kommt (ABR-07)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      fetchRechnungszahlungen.mockResolvedValue([
+        {
+          id: 'z1',
+          direction: 'incoming',
+          amount_cents: 2000,
+          currency: 'EUR',
+          paid_on: '2026-09-05',
+          method: 'bank_transfer',
+          note: null,
+          voided_at: null,
+          void_reason: null,
+        },
+      ]);
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Zuerst die gebuchte Zahlung oben stornieren/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
+      expect(screen.getByRole('button', { name: 'Zahlung stornieren' })).toBeInTheDocument();
+    });
+
+    it('meldet das Ausstellen mit der Nummer und setzt den Fokus aufs Blatt (ABR-10)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht());
+
+      const { client } = zeigeRechnung();
+      const neuLaden = vi.spyOn(client, 'invalidateQueries');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Rechnung ausstellen' }));
+
+      const meldung = await screen.findByText('Rechnung RG-2026-0001 ausgestellt.');
+      expect(meldung).toHaveAttribute('role', 'status');
+      const blatt = within(meldung.parentElement!).getByRole('link', {
+        name: 'Rechnungsblatt öffnen',
+      });
+      expect(blatt).toHaveAttribute('href', '/abrechnung/rechnungen/r1/druck');
+      await waitFor(() => expect(blatt).toHaveFocus());
+
+      // ABR-01: auch offene Posten und Leistungen laden neu. Der Aufruf bleibt.
+      await waitFor(() =>
+        expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['abrechnung-leistungen'] }),
+      );
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['offene-posten'] });
+      expect(stelleRechnungAus).toHaveBeenCalledWith('r1');
+    });
+
+    it('lädt nach der Korrektur die stornierte Rechnung neu (ABR-01)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(
+        ausgestellt({
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+        }),
+      );
+
+      const { client } = zeigeRechnung();
+      const neuLaden = vi.spyOn(client, 'invalidateQueries');
+
+      await nutzer.click(
+        await screen.findByRole('button', { name: 'Korrekturrechnung erstellen' }),
+      );
+
+      await waitFor(() => expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['rechnung', 'r1'] }));
+      expect(erstelleKorrektur).toHaveBeenCalledWith('r1');
+    });
+
+    it('zeigt einen Fehlschlag beim Verwerfen im offenen Kasten (ABR-03)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht());
+      deleteEntwurf.mockRejectedValue(new Error('Der Entwurf konnte nicht verworfen werden.'));
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
+      await nutzer.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
+
+      expect(await screen.findByRole('alert')).toHaveTextContent(
+        'Der Entwurf konnte nicht verworfen werden. Bitte die Verbindung prüfen und erneut versuchen.',
+      );
+      // Der Kasten bleibt offen: Der Entwurf existiert noch.
+      expect(screen.getByRole('group', { name: 'Entwurf verwerfen' })).toBeInTheDocument();
+    });
+
+    it('sagt dem Office, wer die Stammdaten erfasst (ABR-17)', async () => {
+      const { KeineStammdaten } = await import('./api');
+      fetchRechnung.mockRejectedValue(new KeineStammdaten());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Die Praxisinhaber:in muss sie erst erfassen/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Zu den Praxisstammdaten' })).toBeNull();
+    });
+
+    it('führt die Praxisinhaberin zu den Stammdaten (ABR-17)', async () => {
+      const { KeineStammdaten } = await import('./api');
+      fetchRechnung.mockRejectedValue(new KeineStammdaten());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['owner'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(await screen.findByRole('link', { name: 'Zu den Praxisstammdaten' })).toHaveAttribute(
+        'href',
+        '/abrechnung/stammdaten',
+      );
+    });
+
+    it('zeigt einen Ladefehler der Erinnerungen statt „Noch keine" (ABR-30)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt({ overdue: true }));
+      fetchErinnerungen.mockRejectedValue(new Error('Netz weg'));
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText('Die Zahlungserinnerungen konnten nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Noch keine Erinnerung ausgestellt.')).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeNull();
+    });
+
+    it('sperrt die zweite Erinnerung am selben Tag und sagt warum (ABR-B03)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt({ overdue: true }));
+      fetchErinnerungen.mockResolvedValue([
+        {
+          id: 'e1',
+          reminder_on: todayInTimeZone('Europe/Berlin'),
+          due_on: '2026-10-11',
+          outstanding_cents: 2500,
+          currency: 'EUR',
+        },
+      ]);
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText('Heute ist bereits eine Erinnerung ausgestellt.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Zahlungserinnerung ausstellen' })).toBeDisabled();
+    });
+
+    it('öffnet nach dem Ausstellen der Erinnerung ihr Blatt (ABR-10)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ausgestellt({ overdue: true }));
+
+      const { router } = zeigeRechnung();
+      // Beobachtet wird der Seitenwechsel selbst, nicht sein Ergebnis: Unter
+      // Node 24 scheitert jede Navigation des Data Routers in jsdom an einem
+      // fremden `AbortSignal` (siehe die Router-Fälle der lokalen
+      // Basisfehlschläge). Das Ziel lässt sich trotzdem genau prüfen.
+      const wechsel = vi.spyOn(router, 'navigate').mockResolvedValue(undefined);
+
+      await nutzer.click(
+        await screen.findByRole('button', { name: 'Zahlungserinnerung ausstellen' }),
+      );
+
+      await waitFor(() => expect(wechsel).toHaveBeenCalled());
+      expect(wechsel.mock.calls[0]?.[0]).toBe('/abrechnung/erinnerungen/e1');
+      expect(erstelleErinnerung).toHaveBeenCalledWith('r1');
+    });
+
+    it('sperrt die Empfängerwahl, solange sie gesetzt wird, und meldet den Erfolg (ABR-10)', async () => {
+      const nutzer = userEvent.setup();
+      let fertig: () => void = () => undefined;
+      setzeEmpfaenger.mockReturnValue(
+        new Promise<void>((erledigt) => {
+          fertig = erledigt;
+        }),
+      );
+      fetchRechnung.mockResolvedValue(ansicht());
+      fetchEmpfaenger.mockResolvedValue([
+        {
+          id: 'e1',
+          recipient_kind: 'aid_authority',
+          name: 'Beihilfestelle Testland',
+          street: null,
+          house_number: null,
+          postal_code: null,
+          city: null,
+          reference: null,
+          is_default: false,
+        },
+      ]);
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await screen.findByRole('option', { name: /Beihilfestelle Testland/ });
+      const auswahl = screen.getByLabelText(/Rechnung geht an/);
+      await nutzer.selectOptions(auswahl, 'e1');
+
+      // Die Auswahl zeigt schon die neue Wahl und nimmt keinen zweiten Wechsel an.
+      expect(auswahl).toBeDisabled();
+      expect(auswahl).toHaveValue('e1');
+
+      fertig();
+      expect(await screen.findByText('Empfänger gesetzt.')).toBeInTheDocument();
+      expect(auswahl).toBeEnabled();
+    });
+
+    it('nennt am Empfängerformular den fehlenden Namen am Feld (ABR-20, RSP-12)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Empfänger hinterlegen' }));
+      const speichern = screen.getByRole('button', { name: 'Empfänger speichern' });
+      // Nicht mehr ohne Grund gesperrt: Der Grund steht nach dem Tipp am Feld.
+      expect(speichern).toBeEnabled();
+      await nutzer.click(speichern);
+
+      const name = screen.getByLabelText('Name oder Stelle *');
+      expect(name).toHaveAttribute('aria-invalid', 'true');
+      expect(name).toHaveAccessibleDescription('Bitte ausfüllen.');
+      expect(name).toHaveFocus();
+      expect(saveEmpfaenger).not.toHaveBeenCalled();
+      expect(screen.getByLabelText('PLZ')).toHaveAttribute('inputmode', 'numeric');
+    });
+
+    it('ordnet Leistungszeilen am Handy zweizeilig (ABR-B08)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      const text = await screen.findByText(/1 × Krankengymnastik \(KG\)/);
+      expect(text.closest('li')).toHaveClass('grid', 'grid-cols-[1fr_auto]');
+      // Unter 640 px volle Breite in der zweiten Zeile, darüber die Mittelspalte.
+      expect(text.parentElement).toHaveClass('col-span-2', 'row-start-2', 'sm:col-span-1');
+    });
+
+    it('kennzeichnet das Ausfallhonorar ohne Warnzeichen (ABR-16)', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht(
+          {},
+          {
+            items: [
+              {
+                performed_on: '2026-08-05',
+                code: 'AUS',
+                label: 'Ausfall kurzfristig',
+                item_kind: 'absence_fee',
+                quantity: 1,
+                unit_price_cents: 3000,
+                line_total_cents: 3000,
+                currency: 'EUR',
+                tax_treatment: 'not_taxable',
+                tax_rate_permille: 0,
+              },
+            ],
+          },
+        ),
+      );
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      const etikett = await screen.findByText('Ausfallhonorar');
+      expect(etikett.textContent).toBe('Ausfallhonorar');
     });
   });
 });

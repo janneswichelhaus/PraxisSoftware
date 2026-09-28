@@ -2,12 +2,18 @@ import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { aktiveStandortvorlage } from '@/features/preview/standortvorlage';
-import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
+import {
+  radMitStandort,
+  useVorschau,
+  type Protokolleintrag,
+} from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { SimulationsMeldung } from '@/features/preview/ui';
 import {
@@ -90,7 +96,7 @@ export function BreakdownPage() {
         folgen: [
           `Pannenverlauf ergänzt: ${ergebnisAbschluss.text}`,
           ergebnisAbschluss.sperrt
-            ? `${radName} in der Vorschau als „In Reparatur" markiert – das Rad steht in der Planung nicht mehr zur Verfügung`
+            ? `${radName} in der Vorschau als „In Reparatur“ markiert – das Rad steht in der Planung nicht mehr zur Verfügung`
             : `${radName} bleibt nutzbar – die Meldung sperrt es nicht`,
         ],
         nichtGeschehen: [
@@ -126,15 +132,12 @@ export function BreakdownPage() {
   if (ergebnis) {
     return (
       <>
+        <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
         <PageHeader title="Panne melden" description="Meldung abgeschlossen." />
         <SimulationsMeldung eintrag={ergebnis} />
         <div className="flex flex-wrap gap-3">
-          <Link
-            to="/betrieb/flotte"
-            className="bg-accent hover:bg-accent-hover rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium text-white transition-colors"
-          >
-            Zurück zur Radflotte
-          </Link>
+          {/* Seitenwechsel als ButtonLink statt eigener Klassenkette (VOR-12). */}
+          <ButtonLink to="/betrieb/flotte">Zurück zur Radflotte</ButtonLink>
           <Button
             variant="secondary"
             onClick={() => {
@@ -153,12 +156,18 @@ export function BreakdownPage() {
 
   return (
     <>
-      <PageHeader title="Panne melden" description={rad ? rad.name : 'Rad noch nicht ausgewählt'} />
+      <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
+      {/* Solange das Rad gewählt wird, ist keines gewählt - auch wenn die
+          Auswahl eines vorbelegt (VOR-18). */}
+      <PageHeader
+        title="Panne melden"
+        description={rad && ablauf.schritt !== 'radwahl' ? rad.name : 'Rad noch nicht ausgewählt'}
+      />
 
       <div className="rounded-card border-line bg-surface max-w-xl border p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <Badge ton="warnung">{vorlage.herkunft}-Vorlage</Badge>
-          <span className="text-ink-subtle text-sm">{vorlage.pruefhinweis}</span>
+          <span className="text-ink-muted text-sm">{vorlage.pruefhinweis}</span>
         </div>
 
         <h2 className="text-ink mb-4 text-[1.0625rem] font-semibold">
@@ -215,7 +224,7 @@ export function BreakdownPage() {
         <div className="border-line mt-6 flex flex-wrap gap-3 border-t pt-4">
           <Link
             to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
           >
             Abbrechen
           </Link>
@@ -265,7 +274,7 @@ function Schrittinhalt({
           >
             {vorschau.raeder.map((rad) => (
               <option key={rad.id} value={rad.id}>
-                {rad.name} ({depotName(vorschau, rad, 'aktuell')})
+                {radMitStandort(vorschau, rad)}
               </option>
             ))}
           </Select>
@@ -314,12 +323,12 @@ function Schrittinhalt({
       return (
         <div className="mb-4">
           <Hinweiskasten>Rad bitte vor Ort reparieren lassen.</Hinweiskasten>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-4">
             Behandlung, die nicht mehr zu schaffen ist, telefonisch absagen. Eintrag im Kalender und
             kurze Information an Praxismanagement und {vorlage.zustaendigeRolle}.
           </p>
           <Button onClick={() => beenden('lokalRepariert')}>
-            Erledigt – Rad als „In Reparatur" markieren
+            Erledigt – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -338,16 +347,16 @@ function Schrittinhalt({
           <Hinweiskasten>
             {vorlage.depot.bezeichnung}: {vorlage.depot.zugangHinweis}
           </Hinweiskasten>
-          <p className="text-ink mb-2 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-2">
             {vorlage.zustaendigeRolle} kurz über den Schaden informieren, damit die Reparatur
             koordiniert werden kann.
           </p>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-4">
             Bis auf Weiteres bitte <strong>{ersatzrad}</strong> nutzen – so lange, bis das defekte
             Rad wieder freigegeben ist.
           </p>
           <Button onClick={() => beenden('depotAbgestellt')}>
-            Rad als „In Reparatur" markieren
+            Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -368,10 +377,10 @@ function Schrittinhalt({
             <br />
             Telefon: {vorlage.werkstatt.telefon} · Mobil: {vorlage.werkstatt.mobil}
           </Hinweiskasten>
-          <p className="text-ink text-[0.9375rem]">
+          <p className="text-ink text-liste">
             Zusätzlich kurze Nachricht an die {vorlage.zustaendigeRolle} über {vorlage.meldeweg}.
           </p>
-          <p className="text-ink text-[0.9375rem]">
+          <p className="text-ink text-liste">
             {vorlage.mitnehmen.join(' und ')} vom Rad entfernen und mitnehmen. Rad an einem festen
             Gegenstand anketten.
           </p>
@@ -420,13 +429,13 @@ function Schrittinhalt({
     case 'zusammenfassung':
       return (
         <div className="mb-4">
-          <ul className="text-ink mb-4 list-disc space-y-1 pl-5 text-[0.9375rem]">
+          <ul className="text-ink text-liste mb-4 list-disc space-y-1 pl-5">
             {punkte.map((punkt) => (
               <li key={punkt}>{punkt}</li>
             ))}
           </ul>
           <Button onClick={() => beenden('transportFortsetzung')}>
-            Bestätigen – Rad als „In Reparatur" markieren
+            Bestätigen – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -434,7 +443,7 @@ function Schrittinhalt({
     case 'vertragswerkstattKontakt':
       return (
         <div className="mb-4">
-          <p className="text-ink mb-3 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-3">
             Kontakt zu {vorlage.werkstatt.name} aufnehmen: Bescheid geben, dass Sie aus der Praxis
             kommen und in etwa 15 Minuten mit einem Schaden vorbeikommen.
           </p>
@@ -451,7 +460,7 @@ function Schrittinhalt({
         <div className="mb-4">
           <Hinweiskasten>Reparatur durchführen lassen.</Hinweiskasten>
           <Button onClick={() => beenden('vertragswerkstattRepariert')}>
-            Erledigt – Rad als „In Reparatur" markieren
+            Erledigt – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -459,10 +468,8 @@ function Schrittinhalt({
     case 'vertragswerkstattUebergabe':
       return (
         <div className="mb-4">
-          <p className="text-ink mb-2 text-[0.9375rem]">
-            {vorlage.zustaendigeRolle} Bescheid geben.
-          </p>
-          <p className="text-ink mb-4 text-[0.9375rem]">
+          <p className="text-ink text-liste mb-2">{vorlage.zustaendigeRolle} Bescheid geben.</p>
+          <p className="text-ink text-liste mb-4">
             Am nächsten Werktag <strong>{ersatzrad}</strong> nutzen, so lange, bis das andere Rad
             wieder freigegeben ist.
           </p>

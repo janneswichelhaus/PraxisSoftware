@@ -41,7 +41,9 @@ const FOTO: FotoApi.Patientenfoto = {
   object_missing: false,
 };
 
-describe('FotoHerausgabe', () => {
+// Unter voller Last der Testsuite reichen 5 s für den ersten Knopfdruck samt
+// Abfrage nicht immer.
+describe('FotoHerausgabe', { timeout: 20_000 }, () => {
   const geklickt = vi.fn();
 
   beforeEach(() => {
@@ -65,7 +67,9 @@ describe('FotoHerausgabe', () => {
   it('gibt erst auf Knopfdruck heraus, je Foto, unter einem sicheren Dateinamen', async () => {
     renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
 
-    const knopf = await screen.findByRole('button', { name: /Kopie für die Person sichern/ });
+    const knopf = await screen.findByRole('button', {
+      name: 'Kopie für die Person herunterladen: Knie rechts/links: Vergleich',
+    });
     expect(gibPatientenfotoHeraus).not.toHaveBeenCalled();
 
     await userEvent.click(knopf);
@@ -74,7 +78,13 @@ describe('FotoHerausgabe', () => {
       expect(geklickt).toHaveBeenCalledWith('Knie rechts_links_ Vergleich.jpg', 'blob:kopie'),
     );
     expect(gibPatientenfotoHeraus).toHaveBeenCalledWith('f1');
-    expect(await screen.findByText('Gesichert und protokolliert.')).toBeInTheDocument();
+    // Gemeldet wird, was die Seite weiß - nicht, dass gesichert ist (DAT-19).
+    expect(
+      await screen.findByText(
+        'Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen ist.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Gesichert/)).toBeNull();
   });
 
   it('meldet eine Abweisung, statt still nichts zu sichern', async () => {
@@ -84,7 +94,7 @@ describe('FotoHerausgabe', () => {
     renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
 
     await userEvent.click(
-      await screen.findByRole('button', { name: /Kopie für die Person sichern/ }),
+      await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),
     );
     expect(await screen.findByRole('alert')).toHaveTextContent(/Fehlt die Berechtigung/);
     expect(geklickt).not.toHaveBeenCalled();
@@ -96,6 +106,18 @@ describe('FotoHerausgabe', () => {
     expect(await screen.findByText('Keine Fotos')).toBeInTheDocument();
   });
 
+  it('meldet einen Ladefehler mit einem neuen Versuch (DAT-13, WRT-01)', async () => {
+    fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
+    renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
+
+    expect(await screen.findByText('Die Fotos konnten nicht geladen werden.')).toBeVisible();
+    expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(
+      await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),
+    ).toBeInTheDocument();
+  });
+
   it('bildet den Dateinamen ohne Pfad- und Steuerzeichen', () => {
     expect(herausgabeDateiname('../../etc/passwd')).toBe('.._.._etc_passwd.jpg');
     expect(herausgabeDateiname('Schulter äußere Seite')).toBe('Schulter äußere Seite.jpg');
@@ -105,7 +127,7 @@ describe('FotoHerausgabe', () => {
 
   it('besteht die Barrierefreiheitsprüfung', async () => {
     const { container } = renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
-    await screen.findByRole('button', { name: /Kopie für die Person sichern/ });
+    await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ });
     await pruefeBarrierefreiheit(container);
   });
 });

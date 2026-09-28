@@ -198,10 +198,21 @@ describe('TagUmplanenPage', () => {
     await user.click(screen.getByRole('button', { name: '2 Termine absagen' }));
     await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
 
-    expect(await screen.findByText('2 Termine sind abgesagt. Jetzt anrufen.')).toBeInTheDocument();
+    // Eine Erfolgsmeldung mit Zeichen (UIK-21).
+    expect(await screen.findByText(/2 Termine sind abgesagt\. Jetzt anrufen\./)).toHaveTextContent(
+      '✓',
+    );
     const anruf = await screen.findAllByRole('link', { name: /Mobil: 0170 1234567/ });
     expect(anruf[0]).toHaveAttribute('href', 'tel:01701234567');
     expect(screen.getByText(/nicht gespeichert/)).toBeInTheDocument();
+    // Die Anrufliste steht in der Adresse (KAL-06): Der Weg in die Akte nimmt
+    // sie als Rückweg mit - nur Kennungen, keine Namen.
+    const name = screen.getAllByRole('link', { name: 'Erika Beispiel' })[0]!;
+    const zurueck = new URL(name.getAttribute('href')!, 'http://test').searchParams.get('zurueck');
+    expect(zurueck).toContain('abgesagt=termin-1%2Ctermin-2');
+    expect(zurueck).not.toMatch(/Erika|Beispiel/);
+    // Nach dem letzten Anruf der Weg zum Kalender (KAL-19).
+    expect(screen.getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute('href', '/kalender');
   });
 
   it('bietet einem Zugang ohne Terminrecht keine Absage an', async () => {
@@ -213,10 +224,15 @@ describe('TagUmplanenPage', () => {
   });
 
   it('sagt bei fehlender Person nichts ab, sondern verweist auf den Kalender', async () => {
-    rendern('/kalender/tag-umplanen');
+    rendern('/kalender/tag-umplanen?zurueck=%2Fkalender%3Fansicht%3Dwoche');
 
     expect(await screen.findByText('Person und Tag fehlen')).toBeInTheDocument();
     expect(fetchDayPlan).not.toHaveBeenCalled();
+    // Der Weg dorthin nimmt den mitgereisten Rückweg (NAV-02).
+    expect(screen.getByRole('link', { name: 'Zum Kalender' })).toHaveAttribute(
+      'href',
+      '/kalender?ansicht=woche',
+    );
   });
 
   it('weist ein unplausibles Datum ab, statt still auf heute zu fallen', async () => {
@@ -246,9 +262,89 @@ describe('TagUmplanenPage', () => {
     await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
     await user.click(screen.getByRole('button', { name: '1 Termin absagen' }));
     await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
-    await screen.findByText('Ein Termin ist abgesagt. Jetzt anrufen.');
+    await screen.findByText(/Ein Termin ist abgesagt\. Jetzt anrufen\./);
 
     await pruefeBarrierefreiheit(container);
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-Review 2026-09 (UXR-004)
+  // ---------------------------------------------------------------------------
+
+  it('fuehrt die Anrufliste nur aus den eben abgesagten Kennungen der Adresse (KAL-06)', async () => {
+    // termin-1 hatte die Patient:in schon vorher abgesagt - er gehört nicht auf
+    // die Liste. termin-2 ist in diesem Vorgang abgesagt worden.
+    fetchDayPlan.mockResolvedValue([
+      eintrag({
+        status: 'cancelled',
+        patient_given_name: 'Frueher',
+        patient_family_name: 'Abgesagt',
+      }),
+      eintrag({ id: 'termin-2', status: 'cancelled' }),
+    ]);
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-2`);
+
+    expect(await screen.findByText('Anrufliste (1)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
+    expect(screen.queryByText(/Frueher Abgesagt/)).toBeNull();
+    // Keine zweite Absage: Die Seite steht nach dem Neuladen wieder bei der Anrufliste.
+    expect(screen.queryByRole('button', { name: /absagen/ })).toBeNull();
+  });
+
+  it('nennt den Tag in der Zeitzone der Praxis, auch ohne Termine (KAL-10)', async () => {
+    fetchDayPlan.mockResolvedValue([]);
+    rendern();
+
+    expect(await screen.findByText('Anna Beispiel · Mittwoch, 12. Mai 2027')).toBeInTheDocument();
+    expect(screen.queryByText(/2027-05-12/)).toBeNull();
+  });
+
+  it('hat einen Rueckweg, der den mitgereisten Kalenderstand nimmt (KAL-19)', async () => {
+    rendern(
+      `/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&zurueck=%2Fkalender%3Fansicht%3Dtag%26datum%3D${DATUM}`,
+    );
+
+    expect(await screen.findByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      `/kalender?ansicht=tag&datum=${DATUM}`,
+    );
+  });
+
+  it('bietet beim Ladefehler einen Weg heraus (WRT-01)', async () => {
+    fetchDayPlan.mockRejectedValueOnce(new Error('Netz'));
+    rendern();
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Der Tag konnte nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+
+    await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByText(/Diese Termine werden abgesagt \(2\)/)).toBeInTheDocument();
+  });
+
+  it('beschriftet die leere Wahl wie ueberall (WRT-14)', async () => {
+    rendern();
+    await screen.findByText(/Diese Termine werden abgesagt/);
+
+    expect(
+      within(screen.getByLabelText('Absagegrund')).getByRole('option', { name: 'Bitte wählen …' }),
+    ).toBeInTheDocument();
+  });
+
+  it('laesst die Anrufliste stehen, wenn nur das Nachladen scheitert (ZST-03)', async () => {
+    fetchDayPlan.mockResolvedValue([eintrag({ status: 'cancelled' })]);
+    rendern(`/kalender/tag-umplanen?person=${ANNA}&datum=${DATUM}&abgesagt=termin-1`);
+    expect(await screen.findByText('Anrufliste (1)')).toBeInTheDocument();
+
+    // Das Gerät kommt zurück, das Nachladen scheitert - der Stand bleibt.
+    fetchDayPlan.mockRejectedValue(new Error('Netz'));
+    window.dispatchEvent(new Event('visibilitychange'));
+
+    expect(
+      await screen.findByText('Der Stand konnte nicht aktualisiert werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Anrufliste (1)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
   });
 
   it('sagt an einem Tag ohne bestaetigte Termine nichts an', async () => {

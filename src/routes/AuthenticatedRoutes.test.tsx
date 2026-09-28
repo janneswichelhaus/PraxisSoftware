@@ -137,13 +137,20 @@ describe('MDR-Riegel (ANN-089)', () => {
   });
 });
 
+/**
+ * Der Seitentitel der Auditansicht - „Audit" oder, sobald Menü und Titel ein
+ * Wort tragen, „Auditlog" (ORG-07). Die Prüfung gilt der Seite, nicht dem
+ * Wortlaut ihres Titels.
+ */
+const AUDITTITEL = /^Audit(log)?$/;
+
 describe('AuthenticatedRoutes', () => {
   it('oeffnet die Auditansicht fuer owner', async () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
       AUDIT,
     );
-    expect(await screen.findByRole('heading', { name: 'Audit' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: AUDITTITEL })).toBeInTheDocument();
   });
 
   it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
@@ -153,7 +160,7 @@ describe('AuthenticatedRoutes', () => {
         <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,
         AUDIT,
       );
-      expect(screen.queryByRole('heading', { name: 'Audit' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: AUDITTITEL })).toBeNull();
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
     },
   );
@@ -164,10 +171,11 @@ describe('AuthenticatedRoutes', () => {
       AUSKUNFT,
     );
     // fetchPatient liefert in dieser Datei null; entscheidend ist, dass die
-    // Seite ueberhaupt gemountet wird und nicht umgeleitet (OPS-006).
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Diese Akte konnte nicht geladen werden.',
-    );
+    // Seite ueberhaupt gemountet wird und nicht umgeleitet (OPS-006). Der
+    // Satz dazu lautet seit UXR-006 „Diese Akte gibt es nicht …" - geprueft
+    // wird die Seite, nicht ihr Wortlaut.
+    expect(await screen.findByRole('alert')).toHaveTextContent(/Diese Akte/);
+    expect(screen.queryByRole('heading', { name: /Guten/ })).toBeNull();
   });
 
   it.each([['therapist'], ['team_lead'], ['office'], ['patient']] as const)(
@@ -245,13 +253,15 @@ describe('AuthenticatedRoutes', () => {
 
   // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs
   // "Organisatorisches";
-  // geprueft wird deshalb auf einer Seite dieses Bereichs.
+  // geprueft wird deshalb auf einer Seite dieses Bereichs. Der Menuepunkt
+  // heisst seit UXR-002 wie die Seite: „Auditlog" (ORG-07).
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['therapist', 'team_lead'])} onSignOut={vi.fn()} />,
       FLOTTE,
     );
-    expect(screen.queryByRole('link', { name: 'Sicherheit' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Auditlog' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Aufbewahrung' })).toBeNull();
   });
 
   it('zeigt owner den Sicherheitsbereich in der Navigation', () => {
@@ -259,7 +269,8 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
       FLOTTE,
     );
-    expect(screen.getAllByRole('link', { name: 'Sicherheit' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Auditlog' }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole('link', { name: 'Aufbewahrung' }).length).toBeGreaterThan(0);
   });
 
   it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {

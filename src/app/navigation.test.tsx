@@ -157,6 +157,51 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 });
 
+describe('Untermenü auf Detailseiten (UXR-002)', () => {
+  function punkt(roles: RoleKey[], bereichId: string, to: string) {
+    return bereicheFuer(roles)
+      .find((bereich) => bereich.id === bereichId)
+      ?.unterpunkte.find((eintrag) => eintrag.to === to);
+  }
+
+  it('markiert „Rechnungen" auch auf Rechnung, Blatt, Storno und Erinnerung (NAV-15, ABR-29)', () => {
+    const rechnungen = punkt(['office'], 'abrechnung', '/abrechnung');
+    expect(rechnungen?.label).toBe('Rechnungen');
+    expect(rechnungen?.pfade).toEqual(['/abrechnung/rechnungen', '/abrechnung/erinnerungen']);
+    // Nicht `end: false`: sonst leuchtete „Rechnungen" auch auf Zahlungen
+    // und Auswertung.
+    expect(rechnungen?.end).toBeUndefined();
+  });
+
+  it('markiert „Verordner:innen" auch auf den Formularen (VER-B01)', () => {
+    expect(punkt(['therapist'], 'patienten', '/verordner')?.end).toBe(false);
+  });
+
+  it('nennt Menüpunkte wie die Seiten, die sie öffnen (ABR-26, ORG-07)', () => {
+    expect(punkt(['owner'], 'abrechnung', '/abrechnung/katalog')?.label).toBe('Leistungskatalog');
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe('Auditlog');
+    expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.label).toBe('Arbeitszeiten');
+  });
+
+  it('gibt der Suche die Wörter mit, die auf den Seiten stehen (ORG-07)', () => {
+    expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.stichworte).toEqual(
+      expect.arrayContaining(['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']),
+    );
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.stichworte).toEqual(
+      expect.arrayContaining(['Audit', 'Protokoll', 'Zugriffe', 'Sicherheit']),
+    );
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')?.stichworte).toEqual(
+      expect.arrayContaining(['Löschung', 'Löschsperre']),
+    );
+  });
+
+  it('verspricht Raster, Frist und Startort nur der Rolle, die sie auf der Seite sieht', () => {
+    for (const rolle of ['therapist', 'team_lead', 'office'] as RoleKey[]) {
+      expect(punkt([rolle], 'betrieb', '/praxis/planung')?.stichworte, rolle).toEqual(['Planung']);
+    }
+  });
+});
+
 describe('aktiverBereich', () => {
   const bereiche = bereicheFuer(['owner']);
 

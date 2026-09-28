@@ -26,22 +26,35 @@ import { useIstVerbunden } from './verbindung';
 export function Verbindungsanzeige() {
   const verbunden = useIstVerbunden();
 
-  // Im Normalfall steht hier nichts. Eine dauerhafte „verbunden"-Anzeige wäre
-  // Rauschen: sie stünde 99 Prozent der Zeit da und würde genau dann übersehen,
-  // wenn sie umschlägt.
-  if (verbunden) return null;
-
+  // Im Normalfall steht hier nichts Sichtbares. Eine dauerhafte
+  // „verbunden"-Anzeige wäre Rauschen: sie stünde 99 Prozent der Zeit da und
+  // würde genau dann übersehen, wenn sie umschlägt.
+  //
+  // Die Zeile selbst steht aber immer im Baum, nur ihr Inhalt wechselt
+  // (NAV-11): Eine Live-Region, die erst zusammen mit ihrem Text entsteht,
+  // sagt Vorlesesoftware unzuverlässig an - sie muss den Bereich schon
+  // kennen, bevor sich darin etwas ändert.
   return (
-    <div
-      role="status"
-      className="border-warnung/30 bg-warnung-soft text-warnung nicht-drucken border-b px-5 py-2 text-sm"
-    >
-      {/* Der Hinweis ist Fließtext und begrenzt sich deshalb selbst auf ein
-          lesbares Maß — die Seitenbreite tut das seit UI-001 nicht mehr. */}
-      <span className="block max-w-prose">
-        <strong className="font-semibold">Keine Verbindung.</strong> Änderungen lassen sich gerade
-        nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück ist.
-      </span>
+    <div role="status" className="nicht-drucken">
+      {verbunden ? null : (
+        // Ohne eigenen Rand (TOK-09): Die weiche Fläche setzt sich vom Kopf
+        // darunter ab; ein Rand in abgeleiteter Deckkraft stand außerhalb der
+        // Palette.
+        <div className="bg-warnung-soft text-warnung px-5 py-2 text-sm">
+          {/* Der Hinweis ist Fließtext und begrenzt sich deshalb selbst auf ein
+              lesbares Maß — die Seitenbreite tut das seit UI-001 nicht mehr. */}
+          <span className="block max-w-prose">
+            {/* Das Zeichen der Warnung wie im Badge (DS-001): Farbe trägt nie
+                allein. Für Vorlesesoftware ausgeblendet, der Satz sagt es. */}
+            <span aria-hidden="true" className="mr-1.5 font-semibold">
+              !
+            </span>
+            <strong className="font-semibold">Keine Verbindung.</strong> Änderungen lassen sich
+            gerade nicht speichern. Bitte den Text im Feld stehen lassen, bis die Verbindung zurück
+            ist.
+          </span>
+        </div>
+      )}
     </div>
   );
 }

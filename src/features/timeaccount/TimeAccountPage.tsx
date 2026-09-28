@@ -6,7 +6,6 @@ import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardGrid, Disclosure } from '@/components/ui/Card';
-import { EmptyState } from '@/components/ui/Feedback';
 import type { CurrentUser } from '@/features/session/types';
 import {
   mitarbeiterName,
@@ -51,6 +50,14 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
 
   const gesamt = saldenNachPerson.reduce((summe, eintrag) => summe + eintrag.saldo, 0);
 
+  // Das eigene Konto steht einmal: vorn in der Liste und als „(Sie)“ markiert
+  // (VOR-16). Bis dahin stand es oben über die volle Breite und in der Liste
+  // ein zweites Mal. Wem es in der Vorschau gehört, sagt der Satz darüber.
+  const eigeneId = identitaet?.person.id ?? null;
+  const reihenfolge = [...saldenNachPerson].sort(
+    (a, b) => Number(b.person.id === eigeneId) - Number(a.person.id === eigeneId),
+  );
+
   if (formular) {
     return (
       <Buchungsformular
@@ -78,25 +85,21 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
         Saldo über alle Personen: <strong className="text-ink">{formatStunden(gesamt)}</strong>
       </p>
 
-      {identitaet ? (
-        <Abschnitt
-          titel="Mein Zeitkonto"
-          beschreibung={`Buchungen von ${identitaet.person.name}${identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.`}
-        >
-          {(() => {
-            const eintrag = saldenNachPerson.find(
-              (kandidat) => kandidat.person.id === identitaet.person.id,
-            );
-            if (!eintrag) return <EmptyState title="Keine Buchungen" />;
-            return <Personenkarte {...eintrag} />;
-          })()}
-        </Abschnitt>
-      ) : null}
-
-      <Abschnitt titel="Alle Zeitkonten">
+      <Abschnitt
+        titel="Alle Zeitkonten"
+        {...(identitaet
+          ? {
+              beschreibung: `Ihr Zeitkonto in der Vorschau ist das von ${identitaet.person.name}${identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}, markiert mit „(Sie)“.`,
+            }
+          : {})}
+      >
         <CardGrid>
-          {saldenNachPerson.map((eintrag) => (
-            <Personenkarte key={eintrag.person.id} {...eintrag} />
+          {reihenfolge.map((eintrag) => (
+            <Personenkarte
+              key={eintrag.person.id}
+              {...eintrag}
+              eigene={eintrag.person.id === eigeneId}
+            />
           ))}
         </CardGrid>
       </Abschnitt>
@@ -108,19 +111,26 @@ function Personenkarte({
   person,
   buchungen,
   saldo,
+  eigene,
 }: {
   person: { id: string; name: string; rolle: string };
   buchungen: Zeitbuchung[];
   saldo: number;
+  eigene: boolean;
 }) {
   return (
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink truncate text-[0.9375rem] font-semibold">{person.name}</p>
+          <p className="text-ink text-liste truncate font-semibold">
+            {person.name}
+            {eigene ? ' (Sie)' : ''}
+          </p>
           <p className="text-ink-muted mt-0.5 text-sm">{person.rolle}</p>
         </div>
-        <Badge ton={saldo >= 0 ? 'positiv' : 'kritisch'}>{formatStunden(saldo)}</Badge>
+        {/* Der Saldo als Zahl, ohne ✓ oder × (VOR-13): Minusstunden sind
+            keine Verfehlung, und das Zeitkonto bewertet niemanden (§20). */}
+        <Badge ton="neutral">{formatStunden(saldo)}</Badge>
       </div>
       <p className="text-ink-muted mt-2 text-sm">
         {buchungen.length} Buchung{buchungen.length === 1 ? '' : 'en'}
@@ -244,9 +254,10 @@ function Buchungsformular({
           onChange={(event) => setStunden(event.target.value)}
         />
 
+        {/* Ein Feld, ein Name - gleich welche Art (VOR-25). */}
         <TextArea
           rows={3}
-          label={art === 'geleistet' ? 'Grund' : 'Notiz'}
+          label="Grund"
           hint="Optional."
           placeholder="z. B. Vertretung Hausbesuche"
           value={grund}

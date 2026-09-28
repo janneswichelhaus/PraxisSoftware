@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, render, renderHook, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Kameradialog } from './Kameradialog';
-import { kameraVerfuegbar } from './kamera';
+import { KAMERA_FRIST, kameraVerfuegbar, useKamera } from './kamera';
 
 /**
  * Der Kameradialog (DOK-006, ADR-017 Punkt 33).
@@ -184,5 +184,103 @@ describe('Kameradialog', () => {
       />,
     );
     expect(await screen.findByText(/Gesicht nur/)).toBeInTheDocument();
+  });
+
+  it('bietet ohne Kamera am Gerät keinen aussichtslosen neuen Versuch an (DAT-25)', async () => {
+    getUserMedia.mockRejectedValue(Object.assign(new Error('keine'), { name: 'NotFoundError' }));
+    render(<Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/keine Kamera gefunden/);
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).not.toBeInTheDocument();
+  });
+
+  it('bietet einen neuen Versuch an, wo er Aussicht hat', async () => {
+    getUserMedia.mockRejectedValue(
+      Object.assign(new Error('belegt'), { name: 'NotReadableError' }),
+    );
+    render(<Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/anderen App/);
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('legt den Fokus auf „Auslösen", sobald die Kamera läuft (DAT-11)', async () => {
+    render(<Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);
+    const ausloesen = await screen.findByRole('button', { name: 'Auslösen' });
+    await waitFor(() => expect(ausloesen).toHaveFocus());
+  });
+
+  it('sagt, dass die Kamera startet, als Zustandsmeldung', () => {
+    getUserMedia.mockReturnValue(new Promise(() => undefined));
+    render(<Kameradialog titel="Foto" onAufnahme={vi.fn()} onSchliessen={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Kamera wird gestartet …');
+  });
+});
+
+describe('useKamera (DAT-25)', () => {
+  function stand() {
+    return renderHook(() => useKamera());
+  }
+
+  it('bietet die Kamera an, wenn die Geräteliste eine nennt', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia,
+        enumerateDevices: vi
+          .fn()
+          .mockResolvedValue([{ kind: 'audioinput' }, { kind: 'videoinput' }]),
+      },
+    });
+    const { result } = stand();
+    expect(result.current).toBe('pruefen');
+    await waitFor(() => expect(result.current).toBe('vorhanden'));
+  });
+
+  it('bietet sie am Rechner ohne Kamera nicht an', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia,
+        enumerateDevices: vi.fn().mockResolvedValue([{ kind: 'audioinput' }]),
+      },
+    });
+    const { result } = stand();
+    await waitFor(() => expect(result.current).toBe('keine'));
+  });
+
+  it('bietet sie an, wenn das Gerät keine Liste liefert - der Dialog sagt dann, was fehlt', async () => {
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: { getUserMedia, enumerateDevices: vi.fn().mockRejectedValue(new Error('nein')) },
+    });
+    const { result } = stand();
+    await waitFor(() => expect(result.current).toBe('vorhanden'));
+
+    kameraEinbauen();
+    expect(stand().result.current).toBe('vorhanden');
+  });
+
+  it('kennt ohne sichere Verbindung keine Kamera-Schnittstelle', () => {
+    kameraAusbauen();
+    expect(stand().result.current).toBe('ohneSchnittstelle');
+  });
+
+  it('bietet die Kamera an, wenn die Geräteliste nicht antwortet (Frist)', () => {
+    vi.useFakeTimers();
+    try {
+      Object.defineProperty(navigator, 'mediaDevices', {
+        configurable: true,
+        value: { getUserMedia, enumerateDevices: vi.fn(() => new Promise(() => undefined)) },
+      });
+      const { result } = stand();
+      expect(result.current).toBe('pruefen');
+      act(() => {
+        vi.advanceTimersByTime(KAMERA_FRIST);
+      });
+      expect(result.current).toBe('vorhanden');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

@@ -1,12 +1,13 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Section } from '@/components/ui/Section';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -39,6 +40,8 @@ import {
   type TerminCursor,
 } from './api';
 import { schreibeParameter, ZOOM_STANDARD } from './calendar';
+import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
+import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 
 /**
  * Der Terminbereich der Akte (AKTE-003, gruppiert seit AKTE-006).
@@ -89,7 +92,16 @@ function grundlagenBeschriftung(termin: {
 const FILTER = 'verordnung';
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-function Terminzeile({ termin, patientId }: { termin: PatientAppointment; patientId: string }) {
+function Terminzeile({
+  termin,
+  patientId,
+  hervorgehoben,
+}: {
+  termin: PatientAppointment;
+  patientId: string;
+  /** Gerade angelegt - beim Zurückkommen aus dem Formular (TER-04). */
+  hervorgehoben: boolean;
+}) {
   const zone = termin.organization_time_zone;
 
   return (
@@ -100,9 +112,11 @@ function Terminzeile({ termin, patientId }: { termin: PatientAppointment; patien
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
         <Link
           to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}/termine`)}
-          className="hover:bg-surface-sunken -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center rounded px-2 transition-colors"
+          // Der eben angelegte Termin trägt die Fläche der aktiven Auswahl;
+          // die Bestätigung über der Liste sagt es in Worten (TER-04).
+          className={`${hervorgehoben ? 'bg-accent-soft' : 'hover:bg-surface-sunken'} rounded-button -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center px-2 transition-colors`}
         >
-          <span className="text-ink text-[0.9375rem] font-medium">
+          <span className="text-ink text-liste font-medium">
             {formatLocalDate(termin.starts_at, zone)}
           </span>
           <span className="text-ink-muted text-sm">
@@ -203,19 +217,23 @@ function Gruppenkopf({ gruppe, patientId }: { gruppe: Terminguppe; patientId: st
   return (
     <div className="mb-1 flex flex-wrap items-center gap-x-3 gap-y-1">
       {/* Die Überschrift ist zugleich der Weg zur Grundlage — vor AKTE-006
-          stand er an jeder einzelnen Zeile und sagte dort immer dasselbe. */}
-      <h4 className="text-ink text-[0.9375rem] font-semibold">
+          stand er an jeder einzelnen Zeile und sagte dort immer dasselbe.
+
+          Eine Stufe unter dem Abschnitt (h3 unter h2, TER-16, UIK-20) und
+          als Link erkennbar, nicht erst beim Überfahren - mit einem Ziel von
+          44 px Höhe (RSP-06, UIK-15, TER-17). */}
+      <h3 className="text-ink text-liste font-bold">
         {grundlageId ? (
-          <Link
+          <Textlink
+            alleinstehend
             to={`/patienten/${patientId}/verordnungen#verordnung-${grundlageId}`}
-            className="hover:text-accent hover:underline"
           >
             {gruppe.titel}
-          </Link>
+          </Textlink>
         ) : (
           gruppe.titel
         )}
-      </h4>
+      </h3>
       {/* Die Deckung ist eine Aussage über die Grundlage und steht deshalb an
           der Überschrift (CAL-022). Als Satz und nicht als Abzeichen: Welche
           Termine ungedeckt sind, zeigen die Zeichen in den Zeilen darunter —
@@ -234,6 +252,7 @@ function Terminliste({
   kontingente,
   leerText,
   weiterText,
+  neuerTermin,
 }: {
   patientId: string;
   kuenftig: boolean;
@@ -241,6 +260,8 @@ function Terminliste({
   kontingente: readonly TreatmentBasisKontingent[];
   leerText: string;
   weiterText: string;
+  /** Der gerade angelegte Termin, hervorgehoben (TER-04). */
+  neuerTermin: string | null;
 }) {
   const seiten = useInfiniteQuery({
     queryKey: ['patient-appointments', patientId, kuenftig, verordnung],
@@ -263,11 +284,28 @@ function Terminliste({
   return (
     <>
       {seiten.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
-      {seiten.isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
-
-      {seiten.data && termine.length === 0 ? (
-        <p className="text-ink-muted text-[0.9375rem]">{leerText}</p>
+      {/* Mit dem nächsten Schritt statt einer Ratefrage, und mit dem Weg, es
+          gleich noch einmal zu versuchen (WRT-01, UIK-16). Ein gescheitertes
+          Weiterblättern meldet sich unten am Knopf. */}
+      {seiten.isError && !seiten.data ? (
+        <ErrorState
+          title="Die Termine konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void seiten.refetch()}
+        />
       ) : null}
+
+      {/* Ein gescheitertes Nachladen nimmt die Liste nicht mit (ZST-03). */}
+      {seiten.isRefetchError ? (
+        <NachladeHinweis
+          className="mb-3"
+          laeuft={seiten.isFetching}
+          onErneut={() => void seiten.refetch()}
+        />
+      ) : null}
+
+      {/* Der Leerzustand aus dem Baustein statt eigenem Text (TER-16). */}
+      {seiten.data && termine.length === 0 ? <EmptyState title={leerText} /> : null}
 
       {gruppiere(termine, kontingente).map((gruppe) => (
         <div
@@ -279,7 +317,12 @@ function Terminliste({
           <Gruppenkopf gruppe={gruppe} patientId={patientId} />
           <ul>
             {gruppe.termine.map((termin) => (
-              <Terminzeile key={termin.id} termin={termin} patientId={patientId} />
+              <Terminzeile
+                key={termin.id}
+                termin={termin}
+                patientId={patientId}
+                hervorgehoben={termin.id === neuerTermin}
+              />
             ))}
           </ul>
         </div>
@@ -297,7 +340,8 @@ function Terminliste({
           </Button>
           {seiten.isFetchNextPageError ? (
             <Statusmeldung ton="fehler" className="mt-2">
-              Die weiteren Termine konnten nicht geladen werden. Bitte erneut versuchen.
+              Die weiteren Termine konnten nicht geladen werden. Bitte die Verbindung prüfen und
+              erneut versuchen.
             </Statusmeldung>
           ) : null}
         </div>
@@ -313,6 +357,12 @@ export function PatientAppointmentsPage() {
 
 export function Terminbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const [suche, setSuche] = useSearchParams();
+  // Was ein Vorgang beim Hierherkommen mitgibt - „3 Termine angelegt." nach
+  // der Serie (TER-04). Ungeprüft, bis `leseMeldung` es liest.
+  const zustand: unknown = useLocation().state;
+  const eingangsmeldung = leseMeldung(zustand);
+  /** Der gerade angelegte Einzeltermin, wenn das Formular hierher zurückkam (TER-04). */
+  const neuerTermin = leseAngelegtenTermin(suche);
 
   const roh = suche.get(FILTER);
   const verordnung = roh && UUID.test(roh) ? roh : null;
@@ -363,6 +413,15 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
 
   return (
     <>
+      {/* Die Bestätigung steht über den Listen und nimmt den Fokus: Nach dem
+          Anlegen sagt die Seite, dass es geklappt hat, statt die neuen
+          Termine suchen zu lassen (TER-04). */}
+      {eingangsmeldung ? (
+        <Rueckmeldung className="mb-6">{eingangsmeldung}</Rueckmeldung>
+      ) : neuerTermin ? (
+        <Rueckmeldung className="mb-6">Termin angelegt.</Rueckmeldung>
+      ) : null}
+
       {verordnung ? (
         <div
           role="status"
@@ -417,6 +476,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           kontingente={kontingente.data ?? []}
           leerText="Kein weiterer Termin vereinbart."
           weiterText="Weitere Termine anzeigen"
+          neuerTermin={neuerTermin}
         />
       </Section>
 
@@ -432,6 +492,7 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           kontingente={kontingente.data ?? []}
           leerText="Für diese Person gibt es noch keinen vergangenen Termin."
           weiterText="Ältere Termine anzeigen"
+          neuerTermin={neuerTermin}
         />
       </Section>
     </>

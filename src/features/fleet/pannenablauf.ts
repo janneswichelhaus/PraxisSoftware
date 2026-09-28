@@ -186,13 +186,13 @@ export function frage(schritt: SchrittId, vorlage: Standortvorlage): string {
     case 'ruhetag':
       return `Ist heute ${vorlage.werkstatt.ruhetag}?`;
     case 'depotErreichbar':
-      return `War das die letzte Therapie am Tag UND ist das ${vorlage.depot.bezeichnung} 15–30 Minuten entfernt?`;
+      return `War das die letzte Behandlung am Tag und ist das ${vorlage.depot.bezeichnung} 15–30 Minuten entfernt?`;
     case 'depotBringen':
       return `Lastenrad ins ${vorlage.depot.bezeichnung} bringen.`;
     case 'radZuruecklassen':
       return 'Fahrrad zurücklassen. Wo genau steht es?';
     case 'fuehrerschein':
-      return 'Hast du einen Autoführerschein?';
+      return 'Haben Sie einen Autoführerschein?';
     case 'fahrzeugErreichbar':
       return 'Ist ein Carsharing-Fahrzeug in 15 Minuten Fußweg erreichbar?';
     case 'zusammenfassung':
@@ -231,12 +231,13 @@ export function abschluss(art: Abschlussart, kontext: Abschlusskontext): Abschlu
         text: `Weiterfahrt möglich: ${zustand.freitext.trim() || 'ohne nähere Angabe'}`,
       };
     case 'lokalNichtMoeglich':
+      // Nur, was feststeht (VOR-08): Auf das „Nein" folgt kein Schritt, der zum
+      // Absagen und Informieren auffordert - der Verlauf behauptet es deshalb
+      // auch nicht.
       return {
         art,
         sperrt: true,
-        text:
-          'Lokale Werkstatt: Reparatur vor Ort nicht möglich. Betroffene Behandlung telefonisch ' +
-          'abgesagt, Kalender und Praxismanagement informiert.',
+        text: 'Lokale Werkstatt: Reparatur vor Ort nicht möglich.',
       };
     case 'lokalRepariert':
       return {
@@ -252,7 +253,7 @@ export function abschluss(art: Abschlussart, kontext: Abschlusskontext): Abschlu
         sperrt: true,
         text:
           `Ins ${vorlage.depot.bezeichnung} gebracht (${vorlage.werkstatt.ruhetag}, letzte ` +
-          `Therapie des Tages). ${rolle} zur Koordination informiert. Bis zur Freigabe wird ` +
+          `Behandlung des Tages). ${rolle} zur Koordination informiert. Bis zur Freigabe wird ` +
           `${ersatzrad} genutzt.`,
       };
     case 'vertragswerkstattRepariert':

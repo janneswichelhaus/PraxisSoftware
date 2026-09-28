@@ -137,8 +137,38 @@ describe('AdresseVerorten', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent(/keinen Treffer/);
   });
 
-  it('bietet bei unvollstaendiger Adresse nichts an', () => {
+  it('bietet bei unvollstaendiger Adresse nichts an und sagt, was fehlt (PAT-15)', () => {
     renderWithProviders(<AdresseVerorten patient={{ ...OHNE, city: null }} />);
     expect(screen.queryByRole('button')).toBeNull();
+    expect(
+      screen.getByText('Für die Kartenposition fehlen Straße, PLZ oder Ort.'),
+    ).toBeInTheDocument();
+  });
+
+  // PAT-15: Eigene Sätze mit Handlung statt der Titel aus der Routenberechnung.
+  it.each([
+    ['unavailable', 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.'],
+    ['timeout', 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.'],
+    [
+      'not_configured',
+      'Für die Praxis ist kein Kartendienst eingerichtet. Die Adresse bleibt vorerst ohne Kartenposition.',
+    ],
+    [
+      'session_invalid',
+      'Die Anmeldung gilt nicht mehr. Bitte neu anmelden und dann erneut verorten.',
+    ],
+    // Die eigene Funktion war es - der Satz schiebt es nicht dem Kartendienst zu.
+    [
+      'function_unavailable',
+      'Die Verortung ist gerade nicht möglich. Bitte später erneut verorten.',
+    ],
+  ])('meldet „%s" mit einem Satz, der sagt, was jetzt geht', async (code, satz) => {
+    geocodiere.mockResolvedValue({ ok: false, error: { code, message: 'x' } });
+    renderWithProviders(<AdresseVerorten patient={OHNE} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));
+
+    const meldung = await screen.findByRole('alert');
+    expect(meldung).toHaveTextContent(satz);
+    expect(meldung.textContent).not.toMatch(/Routenfunktion|Serverschlüssel|Anfrage nicht gültig/);
   });
 });

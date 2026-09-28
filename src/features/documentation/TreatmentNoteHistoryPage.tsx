@@ -1,15 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
   formatLocalTime,
+  formatLocalTimeRange,
   patientName,
   type Appointment,
 } from '@/features/appointments/api';
 import { DocumentationShell } from './DocumentationShell';
+import { FREITEXT } from './format';
 import { fetchTreatmentNoteVersions, findeEintrag, type TreatmentNote } from './api';
 
 /**
@@ -24,6 +27,11 @@ import { fetchTreatmentNoteVersions, findeEintrag, type TreatmentNote } from './
  * Lesen darf ihn, wer den Eintrag selbst lesen darf (Punkt 8) - seit E15 auch
  * office (ROL-001). Für Patientenkonten gibt es die Seite nicht und den
  * Serveraufruf ebenso wenig.
+ *
+ * Der Kopf ist so knapp wie auf den übrigen Doku-Seiten und nennt Name, Datum
+ * und Uhrzeit (BEF-001) und ob es um den Eintrag oder einen Nachtrag geht
+ * (DOK-18). Die jüngste Version ist die geltende Fassung und trägt das dazu -
+ * vorher musste man sie an der höchsten Nummer erkennen.
  */
 function Verlauf({ appointment, note }: { appointment: Appointment; note: TreatmentNote }) {
   const zone = appointment.organization_time_zone;
@@ -34,21 +42,31 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
     retry: false,
   });
 
+  const juengste = versionen.data?.reduce(
+    (hoechste, version) => Math.max(hoechste, version.version_no),
+    0,
+  );
+
   return (
     <>
       <PageHeader
-        title="Änderungsverlauf"
-        description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}`}
+        title={`Änderungsverlauf · ${note.addendum_to_note_id === null ? 'Eintrag' : 'Nachtrag'}`}
+        description={`${patientName(appointment)} · ${formatLocalDate(appointment.starts_at, zone)}, ${formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}`}
+        kompakt
       />
 
       {versionen.isPending ? <LoadingState label="Verlauf wird geladen …" /> : null}
 
       {versionen.isError ? (
-        <ErrorState title="Der Änderungsverlauf konnte nicht geladen werden." />
+        <ErrorState
+          title="Der Änderungsverlauf konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => versionen.refetch()}
+        />
       ) : null}
 
       {versionen.data?.length === 0 ? (
-        <p className="text-ink-muted max-w-prose text-[0.9375rem]">
+        <p className="text-ink-muted text-liste max-w-prose">
           Dieser Eintrag ist noch ein Entwurf. Festgeschriebene Versionen entstehen erst mit der
           Finalisierung.
         </p>
@@ -63,10 +81,11 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
               aria-label={`Version ${version.version_no}`}
             >
               <div className="flex flex-wrap items-center gap-2">
-                <span className="border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium">
-                  Version {version.version_no}
-                </span>
-                <span className="text-ink-subtle text-xs">
+                <Badge>Version {version.version_no}</Badge>
+                {version.version_no === juengste ? (
+                  <Badge ton="akzent">Geltende Fassung</Badge>
+                ) : null}
+                <span className="text-ink-muted text-xs">
                   {formatLocalDate(version.recorded_at, zone)},{' '}
                   {formatLocalTime(version.recorded_at, zone)} Uhr
                   {version.author_name ? ` · ${version.author_name}` : ''}
@@ -79,12 +98,12 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
                   {version.change_reason}
                 </p>
               ) : (
-                <p className="text-ink-subtle mt-3 text-sm">
+                <p className="text-ink-muted mt-3 text-sm">
                   Bei der Finalisierung festgeschriebener Stand.
                 </p>
               )}
 
-              <p className="text-ink mt-3 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+              <p className={`text-ink text-liste mt-3 max-w-prose leading-relaxed ${FREITEXT}`}>
                 {version.content}
               </p>
             </li>
@@ -92,7 +111,7 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
         </ol>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Frühere Versionen werden nicht überschrieben und nicht gelöscht. Das Lesen des Verlaufs wird
         gesondert protokolliert.
       </p>
@@ -107,7 +126,9 @@ export function TreatmentNoteHistoryPage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canReadTreatmentNote(user.roles)}
-      verweigert="Den Änderungsverlauf der Behandlungsdokumentation sieht die Verwaltung nicht."
+      // Seit E15 liest auch das Praxismanagement den Verlauf; gesperrt ist er
+      // nur für Konten außerhalb der Praxisrollen (WRT-12).
+      verweigert="Den Änderungsverlauf sehen nur die Praxisrollen."
     >
       {({ appointment, dokumentation }) => {
         const eintrag = findeEintrag(dokumentation, noteId);

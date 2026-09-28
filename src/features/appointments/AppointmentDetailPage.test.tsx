@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
@@ -396,7 +398,7 @@ describe('AppointmentDetailPage', () => {
       // am 2026-09-12 geaendert: Das Abhaken vor der Tuer verlangt keine
       // Entscheidung, fuer die es noch keine Regel gibt (E14).
       expect(screen.queryByLabelText('Ausfallhonorar berechnen?')).not.toBeInTheDocument();
-      expect(screen.getByText(/Eine Gebühr entsteht daraus nicht/)).toBeInTheDocument();
+      expect(screen.getByText(/Ein Ausfallhonorar entsteht daraus nicht/)).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
@@ -428,7 +430,7 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
       expect(zeile('Status')).toBe('Nicht angetroffen');
-      expect(screen.queryByText('Gebühr vorgemerkt')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ausfallhonorar vorgemerkt')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
     });
 
@@ -460,7 +462,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
-      expect(zeile('Gebühr vorgemerkt')).toMatch(/Nicht angetroffen/);
+      expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/Nicht angetroffen/);
       // Ohne bestaetigtes Protokoll steht auch keines da (CAL-018).
       expect(screen.queryByText('Protokoll')).not.toBeInTheDocument();
     });
@@ -497,8 +499,16 @@ describe('AppointmentDetailPage', () => {
       expect(screen.getByText('Niemand hat geöffnet')).toBeInTheDocument();
       expect(screen.getByText('Die Patient:in hat vorher abgesagt')).toBeInTheDocument();
 
-      expect(screen.getByText(/eine Ausfallgebühr entsteht nicht/)).toBeInTheDocument();
-      expect(screen.getByText(/löst eine Ausfallgebühr aus/)).toBeInTheDocument();
+      // Dasselbe Wort wie auf Rechnung, Katalog und Blatt für Patient:innen
+      // (TER-10), derselbe Zustand wie am Knopf (WRT-B01).
+      expect(screen.getByText(/ein Ausfallhonorar entsteht nicht/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/als „nicht angetroffen“ geführt und löst ein Ausfallhonorar aus/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Ausfallgebühr/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/nicht wahrgenommen/)).not.toBeInTheDocument();
+      // Keine Technikwörter im Hinweis (WRT-03, TER-22).
+      expect(screen.queryByText(/serverseitig/)).not.toBeInTheDocument();
     });
 
     it('fuehrt vom zweiten Szenario in den Abschluss mit Pflichtvermerk', async () => {
@@ -578,9 +588,13 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByText(/Hier wurde niemand angetroffen/);
       expect(zeile('Protokoll')).toMatch(/15 Minuten vor Ort gewartet/);
-      expect(zeile('Gebühr vorgemerkt')).toMatch(/Nicht angetroffen/);
-      // Kein Betrag: Leistungskatalog und Rechnung sind nicht gebaut.
-      expect(zeile('Gebühr vorgemerkt')).toMatch(/Höhe und Abrechnung stehen noch aus/);
+      expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/Nicht angetroffen/);
+      // Kein Betrag hier, aber der Ort, an dem abgerechnet wird (TER-10) -
+      // nicht mehr der überholte Satz vom fehlenden Katalog.
+      expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(
+        /Wird unter Abrechnung → Leistungen erfasst\./,
+      );
+      expect(screen.queryByText(/Leistungskatalog ist noch nicht/)).not.toBeInTheDocument();
     });
 
     it('zeigt den gefuehrten Ablauf nur am bestaetigten Hausbesuch', async () => {
@@ -688,8 +702,8 @@ describe('AppointmentDetailPage', () => {
 
     /**
      * Die Frist rechnet ausschliesslich der Server. Die Oberflaeche zeigt das
-     * Ergebnis und nennt ausdruecklich keinen Betrag - der Leistungskatalog
-     * (ABR-001) ist nicht gebaut, und eine Zahl hier waere erfunden.
+     * Ergebnis und nennt ausdruecklich keinen Betrag - die Hoehe steht im
+     * Katalog, abgerechnet wird ueber die Leistungen (TER-10).
      */
     it('zeigt den vorgemerkten Gebuehrenanlass ohne Betrag', async () => {
       fetchAppointment.mockResolvedValue({
@@ -704,8 +718,8 @@ describe('AppointmentDetailPage', () => {
       await screen.findByText(/Dieser Termin ist abgesagt/);
       expect(zeile('Status')).toBe('Abgesagt');
       expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
-      expect(zeile('Gebühr vorgemerkt')).toMatch(/weniger als 24 Stunden/);
-      expect(screen.getByText(/Höhe und Abrechnung stehen noch aus/)).toBeInTheDocument();
+      expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/weniger als 24 Stunden/);
+      expect(screen.getByText('Wird unter Abrechnung → Leistungen erfasst.')).toBeInTheDocument();
     });
 
     it('nennt bei einer Absage ohne Gebuehr keine Gebuehrenzeile', async () => {
@@ -718,7 +732,26 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByText(/Dieser Termin ist abgesagt/);
-      expect(screen.queryByText('Gebühr vorgemerkt')).not.toBeInTheDocument();
+      expect(screen.queryByText('Ausfallhonorar vorgemerkt')).not.toBeInTheDocument();
+    });
+
+    it('nennt die Frist ohne Technikwörter (WRT-03, TER-22)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+
+      expect(
+        screen.getByText(/Die Frist wird automatisch berechnet; genau 24 Stunden vorher gilt/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Server/)).not.toBeInTheDocument();
+      // Die leere Auswahl heißt wie in jedem anderen Formular (WRT-14).
+      expect(
+        within(screen.getByLabelText('Absagegrund')).getByRole('option', {
+          name: 'Bitte wählen …',
+        }),
+      ).toBeInTheDocument();
     });
   });
 
@@ -817,8 +850,8 @@ describe('AppointmentDetailPage', () => {
       ).toBeInTheDocument();
 
       expect(screen.queryByLabelText('Wann ist die Absage eingegangen?')).not.toBeInTheDocument();
-      expect(screen.queryByText(/Ausfallgebühr vor/)).not.toBeInTheDocument();
-      expect(screen.getByText(/löst keine Ausfallgebühr aus/)).toBeInTheDocument();
+      expect(screen.queryByText(/Ausfallhonorar vor/)).not.toBeInTheDocument();
+      expect(screen.getByText(/löst kein Ausfallhonorar aus/)).toBeInTheDocument();
     });
 
     it('nennt in der Rueckfrage die Bezeichnung und keinen leeren Namen', async () => {
@@ -850,11 +883,40 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
-      expect(await screen.findByText(/Anna Beispiel, Tim Teamleitung/)).toBeInTheDocument();
+      await waitFor(() => expect(zeile('Beteiligte')).toMatch(/^Anna Beispiel, Tim Teamleitung/));
       expect(screen.getByRole('button', { name: 'Fehlzeit absagen' })).toBeInTheDocument();
       expect(
         screen.getByRole('button', { name: 'Nur diese Teilnahme absagen' }),
       ).toBeInTheDocument();
+    });
+
+    it('fuehrt von jeder anderen Teilnahme zu ihrem Termin (TER-15)', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      fetchEventParticipants.mockResolvedValue(zweiBeteiligte);
+      rendern();
+
+      // Die eigene Teilnahme ist diese Seite - sie ist kein Link.
+      const tim = await screen.findByRole('link', { name: 'Tim Teamleitung' });
+      expect(tim).toHaveAttribute(
+        'href',
+        `/termine/${zweiBeteiligte[1]!.appointment_id}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+      );
+      expect(screen.queryByRole('link', { name: 'Anna Beispiel' })).not.toBeInTheDocument();
+    });
+
+    it('nennt an der Fehlzeit die Fehlzeit, nicht den Termin (TER-22)', async () => {
+      fetchAppointment.mockResolvedValue(ereignis);
+      rendern();
+
+      await screen.findByRole('heading', { name: /Teambesprechung/ });
+      expect(screen.getByRole('heading', { level: 2, name: 'Fehlzeit' })).toBeInTheDocument();
+      expect(screen.getByText(/Die Fehlzeit enthält ausschließlich/)).toBeInTheDocument();
+      // Ohne mitgereisten Weg führt „zurück" von einer Fehlzeit in den
+      // Kalender, nicht in die Patientenliste (TER-03).
+      expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+        'href',
+        '/kalender',
+      );
     });
 
     it('sagt das ganze Ereignis auf dem Stand der Gruppe ab', async () => {
@@ -1248,6 +1310,200 @@ describe('AppointmentDetailPage', () => {
       await screen.findByRole('heading', { name: /Teammeeting/ });
       await screen.findByText('Dauerfehlzeit');
       expect(screen.queryByRole('button', { name: 'Ganze Serie absagen' })).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * UXR-005: Nach einem Vorgang sagt die Seite, dass er geklappt hat - oben,
+   * wo man danach hinsieht, und mit dem Fokus dort (ZST-16, TER-17). Der
+   * Knopf, der den Fokus hatte, ist nach dem Vorgang meist fort.
+   */
+  describe('Bestätigung nach Vorgängen (ZST-16, TER-17)', () => {
+    /** Die fokussierbare Zeile um eine Bestätigung. */
+    function zeileUm(text: HTMLElement): HTMLElement | null {
+      return text.closest('[tabindex="-1"]');
+    }
+
+    it('bestätigt eine Absage oben und nimmt den Fokus dorthin', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      const meldung = await screen.findByText('Termin abgesagt.');
+      expect(meldung).toHaveAttribute('role', 'status');
+      expect(zeileUm(meldung)).toHaveFocus();
+    });
+
+    it('bestätigt den Abschluss und nimmt den Fokus dorthin', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(zeileUm(await screen.findByText('Termin abgeschlossen.'))).toHaveFocus();
+    });
+
+    it('bestätigt das Nichtantreffen am Hausbesuch samt Honorar', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        appointment_type: 'home_visit',
+        location_id: null,
+        location_name: null,
+        visit_street: 'Testweg',
+        visit_house_number: '7',
+        visit_postal_code: '72072',
+        visit_city: 'Tuebingen',
+      });
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+      for (const schritt of [
+        '15 Minuten vor Ort gewartet',
+        'An der Tür geklingelt',
+        'Telefonisch angerufen',
+      ]) {
+        await user.click(screen.getByLabelText(schritt));
+      }
+      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+
+      expect(
+        await screen.findByText(
+          'Als „nicht angetroffen“ vermerkt – das Ausfallhonorar ist vorgemerkt.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    /**
+     * ZST-B01: Die Bestätigung folgt dem Server, nicht dem Nachladen. Hängt
+     * das Nachladen im Funkloch, stand bisher sekundenlang „Wird abgeschlossen …"
+     * da, obwohl der Vorgang längst gespeichert war.
+     */
+    it('wartet mit der Bestätigung nicht auf das Nachladen', async () => {
+      fetchAppointment.mockResolvedValueOnce(praxistermin);
+      fetchAppointment.mockImplementation(() => new Promise(() => undefined));
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(await screen.findByText('Termin abgeschlossen.')).toBeInTheDocument();
+    });
+
+    it('zeigt, was ein anderer Vorgang beim Hierherkommen bestätigt (DOK-15, ZST-17)', async () => {
+      const queryClient = new QueryClient({
+        defaultOptions: { queries: { retry: false, gcTime: 0 } },
+      });
+      const router = createMemoryRouter(
+        [{ path: '*', element: <AppointmentDetailPage user={testUser(['office'])} /> }],
+        {
+          initialEntries: [
+            {
+              pathname: `/termine/${TERMIN_ID}`,
+              state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
+            },
+          ],
+        },
+      );
+      render(
+        <QueryClientProvider client={queryClient}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>,
+      );
+
+      const meldung = await screen.findByText('Entwurf gespeichert – noch nicht finalisiert.');
+      expect(zeileUm(meldung)).toHaveFocus();
+    });
+
+    it('bestätigt einen angelegten Folgetermin mit Tag, Zeit und Weg dorthin (TER-04)', async () => {
+      const NEU = '77777777-7777-4777-8777-000000000009';
+      fetchAppointment.mockImplementation((id: string) =>
+        Promise.resolve(
+          id === NEU
+            ? {
+                ...praxistermin,
+                id: NEU,
+                starts_at: '2027-05-19T07:00:00.000Z',
+                ends_at: '2027-05-19T08:00:00.000Z',
+              }
+            : praxistermin,
+        ),
+      );
+      renderWithProviders(
+        <AppointmentDetailPage user={testUser(['office'])} />,
+        `/termine/${TERMIN_ID}?neu=${NEU}`,
+      );
+
+      expect(
+        await screen.findByText(/^Folgetermin am Mittwoch, 19\. Mai 2027 um 09:00 Uhr angelegt\./),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Folgetermin öffnen' })).toHaveAttribute(
+        'href',
+        `/termine/${NEU}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+      );
+    });
+  });
+
+  describe('Rückweg, Zustände und Wege (TER-03, TER-15, TER-16, UIK-16)', () => {
+    it('führt ohne mitgereisten Weg in die Terminliste der Akte, nicht in die Patientenliste', async () => {
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      expect(
+        screen.getByRole('link', { name: '← Zurück zu den Terminen der Akte' }),
+      ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/termine`);
+      expect(screen.queryByText(/Zurück zur Patientenliste/)).not.toBeInTheDocument();
+    });
+
+    it('meldet einen Ladefehler mit Titel, Rückweg und neuem Versuch', async () => {
+      fetchAppointment.mockRejectedValueOnce(new Error('Netz weg'));
+      const user = userEvent.setup();
+      rendern();
+
+      expect(
+        await screen.findByText('Der Termin konnte nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 1, name: 'Termin' })).toBeInTheDocument();
+      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
+      expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
+    });
+
+    it('bietet am ungedeckten Termin den Weg zum Übertragen an', async () => {
+      fetchAppointment.mockResolvedValue({ ...praxistermin, treatment_basis_covered: false });
+      rendern();
+
+      expect(
+        await screen.findByRole('link', { name: 'Auf andere Grundlage übertragen' }),
+      ).toHaveAttribute(
+        'href',
+        `/patienten/${PATIENT_ID}/termine-uebertragen?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+      );
+    });
+
+    it('setzt „Bearbeiten" als kompakten Sekundärknopf des Systems', async () => {
+      rendern();
+
+      const bearbeiten = await screen.findByRole('link', { name: 'Bearbeiten' });
+      // Hauptfarbe, 700 - wie jeder andere Sekundärknopf (TER-16, UIK-14).
+      expect(bearbeiten).toHaveClass('text-accent', 'font-bold', 'min-h-11');
+      expect(bearbeiten).not.toHaveClass('text-ink', 'font-medium');
+    });
+
+    it('nennt die Zeitzone ohne technische Kennung', async () => {
+      rendern();
+      await screen.findByText('Anna Beispiel');
+
+      expect(screen.getByText(/Zeiten gelten in der Zeitzone der Praxis\./)).toBeInTheDocument();
+      expect(screen.queryByText(/Europe\/Berlin/)).not.toBeInTheDocument();
     });
   });
 });

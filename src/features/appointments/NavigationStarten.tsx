@@ -63,6 +63,10 @@ export function NavigationZumTermin({
  * Reicht das Wegpunktlimit der Ziel-App nicht, entstehen mehrere Abschnitte -
  * dann steht je Abschnitt eine eigene Schaltfläche, statt dass still Stopps
  * verloren gehen. Wer keinen navigierbaren Stopp hat, sieht gar nichts.
+ *
+ * Die Beschriftung beginnt mit „Navigation" (UEB-10): „Ganzer Tag" allein las
+ * sich wie ein Filter, nicht wie die Übergabe an die Navigations-App - anders
+ * als „Navigation starten" auf der Karte daneben.
  */
 export function NavigationFuerDenTag({ termine }: { termine: readonly Besuchsadresse[] }) {
   const ziele = termine
@@ -78,8 +82,8 @@ export function NavigationFuerDenTag({ termine }: { termine: readonly Besuchsadr
       {abschnitte.map((url, index) => (
         <button key={url} type="button" className={knopf} onClick={() => navigationOeffnen(url)}>
           {abschnitte.length === 1
-            ? `Ganzer Tag (${ziele.length} ${ziele.length === 1 ? 'Stopp' : 'Stopps'})`
-            : `Ganzer Tag – Abschnitt ${index + 1} von ${abschnitte.length}`}
+            ? `Navigation: ganzer Tag (${ziele.length} ${ziele.length === 1 ? 'Stopp' : 'Stopps'})`
+            : `Navigation: Abschnitt ${index + 1} von ${abschnitte.length}`}
         </button>
       ))}
     </div>

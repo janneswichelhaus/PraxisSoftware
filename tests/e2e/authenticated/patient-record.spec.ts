@@ -141,7 +141,7 @@ test.describe('AKTE-002: Verordnung und Termine finden einander', () => {
     await expect(page.getByText('Heilmittel', { exact: true }).first()).toBeVisible();
     await expect(page.getByText('Noch planbar').first()).toBeVisible();
 
-    const zuDenTerminen = page.getByRole('link', { name: 'Termine dieser Verordnung' }).first();
+    const zuDenTerminen = page.getByRole('link', { name: 'Termine dieser Grundlage' }).first();
     if ((await zuDenTerminen.count()) > 0) {
       await zuDenTerminen.click();
       await expect(page).toHaveURL(/\/termine\?verordnung=[0-9a-f-]{36}$/);

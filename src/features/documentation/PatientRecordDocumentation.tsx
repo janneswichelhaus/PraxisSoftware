@@ -1,8 +1,10 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   appointmentStatusLabels,
@@ -22,11 +24,7 @@ import {
   type RecordAppointment,
   type TreatmentNote,
 } from './api';
-import { herkunft } from './format';
-
-const abzeichen =
-  'border-line-strong bg-surface-sunken text-ink-muted rounded-pill border px-2.5 py-0.5 text-xs font-medium';
-const linkLeise = 'text-accent inline-flex min-h-11 items-center text-sm hover:underline';
+import { ENTWURF_ZUSATZ, FREITEXT, herkunft } from './format';
 
 /**
  * Kopfzeile eines Termins in der Akte.
@@ -34,14 +32,17 @@ const linkLeise = 'text-accent inline-flex min-h-11 items-center text-sm hover:u
  * Datum, Zeit, Art, behandelnde Person und Terminstatus sind organisatorische
  * Angaben, die jede Praxisrolle am Termin ohnehin sieht (PROJECT_PRINCIPLES.md
  * 4.3). Darunter stehen die Eintraege.
+ *
+ * Der Status steht neben dem Datum, nicht am anderen Rand der Liste: Bei
+ * 1.440 px lagen die beiden sonst rund 1.100 px auseinander (DOK-22).
  */
 function TerminKopf({ termin }: { termin: RecordAppointment }) {
   const zone = termin.organization_time_zone;
   return (
     <>
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <p className="text-ink font-medium">{formatLocalDate(termin.starts_at, zone)}</p>
-        <span className={abzeichen}>{appointmentStatusLabels[termin.appointment_status]}</span>
+        <Badge>{appointmentStatusLabels[termin.appointment_status]}</Badge>
       </div>
       <p className="text-ink-muted mt-1 text-sm">
         {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)} ·{' '}
@@ -77,7 +78,8 @@ function WeitereSeite({
       </Button>
       {fehler ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Die weiteren Termine konnten nicht geladen werden. Bitte erneut versuchen.
+          Die weiteren Termine konnten nicht geladen werden. Bitte die Verbindung prüfen und erneut
+          versuchen.
         </Statusmeldung>
       ) : null}
     </div>
@@ -91,40 +93,56 @@ function WeitereSeite({
  * (ADR-006). Bearbeitet, finalisiert, korrigiert und nachgetragen wird am
  * Termin: die Akte ist der Ort zum Lesen, nicht der zweite Ort zum Schreiben.
  */
-function AkteEintrag({ termin, note }: { termin: RecordAppointment; note: TreatmentNote }) {
+function AkteEintrag({
+  termin,
+  note,
+  rueckweg,
+}: {
+  termin: RecordAppointment;
+  note: TreatmentNote;
+  /** Der Weg zurück in den Verlauf der Akte - für den Änderungsverlauf (DOK-01). */
+  rueckweg: string;
+}) {
   const zone = termin.organization_time_zone;
   const istNachtrag = note.addendum_to_note_id !== null;
+  const final = note.status === 'final';
 
   return (
     <div className="mt-3">
+      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18): „Finalisiert“
+          trägt das Zeichen ✓, der Rest bleibt neutral. */}
       <div className="flex flex-wrap items-center gap-2">
-        {istNachtrag ? <span className={abzeichen}>Nachtrag</span> : null}
-        <span className={abzeichen}>{treatmentNoteStatusLabels[note.status]}</span>
+        {istNachtrag ? <Badge>Nachtrag</Badge> : null}
+        <Badge ton={final ? 'positiv' : 'neutral'}>{treatmentNoteStatusLabels[note.status]}</Badge>
         {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018) steht in der
             Akte wie am Termin: Ob behandelt wurde, entscheidet später über
             eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
-        {note.visit_without_treatment ? <span className={abzeichen}>Ohne Behandlung</span> : null}
+        {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
         {note.status === 'draft' ? (
-          <span className="text-ink-subtle text-xs">noch nicht finalisiert</span>
+          <span className="text-ink-muted text-xs">{ENTWURF_ZUSATZ}</span>
         ) : null}
-        {note.status === 'final' && note.version_count > 1 ? (
-          <span className="text-ink-subtle text-xs">{note.version_count} Versionen</span>
+        {final && note.version_count > 1 ? (
+          <span className="text-ink-muted text-xs">{note.version_count} Versionen</span>
         ) : null}
       </div>
 
-      <p className="text-ink mt-2 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+      <p className={`text-ink text-liste mt-2 max-w-prose leading-relaxed ${FREITEXT}`}>
         {note.content}
       </p>
 
-      <p className="text-ink-subtle mt-2 text-xs leading-relaxed">{herkunft(note, zone)}</p>
+      <p className="text-ink-muted mt-2 text-xs leading-relaxed">{herkunft(note, zone)}</p>
 
       {note.version_count > 0 ? (
-        <Link
-          to={`/termine/${termin.appointment_id}/dokumentation/${note.id}/verlauf`}
-          className={linkLeise}
+        <Textlink
+          to={mitRueckweg(
+            `/termine/${termin.appointment_id}/dokumentation/${note.id}/verlauf`,
+            rueckweg,
+          )}
+          alleinstehend
+          className="text-sm"
         >
           Änderungsverlauf
-        </Link>
+        </Textlink>
       ) : null}
     </div>
   );
@@ -154,73 +172,70 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
   });
 
   const termine: PatientTreatmentNotesEntry[] = seiten.data?.pages.flat() ?? [];
+  const verlauf = `/patienten/${patient.id}/verlauf`;
 
   return (
-    <section className="mt-8" aria-labelledby="behandlungsdokumentation">
-      <h2
-        id="behandlungsdokumentation"
-        className="text-ink-muted text-sm font-semibold tracking-wide uppercase"
+    // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
+    // Überschrift kommt aus `Section` wie überall sonst (UIK-20, TOK-05).
+    <div role="region" aria-label="Behandlungsdokumentation" className="mt-8">
+      <Section
+        titel="Behandlungsdokumentation"
+        hinweis="Alle Termine mit ihren Einträgen, neueste zuerst. Bearbeitet, finalisiert und ergänzt wird am Termin. Zukünftige Termine ohne Dokumentation stehen im Kalender."
       >
-        Behandlungsdokumentation
-      </h2>
-      <p className="text-ink-muted mt-1 max-w-prose text-sm">
-        Alle Termine mit ihren Einträgen, neueste zuerst. Bearbeitet, finalisiert und ergänzt wird
-        am Termin. Zukünftige Termine ohne Dokumentation stehen im Kalender.
-      </p>
+        {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
-      {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
+        {seiten.isError ? (
+          <ErrorState
+            title="Die Behandlungsdokumentation konnte nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => seiten.refetch()}
+          />
+        ) : null}
 
-      {seiten.isError ? (
-        <div className="mt-3">
-          <ErrorState title="Die Behandlungsdokumentation konnte nicht geladen werden." />
-        </div>
-      ) : null}
+        {seiten.data && termine.length === 0 ? (
+          <p className="text-ink-muted border-line text-liste border-t pt-4">
+            Für diese Person gibt es noch keine Termine in der Akte.
+          </p>
+        ) : null}
 
-      {seiten.data && termine.length === 0 ? (
-        <p className="text-ink-muted border-line mt-3 border-t pt-4 text-[0.9375rem]">
-          Für diese Person gibt es noch keine Termine in der Akte.
-        </p>
-      ) : null}
+        {termine.length > 0 ? (
+          <ol className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
+            {termine.map((termin) => (
+              <li key={termin.appointment_id} className="py-4">
+                <TerminKopf termin={termin} />
 
-      {termine.length > 0 ? (
-        <ol className="divide-line border-line bg-surface rounded-card mt-3 divide-y border px-4 sm:px-5">
-          {termine.map((termin) => (
-            <li key={termin.appointment_id} className="py-4">
-              <TerminKopf termin={termin} />
-
-              {termin.notes.length === 0 ? (
-                <p className="text-ink-muted mt-2 text-[0.9375rem]">Keine Dokumentation.</p>
-              ) : (
-                termin.notes.map((note) => (
-                  <AkteEintrag key={note.id} termin={termin} note={note} />
-                ))
-              )}
-
-              <Link
-                to={mitRueckweg(
-                  `/termine/${termin.appointment_id}`,
-                  `/patienten/${patient.id}/verlauf`,
+                {termin.notes.length === 0 ? (
+                  <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
+                ) : (
+                  termin.notes.map((note) => (
+                    <AkteEintrag key={note.id} termin={termin} note={note} rueckweg={verlauf} />
+                  ))
                 )}
-                className={`${linkLeise} mt-1`}
-              >
-                Zum Termin
-              </Link>
-            </li>
-          ))}
-        </ol>
-      ) : null}
 
-      <WeitereSeite
-        sichtbar={Boolean(seiten.hasNextPage)}
-        laufend={seiten.isFetchingNextPage}
-        fehler={seiten.isFetchNextPageError}
-        onClick={() => void seiten.fetchNextPage()}
-      />
+                <Textlink
+                  to={mitRueckweg(`/termine/${termin.appointment_id}`, verlauf)}
+                  alleinstehend
+                  className="mt-1 text-sm"
+                >
+                  Zum Termin
+                </Textlink>
+              </li>
+            ))}
+          </ol>
+        ) : null}
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
-        Zugriffe auf die Behandlungsdokumentation werden je Eintrag protokolliert.
-      </p>
-    </section>
+        <WeitereSeite
+          sichtbar={Boolean(seiten.hasNextPage)}
+          laufend={seiten.isFetchingNextPage}
+          fehler={seiten.isFetchNextPageError}
+          onClick={() => void seiten.fetchNextPage()}
+        />
+
+        <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
+          Zugriffe auf die Behandlungsdokumentation werden je Eintrag protokolliert.
+        </p>
+      </Section>
+    </div>
   );
 }
 

@@ -1,10 +1,11 @@
 import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { TextArea } from '@/components/ui/TextArea';
-import { ErrorState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
@@ -12,8 +13,11 @@ import {
   patientName,
   type Appointment,
 } from '@/features/appointments/api';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { DocumentationShell } from './DocumentationShell';
+import { FREITEXT } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
+import { NochEinEntwurf } from './Zustaende';
 import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type TreatmentNote } from './api';
 
 /**
@@ -24,7 +28,16 @@ import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type Treatment
  * Sie beginnt als Entwurf und wird wie jeder Eintrag gesondert finalisiert -
  * andernfalls entstünde klinischer Text, der nie Bestandteil der Akte wird.
  */
-function Formular({ appointment, parent }: { appointment: Appointment; parent: TreatmentNote }) {
+function Formular({
+  appointment,
+  parent,
+  zumTermin,
+}: {
+  appointment: Appointment;
+  parent: TreatmentNote;
+  /** Ziel für „Abbrechen“ und nach dem Speichern: der Termin samt Rückweg (DOK-01). */
+  zumTermin: string;
+}) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const zone = appointment.organization_time_zone;
@@ -35,7 +48,6 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
   // Der Text, wie er in diesem Augenblick im Feld steht (FIX-014).
   const inhaltRef = useRef(inhalt);
   inhaltRef.current = inhalt;
-  const zurueck = `/termine/${appointment.id}`;
 
   /**
    * Den Nachtrag als Entwurf anlegen - ohne Seitenwechsel.
@@ -75,7 +87,8 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
       fehlertitel: 'Nicht gespeichert',
       danach: () => {
         freigeben();
-        void navigate(zurueck);
+        // Der Termin erfährt, was geschehen ist (DOK-15).
+        void navigate(zumTermin, { state: { meldung: 'Nachtrag als Entwurf gespeichert.' } });
       },
     });
   }
@@ -88,11 +101,14 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
         kompakt
       />
 
-      <div className="border-line-strong bg-surface-sunken rounded-card mb-6 max-w-2xl border p-4">
-        <p className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+      {/* Der Ursprungseintrag ist Akteninhalt, keine Nebensache: auf Papier
+          mit Trennlinie wie jede Auskunft (UI-002c, DOK-19), nicht vertieft
+          wie ein Hinweis. Die Beschriftung im Label-Stil (TOK-05). */}
+      <div className="border-line bg-surface rounded-card mb-6 max-w-2xl border p-4">
+        <p className="text-ink-muted tracking-label text-xs font-semibold uppercase">
           Ursprünglicher Eintrag
         </p>
-        <p className="text-ink mt-2 max-w-prose text-[0.9375rem] leading-relaxed whitespace-pre-wrap">
+        <p className={`text-ink text-liste mt-2 max-w-prose leading-relaxed ${FREITEXT}`}>
           {parent.content}
         </p>
       </div>
@@ -100,7 +116,9 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
       <form onSubmit={absenden} noValidate className="max-w-2xl">
         <TextArea
           label="Nachtrag"
-          hint="Der Nachtrag ergänzt den Eintrag oben und ändert ihn nicht. Er wird zunächst als Entwurf gespeichert."
+          // Auch der Nachtrag wird mit der Frist der Praxis von selbst Version 1
+          // (ADR-016 Punkt 7, DOK-02).
+          hint="Der Nachtrag ergänzt den Eintrag oben und ändert ihn nicht. Er bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis."
           rows={12}
           value={inhalt}
           error={fehler}
@@ -120,16 +138,13 @@ function Formular({ appointment, parent }: { appointment: Appointment; parent: T
           <Button type="submit" disabled={laeuft || inhalt.trim().length === 0}>
             {laeuft ? 'Wird gespeichert …' : 'Nachtrag als Entwurf speichern'}
           </Button>
-          <Link
-            to={zurueck}
-            className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-button inline-flex min-h-11 items-center justify-center px-4 text-[0.9375rem] font-medium transition-colors"
-          >
+          <ButtonLink to={zumTermin} variant="quiet">
             Abbrechen
-          </Link>
+          </ButtonLink>
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Ändern und
         Lesen werden protokolliert.
       </p>
@@ -144,9 +159,9 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
     <DocumentationShell
       appointmentId={appointmentId}
       darf={canWriteTreatmentNote(user.roles)}
-      verweigert="Behandlungsdokumentation schreiben dürfen ausschließlich therapeutische Rollen."
+      verweigert="Behandlungsdokumentation schreiben dürfen Therapeut:innen und Teamleitung."
     >
-      {({ appointment, dokumentation }) => {
+      {({ appointment, dokumentation, eingehend, zumTermin }) => {
         const eintrag = findeEintrag(dokumentation, noteId);
 
         if (!eintrag) {
@@ -158,25 +173,39 @@ export function TreatmentNoteAddendumPage({ user }: { user: CurrentUser }) {
           );
         }
 
+        // Erwartbare Zustände mit dem nächsten Schritt, kein Alarm (DOK-12).
         if (eintrag.addendum_to_note_id !== null) {
           return (
-            <ErrorState
+            <EmptyState
               title="Kein Nachtrag zum Nachtrag"
               description="Ein Nachtrag ergänzt immer den ursprünglichen Eintrag. Bitte diesen ergänzen."
+              aktion={
+                <ButtonLink
+                  to={mitRueckweg(
+                    `/termine/${appointment.id}/dokumentation/${eintrag.addendum_to_note_id}/nachtrag`,
+                    eingehend,
+                  )}
+                  variant="secondary"
+                >
+                  Zum ursprünglichen Eintrag
+                </ButtonLink>
+              }
             />
           );
         }
 
         if (eintrag.status !== 'final') {
           return (
-            <ErrorState
-              title="Noch ein Entwurf"
-              description="Solange der Eintrag ein Entwurf ist, wird er schlicht bearbeitet. Einen Nachtrag gibt es erst nach der Finalisierung."
+            <NochEinEntwurf
+              appointmentId={appointment.id}
+              eintrag={eintrag}
+              eingehend={eingehend}
+              beschreibung="Solange der Eintrag ein Entwurf ist, wird er schlicht bearbeitet. Einen Nachtrag gibt es erst nach der Finalisierung."
             />
           );
         }
 
-        return <Formular appointment={appointment} parent={eintrag} />;
+        return <Formular appointment={appointment} parent={eintrag} zumTermin={zumTermin} />;
       }}
     </DocumentationShell>
   );

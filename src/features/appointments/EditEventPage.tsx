@@ -1,14 +1,31 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Badge } from '@/components/ui/Badge';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
+import { roleLabels } from '@/components/ui/roleLabels';
+import {
+  EINGABETEXTE,
+  useTextverlustschutz,
+  type Verlustschutztexte,
+} from '@/features/documentation/Textverlustschutz';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
+import {
+  EREIGNIS_BESCHRIFTUNGEN,
+  EREIGNIS_FEHLERFELDER,
+  EREIGNIS_FELD_IDS,
+  ereignisGeaendert,
+} from './calendar';
 import {
   appointmentStatusLabels,
   appointmentToFormValues,
@@ -36,25 +53,44 @@ import { formatDate } from '@/lib/datum';
  * **Was hier nicht geändert wird: wer teilnimmt.** Das ist eine Teilnahme und
  * kein Ereignis, und die Unterscheidung soll sichtbar bleiben. Wer eine
  * Teilnahme austauschen oder absagen will, tut das am einzelnen Termin; die
- * Liste unten führt den Weg dorthin.
+ * Liste unten führt den Weg dorthin - jede Teilnahme ist ein Link (TER-15).
  *
  * **Gehört das Ereignis zu einer Dauerfehlzeit (CAL-021)**, kommt eine dritte
  * Unterscheidung dazu, und sie steht ausdrücklich zur Wahl: dieses Vorkommen
  * oder die ganze Serie. Vorbelegt ist das Vorkommen — die kleinere Wirkung
- * ist die, die man versehentlich auslösen darf.
+ * ist die, die man versehentlich auslösen darf. Die Wahl steht vor den
+ * Feldern, denn sie bestimmt, was die Felder bedeuten: Im Serienmodus bleiben
+ * die Tage, und der Tag ist dann keine Eingabe (TER-14).
+ *
+ * Geänderte Eingaben gehen nicht still verloren (TER-05), und was fehlt,
+ * steht zusammengefasst über dem Formular (TER-06).
  */
 type Feld = keyof EreignisFormValues;
+
+/** Die Sätze des Verlustschutzes für dieses Formular. */
+const FEHLZEITTEXTE: Verlustschutztexte = {
+  ...EINGABETEXTE,
+  bezeichnung: 'Ungespeicherte Änderungen',
+};
 
 export function EditEventPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
+  const ort = useLocation();
   const [suche] = useSearchParams();
   const rueckweg = suche.get(RUECKWEG_PARAM);
   const queryClient = useQueryClient();
 
   const [werte, setWerte] = useState<EreignisFormValues | null>(null);
+  // Der geladene Stand: Was davon abweicht, ist eine Eingabe (TER-05).
+  const [anfang, setAnfang] = useState<EreignisFormValues | null>(null);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
   const [umfang, setUmfang] = useState<'vorkommen' | 'serie'>('vorkommen');
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: werte !== null && anfang !== null && ereignisGeaendert(werte, anfang),
+    texte: FEHLZEITTEXTE,
+  });
 
   const termin = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -91,7 +127,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     // Dieselbe Umrechnung wie beim Termin - Ortszeit der Praxis, nicht die des
     // Geräts.
     const felder = appointmentToFormValues(daten);
-    setWerte({
+    const geladen: EreignisFormValues = {
       title: daten.title ?? '',
       staff_member_ids: [],
       appointment_type: daten.appointment_type === 'video' ? 'video' : 'practice',
@@ -99,7 +135,9 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
       start_time: felder.start_time,
       end_time: felder.end_time,
       location_id: daten.location_id ?? '',
-    });
+    };
+    setWerte(geladen);
+    setAnfang(geladen);
   }, [termin.data, werte]);
 
   const mutation = useMutation({
@@ -125,6 +163,8 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
       await queryClient.invalidateQueries({ queryKey: ['event-series'] });
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // Gespeichert: Der eigene Weg hinaus ist kein Verlust (ANN-046).
+      freigeben();
       void navigate(mitRueckweg(`/termine/${appointmentId}`, rueckweg), { replace: true });
     },
   });
@@ -160,7 +200,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Nicht freigegeben"
-        description="Fehlzeiten bearbeiten dürfen die Rollen der Terminverwaltung."
+        description={`Fehlzeiten bearbeiten dürfen alle vier Praxisrollen: ${roleLabels.owner}, ${roleLabels.therapist}, ${roleLabels.team_lead} und ${roleLabels.office}.`}
       />
     );
   }
@@ -169,12 +209,31 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
     return <LoadingState label="Fehlzeit wird geladen …" />;
   }
 
-  if (termin.isError || !termin.data) {
+  // Ein Ladefehler ist kein „Nicht gefunden" (TER-11, ZST-08): Im Funkloch
+  // wirkte eine vorhandene Fehlzeit sonst gelöscht oder gesperrt. Der Weg
+  // zurück steht in beiden Fällen da.
+  if (termin.isError) {
     return (
-      <ErrorState
-        title="Nicht gefunden"
-        description="Diese Fehlzeit existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-      />
+      <>
+        <Rueckweg standard="/kalender" />
+        <ErrorState
+          title="Die Fehlzeit konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => termin.refetch()}
+        />
+      </>
+    );
+  }
+
+  if (!termin.data) {
+    return (
+      <>
+        <Rueckweg standard="/kalender" />
+        <ErrorState
+          title="Nicht gefunden"
+          description="Diese Fehlzeit existiert nicht oder ist für Ihren Zugang nicht freigegeben."
+        />
+      </>
     );
   }
 
@@ -192,9 +251,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         </Link>
         <ErrorState
           title="Keine Fehlzeit"
-          description={
-            'Dieser Weg gilt für Fehlzeiten des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten" geändert.'
-          }
+          description="Dieser Weg gilt für Fehlzeiten des Praxisbetriebs. Ein Behandlungstermin wird über „Bearbeiten“ geändert."
         />
       </>
     );
@@ -219,9 +276,20 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
 
   const ausserhalb = mutation.isError && istAusserhalbArbeitszeit(mutation.error);
   const serienVorkommen = serie.data ?? [];
+  // Dieselbe Grenze wie serverseitig: noch nicht begonnen und noch nicht
+  // abgesagt - so zählt auch die Absage der ganzen Serie (TER-14).
+  const kommende = serienVorkommen.filter(
+    (v) => v.open_count > 0 && new Date(v.starts_at).getTime() > Date.now(),
+  );
+  // Ohne die Beteiligten lässt sich die Gruppe nicht schreiben (ZST-07).
+  const listeFehlt =
+    beteiligte.isError || (standorte.isError && werte?.appointment_type === 'practice');
 
   return (
     <>
+      {/* Der Rückweg führt auf die Fehlzeit, von der die Bearbeitung ausging;
+          der Kalenderstand reist dabei weiter. `Rueckweg` nähme ihn direkt
+          und übersprünge die Fehlzeit. */}
       <Link
         to={zurueck}
         className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
@@ -233,7 +301,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
         title="Fehlzeit bearbeiten"
         description={
           serieId
-            ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – der Umfang der Änderung steht unten zur Wahl.'
+            ? 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Diese Fehlzeit gehört zu einer Dauerfehlzeit – zuerst steht zur Wahl, was sich ändert.'
             : 'Bezeichnung, Zeit und Ort gelten für alle Beteiligten. Mit * markierte Felder sind erforderlich.'
         }
       />
@@ -251,50 +319,25 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             }
           }}
         >
-          <EreignisFormFields
-            werte={werte}
-            fehler={fehler}
-            onChange={setzen}
-            standorte={standorte.data ?? []}
-            zeitzone={user.organizationTimeZone}
-            rasterMinuten={user.appointmentGridMinutes}
-            beteiligte={
-              <div className="border-line bg-surface-sunken rounded-card border p-4">
-                <p className="text-ink-muted text-sm">Beteiligte</p>
-                {beteiligte.isPending ? (
-                  <p className="text-ink-subtle mt-2 text-sm">Wird geladen …</p>
-                ) : (
-                  <ul className="mt-2 flex flex-col gap-1">
-                    {(beteiligte.data ?? []).map((person) => (
-                      <li
-                        key={person.appointment_id}
-                        className="text-ink flex flex-wrap items-center gap-2 text-[0.9375rem]"
-                      >
-                        <span>{person.display_name}</span>
-                        {person.status === 'confirmed' ? null : (
-                          <Badge ton="kritisch">{appointmentStatusLabels[person.status]}</Badge>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-                <p className="text-ink-subtle mt-3 text-xs leading-relaxed">
-                  Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und keine
-                  Fehlzeit. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; die
-                  Fehlzeit findet dann ohne diese Person statt.
-                </p>
-              </div>
-            }
+          {/* Was noch fehlt - und wo (TER-06). */}
+          <Fehlerzusammenfassung
+            fehler={alsFormularfehler(
+              EREIGNIS_FEHLERFELDER,
+              EREIGNIS_BESCHRIFTUNGEN,
+              fehler,
+              (feld) => EREIGNIS_FELD_IDS[feld],
+            )}
           />
 
           {/* Dieses Vorkommen oder die ganze Serie (CAL-021) - ausdrücklich
               beschriftet, wie schon „Fehlzeit bearbeiten" gegen „Teilnahme
-              ändern". Vorbelegt ist das Vorkommen. */}
+              ändern". Vorbelegt ist das Vorkommen. Vor den Feldern, weil die
+              Wahl bestimmt, was sie bedeuten (TER-14). */}
           {serieId && serienVorkommen.length > 0 ? (
-            <fieldset className="border-line bg-surface-sunken rounded-card mt-6 border p-4">
+            <fieldset className="border-line bg-surface-sunken rounded-card mb-6 border p-4">
               <legend className="text-ink px-1 text-sm font-medium">Umfang der Änderung</legend>
               <div className="mt-2 flex flex-col gap-3">
-                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                <label className="text-liste flex min-h-11 cursor-pointer gap-3">
                   <input
                     type="radio"
                     name="umfang"
@@ -310,7 +353,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     </span>
                   </span>
                 </label>
-                <label className="flex cursor-pointer gap-3 text-[0.9375rem]">
+                <label className="text-liste flex min-h-11 cursor-pointer gap-3">
                   <input
                     type="radio"
                     name="umfang"
@@ -321,7 +364,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   <span>
                     <span className="text-ink block font-medium">Die ganze Serie</span>
                     <span className="text-ink-muted block text-sm">
-                      Alle noch nicht begonnenen Vorkommen (von {serienVorkommen.length}). Die Tage
+                      {kommende.length} kommende von {serienVorkommen.length} Vorkommen. Die Tage
                       bleiben – geändert werden Bezeichnung, Uhrzeit, Länge, Art und Ort.
                     </span>
                   </span>
@@ -329,6 +372,72 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
               </div>
             </fieldset>
           ) : null}
+
+          <EreignisFormFields
+            werte={werte}
+            fehler={fehler}
+            onChange={setzen}
+            standorte={standorte.data ?? []}
+            zeitzone={user.organizationTimeZone}
+            rasterMinuten={user.appointmentGridMinutes}
+            // Im Serienmodus bleiben die Tage - der Tag ist dann keine Eingabe,
+            // deren Wert der Server verwürfe (TER-14).
+            datumFest={umfang === 'serie' ? 'Die Tage der Serie bleiben, wie sie sind.' : undefined}
+            standorteFehler={
+              standorte.isError ? (
+                <ErrorState
+                  title="Die Standorte konnten nicht geladen werden."
+                  description="Bitte die Verbindung prüfen und erneut versuchen."
+                  onErneut={() => standorte.refetch()}
+                />
+              ) : null
+            }
+            beteiligte={
+              <div className="border-line bg-surface-sunken rounded-card border p-4">
+                <p className="text-ink-muted text-sm">Beteiligte</p>
+                {beteiligte.isPending ? (
+                  <LoadingState label="Beteiligte werden geladen …" />
+                ) : beteiligte.isError ? (
+                  <div className="mt-2">
+                    <ErrorState
+                      title="Die Beteiligten konnten nicht geladen werden."
+                      description="Bitte die Verbindung prüfen und erneut versuchen."
+                      onErneut={() => beteiligte.refetch()}
+                    />
+                  </div>
+                ) : (
+                  <ul className="mt-2 flex flex-col gap-1">
+                    {(beteiligte.data ?? []).map((person) => (
+                      <li
+                        key={person.appointment_id}
+                        className="text-ink text-liste flex flex-wrap items-center gap-2"
+                      >
+                        {/* Die Teilnahme ist der Weg zum Austauschen oder
+                            Absagen (TER-15) - mit Rückweg hierher. */}
+                        <Textlink
+                          alleinstehend
+                          to={mitRueckweg(
+                            `/termine/${person.appointment_id}`,
+                            `${ort.pathname}${ort.search}`,
+                          )}
+                        >
+                          {person.display_name}
+                        </Textlink>
+                        {person.status === 'confirmed' ? null : (
+                          <Badge ton="kritisch">{appointmentStatusLabels[person.status]}</Badge>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <p className="text-ink-muted mt-3 text-xs leading-relaxed">
+                  Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und keine
+                  Fehlzeit. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; die
+                  Fehlzeit findet dann ohne diese Person statt.
+                </p>
+              </div>
+            }
+          />
 
           {ausserhalb ? (
             <EreignisArbeitszeitRueckfrage
@@ -350,17 +459,23 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
             </Statusmeldung>
           ) : null}
 
+          {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
+          {schutz}
+
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button type="submit" disabled={mutation.isPending}>
+            <Button type="submit" disabled={mutation.isPending || listeFehlt}>
+              {/* Dasselbe Verb wie beim Termin (WRT-10, TER-22). */}
               {mutation.isPending
-                ? 'Wird geändert …'
+                ? 'Wird gespeichert …'
                 : umfang === 'serie'
                   ? 'Ganze Serie ändern'
                   : 'Änderungen speichern'}
             </Button>
-            <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+            {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
+                dieselbe Rückfrage wie jeder andere Weg hinaus. */}
+            <ButtonLink to={zurueck} variant="secondary">
               Abbrechen
-            </Button>
+            </ButtonLink>
           </div>
         </form>
       ) : null}

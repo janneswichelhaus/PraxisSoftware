@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { morgenOrtszeit, renderWithProviders, testUser } from '@/test-utils';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchKandidaten = vi.fn();
 const fetchRechnungen = vi.fn();
@@ -292,5 +293,166 @@ describe('InvoicesPage', () => {
       'href',
       '/abrechnung/rechnungen/r7',
     );
+  });
+
+  describe('UXR-010', () => {
+    it('meldet die Buchung am Posten und setzt den Fokus dorthin (ABR-10)', async () => {
+      // Das Formular schließt nach der Buchung, ein bezahlter Posten
+      // verschwindet ganz. Die Meldung steht über der Liste und hat den Fokus.
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      const meldung = await screen.findByText('45,00 € zu RG-2026-0001 gebucht.');
+      expect(meldung).toHaveAttribute('role', 'status');
+      await waitFor(() => expect(meldung.parentElement).toHaveFocus());
+      // Das Formular ist zu; der Knopf an der Karte heißt wieder wie vorher.
+      expect(screen.queryByLabelText('Betrag')).toBeNull();
+    });
+
+    it('lädt nach der Buchung auch die Rechnung neu (ABR-01)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);
+
+      const { client } = zeigeMitRouten(
+        [{ path: '/abrechnung', element: <InvoicesPage user={testUser(['office'])} /> }],
+        '/abrechnung',
+      );
+      const neuLaden = vi.spyOn(client, 'invalidateQueries');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      await waitFor(() => expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['rechnung', 'r1'] }));
+      // Der Aufruf bleibt derselbe wie vorher.
+      expect(bucheZahlung).toHaveBeenCalledWith({
+        invoiceId: 'r1',
+        betragCent: 4500,
+        tag: expect.any(String) as string,
+        weg: 'bank_transfer',
+        richtung: 'incoming',
+        notiz: null,
+      });
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['offene-posten'] });
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['rechnungszahlungen', 'r1'] });
+    });
+
+    it('schreibt einen Datumsfehler an das Datum, nicht an den Betrag (ABR-09, ZST-11)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      const datum = screen.getByLabelText('Eingegangen am');
+      fireEvent.change(datum, { target: { value: morgenOrtszeit() } });
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      expect(datum).toHaveAttribute('aria-invalid', 'true');
+      expect(datum).toHaveAccessibleDescription(/nicht für die Zukunft buchen/);
+      expect(screen.getByLabelText('Betrag')).not.toHaveAttribute('aria-invalid');
+      expect(datum).toHaveFocus();
+      expect(bucheZahlung).not.toHaveBeenCalled();
+
+      // Die nächste Eingabe am Datum nimmt den Fehler zurück.
+      fireEvent.change(datum, { target: { value: '2026-09-01' } });
+      expect(datum).not.toHaveAttribute('aria-invalid');
+    });
+
+    it('nennt den Tausenderpunkt als Grund, statt „größer als null" zu verlangen (ABR-09)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500 })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      const betrag = screen.getByLabelText('Betrag');
+      await nutzer.clear(betrag);
+      await nutzer.type(betrag, '1.234,56');
+      await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
+
+      expect(betrag).toHaveAccessibleDescription(/ohne Tausenderpunkt/);
+      expect(bucheZahlung).not.toHaveBeenCalled();
+    });
+
+    it('beschriftet Datum und Weg vollständig und nennt die Rückzahlung knapp (ABR-09, WRT-11)', async () => {
+      const nutzer = userEvent.setup();
+      fetchOffenePosten.mockResolvedValue([posten({ outstanding_cents: 4500, paid_cents: 3000 })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
+      expect(screen.getByLabelText('Zahlungsweg')).toBeInTheDocument();
+      expect(screen.getByText('Offen: 45,00 €')).toBeInTheDocument();
+
+      await nutzer.selectOptions(screen.getByLabelText('Art'), 'Rückzahlung');
+      expect(screen.getByLabelText('Rückzahlung')).toHaveValue('');
+      expect(screen.getByLabelText('Zurückgezahlt am')).toBeInTheDocument();
+      expect(screen.getByText('Eingegangen: 30,00 €')).toBeInTheDocument();
+
+      // Zurück zum Eingang: Der offene Betrag steht wieder da.
+      await nutzer.selectOptions(screen.getByLabelText('Art'), 'Zahlungseingang');
+      expect(screen.getByLabelText('Betrag')).toHaveValue('45,00');
+    });
+
+    it('trägt an „Ausgestellt" kein Warnzeichen mehr (ABR-16)', async () => {
+      fetchRechnungen.mockResolvedValue([rechnung()]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      const etikett = await screen.findByText('Ausgestellt');
+      expect(etikett.textContent).toBe('Ausgestellt');
+      expect(within(etikett).queryByText('!')).toBeNull();
+    });
+
+    it('nennt an einer stornierten Rechnung keine Zahlungsfrist mehr (ABR-06)', async () => {
+      fetchRechnungen.mockResolvedValue([rechnung({ cancelled: true })]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      expect(await screen.findByText(/ausgestellt am 01\.09\.2026/)).toBeInTheDocument();
+      expect(screen.queryByText(/zahlbar bis/)).toBeNull();
+    });
+
+    it('setzt „Entwurf anlegen" als Kartenaktion statt als Hauptknopf (ABR-24)', async () => {
+      fetchKandidaten.mockResolvedValue([kandidat()]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      const knopf = await screen.findByRole('button', { name: 'Entwurf anlegen' });
+      // Die gefüllte Fläche des Hauptknopfs, nicht `hover:bg-accent-soft`.
+      expect(knopf.className.split(/\s+/)).not.toContain('bg-accent');
+      expect(knopf.className.split(/\s+/)).toContain('min-h-11');
+    });
+
+    it('stellt Posten und Monate als Karten auf Papier (ABR-33)', async () => {
+      fetchOffenePosten.mockResolvedValue([posten()]);
+      fetchKandidaten.mockResolvedValue([kandidat()]);
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      const nummer = await screen.findByText('RG-2026-0001');
+      expect(nummer.closest('.rounded-card')).toHaveClass('bg-surface');
+      // Posten (Empfängerin) und Monat (Person) nennen denselben Namen.
+      const namen = screen.getAllByText('Erika Beispiel');
+      expect(namen).toHaveLength(2);
+      for (const name of namen) expect(name.closest('.rounded-card')).toHaveClass('bg-surface');
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      fetchKandidaten.mockRejectedValue(new Error('Netz weg'));
+
+      renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+      expect(
+        await screen.findByText('Die abzurechnenden Leistungen konnten nicht geladen werden.'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+    });
   });
 });

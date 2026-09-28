@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { CurrentUser } from '@/features/session/types';
 import {
   berichtQueryKey,
@@ -193,21 +193,33 @@ const start =
     ? `/patienten/${PATIENT}/berichte/b1/druck`
     : `/patienten/${PATIENT}/berichte/b2`;
 
+// Ein Data Router wie in der Anwendung: Der Schutz vor Textverlust im
+// Berichtsformular hält Seitenwechsel über `useBlocker` an, und den gibt es
+// nur unter einem Data Router (UXR-008, wie in fotos.tsx).
+const router = createMemoryRouter(
+  [
+    {
+      path: '/patienten/:patientId/berichte/:berichtId',
+      element: (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <TherapieberichtPage user={nutzer} />
+        </main>
+      ),
+    },
+    {
+      path: '/patienten/:patientId/berichte/:berichtId/druck',
+      element: (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <TherapieberichtDruckPage user={nutzer} />
+        </main>
+      ),
+    },
+  ],
+  { initialEntries: [start] },
+);
+
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
-    <MemoryRouter initialEntries={[start]}>
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <Routes>
-          <Route
-            path="/patienten/:patientId/berichte/:berichtId"
-            element={<TherapieberichtPage user={nutzer} />}
-          />
-          <Route
-            path="/patienten/:patientId/berichte/:berichtId/druck"
-            element={<TherapieberichtDruckPage user={nutzer} />}
-          />
-        </Routes>
-      </main>
-    </MemoryRouter>
+    <RouterProvider router={router} />
   </QueryClientProvider>,
 );

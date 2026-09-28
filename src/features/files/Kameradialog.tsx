@@ -40,21 +40,33 @@ const JPEG_QUALITAET = 0.9;
 type Zustand =
   | { art: 'startet' }
   | { art: 'laeuft' }
-  | { art: 'fehler'; meldung: string }
+  /** `erneut`: Hat ein zweiter Versuch Aussicht? Ohne Kamera nicht (DAT-25). */
+  | { art: 'fehler'; meldung: string; erneut: boolean }
   | { art: 'vorschau'; bild: Blob; adresse: string };
 
-function kamerafehler(ursache: unknown): string {
+function kamerafehler(ursache: unknown): { meldung: string; erneut: boolean } {
   const name = ursache instanceof Error ? ursache.name : '';
   if (name === 'NotAllowedError' || name === 'SecurityError') {
-    return 'Die Kamera wurde nicht freigegeben. Bitte in den Einstellungen des Browsers für diese Seite erlauben und erneut öffnen.';
+    return {
+      meldung:
+        'Die Kamera wurde nicht freigegeben. Bitte in den Einstellungen des Browsers für diese Seite erlauben und erneut öffnen.',
+      erneut: true,
+    };
   }
   if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-    return 'Auf diesem Gerät wurde keine Kamera gefunden.';
+    return { meldung: 'Auf diesem Gerät wurde keine Kamera gefunden.', erneut: false };
   }
   if (name === 'NotReadableError') {
-    return 'Die Kamera wird gerade von einer anderen App benutzt. Bitte dort schließen und erneut öffnen.';
+    return {
+      meldung:
+        'Die Kamera wird gerade von einer anderen App benutzt. Bitte dort schließen und erneut versuchen.',
+      erneut: true,
+    };
   }
-  return 'Die Kamera konnte nicht gestartet werden.';
+  return {
+    meldung: 'Die Kamera konnte nicht gestartet werden. Bitte erneut versuchen.',
+    erneut: true,
+  };
 }
 
 function stoppe(strom: MediaStream | null) {
@@ -92,6 +104,7 @@ export function Kameradialog({
         art: 'fehler',
         meldung:
           'Die Kamera steht hier nicht zur Verfügung. Sie braucht eine sichere Verbindung (https) und einen Browser, der sie freigibt.',
+        erneut: false,
       });
       return;
     }
@@ -124,10 +137,16 @@ export function Kameradialog({
       }
       setZustand({ art: 'laeuft' });
     } catch (ursache) {
-      if (dieser === durchlauf.current)
-        setZustand({ art: 'fehler', meldung: kamerafehler(ursache) });
+      if (dieser === durchlauf.current) setZustand({ art: 'fehler', ...kamerafehler(ursache) });
     }
   }, []);
+
+  // Läuft die Kamera, liegt der Fokus auf „Auslösen" (DAT-11): Das Fenster
+  // setzt ihn beim Öffnen, als es nur „Abbrechen" gab.
+  const ausloeserRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (zustand.art === 'laeuft') ausloeserRef.current?.focus();
+  }, [zustand.art]);
 
   useEffect(() => {
     void starten();
@@ -163,7 +182,11 @@ export function Kameradialog({
         // Zu, bevor das Bild fertig war: keine Objekt-URL, die niemand freigibt.
         if (dieser !== durchlauf.current) return;
         if (!bild) {
-          setZustand({ art: 'fehler', meldung: 'Das Foto konnte nicht erzeugt werden.' });
+          setZustand({
+            art: 'fehler',
+            meldung: 'Das Foto konnte nicht erzeugt werden. Bitte erneut versuchen.',
+            erneut: true,
+          });
           return;
         }
         setZustand({ art: 'vorschau', bild, adresse: URL.createObjectURL(bild) });
@@ -184,11 +207,14 @@ export function Kameradialog({
       {hinweis ? <div className="text-ink-muted mb-3 text-sm">{hinweis}</div> : null}
 
       {/* Das Kamerabild bleibt eingehängt, solange die Kamera läuft oder
-          startet - `srcObject` braucht das Element. */}
+          startet - `srcObject` braucht das Element. Seine Höhe lässt Platz
+          für Titel, Hinweis und Knöpfe (DAT-14): Mit 60 % der Fensterhöhe lag
+          „Auslösen" am quer gehaltenen Telefon unter der Kante. Radius eines
+          Bildes, nicht einer Karte (DAT-20). */}
       <div
         className={
           zustand.art === 'startet' || zustand.art === 'laeuft'
-            ? 'bg-ink rounded-card overflow-hidden'
+            ? 'bg-ink rounded-image overflow-hidden'
             : 'hidden'
         }
       >
@@ -198,7 +224,7 @@ export function Kameradialog({
           playsInline
           autoPlay
           aria-label="Kamerabild"
-          className="block max-h-[60dvh] w-full object-contain"
+          className="block max-h-[calc(100dvh-16rem)] w-full object-contain"
         />
       </div>
 
@@ -206,23 +232,24 @@ export function Kameradialog({
         <img
           src={zustand.adresse}
           alt="Aufgenommenes Foto"
-          className="bg-ink rounded-card block max-h-[60dvh] w-full object-contain"
+          className="bg-ink rounded-image block max-h-[calc(100dvh-16rem)] w-full object-contain"
         />
       ) : null}
 
       {zustand.art === 'startet' ? (
-        <p className="text-ink-muted mt-2 text-sm" role="status">
-          Kamera wird gestartet …
-        </p>
+        <Statusmeldung className="mt-2">Kamera wird gestartet …</Statusmeldung>
       ) : null}
 
       {zustand.art === 'fehler' ? (
         <Statusmeldung ton="fehler">{zustand.meldung}</Statusmeldung>
       ) : null}
 
-      <div className="mt-4 flex flex-wrap gap-2">
+      {/* Die Knöpfe bleiben am unteren Rand des Fensters stehen, auch wenn es
+          innen rollt (DAT-14): Der Auslöser ist die Aktion, die am Lenker mit
+          Handschuh zählt. Die Fläche deckt den Innenabstand darunter mit ab. */}
+      <div className="bg-surface sticky bottom-0 -mx-6 mt-4 -mb-6 flex flex-wrap gap-2 px-6 pt-3 pb-6">
         {zustand.art === 'laeuft' ? (
-          <Button type="button" data-autofocus onClick={ausloesen}>
+          <Button ref={ausloeserRef} type="button" data-autofocus onClick={ausloesen}>
             Auslösen
           </Button>
         ) : null}
@@ -236,7 +263,7 @@ export function Kameradialog({
             </Button>
           </>
         ) : null}
-        {zustand.art === 'fehler' && kameraVerfuegbar() ? (
+        {zustand.art === 'fehler' && zustand.erneut ? (
           <Button type="button" variant="secondary" onClick={() => void starten()}>
             Erneut versuchen
           </Button>

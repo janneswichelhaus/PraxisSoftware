@@ -44,7 +44,7 @@ export function Select({
         {label}
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-subtle text-sm">
+        <p id={hintId} className="text-ink-muted text-sm">
           {hint}
         </p>
       ) : null}
@@ -54,6 +54,8 @@ export function Select({
         aria-invalid={error ? true : undefined}
         className={[
           'bg-surface-field text-ink rounded-field h-12 w-full border px-4 text-base',
+          // Abgeschaltet vertieft wie `Field` (DS-001, UIK-05).
+          'disabled:bg-surface-sunken disabled:cursor-not-allowed',
           error ? 'border-danger' : 'border-line-strong',
           className,
         ]

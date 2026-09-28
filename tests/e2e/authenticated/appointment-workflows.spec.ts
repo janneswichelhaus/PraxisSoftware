@@ -9,6 +9,7 @@ import {
   direktesEinfuegenVersuchen,
   rpcAufrufen,
   tagImFenster,
+  terminLinkWahl,
   terminUeberApi,
   zugriffstoken,
 } from './helpers';
@@ -63,12 +64,17 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByRole('link', { name: 'Termin anlegen' }).click();
     await expect(page.getByRole('heading', { name: 'Termin anlegen' })).toBeVisible();
 
-    // Der Patient steht als Kontext und ist nicht wechselbar. exact grenzt das
-    // Kontextfeld gegen die Seitenbeschreibung ab, die den Namen ebenfalls nennt -
-    // und seit VER-001 zusaetzlich gegen die Arbeitsbereich-Unternavigation
-    // "Patient:innen" (nav aria-label, sichtbar sobald die Verordnerkartei einen
-    // zweiten Unterpunkt liefert): ohne exact matcht getByLabel sie als Teilstring.
-    await expect(page.getByText('Max Mustermann', { exact: true })).toBeVisible();
+    // Der Patient steht als Kontext und ist nicht wechselbar. Seit TER-21 gibt
+    // es keinen eigenen Kasten mit dem Namen mehr: Er steht in der
+    // Seitenbeschreibung, geprüft wird sie wörtlich. exact grenzt beim Feld seit
+    // VER-001 gegen die Arbeitsbereich-Unternavigation "Patient:innen" ab (nav
+    // aria-label, sichtbar sobald die Verordnerkartei einen zweiten Unterpunkt
+    // liefert): ohne exact matcht getByLabel sie als Teilstring.
+    await expect(
+      page.getByText('Für Max Mustermann. Mit * markierte Felder sind erforderlich.', {
+        exact: true,
+      }),
+    ).toBeVisible();
     await expect(page.getByLabel('Patient:in', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
@@ -79,10 +85,21 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
 
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    // Seit UXR-006 gibt der Knopf in der Akte seinen Rückweg mit: Nach dem
+    // Anlegen geht es zurück in die Terminliste der Akte, die das Anlegen
+    // bestätigt und den neuen Termin hervorhebt (TER-04).
+    const zurueckInDerAkte = /\/patienten\/[0-9a-f-]{36}\/termine\?neu=[0-9a-f-]{36}$/;
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', zurueckInDerAkte);
 
-    // Erfolg: Wechsel in die Detailansicht des neuen Termins.
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+    // Erfolg: Bestätigung in der Akte, von dort in die Detailansicht des
+    // neuen Termins.
+    await expect(page).toHaveURL(zurueckInDerAkte);
+    const adresse = new URL(page.url());
+    expect(adresse.pathname).toBe(`/patienten/${PATIENTEN.max}/termine`);
+    await expect(page.getByText('Termin angelegt.')).toBeVisible();
+    const terminId = adresse.searchParams.get('neu')!;
+    await page.locator(terminLinkWahl(terminId)).click();
+    await expect(page).toHaveURL((url) => url.pathname === `/termine/${terminId}`);
     await expect(page.getByRole('heading', { name: /Termin – Max Mustermann/ })).toBeVisible();
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');

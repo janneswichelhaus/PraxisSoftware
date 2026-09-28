@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -73,10 +73,11 @@ const { TreatmentNoteSection } = await import('./TreatmentNoteSection');
 function rendern(
   rollen: Parameters<typeof testUser>[0] = ['therapist'],
   ueberschreiben: Partial<AppointmentsApi.Appointment> = {},
+  suche = '',
 ) {
   return renderWithProviders(
     <TreatmentNoteSection appointment={{ ...termin, ...ueberschreiben }} user={testUser(rollen)} />,
-    `/termine/${TERMIN_ID}`,
+    `/termine/${TERMIN_ID}${suche}`,
   );
 }
 
@@ -228,6 +229,116 @@ describe('TreatmentNoteSection', () => {
     expect(
       await screen.findByText('Die Behandlungsdokumentation konnte nicht geladen werden.'),
     ).toBeInTheDocument();
+    // Was zu tun ist, und ein Weg dorthin (WRT-01).
+    expect(
+      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('steht als Abschnitt mit Überschrift da (UIK-20, TOK-05)', async () => {
+    rendern();
+
+    const ueberschrift = await screen.findByRole('heading', {
+      level: 2,
+      name: 'Behandlungsdokumentation',
+    });
+    expect(ueberschrift).toHaveClass('tracking-label', 'text-xs');
+  });
+
+  it('nennt beim Entwurf die automatische Finalisierung (DOK-02)', async () => {
+    rendern();
+
+    expect(
+      await screen.findByText('noch nicht finalisiert · wird automatisch finalisiert'),
+    ).toBeInTheDocument();
+  });
+
+  it('bietet zu einem nicht angetroffenen Termin kein Anlegen an (TER-B01)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    rendern(['therapist'], { status: 'no_show' });
+
+    expect(
+      await screen.findByText(
+        'Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst „Termin wieder öffnen“.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+  });
+
+  it('reicht den Rückweg des Termins an die Doku-Seiten weiter (DOK-01)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [nachtrag] });
+    rendern(['therapist'], {}, '?zurueck=%2Fkalender');
+
+    const zurueck = `?zurueck=${encodeURIComponent('/kalender')}`;
+    expect(await screen.findByRole('link', { name: 'Nachtrag hinzufügen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag${zurueck}`,
+    );
+    expect(screen.getByRole('link', { name: 'Korrigieren' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/korrektur${zurueck}`,
+    );
+    expect(screen.getByRole('link', { name: 'Änderungsverlauf' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/verlauf${zurueck}`,
+    );
+    expect(screen.getByRole('link', { name: 'Nachtrag bearbeiten' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${NACHTRAG_ID}/bearbeiten${zurueck}`,
+    );
+  });
+});
+
+/**
+ * Ein Hauptknopf je Ansicht (DOK-14): Steht oben am offenen Termin schon
+ * „Dokumentieren und abschließen“, sind die Schreibwege hier sekundär.
+ */
+describe('TreatmentNoteSection: Gewichtung der Knöpfe (DOK-14)', () => {
+  beforeEach(() => {
+    fetchTreatmentDocumentation.mockReset();
+    finalizeTreatmentNote.mockReset();
+  });
+
+  it('zeigt „Dokumentation anlegen“ am offenen Termin sekundär', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    rendern(['therapist']);
+
+    const anlegen = await screen.findByRole('link', { name: 'Dokumentation anlegen' });
+    expect(anlegen).not.toHaveClass('bg-accent');
+    expect(anlegen).toHaveClass('border-line-strong');
+  });
+
+  it('lässt „Dokumentation anlegen“ am abgeschlossenen Termin den Hauptknopf', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    rendern(['therapist'], { status: 'completed' });
+
+    expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveClass(
+      'bg-accent',
+    );
+  });
+
+  it('zeigt „Finalisieren“ am offenen Termin sekundär', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    rendern(['therapist']);
+
+    expect(await screen.findByRole('button', { name: 'Finalisieren' })).not.toHaveClass(
+      'bg-accent',
+    );
+  });
+
+  it('stellt am finalisierten Eintrag den Nachtrag vor die leise Korrektur', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
+    rendern(['therapist'], { status: 'documented' });
+
+    const nachtragLink = await screen.findByRole('link', { name: 'Nachtrag hinzufügen' });
+    const korrigieren = screen.getByRole('link', { name: 'Korrigieren' });
+    expect(
+      nachtragLink.compareDocumentPosition(korrigieren) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    // Beide in derselben Aktionszeile des Eintrags.
+    expect(nachtragLink.parentElement).toBe(korrigieren.parentElement);
+    expect(korrigieren).not.toHaveClass('border');
   });
 });
 
@@ -269,8 +380,37 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
     await user.click(screen.getByRole('button', { name: 'Ja, jetzt finalisieren' }));
 
-    expect(await screen.findByText('Nicht finalisiert')).toBeInTheDocument();
-    expect(screen.getByText('Zwischenzeitlich geändert.')).toBeInTheDocument();
+    // Die Rückfrage bleibt offen und nennt den Fehler am Ort (ZST-16).
+    const kasten = screen.getByRole('group', { name: 'Dokumentation finalisieren' });
+    expect(await within(kasten).findByRole('alert')).toHaveTextContent(
+      'Zwischenzeitlich geändert.',
+    );
+    expect(screen.getByText('Entwurf')).toBeInTheDocument();
+  });
+
+  it('bestätigt die Finalisierung am Ort und setzt den Fokus dorthin (ZST-16)', async () => {
+    const user = userEvent.setup();
+    finalizeTreatmentNote.mockImplementation(() => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
+      return Promise.resolve();
+    });
+    rendern(['therapist']);
+
+    await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, jetzt finalisieren' }));
+
+    const bestaetigung = await screen.findByText(
+      'Finalisiert – der Eintrag ist jetzt Bestandteil der Akte.',
+    );
+    await waitFor(() => expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus());
+  });
+
+  it('kennzeichnet „Finalisiert“ mit Zeichen, nicht nur mit Farbe (UIK-18)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
+    rendern(['therapist']);
+
+    const etikett = await screen.findByText('Finalisiert');
+    expect(etikett).toHaveTextContent('✓');
   });
 
   it('bietet einem Entwurf noch keinen Aenderungsverlauf an', async () => {

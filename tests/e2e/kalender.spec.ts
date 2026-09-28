@@ -10,7 +10,7 @@ import { expect, test, type Page } from '@playwright/test';
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/kalender.html';
 
-const annaSpalte = (page: Page) => page.locator('[role=gridcell][aria-label="Anna Beispiel"]');
+const annaSpalte = (page: Page) => page.locator('[role=group][aria-label^="Anna Beispiel"]');
 
 test.describe('Kalender', () => {
   test('beginnt das Raster bei 375 px auf dem ersten Bildschirm', async ({ page }) => {
@@ -94,7 +94,10 @@ test.describe('Kalender', () => {
     await expect(annaSpalte(page)).toBeVisible();
 
     const inhalt = (await page.getByRole('main').boundingBox())!;
-    const raster = (await page.locator('[role=grid]').first().boundingBox())!;
+    const raster = (await page
+      .getByRole('region', { name: /ansicht/ })
+      .first()
+      .boundingBox())!;
     // Die Seitenleiste nimmt 248 px; der Rest gehört dem Raster bis auf den Rand.
     expect(inhalt.width).toBeGreaterThan(1920 - 248 - 2);
     expect(raster.width).toBeGreaterThan(inhalt.width - 32);

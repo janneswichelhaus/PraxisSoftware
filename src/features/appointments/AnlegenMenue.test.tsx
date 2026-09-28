@@ -63,4 +63,19 @@ describe('AnlegenMenue', () => {
     expect(dauertermin).toBeDisabled();
     expect(dauertermin).toHaveTextContent('Zuerst die Patient:in wählen.');
   });
+
+  // KAL-10: Die Leiste steht fern der Auswahl - sie nennt deshalb Person und
+  // Tag vor der Zeit, damit ein Tipp in die Nachbarspalte hier auffällt.
+  it('nennt Person und Tag vor der Uhrzeit', () => {
+    rendern({ kopf: 'Tim Teamleitung · Mo 28.09.' });
+    expect(screen.getByRole('group', { name: 'Was soll hier entstehen?' })).toHaveTextContent(
+      'Tim Teamleitung · Mo 28.09. · 09:00–10:00 Uhr',
+    );
+  });
+
+  it('schliesst ueber „Abbrechen"', () => {
+    const { onSchliessen } = rendern();
+    fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(onSchliessen).toHaveBeenCalledTimes(1);
+  });
 });

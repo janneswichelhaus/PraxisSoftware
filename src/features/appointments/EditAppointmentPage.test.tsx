@@ -3,8 +3,15 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as StaffApi from '@/features/staff/api';
 import type * as RouterModul from 'react-router-dom';
-import { renderWithProviders, testAppointment, testPatient, testUser } from '@/test-utils';
+import {
+  renderWithProviders,
+  testAppointment,
+  testPatient,
+  testStaffMember,
+  testUser,
+} from '@/test-utils';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -42,11 +49,17 @@ const fetchAssignableTherapists = vi.fn();
 const fetchLocations = vi.fn();
 const updateAppointment = vi.fn();
 const fetchPatient = vi.fn();
+const fetchStaffMembers = vi.fn();
 const navigate = vi.fn();
 
 vi.mock('@/features/patients/api', async (importOriginal) => ({
   ...(await importOriginal<typeof PatientsApi>()),
   fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
+}));
+
+vi.mock('@/features/staff/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof StaffApi>()),
+  fetchStaffMembers: () => fetchStaffMembers() as Promise<StaffApi.StaffMember[]>,
 }));
 
 vi.mock('./api', async (importOriginal) => {
@@ -94,6 +107,7 @@ describe('EditAppointmentPage', () => {
     fetchLocations.mockReset();
     updateAppointment.mockReset();
     fetchPatient.mockReset();
+    fetchStaffMembers.mockReset();
     navigate.mockReset();
 
     fetchAppointment.mockResolvedValue(termin);
@@ -388,14 +402,38 @@ describe('EditAppointmentPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('bricht ohne Schreibvorgang zum Termin zurueck ab', async () => {
-    const user = userEvent.setup();
+  it('bricht ohne Schreibvorgang zum Termin zurueck ab - ueber einen Link (UIK-13)', async () => {
     rendern();
     await formularAbwarten();
 
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}`,
+    );
+    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}`,
+    );
     expect(updateAppointment).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`);
+  });
+
+  it('reicht den Rückweg des Termins an Abbrechen weiter', async () => {
+    const kalender = '/kalender?ansicht=tag';
+    renderWithProviders(
+      <EditAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/termine/${TERMIN_ID}/bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    await formularAbwarten();
+
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}?zurueck=${encodeURIComponent(kalender)}`,
+    );
+    // Der Rückweg oben folgt dem mitgereisten Weg (Rueckweg-Baustein, TER-03).
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      kalender,
+    );
   });
 
   it('bietet fuer einen abgesagten Termin kein Formular an', async () => {
@@ -406,6 +444,7 @@ describe('EditAppointmentPage', () => {
       await screen.findByText('Abgesagte Termine werden nicht bearbeitet'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toBeInTheDocument();
   });
 
   it('meldet einen nicht freigegebenen Termin ohne Details', async () => {
@@ -414,5 +453,197 @@ describe('EditAppointmentPage', () => {
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
+    // Der Rückweg bleibt auch im Fehlerfall (ZST-08).
+    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toBeInTheDocument();
+  });
+
+  it('meldet einen Ladefehler als Ladefehler und bietet einen neuen Versuch an (TER-11)', async () => {
+    fetchAppointment.mockRejectedValueOnce(new Error('Netz weg'));
+    fetchAppointment.mockResolvedValue(termin);
+    const user = userEvent.setup();
+    rendern();
+
+    expect(await screen.findByText('Der Termin konnte nicht geladen werden.')).toBeInTheDocument();
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await formularAbwarten()).toBeInTheDocument();
+  });
+
+  it('meldet fehlende Angaben in einer Zusammenfassung mit Fokus (UIK-02, TER-06)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.clear(screen.getByLabelText('Beginn *'));
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    const kasten = (await screen.findByText('Bitte prüfen Sie diese Angabe')).closest(
+      '[role="alert"]',
+    ) as HTMLElement;
+    expect(kasten).toHaveFocus();
+    expect(
+      within(kasten).getByRole('link', { name: 'Beginn ist erforderlich.' }),
+    ).toBeInTheDocument();
+    // Das Ende ist eine Ableitung und meldet sich nicht zusaetzlich.
+    expect(screen.queryByText('Ende ist erforderlich.')).not.toBeInTheDocument();
+    expect(updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it('wiederholt im Fehlerfenster nicht den Titel (ZST-12)', async () => {
+    updateAppointment.mockRejectedValue(new Error('Der Termin konnte nicht geändert werden.'));
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Der Termin konnte nicht geändert werden.',
+    });
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
+  });
+
+  it('haelt nach einer Aenderung vor dem Weggehen an (TER-05)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_TIM);
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherter Termin' });
+    expect(
+      within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+    ).toBeInTheDocument();
+    expect(
+      within(rueckfrage).queryByRole('button', { name: 'Speichern und weitergehen' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Behandelnde Person *')).toHaveValue(STAFF_TIM);
+  });
+
+  it('meldet ein unveraendertes Formular nicht als ungespeichert', async () => {
+    rendern();
+    await formularAbwarten();
+
+    const ereignis = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(ereignis);
+    expect(ereignis.defaultPrevented).toBe(false);
+  });
+
+  it('sagt am Feld, wenn die Personen nicht laden, und speichert dann nicht (ZST-07)', async () => {
+    fetchAssignableTherapists.mockRejectedValue(new Error('Netz weg'));
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    expect(
+      await screen.findByText('Die Personen konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    expect(
+      await screen.findAllByText('Bitte zuerst die Liste der Personen erneut laden.'),
+    ).not.toHaveLength(0);
+    expect(updateAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fuehrt beim Wechsel zum Hausbesuch in die Stammdaten und zurueck hierher (TER-15)', async () => {
+    fetchPatient.mockResolvedValue({ ...patient, house_number: null });
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'home_visit');
+
+    const abstecher = await screen.findByRole('link', { name: 'Jetzt in den Stammdaten ergänzen' });
+    expect(abstecher).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}/bearbeiten?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}/bearbeiten`)}`,
+    );
+  });
+
+  describe('TER-01: Teilnahme an einer Fehlzeit', () => {
+    const fehlzeit: AppointmentsApi.Appointment = {
+      ...termin,
+      kind: 'internal',
+      title: 'Teambesprechung',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+      event_group_id: '99999999-9999-4999-8999-000000000001',
+    };
+
+    beforeEach(() => {
+      fetchAppointment.mockResolvedValue(fehlzeit);
+      fetchStaffMembers.mockResolvedValue([
+        testStaffMember({ id: STAFF_ANNA, given_name: 'Anna', family_name: 'Beispiel' }),
+        testStaffMember({ id: STAFF_TIM, given_name: 'Tim', family_name: 'Teamleitung' }),
+      ]);
+    });
+
+    it('heisst „Teilnahme ändern" und bietet nur die beteiligte Person an', async () => {
+      rendern();
+      await formularAbwarten();
+
+      expect(screen.getByRole('heading', { level: 1, name: 'Teilnahme ändern' })).toBeVisible();
+      expect(screen.getByText('Hier wird nur die beteiligte Person getauscht.')).toBeVisible();
+      expect(screen.getByLabelText('Beteiligte Person *')).toHaveValue(STAFF_ANNA);
+      // Zeit, Art und Ort gelten fuer alle - sie stehen als Auskunft da.
+      for (const feld of ['Terminart *', 'Datum *', 'Beginn *', 'Standort *']) {
+        expect(screen.queryByLabelText(feld)).not.toBeInTheDocument();
+      }
+      expect(screen.getByText('Teambesprechung')).toBeVisible();
+      expect(screen.getByText('09:00–10:00 Uhr')).toBeVisible();
+    });
+
+    it('fuehrt fuer Zeit und Ort zu „Fehlzeit bearbeiten", mit Rückweg', async () => {
+      const kalender = '/kalender?ansicht=woche';
+      renderWithProviders(
+        <EditAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/termine/${TERMIN_ID}/bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+      );
+      await formularAbwarten();
+
+      expect(screen.getByRole('link', { name: 'Zeit oder Ort für alle ändern' })).toHaveAttribute(
+        'href',
+        `/termine/${TERMIN_ID}/ereignis-bearbeiten?zurueck=${encodeURIComponent(kalender)}`,
+      );
+    });
+
+    it('tauscht die Person und laesst Zeit und Ort, wie sie sind', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.selectOptions(screen.getByLabelText('Beteiligte Person *'), STAFF_TIM);
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
+      expect(updateAppointment).toHaveBeenCalledWith(
+        TERMIN_ID,
+        STAND,
+        {
+          staff_member_id: STAFF_TIM,
+          appointment_type: 'practice',
+          date: '2027-05-12',
+          start_time: '09:00',
+          end_time: '10:00',
+          location_id: ORT,
+        },
+        false,
+        false,
+      );
+    });
+
+    it('nennt im Fehlerfenster die Teilnahme, nicht den Termin (TER-22)', async () => {
+      updateAppointment.mockRejectedValue(new Error('Der Termin konnte nicht geändert werden.'));
+      const user = userEvent.setup();
+      rendern();
+      await user.click(await formularAbwarten());
+
+      expect(
+        await screen.findByRole('dialog', { name: 'Die Teilnahme konnte nicht geändert werden.' }),
+      ).toHaveTextContent('Die Eingaben stehen noch im Formular.');
+    });
   });
 });

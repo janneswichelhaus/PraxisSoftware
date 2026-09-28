@@ -18,8 +18,24 @@ import { empfaengerName, terminzeile, type Berichtsdokument } from './api';
  * Dieselbe Komponente zeigt die Vorschau des Entwurfs und das Druckblatt; was
  * am Bildschirm steht, kommt aus dem Drucker. Ein Entwurf trägt einen Vermerk,
  * der **mitgedruckt** wird. Der Kopf steht in einem `div`, nicht in einem
- * `header` — die Druckregeln aus UI-000 blenden `header` aus.
+ * `header` — die Druckregeln aus UI-000 blendeten `header` bis UXR-001 aus.
  */
+
+/**
+ * Ein Abschnitt des Blattes darf auf Papier umbrechen (DOK-22).
+ *
+ * Die Druckregel hält jede `section` zusammen (`break-inside: avoid`). Ein
+ * Abschnitt mit vielen Einträgen sprang damit als Ganzes auf die nächste
+ * Seite und ließ eine halbe Seite leer - auf Papier und Fax. Zusammen bleibt
+ * jetzt nur der einzelne Eintrag (`li`, weiter aus der Druckregel). Das `!`
+ * ist nötig: Die Druckregel steht außerhalb der Tailwind-Ebenen und ginge
+ * einer gewöhnlichen Klasse vor.
+ */
+const ABSCHNITT = 'mt-6 break-inside-auto!';
+
+/** Freitext der Therapeut:in und der Einträge: bricht auch lange Ketten um (DOK-23). */
+const FREITEXT = 'wrap-anywhere whitespace-pre-line';
+
 export function Berichtsblatt({
   dokument,
   entwurf,
@@ -42,7 +58,7 @@ export function Berichtsblatt({
   const datum = dokument.abgeschlossen?.datum ?? null;
 
   return (
-    <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
+    <article className="text-ink text-liste mx-auto max-w-[210mm]">
       <div className="flex flex-wrap items-start justify-between gap-4">
         {/* Die schwarze Fassung: `marke/README.md` nennt Rechnung und Fax als
             ihren Fall, und ein Bericht an die Verordner:in geht oft per Fax. */}
@@ -58,13 +74,13 @@ export function Berichtsblatt({
 
       {entwurf ? (
         <p className="border-line-strong text-ink mt-8 border-2 px-3 py-2 text-sm font-semibold">
-          Entwurf — noch nicht abgeschlossen, nicht zum Versand.
+          Entwurf – noch nicht abgeschlossen, nicht zum Versand.
         </p>
       ) : null}
 
       <div className="mt-10 flex flex-wrap justify-between gap-8">
         <div className="min-w-[70mm]">
-          <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
+          <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
             {absenderzeile}
           </p>
           {empfaenger ? (
@@ -118,7 +134,7 @@ export function Berichtsblatt({
         {formatDate(verordnung.issued_on)}
       </p>
 
-      <section className="mt-6">
+      <section className={ABSCHNITT}>
         <Abschnitt className="text-sm font-semibold">Verordnung</Abschnitt>
         <dl className="mt-1 text-sm">
           {verordnung.diagnosis ? (
@@ -151,7 +167,7 @@ export function Berichtsblatt({
       </section>
 
       {dokument.eintraege.length > 0 ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">
             Befund und Verlauf aus der Dokumentation
           </Abschnitt>
@@ -163,7 +179,7 @@ export function Berichtsblatt({
                   {eintrag.ergaenzung ? ' · Nachtrag' : ''}
                   {eintrag.verfasser ? ` · ${eintrag.verfasser}` : ''}
                 </p>
-                <p className="whitespace-pre-line">{eintrag.inhalt}</p>
+                <p className={FREITEXT}>{eintrag.inhalt}</p>
               </li>
             ))}
           </ul>
@@ -171,7 +187,7 @@ export function Berichtsblatt({
       ) : null}
 
       {dokument.koerperschema ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">Körperschema</Abschnitt>
           <p className="text-ink-muted mt-1 text-sm">
             Angabe vom {formatDate(dokument.koerperschema.erhoben_am)}:{' '}
@@ -184,19 +200,19 @@ export function Berichtsblatt({
       ) : null}
 
       {dokument.text ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">Bericht der Therapeut:in</Abschnitt>
-          <p className="mt-1 text-sm whitespace-pre-line">{dokument.text.inhalt}</p>
+          <p className={`mt-1 text-sm ${FREITEXT}`}>{dokument.text.inhalt}</p>
           <p className="text-ink-muted mt-1 text-xs">{quelle(dokument.text)}</p>
         </section>
       ) : null}
 
       {dokument.empfehlung ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">
             Empfehlung der Therapeut:in zum Verordnungsende
           </Abschnitt>
-          <p className="mt-1 text-sm whitespace-pre-line">{dokument.empfehlung.inhalt}</p>
+          <p className={`mt-1 text-sm ${FREITEXT}`}>{dokument.empfehlung.inhalt}</p>
           <p className="text-ink-muted mt-1 text-xs">{quelle(dokument.empfehlung)}</p>
         </section>
       ) : null}

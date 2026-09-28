@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as RouterModul from 'react-router-dom';
@@ -135,6 +137,21 @@ function rendern(pfad = '/kalender') {
  */
 async function optionenOeffnen(): Promise<void> {
   fireEvent.click(await screen.findByRole('button', { name: /^Ansicht und Filter/ }));
+}
+
+/**
+ * Das Raster: ein benannter Bereich in der Tages- oder Wochenansicht (KAL-16,
+ * UIK-17). Bis dahin trug es die Rolle `grid` - ohne Zeilen, also falsch.
+ */
+function raster(): HTMLElement {
+  return screen.getByRole('region', { name: /^(Tages|Wochen)ansicht/ });
+}
+
+/** Die Spalten des Rasters: je Person oder Tag eine benannte Gruppe. */
+function spalten(): HTMLElement[] {
+  return Array.from(raster().children).filter(
+    (kind): kind is HTMLElement => kind.getAttribute('role') === 'group',
+  );
 }
 
 /** Argumente des jeweils letzten Abrufs. */
@@ -358,7 +375,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      const gitter = screen.getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' });
+      const gitter = screen.getByRole('region', { name: 'Tagesansicht nach behandelnder Person' });
       expect(within(gitter).getByText('Anna Beispiel')).toBeInTheDocument();
       expect(within(gitter).getByText('Tim Teamleitung')).toBeInTheDocument();
     });
@@ -377,8 +394,8 @@ describe('CalendarPage', () => {
       ]);
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
 
-      const annaSpalte = await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
-      const timSpalte = screen.getByRole('gridcell', { name: 'Tim Teamleitung' });
+      const annaSpalte = await screen.findByRole('group', { name: 'Anna Beispiel' });
+      const timSpalte = screen.getByRole('group', { name: 'Tim Teamleitung' });
       expect(within(annaSpalte).getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
       expect(within(timSpalte).getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
     });
@@ -423,7 +440,7 @@ describe('CalendarPage', () => {
 
       // Die Wochenspalten heissen nach ihrem Wochentag; der 13.05.2027 ist ein
       // Donnerstag.
-      const donnerstag = await screen.findByRole('gridcell', { name: 'Do' });
+      const donnerstag = await screen.findByRole('group', { name: 'Do 13.05.' });
       expect(within(donnerstag).getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
     });
 
@@ -599,7 +616,7 @@ describe('CalendarPage', () => {
       await screen.findByRole('link', { name: /Max Mustermann/ });
       await optionenOeffnen();
 
-      await userEvent.click(screen.getByRole('button', { name: 'Gitter verkleinern' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Raster gröber' }));
 
       const zoom = screen.getByRole('group', { name: 'Zoom' });
       expect(within(zoom).getByText('15-Minuten-Raster')).toBeInTheDocument();
@@ -614,10 +631,10 @@ describe('CalendarPage', () => {
     it('vergroessert mit zwei Fingern auseinander und verkleinert zusammen', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
-      const gitter = () => screen.getByRole('grid').parentElement!;
+      const gitter = () => raster().parentElement!;
       // Die Hoehe einer Spalte ist Stunden mal Zoomstufe.
       const hoehe = () =>
-        parseFloat(screen.getByRole('gridcell', { name: 'Anna Beispiel' }).style.height);
+        parseFloat(screen.getByRole('group', { name: 'Anna Beispiel' }).style.height);
       const vorher = hoehe();
 
       fireEvent.touchStart(gitter(), { touches: finger([100, 100], [100, 200]) });
@@ -638,7 +655,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&zoom=64');
       await screen.findByRole('link', { name: /Max Mustermann/ });
       await optionenOeffnen();
-      const gitter = screen.getByRole('grid').parentElement!;
+      const gitter = raster().parentElement!;
 
       fireEvent.touchStart(gitter, { touches: finger([100, 60], [100, 240]) });
       fireEvent.touchMove(gitter, { touches: finger([100, 120], [100, 180]) });
@@ -650,7 +667,7 @@ describe('CalendarPage', () => {
     it('laesst einen einzelnen Finger scrollen und oeffnet nach dem Zoomen kein Menue', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
-      const gitter = screen.getByRole('grid').parentElement!;
+      const gitter = raster().parentElement!;
 
       // Ein Finger: nichts wird verhindert - der Browser scrollt.
       const einFinger = fireEvent.touchMove(gitter, { touches: finger([100, 100]) });
@@ -659,14 +676,14 @@ describe('CalendarPage', () => {
       fireEvent.touchStart(gitter, { touches: finger([100, 100], [100, 110]) });
       fireEvent.touchEnd(gitter, { touches: [] });
       // Der Klick, den ein Browser nach der Geste noch schickt, ist keine Auswahl.
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       expect(
         screen.queryByRole('group', { name: 'Was soll hier entstehen?' }),
       ).not.toBeInTheDocument();
 
       // Der naechste Tipp ist wieder einer.
       fireEvent.touchStart(gitter, { touches: finger([100, 100]) });
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       expect(screen.getByRole('group', { name: 'Was soll hier entstehen?' })).toBeInTheDocument();
     });
   });
@@ -678,7 +695,7 @@ describe('CalendarPage', () => {
      * "welche Spalte liegt unter dem Zeiger" überhaupt eine Aussage hat.
      */
     function spaltenVermessen(): void {
-      const zellen = screen.getAllByRole('gridcell');
+      const zellen = spalten();
       zellen.forEach((zelle, index) => {
         zelle.getBoundingClientRect = () => ({
           left: 100 + index * 200,
@@ -966,9 +983,9 @@ describe('CalendarPage', () => {
         // Der neue Platz: eine Kachel mit der neuen Zeit, im Gitter.
         const neu = screen.getByTestId('vorschlag-kachel');
         expect(neu).toHaveTextContent('10:00–11:00');
-        expect(screen.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainElement(neu);
+        expect(screen.getByRole('group', { name: 'Anna Beispiel' })).toContainElement(neu);
         // Der Kasten steht im Gitter, nicht darueber.
-        expect(screen.getByRole('grid')).toContainElement(await rueckfrage());
+        expect(raster()).toContainElement(await rueckfrage());
       });
 
       it('sperrt die uebrigen Kacheln nicht, solange die Rueckfrage offen ist (BEF-015)', async () => {
@@ -1110,15 +1127,23 @@ describe('CalendarPage', () => {
         expect(bestaetigt).toBe(true);
       });
 
-      it('sagt unter dem Gitter, dass Ziehen nachfragt', async () => {
+      // KAL-26: Die Bedienhilfe stand als Dauertext unter dem Raster; jetzt
+      // steht sie eingeklappt unter „Ansicht und Filter".
+      it('sagt in der Bedienhilfe, dass Ziehen nachfragt', async () => {
         await tagesansicht();
+        expect(screen.queryByText(/fragt der Kalender mit alter und neuer Zeit nach/)).toBeNull();
+
+        await optionenOeffnen();
+        expect(screen.getByText('So bedienen Sie den Kalender')).toBeInTheDocument();
         expect(
           screen.getByText(/fragt der Kalender mit alter und neuer Zeit nach/),
         ).toBeInTheDocument();
       });
     });
 
-    it('meldet eine Ueberschneidung, ohne nachzufragen', async () => {
+    // KAL-01: Der Fehler steht in derselben Rückfrage neben der Kachel -
+    // bis dahin schloss sie, und die Meldung stand über dem Raster, außer Sicht.
+    it('meldet eine Ueberschneidung in der offenen Rueckfrage, ohne nachzufragen', async () => {
       updateAppointment.mockRejectedValue(
         new Error('In diesem Zeitraum hat die behandelnde Person bereits einen Termin.'),
       );
@@ -1127,15 +1152,26 @@ describe('CalendarPage', () => {
       ziehen(kachel, { dy: EINE_STUNDE });
       await bestaetigen();
 
-      expect(await screen.findByText(/bereits einen Termin/)).toBeInTheDocument();
-      expect(screen.queryByRole('group', { name: 'Termin verschieben?' })).not.toBeInTheDocument();
+      const kasten = await rueckfrage();
+      await waitFor(() =>
+        expect(within(kasten).getByRole('alert')).toHaveTextContent(/bereits einen Termin/),
+      );
+      // Nichts zu bestätigen: kein Hinweis auf Arbeitszeit oder Vergangenheit.
+      expect(kasten).not.toHaveTextContent(/außerhalb/);
+      expect(updateAppointment).toHaveBeenCalledTimes(1);
+
+      // Abbrechen erledigt den Fehler mit dem Versuch.
+      fireEvent.click(within(kasten).getByRole('button', { name: 'Abbrechen' }));
+      expect(screen.queryByText(/bereits einen Termin/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
     });
 
     it('nennt das Bearbeiten als gleichwertigen Weg', async () => {
       // Ziehen darf niemals der einzige Weg zum Verschieben sein.
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
-      expect(screen.getByText(/über „Bearbeiten" in der Detailansicht/)).toBeInTheDocument();
+      await optionenOeffnen();
+      expect(screen.getByText(/über „Bearbeiten“ in der Detailansicht/)).toBeInTheDocument();
     });
   });
 
@@ -1198,7 +1234,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1228,9 +1264,12 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12&neu=77777777-7777-4777-8777-000000000001');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      expect(kachel.className).toContain('ring-2');
-      expect(screen.getByRole('status')).toHaveTextContent(/Termin angelegt/);
-      expect(screen.getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
+      expect(kachel.className).toContain('border-accent');
+      const meldung = screen.getByRole('status');
+      expect(meldung).toHaveTextContent(/Termin angelegt/);
+      // Eine Erfolgsmeldung mit Zeichen (UIK-21), der Link im Satz unterstrichen (TOK-12).
+      expect(meldung).toHaveTextContent('✓');
+      expect(screen.getByRole('link', { name: 'Termin öffnen' })).toHaveClass('underline');
     });
 
     it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {
@@ -1238,7 +1277,7 @@ describe('CalendarPage', () => {
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
       // Spalten sind hier Wochentage; die Beschriftung ist der Kurzname.
-      fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+      fireEvent.click(spalten()[0]!);
       menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1253,9 +1292,9 @@ describe('CalendarPage', () => {
      */
     it('fuehrt mit Patientenfilter direkt in das Formular dieser Person', async () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
-      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      await screen.findByRole('group', { name: 'Anna Beispiel' });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1268,9 +1307,9 @@ describe('CalendarPage', () => {
     it('reicht die Verordnung aus dem Kalenderstand in das Formular durch', async () => {
       const verordnung = '99999999-9999-4999-8999-000000000001';
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}&verordnung=${verordnung}`);
-      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      await screen.findByRole('group', { name: 'Anna Beispiel' });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Neuer Termin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1306,7 +1345,7 @@ describe('CalendarPage', () => {
       await optionenOeffnen();
       expect(screen.getByRole('group', { name: 'Ansicht und Filter' })).toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Termin anlegen' })).toBeNull();
-      fireEvent.click(screen.getAllByRole('gridcell')[0]!);
+      fireEvent.click(spalten()[0]!);
       expect(screen.queryByRole('group', { name: 'Was soll hier entstehen?' })).toBeNull();
     });
 
@@ -1317,7 +1356,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
 
       const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
       expect(within(menue).getByRole('button', { name: /^Neuer Termin/ })).toBeInTheDocument();
@@ -1331,7 +1370,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Fehlzeit');
 
       const fehlzeit = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1342,7 +1381,7 @@ describe('CalendarPage', () => {
       expect(fehlzeit.searchParams.has('ende')).toBe(false);
       expect(fehlzeit.searchParams.get('person')).toBe(STAFF_ANNA);
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Dauerfehlzeit');
       expect(String(navigate.mock.calls.at(-1)?.[0])).toContain('/termine/dauerfehlzeit');
     });
@@ -1351,7 +1390,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       expect(screen.getByRole('button', { name: /^Dauertermin/ })).toBeEnabled();
       menueWaehlen('Dauertermin');
 
@@ -1360,13 +1399,15 @@ describe('CalendarPage', () => {
       expect(ziel.searchParams.get('datum')).toBe('2027-05-12');
       expect(ziel.searchParams.get('beginn')).toBe('07:00');
       expect(ziel.searchParams.has('patient')).toBe(false);
+      // Die Person der Spalte reist mit (KAL-05) - wie bei Termin und Fehlzeit.
+      expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
     });
 
     it('nimmt beim Dauertermin die gefilterte Patient:in mit, die Grundlage fragt die Seite', async () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
-      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      await screen.findByRole('group', { name: 'Anna Beispiel' });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Dauertermin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1377,9 +1418,9 @@ describe('CalendarPage', () => {
     it('fuehrt den Dauertermin mit Verordnung in die Serienanlage', async () => {
       const verordnung = '99999999-9999-4999-8999-000000000001';
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}&verordnung=${verordnung}`);
-      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      await screen.findByRole('group', { name: 'Anna Beispiel' });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       menueWaehlen('Dauertermin');
 
       const ziel = new URL(String(navigate.mock.calls.at(-1)?.[0]), 'http://test');
@@ -1391,7 +1432,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
       fireEvent.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
       expect(
@@ -1432,7 +1473,7 @@ describe('CalendarPage', () => {
 
       // Der Knopf dazu steht in der Ecke des Rasters.
       const knopf = screen.getByRole('button', { name: 'Ansicht und Filter' });
-      expect(screen.getByRole('grid').contains(knopf)).toBe(true);
+      expect(raster().contains(knopf)).toBe(true);
       fireEvent.click(knopf);
       expect(knopf).toHaveAttribute('aria-expanded', 'true');
       expect(screen.getByRole('group', { name: 'Zoom' })).toBeInTheDocument();
@@ -1501,7 +1542,7 @@ describe('CalendarPage', () => {
 
     it('zeigt an einem anderen Tag keine Linie', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-13');
-      await screen.findByRole('gridcell', { name: 'Anna Beispiel' });
+      await screen.findByRole('group', { name: 'Anna Beispiel' });
       expect(screen.queryByTestId('jetzt-linie')).toBeNull();
     });
   });
@@ -1511,7 +1552,7 @@ describe('CalendarPage', () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
 
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }));
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }));
 
       // 2 px Rahmen, 4 px Innenabstand und 16 px Zeile, oben und unten.
       const flaeche = screen.getByTestId('auswahl-flaeche');
@@ -1525,7 +1566,7 @@ describe('CalendarPage', () => {
     async function tagAnna() {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       await screen.findByRole('link', { name: /Max Mustermann/ });
-      return screen.getByRole('gridcell', { name: 'Anna Beispiel' });
+      return screen.getByRole('group', { name: 'Anna Beispiel' });
     }
 
     it('zieht mit einem zweiten Tipp in derselben Spalte die Spanne dazwischen auf', async () => {
@@ -1561,15 +1602,15 @@ describe('CalendarPage', () => {
 
     it('beginnt in einer anderen Spalte eine neue Auswahl', async () => {
       await tagAnna();
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Anna Beispiel' }), { clientY: 0 });
-      fireEvent.click(screen.getByRole('gridcell', { name: 'Tim Teamleitung' }), {
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }), { clientY: 0 });
+      fireEvent.click(screen.getByRole('group', { name: 'Tim Teamleitung' }), {
         clientY: EINE_STUNDE,
       });
 
       const flaeche = screen.getByTestId('auswahl-flaeche');
       expect(flaeche).toHaveTextContent('08:00');
       expect(
-        within(screen.getByRole('gridcell', { name: 'Tim Teamleitung' })).getByTestId(
+        within(screen.getByRole('group', { name: 'Tim Teamleitung' })).getByTestId(
           'auswahl-flaeche',
         ),
       ).toBe(flaeche);
@@ -1581,7 +1622,7 @@ describe('CalendarPage', () => {
 
       const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
       expect(within(zelle).queryByRole('group')).toBeNull();
-      expect(screen.getByRole('grid').contains(menue)).toBe(false);
+      expect(raster().contains(menue)).toBe(false);
       // Klebt am unteren Fensterrand, ueber der Tableiste des Telefons.
       expect(menue.className).toContain('sticky');
       expect(menue).toHaveTextContent(/Zweites Feld antippen/);
@@ -1591,7 +1632,7 @@ describe('CalendarPage', () => {
   describe('UX-010: Langer Druck am Finger und Rueckgaengig', () => {
     /** Wie in CAL-006: jsdom kennt kein Layout. */
     function spaltenVermessen(): void {
-      const zellen = screen.getAllByRole('gridcell');
+      const zellen = spalten();
       zellen.forEach((zelle, index) => {
         zelle.getBoundingClientRect = () => ({
           left: 100 + index * 200,
@@ -1674,7 +1715,7 @@ describe('CalendarPage', () => {
           button: 0,
           pointerType: 'touch',
         });
-        fireEvent.touchStart(screen.getByRole('grid').parentElement!, {
+        fireEvent.touchStart(raster().parentElement!, {
           touches: [
             { identifier: 0, clientX: 150, clientY: 200 },
             { identifier: 1, clientX: 150, clientY: 300 },
@@ -1836,6 +1877,386 @@ describe('CalendarPage', () => {
         standort: null,
         status: 'active',
       });
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-Review 2026-09, Bereich Kalender (UXR-004)
+  // ---------------------------------------------------------------------------
+  describe('UXR-004: Kalender aus dem UX-Review', () => {
+    /** Wie in CAL-006: jsdom kennt kein Layout. */
+    function spaltenVermessen(): void {
+      spalten().forEach((zelle, index) => {
+        zelle.getBoundingClientRect = () => ({
+          left: 100 + index * 200,
+          right: 300 + index * 200,
+          top: 0,
+          bottom: 800,
+          width: 200,
+          height: 800,
+          x: 100 + index * 200,
+          y: 0,
+          toJSON: () => ({}),
+        });
+      });
+    }
+
+    /** Zieht die Kachel eine Stunde nach unten und laesst los. */
+    function eineStundeZiehen(kachel: HTMLElement): void {
+      fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+      fireEvent.pointerMove(window, { clientX: 150, clientY: 200 + EINE_STUNDE, button: 0 });
+      fireEvent.pointerUp(window, { clientX: 150, clientY: 200 + EINE_STUNDE });
+    }
+
+    it('stellt die Rueckgaengig-Leiste klebend unter das Raster und setzt den Fokus darauf (KAL-01)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      eineStundeZiehen(kachel);
+      fireEvent.click(await screen.findByRole('button', { name: /^(Trotzdem v|V)erschieben$/ }));
+
+      const rueckgaengig = await screen.findByRole('button', { name: 'Rückgängig' });
+      await waitFor(() => expect(rueckgaengig).toHaveFocus());
+      const leiste = rueckgaengig.closest('[role="status"]')!;
+      expect(leiste.className).toContain('sticky');
+      // Unter dem Raster, an der Stelle der Anlegen-Leiste - nicht darüber.
+      expect(raster().compareDocumentPosition(leiste) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    });
+
+    it('oeffnet die Woche der eigenen Person, nicht die der ersten (KAL-03)', async () => {
+      renderWithProviders(
+        <CalendarPage user={testUser(['therapist', 'team_lead'], 'Tim Teamleitung')} />,
+        '/kalender',
+      );
+      await waitFor(() =>
+        expect(screen.getByLabelText('Behandelnde Person')).toHaveValue(STAFF_TIM),
+      );
+    });
+
+    it('kennzeichnet die eigene Spalte der Tagesansicht mit einem Wort (KAL-03, KAL-B01)', async () => {
+      renderWithProviders(
+        <CalendarPage user={testUser(['therapist'], 'Tim Teamleitung')} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      expect(
+        await screen.findByRole('group', { name: 'Tim Teamleitung, ich' }),
+      ).toBeInTheDocument();
+      const kopf = screen.getByRole('link', { name: 'Wochenplan von Tim Teamleitung (ich)' });
+      expect(kopf).toHaveTextContent('ich');
+      expect(screen.getByRole('group', { name: 'Anna Beispiel' })).toBeInTheDocument();
+    });
+
+    it('meldet eine gescheiterte Personenliste als Fehler statt als leere Praxis (KAL-07)', async () => {
+      fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const titel = await screen.findByText(
+        'Die behandelnden Personen konnten nicht geladen werden.',
+      );
+      expect(titel.closest('[role="alert"]')).toHaveTextContent(
+        'Bitte die Verbindung prüfen und erneut versuchen.',
+      );
+      expect(screen.queryByText(/keine behandelnde Person hinterlegt/)).toBeNull();
+
+      fetchAssignableTherapists.mockResolvedValue([
+        { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      ]);
+      fireEvent.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByRole('group', { name: 'Anna Beispiel' })).toBeInTheDocument();
+    });
+
+    it('zeigt in der Woche ohne geladene Person kein leeres Raster (KAL-07)', async () => {
+      fetchAssignableTherapists.mockRejectedValue(new Error('Netz'));
+      rendern('/kalender?ansicht=woche&datum=2027-05-12');
+
+      await screen.findByText('Die behandelnden Personen konnten nicht geladen werden.');
+      expect(screen.queryByRole('region', { name: /Wochenansicht/ })).toBeNull();
+      expect(screen.queryByText(/keine Termine geplant/)).toBeNull();
+      // Ansicht und Filter bleiben erreichbar.
+      expect(screen.getByRole('button', { name: /^Ansicht und Filter/ })).toBeInTheDocument();
+    });
+
+    it('nennt beim Ladefehler der Termine den naechsten Schritt (KAL-07, WRT-01)', async () => {
+      fetchAppointments.mockRejectedValue(new Error('Netz'));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const titel = await screen.findByText('Die Termine konnten nicht geladen werden.');
+      const kasten = titel.closest<HTMLElement>('[role="alert"]')!;
+      expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+      expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+      expect(kasten).not.toHaveTextContent(/angemeldet|neu laden/);
+    });
+
+    it('macht Pfeile, Eckknopf, Personenwahl und Monatstage zu 44-px-Zielen (KAL-08)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      for (const name of ['Vorheriger Zeitraum', 'Nächster Zeitraum', 'Ansicht und Filter']) {
+        expect(screen.getByRole('button', { name })).toHaveClass('size-11');
+      }
+      expect(screen.getByRole('button', { name: 'Jetzt' })).toHaveClass('min-h-11');
+      // 16 px Schrift: darunter zoomt iOS beim Antippen hinein.
+      expect(screen.getByLabelText('Behandelnde Person')).toHaveClass('min-h-11', 'text-base');
+
+      fireEvent.click(screen.getByRole('button', { name: /Mai 2027/ }));
+      expect(screen.getByRole('button', { name: 'Mittwoch, 12. Mai 2027' })).toHaveClass('size-11');
+    });
+
+    it('hebt die Auswahl mit einem Tipp in ihre gezeichnete Flaeche auf (KAL-09)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      const spalte = screen.getByRole('group', { name: 'Anna Beispiel' });
+
+      fireEvent.click(spalte, { clientY: 0 });
+      // 14 px tiefer: gerundet schon 07:10, aber noch in der 28 px hohen Fläche.
+      fireEvent.click(spalte, { clientY: 14 });
+
+      expect(screen.queryByTestId('auswahl-flaeche')).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Was soll hier entstehen?' })).toBeNull();
+    });
+
+    it('zieht mit einem Tipp unterhalb der Flaeche weiter die Spanne auf (KAL-09)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+      const spalte = screen.getByRole('group', { name: 'Anna Beispiel' });
+
+      fireEvent.click(spalte, { clientY: 0 });
+      fireEvent.click(spalte, { clientY: 40 });
+
+      expect(screen.getByTestId('auswahl-flaeche')).toHaveTextContent('07:00–07:25');
+    });
+
+    it('nennt in der Leiste Person und Tag vor der Uhrzeit (KAL-10)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('group', { name: 'Tim Teamleitung' }), { clientY: 0 });
+      expect(screen.getByRole('group', { name: 'Was soll hier entstehen?' })).toHaveTextContent(
+        'Tim Teamleitung · Mi 12.05. · 07:00 Uhr',
+      );
+    });
+
+    it('behaelt beim Zoomen die Auswahl und legt keinen Verlaufseintrag an (KAL-11)', async () => {
+      // Ein eigener Router, damit sich die Art der Navigation ablesen lässt.
+      const router = createMemoryRouter(
+        [{ path: '*', element: <CalendarPage user={testUser(['office'], 'Olivia Office')} /> }],
+        { initialEntries: ['/kalender?ansicht=tag&datum=2027-05-12'] },
+      );
+      const client = new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
+      render(
+        <QueryClientProvider client={client}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>,
+      );
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('group', { name: 'Anna Beispiel' }), { clientY: 0 });
+      await optionenOeffnen();
+      fireEvent.click(screen.getByRole('button', { name: 'Raster feiner' }));
+
+      await waitFor(() => expect(router.state.location.search).toContain('zoom=144'));
+      expect(router.state.historyAction).toBe('REPLACE');
+      expect(screen.getByTestId('auswahl-flaeche')).toHaveTextContent('07:00');
+    });
+
+    it('beschreibt das Raster als Bereich mit einer Gruppe je Spalte (KAL-16)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(screen.queryByRole('grid')).toBeNull();
+      expect(screen.queryByRole('gridcell')).toBeNull();
+      expect(spalten().map((s) => s.getAttribute('aria-label'))).toEqual([
+        'Anna Beispiel',
+        'Tim Teamleitung',
+      ]);
+    });
+
+    it('liest das Zeichen einer Fehlzeit als Wort vor (KAL-16)', async () => {
+      fetchAppointments.mockResolvedValue([
+        eintrag({
+          id: '77777777-7777-4777-8777-00000000000e',
+          kind: 'internal',
+          title: 'Teambesprechung',
+          patient_id: null,
+          patient_given_name: null,
+          patient_family_name: null,
+        }),
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const kachel = await screen.findByRole('link', { name: /Teambesprechung/ });
+      // jsdom rechnet den Namen ohne Leerraum zwischen Inline-Elementen zusammen.
+      expect(kachel).toHaveAccessibleName(/^Fehlzeit:s*Teambesprechung/);
+      expect(kachel).not.toHaveAccessibleName(/▪/);
+    });
+
+    it('zeichnet abgesagte Termine mit eigenen Farben und nennt den Status in eigener Zeile (KAL-18, KAL-23)', async () => {
+      fetchAppointments.mockResolvedValue([eintrag({ status: 'cancelled' })]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
+
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      expect(kachel.className).not.toMatch(/opacity/);
+      expect(kachel.className).toContain('bg-surface-sunken');
+      expect(kachel.className).toContain('border-dashed');
+      expect(within(kachel).getByTestId('kachel-status')).toHaveTextContent('× Abgesagt');
+      // Die Zeitzeile trägt den Status nicht mehr - dort wurde er abgeschnitten.
+      expect(within(kachel).getByText(/09:00–10:00/)).not.toHaveTextContent('Abgesagt');
+    });
+
+    it('gibt „Tag umplanen" den Kalenderstand als Rueckweg mit (KAL-19)', async () => {
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await optionenOeffnen();
+
+      const link = await screen.findByRole('link', { name: 'Tag umplanen' });
+      const ziel = new URL(link.getAttribute('href')!, 'http://test');
+      expect(ziel.pathname).toBe('/kalender/tag-umplanen');
+      expect(ziel.searchParams.get('zurueck')).toBe(
+        `/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}`,
+      );
+    });
+
+    it('gibt den Fokus nach dem Monatsblatt an den Monatsknopf zurueck (KAL-21)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const knopf = screen.getByRole('button', { name: /Mai 2027/ });
+      fireEvent.click(knopf);
+      fireEvent.keyDown(screen.getByRole('group', { name: 'Monatskalender' }), { key: 'Escape' });
+
+      expect(screen.queryByRole('group', { name: 'Monatskalender' })).toBeNull();
+      expect(knopf).toHaveFocus();
+    });
+
+    it('fuehrt den Fokus in „Ansicht und Filter" hinein und mit Escape zurueck (KAL-21)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const knopf = screen.getByRole('button', { name: 'Ansicht und Filter' });
+      fireEvent.click(knopf);
+      const feld = screen.getByRole('group', { name: 'Ansicht und Filter' });
+      await waitFor(() => expect(within(feld).getByRole('button', { name: 'Tag' })).toHaveFocus());
+
+      fireEvent.keyDown(feld, { key: 'Escape' });
+      expect(screen.queryByRole('group', { name: 'Ansicht und Filter' })).toBeNull();
+      expect(knopf).toHaveFocus();
+    });
+
+    it('gibt den Fokus nach der Anlegen-Leiste an die Spalte zurueck (KAL-21)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const spalte = screen.getByRole('group', { name: 'Anna Beispiel' });
+      fireEvent.click(spalte, { clientY: 0 });
+      fireEvent.keyDown(screen.getByRole('group', { name: 'Was soll hier entstehen?' }), {
+        key: 'Escape',
+      });
+
+      await waitFor(() => expect(spalte).toHaveFocus());
+    });
+
+    it('gibt den Fokus nach dem Abbrechen der Rueckfrage an die Kachel zurueck (KAL-21)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
+      spaltenVermessen();
+
+      eineStundeZiehen(kachel);
+      const kasten = await screen.findByRole('group', { name: 'Termin verschieben?' });
+      fireEvent.click(within(kasten).getByRole('button', { name: 'Abbrechen' }));
+
+      await waitFor(() => expect(kachel).toHaveFocus());
+    });
+
+    it('bietet an vergangenen Tagen keine Fehlzeit an (KAL-22)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-11');
+      fireEvent.click(await screen.findByRole('group', { name: 'Anna Beispiel' }));
+
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      for (const name of [/^Fehlzeit/, /^Dauerfehlzeit/]) {
+        const eintragKnopf = within(menue).getByRole('button', { name });
+        expect(eintragKnopf).toBeDisabled();
+        expect(eintragKnopf).toHaveTextContent('Nur ab heute möglich');
+      }
+      expect(within(menue).getByRole('button', { name: /^Neuer Termin/ })).toBeEnabled();
+    });
+
+    it('meldet nach dem Eintragen einer Fehlzeit den Erfolg (KAL-22)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&eingetragen=dauerfehlzeit');
+      expect(await screen.findByText('Dauerfehlzeit eingetragen.')).toBeInTheDocument();
+    });
+
+    it('meldet einen leeren Tag unter Statusfilter mit dem Filter und ueber dem Raster (KAL-26)', async () => {
+      fetchAppointments.mockResolvedValue([]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&status=cancelled');
+
+      const leer = await screen.findByText('Keine abgesagten Termine an diesem Tag.');
+      expect(leer.compareDocumentPosition(raster()) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+        Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+      // Die Zeitzone steht nicht mehr als Kennung da.
+      expect(screen.queryByText(/Europe\/Berlin/)).toBeNull();
+    });
+
+    it('nennt den Monat am Telefon ohne zweistelliges Jahr (KAL-27)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const knopf = screen.getByRole('button', { name: /Monatskalender/ });
+      expect(within(knopf).getByText('Mai')).toBeInTheDocument();
+      expect(knopf).not.toHaveTextContent('Mai 27');
+    });
+
+    it('nennt das Jahr ausgeschrieben, wenn es nicht das laufende ist (KAL-27)', async () => {
+      rendern('/kalender?ansicht=tag&datum=2028-01-12');
+      const knopf = await screen.findByRole('button', { name: /Monatskalender/ });
+      expect(within(knopf).getByText('Jan. 2028')).toBeInTheDocument();
+    });
+
+    it('kennzeichnet heute in der Woche als Wort und als aktuelles Datum (KAL-B01)', async () => {
+      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      const koepfe = screen.getAllByRole('link', {
+        name: /Tagesansicht aller behandelnden Personen/,
+      });
+      const heute = koepfe.filter((k) => k.getAttribute('aria-current') === 'date');
+      expect(heute).toHaveLength(1);
+      expect(heute[0]).toHaveTextContent(/12\.05\..*heute/);
+      expect(screen.getByRole('group', { name: 'Mi 12.05., heute' })).toBeInTheDocument();
+    });
+
+    it('rollt die Woche waagerecht zum heutigen Tag (RSP-03)', async () => {
+      // jsdom kennt kein Layout: Jede Tagesspalte bekommt einen Kasten von
+      // 144 px, Montag beginnt neben der Zeitachse.
+      const TAGE = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+      const vermessen = vi
+        .spyOn(Element.prototype, 'getBoundingClientRect')
+        .mockImplementation(function (this: Element) {
+          const name = this.getAttribute('aria-label') ?? '';
+          const index = this.getAttribute('role') === 'group' ? TAGE.indexOf(name.slice(0, 2)) : -1;
+          const left = index < 0 ? 0 : 52 + index * 144;
+          return {
+            left,
+            right: left + 144,
+            top: 0,
+            bottom: 0,
+            width: 144,
+            height: 0,
+            x: left,
+            y: 0,
+            toJSON: () => ({}),
+          };
+        });
+      try {
+        rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
+        await screen.findByRole('link', { name: /Max Mustermann/ });
+        // Mittwoch: zwei Spalten nach Montag.
+        await waitFor(() => expect(raster().parentElement!.scrollLeft).toBe(2 * 144));
+      } finally {
+        vermessen.mockRestore();
+      }
     });
   });
 });

@@ -1,13 +1,15 @@
-import { Link, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useParams } from 'react-router-dom';
+import { useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Wortmarke } from '@/components/ui/Wortmarke';
-import { MARKE_RECHNUNGSHOEHE } from '@/components/ui/markeRegeln';
+import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
+import { monatsname, grundlageText, ibanInGruppen } from './anzeige';
+import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
  * Die Rechnung als Blatt zum Verschicken (ABR-003b).
@@ -32,8 +34,12 @@ import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } f
  * darf nicht wie eine Rechnung aussehen.
  *
  * Die Druck-Basis aus UI-000 (`@media print` in `src/index.css`) blendet
- * `nav`, `header` und jeden `button` aus. Deshalb steht der Rechnungskopf
- * hier in einem `div` und nicht in einem `header` — er soll gedruckt werden.
+ * `nav` und jeden `button` aus, bis UXR-001 auch `header`. Deshalb steht der
+ * Rechnungskopf in einem `div` und nicht in einem `header` — er soll gedruckt werden.
+ *
+ * Seit UXR-010 steht der Weg zurück auch beim Laden, bei einem Fehler und bei
+ * fehlenden Stammdaten da (ABR-30) - und zwar der Baustein mit seiner Regel
+ * für einen mitgereisten Rückweg, nicht ein Nachbau (ABR-33).
  */
 export function InvoicePrintPage() {
   const { invoiceId = '' } = useParams();
@@ -44,14 +50,34 @@ export function InvoicePrintPage() {
     retry: false,
   });
 
+  return (
+    <>
+      <div className="nicht-drucken">
+        <Rueckweg
+          standard={`/abrechnung/rechnungen/${invoiceId}`}
+          beschriftung="Zurück zur Rechnung"
+        />
+      </div>
+      <Inhalt rechnung={rechnung} />
+    </>
+  );
+}
+
+function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
   if (rechnung.isPending) return <LoadingState label="Rechnung wird geladen …" />;
 
   if (rechnung.error instanceof KeineStammdaten) {
     return (
-      <Statusmeldung ton="warnung">
-        Es sind noch keine Praxis-Stammdaten erfasst. Ohne Absender, Steuernummer und Bankverbindung
-        lässt sich kein Rechnungsblatt drucken — sie stehen unter „Praxisstammdaten".
-      </Statusmeldung>
+      <div>
+        <Statusmeldung ton="warnung">
+          Es sind noch keine Praxisstammdaten erfasst. Ohne Absender, Steuernummer und
+          Bankverbindung lässt sich kein Rechnungsblatt drucken. Erfassen kann sie die
+          Praxisinhaber:in.
+        </Statusmeldung>
+        <Textlink to="/abrechnung/stammdaten" alleinstehend className="text-sm">
+          Zu den Praxisstammdaten
+        </Textlink>
+      </div>
     );
   }
 
@@ -59,7 +85,8 @@ export function InvoicePrintPage() {
     return (
       <ErrorState
         title="Die Rechnung konnte nicht geladen werden."
-        description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => rechnung.refetch()}
       />
     );
   }
@@ -70,48 +97,57 @@ export function InvoicePrintPage() {
 function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
-  const empfaenger = dokument.recipient;
   const absender = dokument.issuer;
 
   return (
     <>
-      <div className="nicht-drucken">
-        <Link
-          to={`/abrechnung/rechnungen/${ansicht.id}`}
-          className="text-ink-muted hover:text-ink mb-4 inline-flex min-h-11 items-center text-sm"
-        >
-          ← Zurück zur Rechnung
-        </Link>
-      </div>
-
       {/* Ein Blatt in Briefbreite. `max-w-[210mm]` gilt am Bildschirm wie auf
           Papier: Wer die Seite ansieht, sieht, was aus dem Drucker kommt. */}
-      <article className="text-ink mx-auto max-w-[210mm] text-[0.9375rem]">
-        {/* Bewusst kein `header`: Die Druckregeln blenden `header` aus, und
+      <article className="text-ink text-liste mx-auto max-w-[210mm]">
+        {/* Bewusst kein `header`: Die Druckregeln blendeten ihn bis UXR-001 aus, und
             dieser Kopf gehört auf das Papier. */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          {/* Die schwarze Fassung, nicht die farbige umgefärbt:
-              `marke/README.md` nennt Rechnung und Fax als genau ihren Fall. */}
-          <Wortmarke hoehe={MARKE_RECHNUNGSHOEHE} fassung="schwarz" />
-          <address className="text-ink-muted text-right text-sm not-italic">
-            <span className="text-ink block font-medium">{absender.legal_name}</span>
-            <span className="block">
-              {`${absender.street} ${absender.house_number ?? ''}`.trim()}
-            </span>
-            <span className="block">
-              {absender.postal_code} {absender.city}
-            </span>
-            {absender.phone ? <span className="block">{absender.phone}</span> : null}
-            {absender.email ? <span className="block">{absender.email}</span> : null}
-          </address>
-        </div>
+        <Briefkopf
+          absender={absender}
+          empfaenger={dokument.recipient}
+          angaben={
+            <Angaben>
+              {ansicht.invoice_number ? (
+                <Angabe bezeichnung="Rechnungsnummer" zahl hervorgehoben>
+                  {ansicht.invoice_number}
+                </Angabe>
+              ) : null}
+              {ansicht.issued_on ? (
+                <Angabe bezeichnung="Rechnungsdatum" zahl>
+                  {formatDate(ansicht.issued_on)}
+                </Angabe>
+              ) : null}
+              <Angabe bezeichnung="Behandelte Person">{dokument.patient.name}</Angabe>
+              {dokument.patient.date_of_birth ? (
+                <Angabe bezeichnung="Geburtsdatum" zahl>
+                  {formatDate(dokument.patient.date_of_birth)}
+                </Angabe>
+              ) : null}
+              <Angabe bezeichnung="Steuernummer" zahl>
+                {absender.tax_number}
+              </Angabe>
+              {absender.vat_id ? (
+                <Angabe bezeichnung="USt-IdNr." zahl>
+                  {absender.vat_id}
+                </Angabe>
+              ) : null}
+            </Angaben>
+          }
+        />
 
+        {/* Die Vermerke stehen unter dem Anschriftfeld, nicht zwischen Kopf
+            und Anschrift: Dort verschoben sie das Feld aus dem Fenster
+            (ABR-22). Sie drucken mit. */}
         {entwurf ? (
-          // Druckt mit: Ein Entwurf auf Papier darf nicht wie eine Rechnung
-          // aussehen. Er trägt keine Nummer, und die Angaben stammen aus den
-          // heutigen Stammdaten statt aus einem Snapshot.
+          // Ein Entwurf auf Papier darf nicht wie eine Rechnung aussehen. Er
+          // trägt keine Nummer, und die Angaben stammen aus den heutigen
+          // Stammdaten statt aus einem Snapshot.
           <p className="border-line-strong text-ink mt-8 border-2 px-3 py-2 text-sm font-semibold">
-            Entwurf — keine Rechnung. Ohne Nummer, nicht zum Versand.
+            Entwurf – keine Rechnung. Ohne Nummer, nicht zum Versand.
           </p>
         ) : null}
 
@@ -125,69 +161,8 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           </p>
         ) : null}
 
-        <div className="mt-10 flex flex-wrap justify-between gap-8">
-          <div className="min-w-[70mm]">
-            {/* Die Absenderzeile über dem Anschriftenfeld: klein, einzeilig,
-                wie im Fensterumschlag. */}
-            <p className="text-ink-subtle border-line border-b pb-1 text-[0.6875rem]">
-              {absender.legal_name} · {`${absender.street} ${absender.house_number ?? ''}`.trim()} ·{' '}
-              {absender.postal_code} {absender.city}
-            </p>
-            <address className="mt-3 leading-relaxed not-italic">
-              <span className="block">{empfaenger.name}</span>
-              {empfaenger.street ? (
-                <span className="block">
-                  {`${empfaenger.street} ${empfaenger.house_number ?? ''}`.trim()}
-                </span>
-              ) : null}
-              {empfaenger.postal_code || empfaenger.city ? (
-                <span className="block">
-                  {empfaenger.postal_code} {empfaenger.city}
-                </span>
-              ) : null}
-            </address>
-            {empfaenger.reference ? (
-              <p className="text-ink-muted mt-2 text-sm">Aktenzeichen: {empfaenger.reference}</p>
-            ) : null}
-          </div>
-
-          <dl className="text-sm">
-            {ansicht.invoice_number ? (
-              <div className="flex gap-3">
-                <dt className="text-ink-muted w-40">Rechnungsnummer</dt>
-                <dd className="text-ink font-medium tabular-nums">{ansicht.invoice_number}</dd>
-              </div>
-            ) : null}
-            {ansicht.issued_on ? (
-              <div className="mt-1 flex gap-3">
-                <dt className="text-ink-muted w-40">Rechnungsdatum</dt>
-                <dd className="tabular-nums">{formatDate(ansicht.issued_on)}</dd>
-              </div>
-            ) : null}
-            <div className="mt-1 flex gap-3">
-              <dt className="text-ink-muted w-40">Behandelte Person</dt>
-              <dd>{dokument.patient.name}</dd>
-            </div>
-            {dokument.patient.date_of_birth ? (
-              <div className="mt-1 flex gap-3">
-                <dt className="text-ink-muted w-40">Geburtsdatum</dt>
-                <dd className="tabular-nums">{formatDate(dokument.patient.date_of_birth)}</dd>
-              </div>
-            ) : null}
-            <div className="mt-1 flex gap-3">
-              <dt className="text-ink-muted w-40">Steuernummer</dt>
-              <dd className="tabular-nums">{absender.tax_number}</dd>
-            </div>
-            {absender.vat_id ? (
-              <div className="mt-1 flex gap-3">
-                <dt className="text-ink-muted w-40">USt-IdNr.</dt>
-                <dd className="tabular-nums">{absender.vat_id}</dd>
-              </div>
-            ) : null}
-          </dl>
-        </div>
-
-        <h1 className="mt-10 text-lg font-semibold">
+        {/* H4 der Skala (20 px, 700) statt eines Tailwind-Grads daneben (ABR-34). */}
+        <h1 className="text-h4 mt-10 font-bold">
           {ansicht.invoice_number ? `Rechnung ${ansicht.invoice_number}` : 'Rechnungsentwurf'}
         </h1>
         {/* Eine Korrekturrechnung sagt auf dem Papier, welche Rechnung sie
@@ -198,7 +173,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
             Korrekturrechnung zur stornierten Rechnung {ansicht.replaces_invoice_number}.
           </p>
         ) : null}
-        <p className="text-ink-muted mt-1 text-sm">
+        <p className="text-ink-muted print:text-ink mt-1 text-sm">
           Für die folgenden Leistungen im {monatsname(dokument.period_month)} stellen wir in
           Rechnung:
         </p>
@@ -206,8 +181,17 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         {/* Die Leistungstabelle hat fünf Spalten und passt damit auf A4, aber
             nicht auf ein Telefon. Sie rollt deshalb in ihrem eigenen Rahmen
             statt die ganze Seite quer zu schieben; auf Papier gibt es nichts
-            zu rollen, dort steht sie vollständig. */}
-        <div className="mt-4 overflow-x-auto print:overflow-visible">
+            zu rollen, dort steht sie vollständig.
+
+            Der Rahmen ist mit der Tastatur erreichbar und benannt (ABR-B04,
+            UIK-24): Ohne das waren die Beträge am Handy für Tastatur und
+            Vorlesesoftware nicht zu erreichen. */}
+        <div
+          className="mt-4 overflow-x-auto print:overflow-visible"
+          tabIndex={0}
+          role="region"
+          aria-label="Leistungen, waagerecht rollbar"
+        >
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-line-strong border-b text-left">
@@ -261,14 +245,19 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
             </tfoot>
           </table>
         </div>
+        <p className="nicht-drucken text-ink-muted mt-1 text-sm sm:hidden">
+          Die Tabelle lässt sich seitlich wischen; rechts folgt der Betrag.
+        </p>
 
         {/* Der Katalogpreis ist der Endpreis; eine enthaltene Umsatzsteuer
             wird je Satz herausgerechnet (ANN-074). Unter Paragraf 19 UStG
             entfällt der Ausweis und der Hinweis tritt an seine Stelle.
             Der Grund der Steuerbefreiung steht an der Gruppe, die ihn
             betrifft — er ist Pflichtangabe nach § 14 Abs. 4 Nr. 8 UStG
-            (ABR-006, BEF-019) und kommt aus dem Dokument, nicht von hier. */}
-        <ul className="text-ink-muted mt-2 text-sm">
+            (ABR-006, BEF-019) und kommt aus dem Dokument, nicht von hier.
+            Auf Papier schwarz: Die Pflichtangabe gehört nicht ins Grau
+            (ABR-28). */}
+        <ul className="text-ink-muted print:text-ink mt-2 text-sm">
           {dokument.tax_groups.map((gruppe) => (
             <li key={`${gruppe.tax_treatment}-${gruppe.tax_rate_permille}`}>
               {steuerLabels[gruppe.tax_treatment]}: {formatEuro(gruppe.gross_cents)}
@@ -283,7 +272,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         </ul>
 
         {absender.small_business ? (
-          <p className="text-ink-muted mt-2 text-sm">
+          <p className="text-ink-muted print:text-ink mt-2 text-sm">
             Kein Ausweis von Umsatzsteuer gemäß § 19 UStG (Kleinunternehmerregelung).
           </p>
         ) : null}
@@ -291,10 +280,11 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
         {dokument.treatment_bases.length > 0 ? (
           <section className="mt-6">
             <h2 className="text-sm font-semibold">Behandlungsgrundlage</h2>
-            <ul className="text-ink-muted mt-1 text-sm">
+            <ul className="text-ink-muted print:text-ink mt-1 text-sm">
               {dokument.treatment_bases.map((basis, index) => (
                 <li key={`${basis.issued_on}-${index}`}>
-                  {basisLabels[basis.kind] ?? basis.kind} vom {formatDate(basis.issued_on)}
+                  {/* Dieselben Wörter wie in der Akte (ABR-18). */}
+                  {grundlageText(basis.kind, basis.issued_on)}
                   {basis.prescriber ? ` · ${basis.prescriber}` : ''}
                 </li>
               ))}
@@ -304,7 +294,7 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
 
         <section className="mt-6">
           <h2 className="text-sm font-semibold">Zahlung</h2>
-          <p className="text-ink-muted mt-1 text-sm">
+          <p className="text-ink-muted print:text-ink mt-1 text-sm">
             {ansicht.due_on
               ? `Bitte überweisen Sie den Betrag bis zum ${formatDate(ansicht.due_on)} ohne Abzug.`
               : `Zahlungsziel ${absender.payment_term_days} Tage ab Rechnungsdatum.`}
@@ -312,8 +302,9 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
               ? ` Bitte geben Sie als Verwendungszweck die Rechnungsnummer ${ansicht.invoice_number} an.`
               : ''}
           </p>
-          <p className="text-ink-muted mt-1 text-sm">
-            {absender.account_holder ?? absender.legal_name} · IBAN {absender.iban}
+          {/* Die IBAN in Vierergruppen: abgetippt wird sie vom Papier (ABR-28). */}
+          <p className="text-ink-muted print:text-ink mt-1 text-sm">
+            {absender.account_holder ?? absender.legal_name} · IBAN {ibanInGruppen(absender.iban)}
             {absender.bic ? ` · BIC ${absender.bic}` : ''}
             {absender.bank_name ? ` · ${absender.bank_name}` : ''}
           </p>
@@ -322,30 +313,18 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
 
       <div className="nicht-drucken mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
+          {/* Am Entwurf heißt der Knopf, was er druckt (ABR-26). */}
           <Button type="button" onClick={() => window.print()}>
-            Rechnung drucken
+            {entwurf ? 'Entwurf drucken' : 'Rechnung drucken'}
           </Button>
         </div>
-        <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
+        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Der Druckdialog des Browsers führt zu Papier oder zu einer PDF-Datei. Diese Datei entsteht
-          auf diesem Gerät; die Anwendung legt sie nicht ab und kann sie später nicht vorlegen —
-          aufbewahrt wird die Rechnung als Datensatz. Ein Dokument, das die Anwendung selbst erzeugt
-          und ablegt, kommt mit dem serverseitigen Weg (B14, Weg 3).
+          auf diesem Gerät; die Anwendung legt sie nicht ab und kann sie später nicht vorlegen –
+          aufbewahrt werden die Angaben der Rechnung in der Anwendung. Ein Dokument, das die
+          Anwendung selbst erzeugt und ablegt, kommt mit dem serverseitigen Weg.
         </p>
       </div>
     </>
   );
-}
-
-const basisLabels: Record<string, string> = {
-  first: 'Erstverordnung',
-  follow_up: 'Folgeverordnung',
-  self_pay: 'Selbstzahlerin',
-};
-
-/** „August 2026" aus dem ersten Tag des Abrechnungsmonats. */
-function monatsname(periodMonth: string): string {
-  const datum = new Date(periodMonth);
-  if (Number.isNaN(datum.getTime())) return periodMonth;
-  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(datum);
 }

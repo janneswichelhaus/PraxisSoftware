@@ -7,15 +7,18 @@ import type * as TermineApi from '@/features/appointments/api';
 import type * as PatientenApi from '@/features/patients/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
+import { instrumentFuer } from './instrumente';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const fetchErhebungen = vi.fn();
+const erhebungVerwerfen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof Api>();
   return {
     ...actual,
     fetchErhebungen: (id: string) => fetchErhebungen(id) as Promise<Api.Erhebung[]>,
+    erhebungVerwerfen: (id: string) => erhebungVerwerfen(id) as Promise<void>,
   };
 });
 const fetchEreignisse = vi.fn();
@@ -118,7 +121,7 @@ describe('Befund der Akte', () => {
       'href',
       `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8&korrigiert=neu`,
     );
-    expect(screen.getByText('durch Korrektur ersetzt')).toBeInTheDocument();
+    expect(screen.getByText('Durch Korrektur ersetzt')).toBeInTheDocument();
     expect(screen.getByText('Korrektur: Frage 3 falsch')).toBeInTheDocument();
   });
 
@@ -133,10 +136,55 @@ describe('Befund der Akte', () => {
       }),
       erhebung({ id: 'alt', superseded_by_response_id: 'neu' }),
     ]);
-    expect(await screen.findByText('abgeschlossen · Korrektur im Entwurf')).toBeInTheDocument();
-    expect(screen.queryByText('durch Korrektur ersetzt')).toBeNull();
+    expect(await screen.findByText('Abgeschlossen · Korrektur im Entwurf')).toBeInTheDocument();
+    expect(screen.queryByText('Durch Korrektur ersetzt')).toBeNull();
     // Keine zweite Korrektur neben der laufenden.
     expect(screen.queryByRole('link', { name: 'Korrigieren' })).toBeNull();
+  });
+
+  it('verwirft einen Entwurf auch in der Akte, erst nach einer Rückfrage (BEF-02)', async () => {
+    const user = userEvent.setup();
+    erhebungVerwerfen.mockReset().mockResolvedValue(undefined);
+    seite([erhebung({ id: 'd1', status: 'entwurf', completed_at: null })]);
+
+    await user.click(await screen.findByRole('button', { name: 'Entwurf verwerfen' }));
+    expect(
+      screen.getByRole('group', { name: 'Entwurf vom 20.09.2026 verwerfen' }),
+    ).toHaveTextContent('Die gespeicherten Antworten dieses Entwurfs werden gelöscht.');
+    expect(erhebungVerwerfen).not.toHaveBeenCalled();
+
+    fetchErhebungen.mockResolvedValue([]);
+    await user.click(screen.getByRole('button', { name: 'Ja, Entwurf verwerfen' }));
+    expect(erhebungVerwerfen).toHaveBeenCalledWith('d1');
+    // Der Entwurf ist fort, und der Weg zu einem neuen Bogen ist frei.
+    expect(await screen.findByRole('link', { name: 'Bogen erheben' })).toBeInTheDocument();
+  });
+
+  it('bietet einen abgeschlossenen Bogen nicht zum Verwerfen an', async () => {
+    seite([erhebung()]);
+    await screen.findByText('Erhoben am 20.09.2026');
+    expect(screen.queryByRole('button', { name: 'Entwurf verwerfen' })).toBeNull();
+  });
+
+  it('nennt eine abweichende Fassung des Bogens „Fassung" (BEF-16)', async () => {
+    seite([erhebung({ definition_version: '0.9.0' })]);
+    expect(await screen.findByText(/· Fassung 0\.9\.0 des Bogens$/)).toBeInTheDocument();
+    expect(screen.queryByText(/Version 0\.9\.0/)).toBeNull();
+  });
+
+  it('zeigt unter „Weitere Erhebungen" den Stand wie oben (BEF-02)', async () => {
+    const anamnese = instrumentFuer('anamnese_v8')!;
+    fetchErhebungen.mockResolvedValue([erhebung({ status: 'entwurf', completed_at: null })]);
+    renderWithProviders(
+      <Befund
+        patient={testPatient({ id: PATIENT_ID })}
+        user={testUser(['therapist'])}
+        scores={[{ ...anamnese, meta: { ...anamnese.meta, aktiv: false } }]}
+      />,
+    );
+    const abschnitt = (await screen.findByText('Weitere Erhebungen')).closest('section')!;
+    expect(within(abschnitt).getByText('Entwurf')).toBeInTheDocument();
+    expect(within(abschnitt).queryByRole('button')).toBeNull();
   });
 
   it('zeigt office die Bögen, aber keine Schreibaktion', async () => {
@@ -193,11 +241,12 @@ describe('Befund der Akte', () => {
       seite([]);
 
       expect(await screen.findByText('Nicht nötig')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+      await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
       expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true);
     });
 
     it('steht auch dann, wenn die Fragebögen nicht laden', async () => {
+      const user = userEvent.setup();
       fetchErhebungen.mockRejectedValue(new Error('synthetisch'));
       renderWithProviders(
         <Befund
@@ -208,7 +257,13 @@ describe('Befund der Akte', () => {
       expect(
         await screen.findByText('Die Fragebögen konnten nicht geladen werden.'),
       ).toBeInTheDocument();
+      expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
       expect(screen.getByText('Mitnehmen')).toBeInTheDocument();
+
+      // Ein Weg aus dem Fehler, ohne die Seite neu zu laden (WRT-01).
+      fetchErhebungen.mockResolvedValue([erhebung()]);
+      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByText('Erhoben am 20.09.2026')).toBeInTheDocument();
     });
   });
 

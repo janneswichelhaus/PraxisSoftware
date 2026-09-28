@@ -1,14 +1,14 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { Textlink } from '@/components/ui/Textlink';
 import { datenschutzstand, fetchDatenschutzvermerke } from '@/features/datenschutz/vermerke';
 import {
   canReadClinicalPatientFiles,
@@ -18,7 +18,7 @@ import {
 import { loescheDatei } from './api';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
-import { fotoVomHeutigenTag, kameraVerfuegbar } from './kamera';
+import { fotoVomHeutigenTag, useKamera } from './kamera';
 import {
   fetchPatientenfotos,
   ladePatientenfoto,
@@ -51,6 +51,9 @@ import {
  *
  * Wer was darf, prüft die Datenbank (Punkt 36 und 37); die Rolle bestimmt hier
  * nur, was angeboten wird.
+ *
+ * Gerahmt ist nur die Liste samt Ansicht, eine Auskunft; Einwilligung und
+ * Aufnahme stehen darüber ohne Rahmen (UI-002c, DAT-21).
  */
 
 const HINWEIS_GESICHT =
@@ -91,15 +94,6 @@ function Einwilligungsstand({
   patientId: string;
   stand: ReturnType<typeof datenschutzstand>['einwilligungen'][number] | undefined;
 }) {
-  const zumDatenschutz = (
-    <Link
-      to={`/patienten/${patientId}/datenschutz`}
-      className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-    >
-      Zum Datenschutz der Akte
-    </Link>
-  );
-
   if (stand?.erteilt) {
     return (
       <p className="text-ink-muted text-sm">
@@ -117,7 +111,9 @@ function Einwilligungsstand({
   return (
     <div>
       <p className="text-ink-muted text-sm">{text}</p>
-      {zumDatenschutz}
+      <Textlink to={`/patienten/${patientId}/datenschutz`} alleinstehend className="text-sm">
+        Zum Datenschutz der Akte
+      </Textlink>
     </div>
   );
 }
@@ -128,11 +124,13 @@ function Einwilligungsstand({
 
 function Aufnahme({ patientId }: { patientId: string }) {
   const queryClient = useQueryClient();
+  const kamera = useKamera();
   const [kameraOffen, setKameraOffen] = useState(false);
   const [foto, setFoto] = useState<Blob | null>(null);
   const [vorschau, setVorschau] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [erfolg, setErfolg] = useState<string | null>(null);
+  const speichernRef = useRef<HTMLButtonElement>(null);
 
   const speichern = useMutation({
     mutationFn: (auftrag: { foto: Blob; anzeigename: string }) =>
@@ -151,6 +149,12 @@ function Aufnahme({ patientId }: { patientId: string }) {
     return () => URL.revokeObjectURL(vorschau);
   }, [vorschau]);
 
+  // Nach „Foto verwenden" ist der Knopf, der den Dialog öffnete, fort; der
+  // Fokus geht auf den nächsten Schritt (DAT-11).
+  useEffect(() => {
+    if (foto) speichernRef.current?.focus();
+  }, [foto]);
+
   function aufgenommen(neu: Blob) {
     setKameraOffen(false);
     setErfolg(null);
@@ -166,37 +170,54 @@ function Aufnahme({ patientId }: { patientId: string }) {
     setName('');
   }
 
-  if (!kameraVerfuegbar()) {
+  if (kamera === 'ohneSchnittstelle') {
     return (
       <Statusmeldung ton="warnung">
-        Die Kamera steht hier nicht zur Verfügung — sie braucht eine sichere Verbindung (https).
+        Die Kamera steht hier nicht zur Verfügung – sie braucht eine sichere Verbindung (https).
         Fotos entstehen nur über die Kamera der Anwendung, nicht aus der Mediathek.
       </Statusmeldung>
     );
   }
+  // Am Rechner ohne Kamera kein Angebot, das in eine Sackgasse führt (DAT-25).
+  if (kamera === 'keine') {
+    return (
+      <Statusmeldung ton="warnung">
+        Auf diesem Gerät wurde keine Kamera gefunden. Fotos entstehen nur über die Kamera der
+        Anwendung, nicht aus der Mediathek.
+      </Statusmeldung>
+    );
+  }
+  if (kamera === 'pruefen') return null;
 
   return (
     <div>
       {foto && vorschau ? (
-        <div className="border-line rounded-card border border-dashed p-4">
-          <p className="text-ink text-[0.9375rem] font-medium">Neues Foto</p>
+        <div>
+          {/* Eine Überschrift, keine fette Zeile: in der Gliederung auffindbar
+              (DAT-20). Kein gestrichelter Kasten - Ablegen per Ziehen gibt es
+              nicht (DAT-21). */}
+          <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+            Neues Foto
+          </h3>
           <img
             src={vorschau}
             alt="Neues Foto, noch nicht gespeichert"
             draggable={false}
-            className="bg-ink rounded-card pointer-events-none mt-2 block max-h-64 w-full object-contain select-none"
+            className="bg-ink rounded-image pointer-events-none mt-2 block max-h-64 w-full max-w-md object-contain select-none"
           />
           <div className="mt-3 max-w-md">
             <Field
               label="Name"
               value={name}
               maxLength={200}
-              hint="Unter diesem Namen steht das Foto in der Liste — etwa die Region."
+              hint="Unter diesem Namen steht das Foto in der Liste – etwa die Region."
+              disabled={speichern.isPending}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             <Button
+              ref={speichernRef}
               type="button"
               disabled={speichern.isPending}
               onClick={() =>
@@ -216,7 +237,7 @@ function Aufnahme({ patientId }: { patientId: string }) {
           </div>
           {speichern.isError ? (
             <Statusmeldung ton="fehler" className="mt-2">
-              {speichern.error.message} Das Foto ist noch da — „Foto speichern“ versucht es erneut,
+              {speichern.error.message} Das Foto ist noch da – „Foto speichern“ versucht es erneut,
               solange diese Seite offen ist.
             </Statusmeldung>
           ) : null}
@@ -229,7 +250,7 @@ function Aufnahme({ patientId }: { patientId: string }) {
       )}
 
       {erfolg ? (
-        <Statusmeldung ton="neutral" className="mt-2">
+        <Statusmeldung ton="erfolg" className="mt-2 wrap-anywhere">
           {erfolg}
         </Statusmeldung>
       ) : null}
@@ -258,7 +279,7 @@ export interface Geladen {
 function Beschriftung({ foto, zeitzone }: { foto: Patientenfoto; zeitzone: string }) {
   return (
     <>
-      <span className="text-ink block font-medium">{foto.display_name}</span>
+      <span className="text-ink block font-medium wrap-anywhere">{foto.display_name}</span>
       <span className="text-ink-muted block">
         {tagDerPraxis(foto.taken_at, zeitzone)}
         {foto.taken_by_name ? ` · ${foto.taken_by_name}` : ''}
@@ -271,15 +292,23 @@ function Beschriftung({ foto, zeitzone }: { foto: Patientenfoto; zeitzone: strin
  * Ein Foto oder zwei nebeneinander, aus dem Speicher der Seite (Punkt 39 und
  * 40). Exportiert für die Prüfseite, die es ohne Server mit synthetischen
  * Bildern zeigt.
+ *
+ * Ein einzelnes Foto ist so breit wie eine Hälfte des Vergleichs (DAT-15):
+ * Am Bildschirm wuchs es sonst auf rund 1 050 × 1 400 px, und „Schließen" lag
+ * unter dem Bild. Die Ansicht steht im Rahmen der Liste und trägt deshalb
+ * keinen eigenen (DAT-21).
  */
 export function Ansicht({
   fotos,
   zeitzone,
   onSchliessen,
+  ref,
 }: {
   fotos: Geladen[];
   zeitzone: string;
   onSchliessen: () => void;
+  /** Wohin der Fokus nach dem Laden geht (DAT-06). */
+  ref?: Ref<HTMLElement>;
 }) {
   // Die Objekt-URLs gibt die Ansicht frei, sobald sie verschwindet.
   useEffect(
@@ -291,19 +320,21 @@ export function Ansicht({
 
   return (
     <section
+      ref={ref}
+      tabIndex={-1}
       aria-label={fotos.length > 1 ? 'Vergleich zweier Fotos' : 'Fotoansicht'}
-      className="border-line bg-surface rounded-card mt-4 border p-4"
+      className="mt-4 outline-none"
       // Kein Kontextmenü mit „Bild speichern" (Punkt 40).
       onContextMenu={(event) => event.preventDefault()}
     >
-      <div className={fotos.length > 1 ? 'grid grid-cols-2 gap-3' : ''}>
+      <div className={fotos.length > 1 ? 'grid grid-cols-2 gap-3' : 'mx-auto max-w-md'}>
         {fotos.map(({ foto, adresse }) => (
           <figure key={foto.id} className="min-w-0">
             <img
               src={adresse}
               alt={foto.display_name}
               draggable={false}
-              className="bg-ink rounded-card pointer-events-none block aspect-[3/4] w-full object-contain select-none [-webkit-touch-callout:none]"
+              className="bg-ink rounded-image pointer-events-none block aspect-[3/4] w-full object-contain select-none [-webkit-touch-callout:none]"
             />
             <figcaption className="mt-2 text-sm">
               <Beschriftung foto={foto} zeitzone={zeitzone} />
@@ -339,6 +370,8 @@ function Fotozeile({
   onAuswahl,
   onAnsehen,
   laeuft,
+  laedtHier,
+  fehlerHier,
 }: {
   foto: Patientenfoto;
   zeitzone: string;
@@ -349,6 +382,9 @@ function Fotozeile({
   onAuswahl: (an: boolean) => void;
   onAnsehen: () => void;
   laeuft: boolean;
+  /** Lädt gerade dieses Foto? Dann steht es hier, nicht unter der Liste (DAT-06). */
+  laedtHier: boolean;
+  fehlerHier: string | null;
 }) {
   const queryClient = useQueryClient();
   const loeschen = useMutation({
@@ -362,8 +398,8 @@ function Fotozeile({
   return (
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 text-sm">
-          <p className="text-ink text-[0.9375rem] font-medium">{foto.display_name}</p>
+        <div className="min-w-0 text-sm wrap-anywhere">
+          <p className="text-ink text-liste font-medium">{foto.display_name}</p>
           <p className="text-ink-muted mt-0.5">
             {tagDerPraxis(foto.taken_at, zeitzone)}
             {foto.taken_by_name ? ` · ${foto.taken_by_name}` : ''} · wird spätestens am{' '}
@@ -371,15 +407,16 @@ function Fotozeile({
           </p>
         </div>
         {foto.object_missing ? null : (
-          <div className="flex flex-wrap items-center gap-2">
-            <button
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Button
               type="button"
+              variant="secondary"
+              groesse="kompakt"
               onClick={onAnsehen}
               disabled={laeuft}
-              className={kartenAktionKlassen()}
             >
               Ansehen<span className="sr-only">: {foto.display_name}</span>
-            </button>
+            </Button>
             <Checkbox
               label={
                 <>
@@ -397,26 +434,37 @@ function Fotozeile({
                 bezeichnung={`„${foto.display_name}“ löschen`}
                 bestaetigen="Endgültig löschen"
                 bestaetigenLaeuft="Wird gelöscht …"
-                laeuft={loeschen.isPending}
                 fehler={loeschen.isError ? loeschen.error.message : undefined}
-                onBestaetigen={() => loeschen.mutate()}
+                onAbbrechen={() => loeschen.reset()}
+                onBestaetigen={() => loeschen.mutateAsync()}
               >
-                „{foto.display_name}“ wird sofort aus der Liste entfernt; das abgelegte Foto löscht
-                der Löschauftrag. Rückgängig machen lässt sich das nicht.
+                <span className="wrap-anywhere">
+                  „{foto.display_name}“ wird sofort aus der Liste entfernt. Das lässt sich nicht
+                  rückgängig machen.
+                </span>
               </Rueckfrage>
             ) : null}
           </div>
         )}
       </div>
+      {laedtHier ? <Statusmeldung className="mt-2">Foto wird geladen …</Statusmeldung> : null}
+      {fehlerHier ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {fehlerHier}
+        </Statusmeldung>
+      ) : null}
       {foto.object_missing ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          Dieses Foto ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden — es
-          steht in der Aufbewahrungsübersicht.
+          Dieses Foto ist in der Ablage nicht auffindbar. Bitte der Praxisinhaber:in melden – es
+          steht unter „Aufbewahrung“.
         </Statusmeldung>
       ) : null}
     </li>
   );
 }
+
+/** Wofür gerade ein Foto lädt: eine Zeile oder der Vergleich. */
+type Ladeort = { art: 'zeile'; fotoId: string } | { art: 'vergleich' };
 
 export function Patientenfotos({ patientId, user }: { patientId: string; user: CurrentUser }) {
   const darfSehen = canReadClinicalPatientFiles(user.roles);
@@ -439,8 +487,11 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
 
   const [auswahl, setAuswahl] = useState<string[]>([]);
   const [ansicht, setAnsicht] = useState<Geladen[] | null>(null);
-  const [laeuft, setLaeuft] = useState(false);
-  const [fehler, setFehler] = useState<string | null>(null);
+  const [ladeort, setLadeort] = useState<Ladeort | null>(null);
+  const [fehler, setFehler] = useState<{ ort: Ladeort; text: string } | null>(null);
+  const ansichtRef = useRef<HTMLElement>(null);
+  // Wer „Ansehen" antippte, kommt mit „Schließen" dorthin zurück (DAT-11).
+  const ausloeser = useRef<HTMLElement | null>(null);
   // Wer die Seite verlässt, während ein Foto lädt, bekommt keine Objekt-URL
   // mehr erzeugt, die dann niemand freigäbe.
   const eingehaengt = useRef(true);
@@ -451,8 +502,17 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
     };
   }, []);
 
+  // Die Ansicht steht unter der Liste; nach dem Laden rollt sie ins Bild und
+  // bekommt den Fokus (DAT-06) - sonst geschah nach dem Tipp scheinbar nichts.
+  useEffect(() => {
+    if (!ansicht) return;
+    ansichtRef.current?.scrollIntoView?.({ block: 'start' });
+    ansichtRef.current?.focus();
+  }, [ansicht]);
+
   if (!darfSehen) return null;
 
+  const laeuft = ladeort !== null;
   const liste = fotos.data ?? [];
   const einwilligung = vermerke.data
     ? datenschutzstand(vermerke.data).einwilligungen.find((e) => e.zweck === 'patient_photos')
@@ -461,9 +521,11 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
   const gewaehlt = auswahl.filter((id) => liste.some((foto) => foto.id === id));
 
   /** Öffnen ist immer ein Klick: ein Verweis je Foto, je Öffnen (Punkt 15). */
-  async function oeffnen(auswahlFotos: Patientenfoto[]) {
+  async function oeffnen(auswahlFotos: Patientenfoto[], ort: Ladeort) {
+    ausloeser.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setFehler(null);
-    setLaeuft(true);
+    setLadeort(ort);
     try {
       const bilder: Blob[] = [];
       for (const foto of auswahlFotos) bilder.push(await ladePatientenfoto(foto.id));
@@ -472,19 +534,38 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
         auswahlFotos.map((foto, i) => ({ foto, adresse: URL.createObjectURL(bilder[i]!) })),
       );
     } catch (ursache) {
-      if (eingehaengt.current) setFehler((ursache as Error).message);
+      if (eingehaengt.current) setFehler({ ort, text: (ursache as Error).message });
     } finally {
-      if (eingehaengt.current) setLaeuft(false);
+      if (eingehaengt.current) setLadeort(null);
     }
   }
+
+  function schliessen() {
+    setAnsicht(null);
+    if (ausloeser.current?.isConnected) ausloeser.current.focus();
+  }
+
+  const hierLadend = (fotoId: string) => ladeort?.art === 'zeile' && ladeort.fotoId === fotoId;
+  const hierFehler = (fotoId: string) =>
+    fehler?.ort.art === 'zeile' && fehler.ort.fotoId === fotoId ? fehler.text : null;
 
   return (
     <Section
       titel="Fotos"
-      rahmen
       hinweis="Arbeitshilfe für Übergabe und Vergleich, neben der Akte. Ein Foto ersetzt keinen Eintrag: Was wesentlich ist, steht in Worten in der Dokumentation."
     >
-      {vermerke.isPending ? null : (
+      {/* Gesagt wird nur, was geladen ist (DAT-03, ZST-09): Scheitert das
+          Laden der Vermerke, steht nicht „Keine Einwilligung vermerkt" da,
+          während darunter Fotos stehen - und aufgenommen wird dann nicht. */}
+      {vermerke.isPending ? (
+        <Statusmeldung>Einwilligung wird geladen …</Statusmeldung>
+      ) : vermerke.isError ? (
+        <ErrorState
+          title="Der Stand der Einwilligung konnte nicht geladen werden."
+          description="Bis er geladen ist, lassen sich keine Fotos aufnehmen. Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => vermerke.refetch()}
+        />
+      ) : (
         <Einwilligungsstand patientId={patientId} stand={einwilligung} />
       )}
 
@@ -494,9 +575,15 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
         </div>
       ) : null}
 
-      <div className="mt-4">
+      <Inhaltsflaeche className="mt-4">
         {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
-        {fotos.isError ? <ErrorState title="Die Fotos konnten nicht geladen werden." /> : null}
+        {fotos.isError ? (
+          <ErrorState
+            title="Die Fotos konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => fotos.refetch()}
+          />
+        ) : null}
         {fotos.data && liste.length === 0 ? (
           <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
         ) : null}
@@ -513,12 +600,14 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
                 ausgewaehlt={gewaehlt.includes(foto.id)}
                 auswahlVoll={gewaehlt.length >= 2}
                 laeuft={laeuft}
+                laedtHier={hierLadend(foto.id)}
+                fehlerHier={hierFehler(foto.id)}
                 onAuswahl={(an) =>
                   setAuswahl((bisher) =>
                     an ? [...bisher, foto.id] : bisher.filter((id) => id !== foto.id),
                   )
                 }
-                onAnsehen={() => void oeffnen([foto])}
+                onAnsehen={() => void oeffnen([foto], { art: 'zeile', fotoId: foto.id })}
               />
             ))}
           </ul>
@@ -537,6 +626,7 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
                     .filter((foto): foto is Patientenfoto => Boolean(foto))
                     // Das ältere links, das jüngere rechts.
                     .sort((a, b) => a.taken_at.localeCompare(b.taken_at)),
+                  { art: 'vergleich' },
                 )
               }
             >
@@ -547,20 +637,23 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
             </span>
           </div>
         ) : null}
-
-        {laeuft ? <LoadingState label="Foto wird geladen …" /> : null}
-        {fehler ? (
+        {ladeort?.art === 'vergleich' ? (
+          <Statusmeldung className="mt-2">Fotos werden geladen …</Statusmeldung>
+        ) : null}
+        {fehler?.ort.art === 'vergleich' ? (
           <Statusmeldung ton="fehler" className="mt-2">
-            {fehler}
+            {fehler.text}
           </Statusmeldung>
         ) : null}
 
         {ansicht ? (
-          <Ansicht fotos={ansicht} zeitzone={zeitzone} onSchliessen={() => setAnsicht(null)} />
+          <Ansicht ref={ansichtRef} fotos={ansicht} zeitzone={zeitzone} onSchliessen={schliessen} />
         ) : null}
-      </div>
+      </Inhaltsflaeche>
 
-      <p className="text-ink-subtle mt-4 max-w-prose text-xs leading-relaxed">
+      {/* Die Größe des Kleingedruckten entscheidet Jannes für alle Stellen
+          zugleich (TOK-04); bis dahin bleibt sie hier, wie sie ist. */}
+      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
         Jedes Öffnen eines Fotos wird protokolliert. Fotos lassen sich hier weder herunterladen noch
         teilen.
       </p>

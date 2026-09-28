@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/Button';
 import { minuteZuZeit } from './calendar';
 import type { Spanne } from './useSpanneAufziehen';
 
@@ -37,12 +38,22 @@ export interface AnlegenEintrag {
  * Eintrag, Escape schließt. Ein Weg ohne Zeigegerät ist das Menü damit noch
  * nicht — eine Spanne zieht man nicht mit der Tastatur auf. Dafür bleiben die
  * Schaltflächen im Kalender, und jeder Eintrag hat dort seine Entsprechung.
+ *
+ * **Wessen Spalte, welcher Tag (KAL-10).** Die Leiste steht fern der Auswahl,
+ * am unteren Rand. Nannte sie nur die Uhrzeit, fiele ein Tipp in die
+ * Nachbarspalte erst im Formular auf; `kopf` nennt deshalb Person und Tag vor
+ * der Zeit - „Tim Teamleitung · Mo 28.09. · 12:00–12:40 Uhr".
  */
 export function AnlegenMenue({
   auswahl,
   className = '',
 }: {
-  auswahl: Spanne & { eintraege: AnlegenEintrag[]; onSchliessen: () => void };
+  auswahl: Spanne & {
+    eintraege: AnlegenEintrag[];
+    onSchliessen: () => void;
+    /** Person und Tag der Auswahl, von der Seite zusammengesetzt. */
+    kopf?: string | undefined;
+  };
   className?: string;
 }) {
   const ersterRef = useRef<HTMLButtonElement>(null);
@@ -66,6 +77,7 @@ export function AnlegenMenue({
       <div className="flex items-start justify-between gap-2 px-1">
         <p className="min-w-0 text-sm">
           <span className="text-ink font-semibold tabular-nums">
+            {auswahl.kopf ? `${auswahl.kopf} · ` : ''}
             {minuteZuZeit(auswahl.vonMinute)}
             {spanne ? `–${minuteZuZeit(auswahl.bisMinute)}` : ''} Uhr
           </span>
@@ -77,13 +89,15 @@ export function AnlegenMenue({
             </span>
           )}
         </p>
-        <button
+        <Button
           type="button"
+          variant="quiet"
+          groesse="kompakt"
+          className="shrink-0"
           onClick={auswahl.onSchliessen}
-          className="text-ink-muted hover:bg-surface-sunken rounded-button min-h-11 shrink-0 px-3 text-sm"
         >
           Abbrechen
-        </button>
+        </Button>
       </div>
       <ul className="mt-1 grid grid-cols-2 gap-1 sm:grid-cols-4">
         {auswahl.eintraege.map((eintrag, i) => (
@@ -94,15 +108,18 @@ export function AnlegenMenue({
               disabled={eintrag.deaktiviert}
               onClick={eintrag.onWaehlen}
               className={[
-                'rounded-button border-line flex min-h-11 w-full flex-col gap-0.5 border px-3 py-1.5 text-left',
+                // Der Rand ist `line-strong`: Er umrandet ein Bedienelement
+                // (DS-001); mit `line` (1,4:1) waren die Einträge kaum als
+                // Knöpfe zu erkennen (KAL-24).
+                'rounded-button border-line-strong flex min-h-11 w-full flex-col gap-0.5 border px-3 py-1.5 text-left',
                 eintrag.deaktiviert
-                  ? 'text-ink-subtle cursor-not-allowed'
+                  ? 'text-ink-muted cursor-not-allowed'
                   : 'text-ink hover:bg-surface-sunken',
               ].join(' ')}
             >
-              <span className="text-[0.9375rem] font-medium">{eintrag.beschriftung}</span>
+              <span className="text-liste font-medium">{eintrag.beschriftung}</span>
               {eintrag.hinweis ? (
-                <span className="text-ink-muted text-xs leading-snug">{eintrag.hinweis}</span>
+                <span className="text-ink-muted text-xs">{eintrag.hinweis}</span>
               ) : null}
             </button>
           </li>

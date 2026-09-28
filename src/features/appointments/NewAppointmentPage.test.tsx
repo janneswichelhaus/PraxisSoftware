@@ -3,6 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as GrundlagenApi from '@/features/treatment-bases/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
@@ -32,6 +33,7 @@ const fetchPatient = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 const fetchLocations = vi.fn();
 const createAppointment = vi.fn();
+const fetchPatientTreatmentBases = vi.fn();
 const navigate = vi.fn();
 
 vi.mock('@/features/patients/api', async (importOriginal) => {
@@ -41,6 +43,12 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
     fetchPatient: (id: string) => fetchPatient(id) as Promise<PatientsApi.Patient | null>,
   };
 });
+
+vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof GrundlagenApi>()),
+  fetchPatientTreatmentBases: (id: string) =>
+    fetchPatientTreatmentBases(id) as Promise<GrundlagenApi.TreatmentBasis[]>,
+}));
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -105,6 +113,7 @@ describe('NewAppointmentPage', () => {
     fetchAssignableTherapists.mockReset();
     fetchLocations.mockReset();
     createAppointment.mockReset();
+    fetchPatientTreatmentBases.mockReset();
     navigate.mockReset();
 
     fetchPatient.mockResolvedValue(patientMitAdresse);
@@ -114,13 +123,16 @@ describe('NewAppointmentPage', () => {
     ]);
     fetchLocations.mockResolvedValue([{ id: ORT_HAUPT, name: 'Hauptstandort Tuebingen' }]);
     createAppointment.mockResolvedValue(TERMIN_ID);
+    fetchPatientTreatmentBases.mockResolvedValue([]);
   });
 
-  it('zeigt den vorausgewaehlten Patienten als Kontext', async () => {
+  it('nennt die vorausgewaehlte Patient:in einmal, in der Beschreibung (TER-21)', async () => {
     rendern();
     await formularAbwarten();
-    expect(screen.getByText('Patient:in')).toBeInTheDocument();
-    expect(screen.getAllByText('Berta Bestand').length).toBeGreaterThan(0);
+    expect(screen.getByText(/^Für Berta Bestand\./)).toBeInTheDocument();
+    // Kein zweiter Kasten mit demselben Namen direkt darunter.
+    expect(screen.getAllByText(/Berta Bestand/)).toHaveLength(1);
+    expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
   });
 
   it('bietet kein Feld zum Wechseln des Patienten an', async () => {
@@ -149,15 +161,76 @@ describe('NewAppointmentPage', () => {
     expect(arten).toEqual(['home_visit', 'practice', 'video']);
   });
 
-  it('meldet fehlende Pflichtangaben inline und sendet nicht', async () => {
+  it('meldet fehlende Pflichtangaben am Feld und oben in einer Zusammenfassung (UIK-02)', async () => {
     const user = userEvent.setup();
     rendern();
     await user.click(await formularAbwarten());
 
     // Olivia Office ist keine zuordenbare behandelnde Person; die Vorbelegung
-    // "ich" greift fuer sie nicht (UX-003).
-    expect(await screen.findByText('Behandelnde Person ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Beginn ist erforderlich.')).toBeInTheDocument();
+    // "ich" greift fuer sie nicht (UX-003). Der Knopf steht unten, die Felder
+    // oben: Die Zusammenfassung nimmt den Fokus, damit der Grund nicht
+    // ausserhalb des Bildes bleibt.
+    const kasten = (await screen.findByText('Bitte prüfen Sie diese Angaben')).closest(
+      '[role="alert"]',
+    ) as HTMLElement;
+    expect(kasten).toHaveFocus();
+    expect(
+      within(kasten).getByRole('link', { name: 'Behandelnde Person ist erforderlich.' }),
+    ).toBeInTheDocument();
+    expect(
+      within(kasten).getByRole('link', { name: 'Beginn ist erforderlich.' }),
+    ).toBeInTheDocument();
+
+    // Am Feld steht die Meldung ebenso, verbunden fuer Vorlesesoftware.
+    const person = screen.getByLabelText('Behandelnde Person *');
+    const beschreibung = document.getElementById(person.getAttribute('aria-describedby') ?? '');
+    expect(beschreibung).toHaveTextContent('Behandelnde Person ist erforderlich.');
+    expect(createAppointment).not.toHaveBeenCalled();
+  });
+
+  it('fuehrt aus der Zusammenfassung in das Feld', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    await user.click(await screen.findByRole('link', { name: 'Beginn ist erforderlich.' }));
+    expect(screen.getByLabelText('Beginn *')).toHaveFocus();
+  });
+
+  /**
+   * TER-06: Das Ende ist eine Ableitung. Fehlt der Beginn, meldete bisher
+   * zusaetzlich die richtig gewaehlte Dauer „Ende ist erforderlich." - und
+   * lenkte auf das falsche Feld.
+   */
+  it('meldet ohne Beginn nicht zusaetzlich das Ende an der Dauer (TER-06)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await user.click(await formularAbwarten());
+
+    expect(await screen.findAllByText('Beginn ist erforderlich.')).not.toHaveLength(0);
+    expect(screen.queryByText('Ende ist erforderlich.')).not.toBeInTheDocument();
+    // Ohne Beginn gibt es kein Ende, also auch keinen Hinweis darauf.
+    expect(screen.queryByText(/Dokumentation eingeschlossen/)).not.toBeInTheDocument();
+  });
+
+  it('meldet einen Termin ueber Mitternacht am Beginn (TER-06)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.clear(screen.getByLabelText('Datum *'));
+    await user.type(screen.getByLabelText('Datum *'), '2027-05-12');
+    await user.type(screen.getByLabelText('Beginn *'), '23:30');
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const beginn = screen.getByLabelText('Beginn *');
+    await waitFor(() =>
+      expect(
+        document.getElementById(beginn.getAttribute('aria-describedby')?.split(' ').at(-1) ?? ''),
+      ).toHaveTextContent('Beginn und Dauer reichen über Mitternacht.'),
+    );
+    expect(screen.queryByText('Ende ist erforderlich.')).not.toBeInTheDocument();
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
@@ -343,8 +416,7 @@ describe('NewAppointmentPage', () => {
     );
   });
 
-  it('bricht zum Rueckweg hin ab, nicht zur Akte', async () => {
-    const user = userEvent.setup();
+  it('bricht zum Rueckweg hin ab, nicht zur Akte - oben wie unten (TER-03)', async () => {
     const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
     renderWithProviders(
       <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
@@ -352,8 +424,32 @@ describe('NewAppointmentPage', () => {
     );
     await formularAbwarten();
 
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
-    expect(navigate).toHaveBeenCalledWith(kalender);
+    // Ein Seitenwechsel ist ein Link, keine Schaltflaeche (UIK-13).
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', kalender);
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      kalender,
+    );
+  });
+
+  it('kehrt nach einem Folgetermin zum Ausgangstermin zurueck und nennt den neuen (TER-04)', async () => {
+    const ausgang = `/termine/77777777-7777-4777-8777-00000000000a?zurueck=${encodeURIComponent('/kalender?ansicht=tag')}`;
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+      `/patienten/${PATIENT_ID}/termine/neu?zurueck=${encodeURIComponent(ausgang)}`,
+    );
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    // Der Rückweg des Ausgangstermins bleibt erhalten; dazu kommt die
+    // Kennung des neuen Termins - der Termin bestaetigt damit das Anlegen.
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`${ausgang}&neu=${TERMIN_ID}`, { replace: true }),
+    );
   });
 
   it('waehlt einen einzelnen Standort vor', async () => {
@@ -381,9 +477,10 @@ describe('NewAppointmentPage', () => {
     await zeitenSetzen(user);
     await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
 
+    // Am Feld und in der Zusammenfassung darüber.
     expect(
-      await screen.findByText('Für einen Praxistermin ist ein Standort erforderlich.'),
-    ).toBeInTheDocument();
+      await screen.findAllByText('Für einen Praxistermin ist ein Standort erforderlich.'),
+    ).toHaveLength(2);
     expect(createAppointment).not.toHaveBeenCalled();
   });
 
@@ -641,13 +738,18 @@ describe('NewAppointmentPage', () => {
   });
 
   it('bricht ohne Schreibvorgang zurueck zur Akte ab', async () => {
-    const user = userEvent.setup();
     rendern();
     await formularAbwarten();
 
-    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}`,
+    );
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toHaveAttribute(
+      'href',
+      `/patienten/${PATIENT_ID}`,
+    );
     expect(createAppointment).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}`);
   });
 
   it('meldet einen nicht freigegebenen Patienten, ohne ein Formular anzubieten', async () => {
@@ -655,7 +757,199 @@ describe('NewAppointmentPage', () => {
     rendern();
 
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(
+      screen.getByText('Diese Akte gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben.'),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Termin anlegen' })).not.toBeInTheDocument();
+    // Der Weg zurück bleibt auch hier (ZST-08).
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
+  });
+
+  it('meldet einen Ladefehler als Ladefehler, mit erneutem Versuch und Rückweg (TER-11)', async () => {
+    fetchPatient.mockRejectedValueOnce(new Error('Netz weg'));
+    fetchPatient.mockResolvedValue(patientMitAdresse);
+    const user = userEvent.setup();
+    rendern();
+
+    expect(
+      await screen.findByText('Die Patientendaten konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Nicht gefunden')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zur Akte' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await formularAbwarten()).toBeInTheDocument();
+  });
+
+  describe('ZST-07: Auswahllisten, die nicht laden', () => {
+    it('sagt am Feld, dass die Personen fehlen, und bietet einen neuen Versuch an', async () => {
+      fetchAssignableTherapists.mockRejectedValueOnce(new Error('Netz weg'));
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      expect(
+        await screen.findByText('Die Personen konnten nicht geladen werden.'),
+      ).toBeInTheDocument();
+
+      // Solange die Pflichtliste fehlt, wird nichts gesendet.
+      await zeitenSetzen(user);
+      await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+      expect(createAppointment).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Die Personen konnten nicht geladen werden.'),
+        ).not.toBeInTheDocument(),
+      );
+      expect(
+        Array.from(screen.getByLabelText('Behandelnde Person *').querySelectorAll('option')).map(
+          (o) => o.textContent,
+        ),
+      ).toEqual(['Bitte wählen …', 'Anna Beispiel', 'Tim Teamleitung']);
+    });
+  });
+
+  describe('TER-05: Schutz ungespeicherter Eingaben', () => {
+    /** Meldet der Schutz ungespeicherte Eingaben an den Browser (Neuladen, Schließen)? */
+    function verlassenWirdAngehalten(): boolean {
+      const ereignis = new Event('beforeunload', { cancelable: true });
+      window.dispatchEvent(ereignis);
+      return ereignis.defaultPrevented;
+    }
+
+    it('laesst ein unveraendertes Formular ohne Rueckfrage gehen', async () => {
+      rendern();
+      await formularAbwarten();
+      // Vorbelegung und der einzige Standort sind keine Eingabe.
+      await waitFor(() => expect(screen.getByLabelText('Terminart *')).toHaveValue('home_visit'));
+      expect(verlassenWirdAngehalten()).toBe(false);
+    });
+
+    it('haelt nach einer Eingabe an und bietet nur Verwerfen und Bleiben an', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await formularAbwarten();
+
+      await user.type(screen.getByLabelText('Beginn *'), '09:00');
+      expect(verlassenWirdAngehalten()).toBe(true);
+
+      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+      const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherter Termin' });
+      expect(rueckfrage).toHaveTextContent('Die Eingaben sind noch nicht gespeichert.');
+      expect(
+        within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+      ).toBeInTheDocument();
+      // Ohne Entwurfszustand gibt es kein „Speichern und weitergehen" (ANN-046).
+      expect(
+        within(rueckfrage).queryByRole('button', { name: 'Speichern und weitergehen' }),
+      ).not.toBeInTheDocument();
+
+      await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+      expect(screen.getByLabelText('Beginn *')).toHaveValue('09:00');
+      expect(
+        screen.queryByRole('group', { name: 'Ungespeicherter Termin' }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('fuehrt den Abstecher in die Stammdaten mit allen Eingaben zurueck', async () => {
+      fetchPatient.mockResolvedValue({ ...patientMitAdresse, house_number: null });
+      const verordnung = '88888888-8888-4888-8888-000000000002';
+      const kalender = '/kalender?ansicht=tag';
+      const user = userEvent.setup();
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09:00&person=${STAFF_TIM}&verordnung=${verordnung}&zurueck=${encodeURIComponent(kalender)}`,
+      );
+      await formularAbwarten();
+      await user.selectOptions(screen.getByLabelText('Dauer'), '45');
+
+      const abstecher = await screen.findByRole('link', {
+        name: 'Jetzt in den Stammdaten ergänzen',
+      });
+      const ziel = new URL(abstecher.getAttribute('href') ?? '', 'http://test.invalid');
+      expect(ziel.pathname).toBe(`/patienten/${PATIENT_ID}/bearbeiten`);
+      const zurueck = new URL(ziel.searchParams.get('zurueck') ?? '', 'http://test.invalid');
+      expect(zurueck.pathname).toBe(`/patienten/${PATIENT_ID}/termine/neu`);
+      expect(Object.fromEntries(zurueck.searchParams)).toEqual({
+        datum: '2027-05-19',
+        beginn: '09:00',
+        art: 'home_visit',
+        person: STAFF_TIM,
+        dauer: '45',
+        verordnung,
+        zurueck: kalender,
+      });
+    });
+
+    it('beginnt nach dem Abstecher mit der mitgebrachten Dauer', async () => {
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09:00&dauer=45`,
+      );
+      await formularAbwarten();
+
+      expect(screen.getByLabelText('Dauer')).toHaveValue('45');
+      expect(screen.getByText('Ende: 09:45 Uhr')).toBeInTheDocument();
+    });
+  });
+
+  describe('TER-21: Termin aus einer Verordnung', () => {
+    const verordnung = '88888888-8888-4888-8888-000000000002';
+
+    it('nennt die Grundlage, der der Termin zugeordnet wird', async () => {
+      fetchPatientTreatmentBases.mockResolvedValue([
+        {
+          id: verordnung,
+          prescriber_id: null,
+          prescriber_name: null,
+          prescriber_practice_name: null,
+          treatment_basis_kind: 'follow_up',
+          issued_on: '2026-06-18',
+          frequency_note: null,
+          note: null,
+          items: [],
+          updated_at: '2026-06-18T10:00:00+00',
+        },
+      ]);
+      renderWithProviders(
+        <NewAppointmentPage user={testUser(['office'], 'Olivia Office')} />,
+        `/patienten/${PATIENT_ID}/termine/neu?verordnung=${verordnung}`,
+      );
+      await formularAbwarten();
+
+      expect(
+        await screen.findByText(
+          'Der Termin wird dieser Behandlungsgrundlage zugeordnet: Folgeverordnung vom 18.06.2026.',
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('fragt ohne Verordnung keine Grundlagen ab', async () => {
+      rendern();
+      await formularAbwarten();
+      expect(fetchPatientTreatmentBases).not.toHaveBeenCalled();
+      expect(screen.queryByText(/Behandlungsgrundlage zugeordnet/)).not.toBeInTheDocument();
+    });
+  });
+
+  it('wiederholt im Fehlerfenster nicht den Titel, sondern sagt, was zu tun ist (ZST-12)', async () => {
+    createAppointment.mockRejectedValue(new Error('Der Termin konnte nicht angelegt werden.'));
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await zeitenSetzen(user);
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Der Termin konnte nicht angelegt werden.',
+    });
+    expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
+    expect(within(fenster).getAllByText(/konnte nicht angelegt werden/)).toHaveLength(1);
   });
 
   describe('UX-003: Vorbelegung', () => {

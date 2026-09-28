@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Field } from '@/components/ui/Field';
 
 /**
  * Unterschriftsfeld der Vorlage.
@@ -9,6 +10,13 @@ import { Button } from '@/components/ui/Button';
  * unterschreiben oder den eigenen Namen tippen. Beides führt zum selben
  * Ergebnis - „bestätigt ja/nein".
  *
+ * **Der Zustand gehört dem Feld (VOR-03).** Bestätigt ist, was hier gezeichnet
+ * oder getippt wurde - nicht, was die Seite zuletzt gemeldet bekam. Bis VOR-03
+ * zeigte ein neu aufgebautes Feld „Bestätigung liegt vor." bei leerem Zeichen-
+ * und Namensfeld, und wer einen getippten Namen wieder löschte, verlor die
+ * Bestätigung trotz Zeichnung. Die Seite erfährt jede Änderung über
+ * `onChange`; ein frisches Feld ist immer unbestätigt.
+ *
  * Das Bild verlässt die Vorschau nicht: es wird weder hochgeladen noch
  * gespeichert. Eine rechtsverbindliche elektronische Signatur ist das
  * ausdrücklich nicht.
@@ -16,25 +24,26 @@ import { Button } from '@/components/ui/Button';
 export function SignaturFeld({
   beschriftung,
   erklaerung,
-  unterschrieben,
   onChange,
 }: {
   beschriftung: string;
   erklaerung?: string;
-  unterschrieben: boolean;
-  onChange: (unterschrieben: boolean) => void;
+  onChange: (bestaetigt: boolean) => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const zeichnet = useRef(false);
+  const [gezeichnet, setGezeichnet] = useState(false);
   const [getippt, setGetippt] = useState('');
+  const bestaetigt = gezeichnet || getippt.trim().length > 0;
 
-  const leeren = useCallback(() => {
+  function leeren() {
     const canvas = canvasRef.current;
     const kontext = canvas?.getContext('2d');
     if (canvas && kontext) kontext.clearRect(0, 0, canvas.width, canvas.height);
+    setGezeichnet(false);
     setGetippt('');
     onChange(false);
-  }, [onChange]);
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,7 +60,12 @@ export function SignaturFeld({
     kontext.lineWidth = 2;
     kontext.lineCap = 'round';
     kontext.lineJoin = 'round';
-    kontext.strokeStyle = '#1f2933';
+    // Die Tinte des Design Systems statt eines eigenen Farbwerts (UEB-20,
+    // TOK-08): Bis dahin stand hier der alte Tintenwert, der keiner
+    // Palettenänderung folgte. Versteht der Browser den Wert im Zeichenfeld
+    // nicht, bleibt der Strich schwarz.
+    const tinte = getComputedStyle(canvas).getPropertyValue('--color-ink').trim();
+    if (tinte) kontext.strokeStyle = tinte;
   }, []);
 
   function position(event: React.PointerEvent<HTMLCanvasElement>) {
@@ -76,7 +90,10 @@ export function SignaturFeld({
     const { x, y } = position(event);
     kontext.lineTo(x, y);
     kontext.stroke();
-    if (!unterschrieben) onChange(true);
+    if (!gezeichnet) {
+      setGezeichnet(true);
+      onChange(true);
+    }
   }
 
   function beenden() {
@@ -106,26 +123,27 @@ export function SignaturFeld({
         <Button type="button" variant="secondary" onClick={leeren}>
           Unterschrift löschen
         </Button>
-        <div className="flex min-w-56 flex-1 flex-col gap-1.5">
-          <label htmlFor="signatur-getippt" className="text-ink-muted text-sm">
-            Oder Namen tippen (barrierefreie Alternative)
-          </label>
-          <input
-            id="signatur-getippt"
-            type="text"
-            value={getippt}
+        {/* Das Feld des Systems statt eines eigenen Eingabefelds (UEB-20):
+            48 px wie der Knopf daneben, Beschriftung in Tinte. */}
+        <div className="min-w-56 flex-1">
+          <Field
+            label="Oder Namen tippen"
             placeholder="Vorname Nachname"
+            value={getippt}
             onChange={(event) => {
-              setGetippt(event.target.value);
-              onChange(event.target.value.trim().length > 0);
+              const wert = event.target.value;
+              setGetippt(wert);
+              onChange(gezeichnet || wert.trim().length > 0);
             }}
-            className="border-line-strong bg-surface text-ink placeholder:text-ink-subtle rounded-field min-h-11 w-full border px-3 text-base"
           />
         </div>
       </div>
 
-      <p className="text-ink-subtle mt-2 text-sm">
-        {unterschrieben ? 'Bestätigung liegt vor.' : 'Noch keine Bestätigung.'} Das Bild wird nicht
+      {/* Der Speichern-Knopf der Seite hängt an dieser Zeile. Vorlesesoftware
+          erfährt den Wechsel über die Live-Region (UEB-20) - bewusst ohne
+          zweite role="status": Die gehört der Zustandsmeldung der Seite. */}
+      <p aria-live="polite" className="text-ink-muted mt-2 text-sm">
+        {bestaetigt ? 'Bestätigung liegt vor.' : 'Noch keine Bestätigung.'} Das Bild wird nicht
         gespeichert und ist keine rechtsverbindliche Signatur.
       </p>
     </fieldset>

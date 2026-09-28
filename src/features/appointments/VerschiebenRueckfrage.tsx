@@ -1,5 +1,6 @@
-import { useEffect, useRef, type CSSProperties } from 'react';
+import { useEffect, useRef, type CSSProperties, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 
 /**
  * Was die Rückfrage beim Verschieben zeigt (CAL-023).
@@ -37,21 +38,32 @@ export interface VerschiebenFrage {
  * Kasten deshalb direkt neben der neuen Kachel; der alte Platz bleibt als
  * Umriss stehen. Der Fokus wandert beim Öffnen auf die bestätigende
  * Schaltfläche, Escape bricht ab.
+ *
+ * **Ein Fehler bleibt im Kasten (KAL-01).** Scheitert das Verschieben - der
+ * Platz ist inzwischen belegt, der Termin fort -, schließt der Kasten nicht,
+ * sondern nennt den Grund dort, wo die Person gerade hinsieht. Bis KAL-01
+ * verschwand er, und die Meldung stand über einem Raster von 1 250 px.
  */
 export function VerschiebenRueckfrage({
   frage,
   laeuft,
+  fehler,
   onBestaetigen,
   onAbbrechen,
   className = '',
   style,
+  ref,
 }: {
   frage: VerschiebenFrage;
   laeuft: boolean;
+  /** Warum das Verschieben gescheitert ist; als `role="alert"` vorgelesen. */
+  fehler?: string | undefined;
   onBestaetigen: () => void;
   onAbbrechen: () => void;
   className?: string;
   style?: CSSProperties | undefined;
+  /** Zum Messen der Kastenhöhe (KAL-13). */
+  ref?: Ref<HTMLDivElement>;
 }) {
   const bestaetigenRef = useRef<HTMLButtonElement>(null);
 
@@ -63,11 +75,12 @@ export function VerschiebenRueckfrage({
 
   return (
     <div
+      ref={ref}
       role="group"
       aria-label="Termin verschieben?"
       // Seit FIX-017 steht der Kasten IM GITTER neben der neuen Kachel (BEF-013);
-      // wer ihn setzt, gibt die Lage vor. Schatten und Rand heben ihn vom
-      // Hintergrund ab, auf dem er liegt.
+      // wer ihn setzt, gibt die Lage vor. Der Rand hebt ihn vom Hintergrund
+      // ab, auf dem er liegt.
       className={`border-line-strong bg-surface rounded-card border-2 p-4 ${className}`}
       style={style}
       onKeyDown={(event) => {
@@ -101,7 +114,12 @@ export function VerschiebenRueckfrage({
           Die neue Zeit liegt außerhalb der hinterlegten Arbeitszeit.
         </p>
       ) : null}
-      <p className="text-ink-subtle mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
+      {fehler ? (
+        <Statusmeldung ton="fehler" className="mt-3">
+          {fehler}
+        </Statusmeldung>
+      ) : null}
+      <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht verschoben.</p>
       <div className="mt-3 flex flex-wrap gap-3">
         <Button ref={bestaetigenRef} type="button" disabled={laeuft} onClick={onBestaetigen}>
           {laeuft

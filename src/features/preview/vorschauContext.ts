@@ -116,6 +116,45 @@ export function depotName(
 }
 
 /**
+ * Ein Rad in einer Auswahlliste: „Lastenrad 5 (Ersatz) · Raddepot Nord" (VOR-24).
+ *
+ * Mit Punkt statt einer zweiten Klammer - der Name des Ersatzrads trägt schon
+ * eine, und „(Ersatz) (Raddepot Nord)" las sich wie ein Fehler.
+ */
+export function radMitStandort(zustand: Vorschauzustand, rad: Rad): string {
+  return `${rad.name} · ${depotName(zustand, rad, 'aktuell')}`;
+}
+
+/**
+ * Zustandsmeldung über einen Seitenwechsel hinweg (VOR-01).
+ *
+ * Eine Aktion, nach der die Seite wechselt - „Rad speichern", „Rad entfernen"
+ * -, gibt ihren Protokolleintrag im Verlaufszustand mit, und die Zielseite
+ * zeigt ihn. Mitgegeben wird nur die Kennung: Gezeigt wird ausschließlich, was
+ * im Protokoll dieser Sitzung steht. Nach einem Neuladen bleibt der
+ * Verlaufszustand im Browser erhalten, das Protokoll aber nicht - dann gibt es
+ * keine Meldung über etwas, das der Neuladen längst zurückgesetzt hat.
+ */
+export function meldungImVerlauf(eintrag: Protokolleintrag): { vorschauMeldung: string } {
+  return { vorschauMeldung: eintrag.id };
+}
+
+export function uebergebeneMeldung(
+  verlaufszustand: unknown,
+  protokoll: Protokolleintrag[],
+): Protokolleintrag | null {
+  if (
+    typeof verlaufszustand !== 'object' ||
+    verlaufszustand === null ||
+    !('vorschauMeldung' in verlaufszustand)
+  ) {
+    return null;
+  }
+  const id = verlaufszustand.vorschauMeldung;
+  return protokoll.find((eintrag) => eintrag.id === id) ?? null;
+}
+
+/**
  * Ist die Person an diesem Kalendertag genehmigt abwesend?
  *
  * Der Punkt, an dem Personal und Flotte zusammenhängen: Ein Rad, dessen

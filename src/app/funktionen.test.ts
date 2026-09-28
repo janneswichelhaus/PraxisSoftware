@@ -57,7 +57,7 @@ describe('funktionskatalog', () => {
     const namen = bezeichnungen(katalog);
     expect(namen).not.toContain('Termin anlegen');
     expect(namen).not.toContain('Patient:in suchen');
-    expect(namen).not.toContain('Grundlage erfassen');
+    expect(namen).not.toContain('Behandlungsgrundlage erfassen');
     // Das eigene Konto steht jeder angemeldeten Rolle offen (STAFF-004).
     expect(namen).toContain('Mein Konto');
   });
@@ -69,12 +69,12 @@ describe('funktionskatalog', () => {
     expect(namen).toContain('Mitarbeiter:in anlegen');
     // Wer eine Verordnung erfasst, tippt die Diagnose mit ab - ohne office
     // (ANN-011, canWriteTreatmentBases).
-    expect(namen).not.toContain('Grundlage erfassen');
+    expect(namen).not.toContain('Behandlungsgrundlage erfassen');
   });
 
   it('bietet der Therapeutin das Verordnen, aber keine Personalakte', () => {
     const namen = bezeichnungen(funktionskatalog(testUser(['therapist'])));
-    expect(namen).toContain('Grundlage erfassen');
+    expect(namen).toContain('Behandlungsgrundlage erfassen');
     expect(namen).not.toContain('Mitarbeiter:in anlegen');
     expect(namen).not.toContain('Abrechnung');
   });
@@ -83,6 +83,23 @@ describe('funktionskatalog', () => {
     for (const eintrag of funktionskatalog(testUser(['owner']))) {
       expect(eintrag.ziel.startsWith('/')).toBe(true);
       expect(eintrag.ziel.startsWith('//')).toBe(false);
+    }
+  });
+
+  it('führt „Tag umplanen" in den Kalender, statt auf eine Seite ohne Person und Tag (NAV-02)', () => {
+    // Die Seite lehnt ohne beides ab (CAL-009); der Treffer sagt, wo beides
+    // gewählt wird - wie „Behandlungsgrundlage erfassen".
+    const umplanen = funktionskatalog(testUser(['office'], 'Olivia Office')).find(
+      (eintrag) => eintrag.id === 'vorgang-tag-umplanen',
+    );
+    expect(umplanen?.ziel).toBe('/kalender');
+    expect(umplanen?.rueckweg).toBeUndefined();
+    expect(umplanen?.hinweis).toBe('Im Kalender unter „Ansicht und Filter“ Tag und Person wählen');
+  });
+
+  it('führt keinen Vorgang auf eine Adresse, die ohne Parameter ablehnt', () => {
+    for (const eintrag of funktionskatalog(testUser(['owner', 'therapist']))) {
+      expect(eintrag.ziel, eintrag.id).not.toBe('/kalender/tag-umplanen');
     }
   });
 });
@@ -118,7 +135,9 @@ describe('sucheFunktionen', () => {
   });
 
   it('findet einen Vorgang unter dem Wort, das die Praxis dafür benutzt', () => {
-    expect(bezeichnungen(sucheFunktionen(katalog, 'rezept'))).toContain('Grundlage erfassen');
+    expect(bezeichnungen(sucheFunktionen(katalog, 'rezept'))).toContain(
+      'Behandlungsgrundlage erfassen',
+    );
     expect(bezeichnungen(sucheFunktionen(katalog, 'passwort'))).toContain('Mein Konto');
     expect(bezeichnungen(sucheFunktionen(katalog, 'ausfall'))).toContain('Tag umplanen');
     // Die Kurzform aus der Tableiste ist der zweite Name derselben Sache.
@@ -136,5 +155,33 @@ describe('sucheFunktionen', () => {
   it('hält die Liste kurz, damit die Namensgruppe darunter sichtbar bleibt', () => {
     // „e" steckt in fast jedem Eintrag - genau der Fall, für den die Grenze da ist.
     expect(sucheFunktionen(katalog, 'e').length).toBeLessThanOrEqual(FUNKTIONSTREFFER_MAX);
+  });
+
+  it('findet Seiten unter dem, was auf ihnen steht (ORG-07)', () => {
+    // Bis UXR-002 fanden „Audit", „Frist" oder „Löschung" nichts, obwohl es
+    // die Seiten gibt - der Katalog kannte nur die Menünamen.
+    for (const [begriff, seite] of [
+      ['audit', 'Auditlog'],
+      ['protokoll', 'Auditlog'],
+      ['sicherheit', 'Auditlog'],
+      ['frist', 'Arbeitszeiten'],
+      ['raster', 'Arbeitszeiten'],
+      ['startort', 'Arbeitszeiten'],
+      ['planung', 'Arbeitszeiten'],
+      ['loschung', 'Aufbewahrung'],
+      ['Löschsperre', 'Aufbewahrung'],
+    ] as const) {
+      expect(bezeichnungen(sucheFunktionen(katalog, begriff)), begriff).toContain(seite);
+    }
+  });
+
+  it('verspricht einer Rolle keine Einstellung, die sie auf der Seite nicht sieht', () => {
+    const therapeutin = funktionskatalog(testUser(['therapist']));
+    expect(bezeichnungen(sucheFunktionen(therapeutin, 'frist'))).not.toContain('Arbeitszeiten');
+    expect(bezeichnungen(sucheFunktionen(therapeutin, 'planung'))).toContain('Arbeitszeiten');
+  });
+
+  it('nennt den Menüpunkt des Leistungskatalogs wie seine Seite (ABR-26)', () => {
+    expect(bezeichnungen(sucheFunktionen(katalog, 'katalog'))).toContain('Leistungskatalog');
   });
 });

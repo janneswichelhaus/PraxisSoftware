@@ -1,14 +1,17 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Hinweisfenster } from '@/components/ui/Dialogfenster';
 import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { alsFormularfehler } from '@/lib/formularfehler';
-import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
+import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import {
   createPatient,
   leereStammdaten,
@@ -22,12 +25,22 @@ import {
   stammdatenFeldId,
 } from './stammdatenfelder';
 
+/** Der Vorgang heißt hier wie in der Liste und in der Kopfsuche (PAT-21). */
+const ANLEGEN = `${BEGRIFFE.patientIn} anlegen`;
+
 /**
- * Anlage eines neuen Patienten.
+ * Anlage einer neuen Patient:in.
  *
  * Die Prüfung im Formular dient der Bedienbarkeit. Verbindlich sind
  * Berechtigung, Organisationszuordnung und Normalisierung in der
  * Serverfunktion `create_patient` (ADR-004).
+ *
+ * **Eingaben gehen nicht still verloren (PAT-02).** Siebzehn Felder standen
+ * nur im Arbeitsspeicher der Seite; ein Tipp auf die Tableiste, die Kopfsuche
+ * oder den Rückweg, ein Wischen zurück oder ein Neuladen verwarf eine halbe
+ * Aufnahme ohne Frage. Der Schutz der Dokumentation fragt jetzt auch hier -
+ * mit den Sätzen für Formulare und, weil es keinen Entwurf gibt, nur mit
+ * „Verwerfen und weitergehen" und „Hier bleiben" (ANN-046).
  */
 export function NewPatientPage() {
   const [werte, setWerte] = useState<Record<StammdatenFeld, string>>(leereStammdaten);
@@ -35,6 +48,8 @@ export function NewPatientPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [suche] = useSearchParams();
+  const absendenRef = useRef<HTMLButtonElement>(null);
+  const [fokusAufAbsenden, setFokusAufAbsenden] = useState(false);
 
   /**
    * Der Abstecher aus einem laufenden Vorgang (UX-012).
@@ -47,8 +62,14 @@ export function NewPatientPage() {
    */
   const zurueck = leseRueckweg(suche, '/patienten');
 
+  const ungespeichert = STAMMDATEN_REIHENFOLGE.some(
+    (feld) => werte[feld] !== leereStammdaten[feld],
+  );
+  const { freigeben, schutz } = useTextverlustschutz({ ungespeichert, texte: EINGABETEXTE });
+
   // Auswahl für die feste Therapeut:in (PAT-005). Schlägt die Abfrage fehl,
-  // bleibt die Auswahl leer - das Formular bleibt bedienbar.
+  // bleibt das Formular bedienbar; das Feld sagt dann, warum die Liste fehlt
+  // (PAT-20).
   const therapeuten = useQuery({
     queryKey: ['assignable-therapists'],
     queryFn: fetchAssignableTherapists,
@@ -60,6 +81,8 @@ export function NewPatientPage() {
     onSuccess: async (patientId) => {
       await queryClient.invalidateQueries({ queryKey: ['patients'] });
       const trenner = zurueck.includes('?') ? '&' : '?';
+      // Gespeichert: Der eigene Weg hinaus ist kein Verlust (ANN-046).
+      freigeben();
       void navigate(
         zurueck === '/patienten'
           ? `/patienten/${patientId}`
@@ -68,6 +91,15 @@ export function NewPatientPage() {
       );
     },
   });
+
+  // Nach dem Fehlerfenster steht der Fokus wieder auf dem Knopf, mit dem es
+  // weitergeht - nicht auf dem Seitenanfang, 2000 px darüber (PAT-03). Erst
+  // nach dem Schließen: Solange das Fenster offen ist, ist die Seite gesperrt.
+  useEffect(() => {
+    if (!fokusAufAbsenden) return;
+    absendenRef.current?.focus();
+    setFokusAufAbsenden(false);
+  }, [fokusAufAbsenden]);
 
   function setzen(feld: StammdatenFeld, wert: string) {
     setWerte((bisher) => ({ ...bisher, [feld]: wert }));
@@ -97,7 +129,7 @@ export function NewPatientPage() {
 
   return (
     <>
-      <Rueckweg standard="/patienten" beschriftung="Zurück zur Liste" />
+      <Rueckweg standard="/patienten" />
 
       <PageHeader
         title="Neue:r Patient:in"
@@ -105,15 +137,6 @@ export function NewPatientPage() {
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
-        {mutation.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Der Patient konnte nicht angelegt werden."
-              description="Bitte erneut versuchen. Sind Sie noch angemeldet und berechtigt?"
-            />
-          </div>
-        ) : null}
-
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,
@@ -128,19 +151,44 @@ export function NewPatientPage() {
           fehler={fehler}
           onChange={setzen}
           therapeutinnen={therapeuten.data ?? []}
+          therapeutinnenStand={
+            therapeuten.isPending ? 'laedt' : therapeuten.isError ? 'fehler' : 'bereit'
+          }
         />
 
+        {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -
+            über den Knöpfen (PAT-02). */}
+        {schutz}
+
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Wird angelegt …' : 'Patient anlegen'}
+          <Button ref={absendenRef} type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Wird angelegt …' : ANLEGEN}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+          {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
+              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
+          <ButtonLink to={zurueck} variant="secondary">
             Abbrechen
-          </Button>
+          </ButtonLink>
         </div>
       </form>
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      {/* Ein Fehlschlag kann nicht neben dem Knopf stehen, der ihn auslöst: Am
+          Telefon lag der Kasten oben im Formular, rund 2000 px über dem Knopf,
+          und niemand sah ihn. Deshalb als Fenster über dem Inhalt (ANN-058,
+          PAT-03, ZST-10). */}
+      {mutation.isError ? (
+        <Hinweisfenster
+          titel="Die Patient:in konnte nicht angelegt werden."
+          onSchliessen={() => {
+            mutation.reset();
+            setFokusAufAbsenden(true);
+          }}
+        >
+          Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut versuchen.
+        </Hinweisfenster>
+      ) : null}
+
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Es werden ausschließlich organisatorische Stammdaten erfasst. Klinische Angaben und ein
         Portalzugang entstehen hier nicht.
       </p>

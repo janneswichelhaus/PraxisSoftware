@@ -1,9 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Wortmarke } from '@/components/ui/Wortmarke';
+import { Vollseite } from '@/app/Vollseite';
+import { useFokusNachWechsel } from './fokus';
+import { hinweisAngemeldet } from './fremdeSitzung';
 import { useSession } from './sessionContext';
 import { VerbindungError, loeseLinkEin } from './linkEinloesen';
 
@@ -31,6 +34,7 @@ export function ZugangPage() {
   const navigate = useNavigate();
   const { session } = useSession();
   const tokenHash = suche.get('token_hash');
+  const konto = session?.user.email;
 
   /**
    * Ob beim Öffnen schon jemand angemeldet war — als Momentaufnahme, denn
@@ -48,6 +52,7 @@ export function ZugangPage() {
     if (session !== null) return 'fremde-sitzung';
     return tokenHash ? 'einloesen' : 'ungueltig';
   });
+  const auskunft = useRef<HTMLDivElement>(null);
 
   /** Einmalige Kennung, doppelte Montage unter `StrictMode` — siehe FIX-001b. */
   const eingeloest = useRef(false);
@@ -63,39 +68,41 @@ export function ZugangPage() {
       );
   }, [zustand, tokenHash, navigate]);
 
+  // Jeder Schritt ersetzt die Knöpfe des vorigen; der Fokus geht auf die neue
+  // Auskunft (AUTH-06).
+  useFokusNachWechsel(zustand, () => auskunft.current);
+
   function erneutVersuchen() {
     eingeloest.current = false;
     setZustand(tokenHash ? 'einloesen' : 'ungueltig');
   }
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
-      <div className="mb-8">
-        <Wortmarke hoehe={40} />
-      </div>
-
+    // Eine Überschrift in jedem Zustand (AUTH-13): Bis UXR-002 hatte die Seite
+    // keine, und Vorlesesoftware fand nichts zum Anspringen.
+    <Vollseite titel="Mit Link anmelden">
       {zustand === 'fremde-sitzung' ? (
-        <>
-          <Statusmeldung ton="warnung">
-            Auf diesem Gerät ist bereits jemand angemeldet. Mit diesem Link melden Sie sich als
-            andere Person an; nicht gespeicherte Eingaben der laufenden Sitzung gehen dabei
-            verloren.
-          </Statusmeldung>
+        <div ref={auskunft} tabIndex={-1}>
+          <Statusmeldung ton="warnung">{hinweisAngemeldet(konto)}</Statusmeldung>
           <div className="mt-4 flex flex-col gap-3">
             <Button onClick={() => setZustand(tokenHash ? 'einloesen' : 'ungueltig')}>
               Trotzdem mit diesem Link anmelden
             </Button>
-            <Button variant="secondary" onClick={() => void navigate('/', { replace: true })}>
+            <ButtonLink to="/" replace variant="secondary">
               Angemeldet bleiben
-            </Button>
+            </ButtonLink>
           </div>
-        </>
+        </div>
       ) : null}
 
-      {zustand === 'einloesen' ? <LoadingState label="Der Link wird geprüft …" /> : null}
+      {zustand === 'einloesen' ? (
+        <div ref={auskunft} tabIndex={-1}>
+          <LoadingState label="Der Link wird geprüft …" />
+        </div>
+      ) : null}
 
       {zustand === 'verbindung' ? (
-        <>
+        <div ref={auskunft} tabIndex={-1}>
           <ErrorState
             title="Der Anmeldedienst ist gerade nicht erreichbar."
             description="Ihr Link ist deswegen nicht verbraucht. Bitte prüfen Sie die Verbindung und versuchen Sie es erneut."
@@ -103,26 +110,33 @@ export function ZugangPage() {
           <Button className="mt-4" onClick={erneutVersuchen}>
             Erneut versuchen
           </Button>
-        </>
+        </div>
       ) : null}
 
       {zustand === 'ungueltig' ? (
-        <>
+        <div ref={auskunft} tabIndex={-1}>
+          {/* Eine neue Zugangsmail schickt, wer Zugänge verwaltet - die Rolle
+              Praxisinhaber (canManageStaffAccounts, WRT-12). Besteht die
+              bisherige Sitzung noch, führt der Weg zurück in sie (AUTH-04). */}
           <ErrorState
             title="Dieser Link lässt sich nicht mehr verwenden."
-            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Die Praxisleitung kann eine neue Zugangsmail schicken."
+            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Die Praxisinhaber:in kann eine neue Zugangsmail schicken."
           />
-          <Button variant="secondary" className="mt-4" onClick={() => void navigate('/')}>
-            Zur Anmeldung
-          </Button>
-        </>
+          <ButtonLink to="/" variant="secondary" className="mt-4">
+            {session ? 'Zurück zur Anwendung' : 'Zur Anmeldung'}
+          </ButtonLink>
+        </div>
       ) : null}
 
-      {fremdeSitzungBeimOeffnen.current && zustand !== 'fremde-sitzung' ? (
-        <p className="text-ink-subtle mt-6 text-xs leading-relaxed">
-          Hinweis: Beim Öffnen dieser Seite war auf dem Gerät noch ein anderer Zugang angemeldet.
+      {/* Solange die bisherige Sitzung besteht, im Präsens (AUTH-04): Der
+          Link hat sie nicht ersetzt, sie ist weiter angemeldet. */}
+      {fremdeSitzungBeimOeffnen.current && zustand !== 'fremde-sitzung' && session ? (
+        <p className="text-ink-muted mt-6 text-xs leading-relaxed">
+          {konto
+            ? `Hinweis: Auf diesem Gerät ist weiterhin ${konto} angemeldet.`
+            : 'Hinweis: Auf diesem Gerät ist weiterhin das bisherige Konto angemeldet.'}
         </p>
       ) : null}
-    </main>
+    </Vollseite>
   );
 }

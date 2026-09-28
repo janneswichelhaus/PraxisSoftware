@@ -46,7 +46,7 @@ export function Checkbox({
         <span className="text-ink text-sm">{label}</span>
       </label>
       {hint ? (
-        <p id={hintId} className="text-ink-subtle ml-8 text-sm">
+        <p id={hintId} className="text-ink-muted ml-8 text-sm">
           {hint}
         </p>
       ) : null}

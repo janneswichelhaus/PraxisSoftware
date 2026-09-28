@@ -31,7 +31,7 @@ function trifft(prescriber: Prescriber, suche: string): boolean {
 export function PrescribersListPage() {
   const [suche, setSuche] = useState('');
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['prescribers'],
     queryFn: fetchPrescribers,
     retry: false,
@@ -59,7 +59,8 @@ export function PrescribersListPage() {
       {isError ? (
         <ErrorState
           title="Die Verordner:innen konnten nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void refetch()}
         />
       ) : null}
 
@@ -83,7 +84,10 @@ export function PrescribersListPage() {
                 className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
               >
                 <span className="min-w-0">
-                  <span className="text-ink block truncate text-[0.9375rem] font-medium">
+                  {/* Umbrechen statt abschneiden (VER-09): Gekürzt fiel am
+                      Ende genau der Nachname weg - das unterscheidende
+                      Merkmal. */}
+                  <span className="text-ink text-liste block font-medium break-words">
                     {prescriberName(prescriber)}
                   </span>
                   <span className="text-ink-muted mt-0.5 block text-sm">

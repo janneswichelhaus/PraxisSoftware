@@ -42,9 +42,13 @@ const bezugLabels: Record<string, string> = {
   urlaub: 'Urlaub',
 };
 
+/** So viel der Ausgangsnachricht steht über einer Antwort im Entwurf. */
+const ZITATLAENGE = 60;
+
 export function TeamChatPage({ user }: { user: CurrentUser }) {
   const { zustand, simuliere } = useVorschau();
   const identitaet = vorschauidentitaet(zustand, user);
+  const zeitzone = user.organizationTimeZone;
 
   const [kanalId, setKanalId] = useState(zustand.kanaele[0]?.id ?? '');
   const [suche, setSuche] = useState('');
@@ -55,9 +59,12 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
   const kanal = zustand.kanaele.find((eintrag) => eintrag.id === kanalId);
   const nadel = suche.trim().toLowerCase();
 
+  // Nach dem Augenblick sortiert, nicht nach dem Text des Zeitstempels
+  // (VOR-06): Sonst konnte eine neue Nachricht vor älteren von heute landen.
   const nachrichtenImKanal = zustand.nachrichten
     .filter((nachricht) => nachricht.kanalId === kanalId)
-    .sort((a, b) => a.zeitpunkt.localeCompare(b.zeitpunkt));
+    .sort((a, b) => Date.parse(a.zeitpunkt) - Date.parse(b.zeitpunkt));
+  const ungelesenImKanal = nachrichtenImKanal.some((nachricht) => !nachricht.gelesen);
 
   const treffer = nadel
     ? zustand.nachrichten.filter((nachricht) => nachricht.text.toLowerCase().includes(nadel))
@@ -69,7 +76,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
       {
         bereich: 'Kommunikation',
         vorgang: antwortAuf
-          ? `Antwort im Thread verfasst (${kanal.name})`
+          ? `Antwort verfasst (${kanal.name})`
           : `Nachricht verfasst (${kanal.name})`,
         folgen: ['Nachricht in der Vorschau des Kanals sichtbar'],
         nichtGeschehen: [
@@ -123,7 +130,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Kommunikation"
-        description="Kanäle, Direktnachrichten und Threads für organisatorische Abstimmung."
+        description="Kanäle, Direktnachrichten und Antworten für organisatorische Abstimmung."
       />
 
       <SimulationsMeldung eintrag={meldung} />
@@ -141,19 +148,21 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
       {nadel ? (
         <section className="mb-6">
           <h2 className="text-ink mb-2 text-[1.0625rem] font-semibold">{treffer.length} Treffer</h2>
+          {/* Die Regel, nicht ihre Fundstelle in den Projektunterlagen
+              (WRT-03, VOR-25). */}
           <p className="text-ink-muted mb-3 text-sm">
-            Eine echte Suche muss dieselben Berechtigungen anwenden wie die Kanäle selbst
-            (PROJECT_PRINCIPLES.md 4.7). In der Vorschau gibt es keine Berechtigungsprüfung.
+            Eine echte Suche zeigt nur, was Sie sehen dürfen. In der Vorschau gibt es keine
+            Berechtigungsprüfung.
           </p>
           <ul className="divide-line border-line divide-y border-y">
             {treffer.map((nachricht) => (
               <li key={nachricht.id} className="py-3">
-                <p className="text-ink-subtle text-sm">
+                <p className="text-ink-muted text-sm">
                   {zustand.kanaele.find((eintrag) => eintrag.id === nachricht.kanalId)?.name} ·{' '}
                   {mitarbeiterName(zustand, nachricht.autorId)} ·{' '}
-                  {formatZeitpunkt(nachricht.zeitpunkt)}
+                  {formatZeitpunkt(nachricht.zeitpunkt, zeitzone)}
                 </p>
-                <p className="text-ink mt-0.5 text-[0.9375rem]">{nachricht.text}</p>
+                <p className="text-ink text-liste mt-0.5">{nachricht.text}</p>
               </li>
             ))}
           </ul>
@@ -177,7 +186,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                     type="button"
                     onClick={() => setKanalId(eintrag.id)}
                     aria-current={aktiv ? 'true' : undefined}
-                    className={`rounded-button flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left text-[0.9375rem] transition-colors ${
+                    className={`rounded-button text-liste flex min-h-11 w-full items-center justify-between gap-2 px-3 text-left transition-colors ${
                       aktiv
                         ? 'bg-accent-soft text-accent font-medium'
                         : 'text-ink-muted hover:bg-surface-sunken'
@@ -204,9 +213,13 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                   </h2>
                   <p className="text-ink-muted mt-0.5 text-sm">{kanal.beschreibung}</p>
                 </div>
-                <Button variant="quiet" onClick={alsGelesen}>
-                  Als gelesen markieren
-                </Button>
+                {/* Nur, wenn es Ungelesenes gibt (VOR-23) - sonst meldete der
+                    Knopf einen Vorgang, der nichts tat. */}
+                {ungelesenImKanal ? (
+                  <Button variant="quiet" onClick={alsGelesen}>
+                    Als gelesen markieren
+                  </Button>
+                ) : null}
               </div>
 
               {nachrichtenImKanal.length === 0 ? (
@@ -219,6 +232,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                       <li key={nachricht.id}>
                         <Nachrichtenblock
                           nachricht={nachricht}
+                          zeitzone={zeitzone}
                           onAntworten={() => setAntwortAuf(nachricht)}
                         />
                         <ul className="border-line mt-2 ml-4 space-y-3 border-l pl-4">
@@ -226,7 +240,7 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
                             .filter((antwort) => antwort.threadVon === nachricht.id)
                             .map((antwort) => (
                               <li key={antwort.id}>
-                                <Nachrichtenblock nachricht={antwort} />
+                                <Nachrichtenblock nachricht={antwort} zeitzone={zeitzone} />
                               </li>
                             ))}
                         </ul>
@@ -236,17 +250,26 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
               )}
 
               <div className="border-line mt-6 border-t pt-4">
-                {antwortAuf ? (
+                {/* Unter welchem Namen die eigene Nachricht erscheint, steht
+                    dabei (VOR-07): In der Vorschau schreibt das Konto als
+                    Demoperson, und ohne diesen Satz stand die eigene Nachricht
+                    scheinbar unter fremdem Namen. */}
+                {identitaet ? (
                   <p className="text-ink-muted mb-2 text-sm">
-                    Antwort auf: „{antwortAuf.text.slice(0, 60)}…"{' '}
-                    <button
-                      type="button"
-                      onClick={() => setAntwortAuf(null)}
-                      className="text-accent underline"
-                    >
-                      abbrechen
-                    </button>
+                    Sie schreiben in der Vorschau als {identitaet.person.name}
+                    {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}.
                   </p>
+                ) : null}
+                {antwortAuf ? (
+                  <div className="mb-2 flex flex-wrap items-center gap-x-3">
+                    <p className="text-ink-muted min-w-0 text-sm">
+                      Antwort auf: „{zitat(antwortAuf.text)}“
+                    </p>
+                    {/* 44 px statt einer Textzeile (VOR-11). */}
+                    <Button variant="quiet" groesse="kompakt" onClick={() => setAntwortAuf(null)}>
+                      Abbrechen
+                    </Button>
+                  </div>
                 ) : null}
                 <TextArea
                   rows={3}
@@ -270,20 +293,27 @@ export function TeamChatPage({ user }: { user: CurrentUser }) {
   );
 }
 
+/** Anfang einer Nachricht; „…“ nur, wenn wirklich gekürzt wurde (VOR-23). */
+function zitat(text: string): string {
+  return text.length > ZITATLAENGE ? `${text.slice(0, ZITATLAENGE)}…` : text;
+}
+
 function Nachrichtenblock({
   nachricht,
+  zeitzone,
   onAntworten,
 }: {
   nachricht: Nachricht;
+  zeitzone: string | null;
   onAntworten?: () => void;
 }) {
   const { zustand } = useVorschau();
 
   return (
     <div>
-      <p className="text-ink-subtle text-sm">
+      <p className="text-ink-muted text-sm">
         <span className="text-ink font-medium">{mitarbeiterName(zustand, nachricht.autorId)}</span>{' '}
-        · {formatZeitpunkt(nachricht.zeitpunkt)}
+        · {formatZeitpunkt(nachricht.zeitpunkt, zeitzone)}
         {!nachricht.gelesen ? (
           <>
             {' '}
@@ -291,7 +321,7 @@ function Nachrichtenblock({
           </>
         ) : null}
       </p>
-      <p className="text-ink mt-0.5 text-[0.9375rem]">{nachricht.text}</p>
+      <p className="text-ink text-liste mt-0.5">{nachricht.text}</p>
       {nachricht.erwaehnungen.length > 0 ? (
         <p className="text-ink-muted mt-1 text-sm">
           Erwähnt: {nachricht.erwaehnungen.map((id) => mitarbeiterName(zustand, id)).join(', ')}
@@ -300,19 +330,16 @@ function Nachrichtenblock({
       {nachricht.bezug ? (
         <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 inline-block px-3 py-1.5 text-sm">
           Bezug: {bezugLabels[nachricht.bezug.art] ?? nachricht.bezug.art} · {nachricht.bezug.label}
-          <span className="text-ink-subtle block text-xs">
+          <span className="text-ink-muted block text-xs">
             Der Verweis erweitert keine Berechtigung.
           </span>
         </p>
       ) : null}
       {onAntworten ? (
-        <button
-          type="button"
-          onClick={onAntworten}
-          className="text-accent hover:text-accent-hover mt-1 min-h-9 text-sm font-medium"
-        >
+        // 44 px statt 36 (VOR-11).
+        <Button variant="quiet" groesse="kompakt" className="mt-1" onClick={onAntworten}>
           Antworten
-        </button>
+        </Button>
       ) : null}
     </div>
   );

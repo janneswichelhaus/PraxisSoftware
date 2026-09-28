@@ -4,8 +4,14 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import type { CurrentUser } from '@/features/session/types';
-import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
+import {
+  depotName,
+  radMitStandort,
+  useVorschau,
+  type Protokolleintrag,
+} from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { SimulationsMeldung } from '@/features/preview/ui';
 
@@ -17,16 +23,27 @@ import { SimulationsMeldung } from '@/features/preview/ui';
  * Freitext, was den Schlüsselstand von einer korrekten Selbstauskunft abhängig
  * machte. Änderbar bleibt er trotzdem: jemand kann den Schlüssel für eine
  * Kollegin mitnehmen.
+ *
+ * **Kein Rad vorgewählt (VOR-18).** Bis dahin stand das erste Rad der Liste in
+ * der Auswahl - im Demostand eines mit vergebenem Schlüssel -, und der tägliche
+ * Weg begann mit einer Warnung und einem Knopf, der nicht ging. Räder mit
+ * vergebenem Schlüssel stehen am Ende und sagen es vorn im Text; nach einer
+ * Entnahme ist die Auswahl wieder leer. Ein Rad aus der Adresszeile
+ * (`?rad=`, von der Radkarte) bleibt vorgewählt.
  */
 export function KeyPage({ user }: { user: CurrentUser }) {
   const { zustand, simuliere } = useVorschau();
   const [suchparameter] = useSearchParams();
-  const [radId, setRadId] = useState(() => suchparameter.get('rad') ?? zustand.raeder[0]?.id ?? '');
+  const [radId, setRadId] = useState(() => suchparameter.get('rad') ?? '');
   const [name, setName] = useState(user.profile.display_name);
   const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
 
   const rad = zustand.raeder.find((eintrag) => eintrag.id === radId);
   const bereitsEntnommen = Boolean(rad?.schluesselInhaber);
+  // Stabil sortiert: Räder mit Schlüssel im Tresor zuerst, sonst wie in der Flotte.
+  const auswahl = [...zustand.raeder].sort(
+    (a, b) => Number(Boolean(a.schluesselInhaber)) - Number(Boolean(b.schluesselInhaber)),
+  );
 
   function bestaetigen() {
     if (!rad) return;
@@ -35,7 +52,7 @@ export function KeyPage({ user }: { user: CurrentUser }) {
         bereich: 'Radflotte',
         vorgang: `Schlüssel entnommen: ${rad.name}`,
         folgen: [
-          `Schlüsselstand auf „bei ${name.trim()}" gesetzt`,
+          `Schlüsselstand auf „bei ${name.trim()}“ gesetzt`,
           'Schlüsselverlauf des Rads ergänzt',
         ],
         nichtGeschehen: [
@@ -66,20 +83,27 @@ export function KeyPage({ user }: { user: CurrentUser }) {
       }),
     );
     setMeldung(eintrag);
+    setRadId('');
   }
 
   return (
     <>
-      <PageHeader title="Schlüssel entnehmen" description="Wer hat gerade welchen Schlüssel." />
+      <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
+      <PageHeader
+        title="Schlüssel entnehmen"
+        description="Schlüssel für ein Rad aus dem Tresor nehmen."
+      />
 
       <SimulationsMeldung eintrag={meldung} />
 
       <div className="flex max-w-md flex-col gap-4">
         <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
-          {zustand.raeder.map((eintrag) => (
+          <option value="">Bitte wählen …</option>
+          {auswahl.map((eintrag) => (
             <option key={eintrag.id} value={eintrag.id}>
-              {eintrag.name} ({depotName(zustand, eintrag, 'aktuell')})
-              {eintrag.schluesselInhaber ? ' – Schlüssel entnommen' : ''}
+              {eintrag.schluesselInhaber
+                ? `${eintrag.name} (vergeben an ${eintrag.schluesselInhaber}) · ${depotName(zustand, eintrag, 'aktuell')}`
+                : radMitStandort(zustand, eintrag)}
             </option>
           ))}
         </Select>
@@ -104,7 +128,7 @@ export function KeyPage({ user }: { user: CurrentUser }) {
           </Button>
           <Link
             to="/betrieb/flotte"
-            className="text-ink-muted hover:text-ink inline-flex min-h-11 items-center text-[0.9375rem]"
+            className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
           >
             Zurück zur Radflotte
           </Link>

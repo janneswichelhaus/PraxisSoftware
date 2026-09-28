@@ -15,9 +15,12 @@ const PRUEFUNG = {
 describe('Fahrtabschnitt', () => {
   it('warnt bei Unterschreitung mit Minuten und fruehestem Beginn', () => {
     render(<Fahrtabschnitt sekunden={720} pruefung={PRUEFUNG} zeitzone="Europe/Berlin" />);
-    expect(screen.getByText(/Fahrt 12 Min\./)).toHaveTextContent(
-      '5 Min. zu knapp — frühester Beginn 10:20 Uhr',
-    );
+    const zeile = screen.getByText(/Fahrt 12 Min\./);
+    expect(zeile).toHaveTextContent('5 Min. zu knapp – frühester Beginn 10:20 Uhr');
+    // Das Warnzeichen des Systems, nicht ein Sonderzeichen der Geräteschrift
+    // (TER-23) - und für Vorlesesoftware ausgeblendet.
+    expect(zeile.querySelector('[aria-hidden="true"]')).toHaveTextContent('!');
+    expect(zeile).not.toHaveTextContent('⚠');
   });
 
   it('sagt "passt", wenn der Puffer reicht', () => {
@@ -31,9 +34,36 @@ describe('Fahrtabschnitt', () => {
     expect(screen.getByText(/passt/)).toBeInTheDocument();
   });
 
+  it('nennt, wie viel Luft bleibt, statt zwei Uhrzeiten zum Rechnen (TER-23)', () => {
+    render(
+      <Fahrtabschnitt
+        sekunden={600}
+        pruefung={{ ...PRUEFUNG, shortfall_minutes: 0 }}
+        zeitzone="Europe/Berlin"
+        // Frühester Beginn 10:20 Uhr, der nächste Stopp beginnt 10:35 Uhr.
+        naechsterBeginn="2026-09-10T08:35:00Z"
+      />,
+    );
+    expect(screen.getByText(/passt/)).toHaveTextContent('Fahrt 10 Min. · passt · 15 Min. Luft');
+  });
+
+  it('bleibt ohne Beginn des naechsten Stopps beim fruehesten Beginn', () => {
+    render(
+      <Fahrtabschnitt
+        sekunden={600}
+        pruefung={{ ...PRUEFUNG, shortfall_minutes: 0 }}
+        zeitzone="Europe/Berlin"
+      />,
+    );
+    expect(screen.getByText(/passt/)).toHaveTextContent('passt (frühester Beginn 10:20 Uhr)');
+  });
+
   it('nennt eine unbekannte Fahrzeit ungeprueft - nie "passt"', () => {
     render(<Fahrtabschnitt sekunden={null} pruefung={null} zeitzone="Europe/Berlin" />);
-    expect(screen.getByText(/nicht geprüft/)).toBeInTheDocument();
+    const zeile = screen.getByText(/nicht geprüft/);
+    expect(zeile).toHaveTextContent('Fahrzeit unbekannt – nicht geprüft');
+    // Auf Papier sagt die Zeile nichts, was hilft (TER-12).
+    expect(zeile).toHaveClass('print:hidden');
     expect(screen.queryByText(/passt/)).toBeNull();
   });
 });
@@ -63,5 +93,20 @@ describe('Routenzusammenfassung', () => {
     );
     expect(screen.getByRole('status')).toHaveTextContent(/Fahrpuffer nicht geprüft/);
     expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('sagt ohne Einrichtung, was trotzdem geht - ohne Secrets (TER-07, ANN-090)', () => {
+    render(
+      <Routenzusammenfassung
+        laedt={false}
+        ergebnis={{ ok: false, error: { code: 'not_configured', message: 'x' } }}
+        erneutVersuchen={() => {}}
+      />,
+    );
+    const meldung = screen.getByRole('status');
+    expect(meldung).toHaveTextContent(
+      'Fahrzeiten sind hier noch nicht eingerichtet. Liste und Navigation funktionieren trotzdem.',
+    );
+    expect(meldung).not.toHaveTextContent(/Secret|LOCATION_|PTV_API_KEY|Repository/);
   });
 });

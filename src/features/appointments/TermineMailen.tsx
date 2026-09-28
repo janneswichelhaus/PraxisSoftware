@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { fullName, type Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
+import { Rueckmeldung } from './Rueckmeldungen';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
 
 /**
@@ -50,20 +52,20 @@ export function TermineMailen({
   // vielleicht-Adresse.
   if (!patient.email) {
     return (
-      <p className="text-ink-subtle max-w-prose text-xs leading-relaxed">
-        Für eine E-Mail fehlt die Adresse — eintragen darf sie nur, wer sie von der Patient:in
+      <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+        Für eine E-Mail fehlt die Adresse – eintragen darf sie nur, wer sie von der Patient:in
         selbst hat.{' '}
         {/* Der Abstecher in die Stammdaten und zurück auf diese Seite (UX-012).
             Vorher stand hier nur, wo die Adresse hingehört. */}
-        <Link
+        <Textlink
+          alleinstehend
           to={mitRueckweg(
             `/patienten/${patient.id}/bearbeiten`,
             `/patienten/${patient.id}/terminzettel`,
           )}
-          className="text-accent inline-flex min-h-11 items-center underline"
         >
           Adresse in den Stammdaten ergänzen
-        </Link>
+        </Textlink>
       </p>
     );
   }
@@ -91,9 +93,10 @@ function Mailentwurf({
         mail.enthalten.map((eintrag) => eintrag.id),
         'email',
       ),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
+    onSuccess: () => {
+      // Die Bestätigung folgt dem Server, nicht dem Nachladen (ZST-B01).
       setUebergeben(null);
+      void queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
     },
   });
 
@@ -120,11 +123,13 @@ function Mailentwurf({
             <Button type="button" variant="secondary" onClick={entwerfen}>
               Termine per E-Mail senden
             </Button>
+            {/* Im Erfolgston und mit dem Fokus: Der Knopf, der ihn hatte, ist
+                mit der Frage verschwunden (UIK-21, ZST-16). */}
             {vermerken.isSuccess ? (
-              <Statusmeldung>
-                Die Termine sind als „Per E-Mail mitgeteilt" vermerkt. Am Termin lässt sich der
+              <Rueckmeldung>
+                Die Termine sind als „Per E-Mail mitgeteilt“ vermerkt. Am Termin lässt sich der
                 Vermerk zurücknehmen.
-              </Statusmeldung>
+              </Rueckmeldung>
             ) : null}
           </div>
 
@@ -136,7 +141,7 @@ function Mailentwurf({
               role="status"
               className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-3 border px-4 py-3"
             >
-              <p className="text-ink text-[0.9375rem]">
+              <p className="text-ink text-liste">
                 Die E-Mail ist im Mailprogramm geöffnet. Wurde sie gesendet? Nur dann gelten die
                 Termine als mitgeteilt.
               </p>
@@ -162,44 +167,49 @@ function Mailentwurf({
         </div>
       ) : (
         <div className="border-line bg-surface-sunken rounded-card max-w-prose border p-4">
-          <h2 className="text-ink text-base font-semibold">E-Mail an die Patient:in</h2>
+          {/* Die Überschrift als Abschnittstitel des Systems statt einer
+              eigenen Form (TER-16). */}
+          <Section titel="E-Mail an die Patient:in">
+            <dl className="text-sm">
+              {/* min-w-0 und Umbruch an jeder Stelle: Eine E-Mail-Adresse hat
+                  keine Trennstelle und ragte bei 390 px sonst über Kasten und
+                  Bildrand - genau dort, wo sie geprüft werden soll (TER-20). */}
+              <div className="flex gap-2">
+                <dt className="text-ink-muted">An</dt>
+                <dd className="text-ink min-w-0 wrap-anywhere">{adresse}</dd>
+              </div>
+              <div className="mt-1 flex gap-2">
+                <dt className="text-ink-muted">Betreff</dt>
+                <dd className="text-ink min-w-0 wrap-anywhere">{entwurf.betreff}</dd>
+              </div>
+            </dl>
 
-          <dl className="mt-3 text-sm">
-            <div className="flex gap-2">
-              <dt className="text-ink-muted">An</dt>
-              <dd className="text-ink">{adresse}</dd>
+            <p className="text-ink border-line text-liste mt-3 border-t pt-3 whitespace-pre-line">
+              {entwurf.text}
+            </p>
+
+            {entwurf.ausgelassen > 0 ? (
+              <Statusmeldung ton="warnung" className="mt-3">
+                {`Es passen nur die nächsten ${entwurf.enthalten.length} Termine in eine E-Mail. Die übrigen ${entwurf.ausgelassen} stehen auf dem Ausdruck und gelten danach als nicht mitgeteilt.`}
+              </Statusmeldung>
+            ) : null}
+
+            <p className="text-ink-muted mt-3 text-xs leading-relaxed">
+              Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
+              Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
+              Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem
+              Mailprogramm, gesendet wird sie dort von Ihnen.
+            </p>
+
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <Button type="button" onClick={() => uebergabeStarten(entwurf)}>
+                E-Mail öffnen
+              </Button>
+              <Button type="button" variant="secondary" onClick={() => setEntwurf(null)}>
+                Abbrechen
+              </Button>
             </div>
-            <div className="mt-1 flex gap-2">
-              <dt className="text-ink-muted">Betreff</dt>
-              <dd className="text-ink">{entwurf.betreff}</dd>
-            </div>
-          </dl>
-
-          <p className="text-ink border-line mt-3 border-t pt-3 text-[0.9375rem] whitespace-pre-line">
-            {entwurf.text}
-          </p>
-
-          {entwurf.ausgelassen > 0 ? (
-            <Statusmeldung ton="warnung" className="mt-3">
-              {`Es passen nur die nächsten ${entwurf.enthalten.length} Termine in eine E-Mail. Die übrigen ${entwurf.ausgelassen} stehen auf dem Ausdruck und gelten danach als nicht mitgeteilt.`}
-            </Statusmeldung>
-          ) : null}
-
-          <p className="text-ink-subtle mt-3 text-xs leading-relaxed">
-            Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
-            Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
-            Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem Mailprogramm,
-            gesendet wird sie dort von Ihnen.
-          </p>
-
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <Button type="button" onClick={() => uebergabeStarten(entwurf)}>
-              E-Mail öffnen
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setEntwurf(null)}>
-              Abbrechen
-            </Button>
-          </div>
+          </Section>
         </div>
       )}
     </div>

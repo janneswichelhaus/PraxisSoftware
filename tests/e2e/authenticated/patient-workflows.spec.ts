@@ -69,7 +69,10 @@ test.describe('PAT-003: Versorgungsstatus wechseln', () => {
     await page.getByRole('button', { name: 'Als inaktiv markieren' }).last().click();
 
     await expect(detailWert(page, 'Status')).toHaveText('Inaktiv');
-    await expect(page.getByText('Nicht in laufender Versorgung')).toBeVisible();
+    // Das Etikett trägt seit UIK-18 das Zeichen „!“ (für Vorlesesoftware
+    // ausgeblendet); exact grenzt es gegen den neuen Hinweis „Keine neuen
+    // Termine – nicht in laufender Versorgung …“ ab.
+    await expect(page.getByText('!Nicht in laufender Versorgung', { exact: true })).toBeVisible();
 
     await page.reload();
     await expect(detailWert(page, 'Status')).toHaveText('Inaktiv');

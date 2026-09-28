@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
 const signInWithPassword = vi.fn();
 const resetPasswordForEmail = vi.fn();
@@ -102,5 +103,92 @@ describe('LoginPage', () => {
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/User not found/);
     expect(document.body.textContent).not.toMatch(/unbekannt/i);
+  });
+
+  // ---------------------------------------------------------------------------
+  // UXR-002
+  // ---------------------------------------------------------------------------
+  it('trägt Überschrift und Hauptbereich der Vollseite (AUTH-12, AUTH-13)', () => {
+    render(<LoginPage />);
+
+    const titel = screen.getByRole('heading', { level: 1, name: 'Anmelden' });
+    expect(screen.getByRole('main')).toContainElement(titel);
+    expect(titel.className).toContain('text-h3');
+    // „Kennwort vergessen?" ist ein leiser Knopf in der Hauptfarbe, kein
+    // grauer Unterstrich mehr (UIK-14).
+    const knopf = screen.getByRole('button', { name: 'Kennwort vergessen?' });
+    expect(knopf.className).toContain('text-accent');
+    expect(knopf.className).not.toContain('underline');
+  });
+
+  it('führt den Fokus ins Feld und nach „Abbrechen" zurück (AUTH-06)', async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
+    expect(screen.getByLabelText('E-Mail-Adresse des Zugangs')).toHaveFocus();
+    // Die Überschrift des Abschnitts kommt aus Section (TOK-05).
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Kennwort vergessen' }),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+    expect(screen.getByRole('button', { name: 'Kennwort vergessen?' })).toHaveFocus();
+  });
+
+  it('setzt den Fokus auf den Fehler einer gescheiterten Anmeldung (AUTH-06)', async () => {
+    signInWithPassword.mockResolvedValueOnce({ error: { message: 'Invalid login credentials' } });
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.type(screen.getByLabelText('E-Mail-Adresse'), 'wer@praxis.invalid');
+    await user.type(screen.getByLabelText('Kennwort'), 'falsch');
+    await user.click(screen.getByRole('button', { name: 'Anmelden' }));
+
+    const meldung = await screen.findByRole('alert');
+    expect(meldung.parentElement).toHaveFocus();
+  });
+
+  it('prüft das Format der Adresse, bevor es anfragt (AUTH-11)', async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
+    const feld = screen.getByLabelText('E-Mail-Adresse des Zugangs');
+    await user.type(feld, 'anna@praxis,invalid');
+    await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
+
+    expect(screen.getByText('Bitte eine gültige E-Mail-Adresse angeben.')).toBeInTheDocument();
+    expect(feld).toHaveAttribute('aria-invalid', 'true');
+    expect(feld).toHaveFocus();
+    expect(resetPasswordForEmail).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Falls für diese Adresse/)).toBeNull();
+  });
+
+  it('nennt die Adresse in der Bestätigung und lässt sie korrigieren (AUTH-11)', async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+
+    await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
+    await user.type(screen.getByLabelText('E-Mail-Adresse des Zugangs'), 'anna@praxis.invalid');
+    await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
+
+    const bestaetigung = await screen.findByText(/Falls für diese Adresse ein Zugang besteht/);
+    expect(bestaetigung).toHaveTextContent('Angefordert für anna@praxis.invalid.');
+    // Der Fokus steht auf der Bestätigung, die das Formular ersetzt (AUTH-06).
+    expect(bestaetigung.parentElement).toHaveFocus();
+
+    await user.click(screen.getByRole('button', { name: 'Andere Adresse eingeben' }));
+    const feld = screen.getByLabelText('E-Mail-Adresse des Zugangs');
+    expect(feld).toHaveValue('anna@praxis.invalid');
+    expect(feld).toHaveFocus();
+  });
+
+  it('ist mit offenem „Kennwort vergessen" für Vorlesesoftware sauber', async () => {
+    const user = userEvent.setup();
+    const { container } = render(<LoginPage />);
+    await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
+
+    await pruefeBarrierefreiheit(container);
   });
 });

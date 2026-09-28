@@ -52,7 +52,9 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
-  await expect(page.getByText('Finalisiert', { exact: true })).toBeVisible();
+  // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
+  // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
+  await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
 
   return terminId;
 }
@@ -77,14 +79,14 @@ test.describe('DOK-002: Finalisieren', () => {
 
     await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
 
-    await expect(page.getByText('Finalisiert', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
     await expect(page.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
     await expect(page.getByRole('link', { name: 'Dokumentation bearbeiten' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Korrigieren' })).toBeVisible();
 
     await page.reload();
-    await expect(page.getByText('Finalisiert', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
   });
 
   test('schreibt den Entwurfsstand als Version 1 fest', async ({ page }) => {
@@ -111,14 +113,14 @@ test.describe('DOK-002: Korrigieren', () => {
     await page.getByRole('link', { name: 'Korrigieren' }).click();
     await expect(page.getByLabel('Korrigierter Eintrag')).toHaveValue(ENTWURF);
     // Ohne Aenderung gibt es nichts zu speichern.
-    await expect(page.getByRole('button', { name: 'Korrektur speichern' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Korrektur festschreiben' })).toBeDisabled();
 
     await page.getByLabel('Korrigierter Eintrag').fill(KORRIGIERT);
-    await page.getByRole('button', { name: 'Korrektur speichern' }).click();
+    await page.getByRole('button', { name: 'Korrektur festschreiben' }).click();
     await expect(page.getByText('Bitte kurz begründen, was korrigiert wird.')).toBeVisible();
 
     await page.getByLabel('Begründung der Korrektur').fill(BEGRUENDUNG);
-    await page.getByRole('button', { name: 'Korrektur speichern' }).click();
+    await page.getByRole('button', { name: 'Korrektur festschreiben' }).click();
 
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText(KORRIGIERT)).toBeVisible();
@@ -153,7 +155,7 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText('Nachtrag', { exact: true })).toBeVisible();
     // Der Ursprungseintrag bleibt unveraendert finalisiert.
     await expect(page.getByText(ENTWURF)).toBeVisible();
-    await expect(page.getByText('Finalisiert', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
     await expect(page.getByText('Entwurf', { exact: true })).toBeVisible();
 
     await page.reload();

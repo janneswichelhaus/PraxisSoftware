@@ -58,3 +58,60 @@ const kompakt =
 export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = ''): string {
   return `${kompakt} ${varianten[variant]} ${zusatz}`.trim();
 }
+
+/**
+ * Größe einer Schaltfläche: `normal` 48 px, `kompakt` 44 px mit 14 px Schrift
+ * (die Klassen von `kartenAktionKlassen`). Die Variante bleibt davon
+ * unberührt (UIK-14): Wer einen kompakten Knopf braucht, schreibt
+ * `<Button groesse="kompakt">` statt eines rohen `<button>` mit Klassen.
+ */
+export type Groesse = 'normal' | 'kompakt';
+
+export function knopfKlassen(variant: Variant, groesse: Groesse = 'normal', zusatz = ''): string {
+  return groesse === 'kompakt'
+    ? kartenAktionKlassen(variant, zusatz)
+    : buttonKlassen(variant, zusatz);
+}
+
+/**
+ * Knopf nur mit Symbol (UIK-01): Pfeile, Eckknopf, Lupe.
+ *
+ * 44 × 44 px (`size-11`) und damit nie unter dem Mindestziel - der Handoff
+ * nennt für seinen IconButton 48/40 px, am Telefon gilt aber „Ziele ≥ 44"
+ * (Oberflächen-Checkliste Punkt 1). Varianten wie beim Button; ohne Angabe
+ * `quiet`, weil ein Symbol ohne Fläche der Regelfall ist.
+ */
+const symbol =
+  'nicht-drucken inline-flex size-11 shrink-0 items-center justify-center rounded-button ' +
+  'transition-colors disabled:cursor-not-allowed disabled:bg-surface-sunken ' +
+  'disabled:text-ink-muted';
+
+export function symbolknopfKlassen(variant: Variant = 'quiet', zusatz = ''): string {
+  return `${symbol} ${varianten[variant]} ${zusatz}`.trim();
+}
+
+/**
+ * Der Textlink des Systems (TOK-12, UIK-15).
+ *
+ * Bis UXR-001 gab es keinen und rund 25 Klassenfolgen: mit und ohne
+ * Unterstreichung, in Hauptfarbe oder grau, mal 44 px hoch, mal 18. Der
+ * Handoff setzt Links in der Hauptfarbe **mit** Unterstreichung, 3 px
+ * abgesetzt; Tailwinds Grundstil nimmt die Unterstreichung weg. Ein Link, der
+ * nur an der Farbe erkennbar ist, verfehlt WCAG 1.4.1, sobald er neben Text in
+ * `ink-muted` steht (1,66:1).
+ *
+ * `alleinstehend`: Der Link steht für sich - unter einer Karte, neben einem
+ * Knopf - und braucht dann ein Tippziel von 44 px Höhe
+ * (`inline-flex min-h-11 items-center`). Im Satz bleibt er Teil der Zeile;
+ * dort nimmt WCAG 2.5.8 Links ausdrücklich aus.
+ *
+ * Die Schriftgröße erbt der Link; die Seite setzt sie bei Bedarf dazu.
+ */
+const textlink =
+  'text-accent underline underline-offset-3 transition-colors hover:text-accent-hover';
+
+export function textlinkKlassen(alleinstehend = false, zusatz = ''): string {
+  return [textlink, alleinstehend ? 'inline-flex min-h-11 items-center' : '', zusatz]
+    .filter(Boolean)
+    .join(' ');
+}

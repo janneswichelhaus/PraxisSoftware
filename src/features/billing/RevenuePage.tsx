@@ -64,13 +64,15 @@ export function RevenuePage() {
   return (
     <>
       <PageHeader
-        title="Einnahmen je Leistungsart"
-        description="Erlöse getrennt nach Leistungsbereich, innerhalb des Bereichs nach Steuerkennzeichen und Satz. Eine Summe, keine Bewertung."
+        // Der Titel heißt wie der Menüpunkt; was ausgewertet wird, sagt die
+        // Zeile darunter (ABR-26).
+        title="Auswertung"
+        description="Einnahmen je Leistungsart: Erlöse getrennt nach Leistungsbereich, innerhalb des Bereichs nach Steuerkennzeichen und Satz. Eine Summe, keine Bewertung."
       />
 
       <Section
         titel="Grundlage und Zeitraum"
-        hinweis="Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung verlangt, sagt Ihnen Ihre Steuerberatung — diese Auswertung wählt sie nicht für Sie."
+        hinweis="Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung verlangt, sagt Ihnen Ihre Steuerberatung – diese Auswertung wählt sie nicht für Sie."
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="sm:w-72">
@@ -111,7 +113,8 @@ export function RevenuePage() {
       {jahre.isError ? (
         <ErrorState
           title="Die Auswertung konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => jahre.refetch()}
         />
       ) : null}
 
@@ -119,7 +122,7 @@ export function RevenuePage() {
         <Section titel="Ergebnis">
           <EmptyState
             title="Noch keine Grundlage gewählt"
-            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen — deshalb steht hier keine."
+            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen – deshalb steht hier keine."
           />
         </Section>
       ) : (
@@ -131,7 +134,8 @@ export function RevenuePage() {
           {einnahmen.isError ? (
             <ErrorState
               title="Die Auswertung konnte nicht geladen werden."
-              description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+              description="Bitte die Verbindung prüfen und erneut versuchen."
+              onErneut={() => einnahmen.refetch()}
             />
           ) : null}
           {einnahmen.data && bereiche.length === 0 ? (
@@ -149,7 +153,7 @@ export function RevenuePage() {
         </Section>
       )}
 
-      <p className="text-ink-subtle mt-8 max-w-prose text-sm">
+      <p className="text-ink-muted mt-8 max-w-prose text-sm">
         Kein steuerlicher Abschluss: Die Auswertung fasst zusammen, was in ausgestellten Dokumenten
         und gebuchten Zahlungen steht. Sie bewertet nichts und ersetzt keine Gewinnermittlung.
       </p>
@@ -181,10 +185,10 @@ function Bereichsblock({
         würde.
       */}
       <div className="border-line mt-3 flex items-baseline justify-between gap-x-3 border-t pt-3">
-        <span className="text-ink text-[0.9375rem] font-semibold">
+        <span className="text-ink text-liste font-semibold">
           Summe {bereichLabels[bereich.bereich]} · {grundlageLabels[grundlage]}
         </span>
-        <span className="text-ink shrink-0 text-[0.9375rem] font-semibold tabular-nums">
+        <span className="text-ink text-liste shrink-0 font-semibold tabular-nums">
           {formatEuro(bereich.bruttoCent, bereich.currency)}
         </span>
       </div>
@@ -202,11 +206,11 @@ function Einnahmenposten({ zeile }: { zeile: Einnahmenzeile }) {
   return (
     <div className="py-3">
       <div className="flex items-baseline gap-x-3">
-        <span className="text-ink text-[0.9375rem] font-medium">
+        <span className="text-ink text-liste font-medium">
           {steuerLabels[zeile.tax_treatment]}
           {satz}
         </span>
-        <span className="text-ink ml-auto shrink-0 text-[0.9375rem] font-medium tabular-nums">
+        <span className="text-ink text-liste ml-auto shrink-0 font-medium tabular-nums">
           {formatEuro(zeile.gross_cents, zeile.currency)}
         </span>
       </div>

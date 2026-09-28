@@ -6,7 +6,12 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { useAbmeldeanfrage } from '@/app/abmeldeschutz';
-import { useTextverlustschutz } from './Textverlustschutz';
+import {
+  DOKUMENTATIONSTEXTE,
+  EINGABETEXTE,
+  useTextverlustschutz,
+  type Verlustschutztexte,
+} from './Textverlustschutz';
 
 /**
  * §13: Dokumentation darf niemals unbemerkt verloren gehen (UX-009, FIX-011).
@@ -30,14 +35,18 @@ function Pruefseite({
   ungespeichert = true,
   speichern,
   mitFreigabe = false,
+  texte,
 }: {
   ungespeichert?: boolean;
   speichern?: () => Promise<boolean>;
   mitFreigabe?: boolean;
+  texte?: Verlustschutztexte;
 }) {
-  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz(
-    speichern ? { ungespeichert, speichern } : { ungespeichert },
-  );
+  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+    ungespeichert,
+    ...(speichern ? { speichern } : {}),
+    ...(texte ? { texte } : {}),
+  });
   const { pathname, search } = useLocation();
   const navigate = useNavigate();
 
@@ -95,6 +104,7 @@ function MitAbmelden({
   abmelden: () => void;
   ungespeichert?: boolean;
   speichern?: () => Promise<boolean>;
+  texte?: Verlustschutztexte;
 }) {
   return (
     <AbmeldeschutzProvider onAbmelden={abmelden}>
@@ -599,5 +609,101 @@ describe('Textverlustschutz: Fokus', () => {
     await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
 
     expect(screen.getByRole('button', { name: 'Speichern und weitergehen' })).toHaveFocus();
+  });
+});
+
+/**
+ * UXR-001 (PAT-02, NAV-01, ZST-05): Derselbe Schutz für Formulare ohne
+ * Dokumentationsbezug. Sie sprechen von „Eingaben" statt von „Text", tragen
+ * eine eigene Bezeichnung und erklären nichts über Korrektur und Nachtrag.
+ * Sätze und Verhalten der Dokumentation bleiben dabei, wie sie sind (ANN-046).
+ */
+describe('Textverlustschutz: eigene Texte fuer Formulare ohne Dokumentation', () => {
+  it('fragt vor dem Seitenwechsel nach den Eingaben, nicht nach Text', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<Pruefseite texte={EINGABETEXTE} />, '/patienten/neu');
+
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    const kasten = screen.getByRole('group', { name: 'Ungespeicherte Eingaben' });
+    expect(kasten).toHaveTextContent(
+      'Die Eingaben sind noch nicht gespeichert. Beim Weitergehen gehen sie verloren.',
+    );
+    expect(kasten).not.toHaveTextContent(/Text|Bestandteil der Akte/);
+    // Ohne Speicherweg: verwerfen oder bleiben, wie ANN-046 es festlegt.
+    expect(
+      screen.queryByRole('button', { name: 'Speichern und weitergehen' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Verwerfen und weitergehen' })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Hier bleiben' })).toBeInTheDocument();
+    expect(adresse()).toBe('Adresse: /patienten/neu');
+  });
+
+  it('nimmt eine eigene Bezeichnung an', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(
+      <Pruefseite texte={{ ...EINGABETEXTE, bezeichnung: 'Ungespeicherte Patientendaten' }} />,
+      '/patienten/neu',
+    );
+
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+    expect(
+      screen.getByRole('group', { name: 'Ungespeicherte Patientendaten' }),
+    ).toBeInTheDocument();
+  });
+
+  it('fragt vor dem Abmelden mit denselben Worten', async () => {
+    const nutzer = userEvent.setup();
+    const abmelden = vi.fn();
+    renderWithProviders(<MitAbmelden abmelden={abmelden} texte={EINGABETEXTE} />, '/patienten/neu');
+
+    await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
+
+    expect(abmelden).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        'Die Eingaben sind noch nicht gespeichert. Beim Abmelden gehen sie verloren.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Verwerfen und abmelden' })).toBeInTheDocument();
+  });
+
+  it('sagt ohne Verbindung, dass die Eingaben im Formular stehen bleiben', () => {
+    setzeVerbindung(false);
+    renderWithProviders(<Pruefseite texte={EINGABETEXTE} />, '/patienten/neu');
+
+    expect(screen.getByRole('alert')).toHaveTextContent(/Die Eingaben bleiben im Formular stehen/);
+  });
+
+  it('nennt nach einem Speicherfehler, was stehen bleibt', async () => {
+    const nutzer = userEvent.setup();
+    const speichern = vi.fn().mockRejectedValue(new Error('Keine Verbindung zum Server.'));
+    renderWithProviders(
+      <Pruefseite texte={EINGABETEXTE} speichern={speichern} />,
+      '/patienten/neu',
+    );
+
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Keine Verbindung zum Server. Die Eingaben stehen weiter im Formular, die Seite bleibt geöffnet.',
+    );
+    expect(adresse()).toBe('Adresse: /patienten/neu');
+  });
+
+  it('bleibt ohne eigene Texte beim Wortlaut der Dokumentation', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<Pruefseite />, '/dokumentation');
+
+    await nutzer.click(screen.getByRole('link', { name: 'Weggehen' }));
+
+    const kasten = screen.getByRole('group', { name: DOKUMENTATIONSTEXTE.bezeichnung });
+    expect(kasten).toHaveTextContent(
+      'Der eingegebene Text ist noch nicht gespeichert. Beim Weitergehen geht er verloren.',
+    );
+    expect(kasten).toHaveTextContent(
+      'Speichern ist hier kein Zwischenschritt: Korrektur und Nachtrag werden mit dem Absenden Bestandteil der Akte. Bitte zurückgehen und den Eintrag abschließen.',
+    );
   });
 });

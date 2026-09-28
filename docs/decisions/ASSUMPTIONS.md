@@ -1666,3 +1666,15 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `ERGEBNIS_ZEICHEN` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; `ausgangsstellung` in `bausteinItemSchema` (`schema.ts`) und in `definitionen/bausteine/06-huefte.json` (Version 1.1.0); Tests in `dokumentationstext.test.ts`, `schema.test.ts`, `bausteine.test.ts`.
 
 **Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`.
+
+### ANN-131 — Blätter für den Fensterumschlag: DIN 5008 Form B, Fenster links
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim ersten Probedruck einer Rechnung im Fensterumschlag
+
+**Annahme.** Rechnung, Stornodokument und Zahlungserinnerung werden für einen Fensterumschlag DL nach DIN 5008 Form B mit Fenster links gedruckt: Das Anschriftfeld liegt 20 mm vom linken und 45 mm vom oberen Blattrand und ist 85 × 45 mm groß; die Angaben rechts (Nummer, Datum, behandelte Person) beginnen bei 125 mm; Vermerke stehen unter dem Feld, nicht darin. Am Bildschirm ändert sich nichts.
+
+**Begründung.** UX-Review 2026-09 (Review ABR-22, im Druckmodus gemessen): Die Anschrift begann bisher 12 mm vom Rand, beim Stornodokument erst bei 77 mm; die ersten Buchstaben lagen damit im Fensterumschlag verdeckt. Form B ist die in Deutschland verbreitete Lage für Geschäftsbriefe; ein Umschlagformat hat die Praxis noch nicht festgelegt. Die Angaben des Blatts kommen aus dem Snapshot (ADR-009 Punkt 10) — eine andere Lage ändert keine Rechnungsangabe. Die Form des verschickten Blatts bewahrt erst Weg 3 auf (B14): Nachdrucke schon ausgestellter Blätter sehen seit UXR-010 anders aus als das Original, ihre Angaben bleiben gleich. Aktenzeichen oder Versichertennummer stehen bei den Angaben rechts, nicht im Anschriftfeld, damit sie nicht durch das Fenster lesbar sind (Zweitreview H3). Unsicher: Anschriften mit mehr als etwa sechs Zeilen ragen unter das Fenster (synthetischer Behördenempfänger: Feldende bei 106 mm).
+
+**Anker.** `Briefkopf` in `src/features/billing/Briefkopf.tsx` (Druckklassen des Anschriftfelds und der Angaben); Nutzung in `InvoicePrintPage.tsx`, `CancellationPrintPage.tsx`, `ReminderPrintPage.tsx`.
+
+**Änderungspfad.** Form A (27 mm von oben) oder Fenster rechts: die Druckklassen in `Briefkopf.tsx` · Aufwand `klein`.

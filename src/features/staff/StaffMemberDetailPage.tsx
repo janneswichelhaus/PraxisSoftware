@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
@@ -15,6 +18,7 @@ import {
   formatLocalTimeRange,
   todayInTimeZone,
 } from '@/features/appointments/api';
+import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { telHref } from '@/lib/telefon';
@@ -41,6 +45,10 @@ import {
  * Dieselbe Entscheidung wie in der Patientenakte (Oberflächen-Checkliste
  * Punkt 8): Wer im Mitarbeiterdatensatz nachsieht, will in aller Regel gleich
  * anrufen oder schreiben - und tippt die Nummer sonst am Handy ab.
+ *
+ * Als `Textlink` mit Tippziel von 44 px (RSP-05, UIK-15): Bis UXR-011 war die
+ * Nummer ein 20 px hoher Link ohne Unterstreichung, von Text kaum zu
+ * unterscheiden.
  */
 function KontaktZeile({
   label,
@@ -55,9 +63,9 @@ function KontaktZeile({
   const ziel = schema === 'tel' ? telHref(wert) : `mailto:${wert}`;
   return (
     <DetailRow label={label}>
-      <a className="text-accent hover:underline" href={ziel}>
+      <Textlink href={ziel} alleinstehend>
         {wert}
-      </a>
+      </Textlink>
     </DetailRow>
   );
 }
@@ -127,18 +135,25 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
  *
  * Die Rückfrage ist damit keine reine Bildschirmhöflichkeit - ohne sie kommt
  * der Vorgang serverseitig nicht durch (STAFF-001).
+ *
+ * Nach dem Wechsel steht eine Bestätigung an der Stelle des Knopfs und nimmt
+ * den Fokus (ZST-16): Bis UXR-011 änderte sich nur der Seitenkopf, am Telefon
+ * weit über dem Knopf.
  */
 function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: string | null }) {
   const queryClient = useQueryClient();
   const zielStatus: StaffMember['employment_status'] =
     staff.employment_status === 'active' ? 'inactive' : 'active';
+  const [meldung, setMeldung] = useState<{ text: string; nr: number } | null>(null);
 
   const mutation = useMutation({
     mutationFn: (bestaetigt: boolean) => setStaffEmploymentStatus(staff.id, zielStatus, bestaetigt),
     onSuccess: async () => {
+      const text = zielStatus === 'inactive' ? 'Als inaktiv geführt.' : 'Wieder als aktiv geführt.';
       await queryClient.invalidateQueries({ queryKey: ['staff-members'] });
       await queryClient.invalidateQueries({ queryKey: ['staff-member', staff.id] });
       await queryClient.invalidateQueries({ queryKey: ['assignable-therapists'] });
+      setMeldung((vorher) => ({ text, nr: (vorher?.nr ?? 0) + 1 }));
     },
   });
 
@@ -146,42 +161,48 @@ function StatusAktion({ staff, timeZone }: { staff: StaffMember; timeZone: strin
   const termineOffen = sindTermineOffen(mutation.error);
 
   return (
-    <Rueckfrage
-      ausloeser={beschriftung}
-      bezeichnung={`${beschriftung} - Rückfrage`}
-      bestaetigen={termineOffen ? 'Trotz offener Termine deaktivieren' : beschriftung}
-      bestaetigenLaeuft="Wird geändert …"
-      fehler={
-        mutation.isError && !termineOffen
-          ? 'Der Beschäftigungsstatus konnte nicht geändert werden.'
-          : undefined
-      }
-      laeuft={mutation.isPending}
-      onBestaetigen={() => mutation.mutateAsync(termineOffen)}
-      onAbbrechen={() => mutation.reset()}
-    >
-      <p>
-        {zielStatus === 'inactive'
-          ? 'Diese Person wird nicht mehr für neue Terminzuweisungen angeboten. Bestehende Termine, Arbeitszeiten und alle bisherigen Zuordnungen bleiben vollständig erhalten. Der Zugang zur Anwendung wird dadurch nicht gesperrt.'
-          : 'Diese Person wird wieder für Terminzuweisungen angeboten.'}
-      </p>
+    <div className="flex w-full flex-col items-start gap-3">
+      <Rueckfrage
+        ausloeser={beschriftung}
+        bezeichnung={`${beschriftung} – Rückfrage`}
+        bestaetigen={termineOffen ? 'Trotz offener Termine deaktivieren' : beschriftung}
+        bestaetigenLaeuft="Wird geändert …"
+        fehler={
+          mutation.isError && !termineOffen
+            ? 'Der Beschäftigungsstatus konnte nicht geändert werden. Bitte die Verbindung prüfen und erneut versuchen.'
+            : undefined
+        }
+        laeuft={mutation.isPending}
+        onBestaetigen={() => mutation.mutateAsync(termineOffen)}
+        onAbbrechen={() => {
+          mutation.reset();
+          setMeldung(null);
+        }}
+      >
+        <p>
+          {zielStatus === 'inactive'
+            ? 'Diese Person wird nicht mehr für neue Terminzuweisungen angeboten. Bestehende Termine, Arbeitszeiten und alle bisherigen Zuordnungen bleiben vollständig erhalten. Der Zugang zur Anwendung wird dadurch nicht gesperrt.'
+            : 'Diese Person wird wieder für Terminzuweisungen angeboten.'}
+        </p>
 
-      {/* Der zweite Anlauf ist kein Fehler, sondern eine bewusste Bestaetigung:
-          die Termine bleiben stehen und muessen von der Praxis geregelt werden.
-          Deshalb stehen sie hier, bevor bestaetigt wird. */}
-      {termineOffen ? (
-        <div role="alert" className="mt-3">
-          <p className="text-danger text-sm font-medium">
-            Für diese Person sind noch Termine in der Zukunft geplant.
-          </p>
-          <p className="text-ink-muted mt-1 text-sm">
-            Sie werden weder abgesagt noch umgebucht. Nach der Deaktivierung müssen sie im Kalender
-            einer aktiven Person zugeordnet oder abgesagt werden.
-          </p>
-          {timeZone ? <OffeneTermine staffMemberId={staff.id} timeZone={timeZone} /> : null}
-        </div>
-      ) : null}
-    </Rueckfrage>
+        {/* Der zweite Anlauf ist kein Fehler, sondern eine bewusste Bestaetigung:
+            die Termine bleiben stehen und muessen von der Praxis geregelt werden.
+            Deshalb stehen sie hier, bevor bestaetigt wird. */}
+        {termineOffen ? (
+          <div role="alert" className="mt-3">
+            <p className="text-danger text-sm font-medium">
+              Für diese Person sind noch Termine in der Zukunft geplant.
+            </p>
+            <p className="text-ink-muted mt-1 text-sm">
+              Sie werden weder abgesagt noch umgebucht. Nach der Deaktivierung müssen sie im
+              Kalender einer aktiven Person zugeordnet oder abgesagt werden.
+            </p>
+            {timeZone ? <OffeneTermine staffMemberId={staff.id} timeZone={timeZone} /> : null}
+          </div>
+        ) : null}
+      </Rueckfrage>
+      {meldung ? <Rueckmeldung key={meldung.nr}>{meldung.text}</Rueckmeldung> : null}
+    </div>
   );
 }
 
@@ -205,7 +226,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
   const behandelt = (therapeuten.data ?? []).some((t) => t.staff_member_id === staff.id);
   const zone = user.organizationTimeZone;
   // Zwei getrennte Rechte seit E10: Stammdaten pflegt auch das Office, den
-  // Beschaeftigungsstatus wechselt nur die Praxisinhaberin.
+  // Beschaeftigungsstatus wechselt nur die Praxisinhaber:in.
   const darfStammdaten = canManageStaffMasterData(user.roles);
   const darfBeschaeftigung = canManageStaffEmployment(user.roles);
   const darfZugang = canManageStaffAccounts(user.roles);
@@ -224,15 +245,14 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
     <>
       <PageHeader
         title={fullName(staff)}
-        description={aktiv ? undefined : 'Nicht mehr im laufenden Einsatz'}
+        description={aktiv ? undefined : 'Inaktiv – wird nicht mehr für neue Termine angeboten.'}
         actions={
           darfStammdaten ? (
-            <Link
-              to={`/praxis/team/${staff.id}/bearbeiten`}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center justify-center border px-4 text-[0.9375rem] font-medium transition-colors"
-            >
+            // Ein Seitenwechsel im Knopfstil des Systems (ORG-16, TOK-11):
+            // bis UXR-011 ein Nachbau in Tinte mit 15 px und 500.
+            <ButtonLink to={`/praxis/team/${staff.id}/bearbeiten`} variant="secondary">
               Stammdaten bearbeiten
-            </Link>
+            </ButtonLink>
           ) : null
         }
       />
@@ -250,19 +270,30 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           {behandelt ? (
             <DetailRow label="Planung">
               <span className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                <Link
+                <Textlink
                   to={`/kalender?ansicht=woche${zone ? `&datum=${todayInTimeZone(zone)}` : ''}&person=${staff.id}`}
-                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                  alleinstehend
+                  className="text-sm"
                 >
                   Woche im Kalender
-                </Link>
-                <Link
+                </Textlink>
+                <Textlink
                   to={`/praxis/planung?person=${staff.id}`}
-                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                  alleinstehend
+                  className="text-sm"
                 >
-                  Arbeitszeiten
-                </Link>
+                  {BEGRIFFE.arbeitszeiten}
+                </Textlink>
               </span>
+            </DetailRow>
+          ) : null}
+          {/* Warum eine aktive Person nicht im Kalender steht, sagte bis
+              UXR-011 nur die Liste (ORG-25). Nur mit geladener Antwort - ohne
+              sie keine Aussage (ORG-14). */}
+          {aktiv && therapeuten.isSuccess && !behandelt ? (
+            <DetailRow label="Planung">
+              Nicht für Termine zuordenbar – dafür braucht die Person einen Zugang mit der Rolle
+              Therapeut:in oder Teamleitung.
             </DetailRow>
           ) : null}
         </DetailList>
@@ -287,11 +318,15 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         </div>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
-        Mitarbeiterdatensatz und Zugang zur Anwendung sind getrennt. Ein Wechsel des
-        Beschäftigungsstatus sperrt kein Benutzerkonto; dafür gibt es den eigenen Vorgang im
-        Abschnitt „Zugang". Mitarbeiterdatensätze werden nicht gelöscht, damit vergangene Termine
-        und Zuordnungen nachvollziehbar bleiben.
+      {/* Die Fußnote nennt nur, was diese Rolle auf der Seite vorfindet
+          (ORG-25): Den Abschnitt „Zugang" gibt es nur für die
+          Praxisinhaber:in. */}
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+        {darfZugang
+          ? 'Stammdaten und Zugang zur Anwendung sind getrennt. Ein Wechsel des Beschäftigungsstatus sperrt keinen Zugang; dafür gibt es den eigenen Vorgang im Abschnitt „Zugang“.'
+          : 'Stammdaten und Zugang zur Anwendung sind getrennt; Zugänge und Rollen vergibt die Praxisinhaber:in.'}{' '}
+        Stammdaten werden nicht gelöscht, damit vergangene Termine und Zuordnungen nachvollziehbar
+        bleiben.
       </p>
     </>
   );
@@ -300,7 +335,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
 export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
   const { staffMemberId } = useParams<{ staffMemberId: string }>();
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['staff-member', staffMemberId],
     queryFn: () => fetchStaffMember(staffMemberId!),
     enabled: Boolean(staffMemberId),
@@ -311,15 +346,28 @@ export function StaffMemberDetailPage({ user }: { user: CurrentUser }) {
     <>
       <Rueckweg standard="/praxis/team" beschriftung="Zurück zu den Mitarbeitenden" />
 
-      {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
-      {isError ? <ErrorState title="Die Mitarbeiterdaten konnten nicht geladen werden." /> : null}
-      {data === null ? (
-        <ErrorState
-          title="Nicht gefunden"
-          description="Dieser Datensatz existiert nicht oder ist für Ihren Zugang nicht freigegeben."
-        />
-      ) : null}
-      {data ? <StaffDetail staff={data} user={user} /> : null}
+      {data ? (
+        <StaffDetail staff={data} user={user} />
+      ) : (
+        <>
+          {/* Auch ohne Daten trägt die Seite einen Titel (UIK-16). */}
+          <PageHeader title="Mitarbeiter:in" />
+          {isPending ? <LoadingState label="Mitarbeiterdaten werden geladen …" /> : null}
+          {isError ? (
+            <ErrorState
+              title="Die Mitarbeiterdaten konnten nicht geladen werden."
+              description="Bitte die Verbindung prüfen und später erneut versuchen."
+              onErneut={() => void refetch()}
+            />
+          ) : null}
+          {data === null ? (
+            <ErrorState
+              title="Nicht gefunden"
+              description="Diese Person gibt es nicht oder sie ist für Ihren Zugang nicht freigegeben."
+            />
+          ) : null}
+        </>
+      )}
     </>
   );
 }

@@ -2,8 +2,12 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Field } from '@/components/ui/Field';
+import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
 import {
   AUDIT_ACTIONS,
   auditActionLabels,
@@ -21,9 +25,6 @@ import {
 
 const PAGE_SIZE = 25;
 
-const selectClass =
-  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
-
 function label(map: Record<string, string>, key: string): string {
   return map[key] ?? key;
 }
@@ -34,18 +35,39 @@ function akteur(event: AuditEvent): string {
   return event.actor_display_name ?? 'Unbekannt';
 }
 
+/**
+ * Eine Zeile des Auditlogs.
+ *
+ * **Spalten erst ab 1024 px (ORG-12).** Ab 640 px galten bis UXR-011 vier
+ * feste Spalten mit 528 px samt Lücken; bei 700 bis 820 px blieben der
+ * eigentlichen Aussage - was geschah - rund 150 px, „Behandlungsdokumentation"
+ * passte nicht hinein, und die Seite scrollte quer. Darunter stehen die
+ * Angaben jetzt untereinander wie am Telefon, und die Vorgangsspalte darf
+ * schmaler werden als ihr längstes Wort.
+ *
+ * **Spaltenköpfe für Vorlesesoftware (UIK-24).** Die Zeile ist eine Liste,
+ * keine Tabelle; welche Angabe was ist, erschloss sich bisher nur aus dem
+ * Inhalt. Jede Angabe trägt deshalb ihre Bezeichnung, sichtbar nur für
+ * Vorlesesoftware.
+ *
+ * Nur Darstellung: Gelesen wird unverändert über `list_audit_events`
+ * (ADR-010), und was eine Zeile zeigt, bleibt Metadatum.
+ */
 function EventRow({ event }: { event: AuditEvent }) {
   return (
-    <li className="py-3 sm:grid sm:grid-cols-[11rem_10rem_1fr_9rem] sm:items-baseline sm:gap-4 sm:py-2.5">
+    <li className="py-3 lg:grid lg:grid-cols-[10rem_12rem_minmax(0,1fr)_7rem] lg:items-baseline lg:gap-4 lg:py-2.5">
       <span className="text-ink-muted block text-sm tabular-nums">
+        <span className="sr-only">Zeitpunkt: </span>
         {formatTimestamp(event.occurred_at)}
       </span>
-      <span className="text-ink mt-0.5 block truncate text-[0.9375rem] sm:mt-0">
+      <span className="text-ink text-liste mt-0.5 block truncate lg:mt-0">
+        <span className="sr-only">Person: </span>
         {akteur(event)}
       </span>
-      <span className="text-ink mt-0.5 block text-[0.9375rem] sm:mt-0">
+      <span className="text-ink text-liste mt-0.5 block min-w-0 wrap-anywhere lg:mt-0">
+        <span className="sr-only">Vorgang: </span>
         {label(auditActionLabels, event.action)}
-        <span className="text-ink-subtle">
+        <span className="text-ink-muted">
           {' · '}
           {label(auditSubjectLabels, event.subject_type)}{' '}
           <span title={event.subject_id ?? undefined} className="tabular-nums">
@@ -53,7 +75,8 @@ function EventRow({ event }: { event: AuditEvent }) {
           </span>
         </span>
       </span>
-      <span className="text-ink-muted mt-0.5 block text-sm sm:mt-0 sm:text-right">
+      <span className="text-ink-muted mt-0.5 block text-sm lg:mt-0 lg:text-right">
+        <span className="sr-only">Ergebnis: </span>
         {label(auditOutcomeLabels, event.outcome)}
       </span>
     </li>
@@ -76,13 +99,13 @@ export function AuditLogPage() {
     pageSize: PAGE_SIZE,
   };
 
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, isFetching, refetch } = useQuery({
     queryKey: ['audit-events', filter],
     queryFn: () => fetchAuditEvents(filter),
     retry: false,
   });
 
-  const { data: members } = useQuery({
+  const members = useQuery({
     queryKey: ['organization-members'],
     queryFn: fetchOrganizationMembers,
     retry: false,
@@ -103,86 +126,91 @@ export function AuditLogPage() {
 
   return (
     <>
+      {/* Der Titel ist das Wort des Menüpunkts (ORG-07): bis UXR-011 öffnete
+          „Sicherheit" eine Seite namens „Audit". */}
       <PageHeader
-        title="Audit"
+        title="Auditlog"
         description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."
       />
 
+      {/* Die Filter sind die Bausteine `Field` und `Select` (RSP-01, UIK-19,
+          TOK-13): 48 px hoch wie jedes Feld und immer so breit wie ihre
+          Spalte. Bis UXR-011 waren es rohe Felder ohne volle Breite - das
+          längste Wort der Aktionsliste setzte die Breite der Spalte, und die
+          Seite lief bei 390 px 36 px über den Rand. Unter 640 px steht eine
+          Spalte ausdrücklich da. Nur die Darstellung ist neu; welche Werte an
+          den Server gehen, bleibt gleich. */}
       <form
-        className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+        className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
         onSubmit={(event) => event.preventDefault()}
       >
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="audit-from" className="text-ink text-sm font-medium">
-            Von
-          </label>
-          <input
-            id="audit-from"
-            type="date"
-            className={selectClass}
-            value={from}
-            onChange={(event) => reset(setFrom)(event.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="audit-to" className="text-ink text-sm font-medium">
-            Bis
-          </label>
-          <input
-            id="audit-to"
-            type="date"
-            className={selectClass}
-            value={to}
-            onChange={(event) => reset(setTo)(event.target.value)}
-          />
-        </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="audit-user" className="text-ink text-sm font-medium">
-            Benutzer
-          </label>
-          <select
-            id="audit-user"
-            className={selectClass}
+        <Field
+          label="Von"
+          feldId="audit-from"
+          type="date"
+          value={from}
+          onChange={(event) => reset(setFrom)(event.target.value)}
+        />
+        <Field
+          label="Bis"
+          feldId="audit-to"
+          type="date"
+          value={to}
+          onChange={(event) => reset(setTo)(event.target.value)}
+        />
+        <div className="flex min-w-0 flex-col gap-2">
+          <Select
+            label="Person"
+            feldId="audit-user"
             value={actorUserId}
             onChange={(event) => reset(setActorUserId)(event.target.value)}
           >
             <option value="">Alle</option>
-            {(members ?? []).map((member) => (
+            {(members.data ?? []).map((member) => (
               <option key={member.id} value={member.id}>
                 {member.display_name}
               </option>
             ))}
-          </select>
+          </Select>
+          {/* Ohne Liste steht nur „Alle" zur Wahl - das sagt die Seite, statt
+              es als vollständige Auswahl auszugeben (ORG-14). */}
+          {members.isError ? (
+            <Listenfehler
+              text="Die Liste der Personen konnte nicht geladen werden."
+              onErneut={() => void members.refetch()}
+            />
+          ) : null}
         </div>
-
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="audit-action" className="text-ink text-sm font-medium">
-            Aktion
-          </label>
-          <select
-            id="audit-action"
-            className={selectClass}
-            value={action}
-            onChange={(event) => reset(setAction)(event.target.value)}
-          >
-            <option value="">Alle</option>
-            {AUDIT_ACTIONS.map((key: AuditAction) => (
-              <option key={key} value={key}>
-                {auditActionLabels[key]}
-              </option>
-            ))}
-          </select>
-        </div>
+        <Select
+          label="Aktion"
+          feldId="audit-action"
+          value={action}
+          onChange={(event) => reset(setAction)(event.target.value)}
+        >
+          <option value="">Alle</option>
+          {AUDIT_ACTIONS.map((key: AuditAction) => (
+            <option key={key} value={key}>
+              {auditActionLabels[key]}
+            </option>
+          ))}
+        </Select>
       </form>
 
       {isPending ? <LoadingState label="Auditeinträge werden geladen …" /> : null}
-      {isError ? (
+      {/* Wer diese Seite sieht, ist berechtigt: Die Route steht nur der
+          Praxisinhaber:in offen. Ein Ladefehler ist deshalb ein Verbindungs-
+          und kein Rechteproblem - bis UXR-011 las die Praxisinhaber:in hier,
+          die Ansicht sei „ausschließlich für die Praxisleitung freigegeben"
+          (ORG-15, WRT-01, ZST-12). */}
+      {isError && !data ? (
         <ErrorState
           title="Die Auditeinträge konnten nicht geladen werden."
-          description="Diese Ansicht ist ausschließlich für die Praxisleitung freigegeben."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => void refetch()}
         />
+      ) : null}
+      {isError && data ? (
+        <NachladeHinweis className="mb-4" laeuft={isFetching} onErneut={() => void refetch()} />
       ) : null}
 
       {data && data.events.length === 0 ? (
@@ -194,11 +222,15 @@ export function AuditLogPage() {
 
       {data && data.events.length > 0 ? (
         <>
-          <ul className="divide-line border-line divide-y border-y">
-            {data.events.map((event) => (
-              <EventRow key={event.id} event={event} />
-            ))}
-          </ul>
+          {/* Die Liste ist Auskunft und steht deshalb auf Papier wie jede
+              andere Liste der Anwendung (ORG-16). */}
+          <Inhaltsflaeche>
+            <ul className="divide-line divide-y">
+              {data.events.map((event) => (
+                <EventRow key={event.id} event={event} />
+              ))}
+            </ul>
+          </Inhaltsflaeche>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
             <Statusmeldung className="tabular-nums">
@@ -224,7 +256,7 @@ export function AuditLogPage() {
         </>
       ) : null}
 
-      <p className="text-ink-subtle mt-10 max-w-prose text-xs leading-relaxed">
+      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
         Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Auditlogs.
       </p>

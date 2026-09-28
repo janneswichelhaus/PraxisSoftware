@@ -1,7 +1,8 @@
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
-import { Card, DataList, DataRow, Disclosure } from '@/components/ui/Card';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Card, Disclosure } from '@/components/ui/Card';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { EmptyState } from '@/components/ui/Feedback';
 import { bibliothek } from './bibliothek';
 import { optionKennung, type Lizenzstatus, type ScoreDefinition, type ScoreItem } from './schema';
 
@@ -10,7 +11,7 @@ import { optionKennung, type Lizenzstatus, type ScoreDefinition, type ScoreItem 
  *
  * Eine Leseseite ohne Eingabe und ohne Server: Die Bibliothek ist Produktinhalt
  * im Release (ANN-083), für alle Praxen gleich, und enthält keine Angabe zu
- * einer Person. Sie zeigt, was die Definition sagt — Version, Lizenz, Quelle,
+ * einer Person. Sie zeigt, was die Definition sagt — Fassung, Lizenz, Quelle,
  * Rechenvorschrift und Wortlaut.
  *
  * **Was sie nicht zeigt, ist Absicht (ADR-006 Punkt 11, `cutoff-anzeige` in
@@ -18,6 +19,12 @@ import { optionKennung, type Lizenzstatus, type ScoreDefinition, type ScoreItem 
  * nicht hier. Ob ein veröffentlichter Schwellenwert neben einem Wert stehen
  * darf, klärt die externe Prüfung B1; eine Leseseite, die ihn schon heute
  * zeigt, wäre der erste Schritt zu genau dieser Anzeige.
+ *
+ * **Worte der Praxis, nicht des Datenmodells (BEF-15, BEF-16).** „Fragen"
+ * statt „Items", „Fassung" für die Version der Definition wie im Befund, als
+ * Quelle der Herausgeber statt eines Dateinamens. Was aus dem Inventar
+ * stammt - Rechenvorschrift, Regel für fehlende Antworten -, steht wörtlich
+ * und als Zitat gekennzeichnet da: Es zu glätten hieße, die Fassung zu ändern.
  */
 
 const LIZENZ_TEXT: Record<Lizenzstatus, string> = {
@@ -35,6 +42,26 @@ const AUSGEFUELLT_VON: Record<ScoreDefinition['meta']['ausgefuellt_von'], string
 function datum(iso: string): string {
   const [jahr, monat, tag] = iso.split('-');
   return `${tag}.${monat}.${jahr}`;
+}
+
+/** Wie viele Fragen es gibt und wie viele davon in eine Rechnung eingehen. */
+function fragenText(items: readonly ScoreItem[]): string {
+  const gewertet = items.filter((item) => item.gewertet).length;
+  if (gewertet === items.length) return String(items.length);
+  if (gewertet === 0) return `${items.length}, keine geht in eine Rechnung ein`;
+  return `${items.length}, davon ${gewertet} in der Rechnung`;
+}
+
+/**
+ * Woher der Wortlaut kommt, für Menschen: bei einem Bogen als Vorlage der
+ * Herausgeber mit Fassung (etwa „DIGOTOR GbR, Version 8, 07/2026"), sonst die
+ * Veröffentlichung. Der Dateiname der Vorlage ist eine Angabe für das
+ * Repository, nicht für die Praxis (BEF-15).
+ */
+function quelle(score: ScoreDefinition): string {
+  const { datei, literatur, validierung } = score.meta.quelle;
+  if (datei !== undefined) return validierung;
+  return literatur ?? '—';
 }
 
 function Antwortform({ item }: { item: ScoreItem }) {
@@ -55,7 +82,7 @@ function Antwortform({ item }: { item: ScoreItem }) {
         {item.anker ? (
           <>
             {' '}
-            — {item.skala.min} = „{item.anker.min}“, {item.skala.max} = „{item.anker.max}“
+            – {item.skala.min} = „{item.anker.min}“, {item.skala.max} = „{item.anker.max}“
           </>
         ) : null}
       </p>
@@ -83,17 +110,17 @@ function Antwortform({ item }: { item: ScoreItem }) {
   );
 }
 
+/** Der Stand als Etikett, groß geschrieben wie die übrigen Etiketten (WRT-16). */
 function Zustand({ score }: { score: ScoreDefinition }) {
-  if (score.meta.aktiv) return <Badge ton="positiv">aktiv</Badge>;
+  if (score.meta.aktiv) return <Badge ton="positiv">Aktiv</Badge>;
   if (score.meta.quelle.datei === undefined) {
-    return <Badge ton="warnung">inaktiv · Wortlaut vorläufig</Badge>;
+    return <Badge ton="warnung">Inaktiv · Wortlaut vorläufig</Badge>;
   }
-  return <Badge>inaktiv</Badge>;
+  return <Badge>Inaktiv</Badge>;
 }
 
 function Instrument({ score }: { score: ScoreDefinition }) {
   const { meta, scoring, items } = score;
-  const gewertet = items.filter((item) => item.gewertet).length;
 
   return (
     <Card>
@@ -103,39 +130,45 @@ function Instrument({ score }: { score: ScoreDefinition }) {
       </div>
       <p className="text-ink-muted mt-1 text-sm">{meta.konstrukt}</p>
 
-      <DataList>
-        <DataRow label="Version">{meta.version}</DataRow>
-        <DataRow label="Ausgefüllt von">{AUSGEFUELLT_VON[meta.ausgefuellt_von]}</DataRow>
-        <DataRow label="Lizenz">
+      {/* Bezeichnung und Wert untereinander am Telefon, ab 640 px mit einer
+          Beschriftungsspalte und linksbündig (BEF-22): Die kompakte
+          Kartenzeile stellte Literaturangaben von 190 Zeichen rechtsbündig
+          und trennte am Bildschirm Bezeichnung und Wert um 1 000 px. */}
+      <DetailList>
+        <DetailRow label="Fassung">{meta.version}</DetailRow>
+        <DetailRow label="Ausgefüllt von">{AUSGEFUELLT_VON[meta.ausgefuellt_von]}</DetailRow>
+        <DetailRow label="Lizenz">
           {LIZENZ_TEXT[meta.lizenzstatus.status]}, Stand {datum(meta.lizenzstatus.stand)}
-        </DataRow>
-        <DataRow label="Quelle">{meta.quelle.datei ?? meta.quelle.literatur ?? '—'}</DataRow>
-        <DataRow label="Items">
-          {items.length === gewertet ? items.length : `${items.length}, davon ${gewertet} gewertet`}
-        </DataRow>
-      </DataList>
+        </DetailRow>
+        <DetailRow label="Quelle">
+          <span className="block max-w-prose">{quelle(score)}</span>
+        </DetailRow>
+        <DetailRow label="Fragen">{fragenText(items)}</DetailRow>
+      </DetailList>
 
       {meta.quelle.datei === undefined ? (
-        <p className="text-ink-muted mt-3 text-sm">
+        <p className="text-ink-muted mt-3 max-w-prose text-sm">
           Für dieses Instrument liegt noch kein Bogen als Vorlage vor. Bis dahin ist der Wortlaut
           vorläufig, und das Instrument wird nicht eingesetzt.
         </p>
       ) : null}
 
       <Disclosure summary="Rechenvorschrift">
-        <p className="text-ink text-sm">{scoring.regel_wortlaut}</p>
-        {scoring.gesamt ? (
+        <div className="max-w-prose">
+          <p className="text-ink text-sm">Laut Inventar: „{scoring.regel_wortlaut}“</p>
+          {scoring.gesamt ? (
+            <p className="text-ink-muted mt-1 text-sm">
+              Wertebereich {scoring.gesamt.wertebereich.min} bis {scoring.gesamt.wertebereich.max}
+            </p>
+          ) : null}
           <p className="text-ink-muted mt-1 text-sm">
-            Wertebereich {scoring.gesamt.wertebereich.min} bis {scoring.gesamt.wertebereich.max}
+            Fehlende Antworten, laut Inventar: „{scoring.missing_value_regel}“
           </p>
-        ) : null}
-        <p className="text-ink-muted mt-1 text-sm">
-          Fehlende Antworten: {scoring.missing_value_regel}
-        </p>
+        </div>
       </Disclosure>
 
-      <Disclosure summary={`Wortlaut (${items.length} ${items.length === 1 ? 'Item' : 'Items'})`}>
-        <ol className="flex flex-col gap-3">
+      <Disclosure summary={`Wortlaut (${items.length} ${items.length === 1 ? 'Frage' : 'Fragen'})`}>
+        <ol className="flex max-w-prose flex-col gap-3">
           {items.map((item) => (
             <li key={item.id}>
               <p className="text-ink text-sm">{item.text}</p>
@@ -160,10 +193,10 @@ export function InstrumentePage({
     <>
       <PageHeader
         title="Instrumente"
-        description="Die Fragebögen und Skalen der Praxis, je mit Version, Lizenz und Quelle. Erhoben wird in der Akte unter „Befund“."
+        description="Die Fragebögen und Skalen der Praxis, je mit Fassung, Lizenz und Quelle. Erhoben wird in der Akte unter „Befund“."
       />
       {sortiert.length === 0 ? (
-        <Statusmeldung>Noch liegt kein Instrument vor.</Statusmeldung>
+        <EmptyState title="Noch liegt kein Instrument vor." />
       ) : (
         <div className="flex flex-col gap-3">
           {sortiert.map((score) => (

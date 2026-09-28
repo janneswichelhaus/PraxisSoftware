@@ -8,6 +8,7 @@ import {
   BILD_BREITE,
   BILD_HOEHE,
   KOERPERBEREICHE,
+  MAX_MARKIERUNGEN,
   ansichtVon,
   bereichAn,
   bereicheText,
@@ -113,5 +114,64 @@ describe('Körperschema als Eingabe', () => {
     await user.click(screen.getByLabelText('Lendenwirbelsäule'));
     expect(onChange).toHaveBeenLastCalledWith([{ x: 0.726, y: 0.387, bereich: 'lws' }]);
     await pruefeBarrierefreiheit(container);
+  });
+
+  /** Dreißig Kreise auf der Lendenwirbelsäule - die Obergrenze aus ANN-107. */
+  const volleFigur = Array.from({ length: MAX_MARKIERUNGEN }, (_, i) => ({
+    x: 0.7 + i * 0.001,
+    y: 0.387,
+    bereich: 'lws',
+  }));
+
+  it('setzt keinen einunddreißigsten Kreis und sagt, was zu tun ist (BEF-03)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const { container } = render(
+      <KoerperschemaFeld legende="1. Wo?" markierungen={volleFigur} onChange={onChange} />,
+    );
+
+    // Das linke Knie, weit weg von allen dreißig Kreisen.
+    fireEvent.click(flaeche(container), { clientX: 270, clientY: 505 });
+    expect(onChange).not.toHaveBeenCalled();
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Höchstens 30 Stellen – bitte eine entfernen.',
+    );
+
+    // Über die Liste ebenso.
+    await user.click(screen.getByText('Bereiche als Liste'));
+    await user.click(screen.getByLabelText('Knie rechts'));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it('nimmt den zuletzt gesetzten Kreis zurück, ohne ihn treffen zu müssen (BEF-06)', async () => {
+    const user = userEvent.setup();
+    const onChange = vi.fn();
+    const zwei = [
+      { x: 0.329, y: 0.674, bereich: 'knie_links' },
+      { x: 0.726, y: 0.387, bereich: 'lws' },
+    ];
+    const { rerender } = render(
+      <KoerperschemaFeld legende="1. Wo?" markierungen={[]} onChange={onChange} />,
+    );
+    expect(screen.queryByRole('button', { name: 'Letzten Kreis entfernen' })).toBeNull();
+
+    rerender(<KoerperschemaFeld legende="1. Wo?" markierungen={zwei} onChange={onChange} />);
+    await user.click(screen.getByRole('button', { name: 'Letzten Kreis entfernen' }));
+    expect(onChange).toHaveBeenLastCalledWith([zwei[0]]);
+  });
+
+  it('zeigt einen Fehler an der Frage und verbindet ihn mit ihr', () => {
+    render(
+      <KoerperschemaFeld
+        legende="1. Wo?"
+        markierungen={[]}
+        onChange={vi.fn()}
+        feldId="frage-ort"
+        fehler="Höchstens 30 Stellen – bitte eine entfernen."
+      />,
+    );
+    const frage = screen.getByRole('group', { name: '1. Wo?' });
+    expect(frage).toHaveAttribute('id', 'frage-ort');
+    expect(frage).toHaveAccessibleDescription('Höchstens 30 Stellen – bitte eine entfernen.');
   });
 });

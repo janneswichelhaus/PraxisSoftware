@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TreatmentBasesApi from './api';
 import type * as RouterModul from 'react-router-dom';
@@ -67,7 +67,18 @@ vi.mock('@/features/auth/sessionContext', async (importOriginal) => {
   };
 });
 
+// VER-04: Ob die Person Grundlagen schreiben darf, liest die Seite aus dem
+// Zwischenspeicher der Anwendung (schreibrecht.ts, eigener Test). Hier steuert
+// es der Test; `null` heißt „nicht bekannt" und lässt das Formular stehen.
+let darfSchreiben: boolean | null = null;
+vi.mock('./schreibrecht', () => ({ useDarfGrundlagenSchreiben: () => darfSchreiben }));
+
+beforeEach(() => {
+  darfSchreiben = null;
+});
+
 const { EditTreatmentBasisPage, NewTreatmentBasisPage } = await import('./TreatmentBasisFormPage');
+const { spaetestesDatum } = await import('./grundlagenfelder');
 
 const verordner: TreatmentBasesApi.Prescriber = {
   id: PROBST,
@@ -157,9 +168,9 @@ describe('NewTreatmentBasisPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
-    expect(await screen.findByText('Verordner:in ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Das Datum ist erforderlich.')).toBeInTheDocument();
-    expect(screen.getByText('Bitte mindestens ein Heilmittel auswählen.')).toBeInTheDocument();
+    expect(await screen.findAllByText('Verordner:in ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Das Datum ist erforderlich.')).toHaveLength(2);
+    expect(screen.getAllByText('Bitte mindestens ein Heilmittel auswählen.')).toHaveLength(2);
     expect(screen.getByText('Bitte eine ganze Zahl eingeben.')).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -174,16 +185,16 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     const kasten = await screen.findByRole('alert');
-    expect(kasten).toHaveTextContent('Verordner:in: Verordner:in ist erforderlich.');
-    expect(kasten).toHaveTextContent('Datum: Das Datum ist erforderlich.');
-    expect(kasten).toHaveTextContent('Heilmittel: Bitte mindestens ein Heilmittel auswählen.');
+    expect(kasten).toHaveTextContent('Verordner:in ist erforderlich.');
+    expect(kasten).toHaveTextContent('Das Datum ist erforderlich.');
+    expect(kasten).toHaveTextContent('Bitte mindestens ein Heilmittel auswählen.');
 
-    await user.click(screen.getByRole('link', { name: 'Datum: Das Datum ist erforderlich.' }));
+    await user.click(screen.getByRole('link', { name: 'Das Datum ist erforderlich.' }));
     expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveFocus();
 
     await user.click(
       screen.getByRole('link', {
-        name: 'Heilmittel: Bitte mindestens ein Heilmittel auswählen.',
+        name: 'Bitte mindestens ein Heilmittel auswählen.',
       }),
     );
     expect(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' })).toHaveFocus();
@@ -278,7 +289,7 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     expect(
-      await screen.findByText('Bitte mindestens ein Heilmittel auswählen.'),
+      await screen.findByText('Bitte mindestens ein Heilmittel auswählen.', { selector: 'p' }),
     ).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -370,7 +381,7 @@ describe('NewTreatmentBasisPage', () => {
       await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '10');
       await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
-      expect(await screen.findByText('Verordner:in ist erforderlich.')).toBeInTheDocument();
+      expect(await screen.findAllByText('Verordner:in ist erforderlich.')).toHaveLength(2);
       expect(createTreatmentBasis).not.toHaveBeenCalled();
     });
 
@@ -399,7 +410,7 @@ describe('NewTreatmentBasisPage', () => {
     await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
 
     expect(
-      await screen.findByText('Das Datum darf nicht in der Zukunft liegen.'),
+      await screen.findByText('Das Datum darf nicht in der Zukunft liegen.', { selector: 'p' }),
     ).toBeInTheDocument();
     expect(createTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -435,8 +446,11 @@ describe('NewTreatmentBasisPage', () => {
     renderWithProviders(<NewTreatmentBasisPage />);
     await screen.findByRole('option', { name: /Probst/ });
 
+    // Eine eigene Aktion unter dem Feld statt eines Links im Hinweissatz
+    // (VER-12, RSP-06).
+    expect(screen.getByText('Verordner:in nicht in der Liste?')).toBeInTheDocument();
     const ziel = new URL(
-      screen.getByRole('link', { name: 'Verordner:in anlegen' }).getAttribute('href')!,
+      screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }).getAttribute('href')!,
       'http://test',
     );
     expect(ziel.pathname).toBe('/verordner/neu');
@@ -468,6 +482,10 @@ describe('EditTreatmentBasisPage', () => {
     deleteTreatmentBasis.mockReset();
     deleteTreatmentBasis.mockResolvedValue(undefined);
     navigate.mockReset();
+    fetchPatient.mockReset();
+    fetchPatient.mockResolvedValue(
+      testPatient({ id: PATIENT_ID, given_name: 'Max', family_name: 'Mustermann' }),
+    );
   });
 
   it('befuellt Kopf und Auswahl aus dem Bestand', async () => {
@@ -548,7 +566,8 @@ describe('EditTreatmentBasisPage', () => {
     await screen.findByRole('option', { name: /Probst/ });
 
     await user.click(screen.getByRole('button', { name: 'Grundlage löschen' }));
-    await user.click(screen.getByRole('button', { name: 'Nicht löschen' }));
+    // „Abbrechen" wie in jeder anderen Rückfrage (WRT-21).
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
     expect(deleteTreatmentBasis).not.toHaveBeenCalled();
   });
@@ -569,9 +588,301 @@ describe('EditTreatmentBasisPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
-    expect(
-      await screen.findByText('Die Behandlungsgrundlage konnte nicht gespeichert werden.'),
-    ).toBeInTheDocument();
+    // Als Fenster über dem Formular (VER-02, ANN-058), mit einem Satz, was zu
+    // tun ist - ohne Ratefrage nach der Anmeldung (WRT-01).
+    const fenster = await screen.findByRole('dialog', {
+      name: 'Die Behandlungsgrundlage konnte nicht gespeichert werden.',
+    });
+    expect(fenster).toHaveTextContent(
+      'Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.',
+    );
+    expect(fenster).not.toHaveTextContent(/angemeldet/);
     expect(screen.queryByText(/constraint xyz/)).not.toBeInTheDocument();
+
+    await user.click(within(fenster).getByRole('button', { name: 'Zurück zum Formular' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+// -----------------------------------------------------------------------------
+// UXR-007: Rückweg, Schutz, Fehler und Rollen des Grundlagenformulars.
+//
+// Geprüft wird über Ziele (href), den Aufruf von `navigate` und angehaltene
+// Seitenwechsel. Ein Seitenwechsel, der tatsächlich durchläuft, baut im Data
+// Router unter Node 24 mit jsdom keinen `Request` (BEF-011); die Wege über
+// mehrere Seiten stehen in TreatmentBasisFormPage.entwurf.test.tsx.
+// -----------------------------------------------------------------------------
+describe('Grundlagenformular (UXR-007)', () => {
+  const STANDARD = `/patienten/${PATIENT_ID}/verordnungen`;
+  const SCHUTZ = 'Ungespeicherte Behandlungsgrundlage';
+
+  beforeEach(() => {
+    fetchPrescribers.mockReset();
+    fetchPrescribers.mockResolvedValue([verordner]);
+    fetchTreatmentBasis.mockReset();
+    fetchTreatmentBasis.mockResolvedValue(bestand);
+    createTreatmentBasis.mockReset();
+    createTreatmentBasis.mockResolvedValue('neue-id');
+    updateTreatmentBasis.mockReset();
+    updateTreatmentBasis.mockResolvedValue(undefined);
+    deleteTreatmentBasis.mockReset();
+    deleteTreatmentBasis.mockResolvedValue(undefined);
+    navigate.mockReset();
+    fetchPatient.mockReset();
+    fetchPatient.mockResolvedValue(
+      testPatient({ id: PATIENT_ID, given_name: 'Max', family_name: 'Mustermann' }),
+    );
+  });
+
+  describe('Rueckweg (VER-05)', () => {
+    const DAUERTERMIN = `/termine/dauertermin?patient=${PATIENT_ID}&datum=2026-10-05&beginn=08:00`;
+    const MIT_HERKUNFT = `${STANDARD}/neu?zurueck=${encodeURIComponent(DAUERTERMIN)}`;
+
+    it('kehrt nach dem Speichern dorthin zurueck, woher das Formular kam', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<NewTreatmentBasisPage />, MIT_HERKUNFT);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', DAUERTERMIN);
+      expect(screen.getByRole('link', { name: /^← Zurück/ })).toHaveAttribute('href', DAUERTERMIN);
+
+      await formularAusfuellen(user);
+      await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(DAUERTERMIN, { replace: true }));
+    });
+
+    it('nimmt den Rueckweg durch den Abstecher zur Verordner-Anlage mit', async () => {
+      renderWithProviders(<NewTreatmentBasisPage />, MIT_HERKUNFT);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      const ziel = new URL(
+        screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }).getAttribute('href')!,
+        'http://test',
+      );
+      const rueckkehr = new URL(ziel.searchParams.get('zurueck')!, 'http://test');
+      expect(rueckkehr.pathname).toBe(`${STANDARD}/neu`);
+      expect(rueckkehr.searchParams.get('vorgang')).toMatch(/.+/);
+      expect(rueckkehr.searchParams.get('zurueck')).toBe(DAUERTERMIN);
+    });
+
+    it('faellt bei einem fremden Rueckweg auf die Behandlungsgrundlagen zurueck', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<NewTreatmentBasisPage />, `${STANDARD}/neu?zurueck=/%5Cexample.org`);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      expect(
+        screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+      ).toHaveAttribute('href', STANDARD);
+      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', STANDARD);
+
+      await formularAusfuellen(user);
+      await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+      await waitFor(() => expect(navigate).toHaveBeenCalledWith(STANDARD, { replace: true }));
+    });
+  });
+
+  describe('Schutz ungespeicherter Eingaben (VER-03)', () => {
+    it('fragt nach, bevor Abbrechen Eingaben verwirft', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<NewTreatmentBasisPage />, `${STANDARD}/neu`);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '10');
+      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+      const frage = await screen.findByRole('group', { name: SCHUTZ });
+      expect(
+        within(frage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+      ).toBeInTheDocument();
+      // Kein Entwurfszustand auf dem Server, also kein „Speichern und weitergehen".
+      expect(within(frage).queryByRole('button', { name: /Speichern/ })).not.toBeInTheDocument();
+
+      await user.click(within(frage).getByRole('button', { name: 'Hier bleiben' }));
+      expect(screen.queryByRole('group', { name: SCHUTZ })).not.toBeInTheDocument();
+      expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('10');
+    });
+
+    it('zaehlt ein angehaktes Heilmittel als Eingabe', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<NewTreatmentBasisPage />, `${STANDARD}/neu`);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      await user.click(screen.getByRole('checkbox', { name: 'Hausbesuch' }));
+      await user.click(screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }));
+
+      expect(await screen.findByRole('group', { name: SCHUTZ })).toBeInTheDocument();
+    });
+
+    it('fragt beim Bearbeiten nach einer Aenderung am Bestand', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<EditTreatmentBasisPage />, `${STANDARD}/${PRESCRIPTION_ID}/bearbeiten`);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      await user.type(screen.getByLabelText('Diagnose oder Leitsymptomatik'), ' Ergänzt.');
+      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+      expect(await screen.findByRole('group', { name: SCHUTZ })).toBeInTheDocument();
+    });
+  });
+
+  describe('Fehler (VER-02, VER-15, ZST-13)', () => {
+    it('nennt beim Loeschen den Grund und den Ausweg aus der Datenbank', async () => {
+      deleteTreatmentBasis.mockRejectedValue(
+        new Error(
+          'An dieser Verordnung hängt ein Therapiebericht. Sie lässt sich deshalb nicht löschen; einen Entwurf können Sie vorher verwerfen.',
+        ),
+      );
+      const user = userEvent.setup();
+      renderWithProviders(<EditTreatmentBasisPage />);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      await user.click(screen.getByRole('button', { name: 'Grundlage löschen' }));
+      // „samt ihren Heilmitteln" statt des Datenmodellworts „Positionen" (VER-17).
+      expect(screen.getByText(/samt ihren Heilmitteln/)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ja, Grundlage löschen' }));
+
+      expect(
+        await screen.findByText(/An dieser Verordnung hängt ein Therapiebericht/),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByText('Die Grundlage konnte nicht gelöscht werden.'),
+      ).not.toBeInTheDocument();
+      expect(navigate).not.toHaveBeenCalled();
+    });
+
+    it('bietet in der Datumsauswahl keine Zukunft an', async () => {
+      renderWithProviders(<NewTreatmentBasisPage />);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      expect(screen.getByLabelText('Ausstellungsdatum *')).toHaveAttribute(
+        'max',
+        spaetestesDatum(),
+      );
+    });
+
+    it('zeigt eine unbekannte Grundlage mit Rueckweg und einem Satz, was zu tun ist', async () => {
+      fetchTreatmentBasis.mockResolvedValue(null);
+      renderWithProviders(<EditTreatmentBasisPage />);
+
+      expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+      expect(
+        screen.getByText(/Diese Grundlage gibt es nicht oder sie ist für Ihren Zugang/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Datensatz/)).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Grundlage bearbeiten' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+      ).toHaveAttribute('href', STANDARD);
+    });
+
+    it('bietet nach einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+      fetchTreatmentBasis.mockRejectedValueOnce(new Error('interne Ursache'));
+      const user = userEvent.setup();
+      renderWithProviders(<EditTreatmentBasisPage />);
+
+      const kasten = await screen.findByRole('alert');
+      expect(kasten).toHaveTextContent('Die Behandlungsgrundlage konnte nicht geladen werden.');
+      expect(kasten).not.toHaveTextContent(/interne Ursache|angemeldet/);
+
+      await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+      expect(await screen.findByLabelText('Anzahl möglicher Termine *')).toHaveValue('10');
+    });
+  });
+
+  // VER-16: Wer der Fehlerzusammenfassung auf das erste Kästchen folgt, hört
+  // dort, was fehlt - und die Gruppe ist als fehlerhaft gekennzeichnet.
+  it('verbindet den Heilmittelfehler mit Gruppe und erstem Kaestchen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    const gruppe = await screen.findByRole('group', { name: 'Heilmittel *' });
+    expect(gruppe).toHaveAttribute('aria-invalid', 'true');
+    expect(gruppe).toHaveAccessibleDescription('Bitte mindestens ein Heilmittel auswählen.');
+    expect(
+      screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }),
+    ).toHaveAccessibleDescription('Bitte mindestens ein Heilmittel auswählen.');
+  });
+
+  // VER-B02: Ohne Namen fehlt der Schutz gegen die Falschzuordnung (UX-012).
+  it('warnt, wenn die Person nicht geladen ist, und sperrt das Speichern', async () => {
+    fetchPatient.mockRejectedValue(new Error('interne Ursache'));
+    renderWithProviders(<NewTreatmentBasisPage />);
+
+    expect(
+      await screen.findByText(
+        'Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Grundlage speichern' })).toBeDisabled();
+  });
+
+  describe('Rolle ohne Schreibrecht (VER-04)', () => {
+    it('zeigt statt des Formulars, wer Grundlagen erfasst', () => {
+      darfSchreiben = false;
+      renderWithProviders(<NewTreatmentBasisPage />);
+
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Grundlage erfassen' }),
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.',
+        ),
+      ).toBeInTheDocument();
+      expect(screen.queryByLabelText('Art *')).not.toBeInTheDocument();
+      expect(
+        screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
+      ).toHaveAttribute('href', STANDARD);
+      expect(fetchPrescribers).not.toHaveBeenCalled();
+    });
+
+    it('laedt ohne Schreibrecht keine Grundlage zum Bearbeiten', () => {
+      darfSchreiben = false;
+      renderWithProviders(<EditTreatmentBasisPage />);
+
+      expect(screen.getByText('Nicht freigegeben')).toBeInTheDocument();
+      expect(fetchTreatmentBasis).not.toHaveBeenCalled();
+    });
+
+    it('zeigt das Formular, wenn die Rolle schreiben darf', async () => {
+      darfSchreiben = true;
+      renderWithProviders(<NewTreatmentBasisPage />);
+
+      expect(await screen.findByLabelText('Art *')).toBeInTheDocument();
+    });
+  });
+
+  describe('Auswahl und Reihenfolge (VER-09, VER-21, WRT-14)', () => {
+    it('beginnt die Verordner:in-Auswahl mit dem Nachnamen', async () => {
+      renderWithProviders(<NewTreatmentBasisPage />);
+
+      expect(
+        await screen.findByRole('option', { name: 'Probst, Petra (Dr. med.) · Praxis Fiktiv' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Bitte wählen …' })).toBeInTheDocument();
+    });
+
+    it('fuehrt die Frequenz bei Heilmitteln und Anzahl', async () => {
+      renderWithProviders(<NewTreatmentBasisPage />);
+      await screen.findByRole('option', { name: /Probst/ });
+
+      const anzahl = screen.getByLabelText('Anzahl möglicher Termine *');
+      const frequenz = screen.getByLabelText('Frequenz');
+      expect(
+        anzahl.compareDocumentPosition(frequenz) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(
+        frequenz.compareDocumentPosition(screen.getByLabelText('Diagnose oder Leitsymptomatik')) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+      expect(screen.getByRole('heading', { name: 'Weitere Angaben' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Anmerkungen' })).not.toBeInTheDocument();
+    });
   });
 });

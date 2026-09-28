@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TreatmentBasesApi from './api';
 import { renderWithProviders } from '@/test-utils';
@@ -94,5 +94,40 @@ describe('PrescribersListPage', () => {
       await screen.findByText('Die Verordner:innen konnten nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/egal/)).not.toBeInTheDocument();
+  });
+
+  // WRT-01: ein Satz, was zu tun ist, und ein Weg aus dem Fehler - ohne
+  // Ratefrage nach der Anmeldung.
+  it('bietet nach einem Ladefehler einen neuen Versuch an', async () => {
+    fetchPrescribers
+      .mockRejectedValueOnce(new Error('egal'))
+      .mockResolvedValue([verordner('1', { family_name: 'Probst' })]);
+    const user = userEvent.setup();
+    renderWithProviders(<PrescribersListPage />);
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(kasten).not.toHaveTextContent(/angemeldet/);
+    await user.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+
+    expect(await screen.findByText('Probst')).toBeInTheDocument();
+  });
+
+  // VER-09: Gekürzt verschwand am Ende genau der Nachname.
+  it('bricht lange Namen um, statt sie abzuschneiden', async () => {
+    fetchPrescribers.mockResolvedValue([
+      verordner('1', {
+        title: 'Prof. Dr. med. habil.',
+        given_name: 'Maria-Theresia',
+        family_name: 'Müller-Lüdenscheidt-Freifrau-von-Beispiel',
+      }),
+    ]);
+    renderWithProviders(<PrescribersListPage />);
+
+    const name = await screen.findByText(
+      'Prof. Dr. med. habil. Maria-Theresia Müller-Lüdenscheidt-Freifrau-von-Beispiel',
+    );
+    expect(name).not.toHaveClass('truncate');
+    expect(name).toHaveClass('break-words');
   });
 });

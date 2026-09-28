@@ -11,6 +11,9 @@
  * Kalenderrechner; eine Ortszeit wird daraus nie abgeleitet.
  */
 
+// Nur der Typ: `api.ts` liest diese Datei zur Laufzeit, nicht umgekehrt.
+import type { EreignisFormValues } from './api';
+
 const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
 export type KalenderAnsicht = (typeof KALENDER_ANSICHTEN)[number];
 
@@ -214,6 +217,111 @@ export function schreibeParameter(p: KalenderParameter): URLSearchParams {
   // ueberlebt damit das Neuladen, ohne jede Adresse zu verlaengern.
   if (p.zoom !== ZOOM_STANDARD) suche.set('zoom', String(p.zoom));
   return suche;
+}
+
+/**
+ * Parameter, mit dem der Kalender eine gerade eingetragene Fehlzeit meldet
+ * (KAL-22).
+ *
+ * Wie `neu` beim Termin (FIX-016): Er steht nur für den Moment der Rückkehr in
+ * der Adresse, `schreibeParameter` schreibt ihn beim nächsten Blättern nicht
+ * zurück. Der Wert sagt nur, **was** eingetragen wurde - keine Bezeichnung,
+ * keine Person (ADR-011).
+ */
+export const FEHLZEIT_EINGETRAGEN_PARAM = 'eingetragen';
+
+export type EingetrageneFehlzeit = 'fehlzeit' | 'dauerfehlzeit';
+
+/**
+ * Hängt die Meldung „Fehlzeit eingetragen" an einen Rückweg in den Kalender.
+ * Andere Rückwege bleiben, wie sie sind - dort gibt es keine Stelle für die
+ * Meldung.
+ */
+export function mitEingetragenerFehlzeit(rueckweg: string, art: EingetrageneFehlzeit): string {
+  if (!rueckweg.startsWith('/kalender')) return rueckweg;
+  const trenner = rueckweg.includes('?') ? '&' : '?';
+  return `${rueckweg}${trenner}${FEHLZEIT_EINGETRAGEN_PARAM}=${art}`;
+}
+
+/** Die gemeldete Fehlzeit aus der Adresse; ein fremder Wert zählt nicht. */
+export function leseEingetrageneFehlzeit(suche: URLSearchParams): EingetrageneFehlzeit | null {
+  const wert = suche.get(FEHLZEIT_EINGETRAGEN_PARAM);
+  return wert === 'fehlzeit' || wert === 'dauerfehlzeit' ? wert : null;
+}
+
+/**
+ * Wofür eine Fehlzeit steht, als Aufzählung (KAL-27).
+ *
+ * Dieselben Beispiele in der Anlegen-Leiste und auf beiden Formularen - bisher
+ * standen dort drei verschiedene Reihen. Die Reihe ist die aus dem Kommentar
+ * an `BEGRIFFE.fehlzeit` (CAL-021); gehört sie einmal in `begriffe.ts`, zieht
+ * dieser Wert dorthin um.
+ */
+export const FEHLZEIT_BEISPIELE = 'Meeting, Puffer, Pause';
+
+/**
+ * Die Felder einer Fehlzeit, die einen Fehler tragen können - in der
+ * Reihenfolge des Formulars (KAL-17).
+ *
+ * Eine eigene Liste statt der Schlüssel von `EreignisFormValues`: `api.ts`
+ * liest diese Datei, nicht umgekehrt, und die Art des Orts trägt nie einen
+ * Fehler.
+ */
+export const EREIGNIS_FEHLERFELDER = [
+  'title',
+  'staff_member_ids',
+  'location_id',
+  'date',
+  'start_time',
+  'end_time',
+] as const;
+export type EreignisFehlerfeld = (typeof EREIGNIS_FEHLERFELDER)[number];
+
+/**
+ * Feste Kennungen der Fehlzeitfelder (KAL-17, UX-012): Die
+ * Fehlerzusammenfassung springt auf das Feld, und eine mit `useId` erzeugte
+ * Kennung wäre von außen nicht bekannt. Die Beteiligten springen auf ihr
+ * erstes Kästchen.
+ */
+export const EREIGNIS_FELD_IDS: Readonly<Record<EreignisFehlerfeld, string>> = {
+  title: 'fehlzeit-bezeichnung',
+  staff_member_ids: 'fehlzeit-beteiligte',
+  location_id: 'fehlzeit-standort',
+  date: 'fehlzeit-datum',
+  start_time: 'fehlzeit-beginn',
+  end_time: 'fehlzeit-ende',
+};
+
+/** Wie die Fehlerzusammenfassung die Felder nennt - ohne Pflichtsternchen. */
+export const EREIGNIS_BESCHRIFTUNGEN: Readonly<Record<EreignisFehlerfeld, string>> = {
+  title: 'Bezeichnung',
+  staff_member_ids: 'Beteiligte Personen',
+  location_id: 'Standort',
+  date: 'Datum',
+  start_time: 'Beginn',
+  end_time: 'Ende',
+};
+
+/**
+ * Weicht eine Fehlzeit vom Stand ab, mit dem ihr Formular begann? (KAL-20,
+ * TER-05)
+ *
+ * Danach richtet sich der Schutz ungespeicherter Eingaben: Was aus dem
+ * Kalender vorbelegt oder aus dem Bestand geladen wurde, ist keine Eingabe,
+ * und ein Weggehen davon braucht keine Rückfrage. Die Reihenfolge der
+ * Beteiligten zählt nicht.
+ */
+export function ereignisGeaendert(werte: EreignisFormValues, anfang: EreignisFormValues): boolean {
+  const beteiligte = (w: EreignisFormValues) => [...w.staff_member_ids].sort().join(',');
+  return (
+    werte.title !== anfang.title ||
+    werte.appointment_type !== anfang.appointment_type ||
+    werte.date !== anfang.date ||
+    werte.start_time !== anfang.start_time ||
+    werte.end_time !== anfang.end_time ||
+    werte.location_id !== anfang.location_id ||
+    beteiligte(werte) !== beteiligte(anfang)
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -428,6 +536,78 @@ export function minuteZuPixel(minute: number, fensterVon: number, stundenHoehe: 
 
 export function pixelZuMinute(pixel: number, fensterVon: number, stundenHoehe: number): number {
   return fensterVon + (pixel / stundenHoehe) * 60;
+}
+
+/**
+ * Trifft ein Tipp die gezeichnete Fläche einer Punktauswahl? (KAL-09)
+ *
+ * „Dasselbe Feld: aufheben" (BEF-036) verglich bisher die gerundete
+ * Rasterminute - bei fünf Minuten und 96 px je Stunde ein Ziel von 8 px, bei
+ * der kleinsten Zoomstufe 3 px. Gezeichnet ist die Auswahl aber mindestens
+ * `mindestHoehe` Pixel hoch (BEF-037), und genau dorthin tippt, wer sie lösen
+ * will. Ein Tipp irgendwo in dieser Fläche zählt deshalb als dasselbe Feld;
+ * kürzere Spannen entstehen durch Ziehen oder auf einer feineren Zoomstufe.
+ *
+ * Nur für einen Punkt: Eine fertige Spanne ist schon eine Antwort, der nächste
+ * Tipp beginnt eine neue Auswahl (`naechsteAuswahl`).
+ */
+export function trifftPunktauswahl(
+  auswahl: { spalteId: string; vonMinute: number; bisMinute: number } | null,
+  tipp: { spalteId: string; pixel: number },
+  fensterVon: number,
+  stundenHoehe: number,
+  mindestHoehe: number,
+): boolean {
+  if (!auswahl || auswahl.vonMinute !== auswahl.bisMinute) return false;
+  if (auswahl.spalteId !== tipp.spalteId) return false;
+  const oben = minuteZuPixel(auswahl.vonMinute, fensterVon, stundenHoehe);
+  return tipp.pixel >= oben && tipp.pixel <= oben + mindestHoehe;
+}
+
+/**
+ * Wo der Kasten der Verschieben-Rückfrage in der Spalte steht, als Abstand von
+ * oben (KAL-13).
+ *
+ * Bis KAL-13 rechnete das Raster mit 200 px Kastenhöhe; tatsächlich sind es
+ * 250 bis 400 px, und spät am Tag lag der Kasten dann über der neuen Kachel
+ * oder ragte unter das Raster. Die Höhe kommt jetzt gemessen herein:
+ *
+ *   * unter der neuen Kachel, wenn er dort ganz ins Raster passt;
+ *   * sonst darüber, wenn er dort passt;
+ *   * passt beides nicht, in den sichtbaren Teil der Spalte - so nah unter der
+ *     Kachel wie möglich, aber nie über das Raster hinaus. Sonst rollte der
+ *     Rasterkasten innen senkrecht, und die Knöpfe wären zu suchen.
+ *
+ * `sichtbarVon` und `sichtbarBis` sind der Teil der Spalte, der gerade im
+ * Fenster steht, in Pixeln von ihrem oberen Rand.
+ */
+export function rueckfrageOben({
+  kachelOben,
+  kachelHoehe,
+  kastenHoehe,
+  spaltenHoehe,
+  sichtbarVon,
+  sichtbarBis,
+  abstand = 4,
+}: {
+  kachelOben: number;
+  kachelHoehe: number;
+  kastenHoehe: number;
+  spaltenHoehe: number;
+  sichtbarVon: number;
+  sichtbarBis: number;
+  abstand?: number;
+}): number {
+  const darunter = kachelOben + kachelHoehe + abstand;
+  if (darunter + kastenHoehe <= spaltenHoehe) return darunter;
+
+  const darueber = kachelOben - abstand - kastenHoehe;
+  if (darueber >= 0) return darueber;
+
+  let oben = Math.min(darunter, sichtbarBis - kastenHoehe);
+  oben = Math.max(oben, sichtbarVon);
+  oben = Math.min(oben, spaltenHoehe - kastenHoehe);
+  return Math.max(0, oben);
 }
 
 /**

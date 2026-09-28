@@ -28,6 +28,12 @@ export const BILD_HOEHE = 749;
 export const ANSICHTEN_GRENZE = 410;
 /** Größter Abstand eines Tipps zum nächsten Anker, in Bildpunkten. */
 export const MAX_ABSTAND = 60;
+/**
+ * Höchstens so viele Kreise (ANN-107): Mehr wären keine Angabe mehr, sondern
+ * ein ausgemaltes Bild. Die Eingabe setzt keinen weiteren, die Prüfung vor dem
+ * Speichern weist mehr ab - beide lesen diese eine Zahl (BEF-03).
+ */
+export const MAX_MARKIERUNGEN = 30;
 
 export interface Punkt {
   x: number;

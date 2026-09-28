@@ -170,11 +170,13 @@ test.describe('Fotos', () => {
     expect(await ueberlaeuft(page)).toBe(false);
   });
 
-  test('am Dokument steht „Foto aufnehmen“ neben dem Dateiwähler', async ({ page }) => {
+  // Seit DAT-01 heißt der Knopf an den Dateien anders als „Foto aufnehmen“
+  // am Patientenfoto: zwei Rechtswege, zwei Namen (ADR-017).
+  test('am Dokument steht „Dokument fotografieren“ neben dem Dateiwähler', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=dokument`);
     await expect(page.getByLabel('Datei')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Foto aufnehmen' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Dokument fotografieren' })).toBeVisible();
     expect(await ueberlaeuft(page)).toBe(false);
   });
 

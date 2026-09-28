@@ -1,7 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { focusManager } from '@tanstack/react-query';
 import type * as DokumentationApi from './api';
+import type * as Bausteine from './textbausteine';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
@@ -42,6 +44,15 @@ const fetchTreatmentDocumentation = vi.fn();
 const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
+const fetchTextSnippets = vi.fn();
+
+vi.mock('./textbausteine', async (importOriginal) => {
+  const actual = await importOriginal<typeof Bausteine>();
+  return {
+    ...actual,
+    fetchTextSnippets: () => fetchTextSnippets() as Promise<Bausteine.TextSnippet[]>,
+  };
+});
 
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -77,10 +88,10 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 const { TreatmentNotePage } = await import('./TreatmentNotePage');
 const { DokumentationVeraendertError } = await import('./api');
 
-function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
     <TreatmentNotePage user={testUser(rollen)} />,
-    `/termine/${TERMIN_ID}/dokumentation`,
+    `/termine/${TERMIN_ID}/dokumentation${suche}`,
   );
 }
 
@@ -101,6 +112,8 @@ describe('TreatmentNotePage', () => {
     fetchTreatmentDocumentation.mockResolvedValue(LEER);
     createTreatmentNote.mockResolvedValue(DOKU_ID);
     updateTreatmentNote.mockResolvedValue(undefined);
+    fetchTextSnippets.mockReset();
+    fetchTextSnippets.mockResolvedValue([]);
   });
 
   it('legt einen neuen Entwurf an und kehrt zum Termin zurueck', async () => {
@@ -115,7 +128,169 @@ describe('TreatmentNotePage', () => {
       expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Neuer synthetischer Eintrag.');
     });
     expect(updateTreatmentNote).not.toHaveBeenCalled();
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`));
+    // Der Termin erfährt, was geschehen ist (DOK-15).
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
+      }),
+    );
+  });
+
+  describe('Rückweg (DOK-01, NAV-03, ZST-17)', () => {
+    it('behält den mitgereisten Rückweg für Kopf, „Abbrechen“ und den Weg nach dem Speichern', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist'], '?zurueck=%2F');
+
+      await waitFor(() => expect(feld()).toHaveValue(''));
+      // Kopf: dorthin, woher die Person kam - hier die Übersicht.
+      expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute(
+        'href',
+        '/',
+      );
+      // „Abbrechen“ und nach dem Speichern: zum Termin, der den Rückweg behält.
+      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+        'href',
+        `/termine/${TERMIN_ID}?zurueck=%2F`,
+      );
+
+      await user.type(feld(), 'Neuer synthetischer Eintrag.');
+      await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+          state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
+        }),
+      );
+    });
+
+    it('führt ohne mitgereisten Rückweg zum Termin', async () => {
+      rendern();
+
+      await waitFor(() => expect(feld()).toHaveValue(''));
+      expect(screen.getByRole('link', { name: /Zurück zum Termin/ })).toHaveAttribute(
+        'href',
+        `/termine/${TERMIN_ID}`,
+      );
+    });
+  });
+
+  it('sagt, dass der Entwurf mit der Frist der Praxis von selbst finalisiert wird (DOK-02)', async () => {
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(''));
+    expect(feld()).toHaveAccessibleDescription(
+      /bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis\./,
+    );
+  });
+
+  describe('Baustein einfügen (DOK-10)', () => {
+    beforeEach(() => {
+      fetchTextSnippets.mockResolvedValue([
+        {
+          id: 'b1',
+          title: 'Manuelle Therapie',
+          body: 'Manuelle Therapie durchgefuehrt.',
+          shared: true,
+          editable: false,
+        },
+      ]);
+    });
+
+    it('meldet das Einfügen, scrollt ans Ende und nimmt es auf Wunsch zurück', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      const user = userEvent.setup();
+      rendern();
+
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      let gescrollt = 0;
+      Object.defineProperty(feld(), 'scrollHeight', { configurable: true, get: () => 880 });
+      Object.defineProperty(feld(), 'scrollTop', {
+        configurable: true,
+        get: () => gescrollt,
+        set: (wert: number) => {
+          gescrollt = wert;
+        },
+      });
+
+      await user.click(await screen.findByRole('button', { name: 'Manuelle Therapie' }));
+
+      expect(feld()).toHaveValue(`${INHALT}\n\nManuelle Therapie durchgefuehrt.`);
+      expect(screen.getByText('„Manuelle Therapie“ am Ende eingefügt.')).toBeInTheDocument();
+      // Das Ergebnis ist sichtbar - ohne Fokus, der am Handy die Tastatur öffnete.
+      expect(gescrollt).toBe(880);
+      expect(feld()).not.toHaveFocus();
+
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      expect(feld()).toHaveValue(INHALT);
+      expect(screen.queryByText(/am Ende eingefügt/)).toBeNull();
+    });
+
+    it('bietet kein Rückgängig mehr an, sobald weitergetippt wird', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      await waitFor(() => expect(feld()).toHaveValue(''));
+      await user.click(await screen.findByRole('button', { name: 'Manuelle Therapie' }));
+      expect(screen.getByRole('button', { name: 'Rückgängig' })).toBeInTheDocument();
+
+      await user.type(feld(), ' Weiter.');
+      expect(screen.queryByRole('button', { name: 'Rückgängig' })).toBeNull();
+    });
+  });
+
+  describe('Nachladen (DOK-B01)', () => {
+    afterEach(() => {
+      focusManager.setFocused(undefined);
+    });
+
+    it('behält Editor und Text, wenn der Eintrag inzwischen finalisiert wurde', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      const user = userEvent.setup();
+      rendern();
+
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.type(feld(), ' Noch nicht gespeichert.');
+
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...doku, status: 'final', finalisation_kind: 'automatic', version_count: 1 },
+        addenda: [],
+      });
+      act(() => focusManager.setFocused(true));
+
+      expect(
+        await screen.findByText(
+          'Der Eintrag wurde inzwischen finalisiert – Ihr Text steht noch im Feld und ist nicht gespeichert.',
+        ),
+      ).toBeInTheDocument();
+      expect(feld()).toHaveValue(`${INHALT} Noch nicht gespeichert.`);
+      expect(screen.queryByText('Bereits finalisiert')).toBeNull();
+    });
+
+    it('behält einen neuen Text, wenn der Termin inzwischen abgesagt wurde', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      await waitFor(() => expect(feld()).toHaveValue(''));
+      await user.type(feld(), 'Neuer Text.');
+
+      fetchAppointment.mockResolvedValue({ ...termin, status: 'cancelled' });
+      act(() => focusManager.setFocused(true));
+
+      expect(
+        await screen.findByText(
+          'Der Termin wurde inzwischen abgesagt – Ihr Text steht noch im Feld und ist nicht gespeichert.',
+        ),
+      ).toBeInTheDocument();
+      expect(feld()).toHaveValue('Neuer Text.');
+    });
+  });
+
+  it('bietet zu einem nicht angetroffenen Termin keinen Entwurf an (TER-B01)', async () => {
+    fetchAppointment.mockResolvedValue({ ...termin, status: 'no_show' });
+    rendern();
+
+    expect(await screen.findByText('Nicht angetroffen')).toBeInTheDocument();
+    expect(screen.getByText(/zuerst am Termin „Termin wieder öffnen“/)).toBeInTheDocument();
+    expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
   });
 
   it('laedt einen vorhandenen Entwurf und speichert ihn mit dem gelesenen Stand', async () => {
@@ -361,9 +536,19 @@ describe('TreatmentNotePage', () => {
       },
       addenda: [],
     });
-    rendern();
+    rendern(['therapist'], '?zurueck=%2F');
 
     expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
     expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
+    // Ein erwartbarer Zustand, kein Alarm - mit dem nächsten Schritt (DOK-12).
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Nachtrag hinzufügen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag?zurueck=%2F`,
+    );
+    expect(screen.getByRole('link', { name: 'Korrigieren' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/korrektur?zurueck=%2F`,
+    );
   });
 });

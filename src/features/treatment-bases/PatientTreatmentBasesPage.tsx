@@ -1,8 +1,13 @@
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Aufklappzeichen, Card } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import {
   canManageAppointments,
   canReadClinicalPatientFiles,
@@ -31,6 +36,7 @@ import {
 } from './api';
 import {
   deckungstext,
+  uebertrageneTermine,
   useVerordnungenDerAkte,
   zustandLabels,
   type Verordnung,
@@ -62,6 +68,13 @@ import {
  * Termine mit drei Heilmitteln zeigte achtzehn. Jetzt zählt jede Zeile
  * Behandlungstermine — möglich, genutzt, verplant, noch planbar (ANN-064,
  * ANN-038). Die Leistungsmenge je Heilmittel steht getrennt darunter.
+ *
+ * **Ein Wort je Zahl, eine Einheit (VER-08).** Die zugeordneten Termine hießen
+ * hier „zugeordnet", in der ausgeschöpften Zeile „geplant" und im Zustand
+ * „verplant"; gezählt wurde in „Terminen", ausgegeben in „Behandlungen".
+ * Jetzt heißen sie überall „verplant", wie der Zustand, und gezählt wird in
+ * Terminen. Der Satz zur Deckung (`deckungstext`) teilt sich seinen Wortlaut
+ * mit der Terminliste der Akte und folgt mit ihr.
  */
 function Kontingentzeilen({
   kontingent,
@@ -79,19 +92,22 @@ function Kontingentzeilen({
         {/* „Genutzt" pflegt bis ABR-002 niemand mehr von Hand (ANN-064). Die
             Zeile steht deshalb nur da, wo tatsächlich etwas verbraucht ist -
             ein dauerhaftes „0 von 6 genutzt" wäre eine Zahl ohne Aussage. */}
-        {kontingent.used > 0 ? ` · ${kontingent.used} genutzt` : ''}
+        {kontingent.used > 0 ? `, davon ${kontingent.used} genutzt` : ''}
       </DetailRow>
       <DetailRow label="Termine">
         <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <span>
             {kontingent.planned === 0
-              ? 'Noch kein Termin zugeordnet'
-              : `${kontingent.planned} zugeordnet · ${kontingent.upcoming} bevorstehend`}
+              ? 'Noch kein Termin verplant'
+              : `${kontingent.planned} verplant · ${kontingent.upcoming} bevorstehend`}
           </span>
+          {/* Bauartneutral - am Selbstzahler gibt es keine Verordnung (ADR-020
+              Punkt 7) - und als Textlink mit 44-px-Tippziel statt eines
+              kleinen, nur farbigen Links (VER-12, RSP-06). */}
           {kontingent.planned > 0 ? (
-            <Link to={terminlink} className="text-accent text-sm hover:underline">
-              Termine dieser Verordnung
-            </Link>
+            <Textlink to={terminlink} alleinstehend className="text-sm">
+              Termine dieser Grundlage
+            </Textlink>
           ) : null}
         </span>
       </DetailRow>
@@ -114,8 +130,8 @@ function Kontingentzeilen({
           die Serienplanung vor. */}
       <DetailRow label="Noch planbar">
         {kontingent.remaining === 0
-          ? 'Nichts mehr — jeder mögliche Termin ist genutzt oder verplant'
-          : `${kontingent.remaining} ${kontingent.remaining === 1 ? 'Behandlung' : 'Behandlungen'}`}
+          ? 'Nichts mehr – jeder mögliche Termin ist genutzt oder verplant'
+          : `${kontingent.remaining} ${kontingent.remaining === 1 ? 'Termin' : 'Termine'}`}
       </DetailRow>
     </>
   );
@@ -149,7 +165,7 @@ function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
 
   return (
     <div className="min-w-0">
-      <p className="text-ink text-[0.9375rem] font-medium">
+      <p className="text-ink text-liste font-medium">
         <Grundlagentitel verordnung={verordnung} />
       </p>
       {verordner ? <p className="text-ink-muted mt-0.5 text-sm">{verordner}</p> : null}
@@ -180,9 +196,9 @@ function Heilmittel({
           moeglicheTermine !== null && item.prescribed_quantity !== moeglicheTermine;
         let menge = '';
         if (item.used_quantity > 0) {
-          menge = ` — ${item.used_quantity} von ${item.prescribed_quantity} genutzt`;
+          menge = ` – ${item.used_quantity} von ${item.prescribed_quantity} genutzt`;
         } else if (abweichend) {
-          menge = ` — ${item.prescribed_quantity} verordnet`;
+          menge = ` – ${item.prescribed_quantity} verordnet`;
         }
         return (
           <li key={item.id}>
@@ -378,6 +394,11 @@ function terminlink(patientId: string, verordnungId: string): string {
  * ganze Blatt samt Diagnose - und die liest `office` seit ADR-004 Fassung 2
  * ebenso wie die behandelnden Rollen. Hinzufügen und löschen dürfen ihn nur
  * die Rollen mit Schreibrecht an der Verordnung (ADR-017 Punkt 13, ANN-011).
+ *
+ * **Knapp in der Karte (VER-01).** Ohne Scan steht ein Satz statt des großen
+ * Leerzustands, und das Hinzufügen liegt eingeklappt hinter „Scan
+ * hinzufügen": Offen an jeder laufenden Verordnung machte es die Karte am
+ * Telefon rund 760 px länger. Im Aktenbereich „Dateien" bleibt es offen.
  */
 function Verordnungsscan({
   patientId,
@@ -389,6 +410,7 @@ function Verordnungsscan({
   user: CurrentUser;
 }) {
   if (!canReadClinicalPatientFiles(user.roles)) return null;
+  const darfHinzufuegen = canWriteTreatmentBases(user.roles);
 
   return (
     <div className="border-line mt-3 border-t pt-3">
@@ -397,8 +419,16 @@ function Verordnungsscan({
         patientId={patientId}
         user={user}
         grundlageId={verordnungId}
-        darfHinzufuegen={canWriteTreatmentBases(user.roles)}
-        leerHinweis="Noch kein Scan. Ein Foto des Rezepts hält fest, was auf dem Blatt steht."
+        darfHinzufuegen={darfHinzufuegen}
+        hinzufuegenEingeklappt="Scan hinzufügen"
+        leerKompakt
+        // Wer keinen Scan hinzufügen darf, liest keine Aufforderung dazu
+        // (VER-04) - nur den Zustand.
+        leerHinweis={
+          darfHinzufuegen
+            ? 'Noch kein Scan. Ein Foto des Rezepts hält fest, was auf dem Blatt steht.'
+            : 'Noch kein Scan.'
+        }
       />
     </div>
   );
@@ -411,12 +441,18 @@ function LaufendeVerordnung({
   user,
   ungedecktInDerAkte,
   berichte,
+  zahlenLaden,
+  angesprungen,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
   ungedecktInDerAkte: number;
   berichte: readonly Berichtszeile[];
+  /** Die Terminzahlen kommen noch. */
+  zahlenLaden: boolean;
+  /** Das Ziel eines Sprungs aus der Terminliste (VER-06). */
+  angesprungen: boolean;
 }) {
   const { verordnung, kontingent, zustand } = eintrag;
   const weitereAngaben = hatWeitereAngaben(verordnung, berichte);
@@ -426,59 +462,76 @@ function LaufendeVerordnung({
       // Die Kennung macht die Verordnung aus der Terminliste anspringbar - der
       // Rückweg zu „aus welcher Verordnung stammt dieser Termin".
       id={`verordnung-${verordnung.id}`}
-      className="border-line bg-surface rounded-card target:ring-accent border p-4 target:ring-2"
+      // Angesprungen bekommt die Karte den Fokus und einen Rand in der
+      // Hauptfarbe - aus dem Zustand der Seite, nicht aus `:target`: Den
+      // setzt ein Seitenwechsel innerhalb der Anwendung nicht (VER-06), und
+      // `ring-*` wäre ein Schatten (TOK-01).
+      tabIndex={angesprungen ? -1 : undefined}
+      data-angesprungen={angesprungen ? '' : undefined}
+      className="group/grundlage"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <Verordnungskopf verordnung={verordnung} />
-        <Badge ton={zustand === 'offen' ? 'akzent' : 'neutral'}>{zustandLabels[zustand]}</Badge>
-      </div>
-
-      {/* Zwei Spalten, sobald es beides gibt: Zahlen links, Angaben rechts.
-          In einer einzigen Spalte lief die Karte auf dem Desktop über die
-          volle Breite, obwohl in jeder Zeile drei Wörter standen - und sie
-          wurde so hoch, dass die zweite Verordnung aus dem Bild fiel. */}
-      <div className={`grid gap-x-8 ${weitereAngaben ? 'lg:grid-cols-2' : ''}`}>
-        <DetailList>
-          <Kontingentzeilen
-            kontingent={kontingent}
-            terminlink={terminlink(patient.id, verordnung.id)}
-          />
-          {/* Seit VER-EPIC-002 immer: Welche Heilmittel die Grundlage trägt,
-              steht in keiner Zahl darüber - auch nicht bei einem einzigen. */}
-          {verordnung.items.length > 0 ? (
-            <DetailRow label="Heilmittel">
-              <Heilmittel
-                verordnung={verordnung}
-                moeglicheTermine={kontingent?.prescribed ?? null}
-              />
-            </DetailRow>
+      <Card className="group-data-[angesprungen]/grundlage:border-accent">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <Verordnungskopf verordnung={verordnung} />
+          {/* Ohne Zahlen kein Zustand: „Offen" wäre dann geraten (VER-14). */}
+          {kontingent ? (
+            <Badge ton={zustand === 'offen' ? 'akzent' : 'neutral'}>{zustandLabels[zustand]}</Badge>
           ) : null}
-        </DetailList>
+        </div>
 
-        {weitereAngaben ? (
-          <DetailList>
-            <KlinischeAngaben verordnung={verordnung} berichte={berichte} />
-          </DetailList>
+        {!kontingent && zahlenLaden ? (
+          <Statusmeldung className="mt-2">Terminzahlen werden geladen …</Statusmeldung>
         ) : null}
-      </div>
 
-      <Verordnungsaktionen
-        eintrag={eintrag}
-        patient={patient}
-        user={user}
-        ungedecktInDerAkte={ungedecktInDerAkte}
-      />
-      {istVerordnung(verordnung.treatment_basis_kind) ? (
-        <>
-          <BerichteDerVerordnung
-            patientId={patient.id}
-            verordnungId={verordnung.id}
-            berichte={berichte}
-            user={user}
-          />
-          <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
-        </>
-      ) : null}
+        {/* Zwei Spalten, sobald es beides gibt: Zahlen links, Angaben rechts.
+            In einer einzigen Spalte lief die Karte auf dem Desktop über die
+            volle Breite, obwohl in jeder Zeile drei Wörter standen - und sie
+            wurde so hoch, dass die zweite Verordnung aus dem Bild fiel. Erst
+            ab 1280 px: Bei 1024 px blieben neben der Beschriftungsspalte rund
+            120 px für den Wert (VER-20). */}
+        <div className={`grid gap-x-8 ${weitereAngaben ? 'xl:grid-cols-2' : ''}`}>
+          <DetailList>
+            <Kontingentzeilen
+              kontingent={kontingent}
+              terminlink={terminlink(patient.id, verordnung.id)}
+            />
+            {/* Seit VER-EPIC-002 immer: Welche Heilmittel die Grundlage trägt,
+                steht in keiner Zahl darüber - auch nicht bei einem einzigen. */}
+            {verordnung.items.length > 0 ? (
+              <DetailRow label="Heilmittel">
+                <Heilmittel
+                  verordnung={verordnung}
+                  moeglicheTermine={kontingent?.prescribed ?? null}
+                />
+              </DetailRow>
+            ) : null}
+          </DetailList>
+
+          {weitereAngaben ? (
+            <DetailList>
+              <KlinischeAngaben verordnung={verordnung} berichte={berichte} />
+            </DetailList>
+          ) : null}
+        </div>
+
+        <Verordnungsaktionen
+          eintrag={eintrag}
+          patient={patient}
+          user={user}
+          ungedecktInDerAkte={ungedecktInDerAkte}
+        />
+        {istVerordnung(verordnung.treatment_basis_kind) ? (
+          <>
+            <BerichteDerVerordnung
+              patientId={patient.id}
+              verordnungId={verordnung.id}
+              berichte={berichte}
+              user={user}
+            />
+            <Verordnungsscan patientId={patient.id} verordnungId={verordnung.id} user={user} />
+          </>
+        ) : null}
+      </Card>
     </li>
   );
 }
@@ -496,20 +549,32 @@ function AbgeschlosseneVerordnung({
   user,
   ungedecktInDerAkte,
   berichte,
+  angesprungen,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
   ungedecktInDerAkte: number;
   berichte: readonly Berichtszeile[];
+  /** Das Ziel eines Sprungs aus der Terminliste (VER-06). */
+  angesprungen: boolean;
 }) {
   const { verordnung, kontingent } = eintrag;
 
   return (
-    <li id={`verordnung-${verordnung.id}`} className="border-line border-t">
+    <li
+      id={`verordnung-${verordnung.id}`}
+      // Fokusziel eines Sprungs aus der Terminliste; der Sprung klappt die
+      // Zeile auch auf (VER-06).
+      tabIndex={angesprungen ? -1 : undefined}
+      className="border-line border-t"
+    >
       <details className="group">
-        <summary className="hover:bg-surface-sunken flex min-h-11 cursor-pointer flex-wrap items-center justify-between gap-x-4 gap-y-1 py-2.5">
-          <span className="text-ink min-w-0 text-[0.9375rem]">
+        {/* Kopf mit Aufklappzeichen statt eines kleinen „Details" am rechten
+            Rand, das beim Öffnen stehen blieb (VER-19, RSP-07, UIK-07). */}
+        <summary className={`${aufklappKopfKlassen} hover:bg-surface-sunken py-2.5`}>
+          <Aufklappzeichen />
+          <span className="text-ink text-liste min-w-0">
             <Grundlagentitel verordnung={verordnung} />
             <span className="text-ink-muted mt-0.5 block text-sm">
               {[
@@ -517,13 +582,12 @@ function AbgeschlosseneVerordnung({
                 kontingent
                   ? `${kontingent.used} von ${kontingent.prescribed} Terminen genutzt`
                   : null,
-                kontingent ? `${kontingent.planned} geplant` : null,
+                kontingent ? `${kontingent.planned} verplant` : null,
               ]
                 .filter(Boolean)
                 .join(' · ')}
             </span>
           </span>
-          <span className="text-ink-subtle text-xs">Details</span>
         </summary>
 
         <div className="pb-3">
@@ -570,10 +634,74 @@ export function PatientTreatmentBasesPage() {
   return <Verordnungsbereich patient={patient} user={user} />;
 }
 
+/** Der Anker einer Grundlage in der Adresse: `…/verordnungen#verordnung-<id>`. */
+const SPRUNGMARKE = '#verordnung-';
+
+/**
+ * Der Sprung zu einer Grundlage aus der Terminliste (VER-06, BEF-007).
+ *
+ * „Zur Grundlage" führt auf `…/verordnungen#verordnung-<id>`. Ein
+ * Seitenwechsel innerhalb der Anwendung setzt aber weder `:target`, noch rollt
+ * er zum Anker - und die Karte entsteht oft erst nach der Abfrage. Die Seite
+ * springt deshalb selbst, sobald Grundlagen und Zahlen da sind (erst die
+ * Zahlen entscheiden, ob eine Grundlage läuft oder ausgeschöpft ist): Sie
+ * rollt die Karte an den Anfang, klappt eine ausgeschöpfte auf und setzt den
+ * Fokus dorthin. Jeder Sprung zählt einmal - auch ein zweiter auf dieselbe
+ * Grundlage (`key` des Verlaufseintrags).
+ *
+ * Gibt die Kennung der angesprungenen Grundlage zurück, damit ihre Karte
+ * markiert werden kann.
+ */
+function useAngesprungeneGrundlage(
+  eintraege: readonly VerordnungMitZahlen[],
+  bereit: boolean,
+): string | null {
+  const { hash, key } = useLocation();
+  const [sprung, setSprung] = useState<{ id: string; marke: string } | null>(null);
+  const erledigt = useRef<string | null>(null);
+
+  const ziel = hash.startsWith(SPRUNGMARKE) ? hash.slice(SPRUNGMARKE.length) : null;
+  const vorhanden = ziel !== null && eintraege.some((eintrag) => eintrag.verordnung.id === ziel);
+
+  useEffect(() => {
+    if (!bereit || ziel === null) return;
+    const marke = `${key}${hash}`;
+    if (erledigt.current === marke) return;
+    erledigt.current = marke;
+    setSprung(vorhanden ? { id: ziel, marke } : null);
+  }, [bereit, ziel, vorhanden, key, hash]);
+
+  useEffect(() => {
+    if (!sprung) return;
+    const karte = document.getElementById(`verordnung-${sprung.id}`);
+    if (!karte) return;
+    const aufklapper = karte.querySelector('details');
+    if (aufklapper) aufklapper.open = true;
+    karte.scrollIntoView({ block: 'start' });
+    karte.focus({ preventScroll: true });
+  }, [sprung]);
+
+  return sprung?.id ?? null;
+}
+
 export function Verordnungsbereich({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  const { eintraege, aktuell, abgeschlossen, isPending, isError, verborgen } =
-    useVerordnungenDerAkte(patient.id, user);
+  const {
+    eintraege,
+    aktuell,
+    abgeschlossen,
+    isPending,
+    zahlenLaden,
+    grundlagenFehler,
+    zahlenFehler,
+    erneutLaden,
+    verborgen,
+  } = useVerordnungenDerAkte(patient.id, user);
   const berichte = useBerichteDerAkte(patient.id, user).data ?? [];
+  const angesprungen = useAngesprungeneGrundlage(eintraege, !isPending && !zahlenLaden);
+  // Die Rückmeldung aus „Termine übertragen" (VER-13): wie viele tatsächlich
+  // gewandert sind, laut Server.
+  const verlaufszustand: unknown = useLocation().state;
+  const uebertragen = uebertrageneTermine(verlaufszustand);
 
   if (verborgen) return null;
 
@@ -595,21 +723,38 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
         titel="Aktuelle Behandlungsgrundlagen"
         hinweis="Verordnungen und Selbstzahler, deren mögliche Termine noch nicht vollständig genutzt sind."
       >
-        {isPending ? <LoadingState label="Behandlungsgrundlagen werden geladen …" /> : null}
-        {isError ? (
-          <ErrorState
-            title="Die Behandlungsgrundlagen konnten nicht geladen werden."
-            description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
-          />
+        {uebertragen ? (
+          <Statusmeldung ton="erfolg" className="mb-3">
+            {uebertragen === 1 ? '1 Termin übertragen.' : `${uebertragen} Termine übertragen.`}
+          </Statusmeldung>
         ) : null}
 
-        {!isPending && !isError && aktuell.length === 0 ? (
+        {isPending ? <LoadingState label="Behandlungsgrundlagen werden geladen …" /> : null}
+        {/* Die beiden Abfragen scheitern getrennt (VER-14): Fehlen die
+            Grundlagen, gibt es nichts zu zeigen. Fehlen nur die Zahlen, stehen
+            die Grundlagen samt ihren Aktionen da - ohne Zahlen und ohne einen
+            Zustand, der ohne sie nur geraten wäre. */}
+        {grundlagenFehler ? (
+          <ErrorState
+            title="Die Behandlungsgrundlagen konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={erneutLaden}
+          />
+        ) : null}
+        {!grundlagenFehler && zahlenFehler && eintraege.length > 0 ? (
+          <Statusmeldung ton="warnung" className="mb-3">
+            Die Terminzahlen konnten nicht geladen werden. Bitte die Verbindung prüfen und später
+            erneut versuchen.
+          </Statusmeldung>
+        ) : null}
+
+        {!isPending && !grundlagenFehler && aktuell.length === 0 ? (
           <EmptyState
             title="Keine laufende Behandlungsgrundlage"
             description={
               darfSchreiben
-                ? 'Die nächste entsteht über „Grundlage erfassen" — als Verordnung oder als Selbstzahler.'
-                : 'Behandlungsgrundlagen erfassen die therapeutischen Rollen.'
+                ? 'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.'
+                : 'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.'
             }
           />
         ) : null}
@@ -624,6 +769,8 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                 user={user}
                 ungedecktInDerAkte={ungedecktInDerAkte}
                 berichte={berichte}
+                zahlenLaden={zahlenLaden}
+                angesprungen={angesprungen === eintrag.verordnung.id}
               />
             ))}
           </ul>
@@ -633,7 +780,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
       {abgeschlossen.length > 0 ? (
         <Section
           titel="Ausgeschöpfte Behandlungsgrundlagen"
-          hinweis="Nach Jahr, neueste zuerst. Eine Zeile je Grundlage — aufklappen zeigt alles."
+          hinweis="Nach Jahr, neueste zuerst. Eine Zeile je Grundlage – aufklappen zeigt alles."
         >
           {/* Nach Jahr gruppiert wie bisher (VER-002): Eine Akte über zehn
               Jahre ist sonst eine Liste ohne Anhaltspunkt; das Jahr ist das,
@@ -652,6 +799,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
                         user={user}
                         ungedecktInDerAkte={ungedecktInDerAkte}
                         berichte={berichte}
+                        angesprungen={angesprungen === verordnung.id}
                       />
                     );
                   })}
