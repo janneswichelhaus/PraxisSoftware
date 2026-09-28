@@ -52,8 +52,12 @@ export function Laengenzeichen({
  *
  * Inline-SVG wie bei den Mitteilungszeichen: ein Sonderzeichen hinge an der
  * Schriftart des Geräts.
+ *
+ * Auch einzeln zu haben, für die Zeichenerklärung des Kalenders (KAL-26): Dort
+ * steht dasselbe Bild wie in der Kachel, sonst erklärte die Legende ein
+ * anderes Zeichen als das, das man sucht.
  */
-function SpannenBild() {
+export function SpannenBild() {
   return (
     <svg
       viewBox="0 0 16 16"

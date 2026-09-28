@@ -108,10 +108,10 @@ test.describe('CAL-006: Darstellung', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
 
-    const gitter = page.getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' });
+    const gitter = page.getByRole('region', { name: 'Tagesansicht nach behandelnder Person' });
     await expect(gitter).toBeVisible();
     for (const name of ['Jannes Test', 'Anna Beispiel', 'Tim Teamleitung']) {
-      await expect(page.getByRole('gridcell', { name })).toBeVisible();
+      await expect(page.getByRole('group', { name })).toBeVisible();
     }
   });
 
@@ -122,9 +122,13 @@ test.describe('CAL-006: Darstellung', () => {
     await page.goto(`/kalender?ansicht=woche&datum=${tag}`);
 
     await expect(
-      page.getByRole('grid', { name: 'Wochenansicht einer behandelnden Person' }),
+      page.getByRole('region', { name: 'Wochenansicht einer behandelnden Person' }),
     ).toBeVisible();
-    await expect(page.getByRole('gridcell')).toHaveCount(7);
+    await expect(
+      page
+        .getByRole('region', { name: 'Wochenansicht einer behandelnden Person' })
+        .getByRole('group'),
+    ).toHaveCount(7);
 
     // In der Woche gibt es kein "Alle": es steht immer genau eine Person im Gitter.
     const auswahl = page.getByLabel('Behandelnde Person');
@@ -136,7 +140,7 @@ test.describe('CAL-006: Darstellung', () => {
 
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByRole('gridcell', { name: 'Anna Beispiel' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Anna Beispiel' })).toBeVisible();
 
     // Der Kopf ist klebend gesetzt; die Auszeichnung ist Teil der Zusage.
     // Bewusst innerhalb des Gitters gesucht: derselbe Name steht auch in der
@@ -148,7 +152,7 @@ test.describe('CAL-006: Darstellung', () => {
     // und Zelle der Link liegt, traf `..` den Link statt der Zelle. Die
     // Klebrigkeit selbst hat sich nie geaendert.
     const kopf = page
-      .getByRole('grid', { name: 'Tagesansicht nach behandelnder Person' })
+      .getByRole('region', { name: 'Tagesansicht nach behandelnder Person' })
       .getByRole('link', { name: 'Wochenplan von Anna Beispiel' });
     await expect(kopf.locator('xpath=..')).toHaveCSS('position', 'sticky');
   });
@@ -159,7 +163,7 @@ test.describe('CAL-006: Darstellung', () => {
     await anmelden(page, KONTEN.office);
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByRole('gridcell', { name: 'Anna Beispiel' })).toBeVisible();
+    await expect(page.getByRole('group', { name: 'Anna Beispiel' })).toBeVisible();
 
     // Das Gitter selbst scrollt waagerecht - die Seite nicht.
     const ueberlauf = await page.evaluate(
@@ -185,7 +189,7 @@ test.describe('CAL-006: Verschieben', () => {
     // Erst scrollen, dann messen - sonst zieht die Bildlaufstrecke den Termin
     // senkrecht mit (siehe `sichtbarerKasten`).
     const kachelKasten = await sichtbarerKasten(kachel);
-    const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
+    const ziel = page.getByRole('group', { name: 'Tim Teamleitung' });
     const zielKasten = await ziel.boundingBox();
     await ziehen(page, kachelKasten, {
       x: zielKasten!.x + zielKasten!.width / 2,
@@ -230,7 +234,7 @@ test.describe('CAL-006: Verschieben', () => {
     await expect(kachel).toBeVisible();
 
     const kachelKasten = await sichtbarerKasten(kachel);
-    const ziel = page.getByRole('gridcell', { name: 'Tim Teamleitung' });
+    const ziel = page.getByRole('group', { name: 'Tim Teamleitung' });
     const zielKasten = await ziel.boundingBox();
     await ziehen(page, kachelKasten, {
       x: zielKasten!.x + zielKasten!.width / 2,
@@ -257,7 +261,7 @@ test.describe('CAL-006: Verschieben', () => {
 
     // Weit nach unten: die Seed-Arbeitszeit endet um 18:00.
     const kachelKasten = await sichtbarerKasten(kachel);
-    const gitter = page.getByRole('grid').first();
+    const gitter = page.getByRole('region', { name: /ansicht/ }).first();
     const gitterKasten = await gitter.boundingBox();
     await ziehen(page, kachelKasten, {
       x: kachelKasten.x + kachelKasten.width / 2,

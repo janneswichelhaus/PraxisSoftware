@@ -1,12 +1,15 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Select } from '@/components/ui/Select';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Symbolknopf } from '@/components/ui/Symbolknopf';
+import { Textlink } from '@/components/ui/Textlink';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -32,8 +35,10 @@ import {
   CalendarGrid,
   type GitterAuswahl,
   type GitterEintrag,
+  type GitterFokus,
   type GitterSpalte,
 } from './CalendarGrid';
+import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
 import { Monatskalender } from './Monatskalender';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -41,9 +46,11 @@ import {
   arbeitszeitBaender,
   bereichFuer,
   blaettern,
+  FEHLZEIT_BEISPIELE,
   fensterMitArbeitszeit,
   gitterlinien,
   kalenderwoche,
+  leseEingetrageneFehlzeit,
   leseParameter,
   minuteZuZeit,
   schreibeParameter,
@@ -101,11 +108,18 @@ function tagesZahl(tag: string): string {
   }).format(new Date(`${tag}T00:00:00Z`));
 }
 
-/** Monat und Jahr, am Telefon kurz: „Mai 27" statt „Mai 2027" (BEF-039). */
-function monatKurz(tag: string): string {
+/**
+ * Der Monat am Telefon, kurz (BEF-039): „Sept." statt „September 2026".
+ *
+ * Ohne zweistelliges Jahr (KAL-27): „Okt. 26" las sich neben den Tagen der
+ * Kopfzeile als 26. Oktober. Das Jahr steht nur dabei, wenn es nicht das
+ * laufende ist, und dann ausgeschrieben.
+ */
+function monatKurz(tag: string, heute: string): string {
+  const laufendesJahr = tag.slice(0, 4) === heute.slice(0, 4);
   return new Intl.DateTimeFormat('de-DE', {
     month: 'short',
-    year: '2-digit',
+    ...(laufendesJahr ? {} : { year: 'numeric' as const }),
     timeZone: 'UTC',
   }).format(new Date(`${tag}T00:00:00Z`));
 }
@@ -139,6 +153,31 @@ function rasterBeschriftung(fein: number | null, halbeStunde: boolean): string {
   if (fein) return `${fein}-Minuten-Raster`;
   if (halbeStunde) return 'Halbstundenraster';
   return 'Stundenraster';
+}
+
+/**
+ * Was ein leerer Ausschnitt sagt - samt dem Filter, der ihn leer macht
+ * (KAL-26). Unter „Nur abgesagte" hieß es bisher „keine Termine geplant", und
+ * ein belegter Tag las sich als frei.
+ */
+function leerTitel(p: KalenderParameter): string {
+  const zeitraum = p.ansicht === 'tag' ? 'an diesem Tag' : 'in dieser Woche';
+  if (p.patient) return `Für diese Patient:in steht ${zeitraum} kein Termin an.`;
+  switch (p.status) {
+    case 'confirmed':
+      return `Keine bestätigten Termine ${zeitraum}.`;
+    case 'done':
+      return `Keine erledigten Termine ${zeitraum}.`;
+    case 'no_show':
+      return `Keine nicht angetroffenen Termine ${zeitraum}.`;
+    case 'cancelled':
+      return `Keine abgesagten Termine ${zeitraum}.`;
+    default:
+      if (p.standort) return `Am gewählten Standort sind ${zeitraum} keine Termine geplant.`;
+      return p.ansicht === 'tag'
+        ? 'Für diesen Tag sind keine Termine geplant.'
+        : 'Für diese Woche sind keine Termine geplant.';
+  }
 }
 
 /** Anzeigename einer behandelnden Person, auch wenn die Liste sie nicht kennt. */
@@ -198,6 +237,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Der gerade angelegte Termin (FIX-016): einmal hervorgehoben, beim
   // naechsten Blaettern faellt der Parameter weg (`schreibeParameter`).
   const neuerTermin = suche.get(NEUER_TERMIN_PARAM);
+  // Die gerade eingetragene Fehlzeit (KAL-22): nur die Art, kein Name.
+  const eingetragen = leseEingetrageneFehlzeit(suche);
   // Der Kalenderstand als Rückweg - aus den gelesenen Parametern, nicht aus der
   // Adresszeile: So reist `neu=` nicht in den nächsten Rückweg (und markiert
   // beim zweiten Anlegen den falschen Termin).
@@ -238,6 +279,30 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const [optionenOffen, setOptionenOffen] = useState(false);
   /** Zähler für „Jetzt" - das Gitter springt bei jeder Erhöhung (BEF-039). */
   const [sprung, setSprung] = useState(0);
+  /**
+   * Fokusführung nach dem Schließen (KAL-21, KAL-01): Monatsblatt und
+   * „Ansicht und Filter" geben den Fokus an ihren Knopf zurück, Rückfrage und
+   * Anlegen-Leiste an Kachel bzw. Spalte, und nach dem Verschieben steht er
+   * auf „Rückgängig". Vorher fiel er auf den Seitenanfang, vor das Raster.
+   */
+  const [rasterFokus, setRasterFokus] = useState<GitterFokus | null>(null);
+  const monatKnopfRef = useRef<HTMLButtonElement>(null);
+  const optionenKnopfRef = useRef<HTMLButtonElement>(null);
+  const optionenRef = useRef<HTMLDivElement>(null);
+  const rueckgaengigRef = useRef<HTMLButtonElement>(null);
+  const rueckgaengigFokussieren = useRef(false);
+  useEffect(() => {
+    if (!rueckgaengigFokussieren.current || !rueckgaengigRef.current) return;
+    rueckgaengigFokussieren.current = false;
+    // Ohne Bildlauf: Die Leiste klebt ohnehin unten im Bild.
+    rueckgaengigRef.current.focus({ preventScroll: true });
+  });
+  useEffect(() => {
+    // Beim Aufklappen steht der Fokus auf dem ersten Element des Feldes.
+    if (optionenOffen) {
+      optionenRef.current?.querySelector<HTMLElement>('button, a, select')?.focus();
+    }
+  }, [optionenOffen]);
   /**
    * Die aktuelle Uhrzeit der Praxis, jede Minute nachgestellt - für die
    * Linie im Raster (BEF-039). Ohne Zeitzone gibt es keine.
@@ -343,9 +408,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     onSuccess: async (_ergebnis, auftrag) => {
       setVorschlag(null);
       setRueckgaengig(auftrag.zurueck ?? null);
+      // Nach dem Verschieben steht der Fokus auf „Rückgängig" (KAL-01).
+      if (auftrag.zurueck) rueckgaengigFokussieren.current = true;
       // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // Nach dem Zurückholen gibt es keine Leiste mehr: Der Fokus geht an die
+      // Kachel, die zurückgewandert ist (KAL-21).
+      if (!auftrag.zurueck) setRasterFokus({ kachel: auftrag.v.terminId });
     },
     onError: (fehler, auftrag) => {
       // Der Server sieht die Zielzeit außerhalb der Arbeitszeit, die geladenen
@@ -355,7 +425,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       // Nur, wenn diese Rückfrage noch offen ist: Wer inzwischen geblättert
       // hat, bekommt keine Frage zu einem Ausschnitt, der nicht mehr dasteht.
       setVorschlag((aktuell) => {
-        if (!auftrag.aus || aktuell !== auftrag.aus) return null;
+        if (!auftrag.aus || aktuell !== auftrag.aus) return aktuell;
         if (istAusserhalbArbeitszeit(fehler)) {
           return { ...auftrag.aus, frage: { ...auftrag.aus.frage, ausserhalb: true } };
         }
@@ -364,7 +434,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         if (istVergangenheit(fehler)) {
           return { ...auftrag.aus, frage: { ...auftrag.aus.frage, vergangenheit: true } };
         }
-        return null;
+        // Jeder andere Fehler - der Platz ist belegt, der Termin fort - steht
+        // in derselben Rückfrage, neben der Kachel (KAL-01). Bis dahin schloss
+        // sie, und die Meldung stand über dem Raster, außer Sicht.
+        return aktuell;
       });
     },
   });
@@ -382,6 +455,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     setSuche(schreibeParameter({ ...p, ...teil }), { replace: false });
   }
 
+  /**
+   * Eine Zoomstufe weiter (KAL-11) - über „+" und „−" oder mit zwei Fingern.
+   *
+   * Nicht über `setze`: Beim Zoomen bleibt der Ausschnitt derselbe, also
+   * bleiben auch Auswahl, offene Rückfrage und Rückgängig stehen - wer feiner
+   * zoomt, um das zweite Feld zu treffen, verlor sonst das erste. Und die
+   * Stufe ersetzt den Verlaufseintrag: Die Zurück-Geste führt aus dem
+   * Kalender heraus und nicht erst durch jede Zoomstufe.
+   */
+  function zoomen(richtung: 1 | -1) {
+    setSuche(schreibeParameter({ ...p, zoom: zoomSchritt(p.zoom, richtung) }), { replace: true });
+  }
+
   if (!zone) {
     return (
       <ErrorState
@@ -396,9 +482,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const wochenplanDaten = wochenplan.data ?? [];
   const ausnahmenDaten = ausnahmen.data ?? [];
 
+  // Die eigene Person, wenn sie im Kalender eine Spalte hat (KAL-03).
+  const eigenePerson =
+    user.staffMemberId && alleTherapeuten.some((t) => t.staff_member_id === user.staffMemberId)
+      ? user.staffMemberId
+      : null;
+
   // In der Wochenansicht steht genau eine Person im Gitter. Ohne ausdrückliche
-  // Wahl ist das die erste der Praxis - eine Darstellungsentscheidung.
-  const wochenPerson = p.person ?? alleTherapeuten[0]?.staff_member_id ?? null;
+  // Wahl ist das die eigene (KAL-03): Wer auf „Kalender" tippt, will den
+  // eigenen Plan sehen und nicht den der ersten Person der Praxis. Wer keine
+  // Spalte hat - etwa das Praxismanagement -, sieht wie bisher die erste.
+  const wochenPerson = p.person ?? eigenePerson ?? alleTherapeuten[0]?.staff_member_id ?? null;
 
   // In der Tagesansicht steht jede behandelnde Person in einer eigenen Spalte;
   // ein Personenfilter grenzt sie zusätzlich ein.
@@ -420,7 +514,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    */
   const zumWochenplan = (staffMemberId: string, name: string) => ({
     to: `/kalender?${schreibeParameter({ ...p, ansicht: 'woche', person: staffMemberId })}`,
-    beschriftung: `Wochenplan von ${name}`,
+    beschriftung:
+      staffMemberId === eigenePerson ? `Wochenplan von ${name} (ich)` : `Wochenplan von ${name}`,
   });
 
   const zumTag = (tag: string) => ({
@@ -435,6 +530,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ? tagesPersonen.map((t) => ({
           id: t.staff_member_id,
           titel: t.display_name,
+          // Die eigene Spalte, nicht nur als Farbton (KAL-03, KAL-B01).
+          hervorgehoben: t.staff_member_id === eigenePerson,
+          zusatz: t.staff_member_id === eigenePerson ? 'ich' : undefined,
           baender: arbeitszeitBaender(
             t.staff_member_id,
             bereich.von,
@@ -447,7 +545,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           id: tag,
           titel: wochentagKurz(tag),
           unterTitel: tagesZahl(tag),
+          // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
           hervorgehoben: tag === heute,
+          zusatz: tag === heute ? 'heute' : undefined,
+          aktuellesDatum: tag === heute,
           baender: wochenPerson
             ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
             : [],
@@ -595,6 +696,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const staffMemberId = p.ansicht === 'tag' ? gewaehlt.spalteId : wochenPerson;
     const datum = p.ansicht === 'tag' ? bereich.von : gewaehlt.spalteId;
     const spanne = gewaehlt.bisMinute > gewaehlt.vonMinute;
+    // Wessen Spalte und welcher Tag - vor der Uhrzeit in der Leiste (KAL-10).
+    const personName = alleTherapeuten.find(
+      (t) => t.staff_member_id === staffMemberId,
+    )?.display_name;
+    const kopf = [personName, `${wochentagKurz(datum)} ${tagesZahl(datum)}`]
+      .filter(Boolean)
+      .join(' · ');
+    // Fehlzeiten gibt es nur ab heute - der Server wiese sie ab (KAL-22).
+    const vergangen = liegtInVergangenheit(datum, heute);
     const beginn = minuteZuZeit(gewaehlt.vonMinute);
     const ende = spanne ? minuteZuZeit(gewaehlt.bisMinute) : undefined;
 
@@ -633,9 +743,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ...person,
     });
 
-    // Die Serie übernimmt Tag und Beginn, nicht die Länge: Die steht beim
-    // Behandlungstermin im Terminfenster.
-    const serienParameter = schreibeTerminVorbelegung({ datum, beginn });
+    // Die Serie übernimmt Tag, Beginn und die Person der Spalte (KAL-05) -
+    // nicht die Länge: Die steht beim Behandlungstermin im Terminfenster.
+    const serienParameter = schreibeTerminVorbelegung({ datum, beginn, ...person });
 
     const eintraege: GitterAuswahl['eintraege'] = [
       {
@@ -665,21 +775,41 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {
         schluessel: 'fehlzeit',
         beschriftung: BEGRIFFE.fehlzeit,
-        hinweis: 'Meeting, Puffer, Pause',
+        hinweis: vergangen ? 'Nur ab heute möglich' : FEHLZEIT_BEISPIELE,
+        deaktiviert: vergangen,
         onWaehlen: () => hin(`/termine/ereignis${ereignisParameter}`),
       },
       {
         schluessel: 'dauerfehlzeit',
         beschriftung: BEGRIFFE.dauerfehlzeit,
-        hinweis: 'Über mehrere Wochen',
+        hinweis: vergangen ? 'Nur ab heute möglich' : 'Über mehrere Wochen',
+        deaktiviert: vergangen,
         onWaehlen: () => hin(`/termine/dauerfehlzeit${ereignisParameter}`),
       },
     ];
 
-    return { ...gewaehlt, eintraege, onSchliessen: () => setAuswahl(null) };
+    return {
+      ...gewaehlt,
+      kopf,
+      eintraege,
+      // Escape und „Abbrechen": Der Fokus kehrt in die Spalte zurück (KAL-21).
+      onSchliessen: () => {
+        setAuswahl(null);
+        setRasterFokus({ spalte: gewaehlt.spalteId });
+      },
+    };
   }
 
   const laedt = termine.isPending || therapeuten.isPending;
+  // Ein Raster gibt es nur mit Spalten - und in der Woche nur mit einer
+  // Person. Scheitert die Personenliste, stünde sonst eine leere Woche da, die
+  // wie eine freie aussieht (KAL-07).
+  const rasterDa =
+    termine.isSuccess &&
+    !laedt &&
+    spaltenModell.length > 0 &&
+    (p.ansicht === 'tag' || wochenPerson !== null);
+  const laedtNach = termine.isPlaceholderData || ausnahmen.isPlaceholderData;
 
   // Die Kalenderwoche des gezeigten Ausschnitts und in der Tagesansicht der
   // Tag selbst (BEF-039): die Frage „wo bin ich?" in einer Zeile.
@@ -700,17 +830,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    * Meldung, damit die Einstellungen erreichbar bleiben.
    */
   const optionenKnopf = (
-    <button
-      type="button"
+    <Symbolknopf
+      ref={optionenKnopfRef}
+      beschriftung={filterAktiv ? 'Ansicht und Filter, Filter aktiv' : 'Ansicht und Filter'}
+      // Aufgeklappt ist der Knopf ausgewählt: im System die gefüllte
+      // Hauptfarbe. 44 px statt 40 (KAL-08, UIK-01).
+      variant={optionenOffen ? 'primary' : 'quiet'}
       aria-expanded={optionenOffen}
       aria-controls="kalender-optionen"
-      aria-label={filterAktiv ? 'Ansicht und Filter, Filter aktiv' : 'Ansicht und Filter'}
       title="Ansicht und Filter"
+      className="relative"
       onClick={() => setOptionenOffen((offen) => !offen)}
-      className={[
-        'rounded-button relative inline-flex size-10 items-center justify-center',
-        optionenOffen ? 'bg-accent text-surface' : 'text-accent hover:bg-surface-sunken',
-      ].join(' ')}
     >
       <svg
         aria-hidden="true"
@@ -727,12 +857,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         <circle cx="18" cy="18" r="2" />
       </svg>
       {filterAktiv ? (
-        <span
-          aria-hidden="true"
-          className="bg-warnung rounded-pill absolute top-1 right-1 size-2.5"
-        />
+        <span className="bg-warnung rounded-pill absolute top-1 right-1 size-2.5" />
       ) : null}
-    </button>
+    </Symbolknopf>
   );
 
   // Wessen Tour: die gezeigte Person, sonst wählt die Tourenseite selbst.
@@ -750,13 +877,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       <div className="flex items-center justify-between gap-1 sm:gap-3">
         <button
+          ref={monatKnopfRef}
           type="button"
           aria-expanded={monatOffen}
           aria-controls="kalender-monat"
           onClick={() => setMonatOffen((offen) => !offen)}
           className="text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 shrink-0 items-center gap-1 px-1 text-sm font-semibold sm:px-2"
         >
-          <span className="sm:hidden">{monatKurz(p.datum)}</span>
+          <span className="sm:hidden">{monatKurz(p.datum, heute)}</span>
           <span className="hidden sm:inline">{monatLang(p.datum)}</span>
           <span aria-hidden="true" className="text-ink-muted text-xs">
             {monatOffen ? '▴' : '▾'}
@@ -765,14 +893,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </button>
 
         <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5">
-          <button
-            type="button"
-            aria-label="Vorheriger Zeitraum"
+          {/* 44 px auf jeder Breite (KAL-08, UIK-01) - am Telefon waren es 32. */}
+          <Symbolknopf
+            beschriftung="Vorheriger Zeitraum"
+            className="text-xl"
             onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, -1) })}
-            className="text-accent hover:bg-surface-sunken rounded-button inline-flex h-11 w-8 shrink-0 items-center justify-center text-xl sm:w-11"
           >
             ‹
-          </button>
+          </Symbolknopf>
           <div className="flex min-w-0 flex-col items-center text-center">
             {/* Der Name ist zugleich die Wahl der Person - dort, wo man ihn
                 liest. Eine Auswahlliste des Browsers: am Telefon die
@@ -781,7 +909,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               aria-label="Behandelnde Person"
               value={(p.ansicht === 'woche' ? wochenPerson : p.person) ?? ''}
               onChange={(e) => setze({ person: e.target.value || null })}
-              className="text-ink hover:bg-surface-sunken rounded-button text-liste max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center font-semibold"
+              // 44 px hoch und 16 px Schrift (KAL-08): Darunter zoomt iOS beim
+              // Antippen hinein, und mit Handschuhen traf man 22 px schlecht.
+              className="text-ink hover:bg-surface-sunken rounded-button min-h-11 max-w-full min-w-0 cursor-pointer truncate bg-transparent px-1 text-center text-base font-semibold"
             >
               {/* In der Woche steht immer genau eine Person im Gitter. */}
               {p.ansicht === 'tag' ? <option value="">Alle Personen</option> : null}
@@ -795,28 +925,29 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               KW {woche} · {zeitraumKurz}
             </span>
           </div>
-          <button
-            type="button"
-            aria-label="Nächster Zeitraum"
+          <Symbolknopf
+            beschriftung="Nächster Zeitraum"
+            className="text-xl"
             onClick={() => setze({ datum: blaettern(p.ansicht, p.datum, 1) })}
-            className="text-accent hover:bg-surface-sunken rounded-button inline-flex h-11 w-8 shrink-0 items-center justify-center text-xl sm:w-11"
           >
             ›
-          </button>
+          </Symbolknopf>
         </div>
 
         {/* Zum aktuellen Zeitpunkt: heutiger Tag, und das Raster rollt zur
             Linie der aktuellen Uhrzeit (BEF-039). */}
-        <button
+        <Button
           type="button"
-          className="border-line-strong text-accent hover:bg-accent-soft rounded-button inline-flex h-11 shrink-0 items-center border px-3 text-sm font-bold"
+          variant="secondary"
+          groesse="kompakt"
+          className="shrink-0"
           onClick={() => {
             if (p.datum !== heute) setze({ datum: heute });
             setSprung((n) => n + 1);
           }}
         >
           Jetzt
-        </button>
+        </Button>
       </div>
 
       {monatOffen ? (
@@ -828,17 +959,29 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           onWaehlen={(tag) => {
             setMonatOffen(false);
             setze({ datum: tag });
+            // Der Fokus kehrt an den Monatsknopf zurück (KAL-21).
+            monatKnopfRef.current?.focus();
           }}
-          onSchliessen={() => setMonatOffen(false)}
+          onSchliessen={() => {
+            setMonatOffen(false);
+            monatKnopfRef.current?.focus();
+          }}
         />
       ) : null}
 
       {optionenOffen ? (
         <div
+          ref={optionenRef}
           id="kalender-optionen"
           role="group"
           aria-label="Ansicht und Filter"
           className="border-line-strong bg-surface rounded-card mt-3 flex flex-col gap-4 border p-4"
+          // Escape schließt und gibt den Fokus an den Eckknopf zurück (KAL-21).
+          onKeyDown={(event) => {
+            if (event.key !== 'Escape') return;
+            setOptionenOffen(false);
+            optionenKnopfRef.current?.focus();
+          }}
         >
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex gap-1" role="group" aria-label="Ansicht">
@@ -876,24 +1019,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               <Button
                 type="button"
                 variant="secondary"
-                aria-label="Gitter verkleinern"
+                aria-label="Raster gröber"
                 disabled={p.zoom === ZOOMSTUFEN[0]}
-                onClick={() => setze({ zoom: zoomSchritt(p.zoom, -1) })}
+                onClick={() => zoomen(-1)}
               >
                 −
               </Button>
               <span
                 aria-live="polite"
-                className="text-ink-muted min-w-[8.5rem] text-center text-xs tabular-nums"
+                className="text-ink-muted min-w-34 text-center text-xs tabular-nums"
               >
                 {rasterBeschriftung(linien.fein, linien.halbeStunde)}
               </span>
               <Button
                 type="button"
                 variant="secondary"
-                aria-label="Gitter vergrößern"
+                aria-label="Raster feiner"
                 disabled={p.zoom === ZOOMSTUFEN[ZOOMSTUFEN.length - 1]}
-                onClick={() => setze({ zoom: zoomSchritt(p.zoom, 1) })}
+                onClick={() => zoomen(1)}
               >
                 +
               </Button>
@@ -901,18 +1044,28 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           </div>
 
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Select
-              label="Standort"
-              value={p.standort ?? ''}
-              onChange={(e) => setze({ standort: e.target.value || null })}
-            >
-              <option value="">Alle</option>
-              {(standorte.data ?? []).map((l) => (
-                <option key={l.id} value={l.id}>
-                  {l.name}
-                </option>
-              ))}
-            </Select>
+            {/* Scheitert die Liste, sagt das der Kasten - eine Auswahl nur
+                mit „Alle" sähe aus wie eine Praxis ohne Standorte (KAL-07). */}
+            {standorte.isError ? (
+              <ErrorState
+                title="Die Standorte konnten nicht geladen werden."
+                description="Bitte die Verbindung prüfen und erneut versuchen."
+                onErneut={() => standorte.refetch()}
+              />
+            ) : (
+              <Select
+                label="Standort"
+                value={p.standort ?? ''}
+                onChange={(e) => setze({ standort: e.target.value || null })}
+              >
+                <option value="">Alle</option>
+                {(standorte.data ?? []).map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}
+                  </option>
+                ))}
+              </Select>
+            )}
 
             <Select
               label="Status"
@@ -940,7 +1093,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   denkbaren Irrtum. */}
               {p.ansicht === 'tag' && p.person ? (
                 <ButtonLink
-                  to={`/kalender/tag-umplanen?person=${p.person}&datum=${p.datum}`}
+                  // Mit dem Kalenderstand als Rückweg (KAL-19).
+                  to={mitRueckweg(
+                    `/kalender/tag-umplanen?person=${p.person}&datum=${p.datum}`,
+                    kalenderStand,
+                  )}
                   variant="secondary"
                 >
                   Tag umplanen
@@ -992,6 +1149,59 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               </ButtonLink>
             </div>
           ) : null}
+
+          {/* Die Bedienhilfe stand als Dauertext unter 1 250 px Raster
+              (KAL-26). Hier ist sie eingeklappt dort, wo man nach Ansicht
+              und Bedienung sucht - und nur, wenn es ein Raster gibt, das sie
+              beschreibt. Mit der Erklärung der Zeichen in den Kacheln. */}
+          {rasterDa ? (
+            <Disclosure summary="So bedienen Sie den Kalender">
+              <div className="text-ink-muted flex max-w-prose flex-col gap-3 text-sm">
+                <p>
+                  Auf freier Zeit wählt ein Tipp einen Zeitpunkt, ein zweiter Tipp in derselben
+                  Spalte die Spanne bis dorthin. Ein Tipp in die Auswahl hebt sie wieder auf.
+                </p>
+                <p>
+                  Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
+                  {p.ansicht === 'tag'
+                    ? ' oder eine andere behandelnde Person'
+                    : ' oder einen anderen Tag'}{' '}
+                  ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Am
+                  Rand des Fensters scrollt die Seite mit, und wer den Zeiger seitlich am Raster
+                  hält, blättert in den nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender
+                  mit alter und neuer Zeit nach – verschoben wird erst auf die Bestätigung, und
+                  danach lässt es sich rückgängig machen.
+                </p>
+                <p>
+                  Dasselbe geht jederzeit über „Bearbeiten“ in der Detailansicht – das Ziehen ist
+                  eine Abkürzung, kein eigener Weg.
+                </p>
+                <p>
+                  Mit zwei Fingern oder über „+“ und „−“ wird das Raster feiner oder gröber;
+                  gezeichnet wird dabei genau das Raster, auf dem ein Termin einrastet.
+                </p>
+                <ul className="flex flex-col gap-1">
+                  <li>
+                    <span aria-hidden="true" className="text-ink">
+                      ▪{' '}
+                    </span>
+                    vor der Bezeichnung: eine {BEGRIFFE.fehlzeit}, ein Eintrag ohne Patient:in
+                  </li>
+                  <li>
+                    <span aria-hidden="true" className="text-ink inline-flex align-[-0.1em]">
+                      <SpannenBild />
+                    </span>{' '}
+                    neben der Zeit: Die Länge weicht ab, weder 45 noch 60 Minuten.
+                  </li>
+                  <li>Grau hinterlegt: die Arbeitszeit der Person.</li>
+                </ul>
+                <p>
+                  Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der
+                  Zeitzone der Praxis.
+                </p>
+              </div>
+            </Disclosure>
+          ) : null}
         </div>
       ) : null}
 
@@ -1041,26 +1251,36 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {/* Zurück aus dem Formular (FIX-016): Der neue Termin ist im Gitter
           hervorgehoben; die Zeile sagt es auch dem, der nicht hinsieht. */}
       {neuerTermin && termine.isSuccess ? (
-        <Statusmeldung className="mt-4">
+        <Statusmeldung ton="erfolg" className="mt-4">
           Termin angelegt.{' '}
           {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
-            <Link
-              to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}
-              className="text-accent hover:underline"
-            >
+            // Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12).
+            <Textlink to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}>
               Termin öffnen
-            </Link>
+            </Textlink>
           ) : (
             'Er liegt außerhalb des gezeigten Ausschnitts.'
           )}
         </Statusmeldung>
       ) : null}
 
-      {verschieben.isPending && !vorschlag ? (
+      {/* Zurück aus dem Fehlzeit-Formular (KAL-22): Die Fehlzeit kann an
+          einem anderen Tag liegen - die Zeile sagt, dass es geklappt hat. */}
+      {eingetragen ? (
+        <Statusmeldung ton="erfolg" className="mt-4">
+          {eingetragen === 'dauerfehlzeit' ? BEGRIFFE.dauerfehlzeit : BEGRIFFE.fehlzeit}{' '}
+          eingetragen.
+        </Statusmeldung>
+      ) : null}
+
+      {/* Nur noch der Rest: Läuft oder scheitert ein Verschieben, während
+          weder Rückfrage noch Rückgängig-Leiste steht - etwa, weil
+          inzwischen geblättert wurde. Sonst steht beides dort (KAL-01). */}
+      {verschieben.isPending && !vorschlag && !rueckgaengig ? (
         <Statusmeldung className="mt-4">Der Termin wird verschoben …</Statusmeldung>
       ) : null}
 
-      {verschieben.isError && !vorschlag ? (
+      {verschieben.isError && !vorschlag && !rueckgaengig ? (
         <div className="mt-4">
           <ErrorState
             title="Der Termin konnte nicht verschoben werden."
@@ -1070,42 +1290,43 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       {laedt ? <LoadingState label="Termine werden geladen …" /> : null}
-      {termine.isError ? <ErrorState title="Die Termine konnten nicht geladen werden." /> : null}
-
-      {/* Rückgängig-Leiste (UX-010). Ein Termin wandert mit einer Geste, und
-          eine Geste ist schnell versehentlich gemacht. Das Rückgängig ist
-          selbst ein normaler Schreibvorgang: derselbe Weg, dieselben
-          serverseitigen Prüfungen, ein eigener Auditeintrag. Ist der alte
-          Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
-          wo er ist. */}
-      {/* Solange eine Rueckfrage offen ist, tritt die Leiste zurueck: zwei
-          Kaesten zu zwei verschiedenen Verschiebungen waeren eine Frage zu
-          viel. Nach dem Abbrechen steht sie wieder da (CAL-023). */}
-      {rueckgaengig && !verschieben.isPending && !vorschlag ? (
-        <div
-          role="status"
-          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
-        >
-          <p className="text-ink text-sm">
-            Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>
-          </p>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() =>
-              // `bestaetigt` steht auf true: der alte Platz war bereits in
-              // Gebrauch, eine Arbeitszeit-Rückfrage dafür wäre eine Frage
-              // nach etwas, das die Praxis schon so hatte.
-              // Dasselbe fuer die Vergangenheit: Der alte Platz war der alte Platz.
-              verschieben.mutate({ v: rueckgaengig, bestaetigt: true, vergangenheit: true })
-            }
-          >
-            Rückgängig
-          </Button>
+      {/* Ladefehler mit einem Weg heraus (KAL-07, WRT-01), mit Abstand zur
+          Bedienzeile (ZST-21): Ein Funkloch darf nicht aussehen wie eine
+          leere Praxis oder ein freier Tag. */}
+      {therapeuten.isError ? (
+        <div className="mt-3">
+          <ErrorState
+            title="Die behandelnden Personen konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => therapeuten.refetch()}
+          />
+        </div>
+      ) : null}
+      {termine.isError ? (
+        <div className="mt-3">
+          <ErrorState
+            title="Die Termine konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => termine.refetch()}
+          />
         </div>
       ) : null}
 
-      {termine.isSuccess && !laedt && spaltenModell.length > 0 ? (
+      {/* Der Leerzustand steht über dem Raster und nennt den Filter
+          (KAL-26) - unter 1 250 px Raster sah ihn niemand. Nicht während
+          ein neuer Ausschnitt lädt: Dann stünde der alte Zustand da. */}
+      {rasterDa && !laedtNach && gitterEintraege.length === 0 ? (
+        <EmptyState title={leerTitel(p)} />
+      ) : null}
+
+      {/* Beim Blättern bleibt der alte Stand stehen, bis der neue da ist
+          (FIX-018). Das sagt diese Zeile - statt das Raster blass zu zeichnen
+          (KAL-18): Deckkraft ist im System kein Zustand. */}
+      {rasterDa && laedtNach ? (
+        <Statusmeldung className="mt-3">Der Zeitraum wird geladen …</Statusmeldung>
+      ) : null}
+
+      {rasterDa ? (
         <CalendarGrid
           // Der Rückweg ist der Kalenderstand selbst - Ansicht, Datum,
           // Zoomstufe und alle Filter (UX-012). Wer von einer Kachel in den
@@ -1141,18 +1362,37 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                       zurueck: vorschlag.zurueck,
                       aus: vorschlag,
                     }),
-                  onAbbrechen: () => setVorschlag(null),
+                  // Scheitert das Verschieben aus einem anderen Grund als
+                  // Arbeitszeit oder Vergangenheit, steht der Fehler in der
+                  // Rückfrage selbst (KAL-01).
+                  fehler:
+                    verschieben.isError &&
+                    !istAusserhalbArbeitszeit(verschieben.error) &&
+                    !istVergangenheit(verschieben.error)
+                      ? verschieben.error.message
+                      : undefined,
+                  onAbbrechen: () => {
+                    // Ein Fehler des abgebrochenen Versuchs ist mit ihm erledigt.
+                    if (verschieben.isError) verschieben.reset();
+                    setVorschlag(null);
+                    // Der Fokus kehrt an die Kachel zurück, um die es ging (KAL-21).
+                    setRasterFokus({ kachel: vorschlag.v.terminId });
+                  },
                 }
               : null
           }
           onVerschieben={ablegen}
           kontext={bereich.von}
-          // Waehrend des Blaetterns stehen noch die alten Termine da: gedimmt,
-          // damit niemand auf einem Zwischenstand handelt.
-          laedtNach={termine.isPlaceholderData || ausnahmen.isPlaceholderData}
+          // Waehrend des Blaetterns stehen noch die alten Termine da; das
+          // Gitter meldet es mit aria-busy, die Zeile darueber sagt es.
+          laedtNach={laedtNach}
           onBlaettern={(richtung) => setze({ datum: blaettern(p.ansicht, p.datum, richtung) })}
-          // Zwei Finger wirken wie „+" und „−" (BEF-038).
-          onZoom={(richtung) => setze({ zoom: zoomSchritt(p.zoom, richtung) })}
+          // Zwei Finger wirken wie „+" und „−" (BEF-038) - ohne die Auswahl
+          // zu verwerfen (KAL-11).
+          onZoom={zoomen}
+          fokus={rasterFokus}
+          // In der Woche beginnt das Raster beim heutigen Tag (RSP-03).
+          startSpalte={p.ansicht === 'woche' && tage.includes(heute) ? heute : null}
           // Ein zweiter Tipp hebt auf oder zieht die Spanne auf (BEF-035,
           // BEF-036); was er bewirkt, entscheidet `naechsteAuswahl`.
           ecke={optionenKnopf}
@@ -1178,50 +1418,58 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
 
+      {/* Rückgängig-Leiste (UX-010). Ein Termin wandert mit einer Geste, und
+          eine Geste ist schnell versehentlich gemacht. Das Rückgängig ist
+          selbst ein normaler Schreibvorgang: derselbe Weg, dieselben
+          serverseitigen Prüfungen, ein eigener Auditeintrag. Ist der alte
+          Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
+          wo er ist.
+
+          Seit KAL-01 klebt sie unten, an der Stelle der Anlegen-Leiste, und
+          trägt den Fokus: Über dem Raster stand sie nach einem
+          Nachmittagstermin rund 1 000 px außer Sicht. Solange eine
+          Rückfrage oder die Anlegen-Leiste offen ist, tritt sie zurück: zwei
+          Kästen übereinander wären eine Frage zu viel (CAL-023). */}
+      {rueckgaengig && !vorschlag && !auswahl ? (
+        <div
+          role="status"
+          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:bottom-4"
+        >
+          <p className="text-ink text-sm">
+            Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>
+          </p>
+          <Button
+            ref={rueckgaengigRef}
+            type="button"
+            variant="secondary"
+            disabled={verschieben.isPending}
+            onClick={() =>
+              // `bestaetigt` steht auf true: der alte Platz war bereits in
+              // Gebrauch, eine Arbeitszeit-Rückfrage dafür wäre eine Frage
+              // nach etwas, das die Praxis schon so hatte.
+              // Dasselbe fuer die Vergangenheit: Der alte Platz war der alte Platz.
+              verschieben.mutate({ v: rueckgaengig, bestaetigt: true, vergangenheit: true })
+            }
+          >
+            {verschieben.isPending ? 'Wird zurückgeholt …' : 'Rückgängig'}
+          </Button>
+          {verschieben.isError ? (
+            <Statusmeldung ton="fehler" className="basis-full">
+              Der Termin konnte nicht zurückgeholt werden. {verschieben.error.message}
+            </Statusmeldung>
+          ) : null}
+        </div>
+      ) : null}
+
       {/* Ohne Raster keine Ecke: Der Knopf steht dann hier, damit Ansicht
           und Filter erreichbar bleiben (BEF-039). */}
-      {!laedt && !(termine.isSuccess && spaltenModell.length > 0) ? (
-        <div className="mt-3">{optionenKnopf}</div>
+      {!laedt && !rasterDa ? <div className="mt-3">{optionenKnopf}</div> : null}
+
+      {/* Nur aus geladenen Daten (KAL-07, ZST-09): Scheitert die Liste, sagt
+          das der Fehlerkasten oben und nicht „keine Person hinterlegt". */}
+      {therapeuten.isSuccess && alleTherapeuten.length === 0 ? (
+        <EmptyState title="Für diese Praxis ist keine behandelnde Person hinterlegt." />
       ) : null}
-
-      {termine.isSuccess && !laedt && spaltenModell.length === 0 ? (
-        <p className="text-ink-muted mt-4 text-sm">
-          Für diese Praxis ist keine behandelnde Person hinterlegt.
-        </p>
-      ) : null}
-
-      {termine.isSuccess && !laedt && spaltenModell.length > 0 && gitterEintraege.length === 0 ? (
-        <p className="text-ink-muted mt-3 text-sm">
-          {p.patient
-            ? p.ansicht === 'tag'
-              ? 'Für diese Patient:in steht an diesem Tag kein Termin an.'
-              : 'Für diese Patient:in steht in dieser Woche kein Termin an.'
-            : p.ansicht === 'tag'
-              ? 'Für diesen Tag sind keine Termine geplant.'
-              : 'Für diese Woche sind keine Termine geplant.'}
-        </p>
-      ) : null}
-
-      <p className="text-ink-muted mt-6 max-w-prose text-xs leading-relaxed">
-        Termine lassen sich mit der Maus oder dem Finger auf eine andere Zeit
-        {p.ansicht === 'tag'
-          ? ' oder eine andere behandelnde Person'
-          : ' oder einen anderen Tag'}{' '}
-        ziehen; der Beginn rastet auf dem Praxisraster ein, die Dauer bleibt gleich. Am Rand des
-        Fensters scrollt die Seite mit, und wer den Zeiger seitlich am Gitter hält, blättert in den
-        nächsten Ausschnitt. Nach dem Loslassen fragt der Kalender mit alter und neuer Zeit nach —
-        verschoben wird erst auf die Bestätigung, und danach lässt es sich rückgängig machen.
-        Dasselbe geht jederzeit über „Bearbeiten" in der Detailansicht — das Ziehen ist eine
-        Abkürzung, kein eigener Weg. Mit zwei Fingern oder über „+" und „−" unter „Ansicht und
-        Filter" in der Ecke des Rasters wird das Gitter feiner oder gröber; gezeichnet wird dabei
-        genau das Raster, auf dem ein Termin einrastet. Auf freier Zeit wählt ein Tipp einen
-        Zeitpunkt, ein zweiter Tipp in derselben Spalte die Spanne bis dorthin.
-      </p>
-
-      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
-        Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der Zeitzone
-        der Praxis ({zone}); der hinterlegte Hintergrund einer Spalte ist die Arbeitszeit.
-      </p>
     </>
   );
 }

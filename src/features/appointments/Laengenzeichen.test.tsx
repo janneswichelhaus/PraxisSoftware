@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { render, screen } from '@testing-library/react';
-import { Laengenzeichen } from './Laengenzeichen';
+import { Laengenzeichen, SpannenBild } from './Laengenzeichen';
 import { abweichendeLaengeMinuten, abweichendeLaengeText, istRegellaenge } from './api';
 
 /**
@@ -64,5 +64,17 @@ describe('Laengenzeichen', () => {
   it('erscheint an einem Ereignis nie', () => {
     render(<Laengenzeichen termin={{ kind: 'internal', ...um('07:00', '07:30') }} />);
     expect(screen.queryByTestId('laengenzeichen')).not.toBeInTheDocument();
+  });
+
+  // KAL-26: Die Zeichenerklärung des Kalenders zeigt genau das Bild der Kachel.
+  it('stellt dasselbe Bild einzeln fuer die Zeichenerklaerung bereit', () => {
+    const { container: kachel } = render(
+      <Laengenzeichen knapp termin={{ kind: 'therapy', ...um('07:00', '07:30') }} />,
+    );
+    const { container: legende } = render(<SpannenBild />);
+
+    const bild = legende.querySelector('svg');
+    expect(bild).toHaveAttribute('aria-hidden', 'true');
+    expect(bild?.innerHTML).toBe(kachel.querySelector('svg')?.innerHTML);
   });
 });

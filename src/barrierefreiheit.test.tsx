@@ -146,6 +146,7 @@ const { AppointmentSlipPage } = await import('@/features/appointments/Appointmen
 const { MitteilungVermerken } = await import('@/features/appointments/MitteilungVermerken');
 const { Monatskalender } = await import('@/features/appointments/Monatskalender');
 const { AnlegenMenue } = await import('@/features/appointments/AnlegenMenue');
+const { CalendarGrid } = await import('@/features/appointments/CalendarGrid');
 
 /** Ein Hausbesuch mit allem, was die Tageskarte zeigen kann. */
 const tagesEintrag = {
@@ -405,6 +406,140 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
         />
       </main>,
     );
+    await pruefeBarrierefreiheit(container);
+  });
+
+  /**
+   * Das Kalenderraster (KAL-16, UIK-17): bis UXR-004 `role=grid` ohne Zeilen,
+   * die Spalten `gridcell` ohne `row` - zwei kritische axe-Verstöße in jeder
+   * Kalenderaufnahme. Geprüft mit allem, was im Raster steht: Kopf mit
+   * Hervorhebung, Behandlungstermin, Fehlzeit, abgesagtem Termin, offener
+   * Rückfrage mit Fehler und der Anlegen-Leiste darunter.
+   */
+  it('haelt das Kalenderraster sauber - Bereich mit Spaltengruppen (KAL-16, UIK-17)', async () => {
+    const termin = (
+      teil: Partial<AppointmentsApi.CalendarEntry>,
+    ): AppointmentsApi.CalendarEntry => ({
+      id: 'ter-1',
+      patient_id: 'pat-1',
+      staff_member_id: 'st-1',
+      location_id: 'ort-1',
+      appointment_type: 'home_visit',
+      kind: 'therapy',
+      title: null,
+      status: 'confirmed',
+      starts_at: '2027-05-12T07:00:00.000Z',
+      ends_at: '2027-05-12T08:00:00.000Z',
+      patient_given_name: 'Max',
+      patient_family_name: 'Mustermann',
+      staff_given_name: 'Anna',
+      staff_family_name: 'Beispiel',
+      location_name: null,
+      ...teil,
+    });
+    const { container } = renderWithProviders(
+      <main>
+        <h1>Kalender</h1>
+        <CalendarGrid
+          spaltenModell={[
+            {
+              id: 'st-1',
+              titel: 'Anna Beispiel',
+              hervorgehoben: true,
+              zusatz: 'ich',
+              baender: [{ vonMinute: 480, bisMinute: 960 }],
+              ziel: {
+                to: '/kalender?ansicht=woche',
+                beschriftung: 'Wochenplan von Anna Beispiel (ich)',
+              },
+            },
+            { id: 'st-2', titel: 'Tim Teamleitung', baender: [] },
+          ]}
+          eintraege={[
+            {
+              eintrag: termin({}),
+              spalteId: 'st-1',
+              beginnMinute: 540,
+              endeMinute: 600,
+              farbe: 'oklch(48% 0.075 205)',
+              ziehbar: true,
+            },
+            {
+              eintrag: termin({
+                id: 'ter-2',
+                kind: 'internal',
+                title: 'Teambesprechung',
+                patient_id: null,
+                patient_given_name: null,
+                patient_family_name: null,
+                appointment_type: 'practice',
+                location_name: 'Hauptstandort',
+              }),
+              spalteId: 'st-2',
+              beginnMinute: 660,
+              endeMinute: 690,
+              farbe: 'oklch(50% 0.09 145)',
+              ziehbar: true,
+            },
+            {
+              eintrag: termin({ id: 'ter-3', status: 'cancelled' }),
+              spalteId: 'st-2',
+              beginnMinute: 780,
+              endeMinute: 840,
+              farbe: 'oklch(50% 0.09 145)',
+              ziehbar: false,
+            },
+          ]}
+          // Ein kurzes Fenster auf kleiner Zoomstufe: axe prüft jede Rasterlinie,
+          // und die Prüfung soll im Zeitrahmen der übrigen bleiben.
+          fenster={{ vonMinute: 480, bisMinute: 960 }}
+          raster={5}
+          stundenHoehe={40}
+          ziehbarErlaubt
+          onVerschieben={() => {}}
+          onAuswahl={() => {}}
+          vorschlag={{
+            terminId: 'ter-1',
+            spalteId: 'st-1',
+            startMinute: 600,
+            endeMinute: 660,
+            frage: {
+              alteZeit: 'Mi 12.05., 09:00–10:00',
+              neueZeit: 'Mi 12.05., 10:00–11:00',
+              personWechsel: null,
+              ausserhalb: false,
+              vergangenheit: false,
+            },
+            laeuft: false,
+            fehler: 'In diesem Zeitraum hat die behandelnde Person bereits einen Termin.',
+            onBestaetigen: () => {},
+            onAbbrechen: () => {},
+          }}
+          auswahl={{
+            spalteId: 'st-2',
+            vonMinute: 900,
+            bisMinute: 900,
+            kopf: 'Tim Teamleitung · Mi 12.05.',
+            onSchliessen: () => {},
+            eintraege: [
+              { schluessel: 'termin', beschriftung: 'Neuer Termin', onWaehlen: () => {} },
+            ],
+          }}
+          kontext="2027-05-12"
+          ecke={
+            <button type="button" aria-label="Ansicht und Filter">
+              ≡
+            </button>
+          }
+          beschriftung="Tagesansicht nach behandelnder Person"
+        />
+      </main>,
+    );
+
+    expect(
+      screen.getByRole('region', { name: 'Tagesansicht nach behandelnder Person' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Anna Beispiel, ich' })).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });
 

@@ -35,7 +35,7 @@ test.describe('CAL-019: Anlegen-Menü im Kalender', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
 
-    const spalte = page.getByRole('gridcell', { name: 'Anna Beispiel' });
+    const spalte = page.getByRole('group', { name: 'Anna Beispiel' });
     await expect(spalte).toBeVisible();
     await spalte.click({ position: { x: 40, y: 120 } });
 

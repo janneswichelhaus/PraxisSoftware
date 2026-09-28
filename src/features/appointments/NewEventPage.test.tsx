@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as StaffApi from '@/features/staff/api';
@@ -208,7 +208,10 @@ describe('NewEventPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
-    expect(await screen.findByText('Bezeichnung ist erforderlich.')).toBeInTheDocument();
+    // Am Feld - und dazu in der Zusammenfassung darüber (KAL-17).
+    expect(
+      await screen.findByText('Bezeichnung ist erforderlich.', { selector: 'p' }),
+    ).toBeInTheDocument();
     expect(createAppointmentEvent).not.toHaveBeenCalled();
   });
 
@@ -223,7 +226,9 @@ describe('NewEventPage', () => {
     await user.type(screen.getByLabelText('Ende *'), '09:00');
     await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
 
-    expect(await screen.findByText('Das Ende muss nach dem Beginn liegen.')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Das Ende muss nach dem Beginn liegen.', { selector: 'p' }),
+    ).toBeInTheDocument();
     expect(createAppointmentEvent).not.toHaveBeenCalled();
   });
 
@@ -264,5 +269,127 @@ describe('NewEventPage', () => {
 
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     expect(screen.queryByLabelText('Bezeichnung *')).not.toBeInTheDocument();
+    // Die Rollen mit ihren Namen, nicht „die Rollen der Terminverwaltung" (WRT-12).
+    expect(
+      screen.getByText(/Praxisinhaber, Therapeut:in, Teamleitung und Praxismanagement/),
+    ).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-Review 2026-09 (UXR-004)
+  // ---------------------------------------------------------------------------
+
+  it('fasst fehlende Angaben ueber dem Formular zusammen und fuehrt den Fokus dorthin (KAL-17)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
+
+    const zusammenfassung = await screen.findByText(/^Bitte prüfen Sie diese Angabe/);
+    const kasten = zusammenfassung.closest<HTMLElement>('[role="alert"]')!;
+    await waitFor(() => expect(kasten).toHaveFocus());
+    // Ein Weg zum Feld: der Eintrag springt auf die Bezeichnung.
+    const eintrag = within(kasten).getByRole('link', { name: 'Bezeichnung ist erforderlich.' });
+    await user.click(eintrag);
+    expect(screen.getByLabelText('Bezeichnung *')).toHaveFocus();
+  });
+
+  it('meldet fehlende Beteiligte mit Rolle und an der Gruppe (KAL-17)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    // Olivia ist als eigene Person vorbelegt - abwählen.
+    await user.click(screen.getByLabelText('Olivia Office'));
+    await user.type(screen.getByLabelText('Bezeichnung *'), 'Teambesprechung');
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
+
+    const meldung = await screen.findByText('Mindestens eine beteiligte Person ist erforderlich.', {
+      selector: 'p',
+    });
+    expect(meldung).toHaveAttribute('role', 'alert');
+    expect(meldung).toHaveClass('text-sm');
+    expect(screen.getByRole('group', { name: 'Beteiligte Personen *' })).toHaveAttribute(
+      'aria-describedby',
+      meldung.id,
+    );
+    expect(createAppointmentEvent).not.toHaveBeenCalled();
+  });
+
+  it('bricht ueber einen Link ab (UIK-13)', async () => {
+    rendern();
+    await formularAbwarten();
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/kalender');
+  });
+
+  it('fragt vor dem Weggehen, wenn etwas eingegeben wurde (KAL-20, NAV-01)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Bezeichnung *'), 'Teambesprechung');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Fehlzeit' });
+    expect(
+      within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+    ).toBeInTheDocument();
+    // Ohne Entwurf gibt es kein „Speichern und weitergehen" (ANN-046).
+    expect(within(rueckfrage).queryByRole('button', { name: /Speichern/ })).toBeNull();
+
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Bezeichnung *')).toHaveValue('Teambesprechung');
+  });
+
+  it('laesst ohne Eingabe ohne Rueckfrage gehen - die Vorbelegung ist keine Eingabe (KAL-20)', async () => {
+    const user = userEvent.setup();
+    rendern('/termine/ereignis?datum=2027-05-12&beginn=09:30');
+    await formularAbwarten();
+    // Der einzige Standort ist vorgewählt - auch das ist keine Eingabe.
+    await waitFor(() => expect(screen.getByLabelText('Standort *')).toHaveValue(ORT));
+
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    expect(screen.queryByRole('group', { name: 'Ungespeicherte Fehlzeit' })).toBeNull();
+  });
+
+  it('meldet nach dem Eintragen im Kalender, dass es geklappt hat (KAL-22)', async () => {
+    const user = userEvent.setup();
+    rendern(
+      '/termine/ereignis?datum=2027-05-12&zurueck=%2Fkalender%3Fansicht%3Dtag%26datum%3D2027-05-12',
+    );
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Bezeichnung *'), 'Teambesprechung');
+    await user.type(screen.getByLabelText('Beginn *'), '08:00');
+    await user.type(screen.getByLabelText('Ende *'), '08:25');
+    await user.click(screen.getByRole('button', { name: 'Fehlzeit eintragen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(
+        '/kalender?ansicht=tag&datum=2027-05-12&eingetragen=fehlzeit',
+        { replace: true },
+      ),
+    );
+  });
+
+  it('sagt, wenn die Personen nicht geladen werden konnten, statt still leer zu bleiben (ZST-07, KAL-07)', async () => {
+    fetchStaffMembers.mockRejectedValue(new Error('Netz'));
+    rendern();
+    await formularAbwarten();
+
+    const gruppe = screen.getByRole('group', { name: 'Beteiligte Personen *' });
+    expect(within(gruppe).getByRole('alert')).toHaveTextContent(
+      'Die Personen konnten nicht geladen werden.',
+    );
+    expect(within(gruppe).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    // Ohne die Pflichtliste lässt sich nicht eintragen.
+    expect(screen.getByRole('button', { name: 'Fehlzeit eintragen' })).toBeDisabled();
+  });
+
+  it('nennt die Beispiele wie Anlegen-Leiste und Dauerfehlzeit (KAL-27)', async () => {
+    rendern();
+    await formularAbwarten();
+    expect(screen.getByText(/^Meeting, Puffer, Pause oder anderes\./)).toBeInTheDocument();
   });
 });

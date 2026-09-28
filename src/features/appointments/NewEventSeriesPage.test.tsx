@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as StaffApi from '@/features/staff/api';
@@ -119,10 +119,11 @@ describe('NewEventSeriesPage', () => {
     rendern();
     await formularAbwarten();
 
-    // Sechs Vorkommen sind vorbelegt, wöchentlich ab dem 12.05.2027.
-    expect(screen.getByText('6 Fehlzeiten, jeweils 09:00–10:30 Uhr')).toBeInTheDocument();
-    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
-    expect(screen.getByText('16.06.2027')).toBeInTheDocument();
+    // Sechs Vorkommen sind vorbelegt, wöchentlich ab dem 12.05.2027 - jeder
+    // Tag mit seinem Wochentag (KAL-B03).
+    expect(screen.getByText('6 Fehlzeiten, jeweils mittwochs 09:00–10:30 Uhr')).toBeInTheDocument();
+    expect(screen.getByText('Mi, 12.05.2027')).toBeInTheDocument();
+    expect(screen.getByText('Mi, 16.06.2027')).toBeInTheDocument();
   });
 
   it('rechnet den gewaehlten Rhythmus', async () => {
@@ -132,8 +133,8 @@ describe('NewEventSeriesPage', () => {
 
     await user.selectOptions(screen.getByLabelText('Rhythmus *'), 'zweiwoechentlich');
 
-    expect(screen.getByText('26.05.2027')).toBeInTheDocument();
-    expect(screen.queryByText('19.05.2027')).not.toBeInTheDocument();
+    expect(screen.getByText('Mi, 26.05.2027')).toBeInTheDocument();
+    expect(screen.queryByText('Mi, 19.05.2027')).not.toBeInTheDocument();
   });
 
   it('traegt die Serie mit allen Tagen in einem Vorgang ein', async () => {
@@ -163,7 +164,10 @@ describe('NewEventSeriesPage', () => {
 
     await user.click(screen.getByRole('button', { name: '6 Fehlzeiten eintragen' }));
 
-    expect(await screen.findByText('Bezeichnung ist erforderlich.')).toBeInTheDocument();
+    // Am Feld - und dazu in der Zusammenfassung darüber (KAL-17).
+    expect(
+      await screen.findByText('Bezeichnung ist erforderlich.', { selector: 'p' }),
+    ).toBeInTheDocument();
     expect(createEventSeries).not.toHaveBeenCalled();
   });
 
@@ -197,5 +201,87 @@ describe('NewEventSeriesPage', () => {
 
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     expect(screen.queryByLabelText('Bezeichnung *')).not.toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-Review 2026-09 (UXR-004)
+  // ---------------------------------------------------------------------------
+
+  it('gliedert „Wiederholung" als Ebene 2 unter dem Seitentitel (KAL-B02)', async () => {
+    rendern();
+    await formularAbwarten();
+    expect(screen.getByRole('heading', { name: 'Wiederholung' }).tagName).toBe('H2');
+  });
+
+  it('nennt am ersten Tag seinen Wochentag (KAL-B03)', async () => {
+    rendern('/termine/dauerfehlzeit?datum=2026-09-27');
+    await formularAbwarten();
+    expect(screen.getByText('Das ist ein Sonntag.')).toBeInTheDocument();
+  });
+
+  it('prueft die Anzahl, statt sie still zu kappen (KAL-17)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Bezeichnung *'), 'Teammeeting');
+    const anzahl = screen.getByLabelText('Anzahl Fehlzeiten *');
+    await user.clear(anzahl);
+    await user.type(anzahl, '40');
+    // Keine Zahl, die das Feld nicht sagt: nicht „30 Fehlzeiten".
+    expect(screen.queryByRole('button', { name: '30 Fehlzeiten eintragen' })).toBeNull();
+    await user.click(screen.getByRole('button', { name: 'Fehlzeiten eintragen' }));
+
+    expect(
+      await screen.findByText('Bitte 1 bis 30 angeben.', { selector: 'p' }),
+    ).toBeInTheDocument();
+    const zusammenfassung = screen.getByRole('link', {
+      name: 'Anzahl Fehlzeiten: Bitte 1 bis 30 angeben.',
+    });
+    expect(zusammenfassung).toHaveAttribute('href', '#fehlzeit-anzahl');
+    expect(createEventSeries).not.toHaveBeenCalled();
+
+    // Leer ist keine 0.
+    await user.clear(anzahl);
+    expect(screen.queryByRole('button', { name: '0 Fehlzeiten eintragen' })).toBeNull();
+  });
+
+  it('meldet nach dem Eintragen im Kalender, dass es geklappt hat (KAL-22)', async () => {
+    const user = userEvent.setup();
+    rendern(
+      '/termine/dauerfehlzeit?datum=2027-05-12&beginn=09:00&ende=10:30&zurueck=%2Fkalender%3Fansicht%3Dwoche',
+    );
+    await formularAbwarten();
+
+    await user.type(screen.getByLabelText('Bezeichnung *'), 'Teammeeting');
+    await user.click(screen.getByRole('button', { name: '6 Fehlzeiten eintragen' }));
+
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith('/kalender?ansicht=woche&eingetragen=dauerfehlzeit', {
+        replace: true,
+      }),
+    );
+  });
+
+  it('fragt vor dem Weggehen, wenn etwas eingegeben wurde (KAL-20)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+
+    await user.selectOptions(screen.getByLabelText('Rhythmus *'), 'zweiwoechentlich');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Dauerfehlzeit' });
+    expect(
+      within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
+    ).toBeInTheDocument();
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Rhythmus *')).toHaveValue('zweiwoechentlich');
+  });
+
+  it('nennt die Beispiele wie Anlegen-Leiste und Fehlzeit (KAL-27)', async () => {
+    rendern();
+    await formularAbwarten();
+    expect(screen.getByText(/– Meeting, Puffer, Pause\./)).toBeInTheDocument();
   });
 });

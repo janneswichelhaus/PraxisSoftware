@@ -3,14 +3,31 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
+import { Fehlerzusammenfassung } from '@/components/ui/Fehlerzusammenfassung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { roleLabels } from '@/components/ui/roleLabels';
+import {
+  EINGABETEXTE,
+  useTextverlustschutz,
+  type Verlustschutztexte,
+} from '@/features/documentation/Textverlustschutz';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
 import { fetchStaffMembers } from '@/features/staff/api';
+import { alsFormularfehler } from '@/lib/formularfehler';
 import { leseRueckweg } from '@/lib/rueckweg';
+import {
+  EREIGNIS_BESCHRIFTUNGEN,
+  EREIGNIS_FEHLERFELDER,
+  EREIGNIS_FELD_IDS,
+  ereignisGeaendert,
+  FEHLZEIT_BEISPIELE,
+  mitEingetragenerFehlzeit,
+} from './calendar';
 import {
   createAppointmentEvent,
   ereignisFormSchema,
@@ -37,6 +54,12 @@ import {
  * **Mehrere Beteiligte, ein Vorgang:** Der Server legt je Person einen Termin
  * an — alles oder nichts. Eine Besprechung, die nur in einem Kalender steht,
  * sagt den übrigen nicht, dass ihre Zeit belegt ist.
+ *
+ * **Eingaben gehen nicht still verloren (KAL-20, NAV-01).** Weicht das
+ * Formular von der Vorbelegung ab, fragt jeder Weg hinaus - Rückweg,
+ * „Abbrechen", Tableiste, Abmelden - erst nach; Neuladen warnt der Browser.
+ * Einen Entwurf gibt es nicht, also nur „Verwerfen und weitergehen" oder
+ * „Hier bleiben" (ANN-046).
  */
 type Feld = keyof EreignisFormValues;
 
@@ -49,6 +72,15 @@ const leer: EreignisFormValues = {
   end_time: '',
   location_id: '',
 };
+
+/** Die Sätze des Verlustschutzes für dieses Formular. */
+const FEHLZEITTEXTE: Verlustschutztexte = {
+  ...EINGABETEXTE,
+  bezeichnung: 'Ungespeicherte Fehlzeit',
+};
+
+/** Kennung des Fehlers der Beteiligten, für `aria-describedby` (KAL-17). */
+const BETEILIGTE_FEHLER_ID = `${EREIGNIS_FELD_IDS.staff_member_ids}-fehler`;
 
 export function NewEventPage({ user }: { user: CurrentUser }) {
   const navigate = useNavigate();
@@ -75,7 +107,14 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
         ? [user.staffMemberId]
         : [],
   }));
+  // Der Stand, mit dem das Formular begann - Vorbelegung ist keine Eingabe.
+  const [anfang, setAnfang] = useState(werte);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
+
+  const { freigeben, schutz } = useTextverlustschutz({
+    ungespeichert: ereignisGeaendert(werte, anfang),
+    texte: FEHLZEITTEXTE,
+  });
 
   const personen = useQuery({
     queryKey: ['staff-members'],
@@ -88,13 +127,14 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
   // Auswahl ohne Alternative ist keine Entscheidung. Dieselbe Regel und
   // dieselbe Begründung wie in `NewAppointmentPage`; hier fehlte sie, und das
   // Formular verlangte ein Pflichtfeld, für das es nur eine Antwort gab
-  // (FIX-013).
+  // (FIX-013). Auch das ist Vorbelegung, keine Eingabe.
   useEffect(() => {
     const nurEiner = standorte.data?.length === 1 ? standorte.data[0] : undefined;
     if (nurEiner) {
-      setWerte((bisher) =>
-        bisher.location_id === '' ? { ...bisher, location_id: nurEiner.id } : bisher,
-      );
+      const vorwaehlen = (bisher: EreignisFormValues) =>
+        bisher.location_id === '' ? { ...bisher, location_id: nurEiner.id } : bisher;
+      setWerte(vorwaehlen);
+      setAnfang(vorwaehlen);
     }
   }, [standorte.data]);
 
@@ -105,7 +145,10 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
       // Kalender und Tagesplan führen den Zeitraum sonst weiter als frei.
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
-      void navigate(zurueck, { replace: true });
+      // Eingetragen: Der eigene Weg hinaus ist kein Verlust (ANN-046). Der
+      // Kalender sagt, dass es geklappt hat (KAL-22).
+      freigeben();
+      void navigate(mitEingetragenerFehlzeit(zurueck, 'fehlzeit'), { replace: true });
     },
   });
 
@@ -138,7 +181,7 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
     return (
       <ErrorState
         title="Nicht freigegeben"
-        description="Termine und Fehlzeiten eintragen dürfen die Rollen der Terminverwaltung."
+        description={`Fehlzeiten eintragen dürfen alle vier Praxisrollen: ${roleLabels.owner}, ${roleLabels.therapist}, ${roleLabels.team_lead} und ${roleLabels.office}.`}
       />
     );
   }
@@ -149,6 +192,10 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
   const aktive = (personen.data ?? []).filter((p) => p.employment_status === 'active');
   const ausserhalb = mutation.isError && istAusserhalbArbeitszeit(mutation.error);
+  // Ohne die Liste einer Pflichtangabe lässt sich nicht eintragen (ZST-07):
+  // Das Formular sagt es am Feld, statt still leer zu bleiben.
+  const listeFehlt =
+    personen.isError || (standorte.isError && werte.appointment_type === 'practice');
 
   return (
     <>
@@ -156,10 +203,21 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title="Fehlzeit eintragen"
-        description="Besprechung, Teamtermin oder anderes. Ohne Patient:in und ohne Verordnung – es entsteht keine Behandlungsleistung."
+        description={`${FEHLZEIT_BEISPIELE} oder anderes. Ohne Patient:in und ohne Verordnung – es entsteht keine Behandlungsleistung.`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
+        {/* Was noch fehlt - und wo (KAL-17): Auf dem Telefon steht der
+            Absendeknopf einen Bildschirm unter der Bezeichnung. */}
+        <Fehlerzusammenfassung
+          fehler={alsFormularfehler(
+            EREIGNIS_FEHLERFELDER,
+            EREIGNIS_BESCHRIFTUNGEN,
+            fehler,
+            (feld) => EREIGNIS_FELD_IDS[feld],
+          )}
+        />
+
         <EreignisFormFields
           werte={werte}
           fehler={fehler}
@@ -167,31 +225,56 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           standorte={standorte.data ?? []}
           zeitzone={user.organizationTimeZone}
           rasterMinuten={user.appointmentGridMinutes}
+          standorteFehler={
+            standorte.isError ? (
+              <ErrorState
+                title="Die Standorte konnten nicht geladen werden."
+                description="Bitte die Verbindung prüfen und erneut versuchen."
+                onErneut={() => standorte.refetch()}
+              />
+            ) : null
+          }
           beteiligte={
-            <fieldset>
+            <fieldset aria-describedby={fehler.staff_member_ids ? BETEILIGTE_FEHLER_ID : undefined}>
               <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
               <p className="text-ink-muted mt-1 text-sm">
                 Die Fehlzeit belegt den Zeitraum in jedem gewählten Kalender.
               </p>
-              <div className="mt-3 flex flex-col gap-2">
-                {aktive.map((person) => (
-                  <Checkbox
-                    key={person.id}
-                    label={`${person.given_name} ${person.family_name}`}
-                    checked={werte.staff_member_ids.includes(person.id)}
-                    onChange={(e) =>
-                      setzen(
-                        'staff_member_ids',
-                        e.target.checked
-                          ? [...werte.staff_member_ids, person.id]
-                          : werte.staff_member_ids.filter((id) => id !== person.id),
-                      )
-                    }
+              {personen.isError ? (
+                <div className="mt-3">
+                  <ErrorState
+                    title="Die Personen konnten nicht geladen werden."
+                    description="Bitte die Verbindung prüfen und erneut versuchen."
+                    onErneut={() => personen.refetch()}
                   />
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="mt-3 flex flex-col gap-2">
+                  {aktive.map((person, i) => (
+                    <Checkbox
+                      key={person.id}
+                      // Das erste Kästchen ist das Sprungziel der Zusammenfassung.
+                      feldId={i === 0 ? EREIGNIS_FELD_IDS.staff_member_ids : undefined}
+                      label={`${person.given_name} ${person.family_name}`}
+                      checked={werte.staff_member_ids.includes(person.id)}
+                      onChange={(e) =>
+                        setzen(
+                          'staff_member_ids',
+                          e.target.checked
+                            ? [...werte.staff_member_ids, person.id]
+                            : werte.staff_member_ids.filter((id) => id !== person.id),
+                        )
+                      }
+                    />
+                  ))}
+                </div>
+              )}
+              {/* Der Fehler der Gruppe - mit Rolle, in Feldgröße und an der
+                  Gruppe angebunden (KAL-17). */}
               {fehler.staff_member_ids ? (
-                <p className="text-danger mt-2 text-xs">{fehler.staff_member_ids}</p>
+                <p id={BETEILIGTE_FEHLER_ID} role="alert" className="text-danger mt-2 text-sm">
+                  {fehler.staff_member_ids}
+                </p>
               ) : null}
             </fieldset>
           }
@@ -216,13 +299,18 @@ export function NewEventPage({ user }: { user: CurrentUser }) {
           </Statusmeldung>
         ) : null}
 
+        {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird. */}
+        {schutz}
+
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button type="submit" disabled={mutation.isPending}>
+          <Button type="submit" disabled={mutation.isPending || listeFehlt}>
             {mutation.isPending ? 'Wird eingetragen …' : 'Fehlzeit eintragen'}
           </Button>
-          <Button type="button" variant="secondary" onClick={() => void navigate(zurueck)}>
+          {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
+              dieselbe Rückfrage wie jeder andere Weg hinaus. */}
+          <ButtonLink to={zurueck} variant="secondary">
             Abbrechen
-          </Button>
+          </ButtonLink>
         </div>
       </form>
     </>

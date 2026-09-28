@@ -79,6 +79,7 @@ function kontingent(treatment_basis_id: string, prescribed: number, used: number
   };
 }
 
+const ANNA = '55555555-5555-4555-8555-000000000002';
 const G1 = '99999999-9999-4999-8999-000000000001';
 const G2 = '99999999-9999-4999-8999-000000000002';
 const MIT_PERSON = `/termine/dauertermin?datum=2027-05-12&beginn=09%3A00&patient=${MAX.id}`;
@@ -168,7 +169,8 @@ describe('DauerterminStartPage', () => {
     const links = within(offen).getAllByRole('link');
     expect(links).toHaveLength(2);
     expect(links[0]).toHaveAttribute('href', SERIE(G1));
-    expect(links[0]).toHaveTextContent('noch 8 Behandlungen zu planen');
+    // Das Kontingent zählt Termine (VER-08, ANN-064).
+    expect(links[0]).toHaveTextContent('noch 8 Termine zu planen');
     expect(
       screen.getByText('Verplante und ausgeschöpfte (1)').closest('details'),
     ).not.toHaveAttribute('open');
@@ -183,11 +185,59 @@ describe('DauerterminStartPage', () => {
     rendern(MIT_PERSON);
 
     expect(await screen.findByText('Keine Behandlungsgrundlage')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Grundlage anlegen' })).toHaveAttribute(
-      'href',
-      `/patienten/${MAX.id}/verordnungen/neu`,
-    );
+    // „Erfassen" wie überall (VER-17), und zurück kommt man hierher - samt
+    // Zeit und Person (VER-05).
+    const link = screen.getByRole('link', { name: 'Grundlage erfassen' });
+    const ziel = new URL(link.getAttribute('href')!, 'http://test');
+    expect(ziel.pathname).toBe(`/patienten/${MAX.id}/verordnungen/neu`);
+    expect(ziel.searchParams.get('zurueck')).toBe(MIT_PERSON);
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('fuehrt das Praxismanagement nicht in ein Formular, das es nicht speichern darf (VER-04)', async () => {
+    for (const f of [fetchPatientTreatmentBases, fetchPatientTreatmentBasesClinical]) {
+      f.mockResolvedValue([]);
+    }
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
+    renderWithProviders(<DauerterminStartPage user={testUser(['office'])} />, MIT_PERSON);
+
+    expect(
+      await screen.findByText(
+        /Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Grundlage erfassen' })).toBeNull();
+  });
+
+  it('reicht die Person der Spalte und den Rueckweg an die Serie weiter (KAL-05)', async () => {
+    const kalender = '/kalender?ansicht=tag&datum=2027-05-12';
+    rendern(`${MIT_PERSON}&person=${ANNA}&zurueck=${encodeURIComponent(kalender)}`);
+
+    await waitFor(() => expect(navigate).toHaveBeenCalled());
+    const [ziel, optionen] = navigate.mock.calls.at(-1) as [string, unknown];
+    const adresse = new URL(ziel, 'http://test');
+    expect(adresse.pathname).toBe(`/patienten/${MAX.id}/verordnungen/${G1}/serie`);
+    expect(adresse.searchParams.get('person')).toBe(ANNA);
+    expect(adresse.searchParams.get('beginn')).toBe('09:00');
+    expect(adresse.searchParams.get('zurueck')).toBe(kalender);
+    expect(optionen).toEqual({ replace: true });
+  });
+
+  it('schreibt „Uhr" nur mit einem Beginn (KAL-10)', () => {
+    rendern('/termine/dauertermin?datum=2027-05-12');
+
+    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
+    expect(screen.queryByText(/Uhr/)).toBeNull();
+    expect(screen.getByText('Aus dem Kalender übernommen')).toBeInTheDocument();
+  });
+
+  it('fuehrt ueber den Rueckweg in den Kalenderstand zurueck (KAL-19)', () => {
+    rendern('/termine/dauertermin?datum=2027-05-12&zurueck=%2Fkalender%3Fansicht%3Dwoche');
+
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
+      'href',
+      '/kalender?ansicht=woche',
+    );
   });
 
   it('meldet einen Ladefehler ohne Details', async () => {
@@ -196,10 +246,21 @@ describe('DauerterminStartPage', () => {
     }
     rendern(MIT_PERSON);
 
-    expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Die Behandlungsgrundlagen konnten nicht geladen werden.',
-    );
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Die Behandlungsgrundlagen konnten nicht geladen werden.');
+    expect(kasten).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
     expect(screen.queryByText('intern')).not.toBeInTheDocument();
+
+    // Ein Weg heraus (UIK-16, WRT-01): erneut laden, ohne die Seite neu zu laden.
+    for (const f of [fetchPatientTreatmentBases, fetchPatientTreatmentBasesClinical]) {
+      f.mockResolvedValue([grundlage(G1, '2027-04-01'), grundlage(G2, '2027-01-01')]);
+    }
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(G1, 10, 2),
+      kontingent(G2, 6, 1),
+    ]);
+    await userEvent.click(within(kasten).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByRole('list', { name: 'Offene Grundlagen' })).toBeInTheDocument();
   });
 
   it('ignoriert eine verstellte Kennung und fragt nach der Person', () => {

@@ -65,7 +65,7 @@ test.describe('CAL-002: Kalender', () => {
     // Seit CAL-006 hat jede behandelnde Person eine eigene Spalte; ihr Name
     // steht einmal am Spaltenkopf statt in jeder Kachel. Geprueft wird
     // deshalb, dass der Termin in IHRER Spalte liegt.
-    await expect(page.getByRole('gridcell', { name: 'Anna Beispiel' })).toContainText(
+    await expect(page.getByRole('group', { name: 'Anna Beispiel' })).toContainText(
       'Max Mustermann',
     );
 

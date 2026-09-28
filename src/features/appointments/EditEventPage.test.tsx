@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
@@ -192,7 +192,8 @@ describe('EditEventPage', () => {
     await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
 
     const rueckfrage = await screen.findByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
-    expect(rueckfrage).toHaveTextContent('noch nichts geschrieben');
+    // „Eingetragen“ statt der Entwicklersprache „geschrieben“ (KAL-27).
+    expect(rueckfrage).toHaveTextContent('noch nichts eingetragen');
 
     updateAppointmentEvent.mockResolvedValue(2);
     await user.click(screen.getByRole('button', { name: 'Trotzdem ändern' }));
@@ -282,5 +283,105 @@ describe('EditEventPage', () => {
 
     await waitFor(() => expect(updateAppointmentEvent).toHaveBeenCalledTimes(1));
     expect(updateEventSeries).not.toHaveBeenCalled();
+  });
+
+  // ---------------------------------------------------------------------------
+  // UX-Review 2026-09 (UXR-004)
+  // ---------------------------------------------------------------------------
+
+  it('meldet einen Ladefehler als solchen, mit Weg heraus und Rueckweg (TER-11, ZST-08)', async () => {
+    fetchAppointment.mockRejectedValue(new Error('Netz'));
+    rendern();
+
+    const kasten = await screen.findByRole('alert');
+    expect(kasten).toHaveTextContent('Die Fehlzeit konnte nicht geladen werden.');
+    expect(kasten).not.toHaveTextContent(/Nicht gefunden|nicht freigegeben/);
+    expect(within(kasten).getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
+  });
+
+  it('sagt „Nicht gefunden" nur, wenn es die Fehlzeit nicht gibt (TER-11, ZST-08)', async () => {
+    fetchAppointment.mockResolvedValue(null);
+    rendern();
+
+    expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
+  });
+
+  it('stellt den Umfang vor die Felder und macht den Tag im Serienmodus zur Auskunft (TER-14)', async () => {
+    fetchAppointment.mockResolvedValue({ ...ereignis, event_series_id: SERIE });
+    const user = userEvent.setup();
+    rendern();
+
+    const bezeichnung = await screen.findByLabelText('Bezeichnung *');
+    const umfang = await screen.findByRole('group', { name: 'Umfang der Änderung' });
+    expect(umfang.compareDocumentPosition(bezeichnung) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    // Wie viele sich ändern, statt nur der Gesamtzahl.
+    expect(umfang).toHaveTextContent('3 kommende von 3 Vorkommen');
+
+    await user.click(screen.getByRole('radio', { name: /Die ganze Serie/ }));
+    expect(screen.queryByLabelText('Datum *')).toBeNull();
+    expect(screen.getByText('Die Tage der Serie bleiben, wie sie sind.')).toBeInTheDocument();
+  });
+
+  it('fuehrt von jeder Teilnahme zum Termin, an dem sie sich aendern laesst (TER-15)', async () => {
+    rendern();
+
+    const anna = await screen.findByRole('link', { name: 'Anna Beispiel' });
+    const ziel = new URL(anna.getAttribute('href')!, 'http://test');
+    expect(ziel.pathname).toBe(`/termine/${TERMIN_ID}`);
+    expect(ziel.searchParams.get('zurueck')).toBe(`/termine/${TERMIN_ID}/ereignis-bearbeiten`);
+    expect(screen.getByRole('link', { name: 'Tim Teamleitung' })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/termine\/77777777-7777-4777-8777-000000000002\?/) as string,
+    );
+  });
+
+  it('fasst Fehler ueber dem Formular zusammen (TER-06)', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await user.clear(await screen.findByLabelText('Bezeichnung *'));
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+    const titel = await screen.findByText(/^Bitte prüfen Sie diese Angabe/);
+    await waitFor(() => expect(titel.closest('[role="alert"]')).toHaveFocus());
+    expect(updateAppointmentEvent).not.toHaveBeenCalled();
+  });
+
+  it('fragt vor dem Weggehen, wenn etwas geaendert wurde (TER-05)', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await user.type(await screen.findByLabelText('Bezeichnung *'), ' im Juni');
+    // „Abbrechen" ist ein Link (UIK-13) und läuft durch dieselbe Rückfrage.
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Änderungen' });
+    await user.click(within(rueckfrage).getByRole('button', { name: 'Hier bleiben' }));
+    expect(screen.getByLabelText('Bezeichnung *')).toHaveValue('Teambesprechung im Juni');
+  });
+
+  it('nennt den laufenden Vorgang wie beim Termin (WRT-10)', async () => {
+    updateAppointmentEvent.mockReturnValue(new Promise(() => undefined));
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByLabelText('Bezeichnung *');
+    await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+    expect(await screen.findByRole('button', { name: 'Wird gespeichert …' })).toBeDisabled();
+  });
+
+  it('sagt, wenn die Beteiligten nicht geladen werden konnten, und schreibt dann nicht (ZST-07)', async () => {
+    fetchEventParticipants.mockRejectedValue(new Error('Netz'));
+    rendern();
+
+    await screen.findByLabelText('Bezeichnung *');
+    expect(
+      await screen.findByText('Die Beteiligten konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Änderungen speichern' })).toBeDisabled();
   });
 });

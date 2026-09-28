@@ -1,11 +1,26 @@
 import { useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Section } from '@/components/ui/Section';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Textlink } from '@/components/ui/Textlink';
 import { Patientensuche } from '@/features/patients/Patientensuche';
+import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { appointmentTypeLabels, leseTerminVorbelegung, schreibeTerminVorbelegung } from './api';
+import {
+  appointmentTypeLabels,
+  fetchAssignableTherapists,
+  leseTerminVorbelegung,
+  schreibeTerminVorbelegung,
+} from './api';
+
+/** „Datum, Zeit und Terminart" - eine Aufzählung im Satz. */
+function aufzaehlung(teile: readonly string[]): string {
+  if (teile.length <= 1) return teile.join('');
+  return `${teile.slice(0, -1).join(', ')} und ${teile.at(-1)!}`;
+}
 
 /** Eine Kennung aus der Adresszeile, wie sie die Patientenanlage zurückgibt. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -66,26 +81,65 @@ export function NewAppointmentStartPage() {
       ? `${vorbelegung.beginn}–${vorbelegung.ende} Uhr`
       : (vorbelegung.beginn ?? null);
 
+  /**
+   * Wer vorbelegt ist, steht mit Namen da (KAL-10): Ein Tipp in die
+   * Nachbarspalte fiel bisher erst im Formular auf. Der Name kommt aus dem
+   * bestehenden Lesepfad der zuordenbaren Personen.
+   */
+  const personen = useQuery({
+    queryKey: ['assignable-therapists'],
+    queryFn: fetchAssignableTherapists,
+    enabled: Boolean(vorbelegung.person),
+    retry: false,
+  });
+  const personName = personen.data?.find(
+    (t) => t.staff_member_id === vorbelegung.person,
+  )?.display_name;
+  const person = !vorbelegung.person
+    ? 'noch offen'
+    : (personName ?? (personen.isPending ? 'Wird geladen …' : 'Steht im Terminformular'));
+
+  // Die Beschreibung sagt nur, was wirklich vorbelegt ist - bisher versprach
+  // sie Zeit und Person auch dann, wenn beides fehlte (KAL-10).
+  const vorbelegt = [
+    vorbelegung.datum ? 'Datum' : null,
+    zeit ? 'Zeit' : null,
+    vorbelegung.person ? 'behandelnde Person' : null,
+    vorbelegung.art ? 'Terminart' : null,
+  ].filter((teil): teil is string => teil !== null);
+  const vorbelegtSatz = aufzaehlung(vorbelegt);
+  const beschreibung =
+    vorbelegt.length === 0
+      ? 'Zuerst die Patient:in wählen.'
+      : `Zuerst die Patient:in wählen. ${vorbelegtSatz.charAt(0).toUpperCase()}${vorbelegtSatz.slice(1)} ${
+          vorbelegt.length === 1 ? 'ist' : 'sind'
+        } schon vorbelegt.`;
+
   return (
     <>
-      <PageHeader
-        title="Termin anlegen"
-        description="Zuerst die Patient:in wählen. Zeit und behandelnde Person sind schon vorbelegt."
-      />
+      {/* Der Weg zurück, meist in den Kalenderstand (KAL-19). */}
+      <Rueckweg standard="/kalender" />
 
-      <Section titel="Vorbelegung">
-        <DetailList>
-          <DetailRow label="Datum">{vorbelegung.datum ?? 'noch offen'}</DetailRow>
-          <DetailRow label="Zeit">{zeit ?? 'noch offen'}</DetailRow>
-          <DetailRow label="Terminart">
-            {vorbelegung.art ? appointmentTypeLabels[vorbelegung.art] : 'noch offen'}
-          </DetailRow>
-        </DetailList>
-        <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
-          Alles davon lässt sich im nächsten Schritt ändern. Verbindlich geprüft werden Raster,
-          Arbeitszeit und Überschneidung erst beim Speichern.
-        </p>
-      </Section>
+      <PageHeader title="Termin anlegen" description={beschreibung} />
+
+      {vorbelegt.length > 0 ? (
+        <Section titel="Aus dem Kalender übernommen">
+          <DetailList>
+            <DetailRow label="Datum">
+              {vorbelegung.datum ? formatDate(vorbelegung.datum) : 'noch offen'}
+            </DetailRow>
+            <DetailRow label="Zeit">{zeit ?? 'noch offen'}</DetailRow>
+            <DetailRow label="Behandelnde Person">{person}</DetailRow>
+            <DetailRow label="Terminart">
+              {vorbelegung.art ? appointmentTypeLabels[vorbelegung.art] : 'noch offen'}
+            </DetailRow>
+          </DetailList>
+          <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
+            Alles davon lässt sich im nächsten Schritt ändern. Verbindlich geprüft werden Raster,
+            Arbeitszeit und Überschneidung erst beim Speichern.
+          </p>
+        </Section>
+      ) : null}
 
       <Section titel="Patient:in">
         <div className="max-w-md">
@@ -100,13 +154,11 @@ export function NewAppointmentStartPage() {
             zurückfinden, von vorn beginnen (UX-012). */}
         <p className="text-ink-muted mt-3 max-w-prose text-sm">
           Noch nicht in der Kartei?{' '}
-          <Link
-            to={mitRueckweg('/patienten/neu', hierher)}
-            className="text-accent inline-flex min-h-11 items-center hover:underline"
-          >
+          {/* Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12). */}
+          <Textlink alleinstehend to={mitRueckweg('/patienten/neu', hierher)}>
             Patient:in anlegen
-          </Link>{' '}
-          — Datum, Zeit und behandelnde Person bleiben dabei erhalten.
+          </Textlink>{' '}
+          – Datum, Zeit und behandelnde Person bleiben dabei erhalten.
         </p>
       </Section>
     </>
