@@ -1738,3 +1738,15 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach
 **Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
 
 **Änderungspfad.** Knappe Wege ausblenden: Filter in `orderByTravel` · Aufwand `klein`. Mehr geprüfte Vorschläge: `TRAVEL_CHECK_LIMIT` bis zur Grenze der Matrix · Aufwand `klein`. Andere Packregel (etwa halbstündlich): `generate_series` in `find_free_slots` · Aufwand `klein`.
+
+### ANN-137 — Kurzblick am Termin: aufklappbar, jedes Aufklappen protokolliert, letzter Haupteintrag im Wortlaut
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung
+
+**Annahme.** Der Vertretungs-Kurzblick steht an jedem Behandlungstermin **zugeklappt** und wird erst beim Aufklappen gelesen. Er zeigt Zugangshinweis, Besonderheit, feste Therapeut:in, die Grundlage mit Terminzahl und Mengen je Heilmittel und den **letzten Haupteintrag** der Person vor diesem Termin im Wortlaut — auch einen Entwurf, als Entwurf gekennzeichnet; Nachträge nur in der Akte. Jedes Aufklappen schreibt `appointment_brief.viewed`, der gezeigte Eintrag zusätzlich `treatment_note.viewed` mit der Oberfläche `appointment_brief`. Lesen dürfen die Rollen, die Termine **und** Dokumentation lesen (owner, therapist, team_lead, office); Trainingsbetreuung und Patientenkonto werden protokolliert abgewiesen.
+
+**Begründung.** `IDEA-PRX-016` verlangt den Blick „aufklappbar und auditiert“; §4.2 macht die Vertretung zum Regelfall, und ADR-010 Punkt 2 und ADR-016 Punkt 9 machen das Lesen eines Eintrags protokollpflichtig — ein Kurzblick, der den Wortlaut zeigt, darf dieser Spur nicht ausweichen. Zugeklappt, weil die Tagesansicht im Treppenhaus mitgelesen wird (`IDEA-PRX-035`, §4.6). Der Wortlaut statt einer Zusammenfassung, weil jede Verdichtung eine Auswahl über klinischen Inhalt wäre (ADR-006 Punkt 2 und 4). Unsicher: ob der Entwurf gezeigt werden soll; ein unfertiger Text kann in die Irre führen, fehlt aber sonst genau dann, wenn die Kollegin am Vortag noch nicht finalisiert hat.
+
+**Anker.** `public.get_appointment_brief` in `supabase/migrations/20260929100000_prx_006_appointment_brief.sql`; Oberfläche `src/features/appointments/Kurzblick.tsx`; Tests in `supabase/tests/appointment-brief.test.ts`.
+
+**Änderungspfad.** Nur finalisierte Einträge: Bedingung `t.status = 'final'` in der Auswahl · Aufwand `klein`. Aufklappen ohne eigenes Ereignis (nur `treatment_note.viewed`): Einfügung in `get_appointment_brief` streichen, Wert im Katalog belassen · Aufwand `klein`. Weitere Felder (Wortlaut der Verordnung): Rückgabe erweitern · Aufwand `klein`.

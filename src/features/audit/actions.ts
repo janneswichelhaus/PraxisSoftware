@@ -168,6 +168,8 @@ export const AUDIT_ACTIONS = [
   // PRX-002: Gebiete sind eine Praxisregel ohne Personenbezug.
   'territory.saved',
   'territory.removed',
+  // PRX-006: Vertretungs-Kurzblick am Termin, je Aufklappen (ANN-137).
+  'appointment_brief.viewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -280,6 +282,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'waitlist.read': 'Warteliste gelesen',
   'territory.saved': 'Gebiet gespeichert',
   'territory.removed': 'Gebiet entfernt',
+  'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

@@ -13,12 +13,14 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
+import { Kurzblick } from './Kurzblick';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
+  canReadTreatmentNote,
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
@@ -1169,6 +1171,15 @@ function AppointmentDetail({
           ) : null}
         </DetailList>
       </Section>
+
+      {/* Was man vor der Tür wissen muss (PRX-006): zugeklappt, erst auf
+          Anforderung gelesen und protokolliert (ANN-137). Nur am
+          Behandlungstermin; die Rollenprüfung trägt der Server. */}
+      {appointment.kind === 'therapy' && canReadTreatmentNote(user.roles) ? (
+        <div className="mt-6">
+          <Kurzblick appointmentId={appointment.id} />
+        </div>
+      ) : null}
 
       {/* Am Hausbesuch steht vor den Schaltflächen die Frage, die über die
           Abrechnung entscheidet (CAL-018). */}
