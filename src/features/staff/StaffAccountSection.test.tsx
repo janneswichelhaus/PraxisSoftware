@@ -25,9 +25,9 @@ vi.mock('./konto-api', async (importOriginal) => {
     fetchStaffInvitations: (id: string) =>
       fetchStaffInvitations(id) as Promise<KontoApi.StaffInvitation[]>,
     ladeZugangEin: (id: string, mail: string, rollen: readonly string[]) =>
-      ladeZugangEin(id, mail, rollen) as Promise<void>,
+      ladeZugangEin(id, mail, rollen) as Promise<KontoApi.Zustellung>,
     widerrufeEinladung: (id: string) => widerrufeEinladung(id) as Promise<void>,
-    sendeZugangsMail: (mail: string) => sendeZugangsMail(mail) as Promise<void>,
+    sendeZugangsMail: (mail: string) => sendeZugangsMail(mail) as Promise<KontoApi.Zustellung>,
     setzeRollen: (id: string, rollen: readonly string[]) =>
       setzeRollen(id, rollen) as Promise<void>,
     setzeZugangAktiv: (id: string, aktiv: boolean) => setzeZugangAktiv(id, aktiv) as Promise<void>,
@@ -100,17 +100,31 @@ describe('StaffAccountSection', () => {
     }
   });
 
-  it('verlangt mindestens eine Rolle', async () => {
+  it('beschreibt das Praxismanagement, wie es seit E15 ist (ORG-01)', async () => {
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    const office = await screen.findByRole('checkbox', { name: 'Praxismanagement' });
+    expect(office).toHaveAccessibleDescription(
+      /Liest alle Akten einschließlich Dokumentation, schreibt aber keine klinischen Inhalte/,
+    );
+    expect(document.body.textContent).not.toMatch(/Kein klinischer Freitext|Vollzugriff/);
+  });
+
+  it('verlangt mindestens eine Rolle - am Feld (ORG-15)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     await user.click(await screen.findByRole('button', { name: 'Zugang einladen' }));
 
     expect(await screen.findByText('Bitte mindestens eine Rolle wählen.')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Rollen' })).toHaveAccessibleDescription(
+      'Bitte mindestens eine Rolle wählen.',
+    );
+    expect(screen.getByRole('checkbox', { name: 'Therapeut:in' })).toHaveFocus();
     expect(ladeZugangEin).not.toHaveBeenCalled();
   });
 
-  it('verlangt eine brauchbare Adresse', async () => {
+  it('verlangt eine brauchbare Adresse - am Feld (ORG-15)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
@@ -122,6 +136,9 @@ describe('StaffAccountSection', () => {
     expect(
       await screen.findByText('Bitte eine gültige E-Mail-Adresse angeben.'),
     ).toBeInTheDocument();
+    expect(feld).toHaveAttribute('aria-invalid', 'true');
+    expect(feld).toHaveAccessibleDescription('Bitte eine gültige E-Mail-Adresse angeben.');
+    expect(feld).toHaveFocus();
     expect(ladeZugangEin).not.toHaveBeenCalled();
   });
 
@@ -164,9 +181,9 @@ describe('StaffAccountSection', () => {
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
 
-  it('nimmt eine Einladung erst nach der Rückfrage zurück', async () => {
+  it('nimmt eine Einladung erst nach der Rückfrage zurück und bestätigt es', async () => {
     const user = userEvent.setup();
-    fetchStaffInvitations.mockResolvedValue([offeneEinladung]);
+    fetchStaffInvitations.mockResolvedValueOnce([offeneEinladung]).mockResolvedValue([]);
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     await user.click(await screen.findByRole('button', { name: 'Einladung zurücknehmen' }));
@@ -174,6 +191,7 @@ describe('StaffAccountSection', () => {
 
     await user.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
     await waitFor(() => expect(widerrufeEinladung).toHaveBeenCalledWith(offeneEinladung.id));
+    expect(await screen.findByText('Die Einladung ist zurückgenommen.')).toBeInTheDocument();
   });
 
   it('kennzeichnet eine abgelaufene Einladung und bietet kein erneutes Senden an', async () => {
@@ -196,22 +214,25 @@ describe('StaffAccountSection', () => {
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
 
-  it('lädt für eine ausgeschiedene Person niemanden ein', async () => {
+  it('lädt für eine inaktive Person niemanden ein', async () => {
     renderWithProviders(<StaffAccountSection staff={{ ...anna, employment_status: 'inactive' }} />);
 
     expect(
-      await screen.findByText(/Für eine ausgeschiedene Person wird kein Zugang eingeladen/),
+      await screen.findByText(/Für eine inaktive Person wird kein Zugang eingeladen/),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
 
-  it('meldet einen Ladefehler verständlich', async () => {
-    fetchStaffInvitations.mockRejectedValue(new Error('kaputt'));
+  it('meldet einen Ladefehler verständlich und bietet einen neuen Versuch an', async () => {
+    const user = userEvent.setup();
+    fetchStaffInvitations.mockRejectedValueOnce(new Error('kaputt'));
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     expect(
       await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
     ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByRole('button', { name: 'Zugang einladen' })).toBeInTheDocument();
   });
 });
 
@@ -250,6 +271,23 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     expect(setzeRollen).toHaveBeenCalledWith(anna.id, ['therapist', 'team_lead']);
   });
 
+  it('bestätigt gespeicherte Rollen sichtbar (ORG-04)', async () => {
+    // Bis UXR-011 war das einzige Zeichen der wieder gesperrte Knopf.
+    const user = userEvent.setup();
+    fetchStaffAccount
+      .mockResolvedValueOnce(mitZugang)
+      .mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'team_lead'] });
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+
+    const meldung = await screen.findByText('Rollen gespeichert: Therapeut:in, Teamleitung.');
+    expect(meldung.closest('[tabindex="-1"]')).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Rollen speichern' })).toBeDisabled();
+    expect(screen.queryByRole('button', { name: 'Verwerfen' })).not.toBeInTheDocument();
+  });
+
   it('lässt eine Änderung verwerfen', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} />);
@@ -269,6 +307,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
     expect(screen.getByRole('button', { name: 'Rollen speichern' })).toBeDisabled();
     expect(screen.getByText(/Ein Zugang braucht mindestens eine Rolle/)).toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/entrechtet/);
   });
 
   it('erklärt den Aussperrschutz, statt nur zu scheitern', async () => {
@@ -280,11 +319,11 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
 
     expect(
-      await screen.findByText(/Die letzte aktive Praxisinhaberin behält ihre Rolle/),
+      await screen.findByText(/Die letzte aktive Praxisinhaber:in behält ihre Rolle/),
     ).toBeInTheDocument();
   });
 
-  it('sperrt erst nach der Rückfrage', async () => {
+  it('sperrt erst nach der Rückfrage und bestätigt es', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
@@ -293,6 +332,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
     await user.click(screen.getByRole('button', { name: 'Sperren' }));
     await waitFor(() => expect(setzeZugangAktiv).toHaveBeenCalledWith(anna.id, false));
+    expect(await screen.findByText('Der Zugang ist gesperrt.')).toBeInTheDocument();
   });
 
   it('bietet bei gesperrtem Zugang das Entsperren an und sagt, was gilt', async () => {
@@ -319,6 +359,21 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     ).toBeInTheDocument();
   });
 
+  it('sagt bei einem unbekannten Fehler, was zu tun ist (ORG-15)', async () => {
+    const user = userEvent.setup();
+    setzeZugangAktiv.mockRejectedValue(new ZugangsError('unbekannt'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
+    await user.click(screen.getByRole('button', { name: 'Sperren' }));
+
+    expect(
+      await screen.findByText(
+        'Der Vorgang konnte nicht ausgeführt werden. Bitte die Verbindung prüfen und erneut versuchen.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('stößt das Zurücksetzen des Kennworts erst nach der Rückfrage an', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} />);
@@ -332,6 +387,23 @@ describe('StaffAccountSection - bestehender Zugang', () => {
       await screen.findByText(/Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse/),
     ).toBeInTheDocument();
   });
+
+  it('behält die Rollenwahl, wenn das Nachladen scheitert (ZST-03)', async () => {
+    const user = userEvent.setup();
+    fetchStaffAccount.mockResolvedValueOnce(mitZugang).mockRejectedValue(new Error('Funkloch'));
+    renderWithProviders(<StaffAccountSection staff={anna} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+
+    expect(
+      await screen.findByText(/Der angezeigte Stand konnte nicht aktualisiert werden/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('checkbox', { name: 'Teamleitung' })).toBeChecked();
+    expect(
+      screen.queryByText('Der Zugangsstand konnte nicht geladen werden.'),
+    ).not.toBeInTheDocument();
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -343,7 +415,12 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 // ---------------------------------------------------------------------------
 describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
   beforeEach(() => {
-    for (const mock of [fetchStaffAccount, fetchStaffInvitations, sendeZugangsMail]) {
+    for (const mock of [
+      fetchStaffAccount,
+      fetchStaffInvitations,
+      sendeZugangsMail,
+      ladeZugangEin,
+    ]) {
       mock.mockReset();
     }
     fetchStaffAccount.mockResolvedValue(ohneZugang);
@@ -351,13 +428,17 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     sendeZugangsMail.mockResolvedValue('gesendet');
   });
 
-  it('nennt bei einer offenen Einladung den nächsten Schritt', async () => {
+  it('nennt bei einer offenen Einladung den nächsten Schritt - wer und wo', async () => {
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
     expect(await screen.findByText('Nächster Schritt')).toBeInTheDocument();
     expect(
       screen.getByText(/braucht sie einmalig ein\s+Konto beim Anmeldedienst/s),
     ).toBeInTheDocument();
+    // ORG-10: Wo und von wem das Konto angelegt wird.
+    expect(
+      screen.getByText(/Das Konto legt an, wer den\s+Anmeldedienst betreut/s),
+    ).toHaveTextContent('Authentication → Users → Add user');
   });
 
   it('bestätigt die zugestellte Anmeldemail', async () => {
@@ -369,6 +450,8 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     expect(
       await screen.findByText(/Die Anmeldemail wurde an nina.neu@praxis.invalid geschickt/),
     ).toBeInTheDocument();
+    // Das Konto gibt es also schon - der Schritt dorthin entfällt (ORG-10).
+    expect(screen.queryByText('Nächster Schritt')).not.toBeInTheDocument();
   });
 
   it('unterscheidet den nicht erreichbaren Dienst vom fehlenden Konto (R3-008)', async () => {
@@ -397,4 +480,31 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     expect(screen.getByText(/die Einladung bleibt so lange offen/)).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/konnte nicht zugestellt werden/);
   });
+
+  it.each([
+    ['kein_konto', /Zu nina.neu@praxis.invalid gibt es beim Anmeldedienst noch kein Konto/],
+    ['gesendet', /Die Anmeldemail wurde an nina.neu@praxis.invalid geschickt/],
+    ['dienst_nicht_erreichbar', /Der Anmeldedienst war nicht erreichbar/],
+  ] as const)(
+    'sagt schon nach dem Einladen, was mit der Mail geschah: %s (ORG-10)',
+    async (zustellung, text) => {
+      // Bis UXR-011 verwarf das Einladen diese Antwort.
+      const user = userEvent.setup();
+      fetchStaffInvitations.mockReset();
+      fetchStaffInvitations
+        .mockResolvedValueOnce([])
+        .mockResolvedValue([{ ...offeneEinladung, email: 'nina.neu@praxis.invalid' }]);
+      ladeZugangEin.mockResolvedValue(zustellung);
+      renderWithProviders(<StaffAccountSection staff={anna} />);
+
+      const feld = await screen.findByLabelText('E-Mail-Adresse für den Zugang');
+      await user.clear(feld);
+      await user.type(feld, 'nina.neu@praxis.invalid');
+      await user.click(screen.getByRole('checkbox', { name: 'Therapeut:in' }));
+      await user.click(screen.getByRole('button', { name: 'Zugang einladen' }));
+
+      expect(await screen.findByText(text)).toBeInTheDocument();
+      expect(sendeZugangsMail).not.toHaveBeenCalled();
+    },
+  );
 });

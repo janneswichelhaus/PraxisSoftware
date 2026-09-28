@@ -286,6 +286,15 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',
 };
 
+/**
+ * Beschriftung der Gegenstände einer Auditzeile.
+ *
+ * Deckungsgleich mit der Check-Constraint `audit_log_subject_type_check`;
+ * `actions.test.ts` prüft das gegen die jüngste Migration. Bis UXR-011 fehlten
+ * `text_snippet` und `user_account`, und die Liste zeigte den Schlüssel der
+ * Datenbank - ausgerechnet bei den Kontoereignissen (ORG-20). Nur
+ * Beschriftung: der Katalog selbst bleibt, wie er ist.
+ */
 export const auditSubjectLabels: Record<string, string> = {
   patient: 'Patient:in',
   organization: 'Organisation',
@@ -296,6 +305,8 @@ export const auditSubjectLabels: Record<string, string> = {
   treatment_note: 'Behandlungsdokumentation',
   prescription: 'Verordnung',
   treatment_basis: 'Behandlungsgrundlage',
+  text_snippet: 'Textbaustein',
+  user_account: 'Zugang',
   patient_file: 'Datei der Akte',
   questionnaire_response: 'Fragebogen',
   patient_course_event: 'Ereignis im Verlauf',

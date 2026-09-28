@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -6,6 +6,8 @@ import { Section } from '@/components/ui/Section';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Textlink } from '@/components/ui/Textlink';
 import { paragraf } from '@/lib/begriffe';
 import {
   ANKER_TEXTE,
@@ -22,7 +24,6 @@ import {
   formatZeitpunkt,
   type Datenklasse,
 } from './api';
-import { Link } from 'react-router-dom';
 import {
   useDateiabgleich,
   useLoeschauftraege,
@@ -44,20 +45,41 @@ import type { CurrentUser } from '@/features/session/types';
  * (ADR-008, ADR-013). Sichtbar ist sie nur für `owner`; die Rollenprüfung
  * steuert hier die Darstellung, verbindlich sind die Serverfunktionen
  * (ADR-004).
+ *
+ * UXR-011 ändert nur die Darstellung: Frist, Löschweg, Aufträge und Abgleich
+ * laufen unverändert über dieselben Funktionen.
  */
+
+/** Der nächste Schritt nach einem Ladefehler (WRT-01). */
+const ERNEUT_LADEN = 'Bitte die Verbindung prüfen und später erneut versuchen.';
+
+/**
+ * So viele Einträge holt `fetchDeletionRuns` (`p_limit` in `api.ts`). Die
+ * Seite sagt es, statt eine gekürzte Liste als vollständigen Nachweis
+ * auszugeben (ORG-22).
+ */
+const JOURNAL_EINTRAEGE = 50;
 
 function klasseTexte(key: string) {
   return DATENKLASSEN[key] ?? { label: key, beschreibung: '' };
 }
 
 function Aufbewahrungsplan() {
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['retention', 'schedule'],
     queryFn: fetchRetentionSchedule,
   });
 
   if (isPending) return <LoadingState label="Aufbewahrungsplan wird geladen …" />;
-  if (isError) return <ErrorState title="Der Aufbewahrungsplan konnte nicht geladen werden." />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Der Aufbewahrungsplan konnte nicht geladen werden."
+        description={ERNEUT_LADEN}
+        onErneut={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <CardGrid>
@@ -98,7 +120,7 @@ function Aufbewahrungsplan() {
                 {klasse.tabellen.map((tabelle) => (
                   <li key={tabelle.name}>
                     <code className="text-ink text-[0.8125rem]">{tabelle.name}</code>
-                    {' — '}
+                    {' – '}
                     {LOESCHWEG_TEXTE[tabelle.modus] ?? tabelle.modus}
                   </li>
                 ))}
@@ -112,13 +134,21 @@ function Aufbewahrungsplan() {
 }
 
 function Loeschsperren() {
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['retention', 'legal-holds'],
     queryFn: fetchLegalHolds,
   });
 
   if (isPending) return <LoadingState label="Löschsperren werden geladen …" />;
-  if (isError) return <ErrorState title="Die Löschsperren konnten nicht geladen werden." />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Die Löschsperren konnten nicht geladen werden."
+        description={ERNEUT_LADEN}
+        onErneut={() => void refetch()}
+      />
+    );
+  }
 
   if (data.length === 0) {
     return (
@@ -148,14 +178,28 @@ function Loeschsperren() {
   );
 }
 
+/**
+ * Das Löschjournal.
+ *
+ * Spalten erst ab 1024 px (ORG-12), darunter untereinander wie am Telefon;
+ * jede Angabe trägt ihre Bezeichnung für Vorlesesoftware (UIK-24).
+ */
 function Loeschjournal() {
-  const { data, isPending, isError } = useQuery({
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['retention', 'runs'],
     queryFn: fetchDeletionRuns,
   });
 
   if (isPending) return <LoadingState label="Löschjournal wird geladen …" />;
-  if (isError) return <ErrorState title="Das Löschjournal konnte nicht geladen werden." />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Das Löschjournal konnte nicht geladen werden."
+        description={ERNEUT_LADEN}
+        onErneut={() => void refetch()}
+      />
+    );
+  }
 
   if (data.length === 0) {
     return (
@@ -167,28 +211,39 @@ function Loeschjournal() {
   }
 
   return (
-    <ul className="divide-line divide-y">
-      {data.map((lauf) => (
-        <li
-          key={`${lauf.run_id}-${lauf.retention_class}-${lauf.target_table}`}
-          className="py-3 sm:grid sm:grid-cols-[11rem_1fr_6rem] sm:items-baseline sm:gap-4 sm:py-2.5"
-        >
-          <span className="text-ink-muted block text-sm tabular-nums">
-            {formatZeitpunkt(lauf.deleted_at)}
-          </span>
-          <span className="text-ink text-liste mt-0.5 block sm:mt-0">
-            {klasseTexte(lauf.retention_class).label}
-            <span className="text-ink-muted">
-              {' · '}
-              <code className="text-[0.8125rem]">{lauf.target_table}</code>
+    <>
+      <ul className="divide-line divide-y">
+        {data.map((lauf) => (
+          <li
+            key={`${lauf.run_id}-${lauf.retention_class}-${lauf.target_table}`}
+            className="py-3 lg:grid lg:grid-cols-[11rem_minmax(0,1fr)_7rem] lg:items-baseline lg:gap-4 lg:py-2.5"
+          >
+            <span className="text-ink-muted block text-sm tabular-nums">
+              <span className="sr-only">Zeitpunkt: </span>
+              {formatZeitpunkt(lauf.deleted_at)}
             </span>
-          </span>
-          <span className="text-ink-muted mt-0.5 block text-sm tabular-nums sm:mt-0 sm:text-right">
-            {lauf.record_count} {lauf.record_count === 1 ? 'Datensatz' : 'Datensätze'}
-          </span>
-        </li>
-      ))}
-    </ul>
+            <span className="text-ink text-liste mt-0.5 block min-w-0 wrap-anywhere lg:mt-0">
+              <span className="sr-only">Datenklasse: </span>
+              {klasseTexte(lauf.retention_class).label}
+              <span className="text-ink-muted">
+                {' · '}
+                <code className="text-[0.8125rem]">{lauf.target_table}</code>
+              </span>
+            </span>
+            <span className="text-ink-muted mt-0.5 block text-sm tabular-nums lg:mt-0 lg:text-right">
+              <span className="sr-only">Anzahl: </span>
+              {lauf.record_count} {lauf.record_count === 1 ? 'Datensatz' : 'Datensätze'}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {data.length >= JOURNAL_EINTRAEGE ? (
+        <Statusmeldung className="mt-3">
+          Angezeigt werden die letzten {JOURNAL_EINTRAEGE} Einträge; ältere bleiben im Journal
+          erhalten.
+        </Statusmeldung>
+      ) : null}
+    </>
   );
 }
 
@@ -205,15 +260,31 @@ function Loeschjournal() {
  * **Die Quittung wird verdient, nicht behauptet.** Der Server prüft nach dem
  * Entfernen selbst, dass das Objekt weg ist; sonst bleibt der Auftrag offen.
  * Deshalb kann hier nichts als „erledigt" dastehen, was es nicht ist.
+ *
+ * **Endgültig erst nach Rückfrage (ORG-21, ZST-14).** Das Ausführen entfernt
+ * alle offenen Objekte unwiederbringlich; ein Fehlgriff beim Scrollen am
+ * Telefon genügte bis UXR-011. Die Löschung an der Datei ist zwar schon
+ * bestätigt, sie kann aber Wochen zurückliegen und von einer anderen Person
+ * stammen. Der Vorgang selbst bleibt derselbe.
  */
 function Loeschauftraege({ user }: { user: CurrentUser }) {
+  const queryClient = useQueryClient();
   const { auftraege, isPending, isError, verborgen } = useLoeschauftraege(user);
   const ausfuehren = useLoeschauftraegeAusfuehren();
 
   if (verborgen) return null;
   if (isPending) return <LoadingState label="Löschaufträge werden geladen …" />;
-  if (isError)
-    return <ErrorState title="Die offenen Löschaufträge konnten nicht geladen werden." />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Die offenen Löschaufträge konnten nicht geladen werden."
+        description={ERNEUT_LADEN}
+        onErneut={() =>
+          void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] })
+        }
+      />
+    );
+  }
 
   if (auftraege.length === 0) {
     return (
@@ -225,13 +296,14 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
   }
 
   const ergebnis = ausfuehren.data;
+  const anzahl = auftraege.length;
 
   return (
     <>
       <Statusmeldung ton="warnung">
-        {auftraege.length === 1
+        {anzahl === 1
           ? 'Eine Datei ist aus der Akte entfernt, liegt aber noch in der Ablage.'
-          : `${auftraege.length} Dateien sind aus der Akte entfernt, liegen aber noch in der Ablage.`}{' '}
+          : `${anzahl} Dateien sind aus der Akte entfernt, liegen aber noch in der Ablage.`}{' '}
         Erst das Ausführen schließt die Löschung ab.
       </Statusmeldung>
 
@@ -251,16 +323,23 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
         ))}
       </ul>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          disabled={ausfuehren.isPending}
-          onClick={() => ausfuehren.mutate(auftraege)}
+      <div className="mt-4">
+        <Rueckfrage
+          ausloeser={`Alle ${anzahl} ausführen und quittieren`}
+          ausloeserVariante="primary"
+          bestaetigen="Endgültig entfernen"
+          bestaetigenLaeuft="Wird ausgeführt …"
+          laeuft={ausfuehren.isPending}
+          onBestaetigen={() => ausfuehren.mutateAsync(auftraege)}
+          onAbbrechen={() => ausfuehren.reset()}
         >
-          {ausfuehren.isPending
-            ? 'Wird ausgeführt …'
-            : `Alle ${auftraege.length} ausführen und quittieren`}
-        </Button>
+          <p>
+            {anzahl === 1
+              ? 'Eine Datei endgültig aus der Ablage entfernen?'
+              : `${anzahl} Dateien endgültig aus der Ablage entfernen?`}{' '}
+            Rückgängig machen lässt sich das nicht.
+          </p>
+        </Rueckfrage>
       </div>
 
       {ergebnis && ergebnis.fehler.length > 0 ? (
@@ -270,7 +349,7 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
         </Statusmeldung>
       ) : null}
       {ergebnis && ergebnis.fehler.length === 0 && ergebnis.erledigt > 0 ? (
-        <Statusmeldung className="mt-2">
+        <Statusmeldung ton="erfolg" className="mt-2">
           {ergebnis.erledigt} Löschung{ergebnis.erledigt === 1 ? '' : 'en'} abgeschlossen und
           quittiert.
         </Statusmeldung>
@@ -301,20 +380,42 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
  * geöffnet wird. Die Anwendung verschickt nichts (CAL-013), und einen
  * Meldeweg zu bauen wäre ein eigener Auftrag. Deshalb gehört der Blick hierher
  * in den monatlichen Bericht (ADR-010 Punkt 6).
+ *
+ * **Deckungsgleich erst nach den Aufträgen (ORG-22).** Vorgemerkte Objekte
+ * zählt der Abgleich nicht mehr mit, sie liegen aber noch in der Ablage. Bis
+ * UXR-011 sprang der Abschnitt nach „Zur Löschung vormerken" auf
+ * „deckungsgleich". Solange Aufträge offen sind, sagt er, was noch fehlt.
  */
 function Dateiabgleich({ user }: { user: CurrentUser }) {
+  const queryClient = useQueryClient();
   const { fehlende, verwaiste, isPending, isError, verborgen } = useDateiabgleich(user);
+  const offen = useLoeschauftraege(user);
   const vormerken = useVerwaisteVormerken();
 
   if (verborgen) return null;
   if (isPending) return <LoadingState label="Abgleich wird gerechnet …" />;
-  if (isError) return <ErrorState title="Der Abgleich konnte nicht gerechnet werden." />;
+  if (isError) {
+    return (
+      <ErrorState
+        title="Der Abgleich konnte nicht gerechnet werden."
+        description={ERNEUT_LADEN}
+        onErneut={() =>
+          void queryClient.invalidateQueries({ queryKey: ['patient-file-reconciliation'] })
+        }
+      />
+    );
+  }
 
   if (fehlende.length === 0 && verwaiste === 0) {
-    return (
+    return offen.auftraege.length > 0 ? (
+      <EmptyState
+        title="Deckungsgleich, sobald die offenen Löschaufträge oben ausgeführt sind"
+        description="Die vorgemerkten Objekte liegen bis dahin noch in der Ablage."
+      />
+    ) : (
       <EmptyState
         title="Beide Speicher sind deckungsgleich"
-        description="Zu jeder Datei in einer Akte liegt genau ein Objekt in der Ablage — und umgekehrt."
+        description="Zu jeder Datei in einer Akte liegt genau ein Objekt in der Ablage – und umgekehrt."
       />
     );
   }
@@ -327,7 +428,7 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
             {fehlende.length === 1
               ? 'Zu einer Datei in einer Akte fehlt die abgelegte Fassung.'
               : `Zu ${fehlende.length} Dateien in Akten fehlt die abgelegte Fassung.`}{' '}
-            Das ist ein Verlust und kein Aufräumfall — bitte prüfen, ob eine Wiederherstellung nötig
+            Das ist ein Verlust und kein Aufräumfall – bitte prüfen, ob eine Wiederherstellung nötig
             ist.
           </Statusmeldung>
           <ul className="mt-3">
@@ -342,12 +443,13 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
                       : ''}
                   </span>
                 </span>
-                <Link
+                <Textlink
                   to={`/patienten/${datei.patient_id}/dateien`}
-                  className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+                  alleinstehend
+                  className="text-sm"
                 >
                   Akte öffnen
-                </Link>
+                </Textlink>
               </li>
             ))}
           </ul>
@@ -368,9 +470,9 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
             </Button>
           </div>
           {vormerken.isSuccess ? (
-            <Statusmeldung className="mt-2">
-              {vormerken.data} Löschauftr{vormerken.data === 1 ? 'ag' : 'äge'} angelegt — oben unter
-              „Offene Löschaufträge" ausführen.
+            <Statusmeldung ton="erfolg" className="mt-2">
+              {vormerken.data} Löschauftr{vormerken.data === 1 ? 'ag' : 'äge'} angelegt – oben unter
+              „Offene Löschaufträge“ ausführen.
             </Statusmeldung>
           ) : null}
           {vormerken.isError ? (
@@ -392,10 +494,12 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
         description="Was wie lange bleibt, was gerade zurückgehalten wird und was gelöscht wurde. Fristen ändern sich über eine Migration, nicht hier."
       />
 
+      {/* Plan und Sperren sind Kartenlisten; die Karten sind die Rahmen.
+          Bis UXR-011 lag um die Karten ein zweiter Rahmen - bei 390 px blieben
+          dem Inhalt rund 270 von 350 px (RSP-16, ORG-16). */}
       <Section
         titel="Aufbewahrungsplan"
         hinweis="Eine Zeile je Datenklasse. Ein Kürzel ANN-NNN bedeutet: Die Frist ist eine begründete Annahme und wartet auf die Datenschutzprüfung."
-        rahmen
       >
         <Aufbewahrungsplan />
       </Section>
@@ -403,7 +507,6 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
       <Section
         titel="Löschsperren"
         hinweis="Eine gesperrte Akte wird nicht gelöscht, bleibt aber vollständig benutzbar."
-        rahmen
       >
         <Loeschsperren />
       </Section>
@@ -418,7 +521,7 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
 
       <Section
         titel="Abgleich der Dateiablage"
-        hinweis="Datenbank und Objektspeicher können auseinanderlaufen. Hier steht, ob sie es tun — gerechnet beim Öffnen dieser Seite, nicht laufend überwacht."
+        hinweis="Datenbank und Objektspeicher können auseinanderlaufen. Hier steht, ob sie es tun – gerechnet beim Öffnen dieser Seite, nicht laufend überwacht."
         rahmen
       >
         <Dateiabgleich user={user} />
@@ -426,7 +529,7 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
 
       <Section
         titel="Löschjournal"
-        hinweis="Der Nachweis der ausgeführten Löschungen. Er überlebt eine Wiederherstellung und wird danach erneut angewendet."
+        hinweis={`Der Nachweis der ausgeführten Löschungen, die letzten ${JOURNAL_EINTRAEGE} Einträge. Er überlebt eine Wiederherstellung und wird danach erneut angewendet.`}
         rahmen
       >
         <Loeschjournal />

@@ -1,9 +1,13 @@
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import type { Location } from '@/features/appointments/api';
+import { Listenfehler } from '@/features/appointments/Rueckmeldungen';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
+
+/** Stand der Standortliste für die Auswahl des Hauptstandorts (ORG-14). */
+export type StandorteStand = 'laedt' | 'fehler' | 'bereit';
 
 /**
  * Eingabefelder der Mitarbeiterstammdaten.
@@ -14,27 +18,43 @@ import { Feldgruppe, Section } from '@/components/ui/Section';
  *
  * Die Privatangaben stehen bewusst in einem eigenen Abschnitt mit eigenem
  * Hinweis: sie liegen in einer eigenen Tabelle und sind nur für die
- * Praxisinhaberin und die betroffene Person lesbar
+ * Praxisinhaber:in und die betroffene Person lesbar
  * (PROJECT_PRINCIPLES.md 20).
  *
  * Für eine Rolle ohne diesen Zugriff - seit E10 kann das Office Stammdaten
  * pflegen - entfällt der Abschnitt vollständig. Er wird nicht mit leeren
  * Feldern gezeigt: die Werte kommen gar nicht erst an, und ein Speichern
  * dürfte sie nicht löschen (ANN-024, PROJECT_PRINCIPLES.md 4.7).
+ *
+ * **Ohne Standortliste keine stille Leere (ORG-14).** Bis UXR-011 bot die
+ * Auswahl nach einem Ladefehler nur „kein fester Standort" an - als wäre das
+ * die ganze Wahl. Jetzt steht im Feld, dass die Liste lädt oder fehlt, ein
+ * gespeicherter Standort bleibt als Auswahl stehen, und darunter steht der Weg,
+ * es noch einmal zu versuchen.
  */
 export function StaffMasterDataFields({
   werte,
   fehler,
   standorte,
+  standorteStand = 'bereit',
+  bisherigerStandort = null,
+  onStandorteErneut,
   privat,
   onChange,
 }: {
   werte: Record<StaffFeld, string>;
   fehler: Partial<Record<StaffFeld, string>>;
   standorte: readonly Location[];
+  standorteStand?: StandorteStand;
+  /** Name des gespeicherten Hauptstandorts, falls die Liste ihn nicht enthält. */
+  bisherigerStandort?: string | null;
+  onStandorteErneut?: () => void;
   privat: boolean;
   onChange: (feld: StaffFeld, wert: string) => void;
 }) {
+  const gewaehlt = werte.primary_location_id;
+  const fehltInListe = gewaehlt !== '' && !standorte.some((standort) => standort.id === gewaehlt);
+
   return (
     <>
       <Section titel="Person">
@@ -64,7 +84,7 @@ export function StaffMasterDataFields({
 
       <Section
         titel="Dienstlich"
-        hinweis="Für alle Praxisrollen sichtbar - für Vertretung, Rückfragen und Einsatzplanung."
+        hinweis="Für alle Praxisrollen sichtbar – für Vertretung, Rückfragen und Einsatzplanung."
       >
         <Feldgruppe>
           <Field
@@ -87,35 +107,59 @@ export function StaffMasterDataFields({
             error={fehler.work_phone}
             onChange={(event) => onChange('work_phone', event.target.value)}
           />
-          <Select
-            label="Hauptstandort"
-            name="primary_location_id"
-            feldId={staffFeldId('primary_location_id')}
-            value={werte.primary_location_id}
-            error={fehler.primary_location_id}
-            onChange={(event) => onChange('primary_location_id', event.target.value)}
-          >
-            <option value="">— kein fester Standort —</option>
-            {standorte.map((standort) => (
-              <option key={standort.id} value={standort.id}>
-                {standort.name}
-              </option>
-            ))}
-          </Select>
+          <div className="flex flex-col gap-2">
+            <Select
+              label="Hauptstandort"
+              name="primary_location_id"
+              feldId={staffFeldId('primary_location_id')}
+              value={gewaehlt}
+              disabled={standorteStand === 'laedt'}
+              error={fehler.primary_location_id}
+              onChange={(event) => onChange('primary_location_id', event.target.value)}
+            >
+              {standorteStand === 'laedt' ? (
+                // Solange die Liste lädt, steht genau das im Feld - und nicht
+                // „Kein fester Standort". Der Wert bleibt der gespeicherte.
+                <option value={gewaehlt}>Wird geladen …</option>
+              ) : (
+                <>
+                  <option value="">Kein fester Standort</option>
+                  {fehltInListe && bisherigerStandort ? (
+                    <option value={gewaehlt}>{bisherigerStandort}</option>
+                  ) : null}
+                  {standorte.map((standort) => (
+                    <option key={standort.id} value={standort.id}>
+                      {standort.name}
+                    </option>
+                  ))}
+                </>
+              )}
+            </Select>
+            {standorteStand === 'fehler' ? (
+              <Listenfehler
+                text={
+                  fehltInListe && bisherigerStandort
+                    ? 'Die Standorte konnten nicht geladen werden – der bisherige Hauptstandort bleibt erhalten.'
+                    : 'Die Standorte konnten nicht geladen werden.'
+                }
+                onErneut={() => onStandorteErneut?.()}
+              />
+            ) : null}
+          </div>
         </Feldgruppe>
       </Section>
 
       {!privat ? (
         <p className="text-ink-muted mt-6 max-w-prose text-xs leading-relaxed">
           Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt
-          ausschließlich die Praxisinhaberin. Sie bleiben beim Speichern unverändert.
+          ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.
         </p>
       ) : null}
 
       {privat ? (
         <Section
           titel="Privat"
-          hinweis="Beschäftigtendaten. Nur für die Praxisinhaberin und die betroffene Person sichtbar; alle Angaben sind freiwillig."
+          hinweis="Beschäftigtendaten. Nur für die Praxisinhaber:in und die betroffene Person sichtbar; alle Angaben sind freiwillig."
         >
           <Feldgruppe>
             <Field

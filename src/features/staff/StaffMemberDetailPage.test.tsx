@@ -80,7 +80,9 @@ describe('StaffMemberDetailPage', () => {
   describe('Kontakt und Planung', () => {
     it('bietet Diensttelefon und dienstliche E-Mail als Weg an', async () => {
       renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
-      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+      // Der erste Test einer Datei zahlt das erste Zeichnen; unter Last dauert
+      // das laenger als die Sekunde, die findBy von sich aus wartet.
+      await screen.findByRole('heading', { name: 'Anna Beispiel' }, { timeout: 5000 });
 
       expect(screen.getByRole('link', { name: '+49 7071 0000102' })).toHaveAttribute(
         'href',
@@ -105,7 +107,7 @@ describe('StaffMemberDetailPage', () => {
       );
     });
 
-    it('bietet beides nicht an, wenn die Person gar nicht behandelt', async () => {
+    it('bietet beides nicht an, wenn die Person gar nicht behandelt - und sagt warum (ORG-25)', async () => {
       fetchAssignableTherapists.mockResolvedValue([]);
       renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
       await screen.findByRole('heading', { name: 'Anna Beispiel' });
@@ -113,6 +115,20 @@ describe('StaffMemberDetailPage', () => {
       await waitFor(() => expect(fetchAssignableTherapists).toHaveBeenCalled());
       expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: 'Arbeitszeiten' })).not.toBeInTheDocument();
+      expect(
+        await screen.findByText(
+          /Nicht für Termine zuordenbar – dafür braucht die Person einen Zugang/,
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it('sagt ohne geladene Antwort nichts zur Zuordenbarkeit (ORG-14)', async () => {
+      fetchAssignableTherapists.mockRejectedValue(new Error('kaputt'));
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+      await waitFor(() => expect(fetchAssignableTherapists).toHaveBeenCalled());
+      expect(screen.queryByText(/Nicht für Termine zuordenbar/)).not.toBeInTheDocument();
     });
 
     it('fragt fuer trainer nicht nach zuordenbaren Personen (BEF-034)', async () => {
@@ -123,7 +139,27 @@ describe('StaffMemberDetailPage', () => {
       await screen.findByRole('heading', { name: 'Anna Beispiel' });
       expect(fetchAssignableTherapists).not.toHaveBeenCalled();
       expect(screen.queryByRole('link', { name: 'Woche im Kalender' })).not.toBeInTheDocument();
+      expect(screen.queryByText(/Nicht für Termine zuordenbar/)).not.toBeInTheDocument();
     });
+
+    it('macht Telefon und E-Mail zu Links mit 44 px Tippziel (RSP-05)', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+      for (const name of ['+49 7071 0000102', 'anna.beispiel@praxis.invalid']) {
+        expect(screen.getByRole('link', { name })).toHaveClass('min-h-11', 'underline');
+      }
+    });
+  });
+
+  it('nennt den Abschnitt „Zugang“ nur, wo es ihn gibt (ORG-25)', async () => {
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+    await screen.findByRole('heading', { name: 'Anna Beispiel' });
+
+    expect(screen.queryByRole('heading', { name: 'Zugang' })).not.toBeInTheDocument();
+    expect(screen.getByText(/Zugänge und Rollen vergibt die Praxisinhaber:in/)).toBeInTheDocument();
+    expect(screen.queryByText(/im Abschnitt/)).not.toBeInTheDocument();
+    expect(document.body.textContent).not.toMatch(/Benutzerkonto|Mitarbeiterdatensatz/);
   });
 
   it('zeigt die dienstlichen Angaben', async () => {
@@ -262,9 +298,61 @@ describe('StaffMemberDetailPage', () => {
     expect(letzterStatusaufruf().status).toBe('active');
   });
 
+  it('bestaetigt den Wechsel am Knopf und nimmt den Fokus dorthin (ZST-16)', async () => {
+    // Bis UXR-011 aenderte sich nur der Seitenkopf - am Telefon weit ueber
+    // dem Knopf, und der Fokus fiel an den Seitenanfang.
+    const user = userEvent.setup();
+    fetchStaffMember
+      .mockResolvedValueOnce(aktiv)
+      .mockResolvedValue({ ...aktiv, employment_status: 'inactive' });
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
+    await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
+
+    const meldung = await screen.findByText('Als inaktiv geführt.');
+    expect(meldung.closest('[tabindex="-1"]')).toHaveFocus();
+    expect(
+      screen.getByText('Inaktiv – wird nicht mehr für neue Termine angeboten.'),
+    ).toBeInTheDocument();
+  });
+
+  it('sagt beim gescheiterten Wechsel, was zu tun ist (ORG-15)', async () => {
+    const user = userEvent.setup();
+    setStaffEmploymentStatus.mockRejectedValue(new Error('Netz weg'));
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Als inaktiv führen' }));
+    await user.click(screen.getByRole('button', { name: 'Als inaktiv führen' }));
+
+    expect(
+      await screen.findByText(
+        'Der Beschäftigungsstatus konnte nicht geändert werden. Bitte die Verbindung prüfen und erneut versuchen.',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('zeigt eine verstaendliche Meldung, wenn der Datensatz nicht sichtbar ist', async () => {
     fetchStaffMember.mockResolvedValue(null);
     renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
+    expect(screen.getByText(/Diese Person gibt es nicht/)).toBeInTheDocument();
+    // Auch ohne Datensatz traegt die Seite einen Titel und einen Weg zurueck.
+    expect(screen.getByRole('heading', { level: 1, name: 'Mitarbeiter:in' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', { name: '← Zurück zu den Mitarbeitenden' }),
+    ).toBeInTheDocument();
+  });
+
+  it('bietet bei einem Ladefehler einen neuen Versuch an', async () => {
+    const user = userEvent.setup();
+    fetchStaffMember.mockRejectedValueOnce(new Error('kaputt'));
+    renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+
+    expect(
+      await screen.findByText('Die Mitarbeiterdaten konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByRole('heading', { name: 'Anna Beispiel' })).toBeInTheDocument();
   });
 });

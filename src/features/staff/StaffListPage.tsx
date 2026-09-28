@@ -2,22 +2,24 @@ import { useMemo, useState } from 'react';
 import { useQueries } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
+import { Select } from '@/components/ui/Select';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
+import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
 import { fullName } from '@/features/patients/api';
 import {
   canManageAppointments,
+  canManageStaffAccounts,
   canManageStaffMasterData,
   type CurrentUser,
 } from '@/features/session/types';
 import { fetchStaffMembers, type StaffMember } from './api';
 
 type StatusFilter = 'all' | 'active' | 'inactive';
-
-const selectClass =
-  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
 
 function parseStatusFilter(value: string | null): StatusFilter {
   return value === 'active' || value === 'inactive' ? value : 'all';
@@ -43,13 +45,14 @@ function matches(staff: StaffMember, query: string): boolean {
 /**
  * Mitarbeiterliste.
  *
- * Lesbar für alle Praxisrollen; angelegt und geändert wird nur durch die
- * administrative Praxisrolle. Die ausgeblendete Schaltfläche ist dabei keine
- * Zugriffskontrolle - verbindlich prüft der Server (ADR-004).
+ * Lesbar für alle Praxisrollen; angelegt und geändert wird nur durch
+ * Praxisinhaber:in und Praxismanagement. Die ausgeblendete Schaltfläche ist
+ * dabei keine Zugriffskontrolle - verbindlich prüft der Server (ADR-004).
  *
  * Neben dem Beschäftigungsstatus wird ausgewiesen, ob eine Person aktuell als
  * behandelnde Person zuordenbar ist. Das ist eine andere Frage: dafür braucht
- * es zusätzlich einen eigenen Zugang mit therapeutischer Rolle (CAL-001).
+ * es zusätzlich einen eigenen Zugang mit der Rolle Therapeut:in oder
+ * Teamleitung (CAL-001).
  */
 export function StaffListPage({ user }: { user: CurrentUser }) {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -57,6 +60,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
   const [status, setStatus] = useState<StatusFilter>(() =>
     parseStatusFilter(searchParams.get('status')),
   );
+  const fragtZuordenbarkeit = canManageAppointments(user.roles);
 
   const [liste, zuordenbar] = useQueries({
     queries: [
@@ -69,7 +73,7 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         queryKey: ['assignable-therapists'],
         queryFn: fetchAssignableTherapists,
         retry: false,
-        enabled: canManageAppointments(user.roles),
+        enabled: fragtZuordenbarkeit,
       },
     ],
   });
@@ -86,6 +90,11 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
       ),
     [liste.data, query, status],
   );
+
+  // Der gefilterte Stand reist als Rückweg mit (ORG-24): „← Zurück zu den
+  // Mitarbeitenden" führt dann in genau diese Liste, nicht in die ungefilterte.
+  const filter = toSearchParams(query, status).toString();
+  const rueckweg = filter ? `/praxis/team?${filter}` : null;
 
   function updateQuery(value: string) {
     setQuery(value);
@@ -121,29 +130,46 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
             onChange={updateQuery}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="staff-status" className="text-ink text-sm font-medium">
-            Beschäftigung
-          </label>
-          <select
-            id="staff-status"
-            className={selectClass}
+        {/* Der Baustein statt einer Klassenkopie (ORG-16, TOK-13, UIK-19):
+            48 px wie das Suchfeld daneben, die Beschriftungen auf einer Höhe. */}
+        <div className="w-full sm:w-48">
+          <Select
+            label="Beschäftigung"
+            feldId="staff-status"
             value={status}
             onChange={(event) => updateStatus(event.target.value as StatusFilter)}
           >
             <option value="all">Alle</option>
             <option value="active">Aktiv</option>
             <option value="inactive">Inaktiv</option>
-          </select>
+          </Select>
         </div>
       </div>
 
       {liste.isPending ? <LoadingState label="Mitarbeiterliste wird geladen …" /> : null}
-      {liste.isError ? (
+      {liste.isError && !liste.data ? (
         <ErrorState
           title="Die Mitarbeiterliste konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und später erneut versuchen."
+          onErneut={() => void liste.refetch()}
         />
+      ) : null}
+      {liste.isError && liste.data ? (
+        <NachladeHinweis
+          className="mb-4"
+          laeuft={liste.isFetching}
+          onErneut={() => void liste.refetch()}
+        />
+      ) : null}
+      {/* Ohne Antwort keine Aussage (ORG-14): Bis UXR-011 trug nach einem
+          Ladefehler jede aktive Person „nicht für Termine zuordenbar". */}
+      {fragtZuordenbarkeit && zuordenbar.isError && liste.data ? (
+        <div className="mb-4">
+          <Listenfehler
+            text="Ob jemand für Termine zuordenbar ist, konnte nicht geladen werden."
+            onErneut={() => void zuordenbar.refetch()}
+          />
+        </div>
       ) : null}
 
       {liste.data && sichtbar.length === 0 ? (
@@ -157,12 +183,15 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
           {sichtbar.map((staff) => {
             const aktiv = staff.employment_status === 'active';
-            const kannBehandeln = zuordenbareIds.has(staff.id);
+            const nichtZuordenbar = aktiv && zuordenbar.isSuccess && !zuordenbareIds.has(staff.id);
             return (
               <li key={staff.id}>
+                {/* Am Telefon steht das Etikett unter der Standortzeile
+                    (ORG-11): Neben dem Namen ließ es ihm bei 390 px rund
+                    115 px, und ausgerechnet der Name wurde gekürzt. */}
                 <Link
-                  to={`/praxis/team/${staff.id}`}
-                  className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
+                  to={mitRueckweg(`/praxis/team/${staff.id}`, rueckweg)}
+                  className="hover:bg-surface-sunken flex min-h-16 flex-col gap-1.5 py-3 transition-colors sm:flex-row sm:items-center sm:justify-between sm:gap-4"
                 >
                   <span className="min-w-0">
                     <span className="text-ink text-liste block truncate font-medium">
@@ -170,21 +199,20 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
                       {staff.primary_location_name ?? 'Ohne festen Standort'}
-                      {staff.work_phone ? ` · ${staff.work_phone}` : ''}
+                      {staff.work_phone ? (
+                        <>
+                          {' · '}
+                          <span className="whitespace-nowrap">{staff.work_phone}</span>
+                        </>
+                      ) : null}
                     </span>
                   </span>
-                  <span className="flex shrink-0 flex-col items-end gap-1">
-                    {!aktiv ? (
-                      <span className="bg-surface-sunken text-ink-muted rounded-pill px-2.5 py-0.5 text-xs">
-                        inaktiv
-                      </span>
-                    ) : null}
-                    {aktiv && !kannBehandeln && !zuordenbar.isPending ? (
-                      <span className="bg-surface-sunken text-ink-muted rounded-pill px-2.5 py-0.5 text-xs">
-                        nicht für Termine zuordenbar
-                      </span>
-                    ) : null}
-                  </span>
+                  {!aktiv || nichtZuordenbar ? (
+                    <span className="flex shrink-0 flex-wrap gap-1 sm:flex-col sm:items-end">
+                      {!aktiv ? <Badge>Inaktiv</Badge> : null}
+                      {nichtZuordenbar ? <Badge>Nicht für Termine zuordenbar</Badge> : null}
+                    </span>
+                  ) : null}
                 </Link>
               </li>
             );
@@ -192,10 +220,17 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         </ul>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
-        eigenen Zugang mit therapeutischer Rolle hat. Zugänge und Rollen werden nicht hier vergeben.
-      </p>
+      {/* Die Fußnote erklärt nur, was diese Rolle auf der Seite sieht, und
+          sagt der Praxisinhaber:in, wo Zugänge entstehen (ORG-25). */}
+      {fragtZuordenbarkeit ? (
+        <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+          Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
+          eigenen Zugang mit der Rolle Therapeut:in oder Teamleitung hat.
+          {canManageStaffAccounts(user.roles)
+            ? ' Zugang und Rollen vergeben Sie bei der Person unter „Zugang“.'
+            : ''}
+        </p>
+      ) : null}
     </>
   );
 }

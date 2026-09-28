@@ -1,8 +1,10 @@
+import { useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Wortmarke } from '@/components/ui/Wortmarke';
+import { Vollseite } from '@/app/Vollseite';
+import { useFokusNachWechsel } from '@/features/auth/fokus';
 import { KeineEinladungError, nimmZugangAn } from './konto-api';
 
 /**
@@ -20,47 +22,77 @@ import { KeineEinladungError, nimmZugangAn } from './konto-api';
  * Liegt keine Einladung vor, bleibt das Konto zugriffslos (ANN-025). Die
  * Meldung dazu nennt keinen Grund, der Auskunft über die Praxis gäbe: Sie
  * unterscheidet nicht zwischen „nie eingeladen", „abgelaufen" und
- * „zurückgenommen".
+ * „zurückgenommen". Sobald die Einladung steht, lässt sie sich von hier aus
+ * erneut prüfen, ohne Abmelden und neue Mail (AUTH-08).
+ *
+ * Die Hülle ist die der übrigen Seiten außerhalb des Rahmens (AUTH-12).
  */
 export function ZugangEinrichtenPage({
   onEingerichtet,
   onAbmelden,
 }: {
-  onEingerichtet: () => void;
+  /**
+   * Liefert sie ein Versprechen - das Nachladen des Profils -, bleibt der
+   * Knopf bis zum Wechsel in die Anwendung bei „Zugang wird eingerichtet …"
+   * (AUTH-08). Bis dahin sprang er zurück auf „Einladung annehmen".
+   */
+  onEingerichtet: () => void | Promise<unknown>;
   onAbmelden: () => void;
 }) {
   const mutation = useMutation({
     mutationFn: nimmZugangAn,
-    onSuccess: onEingerichtet,
+    onSuccess: () => onEingerichtet(),
   });
 
   const ohneEinladung = mutation.error instanceof KeineEinladungError;
+  const fehlerkasten = useRef<HTMLDivElement>(null);
+
+  // Der Knopf verschwindet mit dem Zustand, den er auslöst; der Fokus geht auf
+  // den Kasten, der an seine Stelle tritt (AUTH-06).
+  useFokusNachWechsel(
+    mutation.isError ? (ohneEinladung ? 'ohne-einladung' : 'fehler') : 'offen',
+    () => fehlerkasten.current,
+  );
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col justify-center px-5 py-10">
-      {/* Vollseite ausserhalb des Anwendungsrahmens, gesehen direkt nach der
-          Anmeldung - sie traegt die Marke wie die Anmeldemaske (MARKE-001). */}
-      <Wortmarke hoehe={40} />
-      <h1 className="text-ink mt-5 text-2xl font-semibold tracking-[-0.01em]">Zugang einrichten</h1>
-
+    <Vollseite
+      titel="Zugang einrichten"
+      kleingedrucktes="Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig. Der Beitritt wird protokolliert."
+    >
       {ohneEinladung ? (
-        <div className="mt-6">
+        <div ref={fehlerkasten} tabIndex={-1} className="outline-none">
           <ErrorState
             title="Für diesen Zugang liegt keine offene Einladung vor."
-            description="Bitte wenden Sie sich an die Praxisleitung. Dieses Konto hat keinen Zugriff auf Daten der Praxis."
+            description="Bitte wenden Sie sich an die Praxisinhaber:in. Dieses Konto hat keinen Zugriff auf Daten der Praxis."
           />
+          <p className="text-ink-muted mt-4 text-sm leading-relaxed">
+            Sobald die Praxisinhaber:in die Einladung angelegt hat, lässt sie sich hier annehmen.
+          </p>
+          <Button
+            variant="secondary"
+            className="mt-4 w-full"
+            disabled={mutation.isPending}
+            onClick={() => mutation.mutate()}
+          >
+            Erneut prüfen
+          </Button>
         </div>
       ) : (
         <>
-          <p className="text-ink-muted mt-3 text-sm leading-relaxed">
+          <p className="text-ink-muted text-sm leading-relaxed">
             Ihr Konto ist angemeldet, aber noch keiner Praxis zugeordnet. Mit dem nächsten Schritt
-            nehmen Sie die Einladung an und erhalten die dafür vorgesehenen Rollen.
+            nehmen Sie die Einladung an und erhalten die dafür vorgesehenen Rollen. Legen Sie danach
+            unter „Mein Konto“ ein eigenes Kennwort fest, damit Sie sich auch ohne Mail anmelden
+            können.
           </p>
 
           {mutation.isError ? (
-            <Statusmeldung ton="fehler" className="mt-4">
-              Der Zugang konnte nicht eingerichtet werden. Bitte erneut versuchen.
-            </Statusmeldung>
+            <div ref={fehlerkasten} tabIndex={-1} className="mt-4 outline-none">
+              <Statusmeldung ton="fehler">
+                Der Zugang konnte nicht eingerichtet werden. Bitte die Verbindung prüfen und erneut
+                versuchen.
+              </Statusmeldung>
+            </div>
           ) : null}
 
           <Button
@@ -76,11 +108,6 @@ export function ZugangEinrichtenPage({
       <Button variant="secondary" className="mt-3 w-full" onClick={onAbmelden}>
         Abmelden
       </Button>
-
-      <p className="text-ink-muted mt-8 text-xs leading-relaxed">
-        Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig. Der Beitritt
-        wird protokolliert.
-      </p>
-    </main>
+    </Vollseite>
   );
 }

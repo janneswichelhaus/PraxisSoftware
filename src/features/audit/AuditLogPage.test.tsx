@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AuditApi from './api';
 import type { AuditEvent, AuditFilter } from './api';
@@ -35,7 +35,12 @@ function event(id: string, action: string, actor: string, total: number): AuditE
 }
 
 describe('AuditLogPage', () => {
-  it('zeigt Zeitpunkt, Benutzer, Aktion, Objekt und Ergebnis', async () => {
+  beforeEach(() => {
+    fetchAuditEvents.mockReset();
+    fetchOrganizationMembers.mockReset();
+  });
+
+  it('zeigt Zeitpunkt, Person, Aktion, Objekt und Ergebnis', async () => {
     fetchAuditEvents.mockResolvedValue({
       events: [event('1', 'patient_record.viewed', 'Anna Beispiel', 1)],
       totalCount: 1,
@@ -54,6 +59,30 @@ describe('AuditLogPage', () => {
     expect(screen.getByTitle('66666666-6666-4666-8666-000000000001')).toHaveTextContent(
       '…000000000001',
     );
+  });
+
+  it('traegt das Wort des Menuepunkts als Titel (ORG-07)', async () => {
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Auditlog' })).toBeInTheDocument();
+  });
+
+  it('benennt jede Angabe der Zeile fuer Vorlesesoftware (UIK-24)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [event('1', 'patient_record.viewed', 'Anna Beispiel', 1)],
+      totalCount: 1,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const zeile = await screen.findByRole('listitem');
+    for (const spalte of ['Zeitpunkt:', 'Person:', 'Vorgang:', 'Ergebnis:']) {
+      expect(within(zeile).getByText(spalte)).toHaveClass('sr-only');
+    }
   });
 
   it('zeigt Systemereignisse mit dem Akteur "System" (DOK-004)', async () => {
@@ -79,6 +108,27 @@ describe('AuditLogPage', () => {
     expect(zeile).not.toHaveTextContent('Unbekannt');
   });
 
+  it('nennt Kontoereignisse und Textbausteine in der Sprache der Oberflaeche (ORG-20)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [
+        {
+          ...event('1', 'account.password_changed', 'Tim Teamleitung', 2),
+          subject_type: 'user_account',
+        },
+        { ...event('2', 'text_snippet.updated', 'Anna Beispiel', 2), subject_type: 'text_snippet' },
+      ],
+      totalCount: 2,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const [konto, baustein] = await screen.findAllByRole('listitem');
+    expect(konto).toHaveTextContent('Eigenes Kennwort geändert · Zugang');
+    expect(baustein).toHaveTextContent('Textbaustein geändert · Textbaustein');
+    expect(document.body.textContent).not.toMatch(/user_account|text_snippet/);
+  });
+
   it('reicht die Filter an den Server weiter statt clientseitig zu filtern', async () => {
     fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
     fetchOrganizationMembers.mockResolvedValue([{ id: 'u-2', display_name: 'Olivia Office' }]);
@@ -87,7 +137,7 @@ describe('AuditLogPage', () => {
     renderWithProviders(<AuditLogPage />);
     await screen.findByText('Keine Einträge im gewählten Zeitraum');
 
-    await user.selectOptions(await screen.findByLabelText('Benutzer'), 'u-2');
+    await user.selectOptions(await screen.findByLabelText('Person'), 'u-2');
     await user.selectOptions(screen.getByLabelText('Aktion'), 'audit_log.read');
 
     await waitFor(() => {
@@ -95,6 +145,24 @@ describe('AuditLogPage', () => {
         expect.objectContaining({ actorUserId: 'u-2', action: 'audit_log.read', page: 0 }),
       );
     });
+  });
+
+  it('haelt die Filter in ihrer Spalte - auch am Telefon (RSP-01, UIK-19)', async () => {
+    // Bis UXR-011 setzte die laengste Aktion die Breite der einzigen Spalte,
+    // und die Seite lief bei 390 px 36 px ueber. jsdom misst keine Breiten;
+    // geprueft wird, was den Ueberlauf verhindert: eine ausdrueckliche Spalte
+    // und Felder in voller Breite und 48 px Hoehe.
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+    await screen.findByText('Keine Einträge im gewählten Zeitraum');
+
+    const felder = ['Von', 'Bis', 'Person', 'Aktion'].map((name) => screen.getByLabelText(name));
+    for (const feld of felder) {
+      expect(feld).toHaveClass('w-full', 'h-12');
+    }
+    expect(felder[0]!.closest('form')).toHaveClass('grid-cols-1');
   });
 
   it('blaettert seitenweise und meldet die Gesamtzahl', async () => {
@@ -128,5 +196,36 @@ describe('AuditLogPage', () => {
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent('Die Auditeinträge konnten nicht geladen werden.');
     expect(meldung.textContent).not.toMatch(/denied/i);
+  });
+
+  it('sagt bei einem Ladefehler, was zu tun ist, und bietet einen neuen Versuch an (ORG-15)', async () => {
+    // Die Seite sieht nur, wer sie sehen darf - „nur fuer die Praxisleitung
+    // freigegeben" war fuer die Praxisinhaber:in die falsche Auskunft.
+    fetchAuditEvents
+      .mockRejectedValueOnce(new Error('Netz weg'))
+      .mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<AuditLogPage />);
+
+    const meldung = await screen.findByRole('alert');
+    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).not.toHaveTextContent(/freigegeben|Praxisleitung/);
+
+    await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
+    expect(await screen.findByText('Keine Einträge im gewählten Zeitraum')).toBeInTheDocument();
+  });
+
+  it('sagt, wenn die Personenliste fuer den Filter fehlt (ORG-14)', async () => {
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockRejectedValue(new Error('kaputt'));
+
+    renderWithProviders(<AuditLogPage />);
+
+    expect(
+      await screen.findByText('Die Liste der Personen konnte nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
   });
 });
