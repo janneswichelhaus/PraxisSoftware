@@ -38,4 +38,4 @@ Stand 2026-09-23 · ersetzt für die Sichtung die Einzelschritte in
 
 ## Ergebnis
 
-Gesichtet am: — · Gerät: — · Befunde: — (neue nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
+Teilweise gesichtet am: 2026-09-28 · Gerät: Android-Handy und Windows-Rechner, Test-Umgebung · Schritte **1 und 8 ok**, keine Befunde. Offen: Schritte 2 bis 7 (Vorbereitung fehlt, siehe oben) sowie 9 bis 11.

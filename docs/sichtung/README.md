@@ -27,7 +27,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | Datei                                        | Etappe                            | Stand                                                                                |
 | -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
 | [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | gesichtet 2026-09-28 (BEF-072 bis BEF-079)                                           |
-| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                                                                |
+| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | teilweise 2026-09-28 (Schritte 1 und 8); 2–7 warten auf Testdaten                    |
 | [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
 | [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
