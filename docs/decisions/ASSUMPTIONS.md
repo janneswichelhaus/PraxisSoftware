@@ -1726,3 +1726,15 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sob
 **Anker.** `app.territory_day_status` in `supabase/migrations/20260928110000_prx_002_territories.sql` (die eine Stelle der Regel), `check_territory_days` für die Formulare; Hinweis `src/features/territories/TerritoryHint.tsx`; Tests in `supabase/tests/territories.test.ts`.
 
 **Änderungspfad.** Andere Grenze der Tageshälfte oder Präfixe statt genauer Postleitzahlen: nur `app.territory_day_status` und die Prüfung in `save_territory` · Aufwand `klein`. Sperre statt Warnung: Prüfung in `create_appointment` mit Rückfrage wie bei der Arbeitszeit · Aufwand `mittel`.
+
+### ANN-136 — Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach den ersten Wochen mit der Suche; E12 Punkt 4 (Warnung oder Sperre)
+
+**Annahme.** Die Terminsuche schlägt je freier Lücke den ersten Rasterpunkt in der Wunschzeit vor und danach dicht aufeinander folgende Plätze (Beginn plus Dauer), höchstens 50 in höchstens 42 Tagen. Belegt ist, was die Therapeut:in **oder** die Patient:in schon hat. Beim Hausbesuch stehen Vorschläge im Gebietstag vorn (ANN-135). Für die ersten **zehn** Hausbesuchsvorschläge holt die Anwendung die Fahrzeit von und zu den Nachbarterminen derselben Person live mit **einer** Matrix beim eigenen Kartendienst; der Server bewertet sie mit der Rundungsregel aus §8.1. Ein knapper Weg wird gekennzeichnet und nach hinten gestellt, **nicht verworfen**; fehlt eine Fahrzeit, steht „Fahrweg nicht geprüft“. Gespeichert wird nichts.
+
+**Begründung.** §8 nennt die Fahrzeit unter den harten Constraints für Terminvorschläge; E12 Punkt 3/4 und ANN-097 lassen die Fahrzeit aber nur live und nur als Warnung zu, und eine pauschale Fahrzeit ist ausgeschlossen. Nach Rang (§21) gilt die Prinzipienregel, umgesetzt so weit, wie die geltenden Festlegungen tragen: Die Fahrzeit wird für jeden geprüften Vorschlag berücksichtigt, die Entscheidung bleibt beim Menschen, und ein Vorschlag verschwindet nicht wegen einer Zahl, deren Grundlage (Wegprofil, Abstellzeit) noch niemand an echten Tagen geprüft hat. Die Grenze von zehn hält eine Suche bei einem Matrixaufruf mit höchstens elf Punkten je Seite (ANN-091: 25). Dichtes Packen ist die einfachste deterministische Regel, die Lücken schließt statt neue zu reißen; eine Bewertung nach Wegen wäre Optimierung (`IDEA-PRX-031`: „keine Optimierung“). Unsicher: ob Jannes knappe Vorschläge lieber ganz ausblendet — dann wird aus der Warnung ein Filter.
+
+**Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
+
+**Änderungspfad.** Knappe Wege ausblenden: Filter in `orderByTravel` · Aufwand `klein`. Mehr geprüfte Vorschläge: `TRAVEL_CHECK_LIMIT` bis zur Grenze der Matrix · Aufwand `klein`. Andere Packregel (etwa halbstündlich): `generate_series` in `find_free_slots` · Aufwand `klein`.

@@ -19,12 +19,21 @@ export function WaitlistNotice({ patientId }: { patientId: string }) {
   });
 
   const add = (
-    <Link
-      to={mitRueckweg(`/warteliste/neu?patient=${patientId}`, here)}
-      className={kartenAktionKlassen('secondary')}
-    >
-      Auf die Warteliste
-    </Link>
+    <div className="flex flex-wrap gap-2">
+      {/* Die Anwendung sucht die Lücke (PRX-003). */}
+      <Link
+        to={mitRueckweg(`/patienten/${patientId}/plaetze`, here)}
+        className={kartenAktionKlassen('secondary')}
+      >
+        Freie Termine suchen
+      </Link>
+      <Link
+        to={mitRueckweg(`/warteliste/neu?patient=${patientId}`, here)}
+        className={kartenAktionKlassen('secondary')}
+      >
+        Auf die Warteliste
+      </Link>
+    </div>
   );
 
   if (!data || data.length === 0) return add;
@@ -40,7 +49,7 @@ export function WaitlistNotice({ patientId }: { patientId: string }) {
           : {reasonLabels[entry.priority_reason]}, {windowsText(entry.time_windows)}.
         </p>
       ))}
-      <div>{add}</div>
+      {add}
     </div>
   );
 }

@@ -92,6 +92,15 @@ function EntryItem({ entry, today }: { entry: WaitlistEntry; today: string }) {
           </div>
           <div className="mt-2 flex flex-wrap gap-2">
             <ButtonLink
+              to={mitRueckweg(
+                `/patienten/${entry.patient_id}/plaetze?warteliste=${entry.id}`,
+                here,
+              )}
+              groesse="kompakt"
+            >
+              Freie Termine suchen
+            </ButtonLink>
+            <ButtonLink
               to={mitRueckweg(`/warteliste/${entry.id}/bearbeiten`, here)}
               variant="secondary"
               groesse="kompakt"

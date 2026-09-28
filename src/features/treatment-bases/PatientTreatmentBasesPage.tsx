@@ -8,6 +8,7 @@ import { Section } from '@/components/ui/Section';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   canManageAppointments,
   canReadClinicalPatientFiles,
@@ -346,6 +347,19 @@ function Verordnungsaktionen({
           className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
         >
           Im Kalender einen Platz suchen
+        </Link>
+      ) : null}
+      {/* Die Anwendung sucht die Lücke (PRX-003): freie Plätze als
+          Vorschlagsliste, die Verordnung reist ins Formular mit. */}
+      {darfPlanen && planbar ? (
+        <Link
+          to={mitRueckweg(
+            `/patienten/${patient.id}/plaetze?verordnung=${verordnung.id}`,
+            `/patienten/${patient.id}/verordnungen`,
+          )}
+          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+        >
+          Freie Termine suchen
         </Link>
       ) : null}
       {/* Derselbe Vorgang, zwei Richtungen (CAL-022). Ohne Ziel in der Adresse

@@ -46,6 +46,7 @@ import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { WaitlistPage } from '@/features/waitlist/WaitlistPage';
 import { TerritoriesPage } from '@/features/territories/TerritoriesPage';
+import { SlotSearchPage } from '@/features/slot-search/SlotSearchPage';
 import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
@@ -241,6 +242,11 @@ export function AuthenticatedRoutes({
                   <Route
                     path="/warteliste/:entryId/bearbeiten"
                     element={<EditWaitlistEntryPage />}
+                  />
+                  {/* Terminsuche als Vorschlagsliste (PRX-003). */}
+                  <Route
+                    path="/patienten/:patientId/plaetze"
+                    element={<SlotSearchPage user={user} />}
                   />
                   {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}

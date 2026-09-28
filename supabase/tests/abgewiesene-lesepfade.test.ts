@@ -266,6 +266,21 @@ const FAELLE: Fall[] = [
     [],
     'storage_deletion.read',
   ],
+  // PRX-003: Terminsuche und Fahrzeit der Vorschläge.
+  [
+    'find_free_slots',
+    users.trainer,
+    `select * from public.find_free_slots($1::uuid, null, 'home_visit', 60, current_date, current_date, '[]', 5)`,
+    [IRGENDEINE],
+    'appointments.read',
+  ],
+  [
+    'rate_slot_travel',
+    users.trainer,
+    `select * from public.rate_slot_travel('[]')`,
+    [],
+    'appointments.read',
+  ],
   // PRX-001: Die Warteliste gehört zur Terminverwaltung; die Trainingsbetreuung
   // sieht sie nicht.
   [
