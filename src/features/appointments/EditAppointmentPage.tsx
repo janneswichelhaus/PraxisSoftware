@@ -22,6 +22,7 @@ import {
   ArbeitszeitRueckfrage,
   UebernommeneAdresse,
 } from './AppointmentFormFields';
+import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { NachladeHinweis } from './Rueckmeldungen';
 import {
   appointmentFormSchema,
@@ -530,34 +531,43 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             istEreignis ? `Dauer: ${fensterMinuten} Minuten, wie eingetragen.` : undefined
           }
           hausbesuch={
-            bleibtHausbesuch ? (
-              <UebernommeneAdresse
-                ueberschrift="Festgehaltene Anschrift"
-                street={daten.visit_street}
-                houseNumber={daten.visit_house_number}
-                postalCode={daten.visit_postal_code}
-                city={daten.visit_city}
-              />
-            ) : (
-              <UebernommeneAdresse
-                ueberschrift="Adresse des Hausbesuchs"
-                street={patient.data?.street ?? null}
-                houseNumber={patient.data?.house_number ?? null}
-                postalCode={patient.data?.postal_code ?? null}
-                city={patient.data?.city ?? null}
-                // Der Abstecher in die Stammdaten und zurück in diese
-                // Bearbeitung (TER-15). Die Änderung selbst reist nicht mit;
-                // der Schutz fragt deshalb vorher nach.
-                ergaenzenZiel={
-                  daten.patient_id
-                    ? mitRueckweg(
-                        `/patienten/${daten.patient_id}/bearbeiten`,
-                        mitRueckweg(`/termine/${daten.id}/bearbeiten`, rueckweg),
-                      )
-                    : undefined
+            <>
+              {bleibtHausbesuch ? (
+                <UebernommeneAdresse
+                  ueberschrift="Festgehaltene Anschrift"
+                  street={daten.visit_street}
+                  houseNumber={daten.visit_house_number}
+                  postalCode={daten.visit_postal_code}
+                  city={daten.visit_city}
+                />
+              ) : (
+                <UebernommeneAdresse
+                  ueberschrift="Adresse des Hausbesuchs"
+                  street={patient.data?.street ?? null}
+                  houseNumber={patient.data?.house_number ?? null}
+                  postalCode={patient.data?.postal_code ?? null}
+                  city={patient.data?.city ?? null}
+                  // Der Abstecher in die Stammdaten und zurück in diese
+                  // Bearbeitung (TER-15). Die Änderung selbst reist nicht mit;
+                  // der Schutz fragt deshalb vorher nach.
+                  ergaenzenZiel={
+                    daten.patient_id
+                      ? mitRueckweg(
+                          `/patienten/${daten.patient_id}/bearbeiten`,
+                          mitRueckweg(`/termine/${daten.id}/bearbeiten`, rueckweg),
+                        )
+                      : undefined
+                  }
+                />
+              )}
+              {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+              <TerritoryHint
+                postalCode={
+                  bleibtHausbesuch ? daten.visit_postal_code : (patient.data?.postal_code ?? null)
                 }
+                slots={[{ datum: werte.date, beginn: werte.start_time }]}
               />
-            )
+            </>
           }
         />
 

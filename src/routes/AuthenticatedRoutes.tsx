@@ -45,6 +45,7 @@ import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
 import { WaitlistPage } from '@/features/waitlist/WaitlistPage';
+import { TerritoriesPage } from '@/features/territories/TerritoriesPage';
 import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
@@ -304,6 +305,9 @@ export function AuthenticatedRoutes({
                   {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
                   <Route path="/touren" element={<TourenPage user={user} />} />
                   <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
+                  {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
+                  pflegen owner, team_lead und office (Server). */}
+                  <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
                 </>
               ) : null}
 

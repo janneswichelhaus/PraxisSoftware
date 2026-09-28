@@ -20,6 +20,7 @@ import {
   ArbeitszeitRueckfrage,
   UebernommeneAdresse,
 } from './AppointmentFormFields';
+import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { NachladeHinweis } from './Rueckmeldungen';
 import {
   appointmentFormSchema,
@@ -518,17 +519,24 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
             if (mutation.isError) mutation.reset();
           }}
           hausbesuch={
-            <UebernommeneAdresse
-              street={patientDaten.street}
-              houseNumber={patientDaten.house_number}
-              postalCode={patientDaten.postal_code}
-              city={patientDaten.city}
-              // Der Abstecher in die Stammdaten und zurück in genau dieses
-              // Formular - mit allem, was es schon trägt (UX-012, TER-05).
-              // Weil nichts verloren geht, fragt der Schutz hier nicht.
-              ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
-              onErgaenzen={freigeben}
-            />
+            <>
+              <UebernommeneAdresse
+                street={patientDaten.street}
+                houseNumber={patientDaten.house_number}
+                postalCode={patientDaten.postal_code}
+                city={patientDaten.city}
+                // Der Abstecher in die Stammdaten und zurück in genau dieses
+                // Formular - mit allem, was es schon trägt (UX-012, TER-05).
+                // Weil nichts verloren geht, fragt der Schutz hier nicht.
+                ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
+                onErgaenzen={freigeben}
+              />
+              {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+              <TerritoryHint
+                postalCode={patientDaten.postal_code}
+                slots={[{ datum: werte.date, beginn: werte.start_time }]}
+              />
+            </>
           }
         />
 

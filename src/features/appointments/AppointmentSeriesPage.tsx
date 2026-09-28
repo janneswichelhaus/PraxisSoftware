@@ -19,6 +19,7 @@ import type { CurrentUser } from '@/features/session/types';
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
 import { istInternerPfad, leseRueckweg, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { ArbeitszeitRueckfrage, UebernommeneAdresse } from './AppointmentFormFields';
+import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Listenfehler, NachladeHinweis } from './Rueckmeldungen';
 import {
@@ -777,6 +778,11 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
               })}
             </ul>
           )}
+
+          {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+          {art === 'home_visit' && liste.length > 0 ? (
+            <TerritoryHint postalCode={patientDaten.postal_code} slots={liste} />
+          ) : null}
 
           {liste.length > 0 ? (
             <div className="mt-6 flex flex-col gap-3">

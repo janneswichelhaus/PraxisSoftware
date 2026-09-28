@@ -165,6 +165,9 @@ export const AUDIT_ACTIONS = [
   'waitlist_entry.updated',
   'waitlist_entry.closed',
   'waitlist.read',
+  // PRX-002: Gebiete sind eine Praxisregel ohne Personenbezug.
+  'territory.saved',
+  'territory.removed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -275,6 +278,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'waitlist_entry.updated': 'Wartelisteneintrag geändert',
   'waitlist_entry.closed': 'Von der Warteliste genommen',
   'waitlist.read': 'Warteliste gelesen',
+  'territory.saved': 'Gebiet gespeichert',
+  'territory.removed': 'Gebiet entfernt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -322,6 +327,7 @@ export const auditSubjectLabels: Record<string, string> = {
   patient_course_event: 'Ereignis im Verlauf',
   therapy_report: 'Therapiebericht',
   waitlist_entry: 'Wartelisteneintrag',
+  territory: 'Gebiet',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

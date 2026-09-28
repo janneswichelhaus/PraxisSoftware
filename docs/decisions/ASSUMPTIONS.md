@@ -1714,3 +1714,15 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 **Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
 
 **Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`.
+
+### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sobald die ersten Gebiete angelegt sind (PRX-EPIC-001)
+
+**Annahme.** Ein Gebiet ist eine Liste **genauer** Postleitzahlen (kein Präfix, kein Stadtteil) mit Wochentagen und Tageshälften; eine Postleitzahl gehört höchstens zu einem Gebiet. Vormittag heißt **Beginn vor 12:00**, Nachmittag **Beginn ab 12:00**, jeweils in Praxiszeit; beides angehakt heißt ganztags. Ein Hausbesuch außerhalb des Gebietstags seiner Adresse wird **gemeldet**, nie gesperrt. Geprüft wird die Postleitzahl, die der Termin trägt: beim Bearbeiten die festgehaltene Anschrift, beim Anlegen die aus den Kontaktdaten.
+
+**Begründung.** `IDEA-PRX-031`: „eine Vorbelegung, keine Optimierung … Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht“. Die genaue Postleitzahl ist die Angabe, die an jeder Anschrift sicher vorliegt und sich deterministisch vergleichen lässt (§6.2) — ein Stadtteil stünde nicht in der Adresse, ein Präfix fasste in Städten ganz andere Gegenden zusammen. Die Grenze um 12:00 am Beginn ist die einfachste Regel, die ein Mensch am Kalender nachrechnen kann. Die Regel sagt nichts über Personen oder Touren (B6) und braucht keinen Kartendienst (E12).
+
+**Anker.** `app.territory_day_status` in `supabase/migrations/20260928110000_prx_002_territories.sql` (die eine Stelle der Regel), `check_territory_days` für die Formulare; Hinweis `src/features/territories/TerritoryHint.tsx`; Tests in `supabase/tests/territories.test.ts`.
+
+**Änderungspfad.** Andere Grenze der Tageshälfte oder Präfixe statt genauer Postleitzahlen: nur `app.territory_day_status` und die Prüfung in `save_territory` · Aufwand `klein`. Sperre statt Warnung: Prüfung in `create_appointment` mit Rückfrage wie bei der Arbeitszeit · Aufwand `mittel`.

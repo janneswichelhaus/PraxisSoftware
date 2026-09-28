@@ -189,6 +189,13 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
         ? ['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']
         : ['Planung'],
     });
+    // Gebietstage (PRX-002): eine Praxisregel für Hausbesuche, gepflegt wie
+    // die Arbeitszeiten.
+    eintraege.push({
+      to: '/praxis/gebiete',
+      label: 'Gebietstage',
+      stichworte: ['Gebiet', 'Postleitzahl', 'Stadtteil', 'Tour'],
+    });
   }
   // Textbausteine sind ein Werkzeug der Dokumentation, gepflegt wird es aber
   // wie eine Praxiseinstellung - deshalb hier und nicht bei den Patient:innen
