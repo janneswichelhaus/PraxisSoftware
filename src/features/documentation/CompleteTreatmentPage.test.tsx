@@ -556,14 +556,18 @@ describe('CompleteTreatmentPage', () => {
       expect(completeTreatment).not.toHaveBeenCalled();
     });
 
-    it('schließt nach „Verwerfen“ wieder ab, ohne den Vorschlag', async () => {
+    // Region, Seite, Block, Ergebnis und die Rückfrage vor dem Verwerfen: mehr
+    // Schritte als der Vorgabewert von 5 s unter voller Last trägt.
+    it('schließt nach „Verwerfen“ wieder ab, ohne den Vorschlag', { timeout: 20_000 }, async () => {
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
       await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
       await screen.findByRole('alert');
+      // Verwerfen fragt seit UXR-009 nach (BEF-01).
       await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
+      await user.click(screen.getByRole('button', { name: 'Ja, alle Angaben verwerfen' }));
       expect(screen.queryByRole('alert')).toBeNull();
 
       await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));

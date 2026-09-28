@@ -394,6 +394,11 @@ function terminlink(patientId: string, verordnungId: string): string {
  * ganze Blatt samt Diagnose - und die liest `office` seit ADR-004 Fassung 2
  * ebenso wie die behandelnden Rollen. Hinzufügen und löschen dürfen ihn nur
  * die Rollen mit Schreibrecht an der Verordnung (ADR-017 Punkt 13, ANN-011).
+ *
+ * **Knapp in der Karte (VER-01).** Ohne Scan steht ein Satz statt des großen
+ * Leerzustands, und das Hinzufügen liegt eingeklappt hinter „Scan
+ * hinzufügen": Offen an jeder laufenden Verordnung machte es die Karte am
+ * Telefon rund 760 px länger. Im Aktenbereich „Dateien" bleibt es offen.
  */
 function Verordnungsscan({
   patientId,
@@ -415,6 +420,8 @@ function Verordnungsscan({
         user={user}
         grundlageId={verordnungId}
         darfHinzufuegen={darfHinzufuegen}
+        hinzufuegenEingeklappt="Scan hinzufügen"
+        leerKompakt
         // Wer keinen Scan hinzufügen darf, liest keine Aufforderung dazu
         // (VER-04) - nur den Zustand.
         leerHinweis={

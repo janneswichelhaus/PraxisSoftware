@@ -763,6 +763,16 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
     expect(await screen.findByText(/Ein Foto des Rezepts hält fest/)).toBeInTheDocument();
   });
 
+  it('klappt das Hinzufügen des Scans ein und nennt den Leerstand in einem Satz (VER-01)', async () => {
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+    const kopf = await screen.findByText('Scan hinzufügen');
+    expect(kopf.closest('details')).not.toHaveAttribute('open');
+    expect(screen.queryByText('Keine Datei')).toBeNull();
+  });
+
   it('zeigt am Kopf einer ausgeschoepften Grundlage ein Aufklappzeichen (RSP-07)', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 

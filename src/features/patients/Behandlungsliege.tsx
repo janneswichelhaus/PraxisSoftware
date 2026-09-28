@@ -43,11 +43,13 @@ export function Behandlungsliege({
             onClick={() => mutation.mutate()}
             disabled={mutation.isPending}
           >
+            {/* Eine Handlung, kein Zustand (PAT-07): Der Zustand steht in der
+                Zeile darüber, der Knopf sagt, was ein Tipp tut. */}
             {mutation.isPending
               ? 'Wird gespeichert …'
               : benoetigt
-                ? 'Liege nicht mehr nötig'
-                : 'Liege wird gebraucht'}
+                ? 'Liege nicht mehr mitnehmen'
+                : 'Liege mitnehmen'}
           </Button>
         </div>
       ) : null}

@@ -403,7 +403,7 @@ describe('Stammdaten der Akte', () => {
 
       expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
       expect(screen.getByText('Nicht nötig')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+      await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
 
       await waitFor(() => expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true));
     });
@@ -418,7 +418,7 @@ describe('Stammdaten der Akte', () => {
       );
 
       expect(screen.getByText('Mitnehmen')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Liege nicht mehr nötig' }));
+      await user.click(screen.getByRole('button', { name: 'Liege nicht mehr mitnehmen' }));
 
       await waitFor(() =>
         expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, false),
@@ -430,7 +430,7 @@ describe('Stammdaten der Akte', () => {
       setTreatmentTableRequired.mockRejectedValue(new Error('abgelehnt'));
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
 
-      await user.click(screen.getByRole('button', { name: 'Liege wird gebraucht' }));
+      await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
       expect(await screen.findByRole('alert')).toHaveTextContent(/Behandlungsliege/);
     });
 
