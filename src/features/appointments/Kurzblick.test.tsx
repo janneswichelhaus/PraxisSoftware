@@ -11,6 +11,7 @@ const blick: KurzblickApi.Kurzblick = {
   patient_id: '66666666-6666-4666-8666-000000000001',
   home_visit_access_note: 'Synthetisch: 2. OG, Klingel „Mustermann“.',
   special_note: 'Synthetisch: Hund im Flur.',
+  take_along_items: ['Theraband', 'Kinesiotape'],
   primary_therapist_name: 'Anna Beispiel',
   treatment_basis_id: '88888888-8888-4888-8888-000000000002',
   treatment_basis_kind: 'follow_up',
@@ -62,6 +63,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     expect(fetchKurzblick).toHaveBeenCalledWith(TERMIN_ID);
     expect(screen.getByText(/Klingel/)).toBeVisible();
     expect(screen.getByText('Synthetisch: Hund im Flur.')).toBeVisible();
+    expect(screen.getByText('Theraband, Kinesiotape')).toBeVisible();
     expect(screen.getByText('Folgeverordnung vom 18.06.2026')).toBeVisible();
     expect(screen.getByText('7 von 10 Terminen genutzt, 9 geplant')).toBeVisible();
     expect(screen.getByText('Krankengymnastik: 7 von 10')).toBeVisible();

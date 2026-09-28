@@ -1750,3 +1750,15 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 **Anker.** `public.get_appointment_brief` in `supabase/migrations/20260929100000_prx_006_appointment_brief.sql`; Oberfläche `src/features/appointments/Kurzblick.tsx`; Tests in `supabase/tests/appointment-brief.test.ts`.
 
 **Änderungspfad.** Nur finalisierte Einträge: Bedingung `t.status = 'final'` in der Auswahl · Aufwand `klein`. Aufklappen ohne eigenes Ereignis (nur `treatment_note.viewed`): Einfügung in `get_appointment_brief` streichen, Wert im Katalog belassen · Aufwand `klein`. Weitere Felder (Wortlaut der Verordnung): Rückgabe erweitern · Aufwand `klein`.
+
+### ANN-138 — „Mitnehmen“: von Hand gepflegte Liste an der Person, am Tag nur zusammengezählt
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Praxisverwaltung)
+
+**Annahme.** Was für einen Besuch aufs Rad muss, steht als **von Hand gepflegte Liste an der Person** — höchstens zehn Einträge zu je 1 bis 60 Zeichen, ohne Doppel —, nicht am einzelnen Termin und nie aus Befund oder Dokumentation abgeleitet. Sie liegt bei den internen Versorgungsangaben neben der Behandlungsliege, erbt deren Rollenschnitt (alle vier Praxisrollen setzen und lesen, nie das Patientenkonto) und Datenklasse (Patientenakte), gehört zur Auskunft nach Art. 15 und wird wie die Liege mit `patient.updated` und dem Feldnamen protokolliert. Die Übersicht zeigt „Heute mitnehmen“ **zusammengezählt und ohne Person** über die noch anzufahrenden Besuche; mit Person steht die Liste im Kurzblick am Termin und in der Akte.
+
+**Begründung.** `IDEA-PRX-035` lässt offen, ob von Hand oder abgeleitet und ob am Termin, an der Person oder am Tag; ohne diese Entscheidung war nichts spezifizierbar. Abgeleitet scheidet aus: ein Vorschlag „aus den letzten Befunden“ wäre eine Auswertung klinischer Inhalte (ADR-006 Punkt 2 und 4). An der Person, weil sich das Material von Besuch zu Besuch wiederholt — eine Liste je Termin müsste jedes Mal neu entstehen und wäre am Serientermin leer. Ohne Namen am Tag, weil die Übersicht im Treppenhaus mitgelesen wird und „Kinesiotape für Frau X“ etwas über ihre Behandlung sagt (§4.6). Unsicher: ob die Praxis Material je Besuch braucht (etwa „diesmal den neuen Plan“) — dann trüge der Termin eine zweite, kurze Liste.
+
+**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Zusammenzählung `mitnehmenHeute` in `src/features/today/tagesstart.ts`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
+
+**Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Namen in der Übersicht: `mitnehmenHeute` um die Person erweitern · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.

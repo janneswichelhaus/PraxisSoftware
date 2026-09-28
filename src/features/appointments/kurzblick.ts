@@ -22,6 +22,7 @@ const kurzblickSchema = z.object({
   patient_id: z.string(),
   home_visit_access_note: z.string().nullable(),
   special_note: z.string().nullable(),
+  take_along_items: z.array(z.string()),
   primary_therapist_name: z.string().nullable(),
   treatment_basis_id: z.string().nullable(),
   treatment_basis_kind: z.enum(BAUARTEN).nullable(),

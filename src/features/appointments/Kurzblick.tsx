@@ -82,6 +82,10 @@ function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
     <DetailList>
       <DetailRow label="Zugang">{blick.home_visit_access_note ?? '—'}</DetailRow>
       <DetailRow label="Besonderheit">{blick.special_note ?? '—'}</DetailRow>
+      {/* PRX-007: von Hand an der Person gepflegt, nie abgeleitet (ANN-138). */}
+      <DetailRow label="Material">
+        {blick.take_along_items.length > 0 ? blick.take_along_items.join(', ') : '—'}
+      </DetailRow>
       <DetailRow label="Feste Therapeut:in">{blick.primary_therapist_name ?? '—'}</DetailRow>
       <DetailRow label="Grundlage">
         <Grundlage blick={blick} />

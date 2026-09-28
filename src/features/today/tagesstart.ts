@@ -86,6 +86,42 @@ export function liegeText(liege: LiegeHeute): string {
   return `ja, ab ${liege.besuch}. Besuch (${uhrzeit} Uhr)`;
 }
 
+export interface MitnehmenPosten {
+  /** Das Material, wie es an der ersten Person steht. */
+  was: string;
+  /** Für wie viele der noch anzufahrenden Besuche. */
+  anzahl: number;
+}
+
+/**
+ * Was heute noch aufs Rad muss (PRX-007, ANN-138) - zusammengezählt, ohne Person.
+ *
+ * Über die noch anzufahrenden Behandlungsbesuche; ein erledigter Besuch
+ * braucht nichts mehr. Gleiches Material zählt ohne Groß- und Kleinschreibung
+ * zusammen, die Reihenfolge ist die des ersten Auftretens am Tag. Wer wofür,
+ * steht nicht hier, sondern im Kurzblick am Termin: Die Übersicht wird im
+ * Treppenhaus mitgelesen.
+ */
+export function mitnehmenHeute(plan: readonly DayPlanEntry[]): MitnehmenPosten[] {
+  const posten = new Map<string, MitnehmenPosten>();
+  for (const termin of besucheDesTages(plan)) {
+    if (!stehtAus(termin)) continue;
+    for (const was of termin.take_along_items ?? []) {
+      const schluessel = was.toLocaleLowerCase('de-DE');
+      const bisher = posten.get(schluessel);
+      if (bisher) bisher.anzahl += 1;
+      else posten.set(schluessel, { was, anzahl: 1 });
+    }
+  }
+  return [...posten.values()];
+}
+
+/** „Theraband (2), Kinesiotape" - oder „nichts eingetragen". */
+export function mitnehmenText(posten: readonly MitnehmenPosten[]): string {
+  if (posten.length === 0) return 'nichts eingetragen';
+  return posten.map((p) => (p.anzahl > 1 ? `${p.was} (${p.anzahl})` : p.was)).join(', ');
+}
+
 /**
  * Fehlzeiten, die heute noch anstehen oder gerade laufen (UEB-02).
  *
