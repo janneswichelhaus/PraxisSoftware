@@ -26,9 +26,11 @@ import type { Rechnungsdokument } from './api';
  *     Name und Geburtsdatum sonst durchs Fenster.
  *
  * Am Bildschirm bleibt alles, wie es war. Die Festlegung ist eine Annahme
- * (Form B, Fenster links, ANN-131) und lässt sich hier
- * zurücknehmen, ohne dass eine Rechnung sich ändert - das Blatt wird aus dem
- * Snapshot neu gezeichnet (ADR-009 Punkt 11).
+ * (Form B, Fenster links, ANN-131) und lässt sich hier zurücknehmen, ohne
+ * dass sich eine Rechnungsangabe ändert: Die Angaben kommen aus dem Snapshot
+ * (ADR-009 Punkt 10). Die Form des verschickten Blatts bewahrt erst Weg 3 auf
+ * (B14) - Nachdrucke schon ausgestellter Blätter sehen deshalb seit UXR-010
+ * anders aus als das Original, ihre Angaben bleiben gleich.
  */
 export function Briefkopf({
   absender,
@@ -80,14 +82,19 @@ export function Briefkopf({
               </span>
             ) : null}
           </address>
+        </div>
+
+        <div className="print:ml-auto print:w-[73mm] print:shrink-0">
+          {angaben}
+          {/* Aktenzeichen oder Versichertennummer stehen bei den Angaben, nicht
+              im Anschriftfeld: Dort wären sie durch das Fenster des Umschlags
+              lesbar (Zweitreview H3, DIN 5008 Infoblock, ANN-131). */}
           {empfaenger.reference ? (
             <p className="text-ink-muted print:text-ink mt-2 text-sm">
               Aktenzeichen: {empfaenger.reference}
             </p>
           ) : null}
         </div>
-
-        <div className="print:ml-auto print:w-[73mm] print:shrink-0">{angaben}</div>
       </div>
     </>
   );

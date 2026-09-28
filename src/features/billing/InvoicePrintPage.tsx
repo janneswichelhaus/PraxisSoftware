@@ -8,7 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
-import { grundlageText, ibanInGruppen } from './anzeige';
+import { monatsname, grundlageText, ibanInGruppen } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -327,11 +327,4 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
       </div>
     </>
   );
-}
-
-/** „August 2026" aus dem ersten Tag des Abrechnungsmonats. */
-function monatsname(periodMonth: string): string {
-  const datum = new Date(periodMonth);
-  if (Number.isNaN(datum.getTime())) return periodMonth;
-  return new Intl.DateTimeFormat('de-DE', { month: 'long', year: 'numeric' }).format(datum);
 }
