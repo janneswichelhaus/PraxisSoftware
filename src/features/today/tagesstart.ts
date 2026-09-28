@@ -85,3 +85,27 @@ export function liegeText(liege: LiegeHeute): string {
   const uhrzeit = formatLocalTime(liege.termin.starts_at, liege.termin.organization_time_zone);
   return `ja, ab ${liege.besuch}. Besuch (${uhrzeit} Uhr)`;
 }
+
+/**
+ * Fehlzeiten, die heute noch anstehen oder gerade laufen (UEB-02).
+ *
+ * Eine Fehlzeit ist nie „offen" im Sinn von `istOffen` - sie wird weder
+ * abgeschlossen noch dokumentiert, und die Zählung „Offen heute" bleibt nach
+ * ANN-117 bei den Behandlungen. Erledigt ist sie deshalb aber noch nicht: Die
+ * Teambesprechung um 13 Uhr stand bis UXR-003 schon morgens im zugeklappten
+ * „Erledigt heute", und wer sich an den ersten Weg hielt, verpasste sie. Die
+ * Übersicht nennt sie stattdessen als „Heute außerdem", bis ihr Ende
+ * erreicht ist; eine abgesagte steht nicht mehr an.
+ *
+ * `jetzt` kommt von außen, damit die Grenze prüfbar bleibt.
+ */
+export function anstehendeFehlzeiten(plan: readonly DayPlanEntry[], jetzt: number): DayPlanEntry[] {
+  return [...plan]
+    .filter(
+      (termin) =>
+        termin.kind === 'internal' &&
+        termin.status !== 'cancelled' &&
+        Date.parse(termin.ends_at) > jetzt,
+    )
+    .sort(nachUhrzeit);
+}

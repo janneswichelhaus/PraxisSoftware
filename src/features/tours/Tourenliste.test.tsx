@@ -27,6 +27,7 @@ vi.mock('@/lib/location/navigation', async (importOriginal) => {
 });
 
 const { Tourenliste } = await import('./Tourenliste');
+const { stoppsJeAbschnitt } = await import('@/lib/location/navigation');
 
 function termin(id: string, typ: 'home_visit' | 'practice' = 'home_visit'): DayPlanEntry {
   return {
@@ -111,5 +112,96 @@ describe('Tourenliste', () => {
       <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />,
     );
     expect(screen.queryByRole('button', { name: 'Navigation zu Stopp 3 starten' })).toBeNull();
+  });
+});
+
+describe('Tourenliste nach dem UX-Review (UXR-003)', () => {
+  it('sagt am Tagesknopf, dass er die Navigation oeffnet - wie in der Uebersicht (UEB-10)', () => {
+    renderWithProviders(
+      <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />,
+    );
+    // Zwei Stopps mit Ziel, der Praxistermin hat keins.
+    expect(
+      screen.getByRole('button', { name: 'Navigation: ganzer Tag (2 Stopps)' }),
+    ).toBeInTheDocument();
+  });
+
+  it('nennt mehrere Abschnitte einzeln', () => {
+    const viele: Stopp[] = Array.from(
+      { length: stoppsJeAbschnitt('google_maps') + 1 },
+      (_, index) => ({
+        nummer: index + 1,
+        termin: termin(`s${index}`),
+        position: { lat: 48.5 + index / 100, lon: 9.05 },
+        genauigkeit: 'address',
+      }),
+    );
+    renderWithProviders(<Tourenliste stopps={viele} zeitzone="Europe/Berlin" startGewaehlt />);
+
+    expect(
+      screen.getByRole('button', { name: 'Navigation: Ganzer Tag – Abschnitt 1 von 2' }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Navigation: Ganzer Tag – Abschnitt 2 von 2' }),
+    ).toBeInTheDocument();
+  });
+
+  it('fuehrt vom Stopp in den Termin und zurueck in dieselbe Tour (TER-03, TER-17)', () => {
+    renderWithProviders(
+      <Tourenliste
+        stopps={STOPPS}
+        zeitzone="Europe/Berlin"
+        startGewaehlt={false}
+        rueckweg="/touren?tag=2026-09-10&person=anna"
+      />,
+    );
+
+    const [ersterStopp] = screen.getAllByRole('link', { name: 'Erika Beispiel' });
+    expect(ersterStopp).toHaveAttribute(
+      'href',
+      `/termine/a?zurueck=${encodeURIComponent('/touren?tag=2026-09-10&person=anna')}`,
+    );
+    // Als Link erkennbar, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15).
+    expect(ersterStopp).toHaveClass('text-accent', 'underline', 'min-h-11');
+  });
+
+  it('nimmt ohne ausdruecklichen Rueckweg die aktuelle Adresse', () => {
+    renderWithProviders(
+      <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />,
+      '/touren?tag=2026-09-11&person=jannes',
+    );
+    const [ersterStopp] = screen.getAllByRole('link', { name: 'Erika Beispiel' });
+    expect(ersterStopp).toHaveAttribute(
+      'href',
+      `/termine/a?zurueck=${encodeURIComponent('/touren?tag=2026-09-11&person=jannes')}`,
+    );
+  });
+
+  it('zeigt die Ziel-App hinter einem Aufklapper mit Zeichen und Tastaturfokus (UIK-07, UIK-06)', async () => {
+    renderWithProviders(
+      <Tourenliste stopps={STOPPS} zeitzone="Europe/Berlin" startGewaehlt={false} />,
+    );
+
+    const kopf = screen.getByText('Andere Ziel-App prüfen (für die Gerätebewertung)');
+    expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
+    expect(kopf).toHaveClass('min-h-11');
+
+    // Das Feld liegt unsichtbar in der Beschriftung; den Fokus zeigt sie.
+    const chip = screen.getByText('Apple Maps').closest('label')!;
+    expect(chip).toHaveClass(
+      'has-[:focus-visible]:outline-2',
+      'has-[:focus-visible]:outline-accent',
+      'has-[:focus-visible]:outline-offset-2',
+    );
+    expect(
+      screen.getByText(
+        'Keine Einstellung: Die Wahl gilt, solange diese Seite offen ist, und wird nicht gespeichert.',
+      ),
+    ).toBeInTheDocument();
+
+    await userEvent.click(screen.getByText('Systemnavigation'));
+    expect(screen.getByText(/kein Zwischenziel/)).toHaveTextContent(
+      'Für den ganzen Tag gibt es deshalb keinen Knopf – Stopp für Stopp geht es unten.',
+    );
   });
 });

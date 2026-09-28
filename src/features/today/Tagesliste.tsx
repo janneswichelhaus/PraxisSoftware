@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { Card } from '@/components/ui/Card';
+import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
@@ -26,6 +26,10 @@ import {
  * Die Karte ist als Ganzes KEIN Link: sie enthält mehrere eigenständige
  * Ziele - Akte, Termin, Anruf. Verschachtelte Klickflächen sind mit Tastatur
  * und Vorlesesoftware nicht auseinanderzuhalten.
+ *
+ * Freitexte - Name, Anschrift, Zugangshinweis, Besonderheit - brechen auch
+ * mitten im Wort um (UEB-16, wie BEF-005): Ein Hinweis ohne Trennstelle
+ * sprengte sonst bei 390 px die Karte und die Seite liefe waagerecht.
  */
 export function Tageskarte({
   termin,
@@ -52,17 +56,18 @@ export function Tageskarte({
       </div>
 
       {/* Eine Fehlzeit des Praxisbetriebs hat keine Akte, in die ein Link
-          führen könnte - es trägt seine Bezeichnung (CAL-016). */}
-      <p className="text-ink mt-1 text-[1.0625rem] font-medium">
+          führen könnte - es trägt seine Bezeichnung (CAL-016).
+
+          Der Name führt in die Akte, und zwar mit dem Weg zurück in den Tag
+          wie jedes andere Ziel der Karte (UEB-13). Er ist als Link zu
+          erkennen, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15). */}
+      <p className="text-ink mt-1 min-w-0 text-[1.0625rem] font-medium wrap-anywhere">
         {termin.kind === 'internal' || !termin.patient_id ? (
           (termin.title ?? 'Fehlzeit')
         ) : (
-          <Link
-            to={`/patienten/${termin.patient_id}`}
-            className="hover:text-accent hover:underline"
-          >
+          <Textlink alleinstehend to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}>
             {termin.patient_given_name} {termin.patient_family_name}
-          </Link>
+          </Textlink>
         )}
       </p>
 
@@ -75,7 +80,7 @@ export function Tageskarte({
       {grund ? <p className="text-warnung mt-2 text-sm font-medium">{grund}</p> : null}
 
       {adresse.length > 0 ? (
-        <address className="text-ink text-liste mt-3 not-italic">
+        <address className="text-ink text-liste mt-3 min-w-0 wrap-anywhere not-italic">
           {adresse.map((zeile) => (
             <span key={zeile} className="block">
               {zeile}
@@ -84,15 +89,17 @@ export function Tageskarte({
         </address>
       ) : null}
 
+      {/* „Zugangshinweis" wie im Feld der Stammdaten (WRT-17): „Zugang"
+          allein ist in dieser Anwendung die Berechtigung zum Anmelden. */}
       {termin.home_visit_access_note ? (
-        <p className="text-ink-muted mt-2 text-sm leading-relaxed">
-          <span className="text-ink-muted font-medium">Zugang: </span>
+        <p className="text-ink-muted mt-2 min-w-0 text-sm leading-relaxed wrap-anywhere">
+          <span className="text-ink-muted font-medium">Zugangshinweis: </span>
           {termin.home_visit_access_note}
         </p>
       ) : null}
 
       {termin.special_note ? (
-        <p className="text-ink-muted mt-1 text-sm leading-relaxed">
+        <p className="text-ink-muted mt-1 min-w-0 text-sm leading-relaxed wrap-anywhere">
           <span className="text-ink-muted font-medium">Besonderheit: </span>
           {termin.special_note}
         </p>
@@ -120,12 +127,18 @@ export function Tageskarte({
             <span className="tabular-nums">{nummer.anzeige}</span>
           </a>
         ))}
-        <Link
+        {/* Der Pfeil zeigt die Richtung, er gehört nicht zum Namen des Links
+            (WRT-08): Vorlesesoftware sagt sonst „Pfeil nach rechts". Den
+            Abstand davor trägt `gap-1` - ein Leerzeichen am Ende des Textes
+            fiele im Flex-Kasten weg. */}
+        <Textlink
+          alleinstehend
           to={mitRueckweg(`/termine/${termin.id}`, '/')}
-          className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"
+          className="gap-1 px-1 text-sm font-medium"
         >
-          {termin.kind === 'internal' ? 'Fehlzeit öffnen →' : 'Termin öffnen →'}
-        </Link>
+          {termin.kind === 'internal' ? 'Fehlzeit öffnen' : 'Termin öffnen'}
+          <span aria-hidden="true">→</span>
+        </Textlink>
       </div>
     </Card>
   );

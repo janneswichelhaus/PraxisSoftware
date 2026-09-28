@@ -1,8 +1,9 @@
 import { Suspense, lazy, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
-import { LoadingState } from '@/components/ui/Feedback';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Textlink } from '@/components/ui/Textlink';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import type { DayPlanEntry } from '@/features/today/api';
 import { fetchStandorte, startpunkt } from './startort';
 import { fetchDayRoute, stoppsDesTages } from './tagesroute';
@@ -16,6 +17,10 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * Karte, die Route. Die Übersicht ist die meistgeöffnete Seite — sie soll
  * nicht bei jedem Öffnen Kacheln und eine Route anfragen, wenn niemand die
  * Karte ansieht.
+ *
+ * Der Kopf trägt das Aufklappzeichen wie jeder Aufklapper der Übersicht
+ * (UEB-03, UIK-07): Ohne es sah „Tagesroute auf der Karte" aus wie eine
+ * graue Textzeile.
  */
 export function TagesrouteAufklapper({
   datum,
@@ -30,10 +35,11 @@ export function TagesrouteAufklapper({
 
   return (
     <details
-      className="border-line mt-6 border-t pt-3 print:hidden"
+      className="group border-line mt-6 border-t pt-3 print:hidden"
       onToggle={(ereignis) => setOffen(ereignis.currentTarget.open)}
     >
-      <summary className="text-ink-muted hover:text-ink flex min-h-11 cursor-pointer items-center text-sm">
+      <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+        <Aufklappzeichen />
         Tagesroute auf der Karte
       </summary>
       {offen ? <Inhalt datum={datum} staffMemberId={staffMemberId} plan={plan} /> : null}
@@ -63,7 +69,15 @@ function Inhalt({
 
   if (route.isPending) return <LoadingState label="Tagesroute wird geladen …" />;
   if (route.isError) {
-    return <Statusmeldung ton="fehler">Die Tagesroute konnte nicht geladen werden.</Statusmeldung>;
+    // Mit dem nächsten Schritt und einem Weg hinaus, der die Seite stehen
+    // lässt (WRT-01, ZST-04, ANN-021).
+    return (
+      <ErrorState
+        title="Die Tagesroute konnte nicht geladen werden."
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => route.refetch()}
+      />
+    );
   }
   if (stopps.length === 0) {
     return <p className="text-ink-muted mt-2 text-sm">Heute gibt es keinen Besuch mit Ort.</p>;
@@ -74,12 +88,15 @@ function Inhalt({
       <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
         <TagesrouteKarte start={startpunkt(standorte.data?.[0])} stopps={stopps} />
       </Suspense>
-      <Link
+      {/* Der Pfeil gehört nicht zum Namen des Links (WRT-08). */}
+      <Textlink
+        alleinstehend
         to={`/touren?person=${staffMemberId}&tag=${datum}`}
-        className="text-accent hover:text-accent-hover text-liste mt-3 inline-flex min-h-11 items-center font-medium"
+        className="text-liste mt-3 gap-1 font-medium"
       >
-        Zur Tour mit Fahrzeiten →
-      </Link>
+        Zur Tour mit Fahrzeiten
+        <span aria-hidden="true">→</span>
+      </Textlink>
     </div>
   );
 }

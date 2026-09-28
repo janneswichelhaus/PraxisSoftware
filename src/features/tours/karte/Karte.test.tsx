@@ -355,13 +355,42 @@ describe('Karte', () => {
   });
 
   it('zeigt ohne Konfiguration den Hinweis und fragt keinen Kartendienst', () => {
-    render(<Karte config={null} stopps={stopps(8)} beschriftung="Karte" />);
+    const { container } = render(<Karte config={null} stopps={stopps(8)} beschriftung="Karte" />);
 
-    expect(screen.getByText('Kartenkacheln nicht konfiguriert')).toBeInTheDocument();
+    expect(
+      screen.getByText('Die Karte ist in dieser Umgebung nicht eingerichtet.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Liste und Navigation funktionieren trotzdem.')).toBeInTheDocument();
+    // Einrichtungsdetails gehören in die Entwicklerdokumentation (TER-07).
+    expect(container).not.toHaveTextContent(/VITE_|\.env|Repository|Schlüssel/);
     expect(karten).toHaveLength(0);
     expect(marker).toHaveLength(0);
     expect(anfragen).toEqual([]);
     expect(screen.queryByRole('region')).not.toBeInTheDocument();
+  });
+
+  it('setzt die Marker in die Farben des Systems, nicht in Standardfarben (TOK-08)', () => {
+    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+
+    const nummer = screen.getByText('1');
+    expect(nummer).toHaveClass('bg-accent', 'text-surface', 'border-surface');
+    expect(nummer.className).not.toMatch(/white/);
+  });
+
+  it('gibt der Karte die Schrift und die Linien des Systems (TOK-10, TER-16)', () => {
+    // MapLibre setzt „Helvetica Neue, Arial" auf die Karte; darin standen die
+    // Stoppnummern. Die Regeln stehen in karte.css, die jsdom nicht anwendet.
+    const regeln = readFileSync('src/features/tours/karte/karte.css', 'utf8').replace(
+      /\/\*[\s\S]*?\*\//g,
+      '',
+    );
+    expect(regeln).toMatch(/\.maplibregl-map\s*\{\s*font-family:\s*var\(--font-sans\);/);
+    // Bedienbares umrandet `line-strong`, nie `line`.
+    expect(regeln).toMatch(
+      /\.maplibregl-ctrl-group\s*\{[^}]*border:\s*1px solid var\(--color-line-strong\)/,
+    );
+    expect(regeln).not.toMatch(/var\(--color-line\)/);
+    expect(regeln).toMatch(/\.maplibregl-ctrl-attrib a\s*\{\s*color:\s*var\(--color-ink-muted\);/);
   });
 
   it('sagt es, wenn kein Kartenmaterial ankommt (BEF-021)', () => {

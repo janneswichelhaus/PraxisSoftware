@@ -79,17 +79,19 @@ export function Karte({ config, stopps, beschriftung, route }: KarteProps) {
  * Der Hinweis anstelle der Karte.
  *
  * Kein Fehlerzustand in Rot: Ein fehlender Kachelschlüssel ist ein
- * Einrichtungsschritt, kein Defekt. Der Text sagt, was zu tun ist, und nennt
- * keine internen Details (Oberflächen-Checkliste Punkt 6).
+ * Einrichtungsschritt, kein Defekt. Der Text sagt, was trotzdem geht, und
+ * nennt keine internen Details (Oberflächen-Checkliste Punkt 6). Bis UXR-003
+ * standen hier Umgebungsvariable und `.env.local` (TER-07) - das gehört in
+ * die Entwicklerdokumentation, nicht vor die Therapeutin.
  */
 function OhneKartenmaterial() {
   return (
     <div className="rounded-card border-line bg-surface-sunken border border-dashed px-4 py-8 text-center">
-      <p className="text-ink text-liste font-medium">Kartenkacheln nicht konfiguriert</p>
+      <p className="text-ink text-liste font-medium">
+        Die Karte ist in dieser Umgebung nicht eingerichtet.
+      </p>
       <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
-        Ohne Kachelschlüssel zeigt diese Seite keine Karte und fragt keinen Kartendienst an. Der
-        Schlüssel gehört als <code>VITE_PTV_TILE_API_KEY</code> in die lokale{' '}
-        <code>.env.local</code> und nie ins Repository.
+        Liste und Navigation funktionieren trotzdem.
       </p>
     </div>
   );
@@ -310,10 +312,12 @@ function Kartenflaeche({
       />
       {marker.map(({ stopp, knoten }) =>
         createPortal(
-          // Der weisse Rand hebt den Marker von der Karte ab - eine Linie,
+          // Der helle Rand hebt den Marker von der Karte ab - eine Linie,
           // kein Schatten und kein `ring-*` (das Tailwind als `box-shadow`
           // setzt): Ebenen entstehen in diesem System aus Fläche oder Linie.
-          <span className="bg-accent rounded-pill flex h-7 min-w-7 items-center justify-center border-2 border-white px-1.5 text-sm font-semibold text-white">
+          // Hell ist das Papier des Systems (`surface`), keine Standardfarbe
+          // (TOK-08); die Schrift der Nummer setzt `karte.css` (TOK-10).
+          <span className="bg-accent rounded-pill border-surface text-surface flex h-7 min-w-7 items-center justify-center border-2 px-1.5 text-sm font-semibold">
             {stopp.label}
           </span>,
           knoten,

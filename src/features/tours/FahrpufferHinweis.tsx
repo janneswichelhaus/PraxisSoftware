@@ -54,12 +54,13 @@ export function FahrpufferHinweis({
           Fahrpuffer: {knapp.length === 1 ? 'ein Übergang ist' : `${knapp.length} Übergänge sind`}{' '}
           zu knapp.
         </Statusmeldung>
+        {/* Dasselbe Wort wie in der Tour: „zu knapp" (TER-23). */}
         <ul className="text-warnung mt-1 text-sm">
           {knapp.map(({ i, pruefung }) => (
             <li key={pruefung.from_appointment_id}>
               {formatLocalTime(stopps[i]!.termin.ends_at, zeitzone)} →{' '}
               {formatLocalTime(stopps[i + 1]!.termin.starts_at, zeitzone)}:{' '}
-              {pruefung.shortfall_minutes} Min. zu wenig, frühester Beginn{' '}
+              {pruefung.shortfall_minutes} Min. zu knapp, frühester Beginn{' '}
               {formatLocalTime(pruefung.earliest_start, zeitzone)} Uhr
             </li>
           ))}

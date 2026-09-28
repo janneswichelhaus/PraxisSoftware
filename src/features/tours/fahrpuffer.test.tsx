@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import type { DayPlanEntry } from '@/features/today/api';
@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc, functions: { invoke } }),
 }));
 
-const { useFahrten } = await import('./fahrpuffer');
+const { useFahrten, useTagesstopps } = await import('./fahrpuffer');
 
 function stopp(nummer: number, lat: number | null): Stopp {
   return {
@@ -80,6 +80,35 @@ describe('useFahrten', () => {
     expect(result.current.zwischen.map((z) => z.sekunden)).toEqual([300, null, null]);
     expect(rpc).toHaveBeenCalledWith('check_travel_buffers', {
       p_legs: [{ from: 't1', to: 't2', travel_seconds: 300 }],
+    });
+  });
+
+  it('laedt Tagesliste und Route nach einem Fehler erneut, ohne die Seite neu zu laden (ZST-04)', async () => {
+    let planVersuche = 0;
+    rpc.mockImplementation((name: string) => {
+      if (name === 'list_day_plan') {
+        planVersuche += 1;
+        // Der erste Abruf scheitert - das Funkloch -, der zweite nicht.
+        return Promise.resolve(
+          planVersuche === 1 ? { data: null, error: { message: 'x' } } : { data: [], error: null },
+        );
+      }
+      return Promise.resolve({ data: [], error: null });
+    });
+
+    const { result } = renderHook(() => useTagesstopps('2026-09-10', 'anna'), { wrapper });
+    await waitFor(() => expect(result.current.fehler).toBe(true));
+
+    await act(async () => {
+      await result.current.erneut();
+    });
+
+    // Die Abfrage meldet ihr Ergebnis gebündelt; gewartet wird darauf.
+    await waitFor(() => expect(result.current.fehler).toBe(false));
+    expect(planVersuche).toBe(2);
+    expect(rpc).toHaveBeenCalledWith('list_day_route', {
+      p_date: '2026-09-10',
+      p_staff_member_id: 'anna',
     });
   });
 
