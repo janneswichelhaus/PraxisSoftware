@@ -35,8 +35,12 @@ describe('createAppointment aus der Warteliste (PRX-004)', () => {
     await createAppointment('p1', WERTE, false, 'b1', false, EINTRAG);
     const [name, params] = rpc.mock.calls[0] as [string, Record<string, unknown>];
     expect(name).toBe('create_appointment_from_waitlist');
-    expect(params).toMatchObject({ p_entry_id: EINTRAG, p_treatment_basis_id: 'b1' });
-    expect(params).not.toHaveProperty('p_patient_id');
+    // Die Person reist mit; der Server prüft sie gegen den Eintrag.
+    expect(params).toMatchObject({
+      p_entry_id: EINTRAG,
+      p_patient_id: 'p1',
+      p_treatment_basis_id: 'b1',
+    });
   });
 
   it('sagt verständlich, wenn der Eintrag inzwischen geschlossen ist', async () => {

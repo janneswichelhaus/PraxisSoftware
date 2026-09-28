@@ -17,9 +17,10 @@ import {
  * Fahrzeitbewertung mit der Rundungsregel aus §8.1.
  */
 
-const { users, patients, organizationId } = SEED;
+const { users, patients, organizationId, trainingRelationships } = SEED;
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const JANNES = '55555555-5555-4555-8555-000000000001';
+const TIM = '55555555-5555-4555-8555-000000000004';
 
 /** Ein Wochentag (ISO 1-7) mindestens acht Tage in der Zukunft, `YYYY-MM-DD`. */
 function naechster(isoWochentag: number, abTagen = 8): string {
@@ -246,6 +247,65 @@ describe('Terminsuche (PRX-003)', () => {
     expect(praxis[0]).toMatchObject({ prev_appointment_id: null, next_appointment_id: null });
   });
 
+  it('nennt keinen Trainingstermin als Nachbarn, zählt ihn aber als belegt (Zweitreview 1)', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments
+         (organization_id, training_relationship_id, staff_member_id, appointment_type, kind, status,
+          starts_at, ends_at, visit_street, visit_house_number, visit_postal_code, visit_city)
+       values ($1::uuid, $2::uuid, $3::uuid, 'home_visit', 'training', 'confirmed',
+               ($4::date + time '08:00') at time zone 'Europe/Berlin',
+               ($4::date + time '09:00') at time zone 'Europe/Berlin',
+               'Beispielstrasse', '1', '72070', 'Tuebingen')
+       returning id`,
+      [organizationId, trainingRelationships.tina, ANNA, MONTAG],
+    );
+    const training = rows[0]!.id;
+    // Therapeut:innen lesen keine Trainingstermine; office darf es (LEI-003).
+    const vorschlaege = await suchen({
+      konto: users.therapist,
+      fenster: [{ weekday: 1, from: '08:00', to: '10:00' }],
+    });
+    // 08:00 ist belegt; 09:00 bekommt keinen Nachbarn aus dem Training.
+    expect(zeiten(vorschlaege)).toEqual([`${MONTAG} 09:00-10:00`]);
+    expect(vorschlaege[0]!.prev_appointment_id).toBeNull();
+    expect(JSON.stringify(vorschlaege)).not.toContain(training);
+
+    const { rows: bewertung } = await asUser<{ status: string }>(users.therapist, BEWERTEN, [
+      JSON.stringify([
+        {
+          index: 0,
+          staff_member_id: ANNA,
+          date: MONTAG,
+          start: '09:00',
+          end: '10:00',
+          prev_appointment_id: training,
+          travel_to_seconds: 3600,
+        },
+      ]),
+    ]);
+    expect(bewertung).toEqual([
+      expect.objectContaining({ status: 'unknown', shortfall_minutes: 0 }),
+    ]);
+  });
+
+  it('weist eine Therapeut:in einer fremden Praxis ab', async () => {
+    const fremd = await fremdeOrganisation();
+    expect(
+      (
+        await fehler(users.office, SUCHE, [
+          patients.max,
+          fremd.staffMember,
+          'home_visit',
+          60,
+          MONTAG,
+          MONTAG,
+          '[]',
+          20,
+        ])
+      )?.code,
+    ).toBe('P0002');
+  });
+
   it('begrenzt Zeitraum, Menge und Dauer', async () => {
     const weit = new Date(`${MONTAG}T00:00:00Z`);
     weit.setUTCDate(weit.getUTCDate() + 42);
@@ -332,13 +392,18 @@ describe('Fahrzeit der Vorschlaege (ANN-136)', () => {
     const fremd = await fremdeOrganisation();
     const vor = await termin(ANNA, patients.erika, MONTAG, '08:00', '09:00');
     const item = { index: 0, staff_member_id: ANNA, date: MONTAG, start: '09:00', end: '10:00' };
-    expect(
-      (
-        await fehler(fremd.owner, BEWERTEN, [
-          JSON.stringify([{ ...item, prev_appointment_id: vor, travel_to_seconds: 1 }]),
-        ])
-      )?.code,
-    ).toBe('P0002');
+    // Eine fremde Kennung ist „nicht geprüft" - ohne zu verraten, ob es sie gibt.
+    const { rows: fremdeBewertung } = await asUser<{ status: string }>(fremd.owner, BEWERTEN, [
+      JSON.stringify([{ ...item, prev_appointment_id: vor, travel_to_seconds: 1 }]),
+    ]);
+    expect(fremdeBewertung).toEqual([expect.objectContaining({ status: 'unknown' })]);
+    // Ebenso ein Termin einer anderen Person desselben Tages.
+    const { rows: andere } = await asUser<{ status: string }>(users.office, BEWERTEN, [
+      JSON.stringify([
+        { ...item, staff_member_id: TIM, prev_appointment_id: vor, travel_to_seconds: 1 },
+      ]),
+    ]);
+    expect(andere).toEqual([expect.objectContaining({ status: 'unknown' })]);
     expect(
       (
         await fehler(users.office, BEWERTEN, [

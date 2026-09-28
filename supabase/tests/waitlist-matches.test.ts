@@ -33,8 +33,10 @@ const MONTAG = naechster(1);
 
 const TREFFER = `select id, patient_id, territory_status
                    from public.list_waitlist_matches($1::uuid, $2::date, $3::time, $4::time, $5::uuid)`;
-const UEBERNEHMEN = `select public.create_appointment_from_waitlist(
-  $1::uuid, $2::uuid, 'home_visit', $3::date, $4::time, $5::time, null, false, null, false) as id`;
+const UEBERNEHMEN_MIT = `select public.create_appointment_from_waitlist(
+  $1::uuid, $6::uuid, $2::uuid, 'home_visit', $3::date, $4::time, $5::time, null, false, null, false) as id`;
+/** Der Regelfall: Die Person der Adresszeile ist Max, dem die Einträge der Tests gehören. */
+const UEBERNEHMEN = UEBERNEHMEN_MIT.replace('$6::uuid', `'${SEED.patients.max}'::uuid`);
 
 async function eintrag(
   patient: string,
@@ -217,6 +219,13 @@ describe('Nachrücken: Übernahme in einer Transaktion (PRX-004)', () => {
       await a.end();
       await b.end();
     }
+  });
+
+  it('legt keinen Termin für eine andere Person an, als das Formular zeigt (Zweitreview 3)', async () => {
+    const id = await eintrag(patients.max);
+    await expect(
+      asUser(users.office, UEBERNEHMEN_MIT, [id, ANNA, MONTAG, '09:00', '10:00', patients.erika]),
+    ).rejects.toThrow(/another patient/);
   });
 
   it('weist geschlossene, fremde und unbekannte Einträge ab', async () => {

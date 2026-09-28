@@ -383,6 +383,63 @@ describe('Warteliste (PRX-001)', () => {
     ).toBe('22023');
   });
 
+  it('aendert nicht aus einer fremden Praxis und nicht als Trainingsbetreuung', async () => {
+    const id = await anlegen();
+    const stand = (await liste())[0]!.updated_at;
+    const fremd = await fremdeOrganisation();
+    const params = [id, stand, null, null, 'practice', 45, '[]', null, null, 'patient_wish', null];
+    expect((await fehler(fremd.owner, AENDERN, params))?.code).toBe('P0002');
+    expect((await fehler(users.trainer, AENDERN, params))?.code).toBe('42501');
+    expect((await fehler(users.patientMax, AENDERN, params))?.code).toBe('42501');
+  });
+
+  it('laesst eine falsch erfasste Grundlage loeschen, auch neben einem Eintrag ohne Grundlage (Zweitreview 2)', async () => {
+    // Eine eigene, leere Grundlage fuer Max - ohne Termine und Bericht.
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.treatment_bases
+         (organization_id, patient_id, treatment_basis_kind, issued_on, appointment_count)
+       values ($1::uuid, $2::uuid, 'self_pay', current_date, 5)
+       returning id`,
+      [organizationId, patients.max],
+    );
+    const basis = rows[0]!.id;
+    const mitGrundlage = await anlegen(users.office, { basis });
+    const ohne = await anlegen(users.office, { basis: null });
+
+    await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
+      basis,
+    ]);
+
+    const { rows: stand } = await asPostgres<{ id: string; status: string }>(
+      'select id, status from public.waitlist_entries order by created_at',
+    );
+    expect(stand).toEqual([
+      { id: mitGrundlage, status: 'withdrawn' },
+      { id: ohne, status: 'open' },
+    ]);
+    const { rows: audit } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log where subject_id = $1 and action = 'waitlist_entry.closed'`,
+      [mitGrundlage],
+    );
+    expect(audit[0]!.context).toMatchObject({ reason: 'treatment_basis_deleted' });
+  });
+
+  it('behaelt den Wunsch, wenn die Grundlage faellt und kein zweiter Eintrag besteht', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.treatment_bases
+         (organization_id, patient_id, treatment_basis_kind, issued_on, appointment_count)
+       values ($1::uuid, $2::uuid, 'self_pay', current_date, 5)
+       returning id`,
+      [organizationId, patients.max],
+    );
+    const id = await anlegen(users.office, { basis: rows[0]!.id });
+    await asUserCommitted(users.therapist, 'select public.delete_treatment_basis($1::uuid)', [
+      rows[0]!.id,
+    ]);
+    const [zeile] = await liste();
+    expect(zeile).toMatchObject({ id, status: 'open', treatment_basis_kind: null });
+  });
+
   it('protokolliert Anlegen, Aendern und Schliessen ohne die Notiz (ADR-010)', async () => {
     const id = await anlegen();
     const zeile = (await liste())[0]!;

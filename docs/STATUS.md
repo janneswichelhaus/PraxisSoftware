@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-28 · letzte Session: UX-Review (UXR-001 bis UXR-013)
+# Status · Stand 2026-09-28 · letzte Session: PRX-EPIC-001 (Warteliste, Terminsuche, Gebietstage)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,19 +6,19 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**UX-Review umgesetzt (Branch `claude/ux-review`):** 444 gegengeprüfte Befunde aus Code und Browser (390, 820 und 1440 px; alle Rollen; leer, gefüllt, Fehler, Laden), davon 357 direkt umsetzbare in 13 Stories umgesetzt – von UXR-001 (Grundlage des Design Systems) bis UXR-013. Über 426 Aufnahmen gemessen: waagerechter Überlauf 36 → 0 px, Tippziele unter 24 px 185 → 0, Felder unter 16 px (iOS-Zoom) 9 → 0, axe-Verstöße 102 → 2 (kritisch 78 → 0). Sicherheitskorrektur: offene Weiterleitung über `?zurueck=` geschlossen (VER-11); Zweitreview für Abrechnung und diese Korrektur gelaufen. **25 Entscheidungen für dich** stehen als BEF-046 bis BEF-070 in `BEFUNDE.md`, neue Annahme ANN-131 (Fensterumschlag). Offen aus dem Zweitreview: nur Hinweis H1 (Sperren am Speicherweg des Katalog-Verlustschutzes).
+**PRX-EPIC-001 gebaut (Branch `claude/tender-carson-vhe941`):** Ein freier Platz findet eine Patientin.
+- **Warteliste** (Kalender → Ansicht und Filter, Funktionssuche, Akte → Termine): Wunschzeiten, Dauer, Terminart, Wunsch-Therapeut:in, Grundlage und ein **organisatorischer** Grund — Wunsch der Person, Verordnung endet, Vorgabe der Praxis — mit „bis spätestens“ (ANN-132); Anrufen per Tipp. Geschlossene Einträge fallen nach zwölf Monaten (ANN-133).
+- **Gebietstage** (Organisatorisches → Gebietstage): Postleitzahlen je Gebiet mit Tagen und Tageshälften. Beim Hausbesuch warnen Anlegen, Bearbeiten und Serie „außerhalb des Gebietstags“, sperren aber nicht (ANN-135).
+- **Freie Termine suchen** (am Eintrag, an der Verordnung, in der Akte): Vorschläge aus Arbeitszeit und Belegung von Therapeut:in **und** Patient:in, Gebietstag vorn, Fahrweg der ersten zehn live geprüft und nur gekennzeichnet (ANN-136). „Übernehmen“ öffnet das Terminformular — reserviert wird nichts.
+- **Nachrücken:** Nach einer Absage und an einer freien Stelle im Kalender steht „Passt von der Warteliste“; Termin und Schließen des Eintrags in einer Transaktion. Versendet wird nichts (B15).
 
-**Bausteine nachgebessert (Branch `claude/bausteine-doku`, deine Rückmeldung zur Hüfte):** Ein Test hat jetzt **o.B.**, **positiv** und **nicht getestet**. An Extremitäten und Kiefer wählst du die Seite **einmal je Region** (links, rechts, beidseits — ohne Vorauswahl), an der Wirbelsäule haben die Nerventests je eine Zeile links und rechts (ANN-129). Der Text ist gegliedert: je Block ein Absatz, je Test eine Zeile mit ✅ oder ❗ vorn, Gruppen eingerückt, „Nicht getestet“ gesammelt, Techniken mit •; Rückenlage und Bauchlage stehen nur beim Abhaken (ANN-130). Die Notiz öffnet sich auf Tipp. Keine Migration. Pull Request offen, wartet auf deinen Merge.
-
-**DOK-006 gebaut:** Fotos entstehen in der Anwendung und landen nicht in der Mediathek. **Foto aufnehmen** öffnet einen Kameradialog in der Seite — am Verordnungsscan, unter **Dateien** und im **Verlauf**; vor jedem Upload entfernt das Gerät Ort, Gerät und Vorschaubild, nur die Ausrichtung bleibt (ANN-125). **Patientenfotos** gibt es nur mit der neuen Einwilligung **Fotos im Behandlungsverlauf** (Datenschutz der Akte, dort auch „abgelehnt“), nur über die Kamera, ohne Dateiwähler. Die Liste im **Verlauf** zeigt keine Vorschaubilder, aber das Löschdatum — zwölf Monate nach der Aufnahme, spätestens drei Monate nach dem festgehaltenen Abschluss (ANN-126). Zwei Fotos stehen gleich groß nebeneinander, ohne Bewertung; angesehen wird nur in der Seite, ohne Download. Ein **Widerruf löscht die Fotos sofort**, ein Legal Hold hält sie gesperrt (ANN-127). Einzige Herausgabe ist die Kopie an die Person durch owner unter **Auskunft und Löschverlangen** (ANN-128). Office sieht Fotos, nimmt aber keine auf.
-
-Pull Request offen, **Zweitreview gelaufen** (Befunde eingearbeitet, Stand im PR), wartet auf deinen Merge. Fortschritt **39,4 %**. **DOK-005 ist gemergt** (PR #128).
+Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Trainingstermin als Nachbar in der Suche — und drei weitere eingearbeitet), wartet auf deinen Merge.
 
 ## Danach — Bauen
 
-1. **PRX-EPIC-001** in der Reihenfolge der Roadmap, Block 2. `/weiter`
-2. **PRX-EPIC-002**
-3. **PRX-EPIC-003**, danach STA-EPIC-001.
+1. **PRX-EPIC-002** (Am Termin steht, was man vor der Tür wissen muss), Block 2. `/weiter`
+2. **PRX-EPIC-003** (Nichts fällt durch)
+3. **STA-EPIC-001** (Statistiken)
 
 ## Prüfverfahren
 
@@ -27,6 +27,8 @@ Pull Request offen, **Zweitreview gelaufen** (Befunde eingearbeitet, Stand im PR
 **Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute (DOK-006, in der Cloud gelaufen): `test` **2692** (lokal unter Node 24 und Windows scheitern weiter Router-, Navigations- und Pfadtests mit derselben „AbortSignal"-Ursache; maßgeblich ist die CI mit Node 22); `test:db` **2104**, davon 46 in `patient-photos.test.ts`; `test:e2e` ohne Anmeldung: **115 grün**, einer übersprungen, darunter `fotos.spec.ts` mit der künstlichen Kamera von Chromium. In der Cloud braucht `login.spec.ts` die Platzhalter aus der CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), sonst zeigt die App den Konfigurationsfehler. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html`, `kalender.html`, `organisation.html`, `uebersicht.html` (Tagesstart, Liege in der Akte), `bausteine.html` (Befund aus Bausteinen), `bericht.html` (Therapiebericht, Formular und Blatt) und `fotos.html` (Kamera, Fotoliste, Vergleich, Metadaten) bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
+
+- **Warteliste und Terminsuche sichten** (PRX-EPIC-001): drei Schritte in [Praxisverwaltung](sichtung/praxisverwaltung.md). Zu bestätigen: **ANN-132** (drei Gründe statt einer Stufe), **ANN-133** (zwölf Monate nach dem Schließen), **ANN-134** (Lesen der Liste ohne Protokoll), **ANN-135** (genaue Postleitzahl, Grenze 12 Uhr, Warnung statt Sperre), **ANN-136** (dicht gepackte Vorschläge, knapper Fahrweg nur gekennzeichnet).
 
 - **UX-Review entscheiden:** BEF-046 bis BEF-070, je Eintrag Frage, Optionen und Empfehlung. Zuerst BEF-046 (ein gescheitertes Nachladen des Profils ersetzt die App, Eingaben gehen verloren) und BEF-047 (Sitzungsende und Anmeldemaske).
 - **Tagesstart am Handy sichten** (UX-EPIC-003): Schritte 10 und 12 in [Kernprozess](sichtung/kernprozess.md). Zu bestätigen: **ANN-116** (Liege als organisatorische Angabe, sichtbar auch für Office) und **ANN-117** (Zählung „ab n. Besuch“ über die Behandlungen des Tages; Plan des Teams für Behandelnde zugeklappt).
@@ -48,6 +50,6 @@ Pull Request offen, **Zweitreview gelaufen** (Befunde eingearbeitet, Stand im PR
 
 ## Letzte Session
 
-**UX-Review (UXR-001 bis UXR-013).** Grundlage des Design Systems (Token `text-liste`, `ink-subtle` entfernt, Wächter für Radien und Schatten, Bausteine `Symbolknopf`, `Textlink`, `Disclosure` mit Zeichen, `ErrorState` mit „Erneut versuchen“, `Rueckfrage` mit Versprechen, `SubNav` mit `pfade`, Druck des Seitenkopfs, Kästchenfarbe, helles Farbschema), danach je Arbeitsbereich eine Story mit Eingabeschutz, sichtbaren Fehlern, Tippzielen, Wortwahl und Zuständen. Keine Migration, keine neue Abhängigkeit, kein neuer RPC; Rechnungsaufrufe unverändert (Zweitreview). Die Befunde stehen als Arbeitsstand unter `.tmp/ux-review/` im Worktree (nicht versioniert).
+**PRX-EPIC-001 (PRX-001 bis PRX-004).** Vier Migrationen und eine für den Zweitreview: `waitlist_entries` mit eigener Datenklasse `warteliste`, `territories` und `territory_postal_codes` (Betriebsdaten), die Suche `find_free_slots` und `rate_slot_travel` ohne Tabelle, das Nachrücken `list_waitlist_matches` und `create_appointment_from_waitlist`. Auskunft nach Art. 15, Löschlauf und Wiederanwendung nach Restore sind nachgezogen. Keine neue Abhängigkeit, kein neuer Anbieter; die Fahrzeit nutzt die vorhandene Matrix beim eigenen Kartendienst (Gate unverändert). Prüfseite `tests/e2e/fixtures/warteliste.html` mit fünf Ansichten.
 
-**Lokale Schritte:** nach dem Merge `git pull origin main`; kein `pnpm install`, kein `db reset` nötig.
+**Lokale Schritte:** nach dem Merge `git pull origin main` und `pnpm dlx supabase@2.116.0 db reset` (neue Migrationen); kein `pnpm install`.

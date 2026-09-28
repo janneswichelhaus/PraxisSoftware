@@ -851,7 +851,8 @@ export async function createAppointment(
   const { data, error } = (await getSupabase().rpc(
     waitlistEntryId ? 'create_appointment_from_waitlist' : 'create_appointment',
     {
-      ...(waitlistEntryId ? { p_entry_id: waitlistEntryId } : { p_patient_id: patientId }),
+      ...(waitlistEntryId ? { p_entry_id: waitlistEntryId } : {}),
+      p_patient_id: patientId,
       p_staff_member_id: values.staff_member_id,
       p_appointment_type: values.appointment_type,
       p_date: values.date,
