@@ -225,6 +225,7 @@ describe('Audit-Lesepfad', () => {
       'find_free_slots',
       'get_appointment_billing_context',
       'get_appointment_brief',
+      'get_appointment_services',
       'get_billable_service_draft',
       'get_invoice',
       'get_payment_reminder',

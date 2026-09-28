@@ -15,6 +15,7 @@ import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Kurzblick } from './Kurzblick';
 import { Abrechnungslage } from './Abrechnungslage';
+import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -22,6 +23,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
   canReadTreatmentNote,
+  canRecordAtAppointment,
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
@@ -1345,6 +1347,14 @@ function AppointmentDetail({
       {istEreignis ? null : (
         <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
       )}
+
+      {/* Termin abhaken (PRX-009): nach der Dokumentation die geleisteten
+          Heilmittel bestätigen - die behandelnde Person an ihrem Termin,
+          das Büro an jedem (ANN-140). Verbindlich prüft der Server. */}
+      {appointment.kind === 'therapy' &&
+      canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId) ? (
+        <HeilmittelBestaetigen appointment={appointment} user={user} />
+      ) : null}
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis.{' '}

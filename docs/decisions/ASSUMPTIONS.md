@@ -947,6 +947,8 @@ Technik · offen · 2026-09-19 · — · — · Wiedervorlage: keine — der Rec
 
 Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen — insbesondere, ob eine Therapeutin am Termin selbst erfassen soll
 
+**Ablösung.** abgelöst durch ANN-140 in der Frage „wer Leistungen erfasst“ (seit PRX-009 auch Behandelnde an ihrem eigenen Termin); der Katalog und das Zurücknehmen bleiben wie hier
+
 **Annahme.** Den Leistungskatalog **lesen** alle vier Praxisrollen, **pflegen** darf ihn allein `owner`. Leistungen **erfassen und zurücknehmen** dürfen `owner` und `office`; die therapeutischen Rollen tun es nicht, und die Erfassung findet im Abrechnungsbereich statt, nicht am Termin. Die Termin-Detailseite bleibt unberührt.
 
 **Begründung.** §4.1 zählt Praxiseinstellungen zur Inhaberrolle, §4.3 gibt dem Office Rechnungen und Zahlungsstatus — nicht die Preisbildung. Lesen muss der Katalog für alle offen sein, sonst sähe die Erfassung ihre eigenen Preise nicht. Die Erfassung auf zwei Rollen zu beschränken hält den Bedienweg an einer Stelle: Eine zweite Oberfläche am Termin wäre eine zweite Implementierung derselben Regel, und die Regel selbst ist ohnehin serverseitig. Unsicher: ob das im Alltag trägt — bei einer Praxis, in der Jannes beide Rollen hat, fällt der Unterschied nicht auf, bei einer angestellten Therapeutin schon.
@@ -1774,3 +1776,17 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach d
 **Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
 
 **Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`.
+
+### ANN-140 — Termin abhaken: Behandelnde bestätigen die Heilmittel an ihrem eigenen Termin, zurücknehmen bleibt beim Büro
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Kern am 2026-09-28 von Jannes gewählt: „sonst muss das Büro immer erst nachhaken, ob der Termin wirklich stattgefunden hat“)
+
+**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“
+
+**Annahme.** Am dokumentierten Termin (oder an einem mit Gebührenanlass) bestätigt die behandelnde Person, welche Heilmittel sie geleistet hat — vorbelegt aus der Grundlage, mit einer Rückfrage, geschrieben über dieselbe `record_billable_services` wie im Büro. `therapist` und `team_lead` dürfen das **nur an ihrem eigenen Termin** (ihre Beschäftigtenkennung steht am Termin); `owner` und `office` weiter an jedem. **Zurücknehmen** bleibt bei `owner` und `office`. Ist das Kontingent danach erreicht, sagt die Seite es; eine Rechnung entsteht dabei nie — sie bleibt im Büro (ANN-077). Das Protokoll trägt, ob am Termin oder im Büro erfasst wurde.
+
+**Begründung.** Jannes hat am 2026-09-28 entschieden, dass Behandelnde abhaken; `IDEA-PRX-039` empfiehlt, das als Oberfläche von ABR-002 zu bauen und nicht als zweiten Weg — so gelten Dokumentationskopplung (§19, ANN-072), Kontingent (ADR-020 Punkt 5) und Schutz vor Doppelerfassung (ADR-009 Punkt 4) ohne Ausnahme. Die Grenze „eigener Termin“ folgt dem Zweck: Was geleistet wurde, weiß, wer behandelt hat; eine Vertretung übernimmt den Termin und damit die Kennung. Das Zurücknehmen beim Büro folgt der Warnung aus `IDEA-PRX-039`: Abhaken darf nicht so aussehen, als ließe es sich durch erneutes Antippen zurücknehmen. Die „Freigabe zur Abrechnung“ braucht keinen eigenen Zustand, weil abgerechnet wird, was erfasst ist, monatlich je Person (ANN-077). Unsicher: ob Behandelnde auch Termine einer Kollegin abhaken sollen, etwa nach einem Tausch ohne Umbuchung.
+
+**Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/session/types.ts`; Oberfläche `src/features/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
+
+**Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`.
