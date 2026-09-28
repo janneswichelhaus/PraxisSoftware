@@ -43,9 +43,10 @@
           "id": "fundament",
           "name": "Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001",
           "gewicht": 3,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "vor 2026-09-01",
-          "nachweis": "PR #1, `e70775a`, `ca907e9`"
+          "nachweis": "PR #1, `e70775a`, `ca907e9`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "dok-epic",
@@ -114,9 +115,10 @@
           "id": "cal-epic-003b",
           "name": "CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013)",
           "gewicht": 3,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-12",
-          "nachweis": "`b2626ae`, `89ab30b`, `acddcc6`"
+          "nachweis": "`b2626ae`, `89ab30b`, `acddcc6`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "dat-epic-001",
@@ -130,73 +132,82 @@
           "id": "rol-epic-001",
           "name": "ROL-EPIC-001 Office liest klinische Inhalte (E15)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-15",
-          "nachweis": "PR #41"
+          "nachweis": "PR #41",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "cal-018",
           "name": "CAL-018 Hausbesuch-Szenarien (E14)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-16",
-          "nachweis": "`dc529a7`, `6a11fb0`"
+          "nachweis": "`dc529a7`, `6a11fb0`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "cal-epic-004a",
           "name": "CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-18",
-          "nachweis": "`ee81ea7`, `e189183` … `1b132ea`"
+          "nachweis": "`ee81ea7`, `e189183` … `1b132ea`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "fix-epic-004",
           "name": "FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016)",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-18",
-          "nachweis": "`14a1fa7` … `856a5ac`"
+          "nachweis": "`14a1fa7` … `856a5ac`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "ver-epic-002",
           "name": "VER-EPIC-002 Verordnung im Office-Alltag",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-18",
-          "nachweis": "`f734e55`, `ba19245`"
+          "nachweis": "`f734e55`, `ba19245`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "abr-epic-001",
           "name": "ABR-EPIC-001 Leistungen und Katalog",
           "gewicht": 3,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-19",
-          "nachweis": "`3874e83` … `a1384ce`"
+          "nachweis": "`3874e83` … `a1384ce`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "abr-epic-002a",
           "name": "ABR-EPIC-002a Rechnung entsteht",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-19",
-          "nachweis": "`3874e83` … `a1384ce`"
+          "nachweis": "`3874e83` … `a1384ce`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "abr-epic-002b",
           "name": "ABR-EPIC-002b Rechnung als Dokument",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-19",
-          "nachweis": "`3874e83` … `a1384ce`"
+          "nachweis": "`3874e83` … `a1384ce`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "abr-epic-003",
           "name": "ABR-EPIC-003 Zahlungen und offene Posten",
           "gewicht": 1,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-19",
-          "nachweis": "`3874e83` … `a1384ce`"
+          "nachweis": "`3874e83` … `a1384ce`",
+          "gesichtet_am": "2026-09-28"
         },
         {
           "id": "pat-006",
@@ -258,19 +269,21 @@
           "id": "ux-epic-002",
           "name": "UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
           "nachweis": "`aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044)",
-          "vermerk": "Sichtung am Handy offen: Kernprozess, Schritte 1, 2, 5 und 7 bis 10"
+          "gesichtet_am": "2026-09-28",
+          "vermerk": "Sichtung Kernprozess 2026-09-28 (Android und Windows)"
         },
         {
           "id": "ux-epic-003",
           "name": "UX-EPIC-003 Tagesansicht fürs Handy (Block 1a)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-26",
           "nachweis": "`46ebc9e` … (UX-003a, UX-003c, Zweitreview)",
-          "vermerk": "Sichtung am Handy: Kernprozess Schritte 10 und 12"
+          "gesichtet_am": "2026-09-28",
+          "vermerk": "Sichtung Kernprozess 2026-09-28, Schritte 10 und 12"
         },
         {
           "id": "map-002",
@@ -381,10 +394,11 @@
           "id": "prx-epic-001",
           "name": "PRX-EPIC-001 Warteliste und Terminsuche",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-28",
-          "nachweis": "`222fccd` … `e01b575` (PRX-001 bis PRX-004), `53f89ad` (Zweitreview)",
-          "vermerk": "Sichtung: Praxisverwaltung Schritte 1 bis 3"
+          "nachweis": "`222fccd` … `e01b575` (PRX-001 bis PRX-004), `53f89ad` (Zweitreview), PR #136",
+          "gesichtet_am": "2026-09-28",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 1 bis 3 (Befund BEF-071)"
         },
         {
           "id": "prx-epic-002",

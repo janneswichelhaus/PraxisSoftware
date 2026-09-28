@@ -26,12 +26,12 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 
 | Datei                                        | Etappe                            | Stand                                                                                |
 | -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
-| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | offen (Rückstand seit CAL-EPIC-003b); freie Sichtung Kalender 2026-09-26             |
-| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | offen                                                                                |
+| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | gesichtet 2026-09-28 (BEF-072 bis BEF-079)                                           |
+| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | teilweise 2026-09-28 (Schritte 1 und 8); 2–7 warten auf Testdaten                    |
 | [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
 | [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
-| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | offen; seit PRX-EPIC-001, ergänzt mit PRX-EPIC-002                                   |
+| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | Schritte 1–3 gesichtet 2026-09-28 (BEF-071); 4–6 (PRX-EPIC-002) offen                |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

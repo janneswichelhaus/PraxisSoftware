@@ -298,7 +298,7 @@ Patientin eine Neuaufnahme — deshalb gleich nach der Tagesroute.
 | ~~**FRB-EPIC-003**~~ | **gebaut 2026-09-26** — Der Befund entsteht aus Bausteinen zum Abhaken: neun Regionen wörtlich als Daten, Vorschlag in den Eintrag, Liege im Befund (ANN-118 bis ANN-120); Bilder und Skalen als FRB-EPIC-004/005 ausgegliedert, Sichtung Befund Schritte 6 und 7 | Phasen P2 und P3 des FRB-Plans: neun Regionen als Daten (Zähltest), Renderer mit Live-Vorschau des Texts, Textbausteine auch im Befund, ein Bild ruft den Test in Erinnerung; **Liege-Merkmal im Befund**; Bausteine und Skalen auch für die Verlaufsdoku — der Weg ohne Sprechen (§5) | `IDEA-PRX-043`, `IDEA-OUT-009` |
 | ~~**DOK-005**~~ | **gebaut 2026-09-26** — Ein Therapiebericht an die Verordner:in entsteht aus Befund und Verlauf: gespeichert und beim Abschluss eingefroren, Inhalt angekreuzt und wörtlich, Empfehlung mit Quelle und Datum an der Verordnung (ANN-121 bis ANN-124); Sichtung Befund Schritte 8 und 9 | Bericht als Druckansicht (B14 Weg 1), Inhalt nur übernommen, nicht interpretiert (§17); dazu die **Empfehlung zum Verordnungsende** mit Quelle und Datum (Wiedervorlage aus VER-EPIC-002, ANN-014) | `PROJECT_PRINCIPLES.md` §4.2 |
 | ~~**DOK-006**~~ | **gebaut 2026-09-26** — Fotos liegen in der Akte, ohne in der Mediathek des Handys zu landen: Kameradialog für Dokumente und Patientenfotos, Metadaten vor dem Upload entfernt (ANN-125), Patientenfotos auf eigener Einwilligung mit eigener Klasse und Löschung beim Widerruf (ANN-126, ANN-127), Vergleich zweier Fotos im Verlauf, Herausgabe nur an die Person (ANN-128); Sichtung Befund Schritte 10 bis 12 | Aufnahme über die Kamera der Anwendung für Verordnung und Papierbögen; **Fotos von Patient:innen** mit eigener Einwilligung, Frist und Entfernung der Aufnahmemetadaten — freigegeben mit ADR-017 Fassung 2 (Abschnitt G, angenommen 2026-09-26); Vergleich zweier Fotos im Verlauf, ohne Bewertung (§17) | Jannes 2026-09-23; §5 |
-| **FRB-EPIC-004** | Skalen in der Verlaufsdoku — die aktuelle Lage antippen statt tippen | Startet, sobald NRS, PSFS und Veränderungsfrage aktiv sind (ANN-099, Bögen von Jannes): Skalen an der Dokumentation erheben, als Erhebung gespeichert und als Zeile in den Vorschlag; kein zweiter Wert neben der Erhebung (§13). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | §5, FRB-EPIC-001 |
+| **FRB-EPIC-004** | Skalen in der Verlaufsdoku — die aktuelle Lage antippen statt tippen | Startet, sobald NRS und Veränderungsfrage aktiv sind (ANN-099; Veränderungsfrage freigegeben, NRS: Freigabe des Wortlauts durch Jannes; **PSFS gestrichen**, Jannes 2026-09-28): Skalen an der Dokumentation erheben, als Erhebung gespeichert und als Zeile in den Vorschlag; kein zweiter Wert neben der Erhebung (§13). Die **Veränderungsfrage steht ab dem zweiten Termin je Patient:in oben in der Dokumentation** (Jannes 2026-09-28). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | §5, FRB-EPIC-001 |
 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung | Startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20): optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | `IDEA-OUT-009` |
 
 **Etappe P — Praxisverwaltung.** Die Ideen aus
@@ -311,7 +311,7 @@ Grundsatz 3: Steuerung ist für den Owner Kernfunktion, nicht Komfort).
 | --- | --- | --- | --- |
 | ~~**PRX-EPIC-001**~~ | **gebaut 2026-09-28** — Ein freier Platz findet eine Patientin: Warteliste mit organisatorischer Dringlichkeit (ANN-132 bis ANN-134), Gebietstage als Warnung (ANN-135), Terminsuche als Vorschlagsliste mit Fahrweg als Kennzeichen (ANN-136), Nachrücken in einer Transaktion; Sichtung Praxisverwaltung Schritte 1 bis 3 | Warteliste mit Zeitfenstern und Nachrücken, automatische Terminsuche als Vorschlagsliste, Gebietstage für die Terminvergabe | `IDEA-PRX-003`, `-008`, `-031` |
 | ~~**PRX-EPIC-002**~~ | **gebaut 2026-09-28** — Am Termin steht, was man vor der Tür wissen muss: Kurzblick aufklappbar und protokolliert (ANN-137), Material von Hand an der Person, am Tag ohne Namen (ANN-138), „Termin n von m“ und Abrechnungslage nur fürs Büro (ANN-139), Heilmittel bestätigen am eigenen Termin (ANN-140); BEF-055 Teil 1; Sichtung Praxisverwaltung Schritte 4 bis 6 | Vertretungs-Kurzblick (aufklappbar, auditiert), „Mitnehmen" aus den letzten Befunden, Abrechnungslage und Verordnungszähler am Termin, Termin abhaken mit Heilmittel und Kontingent | `IDEA-PRX-034`, `-016`, `-035`, `-037`, `-009`, `-039` |
-| **PRX-EPIC-003** | Nichts fällt durch | **Erstaufnahme-Checkliste** (Verordnungsfoto, Befundbogen, Einwilligungen, Befund, Liege; offen in Tagesansicht, Aktenkopf und Büroliste, bis erledigt — §5), Aufgaben und Wiedervorlagen mit Patientenbezug, Anrufliste für morgen mit gespeichertem Stand, Dublettenprüfung und Zusammenführen, Verordnung per Kamera, Erinnerung am Rezeptende und an den vergessenen Abschluss | `IDEA-PRX-019`, `-005`, `-041`, `-018`, `-023`, `IDEA-LZK-007`, `-009` |
+| **PRX-EPIC-003** | Nichts fällt durch | **Verordnung ohne Papier** (Jannes 2026-09-28): Therapeut:in fotografiert am Termin mit der Kamera der App (Verordnungsscan), daraus ein offener Punkt „Verordnung zu erfassen“ in einer Büroliste; Office öffnet „Grundlage erfassen“ mit dem Foto daneben und tippt ab — dafür **Schreibrecht für `office`** an der Grundlage (ANN-011). KI-Vorschlag der Felder bleibt in KI-EPIC-002 (Block 9). **Erstaufnahme-Checkliste** (Verordnungsfoto, Befundbogen, Einwilligungen, Befund, Liege; offen in Tagesansicht, Aktenkopf und Büroliste, bis erledigt — §5), Aufgaben und Wiedervorlagen mit Patientenbezug, Anrufliste für morgen mit gespeichertem Stand, Dublettenprüfung und Zusammenführen, Verordnung per Kamera, Erinnerung am Rezeptende und an den vergessenen Abschluss | `IDEA-PRX-019`, `-005`, `-041`, `-018`, `-023`, `IDEA-LZK-007`, `-009` |
 | **STA-EPIC-001** | Die Praxis wird über fünf Zahlen gesteuert, nicht aus dem Bauch | Eigener Arbeitsbereich **Statistiken**, nur `owner` (ADR-004), nur Praxissummen (§20, B6): **(1)** Umsatz und Zahlungseingang des Monats gegen Vormonat und Ziel, **(2)** offene Posten mit Alter, **(3)** Auslastung der nächsten zwei Wochen (gebuchte gegen verfügbare Behandlungsstunden), **(4)** Verordnungen, die in 14 Tagen enden oder deren Kontingent aufgebraucht ist, ohne Anschluss — samt ungedeckten Terminen, **(5)** Ausfälle der letzten vier Wochen mit Ausfallhonoraren. Zu jeder Zahl ein Zielwert (von Jannes einstellbar) und **die eine Handlung**, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); Zeitraumvergleich; CSV. Berechnung deterministisch in einer Quelle mit Testfällen je Kennzahl, Werte aus Abrechnung (ADR-009) und Terminen (ADR-018), keine zweite Datenhaltung | `IDEA-PRX-025` |
 
 ### Block 3 — Etappe TR: Trainingsbereich
@@ -515,8 +515,8 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
   Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **D2/D3** aus dem FRB-Plan: gelten wie vorgeschlagen (ANN-118, ANN-119);
   die drei Lücken der MT-Vorlage und Korrekturen jederzeit nachliefern.
-- **Material für FRB-EPIC-004/005:** Bögen für NRS, PSFS und
-  Veränderungsfrage (ANN-099), Bilder zu den Tests.
+- **Material für FRB-EPIC-004/005:** Freigabe des NRS-Wortlauts (ANN-099;
+  Veränderungsfrage freigegeben, PSFS gestrichen), Bilder zu den Tests.
 - **Preise** für Katalog, Abo und Pakete — vor Block 5 als synthetische Werte,
   echte vor M3.
 - **Branch Protection:** `main` ist geschützt; ob Secret Scanning und Push
@@ -688,7 +688,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 <!-- fortschritt:anfang (erzeugt von pnpm fortschritt --schreiben, nicht von Hand aendern) -->
 | Block | Posten | Status | Fertig am | Nachweis | Gesichtet am | Vermerk |
 | --- | --- | --- | --- | --- | --- | --- |
-| A | Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001 | fertig | vor 2026-09-01 | PR #1, `e70775a`, `ca907e9` | — | — |
+| A | Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001 | gesichtet | vor 2026-09-01 | PR #1, `e70775a`, `ca907e9` | 2026-09-28 | — |
 | A | DOK-EPIC (DOK-001 bis DOK-004) | gesichtet | 2026-09-05 | PR #5, `21d85dd`, `e931068` | 2026-09-11 | — |
 | A | VER-EPIC-001 Verordnungen | gesichtet | 2026-09-07 | `2c3c1de` … `159c1bb` | 2026-09-11 | — |
 | A | UI-000 Fundament der Oberfläche | gesichtet | 2026-09-07 | `4a4440f` … `e6b4ab6` | 2026-09-11 | — |
@@ -696,25 +696,25 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | UX-EPIC-001 Hausbesuchstag (11 Stories) | gesichtet | 2026-09-11 | PR #18 | 2026-09-11 | — |
 | A | LOE-EPIC-001 Löschung und Retention (5 Stories) | gesichtet | 2026-09-11 | PR #25 | 2026-09-11 | — |
 | A | CAL-EPIC-003a Terminzustände | gesichtet | 2026-09-12 | PR #28 | 2026-09-12 | — |
-| A | CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013) | fertig | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | — | — |
+| A | CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013) | gesichtet | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | 2026-09-28 | — |
 | A | DAT-EPIC-001 Dateiablage (G4) | fertig | 2026-09-13 | `84bec9b` … `fd10a37` | — | — |
-| A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | fertig | 2026-09-15 | PR #41 | — | — |
-| A | CAL-018 Hausbesuch-Szenarien (E14) | fertig | 2026-09-16 | `dc529a7`, `6a11fb0` | — | — |
-| A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | fertig | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | — | — |
-| A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | fertig | 2026-09-18 | `14a1fa7` … `856a5ac` | — | — |
-| A | VER-EPIC-002 Verordnung im Office-Alltag | fertig | 2026-09-18 | `f734e55`, `ba19245` | — | — |
-| A | ABR-EPIC-001 Leistungen und Katalog | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-002a Rechnung entsteht | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-002b Rechnung als Dokument | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-003 Zahlungen und offene Posten | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | gesichtet | 2026-09-15 | PR #41 | 2026-09-28 | — |
+| A | CAL-018 Hausbesuch-Szenarien (E14) | gesichtet | 2026-09-16 | `dc529a7`, `6a11fb0` | 2026-09-28 | — |
+| A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | gesichtet | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | 2026-09-28 | — |
+| A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | gesichtet | 2026-09-18 | `14a1fa7` … `856a5ac` | 2026-09-28 | — |
+| A | VER-EPIC-002 Verordnung im Office-Alltag | gesichtet | 2026-09-18 | `f734e55`, `ba19245` | 2026-09-28 | — |
+| A | ABR-EPIC-001 Leistungen und Katalog | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-002a Rechnung entsteht | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-002b Rechnung als Dokument | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-003 Zahlungen und offene Posten | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
 | A | PAT-006 Datenschutzinformation und Einwilligungen (G8) | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | — | — |
 | A | ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L) | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | — | — |
 | A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | fertig | 2026-09-20 | PR #72 | — | — |
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | fertig | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | — | Sichtung am Handy offen: Kernprozess, Schritte 1, 2, 5 und 7 bis 10 |
-| B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | fertig | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | — | Sichtung am Handy: Kernprozess Schritte 10 und 12 |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |
+| B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | gesichtet | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | 2026-09-28 | Sichtung Kernprozess 2026-09-28, Schritte 10 und 12 |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
 | B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |
@@ -726,7 +726,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | FRB-EPIC-003 Befund mit Bausteinen | fertig | 2026-09-26 | `0483a60`, `b80cd6a`, `b621339` (FRB-003a bis c, Zweitreview) | — | Sichtung: Befund Schritte 6 und 7 |
 | B | DOK-005 Therapiebericht | fertig | 2026-09-26 | `f7d5b6b`, `5041f31`, `a7b0890` (DOK-005a und b, Zweitreview) | — | Sichtung: Befund Schritte 8 und 9 |
 | B | DOK-006 Fotos in der Akte | fertig | 2026-09-26 | `0319ee9` … `88686ea` (ADR-017 Fassung 2), `141aaee` … `5d11f19` (DOK-006a bis d, Zweitreview) | — | Sichtung: Befund Schritte 10 bis 12 |
-| B | PRX-EPIC-001 Warteliste und Terminsuche | fertig | 2026-09-28 | `222fccd` … `e01b575` (PRX-001 bis PRX-004), `53f89ad` (Zweitreview) | — | Sichtung: Praxisverwaltung Schritte 1 bis 3 |
+| B | PRX-EPIC-001 Warteliste und Terminsuche | gesichtet | 2026-09-28 | `222fccd` … `e01b575` (PRX-001 bis PRX-004), `53f89ad` (Zweitreview), PR #136 | 2026-09-28 | Sichtung: Praxisverwaltung Schritte 1 bis 3 (Befund BEF-071) |
 | B | PRX-EPIC-002 Am Termin | fertig | 2026-09-28 | `0f7e6af` … `25d54af` (PRX-005 bis PRX-009) | — | Sichtung: Praxisverwaltung Schritte 4 bis 6 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |

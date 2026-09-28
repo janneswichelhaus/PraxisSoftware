@@ -1065,3 +1065,22 @@ Entscheidung (ADR-005, ADR-006 Punkt 4).
 **Offen.** Ob der Befund eigene Kategorien braucht (Anamnese, Inspektion,
 Palpation, Test) oder ob eine flache Liste reicht — das entscheidet sich am
 fertigen Befundformular, nicht vorher.
+
+---
+
+### IDEA-PRX-045 — Kalender endlos wischen: am Ende des Tags oder der Woche geht es weiter
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Jannes, 2026-09-28 (Sichtung Kernprozess, Schritt 5) |
+| Berührt | Kalender (Tages- und Wochenansicht), ANN-109, BEF-074 |
+
+**Idee.** Im Kalender waagerecht wischen oder scrollen, ohne Ende: Am Rand
+eines Tages bzw. einer Woche folgt nahtlos der nächste (oder vorige)
+Abschnitt, statt über den Kopf umzuschalten.
+
+**Offen.** Wischen oder durchgehendes Scrollen; ob die Wochenansicht
+(eine Person, sieben Tage) genauso läuft; wie es sich mit dem Ziehen von
+Terminen verträgt (Ziehen über den Rand gibt es schon).
+

@@ -211,6 +211,8 @@ Datenschutz · entschieden (Jannes) · 2026-09-13 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Die Diagnose ist ein Gesundheitsdatum nach Art. 9 DSGVO; zugleich ist die Verordnung die Grundlage von Terminserie und Rechnung. Die Heilmittelbezeichnung gilt als organisatorisch, weil sie später ohnehin als Leistungsposition auf der Rechnung steht (C1). Das Schreibrecht ohne `office` folgt §16: Wer erfasst, tippt die Diagnose mit ab. Die zehnjährige Frist folgt §630f BGB und ADR-008 Punkt 4. Der ursprüngliche Leseausschluss der klinischen Projektion für `office` ist mit E15 abgelöst (ADR-004 Fassung 2 Punkt 3, umgesetzt 2026-09-15 mit ROL-002); jeder Zugriff wird als `prescription.viewed` protokolliert (ADR-010). Datenklasse, Frist und Schreibregel gelten unverändert. Unsicher: ob die Datenschutzprüfung (B2) den Lesezugriff von `office` auf die Diagnose trägt.
 
+**Stand 2026-09-28 (Jannes).** **Office darf Grundlagen erfassen und bearbeiten** (Sichtung Kernprozess, Schritt 1: „gang und gäbe in jeder Praxis“). Ablauf dazu: Die Therapeut:in fotografiert die Verordnung vor Ort, Office tippt sie aus einer Büroliste mit dem Foto daneben ab (PRX-EPIC-003). Umgesetzt wird es in PRX-EPIC-003 über `app.can_write_treatment_bases()`; bis dahin gilt der Schreibschnitt oben. Einen eigenen Prüfpunkt bekommt die Freigabe nicht — der Eintrag steht wegen E15 ohnehin im Prüfpaket, und Office liest die Diagnose dort schon.
+
 **Anker.** `app.can_read_treatment_bases()`, `app.can_read_treatment_basis_clinical()` (Rollenschnitt nach E15) und `app.can_write_treatment_bases()` sowie die Lesepfade `list_patient_treatment_bases` und `list_patient_treatment_bases_clinical` in `supabase/migrations/20260918120000_treatment_basis.sql` (ADR-020 hat die Verordnung zur Behandlungsgrundlage umbenannt); Rollenweiche in `src/features/treatment-bases/grundlagen.ts`.
 
 **Änderungspfad.** Anderer Rollenschnitt beim Lesen oder Schreiben: die betroffene `app.can_*`-Funktion ersetzen · Aufwand `klein` — `office` wieder von der Diagnose auszuschließen widerspräche E15. Heilmittel als klinisch einstufen: Spaltenliste und Oberfläche anpassen · Aufwand `mittel`. Andere Frist: eigene Datenklasse und Löschregel in LOE-001 · Aufwand `mittel`.
@@ -1287,11 +1289,13 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-P
 
 ### ANN-099 — Ohne Vorlage im Repository bleibt ein Instrument inaktiv
 
-Technik · offen · 2026-09-25 · — · — · Wiedervorlage: sobald Jannes die Bögen für NRS, PSFS und Veränderungsfrage in `quellen/scores/pdf/` ablegt
+Technik · offen · 2026-09-25 · — · — · Wiedervorlage: mit FRB-EPIC-004 (Veränderungsfrage freigegeben, NRS offen, PSFS gestrichen — Stand 2026-09-28)
 
 **Annahme.** Ein Instrument ohne Vorlage in `quellen/scores/pdf/` darf in der Bibliothek stehen, aber nicht aktiv sein: `quelle.datei` fehlt, `quelle.literatur` nennt die Veröffentlichung, der Wortlaut gilt als vorläufig und die Version bleibt `0.x`. NRS, PSFS und die globale Veränderungsfrage liegen so vor — Wortlaut nach der gängigen deutschen Form, PSFS mit **drei** Aktivitäten (die Originalfassung erlaubt bis zu fünf), Veränderungsfrage **siebenstufig** von −3 bis +3. `prioritaet` steht auf `a`, weil die Roadmap die drei zuerst nennt; im Inventar der 18 kommen sie nicht vor.
 
 **Begründung.** `quellen/README.md` Regel 1 und der FRB-Plan §7 Punkt 2 verlangen einen Wortlaut, der gegen eine Vorlage zu halten ist, und verbieten die Rekonstruktion aus dem Gedächtnis. Aus der Cloud-Umgebung waren die deutschen Fassungen (Deutsche Schmerzgesellschaft, physiopraxis) nicht abrufbar. Bauen wartet nicht (§15.2): Die Struktur, der Rechenkern und die Referenzfälle hängen nicht am Wortlaut, das Erheben schon — und das beginnt erst mit FRB-EPIC-002. Die Kopplung steht im Schema neben der Lizenzkopplung (ANN-086), nicht in der Oberfläche. Unsicher: welche Fassung der PSFS (drei oder fünf Aktivitäten) und der Veränderungsfrage (sieben oder mehr Stufen) die Praxis tatsächlich nutzt.
+
+**Stand 2026-09-28 (Jannes).** **PSFS wird gestrichen** und nicht integriert. Für die **Veränderungsfrage** gilt der Wortlaut oben — eine Frage, sieben Stufen von „sehr viel schlechter“ bis „sehr viel besser“ — als **Praxisvorgabe**, freigegeben von Jannes; eine Vorlage als PDF ist nicht nötig, weil es keine einheitliche deutsche Fassung gibt und das Instrument weder Normwerte noch Cut-offs trägt. Dasselbe genügt für die NRS, sobald Jannes ihren Wortlaut freigibt. Umgesetzt wird beides im ersten Schritt von FRB-EPIC-004 (Freigabe als Quelldatei unter `quellen/scores/`, Version `1.0.0`, `aktiv: true`; `psfs.json` entfällt).
 
 **Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
 
@@ -1395,7 +1399,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervo
 
 ### ANN-108 — Das Anlegen-Menü ist eine Leiste unter dem Gitter; ein zweiter Tipp hebt auf oder zieht die Spanne auf
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Nach einem Tipp auf freie Zeit steht das Anlegen-Menü als Leiste am unteren Fensterrand, über der Tableiste, und nicht mehr in der Spalte unter der Auswahl. Ein zweiter Tipp auf **dasselbe** Feld hebt die Auswahl auf; auf ein **anderes** Feld derselben Spalte wählt er die Spanne zwischen beiden Tipps (in beiden Richtungen, ohne das zweite Feld mitzuzählen: 08:50 und 09:30 ergeben 08:50–09:30). Ein Tipp in einer anderen Spalte oder nach einer fertigen Spanne beginnt eine neue Auswahl; Aufziehen durch Ziehen bleibt daneben erhalten.
 
@@ -1407,7 +1411,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess); UX-EPIC-003 (Tagesansicht als Startseite)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Über dem Raster stehen nur noch: links der Monat, der einen Monatskalender aufklappt; in der Mitte der Name der behandelnden Person als Auswahl (in der Tagesansicht „Alle Personen"), darunter Kalenderwoche und Tag beziehungsweise Woche, daneben die Pfeile zum Blättern; rechts „Jetzt" (heutiger Tag, das Raster rollt zur Linie der aktuellen Uhrzeit). Tag/Woche, Zoom, Standort, Status und die Anlegen-Schaltflächen für die Tastatur (einschließlich „Tag umplanen") liegen hinter einem Knopf in der Ecke des Rasters, der beim Bildlauf stehen bleibt und einen aktiven Filter mit einem Punkt anzeigt. Am Telefon wird die Suche zur Lupe links neben „Konto"; ab 640 px bleibt sie das Feld in der Kopfzeile.
 
@@ -1419,7 +1423,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung mit schmaler Leiste (`minimal-ui`)
 
-Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy und in Chrome am Rechner (App installieren, Symbol prüfen)
+Technik · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10, Android) · erledigt · Wiedervorlage: —
 
 **Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `minimal-ui` (bis UX-002i `browser`). Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
 
@@ -1431,7 +1435,7 @@ Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · �
 
 ### ANN-111 — Die Begriffe stehen in einer Datei; im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit", eine Person des Teams „Mitarbeiter:in"
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 7) · erledigt · Wiedervorlage: —
 
 **Annahme.** Bezeichnungen, die an mehr als einer Stelle dieselbe Sache nennen — die sechs Arbeitsbereiche mit Kurzform und Leitfrage, die Vorgänge aus Menü, Suche und Kalender, die Personen —, stehen einmal in `src/lib/begriffe.ts`. Abgelöst und aus jedem Oberflächentext ausgeschlossen sind: „Mein Tag" und „Touren & Termine" (Beschriftungen vom 2026-09-12), „Passwort" (es gilt „Kennwort"), „Mitarbeitende:n"/„Mitarbeitende:r" (Einzahl „Mitarbeiter:in", Mehrzahl „Mitarbeitende") und im Kalender „Ereignis" (es gilt „Fehlzeit").
 
@@ -1443,7 +1447,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-112 — Ein Arbeitsbereich öffnet auf seinem ersten echten Punkt; Vorschauen stehen eingeklappt dahinter
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 8) · erledigt · Wiedervorlage: —
 
 **Annahme.** „Organisatorisches" öffnet auf „Mitarbeitende" statt auf der Vorschau „Radflotte". Im Untermenü eines Bereichs stehen die angebundenen Punkte offen; Vorschauen liegen hinter einem Knopf „Vorschau (n)" und klappen von selbst auf, wenn man auf einer von ihnen steht. Menüpunkte, deren Route einer Rolle verschlossen ist, stehen für sie nicht im Menü (trainer: „Arbeitszeiten", BEF-034).
 
@@ -1455,7 +1459,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-113 — Die Tour ist eine Ansicht des Kalenders; der Kalender hat keine Unterzeile mehr
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 9) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Zeile „Kalender · Touren" über dem Raster entfällt. „Tour" steht als dritter Knopf neben „Tag" und „Woche" unter „Ansicht und Filter" und öffnet `/touren` mit dem gezeigten Tag und der gezeigten Person; die Tourenseite heißt „Tour" und führt mit „Zum Kalender" in die Tagesansicht desselben Tages zurück. `/touren` bleibt Adresse und Teil des Bereichs Kalender. Die Unterzeilen der Bereiche Patient:innen (Patient:innen · Verordner:innen) und Organisatorisches bleiben.
 
@@ -1491,7 +1495,7 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit 
 
 ### ANN-116 — Die Behandlungsliege ist eine organisatorische Versorgungsangabe der Person
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen
+Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritte 10 und 12) · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** „Behandlungsliege mitnehmen" ist ein Ja/Nein-Merkmal der Person (`patient_care_details.treatment_table_required`, Standard nein), keine Angabe je Termin und kein Befundinhalt. Es erbt Rollenschnitt und Frist der internen Versorgungsangaben aus ANN-010: sichtbar und setzbar für die vier Praxisrollen (dieselbe Menge wie `app.can_update_patient()`), nicht für das Patientenkonto und nicht für die Trainingsrolle, Datenklasse Patientenakte. Die Tagesliste liefert es nur am Behandlungstermin; am Trainingstermin und an einer Fehlzeit bleibt es leer. Jede Änderung steht als `patient.updated` mit dem Feldnamen im Auditlog.
 
@@ -1503,7 +1507,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen.
 
@@ -1683,7 +1687,7 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim
 
 ### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes bei der Sichtung der Warteliste (PRX-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritt 1) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Eintrag der Warteliste trägt als Dringlichkeit genau einen von drei Gründen — **Wunsch der Person**, **Verordnung endet**, **Vorgabe der Praxis** — und optional ein Datum „bis spätestens“. Die Liste ordnet nach diesem Datum (ohne Datum zuletzt), dann nach Wartezeit. Einen Freitext als Dringlichkeit, eine Stufe wie „hoch“ oder eine Einordnung nach Beschwerdebild gibt es nicht; die Notiz ist ausdrücklich organisatorisch.
 
@@ -1719,7 +1723,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 
 ### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sobald die ersten Gebiete angelegt sind (PRX-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritte 1 und 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Gebiet ist eine Liste **genauer** Postleitzahlen (kein Präfix, kein Stadtteil) mit Wochentagen und Tageshälften; eine Postleitzahl gehört höchstens zu einem Gebiet. Vormittag heißt **Beginn vor 12:00**, Nachmittag **Beginn ab 12:00**, jeweils in Praxiszeit; beides angehakt heißt ganztags. Ein Hausbesuch außerhalb des Gebietstags seiner Adresse wird **gemeldet**, nie gesperrt. Geprüft wird die Postleitzahl, die der Termin trägt: beim Bearbeiten die festgehaltene Anschrift, beim Anlegen die aus den Kontaktdaten.
 
@@ -1731,7 +1735,7 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sob
 
 ### ANN-136 — Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach den ersten Wochen mit der Suche; E12 Punkt 4 (Warnung oder Sperre)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisverwaltung, Schritt 2: „Reihenfolge passt“) · erledigt · Wiedervorlage: E12 Punkt 4 (Warnung oder Sperre)
 
 **Annahme.** Die Terminsuche schlägt je freier Lücke den ersten Rasterpunkt in der Wunschzeit vor und danach dicht aufeinander folgende Plätze (Beginn plus Dauer), höchstens 50 in höchstens 42 Tagen. Belegt ist, was die Therapeut:in **oder** die Patient:in schon hat. Beim Hausbesuch stehen Vorschläge im Gebietstag vorn (ANN-135). Für die ersten **zehn** Hausbesuchsvorschläge holt die Anwendung die Fahrzeit von und zu den Nachbarterminen derselben Person live mit **einer** Matrix beim eigenen Kartendienst; der Server bewertet sie mit der Rundungsregel aus §8.1. Ein knapper Weg wird gekennzeichnet und nach hinten gestellt, **nicht verworfen**; fehlt eine Fahrzeit, steht „Fahrweg nicht geprüft“. Gespeichert wird nichts.
 
