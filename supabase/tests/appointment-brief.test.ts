@@ -242,4 +242,11 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     expect(rows[0]!.basis_items).toBeNull();
     expect(rows[0]!.basis_appointment_count).toBeNull();
   });
+
+  it('behandelt einen Trainingstermin für die Therapeutin wie einen unbekannten (Zweitreview)', async () => {
+    const training = await termin({ tage: 1, kind: 'training' });
+    const { rows } = await asUser(users.therapist, BLICK, [training]);
+    expect(rows).toEqual([]);
+    expect(await protokoll('appointment_brief.viewed', users.therapist)).toHaveLength(0);
+  });
 });

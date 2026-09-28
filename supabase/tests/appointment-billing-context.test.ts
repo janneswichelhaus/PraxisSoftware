@@ -258,4 +258,16 @@ describe('Abrechnungslage am Termin (PRX-008, ANN-139)', () => {
     );
     expect(rows[0]!.darf).toBe(false);
   });
+
+  it('behandelt einen Trainingstermin für die Therapeutin wie einen unbekannten (Zweitreview)', async () => {
+    const { rows: training } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (organization_id, training_relationship_id, staff_member_id,
+         location_id, appointment_type, status, starts_at, ends_at, kind)
+       values ($1, $2, $3, $4, 'practice', 'confirmed', now() + interval '2 days',
+               now() + interval '2 days 1 hour', 'training') returning id`,
+      [organizationId, SEED.trainingRelationships.erika, ANNA, LOCATION],
+    );
+    const { rows } = await asUser(users.therapist, LAGE, [training[0]!.id]);
+    expect(rows).toEqual([]);
+  });
 });

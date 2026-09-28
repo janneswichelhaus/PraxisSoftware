@@ -203,4 +203,31 @@ describe('Mitnehmen in Kartei, Auskunft, Tagesliste und Kurzblick (PRX-007)', ()
     );
     expect(rows[0]!.take_along_items).toEqual(['Theraband', 'Kinesiotape']);
   });
+
+  it('lässt die Liste am Trainingstermin derselben Person leer (Zweitreview)', async () => {
+    await asPostgres('delete from public.appointments');
+    await asUserCommitted(users.office, SETZEN, [patients.erika, ['Theraband']]);
+    await asPostgres(
+      `insert into public.appointments (organization_id, training_relationship_id, staff_member_id,
+         location_id, appointment_type, status, starts_at, ends_at, kind)
+       values ($1, $2, $3, $4, 'practice', 'confirmed', '2027-01-04 14:00+01',
+               '2027-01-04 15:00+01', 'training')`,
+      [organizationId, SEED.trainingRelationships.erika, ANNA, LOCATION],
+    );
+    const { rows } = await asUser<{ kind: string; take_along_items: string[] | null }>(
+      users.ownerTherapist,
+      'select kind, take_along_items from public.list_day_plan($1::date, $2::uuid)',
+      ['2027-01-04', ANNA],
+    );
+    expect(rows).toEqual([{ kind: 'training', take_along_items: null }]);
+  });
+
+  it('zeigt dem Patientenkonto die Liste in der eigenen Kartei nicht (ANN-010)', async () => {
+    const { rows } = await asUser<{ take_along_items: string[] | null }>(
+      users.patientMax,
+      'select take_along_items from public.patient_directory where id = $1::uuid',
+      [patients.max],
+    );
+    expect(rows.every((r) => r.take_along_items === null)).toBe(true);
+  });
 });

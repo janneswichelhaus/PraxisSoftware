@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
@@ -19,6 +26,8 @@ const LOCATION = '33333333-3333-4333-8333-000000000001';
 const GRUNDLAGE = '88888888-8888-4888-8888-000000000004';
 const POSITION = '99999999-9999-4999-8999-000000000005';
 const KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+/** Ausfallhonorar aus der Preisliste 2026 (supabase/seed.sql). */
+const AUSFALL = 'cccccccc-cccc-4ccc-8ccc-000000000008';
 
 const VORSCHLAG = 'select * from public.get_billable_service_draft($1::uuid)';
 const ERFASSEN = 'select public.record_billable_services($1::uuid, $2::jsonb) as anzahl';
@@ -215,5 +224,56 @@ describe('Was am Termin erfasst ist (PRX-009)', () => {
       [beiTim],
       'billable_services.read',
     );
+  });
+
+  it('weist das Patientenkonto ab und findet keinen Termin einer fremden Organisation', async () => {
+    const id = await termin(ANNA, 3);
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientErika,
+      AM_TERMIN,
+      [id],
+      'billable_services.read',
+    );
+    await erwarteAbgewiesenenLeseversuch(
+      users.patientErika,
+      VORSCHLAG,
+      [id],
+      'billable_services.read',
+    );
+    await expect(asUser(users.patientErika, ERFASSEN, [id, KG_EINMAL])).rejects.toThrow(
+      /not allowed/,
+    );
+
+    const f = await fremdeOrganisation();
+    const { rows: fremd } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (organization_id, patient_id, staff_member_id,
+         appointment_type, status, starts_at, ends_at)
+       values ($1, $2, $3, 'video', 'confirmed', now() - interval '3 hours',
+               now() - interval '2 hours') returning id`,
+      [f.organizationId, f.patient, f.staffMember],
+    );
+    const { rows } = await asUser(users.office, AM_TERMIN, [fremd[0]!.id]);
+    expect(rows).toEqual([]);
+    await expect(asUser(users.office, ERFASSEN, [fremd[0]!.id, KG_EINMAL])).rejects.toThrow(
+      /appointment not found/,
+    );
+  });
+
+  it('lässt das Ausfallhonorar beim Büro, auch am eigenen Termin (Zweitreview)', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (organization_id, patient_id, staff_member_id, location_id,
+         appointment_type, status, starts_at, ends_at, no_show_recorded_at, no_show_recorded_by,
+         fee_basis)
+       values ($1, $2, $3, $4, 'practice', 'no_show',
+               date_trunc('hour', now()) - interval '5 hours',
+               date_trunc('hour', now()) - interval '4 hours', now(), $5, 'no_show')
+       returning id`,
+      [organizationId, patients.erika, ANNA, LOCATION, users.therapist],
+    );
+    const honorar = JSON.stringify([{ catalog_item_id: AUSFALL, quantity: 1 }]);
+    await expect(asUser(users.therapist, ERFASSEN, [rows[0]!.id, honorar])).rejects.toThrow(
+      /not allowed/,
+    );
+    await asUserCommitted(users.office, ERFASSEN, [rows[0]!.id, honorar]);
   });
 });
