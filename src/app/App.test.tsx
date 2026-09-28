@@ -110,4 +110,23 @@ describe('App: die beiden Zustände aus STAFF-EPIC-002', () => {
     render(<App />);
     expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
   });
+
+  it('gibt der Sperrseite Überschrift und Hauptbereich (AUTH-12, AUTH-13)', () => {
+    // Bis UXR-002 stand der Titel nur im Fehlerkasten, als Absatz - für
+    // Vorlesesoftware gab es keine Überschrift und keinen Hauptbereich.
+    fehler = new ZugangGesperrtError();
+    render(<App />);
+
+    const titel = screen.getByRole('heading', { level: 1, name: 'Zugang gesperrt' });
+    expect(screen.getByRole('main')).toContainElement(titel);
+  });
+
+  it('nennt, wer den Zugang entsperrt (WRT-12)', () => {
+    // Entsperren kann nur die Rolle Praxisinhaber (canManageStaffAccounts).
+    fehler = new ZugangGesperrtError();
+    render(<App />);
+
+    expect(screen.getByRole('alert')).toHaveTextContent('an die Praxisinhaber:in');
+    expect(screen.getByRole('alert')).not.toHaveTextContent('Praxisleitung');
+  });
 });

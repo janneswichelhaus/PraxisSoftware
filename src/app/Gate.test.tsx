@@ -19,14 +19,15 @@ import { render, screen } from '@testing-library/react';
  *     Ausnahme übernähme die angemeldete Anwendung und leitete auf „/" um.
  */
 
-let sitzung: { user: { id: string } } | null = null;
+let sitzung: { user: { id: string; email?: string } } | null = null;
+let pruefend = false;
 
 vi.mock('@/features/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
 vi.mock('@/features/auth/sessionContext', () => ({
-  useSession: () => ({ session: sitzung, initialising: false, signOut: vi.fn() }),
+  useSession: () => ({ session: sitzung, initialising: pruefend, signOut: vi.fn() }),
 }));
 
 const verifyOtp = vi.fn();
@@ -52,9 +53,22 @@ function oeffne(pfad: string) {
 
 beforeEach(() => {
   sitzung = null;
+  pruefend = false;
   // Haengt bewusst: Geprueft wird, WELCHE Seite das Gate zeigt, nicht wohin
   // sie danach springt.
   verifyOtp.mockReset().mockReturnValue(new Promise(() => {}));
+});
+
+describe('Gate waehrend der Pruefung der Sitzung', () => {
+  it('zeigt den Ladezustand mit Marke im Hauptbereich (AUTH-13)', () => {
+    // Bis UXR-002 stand hier ein nackter Satz ohne Hauptbereich und Absender.
+    pruefend = true;
+    oeffne('/');
+
+    const hauptbereich = screen.getByRole('main');
+    expect(hauptbereich).toContainElement(screen.getByRole('img', { name: 'Own Motion' }));
+    expect(hauptbereich).toContainElement(screen.getByText('Sitzung wird geprüft …'));
+  });
 });
 
 afterEach(() => {
@@ -113,11 +127,14 @@ describe('Gate mit Sitzung', () => {
    * stumm auf den Tagesplan der bereits angemeldeten Person.
    */
   it('hält auch die Seite der Zugangsmail offen, wenn schon jemand angemeldet ist', async () => {
-    sitzung = { user: { id: '00000000-0000-0000-0000-000000000001' } };
+    sitzung = {
+      user: { id: '00000000-0000-0000-0000-000000000001', email: 'anna.beispiel@praxis.invalid' },
+    };
     oeffne('/zugang?token_hash=abc&type=magiclink');
 
+    // Seit UXR-002 nennt der Hinweis das angemeldete Konto (AUTH-04).
     expect(
-      await screen.findByText(/Auf diesem Gerät ist bereits jemand angemeldet/),
+      await screen.findByText(/Auf diesem Gerät ist anna\.beispiel@praxis\.invalid angemeldet/),
     ).toBeInTheDocument();
   });
 });

@@ -2,13 +2,19 @@ import { useCallback, useMemo, useRef, type ReactNode } from 'react';
 import { AbmeldeschutzKontext, type Abmeldeschutz } from './abmeldeschutz';
 
 /**
- * Hält die Wache, die das freiwillige Abmelden anhalten darf (FIX-014).
+ * Hält die Wachen, die das freiwillige Abmelden anhalten dürfen (FIX-014).
  *
  * Begründung und Grenzen stehen in `abmeldeschutz.ts` — insbesondere, dass die
  * **erzwungene** Beendigung einer Sitzung hier nicht vorbeikommt und
  * unverändert sofort greift.
  *
- * Wache und Abmeldefunktion liegen in Referenzen: Beide ändern sich bei jedem
+ * **Eine Menge, keine einzelne Stelle (NAV-01, DAT-04).** Bis UXR-002 hielt
+ * der Schutz genau eine Wache. Seit auch Formulare ohne Dokumentationsbezug
+ * und das ausstehende Foto sich anmelden, können zwei zugleich offen sein -
+ * und mit einer einzigen Stelle verdrängte die zweite die erste, und wer
+ * zuerst ging, nahm die andere mit.
+ *
+ * Wachen und Abmeldefunktion liegen in Referenzen: Beide ändern sich bei jedem
  * Rendern der Anwendung, und ein Kontextwert, der sich mitändert, ließe jede
  * Seite darunter neu rendern.
  */
@@ -19,32 +25,43 @@ export function AbmeldeschutzProvider({
   onAbmelden: () => void;
   children: ReactNode;
 }) {
-  const wache = useRef<(() => boolean) | null>(null);
+  const wachen = useRef(new Set<() => boolean>());
+  // Die Wachen, die in der laufenden Runde noch nicht gefragt sind. Eine
+  // Runde beginnt mit jedem Tap auf „Abmelden".
+  const offen = useRef<(() => boolean)[]>([]);
   const abmeldenRef = useRef(onAbmelden);
   abmeldenRef.current = onAbmelden;
 
-  const setzeWache = useCallback((neue: (() => boolean) | null) => {
-    wache.current = neue;
+  const meldeWacheAn = useCallback((wache: () => boolean) => {
+    wachen.current.add(wache);
+    return () => {
+      wachen.current.delete(wache);
+    };
   }, []);
 
   const abmelden = useCallback(() => {
-    // Die Wache gilt für diesen einen Vorgang; danach ist die Seite ohnehin
-    // fort. Ohne das Zurücknehmen bliebe sie an einer Anwendung hängen, die
-    // gerade abgemeldet wird.
-    wache.current = null;
+    // Die nächste Wache der Runde fragt. Eine Seite, die inzwischen fort ist,
+    // fragt nicht mehr.
+    for (let wache = offen.current.shift(); wache; wache = offen.current.shift()) {
+      if (wachen.current.has(wache) && wache()) return;
+    }
+    // Die Wachen gelten für diesen einen Vorgang; danach sind die Seiten
+    // ohnehin fort. Ohne das Zurücknehmen fragten sie bei einem zweiten Tap
+    // auf „Abmelden" erneut, während die Anwendung schon abgemeldet wird.
+    wachen.current.clear();
     abmeldenRef.current();
   }, []);
 
   const anfordern = useCallback(() => {
-    // Übernimmt die Wache, geschieht hier nichts weiter: Sie fragt, und sie
+    // Übernimmt eine Wache, geschieht hier nichts weiter: Sie fragt, und sie
     // ruft später `abmelden()` — oder eben nicht.
-    if (wache.current?.()) return;
+    offen.current = [...wachen.current];
     abmelden();
   }, [abmelden]);
 
   const wert = useMemo<Abmeldeschutz>(
-    () => ({ anfordern, abmelden, setzeWache }),
-    [anfordern, abmelden, setzeWache],
+    () => ({ anfordern, abmelden, meldeWacheAn }),
+    [anfordern, abmelden, meldeWacheAn],
   );
 
   return <AbmeldeschutzKontext.Provider value={wert}>{children}</AbmeldeschutzKontext.Provider>;

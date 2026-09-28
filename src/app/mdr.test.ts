@@ -136,3 +136,30 @@ describe('Nichts Klassifiziertes ist erreichbar', () => {
     }
   });
 });
+
+/**
+ * Die Texte der Sperrseite in der Typografie der Anwendung (WRT-06, WRT-07).
+ *
+ * Bezeichnung, Fundstellen und der Satz, welche Ausgabe nicht entsteht,
+ * erscheinen wörtlich auf der Sperrseite. Bis UXR-002 schloss „Nicht in V1"
+ * mit dem geraden Zeichen, und der Gedankenstrich stand als Geviertstrich.
+ */
+describe('Die Texte der Sperre', () => {
+  const texte = MDR_REVIEW_REQUIRED.flatMap((eintrag) => [
+    eintrag.bezeichnung,
+    eintrag.keineAusgabe,
+    ...eintrag.grundlage,
+  ]);
+
+  it('schliessen jedes Zitat mit “', () => {
+    for (const text of texte) {
+      expect(text, text).not.toMatch(/„[^“]*"/);
+    }
+  });
+
+  it('setzen den Gedankenstrich als –', () => {
+    for (const text of texte) {
+      expect(text, text).not.toMatch(/ [—-] /);
+    }
+  });
+});

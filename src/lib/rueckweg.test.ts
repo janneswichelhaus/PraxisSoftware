@@ -59,6 +59,26 @@ describe('leseRueckweg', () => {
     const suche = new URLSearchParams({ [RUECKWEG_PARAM]: 'https://fremde.example' });
     expect(leseRueckweg(suche, '/patienten')).toBe('/patienten');
   });
+
+  /**
+   * Zweitreview H5: Ein Browser entfernt Tabulatoren und Zeilenumbrüche aus
+   * einer Adresse, bevor er sie liest. Aus `/\t/fremde.example` würde so
+   * `//fremde.example` - ein fremdes Ziel, vorbei an der Prüfung auf `//`.
+   * Abgefangen wird es von der Regel gegen Steuerzeichen; der Test hält fest,
+   * dass es dabei bleibt, auch kodiert aus der Adresszeile.
+   */
+  it('faellt bei einem Tabulator zwischen den Schraegstrichen auf den Standard zurueck', () => {
+    expect(istInternerPfad('/\t/fremde.example')).toBe(false);
+
+    const direkt = new URLSearchParams({ [RUECKWEG_PARAM]: '/\t/fremde.example' });
+    expect(leseRueckweg(direkt, '/patienten')).toBe('/patienten');
+
+    const ausDerAdresszeile = new URLSearchParams(`${RUECKWEG_PARAM}=%2F%09%2Ffremde.example`);
+    expect(ausDerAdresszeile.get(RUECKWEG_PARAM)).toBe('/\t/fremde.example');
+    expect(leseRueckweg(ausDerAdresszeile, '/patienten')).toBe('/patienten');
+
+    expect(mitRueckweg('/termine/t1', '/\t/fremde.example')).toBe('/termine/t1');
+  });
 });
 
 describe('mitRueckweg', () => {
@@ -92,7 +112,8 @@ describe('rueckwegBeschriftung', () => {
   it.each([
     ['/', 'Zurück zur Übersicht'],
     ['/kalender?ansicht=tag&datum=2027-05-12', 'Zurück zum Kalender'],
-    ['/patienten', 'Zurück zur Patientenliste'],
+    ['/patienten', 'Zurück zu den Patient:innen'],
+    ['/patienten?suche=mus&status=alle', 'Zurück zu den Patient:innen'],
     ['/patienten/abc', 'Zurück zur Akte'],
     ['/patienten/abc/termine', 'Zurück zu den Terminen der Akte'],
     ['/patienten/abc/verlauf', 'Zurück zum Behandlungsverlauf'],
@@ -101,5 +122,39 @@ describe('rueckwegBeschriftung', () => {
     ['/praxis/team/s1', 'Zurück zu den Mitarbeitenden'],
   ])('beschriftet %s mit %s', (pfad, erwartet) => {
     expect(rueckwegBeschriftung(pfad)).toBe(erwartet);
+  });
+
+  // UXR-002: dieselben Wörter wie Menü und Seitentitel (NAV-16, ANN-111) und
+  // die Ziele, die bisher im bloßen „Zurück" endeten.
+  it.each([
+    ['/patienten/abc/verordnungen', 'Zurück zu den Behandlungsgrundlagen'],
+    ['/patienten/abc/verordnungen/neu', 'Zurück zur Grundlage'],
+    ['/patienten/abc/verordnungen/g1/bearbeiten', 'Zurück zur Grundlage'],
+    ['/patienten/abc/datenschutz', 'Zurück zum Datenschutz der Akte'],
+    ['/verordner', 'Zurück zu den Verordner:innen'],
+    ['/termine/dauertermin?person=p1', 'Zurück zum Dauertermin'],
+    ['/touren', 'Zurück zur Tour'],
+    // Die Tour trägt Tag und Person in der Adresse (UEB, TER); die
+    // Beschriftung hängt am Pfad, nicht an den Parametern.
+    ['/touren?tag=2026-09-28&person=p1', 'Zurück zur Tour'],
+    ['/touren?person=p1', 'Zurück zur Tour'],
+    ['/abrechnung', 'Zurück zu den Rechnungen'],
+    ['/abrechnung/zahlungen', 'Zurück zu den Zahlungen'],
+    ['/abrechnung/leistungen', 'Zurück zu den Leistungen'],
+    ['/praxis/planung', 'Zurück zu den Arbeitszeiten'],
+    ['/team', 'Zurück zur Kommunikation'],
+    ['/mein-konto', 'Zurück zu „Mein Konto“'],
+  ])('beschriftet %s mit %s (UXR-002)', (pfad, erwartet) => {
+    expect(rueckwegBeschriftung(pfad)).toBe(erwartet);
+  });
+
+  it('nennt kein abgelöstes Wort mehr', () => {
+    for (const pfad of ['/patienten', '/patienten/a/verordnungen', '/verordner']) {
+      expect(rueckwegBeschriftung(pfad)).not.toMatch(/Patientenliste|Verordnerkartei|Verordnungen/);
+    }
+  });
+
+  it('bleibt beim bloßen „Zurück" für ein Ziel ohne eigenen Namen', () => {
+    expect(rueckwegBeschriftung('/bereiche')).toBe('Zurück');
   });
 });

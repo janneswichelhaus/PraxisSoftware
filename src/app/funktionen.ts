@@ -156,7 +156,9 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     eintraege.push({
       id: 'vorgang-grundlage-erfassen',
       art: 'Vorgang',
-      bezeichnung: 'Grundlage erfassen',
+      // Der Bereich der Akte heißt „Behandlungsgrundlagen" (ANN-062); der
+      // Treffer trägt dasselbe Wort (NAV-16).
+      bezeichnung: 'Behandlungsgrundlage erfassen',
       // Eine Behandlungsgrundlage gehört an eine Akte (VER-003); eine Adresse ohne
       // Patient:in gibt es dafür nicht. Der Treffer sagt das, statt auf ein
       // Formular zu führen, das zuerst nach der Person fragen müsste.
@@ -181,11 +183,15 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       id: 'vorgang-tag-umplanen',
       art: 'Vorgang',
       bezeichnung: 'Tag umplanen',
-      hinweis: 'Bei einem Ausfall die Besuche eines Tages verteilen',
-      ziel: '/kalender/tag-umplanen',
+      // Wie „Behandlungsgrundlage erfassen": Die Seite braucht Person und Tag
+      // und lehnt ohne beides bewusst ab (CAL-009) - ein stiller Standard wäre
+      // der teuerste denkbare Irrtum. Der Treffer führt deshalb in den
+      // Kalender und sagt, wo beides gewählt wird, statt auf eine Fehlerseite
+      // (NAV-02).
+      hinweis: 'Im Kalender unter „Ansicht und Filter“ Tag und Person wählen',
+      ziel: '/kalender',
       bereich: BEREICHE.termine.label,
       stichworte: ['ausfall', 'krank', 'verschieben'],
-      rueckweg: true,
     });
     eintraege.push({
       id: 'vorgang-fehlzeit',
@@ -263,6 +269,9 @@ export function funktionskatalog(user: CurrentUser): Funktion[] {
         bezeichnung: punkt.label,
         ziel: punkt.to,
         bereich: bereich.label,
+        // Was auf der Seite steht, ohne dass es der Menüpunkt nennt -
+        // Praxisraster, Frist, Zugriffe (ORG-07, navigation.tsx).
+        ...(punkt.stichworte ? { stichworte: punkt.stichworte } : {}),
         ...(punkt.vorschau ? { vorschau: true } : {}),
       });
     }

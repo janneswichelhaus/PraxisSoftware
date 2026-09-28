@@ -64,9 +64,20 @@ export const BEGRIFFE = {
   mitarbeitende: 'Mitarbeitende',
   termin: 'Termin',
   dauertermin: 'Dauertermin',
-  /** Kalendereintrag ohne Patient:in: Meeting, Puffer, Pause (CAL-021). */
+  /** Kalendereintrag ohne Patient:in (CAL-021); Beispiele in `fehlzeitBeispiele`. */
   fehlzeit: 'Fehlzeit',
+  /**
+   * Wofür eine Fehlzeit steht - in der Anlegen-Leiste und auf beiden
+   * Formularen dieselbe Reihe (KAL-27).
+   */
+  fehlzeitBeispiele: 'Meeting, Puffer, Pause',
   dauerfehlzeit: 'Dauerfehlzeit',
+  /**
+   * Das Honorar für einen abgesagten oder nicht wahrgenommenen Termin
+   * (ADR-018, TER-10) - am Termin, in Katalog, Leistungen und Rechnung
+   * dasselbe Wort.
+   */
+  ausfallhonorar: 'Ausfallhonorar',
   arbeitszeiten: 'Arbeitszeiten',
   kennwort: 'Kennwort',
 } as const;

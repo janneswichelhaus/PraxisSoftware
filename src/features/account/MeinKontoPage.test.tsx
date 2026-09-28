@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import type { Session } from '@supabase/supabase-js';
 import type * as AccountApi from './api';
+import { SessionContext } from '@/features/auth/sessionContext';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const aendereKennwort = vi.fn();
@@ -185,7 +187,17 @@ describe('MeinKontoPage', () => {
     await user.type(screen.getByLabelText('Einmalkennwort aus der App'), '000000');
     await user.click(screen.getByRole('button', { name: 'Einrichtung abschließen' }));
 
-    expect(await screen.findByText(/Der Code wurde nicht angenommen/)).toBeInTheDocument();
+    // Ein Wort für eine Sache (WRT-17): Der QR-Code wird gescannt, das
+    // Einmalkennwort eingetragen - abgelehnt wird das Einmalkennwort.
+    expect(
+      await screen.findByText(
+        'Das Einmalkennwort wurde nicht angenommen. Bitte das aktuelle aus der App eintragen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('Einmalkennwort aus der App')).toHaveAttribute(
+      'aria-invalid',
+      'true',
+    );
   });
 
   it('entfernt einen bestätigten Faktor erst nach der Rückfrage', async () => {
@@ -220,5 +232,193 @@ describe('MeinKontoPage', () => {
     // Das eigene Konto ändert seine Berechtigungen nicht (ADR-004, E10).
     expect(screen.queryByRole('button', { name: 'Rollen speichern' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Zugang sperren' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Die Befunde aus dem UX-Review (UXR-002).
+ *
+ * NAV-13/ORG-B01: Fehler am Feld, das sie verursacht, mit Fokus dorthin und
+ * mit nächstem Schritt. AUTH-05: Das Konto reist für den Passwortmanager mit.
+ * NAV-20: eine Breite, ein Hauptknopf. ZST-04: ein Ladefehler mit Ausweg.
+ */
+describe('MeinKontoPage — UXR-002', () => {
+  beforeEach(() => {
+    for (const mock of [aendereKennwort, ladeMfaFaktoren, starteMfaEinrichtung]) {
+      mock.mockReset();
+    }
+    aendereKennwort.mockResolvedValue(undefined);
+    ladeMfaFaktoren.mockResolvedValue([]);
+    starteMfaEinrichtung.mockResolvedValue(einrichtung);
+  });
+
+  it('hängt die Mindestlänge an das erste Feld und setzt den Fokus dorthin (NAV-13, ORG-B01)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    const kennwort = screen.getByLabelText('Neues Kennwort');
+    const wiederholung = screen.getByLabelText('Neues Kennwort wiederholen');
+
+    await user.type(kennwort, 'kurz');
+    await user.type(wiederholung, 'kurz');
+    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
+
+    expect(kennwort).toHaveAttribute('aria-invalid', 'true');
+    expect(kennwort).toHaveAccessibleDescription(/braucht mindestens 12 Zeichen/);
+    expect(wiederholung).not.toHaveAttribute('aria-invalid');
+    expect(kennwort).toHaveFocus();
+  });
+
+  it('hängt die Abweichung an das Wiederholungsfeld und setzt den Fokus dorthin', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    const kennwort = screen.getByLabelText('Neues Kennwort');
+    const wiederholung = screen.getByLabelText('Neues Kennwort wiederholen');
+
+    await user.type(kennwort, 'ein langer satz hier');
+    await user.type(wiederholung, 'ein anderer satz');
+    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
+
+    expect(wiederholung).toHaveAttribute('aria-invalid', 'true');
+    expect(wiederholung).toHaveAccessibleDescription('Die beiden Eingaben stimmen nicht überein.');
+    expect(kennwort).not.toHaveAttribute('aria-invalid');
+    expect(wiederholung).toHaveFocus();
+  });
+
+  it('nennt die Mindestlänge am Feld selbst (NAV-13)', () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    expect(screen.getByLabelText('Neues Kennwort')).toHaveAccessibleDescription(
+      /Mindestens 12 Zeichen/,
+    );
+  });
+
+  it('ändert das Kennwort mit der Eingabetaste (NAV-13)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
+    await user.type(
+      screen.getByLabelText('Neues Kennwort wiederholen'),
+      'ein langer satz hier{Enter}',
+    );
+
+    await waitFor(() => expect(aendereKennwort).toHaveBeenCalledWith('ein langer satz hier'));
+    expect(screen.getByRole('form', { name: 'Kennwort ändern' })).toBeInTheDocument();
+  });
+
+  it('bestätigt die Änderung als Erfolg (UIK-21)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
+    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein langer satz hier');
+    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
+
+    const meldung = await screen.findByText(/Das Kennwort wurde geändert/);
+    expect(meldung).toHaveAttribute('role', 'status');
+    expect(meldung).toHaveClass('text-positiv');
+    expect(meldung).toHaveTextContent('„Alle Sitzungen beenden“');
+  });
+
+  it('nennt bei einem Fehlschlag den nächsten Schritt (NAV-13, AUTH-10)', async () => {
+    const user = userEvent.setup();
+    aendereKennwort.mockRejectedValue(new Error('same_password'));
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
+    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein langer satz hier');
+    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
+
+    const meldung = await screen.findByRole('alert');
+    expect(meldung).toHaveTextContent('Das Kennwort konnte nicht geändert werden.');
+    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
+    expect(meldung).toHaveTextContent('muss sich vom bisherigen unterscheiden');
+  });
+
+  it('gibt dem Passwortmanager das angemeldete Konto mit (AUTH-05)', () => {
+    const sitzung = { user: { email: 'tara.therapie@praxis.invalid' } } as Session;
+    renderWithProviders(
+      <SessionContext.Provider
+        value={{ session: sitzung, initialising: false, signOut: vi.fn(() => Promise.resolve()) }}
+      >
+        <MeinKontoPage user={testUser(['therapist'])} />
+      </SessionContext.Provider>,
+    );
+
+    const formular = screen.getByRole('form', { name: 'Kennwort ändern' });
+    const konto = formular.querySelector('input[autocomplete="username"]');
+    expect(konto).toHaveValue('tara.therapie@praxis.invalid');
+    expect(konto).not.toBeVisible();
+  });
+
+  it('kommt ohne Sitzung ohne das verborgene Kontofeld aus', () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    const formular = screen.getByRole('form', { name: 'Kennwort ändern' });
+    expect(formular.querySelector('input[autocomplete="username"]')).toBeNull();
+  });
+
+  it('bietet nach einem Ladefehler des zweiten Faktors einen neuen Versuch an (ZST-04)', async () => {
+    const user = userEvent.setup();
+    ladeMfaFaktoren.mockRejectedValueOnce(new Error('netz')).mockResolvedValue([]);
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+
+    expect(
+      await screen.findByText('Der Stand des zweiten Faktors ließ sich nicht laden.'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+
+    expect(
+      await screen.findByText('Für diesen Zugang ist kein zweiter Faktor eingerichtet.'),
+    ).toBeInTheDocument();
+    expect(ladeMfaFaktoren).toHaveBeenCalledTimes(2);
+  });
+
+  it('lässt „Kennwort ändern“ den einen Hauptknopf sein (NAV-20)', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+
+    const einrichten = await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' });
+    expect(einrichten).not.toHaveClass('bg-accent');
+    expect(einrichten).toHaveClass('border-line-strong');
+    expect(screen.getByRole('button', { name: 'Kennwort ändern' })).toHaveClass('bg-accent');
+  });
+
+  it('fasst die ganze Seite in die Formularbreite (NAV-20)', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('Für diesen Zugang ist kein zweiter Faktor eingerichtet.');
+
+    const breite = screen.getByRole('heading', { name: 'Zugang' }).closest('.max-w-xl');
+    expect(breite).not.toBeNull();
+    for (const titel of ['Kennwort', 'Zweiter Faktor', 'Sitzungen']) {
+      expect(breite).toContainElement(screen.getByRole('heading', { name: titel }));
+    }
+    expect(breite).toContainElement(screen.getByText(/werden protokolliert/));
+  });
+
+  it('nennt die Rolle, die Rollen und Sperre ändert (WRT-12, ORG-27)', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByRole('heading', { name: 'Mein Konto' });
+
+    expect(
+      screen.getByText(/Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/ausschließlich die Praxisinhaber:in/)).toBeInTheDocument();
+    expect(screen.queryByText(/Praxisleitung/)).toBeNull();
+  });
+
+  it('gibt dem QR-Code den Bildradius und die Fläche des Systems (TOK-08, TOK-16)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' }));
+
+    const bild = await screen.findByAltText('QR-Code zum Einrichten des zweiten Faktors');
+    expect(bild).toHaveClass('rounded-image', 'bg-surface');
+    expect(bild).not.toHaveClass('bg-white');
+    expect(screen.getByText(/Diesen QR-Code in einer Authenticator-App scannen/)).toBeVisible();
   });
 });

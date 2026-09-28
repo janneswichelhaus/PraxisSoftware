@@ -24,7 +24,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useNavigate: () => navigate,
 }));
 
-let sitzung: { user: { id: string } } | null = null;
+let sitzung: { user: { id: string; email?: string } } | null = null;
 
 vi.mock('./sessionContext', () => ({
   useSession: () => ({ session: sitzung, initialising: false, signOut: vi.fn() }),
@@ -65,8 +65,9 @@ describe('ZugangPage', () => {
     expect(
       await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.'),
     ).toBeInTheDocument();
+    // Zugänge verwaltet die Rolle Praxisinhaber (WRT-12).
     expect(
-      screen.getByText(/Praxisleitung kann eine neue Zugangsmail schicken/),
+      screen.getByText(/Praxisinhaber:in kann eine neue Zugangsmail schicken/),
     ).toBeInTheDocument();
   });
 
@@ -130,7 +131,7 @@ describe('ZugangPage — die Befunde aus dem Review', () => {
     renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
 
     expect(
-      await screen.findByText(/Auf diesem Gerät ist bereits jemand angemeldet/),
+      await screen.findByText(/Auf diesem Gerät ist bereits ein Konto angemeldet/),
     ).toBeInTheDocument();
     // Entscheidend: noch nichts eingelöst und nichts weggeräumt.
     expect(verifyOtp).not.toHaveBeenCalled();
@@ -151,11 +152,66 @@ describe('ZugangPage — die Befunde aus dem Review', () => {
   it('lässt die laufende Sitzung in Ruhe, wenn man sich dafür entscheidet', async () => {
     sitzung = { user: { id: 'olivia' } };
     renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
-    await screen.findByRole('button', { name: 'Angemeldet bleiben' });
 
-    await userEvent.click(screen.getByRole('button', { name: 'Angemeldet bleiben' }));
-
+    // Ein Seitenwechsel, also ein Link (AUTH-12).
+    const bleiben = await screen.findByRole('link', { name: 'Angemeldet bleiben' });
+    expect(bleiben).toHaveAttribute('href', '/');
     expect(verifyOtp).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith('/', { replace: true });
+  });
+});
+
+describe('ZugangPage — UXR-002', () => {
+  it('trägt in jedem Zustand eine Überschrift (AUTH-13)', async () => {
+    renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
+
+    const titel = screen.getByRole('heading', { level: 1, name: 'Mit Link anmelden' });
+    expect(screen.getByRole('main')).toContainElement(titel);
+    await waitFor(() => expect(verifyOtp).toHaveBeenCalled());
+  });
+
+  it('nennt das angemeldete Konto, statt eine andere Person zu behaupten (AUTH-04)', async () => {
+    sitzung = { user: { id: 'olivia', email: 'olivia.office@praxis.invalid' } };
+    renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
+
+    const hinweis = await screen.findByText(/olivia\.office@praxis\.invalid angemeldet/);
+    expect(hinweis).toHaveTextContent(
+      'Gehört der Link zu einem anderen Konto, endet diese Sitzung',
+    );
+    expect(hinweis).not.toHaveTextContent('als andere Person');
+  });
+
+  it('führt nach einem gescheiterten Link zurück in die bestehende Sitzung (AUTH-04)', async () => {
+    verifyOtp.mockResolvedValue({ error: { message: 'Token has expired' } });
+    sitzung = { user: { id: 'olivia', email: 'olivia.office@praxis.invalid' } };
+    renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Trotzdem mit diesem Link anmelden' }),
+    );
+
+    expect(await screen.findByRole('link', { name: 'Zurück zur Anwendung' })).toHaveAttribute(
+      'href',
+      '/',
+    );
+    // Im Präsens: Die bisherige Sitzung besteht weiter.
+    expect(
+      screen.getByText(
+        'Hinweis: Auf diesem Gerät ist weiterhin olivia.office@praxis.invalid angemeldet.',
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('führt ohne Sitzung mit einem Link zur Anmeldung', async () => {
+    renderWithProviders(<ZugangPage />, '/zugang');
+
+    expect(await screen.findByRole('link', { name: 'Zur Anmeldung' })).toHaveAttribute('href', '/');
+    expect(screen.queryByText(/weiterhin/)).toBeNull();
+  });
+
+  it('setzt den Fokus auf die Auskunft, wenn der Link nicht mehr gilt (AUTH-06)', async () => {
+    verifyOtp.mockResolvedValue({ error: { message: 'Token has expired' } });
+    renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
+
+    const titel = await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.');
+    expect(titel.closest('[tabindex="-1"]')).toHaveFocus();
   });
 });

@@ -1,8 +1,8 @@
 import { createContext, useContext, useEffect, useRef } from 'react';
 
 /**
- * Das freiwillige Abmelden anhalten, solange ungespeicherte Dokumentation im
- * Feld steht (FIX-014, `PROJECT_PRINCIPLES.md` §13).
+ * Das freiwillige Abmelden anhalten, solange ungespeicherte Eingaben im
+ * Formular stehen (FIX-014, `PROJECT_PRINCIPLES.md` §13).
  *
  * Der Navigationsschutz (FIX-011) erfasst jeden Seitenwechsel innerhalb der
  * Anwendung. Das Abmelden ist keiner: Es beendet die Sitzung, räumt den
@@ -13,12 +13,16 @@ import { createContext, useContext, useEffect, useRef } from 'react';
  * Der Weg dahin ist bewusst schmal:
  *
  *   * Die Kopfzeile **fragt** (`useAbmeldeanfrage`), statt selbst abzumelden.
- *   * Genau **eine** Seite kann sich als Wache anmelden (`useAbmeldewache`) —
- *     mehr als ein Dokumentationsformular ist nie gleichzeitig offen. Meldet
- *     sich eine zweite an, gilt sie; die erste ist dann ohnehin verschwunden.
- *   * Die Wache **übernimmt** die Rückfrage (sie gibt `true` zurück) und
- *     schließt sie später mit `abmelden()` ab. Sagt sie `false`, meldet die
- *     Anwendung unmittelbar ab.
+ *   * Jede Seite mit schützenswerten Eingaben meldet sich als Wache an
+ *     (`useAbmeldewache`). Seit UXR-002 dürfen es **mehrere zugleich** sein
+ *     (NAV-01, DAT-04): Der Schutz gilt nicht mehr nur der Dokumentation,
+ *     sondern auch Formularen wie Neue:r Patient:in, und ein ausstehendes Foto
+ *     kann neben einem Formular stehen.
+ *   * Eine Wache **übernimmt** die Rückfrage (sie gibt `true` zurück) und
+ *     schließt sie später mit `abmelden()` ab. Dann fragen die übrigen Wachen
+ *     derselben Runde der Reihe nach; erst wenn keine mehr etwas zu sagen hat,
+ *     endet die Sitzung. Sagen alle `false`, meldet die Anwendung unmittelbar
+ *     ab.
  *
  * **Was hier ausdrücklich nicht hineingehört: die erzwungene Beendigung.**
  * Ablauf der Sitzung, „Alle Sitzungen beenden", die Abmeldung in einem zweiten
@@ -34,13 +38,17 @@ export interface Abmeldeschutz {
    * nichts weiter — sie fragt.
    */
   anfordern: () => void;
-  /** Meldet unmittelbar ab. Der Weg, den eine Wache am Ende nimmt. */
+  /**
+   * Der Weg, den eine Wache am Ende nimmt: Die übrigen Wachen der laufenden
+   * Runde fragen noch; hat keine mehr etwas zu sagen, endet die Sitzung.
+   * Außerhalb einer Runde meldet das unmittelbar ab.
+   */
   abmelden: () => void;
   /**
-   * Trägt die Wache ein. `null` nimmt sie zurück; das übernimmt
-   * `useAbmeldewache` beim Verlassen der Seite.
+   * Trägt eine Wache ein und liefert, wie sie wieder ausgetragen wird. Das
+   * übernimmt `useAbmeldewache` beim Verlassen der Seite.
    */
-  setzeWache: (wache: (() => boolean) | null) => void;
+  meldeWacheAn: (wache: () => boolean) => () => void;
 }
 
 export const AbmeldeschutzKontext = createContext<Abmeldeschutz | null>(null);
@@ -73,8 +81,7 @@ export function useAbmeldewache(wache: () => boolean): (() => void) | null {
 
   useEffect(() => {
     if (!schutz) return;
-    schutz.setzeWache(() => aktuelle.current());
-    return () => schutz.setzeWache(null);
+    return schutz.meldeWacheAn(() => aktuelle.current());
   }, [schutz]);
 
   return schutz?.abmelden ?? null;

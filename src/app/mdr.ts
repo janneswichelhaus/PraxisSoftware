@@ -91,7 +91,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     grundlage: ['ADR-006 Punkt 10 und 13', 'PROJECT_PRINCIPLES.md §17 Verbot 1'],
     keineAusgabe:
       'Keine Liste, Sortierung, Vorbelegung oder Dosierung, die aus Diagnose, Befund, ' +
-      'Screening-Antwort oder Verlauf abgeleitet ist — Katalog, Suche und Vorlagen bleiben.',
+      'Screening-Antwort oder Verlauf abgeleitet ist – Katalog, Suche und Vorlagen bleiben.',
     pfade: [],
   },
   {
@@ -100,7 +100,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     grundlage: ['ADR-006 Punkt 11 und 13', 'PROJECT_PRINCIPLES.md §17 Verbot 2'],
     keineAusgabe:
       'Kein eigener Score, keine Risikoklasse, keine Ampel, kein Schwellenwertalarm und kein ' +
-      '„Verschlechterung" — die Kurve über die Zeit bleibt, die Aussage über sie entsteht nicht.',
+      '„Verschlechterung“ – die Kurve über die Zeit bleibt, die Aussage über sie entsteht nicht.',
     pfade: [],
   },
   {
@@ -109,7 +109,7 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     grundlage: ['ADR-006 Punkt 12 und 13', 'PROJECT_PRINCIPLES.md §17 Verbot 3'],
     keineAusgabe:
       'Keine Eignung, Freigabe, Kontraindikation, kein Abbruch und keine Empfehlung zum ' +
-      'Arztbesuch aus den Antworten — auch nicht als Zwischenergebnis oder Vorbelegung.',
+      'Arztbesuch aus den Antworten – auch nicht als Zwischenergebnis oder Vorbelegung.',
     pfade: [],
   },
   {
@@ -131,17 +131,17 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
     bezeichnung: 'KI-Analyse im Trainingsbereich',
     grundlage: [
       'ADR-006 Punkt 13 (einer der drei MDR-nahen Bereiche)',
-      'ROADMAP.md Etappe TR, Navigationspunkt 15; „Nicht in V1"',
+      'ROADMAP.md Etappe TR, Navigationspunkt 15; „Nicht in V1“',
     ],
     keineAusgabe:
       'Keine aus Trainings-, Screening- oder Verlaufsdaten abgeleitete Einschätzung, ' +
-      'Empfehlung oder Bewertung — auch nicht hinter dem Gateway aus ADR-005.',
+      'Empfehlung oder Bewertung – auch nicht hinter dem Gateway aus ADR-005.',
     pfade: ['/training/ki-analyse'],
   },
   {
     id: 'uebungsanalyse',
     bezeichnung: 'Übungsanalyse über die Zeit',
-    grundlage: ['ROADMAP.md Etappe TR, Navigationspunkt 7; „Nicht in V1"'],
+    grundlage: ['ROADMAP.md Etappe TR, Navigationspunkt 7; „Nicht in V1“'],
     keineAusgabe:
       'Die ableitende Hälfte entsteht nicht; was bliebe, wäre die anzeigende und ' +
       'aufzeichnende (ADR-006 Punkt 13).',
@@ -150,10 +150,10 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
   {
     id: 'progression-regelwerk',
     bezeichnung: 'Automatische Progression nach Regelwerk',
-    grundlage: ['ROADMAP.md „Nicht in V1" (Progression, §17 Verbot 1, bis B10)'],
+    grundlage: ['ROADMAP.md „Nicht in V1“ (Progression, §17 Verbot 1, bis B10)'],
     keineAusgabe:
       'Keine vorgeschlagene oder vorbelegte Steigerung von Last, Umfang oder Intensität aus ' +
-      'erfassten Daten — auch nicht im Schattenbetrieb mit offengelegter Regel.',
+      'erfassten Daten – auch nicht im Schattenbetrieb mit offengelegter Regel.',
     pfade: ['/training/progression'],
   },
 ];

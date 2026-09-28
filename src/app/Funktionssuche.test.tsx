@@ -175,7 +175,7 @@ describe('Funktionssuche', () => {
     const user = userEvent.setup();
     renderWithProviders(<Funktionssuche user={testUser(['patient'], 'Max Mustermann')} />);
 
-    await user.type(screen.getByRole('combobox', { name: FELD }), 'mus');
+    await user.type(screen.getByRole('combobox', { name: 'Funktion oder Bereich suchen' }), 'mus');
 
     await waitFor(() => expect(screen.queryByText('Wird gesucht …')).toBeNull());
     expect(screen.queryByRole('group', { name: 'Patient:innen' })).toBeNull();
@@ -193,5 +193,74 @@ describe('Funktionssuche', () => {
     await user.type(screen.getByRole('combobox', { name: FELD }), 'mus');
 
     expect(await screen.findByText(/fehlgeschlagen/)).toBeTruthy();
+  });
+
+  // ---------------------------------------------------------------------------
+  // UXR-002
+  // ---------------------------------------------------------------------------
+  it('schließt die Liste, wenn der Fokus die Suche verlässt (NAV-08)', async () => {
+    // Bis UXR-002 lag die Liste nach Tab weiter über dem nächsten Element -
+    // und nach Enter darauf über der neuen Seite.
+    const user = userEvent.setup();
+    renderWithProviders(
+      <>
+        <Funktionssuche user={testUser(['owner'])} />
+        <a href="#weiter">Weiter</a>
+      </>,
+    );
+
+    await user.click(screen.getByRole('combobox', { name: FELD }));
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
+
+    await user.tab();
+
+    expect(screen.getByRole('link', { name: 'Weiter' })).toHaveFocus();
+    expect(screen.queryByRole('option')).toBeNull();
+    expect(screen.getByRole('combobox', { name: FELD })).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  it('bleibt offen, wenn in die Liste selbst getippt wird', async () => {
+    // Ein Tipp auf den Zustandssatz nimmt dem Feld den Fokus nicht - sonst
+    // schlösse die Liste unter dem Finger.
+    const user = userEvent.setup();
+    renderWithProviders(<Funktionssuche user={testUser(['owner'])} />);
+    const feld = screen.getByRole('combobox', { name: FELD });
+
+    await user.type(feld, 'mu');
+    await user.click(await screen.findByText('Namen ab 3 Zeichen.'));
+
+    expect(feld).toHaveFocus();
+    expect(screen.getAllByRole('option').length).toBeGreaterThan(0);
+  });
+
+  it('verspricht keiner Rolle ohne Namenssuche einen Namen (NAV-16)', () => {
+    renderWithProviders(<Funktionssuche user={testUser(['patient'], 'Max Mustermann')} />);
+
+    const feld = screen.getByRole('combobox', { name: 'Funktion oder Bereich suchen' });
+    expect(feld).toHaveAttribute('placeholder', 'Funktion oder Bereich');
+  });
+
+  it('nennt das Geburtsdatum wie Aktenkopf und Patientensuche (WRT-15)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Funktionssuche user={testUser(['owner'])} />);
+
+    await user.type(screen.getByRole('combobox', { name: FELD }), 'mus');
+
+    const treffer = await screen.findByRole('option', { name: /Max Mustermann/ });
+    expect(treffer).toHaveTextContent('geb. 30.04.1957');
+    expect(treffer).not.toHaveTextContent('geboren');
+  });
+
+  it('zeigt das Tastenkürzel nur, wo es eine Taste dafür gibt (RSP-09)', () => {
+    const { container } = renderWithProviders(<Funktionssuche user={testUser(['owner'])} />);
+
+    // Am Touch-Tablet gibt es kein Strg - das Kürzel steht nur bei feinem
+    // Zeiger, und nur dann hält das Feld rechts Platz dafür frei.
+    const kuerzel = container.querySelector('kbd');
+    expect(kuerzel?.className).toContain('sm:pointer-fine:block');
+    expect(kuerzel?.className).not.toMatch(/(^|\s)sm:block/);
+    expect(screen.getByRole('combobox', { name: FELD }).className).toContain(
+      'sm:pointer-fine:pr-20',
+    );
   });
 });

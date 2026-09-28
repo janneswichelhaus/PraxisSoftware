@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { ABGELOESTE_BEGRIFFE, BEREICHE, type AbgeloesterBegriff } from './begriffe';
+import { FEHLZEIT_BEISPIELE } from '@/features/appointments/calendar';
+import { ABGELOESTE_BEGRIFFE, BEGRIFFE, BEREICHE, type AbgeloesterBegriff } from './begriffe';
 
 /**
  * Das Gate der Begriffe (UX-EPIC-002, ANN-111).
@@ -103,5 +104,11 @@ describe('Begriffe', () => {
     for (const bereich of Object.values(BEREICHE)) {
       expect(bereich.kurz.length).toBeLessThanOrEqual(13);
     }
+  });
+
+  it('führt die Beispiele einer Fehlzeit nur in einer Fassung (KAL-27)', () => {
+    // Der Kalender führt die Reihe noch als eigene Konstante; bis sie auf
+    // BEGRIFFE verweist, hält dieser Vergleich beide Stellen gleich.
+    expect(FEHLZEIT_BEISPIELE).toBe(BEGRIFFE.fehlzeitBeispiele);
   });
 });
