@@ -2972,3 +2972,123 @@ und sagt dann, warum.
 Rückweg des Terminformulars bei `warteliste` auf die Warteliste setzen,
 Bestätigung als `Statusmeldung`; Test, dass nach dem Anlegen nicht die
 Suchseite mit der Warnung erscheint.
+
+### BEF-072 — Auf einer 30-Minuten-Kachel ist die dritte Zeile abgeschnitten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Kalender, Tagesansicht am Handy |
+| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Terminkachel im Kalender; CAL-EPIC-004a (freie Terminlänge); BEF-037 |
+
+**Beobachtung.** Ein Hausbesuch von 30 Minuten (12:40–13:10) zeigt Name, Zeit mit ⟷ und darunter „Hausbesuch“ halb angeschnitten; die Kachel ist zu niedrig für drei Zeilen. Das Kennzeichen zeigt nur ⟷, ohne „30 Min.“.
+
+**Erwartet.** Eine Zeile, die nicht ganz passt, entfällt oder wird mit … gekürzt — nie halb abgeschnitten. Bei kurzen Terminen Name und Zeit zuerst, Terminart als Kürzel oder in der Zeitzeile.
+
+
+### BEF-073 — Nach einem Formular landet der Kalender in der eigenen Personenansicht statt im vorherigen Stand
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Kalender → Neuer Termin / Termin bearbeiten → zurück |
+| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Rückweg aus Terminformular und Akte (`mitRueckweg`, `leseRueckweg`); Kalenderzustand (Ansicht, Tag, Spalten) |
+
+**Beobachtung.** Jannes arbeitet in der Tagesansicht in Annas Spalte, legt einen Termin an bzw. ergänzt Stammdaten und landet danach „immer wieder“ in seinem persönlichen Kalender (Ansicht Jannes), nicht in der Tagesansicht mit Anna.
+
+**Erwartet.** Der Rückweg stellt Ansicht, Tag und Personenauswahl des Kalenders so wieder her, wie sie vor dem Formular waren.
+
+
+### BEF-074 — In der Monatsübersicht des Kalenders ist heute nicht markiert
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Kalender → Monat oben links |
+| Quelle  | Sichtung Kernprozess, Schritt 5 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Monatsauswahl im Kopf des Kalenders; ANN-109 |
+
+**Beobachtung.** Im Monatsblatt, über das man den Tag wählt, ist nicht erkennbar, welcher Tag heute ist.
+
+**Erwartet.** Heute ist im Monat hervorgehoben (Rahmen oder Punkt, nicht nur Farbe — Oberflächen-Checkliste Punkt 4); der gewählte Tag bleibt davon unterscheidbar.
+
+
+### BEF-075 — Die Meldung mit „Rückgängig“ nach dem Verschieben steht oben auf der Seite, außerhalb des Sichtfelds
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Kalender, Termin ziehen → Verschieben |
+| Quelle  | Sichtung Kernprozess, Schritt 9 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Statusmeldung nach dem Verschieben; FIX-EPIC-004; BEF-079 (dieselbe Ursache möglich) |
+
+**Beobachtung.** Nach „Verschieben“ erscheint die Meldung mit „Rückgängig“ am Anfang der Seite. Wer weiter unten im Raster arbeitet, sieht sie nicht und müsste erst nach oben scrollen.
+
+**Erwartet.** Die Meldung erscheint im Sichtfeld, am Handy am unteren Rand über der Tableiste (wie die Leiste „Was soll hier entstehen?“), und bleibt lange genug für „Rückgängig“ stehen.
+
+
+### BEF-076 — Zu viel Erklärtext auf allen Seiten; abgehakte Tests im Erstbefund bleiben aufgeklappt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | übergreifend; Befund aus Bausteinen |
+| Quelle  | Sichtung Kernprozess, Schritt 10 und 11 (therapist) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Bedienprinzip „Was nicht gebraucht wird, ist eingeklappt“ (UX-EPIC-002, Oberflächen-Checkliste Punkt 11); FRB-EPIC-003; ANN-130 |
+
+**Beobachtung.** Auf den Seiten steht durchweg viel erklärender Text. Im Erstbefund bleibt ein abgehakter Test mit allen Optionen offen, die Seite wird dadurch sehr lang.
+
+**Erwartet.** Erklärungen auf einen kurzen Satz, der Rest hinter „Mehr“ bzw. ⓘ zum Aufklappen. Eindeutige Symbole vor einem kurzen Wort (etwa ✅ Erledigt, ⚠️ Gebühr vorgemerkt) — nie ein Symbol allein (Punkt 4, Screenreader). Im Erstbefund klappt ein abgehakter Test auf eine Zeile mit Name und Ergebnis ein und lässt sich wieder öffnen.
+
+
+### BEF-077 — Textbausteine an der Dokumentation: Verwaltung und Überschrift stören, die Beispielbausteine ersetzen Inhalt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Termin → Dokumentieren |
+| Quelle  | Sichtung Kernprozess, Schritt 11 (therapist) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Textbausteine an der Dokumentation; IDEA-PRX-043; Organisatorisches |
+
+**Beobachtung.** „Bausteine verwalten“ steht an der Dokumentation und kostet Platz; die Überschrift „Textbausteine:“ ist unnötig. Die vorhandenen Bausteine (etwa „Eigenübungen besprochen“) ersetzen genaue Dokumentation, statt Struktur und Tipparbeit zu erleichtern.
+
+**Erwartet.** Verwaltung nur unter Organisatorisches; an der Dokumentation nur die Bausteine selbst, ohne Überschrift. Bausteine als Satzanfänge und Gliederung, die ergänzt werden (Jannes liefert eigene). Genaue Übungsdokumentation: IDEA-TRN-015.
+
+
+### BEF-078 — Der Verlauf früherer Termine ist unübersichtlich: keine abgesetzten Kästen, überall gleicher Kontrast
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Akte → Behandlungsverlauf; Übersicht → Bisherige Doku |
+| Quelle  | Sichtung Kernprozess, Schritt 11 und 12 (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Behandlungsverlauf; Tokens in `src/index.css`; UX-EPIC-003 |
+
+**Beobachtung.** Die Dokumentation früherer Termine läuft als gleichförmiger Text; Termine sind nicht als Kästen abgesetzt, Datum, Verfasser:in und Text haben denselben Kontrast.
+
+**Erwartet.** Je Termin eine Karte mit Kopf (Datum, Terminart, Therapeut:in) in kräftigerer Schrift und dem Text darunter; neueste zuerst; lange Texte gekürzt mit „Mehr“.
+
+
+### BEF-079 — Nach einer kurzfristigen Absage ist keine Meldung „Gebühr vorgemerkt“ zu sehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-28 |
+| Bereich | Termin → Absagen (Patient:in, weniger als 24 Stunden) |
+| Quelle  | Sichtung Kernprozess, Schritt 12 (office) (Jannes, Test-Umgebung, iPhone) |
+| Status  | offen |
+| Berührt | Absagedialog und Statusmeldung; CAL-014; BEF-075 |
+
+**Beobachtung.** Nach „Patient:in hat abgesagt“ mit Eingang „Gerade eben“ hat Jannes keinen Hinweis „Gebühr vorgemerkt“ gesehen. Die Gebühr war vorgemerkt: Paul stand in Schritt 13 unter „Zu erfassen“ mit „Absage innerhalb der Frist“.
+
+**Erwartet.** Nach dem Absagen steht die Folge sichtbar im Sichtfeld: „Abgesagt · Gebühr vorgemerkt (weniger als 24 Stunden vorher)“. Prüfen, ob die Meldung fehlt oder nur außerhalb des Sichtfelds steht (wie BEF-075).
+

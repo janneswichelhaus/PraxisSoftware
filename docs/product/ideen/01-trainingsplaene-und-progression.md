@@ -438,3 +438,54 @@ ausgeschlossen.
 **Konsequenz.** Belastung darstellen: ja. Daraus eine Risikoaussage ableiten:
 nein. Diese Unterscheidung sollte in jeder Diskussion über
 „Überlastungswarnungen" vorne stehen.
+
+---
+
+### IDEA-TRN-014 — Progressionsschema je Übungsgruppe, angezeigt neben der letzten Einheit
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Jannes, 2026-09-28 (Sichtung Kernprozess, Schritt 11/12) · Variante A gewählt |
+| Berührt | IDEA-TRN-001, -002, -004, -007, UEB-EPIC-001/002, [ADR-006](../../adr/ADR-006-medical-device-boundary.md) Punkt 10, `PROJECT_PRINCIPLES.md` §17 |
+
+**Idee.** Jannes formuliert — mit Claude als Entwurf und Quellenarbeit, final
+von ihm — für jede Übungsgruppe (Kraft, Kraftausdauer, Beweglichkeit,
+Stabilität/Motorik, Ausdauer …) ein **Progressionsschema** als Praxisstandard,
+abgelegt unter `quellen/`. An jeder Übung stehen dieses Schema und die Werte der
+letzten Einheit nebeneinander („Letztes Mal: 3 × 12 · 20 kg“); die
+Therapeut:in entscheidet und trägt ein.
+
+**Grenze (Jannes 2026-09-28, Variante A).** Die Anwendung **zeigt** das
+Schema wie eine Vorlage; sie rechnet **nicht** aus dem Verlauf die nächste
+Dosis aus und belegt nichts vor. Das wäre §17 Verbot 1 und ADR-006 Punkt 10
+(„auch dann, wenn die Regel offenliegt und ein Mensch bestätigt“) und bleibt
+bei IDEA-TRN-001/-002 unter „Nicht in V1“.
+
+**Offen.** Die Liste der Übungsgruppen; ob das Schema an der Gruppe oder an
+der einzelnen Übung hängt.
+
+---
+
+### IDEA-TRN-015 — Übungen in der Dokumentation strukturiert erfassen
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Jannes, 2026-09-28 (Sichtung Kernprozess, Schritt 11) |
+| Berührt | UEB-EPIC-001/002/003, TRN-EPIC-004, POR-EPIC-002, BEF-077, IDEA-TRN-014 |
+
+**Idee.** Statt „Eigenübungen besprochen“ wird jede durchgeführte Übung
+einzeln festgehalten: Übung aus der Bibliothek, Sätze × Wiederholungen,
+Last oder Widerstand, Dauer, kurze Notiz. Ein Eingabeformat, das in der
+Therapie-Dokumentation, im Trainingsprotokoll und im Plan **dasselbe** ist,
+damit die Angaben später im Patientenportal als eigenes Übungsprogramm
+erscheinen.
+
+**Warum.** Genauere Dokumentation; Trainingskund:innen brauchen es zwingend;
+Grundlage für den Plan im Portal und für die Anzeige neben dem
+Progressionsschema (IDEA-TRN-014).
+
+**Offen.** Ob das Format vor der Übungsbibliothek mit Freitext-Übungen
+starten darf oder UEB-EPIC-001 voraussetzt; Aufnahme in welchen Loop.
+

@@ -688,7 +688,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 <!-- fortschritt:anfang (erzeugt von pnpm fortschritt --schreiben, nicht von Hand aendern) -->
 | Block | Posten | Status | Fertig am | Nachweis | Gesichtet am | Vermerk |
 | --- | --- | --- | --- | --- | --- | --- |
-| A | Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001 | fertig | vor 2026-09-01 | PR #1, `e70775a`, `ca907e9` | — | — |
+| A | Fundament: PAT-001 bis PAT-004, CAL-001 bis CAL-006, STAFF-001 | gesichtet | vor 2026-09-01 | PR #1, `e70775a`, `ca907e9` | 2026-09-28 | — |
 | A | DOK-EPIC (DOK-001 bis DOK-004) | gesichtet | 2026-09-05 | PR #5, `21d85dd`, `e931068` | 2026-09-11 | — |
 | A | VER-EPIC-001 Verordnungen | gesichtet | 2026-09-07 | `2c3c1de` … `159c1bb` | 2026-09-11 | — |
 | A | UI-000 Fundament der Oberfläche | gesichtet | 2026-09-07 | `4a4440f` … `e6b4ab6` | 2026-09-11 | — |
@@ -696,25 +696,25 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | UX-EPIC-001 Hausbesuchstag (11 Stories) | gesichtet | 2026-09-11 | PR #18 | 2026-09-11 | — |
 | A | LOE-EPIC-001 Löschung und Retention (5 Stories) | gesichtet | 2026-09-11 | PR #25 | 2026-09-11 | — |
 | A | CAL-EPIC-003a Terminzustände | gesichtet | 2026-09-12 | PR #28 | 2026-09-12 | — |
-| A | CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013) | fertig | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | — | — |
+| A | CAL-EPIC-003b Serie und Terminfenster (mit CAL-012 und CAL-013) | gesichtet | 2026-09-12 | `b2626ae`, `89ab30b`, `acddcc6` | 2026-09-28 | — |
 | A | DAT-EPIC-001 Dateiablage (G4) | fertig | 2026-09-13 | `84bec9b` … `fd10a37` | — | — |
-| A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | fertig | 2026-09-15 | PR #41 | — | — |
-| A | CAL-018 Hausbesuch-Szenarien (E14) | fertig | 2026-09-16 | `dc529a7`, `6a11fb0` | — | — |
-| A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | fertig | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | — | — |
-| A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | fertig | 2026-09-18 | `14a1fa7` … `856a5ac` | — | — |
-| A | VER-EPIC-002 Verordnung im Office-Alltag | fertig | 2026-09-18 | `f734e55`, `ba19245` | — | — |
-| A | ABR-EPIC-001 Leistungen und Katalog | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-002a Rechnung entsteht | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-002b Rechnung als Dokument | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
-| A | ABR-EPIC-003 Zahlungen und offene Posten | fertig | 2026-09-19 | `3874e83` … `a1384ce` | — | — |
+| A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | gesichtet | 2026-09-15 | PR #41 | 2026-09-28 | — |
+| A | CAL-018 Hausbesuch-Szenarien (E14) | gesichtet | 2026-09-16 | `dc529a7`, `6a11fb0` | 2026-09-28 | — |
+| A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | gesichtet | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | 2026-09-28 | — |
+| A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | gesichtet | 2026-09-18 | `14a1fa7` … `856a5ac` | 2026-09-28 | — |
+| A | VER-EPIC-002 Verordnung im Office-Alltag | gesichtet | 2026-09-18 | `f734e55`, `ba19245` | 2026-09-28 | — |
+| A | ABR-EPIC-001 Leistungen und Katalog | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-002a Rechnung entsteht | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-002b Rechnung als Dokument | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
+| A | ABR-EPIC-003 Zahlungen und offene Posten | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
 | A | PAT-006 Datenschutzinformation und Einwilligungen (G8) | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | — | — |
 | A | ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L) | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | — | — |
 | A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | fertig | 2026-09-20 | PR #72 | — | — |
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | fertig | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | — | Sichtung am Handy offen: Kernprozess, Schritte 1, 2, 5 und 7 bis 10 |
-| B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | fertig | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | — | Sichtung am Handy: Kernprozess Schritte 10 und 12 |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28; Android-Installation (ANN-110) offen |
+| B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | gesichtet | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | 2026-09-28 | Sichtung Kernprozess 2026-09-28, Schritte 10 und 12 |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |
 | B | MAP-004 Fahrzeiten und Erreichbarkeit | fertig | 2026-09-22 | `ce5dbe4` … `0e27b4f` | — | — |

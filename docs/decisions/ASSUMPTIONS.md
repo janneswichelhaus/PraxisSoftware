@@ -1397,7 +1397,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-26 · Jannes · — · Wiedervo
 
 ### ANN-108 — Das Anlegen-Menü ist eine Leiste unter dem Gitter; ein zweiter Tipp hebt auf oder zieht die Spanne auf
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Nach einem Tipp auf freie Zeit steht das Anlegen-Menü als Leiste am unteren Fensterrand, über der Tableiste, und nicht mehr in der Spalte unter der Auswahl. Ein zweiter Tipp auf **dasselbe** Feld hebt die Auswahl auf; auf ein **anderes** Feld derselben Spalte wählt er die Spanne zwischen beiden Tipps (in beiden Richtungen, ohne das zweite Feld mitzuzählen: 08:50 und 09:30 ergeben 08:50–09:30). Ein Tipp in einer anderen Spalte oder nach einer fertigen Spanne beginnt eine neue Auswahl; Aufziehen durch Ziehen bleibt daneben erhalten.
 
@@ -1409,7 +1409,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess); UX-EPIC-003 (Tagesansicht als Startseite)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
 
 **Annahme.** Über dem Raster stehen nur noch: links der Monat, der einen Monatskalender aufklappt; in der Mitte der Name der behandelnden Person als Auswahl (in der Tagesansicht „Alle Personen"), darunter Kalenderwoche und Tag beziehungsweise Woche, daneben die Pfeile zum Blättern; rechts „Jetzt" (heutiger Tag, das Raster rollt zur Linie der aktuellen Uhrzeit). Tag/Woche, Zoom, Standort, Status und die Anlegen-Schaltflächen für die Tastatur (einschließlich „Tag umplanen") liegen hinter einem Knopf in der Ecke des Rasters, der beim Bildlauf stehen bleibt und einen aktiven Filter mit einem Punkt anzeigt. Am Telefon wird die Suche zur Lupe links neben „Konto"; ab 640 px bleibt sie das Feld in der Kopfzeile.
 
@@ -1433,7 +1433,7 @@ Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · �
 
 ### ANN-111 — Die Begriffe stehen in einer Datei; im Kalender heißt der Eintrag ohne Patient:in „Fehlzeit", eine Person des Teams „Mitarbeiter:in"
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 7) · erledigt · Wiedervorlage: —
 
 **Annahme.** Bezeichnungen, die an mehr als einer Stelle dieselbe Sache nennen — die sechs Arbeitsbereiche mit Kurzform und Leitfrage, die Vorgänge aus Menü, Suche und Kalender, die Personen —, stehen einmal in `src/lib/begriffe.ts`. Abgelöst und aus jedem Oberflächentext ausgeschlossen sind: „Mein Tag" und „Touren & Termine" (Beschriftungen vom 2026-09-12), „Passwort" (es gilt „Kennwort"), „Mitarbeitende:n"/„Mitarbeitende:r" (Einzahl „Mitarbeiter:in", Mehrzahl „Mitarbeitende") und im Kalender „Ereignis" (es gilt „Fehlzeit").
 
@@ -1445,7 +1445,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-112 — Ein Arbeitsbereich öffnet auf seinem ersten echten Punkt; Vorschauen stehen eingeklappt dahinter
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 8) · erledigt · Wiedervorlage: —
 
 **Annahme.** „Organisatorisches" öffnet auf „Mitarbeitende" statt auf der Vorschau „Radflotte". Im Untermenü eines Bereichs stehen die angebundenen Punkte offen; Vorschauen liegen hinter einem Knopf „Vorschau (n)" und klappen von selbst auf, wenn man auf einer von ihnen steht. Menüpunkte, deren Route einer Rolle verschlossen ist, stehen für sie nicht im Menü (trainer: „Arbeitszeiten", BEF-034).
 
@@ -1457,7 +1457,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei 
 
 ### ANN-113 — Die Tour ist eine Ansicht des Kalenders; der Kalender hat keine Unterzeile mehr
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 9) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Zeile „Kalender · Touren" über dem Raster entfällt. „Tour" steht als dritter Knopf neben „Tag" und „Woche" unter „Ansicht und Filter" und öffnet `/touren` mit dem gezeigten Tag und der gezeigten Person; die Tourenseite heißt „Tour" und führt mit „Zum Kalender" in die Tagesansicht desselben Tages zurück. `/touren` bleibt Adresse und Teil des Bereichs Kalender. Die Unterzeilen der Bereiche Patient:innen (Patient:innen · Verordner:innen) und Organisatorisches bleiben.
 
@@ -1493,7 +1493,7 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit 
 
 ### ANN-116 — Die Behandlungsliege ist eine organisatorische Versorgungsangabe der Person
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Jannes für den Praxisnutzen
+Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritte 10 und 12) · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** „Behandlungsliege mitnehmen" ist ein Ja/Nein-Merkmal der Person (`patient_care_details.treatment_table_required`, Standard nein), keine Angabe je Termin und kein Befundinhalt. Es erbt Rollenschnitt und Frist der internen Versorgungsangaben aus ANN-010: sichtbar und setzbar für die vier Praxisrollen (dieselbe Menge wie `app.can_update_patient()`), nicht für das Patientenkonto und nicht für die Trainingsrolle, Datenklasse Patientenakte. Die Tagesliste liefert es nur am Behandlungstermin; am Trainingstermin und an einer Fehlzeit bleibt es leer. Jede Änderung steht als `patient.updated` mit dem Feldnamen im Auditlog.
 
@@ -1505,7 +1505,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung am Handy (Kernprozess)
+Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen.
 
