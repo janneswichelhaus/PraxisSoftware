@@ -28,6 +28,21 @@ function laufTag(versatz = 0): string {
 
 const zeit = (minutenAbAcht: number) => zeitImLauf(LAUF, minutenAbAcht, 10);
 
+/** Die Wochentage als Adverb, wie sie die Zusammenfassung nennt (KAL-B03). */
+const WOCHENTAGE = [
+  'sonntags',
+  'montags',
+  'dienstags',
+  'mittwochs',
+  'donnerstags',
+  'freitags',
+  'samstags',
+];
+
+function wochentagAdverb(tag: string): string {
+  return WOCHENTAGE[new Date(`${tag}T00:00:00Z`).getUTCDay()]!;
+}
+
 test.describe('CAL-019: Anlegen-Menü im Kalender', () => {
   test('oeffnet auf freier Flaeche das Menue und fuehrt in die Fehlzeit', async ({ page }) => {
     const tag = laufTag(0);
@@ -83,8 +98,10 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await expect(page.getByLabel('Standort *')).toHaveValue(/.+/);
     await page.getByLabel('Anzahl Fehlzeiten *').fill('3');
 
-    // Die Tage stehen vor dem Eintragen da.
-    await expect(page.getByText(`3 Fehlzeiten, jeweils ${von}–${bis} Uhr`)).toBeVisible();
+    // Die Tage stehen vor dem Eintragen da, seit KAL-B03 mit Wochentag.
+    await expect(
+      page.getByText(`3 Fehlzeiten, jeweils ${wochentagAdverb(tag)} ${von}–${bis} Uhr`),
+    ).toBeVisible();
 
     await page.getByRole('button', { name: '3 Fehlzeiten eintragen' }).click();
     // Fällt der Tag des Laufs auf ein Wochenende, hat niemand hinterlegte

@@ -4,6 +4,7 @@ import {
   TAGESFENSTER,
   anmelden,
   detailWert,
+  kalenderOptionenOeffnen,
   laufTagImFenster,
   terminKachel,
   terminUeberOberflaeche,
@@ -211,9 +212,12 @@ test.describe('CAL-006: Verschieben', () => {
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, { tag, von, bis });
 
-    // Ziehen ist eine Abkuerzung, kein eigener Weg.
+    // Ziehen ist eine Abkuerzung, kein eigener Weg. Die Bedienhilfe steht seit
+    // KAL-26 eingeklappt unter „Ansicht und Filter“ statt als Dauertext.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByText(/über „Bearbeiten" in der Detailansicht/)).toBeVisible();
+    await kalenderOptionenOeffnen(page);
+    await page.getByText('So bedienen Sie den Kalender', { exact: true }).click();
+    await expect(page.getByText(/über „Bearbeiten“ in der Detailansicht/)).toBeVisible();
 
     await page.goto(`/termine/${terminId}`);
     await expect(page.getByRole('link', { name: 'Bearbeiten' })).toBeVisible();

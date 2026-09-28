@@ -95,7 +95,7 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await page.getByRole('button', { name: 'Nicht angetroffen' }).click();
     const rueckfrage = page.getByRole('group', { name: 'Nicht angetroffen' });
     // Seit ADR-018 Fassung 2: keine Pflichtauswahl mehr an dieser Stelle.
-    await expect(rueckfrage).toContainText('Eine Gebühr entsteht daraus nicht');
+    await expect(rueckfrage).toContainText('Ein Ausfallhonorar entsteht daraus nicht');
     await expect(page.getByLabel('Ausfallhonorar berechnen?')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Ja, niemand angetroffen' }).click();

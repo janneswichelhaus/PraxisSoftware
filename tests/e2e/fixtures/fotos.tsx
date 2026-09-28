@@ -21,8 +21,8 @@ import '@/index.css';
  *     Server, und genau das zeigt die Fehlermeldung mit dem Angebot, es
  *     erneut zu versuchen.
  *   * `vergleich` — zwei Fotos nebeneinander, aus Formen im Canvas gezeichnet.
- *   * `dokument` — der Bereich „Dateien" mit „Foto aufnehmen" neben dem
- *     Dateiwähler.
+ *   * `dokument` — der Bereich „Dateien" mit „Dokument fotografieren" neben
+ *     dem Dateiwähler.
  *   * `bereinigung` — ein JPEG und ein PNG mit Ortsangabe und Vorschaubild,
  *     durch die Metadatenentfernung geschickt und im echten Browser
  *     dekodiert: Der Test sieht, ob das Bild danach noch ein Bild ist.

@@ -5,6 +5,7 @@ import {
   TAGESFENSTER,
   anmelden,
   arbeitszeitBestaetigen,
+  detailWert,
   laufTagImFenster,
   tagImFenster,
   zeitImLauf,
@@ -84,8 +85,10 @@ test.describe('CAL-007: Terminserie', () => {
 
     await expect(page.getByRole('heading', { name: 'Terminserie anlegen' })).toBeVisible();
     // Verordnet steht fest im Seed; offen haengt davon ab, was frühere Laeufe
-    // gegen dieselbe Datenbank schon verplant haben.
-    await expect(page.getByText('10 Behandlungen')).toBeVisible();
+    // gegen dieselbe Datenbank schon verplant haben. Seit TER-09 heißt die
+    // Zeile „Mögliche Termine“ und nennt die Zahl ohne Einheit; „10
+    // Behandlungen“ träfe nur noch zufällig die Zeile „Noch planbar“.
+    await expect(detailWert(page, 'Mögliche Termine')).toHaveText(/^10(| · \d+ genutzt)$/);
     await expect(page.getByLabel('Anzahl Termine *')).not.toHaveValue('');
   });
 
@@ -130,9 +133,10 @@ test.describe('CAL-007: Terminserie', () => {
     await expect(page).toHaveURL(`/patienten/${PATIENTEN.erika}/termine`);
 
     // Das verplante Kontingent ist auf der Serienseite nachgeführt: drei
-    // Termine weniger offen als vorher (CAL-007, ANN-038).
+    // Termine weniger offen als vorher (CAL-007, ANN-038). „Bereits verplant“
+    // heißt seit TER-09 wie an der Grundlagenkarte der Akte „Zugeordnet“.
     await page.goto(SERIE);
-    await expect(page.getByText('Bereits verplant')).toBeVisible();
+    await expect(page.getByText('Zugeordnet', { exact: true })).toBeVisible();
     await expect(page.getByLabel('Anzahl Termine *')).toHaveValue(
       String(Math.max(offenVorher - 3, 0)),
     );

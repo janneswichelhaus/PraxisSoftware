@@ -54,7 +54,9 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
-  await expect(page.getByText('Finalisiert', { exact: true })).toBeVisible();
+  // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
+  // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
+  await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
 
   return terminId;
 }
@@ -75,7 +77,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
       .getByRole('listitem')
       .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
-    await expect(zeile.getByText('Finalisiert', { exact: true })).toBeVisible();
+    await expect(zeile.getByText('✓Finalisiert', { exact: true })).toBeVisible();
     await expect(zeile.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
     await expect(zeile.getByRole('link', { name: 'Änderungsverlauf' })).toBeVisible();
     // Gelesen wird in der Akte, geschrieben am Termin.
