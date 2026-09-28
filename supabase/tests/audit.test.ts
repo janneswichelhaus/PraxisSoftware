@@ -222,6 +222,7 @@ describe('Audit-Lesepfad', () => {
       'check_appointment_slots',
       'check_travel_buffers',
       'count_orphaned_patient_file_objects',
+      'find_free_slots',
       'get_billable_service_draft',
       'get_invoice',
       'get_payment_reminder',
@@ -267,6 +268,9 @@ describe('Audit-Lesepfad', () => {
       'list_storage_deletion_orders',
       'list_text_snippets',
       'list_therapy_report_sources',
+      'list_waitlist_entries',
+      'list_waitlist_matches',
+      'rate_slot_travel',
       'search_patients',
     ]);
   });

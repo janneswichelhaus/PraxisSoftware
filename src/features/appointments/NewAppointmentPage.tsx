@@ -20,6 +20,7 @@ import {
   ArbeitszeitRueckfrage,
   UebernommeneAdresse,
 } from './AppointmentFormFields';
+import { TerritoryHint } from '@/features/territories/TerritoryHint';
 import { NachladeHinweis } from './Rueckmeldungen';
 import {
   appointmentFormSchema,
@@ -97,6 +98,15 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
    */
   const verordnungId = (() => {
     const roh = suche.get('verordnung');
+    return roh && VERORDNUNG_KENNUNG.test(roh) ? roh : null;
+  })();
+
+  /**
+   * Eintrag der Warteliste, aus dem der Termin nachrückt (PRX-004). Mit ihm
+   * schließt der Server den Eintrag in derselben Transaktion wie das Anlegen.
+   */
+  const wartelisteId = (() => {
+    const roh = suche.get('warteliste');
     return roh && VERORDNUNG_KENNUNG.test(roh) ? roh : null;
   })();
 
@@ -264,9 +274,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         eingabe.bestaetigt,
         verordnungId,
         eingabe.vergangenheit,
+        wartelisteId,
       ),
     onSuccess: async (appointmentId) => {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      if (wartelisteId) await queryClient.invalidateQueries({ queryKey: ['waitlist'] });
       // Zurück, wo das Anlegen begann (BEF-016): Wer aus dem Kalender kam,
       // landet wieder im Kalender, mit dem neuen Termin hervorgehoben; wer vom
       // Termin kam („Folgetermin anlegen"), auf dem Termin, der das Anlegen
@@ -369,6 +381,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       teile.set(DAUER_PARAM, String(fensterMinuten));
     }
     if (verordnungId) teile.set('verordnung', verordnungId);
+    if (wartelisteId) teile.set('warteliste', wartelisteId);
     const eingehend = suche.get(RUECKWEG_PARAM);
     if (istInternerPfad(eingehend)) teile.set(RUECKWEG_PARAM, eingehend);
     return `${akte}/termine/neu?${teile.toString()}`;
@@ -479,6 +492,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         {/* Kein Kasten mit dem Namen mehr: Er steht schon in der Beschreibung
             darüber (TER-21). Genannt wird dafür, was die Seite sonst
             verschwiege - die Grundlage, der der Termin zugeordnet wird. */}
+        {wartelisteId ? (
+          <p className="text-ink mb-3 max-w-prose text-sm">
+            Aus der Warteliste: Mit dem Termin wird der Eintrag als eingeplant geschlossen.
+          </p>
+        ) : null}
         {verordnungId ? (
           <p className="text-ink mb-6 max-w-prose text-sm">
             {grundlageText
@@ -518,17 +536,24 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
             if (mutation.isError) mutation.reset();
           }}
           hausbesuch={
-            <UebernommeneAdresse
-              street={patientDaten.street}
-              houseNumber={patientDaten.house_number}
-              postalCode={patientDaten.postal_code}
-              city={patientDaten.city}
-              // Der Abstecher in die Stammdaten und zurück in genau dieses
-              // Formular - mit allem, was es schon trägt (UX-012, TER-05).
-              // Weil nichts verloren geht, fragt der Schutz hier nicht.
-              ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
-              onErgaenzen={freigeben}
-            />
+            <>
+              <UebernommeneAdresse
+                street={patientDaten.street}
+                houseNumber={patientDaten.house_number}
+                postalCode={patientDaten.postal_code}
+                city={patientDaten.city}
+                // Der Abstecher in die Stammdaten und zurück in genau dieses
+                // Formular - mit allem, was es schon trägt (UX-012, TER-05).
+                // Weil nichts verloren geht, fragt der Schutz hier nicht.
+                ergaenzenZiel={mitRueckweg(`${akte}/bearbeiten`, rueckkehrAdresse())}
+                onErgaenzen={freigeben}
+              />
+              {/* Gebietstag der Adresse (PRX-002): warnt, sperrt nichts. */}
+              <TerritoryHint
+                postalCode={patientDaten.postal_code}
+                slots={[{ datum: werte.date, beginn: werte.start_time }]}
+              />
+            </>
           }
         />
 

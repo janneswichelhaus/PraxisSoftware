@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-26.
+Zuletzt aktualisiert: 2026-09-28.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1678,3 +1678,63 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim
 **Anker.** `Briefkopf` in `src/features/billing/Briefkopf.tsx` (Druckklassen des Anschriftfelds und der Angaben); Nutzung in `InvoicePrintPage.tsx`, `CancellationPrintPage.tsx`, `ReminderPrintPage.tsx`.
 
 **Änderungspfad.** Form A (27 mm von oben) oder Fenster rechts: die Druckklassen in `Briefkopf.tsx` · Aufwand `klein`.
+
+### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes bei der Sichtung der Warteliste (PRX-EPIC-001)
+
+**Annahme.** Ein Eintrag der Warteliste trägt als Dringlichkeit genau einen von drei Gründen — **Wunsch der Person**, **Verordnung endet**, **Vorgabe der Praxis** — und optional ein Datum „bis spätestens“. Die Liste ordnet nach diesem Datum (ohne Datum zuletzt), dann nach Wartezeit. Einen Freitext als Dringlichkeit, eine Stufe wie „hoch“ oder eine Einordnung nach Beschwerdebild gibt es nicht; die Notiz ist ausdrücklich organisatorisch.
+
+**Begründung.** `IDEA-PRX-003` verlangt, die Dringlichkeit „organisatorisch zu fassen …, nicht als klinische Einstufung“: Eine Reihung nach Beschwerdebild wäre eine Risikoklassifikation und ist nach ADR-006 Punkt 4 ausgeschlossen. Ein Datum und ein benannter Grund sind prüfbar und deterministisch (§6.2); eine Punktzahl wäre eine Bewertung, die niemand nachvollziehen kann. Unsicher: ob Jannes einen vierten Grund braucht (etwa „nach Krankenhausaufenthalt“ — das wäre klinisch und gehört dann in die Notiz der Akte, nicht hierher).
+
+**Anker.** Constraint `priority_reason` an `public.waitlist_entries` und `app.waitlist_check_input` in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Beschriftungen `reasonLabels` in `src/features/waitlist/api.ts`; Test „kennt nur organisatorische Gruende“ in `supabase/tests/waitlist.test.ts`.
+
+**Änderungspfad.** Ein weiterer Grund: Wert in Constraint und Prüfung, Beschriftung in `api.ts` · Aufwand `klein`. Eine andere Reihung: `order by` in `list_waitlist_entries` · Aufwand `klein`.
+
+### ANN-133 — Ein geschlossener Wartelisteneintrag fällt zwölf Monate nach dem Schließen
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+
+**Annahme.** Ein offener Eintrag bleibt, bis er geschlossen wird oder mit der Akte fällt. Ein geschlossener — eingeplant oder zurückgezogen — wird zwölf Monate nach dem Schließen gelöscht (Klasse `warteliste`, Anker „Abschluss des Vorgangs“) und im Löschjournal festgehalten. Ein Legal Hold an der Akte hält die Löschung an. Die Auskunft nach Art. 15 enthält die Einträge.
+
+**Begründung.** ADR-008 kennt keine Klasse „Warteliste“; am nächsten liegt „Terminanfragen ohne Behandlungsverhältnis — 12 Monate nach letztem Kontakt“ (interne Initialentscheidung). Ein Wartelisteneintrag ist eine Terminanfrage **mit** Behandlungsverhältnis, sein Zweck endet mit dem Schließen; zwölf Monate lassen nachvollziehen, warum jemand eingeplant wurde, ohne ihn in die zehnjährige Akte zu ziehen — er ist kein Behandlungsnachweis. Unsicher: ob die Datenschutzprüfung eine kürzere Frist verlangt (Zweck erfüllt mit dem Termin).
+
+**Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
+
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`.
+
+### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+
+**Annahme.** Anlegen, Ändern und Schließen eines Eintrags schreiben je einen Auditeintrag (`waitlist_entry.*`, nur Metadaten, nie die Notiz). Das Lesen der Liste schreibt keinen; ein abgewiesener Leseversuch schon (`waitlist.read`, G6b).
+
+**Begründung.** Die Liste zeigt organisatorische Angaben — Name, Telefon, Postleitzahl, Wunschzeiten, Grund —, dieselben, die Kalender und Tagesliste ohne Leseprotokoll zeigen (ADR-010 Punkt 2 nennt klinische Dokumente, Verordnung, Scan und Export als lesepflichtig). Ein Leseeintrag je Aufruf einer Arbeitsliste, die das Büro mehrmals am Tag öffnet, verwässerte das Protokoll, ohne einen Zugriff sichtbar zu machen, den der Kalender nicht ohnehin erlaubt. Unsicher: Die Notiz könnte gegen die Anweisung am Feld Gesundheitsangaben enthalten.
+
+**Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
+
+**Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`.
+
+### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes, sobald die ersten Gebiete angelegt sind (PRX-EPIC-001)
+
+**Annahme.** Ein Gebiet ist eine Liste **genauer** Postleitzahlen (kein Präfix, kein Stadtteil) mit Wochentagen und Tageshälften; eine Postleitzahl gehört höchstens zu einem Gebiet. Vormittag heißt **Beginn vor 12:00**, Nachmittag **Beginn ab 12:00**, jeweils in Praxiszeit; beides angehakt heißt ganztags. Ein Hausbesuch außerhalb des Gebietstags seiner Adresse wird **gemeldet**, nie gesperrt. Geprüft wird die Postleitzahl, die der Termin trägt: beim Bearbeiten die festgehaltene Anschrift, beim Anlegen die aus den Kontaktdaten.
+
+**Begründung.** `IDEA-PRX-031`: „eine Vorbelegung, keine Optimierung … Termine bleiben frei vergebbar; die Regel warnt, sie verbietet nicht“. Die genaue Postleitzahl ist die Angabe, die an jeder Anschrift sicher vorliegt und sich deterministisch vergleichen lässt (§6.2) — ein Stadtteil stünde nicht in der Adresse, ein Präfix fasste in Städten ganz andere Gegenden zusammen. Die Grenze um 12:00 am Beginn ist die einfachste Regel, die ein Mensch am Kalender nachrechnen kann. Die Regel sagt nichts über Personen oder Touren (B6) und braucht keinen Kartendienst (E12).
+
+**Anker.** `app.territory_day_status` in `supabase/migrations/20260928110000_prx_002_territories.sql` (die eine Stelle der Regel), `check_territory_days` für die Formulare; Hinweis `src/features/territories/TerritoryHint.tsx`; Tests in `supabase/tests/territories.test.ts`.
+
+**Änderungspfad.** Andere Grenze der Tageshälfte oder Präfixe statt genauer Postleitzahlen: nur `app.territory_day_status` und die Prüfung in `save_territory` · Aufwand `klein`. Sperre statt Warnung: Prüfung in `create_appointment` mit Rückfrage wie bei der Arbeitszeit · Aufwand `mittel`.
+
+### ANN-136 — Terminsuche: dicht gepackte Vorschläge, Fahrzeit als Warnung für die ersten zehn
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach den ersten Wochen mit der Suche; E12 Punkt 4 (Warnung oder Sperre)
+
+**Annahme.** Die Terminsuche schlägt je freier Lücke den ersten Rasterpunkt in der Wunschzeit vor und danach dicht aufeinander folgende Plätze (Beginn plus Dauer), höchstens 50 in höchstens 42 Tagen. Belegt ist, was die Therapeut:in **oder** die Patient:in schon hat. Beim Hausbesuch stehen Vorschläge im Gebietstag vorn (ANN-135). Für die ersten **zehn** Hausbesuchsvorschläge holt die Anwendung die Fahrzeit von und zu den Nachbarterminen derselben Person live mit **einer** Matrix beim eigenen Kartendienst; der Server bewertet sie mit der Rundungsregel aus §8.1. Ein knapper Weg wird gekennzeichnet und nach hinten gestellt, **nicht verworfen**; fehlt eine Fahrzeit, steht „Fahrweg nicht geprüft“. Gespeichert wird nichts.
+
+**Begründung.** §8 nennt die Fahrzeit unter den harten Constraints für Terminvorschläge; E12 Punkt 3/4 und ANN-097 lassen die Fahrzeit aber nur live und nur als Warnung zu, und eine pauschale Fahrzeit ist ausgeschlossen. Nach Rang (§21) gilt die Prinzipienregel, umgesetzt so weit, wie die geltenden Festlegungen tragen: Die Fahrzeit wird für jeden geprüften Vorschlag berücksichtigt, die Entscheidung bleibt beim Menschen, und ein Vorschlag verschwindet nicht wegen einer Zahl, deren Grundlage (Wegprofil, Abstellzeit) noch niemand an echten Tagen geprüft hat. Die Grenze von zehn hält eine Suche bei einem Matrixaufruf mit höchstens elf Punkten je Seite (ANN-091: 25). Dichtes Packen ist die einfachste deterministische Regel, die Lücken schließt statt neue zu reißen; eine Bewertung nach Wegen wäre Optimierung (`IDEA-PRX-031`: „keine Optimierung“). Unsicher: ob Jannes knappe Vorschläge lieber ganz ausblendet — dann wird aus der Warnung ein Filter.
+
+**Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
+
+**Änderungspfad.** Knappe Wege ausblenden: Filter in `orderByTravel` · Aufwand `klein`. Mehr geprüfte Vorschläge: `TRAVEL_CHECK_LIMIT` bis zur Grenze der Matrix · Aufwand `klein`. Andere Packregel (etwa halbstündlich): `generate_series` in `find_free_slots` · Aufwand `klein`.

@@ -179,6 +179,25 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       stichworte: ['neu', 'buchen', 'planen'],
       rueckweg: true,
     });
+    // PRX-001: Die Warteliste hat kein eigenes Menü (ANN-113) - gefunden wird
+    // sie hier und im Kalender unter „Ansicht und Filter".
+    eintraege.push({
+      id: 'seite-warteliste',
+      art: 'Seite',
+      bezeichnung: 'Warteliste',
+      ziel: '/warteliste',
+      bereich: BEREICHE.termine.label,
+      stichworte: ['nachrücken', 'wartet', 'freier platz', 'absage'],
+    });
+    eintraege.push({
+      id: 'vorgang-warteliste',
+      art: 'Vorgang',
+      bezeichnung: 'Auf die Warteliste setzen',
+      ziel: '/warteliste/neu',
+      bereich: BEREICHE.termine.label,
+      stichworte: ['warten', 'kein termin'],
+      rueckweg: true,
+    });
     eintraege.push({
       id: 'vorgang-tag-umplanen',
       art: 'Vorgang',

@@ -83,6 +83,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Berichte an die verordnende Ärzt:in: Entwürfe und abgeschlossene Berichte, diese so, wie sie abgeschlossen wurden.',
   },
+  waitlist_entries: {
+    label: 'Warteliste',
+    beschreibung:
+      'Einträge auf der Warteliste mit Wunschzeiten, Dauer, Grund und kurzer Notiz; auch eingeplante und zurückgezogene, bis ihre Frist abläuft.',
+  },
   patient_files: {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme – ohne den Inhalt selbst.',

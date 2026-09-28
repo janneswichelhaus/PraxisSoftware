@@ -57,7 +57,7 @@ CAL-010b ist als eigene Story entfallen. Der Text bleibt lesbar.
 
 | | |
 |---|---|
-| Status | bestätigt |
+| Status | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard bei sieben Produkten) |
 | Berührt | §8; CAL-008 (Absage, gebaut); B15; ADR-006 Punkt 4 |
 
@@ -159,7 +159,7 @@ Ausgangstermins (CAL-010a) — `../../development/ARBEITSBEREICHE.md`.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (Standard) |
 | Berührt | §8, §9; CAL-007; B7 |
 
@@ -616,7 +616,7 @@ MAP-005; der Tages-Link mit allen Zielen ist nicht gebaut.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-EPIC-001 (gebaut 2026-09-28) |
 | Quelle | Claude, 2026-09-06, aus dem Lastenrad-Konzept |
 | Berührt | §6.2, §8, §9; CAL-007, MAP-006 (CAL-010b entfallen, E12); `IDEA-PRX-008`; B6 |
 

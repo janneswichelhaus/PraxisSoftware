@@ -23,6 +23,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
+import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { BEREICHE } from '@/lib/begriffe';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { NavigationZumTermin } from './NavigationStarten';
@@ -30,6 +31,7 @@ import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
 import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 import {
   appointmentStatusLabels,
+  appointmentToFormValues,
   cancelAppointment,
   cancelAppointmentEvent,
   cancelEventSeries,
@@ -1242,6 +1244,30 @@ function AppointmentDetail({
             <SerieAbsageAktion appointment={appointment} melden={melden} />
           ) : null}
           <AbsageAktion appointment={appointment} melden={melden} />
+        </div>
+      ) : null}
+
+      {/* Nachrücken (PRX-004): Ein abgesagter Behandlungstermin in der
+          Zukunft ist ein freier Platz. Die Liste zeigt, wer darauf passt -
+          ohne die Person, die gerade abgesagt hat. */}
+      {darfVerwalten &&
+      appointment.kind === 'therapy' &&
+      appointment.status === 'cancelled' &&
+      new Date(appointment.starts_at).getTime() > Date.now() ? (
+        <div className="mt-6">
+          <WaitlistMatches
+            slot={(() => {
+              const platz = appointmentToFormValues(appointment);
+              return {
+                staffMemberId: appointment.staff_member_id,
+                date: platz.date,
+                start: platz.start_time,
+                end: platz.end_time,
+                excludePatientId: appointment.patient_id,
+              };
+            })()}
+            back={zumTermin}
+          />
         </div>
       ) : null}
 

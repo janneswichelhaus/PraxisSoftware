@@ -1147,6 +1147,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               >
                 {BEGRIFFE.dauertermin} anlegen
               </ButtonLink>
+              {/* Wer auf einen Termin wartet (PRX-001). */}
+              <ButtonLink to={mitRueckweg('/warteliste', kalenderStand)} variant="secondary">
+                Warteliste
+              </ButtonLink>
             </div>
           ) : null}
 

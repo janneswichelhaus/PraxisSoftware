@@ -266,6 +266,38 @@ const FAELLE: Fall[] = [
     [],
     'storage_deletion.read',
   ],
+  // PRX-003: Terminsuche und Fahrzeit der Vorschläge.
+  [
+    'find_free_slots',
+    users.trainer,
+    `select * from public.find_free_slots($1::uuid, null, 'home_visit', 60, current_date, current_date, '[]', 5)`,
+    [IRGENDEINE],
+    'appointments.read',
+  ],
+  [
+    'rate_slot_travel',
+    users.trainer,
+    `select * from public.rate_slot_travel('[]')`,
+    [],
+    'appointments.read',
+  ],
+  // PRX-004: Nachrücken von der Warteliste.
+  [
+    'list_waitlist_matches',
+    users.trainer,
+    `select * from public.list_waitlist_matches($1::uuid, current_date, '09:00', '10:00')`,
+    [IRGENDEINE],
+    'waitlist.read',
+  ],
+  // PRX-001: Die Warteliste gehört zur Terminverwaltung; die Trainingsbetreuung
+  // sieht sie nicht.
+  [
+    'list_waitlist_entries',
+    users.trainer,
+    'select * from public.list_waitlist_entries()',
+    [],
+    'waitlist.read',
+  ],
 ];
 
 describe('G6b: abgewiesene Lesezugriffe bleiben nachweisbar', () => {

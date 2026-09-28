@@ -104,6 +104,9 @@ describe('Schema-Invarianten', () => {
       'patient_questionnaire_responses',
       'patient_course_events',
       'therapy_reports',
+      'waitlist_entries',
+      'territories',
+      'territory_postal_codes',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

@@ -7,6 +7,7 @@ import { Section } from '@/components/ui/Section';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Textlink } from '@/components/ui/Textlink';
 import { Patientensuche } from '@/features/patients/Patientensuche';
+import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
@@ -139,6 +140,22 @@ export function NewAppointmentStartPage() {
             Arbeitszeit und Überschneidung erst beim Speichern.
           </p>
         </Section>
+      ) : null}
+
+      {/* Nachrücken (PRX-004): An einer freien Stelle mit Person, Tag und
+          Zeit zeigt die Warteliste, wer darauf passt. */}
+      {vorbelegung.person && vorbelegung.datum && vorbelegung.beginn && vorbelegung.ende ? (
+        <div className="mb-8">
+          <WaitlistMatches
+            slot={{
+              staffMemberId: vorbelegung.person,
+              date: vorbelegung.datum,
+              start: vorbelegung.beginn,
+              end: vorbelegung.ende,
+            }}
+            back={rueckweg || hierher}
+          />
+        </div>
       ) : null}
 
       <Section titel="Patient:in">

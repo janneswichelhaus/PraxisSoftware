@@ -44,6 +44,10 @@ import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetail
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { WaitlistPage } from '@/features/waitlist/WaitlistPage';
+import { TerritoriesPage } from '@/features/territories/TerritoriesPage';
+import { SlotSearchPage } from '@/features/slot-search/SlotSearchPage';
+import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
@@ -231,6 +235,19 @@ export function AuthenticatedRoutes({
                   {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
                   wenn Person und Tag dort feststehen (CAL-009). */}
                   <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
+                  {/* Warteliste mit Wunschzeiten (PRX-001): dieselben Rollen wie der
+                  Kalender; der Server prüft ebenso (app.can_create_appointment). */}
+                  <Route path="/warteliste" element={<WaitlistPage user={user} />} />
+                  <Route path="/warteliste/neu" element={<NewWaitlistEntryPage />} />
+                  <Route
+                    path="/warteliste/:entryId/bearbeiten"
+                    element={<EditWaitlistEntryPage />}
+                  />
+                  {/* Terminsuche als Vorschlagsliste (PRX-003). */}
+                  <Route
+                    path="/patienten/:patientId/plaetze"
+                    element={<SlotSearchPage user={user} />}
+                  />
                   {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
                   <Route path="/termine/neu" element={<NewAppointmentStartPage />} />
@@ -294,6 +311,9 @@ export function AuthenticatedRoutes({
                   {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
                   <Route path="/touren" element={<TourenPage user={user} />} />
                   <Route path="/praxis/planung" element={<SchedulingPage user={user} />} />
+                  {/* Gebietstage (PRX-002): lesen die Rollen der Terminverwaltung,
+                  pflegen owner, team_lead und office (Server). */}
+                  <Route path="/praxis/gebiete" element={<TerritoriesPage user={user} />} />
                 </>
               ) : null}
 

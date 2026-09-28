@@ -613,6 +613,7 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       'patientenfoto',
       'termin_ohne_nachweis',
       'trainingsverhaeltnis',
+      'warteliste',
       'zugangseinladung',
     ]);
   });

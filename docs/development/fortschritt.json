@@ -381,7 +381,10 @@
           "id": "prx-epic-001",
           "name": "PRX-EPIC-001 Warteliste und Terminsuche",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-28",
+          "nachweis": "`222fccd` … `e01b575` (PRX-001 bis PRX-004), `53f89ad` (Zweitreview)",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 1 bis 3"
         },
         {
           "id": "prx-epic-002",
