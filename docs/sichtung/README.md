@@ -31,7 +31,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
 | [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
-| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | gesichtet 2026-09-28 (BEF-071)                                                       |
+| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | Schritte 1–3 gesichtet 2026-09-28 (BEF-071); 4–6 (PRX-EPIC-002) offen                |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

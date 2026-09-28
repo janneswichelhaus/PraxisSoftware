@@ -45,3 +45,26 @@ test('zeigt in der Akte, dass die Liege mit muss, mit einem Knopf zum Umstellen'
   const knopf = page.getByRole('button', { name: 'Liege nicht mehr mitnehmen' });
   expect((await knopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
 });
+
+test('zählt in der Übersicht zusammen, was heute mit muss - ohne Namen (PRX-007)', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 375, height: 740 });
+  await page.goto(PRUEFSEITE);
+  const zeile = page.getByText('Heute mitnehmen:').locator('..');
+  await expect(zeile).toHaveText('Heute mitnehmen: Theraband (2), Kinesiotape');
+  await expect(zeile).not.toContainText('Mustermann');
+});
+
+test('pflegt in der Akte das Material mit einer Zeile je Eintrag (PRX-007)', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 740 });
+  await page.goto(`${PRUEFSEITE}?ansicht=akte`);
+  await expect(page.getByText('Material', { exact: true })).toBeVisible();
+  await expect(page.getByText('Kinesiotape', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Liste ändern' }).click();
+  await expect(page.getByLabel('Material zum Mitnehmen')).toHaveValue('Theraband\nKinesiotape');
+  const ueberlauf = await page.evaluate(
+    () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+  );
+  expect(ueberlauf).toBe(false);
+});

@@ -949,6 +949,8 @@ Technik · offen · 2026-09-19 · — · — · Wiedervorlage: keine — der Rec
 
 Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen — insbesondere, ob eine Therapeutin am Termin selbst erfassen soll
 
+**Ablösung.** abgelöst durch ANN-140 in der Frage „wer Leistungen erfasst“ (seit PRX-009 auch Behandelnde an ihrem eigenen Termin); der Katalog und das Zurücknehmen bleiben wie hier
+
 **Annahme.** Den Leistungskatalog **lesen** alle vier Praxisrollen, **pflegen** darf ihn allein `owner`. Leistungen **erfassen und zurücknehmen** dürfen `owner` und `office`; die therapeutischen Rollen tun es nicht, und die Erfassung findet im Abrechnungsbereich statt, nicht am Termin. Die Termin-Detailseite bleibt unberührt.
 
 **Begründung.** §4.1 zählt Praxiseinstellungen zur Inhaberrolle, §4.3 gibt dem Office Rechnungen und Zahlungsstatus — nicht die Preisbildung. Lesen muss der Katalog für alle offen sein, sonst sähe die Erfassung ihre eigenen Preise nicht. Die Erfassung auf zwei Rollen zu beschränken hält den Bedienweg an einer Stelle: Eine zweite Oberfläche am Termin wäre eine zweite Implementierung derselben Regel, und die Regel selbst ist ohnehin serverseitig. Unsicher: ob das im Alltag trägt — bei einer Praxis, in der Jannes beide Rollen hat, fällt der Unterschied nicht auf, bei einer angestellten Therapeutin schon.
@@ -1742,3 +1744,53 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 **Anker.** `public.find_free_slots` und `public.rate_slot_travel` in `supabase/migrations/20260928120000_prx_003_slot_search.sql`; `TRAVEL_CHECK_LIMIT` und `orderByTravel` in `src/features/slot-search/api.ts`; Tests in `supabase/tests/slot-search.test.ts`.
 
 **Änderungspfad.** Knappe Wege ausblenden: Filter in `orderByTravel` · Aufwand `klein`. Mehr geprüfte Vorschläge: `TRAVEL_CHECK_LIMIT` bis zur Grenze der Matrix · Aufwand `klein`. Andere Packregel (etwa halbstündlich): `generate_series` in `find_free_slots` · Aufwand `klein`.
+
+### ANN-137 — Kurzblick am Termin: aufklappbar, jedes Aufklappen protokolliert, letzter Haupteintrag im Wortlaut
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung
+
+**Annahme.** Der Vertretungs-Kurzblick steht an jedem Behandlungstermin **zugeklappt** und wird erst beim Aufklappen gelesen. Er zeigt Zugangshinweis, Besonderheit, feste Therapeut:in, die Grundlage mit Terminzahl und Mengen je Heilmittel und den **letzten Haupteintrag** der Person vor diesem Termin im Wortlaut — auch einen Entwurf, als Entwurf gekennzeichnet; Nachträge nur in der Akte. Jedes Aufklappen schreibt `appointment_brief.viewed`, der gezeigte Eintrag zusätzlich `treatment_note.viewed` mit der Oberfläche `appointment_brief`. Lesen dürfen die Rollen, die Termine **und** Dokumentation lesen (owner, therapist, team_lead, office); Trainingsbetreuung und Patientenkonto werden protokolliert abgewiesen.
+
+**Begründung.** `IDEA-PRX-016` verlangt den Blick „aufklappbar und auditiert“; §4.2 macht die Vertretung zum Regelfall, und ADR-010 Punkt 2 und ADR-016 Punkt 9 machen das Lesen eines Eintrags protokollpflichtig — ein Kurzblick, der den Wortlaut zeigt, darf dieser Spur nicht ausweichen. Zugeklappt, weil die Tagesansicht im Treppenhaus mitgelesen wird (`IDEA-PRX-035`, §4.6). Der Wortlaut statt einer Zusammenfassung, weil jede Verdichtung eine Auswahl über klinischen Inhalt wäre (ADR-006 Punkt 2 und 4). Unsicher: ob der Entwurf gezeigt werden soll; ein unfertiger Text kann in die Irre führen, fehlt aber sonst genau dann, wenn die Kollegin am Vortag noch nicht finalisiert hat.
+
+**Anker.** `public.get_appointment_brief` in `supabase/migrations/20260929100000_prx_006_appointment_brief.sql`; Oberfläche `src/features/appointments/Kurzblick.tsx`; Tests in `supabase/tests/appointment-brief.test.ts`.
+
+**Änderungspfad.** Nur finalisierte Einträge: Bedingung `t.status = 'final'` in der Auswahl · Aufwand `klein`. Aufklappen ohne eigenes Ereignis (nur `treatment_note.viewed`): Einfügung in `get_appointment_brief` streichen, Wert im Katalog belassen · Aufwand `klein`. Weitere Felder (Wortlaut der Verordnung): Rückgabe erweitern · Aufwand `klein`.
+
+### ANN-138 — „Mitnehmen“: von Hand gepflegte Liste an der Person, am Tag nur zusammengezählt
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Praxisverwaltung)
+
+**Annahme.** Was für einen Besuch aufs Rad muss, steht als **von Hand gepflegte Liste an der Person** — höchstens zehn Einträge zu je 1 bis 60 Zeichen, ohne Doppel —, nicht am einzelnen Termin und nie aus Befund oder Dokumentation abgeleitet. Sie liegt bei den internen Versorgungsangaben neben der Behandlungsliege, erbt deren Rollenschnitt (alle vier Praxisrollen setzen und lesen, nie das Patientenkonto) und Datenklasse (Patientenakte), gehört zur Auskunft nach Art. 15 und wird wie die Liege mit `patient.updated` und dem Feldnamen protokolliert. Die Übersicht zeigt „Heute mitnehmen“ **zusammengezählt und ohne Person** über die noch anzufahrenden Besuche; mit Person steht die Liste im Kurzblick am Termin und in der Akte.
+
+**Begründung.** `IDEA-PRX-035` lässt offen, ob von Hand oder abgeleitet und ob am Termin, an der Person oder am Tag; ohne diese Entscheidung war nichts spezifizierbar. Abgeleitet scheidet aus: ein Vorschlag „aus den letzten Befunden“ wäre eine Auswertung klinischer Inhalte (ADR-006 Punkt 2 und 4). An der Person, weil sich das Material von Besuch zu Besuch wiederholt — eine Liste je Termin müsste jedes Mal neu entstehen und wäre am Serientermin leer. Ohne Namen am Tag, weil die Übersicht im Treppenhaus mitgelesen wird und „Kinesiotape für Frau X“ etwas über ihre Behandlung sagt (§4.6). Unsicher: ob die Praxis Material je Besuch braucht (etwa „diesmal den neuen Plan“) — dann trüge der Termin eine zweite, kurze Liste.
+
+**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Zusammenzählung `mitnehmenHeute` in `src/features/today/tagesstart.ts`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
+
+**Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Namen in der Übersicht: `mitnehmenHeute` um die Person erweitern · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.
+
+### ANN-139 — Abrechnungslage am Termin: Position für alle, Empfänger und offene Rechnungen nur für owner und office
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung; Datenschutzprüfung mit dem Rollenschnitt (ADR-004)
+
+**Annahme.** Am Behandlungstermin steht „Termin n von m“ mit der Bauart der Grundlage — gezählt wie die Deckung (nicht abgesagte Termine der Grundlage nach Beginn und Kennung) — für alle Rollen der Terminverwaltung. Der **Standard-Rechnungsempfänger** (ohne Eintrag: die Person selbst) und die **offenen Rechnungen** der Person (Anzahl, offener Betrag, ob eine überfällig ist) kommen nur für owner und office; für Behandelnde und Vertretungen bleiben die Felder leer, entschieden in der Datenbank. „Offen“ heißt wie in der Liste der offenen Posten: ausgestellt, nicht storniert, nicht voll bezahlt — ab Ausstellung, nicht erst ab Fälligkeit; die Überfälligkeit steht daneben. Gezählt werden die offenen Rechnungen der Person aus **beiden** Leistungsbereichen, weil owner und office beide sehen dürfen. Im Erfolgsfall wird nicht protokolliert.
+
+**Begründung.** `IDEA-PRX-037` warnt: „Rechnung offen“ am Termin ist eine Zahlungsinformation in einer Ansicht, die auch eine Vertretung sieht; ADR-004 und §4.3 geben Rechnungen und Zahlungsstatus owner und office, und `app.can_read_invoicing` zieht genau diese Grenze schon. Ob abkassiert oder ein offener Betrag angesprochen wird, entscheidet das Büro, nicht die Vertretung an der Tür. Die Frage „ab wann offen“ beantwortet ADR-009 über den Rechnungszustand; eine zweite Regel am Termin wäre eine zweite Wahrheit — deshalb liest die Liste der offenen Posten jetzt dieselbe Funktion. Die Kostenträgerart ist kein neues Feld: Sie ergibt sich aus der Bauart der Grundlage und dem Empfänger (ADR-009 Punkt 2, ADR-020). Unsicher: ob Behandelnde am Hausbesuch wissen sollen, dass etwas offen ist, um es anzusprechen.
+
+**Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
+
+**Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`.
+
+### ANN-140 — Termin abhaken: Behandelnde bestätigen die Heilmittel an ihrem eigenen Termin, zurücknehmen bleibt beim Büro
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Kern am 2026-09-28 von Jannes gewählt: „sonst muss das Büro immer erst nachhaken, ob der Termin wirklich stattgefunden hat“)
+
+**Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“
+
+**Annahme.** Am dokumentierten Termin bestätigt die behandelnde Person, welche Heilmittel sie geleistet hat — vorbelegt aus der Grundlage, mit einer Rückfrage, geschrieben über dieselbe `record_billable_services` wie im Büro. `therapist` und `team_lead` dürfen das **nur an ihrem eigenen Termin** (ihre Beschäftigtenkennung steht am Termin); `owner` und `office` weiter an jedem. **Zurücknehmen** und das **Ausfallhonorar** (eine Forderung gegen die Patient:in) bleiben bei `owner` und `office`. Ist das Kontingent danach erreicht, sagt die Seite es; eine Rechnung entsteht dabei nie — sie bleibt im Büro (ANN-077). Das Protokoll trägt, ob am Termin oder im Büro erfasst wurde.
+
+**Begründung.** Jannes hat am 2026-09-28 entschieden, dass Behandelnde abhaken; `IDEA-PRX-039` empfiehlt, das als Oberfläche von ABR-002 zu bauen und nicht als zweiten Weg — so gelten Dokumentationskopplung (§19, ANN-072), Kontingent (ADR-020 Punkt 5) und Schutz vor Doppelerfassung (ADR-009 Punkt 4) ohne Ausnahme. Die Grenze „eigener Termin“ folgt dem Zweck: Was geleistet wurde, weiß, wer behandelt hat; eine Vertretung übernimmt den Termin und damit die Kennung. Das Zurücknehmen beim Büro folgt der Warnung aus `IDEA-PRX-039`: Abhaken darf nicht so aussehen, als ließe es sich durch erneutes Antippen zurücknehmen. Die „Freigabe zur Abrechnung“ braucht keinen eigenen Zustand, weil abgerechnet wird, was erfasst ist, monatlich je Person (ANN-077). Unsicher: ob Behandelnde auch Termine einer Kollegin abhaken sollen, etwa nach einem Tausch ohne Umbuchung.
+
+**Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/session/types.ts`; Oberfläche `src/features/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
+
+**Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`.

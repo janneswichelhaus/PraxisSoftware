@@ -95,6 +95,8 @@ const tag: DayPlanEntry[] = [
     visit_postal_code: '72072',
     patient_phone_mobile: '+49 160 0000006',
     home_visit_access_note: 'Erdgeschoss, Klingel "Beispiel". Schlüssel bei der Nachbarin.',
+    // PRX-007: Mitnehmen, in der Übersicht nur zusammengezählt (ANN-138).
+    take_along_items: ['Theraband'],
   }),
   besuch(2, '10:00', '11:00', {
     patient_given_name: 'Max',
@@ -106,6 +108,7 @@ const tag: DayPlanEntry[] = [
     home_visit_access_note: '2. OG links, Aufzug vorhanden.',
     special_note: 'Hund im Flur, wird vor dem Termin weggesperrt.',
     treatment_table_required: true,
+    take_along_items: ['Theraband', 'Kinesiotape'],
   }),
   besuch(3, '11:30', '12:30', {
     patient_given_name: 'Petra',
@@ -147,6 +150,7 @@ const patient: Patient = {
   remark: null,
   geocode_precision: 'address',
   treatment_table_required: true,
+  take_along_items: ['Theraband', 'Kinesiotape'],
 };
 
 createRoot(document.getElementById('wurzel')!).render(

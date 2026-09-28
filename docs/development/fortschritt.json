@@ -404,7 +404,10 @@
           "id": "prx-epic-002",
           "name": "PRX-EPIC-002 Am Termin",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-28",
+          "nachweis": "`0f7e6af` … `25d54af` (PRX-005 bis PRX-009)",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 4 bis 6"
         },
         {
           "id": "prx-epic-003",

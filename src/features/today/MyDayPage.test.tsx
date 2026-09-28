@@ -408,6 +408,25 @@ describe('Übersicht', () => {
       expect(screen.getByText('Liege heute:')).toBeInTheDocument();
     });
 
+    it('zählt zusammen, was heute mit muss - ohne Namen (PRX-007)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({ id: 't1', take_along_items: ['Theraband'] }),
+        { ...zweiBesuche[1]!, take_along_items: ['Theraband', 'Kinesiotape'] },
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const zeile = (await screen.findByText('Heute mitnehmen:')).closest('p')!;
+      expect(zeile).toHaveTextContent('Heute mitnehmen: Theraband (2), Kinesiotape');
+      expect(zeile).not.toHaveTextContent('Mustermann');
+    });
+
+    it('zeigt keine Mitnehmen-Zeile, wenn nichts eingetragen ist', async () => {
+      fetchDayPlan.mockResolvedValue(zweiBesuche);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await screen.findByText('Liege heute:');
+      expect(screen.queryByText('Heute mitnehmen:')).toBeNull();
+    });
+
     it('sagt "nein", wenn heute niemand die Liege braucht', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       const zeile = (await screen.findByText('Liege heute:')).closest('p')!;

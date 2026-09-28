@@ -13,12 +13,17 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
+import { Kurzblick } from './Kurzblick';
+import { Abrechnungslage } from './Abrechnungslage';
+import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   canManageAppointments,
+  canReadTreatmentNote,
+  canRecordAtAppointment,
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
@@ -1073,6 +1078,11 @@ function AppointmentDetail({
           ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
+          {/* PRX-008: „Termin n von m" und - nur für owner und office -
+              Empfänger und offene Rechnungen (ANN-139). */}
+          {appointment.kind === 'therapy' ? (
+            <Abrechnungslage appointmentId={appointment.id} />
+          ) : null}
           {/* CAL-022: Dieser Termin geht über das Kontingent seiner
               Behandlungsgrundlage hinaus. Er ist geplant und gilt — aber er
               erzeugt keine Leistung gegen diese Grundlage (§19, ADR-009), und
@@ -1169,6 +1179,15 @@ function AppointmentDetail({
           ) : null}
         </DetailList>
       </Section>
+
+      {/* Was man vor der Tür wissen muss (PRX-006): zugeklappt, erst auf
+          Anforderung gelesen und protokolliert (ANN-137). Nur am
+          Behandlungstermin; die Rollenprüfung trägt der Server. */}
+      {appointment.kind === 'therapy' && canReadTreatmentNote(user.roles) ? (
+        <div className="mt-6">
+          <Kurzblick appointmentId={appointment.id} />
+        </div>
+      ) : null}
 
       {/* Am Hausbesuch steht vor den Schaltflächen die Frage, die über die
           Abrechnung entscheidet (CAL-018). */}
@@ -1328,6 +1347,14 @@ function AppointmentDetail({
       {istEreignis ? null : (
         <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
       )}
+
+      {/* Termin abhaken (PRX-009): nach der Dokumentation die geleisteten
+          Heilmittel bestätigen - die behandelnde Person an ihrem Termin,
+          das Büro an jedem (ANN-140). Verbindlich prüft der Server. */}
+      {appointment.kind === 'therapy' &&
+      canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId) ? (
+        <HeilmittelBestaetigen appointment={appointment} user={user} />
+      ) : null}
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Zeiten gelten in der Zeitzone der Praxis.{' '}

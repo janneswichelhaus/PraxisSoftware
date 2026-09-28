@@ -360,6 +360,28 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     expect(finalizeTreatmentNote).not.toHaveBeenCalled();
   });
 
+  it('sagt am offenen Termin, dass er als durchgeführt geführt wird (BEF-055)', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist']);
+
+    await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
+
+    expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).toHaveTextContent(
+      'Der Termin wird dabei als durchgeführt geführt',
+    );
+  });
+
+  it('nennt die Folge für den Termin nicht, wenn er schon abgeschlossen ist', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist'], { status: 'completed' });
+
+    await user.click(await screen.findByRole('button', { name: 'Finalisieren' }));
+
+    expect(screen.getByRole('group', { name: 'Dokumentation finalisieren' })).not.toHaveTextContent(
+      'als durchgeführt geführt',
+    );
+  });
+
   it('uebergibt bei der Bestaetigung den gelesenen Stand (ADR-001)', async () => {
     const user = userEvent.setup();
     rendern(['therapist']);

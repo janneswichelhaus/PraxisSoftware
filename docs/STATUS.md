@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-28 · letzte Session: Sichtungen Praxisverwaltung und Kernprozess
+# Status · Stand 2026-09-28 · letzte Session: Sichtungen Praxisverwaltung und Kernprozess (davor PRX-EPIC-002)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -12,24 +12,36 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 **Instrumente (ANN-099):** PSFS gestrichen; Wortlaut der Veränderungsfrage freigegeben (sieben Stufen), sie steht ab dem zweiten Termin je Patient:in oben in der Dokumentation (FRB-EPIC-004). Neue Idee **IDEA-OUT-016** (Instrumente in der Praxis pflegen).
 
+**PRX-EPIC-002 gebaut und gemergt (PR #137):** Am Termin steht, was man vor der Tür wissen muss.
+
+- **Kurzblick für die Vertretung** (am Behandlungstermin, zugeklappt): Zugang, Besonderheit, Material, feste Therapeut:in, Mengen der Grundlage und der letzte Eintrag im Wortlaut; jedes Aufklappen wird protokolliert (ANN-137).
+- **Material zum Mitnehmen** (Akte → Stammdaten → Material): von Hand an der Person gepflegt, nie aus Befunden abgeleitet; die Übersicht zeigt „Heute mitnehmen“ zusammengezählt und ohne Namen (ANN-138).
+- **„Termin n von m“** an jedem Behandlungstermin; **Rechnung an** und **Offene Rechnungen** nur für owner und office (ANN-139).
+- **Termin abhaken:** Am dokumentierten Termin bestätigt die behandelnde Person die Heilmittel, vorbelegt aus der Verordnung — nur am eigenen Termin; Zurücknehmen und Ausfallhonorar bleiben beim Büro; eine Rechnung entsteht nie (ANN-140, löst ANN-071 in dieser Frage ab).
+- **BEF-055 Teil 1:** „Finalisieren“ am offenen Termin sagt, dass der Termin dabei als durchgeführt gilt.
+
+Zweitreview gelaufen; gesichtet werden die Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md).
+
 ## Danach — Bauen
 
-1. **PRX-EPIC-002** (Am Termin steht, was man vor der Tür wissen muss), Block 2, erste Story BEF-071. `/weiter`
-2. **PRX-EPIC-003** (Nichts fällt durch)
-3. **STA-EPIC-001** (Statistiken)
+1. **PRX-EPIC-003** (Nichts fällt durch), Block 2. `/weiter`
+2. **STA-EPIC-001** (Statistiken)
+3. **TRN-EPIC-001** (Block 3, Trainingsbereich)
 
 ## Prüfverfahren
 
-**Stand PRX-EPIC-001 (2026-09-28, in der Cloud gelaufen):** `test` **3652** grün, `test:db` **2167** grün (neu: `waitlist`, `territories`, `slot-search`, `waitlist-matches`), `test:e2e` für `warteliste.spec.ts` 16 grün (Prüfseite `tests/e2e/fixtures/warteliste.html`, 1280 und 375 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
+**Stand PRX-EPIC-002 (2026-09-28, in der Cloud gelaufen):** `test` **3683** grün, `test:db` **2220** grün (neu: `appointment-brief`, `take-along`, `appointment-billing-context`, `record-at-appointment`), `test:e2e` für `termin.spec.ts` und `uebersicht.spec.ts` 24 grün (Prüfseite `tests/e2e/fixtures/termin.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
 **Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute (DOK-006, in der Cloud gelaufen): `test` **2692** (lokal unter Node 24 und Windows scheitern weiter Router-, Navigations- und Pfadtests mit derselben „AbortSignal"-Ursache; maßgeblich ist die CI mit Node 22); `test:db` **2104**, davon 46 in `patient-photos.test.ts`; `test:e2e` ohne Anmeldung: **115 grün**, einer übersprungen, darunter `fotos.spec.ts` mit der künstlichen Kamera von Chromium. In der Cloud braucht `login.spec.ts` die Platzhalter aus der CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), sonst zeigt die App den Konfigurationsfehler. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html`, `kalender.html`, `organisation.html`, `uebersicht.html` (Tagesstart, Liege in der Akte), `bausteine.html` (Befund aus Bausteinen), `bericht.html` (Therapiebericht, Formular und Blatt) und `fotos.html` (Kamera, Fotoliste, Vergleich, Metadaten) bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
 
+- **Am Termin sichten** (PRX-EPIC-002): Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md). Zu bestätigen: **ANN-137** (Kurzblick zeigt auch einen Entwurf; jedes Aufklappen protokolliert), **ANN-138** (Material an der Person, am Tag ohne Namen), **ANN-139** (Behandelnde sehen keine offenen Rechnungen) und **ANN-140** (nur am eigenen Termin; Zurücknehmen und Ausfallhonorar beim Büro).
+
 - **UX-Review entscheiden:** BEF-046 bis BEF-070, je Eintrag Frage, Optionen und Empfehlung. Zuerst BEF-046 (ein gescheitertes Nachladen des Profils ersetzt die App, Eingaben gehen verloren) und BEF-047 (Sitzungsende und Anmeldemaske).
 - **G6c lokal prüfen** (ANN-115, auch nach dem Merge noch offen): `pnpm dlx supabase@2.116.0 start`, als Anna (therapist) angemeldet in der Browserkonsole einen Schreibpfad aufrufen, etwa `await supabase.rpc('place_legal_hold', { p_patient_id: '66666666-6666-4666-8666-000000000001', p_reason: 'Probe' })` — erwartet `status: 403`, danach als owner unter **Organisatorisches → Sicherheit** ein Eintrag „Legal Hold gesetzt" mit Ausgang abgewiesen. Zeigt die Antwort 403, aber fehlt der Eintrag, steht der Weg in ANN-115.
 - **Sichtung** (E-6), am Handy auf der Test-Umgebung, Start mit `/sichtung`: offen sind [Befund](sichtung/befund.md), [Leistungsbereiche](sichtung/leistungsbereiche.md), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei) und [Betriebsreife](sichtung/betriebsreife.md); Kernprozess und Praxisverwaltung sind gesichtet (2026-09-28). Aus UX-EPIC-002 noch zu bestätigen: **ANN-114** (weitere Seiten randlos?).
-- **Reihenfolge der Befunde entscheiden:** BEF-071 bis BEF-079 als erste Stories von PRX-EPIC-002 oder als eigener kleiner Oberflächen-Loop davor (Empfehlung: eigener Loop, weil sie Kalender, Übersicht und Befund quer betreffen).
+- **Reihenfolge der Befunde entscheiden:** BEF-071 bis BEF-079 als erste Stories von PRX-EPIC-003 oder als eigener kleiner Oberflächen-Loop davor (Empfehlung: eigener Loop, weil sie Kalender, Übersicht und Befund quer betreffen).
 - **Anamnese und Bausteine sichten** (FRB-EPIC-002/003): Schritte 3 bis 7 in [Befund](sichtung/befund.md); **ANN-104** ist bestätigt (2026-09-26). Zu bestätigen: **ANN-118** (Übertragung der Vorlage, drei Lücken offen, Seitenregel), **ANN-119** (Tippfehler bleiben stehen, auch im Text der Akte), **ANN-120** (nur der Text wird gespeichert; ein nicht übernommener Vorschlag hält Speichern und Abschluss an und geht nur beim Verlassen der Seite in den Entwurf mit), **ANN-129** (Seite einmal je Region) und **ANN-130** (Zeichen ✅/❗ und Gliederung des Texts).
 - **Therapiebericht sichten** (DOK-005): Schritte 8 und 9 in [Befund](sichtung/befund.md). Zu bestätigen: **ANN-121** (Bericht gespeichert und beim Abschluss eingefroren), **ANN-122** (Auswahl nur durch dich, wörtlich, bis 50 Einträge), **ANN-123** (Briefkopf aus den Praxis-Stammdaten ohne Steuer- und Bankangaben) und — vor dem ersten echten Bericht mit der Datenschutzberatung — **ANN-124** (auf welcher Grundlage ein Bericht an die Ärzt:in gehen darf).
 - **Fotos sichten** (DOK-006): Schritte 10 bis 12 in [Befund](sichtung/befund.md) — **nur einen Gegenstand fotografieren, nie eine Person**; Fotos echter Personen erst nach B2 und DSFA (ADR-017 Punkt 41). Zu bestätigen: **ANN-125** (was nach dem Entfernen der Metadaten bleibt), **ANN-126** (zwölf Monate, drei Monate nach Abschluss), **ANN-127** (Ablehnung als eigener Vermerk; Wortlaut der Fotoeinwilligung und ein Satz in der Datenschutzinformation kommen mit B2) und **ANN-128** (Herausgabe als Einzeldatei durch owner); dazu am echten Gerät: Ist ein fotografiertes Musterrezept lesbar?
@@ -46,5 +58,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Letzte Session
 
 **Sichtungen Praxisverwaltung (3 Schritte) und Kernprozess (15 Schritte)** mit Jannes an Android-Handy und Windows-Rechner. Nur Dokumentation: BEF-071 bis BEF-079, Ergebnisse in [`sichtung/praxisverwaltung.md`](sichtung/praxisverwaltung.md) und [`sichtung/kernprozess.md`](sichtung/kernprozess.md), 14 Posten in `fortschritt.json` auf gesichtet (Fortschritt 41,7 %), ANN-011 und ANN-099 nachgestellt, zehn Annahmen entschieden, IDEA-OUT-016, IDEA-PRX-045, IDEA-TRN-014 und -015.
+
+Davor: **PRX-EPIC-002 (PRX-005 bis PRX-009).** Vier Migrationen und eine für den Zweitreview: `get_appointment_brief` (Kurzblick mit Protokoll), `take_along_items` an `patient_care_details` mit `set_take_along_items` (Kartei, Auskunft, Tagesliste nachgezogen), `get_appointment_billing_context` mit den gemeinsamen Regeln `app.appointment_basis_position` (die Deckung fragt sie jetzt) und `app.open_invoices` (die offenen Posten lesen daraus), `app.can_record_services_for_appointment` für Vorschlag, Erfassen und `get_appointment_services`. Keine neue Tabelle, keine neue Abhängigkeit, kein neuer Anbieter. Prüfseite `tests/e2e/fixtures/termin.html` mit drei Ansichten.
 
 **Lokale Schritte:** `git pull origin main` nach dem Merge; kein `pnpm install`, kein `db reset`.

@@ -12,6 +12,7 @@ import {
   canReadPatientDirectory,
   canReadTreatmentBasisClinical,
   canReadTreatmentNote,
+  canRecordAtAppointment,
   canWriteClinicalPatientFiles,
   canWriteTreatmentBases,
   canWriteTreatmentNote,
@@ -223,5 +224,27 @@ describe('Verordnung und Dateien (ROL-002, E15)', () => {
     expect(canReadClinicalPatientFiles(['patient'])).toBe(false);
     expect(canWriteClinicalPatientFiles(['patient'])).toBe(false);
     expect(canCorrectPatientFileType(['patient'])).toBe(false);
+  });
+});
+
+describe('canRecordAtAppointment (PRX-009, ANN-140)', () => {
+  const ANNA = '55555555-5555-4555-8555-000000000002';
+  const TIM = '55555555-5555-4555-8555-000000000004';
+
+  it('lässt owner und office an jedem Termin', () => {
+    expect(canRecordAtAppointment(['office'], TIM, null)).toBe(true);
+    expect(canRecordAtAppointment(['owner'], TIM, ANNA)).toBe(true);
+  });
+
+  it('lässt Behandelnde nur an ihrem eigenen Termin', () => {
+    expect(canRecordAtAppointment(['therapist'], ANNA, ANNA)).toBe(true);
+    expect(canRecordAtAppointment(['team_lead'], TIM, TIM)).toBe(true);
+    expect(canRecordAtAppointment(['therapist'], TIM, ANNA)).toBe(false);
+    expect(canRecordAtAppointment(['therapist'], ANNA, null)).toBe(false);
+  });
+
+  it('lässt Trainingsbetreuung und Patientenkonto nie', () => {
+    expect(canRecordAtAppointment(['trainer'], ANNA, ANNA)).toBe(false);
+    expect(canRecordAtAppointment(['patient'], ANNA, null)).toBe(false);
   });
 });

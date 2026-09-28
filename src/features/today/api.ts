@@ -67,6 +67,12 @@ const dayPlanEntrySchema = z.object({
    * damit ein älterer Stand ohne die Spalte weiter gelesen wird.
    */
   treatment_table_required: z.boolean().nullable().optional(),
+  /**
+   * PRX-007: Was für diesen Besuch mitzunehmen ist (ANN-138), von Hand an der
+   * Person gepflegt. Nur am Behandlungstermin gefüllt. Die Übersicht zeigt es
+   * nur zusammengezählt, ohne Person.
+   */
+  take_along_items: z.array(z.string()).nullable().optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;

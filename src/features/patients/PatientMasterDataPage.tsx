@@ -22,6 +22,7 @@ import {
 import { usePatientRecord } from './akte';
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
+import { Mitnehmen } from './Mitnehmen';
 import {
   ageInYears,
   concludePatientCare,
@@ -325,6 +326,14 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                 {darfLiegeSetzen ? (
                   <DetailRow label="Behandlungsliege">
                     <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
+                  </DetailRow>
+                ) : null}
+                {/* PRX-007: Mitnehmen, von Hand gepflegt (ANN-138). Dieselbe
+                    Rollenmenge wie die Liege; verbindlich prüft
+                    set_take_along_items. */}
+                {darfLiegeSetzen ? (
+                  <DetailRow label="Material">
+                    <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
                   </DetailRow>
                 ) : null}
                 {patient.home_visit_access_note ? (

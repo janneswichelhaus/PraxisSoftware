@@ -50,7 +50,14 @@ import {
 } from './api';
 import { Tageskarte } from './Tagesliste';
 import { navigationsZiel } from '@/lib/location/navigation';
-import { anstehendeFehlzeiten, liegeHeute, liegeText, wegeDesTages } from './tagesstart';
+import {
+  anstehendeFehlzeiten,
+  liegeHeute,
+  liegeText,
+  mitnehmenHeute,
+  mitnehmenText,
+  wegeDesTages,
+} from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
 
@@ -302,6 +309,7 @@ function MeineTagesliste({
   );
   const wege = wegeDesTages(sortiert);
   const liege = liegeHeute(sortiert);
+  const mitnehmen = mitnehmenHeute(sortiert);
   const weitere = offen.filter((termin) => termin.id !== wege.erster?.id);
   // Navigiert wird nur zu Besuchen, die noch ausstehen (UEB-04): Nach dem
   // Besuch mit offener Doku führte „Ganzer Tag" sonst zurück zur Adresse vom
@@ -416,6 +424,14 @@ function MeineTagesliste({
               <span className="font-semibold">Liege heute: </span>
               {liegeText(liege)}
             </p>
+            {/* PRX-007: zusammengezählt und ohne Person (ANN-138) - wer wofür,
+                steht im Kurzblick am Termin. Ohne Einträge keine Zeile. */}
+            {mitnehmen.length > 0 ? (
+              <p className="text-ink -mt-2 mb-3 text-[1.0625rem] wrap-anywhere">
+                <span className="font-semibold">Heute mitnehmen: </span>
+                {mitnehmenText(mitnehmen)}
+              </p>
+            ) : null}
             <HeuteAusserdem fehlzeiten={ausserdem} />
 
             <h3 className="text-ink-muted mb-2 text-sm font-medium">
