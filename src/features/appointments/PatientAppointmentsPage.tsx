@@ -9,6 +9,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
+import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
 import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
@@ -479,6 +480,11 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
           neuerTermin={neuerTermin}
         />
       </Section>
+
+      {/* PRX-001: Wer keinen zeitnahen Termin bekommt, kommt auf die Liste. */}
+      <div className="mt-4">
+        <WaitlistNotice patientId={patient.id} />
+      </div>
 
       <Section
         titel="Vergangene Termine"

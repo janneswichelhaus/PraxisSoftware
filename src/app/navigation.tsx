@@ -248,7 +248,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       id: 'termine',
       ...BEREICHE.termine,
       to: '/kalender',
-      pfade: ['/kalender', '/touren', '/termine'],
+      pfade: ['/kalender', '/touren', '/termine', '/warteliste'],
       icon: symbole.termine,
       // Kein Untermenü (BEF-044, ANN-113): Dass man im Kalender ist, zeigen
       // Seitenleiste und Tableiste; die Tour ist eine Ansicht des Kalenders

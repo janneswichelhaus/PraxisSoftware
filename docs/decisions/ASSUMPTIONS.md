@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-26.
+Zuletzt aktualisiert: 2026-09-28.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1678,3 +1678,39 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim
 **Anker.** `Briefkopf` in `src/features/billing/Briefkopf.tsx` (Druckklassen des Anschriftfelds und der Angaben); Nutzung in `InvoicePrintPage.tsx`, `CancellationPrintPage.tsx`, `ReminderPrintPage.tsx`.
 
 **Änderungspfad.** Form A (27 mm von oben) oder Fenster rechts: die Druckklassen in `Briefkopf.tsx` · Aufwand `klein`.
+
+### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
+
+Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes bei der Sichtung der Warteliste (PRX-EPIC-001)
+
+**Annahme.** Ein Eintrag der Warteliste trägt als Dringlichkeit genau einen von drei Gründen — **Wunsch der Person**, **Verordnung endet**, **Vorgabe der Praxis** — und optional ein Datum „bis spätestens“. Die Liste ordnet nach diesem Datum (ohne Datum zuletzt), dann nach Wartezeit. Einen Freitext als Dringlichkeit, eine Stufe wie „hoch“ oder eine Einordnung nach Beschwerdebild gibt es nicht; die Notiz ist ausdrücklich organisatorisch.
+
+**Begründung.** `IDEA-PRX-003` verlangt, die Dringlichkeit „organisatorisch zu fassen …, nicht als klinische Einstufung“: Eine Reihung nach Beschwerdebild wäre eine Risikoklassifikation und ist nach ADR-006 Punkt 4 ausgeschlossen. Ein Datum und ein benannter Grund sind prüfbar und deterministisch (§6.2); eine Punktzahl wäre eine Bewertung, die niemand nachvollziehen kann. Unsicher: ob Jannes einen vierten Grund braucht (etwa „nach Krankenhausaufenthalt“ — das wäre klinisch und gehört dann in die Notiz der Akte, nicht hierher).
+
+**Anker.** Constraint `priority_reason` an `public.waitlist_entries` und `app.waitlist_check_input` in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Beschriftungen `reasonLabels` in `src/features/waitlist/api.ts`; Test „kennt nur organisatorische Gruende“ in `supabase/tests/waitlist.test.ts`.
+
+**Änderungspfad.** Ein weiterer Grund: Wert in Constraint und Prüfung, Beschriftung in `api.ts` · Aufwand `klein`. Eine andere Reihung: `order by` in `list_waitlist_entries` · Aufwand `klein`.
+
+### ANN-133 — Ein geschlossener Wartelisteneintrag fällt zwölf Monate nach dem Schließen
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+
+**Annahme.** Ein offener Eintrag bleibt, bis er geschlossen wird oder mit der Akte fällt. Ein geschlossener — eingeplant oder zurückgezogen — wird zwölf Monate nach dem Schließen gelöscht (Klasse `warteliste`, Anker „Abschluss des Vorgangs“) und im Löschjournal festgehalten. Ein Legal Hold an der Akte hält die Löschung an. Die Auskunft nach Art. 15 enthält die Einträge.
+
+**Begründung.** ADR-008 kennt keine Klasse „Warteliste“; am nächsten liegt „Terminanfragen ohne Behandlungsverhältnis — 12 Monate nach letztem Kontakt“ (interne Initialentscheidung). Ein Wartelisteneintrag ist eine Terminanfrage **mit** Behandlungsverhältnis, sein Zweck endet mit dem Schließen; zwölf Monate lassen nachvollziehen, warum jemand eingeplant wurde, ohne ihn in die zehnjährige Akte zu ziehen — er ist kein Behandlungsnachweis. Unsicher: ob die Datenschutzprüfung eine kürzere Frist verlangt (Zweck erfüllt mit dem Termin).
+
+**Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
+
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`.
+
+### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
+
+Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+
+**Annahme.** Anlegen, Ändern und Schließen eines Eintrags schreiben je einen Auditeintrag (`waitlist_entry.*`, nur Metadaten, nie die Notiz). Das Lesen der Liste schreibt keinen; ein abgewiesener Leseversuch schon (`waitlist.read`, G6b).
+
+**Begründung.** Die Liste zeigt organisatorische Angaben — Name, Telefon, Postleitzahl, Wunschzeiten, Grund —, dieselben, die Kalender und Tagesliste ohne Leseprotokoll zeigen (ADR-010 Punkt 2 nennt klinische Dokumente, Verordnung, Scan und Export als lesepflichtig). Ein Leseeintrag je Aufruf einer Arbeitsliste, die das Büro mehrmals am Tag öffnet, verwässerte das Protokoll, ohne einen Zugriff sichtbar zu machen, den der Kalender nicht ohnehin erlaubt. Unsicher: Die Notiz könnte gegen die Anweisung am Feld Gesundheitsangaben enthalten.
+
+**Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
+
+**Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`.

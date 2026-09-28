@@ -44,6 +44,8 @@ import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetail
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
+import { WaitlistPage } from '@/features/waitlist/WaitlistPage';
+import { EditWaitlistEntryPage, NewWaitlistEntryPage } from '@/features/waitlist/WaitlistFormPage';
 import { AufbewahrungPage } from '@/features/retention/AufbewahrungPage';
 import { MeinKontoPage } from '@/features/account/MeinKontoPage';
 import { SchedulingPage } from '@/features/scheduling/SchedulingPage';
@@ -231,6 +233,14 @@ export function AuthenticatedRoutes({
                   {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
                   wenn Person und Tag dort feststehen (CAL-009). */}
                   <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
+                  {/* Warteliste mit Wunschzeiten (PRX-001): dieselben Rollen wie der
+                  Kalender; der Server prüft ebenso (app.can_create_appointment). */}
+                  <Route path="/warteliste" element={<WaitlistPage user={user} />} />
+                  <Route path="/warteliste/neu" element={<NewWaitlistEntryPage />} />
+                  <Route
+                    path="/warteliste/:entryId/bearbeiten"
+                    element={<EditWaitlistEntryPage />}
+                  />
                   {/* Termin anlegen, wenn die Zeit feststeht und die Person noch
                   nicht - aus dem Kalender heraus (UX-005). */}
                   <Route path="/termine/neu" element={<NewAppointmentStartPage />} />

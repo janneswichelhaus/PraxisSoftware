@@ -267,6 +267,7 @@ describe('Audit-Lesepfad', () => {
       'list_storage_deletion_orders',
       'list_text_snippets',
       'list_therapy_report_sources',
+      'list_waitlist_entries',
       'search_patients',
     ]);
   });

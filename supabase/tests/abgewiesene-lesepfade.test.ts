@@ -266,6 +266,15 @@ const FAELLE: Fall[] = [
     [],
     'storage_deletion.read',
   ],
+  // PRX-001: Die Warteliste gehört zur Terminverwaltung; die Trainingsbetreuung
+  // sieht sie nicht.
+  [
+    'list_waitlist_entries',
+    users.trainer,
+    'select * from public.list_waitlist_entries()',
+    [],
+    'waitlist.read',
+  ],
 ];
 
 describe('G6b: abgewiesene Lesezugriffe bleiben nachweisbar', () => {
