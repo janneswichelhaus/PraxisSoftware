@@ -12,15 +12,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 **Instrumente (ANN-099):** PSFS gestrichen; Wortlaut der Veränderungsfrage freigegeben (sieben Stufen), sie steht ab dem zweiten Termin je Patient:in oben in der Dokumentation (FRB-EPIC-004). Neue Idee **IDEA-OUT-016** (Instrumente in der Praxis pflegen).
 
-**PRX-EPIC-002 gebaut und gemergt (PR #137):** Am Termin steht, was man vor der Tür wissen muss.
-
-- **Kurzblick für die Vertretung** (am Behandlungstermin, zugeklappt): Zugang, Besonderheit, Material, feste Therapeut:in, Mengen der Grundlage und der letzte Eintrag im Wortlaut; jedes Aufklappen wird protokolliert (ANN-137).
-- **Material zum Mitnehmen** (Akte → Stammdaten → Material): von Hand an der Person gepflegt, nie aus Befunden abgeleitet; die Übersicht zeigt „Heute mitnehmen“ zusammengezählt und ohne Namen (ANN-138).
-- **„Termin n von m“** an jedem Behandlungstermin; **Rechnung an** und **Offene Rechnungen** nur für owner und office (ANN-139).
-- **Termin abhaken:** Am dokumentierten Termin bestätigt die behandelnde Person die Heilmittel, vorbelegt aus der Verordnung — nur am eigenen Termin; Zurücknehmen und Ausfallhonorar bleiben beim Büro; eine Rechnung entsteht nie (ANN-140, löst ANN-071 in dieser Frage ab).
-- **BEF-055 Teil 1:** „Finalisieren“ am offenen Termin sagt, dass der Termin dabei als durchgeführt gilt.
-
-Zweitreview gelaufen; gesichtet werden die Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md).
+**PRX-EPIC-002 gebaut und gemergt (PR #137):** Kurzblick für die Vertretung (ANN-137), Material zum Mitnehmen (ANN-138), „Termin n von m“ und Abrechnungslage (ANN-139), Termin abhaken (ANN-140), BEF-055 Teil 1. Gesichtet werden die Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md).
 
 ## Danach — Bauen
 
