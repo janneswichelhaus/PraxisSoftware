@@ -12,6 +12,7 @@
  * Vorschau nicht mit der Zeit veraltet.
  */
 
+import { ortszeitAlsZeitpunkt } from './format';
 import type {
   Depot,
   ErbrachteLeistung,
@@ -28,7 +29,8 @@ import type {
 } from './types';
 
 // -----------------------------------------------------------------------------
-// Datumshilfen - reine Kalenderrechnung über UTC, keine Ortszeit im Spiel
+// Datumshilfen - Kalendertage über UTC, keine Ortszeit im Spiel. Nur
+// `zeitpunkt` macht aus Tag und Uhrzeit einen Augenblick in der Praxiszeit.
 // -----------------------------------------------------------------------------
 
 export function tagesschluessel(datum: Date): string {
@@ -48,8 +50,15 @@ export function montagDerWoche(tag: string): string {
   return plusTage(tag, -wochentag);
 }
 
+/**
+ * Uhrzeit eines Tags in der Praxis als echter Zeitpunkt (VOR-06).
+ *
+ * Bis VOR-06 stand hier die Ortszeit mit angehängtem „Z", also als UTC. Das
+ * passte nur zu einer Anzeige in UTC; neue Einträge nehmen aber den
+ * tatsächlichen Augenblick, und beide zusammen widersprachen sich.
+ */
 function zeitpunkt(tag: string, uhrzeit: string): string {
-  return `${tag}T${uhrzeit}:00.000Z`;
+  return ortszeitAlsZeitpunkt(tag, uhrzeit);
 }
 
 // -----------------------------------------------------------------------------
@@ -372,7 +381,7 @@ export function demoRaeder(heute: string): Rad[] {
       akku: 'Akku Typ B',
       schluesselcode: 'SC-0007',
       wochenplan: plan([]),
-      notiz: 'Noch keinem Stammnutzer zugeordnet.',
+      notiz: 'Noch keiner Stammnutzer:in zugeordnet.',
       schluesselInhaber: null,
       schluesselSeit: null,
       schluesselverlauf: [],

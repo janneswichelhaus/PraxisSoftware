@@ -7,6 +7,7 @@ import { TextArea } from '@/components/ui/TextArea';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
+import { roleLabels } from '@/components/ui/roleLabels';
 import type { CurrentUser } from '@/features/session/types';
 import {
   mitarbeiterName,
@@ -17,7 +18,7 @@ import { vorschauId } from '@/features/preview/vorschauZustand';
 import { darfEntscheiden, vorschauidentitaet } from '@/features/preview/identitaet';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
 import { Klappbereich, SimulationsMeldung } from '@/features/preview/ui';
-import { formatDatum, formatEuro, parseEuroZuCent } from '@/features/preview/format';
+import { formatDatum, formatEuro, formatMonat, parseEuroZuCent } from '@/features/preview/format';
 import {
   erstattungsstandLabels,
   type Erstattung,
@@ -145,14 +146,27 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
 
       <SimulationsMeldung eintrag={meldung} />
 
+      {/* Wem „(Sie)" gehört, steht dabei (VOR-07): In der Vorschau ist das
+          angemeldete Konto einer Demoperson zugeordnet, und ohne diesen Satz
+          markierte „(ich)" scheinbar eine fremde Person. */}
+      {identitaet ? (
+        <p className="text-ink-muted mb-4 max-w-prose text-sm">
+          Ihre Erstattungen in der Vorschau sind die von {identitaet.person.name}
+          {identitaet.ueberNamen ? '' : ' (Demoperson zur Rolle)'}
+          {zustand.erstattungen.some(
+            (erstattung) => erstattung.mitarbeiterId === identitaet.person.id,
+          )
+            ? ', markiert mit „(Sie)“.'
+            : '; bisher liegt keine vor.'}
+        </p>
+      ) : null}
+
+      {/* Die Auswahl des Systems (TOK-13, UIK-19): 48 px, Beschriftung und
+          Fehler verbunden. */}
       <div className="mb-5 flex flex-wrap items-end gap-4">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="erstattung-filter" className="text-ink text-sm font-medium">
-            Bearbeitungsstand
-          </label>
-          <select
-            id="erstattung-filter"
-            className="border-line-strong bg-surface text-ink rounded-field min-h-11 border px-3 text-base"
+        <div className="w-full sm:w-56">
+          <Select
+            label="Bearbeitungsstand"
             value={filter}
             onChange={(event) => setFilter(event.target.value as 'alle' | Erstattungsstand)}
           >
@@ -162,7 +176,7 @@ export function ReimbursementsPage({ user }: { user: CurrentUser }) {
                 {erstattungsstandLabels[stand]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
         <p className="text-ink-muted pb-3 text-sm">
           Offene Erstattungen: <strong className="text-ink">{formatEuro(offenCent)}</strong>
@@ -219,6 +233,10 @@ function Erstattungskarte({
   const [ablehnung, setAblehnung] = useState('');
   const [ablehnenOffen, setAblehnenOffen] = useState(false);
   const betrag = betragCent(erstattung, zustand.stromsatzCent);
+  // Die Aktionszone nur, wenn sie eine Aktion trägt (VOR-24): An ausgezahlten
+  // und abgelehnten Anträgen stand sonst eine leere Trennlinie.
+  const hatAktion =
+    entscheidungsrecht && (erstattung.stand === 'eingereicht' || erstattung.stand === 'genehmigt');
 
   return (
     <Card>
@@ -226,7 +244,7 @@ function Erstattungskarte({
         <div className="min-w-0">
           <p className="text-ink text-liste truncate font-semibold">
             {mitarbeiterName(zustand, erstattung.mitarbeiterId)}
-            {eigene ? ' (ich)' : ''}
+            {eigene ? ' (Sie)' : ''}
           </p>
           <p className="text-ink-muted mt-0.5 text-sm">
             {erstattung.art === 'strom' ? 'Stromkosten' : 'Einkauf'} ·{' '}
@@ -240,10 +258,12 @@ function Erstattungskarte({
         <DataRow label="Betrag">{formatEuro(betrag)}</DataRow>
         {erstattung.art === 'strom' ? (
           <>
+            {/* Der Monat ausgeschrieben statt als Wert des Eingabefelds
+                („2026-08", VOR-24). */}
             <DataRow label="Zeitraum">
-              {erstattung.zeitraumVon}
+              {formatMonat(erstattung.zeitraumVon)}
               {erstattung.zeitraumBis && erstattung.zeitraumBis !== erstattung.zeitraumVon
-                ? ` – ${erstattung.zeitraumBis}`
+                ? ` – ${formatMonat(erstattung.zeitraumBis)}`
                 : ''}
             </DataRow>
             <DataRow label="Arbeitstage">{erstattung.arbeitstage}</DataRow>
@@ -251,7 +271,12 @@ function Erstattungskarte({
         ) : (
           <DataRow label="Positionen">{erstattung.positionen.length}</DataRow>
         )}
-        <DataRow label="IBAN">{erstattung.iban}</DataRow>
+        {/* Bricht die IBAN um, dann in zwei gleich lange Hälften statt vor
+            der letzten Zweiergruppe (VOR-24). Ganz ohne Umbruch ragte sie in
+            der vierspaltigen Ansicht aus der Wertspalte. */}
+        <DataRow label="IBAN">
+          <span className="inline-block text-balance tabular-nums">{erstattung.iban}</span>
+        </DataRow>
         {erstattung.belege > 0 ? <DataRow label="Belege">{erstattung.belege}</DataRow> : null}
       </DataList>
 
@@ -287,7 +312,7 @@ function Erstattungskarte({
         </p>
       ) : null}
 
-      {entscheidungsrecht ? (
+      {hatAktion ? (
         <div className="border-line mt-3 border-t pt-3">
           {erstattung.stand === 'eingereicht' ? (
             <div className="flex flex-wrap gap-3">
@@ -403,6 +428,10 @@ function Erstattungsformular({
   const [art, setArt] = useState<Erstattungsart>('strom');
   const [mitarbeiterId, setMitarbeiterId] = useState(identitaet?.person.id ?? '');
   const [iban, setIban] = useState('');
+  // Geprüft wird die IBAN erst, wenn das Feld verlassen wurde (VOR-17): Beim
+  // Tippen stand nach „DE" sofort ein Fehler am Feld, bis mindestens 14
+  // Zeichen da waren.
+  const [ibanVerlassen, setIbanVerlassen] = useState(false);
   const [zeitraumVon, setZeitraumVon] = useState(zustand.stichtag.slice(0, 7));
   const [zeitraumBis, setZeitraumBis] = useState(zustand.stichtag.slice(0, 7));
   const [arbeitstage, setArbeitstage] = useState('');
@@ -421,6 +450,10 @@ function Erstattungsformular({
 
   const ibanKurz = iban.replace(/\s/g, '');
   const ibanPlausibel = ibanKurz.length === 0 || /^[A-Z]{2}\d{2}[A-Z0-9]{10,30}$/i.test(ibanKurz);
+  const ibanFehler =
+    ibanVerlassen && !ibanPlausibel
+      ? 'Bitte prüfen Sie die IBAN: zwei Buchstaben, zwei Prüfziffern, dann die Kontonummer (z. B. DE02 1001 …).'
+      : undefined;
   const gueltig =
     mitarbeiterId !== '' &&
     ibanKurz.length > 0 &&
@@ -433,8 +466,9 @@ function Erstattungsformular({
         bereich: 'Erstattungen',
         vorgang: `Erstattung eingereicht: ${mitarbeiterName(zustand, mitarbeiterId)}, ${formatEuro(betrag)}`,
         folgen: [
-          'Antrag mit dem Stand „Eingereicht" in der Liste',
-          'Er erscheint bei den Leitungsrollen zur Entscheidung',
+          'Antrag mit dem Stand „Eingereicht“ in der Liste',
+          // Die Rollen mit ihren Anzeigenamen (VOR-25).
+          `Er erscheint bei ${roleLabels.owner} und ${roleLabels.team_lead} zur Entscheidung`,
         ],
         nichtGeschehen: [
           'Kein PDF erzeugt und nichts an die Buchhaltung versendet',
@@ -491,9 +525,11 @@ function Erstattungsformular({
                 { wert: 'einkauf', label: 'Einkauf' },
               ] as const
             ).map((option) => (
+              // Fokus sichtbar am Chip statt am ausgeblendeten Radio, die Wahl
+              // mit Zeichen statt nur mit Farbe (VOR-02, UIK-06).
               <label
                 key={option.wert}
-                className={`rounded-button text-liste inline-flex min-h-11 cursor-pointer items-center border px-4 ${
+                className={`rounded-button text-liste has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
                   art === option.wert
                     ? 'border-accent bg-accent-soft text-accent font-medium'
                     : 'border-line-strong bg-surface text-ink-muted'
@@ -506,6 +542,7 @@ function Erstattungsformular({
                   checked={art === option.wert}
                   onChange={() => setArt(option.wert)}
                 />
+                {art === option.wert ? <span aria-hidden="true">✓</span> : null}
                 {option.label}
               </label>
             ))}
@@ -525,12 +562,20 @@ function Erstattungsformular({
           ))}
         </Select>
 
+        {/* Großbuchstaben, keine Autokorrektur und keine Vorschläge: Am
+            Telefon kann die Autokorrektur die IBAN beim Tippen verändern
+            (VOR-17). */}
         <Field
           label="IBAN"
           placeholder="DE02 1234 5678 0000 1234 00"
           hint="Es wird nichts gespeichert und nichts überwiesen."
-          error={ibanPlausibel ? undefined : 'Diese IBAN sieht nicht plausibel aus.'}
+          error={ibanFehler}
           value={iban}
+          autoCapitalize="characters"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
+          onBlur={() => setIbanVerlassen(true)}
           onChange={(event) => setIban(event.target.value)}
         />
 
@@ -562,7 +607,6 @@ function Erstattungsformular({
             <SignaturFeld
               beschriftung="Erklärung"
               erklaerung="Ich versichere, dass die geltend gemachten Stromkosten tatsächlich für das Laden des betrieblichen E-Bikes entstanden sind und mir nicht anderweitig erstattet wurden."
-              unterschrieben={unterschrieben}
               onChange={setUnterschrieben}
             />
           </>

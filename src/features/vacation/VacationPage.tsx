@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Card, CardGrid } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
+import { roleLabels } from '@/components/ui/roleLabels';
 import type { CurrentUser } from '@/features/session/types';
 import { montagDerWoche, plusTage } from '@/features/preview/demodaten';
 import {
@@ -23,6 +25,7 @@ import { Abschnitt, Klappbereich, SimulationsMeldung } from '@/features/preview/
 import { formatDatum } from '@/features/preview/format';
 import {
   urlaubsstatusLabels,
+  type Mitarbeitende,
   type Urlaubsantrag,
   type Urlaubsstatus,
 } from '@/features/preview/types';
@@ -56,6 +59,14 @@ const statusTon: Record<Urlaubsstatus, Ton> = {
 };
 
 const WOCHEN_VORAUS = 14;
+
+/** Wer entscheidet - mit den Anzeigenamen der Rollen (VOR-25). */
+const ENTSCHEIDENDE = `${roleLabels.owner} oder ${roleLabels.team_lead}`;
+
+/** „10 Tage" ohne Umbruch zwischen Zahl und Einheit (VOR-24). */
+function tage(anzahl: number): string {
+  return `${anzahl}\u00a0Tage`;
+}
 
 export function VacationPage({ user }: { user: CurrentUser }) {
   const { zustand } = useVorschau();
@@ -115,7 +126,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
       {entscheidungsrecht ? (
         <Abschnitt
           titel={`Offene Anträge (${offene.length})`}
-          beschreibung="Zur Entscheidung durch Leitung oder Teamleitung."
+          beschreibung={`Zur Entscheidung durch ${ENTSCHEIDENDE}.`}
         >
           {offene.length === 0 ? (
             <EmptyState title="Keine offenen Anträge" />
@@ -135,8 +146,6 @@ export function VacationPage({ user }: { user: CurrentUser }) {
         </Abschnitt>
       ) : null}
 
-      <Wochenuebersicht />
-
       {identitaet ? (
         <Abschnitt
           titel="Meine Anträge"
@@ -155,24 +164,16 @@ export function VacationPage({ user }: { user: CurrentUser }) {
         </Abschnitt>
       ) : null}
 
+      {/* Nach den eigenen Anträgen und zugeklappt (VOR-16): Offen schob sie
+          bei 390 px rund 600 px Tabelle vor den eigenen Stand. */}
+      <Wochenuebersicht />
+
+      {/* Entschieden wird oben unter „Offene Anträge"; dieselbe Karte mit
+          Knöpfen stand hier ein zweites Mal (VOR-16). */}
       <Abschnitt titel="Alle Anträge" beschreibung="Team-Übersicht der Abwesenheiten.">
         <CardGrid>
           {zustand.urlaub.map((antrag) => (
-            <Antragskarte
-              key={antrag.id}
-              antrag={antrag}
-              zustand={zustand}
-              onGenehmigen={
-                entscheidungsrecht && antrag.status === 'beantragt'
-                  ? () => setEntscheidung({ antrag, art: 'genehmigen' })
-                  : undefined
-              }
-              onAblehnen={
-                entscheidungsrecht && antrag.status === 'beantragt'
-                  ? () => setEntscheidung({ antrag, art: 'ablehnen' })
-                  : undefined
-              }
-            />
+            <Antragskarte key={antrag.id} antrag={antrag} zustand={zustand} />
           ))}
         </CardGrid>
       </Abschnitt>
@@ -205,7 +206,7 @@ function Antragskarte({
             {mitarbeiterName(zustand, antrag.mitarbeiterId)}
           </p>
           <p className="text-ink-muted mt-0.5 text-sm">
-            {formatDatum(antrag.von)} – {formatDatum(antrag.bis)} · {antrag.tage} Tage
+            {formatDatum(antrag.von)} – {formatDatum(antrag.bis)} · {tage(antrag.tage)}
           </p>
         </div>
         <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
@@ -258,18 +259,47 @@ function Konto({ personId }: { personId: string }) {
 
   return (
     <p className="text-ink-muted mb-3 text-sm">
-      Anspruch {konto.anspruch} Tage + {konto.uebertrag} Übertrag · genehmigt {konto.genehmigt} ·
+      Anspruch {tage(konto.anspruch)} + {konto.uebertrag} Übertrag · genehmigt {konto.genehmigt} ·
       beantragt {konto.beantragt} ·{' '}
-      <strong className="text-ink">verbleibend {konto.rest} Tage</strong>
+      <strong className="text-ink">verbleibend {tage(konto.rest)}</strong>
     </p>
   );
+}
+
+/**
+ * Spaltenkopf der Wochenübersicht (VOR-16).
+ *
+ * Der Vorname reicht, solange er eindeutig ist. Teilen ihn zwei Personen -
+ * die Demodaten haben Lena Hartmann und Lena Hartung absichtlich -, kommt ein
+ * Kürzel des Nachnamens dazu: sein erster Buchstabe und der erste, an dem er
+ * sich von den anderen unterscheidet („Lena Hm.", „Lena Hu."). Den vollen
+ * Namen trägt der Spaltenkopf für Vorlesesoftware und als Hinweis beim Zeigen.
+ */
+function spaltenname(person: Mitarbeitende, alle: Mitarbeitende[]): string {
+  const [vorname = person.name, ...rest] = person.name.split(' ');
+  const nachname = rest.join(' ');
+  const andere = alle
+    .filter((eintrag) => eintrag.id !== person.id && eintrag.name.split(' ')[0] === vorname)
+    .map((eintrag) => eintrag.name.split(' ').slice(1).join(' '));
+  if (andere.length === 0 || nachname === '') return vorname;
+  const initiale = nachname.charAt(0);
+  if (andere.every((name) => name.charAt(0) !== initiale)) return `${vorname} ${initiale}.`;
+  for (let stelle = 1; stelle < nachname.length; stelle += 1) {
+    const zeichen = nachname.charAt(stelle);
+    if (andere.every((name) => name.charAt(stelle) !== zeichen)) {
+      return `${vorname} ${initiale}${zeichen}.`;
+    }
+  }
+  return person.name;
 }
 
 /**
  * Wochenübersicht: wer wann Urlaub hat.
  *
  * Zeilen sind Wochen, Spalten Personen - wie in der Vorlage. Der Umfang der
- * Abwesenheit steht als Zahl in der Zelle, die Farbe ergänzt sie nur.
+ * Abwesenheit steht als Zahl in der Zelle; die Fläche hebt jede Abwesenheit
+ * gleich hervor, ohne Stufen nach Anzahl (VOR-13): Fünf Urlaubstage sind kein
+ * Fehler und drei keine Warnung.
  */
 function Wochenuebersicht() {
   const { zustand } = useVorschau();
@@ -280,30 +310,27 @@ function Wochenuebersicht() {
     plusTage(vergangeneAusblenden ? start : plusTage(start, -28), index * 7),
   );
 
-  function ton(tage: number): string {
-    if (tage >= 5) return 'bg-danger-soft text-danger';
-    if (tage >= 3) return 'bg-warnung-soft text-warnung';
-    if (tage >= 1) return 'bg-accent-soft text-accent';
-    return 'bg-positiv-soft text-positiv';
-  }
-
   return (
     <Klappbereich
       titel="Wochenübersicht – wer wann Urlaub hat"
       beschreibung="Zahl der genehmigten Urlaubswerktage je Woche."
-      offen
     >
-      <label className="text-ink-muted mb-3 flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
+      {/* Das Kästchen des Systems mit 44 px Trefferfläche (VOR-11, RSP-13). */}
+      <div className="mb-3">
+        <Checkbox
+          label="Vergangene Wochen ausblenden"
           checked={vergangeneAusblenden}
           onChange={(event) => setVergangeneAusblenden(event.target.checked)}
-          className="size-4"
         />
-        Vergangene Wochen ausblenden
-      </label>
+      </div>
 
-      <div className="-mx-4 overflow-x-auto px-4">
+      {/* Per Tastatur erreichbar und benannt (VOR-02, UIK-24). */}
+      <div
+        className="-mx-4 overflow-x-auto px-4"
+        tabIndex={0}
+        role="region"
+        aria-label="Wochenübersicht Urlaub"
+      >
         <table className="w-full min-w-[36rem] border-separate border-spacing-1 text-sm">
           <thead>
             <tr>
@@ -314,8 +341,17 @@ function Wochenuebersicht() {
                 Woche
               </th>
               {zustand.mitarbeitende.map((person) => (
-                <th key={person.id} scope="col" className="text-ink-muted font-medium">
-                  {person.name.split(' ')[0]}
+                // Den vollen Namen trägt der Spaltenkopf als Bezeichnung, nicht
+                // als ausgeblendeter Text: Ein absolut gesetztes `sr-only`
+                // stünde außerhalb des Scrollbereichs und machte die Seite
+                // am Telefon breiter.
+                <th
+                  key={person.id}
+                  scope="col"
+                  aria-label={person.name}
+                  className="text-ink-muted font-medium"
+                >
+                  <abbr title={person.name}>{spaltenname(person, zustand.mitarbeitende)}</abbr>
                 </th>
               ))}
             </tr>
@@ -330,13 +366,17 @@ function Wochenuebersicht() {
                   ab {formatDatum(montag)}
                 </th>
                 {zustand.mitarbeitende.map((person) => {
-                  const tage = urlaubstageInWoche(zustand.urlaub, person.id, montag);
+                  const anzahl = urlaubstageInWoche(zustand.urlaub, person.id, montag);
                   return (
                     <td key={person.id} className="text-center">
                       <span
-                        className={`rounded-pill inline-flex min-w-9 justify-center px-2 py-1 text-xs ${ton(tage)}`}
+                        className={`rounded-pill inline-flex min-w-9 justify-center px-2 py-1 text-xs ${
+                          anzahl === 0
+                            ? 'bg-surface-sunken text-ink-muted'
+                            : 'bg-accent-soft text-accent'
+                        }`}
                       >
-                        {tage === 0 ? '–' : tage}
+                        {anzahl === 0 ? '–' : anzahl}
                       </span>
                     </td>
                   );
@@ -369,7 +409,7 @@ function Antragsformular({
   const [mitarbeiterId, setMitarbeiterId] = useState(identitaet?.person.id ?? '');
   const [von, setVon] = useState('');
   const [bis, setBis] = useState('');
-  const [tage, setTage] = useState('');
+  const [tageEingabe, setTageEingabe] = useState('');
   const [grund, setGrund] = useState('');
 
   const berechnet = von && bis ? werktageImZeitraum(von, bis) : 0;
@@ -378,11 +418,16 @@ function Antragsformular({
       ? ueberschneidungen(zustand.urlaub, mitarbeiterId, { von, bis })
       : [];
   const person = zustand.mitarbeitende.find((eintrag) => eintrag.id === mitarbeiterId);
-  const konto = person ? urlaubskonto(person, zustand.urlaub, Number(von.slice(0, 4)) || 0) : null;
-  const gueltig = mitarbeiterId !== '' && von !== '' && bis !== '' && bis >= von;
+  // Ohne Datum gilt das laufende Jahr der Vorschau (VOR-15). Bis dahin rechnete
+  // das Konto dann mit dem Jahr 0 und zeigte zu viel Resturlaub.
+  const konto = person
+    ? urlaubskonto(person, zustand.urlaub, Number((von || zustand.stichtag).slice(0, 4)))
+    : null;
+  const endeVorBeginn = bis !== '' && von !== '' && bis < von;
+  const gueltig = mitarbeiterId !== '' && von !== '' && bis !== '' && !endeVorBeginn;
 
   function absenden() {
-    const beantragteTage = Number(tage) || berechnet;
+    const beantragteTage = Number(tageEingabe) || berechnet;
     const eintrag = simuliere(
       {
         bereich: 'Urlaub',
@@ -392,7 +437,7 @@ function Antragsformular({
           'Der Antrag steht in der Liste der offenen Anträge',
         ],
         nichtGeschehen: [
-          'Keine Benachrichtigung an Leitung oder Teamleitung versendet',
+          `Keine Benachrichtigung an ${ENTSCHEIDENDE} versendet`,
           'Keine Abwesenheit im Kalender eingetragen – das passiert erst mit der Genehmigung',
         ],
       },
@@ -439,7 +484,7 @@ function Antragsformular({
 
         {konto ? (
           <p className="text-ink-muted text-sm">
-            Verbleibend {konto.rest} Tage (Anspruch {konto.anspruch} + Übertrag {konto.uebertrag},
+            Verbleibend {tage(konto.rest)} (Anspruch {konto.anspruch} + Übertrag {konto.uebertrag},
             genehmigt {konto.genehmigt}).
           </p>
         ) : null}
@@ -450,10 +495,14 @@ function Antragsformular({
           value={von}
           onChange={(event) => setVon(event.target.value)}
         />
+        {/* Der Zeitraumfehler steht am Feld „Bis" (VOR-15): Das Feld trägt ihn
+            dann als Beschreibung und gilt als ungültig; als loser Absatz wurde
+            er nicht vorgelesen. */}
         <Field
           label="Bis"
           type="date"
           value={bis}
+          error={endeVorBeginn ? 'Das Ende liegt vor dem Beginn.' : undefined}
           onChange={(event) => setBis(event.target.value)}
         />
 
@@ -467,13 +516,9 @@ function Antragsformular({
               : undefined
           }
           placeholder={berechnet > 0 ? String(berechnet) : ''}
-          value={tage}
-          onChange={(event) => setTage(event.target.value)}
+          value={tageEingabe}
+          onChange={(event) => setTageEingabe(event.target.value)}
         />
-
-        {bis !== '' && von !== '' && bis < von ? (
-          <p className="text-danger text-sm">Das Ende liegt vor dem Beginn.</p>
-        ) : null}
 
         {kollisionen.length > 0 ? (
           <p className="text-warnung bg-warnung-soft rounded-card px-3 py-2 text-sm">
@@ -583,7 +628,7 @@ function Entscheidungsformular({
     <>
       <PageHeader
         title={art === 'genehmigen' ? 'Urlaub genehmigen' : 'Urlaub ablehnen'}
-        description={`${mitarbeiterName(zustand, antrag.mitarbeiterId)} · ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${antrag.tage} Tage`}
+        description={`${mitarbeiterName(zustand, antrag.mitarbeiterId)} · ${formatDatum(antrag.von)} – ${formatDatum(antrag.bis)} · ${tage(antrag.tage)}`}
       />
 
       <div className="flex max-w-xl flex-col gap-4">
@@ -591,7 +636,7 @@ function Entscheidungsformular({
           <p className="text-ink-muted text-sm">
             Nach dieser Entscheidung verbleiben rechnerisch{' '}
             {art === 'genehmigen' ? konto.rest - antrag.tage : konto.rest} von{' '}
-            {konto.anspruch + konto.uebertrag} Tagen.
+            {`${konto.anspruch + konto.uebertrag}\u00a0Tagen`}.
           </p>
         ) : null}
 
@@ -632,11 +677,7 @@ function Entscheidungsformular({
             onChange={(event) => setAblehnungsgrund(event.target.value)}
           />
         ) : (
-          <SignaturFeld
-            beschriftung="Bestätigung der Genehmigung"
-            unterschrieben={unterschrieben}
-            onChange={setUnterschrieben}
-          />
+          <SignaturFeld beschriftung="Bestätigung der Genehmigung" onChange={setUnterschrieben} />
         )}
 
         <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">

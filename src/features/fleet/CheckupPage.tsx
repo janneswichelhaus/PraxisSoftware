@@ -5,12 +5,18 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
+import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Feldgruppe } from '@/components/ui/Section';
 import type { CurrentUser } from '@/features/session/types';
-import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
+import {
+  radMitStandort,
+  useVorschau,
+  type Protokolleintrag,
+} from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { SignaturFeld } from '@/features/preview/SignaturFeld';
 import { SimulationsMeldung } from '@/features/preview/ui';
-import type { Checkupbefund, Checkupbewertung } from '@/features/preview/types';
+import type { Checkupbefund, Checkupbewertung, Rad } from '@/features/preview/types';
 
 /**
  * Fahrrad-Check-Up.
@@ -21,6 +27,12 @@ import type { Checkupbefund, Checkupbewertung } from '@/features/preview/types';
  * Die Vorlage verschickte bei Problemen eine E-Mail. Das passiert hier
  * ausdrücklich nicht - der Versandweg ist eine offene Entscheidung, und ein
  * vorgetäuschter Versand wäre schlimmer als gar keiner.
+ *
+ * **Jeder Check-Up beginnt leer (VOR-03).** Das Formular lebt nur, solange es
+ * zu sehen ist: Nach dem Übernehmen und beim Zurück zur Radwahl ist es fort,
+ * der nächste Check-Up baut es neu auf. Bis dahin standen Bewertungen, Notizen
+ * und die Bestätigung des vorigen Rads im nächsten - eine Sicherheits-
+ * bestätigung für ein Rad, das niemand bestätigt hatte.
  */
 
 const bewertungen: { wert: Checkupbewertung; label: string }[] = [
@@ -30,13 +42,86 @@ const bewertungen: { wert: Checkupbewertung; label: string }[] = [
 ];
 
 export function CheckupPage({ user }: { user: CurrentUser }) {
-  const { zustand, simuliere } = useVorschau();
+  const { zustand } = useVorschau();
   const [suchparameter] = useSearchParams();
 
   const [radId, setRadId] = useState(() => suchparameter.get('rad') ?? zustand.raeder[0]?.id ?? '');
   const [schritt, setSchritt] = useState<'auswahl' | 'formular'>(
     suchparameter.get('rad') ? 'formular' : 'auswahl',
   );
+  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
+
+  const rad = zustand.raeder.find((eintrag) => eintrag.id === radId);
+
+  return (
+    <>
+      <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
+      <PageHeader
+        title="Fahrrad-Check-Up"
+        description="Sicherheitsprüfung mit Bestätigung durch die prüfende Person."
+      />
+
+      <SimulationsMeldung eintrag={meldung} />
+
+      {schritt === 'formular' && rad ? (
+        <Checkupformular
+          rad={rad}
+          user={user}
+          onUebernommen={(eintrag) => {
+            setMeldung(eintrag);
+            setSchritt('auswahl');
+          }}
+          onZurueck={() => setSchritt('auswahl')}
+        />
+      ) : (
+        <div className="flex max-w-md flex-col gap-4">
+          <p className="text-ink-muted text-sm">
+            Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel.
+          </p>
+          <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
+            {zustand.raeder.map((eintrag) => (
+              <option key={eintrag.id} value={eintrag.id}>
+                {radMitStandort(zustand, eintrag)}
+              </option>
+            ))}
+          </Select>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              onClick={() => {
+                // Die Meldung gehörte zum vorigen Rad (VOR-03).
+                setMeldung(null);
+                setSchritt('formular');
+              }}
+              disabled={!rad}
+            >
+              Weiter
+            </Button>
+            <Link
+              to="/betrieb/flotte"
+              className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
+            >
+              Zurück zur Radflotte
+            </Link>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+function Checkupformular({
+  rad,
+  user,
+  onUebernommen,
+  onZurueck,
+}: {
+  rad: Rad;
+  user: CurrentUser;
+  onUebernommen: (eintrag: Protokolleintrag) => void;
+  onZurueck: () => void;
+}) {
+  const { zustand, simuliere } = useVorschau();
+
   const [name, setName] = useState(user.profile.display_name);
   const [befunde, setBefunde] = useState<Checkupbefund[]>(() =>
     zustand.checkupfragen.map((frage) => ({ frage, bewertung: 'ok', notiz: '' })),
@@ -44,9 +129,7 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
   const [notiz, setNotiz] = useState('');
   const [fotos, setFotos] = useState(0);
   const [unterschrieben, setUnterschrieben] = useState(false);
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
 
-  const rad = zustand.raeder.find((eintrag) => eintrag.id === radId);
   const probleme = befunde.filter((befund) => befund.bewertung === 'problem');
   const beobachten = befunde.filter((befund) => befund.bewertung === 'beobachten');
 
@@ -59,7 +142,6 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
   }
 
   function speichern() {
-    if (!rad) return;
     const folgen = [
       `Check-Up im Verlauf von ${rad.name} ergänzt`,
       probleme.length > 0
@@ -106,69 +188,43 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
         ),
       }),
     );
-    setMeldung(eintrag);
-    setSchritt('auswahl');
+    onUebernommen(eintrag);
   }
 
   return (
-    <>
-      <PageHeader
-        title="Fahrrad-Check-Up"
-        description="Sicherheitsprüfung mit Bestätigung durch die prüfende Person."
-      />
+    // Feldabstand der Feldgruppe (TOK-15): 16 px wie in jedem anderen
+    // Formular, bis dahin 20 px.
+    <div className="max-w-xl">
+      <Feldgruppe>
+        <p className="text-ink text-liste font-medium">{rad.name}</p>
 
-      <SimulationsMeldung eintrag={meldung} />
+        <Field
+          label="Prüfende Person"
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+        />
 
-      {schritt === 'auswahl' ? (
-        <div className="flex max-w-md flex-col gap-4">
-          <p className="text-ink-muted text-sm">
-            Die Nummer eines Rads steht am Sattelrohr, direkt unter dem Sattel.
-          </p>
-          <Select label="Rad" value={radId} onChange={(event) => setRadId(event.target.value)}>
-            {zustand.raeder.map((eintrag) => (
-              <option key={eintrag.id} value={eintrag.id}>
-                {eintrag.name} ({depotName(zustand, eintrag, 'aktuell')})
-              </option>
-            ))}
-          </Select>
-          <div className="flex flex-wrap items-center gap-3">
-            <Button onClick={() => setSchritt('formular')} disabled={!rad}>
-              Weiter
-            </Button>
-            <Link
-              to="/betrieb/flotte"
-              className="text-ink-muted hover:text-ink text-liste inline-flex min-h-11 items-center"
-            >
-              Zurück zur Radflotte
-            </Link>
-          </div>
-        </div>
-      ) : (
-        <div className="flex max-w-xl flex-col gap-5">
-          <p className="text-ink text-liste font-medium">{rad?.name}</p>
-
-          <Field
-            label="Prüfende Person"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
-          />
-
-          <fieldset className="border-line rounded-card border p-4">
-            <legend className="text-ink px-1 text-sm font-medium">Prüfpunkte</legend>
-            <ul className="divide-line divide-y">
-              {befunde.map((befund, index) => (
-                <li key={befund.frage} className="py-3 first:pt-0 last:pb-0">
-                  <p className="text-ink text-liste">{befund.frage}</p>
-                  <div
-                    role="radiogroup"
-                    aria-label={befund.frage}
-                    className="mt-2 flex flex-wrap gap-2"
-                  >
-                    {bewertungen.map((option) => (
+        <fieldset className="border-line rounded-card border p-4">
+          <legend className="text-ink px-1 text-sm font-medium">Prüfpunkte</legend>
+          <ul className="divide-line divide-y">
+            {befunde.map((befund, index) => (
+              <li key={befund.frage} className="py-3 first:pt-0 last:pb-0">
+                <p className="text-ink text-liste">{befund.frage}</p>
+                <div
+                  role="radiogroup"
+                  aria-label={befund.frage}
+                  className="mt-2 flex flex-wrap gap-2"
+                >
+                  {bewertungen.map((option) => {
+                    const gewaehlt = befund.bewertung === option.wert;
+                    return (
+                      // Der Fokus steht auf dem ausgeblendeten Radio; sichtbar
+                      // wird er am Chip (VOR-02, UIK-06). Die Wahl trägt ein
+                      // Zeichen, nicht nur Farbe und Schriftstärke.
                       <label
                         key={option.wert}
-                        className={`rounded-button inline-flex min-h-11 cursor-pointer items-center border px-3 text-sm ${
-                          befund.bewertung === option.wert
+                        className={`rounded-button has-[:focus-visible]:outline-accent inline-flex min-h-11 cursor-pointer items-center gap-1.5 border px-3 text-sm has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 ${
+                          gewaehlt
                             ? 'border-accent bg-accent-soft text-accent font-medium'
                             : 'border-line-strong bg-surface text-ink-muted'
                         }`}
@@ -177,80 +233,80 @@ export function CheckupPage({ user }: { user: CurrentUser }) {
                           type="radio"
                           name={`befund-${index}`}
                           className="sr-only"
-                          checked={befund.bewertung === option.wert}
+                          checked={gewaehlt}
                           onChange={() => setzeBefund(index, { bewertung: option.wert })}
                         />
+                        {gewaehlt ? <span aria-hidden="true">✓</span> : null}
                         {option.label}
                       </label>
-                    ))}
+                    );
+                  })}
+                </div>
+                {befund.bewertung !== 'ok' ? (
+                  <div className="mt-2">
+                    <Field
+                      label={`Notiz zu ${befund.frage}`}
+                      placeholder="Was ist aufgefallen?"
+                      value={befund.notiz}
+                      onChange={(event) => setzeBefund(index, { notiz: event.target.value })}
+                    />
                   </div>
-                  {befund.bewertung !== 'ok' ? (
-                    <div className="mt-2">
-                      <Field
-                        label={`Notiz zu ${befund.frage}`}
-                        placeholder="Was ist aufgefallen?"
-                        value={befund.notiz}
-                        onChange={(event) => setzeBefund(index, { notiz: event.target.value })}
-                      />
-                    </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </fieldset>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </fieldset>
 
-          <TextArea
-            rows={3}
-            label="Notiz"
-            placeholder="Weitere Auffälligkeiten"
-            value={notiz}
-            onChange={(event) => setNotiz(event.target.value)}
-          />
+        <TextArea
+          rows={3}
+          label="Notiz"
+          placeholder="Weitere Auffälligkeiten"
+          value={notiz}
+          onChange={(event) => setNotiz(event.target.value)}
+        />
 
-          <div>
-            <p className="text-ink text-sm font-medium">Fotos</p>
-            <p className="text-ink-muted mb-2 text-sm">
-              In der Vorschau wird nur die Anzahl mitgeführt. Es wird nichts hochgeladen.
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Button variant="secondary" onClick={() => setFotos((anzahl) => anzahl + 1)}>
-                Foto hinzufügen
-              </Button>
-              {fotos > 0 ? (
-                <>
-                  <span className="text-ink-muted text-sm">
-                    {fotos} Foto{fotos === 1 ? '' : 's'} vorgemerkt
-                  </span>
-                  <Button variant="quiet" onClick={() => setFotos(0)}>
-                    Zurücksetzen
-                  </Button>
-                </>
-              ) : null}
-            </div>
-          </div>
-
-          <SignaturFeld
-            beschriftung="Bestätigung"
-            erklaerung="Ich bestätige, dass ich das gesamte Fahrrad gründlich auf Sicherheit geprüft habe."
-            unterschrieben={unterschrieben}
-            onChange={setUnterschrieben}
-          />
-
-          <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
-            <Button onClick={speichern} disabled={name.trim() === '' || !unterschrieben}>
-              Check-Up in die Vorschau übernehmen
+        <div>
+          <p className="text-ink text-sm font-medium">Fotos</p>
+          <p className="text-ink-muted mb-2 text-sm">
+            In der Vorschau wird nur die Anzahl mitgeführt. Es wird nichts hochgeladen.
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <Button variant="secondary" onClick={() => setFotos((anzahl) => anzahl + 1)}>
+              Foto hinzufügen
             </Button>
-            <Button variant="quiet" onClick={() => setSchritt('auswahl')}>
-              Zurück
-            </Button>
+            {fotos > 0 ? (
+              <>
+                <span className="text-ink-muted text-sm">
+                  {fotos} Foto{fotos === 1 ? '' : 's'} vorgemerkt
+                </span>
+                <Button variant="quiet" onClick={() => setFotos(0)}>
+                  Zurücksetzen
+                </Button>
+              </>
+            ) : null}
           </div>
-          {!unterschrieben ? (
-            <p className="text-ink-muted text-sm">
-              Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.
-            </p>
-          ) : null}
         </div>
-      )}
-    </>
+
+        <SignaturFeld
+          beschriftung="Bestätigung"
+          erklaerung="Ich bestätige, dass ich das gesamte Fahrrad gründlich auf Sicherheit geprüft habe."
+          onChange={setUnterschrieben}
+        />
+
+        <div className="border-line flex flex-wrap items-center gap-3 border-t pt-4">
+          <Button onClick={speichern} disabled={name.trim() === '' || !unterschrieben}>
+            Check-Up in die Vorschau übernehmen
+          </Button>
+          <Button variant="quiet" onClick={onZurueck}>
+            Zurück
+          </Button>
+        </div>
+        {!unterschrieben ? (
+          <p className="text-ink-muted text-sm">
+            Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.
+          </p>
+        ) : null}
+      </Feldgruppe>
+    </div>
   );
 }

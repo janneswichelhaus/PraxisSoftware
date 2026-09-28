@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
+import { Select } from '@/components/ui/Select';
 import { Badge, type Ton } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
@@ -13,6 +15,7 @@ import {
   depotName,
   hatUrlaub,
   mitarbeiterName,
+  uebergebeneMeldung,
   useVorschau,
   type Protokolleintrag,
   type Vorschauzustand,
@@ -43,20 +46,34 @@ import {
  *     an der Rolle des angemeldeten Kontos, nicht an einer im Quelltext
  *     hinterlegten PIN. Eine PIN im Browser ist keine Zugriffskontrolle.
  *   * Es gibt keine zweite Mitarbeiterverwaltung für die Auswahl der
- *     Stammnutzer. Die Personen kommen aus dem gemeinsamen Mitarbeiterstamm.
+ *     Stammnutzer:innen. Die Personen kommen aus dem gemeinsamen
+ *     Mitarbeiterstamm.
  */
 
 type Statusfilter = 'alle' | Radstatus;
 type Tagesfilter = '' | Wochentag;
 
+/**
+ * Ton des Radstatus (VOR-13).
+ *
+ * „Im Einsatz" ist der Normalbetrieb und trägt deshalb keinen Warnton - bis
+ * VOR-13 stand er mit „!" da, und jede Karte meldete eine Warnung, die keine
+ * war. Gewarnt wird nur bei einer echten Abweichung (Rad nicht im Stammdepot).
+ */
 const statusTon: Record<Radstatus, Ton> = {
   verfuegbar: 'positiv',
-  einsatz: 'warnung',
+  einsatz: 'neutral',
   reparatur: 'kritisch',
 };
 
-const selectKlasse =
-  'min-h-11 rounded-field border border-line-strong bg-surface px-3 text-base text-ink';
+/**
+ * Tagesbelegung als Fläche (VOR-13): belegt ist der Normalfall und neutral,
+ * frei ist hervorgehoben. Warn- und Erfolgsfarben bleiben echten Zuständen
+ * vorbehalten; das Wort in der Zelle trägt die Bedeutung, die Fläche ergänzt.
+ */
+function belegungsflaeche(belegt: boolean): string {
+  return belegt ? 'bg-surface-sunken text-ink-muted' : 'bg-accent-soft text-accent';
+}
 
 /** Kalendertage der laufenden Woche, nach Wochentag. */
 function wochentagsdaten(stichtag: string): Record<Wochentag, string> {
@@ -93,9 +110,16 @@ function passtZurSuche(rad: Rad, stammnutzer: string, suche: string): boolean {
 }
 
 export function FleetPage({ user }: { user: CurrentUser }) {
-  const { zustand, simuliere } = useVorschau();
+  const { zustand, protokoll, simuliere } = useVorschau();
+  // Der Verlaufszustand ist ungeprüft; `uebergebeneMeldung` prüft ihn.
+  const verlaufszustand: unknown = useLocation().state;
   const [suchparameter, setSuchparameter] = useSearchParams();
-  const [meldung, setMeldung] = useState<Protokolleintrag | null>(null);
+  // Eine Aktion auf einer Unterseite - Rad speichern oder entfernen - kommt
+  // mit ihrer Zustandsmeldung hierher zurück (VOR-01). Gemerkt beim ersten
+  // Zeichnen, damit ein Filter sie nicht mit dem Verlaufszustand verliert.
+  const [meldung, setMeldung] = useState<Protokolleintrag | null>(() =>
+    uebergebeneMeldung(verlaufszustand, protokoll),
+  );
 
   const suche = suchparameter.get('q') ?? '';
   const status = (suchparameter.get('status') ?? 'alle') as Statusfilter;
@@ -136,7 +160,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
       {
         bereich: 'Radflotte',
         vorgang: `Schlüssel zurückgelegt: ${rad.name}`,
-        folgen: ['Schlüsselstand auf „im Tresor" gesetzt', 'Schlüsselverlauf ergänzt'],
+        folgen: ['Schlüsselstand auf „im Tresor“ gesetzt', 'Schlüsselverlauf ergänzt'],
         nichtGeschehen: ['Kein Vorgang gespeichert, keine Benachrichtigung versendet'],
       },
       (stand) => ({
@@ -170,7 +194,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
         bereich: 'Radflotte',
         vorgang: `Rad freigegeben: ${rad.name}`,
         folgen: [
-          'Status auf „Verfügbar" gesetzt',
+          'Status auf „Verfügbar“ gesetzt',
           'Das Rad steht in der Vorschau wieder für die Planung zur Verfügung',
         ],
         nichtGeschehen: [
@@ -193,56 +217,43 @@ export function FleetPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Radflotte"
         description="Lastenräder für Hausbesuche: Zuordnung, Verfügbarkeit, Schlüssel und Wartung."
-        actions={
-          <Link
-            to="/betrieb/flotte/rad/neu"
-            className="bg-accent hover:bg-accent-hover rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium text-white transition-colors"
-          >
-            Rad hinzufügen
-          </Link>
-        }
+        actions={<ButtonLink to="/betrieb/flotte/rad/neu">Rad hinzufügen</ButtonLink>}
       />
 
       <SimulationsMeldung eintrag={meldung} />
 
+      {/* Seitenwechsel als ButtonLink statt eigener Klassenketten (VOR-12,
+          TOK-11): Schrift und Hauptfarbe wie jeder Knopf. Die Panne trägt
+          keine Sonderfarbe mehr - ihr Rand lag bei 2,1:1. Kompakt, 44 px wie
+          bisher: In voller Größe bräuchten die drei am Telefon eine Zeile
+          mehr vor dem ersten Rad. */}
       <div className="mb-5 flex flex-wrap gap-3">
-        <Link
-          to="/betrieb/flotte/panne"
-          className="border-danger/40 text-danger hover:bg-danger-soft rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
-        >
+        <ButtonLink to="/betrieb/flotte/panne" variant="secondary" groesse="kompakt">
           Panne melden
-        </Link>
-        <Link
-          to="/betrieb/flotte/schluessel"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
-        >
+        </ButtonLink>
+        <ButtonLink to="/betrieb/flotte/schluessel" variant="secondary" groesse="kompakt">
           Schlüssel entnehmen
-        </Link>
-        <Link
-          to="/betrieb/flotte/checkup"
-          className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
-        >
+        </ButtonLink>
+        <ButtonLink to="/betrieb/flotte/checkup" variant="secondary" groesse="kompakt">
           Fahrrad-Check-Up
-        </Link>
+        </ButtonLink>
       </div>
 
+      {/* Filter über die Bausteine (TOK-13, UIK-19): 48 px wie das Suchfeld.
+          Am Telefon stehen die zwei Auswahlen nebeneinander unter der Suche. */}
       <div className="mb-5 flex flex-wrap items-end gap-4">
-        <div className="max-w-sm flex-1 basis-56">
+        <div className="max-w-sm min-w-0 flex-1 basis-56">
           <Field
             label="Suche"
             type="search"
-            placeholder="Rad, Stammnutzer, Notiz"
+            placeholder="Rad, Stammnutzer:in, Notiz"
             value={suche}
             onChange={(event) => setzeParameter({ q: event.target.value })}
           />
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="flotte-status" className="text-ink text-sm font-medium">
-            Status
-          </label>
-          <select
-            id="flotte-status"
-            className={selectKlasse}
+        <div className="min-w-0 flex-1 basis-36 sm:w-40 sm:flex-none">
+          <Select
+            label="Status"
             value={status}
             onChange={(event) => setzeParameter({ status: event.target.value as Statusfilter })}
           >
@@ -250,15 +261,11 @@ export function FleetPage({ user }: { user: CurrentUser }) {
             <option value="verfuegbar">Verfügbar</option>
             <option value="einsatz">Im Einsatz</option>
             <option value="reparatur">In Reparatur</option>
-          </select>
+          </Select>
         </div>
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="flotte-tag" className="text-ink text-sm font-medium">
-            Freier Tag
-          </label>
-          <select
-            id="flotte-tag"
-            className={selectKlasse}
+        <div className="min-w-0 flex-1 basis-36 sm:w-40 sm:flex-none">
+          <Select
+            label="Freier Tag"
             value={tag}
             onChange={(event) => setzeParameter({ tag: event.target.value as Tagesfilter })}
           >
@@ -268,7 +275,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
                 Nur frei: {wochentagLabels[wochentag]}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -288,13 +295,14 @@ export function FleetPage({ user }: { user: CurrentUser }) {
           <Abschnitt
             key={depot.id}
             titel={depot.name}
-            beschreibung={`${depot.hinweis} · ${raederImDepot.length} Rad${raederImDepot.length === 1 ? '' : 'räder'}`}
+            beschreibung={`${depot.hinweis} · ${raederImDepot.length} ${raederImDepot.length === 1 ? 'Rad' : 'Räder'}`}
           >
             <CardGrid>
               {raederImDepot.map((rad) => (
                 <Radkarte
                   key={rad.id}
                   rad={rad}
+                  zeitzone={user.organizationTimeZone}
                   darfSchluesselcode={darfEinstellungen}
                   onSchluesselZurueck={() => schluesselZurueck(rad)}
                   onFreigeben={() => freigeben(rad)}
@@ -318,11 +326,13 @@ export function FleetPage({ user }: { user: CurrentUser }) {
 
 function Radkarte({
   rad,
+  zeitzone,
   darfSchluesselcode,
   onSchluesselZurueck,
   onFreigeben,
 }: {
   rad: Rad;
+  zeitzone: string | null;
   darfSchluesselcode: boolean;
   onSchluesselZurueck: () => void;
   onFreigeben: () => void;
@@ -355,9 +365,7 @@ function Radkarte({
       ) : null}
 
       <DataList>
-        <DataRow label="Stammnutzer">
-          {rad.ersatzrad ? 'Ersatzfahrrad' : stammnutzer || '–'}
-        </DataRow>
+        <DataRow label="Stammnutzer:in">{rad.ersatzrad ? 'Ersatzrad' : stammnutzer || '–'}</DataRow>
         {vertretung || (rad.ersatzrad && aktuellerNutzer) ? (
           <DataRow label="Aktuell gefahren von">{aktuellerNutzer}</DataRow>
         ) : null}
@@ -373,30 +381,29 @@ function Radkarte({
         </p>
       ) : null}
 
-      <div
-        className={`rounded-card mt-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm ${
-          rad.schluesselInhaber ? 'bg-warnung-soft text-warnung' : 'bg-positiv-soft text-positiv'
-        }`}
-      >
+      {/* Schlüsselstand neutral (VOR-13): Ein ausgegebener Schlüssel ist Alltag,
+          keine Warnung. Knopf und Link darin gleich groß (VOR-12). */}
+      <div className="rounded-card bg-surface-sunken text-ink mt-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
         <span>
           {rad.schluesselInhaber ? `Schlüssel bei ${rad.schluesselInhaber}` : 'Schlüssel im Tresor'}
           {rad.schluesselSeit ? (
-            <span className="block text-xs opacity-80">
-              seit {formatZeitpunkt(rad.schluesselSeit)}
+            <span className="text-ink-muted block text-xs">
+              seit {formatZeitpunkt(rad.schluesselSeit, zeitzone)}
             </span>
           ) : null}
         </span>
         {rad.schluesselInhaber ? (
-          <Button variant="secondary" onClick={onSchluesselZurueck}>
-            Zurückgelegt
+          <Button variant="secondary" groesse="kompakt" onClick={onSchluesselZurueck}>
+            Schlüssel zurücklegen
           </Button>
         ) : (
-          <Link
+          <ButtonLink
             to={`/betrieb/flotte/schluessel?rad=${rad.id}`}
-            className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button text-liste inline-flex min-h-11 items-center justify-center border px-4 font-medium transition-colors"
+            variant="secondary"
+            groesse="kompakt"
           >
             Entnehmen
-          </Link>
+          </ButtonLink>
         )}
       </div>
 
@@ -411,7 +418,7 @@ function Radkarte({
                   ? `${wochentagLabels[tag]}: frei, ${stammnutzer} ist abwesend`
                   : `${wochentagLabels[tag]}: ${stand.belegt ? 'belegt' : 'frei'}`
               }
-              className={`rounded-button px-1 py-1 ${stand.belegt ? 'bg-warnung-soft text-warnung' : 'bg-positiv-soft text-positiv'}`}
+              className={`rounded-button px-1 py-1 ${belegungsflaeche(stand.belegt)}`}
             >
               <span className="block font-medium">{wochentagLabels[tag]}</span>
               <span className="block text-[0.6875rem]">
@@ -435,9 +442,9 @@ function Radkarte({
               .reverse()
               .map((vorgang) => (
                 <li key={vorgang.id}>
-                  {vorgang.inhaber} — {formatZeitpunkt(vorgang.entnommen)}
+                  {vorgang.inhaber} – {formatZeitpunkt(vorgang.entnommen, zeitzone)}
                   {vorgang.zurueckgelegt
-                    ? ` bis ${formatZeitpunkt(vorgang.zurueckgelegt)}`
+                    ? ` bis ${formatZeitpunkt(vorgang.zurueckgelegt, zeitzone)}`
                     : ' (noch entnommen)'}
                 </li>
               ))}
@@ -454,7 +461,7 @@ function Radkarte({
               .map((meldung) => (
                 <li key={meldung.id}>
                   <span className="text-ink-muted block text-xs">
-                    {formatZeitpunkt(meldung.zeitpunkt)}
+                    {formatZeitpunkt(meldung.zeitpunkt, zeitzone)}
                     {meldung.gesperrt ? ' · Rad gesperrt' : ' · ohne Sperre'}
                   </span>
                   {meldung.text}
@@ -478,7 +485,7 @@ function Radkarte({
                 return (
                   <li key={checkup.id}>
                     <span className="text-ink-muted block text-xs">
-                      {formatZeitpunkt(checkup.zeitpunkt)} · {checkup.geprueftVon}
+                      {formatZeitpunkt(checkup.zeitpunkt, zeitzone)} · {checkup.geprueftVon}
                     </span>
                     {probleme.length > 0 ? (
                       <span className="text-danger block">
@@ -509,34 +516,24 @@ function Radkarte({
         </Disclosure>
       ) : null}
 
-      <div className="border-line mt-3 flex flex-wrap gap-3 border-t pt-3 text-sm">
+      {/* Kartenaktionen mit 44 px (VOR-11, RSP-14): bis dahin 36 px hohe
+          Textlinks, „Panne" nur 38 px breit. Freigeben ändert den Status und
+          steht deshalb mit Rahmen neben den ruhigen Links. */}
+      <div className="border-line mt-3 flex flex-wrap gap-2 border-t pt-3">
         {rad.status === 'reparatur' ? (
-          <button
-            type="button"
-            onClick={onFreigeben}
-            className="text-positiv min-h-9 font-medium hover:underline"
-          >
+          <Button variant="secondary" groesse="kompakt" onClick={onFreigeben}>
             Freigeben
-          </button>
+          </Button>
         ) : null}
-        <Link
-          to={`/betrieb/flotte/rad/${rad.id}`}
-          className="text-accent hover:text-accent-hover min-h-9 font-medium"
-        >
+        <ButtonLink to={`/betrieb/flotte/rad/${rad.id}`} variant="quiet" groesse="kompakt">
           Bearbeiten
-        </Link>
-        <Link
-          to={`/betrieb/flotte/panne?rad=${rad.id}`}
-          className="text-ink-muted hover:text-ink min-h-9 font-medium"
-        >
+        </ButtonLink>
+        <ButtonLink to={`/betrieb/flotte/panne?rad=${rad.id}`} variant="quiet" groesse="kompakt">
           Panne
-        </Link>
-        <Link
-          to={`/betrieb/flotte/checkup?rad=${rad.id}`}
-          className="text-ink-muted hover:text-ink min-h-9 font-medium"
-        >
+        </ButtonLink>
+        <ButtonLink to={`/betrieb/flotte/checkup?rad=${rad.id}`} variant="quiet" groesse="kompakt">
           Check-Up
-        </Link>
+        </ButtonLink>
       </div>
     </Card>
   );
@@ -561,11 +558,19 @@ function Wochenuebersicht() {
     <Klappbereich
       titel="Wochenübersicht – wer nutzt wann welches Rad"
       beschreibung={
-        'Zeigt alle Räder, unabhängig von Suche und Filter. „frei*" heißt: frei, weil der ' +
-        'Stammnutzer abwesend ist.'
+        'Zeigt alle Räder, unabhängig von Suche und Filter. „frei*“ heißt: frei, weil die ' +
+        'Stammnutzer:in abwesend ist.'
       }
     >
-      <div className="-mx-4 overflow-x-auto px-4">
+      {/* Per Tastatur erreichbar und benannt (VOR-02, UIK-24): Am Telefon ist
+          die Tabelle breiter als der Bildschirm, und ohne Fokus ließe sich der
+          rechte Teil nur mit dem Finger verschieben. */}
+      <div
+        className="-mx-4 overflow-x-auto px-4"
+        tabIndex={0}
+        role="region"
+        aria-label="Wochenübersicht Räder"
+      >
         <table className="w-full min-w-[34rem] border-separate border-spacing-1 text-sm">
           <thead>
             <tr>
@@ -596,11 +601,9 @@ function Wochenuebersicht() {
                   return (
                     <td key={tag} className="text-center">
                       <span
-                        className={`rounded-pill inline-flex min-w-12 justify-center px-2 py-1 text-xs ${
-                          stand.belegt
-                            ? 'bg-warnung-soft text-warnung'
-                            : 'bg-positiv-soft text-positiv'
-                        }`}
+                        className={`rounded-pill inline-flex min-w-12 justify-center px-2 py-1 text-xs ${belegungsflaeche(
+                          stand.belegt,
+                        )}`}
                       >
                         {stand.belegt ? 'belegt' : stand.wegenUrlaub ? 'frei*' : 'frei'}
                       </span>

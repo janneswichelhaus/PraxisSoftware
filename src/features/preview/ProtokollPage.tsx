@@ -1,8 +1,8 @@
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
 import { Badge } from '@/components/ui/Badge';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { useVorschau } from './vorschauContext';
 import { formatZeitpunkt } from './format';
 
@@ -13,6 +13,9 @@ import { formatZeitpunkt } from './format';
  * ausgelöste Aktion, was die Vorschau übernommen hat und was ausdrücklich
  * nicht passiert ist. Sie ist kein Auditlog - echte Vorgänge werden
  * serverseitig protokolliert (ADR-010).
+ *
+ * Die Zeiten stehen in der Praxiszeitzone (VOR-06, UEB-19). Die Seite kennt
+ * das angemeldete Konto nicht; es gilt deshalb `VORSCHAU_ZEITZONE`.
  */
 export function ProtokollPage() {
   const { protokoll, zuruecksetzen } = useVorschau();
@@ -23,9 +26,21 @@ export function ProtokollPage() {
         title="Vorschau-Protokoll"
         description="Simulierte Vorgänge dieser Sitzung. Kein Auditlog."
         actions={
-          <Button variant="secondary" onClick={zuruecksetzen}>
-            Vorschau zurücksetzen
-          </Button>
+          // Zurücksetzen verwirft alles auf einmal - nur mit Rückfrage und nur,
+          // wenn es etwas zu verwerfen gibt (VOR-10, UEB-19).
+          protokoll.length > 0 ? (
+            <Rueckfrage
+              ausloeser="Vorschau zurücksetzen"
+              bestaetigen="Ja, zurücksetzen"
+              onBestaetigen={zuruecksetzen}
+            >
+              <p>
+                Alle simulierten Vorgänge dieser Sitzung werden verworfen, und die Vorschaubereiche
+                zeigen wieder die synthetischen Ausgangsdaten. Echte Daten sind davon nicht
+                betroffen.
+              </p>
+            </Rueckfrage>
+          ) : undefined
         }
       />
 

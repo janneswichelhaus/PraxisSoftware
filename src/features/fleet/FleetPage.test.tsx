@@ -86,13 +86,16 @@ describe('Radflotte', () => {
     const nutzer = userEvent.setup();
     oeffne();
 
-    await nutzer.click(screen.getAllByRole('button', { name: 'Zurückgelegt' })[0]!);
+    // Der Knopf nennt die Handlung, nicht einen Zustand (VOR-10).
+    await nutzer.click(screen.getAllByRole('button', { name: 'Schlüssel zurücklegen' })[0]!);
 
     const meldung = screen.getByRole('status');
     expect(within(meldung).getByText(/Schlüssel zurückgelegt/)).toBeInTheDocument();
     expect(
       within(meldung).getByText(/Kein Vorgang gespeichert, keine Benachrichtigung versendet/),
     ).toBeInTheDocument();
+    // Die Meldung steht oben, die Aktion an einem Rad weiter unten (VOR-01).
+    expect(meldung).toHaveFocus();
   });
 
   it('gibt ein gesperrtes Rad frei, ohne eine Rueckmeldung an die Werkstatt zu behaupten', async () => {
@@ -131,5 +134,64 @@ describe('Radflotte', () => {
     );
     expect(screen.getByRole('link', { name: 'Schlüssel entnehmen' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Fahrrad-Check-Up' })).toBeInTheDocument();
+  });
+
+  it('setzt die Einstiege als Knoepfe des Systems, die Panne ohne Sonderfarbe (VOR-12)', () => {
+    oeffne();
+    for (const name of ['Panne melden', 'Schlüssel entnehmen', 'Fahrrad-Check-Up']) {
+      const link = screen.getByRole('link', { name });
+      expect(link).toHaveClass('min-h-11', 'font-bold', 'text-accent');
+      expect(link).not.toHaveClass('text-danger');
+    }
+    expect(screen.getByRole('link', { name: 'Rad hinzufügen' })).toHaveClass('bg-accent', 'h-12');
+  });
+
+  it('gibt den Kartenaktionen 44 px Hoehe (VOR-11)', () => {
+    oeffne();
+    const aktionen = [
+      screen.getByRole('button', { name: 'Freigeben' }),
+      ...screen.getAllByRole('link', { name: 'Bearbeiten' }),
+      ...screen.getAllByRole('link', { name: 'Panne' }),
+      ...screen.getAllByRole('link', { name: 'Check-Up' }),
+      ...screen.getAllByRole('button', { name: 'Schlüssel zurücklegen' }),
+      ...screen.getAllByRole('link', { name: 'Entnehmen' }),
+    ];
+    for (const aktion of aktionen) expect(aktion).toHaveClass('min-h-11');
+  });
+
+  it('zeigt den Normalbetrieb ohne Warnzeichen (VOR-13)', () => {
+    oeffne();
+    const imEinsatz = screen.getAllByText('Im Einsatz', { selector: 'span' });
+    expect(imEinsatz.length).toBeGreaterThan(0);
+    // Ohne „!" davor: Im Einsatz zu sein ist keine Warnung.
+    for (const abzeichen of imEinsatz) expect(abzeichen.textContent).toBe('Im Einsatz');
+  });
+
+  it('zaehlt Raeder richtig (VOR-24)', () => {
+    oeffne();
+    expect(screen.queryByText(/Radräder/)).toBeNull();
+    expect(screen.getByText(/· 4 Räder$/)).toBeInTheDocument();
+    expect(screen.getByText(/· 1 Rad$/)).toBeInTheDocument();
+  });
+
+  it('nennt die Uhrzeit am Schluessel mit vierstelligem Jahr (VOR-06)', () => {
+    oeffne();
+    // Die Vorlage gibt Lastenrad 1 um 07:40 Uhr aus - in Praxiszeit.
+    expect(screen.getByText(/^seit \d{2}\.\d{2}\.\d{4}, 07:40$/)).toBeInTheDocument();
+  });
+
+  it('macht die Wochenuebersicht per Tastatur erreichbar (VOR-02)', () => {
+    oeffne();
+    expect(screen.getByRole('region', { name: 'Wochenübersicht Räder' })).toHaveAttribute(
+      'tabindex',
+      '0',
+    );
+  });
+
+  it('nennt Stammnutzer:innen gegendert (VOR-25)', () => {
+    oeffne();
+    expect(screen.getAllByText('Stammnutzer:in').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Stammnutzer')).toBeNull();
+    expect(screen.getByText('Ersatzrad')).toBeInTheDocument();
   });
 });

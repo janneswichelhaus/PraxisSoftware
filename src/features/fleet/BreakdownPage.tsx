@@ -2,12 +2,18 @@ import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { TextArea } from '@/components/ui/TextArea';
 import { Badge } from '@/components/ui/Badge';
+import { Rueckweg } from '@/components/ui/Rueckweg';
 import { aktiveStandortvorlage } from '@/features/preview/standortvorlage';
-import { depotName, useVorschau, type Protokolleintrag } from '@/features/preview/vorschauContext';
+import {
+  radMitStandort,
+  useVorschau,
+  type Protokolleintrag,
+} from '@/features/preview/vorschauContext';
 import { vorschauId } from '@/features/preview/vorschauZustand';
 import { SimulationsMeldung } from '@/features/preview/ui';
 import {
@@ -90,7 +96,7 @@ export function BreakdownPage() {
         folgen: [
           `Pannenverlauf ergänzt: ${ergebnisAbschluss.text}`,
           ergebnisAbschluss.sperrt
-            ? `${radName} in der Vorschau als „In Reparatur" markiert – das Rad steht in der Planung nicht mehr zur Verfügung`
+            ? `${radName} in der Vorschau als „In Reparatur“ markiert – das Rad steht in der Planung nicht mehr zur Verfügung`
             : `${radName} bleibt nutzbar – die Meldung sperrt es nicht`,
         ],
         nichtGeschehen: [
@@ -126,15 +132,12 @@ export function BreakdownPage() {
   if (ergebnis) {
     return (
       <>
+        <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
         <PageHeader title="Panne melden" description="Meldung abgeschlossen." />
         <SimulationsMeldung eintrag={ergebnis} />
         <div className="flex flex-wrap gap-3">
-          <Link
-            to="/betrieb/flotte"
-            className="bg-accent hover:bg-accent-hover rounded-button text-liste inline-flex min-h-11 items-center justify-center px-4 font-medium text-white transition-colors"
-          >
-            Zurück zur Radflotte
-          </Link>
+          {/* Seitenwechsel als ButtonLink statt eigener Klassenkette (VOR-12). */}
+          <ButtonLink to="/betrieb/flotte">Zurück zur Radflotte</ButtonLink>
           <Button
             variant="secondary"
             onClick={() => {
@@ -153,7 +156,13 @@ export function BreakdownPage() {
 
   return (
     <>
-      <PageHeader title="Panne melden" description={rad ? rad.name : 'Rad noch nicht ausgewählt'} />
+      <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
+      {/* Solange das Rad gewählt wird, ist keines gewählt - auch wenn die
+          Auswahl eines vorbelegt (VOR-18). */}
+      <PageHeader
+        title="Panne melden"
+        description={rad && ablauf.schritt !== 'radwahl' ? rad.name : 'Rad noch nicht ausgewählt'}
+      />
 
       <div className="rounded-card border-line bg-surface max-w-xl border p-5">
         <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -265,7 +274,7 @@ function Schrittinhalt({
           >
             {vorschau.raeder.map((rad) => (
               <option key={rad.id} value={rad.id}>
-                {rad.name} ({depotName(vorschau, rad, 'aktuell')})
+                {radMitStandort(vorschau, rad)}
               </option>
             ))}
           </Select>
@@ -319,7 +328,7 @@ function Schrittinhalt({
             kurze Information an Praxismanagement und {vorlage.zustaendigeRolle}.
           </p>
           <Button onClick={() => beenden('lokalRepariert')}>
-            Erledigt – Rad als „In Reparatur" markieren
+            Erledigt – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -347,7 +356,7 @@ function Schrittinhalt({
             Rad wieder freigegeben ist.
           </p>
           <Button onClick={() => beenden('depotAbgestellt')}>
-            Rad als „In Reparatur" markieren
+            Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -426,7 +435,7 @@ function Schrittinhalt({
             ))}
           </ul>
           <Button onClick={() => beenden('transportFortsetzung')}>
-            Bestätigen – Rad als „In Reparatur" markieren
+            Bestätigen – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );
@@ -451,7 +460,7 @@ function Schrittinhalt({
         <div className="mb-4">
           <Hinweiskasten>Reparatur durchführen lassen.</Hinweiskasten>
           <Button onClick={() => beenden('vertragswerkstattRepariert')}>
-            Erledigt – Rad als „In Reparatur" markieren
+            Erledigt – Rad als „In Reparatur“ markieren
           </Button>
         </div>
       );

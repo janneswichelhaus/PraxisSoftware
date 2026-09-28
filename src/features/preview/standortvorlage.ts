@@ -104,7 +104,7 @@ export const standortvorlageKoeln: Standortvorlage = {
     },
   ],
   zustaendigeRolle: 'Teamleitung',
-  meldeweg: 'Team-Kanal „Flotte"',
+  meldeweg: 'Team-Kanal „Flotte“',
   mitnehmen: ['Fahrradakku', 'Behandlungsliege'],
 };
 

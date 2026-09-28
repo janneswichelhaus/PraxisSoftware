@@ -1,10 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { renderMitVorschau, testUser } from '@/test-utils';
+import { BikeEditPage } from '@/features/fleet/BikeEditPage';
 import { CheckupPage } from '@/features/fleet/CheckupPage';
+import { FleetPage } from '@/features/fleet/FleetPage';
 import { KeyPage } from '@/features/fleet/KeyPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
+import { VorschauProvider } from './VorschauProvider';
 
 /**
  * Eine Vorschau darf nie einen Erfolg zeigen, den es nicht gibt.
@@ -52,6 +56,96 @@ describe('Check-Up', () => {
     );
     expect(screen.getByText(/Es wird nichts hochgeladen/)).toBeInTheDocument();
     expect(screen.getByText(/keine rechtsverbindliche Signatur/)).toBeInTheDocument();
+  });
+
+  it('verlangt fuer den zweiten Check-Up eine neue Bestaetigung (VOR-03)', async () => {
+    // Bis VOR-03 gingen Bewertungen und Bestätigung des ersten Rads in den
+    // Check-Up des nächsten über: „Bestätigung liegt vor." bei leerem Feld.
+    // Abfragen über Beschriftung und Text statt Rolle: Das Formular hat 27
+    // Auswahlfelder, und die Rollenabfrage läuft in jsdom über jedes davon.
+    const nutzer = userEvent.setup({ delay: null });
+    renderMitVorschau(
+      <CheckupPage user={testUser([...nutzerRolle])} />,
+      '/betrieb/flotte/checkup?rad=r1',
+    );
+    const uebernehmen = () => screen.getByText(/Check-Up in die Vorschau/).closest('button');
+
+    await nutzer.click(screen.getAllByLabelText('Problem')[0]!);
+    await nutzer.type(screen.getByLabelText(/Namen tippen/), 'Anna');
+    await nutzer.click(uebernehmen()!);
+
+    await nutzer.selectOptions(screen.getByLabelText('Rad'), 'r2');
+    await nutzer.click(screen.getByText('Weiter'));
+
+    expect(uebernehmen()).toBeDisabled();
+    expect(screen.getByText(/Noch keine Bestätigung/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Namen tippen/)).toHaveValue('');
+    // Der erste Prüfpunkt steht wieder auf „In Ordnung", ohne Notizfeld.
+    expect(screen.getAllByLabelText(/In Ordnung/)[0]).toBeChecked();
+    expect(screen.queryByLabelText('Notiz zu Reifen und Luftdruck')).toBeNull();
+    // Die Meldung zum ersten Rad steht nicht über dem Check-Up des zweiten.
+    expect(document.querySelector('[role="status"]')).toBeNull();
+  });
+});
+
+describe('Rad speichern und entfernen', () => {
+  /**
+   * Beide Aktionen wechseln zurück in die Radflotte. Die Zustandsmeldung muss
+   * dort ankommen (VOR-01) - bis dahin stand keine, und das geänderte oder
+   * verschwundene Rad sah aus wie ein echter Vorgang.
+   *
+   * Eigener Router statt `renderMitVorschau`: Der Seitenwechsel ist hier der
+   * Gegenstand der Prüfung, und beide Seiten brauchen ihre Route.
+   */
+  function oeffneRad(radId: string) {
+    const user = testUser([...nutzerRolle]);
+    return render(
+      <MemoryRouter initialEntries={[`/betrieb/flotte/rad/${radId}`]}>
+        <VorschauProvider>
+          <Routes>
+            <Route path="/betrieb/flotte" element={<FleetPage user={user} />} />
+            <Route path="/betrieb/flotte/rad/:radId" element={<BikeEditPage user={user} />} />
+          </Routes>
+        </VorschauProvider>
+      </MemoryRouter>,
+    );
+  }
+
+  /**
+   * Die Zustandsmeldung der Radflotte - gesucht über ihren Text und dann an
+   * ihrer Rolle geprüft. Eine Rollenabfrage liefe in jsdom über die ganze,
+   * große Seite.
+   */
+  function meldungMit(text: RegExp): HTMLElement {
+    const meldung = screen.getByText(text).closest<HTMLElement>('[role="status"]');
+    expect(meldung).not.toBeNull();
+    return meldung!;
+  }
+
+  it('meldet nach dem Speichern in der Radflotte, was nicht passiert ist', async () => {
+    const nutzer = userEvent.setup({ delay: null });
+    oeffneRad('r1');
+
+    await nutzer.click(screen.getByText('In die Vorschau übernehmen'));
+
+    expect(screen.getByText('Radflotte', { selector: 'h1' })).toBeInTheDocument();
+    const meldung = meldungMit(/Rad geändert: Lastenrad 1/);
+    expect(within(meldung).getByText(/Nicht passiert/)).toBeInTheDocument();
+    expect(within(meldung).getByText(/Nichts gespeichert/)).toBeInTheDocument();
+  });
+
+  it('entfernt ein Rad erst nach Rueckfrage und meldet, dass nichts geloescht wurde', async () => {
+    const nutzer = userEvent.setup({ delay: null });
+    oeffneRad('r1');
+
+    await nutzer.click(screen.getByText('Rad entfernen'));
+    // Noch auf der Seite: Der Knopf allein entfernt nichts (VOR-10).
+    expect(screen.getByText('Rad bearbeiten', { selector: 'h1' })).toBeInTheDocument();
+
+    await nutzer.click(screen.getByText('Ja, Rad entfernen'));
+
+    const meldung = meldungMit(/Rad entfernt: Lastenrad 1/);
+    expect(within(meldung).getByText(/Nichts gelöscht/)).toBeInTheDocument();
   });
 });
 

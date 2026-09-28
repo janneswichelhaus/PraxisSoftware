@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderMitVorschau } from '@/test-utils';
 import { BreakdownPage } from './BreakdownPage';
@@ -70,7 +70,7 @@ describe('Pannenassistent', () => {
     ).toBeInTheDocument();
 
     await nutzer.click(screen.getByRole('button', { name: /In Reparatur/ }));
-    expect(screen.getByText(/als „In Reparatur" markiert/)).toBeInTheDocument();
+    expect(screen.getByText(/als „In Reparatur“ markiert/)).toBeInTheDocument();
     expect(screen.getByText(/Keine Termine abgesagt oder verschoben/)).toBeInTheDocument();
   });
 
@@ -149,5 +149,62 @@ describe('Pannenassistent', () => {
     const inhalt = document.body.textContent ?? '';
     expect(inhalt).toMatch(/nicht hinterlegt/);
     expect(inhalt).not.toMatch(/\b\d{4,}\b/);
+  });
+
+  it('nennt im Kopf kein Rad, solange es gewaehlt wird (VOR-18)', () => {
+    oeffne('/betrieb/flotte/panne');
+    // Die Auswahl ist vorbelegt, gewählt ist damit aber noch nichts.
+    expect(screen.getByText('Rad noch nicht ausgewählt')).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Rad' })).toHaveDisplayValue(
+      'Lastenrad 1 · Raddepot Nord',
+    );
+  });
+
+  it('fragt nach dem Fuehrerschein mit „Sie“ (VOR-08, WRT-13)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Ja' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Groß' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Nein' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Nein' }));
+    await nutzer.type(screen.getByRole('textbox', { name: /Standort/ }), 'Beispielweg 3');
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+
+    expect(
+      screen.getByRole('heading', { name: 'Haben Sie einen Autoführerschein?' }),
+    ).toBeInTheDocument();
+  });
+
+  it('behauptet nach „Nein“ vor Ort keine Absage und keine Information (VOR-08)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Ja' })); // gehindert
+    await nutzer.click(screen.getByRole('button', { name: 'Klein' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja' })); // Werkstatt in der Naehe
+    await nutzer.click(screen.getByRole('button', { name: 'Nein' })); // keine Reparatur vor Ort
+
+    const meldung = screen.getByRole('status');
+    expect(within(meldung).getByText(/Reparatur vor Ort nicht möglich/)).toBeInTheDocument();
+    expect(within(meldung).queryByText(/telefonisch abgesagt/)).toBeNull();
+    expect(within(meldung).queryByText(/Praxismanagement informiert/)).toBeNull();
+  });
+
+  it('fuehrt oben und nach dem Abschluss zur Radflotte zurueck (VOR-21, VOR-12)', async () => {
+    const nutzer = userEvent.setup();
+    oeffne();
+    expect(screen.getByRole('link', { name: '← Zurück zur Radflotte' })).toHaveAttribute(
+      'href',
+      '/betrieb/flotte',
+    );
+
+    await nutzer.click(screen.getByRole('button', { name: 'Nein' }));
+    await nutzer.type(screen.getByRole('textbox', { name: /Was ist auffällig/ }), 'Licht');
+    await nutzer.click(screen.getByRole('button', { name: 'Melden' }));
+
+    const zurueck = screen.getByRole('link', { name: 'Zurück zur Radflotte' });
+    expect(zurueck).toHaveAttribute('href', '/betrieb/flotte');
+    expect(zurueck).toHaveClass('bg-accent', 'text-surface');
   });
 });
