@@ -273,6 +273,23 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 | `max.mustermann@patient.invalid` | patient              |
 | `erika.beispiel@patient.invalid` | patient              |
 
+## Benennung im Code
+
+Gilt für **neuen** Code ab 2026-09-27. Bestehender Code wird dafür **nicht**
+umbenannt — auch nicht „nebenbei“ in einer berührten Datei; innerhalb eines
+Moduls geht Einheitlichkeit vor der Regel.
+
+- **Bezeichner englisch:** Datenbank (Tabellen, Spalten, Funktionen — so ist es
+  bereits), Ordner unter `src/features/`, Dateien, Komponenten, Funktionen,
+  Typen, Variablen.
+- **Fachbegriff ohne genaue Entsprechung bleibt deutsch**, in ASCII
+  (`ausfallhonorar`, nicht `ausfallhonorär`), statt einer irreführenden
+  Übersetzung. Im Zweifel den Begriff nehmen, den das Datenbankschema schon
+  verwendet.
+- **Deutsch bleiben:** alles, was Nutzende sehen (Oberfläche, Fehlermeldungen,
+  Dokumente), Kommentare, Commit-Nachrichten und `docs/`.
+- Keine Umlaute oder `ß` in Bezeichnern und Dateinamen.
+
 ## Befehle
 
 ```bash

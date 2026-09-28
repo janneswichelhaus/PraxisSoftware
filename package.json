@@ -1,6 +1,7 @@
 {
   "name": "praxissoftware",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.1.0",
   "type": "module",
   "packageManager": "pnpm@10.33.0",
