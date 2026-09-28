@@ -51,6 +51,8 @@ const patientSchema = z.object({
   // UX-003a: Behandlungsliege mitnehmen (ANN-116). Eine interne
   // Versorgungsangabe wie der Zugangshinweis - für ein Patientenkonto leer.
   treatment_table_required: z.boolean().nullable().optional(),
+  // PRX-007: Mitnehmen (ANN-138), von Hand gepflegt; für ein Patientenkonto leer.
+  take_along_items: z.array(z.string()).nullable().optional(),
 });
 
 export type Patient = z.infer<typeof patientSchema>;
@@ -92,6 +94,7 @@ const SELECT = [
   'home_visit_access_note, special_note, remark',
   'geocode_precision',
   'treatment_table_required',
+  'take_along_items',
 ].join(', ');
 
 export async function fetchPatients(): Promise<PatientListenzeile[]> {
@@ -432,6 +435,27 @@ export async function setTreatmentTableRequired(
   });
 
   if (error) throw new Error('Die Angabe zur Behandlungsliege konnte nicht gespeichert werden.');
+}
+
+/** Höchstens so viele Einträge, je höchstens so lang - wie `app.take_along_items_valid`. */
+export const MITNEHMEN_HOECHSTZAHL = 10;
+export const MITNEHMEN_HOECHSTLAENGE = 60;
+
+/**
+ * Setzt die Mitnehmen-Liste einer Person (PRX-007, ANN-138).
+ *
+ * Der Server normalisiert (Rand, Leeres, Doppel) und gibt die gespeicherte
+ * Liste zurück; verbindlich prüft `set_take_along_items` Rolle, Organisation
+ * und Form und protokolliert ohne Inhalt (ADR-004, ADR-010).
+ */
+export async function setTakeAlongItems(patientId: string, eintraege: string[]): Promise<string[]> {
+  const { data, error } = (await getSupabase().rpc('set_take_along_items', {
+    p_patient_id: patientId,
+    p_items: eintraege,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Die Liste zum Mitnehmen konnte nicht gespeichert werden.');
+  return z.array(z.string()).parse(data ?? []);
 }
 
 /**

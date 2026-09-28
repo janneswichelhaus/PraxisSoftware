@@ -5,6 +5,8 @@ import {
   besucheDesTages,
   liegeHeute,
   liegeText,
+  mitnehmenHeute,
+  mitnehmenText,
   wegeDesTages,
 } from './tagesstart';
 
@@ -173,5 +175,35 @@ describe('Anstehende Fehlzeiten (UEB-02)', () => {
       eintrag({ id: 't', um: '10:00', kind: 'training', patient_id: null }),
     ];
     expect(anstehendeFehlzeiten(plan, JETZT)).toEqual([]);
+  });
+});
+
+describe('Mitnehmen heute (PRX-007, ANN-138)', () => {
+  it('zählt über die noch anzufahrenden Besuche zusammen, ohne Groß/klein', () => {
+    const posten = mitnehmenHeute([
+      eintrag({ id: 'a', um: '07:00', take_along_items: ['Theraband', 'Kinesiotape'] }),
+      eintrag({ id: 'b', um: '08:00', take_along_items: ['theraband'] }),
+      eintrag({ id: 'c', um: '09:00', take_along_items: [] }),
+    ]);
+    expect(posten).toEqual([
+      { was: 'Theraband', anzahl: 2 },
+      { was: 'Kinesiotape', anzahl: 1 },
+    ]);
+    expect(mitnehmenText(posten)).toBe('Theraband (2), Kinesiotape');
+  });
+
+  it('lässt erledigte und abgesagte Besuche, Training und Fehlzeit weg', () => {
+    const posten = mitnehmenHeute([
+      eintrag({ id: 'a', um: '06:00', status: 'completed', take_along_items: ['Band'] }),
+      eintrag({ id: 'b', um: '07:00', status: 'cancelled', take_along_items: ['Tape'] }),
+      eintrag({ id: 't', um: '08:00', kind: 'training', patient_id: null, take_along_items: null }),
+      eintrag({ id: 'c', um: '09:00', take_along_items: ['Plan'] }),
+    ]);
+    expect(posten).toEqual([{ was: 'Plan', anzahl: 1 }]);
+  });
+
+  it('nennt keinen Namen und sagt es, wenn nichts eingetragen ist', () => {
+    expect(mitnehmenHeute([eintrag({ id: 'a', um: '07:00' })])).toEqual([]);
+    expect(mitnehmenText([])).toBe('nichts eingetragen');
   });
 });

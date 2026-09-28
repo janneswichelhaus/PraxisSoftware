@@ -182,7 +182,7 @@ Punkt 3 und 4 (2026-09-12) ausgeschlossen. Der Kalender als Suchfläche
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (thevea „8/10", THEORG Terminblatt) |
 | Berührt | VER-001, CAL-007, ABR-002, ADR-009 |
 
@@ -319,7 +319,7 @@ Beweisfunktion: Speicherform, Frist, Zugriff nach ADR-008 und ADR-004.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | Quelle | Produktreview 2026-09-06 |
 | Berührt | §4.2 (Vertretung), ADR-010, `IDEA-ORG-005`, `IDEA-PRX-036`; PAT-005, UI-002a |
 
@@ -759,7 +759,7 @@ Ablaufrunde oder ein eigenes Epic — nicht dieser Eintrag.
 
 | | |
 |---|---|
-| Status | notiert |
+| Status | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
 | Berührt | DOK-EPIC, ADR-006, §4.6 |
 
@@ -835,7 +835,7 @@ neu zugeschnitten, nicht dieser Eintrag wiederbelebt.
 
 | | |
 |---|---|
-| Status | notiert |
+| Status | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | Quelle | Jannes, 2026-09-11 (Kanvas „Own Motion · Praxis") |
 | Berührt | ADR-009; ABR-EPIC; `IDEA-PRX-010`, `-012` |
 
@@ -877,7 +877,7 @@ Spur. Hier bleibt nur die Kennung.
 
 | | |
 |---|---|
-| Status | notiert |
+| Status | überführt → PRX-EPIC-002 (gebaut 2026-09-28) |
 | Quelle | Jannes, 2026-09-11 |
 | Berührt | ADR-009, ADR-016; ABR-001, **ABR-002**; VER-002, VER-003; `ANN-006`, C1; E14 (erledigt 2026-09-13, CAL-018) |
 

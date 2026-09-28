@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-28 · letzte Session: PRX-EPIC-001 (Warteliste, Terminsuche, Gebietstage)
+# Status · Stand 2026-09-28 · letzte Session: PRX-EPIC-002 (Am Termin steht, was man vor der Tür wissen muss)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,28 +6,31 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**PRX-EPIC-001 gebaut (Branch `claude/tender-carson-vhe941`):** Ein freier Platz findet eine Patientin.
+**PRX-EPIC-002 gebaut (Branch `claude/weiter-44wlun`):** Am Termin steht, was man vor der Tür wissen muss.
 
-- **Warteliste** (Kalender → Ansicht und Filter, Funktionssuche, Akte → Termine): Wunschzeiten, Dauer, Terminart, Wunsch-Therapeut:in, Grundlage und ein **organisatorischer** Grund — Wunsch der Person, Verordnung endet, Vorgabe der Praxis — mit „bis spätestens“ (ANN-132); Anrufen per Tipp. Geschlossene Einträge fallen nach zwölf Monaten (ANN-133).
-- **Gebietstage** (Organisatorisches → Gebietstage): Postleitzahlen je Gebiet mit Tagen und Tageshälften. Beim Hausbesuch warnen Anlegen, Bearbeiten und Serie „außerhalb des Gebietstags“, sperren aber nicht (ANN-135).
-- **Freie Termine suchen** (am Eintrag, an der Verordnung, in der Akte): Vorschläge aus Arbeitszeit und Belegung von Therapeut:in **und** Patient:in, Gebietstag vorn, Fahrweg der ersten zehn live geprüft und nur gekennzeichnet (ANN-136). „Übernehmen“ öffnet das Terminformular — reserviert wird nichts.
-- **Nachrücken:** Nach einer Absage und an einer freien Stelle im Kalender steht „Passt von der Warteliste“; Termin und Schließen des Eintrags in einer Transaktion. Versendet wird nichts (B15).
+- **Kurzblick für die Vertretung** (am Behandlungstermin, zugeklappt): Zugang, Besonderheit, Material, feste Therapeut:in, Mengen der Grundlage und der letzte Eintrag im Wortlaut; jedes Aufklappen wird protokolliert (ANN-137).
+- **Material zum Mitnehmen** (Akte → Stammdaten → Material): von Hand an der Person gepflegt, nie aus Befunden abgeleitet; die Übersicht zeigt „Heute mitnehmen“ zusammengezählt und ohne Namen (ANN-138).
+- **„Termin n von m“** an jedem Behandlungstermin; **Rechnung an** und **Offene Rechnungen** nur für owner und office (ANN-139).
+- **Termin abhaken:** Am dokumentierten Termin bestätigt die behandelnde Person die Heilmittel, vorbelegt aus der Verordnung — nur am eigenen Termin; Zurücknehmen und Ausfallhonorar bleiben beim Büro; eine Rechnung entsteht nie (ANN-140, löst ANN-071 in dieser Frage ab).
+- **BEF-055 Teil 1:** „Finalisieren“ am offenen Termin sagt, dass der Termin dabei als durchgeführt gilt.
 
-Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Trainingstermin als Nachbar in der Suche — und drei weitere eingearbeitet), wartet auf deinen Merge. Fortschritt **40,1 %**.
+Pull Request offen, **Zweitreview gelaufen** (kein blockierender Befund, vier weitere eingearbeitet), wartet auf deinen Merge. Fortschritt **40,8 %**.
 
 ## Danach — Bauen
 
-1. **PRX-EPIC-002** (Am Termin steht, was man vor der Tür wissen muss), Block 2. `/weiter`
-2. **PRX-EPIC-003** (Nichts fällt durch)
-3. **STA-EPIC-001** (Statistiken)
+1. **PRX-EPIC-003** (Nichts fällt durch), Block 2. `/weiter`
+2. **STA-EPIC-001** (Statistiken)
+3. **TRN-EPIC-001** (Block 3, Trainingsbereich)
 
 ## Prüfverfahren
 
-**Stand PRX-EPIC-001 (2026-09-28, in der Cloud gelaufen):** `test` **3652** grün, `test:db` **2167** grün (neu: `waitlist`, `territories`, `slot-search`, `waitlist-matches`), `test:e2e` für `warteliste.spec.ts` 16 grün (Prüfseite `tests/e2e/fixtures/warteliste.html`, 1280 und 375 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
+**Stand PRX-EPIC-002 (2026-09-28, in der Cloud gelaufen):** `test` **3683** grün, `test:db` **2220** grün (neu: `appointment-brief`, `take-along`, `appointment-billing-context`, `record-at-appointment`), `test:e2e` für `termin.spec.ts` und `uebersicht.spec.ts` 24 grün (Prüfseite `tests/e2e/fixtures/termin.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
 **Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute (DOK-006, in der Cloud gelaufen): `test` **2692** (lokal unter Node 24 und Windows scheitern weiter Router-, Navigations- und Pfadtests mit derselben „AbortSignal"-Ursache; maßgeblich ist die CI mit Node 22); `test:db` **2104**, davon 46 in `patient-photos.test.ts`; `test:e2e` ohne Anmeldung: **115 grün**, einer übersprungen, darunter `fotos.spec.ts` mit der künstlichen Kamera von Chromium. In der Cloud braucht `login.spec.ts` die Platzhalter aus der CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), sonst zeigt die App den Konfigurationsfehler. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html`, `kalender.html`, `organisation.html`, `uebersicht.html` (Tagesstart, Liege in der Akte), `bausteine.html` (Befund aus Bausteinen), `bericht.html` (Therapiebericht, Formular und Blatt) und `fotos.html` (Kamera, Fotoliste, Vergleich, Metadaten) bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
 ## Blocker (Jannes-seitig)
+
+- **Am Termin sichten** (PRX-EPIC-002): Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md). Zu bestätigen: **ANN-137** (Kurzblick zeigt auch einen Entwurf; jedes Aufklappen protokolliert), **ANN-138** (Material an der Person, am Tag ohne Namen), **ANN-139** (Behandelnde sehen keine offenen Rechnungen) und **ANN-140** (nur am eigenen Termin; Zurücknehmen und Ausfallhonorar beim Büro).
 
 - **Warteliste und Terminsuche sichten** (PRX-EPIC-001): drei Schritte in [Praxisverwaltung](sichtung/praxisverwaltung.md). Zu bestätigen: **ANN-132** (drei Gründe statt einer Stufe), **ANN-133** (zwölf Monate nach dem Schließen), **ANN-134** (Lesen der Liste ohne Protokoll), **ANN-135** (genaue Postleitzahl, Grenze 12 Uhr, Warnung statt Sperre), **ANN-136** (dicht gepackte Vorschläge, knapper Fahrweg nur gekennzeichnet).
 
@@ -51,6 +54,6 @@ Pull Request offen, **Zweitreview gelaufen** (ein blockierender Befund — Train
 
 ## Letzte Session
 
-**PRX-EPIC-001 (PRX-001 bis PRX-004).** Vier Migrationen und eine für den Zweitreview: `waitlist_entries` mit eigener Datenklasse `warteliste`, `territories` und `territory_postal_codes` (Betriebsdaten), die Suche `find_free_slots` und `rate_slot_travel` ohne Tabelle, das Nachrücken `list_waitlist_matches` und `create_appointment_from_waitlist`. Auskunft nach Art. 15, Löschlauf und Wiederanwendung nach Restore sind nachgezogen. Keine neue Abhängigkeit, kein neuer Anbieter; die Fahrzeit nutzt die vorhandene Matrix beim eigenen Kartendienst (Gate unverändert). Prüfseite `tests/e2e/fixtures/warteliste.html` mit fünf Ansichten.
+**PRX-EPIC-002 (PRX-005 bis PRX-009).** Vier Migrationen und eine für den Zweitreview: `get_appointment_brief` (Kurzblick mit Protokoll), `take_along_items` an `patient_care_details` mit `set_take_along_items` (Kartei, Auskunft, Tagesliste nachgezogen), `get_appointment_billing_context` mit den gemeinsamen Regeln `app.appointment_basis_position` (die Deckung fragt sie jetzt) und `app.open_invoices` (die offenen Posten lesen daraus), `app.can_record_services_for_appointment` für Vorschlag, Erfassen und `get_appointment_services`. Keine neue Tabelle, keine neue Abhängigkeit, kein neuer Anbieter. Prüfseite `tests/e2e/fixtures/termin.html` mit drei Ansichten.
 
 **Lokale Schritte:** nach dem Merge `git pull origin main` und `pnpm dlx supabase@2.116.0 db reset` (neue Migrationen); kein `pnpm install`.

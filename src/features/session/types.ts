@@ -304,6 +304,26 @@ export function canRecordBillableServices(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Darf die Person an diesem Termin die Heilmittel bestätigen (PRX-009)?
+ *
+ * ANN-140: owner und office an jedem Termin, therapist und team_lead an ihrem
+ * eigenen. Nur Darstellung - verbindlich prüft
+ * `app.can_record_services_for_appointment`.
+ */
+export function canRecordAtAppointment(
+  roles: readonly RoleKey[],
+  appointmentStaffMemberId: string,
+  ownStaffMemberId: string | null,
+): boolean {
+  if (canRecordBillableServices(roles)) return true;
+  return (
+    roles.some((role) => role === 'therapist' || role === 'team_lead') &&
+    ownStaffMemberId !== null &&
+    ownStaffMemberId === appointmentStaffMemberId
+  );
+}
+
+/**
  * Rollen, die die Praxis-Stammdaten fuer Rechnungen pflegen duerfen
  * (ABR-000, ANN-074).
  *

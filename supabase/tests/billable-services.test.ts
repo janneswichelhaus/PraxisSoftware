@@ -450,12 +450,24 @@ describe('Leistungserfassung', () => {
   });
 
   describe('Wer darf was', () => {
-    it('laesst Therapeutin und Teamleitung nicht erfassen', async () => {
-      const id = await termin({ vorStunden: 60 });
-      for (const konto of [users.therapist, users.teamLead]) {
+    // Seit PRX-009 (ANN-140, loest ANN-071 ab) erfassen Therapeutin und
+    // Teamleitung an ihrem EIGENEN Termin; an dem einer Kollegin weiter nicht,
+    // und die Leistungsliste der Abrechnung lesen sie weiter nicht. Der Fall
+    // am eigenen Termin steht in record-at-appointment.test.ts.
+    it('laesst Therapeutin und Teamleitung nicht am Termin einer Kollegin erfassen', async () => {
+      const beiAnna = await termin({ vorStunden: 60 });
+      const beiTim = await termin({ vorStunden: 58 });
+      await asPostgres('update public.appointments set staff_member_id = $2 where id = $1', [
+        beiTim,
+        '55555555-5555-4555-8555-000000000004',
+      ]);
+      for (const [konto, fremd] of [
+        [users.therapist, beiTim],
+        [users.teamLead, beiAnna],
+      ] as const) {
         await expect(
           asUser(konto, ERFASSEN, [
-            id,
+            fremd,
             JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
           ]),
         ).rejects.toThrow(/not allowed to record billable services/);
