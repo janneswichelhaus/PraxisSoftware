@@ -147,9 +147,10 @@ describe('Termin abhaken: Heilmittel bestätigen (PRX-009)', () => {
     expect(screen.queryByRole('link', { name: 'Zur Abrechnung' })).toBeNull();
   });
 
-  it('sagt vor der Dokumentation, wann bestätigt wird - ohne zu laden', async () => {
-    rendern('completed');
-    expect(await screen.findByText(/sobald die Dokumentation finalisiert ist/)).toBeInTheDocument();
+  it('schweigt vor der Dokumentation und lädt nichts (ANN-005, CAL-004)', () => {
+    const { container } = rendern('completed');
+    expect(container).toBeEmptyDOMElement();
+    expect(screen.queryByText(/dokumentation/i)).toBeNull();
     expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
   });
 });

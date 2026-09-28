@@ -215,19 +215,10 @@ export function HeilmittelBestaetigen({
     retry: false,
   });
 
-  // Vor der Dokumentation gibt es nichts zu bestätigen (§19, ANN-072). Die
-  // Zeile sagt, wann es so weit ist, statt einen gesperrten Knopf zu zeigen.
-  // Am offenen Termin steht noch nichts: Dort führt der Abschluss, nicht
-  // dieser Abschnitt.
-  if (appointment.fee_basis === null && appointment.status === 'completed') {
-    return (
-      <Section titel="Heilmittel">
-        <p className="text-ink-muted text-liste max-w-prose">
-          Die geleisteten Heilmittel werden bestätigt, sobald die Dokumentation finalisiert ist.
-        </p>
-      </Section>
-    );
-  }
+  // Vor der Dokumentation gibt es nichts zu bestätigen (§19, ANN-072) - und
+  // der Abschnitt schweigt dann ganz. Ein Termin ohne Dokumentation ist
+  // erlaubt (ANN-005); ein Hinweis „sobald die Dokumentation …“ läse sich als
+  // Mangel (CAL-004, appointment-completion.spec.ts).
   if (!erfassbar && appointment.status !== 'invoiced') return null;
 
   return (
