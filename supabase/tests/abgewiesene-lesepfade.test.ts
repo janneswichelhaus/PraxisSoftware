@@ -281,6 +281,14 @@ const FAELLE: Fall[] = [
     [],
     'appointments.read',
   ],
+  // PRX-004: Nachrücken von der Warteliste.
+  [
+    'list_waitlist_matches',
+    users.trainer,
+    `select * from public.list_waitlist_matches($1::uuid, current_date, '09:00', '10:00')`,
+    [IRGENDEINE],
+    'waitlist.read',
+  ],
   // PRX-001: Die Warteliste gehört zur Terminverwaltung; die Trainingsbetreuung
   // sieht sie nicht.
   [

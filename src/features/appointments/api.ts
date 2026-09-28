@@ -841,22 +841,36 @@ export async function createAppointment(
   grundlageId: string | null = null,
   /** Ein Tag vor dem heutigen, ausdrücklich bestätigt (FIX-019). */
   confirmedPast = false,
+  /**
+   * Eintrag der Warteliste, aus dem der Termin nachrückt (PRX-004). Dann legt
+   * `create_appointment_from_waitlist` den Termin an und schließt den Eintrag
+   * in derselben Transaktion — die Person kommt dort aus dem Eintrag.
+   */
+  waitlistEntryId: string | null = null,
 ): Promise<string> {
-  const { data, error } = (await getSupabase().rpc('create_appointment', {
-    p_patient_id: patientId,
-    p_staff_member_id: values.staff_member_id,
-    p_appointment_type: values.appointment_type,
-    p_date: values.date,
-    p_start_time: values.start_time,
-    p_end_time: values.end_time,
-    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
-    p_allow_outside_working_hours: allowOutsideWorkingHours,
-    p_treatment_basis_id: grundlageId,
-    p_confirmed_past: confirmedPast,
-  })) as { data: unknown; error: { message?: string } | null };
+  const { data, error } = (await getSupabase().rpc(
+    waitlistEntryId ? 'create_appointment_from_waitlist' : 'create_appointment',
+    {
+      ...(waitlistEntryId ? { p_entry_id: waitlistEntryId } : { p_patient_id: patientId }),
+      p_staff_member_id: values.staff_member_id,
+      p_appointment_type: values.appointment_type,
+      p_date: values.date,
+      p_start_time: values.start_time,
+      p_end_time: values.end_time,
+      p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+      p_allow_outside_working_hours: allowOutsideWorkingHours,
+      p_treatment_basis_id: grundlageId,
+      p_confirmed_past: confirmedPast,
+    },
+  )) as { data: unknown; error: { message?: string } | null };
 
   if (error) {
     if (error.message?.includes('outside_working_hours')) throw new AusserhalbArbeitszeitError();
+    if (error.message?.includes('waitlist entry')) {
+      throw new Error(
+        'Der Eintrag der Warteliste ist nicht mehr offen – vielleicht hat ihn gerade jemand anderes eingeplant. Der Termin wurde nicht angelegt.',
+      );
+    }
     if (error.message?.includes('in the past')) throw new VergangenheitError();
     // Keine Details aus der Datenbank nach außen. Die Überschneidung ist der
     // einzige Fall, den die bedienende Person unmittelbar auflösen kann.

@@ -225,3 +225,55 @@ export function windowsError(windows: readonly TimeWindow[]): string | null {
   }
   return null;
 }
+
+const matchSchema = z.object({
+  id: z.string(),
+  patient_id: z.string(),
+  patient_given_name: z.string(),
+  patient_family_name: z.string(),
+  phone: z.string().nullable(),
+  phone_mobile: z.string().nullable(),
+  treatment_basis_id: z.string().nullable(),
+  appointment_type: appointmentTypeSchema,
+  duration_minutes: z.number(),
+  time_windows: z.array(windowSchema),
+  needed_by: z.string().nullable(),
+  priority_reason: reasonSchema,
+  territory_status: z.enum(['none', 'match', 'outside']),
+  updated_at: z.string(),
+});
+export type WaitlistMatch = z.infer<typeof matchSchema>;
+
+/** Ein freier Platz: wer, an welchem Tag, von wann bis wann (Praxiszeit). */
+export interface FreeSlot {
+  staffMemberId: string;
+  date: string;
+  start: string;
+  end: string;
+  /** Die Person, die gerade abgesagt hat — sie passt nicht auf ihren eigenen Platz. */
+  excludePatientId?: string | null;
+}
+
+/**
+ * Nachrücken (PRX-004): offene Einträge, die auf einen freien Platz passen.
+ * Die Regel steht im Server (`list_waitlist_matches`).
+ */
+export async function fetchWaitlistMatches(slot: FreeSlot): Promise<WaitlistMatch[]> {
+  const fallback = 'Die passenden Einträge der Warteliste konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_waitlist_matches', {
+    p_staff_member_id: slot.staffMemberId,
+    p_date: slot.date,
+    p_start_time: slot.start,
+    p_end_time: slot.end,
+    p_exclude_patient_id: slot.excludePatientId ?? null,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(fallback);
+  return antwort(z.array(matchSchema), data ?? [], fallback);
+}
+
+/** „09:00" plus Minuten, ohne Tageswechsel. */
+export function addMinutes(time: string, minutes: number): string {
+  const [h = 0, m = 0] = time.split(':').map(Number);
+  const total = Math.min(h * 60 + m + minutes, 23 * 60 + 59);
+  return `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`;
+}

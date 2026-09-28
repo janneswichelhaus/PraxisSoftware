@@ -269,6 +269,7 @@ describe('Audit-Lesepfad', () => {
       'list_text_snippets',
       'list_therapy_report_sources',
       'list_waitlist_entries',
+      'list_waitlist_matches',
       'rate_slot_travel',
       'search_patients',
     ]);
