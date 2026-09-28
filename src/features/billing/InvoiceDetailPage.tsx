@@ -1,23 +1,31 @@
-import { useState } from 'react';
+import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
+import { Textlink } from '@/components/ui/Textlink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
-import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
+import { todayInTimeZone } from '@/features/appointments/api';
+import {
+  canManageBillingProfile,
+  canManageInvoicing,
+  type CurrentUser,
+} from '@/features/session/types';
 import {
   KeineStammdaten,
   ZahlungStehtNoch,
+  bereichLabels,
   deleteEntwurf,
   empfaengerartLabels,
   erstelleErinnerung,
@@ -32,11 +40,14 @@ import {
   steuerLabels,
   stelleRechnungAus,
   storniereRechnung,
+  zahlungsstandLabels,
   zahlungswegLabels,
   type Empfaenger,
   type Rechnungsansicht,
 } from './api';
+import { grundlageText, ibanInGruppen, monatsname, zahlungsTon } from './anzeige';
 import { Zahlungsformular } from './Zahlungsformular';
+import { Zahlungsstorno } from './Zahlungsstorno';
 
 /**
  * Eine Rechnung (ABR-003).
@@ -51,56 +62,86 @@ import { Zahlungsformular } from './Zahlungsformular';
  * Am Entwurf lässt sich genau zweierlei tun — den Empfänger wählen und
  * ausstellen —, dazu das Verwerfen. Alles andere ist an der Leistung zu
  * ändern, nicht an der Rechnung.
+ *
+ * **Seit UXR-010 nennt der Kopf die Rechnung (ABR-05):** Nummer oder
+ * „Entwurf", Person, Monat, Bereich, Betrag und den Zahlungsstand aus dem
+ * Server - dieselben Werte wie in der Liste. Solange nichts geladen ist,
+ * heißt die Seite nur „Rechnung": Vorher stand dort der Entwurfstext, auch
+ * beim Laden einer ausgestellten Rechnung (ZST-09).
  */
 
-const basisLabels: Record<string, string> = {
-  first: 'Erstverordnung',
-  follow_up: 'Folgeverordnung',
-  self_pay: 'Selbstzahlerin',
-};
+/** „RG-2026-0001 · Max Mustermann" oder „Entwurf · Erika Beispiel". */
+function titel(ansicht: Rechnungsansicht): string {
+  const person = ansicht.document.patient.name;
+  return ansicht.status === 'draft'
+    ? `Entwurf · ${person}`
+    : `${ansicht.invoice_number ?? 'Rechnung'} · ${person}`;
+}
+
+/** „August 2026 · Behandlung · 63,00 €" - alles aus dem Dokument, nichts gerechnet. */
+function beschreibung(ansicht: Rechnungsansicht): string {
+  const dokument = ansicht.document;
+  return [
+    monatsname(dokument.period_month),
+    // Snapshots mit `schema_version` 1 und 2 tragen keinen Bereich.
+    dokument.service_area ? bereichLabels[dokument.service_area] : null,
+    formatEuro(dokument.totals.total_cents, dokument.currency),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
 
 export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
   const { invoiceId = '' } = useParams();
   const darfAusstellen = canManageInvoicing(user.roles);
+  const darfStammdaten = canManageBillingProfile(user.roles);
 
   const rechnung = useQuery({
     queryKey: ['rechnung', invoiceId],
     queryFn: () => fetchRechnung(invoiceId),
     retry: false,
   });
+  const ansicht = rechnung.data;
 
   return (
     <>
-      <Rueckweg standard="/abrechnung" beschriftung="Rechnungen" />
+      <Rueckweg standard="/abrechnung" beschriftung="Zurück zu den Rechnungen" />
       <PageHeader
-        title={rechnung.data?.invoice_number ?? 'Rechnungsentwurf'}
-        description={
-          rechnung.data?.cancellation
-            ? 'Storniert. Das Stornodokument steht daneben; die Rechnung selbst bleibt unverändert.'
-            : rechnung.data?.status === 'issued'
-              ? 'Ausgestellt und unveränderlich. Eine Korrektur läuft über Storno und Neuausstellung.'
-              : 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.'
+        title={ansicht ? titel(ansicht) : 'Rechnung'}
+        description={ansicht ? beschreibung(ansicht) : undefined}
+        actions={
+          ansicht ? (
+            <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
+              Rechnungsblatt öffnen
+            </ButtonLink>
+          ) : undefined
         }
       />
+      {ansicht ? <Zustandszeile ansicht={ansicht} /> : null}
 
       {rechnung.isPending ? <LoadingState label="Rechnung wird geladen …" /> : null}
 
       {rechnung.error instanceof KeineStammdaten ? (
-        <Statusmeldung ton="warnung">
-          Es sind noch keine Praxis-Stammdaten erfasst. Ohne Absender, Steuernummer und
-          Bankverbindung lässt sich keine Rechnung darstellen — sie stehen unter „Praxisstammdaten".
-        </Statusmeldung>
+        <StammdatenFehlen
+          darfPflegen={darfStammdaten}
+          folge="Ohne Absender, Steuernummer und Bankverbindung lässt sich keine Rechnung darstellen."
+        />
       ) : rechnung.isError ? (
         <ErrorState
           title="Die Rechnung konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => rechnung.refetch()}
         />
       ) : null}
 
-      {rechnung.data ? (
+      {ansicht ? (
         <Rechnungsbild
-          ansicht={rechnung.data}
+          // Eine Meldung wie „Rechnung … ausgestellt." gehört zu genau dieser
+          // Rechnung und reist nicht zur nächsten mit.
+          key={ansicht.id}
+          ansicht={ansicht}
           darfAusstellen={darfAusstellen}
+          darfStammdaten={darfStammdaten}
           zeitzone={user.organizationTimeZone}
         />
       ) : null}
@@ -108,55 +149,163 @@ export function InvoiceDetailPage({ user }: { user: CurrentUser }) {
   );
 }
 
+/**
+ * Der Zustand unter dem Kopf: dieselben Etiketten wie in der Liste, aus
+ * denselben Serverwerten (ABR-05). Bei 390 px stand der Zahlungsstand vorher
+ * erst nach gut zwei Bildschirmhöhen.
+ */
+function Zustandszeile({ ansicht }: { ansicht: Rechnungsansicht }) {
+  let etiketten: ReactNode;
+  let satz: string;
+
+  if (ansicht.status === 'draft') {
+    etiketten = <Badge ton="neutral">Entwurf</Badge>;
+    satz = 'Noch ohne Nummer. Die Nummer entsteht beim Ausstellen.';
+  } else if (ansicht.cancellation) {
+    // Storniert ist keine Forderung mehr: kein Zahlungsstand daneben.
+    etiketten = <Badge ton="neutral">Storniert</Badge>;
+    satz = 'Das Stornodokument steht unten; die Rechnung selbst bleibt unverändert.';
+  } else {
+    etiketten = (
+      <>
+        <Badge ton={zahlungsTon[ansicht.payment_state]}>
+          {zahlungsstandLabels[ansicht.payment_state]}
+        </Badge>
+        {ansicht.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
+      </>
+    );
+    satz = 'Ausgestellt und unveränderlich. Eine Korrektur läuft über Storno und Neuausstellung.';
+  }
+
+  return (
+    <div className="-mt-3 mb-6">
+      <div className="flex flex-wrap items-center gap-2">{etiketten}</div>
+      <p className="text-ink-muted mt-2 max-w-prose text-sm">{satz}</p>
+    </div>
+  );
+}
+
+/**
+ * Fehlende Praxisstammdaten - mit dem Weg dorthin für die, die sie erfassen
+ * darf, und dem Namen der Rolle für alle anderen (ABR-17). Das Office darf
+ * sie nicht pflegen (ANN-074); ein Auftrag an sie wäre eine Sackgasse.
+ */
+function StammdatenFehlen({
+  darfPflegen,
+  folge,
+  ton = 'warnung',
+}: {
+  darfPflegen: boolean;
+  folge: string;
+  ton?: 'warnung' | 'fehler';
+}) {
+  return (
+    <div>
+      <Statusmeldung ton={ton}>
+        Es sind noch keine Praxisstammdaten erfasst. {folge}{' '}
+        {darfPflegen
+          ? 'Bitte zuerst Absender, Steuernummer und Bankverbindung erfassen.'
+          : 'Die Praxisinhaber:in muss sie erst erfassen.'}
+      </Statusmeldung>
+      {darfPflegen ? (
+        <Textlink to="/abrechnung/stammdaten" alleinstehend className="text-sm">
+          Zu den Praxisstammdaten
+        </Textlink>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * Eine Zeile mit Datum, Text und Betrag (ABR-B08).
+ *
+ * Am Handy stehen Datum und Betrag oben nebeneinander und der Text darunter
+ * in voller Breite. Vorher blieben dem Text in der Mitte rund 120 px, und
+ * „1 × Krankengymnastik (KG)" brach dreizeilig. Ab 640 px drei Spalten wie
+ * bisher. Die Reihenfolge im Quelltext bleibt Datum, Text, Betrag - so liest
+ * sie auch die Vorlesesoftware.
+ */
+function Listenzeile({
+  datum,
+  betrag,
+  children,
+}: {
+  datum: string;
+  betrag?: ReactNode;
+  children: ReactNode;
+}) {
+  return (
+    <li className="grid grid-cols-[1fr_auto] items-baseline gap-x-3 gap-y-0.5 py-2 sm:grid-cols-[6rem_1fr_auto]">
+      <span className="text-ink-muted col-start-1 row-start-1 text-sm tabular-nums">{datum}</span>
+      <div className="col-span-2 col-start-1 row-start-2 min-w-0 sm:col-span-1 sm:col-start-2 sm:row-start-1">
+        {children}
+      </div>
+      {betrag === undefined ? null : (
+        <span className="col-start-2 row-start-1 text-right sm:col-start-3">{betrag}</span>
+      )}
+    </li>
+  );
+}
+
 function Rechnungsbild({
   ansicht,
   darfAusstellen,
+  darfStammdaten,
   zeitzone,
 }: {
   ansicht: Rechnungsansicht;
   darfAusstellen: boolean;
+  darfStammdaten: boolean;
   zeitzone: string | null;
 }) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
+  // Die Nummer der eben ausgestellten Rechnung (ABR-10). Sie kommt aus dem
+  // Aufruf, der sie vergeben hat - die Seite rät keine.
+  const [ausgestellt, setAusgestellt] = useState<string | null>(null);
 
   return (
     <>
       {/* Die Kette rückwärts (ABR-003c): Wer diese Rechnung ansieht, soll
-          sehen, dass sie eine andere ersetzt — und dorthin kommen. */}
+          sehen, dass sie eine andere ersetzt — und dorthin kommen. Der Link
+          sieht aus wie einer (TOK-12). */}
       {ansicht.replaces_invoice_id ? (
         <Statusmeldung className="mb-4">
           Korrekturrechnung zur stornierten Rechnung{' '}
-          <Link className="underline" to={`/abrechnung/rechnungen/${ansicht.replaces_invoice_id}`}>
+          <Textlink to={`/abrechnung/rechnungen/${ansicht.replaces_invoice_id}`}>
             {ansicht.replaces_invoice_number ?? 'ohne Nummer'}
-          </Link>
+          </Textlink>
           .
         </Statusmeldung>
       ) : null}
 
-      <Section titel="Empfänger" rahmen>
-        <p className="text-ink text-liste font-medium">{dokument.recipient.name}</p>
-        <p className="text-ink-muted text-sm">
-          {empfaengerartLabels[dokument.recipient.kind] ?? 'Kostenträger'}
-        </p>
-        {dokument.recipient.street ? (
-          <p className="text-ink-muted mt-1 text-sm">
-            {`${dokument.recipient.street} ${dokument.recipient.house_number ?? ''}`.trim()},{' '}
-            {dokument.recipient.postal_code} {dokument.recipient.city}
+      {/* Auskunft im Rahmen, die Empfängerwahl darunter und ohne Rahmen:
+          Ein Formular steht nicht in einem Auskunftskasten (UI-002c, ABR-33). */}
+      <Section titel="Empfänger">
+        <Inhaltsflaeche>
+          <p className="text-ink text-liste font-medium">{dokument.recipient.name}</p>
+          <p className="text-ink-muted text-sm">
+            {empfaengerartLabels[dokument.recipient.kind] ?? 'Kostenträger'}
           </p>
-        ) : null}
-        {dokument.recipient.reference ? (
-          <p className="text-ink-muted mt-1 text-sm">
-            Aktenzeichen: {dokument.recipient.reference}
-          </p>
-        ) : null}
+          {dokument.recipient.street ? (
+            <p className="text-ink-muted mt-1 text-sm">
+              {`${dokument.recipient.street} ${dokument.recipient.house_number ?? ''}`.trim()},{' '}
+              {dokument.recipient.postal_code} {dokument.recipient.city}
+            </p>
+          ) : null}
+          {dokument.recipient.reference ? (
+            <p className="text-ink-muted mt-1 text-sm">
+              Aktenzeichen: {dokument.recipient.reference}
+            </p>
+          ) : null}
 
-        <p className="text-ink-muted mt-3 text-sm">
-          Behandelt: {dokument.patient.name}
-          {dokument.patient.date_of_birth
-            ? `, geboren am ${formatDate(dokument.patient.date_of_birth)}`
-            : ''}
-        </p>
+          <p className="text-ink-muted mt-3 text-sm">
+            Behandelt: {dokument.patient.name}
+            {dokument.patient.date_of_birth
+              ? `, geb. ${formatDate(dokument.patient.date_of_birth)}`
+              : ''}
+          </p>
+        </Inhaltsflaeche>
 
         {entwurf && darfAusstellen ? <Empfaengerwahl ansicht={ansicht} /> : null}
       </Section>
@@ -164,25 +313,25 @@ function Rechnungsbild({
       <Section titel="Leistungen" rahmen>
         <ul className="divide-line divide-y">
           {dokument.items.map((zeile, index) => (
-            <li
+            <Listenzeile
               key={`${zeile.performed_on}-${zeile.code}-${index}`}
-              className="flex flex-wrap items-baseline gap-x-3 py-2"
+              datum={formatDate(zeile.performed_on)}
+              betrag={
+                <span className="text-ink text-liste tabular-nums">
+                  {formatEuro(zeile.line_total_cents, zeile.currency)}
+                </span>
+              }
             >
-              <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
-                {formatDate(zeile.performed_on)}
-              </span>
-              <span className="text-ink text-liste min-w-0 flex-1">
+              <span className="text-ink text-liste">
                 {zeile.quantity} × {zeile.label} ({zeile.code})
+                {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
                 {zeile.item_kind === 'absence_fee' ? (
                   <span className="ml-2">
-                    <Badge ton="warnung">Ausfallhonorar</Badge>
+                    <Badge ton="neutral">Ausfallhonorar</Badge>
                   </span>
                 ) : null}
               </span>
-              <span className="text-ink text-liste tabular-nums">
-                {formatEuro(zeile.line_total_cents, zeile.currency)}
-              </span>
-            </li>
+            </Listenzeile>
           ))}
         </ul>
 
@@ -224,7 +373,9 @@ function Rechnungsbild({
           <ul className="flex flex-col gap-1">
             {dokument.treatment_bases.map((basis, index) => (
               <li key={`${basis.issued_on}-${index}`} className="text-ink-muted text-sm">
-                {basisLabels[basis.kind] ?? basis.kind} vom {formatDate(basis.issued_on)}
+                {/* Dieselben Wörter wie in der Akte (ABR-18): „Selbstzahler
+                    seit …", nicht „Selbstzahlerin vom …". */}
+                {grundlageText(basis.kind, basis.issued_on)}
                 {basis.prescriber ? ` · ${basis.prescriber}` : ''}
               </li>
             ))}
@@ -243,11 +394,15 @@ function Rechnungsbild({
           {dokument.issuer.postal_code} {dokument.issuer.city}
         </p>
         <p className="text-ink-muted mt-1 text-sm">Steuernummer {dokument.issuer.tax_number}</p>
+        {/* Beschriftet und in Vierergruppen (ABR-28); gespeichert bleibt sie,
+            wie sie ist. */}
         <p className="text-ink-muted text-sm">
-          {dokument.issuer.account_holder ?? dokument.issuer.legal_name} · {dokument.issuer.iban}
-          {dokument.issuer.bic ? ` · ${dokument.issuer.bic}` : ''}
+          {dokument.issuer.account_holder ?? dokument.issuer.legal_name} · IBAN{' '}
+          {ibanInGruppen(dokument.issuer.iban)}
+          {dokument.issuer.bic ? ` · BIC ${dokument.issuer.bic}` : ''}
         </p>
-        {ansicht.due_on ? (
+        {/* Eine stornierte Rechnung ist keine Forderung mehr (ABR-06). */}
+        {ansicht.cancellation ? null : ansicht.due_on ? (
           <p className="text-ink-muted mt-1 text-sm">
             Zahlbar bis {formatDate(ansicht.due_on)} ({dokument.issuer.payment_term_days} Tage).
           </p>
@@ -258,23 +413,18 @@ function Rechnungsbild({
         )}
       </Section>
 
-      {/* Das Blatt zum Verschicken steht als eigene Seite daneben (ABR-003b):
-          Ein Brief ist kein Bedienbildschirm, und der Entwurf lässt sich
-          darauf ansehen, bevor er eine Nummer bekommt. */}
-      <Section titel="Rechnungsblatt" ebene={2}>
-        <p className="text-ink-muted text-sm">
-          {entwurf
-            ? 'Der Entwurf lässt sich als Blatt ansehen und ausdrucken — mit einem Vermerk darauf, dass er keine Rechnung ist.'
-            : 'Das Blatt zum Verschicken: über den Druckdialog des Browsers auf Papier oder in eine PDF-Datei.'}
-        </p>
-        <div className="mt-3">
-          <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/druck`} variant="secondary">
-            Rechnungsblatt öffnen
-          </ButtonLink>
-        </div>
-      </Section>
-
-      {entwurf && darfAusstellen ? <Entwurfsaktionen ansicht={ansicht} /> : null}
+      {/* Das Blatt zum Verschicken öffnet der Kopf der Seite (ABR-05). Nach
+          dem Ausstellen steht es hier noch einmal - als nächster Schritt, mit
+          dem Fokus darauf (ABR-10). */}
+      {ausgestellt ? (
+        <Ausstellmeldung nummer={ausgestellt} invoiceId={ansicht.id} />
+      ) : entwurf && darfAusstellen ? (
+        <Entwurfsaktionen
+          ansicht={ansicht}
+          darfStammdaten={darfStammdaten}
+          onAusgestellt={setAusgestellt}
+        />
+      ) : null}
 
       {!entwurf ? (
         <>
@@ -284,11 +434,40 @@ function Rechnungsbild({
             zeitzone={zeitzone}
             waehrung={dokument.currency}
           />
-          <Zahlungserinnerungen ansicht={ansicht} darfErinnern={darfAusstellen} />
+          <Zahlungserinnerungen
+            ansicht={ansicht}
+            darfErinnern={darfAusstellen}
+            zeitzone={zeitzone}
+          />
           <Stornokette ansicht={ansicht} darfStornieren={darfAusstellen} />
         </>
       ) : null}
     </>
+  );
+}
+
+/**
+ * Die Rückmeldung nach dem Ausstellen, an der Stelle des Entwurfsabschnitts
+ * (ABR-10). Der Knopf „Rechnung ausstellen" ist mit dem Abschnitt fort; ohne
+ * Fokusziel fiele die Tastaturbedienung an den Seitenanfang, und die Nummer
+ * stünde nur im Kopf - am Handy außer Sicht.
+ */
+function Ausstellmeldung({ nummer, invoiceId }: { nummer: string; invoiceId: string }) {
+  const kasten = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    kasten.current?.querySelector('a')?.focus();
+  }, []);
+
+  return (
+    <div ref={kasten} className="mt-8">
+      <Statusmeldung ton="erfolg">Rechnung {nummer} ausgestellt.</Statusmeldung>
+      <div className="mt-3">
+        <ButtonLink to={`/abrechnung/rechnungen/${invoiceId}/druck`}>
+          Rechnungsblatt öffnen
+        </ButtonLink>
+      </div>
+    </div>
   );
 }
 
@@ -301,6 +480,11 @@ function Rechnungsbild({
  *
  * Stornierte Buchungen bleiben mit ihrem Grund stehen. Sie fallen aus der
  * Summe, nicht aus der Ansicht.
+ *
+ * Die Summenzeile heißt, was sie zeigt (ABR-B01): „Noch offen" mit dem
+ * Serverbetrag, daneben das Etikett des Zahlungsstands. Vorher wechselte nur
+ * die Beschriftung, und eine bezahlte Rechnung zeigte „Bezahlt 0,00 €". An
+ * einer stornierten Rechnung steht keine Forderung mehr (ABR-06).
  */
 function Zahlungen({
   ansicht,
@@ -320,29 +504,49 @@ function Zahlungen({
   });
 
   const offen = ansicht.outstanding_cents;
+  const storniert = ansicht.cancellation !== null;
+  // An einer bezahlten Rechnung ist Buchen selten - eine Rückzahlung etwa.
+  // Das Formular steht dort eingeklappt hinter einem Knopf (ABR-09). Einmal
+  // offen, bleibt es offen: Eine Buchung, die die Rechnung ausgleicht, soll
+  // ihre eigene Meldung nicht mit dem Formular verschwinden lassen.
+  const [formularOffen, setFormularOffen] = useState(offen > 0);
 
   return (
-    <Section titel="Zahlungen" rahmen>
-      {zahlungen.isError ? (
-        <ErrorState
-          title="Die Zahlungen konnten nicht geladen werden."
-          description="Bitte später erneut versuchen."
-        />
-      ) : null}
+    <Section titel="Zahlungen">
+      <Inhaltsflaeche>
+        {zahlungen.isPending ? <LoadingState label="Zahlungen werden geladen …" /> : null}
+        {zahlungen.isError ? (
+          <ErrorState
+            title="Die Zahlungen konnten nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => zahlungen.refetch()}
+          />
+        ) : null}
 
-      {zahlungen.data && zahlungen.data.length === 0 ? (
-        <p className="text-ink-muted text-sm">Noch keine Zahlung erfasst.</p>
-      ) : null}
+        {zahlungen.data && zahlungen.data.length === 0 ? (
+          <p className="text-ink-muted text-sm">Noch keine Zahlung erfasst.</p>
+        ) : null}
 
-      <ul className="divide-line divide-y">
-        {(zahlungen.data ?? []).map((zahlung) => (
-          <li key={zahlung.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
-            <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
-              {formatDate(zahlung.paid_on)}
-            </span>
-            <span className="text-ink text-liste min-w-0 flex-1">
-              {richtungLabels[zahlung.direction]} ·{' '}
-              {zahlungswegLabels[zahlung.method] ?? zahlung.method}
+        <ul className="divide-line divide-y">
+          {(zahlungen.data ?? []).map((zahlung) => (
+            <Listenzeile
+              key={zahlung.id}
+              datum={formatDate(zahlung.paid_on)}
+              betrag={
+                <span
+                  className={`text-liste tabular-nums ${
+                    zahlung.voided_at !== null ? 'text-ink-muted line-through' : 'text-ink'
+                  }`}
+                >
+                  {zahlung.direction === 'refund' ? '−' : ''}
+                  {formatEuro(zahlung.amount_cents, zahlung.currency)}
+                </span>
+              }
+            >
+              <span className="text-ink text-liste">
+                {richtungLabels[zahlung.direction]} ·{' '}
+                {zahlungswegLabels[zahlung.method] ?? zahlung.method}
+              </span>
               {zahlung.voided_at !== null ? (
                 <span className="ml-2">
                   <Badge ton="neutral">Storniert</Badge>
@@ -356,40 +560,64 @@ function Zahlungen({
                   Storniert: {zahlung.void_reason}
                 </span>
               ) : null}
-            </span>
-            <span
-              className={`text-liste tabular-nums ${
-                zahlung.voided_at !== null ? 'text-ink-muted line-through' : 'text-ink'
-              }`}
-            >
-              {zahlung.direction === 'refund' ? '−' : ''}
-              {formatEuro(zahlung.amount_cents, zahlung.currency)}
-            </span>
-          </li>
-        ))}
-      </ul>
+              {/* ABR-07: Das Storno der Zahlung steht dort, wo sie steht - nicht
+                  nur unter „Zahlungen". Derselbe Knopf, derselbe Aufruf. */}
+              {darfBuchen && zahlung.voided_at === null ? (
+                <div className="mt-1">
+                  <Zahlungsstorno
+                    zahlungId={zahlung.id}
+                    invoiceId={ansicht.id}
+                    ausloeser="Zahlung stornieren"
+                  />
+                </div>
+              ) : null}
+            </Listenzeile>
+          ))}
+        </ul>
 
-      <div className="border-line mt-3 flex justify-between border-t pt-3">
-        <span className="text-ink text-liste font-semibold">
-          {offen > 0 ? 'Noch offen' : offen < 0 ? 'Zu viel gezahlt' : 'Bezahlt'}
-        </span>
-        <span className="text-ink text-liste font-semibold tabular-nums">
-          {formatEuro(Math.abs(offen), waehrung)}
-        </span>
-      </div>
+        <div className="border-line mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
+          {storniert ? (
+            <span className="text-ink text-liste font-semibold">Storniert – keine Forderung</span>
+          ) : (
+            <>
+              <span className="flex flex-wrap items-center gap-2">
+                <span className="text-ink text-liste font-semibold">
+                  {offen < 0 ? 'Zu viel gezahlt' : 'Noch offen'}
+                </span>
+                <Badge ton={zahlungsTon[ansicht.payment_state]}>
+                  {zahlungsstandLabels[ansicht.payment_state]}
+                </Badge>
+              </span>
+              <span className="text-ink text-liste font-semibold tabular-nums">
+                {formatEuro(Math.abs(offen), waehrung)}
+              </span>
+            </>
+          )}
+        </div>
+      </Inhaltsflaeche>
 
       {/* An einer stornierten Rechnung wird nicht mehr gebucht: Der Server
           weist die Zahlung ab (R3-004), und ein Formular, das nur noch
           Fehlermeldungen erzeugt, ist kein Angebot. Die bereits gebuchten
           Zahlungen bleiben darüber stehen — dieselbe Linie wie bei der
-          Zahlungserinnerung. */}
-      {darfBuchen && zeitzone !== null && !ansicht.cancellation ? (
-        <Zahlungsformular
-          invoiceId={ansicht.id}
-          offenCent={offen}
-          waehrung={waehrung}
-          zeitzone={zeitzone}
-        />
+          Zahlungserinnerung. Das Formular steht außerhalb des Rahmens: Der
+          Rahmen gehört der Auskunft (UI-002c, ABR-33). */}
+      {darfBuchen && zeitzone !== null && !storniert ? (
+        formularOffen ? (
+          <Zahlungsformular
+            invoiceId={ansicht.id}
+            offenCent={offen}
+            eingegangenCent={ansicht.paid_cents}
+            waehrung={waehrung}
+            zeitzone={zeitzone}
+          />
+        ) : (
+          <div className="mt-4">
+            <Button type="button" variant="secondary" onClick={() => setFormularOffen(true)}>
+              Zahlung buchen
+            </Button>
+          </div>
+        )
       ) : null}
     </Section>
   );
@@ -406,15 +634,24 @@ function Zahlungen({
  * Die Liste zeigt jede ausgestellte Erinnerung mit **ihrem** offenen Betrag:
  * dem vom Tag der Ausstellung (ANN-080). Der heutige steht darüber bei den
  * Zahlungen und wird dort gerechnet.
+ *
+ * **Seit UXR-010:** Solange die Liste lädt oder nicht geladen werden konnte,
+ * steht das da - und nicht „Noch keine Erinnerung ausgestellt." (ABR-30).
+ * Der Knopf erscheint erst mit der geladenen Liste und ist gesperrt, wenn
+ * heute schon eine besteht: Der Server lässt eine je Tag zu (ANN-080) und
+ * bleibt maßgeblich (ABR-B03). Nach dem Ausstellen geht es zum Blatt (ABR-10).
  */
 function Zahlungserinnerungen({
   ansicht,
   darfErinnern,
+  zeitzone,
 }: {
   ansicht: Rechnungsansicht;
   darfErinnern: boolean;
+  zeitzone: string | null;
 }) {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const erinnerungen = useQuery({
     queryKey: ['zahlungserinnerungen', ansicht.id],
@@ -424,8 +661,10 @@ function Zahlungserinnerungen({
 
   const erstellen = useMutation({
     mutationFn: () => erstelleErinnerung(ansicht.id),
-    onSuccess: async () => {
+    onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: ['zahlungserinnerungen', ansicht.id] });
+      // Der nächste Schritt ist das Blatt, das verschickt wird (ABR-10).
+      await navigate(`/abrechnung/erinnerungen/${id}`);
     },
   });
 
@@ -435,49 +674,64 @@ function Zahlungserinnerungen({
 
   const bezahlt = ansicht.outstanding_cents <= 0;
   const eintraege = erinnerungen.data ?? [];
+  const heute = zeitzone === null ? null : todayInTimeZone(zeitzone);
+  const heuteSchon = heute !== null && eintraege.some((eintrag) => eintrag.reminder_on === heute);
 
   return (
     <Section titel="Zahlungserinnerung" rahmen>
-      {eintraege.length === 0 ? (
+      {erinnerungen.isPending ? <LoadingState label="Erinnerungen werden geladen …" /> : null}
+      {erinnerungen.isError ? (
+        <ErrorState
+          title="Die Zahlungserinnerungen konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => erinnerungen.refetch()}
+        />
+      ) : null}
+
+      {erinnerungen.isSuccess && eintraege.length === 0 ? (
         <p className="text-ink-muted text-sm">Noch keine Erinnerung ausgestellt.</p>
-      ) : (
+      ) : null}
+
+      {eintraege.length > 0 ? (
         <ul className="divide-line divide-y">
           {eintraege.map((eintrag) => (
-            <li key={eintrag.id} className="flex flex-wrap items-baseline gap-x-3 py-2">
-              <span className="text-ink-muted w-24 shrink-0 text-sm tabular-nums">
-                {formatDate(eintrag.reminder_on)}
-              </span>
-              <span className="text-ink text-liste min-w-0 flex-1">
+            <Listenzeile key={eintrag.id} datum={formatDate(eintrag.reminder_on)}>
+              <span className="text-ink text-liste block">
                 Frist bis {formatDate(eintrag.due_on)} ·{' '}
                 {formatEuro(eintrag.outstanding_cents, eintrag.currency)} offen
               </span>
-              <Link
-                className="text-ink-muted hover:text-ink text-sm underline"
+              {/* Ein Link, der wie einer aussieht, 44 px hoch, und der sagt,
+                  welches Blatt er öffnet (ABR-25). */}
+              <Textlink
                 to={`/abrechnung/erinnerungen/${eintrag.id}`}
+                alleinstehend
+                className="text-sm"
               >
-                Blatt öffnen
-              </Link>
-            </li>
+                Erinnerung vom {formatDate(eintrag.reminder_on)} öffnen
+              </Textlink>
+            </Listenzeile>
           ))}
         </ul>
-      )}
+      ) : null}
 
-      {darfErinnern && !bezahlt ? (
+      {darfErinnern && !bezahlt && erinnerungen.isSuccess ? (
         <div className="mt-3">
           <Button
             type="button"
             variant="secondary"
-            disabled={erstellen.isPending || !ansicht.overdue}
+            disabled={erstellen.isPending || !ansicht.overdue || heuteSchon}
             onClick={() => erstellen.mutate()}
           >
             {erstellen.isPending ? 'Wird ausgestellt …' : 'Zahlungserinnerung ausstellen'}
           </Button>
           <p className="text-ink-muted mt-2 max-w-prose text-sm">
-            {ansicht.overdue
-              ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
-              : `Die Rechnung ist noch nicht fällig${
-                  ansicht.due_on ? ` — sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
-                }. Vorher gibt es nichts zu erinnern.`}
+            {heuteSchon
+              ? 'Heute ist bereits eine Erinnerung ausgestellt.'
+              : ansicht.overdue
+                ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
+                : `Die Rechnung ist noch nicht fällig${
+                    ansicht.due_on ? ` – sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
+                  }. Vorher gibt es nichts zu erinnern.`}
           </p>
         </div>
       ) : null}
@@ -502,6 +756,11 @@ function Zahlungserinnerungen({
  * „Storniert" ist ein abgeleiteter Zustand (ANN-079): Es gibt ein
  * Stornodokument zu dieser Rechnung. Die Rechnung selbst ändert sich nicht,
  * und an ihr steht dazu keine Spalte.
+ *
+ * **Seit UXR-010 (ABR-07):** Steht noch eine gebuchte Zahlung, sagt der
+ * Abschnitt das, bevor jemand einen Grund tippt - statt erst danach mit der
+ * Meldung des Servers. Die Regel bleibt die des Servers (ANN-079); die Seite
+ * liest sie aus derselben Zahlungsliste wie der Abschnitt darüber.
  */
 function Stornokette({
   ansicht,
@@ -514,6 +773,14 @@ function Stornokette({
   const navigate = useNavigate();
   const [grund, setGrund] = useState('');
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+
+  // Dieselbe Abfrage wie die Zahlungsliste darüber - ein Eintrag im Cache.
+  const zahlungen = useQuery({
+    queryKey: ['rechnungszahlungen', ansicht.id],
+    queryFn: () => fetchRechnungszahlungen(ansicht.id),
+    retry: false,
+  });
+  const zahlungSteht = (zahlungen.data ?? []).some((zahlung) => zahlung.voided_at === null);
 
   const stornieren = useMutation({
     mutationFn: () => storniereRechnung(ansicht.id, grund.trim()),
@@ -529,6 +796,10 @@ function Stornokette({
   const korrigieren = useMutation({
     mutationFn: () => erstelleKorrektur(ansicht.id),
     onSuccess: async (id) => {
+      // Die stornierte Rechnung zeigt danach den Weg zu ihrer Korrektur;
+      // ohne sie neu zu laden bot sie weiter „Korrekturrechnung erstellen" an
+      // (ABR-01).
+      await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
       await navigate(`/abrechnung/rechnungen/${id}`);
@@ -544,7 +815,7 @@ function Stornokette({
         </p>
         <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
         <p className="text-ink-muted mt-2 text-sm">
-          Die Rechnung bleibt unverändert stehen — sie ist ausgestellt gewesen, und das lässt sich
+          Die Rechnung bleibt unverändert stehen – sie ist ausgestellt gewesen, und das lässt sich
           nicht zurücknehmen. Sie steht in keinem offenen Posten mehr, und ihre Leistungen sind
           wieder abzurechnen.
         </p>
@@ -570,7 +841,7 @@ function Stornokette({
               disabled={korrigieren.isPending}
               onClick={() => korrigieren.mutate()}
             >
-              {korrigieren.isPending ? 'Wird angelegt …' : 'Korrekturrechnung erstellen'}
+              {korrigieren.isPending ? 'Wird erstellt …' : 'Korrekturrechnung erstellen'}
             </Button>
           ) : null}
         </div>
@@ -595,50 +866,69 @@ function Stornokette({
       </p>
 
       <div className="mt-3">
-        <Rueckfrage
-          ausloeser="Rechnung stornieren"
-          bestaetigen="Storno ausstellen"
-          bestaetigenLaeuft="Wird storniert …"
-          laeuft={stornieren.isPending}
-          fehler={
-            fehler ??
-            (stornieren.error instanceof ZahlungStehtNoch
-              ? 'Zu dieser Rechnung ist eine Zahlung gebucht. Erst die Zahlung stornieren, dann die Rechnung — sonst bliebe ein Geldeingang ohne Forderung.'
-              : stornieren.isError
-                ? stornieren.error.message
-                : undefined)
-          }
-          onBestaetigen={() => {
-            if (grund.trim().length < 3) {
-              setFehler('Bitte einen Grund angeben — er steht auf dem Stornodokument.');
-              // Abgewiesen, nicht ausgeführt: Der Kasten bleibt offen, damit
-              // der Hinweis am Feld steht, in dem er gilt.
-              return Promise.reject(new Error('Grund fehlt'));
+        {zahlungSteht ? (
+          <Statusmeldung>
+            Zuerst die gebuchte Zahlung oben stornieren. Erst danach lässt sich die Rechnung
+            stornieren – sonst bliebe ein Geldeingang ohne Forderung.
+          </Statusmeldung>
+        ) : (
+          <Rueckfrage
+            ausloeser="Rechnung stornieren"
+            bestaetigen="Storno ausstellen"
+            bestaetigenLaeuft="Wird storniert …"
+            laeuft={stornieren.isPending}
+            fehler={
+              fehler ??
+              (stornieren.error instanceof ZahlungStehtNoch
+                ? 'Zu dieser Rechnung ist eine Zahlung gebucht. Erst die Zahlung stornieren, dann die Rechnung – sonst bliebe ein Geldeingang ohne Forderung.'
+                : stornieren.isError
+                  ? stornieren.error.message
+                  : undefined)
             }
-            setFehler(undefined);
-            return stornieren.mutateAsync();
-          }}
-          onAbbrechen={() => {
-            setGrund('');
-            setFehler(undefined);
-          }}
-        >
-          <p className="text-ink-muted text-sm">
-            Das Storno bleibt dauerhaft sichtbar und trägt seine eigene Nummer aus dem
-            Rechnungskreis. Rückgängig machen lässt es sich nicht.
-          </p>
-          <div className="mt-2">
-            <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
-          </div>
-        </Rueckfrage>
+            onBestaetigen={() => {
+              if (grund.trim().length < 3) {
+                setFehler('Bitte einen Grund angeben – er steht auf dem Stornodokument.');
+                // Abgewiesen, nicht ausgeführt: Der Kasten bleibt offen, damit
+                // der Hinweis am Feld steht, in dem er gilt.
+                return Promise.reject(new Error('Grund fehlt'));
+              }
+              setFehler(undefined);
+              return stornieren.mutateAsync();
+            }}
+            onAbbrechen={() => {
+              setGrund('');
+              setFehler(undefined);
+              stornieren.reset();
+            }}
+          >
+            <p className="text-ink-muted text-sm">
+              Das Storno bleibt dauerhaft sichtbar und trägt seine eigene Nummer aus dem
+              Nummernkreis. Rückgängig machen lässt es sich nicht.
+            </p>
+            {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
+            <div className="mt-2 max-w-xl">
+              <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
+            </div>
+          </Rueckfrage>
+        )}
       </div>
     </Section>
   );
 }
 
+/**
+ * Wer die Rechnung bekommt, am Entwurf.
+ *
+ * **Seit UXR-010:** Laden und Ladefehler stehen da, statt dass die Auswahl
+ * nur „Patient:in selbst" anbietet (ABR-30). Während des Setzens zeigt die
+ * Auswahl schon die neue Wahl und ist gesperrt - vorher sprang sie bis zum
+ * Neuladen auf den alten Wert zurück und nahm einen zweiten Wechsel an; danach
+ * sagt eine Meldung, dass er gesetzt ist (ABR-10, ZST-20).
+ */
 function Empfaengerwahl({ ansicht }: { ansicht: Rechnungsansicht }) {
   const queryClient = useQueryClient();
   const [neu, setNeu] = useState(false);
+  const [gesetzt, setGesetzt] = useState(false);
 
   const empfaenger = useQuery({
     queryKey: ['rechnungsempfaenger', ansicht.patient_id],
@@ -651,24 +941,55 @@ function Empfaengerwahl({ ansicht }: { ansicht: Rechnungsansicht }) {
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
+      setGesetzt(true);
     },
   });
 
+  if (empfaenger.isPending) {
+    return <LoadingState label="Hinterlegte Empfänger werden geladen …" />;
+  }
+
+  if (empfaenger.isError) {
+    return (
+      <div className="mt-4">
+        <ErrorState
+          title="Die hinterlegten Empfänger konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => empfaenger.refetch()}
+        />
+      </div>
+    );
+  }
+
+  const wert = waehlen.isPending ? (waehlen.variables ?? '') : (ansicht.recipient_id ?? '');
+
   return (
-    <div className="mt-3">
+    <div className="mt-4 max-w-xl">
       <Select
         label="Rechnung geht an"
-        hint="Ohne hinterlegten Empfänger geht sie an die Patientin selbst."
-        value={ansicht.recipient_id ?? ''}
-        onChange={(e) => waehlen.mutate(e.target.value === '' ? null : e.target.value)}
+        hint="Ohne hinterlegten Empfänger geht sie an die Patient:in selbst."
+        value={wert}
+        disabled={waehlen.isPending}
+        onChange={(e) => {
+          setGesetzt(false);
+          waehlen.mutate(e.target.value === '' ? null : e.target.value);
+        }}
       >
         <option value="">{empfaengerartLabels.self}</option>
-        {(empfaenger.data ?? []).map((eintrag) => (
+        {empfaenger.data.map((eintrag) => (
           <option key={eintrag.id} value={eintrag.id}>
             {eintrag.name} ({empfaengerartLabels[eintrag.recipient_kind] ?? 'Kostenträger'})
           </option>
         ))}
       </Select>
+
+      {waehlen.isPending ? (
+        <Statusmeldung className="mt-2">Wird gesetzt …</Statusmeldung>
+      ) : gesetzt ? (
+        <Statusmeldung ton="erfolg" className="mt-2">
+          Empfänger gesetzt.
+        </Statusmeldung>
+      ) : null}
 
       {waehlen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
@@ -697,6 +1018,14 @@ function Empfaengerwahl({ ansicht }: { ansicht: Rechnungsansicht }) {
   );
 }
 
+/**
+ * Einen Empfänger hinterlegen.
+ *
+ * **Seit UXR-010:** kein Kasten im Kasten mehr (ABR-33), höchstens so breit
+ * wie ein Formular (ABR-23), und „Empfänger speichern" ist nicht mehr ohne
+ * Grund gesperrt: Fehlt der Name, steht das am Feld (ABR-20). Die
+ * Postleitzahl öffnet am Handy das Ziffernfeld (RSP-12).
+ */
 function Empfaengerformular({
   patientId,
   onFertig,
@@ -704,6 +1033,8 @@ function Empfaengerformular({
   patientId: string;
   onFertig: () => void | Promise<void>;
 }) {
+  const namensfeld = useId();
+  const [namensfehler, setNamensfehler] = useState<string | undefined>(undefined);
   const [eingabe, setEingabe] = useState({
     recipient_kind: 'aid_authority',
     name: '',
@@ -732,6 +1063,16 @@ function Empfaengerformular({
     onSuccess: onFertig,
   });
 
+  function absenden() {
+    if (speichern.isPending) return;
+    if (eingabe.name.trim() === '') {
+      setNamensfehler('Bitte ausfüllen.');
+      document.getElementById(namensfeld)?.focus();
+      return;
+    }
+    speichern.mutate();
+  }
+
   const arten: Empfaenger['recipient_kind'][] = [
     'aid_authority',
     'private_insurer',
@@ -741,75 +1082,75 @@ function Empfaengerformular({
   ];
 
   return (
-    <div className="border-line rounded-card mt-3 border p-3">
-      <div className="flex flex-col gap-3">
-        <Select
-          label="Art"
-          value={eingabe.recipient_kind}
-          onChange={(e) => setEingabe((alt) => ({ ...alt, recipient_kind: e.target.value }))}
-        >
-          {arten.map((art) => (
-            <option key={art} value={art}>
-              {empfaengerartLabels[art]}
-            </option>
-          ))}
-        </Select>
-        <Field
-          label="Name oder Stelle"
-          value={eingabe.name}
-          onChange={(e) => setEingabe((alt) => ({ ...alt, name: e.target.value }))}
-        />
-        <div className="flex gap-3">
-          <span className="flex-1">
-            <Field
-              label="Straße"
-              value={eingabe.street}
-              onChange={(e) => setEingabe((alt) => ({ ...alt, street: e.target.value }))}
-            />
-          </span>
-          <span className="w-24">
-            <Field
-              label="Nr."
-              value={eingabe.house_number}
-              onChange={(e) => setEingabe((alt) => ({ ...alt, house_number: e.target.value }))}
-            />
-          </span>
-        </div>
-        <div className="flex gap-3">
-          <span className="w-28">
-            <Field
-              label="PLZ"
-              value={eingabe.postal_code}
-              onChange={(e) => setEingabe((alt) => ({ ...alt, postal_code: e.target.value }))}
-            />
-          </span>
-          <span className="flex-1">
-            <Field
-              label="Ort"
-              value={eingabe.city}
-              onChange={(e) => setEingabe((alt) => ({ ...alt, city: e.target.value }))}
-            />
-          </span>
-        </div>
-        <Field
-          label="Aktenzeichen oder Versichertennummer"
-          value={eingabe.reference}
-          onChange={(e) => setEingabe((alt) => ({ ...alt, reference: e.target.value }))}
-        />
+    <div className="mt-4 flex max-w-xl flex-col gap-4">
+      <Select
+        label="Art"
+        value={eingabe.recipient_kind}
+        onChange={(e) => setEingabe((alt) => ({ ...alt, recipient_kind: e.target.value }))}
+      >
+        {arten.map((art) => (
+          <option key={art} value={art}>
+            {empfaengerartLabels[art]}
+          </option>
+        ))}
+      </Select>
+      <Field
+        label="Name oder Stelle *"
+        feldId={namensfeld}
+        value={eingabe.name}
+        error={namensfehler}
+        onChange={(e) => {
+          setEingabe((alt) => ({ ...alt, name: e.target.value }));
+          setNamensfehler(undefined);
+        }}
+      />
+      <div className="flex gap-4">
+        <span className="flex-1">
+          <Field
+            label="Straße"
+            value={eingabe.street}
+            onChange={(e) => setEingabe((alt) => ({ ...alt, street: e.target.value }))}
+          />
+        </span>
+        <span className="w-24">
+          <Field
+            label="Nr."
+            value={eingabe.house_number}
+            onChange={(e) => setEingabe((alt) => ({ ...alt, house_number: e.target.value }))}
+          />
+        </span>
       </div>
+      <div className="flex gap-4">
+        <span className="w-28">
+          <Field
+            label="PLZ"
+            inputMode="numeric"
+            value={eingabe.postal_code}
+            onChange={(e) => setEingabe((alt) => ({ ...alt, postal_code: e.target.value }))}
+          />
+        </span>
+        <span className="flex-1">
+          <Field
+            label="Ort"
+            value={eingabe.city}
+            onChange={(e) => setEingabe((alt) => ({ ...alt, city: e.target.value }))}
+          />
+        </span>
+      </div>
+      <Field
+        label="Aktenzeichen oder Versichertennummer"
+        value={eingabe.reference}
+        onChange={(e) => setEingabe((alt) => ({ ...alt, reference: e.target.value }))}
+      />
 
       {speichern.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {speichern.error.message}
+        <Statusmeldung ton="fehler">
+          {speichern.error.message} Die Eingaben stehen noch im Formular.
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-3 flex gap-2">
-        <Button
-          type="button"
-          onClick={() => speichern.mutate()}
-          disabled={speichern.isPending || eingabe.name.trim() === ''}
-        >
+      <div className="flex gap-2">
+        <Button type="button" onClick={absenden} disabled={speichern.isPending}>
           {speichern.isPending ? 'Wird gespeichert …' : 'Empfänger speichern'}
         </Button>
         <Button type="button" variant="quiet" onClick={() => void onFertig()}>
@@ -820,16 +1161,30 @@ function Empfaengerformular({
   );
 }
 
-function Entwurfsaktionen({ ansicht }: { ansicht: Rechnungsansicht }) {
+function Entwurfsaktionen({
+  ansicht,
+  darfStammdaten,
+  onAusgestellt,
+}: {
+  ansicht: Rechnungsansicht;
+  darfStammdaten: boolean;
+  /** Mit der Nummer, die der Server vergeben hat (ABR-10). */
+  onAusgestellt: (nummer: string) => void;
+}) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const ausstellen = useMutation({
     mutationFn: () => stelleRechnungAus(ansicht.id),
-    onSuccess: async () => {
+    onSuccess: async (nummer) => {
+      onAusgestellt(nummer);
       await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
+      // Die neue Rechnung ist ein offener Posten, und ihre Leistungen gelten
+      // jetzt als abgerechnet (ABR-01).
+      await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
+      await queryClient.invalidateQueries({ queryKey: ['abrechnung-leistungen'] });
     },
   });
 
@@ -846,18 +1201,21 @@ function Entwurfsaktionen({ ansicht }: { ansicht: Rechnungsansicht }) {
     <Section titel="Entwurf" ebene={2}>
       <p className="text-ink-muted text-sm">
         Mit dem Ausstellen bekommt die Rechnung ihre Nummer, und alle Angaben werden
-        festgeschrieben. Danach ist sie unveränderlich — eine Korrektur läuft über Storno und
+        festgeschrieben. Danach ist sie unveränderlich – eine Korrektur läuft über Storno und
         Neuausstellung.
       </p>
 
       {ausstellen.error instanceof KeineStammdaten ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          Ohne Praxis-Stammdaten lässt sich keine Rechnung ausstellen. Sie stehen unter
-          „Praxisstammdaten".
-        </Statusmeldung>
+        <div className="mt-2">
+          <StammdatenFehlen
+            ton="fehler"
+            darfPflegen={darfStammdaten}
+            folge="Ohne sie lässt sich keine Rechnung ausstellen."
+          />
+        </div>
       ) : ausstellen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          {ausstellen.error.message}
+          {ausstellen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
         </Statusmeldung>
       ) : null}
 
@@ -866,16 +1224,23 @@ function Entwurfsaktionen({ ansicht }: { ansicht: Rechnungsansicht }) {
           {ausstellen.isPending ? 'Wird ausgestellt …' : 'Rechnung ausstellen'}
         </Button>
 
+        {/* Mit Versprechen: Der Kasten bleibt offen, bis der Server
+            geantwortet hat, und zeigt einen Fehlschlag (ABR-03, ZST-06). */}
         <Rueckfrage
           ausloeser="Entwurf verwerfen"
-          bestaetigen="Verwerfen"
+          bestaetigen="Ja, Entwurf verwerfen"
           bestaetigenLaeuft="Wird verworfen …"
           laeuft={verwerfen.isPending}
-          fehler={verwerfen.isError ? verwerfen.error.message : undefined}
-          onBestaetigen={() => verwerfen.mutate()}
+          fehler={
+            verwerfen.isError
+              ? `${verwerfen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`
+              : undefined
+          }
+          onBestaetigen={() => verwerfen.mutateAsync()}
+          onAbbrechen={() => verwerfen.reset()}
         >
           <p>
-            Der Entwurf wird gelöscht; seine Leistungen stehen danach wieder unter „Abzurechnen".
+            Der Entwurf wird gelöscht; seine Leistungen stehen danach wieder unter „Abzurechnen“.
             Eine Nummer wurde nie vergeben, es entsteht also keine Lücke.
           </p>
         </Rueckfrage>

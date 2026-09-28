@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { renderWithProviders } from '@/test-utils';
 import { rechnungsansicht } from './testdaten';
+import { zeigeMitRouten } from './testumgebung';
 
 const fetchErinnerung = vi.fn();
 
@@ -89,7 +90,8 @@ describe('Zahlungserinnerung als Blatt', () => {
     fetchErinnerung.mockResolvedValue(dokument());
     zeige();
 
-    expect(await screen.findByText(/DE02120300000000202051/)).toBeInTheDocument();
+    // ABR-28: in Vierergruppen, wie sie abgetippt wird.
+    expect(await screen.findByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
     expect(
       screen.getByText(/Verwendungszweck die Rechnungsnummer RG-2026-0001/),
     ).toBeInTheDocument();
@@ -106,5 +108,53 @@ describe('Zahlungserinnerung als Blatt', () => {
     );
     expect(drucken).toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+
+  describe('UXR-010', () => {
+    function zeigeMitRoute() {
+      return zeigeMitRouten(
+        [{ path: '/abrechnung/erinnerungen/:reminderId', element: <ReminderPrintPage /> }],
+        '/abrechnung/erinnerungen/e1',
+      );
+    }
+
+    it('führt beim Ladefehler zu den Rechnungen, sonst zur Rechnung (ABR-30, ABR-33, WRT-01)', async () => {
+      fetchErinnerung.mockRejectedValue(new Error('Netz weg'));
+      zeigeMitRoute();
+
+      expect(
+        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+      expect(screen.getByRole('link', { name: /Zurück zu den Rechnungen/ })).toHaveAttribute(
+        'href',
+        '/abrechnung',
+      );
+    });
+
+    it('führt mit geladener Erinnerung zu ihrer Rechnung (ABR-33)', async () => {
+      fetchErinnerung.mockResolvedValue(dokument());
+      zeigeMitRoute();
+
+      expect(await screen.findByRole('link', { name: /Zurück zur Rechnung/ })).toHaveAttribute(
+        'href',
+        '/abrechnung/rechnungen/r1',
+      );
+    });
+
+    it('trägt denselben Briefkopf wie die Rechnung (ABR-22, ABR-B05, ABR-34)', async () => {
+      fetchErinnerung.mockResolvedValue(dokument());
+      zeige();
+
+      expect(await screen.findByRole('heading', { name: 'Zahlungserinnerung' })).toHaveClass(
+        'text-h4',
+        'font-bold',
+      );
+      expect(screen.getByText('Behandelte Person')).toHaveClass('w-40', 'shrink-0');
+      expect(screen.getByAltText('Own Motion').parentElement).toHaveClass('print:min-h-[33mm]');
+      expect(screen.getByText(/Verwendungszweck die Rechnungsnummer/)).toHaveClass(
+        'print:text-ink',
+      );
+    });
   });
 });

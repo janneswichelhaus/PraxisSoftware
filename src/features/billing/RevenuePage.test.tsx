@@ -158,4 +158,30 @@ describe('RevenuePage', () => {
     expect(await screen.findByText(/Kein steuerlicher Abschluss/)).toBeInTheDocument();
     expect(screen.getByText(/ersetzt keine Gewinnermittlung/)).toBeInTheDocument();
   });
+
+  describe('UXR-010', () => {
+    it('heißt wie der Menüpunkt und nennt darunter, was ausgewertet wird (ABR-26)', async () => {
+      renderWithProviders(<RevenuePage />, '/abrechnung/auswertung');
+
+      expect(await screen.findByRole('heading', { name: 'Auswertung' })).toBeInTheDocument();
+      expect(screen.getByText(/^Einnahmen je Leistungsart:/)).toBeInTheDocument();
+      // WRT-07: der Gedankenstrich der Schreibregel.
+      expect(screen.getByText(/Steuerberatung – diese Auswertung/)).toBeInTheDocument();
+    });
+
+    it('bietet beim Ladefehler einen nächsten Schritt statt einer Ratefrage (WRT-01)', async () => {
+      const nutzer = userEvent.setup();
+      fetchEinnahmenjahre.mockRejectedValueOnce(new Error('Netz weg'));
+
+      renderWithProviders(<RevenuePage />, '/abrechnung/auswertung');
+
+      expect(
+        await screen.findByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/angemeldet/)).toBeNull();
+
+      await nutzer.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
+      expect(fetchEinnahmenjahre).toHaveBeenCalledTimes(2);
+    });
+  });
 });

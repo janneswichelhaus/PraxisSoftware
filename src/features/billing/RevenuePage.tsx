@@ -64,13 +64,15 @@ export function RevenuePage() {
   return (
     <>
       <PageHeader
-        title="Einnahmen je Leistungsart"
-        description="Erlöse getrennt nach Leistungsbereich, innerhalb des Bereichs nach Steuerkennzeichen und Satz. Eine Summe, keine Bewertung."
+        // Der Titel heißt wie der Menüpunkt; was ausgewertet wird, sagt die
+        // Zeile darunter (ABR-26).
+        title="Auswertung"
+        description="Einnahmen je Leistungsart: Erlöse getrennt nach Leistungsbereich, innerhalb des Bereichs nach Steuerkennzeichen und Satz. Eine Summe, keine Bewertung."
       />
 
       <Section
         titel="Grundlage und Zeitraum"
-        hinweis="Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung verlangt, sagt Ihnen Ihre Steuerberatung — diese Auswertung wählt sie nicht für Sie."
+        hinweis="Zufluss und Rechnungsstellung ergeben verschiedene Zahlen. Welche Ihre Gewinnermittlung verlangt, sagt Ihnen Ihre Steuerberatung – diese Auswertung wählt sie nicht für Sie."
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
           <div className="sm:w-72">
@@ -111,7 +113,8 @@ export function RevenuePage() {
       {jahre.isError ? (
         <ErrorState
           title="Die Auswertung konnte nicht geladen werden."
-          description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => jahre.refetch()}
         />
       ) : null}
 
@@ -119,7 +122,7 @@ export function RevenuePage() {
         <Section titel="Ergebnis">
           <EmptyState
             title="Noch keine Grundlage gewählt"
-            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen — deshalb steht hier keine."
+            description="Wählen Sie oben Zufluss oder Rechnungsstellung. Ohne Grundlage ist eine Zahl nicht zu lesen – deshalb steht hier keine."
           />
         </Section>
       ) : (
@@ -131,7 +134,8 @@ export function RevenuePage() {
           {einnahmen.isError ? (
             <ErrorState
               title="Die Auswertung konnte nicht geladen werden."
-              description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
+              description="Bitte die Verbindung prüfen und erneut versuchen."
+              onErneut={() => einnahmen.refetch()}
             />
           ) : null}
           {einnahmen.data && bereiche.length === 0 ? (
