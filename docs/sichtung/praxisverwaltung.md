@@ -21,6 +21,6 @@ Stand 2026-09-28 · neue Datei mit dem ersten Oberflächen-Loop der Etappe.
 
 ## Ergebnis
 
-Gesichtet am: 2026-09-28 · Gerät: iPhone, Test-Umgebung, office · Befunde: **BEF-071** (nach „Termin anlegen“ aus der Suche zurück auf der Suche, Meldung klingt wie ein Fehler; nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
+Gesichtet am: 2026-09-28 · Gerät: Android-Handy und Windows-Rechner, Test-Umgebung, office · Befunde: **BEF-071** (nach „Termin anlegen“ aus der Suche zurück auf der Suche, Meldung klingt wie ein Fehler; nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
 
 Schritte 1 bis 3 ok. Reihenfolge der Vorschläge passt (ANN-136), „passt von der Warteliste“ passt (Schritt 3). Bestätigt: **ANN-132**, **ANN-135**, **ANN-136**. **ANN-133** und **ANN-134** (Frist, Leseprotokoll) sind Datenschutz und bleiben für die Datenschutzprüfung offen.

@@ -713,7 +713,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
-| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28; Android-Installation (ANN-110) offen |
+| B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |
 | B | UX-EPIC-003 Tagesansicht fürs Handy (Block 1a) | gesichtet | 2026-09-26 | `46ebc9e` … (UX-003a, UX-003c, Zweitreview) | 2026-09-28 | Sichtung Kernprozess 2026-09-28, Schritte 10 und 12 |
 | B | MAP-002 In-App-Kartenprototyp | fertig | 2026-09-21 | `c85c56e` … `ea2d9aa` | — | — |
 | B | MAP-003 Fahrradroute als Linie | fertig | 2026-09-21 | `cbc6c07`, `71756aa`, `d66ea31` | — | — |

@@ -48,9 +48,9 @@ Ein durchgehender Fall: Die neue Patientin „Sichtung Test" (Platzhalter, kein 
 
 ## Ergebnis
 
-Gesichtet am: 2026-09-28 · Gerät: iPhone, Test-Umgebung (office, owner, therapist) · Befunde: **BEF-072** bis **BEF-079** (nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
+Gesichtet am: 2026-09-28 · Gerät: Android-Handy und Windows-Rechner, Test-Umgebung (office, owner, therapist) · Befunde: **BEF-072** bis **BEF-079** (nach [`../development/BEFUNDE.md`](../development/BEFUNDE.md))
 
-Alle 15 Schritte durchlaufen; Befunde in den Schritten 3 (BEF-072, BEF-073), 5 (BEF-074), 9 (BEF-075), 10/11 (BEF-076 bis BEF-078) und 12 (BEF-079). Bestätigt: **ANN-108, -109, -111, -112, -113, -116, -117**. Offen: **ANN-110** (Installation unter Android — am iPhone nicht prüfbar) und **ANN-114** (weitere Seiten randlos). Die Karte zeigt auf der Test-Umgebung keine Kacheln (gewollt, `DEVELOPMENT.md`, „Test-Umgebung“, Grenzen). Entscheidungen dabei: Office erfasst Grundlagen (ANN-011, PRX-EPIC-003); Ideen IDEA-PRX-045, IDEA-TRN-014 (Variante A), IDEA-TRN-015.
+Alle 15 Schritte durchlaufen; Befunde in den Schritten 3 (BEF-072, BEF-073), 5 (BEF-074), 9 (BEF-075), 10/11 (BEF-076 bis BEF-078) und 12 (BEF-079). Bestätigt: **ANN-108, -109, -111, -112, -113, -116, -117**. Bestätigt mit Schritt 10 unter Android auch **ANN-110** (Installation, `minimal-ui`, Symbol). Offen: **ANN-114** (weitere Seiten randlos). Die Karte zeigt auf der Test-Umgebung keine Kacheln (gewollt, `DEVELOPMENT.md`, „Test-Umgebung“, Grenzen). Entscheidungen dabei: Office erfasst Grundlagen (ANN-011, PRX-EPIC-003); Ideen IDEA-PRX-045, IDEA-TRN-014 (Variante A), IDEA-TRN-015.
 
 **Freie Sichtung Kalender, 2026-09-26** (ohne die Schritte oben, Test-Umgebung, iPhone und Android, therapist): BEF-035 bis BEF-040 — Anlegen-Menü verdeckt die Spalte, zweiter Tipp hebt nicht auf, Uhrzeit sprengt den Rahmen, kein Zoomen mit zwei Fingern, zu viel über dem Raster, Android-Symbol im weißen Kreis. Die Schritte oben bleiben offen. Gebaut in UX-EPIC-002 (UX-002a bis UX-002e, 2026-09-26); nachzusehen in den Schritten 1, 2, 9 und 10.
 

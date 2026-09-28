@@ -1421,7 +1421,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 ### ANN-110 — Das Web-Manifest nennt das Master als maskierbares Symbol und öffnet die Anwendung mit schmaler Leiste (`minimal-ui`)
 
-Technik · offen · 2026-09-26 (fortgeschrieben 2026-09-26, BEF-041) · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Android-Handy und in Chrome am Rechner (App installieren, Symbol prüfen)
+Technik · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10, Android) · erledigt · Wiedervorlage: —
 
 **Annahme.** `public/manifest.webmanifest` nennt als einziges Symbol das vorhandene Master `own-motion-app-1024.png`, einmal für `any` und einmal für `maskable`; `display` ist `minimal-ui` (bis UX-002i `browser`). Es gibt keinen Service Worker. Eingebunden wird das Manifest mit `crossorigin="use-credentials"`.
 

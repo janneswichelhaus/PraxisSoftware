@@ -2949,7 +2949,7 @@ ohnehin nicht nebenbei angefasst werden.
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Datum   | 2026-09-28                                                                                                                                  |
 | Bereich | Warteliste → Freie Termine suchen → Übernehmen → Terminformular                                                                             |
-| Quelle  | Sichtung Praxisverwaltung, Schritt 2 (Jannes, Test-Umgebung, iPhone, office)                                                                |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 2 (Jannes, Test-Umgebung, Android und Windows, office)                                                                |
 | Status  | offen                                                                                                                                       |
 | Berührt | `src/features/slot-search/SlotSearchPage.tsx` (Z. 167–171, Rückweg), Terminformular (Rückweg nach dem Anlegen); PRX-003, PRX-004; ANN-136 |
 
@@ -2979,7 +2979,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Tagesansicht am Handy |
-| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Terminkachel im Kalender; CAL-EPIC-004a (freie Terminlänge); BEF-037 |
 
@@ -2994,7 +2994,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Neuer Termin / Termin bearbeiten → zurück |
-| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Rückweg aus Terminformular und Akte (`mitRueckweg`, `leseRueckweg`); Kalenderzustand (Ansicht, Tag, Spalten) |
 
@@ -3009,7 +3009,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Monat oben links |
-| Quelle  | Sichtung Kernprozess, Schritt 5 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Monatsauswahl im Kopf des Kalenders; ANN-109 |
 
@@ -3024,7 +3024,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Termin ziehen → Verschieben |
-| Quelle  | Sichtung Kernprozess, Schritt 9 (owner) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 9 (owner) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Statusmeldung nach dem Verschieben; FIX-EPIC-004; BEF-079 (dieselbe Ursache möglich) |
 
@@ -3039,7 +3039,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | übergreifend; Befund aus Bausteinen |
-| Quelle  | Sichtung Kernprozess, Schritt 10 und 11 (therapist) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 10 und 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Bedienprinzip „Was nicht gebraucht wird, ist eingeklappt“ (UX-EPIC-002, Oberflächen-Checkliste Punkt 11); FRB-EPIC-003; ANN-130 |
 
@@ -3054,7 +3054,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Dokumentieren |
-| Quelle  | Sichtung Kernprozess, Schritt 11 (therapist) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Textbausteine an der Dokumentation; IDEA-PRX-043; Organisatorisches |
 
@@ -3069,7 +3069,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Akte → Behandlungsverlauf; Übersicht → Bisherige Doku |
-| Quelle  | Sichtung Kernprozess, Schritt 11 und 12 (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 11 und 12 (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Behandlungsverlauf; Tokens in `src/index.css`; UX-EPIC-003 |
 
@@ -3084,7 +3084,7 @@ Suchseite mit der Warnung erscheint.
 | ------- | - |
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Absagen (Patient:in, weniger als 24 Stunden) |
-| Quelle  | Sichtung Kernprozess, Schritt 12 (office) (Jannes, Test-Umgebung, iPhone) |
+| Quelle  | Sichtung Kernprozess, Schritt 12 (office) (Jannes, Test-Umgebung, Android und Windows) |
 | Status  | offen |
 | Berührt | Absagedialog und Statusmeldung; CAL-014; BEF-075 |
 
