@@ -111,14 +111,14 @@ test.describe('DOK-002: Korrigieren', () => {
     await page.getByRole('link', { name: 'Korrigieren' }).click();
     await expect(page.getByLabel('Korrigierter Eintrag')).toHaveValue(ENTWURF);
     // Ohne Aenderung gibt es nichts zu speichern.
-    await expect(page.getByRole('button', { name: 'Korrektur speichern' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Korrektur festschreiben' })).toBeDisabled();
 
     await page.getByLabel('Korrigierter Eintrag').fill(KORRIGIERT);
-    await page.getByRole('button', { name: 'Korrektur speichern' }).click();
+    await page.getByRole('button', { name: 'Korrektur festschreiben' }).click();
     await expect(page.getByText('Bitte kurz begründen, was korrigiert wird.')).toBeVisible();
 
     await page.getByLabel('Begründung der Korrektur').fill(BEGRUENDUNG);
-    await page.getByRole('button', { name: 'Korrektur speichern' }).click();
+    await page.getByRole('button', { name: 'Korrektur festschreiben' }).click();
 
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText(KORRIGIERT)).toBeVisible();

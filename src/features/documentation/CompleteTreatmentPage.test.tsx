@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { focusManager } from '@tanstack/react-query';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as DokumentationApi from './api';
 import type * as Bausteine from './textbausteine';
@@ -150,7 +151,37 @@ describe('CompleteTreatmentPage', () => {
     // Kein zweiter Schreibweg daneben.
     expect(createTreatmentNote).not.toHaveBeenCalled();
     expect(updateTreatmentNote).not.toHaveBeenCalled();
-    expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`);
+    // Zurück zum Termin, der erfährt, was geschehen ist (DOK-15, ZST-17).
+    expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+      state: { meldung: 'Behandlung abgeschlossen.' },
+    });
+  });
+
+  it('behält den Rückweg aus der Übersicht für Kopf, „Abbrechen“ und den Weg danach (DOK-01, ZST-17)', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist'], '?zurueck=%2F');
+
+    await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+    expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}?zurueck=%2F`,
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+        state: { meldung: 'Behandlung abgeschlossen.' },
+      }),
+    );
+  });
+
+  it('verbindet die Folge mit dem Knopf, damit sie auch vorgelesen wird (DOK-20)', async () => {
+    rendern();
+
+    expect(
+      await screen.findByRole('button', { name: 'Behandlung abschließen' }),
+    ).toHaveAccessibleDescription(/Mit dem Abschluss geschieht zweierlei in einem Schritt/);
   });
 
   it('uebergibt den Stand eines vorhandenen Entwurfs zur Konflikterkennung', async () => {
@@ -197,6 +228,11 @@ describe('CompleteTreatmentPage', () => {
 
     await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledTimes(1));
     expect(completeTreatment).not.toHaveBeenCalled();
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
+      }),
+    );
   });
 
   it('schuetzt einen ungespeicherten Text beim Abbrechen', async () => {
@@ -247,15 +283,93 @@ describe('CompleteTreatmentPage', () => {
     rendern();
     expect(await screen.findByText('Termin abgesagt')).toBeInTheDocument();
     expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
+    // Ein erwartbarer Zustand, kein Alarm (DOK-12).
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
-  it('weist eine bereits finalisierte Dokumentation ab', async () => {
+  it('weist eine bereits finalisierte Dokumentation ab und nennt die Wege (DOK-08, DOK-12)', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({
       primary: { ...entwurf, status: 'final', version_count: 1 },
       addenda: [],
     });
     rendern();
-    expect(await screen.findByText('Bereits abgeschlossen')).toBeInTheDocument();
+    // Derselbe Zustand heißt überall gleich (DOK-08).
+    expect(await screen.findByText('Bereits finalisiert')).toBeInTheDocument();
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Nachtrag hinzufügen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${NOTE_ID}/nachtrag`,
+    );
+    expect(screen.getByRole('link', { name: 'Korrigieren' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${NOTE_ID}/korrektur`,
+    );
+  });
+
+  describe('Nachladen (DOK-B01)', () => {
+    afterEach(() => {
+      focusManager.setFocused(undefined);
+    });
+
+    it('behält Feld und Text, wenn der Eintrag inzwischen finalisiert wurde', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: entwurf, addenda: [] });
+      const user = userEvent.setup();
+      rendern();
+
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await waitFor(() => expect(feld).toHaveValue('Bereits geschriebener Entwurf'));
+      await user.type(feld, ' Und mehr.');
+
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...entwurf, status: 'final', version_count: 1 },
+        addenda: [],
+      });
+      act(() => focusManager.setFocused(true));
+
+      expect(
+        await screen.findByText(
+          'Der Eintrag wurde inzwischen finalisiert – Ihr Text steht noch im Feld und ist nicht gespeichert.',
+        ),
+      ).toBeInTheDocument();
+      expect(feld).toHaveValue('Bereits geschriebener Entwurf Und mehr.');
+      expect(screen.queryByText('Bereits finalisiert')).toBeNull();
+    });
+
+    it('meldet den eigenen Abschluss nicht als Änderung von außen', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
+      // Nach dem Abschluss liefert der Server den Eintrag finalisiert.
+      completeTreatment.mockImplementation(() => {
+        fetchTreatmentDocumentation.mockResolvedValue({
+          primary: { ...entwurf, content: 'Heute geübt.', status: 'final', version_count: 1 },
+          addenda: [],
+        });
+        return Promise.resolve();
+      });
+      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+
+      await waitFor(() => expect(navigate).toHaveBeenCalled());
+      expect(screen.queryByText(/inzwischen finalisiert/)).toBeNull();
+    });
+  });
+
+  describe('Baustein einfügen (DOK-10)', () => {
+    it('meldet das Einfügen und nimmt es auf Wunsch zurück', async () => {
+      const user = userEvent.setup();
+      rendern();
+
+      const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+      await user.type(feld, 'Eigener Satz.');
+      await user.click(await screen.findByRole('button', { name: 'Hausbesuch' }));
+
+      expect(feld).toHaveValue('Eigener Satz.\n\nHausbesuch durchgefuehrt.');
+      expect(screen.getByText('„Hausbesuch“ am Ende eingefügt.')).toBeInTheDocument();
+
+      await user.click(screen.getByRole('button', { name: 'Rückgängig' }));
+      expect(feld).toHaveValue('Eigener Satz.');
+    });
   });
 
   it('ist fuer office gar nicht erst zu oeffnen und fragt nichts ab', async () => {
@@ -479,7 +593,11 @@ describe('CompleteTreatmentPage', () => {
       await user.click(screen.getByRole('button', { name: 'Hausbesuch' }));
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Befund:');
       fertig();
-      await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`));
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+          state: { meldung: 'Behandlung abgeschlossen.' },
+        }),
+      );
     });
 
     it('bietet ohne Behandlung keine Bausteine an', async () => {

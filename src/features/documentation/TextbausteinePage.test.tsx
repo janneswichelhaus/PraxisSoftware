@@ -81,7 +81,8 @@ describe('TextbausteinePage', () => {
       'section',
     )!;
     expect(within(praxis).queryByRole('button', { name: 'Bearbeiten' })).toBeNull();
-    expect(within(praxis).getByText(/pflegt die Praxisleitung/)).toBeInTheDocument();
+    // Die Rolle heißt, wie sie heißt (WRT-12).
+    expect(within(praxis).getByText(/pflegt die Praxisinhaber:in/)).toBeInTheDocument();
   });
 
   it('bietet dem owner die Wahl des Geltungsbereichs beim Anlegen', async () => {
@@ -154,5 +155,112 @@ describe('TextbausteinePage', () => {
     renderWithProviders(<TextbausteinePage user={testUser(['office'], 'Olivia Office')} />);
     expect(await screen.findByText('Nicht freigegeben')).toBeInTheDocument();
     expect(fetchTextSnippets).not.toHaveBeenCalled();
+  });
+
+  it('bestätigt das Anlegen über der Liste und setzt den Fokus dorthin (DOK-15)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Baustein anlegen' }));
+    await user.type(screen.getByLabelText('Titel *'), 'Neuer Baustein');
+    await user.type(screen.getByLabelText('Text *'), 'Neuer Text');
+    await user.click(screen.getByRole('button', { name: 'Baustein anlegen' }));
+
+    const meldung = await screen.findByText('Baustein „Neuer Baustein“ angelegt.');
+    await waitFor(() => expect(meldung.closest('[tabindex="-1"]')).toHaveFocus());
+  });
+
+  it('bietet den Geltungsbereich als Kästchen des Systems mit Hinweis an (DOK-13)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <TextbausteinePage user={testUser(['owner', 'therapist'], 'Jannes Test')} />,
+    );
+
+    await user.click(await screen.findByRole('button', { name: 'Baustein anlegen' }));
+    expect(
+      screen.getByRole('checkbox', { name: 'Baustein der Praxis' }),
+    ).toHaveAccessibleDescription(
+      'Erscheint bei allen dokumentierenden Personen. Ohne Haken gehört der Baustein nur Ihnen.',
+    );
+  });
+
+  it('sagt beim Löschen, was geschieht, mit schließendem Anführungszeichen (WRT-06, WRT-21)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Löschen' }));
+    const kasten = await screen.findByRole('group', {
+      name: 'Baustein „Manuelle Therapie“ löschen',
+    });
+    expect(kasten).toHaveTextContent('Der Baustein wird gelöscht.');
+  });
+
+  it('bietet bei einem Ladefehler einen neuen Versuch an (WRT-01)', async () => {
+    fetchTextSnippets.mockRejectedValue(new Error('kaputt'));
+    renderWithProviders(<TextbausteinePage user={testUser(['therapist'])} />);
+
+    expect(
+      await screen.findByText('Die Textbausteine konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  describe('Rückweg und Schutz ungespeicherter Eingaben (DOK-01, DOK-03)', () => {
+    const DOKU = '/termine/t1/dokumentation';
+
+    it('hat als Bereichsseite ohne mitgereisten Rückweg keinen', async () => {
+      renderWithProviders(
+        <TextbausteinePage user={testUser(['therapist'])} />,
+        '/praxis/textbausteine',
+      );
+
+      await screen.findByRole('heading', { name: 'Bausteine der Praxis' });
+      expect(screen.queryByRole('link', { name: /Zurück/ })).toBeNull();
+    });
+
+    it('führt aus der Dokumentation dorthin zurück', async () => {
+      renderWithProviders(
+        <TextbausteinePage user={testUser(['therapist'])} />,
+        `/praxis/textbausteine?zurueck=${encodeURIComponent(DOKU)}`,
+      );
+
+      expect(await screen.findByRole('link', { name: /Zurück zur Dokumentation/ })).toHaveAttribute(
+        'href',
+        DOKU,
+      );
+    });
+
+    it('fragt vor dem Weggehen nach, wenn ein Baustein halb geschrieben ist', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <TextbausteinePage user={testUser(['therapist'])} />,
+        `/praxis/textbausteine?zurueck=${encodeURIComponent(DOKU)}`,
+      );
+
+      await user.click(await screen.findByRole('button', { name: 'Baustein anlegen' }));
+      await user.type(screen.getByLabelText('Text *'), 'Halb geschrieben');
+      await user.click(screen.getByRole('link', { name: /Zurück zur Dokumentation/ }));
+
+      const kasten = await screen.findByRole('group', { name: 'Ungespeicherter Textbaustein' });
+      expect(kasten).toHaveTextContent(
+        'Die Eingaben sind noch nicht gespeichert. Beim Weitergehen gehen sie verloren.',
+      );
+      // Ein Baustein kennt keinen Entwurf: nur Verwerfen oder Bleiben (ANN-046).
+      expect(within(kasten).queryByRole('button', { name: /Speichern/ })).toBeNull();
+      await user.click(within(kasten).getByRole('button', { name: 'Hier bleiben' }));
+      expect(screen.getByLabelText('Text *')).toHaveValue('Halb geschrieben');
+    });
+
+    it('lässt ohne Eingaben ohne Rückfrage gehen', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(
+        <TextbausteinePage user={testUser(['therapist'])} />,
+        `/praxis/textbausteine?zurueck=${encodeURIComponent(DOKU)}`,
+      );
+
+      await user.click(await screen.findByRole('button', { name: 'Baustein anlegen' }));
+      await user.click(screen.getByRole('link', { name: /Zurück zur Dokumentation/ }));
+      expect(screen.queryByRole('group', { name: 'Ungespeicherter Textbaustein' })).toBeNull();
+    });
   });
 });

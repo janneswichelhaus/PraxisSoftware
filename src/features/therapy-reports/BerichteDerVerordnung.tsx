@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailRow } from '@/components/ui/DetailList';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
@@ -52,6 +53,13 @@ export function EmpfehlungAusBericht({
  * Ein Entwurf führt zum Weiterschreiben, ein abgeschlossener Bericht zum
  * Druckblatt. Office liest und druckt, schreibt aber nicht (ADR-004 Punkt 3,
  * ADR-016 Punkt 1) — der Knopf fehlt dort, verbindlich prüft es der Server.
+ *
+ * **Ein angefangener Entwurf geht vor (DOK-11).** Der Knopf „Therapiebericht
+ * schreiben“ stand immer da, auch neben einem Entwurf, und legte jedes Mal
+ * einen neuen, leeren an - wer weiterschreiben wollte, tippte eher ihn und
+ * verteilte den Text auf zwei Entwürfe. Gibt es einen Entwurf, führt der
+ * Knopf jetzt zu ihm; ein neuer Bericht bleibt als leiser Weg daneben. Der
+ * Bericht ist an der Karte eine seltene Aktion und deshalb kompakt (VER-01).
  */
 export function BerichteDerVerordnung({
   patientId,
@@ -68,6 +76,15 @@ export function BerichteDerVerordnung({
   const queryClient = useQueryClient();
   const darfSchreiben = canWriteTreatmentNote(user.roles);
   const eigene = berichte.filter((b) => b.treatment_basis_id === verordnungId);
+  // Der jüngste Entwurf dieser Verordnung - dorthin führt „Entwurf
+  // weiterschreiben“. Die Zeitstempel kommen einheitlich aus PostgREST und
+  // lassen sich deshalb als Zeichenkette vergleichen.
+  const juengsterEntwurf = eigene
+    .filter((b) => b.status === 'entwurf')
+    .reduce<Berichtszeile | null>(
+      (juengster, b) => (!juengster || b.created_at > juengster.created_at ? b : juengster),
+      null,
+    );
 
   const anlegen = useMutation({
     mutationFn: () => berichtAnlegen(verordnungId),
@@ -110,14 +127,30 @@ export function BerichteDerVerordnung({
       ) : null}
       {darfSchreiben ? (
         <div className="mt-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => anlegen.mutate()}
-            disabled={anlegen.isPending}
-          >
-            {anlegen.isPending ? 'Wird angelegt …' : 'Therapiebericht schreiben'}
-          </Button>
+          <div className="flex flex-wrap items-center gap-3">
+            {juengsterEntwurf ? (
+              <ButtonLink
+                to={`/patienten/${patientId}/berichte/${juengsterEntwurf.id}`}
+                variant="secondary"
+                groesse="kompakt"
+              >
+                Entwurf weiterschreiben
+              </ButtonLink>
+            ) : null}
+            <Button
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              onClick={() => anlegen.mutate()}
+              disabled={anlegen.isPending}
+            >
+              {anlegen.isPending
+                ? 'Wird angelegt …'
+                : juengsterEntwurf
+                  ? 'Neuen Bericht anlegen'
+                  : 'Therapiebericht schreiben'}
+            </Button>
+          </div>
           {anlegen.isError ? (
             <Statusmeldung ton="fehler" className="mt-2">
               {anlegen.error.message}

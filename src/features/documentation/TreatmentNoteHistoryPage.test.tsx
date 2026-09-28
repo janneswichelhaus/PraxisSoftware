@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
@@ -160,6 +160,48 @@ describe('TreatmentNoteHistoryPage', () => {
 
     expect(
       await screen.findByText('Der Änderungsverlauf konnte nicht geladen werden.'),
+    ).toBeInTheDocument();
+    // Was zu tun ist, und ein Weg dorthin (WRT-01).
+    expect(
+      screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
+  });
+
+  it('nennt im knappen Kopf Eintrag, Datum und Uhrzeit (DOK-18)', async () => {
+    rendern();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Änderungsverlauf · Eintrag' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Mittwoch, 12\. Mai 2027, 09:00–10:00 Uhr/)).toBeInTheDocument();
+  });
+
+  it('nennt einen Nachtrag als Nachtrag (DOK-18)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: { ...finalisiert, id: 'haupt' },
+      addenda: [{ ...finalisiert, addendum_to_note_id: 'haupt' }],
+    });
+    rendern();
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Änderungsverlauf · Nachtrag' }),
+    ).toBeInTheDocument();
+  });
+
+  it('kennzeichnet die jüngste Version als geltende Fassung (DOK-18)', async () => {
+    rendern();
+
+    const zweite = await screen.findByLabelText('Version 2');
+    expect(within(zweite).getByText('Geltende Fassung')).toBeInTheDocument();
+    expect(within(screen.getByLabelText('Version 1')).queryByText('Geltende Fassung')).toBeNull();
+  });
+
+  it('sagt der gesperrten Rolle sachlich richtig, wer den Verlauf sieht (WRT-12)', async () => {
+    rendern(['patient']);
+
+    expect(
+      await screen.findByText('Den Änderungsverlauf sehen nur die Praxisrollen.'),
     ).toBeInTheDocument();
   });
 });

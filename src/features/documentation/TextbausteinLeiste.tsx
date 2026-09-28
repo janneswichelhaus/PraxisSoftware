@@ -1,5 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/Button';
+import { Textlink } from '@/components/ui/Textlink';
+import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchTextSnippets, type TextSnippet } from './textbausteine';
 
 /**
@@ -7,14 +10,24 @@ import { fetchTextSnippets, type TextSnippet } from './textbausteine';
  *
  * Ein Tap fügt den Baustein ans Ende des bereits Geschriebenen ein. Bewusst
  * kein Menü und kein Dialog: Der Weg soll kürzer sein als das Tippen, sonst
- * ist er sinnlos.
+ * ist er sinnlos. Was dabei geschah, sagt die Seite unter dem Feld - dafür
+ * bekommt sie neben dem Text auch den Titel des Bausteins (DOK-10).
  *
  * Praxisweite Bausteine stehen vorn (die Reihenfolge kommt vom Server), eigene
  * dahinter; der Titel des Knopfes ist der Titel des Bausteins, sein
  * `title`-Attribut zeigt den vollen Text. Hat jemand keine Bausteine, steht
  * dort der Weg, welche anzulegen - eine leere Leiste wäre ein Rätsel.
+ *
+ * Die Leiste ist eine benannte Gruppe (DOK-20); das sichtbare „Textbausteine:“
+ * wiederholt den Namen nur für das Auge. Die Knöpfe sind kompakte
+ * Kartenaktionen wie im Bausteinfeld darunter (DOK-13, UIK-14).
  */
-export function TextbausteinLeiste({ onEinfuegen }: { onEinfuegen: (text: string) => void }) {
+export function TextbausteinLeiste({
+  onEinfuegen,
+}: {
+  onEinfuegen: (text: string, titel: string) => void;
+}) {
+  const ort = useLocation();
   const { data, isPending, isError } = useQuery({
     queryKey: ['text-snippets'],
     queryFn: fetchTextSnippets,
@@ -32,31 +45,40 @@ export function TextbausteinLeiste({ onEinfuegen }: { onEinfuegen: (text: string
 
   return (
     <div className="nicht-drucken mb-3">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-ink-muted text-sm">Textbausteine:</span>
+      <div role="group" aria-label="Textbausteine" className="flex flex-wrap items-center gap-2">
+        <span aria-hidden="true" className="text-ink-muted text-sm">
+          Textbausteine:
+        </span>
 
         {bausteine.length === 0 ? (
           <span className="text-ink-muted text-sm">noch keine angelegt</span>
         ) : (
           bausteine.map((baustein) => (
-            <button
+            <Button
               key={baustein.id}
               type="button"
+              variant="secondary"
+              groesse="kompakt"
               title={baustein.body}
-              onClick={() => onEinfuegen(baustein.body)}
-              className="border-line-strong bg-surface text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 items-center border px-3 text-sm font-medium transition-colors"
+              onClick={() => onEinfuegen(baustein.body, baustein.title)}
             >
               {baustein.title}
-            </button>
+            </Button>
           ))
         )}
 
-        <Link
-          to="/praxis/textbausteine"
-          className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center px-1 text-sm font-medium"
+        {/* Die Bausteinseite ist eine Bereichsseite; ihr Rückweg führt hierher
+            zurück, samt dem Rückweg dieser Seite (DOK-01). Der Pfeil ist
+            Schmuck und wird nicht vorgelesen (WRT-08). */}
+        <Textlink
+          to={mitRueckweg('/praxis/textbausteine', `${ort.pathname}${ort.search}`)}
+          alleinstehend
+          // `gap-1`: Im `inline-flex` des Links fiele das Leerzeichen vor dem
+          // Pfeil weg.
+          className="gap-1 px-1 text-sm font-medium"
         >
-          Bausteine verwalten →
-        </Link>
+          Bausteine verwalten <span aria-hidden="true">→</span>
+        </Textlink>
       </div>
     </div>
   );

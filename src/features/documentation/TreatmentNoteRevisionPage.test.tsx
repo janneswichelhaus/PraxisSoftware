@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -84,10 +84,10 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 const { TreatmentNoteRevisionPage } = await import('./TreatmentNoteRevisionPage');
 const { DokumentationVeraendertError } = await import('./api');
 
-function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
     <TreatmentNoteRevisionPage user={testUser(rollen)} />,
-    `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/korrektur`,
+    `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/korrektur${suche}`,
   );
 }
 
@@ -113,7 +113,8 @@ describe('TreatmentNoteRevisionPage', () => {
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Korrigiert.');
     await user.type(grundfeld(), 'Zahlendreher.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur speichern' }));
+    // „Festschreiben“, weil „Speichern“ in der Dokumentation Entwurf heißt (DOK-08).
+    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
 
     await waitFor(() => {
       expect(reviseTreatmentNote).toHaveBeenCalledWith(
@@ -124,7 +125,61 @@ describe('TreatmentNoteRevisionPage', () => {
         'Zahlendreher.',
       );
     });
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`));
+    // Der Termin erfährt, welche Version entstanden ist (DOK-15).
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
+      }),
+    );
+  });
+
+  it('behält den mitgereisten Rückweg für „Abbrechen“, Nachtrag und den Weg danach (DOK-01)', async () => {
+    const user = userEvent.setup();
+    rendern(['therapist'], '?zurueck=%2F');
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}?zurueck=%2F`,
+    );
+    expect(screen.getByRole('link', { name: 'Nachtrag' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag?zurueck=%2F`,
+    );
+
+    await user.type(feld(), ' Korrigiert.');
+    await user.type(grundfeld(), 'Zahlendreher.');
+    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+        state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
+      }),
+    );
+  });
+
+  it('verbindet die Folge mit dem Knopf (DOK-20)', async () => {
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    expect(
+      screen.getByRole('button', { name: 'Korrektur festschreiben' }),
+    ).toHaveAccessibleDescription(/Jede Korrektur wird als neue Version festgeschrieben/);
+  });
+
+  it('sagt beim Verlassen, dass eine Korrektur nicht zwischengespeichert wird (DOK-05)', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    await user.type(feld(), ' Korrigiert.');
+    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+
+    const kasten = await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' });
+    expect(kasten).toHaveTextContent(
+      'Eine Korrektur lässt sich nicht zwischenspeichern: Sie wird erst mit „Korrektur festschreiben“ Teil der Akte. Zum Festschreiben hier bleiben; beim Weitergehen gehen Text und Begründung verloren.',
+    );
+    // Ohne Entwurf gibt es kein „Speichern“ aus der Rückfrage (ANN-046).
+    expect(within(kasten).queryByRole('button', { name: /Speichern/ })).toBeNull();
   });
 
   it('fragt den Server ohne Begruendung gar nicht erst (ADR-016 Punkt 6)', async () => {
@@ -133,7 +188,7 @@ describe('TreatmentNoteRevisionPage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Korrigiert.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
 
     expect(
       await screen.findByText('Bitte kurz begründen, was korrigiert wird.'),
@@ -145,7 +200,7 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    expect(screen.getByRole('button', { name: 'Korrektur speichern' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Korrektur festschreiben' })).toBeDisabled();
   });
 
   it('verweist auf den Nachtrag als Regelfall', async () => {
@@ -165,9 +220,9 @@ describe('TreatmentNoteRevisionPage', () => {
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
     await user.type(feld(), ' Eigener Zusatz.');
     await user.type(grundfeld(), 'Begruendung.');
-    await user.click(screen.getByRole('button', { name: 'Korrektur speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
 
-    expect(await screen.findByText('Nicht gespeichert')).toBeInTheDocument();
+    expect(await screen.findByText('Nicht festgeschrieben')).toBeInTheDocument();
     expect(feld()).toHaveValue(`${INHALT} Eigener Zusatz.`);
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -178,6 +233,12 @@ describe('TreatmentNoteRevisionPage', () => {
 
     expect(await screen.findByText('Noch ein Entwurf')).toBeInTheDocument();
     expect(screen.queryByLabelText('Korrigierter Eintrag')).toBeNull();
+    // Ein erwartbarer Zustand mit dem Weg dorthin, kein Alarm (DOK-12).
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.getByRole('link', { name: 'Entwurf bearbeiten' })).toHaveAttribute(
+      'href',
+      `/termine/${TERMIN_ID}/dokumentation`,
+    );
   });
 
   it('meldet einen Eintrag, der nicht zu diesem Termin gehoert', async () => {

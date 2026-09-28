@@ -20,6 +20,22 @@ import { empfaengerName, terminzeile, type Berichtsdokument } from './api';
  * der **mitgedruckt** wird. Der Kopf steht in einem `div`, nicht in einem
  * `header` — die Druckregeln aus UI-000 blendeten `header` bis UXR-001 aus.
  */
+
+/**
+ * Ein Abschnitt des Blattes darf auf Papier umbrechen (DOK-22).
+ *
+ * Die Druckregel hält jede `section` zusammen (`break-inside: avoid`). Ein
+ * Abschnitt mit vielen Einträgen sprang damit als Ganzes auf die nächste
+ * Seite und ließ eine halbe Seite leer - auf Papier und Fax. Zusammen bleibt
+ * jetzt nur der einzelne Eintrag (`li`, weiter aus der Druckregel). Das `!`
+ * ist nötig: Die Druckregel steht außerhalb der Tailwind-Ebenen und ginge
+ * einer gewöhnlichen Klasse vor.
+ */
+const ABSCHNITT = 'mt-6 break-inside-auto!';
+
+/** Freitext der Therapeut:in und der Einträge: bricht auch lange Ketten um (DOK-23). */
+const FREITEXT = 'wrap-anywhere whitespace-pre-line';
+
 export function Berichtsblatt({
   dokument,
   entwurf,
@@ -58,7 +74,7 @@ export function Berichtsblatt({
 
       {entwurf ? (
         <p className="border-line-strong text-ink mt-8 border-2 px-3 py-2 text-sm font-semibold">
-          Entwurf — noch nicht abgeschlossen, nicht zum Versand.
+          Entwurf – noch nicht abgeschlossen, nicht zum Versand.
         </p>
       ) : null}
 
@@ -118,7 +134,7 @@ export function Berichtsblatt({
         {formatDate(verordnung.issued_on)}
       </p>
 
-      <section className="mt-6">
+      <section className={ABSCHNITT}>
         <Abschnitt className="text-sm font-semibold">Verordnung</Abschnitt>
         <dl className="mt-1 text-sm">
           {verordnung.diagnosis ? (
@@ -151,7 +167,7 @@ export function Berichtsblatt({
       </section>
 
       {dokument.eintraege.length > 0 ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">
             Befund und Verlauf aus der Dokumentation
           </Abschnitt>
@@ -163,7 +179,7 @@ export function Berichtsblatt({
                   {eintrag.ergaenzung ? ' · Nachtrag' : ''}
                   {eintrag.verfasser ? ` · ${eintrag.verfasser}` : ''}
                 </p>
-                <p className="whitespace-pre-line">{eintrag.inhalt}</p>
+                <p className={FREITEXT}>{eintrag.inhalt}</p>
               </li>
             ))}
           </ul>
@@ -171,7 +187,7 @@ export function Berichtsblatt({
       ) : null}
 
       {dokument.koerperschema ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">Körperschema</Abschnitt>
           <p className="text-ink-muted mt-1 text-sm">
             Angabe vom {formatDate(dokument.koerperschema.erhoben_am)}:{' '}
@@ -184,19 +200,19 @@ export function Berichtsblatt({
       ) : null}
 
       {dokument.text ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">Bericht der Therapeut:in</Abschnitt>
-          <p className="mt-1 text-sm whitespace-pre-line">{dokument.text.inhalt}</p>
+          <p className={`mt-1 text-sm ${FREITEXT}`}>{dokument.text.inhalt}</p>
           <p className="text-ink-muted mt-1 text-xs">{quelle(dokument.text)}</p>
         </section>
       ) : null}
 
       {dokument.empfehlung ? (
-        <section className="mt-6">
+        <section className={ABSCHNITT}>
           <Abschnitt className="text-sm font-semibold">
             Empfehlung der Therapeut:in zum Verordnungsende
           </Abschnitt>
-          <p className="mt-1 text-sm whitespace-pre-line">{dokument.empfehlung.inhalt}</p>
+          <p className={`mt-1 text-sm ${FREITEXT}`}>{dokument.empfehlung.inhalt}</p>
           <p className="text-ink-muted mt-1 text-xs">{quelle(dokument.empfehlung)}</p>
         </section>
       ) : null}

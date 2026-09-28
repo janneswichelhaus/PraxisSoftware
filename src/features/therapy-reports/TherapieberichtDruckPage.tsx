@@ -34,13 +34,52 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  if (bericht.isPending) return <LoadingState label="Bericht wird geladen …" />;
-  if (bericht.isError || !bericht.data) {
+  // Der Rückweg steht vor jedem Zustand (DOK-12) - auch ein Ladefehler oder
+  // ein inzwischen verworfener Bericht lässt einen Weg zurück. Rückweg und
+  // Knopfreihe stehen so breit und so mittig wie das Blatt (DOK-22).
+  const verordnungen = `/patienten/${patientId}/verordnungen`;
+  const rueckweg = (
+    <div className="nicht-drucken mx-auto max-w-[210mm]">
+      {bericht.data ? (
+        <Rueckweg
+          standard={`${verordnungen}#verordnung-${bericht.data.treatment_basis_id}`}
+          beschriftung="Zurück zur Verordnung"
+        />
+      ) : (
+        <Rueckweg standard={verordnungen} beschriftung="Zurück zu den Verordnungen" />
+      )}
+    </div>
+  );
+
+  if (bericht.isPending) {
     return (
-      <ErrorState
-        title="Der Bericht konnte nicht geladen werden."
-        description="Bitte später erneut versuchen. Sind Sie noch angemeldet?"
-      />
+      <>
+        {rueckweg}
+        <LoadingState label="Bericht wird geladen …" />
+      </>
+    );
+  }
+  if (bericht.isError && !bericht.data) {
+    return (
+      <>
+        {rueckweg}
+        <ErrorState
+          title="Der Bericht konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => bericht.refetch()}
+        />
+      </>
+    );
+  }
+  if (!bericht.data) {
+    return (
+      <>
+        {rueckweg}
+        <ErrorState
+          title="Bericht nicht gefunden"
+          description="Vielleicht wurde der Entwurf inzwischen verworfen."
+        />
+      </>
     );
   }
 
@@ -61,16 +100,11 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
 
   return (
     <>
-      <div className="nicht-drucken">
-        <Rueckweg
-          standard={`/patienten/${patientId}/verordnungen#verordnung-${bericht.data.treatment_basis_id}`}
-          beschriftung="Zurück zur Verordnung"
-        />
-      </div>
+      {rueckweg}
 
       <Berichtsblatt dokument={bericht.data.document} entwurf={entwurf} />
 
-      <div className="nicht-drucken mt-10 flex max-w-[210mm] flex-col gap-3">
+      <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <Button type="button" onClick={() => void drucken()} disabled={druckt}>
             {druckt ? 'Druck wird vorbereitet …' : 'Bericht drucken'}
@@ -84,8 +118,8 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
         {druckfehler ? <Statusmeldung ton="fehler">{druckfehler}</Statusmeldung> : null}
         <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
           Der Druckdialog des Browsers führt zu Papier, Fax oder einer PDF-Datei. Diese Datei
-          entsteht auf diesem Gerät; aufbewahrt wird der Bericht als Datensatz
-          {entwurf ? ', sobald er abgeschlossen ist' : ' — so, wie er abgeschlossen wurde'}. Die
+          entsteht auf diesem Gerät; aufbewahrt wird der Bericht in der Anwendung
+          {entwurf ? ', sobald er abgeschlossen ist' : ' – so, wie er abgeschlossen wurde'}. Die
           Anwendung verschickt nichts.
         </p>
       </div>
