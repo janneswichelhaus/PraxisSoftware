@@ -3025,7 +3025,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Termin ziehen → Verschieben |
 | Quelle  | Sichtung Kernprozess, Schritt 9 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004c) |
 | Berührt | Statusmeldung nach dem Verschieben; FIX-EPIC-004; BEF-079 (dieselbe Ursache möglich) |
 
 **Beobachtung.** Nach „Verschieben“ erscheint die Meldung mit „Rückgängig“ am Anfang der Seite. Wer weiter unten im Raster arbeitet, sieht sie nicht und müsste erst nach oben scrollen.
@@ -3085,7 +3085,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Absagen (Patient:in, weniger als 24 Stunden) |
 | Quelle  | Sichtung Kernprozess, Schritt 12 (office) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004c) |
 | Berührt | Absagedialog und Statusmeldung; CAL-014; BEF-075 |
 
 **Beobachtung.** Nach „Patient:in hat abgesagt“ mit Eingang „Gerade eben“ hat Jannes keinen Hinweis „Gebühr vorgemerkt“ gesehen. Die Gebühr war vorgemerkt: Paul stand in Schritt 13 unter „Zu erfassen“ mit „Absage innerhalb der Frist“.

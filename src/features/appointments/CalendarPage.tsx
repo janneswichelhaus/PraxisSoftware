@@ -1442,15 +1442,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
           wo er ist.
 
-          Seit KAL-01 klebt sie unten, an der Stelle der Anlegen-Leiste, und
+          Seit KAL-01 steht sie unten, an der Stelle der Anlegen-Leiste, und
           trägt den Fokus: Über dem Raster stand sie nach einem
-          Nachmittagstermin rund 1 000 px außer Sicht. Solange eine
+          Nachmittagstermin rund 1 000 px außer Sicht. Seit BEF-075 fest am
+          Bildrand statt klebend: Klebend hing sie am Ende des Rasters und
+          stand je nach Bildlauf doch außerhalb. Solange eine
           Rückfrage oder die Anlegen-Leiste offen ist, tritt sie zurück: zwei
           Kästen übereinander wären eine Frage zu viel (CAL-023). */}
       {rueckgaengig && !vorschlag && !auswahl ? (
         <div
           role="status"
-          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:bottom-4"
+          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[28rem]"
         >
           <p className="text-ink text-sm">
             Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>

@@ -174,11 +174,23 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
         eingabe.datum,
         eingabe.uhrzeit,
       ),
-    onSuccess: () => {
+    onSuccess: async () => {
       // Der Termin selbst, der Kalender und die Tagesliste zeigen sonst
       // weiter einen bestätigten Termin.
       nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
-      melden(istEreignis ? 'Teilnahme abgesagt.' : 'Termin abgesagt.');
+      if (istEreignis) {
+        melden('Teilnahme abgesagt.');
+        return;
+      }
+      // BEF-079: Ob ein Ausfallhonorar entsteht, rechnet nur der Server. Die
+      // Meldung liest den neuen Stand und sagt die Folge gleich mit - sie
+      // stand bisher nur als Zeile weiter unten, und niemand sah sie.
+      const danach = await fetchAppointment(appointment.id).catch(() => null);
+      melden(
+        danach?.fee_basis
+          ? `Termin abgesagt · Ausfallhonorar vorgemerkt: ${feeBasisLabels[danach.fee_basis]}.`
+          : 'Termin abgesagt.',
+      );
     },
   });
 

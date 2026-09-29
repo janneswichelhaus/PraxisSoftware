@@ -1924,7 +1924,7 @@ describe('CalendarPage', () => {
       fireEvent.pointerUp(window, { clientX: 150, clientY: 200 + EINE_STUNDE });
     }
 
-    it('stellt die Rueckgaengig-Leiste klebend unter das Raster und setzt den Fokus darauf (KAL-01)', async () => {
+    it('stellt die Rueckgaengig-Leiste fest an den unteren Bildrand und setzt den Fokus darauf (KAL-01, BEF-075)', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
       spaltenVermessen();
@@ -1935,8 +1935,9 @@ describe('CalendarPage', () => {
       const rueckgaengig = await screen.findByRole('button', { name: 'Rückgängig' });
       await waitFor(() => expect(rueckgaengig).toHaveFocus());
       const leiste = rueckgaengig.closest('[role="status"]')!;
-      expect(leiste.className).toContain('sticky');
-      // Unter dem Raster, an der Stelle der Anlegen-Leiste - nicht darüber.
+      // Fest am Bildrand, nicht klebend am Ende des Rasters (BEF-075).
+      expect(leiste.className).toContain('fixed');
+      // Im Dokument unter dem Raster - die Tastaturreihenfolge bleibt.
       expect(raster().compareDocumentPosition(leiste) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       );
