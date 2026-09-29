@@ -180,6 +180,8 @@ export const AUDIT_ACTIONS = [
   'task.reopened',
   'task.deleted',
   'tasks.read',
+  // PRX-014: Ergebnis eines Anrufs der Anrufliste, ohne Inhalt.
+  'appointment.call_recorded',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -300,6 +302,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'task.reopened': 'Aufgabe wieder geöffnet',
   'task.deleted': 'Aufgabe gelöscht',
   'tasks.read': 'Aufgaben gelesen',
+  'appointment.call_recorded': 'Anruf zum Termin vermerkt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

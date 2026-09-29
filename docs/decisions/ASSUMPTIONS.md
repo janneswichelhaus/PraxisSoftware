@@ -1832,3 +1832,15 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 **Anker.** `app.intake_checklist` (die eine Stelle der Regeln), `app.intake_finding_instruments`, `get_intake_checklist` und `list_open_intakes` sowie die Spalte in `supabase/migrations/20260929180000_prx_013_intake_checklist.sql`; Beschriftung und Ziele in `src/features/open-points/intake-api.ts`; Liege mit drei Zuständen in `src/features/patients/Behandlungsliege.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`.
 
 **Änderungspfad.** Ein Punkt mehr oder anders: `app.intake_checklist` und die Liste in `intake-api.ts` · Aufwand `klein`. Papierbogen zählt: im Punkt `anamnesis` zusätzlich eine Datei einer neuen Dokumentart prüfen · Aufwand `mittel`. Zurück zu „nein“ als Standard: Spalte wieder `not null default false` · Aufwand `klein`.
+
+### ANN-144 — Anrufliste: „erreicht“ ist ein Mitteilungsvermerk, „nicht erreicht“ ein Stand am Termin für zwei Wochen
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008); Sichtung PRX-EPIC-003
+
+**Annahme.** Die Anrufliste zeigt je Tag (Standard: morgen) die bestätigten Behandlungstermine mit Rufnummern. „Erreicht, bestätigt“ setzt den vorhandenen Mitteilungsvermerk „telefonisch“ am Termin (CAL-012) und verfällt wie dieser, sobald der Termin sich ändert. „Nicht erreicht“ und „Nachricht hinterlassen“ werden als Stand **am Termin** gespeichert (`appointment_call_states`: Ergebnis, Zahl der Versuche, wann, wer) und vierzehn Tage nach Terminbeginn gelöscht (Klasse `anrufstand`); nie als Merkmal der Person. Lesen und Vermerken dürfen die Rollen des Mitteilungsvermerks (`app.can_update_appointment`); jedes Ergebnis wird als `appointment.call_recorded` protokolliert, ohne Gesprächsinhalt.
+
+**Begründung.** `IDEA-PRX-041` fragt, ob der Stand an den Termin oder an einen eigenen Vorgang gehört und ob „nicht erreicht“ ein Merkmal der Patientin wird (§20); am Termin und kurzlebig beantwortet beides am engsten. „Erreicht“ ist dieselbe Aussage wie „telefonisch mitgeteilt“ — ein zweiter Ort dafür liefe auseinander. Vierzehn Tage genügen, um einen Ausfall („trotz zweimal Nachricht nicht erschienen“) im Gespräch nachzuvollziehen; länger wäre ein Verlauf über das Erreichbarkeitsverhalten einer Person. Unsicher: ob die Praxis bei Ausfallhonoraren (ANN-035) den Anrufstand länger als Beleg braucht.
+
+**Anker.** Tabelle, Klasse `anrufstand`, `list_call_list` und `record_call_outcome` sowie die Regel in `public.apply_retention` in `supabase/migrations/20260929190000_prx_014_call_list.sql`; Oberfläche `src/features/open-points/CallListPage.tsx`; Tests in `supabase/tests/call-list.test.ts`.
+
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `anrufstand` · Aufwand `klein`. Verlauf aller Versuche statt eines Stands: eigene Zeile je Versuch statt `on conflict` · Aufwand `mittel`. Auch die Anrufliste nach „Tag umplanen“ (CAL-009) speichert ihren Stand hier: dieselbe Funktion für abgesagte Termine öffnen · Aufwand `mittel`.

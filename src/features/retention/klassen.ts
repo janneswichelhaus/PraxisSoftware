@@ -56,6 +56,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Erledigte Aufgaben und Wiedervorlagen. Offene bleiben stehen; mit Bezug auf eine Person fallen sie mit der Akte.',
   },
+  anrufstand: {
+    label: 'Anrufliste',
+    beschreibung:
+      'Vermerk „nicht erreicht“ oder „Nachricht hinterlassen“ an einem Termin. Fällt zwei Wochen nach dem Termin; „erreicht“ steht als Mitteilung am Termin.',
+  },
   personenstammdaten: {
     label: 'Personenstammdaten',
     beschreibung:

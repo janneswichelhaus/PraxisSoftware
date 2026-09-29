@@ -238,6 +238,7 @@ describe('Audit-Lesepfad', () => {
       'list_appointments',
       'list_audit_events',
       'list_billable_services',
+      'list_call_list',
       'list_day_plan',
       'list_day_route',
       'list_deletion_runs',
