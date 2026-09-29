@@ -7,6 +7,10 @@ import type * as RouterModul from 'react-router-dom';
 import { morgenOrtszeit, renderWithProviders } from '@/test-utils';
 
 const createPatient = vi.fn();
+// PRX-015: ohne Angabe keine Dublette.
+const findPossibleDuplicates = vi.fn(
+  (_vorname: string, _nachname: string, _geburt: string | null) => Promise.resolve([] as unknown[]),
+);
 const navigate = vi.fn();
 const fetchAssignableTherapists = vi.fn();
 
@@ -24,6 +28,8 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     createPatient: (values: unknown) => createPatient(values) as Promise<string>,
+    findPossibleDuplicates: (vorname: string, nachname: string, geburt: string | null) =>
+      findPossibleDuplicates(vorname, nachname, geburt) as Promise<PatientsApi.PatientSearchHit[]>,
   };
 });
 
@@ -43,6 +49,7 @@ async function ausfuellen(user: ReturnType<typeof userEvent.setup>) {
 describe('NewPatientPage', () => {
   beforeEach(() => {
     createPatient.mockReset();
+    findPossibleDuplicates.mockReset().mockResolvedValue([]);
     navigate.mockReset();
     fetchAssignableTherapists.mockReset();
     fetchAssignableTherapists.mockResolvedValue([
@@ -395,5 +402,61 @@ describe('NewPatientPage', () => {
     expect(
       screen.getByRole('heading', { name: 'Hausbesuch und Praxisangaben' }),
     ).toBeInTheDocument();
+  });
+
+  describe('Dublettenpruefung (PRX-015)', () => {
+    const treffer = {
+      id: '66666666-6666-4666-8666-000000000001',
+      given_name: 'Nora',
+      family_name: 'Neuzugang',
+      date_of_birth: '1980-03-14',
+      status: 'active' as const,
+    };
+
+    it('weist auf eine moegliche Dublette hin und legt erst beim zweiten Tipp an', async () => {
+      findPossibleDuplicates.mockResolvedValueOnce([treffer]);
+      createPatient.mockResolvedValue('neu');
+      const user = userEvent.setup();
+      renderWithProviders(<NewPatientPage />);
+
+      await ausfuellen(user);
+      await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+
+      expect(await screen.findByText('Vielleicht schon in der Kartei')).toBeInTheDocument();
+      expect(findPossibleDuplicates).toHaveBeenCalledWith('  Nora  ', 'Neuzugang', '1980-03-14');
+      expect(screen.getByRole('link', { name: /Nora Neuzugang, geb\./ })).toHaveAttribute(
+        'href',
+        `/patienten/${treffer.id}?zurueck=%2Fpatienten`,
+      );
+      expect(createPatient).not.toHaveBeenCalled();
+
+      await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+      await waitFor(() => expect(createPatient).toHaveBeenCalledTimes(1));
+      expect(findPossibleDuplicates).toHaveBeenCalledTimes(1);
+    });
+
+    it('prueft erneut, wenn sich der Name aendert', async () => {
+      findPossibleDuplicates.mockResolvedValueOnce([treffer]);
+      const user = userEvent.setup();
+      renderWithProviders(<NewPatientPage />);
+
+      await ausfuellen(user);
+      await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+      await screen.findByText('Vielleicht schon in der Kartei');
+      await user.type(screen.getByLabelText('Nachname *'), 'x');
+      expect(screen.queryByText('Vielleicht schon in der Kartei')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+      await waitFor(() => expect(findPossibleDuplicates).toHaveBeenCalledTimes(2));
+    });
+
+    it('legt an, wenn die Pruefung scheitert - sie ist ein Hinweis, kein Tor', async () => {
+      findPossibleDuplicates.mockRejectedValueOnce(new Error('offline'));
+      createPatient.mockResolvedValue('neu');
+      const user = userEvent.setup();
+      renderWithProviders(<NewPatientPage />);
+      await ausfuellen(user);
+      await user.click(screen.getByRole('button', { name: 'Patient:in anlegen' }));
+      await waitFor(() => expect(createPatient).toHaveBeenCalledTimes(1));
+    });
   });
 });

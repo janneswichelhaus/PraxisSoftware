@@ -228,11 +228,12 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(sichtbar.rows).toEqual([]);
     });
 
-    it('weist einen Verordnungsscan ohne Verordnung ab (ADR-017 Punkt 10)', async () => {
-      const fehler = await abgefangen(
-        vorbereiten(users.therapist, { verordnungId: null, art: 'verordnungsscan' }),
-      );
-      expect(fehler?.message).toMatch(/patient_files_scan_belongs_to_treatment_basis/);
+    it('haengt einen Verordnungsscan ohne Grundlage vorlaeufig an die Patientin (PRX-011)', async () => {
+      const datei = await vorbereiten(users.therapist, {
+        verordnungId: null,
+        art: 'verordnungsscan',
+      });
+      expect(datei.object_key).toBe(`${organizationId}/${patients.max}/${datei.file_id}`);
     });
 
     it('weist eine Verordnung ab, die einer anderen Patientin gehoert', async () => {
@@ -278,9 +279,14 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
   });
 
   describe('Rollenschnitt an der Dokumentart (ADR-017 Punkt 12 und 13)', () => {
-    it('laesst office keine klinische Datei anlegen - auch nicht den Verordnungsscan', async () => {
-      const scan = await abgefangen(vorbereiten(users.office));
-      expect(scan?.message).toMatch(/not allowed to upload this document type/);
+    it('laesst office den Verordnungsscan anlegen, aber keine andere klinische Datei (PRX-010)', async () => {
+      // Der Scan folgt dem Schreibrecht an der Grundlage (ADR-017 Punkt 13),
+      // und office erfasst seit PRX-010 Grundlagen (ANN-011).
+      const scan = await vorbereiten(users.office);
+      expect(scan.file_id).toBeTruthy();
+
+      const trainer = await abgefangen(vorbereiten(users.trainer));
+      expect(trainer?.message).toMatch(/patient not accessible|not allowed to upload/);
 
       const befund = await abgefangen(
         vorbereiten(users.office, { verordnungId: null, art: 'befund' }),
@@ -538,7 +544,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
     });
 
     it('laesst office nicht zu einem klinischen Schluessel hochladen', async () => {
-      const datei = await vorbereiten(users.therapist);
+      const datei = await vorbereiten(users.therapist, { verordnungId: null, art: 'befund' });
       const fehler = await abgefangen(asUser(users.office, HOCHLADEN, [datei.object_key]));
       expect(fehler?.message).toMatch(/row-level security/i);
     });

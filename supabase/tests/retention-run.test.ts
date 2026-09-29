@@ -608,7 +608,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
        where deletion_mode = 'automatisch' order by class_key`,
     );
     expect(rows.map((r) => r.class_key)).toEqual([
+      'anrufstand',
       'auditlog',
+      'aufgabe',
       'patientenakte',
       'patientenfoto',
       'termin_ohne_nachweis',

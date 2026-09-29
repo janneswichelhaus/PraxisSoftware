@@ -5,6 +5,8 @@ import { MdrSperre } from '@/app/MdrSperre';
 import { mdrSperre } from '@/app/mdr';
 import { canSeeBilling } from '@/app/navigation';
 import { MyDayPage } from '@/features/today/MyDayPage';
+import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
+import { CallListPage } from '@/features/open-points/CallListPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
@@ -164,6 +166,9 @@ export function AuthenticatedRoutes({
 
               {showDirectory ? (
                 <>
+                  {/* Offene Punkte - die Büroliste (PRX-EPIC-003): alle vier
+                  Praxisrollen; jede Liste prüft der Server selbst. */}
+                  <Route path="/offen" element={<OpenPointsPage user={user} />} />
                   <Route path="/patienten" element={<PatientsListPage />} />
                   <Route path="/patienten/neu" element={<NewPatientPage />} />
                   {/* Die Akte ist ein Rahmen mit fünf Bereichen (AKTE-000, seit
@@ -237,6 +242,9 @@ export function AuthenticatedRoutes({
                   <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
                   {/* Warteliste mit Wunschzeiten (PRX-001): dieselben Rollen wie der
                   Kalender; der Server prüft ebenso (app.can_create_appointment). */}
+                  {/* Anrufliste mit gespeichertem Stand (PRX-014): Rollen wie der
+                  Mitteilungsvermerk; der Server prüft app.can_update_appointment. */}
+                  <Route path="/offen/anrufe" element={<CallListPage user={user} />} />
                   <Route path="/warteliste" element={<WaitlistPage user={user} />} />
                   <Route path="/warteliste/neu" element={<NewWaitlistEntryPage />} />
                   <Route

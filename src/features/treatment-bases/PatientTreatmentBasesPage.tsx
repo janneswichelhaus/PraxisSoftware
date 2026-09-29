@@ -435,6 +435,7 @@ function Verordnungsscan({
         grundlageId={verordnungId}
         darfHinzufuegen={darfHinzufuegen}
         hinzufuegenEingeklappt="Scan hinzufügen"
+        hinzufuegenEingeklapptWeitere="Weiteren Scan hinzufügen"
         leerKompakt
         // Wer keinen Scan hinzufügen darf, liest keine Aufforderung dazu
         // (VER-04) - nur den Zustand.
@@ -768,7 +769,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
             description={
               darfSchreiben
                 ? 'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.'
-                : 'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.'
+                : 'Behandlungsgrundlagen erfasst das Praxisteam.'
             }
           />
         ) : null}

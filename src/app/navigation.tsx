@@ -244,8 +244,13 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       id: 'heute',
       ...BEREICHE.heute,
       to: '/',
-      pfade: ['/'],
+      pfade: ['/', '/offen'],
       icon: symbole.uebersicht,
+      // Die Büroliste (PRX-EPIC-003) gehört zur Frage der Übersicht - was ist
+      // zu tun -, nicht zu einem Fachbereich. Bewusst ohne Untermenü: Die
+      // Leiste kostete am Handy den ersten Weg auf dem ersten Bildschirm
+      // (UX-EPIC-003). Der Weg führt über die Zeile „Offene Punkte" in der
+      // Übersicht, den Link an ihrem Ende und die Funktionssuche.
       unterpunkte: [],
     },
   ];

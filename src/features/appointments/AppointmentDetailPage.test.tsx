@@ -1113,6 +1113,21 @@ describe('AppointmentDetailPage', () => {
     }
   });
 
+  // PRX-011: Verordnung ohne Papier - das Foto am Termin.
+  it('bietet am Behandlungstermin das Foto der Verordnung an', async () => {
+    rendern(['therapist']);
+    await screen.findByText('Anna Beispiel');
+    expect(screen.getByRole('heading', { name: 'Verordnung' })).toBeInTheDocument();
+    expect(screen.getByText(/das Büro erfasst die Grundlage daraus/)).toBeInTheDocument();
+  });
+
+  it('bietet das Foto nicht am abgesagten Termin an', async () => {
+    fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
+    rendern(['therapist']);
+    await screen.findByText('Anna Beispiel');
+    expect(screen.queryByText(/das Büro erfasst die Grundlage daraus/)).not.toBeInTheDocument();
+  });
+
   it('meldet einen nicht freigegebenen Termin ohne Details', async () => {
     fetchAppointment.mockResolvedValue(null);
     rendern();

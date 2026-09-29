@@ -415,13 +415,13 @@ describe('Verordnungsbereich der Akte', () => {
       expect(screen.queryByRole('link', { name: 'Terminserie anlegen' })).not.toBeInTheDocument();
     });
 
-    it('laesst office die Verordnung nicht bearbeiten', async () => {
+    it('laesst office die Verordnung bearbeiten (PRX-010), die Trainingsbetreuung nicht', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
       await screen.findByText('Folgeverordnung vom 18.06.2026');
-      expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
     });
   });
 
@@ -587,13 +587,11 @@ describe('Verordnungsbereich der Akte', () => {
 
   // WRT-12: Rollen mit den Namen, die die Anwendung sonst zeigt - keine
   // „therapeutischen Rollen", die es nirgends gibt.
-  it('sagt dem Buero, wer Grundlagen erfasst', async () => {
+  it('zeigt dem Buero den Weg zur naechsten Grundlage (PRX-010)', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
     expect(
-      await screen.findByText(
-        'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.',
-      ),
+      await screen.findByText(/Die nächste entsteht über „Grundlage erfassen“/),
     ).toBeInTheDocument();
   });
 });
@@ -746,13 +744,12 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
     });
   });
 
-  it('laedt das Buero nicht zu einem Scan ein, den es nicht hinzufuegen darf (VER-04)', async () => {
+  it('bittet seit PRX-010 auch das Buero um den Scan, denn es erfasst die Grundlage', async () => {
     fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
     fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
-    expect(await screen.findByText('Noch kein Scan.')).toBeInTheDocument();
-    expect(screen.queryByText(/Ein Foto des Rezepts/)).not.toBeInTheDocument();
+    expect(await screen.findByText(/Ein Foto des Rezepts/)).toBeInTheDocument();
   });
 
   it('bittet schreibende Rollen weiter um das Foto des Rezepts', async () => {

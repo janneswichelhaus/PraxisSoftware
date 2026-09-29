@@ -71,8 +71,10 @@ export function TreatmentBasisFormFields({
   /** Texte aus der Zeit vor VER-EPIC-002 — nur Anzeige, nie überschrieben. */
   bestandstexte: { feld: string; text: string }[];
 }) {
-  const bauart = werte.treatment_basis_kind as Bauart;
-  const verordnung = istVerordnung(bauart);
+  const bauart = werte.treatment_basis_kind as Bauart | '';
+  // Solange keine Art gewählt ist (BEF-060 Teil 1), stehen die Felder der
+  // Verordnung da - der häufigere Fall; gespeichert wird erst mit einer Wahl.
+  const verordnung = bauart === '' || istVerordnung(bauart);
 
   const gewaehlt = (remedy: string) => positionen.some((position) => position.remedy === remedy);
   const bestandspositionen = positionen.filter((position) => istBestand(position.remedy));
@@ -91,6 +93,9 @@ export function TreatmentBasisFormFields({
             error={fehler.treatment_basis_kind}
             onChange={(event) => onChange('treatment_basis_kind', event.target.value)}
           >
+            <option value="" disabled>
+              Bitte wählen …
+            </option>
             {BAUARTEN.map((wert) => (
               <option key={wert} value={wert}>
                 {bauartLabels[wert]}
@@ -132,7 +137,7 @@ export function TreatmentBasisFormFields({
             </div>
           ) : null}
           <Field
-            label={`${bauartDatumsBeschriftung[bauart]} *`}
+            label={`${bauartDatumsBeschriftung[bauart === '' ? 'first' : bauart]} *`}
             name="issued_on"
             feldId={grundlageFeldId('issued_on')}
             type="date"

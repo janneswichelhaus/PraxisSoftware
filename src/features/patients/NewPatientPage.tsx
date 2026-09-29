@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -12,10 +12,14 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchAssignableTherapists } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
+import { formatDate } from '@/lib/datum';
+import { mitRueckweg } from '@/lib/rueckweg';
 import {
   createPatient,
+  findPossibleDuplicates,
   leereStammdaten,
   patientMasterDataSchema,
+  type PatientSearchHit,
   type StammdatenFeld,
 } from './api';
 import { PatientMasterDataFields } from './PatientMasterDataFields';
@@ -50,6 +54,12 @@ export function NewPatientPage() {
   const [suche] = useSearchParams();
   const absendenRef = useRef<HTMLButtonElement>(null);
   const [fokusAufAbsenden, setFokusAufAbsenden] = useState(false);
+  // PRX-015: mögliche Dubletten - ein Hinweis, keine Sperre (ANN-145). Wer
+  // ihn gesehen hat und trotzdem anlegt, wird nicht ein zweites Mal gefragt,
+  // solange Name und Geburtsdatum gleich bleiben.
+  const [dubletten, setDubletten] = useState<PatientSearchHit[] | null>(null);
+  const [geprueftFuer, setGeprueftFuer] = useState<string | null>(null);
+  const [pruefung, setPruefung] = useState<'bereit' | 'laeuft'>('bereit');
 
   /**
    * Der Abstecher aus einem laufenden Vorgang (UX-012).
@@ -104,13 +114,16 @@ export function NewPatientPage() {
   function setzen(feld: StammdatenFeld, wert: string) {
     setWerte((bisher) => ({ ...bisher, [feld]: wert }));
     if (fehler[feld]) setFehler((bisher) => ({ ...bisher, [feld]: undefined }));
+    if (feld === 'given_name' || feld === 'family_name' || feld === 'date_of_birth') {
+      setDubletten(null);
+    }
   }
 
-  function absenden(event: FormEvent<HTMLFormElement>) {
+  async function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     // Schutz gegen mehrfaches Absenden: solange ein Vorgang läuft, wird kein
     // zweiter gestartet. Der Button ist zusätzlich deaktiviert.
-    if (mutation.isPending) return;
+    if (mutation.isPending || pruefung === 'laeuft') return;
 
     const ergebnis = patientMasterDataSchema.safeParse(werte);
     if (!ergebnis.success) {
@@ -124,6 +137,30 @@ export function NewPatientPage() {
     }
 
     setFehler({});
+
+    // PRX-015: Vor dem ersten Anlegen mit diesen Angaben auf Dubletten
+    // prüfen. Scheitert die Prüfung, wird angelegt - sie ist ein Hinweis, kein
+    // Tor; die Suche in der Kopfleiste bleibt der zweite Blick.
+    const schluessel = `${werte.given_name}|${werte.family_name}|${werte.date_of_birth}`;
+    if (geprueftFuer !== schluessel) {
+      setPruefung('laeuft');
+      try {
+        const treffer = await findPossibleDuplicates(
+          werte.given_name,
+          werte.family_name,
+          werte.date_of_birth || null,
+        );
+        setGeprueftFuer(schluessel);
+        if (treffer.length > 0) {
+          setDubletten(treffer);
+          return;
+        }
+      } catch {
+        // Ohne Prüfung weiter: siehe oben.
+      } finally {
+        setPruefung('bereit');
+      }
+    }
     mutation.mutate(ergebnis.data);
   }
 
@@ -136,7 +173,7 @@ export function NewPatientPage() {
         description="Stammdaten für die Aufnahme in die Praxis. Mit * markierte Felder sind erforderlich."
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
+      <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-xl">
         <Fehlerzusammenfassung
           fehler={alsFormularfehler(
             STAMMDATEN_REIHENFOLGE,
@@ -160,9 +197,50 @@ export function NewPatientPage() {
             über den Knöpfen (PAT-02). */}
         {schutz}
 
+        {dubletten && dubletten.length > 0 ? (
+          <section
+            aria-labelledby="dubletten-titel"
+            role="alert"
+            className="border-warnung bg-surface rounded-card mt-8 border p-4"
+          >
+            <h2 id="dubletten-titel" className="text-ink text-liste font-semibold">
+              Vielleicht schon in der Kartei
+            </h2>
+            <p className="text-ink-muted mt-1 text-sm">
+              Gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname. Ist es dieselbe
+              Person, bitte die vorhandene Akte öffnen statt eine zweite anzulegen.
+            </p>
+            <ul className="mt-3 flex flex-col gap-1">
+              {dubletten.map((treffer) => (
+                <li key={treffer.id}>
+                  <Link
+                    to={mitRueckweg(`/patienten/${treffer.id}`, '/patienten')}
+                    className="text-accent inline-flex min-h-11 items-center font-medium hover:underline"
+                  >
+                    {treffer.given_name} {treffer.family_name}
+                    {treffer.date_of_birth ? `, geb. ${formatDate(treffer.date_of_birth)}` : ''}
+                    {treffer.status === 'inactive' ? ' (nicht in Versorgung)' : ''}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <p className="text-ink mt-2 text-sm">
+              Eine andere Person mit ähnlichen Angaben? Dann „{ANLEGEN}“ noch einmal tippen.
+            </p>
+          </section>
+        ) : null}
+
         <div className="mt-8 flex flex-wrap gap-3">
-          <Button ref={absendenRef} type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Wird angelegt …' : ANLEGEN}
+          <Button
+            ref={absendenRef}
+            type="submit"
+            disabled={mutation.isPending || pruefung === 'laeuft'}
+          >
+            {mutation.isPending
+              ? 'Wird angelegt …'
+              : pruefung === 'laeuft'
+                ? 'Wird geprüft …'
+                : ANLEGEN}
           </Button>
           {/* Ein Seitenwechsel ist ein Link (UIK-13) - und läuft damit durch
               dieselbe Rückfrage wie jeder andere Weg hinaus. */}

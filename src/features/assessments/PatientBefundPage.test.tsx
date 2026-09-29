@@ -240,7 +240,7 @@ describe('Befund der Akte', () => {
       const user = userEvent.setup();
       seite([]);
 
-      expect(await screen.findByText('Nicht nötig')).toBeInTheDocument();
+      expect(await screen.findByText('Noch nicht entschieden')).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
       expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true);
     });

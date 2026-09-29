@@ -222,6 +222,16 @@ const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
  * hin außer in genau diesen einen Aufruf.
  */
 export async function oeffneDatei(fileId: string): Promise<string> {
+  return (await verweisMitArt(fileId)).url;
+}
+
+/**
+ * Wie `oeffneDatei`, dazu das Format - für die eine Stelle, die ein Bild
+ * selbst zeigt statt es in einem neuen Fenster zu öffnen: das Foto der
+ * Verordnung neben „Grundlage erfassen" (PRX-011). Ein Verweis, ein Tipp,
+ * ein Auditeintrag - wie beim Öffnen.
+ */
+export async function verweisMitArt(fileId: string): Promise<{ url: string; mimeType: string }> {
   const { data, error } = (await getSupabase().rpc('issue_patient_file_link', {
     p_file_id: fileId,
   })) as { data: unknown; error: unknown };
@@ -240,7 +250,7 @@ export async function oeffneDatei(fileId: string): Promise<string> {
     throw new Error('Die Datei ist in der Ablage nicht auffindbar.');
   }
 
-  return signiert.signedUrl;
+  return { url: signiert.signedUrl, mimeType: verweis.mime_type };
 }
 
 // -----------------------------------------------------------------------------
@@ -400,4 +410,46 @@ export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
     throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
   }
   return z.coerce.number().parse(antwort.data);
+}
+
+// -----------------------------------------------------------------------------
+// Verordnung ohne Papier (PRX-011)
+// -----------------------------------------------------------------------------
+
+const offenerScanSchema = z.object({
+  file_id: z.string(),
+  patient_id: z.string(),
+  patient_given_name: z.string(),
+  patient_family_name: z.string(),
+  uploaded_at: z.string(),
+  uploaded_by_name: z.string().nullable(),
+});
+
+export type OffenerScan = z.infer<typeof offenerScanSchema>;
+
+/**
+ * Verordnungsscans, die noch an keiner Grundlage hängen - die „Verordnungen
+ * zu erfassen" der Büroliste. Ohne Verweis und ohne Schlüssel: Das Foto öffnet
+ * erst das Formular, auf Tipp (ADR-017 Punkt 15).
+ */
+export async function fetchOffeneScans(): Promise<OffenerScan[]> {
+  const { data, error } = (await getSupabase().rpc('list_open_prescription_scans')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error('Die Verordnungen zum Erfassen konnten nicht geladen werden.');
+  return z.array(offenerScanSchema).parse(data ?? []);
+}
+
+/** Hängt den offenen Scan an die gerade erfasste Grundlage (PRX-011). */
+export async function ordneScanZu(fileId: string, grundlageId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('assign_prescription_scan', {
+    p_file_id: fileId,
+    p_treatment_basis_id: grundlageId,
+  })) as { error: unknown };
+  if (error) {
+    throw new Error(
+      'Die Grundlage ist gespeichert, das Foto hängt aber noch nicht an ihr. Es bleibt unter „Offene Punkte“.',
+    );
+  }
 }

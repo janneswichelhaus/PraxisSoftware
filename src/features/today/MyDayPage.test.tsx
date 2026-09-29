@@ -119,6 +119,13 @@ vi.mock('@/features/today/api', async (importOriginal) => {
  */
 const fetchAppointments = vi.fn();
 
+// PRX-013: offene Erstaufnahmen; ohne Angabe keine.
+const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
+vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  fetchOpenIntakes: () => fetchOpenIntakes(),
+}));
+
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApiModule>();
   return {
@@ -168,6 +175,20 @@ describe('Übersicht', () => {
     expect(query!.bis > query!.von).toBe(true);
     expect(await screen.findByText('Max Mustermann')).toBeInTheDocument();
     expect(screen.queryByText('Der Tagesplan des Teams konnte nicht geladen werden.')).toBeNull();
+  });
+
+  it('nennt an der Karte, was zur Erstaufnahme noch fehlt (PRX-013)', async () => {
+    fetchOpenIntakes.mockResolvedValueOnce([
+      {
+        patient_id: 'p1',
+        patient_given_name: 'Erika',
+        patient_family_name: 'Beispiel',
+        open_items: ['finding', 'treatment_table'],
+      },
+    ]);
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    expect(await screen.findByText('Befund · Liege')).toBeInTheDocument();
+    expect(screen.getByText('Erstaufnahme offen:')).toBeInTheDocument();
   });
 
   it('bietet Doku als eigenen Weg neben dem Abschluss an (IDEA-PRX-040)', async () => {

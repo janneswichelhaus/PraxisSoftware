@@ -107,6 +107,8 @@ describe('Schema-Invarianten', () => {
       'waitlist_entries',
       'territories',
       'territory_postal_codes',
+      'tasks',
+      'appointment_call_states',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

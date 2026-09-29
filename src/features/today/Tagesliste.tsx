@@ -34,10 +34,13 @@ import {
 export function Tageskarte({
   termin,
   aktionen,
+  hinweis,
 }: {
   termin: DayPlanEntry;
   /** Zusätzliche Aktionen der Karte, etwa der Navigations-Handoff (UX-002). */
   aktionen?: ReactNode;
+  /** Ein Hinweis unter den Angaben zur Person, etwa die offene Erstaufnahme (PRX-013). */
+  hinweis?: ReactNode;
 }) {
   const zone = termin.organization_time_zone;
   const adresse = adressZeilen(termin);
@@ -112,6 +115,8 @@ export function Tageskarte({
           mitnehmen
         </p>
       ) : null}
+
+      {hinweis}
 
       <div className="mt-3 flex flex-wrap gap-2">
         {aktionen}

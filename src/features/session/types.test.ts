@@ -204,8 +204,13 @@ describe('Verordnung und Dateien (ROL-002, E15)', () => {
     },
   );
 
+  it('laesst office Behandlungsgrundlagen erfassen (PRX-010, ANN-011)', () => {
+    expect(canWriteTreatmentBases(['office'])).toBe(true);
+    expect(canWriteTreatmentBases(['trainer'])).toBe(false);
+    expect(canWriteTreatmentBases([])).toBe(false);
+  });
+
   it('oeffnet office mit dem Leserecht kein Schreibrecht (PROJECT_PRINCIPLES.md 4.3)', () => {
-    expect(canWriteTreatmentBases(['office'])).toBe(false);
     expect(canWriteClinicalPatientFiles(['office'])).toBe(false);
     expect(canCorrectPatientFileType(['office'])).toBe(false);
     expect(canConcludePatientCare(['office'])).toBe(false);

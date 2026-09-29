@@ -44,7 +44,9 @@ describe('Dokumentarten und Dateiprüfung', () => {
 
   it('sagt zu jeder Art, wer sie sieht und wer sie pflegt (E15, ADR-017 Punkt 13)', () => {
     expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(/sichtbar für alle Praxisrollen/);
-    expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(
+    // Der Scan folgt der Grundlage (PRX-010).
+    expect(sichtbarkeitHinweis('verordnungsscan')).toMatch(/auch das Praxismanagement/);
+    expect(sichtbarkeitHinweis('befund')).toMatch(
       /nur Praxisinhaber:in, Therapeut:innen und Teamleitung/,
     );
     // Der Name der Rolle, wie er im Konto steht (DAT-23).

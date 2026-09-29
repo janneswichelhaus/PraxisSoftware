@@ -88,6 +88,8 @@ export function useDateiUpload(patientId: string) {
     mutationFn: (auftrag: UploadAuftrag) => ladeDateiHoch(auftrag),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
+      // Ein Scan ohne Grundlage ist ein offener Punkt (PRX-011).
+      void queryClient.invalidateQueries({ queryKey: ['open-points'] });
     },
   });
 }
@@ -106,6 +108,7 @@ export function useDateiLoeschen(patientId: string) {
     mutationFn: (fileId: string) => loescheDatei(fileId),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
+      void queryClient.invalidateQueries({ queryKey: ['open-points'] });
       // Ein gelöschtes Objekt erzeugt einen Auftrag; die Übersicht der
       // Praxisinhaber:in zeigt ihn ohne Neuladen der Seite.
       void queryClient.invalidateQueries({ queryKey: ['storage-deletion-orders'] });

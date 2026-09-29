@@ -24,9 +24,11 @@ import {
   canManageAppointments,
   canReadTreatmentNote,
   canRecordAtAppointment,
+  canWriteTreatmentBases,
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
+import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { BEREICHE } from '@/lib/begriffe';
@@ -1325,6 +1327,18 @@ function AppointmentDetail({
             Folgetermin anlegen
           </ButtonLink>
         </div>
+      ) : null}
+
+      {/* Verordnung ohne Papier (PRX-011): ein Foto am Termin, das Büro
+          erfasst daraus die Grundlage. Wer Grundlagen schreibt, darf auch
+          ihren Scan ablegen (ANN-011); verbindlich prüft der Server. */}
+      {!istEreignis &&
+      appointment.patient_id &&
+      appointment.status !== 'cancelled' &&
+      canWriteTreatmentBases(user.roles) ? (
+        <Section titel="Verordnung" ebene={3}>
+          <PrescriptionPhoto patientId={appointment.patient_id} />
+        </Section>
       ) : null}
 
       {darfWiederOeffnen ? (

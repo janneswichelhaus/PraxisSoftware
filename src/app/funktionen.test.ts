@@ -62,14 +62,13 @@ describe('funktionskatalog', () => {
     expect(namen).toContain('Mein Konto');
   });
 
-  it('bietet dem Office alles Organisatorische, aber kein Verordnen', () => {
+  it('bietet dem Office alles Organisatorische samt Grundlage erfassen (PRX-010)', () => {
     const namen = bezeichnungen(funktionskatalog(testUser(['office'], 'Olivia Office')));
     expect(namen).toContain('Termin anlegen');
     expect(namen).toContain('Patient:in anlegen');
     expect(namen).toContain('Mitarbeiter:in anlegen');
-    // Wer eine Verordnung erfasst, tippt die Diagnose mit ab - ohne office
-    // (ANN-011, canWriteTreatmentBases).
-    expect(namen).not.toContain('Behandlungsgrundlage erfassen');
+    // Office tippt die Verordnung ab (ANN-011, Stand 2026-09-28).
+    expect(namen).toContain('Behandlungsgrundlage erfassen');
   });
 
   it('bietet der Therapeutin das Verordnen, aber keine Personalakte', () => {

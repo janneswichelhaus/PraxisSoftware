@@ -13,9 +13,11 @@ import {
  *
  * Browser → GoTrue → PostgREST → SECURITY-DEFINER-RPC → PostgreSQL, nichts
  * gestubbt. Seit ADR-004 Fassung 2 liest office Diagnose und Verordnungsscan
- * wie die therapeutischen Rollen; schreiben darf es beides nicht. Gelesen wird
- * ausschliesslich der synthetische Seed (PROJECT_PRINCIPLES.md 3.1), und
- * jeder Schreibversuch hier muss scheitern.
+ * wie die therapeutischen Rollen. Seit PRX-010 (ANN-011) erfasst und bearbeitet
+ * office Grundlagen samt Scan; klinische Dateien anderer Art legt es weiter
+ * nicht ab, und klinische Bestandstexte einer Grundlage raeumt es nicht ab.
+ * Gelesen wird ausschliesslich der synthetische Seed (PROJECT_PRINCIPLES.md
+ * 3.1), und jeder Schreibversuch hier muss scheitern.
  */
 
 /** Laufende Folgeverordnung von Max Mustermann aus supabase/seed.sql. */
@@ -23,15 +25,18 @@ const VERORDNUNG_MAX = '88888888-8888-4888-8888-000000000002';
 const DIAGNOSE_MAX = 'Synthetisch: Fortbestehende Bewegungseinschraenkung rechte Schulter.';
 
 test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
-  test('zeigt office die Diagnose und den Scan-Bereich, aber keine Ablage', async ({ page }) => {
+  test('zeigt office die Diagnose, den Scan-Bereich und das Bearbeiten (PRX-010)', async ({
+    page,
+  }) => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/patienten/${PATIENTEN.max}/verordnungen`);
 
     await expect(page.getByText(DIAGNOSE_MAX)).toBeVisible();
     await expect(page.getByText('Scan des Rezepts').first()).toBeVisible();
-    // Lesen ja, ablegen und bearbeiten nein (ADR-017 Punkt 13, ANN-011).
+    // Das Hinzufügen steht eingeklappt an der Karte, nicht offen (VER-01).
     await expect(page.getByRole('button', { name: 'Datei hinzufügen' })).toHaveCount(0);
-    await expect(page.getByRole('link', { name: 'Bearbeiten', exact: true })).toHaveCount(0);
+    // Seit PRX-010 erfasst und bearbeitet office Grundlagen (ANN-011).
+    await expect(page.getByRole('link', { name: 'Bearbeiten', exact: true }).first()).toBeVisible();
   });
 
   test('liefert office Liste und Detail und weist jedes Schreiben ab', async ({ request }) => {
@@ -54,7 +59,9 @@ test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
     const loeschen = await rpcAufrufen(request, token, 'delete_treatment_basis', {
       p_treatment_basis_id: VERORDNUNG_MAX,
     });
-    expect(loeschen.status(), 'office loescht keine Verordnung (ANN-011)').toBe(403);
+    // Die Folgeverordnung von Max traegt Therapieziel und Verordnerhinweis:
+    // die raeumt office nicht ab (PRX-010, Zweitreview).
+    expect(loeschen.status(), 'office loescht keine Grundlage mit klinischen Texten').toBe(403);
 
     const befund = await rpcAufrufen(request, token, 'prepare_patient_file_upload', {
       p_patient_id: PATIENTEN.max,

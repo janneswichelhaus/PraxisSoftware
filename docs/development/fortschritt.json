@@ -423,8 +423,17 @@
         },
         {
           "id": "prx-epic-003",
-          "name": "PRX-EPIC-003 Aufgaben und Nachsorge",
+          "name": "PRX-EPIC-003 Nichts fällt durch",
           "gewicht": 2,
+          "status": "fertig",
+          "fertig_am": "2026-09-29",
+          "nachweis": "PRX-010 bis PRX-016",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 10 bis 12"
+        },
+        {
+          "id": "prx-epic-003b",
+          "name": "PRX-EPIC-003b Dubletten zusammenführen",
+          "gewicht": 1,
           "status": "offen"
         },
         {

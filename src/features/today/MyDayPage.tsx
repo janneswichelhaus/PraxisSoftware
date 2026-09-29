@@ -27,6 +27,7 @@ import {
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
+  canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
@@ -60,6 +61,12 @@ import {
 } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
+import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
+import {
+  OPEN_INTAKES_KEY,
+  fetchOpenIntakes,
+  openItemsText,
+} from '@/features/open-points/intake-api';
 
 /**
  * Übersicht - der persönliche Einstieg.
@@ -285,6 +292,27 @@ function MeineTagesliste({
     gcTime: TAGESPLAN_VORHALTEDAUER_MS,
   });
 
+  // PRX-013: Was zur Erstaufnahme noch fehlt, steht an der Karte - vor der
+  // Tür, wo man es noch mitnehmen oder erledigen kann. Dieselbe Abfrage wie
+  // unter „Offene Punkte".
+  const { data: erstaufnahmen } = useQuery({
+    queryKey: OPEN_INTAKES_KEY,
+    queryFn: fetchOpenIntakes,
+    retry: false,
+  });
+
+  function erstaufnahme(termin: DayPlanEntry) {
+    if (termin.kind !== 'therapy' || !termin.patient_id) return undefined;
+    const offen = erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id);
+    if (!offen) return undefined;
+    return (
+      <p className="text-ink mt-1 text-sm leading-relaxed wrap-anywhere">
+        <span className="text-ink-muted font-medium">Erstaufnahme offen: </span>
+        {openItemsText(offen.open_items)}
+      </p>
+    );
+  }
+
   if (isPending) return <LoadingState label="Tagesliste wird geladen …" />;
 
   // Nur wenn es NICHTS zu zeigen gibt, tritt der Fehler an die Stelle der
@@ -439,6 +467,7 @@ function MeineTagesliste({
             </h3>
             <Tageskarte
               termin={wege.erster}
+              hinweis={erstaufnahme(wege.erster)}
               aktionen={
                 <>
                   <NavigationZumTermin termin={wege.erster} hauptknopf />
@@ -474,6 +503,7 @@ function MeineTagesliste({
                     <li key={termin.id}>
                       <Tageskarte
                         termin={termin}
+                        hinweis={erstaufnahme(termin)}
                         aktionen={
                           <>
                             {/* Ein Hauptknopf je Ansicht: den trägt der erste Weg. */}
@@ -499,7 +529,11 @@ function MeineTagesliste({
             <ul className="flex flex-col gap-3">
               {offen.map((termin, index) => (
                 <li key={termin.id}>
-                  <Tageskarte termin={termin} aktionen={kartenAktionen(termin, index === 0)} />
+                  <Tageskarte
+                    termin={termin}
+                    hinweis={erstaufnahme(termin)}
+                    aktionen={kartenAktionen(termin, index === 0)}
+                  />
                 </li>
               ))}
             </ul>
@@ -599,6 +633,12 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         description={formatDatum(heute)}
       />
 
+      {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
+          etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter den
+          eigenen Besuchen: Liege und erster Weg bleiben auf dem ersten
+          Bildschirm (UX-EPIC-003). */}
+      {eigeneTagesliste ? null : <OpenPointsSummary user={user} today={heute} />}
+
       {eigeneTagesliste && user.staffMemberId ? (
         <MeineTagesliste
           datum={heute}
@@ -608,6 +648,8 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           zeitzone={zeitzone}
         />
       ) : null}
+
+      {eigeneTagesliste ? <OpenPointsSummary user={user} today={heute} /> : null}
 
       {darfTermine ? (
         // UX-EPIC-003: Wer eine eigene Tagesliste hat, braucht den Plan des
@@ -661,6 +703,17 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             </div>
           </details>
         </section>
+      ) : null}
+
+      {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
+          ist - die Zeile oben erscheint nur mit Fälligem. */}
+      {canReadPatientDirectory(user.roles) ? (
+        <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+          <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
+            Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+            <Pfeil />
+          </Textlink>
+        </p>
       ) : null}
 
       <UebersichtVorschau user={user} />

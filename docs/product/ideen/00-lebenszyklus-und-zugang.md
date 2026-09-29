@@ -305,7 +305,7 @@ entschieden (B9).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-016 |
 | Quelle | Claude, 2026-09-11 (aus LOE-001b) |
 | Berührt | [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), `ANN-032`, `IDEA-LZK-007`, B9 |
 

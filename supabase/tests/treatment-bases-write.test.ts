@@ -141,23 +141,66 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Schulter/i);
   });
 
-  it('laesst office weder anlegen noch aendern noch loeschen (ANN-011)', async () => {
-    await expect(asUser(users.office, ANLEGEN, argumente())).rejects.toThrow(
-      /not allowed to write treatment_bases/i,
+  it('laesst office anlegen, aendern und loeschen (PRX-010, ANN-011 Stand 2026-09-28)', async () => {
+    // Office tippt die Verordnung mit dem Foto daneben ab (PRX-EPIC-003).
+    const id = await anlegen(users.office, { diagnose: 'Synthetisch: Diagnose Knie.' });
+    await asUserCommitted(users.office, AENDERN, aendernArgumente(id));
+    const { rows } = await asPostgres<{ action: string; actor_user_id: string }>(
+      `select action, actor_user_id from public.audit_log
+        where subject_id = $1 order by occurred_at, action`,
+      [id],
     );
-    await expect(asUser(users.patientMax, ANLEGEN, argumente())).rejects.toThrow(
-      /not allowed to write treatment_bases/i,
+    expect(rows.map((r) => r.action)).toEqual([
+      'treatment_basis.created',
+      'treatment_basis.updated',
+    ]);
+    expect(rows.every((r) => r.actor_user_id === users.office)).toBe(true);
+    await asUserCommitted(users.office, LOESCHEN, [id]);
+    const { rows: rest } = await asPostgres('select 1 from public.treatment_bases where id = $1', [
+      id,
+    ]);
+    expect(rest).toHaveLength(0);
+  });
+
+  it('laesst office keine klinischen Texte abraeumen - weder per Selbstzahler noch per Loeschen (Zweitreview)', async () => {
+    const id = await anlegen(users.therapist);
+    await asPostgres(
+      `update public.treatment_bases set therapy_goal = 'Synthetisch: Ziel' where id = $1`,
+      [id],
     );
+    await expect(
+      asUser(users.office, AENDERN, aendernArgumente(id, { kind: 'self_pay', prescriber: null })),
+    ).rejects.toThrow(/can only be cleared by treating roles/);
+    await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
+      /can only be cleared by treating roles/,
+    );
+    // Ohne Selbstzahler-Wechsel aendert office weiter, und die Texte bleiben.
+    await asUserCommitted(users.office, AENDERN, aendernArgumente(id));
+    const { rows } = await asPostgres<{ therapy_goal: string | null }>(
+      'select therapy_goal from public.treatment_bases where id = $1',
+      [id],
+    );
+    expect(rows[0]!.therapy_goal).toBe('Synthetisch: Ziel');
+    // Die Therapeutin darf.
+    await asUserCommitted(users.therapist, LOESCHEN, [id]);
+  });
+
+  it('laesst Trainingsbetreuung und Patientenkonto weder anlegen noch aendern noch loeschen', async () => {
+    for (const konto of [users.trainer, users.patientMax]) {
+      await expect(asUser(konto, ANLEGEN, argumente())).rejects.toThrow(
+        /not allowed to write treatment_bases/i,
+      );
+    }
 
     const id = await anlegen(users.therapist);
-    // E15 oeffnet office das Lesen der Verordnung samt Diagnose - Aendern und
-    // Loeschen bleiben zu (ADR-004 Fassung 2 Punkt 3, ANN-011).
-    await expect(asUser(users.office, AENDERN, aendernArgumente(id))).rejects.toThrow(
-      /not allowed to write treatment_bases/i,
-    );
-    await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
-      /not allowed to write treatment_bases/i,
-    );
+    for (const konto of [users.trainer, users.patientMax]) {
+      await expect(asUser(konto, AENDERN, aendernArgumente(id))).rejects.toThrow(
+        /not allowed to write treatment_bases/i,
+      );
+      await expect(asUser(konto, LOESCHEN, [id])).rejects.toThrow(
+        /not allowed to write treatment_bases/i,
+      );
+    }
   });
 
   it('verlangt mindestens eine Position', async () => {

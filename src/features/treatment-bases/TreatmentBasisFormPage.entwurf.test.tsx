@@ -314,6 +314,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     );
     await screen.findByRole('option', { name: /Probst/ });
 
+    await user.selectOptions(screen.getByLabelText('Art *'), 'first');
     await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
     await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');

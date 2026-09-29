@@ -104,7 +104,7 @@ gespeicherter Erledigt-Haken — Letzteres ist `IDEA-PRX-041`.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-014 |
 | Quelle | Produktreview 2026-09-06 |
 | Berührt | B15 (2026-09-08), CAL-008, CAL-013 |
 
@@ -360,7 +360,7 @@ nur auf Aktion der Person an den Kartendienst gegeben (`IDEA-PRX-029`).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-015 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (thevea) |
 | Berührt | ADR-014, ADR-010, LOE-002 |
 
@@ -377,7 +377,7 @@ Dokumentation, ausgestellte Rechnungen); der Bezug wechselt, der Inhalt nicht.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-012 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (appointmed, MD Therapie) |
 | Berührt | `IDEA-ORG-001`, §4.3, §10 |
 
@@ -448,7 +448,7 @@ PRX-EPIC-004 hinter einem Adapter (Roadmap, Grundsatz 5).
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-011 |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (thevea Scan-App, iPrax Clever-Scan, THEORG, MD, Optica) |
 | Berührt | VER-004, ADR-017, ADR-005 |
 
@@ -953,7 +953,7 @@ nur die Kennung.
 
 | | |
 |---|---|
-| Status | vorschlag |
+| Status | überführt → PRX-014 |
 | Quelle | CAL-009, 2026-09-12 |
 | Berührt | CAL-009, ADR-008 (Frist), §20 |
 

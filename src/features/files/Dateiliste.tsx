@@ -26,6 +26,7 @@ import {
 import {
   canCorrectPatientFileType,
   canWriteClinicalPatientFiles,
+  canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -599,6 +600,12 @@ interface DateilisteProps {
    * 760 px länger. Ohne Angabe steht es offen unter der Liste.
    */
   hinzufuegenEingeklappt?: string;
+  /**
+   * Die Zeile zum Aufklappen, wenn schon etwas da ist - etwa „Weiteren Scan
+   * hinzufügen" (BEF-060 Teil 2): „Scan hinzufügen" neben einem vorhandenen
+   * Scan klang, als fehle er.
+   */
+  hinzufuegenEingeklapptWeitere?: string;
   /** Leer als ein Satz statt als großer Leerzustand - in einer Karte (VER-01). */
   leerKompakt?: boolean;
 }
@@ -612,6 +619,7 @@ export function Dateiliste({
   leerAktion,
   rahmen = false,
   hinzufuegenEingeklappt,
+  hinzufuegenEingeklapptWeitere,
   leerKompakt = false,
 }: DateilisteProps) {
   const { dateien, isPending, isError, veraltet, erneutLaden, verborgen } = useDateien(
@@ -627,6 +635,7 @@ export function Dateiliste({
   // Schreibrecht der Art (ADR-017 Punkt 13) - office pflegt nur
   // organisatorische Unterlagen.
   const klinischSchreiben = canWriteClinicalPatientFiles(user.roles);
+  const grundlagenSchreiben = canWriteTreatmentBases(user.roles);
   const darfArtKorrigieren = canCorrectPatientFileType(user.roles);
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
 
@@ -690,7 +699,14 @@ export function Dateiliste({
               // nicht dem Leserecht: office sieht seit E15 klinische Dateien,
               // löscht aber nur organisatorische. Die Datenbank prüft es noch
               // einmal.
-              darfLoeschen={darfHinzufuegen && (!datei.is_clinical || klinischSchreiben)}
+              // Der Verordnungsscan folgt der Grundlage (PRX-010): Wer sie
+              // schreibt, pflegt auch ihren Scan.
+              darfLoeschen={
+                darfHinzufuegen &&
+                (!datei.is_clinical ||
+                  klinischSchreiben ||
+                  (datei.document_type === 'verordnungsscan' && grundlagenSchreiben))
+              }
               darfArtKorrigieren={darfArtKorrigieren}
               arten={korrekturarten}
             />
@@ -708,7 +724,15 @@ export function Dateiliste({
     <>
       {rahmen ? <Inhaltsflaeche>{liste}</Inhaltsflaeche> : liste}
       {uploadfeld && hinzufuegenEingeklappt ? (
-        <Disclosure summary={hinzufuegenEingeklappt}>{uploadfeld}</Disclosure>
+        <Disclosure
+          summary={
+            dateien.length > 0 && hinzufuegenEingeklapptWeitere
+              ? hinzufuegenEingeklapptWeitere
+              : hinzufuegenEingeklappt
+          }
+        >
+          {uploadfeld}
+        </Disclosure>
       ) : uploadfeld ? (
         <Section titel="Datei hinzufügen" ebene={3}>
           {uploadfeld}

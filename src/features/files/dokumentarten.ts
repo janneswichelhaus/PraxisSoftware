@@ -78,6 +78,11 @@ export function istKlinisch(art: Dokumentart): boolean {
  * Verwaltung".
  */
 export function sichtbarkeitHinweis(art: Dokumentart): string {
+  // Der Scan folgt der Grundlage, und die erfasst seit PRX-010 auch das
+  // Praxismanagement (ANN-011).
+  if (art === 'verordnungsscan') {
+    return 'Klinisch: sichtbar für alle Praxisrollen; hinzufügen und löschen darf wie die Grundlage auch das Praxismanagement.';
+  }
   return istKlinisch(art)
     ? 'Klinisch: sichtbar für alle Praxisrollen; hinzufügen und löschen nur Praxisinhaber:in, Therapeut:innen und Teamleitung.'
     : 'Organisatorisch: sichtbar für alle Praxisrollen; auch das Praxismanagement darf sie hinzufügen und löschen.';
