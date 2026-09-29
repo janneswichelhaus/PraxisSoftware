@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { kachelZeilen } from './CalendarGrid';
+import { kachelZeilen } from './calendar';
 
 describe('kachelZeilen (BEF-072)', () => {
   it('zeigt nur ganze Zeilen und mindestens den Namen', () => {

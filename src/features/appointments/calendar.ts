@@ -713,3 +713,11 @@ export function fensterMitArbeitszeit(
   }
   return { vonMinute: von, bisMinute: Math.max(bis, von + 60) };
 }
+
+/**
+ * Wie viele ganze Zeilen eine Kachel dieser Höhe trägt (BEF-072), mindestens
+ * eine: Der Name steht immer da, Zeit und Ort nur, wenn sie ganz passen.
+ */
+export function kachelZeilen(hoehePx: number): number {
+  return Math.max(1, Math.floor((hoehePx - 10) / 16));
+}
