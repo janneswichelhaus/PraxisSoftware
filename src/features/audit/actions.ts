@@ -185,6 +185,10 @@ export const AUDIT_ACTIONS = [
   // PRX-017: Eine Dublette ist in dieser Akte aufgegangen - Kennung der
   // Dublette und Zahlen, keine Namen (ANN-150).
   'patient.merged',
+  // STA-001: nur der abgewiesene Versuch, die Kennzahlen zu lesen.
+  'statistics.read',
+  // STA-002: Zielwert der Praxisfuehrung geaendert, mit altem und neuem Wert.
+  'organization.practice_target_changed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -307,6 +311,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'tasks.read': 'Aufgaben gelesen',
   'appointment.call_recorded': 'Anruf zum Termin vermerkt',
   'patient.merged': 'Dublette in die Akte übernommen',
+  'statistics.read': 'Statistiken gelesen',
+  'organization.practice_target_changed': 'Zielwert der Statistik geändert',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

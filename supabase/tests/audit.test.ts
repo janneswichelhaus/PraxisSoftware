@@ -231,6 +231,8 @@ describe('Audit-Lesepfad', () => {
       'get_intake_checklist',
       'get_invoice',
       'get_payment_reminder',
+      'get_practice_statistics',
+      'get_practice_targets',
       'get_therapy_report',
       'get_treatment_basis',
       'get_treatment_basis_slots',
