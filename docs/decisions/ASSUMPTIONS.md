@@ -1799,7 +1799,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 
 ### ANN-141 — Verordnung ohne Papier: Das Foto hängt bis zum Erfassen an der Person, sein Objektschlüssel bleibt beim Zuordnen stehen
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · erledigt · Wiedervorlage: —
 
 **Annahme.** Ein Verordnungsscan, den die Therapeut:in am Termin aufnimmt, hängt zunächst an der Patient:in (ohne Grundlage) und ist so lange ein offener Punkt „Verordnung zu erfassen“. Beim Speichern der Grundlage ordnet das Formular ihn zu — einmal, nur an eine Grundlage derselben Person, protokolliert als `patient_file.assigned`. Der Objektschlüssel wird beim Anlegen gesetzt und danach nie geändert; ein zugeordneter Scan liegt deshalb weiter unter dem Pfad der Person. Scheitert nur das Zuordnen, bleibt die Grundlage gespeichert, die Seite sagt es, und das Foto bleibt in den offenen Punkten.
 
@@ -1811,7 +1811,7 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 
 ### ANN-142 — Aufgaben: alle vier Praxisrollen sehen alle, erledigte fallen nach zwölf Monaten
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
 
 **Annahme.** Aufgaben und Wiedervorlagen lesen und schreiben alle vier Praxisrollen (`owner`, `therapist`, `team_lead`, `office`), und zwar alle Aufgaben der Praxis — auch die einer Kollegin; die Zuweisung ist ein Hinweis, keine Sichtgrenze. Trainingsbetreuung und Patientenkonto sehen keine. Eine erledigte Aufgabe wird zwölf Monate nach dem Erledigen gelöscht (Klasse `aufgabe`, Anker „Abschluss des Vorgangs“); eine offene bleibt, mit Personenbezug fällt sie mit der Akte, ein Legal Hold an der Akte hält auch die erledigte. Titel und Notiz stehen nie im Protokoll; das Lesen der Liste wird wie bei der Warteliste nicht protokolliert (ANN-134), eine Abweisung schon.
 
@@ -1823,7 +1823,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-143 — Erstaufnahme: fünf Punkte, abgeleitet aus der Akte; „nein“ bei der Liege ist eine Entscheidung
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Erstaufnahme-Checkliste hat fünf Punkte, und jeder gilt als erledigt, sobald in der Akte steht, was er verlangt — niemand hakt etwas ab: **Verordnungsfoto** (ein Verordnungsscan an der Person, auch ein noch nicht zugeordneter; entfällt, wenn alle Grundlagen Selbstzahler sind), **Anamnesebogen** (V8 abgeschlossen), **Datenschutz und Vertrag** (Datenschutzinformation ausgehändigt **und** Behandlungsvertrag unterschrieben; freiwillige Einwilligungen für Mail, Bericht und Fotos zählen nicht), **Befund** (ein abgeschlossener Bogen einer der neun Regionen) und **Liege** (entschieden, ja oder nein). Die Liste führt Personen in Versorgung (`status = active`, ohne Abschluss der Versorgung); sie steht in der Tagesansicht an der Karte, im Aktenkopf und unter „Offene Punkte“, sichtbar für die vier Praxisrollen, nicht protokolliert (sie nennt, ob etwas vorliegt, nicht den Inhalt). Die Liege bekommt dafür einen dritten Zustand: leer heißt „noch nicht entschieden“; die bisherigen „nein“ (Standard, nie bewusst gewählt) wurden leer.
 
@@ -1835,7 +1835,7 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 
 ### ANN-144 — Anrufliste: „erreicht“ ist ein Mitteilungsvermerk, „nicht erreicht“ ein Stand am Termin für zwei Wochen
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008); Sichtung PRX-EPIC-003
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
 
 **Annahme.** Die Anrufliste zeigt je Tag (Standard: morgen) die bestätigten Behandlungstermine mit Rufnummern. „Erreicht, bestätigt“ setzt den vorhandenen Mitteilungsvermerk „telefonisch“ am Termin (CAL-012) und verfällt wie dieser, sobald der Termin sich ändert. „Nicht erreicht“ und „Nachricht hinterlassen“ werden als Stand **am Termin** gespeichert (`appointment_call_states`: Ergebnis, Zahl der Versuche, wann, wer) und vierzehn Tage nach Terminbeginn gelöscht (Klasse `anrufstand`); nie als Merkmal der Person. Lesen und Vermerken dürfen die Rollen des Mitteilungsvermerks (`app.can_update_appointment`); jedes Ergebnis wird als `appointment.call_recorded` protokolliert, ohne Gesprächsinhalt.
 
@@ -1847,7 +1847,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-145 — Dublettenhinweis: gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003; mit PRX-EPIC-003b (Zusammenführen)
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · erledigt · Wiedervorlage: mit PRX-EPIC-003b (Zusammenführen)
 
 **Annahme.** Beim Anlegen einer Person prüft die Anwendung vor dem ersten Speichern auf mögliche Dubletten in der eigenen Praxis: gleicher Nachname **und** (gleiches Geburtsdatum **oder** gleicher Vorname), verglichen in der Suchform (klein, ohne Akzente, Umlaute aufgelöst). Treffer erscheinen als Hinweis mit Link zur vorhandenen Akte; wer erneut „anlegen“ tippt, legt an. Scheitert die Prüfung, wird ohne sie angelegt. Höchstens fünf Treffer, nur Name, Geburtsdatum und Status — dieselben Angaben wie die Suche, nicht protokolliert wie deren Trefferliste.
 
@@ -1859,7 +1859,7 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 
 ### ANN-146 — Erinnerungen fragen nur: Verordnung endet bei ganz verplantem Kontingent und letztem Termin in 14 Tagen; Abschluss nach sechs Monaten ohne Termin
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003; STA-EPIC-001 Kennzahl 4 liest dieselbe Regel
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · erledigt · Wiedervorlage: STA-EPIC-001 Kennzahl 4 liest dieselbe Regel
 
 **Annahme.** Unter „Offene Punkte“ stehen zwei Listen, die nur fragen und nichts setzen. **Verordnung endet:** eine Verordnung (nicht Selbstzahler) einer Person in Versorgung, zu der es keine jüngere Grundlage gibt, deren Kontingent genutzt ist **oder** deren Termine alle verplant sind und deren letzter Termin in den nächsten 14 Tagen liegt (oder schon war); dazu nur, **ob** eine Empfehlung zum Verordnungsende vorliegt (Therapiebericht oder Bestandsfeld), und Name und Telefon der Verordner:in — sichtbar für die vier Praxisrollen. **Versorgung abschließen?:** Personen ohne Abschluss der Versorgung, deren letzter Behandlungstermin sechs Monate zurückliegt (ohne Termin: die Anlage der Akte) und die keinen kommenden haben — sichtbar nur für die Rollen, die abschließen dürfen (`owner`, `therapist`, `team_lead`).
 
