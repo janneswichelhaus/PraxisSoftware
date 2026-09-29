@@ -177,7 +177,7 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
   'patient_record.exported': 'Auskunft aus der Akte erteilt',
-  'audit_log.read': 'Auditlog gelesen',
+  'audit_log.read': 'Protokoll gelesen',
   'patient.created': 'Patient:in angelegt',
   'patient.updated': 'Stammdaten geändert',
   'patient.status_changed': 'Versorgungsstatus geändert',

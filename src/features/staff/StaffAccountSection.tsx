@@ -334,7 +334,7 @@ function OffeneEinladung({
 
 const sperrTexte: Record<SperrProblem, string> = {
   last_owner_required:
-    'Die letzte aktive Praxisinhaber:in behält ihre Rolle und ihren Zugang. Sonst könnte niemand mehr Zugänge, Rollen und das Auditlog verwalten.',
+    'Die letzte aktive Praxisinhaber:in behält ihre Rolle und ihren Zugang. Sonst könnte niemand mehr Zugänge, Rollen und das Protokoll verwalten.',
   cannot_lock_own_account: 'Der eigene Zugang lässt sich nicht sperren.',
   unbekannt: `Der Vorgang konnte nicht ausgeführt werden. ${ERNEUT}`,
 };

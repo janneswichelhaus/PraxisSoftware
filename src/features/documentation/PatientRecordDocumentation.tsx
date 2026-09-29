@@ -41,7 +41,7 @@ function TerminKopf({ termin }: { termin: RecordAppointment }) {
   return (
     <>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-ink font-medium">{formatLocalDate(termin.starts_at, zone)}</p>
+        <p className="text-accent text-h4 font-bold">{formatLocalDate(termin.starts_at, zone)}</p>
         <Badge>{appointmentStatusLabels[termin.appointment_status]}</Badge>
       </div>
       <p className="text-ink-muted mt-1 text-sm">
@@ -126,7 +126,11 @@ function AkteEintrag({
         ) : null}
       </div>
 
-      <p className={`text-ink text-liste mt-2 max-w-prose leading-relaxed ${FREITEXT}`}>
+      {/* BEF-078: Der Eintrag steht in einem eigenen, abgesetzten Feld -
+          vorher lief er im gleichen Grau wie Kopf und Herkunft durch. */}
+      <p
+        className={`text-ink text-liste bg-surface-sunken rounded-card mt-2 max-w-prose p-3 leading-relaxed ${FREITEXT}`}
+      >
         {note.content}
       </p>
 
@@ -180,7 +184,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
     <div role="region" aria-label="Behandlungsdokumentation" className="mt-8">
       <Section
         titel="Behandlungsdokumentation"
-        hinweis="Alle Termine mit ihren Einträgen, neueste zuerst. Bearbeitet, finalisiert und ergänzt wird am Termin. Zukünftige Termine ohne Dokumentation stehen im Kalender."
+        hinweis="Neueste zuerst. Geschrieben wird am Termin."
       >
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
@@ -199,9 +203,14 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
         ) : null}
 
         {termine.length > 0 ? (
-          <ol className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
+          // BEF-078: Je Termin eine eigene Karte statt Zeilen in einem Kasten -
+          // man sieht, wo ein Termin endet und der nächste beginnt.
+          <ol className="flex flex-col gap-3">
             {termine.map((termin) => (
-              <li key={termin.appointment_id} className="py-4">
+              <li
+                key={termin.appointment_id}
+                className="border-line bg-surface rounded-card border p-4 sm:p-5"
+              >
                 <TerminKopf termin={termin} />
 
                 {termin.notes.length === 0 ? (

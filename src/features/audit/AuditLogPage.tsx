@@ -129,7 +129,7 @@ export function AuditLogPage() {
       {/* Der Titel ist das Wort des Menüpunkts (ORG-07): bis UXR-011 öffnete
           „Sicherheit" eine Seite namens „Audit". */}
       <PageHeader
-        title="Auditlog"
+        title="Protokoll"
         description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."
       />
 
@@ -258,7 +258,7 @@ export function AuditLogPage() {
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
         Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
-        Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Auditlogs.
+        Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Protokolls.
       </p>
     </>
   );

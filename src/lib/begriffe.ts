@@ -80,6 +80,8 @@ export const BEGRIFFE = {
   ausfallhonorar: 'Ausfallhonorar',
   arbeitszeiten: 'Arbeitszeiten',
   kennwort: 'Kennwort',
+  /** Wer wann was getan hat (ADR-010) - Menü, Seitentitel und Aufbewahrung (BEF-080). */
+  protokoll: 'Protokoll',
 } as const;
 
 /**
@@ -110,6 +112,11 @@ export interface AbgeloesterBegriff {
 }
 
 export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
+  {
+    muster: /\bAuditlogs?\b/,
+    statt: BEGRIFFE.protokoll,
+    quelle: 'Sichtung Praxisverwaltung, Jannes 2026-09-29 (BEF-080)',
+  },
   {
     muster: /\bMein Tag\b/,
     statt: BEREICHE.heute.label,

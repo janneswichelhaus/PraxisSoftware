@@ -3070,7 +3070,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Akte → Behandlungsverlauf; Übersicht → Bisherige Doku |
 | Quelle  | Sichtung Kernprozess, Schritt 11 und 12 (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
 | Berührt | Behandlungsverlauf; Tokens in `src/index.css`; UX-EPIC-003 |
 
 **Beobachtung.** Die Dokumentation früherer Termine läuft als gleichförmiger Text; Termine sind nicht als Kästen abgesetzt, Datum, Verfasser:in und Text haben denselben Kontrast.
@@ -3099,7 +3099,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-29 |
 | Bereich | Organisatorisches (owner) |
 | Quelle  | Sichtung Praxisverwaltung, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
 | Berührt | `src/app/navigation.tsx` (Menüpunkt „Auditlog“, Stichwort „Sicherheit“); Sichtungsdateien; BEF-065; ANN-137 |
 
 **Beobachtung.** Jannes sucht als owner unter Organisatorisches den Punkt „Sicherheit“ und findet ihn nicht. Seit UXR-002 heißt er „Auditlog“; die Sichtungsdateien nannten noch „Sicherheit“ (am 2026-09-29 nachgezogen). „Auditlog“ ist Entwicklersprache.
@@ -3114,7 +3114,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-29 |
 | Bereich | Termin (office) |
 | Quelle  | Sichtung Praxisverwaltung, Schritt 6 (office) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
 | Berührt | `src/features/appointments/Abrechnungslage.tsx`, `AppointmentDetailPage.tsx`; PRX-008; ANN-139; BEF-076, BEF-078 |
 
 **Beobachtung.** Als Olivia (office) findet Jannes am Termin von Erika die Zeilen „Rechnung an“ und „Offene Rechnungen“ nicht. Sie stehen als zwei unauffällige Zeilen zwischen den übrigen Termindaten (Art, Status, Grundlage) und erscheinen nur, wenn der Server sie für die Rolle freigibt. Jannes: „Es ist alles noch viel zu unübersichtlich und nicht intuitiv genug.“

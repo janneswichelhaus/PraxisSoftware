@@ -22,5 +22,5 @@ export const ROLLENHINWEISE: Partial<Record<RoleKey, string>> = {
   office:
     'Termine, Arbeitszeiten, Abrechnung und Mitarbeiterstammdaten. Liest alle Akten einschließlich Dokumentation, schreibt aber keine klinischen Inhalte.',
   owner:
-    'Zugänge, Rollen, Auditlog und Abrechnung; liest alle Akten. Dokumentieren nur zusammen mit der Rolle Therapeut:in oder Teamleitung.',
+    'Zugänge, Rollen, Protokoll und Abrechnung; liest alle Akten. Dokumentieren nur zusammen mit der Rolle Therapeut:in oder Teamleitung.',
 };

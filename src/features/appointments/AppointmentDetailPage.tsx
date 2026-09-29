@@ -14,7 +14,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Kurzblick } from './Kurzblick';
-import { Abrechnungslage } from './Abrechnungslage';
+import { AbrechnungAbschnitt, Abrechnungslage } from './Abrechnungslage';
 import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
@@ -1090,8 +1090,8 @@ function AppointmentDetail({
           ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
-          {/* PRX-008: „Termin n von m" und - nur für owner und office -
-              Empfänger und offene Rechnungen (ANN-139). */}
+          {/* PRX-008: „Termin n von m" an der Grundlage; Empfänger und offene
+              Rechnungen stehen darunter im Abschnitt „Abrechnung". */}
           {appointment.kind === 'therapy' ? (
             <Abrechnungslage appointmentId={appointment.id} />
           ) : null}
@@ -1191,6 +1191,12 @@ function AppointmentDetail({
           ) : null}
         </DetailList>
       </Section>
+
+      {/* BEF-081: Empfänger und offene Rechnungen als eigener Abschnitt statt
+          zweier Zeilen zwischen den Termindaten - nur für owner und office. */}
+      {appointment.kind === 'therapy' ? (
+        <AbrechnungAbschnitt appointmentId={appointment.id} />
+      ) : null}
 
       {/* Was man vor der Tür wissen muss (PRX-006): zugeklappt, erst auf
           Anforderung gelesen und protokolliert (ANN-137). Nur am

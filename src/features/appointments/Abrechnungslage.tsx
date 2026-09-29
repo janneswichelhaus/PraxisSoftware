@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
-import { DetailRow } from '@/components/ui/DetailList';
+import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -24,21 +25,24 @@ function OffeneRechnungen({ lage }: { lage: Abrechnungslage }) {
   );
 }
 
-/**
- * Zeilen für die Termindaten (PRX-008): Position in der Grundlage, für owner
- * und office dazu Empfänger und offene Rechnungen (ANN-139).
- *
- * Ohne eigenen Abschnitt: Die Angaben gehören zum Termin wie Art und Status.
- * Lädt der Stand nicht, fehlen die Zeilen - der Termin bleibt bedienbar, und
- * die Deckung steht weiter darunter.
- */
-export function Abrechnungslage({ appointmentId }: { appointmentId: string }) {
-  const { data } = useQuery({
+function useAbrechnungslage(appointmentId: string) {
+  return useQuery({
     // Unter dem Schlüssel des Termins: Was den Termin neu lädt, lädt auch dies.
     queryKey: ['appointment', appointmentId, 'abrechnungslage'],
     queryFn: () => fetchAbrechnungslage(appointmentId),
     retry: false,
   });
+}
+
+/**
+ * Die Zeile „Grundlage" in den Termindaten (PRX-008): Position in der
+ * Grundlage für alle Rollen der Terminverwaltung.
+ *
+ * Lädt der Stand nicht, fehlt die Zeile - der Termin bleibt bedienbar, und
+ * die Deckung steht weiter darunter.
+ */
+export function Abrechnungslage({ appointmentId }: { appointmentId: string }) {
+  const { data } = useAbrechnungslage(appointmentId);
 
   if (!data) return null;
   const position = positionText(data);
@@ -53,28 +57,43 @@ export function Abrechnungslage({ appointmentId }: { appointmentId: string }) {
       : null;
 
   return (
-    <>
-      <DetailRow label="Grundlage">
-        {grundlage ? (
-          <>
-            {position ? <span className="font-semibold">{position}</span> : null}
-            {position ? ' · ' : null}
-            {grundlage}
-          </>
-        ) : (
-          'Keine Behandlungsgrundlage zugeordnet'
-        )}
-      </DetailRow>
-      {data.billing_visible ? (
+    <DetailRow label="Grundlage">
+      {grundlage ? (
         <>
-          <DetailRow label="Rechnung an">
-            {empfaengerartLabels[data.recipient_kind ?? 'self'] ?? data.recipient_kind}
-          </DetailRow>
-          <DetailRow label="Offene Rechnungen">
-            <OffeneRechnungen lage={data} />
-          </DetailRow>
+          {position ? <span className="font-semibold">{position}</span> : null}
+          {position ? ' · ' : null}
+          {grundlage}
         </>
-      ) : null}
-    </>
+      ) : (
+        'Keine Behandlungsgrundlage zugeordnet'
+      )}
+    </DetailRow>
+  );
+}
+
+/**
+ * Ein eigener Abschnitt „Abrechnung" am Termin (BEF-081): Empfänger und
+ * offene Rechnungen, nur für owner und office (ANN-139).
+ *
+ * Bis zur Sichtung standen beide als zwei unauffällige Zeilen zwischen Art,
+ * Status und Grundlage - Jannes fand sie als office nicht. Ob sie da sind,
+ * entscheidet weiter der Server (`billing_visible`); die Oberfläche blendet
+ * nichts aus, was sie bekommen hat (ADR-004).
+ */
+export function AbrechnungAbschnitt({ appointmentId }: { appointmentId: string }) {
+  const { data } = useAbrechnungslage(appointmentId);
+  if (!data?.billing_visible) return null;
+
+  return (
+    <Section titel="Abrechnung" rahmen>
+      <DetailList>
+        <DetailRow label="Rechnung an">
+          {empfaengerartLabels[data.recipient_kind ?? 'self'] ?? data.recipient_kind}
+        </DetailRow>
+        <DetailRow label="Offene Rechnungen">
+          <OffeneRechnungen lage={data} />
+        </DetailRow>
+      </DetailList>
+    </Section>
   );
 }
