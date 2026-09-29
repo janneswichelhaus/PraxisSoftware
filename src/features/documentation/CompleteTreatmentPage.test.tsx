@@ -406,7 +406,7 @@ describe('CompleteTreatmentPage', () => {
       rendern();
 
       expect(await screen.findByLabelText('Eintrag zur Behandlung')).toBeInTheDocument();
-      expect(screen.queryByText('Textbausteine:')).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Textbausteine' })).toBeNull();
     });
   });
   /**

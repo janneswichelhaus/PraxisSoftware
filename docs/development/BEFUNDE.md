@@ -3040,7 +3040,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | übergreifend; Befund aus Bausteinen |
 | Quelle  | Sichtung Kernprozess, Schritt 10 und 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004d) |
 | Berührt | Bedienprinzip „Was nicht gebraucht wird, ist eingeklappt“ (UX-EPIC-002, Oberflächen-Checkliste Punkt 11); FRB-EPIC-003; ANN-130 |
 
 **Beobachtung.** Auf den Seiten steht durchweg viel erklärender Text. Im Erstbefund bleibt ein abgehakter Test mit allen Optionen offen, die Seite wird dadurch sehr lang.
@@ -3055,7 +3055,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Dokumentieren |
 | Quelle  | Sichtung Kernprozess, Schritt 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004d) |
 | Berührt | Textbausteine an der Dokumentation; IDEA-PRX-043; Organisatorisches |
 
 **Beobachtung.** „Bausteine verwalten“ steht an der Dokumentation und kostet Platz; die Überschrift „Textbausteine:“ ist unnötig. Die vorhandenen Bausteine (etwa „Eigenübungen besprochen“) ersetzen genaue Dokumentation, statt Struktur und Tipparbeit zu erleichtern.

@@ -1,8 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Textlink } from '@/components/ui/Textlink';
-import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchTextSnippets, type TextSnippet } from './textbausteine';
 
 /**
@@ -15,19 +12,20 @@ import { fetchTextSnippets, type TextSnippet } from './textbausteine';
  *
  * Praxisweite Bausteine stehen vorn (die Reihenfolge kommt vom Server), eigene
  * dahinter; der Titel des Knopfes ist der Titel des Bausteins, sein
- * `title`-Attribut zeigt den vollen Text. Hat jemand keine Bausteine, steht
- * dort der Weg, welche anzulegen - eine leere Leiste wäre ein Rätsel.
+ * `title`-Attribut zeigt den vollen Text. Ohne Bausteine steht die Leiste
+ * nicht da.
  *
- * Die Leiste ist eine benannte Gruppe (DOK-20); das sichtbare „Textbausteine:“
- * wiederholt den Namen nur für das Auge. Die Knöpfe sind kompakte
- * Kartenaktionen wie im Bausteinfeld darunter (DOK-13, UIK-14).
+ * Die Leiste ist eine benannte Gruppe (DOK-20), ohne sichtbare Überschrift
+ * und ohne „Bausteine verwalten“ (BEF-077): Die Knöpfe erklären sich selbst,
+ * und gepflegt werden Bausteine unter Organisatorisches → Textbausteine. Die
+ * Knöpfe sind kompakte Kartenaktionen wie im Bausteinfeld darunter (DOK-13,
+ * UIK-14).
  */
 export function TextbausteinLeiste({
   onEinfuegen,
 }: {
   onEinfuegen: (text: string, titel: string) => void;
 }) {
-  const ort = useLocation();
   const { data, isPending, isError } = useQuery({
     queryKey: ['text-snippets'],
     queryFn: fetchTextSnippets,
@@ -42,43 +40,23 @@ export function TextbausteinLeiste({
   if (isPending || isError) return null;
 
   const bausteine: TextSnippet[] = data;
+  if (bausteine.length === 0) return null;
 
   return (
     <div className="nicht-drucken mb-3">
       <div role="group" aria-label="Textbausteine" className="flex flex-wrap items-center gap-2">
-        <span aria-hidden="true" className="text-ink-muted text-sm">
-          Textbausteine:
-        </span>
-
-        {bausteine.length === 0 ? (
-          <span className="text-ink-muted text-sm">noch keine angelegt</span>
-        ) : (
-          bausteine.map((baustein) => (
-            <Button
-              key={baustein.id}
-              type="button"
-              variant="secondary"
-              groesse="kompakt"
-              title={baustein.body}
-              onClick={() => onEinfuegen(baustein.body, baustein.title)}
-            >
-              {baustein.title}
-            </Button>
-          ))
-        )}
-
-        {/* Die Bausteinseite ist eine Bereichsseite; ihr Rückweg führt hierher
-            zurück, samt dem Rückweg dieser Seite (DOK-01). Der Pfeil ist
-            Schmuck und wird nicht vorgelesen (WRT-08). */}
-        <Textlink
-          to={mitRueckweg('/praxis/textbausteine', `${ort.pathname}${ort.search}`)}
-          alleinstehend
-          // `gap-1`: Im `inline-flex` des Links fiele das Leerzeichen vor dem
-          // Pfeil weg.
-          className="gap-1 px-1 text-sm font-medium"
-        >
-          Bausteine verwalten <span aria-hidden="true">→</span>
-        </Textlink>
+        {bausteine.map((baustein) => (
+          <Button
+            key={baustein.id}
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            title={baustein.body}
+            onClick={() => onEinfuegen(baustein.body, baustein.title)}
+          >
+            {baustein.title}
+          </Button>
+        ))}
       </div>
     </div>
   );

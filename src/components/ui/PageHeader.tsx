@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 
 /**
  * Kopf einer Seite: Titel, erklärender Satz, Aktionen.
@@ -56,12 +56,51 @@ export function PageHeader({
           {title}
         </h1>
         {description ? (
-          <p className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
-            {description}
-          </p>
+          kompakt || description.length <= KURZ ? (
+            <p className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
+              {description}
+            </p>
+          ) : (
+            <Erklaerung text={description} />
+          )
         ) : null}
       </div>
       {actions}
     </header>
+  );
+}
+
+/**
+ * Ab dieser Länge steht die Erklärung unter dem Titel eingeklappt (BEF-076).
+ * Etwa eine Zeile am Handy; kürzere Sätze stehen ganz da.
+ */
+const KURZ = 90;
+
+/**
+ * Eine lange Erklärung zeigt ihre erste Zeile und „Mehr" (BEF-076).
+ *
+ * Jannes: „Es ist immer extrem viel Text zu sehen." Die Erklärungen bleiben,
+ * wer sie braucht, klappt sie auf - der Rest der Seite rückt nach oben. Der
+ * ganze Text steht auch eingeklappt im Dokument, Vorlesewerkzeuge lesen ihn
+ * vollständig.
+ */
+function Erklaerung({ text }: { text: string }) {
+  const [offen, setOffen] = useState(false);
+  const id = useId();
+  return (
+    <div className="mt-1 flex max-w-prose items-start gap-2">
+      <p id={id} className={`text-ink-muted min-w-0 text-sm ${offen ? '' : 'line-clamp-1'}`}>
+        {text}
+      </p>
+      <button
+        type="button"
+        aria-expanded={offen}
+        aria-controls={id}
+        onClick={() => setOffen((bisher) => !bisher)}
+        className="text-accent -my-3 min-h-11 shrink-0 text-sm font-semibold underline underline-offset-2"
+      >
+        {offen ? 'Weniger' : 'Mehr'}
+      </button>
+    </div>
   );
 }
