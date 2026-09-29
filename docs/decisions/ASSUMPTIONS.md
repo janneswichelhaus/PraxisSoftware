@@ -1976,3 +1976,27 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-
 **Anker.** `src/features/statistics/kennzahlen.ts` (Richtung, Ziel erreicht, Handlung je Kennzahl) mit Tests in `src/features/statistics/kennzahlen.test.ts`.
 
 **Änderungspfad.** Richtung oder Ziel einer Handlung ändern: Eintrag in `kennzahlen.ts` · Aufwand `klein`.
+
+### ANN-156 — Umsatz je Person: der behandelnden Person zugeordnet; owner sieht alle, wer Umsatzbeteiligung hat, sich selbst; jeder Aufruf protokolliert
+
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · Prüfpaket · Wiedervorlage: Datenschutzprüfung Beschäftigtendaten (Art. 88 DSGVO, § 26 BDSG), Vergütungsmodelle (IDEA-PRX-047)
+
+**Annahme.** Der Umsatz nach Rechnungsstellung wird je Monat der Person zugeordnet, die den Termin der abgerechneten Leistung behandelt hat; was sich keiner Person zuordnen lässt (etwa ein nach dem Storno gelöschter Posten), steht als „ohne Zuordnung“, sodass die Summe eines Monats immer der Praxisumsatz ist. `owner` sieht alle Personen mit Namen — erst auf Klick, weil jeder Abruf protokolliert wird —, eine Person mit Umsatzbeteiligung ausschließlich die eigenen Zahlen (maßgeblich ist das Modell am Mitarbeiterdatensatz, nicht die Rolle; ein inaktiver Beschäftigungsstatus sperrt nicht, das Konto schon), alle anderen nichts. Jeder erfolgreiche Aufruf steht als `statistics.staff_revenue_viewed` mit Umfang (alle oder selbst), ohne Beträge, im Protokoll. Die Auswertung liest keine Zeiten, Wege, Orte oder Ausfälle je Person (§20).
+
+**Begründung.** Jannes hat B6 am 2026-09-29 aufgelöst, weil Vergütungsmodelle mit Umsatzbeteiligung geplant sind; wer beteiligt ist, braucht die eigene Zahl. Zugeordnet wird nach der Behandlung, weil der Umsatz dort entsteht — die Person, die die Rechnung schreibt, ist meist das Büro. Das Protokoll kompensiert, dass es sich um Beschäftigtendaten handelt (ADR-010). Unsicher: ob die Prüfung eine Information der Beschäftigten (Art. 13 DSGVO) vor dem ersten Einsatz verlangt — empfohlen.
+
+**Anker.** `public.list_revenue_by_staff` in `supabase/migrations/20260929234000_sta_006_revenue_by_staff.sql`, Posten aus `app.revenue_staff_lines` in `supabase/migrations/20260929232000_sta_004_revenue_series.sql`; Laden auf Klick in `src/features/statistics/StatisticsPage.tsx`; Tests in `supabase/tests/revenue-series.test.ts`.
+
+**Änderungspfad.** Nach Zahlungseingang statt Rechnungsstellung: Zahlung anteilig auf die Zeilen verteilen (wie ANN-088) · Aufwand `mittel`. Personen ohne Umsatzbeteiligung für owner ausblenden: Bedingung in `list_revenue_by_staff` · Aufwand `klein`.
+
+### ANN-157 — Vergütungsmodell: zwei Werte, owner trägt ein, ohne Angabe kein Umsatz für die Person
+
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · erledigt · Wiedervorlage: Vergütungsmodelle (IDEA-PRX-047)
+
+**Annahme.** Je Person gibt es genau eine Angabe: Festgehalt oder Umsatzbeteiligung. Die Person wählt ihr Modell, `owner` trägt es ein (es ist Teil des Arbeitsvertrags); jede Änderung wird mit altem und neuem Wert protokolliert. Ohne Angabe zählt die Person wie Festgehalt und sieht keinen Umsatz. Lesen dürfen `owner` und die Person selbst, `office` nicht.
+
+**Begründung.** Die Sicht auf den eigenen Umsatz soll an einer vereinbarten Tatsache hängen, nicht an einer Rolle; eine fehlende Angabe darf niemandem Zahlen zeigen. Sätze und Abrechnung der Beteiligung sind ein eigenes Epic.
+
+**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffCompensationSection.tsx`.
+
+**Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.

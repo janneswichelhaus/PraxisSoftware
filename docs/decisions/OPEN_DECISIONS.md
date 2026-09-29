@@ -48,7 +48,7 @@ Feature, **P3** später.
 | B3 | Aufbewahrung und Löschung | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001 |
 | B4 | Abrechnungsmodell | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13; Volltext: `ANFRAGEN.md` § B4 |
 | B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
-| B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **vorläufig entschieden 2026-09-08: nein** | vor ZK-001 und MAP-006; ANN-004 überbrückt das Audit |
+| B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **entschieden 2026-09-29 (Jannes): Umsatz je Person ja, Orts- und Tourendaten nein** | ANN-156, ANN-157; ANN-004 überbrückt das Audit |
 | B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
 | B8 | Lizenzen für Fragebögen und PROMs | Nutzung **bestätigt durch Jannes 2026-09-19**; schriftlicher Beleg des Lizenzgebers bleibt offen (M3) | vor FRB-003 |
 | B9 | Betreuung ohne und nach Heilbehandlung (Personal Training) | **vollständig vorläufig entschieden**: ein Unternehmen (2026-09-07), die sechs übrigen Fragen (2026-09-08); **Punkt 6 neu 2026-09-22**: Ernährung als Protokoll und Zielwert gehört zu V1 | Roadmap ALT-EPIC-002, KND-EPIC-001; Steuerteil mit B4; Volltext: `ANFRAGEN.md` § B9 |
@@ -153,15 +153,15 @@ Vertreterzugriffe); Roadmap Etappe 4.
 
 ### B6 — Beschäftigtendaten: Tourendaten und Leistungskontrolle
 
-vorläufig entschieden · 2026-09-08 · Jannes · nein
+entschieden · 2026-09-29 · Jannes · Umsatz je Person ja, Orts- und Tourendaten nein · Prüfpaket
 
-Standort-, Touren- und Arbeitszeitdaten werden nicht zur Verhaltens- oder
-Leistungsbeurteilung verwendet; umgesetzt durch Aggregation statt Einzelbewegung,
-kurze Löschfristen, kein Live-Tracking, keine Auswertung je Person. §26 BDSG setzt
-enge Grenzen, und bei dieser Praxisgröße liefert ein „Ja" nichts Unbekanntes (§16,
-§20). **§20.1 (2026-09-22) ändert daran nichts:** Eine Führung auf dem Gerät meldet
-der Praxis keinen Standort. Rücknahme `mittel`. Wo: §20; Roadmap vor ZK-001 und
-MAP-006 (Tagesstopps). Annahmen: ANN-004 (Arbeitszeiten bleiben aus dem Auditlog heraus).
+Aufgelöst für geplante Vergütungsmodelle mit Umsatzbeteiligung (IDEA-PRX-047):
+Umsatz je behandelnder Person für `owner`, für eine Person mit
+Umsatzbeteiligung nur der eigene, jeder Aufruf protokolliert (ANN-156,
+ANN-157). **Unberührt bleibt §20 (Rang 1):** keine Live-Ortung, Touren-,
+Standort- und Arbeitszeitdaten nicht zur Leistungskontrolle. Rechtsgrundlage
+und Information der Beschäftigten gehen ins Prüfpaket. Rücknahme `klein`.
+*Bis 2026-09-29 vorläufig „nein" (2026-09-08); ANN-004 bleibt.*
 
 ### B7 — Übermittlung von Adressdaten an den Kartendienst
 
