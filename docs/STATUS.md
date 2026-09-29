@@ -12,7 +12,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 **Instrumente (ANN-099):** PSFS gestrichen; Wortlaut der Veränderungsfrage freigegeben (sieben Stufen), sie steht ab dem zweiten Termin je Patient:in oben in der Dokumentation (FRB-EPIC-004). Neue Idee **IDEA-OUT-016** (Instrumente in der Praxis pflegen).
 
-**PRX-EPIC-002 gebaut und gemergt (PR #137):** Kurzblick für die Vertretung (ANN-137), Material zum Mitnehmen (ANN-138), „Termin n von m“ und Abrechnungslage (ANN-139), Termin abhaken (ANN-140), BEF-055 Teil 1. Gesichtet werden die Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md).
+**PRX-EPIC-002 gebaut und gemergt (PR #137):** Kurzblick für die Vertretung (ANN-137), Material zum Mitnehmen (ANN-138), „Termin n von m“ und Abrechnungslage (ANN-139), Termin abhaken (ANN-140), BEF-055 Teil 1. Gesichtet 2026-09-29 (BEF-080, BEF-081; ANN-137, -138, -140 bestätigt).
 
 ## Danach — Bauen
 
@@ -28,10 +28,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-- **Am Termin sichten** (PRX-EPIC-002): Schritte 4 bis 6 in [Praxisverwaltung](sichtung/praxisverwaltung.md). Zu bestätigen: **ANN-137** (Kurzblick zeigt auch einen Entwurf; jedes Aufklappen protokolliert), **ANN-138** (Material an der Person, am Tag ohne Namen), **ANN-139** (Behandelnde sehen keine offenen Rechnungen) und **ANN-140** (nur am eigenen Termin; Zurücknehmen und Ausfallhonorar beim Büro).
-
 - **UX-Review entscheiden:** BEF-046 bis BEF-070, je Eintrag Frage, Optionen und Empfehlung. Zuerst BEF-046 (ein gescheitertes Nachladen des Profils ersetzt die App, Eingaben gehen verloren) und BEF-047 (Sitzungsende und Anmeldemaske).
-- **G6c lokal prüfen** (ANN-115, auch nach dem Merge noch offen): `pnpm dlx supabase@2.116.0 start`, als Anna (therapist) angemeldet in der Browserkonsole einen Schreibpfad aufrufen, etwa `await supabase.rpc('place_legal_hold', { p_patient_id: '66666666-6666-4666-8666-000000000001', p_reason: 'Probe' })` — erwartet `status: 403`, danach als owner unter **Organisatorisches → Sicherheit** ein Eintrag „Legal Hold gesetzt" mit Ausgang abgewiesen. Zeigt die Antwort 403, aber fehlt der Eintrag, steht der Weg in ANN-115.
+- **G6c lokal prüfen** (ANN-115, auch nach dem Merge noch offen): `pnpm dlx supabase@2.116.0 start`, als Anna (therapist) angemeldet in der Browserkonsole einen Schreibpfad aufrufen, etwa `await supabase.rpc('place_legal_hold', { p_patient_id: '66666666-6666-4666-8666-000000000001', p_reason: 'Probe' })` — erwartet `status: 403`, danach als owner unter **Organisatorisches → Auditlog** ein Eintrag „Legal Hold gesetzt" mit Ausgang abgewiesen. Zeigt die Antwort 403, aber fehlt der Eintrag, steht der Weg in ANN-115.
 - **Sichtung** (E-6), am Handy auf der Test-Umgebung, Start mit `/sichtung`: offen sind [Befund](sichtung/befund.md), [Leistungsbereiche](sichtung/leistungsbereiche.md) (nur noch Schritte 2 bis 7, warten auf Testdaten), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei) und [Betriebsreife](sichtung/betriebsreife.md); Kernprozess und Praxisverwaltung sind gesichtet (2026-09-28). Aus UX-EPIC-002 noch zu bestätigen: **ANN-114** (weitere Seiten randlos?).
 - **Reihenfolge der Befunde entscheiden:** BEF-071 bis BEF-079 als erste Stories von PRX-EPIC-003 oder als eigener kleiner Oberflächen-Loop davor (Empfehlung: eigener Loop, weil sie Kalender, Übersicht und Befund quer betreffen).
 - **Anamnese und Bausteine sichten** (FRB-EPIC-002/003): Schritte 3 bis 7 in [Befund](sichtung/befund.md); **ANN-104** ist bestätigt (2026-09-26). Zu bestätigen: **ANN-118** (Übertragung der Vorlage, drei Lücken offen, Seitenregel), **ANN-119** (Tippfehler bleiben stehen, auch im Text der Akte), **ANN-120** (nur der Text wird gespeichert; ein nicht übernommener Vorschlag hält Speichern und Abschluss an und geht nur beim Verlassen der Seite in den Entwurf mit), **ANN-129** (Seite einmal je Region) und **ANN-130** (Zeichen ✅/❗ und Gliederung des Texts).

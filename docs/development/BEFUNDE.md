@@ -3092,3 +3092,32 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Nach dem Absagen steht die Folge sichtbar im Sichtfeld: „Abgesagt · Gebühr vorgemerkt (weniger als 24 Stunden vorher)“. Prüfen, ob die Meldung fehlt oder nur außerhalb des Sichtfelds steht (wie BEF-075).
 
+### BEF-080 — Das Protokoll ist unter „Organisatorisches“ nicht zu finden: Der Menüpunkt heißt „Auditlog“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-29 |
+| Bereich | Organisatorisches (owner) |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
+| Status  | offen |
+| Berührt | `src/app/navigation.tsx` (Menüpunkt „Auditlog“, Stichwort „Sicherheit“); Sichtungsdateien; BEF-065; ANN-137 |
+
+**Beobachtung.** Jannes sucht als owner unter Organisatorisches den Punkt „Sicherheit“ und findet ihn nicht. Seit UXR-002 heißt er „Auditlog“; die Sichtungsdateien nannten noch „Sicherheit“ (am 2026-09-29 nachgezogen). „Auditlog“ ist Entwicklersprache.
+
+**Erwartet.** Ein Wort, das eine Praxisleitung sucht, etwa „Protokoll“ (Begriffsliste `src/lib/begriffe.ts`), gleich in Menü, Seitentitel und Sichtung; „Auditlog“ und „Sicherheit“ bleiben als Suchwörter. Zusammen mit BEF-065 (Nachweisseiten in Projektsprache).
+
+
+### BEF-081 — „Rechnung an“ und „Offene Rechnungen“ am Termin werden nicht gefunden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-29 |
+| Bereich | Termin (office) |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 6 (office) (Jannes, Test-Umgebung, Android und Windows) |
+| Status  | offen |
+| Berührt | `src/features/appointments/Abrechnungslage.tsx`, `AppointmentDetailPage.tsx`; PRX-008; ANN-139; BEF-076, BEF-078 |
+
+**Beobachtung.** Als Olivia (office) findet Jannes am Termin von Erika die Zeilen „Rechnung an“ und „Offene Rechnungen“ nicht. Sie stehen als zwei unauffällige Zeilen zwischen den übrigen Termindaten (Art, Status, Grundlage) und erscheinen nur, wenn der Server sie für die Rolle freigibt. Jannes: „Es ist alles noch viel zu unübersichtlich und nicht intuitiv genug.“
+
+**Erwartet.** Zuerst prüfen, ob die Zeilen für office auf der Test-Umgebung überhaupt ankommen (`billing_visible`). Dann die Abrechnungsangaben als eigener, kurzer Block „Abrechnung“ am Termin, mit Überschrift, abgesetzt von den Termindaten — Teil der Neuordnung der Terminseite (BEF-076, BEF-078).
+
