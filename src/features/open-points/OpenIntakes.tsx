@@ -52,7 +52,7 @@ export function OpenIntakes() {
                   {eintrag.patient_family_name}, {eintrag.patient_given_name}
                 </Link>
               </p>
-              <p className="mt-0.5 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+              <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm">
                 <span className="text-ink-muted">Offen:</span>
                 {eintrag.open_items.map((item) => (
                   <Link

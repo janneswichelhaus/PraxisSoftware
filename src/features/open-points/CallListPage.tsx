@@ -99,8 +99,11 @@ function CallRow({ entry, zurueck }: { entry: CallEntry; zurueck: string }) {
       </div>
       {mitgeteilt ? null : (
         <div className="flex flex-wrap gap-2" role="group" aria-label={`Anruf bei ${name}`}>
+          {/* Sekundär wie die übrigen: ein Hauptknopf je Ansicht, und die
+              Liste trägt viele Zeilen (Bedienprinzipien, UX-EPIC-002). */}
           <Button
             type="button"
+            variant="secondary"
             groesse="kompakt"
             disabled={laeuft}
             onClick={() => vermerken.mutate('reached')}
