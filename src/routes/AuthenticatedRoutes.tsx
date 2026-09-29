@@ -13,6 +13,7 @@ import { EditPatientPage } from '@/features/patients/EditPatientPage';
 import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
+import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
 import { PatientDatenschutzPage } from '@/features/datenschutz/PatientDatenschutzPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
@@ -211,6 +212,15 @@ export function AuthenticatedRoutes({
                     <Route
                       path="/patienten/:patientId/auskunft"
                       element={<BetroffenenrechtePage />}
+                    />
+                  ) : null}
+                  {/* Eine Dublette uebernehmen: ebenfalls ein Vorgang der
+                  Praxisleitung neben der Akte (PRX-018). Nur `owner`;
+                  verbindlich prueft `merge_patients` (ADR-004). */}
+                  {showSecurity ? (
+                    <Route
+                      path="/patienten/:patientId/dublette"
+                      element={<ZusammenfuehrenPage />}
                     />
                   ) : null}
                   {/* Die Verordnerkartei haengt am Arbeitsbereich Patient:innen: sie

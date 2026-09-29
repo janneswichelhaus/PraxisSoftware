@@ -226,6 +226,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Die Auskunft buendelt in einer Antwort, was sonst ueber zwoelf Leserechte
   // verteilt liegt; wer sie erteilt, steht fuer sie gerade (OPS-006, G9).
   const darfAuskunftErteilen = isOwner(user.roles);
+  // Zusammenführen ist ein Vorgang der Praxisleitung (PRX-018,
+  // app.can_merge_patients).
+  const darfZusammenfuehren = isOwner(user.roles);
   const hatVersorgungsangaben = Boolean(
     patient.home_visit_access_note ||
     patient.special_note ||
@@ -390,6 +393,23 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
             ) : null}
           </div>
+        </Section>
+      ) : null}
+
+      {/* PRX-018: Eine zweite Akte derselben Person hierher übernehmen. Nur
+          `owner` - ausgeblendet ist keine Zugriffskontrolle, verbindlich
+          prüft `merge_patients` (ADR-004). */}
+      {darfZusammenfuehren ? (
+        <Section
+          titel="Dublette"
+          hinweis="Gibt es für diese Person eine zweite Akte, lässt sie sich hierher übernehmen. Diese Akte bleibt."
+        >
+          <ButtonLink
+            to={mitRueckweg(`/patienten/${patient.id}/dublette`, hier)}
+            variant="secondary"
+          >
+            Dublette übernehmen
+          </ButtonLink>
         </Section>
       ) : null}
 
