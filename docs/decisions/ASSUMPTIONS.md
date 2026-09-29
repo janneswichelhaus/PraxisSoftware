@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 41 Einträge):
+Zusatz `Prüfpaket` (heute 53 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -1868,3 +1868,51 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 **Anker.** `app.reminder_prescription_horizon()`, `app.reminder_care_idle()`, `list_ending_prescriptions` und `list_care_without_conclusion` in `supabase/migrations/20260929210000_prx_016_reminders.sql`; Oberfläche `src/features/open-points/Reminders.tsx`; Tests in `supabase/tests/reminders.test.ts`.
 
 **Änderungspfad.** Andere Schwellen: die beiden `app.reminder_*`-Funktionen · Aufwand `klein`. Office sieht die Abschlussliste: Rollenprüfung in `list_care_without_conclusion` auf `app.can_read_patient_directory()` · Aufwand `klein`. Mit Erinnerung an die Therapeut:in (Benachrichtigung): gehört zu KOM-EPIC-003 · Aufwand `groß`.
+
+### ANN-147 — Zusammenführen: Die bleibende Akte behält ihre Stammdaten, Leeres füllt die Dublette, Freitexte werden angehängt
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
+
+**Annahme.** Beim Zusammenführen gewinnt in jedem Feld der Stammdaten die Akte, aus der heraus `owner` die Dublette übernimmt; nur leere Felder füllt die Dublette, die Anschrift nur als Ganzes und mit ihrer Verortung. Weichen die Freitexte (Zugangshinweis, Besonderheit, Bemerkung) ab, wird der Text der Dublette durch eine Leerzeile getrennt **angehängt**, nie verworfen; „Mitnehmen“ wird ohne Doppel vereinigt. Hat die bleibende Akte schon einen Standard-Rechnungsempfänger, verliert der der Dublette diese Markierung. Die Vorschau zeigt vor dem Bestätigen, welche Felder in beiden Akten verschieden sind.
+
+**Begründung.** `IDEA-PRX-018` verlangt „nie automatisch“; eine Regel, die Felder nach Alter oder Häufigkeit auswählt, wäre genau das. Die Akte, die jemand bewusst als die richtige öffnet, ist die bessere Quelle; wer einen Wert der Dublette braucht, trägt ihn vorher oder danach in den Stammdaten ein. Freitexte sind Wissen des Teams („Klingel defekt“) — sie zu verwerfen verstieße gegen §13. Unsicher: ob Jannes die Felder lieber einzeln auswählen will.
+
+**Anker.** `app.merge_note`, `app.merge_take_along` und der Stammdatenteil von `public.merge_patients` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Tests in `supabase/tests/patient-merge.test.ts`.
+
+**Änderungspfad.** Felder einzeln wählen: Parameter an `merge_patients` und Auswahl in der Vorschau · Aufwand `mittel`. Freitexte verwerfen statt anhängen: `app.merge_note` · Aufwand `klein`.
+
+### ANN-148 — Zusammenführen: aktiv, wenn eine Akte aktiv ist; ein Abschluss bleibt nur, wenn beide abgeschlossen sind, dann der spätere
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+
+**Annahme.** Nach dem Zusammenführen ist die Person in laufender Versorgung, wenn eine der beiden Akten es war; der Abschluss der Versorgung (Anker der zehnjährigen Aufbewahrung, ANN-032) bleibt nur stehen, wenn beide Akten abgeschlossen waren — dann der spätere. Beginn der Versorgung ist der frühere.
+
+**Begründung.** Eine Behandlung ist erst beendet, wenn die ganze Person nicht mehr behandelt wird; eine abgeschlossene Dublette neben einer laufenden Akte wäre ein Abschluss, den niemand ausgesprochen hat. Der spätere Abschluss hält die Frist für alle Unterlagen, die nun in einer Akte liegen, eher länger als kürzer — früheres Löschen einer Hälfte wäre der schwerere Fehler (§630f BGB, ADR-008 Punkt 2). Unsicher: ob die Prüfung für die Unterlagen der früher abgeschlossenen Dublette die frühere Frist verlangt (Speicherbegrenzung, Art. 5 Abs. 1 lit. e DSGVO).
+
+**Anker.** Abschnitt „Versorgungsstand“ in `public.merge_patients` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Test „behält bei zwei Abschlüssen den späteren“ in `supabase/tests/patient-merge.test.ts`.
+
+**Änderungspfad.** Getrennte Fristen je Herkunft: Abschlussdatum an den gewanderten Zeilen statt an der Akte · Aufwand `groß`. Ein Abschluss der Dublette wird verworfen: dieselbe Stelle · Aufwand `klein`.
+
+### ANN-149 — Zusammenführen sperrt statt zu raten: Konto an der Dublette, zwei Entwürfe für denselben Monat, zwei offene Wartelisteneinträge ohne Grundlage, zu langer Freitext
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
+
+**Annahme.** Das Zusammenführen findet nicht statt, solange (a) an der Person der Dublette ein Konto hängt, (b) beide Akten einen Rechnungsentwurf für denselben Monat und Leistungsbereich haben, (c) beide einen offenen Wartelisteneintrag ohne Grundlage haben, (d) ein angehängter Freitext länger würde als erlaubt oder (e) „Mitnehmen“ mehr als zehn Einträge hätte. Die Vorschau nennt den Grund und den Weg: Konto klären, einen Entwurf verwerfen, einen Eintrag schließen, einen Text kürzen.
+
+**Begründung.** In jedem dieser Fälle müsste der Vorgang selbst etwas entscheiden, das die Praxis entscheiden sollte — welcher Entwurf gilt, welcher Wunsch auf der Warteliste, welches Konto seine Akte verliert. Kürzen hieße Text verlieren (§13). Alle Fälle sind selten und in einem Handgriff zu lösen. Ein Trainingsverhältnis, eine Mitarbeiterrolle oder ein Legal Hold sperren dagegen nicht (ANN-150).
+
+**Anker.** Sperrgründe in `app.patient_merge_plan` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Texte in `src/features/patients/zusammenfuehren.ts`; Tests „Sperren (ANN-149)“ in `supabase/tests/patient-merge.test.ts`.
+
+**Änderungspfad.** Entwürfe zusammenlegen statt sperren: Zeilen umhängen und einen Entwurf löschen · Aufwand `mittel`. Konto mitnehmen: `user_profiles.person_id` auf die bleibende Person · Aufwand `mittel` (mit Patientenportal POR-EPIC prüfen).
+
+### ANN-150 — Zusammenführen: nicht rückgängig, Legal Hold wandert mit, Nachweis ist der Auditeintrag
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung
+
+**Annahme.** Das Zusammenführen ist nicht rückgängig zu machen. Ein Legal Hold der Dublette zieht auf die bleibende Akte um und gilt dort weiter; steht die bleibende Akte schon unter einer Sperre, wird die der Dublette dabei aufgehoben und bleibt als Nachweis an der bleibenden Akte stehen (für eine Akte gibt es nur eine aktive Sperre). Ein gleichzeitig gesetzter Legal Hold wartet, bis das Zusammenführen fertig ist. Die leere Akte fällt; ihre Person nur, wenn nichts anderes an ihr hängt (Mitarbeiter:in, Konto, Trainingsverhältnis). Nachweis ist ein Auditeintrag `patient.merged` an der bleibenden Akte mit der Kennung der Dublette und den Zahlen je Bereich, ohne Namen und Inhalt; kein Eintrag im Löschjournal. Wird eine Sicherung von vor dem Zusammenführen zurückgespielt, kommt die Dublette zurück; das Wiederherstellungsverfahren (OPS-003) führt sie anhand der Auditeinträge erneut zusammen.
+
+**Begründung.** Ein Rückgängig müsste sich merken, welche Zeile woher kam — eine zweite Wahrheit über die Akte. Eine Vorschau mit Bestätigung und die Beschränkung auf `owner` sind der Schutz vor dem Irrtum. Ein Legal Hold schützt Unterlagen, nicht eine Kennung; er folgt deshalb den Unterlagen (ADR-008 Punkt 7, ANN-033). Das Löschjournal ist für Löschungen nach Frist gemacht und würde nach einem Restore eine Akte löschen wollen, an der wieder Termine hängen; der Auditeintrag trägt dieselbe Information ohne diese Falle. Unsicher: ob die Prüfung für die gefallene Akte einen Journaleintrag verlangt.
+
+**Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
+
+**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`.

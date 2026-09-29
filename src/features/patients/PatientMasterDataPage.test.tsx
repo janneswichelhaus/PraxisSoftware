@@ -141,6 +141,25 @@ describe('Stammdaten der Akte', () => {
     });
   });
 
+  describe('Dublette (PRX-018)', () => {
+    it('zeigt owner den Weg, eine Dublette zu übernehmen', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />, STAMMDATEN);
+
+      expect(linkZiel(screen.getByRole('link', { name: 'Dublette übernehmen' }))).toEqual({
+        pfad: `/patienten/${aktiv.id}/dublette`,
+        zurueck: STAMMDATEN,
+      });
+    });
+
+    it.each([['therapist'], ['team_lead'], ['office']] as const)(
+      'blendet ihn für %s aus',
+      (role) => {
+        renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
+        expect(screen.queryByRole('link', { name: 'Dublette übernehmen' })).toBeNull();
+      },
+    );
+  });
+
   describe('Betroffenenrechte', () => {
     it('zeigt owner den Weg zu Auskunft und Loeschverlangen', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />, STAMMDATEN);
