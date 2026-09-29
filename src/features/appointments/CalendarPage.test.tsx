@@ -1518,11 +1518,11 @@ describe('CalendarPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Mai 2027/ }));
       const blatt = screen.getByRole('group', { name: 'Monatskalender' });
       // Heute ist markiert, der gezeigte Tag gewaehlt.
-      // Auch gewählt bleibt heute erkennbar: Ring und Punkt, im Namen „heute" (BEF-074).
+      // Auch gewählt bleibt heute erkennbar: Rahmen und Punkt, im Namen „heute" (BEF-074).
       const heute = within(blatt).getByRole('button', { name: 'Mittwoch, 12. Mai 2027, heute' });
       expect(heute).toHaveAttribute('aria-current', 'date');
       expect(heute).toHaveAttribute('aria-pressed', 'true');
-      expect(heute).toHaveClass('ring-2');
+      expect(heute).toHaveClass('border-2');
 
       fireEvent.click(within(blatt).getByRole('button', { name: 'Nächster Monat' }));
       fireEvent.click(within(blatt).getByRole('button', { name: 'Donnerstag, 3. Juni 2027' }));

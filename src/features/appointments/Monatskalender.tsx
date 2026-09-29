@@ -118,8 +118,8 @@ export function Monatskalender({
                     : 'text-ink-muted hover:bg-surface-sunken',
                 istHeute && !istGewaehlt ? 'border-accent border-2 font-semibold' : '',
                 // BEF-074: In der Woche ist heute mit sechs anderen Tagen
-                // gewählt und wäre sonst nicht zu erkennen - der Ring bleibt.
-                istHeute && istGewaehlt ? 'ring-ink ring-2 ring-offset-2' : '',
+                // gewählt und wäre sonst nicht zu erkennen - der Rahmen bleibt.
+                istHeute && istGewaehlt ? 'border-ink border-2' : '',
               ].join(' ')}
             >
               {Number(tag.slice(8))}
@@ -127,7 +127,7 @@ export function Monatskalender({
                 // Ein Punkt unter der Zahl: heute, auch ohne Farbe erkennbar.
                 <span
                   aria-hidden="true"
-                  className="absolute bottom-1 size-1 rounded-full bg-current"
+                  className="rounded-pill absolute bottom-1 size-1 bg-current"
                 />
               ) : null}
             </button>
