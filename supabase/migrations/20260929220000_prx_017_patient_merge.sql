@@ -26,6 +26,9 @@
 --   * SPERREN STATT RATEN (ANN-149): zwei Rechnungsentwuerfe fuer denselben
 --     Monat und Bereich, zwei offene Wartelisteneintraege ohne Grundlage, ein
 --     Konto an der Dublette, ein zu langer zusammengefuegter Freitext.
+--   * LEGAL HOLD (ANN-150): folgt den Daten. Sind beide Akten gesperrt, wird
+--     die Sperre der Dublette aufgehoben und bleibt als Nachweis stehen;
+--     place_legal_hold wartet auf ein laufendes Zusammenfuehren.
 --   * NACHWEIS (ANN-150): patient.merged an der bleibenden Akte mit der
 --     Kennung der Dublette und den Zaehlern, ohne Namen und Inhalt. Die leere
 --     Akte faellt; ihre Person nur, wenn nichts anderes an ihr haengt.
@@ -542,6 +545,7 @@ declare
   v_beginn      date;
   v_anschrift   boolean;
   v_fotos       integer := 0;
+  v_sperre      uuid;
 begin
   v_actor := auth.uid();
   if v_actor is null then
@@ -593,6 +597,10 @@ begin
   v_fotos := v_fotos + app.delete_due_patient_photos(
     v_org, v_ziel.id, extensions.gen_random_uuid(), v_actor, 'patient_merged'
   );
+
+  -- Die Zahlen des Nachweises erst jetzt: Ein eben geloeschtes Foto ist
+  -- nicht mitgewandert und steht schon in photos_deleted.
+  v_plan := app.patient_merge_plan(v_org, v_quelle.id, v_ziel.id);
 
   perform pg_catalog.set_config('app.patient_merge', 'on', true);
 
@@ -676,7 +684,20 @@ begin
   update public.therapy_reports              set patient_id = v_ziel.id where patient_id = v_quelle.id;
   update public.tasks                        set patient_id = v_ziel.id where patient_id = v_quelle.id;
   update public.waitlist_entries             set patient_id = v_ziel.id where patient_id = v_quelle.id;
-  -- Ein Legal Hold folgt den Daten, die er schuetzt (ANN-150).
+  -- Ein Legal Hold folgt den Daten, die er schuetzt (ANN-150). Steht die
+  -- bleibende Akte schon unter einer Sperre, gibt es fuer dieselbe Akte keine
+  -- zweite aktive: Die der Dublette wird aufgehoben und haengt danach mit
+  -- Grund und Dauer als Nachweis an der bleibenden Akte. Der Schutz bleibt,
+  -- weil die bleibende Akte weiter gesperrt ist.
+  if app.under_legal_hold(v_org, 'patient', v_ziel.id) then
+    update public.legal_holds
+       set released_at = now(),
+           released_by = v_actor
+     where subject_type = 'patient'
+       and subject_id = v_quelle.id
+       and released_at is null
+    returning id into v_sperre;
+  end if;
   update public.legal_holds
      set subject_id = v_ziel.id
    where subject_type = 'patient' and subject_id = v_quelle.id;
@@ -745,7 +766,8 @@ begin
       'surface', 'web',
       'source_patient_id', v_quelle.id,
       'moved', v_plan -> 'counts',
-      'photos_deleted', v_fotos
+      'photos_deleted', v_fotos,
+      'legal_hold_released', v_sperre
     )
   );
 
@@ -762,3 +784,77 @@ comment on function public.merge_patients(uuid, uuid) is
 
 revoke all on function public.merge_patients(uuid, uuid) from public, anon;
 grant execute on function public.merge_patients(uuid, uuid) to authenticated;
+
+-- -----------------------------------------------------------------------------
+-- place_legal_hold - wartet auf ein laufendes Zusammenfuehren (PRX-017)
+--
+-- Unveraendert bis auf die Sperre der Akte: Ohne sie koennte ein Legal Hold,
+-- der waehrend merge_patients entsteht, an der Kennung der gefallenen Dublette
+-- haengen bleiben - legal_holds.subject_id hat keinen Fremdschluessel - und die
+-- bleibende Akte waere ungeschuetzt. FOR SHARE wartet auf das FOR UPDATE des
+-- Zusammenfuehrens und findet danach die Dublette nicht mehr.
+-- -----------------------------------------------------------------------------
+create or replace function public.place_legal_hold(p_patient_id uuid, p_reason text)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor uuid;
+  v_org   uuid;
+  v_hold  uuid;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_manage_legal_hold() then
+    -- G6c: abgewiesen wird mit einem bestaetigten denied-Eintrag und HTTP 403.
+    perform app.record_denied_write(v_actor, 'legal_hold.placed', 'not allowed to manage legal holds');
+    return null;
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to manage legal holds' using errcode = '42501';
+  end if;
+
+  if p_reason is null or length(btrim(p_reason)) < 3 then
+    raise exception 'a legal hold needs a reason' using errcode = '22023';
+  end if;
+
+  -- Zielakte ausschliesslich in der Organisation des Aufrufers suchen - und
+  -- sperren, damit ein gleichzeitiges Zusammenfuehren zuerst fertig wird.
+  perform 1
+  from public.patients p
+  where p.id = p_patient_id
+    and p.organization_id = v_org
+  for share;
+
+  if not found then
+    raise exception 'patient not found' using errcode = 'P0002';
+  end if;
+
+  if app.under_legal_hold(v_org, 'patient', p_patient_id) then
+    raise exception 'patient is already under legal hold' using errcode = '22023';
+  end if;
+
+  insert into public.legal_holds (
+    organization_id, subject_type, subject_id, reason, placed_by
+  )
+  values (v_org, 'patient', p_patient_id, btrim(p_reason), v_actor)
+  returning id into v_hold;
+
+  insert into public.audit_log (
+    organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
+  )
+  values (
+    v_org, v_actor, 'legal_hold.placed', 'patient', p_patient_id, 'success',
+    jsonb_build_object('surface', 'web', 'hold_id', v_hold)
+  );
+
+  return v_hold;
+end;
+$$;

@@ -434,7 +434,10 @@
           "id": "prx-epic-003b",
           "name": "PRX-EPIC-003b Dubletten zusammenführen",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-29",
+          "nachweis": "PRX-017, PRX-018",
+          "vermerk": "Sichtung: Praxisverwaltung Schritt 13"
         },
         {
           "id": "sta-epic-001",

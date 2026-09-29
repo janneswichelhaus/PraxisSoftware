@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-29 · letzte Session: PRX-EPIC-003 Nichts fällt durch (davor UX-EPIC-004)
+# Status · Stand 2026-09-29 · letzte Session: PRX-EPIC-003b Dubletten zusammenführen (davor PRX-EPIC-003)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,7 +6,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**PRX-EPIC-003 gebaut (Branch `ccr-594d7e07-t34vzd`, Pull Request gegen `main`):** Nichts fällt durch — **Übersicht → Offene Punkte** (`/offen`): Office erfasst Grundlagen (ANN-011, PRX-010), Verordnungsfoto am Termin und „Grundlage erfassen“ mit dem Foto daneben (ANN-141, PRX-011), Aufgaben und Wiedervorlagen (ANN-142, PRX-012), Erstaufnahme-Checkliste in Tagesansicht, Aktenkopf und Büroliste; die Liege kennt „noch nicht entschieden“ (ANN-143, PRX-013), Anrufliste mit gespeichertem Stand (ANN-144, PRX-014), Dublettenhinweis beim Anlegen (ANN-145, PRX-015), Erinnerungen am Rezeptende und an den vergessenen Abschluss (ANN-146, PRX-016); BEF-060 Teile 1 und 2. Sieben Migrationen, zwei neue Tabellen (`tasks`, `appointment_call_states`), Zweitreview gelaufen und eingearbeitet. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 10 bis 12. **ANN-141 bis ANN-146 von Jannes bestätigt** (2026-09-29); ANN-142 und ANN-144 bleiben als Datenschutz im Prüfpaket. Zusammenführen von Dubletten ist **PRX-EPIC-003b**.
+**PRX-EPIC-003b gebaut (Branch `ccr-50863c6b-uq5az4`, Pull Request gegen `main`):** Zwei Akten derselben Person werden eine — **Stammdaten → Dublette übernehmen** (nur owner): die geöffnete Akte bleibt, mögliche Dubletten stehen oben, Vorschau mit beiden Akten, dem, was mitwandert, Konflikten und Sperrgründen, Zusammenführen erst nach Bestätigungshaken (PRX-017, PRX-018). Alles wandert — auch ausgestellte Rechnungen, finalisierte Dokumentation, abgeschlossene Berichte und Bögen, nur mit neuem Bezug; die leere Akte fällt, Nachweis `patient.merged`. Eine Migration, keine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-147 bis ANN-150** (Stammdaten, Versorgungsstand, Sperren, nicht rückgängig; ANN-148 und ANN-150 gehen als Datenschutz ins Prüfpaket). Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritt 13.
+
+**PRX-EPIC-003 ist gemergt (PR #141):** Nichts fällt durch — **Übersicht → Offene Punkte** (`/offen`): Office erfasst Grundlagen (ANN-011, PRX-010), Verordnungsfoto am Termin und „Grundlage erfassen“ mit dem Foto daneben (ANN-141, PRX-011), Aufgaben und Wiedervorlagen (ANN-142, PRX-012), Erstaufnahme-Checkliste in Tagesansicht, Aktenkopf und Büroliste; die Liege kennt „noch nicht entschieden“ (ANN-143, PRX-013), Anrufliste mit gespeichertem Stand (ANN-144, PRX-014), Dublettenhinweis beim Anlegen (ANN-145, PRX-015), Erinnerungen am Rezeptende und an den vergessenen Abschluss (ANN-146, PRX-016); BEF-060 Teile 1 und 2. Sieben Migrationen, zwei neue Tabellen (`tasks`, `appointment_call_states`), Zweitreview gelaufen und eingearbeitet. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 10 bis 12. **ANN-141 bis ANN-146 von Jannes bestätigt** (2026-09-29); ANN-142 und ANN-144 bleiben als Datenschutz im Prüfpaket.
 
 **UX-EPIC-004 ist gemergt (PR #140):** BEF-071 bis BEF-081; Sichtung Praxisverwaltung Schritte 7 bis 9 offen.
 
@@ -16,19 +18,17 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 **Instrumente (ANN-099):** PSFS gestrichen; Wortlaut der Veränderungsfrage freigegeben (sieben Stufen), sie steht ab dem zweiten Termin je Patient:in oben in der Dokumentation (FRB-EPIC-004). Neue Idee **IDEA-OUT-016** (Instrumente in der Praxis pflegen).
 
-**PRX-EPIC-002 gebaut und gemergt (PR #137):** Kurzblick für die Vertretung (ANN-137), Material zum Mitnehmen (ANN-138), „Termin n von m“ und Abrechnungslage (ANN-139), Termin abhaken (ANN-140), BEF-055 Teil 1. Gesichtet 2026-09-29 (BEF-080, BEF-081; ANN-137, -138, -140 bestätigt).
-
 ## Danach — Bauen
 
-1. **PRX-EPIC-003b** (Dubletten zusammenführen), Block 2. `/weiter`
-2. **STA-EPIC-001** (Statistiken)
-3. **TRN-EPIC-001** (Block 3, Trainingsbereich)
+1. **STA-EPIC-001** (Statistiken), letzter Loop von Block 2. `/weiter`
+2. **TRN-EPIC-001** (Block 3, Trainingsbereich)
+3. **TRN-EPIC-002**
 
 ## Prüfverfahren
 
-**Stand PRX-EPIC-003 (2026-09-29, in der Cloud gelaufen):** `test` **3742** grün, `test:db` **2301** grün (neu: `prescription-scans`, `tasks`, `intake-checklist`, `call-list`, `duplicate-check`, `reminders`), `test:e2e` für `offen.spec.ts`, `termin.spec.ts`, `uebersicht.spec.ts` und `warteliste.spec.ts` grün (Prüfseite `tests/e2e/fixtures/offen.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
+**Stand PRX-EPIC-003b (2026-09-29, in der Cloud gelaufen):** `test` **3752** grün, `test:db` **2337** grün (neu: `patient-merge`, dazu zwei Pfade in `abgewiesene-schreibpfade`), `test:e2e` für `dublette.spec.ts` grün (Prüfseite `tests/e2e/fixtures/dublette.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün. Zweitreview gelaufen: ein Befund (zwei gesperrte Akten ließen sich nicht zusammenführen) und zwei kleine behoben.
 
-**Stand PRX-EPIC-002 (2026-09-28, in der Cloud gelaufen):** `test` **3683** grün, `test:db` **2220** grün (neu: `appointment-brief`, `take-along`, `appointment-billing-context`, `record-at-appointment`), `test:e2e` für `termin.spec.ts` und `uebersicht.spec.ts` 24 grün (Prüfseite `tests/e2e/fixtures/termin.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
+**Stand PRX-EPIC-003 (2026-09-29, in der Cloud gelaufen):** `test` **3742** grün, `test:db` **2301** grün (neu: `prescription-scans`, `tasks`, `intake-checklist`, `call-list`, `duplicate-check`, `reminders`), `test:e2e` für `offen.spec.ts`, `termin.spec.ts`, `uebersicht.spec.ts` und `warteliste.spec.ts` grün (Prüfseite `tests/e2e/fixtures/offen.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
 **Die CI läuft.** Lokal: `pnpm test:db` gegen einen Wegwerf-Container (54329); **angemeldete E2E-Tests und die Deno-Laufzeit laufen in der Cloud nicht**. Stand heute (DOK-006, in der Cloud gelaufen): `test` **2692** (lokal unter Node 24 und Windows scheitern weiter Router-, Navigations- und Pfadtests mit derselben „AbortSignal"-Ursache; maßgeblich ist die CI mit Node 22); `test:db` **2104**, davon 46 in `patient-photos.test.ts`; `test:e2e` ohne Anmeldung: **115 grün**, einer übersprungen, darunter `fotos.spec.ts` mit der künstlichen Kamera von Chromium. In der Cloud braucht `login.spec.ts` die Platzhalter aus der CI (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`), sonst zeigt die App den Konfigurationsfehler. Sichtprüfung der Tourenkomponenten, der Instrumente, des Befunds und des Kalenders über die Prüfseiten `tests/e2e/fixtures/karte.html`, `instrumente.html`, `befund.html`, `kalender.html`, `organisation.html`, `uebersicht.html` (Tagesstart, Liege in der Akte), `bausteine.html` (Befund aus Bausteinen), `bericht.html` (Therapiebericht, Formular und Blatt) und `fotos.html` (Kamera, Fotoliste, Vergleich, Metadaten) bei 1280 und 375 px; die Seiten hinter der Anmeldung nur über Komponententests.
 
@@ -52,8 +52,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**PRX-EPIC-003 (PRX-010 bis PRX-016).** Sieben Migrationen `20260929150000` bis `20260929210000`: Office schreibt Grundlagen und ihren Scan, klinische Bestandstexte räumen nur therapeutische Rollen ab; Scan ohne Grundlage mit eingefrorenem Objektschlüssel und `assign_prescription_scan`; `tasks` und `appointment_call_states` mit Klassen `aufgabe` und `anrufstand` im Löschlauf, Restore und Auskunft; `get_intake_checklist`, `list_open_intakes`, `list_call_list`, `record_call_outcome`, `find_possible_duplicates`, `list_ending_prescriptions`, `list_care_without_conclusion`; die Liege ist nullbar (Bestands-„nein“ wurden leer). Keine neue Abhängigkeit, kein neuer Anbieter. Annahmen ANN-141 bis ANN-146, ANN-011 und ANN-116 nachgezogen.
+**PRX-EPIC-003b (PRX-017, PRX-018).** Migration `20260929220000_prx_017_patient_merge.sql`: `preview_patient_merge` und `merge_patients` (nur owner, abgewiesen mit denied-Eintrag und 403 wie G6c), Plan in `app.patient_merge_plan`; die Unveränderlichkeitstrigger an Rechnungen, Berichten, Bögen und die Terminkoordinate lassen **nur** den Wechsel von `patient_id` zu und nur, solange `merge_patients` läuft (`app.patient_merge_active`). Auditkatalog `patient.merged`. Oberfläche `src/features/patients/ZusammenfuehrenPage.tsx` unter `/patienten/:id/dublette`, Prüfseite `tests/e2e/fixtures/dublette.html`. Annahmen ANN-147 bis ANN-150.
 
-**Lokale Schritte:** `git pull origin ccr-594d7e07-t34vzd` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen der neuen Migrationen; kein `pnpm install`.
+**Lokale Schritte:** `git pull origin ccr-50863c6b-uq5az4` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen der neuen Migration; kein `pnpm install`.
 
-Davor: **Sichtungen Praxisverwaltung und Kernprozess** (2026-09-28) und UX-EPIC-004.
+Davor: **PRX-EPIC-003** (gemergt, PR #141) und die Sichtungen Praxisverwaltung und Kernprozess (2026-09-28).

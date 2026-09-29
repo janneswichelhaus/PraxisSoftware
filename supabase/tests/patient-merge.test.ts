@@ -710,6 +710,48 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     });
   });
 
+  describe('Legal Hold (ANN-150)', () => {
+    it('führt auch zwei gesperrte Akten zusammen, ohne den Schutz zu verlieren', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Hanna', nachname: 'Halt' });
+      const quelle = await legeAkteAn({ vorname: 'Hanna', nachname: 'Halt' });
+      const sperre = async (p: string) =>
+        (
+          await asPostgres<{ id: string }>(
+            `insert into public.legal_holds
+               (organization_id, subject_type, subject_id, reason, placed_by)
+             values ($1, 'patient', $2, 'Synthetische Anfrage', $3) returning id`,
+            [ORG, p, users.ownerTherapist],
+          )
+        ).rows[0]!.id;
+      const zielSperre = await sperre(ziel.patient);
+      const quellSperre = await sperre(quelle.patient);
+
+      const { rows: plan } = await asUser<{ plan: { blockers: string[] } }>(
+        users.ownerTherapist,
+        VORSCHAU,
+        [quelle.patient, ziel.patient],
+      );
+      expect(plan[0]!.plan.blockers).toEqual([]);
+      await zusammenfuehren(quelle.patient, ziel.patient);
+
+      const { rows } = await asPostgres<{ id: string; aktiv: boolean }>(
+        `select id, released_at is null as aktiv from public.legal_holds
+         where subject_type = 'patient' and subject_id = $1 order by aktiv desc`,
+        [ziel.patient],
+      );
+      expect(rows).toEqual([
+        { id: zielSperre, aktiv: true },
+        { id: quellSperre, aktiv: false },
+      ]);
+      const audit = await asPostgres<{ context: Record<string, unknown> }>(
+        `select context from public.audit_log
+         where action = 'patient.merged' and subject_id = $1`,
+        [ziel.patient],
+      );
+      expect(audit.rows[0]!.context.legal_hold_released).toBe(quellSperre);
+    });
+  });
+
   describe('Person mit weiteren Bezügen', () => {
     it('lässt eine Person mit Trainingsverhältnis stehen (ADR-021)', async () => {
       const ziel = await legeAkteAn({ vorname: 'Tara', nachname: 'Training' });
@@ -728,6 +770,26 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
   });
 
   describe('Fotos (ADR-017 Punkt 36)', () => {
+    it('zählt ein vorab gelöschtes Foto nicht als mitgewandert', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Frida', nachname: 'Foto' });
+      const quelle = await legeAkteAn({ vorname: 'Frida', nachname: 'Foto' });
+      // Unter Legal Hold gesperrt gehalten und fällig: Das Foto fällt erst,
+      // wenn die Sperre endet - hier simuliert durch ein festgehaltenes
+      // Sperrdatum in der Vergangenheit ohne Hold.
+      await asPostgres(
+        `insert into public.patient_files
+           (organization_id, patient_id, document_type, display_name, mime_type, byte_size,
+            checksum_sha256, object_key, status, confirmed_at, created_at, photo_locked_at)
+         values ($1, $2, 'patientenfoto', 'Foto', 'image/jpeg', 1024, repeat('c', 64), 'x',
+                 'ready', now() - interval '3 days', now() - interval '3 days',
+                 now() - interval '1 day')`,
+        [ORG, quelle.patient],
+      );
+      const ergebnis = await zusammenfuehren(quelle.patient, ziel.patient);
+      expect(ergebnis.photos_deleted).toBe(1);
+      expect((ergebnis.moved as Record<string, number>).patient_files).toBe(0);
+    });
+
     it('löscht Fotos der Dublette, die ein Widerruf der bleibenden Akte trifft', async () => {
       const ziel = await legeAkteAn({ vorname: 'Fiona', nachname: 'Foto' });
       const quelle = await legeAkteAn({ vorname: 'Fiona', nachname: 'Foto' });
