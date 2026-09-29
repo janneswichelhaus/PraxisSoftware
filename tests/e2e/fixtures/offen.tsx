@@ -59,6 +59,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: ZONE,
   appointmentGridMinutes: 5,
   staffMemberId: '55555555-5555-4555-8555-000000000001',
+  revenueShare: false,
 };
 
 const aufgaben: Task[] = [

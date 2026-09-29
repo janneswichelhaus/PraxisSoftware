@@ -29,6 +29,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: 'Europe/Berlin',
   appointmentGridMinutes: 5,
   staffMemberId: null,
+  revenueShare: false,
 };
 
 function person(nummer: number, vorname: string, nachname: string): StaffMember {

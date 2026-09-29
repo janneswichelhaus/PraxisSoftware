@@ -36,7 +36,14 @@ describe('Arbeitsbereiche je Rolle', () => {
     ]);
   });
 
-  it('zeigt die Statistiken allein owner (STA-EPIC-001)', () => {
+  it('zeigt die Statistiken einer Person mit Umsatzbeteiligung (STA-006)', () => {
+    const anna = { ...testUser(['therapist']), revenueShare: true };
+    expect(arbeitsbereiche(anna).map((b) => b.id)).toContain('statistik');
+    const patient = { ...testUser(['patient']), revenueShare: true };
+    expect(arbeitsbereiche(patient).map((b) => b.id)).not.toContain('statistik');
+  });
+
+  it('zeigt die Statistiken ohne Umsatzbeteiligung allein owner (STA-EPIC-001)', () => {
     for (const rolle of ['therapist', 'team_lead', 'office', 'trainer', 'patient'] as const) {
       expect(ids([rolle]), rolle).not.toContain('statistik');
     }

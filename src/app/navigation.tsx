@@ -348,10 +348,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     });
   }
 
-  // Statistiken (STA-EPIC-001): allein owner (ADR-004); der Server liefert
-  // jeder anderen Rolle ohnehin keine Zeile. Eigener Bereich, weil die fünf
-  // Zahlen über Abrechnung und Termine zugleich laufen.
-  if (isOwner(roles)) {
+  // Statistiken (STA-EPIC-001): owner mit allen Zahlen; eine Person mit
+  // Umsatzbeteiligung mit ihrem eigenen Umsatz (STA-006, ANN-156). Der Server
+  // liefert jeder anderen Rolle keine Zeile - das hier ist nur Darstellung.
+  if (isOwner(roles) || (isStaff(roles) && user.revenueShare)) {
     bereiche.push({
       id: 'statistik',
       ...BEREICHE.statistik,

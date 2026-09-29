@@ -11,7 +11,23 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { formatEuro } from '@/lib/geld';
 import { sichereAlsDatei } from '@/features/datenschutz/datei';
-import { KENNZAHLEN_KEY, ZIELE_KEY, fetchKennzahlen, fetchZiele, setzeZiel } from './api';
+import { isOwner, type CurrentUser } from '@/features/session/types';
+import { todayInTimeZone } from '@/features/appointments/api';
+import {
+  JE_PERSON_KEY,
+  KENNZAHLEN_KEY,
+  LEISTUNGEN_KEY,
+  MONATE_KEY,
+  ZIELE_KEY,
+  fetchKennzahlen,
+  fetchTopLeistungen,
+  fetchUmsatzJePerson,
+  fetchUmsatzMonate,
+  fetchZiele,
+  setzeZiel,
+} from './api';
+import { euroKurz, letzteMonate, personenReihen, umsatzReihen } from './diagramme';
+import { Balkenliste, Messbalken, Saeulendiagramm } from './grafiken';
 import {
   KENNZAHLEN,
   alsCsv,
@@ -32,13 +48,24 @@ import {
 
 /**
  * Statistiken (STA-EPIC-001): fünf Zahlen, nach denen die Praxis gesteuert
- * wird, jede mit Ziel und der einen Handlung, die sie auslöst.
+ * wird, jede mit Ziel und der einen Handlung, die sie auslöst — dazu der
+ * Verlauf als Grafiken (STA-007).
  *
- * Nur `owner` bekommt die Seite und — verbindlich — nur `owner` bekommt vom
- * Server eine Zeile (STA-001). Die Seite zeigt ausschließlich Summen: keine
- * Patientin, keine Rechnung, keine Mitarbeiterin (§20, B6).
+ * `owner` sieht alles; eine Person mit Umsatzbeteiligung sieht nur ihren
+ * eigenen Umsatz (STA-006, ANN-156). Verbindlich entscheidet der Server, wer
+ * welche Zeile bekommt — die Weiche hier ist nur Darstellung. Keine Patientin,
+ * keine Rechnung erscheint je; Umsatz je Person ist die einzige Zahl mit
+ * Personenbezug, und jeder Aufruf steht im Protokoll.
  */
-export function StatisticsPage() {
+export function StatisticsPage({ user }: { user: CurrentUser }) {
+  return isOwner(user.roles) ? (
+    <Praxisstatistik />
+  ) : (
+    <MeinUmsatz zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'} />
+  );
+}
+
+function Praxisstatistik() {
   const [monat, setMonat] = useState<string | null>(null);
 
   const kennzahlen = useQuery({
@@ -58,7 +85,7 @@ export function StatisticsPage() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt. Nur Praxissummen, keine Werte je Person."
+        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt –, darunter der Verlauf. Umsatz je Person sehen nur du und die Person selbst bei Umsatzbeteiligung; jeder Blick darauf steht im Protokoll."
         actions={
           k && ziele.data ? (
             <Button variant="secondary" onClick={() => sichereCsv(k, ziele.data)} type="button">
@@ -116,10 +143,16 @@ export function StatisticsPage() {
                 ziel={ziele.data?.[kennzahl.ziel] ?? null}
                 zieleGeladen={ziele.isSuccess}
               >
-                <Einzelheiten kennzahl={kennzahl} k={k} />
+                <Einzelheiten
+                  kennzahl={kennzahl}
+                  k={k}
+                  ziel={ziele.data?.[kennzahl.ziel] ?? null}
+                />
               </Kennzahlkarte>
             ))}
           </CardGrid>
+
+          <Verlauf monat={monat} heute={k.today} />
 
           <p className="text-ink-muted mt-8 max-w-prose text-sm">
             Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die übrigen
@@ -183,7 +216,15 @@ function Kennzahlkarte({
   );
 }
 
-function Einzelheiten({ kennzahl, k }: { kennzahl: Kennzahl; k: Kennzahlen }) {
+function Einzelheiten({
+  kennzahl,
+  k,
+  ziel,
+}: {
+  kennzahl: Kennzahl;
+  k: Kennzahlen;
+  ziel: number | null;
+}) {
   switch (kennzahl.ziel) {
     case 'revenue_cents':
       return (
@@ -192,11 +233,17 @@ function Einzelheiten({ kennzahl, k }: { kennzahl: Kennzahl; k: Kennzahlen }) {
             {monatsname(k.month)}, Rechnungsstellung brutto · {monatsname(k.previous_month)}:{' '}
             {formatEuro(k.revenue_previous_cents)}
           </p>
-          <p>
-            Behandlung {formatEuro(k.revenue_therapy_cents)} · Training{' '}
-            {formatEuro(k.revenue_training_cents)}
-          </p>
-          <p className="text-ink mt-2">
+          <div className="my-3">
+            <Balkenliste
+              titel="Umsatz nach Bereich"
+              format={formatEuro}
+              zeilen={[
+                { schluessel: 'therapy', label: 'Behandlung', wert: k.revenue_therapy_cents },
+                { schluessel: 'training', label: 'Training', wert: k.revenue_training_cents },
+              ]}
+            />
+          </div>
+          <p className="text-ink">
             Zahlungseingang {formatEuro(k.payments_cents)} · {monatsname(k.previous_month)}:{' '}
             {formatEuro(k.payments_previous_cents)}
           </p>
@@ -209,34 +256,52 @@ function Einzelheiten({ kennzahl, k }: { kennzahl: Kennzahl; k: Kennzahlen }) {
             {k.open_count} {k.open_count === 1 ? 'Rechnung' : 'Rechnungen'} offen, Stand{' '}
             {tagText(k.today)}
           </p>
-          <ul className="mt-1">
-            <li>
-              noch nicht fällig: {formatEuro(k.open_not_due_cents)} ({k.open_not_due_count})
-            </li>
-            <li>
-              1–30 Tage überfällig: {formatEuro(k.open_overdue_1_30_cents)} (
-              {k.open_overdue_1_30_count})
-            </li>
-            <li>
-              31–60 Tage überfällig: {formatEuro(k.open_overdue_31_60_cents)} (
-              {k.open_overdue_31_60_count})
-            </li>
-            <li>
-              über 60 Tage überfällig: {formatEuro(k.open_overdue_over_60_cents)} (
-              {k.open_overdue_over_60_count})
-            </li>
-          </ul>
+          <div className="mt-3">
+            <Balkenliste
+              titel="Offene Posten nach Alter"
+              format={formatEuro}
+              zeilen={[
+                {
+                  schluessel: '0',
+                  label: `noch nicht fällig (${k.open_not_due_count})`,
+                  wert: k.open_not_due_cents,
+                },
+                {
+                  schluessel: '1',
+                  label: `1–30 Tage überfällig (${k.open_overdue_1_30_count})`,
+                  wert: k.open_overdue_1_30_cents,
+                },
+                {
+                  schluessel: '2',
+                  label: `31–60 Tage überfällig (${k.open_overdue_31_60_count})`,
+                  wert: k.open_overdue_31_60_cents,
+                },
+                {
+                  schluessel: '3',
+                  label: `über 60 Tage überfällig (${k.open_overdue_over_60_count})`,
+                  wert: k.open_overdue_over_60_cents,
+                },
+              ]}
+            />
+          </div>
         </>
       );
     case 'utilization_percent': {
       const stunden = (minuten: number) =>
         new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 }).format(minuten / 60);
       return (
-        <p>
-          {tagText(k.utilization_from)} bis {tagText(k.utilization_to)}: {stunden(k.booked_minutes)}{' '}
-          von {stunden(k.available_minutes)} Stunden Arbeitszeit gebucht
-          {auslastungProzent(k) === null ? ' – keine Arbeitszeit hinterlegt' : ''}
-        </p>
+        <>
+          <div className="mb-3">
+            <Messbalken titel="Auslastung" prozent={auslastungProzent(k)} ziel={ziel} />
+          </div>
+          <p>
+            {tagText(k.utilization_from)} bis {tagText(k.utilization_to)}:{' '}
+            {stunden(k.booked_minutes)} von {stunden(k.available_minutes)} Stunden Arbeitszeit
+            gebucht
+            {auslastungProzent(k) === null ? ' – keine Arbeitszeit hinterlegt' : ''}
+            {ziel !== null ? ` · Strich: Ziel ${ziel} %` : ''}
+          </p>
+        </>
       );
     }
     case 'ending_bases':
@@ -259,10 +324,17 @@ function Einzelheiten({ kennzahl, k }: { kennzahl: Kennzahl; k: Kennzahlen }) {
             davon {k.absences_with_fee} mit Ausfallhonorar, erfasst{' '}
             {formatEuro(k.absence_fee_cents)}
           </p>
-          <p>
-            vier Wochen davor: {k.absences_previous} ({formatEuro(k.absence_fee_previous_cents)})
-            {ausfaelle(k) > k.absences_previous ? ' · mehr als davor' : ''}
-          </p>
+          <div className="mt-3">
+            <Balkenliste
+              titel="Ausfälle im Vergleich"
+              format={(wert) => String(wert)}
+              zeilen={[
+                { schluessel: 'jetzt', label: 'letzte vier Wochen', wert: ausfaelle(k) },
+                { schluessel: 'davor', label: 'vier Wochen davor', wert: k.absences_previous },
+              ]}
+            />
+          </div>
+          <p className="mt-2">Ausfallhonorare davor: {formatEuro(k.absence_fee_previous_cents)}</p>
         </>
       );
   }
@@ -327,5 +399,190 @@ function Zielzeile({ kennzahl, ziel }: { kennzahl: Kennzahl; ziel: number | null
         </div>
       </form>
     </details>
+  );
+}
+
+/** Die Grafiken unter den Kennzahlen (STA-007). */
+function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
+  const monate = useQuery({
+    queryKey: MONATE_KEY,
+    queryFn: () => fetchUmsatzMonate(12),
+    retry: false,
+  });
+  const leistungen = useQuery({
+    queryKey: [...LEISTUNGEN_KEY, monat],
+    queryFn: () => fetchTopLeistungen(monat),
+    retry: false,
+  });
+  // Umsatz je Person ist die einzige Zahl mit Personenbezug; jeder Abruf steht
+  // im Protokoll. Geladen wird sie deshalb erst auf ausdrücklichen Wunsch -
+  // wer nur die Praxiszahlen ansieht, erzeugt keinen Eintrag (ANN-156).
+  const [personenZeigen, setPersonenZeigen] = useState(false);
+  const jePerson = useQuery({
+    queryKey: [...JE_PERSON_KEY, 6],
+    queryFn: () => fetchUmsatzJePerson(6),
+    enabled: personenZeigen,
+    retry: false,
+  });
+
+  const gewaehlt = monat ?? `${heute.slice(0, 7)}-01`;
+
+  return (
+    <div className="mt-8 grid gap-3 lg:grid-cols-2">
+      <Grafikflaeche
+        titel="Umsatz der letzten 12 Monate"
+        unterzeile="Säulen: Umsatz nach Rechnungsstellung · Punkte: Zahlungseingang"
+        breit
+        zustand={monate}
+      >
+        {monate.data ? (
+          <Saeulendiagramm
+            titel="Umsatz und Zahlungseingang der letzten 12 Monate"
+            {...umsatzReihen(monate.data)}
+            format={formatEuro}
+            achsenformat={euroKurz}
+          />
+        ) : null}
+      </Grafikflaeche>
+
+      <Grafikflaeche
+        titel="Umsatz nach Therapeut:in"
+        unterzeile="Letzte 6 Monate, nach Rechnungsstellung, der behandelnden Person zugeordnet"
+        zustand={
+          personenZeigen ? jePerson : { isPending: false, isError: false, refetch: () => null }
+        }
+      >
+        {!personenZeigen && !jePerson.data ? (
+          <div>
+            <p className="text-ink-muted mb-3 max-w-prose text-sm">
+              Umsatz je Person sind Beschäftigtendaten. Jeder Abruf steht im Protokoll.
+            </p>
+            <Button type="button" variant="secondary" onClick={() => setPersonenZeigen(true)}>
+              Umsatz je Person anzeigen
+            </Button>
+          </div>
+        ) : null}
+        {jePerson.data ? (
+          jePerson.data.length === 0 ? (
+            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
+          ) : (
+            <Saeulendiagramm
+              titel="Umsatz je Therapeut:in der letzten 6 Monate"
+              {...personenReihen(jePerson.data, letzteMonate(heute, 6))}
+              gestapelt
+              format={formatEuro}
+              achsenformat={euroKurz}
+            />
+          )
+        ) : null}
+      </Grafikflaeche>
+
+      <Grafikflaeche
+        titel="Umsatzstärkste Leistungen"
+        unterzeile={`${monatsname(gewaehlt)}, nach Rechnungsstellung`}
+        zustand={leistungen}
+      >
+        {leistungen.data ? (
+          leistungen.data.length === 0 ? (
+            <p className="text-ink-muted text-sm">In diesem Monat ist nichts abgerechnet.</p>
+          ) : (
+            <Balkenliste
+              titel="Umsatzstärkste Leistungen"
+              format={formatEuro}
+              zeilen={leistungen.data.map((l) => ({
+                schluessel: l.code,
+                label: (
+                  <>
+                    <span className="font-medium">{l.code}</span>{' '}
+                    <span className="text-ink-muted">{l.label}</span>
+                  </>
+                ),
+                wert: l.revenue_cents,
+              }))}
+            />
+          )
+        ) : null}
+      </Grafikflaeche>
+    </div>
+  );
+}
+
+function Grafikflaeche({
+  titel,
+  unterzeile,
+  breit = false,
+  zustand,
+  children,
+}: {
+  titel: string;
+  unterzeile: string;
+  breit?: boolean;
+  zustand: { isPending: boolean; isError: boolean; refetch: () => unknown };
+  children: ReactNode;
+}) {
+  const titelId = useId();
+  return (
+    <section aria-labelledby={titelId} className={breit ? 'lg:col-span-2' : ''}>
+      <Inhaltsflaeche className="h-full">
+        <h2 id={titelId} className="text-ink text-liste font-semibold">
+          {titel}
+        </h2>
+        <p className="text-ink-muted mb-3 text-sm">{unterzeile}</p>
+        {zustand.isPending ? <LoadingState label="Wird geladen …" /> : null}
+        {zustand.isError ? (
+          <ErrorState
+            title={`${titel}: konnte nicht geladen werden.`}
+            onErneut={() => zustand.refetch()}
+          />
+        ) : null}
+        {children}
+      </Inhaltsflaeche>
+    </section>
+  );
+}
+
+/**
+ * Der eigene Umsatz einer Person mit Umsatzbeteiligung (STA-006, ANN-156).
+ * Der Server liefert ausschließlich ihre Zeilen.
+ */
+function MeinUmsatz({ zeitzone }: { zeitzone: string }) {
+  const jePerson = useQuery({
+    queryKey: [...JE_PERSON_KEY, 12],
+    queryFn: () => fetchUmsatzJePerson(12),
+    retry: false,
+  });
+  // Der Monat in der Zeitzone der Praxis, wie der Server rechnet.
+  const monate = letzteMonate(todayInTimeZone(zeitzone), 12);
+  const daten = jePerson.data ? personenReihen(jePerson.data, monate) : null;
+  const summe = (jePerson.data ?? [])
+    .filter((z) => z.month === monate.at(-1))
+    .reduce((s, z) => s + z.revenue_cents, 0);
+
+  return (
+    <>
+      <PageHeader
+        title="Statistiken"
+        description="Dein Umsatz der letzten 12 Monate nach Rechnungsstellung – die Grundlage deiner Umsatzbeteiligung. Nur du und die Praxisleitung sehen ihn."
+      />
+      <Grafikflaeche
+        titel="Mein Umsatz"
+        unterzeile={`Laufender Monat: ${formatEuro(summe)}`}
+        zustand={jePerson}
+      >
+        {daten ? (
+          jePerson.data!.length === 0 ? (
+            <p className="text-ink-muted text-sm">In diesen Monaten ist nichts abgerechnet.</p>
+          ) : (
+            <Saeulendiagramm
+              titel="Mein Umsatz der letzten 12 Monate"
+              kategorien={daten.kategorien}
+              reihen={daten.reihen.map((r) => ({ ...r, name: 'Umsatz' }))}
+              format={formatEuro}
+              achsenformat={euroKurz}
+            />
+          )
+        ) : null}
+      </Grafikflaeche>
+    </>
   );
 }

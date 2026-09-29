@@ -54,6 +54,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: ZONE,
   appointmentGridMinutes: 5,
   staffMemberId: null,
+  revenueShare: false,
 };
 
 const eintraege: WaitlistEntry[] = [

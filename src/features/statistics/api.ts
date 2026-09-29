@@ -94,3 +94,70 @@ export async function setzeZiel(ziel: Zielkennung, wert: number | null): Promise
   })) as { error: unknown };
   if (error) throw new Error('Der Zielwert konnte nicht gespeichert werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Grafiken (STA-004, STA-006)
+// -----------------------------------------------------------------------------
+
+const monatSchema = z.object({
+  month: z.string(),
+  revenue_cents: zahl,
+  revenue_therapy_cents: zahl,
+  revenue_training_cents: zahl,
+  payments_cents: zahl,
+});
+export type Umsatzmonat = z.infer<typeof monatSchema>;
+
+const leistungSchema = z.object({
+  code: z.string(),
+  label: z.string(),
+  revenue_cents: zahl,
+});
+export type Leistungsumsatz = z.infer<typeof leistungSchema>;
+
+const personSchema = z.object({
+  month: z.string(),
+  staff_member_id: z.string().nullable(),
+  staff_name: z.string().nullable(),
+  revenue_cents: zahl,
+});
+export type Personenumsatz = z.infer<typeof personSchema>;
+
+export const MONATE_KEY = ['statistics', 'monate'] as const;
+export const LEISTUNGEN_KEY = ['statistics', 'leistungen'] as const;
+export const JE_PERSON_KEY = ['statistics', 'je-person'] as const;
+
+/** Umsatz und Zahlungseingang je Monat, bis einschließlich des laufenden. */
+export async function fetchUmsatzMonate(monate = 12): Promise<Umsatzmonat[]> {
+  const satz = 'Der Umsatzverlauf konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_practice_revenue_months', {
+    p_months: monate,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(monatSchema), data ?? [], satz);
+}
+
+/** Umsatz je Leistung in einem Monat, absteigend. */
+export async function fetchTopLeistungen(monat: string | null): Promise<Leistungsumsatz[]> {
+  const satz = 'Die Leistungen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_top_services', {
+    p_month: monat,
+    p_limit: 10,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(leistungSchema), data ?? [], satz);
+}
+
+/**
+ * Umsatz je Monat und behandelnder Person (ANN-156). owner bekommt alle,
+ * eine Person mit Umsatzbeteiligung nur sich selbst; jeder Aufruf steht im
+ * Protokoll.
+ */
+export async function fetchUmsatzJePerson(monate: number): Promise<Personenumsatz[]> {
+  const satz = 'Der Umsatz je Person konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_revenue_by_staff', {
+    p_months: monate,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(personSchema), data ?? [], satz);
+}

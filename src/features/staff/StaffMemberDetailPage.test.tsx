@@ -19,6 +19,8 @@ const fetchStaffMember = vi.fn();
 const setStaffEmploymentStatus = vi.fn();
 const fetchStaffFutureAppointments = vi.fn();
 const fetchAssignableTherapists = vi.fn();
+const fetchVerguetungsmodell = vi.fn();
+const setzeVerguetungsmodell = vi.fn();
 
 // Kalender und Arbeitszeiten kennen nur zuordenbare Personen (UX-012); die
 // Seite fragt deshalb, ob diese Person ueberhaupt behandelt.
@@ -40,6 +42,10 @@ vi.mock('./api', async (importOriginal) => {
       setStaffEmploymentStatus(id, status, bestaetigt) as Promise<void>,
     fetchStaffFutureAppointments: (id: string) =>
       fetchStaffFutureAppointments(id) as Promise<StaffApi.FutureAppointment[]>,
+    fetchVerguetungsmodell: (id: string) =>
+      fetchVerguetungsmodell(id) as Promise<StaffApi.Verguetungsmodell | null>,
+    setzeVerguetungsmodell: (id: string, modell: string | null) =>
+      setzeVerguetungsmodell(id, modell) as Promise<void>,
   };
 });
 
@@ -67,6 +73,8 @@ describe('StaffMemberDetailPage', () => {
     fetchStaffMember.mockResolvedValue(aktiv);
     setStaffEmploymentStatus.mockResolvedValue(undefined);
     fetchStaffFutureAppointments.mockResolvedValue([]);
+    fetchVerguetungsmodell.mockReset().mockResolvedValue(null);
+    setzeVerguetungsmodell.mockReset().mockResolvedValue(undefined);
     fetchAssignableTherapists.mockReset();
     fetchAssignableTherapists.mockResolvedValue([
       { staff_member_id: STAFF_ID, display_name: 'Anna Beispiel' },
@@ -354,5 +362,24 @@ describe('StaffMemberDetailPage', () => {
     ).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
     expect(await screen.findByRole('heading', { name: 'Anna Beispiel' })).toBeInTheDocument();
+  });
+
+  describe('Vergütungsmodell (STA-005)', () => {
+    it('laesst owner das Modell eintragen', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['owner'])} />);
+      const auswahl = await screen.findByLabelText('Vergütungsmodell');
+      expect(auswahl).toHaveValue('');
+      await user.selectOptions(auswahl, 'revenue_share');
+      await user.click(screen.getByRole('button', { name: 'Speichern' }));
+      expect(setzeVerguetungsmodell).toHaveBeenCalledWith(STAFF_ID, 'revenue_share');
+    });
+
+    it('zeigt den Abschnitt keiner anderen Rolle', async () => {
+      renderWithProviders(<StaffMemberDetailPage user={testUser(['office'])} />);
+      expect(await screen.findByRole('heading', { name: 'Anna Beispiel' })).toBeInTheDocument();
+      expect(screen.queryByLabelText('Vergütungsmodell')).toBeNull();
+      expect(fetchVerguetungsmodell).not.toHaveBeenCalled();
+    });
   });
 });

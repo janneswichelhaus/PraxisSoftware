@@ -21,9 +21,9 @@ test.describe('Statistiken', () => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(PRUEFSEITE);
       await expect(page.getByRole('heading', { name: 'Statistiken', level: 1 })).toBeVisible();
-      await expect(page.getByRole('region')).toHaveCount(5);
+      await expect(page.getByRole('region')).toHaveCount(8);
       expect(await ueberlaeuft(page)).toBe(false);
-      await page.getByRole('region', { name: 'Umsatz' }).getByText('Ändern').click();
+      await page.getByRole('region', { name: 'Umsatz', exact: true }).getByText('Ändern').click();
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }
@@ -31,15 +31,17 @@ test.describe('Statistiken', () => {
   test('am Telefon stehen die Karten untereinander, am Rechner nebeneinander', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto(PRUEFSEITE);
-    await expect(page.getByRole('region')).toHaveCount(5);
-    const umsatz = await page.getByRole('region', { name: 'Umsatz' }).boundingBox();
+    await expect(page.getByRole('region')).toHaveCount(8);
+    const umsatz = await page.getByRole('region', { name: 'Umsatz', exact: true }).boundingBox();
     const posten = await page.getByRole('region', { name: 'Offene Posten' }).boundingBox();
     // Untereinander: dieselbe Spalte, die zweite Karte tiefer.
     expect(Math.abs(posten!.x - umsatz!.x)).toBeLessThan(2);
     expect(posten!.y).toBeGreaterThan(umsatz!.y);
 
     await page.setViewportSize({ width: 1280, height: 900 });
-    const umsatzBreit = await page.getByRole('region', { name: 'Umsatz' }).boundingBox();
+    const umsatzBreit = await page
+      .getByRole('region', { name: 'Umsatz', exact: true })
+      .boundingBox();
     const postenBreit = await page.getByRole('region', { name: 'Offene Posten' }).boundingBox();
     expect(Math.abs(postenBreit!.y - umsatzBreit!.y)).toBeLessThan(2);
   });
@@ -59,10 +61,39 @@ test.describe('Statistiken', () => {
   test('zeigt den Zielstand mit Zeichen und Wort', async ({ page }) => {
     await page.goto(PRUEFSEITE);
     await expect(
-      page.getByRole('region', { name: 'Umsatz' }).getByText('Ziel verfehlt'),
+      page.getByRole('region', { name: 'Umsatz', exact: true }).getByText('Ziel verfehlt'),
     ).toBeVisible();
     await expect(
       page.getByRole('region', { name: 'Offene Posten' }).getByText('Ziel erreicht'),
     ).toBeVisible();
+  });
+
+  test('die Grafiken füllen die Breite, am Telefon ohne Überlauf', async ({ page }) => {
+    for (const breite of [375, 1280]) {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(PRUEFSEITE);
+      const flaeche = page.getByRole('region', { name: 'Umsatz der letzten 12 Monate' });
+      const grafik = flaeche.getByRole('group', { name: /^Umsatz und Zahlungseingang/ });
+      await expect(grafik).toBeVisible();
+      const aussen = await flaeche.boundingBox();
+      const innen = await grafik.boundingBox();
+      expect(innen!.width).toBeLessThanOrEqual(aussen!.width);
+      expect(innen!.width).toBeGreaterThan(aussen!.width * 0.8);
+      expect(await ueberlaeuft(page)).toBe(false);
+    }
+  });
+
+  test('ein Monat zeigt beim Zeigen Umsatz und Eingang', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(PRUEFSEITE);
+    const flaeche = page.getByRole('region', { name: 'Umsatz der letzten 12 Monate' });
+    await flaeche
+      .getByRole('group', { name: /^Umsatz und Zahlungseingang/ })
+      .locator('rect[tabindex="0"]')
+      .last()
+      .hover();
+    const hinweis = flaeche.getByRole('tooltip');
+    await expect(hinweis).toBeVisible();
+    await expect(hinweis).toContainText('Zahlungseingang');
   });
 });

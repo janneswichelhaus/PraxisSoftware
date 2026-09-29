@@ -80,6 +80,21 @@ async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     supabase.from('staff_members').select('id').eq('person_id', profile.person_id).maybeSingle(),
   ]);
 
+  const eigeneId = (staffMember.data as { id?: string } | null)?.id ?? null;
+
+  // Das eigene Verguetungsmodell (STA-005). Gefiltert auf die eigene Person:
+  // owner darf jede Zeile lesen. Ein Fehler heisst hier nur "kein Angebot" -
+  // der Server entscheidet ohnehin selbst (ANN-156).
+  let revenueShare = false;
+  if (eigeneId) {
+    const modell = await supabase
+      .from('staff_compensation_models')
+      .select('model')
+      .eq('staff_member_id', eigeneId)
+      .maybeSingle();
+    revenueShare = (modell.data as { model?: string } | null)?.model === 'revenue_share';
+  }
+
   const org = organization.data as {
     name?: string;
     time_zone?: string;
@@ -94,7 +109,8 @@ async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     // (CAL-001). Bewusst aus der Organisation, nicht aus dem Browser.
     organizationTimeZone: org?.time_zone ?? null,
     appointmentGridMinutes: org?.appointment_grid_minutes ?? null,
-    staffMemberId: (staffMember.data as { id?: string } | null)?.id ?? null,
+    staffMemberId: eigeneId,
+    revenueShare,
   };
 }
 

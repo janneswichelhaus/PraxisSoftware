@@ -146,6 +146,7 @@ export function AuthenticatedRoutes({
   // PROJECT_PRINCIPLES.md 4.1/4.3).
   const showHistory = canReadTreatmentNote(user.roles);
   const showBilling = canSeeBilling(user.roles);
+  const showStatistics = showSecurity || (isStaff(user.roles) && user.revenueShare);
 
   return (
     <VorschauProvider>
@@ -471,10 +472,12 @@ export function AuthenticatedRoutes({
                     path="/praxis/sicherheit/aufbewahrung"
                     element={<AufbewahrungPage user={user} />}
                   />
-                  {/* Fuenf Kennzahlen der Praxisfuehrung, nur Summen
-                  (STA-EPIC-001). */}
-                  <Route path="/statistiken" element={<StatisticsPage />} />
                 </>
+              ) : null}
+              {showStatistics ? (
+                // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
+                // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
+                <Route path="/statistiken" element={<StatisticsPage user={user} />} />
               ) : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

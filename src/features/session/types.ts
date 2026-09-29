@@ -52,6 +52,13 @@ export interface CurrentUser {
    * prueft der Server, wer einem Termin zugeordnet werden darf (ADR-004).
    */
   staffMemberId: string | null;
+  /**
+   * Gilt fuer die eigene Person die Umsatzbeteiligung (STA-005, ANN-157)?
+   *
+   * Steuert nur, ob der Bereich Statistiken mit dem eigenen Umsatz angeboten
+   * wird. Verbindlich prueft der Server in `list_revenue_by_staff` (ANN-156).
+   */
+  revenueShare: boolean;
 }
 
 /** Rollen mit Zugriff auf die Patientenkartei (PROJECT_PRINCIPLES.md 4.2/4.3). */
