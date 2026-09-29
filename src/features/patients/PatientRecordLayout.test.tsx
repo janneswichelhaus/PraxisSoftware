@@ -241,10 +241,15 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       });
     });
 
-    it('zeigt office im Kopf kein Erfassen einer Verordnung', async () => {
+    it('zeigt office im Kopf das Erfassen einer Grundlage (PRX-010, ANN-011)', async () => {
       akteRendern(['office']);
       await screen.findByRole('heading', { name: 'Max Mustermann' });
-      // Im Kopf nicht - im Verordnungsbereich prueft das dessen eigener Test.
+      expect(screen.getByRole('link', { name: 'Grundlage erfassen' })).toBeInTheDocument();
+    });
+
+    it('zeigt der Trainingsbetreuung kein Erfassen einer Grundlage', async () => {
+      akteRendern(['trainer']);
+      await screen.findByRole('heading', { name: 'Max Mustermann' }).catch(() => undefined);
       expect(screen.queryByRole('link', { name: 'Grundlage erfassen' })).not.toBeInTheDocument();
     });
   });

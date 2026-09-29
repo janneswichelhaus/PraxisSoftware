@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
+import { IntakeHint } from '@/features/open-points/IntakeHint';
 import { useQuery } from '@tanstack/react-query';
 import {
   Link,
@@ -278,6 +279,8 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
           ) : null}
         </div>
         <HausbesuchHinweise patient={patient} />
+        {/* PRX-013: was zur Erstaufnahme noch fehlt - nur, solange etwas fehlt. */}
+        <IntakeHint patientId={patient.id} aktiv={aktiv} user={user} />
       </div>
 
       {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles

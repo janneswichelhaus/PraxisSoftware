@@ -402,10 +402,33 @@ describe('Stammdaten der Akte', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
 
       expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
-      expect(screen.getByText('Nicht nötig')).toBeInTheDocument();
+      // Seit PRX-013 ist „nein“ eine Entscheidung, kein Standard (ANN-143).
+      expect(screen.getByText('Noch nicht entschieden')).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
 
       await waitFor(() => expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true));
+    });
+
+    it('haelt „nicht noetig“ als Entscheidung fest (PRX-013)', async () => {
+      const user = userEvent.setup();
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+
+      await user.click(screen.getByRole('button', { name: 'Liege nicht nötig' }));
+      await waitFor(() =>
+        expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, false),
+      );
+    });
+
+    it('zeigt eine entschiedene „nein“-Liege mit dem Weg zum Umstellen', () => {
+      renderWithProviders(
+        <Stammdaten
+          patient={{ ...aktiv, treatment_table_required: false }}
+          user={testUser(['therapist'])}
+        />,
+      );
+      expect(screen.getByText('Nicht nötig')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Liege mitnehmen' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Liege nicht nötig' })).toBeNull();
     });
 
     it('nimmt eine gesetzte Liege zurueck', async () => {

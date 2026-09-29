@@ -22,35 +22,54 @@ export function Behandlungsliege({
   darfAendern: boolean;
 }) {
   const queryClient = useQueryClient();
-  const benoetigt = patient.treatment_table_required === true;
+  // Drei Zustände seit PRX-013 (ANN-143): ja, nein, oder noch nicht
+  // entschieden - dann steht die Liege in der Erstaufnahme als offen.
+  const stand = patient.treatment_table_required ?? null;
 
   const mutation = useMutation({
-    mutationFn: () => setTreatmentTableRequired(patient.id, !benoetigt),
+    mutationFn: (benoetigt: boolean) => setTreatmentTableRequired(patient.id, benoetigt),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       // Die Übersicht liest das Merkmal über die Tagesliste.
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // Die Erstaufnahme zählt die Entscheidung (PRX-013).
+      await queryClient.invalidateQueries({ queryKey: ['open-points'] });
     },
   });
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-ink">{benoetigt ? 'Mitnehmen' : 'Nicht nötig'}</p>
+      <p className="text-ink">
+        {stand === true ? 'Mitnehmen' : stand === false ? 'Nicht nötig' : 'Noch nicht entschieden'}
+      </p>
       {darfAendern ? (
-        <div>
-          <Button
-            variant="secondary"
-            onClick={() => mutation.mutate()}
-            disabled={mutation.isPending}
-          >
-            {/* Eine Handlung, kein Zustand (PAT-07): Der Zustand steht in der
-                Zeile darüber, der Knopf sagt, was ein Tipp tut. */}
-            {mutation.isPending
-              ? 'Wird gespeichert …'
-              : benoetigt
-                ? 'Liege nicht mehr mitnehmen'
+        <div className="flex flex-wrap gap-2">
+          {/* Eine Handlung, kein Zustand (PAT-07): Der Zustand steht in der
+              Zeile darüber, der Knopf sagt, was ein Tipp tut. */}
+          {stand !== true ? (
+            <Button
+              variant="secondary"
+              onClick={() => mutation.mutate(true)}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && mutation.variables === true
+                ? 'Wird gespeichert …'
                 : 'Liege mitnehmen'}
-          </Button>
+            </Button>
+          ) : null}
+          {stand !== false ? (
+            <Button
+              variant={stand === null ? 'secondary' : 'quiet'}
+              onClick={() => mutation.mutate(false)}
+              disabled={mutation.isPending}
+            >
+              {mutation.isPending && mutation.variables === false
+                ? 'Wird gespeichert …'
+                : stand === true
+                  ? 'Liege nicht mehr mitnehmen'
+                  : 'Liege nicht nötig'}
+            </Button>
+          ) : null}
         </div>
       ) : null}
       {mutation.isError ? (
