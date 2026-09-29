@@ -2980,7 +2980,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Tagesansicht am Handy |
 | Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Terminkachel im Kalender; CAL-EPIC-004a (freie Terminlänge); BEF-037 |
 
 **Beobachtung.** Ein Hausbesuch von 30 Minuten (12:40–13:10) zeigt Name, Zeit mit ⟷ und darunter „Hausbesuch“ halb angeschnitten; die Kachel ist zu niedrig für drei Zeilen. Das Kennzeichen zeigt nur ⟷, ohne „30 Min.“.
@@ -2995,7 +2995,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Neuer Termin / Termin bearbeiten → zurück |
 | Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Rückweg aus Terminformular und Akte (`mitRueckweg`, `leseRueckweg`); Kalenderzustand (Ansicht, Tag, Spalten) |
 
 **Beobachtung.** Jannes arbeitet in der Tagesansicht in Annas Spalte, legt einen Termin an bzw. ergänzt Stammdaten und landet danach „immer wieder“ in seinem persönlichen Kalender (Ansicht Jannes), nicht in der Tagesansicht mit Anna.
@@ -3010,7 +3010,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Monat oben links |
 | Quelle  | Sichtung Kernprozess, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Monatsauswahl im Kopf des Kalenders; ANN-109 |
 
 **Beobachtung.** Im Monatsblatt, über das man den Tag wählt, ist nicht erkennbar, welcher Tag heute ist.

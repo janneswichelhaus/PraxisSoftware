@@ -949,6 +949,10 @@ function Kachel({
   // bleibt voll lesbar.
   const abgesagt = eintrag.status === 'cancelled';
   const zurueckgelassen = gedimmt || bisher;
+  // BEF-072: So viele Zeilen, wie ganz hineinpassen - eine halb
+  // angeschnittene Zeile („Hausbesu…" in halber Höhe) entfällt lieber. Jede
+  // Zeile ist genau 16 px hoch (`leading-4`); Rand und Polsterung 10 px.
+  const zeilen = kachelZeilen(hoehe);
 
   return (
     <Link
@@ -1012,7 +1016,7 @@ function Kachel({
           (CAL-015b). Ohne das Zeichen sähe eine Teambesprechung aus wie eine
           Patient:in mit ungewöhnlichem Namen. Vorgelesen wird das Wort, nicht
           das Zeichen (KAL-16). */}
-      <span className="text-ink block truncate text-xs font-medium">
+      <span className="text-ink block truncate text-xs leading-4 font-medium">
         {bisher ? <span className="text-ink-muted">Bisher · </span> : null}
         {eintrag.kind === 'internal' ? (
           <>
@@ -1022,20 +1026,34 @@ function Kachel({
         ) : null}
         {terminBezeichnung(eintrag)}
       </span>
-      {vermerk ? (
+      {vermerk && zeilen >= 2 ? (
         <span
-          className={`block truncate text-[0.6875rem] font-medium ${STATUS_FARBE[ton]}`}
+          className={`block truncate text-[0.6875rem] leading-4 font-medium ${STATUS_FARBE[ton]}`}
           data-testid="kachel-status"
         >
           <span aria-hidden="true">{STATUS_ZEICHEN[ton]} </span>
           {vermerk}
         </span>
       ) : null}
-      <span className="text-ink-muted block truncate text-[0.6875rem]">
-        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
-        <Laengenzeichen termin={eintrag} knapp />
-      </span>
-      <span className="text-ink-muted block truncate text-[0.6875rem]">{ortsHinweis(eintrag)}</span>
+      {zeilen >= (vermerk ? 3 : 2) ? (
+        <span className="text-ink-muted block truncate text-[0.6875rem] leading-4">
+          {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
+          <Laengenzeichen termin={eintrag} knapp />
+        </span>
+      ) : null}
+      {zeilen >= (vermerk ? 4 : 3) ? (
+        <span className="text-ink-muted block truncate text-[0.6875rem] leading-4">
+          {ortsHinweis(eintrag)}
+        </span>
+      ) : null}
     </Link>
   );
+}
+
+/**
+ * Wie viele ganze Zeilen eine Kachel dieser Höhe trägt (BEF-072), mindestens
+ * eine: Der Name steht immer da, Zeit und Ort nur, wenn sie ganz passen.
+ */
+export function kachelZeilen(hoehePx: number): number {
+  return Math.max(1, Math.floor((hoehePx - 10) / 16));
 }
