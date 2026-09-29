@@ -16,7 +16,10 @@
  * Welche Wörter abgelöst sind, trägt ANN-111.
  */
 
-/** Die sechs Arbeitsbereiche; die Kennung ist fachlich und keine Beschriftung. */
+/**
+ * Die Arbeitsbereiche; die Kennung ist fachlich und keine Beschriftung. Sechs
+ * für alle Praxisrollen, dazu seit STA-EPIC-001 die Statistiken allein für owner.
+ */
 export const BEREICHE = {
   heute: {
     label: 'Übersicht',
@@ -47,6 +50,11 @@ export const BEREICHE = {
     label: 'Abrechnung',
     kurz: 'Abrechnung',
     leitfrage: 'Welche Leistungen sind abzurechnen oder zu bezahlen?',
+  },
+  statistik: {
+    label: 'Statistiken',
+    kurz: 'Statistiken',
+    leitfrage: 'Wo steht die Praxis, und was ist als Nächstes zu steuern?',
   },
 } as const satisfies Record<string, { label: string; kurz: string; leitfrage: string }>;
 

@@ -151,6 +151,15 @@ const symbole = {
       <path d="M8 7.5h4M8 10.5h4" />
     </>,
   ),
+  // Drei Balken auf einer Grundlinie - Zahlen im Vergleich (STA-EPIC-001).
+  statistik: symbol(
+    <>
+      <path d="M3 16.5h14" />
+      <rect x="4.5" y="10" width="2.8" height="6.5" rx="0.8" />
+      <rect x="8.6" y="6" width="2.8" height="10.5" rx="0.8" />
+      <rect x="12.7" y="3.5" width="2.8" height="13" rx="0.8" />
+    </>,
+  ),
   mehr: symbol(
     <>
       <circle cx="4.5" cy="10" r="1.25" />
@@ -336,6 +345,20 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
         { to: '/abrechnung/zahlungen', label: 'Zahlungen' },
         { to: '/abrechnung/auswertung', label: 'Auswertung' },
       ],
+    });
+  }
+
+  // Statistiken (STA-EPIC-001): allein owner (ADR-004); der Server liefert
+  // jeder anderen Rolle ohnehin keine Zeile. Eigener Bereich, weil die fünf
+  // Zahlen über Abrechnung und Termine zugleich laufen.
+  if (isOwner(roles)) {
+    bereiche.push({
+      id: 'statistik',
+      ...BEREICHE.statistik,
+      to: '/statistiken',
+      pfade: ['/statistiken'],
+      icon: symbole.statistik,
+      unterpunkte: [],
     });
   }
 

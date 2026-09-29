@@ -1,0 +1,42 @@
+import type { Kennzahlen } from './kennzahlen';
+
+/** Synthetische Kennzahlen fuer Komponententests (STA-003). */
+export function beispielKennzahlen(rest: Partial<Kennzahlen> = {}): Kennzahlen {
+  return {
+    time_zone: 'Europe/Berlin',
+    today: '2026-09-29',
+    month: '2026-09-01',
+    previous_month: '2026-08-01',
+    revenue_cents: 1_234_500,
+    revenue_therapy_cents: 1_134_500,
+    revenue_training_cents: 100_000,
+    revenue_previous_cents: 1_100_000,
+    payments_cents: 980_000,
+    payments_previous_cents: 1_050_000,
+    open_count: 3,
+    open_cents: 22_500,
+    open_not_due_count: 1,
+    open_not_due_cents: 4_500,
+    open_overdue_1_30_count: 1,
+    open_overdue_1_30_cents: 9_000,
+    open_overdue_31_60_count: 0,
+    open_overdue_31_60_cents: 0,
+    open_overdue_over_60_count: 1,
+    open_overdue_over_60_cents: 9_000,
+    utilization_from: '2026-09-29',
+    utilization_to: '2026-10-12',
+    available_minutes: 6_000,
+    booked_minutes: 4_500,
+    ending_bases: 2,
+    uncovered_appointments: 3,
+    absences_from: '2026-09-02',
+    absences_to: '2026-09-29',
+    patient_cancellations: 3,
+    no_shows: 1,
+    absences_with_fee: 2,
+    absence_fee_cents: 9_000,
+    absences_previous: 2,
+    absence_fee_previous_cents: 4_500,
+    ...rest,
+  };
+}

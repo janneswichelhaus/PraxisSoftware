@@ -87,6 +87,7 @@ import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { RevenuePage } from '@/features/billing/RevenuePage';
+import { StatisticsPage } from '@/features/statistics/StatisticsPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
@@ -107,7 +108,7 @@ import {
  * Ein Patientenkonto, das die Route direkt aufruft, bekommt vom Server schlicht
  * keine Daten.
  *
- * Die Routen sind nach den sechs Arbeitsbereichen geordnet. Die Pfade der
+ * Die Routen sind nach den Arbeitsbereichen geordnet. Die Pfade der
  * bereits angebundenen Seiten bleiben unverändert: Sie stehen in Lesezeichen,
  * in geteilten Links und in den bestehenden Tests. Geändert haben sich
  * Einordnung und Beschriftung, nicht die Adresse.
@@ -470,6 +471,9 @@ export function AuthenticatedRoutes({
                     path="/praxis/sicherheit/aufbewahrung"
                     element={<AufbewahrungPage user={user} />}
                   />
+                  {/* Fuenf Kennzahlen der Praxisfuehrung, nur Summen
+                  (STA-EPIC-001). */}
+                  <Route path="/statistiken" element={<StatisticsPage />} />
                 </>
               ) : null}
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -1916,3 +1916,63 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-00
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
 **Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`.
+
+### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Steuerberatung (B9), Sichtung Statistiken
+
+**Annahme.** Kennzahl (1) „Umsatz“ ist die Bruttosumme ausgestellter Rechnungen am Ausstellungstag, abzüglich Stornodokumenten am Tag des Stornos; „Zahlungseingang“ ist die Summe gebuchter Zahlungen abzüglich Rückzahlungen, ohne stornierte Zahlungen. Beide stehen immer getrennt, nie in einer Zahl. Der Umsatz erscheint als Praxissumme über beide Leistungsbereiche mit der Aufteilung Behandlung/Training darunter; der Zielwert gilt dem Umsatz, nicht dem Eingang.
+
+**Begründung.** Für die Steuerung braucht Jannes eine Monatszahl, nicht je Bereich zwei; die getrennte Gewinnermittlung (ADR-009 Punkt 19) leistet weiter die Auswertung „Einnahmen je Leistungsart“ mit Steuergruppen, und die Aufteilung je Bereich steht auch hier. Die beiden Grundlagen werden wie dort getrennt gerechnet und nie gemischt. Unsicher: ob die Steuerberatung für die Steuerung lieber netto sähe.
+
+**Anker.** Abschnitt (1) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Tests „(1) Umsatz und Zahlungseingang“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** Netto statt brutto: Summe über `snapshot -> 'tax_groups' -> net_cents` an derselben Stelle · Aufwand `klein`. Ziel am Zahlungseingang: Spalte in `practice_targets` und Zuordnung in `src/features/statistics/kennzahlen.ts` · Aufwand `klein`.
+
+### ANN-152 — Statistik: Auslastung zählt Behandlungs- und Trainingstermine innerhalb der Arbeitszeit, nur als Praxissumme
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: B6 (Beschäftigtendaten), Datenschutzprüfung
+
+**Annahme.** Kennzahl (3) „Auslastung“ teilt die Minuten nicht abgesagter Behandlungs- und Trainingstermine, soweit sie in der Arbeitszeit liegen, durch die Minuten der Arbeitszeit aller Personen, die Termine bekommen können — für heute und die folgenden dreizehn Tage, nach dem Wochenplan und seinen Abweichungen (dieselbe Regel wie die Terminsuche). Interne Termine zählen nicht, „nicht angetroffen“ zählt als gebucht. Die Funktion rechnet je Person und Tag, liefert aber **nur die Praxissumme**; einen Wert je Person gibt es weder in der Datenbank noch in der Oberfläche.
+
+**Begründung.** §20 und B6 schließen Leistungskontrolle über Beschäftigtendaten aus; eine Summe über die Praxis ist Planungsgröße, kein Verhalten einer Person (IDEA-PRX-025: „Keine Werte je Person, bis B6 entschieden ist“). Arbeitszeit außerhalb gebuchter Termine ist freie Kapazität, Termine außerhalb der Arbeitszeit sind keine Auslastung der geplanten Zeit. Unsicher: ob die Prüfung eine Praxissumme bei sehr kleinem Team (zwei Personen) als personenbeziehbar einordnet.
+
+**Anker.** Abschnitt (3) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Tests „(3) Auslastung“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** Interne Termine mitzählen oder Termine außerhalb der Arbeitszeit voll rechnen: Filter und Schnitt an derselben Stelle · Aufwand `klein`. Werte je Person erst nach B6 und als eigenes Epic · Aufwand `mittel`.
+
+### ANN-153 — Statistik: Ausfälle sind Absagen durch Patient:innen und Nichtantreffen, nach dem Tag des Termins; das Honorar ist, was erfasst ist
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Statistiken
+
+**Annahme.** Kennzahl (5) zählt Behandlungs- und Trainingstermine mit Absagegrund „auf Wunsch der Patient:in“ und nicht angetroffene Termine, deren Beginn in den letzten 28 Tagen (heute eingeschlossen) beziehungsweise den 28 Tagen davor liegt. Absagen der Praxis, „verlegt“ und „sonstiger Grund“ zählen nicht. „Mit Gebühr“ zählt Ausfälle mit Gebührenanlass; die Summe der Ausfallhonorare ist die Summe der daran erfassten Honorar-Leistungen zum Katalogpreis — ein Ausfall mit Anlass, aber ohne erfasste Leistung, steht nur in der Anzahl.
+
+**Begründung.** Nur die Patientenabsage ist ein Ausfall, den die Praxis beeinflussen kann (Erinnerung, Anrufliste); dieselbe Abgrenzung trifft ADR-018 Punkt 8 Nr. 4 für die Gebühr. Eine Gebühr vorauszurechnen, die niemand erfasst hat, wäre eine Forderung, die es nicht gibt.
+
+**Anker.** Abschnitt (5) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Test „(5) Ausfälle“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** „Verlegt“ oder „sonstiger Grund“ mitzählen: Bedingung an derselben Stelle · Aufwand `klein`. Honorar nach Rechnung statt nach Erfassung: Join über die Rechnungsposten · Aufwand `klein`.
+
+### ANN-154 — Statistik: Der erfolgreiche Aufruf wird nicht protokolliert, der abgewiesene schon
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+
+**Annahme.** `get_practice_statistics` und `get_practice_targets` schreiben beim erfolgreichen Aufruf durch `owner` keinen Auditeintrag; ein abgewiesener Aufruf liefert keine Zeile und steht als `statistics.read` mit Ausgang „abgewiesen“ im Protokoll. Der CSV-Export entsteht im Browser aus derselben Antwort und wird ebenfalls nicht protokolliert. Das Ändern eines Zielwerts wird protokolliert (`organization.practice_target_changed`).
+
+**Begründung.** Die Antwort enthält nur Summen ohne Patientin, Rechnung oder Mitarbeiterin — wie die Auswertung „Einnahmen je Leistungsart“, die ebenfalls nicht protokolliert (ABR-011). ADR-010 verlangt das Protokoll für Zugriffe auf personenbezogene Inhalte; ein Eintrag je Blick auf Praxissummen wäre Rauschen im Protokoll. Der abgewiesene Versuch bleibt nachweisbar (G6b).
+
+**Anker.** Kopfkommentar von `supabase/migrations/20260929230000_sta_001_practice_statistics.sql` und die Rollenprüfung in `public.get_practice_statistics`; `public.get_practice_targets` in `supabase/migrations/20260929231000_sta_002_practice_targets.sql`.
+
+**Änderungspfad.** Lesen protokollieren: ein Eintrag `statistics.read` mit Ausgang „erfolgreich“ in beiden Funktionen · Aufwand `klein`.
+
+### ANN-155 — Statistik: Richtung der Zielwerte und die eine Handlung je Kennzahl
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Statistiken
+
+**Annahme.** Ein Zielwert ist beim Umsatz und bei der Auslastung ein Mindestwert, bei offenen Posten, Verordnungen ohne Anschluss und Ausfällen ein Höchstwert; ohne Zielwert zeigt die Karte keinen Vergleich. Je Kennzahl führt genau eine Handlung weiter: Umsatz → Rechnungen, offene Posten → offene Posten mit Mahnung, Auslastung → Warteliste (freie Fenster füllen; die Terminsuche selbst gehört zu einer Person), Verordnungen → „Verordnung endet“ unter Offene Punkte (dort mit Telefon der Verordner:in), Ausfälle → Anrufliste für morgen. Eine eigene Anfragefunktion an Verordner:innen entsteht nicht.
+
+**Begründung.** Die Roadmap verlangt zu jeder Zahl die eine Handlung, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); alle Ziele gibt es schon als Seiten. Eine Anfragefunktion wäre ein neuer Versandweg (ADR-002) und ein eigenes Epic.
+
+**Anker.** `src/features/statistics/kennzahlen.ts` (Richtung, Ziel erreicht, Handlung je Kennzahl) mit Tests in `src/features/statistics/kennzahlen.test.ts`.
+
+**Änderungspfad.** Richtung oder Ziel einer Handlung ändern: Eintrag in `kennzahlen.ts` · Aufwand `klein`.
