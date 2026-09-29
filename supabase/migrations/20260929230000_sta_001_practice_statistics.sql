@@ -216,6 +216,66 @@ comment on function app.snapshot_gross_cents(jsonb) is
 revoke all on function app.snapshot_gross_cents(jsonb) from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
+-- Die beiden Grundlagen des Umsatzes - je eine Stelle
+--
+-- app.revenue_documents: Rechnungsstellung. Die ausgestellte Rechnung mit
+-- ihrem Ausstellungstag, das Stornodokument mit seinem eigenen Tag und
+-- umgekehrtem Vorzeichen (ADR-009 Punkt 9, wie ABR-011).
+-- app.payment_flows: Zufluss. Gebuchte Zahlungen, eine Rueckzahlung zieht
+-- ab, eine stornierte Zahlung zaehlt nicht.
+-- Beide ohne Rollenpruefung: nur aus Funktionen mit eigener Pruefung.
+-- -----------------------------------------------------------------------------
+create function app.revenue_documents(p_organization_id uuid, p_from date, p_to date)
+returns table (tag date, bereich text, betrag bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select i.issued_on,
+         coalesce(i.snapshot ->> 'service_area', i.service_area),
+         app.snapshot_gross_cents(i.snapshot)
+  from public.invoices i
+  where i.organization_id = p_organization_id
+    and i.status = 'issued'
+    and i.issued_on >= p_from
+    and i.issued_on < p_to
+  union all
+  select c.cancelled_on,
+         coalesce(i.snapshot ->> 'service_area', i.service_area),
+         -app.snapshot_gross_cents(i.snapshot)
+  from public.invoice_cancellations c
+  join public.invoices i on i.id = c.invoice_id
+  where c.organization_id = p_organization_id
+    and c.cancelled_on >= p_from
+    and c.cancelled_on < p_to
+$$;
+
+comment on function app.revenue_documents(uuid, date, date) is
+  'STA-001: Umsatz nach Rechnungsstellung als Buchungen (Tag, Bereich, Betrag brutto) im halboffenen Zeitraum [p_from, p_to). Einzige Stelle der Regel fuer Kennzahlen und Monatsreihe. Ohne Rollenpruefung.';
+revoke all on function app.revenue_documents(uuid, date, date) from public, anon, authenticated;
+
+create function app.payment_flows(p_organization_id uuid, p_from date, p_to date)
+returns table (tag date, betrag bigint)
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select p.paid_on,
+         (case p.direction when 'incoming' then p.amount_cents else -p.amount_cents end)::bigint
+  from public.payments p
+  where p.organization_id = p_organization_id
+    and p.voided_at is null
+    and p.paid_on >= p_from
+    and p.paid_on < p_to
+$$;
+
+comment on function app.payment_flows(uuid, date, date) is
+  'STA-001: Zahlungseingang (Zufluss) als Buchungen im halboffenen Zeitraum [p_from, p_to); Rueckzahlung negativ, stornierte Zahlungen nicht. Einzige Stelle der Regel fuer Kennzahlen und Monatsreihe. Ohne Rollenpruefung.';
+revoke all on function app.payment_flows(uuid, date, date) from public, anon, authenticated;
+
+-- -----------------------------------------------------------------------------
 -- 4. Die Kennzahlen
 --
 -- p_month ist irgendein Tag des Monats fuer Kennzahl (1); ohne Angabe der
@@ -308,23 +368,8 @@ begin
   -- (1) Rechnungsstellung: Rechnung am Ausstellungstag, Storno am eigenen Tag
   -- ---------------------------------------------------------------------------
   rechnungsstellung as (
-    select i.issued_on as tag,
-           coalesce(i.snapshot ->> 'service_area', i.service_area) as bereich,
-           app.snapshot_gross_cents(i.snapshot) as betrag
-    from public.invoices i
-    where i.organization_id = v_org
-      and i.status = 'issued'
-      and i.issued_on >= v_vormonat
-      and i.issued_on < (v_monat + interval '1 month')::date
-    union all
-    select c.cancelled_on,
-           coalesce(i.snapshot ->> 'service_area', i.service_area),
-           -app.snapshot_gross_cents(i.snapshot)
-    from public.invoice_cancellations c
-    join public.invoices i on i.id = c.invoice_id
-    where c.organization_id = v_org
-      and c.cancelled_on >= v_vormonat
-      and c.cancelled_on < (v_monat + interval '1 month')::date
+    select r.tag, r.bereich, r.betrag
+    from app.revenue_documents(v_org, v_vormonat, (v_monat + interval '1 month')::date) r
   ),
   umsatz as (
     select coalesce(sum(r.betrag) filter (where r.tag >= v_monat), 0)::bigint as gesamt,
@@ -335,15 +380,9 @@ begin
   ),
   -- Zufluss: gebuchte Zahlungen, die Rueckzahlung zieht ab.
   zufluss as (
-    select coalesce(sum(case p.direction when 'incoming' then p.amount_cents else -p.amount_cents end)
-                      filter (where p.paid_on >= v_monat), 0)::bigint as monat,
-           coalesce(sum(case p.direction when 'incoming' then p.amount_cents else -p.amount_cents end)
-                      filter (where p.paid_on < v_monat), 0)::bigint as vormonat
-    from public.payments p
-    where p.organization_id = v_org
-      and p.voided_at is null
-      and p.paid_on >= v_vormonat
-      and p.paid_on < (v_monat + interval '1 month')::date
+    select coalesce(sum(z.betrag) filter (where z.tag >= v_monat), 0)::bigint as monat,
+           coalesce(sum(z.betrag) filter (where z.tag < v_monat), 0)::bigint as vormonat
+    from app.payment_flows(v_org, v_vormonat, (v_monat + interval '1 month')::date) z
   ),
   -- ---------------------------------------------------------------------------
   -- (2) Offene Posten nach Tagen ueber der Faelligkeit
