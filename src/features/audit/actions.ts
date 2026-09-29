@@ -170,6 +170,8 @@ export const AUDIT_ACTIONS = [
   'territory.removed',
   // PRX-006: Vertretungs-Kurzblick am Termin, je Aufklappen (ANN-137).
   'appointment_brief.viewed',
+  // PRX-011: ein offener Verordnungsscan wird einer Grundlage zugeordnet.
+  'patient_file.assigned',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -283,6 +285,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'territory.saved': 'Gebiet gespeichert',
   'territory.removed': 'Gebiet entfernt',
   'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
+  'patient_file.assigned': 'Verordnungsfoto einer Grundlage zugeordnet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

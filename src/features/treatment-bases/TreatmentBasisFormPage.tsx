@@ -21,6 +21,8 @@ import {
   type Verlustschutztexte,
 } from '@/features/documentation/Textverlustschutz';
 import { fetchPatient, fullName } from '@/features/patients/api';
+import { ordneScanZu } from '@/features/files/api';
+import { ScanBesideForm } from './ScanBesideForm';
 import { TreatmentBasisFormFields } from './TreatmentBasisFormFields';
 import { GRUNDLAGE_BESCHRIFTUNG, GRUNDLAGE_REIHENFOLGE, grundlageFeldId } from './grundlagenfelder';
 import { useDarfGrundlagenSchreiben } from './schreibrecht';
@@ -56,6 +58,9 @@ function grundlagenbereich(patientId: string): string {
 
 /** Derselbe Name wie der Reiter der Akte (VER-17). */
 const RUECKWEG_TEXT = 'Zurück zu den Behandlungsgrundlagen';
+
+/** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt (PRX-011). */
+const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /** Die Sätze des Schutzes vor Eingabeverlust (VER-03, ANN-046). */
 const VERLUSTTEXTE: Verlustschutztexte = {
@@ -120,6 +125,13 @@ function GrundlagenFormular({
   // Restpunkt aus ANN-019). Sie kommt aus der Adresszeile, wenn wir gerade vom
   // Abstecher zurückkommen; für den nächsten Abstecher entsteht eine neue.
   const laufenderVorgang = suche.get('vorgang');
+
+  // PRX-011: Aus den offenen Punkten kommt das Foto der Verordnung mit. Nur
+  // beim Anlegen und nur als Kennung - ob sie zu dieser Person gehört, prüft
+  // der Server beim Zuordnen.
+  const scanParam = suche.get('scan');
+  const scanId = !bestand && scanParam && KENNUNG.test(scanParam) ? scanParam : null;
+  const [scanFehler, setScanFehler] = useState<string | null>(null);
   const [naechsterVorgang] = useState(() => neueVorgangskennung());
 
   // Ein Entwurf existiert nur direkt nach der Rückkehr vom Anlegen einer
@@ -210,15 +222,30 @@ function GrundlagenFormular({
     mutationFn: async (values: z.output<typeof treatmentBasisFormSchema>) => {
       if (bestand) {
         await updateTreatmentBasis(bestand.id, values, positionen);
-        return bestand.id;
+        return { id: bestand.id, scanFehler: null };
       }
-      return createTreatmentBasis(patientId, values, positionen);
+      const id = await createTreatmentBasis(patientId, values, positionen);
+      // Die Grundlage steht; scheitert nur das Zuordnen, bleibt das Foto in
+      // den offenen Punkten - und die Seite sagt es, statt still weiterzugehen.
+      if (!scanId) return { id, scanFehler: null };
+      try {
+        await ordneScanZu(scanId, id);
+        return { id, scanFehler: null };
+      } catch (ursache) {
+        return { id, scanFehler: (ursache as Error).message };
+      }
     },
-    onSuccess: async (id) => {
+    onSuccess: async ({ id, scanFehler: fehlerBeimZuordnen }) => {
       await akteAuffrischen();
       if (bestand) await queryClient.invalidateQueries({ queryKey: ['treatment-basis', id] });
+      await queryClient.invalidateQueries({ queryKey: ['open-points'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] });
       // Gespeichert: Der eigene Weg zurück ist kein Verlust (ANN-046).
       freigeben();
+      if (fehlerBeimZuordnen) {
+        setScanFehler(fehlerBeimZuordnen);
+        return;
+      }
       void navigate(zurueck, { replace: true });
     },
   });
@@ -357,75 +384,96 @@ function GrundlagenFormular({
         }
       />
 
-      <form onSubmit={absenden} noValidate className="max-w-xl">
-        {personFehlt ? (
-          <Statusmeldung ton="warnung" className="mb-6">
-            Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.
-          </Statusmeldung>
-        ) : null}
+      {scanFehler ? (
+        <Hinweisfenster
+          titel="Grundlage gespeichert"
+          onSchliessen={() => void navigate(zurueck, { replace: true })}
+        >
+          {scanFehler}
+        </Hinweisfenster>
+      ) : null}
 
-        {/* Ein Speicherfehler als Fenster über dem Formular (VER-02, ZST-10,
+      <div
+        className={
+          scanId ? 'grid gap-6 lg:grid-cols-[minmax(0,36rem)_minmax(0,1fr)] lg:items-start' : ''
+        }
+      >
+        {scanId ? (
+          <div className="lg:order-2">
+            <ScanBesideForm fileId={scanId} />
+          </div>
+        ) : null}
+        <form onSubmit={absenden} noValidate className="max-w-xl lg:order-1">
+          {personFehlt ? (
+            <Statusmeldung ton="warnung" className="mb-6">
+              Für wen diese Grundlage ist, ließ sich nicht laden. Bitte aus der Akte neu öffnen.
+            </Statusmeldung>
+          ) : null}
+
+          {/* Ein Speicherfehler als Fenster über dem Formular (VER-02, ZST-10,
             ANN-058): Wer am Seitenende auf „Speichern" tippt, sieht einen
             Kasten am Formularanfang nicht. Der Satz sagt, was zu tun ist -
             ohne Einzelheiten aus der Datenbank (§13). */}
-        {speichern.isError ? (
-          <Hinweisfenster
-            titel="Die Behandlungsgrundlage konnte nicht gespeichert werden."
-            onSchliessen={() => speichern.reset()}
-          >
-            Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
-          </Hinweisfenster>
-        ) : null}
-        {verordner.isError ? (
-          <div className="mb-6">
-            <ErrorState
-              title="Die Verordner:innen konnten nicht geladen werden."
-              description="Bitte die Verbindung prüfen und erneut versuchen."
-              onErneut={() => void verordner.refetch()}
-            />
-          </div>
-        ) : null}
+          {speichern.isError ? (
+            <Hinweisfenster
+              titel="Die Behandlungsgrundlage konnte nicht gespeichert werden."
+              onSchliessen={() => speichern.reset()}
+            >
+              Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut
+              speichern.
+            </Hinweisfenster>
+          ) : null}
+          {verordner.isError ? (
+            <div className="mb-6">
+              <ErrorState
+                title="Die Verordner:innen konnten nicht geladen werden."
+                description="Bitte die Verbindung prüfen und erneut versuchen."
+                onErneut={() => void verordner.refetch()}
+              />
+            </div>
+          ) : null}
 
-        <Fehlerzusammenfassung
-          fehler={alsFormularfehler(
-            GRUNDLAGE_REIHENFOLGE,
-            GRUNDLAGE_BESCHRIFTUNG,
-            fehler,
-            grundlageFeldId,
-          )}
-        />
+          <Fehlerzusammenfassung
+            fehler={alsFormularfehler(
+              GRUNDLAGE_REIHENFOLGE,
+              GRUNDLAGE_BESCHRIFTUNG,
+              fehler,
+              grundlageFeldId,
+            )}
+          />
 
-        <TreatmentBasisFormFields
-          werte={werte}
-          fehler={fehler}
-          onChange={setzen}
-          positionen={positionen}
-          positionsFehler={fehler.items}
-          onHeilmittelWechsel={heilmittelWechsel}
-          bestandstexte={bestand ? bestandstexte(bestand) : []}
-          verordnerinnen={verordner.data ?? []}
-          verordnerAnlegenZiel={verordnerAnlegenZiel}
-          onVerordnerAnlegenKlick={verordnerAnlegen}
-        />
+          <TreatmentBasisFormFields
+            werte={werte}
+            fehler={fehler}
+            onChange={setzen}
+            positionen={positionen}
+            positionsFehler={fehler.items}
+            onHeilmittelWechsel={heilmittelWechsel}
+            bestandstexte={bestand ? bestandstexte(bestand) : []}
+            verordnerinnen={verordner.data ?? []}
+            verordnerAnlegenZiel={verordnerAnlegenZiel}
+            onVerordnerAnlegenKlick={verordnerAnlegen}
+          />
 
-        {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}
-        {schutz}
+          {/* Rückfrage und Hinweise des Schutzes, dort, wo gearbeitet wird. */}
+          {schutz}
 
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Button type="submit" disabled={speichern.isPending || !patient.data}>
-            {speichern.isPending
-              ? 'Wird gespeichert …'
-              : bestand
-                ? 'Änderungen speichern'
-                : 'Grundlage speichern'}
-          </Button>
-          {/* Ein Seitenwechsel und deshalb ein Link (UIK-13) - der Schutz
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Button type="submit" disabled={speichern.isPending || !patient.data}>
+              {speichern.isPending
+                ? 'Wird gespeichert …'
+                : bestand
+                  ? 'Änderungen speichern'
+                  : 'Grundlage speichern'}
+            </Button>
+            {/* Ein Seitenwechsel und deshalb ein Link (UIK-13) - der Schutz
               fragt bei ungespeicherten Eingaben wie bei jedem anderen Weg. */}
-          <ButtonLink to={zurueck} variant="secondary">
-            Abbrechen
-          </ButtonLink>
-        </div>
-      </form>
+            <ButtonLink to={zurueck} variant="secondary">
+              Abbrechen
+            </ButtonLink>
+          </div>
+        </form>
+      </div>
 
       {/* Löschen ist der Weg für eine Grundlage, die in der falschen Akte
           gelandet ist (Art. 16 DSGVO). Bewusst mit Rückfrage und außerhalb des

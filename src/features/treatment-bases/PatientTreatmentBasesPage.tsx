@@ -435,6 +435,7 @@ function Verordnungsscan({
         grundlageId={verordnungId}
         darfHinzufuegen={darfHinzufuegen}
         hinzufuegenEingeklappt="Scan hinzufügen"
+        hinzufuegenEingeklapptWeitere="Weiteren Scan hinzufügen"
         leerKompakt
         // Wer keinen Scan hinzufügen darf, liest keine Aufforderung dazu
         // (VER-04) - nur den Zustand.

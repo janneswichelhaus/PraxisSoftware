@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-28.
+Zuletzt aktualisiert: 2026-09-29.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1796,3 +1796,15 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 **Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/session/types.ts`; Oberfläche `src/features/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
 
 **Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`.
+
+### ANN-141 — Verordnung ohne Papier: Das Foto hängt bis zum Erfassen an der Person, sein Objektschlüssel bleibt beim Zuordnen stehen
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003
+
+**Annahme.** Ein Verordnungsscan, den die Therapeut:in am Termin aufnimmt, hängt zunächst an der Patient:in (ohne Grundlage) und ist so lange ein offener Punkt „Verordnung zu erfassen“. Beim Speichern der Grundlage ordnet das Formular ihn zu — einmal, nur an eine Grundlage derselben Person, protokolliert als `patient_file.assigned`. Der Objektschlüssel wird beim Anlegen gesetzt und danach nie geändert; ein zugeordneter Scan liegt deshalb weiter unter dem Pfad der Person. Scheitert nur das Zuordnen, bleibt die Grundlage gespeichert, die Seite sagt es, und das Foto bleibt in den offenen Punkten.
+
+**Begründung.** Jannes 2026-09-28 (Sichtung Kernprozess): Therapeut:in fotografiert, Office tippt ab. ADR-017 Punkt 10 nennt die Patient:in als zulässigen Bezugsdatensatz; Klasse und Frist sind dieselben wie an der Grundlage (Patientenakte, ADR-008 Punkt 4), die Datei fällt mit der Akte. Punkt 8 verbietet, ein abgelegtes Objekt zu verändern — ein Verschieben im Speicher wäre genau das; deshalb wandert der Bezug, nicht der Ort. Der Pfad besteht nur aus Kennungen (Punkt 5), ein „falscher“ Elternteil im Pfad sagt nichts über die Person hinaus. Ein eigener Zustand „zu erfassen“ wäre ein zweiter Wahrheitsort neben dem leeren Bezug. Unsicher: ob eine falsch zugeordnete Grundlage beim Löschen ihr Foto mitnehmen soll (heute ja, wie jeden Scan — die Kaskade stammt aus DAT-001).
+
+**Anker.** `list_open_prescription_scans`, `assign_prescription_scan` und der Trigger `patient_files_object_key` (`app.set_patient_file_object_key`) in `supabase/migrations/20260929160000_prx_011_prescription_without_paper.sql`; Oberfläche `src/features/files/PrescriptionPhoto.tsx`, `src/features/open-points/PrescriptionsToCapture.tsx`, `src/features/treatment-bases/ScanBesideForm.tsx`; Tests in `supabase/tests/prescription-scans.test.ts`.
+
+**Änderungspfad.** Das Foto soll beim Löschen einer Grundlage zurück in die offenen Punkte: Fremdschlüssel `patient_files_treatment_basis_id_fkey` auf `on delete set null` für Scans · Aufwand `mittel`. Ohne Umweg über die Person (Foto nur an bestehender Grundlage): Constraint `patient_files_scan_belongs_to_treatment_basis` wiederherstellen und den Knopf am Termin entfernen · Aufwand `klein`.

@@ -600,6 +600,12 @@ interface DateilisteProps {
    * 760 px länger. Ohne Angabe steht es offen unter der Liste.
    */
   hinzufuegenEingeklappt?: string;
+  /**
+   * Die Zeile zum Aufklappen, wenn schon etwas da ist - etwa „Weiteren Scan
+   * hinzufügen" (BEF-060 Teil 2): „Scan hinzufügen" neben einem vorhandenen
+   * Scan klang, als fehle er.
+   */
+  hinzufuegenEingeklapptWeitere?: string;
   /** Leer als ein Satz statt als großer Leerzustand - in einer Karte (VER-01). */
   leerKompakt?: boolean;
 }
@@ -613,6 +619,7 @@ export function Dateiliste({
   leerAktion,
   rahmen = false,
   hinzufuegenEingeklappt,
+  hinzufuegenEingeklapptWeitere,
   leerKompakt = false,
 }: DateilisteProps) {
   const { dateien, isPending, isError, veraltet, erneutLaden, verborgen } = useDateien(
@@ -717,7 +724,15 @@ export function Dateiliste({
     <>
       {rahmen ? <Inhaltsflaeche>{liste}</Inhaltsflaeche> : liste}
       {uploadfeld && hinzufuegenEingeklappt ? (
-        <Disclosure summary={hinzufuegenEingeklappt}>{uploadfeld}</Disclosure>
+        <Disclosure
+          summary={
+            dateien.length > 0 && hinzufuegenEingeklapptWeitere
+              ? hinzufuegenEingeklapptWeitere
+              : hinzufuegenEingeklappt
+          }
+        >
+          {uploadfeld}
+        </Disclosure>
       ) : uploadfeld ? (
         <Section titel="Datei hinzufügen" ebene={3}>
           {uploadfeld}

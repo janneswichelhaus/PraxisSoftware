@@ -244,9 +244,16 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       id: 'heute',
       ...BEREICHE.heute,
       to: '/',
-      pfade: ['/'],
+      pfade: ['/', '/offen'],
       icon: symbole.uebersicht,
-      unterpunkte: [],
+      // Die Büroliste (PRX-EPIC-003) gehört zur Frage der Übersicht - was ist
+      // zu tun -, nicht zu einem Fachbereich. Nur für Praxisrollen.
+      unterpunkte: canReadPatientDirectory(roles)
+        ? [
+            { to: '/', label: 'Heute' },
+            { to: '/offen', label: 'Offene Punkte', stichworte: ['Büroliste', 'Aufgaben'] },
+          ]
+        : [],
     },
   ];
 

@@ -99,6 +99,7 @@ export function rueckwegBeschriftung(pfad: string): string {
   // „Patient:innen" statt „Patientenliste", „Behandlungsgrundlagen" statt
   // „Verordnungen der Akte" - die Adresse behält `verordnungen` (ANN-062).
   if (ohneSuche === '/') return `Zurück zur ${BEREICHE.heute.label}`;
+  if (ohneSuche === '/offen') return 'Zurück zu den offenen Punkten';
   if (ohneSuche.startsWith('/kalender')) return `Zurück zum ${BEREICHE.termine.label}`;
   if (ohneSuche === '/touren') return 'Zurück zur Tour';
   if (ohneSuche === '/patienten') return `Zurück zu den ${BEGRIFFE.patientInnen}`;

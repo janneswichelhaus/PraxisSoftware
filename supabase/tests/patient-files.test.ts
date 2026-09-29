@@ -228,11 +228,12 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(sichtbar.rows).toEqual([]);
     });
 
-    it('weist einen Verordnungsscan ohne Verordnung ab (ADR-017 Punkt 10)', async () => {
-      const fehler = await abgefangen(
-        vorbereiten(users.therapist, { verordnungId: null, art: 'verordnungsscan' }),
-      );
-      expect(fehler?.message).toMatch(/patient_files_scan_belongs_to_treatment_basis/);
+    it('haengt einen Verordnungsscan ohne Grundlage vorlaeufig an die Patientin (PRX-011)', async () => {
+      const datei = await vorbereiten(users.therapist, {
+        verordnungId: null,
+        art: 'verordnungsscan',
+      });
+      expect(datei.object_key).toBe(`${organizationId}/${patients.max}/${datei.file_id}`);
     });
 
     it('weist eine Verordnung ab, die einer anderen Patientin gehoert', async () => {

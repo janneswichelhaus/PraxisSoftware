@@ -582,6 +582,52 @@ describe('Dateiliste', () => {
  * „Dokument fotografieren" in der Akte, „Rezept fotografieren" an der
  * Verordnung.
  */
+describe('Dateiliste — Scanzeile an der Verordnung (BEF-060 Teil 2)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('nennt das Hinzufuegen neben einem vorhandenen Scan „Weiteren Scan hinzufügen“', async () => {
+    fetchPatientFiles.mockResolvedValue([
+      datei({ document_type: 'verordnungsscan', treatment_basis_id: 'v1' }),
+    ]);
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['office'])}
+        grundlageId="v1"
+        darfHinzufuegen
+        hinzufuegenEingeklappt="Scan hinzufügen"
+        hinzufuegenEingeklapptWeitere="Weiteren Scan hinzufügen"
+        leerKompakt
+        leerHinweis="Noch kein Scan."
+      />,
+    );
+    expect(await screen.findByText('Weiteren Scan hinzufügen')).toBeInTheDocument();
+    expect(screen.queryByText('Scan hinzufügen')).toBeNull();
+    // Office darf den Scan seit PRX-010 auch loeschen - er folgt der Grundlage.
+    expect(screen.getByRole('button', { name: /Löschen/ })).toBeInTheDocument();
+  });
+
+  it('bleibt ohne Scan bei „Scan hinzufügen“', async () => {
+    fetchPatientFiles.mockResolvedValue([]);
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['office'])}
+        grundlageId="v1"
+        darfHinzufuegen
+        hinzufuegenEingeklappt="Scan hinzufügen"
+        hinzufuegenEingeklapptWeitere="Weiteren Scan hinzufügen"
+        leerKompakt
+        leerHinweis="Noch kein Scan."
+      />,
+    );
+    expect(await screen.findByText('Noch kein Scan.')).toBeInTheDocument();
+    expect(screen.getByText('Scan hinzufügen')).toBeInTheDocument();
+  });
+});
+
 describe('Dateiliste — Blatt fotografieren', () => {
   const getUserMedia = vi.fn();
   const freigeben = vi.fn();

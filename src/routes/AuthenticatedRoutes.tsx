@@ -5,6 +5,7 @@ import { MdrSperre } from '@/app/MdrSperre';
 import { mdrSperre } from '@/app/mdr';
 import { canSeeBilling } from '@/app/navigation';
 import { MyDayPage } from '@/features/today/MyDayPage';
+import { OpenPointsPage } from '@/features/open-points/OpenPointsPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
@@ -164,6 +165,9 @@ export function AuthenticatedRoutes({
 
               {showDirectory ? (
                 <>
+                  {/* Offene Punkte - die Büroliste (PRX-EPIC-003): alle vier
+                  Praxisrollen; jede Liste prüft der Server selbst. */}
+                  <Route path="/offen" element={<OpenPointsPage user={user} />} />
                   <Route path="/patienten" element={<PatientsListPage />} />
                   <Route path="/patienten/neu" element={<NewPatientPage />} />
                   {/* Die Akte ist ein Rahmen mit fünf Bereichen (AKTE-000, seit

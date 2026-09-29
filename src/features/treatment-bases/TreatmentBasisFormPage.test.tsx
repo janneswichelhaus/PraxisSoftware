@@ -5,6 +5,7 @@ import type * as TreatmentBasesApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as SessionContextModule from '@/features/auth/sessionContext';
 import type * as PatientsApi from '@/features/patients/api';
+import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testPatient } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -19,6 +20,20 @@ const updateTreatmentBasis = vi.fn();
 const deleteTreatmentBasis = vi.fn();
 const navigate = vi.fn();
 const fetchPatient = vi.fn();
+const ordneScanZu = vi.fn();
+const verweisMitArt = vi.fn();
+
+// PRX-011: Zuordnen und Anzeigen des Verordnungsfotos.
+vi.mock('@/features/files/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof FilesApi>();
+  return {
+    ...actual,
+    ordneScanZu: (fileId: string, grundlageId: string) =>
+      ordneScanZu(fileId, grundlageId) as Promise<void>,
+    verweisMitArt: (fileId: string) =>
+      verweisMitArt(fileId) as Promise<{ url: string; mimeType: string }>,
+  };
+});
 
 // Der Patientenkontext im Kopf des Formulars (UX-012): dieselbe Abfrage wie in
 // der Akte, damit sie aus dem Zwischenspeicher kommt.
@@ -898,5 +913,89 @@ describe('Grundlagenformular (UXR-007)', () => {
       expect(screen.getByRole('heading', { name: 'Weitere Angaben' })).toBeInTheDocument();
       expect(screen.queryByRole('heading', { name: 'Anmerkungen' })).not.toBeInTheDocument();
     });
+  });
+});
+
+describe('Verordnung ohne Papier (PRX-011)', () => {
+  const SCAN = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001';
+
+  beforeEach(() => {
+    fetchPrescribers.mockReset();
+    fetchPrescribers.mockResolvedValue([verordner]);
+    createTreatmentBasis.mockReset();
+    createTreatmentBasis.mockResolvedValue('neue-id');
+    ordneScanZu.mockReset();
+    ordneScanZu.mockResolvedValue(undefined);
+    verweisMitArt.mockReset();
+    verweisMitArt.mockResolvedValue({ url: 'https://ablage.invalid/foto', mimeType: 'image/jpeg' });
+    navigate.mockReset();
+    fetchPatient.mockReset();
+    fetchPatient.mockResolvedValue(
+      testPatient({ id: PATIENT_ID, given_name: 'Max', family_name: 'Mustermann' }),
+    );
+  });
+
+  it('zeigt das Foto erst auf Tipp neben dem Formular', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewTreatmentBasisPage />,
+      `/patienten/${PATIENT_ID}/verordnungen/neu?scan=${SCAN}`,
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+
+    const foto = screen.getByRole('complementary', { name: 'Foto der Verordnung' });
+    expect(within(foto).queryByRole('img')).not.toBeInTheDocument();
+    expect(verweisMitArt).not.toHaveBeenCalled();
+
+    await user.click(within(foto).getByRole('button', { name: 'Foto anzeigen' }));
+    expect(await within(foto).findByRole('img', { name: 'Foto der Verordnung' })).toHaveAttribute(
+      'src',
+      'https://ablage.invalid/foto',
+    );
+    expect(verweisMitArt).toHaveBeenCalledWith(SCAN);
+  });
+
+  it('haengt das Foto beim Speichern an die neue Grundlage', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewTreatmentBasisPage />,
+      `/patienten/${PATIENT_ID}/verordnungen/neu?scan=${SCAN}&zurueck=%2Foffen`,
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+    await formularAusfuellen(user);
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    await waitFor(() => expect(ordneScanZu).toHaveBeenCalledWith(SCAN, 'neue-id'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/offen', { replace: true }));
+  });
+
+  it('sagt es, wenn nur das Zuordnen scheitert - die Grundlage bleibt gespeichert', async () => {
+    ordneScanZu.mockRejectedValue(new Error('Das Foto hängt noch nicht an ihr.'));
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewTreatmentBasisPage />,
+      `/patienten/${PATIENT_ID}/verordnungen/neu?scan=${SCAN}`,
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+    await formularAusfuellen(user);
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    expect(await screen.findByText('Das Foto hängt noch nicht an ihr.')).toBeInTheDocument();
+    expect(createTreatmentBasis).toHaveBeenCalledTimes(1);
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it('ignoriert eine Kennung, die keine ist, und ordnet nichts zu', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <NewTreatmentBasisPage />,
+      `/patienten/${PATIENT_ID}/verordnungen/neu?scan=kein-uuid`,
+    );
+    await screen.findByRole('option', { name: /Probst/ });
+    expect(screen.queryByRole('complementary', { name: 'Foto der Verordnung' })).toBeNull();
+    await formularAusfuellen(user);
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+    await waitFor(() => expect(createTreatmentBasis).toHaveBeenCalledTimes(1));
+    expect(ordneScanZu).not.toHaveBeenCalled();
   });
 });

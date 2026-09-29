@@ -251,6 +251,7 @@ describe('Audit-Lesepfad', () => {
       'list_missing_patient_file_objects',
       'list_open_billable_appointments',
       'list_open_items',
+      'list_open_prescription_scans',
       'list_patient_appointment_slip',
       'list_patient_appointments',
       'list_patient_course_events',
