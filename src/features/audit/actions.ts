@@ -182,6 +182,9 @@ export const AUDIT_ACTIONS = [
   'tasks.read',
   // PRX-014: Ergebnis eines Anrufs der Anrufliste, ohne Inhalt.
   'appointment.call_recorded',
+  // PRX-017: Eine Dublette ist in dieser Akte aufgegangen - Kennung der
+  // Dublette und Zahlen, keine Namen (ANN-150).
+  'patient.merged',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -303,6 +306,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'task.deleted': 'Aufgabe gelöscht',
   'tasks.read': 'Aufgaben gelesen',
   'appointment.call_recorded': 'Anruf zum Termin vermerkt',
+  'patient.merged': 'Dublette in die Akte übernommen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

@@ -82,6 +82,18 @@ const FAELLE: Fall[] = [
     'storage_deletion.claimed',
   ],
   [
+    'merge_patients',
+    'select public.merge_patients($1::uuid, $2::uuid) as ergebnis',
+    [patients.petra, patients.erika],
+    'patient.merged',
+  ],
+  [
+    'preview_patient_merge',
+    'select public.preview_patient_merge($1::uuid, $2::uuid) as plan',
+    [patients.petra, patients.erika],
+    'patient.merged',
+  ],
+  [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
     [IRGENDEINE],
@@ -96,7 +108,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
 
   it('kennt genau die Pfade, die eine Abweisung beim Schreiben ueberleben lassen', async () => {
     // Die Liste ist Jannes' Wahl vom 2026-09-26: Rollen und Konten, Legal Hold
-    // und Loeschauftraege. Ein neuer Pfad ist Absicht, ein fehlender ein
+    // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten.
+    // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
       select p.proname
