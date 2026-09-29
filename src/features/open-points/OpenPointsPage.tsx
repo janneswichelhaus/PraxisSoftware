@@ -2,13 +2,16 @@ import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { todayInTimeZone } from '@/features/appointments/api';
 import {
+  canConcludePatientCare,
   canManageAppointments,
   canManageTasks,
   canReadPatientDirectory,
+  canReadTreatmentBases,
   canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 import { CallsSummary } from './CallsSummary';
+import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
 import { Tasks } from './Tasks';
@@ -50,6 +53,10 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {canWriteTreatmentBases(user.roles) ? <PrescriptionsToCapture timeZone={timeZone} /> : null}
         {canReadPatientDirectory(user.roles) ? <OpenIntakes /> : null}
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
+        {canReadTreatmentBases(user.roles) ? <EndingPrescriptions timeZone={timeZone} /> : null}
+        {canConcludePatientCare(user.roles) ? (
+          <CareWithoutConclusionList timeZone={timeZone} />
+        ) : null}
       </div>
     </>
   );

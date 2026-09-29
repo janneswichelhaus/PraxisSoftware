@@ -326,7 +326,8 @@ export function Tasks({
   openForm?: boolean;
   patientId?: string | null;
 }) {
-  const [formular, setFormular] = useState<'neu' | string | null>(openForm ? 'neu' : null);
+  // 'neu' oder die Kennung der Aufgabe, die gerade geändert wird.
+  const [formular, setFormular] = useState<string | null>(openForm ? 'neu' : null);
   const [meldung, setMeldung] = useState('');
 
   const offen = useQuery({

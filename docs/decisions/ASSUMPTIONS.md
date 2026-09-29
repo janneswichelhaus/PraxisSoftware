@@ -1856,3 +1856,15 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 **Anker.** `public.find_possible_duplicates` in `supabase/migrations/20260929200000_prx_015_duplicate_check.sql`; Hinweis in `src/features/patients/NewPatientPage.tsx`; Tests in `supabase/tests/duplicate-check.test.ts`.
 
 **Änderungspfad.** Andere Regel (etwa Ähnlichkeit statt Gleichheit mit `pg_trgm`): die Bedingung in `find_possible_duplicates` · Aufwand `klein` (mit neuer Erweiterung `mittel`). Harte Sperre: `create_patient` ruft dieselbe Regel und verlangt eine Bestätigung · Aufwand `mittel`.
+
+### ANN-146 — Erinnerungen fragen nur: Verordnung endet bei ganz verplantem Kontingent und letztem Termin in 14 Tagen; Abschluss nach sechs Monaten ohne Termin
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003; STA-EPIC-001 Kennzahl 4 liest dieselbe Regel
+
+**Annahme.** Unter „Offene Punkte“ stehen zwei Listen, die nur fragen und nichts setzen. **Verordnung endet:** eine Verordnung (nicht Selbstzahler) einer Person in Versorgung, zu der es keine jüngere Grundlage gibt, deren Kontingent genutzt ist **oder** deren Termine alle verplant sind und deren letzter Termin in den nächsten 14 Tagen liegt (oder schon war); dazu nur, **ob** eine Empfehlung zum Verordnungsende vorliegt (Therapiebericht oder Bestandsfeld), und Name und Telefon der Verordner:in — sichtbar für die vier Praxisrollen. **Versorgung abschließen?:** Personen ohne Abschluss der Versorgung, deren letzter Behandlungstermin sechs Monate zurückliegt (ohne Termin: die Anlage der Akte) und die keinen kommenden haben — sichtbar nur für die Rollen, die abschließen dürfen (`owner`, `therapist`, `team_lead`).
+
+**Begründung.** `IDEA-LZK-009`: „Ein Vorschlag darf keine Frist starten, sondern nur fragen“ — der Abschluss bleibt der ausdrückliche Vorgang aus LOE-001b, weil an ihm die Löschung in zehn Jahren hängt. `IDEA-LZK-007` trennt die Empfehlung der Therapeutin (Dokumentation, DOK-005) von einer automatischen Einstufung (B9); die Liste zeigt deshalb nur, ob eine Empfehlung da ist. 14 Tage entsprechen der Kennzahl 4 aus STA-EPIC-001, sechs Monate dem üblichen Abstand, nach dem eine Folgeverordnung nicht mehr „Anschluss“ ist. Unsicher: ob Office die Abschlussliste sehen soll, um Therapeut:innen anzusprechen (IDEA-LZK-009 lässt es offen).
+
+**Anker.** `app.reminder_prescription_horizon()`, `app.reminder_care_idle()`, `list_ending_prescriptions` und `list_care_without_conclusion` in `supabase/migrations/20260929210000_prx_016_reminders.sql`; Oberfläche `src/features/open-points/Reminders.tsx`; Tests in `supabase/tests/reminders.test.ts`.
+
+**Änderungspfad.** Andere Schwellen: die beiden `app.reminder_*`-Funktionen · Aufwand `klein`. Office sieht die Abschlussliste: Rollenprüfung in `list_care_without_conclusion` auf `app.can_read_patient_directory()` · Aufwand `klein`. Mit Erinnerung an die Therapeut:in (Benachrichtigung): gehört zu KOM-EPIC-003 · Aufwand `groß`.
