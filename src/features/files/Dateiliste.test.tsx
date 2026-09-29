@@ -244,7 +244,7 @@ describe('Dateiliste', () => {
     // steht trotzdem da (ADR-017 Punkt 12).
     expect(screen.queryByLabelText('Art des Dokuments')).not.toBeInTheDocument();
     expect(screen.getByText('Verordnungsscan')).toBeInTheDocument();
-    expect(screen.getByText(/hinzufügen und löschen nur/)).toBeInTheDocument();
+    expect(screen.getByText(/auch das Praxismanagement/)).toBeInTheDocument();
 
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));

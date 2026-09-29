@@ -37,17 +37,20 @@ function mitPerson(rollen: RoleKey[] | null) {
   );
 }
 
-// VER-04, ANN-011: Schreiben dürfen owner, therapist und team_lead - office
-// nicht. Die Seite fragt dafür keinen Server, sie liest, was die Anwendung zur
+// VER-04, ANN-011: Schreiben dürfen alle vier Praxisrollen, seit PRX-010 auch
+// office - die Trainingsbetreuung nicht. Die Seite fragt dafür keinen Server, sie liest, was die Anwendung zur
 // angemeldeten Person schon geladen hat.
 describe('useDarfGrundlagenSchreiben', () => {
-  it.each([['owner'], ['therapist'], ['team_lead']] as const)('laesst %s schreiben', (rolle) => {
-    mitPerson([rolle]);
-    expect(screen.getByText('darf')).toBeInTheDocument();
-  });
+  it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+    'laesst %s schreiben',
+    (rolle) => {
+      mitPerson([rolle]);
+      expect(screen.getByText('darf')).toBeInTheDocument();
+    },
+  );
 
-  it('laesst office nicht schreiben', () => {
-    mitPerson(['office']);
+  it('laesst die Trainingsbetreuung nicht schreiben', () => {
+    mitPerson(['trainer']);
     expect(screen.getByText('darf nicht')).toBeInTheDocument();
   });
 

@@ -26,6 +26,7 @@ import {
 import {
   canCorrectPatientFileType,
   canWriteClinicalPatientFiles,
+  canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -627,6 +628,7 @@ export function Dateiliste({
   // Schreibrecht der Art (ADR-017 Punkt 13) - office pflegt nur
   // organisatorische Unterlagen.
   const klinischSchreiben = canWriteClinicalPatientFiles(user.roles);
+  const grundlagenSchreiben = canWriteTreatmentBases(user.roles);
   const darfArtKorrigieren = canCorrectPatientFileType(user.roles);
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
 
@@ -690,7 +692,14 @@ export function Dateiliste({
               // nicht dem Leserecht: office sieht seit E15 klinische Dateien,
               // löscht aber nur organisatorische. Die Datenbank prüft es noch
               // einmal.
-              darfLoeschen={darfHinzufuegen && (!datei.is_clinical || klinischSchreiben)}
+              // Der Verordnungsscan folgt der Grundlage (PRX-010): Wer sie
+              // schreibt, pflegt auch ihren Scan.
+              darfLoeschen={
+                darfHinzufuegen &&
+                (!datei.is_clinical ||
+                  klinischSchreiben ||
+                  (datei.document_type === 'verordnungsscan' && grundlagenSchreiben))
+              }
               darfArtKorrigieren={darfArtKorrigieren}
               arten={korrekturarten}
             />

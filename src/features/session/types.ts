@@ -137,14 +137,15 @@ export function canReadTreatmentBasisClinical(roles: readonly RoleKey[]): boolea
 }
 
 /**
- * Rollen, die Verordnungen anlegen, aendern und loeschen duerfen.
+ * Rollen, die Behandlungsgrundlagen anlegen, aendern und loeschen duerfen.
  *
- * Ohne office (ANN-011): wer eine Verordnung erfasst, tippt die Diagnose mit
- * ab. E15 oeffnet das Lesen, nicht das Schreiben. Verbindlich ist
- * app.can_write_treatment_bases().
+ * Alle vier Praxisrollen seit PRX-010 (ANN-011, Stand 2026-09-28): Office
+ * tippt die Verordnung mit dem Foto daneben ab. Eigene klinische
+ * Dokumentation schreibt office weiterhin nicht (ADR-004 Punkt 3).
+ * Verbindlich ist app.can_write_treatment_bases().
  */
 export function canWriteTreatmentBases(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => treatingRoles.includes(role));
+  return roles.some((role) => directoryRoles.includes(role));
 }
 
 /**

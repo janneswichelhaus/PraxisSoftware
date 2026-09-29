@@ -768,7 +768,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
             description={
               darfSchreiben
                 ? 'Die nächste entsteht über „Grundlage erfassen“ – als Verordnung oder als Selbstzahler.'
-                : 'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.'
+                : 'Behandlungsgrundlagen erfasst das Praxisteam.'
             }
           />
         ) : null}

@@ -135,6 +135,7 @@ const bestand: TreatmentBasesApi.TreatmentBasisDetail = {
 };
 
 async function formularAusfuellen(user: ReturnType<typeof userEvent.setup>) {
+  await user.selectOptions(screen.getByLabelText('Art *'), 'first');
   await user.selectOptions(screen.getByLabelText('Verordner:in *'), PROBST);
   await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
   await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
@@ -255,11 +256,28 @@ describe('NewTreatmentBasisPage', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('startet ohne Vorauswahl der Art und verlangt sie (BEF-060 Teil 1)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<NewTreatmentBasisPage />);
+    await screen.findByRole('option', { name: /Probst/ });
+
+    expect(screen.getByLabelText('Art *')).toHaveValue('');
+    await user.selectOptions(screen.getByLabelText('Verordner:in *'), PROBST);
+    await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
+    await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
+    await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '10');
+    await user.click(screen.getByRole('button', { name: 'Grundlage speichern' }));
+
+    expect(await screen.findAllByText('Bitte die Art wählen.')).toHaveLength(2);
+    expect(createTreatmentBasis).not.toHaveBeenCalled();
+  });
+
   it('nimmt die Wunschkombination auf, ohne die Terminzahl zu vervielfachen', async () => {
     const user = userEvent.setup();
     renderWithProviders(<NewTreatmentBasisPage />);
     await screen.findByRole('option', { name: /Probst/ });
 
+    await user.selectOptions(screen.getByLabelText('Art *'), 'first');
     await user.selectOptions(screen.getByLabelText('Verordner:in *'), PROBST);
     await user.type(screen.getByLabelText('Ausstellungsdatum *'), '2026-03-01');
     await user.click(screen.getByRole('checkbox', { name: 'KG als Doppelbehandlung' }));
@@ -830,11 +848,7 @@ describe('Grundlagenformular (UXR-007)', () => {
       expect(
         screen.getByRole('heading', { level: 1, name: 'Grundlage erfassen' }),
       ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung.',
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Behandlungsgrundlagen erfasst das Praxisteam.')).toBeInTheDocument();
       expect(screen.queryByLabelText('Art *')).not.toBeInTheDocument();
       expect(
         screen.getByRole('link', { name: /Zurück zu den Behandlungsgrundlagen/ }),
@@ -865,7 +879,7 @@ describe('Grundlagenformular (UXR-007)', () => {
       expect(
         await screen.findByRole('option', { name: 'Probst, Petra (Dr. med.) · Praxis Fiktiv' }),
       ).toBeInTheDocument();
-      expect(screen.getByRole('option', { name: 'Bitte wählen …' })).toBeInTheDocument();
+      expect(screen.getAllByRole('option', { name: 'Bitte wählen …' })).toHaveLength(2);
     });
 
     it('fuehrt die Frequenz bei Heilmitteln und Anzahl', async () => {

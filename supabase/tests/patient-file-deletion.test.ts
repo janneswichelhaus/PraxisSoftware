@@ -120,7 +120,11 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
     });
 
     it('laesst office eine klinische Datei nicht loeschen', async () => {
-      const datei = await abgelegteDatei(users.therapist);
+      const datei = await abgelegteDatei(users.therapist, {
+        verordnungId: null,
+        art: 'befund',
+        name: 'Befund.pdf',
+      });
       const fehler = await abgefangen(
         asUserCommitted(users.office, 'select public.delete_patient_file($1::uuid)', [
           datei.file_id,
@@ -130,6 +134,15 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
 
       const zeilen = await asPostgres('select id from public.patient_files');
       expect(zeilen.rows).toHaveLength(1);
+    });
+
+    it('laesst office den Verordnungsscan loeschen - er folgt der Grundlage (PRX-010)', async () => {
+      const datei = await abgelegteDatei(users.therapist);
+      await asUserCommitted(users.office, 'select public.delete_patient_file($1::uuid)', [
+        datei.file_id,
+      ]);
+      const zeilen = await asPostgres('select id from public.patient_files');
+      expect(zeilen.rows).toHaveLength(0);
     });
 
     it('laesst office eine organisatorische Datei loeschen', async () => {

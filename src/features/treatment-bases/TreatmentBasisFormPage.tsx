@@ -471,7 +471,7 @@ function OhneSchreibrecht({ patientId, titel }: { patientId: string; titel: stri
       <PageHeader title={titel} />
       <ErrorState
         title="Nicht freigegeben"
-        description="Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung."
+        description="Behandlungsgrundlagen erfasst das Praxisteam."
       />
     </>
   );

@@ -194,19 +194,14 @@ describe('DauerterminStartPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('fuehrt das Praxismanagement nicht in ein Formular, das es nicht speichern darf (VER-04)', async () => {
+  it('fuehrt das Praxismanagement zur Grundlage, denn es erfasst sie seit PRX-010', async () => {
     for (const f of [fetchPatientTreatmentBases, fetchPatientTreatmentBasesClinical]) {
       f.mockResolvedValue([]);
     }
     fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     renderWithProviders(<DauerterminStartPage user={testUser(['office'])} />, MIT_PERSON);
 
-    expect(
-      await screen.findByText(
-        /Behandlungsgrundlagen erfassen Praxisinhaber:in, Therapeut:innen und Teamleitung\./,
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Grundlage erfassen' })).toBeNull();
+    expect(await screen.findByRole('link', { name: 'Grundlage erfassen' })).toBeInTheDocument();
   });
 
   it('reicht die Person der Spalte und den Rueckweg an die Serie weiter (KAL-05)', async () => {

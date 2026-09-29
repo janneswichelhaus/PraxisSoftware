@@ -478,7 +478,11 @@ export const treatmentBasisFormSchema = z
   .object({
     // Ob sie Pflicht ist, hängt an der Bauart - siehe superRefine unten.
     prescriber_id: optionalText,
-    treatment_basis_kind: z.enum(BAUARTEN),
+    // BEF-060 (1): Die Art startet leer. Ein geratener Wert stünde auf
+    // Rechnung und Therapiebericht (wie ANN-074 beim Umsatzsteuerstatus).
+    // Geprüft wird die leere Wahl im superRefine unten: Ein Fehler hier hielte
+    // die übrigen Rückmeldungen des Formulars zurück.
+    treatment_basis_kind: z.union([z.enum(BAUARTEN), z.literal('')]),
     issued_on: z
       .string()
       .refine((value) => value.trim().length > 0, 'Das Datum ist erforderlich.')
@@ -507,14 +511,26 @@ export const treatmentBasisFormSchema = z
   // (app.assert_treatment_basis_input und die Constraint dahinter); hier steht
   // es, damit der Fehler am Feld erscheint statt als Banner.
   .superRefine((werte, ctx) => {
-    if (istVerordnung(werte.treatment_basis_kind) && werte.prescriber_id === null) {
+    if (werte.treatment_basis_kind === '') {
+      ctx.addIssue({
+        code: 'custom',
+        message: 'Bitte die Art wählen.',
+        path: ['treatment_basis_kind'],
+      });
+    }
+    // Ohne gewählte Art stehen die Felder der Verordnung im Formular.
+    const verordnung =
+      werte.treatment_basis_kind === '' || istVerordnung(werte.treatment_basis_kind);
+    if (verordnung && werte.prescriber_id === null) {
       ctx.addIssue({
         code: 'custom',
         message: 'Verordner:in ist erforderlich.',
         path: ['prescriber_id'],
       });
     }
-  });
+  })
+  // Nach dem superRefine ist die Art gewählt.
+  .transform((werte) => ({ ...werte, treatment_basis_kind: werte.treatment_basis_kind as Bauart }));
 
 type TreatmentBasisFormInput = z.input<typeof treatmentBasisFormSchema>;
 type TreatmentBasisFormValues = z.output<typeof treatmentBasisFormSchema>;
@@ -529,7 +545,8 @@ export type GrundlageFehlerfeld = TreatmentBasisFeld | 'items';
 
 export const leereGrundlage: Record<TreatmentBasisFeld, string> = {
   prescriber_id: '',
-  treatment_basis_kind: 'first',
+  // Ohne Vorbelegung (BEF-060 Teil 1): „Bitte wählen …" statt „Erstverordnung".
+  treatment_basis_kind: '',
   issued_on: '',
   appointment_count: '',
   frequency_note: '',
