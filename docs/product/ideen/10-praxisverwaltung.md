@@ -1084,3 +1084,22 @@ Abschnitt, statt über den Kopf umzuschalten.
 (eine Person, sieben Tage) genauso läuft; wie es sich mit dem Ziehen von
 Terminen verträgt (Ziehen über den Rand gibt es schon).
 
+---
+
+### IDEA-PRX-047 — Vergütungsmodelle mit Umsatzbeteiligung
+
+| | |
+|---|---|
+| Status | bestätigt (Grundlage in STA-005, das Übrige offen) |
+| Quelle | Jannes, 2026-09-29 (STA-EPIC-001) |
+| Berührt | §20, B6 (aufgelöst), ANN-156, ANN-157, Beschäftigtendaten |
+
+**Idee.** Die Praxis bietet mehrere Vergütungsmodelle an, eines davon mit
+Umsatzbeteiligung. Jede Person wählt ihr Modell; wer die Umsatzbeteiligung
+gewählt hat, sieht den eigenen Umsatz (gebaut: STA-005, STA-006).
+
+**Offen.** Sätze und Stufen der Beteiligung, Abrechnung der Beteiligung je
+Monat, Umgang mit Stornos und Zahlungsausfällen (Rechnungsstellung oder
+Zufluss), weitere Modelle, Übergabe an die Lohnabrechnung — jeweils ein
+eigenes Epic, nicht vorgebaut (ADR-014).
+

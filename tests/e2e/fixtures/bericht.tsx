@@ -36,6 +36,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: 'Europe/Berlin',
   appointmentGridMinutes: 5,
   staffMemberId: '55555555-5555-4555-8555-000000000002',
+  revenueShare: false,
 };
 
 const BEFUND =

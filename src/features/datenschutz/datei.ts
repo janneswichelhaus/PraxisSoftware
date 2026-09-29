@@ -21,8 +21,8 @@ export function dateiname(patientId: string, erstelltAm: string): string {
  * Über einen Blob und nicht über einen `data:`-Verweis: Der wäre einfacher und
  * scheitert an der Größe einer vollständigen Akte.
  */
-export function sichereAlsDatei(name: string, inhalt: string): void {
-  const url = URL.createObjectURL(new Blob([inhalt], { type: 'application/json' }));
+export function sichereAlsDatei(name: string, inhalt: string, typ = 'application/json'): void {
+  const url = URL.createObjectURL(new Blob([inhalt], { type: typ }));
   const anker = document.createElement('a');
   anker.href = url;
   anker.download = name;

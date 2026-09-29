@@ -288,3 +288,44 @@ export async function setStaffEmploymentStatus(
   }
   if (error) throw new Error('Der Beschäftigungsstatus konnte nicht geändert werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Vergütungsmodell (STA-005, ANN-157)
+// -----------------------------------------------------------------------------
+
+export type Verguetungsmodell = 'fixed_salary' | 'revenue_share';
+
+export const verguetungsmodellLabels: Record<Verguetungsmodell, string> = {
+  fixed_salary: 'Festgehalt',
+  revenue_share: 'Umsatzbeteiligung',
+};
+
+/** Das hinterlegte Modell einer Person; `null`, wenn keines hinterlegt ist. */
+export async function fetchVerguetungsmodell(
+  staffMemberId: string,
+): Promise<Verguetungsmodell | null> {
+  const { data, error } = await getSupabase()
+    .from('staff_compensation_models')
+    .select('model')
+    .eq('staff_member_id', staffMemberId)
+    .maybeSingle();
+  if (error) throw new Error('Das Vergütungsmodell konnte nicht geladen werden.');
+  const modell = z
+    .object({ model: z.enum(['fixed_salary', 'revenue_share']) })
+    .nullable()
+    .safeParse(data);
+  if (!modell.success) throw new Error('Das Vergütungsmodell konnte nicht geladen werden.');
+  return modell.data?.model ?? null;
+}
+
+/** Setzt das Modell (nur owner); `null` entfernt die Angabe. */
+export async function setzeVerguetungsmodell(
+  staffMemberId: string,
+  modell: Verguetungsmodell | null,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_staff_compensation_model', {
+    p_staff_member_id: staffMemberId,
+    p_model: modell,
+  })) as { error: unknown };
+  if (error) throw new Error('Das Vergütungsmodell konnte nicht gespeichert werden.');
+}

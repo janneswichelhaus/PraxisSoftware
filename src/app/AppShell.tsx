@@ -21,7 +21,7 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
 /**
  * Rahmen der angemeldeten Anwendung.
  *
- * Die globale Navigation zeigt ausschließlich die sechs Arbeitsbereiche und
+ * Die globale Navigation zeigt ausschließlich die Arbeitsbereiche und
  * ist auf allen Seiten identisch. Alles Bereichsinterne steht als lokales
  * Untermenü direkt über dem Inhalt, damit ein Wechsel innerhalb einer Aufgabe
  * nicht durch die globale Ebene führt.

@@ -24,7 +24,7 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(ids(['patient'])).toEqual(['heute']);
   });
 
-  it('zeigt owner alle sechs Bereiche', () => {
+  it('zeigt owner alle sechs Bereiche und dazu die Statistiken', () => {
     expect(ids(['owner'])).toEqual([
       'heute',
       'termine',
@@ -32,7 +32,21 @@ describe('Arbeitsbereiche je Rolle', () => {
       'team',
       'betrieb',
       'abrechnung',
+      'statistik',
     ]);
+  });
+
+  it('zeigt die Statistiken einer Person mit Umsatzbeteiligung (STA-006)', () => {
+    const anna = { ...testUser(['therapist']), revenueShare: true };
+    expect(arbeitsbereiche(anna).map((b) => b.id)).toContain('statistik');
+    const patient = { ...testUser(['patient']), revenueShare: true };
+    expect(arbeitsbereiche(patient).map((b) => b.id)).not.toContain('statistik');
+  });
+
+  it('zeigt die Statistiken ohne Umsatzbeteiligung allein owner (STA-EPIC-001)', () => {
+    for (const rolle of ['therapist', 'team_lead', 'office', 'trainer', 'patient'] as const) {
+      expect(ids([rolle]), rolle).not.toContain('statistik');
+    }
   });
 
   it('traegt die von Jannes vorgegebenen Beschriftungen', () => {
@@ -48,6 +62,7 @@ describe('Arbeitsbereiche je Rolle', () => {
       team: 'Kommunikation',
       betrieb: 'Organisatorisches',
       abrechnung: 'Abrechnung',
+      statistik: 'Statistiken',
     });
   });
 
@@ -68,6 +83,7 @@ describe('Arbeitsbereiche je Rolle', () => {
       team: 'Nachrichten',
       betrieb: 'Organisation',
       abrechnung: 'Abrechnung',
+      statistik: 'Statistiken',
     });
     for (const kurz of Object.values(kurzformen)) {
       expect(kurz.length).toBeLessThanOrEqual(13);

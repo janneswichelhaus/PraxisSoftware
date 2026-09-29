@@ -83,6 +83,8 @@ describe('Schema-Invarianten', () => {
       'treatment_bases',
       'treatment_base_items',
       'treatment_text_snippets',
+      'practice_targets',
+      'staff_compensation_models',
       'staff_account_invitations',
       'legal_holds',
       'deletion_journal',

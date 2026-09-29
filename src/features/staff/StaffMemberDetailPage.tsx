@@ -28,9 +28,11 @@ import {
   canManageStaffAccounts,
   canManageStaffEmployment,
   canManageStaffMasterData,
+  isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 import { StaffAccountSection } from './StaffAccountSection';
+import { StaffCompensationSection } from './StaffCompensationSection';
 import {
   fetchStaffFutureAppointments,
   fetchStaffMember,
@@ -311,6 +313,9 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
       ) : null}
 
       {darfZugang ? <StaffAccountSection staff={staff} /> : null}
+
+      {/* Vergütungsmodell (STA-005): allein owner, wie Beschäftigungsstatus. */}
+      {isOwner(user.roles) ? <StaffCompensationSection staff={staff} /> : null}
 
       {darfBeschaeftigung ? (
         <div className="mt-5 flex">

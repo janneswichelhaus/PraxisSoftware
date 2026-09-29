@@ -37,6 +37,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: ZONE,
   appointmentGridMinutes: 5,
   staffMemberId: STAFF,
+  revenueShare: false,
 };
 
 /** Ortszeit des heutigen Tages als Zeitpunkt; Sommer- und Winterzeit egal. */

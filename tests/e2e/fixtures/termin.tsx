@@ -44,6 +44,7 @@ function nutzer(rolle: RoleKey, name: string, staff: string | null): CurrentUser
     organizationTimeZone: ZONE,
     appointmentGridMinutes: 5,
     staffMemberId: staff,
+    revenueShare: false,
   };
 }
 

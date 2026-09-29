@@ -38,6 +38,7 @@ const nutzer: CurrentUser = {
   organizationTimeZone: ZONE,
   appointmentGridMinutes: 5,
   staffMemberId: ANNA,
+  revenueShare: false,
 };
 
 /** Versatz der Praxiszeitzone am heutigen Tag, etwa `+02:00`. */

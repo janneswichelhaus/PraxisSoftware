@@ -443,7 +443,10 @@
           "id": "sta-epic-001",
           "name": "STA-EPIC-001 Statistiken: fünf Kennzahlen zur Praxissteuerung",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-29",
+          "nachweis": "STA-001 bis STA-007",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 14 und 15"
         },
         {
           "id": "trn-epic-001",

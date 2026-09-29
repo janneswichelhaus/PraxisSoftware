@@ -1916,3 +1916,87 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-00
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
 **Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`.
+
+### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
+
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Steuerberatung (B9), Sichtung Statistiken
+
+**Annahme.** Kennzahl (1) „Umsatz“ ist die Bruttosumme ausgestellter Rechnungen am Ausstellungstag, abzüglich Stornodokumenten am Tag des Stornos; „Zahlungseingang“ ist die Summe gebuchter Zahlungen abzüglich Rückzahlungen, ohne stornierte Zahlungen. Beide stehen immer getrennt, nie in einer Zahl. Der Umsatz erscheint als Praxissumme über beide Leistungsbereiche mit der Aufteilung Behandlung/Training darunter; der Zielwert gilt dem Umsatz, nicht dem Eingang.
+
+**Begründung.** Für die Steuerung braucht Jannes eine Monatszahl, nicht je Bereich zwei; die getrennte Gewinnermittlung (ADR-009 Punkt 19) leistet weiter die Auswertung „Einnahmen je Leistungsart“ mit Steuergruppen, und die Aufteilung je Bereich steht auch hier. Die beiden Grundlagen werden wie dort getrennt gerechnet und nie gemischt. Unsicher: ob die Steuerberatung für die Steuerung lieber netto sähe.
+
+**Anker.** Abschnitt (1) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Tests „(1) Umsatz und Zahlungseingang“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** Netto statt brutto: Summe über `snapshot -> 'tax_groups' -> net_cents` an derselben Stelle · Aufwand `klein`. Ziel am Zahlungseingang: Spalte in `practice_targets` und Zuordnung in `src/features/statistics/kennzahlen.ts` · Aufwand `klein`.
+
+### ANN-152 — Statistik: Auslastung zählt Behandlungs- und Trainingstermine innerhalb der Arbeitszeit, nur als Praxissumme
+
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: B6 (Beschäftigtendaten), Datenschutzprüfung
+
+**Annahme.** Kennzahl (3) „Auslastung“ teilt die Minuten nicht abgesagter Behandlungs- und Trainingstermine, soweit sie in der Arbeitszeit liegen, durch die Minuten der Arbeitszeit aller Personen, die Termine bekommen können — für heute und die folgenden dreizehn Tage, nach dem Wochenplan und seinen Abweichungen (dieselbe Regel wie die Terminsuche). Interne Termine zählen nicht, „nicht angetroffen“ zählt als gebucht. Die Funktion rechnet je Person und Tag, liefert aber **nur die Praxissumme**; einen Wert je Person gibt es weder in der Datenbank noch in der Oberfläche.
+
+**Begründung.** §20 und B6 schließen Leistungskontrolle über Beschäftigtendaten aus; eine Summe über die Praxis ist Planungsgröße, kein Verhalten einer Person (IDEA-PRX-025: „Keine Werte je Person, bis B6 entschieden ist“). Arbeitszeit außerhalb gebuchter Termine ist freie Kapazität, Termine außerhalb der Arbeitszeit sind keine Auslastung der geplanten Zeit. Unsicher: ob die Prüfung eine Praxissumme bei sehr kleinem Team (zwei Personen) als personenbeziehbar einordnet.
+
+**Anker.** Abschnitt (3) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Tests „(3) Auslastung“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** Interne Termine mitzählen oder Termine außerhalb der Arbeitszeit voll rechnen: Filter und Schnitt an derselben Stelle · Aufwand `klein`. Werte je Person erst nach B6 und als eigenes Epic · Aufwand `mittel`.
+
+### ANN-153 — Statistik: Ausfälle sind Absagen durch Patient:innen und Nichtantreffen, nach dem Tag des Termins; das Honorar ist, was erfasst ist
+
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Sichtung Statistiken
+
+**Annahme.** Kennzahl (5) zählt Behandlungs- und Trainingstermine mit Absagegrund „auf Wunsch der Patient:in“ und nicht angetroffene Termine, deren Beginn in den letzten 28 Tagen (heute eingeschlossen) beziehungsweise den 28 Tagen davor liegt. Absagen der Praxis, „verlegt“ und „sonstiger Grund“ zählen nicht. „Mit Gebühr“ zählt Ausfälle mit Gebührenanlass; die Summe der Ausfallhonorare ist die Summe der daran erfassten Honorar-Leistungen zum Katalogpreis — ein Ausfall mit Anlass, aber ohne erfasste Leistung, steht nur in der Anzahl.
+
+**Begründung.** Nur die Patientenabsage ist ein Ausfall, den die Praxis beeinflussen kann (Erinnerung, Anrufliste); dieselbe Abgrenzung trifft ADR-018 Punkt 8 Nr. 4 für die Gebühr. Eine Gebühr vorauszurechnen, die niemand erfasst hat, wäre eine Forderung, die es nicht gibt.
+
+**Anker.** Abschnitt (5) in `public.get_practice_statistics`, `supabase/migrations/20260929230000_sta_001_practice_statistics.sql`; Test „(5) Ausfälle“ in `supabase/tests/practice-statistics.test.ts`.
+
+**Änderungspfad.** „Verlegt“ oder „sonstiger Grund“ mitzählen: Bedingung an derselben Stelle · Aufwand `klein`. Honorar nach Rechnung statt nach Erfassung: Join über die Rechnungsposten · Aufwand `klein`.
+
+### ANN-154 — Statistik: Der erfolgreiche Aufruf wird nicht protokolliert, der abgewiesene schon
+
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+
+**Annahme.** `get_practice_statistics` und `get_practice_targets` schreiben beim erfolgreichen Aufruf durch `owner` keinen Auditeintrag; ein abgewiesener Aufruf liefert keine Zeile und steht als `statistics.read` mit Ausgang „abgewiesen“ im Protokoll. Der CSV-Export entsteht im Browser aus derselben Antwort und wird ebenfalls nicht protokolliert. Das Ändern eines Zielwerts wird protokolliert (`organization.practice_target_changed`).
+
+**Begründung.** Die Antwort enthält nur Summen ohne Patientin, Rechnung oder Mitarbeiterin — wie die Auswertung „Einnahmen je Leistungsart“, die ebenfalls nicht protokolliert (ABR-011). ADR-010 verlangt das Protokoll für Zugriffe auf personenbezogene Inhalte; ein Eintrag je Blick auf Praxissummen wäre Rauschen im Protokoll. Der abgewiesene Versuch bleibt nachweisbar (G6b).
+
+**Anker.** Kopfkommentar von `supabase/migrations/20260929230000_sta_001_practice_statistics.sql` und die Rollenprüfung in `public.get_practice_statistics`; `public.get_practice_targets` in `supabase/migrations/20260929231000_sta_002_practice_targets.sql`.
+
+**Änderungspfad.** Lesen protokollieren: ein Eintrag `statistics.read` mit Ausgang „erfolgreich“ in beiden Funktionen · Aufwand `klein`.
+
+### ANN-155 — Statistik: Richtung der Zielwerte und die eine Handlung je Kennzahl
+
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Sichtung Statistiken
+
+**Annahme.** Ein Zielwert ist beim Umsatz und bei der Auslastung ein Mindestwert, bei offenen Posten, Verordnungen ohne Anschluss und Ausfällen ein Höchstwert; ohne Zielwert zeigt die Karte keinen Vergleich. Je Kennzahl führt genau eine Handlung weiter: Umsatz → Rechnungen, offene Posten → offene Posten mit Mahnung, Auslastung → Warteliste (freie Fenster füllen; die Terminsuche selbst gehört zu einer Person), Verordnungen → „Verordnung endet“ unter Offene Punkte (dort mit Telefon der Verordner:in), Ausfälle → Anrufliste für morgen. Eine eigene Anfragefunktion an Verordner:innen entsteht nicht.
+
+**Begründung.** Die Roadmap verlangt zu jeder Zahl die eine Handlung, die sie auslöst (Mahnung, Anrufliste, freie Fenster, Verordner:in anfragen); alle Ziele gibt es schon als Seiten. Eine Anfragefunktion wäre ein neuer Versandweg (ADR-002) und ein eigenes Epic.
+
+**Anker.** `src/features/statistics/kennzahlen.ts` (Richtung, Ziel erreicht, Handlung je Kennzahl) mit Tests in `src/features/statistics/kennzahlen.test.ts`.
+
+**Änderungspfad.** Richtung oder Ziel einer Handlung ändern: Eintrag in `kennzahlen.ts` · Aufwand `klein`.
+
+### ANN-156 — Umsatz je Person: der behandelnden Person zugeordnet; owner sieht alle, wer Umsatzbeteiligung hat, sich selbst; jeder Aufruf protokolliert
+
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · Prüfpaket · Wiedervorlage: Datenschutzprüfung Beschäftigtendaten (Art. 88 DSGVO, § 26 BDSG), Vergütungsmodelle (IDEA-PRX-047)
+
+**Annahme.** Der Umsatz nach Rechnungsstellung wird je Monat der Person zugeordnet, die den Termin der abgerechneten Leistung behandelt hat; was sich keiner Person zuordnen lässt (etwa ein nach dem Storno gelöschter Posten), steht als „ohne Zuordnung“, sodass die Summe eines Monats immer der Praxisumsatz ist. `owner` sieht alle Personen mit Namen — erst auf Klick, weil jeder Abruf protokolliert wird —, eine Person mit Umsatzbeteiligung ausschließlich die eigenen Zahlen (maßgeblich ist das Modell am Mitarbeiterdatensatz, nicht die Rolle; ein inaktiver Beschäftigungsstatus sperrt nicht, das Konto schon), alle anderen nichts. Jeder erfolgreiche Aufruf steht als `statistics.staff_revenue_viewed` mit Umfang (alle oder selbst), ohne Beträge, im Protokoll. Die Auswertung liest keine Zeiten, Wege, Orte oder Ausfälle je Person (§20).
+
+**Begründung.** Jannes hat B6 am 2026-09-29 aufgelöst, weil Vergütungsmodelle mit Umsatzbeteiligung geplant sind; wer beteiligt ist, braucht die eigene Zahl. Zugeordnet wird nach der Behandlung, weil der Umsatz dort entsteht — die Person, die die Rechnung schreibt, ist meist das Büro. Das Protokoll kompensiert, dass es sich um Beschäftigtendaten handelt (ADR-010). Unsicher: ob die Prüfung eine Information der Beschäftigten (Art. 13 DSGVO) vor dem ersten Einsatz verlangt — empfohlen.
+
+**Anker.** `public.list_revenue_by_staff` in `supabase/migrations/20260929234000_sta_006_revenue_by_staff.sql`, Posten aus `app.revenue_staff_lines` in `supabase/migrations/20260929232000_sta_004_revenue_series.sql`; Laden auf Klick in `src/features/statistics/StatisticsPage.tsx`; Tests in `supabase/tests/revenue-series.test.ts`.
+
+**Änderungspfad.** Nach Zahlungseingang statt Rechnungsstellung: Zahlung anteilig auf die Zeilen verteilen (wie ANN-088) · Aufwand `mittel`. Personen ohne Umsatzbeteiligung für owner ausblenden: Bedingung in `list_revenue_by_staff` · Aufwand `klein`.
+
+### ANN-157 — Vergütungsmodell: zwei Werte, owner trägt ein, ohne Angabe kein Umsatz für die Person
+
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · erledigt · Wiedervorlage: Vergütungsmodelle (IDEA-PRX-047)
+
+**Annahme.** Je Person gibt es genau eine Angabe: Festgehalt oder Umsatzbeteiligung. Die Person wählt ihr Modell, `owner` trägt es ein (es ist Teil des Arbeitsvertrags); jede Änderung wird mit altem und neuem Wert protokolliert. Ohne Angabe zählt die Person wie Festgehalt und sieht keinen Umsatz. Lesen dürfen `owner` und die Person selbst, `office` nicht.
+
+**Begründung.** Die Sicht auf den eigenen Umsatz soll an einer vereinbarten Tatsache hängen, nicht an einer Rolle; eine fehlende Angabe darf niemandem Zahlen zeigen. Sätze und Abrechnung der Beteiligung sind ein eigenes Epic.
+
+**Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffCompensationSection.tsx`.
+
+**Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.

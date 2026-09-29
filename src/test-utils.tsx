@@ -142,6 +142,8 @@ export function testUser(roles: RoleKey[], displayName = 'Anna Beispiel'): Curre
     staffMemberId: roles.some((rolle) => rolle !== 'patient')
       ? (STAFF_IDS[displayName] ?? null)
       : null,
+    // Ohne hinterlegtes Modell keine Umsatzbeteiligung (ANN-157).
+    revenueShare: false,
   };
 }
 

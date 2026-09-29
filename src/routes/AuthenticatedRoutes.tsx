@@ -87,6 +87,7 @@ import { ReminderPrintPage } from '@/features/billing/ReminderPrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { RevenuePage } from '@/features/billing/RevenuePage';
+import { StatisticsPage } from '@/features/statistics/StatisticsPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
@@ -107,7 +108,7 @@ import {
  * Ein Patientenkonto, das die Route direkt aufruft, bekommt vom Server schlicht
  * keine Daten.
  *
- * Die Routen sind nach den sechs Arbeitsbereichen geordnet. Die Pfade der
+ * Die Routen sind nach den Arbeitsbereichen geordnet. Die Pfade der
  * bereits angebundenen Seiten bleiben unverändert: Sie stehen in Lesezeichen,
  * in geteilten Links und in den bestehenden Tests. Geändert haben sich
  * Einordnung und Beschriftung, nicht die Adresse.
@@ -145,6 +146,7 @@ export function AuthenticatedRoutes({
   // PROJECT_PRINCIPLES.md 4.1/4.3).
   const showHistory = canReadTreatmentNote(user.roles);
   const showBilling = canSeeBilling(user.roles);
+  const showStatistics = showSecurity || (isStaff(user.roles) && user.revenueShare);
 
   return (
     <VorschauProvider>
@@ -471,6 +473,11 @@ export function AuthenticatedRoutes({
                     element={<AufbewahrungPage user={user} />}
                   />
                 </>
+              ) : null}
+              {showStatistics ? (
+                // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
+                // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
+                <Route path="/statistiken" element={<StatisticsPage user={user} />} />
               ) : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

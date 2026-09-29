@@ -133,6 +133,22 @@
   --color-warnung: oklch(39.7% 0.0812 86.3);
   --color-warnung-soft: oklch(93.9% 0.0282 86.6);
 
+  /* --- Reihen in Grafiken (STA-EPIC-001) ------------------------------------
+     Sechs unterscheidbare Farben für Datenreihen, abgeleitet aus Flasche und
+     Salbei: dieselbe gedeckte Anmutung, aber genug Buntheit (C >= 0,10), dass
+     eine Reihe nicht grau liest. Geprüft mit dem Palettenprüfer des
+     Dataviz-Verfahrens gegen Weiß: Helligkeitsband, Buntheit, Abstand
+     benachbarter Reihen bei Farbsehschwäche (deutan/protan >= 8,7) und normal
+     (>= 21,7), Kontrast >= 3:1 - alle bestanden. Die Reihenfolge ist fest und
+     wird nie umgewälzt; Statusfarben (positiv, warnung, danger) sind keine
+     Reihen. Text trägt nie eine Reihenfarbe. */
+  --color-reihe-1: oklch(46% 0.105 158);
+  --color-reihe-2: oklch(66% 0.125 78);
+  --color-reihe-3: oklch(57% 0.105 245);
+  --color-reihe-4: oklch(55% 0.125 35);
+  --color-reihe-5: oklch(64% 0.11 150);
+  --color-reihe-6: oklch(50% 0.105 320);
+
   /* --- Schrift und Maße ----------------------------------------------------- */
 
   --font-sans:
