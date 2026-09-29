@@ -88,6 +88,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Einträge auf der Warteliste mit Wunschzeiten, Dauer, Grund und kurzer Notiz; auch eingeplante und zurückgezogene, bis ihre Frist abläuft.',
   },
+  tasks: {
+    label: 'Aufgaben',
+    beschreibung:
+      'Aufgaben und Wiedervorlagen der Praxis mit Bezug auf die Person: was zu tun ist, bis wann, wer es übernimmt, und ob es erledigt ist.',
+  },
   patient_files: {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme – ohne den Inhalt selbst.',

@@ -172,6 +172,14 @@ export const AUDIT_ACTIONS = [
   'appointment_brief.viewed',
   // PRX-011: ein offener Verordnungsscan wird einer Grundlage zugeordnet.
   'patient_file.assigned',
+  // PRX-012: Aufgaben und Wiedervorlagen. Lesen ist wie die Warteliste nicht
+  // auditiert; ein abgewiesener Leseversuch schon.
+  'task.created',
+  'task.updated',
+  'task.completed',
+  'task.reopened',
+  'task.deleted',
+  'tasks.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -286,6 +294,12 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'territory.removed': 'Gebiet entfernt',
   'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   'patient_file.assigned': 'Verordnungsfoto einer Grundlage zugeordnet',
+  'task.created': 'Aufgabe angelegt',
+  'task.updated': 'Aufgabe geändert',
+  'task.completed': 'Aufgabe erledigt',
+  'task.reopened': 'Aufgabe wieder geöffnet',
+  'task.deleted': 'Aufgabe gelöscht',
+  'tasks.read': 'Aufgaben gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -334,6 +348,7 @@ export const auditSubjectLabels: Record<string, string> = {
   therapy_report: 'Therapiebericht',
   waitlist_entry: 'Wartelisteneintrag',
   territory: 'Gebiet',
+  task: 'Aufgabe',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

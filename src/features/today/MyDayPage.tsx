@@ -60,6 +60,7 @@ import {
 } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { TagesrouteAufklapper } from '@/features/tours/TagesrouteAufklapper';
+import { OpenPointsSummary } from '@/features/open-points/OpenPointsSummary';
 
 /**
  * Übersicht - der persönliche Einstieg.
@@ -598,6 +599,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         title={`${greeting()}, ${firstName(user.profile.display_name)}`}
         description={formatDatum(heute)}
       />
+
+      {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
+          etwas fällig ist. */}
+      <OpenPointsSummary user={user} today={heute} />
 
       {eigeneTagesliste && user.staffMemberId ? (
         <MeineTagesliste

@@ -1,6 +1,12 @@
+import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { canWriteTreatmentBases, type CurrentUser } from '@/features/session/types';
+import { todayInTimeZone } from '@/features/appointments/api';
+import { canManageTasks, canWriteTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
+import { Tasks } from './Tasks';
+
+/** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */
+const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Offene Punkte - die Büroliste (PRX-EPIC-003, „Nichts fällt durch").
@@ -16,6 +22,12 @@ import { PrescriptionsToCapture } from './PrescriptionsToCapture';
  */
 export function OpenPointsPage({ user }: { user: CurrentUser }) {
   const timeZone = user.organizationTimeZone ?? 'Europe/Berlin';
+  const today = todayInTimeZone(timeZone);
+  // `?aufgabe=neu&patient=…` öffnet das Formular mit der Person (PRX-012).
+  const [suche] = useSearchParams();
+  const neueAufgabe = suche.get('aufgabe') === 'neu';
+  const patientParam = suche.get('patient');
+  const aufgabePatient = patientParam && KENNUNG.test(patientParam) ? patientParam : null;
 
   return (
     <>
@@ -24,6 +36,9 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         description="Was noch zu erledigen ist, bis es erledigt ist."
       />
       <div className="lg:max-w-3xl">
+        {canManageTasks(user.roles) ? (
+          <Tasks today={today} openForm={neueAufgabe} patientId={aufgabePatient} />
+        ) : null}
         {canWriteTreatmentBases(user.roles) ? <PrescriptionsToCapture timeZone={timeZone} /> : null}
       </div>
     </>

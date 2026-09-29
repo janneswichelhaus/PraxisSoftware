@@ -51,6 +51,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Eingeplante und zurückgezogene Einträge der Warteliste. Offene Einträge bleiben, bis sie geschlossen werden oder mit der Akte fallen.',
   },
+  aufgabe: {
+    label: 'Aufgaben',
+    beschreibung:
+      'Erledigte Aufgaben und Wiedervorlagen. Offene bleiben stehen; mit Bezug auf eine Person fallen sie mit der Akte.',
+  },
   personenstammdaten: {
     label: 'Personenstammdaten',
     beschreibung:

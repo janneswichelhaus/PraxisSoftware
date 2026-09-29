@@ -270,6 +270,7 @@ describe('Audit-Lesepfad', () => {
       'list_revenue_years',
       'list_staff_future_appointments',
       'list_storage_deletion_orders',
+      'list_tasks',
       'list_text_snippets',
       'list_therapy_report_sources',
       'list_waitlist_entries',

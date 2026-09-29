@@ -3,6 +3,7 @@ import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
   canManageStaffMasterData,
+  canManageTasks,
   canReadPatientDirectory,
   canWriteTreatmentBases,
   type CurrentUser,
@@ -148,6 +149,19 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       ziel: '/verordner/neu',
       bereich: BEREICHE.patienten.label,
       stichworte: ['arzt', 'ärztin', 'praxis', 'neu'],
+      rueckweg: true,
+    });
+  }
+
+  // PRX-012: Aufgaben und Wiedervorlagen, dieselbe Bedingung wie die Liste.
+  if (canManageTasks(roles)) {
+    eintraege.push({
+      id: 'vorgang-aufgabe-anlegen',
+      art: 'Vorgang',
+      bezeichnung: 'Aufgabe anlegen',
+      ziel: '/offen?aufgabe=neu',
+      bereich: BEREICHE.heute.label,
+      stichworte: ['wiedervorlage', 'erinnerung', 'rückruf', 'todo', 'erledigen'],
       rueckweg: true,
     });
   }

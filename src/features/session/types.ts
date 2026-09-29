@@ -149,6 +149,14 @@ export function canWriteTreatmentBases(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen, die Aufgaben und Wiedervorlagen lesen und schreiben (PRX-012):
+ * alle vier Praxisrollen (ANN-142). Verbindlich ist app.can_manage_tasks().
+ */
+export function canManageTasks(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => directoryRoles.includes(role));
+}
+
+/**
  * Rollen mit Zugriff auf die Dateien einer Akte (DAT-001, ADR-017 Punkt 12).
  *
  * Alle vier Praxisrollen. Diese Funktion steuert nur, ob der Bereich in der

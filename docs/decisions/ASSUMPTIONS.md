@@ -1808,3 +1808,15 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PR
 **Anker.** `list_open_prescription_scans`, `assign_prescription_scan` und der Trigger `patient_files_object_key` (`app.set_patient_file_object_key`) in `supabase/migrations/20260929160000_prx_011_prescription_without_paper.sql`; Oberfläche `src/features/files/PrescriptionPhoto.tsx`, `src/features/open-points/PrescriptionsToCapture.tsx`, `src/features/treatment-bases/ScanBesideForm.tsx`; Tests in `supabase/tests/prescription-scans.test.ts`.
 
 **Änderungspfad.** Das Foto soll beim Löschen einer Grundlage zurück in die offenen Punkte: Fremdschlüssel `patient_files_treatment_basis_id_fkey` auf `on delete set null` für Scans · Aufwand `mittel`. Ohne Umweg über die Person (Foto nur an bestehender Grundlage): Constraint `patient_files_scan_belongs_to_treatment_basis` wiederherstellen und den Knopf am Termin entfernen · Aufwand `klein`.
+
+### ANN-142 — Aufgaben: alle vier Praxisrollen sehen alle, erledigte fallen nach zwölf Monaten
+
+Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+
+**Annahme.** Aufgaben und Wiedervorlagen lesen und schreiben alle vier Praxisrollen (`owner`, `therapist`, `team_lead`, `office`), und zwar alle Aufgaben der Praxis — auch die einer Kollegin; die Zuweisung ist ein Hinweis, keine Sichtgrenze. Trainingsbetreuung und Patientenkonto sehen keine. Eine erledigte Aufgabe wird zwölf Monate nach dem Erledigen gelöscht (Klasse `aufgabe`, Anker „Abschluss des Vorgangs“); eine offene bleibt, mit Personenbezug fällt sie mit der Akte, ein Legal Hold an der Akte hält auch die erledigte. Titel und Notiz stehen nie im Protokoll; das Lesen der Liste wird wie bei der Warteliste nicht protokolliert (ANN-134), eine Abweisung schon.
+
+**Begründung.** `IDEA-PRX-019`: „Ein Bezug erweitert keine Berechtigung“ (§4.7) — wer Aufgaben sieht, sieht die Kartei ohnehin, und in einer kleinen Praxis übernimmt, wer gerade Zeit hat. ADR-008 kennt keine Klasse „Aufgabe“; am nächsten liegen die Warteliste (ANN-133, zwölf Monate nach dem Schließen) und die Terminanfragen ohne Behandlungsverhältnis (zwölf Monate nach letztem Kontakt). Eine erledigte Aufgabe ist ein abgeschlossener organisatorischer Vorgang; was fachlich bleiben muss, steht in Dokumentation oder Grundlage. Unsicher: ob Freitext mit Namen Dritter („Rückruf Frau X“) eine kürzere Frist verlangt.
+
+**Anker.** `app.can_manage_tasks()`, Klasse `aufgabe` mit zwei Zuordnungen und die Regel in `public.apply_retention` in `supabase/migrations/20260929170000_prx_012_tasks.sql`; Anzeigeweiche `canManageTasks` in `src/features/session/types.ts`; Beschriftung in `src/features/retention/klassen.ts`; Tests in `supabase/tests/tasks.test.ts`.
+
+**Änderungspfad.** Nur eigene und zugewiesene Aufgaben sichtbar: Bedingung in `list_tasks` und den Schreibpfaden ergänzen · Aufwand `mittel`. Andere Frist: `retention_interval` der Klasse `aufgabe` (Datenänderung) · Aufwand `klein`. Office ausschließen: `app.can_manage_tasks()` · Aufwand `klein`.
