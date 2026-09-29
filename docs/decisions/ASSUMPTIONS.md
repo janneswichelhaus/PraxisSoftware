@@ -1919,7 +1919,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-00
 
 ### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Steuerberatung (B9), Sichtung Statistiken
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Steuerberatung (B9), Sichtung Statistiken
 
 **Annahme.** Kennzahl (1) „Umsatz“ ist die Bruttosumme ausgestellter Rechnungen am Ausstellungstag, abzüglich Stornodokumenten am Tag des Stornos; „Zahlungseingang“ ist die Summe gebuchter Zahlungen abzüglich Rückzahlungen, ohne stornierte Zahlungen. Beide stehen immer getrennt, nie in einer Zahl. Der Umsatz erscheint als Praxissumme über beide Leistungsbereiche mit der Aufteilung Behandlung/Training darunter; der Zielwert gilt dem Umsatz, nicht dem Eingang.
 
@@ -1931,7 +1931,7 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Steuerberat
 
 ### ANN-152 — Statistik: Auslastung zählt Behandlungs- und Trainingstermine innerhalb der Arbeitszeit, nur als Praxissumme
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: B6 (Beschäftigtendaten), Datenschutzprüfung
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: B6 (Beschäftigtendaten), Datenschutzprüfung
 
 **Annahme.** Kennzahl (3) „Auslastung“ teilt die Minuten nicht abgesagter Behandlungs- und Trainingstermine, soweit sie in der Arbeitszeit liegen, durch die Minuten der Arbeitszeit aller Personen, die Termine bekommen können — für heute und die folgenden dreizehn Tage, nach dem Wochenplan und seinen Abweichungen (dieselbe Regel wie die Terminsuche). Interne Termine zählen nicht, „nicht angetroffen“ zählt als gebucht. Die Funktion rechnet je Person und Tag, liefert aber **nur die Praxissumme**; einen Wert je Person gibt es weder in der Datenbank noch in der Oberfläche.
 
@@ -1943,7 +1943,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: B6 (Be
 
 ### ANN-153 — Statistik: Ausfälle sind Absagen durch Patient:innen und Nichtantreffen, nach dem Tag des Termins; das Honorar ist, was erfasst ist
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Statistiken
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Sichtung Statistiken
 
 **Annahme.** Kennzahl (5) zählt Behandlungs- und Trainingstermine mit Absagegrund „auf Wunsch der Patient:in“ und nicht angetroffene Termine, deren Beginn in den letzten 28 Tagen (heute eingeschlossen) beziehungsweise den 28 Tagen davor liegt. Absagen der Praxis, „verlegt“ und „sonstiger Grund“ zählen nicht. „Mit Gebühr“ zählt Ausfälle mit Gebührenanlass; die Summe der Ausfallhonorare ist die Summe der daran erfassten Honorar-Leistungen zum Katalogpreis — ein Ausfall mit Anlass, aber ohne erfasste Leistung, steht nur in der Anzahl.
 
@@ -1955,7 +1955,7 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung St
 
 ### ANN-154 — Statistik: Der erfolgreiche Aufruf wird nicht protokolliert, der abgewiesene schon
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
 
 **Annahme.** `get_practice_statistics` und `get_practice_targets` schreiben beim erfolgreichen Aufruf durch `owner` keinen Auditeintrag; ein abgewiesener Aufruf liefert keine Zeile und steht als `statistics.read` mit Ausgang „abgewiesen“ im Protokoll. Der CSV-Export entsteht im Browser aus derselben Antwort und wird ebenfalls nicht protokolliert. Das Ändern eines Zielwerts wird protokolliert (`organization.practice_target_changed`).
 
@@ -1967,7 +1967,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-155 — Statistik: Richtung der Zielwerte und die eine Handlung je Kennzahl
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Statistiken
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · erledigt · Wiedervorlage: Sichtung Statistiken
 
 **Annahme.** Ein Zielwert ist beim Umsatz und bei der Auslastung ein Mindestwert, bei offenen Posten, Verordnungen ohne Anschluss und Ausfällen ein Höchstwert; ohne Zielwert zeigt die Karte keinen Vergleich. Je Kennzahl führt genau eine Handlung weiter: Umsatz → Rechnungen, offene Posten → offene Posten mit Mahnung, Auslastung → Warteliste (freie Fenster füllen; die Terminsuche selbst gehört zu einer Person), Verordnungen → „Verordnung endet“ unter Offene Punkte (dort mit Telefon der Verordner:in), Ausfälle → Anrufliste für morgen. Eine eigene Anfragefunktion an Verordner:innen entsteht nicht.
 
