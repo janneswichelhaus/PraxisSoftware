@@ -38,4 +38,4 @@ Stand 2026-09-23 · ersetzt für die Sichtung die Einzelschritte in
 
 ## Ergebnis
 
-Teilweise gesichtet am: 2026-09-28 · Gerät: Android-Handy und Windows-Rechner, Test-Umgebung · Schritte **1 und 8 ok**, keine Befunde. Offen: Schritte 2 bis 7 (Vorbereitung fehlt, siehe oben) sowie 9 bis 11.
+Teilweise gesichtet am: 2026-09-28 · Gerät: Android-Handy und Windows-Rechner, Test-Umgebung · Schritte **1 und 8 bis 11 ok** (2026-09-28/29), keine Befunde; LEI-EPIC-001 und CAL-EPIC-005 damit gesichtet. Offen: Schritte 2 bis 7 (ABR-EPIC-004 bis -006; Vorbereitung fehlt, siehe oben).

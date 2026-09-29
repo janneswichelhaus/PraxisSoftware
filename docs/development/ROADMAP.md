@@ -709,8 +709,8 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | ABR-EPIC-003 Zahlungen und offene Posten | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
 | A | PAT-006 Datenschutzinformation und Einwilligungen (G8) | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | — | — |
 | A | ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L) | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | — | — |
-| A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | fertig | 2026-09-20 | PR #72 | — | — |
-| A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
+| A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | gesichtet | 2026-09-20 | PR #72 | 2026-09-29 | — |
+| A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | gesichtet | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | 2026-09-29 | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |

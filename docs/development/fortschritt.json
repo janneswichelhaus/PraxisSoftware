@@ -229,17 +229,19 @@
           "id": "lei-epic-001",
           "name": "LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-20",
-          "nachweis": "PR #72"
+          "nachweis": "PR #72",
+          "gesichtet_am": "2026-09-29"
         },
         {
           "id": "cal-epic-005",
           "name": "CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L)",
           "gewicht": 2,
-          "status": "fertig",
+          "status": "gesichtet",
           "fertig_am": "2026-09-21",
-          "nachweis": "`e268f96`, `0c8920c`, `120445f`"
+          "nachweis": "`e268f96`, `0c8920c`, `120445f`",
+          "gesichtet_am": "2026-09-29"
         },
         {
           "id": "abr-epic-005",
