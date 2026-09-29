@@ -138,6 +138,8 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     const aendern = within(lachmann).getByRole('button', { name: 'Ändern' });
     expect(aendern).toHaveFocus();
     expect(lachmann).toHaveTextContent('o.B.');
+    // Eine Notiz geht auch eingeklappt mit einem Tipp.
+    expect(within(lachmann).getByRole('button', { name: 'Notiz' })).toBeInTheDocument();
 
     await user.click(aendern);
     expect(within(lachmann).getByRole('button', { name: 'o.B.' })).toHaveAttribute(

@@ -544,6 +544,22 @@ const Eingabe = memo(function Eingabe({
         >
           Ändern
         </Button>
+        {!angabe.notiz ? (
+          <Button
+            type="button"
+            groesse="kompakt"
+            variant="quiet"
+            onClick={() => {
+              fokusAufNotiz.current = true;
+              setNotizGewuenscht(true);
+              setEingeklappt(false);
+            }}
+          >
+            <span>
+              <span aria-hidden="true">+ </span>Notiz
+            </span>
+          </Button>
+        ) : null}
       </div>
     );
   }

@@ -413,6 +413,15 @@
           "vermerk": "Sichtung: Praxisverwaltung Schritte 4 bis 6 (BEF-080, BEF-081)"
         },
         {
+          "id": "ux-epic-004",
+          "name": "UX-EPIC-004 Ruhiger und übersichtlicher (BEF-071 bis BEF-081)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-09-29",
+          "nachweis": "UX-004a bis UX-004e",
+          "vermerk": "Sichtung: Praxisverwaltung Schritte 7 bis 9"
+        },
+        {
           "id": "prx-epic-003",
           "name": "PRX-EPIC-003 Aufgaben und Nachsorge",
           "gewicht": 2,
