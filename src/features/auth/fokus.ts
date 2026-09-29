@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 /**
  * Setzt den Fokus, wenn ein Zustand der Seite wechselt - nicht beim ersten
@@ -22,7 +22,12 @@ export function useFokusNachWechsel(
 
   // Ohne Abhängigkeiten: `ziel` ist bei jedem Zeichnen eine neue Funktion.
   // Gehandelt wird nur, wenn sich der Zustand wirklich geändert hat.
-  useEffect(() => {
+  //
+  // `useLayoutEffect`, nicht `useEffect`: Der Fokus sitzt damit im selben
+  // Schritt wie die neue Anzeige. Mit `useEffect` lief er eine Aufgabe später -
+  // dazwischen stand die Auskunft schon da, ohne Fokus; die CI hat genau das
+  // einmal gesehen (KennwortNeuPage, Lauf 398 auf main).
+  useLayoutEffect(() => {
     if (Object.is(bisher.current, zustand)) return;
     bisher.current = zustand;
     ziel()?.focus();
