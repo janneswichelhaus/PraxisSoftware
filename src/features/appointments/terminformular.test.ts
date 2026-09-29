@@ -7,6 +7,7 @@ import {
   leseDauer,
   leseMeldung,
   mitAngelegtemTermin,
+  nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
@@ -110,6 +111,27 @@ describe('mitAngelegtemTermin (TER-04)', () => {
     expect(mitAngelegtemTermin(`/patienten/p/termine?neu=alt`, NEU)).toBe(
       `/patienten/p/termine?neu=${NEU}`,
     );
+  });
+});
+
+describe('nachDemAnlegen (BEF-071)', () => {
+  const warteliste = '/warteliste?filter=open';
+  const suche = `/patienten/p1/plaetze?warteliste=e1&zurueck=${encodeURIComponent(warteliste)}`;
+
+  it('führt aus der Terminsuche dorthin, wo die Suche begann', () => {
+    expect(nachDemAnlegen(suche, true)).toBe(warteliste);
+  });
+
+  it('fällt ohne mitgereisten Rückweg auf die Termine der Akte zurück', () => {
+    expect(nachDemAnlegen('/patienten/p1/plaetze?warteliste=e1', true)).toBe(
+      '/patienten/p1/termine',
+    );
+  });
+
+  it('lässt jeden anderen Rückweg und jeden Termin ohne Warteliste unverändert', () => {
+    expect(nachDemAnlegen(suche, false)).toBe(suche);
+    expect(nachDemAnlegen('/kalender?datum=2026-10-01', true)).toBe('/kalender?datum=2026-10-01');
+    expect(nachDemAnlegen('', true)).toBe('');
   });
 });
 

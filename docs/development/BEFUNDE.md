@@ -2950,7 +2950,7 @@ ohnehin nicht nebenbei angefasst werden.
 | Datum   | 2026-09-28                                                                                                                                  |
 | Bereich | Warteliste → Freie Termine suchen → Übernehmen → Terminformular                                                                             |
 | Quelle  | Sichtung Praxisverwaltung, Schritt 2 (Jannes, Test-Umgebung, Android und Windows, office)                                                                |
-| Status  | offen                                                                                                                                       |
+| Status  | erledigt in UX-EPIC-004 (UX-004a) |
 | Berührt | `src/features/slot-search/SlotSearchPage.tsx` (Z. 167–171, Rückweg), Terminformular (Rückweg nach dem Anlegen); PRX-003, PRX-004; ANN-136 |
 
 **Beobachtung.** Max Mustermann steht auf der Warteliste; über **Freie Termine

@@ -45,6 +45,7 @@ import {
   DAUER_PARAM,
   leseDauer,
   mitAngelegtemTermin,
+  nachDemAnlegen,
   speicherfehlerText,
   terminFehlerliste,
   terminFeldfehler,
@@ -283,7 +284,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       // landet wieder im Kalender, mit dem neuen Termin hervorgehoben; wer vom
       // Termin kam („Folgetermin anlegen"), auf dem Termin, der das Anlegen
       // bestätigt (TER-04). Ohne Rückweg bleibt es die Terminansicht.
-      const rueckweg = leseRueckweg(suche, '');
+      const rueckweg = nachDemAnlegen(leseRueckweg(suche, ''), wartelisteId !== null);
       // Gespeichert ist gespeichert: Der eigene Weg danach ist kein Verlust.
       freigeben();
       void navigate(

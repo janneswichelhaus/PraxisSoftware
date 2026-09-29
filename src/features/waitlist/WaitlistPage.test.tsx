@@ -76,6 +76,17 @@ describe('WaitlistPage (PRX-001)', () => {
     );
   });
 
+  it('bestätigt einen gerade eingeplanten Eintrag mit dem Weg zum Termin (BEF-071)', async () => {
+    fetchWaitlist.mockResolvedValue([]);
+    const termin = '0f0f0f0f-0000-4000-8000-000000000001';
+    renderWithProviders(<WaitlistPage user={testUser(['office'])} />, `/warteliste?neu=${termin}`);
+    expect(await screen.findByText(/Termin angelegt – der Eintrag ist eingeplant/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'Termin öffnen' })).toHaveAttribute(
+      'href',
+      `/termine/${termin}`,
+    );
+  });
+
   it('sagt es, wenn niemand wartet', async () => {
     fetchWaitlist.mockResolvedValue([]);
     renderWithProviders(<WaitlistPage user={testUser(['office'])} />);
