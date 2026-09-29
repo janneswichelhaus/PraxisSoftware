@@ -223,6 +223,7 @@ describe('Audit-Lesepfad', () => {
       'check_travel_buffers',
       'count_orphaned_patient_file_objects',
       'find_free_slots',
+      'find_possible_duplicates',
       'get_appointment_billing_context',
       'get_appointment_brief',
       'get_appointment_services',

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
 import type { GeocodeResult } from '@/lib/location/contract';
@@ -163,6 +164,29 @@ export async function searchPatients(begriff: string, limit = 10): Promise<Patie
 
   if (error) throw new Error('Die Suche konnte nicht ausgeführt werden.');
   return z.array(patientSearchHitSchema).parse(data ?? []);
+}
+
+/**
+ * Mögliche Dubletten beim Anlegen (PRX-015, ANN-145): gleicher Nachname und
+ * gleiches Geburtsdatum oder gleicher Vorname. Nur ein Hinweis - anlegen
+ * darf man trotzdem.
+ */
+export async function findPossibleDuplicates(
+  givenName: string,
+  familyName: string,
+  dateOfBirth: string | null,
+): Promise<PatientSearchHit[]> {
+  const { data, error } = (await getSupabase().rpc('find_possible_duplicates', {
+    p_given_name: givenName,
+    p_family_name: familyName,
+    p_date_of_birth: dateOfBirth,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error('Die Prüfung auf Dubletten ist fehlgeschlagen.');
+  return antwort(
+    z.array(patientSearchHitSchema),
+    data ?? [],
+    'Die Prüfung auf Dubletten ist fehlgeschlagen.',
+  );
 }
 
 /**

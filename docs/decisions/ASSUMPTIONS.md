@@ -1844,3 +1844,15 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Tabelle, Klasse `anrufstand`, `list_call_list` und `record_call_outcome` sowie die Regel in `public.apply_retention` in `supabase/migrations/20260929190000_prx_014_call_list.sql`; Oberfläche `src/features/open-points/CallListPage.tsx`; Tests in `supabase/tests/call-list.test.ts`.
 
 **Änderungspfad.** Andere Frist: `retention_interval` der Klasse `anrufstand` · Aufwand `klein`. Verlauf aller Versuche statt eines Stands: eigene Zeile je Versuch statt `on conflict` · Aufwand `mittel`. Auch die Anrufliste nach „Tag umplanen“ (CAL-009) speichert ihren Stand hier: dieselbe Funktion für abgesagte Termine öffnen · Aufwand `mittel`.
+
+### ANN-145 — Dublettenhinweis: gleicher Nachname und gleiches Geburtsdatum oder gleicher Vorname
+
+Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung PRX-EPIC-003; mit PRX-EPIC-003b (Zusammenführen)
+
+**Annahme.** Beim Anlegen einer Person prüft die Anwendung vor dem ersten Speichern auf mögliche Dubletten in der eigenen Praxis: gleicher Nachname **und** (gleiches Geburtsdatum **oder** gleicher Vorname), verglichen in der Suchform (klein, ohne Akzente, Umlaute aufgelöst). Treffer erscheinen als Hinweis mit Link zur vorhandenen Akte; wer erneut „anlegen“ tippt, legt an. Scheitert die Prüfung, wird ohne sie angelegt. Höchstens fünf Treffer, nur Name, Geburtsdatum und Status — dieselben Angaben wie die Suche, nicht protokolliert wie deren Trefferliste.
+
+**Begründung.** `IDEA-PRX-018`: „Hinweis auf gleichen Namen und Geburtsdatum … nie automatisch.“ Der Nachname allein wäre zu laut (Familien), Vorname und Nachname ohne Geburtsdatum fangen den häufigsten Fall — eine zweite Anlage ohne Geburtsdatum oder mit Tippfehler darin —, Nachname und Geburtsdatum den Fall mit Kurzform im Vornamen („Max“/„Maximilian“). Tippfehler im Nachnamen fängt die Regel nicht; das bleibt der Suche in der Kopfleiste überlassen. Ein Hinweis statt einer Sperre, weil es Namensgleiche mit gleichem Geburtstag gibt.
+
+**Anker.** `public.find_possible_duplicates` in `supabase/migrations/20260929200000_prx_015_duplicate_check.sql`; Hinweis in `src/features/patients/NewPatientPage.tsx`; Tests in `supabase/tests/duplicate-check.test.ts`.
+
+**Änderungspfad.** Andere Regel (etwa Ähnlichkeit statt Gleichheit mit `pg_trgm`): die Bedingung in `find_possible_duplicates` · Aufwand `klein` (mit neuer Erweiterung `mittel`). Harte Sperre: `create_patient` ruft dieselbe Regel und verlangt eine Bestätigung · Aufwand `mittel`.
