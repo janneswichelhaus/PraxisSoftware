@@ -156,7 +156,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     ]);
     expect(rows.every((r) => r.actor_user_id === users.office)).toBe(true);
     await asUserCommitted(users.office, LOESCHEN, [id]);
-    const { rows: rest } = await asPostgres('select 1 from public.treatment_bases where id = $1', [id]);
+    const { rows: rest } = await asPostgres('select 1 from public.treatment_bases where id = $1', [
+      id,
+    ]);
     expect(rest).toHaveLength(0);
   });
 
