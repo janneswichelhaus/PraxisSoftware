@@ -1,4 +1,5 @@
 import { alsFormularfehler, type Formularfehler } from '@/lib/formularfehler';
+import { leseRueckweg } from '@/lib/rueckweg';
 import { mitNeuemTermin, NEUER_TERMIN_PARAM, type AppointmentFormField } from './api';
 
 /**
@@ -148,6 +149,26 @@ export function mitAngelegtemTermin(rueckweg: string, appointmentId: string): st
   const suche = new URLSearchParams(trenner === -1 ? '' : rueckweg.slice(trenner + 1));
   suche.set(NEUER_TERMIN_PARAM, appointmentId);
   return `${pfad}?${suche.toString()}`;
+}
+
+const TERMINSUCHE = /^\/patienten\/([^/?]+)\/plaetze$/;
+
+/**
+ * Wohin es nach dem Anlegen geht, wenn der Termin aus der Warteliste kam (BEF-071).
+ *
+ * Die Terminsuche ist nur ein Zwischenschritt: Ihr Eintrag ist mit dem Anlegen
+ * eingeplant, und zurück auf der Suche stand nur noch „nicht mehr offen" - das
+ * las sich wie ein Fehler. Der Weg führt deshalb dorthin, wo die Suche
+ * begann (Warteliste oder Akte), und bestätigt dort das Anlegen.
+ */
+export function nachDemAnlegen(rueckweg: string, ausWarteliste: boolean): string {
+  if (!ausWarteliste) return rueckweg;
+  const trenner = rueckweg.indexOf('?');
+  const pfad = trenner === -1 ? rueckweg : rueckweg.slice(0, trenner);
+  const treffer = TERMINSUCHE.exec(pfad);
+  if (!treffer) return rueckweg;
+  const suche = new URLSearchParams(trenner === -1 ? '' : rueckweg.slice(trenner + 1));
+  return leseRueckweg(suche, `/patienten/${treffer[1]}/termine`);
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;

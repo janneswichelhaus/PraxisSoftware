@@ -1441,6 +1441,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Begründung.** Oberflächen-Checkliste Punkt 9 („gleiche Sache, gleiches Wort") und die Bedienprinzipien in `docs/PRODUCT_VISION.md` (Beschriftungen folgen einer Begriffsliste). Jannes hat die vorhandenen Begriffe am 2026-09-26 für in Ordnung befunden; dieser Loop legt deshalb keine neuen Wörter fest, sondern entscheidet nur, wo zwei Wörter für dieselbe Sache nebeneinanderstanden: Die Anlegen-Leiste sagte in Jannes' Worten „Fehlzeit · Dauerfehlzeit" (BEF-035), die Suche „Fehlzeit eintragen", das Formular dahinter „Ereignis eintragen". „Kennwort" steht 62-mal im Bestand, „Passwort" einmal in einem Kommentar. Die Einzahl „Mitarbeiter:in" folgt der Schreibweise von „Patient:in" und „Therapeut:in"; die Suche sagte als einzige Stelle „Mitarbeitende:n anlegen". Im Auditlog und im Verlauf der Messwerte (ANN-106) meint „Ereignis" etwas anderes und bleibt. Unsicher: ob „Fehlzeit" für ein Teammeeting passt, das Arbeitszeit ist.
 
+Seit 2026-09-29 auch „Auditlog“ → „Protokoll“ (Jannes in der Sichtung, BEF-080).
+
 **Anker.** `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts`, durchgesetzt von `src/lib/begriffe.test.ts` über jeden Quelltext unter `src/` ohne Kommentare und Tests.
 
 **Änderungspfad.** Ein anderes Wort: den Wert in `BEGRIFFE` bzw. `BEREICHE` ändern, den Eintrag in `ABGELOESTE_BEGRIFFE` umkehren und den Test die übrigen Stellen finden lassen · Aufwand `klein`. Das Gate aufgeben: den Test entfernen, die Datei bleibt als Quelle · Aufwand `klein`.
@@ -1747,7 +1749,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 ### ANN-137 — Kurzblick am Termin: aufklappbar, jedes Aufklappen protokolliert, letzter Haupteintrag im Wortlaut
 
-Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 5) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung
 
 **Annahme.** Der Vertretungs-Kurzblick steht an jedem Behandlungstermin **zugeklappt** und wird erst beim Aufklappen gelesen. Er zeigt Zugangshinweis, Besonderheit, feste Therapeut:in, die Grundlage mit Terminzahl und Mengen je Heilmittel und den **letzten Haupteintrag** der Person vor diesem Termin im Wortlaut — auch einen Entwurf, als Entwurf gekennzeichnet; Nachträge nur in der Akte. Jedes Aufklappen schreibt `appointment_brief.viewed`, der gezeigte Eintrag zusätzlich `treatment_note.viewed` mit der Oberfläche `appointment_brief`. Lesen dürfen die Rollen, die Termine **und** Dokumentation lesen (owner, therapist, team_lead, office); Trainingsbetreuung und Patientenkonto werden protokolliert abgewiesen.
 
@@ -1759,7 +1761,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 
 ### ANN-138 — „Mitnehmen“: von Hand gepflegte Liste an der Person, am Tag nur zusammengezählt
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Praxisverwaltung)
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 4) · erledigt · Wiedervorlage: —
 
 **Annahme.** Was für einen Besuch aufs Rad muss, steht als **von Hand gepflegte Liste an der Person** — höchstens zehn Einträge zu je 1 bis 60 Zeichen, ohne Doppel —, nicht am einzelnen Termin und nie aus Befund oder Dokumentation abgeleitet. Sie liegt bei den internen Versorgungsangaben neben der Behandlungsliege, erbt deren Rollenschnitt (alle vier Praxisrollen setzen und lesen, nie das Patientenkonto) und Datenklasse (Patientenakte), gehört zur Auskunft nach Art. 15 und wird wie die Liege mit `patient.updated` und dem Feldnamen protokolliert. Die Übersicht zeigt „Heute mitnehmen“ **zusammengezählt und ohne Person** über die noch anzufahrenden Besuche; mit Person steht die Liste im Kurzblick am Termin und in der Akte.
 
@@ -1783,7 +1785,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach d
 
 ### ANN-140 — Termin abhaken: Behandelnde bestätigen die Heilmittel an ihrem eigenen Termin, zurücknehmen bleibt beim Büro
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung (Kern am 2026-09-28 von Jannes gewählt: „sonst muss das Büro immer erst nachhaken, ob der Termin wirklich stattgefunden hat“)
+Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 6) · erledigt · Wiedervorlage: —
 
 **Ablösung.** ersetzt ANN-071 in der Frage „wer Leistungen erfasst“
 

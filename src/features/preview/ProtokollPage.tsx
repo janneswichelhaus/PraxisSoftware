@@ -24,7 +24,7 @@ export function ProtokollPage() {
     <>
       <PageHeader
         title="Vorschau-Protokoll"
-        description="Simulierte Vorgänge dieser Sitzung. Kein Auditlog."
+        description="Simulierte Vorgänge dieser Sitzung. Nicht das Protokoll der Praxis."
         actions={
           // Zurücksetzen verwirft alles auf einmal - nur mit Rückfrage und nur,
           // wenn es etwas zu verwerfen gibt (VOR-10, UEB-19).

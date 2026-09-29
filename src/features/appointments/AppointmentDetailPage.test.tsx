@@ -1338,6 +1338,28 @@ describe('AppointmentDetailPage', () => {
       expect(zeileUm(meldung)).toHaveFocus();
     });
 
+    it('nennt nach einer kurzfristigen Absage das vorgemerkte Ausfallhonorar (BEF-079)', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Anna Beispiel');
+      // Nach der Absage liefert der Server den Termin mit Honoraranlass.
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        fee_basis: 'late_cancellation',
+      });
+
+      await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
+      await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
+
+      expect(
+        await screen.findByText(
+          'Termin abgesagt · Ausfallhonorar vorgemerkt: Absage weniger als 24 Stunden vorher.',
+        ),
+      ).toBeInTheDocument();
+    });
+
     it('bestätigt den Abschluss und nimmt den Fokus dorthin', async () => {
       const user = userEvent.setup();
       rendern();

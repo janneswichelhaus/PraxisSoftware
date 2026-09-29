@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import type * as LageApi from './abrechnungslage-api';
 import { renderWithProviders } from '@/test-utils';
 import { DetailList } from '@/components/ui/DetailList';
@@ -30,7 +30,7 @@ vi.mock('./abrechnungslage-api', async (importOriginal) => {
   };
 });
 
-const { Abrechnungslage } = await import('./Abrechnungslage');
+const { AbrechnungAbschnitt, Abrechnungslage } = await import('./Abrechnungslage');
 
 function rendern() {
   return renderWithProviders(
@@ -38,6 +38,11 @@ function rendern() {
       <Abrechnungslage appointmentId={TERMIN_ID} />
     </DetailList>,
   );
+}
+
+/** Der eigene Abschnitt „Abrechnung" unter den Termindaten (BEF-081). */
+function abschnittRendern() {
+  return renderWithProviders(<AbrechnungAbschnitt appointmentId={TERMIN_ID} />);
 }
 
 describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
@@ -52,9 +57,10 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
     expect(screen.getByText(/Folgeverordnung vom 08\.09\.2026/)).toBeInTheDocument();
   });
 
-  it('zeigt owner und office Empfänger und offene Rechnungen', async () => {
-    rendern();
-    expect(await screen.findByText('Beihilfestelle')).toBeInTheDocument();
+  it('zeigt owner und office Empfänger und offene Rechnungen im Abschnitt „Abrechnung" (BEF-081)', async () => {
+    abschnittRendern();
+    expect(await screen.findByRole('heading', { name: 'Abrechnung' })).toBeInTheDocument();
+    expect(screen.getByText('Beihilfestelle')).toBeInTheDocument();
     expect(
       screen.getByText(/2 Rechnungen, 123,45\s€ offen – davon überfällig/u),
     ).toBeInTheDocument();
@@ -72,7 +78,7 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
       open_outstanding_cents: 0,
       open_overdue: false,
     });
-    rendern();
+    abschnittRendern();
     expect(await screen.findByText('Patient:in selbst')).toBeInTheDocument();
     expect(screen.getByText('keine')).toBeInTheDocument();
   });
@@ -88,6 +94,9 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
     });
     rendern();
     expect(await screen.findByText('Termin 8 von 10')).toBeInTheDocument();
+    const { container } = abschnittRendern();
+    await waitFor(() => expect(fetchAbrechnungslage).toHaveBeenCalledTimes(2));
+    expect(container).toBeEmptyDOMElement();
     expect(screen.queryByText('Rechnung an')).toBeNull();
     expect(screen.queryByText('Offene Rechnungen')).toBeNull();
   });

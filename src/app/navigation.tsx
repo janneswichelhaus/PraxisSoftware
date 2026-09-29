@@ -212,8 +212,8 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     // die Suche weiter.
     eintraege.push({
       to: '/praxis/sicherheit/audit',
-      label: 'Auditlog',
-      stichworte: ['Audit', 'Protokoll', 'Zugriffe', 'Sicherheit'],
+      label: 'Protokoll',
+      stichworte: ['Audit', 'Zugriffe', 'Sicherheit'],
     });
     // Aufbewahrung und Loeschung gehoeren zur Praxisleitung wie das Auditlog:
     // beides sind Nachweise, keine Arbeitsvorraete (LOE-002b, ADR-008).

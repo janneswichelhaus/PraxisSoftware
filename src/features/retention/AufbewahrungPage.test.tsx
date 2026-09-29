@@ -219,7 +219,7 @@ describe('AufbewahrungPage', () => {
 
     expect(await screen.findByText('1 Datensatz')).toBeInTheDocument();
     expect(screen.getByText('12 Datensätze')).toBeInTheDocument();
-    expect(screen.getByText('Auditlog')).toBeInTheDocument();
+    expect(screen.getByText('Protokoll')).toBeInTheDocument();
   });
 
   it('haelt die Seite barrierefrei - mit Sperre und mit Loeschjournal', async () => {

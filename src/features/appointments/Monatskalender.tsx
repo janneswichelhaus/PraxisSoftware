@@ -105,21 +105,31 @@ export function Monatskalender({
               key={tag}
               ref={tag === datum ? gewaehltRef : undefined}
               type="button"
-              aria-label={tagesName(tag)}
+              aria-label={istHeute ? `${tagesName(tag)}, heute` : tagesName(tag)}
               aria-pressed={istGewaehlt}
               aria-current={istHeute ? 'date' : undefined}
               onClick={() => onWaehlen(tag)}
               className={[
-                'rounded-button mx-auto inline-flex size-11 items-center justify-center text-sm tabular-nums',
+                'rounded-button relative mx-auto inline-flex size-11 flex-col items-center justify-center text-sm tabular-nums',
                 istGewaehlt
                   ? 'bg-accent text-surface font-semibold'
                   : imMonat
                     ? 'text-ink hover:bg-surface-sunken'
                     : 'text-ink-muted hover:bg-surface-sunken',
                 istHeute && !istGewaehlt ? 'border-accent border-2 font-semibold' : '',
+                // BEF-074: In der Woche ist heute mit sechs anderen Tagen
+                // gewählt und wäre sonst nicht zu erkennen - der Rahmen bleibt.
+                istHeute && istGewaehlt ? 'border-ink border-2' : '',
               ].join(' ')}
             >
               {Number(tag.slice(8))}
+              {istHeute ? (
+                // Ein Punkt unter der Zahl: heute, auch ohne Farbe erkennbar.
+                <span
+                  aria-hidden="true"
+                  className="rounded-pill absolute bottom-1 size-1 bg-current"
+                />
+              ) : null}
             </button>
           );
         })}

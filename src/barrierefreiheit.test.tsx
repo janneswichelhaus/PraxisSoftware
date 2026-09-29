@@ -572,7 +572,7 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
         <TextbausteinLeiste onEinfuegen={() => {}} />
       </main>,
     );
-    await screen.findByText('Textbausteine:');
+    await screen.findByRole('group', { name: 'Textbausteine' });
     await pruefeBarrierefreiheit(container);
   });
 });

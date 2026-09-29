@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { vergissKalenderstaende } from './kalenderstand';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -161,6 +162,7 @@ function letzteAbfrage() {
 
 describe('CalendarPage', () => {
   beforeEach(() => {
+    vergissKalenderstaende();
     fetchAppointments.mockReset();
     fetchAssignableTherapists.mockReset();
     fetchLocations.mockReset();
@@ -187,6 +189,18 @@ describe('CalendarPage', () => {
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
       expect(letzteAbfrage()).toMatchObject({ von: '2027-05-10', bis: '2027-05-17' });
+    });
+
+    it('öffnet ohne Parameter dort, wo man heute zuletzt war (BEF-073)', async () => {
+      const erster = rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      erster.unmount();
+      fetchAppointments.mockClear();
+
+      // Später, über die Tableiste: ohne Ansicht und Tag in der Adresse.
+      rendern('/kalender');
+      await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
+      expect(letzteAbfrage()).toMatchObject({ von: '2027-05-12', bis: '2027-05-13' });
     });
 
     it('fragt in der Tagesansicht genau einen Tag ab', async () => {
@@ -1504,9 +1518,11 @@ describe('CalendarPage', () => {
       fireEvent.click(screen.getByRole('button', { name: /Mai 2027/ }));
       const blatt = screen.getByRole('group', { name: 'Monatskalender' });
       // Heute ist markiert, der gezeigte Tag gewaehlt.
-      const heute = within(blatt).getByRole('button', { name: 'Mittwoch, 12. Mai 2027' });
+      // Auch gewählt bleibt heute erkennbar: Rahmen und Punkt, im Namen „heute" (BEF-074).
+      const heute = within(blatt).getByRole('button', { name: 'Mittwoch, 12. Mai 2027, heute' });
       expect(heute).toHaveAttribute('aria-current', 'date');
       expect(heute).toHaveAttribute('aria-pressed', 'true');
+      expect(heute).toHaveClass('border-2');
 
       fireEvent.click(within(blatt).getByRole('button', { name: 'Nächster Monat' }));
       fireEvent.click(within(blatt).getByRole('button', { name: 'Donnerstag, 3. Juni 2027' }));
@@ -1908,7 +1924,7 @@ describe('CalendarPage', () => {
       fireEvent.pointerUp(window, { clientX: 150, clientY: 200 + EINE_STUNDE });
     }
 
-    it('stellt die Rueckgaengig-Leiste klebend unter das Raster und setzt den Fokus darauf (KAL-01)', async () => {
+    it('stellt die Rueckgaengig-Leiste fest an den unteren Bildrand und setzt den Fokus darauf (KAL-01, BEF-075)', async () => {
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const kachel = await screen.findByRole('link', { name: /Max Mustermann/ });
       spaltenVermessen();
@@ -1919,8 +1935,9 @@ describe('CalendarPage', () => {
       const rueckgaengig = await screen.findByRole('button', { name: 'Rückgängig' });
       await waitFor(() => expect(rueckgaengig).toHaveFocus());
       const leiste = rueckgaengig.closest('[role="status"]')!;
-      expect(leiste.className).toContain('sticky');
-      // Unter dem Raster, an der Stelle der Anlegen-Leiste - nicht darüber.
+      // Fest am Bildrand, nicht klebend am Ende des Rasters (BEF-075).
+      expect(leiste.className).toContain('fixed');
+      // Im Dokument unter dem Raster - die Tastaturreihenfolge bleibt.
       expect(raster().compareDocumentPosition(leiste) & Node.DOCUMENT_POSITION_FOLLOWING).toBe(
         Node.DOCUMENT_POSITION_FOLLOWING,
       );
@@ -2002,7 +2019,9 @@ describe('CalendarPage', () => {
       expect(screen.getByLabelText('Behandelnde Person')).toHaveClass('min-h-11', 'text-base');
 
       fireEvent.click(screen.getByRole('button', { name: /Mai 2027/ }));
-      expect(screen.getByRole('button', { name: 'Mittwoch, 12. Mai 2027' })).toHaveClass('size-11');
+      expect(screen.getByRole('button', { name: 'Mittwoch, 12. Mai 2027, heute' })).toHaveClass(
+        'size-11',
+      );
     });
 
     it('hebt die Auswahl mit einem Tipp in ihre gezeichnete Flaeche auf (KAL-09)', async () => {

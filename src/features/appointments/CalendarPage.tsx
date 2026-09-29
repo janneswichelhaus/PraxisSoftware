@@ -38,6 +38,7 @@ import {
   type GitterFokus,
   type GitterSpalte,
 } from './CalendarGrid';
+import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
 import { Monatskalender } from './Monatskalender';
@@ -233,7 +234,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // duerfen nicht bedingt laufen, und ein leerer Wert liess die
   // Kalenderarithmetik abstuerzen statt den Fehlerzustand zu zeigen.
   const heute = zone ? todayInTimeZone(zone) : '1970-01-01';
-  const p = leseParameter(suche, heute);
+  // BEF-073: Ohne Ansicht in der Adresse (Tableiste, Rückweg ohne Stand)
+  // öffnet der Kalender dort, wo man heute zuletzt war.
+  const gemerkt = suche.has('ansicht') ? null : letzterKalenderstand(user.profile.id, heute);
+  const p = leseParameter(gemerkt ?? suche, heute);
   // Der gerade angelegte Termin (FIX-016): einmal hervorgehoben, beim
   // naechsten Blaettern faellt der Parameter weg (`schreibeParameter`).
   const neuerTermin = suche.get(NEUER_TERMIN_PARAM);
@@ -289,6 +293,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const monatKnopfRef = useRef<HTMLButtonElement>(null);
   const optionenKnopfRef = useRef<HTMLButtonElement>(null);
   const optionenRef = useRef<HTMLDivElement>(null);
+  const kalenderSuche = schreibeParameter(p).toString();
+  const ausGemerktem = gemerkt !== null;
+  useEffect(() => {
+    if (ausGemerktem) {
+      setSuche(new URLSearchParams(kalenderSuche), { replace: true });
+      return;
+    }
+    merkeKalenderstand(user.profile.id, new URLSearchParams(kalenderSuche), heute);
+  }, [ausGemerktem, kalenderSuche, heute, user.profile.id, setSuche]);
   const rueckgaengigRef = useRef<HTMLButtonElement>(null);
   const rueckgaengigFokussieren = useRef(false);
   useEffect(() => {
@@ -1429,15 +1442,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           Platz inzwischen belegt, sagt der Server das - und der Termin bleibt,
           wo er ist.
 
-          Seit KAL-01 klebt sie unten, an der Stelle der Anlegen-Leiste, und
+          Seit KAL-01 steht sie unten, an der Stelle der Anlegen-Leiste, und
           trägt den Fokus: Über dem Raster stand sie nach einem
-          Nachmittagstermin rund 1 000 px außer Sicht. Solange eine
+          Nachmittagstermin rund 1 000 px außer Sicht. Seit BEF-075 fest am
+          Bildrand statt klebend: Klebend hing sie am Ende des Rasters und
+          stand je nach Bildlauf doch außerhalb. Solange eine
           Rückfrage oder die Anlegen-Leiste offen ist, tritt sie zurück: zwei
           Kästen übereinander wären eine Frage zu viel (CAL-023). */}
       {rueckgaengig && !vorschlag && !auswahl ? (
         <div
           role="status"
-          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:bottom-4"
+          className="border-line-strong bg-surface-sunken nicht-drucken rounded-card fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[28rem]"
         >
           <p className="text-ink text-sm">
             Termin verschoben. Vorher: <strong>{rueckgaengig.beschreibung}</strong>

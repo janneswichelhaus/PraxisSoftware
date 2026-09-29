@@ -2950,7 +2950,7 @@ ohnehin nicht nebenbei angefasst werden.
 | Datum   | 2026-09-28                                                                                                                                  |
 | Bereich | Warteliste → Freie Termine suchen → Übernehmen → Terminformular                                                                             |
 | Quelle  | Sichtung Praxisverwaltung, Schritt 2 (Jannes, Test-Umgebung, Android und Windows, office)                                                                |
-| Status  | offen                                                                                                                                       |
+| Status  | erledigt in UX-EPIC-004 (UX-004a) |
 | Berührt | `src/features/slot-search/SlotSearchPage.tsx` (Z. 167–171, Rückweg), Terminformular (Rückweg nach dem Anlegen); PRX-003, PRX-004; ANN-136 |
 
 **Beobachtung.** Max Mustermann steht auf der Warteliste; über **Freie Termine
@@ -2980,7 +2980,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Tagesansicht am Handy |
 | Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Terminkachel im Kalender; CAL-EPIC-004a (freie Terminlänge); BEF-037 |
 
 **Beobachtung.** Ein Hausbesuch von 30 Minuten (12:40–13:10) zeigt Name, Zeit mit ⟷ und darunter „Hausbesuch“ halb angeschnitten; die Kachel ist zu niedrig für drei Zeilen. Das Kennzeichen zeigt nur ⟷, ohne „30 Min.“.
@@ -2995,7 +2995,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Neuer Termin / Termin bearbeiten → zurück |
 | Quelle  | Sichtung Kernprozess, Schritt 3 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Rückweg aus Terminformular und Akte (`mitRueckweg`, `leseRueckweg`); Kalenderzustand (Ansicht, Tag, Spalten) |
 
 **Beobachtung.** Jannes arbeitet in der Tagesansicht in Annas Spalte, legt einen Termin an bzw. ergänzt Stammdaten und landet danach „immer wieder“ in seinem persönlichen Kalender (Ansicht Jannes), nicht in der Tagesansicht mit Anna.
@@ -3010,7 +3010,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender → Monat oben links |
 | Quelle  | Sichtung Kernprozess, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004b) |
 | Berührt | Monatsauswahl im Kopf des Kalenders; ANN-109 |
 
 **Beobachtung.** Im Monatsblatt, über das man den Tag wählt, ist nicht erkennbar, welcher Tag heute ist.
@@ -3025,7 +3025,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Kalender, Termin ziehen → Verschieben |
 | Quelle  | Sichtung Kernprozess, Schritt 9 (owner) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004c) |
 | Berührt | Statusmeldung nach dem Verschieben; FIX-EPIC-004; BEF-079 (dieselbe Ursache möglich) |
 
 **Beobachtung.** Nach „Verschieben“ erscheint die Meldung mit „Rückgängig“ am Anfang der Seite. Wer weiter unten im Raster arbeitet, sieht sie nicht und müsste erst nach oben scrollen.
@@ -3040,7 +3040,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | übergreifend; Befund aus Bausteinen |
 | Quelle  | Sichtung Kernprozess, Schritt 10 und 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004d) |
 | Berührt | Bedienprinzip „Was nicht gebraucht wird, ist eingeklappt“ (UX-EPIC-002, Oberflächen-Checkliste Punkt 11); FRB-EPIC-003; ANN-130 |
 
 **Beobachtung.** Auf den Seiten steht durchweg viel erklärender Text. Im Erstbefund bleibt ein abgehakter Test mit allen Optionen offen, die Seite wird dadurch sehr lang.
@@ -3055,7 +3055,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Dokumentieren |
 | Quelle  | Sichtung Kernprozess, Schritt 11 (therapist) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004d) |
 | Berührt | Textbausteine an der Dokumentation; IDEA-PRX-043; Organisatorisches |
 
 **Beobachtung.** „Bausteine verwalten“ steht an der Dokumentation und kostet Platz; die Überschrift „Textbausteine:“ ist unnötig. Die vorhandenen Bausteine (etwa „Eigenübungen besprochen“) ersetzen genaue Dokumentation, statt Struktur und Tipparbeit zu erleichtern.
@@ -3070,7 +3070,7 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Akte → Behandlungsverlauf; Übersicht → Bisherige Doku |
 | Quelle  | Sichtung Kernprozess, Schritt 11 und 12 (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
 | Berührt | Behandlungsverlauf; Tokens in `src/index.css`; UX-EPIC-003 |
 
 **Beobachtung.** Die Dokumentation früherer Termine läuft als gleichförmiger Text; Termine sind nicht als Kästen abgesetzt, Datum, Verfasser:in und Text haben denselben Kontrast.
@@ -3085,10 +3085,39 @@ Suchseite mit der Warnung erscheint.
 | Datum   | 2026-09-28 |
 | Bereich | Termin → Absagen (Patient:in, weniger als 24 Stunden) |
 | Quelle  | Sichtung Kernprozess, Schritt 12 (office) (Jannes, Test-Umgebung, Android und Windows) |
-| Status  | offen |
+| Status  | erledigt in UX-EPIC-004 (UX-004c) |
 | Berührt | Absagedialog und Statusmeldung; CAL-014; BEF-075 |
 
 **Beobachtung.** Nach „Patient:in hat abgesagt“ mit Eingang „Gerade eben“ hat Jannes keinen Hinweis „Gebühr vorgemerkt“ gesehen. Die Gebühr war vorgemerkt: Paul stand in Schritt 13 unter „Zu erfassen“ mit „Absage innerhalb der Frist“.
 
 **Erwartet.** Nach dem Absagen steht die Folge sichtbar im Sichtfeld: „Abgesagt · Gebühr vorgemerkt (weniger als 24 Stunden vorher)“. Prüfen, ob die Meldung fehlt oder nur außerhalb des Sichtfelds steht (wie BEF-075).
+
+### BEF-080 — Das Protokoll ist unter „Organisatorisches“ nicht zu finden: Der Menüpunkt heißt „Auditlog“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-29 |
+| Bereich | Organisatorisches (owner) |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 5 (owner) (Jannes, Test-Umgebung, Android und Windows) |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
+| Berührt | `src/app/navigation.tsx` (Menüpunkt „Auditlog“, Stichwort „Sicherheit“); Sichtungsdateien; BEF-065; ANN-137 |
+
+**Beobachtung.** Jannes sucht als owner unter Organisatorisches den Punkt „Sicherheit“ und findet ihn nicht. Seit UXR-002 heißt er „Auditlog“; die Sichtungsdateien nannten noch „Sicherheit“ (am 2026-09-29 nachgezogen). „Auditlog“ ist Entwicklersprache.
+
+**Erwartet.** Ein Wort, das eine Praxisleitung sucht, etwa „Protokoll“ (Begriffsliste `src/lib/begriffe.ts`), gleich in Menü, Seitentitel und Sichtung; „Auditlog“ und „Sicherheit“ bleiben als Suchwörter. Zusammen mit BEF-065 (Nachweisseiten in Projektsprache).
+
+
+### BEF-081 — „Rechnung an“ und „Offene Rechnungen“ am Termin werden nicht gefunden
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-29 |
+| Bereich | Termin (office) |
+| Quelle  | Sichtung Praxisverwaltung, Schritt 6 (office) (Jannes, Test-Umgebung, Android und Windows) |
+| Status  | erledigt in UX-EPIC-004 (UX-004e) |
+| Berührt | `src/features/appointments/Abrechnungslage.tsx`, `AppointmentDetailPage.tsx`; PRX-008; ANN-139; BEF-076, BEF-078 |
+
+**Beobachtung.** Als Olivia (office) findet Jannes am Termin von Erika die Zeilen „Rechnung an“ und „Offene Rechnungen“ nicht. Sie stehen als zwei unauffällige Zeilen zwischen den übrigen Termindaten (Art, Status, Grundlage) und erscheinen nur, wenn der Server sie für die Rolle freigibt. Jannes: „Es ist alles noch viel zu unübersichtlich und nicht intuitiv genug.“
+
+**Erwartet.** Zuerst prüfen, ob die Zeilen für office auf der Test-Umgebung überhaupt ankommen (`billing_visible`). Dann die Abrechnungsangaben als eigener, kurzer Block „Abrechnung“ am Termin, mit Überschrift, abgesetzt von den Termindaten — Teil der Neuordnung der Terminseite (BEF-076, BEF-078).
 

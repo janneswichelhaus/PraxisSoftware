@@ -38,7 +38,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
       'Abgesagte Termine, an denen keine Dokumentation hängt. Hängt Dokumentation daran, gilt die Frist der Akte.',
   },
   auditlog: {
-    label: 'Auditlog',
+    label: 'Protokoll',
     beschreibung: 'Nachweis sensibler Zugriffe. Nur Metadaten, keine klinischen Inhalte.',
   },
   zugangseinladung: {

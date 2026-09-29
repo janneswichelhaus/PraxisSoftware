@@ -255,7 +255,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
         <div>
           {isOwner(user.roles) ? (
             <Statusmeldung className="mt-4">
-              Dieser Zugang darf Zugänge, Rollen und das Auditlog verwalten und hat noch keinen
+              Dieser Zugang darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
               zweiten Faktor. Für diese Rechte ist er vorgesehen, sobald die Anmeldung ihn abfragt.
             </Statusmeldung>
           ) : (

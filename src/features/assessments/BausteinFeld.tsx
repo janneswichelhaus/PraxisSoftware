@@ -453,6 +453,28 @@ const Eingabe = memo(function Eingabe({
   const notizSichtbar = angabe !== undefined && (notizGewuenscht || !!angabe.notiz);
   const knoepfeRef = useRef<HTMLDivElement>(null);
   const abwaehlenRef = useRef<HTMLButtonElement>(null);
+  /**
+   * BEF-076: Ein abgehakter Test klappt auf eine Zeile ein - Name, Ergebnis,
+   * Messwert, Notiz und „Ändern". Bei einer vollständigen Basisuntersuchung
+   * wuchs die Seite sonst mit jedem Test um alle Schaltflächen. Ein Test mit
+   * Messfeld bleibt offen, bis der Wert eingetragen ist; eine gewünschte
+   * Notiz ebenso.
+   */
+  const [eingeklappt, setEingeklappt] = useState(() => angabe !== undefined);
+  const aendernRef = useRef<HTMLButtonElement>(null);
+  // Nach dem Tipp auf ein Ergebnis ist dessen Knopf fort; der Fokus geht auf „Ändern".
+  const fokusAufAendern = useRef(false);
+  useEffect(() => {
+    if (eingeklappt && fokusAufAendern.current) {
+      fokusAufAendern.current = false;
+      aendernRef.current?.focus();
+    }
+  }, [eingeklappt]);
+  const zuklappbar =
+    angabe !== undefined &&
+    !abwaehlenFragen &&
+    !notizGewuenscht &&
+    (!item.value_field || (angabe.messwert ?? '').trim() !== '');
 
   // Wer „Notiz" antippt, will schreiben.
   const fokusAufNotiz = useRef(false);
@@ -477,6 +499,69 @@ const Eingabe = memo(function Eingabe({
     setNotizGewuenscht(false);
     setzen(schluessel, undefined);
     knoepfeRef.current?.querySelector('button')?.focus();
+  }
+
+  if (eingeklappt && zuklappbar) {
+    const zeichen = ERGEBNIS_ZEICHEN[angabe.ergebnis];
+    return (
+      <div
+        role="group"
+        {...(name ? { 'aria-label': name } : { 'aria-labelledby': titelId })}
+        className="flex flex-wrap items-center gap-x-2 gap-y-1"
+      >
+        {titel ? (
+          <span id={titelId} className="text-ink text-sm wrap-anywhere">
+            {titel}
+          </span>
+        ) : null}
+        {seite ? (
+          <span aria-hidden="true" className="text-ink-muted w-7 text-sm font-medium">
+            {SEITE_MARKE[seite]}
+          </span>
+        ) : null}
+        <span className="text-ink text-sm font-semibold">
+          {zeichen ? <span aria-hidden="true">{`${zeichen} `}</span> : null}
+          {ERGEBNIS_TEXT[angabe.ergebnis]}
+          {angabe.messwert ? ` · ${angabe.messwert}` : ''}
+        </span>
+        {angabe.notiz ? (
+          <span className="text-ink-muted min-w-0 truncate text-sm">· {angabe.notiz}</span>
+        ) : null}
+        <Button
+          ref={aendernRef}
+          type="button"
+          groesse="kompakt"
+          variant="quiet"
+          onClick={() => {
+            setEingeklappt(false);
+            // Der Fokus geht auf das gewählte Ergebnis.
+            requestAnimationFrame(() =>
+              knoepfeRef.current
+                ?.querySelector<HTMLButtonElement>('[aria-pressed="true"]')
+                ?.focus(),
+            );
+          }}
+        >
+          Ändern
+        </Button>
+        {!angabe.notiz ? (
+          <Button
+            type="button"
+            groesse="kompakt"
+            variant="quiet"
+            onClick={() => {
+              fokusAufNotiz.current = true;
+              setNotizGewuenscht(true);
+              setEingeklappt(false);
+            }}
+          >
+            <span>
+              <span aria-hidden="true">+ </span>Notiz
+            </span>
+          </Button>
+        ) : null}
+      </div>
+    );
   }
 
   return (
@@ -516,6 +601,13 @@ const Eingabe = memo(function Eingabe({
                   if (!gewaehlt) {
                     setAbwaehlenFragen(false);
                     setzen(schluessel, { ...(angabe ?? {}), ergebnis });
+                    // Ohne Messfeld ist ein unauffälliger Test mit dem Tipp
+                    // erledigt. „positiv" bleibt offen: Dort folgt meist die
+                    // Notiz.
+                    if (ergebnis !== 'positiv' && !item.value_field && !notizSichtbar) {
+                      fokusAufAendern.current = true;
+                      setEingeklappt(true);
+                    }
                   } else if (mitEingaben(angabe)) {
                     setAbwaehlenFragen(true);
                   } else {

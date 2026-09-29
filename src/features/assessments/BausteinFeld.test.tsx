@@ -128,6 +128,26 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     expect(vorschlag()).toBe('Basisuntersuchung Knie links\nNicht getestet: Kniebeuge');
   });
 
+  it('klappt einen unauffälligen Test auf eine Zeile ein (BEF-076)', async () => {
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
+    const lachmann = test_('Lachmann-Test');
+    await user.click(within(lachmann).getByRole('button', { name: 'o.B.' }));
+
+    // Nur noch Name, Ergebnis und „Ändern" - die Schaltflächen sind fort.
+    expect(within(lachmann).queryByRole('button', { name: 'positiv' })).toBeNull();
+    const aendern = within(lachmann).getByRole('button', { name: 'Ändern' });
+    expect(aendern).toHaveFocus();
+    expect(lachmann).toHaveTextContent('o.B.');
+    // Eine Notiz geht auch eingeklappt mit einem Tipp.
+    expect(within(lachmann).getByRole('button', { name: 'Notiz' })).toBeInTheDocument();
+
+    await user.click(aendern);
+    expect(within(lachmann).getByRole('button', { name: 'o.B.' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
   it('hebt ein Ergebnis mit dem zweiten Tipp wieder auf', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
     const lachmann = test_('Lachmann-Test');

@@ -14,7 +14,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { Deckungszeichen } from './Deckungszeichen';
 import { Kurzblick } from './Kurzblick';
-import { Abrechnungslage } from './Abrechnungslage';
+import { AbrechnungAbschnitt, Abrechnungslage } from './Abrechnungslage';
 import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
 import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
@@ -174,11 +174,23 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
         eingabe.datum,
         eingabe.uhrzeit,
       ),
-    onSuccess: () => {
+    onSuccess: async () => {
       // Der Termin selbst, der Kalender und die Tagesliste zeigen sonst
       // weiter einen bestätigten Termin.
       nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
-      melden(istEreignis ? 'Teilnahme abgesagt.' : 'Termin abgesagt.');
+      if (istEreignis) {
+        melden('Teilnahme abgesagt.');
+        return;
+      }
+      // BEF-079: Ob ein Ausfallhonorar entsteht, rechnet nur der Server. Die
+      // Meldung liest den neuen Stand und sagt die Folge gleich mit - sie
+      // stand bisher nur als Zeile weiter unten, und niemand sah sie.
+      const danach = await fetchAppointment(appointment.id).catch(() => null);
+      melden(
+        danach?.fee_basis
+          ? `Termin abgesagt · Ausfallhonorar vorgemerkt: ${feeBasisLabels[danach.fee_basis]}.`
+          : 'Termin abgesagt.',
+      );
     },
   });
 
@@ -1078,8 +1090,8 @@ function AppointmentDetail({
           ) : null}
           <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
           <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
-          {/* PRX-008: „Termin n von m" und - nur für owner und office -
-              Empfänger und offene Rechnungen (ANN-139). */}
+          {/* PRX-008: „Termin n von m" an der Grundlage; Empfänger und offene
+              Rechnungen stehen darunter im Abschnitt „Abrechnung". */}
           {appointment.kind === 'therapy' ? (
             <Abrechnungslage appointmentId={appointment.id} />
           ) : null}
@@ -1179,6 +1191,12 @@ function AppointmentDetail({
           ) : null}
         </DetailList>
       </Section>
+
+      {/* BEF-081: Empfänger und offene Rechnungen als eigener Abschnitt statt
+          zweier Zeilen zwischen den Termindaten - nur für owner und office. */}
+      {appointment.kind === 'therapy' ? (
+        <AbrechnungAbschnitt appointmentId={appointment.id} />
+      ) : null}
 
       {/* Was man vor der Tür wissen muss (PRX-006): zugeklappt, erst auf
           Anforderung gelesen und protokolliert (ANN-137). Nur am

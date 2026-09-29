@@ -67,7 +67,7 @@ describe('AuditLogPage', () => {
 
     renderWithProviders(<AuditLogPage />);
 
-    expect(await screen.findByRole('heading', { level: 1, name: 'Auditlog' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Protokoll' })).toBeInTheDocument();
   });
 
   it('benennt jede Angabe der Zeile fuer Vorlesesoftware (UIK-24)', async () => {

@@ -140,7 +140,7 @@ describe('MeinKontoPage', () => {
   it('warnt owner deutlicher als andere Rollen, wenn der zweite Faktor fehlt', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
     expect(
-      await screen.findByText(/darf Zugänge, Rollen und das Auditlog verwalten/),
+      await screen.findByText(/darf Zugänge, Rollen und das Protokoll verwalten/),
     ).toBeInTheDocument();
   });
 
@@ -221,7 +221,7 @@ describe('MeinKontoPage', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
     expect(
-      await screen.findByText(/darf Zugänge, Rollen und das Auditlog verwalten/),
+      await screen.findByText(/darf Zugänge, Rollen und das Protokoll verwalten/),
     ).toBeInTheDocument();
   });
 

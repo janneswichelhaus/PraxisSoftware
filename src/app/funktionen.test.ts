@@ -161,9 +161,9 @@ describe('sucheFunktionen', () => {
     // Bis UXR-002 fanden „Audit", „Frist" oder „Löschung" nichts, obwohl es
     // die Seiten gibt - der Katalog kannte nur die Menünamen.
     for (const [begriff, seite] of [
-      ['audit', 'Auditlog'],
-      ['protokoll', 'Auditlog'],
-      ['sicherheit', 'Auditlog'],
+      ['audit', 'Protokoll'],
+      ['protokoll', 'Protokoll'],
+      ['sicherheit', 'Protokoll'],
       ['frist', 'Arbeitszeiten'],
       ['raster', 'Arbeitszeiten'],
       ['startort', 'Arbeitszeiten'],

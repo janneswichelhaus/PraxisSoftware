@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { todayInTimeZone } from '@/features/appointments/api';
+import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -154,6 +157,9 @@ function EntryItem({ entry, today }: { entry: WaitlistEntry; today: string }) {
  */
 export function WaitlistPage({ user }: { user: CurrentUser }) {
   const [filter, setFilter] = useState<ListFilter>('open');
+  const [suche] = useSearchParams();
+  /** Der Termin, mit dem ein Eintrag gerade eingeplant wurde (BEF-071). */
+  const neuerTermin = leseAngelegtenTermin(suche);
   const today = todayInTimeZone(user.organizationTimeZone ?? 'Europe/Berlin');
 
   const { data, isPending, isError, refetch, isRefetchError } = useQuery({
@@ -169,6 +175,13 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
         description="Wer auf einen Termin wartet. Wird ein Platz frei, zeigt die Absage die passenden Einträge; angerufen wird von hier – versendet wird nichts."
         actions={<ButtonLink to="/warteliste/neu">Auf die Warteliste setzen</ButtonLink>}
       />
+
+      {neuerTermin ? (
+        <Rueckmeldung className="mb-4">
+          Termin angelegt – der Eintrag ist eingeplant und steht unter „Geschlossen“.{' '}
+          <Textlink to={`/termine/${neuerTermin}`}>Termin öffnen</Textlink>
+        </Rueckmeldung>
+      ) : null}
 
       <div role="group" aria-label="Einträge anzeigen" className="mb-4 flex gap-2">
         {(Object.keys(FILTER_LABELS) as ListFilter[]).map((value) => (

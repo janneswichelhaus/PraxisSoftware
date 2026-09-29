@@ -179,7 +179,7 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
 
   it('nennt Menüpunkte wie die Seiten, die sie öffnen (ABR-26, ORG-07)', () => {
     expect(punkt(['owner'], 'abrechnung', '/abrechnung/katalog')?.label).toBe('Leistungskatalog');
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe('Auditlog');
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe('Protokoll');
     expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.label).toBe('Arbeitszeiten');
   });
 
@@ -188,7 +188,7 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
       expect.arrayContaining(['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']),
     );
     expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.stichworte).toEqual(
-      expect.arrayContaining(['Audit', 'Protokoll', 'Zugriffe', 'Sicherheit']),
+      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit']),
     );
     expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')?.stichworte).toEqual(
       expect.arrayContaining(['Löschung', 'Löschsperre']),
