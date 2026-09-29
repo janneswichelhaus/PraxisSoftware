@@ -298,7 +298,7 @@ Patientin eine Neuaufnahme — deshalb gleich nach der Tagesroute.
 | ~~**FRB-EPIC-003**~~ | **gebaut 2026-09-26** — Der Befund entsteht aus Bausteinen zum Abhaken: neun Regionen wörtlich als Daten, Vorschlag in den Eintrag, Liege im Befund (ANN-118 bis ANN-120); Bilder und Skalen als FRB-EPIC-004/005 ausgegliedert, Sichtung Befund Schritte 6 und 7 | Phasen P2 und P3 des FRB-Plans: neun Regionen als Daten (Zähltest), Renderer mit Live-Vorschau des Texts, Textbausteine auch im Befund, ein Bild ruft den Test in Erinnerung; **Liege-Merkmal im Befund**; Bausteine und Skalen auch für die Verlaufsdoku — der Weg ohne Sprechen (§5) | `IDEA-PRX-043`, `IDEA-OUT-009` |
 | ~~**DOK-005**~~ | **gebaut 2026-09-26** — Ein Therapiebericht an die Verordner:in entsteht aus Befund und Verlauf: gespeichert und beim Abschluss eingefroren, Inhalt angekreuzt und wörtlich, Empfehlung mit Quelle und Datum an der Verordnung (ANN-121 bis ANN-124); Sichtung Befund Schritte 8 und 9 | Bericht als Druckansicht (B14 Weg 1), Inhalt nur übernommen, nicht interpretiert (§17); dazu die **Empfehlung zum Verordnungsende** mit Quelle und Datum (Wiedervorlage aus VER-EPIC-002, ANN-014) | `PROJECT_PRINCIPLES.md` §4.2 |
 | ~~**DOK-006**~~ | **gebaut 2026-09-26** — Fotos liegen in der Akte, ohne in der Mediathek des Handys zu landen: Kameradialog für Dokumente und Patientenfotos, Metadaten vor dem Upload entfernt (ANN-125), Patientenfotos auf eigener Einwilligung mit eigener Klasse und Löschung beim Widerruf (ANN-126, ANN-127), Vergleich zweier Fotos im Verlauf, Herausgabe nur an die Person (ANN-128); Sichtung Befund Schritte 10 bis 12 | Aufnahme über die Kamera der Anwendung für Verordnung und Papierbögen; **Fotos von Patient:innen** mit eigener Einwilligung, Frist und Entfernung der Aufnahmemetadaten — freigegeben mit ADR-017 Fassung 2 (Abschnitt G, angenommen 2026-09-26); Vergleich zweier Fotos im Verlauf, ohne Bewertung (§17) | Jannes 2026-09-23; §5 |
-| **FRB-EPIC-004** | Skalen in der Verlaufsdoku — die aktuelle Lage antippen statt tippen | Startet, sobald NRS und Veränderungsfrage aktiv sind (ANN-099; Veränderungsfrage freigegeben, NRS: Freigabe des Wortlauts durch Jannes; **PSFS gestrichen**, Jannes 2026-09-28): Skalen an der Dokumentation erheben, als Erhebung gespeichert und als Zeile in den Vorschlag; kein zweiter Wert neben der Erhebung (§13). Die **Veränderungsfrage steht ab dem zweiten Termin je Patient:in oben in der Dokumentation** (Jannes 2026-09-28). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | §5, FRB-EPIC-001 |
+| **FRB-EPIC-004** | Skalen in der Verlaufsdoku — die aktuelle Lage antippen statt tippen | Startet mit der Aktivierung von NRS und Veränderungsfrage (ANN-099; Wortlaut beider freigegeben 2026-09-28/29; **PSFS gestrichen**): Skalen an der Dokumentation erheben, als Erhebung gespeichert und als Zeile in den Vorschlag; kein zweiter Wert neben der Erhebung (§13). Die **Veränderungsfrage steht ab dem zweiten Termin je Patient:in oben in der Dokumentation** (Jannes 2026-09-28). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | §5, FRB-EPIC-001 |
 | **FRB-EPIC-005** | Ein Bild ruft den Test in Erinnerung | Startet, sobald Bilder vorliegen (eigene Zeichnung, Lizenz nach B8 oder Foto nach §20): optionales Bild je Test in der Definition, beim Abhaken gezeigt, ohne Bewertung (ADR-006). Aus FRB-EPIC-003 ausgegliedert (Jannes 2026-09-26) | `IDEA-OUT-009` |
 
 **Etappe P — Praxisverwaltung.** Die Ideen aus
@@ -515,8 +515,8 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
   Bildschirmfotos) — Grundlage für UX-EPIC-002.
 - **D2/D3** aus dem FRB-Plan: gelten wie vorgeschlagen (ANN-118, ANN-119);
   die drei Lücken der MT-Vorlage und Korrekturen jederzeit nachliefern.
-- **Material für FRB-EPIC-004/005:** Freigabe des NRS-Wortlauts (ANN-099;
-  Veränderungsfrage freigegeben, PSFS gestrichen), Bilder zu den Tests.
+- **Material für FRB-EPIC-005:** Bilder zu den Tests (NRS und
+  Veränderungsfrage für FRB-EPIC-004 freigegeben, PSFS gestrichen).
 - **Preise** für Katalog, Abo und Pakete — vor Block 5 als synthetische Werte,
   echte vor M3.
 - **Branch Protection:** `main` ist geschützt; ob Secret Scanning und Push
@@ -709,8 +709,8 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | ABR-EPIC-003 Zahlungen und offene Posten | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |
 | A | PAT-006 Datenschutzinformation und Einwilligungen (G8) | fertig | 2026-09-22 | `4764d90`, `8569f3d`, `1706cb1` | — | — |
 | A | ABR-EPIC-004 Befreiungsgrund (BEF-019) und § 14c-Riegel (Etappe L) | fertig | 2026-09-20 | `dfe96a8`, `d8f3ea4` | — | — |
-| A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | fertig | 2026-09-20 | PR #72 | — | — |
-| A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | fertig | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | — | — |
+| A | LEI-EPIC-001 Trainingsverhältnis mit eigener Frist und Rolle (Etappe L) | gesichtet | 2026-09-20 | PR #72 | 2026-09-29 | — |
+| A | CAL-EPIC-005 Terminkontext und Trainingsgrundlage (Etappe L) | gesichtet | 2026-09-21 | `e268f96`, `0c8920c`, `120445f` | 2026-09-29 | — |
 | A | ABR-EPIC-005 Leistungsbereich je Rechnung, getrennte Nummernkreise (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | A | ABR-EPIC-006 Auswertung „Einnahmen je Leistungsart" (Etappe L) | fertig | 2026-09-21 | `0fcac3e` … `6d6261f` | — | — |
 | B | UX-EPIC-002 Begriffe und Bedienprinzipien (Block 1a) | gesichtet | 2026-09-26 | `aafe0cd` … `ecc17b8` (UX-002a bis UX-002e, BEF-035 bis BEF-040); `ae65bc9` … `134ab23` (UX-002f bis UX-002h, BEF-033, BEF-034); `21f4866` … `ac8516f` (UX-002i bis UX-002l, BEF-041 bis BEF-044) | 2026-09-28 | Sichtung Kernprozess 2026-09-28 (Android und Windows) |

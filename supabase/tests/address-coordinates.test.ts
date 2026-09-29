@@ -262,6 +262,16 @@ describe('set_patient_address_coordinate', () => {
     ]);
     const termin = rows[0]!.id;
     expect((await besuchskoordinate(termin)).visit_lat).toBeNull();
+    // Wie viele Hausbesuche kuenftig sind, haengt von der Uhrzeit des Laufs
+    // ab: Der Seed-Hausbesuch von heute 09:00 zaehlt vor 09:00 mit.
+    const kuenftig = await asPostgres<{ n: number }>(
+      `select count(*)::int as n from public.appointments
+        where patient_id = $1 and appointment_type = 'home_visit' and starts_at >= now()
+          and visit_street = $2 and visit_house_number = $3
+          and visit_postal_code = $4 and visit_city = $5`,
+      [patients.max, ...MAX],
+    );
+    expect(kuenftig.rows[0]!.n).toBeGreaterThanOrEqual(1);
 
     const gesetzt = await asUserCommitted<{ n: number }>(users.therapist, SETZEN, [
       patients.max,
@@ -271,13 +281,11 @@ describe('set_patient_address_coordinate', () => {
       'address',
       false,
     ]);
-    expect(gesetzt.rows[0]!.n).toBe(1);
+    expect(gesetzt.rows[0]!.n).toBe(kuenftig.rows[0]!.n);
     expect(await besuchskoordinate(termin)).toEqual({
       visit_lat: 48.53,
       visit_geocode_precision: 'address',
     });
-    // Der Hausbesuch von heute Morgen liegt in der Vergangenheit oder zumindest
-    // vor dem Stichtag des Aufrufs - er behaelt, was er hatte.
   });
 });
 
