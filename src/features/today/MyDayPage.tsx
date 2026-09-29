@@ -27,6 +27,7 @@ import {
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
+  canReadPatientDirectory,
   canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
@@ -633,8 +634,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
       />
 
       {/* PRX-EPIC-003: was liegen geblieben ist, als eine Zeile - nur wenn
-          etwas fällig ist. */}
-      <OpenPointsSummary user={user} today={heute} />
+          etwas fällig ist. Wer selbst unterwegs ist, sieht sie unter den
+          eigenen Besuchen: Liege und erster Weg bleiben auf dem ersten
+          Bildschirm (UX-EPIC-003). */}
+      {eigeneTagesliste ? null : <OpenPointsSummary user={user} today={heute} />}
 
       {eigeneTagesliste && user.staffMemberId ? (
         <MeineTagesliste
@@ -645,6 +648,8 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           zeitzone={zeitzone}
         />
       ) : null}
+
+      {eigeneTagesliste ? <OpenPointsSummary user={user} today={heute} /> : null}
 
       {darfTermine ? (
         // UX-EPIC-003: Wer eine eigene Tagesliste hat, braucht den Plan des
@@ -698,6 +703,17 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             </div>
           </details>
         </section>
+      ) : null}
+
+      {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
+          ist - die Zeile oben erscheint nur mit Fälligem. */}
+      {canReadPatientDirectory(user.roles) ? (
+        <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+          <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
+            Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+            <Pfeil />
+          </Textlink>
+        </p>
       ) : null}
 
       <UebersichtVorschau user={user} />

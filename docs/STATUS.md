@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-28 · letzte Session: Sichtungen Praxisverwaltung und Kernprozess (davor PRX-EPIC-002)
+# Status · Stand 2026-09-29 · letzte Session: PRX-EPIC-003 Nichts fällt durch (davor UX-EPIC-004)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,7 +6,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**UX-EPIC-004 gebaut (Branch `claude/naechste-schritte-prioritaeten-k86na7`):** Ruhiger und übersichtlicher — BEF-071 bis BEF-081 aus den Sichtungen: Rückweg aus der Terminsuche zur Warteliste, Kalender merkt sich Ansicht und Person, heute im Monat markiert, kurze Kacheln ohne halbe Zeilen, „Rückgängig“ fest im Bild, Absage nennt das Ausfallhonorar, Erklärungen mit „Mehr“, erledigte Tests auf einer Zeile, Bausteine ohne Verwaltung, Verlauf als Karten, Abschnitt „Abrechnung“ am Termin, „Protokoll“ statt „Auditlog“. Nur Oberfläche, keine Migration. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 7 bis 9.
+**PRX-EPIC-003 gebaut (Branch `ccr-594d7e07-t34vzd`, Pull Request gegen `main`):** Nichts fällt durch — **Übersicht → Offene Punkte** (`/offen`): Office erfasst Grundlagen (ANN-011, PRX-010), Verordnungsfoto am Termin und „Grundlage erfassen“ mit dem Foto daneben (ANN-141, PRX-011), Aufgaben und Wiedervorlagen (ANN-142, PRX-012), Erstaufnahme-Checkliste in Tagesansicht, Aktenkopf und Büroliste; die Liege kennt „noch nicht entschieden“ (ANN-143, PRX-013), Anrufliste mit gespeichertem Stand (ANN-144, PRX-014), Dublettenhinweis beim Anlegen (ANN-145, PRX-015), Erinnerungen am Rezeptende und an den vergessenen Abschluss (ANN-146, PRX-016); BEF-060 Teile 1 und 2. Sieben Migrationen, zwei neue Tabellen (`tasks`, `appointment_call_states`), Zweitreview gelaufen und eingearbeitet. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 10 bis 12. Zusammenführen von Dubletten ist **PRX-EPIC-003b**.
+
+**UX-EPIC-004 ist gemergt (PR #140):** BEF-071 bis BEF-081; Sichtung Praxisverwaltung Schritte 7 bis 9 offen.
 
 **PRX-EPIC-001 ist gemergt (PR #136) und gesichtet** (2026-09-28, Android und Windows, Test-Umgebung): Warteliste, Gebietstage, Terminsuche und Nachrücken; ANN-132, ANN-135 und ANN-136 bestätigt. Ein Befund: **BEF-071** (nach „Termin anlegen“ aus der Suche zurück auf der Suche, Meldung klingt wie ein Fehler) — erste Story von PRX-EPIC-002.
 
@@ -18,11 +20,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Danach — Bauen
 
-1. **PRX-EPIC-003** (Nichts fällt durch), Block 2. `/weiter`
+1. **PRX-EPIC-003b** (Dubletten zusammenführen), Block 2. `/weiter`
 2. **STA-EPIC-001** (Statistiken)
 3. **TRN-EPIC-001** (Block 3, Trainingsbereich)
 
 ## Prüfverfahren
+
+**Stand PRX-EPIC-003 (2026-09-29, in der Cloud gelaufen):** `test` **3742** grün, `test:db` **2301** grün (neu: `prescription-scans`, `tasks`, `intake-checklist`, `call-list`, `duplicate-check`, `reminders`), `test:e2e` für `offen.spec.ts`, `termin.spec.ts`, `uebersicht.spec.ts` und `warteliste.spec.ts` grün (Prüfseite `tests/e2e/fixtures/offen.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
 **Stand PRX-EPIC-002 (2026-09-28, in der Cloud gelaufen):** `test` **3683** grün, `test:db` **2220** grün (neu: `appointment-brief`, `take-along`, `appointment-billing-context`, `record-at-appointment`), `test:e2e` für `termin.spec.ts` und `uebersicht.spec.ts` 24 grün (Prüfseite `tests/e2e/fixtures/termin.html`, 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün.
 
@@ -48,8 +52,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Sichtungen Praxisverwaltung (3 Schritte) und Kernprozess (15 Schritte)** mit Jannes an Android-Handy und Windows-Rechner. Nur Dokumentation: BEF-071 bis BEF-079, Ergebnisse in [`sichtung/praxisverwaltung.md`](sichtung/praxisverwaltung.md) und [`sichtung/kernprozess.md`](sichtung/kernprozess.md), 14 Posten in `fortschritt.json` auf gesichtet (Fortschritt 41,7 %), ANN-011 und ANN-099 nachgestellt, zehn Annahmen entschieden, IDEA-OUT-016, IDEA-PRX-045, IDEA-TRN-014 und -015.
+**PRX-EPIC-003 (PRX-010 bis PRX-016).** Sieben Migrationen `20260929150000` bis `20260929210000`: Office schreibt Grundlagen und ihren Scan, klinische Bestandstexte räumen nur therapeutische Rollen ab; Scan ohne Grundlage mit eingefrorenem Objektschlüssel und `assign_prescription_scan`; `tasks` und `appointment_call_states` mit Klassen `aufgabe` und `anrufstand` im Löschlauf, Restore und Auskunft; `get_intake_checklist`, `list_open_intakes`, `list_call_list`, `record_call_outcome`, `find_possible_duplicates`, `list_ending_prescriptions`, `list_care_without_conclusion`; die Liege ist nullbar (Bestands-„nein“ wurden leer). Keine neue Abhängigkeit, kein neuer Anbieter. Annahmen ANN-141 bis ANN-146, ANN-011 und ANN-116 nachgezogen.
 
-Davor: **PRX-EPIC-002 (PRX-005 bis PRX-009).** Vier Migrationen und eine für den Zweitreview: `get_appointment_brief` (Kurzblick mit Protokoll), `take_along_items` an `patient_care_details` mit `set_take_along_items` (Kartei, Auskunft, Tagesliste nachgezogen), `get_appointment_billing_context` mit den gemeinsamen Regeln `app.appointment_basis_position` (die Deckung fragt sie jetzt) und `app.open_invoices` (die offenen Posten lesen daraus), `app.can_record_services_for_appointment` für Vorschlag, Erfassen und `get_appointment_services`. Keine neue Tabelle, keine neue Abhängigkeit, kein neuer Anbieter. Prüfseite `tests/e2e/fixtures/termin.html` mit drei Ansichten.
+**Lokale Schritte:** `git pull origin ccr-594d7e07-t34vzd` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen der neuen Migrationen; kein `pnpm install`.
 
-**Lokale Schritte:** `git pull origin main` nach dem Merge; kein `pnpm install`, kein `db reset`.
+Davor: **Sichtungen Praxisverwaltung und Kernprozess** (2026-09-28) und UX-EPIC-004.

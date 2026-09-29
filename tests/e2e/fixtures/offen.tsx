@@ -17,7 +17,6 @@ import {
   type EndingPrescription,
 } from '@/features/open-points/reminders-api';
 import { TASKS_KEY, type Task } from '@/features/open-points/tasks-api';
-import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
 import '@/index.css';
@@ -245,7 +244,7 @@ client.setQueryData(['patient', MAX], {
   id: MAX,
   given_name: 'Max',
   family_name: 'Mustermann',
-} as Patient);
+});
 
 const start: Record<string, string> = {
   liste: '/offen',

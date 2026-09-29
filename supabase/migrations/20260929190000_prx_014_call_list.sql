@@ -15,7 +15,7 @@
 --     Stand am Termin (appointment_call_states): Ergebnis, Zahl der Versuche,
 --     wann und wer. Kein Merkmal der Person (§20, IDEA-PRX-041): Der Stand
 --     haengt am Termin und faellt vierzehn Tage nach ihm (Klasse
---     `anrufstand`, ANN-144).
+--     `anrufstand`, ANN-144); ein Legal Hold an der Akte haelt.
 --   * WER: dieselben Rollen wie der Mitteilungsvermerk
 --     (app.can_update_appointment). Nur Behandlungstermine mit Person.
 --   * AUDIT: appointment.call_recorded mit dem Ergebnis (kein Inhalt eines
@@ -527,6 +527,9 @@ begin
       from public.appointment_call_states c
       join public.appointments a on a.id = c.appointment_id
       where c.organization_id = v_org.id
+        -- Ein Legal Hold an der Akte haelt auch den Anrufstand (ADR-008
+        -- Punkt 7, Zweitreview).
+        and not app.under_legal_hold(v_org.id, 'patient', a.patient_id)
     ),
     geloescht as (
       delete from public.appointment_call_states c

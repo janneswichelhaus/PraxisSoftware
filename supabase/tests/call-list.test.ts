@@ -243,6 +243,22 @@ describe('Anrufstand im Loeschlauf (ANN-144)', () => {
     expect(rows).toEqual([{ retention_class: 'anrufstand' }]);
   });
 
+  it('haelt den Stand unter Loeschsperre der Akte (ADR-008 Punkt 7)', async () => {
+    const alt = await termin({ tag: '2026-01-05' });
+    await asPostgres(
+      `insert into public.appointment_call_states (organization_id, appointment_id, outcome)
+       values ($1::uuid, $2::uuid, 'not_reached')`,
+      [organizationId, alt],
+    );
+    await asPostgres(
+      `insert into public.legal_holds (organization_id, subject_type, subject_id, reason, placed_by)
+       values ($1::uuid, 'patient', $2::uuid, 'Laufender Vorgang', $3::uuid)`,
+      [organizationId, patients.max, users.ownerTherapist],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await stand(alt)).toBe(true);
+  });
+
   it('loescht nach einer Wiederherstellung erneut', async () => {
     const alt = await termin({ tag: '2026-01-05' });
     const { rows } = await asPostgres<{ id: string }>(

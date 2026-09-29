@@ -153,6 +153,19 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     });
   }
 
+  // PRX-EPIC-003: die Büroliste selbst.
+  if (canReadPatientDirectory(roles)) {
+    eintraege.push({
+      id: 'vorgang-offene-punkte',
+      art: 'Vorgang',
+      bezeichnung: 'Offene Punkte',
+      hinweis: 'Aufgaben, Verordnungen zu erfassen, Erstaufnahmen, Anrufliste',
+      ziel: '/offen',
+      bereich: BEREICHE.heute.label,
+      stichworte: ['büroliste', 'anrufliste', 'erstaufnahme', 'wiedervorlage'],
+    });
+  }
+
   // PRX-012: Aufgaben und Wiedervorlagen, dieselbe Bedingung wie die Liste.
   if (canManageTasks(roles)) {
     eintraege.push({

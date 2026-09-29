@@ -9,8 +9,7 @@ import { morgenOrtszeit, renderWithProviders } from '@/test-utils';
 const createPatient = vi.fn();
 // PRX-015: ohne Angabe keine Dublette.
 const findPossibleDuplicates = vi.fn(
-  (_vorname: string, _nachname: string, _geburt: string | null) =>
-    Promise.resolve([] as unknown[]),
+  (_vorname: string, _nachname: string, _geburt: string | null) => Promise.resolve([] as unknown[]),
 );
 const navigate = vi.fn();
 const fetchAssignableTherapists = vi.fn();

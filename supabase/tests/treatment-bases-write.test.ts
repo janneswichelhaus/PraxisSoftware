@@ -162,6 +162,29 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(rest).toHaveLength(0);
   });
 
+  it('laesst office keine klinischen Texte abraeumen - weder per Selbstzahler noch per Loeschen (Zweitreview)', async () => {
+    const id = await anlegen(users.therapist);
+    await asPostgres(
+      `update public.treatment_bases set therapy_goal = 'Synthetisch: Ziel' where id = $1`,
+      [id],
+    );
+    await expect(
+      asUser(users.office, AENDERN, aendernArgumente(id, { kind: 'self_pay', prescriber: null })),
+    ).rejects.toThrow(/can only be cleared by treating roles/);
+    await expect(asUser(users.office, LOESCHEN, [id])).rejects.toThrow(
+      /can only be cleared by treating roles/,
+    );
+    // Ohne Selbstzahler-Wechsel aendert office weiter, und die Texte bleiben.
+    await asUserCommitted(users.office, AENDERN, aendernArgumente(id));
+    const { rows } = await asPostgres<{ therapy_goal: string | null }>(
+      'select therapy_goal from public.treatment_bases where id = $1',
+      [id],
+    );
+    expect(rows[0]!.therapy_goal).toBe('Synthetisch: Ziel');
+    // Die Therapeutin darf.
+    await asUserCommitted(users.therapist, LOESCHEN, [id]);
+  });
+
   it('laesst Trainingsbetreuung und Patientenkonto weder anlegen noch aendern noch loeschen', async () => {
     for (const konto of [users.trainer, users.patientMax]) {
       await expect(asUser(konto, ANLEGEN, argumente())).rejects.toThrow(
