@@ -1,6 +1,7 @@
 import { Fragment } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +29,7 @@ import {
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canReadTrainingClients,
   canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
@@ -711,6 +713,18 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
           <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
             Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
+            <Pfeil />
+          </Textlink>
+        </p>
+      ) : null}
+
+      {/* TRN-EPIC-001: der Weg in den Bereich Training für die Rollen, die ihn
+          sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
+          dieser Übersicht. */}
+      {canReadTrainingClients(user.roles) ? (
+        <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+          <Textlink alleinstehend to="/training" className="text-liste gap-1 font-medium">
+            {BEGRIFFE.trainingskundInnen}
             <Pfeil />
           </Textlink>
         </p>

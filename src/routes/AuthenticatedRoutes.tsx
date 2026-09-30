@@ -88,12 +88,17 @@ import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { PracticeProfilePage } from '@/features/billing/PracticeProfilePage';
 import { RevenuePage } from '@/features/billing/RevenuePage';
 import { StatisticsPage } from '@/features/statistics/StatisticsPage';
+import { NewTrainingClientPage } from '@/features/training/NewTrainingClientPage';
+import { TrainingClientPage } from '@/features/training/TrainingClientPage';
+import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
   canManageStaffMasterData,
   canReadPatientDirectory,
+  canReadTrainingClients,
   canReadTreatmentNote,
+  canWriteTrainingClients,
   canWriteTreatmentNote,
   isOwner,
   isStaff,
@@ -147,6 +152,9 @@ export function AuthenticatedRoutes({
   const showHistory = canReadTreatmentNote(user.roles);
   const showBilling = canSeeBilling(user.roles);
   const showStatistics = showSecurity || (isStaff(user.roles) && user.revenueShare);
+  // Training (TRN-EPIC-001): owner, Trainingsbetreuung, Büro - ohne therapist
+  // und team_lead (ADR-021 Punkt 6). Verbindlich prüft der Server.
+  const showTraining = canReadTrainingClients(user.roles);
 
   return (
     <VorschauProvider>
@@ -478,6 +486,18 @@ export function AuthenticatedRoutes({
                 // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
                 // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
                 <Route path="/statistiken" element={<StatisticsPage user={user} />} />
+              ) : null}
+              {showTraining ? (
+                <>
+                  <Route path="/training" element={<TrainingClientsPage user={user} />} />
+                  {canWriteTrainingClients(user.roles) ? (
+                    <Route path="/training/neu" element={<NewTrainingClientPage />} />
+                  ) : null}
+                  <Route
+                    path="/training/:relationshipId"
+                    element={<TrainingClientPage user={user} />}
+                  />
+                </>
               ) : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

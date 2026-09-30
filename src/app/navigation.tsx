@@ -4,6 +4,7 @@ import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canReadTrainingClients,
   canWriteTreatmentNote,
   isOwner,
   isStaff,
@@ -160,6 +161,15 @@ const symbole = {
       <rect x="12.7" y="3.5" width="2.8" height="13" rx="0.8" />
     </>,
   ),
+  // Eine Hantel - Personal Training (TRN-EPIC-001).
+  training: symbol(
+    <>
+      <path d="M6.5 10h7" />
+      <rect x="3.5" y="6.5" width="3" height="7" rx="0.8" />
+      <rect x="13.5" y="6.5" width="3" height="7" rx="0.8" />
+      <path d="M2 8.5v3M18 8.5v3" />
+    </>,
+  ),
   mehr: symbol(
     <>
       <circle cx="4.5" cy="10" r="1.25" />
@@ -291,6 +301,20 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
         // Verordner:in war sonst kein Punkt markiert (VER-B01, NAV-15).
         { to: '/verordner', label: BEGRIFFE.verordnerInnen, end: false },
       ],
+    });
+  }
+
+  // Training (TRN-EPIC-001): owner, Trainingsbetreuung und Büro. therapist
+  // und team_lead nicht - der offene Zugriff auf alle Akten gilt innerhalb der
+  // Behandlung (ADR-021 Punkt 6). Der Server liefert ihnen ohnehin nichts.
+  if (canReadTrainingClients(roles)) {
+    bereiche.push({
+      id: 'training',
+      ...BEREICHE.training,
+      to: '/training',
+      pfade: ['/training'],
+      icon: symbole.training,
+      unterpunkte: [],
     });
   }
 

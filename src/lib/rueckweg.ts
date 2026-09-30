@@ -125,5 +125,7 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/abrechnung/leistungen') return 'Zurück zu den Leistungen';
   if (ohneSuche === '/team') return `Zurück zur ${BEREICHE.team.label}`;
   if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';
+  if (ohneSuche === '/training') return `Zurück zu den ${BEGRIFFE.trainingskundInnen}`;
+  if (ohneSuche.startsWith('/training/')) return `Zurück zur ${BEGRIFFE.trainingskundIn}`;
   return 'Zurück';
 }

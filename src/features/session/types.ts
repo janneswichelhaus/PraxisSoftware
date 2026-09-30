@@ -371,3 +371,24 @@ export function isOwner(roles: readonly RoleKey[]): boolean {
 export function isStaff(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => role !== 'patient');
 }
+
+/**
+ * Rollen, die Trainingskund:innen sehen (PROJECT_PRINCIPLES.md 4.8/4.9).
+ *
+ * Ohne therapist und team_lead: Der offene Zugriff auf alle Akten gilt
+ * innerhalb der Behandlung (ADR-021 Punkt 6). Steuert nur die Darstellung;
+ * verbindlich ist app.can_read_training_relationships().
+ */
+const trainingRoles: RoleKey[] = ['owner', 'trainer', 'office'];
+
+export function canReadTrainingClients(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => trainingRoles.includes(role));
+}
+
+/**
+ * Wer Trainingskund:innen anlegt, ändert und ihren Vertrag beendet - dieselben
+ * drei Rollen (ANN-172). Verbindlich ist app.can_write_training_relationships().
+ */
+export function canWriteTrainingClients(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => trainingRoles.includes(role));
+}

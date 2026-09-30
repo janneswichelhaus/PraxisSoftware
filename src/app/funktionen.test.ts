@@ -29,6 +29,7 @@ describe('funktionskatalog', () => {
       'Übersicht',
       'Kalender',
       'Patient:innen',
+      'Training',
       'Kommunikation',
       'Organisatorisches',
       'Abrechnung',
@@ -119,8 +120,9 @@ describe('sucheFunktionen', () => {
   it('zeigt ohne Eingabe die Bereiche, damit die Liste nicht leer aufgeht', () => {
     const treffer = sucheFunktionen(katalog, '');
     expect(treffer.every((eintrag) => eintrag.art === 'Bereich')).toBe(true);
-    // Sechs Bereiche und fuer owner die Statistiken (STA-EPIC-001).
-    expect(treffer).toHaveLength(7);
+    // Sechs Bereiche und fuer owner Training und Statistiken (TRN-EPIC-001,
+    // STA-EPIC-001).
+    expect(treffer).toHaveLength(8);
   });
 
   it('stellt den Anfang des Namens vor den Treffer mitten im Wort', () => {
