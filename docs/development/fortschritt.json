@@ -976,7 +976,7 @@
           "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "docs/adr/ADR-023-platform-access.md",
-          "vermerk": "W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen)"
+          "vermerk": "W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag"
         },
         {
           "id": "adr-024",

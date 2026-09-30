@@ -8,9 +8,16 @@
 beginnen (Roadmap Block 4). Die Punkte 11, 13 und 5 gehen als Fragen ins Prüfpaket (B2, B5). Löst keinen ADR ab. Setzt [DSN-001](../development/PLATTFORM-ANSICHTEN.md)
 voraus (bestätigt 2026-09-30), dessen Abschnitte 3 und 10 diese Fragen hierher verweisen.
 
+**Fassung 2 (2026-09-30)**: Jannes hat sie am selben Tag nach der Durchsicht der drei Prüffragen
+freigegeben. **Punkt 5 ändert seine Frist**: Konto und Zugang werden getrennt, der Zugang mit
+seinem Nachweis hält drei Jahre statt zwölf Monate. Den Wortlaut der Fassung 1 zeigt der Punkt
+selbst. **Punkte 11 und 13 werden geschärft**: Mail nur an eine persönlich bestätigte Adresse,
+Ausweis und Vollmacht bei Vertretungen ansehen, Bedingungen der Einwilligung zur Begleitung. Die
+übrigen 23 Punkte und W1 bis W6 bleiben unverändert.
+
 ## Datum
 
-2026-09-30
+2026-09-30 · Fassung 2: 2026-09-30
 
 ## Kontext
 
@@ -97,10 +104,24 @@ zeigt nur Verhältnisse mit aktivem Zugang.
 **5. Konto ist nicht Akte** (§4.6, §4.10, ADR-008 Punkt 9). Sperren und Entziehen ändern nur den
 Zugang, nie das Verhältnis und nie seine Frist. Endet das Verhältnis (Abschluss der Versorgung,
 Vertragsende), endet der Zugang nicht von selbst. Das Ende steuert, was die Person noch sieht:
-30 Tage lesend, dann nur noch „Ich" (DSN-001 D2). Datenklasse des Zugangs:
-**Zugangs- und Authentifizierungsdatum** wie die Einladung (ANN-026), zwölf Monate nach seinem
-Ende (ADR-008, Tabelle). Fällt das Verhältnis im Löschlauf, fällt sein Zugang mit. Das Konto
-fällt, sobald kein Zugang mehr darauf zeigt und seine Frist abgelaufen ist.
+30 Tage lesend, dann nur noch „Ich" (DSN-001 D2).
+
+*(Fassung 2)* **Konto und Zugang haben getrennte Fristen**, weil sie verschiedene Daten sind:
+
+| Was | Frist | Warum |
+| --- | --- | --- |
+| **Konto** (Anmeldedaten beim Anmeldedienst, `user_profiles`) | 30 Tage nach dem Ende des letzten Zugangs bzw. seiner Lesefrist (D2) | Zweck erledigt; der Puffer fängt ein versehentliches Entziehen ab |
+| **Zugang mit Nachweis** (Übergabeweg, Bestätigung der Adresse, Vertretungsart, Nachweisvermerk, Einwilligung zur Begleitung und ihr Widerruf) | 3 Jahre nach dem Ende des Zugangs | so lange wie die Auditeinträge, die auf ihn zeigen (ADR-010 Punkt 5, ANN-029); zugleich die regelmäßige Verjährung nach § 195 BGB für den Nachweis der Einwilligung (Art. 7 Abs. 1 DSGVO) |
+
+Datenklasse: **Zugangs- und Authentifizierungsdatum**. Fällt das Verhältnis im Löschlauf, endet
+sein Zugang; der Nachweis läuft von da an seine drei Jahre und trägt dabei keinen Inhalt aus dem
+Verhältnis. Ein Auditeintrag über einen Zugriff zeigt damit nie auf einen Zugang, der schon
+gelöscht ist. Beide Fristen sind interne Initialentscheidungen und gehen in die Validierung
+nach ADR-008.
+*Fassung 1 lautete: „Datenklasse des Zugangs: Zugangs- und Authentifizierungsdatum wie die
+Einladung (ANN-026), zwölf Monate nach seinem Ende (ADR-008, Tabelle). Fällt das Verhältnis im
+Löschlauf, fällt sein Zugang mit. Das Konto fällt, sobald kein Zugang mehr darauf zeigt und
+seine Frist abgelaufen ist."*
 
 ### B. Einladung und Zustellweg
 
@@ -151,8 +172,12 @@ Person setzt damit ein neues Kennwort. Der Wiederherstellungslink per Mail kommt
 **11. Die Identität prüft die Praxis, die die Person kennt.** Ein Zugang entsteht nur zu einem
 Verhältnis, das die Praxis schon führt. Geprüft wird mit **persönlicher Übergabe** (Punkt 8, vor
 Ort) oder mit **Mail an die Adresse im Verhältnis**, die die einladende Person mit der
-Patient:in oder Kund:in abgeglichen hat. Die Einladung hält fest, wer sie auf welchem Weg
-übergeben hat. Ändert sich die Adresse, braucht es eine neue Einladung. Es gibt **keinen
+Patient:in oder Kund:in abgeglichen hat. *(Fassung 2)* Abgeglichen heißt: **Die Person hat die
+Adresse selbst bestätigt**, im Gespräch oder am Termin. Eine Adresse, die nur aus einer
+Überweisung, einem Formular oder von Angehörigen stammt, genügt nicht. Gerade in der mobilen
+Versorgung gehört die Adresse in der Akte oft der Tochter oder der ganzen Familie. Die Einladung
+hält fest, wer sie auf welchem Weg übergeben hat und wer die Adresse wann bestätigt hat. Ändert
+sich die Adresse, braucht es eine neue Einladung. Es gibt **keinen
 Ausweisscan, kein Video-Ident, keinen externen Identitätsdienst**: Die Praxis kennt die Person,
 und ein neuer Anbieter wäre ein neues Risiko ohne neue Sicherheit. Das Verfahren gilt vorläufig
 bis zur Antwort auf B5 und ist an einer Stelle austauschbar, der Einladungsfunktion.
@@ -167,7 +192,10 @@ ihn nicht.
 (eigene Person, eigene Adresse, eigenes Kennwort). Ihr Zugang zeigt auf das Verhältnis der
 vertretenen Person. Gehört das Konto nicht zur Person des Verhältnisses, ist der Zugang eine
 Vertretung und braucht eine **Art** und einen **Nachweisvermerk**: wer welches Dokument wann
-gesehen hat. In V1 wird kein Scan gespeichert. Zwei Arten (**W3**):
+gesehen hat. *(Fassung 2)* Angesehen werden **der Ausweis der vertretenden Person** und bei
+rechtlicher Vertretung **Vollmacht, Betreuerausweis oder Sorgerechtsnachweis**. Gespeichert wird
+davon nichts, weder Scan noch Ausweisnummer. Der Vermerk hält nur fest, was wer wann gesehen hat.
+Zwei Arten (**W3**):
 
 | Art                     | Wer                                                                      | Darf                                                                                            |
 | ----------------------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
@@ -175,8 +203,22 @@ gesehen hat. In V1 wird kein Scan gespeichert. Zwei Arten (**W3**):
 | **Begleitung**          | Angehörige oder Vertraute, mit dokumentierter Zustimmung der Person      | lesen, Terminwünsche und Nachrichten schreiben; **keine** Einwilligung, kein Widerruf, kein Datenexport |
 
 Die Zustimmung zur Begleitung ist zugleich die Entbindung von der Schweigepflicht gegenüber
-dieser Person (§ 203 StGB). Deshalb wird sie wie eine Einwilligung dokumentiert und ist
-widerruflich. Das Weitergeben von Zugangsdaten bleibt verboten (B5). Die Nutzungshinweise sagen
+dieser Person (§ 203 StGB). *(Fassung 2)* Weil die Begleitung Gesundheitsdaten sieht und die
+Heilbehandlung (Art. 9 Abs. 2 lit. h DSGVO) die Weitergabe an Angehörige nicht trägt, ist sie eine
+**ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO** und muss deren Bedingungen erfüllen:
+
+- **konkret**: Sie nennt die begleitende Person und den Umfang, also die Bereiche aus der Tabelle,
+  und ob frühere Nachrichten mit den Antworten der Praxis sichtbar sind.
+- **informiert, freiwillig, jederzeit widerruflich**: Der Widerruf wirkt wie ein Entziehen.
+- **nachweisbar** (Art. 7 Abs. 1): Am besten erteilt die Person sie selbst in ihrem Konto unter
+  „Ich". Hat sie kein Konto, bestätigt sie sie auf dem Praxisgerät; der Vermerk nennt, wer dabei
+  war.
+- **von einer einwilligungsfähigen Person**: Hat die Praxis daran Zweifel, gibt es keine
+  Begleitung, sondern nur die rechtliche Vertretung. Der Zweifel wird vermerkt, eine Diagnose
+  nicht.
+
+Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2. Das Weitergeben von Zugangsdaten
+bleibt verboten (B5). Die Nutzungshinweise sagen
 das, und weil es technisch nicht zu verhindern ist, muss der erlaubte Weg der leichtere sein:
 Eine Begleitung ist vor Ort in zwei Minuten eingerichtet.
 
@@ -292,9 +334,14 @@ Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Beg
   aktiver Zugang einen Moment lang auf alten Policies, die nach der Person fragen.
 - **Der Löschlauf lernt das Konto.** `app.delete_patient_record` lässt die `persons`-Zeile stehen,
   solange `user_profiles` auf sie zeigt (`20260911180000_retention_run.sql`). Ohne Nachzug hielte
-  ein Plattformkonto die Stammdaten einer gelöschten Akte fest. Der Zugang fällt deshalb mit dem
-  Verhältnis. Das Konto fällt nach Punkt 5, der Löschlauf oder der Zugangsdienst entfernt es beim
-  Anmeldedienst. Den Weg legt der SPEC fest; ein Test in `retention-run` beweist ihn. Das ist
+  ein Plattformkonto die Stammdaten einer gelöschten Akte fest. Mit dem Verhältnis endet deshalb
+  sein Zugang, und das Konto fällt nach Punkt 5; der Löschlauf oder der Zugangsdienst entfernt es
+  beim Anmeldedienst. *(Fassung 2)* Der Nachweis des Zugangs überdauert das Verhältnis um seine
+  drei Jahre. Er darf dabei nicht an der `persons`-Zeile der Person des Verhältnisses hängen und
+  nicht deren Namen tragen, sonst hielte er ihre Stammdaten ebenso fest. Er trägt die Kennung des
+  Verhältnisses wie ein Auditeintrag. Bei einer Vertretung trägt er außerdem den Namen der
+  vertretenden Person, als Teil des Nachweises, weil deren Konto nach 30 Tagen fällt. Den Weg
+  legt der SPEC fest; ein Test in `retention-run` beweist ihn. Das ist
   dieselbe Art Folge wie die vierte Prüfung aus ADR-021.
 - **Die Plattform ist gebaut, bevor sie scharf sein darf.** Zugangsdienst (Punkt 9) und
   Mailversand (Punkt 10) laufen mit `mock` und lokal. Echte Konten brauchen OPS-001 für die Edge
@@ -308,9 +355,10 @@ Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Beg
   zeigen (Punkt 14). Auditzeilen werden nie umgeschrieben; neue Werte treten neben die alten.
 - **Die Datenschutzprüfung bekommt drei Fragen** (B2, B5): Genügt die persönliche Übergabe als
   Identitätsprüfung (Punkt 11)? Genügt die dokumentierte Zustimmung zur Begleitung als
-  Schweigepflichtentbindung (Punkt 13)? Welche Frist gilt für Zugangsdaten (Punkt 5)? Bis dahin
-  gelten die Punkte als vorläufige Festlegung. Jeder ist an genau einer Stelle verankert, die der
-  Loop benennt, der ihn baut.
+  Schweigepflichtentbindung (Punkt 13)? Welche Frist gilt für Zugangsdaten (Punkt 5)? Fassung 2
+  hat zu allen drei eine begründete Antwort vorgelegt; die Prüfung bestätigt oder ändert sie.
+  Bis dahin gelten die Punkte als vorläufige Festlegung. Jeder ist an genau einer Stelle
+  verankert, die der Loop benennt, der ihn baut.
 - **Verworfen: der Selbstzugriff über `person_id`.** Er ist billig, weil er schon da ist. Aber er
   schließt über die gemeinsame Identität von einem Verhältnis aufs andere (§4.8) und kennt keine
   Sperre je Verhältnis.
@@ -350,7 +398,8 @@ Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Beg
   bestätigen in B5.
 - Braucht eine Person mit **Praxiskonto** doch einen Plattformzugang (W1 b oder c)? Das fällt an,
   sobald eine Mitarbeiterin in Behandlung ist und ihre Übungen sehen will.
-- Wie lange bleibt ein Konto **ohne jeden Zugang** bestehen, bevor es fällt? (Punkt 5, B2.)
+- ~~Wie lange bleibt ein Konto **ohne jeden Zugang** bestehen, bevor es fällt? (Punkt 5, B2.)~~
+  *Beantwortet mit Fassung 2, Punkt 5: 30 Tage; der Zugang mit Nachweis drei Jahre.*
 
 ## Wahlpunkte — bestätigt
 
@@ -401,3 +450,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | Fassung | Datum | Änderung |
 | --- | --- | --- |
 | 1 | 2026-09-30 | Erstfassung nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6; am selben Tag angenommen, W1 bis W6 wie empfohlen. |
+| 2 | 2026-09-30 | **Punkt 5 geändert** (Jannes): Konto 30 Tage nach dem letzten Zugang, Zugang mit Nachweis drei Jahre wie das Auditlog statt zwölf Monate; Wortlaut der Fassung 1 im Punkt. Punkt 11: Mail nur an eine von der Person selbst bestätigte Adresse. Punkt 13: Ausweis und Vollmacht ansehen, nichts speichern; Einwilligung zur Begleitung nach Art. 9 Abs. 2 lit. a mit vier Bedingungen. Erledigungsvermerk in den Folgefragen. Übrige Punkte und W1 bis W6 unverändert. |

@@ -769,7 +769,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | B1 Zweckbestimmung, MDR-Abgrenzung, AI Act | vorlaeufig | — | — | — | — |
 | E | B3 Validierung der Fristen (ANN-001) | vorlaeufig | — | — | — | — |
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
-| E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen) |
+| E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen); Fassung 2 am selben Tag |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->
