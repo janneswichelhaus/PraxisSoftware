@@ -2,11 +2,10 @@
 
 ## Status
 
-**Vorgeschlagen** (2026-09-30). Die Punkte 1 bis 26 folgen aus §3.4, §4.6 bis §4.10, dem
-B5-Rahmen und den ADRs 004, 008, 010, 015 und 021. Wo es eine echte Wahl gibt, steht sie als
-**W1 bis W6** am Ende, jede mit Empfehlung. Der Text geht von den Empfehlungen aus. Jannes
-bestätigt oder wählt anders; erst dann ist der ADR angenommen und POR-EPIC-001 kann beginnen
-(Roadmap Block 4). Löst keinen ADR ab. Setzt [DSN-001](../development/PLATTFORM-ANSICHTEN.md)
+**Angenommen** (2026-09-30), alle 26 Punkte und die Wahlpunkte **W1 bis W6 wie empfohlen**
+(Jannes, 2026-09-30). Die Punkte folgen aus §3.4, §4.6 bis §4.10, dem B5-Rahmen und den ADRs
+004, 008, 010, 015 und 021; wo es eine echte Wahl gab, steht sie am Ende. POR-EPIC-001 kann
+beginnen (Roadmap Block 4). Die Punkte 11, 13 und 5 gehen als Fragen ins Prüfpaket (B2, B5). Löst keinen ADR ab. Setzt [DSN-001](../development/PLATTFORM-ANSICHTEN.md)
 voraus (bestätigt 2026-09-30), dessen Abschnitte 3 und 10 diese Fragen hierher verweisen.
 
 ## Datum
@@ -353,9 +352,10 @@ Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Beg
   sobald eine Mitarbeiterin in Behandlung ist und ihre Übungen sehen will.
 - Wie lange bleibt ein Konto **ohne jeden Zugang** bestehen, bevor es fällt? (Punkt 5, B2.)
 
-## Wahlpunkte — zu bestätigen
+## Wahlpunkte — bestätigt
 
-Jede Wahl ist nach §15.1 reversibel gedacht. Die Rücknahme ist je Punkt genannt, verankert wird
+**Jannes hat am 2026-09-30 alle sechs wie empfohlen bestätigt.** Die verworfenen Optionen
+bleiben als Rückweg stehen. Jede Wahl ist nach §15.1 reversibel gedacht. Die Rücknahme ist je Punkt genannt, verankert wird
 im Loop, der sie baut.
 
 **W1 — Person mit Praxiskonto.** (a) In V1 kein Plattformzugang für Personen mit Praxiskonto; sie
@@ -400,4 +400,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 
 | Fassung | Datum | Änderung |
 | --- | --- | --- |
-| 1 | 2026-09-30 | Erstfassung, vorgeschlagen nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6. |
+| 1 | 2026-09-30 | Erstfassung nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6; am selben Tag angenommen, W1 bis W6 wie empfohlen. |

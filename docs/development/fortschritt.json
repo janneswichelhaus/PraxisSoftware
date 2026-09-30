@@ -496,7 +496,13 @@
         {
           "id": "por-epic-001",
           "name": "POR-EPIC-001 Plattformzugang",
-          "gewicht": 3,
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "por-epic-001b",
+          "name": "POR-EPIC-001b Vertretung",
+          "gewicht": 1,
           "status": "offen"
         },
         {
@@ -967,10 +973,10 @@
           "id": "adr-023",
           "name": "ADR-023 Plattformzugang",
           "gewicht": 1,
-          "status": "entwurf",
+          "status": "gesichtet",
           "fertig_am": "2026-09-30",
           "nachweis": "docs/adr/ADR-023-platform-access.md",
-          "vermerk": "Wahlpunkte W1 bis W6 zu bestätigen"
+          "vermerk": "W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen)"
         },
         {
           "id": "adr-024",

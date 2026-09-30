@@ -146,7 +146,7 @@ in den Etappen darunter.
 | 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → ~~UX-EPIC-003~~ (gebaut 2026-09-26) | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → UX-EPIC-004 → PRX-EPIC-003 → PRX-EPIC-003b → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
-| 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ADR-023 bestätigen |
+| 4 | **Plattformzugang** | POR-EPIC-001 → -001b → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
 | 5 | **Angebote** | ANG-EPIC-001 → ANG-EPIC-002 → KND-EPIC-001 | — | Abo- und Paketpreise (bis dahin synthetisch) |
 | 6 | **Pläne und Rückfragen** | UEB-EPIC-001 → -002 → -003 → KOM-EPIC-001 → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
 | 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
@@ -377,14 +377,14 @@ Ansicht der Trainingskund:innen steht mit §4.10 und bekommt dort nur ihren Plat
 externer Personen neben den Praxisrollen, Einladung und Zustellweg (R8),
 Identitätsprüfung und Vertretung (B5 als Annahme, reversibel an einer Stelle),
 Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche —
-Entwurf in [`ADR-023-platform-access.md`](../adr/ADR-023-platform-access.md)
-(2026-09-30) mit sechs Wahlpunkten W1 bis W6, zu bestätigen. W6 (Empfehlung b)
-schiebt die Vertretung als **POR-EPIC-001b** zwischen -001 und -002; die Kette
-unten wird erst mit der Bestätigung nachgezogen.
+[`ADR-023-platform-access.md`](../adr/ADR-023-platform-access.md), am 2026-09-30
+angenommen, W1 bis W6 wie empfohlen. Nach W6 steht die Vertretung als eigener
+Loop **POR-EPIC-001b** zwischen -001 und -002.
 
 | Loop | Ergebnis | Zuschnitt | Quelle |
 | --- | --- | --- | --- |
 | **POR-EPIC-001** | Eine Patientin oder Kund:in hat einen eigenen Zugang, der nur ihre Daten zeigt | Konto zu Person, Einladung aus der Akte bzw. dem Trainingsverhältnis, Anmeldung, Sperren und Entziehen ohne Wirkung auf die Akte; Negativfall „fremde Person" für jede Sicht | `IDEA-LZK-001` |
+| **POR-EPIC-001b** | Angehörige, Betreuung und Sorgeberechtigte handeln mit eigenem Konto für eine Person | Vertretung als eigener Zugang (ADR-023 Punkte 13 bis 15): rechtliche Vertretung und Begleitung, Nachweisvermerk, „Sie handeln für …", Auditeinträge unterscheidbar, Begleitung durch die Person selbst beendbar, unter 18 nur Sorgeberechtigte; Negativfälle je Art | B5, ADR-023 W3, W6 |
 | **POR-EPIC-002** | Die eigene Sicht zeigt Termine, Rechnungen und freigegebene Dokumente | Termine mit Anfrage und Änderungswunsch — **ein Wunsch, den das Büro bestätigt** (§8) —, Befundbogen vorab ausfüllen, eigene Rechnungen, freigegebene Dokumente (ADR-017), Übersicht „was zu tun ist" | §4.6, §4.10, `IDEA-ORG-001` |
 | **POR-EPIC-003** | Einwilligungen, Export und Einstellungen liegen in der eigenen Hand | Einwilligung erteilen und widerrufen (auf PAT-006), Datenexport als Funktion, Onboarding mit Überspringen, Einstellungen mit sichtbarer Coach-Kontrolle, Oberfläche für 78-Jährige | `IDEA-QSN-003`, `IDEA-LZK-005`, `IDEA-QSN-005`, `-006` |
 
@@ -769,7 +769,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | B1 Zweckbestimmung, MDR-Abgrenzung, AI Act | vorlaeufig | — | — | — | — |
 | E | B3 Validierung der Fristen (ANN-001) | vorlaeufig | — | — | — | — |
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
-| E | ADR-023 Plattformzugang | entwurf | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | Wahlpunkte W1 bis W6 zu bestätigen |
+| E | ADR-023 Plattformzugang | gesichtet | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | W1 bis W6 von Jannes bestätigt (2026-09-30, wie empfohlen) |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->
