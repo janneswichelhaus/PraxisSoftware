@@ -452,7 +452,10 @@
           "id": "trn-epic-001",
           "name": "TRN-EPIC-001 Trainingskund:in anlegen",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-30",
+          "nachweis": "TRN-001 bis TRN-003",
+          "vermerk": "Sichtung: Training Schritte 1 bis 3"
         },
         {
           "id": "trn-epic-002",

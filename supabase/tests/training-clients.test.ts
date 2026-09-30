@@ -189,6 +189,35 @@ describe('Das zweite Verhaeltnis einer vorhandenen Person (ANN-173)', () => {
     });
   });
 
+  it('nimmt Kontakt und Beginn aus dem Aufruf mit - nicht aus der Akte', async () => {
+    // Petra ist nur Patientin; ihre Akte traegt eine eigene Telefonnummer.
+    const { rows: petra } = await asPostgres<{ person_id: string }>(
+      'select person_id from public.patients where id = $1',
+      [SEED.patients.petra],
+    );
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.office,
+      `select public.start_training_for_person($1::uuid, $2::date, null, $3, null, null, null, null) as id`,
+      [petra[0]!.person_id, tagInTagen(-3), 'petra.training@beispiel.invalid'],
+    );
+    const { rows: zeile } = await asPostgres<{
+      start: string;
+      email: string;
+      phone: string | null;
+    }>(
+      `select t.contract_started_on::text as start, d.email, d.phone
+         from public.training_relationships t
+         join public.training_contact_details d on d.training_relationship_id = t.id
+        where t.id = $1`,
+      [rows[0]!.id],
+    );
+    expect(zeile[0]).toEqual({
+      start: tagInTagen(-3),
+      email: 'petra.training@beispiel.invalid',
+      phone: null,
+    });
+  });
+
   it('kennt fuer die Trainingsbetreuung keine Akte - nicht gefunden wie eine fremde Kennung', async () => {
     // Petras Person hat nur eine Akte. Waere sie fuer den Trainer anbindbar,
     // verriete die Funktion, dass es sie in der Behandlung gibt (§4.8).
@@ -269,9 +298,33 @@ describe('Dublettenhinweis beim Anlegen (TRN-002)', () => {
     expect(rows).toEqual([expect.objectContaining({ kind: 'training', person_id: persons.erika })]);
   });
 
+  it('gibt das Geburtsdatum einer Trainingskundin nur heraus, wenn es eingegeben war (ANN-175)', async () => {
+    await asPostgres(
+      `insert into public.training_contact_details (training_relationship_id, organization_id, date_of_birth)
+       values ($1, $2, '1991-07-08')
+       on conflict (training_relationship_id) do update set date_of_birth = excluded.date_of_birth`,
+      [trainingRelationships.tina, SEED.organizationId],
+    );
+    const { rows: ohne } = await asUser<{ date_of_birth: string | null }>(users.trainer, FIND, [
+      'Tina',
+      'Trainingskundin',
+      null,
+    ]);
+    expect(ohne).toEqual([expect.objectContaining({ date_of_birth: null })]);
+
+    const { rows: mit } = await asUser<{ date_of_birth: string | null }>(users.trainer, FIND, [
+      null,
+      'Trainingskundin',
+      '1991-07-08',
+    ]);
+    expect(mit).toHaveLength(1);
+    expect(mit[0]?.date_of_birth).not.toBeNull();
+  });
+
   it.each([
     ['therapist', users.therapist],
     ['team_lead', users.teamLead],
+    ['patient', users.patientMax],
   ])('weist %s ab - protokolliert', async (_rolle, user) => {
     await erwarteAbgewiesenenLeseversuch(
       user,
@@ -425,6 +478,74 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
       asUser(users.trainer, END, ['eeeeeeee-eeee-4eee-8eee-0000000000ff', null]),
     );
     expect(fehler?.message).toMatch(/training relationship not found/);
+  });
+});
+
+describe('Name einer Mitarbeiterin im Training (ANN-174, Zweitreview)', () => {
+  const ANNA_PERSON = '44444444-4444-4444-8444-000000000002';
+  let annasTraining = '';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.office,
+      'select public.start_training_for_person($1::uuid) as id',
+      [ANNA_PERSON],
+    );
+    annasTraining = rows[0]!.id;
+  }, 120_000);
+
+  it('laesst die Trainingsbetreuung den Namen einer Mitarbeiterin nicht aendern', async () => {
+    const fehler = await abgefangen(
+      asUser(users.trainer, UPDATE, [
+        annasTraining,
+        'Anna',
+        'Umbenannt',
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        tagInTagen(0),
+      ]),
+    );
+    expect(fehler?.message).toMatch(/name is managed in staff master data/);
+  });
+
+  it('laesst sie den Kontakt im Training aber pflegen', async () => {
+    await asUserCommitted(users.trainer, UPDATE, [
+      annasTraining,
+      'Anna',
+      'Beispiel',
+      null,
+      'anna.training@beispiel.invalid',
+      null,
+      null,
+      null,
+      null,
+      tagInTagen(0),
+    ]);
+    const { rows } = await asPostgres<{ email: string }>(
+      'select email from public.training_contact_details where training_relationship_id = $1',
+      [annasTraining],
+    );
+    expect(rows[0]?.email).toBe('anna.training@beispiel.invalid');
+  });
+
+  it('laesst office, das Mitarbeiterstammdaten pflegt, den Namen aendern', async () => {
+    await asUser(users.office, UPDATE, [
+      annasTraining,
+      'Anna',
+      'Neuname',
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      tagInTagen(0),
+    ]);
   });
 });
 

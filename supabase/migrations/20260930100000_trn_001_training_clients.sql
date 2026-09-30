@@ -323,7 +323,13 @@ grant execute on function public.create_training_client(text, text, date, text, 
 -- -----------------------------------------------------------------------------
 create function public.start_training_for_person(
   p_person_id           uuid,
-  p_contract_started_on date default null
+  p_contract_started_on date default null,
+  p_date_of_birth       date default null,
+  p_email               text default null,
+  p_phone               text default null,
+  p_street              text default null,
+  p_postal_code         text default null,
+  p_city                text default null
 )
 returns uuid
 language plpgsql
@@ -378,8 +384,12 @@ begin
   )
   returning id into v_id;
 
-  -- Leere Kontaktzeile: Aus der Akte wird nichts uebernommen (ANN-173).
-  perform app.write_training_contact(v_id, v_org, v_actor, null, null, null, null, null, null);
+  -- Aus der Akte wird nichts uebernommen (ANN-173). Was im Formular steht,
+  -- hat die anlegende Person fuer das Training eingegeben - das kommt mit,
+  -- sonst gingen ihre Eingaben still verloren (Zweitreview TRN-EPIC-001).
+  perform app.write_training_contact(
+    v_id, v_org, v_actor, p_date_of_birth, p_email, p_phone, p_street, p_postal_code, p_city
+  );
 
   insert into public.audit_log (
     organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
@@ -393,10 +403,10 @@ begin
 end;
 $$;
 
-comment on function public.start_training_for_person(uuid, date) is
-  'TRN-001: gibt einer vorhandenen Person ihr Trainingsverhaeltnis, ohne zweite persons-Zeile. Nur wer die Person aus dem Behandlungsbereich sieht (owner, office); sonst "person not found" (ANN-173). Uebernimmt keine Daten aus der Akte.';
-revoke all on function public.start_training_for_person(uuid, date) from public, anon;
-grant execute on function public.start_training_for_person(uuid, date) to authenticated;
+comment on function public.start_training_for_person(uuid, date, date, text, text, text, text, text) is
+  'TRN-001: gibt einer vorhandenen Person ihr Trainingsverhaeltnis, ohne zweite persons-Zeile. Nur wer die Person aus dem Behandlungsbereich sieht (owner, office); sonst "person not found" (ANN-173). Uebernimmt keine Daten aus der Akte; Kontaktdaten nur aus dem Aufruf.';
+revoke all on function public.start_training_for_person(uuid, date, date, text, text, text, text, text) from public, anon;
+grant execute on function public.start_training_for_person(uuid, date, date, text, text, text, text, text) to authenticated;
 
 -- -----------------------------------------------------------------------------
 -- 7. update_training_client - Name, Kontakt, Vertragsbeginn
@@ -485,6 +495,21 @@ begin
 
   if cardinality(v_felder) = 0 then
     return p_relationship_id;
+  end if;
+
+  -- Der Name einer Mitarbeiter:in oder eines Kontos gehoert in die
+  -- Mitarbeiterstammdaten: Aendern darf ihn dort nur, wer sie pflegt
+  -- (app.can_manage_staff_master_data, ANN-174). Aus dem Training heraus
+  -- ginge das an Pruefung und Protokoll vorbei (Zweitreview TRN-EPIC-001).
+  -- Die Meldung verraet nichts, was §4.8 schuetzt: Zugehoerigkeit zum Team
+  -- ist kein Behandlungsdatum.
+  if array_position(v_felder, 'name') is not null
+     and not app.can_manage_staff_master_data()
+     and (
+       exists (select 1 from public.staff_members x where x.person_id = v_person)
+       or exists (select 1 from public.user_profiles x where x.person_id = v_person)
+     ) then
+    raise exception 'name is managed in staff master data' using errcode = '42501';
   end if;
 
   -- Der Name gehoert der Person, nicht dem Verhaeltnis (ANN-174).
@@ -664,6 +689,9 @@ grant execute on function public.reopen_training_relationship(uuid) to authentic
 -- Die Trefferliste: Name, Status, Vertragsdaten - kein Kontakt. Wie die
 -- Kartei nicht protokolliert (ADR-010), ein abgewiesener Versuch schon.
 -- -----------------------------------------------------------------------------
+-- VOLATILE, nicht STABLE: Im abgewiesenen Fall schreibt die Funktion einen
+-- denied-Eintrag, und PostgREST ruft STABLE-Funktionen in einer lesenden
+-- Transaktion auf - das INSERT scheiterte dort (Zweitreview TRN-EPIC-001).
 create function public.list_training_clients()
 returns table (
   id                  uuid,
@@ -675,7 +703,7 @@ returns table (
   contract_ended_on   date
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -811,7 +839,7 @@ returns table (
   date_of_birth            date
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -839,7 +867,10 @@ begin
   end if;
 
   return query
-    select 'training'::text, t.id, t.person_id, pe.given_name, pe.family_name, d.date_of_birth
+    -- Das Geburtsdatum nur, wenn es das eingegebene ist: Sonst gaebe der
+    -- Hinweis Kontaktdaten ohne Protokoll heraus (ANN-175, Zweitreview).
+    select 'training'::text, t.id, t.person_id, pe.given_name, pe.family_name,
+           case when d.date_of_birth = p_date_of_birth then d.date_of_birth end
     from public.training_relationships t
     join public.persons pe on pe.id = t.person_id
     left join public.training_contact_details d on d.training_relationship_id = t.id

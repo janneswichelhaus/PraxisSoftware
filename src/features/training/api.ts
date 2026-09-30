@@ -237,11 +237,28 @@ export async function createTrainingClient(werte: TrainingWerte): Promise<string
   return neueKennung(ergebnis.data, satz);
 }
 
-/** Das zweite Verhältnis einer Person, die schon eine Akte hat (ANN-173). */
-export async function startTrainingForPerson(personId: string): Promise<string> {
+/**
+ * Das zweite Verhältnis einer Person, die schon eine Akte hat (ANN-173).
+ *
+ * Aus der Akte kommt nichts; Kontakt und Vertragsbeginn sind die Eingaben
+ * aus dem Formular. Der Name bleibt der der Person - ein abweichend
+ * geschriebener Name im Formular ändert ihn nicht.
+ */
+export async function startTrainingForPerson(
+  personId: string,
+  werte: TrainingWerte,
+): Promise<string> {
   const satz = 'Das Training konnte nicht begonnen werden.';
+  const alle = rpcWerte(werte);
   const ergebnis = await getSupabase().rpc('start_training_for_person', {
     p_person_id: personId,
+    p_contract_started_on: alle.p_contract_started_on,
+    p_date_of_birth: alle.p_date_of_birth,
+    p_email: alle.p_email,
+    p_phone: alle.p_phone,
+    p_street: alle.p_street,
+    p_postal_code: alle.p_postal_code,
+    p_city: alle.p_city,
   });
   if (abgewiesen(ergebnis)) throw new Error(satz);
   return neueKennung(ergebnis.data, satz);

@@ -30,6 +30,7 @@ import {
   canManageAppointments,
   canReadPatientDirectory,
   canReadTrainingClients,
+  isTherapyStaff,
   canReadTreatmentNote,
   canWriteTreatmentNote,
   isStaff,
@@ -730,7 +731,9 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         </p>
       ) : null}
 
-      <UebersichtVorschau user={user} />
+      {/* Die Vorschau führt nach Organisatorisches und Kommunikation - Bereiche,
+          die ein reines Trainingskonto nicht hat (TRN-003). */}
+      {isTherapyStaff(user.roles) ? <UebersichtVorschau user={user} /> : null}
     </>
   );
 }

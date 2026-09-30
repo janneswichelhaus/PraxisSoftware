@@ -2017,7 +2017,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Zweckbindung ADR-021 Punkt 7)
 
-**Annahme.** Eine Person, die schon eine Akte hat (oder im Team ist), bekommt ihr Trainingsverhältnis ohne zweite `persons`-Zeile — aber nur durch jemanden, der sie aus der Behandlung ohnehin sieht, also `owner` oder `office`. Der Dublettenhinweis beim Anlegen zeigt der Trainingsbetreuung nur Trainingskund:innen; für sie ist eine Akte „nicht gefunden“, ununterscheidbar von einer fremden Kennung. Kontaktdaten hängen am Verhältnis (`training_contact_details`, Gegenstück zu `patient_contact_details`); beim zweiten Verhältnis wird nichts aus der Akte übernommen, auch keine Adresse.
+**Annahme.** Eine Person, die schon eine Akte hat (oder im Team ist), bekommt ihr Trainingsverhältnis ohne zweite `persons`-Zeile — aber nur durch jemanden, der sie aus der Behandlung ohnehin sieht, also `owner` oder `office`. Der Dublettenhinweis beim Anlegen zeigt der Trainingsbetreuung nur Trainingskund:innen; für sie ist eine Akte „nicht gefunden“, ununterscheidbar von einer fremden Kennung. Kontaktdaten hängen am Verhältnis (`training_contact_details`, Gegenstück zu `patient_contact_details`); beim zweiten Verhältnis wird nichts aus der Akte übernommen, auch keine Adresse — mit kommt nur, was die anlegende Person ins Formular getippt hat (Kontakt, Vertragsbeginn), nie der Name aus dem Formular.
 
 **Begründung.** ADR-021 verwirft zwei Personendatensätze (Dubletten) und verlangt zugleich, dass aus der Trainingsrolle nicht auf die Behandlung geschlossen wird, „auch nicht mittelbar über die gemeinsame Identität“ (§4.8). Beides zusammen geht nur, wenn die Verbindung von einer Rolle gezogen wird, die beide Bereiche sieht. Die Kontaktdaten sind seit der Datenminimierung (`20260828110000_person_data_minimisation.sql`) an den Kontext gebunden; eine automatische Übernahme wäre eine Übernahme aus dem Behandlungskontext ohne dokumentierte Einwilligung (ADR-021 Punkt 7). Unsicher: ob Kontaktdaten unter Punkt 7 fallen — bewusst die strengere Lesart.
 
@@ -2029,7 +2029,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
 
-**Annahme.** Ändert die Trainingsbetreuung Vor- oder Nachnamen einer Trainingskund:in, ändert sie ihn in `persons` — und damit auch in einer Akte derselben Person, von der sie nichts weiß. Protokolliert wird die Änderung am Trainingsverhältnis (`training_relationship.updated`, Feld `name`).
+**Annahme.** Ändert die Trainingsbetreuung Vor- oder Nachnamen einer Trainingskund:in, ändert sie ihn in `persons` — und damit auch in einer Akte derselben Person, von der sie nichts weiß. Protokolliert wird die Änderung am Trainingsverhältnis (`training_relationship.updated`, Feld `name`). Ausnahme: Ist die Person Mitarbeiter:in oder hat sie ein Konto, ändert den Namen nur, wer Mitarbeiterstammdaten pflegt (owner, office); die Trainingsbetreuung bekommt „name is managed in staff master data“ (Zweitreview).
 
 **Begründung.** ADR-021 Punkt 3 macht die Identität zum einzigen geteilten Punkt; zwei Namenszeilen wären die verworfenen zwei Personendatensätze. Ein Verbot für Personen mit Akte verriete durch seine Fehlermeldung genau das, was §4.8 schützt. Namensänderungen (Heirat, Tippfehler) betreffen die Person, nicht das Verhältnis.
 
@@ -2041,7 +2041,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8)
 
-**Annahme.** Wie bei der Akte: Das Öffnen einer Trainingskund:in (`training_relationship.viewed`) und jede Änderung (`.created`, `.updated`, `.ended`, `.reopened`) stehen im Protokoll, Kontaktdaten und Namen nie — bei Änderungen nur die Namen der geänderten Felder, beim Vertragsende der Tag. Die Trefferliste und der Dublettenhinweis zeigen keinen Kontakt und werden nicht protokolliert; ihr abgewiesener Aufruf schon (`training_relationships.read`).
+**Annahme.** Wie bei der Akte: Das Öffnen einer Trainingskund:in (`training_relationship.viewed`) und jede Änderung (`.created`, `.updated`, `.ended`, `.reopened`) stehen im Protokoll, Kontaktdaten und Namen nie — bei Änderungen nur die Namen der geänderten Felder, beim Vertragsende der Tag. Die Trefferliste und der Dublettenhinweis zeigen keinen Kontakt und werden nicht protokolliert; ihr abgewiesener Aufruf schon (`training_relationships.read`). Das Geburtsdatum einer Trainingskund:in nennt der Hinweis nur, wenn es genau das eingegebene ist. Bekannt und hingenommen: Wer schreiben darf, kann Beginn und Ende zurückdatieren und damit die Frist früher auslösen — beides steht mit Tag im Protokoll, wie beim Abschluss der Versorgung.
 
 **Begründung.** ADR-021 Punkt 8 verlangt für das Training das Auditniveau der Akte; ADR-010 protokolliert das Öffnen, nicht die Trefferliste. Der Tag des Vertragsendes bestimmt die Frist und gehört deshalb in den Eintrag (wie `patient.care_concluded`).
 

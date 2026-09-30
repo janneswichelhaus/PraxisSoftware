@@ -66,7 +66,10 @@ export function NewTrainingClientPage() {
   }
 
   const anlegen = useMutation({ mutationFn: createTrainingClient, onSuccess: fertig });
-  const anbinden = useMutation({ mutationFn: startTrainingForPerson, onSuccess: fertig });
+  const anbinden = useMutation({
+    mutationFn: (personId: string) => startTrainingForPerson(personId, werte),
+    onSuccess: fertig,
+  });
   const beschaeftigt = anlegen.isPending || anbinden.isPending || pruefung === 'laeuft';
 
   function setzen(feld: TrainingFeld, wert: string) {
@@ -172,7 +175,8 @@ export function NewTrainingClientPage() {
               <>
                 <p className="text-ink mt-3 text-sm">
                   In der Behandlung bekannt. Ist es dieselbe Person, bekommt sie ihr Training ohne
-                  zweiten Eintrag – aus der Akte wird nichts übernommen.
+                  zweiten Eintrag – mit Kontakt und Vertragsbeginn aus diesem Formular; aus der Akte
+                  wird nichts übernommen.
                 </p>
                 <ul className="mt-2 flex flex-col gap-2">
                   {aktenTreffer.map((treffer) => (

@@ -30,7 +30,8 @@ vi.mock('./api', async (importOriginal) => {
     listTrainingClients: () => listTrainingClients() as Promise<unknown>,
     getTrainingClient: (id: string) => getTrainingClient(id) as Promise<unknown>,
     createTrainingClient: (werte: unknown) => createTrainingClient(werte) as Promise<string>,
-    startTrainingForPerson: (id: string) => startTrainingForPerson(id) as Promise<string>,
+    startTrainingForPerson: (id: string, werte: unknown) =>
+      startTrainingForPerson(id, werte) as Promise<string>,
     updateTrainingClient: (id: string, werte: unknown) =>
       updateTrainingClient(id, werte) as Promise<void>,
     endTrainingRelationship: (id: string, tag: string) =>
@@ -177,7 +178,13 @@ describe('NewTrainingClientPage', () => {
     expect(createTrainingClient).not.toHaveBeenCalled();
 
     await user.click(screen.getByRole('button', { name: 'Training für diese Person beginnen' }));
-    await waitFor(() => expect(startTrainingForPerson).toHaveBeenCalledWith(MAX_PERSON));
+    // Die Eingaben aus dem Formular gehen mit (Zweitreview), aus der Akte nichts.
+    await waitFor(() =>
+      expect(startTrainingForPerson).toHaveBeenCalledWith(
+        MAX_PERSON,
+        expect.objectContaining({ given_name: 'Max', family_name: 'Mustermann' }),
+      ),
+    );
     expect(createTrainingClient).not.toHaveBeenCalled();
   });
 

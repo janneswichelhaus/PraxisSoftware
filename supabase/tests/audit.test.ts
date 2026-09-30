@@ -294,6 +294,42 @@ describe('Audit-Lesepfad', () => {
     ]);
   });
 
+  it('fuehrt keinen Pfad mit Abweisungseintrag als STABLE oder IMMUTABLE (TRN-EPIC-001)', async () => {
+    // PostgREST ruft STABLE- und IMMUTABLE-Funktionen in einer lesenden
+    // Transaktion auf. Das INSERT des denied-Eintrags scheitert dort mit 25006,
+    // und die Abweisung bliebe ohne Nachweis - ueber eine direkte Verbindung,
+    // wie sie diese Tests nutzen, faellt das nie auf. Deshalb hier als Regel
+    // ueber den Katalog (Zweitreview TRN-EPIC-001).
+    const { rows } = await asPostgres<{ proname: string }>(`
+      select p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('public', 'app')
+        and p.prosrc ~ 'app\\.record_denied_(owner_)?(read|write)\\('
+        and p.provolatile <> 'v'
+      order by p.proname
+    `);
+    // BEF-082: Diese Pfade sind aelter und tragen den Fehler noch; die Liste
+    // darf nur schrumpfen. Ein neuer Eintrag hier ist ein neuer Fehler.
+    expect(rows.map((r) => r.proname)).toEqual([
+      'find_free_slots',
+      'find_possible_duplicates',
+      'get_intake_checklist',
+      'get_practice_statistics',
+      'get_practice_targets',
+      'list_call_list',
+      'list_care_without_conclusion',
+      'list_ending_prescriptions',
+      'list_open_intakes',
+      'list_open_prescription_scans',
+      'list_practice_revenue_months',
+      'list_tasks',
+      'list_top_services',
+      'list_waitlist_entries',
+      'list_waitlist_matches',
+      'rate_slot_travel',
+    ]);
+  });
+
   it('verweigert den Zugriff ohne Session', async () => {
     await expect(asUser(null, LIST)).rejects.toThrow(/not authenticated/);
   });
