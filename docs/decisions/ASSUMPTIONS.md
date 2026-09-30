@@ -2182,3 +2182,27 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** Rollenprüfung in `public.complete_appointment` und `public.reopen_appointment` in `supabase/migrations/20260930131000_trn_010_training_documented.sql`; `public.appointments_training_protocol_guard` in `supabase/migrations/20260930132000_trn_epic_004_zweitreview.sql`; `TerminAbschluss` in `src/features/training/TrainingProtocol.tsx`.
 
 **Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`.
+
+### ANN-187 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
+
+**Annahme.** Die Regel-Terminart dieser Praxis ist der Hausbesuch. Er steht deshalb an keinem Termin, keiner Kalenderkachel, keiner Tageskarte und keiner Terminzeile als Wort; nur eine abweichende Art wird gekennzeichnet — der Praxistermin mit seinem Standort, der Videotermin mit einem Hinweis, dass noch kein Videolink erzeugt wird. Wer den Ort eines Hausbesuchs sucht, findet die Anschrift mit dem Navigationsknopf.
+
+**Begründung.** Jannes (2026-09-30): „Hausbesuch ist Standard, nur ein Praxistermin muss auffallen.“ Ein Wort, das an jeder Stelle steht, sagt nichts mehr und frisst am Telefon eine Zeile je Karte (§5, ADR-015 Punkt zur Bedienbarkeit). Die Terminart bleibt im Datenmodell und in allen Formularen wählbar; nur die Anzeige des Regelfalls entfällt. Eine Praxis mit anderem Regelfall ändert eine Konstante.
+
+**Anker.** `REGEL_TERMINART` und `appointmentTypeHint` in `src/features/appointments/api.ts`; alle Kacheln und Zeilen lesen die Terminart darüber.
+
+**Änderungspfad.** Anderer Regelfall (etwa eine Praxis, die überwiegend im Haus behandelt): `REGEL_TERMINART` auf `practice` setzen · Aufwand `klein`. Terminart immer zeigen: `appointmentTypeHint` gibt stets das Etikett zurück · Aufwand `klein`.
+
+### ANN-188 — Die behandelnde Person steht am Termin nur, wenn sie nicht die angemeldete Person ist
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
+
+**Annahme.** Auf der Terminseite steht die behandelnde Person nur, wenn sie von der angemeldeten Person abweicht — für das Büro also immer, für die Therapeut:in nur an fremden Terminen. Am eigenen Termin ist die Angabe klar und entfällt. Der Status „Bestätigt“ steht ebenfalls nur für Vorlesesoftware; sichtbar ist nur ein abweichender Zustand (abgesagt, nicht angetroffen, abgeschlossen, dokumentiert, abgerechnet).
+
+**Begründung.** Jannes (2026-09-30): „Die behandelnde Person ist in der Situation klar, der Status für die Behandelnde irrelevant.“ Die Zuordnung bleibt in den Daten und im Kalender sichtbar; die Seite zeigt nur, was in der Situation nicht schon feststeht (§5). Für das Büro, das fremde Termine öffnet, steht die Person weiter im Kopf.
+
+**Anker.** `fremdePerson` in `src/features/appointments/AppointmentHeadline.tsx`.
+
+**Änderungspfad.** Person immer zeigen: die Bedingung `fremdePerson` entfernen · Aufwand `klein`. Status immer sichtbar: den Zweig für `confirmed` in derselben Datei durch das Abzeichen ersetzen · Aufwand `klein`.

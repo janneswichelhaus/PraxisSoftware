@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-28
+Stand: 2026-09-30
 
 ## Zweck
 
@@ -3135,3 +3135,59 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Diese Funktionen sind `STABLE` und schreiben im abgewiesenen Fall über `app.record_denied_read` einen `denied`-Eintrag. PostgREST ruft `STABLE`-Funktionen in einer lesenden Transaktion auf; das INSERT scheitert dort mit 25006, der Aufrufer bekommt einen Fehler statt einer leeren Antwort, und der Versuch steht **nicht** im Protokoll. `pnpm test:db` sieht das nicht, weil es über eine direkte Verbindung ohne lesende Transaktion ruft. Für die Pfade von TRN-EPIC-001 ist es behoben; eine Katalogregel in `audit.test.ts` hält die Liste fest und lässt sie nur schrumpfen.
 
 **Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
+
+### BEF-083 — Die Terminseite wiederholt, was die Überschrift schon sagt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Terminseite `/termine/:id` |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005a) |
+| Berührt | `src/features/appointments/AppointmentDetailPage.tsx`, `AppointmentHeadline.tsx`, `Abrechnungslage.tsx`, `src/components/ui/Tile.tsx` |
+
+**Beobachtung.** Die Tabelle unter der Überschrift nannte den Namen der Patient:in (steht schon in der Überschrift), die behandelnde Person (in der Situation klar), „Hausbesuch“ (der Regelfall) und den Status „Bestätigt“ (für die Behandelnde ohne Bedeutung). Datum und Uhrzeit standen erst in der Tabelle, die Mitteilungszeichen daneben. Alles zusammen kostete am Telefon eine Bildschirmhöhe, bevor die Anschrift kam.
+
+**Erwartet.** Datum, Zeit und Mitteilungszeichen in der Zeile unter der Überschrift; die behandelnde Person nur an fremden Terminen (ANN-188), die Terminart nur, wenn sie vom Hausbesuch abweicht (ANN-187), der Status nur, wenn er von „Bestätigt“ abweicht. Anschrift und Navigation bleiben, als Kachel, daneben die Grundlage. Ein Praxis- oder Videotermin trägt eine farbige Kachel.
+
+### BEF-084 — Der Block „Was ist passiert?“ am Hausbesuch steht immer offen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Terminseite `/termine/:id` (bestätigter Hausbesuch) |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005b) |
+| Berührt | `src/features/appointments/HomeVisitFlow.tsx`, `AppointmentDetailPage.tsx` |
+
+**Beobachtung.** Die drei Szenarien aus CAL-018 (Regelfall, Tür geöffnet ohne Behandlung, niemand öffnet) standen auf jeder Hausbesuchsseite ausgeklappt mit ihren Folgen — auch dann, wenn die Tür wie fast immer aufgeht. Der Regelfall stand mitten im Ausnahmeblock.
+
+**Erwartet.** Ein Knopf „Niemand öffnet?“ neben „Dokumentieren und abschließen“; dahinter die Schrittfolge geklingelt → gewartet → angerufen mit den Rufnummern der Patient:in zum Tippen, am Ende „nicht angetroffen“ vermerken; darunter der Weg „Ohne Behandlung abschließen“. Das Protokoll bleibt serverseitig Pflicht (ADR-018 Punkt 9).
+
+### BEF-085 — Im Kalender ist nicht zu sehen, wann jemand arbeitet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Kalender `/kalender` |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005c) |
+| Berührt | `src/features/appointments/CalendarGrid.tsx`, `CalendarPage.tsx`, `calendar.ts` |
+
+**Beobachtung.** Das Gitter war für jede Person von 07:00 bis 19:00 gleich weiß, ob sie an dem Tag arbeitet oder nicht. Die Arbeitszeit stand nur in der Planung unter Organisatorisches.
+
+**Erwartet.** Die Zeit außerhalb der Arbeitszeit einer Person ist grau schraffiert, auch ein ganzer Tag ohne Arbeitszeit; die weiße Fläche ist die Arbeitszeit. Solange der Wochenplan nicht geladen ist, wird nichts behauptet. Die Legende erklärt die Schraffur.
+
+### BEF-086 — „Hausbesuch“ steht auf jeder Kachel, Karte und Zeile
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Kalender, Übersicht (Tageskarte, Tagesplan des Teams), Akte (Termine, Behandlungsverlauf), Mitarbeitende, Tag umplanen, Termine übertragen, Anrufliste |
+| Quelle  | Claude, Durchsicht aller Terminzeilen im Auftrag von Jannes („weitere Stellen mit unnötigen Angaben“) |
+| Status  | erledigt in UX-EPIC-005 (UX-005d) |
+| Berührt | neun Komponenten, alle über `appointmentTypeHint` in `src/features/appointments/api.ts` |
+
+**Beobachtung.** Neun Listen und Kacheln nannten die Terminart an jeder Zeile — bei einer Hausbesuchspraxis fast immer „Hausbesuch“. Auf der Kalenderkachel war es die dritte Zeile, auf der Tageskarte eine eigene Zeile unter dem Namen, im Teamplan „Anna Beispiel · Hausbesuch“.
+
+**Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-187): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.
