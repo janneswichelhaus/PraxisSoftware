@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
 import type * as CurrentUserModul from '@/features/session/useCurrentUser';
 import type * as KontoApi from '@/features/staff/konto-api';
+import type * as PlattformApi from '@/features/platform/api';
 
 /**
  * Die Seite „Zugang nicht vollständig eingerichtet" (MARKE-001).
@@ -58,6 +59,14 @@ vi.mock('@/features/staff/konto-api', async (importOriginal) => ({
   nimmZugangAn: () => Promise.resolve(),
 }));
 
+/** POR-004: Was die Plattformprojektion für ein Konto ohne Profil liefert. */
+let plattformzugaenge: PlattformApi.Plattformzugang[] = [];
+
+vi.mock('@/features/platform/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PlattformApi>()),
+  ladePlattformkontext: () => Promise.resolve(plattformzugaenge),
+}));
+
 const { App } = await import('./App');
 
 describe('App: Zugang nicht vollständig eingerichtet', () => {
@@ -79,13 +88,14 @@ describe('App: Zugang nicht vollständig eingerichtet', () => {
 });
 
 describe('App: die beiden Zustände aus STAFF-EPIC-002', () => {
-  it('führt ein Konto ohne Praxisprofil auf „Zugang einrichten" statt in einen Fehler', () => {
+  it('führt ein Konto ohne Praxisprofil auf „Zugang einrichten" statt in einen Fehler', async () => {
     // Der Normalfall direkt nach der Anmeldung über eine Einladung
     // (STAFF-002b) - kein Fehlerkasten, sondern ein nächster Schritt.
     fehler = new KeinProfilError();
+    plattformzugaenge = [];
     render(<App />);
 
-    expect(screen.getByRole('heading', { name: 'Zugang einrichten' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Zugang einrichten' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Einladung annehmen' })).toBeInTheDocument();
     expect(screen.queryByText('Zugang nicht vollständig eingerichtet')).not.toBeInTheDocument();
   });
@@ -100,9 +110,11 @@ describe('App: die beiden Zustände aus STAFF-EPIC-002', () => {
     expect(screen.getByRole('button', { name: 'Abmelden' })).toBeInTheDocument();
   });
 
-  it('trägt auf beiden Seiten die Marke (MARKE-001)', () => {
+  it('trägt auf beiden Seiten die Marke (MARKE-001)', async () => {
     fehler = new KeinProfilError();
+    plattformzugaenge = [];
     const { unmount } = render(<App />);
+    expect(await screen.findByRole('heading', { name: 'Zugang einrichten' })).toBeInTheDocument();
     expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
     unmount();
 
@@ -128,5 +140,30 @@ describe('App: die beiden Zustände aus STAFF-EPIC-002', () => {
 
     expect(screen.getByRole('alert')).toHaveTextContent('an die Praxisinhaber:in');
     expect(screen.getByRole('alert')).not.toHaveTextContent('Praxisleitung');
+  });
+});
+
+describe('App: Plattformkonto (POR-004, ADR-023 Punkt 25)', () => {
+  it('gibt einem Plattformkonto das Gerüst und nie die Praxisoberfläche', async () => {
+    fehler = new KeinProfilError();
+    plattformzugaenge = [
+      {
+        access_id: 'cafecafe-cafe-4afe-8afe-000000000001',
+        organization_name: 'Test Praxis Tuebingen',
+        relationship_kind: 'training',
+        status: 'active',
+        readable: true,
+        read_until: null,
+      },
+    ];
+    window.history.pushState(null, '', '/patienten');
+    render(<App />);
+
+    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Ich' })).toBeInTheDocument();
+    // Keine Praxisbegriffe, keine Arbeitsbereiche, keine Einladungsannahme.
+    expect(screen.queryByRole('navigation', { name: 'Arbeitsbereiche' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Einladung annehmen' })).not.toBeInTheDocument();
+    expect(window.location.pathname).toBe('/p');
   });
 });
