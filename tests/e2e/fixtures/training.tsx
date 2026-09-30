@@ -77,6 +77,23 @@ const client = new QueryClient({
 });
 client.setQueryData(['training-clients'], liste);
 client.setQueryData(['training-client', TINA], tina);
+// POR-002: der Abschnitt „Plattform" an der Kundin - hier mit aktivem Zugang.
+client.setQueryData(['platform-access', 'training', TINA], {
+  id: 'cafecafe-cafe-4afe-8afe-000000000001',
+  status: 'active',
+  created_at: '2026-09-28T08:00:00+00:00',
+  activated_at: '2026-09-28T08:05:00+00:00',
+  locked_at: null,
+  revoked_at: null,
+  revoked_reason: null,
+  invitation_id: null,
+  invitation_purpose: null,
+  invitation_channel: null,
+  invitation_expires_at: null,
+  invitation_sent_at: null,
+  relationship_email: 'tina.trainingskundin-mit-langer-adresse@beispiel.invalid',
+  ended_at: null,
+});
 
 // TRN-EPIC-002: Vereinbarungen, Termine und ein Trainingstermin.
 const TOM = '55555555-5555-4555-8555-000000000006';

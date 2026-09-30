@@ -302,7 +302,13 @@ function MailEinladung({
  * Der Code zum Scannen (ADR-023 Punkt 8). Bleibt nur so lange sichtbar, bis
  * die Praxis „Fertig" tippt; danach ist er aus dem Speicher der Seite.
  */
-function EinladungVorOrt({ einladung, onFertig }: { einladung: Einladung; onFertig: () => void }) {
+export function EinladungVorOrt({
+  einladung,
+  onFertig,
+}: {
+  einladung: Einladung;
+  onFertig: () => void;
+}) {
   const adresse = einloeseadresse(window.location.origin, einladung.code);
   return (
     <div className="flex flex-col items-start gap-4">
