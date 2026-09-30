@@ -1,6 +1,7 @@
 # DSN-001 — Ansichten der Plattform für Patient:innen und Betreuung
 
-Stand 2026-09-30 · **Entwurf, zu bestätigen durch Jannes** (Roadmap Block 4) ·
+Stand 2026-09-30 · **Bestätigt von Jannes am 2026-09-30**, D1 bis D7 wie empfohlen
+(Roadmap Block 4) ·
 **Loop-Vorgabe**: Eingabe für den SPEC-Schritt von POR-EPIC-001 bis -003 und
 der Loops, die die Plattform füllen. Kein eigener Rang: Dieses Dokument legt
 **Aufbau und Bedienung** fest, nicht Rechte, Fristen oder Datenmodell. Wo es
@@ -309,7 +310,10 @@ Aus `IDEA-QSN-006` (bestätigt) und §2.2, als Prüfpunkte für die Sichtung:
 7. Ein Hauptknopf je Ansicht; Abbrechen ist immer sichtbar.
 8. Keine Zeitdruck-Elemente: kein Countdown, keine Serie, keine rote Zahl.
 
-## 8. Festlegungen — zu bestätigen
+## 8. Festlegungen — bestätigt
+
+**Jannes hat am 2026-09-30 alle sieben Festlegungen wie empfohlen bestätigt.**
+Gilt jeweils die Empfehlung; die verworfene Option bleibt als Rückweg stehen.
 
 Jede Festlegung ist nach §15.1 reversibel gedacht; verankert wird sie im Loop,
 der sie baut, nicht hier.
@@ -389,7 +393,7 @@ die Ansicht nicht so baut, dass die Vorschau später nicht geht.
 | **ANG-EPIC-001** | Stufe 2, Reiter Verlauf, Abo-Stand, Kündigung, 30 Tage lesend (D2) |
 | **OUT-, ALT-EPIC** | Inhalt von Verlauf und Gewohnheiten |
 
-## 10. Bewusst nicht Teil dieses Entwurfs
+## 10. Bewusst nicht Teil dieses Dokuments
 
 - **Konten, Anmeldung, Identitätsprüfung, Vertretung, Sitzungsregeln,
   RLS-Muster** — ADR-023. Dieses Dokument setzt nur voraus, dass eine

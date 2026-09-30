@@ -84,8 +84,8 @@ Software nie (§7.1, §17).
 - Die Ansicht der Trainingskund:innen hat ein Vorbild
   ([`product/ideen/referenz-navigation.md`](product/ideen/referenz-navigation.md)). Die Ansichten
   für Patient:innen und für die Betreuung entwirft DSN-001
-  ([`development/PLATTFORM-ANSICHTEN.md`](development/PLATTFORM-ANSICHTEN.md), Entwurf vom
-  2026-09-30, zu bestätigen).
+  ([`development/PLATTFORM-ANSICHTEN.md`](development/PLATTFORM-ANSICHTEN.md), bestätigt am
+  2026-09-30).
 
 ## 5. Geschäftsmodell
 
