@@ -526,6 +526,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const alleTherapeuten = therapeuten.data?.alle ?? [];
   const wochenplanDaten = wochenplan.data ?? [];
   const ausnahmenDaten = ausnahmen.data ?? [];
+  // Solange der Wochenplan nicht da ist, behauptet das Gitter nichts: Ohne
+  // Bänder wäre sonst jeder Tag ganz grau, bis die Antwort kommt (UX-005c).
+  const arbeitszeitBekannt = wochenplan.data !== undefined;
 
   // Die eigene Person, wenn sie im Kalender eine Spalte hat (KAL-03).
   const eigenePerson =
@@ -578,12 +581,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Die eigene Spalte, nicht nur als Farbton (KAL-03, KAL-B01).
           hervorgehoben: t.staff_member_id === eigenePerson,
           zusatz: t.staff_member_id === eigenePerson ? 'ich' : undefined,
-          baender: arbeitszeitBaender(
-            t.staff_member_id,
-            bereich.von,
-            wochenplanDaten,
-            ausnahmenDaten,
-          ),
+          baender: arbeitszeitBekannt
+            ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
+            : null,
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
       : tage.map((tag) => ({
@@ -594,9 +594,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           hervorgehoben: tag === heute,
           zusatz: tag === heute ? 'heute' : undefined,
           aktuellesDatum: tag === heute,
-          baender: wochenPerson
-            ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
-            : [],
+          baender:
+            wochenPerson && arbeitszeitBekannt
+              ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
+              : null,
           ziel: zumTag(tag),
         }));
 
@@ -654,7 +655,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
   const fenster = fensterMitArbeitszeit(
     tagesFenster(gitterEintraege.map((g) => ({ beginn: g.beginnMinute, ende: g.endeMinute }))),
-    spaltenModell.flatMap((s) => s.baender),
+    spaltenModell.flatMap((s) => s.baender ?? []),
   );
 
   /** Übersetzt eine Zielspalte zurück in Person und Datum. */
@@ -687,7 +688,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     const ausserhalb =
       wochenplan.isSuccess &&
       ausnahmen.isSuccess &&
-      zielSpalte !== undefined &&
+      zielSpalte?.baender !== undefined &&
+      zielSpalte.baender !== null &&
       !inArbeitszeit(zielSpalte.baender, ziel.startMinute, ende);
 
     // Ein Fehler der vorigen Verschiebung ist mit der neuen Geste erledigt.
@@ -1303,7 +1305,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     </span>{' '}
                     neben der Zeit: Die Länge weicht ab, weder 45 noch 60 Minuten.
                   </li>
-                  <li>Grau hinterlegt: die Arbeitszeit der Person.</li>
+                  <li>
+                    Grau schraffiert: außerhalb der Arbeitszeit der Person – auch ein Tag ohne
+                    hinterlegte Arbeitszeit. Die weiße Fläche ist ihre Arbeitszeit.
+                  </li>
                 </ul>
                 <p>
                   Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der

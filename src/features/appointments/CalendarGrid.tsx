@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { BEGRIFFE } from '@/lib/begriffe';
 import {
   aufRaster,
+  ausserhalbArbeitszeit,
   gitterlinien,
   kachelZeilen,
   kachelBreite,
@@ -176,8 +177,12 @@ export interface GitterSpalte {
   zusatz?: string | undefined;
   /** Der Kopf steht für den heutigen Tag: `aria-current="date"`. */
   aktuellesDatum?: boolean | undefined;
-  /** Arbeitszeit dieser Spalte als Hintergrund. */
-  baender: Zeitband[];
+  /**
+   * Arbeitszeit dieser Spalte. Gezeichnet wird ihr Gegenstück: Was außerhalb
+   * liegt, ist grau schraffiert (UX-005c). `null` heißt „noch nicht bekannt"
+   * - dann bleibt die Spalte weiß, statt einen ganzen Tag grau zu behaupten.
+   */
+  baender: Zeitband[] | null;
   /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
@@ -666,18 +671,23 @@ export function CalendarGrid({
                     : undefined
                 }
               >
-                {/* Arbeitszeit als Hintergrund - Darstellung, keine Prüfung. */}
-                {s.baender.map((b, i) => (
-                  <div
-                    key={i}
-                    aria-hidden="true"
-                    className="bg-surface-sunken pointer-events-none absolute inset-x-0"
-                    style={{
-                      top: `${minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
-                      height: `${minuteZuPixel(Math.min(b.bisMinute, fenster.bisMinute), fenster.vonMinute, stundenHoehe) - minuteZuPixel(Math.max(b.vonMinute, fenster.vonMinute), fenster.vonMinute, stundenHoehe)}px`,
-                    }}
-                  />
-                ))}
+                {/* Außerhalb der Arbeitszeit grau schraffiert (UX-005c) -
+                    Darstellung, keine Prüfung; die freie Fläche bleibt
+                    antippbar, und der Server fragt nach (CAL-005). */}
+                {s.baender
+                  ? ausserhalbArbeitszeit(s.baender, fenster).map((b, i) => (
+                      <div
+                        key={i}
+                        aria-hidden="true"
+                        data-testid="ausserhalb-arbeitszeit"
+                        className="bg-surface-sunken schraffur pointer-events-none absolute inset-x-0"
+                        style={{
+                          top: `${minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                          height: `${minuteZuPixel(b.bisMinute, fenster.vonMinute, stundenHoehe) - minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                        }}
+                      />
+                    ))
+                  : null}
 
                 {/* Die drei Linienarten von fein nach kraeftig: die spaetere
                   Regel gewinnt bei gleicher Deckkraft nicht, aber die
