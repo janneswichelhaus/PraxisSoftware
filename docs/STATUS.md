@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-29 · letzte Session: STA-EPIC-001 Statistiken (davor PRX-EPIC-003b)
+# Status · Stand 2026-09-30 · letzte Session: TRN-EPIC-001 Trainingskund:innen (davor STA-EPIC-001)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,13 +6,11 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**STA-EPIC-001 gebaut (PR #143 gegen `main`) — Block 2 ist damit durchgebaut:** Bereich **Statistiken** (`/statistiken`, am Handy unter **Mehr**): fünf Karten mit Ziel und Handlung (ANN-151 bis ANN-155, bestätigt), darunter Grafiken — Umsatz der letzten 12 Monate mit Zahlungseingang, **Umsatz nach Therapeut:in**, umsatzstärkste Leistungen. **B6 aufgelöst** (Jannes 2026-09-29): Umsatz je behandelnder Person für owner, für eine Person mit **Umsatzbeteiligung** nur der eigene (Vergütungsmodell in der Mitarbeiterakte); jeder Aufruf protokolliert (ANN-156, ANN-157, beide bestätigt; ANN-156 im Prüfpaket). Fünf Migrationen, zwei neue Tabellen (`practice_targets`, `staff_compensation_models`), keine neue Abhängigkeit. Vergütungsmodelle selbst: IDEA-PRX-047. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 14 und 15.
+**TRN-EPIC-001 gebaut (Pull Request gegen `main`) — Block 3 hat begonnen:** Bereich **Training** (`/training`, für owner, Trainingsbetreuung und Büro): Trainingskund:innen **ohne Akte** anlegen, öffnen, ändern, Vertrag beenden und wieder aufnehmen. Kontaktdaten hängen am Trainingsverhältnis (`training_contact_details`), nicht an der Akte; eine Patient:in bekommt ihr Training ohne zweite Person, aber nur durch owner oder Büro (ANN-173). Die Rolle **Trainingsbetreuung** ist zuweisbar; ein reines Trainingskonto sieht Übersicht und Training. Kein Durchgriff in beide Richtungen als Negativfälle in `pnpm test:db`; Öffnen und jede Änderung protokolliert. Zwei Migrationen, eine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-172 bis ANN-175** (alle Datenschutz, im Prüfpaket). Zweitreview gelaufen, alle Befunde eingearbeitet; einer betrifft Älteres und steht als **BEF-082**. Sichtung: [Training](sichtung/training.md) Schritte 1 bis 3.
+
+**STA-EPIC-001 ist gemergt (PR #143) — Block 2 ist damit durchgebaut:** Bereich **Statistiken** (`/statistiken`, am Handy unter **Mehr**): fünf Karten mit Ziel und Handlung (ANN-151 bis ANN-155, bestätigt), darunter Grafiken — Umsatz der letzten 12 Monate mit Zahlungseingang, **Umsatz nach Therapeut:in**, umsatzstärkste Leistungen. **B6 aufgelöst** (Jannes 2026-09-29): Umsatz je behandelnder Person für owner, für eine Person mit **Umsatzbeteiligung** nur der eigene (Vergütungsmodell in der Mitarbeiterakte); jeder Aufruf protokolliert (ANN-156, ANN-157, beide bestätigt; ANN-156 im Prüfpaket). Fünf Migrationen, zwei neue Tabellen (`practice_targets`, `staff_compensation_models`), keine neue Abhängigkeit. Vergütungsmodelle selbst: IDEA-PRX-047. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 14 und 15.
 
 **PRX-EPIC-003b ist gemergt (PR #142):** Zwei Akten derselben Person werden eine — **Stammdaten → Dublette übernehmen** (nur owner): die geöffnete Akte bleibt, mögliche Dubletten stehen oben, Vorschau mit beiden Akten, dem, was mitwandert, Konflikten und Sperrgründen, Zusammenführen erst nach Bestätigungshaken (PRX-017, PRX-018). Alles wandert — auch ausgestellte Rechnungen, finalisierte Dokumentation, abgeschlossene Berichte und Bögen, nur mit neuem Bezug; die leere Akte fällt, Nachweis `patient.merged`. Eine Migration, keine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-147 bis ANN-150** (Stammdaten, Versorgungsstand, Sperren, nicht rückgängig; ANN-148 und ANN-150 gehen als Datenschutz ins Prüfpaket). Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritt 13.
-
-**PRX-EPIC-003 ist gemergt (PR #141):** Nichts fällt durch — **Übersicht → Offene Punkte** (`/offen`): Office erfasst Grundlagen (ANN-011, PRX-010), Verordnungsfoto am Termin und „Grundlage erfassen“ mit dem Foto daneben (ANN-141, PRX-011), Aufgaben und Wiedervorlagen (ANN-142, PRX-012), Erstaufnahme-Checkliste in Tagesansicht, Aktenkopf und Büroliste; die Liege kennt „noch nicht entschieden“ (ANN-143, PRX-013), Anrufliste mit gespeichertem Stand (ANN-144, PRX-014), Dublettenhinweis beim Anlegen (ANN-145, PRX-015), Erinnerungen am Rezeptende und an den vergessenen Abschluss (ANN-146, PRX-016); BEF-060 Teile 1 und 2. Sieben Migrationen, zwei neue Tabellen (`tasks`, `appointment_call_states`), Zweitreview gelaufen und eingearbeitet. Sichtung: [Praxisverwaltung](sichtung/praxisverwaltung.md) Schritte 10 bis 12. **ANN-141 bis ANN-146 von Jannes bestätigt** (2026-09-29); ANN-142 und ANN-144 bleiben als Datenschutz im Prüfpaket.
-
-**PRX-EPIC-001 ist gemergt (PR #136) und gesichtet** (2026-09-28, Android und Windows, Test-Umgebung): Warteliste, Gebietstage, Terminsuche und Nachrücken; ANN-132, ANN-135 und ANN-136 bestätigt. Ein Befund: **BEF-071** (nach „Termin anlegen“ aus der Suche zurück auf der Suche, Meldung klingt wie ein Fehler) — erste Story von PRX-EPIC-002.
 
 **Sichtung Kernprozess gelaufen** (2026-09-28, alle 15 Schritte, Android und Windows): acht Befunde **BEF-072 bis BEF-079** — Kalender (30-Minuten-Kachel abgeschnitten, Rückweg in die eigene Personenansicht, heute im Monat nicht markiert, „Rückgängig“ außerhalb des Sichtfelds), Absage ohne sichtbaren Gebührenhinweis, zu viel Erklärtext und aufgeklappte Tests im Erstbefund, Textbausteine, unübersichtlicher Verlauf. Bestätigt: ANN-108, -109, -110, -111, -112, -113, -116, -117. **Office darf Grundlagen erfassen** (ANN-011; Verordnung ohne Papier in PRX-EPIC-003). Ideen: IDEA-PRX-045 (Kalender endlos wischen), IDEA-TRN-014 (Progressionsschema als Anzeige, Variante A), IDEA-TRN-015 (Übungen strukturiert dokumentieren).
 
@@ -20,11 +18,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Danach — Bauen
 
-1. **TRN-EPIC-001** (Block 3, Trainingsbereich). `/weiter`
-2. **TRN-EPIC-002**
-3. **TRN-EPIC-003**
+1. **TRN-EPIC-002** (Block 3, Trainingstermine im selben Kalender). `/weiter`
+2. **TRN-EPIC-003**
+3. **TRN-EPIC-004**
 
 ## Prüfverfahren
+
+**Stand TRN-EPIC-001 (2026-09-30, in der Cloud gelaufen):** `test` **3799** grün, `test:db` **2458** grün (neu: `training-clients`, dazu Pfade in `abgewiesene-schreibpfade`, `audit`, `retention-run`), `test:e2e` ohne Anmeldung **189** grün, einer übersprungen (`login.spec.ts` mit den CI-Platzhaltern; `training.spec.ts` bei 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün. Zweitreview gelaufen: sieben Befunde, vier behoben (u. a. Protokoll abgewiesener Lesezugriffe hinter PostgREST, Name einer Mitarbeiterin), zwei als bekannt begründet, einer als BEF-082.
 
 **Stand STA-EPIC-001 (2026-09-29, in der Cloud gelaufen, mit Grafiken und Umsatz je Person):** `test` **3782** grün, `test:db` **2390** grün (neu: `practice-statistics`, `practice-targets`, `revenue-series`), `test:e2e` ohne Anmeldung **183** grün, einer übersprungen (`login.spec.ts` mit den CI-Platzhaltern; `statistik.spec.ts` bei 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün. Zwei Zweitreviews gelaufen, alle Befunde eingearbeitet (u. a. Summe je Person = Praxisumsatz über „ohne Zuordnung“, Leistungen aus dem Snapshot, Trainer:innen mit Umsatzbeteiligung, Umsatz je Person erst auf Klick).
 
@@ -34,6 +34,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
+- **Training sichten und bestätigen** (TRN-EPIC-001): [Training](sichtung/training.md) Schritte 1 bis 3, als Tom (`tom.training@praxis.invalid`), Olivia und Anna. Zu bestätigen: **ANN-172** (Büro legt Trainingskund:innen an und beendet Verträge), **ANN-173** (zweites Verhältnis nur durch owner und Büro, nichts aus der Akte), **ANN-174** (ein im Training geänderter Name gilt auch in der Akte, außer bei Mitarbeitenden), **ANN-175** (Protokoll wie an der Akte).
 - **UX-Review entscheiden:** BEF-046 bis BEF-070, je Eintrag Frage, Optionen und Empfehlung. Zuerst BEF-046 (ein gescheitertes Nachladen des Profils ersetzt die App, Eingaben gehen verloren) und BEF-047 (Sitzungsende und Anmeldemaske).
 - **G6c lokal prüfen** (ANN-115, auch nach dem Merge noch offen): `pnpm dlx supabase@2.116.0 start`, als Anna (therapist) angemeldet in der Browserkonsole einen Schreibpfad aufrufen, etwa `await supabase.rpc('place_legal_hold', { p_patient_id: '66666666-6666-4666-8666-000000000001', p_reason: 'Probe' })` — erwartet `status: 403`, danach als owner unter **Organisatorisches → Protokoll** ein Eintrag „Legal Hold gesetzt" mit Ausgang abgewiesen. Zeigt die Antwort 403, aber fehlt der Eintrag, steht der Weg in ANN-115.
 - **Sichtung** (E-6), am Handy auf der Test-Umgebung, Start mit `/sichtung`: offen sind [Befund](sichtung/befund.md), [Leistungsbereiche](sichtung/leistungsbereiche.md) (nur noch Schritte 2 bis 7, warten auf Testdaten), [Kartendienst](sichtung/kartendienst.md) (Teil am Telefon: Wegpunktlimit, `MAX_ZWISCHENZIELE` bleibt bei drei) und [Betriebsreife](sichtung/betriebsreife.md); Kernprozess und Praxisverwaltung sind gesichtet (2026-09-28). Aus UX-EPIC-002 noch zu bestätigen: **ANN-114** (weitere Seiten randlos?).
@@ -52,8 +53,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**STA-EPIC-001 (STA-001 bis STA-007).** Nachtrag nach Jannes' Wunsch: `20260929232000_sta_004_revenue_series.sql` (Monatsreihe, Leistungen, `app.revenue_lines`), `20260929233000_sta_005_compensation_model.sql` (`staff_compensation_models`), `20260929234000_sta_006_revenue_by_staff.sql` (`list_revenue_by_staff`), Grafiken in `src/features/statistics/grafiken.tsx`, Reihenfarben in `src/index.css`. Migration `20260929230000_sta_001_practice_statistics.sql`: `get_practice_statistics` (nur owner, abgewiesen mit `statistics.read`), die Regel „Verordnung endet“ als `app.ending_treatment_bases` für Erinnerung und Kennzahl. Migration `20260929231000_sta_002_practice_targets.sql`: Tabelle `practice_targets`, `get_practice_targets`, `set_practice_target` mit `organization.practice_target_changed`. Oberfläche `src/features/statistics/`, Prüfseite `tests/e2e/fixtures/statistik.html`. Annahmen ANN-151 bis ANN-155.
+**TRN-EPIC-001 (TRN-001 bis TRN-003).** Migration `20260930100000_trn_001_training_clients.sql`: Tabelle `training_contact_details`, `app.can_write_training_relationships` (ANN-172), `create_training_client`, `start_training_for_person` (ANN-173), `update_training_client` (ANN-174), `end_training_relationship`, `reopen_training_relationship`, `list_training_clients`, `get_training_client` (protokolliert, ANN-175), `find_possible_training_duplicates`; sechs Auditaktionen. Migration `20260930101000_trn_003_trainer_assignable.sql`: `trainer` in `app.assert_staff_role_keys`. Oberfläche `src/features/training/`, Bereich Training in Navigation und Übersicht, `isTherapyStaff` für Kommunikation und Organisatorisches, Prüfseite `tests/e2e/fixtures/training.html`. Testkonto Tom in `docs/DEVELOPMENT.md`.
 
-**Lokale Schritte:** `git pull origin ccr-277cc402-fi7r3g` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen der fünf neuen Migrationen; kein `pnpm install`.
+**Lokale Schritte:** `git pull origin ccr-168880f6-w8rez7` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen der zwei neuen Migrationen; kein `pnpm install`.
 
-Davor: **PRX-EPIC-003b** (gemergt, PR #142) und **PRX-EPIC-003** (gemergt, PR #141).
+Davor: **STA-EPIC-001** (gemergt, PR #143) und **PRX-EPIC-003b** (gemergt, PR #142).

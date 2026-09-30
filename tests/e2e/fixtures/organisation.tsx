@@ -11,8 +11,8 @@ import '@/index.css';
  * Einstieg der Prüfseite aus `organisation.html` (UX-EPIC-002, UX-002h).
  *
  * „Organisatorisches → Mitarbeitende" mit Rahmen, Untermenü und Tableiste —
- * mit erfundenen Personen, ohne Server. `?rolle=trainer` zeigt das Menü, wie
- * trainer es sieht (BEF-034).
+ * mit erfundenen Personen, ohne Server. `?rolle=trainer` zeigt den Rahmen, wie
+ * trainer ihn sieht - seit TRN-003 ohne Organisatorisches (BEF-034).
  */
 const rolle = (new URLSearchParams(window.location.search).get('rolle') ?? 'owner') as RoleKey;
 
