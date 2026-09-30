@@ -30,6 +30,7 @@ import {
   canManageAppointments,
   canReadPatientDirectory,
   canReadTrainingClients,
+  canWriteTrainingClients,
   isTherapyStaff,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -193,6 +194,16 @@ function Vorschau({ termin }: { termin: DayPlanEntry }) {
           >
             {`${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
           </Textlink>
+        ) : termin.kind === 'training' ? (
+          // TRN-006: der Trainingstermin öffnet im Trainingsbereich.
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/training/termine/${termin.id}`, '/')}
+            className="font-medium"
+          >
+            {`${termin.training_given_name ?? ''} ${termin.training_family_name ?? ''}`.trim() ||
+              'Trainingstermin'}
+          </Textlink>
         ) : (
           <Textlink
             alleinstehend
@@ -271,12 +282,15 @@ function MeineTagesliste({
   staffMemberId,
   darfDokumentieren,
   darfDokuLesen,
+  mitBehandlung,
   zeitzone,
 }: {
   datum: string;
   staffMemberId: string;
   darfDokumentieren: boolean;
   darfDokuLesen: boolean;
+  /** Sieht die Rolle Akten? Sonst fragt die Liste nicht nach Erstaufnahmen (TRN-006). */
+  mitBehandlung: boolean;
   zeitzone: string;
 }) {
   const {
@@ -301,6 +315,7 @@ function MeineTagesliste({
   const { data: erstaufnahmen } = useQuery({
     queryKey: OPEN_INTAKES_KEY,
     queryFn: fetchOpenIntakes,
+    enabled: mitBehandlung,
     retry: false,
   });
 
@@ -604,7 +619,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   });
 
   const alleHeute = [...(termine ?? [])].sort(nachUhrzeit);
-  const eigeneTagesliste = darfTermine && Boolean(user.staffMemberId);
+  // Seit TRN-006 auch die Trainingsbetreuung: Ihre Liste zeigt nur
+  // Trainingstermine, der Server filtert je Termin (ADR-022 Punkt 11).
+  const eigeneTagesliste =
+    (darfTermine || canWriteTrainingClients(user.roles)) && Boolean(user.staffMemberId);
   // ANN-117: Zugeklappt nur für die, die selbst unterwegs sind: Das Büro hat meist
   // keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache.
   const teamplanZugeklappt = eigeneTagesliste && canWriteTreatmentNote(user.roles);
@@ -648,6 +666,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           staffMemberId={user.staffMemberId}
           darfDokumentieren={canWriteTreatmentNote(user.roles)}
           darfDokuLesen={canReadTreatmentNote(user.roles)}
+          mitBehandlung={isTherapyStaff(user.roles)}
           zeitzone={zeitzone}
         />
       ) : null}

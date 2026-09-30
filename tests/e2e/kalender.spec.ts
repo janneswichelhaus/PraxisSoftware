@@ -112,4 +112,28 @@ test.describe('Kalender', () => {
     const tour = page.getByRole('link', { name: 'Tour', exact: true });
     await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
   });
+
+  // TRN-006: Die Trainingsbetreuung sieht ihre Trainingstermine und sonst nichts.
+  for (const breite of [375, 1280]) {
+    test(`zeigt der Trainingsbetreuung ihre Termine bei ${breite} px`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?rolle=trainer`);
+      const kachel = page.getByRole('link', { name: /Tina Trainingskundin/ });
+      await expect(kachel).toBeVisible();
+      await expect(kachel).toHaveAttribute('href', /^\/training\/termine\//);
+      await expect(page.getByRole('link', { name: /Berta Bestand/ })).toHaveCount(0);
+      const ueberlauf = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+      expect(ueberlauf).toBe(false);
+
+      // Ein Tipp auf freie Zeit bietet nur den Trainingstermin an.
+      const spalte = page.locator('[role=group][aria-label^="Tom Trainingsbetreuung"]');
+      const kasten = (await spalte.boundingBox())!;
+      await page.mouse.click(kasten.x + kasten.width / 2, kasten.y + 20);
+      const menue = page.getByRole('group', { name: 'Was soll hier entstehen?' });
+      await expect(menue.getByRole('button', { name: /^Trainingstermin/ })).toBeVisible();
+      await expect(menue.getByRole('button', { name: /^Neuer Termin/ })).toHaveCount(0);
+    });
+  }
 });

@@ -73,6 +73,13 @@ const dayPlanEntrySchema = z.object({
    * nur zusammengezählt, ohne Person.
    */
   take_along_items: z.array(z.string()).nullable().optional(),
+  /**
+   * TRN-006: am Trainingstermin Verhältnis und Name aus dem Training, nie aus
+   * der Akte (ADR-021 Punkt 3). Optional wie oben.
+   */
+  training_relationship_id: z.string().nullable().optional(),
+  training_given_name: z.string().nullable().optional(),
+  training_family_name: z.string().nullable().optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;

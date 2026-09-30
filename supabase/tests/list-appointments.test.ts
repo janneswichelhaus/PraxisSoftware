@@ -438,6 +438,11 @@ describe('list_appointments: Datensparsamkeit', () => {
         'staff_given_name',
         'staff_family_name',
         'location_name',
+        // TRN-006: am Trainingstermin Verhaeltnis und Name aus dem Training,
+        // nie aus der Akte (ADR-021 Punkt 3). Sonst leer.
+        'training_relationship_id',
+        'training_given_name',
+        'training_family_name',
       ].sort(),
     );
   });
