@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 53 Einträge):
+Zusatz `Prüfpaket` (heute 60 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2000,3 +2000,51 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) ·
 **Anker.** `public.staff_compensation_models`, `app.has_revenue_share` und `public.set_staff_compensation_model` in `supabase/migrations/20260929233000_sta_005_compensation_model.sql`; Abschnitt „Vergütung“ in `src/features/staff/StaffCompensationSection.tsx`.
 
 **Änderungspfad.** Weitere Modelle: Wert in der Check-Constraint und in der Auswahl · Aufwand `klein`. Die Person wählt selbst in der Anwendung: eigener Schreibweg mit Bestätigung durch owner · Aufwand `mittel`.
+
+### ANN-172 — Trainingsverhältnisse anlegen, ändern und beenden: owner, Trainingsbetreuung und Büro
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
+
+**Annahme.** Ein Trainingsverhältnis legen `owner`, `trainer` und `office` an, ändern es und beenden es; `therapist` und `team_lead` weder lesend noch schreibend. Jeder abgewiesene Versuch steht als `denied` im Protokoll (HTTP 403, wie G6c).
+
+**Begründung.** §4.9 gibt der Trainingsbetreuung Anlegen, Ändern und Beenden; `owner` ist Vertragspartner beider Verhältnisse. §4.8 lässt `office` im Training „nur organisatorisch“ zu — Termin, Vertragsstatus, Leistung, Rechnung, Zahlung. Name, Kontakt und Vertragsdaten sind genau das; Screening- und Gesundheitsangaben gibt es in diesem Loop nicht, sie bleiben für `office` gesperrt, wenn sie kommen. Die Lesegrenze (owner, trainer, office) steht seit LEI-003; Schreiben ohne Lesen wäre sinnlos. Unsicher: ob die Prüfung das Büro auf Lesen beschränkt sehen will.
+
+**Anker.** `app.can_write_training_relationships()` in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Tests in `supabase/tests/training-clients.test.ts` und `supabase/tests/abgewiesene-schreibpfade.test.ts`.
+
+**Änderungspfad.** Büro nur lesend: `office` aus der Funktion nehmen, die Oberfläche folgt `canWriteTrainingClients` · Aufwand `klein`.
+
+### ANN-173 — Das zweite Verhältnis entsteht nur bei owner und Büro, und aus der Akte wird nichts übernommen
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Zweckbindung ADR-021 Punkt 7)
+
+**Annahme.** Eine Person, die schon eine Akte hat (oder im Team ist), bekommt ihr Trainingsverhältnis ohne zweite `persons`-Zeile — aber nur durch jemanden, der sie aus der Behandlung ohnehin sieht, also `owner` oder `office`. Der Dublettenhinweis beim Anlegen zeigt der Trainingsbetreuung nur Trainingskund:innen; für sie ist eine Akte „nicht gefunden“, ununterscheidbar von einer fremden Kennung. Kontaktdaten hängen am Verhältnis (`training_contact_details`, Gegenstück zu `patient_contact_details`); beim zweiten Verhältnis wird nichts aus der Akte übernommen, auch keine Adresse — mit kommt nur, was die anlegende Person ins Formular getippt hat (Kontakt, Vertragsbeginn), nie der Name aus dem Formular.
+
+**Begründung.** ADR-021 verwirft zwei Personendatensätze (Dubletten) und verlangt zugleich, dass aus der Trainingsrolle nicht auf die Behandlung geschlossen wird, „auch nicht mittelbar über die gemeinsame Identität“ (§4.8). Beides zusammen geht nur, wenn die Verbindung von einer Rolle gezogen wird, die beide Bereiche sieht. Die Kontaktdaten sind seit der Datenminimierung (`20260828110000_person_data_minimisation.sql`) an den Kontext gebunden; eine automatische Übernahme wäre eine Übernahme aus dem Behandlungskontext ohne dokumentierte Einwilligung (ADR-021 Punkt 7). Unsicher: ob Kontaktdaten unter Punkt 7 fallen — bewusst die strengere Lesart.
+
+**Anker.** `public.start_training_for_person` und `public.find_possible_training_duplicates` in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Dublettenhinweis in `src/features/training/NewTrainingClientPage.tsx`.
+
+**Änderungspfad.** Kontaktdaten auf ausdrückliche Bestätigung übernehmen: Schalter im Anlegen, Kopie in `start_training_for_person` mit Vermerk im Protokoll · Aufwand `klein`.
+
+### ANN-174 — Der Name gehört der Person: Eine Änderung im Training gilt auch in der Akte
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+
+**Annahme.** Ändert die Trainingsbetreuung Vor- oder Nachnamen einer Trainingskund:in, ändert sie ihn in `persons` — und damit auch in einer Akte derselben Person, von der sie nichts weiß. Protokolliert wird die Änderung am Trainingsverhältnis (`training_relationship.updated`, Feld `name`). Ausnahme: Ist die Person Mitarbeiter:in oder hat sie ein Konto, ändert den Namen nur, wer Mitarbeiterstammdaten pflegt (owner, office); die Trainingsbetreuung bekommt „name is managed in staff master data“ (Zweitreview).
+
+**Begründung.** ADR-021 Punkt 3 macht die Identität zum einzigen geteilten Punkt; zwei Namenszeilen wären die verworfenen zwei Personendatensätze. Ein Verbot für Personen mit Akte verriete durch seine Fehlermeldung genau das, was §4.8 schützt. Namensänderungen (Heirat, Tippfehler) betreffen die Person, nicht das Verhältnis.
+
+**Anker.** `public.update_training_client` in `supabase/migrations/20260930100000_trn_001_training_clients.sql`.
+
+**Änderungspfad.** Name im Training nur für Personen ohne weiteres Verhältnis änderbar, sonst stiller Vorschlag an owner: Prüfung in `update_training_client` plus Aufgabe (PRX-012) · Aufwand `mittel`.
+
+### ANN-175 — Protokoll im Training: Detailansicht und jede Änderung ja, Trefferliste und Dublettenhinweis nein
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8)
+
+**Annahme.** Wie bei der Akte: Das Öffnen einer Trainingskund:in (`training_relationship.viewed`) und jede Änderung (`.created`, `.updated`, `.ended`, `.reopened`) stehen im Protokoll, Kontaktdaten und Namen nie — bei Änderungen nur die Namen der geänderten Felder, beim Vertragsende der Tag. Die Trefferliste und der Dublettenhinweis zeigen keinen Kontakt und werden nicht protokolliert; ihr abgewiesener Aufruf schon (`training_relationships.read`). Das Geburtsdatum einer Trainingskund:in nennt der Hinweis nur, wenn es genau das eingegebene ist. Bekannt und hingenommen: Wer schreiben darf, kann Beginn und Ende zurückdatieren und damit die Frist früher auslösen — beides steht mit Tag im Protokoll, wie beim Abschluss der Versorgung.
+
+**Begründung.** ADR-021 Punkt 8 verlangt für das Training das Auditniveau der Akte; ADR-010 protokolliert das Öffnen, nicht die Trefferliste. Der Tag des Vertragsendes bestimmt die Frist und gehört deshalb in den Eintrag (wie `patient.care_concluded`).
+
+**Anker.** `public.get_training_client`, `public.list_training_clients` und die Schreibwege in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Katalog in `src/features/audit/actions.ts`.
+
+**Änderungspfad.** Trefferliste protokollieren: ein Eintrag je Aufruf in `list_training_clients` · Aufwand `klein`.

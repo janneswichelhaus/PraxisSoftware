@@ -35,9 +35,14 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('zeigt trainer die Arbeitszeiten nicht (BEF-034)', async ({ page }) => {
+test('zeigt einem reinen Trainingskonto weder Organisatorisches noch Arbeitszeiten (BEF-034, TRN-003)', async ({
+  page,
+}) => {
+  // Seit TRN-003 gehört Organisatorisches zur Behandlungsseite (`app.is_staff()`);
+  // die Trainingsbetreuung hat dort nur leere Listen gesehen. Sie sieht
+  // Übersicht und Training.
   await page.goto(`${PRUEFSEITE}?rolle=trainer`);
-  const menue = page.getByRole('navigation', { name: 'Bereich Organisatorisches' });
-  await expect(menue.getByRole('link', { name: 'Mitarbeitende' })).toBeVisible();
-  await expect(menue.getByRole('link', { name: 'Arbeitszeiten' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Training' }).first()).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Bereich Organisatorisches' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: 'Arbeitszeiten' })).toHaveCount(0);
 });

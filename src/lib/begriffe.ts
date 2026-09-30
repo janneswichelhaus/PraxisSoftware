@@ -51,6 +51,11 @@ export const BEREICHE = {
     kurz: 'Abrechnung',
     leitfrage: 'Welche Leistungen sind abzurechnen oder zu bezahlen?',
   },
+  training: {
+    label: 'Training',
+    kurz: 'Training',
+    leitfrage: 'Wen betreue ich im Personal Training, und wie steht der Vertrag?',
+  },
   statistik: {
     label: 'Statistiken',
     kurz: 'Statistiken',
@@ -88,6 +93,9 @@ export const BEGRIFFE = {
   ausfallhonorar: 'Ausfallhonorar',
   arbeitszeiten: 'Arbeitszeiten',
   kennwort: 'Kennwort',
+  /** Person im Personal Training (TRN-EPIC-001) - nie „Kunde" allein, nie „PT" (ADR-021 Punkt 9). */
+  trainingskundIn: 'Trainingskund:in',
+  trainingskundInnen: 'Trainingskund:innen',
   /** Wer wann was getan hat (ADR-010) - Menü, Seitentitel und Aufbewahrung (BEF-080). */
   protokoll: 'Protokoll',
 } as const;

@@ -4,9 +4,11 @@ import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
   canReadPatientDirectory,
+  canReadTrainingClients,
   canWriteTreatmentNote,
   isOwner,
   isStaff,
+  isTherapyStaff,
   type CurrentUser,
   type RoleKey,
 } from '@/features/session/types';
@@ -160,6 +162,15 @@ const symbole = {
       <rect x="12.7" y="3.5" width="2.8" height="13" rx="0.8" />
     </>,
   ),
+  // Eine Hantel - Personal Training (TRN-EPIC-001).
+  training: symbol(
+    <>
+      <path d="M6.5 10h7" />
+      <rect x="3.5" y="6.5" width="3" height="7" rx="0.8" />
+      <rect x="13.5" y="6.5" width="3" height="7" rx="0.8" />
+      <path d="M2 8.5v3M18 8.5v3" />
+    </>,
+  ),
   mehr: symbol(
     <>
       <circle cx="4.5" cy="10" r="1.25" />
@@ -294,7 +305,24 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     });
   }
 
-  if (isStaff(roles)) {
+  // Training (TRN-EPIC-001): owner, Trainingsbetreuung und Büro. therapist
+  // und team_lead nicht - der offene Zugriff auf alle Akten gilt innerhalb der
+  // Behandlung (ADR-021 Punkt 6). Der Server liefert ihnen ohnehin nichts.
+  if (canReadTrainingClients(roles)) {
+    bereiche.push({
+      id: 'training',
+      ...BEREICHE.training,
+      to: '/training',
+      pfade: ['/training'],
+      icon: symbole.training,
+      unterpunkte: [],
+    });
+  }
+
+  // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
+  // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
+  // Trainingskonto sieht Übersicht und Training (TRN-003).
+  if (isTherapyStaff(roles)) {
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,

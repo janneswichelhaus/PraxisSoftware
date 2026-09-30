@@ -32,8 +32,12 @@ import {
 import type { StaffMember } from './api';
 import { ROLLENHINWEISE } from './rollenhinweise';
 
-/** Rollen, die ein Praxiszugang bekommen kann. `patient` ist ein anderes Konzept (§4.6). */
-const WAEHLBARE_ROLLEN: RoleKey[] = ['therapist', 'team_lead', 'office', 'owner'];
+/**
+ * Rollen, die ein Praxiszugang bekommen kann. `patient` ist ein anderes Konzept
+ * (§4.6). Die Trainingsbetreuung seit TRN-003 - verbindlich prüft
+ * `app.assert_staff_role_keys`.
+ */
+const WAEHLBARE_ROLLEN: RoleKey[] = ['therapist', 'team_lead', 'office', 'trainer', 'owner'];
 
 /** Was nach einem gescheiterten Vorgang zu tun ist (WRT-01). */
 const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';

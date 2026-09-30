@@ -93,6 +93,38 @@ const FAELLE: Fall[] = [
     [patients.petra, patients.erika],
     'patient.merged',
   ],
+  // TRN-001: das Trainingsverhaeltnis auf dem Niveau der Akte (ADR-021
+  // Punkt 8) - therapist und Patientenkonto haben hier nichts zu schreiben.
+  [
+    'create_training_client',
+    'select public.create_training_client($1, $2) as id',
+    ['Kein', 'Zugriff'],
+    'training_relationship.created',
+  ],
+  [
+    'start_training_for_person',
+    'select public.start_training_for_person($1::uuid) as id',
+    [SEED.persons.max],
+    'training_relationship.created',
+  ],
+  [
+    'update_training_client',
+    'select public.update_training_client($1::uuid, $2, $3, null, null, null, null, null, null, current_date) as id',
+    [SEED.trainingRelationships.tina, 'Kein', 'Zugriff'],
+    'training_relationship.updated',
+  ],
+  [
+    'end_training_relationship',
+    'select public.end_training_relationship($1::uuid) as tag',
+    [SEED.trainingRelationships.tina],
+    'training_relationship.ended',
+  ],
+  [
+    'reopen_training_relationship',
+    'select public.reopen_training_relationship($1::uuid) as id',
+    [SEED.trainingRelationships.erika],
+    'training_relationship.reopened',
+  ],
   [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
@@ -108,7 +140,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
 
   it('kennt genau die Pfade, die eine Abweisung beim Schreiben ueberleben lassen', async () => {
     // Die Liste ist Jannes' Wahl vom 2026-09-26: Rollen und Konten, Legal Hold
-    // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten.
+    // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
+    // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`

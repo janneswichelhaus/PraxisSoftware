@@ -224,6 +224,7 @@ describe('Audit-Lesepfad', () => {
       'count_orphaned_patient_file_objects',
       'find_free_slots',
       'find_possible_duplicates',
+      'find_possible_training_duplicates',
       'get_appointment_billing_context',
       'get_appointment_brief',
       'get_appointment_services',
@@ -234,6 +235,7 @@ describe('Audit-Lesepfad', () => {
       'get_practice_statistics',
       'get_practice_targets',
       'get_therapy_report',
+      'get_training_client',
       'get_treatment_basis',
       'get_treatment_basis_slots',
       'get_treatment_note',
@@ -284,10 +286,47 @@ describe('Audit-Lesepfad', () => {
       'list_text_snippets',
       'list_therapy_report_sources',
       'list_top_services',
+      'list_training_clients',
       'list_waitlist_entries',
       'list_waitlist_matches',
       'rate_slot_travel',
       'search_patients',
+    ]);
+  });
+
+  it('fuehrt keinen Pfad mit Abweisungseintrag als STABLE oder IMMUTABLE (TRN-EPIC-001)', async () => {
+    // PostgREST ruft STABLE- und IMMUTABLE-Funktionen in einer lesenden
+    // Transaktion auf. Das INSERT des denied-Eintrags scheitert dort mit 25006,
+    // und die Abweisung bliebe ohne Nachweis - ueber eine direkte Verbindung,
+    // wie sie diese Tests nutzen, faellt das nie auf. Deshalb hier als Regel
+    // ueber den Katalog (Zweitreview TRN-EPIC-001).
+    const { rows } = await asPostgres<{ proname: string }>(`
+      select p.proname
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+      where n.nspname in ('public', 'app')
+        and p.prosrc ~ 'app\\.record_denied_(owner_)?(read|write)\\('
+        and p.provolatile <> 'v'
+      order by p.proname
+    `);
+    // BEF-082: Diese Pfade sind aelter und tragen den Fehler noch; die Liste
+    // darf nur schrumpfen. Ein neuer Eintrag hier ist ein neuer Fehler.
+    expect(rows.map((r) => r.proname)).toEqual([
+      'find_free_slots',
+      'find_possible_duplicates',
+      'get_intake_checklist',
+      'get_practice_statistics',
+      'get_practice_targets',
+      'list_call_list',
+      'list_care_without_conclusion',
+      'list_ending_prescriptions',
+      'list_open_intakes',
+      'list_open_prescription_scans',
+      'list_practice_revenue_months',
+      'list_tasks',
+      'list_top_services',
+      'list_waitlist_entries',
+      'list_waitlist_matches',
+      'rate_slot_travel',
     ]);
   });
 

@@ -95,7 +95,13 @@ describe('StaffAccountSection', () => {
     );
     // Eine Rolle zu vergeben ist Berechtigungsvergabe - nichts davon ist
     // vorbelegt (ADR-004).
-    for (const rolle of ['Therapeut:in', 'Teamleitung', 'Praxismanagement', 'Praxisinhaber']) {
+    for (const rolle of [
+      'Therapeut:in',
+      'Teamleitung',
+      'Praxismanagement',
+      'Trainingsbetreuung',
+      'Praxisinhaber',
+    ]) {
       expect(screen.getByRole('checkbox', { name: rolle })).not.toBeChecked();
     }
   });

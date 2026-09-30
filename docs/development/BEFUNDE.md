@@ -3121,3 +3121,17 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Zuerst prüfen, ob die Zeilen für office auf der Test-Umgebung überhaupt ankommen (`billing_visible`). Dann die Abrechnungsangaben als eigener, kurzer Block „Abrechnung“ am Termin, mit Überschrift, abgesetzt von den Termindaten — Teil der Neuordnung der Terminseite (BEF-076, BEF-078).
 
+
+### BEF-082 — Sechzehn Lesepfade verlieren ihren Abweisungseintrag hinter PostgREST
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Serverfunktionen mit protokollierter Abweisung (ADR-010, G6a/G6b) |
+| Quelle  | Zweitreview TRN-EPIC-001 (Review-Subagent), Katalogabfrage in `supabase/tests/audit.test.ts` |
+| Status  | offen |
+| Berührt | `find_free_slots`, `find_possible_duplicates`, `get_intake_checklist`, `get_practice_statistics`, `get_practice_targets`, `list_call_list`, `list_care_without_conclusion`, `list_ending_prescriptions`, `list_open_intakes`, `list_open_prescription_scans`, `list_practice_revenue_months`, `list_tasks`, `list_top_services`, `list_waitlist_entries`, `list_waitlist_matches`, `rate_slot_travel`; Muster aus `20260923120000_abgewiesene_lesezugriffe_rest.sql` |
+
+**Beobachtung.** Diese Funktionen sind `STABLE` und schreiben im abgewiesenen Fall über `app.record_denied_read` einen `denied`-Eintrag. PostgREST ruft `STABLE`-Funktionen in einer lesenden Transaktion auf; das INSERT scheitert dort mit 25006, der Aufrufer bekommt einen Fehler statt einer leeren Antwort, und der Versuch steht **nicht** im Protokoll. `pnpm test:db` sieht das nicht, weil es über eine direkte Verbindung ohne lesende Transaktion ruft. Für die Pfade von TRN-EPIC-001 ist es behoben; eine Katalogregel in `audit.test.ts` hält die Liste fest und lässt sie nur schrumpfen.
+
+**Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
