@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-30 · letzte Session: TRN-EPIC-003 Trainingsrechnung (davor TRN-EPIC-002)
+# Status · Stand 2026-09-30 · letzte Session: TRN-EPIC-004 Trainingsprotokoll (davor TRN-EPIC-003)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,7 +6,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**TRN-EPIC-003 gebaut (PR gegen `main`, Branch `claude/busy-mayer-ccp2g2`) — Trainingsleistung als Rechnung im Kreis `TR`:** Das Büro erfasst unter **Abrechnung → Leistungen** einen **durchgeführten** Trainingstermin („Training · Durchgeführt“, nur Trainingspositionen, nichts vorbelegt; ANN-181) und legt unter **Rechnungen** je Kund:in und Monat einen eigenen Entwurf an. Die Rechnung hängt am **Trainingsverhältnis, nie an der Akte**: Empfänger ist die Kund:in selbst mit der Anschrift aus dem Training, „Leistung für“ statt „Behandelt“, kein Geburtsdatum, keine Empfängerwahl (ANN-182); Nummer aus `TR`, § 14c-Riegel, Storno, Korrektur, Zahlung und Auswertung wie in der Behandlung. Eine Person mit beiden Verhältnissen bekommt zwei Rechnungen. **Löschlauf:** Nach drei Jahren fallen Kontakt und Termine ohne Leistung; die Belege bleiben acht Jahre (ANN-183). Drei Migrationen, keine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-181 bis ANN-183** (ANN-182, -183 Datenschutz im Prüfpaket). Abschließen am Trainingstermin fehlt in der Oberfläche noch (TRN-EPIC-004) — die Sichtung nutzt eine Seed-Stunde von vorgestern. Sichtung: [Training](sichtung/training.md) Schritte 7 bis 9.
+**TRN-EPIC-004 gebaut (PR gegen `main`, Branch `ccr-fe2cfca3-doyl2j`) — Block 3 ist damit durchgebaut:** Am Trainingstermin steht der Abschnitt **Trainingsprotokoll**: Was in der Einheit gemacht wurde, als Freitext, erst Entwurf, dann **abgeschlossen** und ab da unveränderlich (ANN-185). Der Abschluss setzt den Termin auf **Dokumentiert** (ADR-018 Punkt 3, gelesen nach ADR-022 Punkt 8). Schreiben und lesen dürfen nur owner und Trainingsbetreuung, das Büro nicht (ANN-184). Die Trainingsbetreuung vermerkt ihre Einheit jetzt selbst als **durchgeführt** und öffnet sie wieder, das Büro ebenso (ANN-186). Eine Absage verwirft einen Entwurf und steht im Protokoll; ein abgeschlossenes Protokoll sperrt die Absage. Bei der Kund:in listet **Einheiten** die Protokolle. Kein Befund, keine Auswertung, nichts aus der Akte (ADR-006 Punkte 9 bis 13, ADR-021 Punkt 7). Löschlauf: Das Protokoll fällt mit dem Verhältnis, in der Teillöschung auch am abgerechneten Termin (ANN-183 ergänzt). Drei Migrationen, eine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-184 bis ANN-186** (ANN-184 Datenschutz im Prüfpaket). Sichtung: [Training](sichtung/training.md) Schritte 10 bis 12.
+
+**TRN-EPIC-003 ist gemergt (PR #149) — Trainingsleistung als Rechnung im Kreis `TR`:** Leistung aus dem durchgeführten Trainingstermin, erfasst vom Büro (ANN-181), Rechnung an die Kund:in selbst mit Anschrift aus dem Training (ANN-182), nach drei Jahren nur noch die Belege (ANN-183). Sichtung: [Training](sichtung/training.md) Schritte 7 bis 9.
 
 **TRN-EPIC-002 ist gemergt (PR #148) — Trainingstermine im gemeinsamen Kalender:** Die Trainingsbetreuung sieht Kalender und eigene Tagesliste nur mit Trainingsterminen (ANN-180); Anlegen, Verschieben, Absagen ohne Ausfallhonorar (ANN-178), Vereinbarungen ohne Sperre (ANN-179), Hausbesuch mit Anschrift aus dem Training (ANN-177). Kein Durchgriff beim Schreiben in beide Richtungen. Sichtung: [Training](sichtung/training.md) Schritte 4 bis 6.
 
@@ -18,11 +20,13 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Danach — Bauen
 
-1. **TRN-EPIC-004** (Block 3, Trainingsprotokoll; bringt auch Abschließen am Trainingstermin). `/weiter`
-2. **DSN-001** (Docs, vor Block 4: Ansichten für Patient:innen und Betreuung)
-3. **ADR-023** (Docs, vor Block 4: Plattformzugang)
+1. **DSN-001** (Docs, vor Block 4: Ansichten für Patient:innen und Betreuung). `/weiter`
+2. **ADR-023** (Docs, vor Block 4: Plattformzugang)
+3. **POR-EPIC-001** (Block 4, Plattformzugang; startet, wenn DSN-001 und ADR-023 bestätigt sind)
 
 ## Prüfverfahren
+
+**Stand TRN-EPIC-004 (2026-09-30, in der Cloud gelaufen):** `test` **3830** grün (vor den Zweitreview-Korrekturen; die betroffenen Dateien danach erneut grün), `test:db` (Endlauf läuft, Zahl folgt) (neu: `training-protocols` mit 42 Fällen, dazu Anpassungen in `audit`, `abgewiesene-schreibpfade`, `schema`, `betroffenenrechte`), `test:e2e` ohne Anmeldung **181** grün und einer übersprungen, `login.spec.ts` mit den CI-Platzhaltern **28** grün (neu: Trainingsprotokoll und Einheiten bei 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün. Zweitreview gelaufen: sieben Befunde (einer mittel, sechs niedrig), alle behoben. Der mittlere: Ein Entwurf sperrte die Absage dauerhaft, jetzt fällt er mit ihr.
 
 **Stand TRN-EPIC-003 (2026-09-30, in der Cloud gelaufen):** `test` **3819** grün, `test:db` **2590** grün (neu: `training-services`, `training-invoices`, dazu Anpassungen in `invoice-service-area`, `service-area`, `revenue-by-service-area`, `retention-run`, `training-appointments`), `test:e2e` ohne Anmeldung **205** grün, einer übersprungen (`login.spec.ts` mit den CI-Platzhaltern; neu `trainingsabrechnung.spec.ts` bei 375 und 1280 px); `format:check`, `lint`, `typecheck`, `docs:check` und `build` grün. Zweitreview gelaufen: acht Befunde (zwei mittel, sechs niedrig), alle behoben — u. a. Teillöschung nach drei Jahren statt das ganze Verhältnis acht Jahre zu halten, „Behandelte Person“ auf Erinnerungs- und Stornoblatt im Training.
 
@@ -32,6 +36,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
+- **Trainingsprotokoll sichten und bestätigen** (TRN-EPIC-004): [Training](sichtung/training.md) Schritte 10 bis 12, als Tom, Olivia, Anna und Jannes. Zu bestätigen: **ANN-184** (Protokoll nur für owner und Trainingsbetreuung, das Büro sieht es nicht — braucht das Büro den Inhalt für Rückfragen zur Rechnung?), **ANN-185** (abgeschlossen heißt unveränderlich, kein Nachtrag in V1), **ANN-186** (durchgeführt vermerken owner, Trainingsbetreuung und Büro; eine Absage verwirft einen Entwurf).
 - **Trainingsrechnung sichten und bestätigen** (TRN-EPIC-003): [Training](sichtung/training.md) Schritte 7 bis 9, als Olivia, Tom und Jannes. Zu bestätigen: **ANN-181** (Leistung aus dem durchgeführten Trainingstermin, erfasst vom Büro), **ANN-182** (Trainingsrechnung an die Kund:in selbst, Anschrift aus dem Training, ohne Geburtsdatum — kommen Firmen oder Angehörige als Zahler vor?), **ANN-183** (nach drei Jahren nur noch die Belege, acht Jahre).
 - **Trainingstermine sichten und bestätigen** (TRN-EPIC-002): [Training](sichtung/training.md) Schritte 4 bis 6, als Tom, Anna und Jannes. Zu bestätigen: **ANN-176** (Trainingstermine schreiben owner, Trainingsbetreuung, Büro; betreuen kann nur die Trainingsbetreuung — wenn du selbst trainierst, gib dir die Rolle zusätzlich), **ANN-177** (Hausbesuch im Training mit Anschrift aus dem Trainingskontakt, Hausnummer abgetrennt), **ANN-178** (keine Ausfallgebühr im Training, bis deine AGB-Frage beantwortet ist), **ANN-179** (Vereinbarung sperrt nicht), **ANN-180** (keine internen Termine für die Trainingsbetreuung, Protokoll wie am Behandlungstermin).
 - **Training sichten und bestätigen** (TRN-EPIC-001): [Training](sichtung/training.md) Schritte 1 bis 3, als Tom (`tom.training@praxis.invalid`), Olivia und Anna. Zu bestätigen: **ANN-172** (Büro legt Trainingskund:innen an und beendet Verträge), **ANN-173** (zweites Verhältnis nur durch owner und Büro, nichts aus der Akte), **ANN-174** (ein im Training geänderter Name gilt auch in der Akte, außer bei Mitarbeitenden), **ANN-175** (Protokoll wie an der Akte).
@@ -53,8 +58,8 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**TRN-EPIC-003 (TRN-007, TRN-008).** Migration `20260930120000_trn_007_training_services.sql`: `billable_services.training_relationship_id` mit Constraint `billable_services_party`, Trigger prüft das Verhältnis des Termins, `app.appointment_is_billable` (ANN-181), `app.can_record_services_for_appointment` nur am Behandlungstermin, `record_billable_services`, `list_open_billable_appointments`, `list_billable_services`. Migration `20260930121000_trn_008_training_invoices.sql`: `invoices.training_relationship_id` mit `invoices_party`, Entwurfsindex je Kund:in und Monat, `create_training_invoice_draft`, `list_invoice_candidates`, `create_correction_draft`, `app.build_invoice_document` (ANN-182), `list_invoices`, `list_open_items`, `list_payments`, `app.training_billing_retention_due_at`, Löschlauf (ANN-183). Migration `20260930122000_trn_epic_003_zweitreview.sql`: Teillöschung, Journal, Trigger beim Ändern, Fremdschlüssel, Auditkontext. Oberfläche: `src/features/billing/` (Leistungen, Rechnungen, Entwurf, Blätter). Seed: eine durchgeführte Trainingsstunde von Tina.
+**TRN-EPIC-004 (TRN-009, TRN-010).** Migration `20260930130000_trn_009_training_protocols.sql`: Tabelle `training_protocols` (Datenklasse `trainingsverhaeltnis`), `app.can_access_training_protocols` (ANN-184), Trigger `training_protocols_guard` (ANN-185) und `appointments_training_protocol_guard`, `save_training_protocol`, `finalize_training_protocol`, `get_training_protocol`, `list_training_protocols`, Löschlauf und Journal, `app.mark_appointment_documented` mit Auditkontext. Migration `20260930131000_trn_010_training_documented.sql`: `complete_appointment` und `reopen_appointment` für die Trainingsbetreuung am Trainingstermin (ANN-186). Migration `20260930132000_trn_epic_004_zweitreview.sql`: Entwurf fällt mit Absage und Nichtantreffen (`training_protocol.discarded`), Entwurf nur am bestätigten oder durchgeführten Termin. Oberfläche: `src/features/training/TrainingProtocol.tsx` (Protokoll, Abschluss, Einheiten). Seed unverändert bis auf die Löschreihenfolge.
 
-**Lokale Schritte:** `git pull origin claude/busy-mayer-ccp2g2` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen drei neuer Migrationen und geändertem Seed; kein `pnpm install`.
+**Lokale Schritte:** `git pull origin ccr-fe2cfca3-doyl2j` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen drei neuer Migrationen; kein `pnpm install`.
 
-Davor: **TRN-EPIC-002** (gemergt, PR #148) und **TRN-EPIC-001** (gemergt, PR #145).
+Davor: **TRN-EPIC-003** (gemergt, PR #149), **TRN-EPIC-002** (gemergt, PR #148) und **TRN-EPIC-001** (gemergt, PR #145).
