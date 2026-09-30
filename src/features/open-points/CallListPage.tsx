@@ -8,7 +8,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import {
-  appointmentTypeLabels,
+  appointmentTypeHint,
   formatLocalTimeRange,
   notificationChannelLabels,
   todayInTimeZone,
@@ -78,9 +78,14 @@ function CallRow({ entry, zurueck }: { entry: CallEntry; zurueck: string }) {
         )}
       </div>
       <p className="text-ink-muted text-sm">
-        {appointmentTypeLabels[entry.appointment_type]}
-        {entry.location_name ? ` · ${entry.location_name}` : ''}
-        {entry.staff_name ? ` · bei ${entry.staff_name}` : ''}
+        {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+        {[
+          appointmentTypeHint(entry.appointment_type),
+          entry.location_name,
+          entry.staff_name ? `bei ${entry.staff_name}` : null,
+        ]
+          .filter(Boolean)
+          .join(' · ')}
         {entry.call_outcome && entry.call_recorded_by_name
           ? ` · zuletzt angerufen von ${entry.call_recorded_by_name}`
           : ''}

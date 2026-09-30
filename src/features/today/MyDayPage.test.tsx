@@ -685,9 +685,10 @@ describe('Übersicht', () => {
       const teamplan = (
         await screen.findByRole('heading', { name: 'Tagesplan des Teams' })
       ).closest('section')!;
-      expect(await within(teamplan).findByText('Anna Beispiel · Hausbesuch')).toBeInTheDocument();
+      // Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-187).
+      expect(await within(teamplan).findAllByText('Anna Beispiel')).not.toHaveLength(0);
       expect(within(teamplan).getByText('Jannes Test · Praxis Hauptstandort')).toBeInTheDocument();
-      expect(within(teamplan).queryByText(/Hausbesuch · Hausbesuch/)).toBeNull();
+      expect(within(teamplan).queryByText(/Hausbesuch/)).toBeNull();
       expect(
         within(teamplan).getByText('Alle Termine und Fehlzeiten des Teams heute.'),
       ).toBeInTheDocument();

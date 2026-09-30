@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
+import { appointmentTypeHint, formatLocalTimeRange } from '@/features/appointments/api';
 import {
   adressZeilen,
   dayPlanStatusLabels,
@@ -46,6 +46,13 @@ export function Tageskarte({
   const adresse = adressZeilen(termin);
   const nummern = rufnummern(termin);
   const grund = offenGrund(termin);
+  const einordnung = [
+    termin.kind === 'internal' ? 'Fehlzeit' : termin.kind === 'training' ? 'Training' : null,
+    appointmentTypeHint(termin.appointment_type),
+    termin.location_name,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Card>
@@ -86,15 +93,9 @@ export function Tageskarte({
         )}
       </p>
 
-      <p className="text-ink-muted mt-0.5 text-sm">
-        {termin.kind === 'internal'
-          ? 'Fehlzeit · '
-          : termin.kind === 'training'
-            ? 'Training · '
-            : ''}
-        {appointmentTypeLabels[termin.appointment_type]}
-        {termin.location_name ? ` · ${termin.location_name}` : ''}
-      </p>
+      {/* Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-187);
+          die Zeile steht nur, wenn sie etwas sagt. */}
+      {einordnung ? <p className="text-ink-muted mt-0.5 text-sm">{einordnung}</p> : null}
 
       {grund ? <p className="text-warnung mt-2 text-sm font-medium">{grund}</p> : null}
 

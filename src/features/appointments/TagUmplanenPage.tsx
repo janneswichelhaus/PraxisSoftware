@@ -20,7 +20,7 @@ import { Laengenzeichen } from './Laengenzeichen';
 import { istIsoDatum } from './calendar';
 import {
   appointmentStatusLabels,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   cancellationReasonLabels,
   cancellationReasonSchema,
   cancelStaffDay,
@@ -299,7 +299,10 @@ function Umplanung({
                           )}
                         </span>
                         {` · ${termin.patient_given_name} ${termin.patient_family_name}`}
-                        {` · ${appointmentTypeLabels[termin.appointment_type]}`}{' '}
+                        {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+                        {appointmentTypeHint(termin.appointment_type)
+                          ? ` · ${appointmentTypeHint(termin.appointment_type)}`
+                          : ''}{' '}
                         <Laengenzeichen termin={termin} />
                       </li>
                     ))}

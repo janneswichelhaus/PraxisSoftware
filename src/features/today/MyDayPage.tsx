@@ -17,7 +17,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   fetchAppointments,
   formatLocalTime,
   formatLocalTimeRange,
@@ -99,20 +99,20 @@ const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
  *
  * Die Person steht vorn, weil der Plan zeigen soll, wer wann wo ist - am
  * Telefon kürzt `truncate` das Ende der Zeile, und das war bis UXR-003 genau
- * der Name. Die Terminart steht einmal; bei Praxisterminen folgt ihr der
- * Standort.
+ * der Name. Die Terminart steht einmal und nur, wenn sie vom Hausbesuch
+ * abweicht (ANN-187); bei Praxisterminen folgt ihr der Standort.
  *
  * Die Kalenderabfrage liefert bewusst keine Besuchsadresse - für die Übersicht
  * über den Tag des Teams ist sie nicht erforderlich (ADR-004,
  * Datenminimierung). Die eigene Tagesliste oben hat sie.
  */
 function personUndOrt(termin: CalendarEntry): string {
-  const art = appointmentTypeLabels[termin.appointment_type];
+  const art = appointmentTypeHint(termin.appointment_type);
   const ort =
     termin.appointment_type === 'practice' && termin.location_name
       ? `${art} ${termin.location_name}`
       : art;
-  return `${staffName(termin)} · ${ort}`;
+  return ort ? `${staffName(termin)} · ${ort}` : staffName(termin);
 }
 
 function greeting(now = new Date()): string {

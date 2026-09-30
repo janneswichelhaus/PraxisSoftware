@@ -12,7 +12,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
-  appointmentTypeLabels,
+  appointmentTypeHint,
   fetchAssignableTherapists,
   formatLocalDate,
   formatLocalTimeRange,
@@ -117,8 +117,11 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
               ? (termin.title ?? BEGRIFFE.fehlzeit)
               : termin.kind === 'training'
                 ? 'Trainingstermin'
-                : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}{' '}
-            · {appointmentTypeLabels[termin.appointment_type]}
+                : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
+            {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+            {appointmentTypeHint(termin.appointment_type)
+              ? ` · ${appointmentTypeHint(termin.appointment_type)}`
+              : ''}
             {termin.location_name ? ` · ${termin.location_name}` : ''}
           </span>
         </li>

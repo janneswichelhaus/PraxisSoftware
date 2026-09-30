@@ -29,7 +29,7 @@ import {
   abweichendeLaengeText,
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   terminBezeichnung,
   type CalendarEntry,
   terminPfad,
@@ -205,10 +205,13 @@ export interface GitterEintrag {
   neu?: boolean;
 }
 
-/** Kurze Einordnung: wo der Termin stattfindet. */
-function ortsHinweis(eintrag: CalendarEntry): string {
+/**
+ * Kurze Einordnung: wo der Termin stattfindet - nur, wenn es vom Regelfall
+ * abweicht. Der Hausbesuch trägt kein Wort (ANN-187, UX-005d).
+ */
+function ortsHinweis(eintrag: CalendarEntry): string | null {
   if (eintrag.appointment_type === 'practice') return eintrag.location_name ?? 'Praxis';
-  return appointmentTypeLabels[eintrag.appointment_type];
+  return appointmentTypeHint(eintrag.appointment_type);
 }
 
 /** Name einer Spalte für Vorlesesoftware: Person bzw. Tag samt Hervorhebung. */
@@ -1063,7 +1066,7 @@ function Kachel({
           <Laengenzeichen termin={eintrag} knapp />
         </span>
       ) : null}
-      {zeilen >= (vermerk ? 4 : 3) ? (
+      {zeilen >= (vermerk ? 4 : 3) && ortsHinweis(eintrag) ? (
         <span className="text-ink-muted block truncate text-[0.6875rem] leading-4">
           {ortsHinweis(eintrag)}
         </span>

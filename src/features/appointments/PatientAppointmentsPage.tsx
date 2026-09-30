@@ -29,7 +29,7 @@ import { Laengenzeichen } from './Laengenzeichen';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   dayKey,
   fetchPatientAppointments,
   formatLocalDate,
@@ -122,7 +122,10 @@ function Terminzeile({
           </span>
           <span className="text-ink-muted text-sm">
             {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
-            {` · ${appointmentTypeLabels[termin.appointment_type]}`}
+            {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+            {appointmentTypeHint(termin.appointment_type)
+              ? ` · ${appointmentTypeHint(termin.appointment_type)}`
+              : ''}
             {` · ${staffName(termin)}`}
           </span>
         </Link>
