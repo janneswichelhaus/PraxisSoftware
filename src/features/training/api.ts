@@ -483,3 +483,126 @@ export const trainingAbsageLabels: Record<CancellationReason, string> = {
   moved: 'Termin verlegt',
   other: 'Sonstiger Grund',
 };
+
+// -----------------------------------------------------------------------------
+// Trainingsprotokoll (TRN-009, TRN-010)
+//
+// Ein Fachdatum des Trainingsverhältnisses, kein Befund und keine
+// Behandlungsdokumentation (ADR-022 Punkt 7). Freitext, der erfasst und
+// angezeigt wird - keine Auswertung, kein Vorschlag (ADR-006 Punkte 9 bis 13).
+// Jedes Lesen protokolliert der Server (ADR-021 Punkt 8).
+// -----------------------------------------------------------------------------
+
+const protokollSchema = z.object({
+  id: z.string().uuid(),
+  appointment_id: z.string().uuid(),
+  status: z.enum(['draft', 'final']),
+  content: z.string(),
+  created_at: z.string(),
+  updated_at: z.string(),
+  finalized_at: z.string().nullable(),
+  author_name: z.string().nullable(),
+  finalized_by_name: z.string().nullable(),
+});
+export type TrainingProtocol = z.infer<typeof protokollSchema>;
+
+const einheitSchema = z.object({
+  id: z.string().uuid(),
+  appointment_id: z.string().uuid(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  status: z.enum(['draft', 'final']),
+  content: z.string(),
+  finalized_at: z.string().nullable(),
+  author_name: z.string().nullable(),
+  organization_time_zone: z.string(),
+});
+export type TrainingUnit = z.infer<typeof einheitSchema>;
+
+/** Protokolliert werden kann nur, was stattgefunden hat oder gerade stattfindet. */
+export function istProtokollierbar(status: TrainingAppointment['status']): boolean {
+  return status !== 'cancelled' && status !== 'no_show';
+}
+
+/** Das Protokoll eines Trainingstermins oder `null`, wenn es noch keines gibt. */
+export async function getTrainingProtocol(appointmentId: string): Promise<TrainingProtocol | null> {
+  const satz = 'Das Trainingsprotokoll konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_training_protocol', {
+    p_appointment_id: appointmentId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  const zeilen = antwort(z.array(protokollSchema), data ?? [], satz);
+  return zeilen[0] ?? null;
+}
+
+/** Die protokollierten Einheiten einer Trainingskund:in, neueste zuerst. */
+export async function listTrainingProtocols(relationshipId: string): Promise<TrainingUnit[]> {
+  const satz = 'Die Einheiten konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_training_protocols', {
+    p_relationship_id: relationshipId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(einheitSchema), data ?? [], satz);
+}
+
+function protokollfehler(error: { message?: string } | null, standard: string): Error {
+  if (error?.message?.includes('changed meanwhile')) {
+    return new Error(
+      'Das Protokoll wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden.',
+    );
+  }
+  if (error?.message?.includes('cannot be changed')) {
+    return new Error('Das Protokoll ist abgeschlossen und lässt sich nicht mehr ändern.');
+  }
+  if (error?.message?.includes('must not be empty')) {
+    return new Error('Bitte festhalten, was in der Einheit gemacht wurde.');
+  }
+  if (error?.message?.includes('too long')) {
+    return new Error('Das Protokoll ist zu lang (höchstens 20 000 Zeichen).');
+  }
+  return new Error(standard);
+}
+
+const speicherSchema = z.array(z.object({ id: z.string().uuid(), updated_at: z.string() }));
+
+/** Speichert das Protokoll als Entwurf; gibt den neuen Stand zurück. */
+export async function saveTrainingProtocol(
+  appointmentId: string,
+  content: string,
+  expectedUpdatedAt: string | null,
+): Promise<{ id: string; updated_at: string }> {
+  const satz = 'Das Trainingsprotokoll konnte nicht gespeichert werden.';
+  const ergebnis = (await getSupabase().rpc('save_training_protocol', {
+    p_appointment_id: appointmentId,
+    p_content: content,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) throw protokollfehler(ergebnis.error, satz);
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  const zeile = antwort(speicherSchema, ergebnis.data ?? [], satz)[0];
+  if (!zeile) throw new Error(satz);
+  return zeile;
+}
+
+/**
+ * Schließt das Protokoll ab. Der Server setzt den Termin im selben Vorgang
+ * auf „dokumentiert" (ADR-018 Punkt 3); danach ist es unveränderlich
+ * (ANN-185).
+ */
+export async function finalizeTrainingProtocol(
+  appointmentId: string,
+  content: string,
+  expectedUpdatedAt: string | null,
+): Promise<void> {
+  const satz = 'Das Trainingsprotokoll konnte nicht abgeschlossen werden.';
+  const ergebnis = (await getSupabase().rpc('finalize_training_protocol', {
+    p_appointment_id: appointmentId,
+    p_content: content,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) throw protokollfehler(ergebnis.error, satz);
+  if (abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
+}

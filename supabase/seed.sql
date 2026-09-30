@@ -27,6 +27,7 @@ delete from public.treatment_text_snippets;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
 delete from public.appointment_notifications;
+delete from public.training_protocols;
 delete from public.appointments;
 delete from public.storage_deletion_orders;
 delete from public.patient_files;

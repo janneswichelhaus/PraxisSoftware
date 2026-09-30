@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 65 Einträge):
+Zusatz `Prüfpaket` (heute 66 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2141,6 +2141,32 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** ADR-021 Punkt 4 legt drei Jahre fest. ADR-008 Punkt 2 und § 147 Abs. 3 AO rechtfertigen die längere Aufbewahrung nur für die Belege, und die Rechnung trägt Name und Anschrift in ihrem Snapshot. Leistung und Rechnung zeigen mit RESTRICT auf Termin und Verhältnis; diese Zeilen bleiben deshalb, ohne Kontakt. Unsicher: ob der abgerechnete Termin (Zeit, betreuende Person) als Teil des Belegs gilt oder früher fallen muss.
 
-**Anker.** `app.reduce_training_relationship` und die Sperre in der Trainingsschleife von `public.apply_retention` in `supabase/migrations/20260930122000_trn_epic_003_zweitreview.sql`; Frist in `app.training_billing_retention_due_at`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`.
+**Seit TRN-EPIC-004** fällt in der Teillöschung auch das Trainingsprotokoll, am abgerechneten Termin ebenso: Es ist kein Beleg. Der Termin bleibt `documented` stehen, ohne Protokoll – die einzige Stelle, an der die Invariante aus ADR-018 Punkt 3 nicht mehr greift, und zwar durch die Frist, nicht durch einen Schreibweg.
+
+**Anker.** `app.reduce_training_relationship` und die Sperre in der Trainingsschleife von `public.apply_retention` in `supabase/migrations/20260930122000_trn_epic_003_zweitreview.sql` (mit den Protokollen neu gefasst in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`); Frist in `app.training_billing_retention_due_at`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`.
 
 **Änderungspfad.** Abgerechnete Termine auch früher löschen: die Leistung vom Termin lösen (`appointment_id` nullbar, `on delete set null`) und in `app.reduce_training_relationship` mitlöschen · Aufwand `mittel`.
+
+### ANN-184 — Trainingsprotokolle schreiben, abschließen und lesen nur owner und Trainingsbetreuung
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8)
+
+**Annahme.** Das Trainingsprotokoll schreiben, abschließen und lesen `owner` und `trainer`. Das Büro (`office`) liest es nicht, auch nicht in der Liste der Einheiten. Es sieht aber weiter den Termin mit seinem Zustand. `therapist` und `team_lead` erreichen das Protokoll nicht (kein Durchgriff). Jedes Öffnen eines Protokolls, auch in der Liste, steht als `training_protocol.viewed` im Protokoll, jeder abgewiesene Versuch als `denied`.
+
+**Begründung.** Ein Trainingsprotokoll kann Angaben zur Gesundheit enthalten (Schmerz, Belastbarkeit), die im Training unter Art. 9 Abs. 2 lit. a DSGVO stehen (ADR-021 Punkt 4). §4.8 nennt das Büro im Training „nur organisatorisch“; für die Abrechnung braucht es den Zustand des Termins, nicht den Inhalt der Einheit. Das ist enger als in der Behandlung, wo das Büro die Dokumentation liest (ADR-004 Fassung 2). Unsicher: ob das Büro für Rückfragen der Kund:in zur Rechnung den Inhalt braucht.
+
+**Anker.** `app.can_access_training_protocols` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `canWriteTrainingProtocols` in `src/features/session/types.ts`; Tests in `supabase/tests/training-protocols.test.ts`.
+
+**Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`.
+
+### ANN-185 — Ein abgeschlossenes Trainingsprotokoll ist unveränderlich; einen Korrekturweg gibt es in V1 nicht
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
+
+**Annahme.** Ein Trainingsprotokoll ist Entwurf oder abgeschlossen. Den Entwurf können `owner` und `trainer` beliebig oft ändern. Das Abschließen ist ein ausdrücklicher Schritt mit Rückfrage. Danach ist der Text unveränderlich: über jeden Schreibweg, auch am Server vorbei. Es gibt weder Korrektur noch Nachtrag und auch keine automatische Finalisierung.
+
+**Begründung.** §13 verbietet, Dokumentation unbemerkt zu überschreiben. ADR-022 Punkt 7 nimmt dem Protokoll die Versionspflicht aus § 630f BGB. Ohne Versionen bliebe als Korrektur nur das Überschreiben, und das schließt §13 aus. ADR-022 Punkt 6 schließt die automatische Finalisierung für den Trainingstermin aus. Unsicher: wie oft ein Tippfehler nach dem Abschluss auffällt. Das zeigt erst die Nutzung.
+
+**Anker.** `public.training_protocols_guard` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; Tests in `supabase/tests/training-protocols.test.ts` („ist danach unveraenderlich“).
+
+**Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`.

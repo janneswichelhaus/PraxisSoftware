@@ -151,6 +151,19 @@ const FAELLE: Fall[] = [
     ['ffffffff-ffff-4fff-8fff-000000000001'],
     'training_basis.reopened',
   ],
+  // TRN-009: das Trainingsprotokoll - nur owner und trainer (ANN-184).
+  [
+    'save_training_protocol',
+    "select * from public.save_training_protocol($1::uuid, 'Kein Zugriff')",
+    [IRGENDEINE],
+    'training_protocol.updated',
+  ],
+  [
+    'finalize_training_protocol',
+    "select public.finalize_training_protocol($1::uuid, 'Kein Zugriff') as id",
+    [IRGENDEINE],
+    'training_protocol.finalized',
+  ],
   [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
@@ -168,7 +181,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // Die Liste ist Jannes' Wahl vom 2026-09-26: Rollen und Konten, Legal Hold
     // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
-    // und TRN-005 Trainingstermin und Vereinbarung.
+    // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
+    // Trainingsprotokoll.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
