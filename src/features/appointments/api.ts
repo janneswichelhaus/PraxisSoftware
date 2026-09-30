@@ -395,6 +395,16 @@ export function patientName(
  * Namen zurückhält —, steht ein Gedankenstrich da und keine leere Zeile
  * (PROJECT_PRINCIPLES.md §13).
  */
+/**
+ * Wo ein Termin geöffnet wird (TRN-004): Der Trainingstermin hat seine Seite
+ * im Trainingsbereich, jeder andere die Terminseite der Praxis. Eine Stelle
+ * für Kalender, Tagesplan und Tour, damit kein Trainingstermin auf der Seite
+ * der Behandlung landet.
+ */
+export function terminPfad(termin: Pick<Appointment, 'id' | 'kind'>): string {
+  return termin.kind === 'training' ? `/training/termine/${termin.id}` : `/termine/${termin.id}`;
+}
+
 export function terminBezeichnung(
   appointment: Pick<
     Appointment,

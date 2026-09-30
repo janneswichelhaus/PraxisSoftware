@@ -284,7 +284,8 @@ $function$;
 
 comment on function public.list_day_plan(date, uuid) is
   'Tagesliste einer Person fuer einen Tag (UX-001) mit Adresse, Rufnummer, Zugangshinweis, seit MAP-006d der Kartenposition des Hausbesuchs, seit UX-003b der Behandlungsliege und seit PRX-007 der Mitnehmen-Liste am Behandlungstermin; seit TRN-006 auch fuer die Trainingsbetreuung, je Zeile nach Kontext gefiltert, am Trainingstermin mit Verhaeltnis und Namen. Abgewiesen mit denied-Eintrag (G6b).';
-revoke all on function public.list_day_plan(date, uuid) from public;
+-- Auch anon, wie seit dem Zweitreview zu PRX-EPIC-002 (20260929140000).
+revoke all on function public.list_day_plan(date, uuid) from public, anon;
 grant execute on function public.list_day_plan(date, uuid) to authenticated;
 
 -- -----------------------------------------------------------------------------

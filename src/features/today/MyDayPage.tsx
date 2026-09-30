@@ -25,6 +25,7 @@ import {
   staffName,
   todayInTimeZone,
   type CalendarEntry,
+  terminPfad,
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
@@ -134,7 +135,7 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
   return (
     <li>
       <Link
-        to={mitRueckweg(`/termine/${termin.id}`, '/')}
+        to={mitRueckweg(terminPfad(termin), '/')}
         className="hover:bg-surface-sunken flex min-h-16 items-center gap-4 py-3 transition-colors"
       >
         <span className="text-ink w-28 shrink-0 text-sm font-medium tabular-nums">
@@ -559,8 +560,11 @@ function MeineTagesliste({
         )}
       </Section>
 
-      {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. */}
-      <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
+      {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. Nur für die
+          Praxisrollen - der Server gibt sie der Trainingsbetreuung nicht. */}
+      {mitBehandlung ? (
+        <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
+      ) : null}
 
       {erledigt.length > 0 ? (
         <details className="group border-line mt-6 border-t pt-3">

@@ -36,6 +36,7 @@ import {
   todayInTimeZone,
   updateAppointment,
   type TerminVorbelegung,
+  terminPfad,
 } from './api';
 import {
   CalendarGrid,
@@ -1098,15 +1099,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   Fragen wie hier - Tag und Person -, deshalb reisen beide
                   mit. Die eigene Zeile „Kalender · Touren" über dem Raster
                   ist dafür entfallen; `/touren` bleibt als Adresse. */}
-              <ButtonLink
-                to={`/touren?${new URLSearchParams({
-                  tag: p.datum,
-                  ...(tourPerson ? { person: tourPerson } : {}),
-                }).toString()}`}
-                variant="secondary"
-              >
-                Tour
-              </ButtonLink>
+              {/* Die Tourenseite gehört zur Praxis; die Trainingsbetreuung
+                  hat sie nicht (TRN-006). */}
+              {darfAendern ? (
+                <ButtonLink
+                  to={`/touren?${new URLSearchParams({
+                    tag: p.datum,
+                    ...(tourPerson ? { person: tourPerson } : {}),
+                  }).toString()}`}
+                  variant="secondary"
+                >
+                  Tour
+                </ButtonLink>
+              ) : null}
             </div>
 
             {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern
@@ -1360,7 +1365,18 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           Termin angelegt.{' '}
           {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
             // Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12).
-            <Textlink to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}>
+            // Ein Trainingstermin öffnet im Trainingsbereich (TRN-004).
+            <Textlink
+              to={mitRueckweg(
+                terminPfad(
+                  gitterEintraege.find((g) => g.eintrag.id === neuerTermin)?.eintrag ?? {
+                    id: neuerTermin,
+                    kind: 'therapy',
+                  },
+                ),
+                kalenderStand,
+              )}
+            >
               Termin öffnen
             </Textlink>
           ) : (

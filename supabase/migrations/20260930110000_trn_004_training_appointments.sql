@@ -464,8 +464,11 @@ grant execute on function public.create_training_appointment(uuid, uuid, text, d
 -- CAL-024 sagt.
 --
 -- complete_appointment, record_no_show, reopen_appointment,
--- set_appointment_notification: nur der Kontextfilter (TRN-006). Abschliessen
--- und Nichtantreffen im Training gehoeren zu TRN-EPIC-004.
+-- set_appointment_notification und create_treatment_note: nur der
+-- Kontextfilter (TRN-006). Abschliessen und Nichtantreffen im Training
+-- gehoeren zu TRN-EPIC-004. create_treatment_note meldete bis hierher je nach
+-- Zustand eines fremden Trainingstermins verschiedene Saetze - ein
+-- Zustandsorakel (Zweitreview TRN-EPIC-002).
 -- -----------------------------------------------------------------------------
 
 
@@ -1348,5 +1351,103 @@ begin
   );
 
   return v_kanaele;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION public.create_treatment_note(p_appointment_id uuid, p_content text)
+ RETURNS uuid
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_actor  uuid;
+  v_org    uuid;
+  v_inhalt text;
+  v_termin record;
+  v_note   uuid;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+
+  if not app.can_write_treatment_note() then
+    raise exception 'not allowed to write treatment documentation' using errcode = '42501';
+  end if;
+
+  v_org := app.current_organization_id();
+  if v_org is null then
+    raise exception 'not allowed to write treatment documentation' using errcode = '42501';
+  end if;
+
+  v_inhalt := btrim(coalesce(p_content, ''), E' \t\r\n');
+
+  if v_inhalt = '' then
+    raise exception 'documentation must not be empty' using errcode = '22023';
+  end if;
+
+  if length(v_inhalt) > 20000 then
+    raise exception 'documentation is too long' using errcode = '22023';
+  end if;
+
+  select a.id, a.patient_id, a.status, a.kind
+    into v_termin
+  from public.appointments a
+  where a.id = p_appointment_id
+    and a.organization_id = v_org
+    -- TRN-006: kein Durchgriff ueber den gemeinsamen Kalender (ADR-022 Punkt 11).
+    and app.may_write_appointment_context(a.kind)
+  for update;
+
+  if not found then
+    raise exception 'appointment not found' using errcode = 'P0002';
+  end if;
+
+  -- Ein Ereignis des Praxisbetriebs hat keine Patient:in - eine
+  -- Behandlungsdokumentation daran haette kein Gegenueber (CAL-015b).
+  if v_termin.kind = 'internal' then
+    raise exception 'event cannot be documented' using errcode = '22023';
+  end if;
+
+  -- Eine Absage sagt aus, dass die Behandlung NICHT stattgefunden hat.
+  -- Bestaetigte und abgeschlossene Termine sind dokumentierbar - der laufende
+  -- Hausbesuch ist der Regelfall und noch nicht abgeschlossen.
+  if v_termin.status = 'cancelled' then
+    raise exception 'cancelled appointment cannot be documented' using errcode = '22023';
+  end if;
+
+  -- Nicht angetroffen heisst: keine Behandlung, also auch kein Nachweis
+  -- (CAL-008c). Wer sich vertan hat, oeffnet den Termin wieder.
+  if v_termin.status = 'no_show' then
+    raise exception 'no-show appointment cannot be documented' using errcode = '22023';
+  end if;
+
+  begin
+    insert into public.treatment_notes (
+      organization_id, appointment_id, status, content, created_by, updated_by
+    )
+    values (
+      v_org, p_appointment_id, 'draft', v_inhalt, v_actor, v_actor
+    )
+    returning id into v_note;
+  exception
+    when unique_violation then
+      raise exception 'treatment note already exists' using errcode = '23505';
+  end;
+
+  insert into public.audit_log (
+    organization_id, actor_user_id, action, subject_type, subject_id, outcome, context
+  )
+  values (
+    v_org, v_actor, 'treatment_note.created', 'treatment_note', v_note, 'success',
+    jsonb_build_object(
+      'surface', 'web',
+      'appointment_id', p_appointment_id,
+      'patient_id', v_termin.patient_id
+    )
+  );
+
+  return v_note;
 end;
 $function$;

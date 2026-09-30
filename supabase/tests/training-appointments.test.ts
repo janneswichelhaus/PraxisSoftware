@@ -469,6 +469,64 @@ describe('Kein Durchgriff beim Schreiben (TRN-006, ADR-022 Punkt 11)', () => {
     },
   );
 
+  it.each([
+    ['team_lead', users.teamLead],
+    ['die fremde Praxis', '11111111-1111-4111-8111-0000000000ab'],
+  ])('update und cancel: fuer %s ist der Trainingstermin nicht gefunden', async (_wer, konto) => {
+    await fremdeOrganisation();
+    const vorher = await zeile(training);
+    const stand = await updatedAt(training);
+    await expect(
+      asUser(konto, UPDATE, [
+        training,
+        stand,
+        TOM,
+        'practice',
+        tagInTagen(41),
+        '10:00',
+        '11:00',
+        PRAXIS,
+      ]),
+    ).rejects.toThrow(/^appointment not found$/);
+    await expect(asUser(konto, CANCEL, [training, stand, 'other'])).rejects.toThrow(
+      /^appointment not found$/,
+    );
+    expect(await zeile(training)).toEqual(vorher);
+  });
+
+  it('laesst die Trainingsbetreuung keinen internen Termin aendern oder absagen', async () => {
+    const intern = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000005';
+    const vorher = await zeile(intern);
+    const stand = await updatedAt(intern);
+    await expect(
+      asUser(users.trainer, UPDATE, [
+        intern,
+        stand,
+        TOM,
+        'practice',
+        tagInTagen(41),
+        '10:00',
+        '11:00',
+        PRAXIS,
+      ]),
+    ).rejects.toThrow(/^appointment not found$/);
+    await expect(asUser(users.trainer, CANCEL, [intern, stand, 'other'])).rejects.toThrow(
+      /^appointment not found$/,
+    );
+    expect(await zeile(intern)).toEqual(vorher);
+  });
+
+  it('dokumentiert keinen Trainingstermin und verraet nicht, in welchem Zustand er ist', async () => {
+    // Bis zum Zweitreview antwortete create_treatment_note je nach Zustand
+    // eines fremden Termins mit verschiedenen Saetzen - ein Orakel.
+    await expect(
+      asUser(users.therapist, 'select public.create_treatment_note($1::uuid, $2) as id', [
+        training,
+        'Probe',
+      ]),
+    ).rejects.toThrow(/^appointment not found$/);
+  });
+
   it('haelt auch einen kuenftigen Schreibweg auf: der Riegel an der Tabelle', async () => {
     // Ein Weg, der den Kontext vergisst, schreibt mit der Sitzung der
     // Therapeutin - der Trigger findet den Termin nicht.
@@ -620,6 +678,60 @@ describe('Kein Durchgriff beim Lesen (TRN-006)', () => {
       [heute, ANNA],
     );
     expect(annas.rows).toEqual([]);
+  });
+
+  it.each([
+    ['Patientenkonto', users.patientMax],
+    ['therapist', users.therapist],
+  ])('weist %s an Detail, Kundenterminen und Betreuungsliste bestaetigt ab', async (_w, konto) => {
+    await erwarteAbgewiesenenLeseversuch(
+      konto,
+      'select * from public.get_training_appointment($1::uuid)',
+      [TRAINING_HEUTE],
+      'appointments.read',
+    );
+    await erwarteAbgewiesenenLeseversuch(
+      konto,
+      'select * from public.list_training_client_appointments($1::uuid)',
+      [trainingRelationships.tina],
+      'training_relationships.read',
+    );
+    await erwarteAbgewiesenenLeseversuch(
+      konto,
+      'select * from public.list_assignable_trainers()',
+      [],
+      'appointments.read',
+    );
+  });
+
+  it('kennt fuer die fremde Praxis weder Trainingstermin noch Kundentermine', async () => {
+    const fremd = await fremdeOrganisation();
+    await expect(
+      asUser(fremd.owner, 'select * from public.get_training_appointment($1::uuid)', [
+        TRAINING_HEUTE,
+      ]),
+    ).rejects.toThrow(/^appointment not found$/);
+    const { rows } = await asUser(
+      fremd.owner,
+      'select * from public.list_training_client_appointments($1::uuid)',
+      [trainingRelationships.tina],
+    );
+    expect(rows).toEqual([]);
+    const kalender = await asUser(
+      fremd.owner,
+      'select * from public.list_appointments($1::date, $2::date)',
+      [heute, tagInTagen(2)],
+    );
+    expect(kalender.rows).toEqual([]);
+  });
+
+  it('gibt anon weder Kalender noch Tagesliste (Zweitreview)', async () => {
+    const { rows } = await asPostgres<{ kalender: boolean; tag: boolean }>(`
+      select
+        has_function_privilege('anon', 'public.list_appointments(date, date, uuid, uuid, text)', 'execute') as kalender,
+        has_function_privilege('anon', 'public.list_day_plan(date, uuid)', 'execute') as tag
+    `);
+    expect(rows[0]).toEqual({ kalender: false, tag: false });
   });
 
   it('liest keine internen Termine fuer die Trainingsbetreuung (ANN-180)', async () => {

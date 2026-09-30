@@ -1,6 +1,6 @@
 import { Fragment, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useParams, useSearchParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Select } from '@/components/ui/Select';
@@ -1441,6 +1441,12 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
     data && data.kind !== 'internal' && data.patient_id
       ? `/patienten/${data.patient_id}/termine`
       : '/kalender';
+
+  // Ein Trainingstermin hat seine Seite im Trainingsbereich (TRN-004) - hier
+  // stünden Abschließen, Dokumentation und Akte, die es an ihm nicht gibt.
+  if (data?.kind === 'training') {
+    return <Navigate to={mitRueckweg(`/training/termine/${data.id}`, eingehend)} replace />;
+  }
 
   return (
     <>

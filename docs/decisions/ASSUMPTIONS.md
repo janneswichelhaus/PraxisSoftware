@@ -2067,7 +2067,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Annahme.** Ein Trainingstermin als Hausbesuch (Personal Training zu Hause, ADR-022 Punkt 9) nimmt die Anschrift als Kopie aus `training_contact_details`, nie aus der Akte – auch wenn dieselbe Person eine hat. Weil der Trainingskontakt „Straße und Hausnummer“ in einem Feld führt, wird am letzten Leerzeichen vor einer Hausnummer getrennt, die mit einer Ziffer beginnt („12“, „12a“, „12 a“, „3-5“, „7 / 9“). Gelingt das nicht oder fehlt PLZ oder Ort, wird der Hausbesuch abgewiesen („home visit requires a complete address“), statt eine Hausnummer zu erfinden.
 
-**Begründung.** ADR-022 lässt die Quelle des Adress-Snapshots offen („die Kopie bleibt eine Kopie“); ADR-021 Punkt 3 erlaubt als geteilten Punkt nur die Identität, nicht die Kontaktdaten der Akte. Der Termin braucht Straße und Hausnummer getrennt (`appointments_address_matches_type`, Tourenplanung). Unsicher: Straßennamen mit Ziffer am Ende („B 27“) werden falsch getrennt.
+**Begründung.** ADR-022 lässt die Quelle des Adress-Snapshots offen („die Kopie bleibt eine Kopie“); ADR-021 Punkt 3 erlaubt als geteilten Punkt nur die Identität, nicht die Kontaktdaten der Akte. Der Termin braucht Straße und Hausnummer getrennt (`appointments_address_matches_type`, Tourenplanung). Unsicher: Straßennamen mit Ziffer am Ende („An der B 27“) und Bruchnummern („Am Markt 1 1/2“) werden falsch getrennt (Zweitreview).
 
 **Anker.** `app.split_street_and_house_number` und `app.training_visit_address` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Fälle in `supabase/tests/training-appointments.test.ts`.
 

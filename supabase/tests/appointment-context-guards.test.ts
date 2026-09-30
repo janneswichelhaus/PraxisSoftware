@@ -212,10 +212,13 @@ describe('Kalender ohne Durchgriff', () => {
 
   describe('Kein Trainingstermin erzeugt Behandlungsdokumentation (ADR-022 Punkt 6)', () => {
     it('weist den Schreibweg ab', async () => {
+      // Als owner, der den Trainingstermin sehen darf: Der Weg sagt, warum.
+      // Eine Therapeutin findet ihn seit dem Zweitreview zu TRN-EPIC-002 gar
+      // nicht (training-appointments.test.ts).
       const id = await trainingstermin();
-      await expect(asUser(users.therapist, DOKUMENTIEREN, [id, 'Kniebeuge, 3x12'])).rejects.toThrow(
-        /only a treatment appointment can be documented|not allowed/,
-      );
+      await expect(
+        asUser(users.ownerTherapist, DOKUMENTIEREN, [id, 'Kniebeuge, 3x12']),
+      ).rejects.toThrow(/only a treatment appointment can be documented/);
     });
 
     it('weist auch den unmittelbaren Eintrag ab - der Riegel sitzt an der Tabelle', async () => {
