@@ -1135,3 +1135,30 @@ Entwurf werden nicht übernommen.
 **Offen.** Ort der Umsetzung (Website-Repository, Lovable); ob Bildsequenz
 (48 Bilder, 800 × 800, transparent) oder GLB mit react-three-fiber; ob das
 Modell zum noch nicht gewählten Illustrationsstil (A oder C) passen muss.
+
+---
+
+### IDEA-PRX-049 — Geburtsdatum aller Mitarbeitenden hinterlegt
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-09-30 |
+| Berührt | STAFF-EPIC (Mitarbeiterakte), `staff_private_details`, §20, Art. 88 DSGVO / § 26 BDSG, ADR-004 |
+
+**Idee.** Von jeder und jedem Mitarbeitenden ist das Geburtsdatum hinterlegt,
+nicht nur von einigen. Heute gibt es das Feld schon (`staff_private_details`,
+seit der Personentrennung), aber es ist freiwillig; sehen dürfen es nur
+`owner` und die Person selbst.
+
+**Offen.** Wozu es gebraucht wird, entscheidet die Bauart: Pflichtfeld beim
+Anlegen, ein offener Punkt „Geburtsdatum fehlt“ für den Bestand, oder eine
+Erinnerung an Geburtstage im Team. Für die Lohnabrechnung und die
+Sozialversicherung ist es ohnehin nötig — ob die Plattform dafür die Quelle
+ist oder das Lohnbüro, ist nicht festgelegt.
+
+**Bedenken.** Ein Beschäftigtendatum (§ 26 BDSG): Erheben nur, soweit das
+Arbeitsverhältnis es braucht; als Pflichtfeld braucht es einen benannten
+Zweck. Eine Geburtstagserinnerung im Team zeigt das Datum anderen
+Mitarbeitenden — dann nur Tag und Monat, nie das Jahr, und nur mit
+Einwilligung der Person. Kein Rückschluss auf Alter in Auswertungen (§20).

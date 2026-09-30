@@ -751,8 +751,9 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
     );
     // Gezaehlt werden Zeilen, nicht Verhaeltnisse - wie bei der Akte: das
     // Verhaeltnis und die Person, die mit ihm faellt, dazu seit TRN-EPIC-002
-    // die zwei Trainingstermine und die Vereinbarung aus dem Seed.
-    expect(rows[0]?.anzahl).toBe('5');
+    // die drei Trainingstermine (seit TRN-EPIC-003 auch die durchgefuehrte
+    // Stunde von vorgestern) und die Vereinbarung aus dem Seed.
+    expect(rows[0]?.anzahl).toBe('6');
     // Welche Datensaetze es traf, steht im Journal und nicht im Auditlog
     // (ADR-010 Punkt 3).
     expect(JSON.stringify(rows[0]?.kontext)).not.toContain(trainingRelationships.tina);

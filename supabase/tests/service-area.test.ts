@@ -303,10 +303,16 @@ describe('Leistungsbereich', () => {
         'alter table public.billable_services disable trigger billable_services_area_matches_context',
       );
       try {
+        // Seit TRN-007 haelt billable_services_party das Verhaeltnis am
+        // Bereich. Damit hier der Fremdschluessel fuer sich einsteht, wandert
+        // das Verhaeltnis mit - die Constraint ist erfuellt, der Schluessel
+        // nicht (sie selbst prueft training-services.test.ts).
         await expect(
           asPostgres(
-            "update public.billable_services set service_area = 'training' where appointment_id = $1",
-            [termin],
+            `update public.billable_services
+                set service_area = 'training', patient_id = null, training_relationship_id = $2
+              where appointment_id = $1`,
+            [termin, SEED.trainingRelationships.erika],
           ),
         ).rejects.toThrow(/billable_services_catalog_item_area_fkey/);
       } finally {

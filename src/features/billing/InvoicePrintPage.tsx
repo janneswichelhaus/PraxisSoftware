@@ -8,7 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
-import { monatsname, grundlageText, ibanInGruppen } from './anzeige';
+import { monatsname, grundlageText, ibanInGruppen, personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -121,7 +121,9 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
                   {formatDate(ansicht.issued_on)}
                 </Angabe>
               ) : null}
-              <Angabe bezeichnung="Behandelte Person">{dokument.patient.name}</Angabe>
+              <Angabe bezeichnung={personLabel(dokument.service_area, 'blatt')}>
+                {dokument.patient.name}
+              </Angabe>
               {dokument.patient.date_of_birth ? (
                 <Angabe bezeichnung="Geburtsdatum" zahl>
                   {formatDate(dokument.patient.date_of_birth)}

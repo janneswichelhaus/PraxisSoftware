@@ -293,7 +293,10 @@ export async function saveEmpfaenger(eingabe: {
 // -----------------------------------------------------------------------------
 
 const kandidatSchema = z.object({
-  patient_id: z.string(),
+  // Die Person der Klammer ist die Patient:in oder das Trainingsverhältnis,
+  // nie beides (TRN-008, ADR-021 Punkt 3).
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
   patient_name: z.string(),
   period_month: z.string(),
   // ABR-009: der dritte Schlüssel der Klammer (ANN-077). Eine Person mit
@@ -343,7 +346,9 @@ const rechnungSchema = z.object({
   service_area: z.enum(['therapy', 'training']),
   issued_on: z.string().nullable(),
   due_on: z.string().nullable(),
-  patient_id: z.string(),
+  /** Leer an einer Trainingsrechnung: Sie hängt am Trainingsverhältnis (TRN-008). */
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
   patient_name: z.string(),
   recipient_name: z.string(),
   recipient_kind: z.string(),
@@ -463,7 +468,8 @@ const dokumentSchema = z.object({
 const rechnungsansichtSchema = z.object({
   id: z.string(),
   status: z.enum(['draft', 'issued']),
-  patient_id: z.string(),
+  /** Leer an einer Trainingsrechnung (TRN-008): Sie hat keine Empfängerstammdaten. */
+  patient_id: z.string().nullable(),
   recipient_id: z.string().nullable(),
   invoice_number: z.string().nullable(),
   issued_on: z.string().nullable(),
@@ -510,16 +516,31 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
   return rechnungsansichtSchema.parse(data);
 }
 
+/**
+ * Legt den Entwurf zu einer Zeile aus „Abzurechnen" an.
+ *
+ * Zwei Wege, weil es zwei Verhältnisse sind (TRN-008): Die Behandlung hängt
+ * an der Patient:in, das Training am Trainingsverhältnis. Welcher Weg, sagt
+ * die Zeile selbst - nicht eine Ableitung aus dem Bereich.
+ */
 export async function createEntwurf(
-  patientId: string,
-  monat: string,
-  bereich: Leistungsbereich,
+  kandidat: Pick<
+    Kandidat,
+    'patient_id' | 'training_relationship_id' | 'period_month' | 'service_area'
+  >,
 ): Promise<string> {
-  const { data, error } = (await getSupabase().rpc('create_invoice_draft', {
-    p_patient_id: patientId,
-    p_period_month: monat,
-    p_service_area: bereich,
-  })) as { data: unknown; error: unknown };
+  const { data, error } = (
+    kandidat.training_relationship_id
+      ? await getSupabase().rpc('create_training_invoice_draft', {
+          p_training_relationship_id: kandidat.training_relationship_id,
+          p_period_month: kandidat.period_month,
+        })
+      : await getSupabase().rpc('create_invoice_draft', {
+          p_patient_id: kandidat.patient_id,
+          p_period_month: kandidat.period_month,
+          p_service_area: kandidat.service_area,
+        })
+  ) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
   const id = z.string().uuid().safeParse(data);
@@ -696,7 +717,9 @@ export const richtungLabels: Record<string, string> = {
 const offenerPostenSchema = z.object({
   id: z.string(),
   invoice_number: z.string(),
-  patient_id: z.string(),
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
+  service_area: z.enum(['therapy', 'training']),
   patient_name: z.string(),
   recipient_name: z.string(),
   period_month: z.string(),
@@ -810,7 +833,11 @@ export async function storniereZahlung(paymentId: string, grund: string): Promis
 
 const offenerTerminSchema = z.object({
   appointment_id: z.string(),
-  patient_id: z.string(),
+  /** Leer am Trainingstermin: Er hängt am Trainingsverhältnis (TRN-007). */
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
+  service_area: z.enum(['therapy', 'training']),
+  /** Name der Person, für die die Leistung erbracht wird — im Training aus dem Training. */
   patient_name: z.string(),
   performed_on: z.string(),
   starts_at: z.string(),
@@ -864,7 +891,9 @@ export async function fetchVorschlag(appointmentId: string): Promise<Vorschlag[]
 const leistungSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
-  patient_id: z.string(),
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
+  service_area: z.enum(['therapy', 'training']),
   patient_name: z.string(),
   performed_on: z.string(),
   code: z.string(),
@@ -924,6 +953,7 @@ export async function deleteLeistungen(appointmentId: string): Promise<void> {
 export interface Terminleistungen {
   appointmentId: string;
   patientName: string;
+  bereich: Leistungsbereich;
   performedOn: string;
   zeilen: Leistung[];
   summeCent: number;
@@ -938,6 +968,7 @@ export function nachTerminen(leistungen: Leistung[]): Terminleistungen[] {
     const gruppe = vorhanden ?? {
       appointmentId: zeile.appointment_id,
       patientName: zeile.patient_name,
+      bereich: zeile.service_area,
       performedOn: zeile.performed_on,
       zeilen: [],
       summeCent: 0,

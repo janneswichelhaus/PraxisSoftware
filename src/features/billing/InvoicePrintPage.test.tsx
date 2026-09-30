@@ -91,6 +91,30 @@ describe('Rechnungsblatt', () => {
     expect(screen.getByText('Erika Beispiel')).toBeInTheDocument();
   });
 
+  it('nennt im Training die Person nicht behandelt und das Kürzel TR (TRN-008)', async () => {
+    fetchRechnung.mockResolvedValue(
+      rechnungsansicht(
+        {
+          status: 'issued',
+          patient_id: null,
+          invoice_number: 'TR-2026-0001',
+          issued_on: '2026-09-01',
+        },
+        {
+          service_area: 'training',
+          patient: { name: 'Tina Trainingskundin', date_of_birth: null },
+          treatment_bases: [],
+        },
+      ),
+    );
+    zeige();
+
+    expect(await screen.findByText('TR-2026-0001')).toBeInTheDocument();
+    expect(screen.getByText('Leistung für')).toBeInTheDocument();
+    expect(screen.queryByText('Behandelte Person')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Geburtsdatum/)).not.toBeInTheDocument();
+  });
+
   it('weist die Leistungen mit Datum, Menge und Betrag aus', async () => {
     fetchRechnung.mockResolvedValue(ausgestellt());
     zeige();

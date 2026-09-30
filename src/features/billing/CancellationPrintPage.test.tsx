@@ -56,6 +56,21 @@ describe('Stornodokument', () => {
     expect(screen.getByText(/vollständig\s+storniert/)).toBeInTheDocument();
   });
 
+  it('nennt die Person im Training nicht behandelt (TRN-008)', async () => {
+    const ansicht = storniert({ patient_id: null, invoice_number: 'TR-2026-0001' });
+    ansicht.document = {
+      ...ansicht.document,
+      service_area: 'training',
+      patient: { name: 'Tina Trainingskundin', date_of_birth: null },
+      treatment_bases: [],
+    };
+    fetchRechnung.mockResolvedValue(ansicht);
+    zeige();
+
+    expect(await screen.findByText('Leistung für')).toBeInTheDocument();
+    expect(screen.queryByText('Behandelte Person')).not.toBeInTheDocument();
+  });
+
   it('trägt den Grund auf das Blatt', async () => {
     fetchRechnung.mockResolvedValue(storniert());
     zeige();

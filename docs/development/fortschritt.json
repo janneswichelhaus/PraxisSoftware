@@ -470,7 +470,10 @@
           "id": "trn-epic-003",
           "name": "TRN-EPIC-003 Trainingsrechnung",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-30",
+          "nachweis": "TRN-007, TRN-008, Zweitreview",
+          "vermerk": "Sichtung: Training Schritte 7 bis 9"
         },
         {
           "id": "trn-epic-004",

@@ -788,7 +788,13 @@ describe('Kein Durchgriff beim Lesen (TRN-006)', () => {
       'select id, status from public.list_training_client_appointments($1::uuid)',
       [trainingRelationships.tina],
     );
-    expect(rows.map((r) => r.id)).toEqual([TRAINING_HEUTE, 'aaaaaaaa-aaaa-4aaa-8aaa-000000000008']);
+    // Seit TRN-EPIC-003 steht im Seed auch die durchgefuehrte Stunde von
+    // vorgestern (TRN-007).
+    expect(rows.map((r) => r.id)).toEqual([
+      'aaaaaaaa-aaaa-4aaa-8aaa-000000000009',
+      TRAINING_HEUTE,
+      'aaaaaaaa-aaaa-4aaa-8aaa-000000000008',
+    ]);
 
     // Erika hat auch eine Akte mit Behandlungsterminen - keiner davon steht
     // in ihrer Trainingsliste, auch nicht fuer owner, der beide sieht.
@@ -866,7 +872,8 @@ describe('Vereinbarungen (TRN-005)', () => {
       'select * from public.list_training_bases($1::uuid)',
       [trainingRelationships.tina],
     );
-    expect(liste.rows.find((r) => r.id === SEED_BASIS)?.appointment_count).toBe(1);
+    // Heute und die durchgefuehrte Stunde von vorgestern (Seed, TRN-007).
+    expect(liste.rows.find((r) => r.id === SEED_BASIS)?.appointment_count).toBe(2);
     expect(liste.rows.find((r) => r.id === id)).toMatchObject({
       agreed_quantity: 5,
       appointment_count: 0,

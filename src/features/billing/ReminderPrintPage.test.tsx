@@ -59,6 +59,24 @@ describe('Zahlungserinnerung als Blatt', () => {
     expect(blatt?.textContent).not.toMatch(/Mahnung|Mahnstufe|Gebühr|Verzugszins/);
   });
 
+  it('nennt die Person im Training nicht behandelt (TRN-008)', async () => {
+    fetchErinnerung.mockResolvedValue({
+      ...dokument({ invoice_number: 'TR-2026-0001' }),
+      document: rechnungsansicht(
+        {},
+        {
+          service_area: 'training',
+          patient: { name: 'Tina Trainingskundin', date_of_birth: null },
+          treatment_bases: [],
+        },
+      ).document,
+    });
+    zeige();
+
+    expect(await screen.findByText('Leistung für')).toBeInTheDocument();
+    expect(screen.queryByText('Behandelte Person')).not.toBeInTheDocument();
+  });
+
   it('nennt Rechnung, alte Fälligkeit, offenen Betrag und neue Frist', async () => {
     fetchErinnerung.mockResolvedValue(dokument());
     zeige();
