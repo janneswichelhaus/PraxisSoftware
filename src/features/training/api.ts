@@ -554,6 +554,13 @@ function protokollfehler(error: { message?: string } | null, standard: string): 
       'Das Protokoll wurde zwischenzeitlich von einer anderen Person geändert. Bitte die Ansicht neu laden.',
     );
   }
+  // Zweitreview 5: Ein zweites Fenster hat das Protokoll inzwischen angelegt.
+  if (error?.message?.includes('expected updated_at is required')) {
+    return new Error('Das Protokoll wurde inzwischen angelegt. Bitte die Ansicht neu laden.');
+  }
+  if (error?.message?.includes('already exists')) {
+    return new Error('Das Protokoll wurde inzwischen angelegt. Bitte die Ansicht neu laden.');
+  }
   if (error?.message?.includes('cannot be changed')) {
     return new Error('Das Protokoll ist abgeschlossen und lässt sich nicht mehr ändern.');
   }

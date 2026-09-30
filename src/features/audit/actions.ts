@@ -212,6 +212,8 @@ export const AUDIT_ACTIONS = [
   'training_protocol.updated',
   'training_protocol.finalized',
   'training_protocol.viewed',
+  // Zweitreview: ein Entwurf fällt mit Absage oder Nichtantreffen.
+  'training_protocol.discarded',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -351,6 +353,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'training_protocol.updated': 'Trainingsprotokoll geändert',
   'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
   'training_protocol.viewed': 'Trainingsprotokoll gelesen',
+  'training_protocol.discarded': 'Entwurf des Trainingsprotokolls verworfen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

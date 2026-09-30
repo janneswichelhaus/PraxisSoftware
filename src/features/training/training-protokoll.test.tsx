@@ -192,6 +192,16 @@ describe('Trainingsprotokoll am Trainingstermin', () => {
     expect(getTrainingProtocol).not.toHaveBeenCalled();
   });
 
+  it('bietet am dokumentierten Termin ohne Protokoll keinen Entwurf an (Zweitreview 2)', async () => {
+    getTrainingAppointment.mockResolvedValue({ ...termin, status: 'documented' });
+    getTrainingProtocol.mockResolvedValue(null);
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
+    expect(
+      await screen.findByText('Zu diesem Termin gibt es kein Trainingsprotokoll.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText('Was in der Einheit gemacht wurde')).toBeNull();
+  });
+
   it('bietet an einem abgesagten Termin kein Protokoll an', async () => {
     getTrainingAppointment.mockResolvedValue({
       ...termin,

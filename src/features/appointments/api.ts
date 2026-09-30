@@ -1446,10 +1446,11 @@ export function schreibfehler(error: { message?: string } | null, standard: stri
       'In diesem Zeitraum hat die behandelnde Person bereits einen Termin. Bitte eine andere Zeit wählen.',
     );
   }
-  // TRN-009: Wo protokolliert wurde, hat die Einheit stattgefunden.
-  if (error?.message?.includes('training protocol exists')) {
+  // TRN-009: Wo abgeschlossen protokolliert wurde, hat die Einheit
+  // stattgefunden (ein Entwurf fällt mit der Absage, Zweitreview).
+  if (error?.message?.includes('finalized training protocol exists')) {
     return new Error(
-      'Zu diesem Termin gibt es ein Trainingsprotokoll. Ein protokollierter Termin lässt sich nicht absagen und nicht als „nicht angetroffen" vermerken.',
+      'Die Einheit ist bereits protokolliert und lässt sich nicht mehr absagen oder als „nicht angetroffen" vermerken.',
     );
   }
   if (error?.message?.includes('changed meanwhile')) {

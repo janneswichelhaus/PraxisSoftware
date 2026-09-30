@@ -78,12 +78,22 @@ function kurzesDatum(iso: string, zone: string): string {
   }).format(new Date(iso));
 }
 
+/**
+ * Lädt nach, was ein Vorgang am Termin geändert hat. Das Protokoll selbst nur
+ * nach dem Abschluss: Beim Vermerken und Wiederöffnen steht vielleicht
+ * ungespeicherter Text im Feld, und ein gescheitertes Nachladen darf ihn
+ * nicht wegnehmen (Zweitreview 4) - es wäre auch ein unnötiges Lesen im
+ * Protokoll.
+ */
 function invalidiereTermin(
   queryClient: ReturnType<typeof useQueryClient>,
   termin: TrainingAppointment,
+  mitProtokoll: boolean,
 ) {
   void queryClient.invalidateQueries({ queryKey: ['training-appointment', termin.id] });
-  void queryClient.invalidateQueries({ queryKey: ['training-protocol', termin.id] });
+  if (mitProtokoll) {
+    void queryClient.invalidateQueries({ queryKey: ['training-protocol', termin.id] });
+  }
   void queryClient.invalidateQueries({
     queryKey: ['training-protocols', termin.training_relationship_id],
   });
@@ -103,18 +113,27 @@ export function TrainingProtokoll({ termin }: { termin: TrainingAppointment }) {
 
   return (
     <Section titel="Trainingsprotokoll" rahmen>
-      {protokoll.isPending ? (
-        <LoadingState label="Trainingsprotokoll wird geladen …" />
-      ) : protokoll.isError ? (
-        <ErrorState
-          title="Das Trainingsprotokoll konnte nicht geladen werden."
-          description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => protokoll.refetch()}
-        />
+      {/* Ein gescheitertes Nachladen ersetzt vorhandene Daten nicht - sonst
+          nähme es den Text im Feld mit (Zweitreview 4). */}
+      {protokoll.data === undefined ? (
+        protokoll.isError ? (
+          <ErrorState
+            title="Das Trainingsprotokoll konnte nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => protokoll.refetch()}
+          />
+        ) : (
+          <LoadingState label="Trainingsprotokoll wird geladen …" />
+        )
       ) : protokoll.data?.status === 'final' ? (
         <Abgeschlossen protokoll={protokoll.data} zone={termin.organization_time_zone} />
+      ) : termin.status === 'confirmed' || termin.status === 'completed' ? (
+        <Entwurf termin={termin} protokoll={protokoll.data} />
       ) : (
-        <Entwurf termin={termin} protokoll={protokoll.data ?? null} />
+        // Ein dokumentierter Termin ohne Protokoll: Der Löschlauf hat es nach
+        // Ablauf der Frist genommen (ANN-183). Einen neuen Entwurf gibt es
+        // hier nicht (Zweitreview 2).
+        <p className="text-ink-muted text-sm">Zu diesem Termin gibt es kein Trainingsprotokoll.</p>
       )}
     </Section>
   );
@@ -173,7 +192,7 @@ function Entwurf({
     mutationFn: () => finalizeTrainingProtocol(termin.id, textRef.current, stand),
     onSuccess: () => {
       setGespeichert(textRef.current);
-      invalidiereTermin(queryClient, termin);
+      invalidiereTermin(queryClient, termin, true);
     },
   });
 
@@ -229,7 +248,7 @@ function Entwurf({
           bestaetigen="Ja, abschließen"
           bestaetigenLaeuft="Wird abgeschlossen …"
           fehler={abschluss.isError ? abschluss.error.message : undefined}
-          laeuft={abschluss.isPending}
+          laeuft={laeuft || abschluss.isPending}
           onBestaetigen={async () => {
             if (!pruefen()) throw new Error('Bitte festhalten, was in der Einheit gemacht wurde.');
             await abschluss.mutateAsync();
@@ -265,14 +284,14 @@ export function TerminAbschluss({
   const abschliessen = useMutation({
     mutationFn: () => completeAppointment(termin.id, termin.updated_at),
     onSuccess: () => {
-      invalidiereTermin(queryClient, termin);
+      invalidiereTermin(queryClient, termin, false);
       onGeaendert('Termin als durchgeführt vermerkt.');
     },
   });
   const oeffnen = useMutation({
     mutationFn: () => reopenAppointment(termin.id, termin.updated_at),
     onSuccess: () => {
-      invalidiereTermin(queryClient, termin);
+      invalidiereTermin(queryClient, termin, false);
       onGeaendert('Termin wieder geöffnet.');
     },
   });

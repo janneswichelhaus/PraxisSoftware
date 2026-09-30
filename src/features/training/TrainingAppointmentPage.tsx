@@ -59,7 +59,9 @@ export function TrainingAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   if (termin.isPending) return <LoadingState />;
-  if (termin.isError) {
+  // Ein gescheitertes Nachladen nach einem Vorgang ersetzt die Seite nicht:
+  // Im Protokoll darunter kann ungespeicherter Text stehen (Zweitreview 4).
+  if (termin.isError && termin.data === undefined) {
     return (
       <>
         <Rueckweg standard="/kalender" />

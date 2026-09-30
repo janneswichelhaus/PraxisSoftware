@@ -256,17 +256,62 @@ describe('TRN-009: Trainingsprotokoll', () => {
       );
     });
 
-    it('verhindert Absage und Nichtantreffen, solange ein Protokoll am Termin haengt', async () => {
-      await speichere(users.trainer, TRAINING_HEUTE, 'Aufwaermen');
+    it('verwirft einen Entwurf mit der Absage und protokolliert das (Zweitreview 1)', async () => {
+      const entwurf = await speichere(users.trainer, TRAINING_HEUTE, 'Vorgeschrieben');
+      // Das Buero sieht den Entwurf nicht - und kann trotzdem absagen.
+      await asUserCommitted(users.office, ABSAGEN, [
+        TRAINING_HEUTE,
+        await terminStand(TRAINING_HEUTE),
+      ]);
+      expect(await terminStatus(TRAINING_HEUTE)).toBe('cancelled');
+      expect(await protokoll(TRAINING_HEUTE)).toBeUndefined();
+
+      const verworfen = await audit('training_protocol.discarded', entwurf.id);
+      expect(verworfen).toHaveLength(1);
+      expect(verworfen[0]!.context).toEqual({
+        surface: 'web',
+        appointment_id: TRAINING_HEUTE,
+        training_relationship_id: trainingRelationships.tina,
+        reason: 'cancelled',
+      });
+    });
+
+    it('verwirft einen Entwurf auch beim Nichtantreffen', async () => {
+      const gestern = await trainingstermin(-1);
+      await speichere(users.trainer, gestern, 'Entwurf');
+      await asUserCommitted(users.ownerTherapist, NICHT_ANGETROFFEN, [
+        gestern,
+        await terminStand(gestern),
+      ]);
+      expect(await terminStatus(gestern)).toBe('no_show');
+      expect(await protokoll(gestern)).toBeUndefined();
+    });
+
+    it('sperrt Absage und Nichtantreffen neben einem abgeschlossenen Protokoll - auch am Schreibweg vorbei', async () => {
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Fertig');
+      for (const status of ['cancelled', 'no_show']) {
+        await expect(
+          asPostgres('update public.appointments set status = $2 where id = $1', [
+            TRAINING_HEUTE,
+            status,
+          ]),
+        ).rejects.toThrow(/finalized training protocol exists/);
+      }
+      expect((await protokoll(TRAINING_HEUTE))?.status).toBe('final');
+    });
+
+    it('legt am dokumentierten Termin ohne Protokoll keinen Entwurf an (Zweitreview 2)', async () => {
+      await schliesseAb(users.trainer, TRAINING_VORGESTERN, 'Faellt nach der Frist');
+      // Wie nach der Teilloeschung (ANN-183): der Termin bleibt documented.
+      await asPostgres('delete from public.training_protocols where appointment_id = $1', [
+        TRAINING_VORGESTERN,
+      ]);
       await expect(
-        asUser(users.ownerTherapist, ABSAGEN, [TRAINING_HEUTE, await terminStand(TRAINING_HEUTE)]),
-      ).rejects.toThrow(/training protocol exists/);
+        asUser(users.trainer, SPEICHERN, [TRAINING_VORGESTERN, 'Neu', null]),
+      ).rejects.toThrow(/appointment cannot be protocolled/);
       await expect(
-        asUser(users.ownerTherapist, NICHT_ANGETROFFEN, [
-          TRAINING_HEUTE,
-          await terminStand(TRAINING_HEUTE),
-        ]),
-      ).rejects.toThrow(/training protocol exists/);
+        asUser(users.trainer, ABSCHLIESSEN, [TRAINING_VORGESTERN, 'Neu', null]),
+      ).rejects.toThrow(/appointment cannot be documented/);
     });
 
     it('bleibt von der automatischen Finalisierung unberuehrt (ADR-022 Punkt 6)', async () => {
@@ -465,6 +510,32 @@ describe('TRN-009: Trainingsprotokoll', () => {
       await expect(
         asUser(users.patientMax, ABSCHLUSS, [TRAINING_HEUTE, await terminStand(TRAINING_HEUTE)]),
       ).rejects.toThrow(/not allowed to complete appointments/);
+      await expect(
+        asUser(users.patientMax, OEFFNEN, [
+          TRAINING_VORGESTERN,
+          await terminStand(TRAINING_VORGESTERN),
+        ]),
+      ).rejects.toThrow(/not allowed to reopen appointments/);
+    });
+
+    it('oeffnet fuer die Trainingsbetreuung keinen Behandlungstermin (Zweitreview 6)', async () => {
+      await expect(
+        asUser(users.trainer, OEFFNEN, [BEHANDLUNG_HEUTE, await terminStand(BEHANDLUNG_HEUTE)]),
+      ).rejects.toThrow(/appointment not found/);
+    });
+
+    it('findet fuer eine andere Praxis keinen Trainingstermin (Zweitreview 6)', async () => {
+      const fremd = await fremdeOrganisation();
+      for (const [sql, termin] of [
+        [ABSCHLUSS, TRAINING_HEUTE],
+        [OEFFNEN, TRAINING_VORGESTERN],
+      ] as const) {
+        await expect(asUser(fremd.owner, sql, [termin, await terminStand(termin)])).rejects.toThrow(
+          /appointment not found/,
+        );
+      }
+      expect(await terminStatus(TRAINING_HEUTE)).toBe('confirmed');
+      expect(await terminStatus(TRAINING_VORGESTERN)).toBe('completed');
     });
   });
 
