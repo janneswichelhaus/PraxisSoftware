@@ -193,6 +193,15 @@ export const AUDIT_ACTIONS = [
   'staff_member.compensation_model_changed',
   // STA-006: Umsatz je Person angesehen - Umfang, keine Betraege.
   'statistics.staff_revenue_viewed',
+  // TRN-001: das Trainingsverhaeltnis auf dem Niveau der Akte (ADR-021
+  // Punkt 8). Die Detailansicht ist protokolliert, die Trefferliste nur im
+  // abgewiesenen Fall.
+  'training_relationship.created',
+  'training_relationship.updated',
+  'training_relationship.ended',
+  'training_relationship.reopened',
+  'training_relationship.viewed',
+  'training_relationships.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -319,6 +328,12 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'organization.practice_target_changed': 'Zielwert der Statistik geändert',
   'staff_member.compensation_model_changed': 'Vergütungsmodell geändert',
   'statistics.staff_revenue_viewed': 'Umsatz je Person angesehen',
+  'training_relationship.created': 'Trainingskund:in angelegt',
+  'training_relationship.updated': 'Trainingskund:in geändert',
+  'training_relationship.ended': 'Trainingsvertrag beendet',
+  'training_relationship.reopened': 'Trainingsvertrag wieder aufgenommen',
+  'training_relationship.viewed': 'Trainingskund:in geöffnet',
+  'training_relationships.read': 'Trainingskund:innen gelesen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -368,6 +383,7 @@ export const auditSubjectLabels: Record<string, string> = {
   waitlist_entry: 'Wartelisteneintrag',
   territory: 'Gebiet',
   task: 'Aufgabe',
+  training_relationship: 'Trainingsverhältnis',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',
