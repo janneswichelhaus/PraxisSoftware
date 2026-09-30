@@ -203,6 +203,40 @@ describe('Abschottung der Praxis gegen Plattformkonten (ADR-023 Punkt 21)', () =
     expect(befund.geprueft).toBeGreaterThan(300);
   }, 120_000);
 
+  it.each([
+    ['aktiv', null],
+    [
+      'gesperrt',
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+    ],
+    [
+      'entzogen',
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+    ],
+  ] as const)(
+    'zeigt einem Plattformkonto mit Zugang (%s) keine Zeile der Praxis',
+    async (_zustand, aendern) => {
+      if (aendern !== null) {
+        await asPostgres(aendern, [SEED.platformAccesses.tinaTraining]);
+      }
+      try {
+        const befund = await pruefe(SEED.users.plattformTina, true);
+        expect(befund.tabellen).toEqual([]);
+        expect(befund.funktionen).toEqual([]);
+      } finally {
+        await asPostgres(
+          `update public.platform_accesses
+              set status = 'active', locked_at = null, revoked_at = null, revoked_reason = null
+            where id = $1`,
+          [SEED.platformAccesses.tinaTraining],
+        );
+      }
+    },
+    120_000,
+  );
+
   it('zeigt einem Konto mit Profil, aber ohne Praxisrolle keine Zeile (Punkt 20)', async () => {
     // Bis POR-001 las dieses Konto über den Selbstzugriff seine eigene Akte,
     // Person und Anschrift. Das eigene Profil ist die eine Ausnahme: Ohne es

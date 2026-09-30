@@ -367,6 +367,32 @@ export async function asStorageApi<T = Record<string, unknown>>(
   }
 }
 
+/**
+ * In der Rolle `service_role`, bestätigt - so, wie eine serverseitige
+ * Funktion mit dem Admin-Schlüssel anfragt (ADR-023 Punkt 9, POR-003).
+ */
+export async function asServiceRole<T = Record<string, unknown>>(
+  sql: string,
+  params: unknown[] = [],
+): Promise<QueryResultRows<T>> {
+  const client = await connect();
+  try {
+    await client.query('begin');
+    await client.query("select set_config('role', 'service_role', true)");
+    await client.query("select set_config('request.jwt.claims', $1, true)", [
+      JSON.stringify({ role: 'service_role' }),
+    ]);
+    const result = await client.query(sql, params as never[]);
+    await client.query('commit');
+    return { rows: result.rows as T[] };
+  } catch (error) {
+    await client.query('rollback').catch(() => undefined);
+    throw error;
+  } finally {
+    await client.end();
+  }
+}
+
 /** Wie asUser, aber in der Rolle `anon` (nicht angemeldet). */
 export async function asAnon<T = Record<string, unknown>>(
   sql: string,
@@ -415,6 +441,15 @@ export const SEED = {
     patientMax: '11111111-1111-4111-8111-000000000005', // Max Mustermann
     patientErika: '11111111-1111-4111-8111-000000000006', // Erika Beispiel
     trainer: '11111111-1111-4111-8111-000000000007', // Tom Trainingsbetreuung
+    /** Plattformkonto ohne Profil, aktiver Zugang zu Tinas Training. */
+    plattformTina: '11111111-1111-4111-8111-000000000008',
+    /** Plattformkonto ohne Profil, aktive Zugänge zu Erikas Behandlung und Training. */
+    plattformErika: '11111111-1111-4111-8111-000000000009',
+  },
+  platformAccesses: {
+    tinaTraining: 'cafecafe-cafe-4afe-8afe-000000000001',
+    erikaBehandlung: 'cafecafe-cafe-4afe-8afe-000000000002',
+    erikaTraining: 'cafecafe-cafe-4afe-8afe-000000000003',
   },
   patients: {
     max: '66666666-6666-4666-8666-000000000001',

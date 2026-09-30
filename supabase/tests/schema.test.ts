@@ -113,6 +113,8 @@ describe('Schema-Invarianten', () => {
       'territory_postal_codes',
       'tasks',
       'appointment_call_states',
+      'platform_accesses',
+      'platform_access_invitations',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
