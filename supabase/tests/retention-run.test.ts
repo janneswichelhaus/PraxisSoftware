@@ -641,10 +641,12 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
   it('loescht ein Trainingsverhaeltnis drei Jahre nach Vertragsende', async () => {
     await beendetVor(trainingRelationships.tina, 4);
     // TRN-001: Die Kontaktdaten haengen am Verhaeltnis und fallen mit ihm.
+    // Seit TRN-EPIC-002 bringt der Seed sie schon mit.
     await asPostgres(
       `insert into public.training_contact_details
          (training_relationship_id, organization_id, email)
-       values ($1, $2, 'tina@beispiel.invalid')`,
+       values ($1, $2, 'tina@beispiel.invalid')
+       on conflict (training_relationship_id) do update set email = excluded.email`,
       [trainingRelationships.tina, organizationId],
     );
 
@@ -748,8 +750,9 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
         limit 1`,
     );
     // Gezaehlt werden Zeilen, nicht Verhaeltnisse - wie bei der Akte: das
-    // Verhaeltnis und die Person, die mit ihm faellt.
-    expect(rows[0]?.anzahl).toBe('2');
+    // Verhaeltnis und die Person, die mit ihm faellt, dazu seit TRN-EPIC-002
+    // die zwei Trainingstermine und die Vereinbarung aus dem Seed.
+    expect(rows[0]?.anzahl).toBe('5');
     // Welche Datensaetze es traf, steht im Journal und nicht im Auditlog
     // (ADR-010 Punkt 3).
     expect(JSON.stringify(rows[0]?.kontext)).not.toContain(trainingRelationships.tina);

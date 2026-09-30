@@ -33,6 +33,7 @@ import {
   type TrainingWerte,
 } from './api';
 import { TrainingClientFields } from './TrainingClientFields';
+import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -165,6 +166,17 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               </div>
             ) : null}
           </Section>
+
+          {/* TRN-EPIC-002: Termine im gemeinsamen Kalender und die
+              Vereinbarungen, an denen sie hängen können. */}
+          {user.organizationTimeZone ? (
+            <TrainingTermine
+              kundin={kundin}
+              zeitzone={user.organizationTimeZone}
+              darfPlanen={darfSchreiben}
+            />
+          ) : null}
+          <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
         </>
       )}
     </>

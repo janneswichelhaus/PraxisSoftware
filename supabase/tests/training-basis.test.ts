@@ -173,10 +173,14 @@ describe('Trainingsgrundlage', () => {
 
   describe('Rollenschnitt: die Klammer folgt dem Verhaeltnis (ADR-021 Punkt 6)', () => {
     it('zeigt sie owner, trainer und office', async () => {
-      await klammer();
+      const id = await klammer();
       for (const konto of [users.ownerTherapist, users.trainer, users.office]) {
-        const { rows } = await asUser(konto, `select id from public.training_bases`);
-        expect(rows.length).toBe(1);
+        const { rows } = await asUser<{ id: string }>(
+          konto,
+          `select id from public.training_bases`,
+        );
+        // Die eigene und seit TRN-EPIC-002 die aus dem Seed.
+        expect(rows.map((r) => r.id)).toContain(id);
       }
     });
 

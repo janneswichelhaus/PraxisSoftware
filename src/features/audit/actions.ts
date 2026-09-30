@@ -202,6 +202,10 @@ export const AUDIT_ACTIONS = [
   'training_relationship.reopened',
   'training_relationship.viewed',
   'training_relationships.read',
+  // TRN-005: Vereinbarungen im Training (Trainingsgrundlage, ADR-022 Punkt 5).
+  'training_basis.created',
+  'training_basis.concluded',
+  'training_basis.reopened',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -334,6 +338,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'training_relationship.reopened': 'Trainingsvertrag wieder aufgenommen',
   'training_relationship.viewed': 'Trainingskund:in geöffnet',
   'training_relationships.read': 'Trainingskund:innen gelesen',
+  'training_basis.created': 'Vereinbarung im Training angelegt',
+  'training_basis.concluded': 'Vereinbarung im Training abgeschlossen',
+  'training_basis.reopened': 'Vereinbarung im Training wieder geöffnet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -384,6 +391,7 @@ export const auditSubjectLabels: Record<string, string> = {
   territory: 'Gebiet',
   task: 'Aufgabe',
   training_relationship: 'Trainingsverhältnis',
+  training_basis: 'Vereinbarung im Training',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',
