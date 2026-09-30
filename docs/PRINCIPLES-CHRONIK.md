@@ -6,6 +6,16 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.18.1
+
+Korrekturversion, ändert keine Leitplanke. **ADR-023** (Plattformzugang) ist am 2026-09-30 vom
+Projektinhaber angenommen, W1 bis W6 wie empfohlen, und steht deshalb in der Dokumentinformation
+und in der Tabelle in §21. In **§4.6** verweist der Satz zu Identität und Vertretung jetzt auf den
+angenommenen ADR statt auf einen künftigen, und der Satz „noch nicht entworfen" nennt DSN-001, das
+seit dem 2026-09-30 bestätigt ist. Der ADR ändert keine Aussage dieses Dokuments: Er setzt §4.6
+und §4.10 („ausschließlich eigene Daten", Konto ist nicht Akte), §4.8 (Zugriff folgt dem
+Verhältnis) und §3.4 (keine eigene Sitzungsmechanik) für die Plattform um.
+
 ### Änderungsvermerk 0.18
 
 Nachzug an Rang 2 nach der Annahme von ADR-017 Fassung 2 (Abschnitt G) durch den Projektinhaber am

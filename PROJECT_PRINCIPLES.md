@@ -4,10 +4,10 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.18** |
-| **Änderungsdatum** | **2026-09-26** |
-| Vorversion | 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
-| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-022, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier; ADR-023 (Plattformzugang) ist vorgesehen |
+| **Dokumentversion** | **0.18.1** |
+| **Änderungsdatum** | **2026-09-30** |
+| Vorversion | 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
 
@@ -513,12 +513,15 @@ unverändert §18.
 
 Der Heimübungsplan gehört zur **Behandlung**. Das Trainingsverhältnis nach
 §1.2 ist etwas anderes; sein Gegenstück zu dieser Ziffer steht in §4.10. Wie
-die Ansicht der Patient:innen im Einzelnen aussieht, ist noch nicht entworfen;
-das geschieht vor dem ersten Loop der Plattform.
+die Ansicht der Patient:innen im Einzelnen aussieht, legt DSN-001 fest
+(`docs/development/PLATTFORM-ANSICHTEN.md`, ohne eigenen Rang).
 
 Patienten erhalten nicht automatisch Zugriff auf sämtliche internen klinischen
 oder organisatorischen Notizen. Identitätsprüfung sowie Vertretungs- und
-Angehörigenzugriff regelt ADR-023, bevor die Plattform gebaut wird.
+Angehörigenzugriff regelt
+[ADR-023](docs/adr/ADR-023-platform-access.md): Zugriff folgt dem Zugang zu
+einem Verhältnis, nicht der Person, und Vertretung ist ein eigener Zugang mit
+eigenem Konto.
 
 ### 4.7 Durchsetzung der Berechtigungen
 
@@ -1620,6 +1623,7 @@ Angenommene ADRs zum Stand dieser Version:
 | ADR-020 | Behandlungsgrundlage: Verordnung und Selbstzahler unter einer Klammer | §14, §19 |
 | ADR-021 | Leistungsbereiche und Rechtsverhältnisse: Behandlung und Training getrennt | §1.1, §1.2, §4, §14, §18 |
 | ADR-022 | Terminkontext und Trainingsgrundlage: ein Kalender, ein Kontext je Termin | §1.2, §4, §5, §8, §9, §18 |
+| ADR-023 | Plattformzugang: Konto je Person, Zugang je Verhältnis, Vertretung als eigene Beziehung | §3.4, §4.6, §4.7, §4.8, §4.10 |
 
 Die Tabelle nennt, **welcher ADR welchen Paragraphen trägt** — sonst nichts.
 Welche Fassung gilt, welchen Status ein ADR hat und woran eine produktive

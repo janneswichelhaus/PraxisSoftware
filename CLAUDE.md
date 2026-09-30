@@ -3,8 +3,7 @@
 Praxisplattform für eine privat abrechnende Physiotherapiepraxis. Verarbeitet Gesundheitsdaten.
 Früher Entwicklungsstand, kein Produktivbetrieb.
 
-**Zuerst lesen:** `docs/STATUS.md` — was jetzt läuft, was danach kommt, was bei Jannes liegt.
-Sessionstart: `/weiter`, `/idee <Text>` oder `/sichtung` (`docs/development/SESSION-START.md`).
+**Zuerst lesen:** `docs/STATUS.md` — was jetzt läuft, was danach kommt, was bei Jannes liegt. Sessionstart: `/weiter`, `/idee <Text>` oder `/sichtung` (`docs/development/SESSION-START.md`).
 
 ## Verbindliche Grundlagen
 
@@ -66,6 +65,7 @@ verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
 | 020 | Behandlungsgrundlage: Verordnung und Selbstzahler, Kontingent, Gruppierung  |
 | 021 | Behandlung und Training getrennt, Rechtsverhältnis, Trainingsdaten, §203    |
 | 022 | Terminkontext, Trainingsgrundlage, Trainingsprotokoll, ein Kalender         |
+| 023 | Plattformzugang: Konten, Einladung, Identität, Vertretung, Sitzung, RLS     |
 
 ## Repository
 
