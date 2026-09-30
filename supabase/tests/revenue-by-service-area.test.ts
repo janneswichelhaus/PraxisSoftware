@@ -444,12 +444,13 @@ describe('Einnahmen je Leistungsart', () => {
       const { betrag } = await ausgestellteRechnung([KATALOG.kg]);
       const heuer = await jahr();
 
-      // Am Schreibweg vorbei gebaut, weil es fuer Training noch keinen gibt
-      // (E18 Schritt 7). Der Snapshot hat die Form, die
-      // app.build_invoice_document liefert.
+      // Am Schreibweg vorbei gebaut: Die Auswertung rechnet allein aus dem
+      // Snapshot. Seit TRN-008 haengt eine Trainingsrechnung am
+      // Trainingsverhaeltnis, nie an der Akte (invoices_party). Der Snapshot
+      // hat die Form, die app.build_invoice_document liefert.
       await asPostgres(
         `insert into public.invoices (
-           organization_id, patient_id, service_area, status, period_month,
+           organization_id, training_relationship_id, service_area, status, period_month,
            invoice_number, issued_on, due_on, total_cents, tax_total_cents,
            currency, snapshot
          ) values (
@@ -467,7 +468,7 @@ describe('Einnahmen je Leistungsart', () => {
              ))
            )
          )`,
-        [organizationId, patients.erika],
+        [organizationId, SEED.trainingRelationships.erika],
       );
 
       const zeilen = await auswertung('accrual', heuer);
