@@ -62,6 +62,7 @@ function eintrag(
 
 const fetchAppointments = vi.fn();
 const fetchAssignableTherapists = vi.fn();
+const fetchAssignableTrainers = vi.fn();
 const fetchLocations = vi.fn();
 const fetchAppointment = vi.fn();
 const updateAppointment = vi.fn();
@@ -76,6 +77,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchAppointments(query) as Promise<AppointmentsApi.CalendarEntry[]>,
     fetchAssignableTherapists: () =>
       fetchAssignableTherapists() as Promise<AppointmentsApi.AssignableTherapist[]>,
+    fetchAssignableTrainers: () =>
+      fetchAssignableTrainers() as Promise<AppointmentsApi.AssignableTherapist[]>,
     fetchLocations: () => fetchLocations() as Promise<AppointmentsApi.Location[]>,
     fetchAppointment: (id: string) =>
       fetchAppointment(id) as Promise<AppointmentsApi.Appointment | null>,
@@ -165,6 +168,8 @@ describe('CalendarPage', () => {
     vergissKalenderstaende();
     fetchAppointments.mockReset();
     fetchAssignableTherapists.mockReset();
+    fetchAssignableTrainers.mockReset();
+    fetchAssignableTrainers.mockResolvedValue([]);
     fetchLocations.mockReset();
     fetchAppointment.mockReset();
     updateAppointment.mockReset();
@@ -2276,6 +2281,92 @@ describe('CalendarPage', () => {
       } finally {
         vermessen.mockRestore();
       }
+    });
+  });
+
+  describe('TRN-006: Trainingstermine im gemeinsamen Kalender', () => {
+    const STAFF_TOM = '55555555-5555-4555-8555-000000000006';
+    const training = eintrag({
+      id: '77777777-7777-4777-8777-0000000000aa',
+      kind: 'training',
+      patient_id: null,
+      patient_given_name: null,
+      patient_family_name: null,
+      staff_member_id: STAFF_TOM,
+      staff_given_name: 'Tom',
+      staff_family_name: 'Trainingsbetreuung',
+      training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+      training_given_name: 'Tina',
+      training_family_name: 'Trainingskundin',
+    });
+
+    it('zeigt den Trainingstermin mit dem Namen aus dem Training und oeffnet ihn im Trainingsbereich', async () => {
+      fetchAssignableTrainers.mockResolvedValue([
+        { staff_member_id: STAFF_TOM, display_name: 'Tom Trainingsbetreuung' },
+      ]);
+      fetchAppointments.mockResolvedValue([eintrag(), training]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const kachel = await screen.findByRole('link', { name: /Tina Trainingskundin/ });
+      expect(kachel.getAttribute('href')).toMatch(
+        /^\/training\/termine\/77777777-7777-4777-8777-0000000000aa/,
+      );
+      // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16).
+      expect(kachel).toHaveTextContent(/Training: Tina Trainingskundin/);
+      // Toms Spalte steht neben den behandelnden Personen.
+      expect(screen.getByRole('group', { name: 'Tom Trainingsbetreuung' })).toBeInTheDocument();
+    });
+
+    it('bietet in der Spalte der Trainingsbetreuung nur Trainingstermin und Fehlzeiten an', async () => {
+      fetchAssignableTrainers.mockResolvedValue([
+        { staff_member_id: STAFF_TOM, display_name: 'Tom Trainingsbetreuung' },
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      fireEvent.click(screen.getByRole('group', { name: 'Tom Trainingsbetreuung' }));
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      const knoepfe = within(menue)
+        .getAllByRole('button')
+        .map((k) => k.textContent ?? '');
+      expect(knoepfe.some((k) => k.startsWith('Trainingstermin'))).toBe(true);
+      expect(knoepfe.some((k) => k.startsWith('Neuer Termin'))).toBe(false);
+      expect(knoepfe.some((k) => k.startsWith('Fehlzeit'))).toBe(true);
+    });
+
+    it('gibt der Trainingsbetreuung ihre Spalte und nur den Trainingstermin zum Anlegen', async () => {
+      fetchAssignableTrainers.mockResolvedValue([
+        { staff_member_id: STAFF_TOM, display_name: 'Tom Trainingsbetreuung' },
+      ]);
+      fetchAppointments.mockResolvedValue([training]);
+      renderWithProviders(
+        <CalendarPage user={testUser(['trainer'], 'Tom Trainingsbetreuung')} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      await screen.findByRole('link', { name: /Tina Trainingskundin/ });
+      // Die Liste der behandelnden Personen fragt sie gar nicht erst an.
+      expect(fetchAssignableTherapists).not.toHaveBeenCalled();
+
+      fireEvent.click(screen.getByRole('group', { name: /Tom Trainingsbetreuung/ }));
+      const menue = screen.getByRole('group', { name: 'Was soll hier entstehen?' });
+      expect(
+        within(menue)
+          .getAllByRole('button')
+          .map((k) => (k.textContent ?? '').split(/\d/)[0]),
+      ).toEqual(expect.arrayContaining(['Trainingstermin']));
+      expect(within(menue).getAllByRole('button')).toHaveLength(2);
+    });
+
+    it('zieht einen Trainingstermin nicht', async () => {
+      fetchAssignableTrainers.mockResolvedValue([
+        { staff_member_id: STAFF_TOM, display_name: 'Tom Trainingsbetreuung' },
+      ]);
+      fetchAppointments.mockResolvedValue([eintrag(), training]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      const kachel = await screen.findByRole('link', { name: /Tina Trainingskundin/ });
+      // Die Behandlung daneben laesst sich greifen, der Trainingstermin nicht.
+      expect(screen.getByRole('link', { name: /Max Mustermann/ }).className).toMatch(/cursor-grab/);
+      expect(kachel.className).not.toMatch(/cursor-grab/);
     });
   });
 });

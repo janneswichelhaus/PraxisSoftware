@@ -407,3 +407,13 @@ export function canReadTrainingClients(roles: readonly RoleKey[]): boolean {
 export function canWriteTrainingClients(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => trainingRoles.includes(role));
 }
+
+/**
+ * Wer den Kalender öffnet (TRN-006): die Praxisrollen und die Rollen des
+ * Trainingsbereichs. Welche Termine darin stehen, entscheidet der Server je
+ * Termin nach Kontext (ADR-022 Punkt 11) - die Trainingsbetreuung sieht dort
+ * nur Trainingstermine. Verbindlich ist app.can_read_calendar().
+ */
+export function canSeeCalendar(roles: readonly RoleKey[]): boolean {
+  return canManageAppointments(roles) || canReadTrainingClients(roles);
+}

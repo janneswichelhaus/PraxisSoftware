@@ -32,7 +32,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
 | [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
 | [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | 1–6 gesichtet 2026-09-28/29; 7–9 (UX-EPIC-004) offen                                 |
-| [training.md](training.md)                   | Block 3 — Trainingsbereich        | offen; seit TRN-EPIC-001                                                             |
+| [training.md](training.md)                   | Block 3 — Trainingsbereich        | offen; seit TRN-EPIC-001, Schritte 4–6 seit TRN-EPIC-002                             |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

@@ -106,10 +106,12 @@ describe('Kalender ohne Durchgriff', () => {
         users.trainer,
         `select kind, patient_id, title from public.appointments order by kind`,
       );
-      // Genau ein Termin: der eigene. Der Seed traegt Behandlungstermine und
-      // ein Ereignis - beide bleiben unsichtbar, weder Person noch Titel noch
-      // Grundlage (ADR-021 Punkt 6).
-      expect(rows.map((r) => r.kind)).toEqual(['training']);
+      // Nur Trainingstermine: der eigene und seit TRN-EPIC-002 die beiden aus
+      // dem Seed. Der Seed traegt Behandlungstermine und ein Ereignis - beide
+      // bleiben unsichtbar, weder Person noch Titel noch Grundlage (ADR-021
+      // Punkt 6).
+      expect(rows.length).toBeGreaterThan(0);
+      expect(new Set(rows.map((r) => r.kind))).toEqual(new Set(['training']));
     });
 
     it('zeigt den Praxisrollen keinen Trainingstermin', async () => {
@@ -210,10 +212,13 @@ describe('Kalender ohne Durchgriff', () => {
 
   describe('Kein Trainingstermin erzeugt Behandlungsdokumentation (ADR-022 Punkt 6)', () => {
     it('weist den Schreibweg ab', async () => {
+      // Als owner, der den Trainingstermin sehen darf: Der Weg sagt, warum.
+      // Eine Therapeutin findet ihn seit dem Zweitreview zu TRN-EPIC-002 gar
+      // nicht (training-appointments.test.ts).
       const id = await trainingstermin();
-      await expect(asUser(users.therapist, DOKUMENTIEREN, [id, 'Kniebeuge, 3x12'])).rejects.toThrow(
-        /only a treatment appointment can be documented|not allowed/,
-      );
+      await expect(
+        asUser(users.ownerTherapist, DOKUMENTIEREN, [id, 'Kniebeuge, 3x12']),
+      ).rejects.toThrow(/only a treatment appointment can be documented/);
     });
 
     it('weist auch den unmittelbaren Eintrag ab - der Riegel sitzt an der Tabelle', async () => {
@@ -255,9 +260,12 @@ describe('Kalender ohne Durchgriff', () => {
       // Personal Training zu Hause ist ein Hausbesuch (Punkt 9). Ohne diesen
       // Zweig setzte record_no_show dort den Anlass 'no_show' und liefe in
       // eine Constraint, die von der Behandlung spricht.
+      //
+      // Seit TRN-006 als owner: Eine Therapeutin findet den Trainingstermin
+      // gar nicht mehr (kein Durchgriff beim Schreiben, training-appointments).
       const id = await trainingstermin({ art: 'home_visit', beginn: '14:00' });
 
-      await asUserCommitted(users.therapist, NICHT_ANGETROFFEN, [id, await stand(id), false]);
+      await asUserCommitted(users.ownerTherapist, NICHT_ANGETROFFEN, [id, await stand(id), false]);
 
       const { rows } = await asPostgres<{
         status: string;
@@ -278,7 +286,7 @@ describe('Kalender ohne Durchgriff', () => {
     it('nimmt am Trainingstermin keine Protokollbestaetigung entgegen', async () => {
       const id = await trainingstermin({ art: 'home_visit', beginn: '15:00' });
       await expect(
-        asUser(users.therapist, NICHT_ANGETROFFEN, [id, await stand(id), true]),
+        asUser(users.ownerTherapist, NICHT_ANGETROFFEN, [id, await stand(id), true]),
       ).rejects.toThrow(/no-show protocol applies to treatment appointments only/);
     });
   });
@@ -320,7 +328,9 @@ describe('Kalender ohne Durchgriff', () => {
         `select target_table from public.deletion_journal
           where retention_class = 'trainingsverhaeltnis' order by target_table`,
       );
-      expect(journal.map((r) => r.target_table)).toEqual([
+      // Je Tabelle einmal genannt: Der Seed traegt seit TRN-EPIC-002 weitere
+      // Termine und eine Vereinbarung an Tina.
+      expect([...new Set(journal.map((r) => r.target_table))]).toEqual([
         'appointments',
         'training_bases',
         'training_relationships',

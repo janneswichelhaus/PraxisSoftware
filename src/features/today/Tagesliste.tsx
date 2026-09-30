@@ -65,7 +65,19 @@ export function Tageskarte({
           wie jedes andere Ziel der Karte (UEB-13). Er ist als Link zu
           erkennen, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15). */}
       <p className="text-ink mt-1 min-w-0 text-[1.0625rem] font-medium wrap-anywhere">
-        {termin.kind === 'internal' || !termin.patient_id ? (
+        {termin.kind === 'training' ? (
+          // TRN-006: der Name aus dem Training; er führt zur Kund:in.
+          termin.training_relationship_id ? (
+            <Textlink
+              alleinstehend
+              to={mitRueckweg(`/training/${termin.training_relationship_id}`, '/')}
+            >
+              {termin.training_given_name} {termin.training_family_name}
+            </Textlink>
+          ) : (
+            '—'
+          )
+        ) : termin.kind === 'internal' || !termin.patient_id ? (
           (termin.title ?? 'Fehlzeit')
         ) : (
           <Textlink alleinstehend to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}>
@@ -75,7 +87,11 @@ export function Tageskarte({
       </p>
 
       <p className="text-ink-muted mt-0.5 text-sm">
-        {termin.kind === 'internal' ? 'Fehlzeit · ' : ''}
+        {termin.kind === 'internal'
+          ? 'Fehlzeit · '
+          : termin.kind === 'training'
+            ? 'Training · '
+            : ''}
         {appointmentTypeLabels[termin.appointment_type]}
         {termin.location_name ? ` · ${termin.location_name}` : ''}
       </p>
@@ -138,7 +154,10 @@ export function Tageskarte({
             fiele im Flex-Kasten weg. */}
         <Textlink
           alleinstehend
-          to={mitRueckweg(`/termine/${termin.id}`, '/')}
+          to={mitRueckweg(
+            termin.kind === 'training' ? `/training/termine/${termin.id}` : `/termine/${termin.id}`,
+            '/',
+          )}
           className="gap-1 px-1 text-sm font-medium"
         >
           {termin.kind === 'internal' ? 'Fehlzeit öffnen' : 'Termin öffnen'}

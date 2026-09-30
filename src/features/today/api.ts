@@ -73,6 +73,13 @@ const dayPlanEntrySchema = z.object({
    * nur zusammengezählt, ohne Person.
    */
   take_along_items: z.array(z.string()).nullable().optional(),
+  /**
+   * TRN-006: am Trainingstermin Verhältnis und Name aus dem Training, nie aus
+   * der Akte (ADR-021 Punkt 3). Optional wie oben.
+   */
+  training_relationship_id: z.string().nullable().optional(),
+  training_given_name: z.string().nullable().optional(),
+  training_family_name: z.string().nullable().optional(),
 });
 
 export type DayPlanEntry = z.infer<typeof dayPlanEntrySchema>;
@@ -137,10 +144,11 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
   // dokumentiert, und eine Aufgabe, die niemand erledigen kann, wäre eine
   // falsche Zahl über der Liste (CAL-016).
   //
-  // Für den Trainingstermin gilt dasselbe, und zwar dauerhaft: Er erzeugt
-  // keine Behandlungsdokumentation (ADR-022 Punkt 6), also steht an ihm auch
-  // nichts offen. Er erreicht diese Liste nur bei einer Rolle, die beide
-  // Bereiche trägt (owner, office).
+  // Der Trainingstermin erzeugt keine Behandlungsdokumentation (ADR-022
+  // Punkt 6): offen ist er, solange er aussteht - danach nicht mehr. Seit
+  // TRN-006 steht er in der eigenen Liste der Trainingsbetreuung, und dort
+  // gehört ein kommender Termin nach oben, nicht unter „Erledigt".
+  if (termin.kind === 'training') return termin.status === 'confirmed';
   if (termin.kind !== 'therapy') return false;
   if (termin.status === 'confirmed') return true;
   if (termin.status !== 'completed') return false;

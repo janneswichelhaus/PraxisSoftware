@@ -102,9 +102,11 @@ describe('Arbeitsbereiche je Rolle', () => {
     for (const rolle of ['therapist', 'team_lead', 'patient'] as const) {
       expect(ids([rolle]), rolle).not.toContain('training');
     }
-    // Umgekehrt: Die Trainingsbetreuung bekommt weder Kartei noch Kalender.
+    // Umgekehrt: Die Trainingsbetreuung bekommt keine Kartei. Den Kalender
+    // seit TRN-006 schon - darin stehen für sie nur Trainingstermine
+    // (ADR-022 Punkt 11, der Server filtert je Termin).
     expect(ids(['trainer'])).not.toContain('patienten');
-    expect(ids(['trainer'])).not.toContain('termine');
+    expect(ids(['trainer'])).toContain('termine');
   });
 
   it('haelt die Abrechnung von behandelnden Rollen fern', () => {
@@ -174,11 +176,12 @@ describe('Arbeitsbereiche je Rolle', () => {
     }
   });
 
-  it('zeigt einem reinen Trainingskonto nur Übersicht und Training (TRN-003)', () => {
+  it('zeigt einem reinen Trainingskonto Übersicht, Kalender und Training (TRN-003, TRN-006)', () => {
     // Seit TRN-003: Mitarbeitende, Kommunikation und Organisatorisches zeigen
     // Daten, die der Server nur der Behandlungsseite gibt (`app.is_staff()`).
-    // Bis dahin sah trainer dort leere Listen (BEF-034).
-    expect(ids(['trainer'])).toEqual(['heute', 'training']);
+    // Bis dahin sah trainer dort leere Listen (BEF-034). Den Kalender seit
+    // TRN-006 - mit den Trainingsterminen und sonst nichts.
+    expect(ids(['trainer'])).toEqual(['heute', 'termine', 'training']);
     // Wer beide Rollen hat, sieht beides - Häufung, kein Schluss (§4.8).
     expect(ids(['therapist', 'trainer'])).toEqual(
       expect.arrayContaining(['patienten', 'training', 'betrieb']),

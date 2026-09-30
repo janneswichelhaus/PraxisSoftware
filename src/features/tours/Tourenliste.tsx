@@ -12,7 +12,7 @@ import {
   stoppsJeAbschnitt,
 } from '@/lib/location/navigation';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { formatLocalTimeRange, terminBezeichnung } from '@/features/appointments/api';
+import { formatLocalTimeRange, terminBezeichnung, terminPfad } from '@/features/appointments/api';
 import { zielDesStopps, type Stopp } from './tagesroute';
 
 /**
@@ -144,7 +144,7 @@ export function Tourenliste({
                     ·{' '}
                     <Textlink
                       alleinstehend
-                      to={mitRueckweg(`/termine/${stopp.termin.id}`, hier)}
+                      to={mitRueckweg(terminPfad(stopp.termin), hier)}
                       className="wrap-anywhere"
                     >
                       {terminBezeichnung(stopp.termin)}

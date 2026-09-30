@@ -21,6 +21,8 @@ const updateTrainingClient = vi.fn();
 const endTrainingRelationship = vi.fn();
 const reopenTrainingRelationship = vi.fn();
 const findPossibleTrainingDuplicates = vi.fn();
+const listTrainingBases = vi.fn();
+const listTrainingClientAppointments = vi.fn();
 const navigate = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -39,6 +41,9 @@ vi.mock('./api', async (importOriginal) => {
     reopenTrainingRelationship: (id: string) => reopenTrainingRelationship(id) as Promise<void>,
     findPossibleTrainingDuplicates: (v: string, n: string, g: string | null) =>
       findPossibleTrainingDuplicates(v, n, g) as Promise<unknown>,
+    listTrainingBases: (id: string) => listTrainingBases(id) as Promise<unknown>,
+    listTrainingClientAppointments: (id: string) =>
+      listTrainingClientAppointments(id) as Promise<unknown>,
   };
 });
 
@@ -78,11 +83,15 @@ beforeEach(() => {
     endTrainingRelationship,
     reopenTrainingRelationship,
     findPossibleTrainingDuplicates,
+    listTrainingBases,
+    listTrainingClientAppointments,
     navigate,
   ]) {
     f.mockReset();
   }
   findPossibleTrainingDuplicates.mockResolvedValue([]);
+  listTrainingBases.mockResolvedValue([]);
+  listTrainingClientAppointments.mockResolvedValue([]);
 });
 
 describe('TrainingClientsPage', () => {

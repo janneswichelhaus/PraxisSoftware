@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import type { Formularfehler } from '@/lib/formularfehler';
@@ -368,6 +368,12 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
   const daten = termin.data;
   const zone = daten.organization_time_zone;
+
+  // Ein Trainingstermin wird im Trainingsbereich verschoben (TRN-004): Dieses
+  // Formular kennt nur behandelnde Personen und die Anschrift der Akte.
+  if (daten.kind === 'training') {
+    return <Navigate to={`/training/termine/${daten.id}/bearbeiten`} replace />;
+  }
 
   // Ein abgesagter Termin ist terminal. Die Serverfunktion weist ihn ohnehin
   // ab; hier wird gar nicht erst ein Formular angeboten.

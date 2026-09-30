@@ -38,6 +38,16 @@ function eintrag(teil: Partial<DayPlanEntry> = {}): DayPlanEntry {
 }
 
 describe('istOffen', () => {
+  it('fuehrt einen ausstehenden Trainingstermin als offen, danach nicht mehr (TRN-006)', () => {
+    // Die eigene Liste der Trainingsbetreuung: Ein kommender Termin gehört
+    // nach oben, nicht unter „Erledigt" - Dokumentation gibt es an ihm nicht.
+    const training = (status: 'confirmed' | 'cancelled' | 'completed') =>
+      eintrag({ kind: 'training', patient_id: null, status, documentation_status: null });
+    expect(istOffen(training('confirmed'), false)).toBe(true);
+    expect(istOffen(training('cancelled'), false)).toBe(false);
+    expect(istOffen(training('completed'), true)).toBe(false);
+  });
+
   it('fuehrt einen noch ausstehenden Besuch als offen', () => {
     expect(istOffen(eintrag({ status: 'confirmed' }), true)).toBe(true);
   });

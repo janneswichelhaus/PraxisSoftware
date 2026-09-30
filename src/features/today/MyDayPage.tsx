@@ -25,11 +25,13 @@ import {
   staffName,
   todayInTimeZone,
   type CalendarEntry,
+  terminPfad,
 } from '@/features/appointments/api';
 import {
   canManageAppointments,
   canReadPatientDirectory,
   canReadTrainingClients,
+  canWriteTrainingClients,
   isTherapyStaff,
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -133,7 +135,7 @@ function Terminzeile({ termin, zeitzone }: { termin: CalendarEntry; zeitzone: st
   return (
     <li>
       <Link
-        to={mitRueckweg(`/termine/${termin.id}`, '/')}
+        to={mitRueckweg(terminPfad(termin), '/')}
         className="hover:bg-surface-sunken flex min-h-16 items-center gap-4 py-3 transition-colors"
       >
         <span className="text-ink w-28 shrink-0 text-sm font-medium tabular-nums">
@@ -192,6 +194,16 @@ function Vorschau({ termin }: { termin: DayPlanEntry }) {
             className="font-medium"
           >
             {`${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
+          </Textlink>
+        ) : termin.kind === 'training' ? (
+          // TRN-006: der Trainingstermin öffnet im Trainingsbereich.
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/training/termine/${termin.id}`, '/')}
+            className="font-medium"
+          >
+            {`${termin.training_given_name ?? ''} ${termin.training_family_name ?? ''}`.trim() ||
+              'Trainingstermin'}
           </Textlink>
         ) : (
           <Textlink
@@ -271,12 +283,15 @@ function MeineTagesliste({
   staffMemberId,
   darfDokumentieren,
   darfDokuLesen,
+  mitBehandlung,
   zeitzone,
 }: {
   datum: string;
   staffMemberId: string;
   darfDokumentieren: boolean;
   darfDokuLesen: boolean;
+  /** Sieht die Rolle Akten? Sonst fragt die Liste nicht nach Erstaufnahmen (TRN-006). */
+  mitBehandlung: boolean;
   zeitzone: string;
 }) {
   const {
@@ -301,6 +316,7 @@ function MeineTagesliste({
   const { data: erstaufnahmen } = useQuery({
     queryKey: OPEN_INTAKES_KEY,
     queryFn: fetchOpenIntakes,
+    enabled: mitBehandlung,
     retry: false,
   });
 
@@ -544,8 +560,11 @@ function MeineTagesliste({
         )}
       </Section>
 
-      {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. */}
-      <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
+      {/* MAP-006b: die Tagesroute, erst beim Aufklappen geladen. Nur für die
+          Praxisrollen - der Server gibt sie der Trainingsbetreuung nicht. */}
+      {mitBehandlung ? (
+        <TagesrouteAufklapper datum={datum} staffMemberId={staffMemberId} plan={sortiert} />
+      ) : null}
 
       {erledigt.length > 0 ? (
         <details className="group border-line mt-6 border-t pt-3">
@@ -604,7 +623,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   });
 
   const alleHeute = [...(termine ?? [])].sort(nachUhrzeit);
-  const eigeneTagesliste = darfTermine && Boolean(user.staffMemberId);
+  // Seit TRN-006 auch die Trainingsbetreuung: Ihre Liste zeigt nur
+  // Trainingstermine, der Server filtert je Termin (ADR-022 Punkt 11).
+  const eigeneTagesliste =
+    (darfTermine || canWriteTrainingClients(user.roles)) && Boolean(user.staffMemberId);
   // ANN-117: Zugeklappt nur für die, die selbst unterwegs sind: Das Büro hat meist
   // keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache.
   const teamplanZugeklappt = eigeneTagesliste && canWriteTreatmentNote(user.roles);
@@ -648,6 +670,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           staffMemberId={user.staffMemberId}
           darfDokumentieren={canWriteTreatmentNote(user.roles)}
           darfDokuLesen={canReadTreatmentNote(user.roles)}
+          mitBehandlung={isTherapyStaff(user.roles)}
           zeitzone={zeitzone}
         />
       ) : null}

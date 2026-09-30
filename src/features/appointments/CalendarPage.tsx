@@ -10,7 +10,12 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Textlink } from '@/components/ui/Textlink';
-import { canManageAppointments, type CurrentUser } from '@/features/session/types';
+import {
+  canManageAppointments,
+  canReadTrainingClients,
+  canWriteTrainingClients,
+  type CurrentUser,
+} from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
@@ -19,6 +24,7 @@ import {
   fetchAppointment,
   fetchAppointments,
   fetchAssignableTherapists,
+  fetchAssignableTrainers,
   fetchLocations,
   istAusserhalbArbeitszeit,
   istVergangenheit,
@@ -30,6 +36,7 @@ import {
   todayInTimeZone,
   updateAppointment,
   type TerminVorbelegung,
+  terminPfad,
 } from './api';
 import {
   CalendarGrid,
@@ -332,9 +339,34 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     return () => clearInterval(takt);
   }, [zone]);
 
+  // Die Spalten des Kalenders: wer behandelt und - seit TRN-006 - wer
+  // Training betreut. Jede Rolle fragt nur nach der Liste, die ihr der Server
+  // gibt: die Trainingsbetreuung nur nach der eigenen, die Behandlungsrollen
+  // nur nach ihrer (ADR-022 Punkt 11); owner und Büro nach beiden.
+  const mitTraining = canReadTrainingClients(user.roles);
+  const mitBehandlung = darfAendern || !mitTraining;
+  const darfTraining = canWriteTrainingClients(user.roles);
   const therapeuten = useQuery({
-    queryKey: ['assignable-therapists'],
-    queryFn: fetchAssignableTherapists,
+    queryKey: ['calendar-staff', mitBehandlung, mitTraining],
+    queryFn: async () => {
+      const [behandlung, training] = await Promise.all([
+        mitBehandlung ? fetchAssignableTherapists() : Promise.resolve([]),
+        // Scheitert nur die Liste der Trainingsbetreuung, bleibt der
+        // Kalender der Behandlung stehen; ohne Behandlung ist sie die Spalte.
+        mitTraining
+          ? fetchAssignableTrainers().catch((fehler: unknown) => {
+              if (mitBehandlung) return [];
+              throw fehler;
+            })
+          : Promise.resolve([]),
+      ]);
+      const bekannt = new Set(behandlung.map((t) => t.staff_member_id));
+      return {
+        alle: [...behandlung, ...training.filter((t) => !bekannt.has(t.staff_member_id))],
+        behandlung: bekannt,
+        training: new Set(training.map((t) => t.staff_member_id)),
+      };
+    },
     retry: false,
   });
 
@@ -379,7 +411,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // Feste Farbzuordnung über die Personen der Praxis, damit dieselbe Person
   // beim Blättern nicht die Farbe wechselt.
   const farbeVon = useMemo(() => {
-    const liste = (therapeuten.data ?? []).map((t) => t.staff_member_id);
+    const liste = (therapeuten.data?.alle ?? []).map((t) => t.staff_member_id);
     return (staffId: string) => {
       const index = liste.indexOf(staffId);
       return PERSONEN_FARBEN[(index < 0 ? 0 : index) % PERSONEN_FARBEN.length]!;
@@ -491,7 +523,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   }
 
   const tage = tageImBereich(bereich);
-  const alleTherapeuten = therapeuten.data ?? [];
+  const alleTherapeuten = therapeuten.data?.alle ?? [];
   const wochenplanDaten = wochenplan.data ?? [];
   const ausnahmenDaten = ausnahmen.data ?? [];
 
@@ -596,7 +628,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // Nur bestätigte Termine werden gezogen. Ein abgeschlossener oder als
     // nicht angetroffen geführter müsste erst wieder geöffnet werden, ein
     // abgesagter bleibt terminal (CAL-004, ADR-018).
-    ziehbar: e.status === 'confirmed',
+    // Ein Trainingstermin wird über seine Seite verschoben (TRN-004), nicht
+    // gezogen: Die Geste liest den Termin über die Sicht der Praxis.
+    ziehbar: e.status === 'confirmed' && e.kind !== 'training' && darfAendern,
     ...(e.id === neuerTermin ? { neu: true } : {}),
   }));
 
@@ -760,7 +794,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // nicht die Länge: Die steht beim Behandlungstermin im Terminfenster.
     const serienParameter = schreibeTerminVorbelegung({ datum, beginn, ...person });
 
-    const eintraege: GitterAuswahl['eintraege'] = [
+    // Wer in dieser Spalte behandelt oder Training betreut (TRN-004). Ohne
+    // Person in der Spalte - Woche ohne Wahl - stehen beide Wege offen.
+    const behandelt = !staffMemberId || therapeuten.data?.behandlung.has(staffMemberId) === true;
+    const trainiert = !staffMemberId || therapeuten.data?.training.has(staffMemberId) === true;
+    const trainingsParameter = schreibeTerminVorbelegung({
+      datum,
+      beginn,
+      ende: ende ?? minuteZuZeit(gewaehlt.vonMinute + TERMINFENSTER_MINUTEN),
+      art: 'practice',
+      ...person,
+    });
+
+    const praxisEintraege: GitterAuswahl['eintraege'] = [
       {
         schluessel: 'termin',
         beschriftung: `Neuer ${BEGRIFFE.termin}`,
@@ -801,6 +847,28 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       },
     ];
 
+    const eintraege: GitterAuswahl['eintraege'] = [
+      // Behandlungstermin und Dauertermin nur in der Spalte einer
+      // behandelnden Person; Fehlzeiten in jeder (CAL-015b).
+      ...(darfAendern
+        ? praxisEintraege.filter(
+            (e) => behandelt || e.schluessel === 'fehlzeit' || e.schluessel === 'dauerfehlzeit',
+          )
+        : []),
+      ...(darfTraining && trainiert
+        ? [
+            {
+              schluessel: 'training',
+              beschriftung: 'Trainingstermin',
+              hinweis: spanne
+                ? `${beginn}–${ende!} Uhr`
+                : `${beginn} Uhr, ${TERMINFENSTER_MINUTEN} Minuten`,
+              onWaehlen: () => hin(`/training/termine/neu${trainingsParameter}`),
+            },
+          ]
+        : []),
+    ];
+
     return {
       ...gewaehlt,
       kopf,
@@ -812,6 +880,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       },
     };
   }
+
+  /** Der Tastaturweg zum Trainingstermin (TRN-004), wie „Termin anlegen" daneben. */
+  const trainingsterminAnlegen = (
+    <ButtonLink
+      to={mitRueckweg(
+        `/training/termine/neu${schreibeTerminVorbelegung({
+          datum: p.datum,
+          art: 'practice',
+          ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+          ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+        })}`,
+        kalenderStand,
+      )}
+      variant="secondary"
+    >
+      Trainingstermin anlegen
+    </ButtonLink>
+  );
 
   const laedt = termine.isPending || therapeuten.isPending;
   // Ein Raster gibt es nur mit Spalten - und in der Woche nur mit einer
@@ -1013,15 +1099,19 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                   Fragen wie hier - Tag und Person -, deshalb reisen beide
                   mit. Die eigene Zeile „Kalender · Touren" über dem Raster
                   ist dafür entfallen; `/touren` bleibt als Adresse. */}
-              <ButtonLink
-                to={`/touren?${new URLSearchParams({
-                  tag: p.datum,
-                  ...(tourPerson ? { person: tourPerson } : {}),
-                }).toString()}`}
-                variant="secondary"
-              >
-                Tour
-              </ButtonLink>
+              {/* Die Tourenseite gehört zur Praxis; die Trainingsbetreuung
+                  hat sie nicht (TRN-006). */}
+              {darfAendern ? (
+                <ButtonLink
+                  to={`/touren?${new URLSearchParams({
+                    tag: p.datum,
+                    ...(tourPerson ? { person: tourPerson } : {}),
+                  }).toString()}`}
+                  variant="secondary"
+                >
+                  Tour
+                </ButtonLink>
+              ) : null}
             </div>
 
             {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern
@@ -1164,7 +1254,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               <ButtonLink to={mitRueckweg('/warteliste', kalenderStand)} variant="secondary">
                 Warteliste
               </ButtonLink>
+              {darfTraining ? trainingsterminAnlegen : null}
             </div>
+          ) : darfTraining ? (
+            <div className="flex flex-wrap gap-2">{trainingsterminAnlegen}</div>
           ) : null}
 
           {/* Die Bedienhilfe stand als Dauertext unter 1 250 px Raster
@@ -1272,7 +1365,18 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           Termin angelegt.{' '}
           {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
             // Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12).
-            <Textlink to={mitRueckweg(`/termine/${neuerTermin}`, kalenderStand)}>
+            // Ein Trainingstermin öffnet im Trainingsbereich (TRN-004).
+            <Textlink
+              to={mitRueckweg(
+                terminPfad(
+                  gitterEintraege.find((g) => g.eintrag.id === neuerTermin)?.eintrag ?? {
+                    id: neuerTermin,
+                    kind: 'therapy',
+                  },
+                ),
+                kalenderStand,
+              )}
+            >
               Termin öffnen
             </Textlink>
           ) : (
@@ -1424,7 +1528,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           }
           sprung={sprung}
           onAuswahl={
-            darfAendern ? (neu) => setAuswahl((bisher) => naechsteAuswahl(bisher, neu)) : undefined
+            darfAendern || darfTraining
+              ? (neu) => setAuswahl((bisher) => naechsteAuswahl(bisher, neu))
+              : undefined
           }
           auswahl={auswahl ? anlegenMenue(auswahl) : null}
           beschriftung={

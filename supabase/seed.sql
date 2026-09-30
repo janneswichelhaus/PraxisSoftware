@@ -50,6 +50,7 @@ delete from public.staff_private_details;
 delete from public.user_roles;
 delete from public.user_profiles;
 delete from public.patients;
+delete from public.training_bases;
 delete from public.training_relationships;
 delete from public.staff_members;
 delete from public.persons;
@@ -469,3 +470,42 @@ cross join (values
   (time '08:00', time '12:00'),
   (time '13:00', time '18:00')
 ) as block (von, bis);
+
+-- -----------------------------------------------------------------------------
+-- Training im gemeinsamen Kalender (TRN-EPIC-002)
+--
+-- Tom Trainingsbetreuung bekommt einen Wochenplan, Tina einen Kontakt mit
+-- Anschrift (fuer den Hausbesuch im Training, ANN-177), eine Vereinbarung ueber
+-- zehn Einheiten und zwei Trainingstermine: heute in der Praxis an der
+-- Vereinbarung, morgen als Einzelstunde ueber Video ohne Vereinbarung
+-- (ADR-022 Punkt 5). Tom sieht im Kalender genau diese beiden; die
+-- Behandlungstermine oben sieht er nicht (Punkt 11).
+-- -----------------------------------------------------------------------------
+insert into public.staff_working_hours (organization_id, staff_member_id, weekday, starts_at, ends_at)
+select '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000006', wochentag, time '09:00', time '19:00'
+from generate_series(1, 6) as wochentag;
+
+insert into public.training_contact_details
+  (training_relationship_id, organization_id, email, phone, street, postal_code, city) values
+  ('eeeeeeee-eeee-4eee-8eee-000000000001', '22222222-2222-4222-8222-000000000001',
+   'tina.training@kunde.invalid', '+49 7071 0000109', 'Trainingsweg 5', '72076', 'Tuebingen');
+
+insert into public.training_bases
+  (id, organization_id, training_relationship_id, status, started_on, agreed_quantity) values
+  ('ffffffff-ffff-4fff-8fff-000000000001', '22222222-2222-4222-8222-000000000001',
+   'eeeeeeee-eeee-4eee-8eee-000000000001', 'active', '2026-09-01', 10);
+
+insert into public.appointments (
+  id, organization_id, training_relationship_id, training_basis_id, staff_member_id, location_id,
+  appointment_type, kind, status, starts_at, ends_at
+) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000007', '22222222-2222-4222-8222-000000000001',
+   'eeeeeeee-eeee-4eee-8eee-000000000001', 'ffffffff-ffff-4fff-8fff-000000000001',
+   '55555555-5555-4555-8555-000000000006', '33333333-3333-4333-8333-000000000001',
+   'practice', 'training', 'confirmed',
+   (current_date + time '10:00') at time zone 'Europe/Berlin', (current_date + time '11:00') at time zone 'Europe/Berlin'),
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000008', '22222222-2222-4222-8222-000000000001',
+   'eeeeeeee-eeee-4eee-8eee-000000000001', null,
+   '55555555-5555-4555-8555-000000000006', null,
+   'video', 'training', 'confirmed',
+   (current_date + 1 + time '17:00') at time zone 'Europe/Berlin', (current_date + 1 + time '18:00') at time zone 'Europe/Berlin');

@@ -125,6 +125,32 @@ const FAELLE: Fall[] = [
     [SEED.trainingRelationships.erika],
     'training_relationship.reopened',
   ],
+  // TRN-004, TRN-005: Trainingstermine und Vereinbarungen auf demselben Niveau.
+  [
+    'create_training_appointment',
+    `select public.create_training_appointment($1::uuid, $2::uuid, 'video', current_date + 7,
+       '10:00'::time, '11:00'::time) as id`,
+    [SEED.trainingRelationships.tina, '55555555-5555-4555-8555-000000000006'],
+    'appointment.created',
+  ],
+  [
+    'create_training_basis',
+    'select public.create_training_basis($1::uuid) as id',
+    [SEED.trainingRelationships.tina],
+    'training_basis.created',
+  ],
+  [
+    'conclude_training_basis',
+    'select public.conclude_training_basis($1::uuid) as id',
+    ['ffffffff-ffff-4fff-8fff-000000000001'],
+    'training_basis.concluded',
+  ],
+  [
+    'reopen_training_basis',
+    'select public.reopen_training_basis($1::uuid) as id',
+    ['ffffffff-ffff-4fff-8fff-000000000001'],
+    'training_basis.reopened',
+  ],
   [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
@@ -141,7 +167,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
   it('kennt genau die Pfade, die eine Abweisung beim Schreiben ueberleben lassen', async () => {
     // Die Liste ist Jannes' Wahl vom 2026-09-26: Rollen und Konten, Legal Hold
     // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
-    // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses.
+    // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
+    // und TRN-005 Trainingstermin und Vereinbarung.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`

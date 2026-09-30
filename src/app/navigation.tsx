@@ -5,6 +5,7 @@ import {
   canManageAppointments,
   canReadPatientDirectory,
   canReadTrainingClients,
+  canSeeCalendar,
   canWriteTreatmentNote,
   isOwner,
   isStaff,
@@ -275,7 +276,9 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     },
   ];
 
-  if (canManageAppointments(roles)) {
+  // Seit TRN-006 auch für die Trainingsbetreuung: Sie sieht im Kalender ihre
+  // Trainingstermine, sonst nichts (ADR-022 Punkt 11).
+  if (canSeeCalendar(roles)) {
     bereiche.push({
       id: 'termine',
       ...BEREICHE.termine,
@@ -321,7 +324,7 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
 
   // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
   // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
-  // Trainingskonto sieht Übersicht und Training (TRN-003).
+  // Trainingskonto sieht Übersicht, Kalender und Training (TRN-003, TRN-006).
   if (isTherapyStaff(roles)) {
     bereiche.push({
       id: 'team',

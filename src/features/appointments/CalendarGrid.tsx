@@ -31,6 +31,7 @@ import {
   appointmentTypeLabels,
   terminBezeichnung,
   type CalendarEntry,
+  terminPfad,
 } from './api';
 import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
@@ -958,7 +959,9 @@ function Kachel({
   return (
     <Link
       ref={linkRef}
-      to={mitRueckweg(`/termine/${eintrag.id}`, rueckweg)}
+      // Ein Trainingstermin oeffnet im Trainingsbereich (TRN-004): Seine
+      // Detailseite kennt die Kund:in statt einer Patient:in.
+      to={mitRueckweg(terminPfad(eintrag), rueckweg)}
       // Ein Link ist im Browser von Haus aus ziehbar. Diese eingebaute Geste
       // bricht die Zeigerverfolgung sofort mit pointercancel ab - ohne
       // draggable=false kaeme das Verschieben gar nicht erst zustande.
@@ -1023,6 +1026,14 @@ function Kachel({
           <>
             <span aria-hidden="true">▪ </span>
             <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
+          </>
+        ) : null}
+        {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
+            als Wort (TRN-006, ADR-021 Punkt 9). */}
+        {eintrag.kind === 'training' ? (
+          <>
+            <span aria-hidden="true">◆ </span>
+            <span className="sr-only">Training: </span>
           </>
         ) : null}
         {terminBezeichnung(eintrag)}

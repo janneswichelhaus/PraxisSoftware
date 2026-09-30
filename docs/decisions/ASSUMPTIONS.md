@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-29.
+Zuletzt aktualisiert: 2026-09-30.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 60 Einträge):
+Zusatz `Prüfpaket` (heute 63 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2048,3 +2048,63 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.get_training_client`, `public.list_training_clients` und die Schreibwege in `supabase/migrations/20260930100000_trn_001_training_clients.sql`; Katalog in `src/features/audit/actions.ts`.
 
 **Änderungspfad.** Trefferliste protokollieren: ein Eintrag je Aufruf in `list_training_clients` · Aufwand `klein`.
+
+### ANN-176 — Trainingstermine schreiben owner, Trainingsbetreuung und Büro; zugeordnet wird die Trainingsbetreuung
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
+
+**Annahme.** Einen Trainingstermin legen `owner`, `trainer` und `office` an, verschieben ihn und sagen ihn ab – dieselbe Stelle wie am Verhältnis (ANN-172). `therapist` und `team_lead` finden einen Trainingstermin über keinen Schreibweg („nicht gefunden“, wie eine unbekannte Kennung); umgekehrt findet die Trainingsbetreuung keinen Behandlungstermin. Betreuen kann einen Trainingstermin nur, wer die Rolle Trainingsbetreuung trägt, mit aktiver Beschäftigung und aktivem Zugang. Wer behandelt und trainiert, trägt beide Rollen. Ein abgewiesenes Anlegen steht als `denied` im Protokoll.
+
+**Begründung.** ADR-022 Punkt 11 und ADR-021 Punkt 6 verbieten den Durchgriff. CAL-026 hatte nur das Lesen gefiltert; die Schreibwege holten eine Zeile per Kennung und prüften nur die Rolle. Aus einer Behandlungsrolle folgt keine Zuordnung im Training (§4.8: Häufung erlaubt, kein Schluss). Unsicher: ob das Büro Trainingstermine nur lesen soll.
+
+**Anker.** `app.may_write_appointment_context`, `app.is_assignable_trainer`, der Trigger `appointments_context_write_guard` und `public.create_training_appointment` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Tests in `supabase/tests/training-appointments.test.ts`.
+
+**Änderungspfad.** Büro nur lesend: `office` aus `app.can_write_training_relationships` nehmen, wie bei ANN-172 · Aufwand `klein`. Behandelnde Personen im Training zuordenbar: `therapist` in `app.is_assignable_trainer` · Aufwand `klein`.
+
+### ANN-177 — Hausbesuch im Training: Anschrift aus dem Trainingskontakt, Hausnummer am letzten Leerzeichen getrennt
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, ANN-003)
+
+**Annahme.** Ein Trainingstermin als Hausbesuch (Personal Training zu Hause, ADR-022 Punkt 9) nimmt die Anschrift als Kopie aus `training_contact_details`, nie aus der Akte – auch wenn dieselbe Person eine hat. Weil der Trainingskontakt „Straße und Hausnummer“ in einem Feld führt, wird am letzten Leerzeichen vor einer Hausnummer getrennt, die mit einer Ziffer beginnt („12“, „12a“, „12 a“, „3-5“, „7 / 9“). Gelingt das nicht oder fehlt PLZ oder Ort, wird der Hausbesuch abgewiesen („home visit requires a complete address“), statt eine Hausnummer zu erfinden.
+
+**Begründung.** ADR-022 lässt die Quelle des Adress-Snapshots offen („die Kopie bleibt eine Kopie“); ADR-021 Punkt 3 erlaubt als geteilten Punkt nur die Identität, nicht die Kontaktdaten der Akte. Der Termin braucht Straße und Hausnummer getrennt (`appointments_address_matches_type`, Tourenplanung). Unsicher: Straßennamen mit Ziffer am Ende („An der B 27“) und Bruchnummern („Am Markt 1 1/2“) werden falsch getrennt (Zweitreview).
+
+**Anker.** `app.split_street_and_house_number` und `app.training_visit_address` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Fälle in `supabase/tests/training-appointments.test.ts`.
+
+**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`.
+
+### ANN-178 — Eine Absage im Training setzt kein Ausfallhonorar-Kennzeichen
+
+Recht · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (AGB Personal Training, ADR-022 offene Folgefrage)
+
+**Annahme.** Wird ein Trainingstermin abgesagt, auch weniger als 24 Stunden vorher, setzt der Server keinen Gebührenanlass (`fee_basis` bleibt leer). Die Oberfläche fragt deshalb weder nach dem Eingang der Absage noch nennt sie ein Ausfallhonorar. Die Absagegründe sind dieselben Codes wie in der Behandlung, im Training als „Kund:in hat abgesagt“ beschriftet.
+
+**Begründung.** ADR-022 lässt offen, ob der Anlass aus ADR-018 Punkt 8 im Dienstvertrag über Training entsteht – das ist eine Vertrags- und AGB-Frage des Projektinhabers. Bis sie beantwortet ist, gilt die Regel „unverändert für die Behandlung“ (ADR-022); `appointments_fee_basis_values` bindet den Anlass seit CAL-024 an `therapy`.
+
+**Anker.** `v_anlass` in `public.cancel_appointment`, `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Absage in `src/features/training/TrainingAppointmentPage.tsx`.
+
+**Änderungspfad.** Anlass auch im Training: Constraint `appointments_fee_basis_values` um `training` erweitern, Bedingung in `cancel_appointment`, Frage nach dem Eingang in der Absage · Aufwand `mittel`.
+
+### ANN-179 — Eine Vereinbarung im Training sperrt nicht, wenn die Anzahl erreicht ist
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 5)
+
+**Annahme.** Die Trainingsgrundlage heißt in der Oberfläche „Vereinbarung“. Sie wird von owner, Trainingsbetreuung und Büro angelegt (Beginn, vereinbarte Einheiten oder ohne feste Anzahl), abgeschlossen und wieder geöffnet; jede Änderung steht im Protokoll. Die Zahl der Termine (ohne Abgesagte) ist eine Anzeige („7 Termine von 10“), keine Sperre: Ein elfter Termin geht. An einer abgeschlossenen Vereinbarung entstehen keine neuen Termine; die geplanten bleiben. Ein Termin ohne Vereinbarung ist eine Einzelstunde.
+
+**Begründung.** ADR-022 Punkt 5: Pflicht ist das Verhältnis, nicht die Klammer. CAL-025 hat keine Deckungsregel gebaut, weil die Abrechnung im Training (TRN-EPIC-003) noch fehlt; eine Sperre ohne Abrechnung wäre ein Feature auf Vorrat (ADR-014).
+
+**Anker.** `public.create_training_basis`, `public.conclude_training_basis`, `public.reopen_training_basis` und `public.list_training_bases` in `supabase/migrations/20260930111000_trn_005_training_bases.sql`; `vereinbarungText` in `src/features/training/api.ts`.
+
+**Änderungspfad.** Sperre bei erreichter Anzahl: Prüfung in `create_training_appointment` und Hinweis im Formular · Aufwand `klein`.
+
+### ANN-180 — Die Trainingsbetreuung sieht im Kalender nur Trainingstermine; Lesen protokolliert wie am Behandlungstermin
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-022 Punkt 11, ADR-010)
+
+**Annahme.** Die Trainingsbetreuung öffnet Kalender und eigene Tagesliste und sieht darin nur Trainingstermine – mit dem Namen aus dem Training, nie aus der Akte. Behandlungstermine und interne Termine (Pausen, Besprechungen) sieht sie nicht; die Belegung erfährt sie nur beim Speichern als „belegt“. Arbeitszeiten sieht sie weiterhin nicht (die Policy bleibt bei den Praxisrollen). Protokolliert wird wie am Behandlungstermin: jede Änderung ja, Kalender, Tagesliste und Termindetail nicht; die Termine und Vereinbarungen einer Trainingskund:in gehören zur protokollierten Detailansicht (ANN-175). Jeder abgewiesene Lesezugriff steht als `denied` im Protokoll.
+
+**Begründung.** ADR-022 Punkt 11 nimmt die Belegung als Restoffenbarung hin und nennt nur Zeit und Mitarbeitende. Die offene Folgefrage „Sieht die Trainingsrolle interne Termine?“ bleibt bei der engeren Antwort aus CAL-026. ADR-022 verlangt für Trainingstermine das Auditniveau der Behandlungstermine – nicht mehr.
+
+**Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/session/types.ts`.
+
+**Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`.
