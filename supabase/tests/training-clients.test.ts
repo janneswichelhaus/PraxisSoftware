@@ -5,6 +5,7 @@ import {
   asPostgres,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
@@ -589,5 +590,64 @@ describe('Rolle Trainingsbetreuung zuweisbar (TRN-003)', () => {
       [ANNA, ['trainer']],
       'staff_account.roles_changed',
     );
+  });
+});
+
+describe('Mandantengrenze (ADR-003)', () => {
+  const FREMD_TRAINING = 'eeeeeeee-eeee-4eee-8eee-0000000000ab';
+
+  beforeAll(async () => {
+    await resetDatabase();
+    const f = await fremdeOrganisation();
+    await asPostgres(
+      `insert into public.training_relationships (id, organization_id, person_id, contract_started_on)
+       values ($1, $2, $3, current_date)`,
+      [FREMD_TRAINING, f.organizationId, f.personPatient],
+    );
+  }, 120_000);
+
+  it('zeigt dem owner einer anderen Praxis keine Trainingskund:in dieser Praxis', async () => {
+    const { owner } = await fremdeOrganisation();
+    const { rows } = await asUser<{ id: string }>(
+      owner,
+      'select * from public.list_training_clients()',
+    );
+    expect(rows.map((r) => r.id)).toEqual([FREMD_TRAINING]);
+    const fehler = await abgefangen(
+      asUser(owner, 'select * from public.get_training_client($1::uuid)', [
+        trainingRelationships.tina,
+      ]),
+    );
+    expect(fehler?.message).toMatch(/training relationship not found/);
+    const { rows: kontakt } = await asUser(owner, 'select 1 from public.training_contact_details');
+    expect(kontakt).toEqual([]);
+  });
+
+  it('laesst die Trainingsbetreuung nichts in einer anderen Praxis aendern oder anbinden', async () => {
+    const f = await fremdeOrganisation();
+    for (const sql of [
+      'select public.end_training_relationship($1::uuid) as x',
+      'select public.reopen_training_relationship($1::uuid) as x',
+      `select public.update_training_client($1::uuid, 'X', 'Y', null, null, null, null, null, null, current_date) as x`,
+    ]) {
+      const fehler = await abgefangen(asUser(users.trainer, sql, [FREMD_TRAINING]));
+      expect(fehler?.message).toMatch(/training relationship not found/);
+    }
+    // Auch owner nicht: die Person der anderen Praxis ist hier unbekannt.
+    const fehler = await abgefangen(
+      asUser(users.ownerTherapist, 'select public.start_training_for_person($1::uuid) as x', [
+        f.personOwner,
+      ]),
+    );
+    expect(fehler?.message).toMatch(/person not found/);
+  });
+
+  it('findet in der Dublettenpruefung niemanden aus einer anderen Praxis', async () => {
+    const { rows } = await asUser(
+      users.ownerTherapist,
+      'select * from public.find_possible_training_duplicates($1, $2, null)',
+      ['Peter', 'Fremdpatient'],
+    );
+    expect(rows).toEqual([]);
   });
 });

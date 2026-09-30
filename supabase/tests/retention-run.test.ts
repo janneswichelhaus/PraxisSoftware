@@ -640,6 +640,13 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
 
   it('loescht ein Trainingsverhaeltnis drei Jahre nach Vertragsende', async () => {
     await beendetVor(trainingRelationships.tina, 4);
+    // TRN-001: Die Kontaktdaten haengen am Verhaeltnis und fallen mit ihm.
+    await asPostgres(
+      `insert into public.training_contact_details
+         (training_relationship_id, organization_id, email)
+       values ($1, $2, 'tina@beispiel.invalid')`,
+      [trainingRelationships.tina, organizationId],
+    );
 
     await lauf();
 
@@ -655,6 +662,12 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
             and retention_class = 'trainingsverhaeltnis'`,
       ),
     ).toBe(1);
+    expect(
+      await anzahl(
+        'select count(*) from public.training_contact_details where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      ),
+    ).toBe(0);
     // Tina hat kein zweites Verhaeltnis - mit dem Vertrag faellt auch ihre
     // Identitaet (ADR-008 Punkt 9).
     expect(await anzahl('select count(*) from public.persons where id = $1', [persons.tina])).toBe(
