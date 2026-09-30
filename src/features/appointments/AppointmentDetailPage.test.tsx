@@ -6,6 +6,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
+import type * as TagesApi from '@/features/today/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -78,6 +79,19 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
+// Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste
+// (UX-005b); ihr Lesepfad wird hier gestubbt.
+const fetchDayPlan = vi.fn();
+
+vi.mock('@/features/today/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TagesApi>();
+  return {
+    ...actual,
+    fetchDayPlan: (datum: string, staff: string) =>
+      fetchDayPlan(datum, staff) as Promise<TagesApi.DayPlanEntry[]>,
+  };
+});
+
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useParams: () => ({ appointmentId: TERMIN_ID }),
@@ -141,6 +155,8 @@ describe('AppointmentDetailPage', () => {
     cancelEventSeries.mockResolvedValue(3);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    fetchDayPlan.mockReset();
+    fetchDayPlan.mockResolvedValue([]);
   });
 
   // UX-005a: Der Name steht im Titel und nirgends noch einmal; die
@@ -533,7 +549,7 @@ describe('AppointmentDetailPage', () => {
    * Tests nicht nur, dass die Wege existieren, sondern dass die Folge jeweils
    * danebensteht - und dass ohne das Protokoll nichts geschrieben wird.
    */
-  describe('CAL-018: Die drei Hausbesuch-Szenarien', () => {
+  describe('CAL-018 / UX-005b: „Niemand öffnet?" am Hausbesuch', () => {
     const hausbesuch = testAppointment({
       id: TERMIN_ID,
       patient_id: PATIENT_ID,
@@ -546,36 +562,120 @@ describe('AppointmentDetailPage', () => {
       visit_city: 'Tuebingen',
     });
 
-    it('fuehrt durch die vier Ausgaenge und nennt zu jedem die Folge', async () => {
+    /** Der Termin, wie ihn die Tagesliste liefert - mit Rufnummer. */
+    function tagesEintrag(teil: Partial<TagesApi.DayPlanEntry> = {}): TagesApi.DayPlanEntry {
+      return {
+        id: TERMIN_ID,
+        patient_id: PATIENT_ID,
+        staff_member_id: hausbesuch.staff_member_id,
+        appointment_type: 'home_visit',
+        kind: 'therapy',
+        title: null,
+        status: 'confirmed',
+        starts_at: hausbesuch.starts_at,
+        ends_at: hausbesuch.ends_at,
+        patient_given_name: 'Berta',
+        patient_family_name: 'Bestand',
+        location_name: null,
+        visit_street: 'Testweg',
+        visit_house_number: '7',
+        visit_postal_code: '72072',
+        visit_city: 'Tuebingen',
+        patient_phone: null,
+        patient_phone_mobile: '+49 160 0000005',
+        home_visit_access_note: null,
+        special_note: null,
+        documentation_status: 'none',
+        organization_time_zone: 'Europe/Berlin',
+        ...teil,
+      };
+    }
+
+    async function ablaufOeffnen(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('button', { name: 'Niemand öffnet?' }));
+    }
+
+    it('zeigt den Regelfall als Hauptknopf und den Ablauf zugeklappt', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
       rendern(['therapist']);
 
-      expect(await screen.findByText('Was ist passiert?')).toBeInTheDocument();
-      expect(screen.getByText('Die Behandlung hat stattgefunden')).toBeInTheDocument();
-      expect(screen.getByText('Tür geöffnet, Behandlung nicht durchgeführt')).toBeInTheDocument();
-      expect(screen.getByText('Niemand hat geöffnet')).toBeInTheDocument();
-      expect(screen.getByText('Die Patient:in hat vorher abgesagt')).toBeInTheDocument();
+      const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
+      expect(knopf).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
+        1,
+      );
+      // Der Kasten mit vier Fällen von vorher steht nicht mehr offen da.
+      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('An der Tür geklingelt')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
+      expect(
+        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('fuehrt nach dem Oeffnen durch die drei Schritte und nennt zu jedem Fall die Folge', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await ablaufOeffnen(user);
+      expect(screen.getByRole('button', { name: 'Niemand öffnet?' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
+      const ablauf = screen.getByRole('region', { name: 'Niemand öffnet?' });
+      // In der Reihenfolge, in der es vor der Tür passiert.
+      expect(
+        within(ablauf)
+          .getAllByRole('checkbox')
+          .map((kasten) => kasten.closest('label')?.textContent?.trim()),
+      ).toEqual(['An der Tür geklingelt', '15 Minuten vor Ort gewartet', 'Telefonisch angerufen']);
 
       // Dasselbe Wort wie auf Rechnung, Katalog und Blatt für Patient:innen
       // (TER-10), derselbe Zustand wie am Knopf (WRT-B01).
-      expect(screen.getByText(/ein Ausfallhonorar entsteht nicht/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/löst ein Ausfallhonorar aus/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/ein Ausfallhonorar\s+entsteht nicht/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/Vorher abgesagt\?/)).toBeInTheDocument();
       expect(
-        screen.getByText(/als „nicht angetroffen“ geführt und löst ein Ausfallhonorar aus/),
-      ).toBeInTheDocument();
+        within(ablauf).getByRole('link', { name: 'Ohne Behandlung abschließen' }),
+      ).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
+      );
       expect(screen.queryByText(/Ausfallgebühr/)).not.toBeInTheDocument();
       expect(screen.queryByText(/nicht wahrgenommen/)).not.toBeInTheDocument();
       // Keine Technikwörter im Hinweis (WRT-03, TER-22).
       expect(screen.queryByText(/serverseitig/)).not.toBeInTheDocument();
     });
 
-    it('fuehrt vom zweiten Szenario in den Abschluss mit Pflichtvermerk', async () => {
+    it('bietet beim dritten Schritt die Rufnummer als Waehlziel - erst nach dem Oeffnen', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag()]);
+      const user = userEvent.setup();
       rendern(['therapist']);
 
-      const weg = await screen.findByRole('link', { name: 'Ohne Behandlung abschließen' });
-      expect(weg).toHaveAttribute(
+      await screen.findByRole('button', { name: 'Niemand öffnet?' });
+      expect(fetchDayPlan).not.toHaveBeenCalled();
+
+      await ablaufOeffnen(user);
+      const anruf = await screen.findByRole('link', { name: /Mobil\s*\+49 160 0000005/ });
+      expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
+      // Gelesen wird der Tag des Termins bei seiner behandelnden Person.
+      expect(fetchDayPlan).toHaveBeenCalledWith('2027-05-12', hausbesuch.staff_member_id);
+    });
+
+    it('sagt, wenn keine Rufnummer hinterlegt ist, und fuehrt in die Stammdaten', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ patient_phone_mobile: null })]);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await ablaufOeffnen(user);
+      expect(await screen.findByText(/Keine Rufnummer hinterlegt/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Zu den Stammdaten' })).toHaveAttribute(
         'href',
-        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
+        `/patienten/${PATIENT_ID}/stammdaten`,
       );
     });
 
@@ -584,12 +684,11 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await ablaufOeffnen(user);
       await user.click(screen.getByLabelText('An der Tür geklingelt'));
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
       await user.click(screen.getByLabelText('Telefonisch angerufen'));
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       await waitFor(() =>
         expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, hausbesuch.updated_at, true),
@@ -601,36 +700,18 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await ablaufOeffnen(user);
       await user.click(screen.getByLabelText('An der Tür geklingelt'));
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       expect(
         await screen.findByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
       ).toBeInTheDocument();
       expect(recordNoShow).not.toHaveBeenCalled();
-      // Die Rueckfrage bleibt offen: Wer die fehlende Angabe nachtragen will,
+      // Der Ablauf bleibt offen: Wer die fehlende Angabe nachtragen will,
       // findet sie noch vor.
       expect(screen.getByLabelText('Telefonisch angerufen')).toBeInTheDocument();
-    });
-
-    it('bietet die beiden Abschlusswege nicht doppelt an', async () => {
-      fetchAppointment.mockResolvedValue(hausbesuch);
-      rendern(['therapist']);
-
-      await screen.findByText('Was ist passiert?');
-      // „Dokumentieren und abschliessen" steht im gefuehrten Ablauf, nicht
-      // noch einmal in der Knopfreihe darunter.
-      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
-        1,
-      );
-      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
-      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
-      expect(
-        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
-      ).toBeInTheDocument();
     });
 
     it('zeigt am vermerkten Hausbesuch Protokoll und Gebuehrenanlass', async () => {
@@ -654,36 +735,37 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByText(/Leistungskatalog ist noch nicht/)).not.toBeInTheDocument();
     });
 
-    it('zeigt den gefuehrten Ablauf nur am bestaetigten Hausbesuch', async () => {
+    it('zeigt den Ablauf nur am bestaetigten Hausbesuch', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'completed' });
       rendern(['therapist']);
 
       await waitFor(() => expect(zeile('Status')).toBe('Abgeschlossen'));
-      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Niemand öffnet?' })).not.toBeInTheDocument();
     });
 
     it('zeigt ihn am Praxistermin nicht', async () => {
       rendern(['therapist']);
 
       await screen.findByText('Berta Bestand');
-      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Niemand öffnet?' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
     });
 
     /**
-     * Der geführte Ablauf ist neue Oberfläche mit Formularfeldern in einer
-     * Rückfrage — genau die Stelle, an der Beschriftungen und ARIA-Bezüge
-     * gern verloren gehen (UI-000). Die Prüfung steht hier und nicht in
-     * `barrierefreiheit.test.tsx`, weil die Seite dort ihre Attrappen nicht
-     * hat; dasselbe Muster wie in `TagUmplanenPage.test.tsx`.
+     * Der geführte Ablauf ist Oberfläche mit Formularfeldern in einem
+     * aufgeklappten Bereich — genau die Stelle, an der Beschriftungen und
+     * ARIA-Bezüge gern verloren gehen (UI-000). Die Prüfung steht hier und
+     * nicht in `barrierefreiheit.test.tsx`, weil die Seite dort ihre
+     * Attrappen nicht hat; dasselbe Muster wie in `TagUmplanenPage.test.tsx`.
      */
-    it('haelt den gefuehrten Ablauf samt Protokoll barrierefrei', async () => {
+    it('haelt den Ablauf samt Protokoll barrierefrei', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag()]);
       const user = userEvent.setup();
       const { container } = rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-      await screen.findByLabelText('An der Tür geklingelt');
+      await ablaufOeffnen(user);
+      await screen.findByRole('link', { name: /Mobil/ });
 
       await pruefeBarrierefreiheit(container);
     });
@@ -1457,15 +1539,15 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+      await user.click(await screen.findByRole('button', { name: 'Niemand öffnet?' }));
       for (const schritt of [
-        '15 Minuten vor Ort gewartet',
         'An der Tür geklingelt',
+        '15 Minuten vor Ort gewartet',
         'Telefonisch angerufen',
       ]) {
         await user.click(screen.getByLabelText(schritt));
       }
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       expect(
         await screen.findByText(

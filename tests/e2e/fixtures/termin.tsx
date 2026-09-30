@@ -199,6 +199,36 @@ client.setQueryData(['treatment-note', TERMIN], {
   primary: offen || ansicht === 'abgesagt' ? null : eintrag,
   addenda: [],
 });
+// Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste (UX-005b).
+client.setQueryData(
+  ['day-plan', '2027-05-12', ANNA],
+  [
+    {
+      id: TERMIN,
+      patient_id: MAX,
+      staff_member_id: ANNA,
+      appointment_type: 'home_visit',
+      kind: 'therapy',
+      title: null,
+      status: 'confirmed',
+      starts_at: termin.starts_at,
+      ends_at: termin.ends_at,
+      patient_given_name: 'Max',
+      patient_family_name: 'Mustermann',
+      location_name: null,
+      visit_street: 'Beispielstrasse',
+      visit_house_number: '12',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
+      patient_phone: '+49 7071 0000005',
+      patient_phone_mobile: '+49 160 0000005',
+      home_visit_access_note: null,
+      special_note: null,
+      documentation_status: 'none',
+      organization_time_zone: ZONE,
+    },
+  ],
+);
 client.setQueryData(['appointment-brief', TERMIN], kurzblick);
 client.setQueryData(['appointment', TERMIN, 'abrechnungslage'], lage);
 client.setQueryData(['appointment', TERMIN, 'leistungen'], leistungen);
