@@ -88,8 +88,10 @@ aktiven Zugängen: Ein aktiver Zugang zu einem Behandlungsverhältnis bedeutet �
 dieses Verhältnis, nicht für die Person. Der Katalogeintrag `patient` wird nie vergeben. Ob der
 SPEC ihn entfernt, entscheidet er; ein Test hält fest, dass keine Zeile in `user_roles` ihn trägt.
 
-**4. Ein Konto je Person, ein Zugang je Verhältnis.** Hat eine Person beide Verhältnisse, hat sie
-ein Konto und bis zu zwei Zugänge. Jeder wird für sich eingeladen, gesperrt und entzogen. Eine
+**4. Ein Konto je Person, höchstens ein Zugang je Konto und Verhältnis.** Hat eine Person beide
+Verhältnisse, hat sie ein Konto und bis zu zwei Zugänge. Ein Verhältnis kann mehrere Zugänge
+haben: den der Person selbst und die ihrer Vertretungen (Punkt 13). Jeder Zugang wird für sich
+eingeladen, gesperrt und entzogen. Eine
 Sperre im Training berührt die Behandlung nicht (§4.8). Der Bereichsschalter aus DSN-001 D6
 zeigt nur Verhältnisse mit aktivem Zugang.
 
@@ -238,8 +240,11 @@ Tabellen (`organizations`, `locations`, `roles`) werden auf Praxiskonten beschr�
 Plattform davon braucht, etwa Name und Marke der Praxis im Kopf, liefert eine Projektion. Ein
 Test in `pnpm test:db` meldet ein Plattformkonto in jedem Zustand an. Er geht **alle** Tabellen
 aus `pg_tables` und alle an `authenticated` freigegebenen Funktionen durch und verlangt: keine
-Zeile, jeder Schreibpfad abgewiesen. Eine neue Tabelle oder Funktion ist damit automatisch
-geprüft, so wie `retention.test.ts` jede neue Tabelle an ihre Datenklasse bindet.
+Zeile, jeder Aufruf abgewiesen. Ausgenommen sind nur die Plattformprojektionen und die
+Funktionen, die für jedes Konto gelten (etwa der Vermerk eines eigenen Sicherheitsereignisses,
+STAFF-004). Diese Ausnahmen stehen als Liste im Test, und ein Eintrag dort ist Teil des Reviews.
+Eine neue Tabelle oder Funktion ist damit automatisch geprüft, so wie `retention.test.ts` jede
+neue Tabelle an ihre Datenklasse bindet.
 
 **22. Was für die Plattform bestimmt ist, steht am Objekt, nicht in der Oberfläche.** Eine
 Rechnung ist sichtbar, weil sie gestellt ist, ein Dokument, weil es einzeln freigegeben ist
