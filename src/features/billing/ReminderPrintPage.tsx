@@ -6,7 +6,7 @@ import { Rueckweg } from '@/components/ui/Rueckweg';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { fetchErinnerung, type Erinnerungsdokument } from './api';
-import { ibanInGruppen } from './anzeige';
+import { ibanInGruppen, personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -82,7 +82,10 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
               <Angabe bezeichnung="Datum" zahl>
                 {formatDate(erinnerung.reminder_on)}
               </Angabe>
-              <Angabe bezeichnung="Behandelte Person">{dokument.patient.name}</Angabe>
+              {/* TRN-008: im Training „Leistung für“ - Training ist keine Heilbehandlung. */}
+              <Angabe bezeichnung={personLabel(dokument.service_area, 'blatt')}>
+                {dokument.patient.name}
+              </Angabe>
             </Angaben>
           }
         />

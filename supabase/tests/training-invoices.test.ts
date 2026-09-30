@@ -493,6 +493,46 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       }
     });
 
+    it('gibt Trainingsbetreuung und Teamleitung keine Rechnung zu lesen', async () => {
+      await trainingsleistung(trainingRelationships.tina);
+      const id = await trainingsentwurf();
+      await asUserCommitted(users.office, AUSSTELLEN, [id]);
+
+      for (const rolle of [users.trainer, users.teamLead]) {
+        for (const sql of [
+          'select * from public.list_invoices(100)',
+          'select * from public.list_open_items(100)',
+          'select * from public.list_payments(100)',
+          'select * from public.list_billable_services(null, null, 200)',
+        ]) {
+          const { rows } = await asUser(rolle, sql);
+          expect(rows).toEqual([]);
+        }
+        const { rows } = await asUser<{ ansicht: unknown }>(
+          rolle,
+          'select public.get_invoice($1::uuid) as ansicht',
+          [id],
+        );
+        expect(rows[0]?.ansicht).toBeNull();
+      }
+    });
+
+    it('laesst niemanden ausser owner und office eine Trainingsrechnung korrigieren', async () => {
+      await trainingsleistung(trainingRelationships.tina);
+      const id = await trainingsentwurf();
+      await asUserCommitted(users.office, AUSSTELLEN, [id]);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2)', [
+        id,
+        'Probe',
+      ]);
+
+      for (const rolle of [users.trainer, users.therapist, users.teamLead, users.patientErika]) {
+        await expect(
+          asUser(rolle, 'select public.create_correction_draft($1::uuid)', [id]),
+        ).rejects.toThrow(/not allowed to manage invoices/);
+      }
+    });
+
     it('weist ein Patientenkonto an Entwurf und Listen ab', async () => {
       await trainingsleistung(trainingRelationships.tina);
       await expect(
@@ -523,19 +563,59 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       await expect(
         asUser(users.office, TRAININGSENTWURF, [fremd[0]!.id, await monat()]),
       ).rejects.toThrow(/training relationship not found/);
+
+      // Und der fremde Owner findet Tinas Rechnung nicht - weder zum
+      // Korrigieren noch zum Lesen.
+      await trainingsleistung(trainingRelationships.tina);
+      const id = await trainingsentwurf();
+      await expect(
+        asUser(FREMDE_ORGANISATION.owner, 'select public.create_correction_draft($1::uuid)', [id]),
+      ).rejects.toThrow(/invoice not found/);
+      await expect(
+        asUser(FREMDE_ORGANISATION.owner, 'select public.get_invoice($1::uuid)', [id]),
+      ).rejects.toThrow(/invoice not found/);
     });
   });
 
   describe('schemaseitig', () => {
-    it('weist eine Trainingsrechnung mit Patientenbezug ab', async () => {
+    it('laesst eine Rechnung nicht an ein anderes Verhaeltnis umhaengen (Zweitreview)', async () => {
       await trainingsleistung(trainingRelationships.erika);
       const id = await trainingsentwurf(trainingRelationships.erika);
       await expect(
-        asPostgres('update public.invoices set patient_id = $1 where id = $2', [
-          patients.erika,
+        asPostgres('update public.invoices set training_relationship_id = $1 where id = $2', [
+          trainingRelationships.tina,
           id,
         ]),
-      ).rejects.toThrow(/invoices_party/);
+      ).rejects.toThrow(/does not belong to the relationship of its invoice/);
+    });
+
+    it('haelt die Organisation des Verhaeltnisses an der Rechnung (Zweitreview)', async () => {
+      await fremdeOrganisation();
+      await expect(
+        asPostgres(
+          `insert into public.invoices (organization_id, training_relationship_id, period_month, service_area)
+           values ($1, $2, date_trunc('month', current_date), 'training')`,
+          [FREMDE_ORGANISATION.organizationId, trainingRelationships.tina],
+        ),
+      ).rejects.toThrow(/invoices_training_relationship_org_fkey/);
+    });
+
+    it('weist eine Trainingsrechnung mit Patientenbezug ab', async () => {
+      await trainingsleistung(trainingRelationships.erika);
+      const id = await trainingsentwurf(trainingRelationships.erika);
+      // Die Constraint fuer sich: Der Trigger aus dem Zweitreview wiese das
+      // Umhaengen vorher ab (Test oben) - fuer diesen einen Satz steht er still.
+      await asPostgres('alter table public.invoices disable trigger invoices_party_matches_items');
+      try {
+        await expect(
+          asPostgres('update public.invoices set patient_id = $1 where id = $2', [
+            patients.erika,
+            id,
+          ]),
+        ).rejects.toThrow(/invoices_party/);
+      } finally {
+        await asPostgres('alter table public.invoices enable trigger invoices_party_matches_items');
+      }
     });
 
     it('nimmt keine Leistung eines anderen Verhaeltnisses auf - auch am Schreibweg vorbei', async () => {
@@ -602,27 +682,107 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       return id;
     }
 
-    it('haelt das Verhaeltnis, solange die Belegfrist laeuft', async () => {
+    it('haelt nur die Belege und was sie tragen, solange die Belegfrist laeuft', async () => {
       const id = await ausgestelltVor(4);
+      // Eine Stunde ohne Leistung: kein Beleg, faellt nach drei Jahren.
+      const ohneLeistung = await trainingstermin(trainingRelationships.tina, 50);
+      const { rows: abgerechnet } = await asPostgres<{ appointment_id: string }>(
+        'select appointment_id from public.billable_services where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      );
+
       await asPostgres(LAUF);
 
-      const { rows } = await asPostgres<{ n: number }>(
-        `select (select count(*)::int from public.training_relationships where id = $1)
-              + (select count(*)::int from public.invoices where id = $2) as n`,
-        [trainingRelationships.tina, id],
+      const { rows } = await asPostgres<{
+        verhaeltnis: number;
+        rechnung: number;
+        kontakt: number;
+        termin_mit: number;
+        termin_ohne: number;
+      }>(
+        `select (select count(*)::int from public.training_relationships where id = $1) as verhaeltnis,
+                (select count(*)::int from public.invoices where id = $2) as rechnung,
+                (select count(*)::int from public.training_contact_details
+                   where training_relationship_id = $1) as kontakt,
+                (select count(*)::int from public.appointments where id = $3) as termin_mit,
+                (select count(*)::int from public.appointments where id = $4) as termin_ohne`,
+        [trainingRelationships.tina, id, abgerechnet[0]!.appointment_id, ohneLeistung],
       );
-      expect(rows[0]?.n).toBe(2);
+      // ADR-021 Punkt 4 vor ANN-183: Kontakt und Termine ohne Leistung fallen
+      // nach drei Jahren; Belege, ihr Termin und das Verhaeltnis bleiben.
+      expect(rows[0]).toEqual({
+        verhaeltnis: 1,
+        rechnung: 1,
+        kontakt: 0,
+        termin_mit: 1,
+        termin_ohne: 0,
+      });
 
       const { rows: audit } = await asPostgres<{ kontext: Record<string, unknown> }>(
         `select context as kontext from public.audit_log
           where action = 'retention.applied' order by occurred_at desc limit 1`,
       );
       expect(audit[0]?.kontext.steuerfrist_gehalten).toBe(1);
-      expect(audit[0]?.kontext.trainingsverhaeltnis).toBe(0);
+      expect(Number(audit[0]?.kontext.trainingsverhaeltnis)).toBeGreaterThan(0);
+
+      const { rows: journal } = await asPostgres<{ target_table: string }>(
+        `select target_table from public.deletion_journal
+          where retention_class = 'trainingsverhaeltnis' order by target_table`,
+      );
+      expect(journal.map((j) => j.target_table)).toContain('training_contact_details');
+      expect(journal.map((j) => j.target_table)).toContain('appointments');
+
+      // Ein zweiter Lauf nimmt nichts mehr - und haelt weiter.
+      const { rows: zweiter } = await asPostgres<{ anzahl: number }>(LAUF);
+      expect(Number(zweiter[0]?.anzahl)).toBe(0);
+    });
+
+    it('loescht die Kontaktdaten nach einem Restore erneut', async () => {
+      await ausgestelltVor(4);
+      await asPostgres(LAUF);
+      // Restore: der Kontakt ist wieder da.
+      await asPostgres(
+        `insert into public.training_contact_details
+           (training_relationship_id, organization_id, email)
+         values ($1, $2, 'tina@beispiel.invalid')`,
+        [trainingRelationships.tina, organizationId],
+      );
+
+      const { rows } = await asPostgres<{ anzahl: number }>(
+        'select public.reapply_deletion_journal() as anzahl',
+      );
+      expect(Number(rows[0]?.anzahl)).toBeGreaterThan(0);
+      const { rows: kontakt } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_contact_details where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      );
+      expect(kontakt[0]?.n).toBe(0);
     });
 
     it('loescht Belege und Verhaeltnis gemeinsam nach Ablauf der Belegfrist', async () => {
       const id = await ausgestelltVor(10);
+      // Die volle Kette an Belegen - alle zeigen mit RESTRICT auf die Rechnung
+      // und stammen aus dem Jahr der Rechnung.
+      await asPostgres(
+        `insert into public.payments
+           (organization_id, invoice_id, direction, amount_cents, currency, paid_on, method, created_by)
+         values ($1, $2, 'incoming', 7500, 'EUR', (current_date - interval '10 years')::date,
+                 'bank_transfer', $3)`,
+        [organizationId, id, users.office],
+      );
+      await asPostgres(
+        `insert into public.invoice_payment_reminders
+           (organization_id, invoice_id, reminder_on, due_on, outstanding_cents, currency, created_by)
+         values ($1, $2, (current_date - interval '10 years')::date,
+                 (current_date - interval '10 years')::date + 14, 7500, 'EUR', $3)`,
+        [organizationId, id, users.office],
+      );
+      await asPostgres(
+        `insert into public.invoice_cancellations
+           (organization_id, invoice_id, cancellation_number, reason, cancelled_on, created_by)
+         values ($1, $2, 'TR-TEST-S', 'Probe', (current_date - interval '10 years')::date, $3)`,
+        [organizationId, id, users.office],
+      );
       await asPostgres(LAUF);
 
       const { rows } = await asPostgres<{ n: number }>(
@@ -635,13 +795,16 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
 
       const { rows: journal } = await asPostgres<{ target_table: string; retention_class: string }>(
         `select target_table, retention_class from public.deletion_journal
-          where target_table in ('invoices', 'invoice_items', 'billable_services')
+          where retention_class = 'abrechnungsdaten'
           order by target_table`,
       );
       expect(journal).toEqual([
         { target_table: 'billable_services', retention_class: 'abrechnungsdaten' },
+        { target_table: 'invoice_cancellations', retention_class: 'abrechnungsdaten' },
         { target_table: 'invoice_items', retention_class: 'abrechnungsdaten' },
+        { target_table: 'invoice_payment_reminders', retention_class: 'abrechnungsdaten' },
         { target_table: 'invoices', retention_class: 'abrechnungsdaten' },
+        { target_table: 'payments', retention_class: 'abrechnungsdaten' },
       ]);
     });
   });

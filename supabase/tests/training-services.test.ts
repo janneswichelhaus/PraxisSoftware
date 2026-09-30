@@ -1,5 +1,13 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
+import {
+  FREMDE_ORGANISATION,
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 /**
  * TRN-007: Die Leistung haengt am Trainingsverhaeltnis (TRN-EPIC-003).
@@ -173,6 +181,21 @@ describe('TRN-007: Leistung am Trainingsverhaeltnis', () => {
       );
       const { rows } = await asUser(users.patientErika, LEISTUNGEN);
       expect(rows).toEqual([]);
+    });
+
+    it('findet den Trainingstermin fuer eine fremde Praxis nicht', async () => {
+      await fremdeOrganisation();
+      const termin = await trainingstermin();
+      await expect(asUser(FREMDE_ORGANISATION.owner, ERFASSEN, [termin, pt()])).rejects.toThrow(
+        /appointment not found/,
+      );
+    });
+
+    it('laesst die Teamleitung am Trainingstermin nicht erfassen', async () => {
+      const termin = await trainingstermin();
+      await expect(asUser(users.teamLead, ERFASSEN, [termin, pt()])).rejects.toThrow(
+        /not allowed to record billable services/,
+      );
     });
 
     it('zeigt der Trainingsbetreuung keine Arbeitsliste der Abrechnung', async () => {

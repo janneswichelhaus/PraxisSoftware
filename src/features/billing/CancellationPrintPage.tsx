@@ -8,6 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, type Rechnungsansicht } from './api';
+import { personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -118,7 +119,10 @@ function Stornoblatt({
               <Angabe bezeichnung="Datum" zahl>
                 {formatDate(storno.cancelled_on)}
               </Angabe>
-              <Angabe bezeichnung="Behandelte Person">{dokument.patient.name}</Angabe>
+              {/* TRN-008: im Training „Leistung für“ - Training ist keine Heilbehandlung. */}
+              <Angabe bezeichnung={personLabel(dokument.service_area, 'blatt')}>
+                {dokument.patient.name}
+              </Angabe>
               <Angabe bezeichnung="Steuernummer" zahl>
                 {absender.tax_number}
               </Angabe>

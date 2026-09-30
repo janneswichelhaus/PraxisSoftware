@@ -255,14 +255,21 @@ describe('Ein Bereich je Rechnung', () => {
       // Seit TRN-008 haelt invoices_party das Verhaeltnis am Bereich. Damit
       // hier der Fremdschluessel fuer sich einsteht, wandert das Verhaeltnis
       // mit (die Constraint selbst prueft training-invoices.test.ts).
-      await expect(
-        asPostgres(
-          `update public.invoices
-              set service_area = 'training', patient_id = null, training_relationship_id = $2
-            where id = $1`,
-          [rows[0]!.id, trainingRelationships.erika],
-        ),
-      ).rejects.toThrow(/invoice_items_invoice_area_fkey/);
+      // Auch der Trigger aus dem Zweitreview (invoices_party_matches_items)
+      // steht fuer diesen einen Satz still.
+      await asPostgres('alter table public.invoices disable trigger invoices_party_matches_items');
+      try {
+        await expect(
+          asPostgres(
+            `update public.invoices
+                set service_area = 'training', patient_id = null, training_relationship_id = $2
+              where id = $1`,
+            [rows[0]!.id, trainingRelationships.erika],
+          ),
+        ).rejects.toThrow(/invoice_items_invoice_area_fkey/);
+      } finally {
+        await asPostgres('alter table public.invoices enable trigger invoices_party_matches_items');
+      }
     });
   });
 

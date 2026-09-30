@@ -326,8 +326,10 @@ function VertragBeenden({ kundin, zeitzone }: { kundin: TrainingClient; zeitzone
       onAbbrechen={() => setTag(heute)}
     >
       <p>
-        Ab diesem Tag läuft die Aufbewahrung von drei Jahren; danach werden Kontakt und Vertrag
-        gelöscht. Trainiert die Person wieder, lässt sich der Vertrag wieder aufnehmen.
+        Ab diesem Tag läuft die Aufbewahrung von drei Jahren; danach werden Kontakt, Vereinbarungen
+        und Termine gelöscht. Rechnungen und die abgerechneten Termine bleiben, bis ihre steuerliche
+        Frist von acht Jahren abgelaufen ist (ANN-183). Trainiert die Person wieder, lässt sich der
+        Vertrag wieder aufnehmen.
       </p>
       <div className="mt-3 max-w-60">
         <Field
