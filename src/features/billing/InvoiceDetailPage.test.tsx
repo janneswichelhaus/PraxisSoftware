@@ -222,6 +222,46 @@ describe('InvoiceDetailPage', () => {
     expect(setzeEmpfaenger).toHaveBeenCalledWith('r1', 'e1');
   });
 
+  it('schickt eine Trainingsrechnung an die Kundin selbst und nennt sie nicht behandelt (TRN-008)', async () => {
+    fetchRechnung.mockResolvedValue(
+      ansicht(
+        { patient_id: null },
+        {
+          service_area: 'training',
+          recipient: {
+            kind: 'self',
+            name: 'Tina Trainingskundin',
+            street: 'Trainingsweg 5',
+            house_number: null,
+            postal_code: '72076',
+            city: 'Tuebingen',
+            reference: null,
+          },
+          patient: { name: 'Tina Trainingskundin', date_of_birth: null },
+          treatment_bases: [],
+        },
+      ),
+    );
+
+    renderWithProviders(
+      <InvoiceDetailPage user={testUser(['office'])} />,
+      '/abrechnung/rechnungen/r1',
+    );
+
+    expect(
+      await screen.findByText(/Eine Trainingsrechnung geht an die Kund:in selbst/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Leistung für: Tina Trainingskundin')).toBeInTheDocument();
+    expect(screen.getByText('Kund:in selbst')).toBeInTheDocument();
+    expect(screen.queryByText('Patient:in selbst')).not.toBeInTheDocument();
+    expect(screen.getByText(/Trainingsweg 5, 72076 Tuebingen/)).toBeInTheDocument();
+    expect(screen.queryByText(/Behandelt:/)).not.toBeInTheDocument();
+    // ANN-182: Die hinterlegten Empfänger hängen an der Akte - im Training
+    // wird weder gefragt noch gewählt.
+    expect(screen.queryByLabelText(/Rechnung geht an/)).not.toBeInTheDocument();
+    expect(fetchEmpfaenger).not.toHaveBeenCalled();
+  });
+
   it('bietet an der ausgestellten Rechnung nichts mehr zum Aendern an', async () => {
     fetchRechnung.mockResolvedValue(
       ansicht({

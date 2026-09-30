@@ -45,7 +45,14 @@ import {
   type Empfaenger,
   type Rechnungsansicht,
 } from './api';
-import { grundlageText, ibanInGruppen, monatsname, zahlungsTon } from './anzeige';
+import {
+  empfaengerart,
+  grundlageText,
+  ibanInGruppen,
+  monatsname,
+  personLabel,
+  zahlungsTon,
+} from './anzeige';
 import { Zahlungsformular } from './Zahlungsformular';
 import { Zahlungsstorno } from './Zahlungsstorno';
 
@@ -285,7 +292,7 @@ function Rechnungsbild({
         <Inhaltsflaeche>
           <p className="text-ink text-liste font-medium">{dokument.recipient.name}</p>
           <p className="text-ink-muted text-sm">
-            {empfaengerartLabels[dokument.recipient.kind] ?? 'Kostenträger'}
+            {empfaengerart(dokument.recipient.kind, dokument.service_area)}
           </p>
           {dokument.recipient.street ? (
             <p className="text-ink-muted mt-1 text-sm">
@@ -300,14 +307,24 @@ function Rechnungsbild({
           ) : null}
 
           <p className="text-ink-muted mt-3 text-sm">
-            Behandelt: {dokument.patient.name}
+            {personLabel(dokument.service_area, 'kurz')}: {dokument.patient.name}
             {dokument.patient.date_of_birth
               ? `, geb. ${formatDate(dokument.patient.date_of_birth)}`
               : ''}
           </p>
         </Inhaltsflaeche>
 
-        {entwurf && darfAusstellen ? <Empfaengerwahl ansicht={ansicht} /> : null}
+        {/* ANN-182: Eine Trainingsrechnung geht an die Kund:in selbst. Die
+            hinterlegten Empfänger hängen an der Akte und gelten im Training
+            nicht (ADR-021 Punkt 3). */}
+        {entwurf && darfAusstellen && ansicht.patient_id ? (
+          <Empfaengerwahl ansicht={ansicht} patientId={ansicht.patient_id} />
+        ) : null}
+        {entwurf && darfAusstellen && !ansicht.patient_id ? (
+          <p className="text-ink-muted mt-4 text-sm">
+            Eine Trainingsrechnung geht an die Kund:in selbst, mit der Anschrift aus dem Training.
+          </p>
+        ) : null}
       </Section>
 
       <Section titel="Leistungen" rahmen>
@@ -925,14 +942,14 @@ function Stornokette({
  * Neuladen auf den alten Wert zurück und nahm einen zweiten Wechsel an; danach
  * sagt eine Meldung, dass er gesetzt ist (ABR-10, ZST-20).
  */
-function Empfaengerwahl({ ansicht }: { ansicht: Rechnungsansicht }) {
+function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; patientId: string }) {
   const queryClient = useQueryClient();
   const [neu, setNeu] = useState(false);
   const [gesetzt, setGesetzt] = useState(false);
 
   const empfaenger = useQuery({
-    queryKey: ['rechnungsempfaenger', ansicht.patient_id],
-    queryFn: () => fetchEmpfaenger(ansicht.patient_id),
+    queryKey: ['rechnungsempfaenger', patientId],
+    queryFn: () => fetchEmpfaenger(patientId),
     retry: false,
   });
 
@@ -999,11 +1016,11 @@ function Empfaengerwahl({ ansicht }: { ansicht: Rechnungsansicht }) {
 
       {neu ? (
         <Empfaengerformular
-          patientId={ansicht.patient_id}
+          patientId={patientId}
           onFertig={async () => {
             setNeu(false);
             await queryClient.invalidateQueries({
-              queryKey: ['rechnungsempfaenger', ansicht.patient_id],
+              queryKey: ['rechnungsempfaenger', patientId],
             });
           }}
         />

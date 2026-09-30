@@ -1,7 +1,7 @@
 import type { Ton } from '@/components/ui/Badge';
 import { formatDate } from '@/lib/datum';
 import { BAUARTEN, grundlageBezeichnung, type Bauart } from '@/features/treatment-bases/api';
-import type { Zahlungsstand } from './api';
+import { empfaengerartLabels, type Leistungsbereich, type Zahlungsstand } from './api';
 
 /**
  * Anzeigehilfen der Abrechnung (UXR-010).
@@ -82,4 +82,27 @@ export function grundlageText(kind: string, tag: string): string {
   if (!istBauart(kind)) return `${kind} vom ${formatDate(tag)}`;
   const { bauart, praeposition } = grundlageBezeichnung({ treatment_basis_kind: kind });
   return `${bauart} ${praeposition} ${formatDate(tag)}`;
+}
+
+/**
+ * Wie die Person heißt, für die geleistet wurde (TRN-008).
+ *
+ * In der Behandlung „Behandelt", im Training nicht: Training ist keine
+ * Heilbehandlung (ADR-021). Snapshots vor `schema_version` 3 tragen keinen
+ * Bereich und sind Behandlung.
+ */
+export function personLabel(bereich: Leistungsbereich | undefined, form: 'kurz' | 'blatt'): string {
+  if (bereich === 'training') return 'Leistung für';
+  return form === 'kurz' ? 'Behandelt' : 'Behandelte Person';
+}
+
+/**
+ * Die Art des Empfängers am Dokument (TRN-008, ANN-182).
+ *
+ * Eine Trainingsrechnung geht an die Kund:in selbst - sie ist keine
+ * Patient:in, auch wenn dieselbe Person eine Akte hat (ADR-021).
+ */
+export function empfaengerart(kind: string, bereich: Leistungsbereich | undefined): string {
+  if (bereich === 'training' && kind === 'self') return 'Kund:in selbst';
+  return empfaengerartLabels[kind] ?? 'Kostenträger';
 }

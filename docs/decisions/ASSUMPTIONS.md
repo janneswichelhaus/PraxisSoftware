@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 63 Einträge):
+Zusatz `Prüfpaket` (heute 65 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2120,3 +2120,27 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `app.appointment_is_billable` und `app.can_record_services_for_appointment` in `supabase/migrations/20260930120000_trn_007_training_services.sql`; Tests in `supabase/tests/training-services.test.ts`.
 
 **Änderungspfad.** Erst nach dem Trainingsprotokoll abrechnen: Den Zweig `training` in `app.appointment_is_billable` auf `documented` setzen · Aufwand `klein`. Trainingsbetreuung erfasst am eigenen Termin: Zweig in `app.can_record_services_for_appointment` für `trainer` und `training` · Aufwand `klein`.
+
+### ANN-182 — Eine Trainingsrechnung geht an die Kund:in selbst, mit der Anschrift aus dem Training und ohne Geburtsdatum
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, Art. 5 Abs. 1 lit. c DSGVO)
+
+**Annahme.** Eine Trainingsrechnung hat keinen abweichenden Empfänger. Empfänger ist die Kund:in selbst, mit Name und Anschrift aus dem Trainingskontakt. Die Zeile „Straße und Hausnummer“ kommt ungeteilt auf die Rechnung. Aus der Akte wird nichts gelesen, auch wenn dieselbe Person eine hat. Die hinterlegten Empfänger (Beihilfe, Versicherung, Betreuung) hängen an der Akte und lassen sich an einer Trainingsrechnung nicht setzen. Die Person, für die geleistet wurde, steht als „Leistung für“ auf der Rechnung, nicht als „Behandelt“, und ohne Geburtsdatum. Fehlt die Anschrift im Training, wird die Rechnung ohne Anschrift ausgestellt.
+
+**Begründung.** ADR-021 Punkt 3 erlaubt zwischen den Verhältnissen nur die gemeinsame Identität, keine Kontaktdaten und keine Empfängerstammdaten der Akte. Das Geburtsdatum dient in der Behandlung der Zuordnung bei Beihilfe und privater Versicherung. Für einen Dienstvertrag über Training ist es keine Pflichtangabe nach § 14 Abs. 4 UStG und entfällt nach dem Grundsatz der Datenminimierung. Unsicher: ob Firmen (Betriebssport) oder Angehörige als Zahler vorkommen – dann bräuchte das Training eigene Empfänger. Unsicher ist auch, ob § 14 Abs. 4 Nr. 1 UStG eine vollständige Anschrift verlangt: Ohne Anschrift im Trainingskontakt ist die Rechnung formal unvollständig.
+
+**Anker.** Zweig `training_relationship_id is not null` in `app.build_invoice_document`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Hinweis statt Empfängerwahl in `src/features/billing/InvoiceDetailPage.tsx`; `personLabel` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/training-invoices.test.ts`.
+
+**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`.
+
+### ANN-183 — Ein Trainingsverhältnis mit Belegen bleibt stehen, bis deren steuerliche Frist abgelaufen ist
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-008 Punkt 2, ADR-021 Punkt 4)
+
+**Annahme.** Der Löschlauf löscht ein Trainingsverhältnis drei Jahre nach Vertragsende nur, wenn keiner seiner Belege (Rechnung, Storno, Erinnerung, Zahlung) noch in der Frist von acht Jahren ab Ende des Kalenderjahres liegt. Sonst bleibt das ganze Verhältnis stehen: Kontakt, Termine, Vereinbarungen, Leistungen und Rechnungen. Im Bericht des Laufs erscheint es als `steuerfrist_gehalten`. Nach Ablauf fallen Belege und Verhältnis gemeinsam, jeder Datensatz im Löschjournal.
+
+**Begründung.** ADR-008 Punkt 2: Gesetzliche Aufbewahrung hat Vorrang vor der regulären Löschung. § 147 Abs. 3 AO verlangt acht Jahre. Dieselbe Regel gilt seit ABR-003 an der Akte (`app.billing_retention_due_at`). Leistung und Rechnung zeigen mit RESTRICT auf Termin und Verhältnis. Ohne diese Regel bräche der Lauf ab oder löschte Belege zu früh. Unsicher: ob Kontaktdaten, Vereinbarungen und Termine ohne Leistung nach drei Jahren schon fallen müssen (Datenminimierung). Die Rechnung selbst trägt ihren Snapshot und braucht sie nicht.
+
+**Anker.** `app.training_billing_retention_due_at`, die Sperre in der Trainingsschleife von `public.apply_retention` und die Belege in `app.delete_training_relationship`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`.
+
+**Änderungspfad.** Teillöschung nach drei Jahren: In der Sperre Kontaktdaten, Vereinbarungen und Termine ohne Leistung löschen, Rest mit der Belegfrist · Aufwand `mittel`.

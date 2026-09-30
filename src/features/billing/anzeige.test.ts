@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { grundlageText, ibanInGruppen, monatsname, zahlungsTon } from './anzeige';
+import {
+  empfaengerart,
+  grundlageText,
+  ibanInGruppen,
+  monatsname,
+  personLabel,
+  zahlungsTon,
+} from './anzeige';
 
 describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
   it('nennt den Abrechnungsmonat ohne Zeitzonenrechnung', () => {
@@ -29,5 +36,20 @@ describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
     expect(zahlungsTon.paid).toBe('positiv');
     expect(zahlungsTon.partially_paid).toBe('warnung');
     expect(zahlungsTon.overpaid).toBe('warnung');
+  });
+
+  it('nennt die Person im Training nicht behandelt (TRN-008)', () => {
+    expect(personLabel('training', 'kurz')).toBe('Leistung für');
+    expect(personLabel('training', 'blatt')).toBe('Leistung für');
+    expect(personLabel('therapy', 'kurz')).toBe('Behandelt');
+    expect(personLabel('therapy', 'blatt')).toBe('Behandelte Person');
+    // Snapshots vor schema_version 3 tragen keinen Bereich und sind Behandlung.
+    expect(personLabel(undefined, 'blatt')).toBe('Behandelte Person');
+  });
+
+  it('nennt die Kundin im Training nicht Patientin (ANN-182)', () => {
+    expect(empfaengerart('self', 'training')).toBe('Kund:in selbst');
+    expect(empfaengerart('self', 'therapy')).toBe('Patient:in selbst');
+    expect(empfaengerart('aid_authority', 'therapy')).toBe('Beihilfestelle');
   });
 });

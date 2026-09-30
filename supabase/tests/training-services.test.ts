@@ -166,6 +166,15 @@ describe('TRN-007: Leistung am Trainingsverhaeltnis', () => {
       );
     });
 
+    it('weist ein Patientenkonto ab - auch an Erikas eigenem Trainingstermin', async () => {
+      const termin = await trainingstermin({ verhaeltnis: trainingRelationships.erika });
+      await expect(asUser(users.patientErika, ERFASSEN, [termin, pt()])).rejects.toThrow(
+        /not allowed to record billable services/,
+      );
+      const { rows } = await asUser(users.patientErika, LEISTUNGEN);
+      expect(rows).toEqual([]);
+    });
+
     it('zeigt der Trainingsbetreuung keine Arbeitsliste der Abrechnung', async () => {
       await trainingstermin();
       const { rows } = await asUser(users.trainer, OFFENE);

@@ -252,10 +252,16 @@ describe('Ein Bereich je Rechnung', () => {
         'therapy',
       ]);
 
+      // Seit TRN-008 haelt invoices_party das Verhaeltnis am Bereich. Damit
+      // hier der Fremdschluessel fuer sich einsteht, wandert das Verhaeltnis
+      // mit (die Constraint selbst prueft training-invoices.test.ts).
       await expect(
-        asPostgres("update public.invoices set service_area = 'training' where id = $1", [
-          rows[0]!.id,
-        ]),
+        asPostgres(
+          `update public.invoices
+              set service_area = 'training', patient_id = null, training_relationship_id = $2
+            where id = $1`,
+          [rows[0]!.id, trainingRelationships.erika],
+        ),
       ).rejects.toThrow(/invoice_items_invoice_area_fkey/);
     });
   });
@@ -301,8 +307,20 @@ describe('Ein Bereich je Rechnung', () => {
     it('findet ohne Leistung im verlangten Bereich nichts zum Abrechnen', async () => {
       await leistung(KATALOG.kg, 30);
       await expect(
-        asUser(users.office, ENTWURF, [patients.erika, await monat(), 'training']),
+        asUser(users.office, ENTWURF, [patients.erika, await monat(), 'therapy']),
+      ).resolves.toBeTruthy();
+      // Alles aus dem Monat steht jetzt auf dem Entwurf; ein zweiter Aufruf
+      // fuer eine andere Person findet nichts.
+      await expect(
+        asUser(users.office, ENTWURF, [patients.max, await monat(), 'therapy']),
       ).rejects.toThrow(/no billable services for this patient, month and service area/);
+    });
+
+    it('verweist fuer den Bereich training auf das Trainingsverhaeltnis (TRN-008)', async () => {
+      await leistung(KATALOG.kg, 30);
+      await expect(
+        asUser(users.office, ENTWURF, [patients.erika, await monat(), 'training']),
+      ).rejects.toThrow(/training invoices are drafted for the training relationship/);
     });
 
     it('laesst je Person, Monat und Bereich hoechstens einen Entwurf zu', async () => {

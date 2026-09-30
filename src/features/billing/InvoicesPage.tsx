@@ -178,7 +178,9 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
 
         <ul className="flex flex-col gap-3">
           {(kandidaten.data ?? []).map((kandidat) => (
-            <li key={`${kandidat.patient_id}-${kandidat.period_month}-${kandidat.service_area}`}>
+            <li
+              key={`${kandidat.patient_id ?? kandidat.training_relationship_id}-${kandidat.period_month}-${kandidat.service_area}`}
+            >
               <KandidatenKarte kandidat={kandidat} darfAusstellen={darfAusstellen} />
             </li>
           ))}
@@ -371,8 +373,7 @@ function KandidatenKarte({
   const navigate = useNavigate();
 
   const anlegen = useMutation({
-    mutationFn: () =>
-      createEntwurf(kandidat.patient_id, kandidat.period_month, kandidat.service_area),
+    mutationFn: () => createEntwurf(kandidat),
     onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });

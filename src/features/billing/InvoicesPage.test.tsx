@@ -28,6 +28,7 @@ const { InvoicesPage } = await import('./InvoicesPage');
 function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat {
   return {
     patient_id: 'p1',
+    training_relationship_id: null,
     patient_name: 'Erika Beispiel',
     period_month: '2026-08-01',
     service_area: 'therapy',
@@ -50,6 +51,7 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     issued_on: '2026-09-01',
     due_on: '2026-09-15',
     patient_id: 'p1',
+    training_relationship_id: null,
     patient_name: 'Erika Beispiel',
     recipient_name: 'Erika Beispiel',
     recipient_kind: 'self',
@@ -70,6 +72,8 @@ function posten(rest: Partial<BillingApi.OffenerPosten> = {}): BillingApi.Offene
     id: 'r1',
     invoice_number: 'RG-2026-0001',
     patient_id: 'p1',
+    training_relationship_id: null,
+    service_area: 'therapy',
     patient_name: 'Erika Beispiel',
     recipient_name: 'Erika Beispiel',
     period_month: '2026-08-01',
@@ -114,7 +118,15 @@ describe('InvoicesPage', () => {
     const nutzer = userEvent.setup();
     fetchKandidaten.mockResolvedValue([
       kandidat(),
-      kandidat({ service_area: 'training', service_count: 1, total_cents: 7_500 }),
+      // Seit TRN-008 hängt die Trainingszeile am Trainingsverhältnis, nicht an
+      // der Akte - auch bei derselben Person (ADR-021 Punkt 3).
+      kandidat({
+        patient_id: null,
+        training_relationship_id: 'v1',
+        service_area: 'training',
+        service_count: 1,
+        total_cents: 7_500,
+      }),
     ]);
     createEntwurf.mockResolvedValue('neu-2');
 
@@ -128,7 +140,14 @@ describe('InvoicesPage', () => {
     const knoepfe = screen.getAllByRole('button', { name: 'Entwurf anlegen' });
     expect(knoepfe).toHaveLength(2);
     await nutzer.click(knoepfe[1]!);
-    expect(createEntwurf).toHaveBeenCalledWith('p1', '2026-08-01', 'training');
+    expect(createEntwurf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patient_id: null,
+        training_relationship_id: 'v1',
+        period_month: '2026-08-01',
+        service_area: 'training',
+      }),
+    );
   });
 
   it('legt einen Entwurf fuer genau diesen Monat und Bereich an', async () => {
@@ -140,7 +159,14 @@ describe('InvoicesPage', () => {
 
     await nutzer.click(await screen.findByRole('button', { name: 'Entwurf anlegen' }));
 
-    expect(createEntwurf).toHaveBeenCalledWith('p1', '2026-08-01', 'therapy');
+    expect(createEntwurf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        patient_id: 'p1',
+        training_relationship_id: null,
+        period_month: '2026-08-01',
+        service_area: 'therapy',
+      }),
+    );
   });
 
   it('bietet keinen zweiten Entwurf fuer denselben Monat an', async () => {
