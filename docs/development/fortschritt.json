@@ -488,7 +488,10 @@
           "id": "dsn-001",
           "name": "DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs)",
           "gewicht": 1,
-          "status": "offen"
+          "status": "entwurf",
+          "fertig_am": "2026-09-30",
+          "nachweis": "docs/development/PLATTFORM-ANSICHTEN.md",
+          "vermerk": "Festlegungen D1 bis D7 zu bestätigen"
         },
         {
           "id": "por-epic-001",

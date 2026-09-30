@@ -63,7 +63,8 @@ Owner in der Anwendung selbst ein (§4). V1 umfasst:
    außer dem, was §17 verbietet. Patient:innen haben **zwei Stufen**: während
    der Behandlung kostenlos (Befundbogen, Termine und Wünsche, Rechnungen,
    Heimübungsplan, Check-ins), danach das Nachsorge-Abo. Die Ansichten für
-   Patient:innen und Betreuung sind noch zu entwerfen (DSN-001, vor Block 4).
+   Patient:innen und Betreuung entwirft DSN-001 vor Block 4
+   ([`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md)).
 7. **Angebote:** das **Nachsorge-Abo** der Patient:innen nach dem Ende der
    Behandlung als Monatsrechnung; das **Trainingspaket** nach Zeitraum, nicht
    pausierbar, mit der Plattform im Preis; der Übergang aus der Behandlung
@@ -370,8 +371,10 @@ Die Plattform nach §4.6 (Patient:innen) und §4.10 (Kund:innen). **Konto und
 Akte sind getrennt**; wer beide Verhältnisse hat, sieht beide Bereiche
 getrennt (§4.8). Vor dem ersten Loop stehen zwei Docs-Sessions. **DSN-001**
 entwirft die Ansichten für Patient:innen (beide Stufen aus §4.6) und für die
-Betreuung — Jannes hat sie noch nicht durchdacht; die Ansicht der
-Trainingskund:innen steht mit §4.10. **ADR-023**: Konten
+Betreuung — Entwurf mit sieben Festlegungen D1 bis D7 in
+[`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md) (2026-09-30, zu
+bestätigen); die Ansicht der Trainingskund:innen steht mit §4.10 und bekommt
+dort nur ihren Platz im selben Gerüst. **ADR-023**: Konten
 externer Personen neben den Praxisrollen, Einladung und Zustellweg (R8),
 Identitätsprüfung und Vertretung (B5 als Annahme, reversibel an einer Stelle),
 Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche.
@@ -738,6 +741,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | TRN-EPIC-002 Trainingstermine | fertig | 2026-09-30 | TRN-004 bis TRN-006 | — | Sichtung: Training Schritte 4 bis 6 |
 | B | TRN-EPIC-003 Trainingsrechnung | fertig | 2026-09-30 | TRN-007, TRN-008, Zweitreview | — | Sichtung: Training Schritte 7 bis 9 |
 | B | TRN-EPIC-004 Trainingsprotokoll | fertig | 2026-09-30 | TRN-009, TRN-010, Zweitreview | — | Sichtung: Training Schritte 10 bis 12 |
+| B | DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs) | entwurf | 2026-09-30 | docs/development/PLATTFORM-ANSICHTEN.md | — | Festlegungen D1 bis D7 zu bestätigen |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
