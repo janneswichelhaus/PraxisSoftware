@@ -339,6 +339,16 @@ describe('TRN-009: Trainingsprotokoll', () => {
       expect((await protokoll(TRAINING_HEUTE))?.content).toBe('Fertig');
     });
 
+    it('oeffnet einen dokumentierten Trainingstermin nicht wieder', async () => {
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Fertig');
+      await expect(
+        asUser(users.trainer, 'select public.reopen_appointment($1::uuid, $2::timestamptz)', [
+          TRAINING_HEUTE,
+          await terminStand(TRAINING_HEUTE),
+        ]),
+      ).rejects.toThrow(/appointment is not completed/);
+    });
+
     it('setzt documented am Trainingstermin nie ohne abgeschlossenes Protokoll', async () => {
       await expect(
         asPostgres(`update public.appointments set status = 'documented' where id = $1`, [
@@ -384,6 +394,70 @@ describe('TRN-009: Trainingsprotokoll', () => {
         ],
       );
       expect(Number(rows[0]!.n)).toBe(1);
+    });
+  });
+
+  describe('Abschliessen am Trainingstermin (TRN-010, ANN-186)', () => {
+    const ABSCHLUSS = 'select public.complete_appointment($1::uuid, $2::timestamptz) as id';
+    const OEFFNEN = 'select public.reopen_appointment($1::uuid, $2::timestamptz) as id';
+
+    it('laesst die Trainingsbetreuung ihre Einheit abschliessen und wieder oeffnen', async () => {
+      await asUserCommitted(users.trainer, ABSCHLUSS, [
+        TRAINING_HEUTE,
+        await terminStand(TRAINING_HEUTE),
+      ]);
+      expect(await terminStatus(TRAINING_HEUTE)).toBe('completed');
+      const abgeschlossen = await audit('appointment.completed', TRAINING_HEUTE);
+      expect(abgeschlossen).toHaveLength(1);
+      expect(abgeschlossen[0]!.context).toMatchObject({
+        kind: 'training',
+        training_relationship_id: trainingRelationships.tina,
+      });
+
+      await asUserCommitted(users.trainer, OEFFNEN, [
+        TRAINING_HEUTE,
+        await terminStand(TRAINING_HEUTE),
+      ]);
+      expect(await terminStatus(TRAINING_HEUTE)).toBe('confirmed');
+      expect((await audit('appointment.reopened', TRAINING_HEUTE))[0]!.context).toMatchObject({
+        kind: 'training',
+        from_status: 'completed',
+      });
+    });
+
+    it('fuehrt vom durchgefuehrten Termin mit dem Protokoll nach documented', async () => {
+      await asUserCommitted(users.office, ABSCHLUSS, [
+        TRAINING_HEUTE,
+        await terminStand(TRAINING_HEUTE),
+      ]);
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Nach dem Abschluss');
+      expect(await terminStatus(TRAINING_HEUTE)).toBe('documented');
+      await expect(
+        asUser(users.trainer, OEFFNEN, [TRAINING_HEUTE, await terminStand(TRAINING_HEUTE)]),
+      ).rejects.toThrow(/appointment is not completed/);
+    });
+
+    it('findet fuer die Trainingsbetreuung keinen Behandlungstermin', async () => {
+      await expect(
+        asUser(users.trainer, ABSCHLUSS, [BEHANDLUNG_HEUTE, await terminStand(BEHANDLUNG_HEUTE)]),
+      ).rejects.toThrow(/appointment not found/);
+    });
+
+    it('findet fuer therapist und team_lead keinen Trainingstermin', async () => {
+      for (const user of [users.therapist, users.teamLead]) {
+        for (const sql of [ABSCHLUSS, OEFFNEN]) {
+          await expect(
+            asUser(user, sql, [TRAINING_VORGESTERN, await terminStand(TRAINING_VORGESTERN)]),
+          ).rejects.toThrow(/appointment not found/);
+        }
+      }
+      expect(await terminStatus(TRAINING_VORGESTERN)).toBe('completed');
+    });
+
+    it('weist ein Patientenkonto ab', async () => {
+      await expect(
+        asUser(users.patientMax, ABSCHLUSS, [TRAINING_HEUTE, await terminStand(TRAINING_HEUTE)]),
+      ).rejects.toThrow(/not allowed to complete appointments/);
     });
   });
 

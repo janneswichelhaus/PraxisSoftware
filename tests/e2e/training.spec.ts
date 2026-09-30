@@ -82,6 +82,7 @@ test.describe('Training', () => {
       await expect(page.getByLabel('Was in der Einheit gemacht wurde')).toHaveValue(
         /Kniebeugen 3 × 10/,
       );
+      await expect(page.getByRole('button', { name: 'Als durchgeführt vermerken' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
       await page.getByRole('button', { name: 'Protokoll abschließen' }).click();
       await expect(page.getByText(/lässt sich danach nicht mehr ändern/)).toBeVisible();
@@ -91,6 +92,7 @@ test.describe('Training', () => {
       await expect(page.getByText(/Rudern am Kabelzug/)).toBeVisible();
       await expect(page.getByText(/Abgeschlossen am/)).toBeVisible();
       await expect(page.getByLabel('Was in der Einheit gemacht wurde')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Wieder öffnen' })).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=detail`);
@@ -118,6 +120,7 @@ test.describe('Training', () => {
     for (const name of [
       'Verschieben',
       'Termin absagen',
+      'Als durchgeführt vermerken',
       'Entwurf speichern',
       'Protokoll abschließen',
     ]) {

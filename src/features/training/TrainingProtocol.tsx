@@ -9,7 +9,12 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
+import {
+  appointmentTypeLabels,
+  completeAppointment,
+  formatLocalTimeRange,
+  reopenAppointment,
+} from '@/features/appointments/api';
 import {
   useTextverlustschutz,
   type Verlustschutztexte,
@@ -239,6 +244,78 @@ function Entwurf({
       {schutz}
     </div>
   );
+}
+
+/**
+ * Abschließen und Wiederöffnen am Trainingstermin (TRN-010, ANN-186).
+ *
+ * „Durchgeführt" ist eine organisatorische Feststellung ohne Inhalt, wie am
+ * Behandlungstermin (ANN-005); dokumentiert ist der Termin erst mit dem
+ * abgeschlossenen Protokoll. Wieder öffnen geht nur vom durchgeführten
+ * Termin - ein dokumentierter hat keinen Rückweg (ADR-018 Punkt 2).
+ */
+export function TerminAbschluss({
+  termin,
+  onGeaendert,
+}: {
+  termin: TrainingAppointment;
+  onGeaendert: (meldung: string) => void;
+}) {
+  const queryClient = useQueryClient();
+  const abschliessen = useMutation({
+    mutationFn: () => completeAppointment(termin.id, termin.updated_at),
+    onSuccess: () => {
+      invalidiereTermin(queryClient, termin);
+      onGeaendert('Termin als durchgeführt vermerkt.');
+    },
+  });
+  const oeffnen = useMutation({
+    mutationFn: () => reopenAppointment(termin.id, termin.updated_at),
+    onSuccess: () => {
+      invalidiereTermin(queryClient, termin);
+      onGeaendert('Termin wieder geöffnet.');
+    },
+  });
+
+  if (termin.status === 'confirmed') {
+    return (
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="secondary"
+          disabled={abschliessen.isPending}
+          onClick={() => abschliessen.mutate()}
+        >
+          {abschliessen.isPending ? 'Wird vermerkt …' : 'Als durchgeführt vermerken'}
+        </Button>
+        {abschliessen.isError ? (
+          <p role="alert" className="text-danger text-sm">
+            {abschliessen.error.message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+  if (termin.status === 'completed') {
+    return (
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="quiet"
+          disabled={oeffnen.isPending}
+          onClick={() => oeffnen.mutate()}
+        >
+          {oeffnen.isPending ? 'Wird geöffnet …' : 'Wieder öffnen'}
+        </Button>
+        {oeffnen.isError ? (
+          <p role="alert" className="text-danger text-sm">
+            {oeffnen.error.message}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+  return null;
 }
 
 /**

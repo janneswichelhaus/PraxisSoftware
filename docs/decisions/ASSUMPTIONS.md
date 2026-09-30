@@ -2151,7 +2151,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8)
 
-**Annahme.** Das Trainingsprotokoll schreiben, abschließen und lesen `owner` und `trainer`. Das Büro (`office`) liest es nicht, auch nicht in der Liste der Einheiten. Es sieht aber weiter den Termin mit seinem Zustand. `therapist` und `team_lead` erreichen das Protokoll nicht (kein Durchgriff). Jedes Öffnen eines Protokolls, auch in der Liste, steht als `training_protocol.viewed` im Protokoll, jeder abgewiesene Versuch als `denied`.
+**Annahme.** Das Trainingsprotokoll schreiben, abschließen und lesen `owner` und `trainer`. Das Büro (`office`) liest es nicht, auch nicht in der Liste der Einheiten. Es sieht aber weiter den Termin mit seinem Zustand und kann ihn als durchgeführt vermerken (ANN-186). `therapist` und `team_lead` erreichen das Protokoll nicht (kein Durchgriff). Jedes Öffnen eines Protokolls, auch in der Liste, steht als `training_protocol.viewed` im Protokoll, jeder abgewiesene Versuch als `denied`.
 
 **Begründung.** Ein Trainingsprotokoll kann Angaben zur Gesundheit enthalten (Schmerz, Belastbarkeit), die im Training unter Art. 9 Abs. 2 lit. a DSGVO stehen (ADR-021 Punkt 4). §4.8 nennt das Büro im Training „nur organisatorisch“; für die Abrechnung braucht es den Zustand des Termins, nicht den Inhalt der Einheit. Das ist enger als in der Behandlung, wo das Büro die Dokumentation liest (ADR-004 Fassung 2). Unsicher: ob das Büro für Rückfragen der Kund:in zur Rechnung den Inhalt braucht.
 
@@ -2170,3 +2170,15 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `public.training_protocols_guard` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; Tests in `supabase/tests/training-protocols.test.ts` („ist danach unveraenderlich“).
 
 **Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`.
+
+### ANN-186 — Am Trainingstermin vermerken owner, Trainingsbetreuung und Büro „durchgeführt“ und öffnen wieder
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
+
+**Annahme.** Einen Trainingstermin vermerken dieselben Rollen als durchgeführt und öffnen ihn wieder, die ihn auch anlegen, verschieben und absagen: `owner`, `trainer` und `office` (ANN-176). „Durchgeführt“ braucht kein Protokoll (wie ANN-005 in der Behandlung). „Dokumentiert“ wird der Termin erst mit dem abgeschlossenen Protokoll, und von dort gibt es keinen Weg zurück (ADR-018 Punkt 2). Einen Termin mit Protokoll, auch nur im Entwurf, kann niemand absagen oder als „nicht angetroffen“ vermerken.
+
+**Begründung.** ADR-018 Punkt 2 gibt den Abschluss den „therapeutischen Rollen“. Im Training ist das die Trainingsbetreuung; ohne sie könnte niemand, der die Einheit betreut hat, sie abschließen. Das Büro schließt auch in der Behandlung ab (`app.can_complete_appointment`), und im Training fasst es den Termin ohnehin an. Wo protokolliert wurde, hat die Einheit stattgefunden; eine Absage daneben wäre ein Widerspruch im Bestand.
+
+**Anker.** Rollenprüfung in `public.complete_appointment` und `public.reopen_appointment` in `supabase/migrations/20260930131000_trn_010_training_documented.sql`; `public.appointments_training_protocol_guard` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `TerminAbschluss` in `src/features/training/TrainingProtocol.tsx`.
+
+**Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`.

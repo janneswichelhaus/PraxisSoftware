@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as TrainingApi from './api';
+import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 
@@ -21,6 +22,8 @@ const getTrainingProtocol = vi.fn();
 const saveTrainingProtocol = vi.fn();
 const finalizeTrainingProtocol = vi.fn();
 const listTrainingProtocols = vi.fn();
+const completeAppointment = vi.fn();
+const reopenAppointment = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof TrainingApi>();
@@ -33,6 +36,15 @@ vi.mock('./api', async (importOriginal) => {
     finalizeTrainingProtocol: (...args: unknown[]) =>
       finalizeTrainingProtocol(...args) as Promise<void>,
     listTrainingProtocols: (id: string) => listTrainingProtocols(id) as Promise<unknown>,
+  };
+});
+
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    completeAppointment: (...args: unknown[]) => completeAppointment(...args) as Promise<void>,
+    reopenAppointment: (...args: unknown[]) => reopenAppointment(...args) as Promise<void>,
   };
 });
 
@@ -88,6 +100,8 @@ beforeEach(() => {
     saveTrainingProtocol,
     finalizeTrainingProtocol,
     listTrainingProtocols,
+    completeAppointment,
+    reopenAppointment,
   ]) {
     f.mockReset();
   }
@@ -95,6 +109,8 @@ beforeEach(() => {
   getTrainingProtocol.mockResolvedValue(null);
   saveTrainingProtocol.mockResolvedValue({ id: PROTOKOLL, updated_at: entwurf.updated_at });
   finalizeTrainingProtocol.mockResolvedValue(undefined);
+  completeAppointment.mockResolvedValue(undefined);
+  reopenAppointment.mockResolvedValue(undefined);
 });
 
 describe('Trainingsprotokoll am Trainingstermin', () => {
@@ -167,9 +183,11 @@ describe('Trainingsprotokoll am Trainingstermin', () => {
     expect(screen.queryByRole('button', { name: 'Wieder öffnen' })).toBeNull();
   });
 
-  it('zeigt dem Büro kein Protokoll (ANN-184)', async () => {
+  it('zeigt dem Büro kein Protokoll (ANN-184) - Abschließen aber schon (ANN-186)', async () => {
     renderWithProviders(<TrainingAppointmentPage user={testUser(['office'], 'Olivia')} />);
-    expect(await screen.findByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: 'Als durchgeführt vermerken' }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Trainingsprotokoll' })).toBeNull();
     expect(getTrainingProtocol).not.toHaveBeenCalled();
   });
@@ -182,6 +200,35 @@ describe('Trainingsprotokoll am Trainingstermin', () => {
     });
     renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
     await screen.findByRole('link', { name: 'Tina Trainingskundin' });
+    expect(screen.queryByRole('heading', { name: 'Trainingsprotokoll' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Als durchgeführt vermerken' })).toBeNull();
+  });
+});
+
+describe('Abschließen am Trainingstermin (TRN-010)', () => {
+  it('vermerkt den Termin als durchgeführt', async () => {
+    const nutzer = userEvent.setup();
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Als durchgeführt vermerken' }));
+    await waitFor(() =>
+      expect(completeAppointment).toHaveBeenCalledWith(TERMIN, termin.updated_at),
+    );
+  });
+
+  it('öffnet einen durchgeführten Termin wieder', async () => {
+    getTrainingAppointment.mockResolvedValue({ ...termin, status: 'completed' });
+    const nutzer = userEvent.setup();
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Wieder öffnen' }));
+    await waitFor(() => expect(reopenAppointment).toHaveBeenCalledWith(TERMIN, termin.updated_at));
+    // Ein durchgeführter Termin wird nicht mehr verschoben oder abgesagt.
+    expect(screen.queryByRole('button', { name: 'Termin absagen' })).toBeNull();
+  });
+
+  it('bietet einem Patientenkonto nichts davon an', async () => {
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['patient'])} />);
+    await screen.findByRole('link', { name: 'Tina Trainingskundin' });
+    expect(screen.queryByRole('button', { name: 'Als durchgeführt vermerken' })).toBeNull();
     expect(screen.queryByRole('heading', { name: 'Trainingsprotokoll' })).toBeNull();
   });
 });
