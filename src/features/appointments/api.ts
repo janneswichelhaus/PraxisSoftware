@@ -155,13 +155,10 @@ export const notificationChannelOrder: readonly NotificationChannel[] = [
  * abrechenbare Leistung (§19). Beide hießen bis CAL-027 `treatment` und
  * `event`; sie heißen jetzt wie die Bereiche (ADR-021 Punkt 9).
  *
- * `training` ist der Trainingstermin am Trainingsverhältnis (ADR-021). Die
- * Praxisoberfläche zeigt ihn **nicht**: Die Policy auf dem Kalender und die
- * Lesepfade filtern nach Kontext (ADR-022 Punkt 11), der Trainingsbereich
- * kommt mit E18 Schritt 7. Der Wert steht hier trotzdem, weil eine Spalte drei
- * Werte trägt — ein Schema, das nur zwei kennt, wirft beim dritten, statt ihn
- * wegzulassen, und die Verwaltung der Zugänge liest den Kalender bewusst über
- * alle Kontexte (`fetchStaffFutureAppointments`).
+ * `training` ist der Trainingstermin am Trainingsverhältnis (ADR-021). Wer ihn
+ * sieht, entscheidet der Kontext (ADR-022 Punkt 11): owner, Büro und
+ * Trainingsbetreuung im Kalender, die Behandlungsrollen nie (TRN-006). Seine
+ * Detailseite liegt im Trainingsbereich (`/training/termine/:id`, TRN-004).
  */
 export const appointmentKindSchema = z.enum(['therapy', 'internal', 'training']);
 export type AppointmentKind = z.infer<typeof appointmentKindSchema>;
@@ -297,6 +294,20 @@ export async function fetchAssignableTherapists(): Promise<AssignableTherapist[]
   return z.array(therapistSchema).parse(data ?? []);
 }
 
+/**
+ * Wer einen Trainingstermin betreuen kann (TRN-004, ANN-176): die Personen mit
+ * der Rolle Trainingsbetreuung. Für owner, Büro und Trainingsbetreuung; den
+ * Behandlungsrollen liefert der Server nichts.
+ */
+export async function fetchAssignableTrainers(): Promise<AssignableTherapist[]> {
+  const { data, error } = (await getSupabase().rpc('list_assignable_trainers')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error('Die Trainingsbetreuung konnte nicht geladen werden.');
+  return z.array(therapistSchema).parse(data ?? []);
+}
+
 const locationSchema = z.object({ id: z.string(), name: z.string() });
 export type Location = z.infer<typeof locationSchema>;
 
@@ -385,13 +396,24 @@ export function patientName(
  * (PROJECT_PRINCIPLES.md §13).
  */
 export function terminBezeichnung(
-  appointment: Pick<Appointment, 'kind' | 'title' | 'patient_given_name' | 'patient_family_name'>,
+  appointment: Pick<
+    Appointment,
+    'kind' | 'title' | 'patient_given_name' | 'patient_family_name'
+  > & {
+    training_given_name?: string | null | undefined;
+    training_family_name?: string | null | undefined;
+  },
 ): string {
   if (appointment.kind === 'internal') return appointment.title ?? 'Fehlzeit';
-  // Ein Trainingstermin hat weder Titel noch Patientennamen und erreicht die
-  // Praxisoberfläche nicht (ADR-022 Punkt 11). Wo er doch steht — in der
-  // Terminliste vor dem Deaktivieren eines Zugangs —, ist er die Belegung und
+  // Ein Trainingstermin traegt den Namen aus dem Training (TRN-006), wo der
+  // Lesepfad ihn liefert - Kalender und Tagesliste. Wo nicht - in der
+  // Terminliste vor dem Deaktivieren eines Zugangs -, ist er die Belegung und
   // nicht der Termin: Zeit und Mitarbeitende, sonst nichts.
+  if (appointment.kind === 'training') {
+    const name =
+      `${appointment.training_given_name ?? ''} ${appointment.training_family_name ?? ''}`.trim();
+    return name || '—';
+  }
   return patientName(appointment) || '—';
 }
 
@@ -1279,9 +1301,16 @@ const calendarEntrySchema = z.object({
   staff_given_name: z.string(),
   staff_family_name: z.string(),
   location_name: z.string().nullable(),
+  // TRN-006: Am Trainingstermin stehen Verhaeltnis und Name aus dem Training,
+  // nie aus der Akte (ADR-021 Punkt 3). Ohne Angabe leer.
+  training_relationship_id: z.string().nullable().default(null),
+  training_given_name: z.string().nullable().default(null),
+  training_family_name: z.string().nullable().default(null),
 });
 
-export type CalendarEntry = z.infer<typeof calendarEntrySchema>;
+// Die Eingabeform: Die drei Felder des Trainings sind dort optional, damit
+// Prüfseiten und Tests aus der Zeit davor gültig bleiben.
+export type CalendarEntry = z.input<typeof calendarEntrySchema>;
 
 export interface CalendarQuery {
   von: string;
@@ -1346,7 +1375,15 @@ export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
  * Öffnen des Formulars.
  */
 export function appointmentToFormValues(
-  appointment: Appointment,
+  appointment: Pick<
+    Appointment,
+    | 'staff_member_id'
+    | 'appointment_type'
+    | 'starts_at'
+    | 'ends_at'
+    | 'location_id'
+    | 'organization_time_zone'
+  >,
 ): Record<AppointmentFormField, string> {
   const zone = appointment.organization_time_zone;
   const uhrzeit = (iso: string) =>
@@ -1377,7 +1414,7 @@ export function appointmentToFormValues(
 const TERMINLAENGE_MELDUNG =
   'Die Länge passt nicht zum Praxisraster. Bitte eine Länge wählen, die ein Vielfaches des Rasters ist.';
 
-function schreibfehler(error: { message?: string } | null, standard: string): Error {
+export function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
     return new AusserhalbArbeitszeitError();
   }
@@ -1423,6 +1460,24 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
   if (error?.message?.includes('cannot be recorded as no-show')) {
     return new Error(
       'Für diesen Termin lässt sich „nicht angetroffen" nicht vermerken: Er ist abgesagt oder es hängt bereits eine Dokumentation daran.',
+    );
+  }
+  // TRN-004: Hausbesuch im Training nimmt die Anschrift aus dem
+  // Trainingskontakt (ANN-177).
+  if (error?.message?.includes('home visit requires a complete address')) {
+    return new Error(
+      'Für einen Hausbesuch fehlt im Training eine vollständige Anschrift – Straße mit Hausnummer, PLZ und Ort. Bitte zuerst den Kontakt der Trainingskund:in ergänzen.',
+    );
+  }
+  if (error?.message?.includes('staff member not assignable')) {
+    return new Error('Die gewählte Person kann diesen Termin nicht übernehmen.');
+  }
+  if (error?.message?.includes('training basis is concluded')) {
+    return new Error('Die gewählte Vereinbarung ist abgeschlossen. Bitte eine laufende wählen.');
+  }
+  if (error?.message?.includes('training relationship is not active')) {
+    return new Error(
+      'Der Trainingsvertrag ist beendet – es lassen sich keine Termine mehr planen.',
     );
   }
   if (error?.message?.includes('documented appointment cannot be changed')) {

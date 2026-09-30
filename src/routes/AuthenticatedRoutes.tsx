@@ -90,6 +90,9 @@ import { RevenuePage } from '@/features/billing/RevenuePage';
 import { StatisticsPage } from '@/features/statistics/StatisticsPage';
 import { NewTrainingClientPage } from '@/features/training/NewTrainingClientPage';
 import { TrainingClientPage } from '@/features/training/TrainingClientPage';
+import { NewTrainingAppointmentPage } from '@/features/training/NewTrainingAppointmentPage';
+import { EditTrainingAppointmentPage } from '@/features/training/EditTrainingAppointmentPage';
+import { TrainingAppointmentPage } from '@/features/training/TrainingAppointmentPage';
 import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
@@ -97,6 +100,7 @@ import {
   canManageStaffMasterData,
   canReadPatientDirectory,
   canReadTrainingClients,
+  canSeeCalendar,
   canReadTreatmentNote,
   canWriteTrainingClients,
   canWriteTreatmentNote,
@@ -158,6 +162,7 @@ export function AuthenticatedRoutes({
   // Training (TRN-EPIC-001): owner, Trainingsbetreuung, Büro - ohne therapist
   // und team_lead (ADR-021 Punkt 6). Verbindlich prüft der Server.
   const showTraining = canReadTrainingClients(user.roles);
+  const showCalendar = canSeeCalendar(user.roles);
 
   return (
     <VorschauProvider>
@@ -257,9 +262,13 @@ export function AuthenticatedRoutes({
                 </>
               ) : null}
 
+              {showCalendar ? (
+                // Der Kalender auch für die Trainingsbetreuung (TRN-006): Sie
+                // sieht darin nur Trainingstermine, der Server filtert je Termin.
+                <Route path="/kalender" element={<CalendarPage user={user} />} />
+              ) : null}
               {showAppointments ? (
                 <>
-                  <Route path="/kalender" element={<CalendarPage user={user} />} />
                   {/* Tag umplanen bei einem Ausfall - aus dem Kalender heraus,
                   wenn Person und Tag dort feststehen (CAL-009). */}
                   <Route path="/kalender/tag-umplanen" element={<TagUmplanenPage user={user} />} />
@@ -496,6 +505,23 @@ export function AuthenticatedRoutes({
                   {canWriteTrainingClients(user.roles) ? (
                     <Route path="/training/neu" element={<NewTrainingClientPage />} />
                   ) : null}
+                  {/* Trainingstermine im gemeinsamen Kalender (TRN-004). */}
+                  {canWriteTrainingClients(user.roles) ? (
+                    <>
+                      <Route
+                        path="/training/termine/neu"
+                        element={<NewTrainingAppointmentPage user={user} />}
+                      />
+                      <Route
+                        path="/training/termine/:appointmentId/bearbeiten"
+                        element={<EditTrainingAppointmentPage user={user} />}
+                      />
+                    </>
+                  ) : null}
+                  <Route
+                    path="/training/termine/:appointmentId"
+                    element={<TrainingAppointmentPage user={user} />}
+                  />
                   <Route
                     path="/training/:relationshipId"
                     element={<TrainingClientPage user={user} />}

@@ -2,6 +2,11 @@ import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
+import {
+  schreibfehler,
+  type AppointmentFormValues,
+  type CancellationReason,
+} from '@/features/appointments/api';
 
 /**
  * Trainingskund:innen (TRN-EPIC-001).
@@ -292,3 +297,189 @@ export async function reopenTrainingRelationship(id: string): Promise<void> {
     throw new Error('Der Vertrag konnte nicht wieder aufgenommen werden.');
   }
 }
+
+// -----------------------------------------------------------------------------
+// Vereinbarungen (TRN-005)
+//
+// Die Trainingsgrundlage heißt in der Oberfläche „Vereinbarung": Sie ist die
+// Absprache über eine Anzahl Einheiten, keine Verordnung (ADR-022 Punkt 5).
+// -----------------------------------------------------------------------------
+
+const vereinbarungSchema = z.object({
+  id: z.string().uuid(),
+  status: z.enum(['active', 'concluded']),
+  started_on: datum,
+  agreed_quantity: z.number().int().nullable(),
+  appointment_count: z.number().int(),
+});
+export type TrainingBasis = z.infer<typeof vereinbarungSchema>;
+
+export async function listTrainingBases(relationshipId: string): Promise<TrainingBasis[]> {
+  const satz = 'Die Vereinbarungen konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_training_bases', {
+    p_relationship_id: relationshipId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(vereinbarungSchema), data ?? [], satz);
+}
+
+/** „10 Einheiten" oder „ohne feste Anzahl" - mit der Zahl der geplanten Termine (ANN-179). */
+export function vereinbarungText(
+  basis: Pick<TrainingBasis, 'agreed_quantity' | 'appointment_count'>,
+): string {
+  const termine = basis.appointment_count === 1 ? '1 Termin' : `${basis.appointment_count} Termine`;
+  return basis.agreed_quantity === null
+    ? `ohne feste Anzahl · ${termine}`
+    : `${termine} von ${basis.agreed_quantity}`;
+}
+
+export async function createTrainingBasis(
+  relationshipId: string,
+  startedOn: string | null,
+  agreedQuantity: number | null,
+): Promise<string> {
+  const satz = 'Die Vereinbarung konnte nicht angelegt werden.';
+  const ergebnis = await getSupabase().rpc('create_training_basis', {
+    p_relationship_id: relationshipId,
+    p_started_on: startedOn,
+    p_agreed_quantity: agreedQuantity,
+  });
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  return neueKennung(ergebnis.data, satz);
+}
+
+export async function setTrainingBasisConcluded(
+  basisId: string,
+  abgeschlossen: boolean,
+): Promise<void> {
+  const ergebnis = await getSupabase().rpc(
+    abgeschlossen ? 'conclude_training_basis' : 'reopen_training_basis',
+    { p_basis_id: basisId },
+  );
+  if (abgewiesen(ergebnis) || ergebnis.data === null) {
+    throw new Error(
+      abgeschlossen
+        ? 'Die Vereinbarung konnte nicht abgeschlossen werden.'
+        : 'Die Vereinbarung konnte nicht wieder geöffnet werden.',
+    );
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Trainingstermine (TRN-004, TRN-006)
+//
+// Angelegt über `create_training_appointment`; verschoben und abgesagt über
+// die vorhandenen Wege `update_appointment` und `cancel_appointment` (ADR-022
+// Punkt 1) - dafür stehen `updateAppointment` und `cancelAppointment` in
+// `features/appointments/api.ts`.
+// -----------------------------------------------------------------------------
+
+const trainingsterminSchema = z.object({
+  id: z.string().uuid(),
+  training_relationship_id: z.string().uuid(),
+  training_basis_id: z.string().uuid().nullable(),
+  client_given_name: z.string(),
+  client_family_name: z.string(),
+  staff_member_id: z.string().uuid(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  location_id: z.string().uuid().nullable(),
+  location_name: z.string().nullable(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  status: z.enum(['confirmed', 'cancelled', 'no_show', 'completed', 'documented', 'invoiced']),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  updated_at: z.string(),
+  visit_street: z.string().nullable(),
+  visit_house_number: z.string().nullable(),
+  visit_postal_code: z.string().nullable(),
+  visit_city: z.string().nullable(),
+  cancellation_reason: z.string().nullable(),
+  cancellation_received_at: z.string().nullable(),
+  organization_time_zone: z.string(),
+});
+export type TrainingAppointment = z.infer<typeof trainingsterminSchema>;
+
+export async function getTrainingAppointment(id: string): Promise<TrainingAppointment | null> {
+  const satz = 'Der Trainingstermin konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('get_training_appointment', {
+    p_appointment_id: id,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (error) {
+    // Ein anderer Kontext und eine unbekannte Kennung sind dasselbe (TRN-006).
+    if (error.message?.includes('appointment not found')) return null;
+    throw new Error(satz);
+  }
+  const zeilen = antwort(z.array(trainingsterminSchema), data ?? [], satz);
+  return zeilen[0] ?? null;
+}
+
+const kundenterminSchema = z.object({
+  id: z.string().uuid(),
+  training_basis_id: z.string().uuid().nullable(),
+  staff_member_id: z.string().uuid(),
+  staff_given_name: z.string(),
+  staff_family_name: z.string(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  status: z.enum(['confirmed', 'cancelled', 'no_show', 'completed', 'documented', 'invoiced']),
+  starts_at: z.string(),
+  ends_at: z.string(),
+});
+export type TrainingClientAppointment = z.infer<typeof kundenterminSchema>;
+
+/** Termine einer Trainingskund:in ab 30 Tagen zurück - nie eine Behandlung derselben Person. */
+export async function listTrainingClientAppointments(
+  relationshipId: string,
+): Promise<TrainingClientAppointment[]> {
+  const satz = 'Die Termine konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_training_client_appointments', {
+    p_relationship_id: relationshipId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(kundenterminSchema), data ?? [], satz);
+}
+
+/**
+ * Legt einen Trainingstermin an (TRN-004).
+ *
+ * Arbeitszeit und Vergangenheit kommen als eigene Fehlertypen zurück, damit
+ * die Seite nachfragen und den Vorgang bestätigt neu schicken kann - dasselbe
+ * Muster wie am Behandlungstermin (CAL-005, FIX-019).
+ */
+export async function createTrainingAppointment(
+  relationshipId: string,
+  values: AppointmentFormValues,
+  basisId: string | null,
+  allowOutsideWorkingHours = false,
+  confirmedPast = false,
+): Promise<string> {
+  const satz = 'Der Trainingstermin konnte nicht angelegt werden.';
+  const ergebnis = (await getSupabase().rpc('create_training_appointment', {
+    p_training_relationship_id: relationshipId,
+    p_staff_member_id: values.staff_member_id,
+    p_appointment_type: values.appointment_type,
+    p_date: values.date,
+    p_start_time: values.start_time,
+    p_end_time: values.end_time,
+    p_location_id: values.appointment_type === 'practice' ? values.location_id : null,
+    p_allow_outside_working_hours: allowOutsideWorkingHours,
+    p_training_basis_id: basisId,
+    p_confirmed_past: confirmedPast,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) throw schreibfehler(ergebnis.error, satz);
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  return neueKennung(ergebnis.data, satz);
+}
+
+/**
+ * Absagegründe im Training (TRN-004).
+ *
+ * Dieselben Codes wie am Behandlungstermin (ANN-034) - nur mit dem Wort des
+ * Bereichs: Eine Trainingskund:in ist keine Patient:in (ADR-021 Punkt 9).
+ */
+export const trainingAbsageLabels: Record<CancellationReason, string> = {
+  patient_request: 'Kund:in hat abgesagt',
+  practice_request: 'Praxis hat abgesagt',
+  moved: 'Termin verlegt',
+  other: 'Sonstiger Grund',
+};

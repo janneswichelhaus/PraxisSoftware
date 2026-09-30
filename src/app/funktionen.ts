@@ -5,6 +5,7 @@ import {
   canManageStaffMasterData,
   canManageTasks,
   canReadPatientDirectory,
+  canWriteTrainingClients,
   canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
@@ -256,6 +257,20 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       ziel: '/termine/dauerfehlzeit',
       bereich: BEREICHE.termine.label,
       stichworte: ['serie', 'wöchentlich', 'ereignis'],
+      rueckweg: true,
+    });
+  }
+
+  // TRN-004: Trainingstermine planen owner, Trainingsbetreuung und Büro -
+  // die Kund:in wählt das Formular selbst.
+  if (canWriteTrainingClients(roles)) {
+    eintraege.push({
+      id: 'vorgang-trainingstermin-anlegen',
+      art: 'Vorgang',
+      bezeichnung: 'Trainingstermin anlegen',
+      ziel: '/training/termine/neu',
+      bereich: BEREICHE.termine.label,
+      stichworte: ['training', 'personal training', 'coaching', 'neu', 'planen'],
       rueckweg: true,
     });
   }
