@@ -98,7 +98,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
         >
           <span
             aria-hidden="true"
-            className="bg-accent-soft text-accent inline-flex size-8 items-center justify-center rounded-full"
+            className="bg-accent-soft text-accent rounded-pill inline-flex size-8 items-center justify-center"
           >
             <svg
               viewBox="0 0 24 24"
@@ -124,7 +124,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
                   to={`${PLATTFORM_PFAD}?bereich=${z.relationship_kind}`}
                   replace
                   aria-current={gewaehlt === z.relationship_kind ? 'page' : undefined}
-                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-base font-medium aria-[current=page]:shadow-sm"
+                  className="text-ink-muted aria-[current=page]:bg-surface aria-[current=page]:text-ink rounded-button flex min-h-11 items-center justify-center px-3 text-base font-medium"
                 >
                   {BEREICHSNAME[z.relationship_kind]}
                 </Link>

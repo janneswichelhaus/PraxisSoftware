@@ -47,7 +47,7 @@ export function QrCode({
       height={groesse}
       viewBox={`${-rand} ${-rand} ${seite} ${seite}`}
       shapeRendering="crispEdges"
-      className="rounded-md bg-white"
+      className="rounded-image bg-white"
     >
       <rect x={-rand} y={-rand} width={seite} height={seite} fill="#ffffff" />
       <path d={pfad} fill="#000000" />

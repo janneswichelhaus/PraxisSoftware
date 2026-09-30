@@ -84,8 +84,8 @@ const sitzung = {
   signOut: () => Promise.resolve(),
 };
 
-function Praxisrahmen({ children }: { children: ReactNode }) {
-  return <div className="mx-auto max-w-2xl px-5 py-6">{children}</div>;
+function praxisrahmen(inhalt: ReactNode): ReactNode {
+  return <div className="mx-auto max-w-2xl px-5 py-6">{inhalt}</div>;
 }
 
 function inhalt(): { pfad: string; element: ReactNode } {
@@ -94,33 +94,29 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'abschnitt':
       return {
         pfad: '/',
-        element: (
-          <Praxisrahmen>
-            <PlattformAbschnitt
-              art="treatment"
-              verhaeltnisId={MAX}
-              darfVerwalten
-              zeitzone="Europe/Berlin"
-            />
-          </Praxisrahmen>
+        element: praxisrahmen(
+          <PlattformAbschnitt
+            art="treatment"
+            verhaeltnisId={MAX}
+            darfVerwalten
+            zeitzone="Europe/Berlin"
+          />,
         ),
       };
     case 'qr':
       return {
         pfad: '/',
-        element: (
-          <Praxisrahmen>
-            <EinladungVorOrt
-              einladung={{
-                access_id: 'cafecafe-cafe-4afe-8afe-000000000009',
-                invitation_id: '99999999-9999-4999-8999-0000000000e1',
-                purpose: 'activate',
-                code: 'AbCdEfGhIjKlMnOpQrStUvWxYz012345',
-                expires_at: '2026-10-14T08:00:00+00:00',
-              }}
-              onFertig={() => undefined}
-            />
-          </Praxisrahmen>
+        element: praxisrahmen(
+          <EinladungVorOrt
+            einladung={{
+              access_id: 'cafecafe-cafe-4afe-8afe-000000000009',
+              invitation_id: '99999999-9999-4999-8999-0000000000e1',
+              purpose: 'activate',
+              code: 'AbCdEfGhIjKlMnOpQrStUvWxYz012345',
+              expires_at: '2026-10-14T08:00:00+00:00',
+            }}
+            onFertig={() => undefined}
+          />,
         ),
       };
     case 'einladung':

@@ -15,6 +15,9 @@ const MIGRATION = readdirSync('supabase/migrations')
   .filter((datei) => datei.endsWith('.sql'))
   .sort()
   .map((datei) => readFileSync(`supabase/migrations/${datei}`, 'utf8'))
+  // Nur die Migrationen der Vermerke: Seit POR-002 trägt auch die Einladung
+  // zur Plattform eine Spalte `purpose` mit eigener Prüfung.
+  .filter((inhalt) => inhalt.includes('patient_privacy_records'))
   .filter((inhalt) => /check \(\s*purpose in \(/.test(inhalt))
   .at(-1)!;
 

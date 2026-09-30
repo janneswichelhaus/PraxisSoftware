@@ -3135,3 +3135,17 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Diese Funktionen sind `STABLE` und schreiben im abgewiesenen Fall über `app.record_denied_read` einen `denied`-Eintrag. PostgREST ruft `STABLE`-Funktionen in einer lesenden Transaktion auf; das INSERT scheitert dort mit 25006, der Aufrufer bekommt einen Fehler statt einer leeren Antwort, und der Versuch steht **nicht** im Protokoll. `pnpm test:db` sieht das nicht, weil es über eine direkte Verbindung ohne lesende Transaktion ruft. Für die Pfade von TRN-EPIC-001 ist es behoben; eine Katalogregel in `audit.test.ts` hält die Liste fest und lässt sie nur schrumpfen.
 
 **Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
+
+### BEF-083 — Ein Rechnungstest wird zwischen 22 und 24 Uhr UTC rot: „morgen" in Gerätezeit, geprüft in Praxiszeit
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Abrechnung, Zahlung buchen (`src/features/billing/InvoicesPage.test.tsx`) |
+| Quelle  | Schlussprüfung POR-EPIC-001, `pnpm test` um 22:48 UTC; Gegenprobe mit `TZ=Europe/Berlin` grün |
+| Status  | erledigt in POR-EPIC-001 (der Test rechnet „morgen" jetzt in Europe/Berlin) |
+| Berührt | Test „schreibt einen Datumsfehler an das Datum, nicht an den Betrag (ABR-09, ZST-11)“, Hilfe `morgenOrtszeit` |
+
+**Beobachtung.** Der Test setzt als Eingangstag „morgen“ in der Zeitzone des Geräts und erwartet den Fehler „nicht für die Zukunft buchen“. Die Seite prüft in der Zeitzone der Praxis (Europe/Berlin). Auf einem Gerät in UTC ist zwischen 22 und 24 Uhr das UTC-„morgen“ in Berlin schon „heute“: kein Fehler, der Test wird rot. Das betrifft die CI (UTC), wenn sie abends läuft. Die Anwendung selbst ist richtig, falsch ist nur die Hilfe im Test. Dieselbe Art Fehler haben POR-EPIC-001 in `training-protocols.test.ts` und `appointment-coverage.test.ts` behoben: Monat von heute statt Monat des Termins, rot am Monatsanfang in Berlin.
+
+**Erwartet.** `morgenOrtszeit` rechnet „morgen“ in Europe/Berlin (`todayInTimeZone` plus ein Tag). Danach einmal mit `TZ=UTC` zu einer Uhrzeit zwischen 22 und 24 Uhr gegenprüfen.
