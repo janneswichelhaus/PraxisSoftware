@@ -8,6 +8,7 @@ import {
   canWriteTreatmentNote,
   isOwner,
   isStaff,
+  isTherapyStaff,
   type CurrentUser,
   type RoleKey,
 } from '@/features/session/types';
@@ -318,7 +319,10 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     });
   }
 
-  if (isStaff(roles)) {
+  // Kommunikation und Organisatorisches zeigen Daten, die der Server nur den
+  // Rollen der Behandlungsseite gibt (`app.is_staff()`). Ein reines
+  // Trainingskonto sieht Übersicht und Training (TRN-003).
+  if (isTherapyStaff(roles)) {
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,

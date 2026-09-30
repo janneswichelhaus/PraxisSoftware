@@ -272,6 +272,7 @@ kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 | `olivia.office@praxis.invalid`   | office               |
 | `max.mustermann@patient.invalid` | patient              |
 | `erika.beispiel@patient.invalid` | patient              |
+| `tom.training@praxis.invalid`    | trainer              |
 
 ## Benennung im Code
 

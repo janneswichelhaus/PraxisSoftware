@@ -166,7 +166,7 @@ describe('Arbeitsbereiche je Rolle', () => {
 
   it('oeffnet Organisatorisches auf den Mitarbeitenden, nicht auf einer Vorschau', () => {
     // ANN-112: Der Einstieg ist der erste Punkt, der wirklich wirkt.
-    for (const rolle of ['owner', 'therapist', 'office', 'trainer'] as RoleKey[]) {
+    for (const rolle of ['owner', 'therapist', 'office'] as RoleKey[]) {
       const betrieb = bereicheFuer([rolle]).find((bereich) => bereich.id === 'betrieb');
       expect(betrieb?.to).toBe('/praxis/team');
       const einstieg = betrieb?.unterpunkte.find((punkt) => punkt.to === betrieb.to);
@@ -174,14 +174,19 @@ describe('Arbeitsbereiche je Rolle', () => {
     }
   });
 
-  it('zeigt trainer die Arbeitszeiten nicht, deren Route ihm verschlossen ist (BEF-034)', () => {
-    const punkte = (roles: RoleKey[]) =>
-      bereicheFuer(roles)
-        .find((bereich) => bereich.id === 'betrieb')
-        ?.unterpunkte.map((punkt) => punkt.to);
-    expect(punkte(['trainer'])).not.toContain('/praxis/planung');
-    expect(punkte(['trainer'])).toContain('/praxis/team');
-    expect(punkte(['therapist'])).toContain('/praxis/planung');
+  it('zeigt einem reinen Trainingskonto nur Übersicht und Training (TRN-003)', () => {
+    // Seit TRN-003: Mitarbeitende, Kommunikation und Organisatorisches zeigen
+    // Daten, die der Server nur der Behandlungsseite gibt (`app.is_staff()`).
+    // Bis dahin sah trainer dort leere Listen (BEF-034).
+    expect(ids(['trainer'])).toEqual(['heute', 'training']);
+    // Wer beide Rollen hat, sieht beides - Häufung, kein Schluss (§4.8).
+    expect(ids(['therapist', 'trainer'])).toEqual(
+      expect.arrayContaining(['patienten', 'training', 'betrieb']),
+    );
+    const punkte = bereicheFuer(['therapist'])
+      .find((bereich) => bereich.id === 'betrieb')
+      ?.unterpunkte.map((punkt) => punkt.to);
+    expect(punkte).toContain('/praxis/planung');
   });
 
   it('ordnet die Arbeitszeiten dem Organisatorischen zu und nicht dem Kalender', () => {

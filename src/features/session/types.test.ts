@@ -17,6 +17,9 @@ import {
   canWriteTreatmentBases,
   canWriteTreatmentNote,
   isStaff,
+  isTherapyStaff,
+  canReadTrainingClients,
+  canWriteTrainingClients,
   roleKeySchema,
 } from './types';
 
@@ -147,6 +150,27 @@ describe('isStaff', () => {
   it('trennt Praxisrollen von Patientenkonten', () => {
     expect(isStaff(['office'])).toBe(true);
     expect(isStaff(['patient'])).toBe(false);
+  });
+});
+
+describe('Training und Behandlungsseite (TRN-EPIC-001)', () => {
+  it('spiegelt app.is_staff(): die Trainingsbetreuung gehört nicht zur Behandlungsseite', () => {
+    for (const rolle of ['owner', 'therapist', 'team_lead', 'office'] as const) {
+      expect(isTherapyStaff([rolle]), rolle).toBe(true);
+    }
+    expect(isTherapyStaff(['trainer'])).toBe(false);
+    expect(isTherapyStaff(['patient'])).toBe(false);
+  });
+
+  it('gibt das Training owner, trainer und office - nicht therapist und team_lead (ANN-172)', () => {
+    for (const rolle of ['owner', 'trainer', 'office'] as const) {
+      expect(canReadTrainingClients([rolle]), rolle).toBe(true);
+      expect(canWriteTrainingClients([rolle]), rolle).toBe(true);
+    }
+    for (const rolle of ['therapist', 'team_lead', 'patient'] as const) {
+      expect(canReadTrainingClients([rolle]), rolle).toBe(false);
+      expect(canWriteTrainingClients([rolle]), rolle).toBe(false);
+    }
   });
 });
 

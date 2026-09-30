@@ -373,6 +373,21 @@ export function isStaff(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Rollen der Behandlungsseite - dasselbe wie `app.is_staff()` in der Datenbank
+ * (owner, therapist, team_lead, office).
+ *
+ * `isStaff` zählt auch die Trainingsbetreuung mit; für die Bereiche, deren
+ * Daten der Server nur `app.is_staff()` zeigt (Mitarbeitende, Kommunikation,
+ * Organisatorisches), ist das die falsche Frage: Ein reines Trainingskonto
+ * fände dort leere Listen (TRN-003, ADR-021 Punkt 6).
+ */
+const therapyStaffRoles: RoleKey[] = ['owner', 'therapist', 'team_lead', 'office'];
+
+export function isTherapyStaff(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => therapyStaffRoles.includes(role));
+}
+
+/**
  * Rollen, die Trainingskund:innen sehen (PROJECT_PRINCIPLES.md 4.8/4.9).
  *
  * Ohne therapist und team_lead: Der offene Zugriff auf alle Akten gilt

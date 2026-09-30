@@ -102,6 +102,7 @@ import {
   canWriteTreatmentNote,
   isOwner,
   isStaff,
+  isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -140,7 +141,9 @@ export function AuthenticatedRoutes({
   const showDirectory = canReadPatientDirectory(user.roles);
   const showSecurity = isOwner(user.roles);
   const showAppointments = canManageAppointments(user.roles);
-  const showOperations = isStaff(user.roles);
+  // Wie die Navigation: die Bereiche mit Daten der Behandlungsseite, nicht
+  // für ein reines Trainingskonto (TRN-003).
+  const showOperations = isTherapyStaff(user.roles);
   // Die Mitarbeiterliste ist fuer alle Praxisrollen lesbar; Anlegen und
   // Aendern prueft die Seite selbst und - verbindlich - der Server (STAFF-001,
   // seit E10 owner und office).
