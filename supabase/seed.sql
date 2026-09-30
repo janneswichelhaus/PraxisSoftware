@@ -346,8 +346,9 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', 'office'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'therapist'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
-  ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient'),
+  -- Max und Erika (…005, …006) tragen seit POR-001 keine Rolle mehr: Die
+  -- Rolle `patient` wird nie vergeben (ADR-023 Punkt 3). Ihre Profile bleiben
+  -- als Konto ohne Praxisrolle stehen, an dem die Abweisungstests hängen.
   -- Ausschliesslich Trainingsbetreuung: nur so laesst sich pruefen, dass
   -- aus dieser Rolle kein Zugriff auf die Behandlungsseite folgt (ADR-021
   -- Punkt 6, PROJECT_PRINCIPLES.md 4.8).

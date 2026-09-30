@@ -410,6 +410,8 @@ export const SEED = {
     therapist: '11111111-1111-4111-8111-000000000002', // Anna Beispiel
     office: '11111111-1111-4111-8111-000000000003', // Olivia Office
     teamLead: '11111111-1111-4111-8111-000000000004', // Tim Teamleitung
+    // Max und Erika: Profil ohne Praxisrolle. Bis POR-001 trugen sie die
+    // Rolle `patient`; seither sehen sie nichts (ADR-023 Punkte 3 und 20).
     patientMax: '11111111-1111-4111-8111-000000000005', // Max Mustermann
     patientErika: '11111111-1111-4111-8111-000000000006', // Erika Beispiel
     trainer: '11111111-1111-4111-8111-000000000007', // Tom Trainingsbetreuung
