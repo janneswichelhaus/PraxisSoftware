@@ -238,6 +238,7 @@ export async function resetDatabaseOhneTermine(): Promise<void> {
   await resetDatabase();
   await asPostgres('delete from public.treatment_note_versions');
   await asPostgres('delete from public.treatment_notes');
+  await asPostgres('delete from public.training_protocols');
   await asPostgres('delete from public.appointments');
 }
 

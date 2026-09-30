@@ -14,7 +14,11 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
+import {
+  canWriteTrainingClients,
+  canWriteTrainingProtocols,
+  type CurrentUser,
+} from '@/features/session/types';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
@@ -28,11 +32,13 @@ import {
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import {
   getTrainingAppointment,
+  istProtokollierbar,
   listTrainingBases,
   trainingAbsageLabels,
   vereinbarungText,
   type TrainingAppointment,
 } from './api';
+import { TerminAbschluss, TrainingProtokoll } from './TrainingProtocol';
 
 /**
  * Ein Trainingstermin (TRN-004, TRN-006).
@@ -40,8 +46,9 @@ import {
  * Gelesen über `get_training_appointment`: Ein Behandlungstermin ist dort
  * „nicht gefunden" - auch für owner, der ihn im Kalender sieht; er öffnet an
  * seiner eigenen Stelle (`/termine/:id`). Verschieben und Absagen laufen über
- * die vorhandenen Wege (ADR-022 Punkt 1). Abschließen gibt es hier noch nicht:
- * Es gehört mit dem Trainingsprotokoll zu TRN-EPIC-004.
+ * die vorhandenen Wege (ADR-022 Punkt 1). Seit TRN-EPIC-004 steht hier das
+ * Trainingsprotokoll (owner und Trainingsbetreuung, ANN-184), und der Termin
+ * lässt sich als durchgeführt vermerken und wieder öffnen (ANN-186).
  */
 export function TrainingAppointmentPage({ user }: { user: CurrentUser }) {
   const { appointmentId = '' } = useParams();
@@ -52,7 +59,9 @@ export function TrainingAppointmentPage({ user }: { user: CurrentUser }) {
   });
 
   if (termin.isPending) return <LoadingState />;
-  if (termin.isError) {
+  // Ein gescheitertes Nachladen nach einem Vorgang ersetzt die Seite nicht:
+  // Im Protokoll darunter kann ungespeicherter Text stehen (Zweitreview 4).
+  if (termin.isError && termin.data === undefined) {
     return (
       <>
         <Rueckweg standard="/kalender" />
@@ -80,7 +89,11 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
   const [meldung, setMeldung] = useState<string | null>(null);
   const zone = termin.organization_time_zone;
   const name = `${termin.client_given_name} ${termin.client_family_name}`;
-  const darfAendern = canWriteTrainingClients(user.roles) && termin.status === 'confirmed';
+  const darfSchreiben = canWriteTrainingClients(user.roles);
+  const darfAendern = darfSchreiben && termin.status === 'confirmed';
+  const darfAbschliessen =
+    darfSchreiben && (termin.status === 'confirmed' || termin.status === 'completed');
+  const darfProtokoll = canWriteTrainingProtocols(user.roles) && istProtokollierbar(termin.status);
   const angelegt = leseAngelegtenTermin(suche) === termin.id;
   const hier = `/training/termine/${termin.id}`;
 
@@ -150,12 +163,27 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         </DetailList>
       </Section>
 
-      {darfAendern ? (
+      {darfAendern || darfAbschliessen ? (
         <div className="mt-6 flex flex-wrap items-start gap-3">
-          <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
-            Verschieben
-          </ButtonLink>
-          <Absagen termin={termin} name={name} onAbgesagt={() => setMeldung('Termin abgesagt.')} />
+          {darfAbschliessen ? <TerminAbschluss termin={termin} onGeaendert={setMeldung} /> : null}
+          {darfAendern ? (
+            <>
+              <ButtonLink to={mitRueckweg(`${hier}/bearbeiten`, hier)} variant="secondary">
+                Verschieben
+              </ButtonLink>
+              <Absagen
+                termin={termin}
+                name={name}
+                onAbgesagt={() => setMeldung('Termin abgesagt.')}
+              />
+            </>
+          ) : null}
+        </div>
+      ) : null}
+
+      {darfProtokoll ? (
+        <div className="mt-6">
+          <TrainingProtokoll termin={termin} />
         </div>
       ) : null}
     </>

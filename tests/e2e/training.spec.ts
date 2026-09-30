@@ -70,6 +70,38 @@ test.describe('Training', () => {
     });
   }
 
+  // TRN-EPIC-004: Trainingsprotokoll am Termin und die Einheiten der Kundin.
+  for (const breite of [375, 1280]) {
+    test(`Trainingsprotokoll und Einheiten laufen bei ${breite} px nicht über`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+
+      await page.goto(`${PRUEFSEITE}?seite=termin`);
+      await expect(page.getByRole('heading', { name: 'Trainingsprotokoll' })).toBeVisible();
+      await expect(page.getByLabel('Was in der Einheit gemacht wurde')).toHaveValue(
+        /Kniebeugen 3 × 10/,
+      );
+      await expect(page.getByRole('button', { name: 'Als durchgeführt vermerken' })).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+      await page.getByRole('button', { name: 'Protokoll abschließen' }).click();
+      await expect(page.getByText(/lässt sich danach nicht mehr ändern/)).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await page.goto(`${PRUEFSEITE}?seite=termin-dokumentiert`);
+      await expect(page.getByText(/Rudern am Kabelzug/)).toBeVisible();
+      await expect(page.getByText(/Abgeschlossen am/)).toBeVisible();
+      await expect(page.getByLabel('Was in der Einheit gemacht wurde')).toHaveCount(0);
+      await expect(page.getByRole('button', { name: 'Wieder öffnen' })).toHaveCount(0);
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await page.goto(`${PRUEFSEITE}?seite=detail`);
+      await expect(page.getByRole('heading', { name: 'Einheiten' })).toBeVisible();
+      await expect(page.getByText(/Absprache: nächste Woche/)).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
+
   test('Listenzeilen und Knöpfe sind mindestens 44 px hoch', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 900 });
     await page.goto(`${PRUEFSEITE}?seite=liste`);
@@ -85,7 +117,13 @@ test.describe('Training', () => {
     expect(beenden!.height).toBeGreaterThanOrEqual(44);
 
     await page.goto(`${PRUEFSEITE}?seite=termin`);
-    for (const name of ['Verschieben', 'Termin absagen']) {
+    for (const name of [
+      'Verschieben',
+      'Termin absagen',
+      'Als durchgeführt vermerken',
+      'Entwurf speichern',
+      'Protokoll abschließen',
+    ]) {
       const knopf = await page
         .getByRole(name === 'Verschieben' ? 'link' : 'button', { name })
         .boundingBox();

@@ -8,6 +8,8 @@ import type {
   TrainingClient,
   TrainingClientAppointment,
   TrainingClientListItem,
+  TrainingProtocol,
+  TrainingUnit,
 } from '@/features/training/api';
 import { NewTrainingAppointmentPage } from '@/features/training/NewTrainingAppointmentPage';
 import { TrainingAppointmentPage } from '@/features/training/TrainingAppointmentPage';
@@ -21,7 +23,8 @@ import '@/index.css';
  * Einstieg der Prüfseite aus `training.html` (TRN-EPIC-001).
  *
  * `?seite=liste` (Standard), `?seite=neu`, `?seite=detail`, seit TRN-EPIC-002
- * `?seite=termin` (Trainingstermin) und `?seite=termin-neu`. Die Daten
+ * `?seite=termin` (Trainingstermin) und `?seite=termin-neu`, seit
+ * TRN-EPIC-004 `?seite=termin-dokumentiert` (abgeschlossenes Protokoll). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server. Alles ist
  * synthetisch.
  */
@@ -154,6 +157,57 @@ const termin: TrainingAppointment = {
 client.setQueryData(['training-bases', TINA], vereinbarungen);
 client.setQueryData(['training-client-appointments', TINA], kundentermine);
 client.setQueryData(['training-appointment', TERMIN], termin);
+
+// TRN-EPIC-004: ein Entwurf am heutigen Termin, ein abgeschlossenes Protokoll
+// an einer Einheit von vorgestern, und die Liste der Einheiten.
+const VORGESTERN = 'aaaaaaaa-aaaa-4aaa-8aaa-000000000009';
+const entwurf: TrainingProtocol = {
+  id: '99999999-9999-4999-8999-000000000001',
+  appointment_id: TERMIN,
+  status: 'draft',
+  content: 'Aufwärmen 10 min Rad, Kniebeugen 3 × 10 mit 20 kg',
+  created_at: um(0, 10),
+  updated_at: um(0, 10),
+  finalized_at: null,
+  author_name: 'Tom Trainingsbetreuung',
+  finalized_by_name: null,
+};
+const abgeschlossen: TrainingProtocol = {
+  id: '99999999-9999-4999-8999-000000000002',
+  appointment_id: VORGESTERN,
+  status: 'final',
+  content:
+    'Rudern am Kabelzug 4 × 8, Plank 3 × 30 s, Ausfallschritte 3 × 12 je Seite.\nAbsprache: nächste Woche Kreuzheben einführen.',
+  created_at: um(-2, 11),
+  updated_at: um(-2, 11),
+  finalized_at: um(-2, 11),
+  author_name: 'Tom Trainingsbetreuung',
+  finalized_by_name: 'Tom Trainingsbetreuung',
+};
+client.setQueryData(['training-protocol', TERMIN], entwurf);
+client.setQueryData(['training-appointment', VORGESTERN], {
+  ...termin,
+  id: VORGESTERN,
+  status: 'documented',
+  starts_at: um(-2, 10),
+  ends_at: um(-2, 11),
+});
+client.setQueryData(['training-protocol', VORGESTERN], abgeschlossen);
+const einheiten: TrainingUnit[] = [entwurf, abgeschlossen].map((p, i) => ({
+  id: p.id,
+  appointment_id: p.appointment_id,
+  starts_at: i === 0 ? um(0, 10) : um(-2, 10),
+  ends_at: i === 0 ? um(0, 11) : um(-2, 11),
+  appointment_type: 'practice',
+  staff_given_name: 'Tom',
+  staff_family_name: 'Trainingsbetreuung',
+  status: p.status,
+  content: p.content,
+  finalized_at: p.finalized_at,
+  author_name: p.author_name,
+  organization_time_zone: 'Europe/Berlin',
+}));
+client.setQueryData(['training-protocols', TINA], einheiten);
 client.setQueryData(
   ['assignable-trainers'],
   [{ staff_member_id: TOM, display_name: 'Tom Trainingsbetreuung' }],
@@ -186,7 +240,9 @@ const start =
         ? `/training/termine/${TERMIN}`
         : seite === 'termin-neu'
           ? `/training/termine/neu?kunde=${TINA}&beginn=10:00`
-          : '/training';
+          : seite === 'termin-dokumentiert'
+            ? `/training/termine/${VORGESTERN}`
+            : '/training';
 
 const router = createMemoryRouter(
   [

@@ -44,6 +44,8 @@ vi.mock('./api', async (importOriginal) => {
     listTrainingBases: (id: string) => listTrainingBases(id) as Promise<unknown>,
     listTrainingClientAppointments: (id: string) =>
       listTrainingClientAppointments(id) as Promise<unknown>,
+    // TRN-009: Die Einheiten haben eigene Tests (training-protokoll.test.tsx).
+    listTrainingProtocols: () => Promise.resolve([]),
   };
 });
 

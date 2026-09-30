@@ -17,7 +17,11 @@ import { formatDate } from '@/lib/datum';
 import { alsFormularfehler } from '@/lib/formularfehler';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
-import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
+import {
+  canWriteTrainingClients,
+  canWriteTrainingProtocols,
+  type CurrentUser,
+} from '@/features/session/types';
 import {
   TRAINING_BESCHRIFTUNG,
   TRAINING_FELDER,
@@ -34,6 +38,7 @@ import {
 } from './api';
 import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
+import { TrainingEinheiten } from './TrainingProtocol';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -177,6 +182,9 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
             />
           ) : null}
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
+          {/* TRN-009: die protokollierten Einheiten - nur owner und
+              Trainingsbetreuung (ANN-184). */}
+          {canWriteTrainingProtocols(user.roles) ? <TrainingEinheiten kundin={kundin} /> : null}
         </>
       )}
     </>

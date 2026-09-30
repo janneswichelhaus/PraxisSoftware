@@ -409,6 +409,15 @@ export function canWriteTrainingClients(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Wer Trainingsprotokolle schreibt, abschließt und liest (TRN-009, ANN-184):
+ * owner und Trainingsbetreuung, nicht das Büro. Verbindlich ist
+ * app.can_access_training_protocols().
+ */
+export function canWriteTrainingProtocols(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => role === 'owner' || role === 'trainer');
+}
+
+/**
  * Wer den Kalender öffnet (TRN-006): die Praxisrollen und die Rollen des
  * Trainingsbereichs. Welche Termine darin stehen, entscheidet der Server je
  * Termin nach Kontext (ADR-022 Punkt 11) - die Trainingsbetreuung sieht dort

@@ -151,6 +151,7 @@ describe('export_patient_record', () => {
     const tabellen = Object.keys(rows[0]!.daten['tabellen'] as Record<string, unknown>);
     expect(tabellen).not.toContain('training_relationships');
     expect(tabellen).not.toContain('training_bases');
+    expect(tabellen).not.toContain('training_protocols');
 
     const hinweise = rows[0]!.daten['nicht_enthalten'] as { was: string }[];
     expect(hinweise.map((h) => h.was)).toContain('Daten eines Trainingsverhaeltnisses');

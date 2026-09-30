@@ -479,7 +479,10 @@
           "id": "trn-epic-004",
           "name": "TRN-EPIC-004 Trainingsprotokoll",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-30",
+          "nachweis": "TRN-009, TRN-010, Zweitreview",
+          "vermerk": "Sichtung: Training Schritte 10 bis 12"
         },
         {
           "id": "dsn-001",
