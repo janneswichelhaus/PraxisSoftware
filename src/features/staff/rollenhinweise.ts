@@ -20,7 +20,11 @@ export const ROLLENHINWEISE: Partial<Record<RoleKey, string>> = {
   therapist: 'Behandelt, dokumentiert, sieht alle Akten der Praxis.',
   team_lead: 'Wie Therapeut:in, dazu Arbeitszeiten pflegen.',
   office:
-    'Termine, Arbeitszeiten, Abrechnung und Mitarbeiterstammdaten. Liest alle Akten einschließlich Dokumentation, schreibt aber keine klinischen Inhalte.',
+    'Termine, Arbeitszeiten, Abrechnung, Mitarbeiterstammdaten und Trainingskund:innen. Liest alle Akten einschließlich Dokumentation, schreibt aber keine klinischen Inhalte.',
+  // TRN-003: Die Grenze zur Behandlung steht im Satz, weil sie beim Vergeben
+  // am wenigsten erwartet wird (ADR-021 Punkt 6).
+  trainer:
+    'Betreut Trainingskund:innen: anlegen, ändern, Vertrag beenden. Sieht keine Akten, keine Termine der Behandlung und keine Dokumentation.',
   owner:
-    'Zugänge, Rollen, Protokoll und Abrechnung; liest alle Akten. Dokumentieren nur zusammen mit der Rolle Therapeut:in oder Teamleitung.',
+    'Zugänge, Rollen, Protokoll, Abrechnung und Trainingskund:innen; liest alle Akten. Dokumentieren nur zusammen mit der Rolle Therapeut:in oder Teamleitung.',
 };

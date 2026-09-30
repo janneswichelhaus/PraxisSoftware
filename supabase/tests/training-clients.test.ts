@@ -531,3 +531,63 @@ describe('Kein Durchgriff von der Trainingsbetreuung in die Behandlung (TRN-003)
     expect(akte).toEqual([]);
   });
 });
+
+describe('Rolle Trainingsbetreuung zuweisbar (TRN-003)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  const ANNA = '55555555-5555-4555-8555-000000000002';
+  const ROLLEN = 'select public.set_staff_account_roles($1::uuid, $2::text[])';
+  const LIST = 'select * from public.list_training_clients()';
+
+  it('laesst trainer als Praxisrolle zu, patient weiter nicht', async () => {
+    await asPostgres(`select app.assert_staff_role_keys(array['trainer'])`);
+    await asPostgres(`select app.assert_staff_role_keys(array['therapist', 'trainer'])`);
+    const fehler = await abgefangen(
+      asPostgres(`select app.assert_staff_role_keys(array['patient'])`),
+    );
+    expect(fehler?.message).toMatch(/unknown role/);
+  });
+
+  it('gibt einer Therapeutin mit zusaetzlicher Trainingsrolle beide Bereiche - und nimmt sie wieder', async () => {
+    // Vorher: Anna ist therapist und sieht kein Training.
+    await erwarteAbgewiesenenLeseversuch(users.therapist, LIST, [], 'training_relationships.read');
+
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [ANNA, ['therapist', 'trainer']]);
+    const { rows } = await asUser<{ id: string }>(users.therapist, LIST);
+    expect(rows.map((r) => r.id)).toEqual(
+      expect.arrayContaining([trainingRelationships.tina, trainingRelationships.erika]),
+    );
+    // Die Akte bleibt ihr aus der Therapeutenrolle - Haeufung, kein Schluss (§4.8).
+    const { rows: akten } = await asUser(users.therapist, 'select 1 from public.patients');
+    expect(akten.length).toBeGreaterThan(0);
+
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [ANNA, ['therapist']]);
+    await erwarteAbgewiesenenLeseversuch(users.therapist, LIST, [], 'training_relationships.read');
+  });
+
+  it('macht aus einem reinen Trainingskonto kein Behandlungskonto', async () => {
+    await asUserCommitted(users.ownerTherapist, ROLLEN, [ANNA, ['trainer']]);
+    try {
+      const { rows: akten } = await asUser(users.therapist, 'select 1 from public.patients');
+      expect(akten).toEqual([]);
+      const { rows: flags } = await asUser<{ staff: boolean; training: boolean }>(
+        users.therapist,
+        'select app.is_staff() as staff, app.can_write_training_relationships() as training',
+      );
+      expect(flags[0]).toEqual({ staff: false, training: true });
+    } finally {
+      await asUserCommitted(users.ownerTherapist, ROLLEN, [ANNA, ['therapist']]);
+    }
+  });
+
+  it('bleibt allein owner vorbehalten', async () => {
+    await erwarteAbgewiesenenSchreibversuch(
+      users.office,
+      ROLLEN,
+      [ANNA, ['trainer']],
+      'staff_account.roles_changed',
+    );
+  });
+});

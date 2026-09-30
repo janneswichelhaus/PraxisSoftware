@@ -5,7 +5,10 @@ import {
   canManageStaffAccounts,
   canManageStaffMasterData,
   canManageWorkingHours,
+  canReadPatientDirectory,
+  canReadTrainingClients,
   canReadTreatmentNote,
+  canWriteTrainingClients,
   canWriteTreatmentNote,
   type RoleKey,
 } from '@/features/session/types';
@@ -78,5 +81,21 @@ describe('ROLLENHINWEISE', () => {
     expect(canManageWorkingHours(['therapist'])).toBe(false);
     expect(hinweis('team_lead')).toMatch(/Arbeitszeiten/);
     expect(hinweis('team_lead')).not.toMatch(/Auswertungen|Dienstplan/);
+  });
+
+  it('sagt bei der Trainingsbetreuung, was sie darf und was nicht (TRN-003)', () => {
+    const text = hinweis('trainer');
+    expect(canWriteTrainingClients(['trainer']) && text.includes('Trainingskund:innen')).toBe(true);
+    expect(canReadPatientDirectory(['trainer'])).toBe(false);
+    expect(canReadTreatmentNote(['trainer'])).toBe(false);
+    expect(text).toMatch(/Sieht keine Akten/);
+  });
+
+  it('nennt das Training bei jeder Rolle, die es sieht - und bei keiner anderen', () => {
+    for (const rolle of ['therapist', 'team_lead', 'office', 'trainer', 'owner'] as const) {
+      expect(hinweis(rolle).includes('Trainingskund:innen'), rolle).toBe(
+        canReadTrainingClients([rolle]),
+      );
+    }
   });
 });
