@@ -63,7 +63,8 @@ Owner in der Anwendung selbst ein (§4). V1 umfasst:
    außer dem, was §17 verbietet. Patient:innen haben **zwei Stufen**: während
    der Behandlung kostenlos (Befundbogen, Termine und Wünsche, Rechnungen,
    Heimübungsplan, Check-ins), danach das Nachsorge-Abo. Die Ansichten für
-   Patient:innen und Betreuung sind noch zu entwerfen (DSN-001, vor Block 4).
+   Patient:innen und Betreuung entwirft DSN-001 vor Block 4
+   ([`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md)).
 7. **Angebote:** das **Nachsorge-Abo** der Patient:innen nach dem Ende der
    Behandlung als Monatsrechnung; das **Trainingspaket** nach Zeitraum, nicht
    pausierbar, mit der Plattform im Preis; der Übergang aus der Behandlung
@@ -145,7 +146,7 @@ in den Etappen darunter.
 | 1a | **Handy und UX-Fundament** | ~~OPS-002a~~ (gebaut 2026-09-25) → ~~UX-EPIC-002~~ (gebaut 2026-09-26) → ~~UX-EPIC-003~~ (gebaut 2026-09-26) | ~~Umbau U5~~ (B16: Uberspace, 2026-09-23) | ~~Supabase-Testprojekt, Uberspace und GitHub-Secrets anlegen~~ (2026-09-25, [`hosting-optionen.md`](../decisions/hosting-optionen.md)); ~~Begriffe sammeln, die stören~~ (2026-09-26: alle in Ordnung); erste Sichtung am Handy |
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → UX-EPIC-004 → PRX-EPIC-003 → PRX-EPIC-003b → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
-| 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | DSN-001 und ADR-023 bestätigen |
+| 4 | **Plattformzugang** | POR-EPIC-001 → -002 → -003 | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ADR-023 bestätigen |
 | 5 | **Angebote** | ANG-EPIC-001 → ANG-EPIC-002 → KND-EPIC-001 | — | Abo- und Paketpreise (bis dahin synthetisch) |
 | 6 | **Pläne und Rückfragen** | UEB-EPIC-001 → -002 → -003 → KOM-EPIC-001 → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
 | 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
@@ -370,8 +371,9 @@ Die Plattform nach §4.6 (Patient:innen) und §4.10 (Kund:innen). **Konto und
 Akte sind getrennt**; wer beide Verhältnisse hat, sieht beide Bereiche
 getrennt (§4.8). Vor dem ersten Loop stehen zwei Docs-Sessions. **DSN-001**
 entwirft die Ansichten für Patient:innen (beide Stufen aus §4.6) und für die
-Betreuung — Jannes hat sie noch nicht durchdacht; die Ansicht der
-Trainingskund:innen steht mit §4.10. **ADR-023**: Konten
+Betreuung — [`PLATTFORM-ANSICHTEN.md`](PLATTFORM-ANSICHTEN.md), sieben
+Festlegungen D1 bis D7, von Jannes am 2026-09-30 wie empfohlen bestätigt; die
+Ansicht der Trainingskund:innen steht mit §4.10 und bekommt dort nur ihren Platz im selben Gerüst. **ADR-023**: Konten
 externer Personen neben den Praxisrollen, Einladung und Zustellweg (R8),
 Identitätsprüfung und Vertretung (B5 als Annahme, reversibel an einer Stelle),
 Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche.
@@ -738,6 +740,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | TRN-EPIC-002 Trainingstermine | fertig | 2026-09-30 | TRN-004 bis TRN-006 | — | Sichtung: Training Schritte 4 bis 6 |
 | B | TRN-EPIC-003 Trainingsrechnung | fertig | 2026-09-30 | TRN-007, TRN-008, Zweitreview | — | Sichtung: Training Schritte 7 bis 9 |
 | B | TRN-EPIC-004 Trainingsprotokoll | fertig | 2026-09-30 | TRN-009, TRN-010, Zweitreview | — | Sichtung: Training Schritte 10 bis 12 |
+| B | DSN-001 Ansichten der Plattform für Patient:innen und Betreuung (Docs) | gesichtet | 2026-09-30 | docs/development/PLATTFORM-ANSICHTEN.md | — | D1 bis D7 von Jannes bestätigt (2026-09-30, wie empfohlen) |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

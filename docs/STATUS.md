@@ -1,4 +1,4 @@
-# Status · Stand 2026-09-30 · letzte Session: TRN-EPIC-004 Trainingsprotokoll (davor TRN-EPIC-003)
+# Status · Stand 2026-09-30 · letzte Session: DSN-001 Ansichten der Plattform (davor TRN-EPIC-004)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -6,7 +6,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Jetzt
 
-**TRN-EPIC-004 gebaut (PR gegen `main`, Branch `ccr-fe2cfca3-doyl2j`) — Block 3 ist damit durchgebaut:** Am Trainingstermin steht der Abschnitt **Trainingsprotokoll**: Was in der Einheit gemacht wurde, als Freitext, erst Entwurf, dann **abgeschlossen** und ab da unveränderlich (ANN-185). Der Abschluss setzt den Termin auf **Dokumentiert** (ADR-018 Punkt 3, gelesen nach ADR-022 Punkt 8). Schreiben und lesen dürfen nur owner und Trainingsbetreuung, das Büro nicht (ANN-184). Die Trainingsbetreuung vermerkt ihre Einheit jetzt selbst als **durchgeführt** und öffnet sie wieder, das Büro ebenso (ANN-186). Eine Absage verwirft einen Entwurf und steht im Protokoll; ein abgeschlossenes Protokoll sperrt die Absage. Bei der Kund:in listet **Einheiten** die Protokolle. Kein Befund, keine Auswertung, nichts aus der Akte (ADR-006 Punkte 9 bis 13, ADR-021 Punkt 7). Löschlauf: Das Protokoll fällt mit dem Verhältnis, in der Teillöschung auch am abgerechneten Termin (ANN-183 ergänzt). Drei Migrationen, eine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-184 bis ANN-186** (ANN-184 Datenschutz im Prüfpaket). Sichtung: [Training](sichtung/training.md) Schritte 10 bis 12.
+**DSN-001 bestätigt (2026-09-30, D1 bis D7 wie empfohlen; PR #151, Branch `claude/weiter-asenfv`), reine Docs-Session:** [`development/PLATTFORM-ANSICHTEN.md`](development/PLATTFORM-ANSICHTEN.md) ist die Vorgabe für die Plattform: ein Gerüst für Patient:innen (Stufe 1, Nachsorge-Abo) und Trainingskund:innen — unten **Übersicht · Termine · Übungen · (Verlauf) · Nachrichten**, oben **Ich**; nichts aus der Akte, keine Bewertung, Notfallhinweis fest an jeder Nachricht. In der Praxis kein neuer Bereich: Terminwünsche in den Kalender, Nachrichten in Kommunikation bzw. **Training (D1)**, Check-ins in die Akte **ohne Alarm (D5)**, je ein Abschnitt **Plattform** an Akte und Trainingsverhältnis. Behandlung ohne Abo: **30 Tage lesend (D2)**; Rechnungen sofort, Dokumente einzeln freigegeben (D3); Absage als Wunsch, Eingang ab Absenden (D4); Anrede „Sie", Schalter Behandlung | Training (D6); Vorschau später (D7).
+
+**TRN-EPIC-004 ist gemergt (PR #150) — Block 3 ist damit durchgebaut:** Am Trainingstermin steht der Abschnitt **Trainingsprotokoll**: Was in der Einheit gemacht wurde, als Freitext, erst Entwurf, dann **abgeschlossen** und ab da unveränderlich (ANN-185). Der Abschluss setzt den Termin auf **Dokumentiert** (ADR-018 Punkt 3, gelesen nach ADR-022 Punkt 8). Schreiben und lesen dürfen nur owner und Trainingsbetreuung, das Büro nicht (ANN-184). Die Trainingsbetreuung vermerkt ihre Einheit jetzt selbst als **durchgeführt** und öffnet sie wieder, das Büro ebenso (ANN-186). Eine Absage verwirft einen Entwurf und steht im Protokoll; ein abgeschlossenes Protokoll sperrt die Absage. Bei der Kund:in listet **Einheiten** die Protokolle. Kein Befund, keine Auswertung, nichts aus der Akte (ADR-006 Punkte 9 bis 13, ADR-021 Punkt 7). Löschlauf: Das Protokoll fällt mit dem Verhältnis, in der Teillöschung auch am abgerechneten Termin (ANN-183 ergänzt). Drei Migrationen, eine neue Tabelle, keine neue Abhängigkeit. **Zu bestätigen: ANN-184 bis ANN-186** (ANN-184 Datenschutz im Prüfpaket). Sichtung: [Training](sichtung/training.md) Schritte 10 bis 12.
 
 **TRN-EPIC-001 bis -003 sind gemergt (PR #145, #148, #149)** — zuletzt Trainingsleistung als Rechnung im Kreis `TR` (Leistung aus dem durchgeführten Trainingstermin, erfasst vom Büro (ANN-181), Rechnung an die Kund:in selbst mit Anschrift aus dem Training (ANN-182), nach drei Jahren nur noch die Belege (ANN-183)). Sichtung: [Training](sichtung/training.md) Schritte 7 bis 9.
 
@@ -16,9 +18,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Danach — Bauen
 
-1. **DSN-001** (Docs, vor Block 4: Ansichten für Patient:innen und Betreuung). `/weiter`
-2. **ADR-023** (Docs, vor Block 4: Plattformzugang)
-3. **POR-EPIC-001** (Block 4, Plattformzugang; startet, wenn DSN-001 und ADR-023 bestätigt sind)
+1. **ADR-023** (Docs, vor Block 4: Plattformzugang — Konten, Einladung, Identität und Vertretung, Sitzung, RLS „nur eigene Daten"; setzt DSN-001 Abschnitt 3 und 10 voraus). `/weiter`
+2. **POR-EPIC-001** (Block 4, Plattformzugang; startet, wenn ADR-023 bestätigt ist — DSN-001 ist es)
+3. **POR-EPIC-002** (Block 4, eigene Termine, Rechnungen, Dokumente)
 
 ## Prüfverfahren
 
@@ -52,8 +54,6 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**TRN-EPIC-004 (TRN-009, TRN-010).** Migration `20260930130000_trn_009_training_protocols.sql`: Tabelle `training_protocols` (Datenklasse `trainingsverhaeltnis`), `app.can_access_training_protocols` (ANN-184), Trigger `training_protocols_guard` (ANN-185) und `appointments_training_protocol_guard`, `save_training_protocol`, `finalize_training_protocol`, `get_training_protocol`, `list_training_protocols`, Löschlauf und Journal, `app.mark_appointment_documented` mit Auditkontext. Migration `20260930131000_trn_010_training_documented.sql`: `complete_appointment` und `reopen_appointment` für die Trainingsbetreuung am Trainingstermin (ANN-186). Migration `20260930132000_trn_epic_004_zweitreview.sql`: Entwurf fällt mit Absage und Nichtantreffen (`training_protocol.discarded`), Entwurf nur am bestätigten oder durchgeführten Termin. Oberfläche: `src/features/training/TrainingProtocol.tsx` (Protokoll, Abschluss, Einheiten). Seed unverändert bis auf die Löschreihenfolge.
+**DSN-001 (Docs).** Neu: `docs/development/PLATTFORM-ANSICHTEN.md` (Gerüst, Stufe 1 und 2, Übergänge, Trainingskund:innen, Praxisseite, Barrierefreiheit als Prüfpunkte, D1 bis D7, Zuordnung zu den Loops). Nachgezogen: `ROADMAP.md` (Ziel 6, Block 4), `PRODUCT_VISION.md` §4 und §6a (siebter Bereich Training), `fortschritt.json` und die erzeugte Fortschrittstabelle. Jannes hat D1 bis D7 am 2026-09-30 wie empfohlen bestätigt (`dsn-001` → `gesichtet`). Keine neue Annahme im Register: Die Festlegungen werden im Loop verankert, der sie baut.
 
-**Lokale Schritte:** `git pull origin ccr-fe2cfca3-doyl2j` (nach dem Merge `git pull origin main`); `pnpm dlx supabase@2.116.0 db reset` wegen drei neuer Migrationen; kein `pnpm install`.
-
-Davor: **TRN-EPIC-003** (gemergt, PR #149), **TRN-EPIC-002** (gemergt, PR #148) und **TRN-EPIC-001** (gemergt, PR #145).
+**Lokale Schritte:** `git pull origin claude/weiter-asenfv` (nach dem Merge `git pull origin main`); kein `pnpm install`. Wer TRN-EPIC-004 (PR #150) noch nicht lokal hat: `pnpm dlx supabase@2.116.0 db reset` wegen dessen drei Migrationen. Davor: **TRN-EPIC-004** (gemergt, PR #150), **TRN-EPIC-003** (gemergt, PR #149), **TRN-EPIC-002** (gemergt, PR #148) und **TRN-EPIC-001** (gemergt, PR #145).

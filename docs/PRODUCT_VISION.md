@@ -83,7 +83,9 @@ Software nie (§7.1, §17).
   PDF.
 - Die Ansicht der Trainingskund:innen hat ein Vorbild
   ([`product/ideen/referenz-navigation.md`](product/ideen/referenz-navigation.md)). Die Ansichten
-  für Patient:innen und für die Betreuung sind **noch zu entwerfen** (DSN-001 in der Roadmap).
+  für Patient:innen und für die Betreuung entwirft DSN-001
+  ([`development/PLATTFORM-ANSICHTEN.md`](development/PLATTFORM-ANSICHTEN.md), bestätigt am
+  2026-09-30).
 
 ## 5. Geschäftsmodell
 
@@ -125,8 +127,9 @@ Gesundheitsdaten wird vorher nach [ADR-002](adr/ADR-002-hosting-data-residency.m
 | Abrechnung        | Welche Leistungen sind abzurechnen oder zu bezahlen?   |
 
 Abgebildet in `src/app/navigation.tsx`; Stand der Bereiche in
-[`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md). Wo die Trainingskund:innen in
-dieser Aufteilung leben, klärt DSN-001.
+[`development/ARBEITSBEREICHE.md`](development/ARBEITSBEREICHE.md). Die Trainingskund:innen leben
+in einem siebten Bereich **Training** (seit TRN-EPIC-001); die Plattform bekommt in der Praxis keinen
+eigenen Bereich, sondern Abschnitte in Akte und Trainingsverhältnis (DSN-001, Abschnitt 6).
 
 Regeln der Bedienung:
 
