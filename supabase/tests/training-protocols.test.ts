@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 import {
   erwarteAbgewiesenenLeseversuch,
   erwarteAbgewiesenenSchreibversuch,
@@ -532,6 +539,23 @@ describe('TRN-009: Trainingsprotokoll', () => {
         [trainingRelationships.tina],
         'training_protocol.viewed',
       );
+    });
+
+    it('findet fuer eine andere Praxis weder Termin noch Verhaeltnis (ADR-003)', async () => {
+      await speichere(users.trainer, TRAINING_HEUTE, 'Nur in dieser Praxis');
+      const fremd = await fremdeOrganisation();
+      for (const sql of [SPEICHERN, ABSCHLIESSEN]) {
+        await expect(asUser(fremd.owner, sql, [TRAINING_HEUTE, 'Fremd', null])).rejects.toThrow(
+          /appointment not found/,
+        );
+      }
+      await expect(asUser(fremd.owner, LESEN, [TRAINING_HEUTE])).rejects.toThrow(
+        /appointment not found/,
+      );
+      await expect(asUser(fremd.owner, LISTE, [trainingRelationships.tina])).rejects.toThrow(
+        /training relationship not found/,
+      );
+      expect((await protokoll(TRAINING_HEUTE))?.content).toBe('Nur in dieser Praxis');
     });
 
     it('findet ueber den Protokollweg keinen Behandlungstermin', async () => {
