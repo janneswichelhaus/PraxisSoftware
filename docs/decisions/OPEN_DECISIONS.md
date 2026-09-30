@@ -47,7 +47,7 @@ Feature, **P3** später.
 | B2 | DSFA, DSB, Verzeichnis, TOM, Meldeprozess | Prozess entschieden; DSB **vorläufig entschieden 2026-09-08** (ja); Schwellwertprüfung offen | [ADR-007](../adr/ADR-007-data-protection-impact-assessment.md); Roadmap G14 |
 | B3 | Aufbewahrung und Löschung | entschieden; **Fristen-Validierung offen**; Umsetzung LOE-EPIC-001 fertig 2026-09-11 | [ADR-008](../adr/ADR-008-data-retention-and-deletion.md); unten (Annahmen); Roadmap LOE-EPIC-001 |
 | B4 | Abrechnungsmodell | entschieden; vier Festlegungen **vorläufig entschieden 2026-09-08**; **steuerliche Validierung offen** | [ADR-009](../adr/ADR-009-private-billing-model.md); Roadmap G13; Volltext: `ANFRAGEN.md` § B4 |
-| B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **offen** (P1 für das Portal) | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
+| B5 | Patientenidentität, Vertretung | Rahmen **vorläufig entschieden 2026-09-08**; Verfahren **vorgeschlagen 2026-09-30** in [ADR-023](../adr/ADR-023-platform-access.md) (Punkte 11 bis 16, zu bestätigen); rechtliche Validierung **offen** | vor Etappe 4; Volltext: `ANFRAGEN.md` § B5 |
 | B6 | Beschäftigtendaten: Touren, Leistungskontrolle | **entschieden 2026-09-29 (Jannes): Umsatz je Person ja, Orts- und Tourendaten nein** | ANN-156, ANN-157; ANN-004 überbrückt das Audit |
 | B7 | Adressdaten an den Kartendienst | Handoff nicht blockiert; Karte und Fahrzeiten: **Weg C** — PTV Developer als Kandidat (ADR-019 Fassung 2, 2026-09-08); **E-20 erledigt 2026-09-13** (Fassung 2 angenommen), Gate **offen** | ADR-019, `providerpruefung-kartendienst.md` (Roadmap G12); überholte Stände im Archiv |
 | B8 | Lizenzen für Fragebögen und PROMs | Nutzung **bestätigt durch Jannes 2026-09-19**; schriftlicher Beleg des Lizenzgebers bleibt offen (M3) | vor FRB-003 |
@@ -149,7 +149,7 @@ E14 (Rechnungstext für Fall 1).
 Rahmen vorläufig entschieden · 2026-09-08 · Jannes; Verfahren offen · P1 für das Portal
 
 Volltext: `ANFRAGEN.md` § B5. Wo: ADR-014 (minimale Struktur für
-Vertreterzugriffe); Roadmap Etappe 4.
+Vertreterzugriffe); Roadmap Etappe 4. **Verfahren vorgeschlagen 2026-09-30** in [ADR-023](../adr/ADR-023-platform-access.md) Abschnitt C: Identität durch persönliche Übergabe oder Mail an die Adresse im Verhältnis, Vertretung als eigener Zugang mit zwei Arten (rechtliche Vertretung, Begleitung), kein eigenes Konto unter 18. Für die Beratung bleiben drei Fragen: persönliche Übergabe als Identitätsprüfung, Zustimmung zur Begleitung als Schweigepflichtentbindung, Frist der Zugangsdaten.
 
 ### B6 — Beschäftigtendaten: Tourendaten und Leistungskontrolle
 

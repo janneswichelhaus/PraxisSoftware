@@ -376,7 +376,11 @@ Festlegungen D1 bis D7, von Jannes am 2026-09-30 wie empfohlen bestätigt; die
 Ansicht der Trainingskund:innen steht mit §4.10 und bekommt dort nur ihren Platz im selben Gerüst. **ADR-023**: Konten
 externer Personen neben den Praxisrollen, Einladung und Zustellweg (R8),
 Identitätsprüfung und Vertretung (B5 als Annahme, reversibel an einer Stelle),
-Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche.
+Sitzungsregeln, RLS-Muster „nur eigene Daten", Abgrenzung zur Praxisoberfläche —
+Entwurf in [`ADR-023-platform-access.md`](../adr/ADR-023-platform-access.md)
+(2026-09-30) mit sechs Wahlpunkten W1 bis W6, zu bestätigen. W6 (Empfehlung b)
+schiebt die Vertretung als **POR-EPIC-001b** zwischen -001 und -002; die Kette
+unten wird erst mit der Bestätigung nachgezogen.
 
 | Loop | Ergebnis | Zuschnitt | Quelle |
 | --- | --- | --- | --- |
@@ -765,6 +769,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | E | B1 Zweckbestimmung, MDR-Abgrenzung, AI Act | vorlaeufig | — | — | — | — |
 | E | B3 Validierung der Fristen (ANN-001) | vorlaeufig | — | — | — | — |
 | E | E2 Ausfallkonzept (Entscheidungsteil) | vorlaeufig | — | — | — | — |
+| E | ADR-023 Plattformzugang | entwurf | 2026-09-30 | docs/adr/ADR-023-platform-access.md | — | Wahlpunkte W1 bis W6 zu bestätigen |
 | E | B5 Identität und Vertretung | vorlaeufig | — | — | — | — |
 | E | B9 Betreuung ohne Heilbehandlung, Ernährung | vorlaeufig | — | — | — | — |
 <!-- fortschritt:ende -->
