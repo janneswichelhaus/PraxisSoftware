@@ -3191,3 +3191,17 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Neun Listen und Kacheln nannten die Terminart an jeder Zeile — bei einer Hausbesuchspraxis fast immer „Hausbesuch“. Auf der Kalenderkachel war es die dritte Zeile, auf der Tageskarte eine eigene Zeile unter dem Namen, im Teamplan „Anna Beispiel · Hausbesuch“.
 
 **Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-192): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.
+
+### BEF-087 — Ein Zahlungstest scheitert zwischen 22:00 und 24:00 UTC
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Testwerkzeuge (`src/test-utils.tsx`), Zahlung buchen |
+| Quelle  | Claude, voller Testlauf in der Cloud um 22:27 UTC (UX-EPIC-005; Abrechnung nicht berührt) |
+| Status  | offen |
+| Berührt | `morgenOrtszeit` in `src/test-utils.tsx`; `InvoicesPage.test.tsx` „schreibt einen Datumsfehler an das Datum“ (ZST-11) |
+
+**Beobachtung.** `morgenOrtszeit()` rechnet „morgen“ in der Zeitzone des Rechners (in der Cloud UTC), das Zahlungsformular „heute“ in der Praxiszeitzone (`todayInTimeZone`, Europe/Berlin). Zwischen 22:00 und 24:00 UTC ist in Berlin schon der nächste Tag: Das eingegebene Datum liegt dann nicht in der Zukunft, der Fehler bleibt aus, der Test scheitert. Zu jeder anderen Stunde läuft er grün; die CI hat ihn bisher nicht getroffen.
+
+**Erwartet.** Der Helfer nennt „morgen“ in derselben Zeitzone wie das Formular (Praxiszeitzone der Testdaten), oder der Test nennt einen Tag zwei Tage voraus. Die Aufrufer in `NewPatientPage.test.tsx` und `EditPatientPage.test.tsx` mitprüfen: Dort gilt dieselbe Frage für das Geburtsdatum.
