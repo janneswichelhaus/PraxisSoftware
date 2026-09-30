@@ -104,7 +104,7 @@ test.describe('CAL-001: Termin anlegen', () => {
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
     // UX-005a: Die Terminart steht als Kennzeichen in der Kachel des Ortes,
-    // nur wenn sie vom Hausbesuch abweicht (ANN-187).
+    // nur wenn sie vom Hausbesuch abweicht (ANN-192).
     await expect(detailWert(page, 'Standort')).toContainText('Praxistermin');
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
@@ -184,7 +184,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-    // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-187).
+    // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-192).
     await expect(page.getByText('Praxistermin')).toHaveCount(0);
     await expect(detailWert(page, 'Anschrift')).toContainText('Testweg');
   });

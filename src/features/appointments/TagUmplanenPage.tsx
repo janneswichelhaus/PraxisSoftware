@@ -299,7 +299,7 @@ function Umplanung({
                           )}
                         </span>
                         {` · ${termin.patient_given_name} ${termin.patient_family_name}`}
-                        {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+                        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
                         {appointmentTypeHint(termin.appointment_type)
                           ? ` · ${appointmentTypeHint(termin.appointment_type)}`
                           : ''}{' '}

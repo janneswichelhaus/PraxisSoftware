@@ -104,7 +104,7 @@ function Terminzeile({
             <span className="text-ink font-medium">{formatLocalDate(termin.starts_at, zone)}</span>
             <span className="text-ink-muted block">
               {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
-              {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+              {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
               {appointmentTypeHint(termin.appointment_type)
                 ? ` · ${appointmentTypeHint(termin.appointment_type)}`
                 : ''}

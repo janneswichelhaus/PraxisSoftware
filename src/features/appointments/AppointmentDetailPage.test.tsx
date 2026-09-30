@@ -103,7 +103,7 @@ const { AppointmentDetailPage } = await import('./AppointmentDetailPage');
  * Wer die Seite ansieht - mit dem Namen aus dem Seed, damit die Kennung zur
  * Rolle passt: Anna ist die behandelnde Person dieses Termins, Olivia sitzt
  * im Büro, Jannes ist owner, Tim leitet. Seit UX-005a hängt daran, ob die
- * Seite die behandelnde Person nennt (ANN-188).
+ * Seite die behandelnde Person nennt (ANN-193).
  */
 const NAMEN: Record<string, string> = {
   therapist: 'Anna Beispiel',
@@ -162,7 +162,7 @@ describe('AppointmentDetailPage', () => {
   // UX-005a: Der Name steht im Titel und nirgends noch einmal; die
   // behandelnde Person steht für das Büro da, der Zustand „Bestätigt" nur für
   // Vorlesesoftware, und der Praxistermin trägt sein Kennzeichen - der
-  // Hausbesuch als Regelfall keins (ANN-187).
+  // Hausbesuch als Regelfall keins (ANN-192).
   it('zeigt dem Büro die behandelnde Person und das Kennzeichen des Praxistermins', async () => {
     rendern();
     expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
@@ -176,7 +176,7 @@ describe('AppointmentDetailPage', () => {
     expect(screen.getByText('Bestätigt')).toHaveClass('sr-only');
   });
 
-  it('nennt der behandelnden Person an ihrem eigenen Termin nicht sich selbst (ANN-188)', async () => {
+  it('nennt der behandelnden Person an ihrem eigenen Termin nicht sich selbst (ANN-193)', async () => {
     rendern(['therapist']);
     expect(await screen.findByText('Berta Bestand')).toBeInTheDocument();
     expect(screen.queryByText('Behandelnde Person')).not.toBeInTheDocument();

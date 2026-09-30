@@ -44,7 +44,7 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
 };
 
 /**
- * Der Regelfall der Terminart (UX-005a, ANN-187).
+ * Der Regelfall der Terminart (UX-005a, ANN-192).
  *
  * Die Praxis macht Hausbesuche. „Hausbesuch" an jedem Termin, jeder Kachel
  * und jeder Zeile sagte deshalb nichts - es stand nur im Weg. Ein Praxis-
@@ -53,7 +53,7 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
  */
 export const REGEL_TERMINART: AppointmentType = 'home_visit';
 
-/** Die Terminart als Kennzeichen - nur, wenn sie vom Regelfall abweicht (ANN-187). */
+/** Die Terminart als Kennzeichen - nur, wenn sie vom Regelfall abweicht (ANN-192). */
 export function appointmentTypeHint(type: AppointmentType): string | null {
   return type === REGEL_TERMINART ? null : appointmentTypeLabels[type];
 }

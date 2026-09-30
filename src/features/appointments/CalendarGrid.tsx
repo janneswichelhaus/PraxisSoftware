@@ -207,7 +207,7 @@ export interface GitterEintrag {
 
 /**
  * Kurze Einordnung: wo der Termin stattfindet - nur, wenn es vom Regelfall
- * abweicht. Der Hausbesuch trägt kein Wort (ANN-187, UX-005d).
+ * abweicht. Der Hausbesuch trägt kein Wort (ANN-192, UX-005d).
  */
 function ortsHinweis(eintrag: CalendarEntry): string | null {
   if (eintrag.appointment_type === 'practice') return eintrag.location_name ?? 'Praxis';

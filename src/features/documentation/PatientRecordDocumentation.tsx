@@ -45,7 +45,7 @@ function TerminKopf({ termin }: { termin: RecordAppointment }) {
         <Badge>{appointmentStatusLabels[termin.appointment_status]}</Badge>
       </div>
       <p className="text-ink-muted mt-1 text-sm">
-        {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
         {[
           formatLocalTimeRange(termin.starts_at, termin.ends_at, zone),
           appointmentTypeHint(termin.appointment_type),

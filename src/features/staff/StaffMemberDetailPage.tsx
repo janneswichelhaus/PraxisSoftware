@@ -118,7 +118,7 @@ function OffeneTermine({ staffMemberId, timeZone }: { staffMemberId: string; tim
               : termin.kind === 'training'
                 ? 'Trainingstermin'
                 : `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim()}
-            {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+            {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
             {appointmentTypeHint(termin.appointment_type)
               ? ` · ${appointmentTypeHint(termin.appointment_type)}`
               : ''}

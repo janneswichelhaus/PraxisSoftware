@@ -78,7 +78,7 @@ function CallRow({ entry, zurueck }: { entry: CallEntry; zurueck: string }) {
         )}
       </div>
       <p className="text-ink-muted text-sm">
-        {/* Nur eine abweichende Terminart steht dran (ANN-187). */}
+        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
         {[
           appointmentTypeHint(entry.appointment_type),
           entry.location_name,

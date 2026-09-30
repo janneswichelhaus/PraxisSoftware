@@ -3148,7 +3148,7 @@ Suchseite mit der Warnung erscheint.
 
 **Beobachtung.** Die Tabelle unter der Überschrift nannte den Namen der Patient:in (steht schon in der Überschrift), die behandelnde Person (in der Situation klar), „Hausbesuch“ (der Regelfall) und den Status „Bestätigt“ (für die Behandelnde ohne Bedeutung). Datum und Uhrzeit standen erst in der Tabelle, die Mitteilungszeichen daneben. Alles zusammen kostete am Telefon eine Bildschirmhöhe, bevor die Anschrift kam.
 
-**Erwartet.** Datum, Zeit und Mitteilungszeichen in der Zeile unter der Überschrift; die behandelnde Person nur an fremden Terminen (ANN-188), die Terminart nur, wenn sie vom Hausbesuch abweicht (ANN-187), der Status nur, wenn er von „Bestätigt“ abweicht. Anschrift und Navigation bleiben, als Kachel, daneben die Grundlage. Ein Praxis- oder Videotermin trägt eine farbige Kachel.
+**Erwartet.** Datum, Zeit und Mitteilungszeichen in der Zeile unter der Überschrift; die behandelnde Person nur an fremden Terminen (ANN-193), die Terminart nur, wenn sie vom Hausbesuch abweicht (ANN-192), der Status nur, wenn er von „Bestätigt“ abweicht. Anschrift und Navigation bleiben, als Kachel, daneben die Grundlage. Ein Praxis- oder Videotermin trägt eine farbige Kachel.
 
 ### BEF-084 — Der Block „Was ist passiert?“ am Hausbesuch steht immer offen
 
@@ -3190,4 +3190,4 @@ Suchseite mit der Warnung erscheint.
 
 **Beobachtung.** Neun Listen und Kacheln nannten die Terminart an jeder Zeile — bei einer Hausbesuchspraxis fast immer „Hausbesuch“. Auf der Kalenderkachel war es die dritte Zeile, auf der Tageskarte eine eigene Zeile unter dem Namen, im Teamplan „Anna Beispiel · Hausbesuch“.
 
-**Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-187): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.
+**Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-192): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.

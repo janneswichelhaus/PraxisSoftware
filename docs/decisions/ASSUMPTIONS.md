@@ -2183,7 +2183,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`.
 
-### ANN-187 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
+### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 
 Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
 
@@ -2195,7 +2195,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Anderer Regelfall (etwa eine Praxis, die überwiegend im Haus behandelt): `REGEL_TERMINART` auf `practice` setzen · Aufwand `klein`. Terminart immer zeigen: `appointmentTypeHint` gibt stets das Etikett zurück · Aufwand `klein`.
 
-### ANN-188 — Die behandelnde Person steht am Termin nur, wenn sie nicht die angemeldete Person ist
+### ANN-193 — Die behandelnde Person steht am Termin nur, wenn sie nicht die angemeldete Person ist
 
 Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
 

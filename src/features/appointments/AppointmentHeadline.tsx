@@ -42,7 +42,7 @@ export function AppointmentHeadline({
   const zone = appointment.organization_time_zone;
   const istEreignis = appointment.kind === 'internal';
   const bestaetigt = appointment.status === 'confirmed';
-  // Die eigene Person weiß, wer behandelt (ANN-188). Ein Patientenkonto hat
+  // Die eigene Person weiß, wer behandelt (ANN-193). Ein Patientenkonto hat
   // keine Beschäftigtenkennung und sieht die Person immer.
   const fremdePerson = appointment.staff_member_id !== user.staffMemberId;
 

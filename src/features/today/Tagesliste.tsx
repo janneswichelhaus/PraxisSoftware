@@ -93,7 +93,7 @@ export function Tageskarte({
         )}
       </p>
 
-      {/* Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-187);
+      {/* Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-192);
           die Zeile steht nur, wenn sie etwas sagt. */}
       {einordnung ? <p className="text-ink-muted mt-0.5 text-sm">{einordnung}</p> : null}
 

@@ -133,7 +133,7 @@ function zustandsHinweis(appointment: Appointment): string | null {
  * Standort am Praxistermin, der Hinweis am Videotermin.
  *
  * Der Hausbesuch ist der Regelfall dieser Praxis und trägt deshalb kein Wort
- * dafür (ANN-187). Ein Praxis- oder Videotermin ist die Ausnahme — Jannes:
+ * dafür (ANN-192). Ein Praxis- oder Videotermin ist die Ausnahme — Jannes:
  * „Sollte hier irgendwann eine Räumlichkeit hinzukommen, sollte ein Kästchen
  * aufploppen, das darauf hinweist." Die Kachel wird dann zur Akzentkarte und
  * nennt die Art als Zeichen.
