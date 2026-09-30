@@ -18,6 +18,7 @@ import {
   KeinKatalog,
   KontingentAusgeschoepft,
   artLabels,
+  bereichLabels,
   deleteLeistungen,
   fetchLeistungen,
   fetchOffeneTermine,
@@ -25,6 +26,7 @@ import {
   nachTerminen,
   recordLeistungen,
   steuerLabels,
+  type Leistungsbereich,
   type OffenerTermin,
   type Terminleistungen,
   type Vorschlag,
@@ -37,10 +39,12 @@ import {
  * erfassen** und **was ist erfasst**.
  *
  * Oben stehen die Termine, aus denen eine Leistung entstehen darf — nach
- * PROJECT_PRINCIPLES.md 19 sind das ausschließlich dokumentierte Termine und
- * Vorgänge mit Gebührenanlass. Es gibt keinen Override: Ein Termin ohne
- * finalisierte Dokumentation erscheint hier gar nicht erst, und die Seite
- * bietet keinen Weg an ihm vorbei.
+ * PROJECT_PRINCIPLES.md 19 sind das in der Behandlung ausschließlich
+ * dokumentierte Termine und Vorgänge mit Gebührenanlass, im Training der
+ * durchgeführte Termin (TRN-007, ANN-181). Es gibt keinen Override: Ein
+ * Behandlungstermin ohne finalisierte Dokumentation erscheint hier gar nicht
+ * erst, und die Seite bietet keinen Weg an ihm vorbei. Welcher Termin hier
+ * steht, entscheidet der Server (`app.appointment_is_billable`).
  *
  * Vorgeschlagen sind die Heilmittel der Behandlungsgrundlage; auswählbar ist,
  * was die am **Leistungstag** geltende Preisliste für diesen Anlass hergibt.
@@ -85,7 +89,7 @@ export function ServicesPage() {
 
       <Section
         titel="Zu erfassen"
-        hinweis="Dokumentierte Termine und Termine mit Ausfallhonorar. Andere stehen hier nicht: Ohne finalisierte Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht."
+        hinweis="Dokumentierte Behandlungstermine, Termine mit Ausfallhonorar und durchgeführte Trainingstermine. Andere stehen hier nicht: Eine Behandlung ohne finalisierte Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht."
       >
         {offene.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
         {offene.isError ? (
@@ -139,7 +143,7 @@ export function ServicesPage() {
             {offen.map((gruppe) => (
               <Leistungsgruppe key={gruppe.appointmentId} gruppe={gruppe}>
                 <div className="mt-2">
-                  <Zuruecknehmen appointmentId={gruppe.appointmentId} />
+                  <Zuruecknehmen appointmentId={gruppe.appointmentId} bereich={gruppe.bereich} />
                 </div>
               </Leistungsgruppe>
             ))}
@@ -176,6 +180,11 @@ function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; child
         <span className="text-ink-muted text-sm tabular-nums">
           {formatDate(gruppe.performedOn)}
         </span>
+        {/* Der Bereich, nicht eine Warnung (TRN-007): Die Rechnung dazu läuft im
+            eigenen Nummernkreis. */}
+        {gruppe.bereich === 'training' ? (
+          <Badge ton="neutral">{bereichLabels.training}</Badge>
+        ) : null}
         <span className="text-ink text-liste ml-auto font-medium tabular-nums">
           {formatEuro(gruppe.summeCent)}
         </span>
@@ -216,7 +225,13 @@ function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; child
  * Die Liste sagt nicht, welche Leistungen auf einem Entwurf stehen; die
  * Meldung nennt deshalb beide Wege.
  */
-function Zuruecknehmen({ appointmentId }: { appointmentId: string }) {
+function Zuruecknehmen({
+  appointmentId,
+  bereich,
+}: {
+  appointmentId: string;
+  bereich: Leistungsbereich;
+}) {
   const queryClient = useQueryClient();
   const entfernen = useMutation({
     mutationFn: () => deleteLeistungen(appointmentId),
@@ -240,10 +255,12 @@ function Zuruecknehmen({ appointmentId }: { appointmentId: string }) {
       onBestaetigen={() => entfernen.mutateAsync()}
       onAbbrechen={() => entfernen.reset()}
     >
+      {/* Ein Trainingstermin hat keine Behandlungsgrundlage (ADR-022 Punkt 4). */}
       <p>
-        Alle Leistungen dieses Termins werden entfernt, und die genutzte Menge der
-        Behandlungsgrundlage geht um denselben Betrag zurück. Der Termin steht danach wieder unter
-        „Zu erfassen“.
+        {bereich === 'training'
+          ? 'Alle Leistungen dieses Termins werden entfernt.'
+          : 'Alle Leistungen dieses Termins werden entfernt, und die genutzte Menge der Behandlungsgrundlage geht um denselben Betrag zurück.'}{' '}
+        Der Termin steht danach wieder unter „Zu erfassen“.
       </p>
     </Rueckfrage>
   );
@@ -265,7 +282,12 @@ function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
         <span className="text-ink-muted text-sm tabular-nums">
           {formatDate(termin.performed_on)}
         </span>
-        {termin.fee_basis ? (
+        {termin.service_area === 'training' ? (
+          <>
+            <Badge ton="neutral">{bereichLabels.training}</Badge>
+            <Badge ton="neutral">Durchgeführt</Badge>
+          </>
+        ) : termin.fee_basis ? (
           <Badge ton="neutral">{anlassLabels[termin.fee_basis] ?? 'Ausfallhonorar'}</Badge>
         ) : (
           <Badge ton="neutral">Dokumentiert</Badge>
@@ -468,13 +490,15 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
             Abrechnung: Therapeut:in oder Praxisinhaber:in erhöht die Menge an der Grundlage, danach
             lässt sich erneut erfassen.
           </Statusmeldung>
-          <Textlink
-            to={mitRueckweg(`/patienten/${termin.patient_id}/verordnungen`, LEISTUNGEN)}
-            alleinstehend
-            className="text-sm"
-          >
-            Zu den Behandlungsgrundlagen
-          </Textlink>
+          {termin.patient_id ? (
+            <Textlink
+              to={mitRueckweg(`/patienten/${termin.patient_id}/verordnungen`, LEISTUNGEN)}
+              alleinstehend
+              className="text-sm"
+            >
+              Zu den Behandlungsgrundlagen
+            </Textlink>
+          ) : null}
         </div>
       ) : null}
       {erfassen.isError && !(erfassen.error instanceof KontingentAusgeschoepft) ? (

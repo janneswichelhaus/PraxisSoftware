@@ -29,6 +29,8 @@ function termin(rest: Partial<BillingApi.OffenerTermin> = {}): BillingApi.Offene
   return {
     appointment_id: 't1',
     patient_id: 'p1',
+    training_relationship_id: null,
+    service_area: 'therapy',
     patient_name: 'Erika Beispiel',
     performed_on: '2026-09-15',
     starts_at: '2026-09-15T08:00:00Z',
@@ -61,6 +63,8 @@ function leistung(rest: Partial<BillingApi.Leistung> = {}): BillingApi.Leistung 
     id: 'l1',
     appointment_id: 't9',
     patient_id: 'p1',
+    training_relationship_id: null,
+    service_area: 'therapy',
     patient_name: 'Erika Beispiel',
     performed_on: '2026-09-10',
     code: 'KG',
@@ -92,8 +96,50 @@ describe('ServicesPage', () => {
 
     // ABR-26: „abgerechnet" statt „fakturiert".
     expect(
-      await screen.findByText(/Ohne finalisierte Dokumentation wird nicht abgerechnet/),
+      await screen.findByText(/ohne finalisierte Dokumentation wird nicht abgerechnet/),
     ).toBeInTheDocument();
+  });
+
+  it('zeigt einen durchgefuehrten Trainingstermin mit seinem Bereich und ohne Grundlage (TRN-007)', async () => {
+    const nutzer = userEvent.setup();
+    fetchOffeneTermine.mockResolvedValue([
+      termin({
+        appointment_id: 'tr1',
+        patient_id: null,
+        training_relationship_id: 'v1',
+        service_area: 'training',
+        patient_name: 'Tina Training',
+        status: 'completed',
+        suggestion_count: 0,
+      }),
+    ]);
+    fetchLeistungen.mockResolvedValue([
+      leistung({
+        appointment_id: 'tr0',
+        patient_id: null,
+        training_relationship_id: 'v1',
+        service_area: 'training',
+        patient_name: 'Tina Training',
+        code: 'PT',
+        label: 'Personal Training (Einzelstunde)',
+        tax_treatment: 'taxable',
+        tax_rate_permille: 190,
+      }),
+    ]);
+
+    renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+    const karte = (await screen.findAllByText('Tina Training'))[0]!.closest('div')!;
+    expect(within(karte).getByText('Training')).toBeInTheDocument();
+    expect(within(karte).getByText('Durchgeführt')).toBeInTheDocument();
+    expect(screen.queryByText('Dokumentiert')).not.toBeInTheDocument();
+
+    // Zurücknehmen erwähnt keine Behandlungsgrundlage: Ein Trainingstermin hat keine.
+    await nutzer.click(screen.getByRole('button', { name: 'Erfassung zurücknehmen' }));
+    expect(
+      await screen.findByText(/Alle Leistungen dieses Termins werden entfernt\./),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Behandlungsgrundlage/)).not.toBeInTheDocument();
   });
 
   it('unterscheidet einen dokumentierten Termin von einem Gebuehrenanlass', async () => {

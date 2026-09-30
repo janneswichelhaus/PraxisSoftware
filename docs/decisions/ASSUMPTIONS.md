@@ -2108,3 +2108,15 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/session/types.ts`.
 
 **Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`.
+
+### ANN-181 — Im Training entsteht eine Leistung aus dem durchgeführten Termin
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 7)
+
+**Annahme.** Die „vereinbarte Trainingsleistung“ aus §19 ist der durchgeführte Trainingstermin (`completed`, später auch `documented`). Eine Dokumentation wird nicht verlangt, ein Ausfallhonorar gibt es nicht (ANN-178). Erfasst wird wie in der Behandlung durch `owner` und `office` im Bereich **Abrechnung → Leistungen**. Angeboten werden nur Positionen des Bereichs `training`, ohne Vorbelegung. Die Trainingsbetreuung erfasst nicht, und die Ausnahme aus ANN-140 (Behandelnde am eigenen Termin) gilt nur am Behandlungstermin.
+
+**Begründung.** §19 bindet die Fakturierung an die finalisierte Dokumentation nur für die Behandlung. Für das Training nennt er die vereinbarte Leistung, und die Roadmap stellt klar, dass TRN-EPIC-003 `documented` nicht voraussetzt. ADR-022 Punkt 8 macht `documented` am Trainingstermin erst mit dem Trainingsprotokoll erreichbar. Eine Trainingsgrundlage hat kein Kontingent wie die Verordnung (ANN-179), daher gibt es keinen Vorschlag aus der Grundlage. Unsicher: ob eine Einheit schon mit der Buchung geschuldet ist (Paket, Abo). Das regelt ADR-009 Punkt 21 in Block 5.
+
+**Anker.** `app.appointment_is_billable` und `app.can_record_services_for_appointment` in `supabase/migrations/20260930120000_trn_007_training_services.sql`; Tests in `supabase/tests/training-services.test.ts`.
+
+**Änderungspfad.** Erst nach dem Trainingsprotokoll abrechnen: Den Zweig `training` in `app.appointment_is_billable` auf `documented` setzen · Aufwand `klein`. Trainingsbetreuung erfasst am eigenen Termin: Zweig in `app.can_record_services_for_appointment` für `trainer` und `training` · Aufwand `klein`.

@@ -810,7 +810,11 @@ export async function storniereZahlung(paymentId: string, grund: string): Promis
 
 const offenerTerminSchema = z.object({
   appointment_id: z.string(),
-  patient_id: z.string(),
+  /** Leer am Trainingstermin: Er hängt am Trainingsverhältnis (TRN-007). */
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
+  service_area: z.enum(['therapy', 'training']),
+  /** Name der Person, für die die Leistung erbracht wird — im Training aus dem Training. */
   patient_name: z.string(),
   performed_on: z.string(),
   starts_at: z.string(),
@@ -864,7 +868,9 @@ export async function fetchVorschlag(appointmentId: string): Promise<Vorschlag[]
 const leistungSchema = z.object({
   id: z.string(),
   appointment_id: z.string(),
-  patient_id: z.string(),
+  patient_id: z.string().nullable(),
+  training_relationship_id: z.string().nullable(),
+  service_area: z.enum(['therapy', 'training']),
   patient_name: z.string(),
   performed_on: z.string(),
   code: z.string(),
@@ -924,6 +930,7 @@ export async function deleteLeistungen(appointmentId: string): Promise<void> {
 export interface Terminleistungen {
   appointmentId: string;
   patientName: string;
+  bereich: Leistungsbereich;
   performedOn: string;
   zeilen: Leistung[];
   summeCent: number;
@@ -938,6 +945,7 @@ export function nachTerminen(leistungen: Leistung[]): Terminleistungen[] {
     const gruppe = vorhanden ?? {
       appointmentId: zeile.appointment_id,
       patientName: zeile.patient_name,
+      bereich: zeile.service_area,
       performedOn: zeile.performed_on,
       zeilen: [],
       summeCent: 0,

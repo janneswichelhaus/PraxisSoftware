@@ -13,8 +13,8 @@ import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } f
  *     stille Korrektur (Punkt 16, ADR-022).
  *   * **Die Sammelrechnung buendelt je Person, Monat und Bereich** - ANN-077
  *     bekommt einen dritten Schluessel.
- *   * **Training bleibt unabrechenbar**: Die Position gibt es, den Schreibweg
- *     nicht (E18 Schritt 7).
+ *   * **Training ist abrechenbar** seit TRN-007 - am Trainingsverhaeltnis,
+ *     nie an der Akte (training-services.test.ts, training-invoices.test.ts).
  */
 
 const { users, organizationId, patients, trainingRelationships } = SEED;
@@ -317,26 +317,24 @@ describe('Ein Bereich je Rechnung', () => {
     });
   });
 
-  describe('Training bleibt unabrechenbar (E18 Schritt 7)', () => {
-    it('gibt es die Position, aber keinen Weg, sie zu erfassen', async () => {
-      // Der Trainingstermin traegt keine Patientin (ADR-022 Punkt 3), und
-      // `billable_services.patient_id` ist Pflicht. Die Luecke ist gewollt:
-      // Der Schreibweg des Trainings gehoert zu E18 Schritt 7.
+  describe('Training ist seit TRN-007 abrechenbar', () => {
+    it('erfasst die Trainingsposition am Trainingstermin im Bereich training', async () => {
+      // Bis TRN-EPIC-003 scheiterte das an `billable_services.patient_id`
+      // (E18 Schritt 7). Jetzt haengt die Leistung am Trainingsverhaeltnis;
+      // die Einzelfaelle stehen in training-services.test.ts.
       const termin = await trainingstermin(30);
 
-      const { rows } = await asPostgres<{ service_area: string }>(
-        'select service_area from public.service_catalog_items where id = $1',
-        [KATALOG.personalTraining],
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.record_billable_services($1::uuid, $2::jsonb)',
+        [termin, JSON.stringify([{ catalog_item_id: KATALOG.personalTraining, quantity: 1 }])],
       );
-      expect(rows[0]?.service_area).toBe('training');
 
-      await expect(
-        asUser(
-          users.ownerTherapist,
-          'select public.record_billable_services($1::uuid, $2::jsonb)',
-          [termin, JSON.stringify([{ catalog_item_id: KATALOG.personalTraining, quantity: 1 }])],
-        ),
-      ).rejects.toThrow(/appointment has no patient/);
+      const { rows } = await asPostgres<{ service_area: string; patient_id: string | null }>(
+        'select service_area, patient_id from public.billable_services where appointment_id = $1',
+        [termin],
+      );
+      expect(rows).toEqual([{ service_area: 'training', patient_id: null }]);
     });
   });
 });

@@ -509,3 +509,22 @@ insert into public.appointments (
    '55555555-5555-4555-8555-000000000006', null,
    'video', 'training', 'confirmed',
    (current_date + 1 + time '17:00') at time zone 'Europe/Berlin', (current_date + 1 + time '18:00') at time zone 'Europe/Berlin');
+
+-- -----------------------------------------------------------------------------
+-- TRN-007: Eine durchgefuehrte Trainingsstunde, vorgestern (ANN-181)
+--
+-- Abschliessen am Trainingstermin kommt in der Oberflaeche erst mit
+-- TRN-EPIC-004. Damit die Sichtung eine Trainingsleistung erfassen und als
+-- Rechnung im Kreis TR ausstellen kann, steht eine Stunde schon als
+-- durchgefuehrt hier - von Tom abgeschlossen, an Tinas Vereinbarung.
+-- -----------------------------------------------------------------------------
+insert into public.appointments (
+  id, organization_id, training_relationship_id, training_basis_id, staff_member_id, location_id,
+  appointment_type, kind, status, starts_at, ends_at, completed_at, completed_by
+) values
+  ('aaaaaaaa-aaaa-4aaa-8aaa-000000000009', '22222222-2222-4222-8222-000000000001',
+   'eeeeeeee-eeee-4eee-8eee-000000000001', 'ffffffff-ffff-4fff-8fff-000000000001',
+   '55555555-5555-4555-8555-000000000006', '33333333-3333-4333-8333-000000000001',
+   'practice', 'training', 'completed',
+   (current_date - 2 + time '10:00') at time zone 'Europe/Berlin', (current_date - 2 + time '11:00') at time zone 'Europe/Berlin',
+   (current_date - 2 + time '11:00') at time zone 'Europe/Berlin', '11111111-1111-4111-8111-000000000007');
