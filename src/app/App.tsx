@@ -17,6 +17,8 @@ import {
   useCurrentUser,
 } from '@/features/session/useCurrentUser';
 import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
+import { EinladungPage } from '@/features/platform/EinladungPage';
+import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -144,6 +146,7 @@ function OeffentlicheRouten() {
     <Routes>
       <Route path={WIEDERHERSTELLUNG_PFAD} element={<KennwortNeuPage />} />
       <Route path={ZUGANG_PFAD} element={<ZugangPage />} />
+      <Route path={EINLADUNG_PFAD} element={<EinladungPage />} />
       <Route path="*" element={<LoginPage />} />
     </Routes>
   );
