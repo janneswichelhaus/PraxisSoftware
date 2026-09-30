@@ -59,6 +59,15 @@ function akteneintrag(page: Page, terminId: string) {
     .first();
 }
 
+/**
+ * Die Auswahl der Mitteilungswege ist seit UX-005a zugeklappt: Ob und wie
+ * ein Termin mitgeteilt ist, steht als Zeichen im Kopf der Seite; die
+ * Kästchen braucht, wer gerade angerufen hat.
+ */
+async function mitteilungOeffnen(page: Page) {
+  await page.locator('summary', { hasText: /^Mitteilung (vermerken|ändern)$/ }).click();
+}
+
 test.describe('CAL-012: Mitteilungsvermerk', () => {
   test('vermerkt einen Weg und zeigt ihn in der Terminliste der Akte', async ({ page }) => {
     await anmelden(page, KONTEN.office);
@@ -69,6 +78,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await expect(akteneintrag(page, terminId)).not.toContainText('Telefon');
 
     await page.goto(`/termine/${terminId}`);
+    await mitteilungOeffnen(page);
     await page.getByLabel('Telefonisch mitgeteilt').check();
     await page.getByRole('button', { name: 'Vermerk speichern' }).click();
     await expect(page.getByText('Vermerk gespeichert.')).toBeVisible();
@@ -87,6 +97,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, tag, zeit());
 
+    await mitteilungOeffnen(page);
     await page.getByLabel('Persönlich gesagt').check();
     await page.getByRole('button', { name: 'Vermerk speichern' }).click();
     await expect(page.getByText('Vermerk gespeichert.')).toBeVisible();
@@ -111,6 +122,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await anmelden(page, KONTEN.office);
     const terminId = await terminAnlegen(page, nahtag(2), zeit());
 
+    await mitteilungOeffnen(page);
     await page.getByLabel('Telefonisch mitgeteilt').check();
     await page.getByRole('button', { name: 'Vermerk speichern' }).click();
     await expect(page.getByText('Vermerk gespeichert.')).toBeVisible();
@@ -172,6 +184,7 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await anmelden(page, KONTEN.therapist);
     await terminAnlegen(page, nahtag(5), zeit());
 
+    await mitteilungOeffnen(page);
     await expect(page.getByRole('button', { name: 'Vermerk speichern' })).toBeVisible();
     // Der Hinweis der Auswahl, seit UXR-005 neu formuliert.
     await expect(

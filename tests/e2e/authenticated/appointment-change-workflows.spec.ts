@@ -84,7 +84,8 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');
-    await expect(detailWert(page, 'Art')).toContainText('Hausbesuch');
+    // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-187).
+    await expect(page.getByText('Praxistermin')).toHaveCount(0);
     await expect(detailWert(page, 'Anschrift')).toContainText('Beispielstrasse');
   });
 

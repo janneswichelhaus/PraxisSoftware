@@ -11,12 +11,13 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
+import { Badge } from '@/components/ui/Badge';
+import { Tile, TileGrid, TileRow, TileRows } from '@/components/ui/Tile';
 import { MitteilungVermerken } from './MitteilungVermerken';
-import { Deckungszeichen } from './Deckungszeichen';
 import { Kurzblick } from './Kurzblick';
-import { AbrechnungAbschnitt, Abrechnungslage } from './Abrechnungslage';
+import { AbrechnungAbschnitt, TreatmentBasisTile } from './Abrechnungslage';
+import { AppointmentHeadline } from './AppointmentHeadline';
 import { HeilmittelBestaetigen } from './HeilmittelBestaetigen';
-import { Laengenzeichen } from './Laengenzeichen';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -39,20 +40,19 @@ import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 import {
   appointmentStatusLabels,
   appointmentToFormValues,
+  appointmentTypeHint,
   cancelAppointment,
   cancelAppointmentEvent,
   cancelEventSeries,
   fetchEventSeries,
   cancellationReasonLabels,
   cancellationReasonSchema,
-  appointmentTypeLabels,
   completeAppointment,
   type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
   formatLocalDate,
   formatLocalTime,
-  formatLocalTimeRange,
   feeBasisLabels,
   locationSummary,
   patientName,
@@ -106,27 +106,164 @@ function ortsBeschriftung(art: Appointment['appointment_type']): string {
 }
 
 /**
- * Der Satz unter der Überschrift: der Zustand, wenn er einer ist, sonst die
- * Terminart.
+ * Was ein Zustand ohne Rückweg bedeutet: wo korrigiert wird — im Kalender
+ * gibt es dafür keinen Knopf, und das ist Absicht (ADR-018 Punkt 2).
  *
- * Er sagt bei jedem Zustand ohne Rückweg auch, wo korrigiert wird — im
- * Kalender gibt es dafür keinen Knopf, und das ist Absicht (ADR-018 Punkt 2).
+ * Der Zustand selbst steht seit UX-005a als Zeichen in der Kopfzeile; der
+ * Satz wiederholt ihn nicht mehr („Dieser Termin ist abgesagt.") und sagt nur
+ * noch, was daraus folgt. Am bestätigten Termin steht nichts: Das ist der
+ * Regelfall, und ein Satz dazu wäre Rauschen.
  */
-function zustandsHinweis(appointment: Appointment): string {
+function zustandsHinweis(appointment: Appointment): string | null {
   switch (appointment.status) {
     case 'cancelled':
-      return 'Dieser Termin ist abgesagt. Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
+      return 'Eine Absage wird nicht zurückgenommen – für einen neuen Termin bitte neu anlegen.';
     case 'no_show':
-      return 'Hier wurde niemand angetroffen. Zum Ändern erst wieder öffnen.';
     case 'completed':
-      return 'Dieser Termin ist abgeschlossen. Zum Ändern erst wieder öffnen.';
+      return 'Zum Ändern erst wieder öffnen.';
     case 'documented':
-      return 'Dieser Termin ist dokumentiert. Korrigiert wird in der Dokumentation, nicht am Termin.';
-    case 'invoiced':
-      return 'Dieser Termin ist abgerechnet.';
+      return 'Korrigiert wird in der Dokumentation, nicht am Termin.';
     default:
-      return appointmentTypeLabels[appointment.appointment_type];
+      return null;
   }
+}
+
+/**
+ * Die Kachel des Ortes (UX-005a): Anschrift mit Navigation am Hausbesuch,
+ * Standort am Praxistermin, der Hinweis am Videotermin.
+ *
+ * Der Hausbesuch ist der Regelfall dieser Praxis und trägt deshalb kein Wort
+ * dafür (ANN-187). Ein Praxis- oder Videotermin ist die Ausnahme — Jannes:
+ * „Sollte hier irgendwann eine Räumlichkeit hinzukommen, sollte ein Kästchen
+ * aufploppen, das darauf hinweist." Die Kachel wird dann zur Akzentkarte und
+ * nennt die Art als Zeichen.
+ *
+ * Der Navigations-Handoff steht bei der Anschrift, nicht bei den
+ * Statusaktionen: Er gehört zur Anfahrt, nicht zum Vorgang (ADR-019 Punkt 20).
+ * Was dabei das Gerät verlässt, steht direkt darunter (ADR-019 Punkt 23) —
+ * bis UX-005a stand es als Fußnote am Ende der Seite.
+ */
+function OrtKachel({ appointment }: { appointment: Appointment }) {
+  const art = appointment.appointment_type;
+  const kennzeichen = appointmentTypeHint(art);
+  const strasse = [appointment.visit_street, appointment.visit_house_number]
+    .filter(Boolean)
+    .join(' ');
+  const ort = [appointment.visit_postal_code, appointment.visit_city].filter(Boolean).join(' ');
+
+  return (
+    <Tile label={ortsBeschriftung(art)} ton={kennzeichen ? 'akzent' : 'neutral'}>
+      {kennzeichen ? (
+        <span className="mb-1 block">
+          <Badge ton="akzent">{kennzeichen}termin</Badge>
+        </span>
+      ) : null}
+      {art === 'home_visit' ? (
+        strasse || ort ? (
+          <address className="not-italic">
+            {strasse ? <span className="block font-medium">{strasse}</span> : null}
+            {ort ? <span className="block">{ort}</span> : null}
+          </address>
+        ) : (
+          '—'
+        )
+      ) : art === 'practice' ? (
+        <span className="block font-medium">{locationSummary(appointment)}</span>
+      ) : null}
+      {art === 'home_visit' ? (
+        <span className="mt-3 block">
+          <NavigationZumTermin termin={appointment} />
+          <span className="text-ink-muted mt-2 block text-xs leading-relaxed">
+            Öffnet Google Maps im Fahrradmodus und übergibt nur die Anschrift ohne Namen – erst beim
+            Tippen.
+          </span>
+        </span>
+      ) : null}
+      {art === 'video' ? (
+        <span className="text-ink-muted mt-1 block text-sm">
+          Für Videotermine wird noch kein Videolink erzeugt.
+        </span>
+      ) : null}
+    </Tile>
+  );
+}
+
+/**
+ * Die Kachel eines Zustands mit Einzelheiten (UX-005a): die Absage mit Grund,
+ * Eingang und Gebührenanlass; das Nichtantreffen mit Zeitpunkt, Protokoll und
+ * Gebührenanlass. Am bestätigten, abgeschlossenen oder dokumentierten Termin
+ * gibt es sie nicht — dort steht nichts, was über die Kopfzeile hinausginge.
+ *
+ * Der Honoraranlass steht nur da, wenn es einen gibt. Ein „Kein
+ * Ausfallhonorar" an jedem abgesagten Termin wäre eine Zeile, die nichts
+ * sagt. Dasselbe Wort wie auf Rechnung, Katalog und dem Blatt für
+ * Patient:innen (TER-10). Kein Betrag: Die Höhe steht im Katalog, abgerechnet
+ * wird über die Leistungen — eine Zahl hier wäre eine zweite Quelle.
+ */
+function ZustandKachel({ appointment }: { appointment: Appointment }) {
+  const zone = appointment.organization_time_zone;
+  const zeitpunkt = (iso: string) =>
+    `${formatLocalDate(iso, zone)}, ${formatLocalTime(iso, zone)} Uhr`;
+  const honorar = appointment.fee_basis ? (
+    <TileRow label="Ausfallhonorar vorgemerkt">
+      <span>{feeBasisLabels[appointment.fee_basis]}</span>
+      <span className="text-ink-muted mt-1 block text-sm">{HONORAR_ERFASSUNG}</span>
+    </TileRow>
+  ) : null;
+
+  if (appointment.status === 'cancelled') {
+    return (
+      <Tile label="Absage" ton="kritisch">
+        <TileRows>
+          <TileRow label="Absagegrund">
+            {appointment.cancellation_reason
+              ? cancellationReasonLabels[appointment.cancellation_reason]
+              : 'Nicht erfasst'}
+          </TileRow>
+          {appointment.cancellation_received_at ? (
+            <TileRow label="Absage eingegangen">
+              {zeitpunkt(appointment.cancellation_received_at)}
+            </TileRow>
+          ) : null}
+          {honorar}
+        </TileRows>
+      </Tile>
+    );
+  }
+
+  if (appointment.status === 'no_show') {
+    return (
+      <Tile label="Vermerk" ton="warnung">
+        <TileRows>
+          {appointment.no_show_recorded_at ? (
+            <TileRow label="Vermerkt am">{zeitpunkt(appointment.no_show_recorded_at)}</TileRow>
+          ) : null}
+          {/* Das bestätigte Protokoll steht neben dem Vermerk, denn es ist
+              die Grundlage der Forderung (CAL-018). An einem Vermerk ohne
+              Honorar steht es nicht: Dort gibt es nichts zu belegen. */}
+          {appointment.no_show_protocol_confirmed ? (
+            <TileRow label="Protokoll">
+              Bestätigt: 15 Minuten vor Ort gewartet, an der Tür geklingelt, telefonisch angerufen.
+            </TileRow>
+          ) : null}
+          {honorar}
+        </TileRows>
+      </Tile>
+    );
+  }
+
+  // Ein Kennzeichen aus der Zeit vor ADR-018 Fassung 2 an einem anderen
+  // Zustand bleibt sichtbar - historische Vorgänge werden nicht umgedeutet,
+  // aber auch nicht versteckt.
+  if (appointment.fee_basis) {
+    return (
+      <Tile label="Vermerk" ton="warnung">
+        <TileRows>{honorar}</TileRows>
+      </Tile>
+    );
+  }
+
+  return null;
 }
 
 /**
@@ -879,7 +1016,6 @@ function AppointmentDetail({
   /** Das Nachladen ist gescheitert; der Stand kann veraltet sein (ZST-03). */
   nachladeFehler: { laeuft: boolean; erneut: () => void } | null;
 }) {
-  const zone = appointment.organization_time_zone;
   const darfVerwalten = canManageAppointments(user.roles);
   // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
   // und abgerechnete Termine sind terminal; abgeschlossene und nicht
@@ -972,7 +1108,18 @@ function AppointmentDetail({
             </>
           )
         }
-        description={zustandsHinweis(appointment)}
+        /* Datum, Zeit, Zustand und Mitteilungszeichen direkt unter dem
+           Namen (UX-005a) - was einen Termin ausmacht, ohne Tabelle. Der
+           Satz darunter sagt nur noch, was aus einem Zustand ohne Rückweg
+           folgt. */
+        description={
+          <>
+            <AppointmentHeadline appointment={appointment} user={user} />
+            {zustandsHinweis(appointment) ? (
+              <p className="mt-1">{zustandsHinweis(appointment)}</p>
+            ) : null}
+          </>
+        }
         actions={
           darfAendern ? (
             <div className="flex flex-wrap gap-3">
@@ -1026,173 +1173,98 @@ function AppointmentDetail({
         <Rueckmeldung className="mb-6">{eingangsmeldung}</Rueckmeldung>
       ) : null}
 
-      <Section titel={istEreignis ? 'Fehlzeit' : 'Termin'} rahmen>
-        <DetailList>
-          {/* Bewusst Text und kein zweiter Link: Der Name im Kopf führt in die
-              Akte (UX-012). Zwei gleichnamige Links auf dieselbe Seite wären
-              für Vorlesesoftware zwei Angebote mit einer Wirkung. */}
-          {istEreignis ? (
-            <DetailRow label="Fehlzeit">{appointment.title ?? '—'}</DetailRow>
-          ) : (
-            <DetailRow label="Patient:in">{patientName(appointment)}</DetailRow>
-          )}
-          <DetailRow label={istEreignis ? 'Diese Teilnahme' : 'Behandelnde Person'}>
-            {staffName(appointment)}
-          </DetailRow>
-          {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
-              hat denselben Zeitraum belegt, und „Fehlzeit bearbeiten" trifft
-              alle zugleich (CAL-017). Jede andere Teilnahme führt zu ihrem
-              Termin - dort wird sie getauscht oder abgesagt (TER-15). */}
-          {istEreignis && beteiligteListe.length > 1 ? (
-            <DetailRow label="Beteiligte">
-              {/* Die Links stehen je für sich und sind 44 px hoch - am
-                  Telefon ein Ziel für den Daumen, nicht für die Fingerspitze. */}
-              <span className="inline-flex flex-wrap items-center">
-                {beteiligteListe.map((b, index) => {
-                  const name =
-                    b.status === 'confirmed'
-                      ? b.display_name
-                      : `${b.display_name} (${appointmentStatusLabels[b.status]})`;
-                  return (
-                    <Fragment key={b.appointment_id}>
-                      {index > 0 ? <span className="mr-1">, </span> : null}
-                      {b.appointment_id === appointment.id ? (
-                        <span>{name}</span>
-                      ) : (
-                        <Textlink
-                          alleinstehend
-                          to={mitRueckweg(`/termine/${b.appointment_id}`, zumTermin)}
-                        >
-                          {name}
-                        </Textlink>
-                      )}
-                    </Fragment>
-                  );
-                })}
-              </span>
-              <span className="text-ink-muted mt-1 block text-sm">
-                Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
-              </span>
-            </DetailRow>
-          ) : null}
-          {/* Dieses Vorkommen ist eines von mehreren (CAL-021). Die Zeile
-              sagt es, bevor weiter unten „Ganze Serie absagen" steht. */}
-          {istEreignis && appointment.event_series_id && serienVorkommen.length > 0 ? (
-            <DetailRow label="Dauerfehlzeit">
-              <span>
-                Vorkommen{' '}
-                {serienVorkommen.findIndex((v) => v.event_group_id === appointment.event_group_id) +
-                  1}{' '}
-                von {serienVorkommen.length}
-              </span>
-              <span className="text-ink-muted mt-1 block text-sm">
-                Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze Serie.
-              </span>
-            </DetailRow>
-          ) : null}
-          <DetailRow label="Art">{appointmentTypeLabels[appointment.appointment_type]}</DetailRow>
-          <DetailRow label="Status">{appointmentStatusLabels[appointment.status]}</DetailRow>
-          {/* PRX-008: „Termin n von m" an der Grundlage; Empfänger und offene
-              Rechnungen stehen darunter im Abschnitt „Abrechnung". */}
+      {/* Die Angaben des Behandlungstermins als Kacheln (UX-005a): der Ort
+          mit der Anfahrt, die Grundlage mit dem Zähler, ein Zustand mit seinen
+          Einzelheiten. Was schon im Kopf steht - Name, Tag, Zeit, Zustand -,
+          steht hier nicht noch einmal. Ein Ereignis behält seine Zeilen: Es
+          hat Beteiligte und Vorkommen, die eine Kachel nicht besser trüge. */}
+      {istEreignis ? null : (
+        <TileGrid>
+          <ZustandKachel appointment={appointment} />
+          <OrtKachel appointment={appointment} />
+          {/* PRX-008: „Termin n von m" an der Grundlage, seit CAL-022 mit
+              der Deckung; Empfänger und offene Rechnungen stehen darunter
+              im Abschnitt „Abrechnung". */}
           {appointment.kind === 'therapy' ? (
-            <Abrechnungslage appointmentId={appointment.id} />
+            <TreatmentBasisTile
+              appointment={appointment}
+              darfVerwalten={darfVerwalten}
+              zumTermin={zumTermin}
+            />
           ) : null}
-          {/* CAL-022: Dieser Termin geht über das Kontingent seiner
-              Behandlungsgrundlage hinaus. Er ist geplant und gilt — aber er
-              erzeugt keine Leistung gegen diese Grundlage (§19, ADR-009), und
-              das gehört an den Termin selbst, nicht nur in die Akte. Der Weg
-              zur Abhilfe steht gleich daneben (TER-15). */}
-          {appointment.treatment_basis_covered === false ? (
-            <DetailRow label="Deckung">
-              <span className="flex flex-wrap items-center gap-x-2">
-                <Deckungszeichen gedeckt={appointment.treatment_basis_covered} />
-                <span className="text-ink-muted text-sm">
-                  Die Behandlungsgrundlage deckt diesen Termin nicht.
+        </TileGrid>
+      )}
+
+      {istEreignis ? (
+        <Section titel="Fehlzeit" rahmen>
+          <DetailList>
+            <DetailRow label="Fehlzeit">{appointment.title ?? '—'}</DetailRow>
+            <DetailRow label="Diese Teilnahme">{staffName(appointment)}</DetailRow>
+            {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
+                hat denselben Zeitraum belegt, und „Fehlzeit bearbeiten" trifft
+                alle zugleich (CAL-017). Jede andere Teilnahme führt zu ihrem
+                Termin - dort wird sie getauscht oder abgesagt (TER-15). */}
+            {beteiligteListe.length > 1 ? (
+              <DetailRow label="Beteiligte">
+                {/* Die Links stehen je für sich und sind 44 px hoch - am
+                    Telefon ein Ziel für den Daumen, nicht für die Fingerspitze. */}
+                <span className="inline-flex flex-wrap items-center">
+                  {beteiligteListe.map((b, index) => {
+                    const name =
+                      b.status === 'confirmed'
+                        ? b.display_name
+                        : `${b.display_name} (${appointmentStatusLabels[b.status]})`;
+                    return (
+                      <Fragment key={b.appointment_id}>
+                        {index > 0 ? <span className="mr-1">, </span> : null}
+                        {b.appointment_id === appointment.id ? (
+                          <span>{name}</span>
+                        ) : (
+                          <Textlink
+                            alleinstehend
+                            to={mitRueckweg(`/termine/${b.appointment_id}`, zumTermin)}
+                          >
+                            {name}
+                          </Textlink>
+                        )}
+                      </Fragment>
+                    );
+                  })}
                 </span>
-                {darfVerwalten && appointment.patient_id ? (
-                  <Textlink
-                    alleinstehend
-                    className="text-sm"
-                    to={mitRueckweg(
-                      `/patienten/${appointment.patient_id}/termine-uebertragen`,
-                      zumTermin,
-                    )}
-                  >
-                    Auf andere Grundlage übertragen
-                  </Textlink>
-                ) : null}
-              </span>
+                <span className="text-ink-muted mt-1 block text-sm">
+                  Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
+                </span>
+              </DetailRow>
+            ) : null}
+            {/* Dieses Vorkommen ist eines von mehreren (CAL-021). Die Zeile
+                sagt es, bevor weiter unten „Ganze Serie absagen" steht. */}
+            {appointment.event_series_id && serienVorkommen.length > 0 ? (
+              <DetailRow label="Dauerfehlzeit">
+                <span>
+                  Vorkommen{' '}
+                  {serienVorkommen.findIndex(
+                    (v) => v.event_group_id === appointment.event_group_id,
+                  ) + 1}{' '}
+                  von {serienVorkommen.length}
+                </span>
+                <span className="text-ink-muted mt-1 block text-sm">
+                  Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze Serie.
+                </span>
+              </DetailRow>
+            ) : null}
+            <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
+              {locationSummary(appointment)}
             </DetailRow>
-          ) : null}
-          <DetailRow label="Datum">{formatLocalDate(appointment.starts_at, zone)}</DetailRow>
-          <DetailRow label="Zeit">
-            {formatLocalTimeRange(appointment.starts_at, appointment.ends_at, zone)}{' '}
-            <Laengenzeichen termin={appointment} />
-          </DetailRow>
-          <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
-            {locationSummary(appointment)}
-          </DetailRow>
-          {/* Der Handoff steht bei der Anschrift, nicht bei den
-              Statusaktionen: Er gehört zur Anfahrt, nicht zum Vorgang
-              (ADR-019 Punkt 20). */}
-          {appointment.appointment_type === 'home_visit' ? (
-            <DetailRow label="Anfahrt">
-              <NavigationZumTermin termin={appointment} />
-            </DetailRow>
-          ) : null}
-          {appointment.status === 'cancelled' ? (
-            <DetailRow label="Absagegrund">
-              {appointment.cancellation_reason
-                ? cancellationReasonLabels[appointment.cancellation_reason]
-                : 'Nicht erfasst'}
-            </DetailRow>
-          ) : null}
-          {appointment.no_show_recorded_at ? (
-            <DetailRow label="Vermerkt am">
-              {`${formatLocalDate(appointment.no_show_recorded_at, zone)}, ${formatLocalTime(
-                appointment.no_show_recorded_at,
-                zone,
-              )} Uhr`}
-            </DetailRow>
-          ) : null}
-          {appointment.cancellation_received_at ? (
-            <DetailRow label="Absage eingegangen">
-              {`${formatLocalDate(appointment.cancellation_received_at, zone)}, ${formatLocalTime(
-                appointment.cancellation_received_at,
-                zone,
-              )} Uhr`}
-            </DetailRow>
-          ) : null}
-          {/* Das bestätigte Protokoll steht neben dem Vermerk, denn es ist
-              die Grundlage der Forderung (CAL-018). An einem Vermerk ohne
-              Honorar steht es nicht: Dort gibt es nichts zu belegen. */}
-          {appointment.no_show_protocol_confirmed ? (
-            <DetailRow label="Protokoll">
-              Bestätigt: 15 Minuten vor Ort gewartet, an der Tür geklingelt, telefonisch angerufen.
-            </DetailRow>
-          ) : null}
-          {/* Der Honoraranlass steht nur da, wenn es einen gibt. Ein „Kein
-              Ausfallhonorar" an jedem abgesagten Termin wäre eine Zeile, die
-              nichts sagt. Dasselbe Wort wie auf Rechnung, Katalog und dem
-              Blatt für Patient:innen (TER-10). */}
-          {appointment.fee_basis ? (
-            <DetailRow label="Ausfallhonorar vorgemerkt">
-              <span>{feeBasisLabels[appointment.fee_basis]}</span>
-              {/* Kein Betrag: Die Höhe steht im Katalog, abgerechnet wird
-                  über die Leistungen. Eine Zahl hier wäre eine zweite Quelle. */}
-              <span className="text-ink-muted mt-1 block text-sm">{HONORAR_ERFASSUNG}</span>
-            </DetailRow>
-          ) : null}
-          {appointment.completed_at ? (
-            <DetailRow label="Abgeschlossen am">
-              {`${formatLocalDate(appointment.completed_at, zone)}, ${formatLocalTime(
-                appointment.completed_at,
-                zone,
-              )} Uhr`}
-            </DetailRow>
-          ) : null}
-        </DetailList>
-      </Section>
+            {appointment.status === 'cancelled' ? (
+              <DetailRow label="Absagegrund">
+                {appointment.cancellation_reason
+                  ? cancellationReasonLabels[appointment.cancellation_reason]
+                  : 'Nicht erfasst'}
+              </DetailRow>
+            ) : null}
+          </DetailList>
+        </Section>
+      ) : null}
 
       {/* BEF-081: Empfänger und offene Rechnungen als eigener Abschnitt statt
           zweier Zeilen zwischen den Termindaten - nur für owner und office. */}
@@ -1365,7 +1437,8 @@ function AppointmentDetail({
         </div>
       ) : null}
 
-      {appointment.appointment_type === 'video' ? (
+      {/* Am Termin steht der Hinweis in der Kachel des Ortes (UX-005a). */}
+      {istEreignis && appointment.appointment_type === 'video' ? (
         <p className="text-ink-muted mt-6 max-w-prose text-sm">
           Für Videotermine wird noch kein Videolink erzeugt.
         </p>
@@ -1388,15 +1461,11 @@ function AppointmentDetail({
         <HeilmittelBestaetigen appointment={appointment} user={user} />
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Zeiten gelten in der Zeitzone der Praxis.{' '}
-        {istEreignis
-          ? 'Die Fehlzeit enthält ausschließlich organisatorische Angaben.'
-          : 'Der Termin selbst enthält ausschließlich organisatorische Angaben.'}
-        {appointment.appointment_type === 'home_visit'
-          ? ' „Navigation starten“ öffnet Google Maps im Fahrradmodus und übergibt dabei nur die Anschrift ohne Namen – erst beim Tippen.'
-          : ''}
-      </p>
+      {/* Bis UX-005a stand hier eine Fußnote: Zeiten in der Zeitzone der
+          Praxis, nur organisatorische Angaben, was die Navigation übergibt.
+          Die ersten beiden Sätze sagten, was jeder hier weiß (Kennzeichnung,
+          ARBEITSBEREICHE.md §2); der dritte steht jetzt an der Schaltfläche,
+          die ihn braucht (ADR-019 Punkt 23). */}
     </>
   );
 }

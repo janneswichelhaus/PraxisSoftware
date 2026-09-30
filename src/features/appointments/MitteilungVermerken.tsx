@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -72,45 +74,62 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
   return (
     // Eine Stufe unter dem Seitentitel: Die Mitteilung gehört nicht zu „Was
     // ist passiert?", sie steht daneben (TER-16).
-    <Section
-      titel="Mitteilung an die Patient:in"
-      hinweis="Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort bestätigen, dass sie übergeben bzw. gesendet wurden."
-    >
-      <div className="flex flex-col gap-1">
-        {notificationChannelOrder.map((kanal) => (
-          <Checkbox
-            key={kanal}
-            label={notificationChannelLabels[kanal].lang}
-            checked={auswahl.includes(kanal)}
-            onChange={(e) => umschalten(kanal, e.target.checked)}
-          />
-        ))}
-      </div>
+    //
+    // Zugeklappt (UX-005a): Ob und wie der Termin mitgeteilt ist, steht als
+    // Zeichen im Kopf der Seite. Die Auswahl hier braucht, wer gerade
+    // angerufen hat - vor der Tür braucht sie niemand, und vier Kästchen mit
+    // zwei Sätzen kosteten dort einen halben Bildschirm.
+    <Section titel="Mitteilung an die Patient:in">
+      <details className="group">
+        <summary className={`${aufklappKopfKlassen} text-ink text-liste font-medium`}>
+          <Aufklappzeichen />
+          {appointment.notification_channels.length === 0
+            ? 'Mitteilung vermerken'
+            : 'Mitteilung ändern'}
+        </summary>
+        <div className="mt-2">
+          <p className="text-ink-muted max-w-prose text-sm">
+            Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort
+            bestätigen, dass sie übergeben bzw. gesendet wurden.
+          </p>
+          <div className="mt-2 flex flex-col gap-1">
+            {notificationChannelOrder.map((kanal) => (
+              <Checkbox
+                key={kanal}
+                label={notificationChannelLabels[kanal].lang}
+                checked={auswahl.includes(kanal)}
+                onChange={(e) => umschalten(kanal, e.target.checked)}
+              />
+            ))}
+          </div>
 
-      <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
-        Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk – die neue Zeit
-        ist dann noch nicht mitgeteilt.
-      </p>
+          <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
+            Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk – die neue
+            Zeit ist dann noch nicht mitgeteilt.
+          </p>
 
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={mutation.isPending || gleich}
-          onClick={() => mutation.mutate(auswahl)}
-        >
-          {mutation.isPending ? 'Wird vermerkt …' : 'Vermerk speichern'}
-        </Button>
-        {/* Im Erfolgston, und mit dem Fokus: Der Knopf ist nach dem Speichern
-            abgeschaltet, weil nichts mehr zu speichern ist (UIK-21). */}
-        {mutation.isError ? (
-          <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
-        ) : gespeichert ? (
-          <Rueckmeldung>
-            {auswahl.length === 0 ? 'Vermerk zurückgenommen.' : 'Vermerk gespeichert.'}
-          </Rueckmeldung>
-        ) : null}
-      </div>
+          <div className="mt-4 flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={mutation.isPending || gleich}
+              onClick={() => mutation.mutate(auswahl)}
+            >
+              {mutation.isPending ? 'Wird vermerkt …' : 'Vermerk speichern'}
+            </Button>
+            {/* Im Erfolgston, und mit dem Fokus: Der Knopf ist nach dem
+                Speichern abgeschaltet, weil nichts mehr zu speichern ist
+                (UIK-21). */}
+            {mutation.isError ? (
+              <Statusmeldung ton="fehler">{mutation.error.message}</Statusmeldung>
+            ) : gespeichert ? (
+              <Rueckmeldung>
+                {auswahl.length === 0 ? 'Vermerk zurückgenommen.' : 'Vermerk gespeichert.'}
+              </Rueckmeldung>
+            ) : null}
+          </div>
+        </div>
+      </details>
     </Section>
   );
 }

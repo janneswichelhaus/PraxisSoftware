@@ -21,7 +21,12 @@ export function PageHeader({
    * Regelfall.
    */
   title: ReactNode;
-  description?: string | undefined;
+  /**
+   * Die Zeile unter dem Titel. Als Text wird sie ab einer Länge eingeklappt
+   * (BEF-076); als Element steht sie, wie sie kommt — die Terminseite trägt
+   * dort Datum, Zeit und die Zeichen des Termins (UX-005a), keinen Fließtext.
+   */
+  description?: ReactNode;
   actions?: ReactNode;
   /**
    * Flacher Kopf für Arbeitsseiten, auf denen das erste Eingabefeld ohne
@@ -55,7 +60,7 @@ export function PageHeader({
         >
           {title}
         </h1>
-        {description ? (
+        {typeof description === 'string' && description ? (
           kompakt || description.length <= KURZ ? (
             <p className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
               {description}
@@ -63,6 +68,10 @@ export function PageHeader({
           ) : (
             <Erklaerung text={description} />
           )
+        ) : description && typeof description !== 'string' ? (
+          <div className={`text-ink-muted max-w-prose text-sm ${kompakt ? '' : 'mt-1'}`}>
+            {description}
+          </div>
         ) : null}
       </div>
       {actions}
