@@ -1103,3 +1103,35 @@ Monat, Umgang mit Stornos und Zahlungsausfällen (Rechnungsstellung oder
 Zufluss), weitere Modelle, Übergabe an die Lohnabrechnung — jeweils ein
 eigenes Epic, nicht vorgebaut (ADR-014).
 
+
+---
+
+### IDEA-PRX-048 — Lastenrad als 3D-Modell (Design-Export „Lastenrad")
+
+| | |
+|---|---|
+| Status | notiert · Abgrenzung |
+| Quelle | Jannes, 2026-09-30 (Claude-Design-Export „Lastenrad") |
+| Berührt | ADR-015, CLAUDE.md „Harte Regeln" (Dependencies), Own Motion Design System (Ikonografie, Website-Ebene) |
+
+**Idee.** Ein drehbares 3D-Modell des Praxis-Lastenrads: Riese & Müller
+Load 60 mit MoreCargoBox in Papier, Wortmarke mit Unterzeile auf Seiten und
+Deckel, Rahmen in Tiefgrün und Hauptfarbe. Der Entwurf liegt als Export aus
+Claude Design vor (`Lastenrad.html` mit `three-d-stage.js`,
+`lastenrad-build.js`, three.js 0.184 per CDN): Ziehen dreht, Scrollen zoomt,
+langsame Eigendrehung, Export als GLB und OBJ.
+
+**Warum.** Das Rad ist das, was Own Motion von einer Praxis mit Räumen
+unterscheidet. Als Scroll-Objekt oder Bildsequenz auf der Website zeigt es
+das, solange es noch keine Fotos gibt.
+
+**Vorsicht.** Gehört **nicht in die Praxissoftware** — deshalb `Abgrenzung`.
+Das Design System lässt das Rad in der Praxissoftware nur in Fotos zu,
+szenische Darstellungen nur auf der Website-Ebene und nie neben der
+Wortmarke. three.js wäre eine neue, wesentliche Abhängigkeit (rund 600 KB)
+ohne fachliche Notwendigkeit für den Praxisbetrieb. Die Referenzfotos aus dem
+Entwurf werden nicht übernommen.
+
+**Offen.** Ort der Umsetzung (Website-Repository, Lovable); ob Bildsequenz
+(48 Bilder, 800 × 800, transparent) oder GLB mit react-three-fiber; ob das
+Modell zum noch nicht gewählten Illustrationsstil (A oder C) passen muss.
