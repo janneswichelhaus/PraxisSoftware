@@ -19,6 +19,7 @@
 import type { Anmeldedienst } from './anmeldedienst.ts';
 import { einladungstext, type Versandweg } from './versand.ts';
 import {
+  codeHash,
   ADRESS_MUSTER,
   CODE_MUSTER,
   MAX_KENNWORT,
@@ -44,6 +45,7 @@ const STATUS: Readonly<Record<ZugangsFehler, number>> = {
   email_taken: 409,
   weak_password: 400,
   account_conflict: 409,
+  password_not_set: 502,
   session_invalid: 401,
   not_allowed: 403,
   address_changed: 409,
@@ -139,28 +141,38 @@ type Ausgang<T> = { ok: true; value: T } | { ok: false; error: ZugangsFehler };
  * Einlösen: nachschlagen, Konto anlegen oder bestätigen, binden.
  *
  * Die Datenbank prüft beim Binden alles noch einmal (Code, Zustand,
- * Praxiskonto, Person). Scheitert das Binden an einem Konto, das dieser
- * Aufruf gerade erst angelegt hat, wird es wieder entfernt — sonst bliebe
- * ein Konto ohne Zugang zurück.
+ * Praxiskonto, Person). An die Datenbank geht nur der Hash des Codes.
+ *
+ * **Eine Auskunft für „Adresse vergeben" und „Konto passt nicht"**
+ * (Zweitreview): Sonst verriete der Unterschied, ob ein Kennwort zu einer
+ * fremden Adresse passt. Jeder solche Fehlversuch zählt an der Einladung;
+ * nach fünf ist sie verbraucht.
  */
 async function einloesen(
   dienst: Anmeldedienst,
   auftrag: Extract<Auftrag, { aufgabe: 'einloesen' }>,
 ): Promise<Ausgang<{ purpose: 'activate' | 'reset'; organizationName: string }>> {
-  const gefunden = await dienst.nachschlagen(auftrag.code);
+  const hash = await codeHash(auftrag.code);
+  const gefunden = await dienst.nachschlagen(hash);
   if (!gefunden.ok) return gefunden;
   if (gefunden.value === null) return { ok: false, error: 'invitation_invalid' };
   const { purpose, accountUserId, organizationName } = gefunden.value;
 
   if (purpose === 'reset') {
-    // Ein neues Kennwort für das gebundene Konto (ADR-023 Punkt 10). Die
-    // Adresse bleibt die des Kontos; die eingegebene dient nur der Anmeldung
-    // danach.
+    // Ein neues Kennwort für das gebundene Konto (ADR-023 Punkt 10). Erst
+    // einlösen, dann setzen (Zweitreview): So ist der Code verbraucht, bevor
+    // sich etwas am Konto ändert, und ein zweiter Aufruf mit demselben Code
+    // setzt nichts. Die Datenbank beendet dabei die laufenden Sitzungen.
     if (accountUserId === null) return { ok: false, error: 'invitation_invalid' };
-    const gesetzt = await dienst.kennwortSetzen(accountUserId, auftrag.kennwort);
-    if (!gesetzt.ok) return gesetzt;
-    const gebunden = await dienst.einloesen(auftrag.code, accountUserId);
+    const gebunden = await dienst.einloesen(hash, accountUserId);
     if (!gebunden.ok) return gebunden;
+    const gesetzt = await dienst.kennwortSetzen(accountUserId, auftrag.kennwort);
+    if (!gesetzt.ok) {
+      return {
+        ok: false,
+        error: gesetzt.error === 'weak_password' ? 'weak_password' : 'password_not_set',
+      };
+    }
     return { ok: true, value: { purpose, organizationName } };
   }
 
@@ -175,15 +187,27 @@ async function einloesen(
     // seinem Kennwort. Ob es derselben Person gehört, prüft die Datenbank.
     const geprueft = await dienst.kennwortPruefen(auftrag.email, auftrag.kennwort);
     if (!geprueft.ok) return geprueft;
-    if (geprueft.value === null) return { ok: false, error: 'email_taken' };
+    if (geprueft.value === null) {
+      await dienst.fehlversuch(hash);
+      return { ok: false, error: 'email_taken' };
+    }
     kontoId = geprueft.value;
   } else {
     return angelegt;
   }
 
-  const gebunden = await dienst.einloesen(auftrag.code, kontoId);
+  const gebunden = await dienst.einloesen(hash, kontoId);
   if (!gebunden.ok) {
-    if (neuAngelegt) await dienst.kontoEntfernen(kontoId);
+    // Aufgeräumt wird nur bei einer klaren Absage der Datenbank. Bei
+    // `unavailable` ist offen, ob die Bindung schon steht - dann bleibt das
+    // Konto, und der Löschlauf nimmt es, falls es ungebunden bleibt (ANN-189).
+    const abgesagt =
+      gebunden.error === 'invitation_invalid' || gebunden.error === 'account_conflict';
+    if (neuAngelegt && abgesagt) await dienst.kontoEntfernen(kontoId);
+    if (gebunden.error === 'account_conflict') {
+      await dienst.fehlversuch(hash);
+      return { ok: false, error: 'email_taken' };
+    }
     return gebunden;
   }
   return { ok: true, value: { purpose, organizationName } };
@@ -205,7 +229,11 @@ async function versenden(
   // offen und kann vor Ort übergeben werden.
   if (versand === null || appUrl.trim() === '') return { ok: false, error: 'not_configured' };
 
-  const mail = await dienst.einladungsmail(authorization, auftrag.einladungId, auftrag.code);
+  const mail = await dienst.einladungsmail(
+    authorization,
+    auftrag.einladungId,
+    await codeHash(auftrag.code),
+  );
   if (!mail.ok) return mail;
 
   const inhalt = einladungstext(

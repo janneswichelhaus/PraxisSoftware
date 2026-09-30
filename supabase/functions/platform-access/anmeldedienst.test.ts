@@ -84,6 +84,7 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
       email: 'a@b.invalid',
       password: 'kennwort',
       email_confirm: true,
+      app_metadata: { platform_account: true },
     });
 
     const vergeben = erstelleAnmeldedienst({
@@ -104,8 +105,8 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
     });
   });
 
-  it('prueft ein Kennwort mit dem oeffentlichen Schluessel', async () => {
-    const abrufen = mitAntwort(200, { user: { id: 'bestehend' } });
+  it('prueft ein Kennwort mit dem oeffentlichen Schluessel und beendet die Sitzung wieder', async () => {
+    const abrufen = mitAntwort(200, { access_token: 'zugriff', user: { id: 'bestehend' } });
     const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
     expect(await dienst.kennwortPruefen('a@b.invalid', 'k')).toEqual({
       ok: true,
@@ -113,6 +114,11 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
     });
     expect(kopf(abrufen).apikey).toBe('oeffentlicher-schluessel');
     expect(kopf(abrufen).Authorization).toBeUndefined();
+    // Zweitreview: Die Sitzung aus der Prüfung wird sofort beendet.
+    expect(abrufen.mock.calls[1]![0]).toBe('https://instanz.invalid/auth/v1/logout?scope=local');
+    expect((abrufen.mock.calls[1]![1]!.headers as Record<string, string>).Authorization).toBe(
+      'Bearer zugriff',
+    );
 
     const falsch = erstelleAnmeldedienst({
       ...EINRICHTUNG,

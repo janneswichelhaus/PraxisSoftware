@@ -81,6 +81,12 @@ function einladefehler(meldung: string | undefined): string {
   if (m.includes('address must be confirmed')) {
     return 'Bitte bestätigen, dass die Person die Adresse selbst genannt hat.';
   }
+  if (m.includes('person has a practice account')) {
+    return 'Diese Person hat ein Konto der Praxis. Einen Plattformzugang gibt es dafür nicht; Übungen gibt es als PDF.';
+  }
+  if (m.includes('reset needs every area')) {
+    return 'Ein neues Kennwort gilt für alle Bereiche dieser Person. Ausstellen kann es nur, wer alle ihre Zugänge verwaltet – etwa die Praxisinhaber:in oder das Büro.';
+  }
   if (m.includes('locked')) {
     return 'Der Zugang ist gesperrt. Bitte zuerst entsperren.';
   }

@@ -194,6 +194,9 @@ create table public.platform_access_invitations (
   -- Wer die Einladung ausgestellt und uebergeben hat (Punkt 11).
   created_by           uuid not null,
   sent_at              timestamptz,
+  -- Zweitreview: Fehlversuche beim Einloesen. Nach fuenf ist die Einladung
+  -- verbraucht - der Code taugt nicht als Probierstein fuer Kennwoerter.
+  failed_attempts      smallint not null default 0 check (failed_attempts between 0 and 5),
   redeemed_at          timestamptz,
   revoked_at           timestamptz,
 
@@ -450,11 +453,24 @@ begin
            status = case when i.status = 'pending' then 'revoked' else i.status end,
            revoked_at = case when i.status = 'pending' then now() else i.revoked_at end
      where i.platform_access_id = new.id;
+    -- Zweitreview: Jede Aenderung an einem Zugang steht im Protokoll (ADR-010
+    -- Punkt 2), auch die, die der Loeschlauf oder das Zusammenfuehren
+    -- ausloest.
+    if old.status <> 'revoked' then
+      perform app.log_platform_access_event(
+        new.organization_id, null, 'system', 'platform_access.revoked', new.id,
+        jsonb_build_object('surface', 'system', 'reason', 'relationship_deleted')
+      );
+    end if;
     return new;
   end if;
 
   if new.account_user_id is not null
      and (tg_op = 'INSERT' or new.account_user_id is distinct from old.account_user_id) then
+    -- Zweitreview: Zwei gleichzeitige Bindungen desselben Kontos sehen sich
+    -- sonst nicht und kaemen beide durch die Personenpruefung.
+    perform pg_advisory_xact_lock(hashtext('platform_account:' || new.account_user_id::text));
+
     if exists (select 1 from public.user_profiles up where up.id = new.account_user_id) then
       raise exception 'practice account cannot hold platform access' using errcode = '23514';
     end if;
@@ -462,6 +478,34 @@ begin
     if new.access_kind = 'self' then
       select r.person_id into v_person
       from app.platform_relationship(new.relationship_kind, new.relationship_id) r;
+
+      perform pg_advisory_xact_lock(hashtext('platform_person:' || v_person::text));
+
+      -- W1 je Person, nicht nur je Konto: Wer ein Praxiskonto hat, bekommt
+      -- keinen eigenen Plattformzugang, auch nicht mit einer zweiten Adresse.
+      if exists (
+        select 1 from public.user_profiles up
+        join public.user_roles ur on ur.user_id = up.id
+        where up.person_id = v_person
+      ) then
+        raise exception 'person has a practice account' using errcode = '23514';
+      end if;
+
+      -- Ein Konto je Person (Punkt 4): Die eigenen Zugaenge einer Person
+      -- haengen an genau einem Konto.
+      if exists (
+        select 1
+        from public.platform_accesses a
+        cross join lateral app.platform_relationship(a.relationship_kind, a.relationship_id) r
+        where a.id <> new.id
+          and a.access_kind = 'self'
+          and a.status <> 'revoked'
+          and a.account_user_id is not null
+          and a.account_user_id <> new.account_user_id
+          and r.person_id = v_person
+      ) then
+        raise exception 'person already has another account' using errcode = '23514';
+      end if;
 
       if exists (
         select 1
@@ -658,6 +702,14 @@ begin
   if v_rel.date_of_birth is null then
     raise exception 'date of birth required' using errcode = '22023';
   end if;
+  -- W1 (Punkt 2): eine Person mit Praxiskonto bekommt keinen Zugang.
+  if exists (
+    select 1 from public.user_profiles up
+    join public.user_roles ur on ur.user_id = up.id
+    where up.person_id = v_rel.person_id
+  ) then
+    raise exception 'person has a practice account' using errcode = '22023';
+  end if;
   if v_rel.date_of_birth > (now() at time zone 'UTC')::date
                            - make_interval(years => app.platform_min_age_years()) then
     raise exception 'person is under age' using errcode = '22023';
@@ -701,6 +753,18 @@ begin
     v_purpose := 'activate';
   elsif v_access.status = 'active' then
     v_purpose := 'reset';
+    -- Zweitreview: Ein neues Kennwort gilt fuer das ganze Konto und damit
+    -- fuer jeden seiner Zugaenge. Ausstellen darf es nur, wer alle lebenden
+    -- Zugaenge des Kontos verwalten darf - sonst oeffnete die
+    -- Trainingsbetreuung den Weg in die Behandlung und umgekehrt (§4.8).
+    if exists (
+      select 1 from public.platform_accesses b
+      where b.account_user_id = v_access.account_user_id
+        and b.status <> 'revoked'
+        and not app.can_manage_platform_access(b.relationship_kind)
+    ) then
+      raise exception 'reset needs every area of this account' using errcode = '22023';
+    end if;
   else
     raise exception 'platform access is locked' using errcode = '22023';
   end if;
@@ -792,6 +856,11 @@ begin
     update public.platform_accesses
        set status = 'locked', locked_at = now(), locked_by = v_actor
      where id = v_access.id;
+    -- Zweitreview: Ein offener Code zum neuen Kennwort gilt nach dem
+    -- Entsperren nicht wieder auf.
+    update public.platform_access_invitations
+       set status = 'revoked', revoked_at = now()
+     where platform_access_id = v_access.id and status = 'pending';
   elsif not p_locked and v_access.status = 'locked' then
     update public.platform_accesses
        set status = 'active', locked_at = null, locked_by = null
@@ -871,7 +940,7 @@ comment on function public.revoke_platform_access(uuid) is
 -- sich die Adresse im Verhaeltnis seither geaendert, braucht es eine neue
 -- Einladung (Punkt 11).
 -- -----------------------------------------------------------------------------
-create function public.platform_invitation_mail(p_invitation_id uuid, p_code text)
+create function public.platform_invitation_mail(p_invitation_id uuid, p_code_hash text)
 returns table (email text, organization_name text, expires_at timestamptz)
 language plpgsql
 security definer
@@ -903,7 +972,7 @@ begin
   end if;
 
   if v_inv.channel <> 'email' or v_inv.status <> 'pending' or v_inv.expires_at <= now()
-     or v_inv.code_hash <> app.platform_code_hash(p_code) then
+     or v_inv.code_hash is distinct from lower(p_code_hash) then
     raise exception 'invitation cannot be sent' using errcode = '22023';
   end if;
 
@@ -938,7 +1007,7 @@ grant execute on function public.platform_invitation_mail(uuid, text) to authent
 -- abgelaufene, benutzte und unbekannte Codes gibt es dieselbe Auskunft (§13):
 -- keine Zeile bzw. dieselbe Ausnahme.
 -- -----------------------------------------------------------------------------
-create function public.platform_invitation_lookup(p_code text)
+create function public.platform_invitation_lookup(p_code_hash text)
 returns table (purpose text, account_user_id uuid, organization_name text)
 language sql
 stable
@@ -949,7 +1018,7 @@ as $$
   from public.platform_access_invitations i
   join public.platform_accesses a on a.id = i.platform_access_id
   join public.organizations o on o.id = i.organization_id
-  where i.code_hash = app.platform_code_hash(p_code)
+  where i.code_hash = lower(p_code_hash)
     and i.status = 'pending'
     and i.expires_at > now()
     and (
@@ -958,7 +1027,10 @@ as $$
     )
 $$;
 
-create function public.redeem_platform_invitation(p_code text, p_user_id uuid)
+-- Zweitreview: Der Zugangsdienst uebergibt nur den SHA-256 des Codes. Der
+-- Code selbst erreicht die Datenbank nie als Parameter und kann damit in
+-- keinem Anweisungs- oder Fehlerprotokoll stehen (ADR-011, Punkt 7).
+create function public.redeem_platform_invitation(p_code_hash text, p_user_id uuid)
 returns uuid
 language plpgsql
 security definer
@@ -976,7 +1048,7 @@ begin
     into v_inv
   from public.platform_access_invitations i
   join public.platform_accesses a on a.id = i.platform_access_id
-  where i.code_hash = app.platform_code_hash(p_code)
+  where i.code_hash = lower(p_code_hash)
     and i.status = 'pending'
     and i.expires_at > now()
   for update of i, a;
@@ -995,6 +1067,14 @@ begin
     update public.platform_accesses
        set status = 'active', account_user_id = p_user_id, activated_at = now()
      where id = v_inv.access_id;
+  else
+    -- Zweitreview: Das neue Kennwort setzt der Dienst erst NACH diesem
+    -- Aufruf; der Code ist dann verbraucht, ein zweiter Aufruf scheitert.
+    -- Laufende Sitzungen des Kontos enden hier: Wer das alte Kennwort
+    -- kannte, bleibt nicht angemeldet (ADR-023 Punkt 18).
+    if to_regclass('auth.sessions') is not null then
+      execute 'delete from auth.sessions where user_id = $1' using p_user_id;
+    end if;
   end if;
 
   update public.platform_access_invitations
@@ -1012,10 +1092,35 @@ begin
 end;
 $$;
 
+-- Zweitreview: Ein Fehlversuch beim Einloesen (Adresse vergeben, Konto
+-- passt nicht) zaehlt. Nach fuenf ist die Einladung verbraucht; die Praxis
+-- stellt eine neue aus. Liefert, ob die Einladung noch gilt.
+create function public.platform_invitation_failed(p_code_hash text)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_stand smallint;
+begin
+  update public.platform_access_invitations i
+     set failed_attempts = least(i.failed_attempts + 1, 5),
+         status = case when i.failed_attempts + 1 >= 5 then 'revoked' else i.status end,
+         revoked_at = case when i.failed_attempts + 1 >= 5 then now() else i.revoked_at end
+   where i.code_hash = lower(p_code_hash)
+     and i.status = 'pending'
+  returning i.failed_attempts into v_stand;
+  return coalesce(v_stand < 5, false);
+end;
+$$;
+
 revoke all on function public.platform_invitation_lookup(text) from public, anon, authenticated;
 revoke all on function public.redeem_platform_invitation(text, uuid) from public, anon, authenticated;
+revoke all on function public.platform_invitation_failed(text) from public, anon, authenticated;
 grant execute on function public.platform_invitation_lookup(text) to service_role;
 grant execute on function public.redeem_platform_invitation(text, uuid) to service_role;
+grant execute on function public.platform_invitation_failed(text) to service_role;
 
 comment on function public.platform_invitation_lookup(text) is
   'POR-003: Zugangsdienst. Gilt der Code, und wofuer? Nur service_role. Unbekannt, abgelaufen und benutzt liefern gleich: keine Zeile.';
@@ -1063,14 +1168,23 @@ begin
        )
        and max(app.platform_access_ended_at(a.id)) + app.platform_read_period() <= now()
   loop
-    update public.platform_accesses a
-       set status = 'revoked',
-           revoked_at = app.platform_access_ended_at(a.id),
-           revoked_by = null,
-           revoked_reason = 'account_deleted',
-           locked_at = null,
-           locked_by = null
-     where a.account_user_id = v_konto.id and a.status <> 'revoked';
+    with entzogen as (
+      update public.platform_accesses a
+         set status = 'revoked',
+             revoked_at = app.platform_access_ended_at(a.id),
+             revoked_by = null,
+             revoked_reason = 'account_deleted',
+             locked_at = null,
+             locked_by = null
+       where a.account_user_id = v_konto.id and a.status <> 'revoked'
+      returning a.id, a.organization_id
+    )
+    insert into public.audit_log (
+      organization_id, actor_user_id, actor_kind, action, subject_type, subject_id, outcome, context
+    )
+    select e.organization_id, null, 'system', 'platform_access.revoked', 'platform_access', e.id,
+           'success', jsonb_build_object('surface', 'scheduler', 'reason', 'account_deleted')
+    from entzogen e;
 
     delete from auth.users u where u.id = v_konto.id;
 
@@ -1081,6 +1195,31 @@ begin
        v_konto.ended_at + app.platform_read_period());
     v_anzahl := v_anzahl + 1;
   end loop;
+
+  -- Zweitreview: Ein Konto, das der Zugangsdienst angelegt hat und das nie
+  -- gebunden wurde (Einloesen abgebrochen, Aufraeumen gescheitert), traegt
+  -- die Marke `platform_account` in den Metadaten des Anmeldedienstes und
+  -- faellt 30 Tage nach dem Anlegen. Praxiskonten tragen sie nie. Der Lauf
+  -- einer Organisation raeumt nur, wenn er der erste ist: Das Konto gehoert
+  -- keiner Organisation, jede Organisation saehe es gleich.
+  if p_org = (select min(o.id::text)::uuid from public.organizations o) then
+    for v_konto in
+      select u.id, u.created_at
+      from auth.users u
+      where coalesce(u.raw_app_meta_data ->> 'platform_account', '') = 'true'
+        and u.created_at + app.platform_read_period() <= now()
+        and not exists (select 1 from public.user_profiles up where up.id = u.id)
+        and not exists (select 1 from public.platform_accesses a where a.account_user_id = u.id)
+    loop
+      delete from auth.users u where u.id = v_konto.id;
+      insert into public.deletion_journal
+        (organization_id, run_id, target_table, target_id, retention_class, due_at)
+      values
+        (p_org, p_run, 'auth_users', v_konto.id, 'plattformzugang',
+         v_konto.created_at + app.platform_read_period());
+      v_anzahl := v_anzahl + 1;
+    end loop;
+  end if;
   return v_anzahl;
 end;
 $$;

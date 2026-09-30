@@ -92,6 +92,11 @@ export function EinladungPage() {
       const art = fehler instanceof EinloeseError ? fehler.art : 'unavailable';
       if (art === 'invitation_invalid') {
         setZustand('ungueltig');
+      } else if (art === 'password_not_set') {
+        // Der Code ist verbraucht, das Kennwort blieb das alte (Zweitreview).
+        setMeldung(
+          'Das neue Kennwort ließ sich nicht setzen, und der Code ist verbraucht. Bitte lassen Sie sich von der Praxis einen neuen geben.',
+        );
       } else if (art === 'email_taken') {
         setEmailFehler(
           'Für diese Adresse gibt es schon ein Konto. Mit dessen Kennwort geht es weiter – oder Sie nehmen eine andere Adresse.',

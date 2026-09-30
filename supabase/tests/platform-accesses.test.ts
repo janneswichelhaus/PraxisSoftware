@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
@@ -76,6 +77,11 @@ async function zugang(id: string) {
     [id],
   );
   return rows[0];
+}
+
+/** Nur der SHA-256 des Codes erreicht die Datenbank (Zweitreview, ADR-011). */
+function h(code: string): string {
+  return createHash('sha256').update(code, 'utf8').digest('hex');
 }
 
 const KONTO_MAX = '99999999-9999-4999-8999-0000000000a1';
@@ -225,9 +231,9 @@ describe('Plattformzugang: einladen (ADR-023 Punkte 6 bis 8)', () => {
     const zweite = await einladen(users.therapist, 'treatment', patients.max);
     expect(zweite.access_id).toBe(erste.access_id);
 
-    const { rows } = await asServiceRole(NACHSCHLAGEN, [erste.code]);
+    const { rows } = await asServiceRole(NACHSCHLAGEN, [h(erste.code)]);
     expect(rows).toEqual([]);
-    expect((await asServiceRole(NACHSCHLAGEN, [zweite.code])).rows).toHaveLength(1);
+    expect((await asServiceRole(NACHSCHLAGEN, [h(zweite.code)])).rows).toHaveLength(1);
   });
 });
 
@@ -242,14 +248,14 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
       purpose: string;
       account_user_id: string | null;
       organization_name: string;
-    }>(NACHSCHLAGEN, [einladung.code]);
+    }>(NACHSCHLAGEN, [h(einladung.code)]);
     expect(nachgeschlagen.rows).toEqual([
       { purpose: 'activate', account_user_id: null, organization_name: 'Test Praxis Tuebingen' },
     ]);
 
     await neuesKonto(KONTO_MAX, 'max.plattform@patient.invalid');
     const { rows } = await asServiceRole<{ access_id: string }>(EINLOESEN, [
-      einladung.code,
+      h(einladung.code),
       KONTO_MAX,
     ]);
     expect(rows[0]?.access_id).toBe(einladung.access_id);
@@ -273,27 +279,27 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
   it('gibt fuer benutzte, abgelaufene und unbekannte Codes dieselbe Auskunft (§13)', async () => {
     const einladung = await einladen(users.therapist, 'treatment', patients.max);
     await neuesKonto(KONTO_MAX, 'max.plattform@patient.invalid');
-    await asServiceRole(EINLOESEN, [einladung.code, KONTO_MAX]);
+    await asServiceRole(EINLOESEN, [h(einladung.code), KONTO_MAX]);
 
     // benutzt
-    expect((await asServiceRole(NACHSCHLAGEN, [einladung.code])).rows).toEqual([]);
-    await expect(asServiceRole(EINLOESEN, [einladung.code, KONTO_MAX])).rejects.toThrow(
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toEqual([]);
+    await expect(asServiceRole(EINLOESEN, [h(einladung.code), KONTO_MAX])).rejects.toThrow(
       /invitation not valid/,
     );
     // unbekannt
-    expect((await asServiceRole(NACHSCHLAGEN, ['erfunden'])).rows).toEqual([]);
-    await expect(asServiceRole(EINLOESEN, ['erfunden', KONTO_MAX])).rejects.toThrow(
+    expect((await asServiceRole(NACHSCHLAGEN, [h('erfunden')])).rows).toEqual([]);
+    await expect(asServiceRole(EINLOESEN, [h('erfunden'), KONTO_MAX])).rejects.toThrow(
       /invitation not valid/,
     );
     // abgelaufen
-    const zweite = await einladen(users.therapist, 'treatment', patients.erika);
+    const zweite = await einladen(users.therapist, 'treatment', patients.petra);
     await asPostgres(
       `update public.platform_access_invitations set expires_at = now() - interval '1 minute'
        where id = $1`,
       [zweite.invitation_id],
     );
-    expect((await asServiceRole(NACHSCHLAGEN, [zweite.code])).rows).toEqual([]);
-    await expect(asServiceRole(EINLOESEN, [zweite.code, KONTO_FREMD])).rejects.toThrow(
+    expect((await asServiceRole(NACHSCHLAGEN, [h(zweite.code)])).rows).toEqual([]);
+    await expect(asServiceRole(EINLOESEN, [h(zweite.code), KONTO_FREMD])).rejects.toThrow(
       /invitation not valid/,
     );
   });
@@ -301,7 +307,7 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
   it('ist fuer angemeldete Konten nicht aufrufbar, nur fuer den Zugangsdienst', async () => {
     const einladung = await einladen(users.therapist, 'treatment', patients.max);
     for (const konto of [users.ownerTherapist, users.plattformTina]) {
-      await expect(asUser(konto, NACHSCHLAGEN, [einladung.code])).rejects.toThrow(
+      await expect(asUser(konto, NACHSCHLAGEN, [h(einladung.code)])).rejects.toThrow(
         /permission denied/,
       );
       await expect(asUser(konto, EINLOESEN, [einladung.code, konto])).rejects.toThrow(
@@ -312,11 +318,11 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
 
   it('bindet kein Praxiskonto (Punkt 2, W1)', async () => {
     const einladung = await einladen(users.therapist, 'treatment', patients.max);
-    await expect(asServiceRole(EINLOESEN, [einladung.code, users.therapist])).rejects.toThrow(
+    await expect(asServiceRole(EINLOESEN, [h(einladung.code), users.therapist])).rejects.toThrow(
       /practice account cannot hold platform access/,
     );
     // Auch ein Konto mit Profil ohne Rolle nicht.
-    await expect(asServiceRole(EINLOESEN, [einladung.code, users.patientMax])).rejects.toThrow(
+    await expect(asServiceRole(EINLOESEN, [h(einladung.code), users.patientMax])).rejects.toThrow(
       /practice account cannot hold platform access/,
     );
   });
@@ -324,9 +330,9 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
   it('bindet kein Konto einer anderen Person, wohl aber ein zweites Verhaeltnis derselben (Punkt 4)', async () => {
     const einladung = await einladen(users.therapist, 'treatment', patients.max);
     // Tinas Plattformkonto gehoert Tina.
-    await expect(asServiceRole(EINLOESEN, [einladung.code, users.plattformTina])).rejects.toThrow(
-      /account belongs to another person/,
-    );
+    await expect(
+      asServiceRole(EINLOESEN, [h(einladung.code), users.plattformTina]),
+    ).rejects.toThrow(/account belongs to another person/);
 
     // Erikas Konto hat zwei Zugaenge zu Erika - der Seed laeuft genau durch
     // diesen Riegel.
@@ -354,16 +360,16 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
 
     const { rows } = await asServiceRole<{ purpose: string; account_user_id: string }>(
       NACHSCHLAGEN,
-      [einladung.code],
+      [h(einladung.code)],
     );
     expect(rows[0]).toMatchObject({ purpose: 'reset', account_user_id: users.plattformErika });
 
     // Ein anderes Konto kann eine Einladung zum neuen Kennwort nicht nutzen.
-    await expect(asServiceRole(EINLOESEN, [einladung.code, users.plattformTina])).rejects.toThrow(
-      /invitation not valid/,
-    );
+    await expect(
+      asServiceRole(EINLOESEN, [h(einladung.code), users.plattformTina]),
+    ).rejects.toThrow(/invitation not valid/);
 
-    await asServiceRole(EINLOESEN, [einladung.code, users.plattformErika]);
+    await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
     const audit = await asPostgres<{ actor_kind: string }>(
       `select actor_kind from public.audit_log where action = 'platform_access.password_reset'`,
     );
@@ -450,7 +456,7 @@ describe('Plattformzugang: sperren, entsperren, entziehen (Punkte 4 bis 6)', () 
   it('nimmt mit dem Entziehen die offene Einladung zurueck', async () => {
     const einladung = await einladen(users.therapist, 'treatment', patients.max);
     await asUserCommitted(users.therapist, ENTZIEHEN, [einladung.access_id]);
-    expect((await asServiceRole(NACHSCHLAGEN, [einladung.code])).rows).toEqual([]);
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toEqual([]);
     // Ein neuer Zugang ist eine neue Einladung (Punkt 3).
     const neu = await einladen(users.therapist, 'treatment', patients.max);
     expect(neu.access_id).not.toBe(einladung.access_id);
@@ -500,7 +506,7 @@ describe('Plattformzugang: Abschnitt "Plattform" und Mail (Punkte 6, 10, 11)', (
     const { rows } = await asUserCommitted<{ email: string; organization_name: string }>(
       users.office,
       MAIL,
-      [einladung.invitation_id, einladung.code],
+      [einladung.invitation_id, h(einladung.code)],
     );
     expect(rows).toEqual([
       expect.objectContaining({
@@ -509,13 +515,13 @@ describe('Plattformzugang: Abschnitt "Plattform" und Mail (Punkte 6, 10, 11)', (
       }),
     ]);
 
-    await expect(asUser(users.office, MAIL, [einladung.invitation_id, 'falsch'])).rejects.toThrow(
-      /cannot be sent/,
-    );
+    await expect(
+      asUser(users.office, MAIL, [einladung.invitation_id, h('falsch')]),
+    ).rejects.toThrow(/cannot be sent/);
     await erwarteAbgewiesenenSchreibversuch(
       users.trainer,
       MAIL,
-      [einladung.invitation_id, einladung.code],
+      [einladung.invitation_id, h(einladung.code)],
       'platform_access.invitation_sent',
     );
 
@@ -525,14 +531,14 @@ describe('Plattformzugang: Abschnitt "Plattform" und Mail (Punkte 6, 10, 11)', (
       [patients.max],
     );
     await expect(
-      asUser(users.office, MAIL, [einladung.invitation_id, einladung.code]),
+      asUser(users.office, MAIL, [einladung.invitation_id, h(einladung.code)]),
     ).rejects.toThrow(/address changed/);
   });
 
   it('versendet keine Einladung, die vor Ort uebergeben wird', async () => {
     const einladung = await einladen(users.office, 'treatment', patients.max);
     await expect(
-      asUser(users.office, MAIL, [einladung.invitation_id, einladung.code]),
+      asUser(users.office, MAIL, [einladung.invitation_id, h(einladung.code)]),
     ).rejects.toThrow(/cannot be sent/);
   });
 });
@@ -586,7 +592,7 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
   it('raeumt mit der Akte nach zehn Jahren auch Konto und Nachweis ab', async () => {
     const einladung = await einladen(users.office, 'treatment', patients.max);
     await neuesKonto(KONTO_MAX, 'max.plattform@patient.invalid');
-    await asServiceRole(EINLOESEN, [einladung.code, KONTO_MAX]);
+    await asServiceRole(EINLOESEN, [h(einladung.code), KONTO_MAX]);
 
     // Elf Jahre nach Abschluss, ohne Rechnung: Die Akte faellt. Der Zugang
     // endete 30 Tage nach dem Abschluss (Lesefrist, D2), das Konto 30 Tage
@@ -672,6 +678,197 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
     expect(
       (await asPostgres('select 1 from auth.users where id = $1', [users.plattformErika])).rows,
     ).toHaveLength(1);
+    expect((await zugang(platformAccesses.erikaBehandlung))?.status).toBe('active');
+  });
+});
+
+describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('laesst ein neues Kennwort nur ausstellen, wer alle Bereiche des Kontos verwaltet (§4.8)', async () => {
+    // Erikas Konto traegt Behandlung und Training. Die Trainingsbetreuung
+    // verwaltet nur das Training, die Therapeutin nur die Behandlung.
+    await asPostgres(
+      `insert into public.training_contact_details (training_relationship_id, organization_id, date_of_birth)
+       values ($1, $2, '1963-09-17')
+       on conflict (training_relationship_id) do update set date_of_birth = excluded.date_of_birth`,
+      [trainingRelationships.erika, organizationId],
+    );
+    await expect(
+      asUser(users.trainer, EINLADEN, ['training', trainingRelationships.erika, 'on_site', false]),
+    ).rejects.toThrow(/reset needs every area/);
+    await expect(
+      asUser(users.therapist, EINLADEN, ['treatment', patients.erika, 'on_site', false]),
+    ).rejects.toThrow(/reset needs every area/);
+    // Tina hat nur das Training: Dort darf die Trainingsbetreuung.
+    await asPostgres(
+      `update public.training_contact_details set date_of_birth = '1990-01-01'
+        where training_relationship_id = $1`,
+      [trainingRelationships.tina],
+    );
+    const tina = await einladen(users.trainer, 'training', trainingRelationships.tina);
+    expect(tina.purpose).toBe('reset');
+  });
+
+  it('beendet beim neuen Kennwort die Einladung, bevor sich etwas am Konto aendert', async () => {
+    const einladung = await einladen(users.office, 'treatment', patients.erika);
+    await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
+    // Ein zweiter Aufruf mit demselben Code scheitert: kein zweites Kennwort.
+    await expect(
+      asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]),
+    ).rejects.toThrow(/invitation not valid/);
+  });
+
+  it('nimmt beim Sperren die offene Einladung zurueck', async () => {
+    const einladung = await einladen(users.office, 'treatment', patients.erika);
+    await asUserCommitted(users.office, SPERREN, [platformAccesses.erikaBehandlung, true]);
+    await asUserCommitted(users.office, SPERREN, [platformAccesses.erikaBehandlung, false]);
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toEqual([]);
+  });
+
+  it('verbraucht eine Einladung nach fuenf Fehlversuchen', async () => {
+    const einladung = await einladen(users.therapist, 'treatment', patients.max);
+    for (let versuch = 1; versuch <= 4; versuch += 1) {
+      const { rows } = await asServiceRole<{ gilt: boolean }>(
+        'select public.platform_invitation_failed($1) as gilt',
+        [h(einladung.code)],
+      );
+      expect(rows[0]?.gilt).toBe(true);
+    }
+    const { rows } = await asServiceRole<{ gilt: boolean }>(
+      'select public.platform_invitation_failed($1) as gilt',
+      [h(einladung.code)],
+    );
+    expect(rows[0]?.gilt).toBe(false);
+    expect((await asServiceRole(NACHSCHLAGEN, [h(einladung.code)])).rows).toEqual([]);
+    await expect(
+      asUser(users.ownerTherapist, 'select public.platform_invitation_failed($1)', [
+        h(einladung.code),
+      ]),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  it('gibt einer Person mit Praxiskonto keinen Zugang, auch nicht ueber eine zweite Adresse (W1)', async () => {
+    // Tom (Trainingsbetreuung) bekommt ein Trainingsverhaeltnis als Kunde.
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.training_relationships (organization_id, person_id, status, contract_started_on)
+       values ($1, '44444444-4444-4444-8444-000000000010', 'active', current_date) returning id`,
+      [organizationId],
+    );
+    await asPostgres(
+      `insert into public.training_contact_details (training_relationship_id, organization_id, date_of_birth)
+       values ($1, $2, '1990-01-01')`,
+      [rows[0]!.id, organizationId],
+    );
+    await expect(
+      asUser(users.office, EINLADEN, ['training', rows[0]!.id, 'on_site', false]),
+    ).rejects.toThrow(/person has a practice account/);
+    // Auch am Einladen vorbei haelt der Riegel am Zugang.
+    await neuesKonto(KONTO_FREMD, 'tom.privat@patient.invalid');
+    await expect(
+      asPostgres(
+        `insert into public.platform_accesses
+           (organization_id, relationship_kind, relationship_id, training_relationship_id,
+            account_user_id, status, created_by, activated_at)
+         values ($1, 'training', $2, $2, $3, 'active', $4, now())`,
+        [organizationId, rows[0]!.id, KONTO_FREMD, users.office],
+      ),
+    ).rejects.toThrow(/person has a practice account/);
+  });
+
+  it('haengt die Zugaenge einer Person an genau ein Konto (Punkt 4)', async () => {
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [platformAccesses.erikaTraining],
+    );
+    await asPostgres(
+      `insert into public.training_contact_details (training_relationship_id, organization_id, date_of_birth)
+       values ($1, $2, '1963-09-17')
+       on conflict (training_relationship_id) do update set date_of_birth = excluded.date_of_birth`,
+      [trainingRelationships.erika, organizationId],
+    );
+    const einladung = await einladen(users.office, 'training', trainingRelationships.erika);
+    await neuesKonto(KONTO_FREMD, 'erika.zweitkonto@patient.invalid');
+    await expect(asServiceRole(EINLOESEN, [h(einladung.code), KONTO_FREMD])).rejects.toThrow(
+      /person already has another account/,
+    );
+    // Mit ihrem Konto geht es.
+    await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
+  });
+
+  it('protokolliert das Ende eines Zugangs auch, wenn das Verhaeltnis faellt (ADR-010)', async () => {
+    await asPostgres(
+      'select app.delete_training_relationship($1::uuid, extensions.gen_random_uuid(), now())',
+      [trainingRelationships.tina],
+    );
+    const { rows } = await asPostgres<{ actor_kind: string; context: Record<string, unknown> }>(
+      `select actor_kind, context from public.audit_log
+        where action = 'platform_access.revoked' and subject_id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    expect(rows).toEqual([
+      { actor_kind: 'system', context: { surface: 'system', reason: 'relationship_deleted' } },
+    ]);
+  });
+
+  it('protokolliert das Ende, wenn der Loeschlauf das Konto entfernt', async () => {
+    await asPostgres(
+      `update public.training_relationships set contract_ended_on = current_date - 90 where id = $1`,
+      [trainingRelationships.tina],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugang(platformAccesses.tinaTraining)).toMatchObject({
+      status: 'revoked',
+      revoked_reason: 'account_deleted',
+    });
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where action = 'platform_access.revoked' and subject_id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    expect(rows.map((r) => r.context['reason'])).toEqual(['account_deleted']);
+  });
+
+  it('raeumt ein nie gebundenes Konto des Zugangsdienstes nach 30 Tagen ab', async () => {
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email, raw_app_meta_data, created_at)
+       values ($1, 'authenticated', 'authenticated', 'verwaist@patient.invalid',
+               '{"platform_account": true}', now() - interval '31 days'),
+              ($2, 'authenticated', 'authenticated', 'frisch@patient.invalid',
+               '{"platform_account": true}', now() - interval '2 days')`,
+      [KONTO_MAX, KONTO_FREMD],
+    );
+    await asPostgres('select public.apply_retention()');
+    const { rows } = await asPostgres<{ id: string }>(
+      'select id from auth.users where id in ($1, $2)',
+      [KONTO_MAX, KONTO_FREMD],
+    );
+    expect(rows.map((r) => r.id)).toEqual([KONTO_FREMD]);
+    // Ein Praxiskonto ohne die Marke bleibt unberuehrt.
+    expect(
+      (await asPostgres('select 1 from auth.users where id = $1', [users.ownerTherapist])).rows,
+    ).toHaveLength(1);
+  });
+
+  it('weist Sperren und Versand fuer eine andere Organisation ab', async () => {
+    const einladung = await einladen(users.office, 'treatment', patients.max, 'email', true);
+    const fremd = await fremdeOrganisation();
+    await erwarteAbgewiesenenSchreibversuch(
+      fremd.owner,
+      SPERREN,
+      [platformAccesses.erikaBehandlung, true],
+      'platform_access.locked',
+    );
+    await erwarteAbgewiesenenSchreibversuch(
+      fremd.owner,
+      MAIL,
+      [einladung.invitation_id, h(einladung.code)],
+      'platform_access.invitation_sent',
+    );
     expect((await zugang(platformAccesses.erikaBehandlung))?.status).toBe('active');
   });
 });

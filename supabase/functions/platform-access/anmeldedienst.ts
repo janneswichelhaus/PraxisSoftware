@@ -18,8 +18,10 @@ import type { Einladungsmail, Ergebnis, Nachgeschlagen, Zweck } from './typen.ts
 const TIMEOUT_MS = 8_000;
 
 export interface Anmeldedienst {
-  readonly nachschlagen: (code: string) => Promise<Ergebnis<Nachgeschlagen | null>>;
-  readonly einloesen: (code: string, kontoId: string) => Promise<Ergebnis<string>>;
+  readonly nachschlagen: (codeHash: string) => Promise<Ergebnis<Nachgeschlagen | null>>;
+  readonly einloesen: (codeHash: string, kontoId: string) => Promise<Ergebnis<string>>;
+  /** Zählt einen Fehlversuch an der Einladung; nach fünf ist sie verbraucht. */
+  readonly fehlversuch: (codeHash: string) => Promise<Ergebnis<null>>;
   readonly kontoAnlegen: (email: string, kennwort: string) => Promise<Ergebnis<string>>;
   readonly kennwortPruefen: (email: string, kennwort: string) => Promise<Ergebnis<string | null>>;
   readonly kennwortSetzen: (kontoId: string, kennwort: string) => Promise<Ergebnis<null>>;
@@ -27,7 +29,7 @@ export interface Anmeldedienst {
   readonly einladungsmail: (
     authorization: string,
     einladungId: string,
-    code: string,
+    codeHash: string,
   ) => Promise<Ergebnis<Einladungsmail>>;
 }
 
@@ -117,9 +119,9 @@ export function erstelleAnmeldedienst({
   }
 
   return {
-    async nachschlagen(code) {
+    async nachschlagen(codeHash) {
       const r = await rufe('/rest/v1/rpc/platform_invitation_lookup', 'POST', admin, {
-        p_code: code,
+        p_code_hash: codeHash,
       });
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status !== 200 || !Array.isArray(r.daten)) return { ok: false, error: 'unavailable' };
@@ -139,9 +141,17 @@ export function erstelleAnmeldedienst({
       };
     },
 
-    async einloesen(code, kontoId) {
+    async fehlversuch(codeHash) {
+      const r = await rufe('/rest/v1/rpc/platform_invitation_failed', 'POST', admin, {
+        p_code_hash: codeHash,
+      });
+      if (r === null || r.status !== 200) return { ok: false, error: 'unavailable' };
+      return { ok: true, value: null };
+    },
+
+    async einloesen(codeHash, kontoId) {
       const r = await rufe('/rest/v1/rpc/redeem_platform_invitation', 'POST', admin, {
-        p_code: code,
+        p_code_hash: codeHash,
         p_user_id: kontoId,
       });
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
@@ -156,10 +166,13 @@ export function erstelleAnmeldedienst({
     async kontoAnlegen(email, kennwort) {
       // Die Adresse gilt als bestätigt: Bestätigt hat sie die Übergabe vor
       // Ort oder die Mail an die Adresse im Verhältnis (ADR-023 Punkt 11).
+      // Die Marke `platform_account` lässt den Löschlauf ein Konto finden,
+      // das nie gebunden wurde (Zweitreview, ANN-189).
       const r = await rufe('/auth/v1/admin/users', 'POST', admin, {
         email,
         password: kennwort,
         email_confirm: true,
+        app_metadata: { platform_account: true },
       });
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status === 200 || r.status === 201) {
@@ -190,6 +203,15 @@ export function erstelleAnmeldedienst({
       );
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status !== 200) return { ok: true, value: null };
+      // Die Prüfung meldet an und erzeugt eine Sitzung. Die wird sofort
+      // wieder beendet (Zweitreview): Sie dient nur der Bestätigung.
+      const token = (r.daten as Record<string, unknown> | null)?.['access_token'];
+      if (typeof token === 'string') {
+        await rufe('/auth/v1/logout?scope=local', 'POST', {
+          apikey: anonKey,
+          Authorization: `Bearer ${token}`,
+        });
+      }
       return { ok: true, value: kennung(r.daten) };
     },
 
@@ -210,12 +232,12 @@ export function erstelleAnmeldedienst({
       return { ok: true, value: null };
     },
 
-    async einladungsmail(authorization, einladungId, code) {
+    async einladungsmail(authorization, einladungId, codeHash) {
       const r = await rufe(
         '/rest/v1/rpc/platform_invitation_mail',
         'POST',
         { apikey: anonKey, Authorization: authorization, 'Content-Type': 'application/json' },
-        { p_invitation_id: einladungId, p_code: code },
+        { p_invitation_id: einladungId, p_code_hash: codeHash },
       );
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status === 401) return { ok: false, error: 'session_invalid' };

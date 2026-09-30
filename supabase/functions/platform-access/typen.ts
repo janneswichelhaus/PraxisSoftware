@@ -23,6 +23,8 @@ export type ZugangsFehler =
   | 'weak_password'
   /** Das Konto kann diesen Zugang nicht bekommen: Praxiskonto oder andere Person (Punkte 2, 4). */
   | 'account_conflict'
+  /** Der Code ist verbraucht, das neue Kennwort ließ sich aber nicht setzen. */
+  | 'password_not_set'
   /** Versenden ohne gültige Sitzung. */
   | 'session_invalid'
   /** Versenden ohne Recht oder für eine Einladung, die nicht per Mail geht. */
@@ -59,4 +61,14 @@ export interface Einladungsmail {
   readonly email: string;
   readonly organizationName: string;
   readonly expiresAt: string;
+}
+
+/**
+ * Der SHA-256 des Codes, hexadezimal - dieselbe Rechnung wie
+ * `app.platform_code_hash` in der Datenbank. Nur er geht an die Datenbank:
+ * Der Code selbst steht so in keinem Protokoll (Zweitreview, ADR-011).
+ */
+export async function codeHash(code: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
 }

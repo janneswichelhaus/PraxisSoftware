@@ -28,6 +28,7 @@ export type Einloesefehler =
   | 'weak_password'
   | 'account_conflict'
   | 'invalid_request'
+  | 'password_not_set'
   | 'unavailable';
 
 export class EinloeseError extends Error {
@@ -53,6 +54,7 @@ const BEKANNT: readonly Einloesefehler[] = [
   'weak_password',
   'account_conflict',
   'invalid_request',
+  'password_not_set',
 ];
 
 export async function loeseEinladungEin(

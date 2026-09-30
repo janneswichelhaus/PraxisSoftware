@@ -706,9 +706,13 @@ describe('TRN-009: Trainingsprotokoll', () => {
       );
       const { rows: entwurf } = await asUserCommitted<{ id: string }>(
         users.office,
+        // Der Monat des Termins, nicht der von heute: Am 1. und 2. eines
+        // Monats liegt „vorgestern" im Vormonat, und der Entwurf fand keine
+        // Leistung (gefunden in POR-EPIC-001, 2026-10-01 Berliner Zeit).
         `select public.create_training_invoice_draft($1::uuid,
-           date_trunc('month', (now() at time zone 'Europe/Berlin'))::date - 0) as id`,
-        [trainingRelationships.tina],
+           (select date_trunc('month', a.starts_at at time zone 'Europe/Berlin')::date
+              from public.appointments a where a.id = $2)) as id`,
+        [trainingRelationships.tina, TRAINING_VORGESTERN],
       );
       // Am Schreibweg vorbei wie in training-invoices.test.ts: ausgestellt vor
       // vier Jahren, die Belegfrist laeuft noch.
