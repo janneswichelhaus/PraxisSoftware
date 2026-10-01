@@ -48,8 +48,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag());
 
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
@@ -58,7 +58,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText(ENTWURF)).toBeVisible();
-    await expect(page.getByText('Entwurf', { exact: true })).toBeVisible();
+    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
     await expect(page.getByText(/Verfasst von Anna Beispiel/)).toBeVisible();
 
     await page.reload();
@@ -69,14 +69,15 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(1));
 
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
 
-    await page.getByRole('link', { name: 'Dokumentation bearbeiten' }).click();
+    // Am offenen Termin führt „Doku“ in der Aktionsleiste zurück (Zyklus 3).
+    await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(ENTWURF);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ERGAENZT);
@@ -99,8 +100,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(2));
 
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: noch nicht gespeichert.');
     await page.getByRole('link', { name: 'Zurück' }).click();
@@ -126,18 +127,17 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     await terminAnlegen(page, laufTag(3));
 
-    // Fuer eine therapeutische Rolle heisst der Knopf seit UX-012e
-    // „Ohne Dokumentation abschließen" - daneben steht „Dokumentieren und
-    // abschließen". Hier ist ausdruecklich der Abschluss ohne Eintrag
-    // gemeint; dokumentiert wird gleich danach nachtraeglich.
-    await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
+    // Der Haken schließt ohne Eintrag ab (Design-Handoff 2026-10-01,
+    // Abschnitt 6a); dokumentiert wird gleich danach nachtraeglich.
+    await page.getByRole('button', { name: 'Termin abschließen' }).click();
     // Der Zustand steht seit UX-005a als Abzeichen in der Kopfzeile, nicht
     // mehr als Satz.
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
-    // Am abgeschlossenen Termin steht der Weg zur Dokumentation weiter als
-    // Knopf im Abschnitt (UX-005g nimmt ihn nur am offenen Termin weg).
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am abgeschlossenen Termin steht „Dokumentation fehlt" mit „Doku" im
+    // Abschnitt (Zyklus 3).
+    await expect(page.getByText('Dokumentation fehlt')).toBeVisible();
+    await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
@@ -149,8 +149,8 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
   test('zeigt dem Office am selben Termin die Dokumentation ohne Schreibweg', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(4));
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
@@ -164,7 +164,7 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     // Seit E15 liest office den klinischen Inhalt (ADR-004 Fassung 2 Punkt 3) ...
     await expect(page.getByText(ENTWURF)).toBeVisible();
     // ... bearbeiten und finalisieren bleiben den therapeutischen Rollen (4.3).
-    await expect(page.getByRole('link', { name: 'Dokumentation bearbeiten' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /^Doku/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
   });
 });
@@ -173,8 +173,8 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
   test('liefert office den Lesepfad und weist das Patientenkonto ab', async ({ page, request }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(5));
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
@@ -216,8 +216,8 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
   test('laesst die Tabelle selbst nicht direkt lesen', async ({ page, request }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(7));
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
@@ -254,8 +254,8 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   async function mitOffenemText(page: Page, tag: string, text: string): Promise<string> {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, tag);
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(text);
     return terminId;
@@ -288,14 +288,13 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   test('haelt das Zurueck des Browsers an', async ({ page }) => {
     // Das Zurueck des Browsers blockt der Router nur innerhalb desselben
     // Dokuments. Deshalb fuehrt der Weg hier nicht ueber `page.goto`, sondern
-    // ueber einen Link der Anwendung: Am abgeschlossenen Termin steht
-    // „Dokumentation anlegen" (am offenen seit UX-005g nur der Hauptknopf
-    // zum Abschluss, der eine andere Seite oeffnet).
+    // ueber einen Link der Anwendung: Am abgeschlossenen Termin steht „Doku"
+    // im Abschnitt „Dokumentation" (Zyklus 3; der Haken schliesst vorher ab).
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(9));
-    await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
+    await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 

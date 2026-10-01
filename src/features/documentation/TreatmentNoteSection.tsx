@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Section } from '@/components/ui/Section';
+import { Textlink } from '@/components/ui/Textlink';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   canManageAppointments,
@@ -16,12 +16,21 @@ import {
 import type { Appointment } from '@/features/appointments/api';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
+  fetchDocumentationDeadline,
   fetchTreatmentDocumentation,
   finalizeTreatmentNote,
-  treatmentNoteStatusLabels,
   type TreatmentNote,
 } from './api';
-import { ENTWURF_ZUSATZ, FREITEXT, herkunft, zeitpunkt } from './format';
+import { FREITEXT, fristDatum, herkunft, zeitpunkt } from './format';
+
+/** Das Abzeichen eines Eintrags: festgeschrieben mit Version, sonst Entwurf mit Frist. */
+function zustandsAbzeichen(note: TreatmentNote, frist: string | null) {
+  return note.status === 'final' ? (
+    <Badge ton="positiv">{`Festgeschrieben · Version ${note.version_count}`}</Badge>
+  ) : (
+    <Badge ton="warnung">{frist ? `Entwurf · Frist ${frist}` : 'Entwurf'}</Badge>
+  );
+}
 
 /**
  * Ein Eintrag - Haupteintrag oder Nachtrag - mit seinen Handlungen.
@@ -36,12 +45,15 @@ function Eintrag({
   istNachtrag,
   hauptknopfOben,
   eingehend,
+  frist,
 }: {
   appointment: Appointment;
   note: TreatmentNote;
   darfSchreiben: boolean;
   istNachtrag: boolean;
-  /** Steht oben am Termin schon „Dokumentieren und abschließen“ (DOK-14)? */
+  /** Bis wann ein Entwurf von selbst festgeschrieben wird, oder `null`. */
+  frist: string | null;
+  /** Steht oben am Termin schon die Aktionsleiste mit „Doku“ (DOK-14)? */
   hauptknopfOben: boolean;
   /** Der Rückweg des Termins - er reist mit auf die Doku-Seiten (DOK-01). */
   eingehend: string;
@@ -76,21 +88,19 @@ function Eintrag({
   const mit = (ziel: string) => mitRueckweg(ziel, eingehend);
 
   return (
-    <div className="border-line mt-2 border-t pt-4">
-      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18, DOK-13):
-          „Finalisiert“ trägt das Zeichen ✓, der Rest bleibt neutral. Es geht
-          um den Bearbeitungsstand, nicht um den Inhalt (§17). */}
-      <div className="flex flex-wrap items-center gap-2">
+    <div className={istNachtrag ? 'border-line mt-4 border-t pt-3' : 'mt-2'}>
+      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18, DOK-13). Der
+          Zustand des Haupteintrags steht im Kopf des Abschnitts; ein Nachtrag
+          trägt seinen eigenen. Es geht um den Bearbeitungsstand, nicht um den
+          Inhalt (§17). */}
+      <div className="flex flex-wrap items-center gap-2 empty:hidden">
         {istNachtrag ? <Badge>Nachtrag</Badge> : null}
-        <Badge ton={final ? 'positiv' : 'neutral'}>{treatmentNoteStatusLabels[note.status]}</Badge>
+        {istNachtrag ? zustandsAbzeichen(note, frist) : null}
         {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018). Er steht
             als eigenes Merkmal neben dem Freitext, nicht darin: Ob behandelt
             wurde, entscheidet später über eine Rechnung ohne erbrachte
             Leistung (ADR-018 Fassung 3 Punkt 9). */}
         {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
-        {note.status === 'draft' ? (
-          <span className="text-ink-muted text-xs">{ENTWURF_ZUSATZ}</span>
-        ) : null}
         {final && note.version_count > 1 ? (
           <span className="text-ink-muted text-xs">
             {note.version_count} Versionen, zuletzt korrigiert am {zeitpunkt(note.updated_at, zone)}
@@ -101,28 +111,42 @@ function Eintrag({
       {/* Das Kennzeichen „Ohne Behandlung" steht schon oben; hier nur die
           eine Folge, die nicht am Kennzeichen ablesbar ist (UX-005g). */}
       {note.visit_without_treatment ? (
-        <p className="text-ink-muted mt-3 max-w-prose text-sm leading-relaxed">
+        <p className="text-ink-muted mt-2 max-w-prose text-sm leading-relaxed">
           Keine Ausfallgebühr.
         </p>
       ) : null}
 
-      <p className={`text-ink text-liste mt-3 max-w-prose leading-relaxed ${FREITEXT}`}>
+      {/* Der Text auf Papier mit Linie (Design-Handoff 2026-10-01, Abschnitt 6). */}
+      <p
+        className={`border-line bg-surface text-ink text-liste rounded-button mt-2 max-w-prose border px-3.5 py-3 leading-relaxed ${FREITEXT}`}
+      >
         {note.content}
       </p>
 
-      <p className="text-ink-muted mt-3 text-xs leading-relaxed">{herkunft(note, zone)}</p>
+      <p className="text-ink-muted mt-2 text-[13px] leading-relaxed">{herkunft(note, zone)}</p>
+      {/* DOK-02: Ein Entwurf sagt, dass er von selbst festgeschrieben wird -
+          mit dem Tag, sobald die Frist der Praxis geladen ist. */}
+      {note.status === 'draft' ? (
+        <p className="text-warnung text-[13px] leading-relaxed">
+          {frist
+            ? `Wird am ${frist} automatisch festgeschrieben, wenn niemand vorher finalisiert.`
+            : 'Wird automatisch festgeschrieben, wenn niemand vorher finalisiert.'}
+        </p>
+      ) : null}
 
-      <div className="mt-4 flex flex-wrap items-start gap-3">
-        {darfSchreiben && !final ? (
+      <div className="mt-3 flex flex-wrap items-start gap-2 empty:hidden">
+        {/* „Doku" heißt der Weg zum Schreiben überall (Abschnitt 6a). Steht er
+            oben in der Aktionsleiste schon, nicht noch einmal (DOK-14). */}
+        {darfSchreiben && !final && (istNachtrag || !hauptknopfOben) ? (
           <ButtonLink
             to={mit(
               istNachtrag
                 ? `${basis}/${note.id}/bearbeiten`
                 : `/termine/${appointment.id}/abschluss`,
             )}
-            variant="secondary"
+            groesse="kompakt"
           >
-            {istNachtrag ? 'Nachtrag bearbeiten' : 'Dokumentation bearbeiten'}
+            {istNachtrag ? 'Nachtrag bearbeiten' : 'Doku'}
           </ButtonLink>
         ) : null}
 
@@ -137,7 +161,8 @@ function Eintrag({
         {darfSchreiben && !final ? (
           <Rueckfrage
             ausloeser="Finalisieren"
-            ausloeserVariante={hauptknopfOben ? 'secondary' : 'primary'}
+            ausloeserVariante="secondary"
+            ausloeserGroesse="kompakt"
             bezeichnung="Dokumentation finalisieren"
             bestaetigen="Ja, jetzt finalisieren"
             bestaetigenLaeuft="Wird finalisiert …"
@@ -162,19 +187,23 @@ function Eintrag({
             Der Nachtrag steht vorn am Eintrag, die Korrektur leise dahinter
             (DOK-14). Zu einem Nachtrag gibt es keinen weiteren. */}
         {darfSchreiben && final && !istNachtrag ? (
-          <ButtonLink to={mit(`${basis}/${note.id}/nachtrag`)} variant="secondary">
+          <ButtonLink
+            to={mit(`${basis}/${note.id}/nachtrag`)}
+            variant="secondary"
+            groesse="kompakt"
+          >
             Nachtrag hinzufügen
           </ButtonLink>
         ) : null}
 
         {darfSchreiben && final ? (
-          <ButtonLink to={mit(`${basis}/${note.id}/korrektur`)} variant="quiet">
+          <ButtonLink to={mit(`${basis}/${note.id}/korrektur`)} variant="quiet" groesse="kompakt">
             Korrigieren
           </ButtonLink>
         ) : null}
 
         {note.version_count > 0 ? (
-          <ButtonLink to={mit(`${basis}/${note.id}/verlauf`)} variant="secondary">
+          <ButtonLink to={mit(`${basis}/${note.id}/verlauf`)} variant="quiet" groesse="kompakt">
             Änderungsverlauf
           </ButtonLink>
         ) : null}
@@ -223,9 +252,9 @@ export function TreatmentNoteSection({
   // Aus „nicht angetroffen“ führt nur das Wiederöffnen weiter (ADR-018); der
   // Server weist die Dokumentation ab (TER-B01).
   const nichtAngetroffen = appointment.status === 'no_show';
-  // Am offenen Termin steht oben „Dokumentieren und abschließen“ als
-  // Hauptknopf - für alle, die dokumentieren und Termine verwalten dürfen.
-  // Hier unten ist der Weg dann sekundär (DOK-14).
+  // Am offenen Termin steht oben die Aktionsleiste mit Haken und „Doku“ -
+  // für alle, die dokumentieren und Termine verwalten dürfen. Hier unten
+  // steht der Weg dann nicht noch einmal (DOK-14).
   const hauptknopfOben =
     appointment.status === 'confirmed' && darfSchreiben && canManageAppointments(user.roles);
 
@@ -236,28 +265,59 @@ export function TreatmentNoteSection({
     retry: false,
   });
 
+  // Die Frist der Praxis für das Abzeichen „Entwurf · Frist 08.10." (ADR-016
+  // Punkt 7); dieselbe Abfrage wie unter Organisatorisches.
+  const organisation = user.profile.organization_id;
+  const { data: fristTage } = useQuery({
+    queryKey: ['documentation-deadline', organisation],
+    queryFn: () => fetchDocumentationDeadline(organisation),
+    enabled: darfLesen && Boolean(data?.primary?.status === 'draft' || data?.addenda.length),
+    retry: false,
+  });
+
   if (!darfLesen) return null;
 
+  const zone = appointment.organization_time_zone;
+  const frist = fristDatum(appointment.starts_at, zone, fristTage);
   const eintrag = data?.primary ?? null;
-  // Am offenen Termin ohne Eintrag steht kein Satz „noch keine Dokumentation":
-  // Dass hier nichts steht, sieht man; der Weg dorthin ist oben der Hauptknopf.
-  // Nur Absage und „nicht angetroffen" brauchen ein Wort, weil dort keine
-  // Dokumentation mehr entsteht (UX-005g).
-  const leerHinweis = abgesagt
-    ? 'Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation.'
-    : nichtAngetroffen
-      ? 'Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst „Termin wieder öffnen“.'
-      : appointment.status === 'confirmed'
-        ? null
-        : 'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.';
-  const anlegenHier = darfSchreiben && !abgesagt && !nichtAngetroffen && !hauptknopfOben;
+  // Ohne Eintrag sagt der Abschnitt nur etwas, wenn eine Doku fällig ist: am
+  // abgeschlossenen oder vorbeigegangenen Termin (Abschnitt 6). Zu einem
+  // abgesagten oder nicht angetroffenen Termin entsteht keine; das sagen dort
+  // die Zeilen des Zustands, nicht ein Erklärsatz (UX-005g).
+  const vorbei = Date.parse(appointment.ends_at) <= Date.now();
+  const faellig = !abgesagt && !nichtAngetroffen && (appointment.status !== 'confirmed' || vorbei);
+  const anlegenHier = darfSchreiben && faellig && !hauptknopfOben;
 
-  // Eine Überschrift ohne Inhalt - etwa fürs Büro am offenen Termin ohne
-  // Eintrag - sagt nichts; dann steht der Abschnitt gar nicht (UX-005g).
-  if (!isPending && !isError && !eintrag && !leerHinweis && !anlegenHier) return null;
+  // „Dokumentation fehlt" ist eine Aufgabe - nur für die, die sie erledigen
+  // können; wie `istOffen` auf der Übersicht (ANN-201). Das Büro sieht am
+  // Termin ohne Eintrag nichts.
+  if (!isPending && !isError && !eintrag && !(faellig && darfSchreiben)) return null;
+
+  const kopfAbzeichen = eintrag ? (
+    zustandsAbzeichen(eintrag, frist)
+  ) : !isPending && !isError ? (
+    <Badge ton="warnung">Dokumentation fehlt</Badge>
+  ) : null;
 
   return (
-    <Section titel="Behandlungsdokumentation">
+    <section aria-labelledby="dokumentation-titel" className="mt-5">
+      <div className="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1">
+        <h2
+          id="dokumentation-titel"
+          className="text-ink-muted tracking-label text-xs font-semibold uppercase"
+        >
+          Dokumentation
+        </h2>
+        {kopfAbzeichen}
+        {eintrag && appointment.patient_id ? (
+          <Textlink
+            to={mitRueckweg(`/patienten/${appointment.patient_id}/verlauf`, rueckweg)}
+            className="ml-auto inline-flex min-h-11 items-center text-sm"
+          >
+            Eintrag in der Akte →
+          </Textlink>
+        ) : null}
+      </div>
       {isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
       {isError ? (
@@ -270,19 +330,14 @@ export function TreatmentNoteSection({
         </div>
       ) : null}
 
-      {!isPending && !isError && !eintrag && (leerHinweis || anlegenHier) ? (
-        <div className="border-line mt-2 border-t pt-4">
-          {leerHinweis ? (
-            <p className="text-ink-muted text-liste max-w-prose">{leerHinweis}</p>
-          ) : null}
-          {anlegenHier ? (
-            <ButtonLink
-              to={mitRueckweg(`/termine/${appointment.id}/abschluss`, rueckweg)}
-              {...(leerHinweis ? { className: 'mt-3' } : {})}
-            >
-              Dokumentation anlegen
-            </ButtonLink>
-          ) : null}
+      {!isPending && !isError && !eintrag && anlegenHier ? (
+        <div className="mt-2 flex">
+          <ButtonLink
+            to={mitRueckweg(`/termine/${appointment.id}/abschluss`, rueckweg)}
+            groesse="kompakt"
+          >
+            Doku <span className="sr-only">schreiben</span>
+          </ButtonLink>
         </div>
       ) : null}
 
@@ -295,6 +350,7 @@ export function TreatmentNoteSection({
             istNachtrag={false}
             hauptknopfOben={hauptknopfOben}
             eingehend={rueckweg}
+            frist={frist}
           />
 
           {data?.addenda.map((nachtrag) => (
@@ -306,12 +362,13 @@ export function TreatmentNoteSection({
               istNachtrag
               hauptknopfOben={hauptknopfOben}
               eingehend={rueckweg}
+              frist={frist}
             />
           ))}
         </>
       ) : null}
       {/* Keine Fußnote zur Protokollierung mehr: Sie erklärte das System,
           nicht den Eintrag (UX-005g). Protokolliert wird unverändert (ADR-010). */}
-    </Section>
+    </section>
   );
 }

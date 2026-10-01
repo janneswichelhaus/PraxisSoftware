@@ -45,8 +45,8 @@ const terminAnlegen = (page: Page, tag: string) =>
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   const terminId = await terminAnlegen(page, tag);
 
-  // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-  // Dokumentation allein ist die Route (UX-005g).
+  // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+  // `/dokumentation` leitet ebenfalls dorthin.
   await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
   await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
@@ -56,7 +56,7 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
   // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
   // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
-  await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
 
   return terminId;
 }
@@ -68,29 +68,29 @@ test.describe('DOK-002: Finalisieren', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag());
 
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
+    // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+    // `/dokumentation` leitet ebenfalls dorthin.
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
-    await expect(page.getByText('Entwurf', { exact: true })).toBeVisible();
+    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalisieren' }).click();
     await expect(page.getByRole('group', { name: 'Dokumentation finalisieren' })).toBeVisible();
     // Ein Klick allein finalisiert nichts.
-    await expect(page.getByText('Entwurf', { exact: true })).toBeVisible();
+    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
 
-    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
     await expect(page.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Dokumentation bearbeiten' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /^Doku/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Korrigieren' })).toBeVisible();
 
     await page.reload();
-    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
   });
 
   test('schreibt den Entwurfsstand als Version 1 fest', async ({ page }) => {
@@ -159,8 +159,8 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText('Nachtrag', { exact: true })).toBeVisible();
     // Der Ursprungseintrag bleibt unveraendert finalisiert.
     await expect(page.getByText(ENTWURF)).toBeVisible();
-    await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
-    await expect(page.getByText('Entwurf', { exact: true })).toBeVisible();
+    await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
+    await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
 
     await page.reload();
     await expect(page.getByText(NACHTRAG)).toBeVisible();

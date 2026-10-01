@@ -64,19 +64,11 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
-    // Keine Rueckfrage nach Inhalten. Den lesenden Abschnitt
-    // "Behandlungsdokumentation" sieht office seit E15 trotzdem - er ist keine
-    // Aufforderung und bietet office keinen Weg zum Dokumentieren.
-    const abschnitt = page
-      .locator('section')
-      .filter({ has: page.getByRole('heading', { name: 'Behandlungsdokumentation' }) });
-    await expect(
-      abschnitt.getByText('Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.'),
-    ).toBeVisible();
-    expect(await page.getByText(/dokumentation/i).count()).toBe(
-      await abschnitt.getByText(/dokumentation/i).count(),
-    );
-    await expect(page.getByRole('link', { name: 'Dokumentation anlegen' })).toHaveCount(0);
+    // Keine Rueckfrage nach Inhalten - und für office keine Aufgabe, die es
+    // nicht erledigen kann: ohne Eintrag kein Abschnitt (ANN-201).
+    await expect(page.getByRole('heading', { name: 'Dokumentation' })).toHaveCount(0);
+    expect(await page.getByText(/dokumentation/i).count()).toBe(0);
+    await expect(page.getByRole('link', { name: /^Doku/ })).toHaveCount(0);
     await expect(page.getByText(/fehlt|unvollständig/i)).toHaveCount(0);
   });
 

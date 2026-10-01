@@ -65,6 +65,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
     finalizeTreatmentNote: (noteId: string, stand: string) =>
       finalizeTreatmentNote(noteId, stand) as Promise<void>,
+    // Ein Tag Frist: Der Entwurf vom 12.05. wird am 13.05. festgeschrieben.
+    fetchDocumentationDeadline: () => Promise.resolve(1),
   };
 });
 
@@ -93,8 +95,8 @@ describe('TreatmentNoteSection', () => {
     rendern();
 
     expect(await screen.findByText(INHALT)).toBeInTheDocument();
-    expect(screen.getByText('Entwurf')).toBeInTheDocument();
-    expect(screen.getByText(/noch nicht finalisiert/)).toBeInTheDocument();
+    // Zustand und Frist im Kopf des Abschnitts (Design-Handoff 2026-10-01, Abschnitt 6).
+    expect(await screen.findByText('Entwurf · Frist 13.05.')).toBeInTheDocument();
     // 08:30 UTC ist 10:30 Ortszeit in Europe/Berlin.
     expect(
       screen.getByText(
@@ -127,11 +129,18 @@ describe('TreatmentNoteSection', () => {
     expect(screen.queryByText('Ohne Behandlung')).not.toBeInTheDocument();
   });
 
-  it('bietet therapeutischen Rollen das Bearbeiten an', async () => {
+  it('bietet therapeutischen Rollen das Bearbeiten an - als „Doku", wo oben keine Leiste steht', async () => {
+    rendern(['therapist'], { status: 'completed' });
+
+    const link = await screen.findByRole('link', { name: 'Doku' });
+    expect(link).toHaveAttribute('href', `/termine/${TERMIN_ID}/abschluss`);
+  });
+
+  it('nennt den Weg am offenen Termin nicht zweimal - er steht oben in der Leiste (DOK-14)', async () => {
     rendern(['therapist']);
 
-    const link = await screen.findByRole('link', { name: 'Dokumentation bearbeiten' });
-    expect(link).toHaveAttribute('href', `/termine/${TERMIN_ID}/abschluss`);
+    expect(await screen.findByText(INHALT)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Doku' })).toBeNull();
   });
 
   it('zeigt owner den Inhalt, aber keine Schaltflaeche zum Schreiben', async () => {
@@ -171,12 +180,13 @@ describe('TreatmentNoteSection', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['office'], { status: 'completed' });
 
-    expect(
-      await screen.findByText(
-        'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+    // „Dokumentation fehlt" ist eine Aufgabe für die, die dokumentieren (ANN-201).
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText('Dokumentation fehlt')).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Doku/ })).toBeNull();
   });
 
   it('sagt am offenen Termin ohne Eintrag nichts - dass nichts da ist, sieht man (UX-005g)', async () => {
@@ -184,12 +194,12 @@ describe('TreatmentNoteSection', () => {
     rendern(['office']);
 
     await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID));
-    expect(screen.getByRole('heading', { name: 'Behandlungsdokumentation' })).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
     );
-    expect(screen.queryByText(/noch keine Behandlungsdokumentation/)).toBeNull();
-    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+    // Der Termin liegt in der Zukunft: Es ist nichts fällig, der Abschnitt schweigt.
+    expect(screen.queryByRole('heading', { name: 'Dokumentation' })).toBeNull();
+    expect(screen.queryByText('Dokumentation fehlt')).toBeNull();
   });
 
   it('zeigt Patientenkonten nichts an', async () => {
@@ -207,12 +217,8 @@ describe('TreatmentNoteSection', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['therapist'], { status: 'completed' });
 
-    expect(
-      await screen.findByText(
-        'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.',
-      ),
-    ).toBeInTheDocument();
-    expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveAttribute(
+    expect(await screen.findByText('Dokumentation fehlt')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveAttribute(
       'href',
       `/termine/${TERMIN_ID}/abschluss`,
     );
@@ -222,12 +228,13 @@ describe('TreatmentNoteSection', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['therapist'], { status: 'cancelled' });
 
-    expect(
-      await screen.findByText(
-        'Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+    // Kein Erklärsatz mehr (Zyklus 3): Der Abschnitt steht gar nicht da.
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('heading', { name: 'Dokumentation' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Doku/ })).toBeNull();
   });
 
   it('zeigt eine vorhandene Dokumentation auch bei abgesagtem Termin weiter an', async () => {
@@ -257,7 +264,7 @@ describe('TreatmentNoteSection', () => {
 
     const ueberschrift = await screen.findByRole('heading', {
       level: 2,
-      name: 'Behandlungsdokumentation',
+      name: 'Dokumentation',
     });
     expect(ueberschrift).toHaveClass('tracking-label', 'text-xs');
   });
@@ -266,7 +273,9 @@ describe('TreatmentNoteSection', () => {
     rendern();
 
     expect(
-      await screen.findByText('noch nicht finalisiert · wird automatisch finalisiert'),
+      await screen.findByText(
+        'Wird am 13.05. automatisch festgeschrieben, wenn niemand vorher finalisiert.',
+      ),
     ).toBeInTheDocument();
   });
 
@@ -274,12 +283,12 @@ describe('TreatmentNoteSection', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['therapist'], { status: 'no_show' });
 
-    expect(
-      await screen.findByText(
-        'Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst „Termin wieder öffnen“.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('heading', { name: 'Dokumentation' })).toBeNull();
+    expect(screen.queryByRole('link', { name: /^Doku/ })).toBeNull();
   });
 
   it('reicht den Rückweg des Termins an die Doku-Seiten weiter (DOK-01)', async () => {
@@ -329,13 +338,11 @@ describe('TreatmentNoteSection: Gewichtung der Knöpfe (DOK-14)', () => {
     expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
   });
 
-  it('lässt „Dokumentation anlegen“ am abgeschlossenen Termin den Hauptknopf', async () => {
+  it('lässt „Doku“ am abgeschlossenen Termin den Hauptknopf', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['therapist'], { status: 'completed' });
 
-    expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveClass(
-      'bg-accent',
-    );
+    expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveClass('bg-accent');
   });
 
   it('zeigt „Finalisieren“ am offenen Termin sekundär', async () => {
@@ -427,7 +434,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     expect(await within(kasten).findByRole('alert')).toHaveTextContent(
       'Zwischenzeitlich geändert.',
     );
-    expect(screen.getByText('Entwurf')).toBeInTheDocument();
+    expect(screen.getByText(/^Entwurf/)).toBeInTheDocument();
   });
 
   it('bestätigt die Finalisierung am Ort und setzt den Fokus dorthin (ZST-16)', async () => {
@@ -451,7 +458,7 @@ describe('TreatmentNoteSection: Finalisierung (DOK-002)', () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
     rendern(['therapist']);
 
-    const etikett = await screen.findByText('Finalisiert');
+    const etikett = await screen.findByText('Festgeschrieben · Version 1');
     expect(etikett).toHaveTextContent('✓');
   });
 
@@ -473,7 +480,7 @@ describe('TreatmentNoteSection: finalisierter Eintrag (DOK-002)', () => {
   it('zeigt Zustand und Finalisierung statt der letzten Aenderung', async () => {
     rendern(['therapist']);
 
-    expect(await screen.findByText('Finalisiert')).toBeInTheDocument();
+    expect(await screen.findByText('Festgeschrieben · Version 1')).toBeInTheDocument();
     expect(
       screen.getByText(/Finalisiert am Mittwoch, 12\. Mai 2027, 11:00 Uhr von Tim Teamleitung\./),
     ).toBeInTheDocument();

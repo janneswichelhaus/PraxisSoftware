@@ -206,7 +206,8 @@ describe('AppointmentDetailPage', () => {
     // 07:00 UTC entspricht 09:00 Ortszeit in Europe/Berlin (Sommerzeit).
     expect(await screen.findByText('09:00–10:00 Uhr')).toBeInTheDocument();
     expect(zeile('Zeit')).toBe('09:00–10:00 Uhr');
-    expect(zeile('Datum')).toMatch(/12\. Mai 2027/);
+    // Kurz in der Metazeile (Design-Handoff 2026-10-01, Abschnitt 6, Zyklus 3).
+    expect(zeile('Datum')).toBe('Mi 12.05.2027');
   });
 
   it('zeigt beim Praxistermin den Standort', async () => {
@@ -289,8 +290,8 @@ describe('AppointmentDetailPage', () => {
 
     await screen.findByText('Berta Bestand');
     expect(screen.getByText('Ohne Deckung')).toBeInTheDocument();
-    // UX-005a: in der Kachel der Grundlage, die ihn nicht trägt.
-    expect(zeile('Grundlage')).toMatch(/deckt diesen Termin nicht/);
+    // In der Metazeile bei der Grundlage, die ihn nicht trägt (Zyklus 3).
+    expect(zeile('Grundlage')).toMatch(/Ohne Deckung/);
   });
 
   it('schweigt an einem gedeckten Termin', async () => {
@@ -604,17 +605,20 @@ describe('AppointmentDetailPage', () => {
 
       const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
       expect(knopf).toHaveAttribute('aria-expanded', 'false');
-      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
-        1,
+      // Aktionsleiste (Zyklus 3): Haken, „Doku", „Niemand öffnet?", „Ohne Behandlung".
+      const leiste = screen.getByRole('group', { name: 'Nach dem Termin' });
+      expect(within(leiste).getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
+      expect(within(leiste).getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
+      expect(within(leiste).getByRole('link', { name: 'Ohne Behandlung' })).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
       );
       // Der Kasten mit vier Fällen von vorher steht nicht mehr offen da.
       expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
       expect(screen.queryByLabelText('An der Tür geklingelt')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
-      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
-      expect(
-        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
-      ).toBeInTheDocument();
+      // Der Abschluss ohne Dokumentation ist der Haken (ANN-005, Abschnitt 6a).
+      expect(screen.queryByRole('button', { name: 'Ohne Dokumentation abschließen' })).toBeNull();
     });
 
     it('fuehrt nach dem Oeffnen durch die drei Schritte und nennt zu jedem Fall die Folge', async () => {
@@ -638,14 +642,10 @@ describe('AppointmentDetailPage', () => {
       // Dasselbe Wort wie auf Rechnung, Katalog und Blatt für Patient:innen
       // (TER-10), derselbe Zustand wie am Knopf (WRT-B01).
       expect(within(ablauf).getByText(/löst ein Ausfallhonorar aus/)).toBeInTheDocument();
-      expect(within(ablauf).getByText(/ein Ausfallhonorar\s+entsteht nicht/)).toBeInTheDocument();
+      // Alle drei Szenarien bleiben genannt (ADR-018 Punkt 9); der Weg ohne
+      // Behandlung steht seit Zyklus 3 in der Leiste darüber.
+      expect(within(ablauf).getByText(/ohne Ausfallhonorar/)).toBeInTheDocument();
       expect(within(ablauf).getByText(/Vorher abgesagt\?/)).toBeInTheDocument();
-      expect(
-        within(ablauf).getByRole('link', { name: 'Ohne Behandlung abschließen' }),
-      ).toHaveAttribute(
-        'href',
-        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
-      );
       expect(screen.queryByText(/Ausfallgebühr/)).not.toBeInTheDocument();
       expect(screen.queryByText(/nicht wahrgenommen/)).not.toBeInTheDocument();
       // Keine Technikwörter im Hinweis (WRT-03, TER-22).
@@ -1143,7 +1143,7 @@ describe('AppointmentDetailPage', () => {
       // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Am offenen
       // Termin ohne Eintrag steht fuer office seit UX-005g auch kein leerer
       // Abschnitt "Behandlungsdokumentation" mehr - nirgends ein Wort davon.
-      expect(screen.queryByRole('heading', { name: 'Behandlungsdokumentation' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Dokumentation' })).toBeNull();
       expect(screen.queryAllByText(/dokumentation/i)).toEqual([]);
     });
 
@@ -1276,13 +1276,13 @@ describe('AppointmentDetailPage', () => {
     it('bietet therapeutischen Rollen den Weg zur Dokumentation an', async () => {
       rendern(['therapist']);
 
-      expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
-      // Am offenen Termin ist der Weg oben „Dokumentieren und abschließen"; ein
-      // zweites „Dokumentation anlegen" im Abschnitt gibt es seit UX-005g nicht.
-      expect(
-        await screen.findByRole('link', { name: 'Dokumentieren und abschließen' }),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+      // Am offenen Termin ist der Weg oben „Doku" in der Aktionsleiste; ein
+      // zweites im Abschnitt gibt es nicht (DOK-14).
+      expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss`),
+      );
+      expect(screen.getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
     });
 
     it('liest office den Eintrag, ohne Weg zum Dokumentieren (E15)', async () => {
@@ -1570,7 +1570,7 @@ describe('AppointmentDetailPage', () => {
 
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
-      expect(await screen.findByText('Termin abgeschlossen.')).toBeInTheDocument();
+      expect(await screen.findByText(/^Termin abgeschlossen\./)).toBeInTheDocument();
     });
 
     it('zeigt, was ein anderer Vorgang beim Hierherkommen bestätigt (DOK-15, ZST-17)', async () => {
@@ -1705,7 +1705,7 @@ describe('AppointmentDetailPage', () => {
   // UI-Redesign Schritt 4 (Design-Handoff 2026-10-01, Abschnitt 6): Maße und
   // Anordnung neu, der Ablauf aus UX-EPIC-005 bleibt.
   describe('Anordnung nach dem Design-Handoff (Abschnitt 6)', () => {
-    it('trägt den Namen als Titel und „Termin" als Zeile darüber', async () => {
+    it('trägt den Namen als Titel, ohne Zeile darüber (Zyklus 3)', async () => {
       fetchAppointment.mockResolvedValue(praxistermin);
       rendern();
 
@@ -1714,15 +1714,15 @@ describe('AppointmentDetailPage', () => {
         'href',
         expect.stringContaining(`/patienten/${PATIENT_ID}`),
       );
-      expect(screen.getByText('Termin', { selector: 'p' })).toBeInTheDocument();
+      // Kicker und Kacheln sind der Metazeile gewichen.
+      expect(screen.queryByText('Termin', { selector: 'p' })).toBeNull();
     });
 
-    it('stellt die Handlungen in die Karte „Nach dem Termin" und die Absage ans Ende', async () => {
+    it('stellt die Handlungen in die Aktionsleiste und die Absage ans Ende', async () => {
       fetchAppointment.mockResolvedValue(praxistermin);
       rendern(['owner']);
 
-      const karte = (await screen.findByRole('heading', { level: 2, name: 'Nach dem Termin' }))
-        .parentElement!;
+      const karte = await screen.findByRole('group', { name: 'Nach dem Termin' });
       expect(within(karte).getByRole('button', { name: /abschließen/ })).toBeInTheDocument();
       expect(within(karte).getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
       // Die Absage steht nicht in der Karte, sondern als letzter Knopf der Seite.
@@ -1731,7 +1731,7 @@ describe('AppointmentDetailPage', () => {
       expect(knoepfe[knoepfe.length - 1]).toHaveTextContent('Termin absagen');
     });
 
-    it('stellt Vermerk und „Termin wieder öffnen" in eine Karte', async () => {
+    it('stellt den Vermerk als Zeilen und „Termin wieder öffnen" darunter', async () => {
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
         status: 'no_show',
@@ -1740,11 +1740,10 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      const karte = (await screen.findByRole('heading', { level: 2, name: 'Vermerk' }))
-        .parentElement!;
-      expect(within(karte).getByText('Ausfallhonorar vorgemerkt')).toBeInTheDocument();
-      expect(within(karte).getByRole('button', { name: 'Termin wieder öffnen' })).toBeVisible();
-      expect(screen.queryByRole('heading', { name: 'Nach dem Termin' })).toBeNull();
+      expect(await screen.findByText('Ausfallhonorar vorgemerkt')).toBeInTheDocument();
+      expect(zeile('Vermerkt am')).toMatch(/2027/);
+      expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeVisible();
+      expect(screen.queryByRole('group', { name: 'Nach dem Termin' })).toBeNull();
     });
 
     it('nennt eine Fehlzeit in der Zeile über ihrem Titel', async () => {

@@ -1,5 +1,6 @@
 import { formatLocalDate, formatLocalTime } from '@/features/appointments/api';
 import type { TreatmentNote } from './api';
+import { tagePlus } from '@/features/appointments/calendar';
 
 /**
  * Klassen für klinischen Freitext, wo er gelesen wird (DOK-23).
@@ -76,4 +77,21 @@ export function herkunft(note: TreatmentNote, zone: string): string {
 
   const wer = note.last_editor_name ? ` von ${note.last_editor_name}` : '';
   return `${verfasst}Zuletzt geändert am ${zeitpunkt(note.updated_at, zone)}${wer}.`;
+}
+
+/**
+ * Bis wann ein Entwurf von selbst festgeschrieben wird, als „08.10."
+ * (ADR-016 Punkt 7): der Behandlungstag in der Zeit der Praxis plus die Frist
+ * der Praxis in Kalendertagen. Ohne geladene Frist kein Datum - lieber
+ * nichts als ein falsches.
+ */
+export function fristDatum(
+  startsAt: string,
+  zone: string,
+  tage: number | undefined,
+): string | null {
+  if (tage === undefined) return null;
+  const tag = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(startsAt));
+  const [, monat, datum] = tagePlus(tag, tage).split('-');
+  return `${datum}.${monat}.`;
 }

@@ -1,13 +1,11 @@
 import { useId, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
-import { mitRueckweg } from '@/lib/rueckweg';
 import { dayKey, recordNoShow, type Appointment } from './api';
 
 /**
@@ -94,14 +92,9 @@ function Rufnummern({ appointment }: { appointment: Appointment }) {
  */
 export function HomeVisitFlow({
   appointment,
-  eingehend,
-  darfDokumentieren,
   melden,
 }: {
   appointment: Appointment;
-  /** Der Rückweg der Seite - für den Abschluss ohne Behandlung. */
-  eingehend: string;
-  darfDokumentieren: boolean;
   melden: (text: string) => void;
 }) {
   const queryClient = useQueryClient();
@@ -135,6 +128,7 @@ export function HomeVisitFlow({
       <Button
         type="button"
         variant="secondary"
+        groesse="kompakt"
         aria-expanded={offen}
         aria-controls={bereichId}
         onClick={() => setOffen((bisher) => !bisher)}
@@ -209,30 +203,19 @@ export function HomeVisitFlow({
               Wer hier steht, hat die Tür vor sich - die Frage ist nur, was
               dahinter passiert ist. */}
           <div className="border-line mt-4 border-t pt-3">
-            <p className="text-ink text-sm font-medium">Tür geöffnet, aber keine Behandlung?</p>
-            <p className="text-ink-muted mt-1 max-w-prose text-sm">
-              Dann gilt der Termin als durchgeführt und wird normal abgerechnet; ein Ausfallhonorar
-              entsteht nicht. Die Dokumentation trägt dazu einen Pflichtvermerk.
+            {/* Der Weg selbst steht seit Zyklus 3 als „Ohne Behandlung" in der
+                Aktionsleiste (Design-Handoff 2026-10-01, Abschnitt 6); hier
+                bleibt der Fall genannt, damit der Ablauf durch alle drei
+                Szenarien führt (ADR-018 Punkt 9). */}
+            <p className="text-ink-muted max-w-prose text-sm">
+              Tür geöffnet, aber keine Behandlung? Dann oben „Ohne Behandlung“ – der Termin gilt als
+              durchgeführt, ohne Ausfallhonorar.
             </p>
-            {darfDokumentieren ? (
-              <div className="mt-2">
-                <ButtonLink
-                  to={mitRueckweg(
-                    `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
-                    eingehend,
-                  )}
-                  variant="secondary"
-                  groesse="kompakt"
-                >
-                  Ohne Behandlung abschließen
-                </ButtonLink>
-              </div>
-            ) : null}
             {/* Der dritte Fall bleibt als eine Zeile (ANN-198): Der Handoff
                 strich den Satz, ADR-018 Punkt 9.3 verlangt aber, dass die
                 Oberfläche durch alle drei Szenarien führt. Die 24-Stunden-Regel
                 erklärt die Absage-Rückfrage selbst. */}
-            <p className="text-ink-muted mt-3 max-w-prose text-sm">
+            <p className="text-ink-muted mt-1 max-w-prose text-sm">
               Vorher abgesagt? Dann am Seitenende „Termin absagen“.
             </p>
           </div>
