@@ -2326,3 +2326,15 @@ Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** `HomeVisitFlow` in `src/features/appointments/HomeVisitFlow.tsx`; Test `AppointmentDetailPage.test.tsx` („Vorher abgesagt?").
 
 **Änderungspfad.** Ganz streichen, wenn Jannes entscheidet, dass die Absage-Rückfrage das Szenario allein erklärt (dann ADR-018 Punkt 9.3 so lesen oder ergänzen) · Aufwand `klein`.
+
+### ANN-199 — Der Haken und die kompakten Knöpfe bleiben bei 44 px
+
+Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 11)
+
+**Annahme.** Der Design-Handoff vom 2026-10-01 (Zyklen 2–4) nennt Kompaktknöpfe und den kleinen Haken mit 40 px, Chips mit 36/32 px. Im Repo bleiben sie bei 44 px; nur der Haken als Hauptknopf einer Karte wird 48 px groß.
+
+**Begründung.** Das Repo hält „Ziele ≥ 44" für Knöpfe ohne umgebende Polsterung ausdrücklich fest (Oberflächen-Checkliste Punkt 1, `buttonStile.ts`); der Handoff selbst nennt 44 als Regel und 40 nur als zulässige Ausnahme (Abschnitt 9). Am Telefon im Hausflur zählt das Tippziel mehr als 4 px Dichte. Die Lesart, die das Tippziel schützt, gilt.
+
+**Anker.** `symbolknopfKlassen` und `kartenAktionKlassen` in `src/components/ui/buttonStile.ts`; Test `bausteine.test.tsx` („nie 40").
+
+**Änderungspfad.** Eine Größe `dicht` (40 px) in `buttonStile.ts` ergänzen und nur am Rechner verwenden · Aufwand `klein`.

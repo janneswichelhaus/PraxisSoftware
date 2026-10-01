@@ -159,8 +159,8 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
 /** Warum ein abgeschlossener Termin noch offen steht - als Text, nicht als Farbe. */
 export function offenGrund(termin: DayPlanEntry): string | null {
   if (termin.status !== 'completed') return null;
-  if (termin.documentation_status === 'draft') return 'Dokumentation noch Entwurf';
-  if (termin.documentation_status === 'none') return 'Dokumentation fehlt';
+  if (termin.documentation_status === 'draft') return 'Doku im Entwurf';
+  if (termin.documentation_status === 'none') return 'Doku offen';
   return null;
 }
 

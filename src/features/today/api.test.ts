@@ -104,10 +104,10 @@ describe('istOffen', () => {
 describe('offenGrund', () => {
   it('benennt den Grund als Text, nicht als Farbe', () => {
     expect(offenGrund(eintrag({ status: 'completed', documentation_status: 'draft' }))).toBe(
-      'Dokumentation noch Entwurf',
+      'Doku im Entwurf',
     );
     expect(offenGrund(eintrag({ status: 'completed', documentation_status: 'none' }))).toBe(
-      'Dokumentation fehlt',
+      'Doku offen',
     );
   });
 

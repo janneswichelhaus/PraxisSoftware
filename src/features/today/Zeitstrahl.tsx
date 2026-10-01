@@ -98,6 +98,7 @@ export function Zeitstrahl({
   zeitzone,
   anfahrten,
   karte,
+  haken,
 }: {
   /** Die Tagesliste, nach Uhrzeit sortiert. */
   plan: readonly DayPlanEntry[];
@@ -108,6 +109,11 @@ export function Zeitstrahl({
   anfahrten: ReadonlyMap<string, Anfahrt>;
   /** Die Karte des ausgeklappten Termins. */
   karte: ReactNode;
+  /**
+   * Der Haken einer Zeile (Design-Handoff 2026-10-01, Abschnitt 6a): rechts
+   * neben der Zeile, nicht in ihr - ein Knopf darf nicht in einem Link liegen.
+   */
+  haken?: (termin: DayPlanEntry) => ReactNode;
 }) {
   const jetztText = formatLocalTime(new Date(jetzt).toISOString(), zeitzone);
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
@@ -181,44 +187,47 @@ export function Zeitstrahl({
                     // Die ganze Zeile ist das Ziel (Design-Handoff, „Zeile").
                     // Sie liegt auf dem Seitengrund; das Überfahren hebt sie
                     // als weiße Fläche ab.
-                    <Link
-                      to={ziel}
-                      // Am Telefon rückt das Abzeichen unter den Namen, statt
-                      // ihn in zwei Zeilen zu drücken.
-                      className="hover:bg-surface rounded-button -mx-2 flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1 transition-colors duration-120"
-                    >
-                      <span className="min-w-0 flex-1 basis-40">
-                        <span
-                          className={`block text-base wrap-anywhere ${
-                            stand === 'kommt'
-                              ? 'text-ink font-semibold'
-                              : 'text-ink-muted font-medium'
-                          }`}
-                        >
-                          {terminName(termin)}
-                        </span>
-                        <span className="text-ink-muted block text-sm wrap-anywhere">
-                          {ortText(termin, anfahrt, stand)}
-                        </span>
-                        {grund ? (
-                          <span className="text-warnung block text-sm font-medium">
-                            <span aria-hidden="true">! </span>
-                            {grund}
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={ziel}
+                        // Am Telefon rückt das Abzeichen unter den Namen, statt
+                        // ihn in zwei Zeilen zu drücken.
+                        className="hover:bg-surface rounded-button -ml-2 flex min-h-11 min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1 px-2 py-1 transition-colors duration-120"
+                      >
+                        <span className="min-w-0 flex-1 basis-40">
+                          <span
+                            className={`block text-base wrap-anywhere ${
+                              stand === 'kommt'
+                                ? 'text-ink font-semibold'
+                                : 'text-ink-muted font-medium'
+                            }`}
+                          >
+                            {terminName(termin)}
                           </span>
-                        ) : null}
-                      </span>
-                      <span className="flex shrink-0 flex-wrap items-center gap-2 empty:hidden">
-                        {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
-                        <Laengenzeichen termin={termin} />
-                        {/* „Steht aus" ist der Regelfall und sagt nichts
+                          <span className="text-ink-muted block text-sm wrap-anywhere">
+                            {ortText(termin, anfahrt, stand)}
+                          </span>
+                          {grund ? (
+                            <span className="text-warnung block text-sm font-medium">
+                              <span aria-hidden="true">! </span>
+                              {grund}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="flex shrink-0 flex-wrap items-center gap-2 empty:hidden">
+                          {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
+                          <Laengenzeichen termin={termin} />
+                          {/* „Steht aus" ist der Regelfall und sagt nichts
                             (UX-005h). */}
-                        {termin.status === 'confirmed' ? null : (
-                          <Badge ton={dayPlanStatusTon[termin.status]}>
-                            {dayPlanStatusLabels[termin.status]}
-                          </Badge>
-                        )}
-                      </span>
-                    </Link>
+                          {termin.status === 'confirmed' ? null : (
+                            <Badge ton={dayPlanStatusTon[termin.status]}>
+                              {dayPlanStatusLabels[termin.status]}
+                            </Badge>
+                          )}
+                        </span>
+                      </Link>
+                      {haken?.(termin)}
+                    </div>
                   )}
                 </div>
               </li>

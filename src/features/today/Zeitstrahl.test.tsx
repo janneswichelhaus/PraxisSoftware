@@ -324,7 +324,7 @@ describe('Zeitstrahl', () => {
       jetzt: zeitpunkt('07:40'),
     });
     const zeile = screen.getByRole('link', { name: /Test Erika/ });
-    const grund = within(zeile).getByText('Dokumentation fehlt');
+    const grund = within(zeile).getByText('Doku offen');
     expect(grund).toHaveClass('text-warnung');
     expect(within(zeile).getByText('Abgeschlossen')).toBeInTheDocument();
   });

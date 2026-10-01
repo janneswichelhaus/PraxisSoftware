@@ -76,7 +76,7 @@ describe('Tageskarte', () => {
     expect(screen.getByText('Abgeschlossen')).toBeInTheDocument();
     expect(screen.queryByText('in 25 Minuten')).toBeNull();
     // Warum der Termin noch offen steht - als Text mit Zeichen, nicht als Farbe.
-    const grund = screen.getByText('Dokumentation noch Entwurf').closest('p')!;
+    const grund = screen.getByText('Doku im Entwurf').closest('p')!;
     expect(grund).toHaveClass('text-warnung');
     expect(grund.querySelector('[aria-hidden="true"]')).toHaveTextContent('!');
   });

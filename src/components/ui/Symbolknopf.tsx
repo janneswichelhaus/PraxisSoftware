@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode, Ref } from 'react';
-import { symbolknopfKlassen, type Variant } from './buttonStile';
+import { symbolknopfKlassen, type SymbolGroesse, type Variant } from './buttonStile';
 
 /**
  * Knopf, der nur ein Symbol zeigt (UIK-01).
@@ -11,6 +11,7 @@ import { symbolknopfKlassen, type Variant } from './buttonStile';
  * Was der Baustein zusichert:
  *
  *   * **44 × 44 px** (`size-11`), auch am Telefon und mit Handschuhen;
+ *     `groesse="gross"` 48 px für den Haken als Hauptknopf;
  *   * eine **Beschriftung ist Pflicht** und wird zum zugänglichen Namen
  *     (`aria-label`) - ein Symbol allein sagt der Vorlesesoftware nichts;
  *   * Varianten wie beim `Button`, ohne Angabe `quiet` (Hauptfarbe ohne
@@ -25,6 +26,7 @@ import { symbolknopfKlassen, type Variant } from './buttonStile';
 export function Symbolknopf({
   beschriftung,
   variant = 'quiet',
+  groesse = 'normal',
   type = 'button',
   className = '',
   children,
@@ -33,6 +35,8 @@ export function Symbolknopf({
   /** Zugänglicher Name, etwa „Vorheriger Zeitraum". */
   beschriftung: string;
   variant?: Variant;
+  /** `gross` 48 px, sonst 44 px. */
+  groesse?: SymbolGroesse;
   /** Das Symbol. */
   children: ReactNode;
   ref?: Ref<HTMLButtonElement>;
@@ -41,7 +45,7 @@ export function Symbolknopf({
     <button
       type={type}
       aria-label={beschriftung}
-      className={symbolknopfKlassen(variant, className)}
+      className={symbolknopfKlassen(variant, className, groesse)}
       {...props}
     >
       <span aria-hidden="true" className="inline-flex items-center justify-center">
