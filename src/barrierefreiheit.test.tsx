@@ -338,7 +338,8 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
           <li>
             <Tageskarte
               termin={tagesEintrag}
-              aktionen={<NavigationZumTermin termin={tagesEintrag} />}
+              kicker="Erster Weg"
+              hauptaktion={<NavigationZumTermin termin={tagesEintrag} hauptknopf breit />}
             />
           </li>
         </ul>

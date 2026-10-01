@@ -50,12 +50,14 @@ export function PageHeader({
       <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : ''}>
         {/* Seitentitel als `--type-h2` in der Hauptfarbe (DS-001). Der Titel
             ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
-            deshalb Hauptfarbe statt Tinte. */}
+            deshalb Hauptfarbe statt Tinte. Unter 640 px 26 statt 32 px
+            (Design-Handoff 2026-10-01): Am Telefon passt der Titel damit
+            in eine Zeile. */}
         <h1
           className={
             kompakt
               ? 'text-accent text-h4 font-bold'
-              : 'text-accent text-h2 tracking-display font-extrabold'
+              : 'text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold'
           }
         >
           {title}

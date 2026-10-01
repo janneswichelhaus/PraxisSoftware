@@ -160,6 +160,61 @@ describe('AppShell', () => {
     expect(kalender.inhalt).not.toContain('max-w-inhalt');
   });
 
+  it('haelt die Kopfzeile bei 56 px und Konto und Abmelden leise (Design-Handoff 2026-10-01)', () => {
+    const onSignOut = vi.fn();
+    const { container } = renderWithProviders(
+      <AppShell user={testUser(['therapist'], 'Anna Beispiel')} onSignOut={onSignOut}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    // 56 px auf jeder Breite - nicht erst ab sm.
+    const zeile = container.querySelector('header > div')!.className.split(/\s+/);
+    expect(zeile).toContain('min-h-14');
+    expect(zeile).not.toContain('sm:min-h-14');
+
+    // „Abmelden" ist der seltenste Vorgang des Tages: 14 px, leise, nicht
+    // fett und nicht in der Hauptfarbe - aber weiter ein Tippziel von 44 px
+    // und weiter ein Knopf, der abmeldet.
+    const abmelden = screen.getByRole('button', { name: 'Abmelden' });
+    const klassen = abmelden.className.split(/\s+/);
+    expect(klassen).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'min-h-11']));
+    expect(klassen).not.toContain('text-accent');
+    expect(klassen).not.toContain('font-bold');
+    expect(abmelden).toHaveAttribute('type', 'button');
+    fireEvent.click(abmelden);
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+
+    // „Mein Konto" in 600, der Name daneben in normalem Gewicht.
+    const konto = screen.getByRole('link', { name: 'Mein Konto, Anna Beispiel' });
+    expect(konto.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['text-ink-muted', 'text-sm', 'min-h-11']),
+    );
+    expect(within(konto).getByText('Mein Konto').className).toContain('font-semibold');
+
+    // Die Marke am Telefon in ihrer Mindesthoehe, der Bereichsname in 14 px.
+    const marke = container.querySelector('header img')!;
+    expect(marke).toHaveAttribute('height', '24');
+    const bereich = container.querySelector('header p')!;
+    expect(bereich).toHaveTextContent('Übersicht');
+    expect(bereich.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['text-ink-muted', 'text-sm', 'truncate']),
+    );
+  });
+
+  it('gibt dem Inhalt 16, 24 und 32 px Rand je Breite (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/patienten',
+    );
+    const inhalt = screen.getByRole('main').className.split(/\s+/);
+    expect(inhalt).toEqual(expect.arrayContaining(['px-4', 'sm:px-6', 'lg:px-8', 'max-w-inhalt']));
+    // Das Untermenue reicht am Telefon bis zum Rand - mit demselben Wert.
+    const untermenue = screen.getByRole('navigation', { name: 'Bereich Patient:innen' });
+    expect(untermenue.className.split(/\s+/)).toEqual(expect.arrayContaining(['-mx-4', 'px-4']));
+  });
+
   it('fuehrt die Suche genau einmal - auf jeder Breite dasselbe Feld (UX-013)', () => {
     // Bis UX-013 stand das Suchfeld zweimal im Baum, einmal je Breite. Mit
     // Tastenkuerzel und Trefferliste waere das zweimal dasselbe Feld, von dem

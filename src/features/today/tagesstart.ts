@@ -1,13 +1,15 @@
-import { formatLocalTime } from '@/features/appointments/api';
-import { nachUhrzeit, type DayPlanEntry } from './api';
+import type { ProgressDot } from '@/components/ui/ProgressDots';
+import { appointmentTypeHint, formatLocalTime } from '@/features/appointments/api';
+import { istOffen, nachUhrzeit, type DayPlanEntry } from './api';
 
 // -----------------------------------------------------------------------------
-// Tagesstart (UX-EPIC-003)
+// Tagesstart (UX-EPIC-003) und Zeitstrahl (Design-Handoff 2026-10-01)
 //
-// Was am Rad zählt, bevor losgefahren wird: der erste Weg, eine Vorschau auf
-// den nächsten und ob die Behandlungsliege heute mit muss (§9). Reine
+// Was am Rad zählt, bevor losgefahren wird: der nächste Weg, wie viel Zeit
+// dafür bleibt und ob die Behandlungsliege heute mit muss (§9). Reine
 // Funktionen über der Tagesliste - keine eigene Abfrage, kein zweiter
-// Lesepfad (ADR-004, Datenminimierung).
+// Lesepfad (ADR-004, Datenminimierung). Die Fahrzeiten kommen von außen
+// herein (`fahrzeiten.ts`).
 // -----------------------------------------------------------------------------
 
 /**
@@ -18,9 +20,9 @@ import { nachUhrzeit, type DayPlanEntry } from './api';
  * mit - er war der erste des Tages, auch wenn er schon hinter einem liegt. Ein
  * abgesagter zählt nicht: zu ihm fährt niemand.
  *
- * Nur Behandlungen: Dieselbe Grenze zieht „Offen heute" (`istOffen`), und nur
- * an ihnen trägt die Tagesliste die Liege. Ein Trainingstermin erreicht die
- * Liste nur bei owner und office; er kommt mit dem Trainingsbereich dazu.
+ * Nur Behandlungen: Dieselbe Grenze zieht `istOffen`, und nur an ihnen trägt
+ * die Tagesliste die Liege. Ein Trainingstermin erreicht die Liste nur bei
+ * owner, office und der Trainingsbetreuung; gezählt wird er hier nicht.
  */
 export function besucheDesTages(plan: readonly DayPlanEntry[]): DayPlanEntry[] {
   return [...plan]
@@ -38,19 +40,127 @@ export interface Wege {
   erster: DayPlanEntry | null;
   /** Ob vor ihm heute schon ein Besuch lag - dann heißt er „Nächster Weg". */
   istErsterDesTages: boolean;
-  /** Der Besuch danach, als Vorschau. */
-  danach: DayPlanEntry | null;
 }
 
 export function wegeDesTages(plan: readonly DayPlanEntry[]): Wege {
   const besuche = besucheDesTages(plan);
-  const ausstehend = besuche.filter(stehtAus);
-  const erster = ausstehend[0] ?? null;
+  const erster = besuche.find(stehtAus) ?? null;
   return {
     erster,
     istErsterDesTages: erster !== null && besuche[0]?.id === erster.id,
-    danach: ausstehend[1] ?? null,
   };
+}
+
+/**
+ * Der eine Termin, den der Zeitstrahl ausgeklappt zeigt.
+ *
+ *   * `besuch` - der nächste noch anzufahrende Behandlungsbesuch
+ *     (`wegeDesTages`, ANN-117); steht keiner mehr aus, der nächste
+ *     ausstehende Trainingstermin: Für die Trainingsbetreuung ist er der
+ *     Besuch, und nur die Karte trägt Anschrift und Rufnummer;
+ *   * `dokumentation` - kein Besuch steht mehr aus, aber eine Dokumentation
+ *     ist noch nicht festgeschrieben (`istOffen`). Die Karte führt dann in den
+ *     Abschluss, eine Navigation gibt es nicht mehr (UEB-04).
+ */
+export interface Fokus {
+  termin: DayPlanEntry;
+  art: 'besuch' | 'dokumentation';
+}
+
+export function fokusDesTages(
+  plan: readonly DayPlanEntry[],
+  darfDokumentieren: boolean,
+): Fokus | null {
+  const besuch = wegeDesTages(plan).erster;
+  if (besuch) return { termin: besuch, art: 'besuch' };
+
+  const sortiert = [...plan].sort(nachUhrzeit);
+  const training = sortiert.find((termin) => termin.kind === 'training' && stehtAus(termin));
+  if (training) return { termin: training, art: 'besuch' };
+
+  const ohneDoku = sortiert.find((termin) => istOffen(termin, darfDokumentieren));
+  return ohneDoku ? { termin: ohneDoku, art: 'dokumentation' } : null;
+}
+
+/**
+ * Wo ein ausstehender Besuch gerade steht (Design-Handoff 2026-10-01,
+ * Abschnitt 5a Punkt 7): Er `wartet` bis zu seinem Beginn, `laeuft` bis zu
+ * seinem Ende und ist danach `ueberfaellig` - begonnen, aber noch nicht
+ * abgeschlossen. Ab dem Beginn wird die Karte zur Arbeitskarte.
+ *
+ * `jetzt` kommt von außen, damit die Grenze prüfbar bleibt.
+ */
+export type Besuchsphase = 'wartet' | 'laeuft' | 'ueberfaellig';
+
+export function besuchsphase(termin: DayPlanEntry, jetzt: number): Besuchsphase {
+  if (jetzt < Date.parse(termin.starts_at)) return 'wartet';
+  return jetzt < Date.parse(termin.ends_at) ? 'laeuft' : 'ueberfaellig';
+}
+
+/** „in 25 Minuten" - nur in den letzten drei Stunden vor dem Beginn. */
+export function bisBeginn(termin: DayPlanEntry, jetzt: number): string | null {
+  const minuten = Math.ceil((Date.parse(termin.starts_at) - jetzt) / 60_000);
+  if (!Number.isFinite(minuten) || minuten <= 0 || minuten >= 180) return null;
+  return minuten === 1 ? 'in 1 Minute' : `in ${minuten} Minuten`;
+}
+
+export interface Tagesfortschritt {
+  /** Ein Punkt je Behandlungstermin in Uhrzeitfolge, auch für eine Absage. */
+  punkte: ProgressDot[];
+  /** Besuche, an denen heute nichts mehr zu fahren ist. */
+  erledigt: number;
+  /** Besuche des Tages ohne Absagen (`besucheDesTages`). */
+  gesamt: number;
+  /** Davon mit festgeschriebener Dokumentation. */
+  dokumentiert: number;
+}
+
+/**
+ * Der Tagesfortschritt im Kopf der Übersicht (Design-Handoff 2026-10-01,
+ * Abschnitt 5a Punkt 3).
+ *
+ * Gezählt werden die Behandlungsbesuche wie bei der Liege (ANN-117):
+ * Fehlzeiten und Training zählen nicht, eine Absage auch nicht - sie bekommt
+ * aber ihren Punkt, damit die Reihe den Tag zeigt, wie er im Kalender stand.
+ * „Erledigt" ist ein Besuch, zu dem niemand mehr fährt: abgeschlossen,
+ * dokumentiert, abgerechnet oder nicht angetroffen.
+ */
+export function tagesfortschritt(
+  plan: readonly DayPlanEntry[],
+  naechsterId: string | null,
+): Tagesfortschritt {
+  const behandlungen = [...plan].filter((termin) => termin.kind === 'therapy').sort(nachUhrzeit);
+  const besuche = behandlungen.filter((termin) => termin.status !== 'cancelled');
+  return {
+    punkte: behandlungen.map((termin) => {
+      if (termin.status === 'cancelled') return 'abgesagt';
+      if (termin.status === 'no_show') return 'nicht_angetroffen';
+      if (termin.status === 'confirmed') return termin.id === naechsterId ? 'naechster' : 'offen';
+      return 'erledigt';
+    }),
+    erledigt: besuche.filter((termin) => !stehtAus(termin)).length,
+    gesamt: besuche.length,
+    dokumentiert: besuche.filter(
+      (termin) =>
+        termin.documentation_status === 'final' ||
+        termin.status === 'documented' ||
+        termin.status === 'invoiced',
+    ).length,
+  };
+}
+
+/** „1 von 4 Besuchen erledigt" - der Satz neben den Punkten. */
+export function fortschrittText(fortschritt: Tagesfortschritt): string {
+  const besuche = fortschritt.gesamt === 1 ? 'Besuch' : 'Besuchen';
+  return `${fortschritt.erledigt} von ${fortschritt.gesamt} ${besuche} erledigt`;
+}
+
+/** „3 Dokus festgeschrieben" - oder `null`, wenn noch keine festgeschrieben ist. */
+export function dokuText(fortschritt: Tagesfortschritt): string | null {
+  if (fortschritt.dokumentiert === 0) return null;
+  return fortschritt.dokumentiert === 1
+    ? '1 Doku festgeschrieben'
+    : `${fortschritt.dokumentiert} Dokus festgeschrieben`;
 }
 
 export type LiegeHeute =
@@ -79,69 +189,126 @@ export function liegeHeute(plan: readonly DayPlanEntry[]): LiegeHeute {
   return { noetig: true, besuch: index + 1, termin: besuche[index]! };
 }
 
-/** „ja, ab 2. Besuch (10:30 Uhr)" - der Zustand als Wort, nicht als Farbe. */
+/**
+ * „Ja · ab 2. Besuch 10:30" oder „Nein" - der Zustand als Wort, nicht als
+ * Farbe. Seit dem Design-Handoff vom 2026-10-01 steht die Antwort in der
+ * Liege-Zeile neben der Beschriftung „Liege heute"; bis dahin lautete der
+ * Satz „ja, ab 2. Besuch (10:30 Uhr)".
+ */
 export function liegeText(liege: LiegeHeute): string {
-  if (!liege.noetig) return 'nein';
+  if (!liege.noetig) return 'Nein';
   const uhrzeit = formatLocalTime(liege.termin.starts_at, liege.termin.organization_time_zone);
-  return `ja, ab ${liege.besuch}. Besuch (${uhrzeit} Uhr)`;
-}
-
-export interface MitnehmenPosten {
-  /** Das Material, wie es an der ersten Person steht. */
-  was: string;
-  /** Für wie viele der noch anzufahrenden Besuche. */
-  anzahl: number;
+  return `Ja · ab ${liege.besuch}. Besuch ${uhrzeit}`;
 }
 
 /**
- * Was heute noch aufs Rad muss (PRX-007, ANN-138) - zusammengezählt, ohne Person.
- *
- * Über die noch anzufahrenden Behandlungsbesuche; ein erledigter Besuch
- * braucht nichts mehr. Gleiches Material zählt ohne Groß- und Kleinschreibung
- * zusammen, die Reihenfolge ist die des ersten Auftretens am Tag. Wer wofür,
- * steht nicht hier, sondern im Kurzblick am Termin: Die Übersicht wird im
- * Treppenhaus mitgelesen.
+ * Die geschätzte Anfahrt zu einem Termin und woher sie kommt (`fahrzeiten.ts`).
+ * `vorher` ist der Termin davor in der Fahrtreihenfolge - `null`, wenn die
+ * Fahrt am Startort der Praxis beginnt.
  */
-export function mitnehmenHeute(plan: readonly DayPlanEntry[]): MitnehmenPosten[] {
-  const posten = new Map<string, MitnehmenPosten>();
-  for (const termin of besucheDesTages(plan)) {
-    if (!stehtAus(termin)) continue;
-    for (const was of termin.take_along_items ?? []) {
-      const schluessel = was.toLocaleLowerCase('de-DE');
-      const bisher = posten.get(schluessel);
-      if (bisher) bisher.anzahl += 1;
-      else posten.set(schluessel, { was, anzahl: 1 });
-    }
+export interface Anfahrt {
+  minuten: number;
+  vorher: DayPlanEntry | null;
+}
+
+/** Ein Ende des Wegbalkens: Uhrzeit und was dort ist. */
+export interface Wegende {
+  zeit: string;
+  label: string;
+}
+
+export interface NaechsterWeg {
+  titel: string;
+  von: Wegende;
+  bis: Wegende;
+  fahrtMin: number;
+}
+
+/** Was zur Einordnung in der Nebenzeile steht - der Hausbesuch trägt kein Wort (ANN-192). */
+export function einordnung(termin: DayPlanEntry): string {
+  // Eine Fehlzeit ohne Bezeichnung heißt in der Namenszeile schon „Fehlzeit"
+  // und braucht das Wort nicht zweimal (UX-005h).
+  return [
+    termin.kind === 'internal'
+      ? termin.title
+        ? 'Fehlzeit'
+        : null
+      : termin.kind === 'training'
+        ? 'Training'
+        : null,
+    appointmentTypeHint(termin.appointment_type),
+    termin.location_name,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** Der Name, unter dem ein Termin in der Übersicht steht. */
+export function terminName(termin: DayPlanEntry): string {
+  if (termin.kind === 'training') {
+    const name = `${termin.training_given_name ?? ''} ${termin.training_family_name ?? ''}`.trim();
+    return name || 'Trainingstermin';
   }
-  return [...posten.values()];
-}
-
-/** „Theraband (2), Kinesiotape" - oder „nichts eingetragen". */
-export function mitnehmenText(posten: readonly MitnehmenPosten[]): string {
-  if (posten.length === 0) return 'nichts eingetragen';
-  return posten.map((p) => (p.anzahl > 1 ? `${p.was} (${p.anzahl})` : p.was)).join(', ');
+  if (termin.kind === 'internal' || !termin.patient_id) return termin.title ?? 'Fehlzeit';
+  return `${termin.patient_given_name ?? ''} ${termin.patient_family_name ?? ''}`.trim();
 }
 
 /**
- * Fehlzeiten, die heute noch anstehen oder gerade laufen (UEB-02).
+ * Der Weg, den der große Wegbalken zeigt (Design-Handoff 2026-10-01,
+ * Abschnitte 5 und 5a Punkt 7).
  *
- * Eine Fehlzeit ist nie „offen" im Sinn von `istOffen` - sie wird weder
- * abgeschlossen noch dokumentiert, und die Zählung „Offen heute" bleibt nach
- * ANN-117 bei den Behandlungen. Erledigt ist sie deshalb aber noch nicht: Die
- * Teambesprechung um 13 Uhr stand bis UXR-003 schon morgens im zugeklappten
- * „Erledigt heute", und wer sich an den ersten Weg hielt, verpasste sie. Die
- * Übersicht nennt sie stattdessen als „Heute außerdem", bis ihr Ende
- * erreicht ist; eine abgesagte steht nicht mehr an.
+ * Wartet der nächste Besuch noch, ist es der Weg **zu ihm**. Hat er begonnen,
+ * ist es der Weg **danach** - zum nächsten ausstehenden Termin mit bekannter
+ * Anfahrt. Ohne geschätzte Fahrzeit gibt es keinen Balken: ungeprüft ist
+ * nicht „kurz" (MAP-004b).
  *
- * `jetzt` kommt von außen, damit die Grenze prüfbar bleibt.
+ * ANN-196: Der Balken beginnt am Ende des Termins davor - und **jetzt**,
+ * sobald dieses Ende vorbei ist oder es keinen Termin davor gibt (der erste
+ * Weg des Tages, vom Startort der Praxis). Einen geplanten Aufbruch kennt die
+ * Anwendung nicht, und eine erfundene Uhrzeit rechnete einen Puffer vor, den
+ * es nicht gibt. Bis zum Ende des Termins davor zeigt der Balken also den
+ * geplanten Abstand, danach das, was davon noch übrig ist: Der Puffer
+ * schrumpft mit der Uhr, und wer zu spät dran ist, liest es.
  */
-export function anstehendeFehlzeiten(plan: readonly DayPlanEntry[], jetzt: number): DayPlanEntry[] {
-  return [...plan]
-    .filter(
-      (termin) =>
-        termin.kind === 'internal' &&
-        termin.status !== 'cancelled' &&
-        Date.parse(termin.ends_at) > jetzt,
-    )
-    .sort(nachUhrzeit);
+export function naechsterWeg(
+  plan: readonly DayPlanEntry[],
+  fokus: Fokus | null,
+  anfahrten: ReadonlyMap<string, Anfahrt>,
+  jetzt: number,
+): NaechsterWeg | null {
+  if (!fokus || fokus.art !== 'besuch') return null;
+
+  const wartet = besuchsphase(fokus.termin, jetzt) === 'wartet';
+  const ziel = wartet
+    ? fokus.termin
+    : [...plan]
+        .sort(nachUhrzeit)
+        .find(
+          (termin) =>
+            termin.id !== fokus.termin.id &&
+            stehtAus(termin) &&
+            termin.starts_at >= fokus.termin.starts_at &&
+            anfahrten.has(termin.id),
+        );
+  const anfahrt = ziel ? anfahrten.get(ziel.id) : undefined;
+  if (!ziel || !anfahrt) return null;
+
+  const zone = ziel.organization_time_zone;
+  const { vorher } = anfahrt;
+  const erster = wartet && wegeDesTages(plan).istErsterDesTages && vorher === null;
+  return {
+    titel: wartet ? (erster ? 'Erster Weg' : 'Nächster Weg') : 'Nächster Weg danach',
+    von:
+      vorher !== null && jetzt <= Date.parse(vorher.ends_at)
+        ? {
+            zeit: formatLocalTime(vorher.ends_at, zone),
+            label: `Ende ${terminName(vorher)}`,
+          }
+        : {
+            zeit: formatLocalTime(new Date(jetzt).toISOString(), zone),
+            label: vorher ? 'Jetzt' : 'Jetzt, Start am Rad',
+          },
+    bis: { zeit: formatLocalTime(ziel.starts_at, zone), label: terminName(ziel) },
+    fahrtMin: anfahrt.minuten,
+  };
 }

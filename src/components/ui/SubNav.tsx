@@ -110,7 +110,9 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
   const sichtbar = einklappbar && !offen ? echte : eintraege;
 
   return (
-    <nav aria-label={label} className="border-line -mx-5 mb-6 border-b px-5">
+    // -mx-4/px-4: Die Linie reicht am Telefon bis zum Rand; der Wert folgt dem
+    // Innenabstand des Inhalts dort (`AppShell`, 16 px).
+    <nav aria-label={label} className="border-line -mx-4 mb-6 border-b px-4">
       {/* Schmal: eine scrollbare Zeile, damit sie nicht die halbe Seite belegt.
           Breit: umbrechen - ein waagerecht verstecktes Menue findet auf dem
           Desktop niemand, weil es dort keine Wischgeste gibt. */}

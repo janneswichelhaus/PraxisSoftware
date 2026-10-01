@@ -5,19 +5,34 @@ import { AppShell } from '@/app/AppShell';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { MyDayPage } from '@/features/today/MyDayPage';
 import type { DayPlanEntry } from '@/features/today/api';
+import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
+import type { Routenergebnis } from '@/lib/location/route';
+import { startpunkt, type Standort } from '@/features/tours/startort';
+import {
+  PRAXISPROFIL,
+  routenplan,
+  stoppsDesTages,
+  type Tagesstopp,
+} from '@/features/tours/tagesroute';
 import { Stammdaten } from '@/features/patients/PatientMasterDataPage';
 import type { Patient } from '@/features/patients/api';
 import { tagePlus } from '@/features/appointments/calendar';
-import { todayInTimeZone } from '@/features/appointments/api';
+import { todayInTimeZone, type CalendarEntry } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import '@/index.css';
 
 /**
  * Einstieg der Prüfseite aus `uebersicht.html` (UX-EPIC-003).
  *
- * Der Tagesstart einer Therapeutin mit erfundenem Tag, ohne Server: drei
- * Hausbesuche, der zweite braucht die Behandlungsliege. `?ansicht=akte` zeigt
- * die Stammdaten einer Person mit dem Schalter für die Liege.
+ * Der Tag einer Therapeutin als Zeitstrahl mit erfundenem Tag, ohne Server:
+ * drei Hausbesuche mit Kartenposition und eine Teambesprechung, der zweite
+ * Besuch braucht die Behandlungsliege. Tagesroute, Startort und Route liegen
+ * fertig im Zwischenspeicher - hinaus geht nichts. Welche Uhrzeit „jetzt" ist,
+ * stellt der Test über die Uhr des Browsers.
+ *
+ * `?ansicht=abend` zeigt den Tag, wenn alles erledigt ist, `?ansicht=doku`
+ * mit einer noch offenen Dokumentation, `?ansicht=akte` die Stammdaten einer
+ * Person mit dem Schalter für die Liege.
  */
 const ZONE = 'Europe/Berlin';
 const STAFF = '55555555-5555-4555-8555-000000000002';
@@ -87,6 +102,18 @@ function besuch(
   };
 }
 
+/** Der Stand des Tages je Ansicht: morgens offen, abends erledigt. */
+function stand(nummer: number): Partial<DayPlanEntry> {
+  if (ansicht === 'abend') return { status: 'documented', documentation_status: 'final' };
+  if (ansicht === 'doku') {
+    return nummer === 3
+      ? { status: 'completed', documentation_status: 'draft' }
+      : { status: 'documented', documentation_status: 'final' };
+  }
+  return {};
+}
+
+// Erfundene Punkte in Tübingen; keine davon ist eine Wohnadresse.
 const tag: DayPlanEntry[] = [
   besuch(1, '08:30', '09:30', {
     patient_given_name: 'Erika',
@@ -94,10 +121,13 @@ const tag: DayPlanEntry[] = [
     visit_street: 'Testweg',
     visit_house_number: '7',
     visit_postal_code: '72072',
+    visit_lat: 48.5216,
+    visit_lon: 9.0576,
     patient_phone_mobile: '+49 160 0000006',
     home_visit_access_note: 'Erdgeschoss, Klingel "Beispiel". Schlüssel bei der Nachbarin.',
-    // PRX-007: Mitnehmen, in der Übersicht nur zusammengezählt (ANN-138).
+    // PRX-007: Mitnehmen steht im Kurzblick am Termin, nicht in der Übersicht.
     take_along_items: ['Theraband'],
+    ...stand(1),
   }),
   besuch(2, '10:00', '11:00', {
     patient_given_name: 'Max',
@@ -105,11 +135,14 @@ const tag: DayPlanEntry[] = [
     visit_street: 'Beispielstrasse',
     visit_house_number: '12',
     visit_postal_code: '72070',
+    visit_lat: 48.5262,
+    visit_lon: 9.0642,
     patient_phone_mobile: '+49 160 0000005',
     home_visit_access_note: '2. OG links, Aufzug vorhanden.',
     special_note: 'Hund im Flur, wird vor dem Termin weggesperrt.',
     treatment_table_required: true,
     take_along_items: ['Theraband', 'Kinesiotape'],
+    ...stand(2),
   }),
   besuch(3, '11:30', '12:30', {
     patient_given_name: 'Petra',
@@ -117,16 +150,153 @@ const tag: DayPlanEntry[] = [
     visit_street: 'Fiktivgasse',
     visit_house_number: '9',
     visit_postal_code: '72074',
+    visit_lat: 48.5385,
+    visit_lon: 9.0461,
+    ...stand(3),
+  }),
+  besuch(4, '13:00', '14:00', {
+    kind: 'internal',
+    patient_id: null,
+    title: 'Teambesprechung',
+    appointment_type: 'video',
+    visit_city: null,
+    documentation_status: null,
   }),
 ];
+
+// Die Tagesroute: nur Punkte, keine Namen (MAP-006b). Die Fehlzeit hat keinen Ort.
+const punkte: Tagesstopp[] = tag
+  .filter((termin) => termin.kind === 'therapy')
+  .map((termin) => ({
+    id: termin.id,
+    kind: termin.kind,
+    appointment_type: 'home_visit',
+    status: termin.status,
+    starts_at: termin.starts_at,
+    ends_at: termin.ends_at,
+    lat: termin.visit_lat ?? null,
+    lon: termin.visit_lon ?? null,
+    geocode_precision: 'address',
+    position_source: 'visit',
+  }));
+
+const standort: Standort = {
+  id: '33333333-3333-4333-8333-000000000001',
+  name: 'Hauptstandort Tuebingen',
+  street: 'Praxisweg',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+  lat: 48.5204,
+  lon: 9.0527,
+  geocode_precision: 'address',
+};
+
+// Eine Route über Startort und alle Stopps: 12, 9 und 26 Minuten. Der dritte
+// Weg ist damit knapp - 30 Minuten Abstand, 4 Minuten Puffer.
+const fahrzeiten = [12, 9, 26];
+const route: Routenergebnis = {
+  ok: true,
+  value: {
+    quelle: 'anbieter',
+    route: {
+      distanceMeters: 9400,
+      durationSeconds: fahrzeiten.reduce((summe, minuten) => summe + minuten * 60, 0),
+      legs: fahrzeiten.map((minuten) => ({
+        distanceMeters: minuten * 200,
+        durationSeconds: minuten * 60,
+      })),
+      geometry: [],
+    },
+  },
+};
+
+function teamtermin(
+  nummer: number,
+  von: string,
+  bis: string,
+  teil: Partial<CalendarEntry>,
+): CalendarEntry {
+  return {
+    id: `bbbbbbbb-bbbb-4bbb-8bbb-00000000000${nummer}`,
+    patient_id: `66666666-6666-4666-8666-00000000001${nummer}`,
+    staff_member_id: '55555555-5555-4555-8555-000000000003',
+    location_id: null,
+    appointment_type: 'home_visit',
+    kind: 'therapy',
+    title: null,
+    status: 'confirmed',
+    starts_at: um(von),
+    ends_at: um(bis),
+    patient_given_name: 'Frida',
+    patient_family_name: 'Test',
+    staff_given_name: 'Tim',
+    staff_family_name: 'Teamleitung',
+    location_name: null,
+    ...teil,
+  };
+}
+
+const team: CalendarEntry[] = [
+  teamtermin(1, '08:00', '09:00', { status: 'documented' }),
+  teamtermin(2, '09:15', '10:15', {
+    patient_given_name: 'Gustav',
+    patient_family_name: 'Vorlage',
+    status: 'no_show',
+  }),
+  teamtermin(3, '10:30', '11:15', {
+    patient_given_name: 'Dora',
+    patient_family_name: 'Probe mit einem langen Doppelnamen',
+    appointment_type: 'practice',
+    location_name: 'Hauptstandort',
+  }),
+  teamtermin(4, '11:45', '12:45', {
+    patient_given_name: 'Carl',
+    patient_family_name: 'Muster',
+    status: 'cancelled',
+  }),
+];
+
+const lage: Abrechnungslage = {
+  appointment_id: tag[0]!.id,
+  treatment_basis_id: '77777777-7777-4777-8777-000000000001',
+  treatment_basis_kind: null,
+  treatment_basis_issued_on: null,
+  basis_position: 2,
+  basis_appointment_count: 6,
+  billing_visible: false,
+  recipient_kind: null,
+  open_invoice_count: null,
+  open_outstanding_cents: null,
+  open_overdue: null,
+};
 
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
 client.setQueryData(['day-plan', heute, STAFF], tag);
+client.setQueryData(['day-route', heute, STAFF], punkte);
+client.setQueryData(['standorte'], [standort]);
+client.setQueryData(
+  ['route', PRAXISPROFIL, routenplan(startpunkt(standort), stoppsDesTages(tag, punkte)).punkte],
+  route,
+);
+client.setQueryData(['appointment', tag[0]!.id, 'abrechnungslage'], lage);
+// PRX-013: Bei der ersten Person ist die Erstaufnahme noch offen.
+client.setQueryData(
+  ['open-points', 'intakes'],
+  [
+    {
+      patient_id: tag[0]!.patient_id,
+      patient_given_name: 'Erika',
+      patient_family_name: 'Beispiel',
+      open_items: ['finding', 'privacy'],
+    },
+  ],
+);
 // POR-002: der Abschnitt „Plattform" in den Stammdaten - ohne Zugang.
 client.setQueryData(['platform-access', 'treatment', '66666666-6666-4666-8666-000000000002'], null);
-client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'active'], []);
+client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'active'], team);
 
 const patient: Patient = {
   id: '66666666-6666-4666-8666-000000000002',

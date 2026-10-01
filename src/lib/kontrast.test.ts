@@ -196,4 +196,52 @@ describe('Farbtokens erfuellen WCAG AA', () => {
   ])('erreicht mit %s auf %s mindestens 4.5:1', (vorne, hinten) => {
     expect(kontrastverhaeltnis(tokens[vorne]!, tokens[hinten]!)).toBeGreaterThanOrEqual(4.5);
   });
+
+  // Der Wegbalken (Design-Handoff 2026-10-01): Die Fahrt liegt als Flaeche
+  // auf der Spur in der weichen Farbe ihrer Stufe, und die Spur liegt auf
+  // einer weissen Karte. 3:1 nach WCAG 1.4.11 fuer grafische Elemente -
+  // gemessen gegen beide, damit die Fahrt auch dort zu sehen ist, wo sie die
+  // Spur ganz fuellt. Neu ist das Paar mit `warnung-mittel` (3.39:1 auf
+  // warnung-soft, 4.06:1 auf Weiss); die uebrigen stehen hier, weil sie im
+  // Balken zum ersten Mal Flaeche auf Flaeche sind.
+  it.each([
+    ['danger', 'danger-soft'],
+    ['warnung', 'warnung-soft'],
+    ['warnung-mittel', 'warnung-soft'],
+    ['accent', 'accent-soft'],
+  ])('hebt die Fahrt %s als Flaeche von der Spur %s und von der Karte ab', (fahrt, spur) => {
+    expect(kontrastverhaeltnis(tokens[fahrt]!, tokens[spur]!)).toBeGreaterThanOrEqual(3);
+    expect(kontrastverhaeltnis(tokens[fahrt]!, tokens.surface!)).toBeGreaterThanOrEqual(3);
+  });
+
+  // Der Tagesabschluss der Uebersicht steht auf Tiefgruen (Design-Handoff
+  // 2026-10-01, Abschnitt 5a Punkt 8): Titel und Link in Papier, die Zeile
+  // darunter in Salbei hell, der Kicker in Salbei. Salbei ist nur auf Tiefgruen
+  // Textfarbe - dort haelt es 4.5:1, auf hellem Grund nicht.
+  it.each([['surface'], ['accent-soft'], ['salbei']])(
+    'traegt %s als Text auf Tiefgruen mit 4.5:1',
+    (token) => {
+      expect(
+        kontrastverhaeltnis(tokens[token]!, tokens['surface-inverse']!),
+      ).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('laesst Salbei auf hellem Grund nicht als Textfarbe zu', () => {
+    expect(schlechtesterKontrast('salbei')).toBeLessThan(4.5);
+  });
+
+  // `warnung-mittel` ist ausdruecklich keine Textfarbe: 4.06:1 auf Weiss und
+  // 3.39:1 auf warnung-soft liegen unter den 4.5:1 fuer Text. Die Stufe steht
+  // deshalb als Wort und Zahl in `warnung` daneben. Diese Zusicherung haelt
+  // die Absicht fest - und der Waechter darunter, dass niemand sie umgeht.
+  it('laesst warnung-mittel bewusst unter dem Textkontrast - es ist nur Flaeche', () => {
+    expect(schlechtesterKontrast('warnung-mittel')).toBeLessThan(4.5);
+    expect(kontrastverhaeltnis(tokens['warnung-mittel']!, tokens['warnung-soft']!)).toBeLessThan(
+      4.5,
+    );
+    // Die beiden Orange-Stufen muessen sich auch voneinander abheben, sonst
+    // waere die hellere keine eigene Stufe.
+    expect(tokens['warnung-mittel']!.L - tokens.warnung!.L).toBeGreaterThanOrEqual(0.15);
+  });
 });

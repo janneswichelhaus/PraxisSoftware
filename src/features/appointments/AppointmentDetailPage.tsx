@@ -160,27 +160,29 @@ function OrtKachel({ appointment }: { appointment: Appointment }) {
       ) : null}
       {art === 'home_visit' ? (
         strasse || ort ? (
+          // Beide Zeilen im Gewicht des Kachelwerts (600, Design-Handoff
+          // 2026-10-01); die Hinweise darunter bleiben normal.
           <address className="not-italic">
-            {strasse ? <span className="block font-medium">{strasse}</span> : null}
+            {strasse ? <span className="block">{strasse}</span> : null}
             {ort ? <span className="block">{ort}</span> : null}
           </address>
         ) : (
           '—'
         )
       ) : art === 'practice' ? (
-        <span className="block font-medium">{locationSummary(appointment)}</span>
+        <span className="block">{locationSummary(appointment)}</span>
       ) : null}
       {art === 'home_visit' ? (
         <span className="mt-3 block">
           <NavigationZumTermin termin={appointment} />
-          <span className="text-ink-muted mt-2 block text-xs leading-relaxed">
+          <span className="text-ink-muted mt-2 block text-xs leading-relaxed font-normal">
             Öffnet Google Maps im Fahrradmodus und übergibt nur die Anschrift ohne Namen – erst beim
             Tippen.
           </span>
         </span>
       ) : null}
       {art === 'video' ? (
-        <span className="text-ink-muted mt-1 block text-sm">
+        <span className="text-ink-muted mt-1 block text-sm font-normal">
           Für Videotermine wird noch kein Videolink erzeugt.
         </span>
       ) : null}

@@ -1162,3 +1162,76 @@ Arbeitsverhältnis es braucht; als Pflichtfeld braucht es einen benannten
 Zweck. Eine Geburtstagserinnerung im Team zeigt das Datum anderen
 Mitarbeitenden — dann nur Tag und Monat, nie das Jahr, und nur mit
 Einwilligung der Person. Kein Rückschluss auf Alter in Auswertungen (§20).
+
+### IDEA-PRX-050 — Stockwerk als eigenes Feld am Hausbesuch (`home_visit_floor`)
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-10-01 (Design-Handoff „Übersicht, Termin, Patientenakte", Abschnitt 5) |
+| Berührt | ADR-014, ADR-008 (Datenklasse wie der Zugangshinweis), ANN-197 |
+
+**Stand.** Die Tageskarte zeigt das Stockwerk seit dem UI-Redesign als Pille
+und liest es vorerst vom Anfang des Zugangshinweises (ANN-197,
+`src/features/today/stockwerk.ts`). Der Handoff sagt ausdrücklich: Feld als
+Folgeaufgabe notieren, nicht migrieren.
+
+**Idee.** Ein kurzes Feld „Stockwerk/Lage" in den Stammdaten neben dem
+Zugangshinweis („2. OG links"), das die Karte direkt liest.
+
+**Warum.** Das Stockwerk ist die Angabe, die man vor der Tür als Erstes
+braucht; aus Freitext geraten bleibt es eine Heuristik, die manche
+Schreibweise nicht erkennt.
+
+**Offen.** Ob der Bestand umgezogen wird (Stockwerk aus den vorhandenen
+Hinweisen übernehmen) oder das Feld leer beginnt; eine Migration mit
+Datenumzug braucht den Zweitreview (ADR-013 Punkt 9).
+
+### IDEA-PRX-051 — Wochentakt der Liege in der Übersicht
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-10-01 (Design-Handoff, Abschnitt 5a Punkt 5) |
+| Berührt | ADR-004 (Lesepfad, Datenminimierung), ANN-116, `list_day_plan` |
+
+**Stand.** Nicht gebaut. Die Liege-Zeile der Übersicht nennt seit dem
+UI-Redesign nur den heutigen Tag.
+
+**Idee.** Rechts in der Liege-Zeile fünf Punkte Montag bis Freitag: gefüllt
+an den Tagen, an denen ein Besuch die Liege braucht, heute hervorgehoben.
+
+**Warum.** Wer die Liege im Depot holen muss, plant das für die Woche, nicht
+für den Tag.
+
+**Vorsicht.** `list_day_plan` gibt bewusst genau einen Tag her — mit
+Anschrift und Rufnummer. Fünf Aufrufe dafür legten für fünf Punkte die
+Adressen einer ganzen Woche auf das Gerät. Es braucht einen eigenen, engen
+Lesepfad, der nur „Liege ja/nein je Tag" liefert (neue Serverfunktion, Pfad A).
+
+**Offen.** Ob die Woche die Kalenderwoche ist oder die nächsten fünf
+Arbeitstage.
+
+### IDEA-PRX-052 — Bestätigung des Abschlusses auf der Übersicht
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-10-01 (Design-Handoff, Abschnitt 5a Punkt 4) |
+| Berührt | ADR-016, UX-012 (Rückwege), DOK-15 |
+
+**Stand.** Nicht gebaut. Nach „Dokumentieren und abschließen" führt der
+Abschluss weiterhin zum Termin und meldet dort, was geschehen ist; die
+Übersicht zeigt das Ergebnis im Zeitstrahl, aber keine eigene Meldung.
+
+**Idee.** Wer aus der Übersicht abschließt, kehrt dorthin zurück und liest
+oben „Abgeschlossen. Dokumentation als Version 1 festgeschrieben."; der Punkt
+im Zeitstrahl wird zum Häkchen.
+
+**Warum.** Der Abschluss ist der letzte Schritt am Besuch; danach will man
+den nächsten Weg sehen, nicht den erledigten Termin.
+
+**Offen.** Das ändert, wohin der Abschluss zurückkehrt — eine Änderung am
+Ablauf der Dokumentation, die der Handoff sonst ausschließt. Die Meldung trägt
+keinen Namen in der Adresse (ADR-011); ob sie den Namen im Text nennt, ist zu
+entscheiden.

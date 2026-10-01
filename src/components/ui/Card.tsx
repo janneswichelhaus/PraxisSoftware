@@ -1,15 +1,16 @@
-import type { ReactNode } from 'react';
-import { aufklappKopfKlassen } from './aufklappStile';
+import { useState, type ReactNode } from 'react';
+import { aufklappKoepfe, aufklappKopfKlassen } from './aufklappStile';
 
 /**
  * Flächiger Container für einen einzelnen Gegenstand einer Liste.
  *
- * Radius 14, Papier, eine Linie als Rahmen, 24 innen (DS-001). Kein Schatten —
- * dass die Karte über der Seite liegt, tragen Fläche und Linie.
+ * Radius 14, weiß, eine Linie als Rahmen, 16 innen (bis zum Design-Handoff
+ * vom 2026-10-01 waren es 24). Kein Schatten — dass die Karte über der Seite
+ * liegt, tragen Fläche und Linie.
  */
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-card border-line bg-surface border p-6 ${className}`}>{children}</div>
+    <div className={`rounded-card border-line bg-surface border p-4 ${className}`}>{children}</div>
   );
 }
 
@@ -115,23 +116,72 @@ export function Aufklappzeichen() {
  * etwa. `offen` öffnet den Bereich beim ersten Zeichnen; danach entscheidet
  * die Person (ANN-117: der Teamplan ist für das Büro offen, für Behandelnde
  * zu).
+ *
+ * Seit dem Design-Handoff vom 2026-10-01 (Abschnitt 3, dort „Aufklapper")
+ * kennt er vier Dinge mehr; ohne sie sieht er aus wie bisher:
+ *
+ *   * `anzahl` setzt einen Zähler in Klammern hinter den Titel („Erledigt
+ *     heute (3)");
+ *   * `kopf` wählt die Schrift des Kopfs: `text` (14 px, wie bisher), `betont`
+ *     (14 px in 600) oder `label` (12 px Versalien, wie ein Abschnittstitel);
+ *   * `inKarte` macht aus dem Aufklapper eine weiße Karte: Kopf 52 px hoch,
+ *     der Inhalt mit einer Linie darüber;
+ *   * `offenAb="lg"` öffnet ihn beim ersten Zeichnen ab 1024 px - für das,
+ *     was am Rechner Platz hat und am Telefon nur auf Wunsch steht.
  */
 export function Disclosure({
   summary,
+  anzahl,
+  kopf = 'text',
   offen = false,
+  offenAb,
+  inKarte = false,
   children,
 }: {
   summary: ReactNode;
+  anzahl?: number;
+  kopf?: keyof typeof aufklappKoepfe;
   offen?: boolean;
+  offenAb?: 'lg';
+  inKarte?: boolean;
   children: ReactNode;
 }) {
+  // Einmal beim ersten Zeichnen gelesen; danach entscheidet die Person. Wer
+  // das Fenster später breiter zieht, bekommt nichts ungefragt aufgeklappt.
+  const [anfangsOffen] = useState(() => offen || (offenAb === 'lg' && abBreite(BREITE_LG)));
   return (
-    <details open={offen} className="group border-line mt-2 border-t pt-2">
-      <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+    <details
+      open={anfangsOffen}
+      // In der Karte 4 px über und unter dem 44 px hohen Kopf: zusammen die
+      // 52 px des Handoffs, ohne zwei Mindesthöhen am selben Element.
+      className={
+        inKarte
+          ? 'group rounded-card border-line bg-surface border px-4 py-1'
+          : 'group border-line mt-2 border-t pt-2'
+      }
+    >
+      <summary className={`${aufklappKopfKlassen} ${aufklappKoepfe[kopf]}`}>
         <Aufklappzeichen />
         {summary}
+        {/* Der Zähler ist ein eigenes Element neben dem Titel: Der Titel darf
+            eine Überschrift sein, und die gehört nicht in ein `span`. Das
+            Leerzeichen davor steht für Vorlesesoftware da; sichtbar trägt den
+            Abstand der Kopf selbst. */}
+        {anzahl === undefined ? null : <span className="-ml-1"> ({anzahl})</span>}
       </summary>
-      <div className="mt-2">{children}</div>
+      <div className={inKarte ? 'border-line mt-1 border-t pt-3 pb-2.5' : 'mt-2'}>{children}</div>
     </details>
+  );
+}
+
+/** Ab dieser Fensterbreite gilt `offenAb="lg"` - Tailwinds `lg`. */
+const BREITE_LG = 1024;
+
+/** Ist das Fenster mindestens so breit? Ohne `matchMedia` (Tests): nein. */
+function abBreite(pixel: number): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia(`(min-width: ${pixel}px)`).matches
   );
 }

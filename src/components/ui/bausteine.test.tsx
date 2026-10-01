@@ -7,7 +7,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { ButtonLink } from './ButtonLink';
-import { Disclosure } from './Card';
+import { Card, Disclosure } from './Card';
 import { EmptyState, ErrorState } from './Feedback';
 import { PageHeader } from './PageHeader';
 import { RoleBadge } from './RoleBadge';
@@ -21,10 +21,24 @@ import { Statusmeldung } from './Statusmeldung';
 import { SubNav, type SubNavEintrag } from './SubNav';
 import { Symbolknopf } from './Symbolknopf';
 import { Textlink } from './Textlink';
+import { ListRow, ListRows } from './ListRow';
+import { NowMarker } from './NowMarker';
+import { ProgressDots } from './ProgressDots';
+import { StatusMark } from './StatusMark';
+import { Tile, TileGrid, TileRow, TileRows } from './Tile';
+import { TravelBar } from './TravelBar';
+import { zeitstrahlRaster } from './timelineStile';
+import { pufferText, travelLevel, travelPlan } from './travelPlan';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
+
+/** Die Klassen eines Elements als Liste - für Zusicherungen ohne Teiltreffer. */
+function klassenVon(element: Element | null | undefined): string[] {
+  return (element?.getAttribute('class') ?? '').split(/\s+/).filter(Boolean);
+}
 
 describe('Badge', () => {
   /**
@@ -57,6 +71,35 @@ describe('Badge', () => {
     renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
     expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('ist 28 px hoch und setzt 14 px in 600 (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(<Badge ton="warnung">Offen</Badge>);
+    const klassen = screen.getByText('Offen').className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['min-h-7', 'px-3', 'text-sm', 'font-semibold']),
+    );
+    // Die alten Maße stehen nicht daneben - zwei Schriftgrade an einem
+    // Element entscheidet sonst die Reihenfolge im Stylesheet.
+    expect(klassen).not.toContain('text-xs');
+    expect(klassen).not.toContain('font-medium');
+  });
+});
+
+describe('Card', () => {
+  it('ist weiss, hat Radius 14, eine Linie und 16 innen - ohne Schatten (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(
+      <Card className="max-w-xl">
+        <p>Inhalt</p>
+      </Card>,
+    );
+    const klassen = screen.getByText('Inhalt').parentElement!.className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['rounded-card', 'bg-surface', 'border', 'border-line', 'p-4']),
+    );
+    expect(klassen).not.toContain('p-6');
+    expect(klassen).toContain('max-w-xl');
+    expect(klassen.join(' ')).not.toMatch(/shadow|ring/);
+  });
 });
 
 describe('PageHeader', () => {
@@ -81,6 +124,20 @@ describe('PageHeader', () => {
   it('bleibt ohne kompakt beim vollen Seitentitel', () => {
     renderWithProviders(<PageHeader title="Patient:innen" />);
     expect(screen.getByRole('heading', { name: 'Patient:innen' }).className).toContain('text-h2');
+  });
+
+  it('setzt den Titel am Telefon in 26 px und ab 640 px in 32 (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(<PageHeader title="Patient:innen" description="12 Personen" />);
+    const klassen = screen.getByRole('heading', { name: 'Patient:innen' }).className.split(/\s+/);
+    expect(klassen).toContain('text-h2-mobil');
+    expect(klassen).toContain('sm:text-h2');
+    // Ohne Breitenangabe gilt die kleine Stufe - `text-h2` allein wäre 32 px
+    // auf jeder Breite.
+    expect(klassen).not.toContain('text-h2');
+    expect(klassen).toEqual(expect.arrayContaining(['font-extrabold', 'tracking-display']));
+    // Beschreibung: 14 px, leise, 4 px unter dem Titel.
+    const beschreibung = screen.getByText('12 Personen').className.split(/\s+/);
+    expect(beschreibung).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'mt-1']));
   });
 });
 
@@ -362,6 +419,109 @@ describe('Disclosure', () => {
     const details = screen.getByText('Inhalt').closest('details');
     expect(details).toHaveAttribute('open');
     expect(details?.querySelector('summary')?.textContent).toBe('Buchungen 3');
+  });
+
+  it('sieht ohne die neuen Angaben aus wie bisher (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(
+      <Disclosure summary="Rechenvorschrift">
+        <p>Summe der Punkte</p>
+      </Disclosure>,
+    );
+    const kopf = screen.getByText('Rechenvorschrift');
+    expect(klassenVon(kopf)).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm']));
+    expect(klassenVon(kopf)).not.toContain('font-semibold');
+    expect(klassenVon(kopf.closest('details'))).toEqual(
+      expect.arrayContaining(['border-t', 'border-line', 'mt-2', 'pt-2']),
+    );
+    expect(klassenVon(kopf.closest('details'))).not.toContain('rounded-card');
+  });
+
+  it('setzt den Zaehler in Klammern hinter den Titel', () => {
+    renderWithProviders(
+      <Disclosure summary="Erledigt heute" anzahl={3} kopf="betont">
+        <p>Inhalt</p>
+      </Disclosure>,
+    );
+    const kopf = screen.getByText('Inhalt').closest('details')!.querySelector('summary')!;
+    expect(kopf.textContent).toBe('Erledigt heute (3)');
+    expect(klassenVon(kopf)).toEqual(expect.arrayContaining(['text-sm', 'font-semibold']));
+    // Auch null ist ein Zaehler: „(0)" sagt, dass nichts da ist.
+    renderWithProviders(
+      <Disclosure summary="Weitere offene heute" anzahl={0}>
+        <p>Leer</p>
+      </Disclosure>,
+    );
+    expect(screen.getByText('Leer').closest('details')!.querySelector('summary')!.textContent).toBe(
+      'Weitere offene heute (0)',
+    );
+  });
+
+  it('wird mit inKarte zu einer weissen Karte mit einer Linie ueber dem Inhalt', () => {
+    renderWithProviders(
+      <Disclosure summary="Alle Angaben" kopf="label" inKarte>
+        <p>Inhalt</p>
+      </Disclosure>,
+    );
+    const details = screen.getByText('Inhalt').closest('details')!;
+    expect(klassenVon(details)).toEqual(
+      expect.arrayContaining(['group', 'rounded-card', 'border', 'border-line', 'bg-surface']),
+    );
+    // Der Kopf im Stil eines Abschnittstitels, weiter 44 px Tippziel; mit
+    // den 4 px der Karte darüber und darunter sind es die 52 px des Handoffs.
+    const kopf = details.querySelector('summary')!;
+    expect(klassenVon(kopf)).toEqual(
+      expect.arrayContaining(['min-h-11', 'tracking-label', 'text-xs', 'uppercase']),
+    );
+    expect(klassenVon(details)).toEqual(expect.arrayContaining(['px-4', 'py-1']));
+    expect(klassenVon(screen.getByText('Inhalt').parentElement)).toEqual(
+      expect.arrayContaining(['border-t', 'border-line', 'pt-3']),
+    );
+    // Kein Schatten, auch nicht als Karte.
+    expect(details.className).not.toMatch(/shadow|ring/);
+  });
+
+  it('oeffnet mit offenAb="lg" ab 1024 px von Anfang an, darunter nicht', () => {
+    const breit = vi.fn((abfrage: string) => ({ matches: abfrage === '(min-width: 1024px)' }));
+    vi.stubGlobal('matchMedia', breit);
+    const { unmount } = renderWithProviders(
+      <Disclosure summary="Vor der Tür" offenAb="lg">
+        <p>Breit</p>
+      </Disclosure>,
+    );
+    expect(breit).toHaveBeenCalledWith('(min-width: 1024px)');
+    expect(screen.getByText('Breit').closest('details')).toHaveAttribute('open');
+    unmount();
+
+    vi.stubGlobal(
+      'matchMedia',
+      vi.fn(() => ({ matches: false })),
+    );
+    renderWithProviders(
+      <Disclosure summary="Vor der Tür" offenAb="lg">
+        <p>Schmal</p>
+      </Disclosure>,
+    );
+    expect(screen.getByText('Schmal').closest('details')).not.toHaveAttribute('open');
+  });
+
+  it('bleibt ohne matchMedia zu und fragt ohne offenAb gar nicht nach der Breite', () => {
+    // jsdom kennt kein matchMedia; dort darf nichts werfen.
+    renderWithProviders(
+      <Disclosure summary="Vor der Tür" offenAb="lg">
+        <p>Ohne</p>
+      </Disclosure>,
+    );
+    expect(screen.getByText('Ohne').closest('details')).not.toHaveAttribute('open');
+
+    const abfrage = vi.fn(() => ({ matches: true }));
+    vi.stubGlobal('matchMedia', abfrage);
+    renderWithProviders(
+      <Disclosure summary="Seltenes">
+        <p>Zu</p>
+      </Disclosure>,
+    );
+    expect(abfrage).not.toHaveBeenCalled();
+    expect(screen.getByText('Zu').closest('details')).not.toHaveAttribute('open');
   });
 });
 
@@ -938,6 +1098,618 @@ describe('Rueckfrage', () => {
     expect(onBestaetigen).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole('group')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Wird gelöscht …' })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * Die Bausteine aus dem Design-Handoff vom 2026-10-01 (Abschnitte 3 und 5a,
+ * `docs/design/handoff-2026-10-01-uebersicht-termin-akte.md`). Die Namen im
+ * Handoff sind deutsch; im Code heißen neue Bausteine englisch
+ * (`docs/DEVELOPMENT.md`, „Benennung im Code"): Wegbalken = `TravelBar`,
+ * Zeile = `ListRow`, Statuszeichen = `StatusMark`, Fortschrittspunkte =
+ * `ProgressDots`, Jetzt-Marke = `NowMarker`. Kachel und Aufklapper sind die
+ * erweiterten `Tile` und `Disclosure`.
+ */
+describe('Wegbalken (TravelBar)', () => {
+  it('stuft nach dem Puffer ein: bis 0 zu spaet, bis 3 und unter 5 knapp, ab 5 frei', () => {
+    expect([-4, 0].map(travelLevel)).toEqual(['late', 'late']);
+    expect([1, 3].map(travelLevel)).toEqual(['tight', 'tight']);
+    expect(travelLevel(4)).toBe('narrow');
+    expect([5, 28].map(travelLevel)).toEqual(['clear', 'clear']);
+  });
+
+  it('rechnet eingeplante Zeit, Puffer, spaeteste Abfahrt und den Anteil der Fahrt', () => {
+    expect(travelPlan('08:30', '09:10', 12)).toEqual({
+      geplantMin: 40,
+      pufferMin: 28,
+      abfahrt: '08:58',
+      anteil: 30,
+      stufe: 'clear',
+    });
+    // Reicht die Zeit nicht, ist der Puffer negativ und die Fahrt füllt die Spur.
+    expect(travelPlan('12:00', '12:08', 12)).toEqual({
+      geplantMin: 8,
+      pufferMin: -4,
+      abfahrt: '11:56',
+      anteil: 100,
+      stufe: 'late',
+    });
+    expect(travelPlan('10:10', '10:26', 12)).toMatchObject({ pufferMin: 4, stufe: 'narrow' });
+    expect(travelPlan('11:00', '11:15', 12)).toMatchObject({ pufferMin: 3, stufe: 'tight' });
+  });
+
+  it('behauptet ohne Zeitfenster keine Zahl, sondern gilt als zu spaet', () => {
+    // Termine ohne Abstand, ein Ziel vor dem Start, eine Angabe, die keine
+    // Uhrzeit ist: nichts eingeplant, die Fahrt füllt die Spur.
+    for (const [von, bis] of [
+      ['10:00', '10:00'],
+      ['10:30', '10:00'],
+      ['—', '09:00'],
+    ] as const) {
+      expect(travelPlan(von, bis, 5)).toMatchObject({ geplantMin: 0, anteil: 100, stufe: 'late' });
+    }
+    // Eine Abfahrt vor Mitternacht gibt es nicht.
+    expect(travelPlan('00:00', '00:05', 20).abfahrt).toBe('00:00');
+    // Ohne lesbares Ziel bleibt die Angabe stehen, wie sie kam.
+    expect(travelPlan('09:00', 'offen', 5).abfahrt).toBe('offen');
+  });
+
+  it('nennt den Puffer als Zahl und sagt, wenn er fehlt', () => {
+    expect(pufferText(28)).toBe('28 min Puffer');
+    expect(pufferText(0)).toBe('0 min Puffer');
+    expect(pufferText(-4)).toBe('4 min zu knapp');
+  });
+
+  it('zeigt die grosse Fassung mit Kopf, beiden Enden und dreispaltiger Legende', async () => {
+    const { container } = renderWithProviders(
+      <TravelBar
+        von={{ zeit: '08:30', label: 'Ende Erika Beispiel' }}
+        bis={{ zeit: '09:10', label: 'Max Mustermann' }}
+        fahrtMin={12}
+      />,
+    );
+    const karte = screen.getByRole('region', { name: 'Nächster Weg' });
+    expect(klassenVon(karte)).toEqual(
+      expect.arrayContaining(['rounded-card', 'border', 'border-line', 'bg-surface']),
+    );
+    expect(screen.getByRole('heading', { level: 2, name: 'Nächster Weg' })).toBeInTheDocument();
+
+    // Kopf: leise, ohne Zeichen, die Abfahrt fett und tabellarisch.
+    const kopf = screen.getByText('Abfahrt spätestens').parentElement!;
+    expect(kopf.textContent).toBe('Abfahrt spätestens 08:58');
+    expect(klassenVon(kopf)).toContain('text-ink-muted');
+    expect(klassenVon(screen.getByText('08:58'))).toEqual(
+      expect.arrayContaining(['font-bold', 'tabular-nums']),
+    );
+
+    expect(screen.getByText('08:30')).toBeInTheDocument();
+    expect(screen.getByText('Ende Erika Beispiel')).toBeInTheDocument();
+    expect(screen.getByText('09:10')).toBeInTheDocument();
+    expect(screen.getByText('Max Mustermann')).toBeInTheDocument();
+
+    // Legende: Puffer in seiner Farbe, Fahrt in Tinte, Summe leise.
+    expect(klassenVon(screen.getByText('28 min Puffer'))).toEqual(
+      expect.arrayContaining(['text-accent', 'font-semibold']),
+    );
+    expect(klassenVon(screen.getByText('≈ 12 min Rad'))).toEqual(
+      expect.arrayContaining(['text-ink', 'font-semibold']),
+    );
+    expect(screen.getByText('40 min eingeplant')).toBeInTheDocument();
+
+    // Der Balken: Spur in der Pufferfarbe, die Fahrt mittig darauf mit ihrem
+    // Anteil als Breite - und für Vorlesesoftware ausgeblendet.
+    const fahrt = karte.querySelector<HTMLElement>('[style]')!;
+    expect(fahrt.style.width).toBe('30%');
+    expect(klassenVon(fahrt)).toEqual(
+      expect.arrayContaining(['bg-accent', 'left-1/2', '-translate-x-1/2', 'rounded-pill']),
+    );
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-accent-soft');
+    expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
+    // Keine Marker, keine Kreise, keine Bewegung, kein Schatten.
+    expect(fahrt.parentElement!.children).toHaveLength(2);
+    expect(karte.innerHTML).not.toMatch(/transition|animate|shadow|ring-/);
+
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('sagt die Stufe als Wort: knapp in Orange, zu spaet in Rot ohne Uhrzeit', () => {
+    const { unmount } = renderWithProviders(
+      <TravelBar
+        von={{ zeit: '11:00', label: 'Ende Berta Bestand' }}
+        bis={{ zeit: '11:15', label: 'Carl Muster' }}
+        fahrtMin={12}
+      />,
+    );
+    let kopf = screen.getByText('Knapp, Abfahrt spätestens').parentElement!;
+    expect(kopf.textContent).toBe('! Knapp, Abfahrt spätestens 11:03');
+    expect(klassenVon(kopf)).toContain('text-warnung');
+    // Das Zeichen ist Schmuck; die Bedeutung trägt das Wort.
+    expect(kopf.querySelector('[aria-hidden="true"]')?.textContent).toBe('! ');
+    expect(klassenVon(screen.getByText('3 min Puffer'))).toContain('text-warnung');
+    let fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
+    expect(klassenVon(fahrt)).toContain('bg-warnung');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-warnung-soft');
+    unmount();
+
+    renderWithProviders(
+      <TravelBar
+        von={{ zeit: '12:00', label: 'Ende Carl Muster' }}
+        bis={{ zeit: '12:08', label: 'Dora Probe' }}
+        fahrtMin={12}
+      />,
+    );
+    kopf = screen.getByText('Zu spät, Abfahrt sofort').parentElement!;
+    expect(kopf.textContent).toBe('! Zu spät, Abfahrt sofort');
+    expect(klassenVon(kopf)).toContain('text-danger');
+    // „Sofort" ist die Angabe - eine Abfahrtszeit in der Vergangenheit nicht.
+    expect(screen.queryByText(/11:56/)).toBeNull();
+    expect(klassenVon(screen.getByText('4 min zu knapp'))).toContain('text-danger');
+    expect(screen.getByText('8 min eingeplant')).toBeInTheDocument();
+    fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
+    expect(fahrt.style.width).toBe('100%');
+    expect(klassenVon(fahrt)).toContain('bg-danger');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-danger-soft');
+  });
+
+  it('nimmt das hellere Orange nur als Flaeche, nie als Textfarbe', () => {
+    renderWithProviders(
+      <TravelBar
+        von={{ zeit: '10:10', label: 'Ende Max Mustermann' }}
+        bis={{ zeit: '10:26', label: 'Berta Bestand' }}
+        fahrtMin={12}
+      />,
+    );
+    const karte = screen.getByRole('region');
+    expect(klassenVon(karte.querySelector('[style]'))).toContain('bg-warnung-mittel');
+    expect(karte.innerHTML).not.toContain('text-warnung-mittel');
+    expect(klassenVon(screen.getByText('4 min Puffer'))).toContain('text-warnung');
+    expect(screen.getByText('Knapp, Abfahrt spätestens').parentElement!.textContent).toBe(
+      '! Knapp, Abfahrt spätestens 10:14',
+    );
+  });
+
+  it('nimmt Titel und Ebene von der Seite und rundet die Fahrzeit', () => {
+    renderWithProviders(
+      <TravelBar
+        titel="Nächster Weg danach"
+        ebene={3}
+        von={{ zeit: '10:10', label: 'Ende Max Mustermann' }}
+        bis={{ zeit: '11:00', label: 'Berta Bestand' }}
+        fahrtMin={11.6}
+      />,
+    );
+    expect(
+      screen.getByRole('heading', { level: 3, name: 'Nächster Weg danach' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('≈ 12 min Rad')).toBeInTheDocument();
+    expect(screen.getByText('38 min Puffer')).toBeInTheDocument();
+  });
+
+  it('zeigt klein nur den schmalen Balken und eine Zeile in der Stufenfarbe', () => {
+    const { container, unmount } = renderWithProviders(
+      <TravelBar
+        size="klein"
+        von={{ zeit: '09:30', label: '' }}
+        bis={{ zeit: '10:00', label: '' }}
+        fahrtMin={9}
+      />,
+    );
+    expect(screen.queryByRole('region')).toBeNull();
+    expect(screen.queryByRole('heading')).toBeNull();
+    const zeile = screen.getByText(/min Rad/);
+    expect(zeile.textContent).toBe('≈ 9 min Rad · 21 min Puffer');
+    expect(klassenVon(zeile)).toEqual(
+      expect.arrayContaining(['text-xs', 'font-semibold', 'text-accent']),
+    );
+    // Uhrzeiten und Namen stehen im Zeitstrahl daneben, nicht noch einmal hier.
+    expect(container.textContent).not.toMatch(/09:30|10:00/);
+    const fahrt = container.querySelector<HTMLElement>('[style]')!;
+    expect(fahrt.style.width).toBe('30%');
+    // Spur 4 px, Fahrt 6 px.
+    expect(klassenVon(fahrt)).toEqual(expect.arrayContaining(['h-1.5', 'bg-accent']));
+    expect(klassenVon(fahrt.previousElementSibling)).toEqual(
+      expect.arrayContaining(['h-1', 'bg-accent-soft']),
+    );
+    expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
+    unmount();
+
+    renderWithProviders(
+      <TravelBar
+        size="klein"
+        von={{ zeit: '12:15', label: '' }}
+        bis={{ zeit: '12:30', label: '' }}
+        fahrtMin={19}
+      />,
+    );
+    const knapp = screen.getByText(/min Rad/);
+    expect(knapp.textContent).toBe('! ≈ 19 min Rad · 4 min zu knapp');
+    expect(klassenVon(knapp)).toContain('text-danger');
+    expect(knapp.querySelector('[aria-hidden="true"]')?.textContent).toBe('! ');
+  });
+});
+
+describe('Kachel (Tile)', () => {
+  it('traegt Beschriftung, Wert, Nebenzeile und Handlung in den Massen des Handoffs', async () => {
+    const { container } = renderWithProviders(
+      <TileGrid spalte="kachel">
+        <Tile
+          label="Anschrift"
+          zusatz="72070 Tuebingen"
+          aktion={
+            <Textlink alleinstehend to="/navigation">
+              Navigation starten
+            </Textlink>
+          }
+        >
+          Beispielstrasse 12
+        </Tile>
+      </TileGrid>,
+    );
+    const beschriftung = screen.getByText('Anschrift');
+    expect(beschriftung.tagName).toBe('DT');
+    expect(klassenVon(beschriftung)).toEqual(
+      expect.arrayContaining(['text-xs', 'font-semibold', 'uppercase', 'tracking-label']),
+    );
+    // Radius 14, innen 12/14 aus den Tokens, mindestens 72 px hoch.
+    const kachel = beschriftung.parentElement!;
+    expect(klassenVon(kachel)).toEqual(
+      expect.arrayContaining(['rounded-card', 'px-kachel-x', 'py-kachel-y', 'min-h-18', 'border']),
+    );
+    // Der Wert folgt der Beschriftung direkt - so finden ihn auch die Seiten.
+    const wert = beschriftung.nextElementSibling!;
+    expect(wert.tagName).toBe('DD');
+    expect(wert).toHaveTextContent('Beispielstrasse 12');
+    expect(klassenVon(wert)).toEqual(
+      expect.arrayContaining(['text-base', 'font-semibold', 'leading-[1.3]', 'text-ink']),
+    );
+    const zusatz = screen.getByText('72070 Tuebingen');
+    expect(zusatz.tagName).toBe('DD');
+    expect(klassenVon(zusatz)).toEqual(expect.arrayContaining(['text-sm', 'text-ink-muted']));
+    const handlung = screen.getByRole('link', { name: 'Navigation starten' });
+    expect(handlung.closest('dd')).not.toBeNull();
+    expect(klassenVon(handlung)).toContain('min-h-11');
+    expect(kachel.className).not.toMatch(/shadow|ring/);
+
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('legt die neutrale Kachel mit Linie auf den Seitengrund, die uebrigen ohne Rahmen auf ihre Flaeche', () => {
+    renderWithProviders(
+      <TileGrid>
+        <Tile label="Wann">Do 01.10.2026</Tile>
+        <Tile label="Grundlage" ton="akzent" zusatz="gedeckt">
+          Termin 2 von 6
+        </Tile>
+        <Tile label="Erstaufnahme offen" ton="warnung" zusatz="Einwilligung fehlt">
+          2 Angaben fehlen
+        </Tile>
+        <Tile label="Absage" ton="kritisch">
+          Absage durch die Praxis
+        </Tile>
+      </TileGrid>,
+    );
+    const flaeche = (label: string) => klassenVon(screen.getByText(label).parentElement);
+    expect(flaeche('Wann')).toEqual(expect.arrayContaining(['bg-canvas', 'border-line']));
+    expect(flaeche('Grundlage')).toEqual(
+      expect.arrayContaining(['bg-accent-soft', 'border-transparent']),
+    );
+    expect(flaeche('Erstaufnahme offen')).toEqual(
+      expect.arrayContaining(['bg-warnung-soft', 'border-transparent']),
+    );
+    expect(flaeche('Absage')).toEqual(
+      expect.arrayContaining(['bg-danger-soft', 'border-transparent']),
+    );
+
+    // Beschriftung und Nebenzeile im Ton der Kachel.
+    expect(klassenVon(screen.getByText('Grundlage'))).toContain('text-accent');
+    expect(klassenVon(screen.getByText('gedeckt'))).toContain('text-accent');
+    expect(klassenVon(screen.getByText('Einwilligung fehlt'))).toContain('text-warnung');
+
+    // Ein Zustand trägt sein Zeichen vor der Beschriftung, ausgeblendet für
+    // Vorlesesoftware; neutral und Akzent sind kein Zustand.
+    const warnung = screen.getByText('Erstaufnahme offen');
+    expect(warnung.textContent).toBe('! Erstaufnahme offen');
+    expect(warnung.querySelector('[aria-hidden="true"]')?.textContent).toBe('! ');
+    expect(screen.getByText('Absage').textContent).toBe('× Absage');
+    expect(screen.getByText('Wann').textContent).toBe('Wann');
+    expect(screen.getByText('Grundlage').textContent).toBe('Grundlage');
+  });
+
+  it('kommt ohne Nebenzeile und Handlung mit Beschriftung und Wert aus', () => {
+    renderWithProviders(
+      <TileGrid>
+        <Tile label="Wann">Do 01.10.2026</Tile>
+      </TileGrid>,
+    );
+    const kachel = screen.getByText('Wann').parentElement!;
+    expect(kachel.querySelectorAll('dd')).toHaveLength(1);
+  });
+
+  it('haelt Zeilen im Wert einer Kachel im normalen Gewicht', () => {
+    renderWithProviders(
+      <TileGrid>
+        <Tile label="Absage" ton="kritisch">
+          <TileRows>
+            <TileRow label="Absagegrund">Wunsch der Patient:in</TileRow>
+          </TileRows>
+        </Tile>
+      </TileGrid>,
+    );
+    // Die Zeile steht im Wert (600) und erbte ihn sonst.
+    expect(klassenVon(screen.getByText('Absagegrund').parentElement)).toContain('font-normal');
+  });
+
+  it('bricht die Reihe nach der gewaehlten Mindestbreite um', () => {
+    const reihe = (spalte?: 'breit' | 'kachel' | 'akte') => {
+      const { container, unmount } = renderWithProviders(
+        <TileGrid {...(spalte ? { spalte } : {})}>
+          <Tile label="Wann">Do</Tile>
+        </TileGrid>,
+      );
+      const klassen = container.querySelector('dl')!.className;
+      unmount();
+      return klassen;
+    };
+    // Ohne Angabe die Reihe aus UX-005a: am Telefon eine Spalte.
+    expect(reihe()).toContain('17rem');
+    expect(reihe()).toContain('gap-3');
+    expect(reihe('breit')).toBe(reihe());
+    // Die Reihen des Handoffs teilen sich die Breite, mit 8 px Abstand.
+    expect(reihe('kachel')).toMatch(/auto-fit,minmax\(min\(100%,150px\),1fr\)/);
+    expect(reihe('kachel')).toContain('gap-2');
+    expect(reihe('akte')).toMatch(/auto-fit,minmax\(min\(100%,160px\),1fr\)/);
+  });
+});
+
+describe('Zeile (ListRow)', () => {
+  it('ist mit `to` als ganze Zeile ein Link von 56 px', async () => {
+    const { container } = renderWithProviders(
+      <ListRows>
+        <ListRow
+          zeit="10:00"
+          titel="Max Mustermann"
+          meta="Beispielstrasse 12 · Anfahrt ≈ 9 min"
+          status={<Badge ton="positiv">Dokumentiert</Badge>}
+          to="/termine/1"
+        />
+      </ListRows>,
+    );
+    const liste = screen.getByRole('list');
+    expect(klassenVon(liste)).toEqual(
+      expect.arrayContaining(['rounded-card', 'border', 'border-line', 'bg-surface', 'px-4']),
+    );
+    const link = screen.getByRole('link');
+    expect(link).toHaveAttribute('href', '/termine/1');
+    // Zeit, Titel, Nebenzeile und Status gehören alle zum einen Ziel.
+    expect(link).toHaveTextContent('10:00');
+    expect(link).toHaveTextContent('Max Mustermann');
+    expect(link).toHaveTextContent('Beispielstrasse 12 · Anfahrt ≈ 9 min');
+    expect(link).toHaveTextContent('Dokumentiert');
+    expect(klassenVon(link)).toEqual(
+      expect.arrayContaining(['grid', 'min-h-14', 'py-2', 'hover:bg-surface-sunken']),
+    );
+    // Über den Innenabstand der Karte hinaus, der Fokusrahmen innen.
+    expect(klassenVon(link)).toEqual(
+      expect.arrayContaining(['-mx-4', 'px-4', 'focus-visible:-outline-offset-2']),
+    );
+    expect(klassenVon(screen.getByText('10:00'))).toEqual(
+      expect.arrayContaining(['text-liste', 'font-semibold', 'tabular-nums', 'text-ink']),
+    );
+    expect(klassenVon(screen.getByText('Max Mustermann'))).toEqual(
+      expect.arrayContaining(['text-base', 'font-semibold', 'text-ink']),
+    );
+    expect(klassenVon(screen.getByText('Beispielstrasse 12 · Anfahrt ≈ 9 min'))).toEqual(
+      expect.arrayContaining(['text-sm', 'text-ink-muted']),
+    );
+
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('ist mit onClick ein Knopf, der kein Formular abschickt', async () => {
+    const user = userEvent.setup();
+    const onClick = vi.fn();
+    renderWithProviders(
+      <ListRows>
+        <ListRow zeit="11:15" titel="Berta Bestand" onClick={onClick} />
+      </ListRows>,
+    );
+    const knopf = screen.getByRole('button', { name: /Berta Bestand/ });
+    expect(knopf).toHaveAttribute('type', 'button');
+    // Ein Knopf wird nur so breit wie sein Inhalt - die Zeile soll die ganze
+    // Breite der Karte füllen.
+    expect(klassenVon(knopf)).toEqual(expect.arrayContaining(['w-[calc(100%+2rem)]', 'text-left']));
+    await user.click(knopf);
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('ist ohne Ziel weder Link noch Knopf und vertieft sich nicht', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow zeit="08:30" titel="Erika Beispiel" />
+      </ListRows>,
+    );
+    expect(screen.queryByRole('link')).toBeNull();
+    expect(screen.queryByRole('button')).toBeNull();
+    const zeile = screen.getByText('Erika Beispiel').closest('div')!;
+    expect(klassenVon(zeile)).toContain('min-h-14');
+    expect(zeile.className).not.toContain('hover:');
+  });
+
+  it('trennt ab der zweiten Zeile mit einer Linie', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow zeit="08:30" titel="Erika Beispiel" />
+        <ListRow zeit="10:00" titel="Max Mustermann" />
+      </ListRows>,
+    );
+    for (const eintrag of screen.getAllByRole('listitem')) {
+      expect(klassenVon(eintrag)).toEqual(
+        expect.arrayContaining(['border-t', 'border-line', 'first:border-t-0']),
+      );
+    }
+  });
+
+  it('daempft Erledigtes: Zeit und Titel leise, der Titel in 500', () => {
+    renderWithProviders(
+      <ListRows>
+        <ListRow zeit="08:30" titel="Erika Beispiel" meta="Testweg 7" gedaempft />
+      </ListRows>,
+    );
+    expect(klassenVon(screen.getByText('08:30'))).toContain('text-ink-muted');
+    const titel = klassenVon(screen.getByText('Erika Beispiel'));
+    expect(titel).toEqual(expect.arrayContaining(['text-ink-muted', 'font-medium']));
+    expect(titel).not.toContain('font-semibold');
+  });
+
+  it('rueckt dicht zusammen und kuerzt lange Namen, statt umzubrechen', () => {
+    renderWithProviders(
+      <ListRows rahmen={false}>
+        <ListRow
+          dicht
+          zeit="08:00"
+          titel="Frida Test mit einem langen Doppelnamen"
+          meta="Tim Teamleitung · Praxis"
+          status={<StatusMark ton="positiv">erledigt</StatusMark>}
+        />
+      </ListRows>,
+    );
+    // Ohne Rahmen: Die Liste steht schon in einer Karte.
+    expect(screen.getByRole('list').className).not.toContain('rounded-card');
+    const zeile = screen.getByText('08:00').parentElement!;
+    expect(klassenVon(zeile)).toEqual(expect.arrayContaining(['min-h-12', 'py-1.5']));
+    expect(klassenVon(zeile)).not.toContain('min-h-14');
+    expect(klassenVon(screen.getByText('08:00'))).toContain('text-sm');
+    expect(klassenVon(screen.getByText('Frida Test mit einem langen Doppelnamen'))).toEqual(
+      expect.arrayContaining(['text-liste', 'truncate']),
+    );
+    expect(klassenVon(screen.getByText('Tim Teamleitung · Praxis'))).toEqual(
+      expect.arrayContaining(['text-sm', 'truncate']),
+    );
+    expect(zeile).toHaveTextContent('erledigt');
+  });
+});
+
+describe('Statuszeichen (StatusMark)', () => {
+  it('setzt Zeichen und Wort ohne Pille, mit den Zeichen des Badge', () => {
+    renderWithProviders(
+      <>
+        <StatusMark ton="positiv">erledigt</StatusMark>
+        <StatusMark ton="warnung">nicht angetroffen</StatusMark>
+        <StatusMark ton="kritisch">abgesagt</StatusMark>
+        <StatusMark>bestätigt</StatusMark>
+      </>,
+    );
+    const erledigt = screen.getByText('erledigt');
+    expect(erledigt.textContent).toBe('✓erledigt');
+    expect(klassenVon(erledigt)).toEqual(
+      expect.arrayContaining(['text-sm', 'font-semibold', 'text-positiv']),
+    );
+    // Keine Pille: weder Fläche noch Radius.
+    expect(erledigt.className).not.toMatch(/\bbg-|rounded/);
+    expect(screen.getByText('nicht angetroffen').textContent).toBe('!nicht angetroffen');
+    expect(klassenVon(screen.getByText('nicht angetroffen'))).toContain('text-warnung');
+    expect(screen.getByText('abgesagt').textContent).toBe('×abgesagt');
+    expect(klassenVon(screen.getByText('abgesagt'))).toContain('text-danger');
+    // Ein bestätigter Termin ist kein Zustand, der ein Zeichen bräuchte.
+    expect(screen.getByText('bestätigt').textContent).toBe('bestätigt');
+    expect(klassenVon(screen.getByText('bestätigt'))).toContain('text-ink-muted');
+  });
+
+  it('haelt das Zeichen aus dem Vorlesetext heraus', () => {
+    renderWithProviders(<StatusMark ton="positiv">erledigt</StatusMark>);
+    expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
+
+describe('Fortschrittspunkte (ProgressDots)', () => {
+  it('zeigt je Termin einen Punkt und daneben den Satz', () => {
+    const { container } = renderWithProviders(
+      <ProgressDots punkte={['erledigt', 'nicht_angetroffen', 'naechster', 'offen', 'abgesagt']}>
+        1 von 5 Besuchen erledigt
+      </ProgressDots>,
+    );
+    const punkte = Array.from(container.querySelectorAll('[data-punkt]'));
+    expect(punkte.map((punkt) => punkt.getAttribute('data-punkt'))).toEqual([
+      'erledigt',
+      'nicht_angetroffen',
+      'naechster',
+      'offen',
+      'abgesagt',
+    ]);
+    const [erledigt, nichtAngetroffen, naechster, offen, abgesagt] = punkte.map(klassenVon);
+    // Erledigt gefüllt, der nächste hohl in der Hauptfarbe, spätere hohl und leise.
+    expect(erledigt).toEqual(expect.arrayContaining(['bg-accent', 'border-accent']));
+    expect(naechster).toEqual(expect.arrayContaining(['bg-surface', 'border-accent']));
+    expect(offen).toEqual(expect.arrayContaining(['bg-surface-sunken', 'border-line-strong']));
+    expect(abgesagt).toEqual(expect.arrayContaining(['bg-danger', 'border-danger']));
+    expect(nichtAngetroffen).toEqual(expect.arrayContaining(['bg-warnung', 'border-warnung']));
+    // 12 px, rund, Farbwechsel in 200 ms.
+    for (const klassen of [erledigt, naechster, offen]) {
+      expect(klassen).toEqual(
+        expect.arrayContaining(['size-3', 'border-2', 'rounded-pill', 'duration-200']),
+      );
+    }
+    // Die Punkte sind Schmuck; was zählt, steht als Satz daneben.
+    expect(punkte[0]!.parentElement).toHaveAttribute('aria-hidden', 'true');
+    expect(klassenVon(screen.getByText('1 von 5 Besuchen erledigt'))).toEqual(
+      expect.arrayContaining(['text-sm', 'text-ink-muted']),
+    );
+  });
+
+  it('laesst die Punktreihe weg, wenn es keinen Termin gibt', () => {
+    const { container } = renderWithProviders(
+      <ProgressDots punkte={[]}>Heute keine Besuche</ProgressDots>,
+    );
+    expect(container.querySelector('[data-punkt]')).toBeNull();
+    expect(container.querySelector('[aria-hidden="true"]')).toBeNull();
+    expect(screen.getByText('Heute keine Besuche')).toBeInTheDocument();
+  });
+});
+
+describe('Jetzt-Marke (NowMarker)', () => {
+  it('ist ein Eintrag im Raster des Zeitstrahls und wird als „Jetzt, … Uhr" gelesen', async () => {
+    const { container } = renderWithProviders(
+      <ol>
+        <NowMarker zeit="08:45" />
+      </ol>,
+    );
+    const eintrag = screen.getByRole('listitem');
+    // Dieselben Spalten wie die Termine, sonst steht der Punkt neben der Schiene.
+    expect(klassenVon(eintrag)).toEqual(expect.arrayContaining(zeitstrahlRaster.split(' ')));
+    expect(zeitstrahlRaster).toContain('grid-cols-[52px_20px_minmax(0,1fr)]');
+
+    // Vorgelesen wird ein Satz; Uhrzeit, Punkt und Linie sind Bild.
+    expect(screen.getByText('Jetzt, 08:45 Uhr')).toHaveClass('sr-only');
+    const sichtbar = screen.getByText('08:45');
+    expect(sichtbar).toHaveAttribute('aria-hidden', 'true');
+    expect(klassenVon(sichtbar)).toEqual(
+      expect.arrayContaining(['text-accent', 'text-xs', 'font-bold', 'tabular-nums']),
+    );
+    // 8-px-Punkt und 2-px-Linie in der Hauptfarbe.
+    const flaechen = Array.from(eintrag.querySelectorAll('.bg-accent')).map(klassenVon);
+    expect(flaechen).toHaveLength(2);
+    expect(flaechen[0]).toEqual(expect.arrayContaining(['size-2', 'rounded-pill']));
+    expect(flaechen[1]).toEqual(expect.arrayContaining(['h-0.5']));
+
+    await pruefeBarrierefreiheit(container);
+  });
+
+  it('laesst am Ende des Strahls den Abstand darunter weg', () => {
+    const { unmount } = renderWithProviders(
+      <ol>
+        <NowMarker zeit="17:00" />
+      </ol>,
+    );
+    const inhalt = () => screen.getByText('Jetzt, 17:00 Uhr').parentElement!;
+    expect(inhalt().className).toContain('pb-');
+    unmount();
+
+    renderWithProviders(
+      <ol>
+        <NowMarker zeit="17:00" letzter />
+      </ol>,
+    );
+    expect(inhalt().className).not.toContain('pb-');
   });
 });
 

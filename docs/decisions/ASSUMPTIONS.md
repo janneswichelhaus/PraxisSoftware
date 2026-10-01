@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-09-30.
+Zuletzt aktualisiert: 2026-10-01.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 69 Einträge):
+Zusatz `Prüfpaket` (heute 70 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -1511,7 +1511,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozes
 
 Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10) · erledigt · Wiedervorlage: —
 
-**Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen.
+**Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen. **Seit dem Design-Handoff vom 2026-10-01** steht der Tag als Zeitstrahl da: Der nächste Besuch ist die ausgeklappte Karte, die Vorschau „Danach" ist entfallen, und die Liege-Zeile lautet „Ja · ab n. Besuch Uhrzeit" oder „Nein"; die Zählung gilt unverändert.
 
 **Begründung.** §9 und `UMBAU.md` (Ein Behandlungstag, Punkte 1, 2 und 4): ruhige Oberfläche, erster Weg, Vorschau auf den nächsten, Liege schon beim Losfahren sichtbar. Die Zählung folgt dem, was man am Rad vor sich hat — „der zweite Besuch heute" meint auch nach dem ersten noch denselben. Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss. Unsicher: ob Jannes nach einem erledigten Besuch lieber ab dem nächsten neu zählt.
 
@@ -1763,13 +1763,13 @@ Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverw
 
 Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 4) · erledigt · Wiedervorlage: —
 
-**Annahme.** Was für einen Besuch aufs Rad muss, steht als **von Hand gepflegte Liste an der Person** — höchstens zehn Einträge zu je 1 bis 60 Zeichen, ohne Doppel —, nicht am einzelnen Termin und nie aus Befund oder Dokumentation abgeleitet. Sie liegt bei den internen Versorgungsangaben neben der Behandlungsliege, erbt deren Rollenschnitt (alle vier Praxisrollen setzen und lesen, nie das Patientenkonto) und Datenklasse (Patientenakte), gehört zur Auskunft nach Art. 15 und wird wie die Liege mit `patient.updated` und dem Feldnamen protokolliert. Die Übersicht zeigt „Heute mitnehmen“ **zusammengezählt und ohne Person** über die noch anzufahrenden Besuche; mit Person steht die Liste im Kurzblick am Termin und in der Akte.
+**Annahme.** Was für einen Besuch aufs Rad muss, steht als **von Hand gepflegte Liste an der Person** — höchstens zehn Einträge zu je 1 bis 60 Zeichen, ohne Doppel —, nicht am einzelnen Termin und nie aus Befund oder Dokumentation abgeleitet. Sie liegt bei den internen Versorgungsangaben neben der Behandlungsliege, erbt deren Rollenschnitt (alle vier Praxisrollen setzen und lesen, nie das Patientenkonto) und Datenklasse (Patientenakte), gehört zur Auskunft nach Art. 15 und wird wie die Liege mit `patient.updated` und dem Feldnamen protokolliert. Die Übersicht zeigte „Heute mitnehmen“ **zusammengezählt und ohne Person** über die noch anzufahrenden Besuche; **seit dem Design-Handoff vom 2026-10-01 entfällt diese Zeile** (Entscheidung Jannes: die einzige Tagesfrage der Übersicht ist die Liege). Mit Person steht die Liste weiter im Kurzblick am Termin und in der Akte.
 
 **Begründung.** `IDEA-PRX-035` lässt offen, ob von Hand oder abgeleitet und ob am Termin, an der Person oder am Tag; ohne diese Entscheidung war nichts spezifizierbar. Abgeleitet scheidet aus: ein Vorschlag „aus den letzten Befunden“ wäre eine Auswertung klinischer Inhalte (ADR-006 Punkt 2 und 4). An der Person, weil sich das Material von Besuch zu Besuch wiederholt — eine Liste je Termin müsste jedes Mal neu entstehen und wäre am Serientermin leer. Ohne Namen am Tag, weil die Übersicht im Treppenhaus mitgelesen wird und „Kinesiotape für Frau X“ etwas über ihre Behandlung sagt (§4.6). Unsicher: ob die Praxis Material je Besuch braucht (etwa „diesmal den neuen Plan“) — dann trüge der Termin eine zweite, kurze Liste.
 
-**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Zusammenzählung `mitnehmenHeute` in `src/features/today/tagesstart.ts`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
+**Anker.** Spalte, Formregel `app.take_along_items_valid` und `public.set_take_along_items` in `supabase/migrations/20260929110000_prx_007_take_along.sql`; Anzeige am Termin `src/features/appointments/Kurzblick.tsx`; Pflege `src/features/patients/Mitnehmen.tsx`; Tests in `supabase/tests/take-along.test.ts`.
 
-**Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Namen in der Übersicht: `mitnehmenHeute` um die Person erweitern · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.
+**Änderungspfad.** Material je Termin: eigene Spalte an `appointments` mit derselben Formregel, Kurzblick und Tagesliste lesen beide · Aufwand `mittel`. Zusammenzählung wieder in der Übersicht: `mitnehmenHeute` und seine Zeile aus der Git-Historie (bis zum UI-Redesign Schritt 3) · Aufwand `klein`. Andere Grenzen: nur `app.take_along_items_valid` und die Konstanten in `src/features/patients/api.ts` · Aufwand `klein`.
 
 ### ANN-139 — Abrechnungslage am Termin: Position für alle, Empfänger und offene Rechnungen nur für owner und office
 
@@ -2266,3 +2266,51 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `fremdePerson` in `src/features/appointments/AppointmentHeadline.tsx`.
 
 **Änderungspfad.** Person immer zeigen: die Bedingung `fremdePerson` entfernen · Aufwand `klein`. Status immer sichtbar: den Zweig für `confirmed` in derselben Datei durch das Abzeichen ersetzen · Aufwand `klein`.
+
+### ANN-194 — Die Übersicht ruft die Route des eigenen Tages beim Öffnen ab
+
+Datenschutz · entschieden (Jannes) · 2026-10-01 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung zusammen mit B2 und dem Gate aus ADR-019 Punkt 9; Kontingent beim Anbieter nach den ersten Feldtagen
+
+**Annahme.** Die Übersicht ruft für die angemeldete Person beim Öffnen die Punkte der eigenen Tagesroute (`list_day_route`), den Startort der Praxis und **eine** Route über alle Stopps ab, solange noch ein Besuch mit Ort aussteht — bisher geschah das dort erst beim Aufklappen der Karte. Hinaus gehen wie in Tour und Kalender nur Koordinaten in Fahrtreihenfolge und das Fahrprofil; gespeichert wird nichts. Die Karte selbst (Kacheln aus dem Browser) lädt weiterhin erst auf Tipp.
+
+**Begründung.** Der Design-Handoff vom 2026-10-01 (Entscheidung Jannes: Wegbalken mit Farbstufen nach Puffer) braucht die Fahrzeit, bevor losgefahren wird; ohne Abruf beim Öffnen gäbe es keinen Balken. ADR-019 Punkt 12, 13, 15 und 16 sind unverändert erfüllt, „nur auf Aktion" gilt nach dem ADR für den Handoff, nicht für Routen; neu ist allein die Häufigkeit: ein Aufruf je Besuch der Übersicht, im Zwischenspeicher der Seite gehalten und 30 Sekunden nach dem Verlassen verworfen. Unsicher: ob die Prüfung die häufigeren Aufrufe anders bewertet als in Tour und Kalender, und ob das Kontingent des Anbieters sie trägt.
+
+**Anker.** `FAHRZEITEN_BEIM_OEFFNEN` und `useTagesfahrzeiten` in `src/features/today/fahrzeiten.ts`; Datenweg 3 in `docs/datenschutz/kartendienst.md`; Tests `src/features/today/fahrzeiten.test.ts` und „schickt nur Koordinaten und Profil" in `src/features/today/MyDayPage.test.tsx`.
+
+**Änderungspfad.** Wieder nur auf Tipp: `FAHRZEITEN_BEIM_OEFFNEN` auf `false` — Wegbalken, Übergänge und „Anfahrt ≈ …" entfallen ohne weitere Änderung · Aufwand `klein`. Abruf auf Tipp mit Wegbalken: ein Knopf „Fahrzeiten zeigen", der den Abruf je Seitenbesuch freigibt · Aufwand `klein`.
+
+### ANN-195 — Der Wegbalken rechnet in echten Minuten, die Rundung aus §8.1 bleibt beim Server
+
+Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
+
+**Annahme.** Der Puffer im Wegbalken ist die Zeit zwischen zwei Terminen minus der geschätzten Fahrzeit, in Minuten und **ohne** Rundung auf das Praxisraster; die Stufen sind bis 0 rot, bis 3 dunkles Orange, unter 5 helleres Orange, ab 5 grün (Entscheidung Jannes im Handoff). Der Balken ist eine Auskunft für unterwegs und sperrt nichts. Die Angebotsregel aus §8.1 — frühester Beginn auf das Raster aufgerundet — gilt unverändert in `check_travel_buffers` und damit in Tour und Kalender (ANN-097).
+
+**Begründung.** „Abfahrt spätestens 08:58" ist eine Frage an die Uhr, nicht an das Raster; gerundet stünde dort eine Zeit, die niemand so fährt. Der Preis: Dieselbe Lücke kann in der Tour „1 Min. zu knapp" heißen (gerundet) und in der Übersicht „2 min Puffer" (echt). Beides stimmt für seine Frage — Planung dort, Fahrt hier. Unsicher: ob Jannes eine Zahl für beides will.
+
+**Anker.** `travelLevel` und `travelPlan` in `src/components/ui/travelPlan.ts`; Tests „Wegbalken (TravelBar)" in `src/components/ui/bausteine.test.tsx`.
+
+**Änderungspfad.** Andere Schwellen: `travelLevel` · Aufwand `klein`. Gerundeter Puffer wie in der Tour: die Übersicht reicht ihre Paare an `check_travel_buffers` und gibt dem Balken das Ergebnis · Aufwand `mittel`.
+
+### ANN-196 — Der Wegbalken beginnt am Ende des Termins davor und zählt danach herunter; der erste Weg beginnt jetzt
+
+Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
+
+**Annahme.** Der große Wegbalken beginnt am geplanten Ende des Termins davor. Gibt es keinen — der erste Weg des Tages — oder ist dieses Ende schon vorbei, beginnt er **jetzt**: Der Puffer ist dann, was bis zum Beginn des nächsten Termins nach Abzug der Fahrzeit noch bleibt, und schrumpft mit der Uhr. Der erste Weg rechnet vom verorteten Standort der Praxis (wie die Tagesroute, ANN-096); ohne verorteten Standort gibt es für ihn keinen Balken.
+
+**Begründung.** Der Handoff nennt für den ersten Weg eine „Startort-Zeit"; einen geplanten Aufbruch kennt die Anwendung aber nicht, und eine erfundene Uhrzeit rechnete einen Puffer vor, den es nicht gibt. „Jetzt" ist die einzige Zeit, die stimmt. Nach dem Ende des Termins davor gilt dasselbe: Wer um 10:40 noch beim Besuch von 09:30 ist, soll „Zu spät, Abfahrt sofort" lesen und nicht den geplanten Puffer. Ein persönlicher Startort (Wohnung) bleibt ausgeschlossen (§20, ANN-096). Unsicher: ob Jannes morgens lieber einen festen Aufbruch sähe, etwa den Arbeitszeitbeginn.
+
+**Anker.** `naechsterWeg` in `src/features/today/tagesstart.ts`; Tests „Der naechste Weg" in `src/features/today/tagesstart.test.ts`.
+
+**Änderungspfad.** Fester Aufbruch aus dem Arbeitszeitbeginn: `naechsterWeg` bekommt die Uhrzeit hereingereicht, die Übersicht liest den Wochenplan · Aufwand `mittel`. Immer der geplante Abstand: die Bedingung `jetzt <= …` in `naechsterWeg` entfernen · Aufwand `klein`.
+
+### ANN-197 — Das Stockwerk kommt vom Anfang des Zugangshinweises, bis es ein eigenes Feld gibt
+
+Technik · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign); eigenes Feld als `IDEA-PRX-050`
+
+**Annahme.** Die Stockwerk-Pille der Tageskarte zeigt die **erste Angabe** des Zugangshinweises, wenn sie die Form „[Zahl.] Ebene [Seite]" hat (etwa „2. OG links", „EG", „Hochparterre") und vor einem Komma, Semikolon, Gedankenstrich oder Zeilenumbruch steht. Der Rest steht als Zugangshinweis hinter dem Info-Knopf. Alles andere bleibt ganz im Zugangshinweis — lieber keine Pille als eine falsche. Gespeichert oder umgeschrieben wird nichts.
+
+**Begründung.** Der Handoff verlangt die Pille und ausdrücklich keine Migration („zunächst aus dem Anfang des Zugangshinweises"). Eine enge Regel hält den Fehler klein: Ein nicht erkanntes Stockwerk steht weiter im Hinweis, einen Tipp entfernt; ein falsch erkanntes gibt es nur, wenn der Hinweis wirklich so anfängt. Unsicher: wie die Praxis Stockwerke tatsächlich schreibt — das zeigt die Sichtung.
+
+**Anker.** `zugangMitStockwerk` in `src/features/today/stockwerk.ts`; Tests `src/features/today/stockwerk.test.ts`.
+
+**Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`.

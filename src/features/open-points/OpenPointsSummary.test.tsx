@@ -46,9 +46,21 @@ describe('OpenPointsSummary', () => {
       ),
     ).toBeInTheDocument();
     // Die Zeile selbst ist der Link (UX-005h).
-    expect(screen.getByRole('link', { name: /^Offene Punkte: 2 überfällige/ })).toHaveAttribute(
-      'href',
-      '/offen',
+    const zeile = screen.getByRole('link', { name: /^Offene Punkte: 2 überfällige/ });
+    expect(zeile).toHaveAttribute('href', '/offen');
+    // Design-Handoff 2026-10-01: eine Karte von 60 px, die sich beim
+    // Überfahren in die Akzentfläche legt - ohne Schatten.
+    const klassen = zeile.className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['min-h-15', 'rounded-card', 'bg-surface', 'hover:bg-accent-soft']),
+    );
+    expect(zeile.className).not.toMatch(/shadow|ring/);
+    expect(screen.getByText('Offene Punkte').className).toContain('font-semibold');
+    // Rechts die Summe als Bild; gelesen wird, was sie zählt.
+    const summe = screen.getByText('4');
+    expect(summe).toHaveAttribute('aria-hidden', 'true');
+    expect(zeile).toHaveAccessibleName(
+      'Offene Punkte: 2 überfällige Aufgaben · 1 Aufgabe heute fällig · 1 Verordnung zu erfassen',
     );
   });
 
