@@ -252,7 +252,7 @@ function Abschluss({
           </span>
         </Link>
         <div className="min-w-0">
-          <h1 className="text-ink truncate text-[15px] leading-tight font-bold">
+          <h1 className="text-ink text-liste truncate leading-tight font-bold">
             {patientName(appointment)}
           </h1>
           <p className="text-ink-muted truncate text-[13px] leading-tight">{kopfzeile}</p>
@@ -434,7 +434,7 @@ function Abschluss({
         {verlaufOffen && appointment.patient_id ? (
           <div
             id="bisherige-eintraege-blatt"
-            className="bg-surface border-line-strong rounded-t-card sm:border-line fixed inset-x-0 bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-20 flex max-h-[62dvh] flex-col border-t sm:static sm:z-auto sm:max-h-none sm:w-[clamp(240px,32%,320px)] sm:shrink-0 sm:rounded-none sm:border-t-0 sm:border-l"
+            className="bg-surface border-line-strong max-sm:rounded-t-card sm:border-line fixed inset-x-0 bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-20 flex max-h-[62dvh] flex-col border-t sm:static sm:z-auto sm:max-h-none sm:w-[clamp(240px,32%,320px)] sm:shrink-0 sm:border-t-0 sm:border-l"
           >
             <BisherigeEintraege
               patientId={appointment.patient_id}
