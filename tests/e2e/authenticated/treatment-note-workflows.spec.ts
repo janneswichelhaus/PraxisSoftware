@@ -273,7 +273,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await expect(rueckfrage(page)).toBeVisible();
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
-    await rueckfrage(page).getByRole('button', { name: 'Speichern und weitergehen' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Speichern und weiter' }).click();
 
     // Erst gespeichert, dann weitergegangen - und ausdruecklich nur als
     // Entwurf: Der Termin bleibt bestaetigt (ADR-016).
@@ -288,14 +288,13 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   test('haelt das Zurueck des Browsers an', async ({ page }) => {
     // Das Zurueck des Browsers blockt der Router nur innerhalb desselben
     // Dokuments. Deshalb fuehrt der Weg hier nicht ueber `page.goto`, sondern
-    // ueber einen Link der Anwendung: Am abgeschlossenen Termin steht
-    // „Dokumentation anlegen" (am offenen seit UX-005g nur der Hauptknopf
-    // zum Abschluss, der eine andere Seite oeffnet).
+    // ueber einen Link der Anwendung: Am abgeschlossenen Termin steht „Doku"
+    // im Abschnitt „Dokumentation" (Zyklus 3; der Haken schliesst vorher ab).
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(9));
-    await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
+    await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 
@@ -304,7 +303,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await expect(rueckfrage(page)).toBeVisible();
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
-    await rueckfrage(page).getByRole('button', { name: 'Verwerfen und weitergehen' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Verwerfen', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText('Synthetisch: Zurueck-Taste.')).toHaveCount(0);
   });
@@ -325,12 +324,12 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await abmeldenKnopf.click();
 
-    await expect(rueckfrage(page)).toContainText('Beim Abmelden geht er verloren');
+    await expect(rueckfrage(page)).toContainText('Text noch nicht gespeichert – abmelden?');
     await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     // Die Sitzung besteht noch: Die Kopfzeile ist da, die Anmeldemaske nicht.
     await expect(abmeldenKnopf).toBeVisible();
 
-    await rueckfrage(page).getByRole('button', { name: 'Hier bleiben' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Weiterschreiben' }).click();
     await expect(rueckfrage(page)).toHaveCount(0);
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(text);
 
@@ -369,12 +368,8 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await pruefeBreiten(page, async () => {
       await expect(rueckfrage(page)).toBeVisible();
-      for (const name of [
-        'Speichern und weitergehen',
-        'Verwerfen und weitergehen',
-        'Hier bleiben',
-      ]) {
-        const knopf = rueckfrage(page).getByRole('button', { name });
+      for (const name of ['Speichern und weiter', 'Verwerfen', 'Weiterschreiben']) {
+        const knopf = rueckfrage(page).getByRole('button', { name, exact: true });
         await expect(knopf).toBeVisible();
         const hoehe = await knopf.evaluate((el) => el.getBoundingClientRect().height);
         expect(hoehe).toBeGreaterThanOrEqual(44);
