@@ -1,8 +1,8 @@
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
@@ -11,7 +11,6 @@ import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
-  formatLocalDate,
   formatLocalTime,
   formatLocalTimeRange,
   staffName,
@@ -19,15 +18,51 @@ import {
 import type { Patient } from '@/features/patients/api';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
+  fetchDocumentationDeadline,
   fetchPatientTreatmentNotesPage,
   naechsteAkteSeite,
-  treatmentNoteStatusLabels,
   type AkteCursor,
   type PatientTreatmentNotesEntry,
   type RecordAppointment,
   type TreatmentNote,
 } from './api';
-import { ENTWURF_ZUSATZ, FREITEXT } from './format';
+import { FREITEXT, fristDatum } from './format';
+
+/** „28.09.2026" in der Zeit der Praxis. */
+function kurzesDatum(iso: string, zone: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: zone,
+  }).format(new Date(iso));
+}
+
+/** Der Monat eines Termins als Schlüssel und Überschrift: „2026-09", „September 2026". */
+function monatVon(iso: string, zone: string): { schluessel: string; titel: string } {
+  const tag = new Intl.DateTimeFormat('en-CA', { timeZone: zone }).format(new Date(iso));
+  const titel = new Intl.DateTimeFormat('de-DE', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: zone,
+  }).format(new Date(iso));
+  return { schluessel: tag.slice(0, 7), titel };
+}
+
+/** Termine nach Monat, in der Reihenfolge der Liste (neueste zuerst). */
+function nachMonat(
+  termine: readonly PatientTreatmentNotesEntry[],
+): { schluessel: string; titel: string; termine: PatientTreatmentNotesEntry[] }[] {
+  const gruppen: { schluessel: string; titel: string; termine: PatientTreatmentNotesEntry[] }[] =
+    [];
+  for (const termin of termine) {
+    const monat = monatVon(termin.starts_at, termin.organization_time_zone);
+    const letzte = gruppen[gruppen.length - 1];
+    if (letzte && letzte.schluessel === monat.schluessel) letzte.termine.push(termin);
+    else gruppen.push({ ...monat, termine: [termin] });
+  }
+  return gruppen;
+}
 
 /**
  * Kopfzeile eines Termins in der Akte.
@@ -58,7 +93,7 @@ function TerminKopf({ termin, rueckweg }: { termin: RecordAppointment; rueckweg:
           // ist der Kopf der Karte, keine Seitenüberschrift.
           className="text-accent text-liste font-semibold hover:underline"
         >
-          {formatLocalDate(termin.starts_at, zone)}
+          {kurzesDatum(termin.starts_at, zone)}
         </Link>
         {ausgefallen ? (
           <Badge ton={appointmentStatusTon[termin.appointment_status]}>
@@ -155,34 +190,34 @@ function AkteEintrag({
   termin,
   note,
   rueckweg,
+  fristTage,
 }: {
   termin: RecordAppointment;
   note: TreatmentNote;
   /** Der Weg zurück in den Verlauf der Akte - für den Änderungsverlauf (DOK-01). */
   rueckweg: string;
+  /** Die Frist der Praxis in Tagen, sobald geladen (ADR-016 Punkt 7). */
+  fristTage: number | undefined;
 }) {
+  const frist = fristDatum(termin.starts_at, termin.organization_time_zone, fristTage);
   const istNachtrag = note.addendum_to_note_id !== null;
   const final = note.status === 'final';
 
   return (
     <div className="mt-3">
-      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18). UX-005e: Ein
-          finalisierter Eintrag ist in der Akte der Regelfall und trägt kein
-          Etikett mehr - nur der Entwurf ist markiert; die Herkunftszeile nennt
-          die Finalisierung. */}
+      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18): „✓ Version n"
+          oder „! Entwurf · Frist …" (Design-Handoff 2026-10-01, Abschnitt 7). */}
       <div className="flex flex-wrap items-center gap-2">
         {istNachtrag ? <Badge>Nachtrag</Badge> : null}
-        {!final ? <Badge>{treatmentNoteStatusLabels[note.status]}</Badge> : null}
+        {final ? (
+          <Badge ton="positiv">{`Version ${note.version_count}`}</Badge>
+        ) : (
+          <Badge ton="warnung">{frist ? `Entwurf · Frist ${frist}` : 'Entwurf'}</Badge>
+        )}
         {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018) steht in der
             Akte wie am Termin: Ob behandelt wurde, entscheidet später über
             eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
         {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
-        {note.status === 'draft' ? (
-          <span className="text-ink-muted text-xs">{ENTWURF_ZUSATZ}</span>
-        ) : null}
-        {final && note.version_count > 1 ? (
-          <span className="text-ink-muted text-xs">{note.version_count} Versionen</span>
-        ) : null}
       </div>
 
       {/* BEF-078: Der Eintrag steht in einem eigenen, abgesetzten Feld -
@@ -193,7 +228,15 @@ function AkteEintrag({
         {note.content}
       </p>
 
-      <p className="text-ink-muted mt-2 text-sm leading-relaxed">{akteHerkunft(note, termin)}</p>
+      <p className="text-ink-muted mt-2 text-sm leading-relaxed">
+        {akteHerkunft(note, termin)}
+        {/* DOK-02: Der Entwurf sagt, dass er von selbst festgeschrieben wird. */}
+        {note.status === 'draft'
+          ? frist
+            ? ` · wird am ${frist} automatisch festgeschrieben`
+            : ' · wird automatisch festgeschrieben'
+          : null}
+      </p>
 
       {note.version_count > 0 ? (
         <Textlink
@@ -219,7 +262,13 @@ function AkteEintrag({
  * zuerst. Jeder gelesene Eintrag wird serverseitig protokolliert (ADR-010,
  * ADR-016 Punkt 9); die Seitengroesse begrenzt, wie viel ein Aufruf offenlegt.
  */
-function Behandlungsdokumentation({ patient }: { patient: Patient }) {
+function Behandlungsdokumentation({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  const organisation = user.profile.organization_id;
+  const { data: fristTage } = useQuery({
+    queryKey: ['documentation-deadline', organisation],
+    queryFn: () => fetchDocumentationDeadline(organisation),
+    retry: false,
+  });
   const seiten = useInfiniteQuery({
     queryKey: ['patient-treatment-notes', patient.id],
     queryFn: ({ pageParam }) => fetchPatientTreatmentNotesPage(patient.id, pageParam),
@@ -236,6 +285,10 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
 
   const termine: PatientTreatmentNotesEntry[] = seiten.data?.pages.flat() ?? [];
   const verlauf = `/patienten/${patient.id}/verlauf`;
+  const monate = nachMonat(termine);
+  // Die Sprungleiste lohnt erst ab zwei Monaten (Abschnitt 7). Sie kennt nur,
+  // was geladen ist; ältere Monate kommen mit „Ältere Termine anzeigen" dazu.
+  const mitLeiste = monate.length >= 2;
 
   return (
     // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
@@ -247,8 +300,33 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
           vor dem Lesen, nicht danach. */}
       <Section
         titel="Behandlungsdokumentation"
-        hinweis="Jeder gelesene Eintrag wird protokolliert."
+        hinweis={mitLeiste ? undefined : 'Jeder gelesene Eintrag wird protokolliert.'}
       >
+        {/* Sprungleiste (Design-Handoff 2026-10-01, Abschnitt 7): bleibt beim
+            Scrollen oben stehen, je Monat ein Ziel; der Hinweis auf das
+            Protokoll steht dann hier statt unter der Überschrift. */}
+        {mitLeiste ? (
+          <nav
+            aria-label="Springen zu"
+            className="bg-canvas sticky top-14 z-10 -mx-1 mb-3 flex items-center gap-x-2 gap-y-1 overflow-x-auto px-1 py-2 sm:flex-wrap"
+          >
+            <span className="text-ink-muted tracking-label shrink-0 text-xs font-semibold whitespace-nowrap uppercase">
+              Springen zu
+            </span>
+            {monate.map((monat) => (
+              <a
+                key={monat.schluessel}
+                href={`#monat-${monat.schluessel}`}
+                className="border-line-strong text-accent hover:bg-accent-soft rounded-pill inline-flex min-h-11 shrink-0 items-center border px-3 text-sm font-semibold whitespace-nowrap transition-colors"
+              >
+                {monat.titel}
+              </a>
+            ))}
+            <span className="text-ink-muted ml-auto shrink-0 text-[13px] whitespace-nowrap">
+              Lesen wird protokolliert
+            </span>
+          </nav>
+        ) : null}
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
         {seiten.isError ? (
@@ -260,34 +338,51 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
         ) : null}
 
         {seiten.data && termine.length === 0 ? (
-          <p className="text-ink-muted border-line text-liste border-t pt-4">
-            Für diese Person gibt es noch keine Termine in der Akte.
-          </p>
+          <EmptyState title="Noch kein Eintrag." inKarte />
         ) : null}
 
-        {termine.length > 0 ? (
-          // BEF-078: Je Termin eine eigene Karte statt Zeilen in einem Kasten -
-          // man sieht, wo ein Termin endet und der nächste beginnt.
-          <ol className="flex flex-col gap-3">
-            {termine.map((termin) => (
-              <li
-                key={termin.appointment_id}
-                // Innen 14/16 (Design-Handoff 2026-10-01, Abschnitt 7).
-                className="border-line bg-surface rounded-card border px-4 py-3.5"
-              >
-                <TerminKopf termin={termin} rueckweg={verlauf} />
+        {/* Nach Monat gruppiert (Abschnitt 7); je Termin eine Karte (BEF-078). */}
+        {monate.map((monat) => (
+          <section
+            key={monat.schluessel}
+            id={`monat-${monat.schluessel}`}
+            aria-labelledby={`monat-titel-${monat.schluessel}`}
+            // Die Sprungleiste steht beim Ziel noch oben - der Titel darunter.
+            className="mt-5 scroll-mt-32 first-of-type:mt-0"
+          >
+            <h3
+              id={`monat-titel-${monat.schluessel}`}
+              className="text-ink-muted tracking-label mb-2 text-xs font-semibold uppercase"
+            >
+              {monat.titel}
+            </h3>
+            <ol className="flex flex-col gap-3">
+              {monat.termine.map((termin) => (
+                <li
+                  key={termin.appointment_id}
+                  // Innen 14/16 (Design-Handoff 2026-10-01, Abschnitt 7).
+                  className="border-line bg-surface rounded-card border px-4 py-3.5"
+                >
+                  <TerminKopf termin={termin} rueckweg={verlauf} />
 
-                {termin.notes.length === 0 ? (
-                  <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
-                ) : (
-                  termin.notes.map((note) => (
-                    <AkteEintrag key={note.id} termin={termin} note={note} rueckweg={verlauf} />
-                  ))
-                )}
-              </li>
-            ))}
-          </ol>
-        ) : null}
+                  {termin.notes.length === 0 ? (
+                    <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
+                  ) : (
+                    termin.notes.map((note) => (
+                      <AkteEintrag
+                        key={note.id}
+                        termin={termin}
+                        note={note}
+                        rueckweg={verlauf}
+                        fristTage={fristTage}
+                      />
+                    ))
+                  )}
+                </li>
+              ))}
+            </ol>
+          </section>
+        ))}
 
         <WeitereSeite
           sichtbar={Boolean(seiten.hasNextPage)}
@@ -320,5 +415,5 @@ export function PatientRecordDocumentation({
   user: CurrentUser;
 }) {
   if (!canReadTreatmentNote(user.roles)) return null;
-  return <Behandlungsdokumentation patient={patient} />;
+  return <Behandlungsdokumentation patient={patient} user={user} />;
 }

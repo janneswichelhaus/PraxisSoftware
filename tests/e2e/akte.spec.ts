@@ -76,3 +76,28 @@ test('ohne Hinweise, Grundlage und Kontakt gibt es weder Kachelreihe noch Spalte
   await expect(page.getByText('Zugangshinweis', { exact: true })).toHaveCount(0);
   await expect(page.getByRole('complementary', { name: 'Zur Person' })).toHaveCount(0);
 });
+
+// Design-Handoff 2026-10-01, Abschnitt 7: Behandlungsverlauf nach Monat.
+test.describe('Akte: Behandlungsverlauf nach Monat', () => {
+  for (const breite of [375, 1280]) {
+    test(`hält die Sprungleiste unter der Kopfzeile und läuft nicht über (${breite} px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto('/tests/e2e/fixtures/akte.html?bereich=verlauf');
+      const leiste = page.getByRole('navigation', { name: 'Springen zu' });
+      await expect(leiste).toBeVisible();
+      await page.getByRole('link', { name: 'Juli 2026' }).click();
+      await expect(page.getByRole('heading', { level: 3, name: 'Juli 2026' })).toBeInViewport();
+      // Die Leiste steht unter der Kopfzeile (56 px), nicht von ihr verdeckt.
+      const box = (await leiste.boundingBox())!;
+      expect(box.y).toBeGreaterThanOrEqual(55);
+      expect(box.y).toBeLessThanOrEqual(60);
+      expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        ),
+      ).toBe(false);
+    });
+  }
+});
