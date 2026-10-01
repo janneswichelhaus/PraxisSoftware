@@ -430,10 +430,9 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     ))}
                   </ul>
                 )}
+                {/* Ein Satz statt dreier: Der Weg steht an jedem Namen (UX-005g). */}
                 <p className="text-ink-muted mt-3 text-xs leading-relaxed">
-                  Wer teilnimmt, wird hier nicht geändert: Das ist eine einzelne Teilnahme und keine
-                  Fehlzeit. Sie lässt sich am jeweiligen Termin austauschen oder absagen &ndash; die
-                  Fehlzeit findet dann ohne diese Person statt.
+                  Teilnahme am jeweiligen Termin ändern.
                 </p>
               </div>
             }

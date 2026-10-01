@@ -4,7 +4,6 @@ import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as ZugangApi from '@/features/platform-access/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
-import { roleLabel } from '@/components/ui/roleLabels';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 const STAMMDATEN = `/patienten/${PATIENT_ID}/stammdaten`;
@@ -84,16 +83,76 @@ describe('Stammdaten der Akte', () => {
     },
   );
 
-  it('zeigt Anschrift, Versorgungsbeginn und Status', () => {
+  it('zeigt Anschrift und Versorgungsbeginn - ohne Status- und Geburtsdatumszeile (UX-005e)', () => {
     renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
     expect(screen.getByText('Musterweg 12b, 72070 Tübingen')).toBeInTheDocument();
     expect(screen.getByText('05.01.2026')).toBeInTheDocument();
-    expect(screen.getByText('Aktiv')).toBeInTheDocument();
+    // Der Kopf der Akte traegt Geburtsdatum und - als Ausnahme - den Status;
+    // der Regelfall „Aktiv" bekommt hier keine Zeile.
+    expect(screen.queryByText('Aktiv')).not.toBeInTheDocument();
+    expect(screen.queryByText('Status')).not.toBeInTheDocument();
+    expect(screen.queryByText('Geburtsdatum')).not.toBeInTheDocument();
+    expect(screen.queryByText('19.07.1985')).not.toBeInTheDocument();
+  });
+
+  // UX-005e: Ein leerer Wert bekommt keine Zeile, ein Satz ersetzt vier
+  // Gedankenstriche; die Kartenposition steht nur, solange sie fehlt.
+  describe('leere Werte (UX-005e)', () => {
+    it('laesst leere Kontaktwege weg und zeigt nur, was da ist', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+
+      expect(screen.getByText('Telefon (privat)')).toBeInTheDocument();
+      expect(screen.getByText('E-Mail')).toBeInTheDocument();
+      expect(screen.queryByText('Mobil')).not.toBeInTheDocument();
+      expect(screen.queryByText('—')).not.toBeInTheDocument();
+      expect(screen.queryByText('Keine Kontaktdaten hinterlegt')).not.toBeInTheDocument();
+    });
+
+    it('sagt in einem Satz, wenn kein Kontaktweg hinterlegt ist', () => {
+      renderWithProviders(
+        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['office'])} />,
+      );
+
+      expect(screen.getByText('Kontakt')).toBeInTheDocument();
+      expect(screen.getByText('Keine Kontaktdaten hinterlegt')).toBeInTheDocument();
+      expect(screen.queryByText('E-Mail')).not.toBeInTheDocument();
+      expect(screen.queryByText('Adresse')).not.toBeInTheDocument();
+    });
+
+    it('zeigt die Kartenposition nur, solange die Adresse nicht verortet ist', () => {
+      const { unmount } = renderWithProviders(
+        <Stammdaten patient={aktiv} user={testUser(['office'])} />,
+      );
+      expect(screen.getByText('Kartenposition')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Adresse verorten' })).toBeInTheDocument();
+      unmount();
+
+      renderWithProviders(
+        <Stammdaten
+          patient={{ ...aktiv, geocode_precision: 'address' }}
+          user={testUser(['office'])}
+        />,
+      );
+      expect(screen.queryByText('Kartenposition')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Verortet/)).not.toBeInTheDocument();
+    });
+
+    it('laesst den Abschnitt „Person" weg, wenn er keine Zeile haette', () => {
+      renderWithProviders(
+        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
+      );
+      expect(screen.queryByText('Person')).not.toBeInTheDocument();
+    });
+
+    it('schreibt keinen Protokollhinweis unter die Stammdaten', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
+      expect(screen.queryByText(/werden protokolliert/)).not.toBeInTheDocument();
+    });
   });
 
   describe('Hausbesuch und Praxisangaben (PAT-005)', () => {
-    it('zeigt Zugangshinweis, Besonderheit und feste Therapeut:in', () => {
+    it('zeigt feste Therapeut:in und Bemerkung - Zugang und Besonderheit stehen im Kopf (UX-005e)', () => {
       renderWithProviders(
         <Stammdaten
           patient={testPatient({
@@ -107,12 +166,14 @@ describe('Stammdaten der Akte', () => {
         />,
       );
 
-      expect(screen.getByText('2. OG links, Klingel "Mustermann".')).toBeInTheDocument();
-      // Ein Name für das Feld, wie im Formular (PAT-07).
-      expect(screen.getByText('Zugangshinweis')).toBeInTheDocument();
-      expect(screen.getByText('Hund im Flur.')).toBeInTheDocument();
       expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
       expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
+      // Der Kopf der Akte traegt beide Hinweise, sobald sie gesetzt sind
+      // (HausbesuchHinweise) - der Bereich wiederholt sie nicht.
+      expect(screen.queryByText('Zugangshinweis')).not.toBeInTheDocument();
+      expect(screen.queryByText('2. OG links, Klingel "Mustermann".')).not.toBeInTheDocument();
+      expect(screen.queryByText('Besonderheit')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hund im Flur.')).not.toBeInTheDocument();
     });
 
     it('laesst den Abschnitt weg, wenn die Sicht nichts liefert', () => {
@@ -177,19 +238,16 @@ describe('Stammdaten der Akte', () => {
       });
     });
 
-    // PAT-05: Statt einer Lücke erfahren die übrigen Praxisrollen, wer eine
-    // Anfrage bearbeitet.
+    // UX-005e: Die übrigen Praxisrollen sehen den Abschnitt gar nicht - ein
+    // Satz darüber, wer etwas darf, ist kein Inhalt der Akte.
     it.each([['therapist'], ['team_lead'], ['office']] as const)(
-      'blendet ihn fuer %s aus und sagt, wer die Auskunft erteilt',
+      'zeigt %s den Abschnitt nicht',
       (role) => {
         renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
 
         expect(screen.queryByRole('link', { name: 'Auskunft und Löschverlangen' })).toBeNull();
-        expect(
-          screen.getByText(
-            `Auskunft nach Art. 15 DSGVO und Löschverlangen sind der Rolle „${roleLabel('owner')}“ vorbehalten.`,
-          ),
-        ).toBeInTheDocument();
+        expect(screen.queryByText('Betroffenenrechte')).not.toBeInTheDocument();
+        expect(screen.queryByText(/vorbehalten/)).not.toBeInTheDocument();
       },
     );
 
@@ -207,21 +265,13 @@ describe('Stammdaten der Akte', () => {
       expect(screen.getByRole('button', { name: 'Als inaktiv markieren' })).toBeInTheDocument();
     });
 
-    // PAT-05: Der Hinweis zählt, was die Rolle tatsächlich sieht.
-    it('nennt beide Vorgänge nur, wenn beide zu sehen sind', () => {
-      const { unmount } = renderWithProviders(
-        <Stammdaten patient={aktiv} user={testUser(['owner'])} />,
-      );
-      expect(screen.getByText(/Beide sind rücknehmbar\./)).toBeInTheDocument();
-      unmount();
-
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-      expect(screen.queryByText(/Beide sind rücknehmbar/)).not.toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'Ein Vorgang, der eine Akte aus dem laufenden Betrieb nimmt. Er ist rücknehmbar.',
-        ),
-      ).toBeInTheDocument();
+    // UX-005e: Kein erklärender Satz unter „Verwaltung" - was ein Vorgang tut,
+    // sagt seine Rückfrage.
+    it('erklärt die Verwaltung nicht in einem Dauersatz', () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['owner'])} />);
+      expect(screen.getByText('Verwaltung')).toBeInTheDocument();
+      expect(screen.queryByText(/rücknehmbar\./)).not.toBeInTheDocument();
+      expect(screen.queryByText(/aus dem laufenden Betrieb/)).not.toBeInTheDocument();
     });
 
     it('blendet die Aktion fuer therapist aus, obwohl die Akte lesbar ist', () => {
@@ -340,14 +390,19 @@ describe('Stammdaten der Akte', () => {
       ).not.toBeInTheDocument();
     });
 
-    it('nennt die laufende Versorgung als Text', () => {
+    // UX-005e: Der Regelfall bekommt keine Zeile - die Zeile „Abschluss"
+    // entsteht erst mit dem Abschluss.
+    it('fuehrt bei laufender Versorgung keine Zeile „Abschluss"', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
-      expect(screen.getByText('Laufende Versorgung')).toBeInTheDocument();
+      expect(screen.getByText('Beginn')).toBeInTheDocument();
+      expect(screen.queryByText('Abschluss')).not.toBeInTheDocument();
+      expect(screen.queryByText('Laufende Versorgung')).not.toBeInTheDocument();
     });
 
     it('nennt Abschlusstag und Ende der Aufbewahrung als Text', () => {
       renderWithProviders(<Stammdaten patient={abgeschlossen} user={testUser(['therapist'])} />);
 
+      expect(screen.getByText('Abschluss')).toBeInTheDocument();
       expect(screen.getByText(/12\.03\.2026 – Aufbewahrung bis 2036/)).toBeInTheDocument();
     });
 
@@ -428,8 +483,10 @@ describe('Stammdaten der Akte', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
 
       expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
-      // Seit PRX-013 ist „nein“ eine Entscheidung, kein Standard (ANN-143).
-      expect(screen.getByText('Noch nicht entschieden')).toBeInTheDocument();
+      // Seit PRX-013 ist „nein“ eine Entscheidung, kein Standard (ANN-143);
+      // unentschieden stehen nur die beiden Handlungen da (UX-005e).
+      expect(screen.queryByText('Noch nicht entschieden')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Liege nicht nötig' })).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
 
       await waitFor(() => expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true));

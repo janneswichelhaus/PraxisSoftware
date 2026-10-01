@@ -277,9 +277,11 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
     <>
       <Rueckweg standard="/kalender" />
 
+      {/* Ohne den Satz zu Patient:in und Verordnung: Er erklärte, was eine
+          Fehlzeit nicht ist (UX-005g). */}
       <PageHeader
         title="Dauerfehlzeit eintragen"
-        description={`Dieselbe Fehlzeit über mehrere Wochen – ${FEHLZEIT_BEISPIELE}. Ohne Patient:in und ohne Verordnung; es entsteht keine Behandlungsleistung.`}
+        description={`Dieselbe Fehlzeit über mehrere Wochen – ${FEHLZEIT_BEISPIELE}.`}
       />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
@@ -312,10 +314,8 @@ export function NewEventSeriesPage({ user }: { user: CurrentUser }) {
           }
           beteiligte={
             <fieldset aria-describedby={fehler.staff_member_ids ? BETEILIGTE_FEHLER_ID : undefined}>
+              {/* Kein Satz zum Belegen der Kalender: Er erklärte das System (UX-005g). */}
               <legend className="text-ink text-sm font-medium">Beteiligte Personen *</legend>
-              <p className="text-ink-muted mt-1 text-sm">
-                Die Fehlzeit belegt den Zeitraum in jedem gewählten Kalender.
-              </p>
               {personen.isError ? (
                 <div className="mt-3">
                   <ErrorState

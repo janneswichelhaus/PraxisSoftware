@@ -277,10 +277,12 @@ function Abschluss({
 
         <TextArea
           label="Eintrag zur Behandlung"
+          // Im Regelfall ohne Hinweis - die Folge steht unten vor dem Knopf.
+          // Am Türfall bleibt er: Er sagt, was hier hineingehört (UX-005g).
           hint={
             ohneBehandlung
               ? 'Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte – etwa, was die Patient:in an der Tür gesagt hat.'
-              : 'Freitext. Was hier steht, wird mit dem Abschluss Bestandteil der Akte.'
+              : undefined
           }
           rows={12}
           feldId={feldId}
@@ -317,11 +319,12 @@ function Abschluss({
             (`aria-describedby`, DOK-20). Ein Hinweis, kein Bedienelement:
             Trennlinie statt Bedienrahmen (DOK-19). */}
         <div className="border-line bg-surface-sunken rounded-card mt-5 border p-4">
+          {/* Gekürzt auf die beiden Folgen; der Anfang bleibt, er ist der
+              ausdrückliche Schritt nach ADR-016 Punkt 4 (UX-005g). */}
           <p id={folgeId} className="text-ink text-sm leading-relaxed">
-            Mit dem Abschluss geschieht zweierlei in einem Schritt: Der Termin wird als durchgeführt
-            geführt, und der Eintrag wird als Version 1 festgeschrieben. Ab dann ist er Bestandteil
-            der Patientenakte; jede spätere Änderung braucht eine Begründung und bleibt
-            nachvollziehbar.
+            Mit dem Abschluss geschieht zweierlei in einem Schritt: Der Termin gilt als
+            durchgeführt, und der Eintrag wird als Version 1 festgeschrieben – ab dann Bestandteil
+            der Akte, später nur mit Begründung änderbar.
             {appointment.status === 'completed'
               ? ' Dieser Termin ist bereits abgeschlossen – es wird nur noch die Dokumentation festgeschrieben.'
               : ''}
@@ -366,11 +369,8 @@ function Abschluss({
           </ButtonLink>
         </div>
       </form>
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Der Text wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Finalisieren und
-        Lesen werden protokolliert.
-      </p>
+      {/* Keine Fußnote zu Speicherort und Protokoll mehr: Sie erklärte das
+          System, nicht den Eintrag (UX-005g). */}
     </>
   );
 }

@@ -27,7 +27,6 @@ import { NachladeHinweis } from './Rueckmeldungen';
 import {
   appointmentFormSchema,
   appointmentToFormValues,
-  appointmentTypeLabels,
   fensterEnde,
   fetchAppointment,
   fetchAssignableTherapists,
@@ -402,10 +401,12 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
 
       <PageHeader
         title={istEreignis ? 'Teilnahme ändern' : 'Termin bearbeiten'}
+        // Nur der Name; der Satz zu den Sternchen erklärte das Formular, nicht
+        // den Termin (UX-005g).
         description={
           istEreignis
             ? 'Hier wird nur die beteiligte Person getauscht.'
-            : `Für ${patientName(daten)}. Mit * markierte Felder sind erforderlich.`
+            : `Für ${patientName(daten)}.`
         }
       />
 
@@ -422,9 +423,11 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       {istEreignis ? (
         <div className="mb-8 max-w-xl">
           <Section titel="Fehlzeit" rahmen>
+            {/* Ohne Bezeichnung keine Zeile, und keine eigene Zeile „Art":
+                „Videotermin" steht im Ort, wo es zutrifft; der Satz, dass das
+                alles für alle gilt, erklärte das System (UX-005g). */}
             <DetailList>
-              <DetailRow label="Bezeichnung">{daten.title ?? '—'}</DetailRow>
-              <DetailRow label="Art">{appointmentTypeLabels[daten.appointment_type]}</DetailRow>
+              {daten.title ? <DetailRow label="Bezeichnung">{daten.title}</DetailRow> : null}
               <DetailRow label="Datum">{formatLocalDate(daten.starts_at, zone)}</DetailRow>
               <DetailRow label="Zeit">
                 {formatLocalTimeRange(daten.starts_at, daten.ends_at, zone)}
@@ -433,9 +436,6 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
                 {locationSummary(daten)}
               </DetailRow>
             </DetailList>
-            <p className="text-ink-muted mt-2 text-sm">
-              Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
-            </p>
             <Textlink
               alleinstehend
               className="text-sm"
@@ -491,18 +491,9 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
           </Hinweisfenster>
         ) : null}
 
-        {/* Der Kasten trägt am Termin eine Auskunft: Die Person ist nicht
-            übertragbar (TER-21). An einer Fehlzeit steht sie oben. */}
-        {istEreignis ? null : (
-          <div className="border-line bg-surface-sunken rounded-card mb-5 border p-4">
-            <p className="text-ink-muted text-sm">Patient:in</p>
-            <p className="text-ink text-liste font-medium">{patientName(daten)}</p>
-            <p className="text-ink-muted mt-2 text-xs leading-relaxed">
-              Ein Termin kann nicht auf eine andere Person übertragen werden.
-            </p>
-          </div>
-        )}
-
+        {/* Kein Kasten „Patient:in" mehr: Der Name steht in der Seiten-
+            beschreibung, und dass ein Termin nicht übertragbar ist, zeigt das
+            fehlende Feld (TER-21, UX-005g). */}
         <AppointmentFormFields
           werte={werte}
           fehler={fehler}

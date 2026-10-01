@@ -19,8 +19,7 @@ import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { Laengenzeichen } from './Laengenzeichen';
 import { istIsoDatum } from './calendar';
 import {
-  appointmentStatusLabels,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   cancellationReasonLabels,
   cancellationReasonSchema,
   cancelStaffDay,
@@ -128,7 +127,7 @@ function Anrufkarte({
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
           <Laengenzeichen termin={termin} />
         </p>
-        <span className="text-ink-muted text-xs">{appointmentStatusLabels[termin.status]}</span>
+        {/* Kein Zustand je Karte: In der Anrufliste steht nur Abgesagtes (UX-005g). */}
       </div>
 
       {/* Der Name ist ein Weg in die Akte - sichtbar als Link, nicht erst
@@ -299,7 +298,10 @@ function Umplanung({
                           )}
                         </span>
                         {` · ${termin.patient_given_name} ${termin.patient_family_name}`}
-                        {` · ${appointmentTypeLabels[termin.appointment_type]}`}{' '}
+                        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
+                        {appointmentTypeHint(termin.appointment_type)
+                          ? ` · ${appointmentTypeHint(termin.appointment_type)}`
+                          : ''}{' '}
                         <Laengenzeichen termin={termin} />
                       </li>
                     ))}

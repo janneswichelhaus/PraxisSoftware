@@ -223,11 +223,9 @@ function OhneNeueTermine({ user }: { user: CurrentUser }) {
         PRAXISROLLEN.filter((rolle) => canChangePatientStatus([rolle])).map(roleLabel),
       )}.`;
 
-  return (
-    <p className="text-ink-muted w-full text-sm">
-      Keine neuen Termine – nicht in laufender Versorgung. {weg}
-    </p>
-  );
+  // UX-005e: Der Grund steht schon im Etikett daneben; der Satz nennt nur
+  // noch die Folge und den Weg zurück.
+  return <p className="text-ink-muted w-full text-sm">Keine neuen Termine. {weg}</p>;
 }
 
 /**
@@ -266,11 +264,9 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
               ? `geb. ${formatDate(patient.date_of_birth)}${alter !== null ? ` · ${alter} Jahre` : ''}`
               : 'Geburtsdatum nicht hinterlegt'}
           </p>
-          {aktiv ? (
-            <Badge ton="positiv">In Versorgung</Badge>
-          ) : (
-            <Badge ton="warnung">Nicht in laufender Versorgung</Badge>
-          )}
+          {/* UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand
+              an jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. */}
+          {!aktiv ? <Badge ton="warnung">Nicht in laufender Versorgung</Badge> : null}
           {/* Der Abschluss ist etwas anderes als der Status und gehört in den
               Kopf: Er sagt, dass die Behandlung beendet ist und die
               Aufbewahrung läuft (LOE-001b, ADR-008). */}

@@ -406,7 +406,10 @@ describe('MeinKontoPage — UXR-002', () => {
     expect(
       screen.getByText(/Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/ausschließlich die Praxisinhaber:in/)).toBeInTheDocument();
+    // Der Satz über Rollen und Sperre in der Fußnote ist fort (UX-005i):
+    // Wer Stammdaten pflegt, sagt der Kopf; die Fußnote nur noch das Protokoll.
+    expect(screen.queryByText(/ausschließlich die Praxisinhaber:in/)).toBeNull();
+    expect(screen.getByText(/werden protokolliert/)).toBeInTheDocument();
     expect(screen.queryByText(/Praxisleitung/)).toBeNull();
   });
 

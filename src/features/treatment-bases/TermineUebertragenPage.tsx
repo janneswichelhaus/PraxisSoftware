@@ -15,7 +15,7 @@ import {
   formatLocalDate,
   formatLocalTimeRange,
   staffName,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   type PatientAppointment,
 } from '@/features/appointments/api';
 import { fetchPatient, fullName } from '@/features/patients/api';
@@ -104,7 +104,10 @@ function Terminzeile({
             <span className="text-ink font-medium">{formatLocalDate(termin.starts_at, zone)}</span>
             <span className="text-ink-muted block">
               {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}
-              {` · ${appointmentTypeLabels[termin.appointment_type]}`}
+              {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
+              {appointmentTypeHint(termin.appointment_type)
+                ? ` · ${appointmentTypeHint(termin.appointment_type)}`
+                : ''}
               {` · ${staffName(termin)}`}
             </span>
           </>

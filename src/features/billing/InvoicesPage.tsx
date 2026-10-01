@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
-import { Badge, type Ton } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -22,7 +23,6 @@ import {
   zahlungsstandLabels,
   type Kandidat,
   type OffenerPosten,
-  type Rechnung,
 } from './api';
 import { monatsname, zahlungsTon } from './anzeige';
 import { Zahlungsformular, type Buchung } from './Zahlungsformular';
@@ -49,21 +49,6 @@ import { Zahlungsformular, type Buchung } from './Zahlungsformular';
  * der Einstiegsseite"). Gebucht wird an derselben Zeile — die Rechnung, um
  * die es geht, steht dabei im Blick.
  */
-
-/**
- * Der Zustand einer Rechnung als Ton. „Ausgestellt" ist der Normalfall und
- * trägt kein Warnzeichen (ABR-16): Das „!" gehört an Handlungsbedarf -
- * Teilzahlung, Überzahlung -, und „Überfällig" trägt sein „×".
- */
-const standTon: Record<Rechnung['status'], Ton> = {
-  draft: 'neutral',
-  issued: 'neutral',
-};
-
-const standLabels: Record<Rechnung['status'], string> = {
-  draft: 'Entwurf',
-  issued: 'Ausgestellt',
-};
 
 /** Die Meldung nach einer Buchung am Posten - dort, wo das Formular stand. */
 interface Buchungsmeldung {
@@ -120,7 +105,8 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                 posten.data[0]!.open_total_cents,
                 posten.data[0]!.currency,
               )} offen`
-            : 'Ausgestellte Rechnungen, auf die noch Geld fehlt.'
+            : // Ohne offene Posten erklärt die Leermeldung den Abschnitt (UX-005i).
+              undefined
         }
       >
         {buchung ? (
@@ -157,10 +143,9 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         </ul>
       </Section>
 
-      <Section
-        titel="Abzurechnen"
-        hinweis="Erfasste Leistungen ohne Rechnung, gebündelt nach Person und Kalendermonat. Ein Entwurf nimmt alle Leistungen des Monats auf."
-      >
+      {/* Ohne Hinweis: Die Karten sagen Person, Monat und Leistungen selbst
+          (UX-005i). */}
+      <Section titel="Abzurechnen">
         {kandidaten.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
         {kandidaten.isError ? (
           <ErrorState
@@ -204,10 +189,24 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           {(rechnungen.data ?? []).map((rechnung) => (
             <li key={rechnung.id} className="py-3">
               <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <span className="text-ink text-liste font-medium">
+                {/* Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je
+                    Zeile entfällt. Der Name sagt Vorlesesoftware, wohin
+                    (UX-005i). */}
+                <Textlink
+                  to={`/abrechnung/rechnungen/${rechnung.id}`}
+                  alleinstehend
+                  className="text-liste font-medium"
+                  aria-label={
+                    rechnung.invoice_number
+                      ? `Rechnung ${rechnung.invoice_number} ansehen`
+                      : 'Entwurf ohne Nummer öffnen'
+                  }
+                >
                   {rechnung.invoice_number ?? 'Ohne Nummer'}
-                </span>
-                <Badge ton={standTon[rechnung.status]}>{standLabels[rechnung.status]}</Badge>
+                </Textlink>
+                {/* „Ausgestellt" ist der Regelfall und trägt kein Abzeichen;
+                    nur der Entwurf steht dran (UX-005i). */}
+                {rechnung.status === 'draft' ? <Badge ton="neutral">Entwurf</Badge> : null}
                 {/* Storniert steht neben dem Zustand, nicht an seiner Stelle:
                     Die Rechnung ist ausgestellt gewesen, und das bleibt sie
                     (ABR-003c, ANN-079). */}
@@ -240,23 +239,21 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                     {zahlungsstandLabels[rechnung.payment_state]}
                   </Badge>
                   {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
-                  <span className="text-ink-muted tabular-nums">
-                    {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
-                    {rechnung.outstanding_cents > 0
-                      ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
-                      : ''}
-                    {rechnung.outstanding_cents < 0
-                      ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
-                      : ''}
-                  </span>
+                  {/* An einer bezahlten Rechnung sagt „Bezahlt" alles; der
+                      Betrag steht schon rechts (UX-005i). */}
+                  {rechnung.payment_state === 'paid' ? null : (
+                    <span className="text-ink-muted tabular-nums">
+                      {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
+                      {rechnung.outstanding_cents > 0
+                        ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
+                        : ''}
+                      {rechnung.outstanding_cents < 0
+                        ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
+                        : ''}
+                    </span>
+                  )}
                 </p>
               ) : null}
-
-              <div className="mt-2">
-                <ButtonLink to={`/abrechnung/rechnungen/${rechnung.id}`} variant="secondary">
-                  {rechnung.status === 'draft' ? 'Entwurf öffnen' : 'Rechnung ansehen'}
-                </ButtonLink>
-              </div>
             </li>
           ))}
         </ul>

@@ -287,10 +287,18 @@ export function terminKachel(page: Page, appointmentId: string): Locator {
  * Schaltfläche „Navigation st*art*en" (UX-002) und brach im Strict Mode ab.
  * Der Fehler lag immer in dieser Zeile hier - er brauchte nur eine zweite
  * passende Zeile, um sichtbar zu werden.
+ *
+ * Seit UX-005a stehen Zeilen auch **in** einer Kachel: Die Kachel „Absage"
+ * ist selbst ein `dl > div`, und ihr `dd` enthält eine zweite Liste mit
+ * „Absagegrund". Deshalb zählen nur das direkte `dt` und das direkte `dd`
+ * einer Zeile - sonst fand „Absagegrund" die Kachel samt allen inneren
+ * Werten und brach im Strict Mode ab.
  */
 export function detailWert(page: Page, bezeichnung: string): Locator {
-  const beschriftung = page.locator('dt').and(page.getByText(bezeichnung, { exact: true }));
-  return page.locator('dl > div').filter({ has: beschriftung }).locator('dd');
+  const beschriftung = page
+    .locator(':scope > dt')
+    .and(page.getByText(bezeichnung, { exact: true }));
+  return page.locator('dl > div').filter({ has: beschriftung }).locator(':scope > dd');
 }
 
 /** Holt ein echtes Zugriffstoken bei GoTrue - Grundlage der RPC-Nachweise. */

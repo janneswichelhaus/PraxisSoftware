@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { SearchField } from '@/components/ui/SearchField';
 import { Select } from '@/components/ui/Select';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -111,10 +112,12 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
       {/* „Mitarbeitende" statt „Team": das Verzeichnis der Beschaeftigten
           steht unter Organisatorisches, der gleichnamige Arbeitsbereich heisst
           seit dem 2026-09-12 Kommunikation und meint den Chat. Zwei Seiten mit
-          derselben Ueberschrift waeren nicht auseinanderzuhalten. */}
+          derselben Ueberschrift waeren nicht auseinanderzuhalten.
+
+          Was hier nicht entsteht, steht nicht im Kopf (UX-005i). */}
       <PageHeader
         title="Mitarbeitende"
-        description="Mitarbeitende der Praxis. Ein Zugang zur Anwendung entsteht hier nicht."
+        description="Mitarbeitende der Praxis."
         actions={
           canManageStaffMasterData(user.roles) ? (
             <ButtonLink to="/praxis/team/neu">Mitarbeiter:in anlegen</ButtonLink>
@@ -220,16 +223,21 @@ export function StaffListPage({ user }: { user: CurrentUser }) {
         </ul>
       ) : null}
 
-      {/* Die Fußnote erklärt nur, was diese Rolle auf der Seite sieht, und
-          sagt der Praxisinhaber:in, wo Zugänge entstehen (ORG-25). */}
+      {/* Die Regel erklärt nur, was diese Rolle auf der Seite sieht, und
+          sagt der Praxisinhaber:in, wo Zugänge entstehen (ORG-25). Zugeklappt,
+          weil sie das System erklärt, nicht die Liste (UX-005i). */}
       {fragtZuordenbarkeit ? (
-        <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-          Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
-          eigenen Zugang mit der Rolle Therapeut:in oder Teamleitung hat.
-          {canManageStaffAccounts(user.roles)
-            ? ' Zugang und Rollen vergeben Sie bei der Person unter „Zugang“.'
-            : ''}
-        </p>
+        <div className="mt-8 max-w-prose">
+          <Disclosure summary="Wer ist zuordenbar?">
+            <p className="text-ink-muted text-sm leading-relaxed">
+              Als behandelnde Person zuordenbar ist, wer aktiv beschäftigt ist und zusätzlich einen
+              eigenen Zugang mit der Rolle Therapeut:in oder Teamleitung hat.
+              {canManageStaffAccounts(user.roles)
+                ? ' Zugang und Rollen vergeben Sie bei der Person unter „Zugang“.'
+                : ''}
+            </p>
+          </Disclosure>
+        </div>
       ) : null}
     </>
   );

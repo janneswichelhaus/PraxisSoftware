@@ -1,4 +1,5 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -8,8 +9,10 @@ import { Textlink } from '@/components/ui/Textlink';
 import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   appointmentStatusLabels,
-  appointmentTypeLabels,
+  appointmentStatusTon,
+  appointmentTypeHint,
   formatLocalDate,
+  formatLocalTime,
   formatLocalTimeRange,
   staffName,
 } from '@/features/appointments/api';
@@ -24,7 +27,7 @@ import {
   type RecordAppointment,
   type TreatmentNote,
 } from './api';
-import { ENTWURF_ZUSATZ, FREITEXT, herkunft } from './format';
+import { ENTWURF_ZUSATZ, FREITEXT } from './format';
 
 /**
  * Kopfzeile eines Termins in der Akte.
@@ -35,18 +38,41 @@ import { ENTWURF_ZUSATZ, FREITEXT, herkunft } from './format';
  *
  * Der Status steht neben dem Datum, nicht am anderen Rand der Liste: Bei
  * 1.440 px lagen die beiden sonst rund 1.100 px auseinander (DOK-22).
+ *
+ * UX-005e: Das Datum **ist** der Weg zum Termin - eine eigene Zeile „Zum
+ * Termin" unter jeder Karte wiederholte ihn. Ein Etikett trägt nur ein Termin,
+ * der nicht stattfand (abgesagt, nicht angetroffen); „Bestätigt",
+ * „Abgeschlossen", „Dokumentiert" sind in einer Dokumentationsliste der
+ * Regelfall und sagen nichts.
  */
-function TerminKopf({ termin }: { termin: RecordAppointment }) {
+function TerminKopf({ termin, rueckweg }: { termin: RecordAppointment; rueckweg: string }) {
   const zone = termin.organization_time_zone;
+  const ausgefallen =
+    termin.appointment_status === 'cancelled' || termin.appointment_status === 'no_show';
   return (
     <>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="text-accent text-h4 font-bold">{formatLocalDate(termin.starts_at, zone)}</p>
-        <Badge>{appointmentStatusLabels[termin.appointment_status]}</Badge>
+        <Link
+          to={mitRueckweg(`/termine/${termin.appointment_id}`, rueckweg)}
+          className="text-accent text-h4 font-bold hover:underline"
+        >
+          {formatLocalDate(termin.starts_at, zone)}
+        </Link>
+        {ausgefallen ? (
+          <Badge ton={appointmentStatusTon[termin.appointment_status]}>
+            {appointmentStatusLabels[termin.appointment_status]}
+          </Badge>
+        ) : null}
       </div>
       <p className="text-ink-muted mt-1 text-sm">
-        {formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)} ·{' '}
-        {appointmentTypeLabels[termin.appointment_type]} · {staffName(termin)}
+        {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
+        {[
+          formatLocalTimeRange(termin.starts_at, termin.ends_at, zone),
+          appointmentTypeHint(termin.appointment_type),
+          staffName(termin),
+        ]
+          .filter(Boolean)
+          .join(' · ')}
       </p>
     </>
   );
@@ -86,6 +112,36 @@ function WeitereSeite({
   );
 }
 
+/** Datum und Uhrzeit kurz, in der Praxiszeitzone: „12.05.2027, 11:32". */
+function kurzerZeitpunkt(wert: string, zone: string): string {
+  const tag = new Intl.DateTimeFormat('de-DE', { dateStyle: 'medium', timeZone: zone }).format(
+    new Date(wert),
+  );
+  return `${tag}, ${formatLocalTime(wert, zone)}`;
+}
+
+/**
+ * Die Herkunftszeile eines Eintrags in der Akte (UX-005e).
+ *
+ * Kürzer als am Termin (`herkunft` in `format.ts`): Die Karte nennt die
+ * behandelnde Person schon im Kopf, deshalb steht ein Name nur, wenn jemand
+ * anderes finalisiert oder zuletzt geändert hat. Die automatische
+ * Finalisierung hat keine handelnde Person (DOK-004, ADR-016 Punkt 7).
+ */
+function akteHerkunft(note: TreatmentNote, termin: RecordAppointment): string {
+  const zone = termin.organization_time_zone;
+  const behandelnd = staffName(termin);
+  const von = (name: string | null) => (name && name !== behandelnd ? ` von ${name}` : '');
+
+  if (note.status === 'final' && note.finalized_at) {
+    if (note.finalisation_kind === 'automatic') {
+      return `Automatisch finalisiert ${kurzerZeitpunkt(note.finalized_at, zone)}`;
+    }
+    return `Finalisiert ${kurzerZeitpunkt(note.finalized_at, zone)}${von(note.finalized_by_name)}`;
+  }
+  return `Zuletzt geändert ${kurzerZeitpunkt(note.updated_at, zone)}${von(note.last_editor_name)}`;
+}
+
 /**
  * Ein Eintrag in der Akte - Haupteintrag oder Nachtrag - ohne Handlungen.
  *
@@ -103,17 +159,18 @@ function AkteEintrag({
   /** Der Weg zurück in den Verlauf der Akte - für den Änderungsverlauf (DOK-01). */
   rueckweg: string;
 }) {
-  const zone = termin.organization_time_zone;
   const istNachtrag = note.addendum_to_note_id !== null;
   const final = note.status === 'final';
 
   return (
     <div className="mt-3">
-      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18): „Finalisiert“
-          trägt das Zeichen ✓, der Rest bleibt neutral. */}
+      {/* Zustände als Etikett, nicht als Bedienelement (UIK-18). UX-005e: Ein
+          finalisierter Eintrag ist in der Akte der Regelfall und trägt kein
+          Etikett mehr - nur der Entwurf ist markiert; die Herkunftszeile nennt
+          die Finalisierung. */}
       <div className="flex flex-wrap items-center gap-2">
         {istNachtrag ? <Badge>Nachtrag</Badge> : null}
-        <Badge ton={final ? 'positiv' : 'neutral'}>{treatmentNoteStatusLabels[note.status]}</Badge>
+        {!final ? <Badge>{treatmentNoteStatusLabels[note.status]}</Badge> : null}
         {/* Der Pflichtvermerk aus Hausbesuch-Szenario 1 (CAL-018) steht in der
             Akte wie am Termin: Ob behandelt wurde, entscheidet später über
             eine Rechnung ohne erbrachte Leistung (ADR-018 Fassung 3 Punkt 9). */}
@@ -134,7 +191,7 @@ function AkteEintrag({
         {note.content}
       </p>
 
-      <p className="text-ink-muted mt-2 text-xs leading-relaxed">{herkunft(note, zone)}</p>
+      <p className="text-ink-muted mt-2 text-xs leading-relaxed">{akteHerkunft(note, termin)}</p>
 
       {note.version_count > 0 ? (
         <Textlink
@@ -182,10 +239,9 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
     // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
     // Überschrift kommt aus `Section` wie überall sonst (UIK-20, TOK-05).
     <div role="region" aria-label="Behandlungsdokumentation" className="mt-8">
-      <Section
-        titel="Behandlungsdokumentation"
-        hinweis="Neueste zuerst. Geschrieben wird am Termin."
-      >
+      {/* UX-005e: Ohne Dauersatz unter der Überschrift - die Reihenfolge sieht
+          man, und geschrieben wird am Termin, wohin das Datum führt. */}
+      <Section titel="Behandlungsdokumentation">
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
         {seiten.isError ? (
@@ -211,7 +267,7 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
                 key={termin.appointment_id}
                 className="border-line bg-surface rounded-card border p-4 sm:p-5"
               >
-                <TerminKopf termin={termin} />
+                <TerminKopf termin={termin} rueckweg={verlauf} />
 
                 {termin.notes.length === 0 ? (
                   <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
@@ -220,14 +276,6 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
                     <AkteEintrag key={note.id} termin={termin} note={note} rueckweg={verlauf} />
                   ))
                 )}
-
-                <Textlink
-                  to={mitRueckweg(`/termine/${termin.appointment_id}`, verlauf)}
-                  alleinstehend
-                  className="mt-1 text-sm"
-                >
-                  Zum Termin
-                </Textlink>
               </li>
             ))}
           </ol>
@@ -239,10 +287,8 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
           fehler={seiten.isFetchNextPageError}
           onClick={() => void seiten.fetchNextPage()}
         />
-
-        <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
-          Zugriffe auf die Behandlungsdokumentation werden je Eintrag protokolliert.
-        </p>
+        {/* UX-005e: Kein Protokollhinweis unter der Liste - protokolliert wird
+            weiter je gelesenem Eintrag (ADR-010), nur der Satz entfällt. */}
       </Section>
     </div>
   );

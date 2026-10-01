@@ -8,6 +8,7 @@ import {
   ZOOM_STANDARD,
   arbeitszeitBaender,
   aufRaster,
+  ausserhalbArbeitszeit,
   bereichFuer,
   ereignisGeaendert,
   fensterMitArbeitszeit,
@@ -677,6 +678,61 @@ describe('arbeitszeitBaender', () => {
       ausnahme(ANNA, '2027-05-13', 'unavailable'),
     ]);
     expect(baender).toHaveLength(2);
+  });
+});
+
+describe('ausserhalbArbeitszeit (UX-005c)', () => {
+  const fenster = { vonMinute: 420, bisMinute: 1200 };
+
+  it('liefert die Luecken vor, zwischen und nach den Baendern', () => {
+    expect(
+      ausserhalbArbeitszeit(
+        [
+          { vonMinute: 480, bisMinute: 720 },
+          { vonMinute: 780, bisMinute: 1080 },
+        ],
+        fenster,
+      ),
+    ).toEqual([
+      { vonMinute: 420, bisMinute: 480 },
+      { vonMinute: 720, bisMinute: 780 },
+      { vonMinute: 1080, bisMinute: 1200 },
+    ]);
+  });
+
+  it('macht ohne Baender das ganze Fenster grau - ein Tag ohne Arbeitszeit', () => {
+    expect(ausserhalbArbeitszeit([], fenster)).toEqual([fenster]);
+  });
+
+  it('laesst nichts uebrig, wenn die Arbeitszeit das Fenster deckt', () => {
+    expect(ausserhalbArbeitszeit([{ vonMinute: 300, bisMinute: 1320 }], fenster)).toEqual([]);
+  });
+
+  it('legt sich ueberlappende und unsortierte Baender zusammen', () => {
+    expect(
+      ausserhalbArbeitszeit(
+        [
+          { vonMinute: 600, bisMinute: 900 },
+          { vonMinute: 480, bisMinute: 700 },
+        ],
+        fenster,
+      ),
+    ).toEqual([
+      { vonMinute: 420, bisMinute: 480 },
+      { vonMinute: 900, bisMinute: 1200 },
+    ]);
+  });
+
+  it('schneidet Baender ausserhalb des Fensters ab', () => {
+    expect(
+      ausserhalbArbeitszeit(
+        [
+          { vonMinute: 0, bisMinute: 60 },
+          { vonMinute: 1260, bisMinute: 1440 },
+        ],
+        fenster,
+      ),
+    ).toEqual([fenster]);
   });
 });
 

@@ -35,7 +35,6 @@ import {
   istHinderlich,
   schreibeTerminVorbelegung,
   slotConflictLabels,
-  TERMINFENSTER_MINUTEN,
   todayInTimeZone,
   type AppointmentFormValues,
   type AppointmentType,
@@ -479,10 +478,9 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
     <>
       {kopf}
 
-      <PageHeader
-        title="Terminserie anlegen"
-        description={`Für ${fullName(patientDaten)}. Die Serie entsteht in einem Vorgang – entweder alle Termine oder keiner.`}
-      />
+      {/* Nur der Name; „alles oder nichts" sagt die Prüfmeldung dort, wo es
+          zählt (UX-005g). */}
+      <PageHeader title="Terminserie anlegen" description={`Für ${fullName(patientDaten)}.`} />
 
       {patient.isError || kontingent.isError ? (
         <NachladeHinweis
@@ -644,10 +642,12 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                 value={beginn}
                 error={fehler.beginn}
                 step={user.appointmentGridMinutes ? user.appointmentGridMinutes * 60 : undefined}
+                // Ohne „Fenster: 60 Minuten": Die Regellänge ist der
+                // Normalzustand und trägt kein Wort (UX-005g).
                 hint={
                   user.appointmentGridMinutes
-                    ? `Praxisraster: ${user.appointmentGridMinutes} Minuten · Fenster: ${TERMINFENSTER_MINUTEN} Minuten`
-                    : `Terminfenster: ${TERMINFENSTER_MINUTEN} Minuten`
+                    ? `Praxisraster: ${user.appointmentGridMinutes} Minuten`
+                    : undefined
                 }
                 onChange={(e) => {
                   setBeginn(e.target.value);
@@ -763,9 +763,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
                         Entfernen
                       </Button>
                     </div>
-                    <p className="text-ink-muted mt-2 text-xs">
-                      bis {fensterEnde(termin.beginn) || '—'} Uhr
-                    </p>
+                    {/* Kein „bis HH:MM Uhr" je Zeile: Das Ende folgt aus dem
+                        Fenster und ist für alle gleich (UX-005g). */}
                     {befund ? (
                       <div className="mt-2">
                         <Badge ton={istHinderlich(befund) ? 'kritisch' : 'warnung'}>
@@ -844,11 +843,8 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
           ) : null}
         </Section>
       ) : null}
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Jeder Termin der Serie ist danach ein eigener Termin mit eigenem Zustand – eine Absage
-        betrifft nur ihn. Es werden ausschließlich organisatorische Angaben erfasst.
-      </p>
+      {/* Keine Fußnote zu Einzelterminen und organisatorischen Angaben mehr:
+          Sie erklärte das System, nicht die Serie (UX-005g). */}
     </>
   );
 }

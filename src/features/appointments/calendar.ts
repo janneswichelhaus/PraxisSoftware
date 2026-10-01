@@ -715,6 +715,41 @@ export function fensterMitArbeitszeit(
 }
 
 /**
+ * Die Zeit außerhalb der Arbeitszeit innerhalb des Tagesfensters (UX-005c).
+ *
+ * Bis UX-005c lag die Arbeitszeit selbst als graues Band im Gitter - und
+ * genau das las sich als „hier nicht": Jannes sah den Kalender und fand die
+ * Arbeitszeit nicht. Grau ist, wo jemand nicht arbeitet; die Arbeitszeit ist
+ * die freie, weiße Fläche. Diese Funktion liefert das Gegenstück der Bänder:
+ * die Lücken davor, dazwischen und danach, bezogen auf das gezeichnete
+ * Fenster. Überlappende Bänder werden zusammengelegt; ohne Bänder ist der
+ * ganze Tag außerhalb - ein Tag ohne hinterlegte Arbeitszeit sieht damit so
+ * aus wie ein freier Tag, und beides stimmt.
+ *
+ * Reine Darstellung: Ob ein Termin außerhalb liegt, entscheidet allein der
+ * Server (`app.is_within_working_hours`).
+ */
+export function ausserhalbArbeitszeit(
+  baender: readonly Zeitband[],
+  fenster: { vonMinute: number; bisMinute: number },
+): Zeitband[] {
+  const sortiert = [...baender]
+    .filter((b) => b.bisMinute > b.vonMinute)
+    .sort((a, b) => a.vonMinute - b.vonMinute);
+  const luecken: Zeitband[] = [];
+  let stand = fenster.vonMinute;
+  for (const band of sortiert) {
+    if (band.vonMinute > stand) {
+      luecken.push({ vonMinute: stand, bisMinute: Math.min(band.vonMinute, fenster.bisMinute) });
+    }
+    stand = Math.max(stand, band.bisMinute);
+    if (stand >= fenster.bisMinute) break;
+  }
+  if (stand < fenster.bisMinute) luecken.push({ vonMinute: stand, bisMinute: fenster.bisMinute });
+  return luecken.filter((l) => l.bisMinute > l.vonMinute && l.bisMinute > fenster.vonMinute);
+}
+
+/**
  * Wie viele ganze Zeilen eine Kachel dieser Höhe trägt (BEF-072), mindestens
  * eine: Der Name steht immer da, Zeit und Ort nur, wenn sie ganz passen.
  */

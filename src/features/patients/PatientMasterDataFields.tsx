@@ -249,10 +249,9 @@ export function PatientMasterDataFields({
         </Feldgruppe>
       </Section>
 
-      <Section
-        titel="Hausbesuch und Praxisangaben"
-        hinweis="Organisatorische Angaben der Praxis. Sie sind für Patientenzugänge nicht sichtbar. Befunde, Diagnosen und Behandlungsverlauf gehören in die Behandlungsdokumentation, nicht hierher."
-      >
+      {/* UX-005e: Auf das Wesentliche gekürzt - geblieben ist, was die
+          Eingabe betrifft: wer die Angaben sieht (ANN-010, ADR-004). */}
+      <Section titel="Hausbesuch und Praxisangaben" hinweis="Für Patientenzugänge nicht sichtbar.">
         <Feldgruppe>
           <Select
             label="Feste Therapeut:in"

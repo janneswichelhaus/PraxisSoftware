@@ -95,9 +95,10 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
   return (
     <>
       <Rueckweg standard="/training" />
+      {/* Keine Zeile „Trainingskund:in" unter dem Namen: Der Weg hierher
+          sagt es schon (UX-005i). */}
       <PageHeader
         title={name}
-        description={BEGRIFFE.trainingskundIn}
         actions={kundin.status === 'inactive' ? <Badge>Vertrag beendet</Badge> : null}
       />
 
@@ -131,41 +132,42 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               ) : null
             }
           >
-            <DetailList>
-              <DetailRow label="Geburtsdatum">
-                {kundin.date_of_birth ? formatDate(kundin.date_of_birth) : '—'}
-              </DetailRow>
-              <DetailRow label="Telefon">
+            {/* Eine leere Angabe nimmt keine Zeile ein (UX-005i). */}
+            {kundin.date_of_birth || kundin.phone || kundin.email || anschrift ? (
+              <DetailList>
+                {kundin.date_of_birth ? (
+                  <DetailRow label="Geburtsdatum">{formatDate(kundin.date_of_birth)}</DetailRow>
+                ) : null}
                 {kundin.phone ? (
-                  <a className="text-accent hover:underline" href={`tel:${kundin.phone}`}>
-                    {kundin.phone}
-                  </a>
-                ) : (
-                  '—'
-                )}
-              </DetailRow>
-              <DetailRow label="E-Mail">
+                  <DetailRow label="Telefon">
+                    <a className="text-accent hover:underline" href={`tel:${kundin.phone}`}>
+                      {kundin.phone}
+                    </a>
+                  </DetailRow>
+                ) : null}
                 {kundin.email ? (
-                  <a className="text-accent hover:underline" href={`mailto:${kundin.email}`}>
-                    {kundin.email}
-                  </a>
-                ) : (
-                  '—'
-                )}
-              </DetailRow>
-              <DetailRow label="Anschrift">{anschrift || '—'}</DetailRow>
-            </DetailList>
+                  <DetailRow label="E-Mail">
+                    <a className="text-accent hover:underline" href={`mailto:${kundin.email}`}>
+                      {kundin.email}
+                    </a>
+                  </DetailRow>
+                ) : null}
+                {anschrift ? <DetailRow label="Anschrift">{anschrift}</DetailRow> : null}
+              </DetailList>
+            ) : (
+              <p className="text-ink-muted text-sm">Keine Kontaktangaben hinterlegt.</p>
+            )}
           </Section>
 
           <Section titel="Vertrag" rahmen>
-            <DetailList>
-              <DetailRow label="Beginn">
-                {kundin.contract_started_on ? formatDate(kundin.contract_started_on) : '—'}
-              </DetailRow>
-              <DetailRow label="Ende">
-                {kundin.contract_ended_on ? formatDate(kundin.contract_ended_on) : 'läuft'}
-              </DetailRow>
-            </DetailList>
+            {/* Eine Zeile statt zweier Reihen „Beginn"/„Ende": „läuft" ist
+                der Regelfall und steht nicht dran (UX-005i). */}
+            <p className="text-ink text-liste">
+              {kundin.contract_started_on
+                ? `Seit ${formatDate(kundin.contract_started_on)}`
+                : 'Ohne Beginn'}
+              {kundin.contract_ended_on ? ` bis ${formatDate(kundin.contract_ended_on)}` : ''}
+            </p>
             {darfSchreiben ? (
               <div className="mt-4">
                 <VertragBeenden kundin={kundin} zeitzone={user.organizationTimeZone} />

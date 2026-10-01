@@ -182,9 +182,8 @@ describe('Urlaub', () => {
       // Zwei offene Anträge, je ein „Genehmigen" - nicht noch einmal unter
       // „Alle Anträge".
       expect(screen.getAllByRole('button', { name: 'Genehmigen' })).toHaveLength(2);
-      expect(
-        screen.getByText(/Zur Entscheidung durch Praxisinhaber oder Teamleitung/),
-      ).toBeInTheDocument();
+      // Wer die Knöpfe sieht, darf entscheiden - der Satz dazu ist fort (UX-005i).
+      expect(screen.queryByText(/Zur Entscheidung durch/)).toBeNull();
     });
 
     it('stellt die Wochenuebersicht zugeklappt hinter die eigenen Antraege (VOR-16)', () => {

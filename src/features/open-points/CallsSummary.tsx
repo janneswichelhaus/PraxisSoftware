@@ -23,7 +23,6 @@ export function CallsSummary({ today }: { today: string }) {
   return (
     <Section
       titel="Anrufe für morgen"
-      hinweis="Termine bestätigen, solange keine Erinnerung verschickt wird."
       aktion={
         <ButtonLink to={`/offen/anrufe?datum=${morgen}`} variant="secondary" groesse="kompakt">
           Anrufliste öffnen

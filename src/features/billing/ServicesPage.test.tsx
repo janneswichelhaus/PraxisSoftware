@@ -155,9 +155,10 @@ describe('ServicesPage', () => {
 
     renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
 
-    expect(await screen.findByText('Dokumentiert')).toBeInTheDocument();
     // TER-10: derselbe Anlass wie am Termin; ABR-16: eine Art, kein „!".
-    const anlass = screen.getByText('Absage weniger als 24 Stunden vorher');
+    // Der dokumentierte Termin trägt kein Abzeichen - er ist der Regelfall (UX-005i).
+    const anlass = await screen.findByText('Absage weniger als 24 Stunden vorher');
+    expect(screen.queryByText('Dokumentiert')).toBeNull();
     expect(anlass.textContent).toBe('Absage weniger als 24 Stunden vorher');
   });
 
@@ -413,11 +414,7 @@ describe('ServicesPage', () => {
       expect(
         await screen.findByRole('button', { name: 'Erfassung zurücknehmen' }),
       ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          'Noch nicht abgerechnet. Zurücknehmen geht, solange weder Rechnung noch Entwurf sie enthält.',
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByText('Noch nicht abgerechnet.')).toBeInTheDocument();
       // Abgerechnet: eingeklappt darunter.
       const abgerechnet = screen.getByText('Max Mustermann').closest('details');
       expect(abgerechnet).not.toBeNull();

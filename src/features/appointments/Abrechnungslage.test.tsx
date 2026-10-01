@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import type * as LageApi from './abrechnungslage-api';
-import { renderWithProviders } from '@/test-utils';
-import { DetailList } from '@/components/ui/DetailList';
+import { renderWithProviders, testAppointment } from '@/test-utils';
+import { TileGrid } from '@/components/ui/Tile';
 
 const TERMIN_ID = '77777777-7777-4777-8777-000000000001';
 
@@ -30,13 +30,17 @@ vi.mock('./abrechnungslage-api', async (importOriginal) => {
   };
 });
 
-const { AbrechnungAbschnitt, Abrechnungslage } = await import('./Abrechnungslage');
+const { AbrechnungAbschnitt, TreatmentBasisTile } = await import('./Abrechnungslage');
 
-function rendern() {
+function rendern(gedeckt: boolean | null = true) {
   return renderWithProviders(
-    <DetailList>
-      <Abrechnungslage appointmentId={TERMIN_ID} />
-    </DetailList>,
+    <TileGrid>
+      <TreatmentBasisTile
+        appointment={testAppointment({ id: TERMIN_ID, treatment_basis_covered: gedeckt })}
+        darfVerwalten
+        zumTermin={`/termine/${TERMIN_ID}`}
+      />
+    </TileGrid>,
   );
 }
 
@@ -55,6 +59,23 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
     rendern();
     expect(await screen.findByText('Termin 8 von 10')).toBeInTheDocument();
     expect(screen.getByText(/Folgeverordnung vom 08\.09\.2026/)).toBeInTheDocument();
+    // Gedeckt ist der Regelfall: kein Zeichen, kein Weg zum Übertragen (CAL-022).
+    expect(screen.queryByText('Ohne Deckung')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Auf andere Grundlage übertragen' })).toBeNull();
+  });
+
+  // CAL-022, UX-005a: Die fehlende Deckung steht in derselben Kachel wie die
+  // Grundlage, die sie nicht trägt - mit dem Weg zur Abhilfe daneben.
+  it('nennt einen ungedeckten Termin an seiner Grundlage, mit dem Weg zum Übertragen', async () => {
+    rendern(false);
+    expect(await screen.findByText('Ohne Deckung')).toBeInTheDocument();
+    expect(
+      screen.getByText('Die Behandlungsgrundlage deckt diesen Termin nicht.'),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Auf andere Grundlage übertragen' })).toHaveAttribute(
+      'href',
+      `/patienten/66666666-6666-4666-8666-000000000001/termine-uebertragen?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+    );
   });
 
   it('zeigt owner und office Empfänger und offene Rechnungen im Abschnitt „Abrechnung" (BEF-081)', async () => {

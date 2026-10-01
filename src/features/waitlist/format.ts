@@ -1,4 +1,4 @@
-import { appointmentTypeLabels } from '@/features/appointments/api';
+import { appointmentTypeHint } from '@/features/appointments/api';
 import { grundlageBezeichnung } from '@/features/treatment-bases/api';
 import { formatDate } from '@/lib/datum';
 import { windowsText, type WaitlistEntry } from './api';
@@ -12,12 +12,18 @@ export function basisText(entry: WaitlistEntry): string {
   return `${bauart} ${praeposition} ${formatDate(entry.treatment_basis_issued_on)}`;
 }
 
-/** Eine Zeile mit Art, Dauer, Wunschzeiten und Therapeut:in. */
+/**
+ * Eine Zeile mit Dauer, Wunschzeiten und Therapeut:in - die Terminart nur,
+ * wenn sie vom Hausbesuch abweicht (ANN-192), und keine Therapeut:in nur,
+ * wenn eine gewünscht ist (UX-005h).
+ */
 export function wishText(entry: WaitlistEntry): string {
   return [
-    appointmentTypeLabels[entry.appointment_type],
+    appointmentTypeHint(entry.appointment_type),
     `${entry.duration_minutes} Min.`,
     windowsText(entry.time_windows),
-    entry.preferred_staff_name ? `bei ${entry.preferred_staff_name}` : 'Therapeut:in egal',
-  ].join(' · ');
+    entry.preferred_staff_name ? `bei ${entry.preferred_staff_name}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 }

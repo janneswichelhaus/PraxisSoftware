@@ -57,11 +57,8 @@ export function StaffCompensationSection({ staff }: { staff: StaffMember }) {
   }
 
   return (
-    <Section
-      titel="Vergütung"
-      rahmen
-      hinweis="Das Modell wählt die Person selbst; hier steht, was vereinbart ist. Mit Umsatzbeteiligung sieht sie unter Statistiken ihren eigenen Umsatz."
-    >
+    // Nur der erste Satzteil des Hinweises: Der Rest erklärte das System (UX-005i).
+    <Section titel="Vergütung" rahmen hinweis="Das Modell wählt die Person selbst.">
       <form onSubmit={absenden} className="flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="sm:w-72">
           <Select

@@ -1211,6 +1211,50 @@ describe('CalendarPage', () => {
       // Ohne die Erweiterung begaenne die Achse erst um 07:00.
       expect(screen.getByText('06:00')).toBeInTheDocument();
     });
+
+    /**
+     * UX-005c: Grau ist, wo jemand nicht arbeitet. Bis dahin lag die
+     * Arbeitszeit selbst als graues Band im Gitter - und las sich als „hier
+     * nicht". Jannes: „Im Kalender muss die jeweilige Arbeitszeit des
+     * Mitarbeiters ersichtlich sein, zum Beispiel durch Ausgrauen des Rasters
+     * zu Zeiten, in denen er nicht arbeitet."
+     */
+    it('schraffiert die Zeit ausserhalb der Arbeitszeit, nicht die Arbeitszeit selbst (UX-005c)', async () => {
+      fetchWorkingHours.mockResolvedValue([
+        { id: 'w1', staff_member_id: STAFF_ANNA, weekday: 3, starts_at: '08:00', ends_at: '16:00' },
+      ]);
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      // Anna: vor 08:00 und nach 16:00 - das Fenster laeuft von 07:00 bis 20:00.
+      const anna = screen.getByRole('group', { name: /^Anna Beispiel/ });
+      const ausserhalb = within(anna).getAllByTestId('ausserhalb-arbeitszeit');
+      expect(ausserhalb).toHaveLength(2);
+      expect(ausserhalb[0]).toHaveStyle({ top: '0px', height: `${EINE_STUNDE}px` });
+      expect(ausserhalb[1]).toHaveStyle({
+        top: `${9 * EINE_STUNDE}px`,
+        height: `${4 * EINE_STUNDE}px`,
+      });
+      for (const flaeche of ausserhalb) expect(flaeche).toHaveClass('schraffur');
+
+      // Tim ohne hinterlegte Arbeitszeit: der ganze Tag.
+      const tim = screen.getByRole('group', { name: /^Tim Teamleitung/ });
+      const timAusserhalb = within(tim).getAllByTestId('ausserhalb-arbeitszeit');
+      expect(timAusserhalb).toHaveLength(1);
+      expect(timAusserhalb[0]).toHaveStyle({ top: '0px', height: `${13 * EINE_STUNDE}px` });
+
+      await optionenOeffnen();
+      expect(screen.getByText(/Grau schraffiert: außerhalb der Arbeitszeit/)).toBeInTheDocument();
+      expect(screen.queryByText(/Grau hinterlegt: die Arbeitszeit/)).not.toBeInTheDocument();
+    });
+
+    it('behauptet nichts, solange der Wochenplan nicht geladen ist', async () => {
+      fetchWorkingHours.mockImplementation(() => new Promise(() => undefined));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+      await screen.findByRole('link', { name: /Max Mustermann/ });
+
+      expect(screen.queryAllByTestId('ausserhalb-arbeitszeit')).toHaveLength(0);
+    });
   });
 
   describe('CAL-015b: Ereignisse im Gitter', () => {

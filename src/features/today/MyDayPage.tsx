@@ -17,7 +17,7 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   fetchAppointments,
   formatLocalTime,
   formatLocalTimeRange,
@@ -99,20 +99,20 @@ const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
  *
  * Die Person steht vorn, weil der Plan zeigen soll, wer wann wo ist - am
  * Telefon kürzt `truncate` das Ende der Zeile, und das war bis UXR-003 genau
- * der Name. Die Terminart steht einmal; bei Praxisterminen folgt ihr der
- * Standort.
+ * der Name. Die Terminart steht einmal und nur, wenn sie vom Hausbesuch
+ * abweicht (ANN-192); bei Praxisterminen folgt ihr der Standort.
  *
  * Die Kalenderabfrage liefert bewusst keine Besuchsadresse - für die Übersicht
  * über den Tag des Teams ist sie nicht erforderlich (ADR-004,
  * Datenminimierung). Die eigene Tagesliste oben hat sie.
  */
 function personUndOrt(termin: CalendarEntry): string {
-  const art = appointmentTypeLabels[termin.appointment_type];
+  const art = appointmentTypeHint(termin.appointment_type);
   const ort =
     termin.appointment_type === 'practice' && termin.location_name
       ? `${art} ${termin.location_name}`
       : art;
-  return `${staffName(termin)} · ${ort}`;
+  return ort ? `${staffName(termin)} · ${ort}` : staffName(termin);
 }
 
 function greeting(now = new Date()): string {
@@ -225,10 +225,11 @@ function Vorschau({ termin }: { termin: DayPlanEntry }) {
   );
 }
 
-function ortDesTermins(termin: DayPlanEntry): string {
+function ortDesTermins(termin: DayPlanEntry): string | null {
   if (termin.appointment_type === 'video') return 'Videotermin';
   if (termin.appointment_type === 'practice') return termin.location_name ?? 'Praxis';
-  return 'Hausbesuch';
+  // Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-192).
+  return null;
 }
 
 /**
@@ -443,7 +444,6 @@ function MeineTagesliste({
 
       <Section
         titel={offen.length > 0 ? `Offen heute (${offen.length})` : 'Offen heute'}
-        hinweis="Ihre Besuche mit Anschrift, Rufnummer und Zugangshinweis."
         aktion={<NavigationFuerDenTag termine={nochAnzufahren} />}
       >
         {offen.length === 0 ? (
@@ -455,7 +455,6 @@ function MeineTagesliste({
                 ? 'Heute ist nichts mehr offen'
                 : 'Heute sind Ihnen keine Besuche zugeordnet'
             }
-            description={gabBesuche ? 'Alle Besuche des Tages sind erledigt.' : undefined}
             aktion={
               ausserdem.length > 0 ? (
                 <HeuteAusserdem fehlzeiten={ausserdem} className="" />
@@ -467,10 +466,15 @@ function MeineTagesliste({
             {/* UX-EPIC-003: Der Tag beginnt am Rad mit dem, was zählt - die
                 Liege, der erste Weg, ein Blick auf den nächsten. Alles
                 Weitere liegt zugeklappt darunter. */}
-            <p className="text-ink mb-3 text-[1.0625rem]">
-              <span className="font-semibold">Liege heute: </span>
-              {liegeText(liege)}
-            </p>
+            {/* „Liege heute: nein" ist der Regelfall und stünde jeden Morgen
+                ganz oben; die Zeile steht nur, wenn die Liege mit muss
+                (UX-005h). */}
+            {liege.noetig ? (
+              <p className="text-ink mb-3 text-[1.0625rem]">
+                <span className="font-semibold">Liege heute: </span>
+                {liegeText(liege)}
+              </p>
+            ) : null}
             {/* PRX-007: zusammengezählt und ohne Person (ANN-138) - wer wofür,
                 steht im Kurzblick am Termin. Ohne Einträge keine Zeile. */}
             {mitnehmen.length > 0 ? (
@@ -695,10 +699,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
                 Tagesplan des Teams
               </h2>
             </summary>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
-              <p className="text-ink-muted max-w-prose text-sm">
-                Alle Termine und Fehlzeiten des Teams heute.
-              </p>
+            <div className="mt-1 flex flex-wrap items-center justify-end gap-3">
               <Textlink
                 alleinstehend
                 to={`/kalender?ansicht=tag&datum=${heute}`}
@@ -822,10 +823,14 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
             Satzanfang trägt die Altersmeldung der Tagesliste aus UX-011, und
             zwei gleich beginnende Sätze auf einer Seite lassen sich weder
             vorlesen noch testen auseinanderhalten. */}
-        <p className="text-ink-muted mt-4 mb-4 max-w-prose text-sm">
-          Diese Karten gehören zu <strong className="text-ink">{ich.name}</strong>
-          {identitaet.ueberNamen ? '' : ' (zur Rolle passend gewählt)'}.
-        </p>
+        {/* Wer über den Namen erkannt ist, braucht den Satz nicht - er steht
+            nur, wenn die Zuordnung über die Rolle geraten ist (UX-005h). */}
+        {identitaet.ueberNamen ? null : (
+          <p className="text-ink-muted mt-4 mb-4 max-w-prose text-sm">
+            Diese Karten gehören zu <strong className="text-ink">{ich.name}</strong> (zur Rolle
+            passend gewählt).
+          </p>
+        )}
 
         <CardGrid>
           <Card>
@@ -859,7 +864,6 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
                 ? 'Nichts offen'
                 : `${meineOffenen} ${meineOffenen === 1 ? 'Antrag' : 'Anträge'} offen`}
             </p>
-            <p className="text-ink-muted mt-1 text-sm">Urlaub, Zeitkonto und Erstattungen.</p>
             <div className="mt-2 flex flex-wrap gap-x-4">
               <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
                 Zum Urlaub
@@ -878,7 +882,6 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
               <p className="text-ink text-liste mt-1 font-medium">
                 {zuEntscheiden} {zuEntscheiden === 1 ? 'Vorgang' : 'Vorgänge'}
               </p>
-              <p className="text-ink-muted mt-1 text-sm">Urlaubsanträge und Erstattungen.</p>
               <div className="mt-2 flex flex-wrap gap-x-4">
                 <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
                   Urlaubsanträge
@@ -897,7 +900,6 @@ function UebersichtVorschau({ user }: { user: CurrentUser }) {
             <p className="text-ink text-liste mt-1 font-medium">
               {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
             </p>
-            <p className="text-ink-muted mt-1 text-sm">Kanäle und Direktnachrichten.</p>
             <Textlink alleinstehend to="/team" className={`mt-2 ${kartenlink}`}>
               Zur Kommunikation
               <Pfeil />

@@ -136,7 +136,9 @@ export function EreignisFormFields({
 
       {/* Beide Enden im Raster: Anders als beim Behandlungstermin ist die
           Länge hier frei (§8.1) - gebunden bleibt sie ans Praxisraster,
-          und das prüft der Server an beiden Enden. */}
+          und das prüft der Server an beiden Enden. Die stehenden Hinweise zum
+          Raster sind fort - sie erklärten das System, nicht die Eingabe; die
+          Fehlermeldung des Servers bleibt (UX-005g). */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Beginn *"
@@ -145,7 +147,6 @@ export function EreignisFormFields({
           value={werte.start_time}
           error={fehler.start_time}
           step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          hint={rasterMinuten ? `Praxisraster: ${rasterMinuten} Minuten` : undefined}
           onChange={(e) => onChange('start_time', e.target.value)}
         />
         <Field
@@ -155,7 +156,6 @@ export function EreignisFormFields({
           value={werte.end_time}
           error={fehler.end_time}
           step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          hint="Frei wählbar, im Praxisraster."
           onChange={(e) => onChange('end_time', e.target.value)}
         />
       </div>

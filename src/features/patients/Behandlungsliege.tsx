@@ -39,9 +39,9 @@ export function Behandlungsliege({
 
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-ink">
-        {stand === true ? 'Mitnehmen' : stand === false ? 'Nicht nötig' : 'Noch nicht entschieden'}
-      </p>
+      {/* UX-005e: Solange nichts entschieden ist, stehen nur die beiden
+          Handlungen da - „Noch nicht entschieden" sagte dasselbe noch einmal. */}
+      {stand !== null ? <p className="text-ink">{stand ? 'Mitnehmen' : 'Nicht nötig'}</p> : null}
       {darfAendern ? (
         <div className="flex flex-wrap gap-2">
           {/* Eine Handlung, kein Zustand (PAT-07): Der Zustand steht in der

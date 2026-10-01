@@ -98,10 +98,11 @@ function Eintrag({
         ) : null}
       </div>
 
+      {/* Das Kennzeichen „Ohne Behandlung" steht schon oben; hier nur die
+          eine Folge, die nicht am Kennzeichen ablesbar ist (UX-005g). */}
       {note.visit_without_treatment ? (
         <p className="text-ink-muted mt-3 max-w-prose text-sm leading-relaxed">
-          Tür geöffnet, Behandlung auf Angabe der Patient:in nicht durchgeführt. Der Termin gilt als
-          durchgeführt; eine Ausfallgebühr entsteht nicht.
+          Keine Ausfallgebühr.
         </p>
       ) : null}
 
@@ -234,6 +235,22 @@ export function TreatmentNoteSection({
   if (!darfLesen) return null;
 
   const eintrag = data?.primary ?? null;
+  // Am offenen Termin ohne Eintrag steht kein Satz „noch keine Dokumentation":
+  // Dass hier nichts steht, sieht man; der Weg dorthin ist oben der Hauptknopf.
+  // Nur Absage und „nicht angetroffen" brauchen ein Wort, weil dort keine
+  // Dokumentation mehr entsteht (UX-005g).
+  const leerHinweis = abgesagt
+    ? 'Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation.'
+    : nichtAngetroffen
+      ? 'Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst „Termin wieder öffnen“.'
+      : appointment.status === 'confirmed'
+        ? null
+        : 'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.';
+  const anlegenHier = darfSchreiben && !abgesagt && !nichtAngetroffen && !hauptknopfOben;
+
+  // Eine Überschrift ohne Inhalt - etwa fürs Büro am offenen Termin ohne
+  // Eintrag - sagt nichts; dann steht der Abschnitt gar nicht (UX-005g).
+  if (!isPending && !isError && !eintrag && !leerHinweis && !anlegenHier) return null;
 
   return (
     <Section titel="Behandlungsdokumentation">
@@ -249,20 +266,15 @@ export function TreatmentNoteSection({
         </div>
       ) : null}
 
-      {!isPending && !isError && !eintrag ? (
+      {!isPending && !isError && !eintrag && (leerHinweis || anlegenHier) ? (
         <div className="border-line mt-2 border-t pt-4">
-          <p className="text-ink-muted text-liste max-w-prose">
-            {abgesagt
-              ? 'Zu einem abgesagten Termin entsteht keine Behandlungsdokumentation.'
-              : nichtAngetroffen
-                ? 'Zu einem nicht angetroffenen Termin entsteht keine Behandlungsdokumentation. War das ein Irrtum, zuerst „Termin wieder öffnen“.'
-                : 'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.'}
-          </p>
-          {darfSchreiben && !abgesagt && !nichtAngetroffen ? (
+          {leerHinweis ? (
+            <p className="text-ink-muted text-liste max-w-prose">{leerHinweis}</p>
+          ) : null}
+          {anlegenHier ? (
             <ButtonLink
               to={mitRueckweg(`/termine/${appointment.id}/dokumentation`, rueckweg)}
-              variant={hauptknopfOben ? 'secondary' : 'primary'}
-              className="mt-3"
+              {...(leerHinweis ? { className: 'mt-3' } : {})}
             >
               Dokumentation anlegen
             </ButtonLink>
@@ -294,10 +306,8 @@ export function TreatmentNoteSection({
           ))}
         </>
       ) : null}
-
-      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
-        Zugriffe auf die Behandlungsdokumentation werden protokolliert.
-      </p>
+      {/* Keine Fußnote zur Protokollierung mehr: Sie erklärte das System,
+          nicht den Eintrag (UX-005g). Protokolliert wird unverändert (ADR-010). */}
     </Section>
   );
 }

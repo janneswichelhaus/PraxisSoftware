@@ -14,7 +14,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
+  appointmentTypeHint,
   formatLocalTimeRange,
 } from '@/features/appointments/api';
 import {
@@ -98,7 +98,11 @@ export function TrainingTermine({
                 {formatLocalTimeRange(t.starts_at, t.ends_at, zeitzone)}
               </Link>
               <span className="text-ink-muted flex items-center gap-2 text-sm">
-                {appointmentTypeLabels[t.appointment_type]} · {t.staff_given_name}
+                {/* Nur eine abweichende Terminart steht dran (ANN-192, UX-005i). */}
+                {appointmentTypeHint(t.appointment_type)
+                  ? `${appointmentTypeHint(t.appointment_type)} · `
+                  : ''}
+                {t.staff_given_name}
                 {t.status === 'confirmed' ? null : (
                   <Badge ton={appointmentStatusTon[t.status]}>
                     {appointmentStatusLabels[t.status]}

@@ -5,7 +5,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { roleLabel } from '@/components/ui/roleLabels';
 import { Section } from '@/components/ui/Section';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
@@ -25,7 +24,6 @@ import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
 import {
-  ageInYears,
   concludePatientCare,
   jahrPlus,
   reopenPatientCare,
@@ -53,7 +51,9 @@ import {
  * Unterstreichung neben schwarzem Text kaum als Link zu erkennen.
  */
 function TelefonZeile({ label, nummer }: { label: string; nummer: string | null }) {
-  if (!nummer) return <DetailRow label={label}>—</DetailRow>;
+  // UX-005e: Ein leerer Wert bekommt keine Zeile - der Gedankenstrich sagte
+  // nur, dass nichts da ist.
+  if (!nummer) return null;
   return (
     <DetailRow label={label}>
       <Textlink href={telHref(nummer)} alleinstehend className={KONTAKT_IN_DER_ZEILE}>
@@ -211,7 +211,6 @@ export function PatientMasterDataPage() {
 
 export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const ort = useLocation();
-  const alter = ageInYears(patient.date_of_birth);
   const street = [patient.street, patient.house_number].filter(Boolean).join(' ');
   const address = [street, [patient.postal_code, patient.city].filter(Boolean).join(' ')]
     .filter(Boolean)
@@ -230,11 +229,15 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Zusammenführen ist ein Vorgang der Praxisleitung (PRX-018,
   // app.can_merge_patients).
   const darfZusammenfuehren = isOwner(user.roles);
-  const hatVersorgungsangaben = Boolean(
-    patient.home_visit_access_note ||
-    patient.special_note ||
-    patient.remark ||
-    patient.primary_therapist_name,
+  // UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der Akte, sobald
+  // sie gesetzt sind - hier zählen nur die Angaben, die der Kopf nicht trägt.
+  const hatVersorgungsangaben = Boolean(patient.remark || patient.primary_therapist_name);
+  // UX-005e: Die Kartenposition ist eine Zeile, solange sie fehlt; verortet
+  // steht sie nicht als Dauerzeile da (ANN-016).
+  const kartenpositionOffen = darfVerorten && !patient.geocode_precision;
+  const hatPersonAngaben = Boolean(patient.institution || address) || kartenpositionOffen;
+  const hatKontaktdaten = Boolean(
+    patient.phone_mobile || patient.phone || patient.phone_work || patient.fax || patient.email,
   );
 
   // Formulare und Auskunft kehren hierher zurück - samt dem Rückweg der Akte,
@@ -264,53 +267,54 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           steht in einem eigenen Rasterfeld - damit greift `first:mt-0` in
           jedem Feld und die Spalten beginnen auf derselben Höhe. */}
       <div className="grid gap-x-8 gap-y-8 xl:grid-cols-2">
-        <div>
-          <Section titel="Person" rahmen>
-            <DetailList>
-              <DetailRow label="Geburtsdatum">
-                {patient.date_of_birth
-                  ? `${formatDate(patient.date_of_birth)}${alter !== null ? ` (${alter} Jahre)` : ''}`
-                  : '—'}
-              </DetailRow>
-              {patient.institution ? (
-                <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
-              ) : null}
-              <DetailRow label="Adresse">{address || '—'}</DetailRow>
-              {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
-                Verorten darf, wer die Stammdaten ändern darf; verbindlich
-                prüft set_patient_address_coordinate (ADR-004). */}
-              {darfVerorten ? (
-                <DetailRow label="Kartenposition">
-                  <AdresseVerorten patient={patient} />
-                </DetailRow>
-              ) : null}
-            </DetailList>
-          </Section>
-        </div>
+        {/* UX-005e: Das Geburtsdatum steht im Kopf über jedem Bereich und
+            wird hier nicht wiederholt; ein Abschnitt ohne Zeile entfällt. */}
+        {hatPersonAngaben ? (
+          <div>
+            <Section titel="Person" rahmen>
+              <DetailList>
+                {patient.institution ? (
+                  <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
+                ) : null}
+                {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
+                {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
+                  Verorten darf, wer die Stammdaten ändern darf; verbindlich
+                  prüft set_patient_address_coordinate (ADR-004). */}
+                {kartenpositionOffen ? (
+                  <DetailRow label="Kartenposition">
+                    <AdresseVerorten patient={patient} />
+                  </DetailRow>
+                ) : null}
+              </DetailList>
+            </Section>
+          </div>
+        ) : null}
 
         <div>
           <Section titel="Kontakt" rahmen>
-            <DetailList>
-              <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
-              <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
-              {patient.phone_work ? (
+            {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
+                sagt das ein Satz statt vier Gedankenstriche. */}
+            {hatKontaktdaten ? (
+              <DetailList>
+                <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+                <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
                 <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
-              ) : null}
-              {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
-              <DetailRow label="E-Mail">
+                {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
                 {patient.email ? (
-                  <Textlink
-                    href={`mailto:${patient.email}`}
-                    alleinstehend
-                    className={KONTAKT_IN_DER_ZEILE}
-                  >
-                    {patient.email}
-                  </Textlink>
-                ) : (
-                  '—'
-                )}
-              </DetailRow>
-            </DetailList>
+                  <DetailRow label="E-Mail">
+                    <Textlink
+                      href={`mailto:${patient.email}`}
+                      alleinstehend
+                      className={KONTAKT_IN_DER_ZEILE}
+                    >
+                      {patient.email}
+                    </Textlink>
+                  </DetailRow>
+                ) : null}
+              </DetailList>
+            ) : (
+              <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
+            )}
           </Section>
         </div>
 
@@ -340,12 +344,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                     <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
                   </DetailRow>
                 ) : null}
-                {patient.home_visit_access_note ? (
-                  <DetailRow label="Zugangshinweis">{patient.home_visit_access_note}</DetailRow>
-                ) : null}
-                {patient.special_note ? (
-                  <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
-                ) : null}
+                {/* UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der
+                    Akte (HausbesuchHinweise) - bearbeitet werden sie weiter im
+                    Formular. */}
                 {patient.primary_therapist_name ? (
                   <DetailRow label="Feste Therapeut:in">{patient.primary_therapist_name}</DetailRow>
                 ) : null}
@@ -359,35 +360,24 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           <Section titel="Versorgung" rahmen>
             <DetailList>
               <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
-              <DetailRow label="Status">
-                {patient.status === 'active' ? 'Aktiv' : 'Inaktiv'}
-              </DetailRow>
-              {/* Der Abschluss ist der Anker der zehnjaehrigen Aufbewahrung
-                (ADR-008, LOE-001b) und etwas anderes als der Status: „inaktiv"
-                sagt etwas ueber den Kalender, „abgeschlossen" ueber die
-                Behandlung. */}
-              <DetailRow label="Abschluss">
-                {patient.care_concluded_on
-                  ? `${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`
-                  : 'Laufende Versorgung'}
-              </DetailRow>
+              {/* UX-005e: Der Status steht als Ausnahme im Kopf der Akte, der
+                  Regelfall bekommt keine Zeile. Der Abschluss ist der Anker der
+                  zehnjaehrigen Aufbewahrung (ADR-008, LOE-001b) und steht nur,
+                  wenn er gesetzt ist - „Laufende Versorgung" war der Regelfall. */}
+              {patient.care_concluded_on ? (
+                <DetailRow label="Abschluss">
+                  {`${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`}
+                </DetailRow>
+              ) : null}
             </DetailList>
           </Section>
         </div>
       </div>
 
+      {/* UX-005e: Ohne erklärende Sätze unter den Überschriften - was ein
+          Vorgang tut, sagt seine Rückfrage, bevor er ausgelöst wird. */}
       {darfStatusWechseln || darfAbschliessen ? (
-        <Section
-          titel="Verwaltung"
-          // Der Satz zählt, was die Rolle hier tatsächlich sieht (PAT-05):
-          // Therapeut:innen sehen nur den Abschluss, das Praxismanagement nur
-          // den Status - „beide" stimmte für sie nicht.
-          hinweis={
-            darfStatusWechseln && darfAbschliessen
-              ? 'Vorgänge, die eine Akte aus dem laufenden Betrieb nehmen. Beide sind rücknehmbar.'
-              : 'Ein Vorgang, der eine Akte aus dem laufenden Betrieb nimmt. Er ist rücknehmbar.'
-          }
-        >
+        <Section titel="Verwaltung">
           <div className="flex flex-wrap items-start gap-3">
             {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
             {darfAbschliessen ? (
@@ -414,10 +404,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           `owner` - ausgeblendet ist keine Zugriffskontrolle, verbindlich
           prüft `merge_patients` (ADR-004). */}
       {darfZusammenfuehren ? (
-        <Section
-          titel="Dublette"
-          hinweis="Gibt es für diese Person eine zweite Akte, lässt sie sich hierher übernehmen. Diese Akte bleibt."
-        >
+        <Section titel="Dublette">
           <ButtonLink
             to={mitRueckweg(`/patienten/${patient.id}/dublette`, hier)}
             variant="secondary"
@@ -431,13 +418,11 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           beginnen mit einem Schreiben, nicht mit einem Klick (OPS-006). Der
           Zugang ist `owner` vorbehalten; ausgeblendet ist keine
           Zugriffskontrolle — verbindlich sind die Serverfunktionen
-          (ADR-004). Die übrigen Praxisrollen erfahren, wer eine Anfrage
-          bearbeitet, statt vor einer Lücke zu stehen (PAT-05). */}
+          (ADR-004). UX-005e: Die übrigen Rollen sehen den Abschnitt nicht -
+          ein Satz darüber, wer etwas darf, ist kein Inhalt der Akte. Der
+          Protokollhinweis entfällt ebenso; protokolliert wird weiter (ADR-010). */}
       {darfAuskunftErteilen ? (
-        <Section
-          titel="Betroffenenrechte"
-          hinweis="Auskunft nach Art. 15 DSGVO und die Antwort auf ein Löschverlangen. Jede Auskunft wird protokolliert."
-        >
+        <Section titel="Betroffenenrechte">
           <ButtonLink
             to={mitRueckweg(`/patienten/${patient.id}/auskunft`, hier)}
             variant="secondary"
@@ -445,18 +430,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             Auskunft und Löschverlangen
           </ButtonLink>
         </Section>
-      ) : canReadPatientDirectory(user.roles) ? (
-        <Section titel="Betroffenenrechte">
-          <p className="text-ink-muted max-w-prose text-sm">
-            Auskunft nach Art. 15 DSGVO und Löschverlangen sind der Rolle „{roleLabel('owner')}“
-            vorbehalten.
-          </p>
-        </Section>
       ) : null}
-
-      <p className="text-ink-muted mt-8 text-xs leading-relaxed">
-        Zugriffe auf Patientenakten werden protokolliert.
-      </p>
     </>
   );
 }

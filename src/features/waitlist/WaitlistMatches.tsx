@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { appointmentTypeLabels, schreibeTerminVorbelegung } from '@/features/appointments/api';
+import { appointmentTypeHint, schreibeTerminVorbelegung } from '@/features/appointments/api';
 import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -83,7 +83,8 @@ export function WaitlistMatches({ slot, back }: { slot: FreeSlot; back: string }
               </div>
               <p className="text-ink-muted text-sm">
                 {[
-                  appointmentTypeLabels[match.appointment_type],
+                  // Nur eine abweichende Terminart steht dran (ANN-192).
+                  appointmentTypeHint(match.appointment_type),
                   `${match.duration_minutes} Min.`,
                   windowsText(match.time_windows),
                   match.needed_by ? `bis spätestens ${formatDate(match.needed_by)}` : null,

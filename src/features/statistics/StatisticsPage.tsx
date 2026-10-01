@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
-import { CardGrid, Inhaltsflaeche } from '@/components/ui/Card';
+import { Aufklappzeichen, CardGrid, Inhaltsflaeche } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { formatEuro } from '@/lib/geld';
@@ -154,11 +154,18 @@ function Praxisstatistik() {
 
           <Verlauf monat={monat} heute={k.today} />
 
-          <p className="text-ink-muted mt-8 max-w-prose text-sm">
-            Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die übrigen
-            Zahlen gelten zum Stand {tagText(k.today)}. Kein steuerlicher Abschluss – die Aufteilung
-            nach Steuerkennzeichen steht unter Abrechnung → Auswertung.
-          </p>
+          {/* Die Fußnote erklärt die Rechnung, nicht die Zahlen - zugeklappt (UX-005i). */}
+          <details className="group border-line mt-8 max-w-prose border-t pt-2">
+            <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+              <Aufklappzeichen />
+              Hinweise zur Berechnung
+            </summary>
+            <p className="text-ink-muted mt-2 text-sm">
+              Umsatz und Zahlungseingang sind zwei Grundlagen und werden nie verrechnet. Die übrigen
+              Zahlen gelten zum Stand {tagText(k.today)}. Kein steuerlicher Abschluss – die
+              Aufteilung nach Steuerkennzeichen steht unter Abrechnung → Auswertung.
+            </p>
+          </details>
         </>
       ) : null}
     </>

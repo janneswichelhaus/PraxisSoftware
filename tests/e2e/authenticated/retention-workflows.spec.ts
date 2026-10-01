@@ -101,7 +101,10 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
 
     await page.goto(`/patienten/${PATIENTEN.erika}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Erika Beispiel' })).toBeVisible();
-    await expect(detailWert(page, 'Abschluss')).toHaveText('Laufende Versorgung');
+    // UX-005e: Eine laufende Versorgung ist der Regelfall und bekommt keine
+    // Zeile - die Zeile „Abschluss" entsteht erst mit dem Abschluss.
+    await expect(detailWert(page, 'Beginn')).toBeVisible();
+    await expect(detailWert(page, 'Abschluss')).toHaveCount(0);
 
     // Der Vorgang verlangt eine Rückfrage; erst der zweite Klick schreibt.
     await page.getByRole('button', { name: 'Versorgung abschließen' }).click();
@@ -122,7 +125,8 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
     // Ausgangszustand wiederherstellen, damit der Lauf wiederholbar bleibt.
     await page.getByRole('button', { name: 'Abschluss zurücknehmen' }).click();
     await page.getByRole('button', { name: 'Abschluss zurücknehmen' }).last().click();
-    await expect(detailWert(page, 'Abschluss')).toHaveText('Laufende Versorgung');
+    await expect(detailWert(page, 'Abschluss')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Versorgung abschließen' })).toBeVisible();
   });
 
   test('bietet office den Abschluss nicht an, wohl aber den Statuswechsel', async ({ page }) => {

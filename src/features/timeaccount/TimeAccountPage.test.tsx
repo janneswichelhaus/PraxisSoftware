@@ -17,8 +17,13 @@ describe('Zeitkonto', () => {
     expect(screen.queryByRole('heading', { name: 'Mein Zeitkonto' })).toBeNull();
     expect(screen.getAllByText(/^Lena Hartmann/)).toHaveLength(1);
 
-    const karten = screen.getAllByText(/Buchung(en)?$/).map((zeile) => zeile.closest('div'));
+    // Jede Karte trägt genau eine Zeile zu den Buchungen: den Aufklapper
+    // „Buchungen (N)" oder „Keine Buchungen" (UX-005i).
+    const karten = screen
+      .getAllByText(/^(Buchungen \(\d+\)|Keine Buchungen)$/)
+      .map((zeile) => zeile.closest('div'));
     expect(karten[0]).toHaveTextContent('Lena Hartmann (Sie)');
+    expect(screen.queryByText(/Saldo über alle Personen/)).toBeNull();
   });
 
   it('benennt, wem das eigene Konto in der Vorschau gehoert (VOR-07)', () => {

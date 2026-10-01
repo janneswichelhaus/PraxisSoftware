@@ -31,7 +31,6 @@ export function PrescriptionsToCapture({ timeZone }: { timeZone: string }) {
           ? `Verordnungen zu erfassen (${data.length})`
           : 'Verordnungen zu erfassen'
       }
-      hinweis="Fotos vom Termin, aus denen noch keine Grundlage entstanden ist."
     >
       {isPending ? <LoadingState label="Verordnungen werden geladen …" /> : null}
       {isError ? (

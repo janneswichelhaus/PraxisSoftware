@@ -65,7 +65,8 @@ describe('WaitlistPage (PRX-001)', () => {
       '/patienten/p1/termine',
     );
     expect(
-      screen.getByText('Hausbesuch · 60 Min. · Mo 08:00–12:00 · bei Anna Beispiel'),
+      // Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-192).
+      screen.getByText('60 Min. · Mo 08:00–12:00 · bei Anna Beispiel'),
     ).toBeInTheDocument();
     expect(screen.getByText('Verordnung endet')).toBeInTheDocument();
     expect(screen.getByText(/bis spätestens/)).toBeInTheDocument();

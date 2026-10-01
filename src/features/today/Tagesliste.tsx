@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { appointmentTypeLabels, formatLocalTimeRange } from '@/features/appointments/api';
+import { appointmentTypeHint, formatLocalTimeRange } from '@/features/appointments/api';
 import {
   adressZeilen,
   dayPlanStatusLabels,
@@ -46,6 +46,21 @@ export function Tageskarte({
   const adresse = adressZeilen(termin);
   const nummern = rufnummern(termin);
   const grund = offenGrund(termin);
+  // Eine Fehlzeit ohne Bezeichnung heißt in der Namenszeile schon „Fehlzeit"
+  // und braucht das Wort nicht zweimal (UX-005h).
+  const einordnung = [
+    termin.kind === 'internal'
+      ? termin.title
+        ? 'Fehlzeit'
+        : null
+      : termin.kind === 'training'
+        ? 'Training'
+        : null,
+    appointmentTypeHint(termin.appointment_type),
+    termin.location_name,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
     <Card>
@@ -55,7 +70,11 @@ export function Tageskarte({
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
           <Laengenzeichen termin={termin} />
         </p>
-        <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
+        {/* „Steht aus" ist unter „Offen heute" der Regelfall und sagt nichts;
+            nur ein abweichender Zustand trägt ein Abzeichen (UX-005h). */}
+        {termin.status === 'confirmed' ? null : (
+          <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
+        )}
       </div>
 
       {/* Eine Fehlzeit des Praxisbetriebs hat keine Akte, in die ein Link
@@ -75,7 +94,7 @@ export function Tageskarte({
               {termin.training_given_name} {termin.training_family_name}
             </Textlink>
           ) : (
-            '—'
+            'Trainingstermin'
           )
         ) : termin.kind === 'internal' || !termin.patient_id ? (
           (termin.title ?? 'Fehlzeit')
@@ -86,15 +105,9 @@ export function Tageskarte({
         )}
       </p>
 
-      <p className="text-ink-muted mt-0.5 text-sm">
-        {termin.kind === 'internal'
-          ? 'Fehlzeit · '
-          : termin.kind === 'training'
-            ? 'Training · '
-            : ''}
-        {appointmentTypeLabels[termin.appointment_type]}
-        {termin.location_name ? ` · ${termin.location_name}` : ''}
-      </p>
+      {/* Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-192);
+          die Zeile steht nur, wenn sie etwas sagt. */}
+      {einordnung ? <p className="text-ink-muted mt-0.5 text-sm">{einordnung}</p> : null}
 
       {grund ? <p className="text-warnung mt-2 text-sm font-medium">{grund}</p> : null}
 

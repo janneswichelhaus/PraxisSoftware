@@ -13,13 +13,17 @@ import type { CurrentUser, RoleKey } from '@/features/session/types';
 import '@/index.css';
 
 /**
- * Einstieg der Prüfseite aus `termin.html` (PRX-EPIC-002).
+ * Einstieg der Prüfseite aus `termin.html` (PRX-EPIC-002, UX-EPIC-005).
  *
- * Drei Ansichten über `?ansicht=`: `behandelnd` (Anna an ihrem dokumentierten
+ * Ansichten über `?ansicht=`: `behandelnd` (Anna an ihrem dokumentierten
  * Hausbesuch: Zähler, Kurzblick, Heilmittel bestätigen), `buero` (derselbe
- * Termin für das Büro: dazu Empfänger und offene Rechnungen) und `bestaetigt`
- * (Heilmittel bestätigt, Grundlage ausgeschöpft). Die Daten liegen vorab im
- * Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
+ * Termin für das Büro: dazu Empfänger und offene Rechnungen), `bestaetigt`
+ * (Heilmittel bestätigt, Grundlage ausgeschöpft), `hausbesuch` (Anna vor der
+ * Tür: der bestätigte Hausbesuch mit dem Ablauf „Niemand öffnet?"), `fremd`
+ * (Jannes am bestätigten Hausbesuch von Anna, mit Mitteilungszeichen),
+ * `praxis` (ein Praxistermin: die Ausnahme trägt ihr Kennzeichen) und
+ * `abgesagt` (die Absage mit Grund und Ausfallhonorar). Die Daten liegen
+ * vorab im Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const ansicht = new URLSearchParams(window.location.search).get('ansicht') ?? 'behandelnd';
 
@@ -51,7 +55,12 @@ function nutzer(rolle: RoleKey, name: string, staff: string | null): CurrentUser
 const benutzer =
   ansicht === 'buero'
     ? nutzer('office', 'Olivia Office', '55555555-5555-4555-8555-000000000003')
-    : nutzer('therapist', 'Anna Beispiel', ANNA);
+    : ansicht === 'fremd'
+      ? nutzer('owner', 'Jannes Test', '55555555-5555-4555-8555-000000000001')
+      : nutzer('therapist', 'Anna Beispiel', ANNA);
+
+/** Der bestätigte Hausbesuch, wie er vor der Tür aussieht (UX-EPIC-005). */
+const offen = ansicht === 'hausbesuch' || ansicht === 'fremd' || ansicht === 'praxis';
 
 const termin: Appointment = {
   id: TERMIN,
@@ -61,28 +70,30 @@ const termin: Appointment = {
   event_group_id: null,
   event_series_id: null,
   staff_member_id: ANNA,
-  location_id: null,
-  appointment_type: 'home_visit',
-  status: 'documented',
-  starts_at: '2026-09-28T08:00:00.000Z',
-  ends_at: '2026-09-28T09:00:00.000Z',
+  location_id: ansicht === 'praxis' ? '33333333-3333-4333-8333-000000000001' : null,
+  appointment_type: ansicht === 'praxis' ? 'practice' : 'home_visit',
+  status: ansicht === 'abgesagt' ? 'cancelled' : offen ? 'confirmed' : 'documented',
+  // Ein kommender Termin, damit der Ablauf vor der Tür und die Absage
+  // mit Frist so aussehen wie im Alltag.
+  starts_at: offen ? '2027-05-12T08:00:00.000Z' : '2026-09-28T08:00:00.000Z',
+  ends_at: offen ? '2027-05-12T09:00:00.000Z' : '2026-09-28T09:00:00.000Z',
   updated_at: '2026-09-28T09:10:00.000000+00',
-  visit_street: 'Beispielstrasse',
-  visit_house_number: '12',
-  visit_postal_code: '72070',
-  visit_city: 'Tuebingen',
-  completed_at: '2026-09-28T09:05:00.000Z',
-  cancellation_reason: null,
+  visit_street: ansicht === 'praxis' ? null : 'Beispielstrasse',
+  visit_house_number: ansicht === 'praxis' ? null : '12',
+  visit_postal_code: ansicht === 'praxis' ? null : '72070',
+  visit_city: ansicht === 'praxis' ? null : 'Tuebingen',
+  completed_at: offen || ansicht === 'abgesagt' ? null : '2026-09-28T09:05:00.000Z',
+  cancellation_reason: ansicht === 'abgesagt' ? 'patient_request' : null,
   no_show_recorded_at: null,
   no_show_protocol_confirmed: null,
-  cancellation_received_at: null,
-  fee_basis: null,
+  cancellation_received_at: ansicht === 'abgesagt' ? '2026-09-27T17:30:00.000Z' : null,
+  fee_basis: ansicht === 'abgesagt' ? 'late_cancellation' : null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
   staff_given_name: 'Anna',
   staff_family_name: 'Beispiel',
-  location_name: null,
-  notification_channels: [],
+  location_name: ansicht === 'praxis' ? 'Hauptstandort Tuebingen' : null,
+  notification_channels: ansicht === 'fremd' ? ['slip', 'phone'] : [],
   treatment_basis_covered: true,
   organization_time_zone: ZONE,
 };
@@ -184,7 +195,40 @@ const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
 client.setQueryData(['appointment', TERMIN], termin);
-client.setQueryData(['treatment-note', TERMIN], { primary: eintrag, addenda: [] });
+client.setQueryData(['treatment-note', TERMIN], {
+  primary: offen || ansicht === 'abgesagt' ? null : eintrag,
+  addenda: [],
+});
+// Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste (UX-005b).
+client.setQueryData(
+  ['day-plan', '2027-05-12', ANNA],
+  [
+    {
+      id: TERMIN,
+      patient_id: MAX,
+      staff_member_id: ANNA,
+      appointment_type: 'home_visit',
+      kind: 'therapy',
+      title: null,
+      status: 'confirmed',
+      starts_at: termin.starts_at,
+      ends_at: termin.ends_at,
+      patient_given_name: 'Max',
+      patient_family_name: 'Mustermann',
+      location_name: null,
+      visit_street: 'Beispielstrasse',
+      visit_house_number: '12',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
+      patient_phone: '+49 7071 0000005',
+      patient_phone_mobile: '+49 160 0000005',
+      home_visit_access_note: null,
+      special_note: null,
+      documentation_status: 'none',
+      organization_time_zone: ZONE,
+    },
+  ],
+);
 client.setQueryData(['appointment-brief', TERMIN], kurzblick);
 client.setQueryData(['appointment', TERMIN, 'abrechnungslage'], lage);
 client.setQueryData(['appointment', TERMIN, 'leistungen'], leistungen);

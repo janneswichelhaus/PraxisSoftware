@@ -159,12 +159,12 @@ describe('Radflotte', () => {
     for (const aktion of aktionen) expect(aktion).toHaveClass('min-h-11');
   });
 
-  it('zeigt den Normalbetrieb ohne Warnzeichen (VOR-13)', () => {
+  it('zeigt den Normalbetrieb ohne Abzeichen, die Reparatur mit (VOR-13, UX-005i)', () => {
     oeffne();
-    const imEinsatz = screen.getAllByText('Im Einsatz', { selector: 'span' });
-    expect(imEinsatz.length).toBeGreaterThan(0);
-    // Ohne „!" davor: Im Einsatz zu sein ist keine Warnung.
-    for (const abzeichen of imEinsatz) expect(abzeichen.textContent).toBe('Im Einsatz');
+    // Im Einsatz zu sein ist der Regelfall und trägt kein Abzeichen mehr.
+    expect(screen.queryByText('Im Einsatz', { selector: 'span' })).toBeNull();
+    expect(screen.queryByText('Verfügbar', { selector: 'span' })).toBeNull();
+    expect(screen.getAllByText('In Reparatur', { selector: 'span' }).length).toBeGreaterThan(0);
   });
 
   it('zaehlt Raeder richtig (VOR-24)', () => {

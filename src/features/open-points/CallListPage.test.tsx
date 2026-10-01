@@ -69,7 +69,9 @@ describe('Anrufliste (PRX-014)', () => {
       expect.stringMatching(/^tel:/),
     );
     expect(screen.getByRole('heading', { name: 'Schon mitgeteilt (1)' })).toBeInTheDocument();
-    expect(screen.getByText('Mitgeteilt: Zettel')).toBeInTheDocument();
+    // Der Abschnitt heißt schon „Schon mitgeteilt" - das Abzeichen nennt nur den Weg (UX-005h).
+    expect(screen.getByText('Zettel')).toBeInTheDocument();
+    expect(screen.queryByText('Offen')).toBeNull();
     expect(fetchCallList).toHaveBeenCalledWith('2031-03-11');
   });
 

@@ -262,6 +262,10 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
           <ul className="divide-line divide-y">
             {versionen.data.map((version) => {
               const istGewaehlt = aktuelle?.id === version.id;
+              // Bei einer künftigen Liste sagt das Abzeichen „Gilt ab …" den
+              // Beginn; die Zeile darunter wiederholte ihn (UX-005i).
+              const kuenftig =
+                version.published_at !== null && heute !== null && version.valid_from > heute;
               return (
                 <li
                   key={version.id}
@@ -285,9 +289,11 @@ export function CatalogPage({ user }: { user: CurrentUser }) {
                       ) : null}
                       {version.label}
                     </span>
-                    <span className="text-ink-muted mt-0.5 block text-sm">
-                      gültig ab {formatDate(version.valid_from)}
-                    </span>
+                    {kuenftig ? null : (
+                      <span className="text-ink-muted mt-0.5 block text-sm">
+                        gültig ab {formatDate(version.valid_from)}
+                      </span>
+                    )}
                   </button>
                   <Listenstand version={version} heute={heute} />
                 </li>

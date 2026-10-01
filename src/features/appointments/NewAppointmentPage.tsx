@@ -431,10 +431,9 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     <>
       {kopf}
 
-      <PageHeader
-        title="Termin anlegen"
-        description={`Für ${fullName(patientDaten)}. Mit * markierte Felder sind erforderlich.`}
-      />
+      {/* Nur der Name; der Satz zu den Sternchen erklärte das Formular, nicht
+          den Termin (UX-005g). */}
+      <PageHeader title="Termin anlegen" description={`Für ${fullName(patientDaten)}.`} />
 
       {patient.isError ? (
         <NachladeHinweis
@@ -573,11 +572,8 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
           </ButtonLink>
         </div>
       </form>
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Es werden ausschließlich organisatorische Angaben erfasst. Klinische Inhalte gehören nicht
-        zum Termin.
-      </p>
+      {/* Keine Fußnote mehr zu organisatorischen Angaben: Sie erklärte das
+          System, nicht den Termin (UX-005g). */}
     </>
   );
 }

@@ -43,6 +43,21 @@ export const appointmentTypeLabels: Record<AppointmentType, string> = {
   video: 'Video',
 };
 
+/**
+ * Der Regelfall der Terminart (UX-005a, ANN-192).
+ *
+ * Die Praxis macht Hausbesuche. „Hausbesuch" an jedem Termin, jeder Kachel
+ * und jeder Zeile sagte deshalb nichts - es stand nur im Weg. Ein Praxis-
+ * oder Videotermin ist die Ausnahme und trägt sein Wort als Kennzeichen.
+ * Genau eine Stelle: Wer den Regelfall ändert, ändert ihn hier.
+ */
+export const REGEL_TERMINART: AppointmentType = 'home_visit';
+
+/** Die Terminart als Kennzeichen - nur, wenn sie vom Regelfall abweicht (ANN-192). */
+export function appointmentTypeHint(type: AppointmentType): string | null {
+  return type === REGEL_TERMINART ? null : appointmentTypeLabels[type];
+}
+
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
   confirmed: 'Bestätigt',
   cancelled: 'Abgesagt',

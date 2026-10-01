@@ -24,7 +24,7 @@ describe('Mitnehmen in der Akte (PRX-007)', () => {
     );
   });
 
-  it('zeigt die Liste und sagt, wenn nichts eingetragen ist', () => {
+  it('zeigt die Liste - und ohne Eintrag nur den Knopf (UX-005e)', () => {
     const { unmount } = renderWithProviders(
       <Mitnehmen patient={testPatient({ take_along_items: ['Theraband'] })} darfAendern />,
     );
@@ -33,7 +33,7 @@ describe('Mitnehmen in der Akte (PRX-007)', () => {
     unmount();
 
     renderWithProviders(<Mitnehmen patient={testPatient({ take_along_items: [] })} darfAendern />);
-    expect(screen.getByText('Nichts eingetragen.')).toBeInTheDocument();
+    expect(screen.queryByText('Nichts eingetragen.')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Material eintragen' })).toBeInTheDocument();
   });
 

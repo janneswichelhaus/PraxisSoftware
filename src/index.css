@@ -205,6 +205,21 @@
   --container-inhalt: 1200px;
 }
 
+/* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die
+   Zeit außerhalb der Arbeitszeit (UX-005c). Feine Linien in `line` auf der
+   vertieften Fläche: Die Fläche liest sich als „hier nicht", ohne dass die
+   Farbe allein trägt (Oberflächen-Checkliste Punkt 4). Als Utility statt als
+   Stil im Element (TOK-17); ein zweiter Ort für Muster entsteht damit nicht. */
+@utility schraffur {
+  background-image: repeating-linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 7px,
+    var(--color-line) 7px,
+    var(--color-line) 8px
+  );
+}
+
 @layer base {
   /* Nur das helle Schema (DS-001, NAV-10). Ohne diese Angabe zeichnet der
      Browser seine eigenen Teile - Rollbalken, Datums- und Zeitfelder samt

@@ -243,10 +243,8 @@ export function AppointmentSlipPage() {
             </div>
           ) : null}
 
-          <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
-            Der Druck selbst vermerkt nichts. Erst die Bestätigung danach hält fest, dass die
-            Termine ausgehändigt wurden; am Termin lässt sich der Vermerk zurücknehmen.
-          </p>
+          {/* Kein Absatz dazu, was der Druck vermerkt und was nicht: Die
+              Rückfrage nach dem Druck sagt es dort, wo es ansteht (UX-005g). */}
 
           {/* Der zweite Weg steht unter dem ersten, nicht daneben: Der Ausdruck
               bleibt der Normalfall, die E-Mail die Ausnahme auf Wunsch. */}
@@ -255,12 +253,8 @@ export function AppointmentSlipPage() {
           </div>
         </div>
       ) : null}
-
-      <p className="text-ink-muted nicht-drucken mt-10 max-w-prose text-xs leading-relaxed">
-        Ausdruck und E-Mail enthalten ausschließlich organisatorische Angaben – dieselbe Liste, die
-        oben steht. Eine Terminliste ist trotzdem ein Gesundheitsdatum: Sie sagt, dass jemand in
-        Behandlung ist.
-      </p>
+      {/* Keine Fußnote zu organisatorischen Angaben und Gesundheitsdatum mehr:
+          Sie erklärte das System, nicht die Liste (UX-005g). */}
     </>
   );
 }

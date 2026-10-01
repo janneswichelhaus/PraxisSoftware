@@ -5,7 +5,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Inhaltsflaeche } from '@/components/ui/Card';
+import { Aufklappzeichen, Inhaltsflaeche } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
@@ -181,7 +182,11 @@ function Zustandszeile({ ansicht }: { ansicht: Rechnungsansicht }) {
         {ansicht.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
       </>
     );
-    satz = 'Ausgestellt und unveränderlich. Eine Korrektur läuft über Storno und Neuausstellung.';
+    // Die Frist steht hier statt im Absenderblock; dass die Rechnung fest
+    // ist, sagt der Storno-Abschnitt, wo es zählt (UX-005i).
+    satz = ansicht.due_on
+      ? `Zahlbar bis ${formatDate(ansicht.due_on)} (${ansicht.document.issuer.payment_term_days} Tage).`
+      : `Zahlungsziel ${ansicht.document.issuer.payment_term_days} Tage ab Ausstellung.`;
   }
 
   return (
@@ -293,6 +298,11 @@ function Rechnungsbild({
           <p className="text-ink text-liste font-medium">{dokument.recipient.name}</p>
           <p className="text-ink-muted text-sm">
             {empfaengerart(dokument.recipient.kind, dokument.service_area)}
+            {/* Geht die Rechnung an die Person selbst, steht ihr Name nicht
+                ein zweites Mal darunter - nur das Geburtsdatum (UX-005i). */}
+            {dokument.recipient.kind === 'self' && dokument.patient.date_of_birth
+              ? `, geb. ${formatDate(dokument.patient.date_of_birth)}`
+              : ''}
           </p>
           {dokument.recipient.street ? (
             <p className="text-ink-muted mt-1 text-sm">
@@ -306,12 +316,14 @@ function Rechnungsbild({
             </p>
           ) : null}
 
-          <p className="text-ink-muted mt-3 text-sm">
-            {personLabel(dokument.service_area, 'kurz')}: {dokument.patient.name}
-            {dokument.patient.date_of_birth
-              ? `, geb. ${formatDate(dokument.patient.date_of_birth)}`
-              : ''}
-          </p>
+          {dokument.recipient.kind === 'self' ? null : (
+            <p className="text-ink-muted mt-3 text-sm">
+              {personLabel(dokument.service_area, 'kurz')}: {dokument.patient.name}
+              {dokument.patient.date_of_birth
+                ? `, geb. ${formatDate(dokument.patient.date_of_birth)}`
+                : ''}
+            </p>
+          )}
         </Inhaltsflaeche>
 
         {/* ANN-182: Eine Trainingsrechnung geht an die Kund:in selbst. Die
@@ -397,38 +409,34 @@ function Rechnungsbild({
               </li>
             ))}
           </ul>
-          <p className="text-ink-muted mt-2 text-sm">
-            Ohne Diagnose: Eine Rechnung geht regelmäßig an Dritte, und klinische Inhalte gehören
-            nicht dorthin.
-          </p>
+          {/* Kein Satz „Ohne Diagnose": Was nicht da ist, braucht keine
+              Erklärung an jeder Rechnung (UX-005i). */}
         </Section>
       ) : null}
 
-      <Section titel="Absender" rahmen>
-        <p className="text-ink text-liste">{dokument.issuer.legal_name}</p>
-        <p className="text-ink-muted text-sm">
-          {`${dokument.issuer.street} ${dokument.issuer.house_number ?? ''}`.trim()},{' '}
-          {dokument.issuer.postal_code} {dokument.issuer.city}
-        </p>
-        <p className="text-ink-muted mt-1 text-sm">Steuernummer {dokument.issuer.tax_number}</p>
-        {/* Beschriftet und in Vierergruppen (ABR-28); gespeichert bleibt sie,
-            wie sie ist. */}
-        <p className="text-ink-muted text-sm">
-          {dokument.issuer.account_holder ?? dokument.issuer.legal_name} · IBAN{' '}
-          {ibanInGruppen(dokument.issuer.iban)}
-          {dokument.issuer.bic ? ` · BIC ${dokument.issuer.bic}` : ''}
-        </p>
-        {/* Eine stornierte Rechnung ist keine Forderung mehr (ABR-06). */}
-        {ansicht.cancellation ? null : ansicht.due_on ? (
-          <p className="text-ink-muted mt-1 text-sm">
-            Zahlbar bis {formatDate(ansicht.due_on)} ({dokument.issuer.payment_term_days} Tage).
+      {/* Der Absender ist auf jeder Rechnung derselbe und steht zugeklappt;
+          die Zahlungsfrist steht oben in der Zustandszeile (UX-005i). */}
+      <details className="group border-line bg-surface rounded-card mt-8 border px-4 sm:px-5">
+        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+          <Aufklappzeichen />
+          Absender und Bankverbindung
+        </summary>
+        <div className="pb-3">
+          <p className="text-ink text-liste">{dokument.issuer.legal_name}</p>
+          <p className="text-ink-muted text-sm">
+            {`${dokument.issuer.street} ${dokument.issuer.house_number ?? ''}`.trim()},{' '}
+            {dokument.issuer.postal_code} {dokument.issuer.city}
           </p>
-        ) : (
-          <p className="text-ink-muted mt-1 text-sm">
-            Zahlungsziel {dokument.issuer.payment_term_days} Tage ab Ausstellung.
+          <p className="text-ink-muted mt-1 text-sm">Steuernummer {dokument.issuer.tax_number}</p>
+          {/* Beschriftet und in Vierergruppen (ABR-28); gespeichert bleibt sie,
+              wie sie ist. */}
+          <p className="text-ink-muted text-sm">
+            {dokument.issuer.account_holder ?? dokument.issuer.legal_name} · IBAN{' '}
+            {ibanInGruppen(dokument.issuer.iban)}
+            {dokument.issuer.bic ? ` · BIC ${dokument.issuer.bic}` : ''}
           </p>
-        )}
-      </Section>
+        </div>
+      </details>
 
       {/* Das Blatt zum Verschicken öffnet der Kopf der Seite (ABR-05). Nach
           dem Ausstellen steht es hier noch einmal - als nächster Schritt, mit
@@ -598,12 +606,11 @@ function Zahlungen({
           ) : (
             <>
               <span className="flex flex-wrap items-center gap-2">
+                {/* Den Zahlungsstand trägt die Zustandszeile oben; hier
+                    stünde er ein zweites Mal (UX-005i). */}
                 <span className="text-ink text-liste font-semibold">
                   {offen < 0 ? 'Zu viel gezahlt' : 'Noch offen'}
                 </span>
-                <Badge ton={zahlungsTon[ansicht.payment_state]}>
-                  {zahlungsstandLabels[ansicht.payment_state]}
-                </Badge>
               </span>
               <span className="text-ink text-liste font-semibold tabular-nums">
                 {formatEuro(Math.abs(offen), waehrung)}
@@ -745,7 +752,8 @@ function Zahlungserinnerungen({
             {heuteSchon
               ? 'Heute ist bereits eine Erinnerung ausgestellt.'
               : ansicht.overdue
-                ? 'Keine Mahnung und keine Stufe: ein Blatt, das an die fällige Rechnung erinnert, mit einer neuen Frist von vierzehn Tagen. Ohne Gebühr und ohne Zinsen.'
+                ? // Kurz: Was das Blatt nicht ist, muss hier nicht stehen (UX-005i).
+                  'Neue Frist 14 Tage, ohne Gebühr.'
                 : `Die Rechnung ist noch nicht fällig${
                     ansicht.due_on ? ` – sie läuft bis zum ${formatDate(ansicht.due_on)}` : ''
                   }. Vorher gibt es nichts zu erinnern.`}
@@ -876,13 +884,9 @@ function Stornokette({
 
   return (
     <Section titel="Storno" ebene={2}>
-      <p className="text-ink-muted text-sm">
-        Eine ausgestellte Rechnung wird nicht geändert und nicht gelöscht. Das Storno ist ein
-        eigenes Dokument mit eigener Nummer; danach sind die Leistungen wieder abzurechnen, und eine
-        Korrekturrechnung lässt sich aus ihnen erstellen.
-      </p>
-
-      <div className="mt-3">
+      {/* Was das Storno bedeutet, steht in der Rückfrage - dort, wo
+          entschieden wird, nicht als Vorrede (UX-005i). */}
+      <div>
         {zahlungSteht ? (
           <Statusmeldung>
             Zuerst die gebuchte Zahlung oben stornieren. Erst danach lässt sich die Rechnung
@@ -919,8 +923,9 @@ function Stornokette({
             }}
           >
             <p className="text-ink-muted text-sm">
-              Das Storno bleibt dauerhaft sichtbar und trägt seine eigene Nummer aus dem
-              Nummernkreis. Rückgängig machen lässt es sich nicht.
+              Die Rechnung bleibt, wie sie ist; das Storno ist ein eigenes Dokument mit eigener
+              Nummer und lässt sich nicht zurücknehmen. Danach sind die Leistungen wieder
+              abzurechnen, und eine Korrekturrechnung lässt sich aus ihnen erstellen.
             </p>
             {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
             <div className="mt-2 max-w-xl">

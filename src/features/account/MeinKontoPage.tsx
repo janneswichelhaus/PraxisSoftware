@@ -196,9 +196,10 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
   });
 
   return (
+    // Ein Satz als Hinweis; was es nicht gibt, steht nicht dran (UX-005i).
     <Section
       titel="Zweiter Faktor"
-      hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Kennwort. Kein SMS-Code – dafür bräuchte es einen weiteren Dienstleister."
+      hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Kennwort."
     >
       {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
           ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
@@ -410,9 +411,9 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
 
       <div className="mt-8 max-w-xl">
         <Section titel="Zugang" rahmen>
+          {/* Name und Praxis stehen in der Kopfzeile der Anwendung; hier nur,
+              was die Seite sonst nirgends sagt - die Rollen (UX-005i). */}
           <DetailList>
-            <DetailRow label="Name">{user.profile.display_name}</DetailRow>
-            <DetailRow label="Praxis">{user.organizationName ?? '—'}</DetailRow>
             <DetailRow label="Rollen">
               <span className="flex flex-wrap gap-1.5">
                 {user.roles.map((rolle) => (
@@ -428,9 +429,9 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <Sitzungen />
 
         <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+          {/* Wer Rollen ändert, sagt der Kopf der Seite (UX-005i). */}
           Kennwortänderung, zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne
-          Kennwort, ohne Einmalkennwort und ohne Gerätekennung. Rollen und Sperre ändert
-          ausschließlich die Praxisinhaber:in.
+          Kennwort, ohne Einmalkennwort und ohne Gerätekennung.
         </p>
       </div>
     </>

@@ -214,8 +214,9 @@ describe('StaffAccountSection', () => {
     fetchStaffAccount.mockResolvedValue(mitZugang);
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
-    expect(await screen.findByText('Eingerichtet')).toBeInTheDocument();
-    expect(screen.getByRole('checkbox', { name: 'Therapeut:in' })).toBeChecked();
+    // Eingerichtet ist der Regelfall und steht nicht als Zeile da (UX-005i).
+    expect(await screen.findByRole('checkbox', { name: 'Therapeut:in' })).toBeChecked();
+    expect(screen.queryByText('Eingerichtet')).not.toBeInTheDocument();
     expect(screen.getByRole('checkbox', { name: 'Praxismanagement' })).not.toBeChecked();
     expect(screen.queryByRole('button', { name: 'Zugang einladen' })).not.toBeInTheDocument();
   });
@@ -345,9 +346,9 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     fetchStaffAccount.mockResolvedValue({ ...mitZugang, account_active: false });
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
-    expect(await screen.findByText('Gesperrt')).toBeInTheDocument();
+    // Die Sperre sagt allein die Warnung, keine Zeile „Stand" (UX-005i).
     expect(
-      screen.getByText(/Die Person kann sich anmelden, sieht aber keine Daten der Praxis/),
+      await screen.findByText(/Die Person kann sich anmelden, sieht aber keine Daten der Praxis/),
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Zugang entsperren' })).toBeInTheDocument();
   });
@@ -437,7 +438,10 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
   it('nennt bei einer offenen Einladung den nächsten Schritt - wer und wo', async () => {
     renderWithProviders(<StaffAccountSection staff={anna} />);
 
-    expect(await screen.findByText('Nächster Schritt')).toBeInTheDocument();
+    // Zugeklappt hinter einem Aufklapper (UX-005i); der Text steht im Dokument.
+    expect(
+      await screen.findByText("Konto beim Anmeldedienst anlegen – so geht's"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/braucht sie einmalig ein\s+Konto beim Anmeldedienst/s),
     ).toBeInTheDocument();
@@ -457,7 +461,9 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
       await screen.findByText(/Die Anmeldemail wurde an nina.neu@praxis.invalid geschickt/),
     ).toBeInTheDocument();
     // Das Konto gibt es also schon - der Schritt dorthin entfällt (ORG-10).
-    expect(screen.queryByText('Nächster Schritt')).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Konto beim Anmeldedienst anlegen – so geht's"),
+    ).not.toBeInTheDocument();
   });
 
   it('unterscheidet den nicht erreichbaren Dienst vom fehlenden Konto (R3-008)', async () => {

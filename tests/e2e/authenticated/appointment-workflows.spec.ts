@@ -66,15 +66,12 @@ test.describe('CAL-001: Termin anlegen', () => {
 
     // Der Patient steht als Kontext und ist nicht wechselbar. Seit TER-21 gibt
     // es keinen eigenen Kasten mit dem Namen mehr: Er steht in der
-    // Seitenbeschreibung, geprüft wird sie wörtlich. exact grenzt beim Feld seit
-    // VER-001 gegen die Arbeitsbereich-Unternavigation "Patient:innen" ab (nav
-    // aria-label, sichtbar sobald die Verordnerkartei einen zweiten Unterpunkt
-    // liefert): ohne exact matcht getByLabel sie als Teilstring.
-    await expect(
-      page.getByText('Für Max Mustermann. Mit * markierte Felder sind erforderlich.', {
-        exact: true,
-      }),
-    ).toBeVisible();
+    // Seitenbeschreibung, geprüft wird sie wörtlich (seit UX-005g ohne den Satz
+    // zu den Sternchen). exact grenzt beim Feld seit VER-001 gegen die
+    // Arbeitsbereich-Unternavigation "Patient:innen" ab (nav aria-label,
+    // sichtbar sobald die Verordnerkartei einen zweiten Unterpunkt liefert):
+    // ohne exact matcht getByLabel sie als Teilstring.
+    await expect(page.getByText('Für Max Mustermann.', { exact: true })).toBeVisible();
     await expect(page.getByLabel('Patient:in', { exact: true })).toHaveCount(0);
 
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });
@@ -103,7 +100,9 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByRole('heading', { name: /Termin – Max Mustermann/ })).toBeVisible();
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
-    await expect(detailWert(page, 'Art')).toContainText('Praxis');
+    // UX-005a: Die Terminart steht als Kennzeichen in der Kachel des Ortes,
+    // nur wenn sie vom Hausbesuch abweicht (ANN-192).
+    await expect(detailWert(page, 'Standort')).toContainText('Praxistermin');
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
     await expect(detailWert(page, 'Standort')).toContainText('Hauptstandort');
@@ -182,7 +181,8 @@ test.describe('CAL-001: Termin anlegen', () => {
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
 
     await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-    await expect(detailWert(page, 'Art')).toContainText('Hausbesuch');
+    // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-192).
+    await expect(page.getByText('Praxistermin')).toHaveCount(0);
     await expect(detailWert(page, 'Anschrift')).toContainText('Testweg');
   });
 });

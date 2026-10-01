@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-28
+Stand: 2026-10-01
 
 ## Zweck
 
@@ -3149,3 +3149,115 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Der Test setzt als Eingangstag „morgen“ in der Zeitzone des Geräts und erwartet den Fehler „nicht für die Zukunft buchen“. Die Seite prüft in der Zeitzone der Praxis (Europe/Berlin). Auf einem Gerät in UTC ist zwischen 22 und 24 Uhr das UTC-„morgen“ in Berlin schon „heute“: kein Fehler, der Test wird rot. Das betrifft die CI (UTC), wenn sie abends läuft. Die Anwendung selbst ist richtig, falsch ist nur die Hilfe im Test. Dieselbe Art Fehler haben POR-EPIC-001 in `training-protocols.test.ts` und `appointment-coverage.test.ts` behoben: Monat von heute statt Monat des Termins, rot am Monatsanfang in Berlin.
 
 **Erwartet.** `morgenOrtszeit` rechnet „morgen“ in Europe/Berlin (`todayInTimeZone` plus ein Tag). Danach einmal mit `TZ=UTC` zu einer Uhrzeit zwischen 22 und 24 Uhr gegenprüfen.
+
+### BEF-084 — Die Terminseite wiederholt, was die Überschrift schon sagt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Terminseite `/termine/:id` |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005a) |
+| Berührt | `src/features/appointments/AppointmentDetailPage.tsx`, `AppointmentHeadline.tsx`, `Abrechnungslage.tsx`, `src/components/ui/Tile.tsx` |
+
+**Beobachtung.** Die Tabelle unter der Überschrift nannte den Namen der Patient:in (steht schon in der Überschrift), die behandelnde Person (in der Situation klar), „Hausbesuch“ (der Regelfall) und den Status „Bestätigt“ (für die Behandelnde ohne Bedeutung). Datum und Uhrzeit standen erst in der Tabelle, die Mitteilungszeichen daneben. Alles zusammen kostete am Telefon eine Bildschirmhöhe, bevor die Anschrift kam.
+
+**Erwartet.** Datum, Zeit und Mitteilungszeichen in der Zeile unter der Überschrift; die behandelnde Person nur an fremden Terminen (ANN-193), die Terminart nur, wenn sie vom Hausbesuch abweicht (ANN-192), der Status nur, wenn er von „Bestätigt“ abweicht. Anschrift und Navigation bleiben, als Kachel, daneben die Grundlage. Ein Praxis- oder Videotermin trägt eine farbige Kachel.
+
+### BEF-085 — Der Block „Was ist passiert?“ am Hausbesuch steht immer offen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Terminseite `/termine/:id` (bestätigter Hausbesuch) |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005b) |
+| Berührt | `src/features/appointments/HomeVisitFlow.tsx`, `AppointmentDetailPage.tsx` |
+
+**Beobachtung.** Die drei Szenarien aus CAL-018 (Regelfall, Tür geöffnet ohne Behandlung, niemand öffnet) standen auf jeder Hausbesuchsseite ausgeklappt mit ihren Folgen — auch dann, wenn die Tür wie fast immer aufgeht. Der Regelfall stand mitten im Ausnahmeblock.
+
+**Erwartet.** Ein Knopf „Niemand öffnet?“ neben „Dokumentieren und abschließen“; dahinter die Schrittfolge geklingelt → gewartet → angerufen mit den Rufnummern der Patient:in zum Tippen, am Ende „nicht angetroffen“ vermerken; darunter der Weg „Ohne Behandlung abschließen“. Das Protokoll bleibt serverseitig Pflicht (ADR-018 Punkt 9).
+
+### BEF-086 — Im Kalender ist nicht zu sehen, wann jemand arbeitet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Kalender `/kalender` |
+| Quelle  | Jannes, Durchsicht am Handy |
+| Status  | erledigt in UX-EPIC-005 (UX-005c) |
+| Berührt | `src/features/appointments/CalendarGrid.tsx`, `CalendarPage.tsx`, `calendar.ts` |
+
+**Beobachtung.** Das Gitter war für jede Person von 07:00 bis 19:00 gleich weiß, ob sie an dem Tag arbeitet oder nicht. Die Arbeitszeit stand nur in der Planung unter Organisatorisches.
+
+**Erwartet.** Die Zeit außerhalb der Arbeitszeit einer Person ist grau schraffiert, auch ein ganzer Tag ohne Arbeitszeit; die weiße Fläche ist die Arbeitszeit. Solange der Wochenplan nicht geladen ist, wird nichts behauptet. Die Legende erklärt die Schraffur.
+
+### BEF-087 — „Hausbesuch“ steht auf jeder Kachel, Karte und Zeile
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Kalender, Übersicht (Tageskarte, Tagesplan des Teams), Akte (Termine, Behandlungsverlauf), Mitarbeitende, Tag umplanen, Termine übertragen, Anrufliste |
+| Quelle  | Claude, Durchsicht aller Terminzeilen im Auftrag von Jannes („weitere Stellen mit unnötigen Angaben“) |
+| Status  | erledigt in UX-EPIC-005 (UX-005d) |
+| Berührt | neun Komponenten, alle über `appointmentTypeHint` in `src/features/appointments/api.ts` |
+
+**Beobachtung.** Neun Listen und Kacheln nannten die Terminart an jeder Zeile — bei einer Hausbesuchspraxis fast immer „Hausbesuch“. Auf der Kalenderkachel war es die dritte Zeile, auf der Tageskarte eine eigene Zeile unter dem Namen, im Teamplan „Anna Beispiel · Hausbesuch“.
+
+**Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-192): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.
+
+### BEF-088 — Die Akte wiederholt ihren Kopf und erklärt sich selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Akte: Stammdaten, Behandlungsverlauf, Verordnungen, Befund, Dateien, Formulare |
+| Quelle  | Claude, systematische Durchsicht aller Seiten im Auftrag von Jannes („solche Bereiche in der gesamten Anwendung finden“) |
+| Status  | erledigt in UX-EPIC-005 (UX-005e) |
+| Berührt | `PatientRecordLayout.tsx`, `PatientMasterDataPage.tsx`, `PatientRecordDocumentation.tsx`, `PatientTreatmentBasesPage.tsx`, `PatientBefundPage.tsx`, `Behandlungsliege.tsx`, `Mitnehmen.tsx`, `PatientFilesPage.tsx`, `EditPatientPage.tsx`, `NewPatientPage.tsx` |
+
+**Beobachtung.** Der Aktenkopf steht über jedem Bereich und nennt Name, Geburtsdatum, Versorgungsstand, Zugangshinweis und Besonderheit. Die Stammdaten darunter nannten Geburtsdatum, „Status: Aktiv“, „Abschluss: Laufende Versorgung“, Zugangshinweis und Besonderheit ein zweites Mal, dazu „Kartenposition: Verortet“ als Dauerzeile, vier Gedankenstriche für leere Kontaktwege, drei Erklärsätze unter den Verwaltungsabschnitten, einen Hinweis auf Betroffenenrechte für Rollen ohne das Recht und die Fußzeile „Zugriffe … werden protokolliert“. Der Verlauf trug an jeder Karte „Abgeschlossen“ oder „Dokumentiert“, „Finalisiert“, den Namen der Behandelnden dreimal und „Zum Termin“ als eigene Zeile; die Grundlagen „Offen“ an jeder laufenden Grundlage und einen leeren Scan-Block mit Erklärsatz.
+
+**Erwartet.** Nichts im Körper wiederholt den Kopf; ein Regelfall trägt kein Abzeichen und keine Zeile; ein leerer Wert nimmt keine Zeile; Sätze, die das System statt die Daten erklären, entfallen. Die frühere Festlegung aus PAT-05 („übrige Rollen erfahren, wer eine Anfrage bearbeitet“) ist damit zurückgenommen: Ein Satz darüber, wer etwas darf, ist kein Inhalt der Akte.
+
+### BEF-089 — Terminformulare erklären das System auf jeder Seite
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Termin anlegen (Start, Formular, Serie, Dauertermin), Termin bearbeiten, Fehlzeiten, Terminzettel, Kurzblick, Mitteilung, Dokumentation, Terminsuche |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005g) |
+| Berührt | `src/features/appointments/*Page.tsx`, `AppointmentFormFields.tsx`, `EreignisFormFields.tsx`, `Kurzblick.tsx`, `MitteilungVermerken.tsx`, `src/features/documentation/TreatmentNoteSection.tsx`, `CompleteTreatmentPage.tsx`, `src/features/slot-search/SlotSearchPage.tsx` |
+
+**Beobachtung.** Die Startseite der Terminanlage nannte die Vorbelegung in der Beschreibung und noch einmal als Tabelle mit „Terminart: Hausbesuch“ und „noch offen“-Zeilen. Jedes Hausbesuchsformular erklärte, woher die Adresse kommt; Beginn-Felder nannten das Praxisraster; Fußzeilen erklärten Protokollierung und Datenart. Bearbeiten zeigte die Patient:in ein zweites Mal mit dem Satz, dass sie nicht wechselbar ist. Die Serie nannte „bis HH:MM“ unter jedem Vorschlag und „Fenster: 60 Minuten“. Am offenen Termin ohne Dokumentation stand „noch keine Dokumentation hinterlegt“ plus ein zweiter Knopf unter dem Hauptknopf. Die Terminsuche trug „Fahrweg passt“ und „Im Gebietstag“ an fast jeder Zeile.
+
+**Erwartet.** Eine Zeile aus gefüllten Werten statt Tabelle; die Terminart nur bei Abweichung (ANN-192); keine Erklärabsätze und Fußzeilen; am offenen Termin kein Satz und kein zweiter Knopf, ein leerer Abschnitt entfällt; nur Abweichungen als Abzeichen.
+
+### BEF-090 — Übersicht und Büroseiten nennen Regelfälle und erklären Überschriften
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Übersicht, Tageskarte, Offene Punkte, Anrufliste, Warteliste |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005h) |
+| Berührt | `src/features/today/MyDayPage.tsx`, `Tagesliste.tsx`, `src/features/open-points/*.tsx`, `src/features/waitlist/format.ts`, `WaitlistMatches.tsx` |
+
+**Beobachtung.** Jede offene Tageskarte trug „Steht aus“; „Liege heute: nein“ stand jeden Morgen ganz oben; der Leerzustand und der Teamplan wiederholten ihre Überschrift als Satz; die Organisationskarten erklärten ihre Links; die Zeile „Offene Punkte: …“ hatte daneben einen zweiten Link zum selben Ziel. Auf „Offene Punkte“ stand unter jeder Überschrift ein Erklärsatz, an jeder Aufgabe „Für alle im Team“, an jeder Erstaufnahme „Offen:“. Die Anrufliste trug „Offen“ an jeder Zeile unter „Anzurufen“ und „Mitgeteilt:“ unter „Schon mitgeteilt“, dazu einen dauerhaften Nachschlagetext. Die Warteliste nannte „Hausbesuch“ und „Therapeut:in egal“.
+
+**Erwartet.** Abzeichen nur für Abweichungen; Zeilen nur, wenn sie etwas sagen; Erklärsätze zu Überschriften entfallen, Nachschlagetext zugeklappt; die Zeile „Offene Punkte“ ist selbst der Link. Nicht angefasst: der Datenschutzsatz unter „Navigation starten“ (ADR-019 Punkt 23 setzt ihn bewusst dorthin) und die beiden Kriteriensätze unter „Verordnung endet“ und „Versorgung abschließen?“, die eine Auswahlregel erklären.
+
+### BEF-091 — Organisation, Abrechnung und Training tragen Regelfall-Abzeichen und Fußnoten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Mitarbeitende und Zugang, Rechnungen, Leistungen, Zahlung, Preisliste, Training, Mein Konto, Lastenräder, Urlaub, Zeitkonto, Erstattungen, Statistiken, Protokoll |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005i) |
+| Berührt | `src/features/{staff,billing,training,account,fleet,vacation,timeaccount,reimbursements,statistics,audit}/` |
+
+**Beobachtung.** Die Rechnungsseite nannte den Empfänger dreimal, den Zahlungsstand zweimal, den eigenen Absender mit Bankverbindung auf jeder Rechnung und erklärte Storno und Unveränderlichkeit in sechs Sätzen; die Liste trug „Ausgestellt“ an jeder Rechnung und einen Knopf je Zeile. Die Mitarbeitenden-Seite erklärte die Trennung von Stammdaten und Zugang dreimal, zeigte „Beschäftigung: Aktiv“, „Stand: Eingerichtet“, leere Kontaktzeilen und eine siebenzeilige Admin-Anleitung. Trainingstermine trugen „Art: Hausbesuch“ und „Bestätigt“, jede Einheit „Hausbesuch · Tom“. Lastenräder wiederholten die Wochenübersicht je Rad; Urlaub listete offene Anträge mit „Beantragt“; „Mein Konto“ nannte den eigenen Namen und die Praxis als Zeilen.
+
+**Erwartet.** Regelfälle ohne Abzeichen und Zeile, leere Werte ohne Zeile, Nachschlagetexte zugeklappt, die Rechnungsnummer als Link. Offen geblieben: Das Abzeichen „Nicht für Termine zuordenbar“ in der Mitarbeitendenliste markiert eine Rolle, kein Problem; es bleibt, weil die Liste die Rollen nicht kennt (serverseitige Änderung nötig). Die Praxiseinstellungen über dem Wochenplan (Praxisraster, automatische Finalisierung, Startort) bleiben offen, weil die Suche sie direkt anspringt.

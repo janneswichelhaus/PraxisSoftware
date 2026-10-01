@@ -444,14 +444,16 @@ describe('Übersicht', () => {
     it('zeigt keine Mitnehmen-Zeile, wenn nichts eingetragen ist', async () => {
       fetchDayPlan.mockResolvedValue(zweiBesuche);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      await screen.findByText('Liege heute:');
+      await screen.findByText('Erster Weg');
       expect(screen.queryByText('Heute mitnehmen:')).toBeNull();
     });
 
-    it('sagt "nein", wenn heute niemand die Liege braucht', async () => {
+    it('zeigt keine Liegezeile, wenn heute niemand die Liege braucht (UX-005h)', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      const zeile = (await screen.findByText('Liege heute:')).closest('p')!;
-      expect(zeile).toHaveTextContent('Liege heute: nein');
+      await screen.findByText('Erster Weg');
+      // „Liege heute: nein" wäre der Regelfall an erster Stelle - die Zeile
+      // steht nur, wenn die Liege mit muss.
+      expect(screen.queryByText('Liege heute:')).toBeNull();
     });
 
     it('zeigt den ersten Weg mit Navigation als Hauptknopf und die Vorschau danach', async () => {
@@ -594,7 +596,8 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       expect(await screen.findByText('Heute ist nichts mehr offen')).toBeInTheDocument();
-      expect(screen.getByText('Alle Besuche des Tages sind erledigt.')).toBeInTheDocument();
+      // Der Titel sagt es schon; ein zweiter Satz darunter wiederholte ihn (UX-005h).
+      expect(screen.queryByText('Alle Besuche des Tages sind erledigt.')).toBeNull();
     });
 
     it('navigiert nur noch zu Besuchen, die ausstehen (UEB-04)', async () => {
@@ -685,12 +688,15 @@ describe('Übersicht', () => {
       const teamplan = (
         await screen.findByRole('heading', { name: 'Tagesplan des Teams' })
       ).closest('section')!;
-      expect(await within(teamplan).findByText('Anna Beispiel · Hausbesuch')).toBeInTheDocument();
+      // Der Hausbesuch ist der Regelfall und trägt kein Wort (ANN-192).
+      expect(await within(teamplan).findAllByText('Anna Beispiel')).not.toHaveLength(0);
       expect(within(teamplan).getByText('Jannes Test · Praxis Hauptstandort')).toBeInTheDocument();
-      expect(within(teamplan).queryByText(/Hausbesuch · Hausbesuch/)).toBeNull();
+      expect(within(teamplan).queryByText(/Hausbesuch/)).toBeNull();
+      // Die Erklärung unter der Überschrift wiederholte sie (UX-005h).
       expect(
-        within(teamplan).getByText('Alle Termine und Fehlzeiten des Teams heute.'),
-      ).toBeInTheDocument();
+        within(teamplan).queryByText('Alle Termine und Fehlzeiten des Teams heute.'),
+      ).toBeNull();
+      expect(within(teamplan).getByRole('link', { name: /Zum Kalender/ })).toBeInTheDocument();
     });
 
     it('sagt einer Patientin, wozu der Zugang dient, und fuehrt zum Konto (UEB-08)', async () => {

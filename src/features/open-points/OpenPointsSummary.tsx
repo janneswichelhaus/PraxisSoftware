@@ -47,14 +47,18 @@ export function OpenPointsSummary({ user, today }: { user: CurrentUser; today: s
   if (teile.length === 0) return null;
 
   return (
-    <div className="border-line bg-surface rounded-card mt-6 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 lg:max-w-3xl">
-      <p className="text-ink text-liste">
-        <span className="font-semibold">Offene Punkte: </span>
-        {teile.join(' · ')}
-      </p>
-      <Textlink alleinstehend to="/offen" className="text-liste font-medium">
-        Zu den offenen Punkten
+    // Die Zeile ist selbst der Weg: ein zweiter Link „Zu den offenen Punkten"
+    // daneben nannte das Ziel zweimal (UX-005h).
+    <p className="border-line bg-surface rounded-card mt-6 border px-4 py-3 lg:max-w-3xl">
+      <Textlink alleinstehend to="/offen" className="text-liste gap-1">
+        {/* Ein Text statt zweier Spans: Im Flex-Kasten fiele das Leerzeichen
+            zwischen ihnen weg, und Vorlesesoftware läse „Punkte:2". */}
+        <span className="text-ink font-normal">
+          <span className="font-semibold">Offene Punkte:</span>
+          {` ${teile.join(' · ')}`}
+        </span>
+        <span aria-hidden="true">→</span>
       </Textlink>
-    </div>
+    </p>
   );
 }

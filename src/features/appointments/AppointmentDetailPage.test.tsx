@@ -6,6 +6,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
+import type * as TagesApi from '@/features/today/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -78,6 +79,19 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
+// Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste
+// (UX-005b); ihr Lesepfad wird hier gestubbt.
+const fetchDayPlan = vi.fn();
+
+vi.mock('@/features/today/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof TagesApi>();
+  return {
+    ...actual,
+    fetchDayPlan: (datum: string, staff: string) =>
+      fetchDayPlan(datum, staff) as Promise<TagesApi.DayPlanEntry[]>,
+  };
+});
+
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useParams: () => ({ appointmentId: TERMIN_ID }),
@@ -85,9 +99,23 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { AppointmentDetailPage } = await import('./AppointmentDetailPage');
 
+/**
+ * Wer die Seite ansieht - mit dem Namen aus dem Seed, damit die Kennung zur
+ * Rolle passt: Anna ist die behandelnde Person dieses Termins, Olivia sitzt
+ * im Büro, Jannes ist owner, Tim leitet. Seit UX-005a hängt daran, ob die
+ * Seite die behandelnde Person nennt (ANN-193).
+ */
+const NAMEN: Record<string, string> = {
+  therapist: 'Anna Beispiel',
+  office: 'Olivia Office',
+  owner: 'Jannes Test',
+  team_lead: 'Tim Teamleitung',
+  patient: 'Max Mustermann',
+};
+
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
   return renderWithProviders(
-    <AppointmentDetailPage user={testUser(rollen)} />,
+    <AppointmentDetailPage user={testUser(rollen, NAMEN[rollen[0] ?? 'office'])} />,
     `/termine/${TERMIN_ID}`,
   );
 }
@@ -96,7 +124,13 @@ function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
 function zeile(beschriftung: string): string {
   const dt = screen.getAllByText(beschriftung).find((el) => el.tagName === 'DT');
   if (!dt) throw new Error(`Datenzeile "${beschriftung}" nicht gefunden.`);
-  return dt.nextElementSibling?.textContent?.trim() ?? '';
+  const dd = dt.nextElementSibling;
+  if (!dd) return '';
+  // Die Zeichen der Abzeichen (✓ ! ×) sind für Vorlesesoftware ausgeblendet
+  // und zählen hier ebenso wenig zum Wert.
+  const klon = dd.cloneNode(true) as HTMLElement;
+  klon.querySelectorAll('[aria-hidden="true"]').forEach((element) => element.remove());
+  return klon.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 }
 
 describe('AppointmentDetailPage', () => {
@@ -121,14 +155,50 @@ describe('AppointmentDetailPage', () => {
     cancelEventSeries.mockResolvedValue(3);
     fetchTreatmentDocumentation.mockReset();
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    fetchDayPlan.mockReset();
+    fetchDayPlan.mockResolvedValue([]);
   });
 
-  it('zeigt Patient, behandelnde Person, Art und Status', async () => {
+  // UX-005a: Der Name steht im Titel und nirgends noch einmal; die
+  // behandelnde Person steht für das Büro da, der Zustand „Bestätigt" nur für
+  // Vorlesesoftware, und der Praxistermin trägt sein Kennzeichen - der
+  // Hausbesuch als Regelfall keins (ANN-192).
+  it('zeigt dem Büro die behandelnde Person und das Kennzeichen des Praxistermins', async () => {
     rendern();
     expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
-    expect(screen.getAllByText('Berta Bestand').length).toBeGreaterThan(0);
-    expect(zeile('Art')).toBe('Praxis');
+    expect(zeile('Behandelnde Person')).toBe('Anna Beispiel');
+    expect(screen.getAllByText('Berta Bestand')).toHaveLength(1);
+    expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
+    expect(screen.queryByText('Art')).not.toBeInTheDocument();
+    expect(screen.getByText('Praxistermin')).toBeInTheDocument();
     expect(zeile('Status')).toBe('Bestätigt');
+    // Sichtbar steht der Regelfall nicht da (sr-only), erst ein anderer Zustand.
+    expect(screen.getByText('Bestätigt')).toHaveClass('sr-only');
+  });
+
+  it('nennt der behandelnden Person an ihrem eigenen Termin nicht sich selbst (ANN-193)', async () => {
+    rendern(['therapist']);
+    expect(await screen.findByText('Berta Bestand')).toBeInTheDocument();
+    expect(screen.queryByText('Behandelnde Person')).not.toBeInTheDocument();
+    expect(screen.queryByText('Anna Beispiel')).not.toBeInTheDocument();
+  });
+
+  it('zeigt am Hausbesuch kein Wort für die Terminart und keine Zustandszeile', async () => {
+    fetchAppointment.mockResolvedValue({
+      ...praxistermin,
+      appointment_type: 'home_visit',
+      location_id: null,
+      location_name: null,
+      visit_street: 'Altstrasse',
+      visit_house_number: '1',
+      visit_postal_code: '72070',
+      visit_city: 'Tuebingen',
+    });
+    rendern(['therapist']);
+    await screen.findByText('Altstrasse 1');
+    expect(screen.queryByText('Hausbesuch')).not.toBeInTheDocument();
+    expect(screen.queryByText('Praxistermin')).not.toBeInTheDocument();
+    expect(screen.queryByText(/Zeiten gelten in der Zeitzone/)).not.toBeInTheDocument();
   });
 
   it('zeigt Datum und Zeit in der Praxiszeitzone, nicht in UTC', async () => {
@@ -141,8 +211,9 @@ describe('AppointmentDetailPage', () => {
 
   it('zeigt beim Praxistermin den Standort', async () => {
     rendern();
-    await screen.findByText('Anna Beispiel');
-    expect(zeile('Standort')).toBe('Hauptstandort Tuebingen');
+    await screen.findByText('Berta Bestand');
+    expect(zeile('Standort')).toContain('Hauptstandort Tuebingen');
+    expect(zeile('Standort')).toContain('Praxistermin');
   });
 
   it('zeigt beim Hausbesuch die festgehaltene Anschrift', async () => {
@@ -158,8 +229,9 @@ describe('AppointmentDetailPage', () => {
     });
     rendern();
 
-    await screen.findByText('Anna Beispiel');
-    expect(zeile('Anschrift')).toBe('Altstrasse 1, 72070 Tuebingen');
+    await screen.findByText('Berta Bestand');
+    expect(zeile('Anschrift')).toMatch(/^Altstrasse 1/);
+    expect(zeile('Anschrift')).toContain('72070 Tuebingen');
   });
 
   it('zeigt beim Videotermin keinen Ort und den Hinweis zum fehlenden Link', async () => {
@@ -171,8 +243,8 @@ describe('AppointmentDetailPage', () => {
     });
     rendern();
 
-    await screen.findByText('Anna Beispiel');
-    expect(zeile('Ort')).toBe('Videotermin');
+    await screen.findByText('Berta Bestand');
+    expect(zeile('Ort')).toMatch(/^Videotermin/);
     expect(screen.getByText(/noch kein Videolink erzeugt/)).toBeInTheDocument();
   });
 
@@ -180,7 +252,7 @@ describe('AppointmentDetailPage', () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern();
 
-    expect(await screen.findByText(/Dieser Termin ist abgesagt\./)).toBeInTheDocument();
+    expect(await screen.findByText(/Eine Absage wird nicht zurückgenommen/)).toBeInTheDocument();
     expect(zeile('Status')).toBe('Abgesagt');
   });
 
@@ -192,7 +264,7 @@ describe('AppointmentDetailPage', () => {
     });
     rendern();
 
-    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
     expect(zeile('Absagegrund')).toBe('Praxis hat abgesagt');
   });
 
@@ -204,7 +276,7 @@ describe('AppointmentDetailPage', () => {
     });
     rendern();
 
-    await screen.findByText(/Dieser Termin ist abgesagt\./);
+    await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
     expect(zeile('Absagegrund')).toBe('Nicht erfasst');
   });
 
@@ -215,16 +287,17 @@ describe('AppointmentDetailPage', () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, treatment_basis_covered: false });
     rendern();
 
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
     expect(screen.getByText('Ohne Deckung')).toBeInTheDocument();
-    expect(zeile('Deckung')).toMatch(/deckt diesen Termin nicht/);
+    // UX-005a: in der Kachel der Grundlage, die ihn nicht trägt.
+    expect(zeile('Grundlage')).toMatch(/deckt diesen Termin nicht/);
   });
 
   it('schweigt an einem gedeckten Termin', async () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, treatment_basis_covered: true });
     rendern();
 
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
     expect(screen.queryByText('Ohne Deckung')).not.toBeInTheDocument();
   });
 
@@ -233,7 +306,7 @@ describe('AppointmentDetailPage', () => {
       'bietet %s Bearbeiten und Absagen an',
       async (rolle) => {
         rendern([rolle]);
-        await screen.findByText('Anna Beispiel');
+        await screen.findByText('Berta Bestand');
 
         // Ohne eigenen Rueckweg bleibt die Adresse schlicht: Die Bearbeitung
         // kehrt ohnehin zum Termin zurueck (UX-012).
@@ -247,7 +320,7 @@ describe('AppointmentDetailPage', () => {
 
     it('blendet beide Aktionen fuer ein Patientenkonto aus', async () => {
       rendern(['patient']);
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -256,7 +329,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet bei einem abgesagten Termin keine Aktionen mehr an', async () => {
       fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
       rendern();
-      await screen.findByText(/Dieser Termin ist abgesagt\./);
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -265,7 +338,7 @@ describe('AppointmentDetailPage', () => {
     it('sagt nicht auf einen einzelnen Klick hin ab, sondern fragt zurueck', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
 
@@ -276,7 +349,7 @@ describe('AppointmentDetailPage', () => {
     it('nennt in der Rueckfrage den betroffenen Termin und vermeidet Loeschsprache', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
 
       const rueckfrage = await screen.findByRole('group', { name: 'Termin absagen' });
@@ -290,7 +363,7 @@ describe('AppointmentDetailPage', () => {
     it('setzt den Fokus auf die Bestaetigung', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
 
       await waitFor(() =>
@@ -301,7 +374,7 @@ describe('AppointmentDetailPage', () => {
     it('gibt den Fokus beim Abbrechen zurueck', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
@@ -314,7 +387,7 @@ describe('AppointmentDetailPage', () => {
     it('sagt nach Bestaetigung mit dem gelesenen Stand und dem Grund ab', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
@@ -334,7 +407,7 @@ describe('AppointmentDetailPage', () => {
     it('sagt ohne ausgewaehlten Grund nicht ab (CAL-008b)', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
 
@@ -355,7 +428,7 @@ describe('AppointmentDetailPage', () => {
 
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
 
@@ -375,7 +448,7 @@ describe('AppointmentDetailPage', () => {
       );
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'other');
       await user.click(screen.getByRole('button', { name: 'Ja, Termin absagen' }));
@@ -390,7 +463,7 @@ describe('AppointmentDetailPage', () => {
     it('vermerkt nach einer Rueckfrage - und fragt dabei nach keiner Gebuehr', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
 
@@ -411,7 +484,7 @@ describe('AppointmentDetailPage', () => {
     it('sagt im Vermerk, dass es keine Behandlung war', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
 
@@ -428,7 +501,7 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      await screen.findByText(/Hier wurde niemand angetroffen/);
+      await waitFor(() => expect(zeile('Status')).toBe('Nicht angetroffen'));
       expect(zeile('Status')).toBe('Nicht angetroffen');
       expect(screen.queryByText('Ausfallhonorar vorgemerkt')).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Termin wieder öffnen' })).toBeInTheDocument();
@@ -442,7 +515,7 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      await screen.findByText(/Hier wurde niemand angetroffen/);
+      await waitFor(() => expect(zeile('Status')).toBe('Nicht angetroffen'));
       expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
     });
@@ -461,7 +534,7 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      await screen.findByText(/Hier wurde niemand angetroffen/);
+      await waitFor(() => expect(zeile('Status')).toBe('Nicht angetroffen'));
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/Nicht angetroffen/);
       // Ohne bestaetigtes Protokoll steht auch keines da (CAL-018).
       expect(screen.queryByText('Protokoll')).not.toBeInTheDocument();
@@ -476,7 +549,7 @@ describe('AppointmentDetailPage', () => {
    * Tests nicht nur, dass die Wege existieren, sondern dass die Folge jeweils
    * danebensteht - und dass ohne das Protokoll nichts geschrieben wird.
    */
-  describe('CAL-018: Die drei Hausbesuch-Szenarien', () => {
+  describe('CAL-018 / UX-005b: „Niemand öffnet?" am Hausbesuch', () => {
     const hausbesuch = testAppointment({
       id: TERMIN_ID,
       patient_id: PATIENT_ID,
@@ -489,36 +562,120 @@ describe('AppointmentDetailPage', () => {
       visit_city: 'Tuebingen',
     });
 
-    it('fuehrt durch die vier Ausgaenge und nennt zu jedem die Folge', async () => {
+    /** Der Termin, wie ihn die Tagesliste liefert - mit Rufnummer. */
+    function tagesEintrag(teil: Partial<TagesApi.DayPlanEntry> = {}): TagesApi.DayPlanEntry {
+      return {
+        id: TERMIN_ID,
+        patient_id: PATIENT_ID,
+        staff_member_id: hausbesuch.staff_member_id,
+        appointment_type: 'home_visit',
+        kind: 'therapy',
+        title: null,
+        status: 'confirmed',
+        starts_at: hausbesuch.starts_at,
+        ends_at: hausbesuch.ends_at,
+        patient_given_name: 'Berta',
+        patient_family_name: 'Bestand',
+        location_name: null,
+        visit_street: 'Testweg',
+        visit_house_number: '7',
+        visit_postal_code: '72072',
+        visit_city: 'Tuebingen',
+        patient_phone: null,
+        patient_phone_mobile: '+49 160 0000005',
+        home_visit_access_note: null,
+        special_note: null,
+        documentation_status: 'none',
+        organization_time_zone: 'Europe/Berlin',
+        ...teil,
+      };
+    }
+
+    async function ablaufOeffnen(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await screen.findByRole('button', { name: 'Niemand öffnet?' }));
+    }
+
+    it('zeigt den Regelfall als Hauptknopf und den Ablauf zugeklappt', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
       rendern(['therapist']);
 
-      expect(await screen.findByText('Was ist passiert?')).toBeInTheDocument();
-      expect(screen.getByText('Die Behandlung hat stattgefunden')).toBeInTheDocument();
-      expect(screen.getByText('Tür geöffnet, Behandlung nicht durchgeführt')).toBeInTheDocument();
-      expect(screen.getByText('Niemand hat geöffnet')).toBeInTheDocument();
-      expect(screen.getByText('Die Patient:in hat vorher abgesagt')).toBeInTheDocument();
+      const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
+      expect(knopf).toHaveAttribute('aria-expanded', 'false');
+      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
+        1,
+      );
+      // Der Kasten mit vier Fällen von vorher steht nicht mehr offen da.
+      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('An der Tür geklingelt')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
+      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
+      expect(
+        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
+      ).toBeInTheDocument();
+    });
+
+    it('fuehrt nach dem Oeffnen durch die drei Schritte und nennt zu jedem Fall die Folge', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await ablaufOeffnen(user);
+      expect(screen.getByRole('button', { name: 'Niemand öffnet?' })).toHaveAttribute(
+        'aria-expanded',
+        'true',
+      );
+      const ablauf = screen.getByRole('region', { name: 'Niemand öffnet?' });
+      // In der Reihenfolge, in der es vor der Tür passiert.
+      expect(
+        within(ablauf)
+          .getAllByRole('checkbox')
+          .map((kasten) => kasten.closest('label')?.textContent?.trim()),
+      ).toEqual(['An der Tür geklingelt', '15 Minuten vor Ort gewartet', 'Telefonisch angerufen']);
 
       // Dasselbe Wort wie auf Rechnung, Katalog und Blatt für Patient:innen
       // (TER-10), derselbe Zustand wie am Knopf (WRT-B01).
-      expect(screen.getByText(/ein Ausfallhonorar entsteht nicht/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/löst ein Ausfallhonorar aus/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/ein Ausfallhonorar\s+entsteht nicht/)).toBeInTheDocument();
+      expect(within(ablauf).getByText(/Vorher abgesagt\?/)).toBeInTheDocument();
       expect(
-        screen.getByText(/als „nicht angetroffen“ geführt und löst ein Ausfallhonorar aus/),
-      ).toBeInTheDocument();
+        within(ablauf).getByRole('link', { name: 'Ohne Behandlung abschließen' }),
+      ).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
+      );
       expect(screen.queryByText(/Ausfallgebühr/)).not.toBeInTheDocument();
       expect(screen.queryByText(/nicht wahrgenommen/)).not.toBeInTheDocument();
       // Keine Technikwörter im Hinweis (WRT-03, TER-22).
       expect(screen.queryByText(/serverseitig/)).not.toBeInTheDocument();
     });
 
-    it('fuehrt vom zweiten Szenario in den Abschluss mit Pflichtvermerk', async () => {
+    it('bietet beim dritten Schritt die Rufnummer als Waehlziel - erst nach dem Oeffnen', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag()]);
+      const user = userEvent.setup();
       rendern(['therapist']);
 
-      const weg = await screen.findByRole('link', { name: 'Ohne Behandlung abschließen' });
-      expect(weg).toHaveAttribute(
+      await screen.findByRole('button', { name: 'Niemand öffnet?' });
+      expect(fetchDayPlan).not.toHaveBeenCalled();
+
+      await ablaufOeffnen(user);
+      const anruf = await screen.findByRole('link', { name: /Mobil\s*\+49 160 0000005/ });
+      expect(anruf).toHaveAttribute('href', 'tel:+491600000005');
+      // Gelesen wird der Tag des Termins bei seiner behandelnden Person.
+      expect(fetchDayPlan).toHaveBeenCalledWith('2027-05-12', hausbesuch.staff_member_id);
+    });
+
+    it('sagt, wenn keine Rufnummer hinterlegt ist, und fuehrt in die Stammdaten', async () => {
+      fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ patient_phone_mobile: null })]);
+      const user = userEvent.setup();
+      rendern(['therapist']);
+
+      await ablaufOeffnen(user);
+      expect(await screen.findByText(/Keine Rufnummer hinterlegt/)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Zu den Stammdaten' })).toHaveAttribute(
         'href',
-        expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
+        `/patienten/${PATIENT_ID}/stammdaten`,
       );
     });
 
@@ -527,12 +684,11 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await ablaufOeffnen(user);
       await user.click(screen.getByLabelText('An der Tür geklingelt'));
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
       await user.click(screen.getByLabelText('Telefonisch angerufen'));
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       await waitFor(() =>
         expect(recordNoShow).toHaveBeenCalledWith(TERMIN_ID, hausbesuch.updated_at, true),
@@ -544,36 +700,18 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-
-      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await ablaufOeffnen(user);
       await user.click(screen.getByLabelText('An der Tür geklingelt'));
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByLabelText('15 Minuten vor Ort gewartet'));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       expect(
         await screen.findByText('Bitte alle drei Schritte des Protokolls bestätigen.'),
       ).toBeInTheDocument();
       expect(recordNoShow).not.toHaveBeenCalled();
-      // Die Rueckfrage bleibt offen: Wer die fehlende Angabe nachtragen will,
+      // Der Ablauf bleibt offen: Wer die fehlende Angabe nachtragen will,
       // findet sie noch vor.
       expect(screen.getByLabelText('Telefonisch angerufen')).toBeInTheDocument();
-    });
-
-    it('bietet die beiden Abschlusswege nicht doppelt an', async () => {
-      fetchAppointment.mockResolvedValue(hausbesuch);
-      rendern(['therapist']);
-
-      await screen.findByText('Was ist passiert?');
-      // „Dokumentieren und abschliessen" steht im gefuehrten Ablauf, nicht
-      // noch einmal in der Knopfreihe darunter.
-      expect(screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' })).toHaveLength(
-        1,
-      );
-      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).not.toBeInTheDocument();
-      // Der Abschluss ohne Dokumentation bleibt daneben stehen (ANN-005).
-      expect(
-        screen.getByRole('button', { name: 'Ohne Dokumentation abschließen' }),
-      ).toBeInTheDocument();
     });
 
     it('zeigt am vermerkten Hausbesuch Protokoll und Gebuehrenanlass', async () => {
@@ -586,7 +724,7 @@ describe('AppointmentDetailPage', () => {
       });
       rendern(['therapist']);
 
-      await screen.findByText(/Hier wurde niemand angetroffen/);
+      await waitFor(() => expect(zeile('Status')).toBe('Nicht angetroffen'));
       expect(zeile('Protokoll')).toMatch(/15 Minuten vor Ort gewartet/);
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/Nicht angetroffen/);
       // Kein Betrag hier, aber der Ort, an dem abgerechnet wird (TER-10) -
@@ -597,36 +735,37 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByText(/Leistungskatalog ist noch nicht/)).not.toBeInTheDocument();
     });
 
-    it('zeigt den gefuehrten Ablauf nur am bestaetigten Hausbesuch', async () => {
+    it('zeigt den Ablauf nur am bestaetigten Hausbesuch', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'completed' });
       rendern(['therapist']);
 
-      await screen.findByText(/Dieser Termin ist abgeschlossen/);
-      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      await waitFor(() => expect(zeile('Status')).toBe('Abgeschlossen'));
+      expect(screen.queryByRole('button', { name: 'Niemand öffnet?' })).not.toBeInTheDocument();
     });
 
     it('zeigt ihn am Praxistermin nicht', async () => {
       rendern(['therapist']);
 
-      await screen.findByText('Anna Beispiel');
-      expect(screen.queryByText('Was ist passiert?')).not.toBeInTheDocument();
+      await screen.findByText('Berta Bestand');
+      expect(screen.queryByRole('button', { name: 'Niemand öffnet?' })).not.toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
     });
 
     /**
-     * Der geführte Ablauf ist neue Oberfläche mit Formularfeldern in einer
-     * Rückfrage — genau die Stelle, an der Beschriftungen und ARIA-Bezüge
-     * gern verloren gehen (UI-000). Die Prüfung steht hier und nicht in
-     * `barrierefreiheit.test.tsx`, weil die Seite dort ihre Attrappen nicht
-     * hat; dasselbe Muster wie in `TagUmplanenPage.test.tsx`.
+     * Der geführte Ablauf ist Oberfläche mit Formularfeldern in einem
+     * aufgeklappten Bereich — genau die Stelle, an der Beschriftungen und
+     * ARIA-Bezüge gern verloren gehen (UI-000). Die Prüfung steht hier und
+     * nicht in `barrierefreiheit.test.tsx`, weil die Seite dort ihre
+     * Attrappen nicht hat; dasselbe Muster wie in `TagUmplanenPage.test.tsx`.
      */
-    it('haelt den gefuehrten Ablauf samt Protokoll barrierefrei', async () => {
+    it('haelt den Ablauf samt Protokoll barrierefrei', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
+      fetchDayPlan.mockResolvedValue([tagesEintrag()]);
       const user = userEvent.setup();
       const { container } = rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
-      await screen.findByLabelText('An der Tür geklingelt');
+      await ablaufOeffnen(user);
+      await screen.findByRole('link', { name: /Mobil/ });
 
       await pruefeBarrierefreiheit(container);
     });
@@ -636,7 +775,7 @@ describe('AppointmentDetailPage', () => {
     it('sagt mit Grund ab und ueberlaesst den Eingang dem Server', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
@@ -657,7 +796,7 @@ describe('AppointmentDetailPage', () => {
     it('reicht einen nachgetragenen Eingang in Ortszeit durch', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
@@ -683,7 +822,7 @@ describe('AppointmentDetailPage', () => {
     it('verlangt bei nachgetragenem Eingang Datum UND Uhrzeit', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_request');
@@ -715,7 +854,7 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      await screen.findByText(/Dieser Termin ist abgesagt/);
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
       expect(zeile('Status')).toBe('Abgesagt');
       expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/weniger als 24 Stunden/);
@@ -731,14 +870,14 @@ describe('AppointmentDetailPage', () => {
       });
       rendern();
 
-      await screen.findByText(/Dieser Termin ist abgesagt/);
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
       expect(screen.queryByText('Ausfallhonorar vorgemerkt')).not.toBeInTheDocument();
     });
 
     it('nennt die Frist ohne Technikwörter (WRT-03, TER-22)', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
 
@@ -910,7 +1049,8 @@ describe('AppointmentDetailPage', () => {
 
       await screen.findByRole('heading', { name: /Teambesprechung/ });
       expect(screen.getByRole('heading', { level: 2, name: 'Fehlzeit' })).toBeInTheDocument();
-      expect(screen.getByText(/Die Fehlzeit enthält ausschließlich/)).toBeInTheDocument();
+      // Keine Fußnote mehr, die sagt, was jeder hier weiß (UX-005a).
+      expect(screen.queryByText(/enthält ausschließlich organisatorische/)).not.toBeInTheDocument();
       // Ohne mitgereisten Weg führt „zurück" von einer Fehlzeit in den
       // Kalender, nicht in die Patientenliste (TER-03).
       expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
@@ -983,7 +1123,7 @@ describe('AppointmentDetailPage', () => {
     it('schliesst einen geplanten Termin auf dem gelesenen Stand ab', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
@@ -995,26 +1135,21 @@ describe('AppointmentDetailPage', () => {
     it('fragt beim Abschliessen nicht nach einer Behandlungsdokumentation', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
       await waitFor(() => expect(completeAppointment).toHaveBeenCalled());
-      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Den lesenden
-      // Abschnitt "Behandlungsdokumentation" sieht office seit E15 trotzdem -
-      // er ist keine Rueckfrage und zaehlt deshalb hier nicht mit.
-      const abschnitt = screen
-        .getByRole('heading', { name: 'Behandlungsdokumentation' })
-        .closest('section');
-      const ausserhalb = screen
-        .queryAllByText(/dokumentation/i)
-        .filter((element) => !abschnitt?.contains(element));
-      expect(ausserhalb).toEqual([]);
+      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Am offenen
+      // Termin ohne Eintrag steht fuer office seit UX-005g auch kein leerer
+      // Abschnitt "Behandlungsdokumentation" mehr - nirgends ein Wort davon.
+      expect(screen.queryByRole('heading', { name: 'Behandlungsdokumentation' })).toBeNull();
+      expect(screen.queryAllByText(/dokumentation/i)).toEqual([]);
     });
 
     it('markiert einen abgeschlossenen Termin nicht als unvollstaendig', async () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(zeile('Status')).toBe('Abgeschlossen');
       expect(screen.queryByText(/fehlt|unvollständig|ausstehend/i)).not.toBeInTheDocument();
@@ -1023,7 +1158,7 @@ describe('AppointmentDetailPage', () => {
     it('zeigt den Abschlusszeitpunkt in der Praxiszeitzone', async () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       // 08:05 UTC entspricht 10:05 Ortszeit in Europe/Berlin (Sommerzeit).
       expect(zeile('Abgeschlossen am')).toMatch(/12\. Mai 2027, 10:05 Uhr/);
@@ -1032,7 +1167,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet am abgeschlossenen Termin weder Bearbeiten noch Absagen an', async () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(screen.queryByRole('link', { name: 'Bearbeiten' })).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Termin absagen' })).not.toBeInTheDocument();
@@ -1043,7 +1178,7 @@ describe('AppointmentDetailPage', () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin wieder öffnen' }));
 
@@ -1055,7 +1190,7 @@ describe('AppointmentDetailPage', () => {
     it('bietet am abgesagten Termin kein Abschliessen an', async () => {
       fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
       expect(
@@ -1065,7 +1200,7 @@ describe('AppointmentDetailPage', () => {
 
     it('bietet einem Patientenkonto keine Statusaktion an', async () => {
       rendern(['patient']);
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
     });
@@ -1076,7 +1211,7 @@ describe('AppointmentDetailPage', () => {
       );
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
@@ -1099,14 +1234,14 @@ describe('AppointmentDetailPage', () => {
 
   it('fuehrt den Namen nur einmal als Link - die Zeile darunter bleibt Text', async () => {
     rendern();
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
 
     expect(screen.getAllByRole('link', { name: 'Berta Bestand' })).toHaveLength(1);
   });
 
   it('zeigt keine klinischen Angaben', async () => {
     rendern();
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
 
     for (const begriff of [/diagnose/i, /befund/i, /therapie/i, /anamnese/i]) {
       expect(screen.queryByText(begriff)).not.toBeInTheDocument();
@@ -1116,7 +1251,7 @@ describe('AppointmentDetailPage', () => {
   // PRX-011: Verordnung ohne Papier - das Foto am Termin.
   it('bietet am Behandlungstermin das Foto der Verordnung an', async () => {
     rendern(['therapist']);
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
     expect(screen.getByRole('heading', { name: 'Verordnung' })).toBeInTheDocument();
     expect(screen.getByText(/das Büro erfasst die Grundlage daraus/)).toBeInTheDocument();
   });
@@ -1124,7 +1259,7 @@ describe('AppointmentDetailPage', () => {
   it('bietet das Foto nicht am abgesagten Termin an', async () => {
     fetchAppointment.mockResolvedValue({ ...praxistermin, status: 'cancelled' });
     rendern(['therapist']);
-    await screen.findByText('Anna Beispiel');
+    await screen.findByText('Berta Bestand');
     expect(screen.queryByText(/das Büro erfasst die Grundlage daraus/)).not.toBeInTheDocument();
   });
 
@@ -1141,18 +1276,22 @@ describe('AppointmentDetailPage', () => {
       rendern(['therapist']);
 
       expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
-      expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveAttribute(
-        'href',
-        `/termine/${TERMIN_ID}/dokumentation`,
-      );
+      // Am offenen Termin ist der Weg oben „Dokumentieren und abschließen"; ein
+      // zweites „Dokumentation anlegen" im Abschnitt gibt es seit UX-005g nicht.
+      expect(
+        await screen.findByRole('link', { name: 'Dokumentieren und abschließen' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
 
-    it('zeigt office den Abschnitt lesend, ohne Weg zum Dokumentieren (E15)', async () => {
+    it('liest office den Eintrag, ohne Weg zum Dokumentieren (E15)', async () => {
       rendern(['office']);
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
-      expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
-      expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID);
+      // Gelesen wird (E15); ohne Eintrag steht am offenen Termin aber kein
+      // leerer Abschnitt (UX-005g), und einen Weg zum Anlegen gibt es nicht.
+      await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID));
+      expect(screen.queryByRole('heading', { name: 'Behandlungsdokumentation' })).toBeNull();
       expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
   });
@@ -1221,14 +1360,14 @@ describe('AppointmentDetailPage', () => {
     it('bietet den Folgetermin am abgesagten Termin nicht an', async () => {
       fetchAppointment.mockResolvedValue({ ...hausbesuch, status: 'cancelled' });
       rendern();
-      await screen.findByText(/Dieser Termin ist abgesagt\./);
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
     });
 
     it('bietet einem Patientenkonto keinen Folgetermin an', async () => {
       fetchAppointment.mockResolvedValue(hausbesuch);
       rendern(['patient']);
-      await screen.findByText('Beispielstrasse 12, 72070 Tuebingen');
+      await screen.findByText('Beispielstrasse 12');
       expect(screen.queryByRole('link', { name: 'Folgetermin anlegen' })).toBeNull();
     });
   });
@@ -1342,7 +1481,7 @@ describe('AppointmentDetailPage', () => {
     it('bestätigt eine Absage oben und nimmt den Fokus dorthin', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
       await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_request');
@@ -1356,7 +1495,7 @@ describe('AppointmentDetailPage', () => {
     it('nennt nach einer kurzfristigen Absage das vorgemerkte Ausfallhonorar (BEF-079)', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
       // Nach der Absage liefert der Server den Termin mit Honoraranlass.
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
@@ -1378,7 +1517,7 @@ describe('AppointmentDetailPage', () => {
     it('bestätigt den Abschluss und nimmt den Fokus dorthin', async () => {
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
@@ -1399,15 +1538,15 @@ describe('AppointmentDetailPage', () => {
       const user = userEvent.setup();
       rendern(['therapist']);
 
-      await user.click(await screen.findByRole('button', { name: 'Niemand angetroffen' }));
+      await user.click(await screen.findByRole('button', { name: 'Niemand öffnet?' }));
       for (const schritt of [
-        '15 Minuten vor Ort gewartet',
         'An der Tür geklingelt',
+        '15 Minuten vor Ort gewartet',
         'Telefonisch angerufen',
       ]) {
         await user.click(screen.getByLabelText(schritt));
       }
-      await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
+      await user.click(screen.getByRole('button', { name: 'Als „nicht angetroffen“ vermerken' }));
 
       expect(
         await screen.findByText(
@@ -1426,7 +1565,7 @@ describe('AppointmentDetailPage', () => {
       fetchAppointment.mockImplementation(() => new Promise(() => undefined));
       const user = userEvent.setup();
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
@@ -1490,7 +1629,7 @@ describe('AppointmentDetailPage', () => {
   describe('Rückweg, Zustände und Wege (TER-03, TER-15, TER-16, UIK-16)', () => {
     it('führt ohne mitgereisten Weg in die Terminliste der Akte, nicht in die Patientenliste', async () => {
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Berta Bestand');
 
       expect(
         screen.getByRole('link', { name: '← Zurück zu den Terminen der Akte' }),
@@ -1511,7 +1650,7 @@ describe('AppointmentDetailPage', () => {
       expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
-      expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
+      expect(await screen.findByText('Berta Bestand')).toBeInTheDocument();
     });
 
     it('bietet am ungedeckten Termin den Weg zum Übertragen an', async () => {
@@ -1535,12 +1674,27 @@ describe('AppointmentDetailPage', () => {
       expect(bearbeiten).not.toHaveClass('text-ink', 'font-medium');
     });
 
-    it('nennt die Zeitzone ohne technische Kennung', async () => {
+    // UX-005a: Die Fußnote ist fort - keine Zeitzone, keine Kennzeichnung.
+    // Was die Navigation übergibt, steht an ihrer Schaltfläche (ADR-019
+    // Punkt 23), und die Zeitzone erscheint nirgends als technische Kennung.
+    it('kommt ohne Fußnote und ohne technische Zeitzonenkennung aus', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        appointment_type: 'home_visit',
+        location_id: null,
+        location_name: null,
+        visit_street: 'Beispielstrasse',
+        visit_house_number: '12',
+        visit_postal_code: '72070',
+        visit_city: 'Tuebingen',
+      });
       rendern();
-      await screen.findByText('Anna Beispiel');
+      await screen.findByText('Beispielstrasse 12');
 
-      expect(screen.getByText(/Zeiten gelten in der Zeitzone der Praxis\./)).toBeInTheDocument();
+      expect(screen.queryByText(/Zeiten gelten in der Zeitzone/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/ausschließlich organisatorische Angaben/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Europe\/Berlin/)).not.toBeInTheDocument();
+      expect(zeile('Anschrift')).toMatch(/übergibt nur die Anschrift ohne Namen/);
     });
   });
 });
