@@ -48,8 +48,6 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
     return { person, buchungen, saldo };
   });
 
-  const gesamt = saldenNachPerson.reduce((summe, eintrag) => summe + eintrag.saldo, 0);
-
   // Das eigene Konto steht einmal: vorn in der Liste und als „(Sie)“ markiert
   // (VOR-16). Bis dahin stand es oben über die volle Breite und in der Liste
   // ein zweites Mal. Wem es in der Vorschau gehört, sagt der Satz darüber.
@@ -81,10 +79,8 @@ export function TimeAccountPage({ user }: { user: CurrentUser }) {
 
       <SimulationsMeldung eintrag={meldung} />
 
-      <p className="text-ink-muted mb-4 text-sm">
-        Saldo über alle Personen: <strong className="text-ink">{formatStunden(gesamt)}</strong>
-      </p>
-
+      {/* Kein Saldo über alle Personen: Eine Summe fremder Zeitkonten
+          bewertet niemanden und beantwortet keine Frage (UX-005i, §20). */}
       <Abschnitt
         titel="Alle Zeitkonten"
         {...(identitaet
@@ -122,21 +118,23 @@ function Personenkarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
+          {/* Ohne Rollenzeile: Fürs Zeitkonto zählt die Person, nicht ihre
+              Rolle (UX-005i). */}
           <p className="text-ink text-liste truncate font-semibold">
             {person.name}
             {eigene ? ' (Sie)' : ''}
           </p>
-          <p className="text-ink-muted mt-0.5 text-sm">{person.rolle}</p>
         </div>
         {/* Der Saldo als Zahl, ohne ✓ oder × (VOR-13): Minusstunden sind
             keine Verfehlung, und das Zeitkonto bewertet niemanden (§20). */}
         <Badge ton="neutral">{formatStunden(saldo)}</Badge>
       </div>
-      <p className="text-ink-muted mt-2 text-sm">
-        {buchungen.length} Buchung{buchungen.length === 1 ? '' : 'en'}
-      </p>
-      {buchungen.length > 0 ? (
-        <Disclosure summary="Buchungen anzeigen">
+      {/* Zahl und Aufklapper in einer Zeile statt „3 Buchungen" über
+          „Buchungen anzeigen" (UX-005i). */}
+      {buchungen.length === 0 ? (
+        <p className="text-ink-muted mt-2 text-sm">Keine Buchungen</p>
+      ) : (
+        <Disclosure summary={`Buchungen (${buchungen.length})`}>
           <ul className="divide-line divide-y text-sm">
             {buchungen.map((buchung) => (
               <li key={buchung.id} className="flex items-baseline justify-between gap-3 py-1.5">
@@ -156,7 +154,7 @@ function Personenkarte({
             ))}
           </ul>
         </Disclosure>
-      ) : null}
+      )}
     </Card>
   );
 }

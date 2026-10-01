@@ -124,10 +124,9 @@ export function VacationPage({ user }: { user: CurrentUser }) {
       <SimulationsMeldung eintrag={meldung} />
 
       {entscheidungsrecht ? (
-        <Abschnitt
-          titel={`Offene Anträge (${offene.length})`}
-          beschreibung={`Zur Entscheidung durch ${ENTSCHEIDENDE}.`}
-        >
+        // Ohne „Zur Entscheidung durch …": Wer die Knöpfe sieht, darf
+        // entscheiden (UX-005i).
+        <Abschnitt titel={`Offene Anträge (${offene.length})`}>
           {offene.length === 0 ? (
             <EmptyState title="Keine offenen Anträge" />
           ) : (
@@ -137,6 +136,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
                   key={antrag.id}
                   antrag={antrag}
                   zustand={zustand}
+                  ohneStatus
                   onGenehmigen={() => setEntscheidung({ antrag, art: 'genehmigen' })}
                   onAblehnen={() => setEntscheidung({ antrag, art: 'ablehnen' })}
                 />
@@ -157,7 +157,7 @@ export function VacationPage({ user }: { user: CurrentUser }) {
           ) : (
             <CardGrid>
               {eigene.map((antrag) => (
-                <Antragskarte key={antrag.id} antrag={antrag} zustand={zustand} />
+                <Antragskarte key={antrag.id} antrag={antrag} zustand={zustand} ohneName />
               ))}
             </CardGrid>
           )}
@@ -188,11 +188,17 @@ export function VacationPage({ user }: { user: CurrentUser }) {
 function Antragskarte({
   antrag,
   zustand,
+  ohneStatus = false,
+  ohneName = false,
   onGenehmigen,
   onAblehnen,
 }: {
   antrag: Urlaubsantrag;
   zustand: Vorschauzustand;
+  /** Unter „Offene Anträge" ist „Beantragt" der Regelfall und steht nicht dran (UX-005i). */
+  ohneStatus?: boolean;
+  /** Unter „Meine Anträge" nennt die Überschrift die Person schon (UX-005i). */
+  ohneName?: boolean;
   onGenehmigen?: (() => void) | undefined;
   onAblehnen?: (() => void) | undefined;
 }) {
@@ -202,14 +208,18 @@ function Antragskarte({
     <Card>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="text-ink text-liste truncate font-semibold">
-            {mitarbeiterName(zustand, antrag.mitarbeiterId)}
-          </p>
-          <p className="text-ink-muted mt-0.5 text-sm">
+          {ohneName ? null : (
+            <p className="text-ink text-liste truncate font-semibold">
+              {mitarbeiterName(zustand, antrag.mitarbeiterId)}
+            </p>
+          )}
+          <p className={`text-sm ${ohneName ? 'text-ink font-medium' : 'text-ink-muted mt-0.5'}`}>
             {formatDatum(antrag.von)} – {formatDatum(antrag.bis)} · {tage(antrag.tage)}
           </p>
         </div>
-        <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
+        {ohneStatus ? null : (
+          <Badge ton={statusTon[antrag.status]}>{urlaubsstatusLabels[antrag.status]}</Badge>
+        )}
       </div>
 
       {antrag.grund ? <p className="text-ink-muted mt-2 text-sm">Grund: {antrag.grund}</p> : null}

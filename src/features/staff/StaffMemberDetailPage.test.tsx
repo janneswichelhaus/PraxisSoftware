@@ -165,9 +165,10 @@ describe('StaffMemberDetailPage', () => {
     await screen.findByRole('heading', { name: 'Anna Beispiel' });
 
     expect(screen.queryByRole('heading', { name: 'Zugang' })).not.toBeInTheDocument();
-    expect(screen.getByText(/Zugänge und Rollen vergibt die Praxisinhaber:in/)).toBeInTheDocument();
+    // Seit UX-005i ohne Fußnote: Die Seite erklärt nicht, was sie nicht zeigt.
+    expect(screen.queryByText(/Zugänge und Rollen vergibt/)).not.toBeInTheDocument();
     expect(screen.queryByText(/im Abschnitt/)).not.toBeInTheDocument();
-    expect(document.body.textContent).not.toMatch(/Benutzerkonto|Mitarbeiterdatensatz/);
+    expect(document.body.textContent).not.toMatch(/Benutzerkonto|Mitarbeiterdatensatz|getrennt/);
   });
 
   it('zeigt die dienstlichen Angaben', async () => {

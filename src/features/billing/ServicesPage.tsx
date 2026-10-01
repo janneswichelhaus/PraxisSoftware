@@ -87,10 +87,7 @@ export function ServicesPage() {
         description="Erbrachte Leistungen aus durchgeführten Terminen und Ausfallhonorare."
       />
 
-      <Section
-        titel="Zu erfassen"
-        hinweis="Dokumentierte Behandlungstermine, Termine mit Ausfallhonorar und durchgeführte Trainingstermine. Andere stehen hier nicht: Eine Behandlung ohne finalisierte Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht."
-      >
+      <Section titel="Zu erfassen">
         {offene.isPending ? <LoadingState label="Termine werden geladen …" /> : null}
         {offene.isError ? (
           <ErrorState
@@ -113,13 +110,22 @@ export function ServicesPage() {
             </li>
           ))}
         </ul>
+
+        {/* Die Regel, welche Termine hier stehen, erklärt das System - sie
+            steht zugeklappt unter der Liste (UX-005i). */}
+        <div className="max-w-prose">
+          <Disclosure summary="Was steht hier?">
+            <p className="text-ink-muted text-sm leading-relaxed">
+              Dokumentierte Behandlungstermine, Termine mit Ausfallhonorar und durchgeführte
+              Trainingstermine. Andere stehen hier nicht: Eine Behandlung ohne finalisierte
+              Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht.
+            </p>
+          </Disclosure>
+        </div>
       </Section>
 
-      <Section
-        titel="Erfasst"
-        hinweis="Noch nicht abgerechnet. Zurücknehmen geht, solange weder Rechnung noch Entwurf sie enthält."
-        rahmen
-      >
+      {/* Ein Satz: Was Zurücknehmen verhindert, sagt die Abweisung (UX-005i). */}
+      <Section titel="Erfasst" hinweis="Noch nicht abgerechnet." rahmen>
         {leistungen.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
         {leistungen.isError ? (
           <ErrorState
@@ -289,9 +295,9 @@ function OffenerTerminKarte({ termin }: { termin: OffenerTermin }) {
           </>
         ) : termin.fee_basis ? (
           <Badge ton="neutral">{anlassLabels[termin.fee_basis] ?? 'Ausfallhonorar'}</Badge>
-        ) : (
-          <Badge ton="neutral">Dokumentiert</Badge>
-        )}
+        ) : // „Dokumentiert" ist der Regelfall unter „Zu erfassen" und trägt
+        // kein Abzeichen (UX-005i).
+        null}
         {!offen ? (
           <span className="ml-auto">
             <Button

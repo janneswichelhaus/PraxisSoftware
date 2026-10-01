@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, waitFor, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
 import { morgenOrtszeit, renderWithProviders, testUser } from '@/test-utils';
@@ -201,10 +201,17 @@ describe('InvoicesPage', () => {
 
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-    expect(await screen.findByText('RG-2026-0001')).toBeInTheDocument();
-    expect(screen.getByText('Ohne Nummer')).toBeInTheDocument();
-    expect(screen.getByText('Ausgestellt')).toBeInTheDocument();
+    // Die Nummer ist der Link zur Rechnung (UX-005i); „Ausgestellt" ist der
+    // Regelfall und trägt kein Etikett mehr.
+    expect(
+      await screen.findByRole('link', { name: 'Rechnung RG-2026-0001 ansehen' }),
+    ).toHaveAttribute('href', '/abrechnung/rechnungen/r1');
+    expect(screen.getByRole('link', { name: 'Entwurf ohne Nummer öffnen' })).toHaveTextContent(
+      'Ohne Nummer',
+    );
+    expect(screen.queryByText('Ausgestellt')).toBeNull();
     expect(screen.getByText('Entwurf')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Rechnung ansehen' })).toBeNull();
   });
 
   it('nennt einen fremden Empfaenger mit seiner Art', async () => {
@@ -306,7 +313,7 @@ describe('InvoicesPage', () => {
     renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
     expect(await screen.findByText('Storniert')).toBeInTheDocument();
-    expect(screen.getByText('Ausgestellt')).toBeInTheDocument();
+    expect(screen.getByText('RG-2026-0001')).toBeInTheDocument();
     expect(screen.queryByText('Offen')).toBeNull();
   });
 
@@ -413,7 +420,10 @@ describe('InvoicesPage', () => {
 
       await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
       expect(screen.getByLabelText('Zahlungsweg')).toBeInTheDocument();
-      expect(screen.getByText('Offen: 45,00 €')).toBeInTheDocument();
+      // Der offene Betrag steht schon im Feld; ein Hinweis dazu nur bei der
+      // Rückzahlung (UX-005i).
+      expect(screen.getByLabelText('Betrag')).toHaveValue('45,00');
+      expect(screen.queryByText('Offen: 45,00 €')).toBeNull();
 
       await nutzer.selectOptions(screen.getByLabelText('Art'), 'Rückzahlung');
       expect(screen.getByLabelText('Rückzahlung')).toHaveValue('');
@@ -425,14 +435,14 @@ describe('InvoicesPage', () => {
       expect(screen.getByLabelText('Betrag')).toHaveValue('45,00');
     });
 
-    it('trägt an „Ausgestellt" kein Warnzeichen mehr (ABR-16)', async () => {
+    it('trägt an einer ausgestellten Rechnung kein Etikett „Ausgestellt" mehr (ABR-16, UX-005i)', async () => {
       fetchRechnungen.mockResolvedValue([rechnung()]);
 
       renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
 
-      const etikett = await screen.findByText('Ausgestellt');
-      expect(etikett.textContent).toBe('Ausgestellt');
-      expect(within(etikett).queryByText('!')).toBeNull();
+      await screen.findByText('RG-2026-0001');
+      expect(screen.queryByText('Ausgestellt')).toBeNull();
+      expect(screen.queryByText('Entwurf')).toBeNull();
     });
 
     it('nennt an einer stornierten Rechnung keine Zahlungsfrist mehr (ABR-06)', async () => {

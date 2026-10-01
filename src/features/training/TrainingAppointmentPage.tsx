@@ -22,7 +22,6 @@ import {
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
-  appointmentTypeLabels,
   cancelAppointment,
   cancellationReasonSchema,
   formatLocalDate,
@@ -124,9 +123,12 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         title="Trainingstermin"
         description={`${formatLocalDate(termin.starts_at, zone)}, ${formatLocalTimeRange(termin.starts_at, termin.ends_at, zone)}`}
         actions={
-          <Badge ton={appointmentStatusTon[termin.status]}>
-            {appointmentStatusLabels[termin.status]}
-          </Badge>
+          // „Bestätigt" ist der Regelfall und trägt kein Abzeichen (UX-005i).
+          termin.status === 'confirmed' ? null : (
+            <Badge ton={appointmentStatusTon[termin.status]}>
+              {appointmentStatusLabels[termin.status]}
+            </Badge>
+          )
         }
       />
 
@@ -146,7 +148,8 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
           <DetailRow label="Betreuende Person">
             {`${termin.staff_given_name} ${termin.staff_family_name}`}
           </DetailRow>
-          <DetailRow label="Art">{appointmentTypeLabels[termin.appointment_type]}</DetailRow>
+          {/* Keine Zeile „Art": Der Ort sagt schon, ob Praxis, Video oder
+              Anschrift (UX-005i). */}
           <DetailRow label="Ort">{ort || '—'}</DetailRow>
           <DetailRow label="Vereinbarung">
             {termin.training_basis_id === null

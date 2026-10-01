@@ -10,7 +10,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
-  appointmentTypeLabels,
+  appointmentTypeHint,
   completeAppointment,
   formatLocalTimeRange,
   reopenAppointment,
@@ -146,8 +146,9 @@ function Abgeschlossen({ protokoll, zone }: { protokoll: TrainingProtocol; zone:
       <p className="text-ink-muted text-sm">
         Abgeschlossen
         {protokoll.finalized_at ? ` am ${zeitpunkt(protokoll.finalized_at, zone)}` : ''}
-        {protokoll.finalized_by_name ? ` von ${protokoll.finalized_by_name}` : ''}. Ein
-        abgeschlossenes Protokoll lässt sich nicht mehr ändern.
+        {/* Dass ein abgeschlossenes Protokoll fest ist, sagt die Rückfrage
+            beim Abschließen; hier steht nur der Stand (UX-005i). */}
+        {protokoll.finalized_by_name ? ` von ${protokoll.finalized_by_name}` : ''}.
       </p>
     </div>
   );
@@ -208,9 +209,10 @@ function Entwurf({
   return (
     <div className="flex flex-col gap-4">
       {meldung ? <Statusmeldung ton="erfolg">{meldung}</Statusmeldung> : null}
+      {/* Was Entwurf und Abschluss bedeuten, sagen Knopf und Rückfrage (UX-005i). */}
       <TextArea
         label="Was in der Einheit gemacht wurde"
-        hint="Übungen, Umfang, Absprachen – in eigenen Worten. Gespeichert wird als Entwurf; abgeschlossen ist das Protokoll unveränderlich."
+        hint="Übungen, Umfang, Absprachen – in eigenen Worten."
         rows={6}
         maxLength={20000}
         value={text}
@@ -221,12 +223,10 @@ function Entwurf({
           if (fehler) setFehler(undefined);
         }}
       />
-      {protokoll || stand ? (
-        <p className="text-ink-muted text-sm">
-          <Badge>Entwurf</Badge>
-        </p>
-      ) : null}
-      <div className="flex flex-wrap items-start gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        {/* Das Abzeichen steht in der Knopfzeile statt in einem eigenen
+            Absatz (UX-005i). */}
+        {protokoll || stand ? <Badge>Entwurf</Badge> : null}
         <Button
           type="button"
           variant="secondary"
@@ -378,7 +378,11 @@ export function TrainingEinheiten({ kundin }: { kundin: TrainingClient }) {
                   {formatLocalTimeRange(e.starts_at, e.ends_at, e.organization_time_zone)}
                 </Link>
                 <span className="text-ink-muted flex items-center gap-2 text-sm">
-                  {appointmentTypeLabels[e.appointment_type]} · {e.staff_given_name}
+                  {/* Nur eine abweichende Terminart steht dran (ANN-192, UX-005i). */}
+                  {appointmentTypeHint(e.appointment_type)
+                    ? `${appointmentTypeHint(e.appointment_type)} · `
+                    : ''}
+                  {e.staff_given_name}
                   {e.status === 'draft' ? <Badge>Entwurf</Badge> : null}
                 </span>
               </div>

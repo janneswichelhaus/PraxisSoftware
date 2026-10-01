@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Inhaltsflaeche } from '@/components/ui/Card';
+import { Aufklappzeichen, Inhaltsflaeche } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
@@ -256,10 +257,17 @@ export function AuditLogPage() {
         </>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
-        Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Protokolls.
-      </p>
+      {/* Die Fußnote erklärt das System, nicht die Einträge - zugeklappt (UX-005i). */}
+      <details className="group border-line mt-10 max-w-prose border-t pt-2">
+        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+          <Aufklappzeichen />
+          Was wird protokolliert?
+        </summary>
+        <p className="text-ink-muted mt-2 text-xs leading-relaxed">
+          Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
+          Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Protokolls.
+        </p>
+      </details>
     </>
   );
 }

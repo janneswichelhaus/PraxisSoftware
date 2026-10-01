@@ -61,7 +61,8 @@ function KontaktZeile({
   wert: string | null;
   schema: 'tel' | 'mailto';
 }) {
-  if (!wert) return <DetailRow label={label}>—</DetailRow>;
+  // Ohne Wert keine Zeile - „—" sagt nichts (UX-005i).
+  if (!wert) return null;
   const ziel = schema === 'tel' ? telHref(wert) : `mailto:${wert}`;
   return (
     <DetailRow label={label}>
@@ -266,8 +267,11 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
         <DetailList>
           <KontaktZeile label="Diensttelefon" wert={staff.work_phone} schema="tel" />
           <KontaktZeile label="Dienstliche E-Mail" wert={staff.work_email} schema="mailto" />
-          <DetailRow label="Hauptstandort">{staff.primary_location_name ?? '—'}</DetailRow>
-          <DetailRow label="Beschäftigung">{aktiv ? 'Aktiv' : 'Inaktiv'}</DetailRow>
+          {/* Keine Zeile „Beschäftigung": Aktiv ist der Regelfall, inaktiv
+              steht im Seitenkopf. Leere Angaben nehmen keine Zeile (UX-005i). */}
+          {staff.primary_location_name ? (
+            <DetailRow label="Hauptstandort">{staff.primary_location_name}</DetailRow>
+          ) : null}
           {/* Die beiden Fragen, die am Mitarbeiterdatensatz tatsächlich
               anschließen: „wann arbeitet die Person" und „was hat sie vor".
               Beide waren vorher nur über die Hauptnavigation und eine erneute
@@ -307,10 +311,12 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
       {privatSichtbar ? (
         <Section titel="Privat" rahmen>
           <DetailList>
-            <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
+            {staff.date_of_birth ? (
+              <DetailRow label="Geburtsdatum">{formatDate(staff.date_of_birth)}</DetailRow>
+            ) : null}
             <KontaktZeile label="Privattelefon" wert={staff.private_phone} schema="tel" />
             <KontaktZeile label="Private E-Mail" wert={staff.private_email} schema="mailto" />
-            <DetailRow label="Adresse">{adresse || '—'}</DetailRow>
+            {adresse ? <DetailRow label="Adresse">{adresse}</DetailRow> : null}
           </DetailList>
         </Section>
       ) : null}
@@ -325,17 +331,8 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           <StatusAktion staff={staff} timeZone={user.organizationTimeZone} />
         </div>
       ) : null}
-
-      {/* Die Fußnote nennt nur, was diese Rolle auf der Seite vorfindet
-          (ORG-25): Den Abschnitt „Zugang" gibt es nur für die
-          Praxisinhaber:in. */}
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        {darfZugang
-          ? 'Stammdaten und Zugang zur Anwendung sind getrennt. Ein Wechsel des Beschäftigungsstatus sperrt keinen Zugang; dafür gibt es den eigenen Vorgang im Abschnitt „Zugang“.'
-          : 'Stammdaten und Zugang zur Anwendung sind getrennt; Zugänge und Rollen vergibt die Praxisinhaber:in.'}{' '}
-        Stammdaten werden nicht gelöscht, damit vergangene Termine und Zuordnungen nachvollziehbar
-        bleiben.
-      </p>
+      {/* Keine Fußnote mehr: Was die Deaktivierung mit dem Zugang macht, sagt
+          ihre Rückfrage; den Rest erklärte sie nur das System (UX-005i). */}
     </>
   );
 }

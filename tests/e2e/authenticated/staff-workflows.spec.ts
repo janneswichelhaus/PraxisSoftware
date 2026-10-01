@@ -1,4 +1,4 @@
-import { expect, test, type APIRequestContext, type Page } from '@playwright/test';
+import { expect, test, type APIRequestContext, type Locator, type Page } from '@playwright/test';
 import {
   KONTEN,
   MITARBEITENDE,
@@ -47,6 +47,14 @@ async function anlegenUeberOberflaeche(page: Page, vorname: string): Promise<str
   return page.url().split('/').pop()!;
 }
 
+/**
+ * Der Beschäftigungsstand steht seit UX-005i nur noch im Seitenkopf: „Aktiv" ist
+ * der Regelfall ohne Zeile, inaktiv sagt die Zeile unter dem Namen.
+ */
+function inaktivHinweis(page: Page): Locator {
+  return page.getByText('Inaktiv – wird nicht mehr für neue Termine angeboten.');
+}
+
 /** Stellt sicher, dass die geseedete Therapeutin am Ende wieder aktiv ist. */
 async function annaReaktivieren(request: APIRequestContext): Promise<void> {
   const token = await zugriffstoken(request, KONTEN.owner);
@@ -68,7 +76,7 @@ test.describe('STAFF-001: Anlegen und Bearbeiten', () => {
     const staffId = await anlegenUeberOberflaeche(page, vorname);
 
     await expect(page.getByRole('heading', { name: `${vorname} Testperson` })).toBeVisible();
-    await expect(detailWert(page, 'Beschäftigung')).toHaveText('Aktiv');
+    await expect(inaktivHinweis(page)).toHaveCount(0);
 
     // Sie steht in der Liste …
     await page.goto('/praxis/team');
@@ -107,11 +115,11 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
 
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
-    await expect(detailWert(page, 'Beschäftigung')).toHaveText('Inaktiv');
+    await expect(inaktivHinweis(page)).toBeVisible();
 
     await page.getByRole('button', { name: 'Wieder als aktiv führen' }).click();
     await page.getByRole('button', { name: 'Wieder als aktiv führen' }).click();
-    await expect(detailWert(page, 'Beschäftigung')).toHaveText('Aktiv');
+    await expect(inaktivHinweis(page)).toHaveCount(0);
   });
 
   test('zeigt vor der Deaktivierung die offenen zukünftigen Termine', async ({ page, request }) => {
@@ -156,13 +164,13 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
 
     // Abbrechen lässt alles unverändert.
     await page.getByRole('button', { name: 'Abbrechen' }).click();
-    await expect(detailWert(page, 'Beschäftigung')).toHaveText('Aktiv');
+    await expect(inaktivHinweis(page)).toHaveCount(0);
 
     // Erst die ausdrückliche Bestätigung deaktiviert - und der Termin bleibt.
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
     await page.getByRole('button', { name: 'Als inaktiv führen' }).click();
     await page.getByRole('button', { name: 'Trotz offener Termine deaktivieren' }).click();
-    await expect(detailWert(page, 'Beschäftigung')).toHaveText('Inaktiv');
+    await expect(inaktivHinweis(page)).toBeVisible();
 
     await page.goto(`/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toHaveText('Bestätigt');

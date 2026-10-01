@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Button } from '@/components/ui/Button';
+import { Aufklappzeichen } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
@@ -286,11 +288,14 @@ function OffeneEinladung({
 
       {/* Der Kasten beschreibt den Handgriff aus ANN-025. Weiß die Seite, dass
           es das Konto schon gibt - die Mail ging hinaus -, entfällt er
-          (ORG-10). */}
+          (ORG-10). Zugeklappt, weil er das System erklärt (UX-005i). */}
       {!abgelaufen && letzteZustellung !== 'gesendet' ? (
-        <div className="border-line bg-surface-sunken rounded-card mt-4 border p-3">
-          <p className="text-ink text-sm font-medium">Nächster Schritt</p>
-          <p className="text-ink-muted mt-1 text-sm leading-relaxed">
+        <details className="group border-line bg-surface-sunken rounded-card mt-4 border px-3">
+          <summary className={`${aufklappKopfKlassen} text-ink text-sm font-medium`}>
+            <Aufklappzeichen />
+            Konto beim Anmeldedienst anlegen – so geht's
+          </summary>
+          <p className="text-ink-muted pb-3 text-sm leading-relaxed">
             Die Berechtigung steht. Damit sich die Person anmelden kann, braucht sie einmalig ein
             Konto beim Anmeldedienst – die Praxisplattform legt keines an, weil die
             Selbstregistrierung bewusst abgeschaltet ist. Das Konto legt an, wer den Anmeldedienst
@@ -298,7 +303,7 @@ function OffeneEinladung({
             dieser Adresse. Danach „Anmeldemail senden“ – die Person meldet sich an und nimmt die
             Einladung an; die Rollen oben werden dabei gesetzt.
           </p>
-        </div>
+        </details>
       ) : null}
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
@@ -416,10 +421,8 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
 
   return (
     <div className="max-w-md">
-      <DetailList>
-        <DetailRow label="Stand">{aktiv ? 'Eingerichtet' : 'Gesperrt'}</DetailRow>
-      </DetailList>
-
+      {/* Keine Zeile „Stand: Eingerichtet": Eingerichtet ist der Regelfall,
+          gesperrt sagt die Warnung darunter (UX-005i). */}
       {!aktiv ? (
         <Statusmeldung ton="warnung" className="mt-3">
           Dieser Zugang ist gesperrt. Die Person kann sich anmelden, sieht aber keine Daten der
@@ -427,14 +430,15 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
         </Statusmeldung>
       ) : null}
 
-      <fieldset className="mt-6">
+      <fieldset className={aktiv ? '' : 'mt-6'}>
         <legend className="text-ink mb-1 text-sm font-medium">Rollen</legend>
         <div className="flex flex-col">
+          {/* Die Rollenhinweise stehen nur im Einladungsformular, wo die
+              Rollen zum ersten Mal gewählt werden (UX-005i). */}
           {WAEHLBARE_ROLLEN.map((rolle) => (
             <Checkbox
               key={rolle}
               label={roleLabel(rolle)}
-              hint={ROLLENHINWEISE[rolle]}
               checked={rollen.includes(rolle)}
               onChange={(event) => {
                 setRollen((bisher) =>
@@ -588,7 +592,8 @@ export function StaffAccountSection({ staff }: { staff: StaffMember }) {
   const hatZugang = konto.data?.user_id != null;
 
   return (
-    <Section titel="Zugang" hinweis="Zugang zur Anwendung. Die Stammdaten bleiben davon unberührt.">
+    // Ohne Hinweis unter der Überschrift: Er erklärte nur das System (UX-005i).
+    <Section titel="Zugang">
       {konto.isError || einladungen.isError ? (
         <NachladeHinweis
           className="mb-4"

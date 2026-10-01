@@ -268,15 +268,16 @@ function Erstattungskarte({
             </DataRow>
             <DataRow label="Arbeitstage">{erstattung.arbeitstage}</DataRow>
           </>
-        ) : (
-          <DataRow label="Positionen">{erstattung.positionen.length}</DataRow>
-        )}
-        {/* Bricht die IBAN um, dann in zwei gleich lange Hälften statt vor
-            der letzten Zweiergruppe (VOR-24). Ganz ohne Umbruch ragte sie in
-            der vierspaltigen Ansicht aus der Wertspalte. */}
-        <DataRow label="IBAN">
-          <span className="inline-block text-balance tabular-nums">{erstattung.iban}</span>
-        </DataRow>
+        ) : // Keine Zeile „Positionen: N" - die Positionen stehen darunter (UX-005i).
+        null}
+        {/* Die IBAN nur, wenn sie gebraucht wird: zur Auszahlung eines
+            genehmigten Antrags (UX-005i). Bricht sie um, dann in zwei gleich
+            lange Hälften statt vor der letzten Zweiergruppe (VOR-24). */}
+        {erstattung.stand === 'genehmigt' ? (
+          <DataRow label="IBAN">
+            <span className="inline-block text-balance tabular-nums">{erstattung.iban}</span>
+          </DataRow>
+        ) : null}
         {erstattung.belege > 0 ? <DataRow label="Belege">{erstattung.belege}</DataRow> : null}
       </DataList>
 

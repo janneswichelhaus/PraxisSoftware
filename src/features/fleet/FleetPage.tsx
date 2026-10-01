@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
-import { Badge, type Ton } from '@/components/ui/Badge';
+import { Badge } from '@/components/ui/Badge';
 import { Card, CardGrid, DataList, DataRow, Disclosure } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/Feedback';
 import { isOwner, type CurrentUser } from '@/features/session/types';
@@ -52,19 +52,6 @@ import {
 
 type Statusfilter = 'alle' | Radstatus;
 type Tagesfilter = '' | Wochentag;
-
-/**
- * Ton des Radstatus (VOR-13).
- *
- * „Im Einsatz" ist der Normalbetrieb und trägt deshalb keinen Warnton - bis
- * VOR-13 stand er mit „!" da, und jede Karte meldete eine Warnung, die keine
- * war. Gewarnt wird nur bei einer echten Abweichung (Rad nicht im Stammdepot).
- */
-const statusTon: Record<Radstatus, Ton> = {
-  verfuegbar: 'positiv',
-  einsatz: 'neutral',
-  reparatur: 'kritisch',
-};
 
 /**
  * Tagesbelegung als Fläche (VOR-13): belegt ist der Normalfall und neutral,
@@ -302,6 +289,7 @@ export function FleetPage({ user }: { user: CurrentUser }) {
                 <Radkarte
                   key={rad.id}
                   rad={rad}
+                  abschnitt={depot.name}
                   zeitzone={user.organizationTimeZone}
                   darfSchluesselcode={darfEinstellungen}
                   onSchluesselZurueck={() => schluesselZurueck(rad)}
@@ -326,20 +314,25 @@ export function FleetPage({ user }: { user: CurrentUser }) {
 
 function Radkarte({
   rad,
+  abschnitt,
   zeitzone,
   darfSchluesselcode,
   onSchluesselZurueck,
   onFreigeben,
 }: {
   rad: Rad;
+  /** Die Überschrift des Abschnitts, in dem die Karte steht. */
+  abschnitt: string;
   zeitzone: string | null;
   darfSchluesselcode: boolean;
   onSchluesselZurueck: () => void;
   onFreigeben: () => void;
 }) {
   const { zustand } = useVorschau();
-  const wochendaten = wochentagsdaten(zustand.stichtag);
   const falschesDepot = rad.depotId !== rad.stammdepotId;
+  // Das Depot steht nur dran, wenn es nicht schon die Abschnittsüberschrift
+  // sagt (UX-005i).
+  const depot = depotName(zustand, rad, 'aktuell');
   const stammnutzer = rad.stammnutzerId ? mitarbeiterName(zustand, rad.stammnutzerId) : '';
   const aktuellerNutzer = rad.aktuellerNutzerId
     ? mitarbeiterName(zustand, rad.aktuellerNutzerId)
@@ -351,11 +344,15 @@ function Radkarte({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="text-ink text-liste truncate font-semibold">{rad.name}</p>
-          <p className="text-ink-muted mt-0.5 truncate text-sm">
-            {depotName(zustand, rad, 'aktuell')}
-          </p>
+          {depot !== abschnitt ? (
+            <p className="text-ink-muted mt-0.5 truncate text-sm">{depot}</p>
+          ) : null}
         </div>
-        <Badge ton={statusTon[rad.status]}>{radstatusLabels[rad.status]}</Badge>
+        {/* Nur die Abweichung trägt ein Abzeichen: Verfügbar und im Einsatz
+            sind Normalbetrieb (VOR-13, UX-005i). */}
+        {rad.status === 'reparatur' ? (
+          <Badge ton="kritisch">{radstatusLabels[rad.status]}</Badge>
+        ) : null}
       </div>
 
       {falschesDepot ? (
@@ -369,7 +366,8 @@ function Radkarte({
         {vertretung || (rad.ersatzrad && aktuellerNutzer) ? (
           <DataRow label="Aktuell gefahren von">{aktuellerNutzer}</DataRow>
         ) : null}
-        <DataRow label="Akku">{rad.akku || '–'}</DataRow>
+        {/* Ohne Angabe keine Zeile (UX-005i). */}
+        {rad.akku ? <DataRow label="Akku">{rad.akku}</DataRow> : null}
         {darfSchluesselcode && rad.schluesselcode ? (
           <DataRow label="Schlüsselcode">{rad.schluesselcode}</DataRow>
         ) : null}
@@ -407,32 +405,8 @@ function Radkarte({
         )}
       </div>
 
-      <div className="text-ink-muted mt-3 grid grid-cols-7 gap-1 text-center text-xs">
-        {wochentage.map((tag) => {
-          const stand = belegung(zustand, rad, tag, wochendaten);
-          return (
-            <div
-              key={tag}
-              title={
-                stand.wegenUrlaub
-                  ? `${wochentagLabels[tag]}: frei, ${stammnutzer} ist abwesend`
-                  : `${wochentagLabels[tag]}: ${stand.belegt ? 'belegt' : 'frei'}`
-              }
-              className={`rounded-button px-1 py-1 ${belegungsflaeche(stand.belegt)}`}
-            >
-              <span className="block font-medium">{wochentagLabels[tag]}</span>
-              <span className="block text-[0.6875rem]">
-                {stand.belegt ? 'belegt' : stand.wegenUrlaub ? 'frei*' : 'frei'}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-      {wochentage.some((tag) => belegung(zustand, rad, tag, wochendaten).wegenUrlaub) ? (
-        <p className="text-ink-muted mt-1 text-xs">
-          * frei, weil {stammnutzer} an diesem Tag genehmigt abwesend ist.
-        </p>
-      ) : null}
+      {/* Kein Wochenraster je Karte: Die Wochenübersicht oben zeigt dieselbe
+          Belegung für alle Räder (UX-005i). */}
 
       {rad.schluesselverlauf.length > 0 ? (
         <Disclosure summary={`Schlüsselverlauf (${rad.schluesselverlauf.length})`}>

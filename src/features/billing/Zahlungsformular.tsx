@@ -158,14 +158,12 @@ export function Zahlungsformular({
     buchen.mutate({ betragCent: cent, richtung });
   }
 
+  // Nur die Rückzahlung braucht den Hinweis: Beim Eingang steht der offene
+  // Betrag schon im Feld (UX-005i).
   const hinweis =
-    richtung === 'refund'
-      ? eingegangenCent === undefined
-        ? undefined
-        : `Eingegangen: ${formatEuro(eingegangenCent, waehrung)}`
-      : offenCent > 0
-        ? `Offen: ${formatEuro(offenCent, waehrung)}`
-        : undefined;
+    richtung === 'refund' && eingegangenCent !== undefined
+      ? `Eingegangen: ${formatEuro(eingegangenCent, waehrung)}`
+      : undefined;
 
   return (
     <form onSubmit={absenden} noValidate className="mt-4 flex max-w-xl flex-col gap-4">

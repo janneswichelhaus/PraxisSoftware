@@ -101,7 +101,8 @@ describe('InvoiceDetailPage', () => {
     expect(
       screen.getByText(/Erstverordnung vom 01.07.2026 · Dr. Fiktiv Beispiel/),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Ohne Diagnose/)).toBeInTheDocument();
+    // Keine Diagnose - und seit UX-005i auch kein Satz, der das erklärt.
+    expect(screen.queryByText(/Diagnose/)).toBeNull();
   });
 
   it('weist die enthaltene Umsatzsteuer aus, wenn es eine gibt', async () => {
@@ -251,7 +252,9 @@ describe('InvoiceDetailPage', () => {
     expect(
       await screen.findByText(/Eine Trainingsrechnung geht an die Kund:in selbst/),
     ).toBeInTheDocument();
-    expect(screen.getByText('Leistung für: Tina Trainingskundin')).toBeInTheDocument();
+    // Geht die Rechnung an die Kund:in selbst, steht ihr Name nicht ein
+    // zweites Mal unter der Empfängerin (UX-005i).
+    expect(screen.queryByText(/Leistung für:/)).toBeNull();
     expect(screen.getByText('Kund:in selbst')).toBeInTheDocument();
     expect(screen.queryByText('Patient:in selbst')).not.toBeInTheDocument();
     expect(screen.getByText(/Trainingsweg 5, 72076 Tuebingen/)).toBeInTheDocument();
@@ -277,10 +280,13 @@ describe('InvoiceDetailPage', () => {
       '/abrechnung/rechnungen/r1',
     );
 
-    expect(await screen.findByText(/Ausgestellt und unveränderlich/)).toBeInTheDocument();
     expect(
-      screen.getByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
+      await screen.findByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
     ).toBeInTheDocument();
+    // Die Frist steht in der Zustandszeile, der Satz über die
+    // Unveränderlichkeit nicht mehr (UX-005i).
+    expect(screen.getByText(/Zahlbar bis 15\.09\.2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/Ausgestellt und unveränderlich/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Rechnung ausstellen' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Entwurf verwerfen' })).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Rechnung geht an/)).not.toBeInTheDocument();
@@ -578,9 +584,8 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      await screen.findByText(/Ausgestellt und unveränderlich/);
       expect(
-        screen.getByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
+        await screen.findByRole('heading', { name: 'RG-2026-0001 · Erika Beispiel' }),
       ).toBeInTheDocument();
       expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
     });
@@ -801,7 +806,9 @@ describe('InvoiceDetailPage', () => {
 
       const zeile = (await screen.findByText('Noch offen')).closest('div')!;
       expect(within(zeile).getByText('0,00 €')).toBeInTheDocument();
-      expect(within(zeile).getByText('Bezahlt')).toBeInTheDocument();
+      // Der Zahlungsstand steht einmal, in der Zustandszeile oben (UX-005i).
+      expect(screen.getByText('Bezahlt')).toBeInTheDocument();
+      expect(within(zeile).queryByText('Bezahlt')).toBeNull();
       expect(screen.queryByText('Bezahlt', { selector: '.font-semibold' })).toBeNull();
     });
 
