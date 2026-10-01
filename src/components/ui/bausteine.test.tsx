@@ -21,6 +21,7 @@ import { Feldgruppe, Section } from './Section';
 import { Statusmeldung } from './Statusmeldung';
 import { SubNav, type SubNavEintrag } from './SubNav';
 import { Symbolknopf } from './Symbolknopf';
+import { HakenSymbol } from './HakenSymbol';
 import { Textlink } from './Textlink';
 import { ListRow, ListRows } from './ListRow';
 import { NowMarker } from './NowMarker';
@@ -255,6 +256,25 @@ describe('Button', () => {
 });
 
 describe('Symbolknopf', () => {
+  it('kennt 44 px und, für den Haken als Hauptknopf, 48 px - nie 40', () => {
+    render(
+      <>
+        <Symbolknopf beschriftung="Klein">
+          <HakenSymbol />
+        </Symbolknopf>
+        <Symbolknopf beschriftung="Gross" groesse="gross" variant="primary">
+          <HakenSymbol />
+        </Symbolknopf>
+      </>,
+    );
+    expect(screen.getByRole('button', { name: 'Klein' })).toHaveClass('size-11');
+    const gross = screen.getByRole('button', { name: 'Gross' });
+    expect(gross).toHaveClass('size-12');
+    expect(gross).not.toHaveClass('size-11');
+    // Das Symbol ist Schmuck; den Namen trägt der Knopf.
+    expect(gross.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+  });
+
   it('ist 44 px gross, benannt und schickt kein Formular ab (UIK-01)', () => {
     renderWithProviders(
       <Symbolknopf beschriftung="Vorheriger Zeitraum" onClick={() => {}}>
@@ -1117,7 +1137,7 @@ describe('Rueckfrage', () => {
 
 /**
  * Die Bausteine aus dem Design-Handoff vom 2026-10-01 (Abschnitte 3 und 5a,
- * `docs/design/handoff-2026-10-01-uebersicht-termin-akte.md`). Die Namen im
+ * `docs/design/handoff-2026-10-01-praxissoftware.md`). Die Namen im
  * Handoff sind deutsch; im Code heißen neue Bausteine englisch
  * (`docs/DEVELOPMENT.md`, „Benennung im Code"): Wegbalken = `TravelBar`,
  * Zeile = `ListRow`, Statuszeichen = `StatusMark`, Fortschrittspunkte =

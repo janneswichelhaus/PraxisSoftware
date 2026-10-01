@@ -16,6 +16,8 @@ import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
+import { TerminAbschliessenKnopf } from '@/features/appointments/TerminAbschliessen';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import {
   appointmentStatusLabels,
@@ -62,6 +64,7 @@ import {
   liegeText,
   naechsterWeg,
   tagesfortschritt,
+  terminName,
   wegeDesTages,
   type Fokus,
   type LiegeHeute,
@@ -365,6 +368,36 @@ function MeinTag({
 }) {
   const { data: termine, isPending, isError, isFetching, dataUpdatedAt, refetch } = abfrage;
 
+  // Was der Haken bewirkt hat - oder warum nicht (Design-Handoff 2026-10-01,
+  // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus.
+  const [meldung, setMeldung] = useState<{ ton: 'ok' | 'fehler'; text: string } | null>(null);
+
+  /**
+   * Der Haken an einem bestätigten Behandlungstermin (Abschnitt 6a): schließt
+   * ab, ohne zu dokumentieren. Die Doku bleibt danach als „Doku offen" stehen.
+   */
+  function haken(termin: DayPlanEntry, groesse: 'normal' | 'gross' = 'normal'): ReactNode {
+    if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
+    const name = terminName(termin);
+    return (
+      <TerminAbschliessenKnopf
+        appointmentId={termin.id}
+        name={name}
+        variant={groesse === 'gross' ? 'primary' : 'secondary'}
+        groesse={groesse}
+        onAbgeschlossen={() =>
+          setMeldung({
+            ton: 'ok',
+            text: darfDokumentieren
+              ? `${name} abgeschlossen. Doku offen.`
+              : `${name} abgeschlossen.`,
+          })
+        }
+        onFehler={(text) => setMeldung({ ton: 'fehler', text })}
+      />
+    );
+  }
+
   // PRX-013: Was zur Erstaufnahme noch fehlt, steht an der Karte - vor der
   // Tür, wo man es noch mitnehmen oder erledigen kann. Dieselbe Abfrage wie
   // unter „Offene Punkte".
@@ -430,7 +463,7 @@ function MeinTag({
 
     const kicker =
       fokus.art === 'dokumentation'
-        ? 'Dokumentation offen'
+        ? 'Doku offen'
         : phase === 'laeuft'
           ? `Jetzt · bis ${ende}`
           : phase === 'ueberfaellig'
@@ -439,31 +472,36 @@ function MeinTag({
                 anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''
               }`;
 
-    const abschluss = mitRueckweg(`/termine/${termin.id}/abschluss`, '/');
-    const darfAbschliessen = darfDokumentieren && behandlung;
+    const doku = mitRueckweg(`/termine/${termin.id}/abschluss`, '/');
+    const darfDoku = darfDokumentieren && behandlung;
 
     // Ein Hauptknopf je Ansicht (UX-EPIC-002): die Navigation, solange der
-    // Besuch wartet; der Abschluss, sobald er begonnen hat - und auch davor,
-    // wenn es kein Ziel für die Navigation gibt (Praxis, Video).
-    const hauptaktion = arbeitet ? (
-      darfAbschliessen ? (
-        // Am Telefon bricht die Beschriftung in zwei Zeilen um; mit der
-        // engeren Zeilenhöhe bleibt sie im 48 px hohen Knopf.
-        <ButtonLink to={abschluss} className="w-full text-center leading-tight">
-          Dokumentieren und abschließen
-        </ButtonLink>
-      ) : null
-    ) : hatNavigation ? (
-      <NavigationZumTermin termin={termin} hauptknopf breit />
-    ) : darfAbschliessen ? (
-      <ButtonLink to={abschluss} className="w-full">
-        Behandlung abschließen
-      </ButtonLink>
-    ) : null;
+    // Besuch wartet; ab dem Beginn - und davor, wenn es kein Ziel für die
+    // Navigation gibt (Praxis, Video) - Haken und „Doku". Abschließen und
+    // Dokumentieren sind getrennt (Design-Handoff 2026-10-01, Abschnitt 6a):
+    // Der Haken schließt ab, „Doku" öffnet die Schreibseite.
+    const grosserHaken = haken(termin, 'gross');
+    const hauptaktion =
+      !arbeitet && hatNavigation ? (
+        <NavigationZumTermin termin={termin} hauptknopf breit />
+      ) : grosserHaken || darfDoku ? (
+        <div className="flex w-full items-center gap-2">
+          {grosserHaken}
+          {darfDoku ? (
+            <ButtonLink to={doku} className="flex-1">
+              Doku <span className="sr-only">schreiben</span>
+            </ButtonLink>
+          ) : null}
+        </div>
+      ) : null;
+    const kleinerHaken = !arbeitet && hatNavigation ? haken(termin) : null;
 
     const aktionen =
-      behandlung && (darfDokuLesen || darfDokumentieren) ? (
+      behandlung && (darfDokuLesen || darfDokumentieren || kleinerHaken) ? (
         <>
+          {/* Vor dem Beginn steht der Haken klein neben den übrigen Zielen;
+              ab dem Beginn ist er Teil des Hauptknopfs. */}
+          {kleinerHaken}
           {/* UX-EPIC-003: Vor der Tür die bisherige Doku mit einem Tipp. Der
               Verlauf der Akte protokolliert jeden Lesezugriff (ADR-010); die
               Anzeige hier ist Darstellung, verbindlich prüft der Lesepfad. */}
@@ -480,20 +518,9 @@ function MeinTag({
               Besuchs mitschreibt, braucht den Weg ohne diese Folge. Der
               zugängliche Name beginnt mit dem sichtbaren Wort, damit auch die
               Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3). */}
-          {darfDokumentieren ? (
-            <Link
-              to={mitRueckweg(`/termine/${termin.id}/dokumentation`, '/')}
-              className={kartenAktionKlassen()}
-            >
+          {darfDoku && !arbeitet && hatNavigation ? (
+            <Link to={doku} className={kartenAktionKlassen()}>
               Doku <span className="sr-only">schreiben</span>
-            </Link>
-          ) : null}
-          {/* Vor dem Beginn bleibt der Abschluss neben der Navigation
-              erreichbar - kurz beschriftet, weil die Karte mehrere Ziele
-              nebeneinander trägt. Ab dem Beginn ist er der Hauptknopf. */}
-          {darfDokumentieren && !arbeitet && hatNavigation ? (
-            <Link to={abschluss} className={kartenAktionKlassen()}>
-              Abschließen <span className="sr-only">der Behandlung</span>
             </Link>
           ) : null}
         </>
@@ -516,6 +543,15 @@ function MeinTag({
 
   return (
     <>
+      {meldung?.ton === 'ok' ? (
+        <Rueckmeldung key={meldung.text} className="mb-4">
+          {meldung.text}
+        </Rueckmeldung>
+      ) : meldung ? (
+        <Statusmeldung ton="fehler" className="mb-4">
+          {meldung.text}
+        </Statusmeldung>
+      ) : null}
       {/* „Stand von …" erscheint nur, wenn die Liste tatsächlich nicht mehr
           frisch ist (UX-011). Dauerhaft angezeigt wäre es Rauschen - wie ein
           dauerhaftes „verbunden" (ANN-015). Aktualisiert wird über die
@@ -575,6 +611,7 @@ function MeinTag({
           zeitzone={zeitzone}
           anfahrten={fahrzeiten.anfahrten}
           karte={karte()}
+          haken={haken}
         />
       ) : null}
     </>

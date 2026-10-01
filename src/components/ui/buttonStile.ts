@@ -82,12 +82,24 @@ export function knopfKlassen(variant: Variant, groesse: Groesse = 'normal', zusa
  * `quiet`, weil ein Symbol ohne Fläche der Regelfall ist.
  */
 const symbol =
-  'nicht-drucken inline-flex size-11 shrink-0 items-center justify-center rounded-button ' +
+  'nicht-drucken inline-flex shrink-0 items-center justify-center rounded-button ' +
   'transition-colors disabled:cursor-not-allowed disabled:bg-surface-sunken ' +
   'disabled:text-ink-muted';
 
-export function symbolknopfKlassen(variant: Variant = 'quiet', zusatz = ''): string {
-  return `${symbol} ${varianten[variant]} ${zusatz}`.trim();
+/**
+ * `gross` (48 px) nur für den Hauptknopf einer Karte - den Haken neben
+ * „Doku" (Design-Handoff 2026-10-01, Abschnitt 6a). Die 40 px des Handoffs
+ * für den kleinen Haken gibt es nicht: Er bleibt bei 44 (ANN-199).
+ */
+export type SymbolGroesse = 'normal' | 'gross';
+
+export function symbolknopfKlassen(
+  variant: Variant = 'quiet',
+  zusatz = '',
+  groesse: SymbolGroesse = 'normal',
+): string {
+  const masse = groesse === 'gross' ? 'size-12' : 'size-11';
+  return `${symbol} ${masse} ${varianten[variant]} ${zusatz}`.trim();
 }
 
 /**

@@ -154,13 +154,13 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   const karte = page.getByRole('article');
 
   await expect(karte.getByRole('heading', { name: 'Jetzt · bis 09:30' })).toBeVisible();
-  const abschluss = karte.getByRole('link', { name: 'Dokumentieren und abschließen' });
-  // Am Telefon bricht die Beschriftung um und bleibt im 48 px hohen Knopf.
-  const knopf = (await abschluss.boundingBox())!;
-  expect(knopf.height).toBeGreaterThanOrEqual(48);
-  expect(knopf.height).toBeLessThanOrEqual(50);
-  const passt = await abschluss.evaluate((element) => element.scrollHeight <= element.clientHeight);
-  expect(passt).toBe(true);
+  // Haken 48 und „Doku" teilen sich den Hauptknopf, in einer Reihe (Handoff 6a).
+  const haken = (await karte.getByRole('button', { name: /^Termin abschließen/ }).boundingBox())!;
+  const doku = (await karte.getByRole('link', { name: 'Doku schreiben' }).boundingBox())!;
+  expect(haken.height).toBe(48);
+  expect(haken.width).toBe(48);
+  expect(doku.height).toBe(48);
+  expect(Math.abs(doku.y - haken.y)).toBeLessThanOrEqual(1);
   await expect(page.getByRole('button', { name: 'Navigation starten' })).toHaveCount(0);
 
   const balken = page.getByRole('region', { name: 'Nächster Weg danach' });
@@ -210,9 +210,11 @@ test('klappt am Tagesende die offene Dokumentation aus', async ({ page }) => {
   await oeffne(page, '17:00', 375, '?ansicht=doku');
   await expect(page.getByRole('heading', { name: 'Alle Besuche erledigt' })).toBeVisible();
   const karte = page.getByRole('article');
-  await expect(karte.getByRole('heading', { name: 'Dokumentation offen' })).toBeVisible();
-  await expect(karte.getByText('Dokumentation noch Entwurf')).toBeVisible();
-  await expect(karte.getByRole('link', { name: 'Dokumentieren und abschließen' })).toBeVisible();
+  await expect(karte.getByRole('heading', { name: 'Doku offen' })).toBeVisible();
+  await expect(karte.getByText('Doku im Entwurf')).toBeVisible();
+  await expect(karte.getByRole('link', { name: 'Doku schreiben' })).toBeVisible();
+  // Abgeschlossen: kein Haken mehr.
+  await expect(karte.getByRole('button', { name: /^Termin abschließen/ })).toHaveCount(0);
   await ohneUeberlauf(page);
 });
 

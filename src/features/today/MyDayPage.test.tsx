@@ -23,7 +23,7 @@ import { MyDayPage } from './MyDayPage';
  *
  * Seit dem Design-Handoff vom 2026-10-01 steht der eigene Tag als Zeitstrahl
  * da. Die Zeiten der Testdaten sind deshalb **relativ zu jetzt**: Ob eine
- * Karte „Navigation starten" oder „Dokumentieren und abschließen" trägt, hängt
+ * Karte „Navigation starten" oder Haken und „Doku" trägt, hängt
  * daran, ob der Besuch schon begonnen hat.
  */
 
@@ -168,6 +168,8 @@ vi.mock('@/features/today/api', async (importOriginal) => {
  * niemandem aufgefallen, weil dieser Ersatz die Argumente gar nicht ansah.
  */
 const fetchAppointments = vi.fn();
+const fetchAppointment = vi.fn();
+const completeAppointment = vi.fn();
 
 // PRX-013: offene Erstaufnahmen; ohne Angabe keine.
 const fetchOpenIntakes = vi.fn(() => Promise.resolve([] as unknown[]));
@@ -182,6 +184,9 @@ vi.mock('@/features/appointments/api', async (importOriginal) => {
     ...actual,
     fetchAppointments: (query: AppointmentsApiModule.CalendarQuery) =>
       fetchAppointments(query) as Promise<AppointmentsApiModule.CalendarEntry[]>,
+    fetchAppointment: (id: string) => fetchAppointment(id) as Promise<unknown>,
+    completeAppointment: (id: string, stand: string) =>
+      completeAppointment(id, stand) as Promise<void>,
   };
 });
 
@@ -341,7 +346,7 @@ describe('Übersicht', () => {
     );
   });
 
-  it('bietet Doku als eigenen Weg neben dem Abschluss an (IDEA-PRX-040)', async () => {
+  it('trennt Doku und Abschluss: Doku als Weg, der Haken schließt ab (Handoff 6a)', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     const karte = await findeKarte();
 
@@ -352,22 +357,47 @@ describe('Übersicht', () => {
     // Mit Rueckweg auf die Uebersicht (UX-012).
     expect(doku).toHaveAttribute(
       'href',
-      `/termine/t1/dokumentation?zurueck=${encodeURIComponent('/')}`,
+      `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
     );
     expect(doku).not.toHaveAttribute('aria-label');
     // Sichtbar bleibt es kurz: Der Rest steht nur für Vorlesesoftware da.
     expect(doku.firstChild?.textContent?.trim()).toBe('Doku');
     expect(doku.querySelector('.sr-only')).toHaveTextContent('schreiben');
 
-    // Vor dem Beginn steht der Abschluss kurz beschriftet neben der
-    // Navigation - der Name beginnt ebenfalls mit dem sichtbaren Wort.
-    const abschluss = within(karte).getByRole('link', { name: 'Abschließen der Behandlung' });
-    expect(abschluss).toHaveAttribute(
-      'href',
-      `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
+    // Vor dem Beginn steht der Haken klein neben der Navigation: ein Knopf,
+    // kein Weg - er schließt ab, ohne zu dokumentieren.
+    const haken = within(karte).getByRole('button', { name: /^Termin abschließen/ });
+    expect(haken).toHaveAttribute('title', 'Termin abschließen');
+    expect(haken.className).not.toContain('bg-accent ');
+    expect(haken).toHaveClass('size-11');
+  });
+
+  it('schließt mit dem Haken ab, ohne zu dokumentieren, und meldet „Doku offen"', async () => {
+    fetchAppointment.mockResolvedValue({ id: 't1', updated_at: '2026-10-01T06:00:00Z' });
+    completeAppointment.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const karte = await findeKarte();
+
+    await user.click(within(karte).getByRole('button', { name: /^Termin abschließen/ }));
+
+    // Der Stand wird unmittelbar vorher gelesen - die Tagesliste kennt ihn nicht.
+    await waitFor(() =>
+      expect(completeAppointment).toHaveBeenCalledWith('t1', '2026-10-01T06:00:00Z'),
     );
-    expect(abschluss.firstChild?.textContent?.trim()).toBe('Abschließen');
-    expect(abschluss.className).not.toContain('bg-accent ');
+    expect(await screen.findByRole('status')).toHaveTextContent(/abgeschlossen. Doku offen./);
+  });
+
+  it('zeigt einen abgewiesenen Abschluss als Fehler', async () => {
+    fetchAppointment.mockResolvedValue({ id: 't1', updated_at: '2026-10-01T06:00:00Z' });
+    completeAppointment.mockRejectedValue(new Error('Der Termin wurde inzwischen geändert.'));
+    const user = userEvent.setup();
+    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+    const karte = await findeKarte();
+
+    await user.click(within(karte).getByRole('button', { name: /^Termin abschließen/ }));
+
+    expect(await screen.findByText('Der Termin wurde inzwischen geändert.')).toBeInTheDocument();
   });
 
   it('setzt die Rufnummern hinter die Handlungen, ohne sie wegzunehmen', async () => {
@@ -377,7 +407,7 @@ describe('Übersicht', () => {
     const ziele = within(karte)
       .getAllByRole('link')
       .map((l) => l.getAttribute('href') ?? '');
-    const doku = ziele.findIndex((z) => z.includes('/dokumentation'));
+    const doku = ziele.findIndex((z) => z.includes('/abschluss'));
     const nummer = ziele.findIndex((z) => z.startsWith('tel:'));
 
     expect(doku).toBeGreaterThanOrEqual(0);
@@ -694,12 +724,15 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const abschluss = await screen.findByRole('link', { name: 'Behandlung abschließen' });
-      expect(abschluss.className).toContain('bg-accent ');
-      expect(abschluss).toHaveClass('w-full');
+      const haken = await screen.findByRole('button', { name: /^Termin abschließen/ });
+      expect(haken.className).toContain('bg-accent ');
+      expect(haken).toHaveClass('size-12');
+      expect(screen.getByRole('link', { name: 'Doku schreiben' }).className).toContain(
+        'bg-accent ',
+      );
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
-      // Ein Hauptknopf je Ansicht: kein zweiter, kurzer Abschluss daneben.
-      expect(screen.queryByRole('link', { name: 'Abschließen der Behandlung' })).toBeNull();
+      // Ein Hauptknopf je Ansicht: kein zweiter, kleiner Haken daneben.
+      expect(screen.getAllByRole('button', { name: /^Termin abschließen/ })).toHaveLength(1);
     });
 
     it('fuehrt mit einem Tipp zur bisherigen Doku, mit Rueckweg', async () => {
@@ -772,18 +805,19 @@ describe('Übersicht', () => {
       expect(
         within(karte).getByRole('heading', { name: `Jetzt · bis ${uhr(laufend.ends_at)}` }),
       ).toBeInTheDocument();
-      const abschluss = within(karte).getByRole('link', { name: 'Dokumentieren und abschließen' });
-      expect(abschluss).toHaveAttribute(
+      // Haken 48 und „Doku" teilen sich den Hauptknopf (Handoff 6a).
+      const haken = within(karte).getByRole('button', { name: /^Termin abschließen/ });
+      expect(haken.className).toContain('bg-accent ');
+      expect(haken).toHaveClass('size-12');
+      const doku = within(karte).getByRole('link', { name: 'Doku schreiben' });
+      expect(doku).toHaveAttribute(
         'href',
         `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
       );
-      expect(abschluss.className).toContain('bg-accent ');
-      expect(abschluss).toHaveClass('w-full');
-      // Navigation und der kurze Abschluss daneben entfallen.
+      expect(doku.className).toContain('bg-accent ');
+      // Die Navigation entfällt.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
-      expect(screen.queryByRole('link', { name: 'Abschließen der Behandlung' })).toBeNull();
-      // Mitschreiben und Nachlesen bleiben.
-      expect(within(karte).getByRole('link', { name: 'Doku schreiben' })).toBeInTheDocument();
+      // Nachlesen bleibt.
       expect(within(karte).getByRole('link', { name: 'Bisherige Doku' })).toBeInTheDocument();
       // Ein laufender Besuch beginnt nicht mehr „in … Minuten".
       expect(within(karte).queryByText(/^in \d+ Minuten?$/)).toBeNull();
@@ -799,8 +833,9 @@ describe('Übersicht', () => {
         within(karte).getByRole('heading', { name: `Seit ${uhr(vorbei.ends_at)} offen` }),
       ).toBeInTheDocument();
       expect(
-        within(karte).getByRole('link', { name: 'Dokumentieren und abschließen' }),
+        within(karte).getByRole('button', { name: /^Termin abschließen/ }),
       ).toBeInTheDocument();
+      expect(within(karte).getByRole('link', { name: 'Doku schreiben' })).toBeInTheDocument();
     });
 
     it('bietet einer Rolle ohne Schreibrecht an der Doku keinen Abschluss an', async () => {
@@ -1113,7 +1148,7 @@ describe('Übersicht', () => {
       expect(screen.getAllByRole('button', { name: 'Navigation starten' })).toHaveLength(1);
       // Der besuchte steht als Zeile da und sagt, was an ihm noch offen ist.
       const besucht = imStrahl().getByRole('link', { name: /Erika Beispiel/ });
-      expect(besucht).toHaveTextContent('Dokumentation noch Entwurf');
+      expect(besucht).toHaveTextContent('Doku im Entwurf');
       expect(await screen.findByText('1 von 2 Besuchen erledigt')).toBeInTheDocument();
     });
 
@@ -1136,11 +1171,11 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
       const karte = await findeKarte();
-      expect(
-        within(karte).getByRole('heading', { name: 'Dokumentation offen' }),
-      ).toBeInTheDocument();
+      expect(within(karte).getByRole('heading', { name: 'Doku offen' })).toBeInTheDocument();
       expect(within(karte).getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
-      const abschluesse = screen.getAllByRole('link', { name: 'Dokumentieren und abschließen' });
+      // Abgeschlossen: kein Haken mehr, nur „Doku".
+      expect(within(karte).queryByRole('button', { name: /^Termin abschließen/ })).toBeNull();
+      const abschluesse = within(karte).getAllByRole('link', { name: 'Doku schreiben' });
       expect(abschluesse).toHaveLength(1);
       expect(abschluesse[0]!.className).toContain('bg-accent ');
       expect(abschluesse[0]).toHaveAttribute(
@@ -1149,7 +1184,7 @@ describe('Übersicht', () => {
       );
       // Die zweite offene Dokumentation steht als Zeile da und führt in ihren Termin.
       const zweite = imStrahl().getByRole('link', { name: /Max Mustermann/ });
-      expect(zweite).toHaveTextContent('Dokumentation fehlt');
+      expect(zweite).toHaveTextContent('Doku offen');
       expect(zweite).toHaveAttribute('href', `/termine/t2?zurueck=${encodeURIComponent('/')}`);
       // Kein Besuch steht aus: keine Navigation, und oben der Tagesabschluss.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
