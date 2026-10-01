@@ -2,14 +2,14 @@
 
 Stand 2026-10-01 · gilt, bis Schritt 6 gemergt ist; danach löschen.
 
-Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 5 entstanden
+Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 6 entstanden
 sind, und den Download-Ordner des Design-Handoffs. Die Spezifikation steht in
 [`handoff-2026-10-01-uebersicht-termin-akte.md`](handoff-2026-10-01-uebersicht-termin-akte.md);
 die klickbaren Entwürfe (`entwuerfe/`) liegen bewusst nicht im Repository und sind für die
 Schritte 4 bis 6 nicht nötig — die Maße stehen in der Spezifikation.
 
-**Als Nächstes: Schritt 6 (Kalender-Kacheln).** Jannes hat ihn noch nicht freigegeben; die neue
-Session beginnt ihn erst auf sein Wort („mach weiter mit Schritt 6").
+**Alle sechs Schritte sind gebaut (2026-10-01).** Offen sind Sichtung, Pull Requests und Merge
+durch Jannes; nach dem Merge von Schritt 6 wird diese Datei gelöscht.
 
 ## Auftrag (aus `AUFTRAG-CLAUDE-CODE.md` des Handoffs, wörtlich)
 
@@ -60,9 +60,8 @@ Die fünf Branches sind gepusht und **aufeinander gestapelt**; keiner liegt auf 
 | 3       | `claude/ui-redesign-3-uebersicht`    | Übersicht als Zeitstrahl, diese Übergabe       |
 | 4       | `claude/ui-redesign-step-3-4-vkmodh` | Termin (Abschnitt 6)                           |
 
-**Schritt 6 zweigt vom Branch der Schritte 4 und 5 ab**, solange die Schritte davor nicht gemergt
-sind; sind sie es, von `main`. Die Schritte 4 und 5 liegen auf dem Branch, den die Session vorgab
-(`claude/ui-redesign-step-3-4-vkmodh`), je ein Commit. Vor dem Bauen
+Die Schritte 4 bis 6 liegen auf dem Branch, den die Session vorgab
+(`claude/ui-redesign-step-3-4-vkmodh`), je ein Commit, gestapelt auf Schritt 3. Vor dem Bauen
 `git fetch origin --prune` und prüfen, ob `main` inzwischen weiter ist — dann `main` in den neuen
 Branch hereinnehmen, nicht die alten Branches umschreiben.
 
@@ -89,6 +88,9 @@ Branch hereinnehmen, nicht die alten Branches umschreiben.
   (`useAktuelleGrundlage`, `useOffeneErstaufnahme`, neuer Baustein `ProgressBar`), Kacheln im
   Terminbereich, „Vergangene Termine“ als `Disclosure`, Karte „Verwaltung“ in den Stammdaten.
   Prüfseite `tests/e2e/fixtures/akte.html` (`?bereich=stammdaten`, `?rolle=office`, `?leer=1`).
+
+- **Schritt 6 gebaut (2026-10-01):** `CalendarGrid` – Statuslinie 3 px (`statusLinie`) statt
+  Personenfarbe; `PERSONEN_FARBEN` entfällt. Die Kacheln trugen schon keinen Schatten.
 
 ## Was bereits anders ist als die Spezifikation
 
@@ -144,7 +146,5 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
 
 ## Start einer neuen Session
 
-Den Branch `claude/ui-redesign-step-3-4-vkmodh` wählen und schreiben:
-
-> Lies `CLAUDE.md`, `docs/STATUS.md` und `docs/design/ui-redesign-uebergabe.md`. Nenne für
-> Schritt 6 (Kalender-Kacheln) die Dateien und die sichtbaren Änderungen und baue ihn.
+Nicht mehr nötig: Alle Schritte sind gebaut. Für Nacharbeiten nach der Sichtung den Branch
+`claude/ui-redesign-step-3-4-vkmodh` wählen und die Befunde aus `../sichtung/ui-redesign.md` nennen.

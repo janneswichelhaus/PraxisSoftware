@@ -163,6 +163,23 @@ const STATUS_FARBE = {
   kritisch: 'text-danger',
 } as const;
 
+/**
+ * Die Linie links an der Kachel sagt den Zustand (Design-Handoff 2026-10-01,
+ * Abschnitt 3, letzte Zeile): bestätigt in der Hauptfarbe, erledigt
+ * (abgeschlossen, dokumentiert, abgerechnet) in `line-strong`, nicht
+ * angetroffen in Warn-, abgesagt in Fehlerfarbe. Bis dahin trug sie eine
+ * Farbe je Person - ein Orange, das wie eine Warnung aussah, ohne eine zu
+ * sein. Die Person zeigt der Kalender ohnehin: Die Woche zeigt eine Person,
+ * der Tag eine Spalte je Person mit Namen im Kopf. Farbe trägt nie allein -
+ * Warnung und Absage stehen als Zeichen und Wort in der Kachel (KAL-23).
+ */
+function statusLinie(status: CalendarEntry['status']): string {
+  if (status === 'confirmed') return 'border-l-accent';
+  if (status === 'no_show') return 'border-l-warnung';
+  if (status === 'cancelled') return 'border-l-danger';
+  return 'border-l-line-strong';
+}
+
 export interface GitterSpalte {
   id: string;
   titel: string;
@@ -198,7 +215,6 @@ export interface GitterEintrag {
   spalteId: string;
   beginnMinute: number;
   endeMinute: number;
-  farbe: string;
   /** Abgesagte und abgeschlossene Termine werden nicht gezogen. */
   ziehbar: boolean;
   /** Gerade angelegt - beim Zurückkommen aus dem Formular hervorgehoben (FIX-016). */
@@ -942,7 +958,7 @@ function Kachel({
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
 }) {
-  const { eintrag, beginnMinute, endeMinute, farbe } = gitter;
+  const { eintrag, beginnMinute, endeMinute } = gitter;
   const oben = minuteZuPixel(beginnMinute, fensterVon, stundenHoehe);
   // Mindesthöhe, damit auch ein sehr kurzer Termin greifbar bleibt. Sie
   // verzerrt einen Termin unterhalb dieser Dauer nach oben; die Zieh-Vorschau
@@ -997,7 +1013,6 @@ function Kachel({
         .filter(Boolean)
         .join(' · ')}
       style={{
-        borderLeftColor: farbe,
         top: `${oben}px`,
         height: `${hoehe}px`,
         left: `${links}%`,
@@ -1006,7 +1021,8 @@ function Kachel({
       }}
       className={[
         'rounded-button absolute block overflow-hidden',
-        'border border-l-4 px-1.5 py-1 text-left transition-colors',
+        // Ohne Schatten (Design-Handoff 2026-10-01): Fläche und Linie tragen.
+        'border border-l-[3px] px-1.5 py-1 text-left transition-colors',
         abgesagt || zurueckgelassen
           ? 'bg-surface-sunken border-dashed'
           : 'bg-surface hover:bg-surface-sunken',
@@ -1018,6 +1034,9 @@ function Kachel({
           : abgesagt || zurueckgelassen
             ? 'border-line-strong'
             : 'border-line',
+        // Nach der Randfarbe: Die Linie links behält ihre Statusfarbe, auch an
+        // einer hervorgehobenen Kachel.
+        statusLinie(eintrag.status),
         // Bewusst NICHT `touch-none` (UX-010): eine Kachel nimmt auf dem
         // Telefon fast die ganze Spalte ein: damit liesse sich der Kalender
         // ueber einem Termin gar nicht mehr scrollen. Der Bildlauf bleibt
