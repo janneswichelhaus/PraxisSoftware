@@ -7,8 +7,8 @@ gebaut in den Schritten 0 bis 6 des Auftrags, je Schritt eine Pull Request.
 **Deckt ab:** UI-Redesign Schritt 1 (Tokens und Gerüst), Schritt 2 (Bausteine), Schritt 3
 (Übersicht als Zeitstrahl), Schritt 4 (Termin), Schritt 5 (Patientenakte), Schritt 6
 (Kalender-Kacheln).
-**Wo:** lokal im WLAN am Handy, solange die Schritte nicht auf `main` liegen
-([`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Handytest im WLAN"); danach auf der Test-Umgebung.
+**Wo:** auf der Test-Umgebung am Handy und am Rechner; alle Schritte liegen seit 2026-10-01 auf
+`main` (PR #156, #155).
 **Dauer:** rund 15 Minuten.
 
 Die Erwartung zur Übersicht in [Kernprozess](kernprozess.md) Schritt 10 („Liege heute: ja, ab
