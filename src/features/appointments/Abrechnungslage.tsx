@@ -82,14 +82,16 @@ export function TreatmentBasisTile({
     <Tile label="Grundlage" ton={ungedeckt ? 'warnung' : 'neutral'}>
       {grundlage ? (
         <>
-          {position ? <span className="block font-semibold">{position}</span> : null}
-          <span className="block">{grundlage}</span>
+          {position ? <span className="block">{position}</span> : null}
+          {/* Der Wert der Kachel steht in 600 (Design-Handoff 2026-10-01);
+              mit einem Zähler darüber ist die Grundlage die Nebenzeile. */}
+          <span className={position ? 'text-liste block font-normal' : 'block'}>{grundlage}</span>
         </>
       ) : data ? (
         'Keine Behandlungsgrundlage zugeordnet'
       ) : null}
       {ungedeckt ? (
-        <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+        <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 font-normal">
           <Deckungszeichen gedeckt={appointment.treatment_basis_covered} />
           <span className="text-ink-muted text-sm">
             Die Behandlungsgrundlage deckt diesen Termin nicht.

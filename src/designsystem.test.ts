@@ -356,6 +356,27 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
     expect(css).toMatch(/--spacing-kachel-y:\s*12px;/);
     expect(css).toMatch(/--spacing-kachel-x:\s*14px;/);
   });
+
+  /**
+   * Das hellere Orange des Wegbalkens ist nur Fläche (Abschnitt 3: „kein Text
+   * in dieser Farbe"). Als Text läge es unter 4,5:1
+   * (`src/lib/kontrast.test.ts`); der Wächter hält es deshalb aus jeder
+   * anderen Utility als `bg-` heraus.
+   */
+  it('fuehrt warnung-mittel als Token und verwendet es nur als Flaeche', () => {
+    expect(css).toMatch(/--color-warnung-mittel:\s*oklch\(60% 0\.12 68\);/);
+    const FREMD = /(?<![\w-])(?!bg-)[a-z][a-z-]*-warnung-mittel\b/g;
+    const finden = (zeile: string) => Array.from(zeile.matchAll(FREMD), (f) => f[0]);
+    expect(funde(finden)).toEqual([]);
+    // Gegenprobe: Das Muster findet Text und Rahmen und lässt die Fläche,
+    // das Token selbst und Prosa durch.
+    expect(finden('className="text-warnung-mittel"')).toEqual(['text-warnung-mittel']);
+    expect(finden("fahrt: 'border-warnung-mittel'")).toEqual(['border-warnung-mittel']);
+    expect(finden('className="hover:text-warnung-mittel"')).toEqual(['text-warnung-mittel']);
+    expect(finden("fahrt: 'bg-warnung-mittel'")).toEqual([]);
+    expect(finden('  --color-warnung-mittel: oklch(60% 0.12 68);')).toEqual([]);
+    expect(finden('`warnung-mittel` ist nur Fläche')).toEqual([]);
+  });
 });
 
 describe('Textstufen', () => {

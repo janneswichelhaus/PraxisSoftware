@@ -132,6 +132,12 @@
   /* #5a4300 auf #f3ead6 — 7.84:1 */
   --color-warnung: oklch(39.7% 0.0812 86.3);
   --color-warnung-soft: oklch(93.9% 0.0282 86.6);
+  /* Helleres Orange - ausschließlich als Fläche: die Fahrt im Wegbalken, wenn
+     der Puffer unter fünf Minuten liegt, aber noch über drei (Design-Handoff
+     2026-10-01, Abschnitt 3). Nie als Textfarbe: Die Stufe steht daneben als
+     Wort („! Knapp …") und als Zahl, in `warnung`. Geprüft als Flächenpaar
+     gegen `warnung-soft` und Weiß in `src/lib/kontrast.test.ts`. */
+  --color-warnung-mittel: oklch(60% 0.12 68);
 
   /* --- Reihen in Grafiken (STA-EPIC-001) ------------------------------------
      Sechs unterscheidbare Farben für Datenreihen, abgeleitet aus Flasche und

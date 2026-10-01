@@ -22,3 +22,15 @@
  */
 export const aufklappKopfKlassen =
   'flex min-h-11 cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden';
+
+/**
+ * Schrift und Farbe des Kopfs im `Disclosure` (Design-Handoff 2026-10-01,
+ * Abschnitt 3): `text` ist der Bestand (14 px), `betont` dasselbe in 600 für
+ * einen Titel mit Zähler, `label` der Stil eines Abschnittstitels (12 px
+ * Versalien) für das, was am Rechner eine eigene Karte mit Überschrift ist.
+ */
+export const aufklappKoepfe = {
+  text: 'text-ink-muted hover:text-ink text-sm',
+  betont: 'text-ink-muted hover:text-ink text-sm font-semibold',
+  label: 'text-ink-muted hover:text-ink tracking-label text-xs font-semibold uppercase',
+} as const;
