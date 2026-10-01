@@ -7,7 +7,6 @@ import {
   type RefObject,
 } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/Button';
 import { SubNav } from '@/components/ui/SubNav';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
@@ -48,11 +47,12 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
  * das System diese Farbe für Text zulässt, weil sie hier auf Tiefgrün liegt
  * (5.86:1). Der ausgewählte Bereich ist mit der Hauptfarbe gefüllt und trägt
  * Papier; das System nennt „Hauptfarbe gefüllt" als Auswahlzustand.
+ * Gewichte nach dem Design-Handoff vom 2026-10-01: 500 in Ruhe, 600 aktiv.
  */
 const seitenLink =
-  'flex min-h-11 items-center gap-3 rounded-button px-3 text-liste transition-colors ' +
+  'flex min-h-11 items-center gap-3 rounded-button px-3 text-liste font-medium transition-colors ' +
   'text-salbei hover:bg-accent hover:text-surface ' +
-  'aria-[current=page]:bg-accent aria-[current=page]:font-medium ' +
+  'aria-[current=page]:bg-accent aria-[current=page]:font-semibold ' +
   'aria-[current=page]:text-surface';
 
 /**
@@ -81,6 +81,21 @@ const tabLink =
 const kontoLink =
   'text-ink-muted hover:text-ink min-h-11 items-center gap-1.5 border-b-2 border-transparent ' +
   'px-2 text-sm aria-[current=page]:border-accent aria-[current=page]:text-accent';
+
+/**
+ * „Abmelden" in der Kopfzeile: leise wie der Weg zum Konto (Design-Handoff
+ * 2026-10-01).
+ *
+ * Bis dahin stand der Knopf in der Hauptfarbe und fett - auf jeder Seite das
+ * lauteste Element der Kopfzeile, für den seltensten Vorgang des Tages. Jetzt
+ * 14 px in 400 und `ink-muted`; das Tippziel bleibt 44 px hoch. Eigene Klassen
+ * statt `Button`: Dessen Varianten sind alle fett und in der Hauptfarbe, und
+ * eine vierte Variante nur für diese eine Stelle wäre ein Baustein ohne
+ * zweiten Nutzer.
+ */
+const abmeldeKnopf =
+  'text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 ' +
+  'items-center px-2.5 text-sm transition-colors';
 
 /**
  * Die Höhe der klebenden Kopfzeile als CSS-Variable `--kopfzeile-hoehe`
@@ -216,8 +231,13 @@ export function AppShell({
                 wäre das zweimal dasselbe Feld, von dem nur eines zu sehen ist.
                 Das Konto steht deshalb auf dem Telefon in der ersten Zeile
                 neben der Marke; die Suche bricht erst nach einem Tipp auf die
-                Lupe darunter um (BEF-039) - sonst bleibt es bei einer Zeile. */}
-            <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2 px-5 py-2 sm:min-h-14 sm:flex-nowrap sm:py-0">
+                Lupe darunter um (BEF-039) - sonst bleibt es bei einer Zeile.
+
+                56 px hoch auf jeder Breite (Design-Handoff 2026-10-01): am
+                Telefon 44 px Tippziel plus 6 oben und unten. Links 16 wie
+                der Inhalt darunter, damit Marke und Seitentitel auf einer
+                Kante stehen. */}
+            <div className="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-2 py-1.5 pr-3 pl-4 sm:flex-nowrap sm:py-0">
               {/* Die Marke steht überall statt des Organisationsnamens. Nach
                 ADR-003 ist Mandantenfähigkeit ausdrücklich keine
                 Produktfunktion — es gibt genau eine Praxis, und die heißt Own
@@ -232,18 +252,22 @@ export function AppShell({
                 Der Link auf die Übersicht ist die Erwartung an ein Logo oben
                 links; das Ziel steht zusätzlich im zugänglichen Namen, sonst
                 hieße der Link für eine Vorlesehilfe bloß „Own Motion". */}
-              <div className="order-1 flex min-w-0 flex-1 items-center gap-3 sm:hidden">
+              <div className="order-1 flex min-w-0 flex-1 items-center gap-2.5 sm:hidden">
                 <Link
                   to="/"
                   aria-label="Own Motion, zur Startseite"
                   className="rounded-button inline-flex min-h-11 shrink-0 items-center"
                 >
-                  <Wortmarke hoehe={26} />
+                  {/* 24 px: die Mindesthöhe der Marke (`markeRegeln.ts`). */}
+                  <Wortmarke hoehe={24} />
                 </Link>
-                {/* Seit der Lupe (BEF-039) ist die Zeile unter 400 px zu eng
-                    für den Bereichsnamen; dort sagt ihn die Tableiste. */}
+                {/* Der Bereichsname in 14 px (Design-Handoff 2026-10-01); ein
+                    langer Name wird gekürzt. Seit der Lupe (BEF-039) ist die
+                    Zeile unter 360 px zu eng dafür; dort sagt ihn die
+                    Tableiste. Bis zum Handoff lag die Grenze bei 400 px -
+                    Konto und „Abmelden" waren breiter. */}
                 {aktuell ? (
-                  <p className="text-ink-muted truncate text-xs max-[399px]:hidden">
+                  <p className="text-ink-muted truncate text-sm max-[359px]:hidden">
                     {aktuell.label}
                   </p>
                 ) : null}
@@ -261,7 +285,7 @@ export function AppShell({
                   <Funktionssuche user={user} />
                 </div>
               </div>
-              <div className="order-2 flex items-center gap-2 sm:order-3">
+              <div className="order-2 flex shrink-0 items-center gap-0.5 sm:order-3">
                 {/* Der Weg zum eigenen Konto: Kennwort, zweiter Faktor,
                     Sitzungen (STAFF-004). Ab sm heißt er wie auf dem Telefon
                     und wie die Seite, „Mein Konto" (NAV-17) - bis UXR-002 stand
@@ -274,7 +298,7 @@ export function AppShell({
                   aria-label={`Mein Konto, ${user.profile.display_name}`}
                   className={`${kontoLink} hidden sm:inline-flex`}
                 >
-                  <span className="font-medium">Mein Konto</span>
+                  <span className="font-semibold">Mein Konto</span>
                   <span className="hidden min-w-0 items-center gap-1.5 md:inline-flex">
                     <span aria-hidden="true">·</span>
                     <span className="max-w-48 truncate">{user.profile.display_name}</span>
@@ -313,7 +337,7 @@ export function AppShell({
                   to="/mein-konto"
                   aria-label="Mein Konto"
                   aria-current={aufKonto ? 'page' : undefined}
-                  className={`${kontoLink} inline-flex sm:hidden`}
+                  className={`${kontoLink} inline-flex font-semibold sm:hidden`}
                 >
                   Konto
                 </Link>
@@ -322,9 +346,9 @@ export function AppShell({
                     Rückfrage (FIX-014, NAV-01). Ohne eingerichteten Schutz -
                     in Tests und Vorschauen - bleibt es beim unmittelbaren
                     Abmelden. */}
-                <Button variant="quiet" onClick={anfordern ?? onSignOut}>
+                <button type="button" className={abmeldeKnopf} onClick={anfordern ?? onSignOut}>
                   Abmelden
-                </Button>
+                </button>
               </div>
             </div>
           </header>
@@ -341,6 +365,10 @@ export function AppShell({
             viel Abstand, dass nichts an der Kante klebt. Der Abstand unter
             der Kopfzeile ist überall auf das Nötige geschrumpft (BEF-044).
 
+            Innenabstand nach dem Design-Handoff vom 2026-10-01: 16 am
+            Telefon, 24 mit Symbolspalte, 24/32 mit Seitenleiste. Unten am
+            Telefon bleibt der Platz für die Tableiste.
+
             `tabIndex={-1}`: Nach einem Seitenwechsel bekommt der Inhalt den
             Fokus (NAV-09, `seitenwechsel.ts`), und der Sprunglink oben
             landet wirklich hier. Er ist kein Bedienelement und zeigt deshalb
@@ -352,7 +380,7 @@ export function AppShell({
           className={
             istRandlos(pathname)
               ? 'w-full min-w-0 px-2 pt-2 pb-28 focus:outline-none sm:px-3 sm:pt-3 sm:pb-4'
-              : 'max-w-inhalt mx-auto w-full min-w-0 px-5 pt-5 pb-28 focus:outline-none sm:px-8 sm:pt-6 sm:pb-10'
+              : 'max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 focus:outline-none sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12'
           }
         >
           {aktuell && aktuell.unterpunkte.length > 0 ? (

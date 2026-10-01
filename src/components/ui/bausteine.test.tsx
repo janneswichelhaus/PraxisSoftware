@@ -7,7 +7,7 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { ButtonLink } from './ButtonLink';
-import { Disclosure } from './Card';
+import { Card, Disclosure } from './Card';
 import { EmptyState, ErrorState } from './Feedback';
 import { PageHeader } from './PageHeader';
 import { RoleBadge } from './RoleBadge';
@@ -57,6 +57,35 @@ describe('Badge', () => {
     renderWithProviders(<Badge ton="positiv">Abgeschlossen</Badge>);
     expect(screen.getByText('✓')).toHaveAttribute('aria-hidden', 'true');
   });
+
+  it('ist 28 px hoch und setzt 14 px in 600 (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(<Badge ton="warnung">Offen</Badge>);
+    const klassen = screen.getByText('Offen').className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['min-h-7', 'px-3', 'text-sm', 'font-semibold']),
+    );
+    // Die alten Maße stehen nicht daneben - zwei Schriftgrade an einem
+    // Element entscheidet sonst die Reihenfolge im Stylesheet.
+    expect(klassen).not.toContain('text-xs');
+    expect(klassen).not.toContain('font-medium');
+  });
+});
+
+describe('Card', () => {
+  it('ist weiss, hat Radius 14, eine Linie und 16 innen - ohne Schatten (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(
+      <Card className="max-w-xl">
+        <p>Inhalt</p>
+      </Card>,
+    );
+    const klassen = screen.getByText('Inhalt').parentElement!.className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['rounded-card', 'bg-surface', 'border', 'border-line', 'p-4']),
+    );
+    expect(klassen).not.toContain('p-6');
+    expect(klassen).toContain('max-w-xl');
+    expect(klassen.join(' ')).not.toMatch(/shadow|ring/);
+  });
 });
 
 describe('PageHeader', () => {
@@ -81,6 +110,20 @@ describe('PageHeader', () => {
   it('bleibt ohne kompakt beim vollen Seitentitel', () => {
     renderWithProviders(<PageHeader title="Patient:innen" />);
     expect(screen.getByRole('heading', { name: 'Patient:innen' }).className).toContain('text-h2');
+  });
+
+  it('setzt den Titel am Telefon in 26 px und ab 640 px in 32 (Design-Handoff 2026-10-01)', () => {
+    renderWithProviders(<PageHeader title="Patient:innen" description="12 Personen" />);
+    const klassen = screen.getByRole('heading', { name: 'Patient:innen' }).className.split(/\s+/);
+    expect(klassen).toContain('text-h2-mobil');
+    expect(klassen).toContain('sm:text-h2');
+    // Ohne Breitenangabe gilt die kleine Stufe - `text-h2` allein wäre 32 px
+    // auf jeder Breite.
+    expect(klassen).not.toContain('text-h2');
+    expect(klassen).toEqual(expect.arrayContaining(['font-extrabold', 'tracking-display']));
+    // Beschreibung: 14 px, leise, 4 px unter dem Titel.
+    const beschreibung = screen.getByText('12 Personen').className.split(/\s+/);
+    expect(beschreibung).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'mt-1']));
   });
 });
 

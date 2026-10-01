@@ -164,6 +164,11 @@
      in 600 mit 0.14em in Versalien. */
   --text-h2: 32px;
   --text-h2--line-height: 1.05;
+  /* Seitentitel am Telefon: 26 px unter 640 px, ab dort `text-h2`
+     (Design-Handoff 2026-10-01, Abschnitt 2). Gewicht 800 und −0.03em wie
+     bei H2; bei 375 px passt damit ein Gruß mit Namen in eine Zeile. */
+  --text-h2-mobil: 26px;
+  --text-h2-mobil--line-height: 1.05;
   --text-h3: 24px;
   --text-h3--line-height: 1.25;
   --text-h4: 20px;
@@ -197,12 +202,27 @@
   --spacing-bedienhoehe: 48px;
   --spacing-bedienhoehe-kompakt: 40px;
 
+  /* Innenabstand einer Kachel: 12 oben und unten, 14 an den Seiten
+     (Design-Handoff 2026-10-01, Abschnitt 2, dort als ein Wert „12px 14px"
+     genannt). Zwei Tokens statt eines Doppelwerts: Ein Abstandstoken mit
+     zwei Längen gälte in `p-*`, wäre aber in `gap-*` oder `w-*` Unsinn. */
+  --spacing-kachel-y: 12px;
+  --spacing-kachel-x: 14px;
+
   /* Breite des Seiteninhalts (`max-w-inhalt`). Der Handoff nennt an zwei
      Stellen zwei Werte — `--content-max: 1200px` in den Tokens, 1024 px im
      Shell-Prototyp. 1200 gilt: 1024 wäre schmaler als das bisherige
      Kalendergitter und würde bei mehreren zeitgleich arbeitenden Personen
      wehtun. */
   --container-inhalt: 1200px;
+  /* Zweispalten-Schwelle: Ab 900 px **Inhaltsbreite** steht die
+     Kontextspalte rechts neben der Hauptspalte (Übersicht, Termin, Akte);
+     darunter rückt sie als Aufklapper in die Hauptspalte (Design-Handoff
+     2026-10-01, Abschnitt 4). Gemessen wird der Inhalt, nicht das Fenster -
+     die Seitenleiste ist je nach Breite 72 oder 248 px -, deshalb eine
+     Container-Schwelle (`@zweispaltig:` unter einem `@container`) und kein
+     Fenster-Breakpoint. */
+  --container-zweispaltig: 900px;
 }
 
 /* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die

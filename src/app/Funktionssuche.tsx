@@ -285,7 +285,10 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
         {...(zeigeListe && hatOptionen ? { 'aria-controls': listeId } : {})}
         aria-autocomplete="list"
         aria-activedescendant={aktiverEintrag ? `${feldId}-${aktiv}` : undefined}
-        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-bedienhoehe w-full border px-4 text-base sm:pointer-fine:pr-20"
+        // Ab sm 40 statt 48 px hoch (Design-Handoff 2026-10-01): In der 56 px
+        // hohen Kopfzeile bleiben damit 8 px Luft darüber und darunter. Am
+        // Telefon steht das Feld in einer eigenen Zeile und bleibt bei 48.
+        className="border-line-strong bg-surface-field text-ink placeholder:text-ink-muted rounded-field h-bedienhoehe sm:h-bedienhoehe-kompakt w-full border px-4 text-base sm:pointer-fine:pr-20"
         placeholder={gesucht}
         value={eingabe}
         onChange={(event) => {

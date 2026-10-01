@@ -332,6 +332,32 @@ describe('Schriftrollen', () => {
   });
 });
 
+describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
+  /**
+   * Der Handoff erlaubt genau diese neuen Maße (Spezifikation Abschnitt 2,
+   * `docs/design/handoff-2026-10-01-uebersicht-termin-akte.md`). Sie stehen
+   * als Token, damit Seitenkopf, Kachel und Zweispalter denselben Wert lesen
+   * statt ihn jeweils in eckigen Klammern zu wiederholen.
+   */
+  it('fuehrt den Seitentitel am Telefon mit 26 px und der Zeilenhoehe von H2', () => {
+    expect(css).toMatch(/--text-h2-mobil:\s*26px;/);
+    expect(css).toMatch(/--text-h2-mobil--line-height:\s*1\.05;/);
+    expect(css).toMatch(/--text-h2:\s*32px;/);
+  });
+
+  it('fuehrt die Zweispalten-Schwelle als Container-Breite, nicht als Fenster-Breakpoint', () => {
+    // 900 px Inhaltsbreite: Die Seitenleiste ist 72 oder 248 px breit, das
+    // Fenster sagt deshalb nichts ueber den Platz des Inhalts.
+    expect(css).toMatch(/--container-zweispaltig:\s*900px;/);
+    expect(css).not.toMatch(/--breakpoint-zweispaltig\s*:/);
+  });
+
+  it('fuehrt den Innenabstand der Kachel: 12 oben und unten, 14 an den Seiten', () => {
+    expect(css).toMatch(/--spacing-kachel-y:\s*12px;/);
+    expect(css).toMatch(/--spacing-kachel-x:\s*14px;/);
+  });
+});
+
 describe('Textstufen', () => {
   /**
    * Das System kennt zwei Textstufen, `ink` und `ink-muted` (DS-001). Die

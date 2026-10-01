@@ -809,7 +809,11 @@ describe('InvoiceDetailPage', () => {
       // Der Zahlungsstand steht einmal, in der Zustandszeile oben (UX-005i).
       expect(screen.getByText('Bezahlt')).toBeInTheDocument();
       expect(within(zeile).queryByText('Bezahlt')).toBeNull();
-      expect(screen.queryByText('Bezahlt', { selector: '.font-semibold' })).toBeNull();
+      // Keine Summenzeile heißt „Bezahlt". Gesucht wird die Beschriftung einer
+      // Summenzeile (`text-liste` in 600) - das Gewicht allein trägt seit dem
+      // Design-Handoff vom 2026-10-01 auch das Abzeichen oben.
+      expect(screen.queryByText('Bezahlt', { selector: '.text-liste.font-semibold' })).toBeNull();
+      expect(screen.getByText('Noch offen').matches('.text-liste.font-semibold')).toBe(true);
     });
 
     it('zeigt nach einer Buchung an der Rechnung sofort den neuen offenen Betrag (ABR-01)', async () => {
