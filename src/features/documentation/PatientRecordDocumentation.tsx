@@ -54,7 +54,9 @@ function TerminKopf({ termin, rueckweg }: { termin: RecordAppointment; rueckweg:
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <Link
           to={mitRueckweg(`/termine/${termin.appointment_id}`, rueckweg)}
-          className="text-accent text-h4 font-bold hover:underline"
+          // 15 px in 600 (Design-Handoff 2026-10-01, Abschnitt 7): Das Datum
+          // ist der Kopf der Karte, keine Seitenüberschrift.
+          className="text-accent text-liste font-semibold hover:underline"
         >
           {formatLocalDate(termin.starts_at, zone)}
         </Link>
@@ -191,7 +193,7 @@ function AkteEintrag({
         {note.content}
       </p>
 
-      <p className="text-ink-muted mt-2 text-xs leading-relaxed">{akteHerkunft(note, termin)}</p>
+      <p className="text-ink-muted mt-2 text-sm leading-relaxed">{akteHerkunft(note, termin)}</p>
 
       {note.version_count > 0 ? (
         <Textlink
@@ -239,9 +241,14 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
     // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
     // Überschrift kommt aus `Section` wie überall sonst (UIK-20, TOK-05).
     <div role="region" aria-label="Behandlungsdokumentation" className="mt-8">
-      {/* UX-005e: Ohne Dauersatz unter der Überschrift - die Reihenfolge sieht
-          man, und geschrieben wird am Termin, wohin das Datum führt. */}
-      <Section titel="Behandlungsdokumentation">
+      {/* Der Hinweis auf das Protokoll steht wieder unter der Überschrift: Der
+          Design-Handoff vom 2026-10-01 behält ihn ausdrücklich (Abschnitt 1,
+          Entscheidung Jannes), nachdem UX-005e ihn gestrichen hatte. Er steht
+          vor dem Lesen, nicht danach. */}
+      <Section
+        titel="Behandlungsdokumentation"
+        hinweis="Jeder gelesene Eintrag wird protokolliert."
+      >
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
 
         {seiten.isError ? (
@@ -265,7 +272,8 @@ function Behandlungsdokumentation({ patient }: { patient: Patient }) {
             {termine.map((termin) => (
               <li
                 key={termin.appointment_id}
-                className="border-line bg-surface rounded-card border p-4 sm:p-5"
+                // Innen 14/16 (Design-Handoff 2026-10-01, Abschnitt 7).
+                className="border-line bg-surface rounded-card border px-4 py-3.5"
               >
                 <TerminKopf termin={termin} rueckweg={verlauf} />
 

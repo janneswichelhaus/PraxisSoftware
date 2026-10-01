@@ -111,7 +111,9 @@ describe('MitteilungVermerken', () => {
     );
     // Erfolg im Erfolgston, mit dem Fokus (UIK-21).
     const bestaetigung = await screen.findByText('Vermerk gespeichert.');
-    expect(bestaetigung).toHaveClass('text-positiv');
+    // Seit dem Design-Handoff vom 2026-10-01 auf der Akzentfläche (Rueckmeldung).
+    expect(bestaetigung).toHaveClass('bg-accent-soft', 'text-accent');
+    expect(bestaetigung).toHaveAttribute('role', 'status');
     expect(bestaetigung.closest('[tabindex="-1"]')).toHaveFocus();
   });
 

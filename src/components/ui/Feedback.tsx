@@ -3,11 +3,45 @@ import { Button } from './Button';
 import { istVersprechen } from './versprechen';
 
 /** Ladezustand mit Textalternative statt reiner Animation. */
-export function LoadingState({ label = 'Wird geladen …' }: { label?: string }) {
-  return (
-    <p role="status" className="text-ink-muted py-10 text-center text-sm">
+export function LoadingState({
+  label = 'Wird geladen …',
+  inKarte = false,
+  kacheln = 0,
+}: {
+  label?: string;
+  /**
+   * In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3) - für
+   * Übersicht, Termin und Akte, wo der Inhalt danach selbst in Karten steht.
+   */
+  inKarte?: boolean;
+  /**
+   * Leere Kachelflächen in Zielgröße (72 px) über dem Satz: Die Seite steht
+   * beim Laden schon so da, wie sie gleich aussieht, und springt nicht. Reine
+   * Fläche, für Vorlesesoftware ausgeblendet - der Satz sagt, was passiert.
+   */
+  kacheln?: number;
+}) {
+  const satz = (
+    <p role="status" className={`text-ink-muted text-center text-sm ${inKarte ? 'py-6' : 'py-10'}`}>
       {label}
     </p>
+  );
+  if (!inKarte && kacheln === 0) return satz;
+  return (
+    <div className={inKarte ? 'rounded-card border-line bg-surface border p-4' : ''}>
+      {kacheln > 0 ? (
+        <div
+          aria-hidden="true"
+          data-ladekacheln=""
+          className="grid [grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))] gap-2"
+        >
+          {Array.from({ length: kacheln }, (_, index) => (
+            <div key={index} className="rounded-card border-line bg-canvas h-18 border" />
+          ))}
+        </div>
+      ) : null}
+      {satz}
+    </div>
   );
 }
 
@@ -23,13 +57,22 @@ export function EmptyState({
   title,
   description,
   aktion,
+  inKarte = false,
 }: {
   title: string;
   description?: string | undefined;
   aktion?: ReactNode;
+  /** In einer weißen Karte (Design-Handoff 2026-10-01, Abschnitt 3). */
+  inKarte?: boolean;
 }) {
   return (
-    <div className="py-12 text-center">
+    <div
+      className={
+        inKarte
+          ? 'rounded-card border-line bg-surface border px-4 py-8 text-center'
+          : 'py-12 text-center'
+      }
+    >
       <p className="text-ink text-liste font-medium">{title}</p>
       {description ? <p className="text-ink-muted mt-1 text-sm">{description}</p> : null}
       {aktion ? <div className="mt-4 flex flex-wrap justify-center gap-3">{aktion}</div> : null}

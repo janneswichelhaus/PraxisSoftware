@@ -7,7 +7,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { fetchDayPlan, rufnummern } from '@/features/today/api';
-import { BEREICHE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { dayKey, recordNoShow, type Appointment } from './api';
 
@@ -23,9 +22,6 @@ const PROTOKOLLSCHRITTE = [
   { id: 'gewartet', label: '15 Minuten vor Ort gewartet' },
   { id: 'angerufen', label: 'Telefonisch angerufen' },
 ] as const;
-
-/** Wo das Ausfallhonorar erfasst wird (TER-10). */
-const HONORAR_ERFASSUNG = `Wird unter ${BEREICHE.abrechnung.label} → Leistungen erfasst.`;
 
 /**
  * Die Rufnummern der Patient:in für den dritten Schritt (UX-005b).
@@ -200,13 +196,13 @@ export function HomeVisitFlow({
             </Statusmeldung>
           ) : null}
 
+          {/* Ohne den Satz „Keine Behandlung … Wird unter Abrechnung →
+              Leistungen erfasst.": gestrichen im Design-Handoff vom 2026-10-01
+              (Abschnitt 1). Die Folge steht schon im Satz über den Schritten. */}
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Button type="button" disabled={vermerken.isPending} onClick={absenden}>
               {vermerken.isPending ? 'Wird vermerkt …' : 'Als „nicht angetroffen“ vermerken'}
             </Button>
-            <span className="text-ink-muted text-sm">
-              Keine Behandlung, keine Dokumentation, keine verbrauchte Leistung. {HONORAR_ERFASSUNG}
-            </span>
           </div>
 
           {/* Die beiden anderen Fälle, je mit ihrer Folge (ADR-018 Punkt 9):
@@ -232,9 +228,12 @@ export function HomeVisitFlow({
                 </ButtonLink>
               </div>
             ) : null}
+            {/* Der dritte Fall bleibt als eine Zeile (ANN-198): Der Handoff
+                strich den Satz, ADR-018 Punkt 9.3 verlangt aber, dass die
+                Oberfläche durch alle drei Szenarien führt. Die 24-Stunden-Regel
+                erklärt die Absage-Rückfrage selbst. */}
             <p className="text-ink-muted mt-3 max-w-prose text-sm">
-              Vorher abgesagt? Dann „Termin absagen“ – bei einem Eingang unter 24 Stunden merkt die
-              Anwendung das Ausfallhonorar von selbst vor.
+              Vorher abgesagt? Dann am Seitenende „Termin absagen“.
             </p>
           </div>
         </section>

@@ -557,11 +557,10 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
       {/* Solange der Kopf mit dem Namen fehlt, trägt die Seite ihre Gattung
           als Überschrift - im Laden wie im Fehler (UIK-16, PAT-22). */}
       {!data ? <PageHeader title="Patientenakte" /> : null}
-      {/* Laden in einer Karte (Design-Handoff 2026-10-01, Abschnitt 3). */}
+      {/* Laden in einer Karte mit den Kacheln des Kopfs in Zielgröße
+          (Design-Handoff 2026-10-01, Abschnitt 3). */}
       {isPending ? (
-        <Card>
-          <LoadingState label="Patientendaten werden geladen …" />
-        </Card>
+        <LoadingState label="Patientendaten werden geladen …" inKarte kacheln={4} />
       ) : null}
       {isError ? (
         <ErrorState
