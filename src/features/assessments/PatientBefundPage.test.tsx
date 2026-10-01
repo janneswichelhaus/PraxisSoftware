@@ -168,8 +168,43 @@ describe('Befund der Akte', () => {
 
   it('nennt eine abweichende Fassung des Bogens „Fassung" (BEF-16)', async () => {
     seite([erhebung({ definition_version: '0.9.0' })]);
-    expect(await screen.findByText(/· Fassung 0\.9\.0 des Bogens$/)).toBeInTheDocument();
+    // UX-005e: Ohne abweichenden Tag oder abweichende Person steht die
+    // Fassung allein in der Zeile.
+    expect(await screen.findByText(/^Fassung 0\.9\.0 des Bogens$/)).toBeInTheDocument();
     expect(screen.queryByText(/Version 0\.9\.0/)).toBeNull();
+  });
+
+  // UX-005e: „Erfasst von … · abgeschlossen am …" nur, wo es etwas über
+  // „Erhoben am" hinaus sagt; der Regelfall trägt weder Zeile noch Etikett.
+  describe('Herkunft und Etikett (UX-005e)', () => {
+    it('laesst Herkunftszeile und Etikett „Abgeschlossen" im Regelfall weg', async () => {
+      seite([erhebung()]);
+      await screen.findByText('Erhoben am 20.09.2026');
+      expect(screen.queryByText(/Erfasst von/)).toBeNull();
+      expect(screen.queryByText(/abgeschlossen am/)).toBeNull();
+      expect(screen.queryByText('Abgeschlossen')).toBeNull();
+    });
+
+    it('nennt Person und Tag, wenn der Abschluss an einem anderen Tag liegt', async () => {
+      seite([erhebung({ completed_at: '2026-09-22T08:10:00Z' })]);
+      expect(
+        await screen.findByText('Erfasst von Anna Beispiel · abgeschlossen am 22.09.2026'),
+      ).toBeInTheDocument();
+    });
+
+    it('nennt Person und Tag, wenn jemand anderes abgeschlossen hat', async () => {
+      seite([erhebung({ completed_by_name: 'Tim Teamleitung' })]);
+      expect(
+        await screen.findByText('Erfasst von Anna Beispiel · abgeschlossen am 20.09.2026'),
+      ).toBeInTheDocument();
+    });
+
+    it('erklärt die Behandlungsliege nicht in einem Dauersatz', async () => {
+      seite([]);
+      await screen.findByText('Noch nicht erhoben.');
+      expect(screen.getByText('Behandlungsliege')).toBeInTheDocument();
+      expect(screen.queryByText(/Wird die Liege beim Hausbesuch gebraucht/)).toBeNull();
+    });
   });
 
   it('zeigt unter „Weitere Erhebungen" den Stand wie oben (BEF-02)', async () => {
@@ -240,8 +275,9 @@ describe('Befund der Akte', () => {
       const user = userEvent.setup();
       seite([]);
 
-      expect(await screen.findByText('Noch nicht entschieden')).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
+      // UX-005e: Unentschieden stehen nur die beiden Handlungen da.
+      await user.click(await screen.findByRole('button', { name: 'Liege mitnehmen' }));
+      expect(screen.queryByText('Noch nicht entschieden')).not.toBeInTheDocument();
       expect(setTreatmentTableRequired).toHaveBeenCalledWith(PATIENT_ID, true);
     });
 

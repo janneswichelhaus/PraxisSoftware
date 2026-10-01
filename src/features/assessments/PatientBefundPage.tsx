@@ -55,11 +55,9 @@ export function Befund(props: BefundProps) {
   return (
     <>
       {canReadPatientDirectory(props.user.roles) ? (
-        <Section
-          titel="Behandlungsliege"
-          hinweis="Wird die Liege beim Hausbesuch gebraucht? Die Übersicht zeigt es morgens beim Tagesstart."
-          rahmen
-        >
+        // UX-005e: Ohne erklärenden Satz - die Überschrift und die beiden
+        // Knöpfe sagen, worum es geht.
+        <Section titel="Behandlungsliege" rahmen>
           <Behandlungsliege patient={props.patient} darfAendern />
         </Section>
       ) : null}
@@ -146,6 +144,9 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
 /**
  * Der Stand einer Erhebung als Etikett, groß geschrieben wie die übrigen
  * Etiketten der Anwendung (WRT-16).
+ *
+ * UX-005e: Der Regelfall - abgeschlossen und geltend - trägt kein Etikett;
+ * markiert sind Entwurf und Korrektur.
  */
 function Zustand({ erhebung, alle }: { erhebung: Erhebung; alle: readonly Erhebung[] }) {
   const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
@@ -154,7 +155,30 @@ function Zustand({ erhebung, alle }: { erhebung: Erhebung; alle: readonly Erhebu
     return <Badge ton="neutral">Durch Korrektur ersetzt</Badge>;
   }
   if (nachfolger) return <Badge ton="positiv">Abgeschlossen · Korrektur im Entwurf</Badge>;
-  return <Badge ton="positiv">Abgeschlossen</Badge>;
+  return null;
+}
+
+/**
+ * Herkunft einer Erhebung - nur, wo sie etwas über „Erhoben am" hinaus sagt
+ * (UX-005e): ein anderer Tag des Abschlusses, eine andere Person als die
+ * erfassende, oder eine ältere Fassung des Bogens.
+ */
+function herkunftszeile(erhebung: Erhebung, definition: ScoreDefinition): string | null {
+  const teile: string[] = [];
+  const abschlusstag = erhebung.completed_at?.slice(0, 10) ?? null;
+  const andererTag = abschlusstag !== null && abschlusstag !== erhebung.recorded_on;
+  const anderePerson =
+    erhebung.completed_by_name !== null && erhebung.completed_by_name !== erhebung.author_name;
+  if (andererTag || anderePerson) {
+    teile.push(erhebung.author_name ? `Erfasst von ${erhebung.author_name}` : 'Erfasst');
+    if (abschlusstag) teile.push(`abgeschlossen am ${formatDate(abschlusstag)}`);
+  }
+  // „Fassung" für die Definition, wie in der Meldung der Erhebungsseite und
+  // in den Instrumenten (BEF-16).
+  if (erhebung.definition_version !== definition.meta.version) {
+    teile.push(`Fassung ${erhebung.definition_version} des Bogens`);
+  }
+  return teile.length > 0 ? teile.join(' · ') : null;
 }
 
 /**
@@ -204,6 +228,7 @@ function ErhebungKarte({
   const ersetzt = nachfolger?.status === 'abgeschlossen';
   const korrigierbar = darfErheben && erhebung.status === 'abgeschlossen' && !nachfolger;
   const verwerfbar = darfErheben && erhebung.status === 'entwurf';
+  const herkunft = herkunftszeile(erhebung, definition);
 
   return (
     <li>
@@ -212,17 +237,7 @@ function ErhebungKarte({
           <p className="text-ink font-medium">Erhoben am {formatDate(erhebung.recorded_on)}</p>
           <Zustand erhebung={erhebung} alle={alle} />
         </div>
-        <p className="text-ink-muted mt-1 text-sm">
-          {erhebung.author_name ? `Erfasst von ${erhebung.author_name}` : 'Erfasst'}
-          {erhebung.completed_at
-            ? ` · abgeschlossen am ${formatDate(erhebung.completed_at.slice(0, 10))}`
-            : ''}
-          {/* „Fassung" für die Definition, wie in der Meldung der
-              Erhebungsseite und in den Instrumenten (BEF-16). */}
-          {erhebung.definition_version !== definition.meta.version
-            ? ` · Fassung ${erhebung.definition_version} des Bogens`
-            : ''}
-        </p>
+        {herkunft ? <p className="text-ink-muted mt-1 text-sm">{herkunft}</p> : null}
         {erhebung.change_reason ? (
           <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
         ) : null}

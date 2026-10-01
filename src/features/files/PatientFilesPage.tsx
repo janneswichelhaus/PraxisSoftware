@@ -41,11 +41,11 @@ export function Dateienbereich({ patientId, user }: { patientId: string; user: C
     // (UI-002c, DAT-21).
     <Section
       titel="Dateien"
+      // UX-005e: Ein Satz statt dreier - geblieben ist nur die „scharfe
+      // Kante" aus ADR-017: Fotos der Person gehören nicht hierher (DAT-01).
       hinweis={
         <>
-          Alles, was als Blatt vorliegt: Befunde, Arztbriefe, Einwilligungen, Verträge – und die
-          Verordnungsscans. Ein Scan wird an seiner Verordnung hinzugefügt. Fotos der Person –
-          Region, Haltung, Narbe – entstehen{' '}
+          Fotos der Person – Region, Haltung, Narbe – entstehen{' '}
           <Textlink to={`${akte}/verlauf`}>im Behandlungsverlauf</Textlink> unter „Fotos“.
         </>
       }

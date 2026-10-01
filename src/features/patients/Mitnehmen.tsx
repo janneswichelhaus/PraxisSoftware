@@ -98,6 +98,8 @@ export function Mitnehmen({ patient, darfAendern }: { patient: Patient; darfAend
 
   return (
     <div className="flex flex-col gap-2">
+      {/* UX-005e: Eine leere Liste bekommt keinen Satz - der Knopf „Material
+          eintragen" sagt schon, dass nichts da ist. */}
       {liste.length > 0 ? (
         <ul className="text-ink list-disc pl-5">
           {liste.map((eintrag) => (
@@ -106,9 +108,7 @@ export function Mitnehmen({ patient, darfAendern }: { patient: Patient; darfAend
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="text-ink-muted">Nichts eingetragen.</p>
-      )}
+      ) : null}
       {darfAendern ? (
         <div>
           <Button variant="secondary" onClick={() => setEntwurf(liste.join('\n'))}>

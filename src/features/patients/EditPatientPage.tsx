@@ -121,10 +121,8 @@ function EditPatientForm({ patient }: { patient: Patient }) {
 
   return (
     <>
-      <PageHeader
-        title={TITEL}
-        description={`${fullName(patient)} · Mit * markierte Felder sind erforderlich.`}
-      />
+      {/* UX-005e: Nur der Name - das Sternchen erklärt sich am Feld. */}
+      <PageHeader title={TITEL} description={fullName(patient)} />
 
       <form onSubmit={absenden} noValidate className="max-w-xl">
         <Fehlerzusammenfassung
@@ -177,11 +175,8 @@ function EditPatientForm({ patient }: { patient: Patient }) {
           Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut speichern.
         </Hinweisfenster>
       ) : null}
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Änderungen an Stammdaten werden protokolliert. Der Versorgungsstatus wird hier nicht
-        verändert.
-      </p>
+      {/* UX-005e: Kein Protokollhinweis unter dem Formular - protokolliert
+          wird weiter (ADR-010), nur der Satz entfällt. */}
     </>
   );
 }

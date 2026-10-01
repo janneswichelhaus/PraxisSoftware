@@ -32,8 +32,10 @@ test.describe('ROL-002: Verordnung und Dateien fuer office', () => {
     await page.goto(`/patienten/${PATIENTEN.max}/verordnungen`);
 
     await expect(page.getByText(DIAGNOSE_MAX)).toBeVisible();
-    await expect(page.getByText('Scan des Rezepts').first()).toBeVisible();
-    // Das Hinzufügen steht eingeklappt an der Karte, nicht offen (VER-01).
+    // UX-005e: Ohne Scan steht an der Karte nur die eingeklappte Zeile „Scan
+    // hinzufügen" - keine Überschrift ueber einem leeren Satz (VER-01).
+    await expect(page.getByText('Scan hinzufügen').first()).toBeVisible();
+    await expect(page.getByText('Noch kein Scan')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Datei hinzufügen' })).toHaveCount(0);
     // Seit PRX-010 erfasst und bearbeitet office Grundlagen (ANN-011).
     await expect(page.getByRole('link', { name: 'Bearbeiten', exact: true }).first()).toBeVisible();

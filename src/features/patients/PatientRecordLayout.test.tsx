@@ -136,14 +136,16 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Kopf der Akte', () => {
-    it('nennt Name, Geburtsdatum und Versorgungsstatus', async () => {
+    it('nennt Name und Geburtsdatum - und bei laufender Versorgung kein Etikett (UX-005e)', async () => {
       akteRendern(['office']);
 
       expect(await screen.findByRole('heading', { name: 'Max Mustermann' })).toBeInTheDocument();
       // Das Alter haengt am heutigen Tag - geprueft wird die Form, nicht die
       // Zahl, damit der Test nicht an einem Geburtstag rot wird.
       expect(screen.getByText(/^geb\. 19\.07\.1985 · \d+ Jahre$/)).toBeInTheDocument();
-      expect(screen.getByText('In Versorgung')).toBeInTheDocument();
+      // Der Regelfall traegt kein Etikett.
+      expect(screen.queryByText('In Versorgung')).not.toBeInTheDocument();
+      expect(screen.queryByText('Nicht in laufender Versorgung')).not.toBeInTheDocument();
     });
 
     it('kennzeichnet eine nicht laufende Versorgung', async () => {
@@ -151,7 +153,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['office']);
 
       expect(await screen.findByText('Nicht in laufender Versorgung')).toBeInTheDocument();
-      expect(screen.queryByText('In Versorgung')).not.toBeInTheDocument();
     });
 
     it('nennt den Abschluss der Versorgung im Kopf', async () => {
@@ -207,7 +208,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
 
       expect(
         await screen.findByText(
-          'Keine neuen Termine – nicht in laufender Versorgung. Wieder als aktiv führen unter Stammdaten → Verwaltung.',
+          'Keine neuen Termine. Wieder als aktiv führen unter Stammdaten → Verwaltung.',
         ),
       ).toBeInTheDocument();
     });

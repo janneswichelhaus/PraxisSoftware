@@ -744,23 +744,23 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
     });
   });
 
-  it('bittet seit PRX-010 auch das Buero um den Scan, denn es erfasst die Grundlage', async () => {
-    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
-    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
-    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+  // UX-005e: Ohne Scan steht nur die eingeklappte Zeile „Scan hinzufügen" -
+  // weder eine Überschrift noch ein Satz über den fehlenden Scan.
+  it.each([['office'], ['therapist']] as const)(
+    'bietet %s ohne Scan nur das eingeklappte Hinzufügen an (PRX-010, UX-005e)',
+    async (role) => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser([role])} />);
 
-    expect(await screen.findByText(/Ein Foto des Rezepts/)).toBeInTheDocument();
-  });
+      expect(await screen.findByText('Scan hinzufügen')).toBeInTheDocument();
+      expect(screen.queryByText(/Ein Foto des Rezepts/)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Noch kein Scan/)).not.toBeInTheDocument();
+      expect(screen.queryByText('Scan des Rezepts')).not.toBeInTheDocument();
+    },
+  );
 
-  it('bittet schreibende Rollen weiter um das Foto des Rezepts', async () => {
-    fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
-    fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
-    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
-
-    expect(await screen.findByText(/Ein Foto des Rezepts hält fest/)).toBeInTheDocument();
-  });
-
-  it('klappt das Hinzufügen des Scans ein und nennt den Leerstand in einem Satz (VER-01)', async () => {
+  it('klappt das Hinzufügen des Scans ein, ohne großen Leerzustand (VER-01)', async () => {
     fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
     fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
@@ -768,6 +768,16 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
     const kopf = await screen.findByText('Scan hinzufügen');
     expect(kopf.closest('details')).not.toHaveAttribute('open');
     expect(screen.queryByText('Keine Datei')).toBeNull();
+  });
+
+  it('erklärt die Abschnitte nicht in Dauersätzen (UX-005e)', async () => {
+    renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+    await screen.findByText('Folgeverordnung vom 18.06.2026');
+    expect(screen.queryByText(/deren mögliche Termine/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Nach Jahr, neueste zuerst/)).not.toBeInTheDocument();
+    // „Offen" ist der Regelfall und trägt kein Etikett.
+    expect(screen.queryByText('Offen')).not.toBeInTheDocument();
   });
 
   it('zeigt am Kopf einer ausgeschoepften Grundlage ein Aufklappzeichen (RSP-07)', async () => {

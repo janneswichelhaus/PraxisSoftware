@@ -45,7 +45,9 @@ test.describe('AKTE-000: Rahmen und Bereiche', () => {
 
     const kopf = page.getByRole('heading', { name: 'Max Mustermann' });
     await expect(kopf).toBeVisible();
-    await expect(page.getByText('In Versorgung')).toBeVisible();
+    // UX-005e: Der Regelfall traegt kein Etikett - nur eine nicht laufende
+    // Versorgung ist im Kopf markiert.
+    await expect(page.getByText('Nicht in laufender Versorgung')).toHaveCount(0);
 
     const navigation = page.getByRole('navigation', { name: 'Bereiche der Akte' });
     await expect(navigation).toBeVisible();

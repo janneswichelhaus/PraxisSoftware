@@ -426,24 +426,21 @@ function Verordnungsscan({
   if (!canReadClinicalPatientFiles(user.roles)) return null;
   const darfHinzufuegen = canWriteTreatmentBases(user.roles);
 
+  // UX-005e: Ohne Scan steht nur die eingeklappte Zeile „Scan hinzufügen" da -
+  // Überschrift und „Noch kein Scan …" sagten dreimal dasselbe. Die
+  // Überschrift „Scan des Rezepts" trägt die Liste selbst, sobald sie etwas
+  // zeigt. Wer keinen Scan hinzufügen darf, sieht ohne Scan nichts (VER-04).
   return (
-    <div className="border-line mt-3 border-t pt-3">
-      <p className="text-ink text-sm font-medium">Scan des Rezepts</p>
+    <div className="border-line mt-3 border-t pt-3 empty:hidden">
       <Dateiliste
         patientId={patientId}
         user={user}
         grundlageId={verordnungId}
         darfHinzufuegen={darfHinzufuegen}
+        titel="Scan des Rezepts"
         hinzufuegenEingeklappt="Scan hinzufügen"
         hinzufuegenEingeklapptWeitere="Weiteren Scan hinzufügen"
         leerKompakt
-        // Wer keinen Scan hinzufügen darf, liest keine Aufforderung dazu
-        // (VER-04) - nur den Zustand.
-        leerHinweis={
-          darfHinzufuegen
-            ? 'Noch kein Scan. Ein Foto des Rezepts hält fest, was auf dem Blatt steht.'
-            : 'Noch kein Scan.'
-        }
       />
     </div>
   );
@@ -488,10 +485,10 @@ function LaufendeVerordnung({
       <Card className="group-data-[angesprungen]/grundlage:border-accent">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <Verordnungskopf verordnung={verordnung} />
-          {/* Ohne Zahlen kein Zustand: „Offen" wäre dann geraten (VER-14). */}
-          {kontingent ? (
-            <Badge ton={zustand === 'offen' ? 'akzent' : 'neutral'}>{zustandLabels[zustand]}</Badge>
-          ) : null}
+          {/* Ohne Zahlen kein Zustand: „Offen" wäre dann geraten (VER-14).
+              UX-005e: „Offen" ist der Regelfall einer laufenden Grundlage und
+              trägt kein Etikett - markiert ist nur, was voll verplant ist. */}
+          {kontingent && zustand === 'verplant' ? <Badge>{zustandLabels[zustand]}</Badge> : null}
         </div>
 
         {!kontingent && zahlenLaden ? (
@@ -734,10 +731,9 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
           Kopf der Akte und ist dort aus jedem Bereich erreichbar. Zwei
           gleichnamige Wege auf einer Seite wären ein Rätsel, kein Angebot -
           derselbe Grund wie bei „Termin anlegen" (UX-006). */}
-      <Section
-        titel="Aktuelle Behandlungsgrundlagen"
-        hinweis="Verordnungen und Selbstzahler, deren mögliche Termine noch nicht vollständig genutzt sind."
-      >
+      {/* UX-005e: Ohne erklärende Sätze unter den Überschriften - die
+          Überschrift sagt, was in der Liste steht. */}
+      <Section titel="Aktuelle Behandlungsgrundlagen">
         {uebertragen ? (
           <Statusmeldung ton="erfolg" className="mb-3">
             {uebertragen === 1 ? '1 Termin übertragen.' : `${uebertragen} Termine übertragen.`}
@@ -793,10 +789,7 @@ export function Verordnungsbereich({ patient, user }: { patient: Patient; user: 
       </Section>
 
       {abgeschlossen.length > 0 ? (
-        <Section
-          titel="Ausgeschöpfte Behandlungsgrundlagen"
-          hinweis="Nach Jahr, neueste zuerst. Eine Zeile je Grundlage – aufklappen zeigt alles."
-        >
+        <Section titel="Ausgeschöpfte Behandlungsgrundlagen">
           {/* Nach Jahr gruppiert wie bisher (VER-002): Eine Akte über zehn
               Jahre ist sonst eine Liste ohne Anhaltspunkt; das Jahr ist das,
               wonach im Gespräch gesucht wird. */}

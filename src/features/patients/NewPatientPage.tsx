@@ -168,10 +168,9 @@ export function NewPatientPage() {
     <>
       <Rueckweg standard="/patienten" />
 
-      <PageHeader
-        title="Neue:r Patient:in"
-        description="Stammdaten für die Aufnahme in die Praxis. Mit * markierte Felder sind erforderlich."
-      />
+      {/* UX-005e: Ohne Erklärsatz - der Titel sagt, was hier entsteht, und
+          das Sternchen erklärt sich am Feld. */}
+      <PageHeader title="Neue:r Patient:in" />
 
       <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-xl">
         <Fehlerzusammenfassung
@@ -265,11 +264,8 @@ export function NewPatientPage() {
           Die Eingaben stehen noch im Formular. Bitte die Verbindung prüfen und erneut versuchen.
         </Hinweisfenster>
       ) : null}
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Es werden ausschließlich organisatorische Stammdaten erfasst. Klinische Angaben und ein
-        Portalzugang entstehen hier nicht.
-      </p>
+      {/* UX-005e: Kein Dauersatz unter dem Formular, der das System erklärt -
+          klinische Angaben haben hier ohnehin kein Feld. */}
     </>
   );
 }

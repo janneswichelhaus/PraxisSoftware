@@ -47,7 +47,9 @@ const terminAnlegen = (page: Page, tag: string) =>
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   const terminId = await terminAnlegen(page, tag);
 
-  await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+  // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+  // Dokumentation allein ist die Route (UX-005g).
+  await page.goto(`/termine/${terminId}/dokumentation`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
   await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
   await expect(page).toHaveURL(`/termine/${terminId}`);
@@ -77,8 +79,11 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
       .getByRole('listitem')
       .filter({ has: page.locator(terminLinkWahl(terminId)) });
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
-    await expect(zeile.getByText('✓Finalisiert', { exact: true })).toBeVisible();
-    await expect(zeile.getByText(/Finalisiert am .* von Anna Beispiel/)).toBeVisible();
+    // UX-005e: In der Akte traegt der finalisierte Eintrag kein Etikett; die
+    // Herkunftszeile nennt die Finalisierung kurz und ohne die behandelnde
+    // Person (Anna hat selbst finalisiert).
+    await expect(zeile.getByText('✓Finalisiert', { exact: true })).toHaveCount(0);
+    await expect(zeile.getByText(/^Finalisiert \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/)).toBeVisible();
     await expect(zeile.getByRole('link', { name: 'Änderungsverlauf' })).toBeVisible();
     // Gelesen wird in der Akte, geschrieben am Termin.
     await expect(akte.getByRole('link', { name: 'Korrigieren' })).toHaveCount(0);

@@ -585,7 +585,13 @@ interface DateilisteProps {
   grundlageId?: string | null;
   /** Darf die aufrufende Person hier etwas hinzufügen? */
   darfHinzufuegen: boolean;
-  leerHinweis: string;
+  /**
+   * Überschrift über der Liste - nur, solange sie etwas zeigt (UX-005e). An
+   * der Verordnung stand „Scan des Rezepts" sonst über einem leeren Satz.
+   */
+  titel?: string;
+  /** Der Satz im leeren Zustand. Ohne ihn steht leer und kompakt nichts da (UX-005e). */
+  leerHinweis?: string;
   /** Der nächste Schritt im leeren Bereich, etwa ein Link (DAT-01). */
   leerAktion?: ReactNode;
   /**
@@ -615,6 +621,7 @@ export function Dateiliste({
   user,
   grundlageId = null,
   darfHinzufuegen,
+  titel,
   leerHinweis,
   leerAktion,
   rahmen = false,
@@ -681,12 +688,16 @@ export function Dateiliste({
 
       {!isPending && !isError && dateien.length === 0 ? (
         leerKompakt ? (
-          <p className="text-ink-muted text-sm">{leerHinweis}</p>
+          leerHinweis ? (
+            <p className="text-ink-muted text-sm">{leerHinweis}</p>
+          ) : null
         ) : (
           <EmptyState title="Keine Datei" description={leerHinweis} aktion={leerAktion} />
         )
       ) : null}
 
+      {/* UX-005e: Die Überschrift gehört zur Liste, nicht zum leeren Zustand. */}
+      {titel && dateien.length > 0 ? <p className="text-ink text-sm font-medium">{titel}</p> : null}
       {dateien.length > 0 ? (
         <ul className="flex flex-col">
           {dateien.map((datei) => (
