@@ -6,6 +6,8 @@ import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
+import { PatientRecordDocumentation } from '@/features/documentation/PatientRecordDocumentation';
+import type { PatientTreatmentNotesEntry, TreatmentNote } from '@/features/documentation/api';
 import type { Patient } from '@/features/patients/api';
 import type { PatientAppointment } from '@/features/appointments/api';
 import type { TreatmentBasis, TreatmentBasisKontingent } from '@/features/treatment-bases/api';
@@ -17,13 +19,15 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `akte.html` (UI-Redesign Schritt 5).
  *
- * `?bereich=termine` (Standard) oder `stammdaten`, `?rolle=therapist`
+ * `?bereich=termine` (Standard), `stammdaten` oder `verlauf`, `?rolle=therapist`
  * (Standard) oder `office`, `?leer=1` für eine Akte ohne Hinweise, Grundlage
  * und Kontakt. Die Daten liegen vorab im Cache; gesprochen wird mit keinem
  * Server. Alles ist synthetisch.
  */
 const suche = new URLSearchParams(window.location.search);
-const bereich = suche.get('bereich') === 'stammdaten' ? 'stammdaten' : 'termine';
+const bereich = ['stammdaten', 'verlauf'].includes(suche.get('bereich') ?? '')
+  ? (suche.get('bereich') as 'stammdaten' | 'verlauf')
+  : 'termine';
 const rolle: RoleKey = suche.get('rolle') === 'office' ? 'office' : 'therapist';
 const leer = suche.get('leer') === '1';
 
@@ -176,6 +180,71 @@ client.setQueryData(['patient-appointments', PATIENT, false, null], {
 client.setQueryData(['waitlist', 'open', PATIENT], []);
 client.setQueryData(['platform-access', 'treatment', PATIENT], null);
 
+/** Der Behandlungsverlauf über drei Monate (Design-Handoff 2026-10-01, Abschnitt 7). */
+function eintrag(
+  id: string,
+  tag: string,
+  inhalt: string,
+  entwurf = false,
+): PatientTreatmentNotesEntry {
+  const note: TreatmentNote = {
+    id: `n-${id}`,
+    appointment_id: id,
+    addendum_to_note_id: null,
+    status: entwurf ? 'draft' : 'final',
+    content: inhalt,
+    visit_without_treatment: false,
+    created_at: `${tag}T08:00:00.000Z`,
+    updated_at: `${tag}T08:05:00.000Z`,
+    finalized_at: entwurf ? null : `${tag}T08:10:00.000Z`,
+    finalisation_kind: entwurf ? null : 'manual',
+    version_count: entwurf ? 0 : 1,
+    author_name: 'Anna Beispiel',
+    last_editor_name: 'Anna Beispiel',
+    finalized_by_name: entwurf ? null : 'Anna Beispiel',
+  };
+  return {
+    appointment_id: id,
+    starts_at: `${tag}T07:00:00.000Z`,
+    ends_at: `${tag}T08:00:00.000Z`,
+    appointment_type: 'home_visit',
+    appointment_status: entwurf ? 'completed' : 'documented',
+    staff_given_name: 'Anna',
+    staff_family_name: 'Beispiel',
+    organization_time_zone: ZONE,
+    notes: [note],
+  };
+}
+client.setQueryData(['patient-treatment-notes', PATIENT], {
+  pages: [
+    [
+      eintrag(
+        'v4',
+        '2026-09-30',
+        'Synthetisch: Schulter rechts, Übungen im Stand wiederholt.',
+        true,
+      ),
+      eintrag(
+        'v3',
+        '2026-09-24',
+        'Synthetisch: Beweglichkeit im Alltag besser, Theraband gelb mitgegeben.',
+      ),
+      eintrag(
+        'v2',
+        '2026-08-27',
+        'Synthetisch: Elevation aktiv 120°, Schmerz bei Abduktion geringer.',
+      ),
+      eintrag(
+        'v1',
+        '2026-07-15',
+        'Synthetisch: Erstbefund. Elevation aktiv 110°, Ziel Haare kämmen ohne Schmerz.',
+      ),
+    ],
+  ],
+  pageParams: [null],
+});
+client.setQueryData(['documentation-deadline', nutzer.profile.organization_id], 1);
+
 const router = createMemoryRouter(
   [
     {
@@ -190,6 +259,10 @@ const router = createMemoryRouter(
       children: [
         { path: 'termine', element: <PatientAppointmentsPage /> },
         { path: 'stammdaten', element: <PatientMasterDataPage /> },
+        {
+          path: 'verlauf',
+          element: <PatientRecordDocumentation patient={patient} user={nutzer} />,
+        },
         { path: '*', element: <p>Ende der Prüfseite.</p> },
       ],
     },

@@ -85,6 +85,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchPatientTreatmentNotesPage(patientId, cursor) as Promise<
         DokumentationApi.PatientTreatmentNotesEntry[]
       >,
+    // Ein Tag Frist: Ein Entwurf vom 12.05. wird am 13.05. festgeschrieben.
+    fetchDocumentationDeadline: () => Promise.resolve(1),
   };
 });
 
@@ -134,7 +136,8 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       const zeilen = await within(abschnitt).findAllByRole('listitem');
       expect(zeilen).toHaveLength(2);
 
-      expect(zeilen[0]).toHaveTextContent('Mittwoch, 12. Mai 2027');
+      // Kurz im Kopf der Karte (Design-Handoff 2026-10-01, Abschnitt 7).
+      expect(zeilen[0]).toHaveTextContent('12.05.2027');
       expect(zeilen[0]).toHaveTextContent('09:00–10:00 Uhr · Praxis · Anna Beispiel');
       // UX-005e: Ein abgeschlossener Termin ist in der Dokumentation der
       // Regelfall und traegt kein Etikett; ebenso wenig der finalisierte
@@ -142,13 +145,14 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       // behandelnde Person noch einmal zu nennen.
       expect(zeilen[0]).not.toHaveTextContent('Abgeschlossen');
       expect(zeilen[0]).toHaveTextContent(INHALT);
-      expect(within(zeilen[0]!).queryByText('Finalisiert')).not.toBeInTheDocument();
+      // Der festgeschriebene Eintrag trägt „✓ Version 1" (Abschnitt 7).
+      expect(within(zeilen[0]!).getByText('Version 1')).toBeInTheDocument();
       expect(zeilen[0]).toHaveTextContent('Finalisiert 12.05.2027, 11:32');
       expect(zeilen[0]).not.toHaveTextContent('von Anna Beispiel');
       expect(zeilen[0]).not.toHaveTextContent('Verfasst von');
       expect(zeilen[0]).toHaveTextContent('Nachtrag');
       expect(zeilen[0]).toHaveTextContent(NACHTRAG_INHALT);
-      expect(zeilen[0]).toHaveTextContent('noch nicht finalisiert');
+      expect(zeilen[0]).toHaveTextContent('wird am 13.05. automatisch festgeschrieben');
       // Eine andere Person als die behandelnde steht dran.
       expect(zeilen[0]).toHaveTextContent('Zuletzt geändert 13.05.2027, 08:15 von Tim Teamleitung');
 
@@ -241,28 +245,61 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     // UX-005e: Das Datum ist der Weg zum Termin - keine eigene Zeile „Zum
     // Termin" mehr.
     expect(screen.queryByRole('link', { name: 'Zum Termin' })).not.toBeInTheDocument();
-    const termin = screen.getByRole('link', { name: 'Mittwoch, 5. Mai 2027' });
+    const termin = screen.getByRole('link', { name: '05.05.2027' });
     expect(termin.getAttribute('href')).toMatch(
       /^\/termine\/77777777-7777-4777-8777-000000000002\?zurueck=/,
     );
-    expect(screen.getByRole('link', { name: 'Mittwoch, 12. Mai 2027' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '12.05.2027' })).toHaveAttribute(
       'href',
       `/termine/77777777-7777-4777-8777-000000000001?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/verlauf`)}`,
     );
   });
 
-  it('zeigt nur den Entwurf als Etikett, den finalisierten Eintrag ohne (UIK-18, UX-005e)', async () => {
+  it('kennzeichnet Entwurf mit Frist und festgeschriebene Version als Etikett (UIK-18, Abschnitt 7)', async () => {
     renderWithProviders(
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
-    const entwurf = await screen.findByText('Entwurf');
-    // Kein Rahmen für Bedienbares an einem Etikett.
+    const entwurf = await screen.findByText('Entwurf · Frist 13.05.');
+    // Kein Rahmen für Bedienbares an einem Etikett; Zeichen und Wort (UIK-18).
     expect(entwurf).not.toHaveClass('border-line-strong');
-    expect(screen.queryByText('Finalisiert')).not.toBeInTheDocument();
-    expect(
-      screen.getByText('noch nicht finalisiert · wird automatisch finalisiert'),
-    ).toBeInTheDocument();
+    expect(entwurf).toHaveTextContent('!');
+    expect(screen.getByText('Version 1')).toHaveTextContent('✓');
+  });
+
+  it('gruppiert nach Monat und springt ab zwei Monaten über eine Leiste (Abschnitt 7)', async () => {
+    const [erster] = (await fetchPatientTreatmentNotesPage.getMockImplementation()?.(
+      patient.id,
+      null,
+    )) as DokumentationApi.PatientTreatmentNotesEntry[];
+    fetchPatientTreatmentNotesPage.mockResolvedValue([
+      erster!,
+      {
+        ...erster!,
+        appointment_id: 'april',
+        starts_at: '2027-04-20T07:00:00.000Z',
+        ends_at: '2027-04-20T08:00:00.000Z',
+        notes: [],
+      },
+    ]);
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+
+    const leiste = await screen.findByRole('navigation', { name: 'Springen zu' });
+    expect(within(leiste).getByRole('link', { name: 'Mai 2027' })).toHaveAttribute(
+      'href',
+      '#monat-2027-05',
+    );
+    expect(within(leiste).getByRole('link', { name: 'April 2027' })).toHaveAttribute(
+      'href',
+      '#monat-2027-04',
+    );
+    expect(within(leiste).getByText('Lesen wird protokolliert')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'Mai 2027' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 3, name: 'April 2027' })).toBeInTheDocument();
+    // Kein Schreibknopf im Verlauf: geschrieben wird am Termin.
+    expect(screen.queryByRole('link', { name: /Behandlungsnotiz|^Doku/ })).toBeNull();
   });
 
   it('steht als Abschnitt mit Überschrift im Label-Stil da (UIK-20, TOK-05)', async () => {
@@ -312,9 +349,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['office'])} />,
     );
 
-    expect(
-      await screen.findByText('Für diese Person gibt es noch keine Termine in der Akte.'),
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Noch kein Eintrag.')).toBeInTheDocument();
     expect(
       screen.queryByRole('button', { name: 'Ältere Termine anzeigen' }),
     ).not.toBeInTheDocument();
