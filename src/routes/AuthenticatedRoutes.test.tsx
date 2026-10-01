@@ -362,7 +362,7 @@ describe('AuthenticatedRoutes', () => {
 
   describe('Dokumentationsroute (DOK-001)', () => {
     it.each([['therapist'], ['team_lead']] as const)(
-      'oeffnet %s den Entwurf der Behandlungsdokumentation',
+      'fuehrt %s von der alten Entwurfsadresse auf die Schreibseite',
       async (role) => {
         renderWithProviders(
           <AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />,

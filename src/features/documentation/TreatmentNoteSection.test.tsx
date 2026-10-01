@@ -131,7 +131,7 @@ describe('TreatmentNoteSection', () => {
     rendern(['therapist']);
 
     const link = await screen.findByRole('link', { name: 'Dokumentation bearbeiten' });
-    expect(link).toHaveAttribute('href', `/termine/${TERMIN_ID}/dokumentation`);
+    expect(link).toHaveAttribute('href', `/termine/${TERMIN_ID}/abschluss`);
   });
 
   it('zeigt owner den Inhalt, aber keine Schaltflaeche zum Schreiben', async () => {
@@ -214,7 +214,7 @@ describe('TreatmentNoteSection', () => {
     ).toBeInTheDocument();
     expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveAttribute(
       'href',
-      `/termine/${TERMIN_ID}/dokumentation`,
+      `/termine/${TERMIN_ID}/abschluss`,
     );
   });
 

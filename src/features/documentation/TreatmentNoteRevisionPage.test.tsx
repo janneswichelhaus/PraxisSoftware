@@ -237,7 +237,7 @@ describe('TreatmentNoteRevisionPage', () => {
     expect(screen.queryByRole('alert')).toBeNull();
     expect(screen.getByRole('link', { name: 'Entwurf bearbeiten' })).toHaveAttribute(
       'href',
-      `/termine/${TERMIN_ID}/dokumentation`,
+      `/termine/${TERMIN_ID}/abschluss`,
     );
   });
 

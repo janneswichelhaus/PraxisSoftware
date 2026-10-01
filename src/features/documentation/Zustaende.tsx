@@ -79,7 +79,7 @@ export function NochEinEntwurf({
   // (DOK-002) - dieselben Wege wie am Termin.
   const ziel =
     eintrag.addendum_to_note_id === null
-      ? `/termine/${appointmentId}/dokumentation`
+      ? `/termine/${appointmentId}/abschluss`
       : `${eintragsweg(appointmentId, eintrag)}/bearbeiten`;
 
   return (

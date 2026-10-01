@@ -23,8 +23,15 @@ import { fetchTextSnippets, type TextSnippet } from './textbausteine';
  */
 export function TextbausteinLeiste({
   onEinfuegen,
+  alsChips = false,
 }: {
   onEinfuegen: (text: string, titel: string) => void;
+  /**
+   * Als Chips in der waagerecht laufenden Zeile der Schreibseite
+   * (Design-Handoff 2026-10-01, Abschnitt 6a): ohne Umbruch, ohne Abstand
+   * nach unten - die Zeile drumherum stellt die Seite.
+   */
+  alsChips?: boolean;
 }) {
   const { data, isPending, isError } = useQuery({
     queryKey: ['text-snippets'],
@@ -41,6 +48,26 @@ export function TextbausteinLeiste({
 
   const bausteine: TextSnippet[] = data;
   if (bausteine.length === 0) return null;
+
+  if (alsChips) {
+    return (
+      <div role="group" aria-label="Textbausteine" className="flex shrink-0 items-center gap-2">
+        {bausteine.map((baustein) => (
+          <Button
+            key={baustein.id}
+            type="button"
+            variant="secondary"
+            groesse="kompakt"
+            className="shrink-0 whitespace-nowrap"
+            title={baustein.body}
+            onClick={() => onEinfuegen(baustein.body, baustein.title)}
+          >
+            {baustein.title}
+          </Button>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="nicht-drucken mb-3">

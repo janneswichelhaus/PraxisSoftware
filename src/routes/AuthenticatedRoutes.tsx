@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
 import { BereichePage } from '@/app/BereichePage';
 import { MdrSperre } from '@/app/MdrSperre';
@@ -364,9 +364,12 @@ export function AuthenticatedRoutes({
                     path="/termine/:appointmentId/abschluss"
                     element={<CompleteTreatmentPage user={user} />}
                   />
+                  {/* Eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt
+                  6a): Der Haupteintrag wird nur noch dort geschrieben.
+                  Nachtrag-Entwürfe behalten ihre eigene Adresse. */}
                   <Route
                     path="/termine/:appointmentId/dokumentation"
-                    element={<TreatmentNotePage user={user} />}
+                    element={<ZurSchreibseite />}
                   />
                   <Route
                     path="/termine/:appointmentId/dokumentation/:noteId/bearbeiten"
@@ -535,4 +538,15 @@ export function AuthenticatedRoutes({
       </AbmeldeschutzProvider>
     </VorschauProvider>
   );
+}
+
+/**
+ * `/termine/:id/dokumentation` führt auf die eine Schreibseite (Design-Handoff
+ * 2026-10-01, Abschnitt 6a). Lesezeichen und alte Verweise bleiben gültig;
+ * der Rückweg reist in der Adresszeile mit.
+ */
+function ZurSchreibseite() {
+  const { appointmentId } = useParams<{ appointmentId: string }>();
+  const { search } = useLocation();
+  return <Navigate replace to={`/termine/${appointmentId ?? ''}/abschluss${search}`} />;
 }

@@ -205,6 +205,7 @@ export function useTextverlustschutz({
   ungespeichert,
   speichern,
   texte = DOKUMENTATIONSTEXTE,
+  kompakt = false,
 }: {
   /** Steht im Feld etwas, das noch nicht auf dem Server liegt? */
   ungespeichert: boolean;
@@ -220,6 +221,12 @@ export function useTextverlustschutz({
    * `EINGABETEXTE`. Ohne Angabe die der Dokumentation.
    */
   texte?: Verlustschutztexte;
+  /**
+   * Als Zeile statt als Kasten (Design-Handoff 2026-10-01, Abschnitt 6a):
+   * ein kurzer Satz und drei kompakte Knöpfe über der Fußleiste der
+   * Schreibseite. Dieselben drei Wege (ANN-046), dieselben Fehler.
+   */
+  kompakt?: boolean;
 }): Textverlustschutz {
   useVerlassenWarnung(ungespeichert);
   const verbunden = useIstVerbunden();
@@ -357,12 +364,71 @@ export function useTextverlustschutz({
       {/* Fehler eines Schreibvorgangs stehen hier, gleich über welche
           Schaltfläche er lief - ein Weg, eine Stelle (FIX-014). */}
       {fehler && !offen ? (
-        <div className="mt-4">
-          <ErrorState title={fehler.titel} description={fehler.text} />
-        </div>
+        kompakt ? (
+          <Statusmeldung ton="fehler" className="px-4 py-2">
+            {fehler.titel}: {fehler.text}
+          </Statusmeldung>
+        ) : (
+          <div className="mt-4">
+            <ErrorState title={fehler.titel} description={fehler.text} />
+          </div>
+        )
       ) : null}
 
-      {offen ? (
+      {offen && kompakt ? (
+        <div
+          ref={kasten}
+          role="group"
+          aria-label={texte.bezeichnung}
+          className="border-line-strong bg-canvas flex flex-wrap items-center gap-x-3 gap-y-2 border-t px-4 py-2"
+        >
+          <p className="text-ink text-sm font-semibold">
+            {abmeldemodus
+              ? 'Text noch nicht gespeichert – abmelden?'
+              : 'Text noch nicht gespeichert.'}
+          </p>
+          {fehler ? (
+            <Statusmeldung ton="fehler" className="basis-full">
+              {fehler.text} {texte.bleibtStehen}, die Seite bleibt geöffnet
+              {abmeldemodus ? ', die Sitzung bleibt bestehen' : ''}.
+            </Statusmeldung>
+          ) : null}
+          <div className="ml-auto flex flex-wrap gap-2">
+            {speichern ? (
+              <Button
+                type="button"
+                groesse="kompakt"
+                disabled={laeuft}
+                onClick={speichernUndWeiter}
+              >
+                {laeuft
+                  ? 'Wird gespeichert …'
+                  : abmeldemodus
+                    ? 'Speichern und abmelden'
+                    : 'Speichern und weiter'}
+              </Button>
+            ) : null}
+            <Button
+              type="button"
+              variant="secondary"
+              groesse="kompakt"
+              disabled={laeuft}
+              onClick={weitergehen}
+            >
+              {abmeldemodus ? 'Verwerfen und abmelden' : 'Verwerfen'}
+            </Button>
+            <Button
+              type="button"
+              variant="quiet"
+              groesse="kompakt"
+              disabled={laeuft}
+              onClick={bleiben}
+            >
+              Weiterschreiben
+            </Button>
+          </div>
+        </div>
+      ) : offen ? (
         <div
           ref={kasten}
           role="group"

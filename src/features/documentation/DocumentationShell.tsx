@@ -35,11 +35,18 @@ export function DocumentationShell({
   appointmentId,
   darf,
   verweigert,
+  eigenerKopf = false,
   children,
 }: {
   appointmentId: string | undefined;
   darf: boolean;
   verweigert: string;
+  /**
+   * Die Seite trägt ihren Rückweg selbst (die Schreibseite, Design-Handoff
+   * 2026-10-01, Abschnitt 6a). Solange sie nicht steht - Laden, Fehler -,
+   * bleibt der gewohnte Rückweg oben.
+   */
+  eigenerKopf?: boolean;
   children: (daten: {
     appointment: Appointment;
     dokumentation: TreatmentDocumentation;
@@ -67,9 +74,11 @@ export function DocumentationShell({
     retry: false,
   });
 
+  const bereit = darf && Boolean(terminAbfrage.data) && Boolean(doku.data);
+
   return (
     <>
-      {appointmentId ? (
+      {eigenerKopf && bereit ? null : appointmentId ? (
         <Rueckweg standard={termin} beschriftung="Zurück zum Termin" />
       ) : (
         <Rueckweg standard="/kalender" />
