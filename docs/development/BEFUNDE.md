@@ -3205,3 +3205,45 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** `morgenOrtszeit()` rechnet „morgen“ in der Zeitzone des Rechners (in der Cloud UTC), das Zahlungsformular „heute“ in der Praxiszeitzone (`todayInTimeZone`, Europe/Berlin). Zwischen 22:00 und 24:00 UTC ist in Berlin schon der nächste Tag: Das eingegebene Datum liegt dann nicht in der Zukunft, der Fehler bleibt aus, der Test scheitert. Zu jeder anderen Stunde läuft er grün; die CI hat ihn bisher nicht getroffen.
 
 **Erwartet.** Der Helfer nennt „morgen“ in derselben Zeitzone wie das Formular (Praxiszeitzone der Testdaten), oder der Test nennt einen Tag zwei Tage voraus. Die Aufrufer in `NewPatientPage.test.tsx` und `EditPatientPage.test.tsx` mitprüfen: Dort gilt dieselbe Frage für das Geburtsdatum.
+
+### BEF-088 — Die Akte wiederholt ihren Kopf und erklärt sich selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Akte: Stammdaten, Behandlungsverlauf, Verordnungen, Befund, Dateien, Formulare |
+| Quelle  | Claude, systematische Durchsicht aller Seiten im Auftrag von Jannes („solche Bereiche in der gesamten Anwendung finden“) |
+| Status  | erledigt in UX-EPIC-005 (UX-005e) |
+| Berührt | `PatientRecordLayout.tsx`, `PatientMasterDataPage.tsx`, `PatientRecordDocumentation.tsx`, `PatientTreatmentBasesPage.tsx`, `PatientBefundPage.tsx`, `Behandlungsliege.tsx`, `Mitnehmen.tsx`, `PatientFilesPage.tsx`, `EditPatientPage.tsx`, `NewPatientPage.tsx` |
+
+**Beobachtung.** Der Aktenkopf steht über jedem Bereich und nennt Name, Geburtsdatum, Versorgungsstand, Zugangshinweis und Besonderheit. Die Stammdaten darunter nannten Geburtsdatum, „Status: Aktiv“, „Abschluss: Laufende Versorgung“, Zugangshinweis und Besonderheit ein zweites Mal, dazu „Kartenposition: Verortet“ als Dauerzeile, vier Gedankenstriche für leere Kontaktwege, drei Erklärsätze unter den Verwaltungsabschnitten, einen Hinweis auf Betroffenenrechte für Rollen ohne das Recht und die Fußzeile „Zugriffe … werden protokolliert“. Der Verlauf trug an jeder Karte „Abgeschlossen“ oder „Dokumentiert“, „Finalisiert“, den Namen der Behandelnden dreimal und „Zum Termin“ als eigene Zeile; die Grundlagen „Offen“ an jeder laufenden Grundlage und einen leeren Scan-Block mit Erklärsatz.
+
+**Erwartet.** Nichts im Körper wiederholt den Kopf; ein Regelfall trägt kein Abzeichen und keine Zeile; ein leerer Wert nimmt keine Zeile; Sätze, die das System statt die Daten erklären, entfallen. Die frühere Festlegung aus PAT-05 („übrige Rollen erfahren, wer eine Anfrage bearbeitet“) ist damit zurückgenommen: Ein Satz darüber, wer etwas darf, ist kein Inhalt der Akte.
+
+### BEF-089 — Terminformulare erklären das System auf jeder Seite
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Termin anlegen (Start, Formular, Serie, Dauertermin), Termin bearbeiten, Fehlzeiten, Terminzettel, Kurzblick, Mitteilung, Dokumentation, Terminsuche |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005g) |
+| Berührt | `src/features/appointments/*Page.tsx`, `AppointmentFormFields.tsx`, `EreignisFormFields.tsx`, `Kurzblick.tsx`, `MitteilungVermerken.tsx`, `src/features/documentation/TreatmentNoteSection.tsx`, `CompleteTreatmentPage.tsx`, `src/features/slot-search/SlotSearchPage.tsx` |
+
+**Beobachtung.** Die Startseite der Terminanlage nannte die Vorbelegung in der Beschreibung und noch einmal als Tabelle mit „Terminart: Hausbesuch“ und „noch offen“-Zeilen. Jedes Hausbesuchsformular erklärte, woher die Adresse kommt; Beginn-Felder nannten das Praxisraster; Fußzeilen erklärten Protokollierung und Datenart. Bearbeiten zeigte die Patient:in ein zweites Mal mit dem Satz, dass sie nicht wechselbar ist. Die Serie nannte „bis HH:MM“ unter jedem Vorschlag und „Fenster: 60 Minuten“. Am offenen Termin ohne Dokumentation stand „noch keine Dokumentation hinterlegt“ plus ein zweiter Knopf unter dem Hauptknopf. Die Terminsuche trug „Fahrweg passt“ und „Im Gebietstag“ an fast jeder Zeile.
+
+**Erwartet.** Eine Zeile aus gefüllten Werten statt Tabelle; die Terminart nur bei Abweichung (ANN-192); keine Erklärabsätze und Fußzeilen; am offenen Termin kein Satz und kein zweiter Knopf, ein leerer Abschnitt entfällt; nur Abweichungen als Abzeichen.
+
+### BEF-090 — Übersicht und Büroseiten nennen Regelfälle und erklären Überschriften
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Übersicht, Tageskarte, Offene Punkte, Anrufliste, Warteliste |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005h) |
+| Berührt | `src/features/today/MyDayPage.tsx`, `Tagesliste.tsx`, `src/features/open-points/*.tsx`, `src/features/waitlist/format.ts`, `WaitlistMatches.tsx` |
+
+**Beobachtung.** Jede offene Tageskarte trug „Steht aus“; „Liege heute: nein“ stand jeden Morgen ganz oben; der Leerzustand und der Teamplan wiederholten ihre Überschrift als Satz; die Organisationskarten erklärten ihre Links; die Zeile „Offene Punkte: …“ hatte daneben einen zweiten Link zum selben Ziel. Auf „Offene Punkte“ stand unter jeder Überschrift ein Erklärsatz, an jeder Aufgabe „Für alle im Team“, an jeder Erstaufnahme „Offen:“. Die Anrufliste trug „Offen“ an jeder Zeile unter „Anzurufen“ und „Mitgeteilt:“ unter „Schon mitgeteilt“, dazu einen dauerhaften Nachschlagetext. Die Warteliste nannte „Hausbesuch“ und „Therapeut:in egal“.
+
+**Erwartet.** Abzeichen nur für Abweichungen; Zeilen nur, wenn sie etwas sagen; Erklärsätze zu Überschriften entfallen, Nachschlagetext zugeklappt; die Zeile „Offene Punkte“ ist selbst der Link. Nicht angefasst: der Datenschutzsatz unter „Navigation starten“ (ADR-019 Punkt 23 setzt ihn bewusst dorthin) und die beiden Kriteriensätze unter „Verordnung endet“ und „Versorgung abschließen?“, die eine Auswahlregel erklären.
