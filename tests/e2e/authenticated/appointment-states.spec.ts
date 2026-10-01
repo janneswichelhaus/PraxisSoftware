@@ -95,7 +95,10 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await page.getByRole('button', { name: 'Nicht angetroffen' }).click();
     const rueckfrage = page.getByRole('group', { name: 'Nicht angetroffen' });
     // Seit ADR-018 Fassung 2: keine Pflichtauswahl mehr an dieser Stelle.
-    await expect(rueckfrage).toContainText('Ein Ausfallhonorar entsteht daraus nicht');
+    // Der Satz „Das ist ein organisatorischer Vermerk …" ist gestrichen
+    // (Design-Handoff 2026-10-01, Abschnitt 1).
+    await expect(rueckfrage).toContainText('wird als „nicht angetroffen“ geführt');
+    await expect(rueckfrage).not.toContainText('organisatorischer Vermerk');
     await expect(page.getByLabel('Ausfallhonorar berechnen?')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Ja, niemand angetroffen' }).click();
