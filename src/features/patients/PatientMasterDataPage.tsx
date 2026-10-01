@@ -12,6 +12,7 @@ import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { todayInTimeZone } from '@/features/appointments/api';
+import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import {
   canChangePatientStatus,
   canConcludePatientCare,
@@ -394,6 +395,19 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             ) : null}
           </div>
         </Section>
+      ) : null}
+
+      {/* POR-002: der eigene Zugang der Person zur Plattform (DSN-001
+          Abschnitt 6). Dieselben Rollen wie die Kartei laden ein, sperren und
+          entziehen (app.can_update_patient, ADR-023 Punkt 6); verbindlich
+          prüft der Server. */}
+      {darfVerorten && user.organizationTimeZone ? (
+        <PlattformAbschnitt
+          art="treatment"
+          verhaeltnisId={patient.id}
+          darfVerwalten={darfVerorten}
+          zeitzone={user.organizationTimeZone}
+        />
       ) : null}
 
       {/* PRX-018: Eine zweite Akte derselben Person hierher übernehmen. Nur

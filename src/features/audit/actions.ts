@@ -214,6 +214,16 @@ export const AUDIT_ACTIONS = [
   'training_protocol.viewed',
   // Zweitreview: ein Entwurf fällt mit Absage oder Nichtantreffen.
   'training_protocol.discarded',
+  // POR-002: Plattformzugang (ADR-023 Punkt 6, W5). `activated` und
+  // `password_reset` schreibt das Plattformkonto selbst (actor_kind platform).
+  'platform_access.invited',
+  'platform_access.invitation_sent',
+  'platform_access.activated',
+  'platform_access.password_reset',
+  'platform_access.locked',
+  'platform_access.unlocked',
+  'platform_access.revoked',
+  'platform_accesses.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -354,6 +364,14 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
   'training_protocol.viewed': 'Trainingsprotokoll gelesen',
   'training_protocol.discarded': 'Entwurf des Trainingsprotokolls verworfen',
+  'platform_access.invited': 'Zur Plattform eingeladen',
+  'platform_access.invitation_sent': 'Einladung zur Plattform per Mail versandt',
+  'platform_access.activated': 'Plattformzugang eingerichtet',
+  'platform_access.password_reset': 'Neues Kennwort für die Plattform gesetzt',
+  'platform_access.locked': 'Plattformzugang gesperrt',
+  'platform_access.unlocked': 'Plattformzugang entsperrt',
+  'platform_access.revoked': 'Plattformzugang entzogen',
+  'platform_accesses.read': 'Plattformzugang angesehen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',
@@ -406,6 +424,7 @@ export const auditSubjectLabels: Record<string, string> = {
   training_relationship: 'Trainingsverhältnis',
   training_basis: 'Vereinbarung im Training',
   training_protocol: 'Trainingsprotokoll',
+  platform_access: 'Plattformzugang',
   storage_deletion_order: 'Löschauftrag der Ablage',
   service_catalog_version: 'Preisliste',
   invoice_recipient: 'Rechnungsempfänger',

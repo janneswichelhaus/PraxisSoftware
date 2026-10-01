@@ -53,12 +53,12 @@ describe('Patientenkontaktdaten', () => {
     }
   });
 
-  it('sind fuer Patient:innen nur im eigenen Kontext lesbar', async () => {
+  it('sind fuer ein Konto ohne Praxisrolle nicht lesbar, auch die eigenen nicht (ADR-023 Punkt 20)', async () => {
     const { rows } = await asUser<{ patient_id: string }>(
       users.patientMax,
       'select patient_id from public.patient_contact_details',
     );
-    expect(rows.map((r) => r.patient_id)).toEqual([patients.max]);
+    expect(rows).toEqual([]);
   });
 
   it('sind ohne Session nicht lesbar', async () => {
@@ -166,12 +166,12 @@ describe('Patientensicht patient_directory', () => {
     expect(rows[0]?.city).toBe('Tuebingen');
   });
 
-  it('zeigt Patient:innen ausschliesslich den eigenen Datensatz', async () => {
+  it('zeigt einem Konto ohne Praxisrolle keinen Datensatz, auch den eigenen nicht (ADR-023 Punkt 20)', async () => {
     const { rows } = await asUser<{ id: string }>(
       users.patientErika,
       'select id from public.patient_directory',
     );
-    expect(rows.map((r) => r.id)).toEqual([patients.erika]);
+    expect(rows).toEqual([]);
   });
 
   it('erweitert die Rechte der Basistabellen nicht', async () => {
@@ -324,7 +324,7 @@ describe('Listensicht patient_list_entries (ADR-004)', () => {
     }
   });
 
-  it('zeigt der Buerokraft die Kartei und einem Patientenkonto nur sich selbst', async () => {
+  it('zeigt der Buerokraft die Kartei und einem Konto ohne Praxisrolle nichts', async () => {
     const { rows } = await asUser<{ id: string }>(
       users.office,
       'select id from public.patient_list_entries order by family_name',
@@ -335,7 +335,7 @@ describe('Listensicht patient_list_entries (ADR-004)', () => {
       users.patientErika,
       'select id from public.patient_list_entries',
     );
-    expect(eigene.map((r) => r.id)).toEqual([patients.erika]);
+    expect(eigene).toEqual([]);
   });
 
   it('erweitert die Rechte der Basistabellen nicht', async () => {

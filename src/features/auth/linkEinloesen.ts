@@ -1,4 +1,5 @@
 import { getSupabase } from '@/lib/supabase';
+import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 
 /**
  * Einlösen eines Links aus einer Auth-Mail (FIX-001, ANN-043).
@@ -88,5 +89,6 @@ export const ZUGANG_PFAD = '/zugang';
  * mitzunehmen — genau dieser Fehler ist bei `/zugang` passiert.
  */
 export function istEinloesePfad(pfad: string): boolean {
-  return pfad === WIEDERHERSTELLUNG_PFAD || pfad === ZUGANG_PFAD;
+  // POR-003: die Einladung zur Plattform (ADR-023 Punkt 8) als dritte Seite.
+  return pfad === WIEDERHERSTELLUNG_PFAD || pfad === ZUGANG_PFAD || pfad === EINLADUNG_PFAD;
 }

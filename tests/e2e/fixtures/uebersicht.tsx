@@ -124,6 +124,8 @@ const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
 client.setQueryData(['day-plan', heute, STAFF], tag);
+// POR-002: der Abschnitt „Plattform" in den Stammdaten - ohne Zugang.
+client.setQueryData(['platform-access', 'treatment', '66666666-6666-4666-8666-000000000002'], null);
 client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'active'], []);
 
 const patient: Patient = {

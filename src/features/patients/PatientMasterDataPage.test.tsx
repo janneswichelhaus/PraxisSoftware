@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
+import type * as ZugangApi from '@/features/platform-access/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { roleLabel } from '@/components/ui/roleLabels';
 
@@ -44,6 +45,12 @@ vi.mock('./api', async (importOriginal) => {
       setTreatmentTableRequired(id, wert) as Promise<void>,
   };
 });
+
+// Der Abschnitt „Plattform" hat eigene Tests (POR-002); hier nur ohne Zugang.
+vi.mock('@/features/platform-access/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof ZugangApi>()),
+  getPlatformAccess: () => Promise.resolve(null),
+}));
 
 const { Stammdaten } = await import('./PatientMasterDataPage');
 

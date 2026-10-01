@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
-import { morgenOrtszeit, renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testUser } from '@/test-utils';
+import { todayInTimeZone } from '@/features/appointments/api';
 import { zeigeMitRouten } from './testumgebung';
 
 const fetchKandidaten = vi.fn();
@@ -375,7 +376,13 @@ describe('InvoicesPage', () => {
 
       await nutzer.click(await screen.findByRole('button', { name: 'Zahlung buchen' }));
       const datum = screen.getByLabelText('Eingegangen am');
-      fireEvent.change(datum, { target: { value: morgenOrtszeit() } });
+      // Morgen in der Zeitzone der Praxis, in der das Formular prüft - nicht
+      // in der des Geräts (BEF-083): Zwischen 22 und 24 Uhr UTC ist das
+      // UTC-„morgen" in Berlin schon heute.
+      const heute = todayInTimeZone('Europe/Berlin');
+      const morgen = new Date(`${heute}T12:00:00Z`);
+      morgen.setUTCDate(morgen.getUTCDate() + 1);
+      fireEvent.change(datum, { target: { value: morgen.toISOString().slice(0, 10) } });
       await nutzer.click(screen.getByRole('button', { name: 'Zahlung buchen' }));
 
       expect(datum).toHaveAttribute('aria-invalid', 'true');

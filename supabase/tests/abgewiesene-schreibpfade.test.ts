@@ -164,6 +164,33 @@ const FAELLE: Fall[] = [
     [IRGENDEINE],
     'training_protocol.finalized',
   ],
+  // POR-002: Plattformzugang - die Rollen, die das Verhaeltnis schreiben
+  // (ADR-023 Punkt 6). Die Therapeutin schreibt kein Training, und eine
+  // unbekannte Kennung wird wie eine fremde abgewiesen.
+  [
+    'invite_platform_access',
+    "select * from public.invite_platform_access('training', $1::uuid, 'on_site', false)",
+    [IRGENDEINE],
+    'platform_access.invited',
+  ],
+  [
+    'set_platform_access_locked',
+    'select public.set_platform_access_locked($1::uuid, true) as status',
+    [IRGENDEINE],
+    'platform_access.locked',
+  ],
+  [
+    'revoke_platform_access',
+    'select public.revoke_platform_access($1::uuid) as status',
+    [IRGENDEINE],
+    'platform_access.revoked',
+  ],
+  [
+    'platform_invitation_mail',
+    "select * from public.platform_invitation_mail($1::uuid, 'irgendein-code')",
+    [IRGENDEINE],
+    'platform_access.invitation_sent',
+  ],
   [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
@@ -182,7 +209,7 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
     // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
-    // Trainingsprotokoll.
+    // Trainingsprotokoll, seit POR-002 der Plattformzugang.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`

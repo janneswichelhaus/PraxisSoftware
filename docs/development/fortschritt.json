@@ -497,7 +497,10 @@
           "id": "por-epic-001",
           "name": "POR-EPIC-001 Plattformzugang",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-30",
+          "nachweis": "POR-001 bis POR-004, Zweitreview",
+          "vermerk": "Sichtung: Plattform Schritte 1 bis 3"
         },
         {
           "id": "por-epic-001b",

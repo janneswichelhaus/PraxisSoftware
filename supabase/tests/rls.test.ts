@@ -45,9 +45,11 @@ describe('RLS: Patientenkartei', () => {
     );
   });
 
-  it('zeigt einem Patienten ausschliesslich den eigenen Kontext (4.6)', async () => {
-    expect(await sichtbarePatienten(users.patientMax)).toEqual([patients.max]);
-    expect(await sichtbarePatienten(users.patientErika)).toEqual([patients.erika]);
+  it('zeigt einem Konto ohne Praxisrolle auch den eigenen Kontext nicht (ADR-023 Punkt 20)', async () => {
+    // Bis POR-001 las ein Konto die Zeile seiner eigenen person_id. Die
+    // Plattform liest jetzt nur über Projektionen mit aktivem Zugang.
+    expect(await sichtbarePatienten(users.patientMax)).toEqual([]);
+    expect(await sichtbarePatienten(users.patientErika)).toEqual([]);
   });
 
   it('zeigt einem Patienten keine anderen Patienten - auch nicht gezielt abgefragt', async () => {
@@ -96,12 +98,21 @@ describe('RLS: Personen und Mitarbeiter', () => {
     }
   });
 
-  it('zeigt einem Patienten ausschliesslich die eigene Person', async () => {
+  it('zeigt einem Konto ohne Praxisrolle auch die eigene Person nicht (ADR-023 Punkt 20)', async () => {
     const { rows } = await asUser<{ id: string }>(
       users.patientMax,
       'select id from public.persons',
     );
-    expect(rows.map((r) => r.id)).toEqual([SEED.persons.max]);
+    expect(rows).toEqual([]);
+  });
+
+  it('zeigt Mitarbeitenden weiter die eigene Person, auch der Trainingsbetreuung', async () => {
+    const { rows } = await asUser<{ id: string }>(
+      users.trainer,
+      'select id from public.persons where id = $1',
+      ['44444444-4444-4444-8444-000000000010'],
+    );
+    expect(rows).toHaveLength(1);
   });
 
   it('verbirgt Mitarbeiterdatensaetze vor Patienten', async () => {
@@ -143,8 +154,9 @@ describe('RLS: Accounts und Rollen', () => {
     );
     expect(eigene.rows.map((r) => r.role_key)).toEqual(['office']);
 
+    // Seit POR-001 ohne die zwei Zeilen `patient` (ADR-023 Punkt 3).
     const alle = await asUser(users.ownerTherapist, 'select id from public.user_roles');
-    expect(alle.rows).toHaveLength(9);
+    expect(alle.rows).toHaveLength(7);
   });
 
   it('unterstuetzt mehrere Rollen pro Benutzer (ADR-004, ADR-014)', async () => {
@@ -218,17 +230,24 @@ describe('Mandantentrennung (ADR-003)', () => {
   //
   // `locations_select_own_org` hatte keinen einzigen Test, obwohl der Client
   // die Tabelle direkt liest. Sie filtert nur nach Organisation und verlangt
-  // keine Praxisrolle - ein Patientenkonto sieht den Standort seiner Praxis
-  // deshalb mit. Das ist hier festgehalten, nicht geaendert: Die Anschrift
-  // der Praxis steht auf jeder Rechnung.
+  // keine Praxisrolle. Seit POR-001 verlangt sie ein Praxiskonto (ADR-023
+  // Punkt 21): Was die Plattform von der Praxis braucht, liefert eine
+  // Projektion.
   // ---------------------------------------------------------------------------
-  it('zeigt jedem angemeldeten Konto der Praxis ihren Standort', async () => {
-    for (const konto of [users.ownerTherapist, users.office, users.therapist, users.patientMax]) {
+  it('zeigt jedem Praxiskonto den Standort seiner Praxis', async () => {
+    for (const konto of [users.ownerTherapist, users.office, users.therapist, users.trainer]) {
       const { rows } = await asUser<{ organization_id: string }>(
         konto,
         'select organization_id from public.locations',
       );
       expect(rows.map((r) => r.organization_id)).toEqual([organizationId]);
+    }
+  });
+
+  it('zeigt einem Konto ohne Praxisrolle weder Standort noch Praxis noch Rollenkatalog', async () => {
+    for (const tabelle of ['locations', 'organizations', 'roles']) {
+      const { rows } = await asUser(users.patientMax, `select 1 from public.${tabelle}`);
+      expect(rows).toEqual([]);
     }
   });
 
