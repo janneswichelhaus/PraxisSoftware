@@ -1,7 +1,7 @@
 # Sichtung — UI-Redesign Übersicht, Termin, Patientenakte
 
 Stand 2026-10-01 · Design-Handoff vom 2026-10-01
-([`../design/handoff-2026-10-01-uebersicht-termin-akte.md`](../design/handoff-2026-10-01-uebersicht-termin-akte.md)),
+([`../design/handoff-2026-10-01-praxissoftware.md`](../design/handoff-2026-10-01-praxissoftware.md)),
 gebaut in den Schritten 0 bis 6 des Auftrags, je Schritt eine Pull Request.
 
 **Deckt ab:** UI-Redesign Schritt 1 (Tokens und Gerüst), Schritt 2 (Bausteine), Schritt 3

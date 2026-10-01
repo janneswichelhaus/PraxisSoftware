@@ -1117,7 +1117,7 @@ describe('Rueckfrage', () => {
 
 /**
  * Die Bausteine aus dem Design-Handoff vom 2026-10-01 (Abschnitte 3 und 5a,
- * `docs/design/handoff-2026-10-01-uebersicht-termin-akte.md`). Die Namen im
+ * `docs/design/handoff-2026-10-01-praxissoftware.md`). Die Namen im
  * Handoff sind deutsch; im Code heißen neue Bausteine englisch
  * (`docs/DEVELOPMENT.md`, „Benennung im Code"): Wegbalken = `TravelBar`,
  * Zeile = `ListRow`, Statuszeichen = `StatusMark`, Fortschrittspunkte =

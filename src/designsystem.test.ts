@@ -335,7 +335,7 @@ describe('Schriftrollen', () => {
 describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   /**
    * Der Handoff erlaubt genau diese neuen Maße (Spezifikation Abschnitt 2,
-   * `docs/design/handoff-2026-10-01-uebersicht-termin-akte.md`). Sie stehen
+   * `docs/design/handoff-2026-10-01-praxissoftware.md`). Sie stehen
    * als Token, damit Seitenkopf, Kachel und Zweispalter denselben Wert lesen
    * statt ihn jeweils in eckigen Klammern zu wiederholen.
    */
