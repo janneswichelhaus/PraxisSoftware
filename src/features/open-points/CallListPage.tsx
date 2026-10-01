@@ -7,6 +7,8 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import {
   appointmentTypeHint,
   formatLocalTimeRange,
@@ -63,9 +65,11 @@ function CallRow({ entry, zurueck }: { entry: CallEntry; zurueck: string }) {
             {name}
           </Link>
         </p>
+        {/* Der Abschnitt sagt schon „Schon mitgeteilt" bzw. „Anzurufen":
+            das Abzeichen nennt nur den Weg bzw. den Ausgang; „Offen" als
+            Regelfall entfällt (UX-005h). */}
         {mitgeteilt ? (
           <Badge ton="positiv">
-            Mitgeteilt:{' '}
             {entry.notified_channels.map((k) => notificationChannelLabels[k].kurz).join(', ')}
           </Badge>
         ) : entry.call_outcome ? (
@@ -73,9 +77,7 @@ function CallRow({ entry, zurueck }: { entry: CallEntry; zurueck: string }) {
             {outcomeLabels[entry.call_outcome]}
             {entry.call_attempts && entry.call_attempts > 1 ? ` (${entry.call_attempts}×)` : ''}
           </Badge>
-        ) : (
-          <Badge>Offen</Badge>
-        )}
+        ) : null}
       </div>
       <p className="text-ink-muted text-sm">
         {/* Nur eine abweichende Terminart steht dran (ANN-192). */}
@@ -245,11 +247,19 @@ export function CallListPage({ user }: { user: CurrentUser }) {
           </section>
         ) : null}
 
-        <p className="text-ink-muted mt-8 max-w-prose text-xs leading-relaxed">
-          „Erreicht, bestätigt“ vermerkt am Termin „telefonisch mitgeteilt“. „Nicht erreicht“ und
-          „Nachricht hinterlassen“ gelten nur für diesen Termin und werden zwei Wochen danach
-          gelöscht. Die Anwendung ruft nicht an und versendet nichts.
-        </p>
+        {/* Nachschlagetext, einmal gelernt - zugeklappt statt auf jeder
+            Liste (UX-005h). */}
+        <details className="group mt-8 max-w-prose">
+          <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink text-sm`}>
+            <Aufklappzeichen />
+            Was wird gespeichert?
+          </summary>
+          <p className="text-ink-muted mt-1 text-xs leading-relaxed">
+            „Erreicht, bestätigt“ vermerkt am Termin „telefonisch mitgeteilt“. „Nicht erreicht“ und
+            „Nachricht hinterlassen“ gelten nur für diesen Termin und werden zwei Wochen danach
+            gelöscht. Die Anwendung ruft nicht an und versendet nichts.
+          </p>
+        </details>
       </div>
     </>
   );

@@ -25,7 +25,6 @@ export function OpenIntakes() {
   return (
     <Section
       titel={data && data.length > 0 ? `Erstaufnahme offen (${data.length})` : 'Erstaufnahme offen'}
-      hinweis="Verordnungsfoto, Anamnesebogen, Datenschutz und Vertrag, Befund und Liege – bis alles in der Akte steht."
     >
       {isPending ? <LoadingState label="Erstaufnahmen werden geladen …" /> : null}
       {isError ? (
@@ -53,7 +52,8 @@ export function OpenIntakes() {
                 </Link>
               </p>
               <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-sm">
-                <span className="text-ink-muted">Offen:</span>
+                {/* Der Abschnitt heißt „Erstaufnahme offen" - ein „Offen:"
+                    je Zeile wiederholte ihn (UX-005h). */}
                 {eintrag.open_items.map((item) => (
                   <Link
                     key={item}

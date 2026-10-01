@@ -259,7 +259,9 @@ function TaskRow({
             </span>
           ) : null}
           {ueberfaellig ? <Badge ton="warnung">Überfällig</Badge> : null}
-          <span>{task.assigned_name ? `Für ${task.assigned_name}` : 'Für alle im Team'}</span>
+          {/* „Für alle im Team" ist der Regelfall und steht nicht an jeder
+              Zeile; nur eine Zuweisung wird genannt (UX-005h). */}
+          {task.assigned_name ? <span>{`Für ${task.assigned_name}`}</span> : null}
           {task.patient_id && task.patient_family_name ? (
             <Link
               to={mitRueckweg(`/patienten/${task.patient_id}`, '/offen')}
@@ -354,7 +356,6 @@ export function Tasks({
   return (
     <Section
       titel={liste.length > 0 ? `Aufgaben (${liste.length})` : 'Aufgaben'}
-      hinweis="Wiedervorlagen und Erledigungen, auf Wunsch mit Bezug auf eine Person."
       aktion={
         formular === 'neu' ? null : (
           <Button

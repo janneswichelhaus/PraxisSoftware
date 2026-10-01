@@ -114,7 +114,8 @@ describe('Offene Punkte - Aufgaben (PRX-012)', () => {
     expect(screen.getByRole('heading', { name: 'Aufgaben (2)' })).toBeInTheDocument();
     expect(screen.getByText('Überfällig')).toBeInTheDocument();
     expect(screen.getByText('Heute fällig')).toBeInTheDocument();
-    expect(screen.getByText('Für alle im Team')).toBeInTheDocument();
+    // Ohne Zuweisung steht nichts - „Für alle im Team" ist der Regelfall (UX-005h).
+    expect(screen.queryByText('Für alle im Team')).toBeNull();
     expect(screen.getByRole('link', { name: 'Max Mustermann' })).toHaveAttribute(
       'href',
       '/patienten/66666666-6666-4666-8666-000000000001?zurueck=%2Foffen',

@@ -46,8 +46,16 @@ export function Tageskarte({
   const adresse = adressZeilen(termin);
   const nummern = rufnummern(termin);
   const grund = offenGrund(termin);
+  // Eine Fehlzeit ohne Bezeichnung heißt in der Namenszeile schon „Fehlzeit"
+  // und braucht das Wort nicht zweimal (UX-005h).
   const einordnung = [
-    termin.kind === 'internal' ? 'Fehlzeit' : termin.kind === 'training' ? 'Training' : null,
+    termin.kind === 'internal'
+      ? termin.title
+        ? 'Fehlzeit'
+        : null
+      : termin.kind === 'training'
+        ? 'Training'
+        : null,
     appointmentTypeHint(termin.appointment_type),
     termin.location_name,
   ]
@@ -62,7 +70,11 @@ export function Tageskarte({
           {/* §8.1: abweichende Länge gekennzeichnet (CAL-020). */}
           <Laengenzeichen termin={termin} />
         </p>
-        <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
+        {/* „Steht aus" ist unter „Offen heute" der Regelfall und sagt nichts;
+            nur ein abweichender Zustand trägt ein Abzeichen (UX-005h). */}
+        {termin.status === 'confirmed' ? null : (
+          <Badge ton={dayPlanStatusTon[termin.status]}>{dayPlanStatusLabels[termin.status]}</Badge>
+        )}
       </div>
 
       {/* Eine Fehlzeit des Praxisbetriebs hat keine Akte, in die ein Link
@@ -82,7 +94,7 @@ export function Tageskarte({
               {termin.training_given_name} {termin.training_family_name}
             </Textlink>
           ) : (
-            '—'
+            'Trainingstermin'
           )
         ) : termin.kind === 'internal' || !termin.patient_id ? (
           (termin.title ?? 'Fehlzeit')

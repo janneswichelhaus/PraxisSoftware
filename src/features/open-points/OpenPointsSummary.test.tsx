@@ -45,7 +45,8 @@ describe('OpenPointsSummary', () => {
         '2 überfällige Aufgaben · 1 Aufgabe heute fällig · 1 Verordnung zu erfassen',
       ),
     ).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zu den offenen Punkten' })).toHaveAttribute(
+    // Die Zeile selbst ist der Link (UX-005h).
+    expect(screen.getByRole('link', { name: /^Offene Punkte: 2 überfällige/ })).toHaveAttribute(
       'href',
       '/offen',
     );
