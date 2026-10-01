@@ -47,7 +47,10 @@ test.describe('Trainingsabrechnung', () => {
       await page.setViewportSize({ width: breite, height: 900 });
 
       await page.goto(`${PRUEFSEITE}?seite=rechnung`);
-      await expect(page.getByText('Leistung für: Tina Trainingskundin')).toBeVisible();
+      // Geht die Rechnung an die Person selbst, steht ihr Name nur einmal, als
+      // Empfängerin - die Zeile „Leistung für“ entfällt (UX-005i).
+      await expect(page.getByText('Tina Trainingskundin').first()).toBeVisible();
+      await expect(page.getByText('Leistung für: Tina Trainingskundin')).toHaveCount(0);
       await expect(page.getByText(/geht an die Kund:in selbst/)).toBeVisible();
       await expect(page.getByLabel(/Rechnung geht an/)).toHaveCount(0);
       expect(await ueberlaeuft(page)).toBe(false);
