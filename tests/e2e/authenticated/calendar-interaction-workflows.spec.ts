@@ -116,20 +116,22 @@ test.describe('CAL-006: Darstellung', () => {
     }
   });
 
-  test('zeigt in der Wochenansicht sieben Tagesspalten einer Person', async ({ page }) => {
+  test('zeigt in der Wochenansicht die Tagesspalten einer Person', async ({ page }) => {
     const tag = mittwoch();
 
     await anmelden(page, KONTEN.office);
     await page.goto(`/kalender?ansicht=woche&datum=${tag}`);
 
-    await expect(
-      page.getByRole('region', { name: 'Wochenansicht einer behandelnden Person' }),
-    ).toBeVisible();
-    await expect(
-      page
-        .getByRole('region', { name: 'Wochenansicht einer behandelnden Person' })
-        .getByRole('group'),
-    ).toHaveCount(7);
+    const woche = page.getByRole('region', { name: 'Wochenansicht einer behandelnden Person' });
+    await expect(woche).toBeVisible();
+    // Mo–Fr stehen immer da; Samstag und Sonntag nur mit einem Termin der
+    // gezeigten Person (Design-Handoff 2026-10-01, Abschnitt 7a; ANN-202).
+    for (const wochentag of [/^Mo\b/, /^Di\b/, /^Mi\b/, /^Do\b/, /^Fr\b/]) {
+      await expect(woche.getByRole('group', { name: wochentag })).toHaveCount(1);
+    }
+    const spalten = await woche.getByRole('group').count();
+    expect(spalten).toBeGreaterThanOrEqual(5);
+    expect(spalten).toBeLessThanOrEqual(7);
 
     // In der Woche gibt es kein "Alle": es steht immer genau eine Person im Gitter.
     const auswahl = page.getByLabel('Behandelnde Person');
