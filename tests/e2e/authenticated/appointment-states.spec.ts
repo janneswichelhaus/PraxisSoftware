@@ -138,7 +138,7 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
-    await expect(detailWert(page, 'Absage eingegangen')).not.toBeEmpty();
+    await expect(detailWert(page, 'Eingegangen')).not.toBeEmpty();
     await expect(page.getByText('Gebühr vorgemerkt')).toHaveCount(0);
   });
 
@@ -169,7 +169,7 @@ test.describe('CAL-014c: Absage unter 24 Stunden', () => {
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
-    await expect(detailWert(page, 'Absage eingegangen')).toContainText('08:00');
+    await expect(detailWert(page, 'Eingegangen')).toContainText('08:00');
   });
 });
 
