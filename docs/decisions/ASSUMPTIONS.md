@@ -2338,3 +2338,15 @@ Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `symbolknopfKlassen` und `kartenAktionKlassen` in `src/components/ui/buttonStile.ts`; Test `bausteine.test.tsx` („nie 40").
 
 **Änderungspfad.** Eine Größe `dicht` (40 px) in `buttonStile.ts` ergänzen und nur am Rechner verwenden · Aufwand `klein`.
+
+### ANN-200 — Die bisherigen Einträge auf der Schreibseite öffnen nie von selbst
+
+Datenschutz · offen · 2026-10-01 · — · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 12)
+
+**Annahme.** Auf der Schreibseite stehen die bisherigen Einträge der Person hinter „Verlauf" in der Fußleiste: am Telefon als Blatt, ab 640 px als Spalte. Gelesen wird erst, wenn jemand das Blatt öffnet – über denselben Lesepfad wie der Behandlungsverlauf der Akte, der jeden gezeigten Eintrag als `treatment_note.viewed` protokolliert. Der Handoff lässt die Spalte am Rechner von selbst offen; hier bleibt sie zu, bis jemand sie öffnet. Gezeigt werden die Einträge der jüngsten 20 Termine ohne den gerade dokumentierten. Der Satz zur Folge des Festschreibens steht nicht mehr sichtbar über dem Knopf, sondern als Beschreibung des Knopfes für Vorlesesoftware.
+
+**Begründung.** Wie beim Kurzblick (ANN-137) folgt ein protokolliertes Lesen klinischer Einträge einer Handlung, nicht dem Öffnen einer Seite; sonst stünde in jedem Protokoll ein Lesen, das niemand wollte, und am Rechner im Büro läse die Seite mit. ADR-016 Punkt 4 verlangt einen ausdrücklichen Schritt; der Knopf heißt nach dem, was er tut („Festschreiben"), und die Folge bleibt für Vorlesesoftware am Knopf (DOK-20).
+
+**Anker.** `BisherigeEintraege` in `src/features/documentation/BisherigeEintraege.tsx`, eingehängt in `CompleteTreatmentPage.tsx`; Test `CompleteTreatmentPage.test.tsx` („liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet").
+
+**Änderungspfad.** Ab 640 px offen beginnen: Anfangswert von `verlaufOffen` an die Breite binden · Aufwand `klein`.

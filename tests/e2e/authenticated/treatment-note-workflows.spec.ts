@@ -50,11 +50,11 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -71,16 +71,16 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
 
     await page.getByRole('link', { name: 'Dokumentation bearbeiten' }).click();
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(ENTWURF);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ERGAENZT);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText(ERGAENZT)).toBeVisible();
@@ -101,23 +101,23 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: noch nicht gespeichert.');
-    await page.getByRole('link', { name: 'Abbrechen' }).click();
+    await page.getByRole('link', { name: 'Zurück' }).click();
 
     const rueckfrage = page.getByRole('group', { name: 'Ungespeicherte Dokumentation' });
     await expect(rueckfrage).toContainText('noch nicht gespeichert');
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
-    // „Hier bleiben" lässt Seite und Text stehen.
-    await rueckfrage.getByRole('button', { name: 'Hier bleiben' }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    // „Weiterschreiben" lässt Seite und Text stehen.
+    await rueckfrage.getByRole('button', { name: 'Weiterschreiben' }).click();
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(
       'Synthetisch: noch nicht gespeichert.',
     );
 
-    await page.getByRole('link', { name: 'Abbrechen' }).click();
-    await rueckfrage.getByRole('button', { name: 'Verwerfen und weitergehen' }).click();
+    await page.getByRole('link', { name: 'Zurück' }).click();
+    await rueckfrage.getByRole('button', { name: 'Verwerfen', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText('Synthetisch: noch nicht gespeichert.')).toHaveCount(0);
   });
@@ -139,7 +139,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     // Knopf im Abschnitt (UX-005g nimmt ihn nur am offenen Termin weg).
     await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
     await expect(page.getByText(ENTWURF)).toBeVisible();
   });
@@ -151,9 +151,9 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     const terminId = await terminAnlegen(page, laufTag(4));
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
@@ -175,9 +175,9 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     const terminId = await terminAnlegen(page, laufTag(5));
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     const officeToken = await zugriffstoken(request, KONTEN.office);
@@ -218,9 +218,9 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     const terminId = await terminAnlegen(page, laufTag(7));
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     // Gaebe es einen direkten Tabellenzugriff, liesse sich klinischer Freitext
@@ -256,7 +256,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     const terminId = await terminAnlegen(page, tag);
     // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
     // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(text);
     return terminId;
   }
@@ -271,9 +271,9 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await page.getByRole('link', { name: 'Kalender' }).first().click();
 
     await expect(rueckfrage(page)).toBeVisible();
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
-    await rueckfrage(page).getByRole('button', { name: 'Speichern und weitergehen' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Speichern und weiter' }).click();
 
     // Erst gespeichert, dann weitergegangen - und ausdruecklich nur als
     // Entwurf: Der Termin bleibt bestaetigt (ADR-016).
@@ -296,15 +296,15 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
     await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 
     await page.goBack();
 
     await expect(rueckfrage(page)).toBeVisible();
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
 
-    await rueckfrage(page).getByRole('button', { name: 'Verwerfen und weitergehen' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Verwerfen', exact: true }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
     await expect(page.getByText('Synthetisch: Zurueck-Taste.')).toHaveCount(0);
   });
@@ -325,12 +325,12 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await abmeldenKnopf.click();
 
-    await expect(rueckfrage(page)).toContainText('Beim Abmelden geht er verloren');
-    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await expect(rueckfrage(page)).toContainText('Text noch nicht gespeichert – abmelden?');
+    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
     // Die Sitzung besteht noch: Die Kopfzeile ist da, die Anmeldemaske nicht.
     await expect(abmeldenKnopf).toBeVisible();
 
-    await rueckfrage(page).getByRole('button', { name: 'Hier bleiben' }).click();
+    await rueckfrage(page).getByRole('button', { name: 'Weiterschreiben' }).click();
     await expect(rueckfrage(page)).toHaveCount(0);
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(text);
 
@@ -364,17 +364,13 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   test('zeigt die Rueckfrage auf Telefon, Tablet und Bildschirm greifbar', async ({ page }) => {
     await mitOffenemText(page, laufTag(11), 'Synthetisch: Breitenpruefung.');
 
-    await page.getByRole('link', { name: 'Abbrechen' }).click();
+    await page.getByRole('link', { name: 'Zurück' }).click();
     await expect(rueckfrage(page)).toBeVisible();
 
     await pruefeBreiten(page, async () => {
       await expect(rueckfrage(page)).toBeVisible();
-      for (const name of [
-        'Speichern und weitergehen',
-        'Verwerfen und weitergehen',
-        'Hier bleiben',
-      ]) {
-        const knopf = rueckfrage(page).getByRole('button', { name });
+      for (const name of ['Speichern und weiter', 'Verwerfen', 'Weiterschreiben']) {
+        const knopf = rueckfrage(page).getByRole('button', { name, exact: true });
         await expect(knopf).toBeVisible();
         const hoehe = await knopf.evaluate((el) => el.getBoundingClientRect().height);
         expect(hoehe).toBeGreaterThanOrEqual(44);

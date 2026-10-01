@@ -65,6 +65,7 @@ export function BausteinFeld({
   gesperrt,
   meldung,
   ebene = 2,
+  streifen,
 }: {
   bausteine: BausteinAuswahl;
   onUebernehmen: (text: string) => void;
@@ -77,6 +78,13 @@ export function BausteinFeld({
    * folgt das Feld unmittelbar auf den Seitentitel (h1), also h2.
    */
   ebene?: 2 | 3;
+  /**
+   * Als Streifen unter der Chipzeile der Schreibseite (Design-Handoff
+   * 2026-10-01, Abschnitt 6a): kein eigener Aufklapper - geöffnet wird über
+   * den Chip „+ Befund" der Seite. Ausgeblendet bleibt das Feld eingehängt,
+   * damit Region und Angaben beim Zuklappen nicht verloren gehen.
+   */
+  streifen?: { offen: boolean } | undefined;
 }) {
   const { regionen, auswahl, seitenwahl, setzen, seiteWaehlen, leeren, text } = bausteine;
   const [regionId, setRegionId] = useState<string | null>(null);
@@ -94,6 +102,120 @@ export function BausteinFeld({
   const wahl = region ? seitenwahl[region.id] : undefined;
   const wartetAufSeite = region !== undefined && seitlicheRegion(region) && wahl === undefined;
 
+  const inhalt = (
+    <fieldset
+      disabled={gesperrt}
+      aria-label="Befund aus Bausteinen"
+      className={`m-0 flex min-w-0 flex-col gap-4 border-0 px-4 ${streifen ? 'py-3' : 'pb-4'}`}
+    >
+      <div role="group" aria-label="Region" className="flex flex-wrap gap-2">
+        {regionen.map((r) => {
+          const zahl = r.blocks.reduce((summe, b) => summe + angabenImBlock(b, auswahl), 0);
+          return (
+            <Button
+              key={r.id}
+              type="button"
+              groesse="kompakt"
+              variant={r.id === regionId ? 'primary' : 'secondary'}
+              aria-pressed={r.id === regionId}
+              onClick={() => setRegionId(r.id === regionId ? null : r.id)}
+            >
+              {zahl > 0 ? `${r.label} · ${zahl}` : r.label}
+            </Button>
+          );
+        })}
+      </div>
+
+      {region && seitlicheRegion(region) ? (
+        <SeitenWahl region={region} wahl={wahl} onWahl={(seite) => seiteWaehlen(region, seite)} />
+      ) : null}
+
+      {region === undefined ? (
+        <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
+      ) : wartetAufSeite ? (
+        <p className="text-ink-muted text-sm">
+          Seite wählen – sie gilt für alle Tests und Techniken der Region.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-2">
+          {region.blocks.map((block) => (
+            <Block
+              key={`${region.id}.${block.id}`}
+              region={region}
+              block={block}
+              wahl={wahl}
+              auswahl={auswahl}
+              setzen={setzen}
+            />
+          ))}
+        </div>
+      )}
+
+      {text ? (
+        <Section titel="Vorschlag für den Eintrag" ebene={ebene}>
+          <div className="flex flex-col gap-3">
+            {/* Eine Auskunft, kein vertiefter Bedienbereich: auf Papier mit
+                  Linie (UI-002c, BEF-18). */}
+            <p className="bg-surface border-line rounded-card text-ink border p-3 text-sm wrap-anywhere whitespace-pre-wrap">
+              {text}
+            </p>
+            {streifen ? null : (
+              <p className="text-ink-muted text-sm">
+                Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
+                verworfen ist. Nur wer die Seite verlässt und dort „Speichern und weitergehen“
+                wählt, bekommt ihn an den Entwurf angehängt, damit nichts verloren geht.
+              </p>
+            )}
+            {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
+            {messwertFalsch ? (
+              <Statusmeldung ton="warnung">
+                Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
+              </Statusmeldung>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <Button
+                type="button"
+                variant={streifen ? 'primary' : 'secondary'}
+                groesse={streifen ? 'kompakt' : 'normal'}
+                disabled={messwertFalsch}
+                onClick={() => {
+                  onUebernehmen(text);
+                  leeren();
+                }}
+              >
+                {streifen ? 'Übernehmen' : 'In den Text übernehmen'}
+              </Button>
+              {/* Verwerfen nimmt Regionen, Seitenwahl, Messwerte und Notizen
+                    auf einmal - erst nach einer Rückfrage (BEF-01). */}
+              <Rueckfrage
+                ausloeser="Verwerfen"
+                ausloeserVariante="quiet"
+                bezeichnung="Alle Angaben aus den Bausteinen verwerfen"
+                bestaetigen="Ja, alle Angaben verwerfen"
+                onBestaetigen={leeren}
+              >
+                Alle gewählten Ergebnisse, Messwerte, Notizen und die Seitenwahl werden verworfen.
+                Im Text steht davon nichts.
+              </Rueckfrage>
+            </div>
+          </div>
+        </Section>
+      ) : null}
+    </fieldset>
+  );
+
+  if (streifen) {
+    return (
+      <div
+        id="befund-streifen"
+        hidden={!streifen.offen}
+        className="nicht-drucken bg-canvas border-line border-b"
+      >
+        {inhalt}
+      </div>
+    );
+  }
+
   return (
     <details
       ref={feldRef}
@@ -104,103 +226,7 @@ export function BausteinFeld({
         Befund aus Bausteinen
         {anzahl > 0 ? <Badge ton="akzent">{`${anzahl} angegeben`}</Badge> : null}
       </summary>
-
-      <fieldset
-        disabled={gesperrt}
-        aria-label="Befund aus Bausteinen"
-        className="m-0 flex min-w-0 flex-col gap-4 border-0 px-4 pb-4"
-      >
-        <div role="group" aria-label="Region" className="flex flex-wrap gap-2">
-          {regionen.map((r) => {
-            const zahl = r.blocks.reduce((summe, b) => summe + angabenImBlock(b, auswahl), 0);
-            return (
-              <Button
-                key={r.id}
-                type="button"
-                groesse="kompakt"
-                variant={r.id === regionId ? 'primary' : 'secondary'}
-                aria-pressed={r.id === regionId}
-                onClick={() => setRegionId(r.id === regionId ? null : r.id)}
-              >
-                {zahl > 0 ? `${r.label} · ${zahl}` : r.label}
-              </Button>
-            );
-          })}
-        </div>
-
-        {region && seitlicheRegion(region) ? (
-          <SeitenWahl region={region} wahl={wahl} onWahl={(seite) => seiteWaehlen(region, seite)} />
-        ) : null}
-
-        {region === undefined ? (
-          <p className="text-ink-muted text-sm">Region wählen, um die Tests aufzuklappen.</p>
-        ) : wartetAufSeite ? (
-          <p className="text-ink-muted text-sm">
-            Seite wählen – sie gilt für alle Tests und Techniken der Region.
-          </p>
-        ) : (
-          <div className="flex flex-col gap-2">
-            {region.blocks.map((block) => (
-              <Block
-                key={`${region.id}.${block.id}`}
-                region={region}
-                block={block}
-                wahl={wahl}
-                auswahl={auswahl}
-                setzen={setzen}
-              />
-            ))}
-          </div>
-        )}
-
-        {text ? (
-          <Section titel="Vorschlag für den Eintrag" ebene={ebene}>
-            <div className="flex flex-col gap-3">
-              {/* Eine Auskunft, kein vertiefter Bedienbereich: auf Papier mit
-                  Linie (UI-002c, BEF-18). */}
-              <p className="bg-surface border-line rounded-card text-ink border p-3 text-sm wrap-anywhere whitespace-pre-wrap">
-                {text}
-              </p>
-              <p className="text-ink-muted text-sm">
-                Gespeichert und abgeschlossen wird erst, wenn der Vorschlag im Text steht oder
-                verworfen ist. Nur wer die Seite verlässt und dort „Speichern und weitergehen“
-                wählt, bekommt ihn an den Entwurf angehängt, damit nichts verloren geht.
-              </p>
-              {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
-              {messwertFalsch ? (
-                <Statusmeldung ton="warnung">
-                  Ein Messwert ist keine Zahl. Bitte korrigieren, dann übernehmen.
-                </Statusmeldung>
-              ) : null}
-              <div className="flex flex-wrap gap-3">
-                <Button
-                  type="button"
-                  variant="secondary"
-                  disabled={messwertFalsch}
-                  onClick={() => {
-                    onUebernehmen(text);
-                    leeren();
-                  }}
-                >
-                  In den Text übernehmen
-                </Button>
-                {/* Verwerfen nimmt Regionen, Seitenwahl, Messwerte und Notizen
-                    auf einmal - erst nach einer Rückfrage (BEF-01). */}
-                <Rueckfrage
-                  ausloeser="Verwerfen"
-                  ausloeserVariante="quiet"
-                  bezeichnung="Alle Angaben aus den Bausteinen verwerfen"
-                  bestaetigen="Ja, alle Angaben verwerfen"
-                  onBestaetigen={leeren}
-                >
-                  Alle gewählten Ergebnisse, Messwerte, Notizen und die Seitenwahl werden verworfen.
-                  Im Text steht davon nichts.
-                </Rueckfrage>
-              </div>
-            </div>
-          </Section>
-        ) : null}
-      </fieldset>
+      {inhalt}
     </details>
   );
 }

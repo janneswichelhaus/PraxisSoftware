@@ -115,7 +115,11 @@ function Eintrag({
       <div className="mt-4 flex flex-wrap items-start gap-3">
         {darfSchreiben && !final ? (
           <ButtonLink
-            to={mit(istNachtrag ? `${basis}/${note.id}/bearbeiten` : basis)}
+            to={mit(
+              istNachtrag
+                ? `${basis}/${note.id}/bearbeiten`
+                : `/termine/${appointment.id}/abschluss`,
+            )}
             variant="secondary"
           >
             {istNachtrag ? 'Nachtrag bearbeiten' : 'Dokumentation bearbeiten'}
@@ -273,7 +277,7 @@ export function TreatmentNoteSection({
           ) : null}
           {anlegenHier ? (
             <ButtonLink
-              to={mitRueckweg(`/termine/${appointment.id}/dokumentation`, rueckweg)}
+              to={mitRueckweg(`/termine/${appointment.id}/abschluss`, rueckweg)}
               {...(leerHinweis ? { className: 'mt-3' } : {})}
             >
               Dokumentation anlegen

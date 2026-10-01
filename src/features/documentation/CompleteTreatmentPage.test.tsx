@@ -3,6 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { focusManager } from '@tanstack/react-query';
 import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as LageApi from '@/features/appointments/abrechnungslage-api';
 import type * as DokumentationApi from './api';
 import type * as Bausteine from './textbausteine';
 import type * as RouterModul from 'react-router-dom';
@@ -48,6 +49,14 @@ const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
 const fetchTextSnippets = vi.fn();
+const fetchAbrechnungslage = vi.fn();
+const fetchPatientTreatmentNotesPage = vi.fn();
+
+vi.mock('@/features/appointments/abrechnungslage-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof LageApi>()),
+  fetchAbrechnungslage: (id: string) =>
+    fetchAbrechnungslage(id) as Promise<LageApi.Abrechnungslage | null>,
+}));
 
 vi.mock('./textbausteine', async (importOriginal) => {
   const actual = await importOriginal<typeof Bausteine>();
@@ -75,6 +84,10 @@ vi.mock('./api', async (importOriginal) => {
     completeTreatment: (...args: unknown[]) => completeTreatment(...args) as Promise<void>,
     createTreatmentNote: (...args: unknown[]) => createTreatmentNote(...args) as Promise<string>,
     updateTreatmentNote: (...args: unknown[]) => updateTreatmentNote(...args) as Promise<void>,
+    fetchPatientTreatmentNotesPage: (...args: unknown[]) =>
+      fetchPatientTreatmentNotesPage(...args) as Promise<
+        DokumentationApi.PatientTreatmentNotesEntry[]
+      >,
   };
 });
 
@@ -108,6 +121,10 @@ describe('CompleteTreatmentPage', () => {
     updateTreatmentNote.mockReset();
     navigate.mockReset();
     fetchTextSnippets.mockReset();
+    fetchAbrechnungslage.mockReset();
+    fetchAbrechnungslage.mockResolvedValue(null);
+    fetchPatientTreatmentNotesPage.mockReset();
+    fetchPatientTreatmentNotesPage.mockResolvedValue([]);
     fetchTextSnippets.mockResolvedValue([
       {
         id: 'b1',
@@ -125,11 +142,88 @@ describe('CompleteTreatmentPage', () => {
     updateTreatmentNote.mockResolvedValue(undefined);
   });
 
-  it('nennt die Folge, bevor abgeschlossen wird', async () => {
+  it('ist eine Schreibfläche: Name im Kopf, Feld, Fußleiste mit Entwurf und Festschreiben (Handoff 6a)', async () => {
     rendern();
-    expect(
-      await screen.findByText(/als Version 1 festgeschrieben|Bestandteil der Patientenakte/),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+    expect(screen.getByText(/^Dokumentation · \S+ \d{2}\.\d{2}\. · /)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Entwurf' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Festschreiben' })).toBeInTheDocument();
+    // Keine Hinweise, keine Folgen-Kästen, kein „Abbrechen" neben dem Pfeil.
+    expect(screen.queryByText(/geschieht zweierlei/)).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Abbrechen' })).toBeNull();
+  });
+
+  it('nennt „Termin n von m" im Kopf, wenn die Grundlage geladen ist', async () => {
+    fetchAbrechnungslage.mockResolvedValue({
+      appointment_id: TERMIN_ID,
+      treatment_basis_id: null,
+      treatment_basis_kind: null,
+      treatment_basis_issued_on: null,
+      basis_position: 2,
+      basis_appointment_count: 6,
+      billing_visible: false,
+      recipient_kind: null,
+    });
+    rendern();
+    expect(await screen.findByText(/Termin 2 von 6/)).toBeInTheDocument();
+  });
+
+  it('liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet (ANN-200)', async () => {
+    const rahmen = {
+      ends_at: '2027-05-12T09:00:00.000Z',
+      appointment_type: 'home_visit',
+      staff_given_name: 'Anna',
+      staff_family_name: 'Beispiel',
+      organization_time_zone: 'Europe/Berlin',
+    };
+    fetchPatientTreatmentNotesPage.mockResolvedValue([
+      {
+        ...rahmen,
+        appointment_id: TERMIN_ID,
+        starts_at: '2027-05-12T08:00:00.000Z',
+        appointment_status: 'confirmed',
+        notes: [entwurf],
+      },
+      {
+        ...rahmen,
+        appointment_id: 'vorher',
+        starts_at: '2027-05-05T08:00:00.000Z',
+        appointment_status: 'documented',
+        notes: [
+          {
+            ...entwurf,
+            id: 'n-vorher',
+            appointment_id: 'vorher',
+            status: 'final',
+            version_count: 1,
+            content: 'Letzte Woche: Gangschule.',
+          },
+        ],
+      },
+    ]);
+    const user = userEvent.setup();
+    rendern();
+    const verlauf = await screen.findByRole('button', { name: /^Verlauf/ });
+    expect(verlauf).toHaveAttribute('aria-expanded', 'false');
+    expect(fetchPatientTreatmentNotesPage).not.toHaveBeenCalled();
+
+    await user.click(verlauf);
+    expect(await screen.findByText('Letzte Woche: Gangschule.')).toBeInTheDocument();
+    expect(screen.getByText('Lesen protokolliert')).toBeInTheDocument();
+    expect(screen.getByText('Version 1')).toBeInTheDocument();
+    // Der Eintrag dieses Termins steht im Feld, nicht noch einmal im Verlauf.
+    expect(screen.queryByText('Bereits geschriebener Entwurf')).toBeNull();
+    expect(screen.getByRole('button', { name: /^Verlauf \(1\)/ })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    expect(screen.getByRole('link', { name: /Verlauf in der Akte/ })).toHaveAttribute(
+      'href',
+      expect.stringMatching(/^\/patienten\/.+\/verlauf\?zurueck=/),
+    );
+
+    await user.click(screen.getByRole('button', { name: 'Bisherige Einträge schließen' }));
+    expect(screen.queryByText('Letzte Woche: Gangschule.')).toBeNull();
   });
 
   it('schliesst Dokumentation und Termin mit einer einzigen Aktion ab', async () => {
@@ -137,7 +231,7 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-    await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
     await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
     expect(completeTreatment).toHaveBeenCalledWith(
@@ -153,25 +247,21 @@ describe('CompleteTreatmentPage', () => {
     expect(updateTreatmentNote).not.toHaveBeenCalled();
     // Zurück zum Termin, der erfährt, was geschehen ist (DOK-15, ZST-17).
     expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
-      state: { meldung: 'Behandlung abgeschlossen.' },
+      state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
     });
   });
 
-  it('behält den Rückweg aus der Übersicht für Kopf, „Abbrechen“ und den Weg danach (DOK-01, ZST-17)', async () => {
+  it('behält den Rückweg aus der Übersicht für den Pfeil und den Weg danach (DOK-01, ZST-17)', async () => {
     const user = userEvent.setup();
     rendern(['therapist'], '?zurueck=%2F');
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Heute geübt.');
-    expect(screen.getByRole('link', { name: /Zurück zur Übersicht/ })).toHaveAttribute('href', '/');
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
-      'href',
-      `/termine/${TERMIN_ID}?zurueck=%2F`,
-    );
+    expect(screen.getByRole('link', { name: 'Zurück' })).toHaveAttribute('href', '/');
 
-    await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
-        state: { meldung: 'Behandlung abgeschlossen.' },
+        state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
       }),
     );
   });
@@ -180,8 +270,8 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     expect(
-      await screen.findByRole('button', { name: 'Behandlung abschließen' }),
-    ).toHaveAccessibleDescription(/Mit dem Abschluss geschieht zweierlei in einem Schritt/);
+      await screen.findByRole('button', { name: 'Festschreiben' }),
+    ).toHaveAccessibleDescription(/als Version 1 fest; der Termin gilt damit als durchgeführt/);
   });
 
   it('uebergibt den Stand eines vorhandenen Entwurfs zur Konflikterkennung', async () => {
@@ -194,7 +284,7 @@ describe('CompleteTreatmentPage', () => {
 
     await user.clear(feld);
     await user.type(feld, 'Neuer Text');
-    await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
     await waitFor(() =>
       expect(completeTreatment).toHaveBeenCalledWith(
@@ -211,7 +301,7 @@ describe('CompleteTreatmentPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    await user.click(await screen.findByRole('button', { name: 'Behandlung abschließen' }));
+    await user.click(await screen.findByRole('button', { name: 'Festschreiben' }));
 
     expect(
       await screen.findByText('Die Behandlungsdokumentation darf nicht leer sein.'),
@@ -224,7 +314,7 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Nur ein Entwurf.');
-    await user.click(screen.getByRole('button', { name: 'Nur als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
     await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledTimes(1));
     expect(completeTreatment).not.toHaveBeenCalled();
@@ -235,12 +325,12 @@ describe('CompleteTreatmentPage', () => {
     );
   });
 
-  it('schuetzt einen ungespeicherten Text beim Abbrechen', async () => {
+  it('schuetzt einen ungespeicherten Text beim Zurückgehen', async () => {
     const user = userEvent.setup();
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Ungespeichert');
-    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+    await user.click(screen.getByRole('link', { name: 'Zurück' }));
 
     // Seit FIX-011 stellt der Navigationsschutz die Rückfrage - für
     // „Abbrechen" wie für jeden anderen Weg aus dieser Seite heraus.
@@ -248,7 +338,9 @@ describe('CompleteTreatmentPage', () => {
       await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
     ).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: 'Hier bleiben' }));
+    // Als Zeile über der Fußleiste (Handoff 6a), mit denselben drei Wegen.
+    expect(screen.getByText('Text noch nicht gespeichert.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Weiterschreiben' }));
     expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Ungespeichert');
   });
 
@@ -263,8 +355,8 @@ describe('CompleteTreatmentPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Ungespeichert');
-    await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
-    await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+    await user.click(screen.getByRole('link', { name: 'Zurück' }));
+    await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
 
     await waitFor(() =>
       expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Ungespeichert'),
@@ -272,10 +364,21 @@ describe('CompleteTreatmentPage', () => {
     expect(completeTreatment).not.toHaveBeenCalled();
   });
 
-  it('sagt am bereits abgeschlossenen Termin, dass nur noch dokumentiert wird', async () => {
+  it('schreibt am bereits abgeschlossenen Termin („Doku offen") mit demselben Knopf fest', async () => {
     fetchAppointment.mockResolvedValue({ ...termin, status: 'completed' });
+    const user = userEvent.setup();
     rendern();
-    expect(await screen.findByText(/bereits abgeschlossen/)).toBeInTheDocument();
+    await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Nachgetragen.');
+    await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
+    await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
+  });
+
+  it('weist einen nicht angetroffenen Termin ohne Eintrag ruhig ab', async () => {
+    fetchAppointment.mockResolvedValue({ ...termin, status: 'no_show' });
+    rendern();
+    expect(await screen.findByText('Nicht angetroffen')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Eintrag zur Behandlung')).toBeNull();
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('weist einen abgesagten Termin ab', async () => {
@@ -348,7 +451,7 @@ describe('CompleteTreatmentPage', () => {
         });
         return Promise.resolve();
       });
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
       await waitFor(() => expect(navigate).toHaveBeenCalled());
       expect(screen.queryByText(/inzwischen finalisiert/)).toBeNull();
@@ -423,7 +526,8 @@ describe('CompleteTreatmentPage', () => {
       expect(
         await screen.findByText(/Tür geöffnet, Behandlung auf Angabe der Patient:in nicht/),
       ).toBeInTheDocument();
-      expect(screen.getByText(/eine Ausfallgebühr\s+entsteht nicht/)).toBeInTheDocument();
+      expect(screen.getByText(/Kein\s+Ausfallhonorar/)).toBeInTheDocument();
+      expect(screen.getByText(/^Ohne Behandlung · /)).toBeInTheDocument();
     });
 
     it('uebergibt den Vermerk an den Abschluss', async () => {
@@ -434,7 +538,7 @@ describe('CompleteTreatmentPage', () => {
         await screen.findByLabelText('Eintrag zur Behandlung'),
         'Tuer geoeffnet, Behandlung abgelehnt.',
       );
-      await user.click(screen.getByRole('button', { name: 'Ohne Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Mit Vermerk festschreiben' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -463,7 +567,7 @@ describe('CompleteTreatmentPage', () => {
 
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Behandelt.');
       // Ohne den Vermerk heisst die Schaltflaeche wieder wie sonst.
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
@@ -486,7 +590,7 @@ describe('CompleteTreatmentPage', () => {
     const VORSCHLAG = 'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test';
 
     async function lachmannPositiv(user: ReturnType<typeof userEvent.setup>) {
-      await user.click(await screen.findByText('Befund aus Bausteinen'));
+      await user.click(await screen.findByRole('button', { name: /^\+ Befund/ }));
       await user.click(screen.getByRole('button', { name: 'Knie' }));
       const seite = screen.getByRole('group', { name: 'Seite Knie' });
       await user.click(within(seite).getByRole('button', { name: 'rechts' }));
@@ -500,11 +604,11 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'In den Text übernehmen' }));
+      await user.click(screen.getByRole('button', { name: 'Übernehmen' }));
 
       const erwartet = `Befund:\n\n${VORSCHLAG}`;
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue(erwartet);
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
           TERMIN_ID,
@@ -521,7 +625,7 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(
         /Vorschlag aus den Bausteinen steht noch nicht im Text/,
@@ -536,7 +640,7 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Nur als Entwurf speichern' }));
+      await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
       expect(await screen.findByRole('alert')).toHaveTextContent(/noch nicht im Text/);
       expect(createTreatmentNote).not.toHaveBeenCalled();
@@ -546,12 +650,12 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern();
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
+      await user.click(screen.getByRole('link', { name: 'Zurück' }));
 
       expect(
         await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
       ).toBeInTheDocument();
-      await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
+      await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
       await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, VORSCHLAG));
       expect(completeTreatment).not.toHaveBeenCalled();
     });
@@ -563,14 +667,14 @@ describe('CompleteTreatmentPage', () => {
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
       await lachmannPositiv(user);
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       await screen.findByRole('alert');
       // Verwerfen fragt seit UXR-009 nach (BEF-01).
       await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
       await user.click(screen.getByRole('button', { name: 'Ja, alle Angaben verwerfen' }));
       expect(screen.queryByRole('alert')).toBeNull();
 
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
       await waitFor(() =>
         expect(completeTreatment).toHaveBeenCalledWith(
           TERMIN_ID,
@@ -588,8 +692,8 @@ describe('CompleteTreatmentPage', () => {
       const user = userEvent.setup();
       rendern();
       await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Befund:');
-      await user.click(screen.getByText('Befund aus Bausteinen'));
-      await user.click(screen.getByRole('button', { name: 'Behandlung abschließen' }));
+      await user.click(screen.getByRole('button', { name: /^\+ Befund/ }));
+      await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
 
       await waitFor(() => expect(completeTreatment).toHaveBeenCalledTimes(1));
       expect(screen.getByRole('group', { name: 'Befund aus Bausteinen' })).toBeDisabled();
@@ -599,7 +703,9 @@ describe('CompleteTreatmentPage', () => {
       fertig();
       await waitFor(() =>
         expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
-          state: { meldung: 'Behandlung abgeschlossen.' },
+          state: {
+            meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.',
+          },
         }),
       );
     });
@@ -607,7 +713,8 @@ describe('CompleteTreatmentPage', () => {
     it('bietet ohne Behandlung keine Bausteine an', async () => {
       rendern(['therapist'], '?ohne-behandlung=1');
       await screen.findByLabelText('Eintrag zur Behandlung');
-      expect(screen.queryByText('Befund aus Bausteinen')).toBeNull();
+      expect(screen.queryByRole('button', { name: /^\+ Befund/ })).toBeNull();
+      expect(screen.queryByRole('group', { name: 'Befund aus Bausteinen' })).toBeNull();
     });
   });
 });

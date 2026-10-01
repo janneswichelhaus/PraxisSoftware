@@ -49,9 +49,9 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
 
   // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
   // Dokumentation allein ist die Route (UX-005g).
-  await page.goto(`/termine/${terminId}/dokumentation`);
+  await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-  await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+  await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
   await expect(page).toHaveURL(`/termine/${terminId}`);
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
