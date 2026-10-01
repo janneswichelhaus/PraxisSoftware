@@ -482,7 +482,7 @@ function LaufendeVerordnung({
       data-angesprungen={angesprungen ? '' : undefined}
       className="group/grundlage"
     >
-      <Card className="group-data-[angesprungen]/grundlage:border-accent">
+      <Card className="group-data-[angesprungen]/grundlage:border-accent @container">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <Verordnungskopf verordnung={verordnung} />
           {/* Ohne Zahlen kein Zustand: „Offen" wäre dann geraten (VER-14).
@@ -500,8 +500,11 @@ function LaufendeVerordnung({
             volle Breite, obwohl in jeder Zeile drei Wörter standen - und sie
             wurde so hoch, dass die zweite Verordnung aus dem Bild fiel. Erst
             ab 1280 px: Bei 1024 px blieben neben der Beschriftungsspalte rund
-            120 px für den Wert (VER-20). */}
-        <div className={`grid gap-x-8 ${weitereAngaben ? 'xl:grid-cols-2' : ''}`}>
+            120 px für den Wert (VER-20). Seit dem Design-Handoff vom
+            2026-10-01 steht neben der Akte eine Kontextspalte; ob zwei
+            Spalten passen, entscheidet deshalb die Breite der Karte selbst
+            (1024 px, `@5xl`), nicht die des Fensters. */}
+        <div className={`grid gap-x-8 ${weitereAngaben ? '@5xl:grid-cols-2' : ''}`}>
           <DetailList>
             <Kontingentzeilen
               kontingent={kontingent}

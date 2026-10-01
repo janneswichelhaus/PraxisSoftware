@@ -111,17 +111,21 @@ export function VerlaufAbschnitt({
               Noch kein abgeschlossener Bogen mit Skalenwerten.
             </p>
           ) : (
-            // Ab 1024 px zwei Bilder nebeneinander (BEF-20): Einspaltig blieb
-            // am Bildschirm rechts die halbe Breite leer.
-            <div className="grid gap-6 lg:grid-cols-2">
-              {reihen.map((reihe) => (
-                <Messreihenbild
-                  key={`${reihe.instrument.meta.id}.${reihe.item.id}`}
-                  reihe={reihe}
-                  ereignisse={ereignisse.data}
-                  termine={termintage}
-                />
-              ))}
+            // Zwei Bilder nebeneinander, sobald der Bereich 672 px breit ist
+            // (BEF-20): Einspaltig blieb am Bildschirm rechts die halbe Breite
+            // leer. Gemessen am Bereich, nicht am Fenster - neben der Akte
+            // steht seit dem Design-Handoff vom 2026-10-01 eine Kontextspalte.
+            <div className="@container">
+              <div className="grid gap-6 @2xl:grid-cols-2">
+                {reihen.map((reihe) => (
+                  <Messreihenbild
+                    key={`${reihe.instrument.meta.id}.${reihe.item.id}`}
+                    reihe={reihe}
+                    ereignisse={ereignisse.data}
+                    termine={termintage}
+                  />
+                ))}
+              </div>
             </div>
           )}
           <Section ebene={3} titel="Ereignisse">

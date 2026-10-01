@@ -48,7 +48,9 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
 
   it('liest nichts, solange er zugeklappt ist', () => {
     renderWithProviders(<Kurzblick appointmentId={TERMIN_ID} />);
-    expect(screen.getByText('Kurzblick für die Vertretung')).toBeInTheDocument();
+    expect(screen.getByText('Vor der Tür')).toBeInTheDocument();
+    // Dass gelesen protokolliert wird, steht schon vor dem Öffnen da.
+    expect(screen.getByText('Lesen wird protokolliert')).toBeVisible();
     expect(fetchKurzblick).not.toHaveBeenCalled();
     expect(screen.queryByText(/Hund im Flur/)).toBeNull();
   });
@@ -57,7 +59,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     const user = userEvent.setup();
     renderWithProviders(<Kurzblick appointmentId={TERMIN_ID} />);
 
-    await user.click(screen.getByText('Kurzblick für die Vertretung'));
+    await user.click(screen.getByText('Vor der Tür'));
 
     expect(await screen.findByText('Synthetisch: Übungen im Stand angeleitet.')).toBeVisible();
     expect(fetchKurzblick).toHaveBeenCalledWith(TERMIN_ID);
@@ -69,13 +71,13 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     expect(screen.getByText('Krankengymnastik: 7 von 10')).toBeVisible();
     // Ein Entwurf bleibt als Entwurf erkennbar.
     expect(screen.getByText('Entwurf')).toBeVisible();
-    expect(screen.getByText(/wird wie jedes Lesen der Dokumentation protokolliert/)).toBeVisible();
+    expect(screen.getByText('Lesen wird protokolliert')).toBeVisible();
   });
 
   it('liest beim erneuten Aufklappen neu - jedes Öffnen ist ein protokolliertes Lesen', async () => {
     const user = userEvent.setup();
     renderWithProviders(<Kurzblick appointmentId={TERMIN_ID} />);
-    const kopf = screen.getByText('Kurzblick für die Vertretung');
+    const kopf = screen.getByText('Vor der Tür');
 
     await user.click(kopf);
     await screen.findByText('Synthetisch: Übungen im Stand angeleitet.');
@@ -105,7 +107,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     const user = userEvent.setup();
     renderWithProviders(<Kurzblick appointmentId={TERMIN_ID} />);
 
-    await user.click(screen.getByText('Kurzblick für die Vertretung'));
+    await user.click(screen.getByText('Vor der Tür'));
 
     expect(await screen.findByText('Noch kein Eintrag vor diesem Termin.')).toBeVisible();
     expect(screen.getByText('Keine Behandlungsgrundlage zugeordnet.')).toBeVisible();
@@ -116,7 +118,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     const user = userEvent.setup();
     renderWithProviders(<Kurzblick appointmentId={TERMIN_ID} />);
 
-    await user.click(screen.getByText('Kurzblick für die Vertretung'));
+    await user.click(screen.getByText('Vor der Tür'));
 
     expect(await screen.findByText('Der Kurzblick konnte nicht geladen werden.')).toBeVisible();
   });

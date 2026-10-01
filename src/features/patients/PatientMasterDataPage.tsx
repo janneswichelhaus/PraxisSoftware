@@ -250,10 +250,12 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
       {/* Der Weg ins Formular steht über den Abschnitten und nicht im Kopf von
           „Person": Er bearbeitet alle Abschnitte, und nebeneinander stehen die
           Köpfe der beiden Spalten so auf derselben Höhe (PAT-B01). */}
-      <div className="mb-6">
+      {/* Rechts über den Abschnitten (Design-Handoff 2026-10-01, Abschnitt 7). */}
+      <div className="mb-6 flex justify-end">
         <ButtonLink
           to={mitRueckweg(`/patienten/${patient.id}/bearbeiten`, hier)}
           variant="secondary"
+          groesse="kompakt"
         >
           Stammdaten bearbeiten
         </ButtonLink>
@@ -265,127 +267,143 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           knapp 100 px - Adresse und Zugangshinweis standen zu ein, zwei Wörtern
           je Zeile, und die Seite lief seitlich über (PAT-B01). Jeder Abschnitt
           steht in einem eigenen Rasterfeld - damit greift `first:mt-0` in
-          jedem Feld und die Spalten beginnen auf derselben Höhe. */}
-      <div className="grid gap-x-8 gap-y-8 xl:grid-cols-2">
-        {/* UX-005e: Das Geburtsdatum steht im Kopf über jedem Bereich und
+          jedem Feld und die Spalten beginnen auf derselben Höhe.
+
+          Seit dem Design-Handoff vom 2026-10-01 steht neben der Akte ab 900 px
+          eine Kontextspalte; ob zwei Spalten passen, entscheidet deshalb die
+          eigene Breite (1024 px, `@5xl`), nicht mehr die des Fensters. Bei
+          1280 px Fensterbreite liefen die Werte sonst wieder zu einzelnen
+          Silben zusammen. */}
+      <div className="@container">
+        <div className="grid gap-x-8 gap-y-8 @5xl:grid-cols-2">
+          {/* UX-005e: Das Geburtsdatum steht im Kopf über jedem Bereich und
             wird hier nicht wiederholt; ein Abschnitt ohne Zeile entfällt. */}
-        {hatPersonAngaben ? (
-          <div>
-            <Section titel="Person" rahmen>
-              <DetailList>
-                {patient.institution ? (
-                  <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
-                ) : null}
-                {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
-                {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
+          {hatPersonAngaben ? (
+            <div>
+              <Section titel="Person" rahmen>
+                <DetailList>
+                  {patient.institution ? (
+                    <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
+                  ) : null}
+                  {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
+                  {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
                   Verorten darf, wer die Stammdaten ändern darf; verbindlich
                   prüft set_patient_address_coordinate (ADR-004). */}
-                {kartenpositionOffen ? (
-                  <DetailRow label="Kartenposition">
-                    <AdresseVerorten patient={patient} />
-                  </DetailRow>
-                ) : null}
-              </DetailList>
+                  {kartenpositionOffen ? (
+                    <DetailRow label="Kartenposition">
+                      <AdresseVerorten patient={patient} />
+                    </DetailRow>
+                  ) : null}
+                </DetailList>
+              </Section>
+            </div>
+          ) : null}
+
+          <div>
+            <Section titel="Kontakt" rahmen>
+              {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
+                sagt das ein Satz statt vier Gedankenstriche. */}
+              {hatKontaktdaten ? (
+                <DetailList>
+                  <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+                  <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
+                  <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
+                  {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
+                  {patient.email ? (
+                    <DetailRow label="E-Mail">
+                      <Textlink
+                        href={`mailto:${patient.email}`}
+                        alleinstehend
+                        className={KONTAKT_IN_DER_ZEILE}
+                      >
+                        {patient.email}
+                      </Textlink>
+                    </DetailRow>
+                  ) : null}
+                </DetailList>
+              ) : (
+                <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
+              )}
             </Section>
           </div>
-        ) : null}
 
-        <div>
-          <Section titel="Kontakt" rahmen>
-            {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
-                sagt das ein Satz statt vier Gedankenstriche. */}
-            {hatKontaktdaten ? (
-              <DetailList>
-                <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
-                <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
-                <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
-                {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
-                {patient.email ? (
-                  <DetailRow label="E-Mail">
-                    <Textlink
-                      href={`mailto:${patient.email}`}
-                      alleinstehend
-                      className={KONTAKT_IN_DER_ZEILE}
-                    >
-                      {patient.email}
-                    </Textlink>
-                  </DetailRow>
-                ) : null}
-              </DetailList>
-            ) : (
-              <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
-            )}
-          </Section>
-        </div>
-
-        {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert die
+          {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert die
             Sicht sie gar nicht erst; der Abschnitt bleibt dann leer und
             verschwindet (ANN-010, ADR-004). Der Zugangshinweis steht zusätzlich
             auf der Übersicht - vor einem Hausbesuch ist er die Angabe, die man
             unterwegs sucht. Der Abschnitt heißt wie im Formular (PAT-07). */}
-        {/* UX-003a: Die Behandlungsliege steht hier für jede Praxisrolle, auch
+          {/* UX-003a: Die Behandlungsliege steht hier für jede Praxisrolle, auch
             wenn sonst nichts hinterlegt ist - sonst gäbe es keinen Ort, sie
             zu setzen. Dieselbe Rollenmenge wie update_patient; verbindlich
             prüft set_treatment_table_required (ADR-004). */}
-        {hatVersorgungsangaben || darfLiegeSetzen ? (
-          <div>
-            <Section titel="Hausbesuch und Praxisangaben" rahmen>
-              <DetailList>
-                {darfLiegeSetzen ? (
-                  <DetailRow label="Behandlungsliege">
-                    <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
-                  </DetailRow>
-                ) : null}
-                {/* PRX-007: Mitnehmen, von Hand gepflegt (ANN-138). Dieselbe
+          {hatVersorgungsangaben || darfLiegeSetzen ? (
+            <div>
+              <Section titel="Hausbesuch und Praxisangaben" rahmen>
+                <DetailList>
+                  {darfLiegeSetzen ? (
+                    <DetailRow label="Behandlungsliege">
+                      <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
+                    </DetailRow>
+                  ) : null}
+                  {/* PRX-007: Mitnehmen, von Hand gepflegt (ANN-138). Dieselbe
                     Rollenmenge wie die Liege; verbindlich prüft
                     set_take_along_items. */}
-                {darfLiegeSetzen ? (
-                  <DetailRow label="Material">
-                    <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
-                  </DetailRow>
-                ) : null}
-                {/* UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der
+                  {darfLiegeSetzen ? (
+                    <DetailRow label="Material">
+                      <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
+                    </DetailRow>
+                  ) : null}
+                  {/* UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der
                     Akte (HausbesuchHinweise) - bearbeitet werden sie weiter im
                     Formular. */}
-                {patient.primary_therapist_name ? (
-                  <DetailRow label="Feste Therapeut:in">{patient.primary_therapist_name}</DetailRow>
-                ) : null}
-                {patient.remark ? <DetailRow label="Bemerkung">{patient.remark}</DetailRow> : null}
-              </DetailList>
-            </Section>
-          </div>
-        ) : null}
+                  {patient.primary_therapist_name ? (
+                    <DetailRow label="Feste Therapeut:in">
+                      {patient.primary_therapist_name}
+                    </DetailRow>
+                  ) : null}
+                  {patient.remark ? (
+                    <DetailRow label="Bemerkung">{patient.remark}</DetailRow>
+                  ) : null}
+                </DetailList>
+              </Section>
+            </div>
+          ) : null}
 
-        <div>
-          <Section titel="Versorgung" rahmen>
-            <DetailList>
-              <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
-              {/* UX-005e: Der Status steht als Ausnahme im Kopf der Akte, der
+          {/* Versorgung und ihre Vorgänge in einem Abschnitt „Verwaltung"
+            (Design-Handoff 2026-10-01, Abschnitt 7): Beginn und Abschluss
+            stehen neben „Als inaktiv markieren" und „Versorgung
+            abschließen", statt darunter in einem eigenen Block.
+            UX-005e: Ohne erklärende Sätze - was ein Vorgang tut, sagt seine
+            Rückfrage, bevor er ausgelöst wird. */}
+          <div>
+            <Section titel="Verwaltung" rahmen>
+              <DetailList>
+                <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
+                {/* UX-005e: Der Status steht als Ausnahme im Kopf der Akte, der
                   Regelfall bekommt keine Zeile. Der Abschluss ist der Anker der
                   zehnjaehrigen Aufbewahrung (ADR-008, LOE-001b) und steht nur,
                   wenn er gesetzt ist - „Laufende Versorgung" war der Regelfall. */}
-              {patient.care_concluded_on ? (
-                <DetailRow label="Abschluss">
-                  {`${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`}
-                </DetailRow>
+                {patient.care_concluded_on ? (
+                  <DetailRow label="Abschluss">
+                    {`${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`}
+                  </DetailRow>
+                ) : null}
+              </DetailList>
+              {darfStatusWechseln || darfAbschliessen ? (
+                <div className="border-line mt-3 flex flex-wrap items-start gap-3 border-t pt-3">
+                  {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
+                  {darfAbschliessen ? (
+                    <VersorgungAbschliessen
+                      patient={patient}
+                      zeitzone={user.organizationTimeZone}
+                    />
+                  ) : null}
+                </div>
               ) : null}
-            </DetailList>
-          </Section>
+            </Section>
+          </div>
         </div>
       </div>
-
-      {/* UX-005e: Ohne erklärende Sätze unter den Überschriften - was ein
-          Vorgang tut, sagt seine Rückfrage, bevor er ausgelöst wird. */}
-      {darfStatusWechseln || darfAbschliessen ? (
-        <Section titel="Verwaltung">
-          <div className="flex flex-wrap items-start gap-3">
-            {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
-            {darfAbschliessen ? (
-              <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
-            ) : null}
-          </div>
-        </Section>
-      ) : null}
 
       {/* POR-002: der eigene Zugang der Person zur Plattform (DSN-001
           Abschnitt 6). Dieselben Rollen wie die Kartei laden ein, sperren und

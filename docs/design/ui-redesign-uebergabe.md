@@ -2,14 +2,14 @@
 
 Stand 2026-10-01 · gilt, bis Schritt 6 gemergt ist; danach löschen.
 
-Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 3 entstanden
+Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 6 entstanden
 sind, und den Download-Ordner des Design-Handoffs. Die Spezifikation steht in
 [`handoff-2026-10-01-uebersicht-termin-akte.md`](handoff-2026-10-01-uebersicht-termin-akte.md);
 die klickbaren Entwürfe (`entwuerfe/`) liegen bewusst nicht im Repository und sind für die
 Schritte 4 bis 6 nicht nötig — die Maße stehen in der Spezifikation.
 
-**Als Nächstes: Schritt 4 (Termin).** Jannes hat ihn noch nicht freigegeben; die neue Session
-beginnt ihn erst auf sein Wort („mach weiter mit Schritt 4").
+**Alle sechs Schritte sind gebaut (2026-10-01).** Offen sind Sichtung, Pull Requests und Merge
+durch Jannes; nach dem Merge von Schritt 6 wird diese Datei gelöscht.
 
 ## Auftrag (aus `AUFTRAG-CLAUDE-CODE.md` des Handoffs, wörtlich)
 
@@ -49,18 +49,19 @@ die kleinste Lösung vor, statt die Spezifikation stillschweigend zu ändern.
 
 ## Stand der Branches
 
-Die vier Branches sind gepusht und **aufeinander gestapelt**; keiner liegt auf `main` (geprüft
+Die fünf Branches sind gepusht und **aufeinander gestapelt**; keiner liegt auf `main` (geprüft
 2026-10-01, `main` bei PR #154, kein Branch liegt hinter `main`). Die Pull Requests öffnet Jannes.
 
-| Schritt | Branch                            | Inhalt                                         |
-| ------- | --------------------------------- | ---------------------------------------------- |
-| 0       | `claude/ui-redesign-0-handoff`    | Spezifikation abgelegt                         |
-| 1       | `claude/ui-redesign-1-geruest`    | Tokens, Kopfzeile, Seitentitel, Karte, Badge   |
-| 2       | `claude/ui-redesign-2-bausteine`  | `TravelBar`, `ListRow`, `StatusMark`, … `Tile` |
-| 3       | `claude/ui-redesign-3-uebersicht` | Übersicht als Zeitstrahl, diese Übergabe       |
+| Schritt | Branch                               | Inhalt                                         |
+| ------- | ------------------------------------ | ---------------------------------------------- |
+| 0       | `claude/ui-redesign-0-handoff`       | Spezifikation abgelegt                         |
+| 1       | `claude/ui-redesign-1-geruest`       | Tokens, Kopfzeile, Seitentitel, Karte, Badge   |
+| 2       | `claude/ui-redesign-2-bausteine`     | `TravelBar`, `ListRow`, `StatusMark`, … `Tile` |
+| 3       | `claude/ui-redesign-3-uebersicht`    | Übersicht als Zeitstrahl, diese Übergabe       |
+| 4       | `claude/ui-redesign-step-3-4-vkmodh` | Termin (Abschnitt 6)                           |
 
-**Schritt 4 zweigt von `claude/ui-redesign-3-uebersicht` ab** (`claude/ui-redesign-4-termin`),
-solange die Schritte davor nicht gemergt sind; sind sie es, von `main`. Vor dem Bauen
+Die Schritte 4 bis 6 liegen auf dem Branch, den die Session vorgab
+(`claude/ui-redesign-step-3-4-vkmodh`), je ein Commit, gestapelt auf Schritt 3. Vor dem Bauen
 `git fetch origin --prune` und prüfen, ob `main` inzwischen weiter ist — dann `main` in den neuen
 Branch hereinnehmen, nicht die alten Branches umschreiben.
 
@@ -78,6 +79,19 @@ Branch hereinnehmen, nicht die alten Branches umschreiben.
 - **Offen bei Jannes:** ANN-195, ANN-196, ANN-197 und die Frage, ob „Liege heute: Nein" stehen
   bleibt (die Spezifikation verlangt die Zeile, UX-EPIC-005 hatte sie gestrichen).
 
+- **Schritt 4 gebaut (2026-10-01):** Kicker „Termin"/„Fehlzeit" über dem Namen (`PageHeader`
+  `kicker`), Kachelreihe 150 px, „Navigation starten →" als Textlink (`NavigationZumTermin`
+  `textlink`), „Vor der Tür" als Karte, Karte „Nach dem Termin", Zustandskarte mit „Termin wieder
+  öffnen", Absage leise am Ende, Abrechnung als Kontextspalte nur für owner/office.
+
+- **Schritt 5 gebaut (2026-10-01):** Kopf der Akte mit Kacheln (`KopfKacheln`), Kontextspalte
+  (`useAktuelleGrundlage`, `useOffeneErstaufnahme`, neuer Baustein `ProgressBar`), Kacheln im
+  Terminbereich, „Vergangene Termine“ als `Disclosure`, Karte „Verwaltung“ in den Stammdaten.
+  Prüfseite `tests/e2e/fixtures/akte.html` (`?bereich=stammdaten`, `?rolle=office`, `?leer=1`).
+
+- **Schritt 6 gebaut (2026-10-01):** `CalendarGrid` – Statuslinie 3 px (`statusLinie`) statt
+  Personenfarbe; `PERSONEN_FARBEN` entfällt. Die Kacheln trugen schon keinen Schatten.
+
 ## Was bereits anders ist als die Spezifikation
 
 Damit die Schritte 4 bis 6 dieselbe Linie halten:
@@ -88,6 +102,14 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
 - Wegbalken-Legende ohne Farbpunkte; kein `ton="dunkel"`.
 - Der Oberflächentext „Mein Tag" ist verboten (`src/lib/begriffe.test.ts`); die versteckte
   Überschrift des Zeitstrahls heißt „Tagesablauf".
+- Termin: keine Karte „Angaben"/„Alle Angaben" (wiederholte den Kopf als Tabelle, die seit
+  UX-005a weg ist); einspaltig, wenn die Abrechnung nicht sichtbar ist. „Vor der Tür" öffnet nie
+  von selbst (jedes Öffnen ist ein protokolliertes Lesen, ANN-137). Die Grundlage bleibt neutral,
+  die Akzentfläche trägt die Ausnahme Praxis-/Videotermin (ANN-192); das Kennzeichen steht dort
+  auf Papier statt als Abzeichen.
+- Akte: siehe [`../sichtung/ui-redesign.md`](../sichtung/ui-redesign.md), „Akte anders als im
+  Handoff“. Wer neben der Kontextspalte steht, wählt seine Spalten über Container-Queries
+  (`@container`, `@5xl`/`@2xl`), nie über die Fensterbreite.
 - Nicht gebaut, im Ideenspeicher (`docs/product/ideen/10-praxisverwaltung.md`): Feld
   `home_visit_floor` (`IDEA-PRX-050`), Wochentakt der Liege (`IDEA-PRX-051`), Abschlussmeldung auf
   der Übersicht (`IDEA-PRX-052`).
@@ -108,10 +130,10 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
 
 ## Prüfen
 
-- **Nachholen, als Erstes:** Der vollständige Lauf `pnpm test` auf `claude/ui-redesign-3-uebersicht`
-  steht aus. Lokal (Windows, Node 24) scheitern 86 Tests an der bekannten „AbortSignal"-Ursache;
-  geprüft wurde dort der Vergleich gegen den unveränderten Stand und zuletzt nur die 23 berührten
-  Dateien. Unter Node 22 muss der Lauf grün sein.
+- Der vollständige Lauf auf Schritt 3 ist nachgeholt (Cloud, Node 22, 2026-10-01): `test` 4061
+  grün, `test:e2e` 249 grün und einer übersprungen.
+- Für `pnpm test:e2e` keinen eigenen `pnpm dev` ohne die Platzhalter offen lassen: Playwright nutzt
+  einen laufenden Server mit, und `login.spec.ts` scheitert dann am Konfigurationsfehler.
 - `pnpm test:e2e` ohne Anmeldung braucht in der Cloud die Platzhalter aus der CI
   (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) und läuft mit einem Worker. Stand Schritt 3
   lokal: 249 grün, einer übersprungen. Die angemeldeten Spezifikationen laufen in der Cloud nicht.
@@ -124,8 +146,5 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
 
 ## Start einer neuen Session
 
-Branch `claude/ui-redesign-3-uebersicht` wählen und schreiben:
-
-> Lies `CLAUDE.md`, `docs/STATUS.md` und `docs/design/ui-redesign-uebergabe.md`. Hole zuerst den
-> vollständigen Testlauf für Schritt 3 nach und berichte. Dann nenne für Schritt 4 (Termin) die
-> Dateien und die sichtbaren Änderungen und baue ihn.
+Nicht mehr nötig: Alle Schritte sind gebaut. Für Nacharbeiten nach der Sichtung den Branch
+`claude/ui-redesign-step-3-4-vkmodh` wählen und die Befunde aus `../sichtung/ui-redesign.md` nennen.

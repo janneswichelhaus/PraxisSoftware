@@ -10,6 +10,7 @@ import { ButtonLink } from './ButtonLink';
 import { Card, Disclosure } from './Card';
 import { EmptyState, ErrorState } from './Feedback';
 import { PageHeader } from './PageHeader';
+import { ProgressBar } from './ProgressBar';
 import { RoleBadge } from './RoleBadge';
 import { kartenAktionKlassen } from './buttonStile';
 import { DetailList, DetailRow } from './DetailList';
@@ -103,6 +104,19 @@ describe('Card', () => {
 });
 
 describe('PageHeader', () => {
+  it('setzt den Kicker über den Titel, nicht in die Überschrift', () => {
+    renderWithProviders(<PageHeader kicker="Termin" title="Berta Bestand" />);
+    const kicker = screen.getByText('Termin');
+    expect(kicker.tagName).toBe('P');
+    expect(kicker).toHaveClass('uppercase', 'text-xs');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName('Berta Bestand');
+    // Der Kicker steht vor dem Titel.
+    expect(
+      kicker.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('haelt den kompakten Kopf flach, ohne die Identitaet wegzunehmen', () => {
     // IDEA-PRX-038: auf den Dokumentationsseiten muss das Textfeld ohne
     // Scrollen erreichbar sein. Gespart wird Hoehe - nicht die Zeile, die
@@ -1724,5 +1738,24 @@ describe('Druck-Basis', () => {
     // Der Link ist ein <a>; die Regel `button { display: none }` im Druck
     // greift dort nicht. Deshalb traegt er die Markierung selbst (UI-000).
     expect(screen.getByRole('link', { name: 'Erfassen' }).className).toContain('nicht-drucken');
+  });
+});
+
+describe('ProgressBar', () => {
+  it('ist Schmuck: für Vorlesesoftware ausgeblendet, Breite nach dem Anteil', () => {
+    const { container } = renderWithProviders(<ProgressBar wert={1} von={6} />);
+    const balken = container.firstElementChild as HTMLElement;
+    expect(balken).toHaveAttribute('aria-hidden', 'true');
+    expect(balken).toHaveClass('h-1.5', 'bg-line');
+    const fuellung = balken.querySelector<HTMLElement>('[data-fortschritt]')!;
+    expect(fuellung).toHaveClass('bg-accent');
+    expect(fuellung.style.width).toBe('17%');
+  });
+
+  it('läuft nicht über und zeichnet ohne Gesamtzahl nichts', () => {
+    const { container, rerender } = renderWithProviders(<ProgressBar wert={9} von={6} />);
+    expect(container.querySelector<HTMLElement>('[data-fortschritt]')!.style.width).toBe('100%');
+    rerender(<ProgressBar wert={0} von={0} />);
+    expect(container.querySelector('[data-fortschritt]')).toBeNull();
   });
 });

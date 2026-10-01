@@ -293,12 +293,16 @@ export function terminKachel(page: Page, appointmentId: string): Locator {
  * „Absagegrund". Deshalb zählen nur das direkte `dt` und das direkte `dd`
  * einer Zeile - sonst fand „Absagegrund" die Kachel samt allen inneren
  * Werten und brach im Strict Mode ab.
+ *
+ * Seit dem Design-Handoff vom 2026-10-01 trägt eine Kachel nach ihrem Wert
+ * weitere `dd` - Nebenzeile und Handlung („Navigation starten →"). Der Wert
+ * ist das erste `dd`; nur das zählt hier.
  */
 export function detailWert(page: Page, bezeichnung: string): Locator {
   const beschriftung = page
     .locator(':scope > dt')
     .and(page.getByText(bezeichnung, { exact: true }));
-  return page.locator('dl > div').filter({ has: beschriftung }).locator(':scope > dd');
+  return page.locator('dl > div').filter({ has: beschriftung }).locator(':scope > dd').first();
 }
 
 /** Holt ein echtes Zugriffstoken bei GoTrue - Grundlage der RPC-Nachweise. */

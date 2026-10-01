@@ -5,6 +5,10 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { Section } from '@/components/ui/Section';
+import { Disclosure } from '@/components/ui/Card';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Tile, TileGrid } from '@/components/ui/Tile';
+import { useAktuelleGrundlage } from '@/features/treatment-bases/useAktuelleGrundlage';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
@@ -354,6 +358,84 @@ function Terminliste({
   );
 }
 
+/**
+ * Die beiden Kacheln über den Terminen (Design-Handoff 2026-10-01,
+ * Abschnitt 7): der nächste Termin und die jüngste Grundlage mit ihren
+ * Zahlen. Gelesen wird nichts Neues - der nächste Termin ist die Abfrage, die
+ * schon den Weg in den Kalender trägt, die Grundlage dieselbe wie in der
+ * Kontextspalte der Akte.
+ *
+ * Der Hausbesuch trägt kein Wort (ANN-192); eine abweichende Art steht dabei.
+ */
+function Terminkacheln({
+  patient,
+  user,
+  naechster,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  naechster: PatientAppointment | null;
+}) {
+  const aktuell = useAktuelleGrundlage(patient.id, user);
+  if (!naechster && !aktuell) return null;
+
+  const zone = naechster?.organization_time_zone;
+  const heute = zone ? todayInTimeZone(zone) : null;
+
+  return (
+    <div className="mb-6">
+      <TileGrid spalte="kachel">
+        {naechster && zone ? (
+          <Tile
+            label="Nächster Termin"
+            ton="akzent"
+            zusatz={[appointmentTypeHint(naechster.appointment_type), staffName(naechster)]
+              .filter(Boolean)
+              .join(' · ')}
+            aktion={
+              <Textlink
+                alleinstehend
+                className="gap-1"
+                to={mitRueckweg(`/termine/${naechster.id}`, `/patienten/${patient.id}/termine`)}
+              >
+                Öffnen
+                <span aria-hidden="true">→</span>
+              </Textlink>
+            }
+          >
+            {dayKey(naechster.starts_at, zone) === heute
+              ? 'Heute'
+              : formatLocalDate(naechster.starts_at, zone)}
+            <span className="block tabular-nums">
+              {formatLocalTimeRange(naechster.starts_at, naechster.ends_at, zone)}
+            </span>
+          </Tile>
+        ) : null}
+        {aktuell ? (
+          <Tile
+            label="Grundlage"
+            zusatz={(() => {
+              const { bauart, praeposition } = grundlageBezeichnung({
+                treatment_basis_kind: aktuell.grundlage.treatment_basis_kind,
+              });
+              return `${bauart} ${praeposition} ${formatIsoDate(aktuell.grundlage.issued_on)}`;
+            })()}
+          >
+            {aktuell.kontingent ? (
+              <>
+                {aktuell.kontingent.used} von {aktuell.kontingent.prescribed} verbraucht
+                <ProgressBar wert={aktuell.kontingent.used} von={aktuell.kontingent.prescribed} />
+              </>
+            ) : (
+              bauartLabels[aktuell.grundlage.treatment_basis_kind]
+            )}
+          </Tile>
+        ) : null}
+      </TileGrid>
+    </div>
+  );
+}
+
 export function PatientAppointmentsPage() {
   const { patient, user } = usePatientRecord();
   return <Terminbereich patient={patient} user={user} />;
@@ -454,6 +536,8 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
         </div>
       ) : null}
 
+      <Terminkacheln patient={patient} user={user} naechster={ersterTermin} />
+
       <Section
         titel="Kommende Termine"
         rahmen
@@ -489,21 +573,24 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
         <WaitlistNotice patientId={patient.id} />
       </div>
 
-      <Section
-        titel="Vergangene Termine"
-        hinweis="Neueste zuerst, einschließlich abgesagter Termine."
-        rahmen
-      >
-        <Terminliste
-          patientId={patient.id}
-          kuenftig={false}
-          verordnung={verordnung}
-          kontingente={kontingente.data ?? []}
-          leerText="Für diese Person gibt es noch keinen vergangenen Termin."
-          weiterText="Ältere Termine anzeigen"
-          neuerTermin={neuerTermin}
-        />
-      </Section>
+      {/* Was war, zugeklappt in einer Karte (Design-Handoff 2026-10-01,
+          Abschnitt 7): Die Akte beantwortet zuerst, was ansteht. */}
+      <div className="mt-8">
+        <Disclosure inKarte kopf="label" summary={<h2>Vergangene Termine</h2>}>
+          <p className="text-ink-muted mb-3 text-sm">
+            Neueste zuerst, einschließlich abgesagter Termine.
+          </p>
+          <Terminliste
+            patientId={patient.id}
+            kuenftig={false}
+            verordnung={verordnung}
+            kontingente={kontingente.data ?? []}
+            leerText="Für diese Person gibt es noch keinen vergangenen Termin."
+            weiterText="Ältere Termine anzeigen"
+            neuerTermin={neuerTermin}
+          />
+        </Disclosure>
+      </div>
     </>
   );
 }

@@ -12,6 +12,7 @@ export function PageHeader({
   title,
   description,
   actions,
+  kicker,
   kompakt = false,
 }: {
   /**
@@ -28,6 +29,13 @@ export function PageHeader({
    */
   description?: ReactNode;
   actions?: ReactNode;
+  /**
+   * Eine Zeile über dem Titel, die sagt, was für ein Gegenstand die Seite ist
+   * („Termin", „Fehlzeit"), wenn der Titel nur seinen Namen trägt
+   * (Design-Handoff 2026-10-01, Abschnitt 6): 12 px Versalien wie ein
+   * Abschnittstitel. Nicht Teil der Überschrift.
+   */
+  kicker?: string;
   /**
    * Flacher Kopf für Arbeitsseiten, auf denen das erste Eingabefeld ohne
    * Scrollen erreichbar sein muss — allen voran die Dokumentation
@@ -47,7 +55,12 @@ export function PageHeader({
     <header
       className={`flex flex-wrap items-end justify-between gap-3 ${kompakt ? 'mb-4' : 'mb-6'}`}
     >
-      <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : ''}>
+      <div className={kompakt ? 'flex min-w-0 flex-wrap items-baseline gap-x-3' : 'min-w-0'}>
+        {kicker ? (
+          <p className="text-ink-muted tracking-label mb-1 text-xs font-semibold uppercase">
+            {kicker}
+          </p>
+        ) : null}
         {/* Seitentitel als `--type-h2` in der Hauptfarbe (DS-001). Der Titel
             ist die einzige Stelle, an der die Marke im Inhalt vorkommt —
             deshalb Hauptfarbe statt Tinte. Unter 640 px 26 statt 32 px

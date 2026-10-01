@@ -93,15 +93,6 @@ import {
  */
 
 /** Unterscheidbare, bewusst zurückhaltende Farben je behandelnder Person. */
-const PERSONEN_FARBEN = [
-  'oklch(48% 0.075 205)',
-  'oklch(50% 0.09 145)',
-  'oklch(52% 0.1 60)',
-  'oklch(48% 0.1 300)',
-  'oklch(50% 0.09 25)',
-  'oklch(45% 0.06 260)',
-] as const;
-
 function wochentagKurz(tag: string): string {
   return new Intl.DateTimeFormat('de-DE', { weekday: 'short', timeZone: 'UTC' }).format(
     new Date(`${tag}T00:00:00Z`),
@@ -408,16 +399,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
   const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
 
-  // Feste Farbzuordnung über die Personen der Praxis, damit dieselbe Person
-  // beim Blättern nicht die Farbe wechselt.
-  const farbeVon = useMemo(() => {
-    const liste = (therapeuten.data?.alle ?? []).map((t) => t.staff_member_id);
-    return (staffId: string) => {
-      const index = liste.indexOf(staffId);
-      return PERSONEN_FARBEN[(index < 0 ? 0 : index) % PERSONEN_FARBEN.length]!;
-    };
-  }, [therapeuten.data]);
-
   const verschieben = useMutation({
     mutationFn: async (auftrag: {
       v: Verschiebung;
@@ -625,7 +606,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     spalteId: p.ansicht === 'tag' ? e.staff_member_id : dayKey(e.starts_at, zone),
     beginnMinute: minutesOfDay(e.starts_at, zone),
     endeMinute: minutesOfDay(e.ends_at, zone),
-    farbe: farbeVon(e.staff_member_id),
     // Nur bestätigte Termine werden gezogen. Ein abgeschlossener oder als
     // nicht angetroffen geführter müsste erst wieder geöffnet werden, ein
     // abgesagter bleibt terminal (CAL-004, ADR-018).

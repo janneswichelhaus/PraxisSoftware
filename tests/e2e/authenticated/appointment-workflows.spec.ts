@@ -97,7 +97,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     const terminId = adresse.searchParams.get('neu')!;
     await page.locator(terminLinkWahl(terminId)).click();
     await expect(page).toHaveURL((url) => url.pathname === `/termine/${terminId}`);
-    await expect(page.getByRole('heading', { name: /Termin – Max Mustermann/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
     // UX-005a: Die Terminart steht als Kennzeichen in der Kachel des Ortes,

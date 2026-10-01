@@ -1694,7 +1694,73 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByText(/Zeiten gelten in der Zeitzone/)).not.toBeInTheDocument();
       expect(screen.queryByText(/ausschließlich organisatorische Angaben/)).not.toBeInTheDocument();
       expect(screen.queryByText(/Europe\/Berlin/)).not.toBeInTheDocument();
-      expect(zeile('Anschrift')).toMatch(/übergibt nur die Anschrift ohne Namen/);
+      // Der Satz zur Übergabe steht am Fuß der Kachel, unter „Navigation
+      // starten" - nicht mehr im Wert (Design-Handoff 2026-10-01).
+      const kachel = screen.getAllByText('Anschrift').find((el) => el.tagName === 'DT')!;
+      expect(kachel.parentElement?.textContent).toMatch(/übergibt nur die Anschrift ohne Namen/);
+    });
+  });
+
+  // UI-Redesign Schritt 4 (Design-Handoff 2026-10-01, Abschnitt 6): Maße und
+  // Anordnung neu, der Ablauf aus UX-EPIC-005 bleibt.
+  describe('Anordnung nach dem Design-Handoff (Abschnitt 6)', () => {
+    it('trägt den Namen als Titel und „Termin" als Zeile darüber', async () => {
+      fetchAppointment.mockResolvedValue(praxistermin);
+      rendern();
+
+      const titel = await screen.findByRole('heading', { level: 1, name: 'Berta Bestand' });
+      expect(within(titel).getByRole('link', { name: 'Berta Bestand' })).toHaveAttribute(
+        'href',
+        expect.stringContaining(`/patienten/${PATIENT_ID}`),
+      );
+      expect(screen.getByText('Termin', { selector: 'p' })).toBeInTheDocument();
+    });
+
+    it('stellt die Handlungen in die Karte „Nach dem Termin" und die Absage ans Ende', async () => {
+      fetchAppointment.mockResolvedValue(praxistermin);
+      rendern(['owner']);
+
+      const karte = (await screen.findByRole('heading', { level: 2, name: 'Nach dem Termin' }))
+        .parentElement!;
+      expect(within(karte).getByRole('button', { name: /abschließen/ })).toBeInTheDocument();
+      expect(within(karte).getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
+      // Die Absage steht nicht in der Karte, sondern als letzter Knopf der Seite.
+      expect(within(karte).queryByRole('button', { name: 'Termin absagen' })).toBeNull();
+      const knoepfe = screen.getAllByRole('button');
+      expect(knoepfe[knoepfe.length - 1]).toHaveTextContent('Termin absagen');
+    });
+
+    it('stellt Vermerk und „Termin wieder öffnen" in eine Karte', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'no_show',
+        no_show_recorded_at: '2027-05-12T08:05:00.000Z',
+        fee_basis: 'no_show',
+      });
+      rendern();
+
+      const karte = (await screen.findByRole('heading', { level: 2, name: 'Vermerk' }))
+        .parentElement!;
+      expect(within(karte).getByText('Ausfallhonorar vorgemerkt')).toBeInTheDocument();
+      expect(within(karte).getByRole('button', { name: 'Termin wieder öffnen' })).toBeVisible();
+      expect(screen.queryByRole('heading', { name: 'Nach dem Termin' })).toBeNull();
+    });
+
+    it('nennt eine Fehlzeit in der Zeile über ihrem Titel', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        kind: 'internal',
+        patient_id: null,
+        title: 'Teambesprechung',
+      });
+      fetchEventParticipants.mockResolvedValue([]);
+      rendern();
+
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Teambesprechung' }),
+      ).toBeInTheDocument();
+      expect(screen.getByText('Fehlzeit', { selector: 'p' })).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Nach dem Termin' })).toBeNull();
     });
   });
 });

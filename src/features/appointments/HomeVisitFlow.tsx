@@ -151,8 +151,9 @@ export function HomeVisitFlow({
           id={bereichId}
           aria-label="Niemand öffnet?"
           // Ein Kasten wie die Rückfrage: eine Karte, keine Schaltfläche
-          // (DS-001), über die ganze Breite unter der Knopfreihe.
-          className="border-line-strong bg-surface-sunken rounded-card order-last w-full border p-5"
+          // (DS-001), über die ganze Breite unter der Knopfreihe; 16 innen
+          // wie die Rückfrage seit dem Design-Handoff vom 2026-10-01.
+          className="border-line-strong bg-surface-sunken rounded-card order-last w-full border p-4"
         >
           <p className="text-ink text-sm">
             Drei Schritte, jeder bestätigt. Danach gilt der Termin als „nicht angetroffen“ und löst

@@ -462,7 +462,6 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
               spalteId: 'st-1',
               beginnMinute: 540,
               endeMinute: 600,
-              farbe: 'oklch(48% 0.075 205)',
               ziehbar: true,
             },
             {
@@ -479,7 +478,6 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
               spalteId: 'st-2',
               beginnMinute: 660,
               endeMinute: 690,
-              farbe: 'oklch(50% 0.09 145)',
               ziehbar: true,
             },
             {
@@ -487,7 +485,6 @@ describe('Barrierefreiheit der Hausbesuchsansichten (UX-EPIC-001)', () => {
               spalteId: 'st-2',
               beginnMinute: 780,
               endeMinute: 840,
-              farbe: 'oklch(50% 0.09 145)',
               ziehbar: false,
             },
           ]}
