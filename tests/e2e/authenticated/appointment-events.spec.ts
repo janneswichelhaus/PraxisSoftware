@@ -82,7 +82,7 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await expect(page.getByRole('button', { name: /abschließen/ })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Folgetermin anlegen' })).toHaveCount(0);
-    await expect(page.getByText('Behandlungsdokumentation')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Dokumentation' })).toHaveCount(0);
 
     // Was es sehr wohl ist: ein Eintrag, den man absagen kann - und zwar
     // getrennt nach Teilnahme und ganzem Ereignis (CAL-017).

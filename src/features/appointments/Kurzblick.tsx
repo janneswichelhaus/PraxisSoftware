@@ -141,8 +141,39 @@ function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
  * zu. Dass das Lesen protokolliert wird, steht jetzt im Kopf: vor dem Öffnen,
  * nicht erst danach.
  */
-export function Kurzblick({ appointmentId }: { appointmentId: string }) {
+export function Kurzblick({
+  appointmentId,
+  alsZeile = false,
+}: {
+  appointmentId: string;
+  /**
+   * Als Textknopf in der Zeilenliste der Terminseite (Design-Handoff
+   * 2026-10-01, Abschnitt 6, Zyklus 3) statt als eigene Karte. Gelesen wird
+   * genauso erst beim Öffnen (ANN-137).
+   */
+  alsZeile?: boolean;
+}) {
   const [offen, setOffen] = useState(false);
+  if (alsZeile) {
+    return (
+      <details className="group" onToggle={(event) => setOffen(event.currentTarget.open)}>
+        <summary className={`${aufklappKopfKlassen} text-accent min-h-11 text-sm font-semibold`}>
+          <Aufklappzeichen />
+          <span>
+            Zugang, Besonderheit, Zuletzt anzeigen
+            <span className="text-ink-muted block text-[13px] font-normal">
+              Lesen wird protokolliert
+            </span>
+          </span>
+        </summary>
+        {offen ? (
+          <div className="pt-1 pb-1">
+            <KurzblickInhalt appointmentId={appointmentId} />
+          </div>
+        ) : null}
+      </details>
+    );
+  }
   return (
     <details
       className="group rounded-card border-line bg-surface border px-4 py-1"

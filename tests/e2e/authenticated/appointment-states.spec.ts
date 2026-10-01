@@ -180,17 +180,11 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
 
-    // Seit UX-012e heisst der Weg am Termin „Dokumentieren und abschließen";
-    // die Seite dahinter traegt weiterhin „Behandlung abschließen".
-    await page.getByRole('link', { name: 'Dokumentieren und abschließen' }).click();
-    await page
-      .getByLabel(/Behandlung/)
-      .first()
-      .fill('Synthetischer Behandlungstext, E2E.');
-    await page
-      .getByRole('button', { name: /abschließen/ })
-      .last()
-      .click();
+    // „Doku" in der Aktionsleiste, „Festschreiben" auf der Schreibseite
+    // (Design-Handoff 2026-10-01, Abschnitt 6a).
+    await page.getByRole('link', { name: 'Doku schreiben' }).click();
+    await page.getByLabel('Eintrag zur Behandlung').fill('Synthetischer Behandlungstext, E2E.');
+    await page.getByRole('button', { name: 'Festschreiben' }).click();
 
     await page.goto(`/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toContainText('Dokumentiert');

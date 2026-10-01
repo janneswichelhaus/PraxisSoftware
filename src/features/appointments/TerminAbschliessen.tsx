@@ -24,6 +24,7 @@ import { completeAppointment, fetchAppointment } from './api';
  */
 export function TerminAbschliessenKnopf({
   appointmentId,
+  stand,
   name,
   variant = 'secondary',
   groesse = 'normal',
@@ -32,6 +33,11 @@ export function TerminAbschliessenKnopf({
   className = '',
 }: {
   appointmentId: string;
+  /**
+   * Der Bearbeitungsstand (`updated_at`), wenn die Seite ihn kennt - die
+   * Terminseite. Ohne Angabe liest der Knopf ihn unmittelbar vorher.
+   */
+  stand?: string;
   /** Name der Patient:in - unterscheidet die Haken einer Liste für Vorlesesoftware. */
   name?: string | null;
   variant?: Variant;
@@ -44,6 +50,10 @@ export function TerminAbschliessenKnopf({
 
   const mutation = useMutation({
     mutationFn: async () => {
+      if (stand) {
+        await completeAppointment(appointmentId, stand);
+        return;
+      }
       const termin = await fetchAppointment(appointmentId);
       if (!termin) throw new Error('Der Termin wurde nicht gefunden.');
       await completeAppointment(termin.id, termin.updated_at);

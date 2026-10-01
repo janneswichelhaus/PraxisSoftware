@@ -2350,3 +2350,15 @@ Datenschutz · offen · 2026-10-01 · — · — · Prüfpaket · Wiedervorlage:
 **Anker.** `BisherigeEintraege` in `src/features/documentation/BisherigeEintraege.tsx`, eingehängt in `CompleteTreatmentPage.tsx`; Test `CompleteTreatmentPage.test.tsx` („liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet").
 
 **Änderungspfad.** Ab 640 px offen beginnen: Anfangswert von `verlaufOffen` an die Breite binden · Aufwand `klein`.
+
+### ANN-201 — „Doku offen" ist eine Aufgabe für die, die dokumentieren
+
+Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 13)
+
+**Annahme.** Abschließen und Dokumentieren sind getrennt (Design-Handoff 2026-10-01, Entscheidung Jannes): Der Haken schließt einen Termin ohne Eintrag ab, wie bisher erlaubt (ANN-005). Danach steht „Doku offen" (Übersicht) bzw. „Dokumentation fehlt" (Termin) als Warnung – aber nur für Rollen, die dokumentieren dürfen. Das Büro sieht am abgeschlossenen Termin ohne Eintrag nichts. Ein bestätigter Termin in der Zukunft hat keinen Doku-Abschnitt; der Weg dahin ist „Doku" in der Aktionsleiste.
+
+**Begründung.** ANN-005 schloss eine Markierung als fehlend aus, damit der Abschluss keine Pflicht zur Dokumentation vortäuscht. Die ausdrückliche Entscheidung von Jannes vom 01.10. geht dieser Annahme vor; die Pflicht selbst bleibt unverändert – gesperrt wird weiterhin erst die Rechnung, nicht der Abschluss (ADR-018, Konsequenzen). Dieselbe Regel gilt schon für die Übersicht (`istOffen`): eine Aufgabe, die jemand nicht erledigen kann, wäre Rauschen.
+
+**Anker.** `TreatmentNoteSection` in `src/features/documentation/TreatmentNoteSection.tsx` (Bedingung `faellig && darfSchreiben`); `offenGrund` in `src/features/today/api.ts`.
+
+**Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`.

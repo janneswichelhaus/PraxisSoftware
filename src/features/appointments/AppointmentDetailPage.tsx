@@ -8,13 +8,13 @@ import { Field } from '@/components/ui/Field';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { TerminAbschliessenKnopf } from './TerminAbschliessen';
+import { TerminMetazeile, TerminZeilen, Zeile } from './TerminKompakt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Textlink } from '@/components/ui/Textlink';
-import { Tile, TileGrid } from '@/components/ui/Tile';
 import { Card } from '@/components/ui/Card';
 import { MitteilungVermerken } from './MitteilungVermerken';
-import { Kurzblick } from './Kurzblick';
-import { AbrechnungAbschnitt, TreatmentBasisTile } from './Abrechnungslage';
+import { AbrechnungAbschnitt } from './Abrechnungslage';
 import { useAbrechnungslage } from './useAbrechnungslage';
 import { AppointmentHeadline } from './AppointmentHeadline';
 import { HomeVisitFlow } from './HomeVisitFlow';
@@ -34,20 +34,17 @@ import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { NavigationZumTermin } from './NavigationStarten';
 import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
 import { leseAngelegtenTermin, leseMeldung } from './terminformular';
 import {
   appointmentStatusLabels,
   appointmentToFormValues,
-  appointmentTypeHint,
   cancelAppointment,
   cancelAppointmentEvent,
   cancelEventSeries,
   fetchEventSeries,
   cancellationReasonLabels,
   cancellationReasonSchema,
-  completeAppointment,
   type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
@@ -117,77 +114,6 @@ function zustandsHinweis(appointment: Appointment): string | null {
     default:
       return null;
   }
-}
-
-/**
- * Die Kachel des Ortes (UX-005a): Anschrift mit Navigation am Hausbesuch,
- * Standort am Praxistermin, der Hinweis am Videotermin.
- *
- * Der Hausbesuch ist der Regelfall dieser Praxis und trägt deshalb kein Wort
- * dafür (ANN-192). Ein Praxis- oder Videotermin ist die Ausnahme — Jannes:
- * „Sollte hier irgendwann eine Räumlichkeit hinzukommen, sollte ein Kästchen
- * aufploppen, das darauf hinweist." Die Kachel wird dann zur Akzentkarte und
- * nennt die Art als Zeichen.
- *
- * Der Navigations-Handoff steht bei der Anschrift, nicht bei den
- * Statusaktionen: Er gehört zur Anfahrt, nicht zum Vorgang (ADR-019 Punkt 20).
- * Was dabei das Gerät verlässt, steht direkt darunter (ADR-019 Punkt 23) —
- * bis UX-005a stand es als Fußnote am Ende der Seite.
- */
-function OrtKachel({ appointment }: { appointment: Appointment }) {
-  const art = appointment.appointment_type;
-  const kennzeichen = appointmentTypeHint(art);
-  const strasse = [appointment.visit_street, appointment.visit_house_number]
-    .filter(Boolean)
-    .join(' ');
-  const ort = [appointment.visit_postal_code, appointment.visit_city].filter(Boolean).join(' ');
-
-  return (
-    <Tile
-      label={ortsBeschriftung(art)}
-      ton={kennzeichen ? 'akzent' : 'neutral'}
-      // Die Navigation als Textlink am Fuß (Design-Handoff 2026-10-01,
-      // Abschnitt 6), der Satz zur Übergabe direkt darunter (ADR-019 Punkt 23).
-      aktion={
-        art === 'home_visit' && (strasse || ort) ? (
-          <span className="flex flex-col items-start">
-            <NavigationZumTermin termin={appointment} textlink />
-            <span className="text-ink-muted block text-xs leading-relaxed font-normal">
-              Öffnet Google Maps im Fahrradmodus und übergibt nur die Anschrift ohne Namen – erst
-              beim Tippen.
-            </span>
-          </span>
-        ) : undefined
-      }
-    >
-      {kennzeichen ? (
-        // Auf Papier statt als Abzeichen: Ein Akzent-Abzeichen trägt dieselbe
-        // Fläche wie die Kachel und verschwände auf ihr.
-        <span className="bg-surface text-accent rounded-pill mb-1 inline-flex min-h-7 items-center px-3 text-sm font-semibold">
-          {kennzeichen}termin
-        </span>
-      ) : null}
-      {art === 'home_visit' ? (
-        strasse || ort ? (
-          // Beide Zeilen im Gewicht des Kachelwerts (600, Design-Handoff
-          // 2026-10-01).
-          <address className="not-italic">
-            {strasse ? <span className="block">{strasse}</span> : null}
-            {ort ? <span className="block">{ort}</span> : null}
-          </address>
-        ) : (
-          '—'
-        )
-      ) : art === 'practice' ? (
-        <span className="block">{locationSummary(appointment)}</span>
-      ) : null}
-      {art === 'video' ? (
-        <span className="text-ink-muted mt-1 block text-sm font-normal">
-          Für Videotermine wird noch kein Videolink erzeugt.
-        </span>
-      ) : null}
-    </Tile>
-  );
 }
 
 /**
@@ -289,6 +215,80 @@ function ZustandKarte({
       <DetailList>{zeilen}</DetailList>
       {wiederOeffnen ? <div className="mt-3 flex">{wiederOeffnen}</div> : null}
     </Card>
+  );
+}
+
+/**
+ * Was aus dem Termin geworden ist, als Zeilen der Zeilenliste (Design-Handoff
+ * 2026-10-01, Abschnitt 6, Zyklus 3) - dieselben Angaben wie bisher die
+ * Karte: Absagegrund, Eingang, Vermerk, Protokoll, Ausfallhonorar.
+ */
+function ZustandZeilen({ appointment }: { appointment: Appointment }) {
+  const zone = appointment.organization_time_zone;
+  const zeitpunkt = (iso: string) =>
+    `${formatLocalDate(iso, zone)}, ${formatLocalTime(iso, zone)} Uhr`;
+  const honorar = appointment.fee_basis ? (
+    <Zeile label="Ausfallhonorar vorgemerkt">{feeBasisLabels[appointment.fee_basis]}</Zeile>
+  ) : null;
+
+  if (appointment.status === 'cancelled') {
+    return (
+      <>
+        <Zeile label="Absagegrund">
+          {appointment.cancellation_reason
+            ? cancellationReasonLabels[appointment.cancellation_reason]
+            : 'Nicht erfasst'}
+        </Zeile>
+        {appointment.cancellation_received_at ? (
+          <Zeile label="Eingegangen">{zeitpunkt(appointment.cancellation_received_at)}</Zeile>
+        ) : null}
+        {honorar}
+      </>
+    );
+  }
+  if (appointment.status === 'no_show') {
+    return (
+      <>
+        {appointment.no_show_recorded_at ? (
+          <Zeile label="Vermerkt am">{zeitpunkt(appointment.no_show_recorded_at)}</Zeile>
+        ) : null}
+        {/* Das bestätigte Protokoll ist die Grundlage der Forderung (CAL-018). */}
+        {appointment.no_show_protocol_confirmed ? (
+          <Zeile label="Protokoll">
+            Bestätigt: 15 Minuten vor Ort gewartet, an der Tür geklingelt, telefonisch angerufen.
+          </Zeile>
+        ) : null}
+        {honorar}
+      </>
+    );
+  }
+  // Ein Kennzeichen aus der Zeit vor ADR-018 Fassung 2 bleibt sichtbar.
+  return honorar;
+}
+
+/** „Termin wieder öffnen" unter den Zeilen - nur an abgeschlossenen und nicht angetroffenen. */
+function WiederOeffnen({
+  appointment,
+  darfWiederOeffnen,
+  melden,
+}: {
+  appointment: Appointment;
+  darfWiederOeffnen: boolean;
+  melden: Melden;
+}) {
+  if (!darfWiederOeffnen) return null;
+  return (
+    <div className="mt-3 flex">
+      <StatusAktion
+        appointment={appointment}
+        aktion={reopenAppointment}
+        beschriftung="Termin wieder öffnen"
+        laufend="Wird geöffnet …"
+        erfolg="Termin wieder geöffnet."
+        variant="secondary"
+        melden={melden}
+      />
+    </div>
   );
 }
 
@@ -904,8 +904,11 @@ function AppointmentDetail({
    * neue Zeile und nimmt den Fokus erneut.
    */
   const [bestaetigung, setBestaetigung] = useState<{ nummer: number; text: string } | null>(null);
-  const melden: Melden = (text) =>
+  const [abschlussFehler, setAbschlussFehler] = useState<string | null>(null);
+  const melden: Melden = (text) => {
+    setAbschlussFehler(null);
     setBestaetigung((bisher) => ({ nummer: (bisher?.nummer ?? 0) + 1, text }));
+  };
 
   /**
    * Die Beteiligten des Ereignisses (CAL-017).
@@ -971,7 +974,9 @@ function AppointmentDetail({
                kein Wort (ANN-192) - die Ausnahme sagt die Kachel des Ortes. Der
                Rückweg reist mit, damit der Weg zurück am Termin endet und nicht
                in der Liste. */
-            kicker={istEreignis ? 'Fehlzeit' : 'Termin'}
+            // Am Behandlungstermin kein Kicker mehr: Name, Zustand und eine
+            // Metazeile (Design-Handoff 2026-10-01, Abschnitt 6, Zyklus 3).
+            {...(istEreignis ? { kicker: 'Fehlzeit' } : {})}
             title={
               istEreignis ? (
                 (appointment.title ?? 'Fehlzeit')
@@ -989,12 +994,22 @@ function AppointmentDetail({
                Satz darunter sagt nur noch, was aus einem Zustand ohne Rückweg
                folgt. */
             description={
-              <>
-                <AppointmentHeadline appointment={appointment} user={user} />
-                {zustandsHinweis(appointment) ? (
-                  <p className="mt-1">{zustandsHinweis(appointment)}</p>
-                ) : null}
-              </>
+              istEreignis ? (
+                <>
+                  <AppointmentHeadline appointment={appointment} user={user} />
+                  {zustandsHinweis(appointment) ? (
+                    <p className="mt-1">{zustandsHinweis(appointment)}</p>
+                  ) : null}
+                </>
+              ) : (
+                <TerminMetazeile
+                  appointment={appointment}
+                  user={user}
+                  darfVerwalten={darfVerwalten}
+                  zumTermin={zumTermin}
+                  hinweis={zustandsHinweis(appointment)}
+                />
+              )
             }
             actions={
               darfAendern ? (
@@ -1018,7 +1033,7 @@ function AppointmentDetail({
                   ) : null}
                   <ButtonLink
                     to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-                    variant="secondary"
+                    variant={istEreignis ? 'secondary' : 'quiet'}
                     groesse="kompakt"
                   >
                     {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
@@ -1049,26 +1064,92 @@ function AppointmentDetail({
             <Rueckmeldung className="mb-6">{eingangsmeldung}</Rueckmeldung>
           ) : null}
 
-          {/* Die Angaben des Behandlungstermins als Kacheln (UX-005a): der Ort
-              mit der Anfahrt, die Grundlage mit dem Zähler; seit dem Design-Handoff
-              vom 2026-10-01 in Reihen von 150 px, am Telefon zwei nebeneinander.
-              Was schon im Kopf steht - Name, Tag, Zeit, Zustand -,
-              steht hier nicht noch einmal. Ein Ereignis behält seine Zeilen: Es
-              hat Beteiligte und Vorkommen, die eine Kachel nicht besser trüge. */}
-          {istEreignis ? null : (
-            <TileGrid spalte="kachel">
-              <OrtKachel appointment={appointment} />
-              {/* PRX-008: „Termin n von m" an der Grundlage, seit CAL-022 mit
-                  der Deckung; Empfänger und offene Rechnungen stehen darunter
-                  im Abschnitt „Abrechnung". */}
-              {appointment.kind === 'therapy' ? (
-                <TreatmentBasisTile
-                  appointment={appointment}
-                  darfVerwalten={darfVerwalten}
-                  zumTermin={zumTermin}
-                />
+          {/* Die Aktionsleiste am bestätigten Behandlungstermin (Design-Handoff
+              2026-10-01, Abschnitt 6, Zyklus 3): Haken, „Doku", am Hausbesuch
+              „Niemand öffnet?" mit dem Protokoll darunter und „Ohne
+              Behandlung", an Praxis und Video „Nicht angetroffen". Abschließen
+              und Dokumentieren sind getrennt (Abschnitt 6a): Der Haken schließt
+              ohne Dokumentation ab (ANN-005), „Doku" öffnet die Schreibseite.
+              Ein Ereignis wird weder abgeschlossen noch dokumentiert (CAL-015b). */}
+          {darfAendern && !istEreignis ? (
+            <div
+              role="group"
+              aria-label="Nach dem Termin"
+              className="border-line mt-4 flex flex-wrap items-center gap-2 border-y py-3"
+            >
+              <TerminAbschliessenKnopf
+                appointmentId={appointment.id}
+                stand={appointment.updated_at}
+                variant="primary"
+                onAbgeschlossen={() =>
+                  melden(
+                    darfDokumentieren
+                      ? 'Termin abgeschlossen. Doku offen.'
+                      : 'Termin abgeschlossen.',
+                  )
+                }
+                onFehler={setAbschlussFehler}
+              />
+              {darfDokumentieren ? (
+                <ButtonLink
+                  to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
+                  groesse="kompakt"
+                >
+                  Doku <span className="sr-only">schreiben</span>
+                </ButtonLink>
               ) : null}
-            </TileGrid>
+              {istHausbesuch ? (
+                <>
+                  <HomeVisitFlow appointment={appointment} melden={melden} />
+                  {darfDokumentieren ? (
+                    <ButtonLink
+                      to={mitRueckweg(
+                        `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
+                        eingehend,
+                      )}
+                      variant="quiet"
+                      groesse="kompakt"
+                    >
+                      Ohne Behandlung
+                    </ButtonLink>
+                  ) : null}
+                </>
+              ) : (
+                <NichtAngetroffenAktion appointment={appointment} melden={melden} />
+              )}
+              {abschlussFehler ? (
+                <Statusmeldung ton="fehler" className="basis-full">
+                  {abschlussFehler}
+                </Statusmeldung>
+              ) : null}
+            </div>
+          ) : null}
+
+          {/* Die Dokumentation direkt unter der Leiste, ohne Karte (Zyklus 3).
+              Klinische Inhalte kommen über einen eigenen, protokollierten
+              Lesepfad (DOK-001); an einem Ereignis gibt es sie nicht. */}
+          {istEreignis ? null : (
+            <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
+          )}
+
+          {/* Anschrift, Vor der Tür, Zuletzt - und darunter, was aus dem Termin
+              geworden ist - als Zeilen statt Kacheln (Zyklus 3). */}
+          {istEreignis ? null : (
+            <TerminZeilen
+              appointment={appointment}
+              darfKurzblick={canReadTreatmentNote(user.roles)}
+              darfVerlauf={canReadTreatmentNote(user.roles)}
+              zumTermin={zumTermin}
+            >
+              <ZustandZeilen appointment={appointment} />
+            </TerminZeilen>
+          )}
+          {istEreignis ? null : (
+            <WiederOeffnen
+              appointment={appointment}
+              darfWiederOeffnen={darfWiederOeffnen}
+              melden={melden}
+            />
           )}
 
           {istEreignis ? (
@@ -1153,77 +1234,13 @@ function AppointmentDetail({
         ) : null}
 
         <div className="@zweispaltig:col-start-1 @zweispaltig:row-start-2 min-w-0">
-          {/* Was man vor der Tür wissen muss (PRX-006): zugeklappt, erst auf
-              Anforderung gelesen und protokolliert (ANN-137). Nur am
-              Behandlungstermin; die Rollenprüfung trägt der Server. */}
-          {appointment.kind === 'therapy' && canReadTreatmentNote(user.roles) ? (
-            <div className="mt-6">
-              <Kurzblick appointmentId={appointment.id} />
-            </div>
-          ) : null}
-
-          {/* Was aus dem Termin geworden ist, an der Stelle der Handlungen, die
-              es nicht mehr gibt (Design-Handoff 2026-10-01, Abschnitt 6). */}
-          <ZustandKarte
-            appointment={appointment}
-            darfWiederOeffnen={darfWiederOeffnen}
-            melden={melden}
-          />
-
-          {/* Die Handlungen des Besuchs in einer Karte (Design-Handoff 2026-10-01,
-              Abschnitt 6). Der Ablauf bleibt der aus UX-EPIC-005 - die Karte
-              „Was ist passiert?" mit drei Zeilen aus dem Handoff gilt nicht
-              (Entscheidung Jannes, 2026-10-01). Ein Ereignis wird weder
-              abgeschlossen noch dokumentiert noch als „nicht angetroffen"
-              vermerkt - der Server weist alle drei ab (CAL-015b); ihm bleiben
-              Verschieben und Absagen. */}
-          {darfAendern && !istEreignis ? (
-            <Card className="mt-6">
-              <h2 className="text-ink text-h4 font-bold">Nach dem Termin</h2>
-              <div className="mt-3 flex flex-wrap items-start gap-3">
-                {/* Der Regelfall am Ende eines Besuchs: Dokumentation und Abschluss
-                    in einem Schritt (UX-007). Der Abschluss ohne Dokumentation ist
-                    ausdrücklich weiter möglich (ANN-005) - er steht daneben.
-
-                    Die Beschriftungen sagen seit UX-012, worin sie sich
-                    unterscheiden. „Behandlung abschließen" neben „Termin
-                    abschließen" waren zwei Knöpfe, deren Unterschied man kennen
-                    musste; wer dokumentieren wollte und den falschen traf, schloss
-                    den Termin ohne Eintrag ab. Wer gar nicht dokumentieren darf,
-                    sieht weiterhin nur den einen und für den heißt er wie bisher. */}
-                {/* Am Hausbesuch steht neben dem Regelfall der Ablauf „Niemand
-                    öffnet?" (UX-005b, CAL-018): zugeklappt, bis die Tür zubleibt.
-                    „Ohne Dokumentation abschließen" bleibt daneben — ANN-005 gilt
-                    unverändert. */}
-                {darfDokumentieren ? (
-                  <ButtonLink to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}>
-                    Dokumentieren und abschließen
-                  </ButtonLink>
-                ) : null}
-                {istHausbesuch ? (
-                  <HomeVisitFlow
-                    appointment={appointment}
-                    eingehend={eingehend}
-                    darfDokumentieren={darfDokumentieren}
-                    melden={melden}
-                  />
-                ) : null}
-                <StatusAktion
-                  appointment={appointment}
-                  aktion={completeAppointment}
-                  beschriftung={
-                    darfDokumentieren ? 'Ohne Dokumentation abschließen' : 'Termin abschließen'
-                  }
-                  laufend="Wird abgeschlossen …"
-                  erfolg="Termin abgeschlossen."
-                  variant={darfDokumentieren ? 'secondary' : 'primary'}
-                  melden={melden}
-                />
-                {istHausbesuch ? null : (
-                  <NichtAngetroffenAktion appointment={appointment} melden={melden} />
-                )}
-              </div>
-            </Card>
+          {/* Am Ereignis bleibt die Karte des Zustands (Absage, Wiederöffnen). */}
+          {istEreignis ? (
+            <ZustandKarte
+              appointment={appointment}
+              darfWiederOeffnen={darfWiederOeffnen}
+              melden={melden}
+            />
           ) : null}
 
           {/* Nachrücken (PRX-004): Ein abgesagter Behandlungstermin in der
@@ -1297,15 +1314,6 @@ function AppointmentDetail({
               Für Videotermine wird noch kein Videolink erzeugt.
             </p>
           ) : null}
-
-          {/* Klinische Inhalte stehen bewusst in einem eigenen Datensatz und werden
-              über einen eigenen, protokollierten Lesepfad geholt (DOK-001). An
-              einem Ereignis gibt es sie nicht - und der Abschnitt fragt auch nicht
-              danach (CAL-015b). Der Rückweg des Termins reist in die Doku-Seiten
-              mit, damit er über sie nicht verloren geht (DOK-01). */}
-          {istEreignis ? null : (
-            <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
-          )}
 
           {/* Termin abhaken (PRX-009): nach der Dokumentation die geleisteten
               Heilmittel bestätigen - die behandelnde Person an ihrem Termin,

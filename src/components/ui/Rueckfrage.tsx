@@ -41,6 +41,7 @@ const STANDARDFEHLER = 'Das hat nicht geklappt. Bitte die Verbindung prüfen und
 export function Rueckfrage({
   ausloeser,
   ausloeserVariante = 'secondary',
+  ausloeserGroesse = 'normal',
   bezeichnung,
   bestaetigen,
   bestaetigenLaeuft,
@@ -54,6 +55,8 @@ export function Rueckfrage({
   /** Beschriftung der Schaltfläche, die die Rückfrage öffnet. */
   ausloeser: string;
   ausloeserVariante?: 'primary' | 'secondary' | 'quiet';
+  /** `kompakt` in dichten Leisten (Design-Handoff 2026-10-01, Abschnitt 6). */
+  ausloeserGroesse?: 'normal' | 'kompakt';
   /** Zugängliche Bezeichnung des Kastens. Ohne Angabe der Auslösertext. */
   bezeichnung?: string;
   /** Beschriftung der bestätigenden Schaltfläche. */
@@ -132,6 +135,7 @@ export function Rueckfrage({
         ref={ausloeserRef}
         type="button"
         variant={ausloeserVariante}
+        groesse={ausloeserGroesse}
         onClick={() => {
           setGescheitert(false);
           setOffen(true);

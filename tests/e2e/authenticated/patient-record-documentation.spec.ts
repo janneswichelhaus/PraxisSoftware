@@ -47,18 +47,18 @@ const terminAnlegen = (page: Page, tag: string) =>
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   const terminId = await terminAnlegen(page, tag);
 
-  // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-  // Dokumentation allein ist die Route (UX-005g).
-  await page.goto(`/termine/${terminId}/dokumentation`);
+  // Die eine Schreibseite (Design-Handoff 2026-10-01, Abschnitt 6a);
+  // `/dokumentation` leitet ebenfalls dorthin.
+  await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
-  await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
+  await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
   await expect(page).toHaveURL(`/termine/${terminId}`);
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
   // Der Zustand ist seit UIK-18 ein Etikett mit Zeichen: Das ✓ ist für
   // Vorlesesoftware ausgeblendet, steht aber im Text des Etiketts.
-  await expect(page.getByText('✓Finalisiert', { exact: true })).toBeVisible();
+  await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
 
   return terminId;
 }
