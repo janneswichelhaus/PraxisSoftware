@@ -11,6 +11,7 @@ import {
   terminUeberOberflaeche,
   zugriffstoken,
   kalenderOptionenOeffnen,
+  terminImKalenderOeffnen,
 } from './helpers';
 
 /**
@@ -69,7 +70,7 @@ test.describe('CAL-002: Kalender', () => {
       'Max Mustermann',
     );
 
-    await eintrag.click();
+    await terminImKalenderOeffnen(page, terminId);
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });

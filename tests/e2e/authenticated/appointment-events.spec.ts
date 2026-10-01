@@ -66,10 +66,13 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await expect(page).toHaveURL(/\/kalender/);
     // getByRole mit Zeichenkette trifft Teiltexte - kein selbst gebauter
     // regulaerer Ausdruck aus veraenderlichem Text noetig.
-    const kachel = page.getByRole('link', { name: bezeichnung });
+    const kachel = page.getByRole('button', { name: bezeichnung });
     await expect(kachel.first()).toBeVisible();
 
+    // Die Kachel öffnet das Terminpanel, „Fehlzeit →" die Detailansicht
+    // (Design-Handoff 2026-10-01, Abschnitt 7a).
     await kachel.first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
 
     // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
     // Überschrift, „Fehlzeit" steht als Zeile darüber.
@@ -122,10 +125,11 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     // Beide Kalender tragen die Besprechung.
-    const kacheln = page.getByRole('link', { name: bezeichnung });
+    const kacheln = page.getByRole('button', { name: bezeichnung });
     await expect(kacheln).toHaveCount(2);
 
     await kacheln.first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
     await expect(detailWert(page, 'Beteiligte')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Beteiligte')).toContainText('Tim Teamleitung');
 
