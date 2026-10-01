@@ -139,10 +139,12 @@ describe('EditAppointmentPage', () => {
     rendern();
     await formularAbwarten();
 
-    expect(screen.getAllByText('Berta Bestand').length).toBeGreaterThan(0);
+    // Der Name steht in der Seitenbeschreibung; einen eigenen Kasten mit dem
+    // Satz, dass der Termin nicht übertragbar sei, gibt es seit UX-005g nicht.
+    expect(screen.getByText('Für Berta Bestand.')).toBeInTheDocument();
     expect(
-      screen.getByText('Ein Termin kann nicht auf eine andere Person übertragen werden.'),
-    ).toBeInTheDocument();
+      screen.queryByText('Ein Termin kann nicht auf eine andere Person übertragen werden.'),
+    ).not.toBeInTheDocument();
     expect(screen.queryByLabelText(/Patient.*\*/)).not.toBeInTheDocument();
   });
 

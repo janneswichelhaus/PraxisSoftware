@@ -45,7 +45,9 @@ const terminAnlegen = (page: Page, tag: string) =>
 async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   const terminId = await terminAnlegen(page, tag);
 
-  await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+  // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+  // Dokumentation allein ist die Route (UX-005g).
+  await page.goto(`/termine/${terminId}/dokumentation`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
   await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
   await expect(page).toHaveURL(`/termine/${terminId}`);
@@ -66,7 +68,9 @@ test.describe('DOK-002: Finalisieren', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag());
 
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);

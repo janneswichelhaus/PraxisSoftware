@@ -79,14 +79,21 @@ function Grundlage({ blick }: { blick: KurzblickDaten }) {
 function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
   const zone = blick.organization_time_zone;
   return (
+    // Leere Werte bekommen keine Zeile - ein „—" sagt im Treppenhaus nichts
+    // (UX-005g). Grundlage und letzter Eintrag bleiben, weil ihr Fehlen eine
+    // Auskunft ist.
     <DetailList>
-      <DetailRow label="Zugang">{blick.home_visit_access_note ?? '—'}</DetailRow>
-      <DetailRow label="Besonderheit">{blick.special_note ?? '—'}</DetailRow>
+      {blick.home_visit_access_note ? (
+        <DetailRow label="Zugang">{blick.home_visit_access_note}</DetailRow>
+      ) : null}
+      {blick.special_note ? <DetailRow label="Besonderheit">{blick.special_note}</DetailRow> : null}
       {/* PRX-007: von Hand an der Person gepflegt, nie abgeleitet (ANN-138). */}
-      <DetailRow label="Material">
-        {blick.take_along_items.length > 0 ? blick.take_along_items.join(', ') : '—'}
-      </DetailRow>
-      <DetailRow label="Feste Therapeut:in">{blick.primary_therapist_name ?? '—'}</DetailRow>
+      {blick.take_along_items.length > 0 ? (
+        <DetailRow label="Material">{blick.take_along_items.join(', ')}</DetailRow>
+      ) : null}
+      {blick.primary_therapist_name ? (
+        <DetailRow label="Feste Therapeut:in">{blick.primary_therapist_name}</DetailRow>
+      ) : null}
       <DetailRow label="Grundlage">
         <Grundlage blick={blick} />
       </DetailRow>

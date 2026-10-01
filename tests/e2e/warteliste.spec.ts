@@ -39,7 +39,13 @@ test.describe('Warteliste und Terminsuche', () => {
     const zeilen = page.locator('li', { has: page.getByRole('link', { name: 'Übernehmen' }) });
     await expect(zeilen).toHaveCount(4);
     await expect(zeilen.last()).toContainText('Fahrweg knapp: 10 Min. zu wenig');
-    await expect(zeilen.first()).toContainText('Fahrweg passt');
+    // Nur Abweichungen tragen ein Kennzeichen (UX-005g): Der passende Fahrweg
+    // und der Gebietstag stehen ohne Wort da, Außerhalb und Ungeprüft nicht.
+    await expect(zeilen.first()).not.toContainText('Fahrweg');
+    await expect(page.getByText('Fahrweg passt')).toHaveCount(0);
+    await expect(page.getByText('Im Gebietstag')).toHaveCount(0);
+    await expect(page.getByText('Außerhalb des Gebietstags')).toBeVisible();
+    await expect(page.getByText('Fahrweg nicht geprüft')).toBeVisible();
   });
 
   test('das Formular fügt eine Wunschzeit hinzu und entfernt sie wieder', async ({ page }) => {

@@ -594,9 +594,10 @@ describe('NewAppointmentPage', () => {
       rendern();
       await formularAbwarten();
       // Der Wert kommt aus der Sitzung (testUser: 5 Minuten). Verbindlich
-      // prueft der Server.
+      // prueft der Server. Ein stehender Hinweis „Praxisraster: 5 Minuten"
+      // erklaerte nur das System und ist seit UX-005g fort.
       expect(screen.getByLabelText('Beginn *')).toHaveAttribute('step', '300');
-      expect(screen.getByText('Praxisraster: 5 Minuten')).toBeInTheDocument();
+      expect(screen.queryByText(/Praxisraster: \d+ Minuten/)).not.toBeInTheDocument();
     });
 
     it('bietet das Ende gar nicht erst als Eingabefeld an', async () => {

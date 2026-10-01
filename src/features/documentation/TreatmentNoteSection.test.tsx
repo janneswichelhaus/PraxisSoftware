@@ -116,7 +116,8 @@ describe('TreatmentNoteSection', () => {
     rendern();
 
     expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
-    expect(screen.getByText(/eine Ausfallgebühr entsteht nicht/)).toBeInTheDocument();
+    // Das Kennzeichen trägt den Sachverhalt; der Satz nennt nur die Folge (UX-005g).
+    expect(screen.getByText('Keine Ausfallgebühr.')).toBeInTheDocument();
   });
 
   it('zeigt ihn an einer gewoehnlichen Behandlung nicht', async () => {
@@ -168,13 +169,26 @@ describe('TreatmentNoteSection', () => {
 
   it('bietet office fuer einen Termin ohne Eintrag kein Anlegen an', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
-    rendern(['office']);
+    rendern(['office'], { status: 'completed' });
 
     expect(
       await screen.findByText(
         'Für diesen Termin ist noch keine Behandlungsdokumentation hinterlegt.',
       ),
     ).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
+  });
+
+  it('sagt am offenen Termin ohne Eintrag nichts - dass nichts da ist, sieht man (UX-005g)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
+    rendern(['office']);
+
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID));
+    expect(screen.getByRole('heading', { name: 'Behandlungsdokumentation' })).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByText(/noch keine Behandlungsdokumentation/)).toBeNull();
     expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
   });
 
@@ -187,9 +201,11 @@ describe('TreatmentNoteSection', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it('bietet ohne vorhandene Dokumentation das Anlegen an', async () => {
+  it('bietet ohne vorhandene Dokumentation das Anlegen an, wo oben kein Hauptknopf steht', async () => {
+    // Am abgeschlossenen Termin fehlt oben „Dokumentieren und abschließen";
+    // der Weg steht dann hier. Am offenen Termin steht er nur oben (UX-005g).
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
-    rendern(['therapist']);
+    rendern(['therapist'], { status: 'completed' });
 
     expect(
       await screen.findByText(
@@ -300,13 +316,17 @@ describe('TreatmentNoteSection: Gewichtung der Knöpfe (DOK-14)', () => {
     finalizeTreatmentNote.mockReset();
   });
 
-  it('zeigt „Dokumentation anlegen“ am offenen Termin sekundär', async () => {
+  it('zeigt „Dokumentation anlegen“ am offenen Termin gar nicht - der Weg steht oben', async () => {
+    // Bis UX-005g stand er hier sekundär; ein zweiter Knopf für denselben
+    // Weg war einer zu viel.
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['therapist']);
 
-    const anlegen = await screen.findByRole('link', { name: 'Dokumentation anlegen' });
-    expect(anlegen).not.toHaveClass('bg-accent');
-    expect(anlegen).toHaveClass('border-line-strong');
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID));
+    await waitFor(() =>
+      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
+    );
+    expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
   });
 
   it('lässt „Dokumentation anlegen“ am abgeschlossenen Termin den Hauptknopf', async () => {

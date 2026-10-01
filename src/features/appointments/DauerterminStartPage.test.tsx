@@ -111,7 +111,7 @@ describe('DauerterminStartPage', () => {
       '/termine/dauertermin?datum=2027-05-12&beginn=09%3A00',
     );
 
-    expect(screen.getByText('12.05.2027, ab 09:00 Uhr')).toBeInTheDocument();
+    expect(screen.getByText('Erster Termin: 12.05.2027, ab 09:00 Uhr')).toBeInTheDocument();
     await userEvent.type(screen.getByLabelText('Patient:in suchen'), 'Must');
     await userEvent.click(await screen.findByRole('option', { name: /Max Mustermann/ }));
 
@@ -221,9 +221,10 @@ describe('DauerterminStartPage', () => {
   it('schreibt „Uhr" nur mit einem Beginn (KAL-10)', () => {
     rendern('/termine/dauertermin?datum=2027-05-12');
 
-    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
+    // Eine Zeile statt Abschnitt und Tabelle (UX-005g).
+    expect(screen.getByText('Erster Termin: 12.05.2027')).toBeInTheDocument();
     expect(screen.queryByText(/Uhr/)).toBeNull();
-    expect(screen.getByText('Aus dem Kalender übernommen')).toBeInTheDocument();
+    expect(screen.queryByText('Aus dem Kalender übernommen')).toBeNull();
   });
 
   it('fuehrt ueber den Rueckweg in den Kalenderstand zurueck (KAL-19)', () => {

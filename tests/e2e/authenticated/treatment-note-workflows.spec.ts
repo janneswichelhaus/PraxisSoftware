@@ -48,7 +48,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag());
 
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
 
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
@@ -67,7 +69,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(1));
 
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page).toHaveURL(`/termine/${terminId}`);
@@ -95,7 +99,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(2));
 
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: noch nicht gespeichert.');
     await page.getByRole('link', { name: 'Abbrechen' }).click();
 
@@ -129,7 +135,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
       page.getByText('Dieser Termin ist abgeschlossen.', { exact: false }),
     ).toBeVisible();
 
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
 
@@ -141,7 +149,9 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
   test('zeigt dem Office am selben Termin die Dokumentation ohne Schreibweg', async ({ page }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(4));
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -163,7 +173,9 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
   test('liefert office den Lesepfad und weist das Patientenkonto ab', async ({ page, request }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(5));
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -204,7 +216,9 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
   test('laesst die Tabelle selbst nicht direkt lesen', async ({ page, request }) => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(7));
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page.getByText(ENTWURF)).toBeVisible();
@@ -240,7 +254,9 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   async function mitOffenemText(page: Page, tag: string, text: string): Promise<string> {
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, tag);
-    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
+    // Dokumentation allein ist die Route (UX-005g).
+    await page.goto(`/termine/${terminId}/dokumentation`);
     await page.getByLabel('Eintrag zur Behandlung').fill(text);
     return terminId;
   }

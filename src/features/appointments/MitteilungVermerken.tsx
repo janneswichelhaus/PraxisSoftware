@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/Button';
 import { Aufklappzeichen } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from './Rueckmeldungen';
 import {
@@ -79,7 +78,11 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
     // Zeichen im Kopf der Seite. Die Auswahl hier braucht, wer gerade
     // angerufen hat - vor der Tür braucht sie niemand, und vier Kästchen mit
     // zwei Sätzen kosteten dort einen halben Bildschirm.
-    <Section titel="Mitteilung an die Patient:in">
+    //
+    // Ohne Abschnittstitel (UX-005g): „Mitteilung an die Patient:in" über
+    // „Mitteilung vermerken" sagte dasselbe zweimal; der Aufklappkopf ist die
+    // eine Überschrift.
+    <section className="mt-8 first:mt-0">
       <details className="group">
         <summary className={`${aufklappKopfKlassen} text-ink text-liste font-medium`}>
           <Aufklappzeichen />
@@ -88,9 +91,11 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
             : 'Mitteilung ändern'}
         </summary>
         <div className="mt-2">
+          {/* Ein Satz für beides - wofür die Auswahl ist (TER-13) und dass
+              sie mit einer Terminänderung verfällt (UX-005g). */}
           <p className="text-ink-muted max-w-prose text-sm">
-            Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort
-            bestätigen, dass sie übergeben bzw. gesendet wurden.
+            Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt, wo sie bestätigt
+            werden; ändert sich der Termin, verfällt der Vermerk.
           </p>
           <div className="mt-2 flex flex-col gap-1">
             {notificationChannelOrder.map((kanal) => (
@@ -102,11 +107,6 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
               />
             ))}
           </div>
-
-          <p className="text-ink-muted mt-3 max-w-prose text-xs leading-relaxed">
-            Sobald der Termin verschoben oder anders geändert wird, verfällt der Vermerk – die neue
-            Zeit ist dann noch nicht mitgeteilt.
-          </p>
 
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <Button
@@ -130,6 +130,6 @@ export function MitteilungVermerken({ appointment }: { appointment: Appointment 
           </div>
         </div>
       </details>
-    </Section>
+    </section>
   );
 }

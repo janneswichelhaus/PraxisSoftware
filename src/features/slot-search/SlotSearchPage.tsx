@@ -55,6 +55,10 @@ function dayLabel(iso: string): string {
   return `${WEEKDAY.format(new Date(`${iso}T00:00:00Z`))} ${formatDate(iso)}`;
 }
 
+/**
+ * Nur Abweichungen tragen ein Kennzeichen (UX-005g): Ein passender Fahrweg
+ * ist der Normalfall und bekommt kein Wort; knapp und ungeprüft schon.
+ */
 function TravelBadge({
   rating,
   checking,
@@ -65,15 +69,15 @@ function TravelBadge({
   if (!rating) {
     return checking ? <Badge>Fahrweg wird geprüft …</Badge> : null;
   }
-  if (rating.status === 'ok') return <Badge ton="positiv">Fahrweg passt</Badge>;
+  if (rating.status === 'ok') return null;
   if (rating.status === 'tight') {
     return <Badge ton="warnung">Fahrweg knapp: {rating.shortfall_minutes} Min. zu wenig</Badge>;
   }
   return <Badge>Fahrweg nicht geprüft</Badge>;
 }
 
+/** Im Gebietstag ist der Normalfall und trägt kein Kennzeichen (UX-005g). */
 function TerritoryBadge({ status }: { status: Slot['territory_status'] }) {
-  if (status === 'match') return <Badge ton="positiv">Im Gebietstag</Badge>;
   if (status === 'outside') return <Badge ton="warnung">Außerhalb des Gebietstags</Badge>;
   return null;
 }
@@ -156,13 +160,11 @@ export function SlotSearchPage({ user }: { user: CurrentUser }) {
   return (
     <>
       <Rueckweg standard={back} />
+      {/* Nur der Name; dass nichts reserviert ist und der Termin erst im
+          Formular entsteht, erklärte das System (UX-005g). */}
       <PageHeader
         title="Freie Termine suchen"
-        description={
-          patient.data
-            ? `${fullName(patient.data)} · Vorschläge, nichts ist reserviert. Der Termin entsteht erst im Formular.`
-            : 'Vorschläge, nichts ist reserviert. Der Termin entsteht erst im Formular.'
-        }
+        description={patient.data ? fullName(patient.data) : undefined}
       />
       {waitlistId && !e ? (
         <Statusmeldung ton="warnung" className="mb-4">
@@ -334,14 +336,9 @@ function SearchForm({
         </form>
       </Section>
 
-      <Section
-        titel="Vorschläge"
-        hinweis={
-          params.type === 'home_visit'
-            ? `Im Gebietstag zuerst, dann nach Datum. Den Fahrweg prüft die Anwendung für die ersten ${TRAVEL_CHECK_LIMIT}; ein knapper Weg steht hinten.`
-            : 'Nach Datum und Uhrzeit.'
-        }
-      >
+      {/* Ohne Hinweis zur Sortierung: Die Reihenfolge zeigt sich selbst, und
+          Abweichungen tragen ihr Kennzeichen (UX-005g). */}
+      <Section titel="Vorschläge">
         {result.isPending ? <LoadingState label="Freie Plätze werden gesucht …" /> : null}
         {result.isError ? (
           <ErrorState

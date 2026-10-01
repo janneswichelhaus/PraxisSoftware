@@ -94,7 +94,8 @@ describe('SlotSearchPage (PRX-003)', () => {
         windows: [{ weekday: 1, from: '08:00', to: '12:00' }],
       }),
     );
-    expect(screen.getByText('Im Gebietstag')).toBeInTheDocument();
+    // Der Normalfall trägt kein Kennzeichen; nur Abweichungen (UX-005g).
+    expect(screen.queryByText('Im Gebietstag')).toBeNull();
     const href = screen.getByRole('link', { name: 'Übernehmen' }).getAttribute('href') ?? '';
     const [pfad, query] = href.split('?');
     expect(pfad).toBe(`/patienten/${PATIENT}/termine/neu`);

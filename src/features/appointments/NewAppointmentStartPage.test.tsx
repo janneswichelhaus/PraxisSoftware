@@ -93,12 +93,22 @@ describe('NewAppointmentStartPage', () => {
   it('zeigt die vorbelegte Zeit, damit sie vor der Auswahl prüfbar ist', async () => {
     renderWithProviders(<NewAppointmentStartPage />, VORBELEGT);
 
-    // Als Datum, nicht als Kennung (KAL-10) - und mit der Person der Spalte.
-    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
-    expect(screen.getByText('09:00–10:00 Uhr')).toBeInTheDocument();
-    expect(screen.getByText('Hausbesuch')).toBeInTheDocument();
-    expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
-    expect(screen.getByText('Aus dem Kalender übernommen')).toBeInTheDocument();
+    // Eine Zeile (UX-005g): als Datum, nicht als Kennung (KAL-10), mit der
+    // Person der Spalte - und ohne „Hausbesuch", den Regelfall (ANN-192).
+    expect(await screen.findByText('12.05.2027 · 09:00–10:00 Uhr · Anna Beispiel')).toBeVisible();
+    expect(screen.queryByText(/Hausbesuch/)).toBeNull();
+    expect(screen.queryByText('Aus dem Kalender übernommen')).toBeNull();
+  });
+
+  it('nennt eine abweichende Terminart in der Zeile', async () => {
+    renderWithProviders(
+      <NewAppointmentStartPage />,
+      `/termine/neu?datum=2027-05-12&beginn=09%3A00&ende=10%3A00&art=practice&person=${STAFF_ANNA}`,
+    );
+
+    expect(
+      await screen.findByText('12.05.2027 · 09:00–10:00 Uhr · Anna Beispiel · Praxis'),
+    ).toBeVisible();
   });
 
   it('verspricht nur, was wirklich vorbelegt ist (KAL-10)', async () => {
@@ -108,13 +118,10 @@ describe('NewAppointmentStartPage', () => {
       `/termine/neu?datum=2027-05-12&art=home_visit&person=${STAFF_ANNA}`,
     );
 
-    expect(
-      screen.getByText(
-        'Zuerst die Patient:in wählen. Datum, behandelnde Person und Terminart sind schon vorbelegt.',
-      ),
-    ).toBeInTheDocument();
-    expect(screen.getByText('noch offen')).toBeInTheDocument();
-    expect(await screen.findByText('Anna Beispiel')).toBeInTheDocument();
+    expect(screen.getByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
+    // Was fehlt, steht nicht da - kein „noch offen" (UX-005g).
+    expect(await screen.findByText('12.05.2027 · Anna Beispiel')).toBeVisible();
+    expect(screen.queryByText(/noch offen/)).toBeNull();
   });
 
   it('fuehrt ueber den Rueckweg in den Kalenderstand zurueck (KAL-19)', () => {
@@ -151,7 +158,7 @@ describe('NewAppointmentStartPage', () => {
 
     // Nichts übernommen - dann steht auch nichts da, und nichts wird versprochen.
     expect(screen.getByText('Zuerst die Patient:in wählen.')).toBeInTheDocument();
-    expect(screen.queryByText('Aus dem Kalender übernommen')).toBeNull();
+    expect(screen.queryByText(/\d{2}\.\d{2}\.\d{4}/)).toBeNull();
     expect(fetchAssignableTherapists).not.toHaveBeenCalled();
 
     await user.type(screen.getByRole('combobox', { name: 'Patient:in suchen' }), 'mus');

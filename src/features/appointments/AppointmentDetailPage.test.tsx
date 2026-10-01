@@ -1281,10 +1281,12 @@ describe('AppointmentDetailPage', () => {
       rendern(['therapist']);
 
       expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
-      expect(await screen.findByRole('link', { name: 'Dokumentation anlegen' })).toHaveAttribute(
-        'href',
-        `/termine/${TERMIN_ID}/dokumentation`,
-      );
+      // Am offenen Termin ist der Weg oben „Dokumentieren und abschließen"; ein
+      // zweites „Dokumentation anlegen" im Abschnitt gibt es seit UX-005g nicht.
+      expect(
+        await screen.findByRole('link', { name: 'Dokumentieren und abschließen' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
 
     it('zeigt office den Abschnitt lesend, ohne Weg zum Dokumentieren (E15)', async () => {

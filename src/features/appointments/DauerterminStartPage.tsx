@@ -3,7 +3,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
-import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -82,18 +81,15 @@ export function DauerterminStartPage({ user }: { user: CurrentUser }) {
       {/* Der Weg zurück, meist in den Kalenderstand (KAL-19). */}
       <Rueckweg standard="/kalender" />
 
+      {/* Nur der erste Satz; was im nächsten Schritt folgt, zeigt der nächste
+          Schritt (UX-005g). */}
       <PageHeader
         title={`${BEGRIFFE.dauertermin} anlegen`}
-        description="Zuerst die Patient:in, dann die Behandlungsgrundlage. Rhythmus und Anzahl folgen im nächsten Schritt."
+        description="Zuerst die Patient:in, dann die Behandlungsgrundlage."
       />
 
-      {zeit ? (
-        <Section titel="Aus dem Kalender übernommen">
-          <DetailList>
-            <DetailRow label="Erster Termin">{zeit}</DetailRow>
-          </DetailList>
-        </Section>
-      ) : null}
+      {/* Eine Zeile statt Abschnitt und Tabelle für einen einzigen Wert (UX-005g). */}
+      {zeit ? <p className="text-ink text-liste mb-8 font-medium">Erster Termin: {zeit}</p> : null}
 
       {patientId === null ? (
         <Section titel="Patient:in">

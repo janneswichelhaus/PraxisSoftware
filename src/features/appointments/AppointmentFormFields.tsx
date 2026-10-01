@@ -199,9 +199,10 @@ export function AppointmentFormFields({
           error={fehler.start_time}
           // step rechnet in Sekunden ab 00:00 - also genau in Minuten seit
           // Mitternacht, wie das Praxisraster. Nur der Beginn ist gebunden;
-          // verbindlich prueft der Server (CAL-005).
+          // verbindlich prueft der Server (CAL-005). Kein Hinweis „Praxisraster:
+          // N Minuten" mehr: Er erklärte das System, nicht die Eingabe; die
+          // Fehlermeldung bei einem Beginn außerhalb des Rasters bleibt (UX-005g).
           step={rasterMinuten ? rasterMinuten * 60 : undefined}
-          hint={rasterMinuten ? `Praxisraster: ${rasterMinuten} Minuten` : undefined}
           onChange={(e) => onChange('start_time', e.target.value)}
         />
         {/* Das Ende bleibt eine Ableitung, kein Feld (CAL-010a) - gewählt wird
@@ -425,13 +426,9 @@ export function UebernommeneAdresse({
     <div className="border-line bg-surface-sunken rounded-card border p-4">
       <p className="text-ink-muted text-sm">{ueberschrift}</p>
       {vollstaendig ? (
-        <>
-          <p className="text-ink text-liste">{[strasse, ort].filter(Boolean).join(', ')}</p>
-          <p className="text-ink-muted mt-2 text-xs leading-relaxed">
-            Wird aus den Stammdaten übernommen und am Termin festgehalten. Eine spätere Änderung der
-            Stammdaten verändert diesen Termin nicht.
-          </p>
-        </>
+        // Nur die Adresse - der Satz, dass sie aus den Stammdaten kommt und am
+        // Termin festgehalten bleibt, erklärte das System, nicht die Daten (UX-005g).
+        <p className="text-ink text-liste">{[strasse, ort].filter(Boolean).join(', ')}</p>
       ) : (
         <p className="text-danger text-sm">
           Für einen Hausbesuch fehlt eine vollständige Adresse (Straße, Hausnummer, PLZ und Ort).{' '}

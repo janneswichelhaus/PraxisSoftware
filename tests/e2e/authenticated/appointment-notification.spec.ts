@@ -186,9 +186,10 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
 
     await mitteilungOeffnen(page);
     await expect(page.getByRole('button', { name: 'Vermerk speichern' })).toBeVisible();
-    // Der Hinweis der Auswahl, seit UXR-005 neu formuliert.
+    // Der Hinweis der Auswahl, seit UXR-005 neu formuliert und seit UX-005g
+    // ein einziger Satz.
     await expect(
-      page.getByText(/Für Gespräch und Anruf\. Terminzettel und E-Mail werden vermerkt/),
+      page.getByText(/Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt/),
     ).toBeVisible();
   });
 });

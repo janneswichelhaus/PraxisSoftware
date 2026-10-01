@@ -115,7 +115,9 @@ describe('AppointmentSlipPage', () => {
 
     expect(screen.getByRole('button', { name: 'Terminzettel drucken' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Termine per E-Mail senden' })).toBeInTheDocument();
-    expect(screen.getByText(/organisatorische Angaben/)).toBeInTheDocument();
+    // Die Fußnote zu organisatorischen Angaben ist seit UX-005g fort; was der
+    // Zettel enthält, prüft der Test oben an der Liste selbst.
+    expect(screen.queryByText(/organisatorische Angaben/)).not.toBeInTheDocument();
     // Weiter kein SMS- oder Messenger-Weg: Messenger ist nach B15
     // ausgeschlossen, SMS gibt es nicht.
     expect(

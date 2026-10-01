@@ -72,20 +72,20 @@ describe('MitteilungVermerken', () => {
     expect(screen.getByLabelText('Per E-Mail mitgeteilt')).not.toBeChecked();
     // Terminzettel und E-Mail vermerken sich erst mit der Bestätigung dort
     // (ANN-039, ANN-041 Fassung 2) - der Hinweis behauptet keinen
-    // Selbstvermerk mehr (TER-13).
+    // Selbstvermerk mehr (TER-13). Seit UX-005g ein Satz, der auch das
+    // Verfallen nennt.
     expect(
       screen.getByText(
-        'Für Gespräch und Anruf. Terminzettel und E-Mail werden vermerkt, sobald Sie dort bestätigen, dass sie übergeben bzw. gesendet wurden.',
+        'Für Gespräch und Anruf – Terminzettel und E-Mail werden dort vermerkt, wo sie bestätigt werden; ändert sich der Termin, verfällt der Vermerk.',
       ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/vermerken sich selbst/)).not.toBeInTheDocument();
   });
 
-  it('steht als eigener Abschnitt eine Stufe unter dem Seitentitel (TER-16)', () => {
+  it('trägt den Aufklappkopf als einzige Überschrift - kein Abschnittstitel darüber (UX-005g)', () => {
     renderWithProviders(<MitteilungVermerken appointment={termin()} />);
-    expect(
-      screen.getByRole('heading', { level: 2, name: 'Mitteilung an die Patient:in' }),
-    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Mitteilung an die Patient:in' })).toBeNull();
+    expect(screen.getByText('Mitteilung vermerken')).toBeInTheDocument();
   });
 
   it('zeigt vorhandene Vermerke als gesetzt', () => {
