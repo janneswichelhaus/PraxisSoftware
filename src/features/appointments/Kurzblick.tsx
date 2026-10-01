@@ -125,30 +125,36 @@ function KurzblickAnzeige({ blick }: { blick: KurzblickDaten }) {
 }
 
 /**
- * Vertretungs-Kurzblick (PRX-006, `IDEA-PRX-016`).
+ * Vertretungs-Kurzblick (PRX-006, `IDEA-PRX-016`), seit dem Design-Handoff vom
+ * 2026-10-01 (Abschnitt 6) die Karte „Vor der Tür".
  *
  * Zugeklappt, weil die Seite im Treppenhaus mitgelesen wird; geöffnet zeigt er
  * Zugang, Besonderheit, feste Therapeut:in, Grundlage und den letzten Eintrag.
  * Ob jemand ihn sehen darf, entscheidet `get_appointment_brief`; die Seite
  * zeigt ihn nur den Rollen, die ihn lesen dürfen, damit niemand einen Knopf
  * sieht, der ins Leere führt.
+ *
+ * Gestaltet wie `Disclosure` mit `inKarte`, aber mit eigenem `<details>`: Er
+ * liest erst beim Öffnen. Der Handoff wollte ihn ab 1024 px offen - das hieße
+ * an jedem Rechner bei jedem Aufruf einen Lesezugriff samt Protokolleintrag,
+ * ohne dass jemand ihn angefordert hätte (ANN-137). Er bleibt deshalb überall
+ * zu. Dass das Lesen protokolliert wird, steht jetzt im Kopf: vor dem Öffnen,
+ * nicht erst danach.
  */
 export function Kurzblick({ appointmentId }: { appointmentId: string }) {
   const [offen, setOffen] = useState(false);
   return (
     <details
-      className="group border-line rounded-card border px-4 py-1"
+      className="group rounded-card border-line bg-surface border px-4 py-1"
       onToggle={(event) => setOffen(event.currentTarget.open)}
     >
-      <summary className={`${aufklappKopfKlassen} text-ink font-medium`}>
+      <summary className={`${aufklappKopfKlassen} text-ink text-liste font-semibold`}>
         <Aufklappzeichen />
-        Kurzblick für die Vertretung
+        Vor der Tür
+        <span className="text-ink-muted ml-auto text-sm font-normal">Lesen wird protokolliert</span>
       </summary>
       {offen ? (
-        <div className="pb-3">
-          <p className="text-ink-muted mb-2 text-xs">
-            Das Öffnen wird wie jedes Lesen der Dokumentation protokolliert.
-          </p>
+        <div className="border-line mt-1 border-t pt-3 pb-2.5">
           <KurzblickInhalt appointmentId={appointmentId} />
         </div>
       ) : null}

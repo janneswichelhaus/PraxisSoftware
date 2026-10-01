@@ -1,4 +1,4 @@
-import { buttonKlassen, kartenAktionKlassen } from '@/components/ui/buttonStile';
+import { buttonKlassen, kartenAktionKlassen, textlinkKlassen } from '@/components/ui/buttonStile';
 import {
   buildNavigationDayUrls,
   buildNavigationUrl,
@@ -35,20 +35,37 @@ const knopf = kartenAktionKlassen();
  * `hauptknopf`: Auf der Karte des ersten Wegs ist die Navigation die eine
  * Handlung, mit der der Tag beginnt (UX-EPIC-003) - dort trägt sie die
  * Hauptfarbe, sonst nicht. Mit `breit` füllt der Hauptknopf die Karte in
- * voller Höhe (48 px, Design-Handoff 2026-10-01). Am Vorgang ändert beides
+ * voller Höhe (48 px, Design-Handoff 2026-10-01). `textlink` setzt sie als
+ * Textlink „Navigation starten →" an den Fuß einer Kachel (Termin, Abschnitt
+ * 6) - weiter eine Schaltfläche, nur anders gekleidet. Am Vorgang ändert das
  * nichts: Die Adresse entsteht weiter erst im Klick.
  */
 export function NavigationZumTermin({
   termin,
   hauptknopf = false,
   breit = false,
+  textlink = false,
 }: {
   termin: Besuchsadresse;
   hauptknopf?: boolean;
   breit?: boolean;
+  textlink?: boolean;
 }) {
   const ziel = navigationsZiel(termin);
   if (!ziel) return null;
+
+  if (textlink) {
+    return (
+      <button
+        type="button"
+        className={textlinkKlassen(true, 'gap-1')}
+        onClick={() => navigationOeffnen(buildNavigationUrl(ziel, 'google_maps'))}
+      >
+        Navigation starten
+        <span aria-hidden="true">→</span>
+      </button>
+    );
+  }
 
   return (
     <button

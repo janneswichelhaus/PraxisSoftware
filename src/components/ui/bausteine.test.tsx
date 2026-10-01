@@ -103,6 +103,19 @@ describe('Card', () => {
 });
 
 describe('PageHeader', () => {
+  it('setzt den Kicker über den Titel, nicht in die Überschrift', () => {
+    renderWithProviders(<PageHeader kicker="Termin" title="Berta Bestand" />);
+    const kicker = screen.getByText('Termin');
+    expect(kicker.tagName).toBe('P');
+    expect(kicker).toHaveClass('uppercase', 'text-xs');
+    expect(screen.getByRole('heading', { level: 1 })).toHaveAccessibleName('Berta Bestand');
+    // Der Kicker steht vor dem Titel.
+    expect(
+      kicker.compareDocumentPosition(screen.getByRole('heading', { level: 1 })) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it('haelt den kompakten Kopf flach, ohne die Identitaet wegzunehmen', () => {
     // IDEA-PRX-038: auf den Dokumentationsseiten muss das Textfeld ohne
     // Scrollen erreichbar sein. Gespart wird Hoehe - nicht die Zeile, die

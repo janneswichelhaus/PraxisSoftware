@@ -25,7 +25,7 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
       await expect(
         page.getByText('Termin 8 von 10').or(page.getByText('Termin 10 von 10')),
       ).toBeVisible();
-      await page.getByText('Kurzblick für die Vertretung').click();
+      await page.locator('summary', { hasText: 'Vor der Tür' }).click();
       await expect(page.getByText(/Theraband gelb mitgegeben/)).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });
@@ -34,7 +34,7 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
   test('der Kurzblick beginnt zugeklappt und hat einen 44-px-Kopf', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=behandelnd`);
-    const kopf = page.getByText('Kurzblick für die Vertretung');
+    const kopf = page.locator('summary', { hasText: 'Vor der Tür' });
     await expect(page.getByText(/Theraband gelb mitgegeben/)).toHaveCount(0);
     expect((await kopf.boundingBox())!.height).toBeGreaterThanOrEqual(44);
     await kopf.click();
@@ -68,5 +68,53 @@ test.describe('Termin: Kurzblick, Zähler und Heilmittel', () => {
     await expect(page.getByText('Bestätigt von Anna Beispiel.')).toBeVisible();
     await expect(page.getByText(/Die Grundlage ist damit ausgeschöpft/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Heilmittel bestätigen' })).toHaveCount(0);
+  });
+});
+
+// UI-Redesign Schritt 4 (Design-Handoff 2026-10-01, Abschnitt 6).
+test.describe('Termin: Anordnung nach dem Design-Handoff', () => {
+  for (const ansicht of ['hausbesuch', 'praxis', 'abgesagt', 'fremd']) {
+    test(`${ansicht} läuft bei 375 px nicht waagerecht über`, async ({ page }) => {
+      await page.setViewportSize({ width: 375, height: 800 });
+      await page.goto(`${PRUEFSEITE}?ansicht=${ansicht}`);
+      await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+    });
+  }
+
+  test('am Rechner steht die Abrechnung rechts neben den Kacheln', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto(`${PRUEFSEITE}?ansicht=buero`);
+    const abrechnung = page.getByRole('heading', { name: 'Abrechnung' });
+    const kacheln = page.getByText('Termin 8 von 10');
+    await expect(abrechnung).toBeVisible();
+    const rechts = (await abrechnung.boundingBox())!;
+    const links = (await kacheln.boundingBox())!;
+    expect(rechts.x).toBeGreaterThan(links.x + links.width);
+  });
+
+  test('am Telefon steht die Abrechnung unter den Kacheln', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(`${PRUEFSEITE}?ansicht=buero`);
+    const abrechnung = (await page.getByRole('heading', { name: 'Abrechnung' }).boundingBox())!;
+    const kachel = (await page.getByText('Termin 8 von 10').boundingBox())!;
+    expect(abrechnung.y).toBeGreaterThan(kachel.y);
+  });
+
+  test('am Hausbesuch: Handlungen in „Nach dem Termin", die Absage leise am Ende', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await page.goto(`${PRUEFSEITE}?ansicht=hausbesuch`);
+    const karte = page.locator('div', {
+      has: page.getByRole('heading', { name: 'Nach dem Termin' }),
+    });
+    await expect(karte.getByRole('button', { name: 'Niemand öffnet?' }).first()).toBeVisible();
+    const absage = page.getByRole('button', { name: 'Termin absagen' });
+    const nachDemTermin = (await page
+      .getByRole('heading', { name: 'Nach dem Termin' })
+      .boundingBox())!;
+    expect((await absage.boundingBox())!.y).toBeGreaterThan(nachDemTermin.y);
+    expect((await absage.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 });

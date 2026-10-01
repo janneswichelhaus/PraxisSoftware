@@ -160,7 +160,7 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     await anmelden(page, KONTEN.office);
     await page.goto(`/termine/${terminId}`);
 
-    await expect(page.getByRole('heading', { name: /Termin – Max Mustermann/ })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
     // Seit E15 liest office den klinischen Inhalt (ADR-004 Fassung 2 Punkt 3) ...
     await expect(page.getByText(ENTWURF)).toBeVisible();
     // ... bearbeiten und finalisieren bleiben den therapeutischen Rollen (4.3).
