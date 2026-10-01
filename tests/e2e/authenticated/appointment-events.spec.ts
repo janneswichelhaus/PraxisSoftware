@@ -71,7 +71,9 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
 
     await kachel.first().click();
 
-    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
+    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
+    // Überschrift, „Fehlzeit" steht als Zeile darüber.
+    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
     await expect(detailWert(page, 'Fehlzeit')).toContainText('Teambesprechung');
     await expect(detailWert(page, 'Zeit')).toContainText(von);
 
@@ -262,7 +264,9 @@ test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
     // 2. Die Detailansicht mit beiden Aktionspaaren.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await page.getByRole('link', { name: bezeichnung }).first().click();
-    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
+    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
+    // Überschrift, „Fehlzeit" steht als Zeile darüber.
+    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
 
     await pruefeBreiten(page, async () => {
       await expect(

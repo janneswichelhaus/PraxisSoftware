@@ -114,7 +114,9 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await kachel.first().click();
 
     // Das Vorkommen sagt, dass es eines von dreien ist (CAL-021).
-    await expect(page.getByRole('heading', { name: /Fehlzeit –/ })).toBeVisible();
+    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
+    // Überschrift, „Fehlzeit" steht als Zeile darüber.
+    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
     await expect(detailWert(page, 'Dauerfehlzeit')).toContainText('Vorkommen 1 von 3');
 
     // Eine Fehlzeit ist keine Behandlung: kein Abschluss, keine Leistung (§19).
