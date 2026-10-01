@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { Textlink } from '@/components/ui/Textlink';
+import { Link } from 'react-router-dom';
 import { fetchOffeneScans } from '@/features/files/api';
 import { canManageTasks, canWriteTreatmentBases, type CurrentUser } from '@/features/session/types';
 import { OPEN_SCANS_KEY } from './PrescriptionsToCapture';
@@ -18,6 +18,11 @@ function anzahl(n: number, eins: string, mehr: string): string {
  *
  * Dieselben Abfragen wie die Seite „Offene Punkte": Wer weitertippt, sieht
  * dort sofort denselben Stand.
+ *
+ * Seit dem Design-Handoff vom 2026-10-01 eine Zeile in einer Karte, 60 px
+ * hoch: der Titel, darunter was fällig ist, rechts die Summe und der Pfeil.
+ * Die ganze Zeile ist der Weg (UX-005h); die Summe ist nur Bild - was sie
+ * zählt, steht daneben als Text.
  */
 export function OpenPointsSummary({ user, today }: { user: CurrentUser; today: string }) {
   const aufgaben = useQuery({
@@ -49,16 +54,28 @@ export function OpenPointsSummary({ user, today }: { user: CurrentUser; today: s
   return (
     // Die Zeile ist selbst der Weg: ein zweiter Link „Zu den offenen Punkten"
     // daneben nannte das Ziel zweimal (UX-005h).
-    <p className="border-line bg-surface rounded-card mt-6 border px-4 py-3 lg:max-w-3xl">
-      <Textlink alleinstehend to="/offen" className="text-liste gap-1">
-        {/* Ein Text statt zweier Spans: Im Flex-Kasten fiele das Leerzeichen
-            zwischen ihnen weg, und Vorlesesoftware läse „Punkte:2". */}
-        <span className="text-ink font-normal">
-          <span className="font-semibold">Offene Punkte:</span>
-          {` ${teile.join(' · ')}`}
+    <Link
+      to="/offen"
+      className="border-line bg-surface rounded-card hover:bg-accent-soft mt-6 flex min-h-15 items-center justify-between gap-3 border px-4 py-2 transition-colors duration-120"
+    >
+      <span className="min-w-0">
+        <span className="text-ink block text-base font-semibold">
+          Offene Punkte
+          {/* Für Vorlesesoftware ein Satz: „Offene Punkte: 2 überfällige …". */}
+          <span className="sr-only">:</span>
         </span>
-        <span aria-hidden="true">→</span>
-      </Textlink>
-    </p>
+        {/* Das Leerzeichen steht zwischen den beiden Zeilen und nicht in
+            einer von ihnen: Am Rand eines Elements fiele es weg, und
+            Vorlesesoftware läse „Punkte:2". */}{' '}
+        <span className="text-ink-muted block text-sm">{teile.join(' · ')}</span>
+      </span>
+      <span
+        aria-hidden="true"
+        className="text-accent flex shrink-0 items-center gap-1.5 text-base font-bold tabular-nums"
+      >
+        {ueberfaellig + heute + fotos}
+        <span>→</span>
+      </span>
+    </Link>
   );
 }

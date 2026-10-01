@@ -214,6 +214,23 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     expect(kontrastverhaeltnis(tokens[fahrt]!, tokens.surface!)).toBeGreaterThanOrEqual(3);
   });
 
+  // Der Tagesabschluss der Uebersicht steht auf Tiefgruen (Design-Handoff
+  // 2026-10-01, Abschnitt 5a Punkt 8): Titel und Link in Papier, die Zeile
+  // darunter in Salbei hell, der Kicker in Salbei. Salbei ist nur auf Tiefgruen
+  // Textfarbe - dort haelt es 4.5:1, auf hellem Grund nicht.
+  it.each([['surface'], ['accent-soft'], ['salbei']])(
+    'traegt %s als Text auf Tiefgruen mit 4.5:1',
+    (token) => {
+      expect(
+        kontrastverhaeltnis(tokens[token]!, tokens['surface-inverse']!),
+      ).toBeGreaterThanOrEqual(4.5);
+    },
+  );
+
+  it('laesst Salbei auf hellem Grund nicht als Textfarbe zu', () => {
+    expect(schlechtesterKontrast('salbei')).toBeLessThan(4.5);
+  });
+
   // `warnung-mittel` ist ausdruecklich keine Textfarbe: 4.06:1 auf Weiss und
   // 3.39:1 auf warnung-soft liegen unter den 4.5:1 fuer Text. Die Stufe steht
   // deshalb als Wort und Zahl in `warnung` daneben. Diese Zusicherung haelt

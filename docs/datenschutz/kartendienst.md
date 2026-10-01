@@ -41,7 +41,13 @@ Wiedervorlage betrachtet vier Wege getrennt:
    Logs steht sie nie. Zu klären: Retention der Anfrage beim Anbieter (Prüfdokument, Teil 5).
 3. **Route und Fahrzeit vom Server.** Koordinaten der Stopps in Fahrtreihenfolge, bei jedem Öffnen
    der Tour und bei jeder Kalenderprüfung mit Personenfilter. Fahrzeiten werden im Browser
-   angezeigt und über `check_travel_buffers` geprüft, **nicht gespeichert** (ANN-097).
+   angezeigt und über `check_travel_buffers` geprüft, **nicht gespeichert** (ANN-097). **Seit dem
+   UI-Redesign vom 2026-10-01 auch bei jedem Öffnen der Übersicht**, solange für die angemeldete
+   Person noch ein Besuch mit Ort aussteht (ANN-194): dieselben Koordinaten, dasselbe Fahrprofil,
+   ein Aufruf je Seitenbesuch, nichts gespeichert. Die Übersicht zeigt daraus Wegbalken und
+   Übergänge und prüft nichts über `check_travel_buffers` (ANN-195). Neu ist damit die
+   **Häufigkeit** der Aufrufe, nicht ihre Art; die Karte mit ihren Kacheln lädt dort weiter erst
+   beim Aufklappen. Abschaltbar an einer Stelle (`FAHRZEITEN_BEIM_OEFFNEN`).
 4. **Handoff vom Gerät.** Seit MAP-006d die Koordinate statt der Anschrift (ANN-018); B2 bleibt
    offen (ADR-019 Punkt 23).
 

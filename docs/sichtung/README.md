@@ -24,16 +24,17 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 
 ## Dateien
 
-| Datei                                        | Etappe                            | Stand                                                                                |
-| -------------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------ |
-| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess     | gesichtet 2026-09-28 (BEF-072 bis BEF-079)                                           |
-| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche | teilweise 2026-09-29 (1, 8–11); 2–7 warten auf Testdaten                             |
-| [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst           | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
-| [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife          | offen                                                                                |
-| [befund.md](befund.md)                       | Etappe 2 — Befund                 | offen; seit FRB-EPIC-001                                                             |
-| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung       | 1–6 gesichtet 2026-09-28/29; 7–9 (UX-EPIC-004) offen                                 |
-| [training.md](training.md)                   | Block 3 — Trainingsbereich        | offen; seit TRN-EPIC-001, Schritte 4–6 TRN-EPIC-002, 7–9 TRN-EPIC-003                |
-| [plattform.md](plattform.md)                 | Block 4 — Plattformzugang         | offen; seit POR-EPIC-001                                                             |
+| Datei                                        | Etappe                              | Stand                                                                                |
+| -------------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------------ |
+| [kernprozess.md](kernprozess.md)             | Etappen 0 und 1 — Kernprozess       | gesichtet 2026-09-28 (BEF-072 bis BEF-079)                                           |
+| [leistungsbereiche.md](leistungsbereiche.md) | Etappe L — zwei Leistungsbereiche   | teilweise 2026-09-29 (1, 8–11); 2–7 warten auf Testdaten                             |
+| [kartendienst.md](kartendienst.md)           | Etappe T — Kartendienst             | offen; seit MAP-006 auf der echten Tourenseite, Teil am Telefon wartet auf ein Gerät |
+| [betriebsreife.md](betriebsreife.md)         | Etappe G — Betriebsreife            | offen                                                                                |
+| [befund.md](befund.md)                       | Etappe 2 — Befund                   | offen; seit FRB-EPIC-001                                                             |
+| [praxisverwaltung.md](praxisverwaltung.md)   | Etappe P — Praxisverwaltung         | 1–6 gesichtet 2026-09-28/29; 7–9 (UX-EPIC-004) offen                                 |
+| [training.md](training.md)                   | Block 3 — Trainingsbereich          | offen; seit TRN-EPIC-001, Schritte 4–6 TRN-EPIC-002, 7–9 TRN-EPIC-003                |
+| [plattform.md](plattform.md)                 | Block 4 — Plattformzugang           | offen; seit POR-EPIC-001                                                             |
+| [ui-redesign.md](ui-redesign.md)             | UI-Redesign Übersicht, Termin, Akte | offen; Schritte 1 bis 3 seit 2026-10-01                                              |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

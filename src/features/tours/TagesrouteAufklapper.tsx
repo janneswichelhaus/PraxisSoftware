@@ -13,10 +13,15 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 /**
  * Die eigene Tagesroute in der Übersicht (MAP-006b).
  *
- * Zugeklappt, und erst beim Aufklappen wird etwas geladen: die Stopps, die
- * Karte, die Route. Die Übersicht ist die meistgeöffnete Seite — sie soll
- * nicht bei jedem Öffnen Kacheln und eine Route anfragen, wenn niemand die
- * Karte ansieht.
+ * Zugeklappt, und erst beim Aufklappen wird die Karte geladen. Die Übersicht
+ * ist die meistgeöffnete Seite — sie soll nicht bei jedem Öffnen Kacheln
+ * anfragen, wenn niemand die Karte ansieht.
+ *
+ * Die Punkte und die Route des Tages ruft die Übersicht seit dem UI-Redesign
+ * vom 2026-10-01 schon beim Öffnen ab, weil der Wegbalken die Fahrzeit
+ * braucht (ANN-194, `src/features/today/fahrzeiten.ts`). Dieselben Abfragen
+ * mit denselben Schlüsseln: Wer die Karte aufklappt, löst keinen zweiten
+ * Aufruf aus. MapLibre und die Kacheln bleiben beim Aufklappen.
  *
  * Der Kopf trägt das Aufklappzeichen wie jeder Aufklapper der Übersicht
  * (UEB-03, UIK-07): Ohne es sah „Tagesroute auf der Karte" aus wie eine

@@ -18,6 +18,11 @@
  * Die Grenzen stehen nur hier. Sie sind eine Darstellungsregel, keine
  * Sperre: Ob ein knapper Weg überhaupt geplant werden darf, entscheidet der
  * Kalender (ANN-097), nicht dieser Balken.
+ *
+ * ANN-195: Gerechnet wird in echten Minuten, **ohne** die Rundung auf das
+ * Praxisraster aus §8.1. Die gilt für das, was die Anwendung als Termin
+ * anbietet, und bleibt beim Server (`check_travel_buffers`); der Balken
+ * beantwortet eine andere Frage - wann man losfahren muss.
  */
 export type TravelLevel = 'late' | 'tight' | 'narrow' | 'clear';
 
