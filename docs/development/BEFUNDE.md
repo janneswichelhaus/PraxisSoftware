@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-09-30
+Stand: 2026-10-01
 
 ## Zweck
 
@@ -3136,7 +3136,21 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
 
-### BEF-083 — Die Terminseite wiederholt, was die Überschrift schon sagt
+### BEF-083 — Ein Rechnungstest wird zwischen 22 und 24 Uhr UTC rot: „morgen" in Gerätezeit, geprüft in Praxiszeit
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-09-30 |
+| Bereich | Abrechnung, Zahlung buchen (`src/features/billing/InvoicesPage.test.tsx`) |
+| Quelle  | Schlussprüfung POR-EPIC-001, `pnpm test` um 22:48 UTC; Gegenprobe mit `TZ=Europe/Berlin` grün |
+| Status  | erledigt in POR-EPIC-001 (der Test rechnet „morgen" jetzt in Europe/Berlin) |
+| Berührt | Test „schreibt einen Datumsfehler an das Datum, nicht an den Betrag (ABR-09, ZST-11)“, Hilfe `morgenOrtszeit` |
+
+**Beobachtung.** Der Test setzt als Eingangstag „morgen“ in der Zeitzone des Geräts und erwartet den Fehler „nicht für die Zukunft buchen“. Die Seite prüft in der Zeitzone der Praxis (Europe/Berlin). Auf einem Gerät in UTC ist zwischen 22 und 24 Uhr das UTC-„morgen“ in Berlin schon „heute“: kein Fehler, der Test wird rot. Das betrifft die CI (UTC), wenn sie abends läuft. Die Anwendung selbst ist richtig, falsch ist nur die Hilfe im Test. Dieselbe Art Fehler haben POR-EPIC-001 in `training-protocols.test.ts` und `appointment-coverage.test.ts` behoben: Monat von heute statt Monat des Termins, rot am Monatsanfang in Berlin.
+
+**Erwartet.** `morgenOrtszeit` rechnet „morgen“ in Europe/Berlin (`todayInTimeZone` plus ein Tag). Danach einmal mit `TZ=UTC` zu einer Uhrzeit zwischen 22 und 24 Uhr gegenprüfen.
+
+### BEF-084 — Die Terminseite wiederholt, was die Überschrift schon sagt
 
 |         |   |
 | ------- | - |
@@ -3150,7 +3164,7 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Datum, Zeit und Mitteilungszeichen in der Zeile unter der Überschrift; die behandelnde Person nur an fremden Terminen (ANN-193), die Terminart nur, wenn sie vom Hausbesuch abweicht (ANN-192), der Status nur, wenn er von „Bestätigt“ abweicht. Anschrift und Navigation bleiben, als Kachel, daneben die Grundlage. Ein Praxis- oder Videotermin trägt eine farbige Kachel.
 
-### BEF-084 — Der Block „Was ist passiert?“ am Hausbesuch steht immer offen
+### BEF-085 — Der Block „Was ist passiert?“ am Hausbesuch steht immer offen
 
 |         |   |
 | ------- | - |
@@ -3164,7 +3178,7 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Ein Knopf „Niemand öffnet?“ neben „Dokumentieren und abschließen“; dahinter die Schrittfolge geklingelt → gewartet → angerufen mit den Rufnummern der Patient:in zum Tippen, am Ende „nicht angetroffen“ vermerken; darunter der Weg „Ohne Behandlung abschließen“. Das Protokoll bleibt serverseitig Pflicht (ADR-018 Punkt 9).
 
-### BEF-085 — Im Kalender ist nicht zu sehen, wann jemand arbeitet
+### BEF-086 — Im Kalender ist nicht zu sehen, wann jemand arbeitet
 
 |         |   |
 | ------- | - |
@@ -3178,7 +3192,7 @@ Suchseite mit der Warnung erscheint.
 
 **Erwartet.** Die Zeit außerhalb der Arbeitszeit einer Person ist grau schraffiert, auch ein ganzer Tag ohne Arbeitszeit; die weiße Fläche ist die Arbeitszeit. Solange der Wochenplan nicht geladen ist, wird nichts behauptet. Die Legende erklärt die Schraffur.
 
-### BEF-086 — „Hausbesuch“ steht auf jeder Kachel, Karte und Zeile
+### BEF-087 — „Hausbesuch“ steht auf jeder Kachel, Karte und Zeile
 
 |         |   |
 | ------- | - |
@@ -3191,20 +3205,6 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Neun Listen und Kacheln nannten die Terminart an jeder Zeile — bei einer Hausbesuchspraxis fast immer „Hausbesuch“. Auf der Kalenderkachel war es die dritte Zeile, auf der Tageskarte eine eigene Zeile unter dem Namen, im Teamplan „Anna Beispiel · Hausbesuch“.
 
 **Erwartet.** Die Terminart steht nur, wenn sie abweicht (ANN-192): Praxistermin mit Standort, Videotermin. Die Zeile entfällt, wenn sie sonst nichts sagen würde.
-
-### BEF-087 — Ein Zahlungstest scheitert zwischen 22:00 und 24:00 UTC
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-09-30 |
-| Bereich | Testwerkzeuge (`src/test-utils.tsx`), Zahlung buchen |
-| Quelle  | Claude, voller Testlauf in der Cloud um 22:27 UTC (UX-EPIC-005; Abrechnung nicht berührt) |
-| Status  | offen |
-| Berührt | `morgenOrtszeit` in `src/test-utils.tsx`; `InvoicesPage.test.tsx` „schreibt einen Datumsfehler an das Datum“ (ZST-11) |
-
-**Beobachtung.** `morgenOrtszeit()` rechnet „morgen“ in der Zeitzone des Rechners (in der Cloud UTC), das Zahlungsformular „heute“ in der Praxiszeitzone (`todayInTimeZone`, Europe/Berlin). Zwischen 22:00 und 24:00 UTC ist in Berlin schon der nächste Tag: Das eingegebene Datum liegt dann nicht in der Zukunft, der Fehler bleibt aus, der Test scheitert. Zu jeder anderen Stunde läuft er grün; die CI hat ihn bisher nicht getroffen.
-
-**Erwartet.** Der Helfer nennt „morgen“ in derselben Zeitzone wie das Formular (Praxiszeitzone der Testdaten), oder der Test nennt einen Tag zwei Tage voraus. Die Aufrufer in `NewPatientPage.test.tsx` und `EditPatientPage.test.tsx` mitprüfen: Dort gilt dieselbe Frage für das Geburtsdatum.
 
 ### BEF-088 — Die Akte wiederholt ihren Kopf und erklärt sich selbst
 

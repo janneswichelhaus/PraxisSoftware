@@ -70,16 +70,10 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
   });
 
   it('haelt die internen Versorgungsangaben vom Patientenkonto fern (ANN-010)', async () => {
-    // Die eigene Erreichbarkeit sieht das Patientenkonto weiterhin - die
-    // Arbeitsnotizen der Praxis nicht. Beides kommt aus derselben Sicht; die
-    // Projektion macht die Datenbank, nicht der Client (ADR-004).
+    // Seit POR-001 sieht ein Konto ohne Praxisrolle auch die eigene Zeile
+    // nicht mehr (ADR-023 Punkt 20); die Plattform liest ueber Projektionen.
     const eigene = await kartei(users.patientMax, patients.max);
-    expect(eigene?.phone_mobile).toBe('+49 160 0000005');
-    expect(eigene?.home_visit_access_note).toBeNull();
-    expect(eigene?.special_note).toBeNull();
-    expect(eigene?.remark).toBeNull();
-    expect(eigene?.primary_therapist_staff_member_id).toBeNull();
-    expect(eigene?.primary_therapist_name).toBeNull();
+    expect(eigene).toBeUndefined();
 
     // Gegenprobe auf der Tabelle selbst: auch der direkte Weg liefert nichts.
     const { rows } = await asUser(

@@ -50,6 +50,7 @@ delete from public.patient_contact_details;
 delete from public.staff_private_details;
 delete from public.user_roles;
 delete from public.user_profiles;
+delete from public.platform_accesses;
 delete from public.patients;
 delete from public.training_bases;
 delete from public.training_relationships;
@@ -81,7 +82,11 @@ values
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000004', 'authenticated', 'authenticated', 'tim.teamleitung@praxis.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000005', 'authenticated', 'authenticated', 'max.mustermann@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000006', 'authenticated', 'authenticated', 'erika.beispiel@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000007', 'authenticated', 'authenticated', 'tom.training@praxis.invalid',     extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000007', 'authenticated', 'authenticated', 'tom.training@praxis.invalid',     extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  -- Plattformkonten (POR-EPIC-001): ohne Profil und ohne Rolle, Zugriff nur
+  -- ueber ihre Zugaenge unten (ADR-023 Punkte 2 und 3).
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000008', 'authenticated', 'authenticated', 'tina.plattform@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000009', 'authenticated', 'authenticated', 'erika.plattform@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort
@@ -346,8 +351,9 @@ insert into public.user_roles (user_id, organization_id, role_key) values
   ('11111111-1111-4111-8111-000000000003', '22222222-2222-4222-8222-000000000001', 'office'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'therapist'),
   ('11111111-1111-4111-8111-000000000004', '22222222-2222-4222-8222-000000000001', 'team_lead'),
-  ('11111111-1111-4111-8111-000000000005', '22222222-2222-4222-8222-000000000001', 'patient'),
-  ('11111111-1111-4111-8111-000000000006', '22222222-2222-4222-8222-000000000001', 'patient'),
+  -- Max und Erika (…005, …006) tragen seit POR-001 keine Rolle mehr: Die
+  -- Rolle `patient` wird nie vergeben (ADR-023 Punkt 3). Ihre Profile bleiben
+  -- als Konto ohne Praxisrolle stehen, an dem die Abweisungstests hängen.
   -- Ausschliesslich Trainingsbetreuung: nur so laesst sich pruefen, dass
   -- aus dieser Rolle kein Zugriff auf die Behandlungsseite folgt (ADR-021
   -- Punkt 6, PROJECT_PRINCIPLES.md 4.8).
@@ -529,3 +535,24 @@ insert into public.appointments (
    'practice', 'training', 'completed',
    (current_date - 2 + time '10:00') at time zone 'Europe/Berlin', (current_date - 2 + time '11:00') at time zone 'Europe/Berlin',
    (current_date - 2 + time '11:00') at time zone 'Europe/Berlin', '11111111-1111-4111-8111-000000000007');
+
+-- -----------------------------------------------------------------------------
+-- POR-EPIC-001: Plattformzugaenge (ADR-023)
+--
+-- Tina hat einen Zugang zu ihrem Training. Erika hat ein Konto mit zwei
+-- Zugaengen - Behandlung und Training -, damit der Bereichsschalter (DSN-001
+-- D6) etwas zu schalten hat. Direkt eingetragen statt ueber die Einladung:
+-- Der Seed ist der Stand nach dem Einloesen, nicht der Weg dorthin.
+-- -----------------------------------------------------------------------------
+insert into public.platform_accesses
+  (id, organization_id, relationship_kind, relationship_id, patient_id, training_relationship_id,
+   account_user_id, status, created_by, activated_at) values
+  ('cafecafe-cafe-4afe-8afe-000000000001', '22222222-2222-4222-8222-000000000001',
+   'training', 'eeeeeeee-eeee-4eee-8eee-000000000001', null, 'eeeeeeee-eeee-4eee-8eee-000000000001',
+   '11111111-1111-4111-8111-000000000008', 'active', '11111111-1111-4111-8111-000000000003', now()),
+  ('cafecafe-cafe-4afe-8afe-000000000002', '22222222-2222-4222-8222-000000000001',
+   'treatment', '66666666-6666-4666-8666-000000000002', '66666666-6666-4666-8666-000000000002', null,
+   '11111111-1111-4111-8111-000000000009', 'active', '11111111-1111-4111-8111-000000000003', now()),
+  ('cafecafe-cafe-4afe-8afe-000000000003', '22222222-2222-4222-8222-000000000001',
+   'training', 'eeeeeeee-eeee-4eee-8eee-000000000002', null, 'eeeeeeee-eeee-4eee-8eee-000000000002',
+   '11111111-1111-4111-8111-000000000009', 'active', '11111111-1111-4111-8111-000000000003', now());

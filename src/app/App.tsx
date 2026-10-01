@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { useSession } from '@/features/auth/sessionContext';
@@ -17,6 +17,10 @@ import {
   useCurrentUser,
 } from '@/features/session/useCurrentUser';
 import { ZugangEinrichtenPage } from '@/features/staff/ZugangEinrichtenPage';
+import { EinladungPage } from '@/features/platform/EinladungPage';
+import { EINLADUNG_PFAD } from '@/features/platform/einladung';
+import { KONTEXT_SCHLUESSEL, ladePlattformkontext } from '@/features/platform/api';
+import { PlattformApp } from '@/features/platform/PlattformApp';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -77,7 +81,8 @@ function AuthenticatedApp() {
    */
   if (error instanceof KeinProfilError) {
     return (
-      <ZugangEinrichtenPage
+      <OhneProfil
+        email={session?.user.email}
         onEingerichtet={() => {
           void queryClient.invalidateQueries({ queryKey: ['current-user'] });
         }}
@@ -133,6 +138,59 @@ function AuthenticatedApp() {
 }
 
 /**
+ * Ein Konto ohne Praxisprofil: Plattformkonto oder Konto mit offener
+ * Praxiseinladung (ADR-023 Punkt 25).
+ *
+ * Die Weiche fragt die Plattformprojektion. Liefert sie Zugänge, ist es ein
+ * Plattformkonto und bekommt das Gerüst unter `/p` - nie die
+ * Praxisoberfläche. Sonst geht es weiter wie bisher: Annahme einer
+ * Praxiseinladung, ohne Einladung zugriffslos (ANN-025). Die Weiche dient
+ * der Bedienung; der Schutz liegt in der Datenbank (Punkte 19 bis 21).
+ */
+function OhneProfil({
+  email,
+  onEingerichtet,
+  onAbmelden,
+}: {
+  email: string | undefined;
+  onEingerichtet: () => void;
+  onAbmelden: () => void;
+}) {
+  // Immer frisch beim Öffnen: Eine Sperre soll bei der nächsten Anfrage
+  // wirken (ADR-023 Punkt 18), nicht nach Ablauf eines Zwischenspeichers.
+  const { data, isPending, isError, refetch } = useQuery({
+    queryKey: KONTEXT_SCHLUESSEL,
+    queryFn: ladePlattformkontext,
+    staleTime: 0,
+  });
+  if (isPending) {
+    return (
+      <Vollseite>
+        <LoadingState label="Zugang wird geladen …" />
+      </Vollseite>
+    );
+  }
+  if (isError) {
+    return (
+      <Vollseite titel="Zugang nicht geladen">
+        <ErrorState
+          title="Ihr Zugang konnte nicht geladen werden."
+          description="Bitte prüfen Sie die Verbindung."
+          onErneut={refetch}
+        />
+        <Button variant="secondary" className="mt-4 w-full" onClick={onAbmelden}>
+          Abmelden
+        </Button>
+      </Vollseite>
+    );
+  }
+  if (data.length > 0) {
+    return <PlattformApp zugaenge={data} email={email} onAbmelden={onAbmelden} />;
+  }
+  return <ZugangEinrichtenPage onEingerichtet={onEingerichtet} onAbmelden={onAbmelden} />;
+}
+
+/**
  * Die Seiten, die ohne Sitzung erreichbar sind.
  *
  * Der Auffangpfad ist die Anmeldemaske und nicht ein Fehler: Wer ohne Sitzung
@@ -144,6 +202,7 @@ function OeffentlicheRouten() {
     <Routes>
       <Route path={WIEDERHERSTELLUNG_PFAD} element={<KennwortNeuPage />} />
       <Route path={ZUGANG_PFAD} element={<ZugangPage />} />
+      <Route path={EINLADUNG_PFAD} element={<EinladungPage />} />
       <Route path="*" element={<LoginPage />} />
     </Routes>
   );

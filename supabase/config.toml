@@ -118,5 +118,15 @@ enabled = false
 [functions.location-provider]
 verify_jwt = true
 
+# Der Zugangsdienst der Plattform (POR-003, ADR-023 Punkt 9). `verify_jwt`
+# ist hier aus, weil die eingeladene Person beim Einloesen noch kein Konto hat:
+# Die Berechtigung ist der einmalige Code, den die Datenbank prueft. Der
+# Versand prueft die Sitzung der einladenden Person selbst ueber die
+# Datenbank. Den Admin-Schluessel liest die Function nur aus dem eigens zu
+# setzenden Secret PLATFORM_ACCESS_ADMIN_KEY; ohne ihn antwortet sie "nicht
+# eingerichtet". Scharf erst nach OPS-001 (ADR-015 Punkt 20).
+[functions.platform-access]
+verify_jwt = false
+
 [analytics]
 enabled = false

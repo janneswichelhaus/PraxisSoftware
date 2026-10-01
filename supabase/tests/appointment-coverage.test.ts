@@ -380,8 +380,13 @@ describe('transfer_appointments_to_treatment_basis', () => {
       'select public.record_billable_services($1::uuid, $2::jsonb)',
       [abgerechnet, JSON.stringify([{ catalog_item_id: KATALOG_KG, quantity: 1 }])],
     );
+    // Der Monat des Termins, nicht der von heute: In den ersten Stunden eines
+    // Monats liegt der Termin von vor 26 Stunden im Vormonat (gefunden in
+    // POR-EPIC-001, 2026-10-01 Berliner Zeit).
     const { rows: monat } = await asPostgres<{ monat: string }>(
-      `select to_char(date_trunc('month', (now() at time zone 'Europe/Berlin')::date), 'YYYY-MM-DD') as monat`,
+      `select to_char(date_trunc('month', a.starts_at at time zone 'Europe/Berlin'), 'YYYY-MM-DD') as monat
+         from public.appointments a where a.id = $1`,
+      [abgerechnet],
     );
     const { rows: entwurf } = await asUserCommitted<{ id: string }>(
       users.office,

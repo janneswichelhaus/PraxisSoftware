@@ -46,6 +46,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Angenommene, zurückgenommene und abgelaufene Einladungen von Mitarbeitenden zu einem Zugang.',
   },
+  plattformzugang: {
+    label: 'Plattformzugänge',
+    beschreibung:
+      'Zugänge von Patient:innen und Kund:innen zur Plattform mit ihren Einladungen als Nachweis. Das Konto fällt 30 Tage nach dem Ende des letzten Zugangs, der Nachweis nach drei Jahren.',
+  },
   warteliste: {
     label: 'Warteliste',
     beschreibung:

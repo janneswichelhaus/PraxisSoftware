@@ -423,7 +423,7 @@
         },
         {
           "id": "ux-epic-005",
-          "name": "UX-EPIC-005 Entrümpeln: Terminseite, Hausbesuch-Ablauf, Arbeitszeit im Kalender, alle Bereiche (BEF-083 bis BEF-091)",
+          "name": "UX-EPIC-005 Entrümpeln: Terminseite, Hausbesuch-Ablauf, Arbeitszeit im Kalender, alle Bereiche (BEF-084 bis BEF-091)",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-09-30",
@@ -506,7 +506,10 @@
           "id": "por-epic-001",
           "name": "POR-EPIC-001 Plattformzugang",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-09-30",
+          "nachweis": "POR-001 bis POR-004, Zweitreview",
+          "vermerk": "Sichtung: Plattform Schritte 1 bis 3"
         },
         {
           "id": "por-epic-001b",

@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 66 Einträge):
+Zusatz `Prüfpaket` (heute 69 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2182,6 +2182,66 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** Rollenprüfung in `public.complete_appointment` und `public.reopen_appointment` in `supabase/migrations/20260930131000_trn_010_training_documented.sql`; `public.appointments_training_protocol_guard` in `supabase/migrations/20260930132000_trn_epic_004_zweitreview.sql`; `TerminAbschluss` in `src/features/training/TrainingProtocol.tsx`.
 
 **Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`.
+
+### ANN-187 — Ein Plattformkonto hat kein Profil in `user_profiles`; Praxis- und Plattformkonto schließen sich in beide Richtungen aus
+
+Technik · offen · 2026-09-30 · — · — · Wiedervorlage: Zweitreview POR-EPIC-001
+
+**Annahme.** Ein Konto, das an einen Plattformzugang gebunden ist oder war, bekommt nie eine Zeile in `user_profiles` und damit nie eine Rolle, auch nicht über die Annahme einer Praxiseinladung. Umgekehrt bindet ein Zugang kein Konto, das ein Profil hat, auch keines ohne Rolle. Die Konto-Art ergibt sich damit aus den Daten: Profil heißt Praxiskonto, gebundener Zugang heißt Plattformkonto. Ein eigenes Kennzeichen am Konto gibt es nicht.
+
+**Begründung.** ADR-023 Punkt 2 verlangt, dass die Datenbank „Praxis- oder Plattformkonto, nie beides“ erzwingt, und überlässt das Schema dem SPEC. Ohne Profil liefert `app.current_organization_id()` für ein Plattformkonto `null`. Damit läuft jede Praxispolicy ins Leere, bevor sie eine Rolle fragt, und zwar auch eine künftige, die jemand ohne Rollenprüfung schreibt. Das ist die stärkste Linie, die ohne neuen Code in jeder Policy zu haben ist. Punkt 5 nennt `user_profiles` beim Konto nur beschreibend; die Frist von 30 Tagen gilt hier für das Konto beim Anmeldedienst (ANN-189). Unsicher ist, ob spätere Plattformfunktionen ein eigenes Profil brauchen, etwa für Anrede oder Einstellungen. Das käme dann als eigene Tabelle, nicht als `user_profiles`.
+
+**Anker.** `app.user_profiles_not_platform_account` und `app.platform_accesses_guard` in `supabase/migrations/20260930141000_por_002_platform_accesses.sql`; Beweis über alle Tabellen und Funktionen in `supabase/tests/plattform-abschottung.test.ts`, Riegel in `supabase/tests/platform-accesses.test.ts`.
+
+**Änderungspfad.** Plattformkonten mit Profil: eine Spalte `account_kind` an `user_profiles`, alle Praxispolicies auf `app.is_practice_account()` umstellen und den Abschottungstest gegen ein Konto mit Profil laufen lassen · Aufwand `groß`.
+
+### ANN-188 — Mail-Einladung nur mit Vermerk „Adresse von der Person selbst bestätigt“, gespeichert an der Einladung
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 11)
+
+**Annahme.** Per Mail wird nur an die Adresse eingeladen, die im Verhältnis steht (Akte bzw. Kontakt im Training). Vorher muss die einladende Person ankreuzen, dass die Person selbst ihr diese Adresse bestätigt hat. Die Einladung speichert die Adresse, wer den Vermerk gesetzt hat und wann. Vor dem Versand prüft der Server, ob die Adresse im Verhältnis noch dieselbe ist. Hat sie sich geändert, wird nicht versandt, und es braucht eine neue Einladung. Wer einlädt, ist zugleich, wer übergibt. Einen eigenen Vermerk „übergeben durch“ gibt es daneben nicht.
+
+**Begründung.** ADR-023 Punkt 11 (Fassung 2): „Abgeglichen heißt: Die Person hat die Adresse selbst bestätigt.“ Eine Adresse aus einer Überweisung oder von Angehörigen genügt nicht, weil in der mobilen Versorgung die Adresse in der Akte oft der Tochter gehört. Ein Häkchen ist die kleinste Form, die das nachweisbar macht, ohne ein neues Datum über die Person zu erheben. Unsicher ist, ob die Prüfung einen Vermerk je Adresse am Verhältnis statt an der Einladung verlangt.
+
+**Anker.** `public.invite_platform_access` und `public.platform_invitation_mail` in `supabase/migrations/20260930141000_por_002_platform_accesses.sql` (Constraint `platform_access_invitations_email_channel`); `MailEinladung` in `src/features/platform-access/PlattformAbschnitt.tsx`.
+
+**Änderungspfad.** Bestätigung am Verhältnis statt an der Einladung: zwei Spalten an den Kontakttabellen, die Einladung liest sie statt des Häkchens · Aufwand `mittel`.
+
+### ANN-189 — Ende des Zugangs: Entziehen, Ende der Lesefrist oder Ablauf der letzten Einladung; der Löschlauf entfernt das Konto beim Anmeldedienst selbst
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-008 Validierung; ADR-023 Punkt 5)
+
+**Annahme.** Ein Zugang endet mit dem frühesten dieser Ereignisse: Er wird entzogen. 30 Tage nach dem Ende des Verhältnisses läuft die Lesefrist ab (DSN-001 D2; Anker ist der Abschluss der Versorgung bzw. das Vertragsende). Ein nie eingelöster Zugang endet mit dem Ablauf seiner letzten Einladung. Fällt das Verhältnis, endet der Zugang sofort. Er löst sich dabei von Verhältnis und Person und behält nur die Kennung des Verhältnisses; die Adressen seiner Einladungen werden geleert. Der Löschlauf entfernt ein Konto, 30 Tage nachdem alle seine Zugänge geendet haben, direkt aus `auth.users`, am Anfang des Laufs, und vermerkt es im Löschjournal als `auth_users`. Zugang und Einladungen fallen drei Jahre nach dem Ende (Datenklasse `plattformzugang`). Beides wird nach einem Restore erneut gelöscht.
+
+**Begründung.** ADR-023 Punkt 5 (Fassung 2) trennt die Fristen: Das Konto fällt 30 Tage nach dem letzten Zugang, der Nachweis nach drei Jahren wie das Auditlog (ANN-029). Die Konsequenzen dort verlangen, dass der Nachweis die Stammdaten nicht festhält. Die Lesefrist als Ende zu nehmen folgt aus D2: Danach sieht die Person nur noch „Ich“, ihr Zugang hat also keinen Zweck mehr. Der Lauf löscht das Konto selbst und nicht über den Zugangsdienst, weil er zeitgesteuert ohne Edge Runtime laufen muss (ADR-015 Punkt 20). Seit dem Zweitreview räumt der Lauf auch ein Konto ab, das der Zugangsdienst angelegt hat (Marke `platform_account` in den Metadaten des Anmeldedienstes) und das 30 Tage nach dem Anlegen noch an keinem Zugang hängt. Jedes Ende eines Zugangs, auch durch Löschlauf oder Zusammenführen, steht als `platform_access.revoked` mit Grund im Protokoll. Unsicher: ob der Anmeldedienst im Produktivprojekt das Löschen aus `auth.users` per SQL durch die Rolle des Laufs zulässt. Das ist vor OPS-001 am Testprojekt zu prüfen.
+
+**Anker.** `app.platform_access_ended_at`, `app.delete_due_platform_accounts`, `app.delete_due_platform_accesses`, der Riegel in `app.platform_accesses_guard` und die Nachträge in `public.apply_retention` und `public.reapply_deletion_journal`, alle in `supabase/migrations/20260930141000_por_002_platform_accesses.sql`; Konstante `app.platform_read_period`; Tests in `supabase/tests/platform-accesses.test.ts` („im Loeschlauf“).
+
+**Änderungspfad.** Andere Fristen: `app.platform_read_period` bzw. `retention_classes.plattformzugang` ändern · Aufwand `klein`. Konten über den Zugangsdienst löschen: den Löschschritt in eine Warteschlange schreiben lassen, die der Dienst abarbeitet · Aufwand `mittel`.
+
+### ANN-190 — Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang
+
+Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+
+**Annahme.** Ein eigener Zugang setzt 18 Jahre voraus (ADR-023 Punkt 15, W4). Der Server prüft das beim Einladen am Geburtsdatum im Verhältnis. Fehlt das Geburtsdatum, wird nicht eingeladen, und die Praxis sieht den Hinweis, es zu ergänzen. Das betrifft vor allem Trainingskund:innen, deren Geburtsdatum kein Pflichtfeld ist.
+
+**Begründung.** Punkt 15 verlangt die Prüfung am Server und nicht in der Oberfläche. Ohne Geburtsdatum lässt sich die Grenze nicht prüfen. Die restriktive Seite gilt (§16), und das Ergänzen kostet einen Handgriff. Unsicher ist, wie oft das im Training stört.
+
+**Anker.** Prüfung in `public.invite_platform_access`, Grenze in `app.platform_min_age_years` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`); Hinweis in `src/features/platform-access/api.ts` (`einladefehler`).
+
+**Änderungspfad.** Ohne Geburtsdatum einladen und die Volljährigkeit als Vermerk der einladenden Person festhalten: ein Häkchen wie bei ANN-188 · Aufwand `klein`.
+
+### ANN-191 — Beim Einlösen legt die Person ihre Adresse selbst fest; ein bestehendes Konto derselben Person bestätigt sie mit ihrem Kennwort
+
+Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkte 4, 7, 8)
+
+**Annahme.** Beim Einlösen gibt die Person Adresse und Kennwort ein. Hat die Adresse noch kein Konto, legt der Zugangsdienst eines an, die Adresse gilt als bestätigt. Hat sie schon eines, zum Beispiel weil die Person schon einen Zugang zum Training hat, bestätigt die Person es mit ihrem Kennwort. Ein Konto einer anderen Person weist die Datenbank ab, ebenso ein Praxiskonto. Die Adresse des Kontos darf von der im Verhältnis abweichen. Scheitert das Binden, wird ein gerade angelegtes Konto wieder entfernt.
+
+**Begründung.** Punkt 4: ein Konto je Person, bis zu zwei Zugänge. Punkt 8: Vor Ort legt die Person „dort Adresse und Kennwort fest“. Die Übergabe ist die Identitätsprüfung (Punkt 11), die Adresse also nur Anmeldename. Beim Weg per Mail ist sie ohnehin die bestätigte aus dem Verhältnis. Die Prüfung per Kennwort meldet sich beim Anmeldedienst an und erzeugt dabei eine Sitzung, die der Dienst verwirft. Unsicher ist, ob die Prüfung eine abweichende Adresse beim Weg vor Ort akzeptiert. Seit dem Zweitreview bekommen „Adresse vergeben“ und „Konto passt nicht“ dieselbe Auskunft. Jeder solche Fehlversuch zählt, nach fünf ist die Einladung verbraucht. Die Sitzung aus der Kennwortprüfung beendet der Dienst sofort. **Mit B13 neu zu entscheiden:** Die selbst gewählte Adresse gilt beim Anlegen als bestätigt. Eine Wiederherstellung per Mail darf es für Plattformkonten erst geben, wenn diese Adresse bestätigt wurde, sonst wäre sie ein Übernahmeweg.
+
+**Anker.** `einloesen` in `supabase/functions/platform-access/handler.ts`, `kennwortPruefen` in `supabase/functions/platform-access/anmeldedienst.ts`; Personenprüfung in `app.platform_accesses_guard` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`).
+
+**Änderungspfad.** Adresse muss der im Verhältnis entsprechen: Vergleich in `public.redeem_platform_invitation` · Aufwand `klein`.
 
 ### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 

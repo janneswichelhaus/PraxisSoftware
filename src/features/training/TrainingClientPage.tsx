@@ -39,6 +39,7 @@ import {
 import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
 import { TrainingEinheiten } from './TrainingProtocol';
+import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -187,6 +188,16 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
           {/* TRN-009: die protokollierten Einheiten - nur owner und
               Trainingsbetreuung (ANN-184). */}
           {canWriteTrainingProtocols(user.roles) ? <TrainingEinheiten kundin={kundin} /> : null}
+          {/* POR-002: der eigene Zugang zur Plattform, getrennt von einem
+              Zugang zur Behandlung (§4.8, ADR-023 Punkt 4). */}
+          {user.organizationTimeZone ? (
+            <PlattformAbschnitt
+              art="training"
+              verhaeltnisId={kundin.id}
+              darfVerwalten={darfSchreiben}
+              zeitzone={user.organizationTimeZone}
+            />
+          ) : null}
         </>
       )}
     </>

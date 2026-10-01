@@ -30,9 +30,14 @@ function label(map: Record<string, string>, key: string): string {
   return map[key] ?? key;
 }
 
-/** Anzeigename des Akteurs. Systemereignisse haben keinen Account (ANN-009). */
+/**
+ * Anzeigename des Akteurs. Systemereignisse haben keinen Account (ANN-009).
+ * Ein Plattformkonto hat kein Profil und damit keinen Namen in der Praxis;
+ * es steht unterscheidbar als solches da (ADR-023 Punkt 14, POR-002).
+ */
 function akteur(event: AuditEvent): string {
   if (event.actor_kind === 'system') return 'System';
+  if (event.actor_kind === 'platform') return 'Plattformkonto';
   return event.actor_display_name ?? 'Unbekannt';
 }
 

@@ -613,6 +613,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       'aufgabe',
       'patientenakte',
       'patientenfoto',
+      // POR-002: Regel in app.delete_due_platform_accesses und
+      // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
+      'plattformzugang',
       'termin_ohne_nachweis',
       'trainingsverhaeltnis',
       'warteliste',
