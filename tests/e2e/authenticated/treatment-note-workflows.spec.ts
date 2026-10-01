@@ -286,7 +286,18 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
   });
 
   test('haelt das Zurueck des Browsers an', async ({ page }) => {
-    const terminId = await mitOffenemText(page, laufTag(9), 'Synthetisch: Zurueck-Taste.');
+    // Das Zurueck des Browsers blockt der Router nur innerhalb desselben
+    // Dokuments. Deshalb fuehrt der Weg hier nicht ueber `page.goto`, sondern
+    // ueber einen Link der Anwendung: Am abgeschlossenen Termin steht
+    // „Dokumentation anlegen" (am offenen seit UX-005g nur der Hauptknopf
+    // zum Abschluss, der eine andere Seite oeffnet).
+    await anmelden(page, KONTEN.therapist);
+    const terminId = await terminAnlegen(page, laufTag(9));
+    await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
+    await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
+    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
+    await expect(page).toHaveURL(`/termine/${terminId}/dokumentation`);
+    await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 
     await page.goBack();
 
