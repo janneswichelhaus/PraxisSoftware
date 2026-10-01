@@ -135,9 +135,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
       page.getByText('Dieser Termin ist abgeschlossen.', { exact: false }),
     ).toBeVisible();
 
-    // Am offenen Termin steht oben „Dokumentieren und abschließen“; der Weg zur
-    // Dokumentation allein ist die Route (UX-005g).
-    await page.goto(`/termine/${terminId}/dokumentation`);
+    // Am abgeschlossenen Termin steht der Weg zur Dokumentation weiter als
+    // Knopf im Abschnitt (UX-005g nimmt ihn nur am offenen Termin weg).
+    await page.getByRole('link', { name: 'Dokumentation anlegen' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
 
