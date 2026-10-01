@@ -423,11 +423,11 @@
         },
         {
           "id": "ux-epic-005",
-          "name": "UX-EPIC-005 Entrümpeln: Terminseite, Hausbesuch-Ablauf, Arbeitszeit im Kalender (BEF-083 bis BEF-086)",
+          "name": "UX-EPIC-005 Entrümpeln: Terminseite, Hausbesuch-Ablauf, Arbeitszeit im Kalender, alle Bereiche (BEF-083 bis BEF-091)",
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-09-30",
-          "nachweis": "UX-005a bis UX-005d, Branch `claude/sleepy-fermi-9ykp3k`",
+          "nachweis": "UX-005a bis UX-005i, Branch `claude/sleepy-fermi-9ykp3k`",
           "vermerk": "Sichtung: Praxisverwaltung Schritt 9"
         },
         {

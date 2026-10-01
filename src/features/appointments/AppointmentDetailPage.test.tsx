@@ -1139,16 +1139,11 @@ describe('AppointmentDetailPage', () => {
       await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
 
       await waitFor(() => expect(completeAppointment).toHaveBeenCalled());
-      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Den lesenden
-      // Abschnitt "Behandlungsdokumentation" sieht office seit E15 trotzdem -
-      // er ist keine Rueckfrage und zaehlt deshalb hier nicht mit.
-      const abschnitt = screen
-        .getByRole('heading', { name: 'Behandlungsdokumentation' })
-        .closest('section');
-      const ausserhalb = screen
-        .queryAllByText(/dokumentation/i)
-        .filter((element) => !abschnitt?.contains(element));
-      expect(ausserhalb).toEqual([]);
+      // Kein Zwischenschritt, keine Rueckfrage nach Inhalten. Am offenen
+      // Termin ohne Eintrag steht fuer office seit UX-005g auch kein leerer
+      // Abschnitt "Behandlungsdokumentation" mehr - nirgends ein Wort davon.
+      expect(screen.queryByRole('heading', { name: 'Behandlungsdokumentation' })).toBeNull();
+      expect(screen.queryAllByText(/dokumentation/i)).toEqual([]);
     });
 
     it('markiert einen abgeschlossenen Termin nicht als unvollstaendig', async () => {
@@ -1289,12 +1284,14 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
 
-    it('zeigt office den Abschnitt lesend, ohne Weg zum Dokumentieren (E15)', async () => {
+    it('liest office den Eintrag, ohne Weg zum Dokumentieren (E15)', async () => {
       rendern(['office']);
       await screen.findByText('Berta Bestand');
 
-      expect(await screen.findByText('Behandlungsdokumentation')).toBeInTheDocument();
-      expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID);
+      // Gelesen wird (E15); ohne Eintrag steht am offenen Termin aber kein
+      // leerer Abschnitt (UX-005g), und einen Weg zum Anlegen gibt es nicht.
+      await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledWith(TERMIN_ID));
+      expect(screen.queryByRole('heading', { name: 'Behandlungsdokumentation' })).toBeNull();
       expect(screen.queryByRole('link', { name: 'Dokumentation anlegen' })).toBeNull();
     });
   });

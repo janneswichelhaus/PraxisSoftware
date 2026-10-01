@@ -3247,3 +3247,17 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Jede offene Tageskarte trug „Steht aus“; „Liege heute: nein“ stand jeden Morgen ganz oben; der Leerzustand und der Teamplan wiederholten ihre Überschrift als Satz; die Organisationskarten erklärten ihre Links; die Zeile „Offene Punkte: …“ hatte daneben einen zweiten Link zum selben Ziel. Auf „Offene Punkte“ stand unter jeder Überschrift ein Erklärsatz, an jeder Aufgabe „Für alle im Team“, an jeder Erstaufnahme „Offen:“. Die Anrufliste trug „Offen“ an jeder Zeile unter „Anzurufen“ und „Mitgeteilt:“ unter „Schon mitgeteilt“, dazu einen dauerhaften Nachschlagetext. Die Warteliste nannte „Hausbesuch“ und „Therapeut:in egal“.
 
 **Erwartet.** Abzeichen nur für Abweichungen; Zeilen nur, wenn sie etwas sagen; Erklärsätze zu Überschriften entfallen, Nachschlagetext zugeklappt; die Zeile „Offene Punkte“ ist selbst der Link. Nicht angefasst: der Datenschutzsatz unter „Navigation starten“ (ADR-019 Punkt 23 setzt ihn bewusst dorthin) und die beiden Kriteriensätze unter „Verordnung endet“ und „Versorgung abschließen?“, die eine Auswahlregel erklären.
+
+### BEF-091 — Organisation, Abrechnung und Training tragen Regelfall-Abzeichen und Fußnoten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-01 |
+| Bereich | Mitarbeitende und Zugang, Rechnungen, Leistungen, Zahlung, Preisliste, Training, Mein Konto, Lastenräder, Urlaub, Zeitkonto, Erstattungen, Statistiken, Protokoll |
+| Quelle  | Claude, systematische Durchsicht im Auftrag von Jannes |
+| Status  | erledigt in UX-EPIC-005 (UX-005i) |
+| Berührt | `src/features/{staff,billing,training,account,fleet,vacation,timeaccount,reimbursements,statistics,audit}/` |
+
+**Beobachtung.** Die Rechnungsseite nannte den Empfänger dreimal, den Zahlungsstand zweimal, den eigenen Absender mit Bankverbindung auf jeder Rechnung und erklärte Storno und Unveränderlichkeit in sechs Sätzen; die Liste trug „Ausgestellt“ an jeder Rechnung und einen Knopf je Zeile. Die Mitarbeitenden-Seite erklärte die Trennung von Stammdaten und Zugang dreimal, zeigte „Beschäftigung: Aktiv“, „Stand: Eingerichtet“, leere Kontaktzeilen und eine siebenzeilige Admin-Anleitung. Trainingstermine trugen „Art: Hausbesuch“ und „Bestätigt“, jede Einheit „Hausbesuch · Tom“. Lastenräder wiederholten die Wochenübersicht je Rad; Urlaub listete offene Anträge mit „Beantragt“; „Mein Konto“ nannte den eigenen Namen und die Praxis als Zeilen.
+
+**Erwartet.** Regelfälle ohne Abzeichen und Zeile, leere Werte ohne Zeile, Nachschlagetexte zugeklappt, die Rechnungsnummer als Link. Offen geblieben: Das Abzeichen „Nicht für Termine zuordenbar“ in der Mitarbeitendenliste markiert eine Rolle, kein Problem; es bleibt, weil die Liste die Rollen nicht kennt (serverseitige Änderung nötig). Die Praxiseinstellungen über dem Wochenplan (Praxisraster, automatische Finalisierung, Startort) bleiben offen, weil die Suche sie direkt anspringt.
