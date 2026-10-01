@@ -22,10 +22,10 @@ Die Erwartung zur Übersicht in [Kernprozess](kernprozess.md) Schritt 10 („Lie
 | 3   | therapist | Während eines laufenden Termins die **Übersicht** öffnen; **Dokumentieren und abschließen**, einen synthetischen Satz schreiben, abschließen und zur Übersicht zurück. Danach den nächsten Termin abwarten lassen und am Tagesende noch einmal. | Die Karte heißt „Jetzt · bis …" und trägt als Hauptknopf **Dokumentieren und abschließen**, keine Navigation; der Wegbalken zeigt „Nächster Weg danach". Nach dem Abschluss ist der Punkt ein Häkchen, der Fortschritt zählt mit, die Karte zeigt den nächsten Besuch. Ist der Termin davor vorbei, zählt der Balken herunter bis „Zu spät, Abfahrt sofort". Am Tagesende steht in Tiefgrün **Alle Besuche erledigt** mit „Morgen im Kalender".                                        | Redesign Schritt 3   |
 | 4   | owner     | Am Rechner im breiten Fenster die **Übersicht** öffnen, das Fenster schmaler ziehen und wieder breiter. Einen Eintrag im **Tagesplan des Teams** anklicken.                                                                                     | Breit steht der Tagesplan des Teams als Karte **rechts** neben dem eigenen Tag, offen, mit „✓ Dokumentiert", „! Nicht angetroffen", „× Abgesagt" ohne Pille; schmal rückt er **unter** den Tag. Die ganze Zeile führt in den Termin, „← Übersicht" wieder zurück. Darunter „Tagesroute auf der Karte" — die Karte lädt erst nach dem Aufklappen.                                                                                                                                       | Redesign Schritt 3   |
 
-**Zu bestätigen:** **ANN-194** (die Übersicht ruft die Route des Tages beim Öffnen ab — Datenschutz,
-im Prüfpaket), **ANN-195** (Puffer in echten Minuten, ohne Rundung auf das Raster), **ANN-196**
+**Zu bestätigen:** **ANN-195** (Puffer in echten Minuten, ohne Rundung auf das Raster), **ANN-196**
 (der erste Weg beginnt „jetzt"; nach dem Ende des Termins davor zählt der Balken herunter),
-**ANN-197** (Stockwerk vom Anfang des Zugangshinweises).
+**ANN-197** (Stockwerk vom Anfang des Zugangshinweises). **ANN-194** (die Übersicht ruft die Route
+des Tages beim Öffnen ab) hat Jannes am 2026-10-01 entschieden; sie bleibt im Prüfpaket.
 
 **Bewusst nicht gebaut** (im Ideenspeicher): Wochentakt der Liege (`IDEA-PRX-051`),
 Abschlussmeldung auf der Übersicht (`IDEA-PRX-052`), eigenes Feld für das Stockwerk

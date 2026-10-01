@@ -2269,7 +2269,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-194 — Die Übersicht ruft die Route des eigenen Tages beim Öffnen ab
 
-Datenschutz · offen · 2026-10-01 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung zusammen mit B2 und dem Gate aus ADR-019 Punkt 9; Jannes nach der Sichtung (Kontingent beim Anbieter)
+Datenschutz · entschieden (Jannes) · 2026-10-01 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung zusammen mit B2 und dem Gate aus ADR-019 Punkt 9; Kontingent beim Anbieter nach den ersten Feldtagen
 
 **Annahme.** Die Übersicht ruft für die angemeldete Person beim Öffnen die Punkte der eigenen Tagesroute (`list_day_route`), den Startort der Praxis und **eine** Route über alle Stopps ab, solange noch ein Besuch mit Ort aussteht — bisher geschah das dort erst beim Aufklappen der Karte. Hinaus gehen wie in Tour und Kalender nur Koordinaten in Fahrtreihenfolge und das Fahrprofil; gespeichert wird nichts. Die Karte selbst (Kacheln aus dem Browser) lädt weiterhin erst auf Tipp.
 
