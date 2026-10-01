@@ -2314,3 +2314,15 @@ Technik · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** `zugangMitStockwerk` in `src/features/today/stockwerk.ts`; Tests `src/features/today/stockwerk.test.ts`.
 
 **Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`.
+
+### ANN-198 — Der Hinweis auf die vorherige Absage bleibt am Hausbesuch als eine Zeile
+
+Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 10)
+
+**Annahme.** Im Ablauf „Niemand öffnet?" bleibt unter „Tür geöffnet, aber keine Behandlung?" eine Zeile zum dritten Szenario: „Vorher abgesagt? Dann am Seitenende ‚Termin absagen'." Die Folge – Ausfallhonorar bei einem Eingang unter 24 Stunden – steht in der Absage-Rückfrage, nicht mehr hier.
+
+**Begründung.** Der Design-Handoff vom 2026-10-01 streicht den Satz „Hat die Patient:in vorher abgesagt? …" (Abschnitt 1). ADR-018 Punkt 9.3 verlangt aber, dass die Oberfläche **durch alle drei** Hausbesuch-Szenarien führt; ein ADR geht der Design-Spezifikation vor (`PROJECT_PRINCIPLES.md` §21). Die kürzeste Form, die beides hält: der Fall wird genannt und der Weg gezeigt, die Regel steht dort, wo abgesagt wird.
+
+**Anker.** `HomeVisitFlow` in `src/features/appointments/HomeVisitFlow.tsx`; Test `AppointmentDetailPage.test.tsx` („Vorher abgesagt?").
+
+**Änderungspfad.** Ganz streichen, wenn Jannes entscheidet, dass die Absage-Rückfrage das Szenario allein erklärt (dann ADR-018 Punkt 9.3 so lesen oder ergänzen) · Aufwand `klein`.

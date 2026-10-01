@@ -471,7 +471,6 @@ describe('AppointmentDetailPage', () => {
       // am 2026-09-12 geaendert: Das Abhaken vor der Tuer verlangt keine
       // Entscheidung, fuer die es noch keine Regel gibt (E14).
       expect(screen.queryByLabelText('Ausfallhonorar berechnen?')).not.toBeInTheDocument();
-      expect(screen.getByText(/Ein Ausfallhonorar entsteht daraus nicht/)).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Ja, niemand angetroffen' }));
 
@@ -481,16 +480,20 @@ describe('AppointmentDetailPage', () => {
       );
     });
 
-    it('sagt im Vermerk, dass es keine Behandlung war', async () => {
+    // Der Satz „Das ist ein organisatorischer Vermerk …" ist gestrichen
+    // (Design-Handoff 2026-10-01, Abschnitt 1, Entscheidung Jannes); die
+    // Rückfrage nennt weiter, was geschieht und wie es zurückgeht.
+    it('sagt im Vermerk, was geschieht - ohne den gestrichenen Erklärsatz', async () => {
       const user = userEvent.setup();
       rendern();
       await screen.findByText('Berta Bestand');
 
       await user.click(screen.getByRole('button', { name: 'Nicht angetroffen' }));
 
-      expect(
-        screen.getByText(/keine durchgeführte Behandlung, keine Dokumentation/),
-      ).toBeInTheDocument();
+      const kasten = screen.getByRole('group', { name: 'Nicht angetroffen' });
+      expect(kasten).toHaveTextContent('wird als „nicht angetroffen“ geführt');
+      expect(kasten).toHaveTextContent('Termin wieder öffnen');
+      expect(within(kasten).queryByText(/organisatorischer Vermerk/)).toBeNull();
     });
 
     it('zeigt am vermerkten Termin Zustand und den Weg zurueck - ohne Gebuehrenzeile', async () => {
@@ -727,11 +730,9 @@ describe('AppointmentDetailPage', () => {
       await waitFor(() => expect(zeile('Status')).toBe('Nicht angetroffen'));
       expect(zeile('Protokoll')).toMatch(/15 Minuten vor Ort gewartet/);
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/Nicht angetroffen/);
-      // Kein Betrag hier, aber der Ort, an dem abgerechnet wird (TER-10) -
-      // nicht mehr der überholte Satz vom fehlenden Katalog.
-      expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(
-        /Wird unter Abrechnung → Leistungen erfasst\./,
-      );
+      // Kein Betrag und seit dem Design-Handoff vom 2026-10-01 auch kein Satz
+      // dazu, wo abgerechnet wird - gestrichen (Abschnitt 1).
+      expect(zeile('Ausfallhonorar vorgemerkt')).not.toMatch(/Leistungen erfasst/);
       expect(screen.queryByText(/Leistungskatalog ist noch nicht/)).not.toBeInTheDocument();
     });
 
@@ -858,7 +859,7 @@ describe('AppointmentDetailPage', () => {
       expect(zeile('Status')).toBe('Abgesagt');
       expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/weniger als 24 Stunden/);
-      expect(screen.getByText('Wird unter Abrechnung → Leistungen erfasst.')).toBeInTheDocument();
+      expect(screen.queryByText(/Leistungen erfasst/)).toBeNull();
     });
 
     it('nennt bei einer Absage ohne Gebuehr keine Gebuehrenzeile', async () => {

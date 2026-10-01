@@ -16,6 +16,10 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
  * Tastatur macht von hier aus weiter (Oberflächen-Checkliste Punkt 7). Sie
  * erscheint nur nach einem bestätigten Erfolg - nie auf Verdacht (Punkt 6).
  *
+ * Seit dem Design-Handoff vom 2026-10-01 steht sie auf der Akzentfläche statt
+ * als grüne Textzeile: Sie ist die Antwort auf den Vorgang und soll so
+ * auffallen wie der Knopf, der ihn ausgelöst hat.
+ *
  * Eine neue Meldung ist eine neue Zeile: Die Seite setzt einen neuen `key`,
  * damit auch eine zweite, gleichlautende Bestätigung den Fokus wieder nimmt.
  */
@@ -36,7 +40,18 @@ export function Rueckmeldung({
     // Fokussierbar, aber kein Bedienelement: ohne eigenen Fokusrahmen, wie die
     // Fehlerzusammenfassung, die ebenso von selbst den Fokus nimmt.
     <div ref={zeile} tabIndex={-1} className={`outline-none ${className}`}>
-      <Statusmeldung ton="erfolg">{children}</Statusmeldung>
+      {/* Aussehen nach dem Design-Handoff vom 2026-10-01 (Abschnitt 3):
+          Akzentfläche, Radius 14, innen 12/16, 15 px in 600 in der Hauptfarbe,
+          das Häkchen vorn für Vorlesesoftware ausgeblendet - der Satz sagt es. */}
+      <p
+        role="status"
+        className="bg-accent-soft text-accent rounded-card text-liste px-4 py-3 font-semibold"
+      >
+        <span aria-hidden="true" className="mr-1.5">
+          ✓
+        </span>
+        {children}
+      </p>
     </div>
   );
 }

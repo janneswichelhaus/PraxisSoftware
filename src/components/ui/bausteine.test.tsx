@@ -8,7 +8,7 @@ import { Badge } from './Badge';
 import { Button } from './Button';
 import { ButtonLink } from './ButtonLink';
 import { Card, Disclosure } from './Card';
-import { EmptyState, ErrorState } from './Feedback';
+import { EmptyState, ErrorState, LoadingState } from './Feedback';
 import { PageHeader } from './PageHeader';
 import { ProgressBar } from './ProgressBar';
 import { RoleBadge } from './RoleBadge';
@@ -1757,5 +1757,31 @@ describe('ProgressBar', () => {
     expect(container.querySelector<HTMLElement>('[data-fortschritt]')!.style.width).toBe('100%');
     rerender(<ProgressBar wert={0} von={0} />);
     expect(container.querySelector('[data-fortschritt]')).toBeNull();
+  });
+});
+
+describe('LoadingState und EmptyState in der Karte (Design-Handoff 2026-10-01)', () => {
+  it('bleibt ohne Angabe die schlichte Zeile', () => {
+    const { container } = renderWithProviders(<LoadingState label="Wird geladen …" />);
+    expect(container.firstElementChild?.tagName).toBe('P');
+    expect(container.querySelector('[data-ladekacheln]')).toBeNull();
+  });
+
+  it('steht in einer Karte und zeigt leere Kacheln in Zielgröße', () => {
+    const { container } = renderWithProviders(
+      <LoadingState label="Termin wird geladen …" inKarte kacheln={2} />,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent('Termin wird geladen …');
+    expect(container.firstElementChild).toHaveClass('rounded-card', 'bg-surface', 'border');
+    const kacheln = container.querySelector('[data-ladekacheln]')!;
+    expect(kacheln).toHaveAttribute('aria-hidden', 'true');
+    expect(kacheln.children).toHaveLength(2);
+    expect(kacheln.firstElementChild).toHaveClass('h-18');
+  });
+
+  it('setzt den Leerzustand auf Wunsch in eine Karte', () => {
+    const { container } = renderWithProviders(<EmptyState title="Noch keine Termine" inKarte />);
+    expect(container.firstElementChild).toHaveClass('rounded-card', 'bg-surface');
+    expect(screen.getByText('Noch keine Termine')).toBeInTheDocument();
   });
 });

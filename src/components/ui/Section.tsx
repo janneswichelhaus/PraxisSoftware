@@ -41,7 +41,11 @@ export function Section({
   const Ueberschrift = ebene === 3 ? 'h3' : 'h2';
   return (
     <section className="mt-8 first:mt-0">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      {/* Kopfzeile mindestens 32 px (Design-Handoff 2026-10-01, Abschnitt 3):
+          genug für die Überschrift und einen Textlink daneben, ohne dass ein
+          leerer Kopf die Liste nach unten schiebt. Das Tippziel eines
+          Textlinks bleibt 44 px (`Textlink alleinstehend`). */}
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
         {/* Abschnittstitel als `--type-label`: 12 px in 600, Versalien mit
             0.14em Laufweite (DS-001). */}
         <Ueberschrift className="text-ink-muted tracking-label text-xs font-semibold uppercase">

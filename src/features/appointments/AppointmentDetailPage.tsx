@@ -33,7 +33,6 @@ import {
 import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
-import { BEREICHE } from '@/lib/begriffe';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import { NavigationZumTermin } from './NavigationStarten';
 import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
@@ -66,15 +65,6 @@ import {
   type Appointment,
   type EventParticipant,
 } from './api';
-
-/**
- * Wo das Ausfallhonorar erfasst wird (TER-10).
- *
- * Bis UXR-005 stand hier, Höhe und Abrechnung stünden noch aus, weil der
- * Leistungskatalog noch nicht eingerichtet sei. Katalog und Rechnung gibt es
- * inzwischen; das Honorar erscheint dort unter den Leistungen.
- */
-const HONORAR_ERFASSUNG = `Wird unter ${BEREICHE.abrechnung.label} → Leistungen erfasst.`;
 
 /**
  * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).
@@ -228,10 +218,9 @@ function ZustandKarte({
   const zeitpunkt = (iso: string) =>
     `${formatLocalDate(iso, zone)}, ${formatLocalTime(iso, zone)} Uhr`;
   const honorar = appointment.fee_basis ? (
-    <DetailRow label="Ausfallhonorar vorgemerkt">
-      <span>{feeBasisLabels[appointment.fee_basis]}</span>
-      <span className="text-ink-muted mt-1 block text-sm">{HONORAR_ERFASSUNG}</span>
-    </DetailRow>
+    // Ohne den Satz „Wird unter Abrechnung → Leistungen erfasst.": gestrichen
+    // im Design-Handoff vom 2026-10-01 (Abschnitt 1).
+    <DetailRow label="Ausfallhonorar vorgemerkt">{feeBasisLabels[appointment.fee_basis]}</DetailRow>
   ) : null;
 
   const wiederOeffnen = darfWiederOeffnen ? (
@@ -760,10 +749,8 @@ function NichtAngetroffenAktion({
         {patientName(appointment)} wird als „nicht angetroffen“ geführt. Der Zeitraum bleibt belegt.
         Ein Irrtum lässt sich über „Termin wieder öffnen“ zurücknehmen.
       </p>
-      <p className="text-ink-muted mt-3 text-sm">
-        Das ist ein organisatorischer Vermerk: keine durchgeführte Behandlung, keine Dokumentation,
-        keine verbrauchte Verordnungsleistung. Ein Ausfallhonorar entsteht daraus nicht.
-      </p>
+      {/* „Das ist ein organisatorischer Vermerk …" ist gestrichen
+          (Design-Handoff 2026-10-01, Abschnitt 1). */}
     </Rueckfrage>
   );
 }
@@ -1420,7 +1407,9 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
           sonst keine Überschrift (UIK-16). */}
       {!data ? <PageHeader title="Termin" /> : null}
 
-      {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
+      {/* Laden in einer Karte mit Ort und Grundlage in Zielgröße
+          (Design-Handoff 2026-10-01, Abschnitt 3). */}
+      {isPending ? <LoadingState label="Termin wird geladen …" inKarte kacheln={2} /> : null}
       {/* Ersetzt wird der Termin nur, solange es keinen gibt; ein
           gescheitertes Nachladen meldet sich über dem Stand (ZST-03). */}
       {isError && !data ? (
