@@ -11,6 +11,7 @@ import {
   terminUeberOberflaeche,
   zugriffstoken,
   kalenderOptionenOeffnen,
+  terminImKalenderOeffnen,
 } from './helpers';
 
 /**
@@ -69,7 +70,7 @@ test.describe('CAL-002: Kalender', () => {
       'Max Mustermann',
     );
 
-    await eintrag.click();
+    await terminImKalenderOeffnen(page, terminId);
     await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
@@ -138,7 +139,7 @@ test.describe('CAL-002: Kalender', () => {
     await expect(page).toHaveURL((u) => u.searchParams.get('datum') === TAG);
     // Hier zaehlt nur, dass der Tag nach dem Zurueckblaettern wieder belegt
     // ist - welcher Termin es genau ist, prueft der Ablauf weiter oben.
-    await expect(page.getByRole('link', { name: /Max Mustermann/ }).first()).toBeVisible();
+    await expect(page.getByRole('button', { name: /Max Mustermann/ }).first()).toBeVisible();
   });
 
   test('läuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {

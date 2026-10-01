@@ -275,7 +275,25 @@ export function terminLinkWahl(appointmentId: string): string {
  * Namensfilter traf dann zwei Kacheln und brach im Strict Mode ab.
  */
 export function terminKachel(page: Page, appointmentId: string): Locator {
-  return page.locator(terminLinkWahl(appointmentId));
+  // Seit dem Design-Handoff vom 2026-10-01 (Abschnitt 7a) ist die Kachel ein
+  // Knopf, der das Terminpanel öffnet - adressiert über `data-termin`.
+  return page.locator(`[data-termin="${appointmentId}"]`);
+}
+
+/**
+ * Öffnet einen Termin aus dem Kalender: Tipp auf die Kachel, dann „Termin →"
+ * im Terminpanel (Design-Handoff 2026-10-01, Abschnitt 7a).
+ */
+export async function terminImKalenderOeffnen(page: Page, appointmentId: string): Promise<void> {
+  await terminKachel(page, appointmentId).click();
+  await page.getByRole('link', { name: /^(Termin|Fehlzeit) →$/ }).click();
+}
+
+/** Das Ziel von „Termin →" im Panel des gewählten Termins. */
+export async function panelZiel(page: Page, appointmentId: string): Promise<URL> {
+  await terminKachel(page, appointmentId).click();
+  const link = page.getByRole('link', { name: /^(Termin|Fehlzeit) →$/ });
+  return new URL((await link.getAttribute('href'))!, 'http://ort.invalid');
 }
 
 /**

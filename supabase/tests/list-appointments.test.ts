@@ -1,5 +1,12 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  resetDatabase,
+  resetDatabaseOhneTermine,
+} from './helpers/db';
 
 const { users, organizationId, patients } = SEED;
 
@@ -443,6 +450,9 @@ describe('list_appointments: Datensparsamkeit', () => {
         'training_relationship_id',
         'training_given_name',
         'training_family_name',
+        // UI-Redesign Zyklen 2-4: der Bearbeitungsstand der Dokumentation, kein
+        // Inhalt - "! Doku offen" an der Kachel (wie list_day_plan).
+        'documentation_status',
       ].sort(),
     );
   });
@@ -461,5 +471,95 @@ describe('list_appointments: Datensparsamkeit', () => {
     ]) {
       expect(schluessel).not.toContain(feld);
     }
+  });
+});
+
+/**
+ * Der Doku-Stand im Kalender (UI-Redesign Zyklen 2-4, Design-Handoff
+ * 2026-10-01, Abschnitt 7a): dieselbe Spalte und dieselbe Grenze wie in der
+ * Tagesliste - nur der Stand des Haupteintrags, nur am Behandlungstermin, nie
+ * der Inhalt.
+ */
+describe('list_appointments: Doku-Stand', () => {
+  // Einträge hängen an Terminen und haben eigene Versionen; das Aufräumen
+  // übernimmt der Helfer, der auch den Kurzblick-Test aufräumt.
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  async function eintrag(terminId: string, status: 'draft' | 'final', addendumZu?: string) {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.treatment_notes (
+         organization_id, appointment_id, status, content, created_by, updated_by,
+         addendum_to_note_id, finalized_at, finalized_by, finalisation_kind
+       ) values ($1, $2, $3, 'Synthetischer Eintrag', $4, $4, $5,
+                 case when $3 = 'final' then now() end,
+                 case when $3 = 'final' then $4::uuid end,
+                 case when $3 = 'final' then 'manual' end)
+       returning id`,
+      [organizationId, terminId, status, users.therapist, addendumZu ?? null],
+    );
+    return rows[0]!.id;
+  }
+
+  async function stand(userId: string) {
+    const { rows } = await asUser<{ id: string; documentation_status: string | null }>(
+      userId,
+      LESEN,
+      ['2027-05-12', '2027-05-13', null, null, 'all'],
+    );
+    return new Map(rows.map((zeile) => [zeile.id, zeile.documentation_status]));
+  }
+
+  it('meldet none, draft und final am Behandlungstermin - ohne Inhalt', async () => {
+    const ohne = await termin({ tag: '2027-05-12', von: '08:00', bis: '09:00' });
+    const entwurf = await termin({ tag: '2027-05-12', von: '09:00', bis: '10:00' });
+    const fertig = await termin({ tag: '2027-05-12', von: '10:00', bis: '11:00' });
+    await eintrag(entwurf, 'draft');
+    await eintrag(fertig, 'final');
+
+    const zeilen = await stand(users.therapist);
+    expect(zeilen.get(ohne)).toBe('none');
+    expect(zeilen.get(entwurf)).toBe('draft');
+    expect(zeilen.get(fertig)).toBe('final');
+
+    const { rows } = await asUser(users.therapist, LESEN, [
+      '2027-05-12',
+      '2027-05-13',
+      null,
+      null,
+      'all',
+    ]);
+    expect(JSON.stringify(rows)).not.toContain('Synthetischer Eintrag');
+  });
+
+  it('zaehlt nur den Haupteintrag, keinen Nachtrag (ADR-016 Punkt 6)', async () => {
+    const id = await termin({ tag: '2027-05-12', von: '08:00', bis: '09:00' });
+    const haupt = await eintrag(id, 'final');
+    await eintrag(id, 'draft', haupt);
+
+    expect((await stand(users.therapist)).get(id)).toBe('final');
+  });
+
+  it('gibt den Stand allen Praxisrollen, die den Nachweis lesen (owner, team_lead, office)', async () => {
+    const id = await termin({ tag: '2027-05-12', von: '08:00', bis: '09:00' });
+    for (const rolle of [users.ownerTherapist, users.teamLead, users.office]) {
+      expect((await stand(rolle)).get(id)).toBe('none');
+    }
+  });
+
+  it('laesst die Spalte an einer Fehlzeit leer - sie wird nicht dokumentiert', async () => {
+    const { rows } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, appointment_type,
+         kind, title, event_group_id, status, starts_at, ends_at
+       ) values (
+         $1, null, $2, 'video', 'internal', 'Teambesprechung', gen_random_uuid(), 'confirmed',
+         ('2027-05-12 08:00'::timestamp at time zone 'Europe/Berlin'),
+         ('2027-05-12 08:30'::timestamp at time zone 'Europe/Berlin')
+       ) returning id`,
+      [organizationId, STAFF.anna],
+    );
+    expect((await stand(users.therapist)).get(rows[0]!.id)).toBeNull();
   });
 });

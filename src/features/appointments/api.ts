@@ -1331,7 +1331,27 @@ const calendarEntrySchema = z.object({
   training_relationship_id: z.string().nullable().default(null),
   training_given_name: z.string().nullable().default(null),
   training_family_name: z.string().nullable().default(null),
+  /**
+   * Bearbeitungsstand der Dokumentation am Behandlungstermin (UI-Redesign
+   * Zyklen 2-4): 'none' | 'draft' | 'final', sonst null - auch für Rollen,
+   * die den Nachweis nicht lesen. Kein Inhalt.
+   */
+  documentation_status: z.enum(['none', 'draft', 'final']).nullable().default(null),
 });
+
+/**
+ * Ist der Termin abgeschlossen, aber nicht festgeschrieben? Dann trägt die
+ * Kachel „! Doku offen" (Design-Handoff 2026-10-01, Abschnitt 7a). Ohne
+ * bekannten Stand nichts behaupten.
+ */
+export function dokuOffen(
+  eintrag: Pick<CalendarEntry, 'status' | 'documentation_status'>,
+): boolean {
+  return (
+    eintrag.status === 'completed' &&
+    (eintrag.documentation_status === 'none' || eintrag.documentation_status === 'draft')
+  );
+}
 
 // Die Eingabeform: Die drei Felder des Trainings sind dort optional, damit
 // Prüfseiten und Tests aus der Zeit davor gültig bleiben.

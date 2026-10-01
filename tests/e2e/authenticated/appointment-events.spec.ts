@@ -66,10 +66,13 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await expect(page).toHaveURL(/\/kalender/);
     // getByRole mit Zeichenkette trifft Teiltexte - kein selbst gebauter
     // regulaerer Ausdruck aus veraenderlichem Text noetig.
-    const kachel = page.getByRole('link', { name: bezeichnung });
+    const kachel = page.getByRole('button', { name: bezeichnung });
     await expect(kachel.first()).toBeVisible();
 
+    // Die Kachel öffnet das Terminpanel, „Fehlzeit →" die Detailansicht
+    // (Design-Handoff 2026-10-01, Abschnitt 7a).
     await kachel.first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
 
     // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
     // Überschrift, „Fehlzeit" steht als Zeile darüber.
@@ -122,10 +125,11 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     // Beide Kalender tragen die Besprechung.
-    const kacheln = page.getByRole('link', { name: bezeichnung });
+    const kacheln = page.getByRole('button', { name: bezeichnung });
     await expect(kacheln).toHaveCount(2);
 
     await kacheln.first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
     await expect(detailWert(page, 'Beteiligte')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Beteiligte')).toContainText('Tim Teamleitung');
 
@@ -146,9 +150,9 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     // Und im Kalender stehen beide Zeilen an der neuen Stelle, mit dem neuen
     // Namen - nicht eine von beiden.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    const neueKacheln = page.getByRole('link', { name: `${bezeichnung} neu` });
+    const neueKacheln = page.getByRole('button', { name: `${bezeichnung} neu` });
     await expect(neueKacheln).toHaveCount(2);
-    await expect(page.getByRole('link', { name: bezeichnung, exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: bezeichnung, exact: true })).toHaveCount(0);
   });
 
   test('sagt das ganze Ereignis in beiden Kalendern ab', async ({ page }) => {
@@ -172,7 +176,8 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await page.getByRole('button', { name: 'Fehlzeit eintragen', exact: true }).click();
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
-    await page.getByRole('link', { name: bezeichnung }).first().click();
+    await page.getByRole('button', { name: bezeichnung }).first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
     await page.getByRole('button', { name: 'Fehlzeit absagen', exact: true }).click();
     // „Patient:in hat abgesagt" steht hier nicht zur Wahl (CAL-016).
     await page.getByLabel('Absagegrund').selectOption('practice_request');
@@ -185,9 +190,9 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     // Beide Zeilen sind abgesagt: Im Standardfilter des Kalenders steht keine
     // mehr, mit dem Filter „alle" beide.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await expect(page.getByRole('link', { name: bezeichnung })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: bezeichnung })).toHaveCount(0);
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=all`);
-    await expect(page.getByRole('link', { name: bezeichnung })).toHaveCount(2);
+    await expect(page.getByRole('button', { name: bezeichnung })).toHaveCount(2);
   });
 
   test('belegt den Zeitraum und weist einen ueberschneidenden Termin ab', async ({ page }) => {
@@ -263,7 +268,8 @@ test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
 
     // 2. Die Detailansicht mit beiden Aktionspaaren.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
-    await page.getByRole('link', { name: bezeichnung }).first().click();
+    await page.getByRole('button', { name: bezeichnung }).first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
     // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
     // Überschrift, „Fehlzeit" steht als Zeile darüber.
     await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();

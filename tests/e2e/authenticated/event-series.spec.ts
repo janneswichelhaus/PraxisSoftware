@@ -109,9 +109,12 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     await expect(page).toHaveURL(/\/kalender/);
-    const kachel = page.getByRole('link', { name: bezeichnung });
+    // Die Kachel öffnet das Terminpanel, „Fehlzeit →" die Detailansicht
+    // (Design-Handoff 2026-10-01, Abschnitt 7a).
+    const kachel = page.getByRole('button', { name: bezeichnung });
     await expect(kachel.first()).toBeVisible();
     await kachel.first().click();
+    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
 
     // Das Vorkommen sagt, dass es eines von dreien ist (CAL-021).
     // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die

@@ -30,6 +30,7 @@ import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
+  dokuOffen,
   terminBezeichnung,
   type CalendarEntry,
   terminPfad,
@@ -173,11 +174,35 @@ const STATUS_FARBE = {
  * der Tag eine Spalte je Person mit Namen im Kopf. Farbe trägt nie allein -
  * Warnung und Absage stehen als Zeichen und Wort in der Kachel (KAL-23).
  */
-function statusLinie(status: CalendarEntry['status']): string {
+function statusLinie(eintrag: CalendarEntry): string {
+  const status = eintrag.status;
   if (status === 'confirmed') return 'border-l-accent';
-  if (status === 'no_show') return 'border-l-warnung';
+  // Abgeschlossen ohne festgeschriebene Doku: Warnfarbe (Zyklen 2-4, ANN-201).
+  if (status === 'no_show' || dokuOffen(eintrag)) return 'border-l-warnung';
   if (status === 'cancelled') return 'border-l-danger';
   return 'border-l-line-strong';
+}
+
+/**
+ * Die dritte Zeile der Kachel (Design-Handoff 2026-10-01, Abschnitt 7a):
+ * Zeichen und Wort für einen abweichenden Zustand - „! Doku offen",
+ * „✓ Dokumentiert", „× Abgesagt" -, sonst der Ort, wenn er vom Regelfall
+ * abweicht (ANN-192).
+ */
+function unterzeile(
+  eintrag: CalendarEntry,
+): { zeichen: string | null; text: string; farbe: string } | null {
+  if (dokuOffen(eintrag)) return { zeichen: '!', text: 'Doku offen', farbe: 'text-warnung' };
+  if (eintrag.status !== 'confirmed') {
+    const ton = appointmentStatusTon[eintrag.status];
+    return {
+      zeichen: ton in STATUS_ZEICHEN ? STATUS_ZEICHEN[ton] : null,
+      text: appointmentStatusLabels[eintrag.status],
+      farbe: ton in STATUS_FARBE ? STATUS_FARBE[ton] : 'text-ink-muted',
+    };
+  }
+  const ort = ortsHinweis(eintrag);
+  return ort ? { zeichen: null, text: ort, farbe: 'text-ink-muted' } : null;
 }
 
 export interface GitterSpalte {
@@ -247,6 +272,8 @@ export function CalendarGrid({
   onAuswahl,
   auswahl = null,
   rueckweg,
+  onWaehlen,
+  gewaehlt = null,
   beschriftung,
   vorschlag = null,
   kontext,
@@ -320,6 +347,14 @@ export function CalendarGrid({
    * kennt seinen eigenen Stand, das Gitter nicht; deshalb kommt er von oben.
    */
   rueckweg?: string | undefined;
+  /**
+   * Ein Tipp auf die Kachel wählt den Termin, statt ihn zu öffnen
+   * (Design-Handoff 2026-10-01, Abschnitt 7a): Die Seite zeigt dann ein
+   * Terminpanel mit Haken und „Doku". Ohne Angabe bleibt die Kachel ein Link.
+   */
+  onWaehlen?: ((eintrag: CalendarEntry) => void) | undefined;
+  /** Der gewählte Termin - seine Kachel trägt den Rahmen der Hauptfarbe. */
+  gewaehlt?: string | null | undefined;
   beschriftung: string;
   /** Wohin der Fokus nach dem Schließen eines Kastens geht (KAL-21). */
   fokus?: GitterFokus | null;
@@ -332,7 +367,7 @@ export function CalendarGrid({
   startSpalte?: string | null;
 }) {
   const spaltenRefs = useRef(new Map<string, HTMLElement>());
-  const kachelRefs = useRef(new Map<string, HTMLAnchorElement>());
+  const kachelRefs = useRef(new Map<string, HTMLElement>());
   const gitterRef = useRef<HTMLDivElement>(null);
   const eckeRef = useRef<HTMLDivElement>(null);
   const rueckfrageRef = useRef<HTMLDivElement>(null);
@@ -783,6 +818,8 @@ export function CalendarGrid({
                       wartet={ziehen.wartetAuf === g.eintrag.id}
                       ziehbar={ziehbarErlaubt && g.ziehbar}
                       rueckweg={rueckweg}
+                      onWaehlen={onWaehlen}
+                      gewaehlt={gewaehlt === g.eintrag.id}
                       onPointerDown={(event) =>
                         ziehen.beginnen(event, {
                           id: g.eintrag.id,
@@ -936,6 +973,8 @@ function Kachel({
   wartet,
   ziehbar,
   rueckweg,
+  onWaehlen,
+  gewaehlt,
   linkRef,
   onPointerDown,
   onClickCapture,
@@ -953,8 +992,10 @@ function Kachel({
   wartet: boolean;
   ziehbar: boolean;
   rueckweg: string | undefined;
+  onWaehlen: ((eintrag: CalendarEntry) => void) | undefined;
+  gewaehlt: boolean;
   /** Für die Fokusführung nach der Rückfrage (KAL-21). */
-  linkRef: (element: HTMLAnchorElement | null) => void;
+  linkRef: (element: HTMLElement | null) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
   onClickCapture: (event: React.MouseEvent) => void;
 }) {
@@ -966,24 +1007,151 @@ function Kachel({
   // greift die Mindesthöhe ohnehin nicht mehr.
   const hoehe = Math.max(28, ((endeMinute - beginnMinute) / 60) * stundenHoehe);
   const vermerk = eintrag.status === 'confirmed' ? null : appointmentStatusLabels[eintrag.status];
-  const ton = appointmentStatusTon[eintrag.status];
   // §8.1: Eine abweichende Länge wird gekennzeichnet - als Bild in der
   // Zeitzeile, als Satz für Vorlesewerkzeuge und im Tooltip (CAL-020).
   const abweichung = abweichendeLaengeMinuten(eintrag);
-  // Ein abweichender Status steht in einer eigenen Zeile direkt unter dem
-  // Namen (KAL-23): Er ist die wichtigere Auskunft und wurde in der Zeitzeile
-  // abgeschnitten („Abgeschloss…"). Der Ort steht zuletzt und zusätzlich im
-  // Tooltip - bei einem kurzen Termin ist die Kachel zu niedrig für alles.
+  // Drei Zeilen (Design-Handoff 2026-10-01, Abschnitt 7a): Zeit, Name,
+  // Unterzeile mit Zeichen und Wort - „! Doku offen", „✓ Dokumentiert",
+  // „× Abgesagt" - oder dem Ort, wenn er vom Regelfall abweicht.
   //
-  // Zustände mit eigenen Farben statt Deckkraft (KAL-18): Abgesagt und der
-  // alte Platz einer Verschiebung sind vertieft und gestrichelt, der Text
-  // bleibt voll lesbar.
+  // Zustände mit eigenen Flächen statt Deckkraft (KAL-18): Abgesagt, nicht
+  // angetroffen, eine Fehlzeit und der alte Platz einer Verschiebung stehen
+  // auf dem Seitengrund; abgesagt und der alte Platz zusätzlich gestrichelt.
   const abgesagt = eintrag.status === 'cancelled';
   const zurueckgelassen = gedimmt || bisher;
+  const aufGrund = abgesagt || eintrag.status === 'no_show' || eintrag.kind === 'internal';
+  const zeile3 = unterzeile(eintrag);
   // BEF-072: So viele Zeilen, wie ganz hineinpassen - eine halb
-  // angeschnittene Zeile („Hausbesu…" in halber Höhe) entfällt lieber. Jede
-  // Zeile ist genau 16 px hoch (`leading-4`); Rand und Polsterung 10 px.
+  // angeschnittene Zeile entfällt lieber. Jede Zeile ist 16 px hoch.
   const zeilen = kachelZeilen(hoehe);
+
+  const titel = [
+    bisher ? 'Bisher' : null,
+    `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
+    // Warum eine Kachel nicht zieht, steht dran - eine stumme Kachel sieht
+    // aus wie ein Fehler (BEF-015).
+    !gitter.ziehbar && eintrag.status !== 'confirmed'
+      ? `Nicht verschiebbar: ${appointmentStatusLabels[eintrag.status]}`
+      : null,
+    abweichung === null ? null : abweichendeLaengeText(abweichung),
+    vermerk,
+    dokuOffen(eintrag) ? 'Doku offen' : null,
+    ortsHinweis(eintrag),
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
+  const klassen = [
+    // Spalte mit sichtbarer Reihenfolge Zeit, Name, Unterzeile; vorgelesen
+    // wird zuerst der Name (KAL-16) - die Zeit steht im Quelltext danach.
+    'rounded-button absolute flex flex-col overflow-hidden',
+    // Ohne Schatten (Design-Handoff 2026-10-01): Fläche und Linie tragen.
+    'border border-l-[3px] px-1.5 py-1 text-left transition-colors',
+    abgesagt || zurueckgelassen
+      ? 'bg-canvas border-dashed'
+      : aufGrund
+        ? 'bg-canvas'
+        : 'bg-surface hover:bg-surface-sunken',
+    // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
+    // wie nichts.
+    wartet ? 'scale-102' : '',
+    wartet || gitter.neu || gewaehlt
+      ? 'border-accent border-2'
+      : abgesagt || zurueckgelassen
+        ? 'border-line-strong'
+        : 'border-line',
+    // Nach der Randfarbe: Die Linie links behält ihre Statusfarbe, auch an
+    // einer hervorgehobenen Kachel.
+    statusLinie(eintrag),
+    // Bewusst NICHT `touch-none` (UX-010): Der Bildlauf bleibt beim Browser;
+    // das Verschieben beginnt erst nach dem langen Druck.
+    ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  const stil = {
+    top: `${oben}px`,
+    height: `${hoehe}px`,
+    left: `${links}%`,
+    width: `${breite}%`,
+    zIndex: stapel,
+  };
+
+  const inhalt = (
+    <>
+      {zeilen >= 2 ? (
+        // Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
+        // und ein Zeichen davor sagt, dass es keine Behandlung ist (CAL-015b).
+        // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16).
+        <span
+          className={`block truncate text-[0.8125rem] leading-4 font-semibold ${
+            eintrag.status === 'documented' || eintrag.status === 'invoiced'
+              ? 'text-ink-muted'
+              : 'text-ink'
+          }`}
+        >
+          {eintrag.kind === 'internal' ? (
+            <>
+              <span aria-hidden="true">▪ </span>
+              <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
+            </>
+          ) : null}
+          {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
+              als Wort (TRN-006, ADR-021 Punkt 9). */}
+          {eintrag.kind === 'training' ? (
+            <>
+              <span aria-hidden="true">◆ </span>
+              <span className="sr-only">Training: </span>
+            </>
+          ) : null}
+          {terminBezeichnung(eintrag)}
+        </span>
+      ) : (
+        <span className="sr-only">{terminBezeichnung(eintrag)}</span>
+      )}
+      <span className="text-ink-muted order-first block truncate text-xs leading-4 tabular-nums">
+        {bisher ? <span>Bisher · </span> : null}
+        {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
+        <Laengenzeichen termin={eintrag} knapp />
+      </span>
+      {zeile3 && zeilen >= 3 ? (
+        <span
+          className={`block truncate text-xs leading-4 font-medium ${zeile3.farbe}`}
+          data-testid={zeile3.farbe === 'text-ink-muted' ? undefined : 'kachel-status'}
+        >
+          {zeile3.zeichen ? <span aria-hidden="true">{zeile3.zeichen} </span> : null}
+          {zeile3.text}
+        </span>
+      ) : zeile3 && zeile3.farbe !== 'text-ink-muted' ? (
+        // Zu niedrig für die dritte Zeile: Der Zustand bleibt vorgelesen.
+        <span className="sr-only">{zeile3.text}</span>
+      ) : null}
+    </>
+  );
+
+  if (onWaehlen) {
+    return (
+      <button
+        ref={linkRef}
+        type="button"
+        aria-pressed={gewaehlt}
+        // Für die Prüfungen: die Kachel EINES Termins, ohne Link-Adresse.
+        data-termin={eintrag.id}
+        onPointerDown={ziehbar ? onPointerDown : undefined}
+        onClickCapture={onClickCapture}
+        onClick={(event) => {
+          if (event.defaultPrevented) return;
+          onWaehlen(eintrag);
+        }}
+        title={titel}
+        style={stil}
+        className={klassen}
+      >
+        {inhalt}
+      </button>
+    );
+  }
 
   return (
     <Link
@@ -995,101 +1163,15 @@ function Kachel({
       // bricht die Zeigerverfolgung sofort mit pointercancel ab - ohne
       // draggable=false kaeme das Verschieben gar nicht erst zustande.
       draggable={false}
+      data-termin={eintrag.id}
       onDragStart={(event) => event.preventDefault()}
       onPointerDown={ziehbar ? onPointerDown : undefined}
       onClickCapture={onClickCapture}
-      title={[
-        bisher ? 'Bisher' : null,
-        `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
-        // Warum eine Kachel nicht zieht, steht dran - eine stumme Kachel
-        // sieht aus wie ein Fehler (BEF-015).
-        !gitter.ziehbar && eintrag.status !== 'confirmed'
-          ? `Nicht verschiebbar: ${appointmentStatusLabels[eintrag.status]}`
-          : null,
-        abweichung === null ? null : abweichendeLaengeText(abweichung),
-        vermerk,
-        ortsHinweis(eintrag),
-      ]
-        .filter(Boolean)
-        .join(' · ')}
-      style={{
-        top: `${oben}px`,
-        height: `${hoehe}px`,
-        left: `${links}%`,
-        width: `${breite}%`,
-        zIndex: stapel,
-      }}
-      className={[
-        'rounded-button absolute block overflow-hidden',
-        // Ohne Schatten (Design-Handoff 2026-10-01): Fläche und Linie tragen.
-        'border border-l-[3px] px-1.5 py-1 text-left transition-colors',
-        abgesagt || zurueckgelassen
-          ? 'bg-surface-sunken border-dashed'
-          : 'bg-surface hover:bg-surface-sunken',
-        // Sichtbare Rueckmeldung auf den langen Druck: sonst sieht Warten aus
-        // wie nichts.
-        wartet ? 'scale-102' : '',
-        wartet || gitter.neu
-          ? 'border-accent border-2'
-          : abgesagt || zurueckgelassen
-            ? 'border-line-strong'
-            : 'border-line',
-        // Nach der Randfarbe: Die Linie links behält ihre Statusfarbe, auch an
-        // einer hervorgehobenen Kachel.
-        statusLinie(eintrag.status),
-        // Bewusst NICHT `touch-none` (UX-010): eine Kachel nimmt auf dem
-        // Telefon fast die ganze Spalte ein: damit liesse sich der Kalender
-        // ueber einem Termin gar nicht mehr scrollen. Der Bildlauf bleibt
-        // beim Browser; das Verschieben beginnt erst nach dem langen Druck,
-        // und der schliesst einen begonnenen Bildlauf aus.
-        ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      title={titel}
+      style={stil}
+      className={klassen}
     >
-      {/* Der Titel eines Ereignisses steht dort, wo sonst der Name steht -
-          und ein Zeichen davor sagt, dass es keine Behandlung ist
-          (CAL-015b). Ohne das Zeichen sähe eine Teambesprechung aus wie eine
-          Patient:in mit ungewöhnlichem Namen. Vorgelesen wird das Wort, nicht
-          das Zeichen (KAL-16). */}
-      <span className="text-ink block truncate text-xs leading-4 font-medium">
-        {bisher ? <span className="text-ink-muted">Bisher · </span> : null}
-        {eintrag.kind === 'internal' ? (
-          <>
-            <span aria-hidden="true">▪ </span>
-            <span className="sr-only">{BEGRIFFE.fehlzeit}: </span>
-          </>
-        ) : null}
-        {/* Training ist keine Behandlung - ein eigenes Zeichen, vorgelesen
-            als Wort (TRN-006, ADR-021 Punkt 9). */}
-        {eintrag.kind === 'training' ? (
-          <>
-            <span aria-hidden="true">◆ </span>
-            <span className="sr-only">Training: </span>
-          </>
-        ) : null}
-        {terminBezeichnung(eintrag)}
-      </span>
-      {vermerk && zeilen >= 2 ? (
-        <span
-          className={`block truncate text-[0.6875rem] leading-4 font-medium ${STATUS_FARBE[ton]}`}
-          data-testid="kachel-status"
-        >
-          <span aria-hidden="true">{STATUS_ZEICHEN[ton]} </span>
-          {vermerk}
-        </span>
-      ) : null}
-      {zeilen >= (vermerk ? 3 : 2) ? (
-        <span className="text-ink-muted block truncate text-[0.6875rem] leading-4">
-          {minuteZuZeit(beginnMinute)}–{minuteZuZeit(endeMinute)}{' '}
-          <Laengenzeichen termin={eintrag} knapp />
-        </span>
-      ) : null}
-      {zeilen >= (vermerk ? 4 : 3) && ortsHinweis(eintrag) ? (
-        <span className="text-ink-muted block truncate text-[0.6875rem] leading-4">
-          {ortsHinweis(eintrag)}
-        </span>
-      ) : null}
+      {inhalt}
     </Link>
   );
 }

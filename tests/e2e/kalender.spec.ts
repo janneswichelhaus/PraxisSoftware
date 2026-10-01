@@ -118,10 +118,17 @@ test.describe('Kalender', () => {
     test(`zeigt der Trainingsbetreuung ihre Termine bei ${breite} px`, async ({ page }) => {
       await page.setViewportSize({ width: breite, height: 900 });
       await page.goto(`${PRUEFSEITE}?rolle=trainer`);
-      const kachel = page.getByRole('link', { name: /Tina Trainingskundin/ });
+      // Die Kachel öffnet das Terminpanel; der Weg in den Trainingsbereich
+      // steht dort (Design-Handoff 2026-10-01, Abschnitt 7a).
+      const kachel = page.getByRole('button', { name: /Tina Trainingskundin/ });
       await expect(kachel).toBeVisible();
-      await expect(kachel).toHaveAttribute('href', /^\/training\/termine\//);
-      await expect(page.getByRole('link', { name: /Berta Bestand/ })).toHaveCount(0);
+      await expect(page.getByRole('button', { name: /Berta Bestand/ })).toHaveCount(0);
+      await kachel.click();
+      await expect(page.getByRole('link', { name: 'Termin →' })).toHaveAttribute(
+        'href',
+        /^\/training\/termine\//,
+      );
+      await page.getByRole('button', { name: 'Terminpanel schließen' }).click();
       const ueberlauf = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );

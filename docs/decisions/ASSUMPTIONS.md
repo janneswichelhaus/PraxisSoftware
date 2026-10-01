@@ -2362,3 +2362,15 @@ Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** `TreatmentNoteSection` in `src/features/documentation/TreatmentNoteSection.tsx` (Bedingung `faellig && darfSchreiben`); `offenGrund` in `src/features/today/api.ts`.
 
 **Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`.
+
+### ANN-202 — Der Kalender nach dem Handoff: Panel als Karte, Kopf bleibt schlank
+
+Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 15)
+
+**Annahme.** Umgesetzt aus Abschnitt 7a: „Woche | Team“ (am Handy „Tag | Team“) als Umschalter im Kopf; die Woche zeigt Mo–Fr, Samstag und Sonntag nur mit Termin der gezeigten Person; die Kachel trägt Zeit, Name und eine Zeile „! Doku offen“, „✓ Dokumentiert“ oder „× Abgesagt“, die Linie links wird bei offener Doku zur Warnung; ein Tipp öffnet ein Terminpanel mit Haken, „Doku“, „Bisherige Doku →“ und „Termin →“ – am fremden Termin ohne Haken und Doku, dafür mit der behandelnden Person. Anders als im Handoff: Das Panel ist überall eine Karte (am Handy ein Blatt), nicht ab 1200 px eine feste Spalte; „Tag“ am Handy ist die eigene Spalte im Tagesraster, keine Zeilenliste mit Wegbalken; der Kopf bleibt ohne sichtbare Überschrift (BEF-039); „Heute“ springt weiter zur Linie der aktuellen Uhrzeit statt sich abzuschalten. Den Doku-Stand liefert `list_appointments` nur Rollen mit `can_read_treatment_evidence`, wie die Tagesliste.
+
+**Begründung.** Die feste Spalte und die Zeilenliste hätten Raster, Zieh-Geste und Breitenrechnung umgebaut; die Karte bringt dieselben Handgriffe ohne diesen Umbau. Der schlanke Kopf ist eine Sichtungsentscheidung (BEF-039), die der Handoff nicht ausdrücklich aufhebt.
+
+**Anker.** `TerminPanel` in `src/features/appointments/TerminPanel.tsx`, Umschalter und Wochenende in `CalendarPage.tsx`, Kachel in `CalendarGrid.tsx`; Migration `20261001200000_cal_doku_stand_im_kalender.sql`; Tests `CalendarPage.test.tsx`, `supabase/tests/list-appointments.test.ts`.
+
+**Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.

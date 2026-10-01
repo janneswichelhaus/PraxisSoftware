@@ -13,6 +13,7 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
+  panelZiel,
 } from './helpers';
 
 /**
@@ -122,10 +123,9 @@ test.describe('CAL-004: Termin abschliessen', () => {
     const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgeschlossen');
-    // Die Kachel fuehrt zu genau diesem Termin. Seit UX-012b haengt der
-    // Rueckweg in die Kalenderansicht daran (`?zurueck=`); zugesichert ist
-    // deshalb der Pfad, nicht die ganze Adresse.
-    const ziel = new URL((await eintrag.getAttribute('href'))!, 'http://ort.invalid');
+    // Die Kachel öffnet das Terminpanel; „Termin →" führt zu genau diesem
+    // Termin, samt Rückweg (Design-Handoff 2026-10-01, Abschnitt 7a).
+    const ziel = await panelZiel(page, terminId);
     expect(ziel.pathname).toBe(`/termine/${terminId}`);
   });
 });

@@ -15,6 +15,7 @@ import {
   canReadTrainingClients,
   canWriteTrainingClients,
   type CurrentUser,
+  canWriteTreatmentNote,
 } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -45,6 +46,7 @@ import {
   type GitterFokus,
   type GitterSpalte,
 } from './CalendarGrid';
+import { TerminPanel } from './TerminPanel';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
@@ -276,6 +278,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
    * Terminanlage; das ging, solange es nur einen Weg gab.
    */
   const [auswahl, setAuswahl] = useState<Spanne | null>(null);
+  // Der Termin im Panel (Design-Handoff 2026-10-01, Abschnitt 7a).
+  const [gewaehltId, setGewaehltId] = useState<string | null>(null);
   /** Monatskalender und Ansicht/Filter sind eingeklappt, bis man sie braucht (BEF-039). */
   const [monatOffen, setMonatOffen] = useState(false);
   const [optionenOffen, setOptionenOffen] = useState(false);
@@ -397,7 +401,17 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     placeholderData: keepPreviousData,
   });
 
-  const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
+  // „Doku offen" ist eine Aufgabe für die, die dokumentieren (ANN-201): Wer
+  // es nicht darf, sieht an der Kachel den Zustand statt der Aufgabe.
+  const darfDokumentieren = canWriteTreatmentNote(user.roles);
+  const eintraege = useMemo(
+    () =>
+      (termine.data ?? []).map((e) =>
+        darfDokumentieren ? e : { ...e, documentation_status: null },
+      ),
+    [termine.data, darfDokumentieren],
+  );
+  const gewaehlt = gewaehltId ? (eintraege.find((e) => e.id === gewaehltId) ?? null) : null;
 
   const verschieben = useMutation({
     mutationFn: async (auftrag: {
@@ -567,20 +581,31 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             : null,
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
-      : tage.map((tag) => ({
-          id: tag,
-          titel: wochentagKurz(tag),
-          unterTitel: tagesZahl(tag),
-          // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
-          hervorgehoben: tag === heute,
-          zusatz: tag === heute ? 'heute' : undefined,
-          aktuellesDatum: tag === heute,
-          baender:
-            wochenPerson && arbeitszeitBekannt
-              ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
-              : null,
-          ziel: zumTag(tag),
-        }));
+      : // Die Woche zeigt Mo–Fr (Design-Handoff 2026-10-01, Abschnitt 7a).
+        // Samstag und Sonntag stehen nur da, wenn dort ein Termin der
+        // gezeigten Person liegt - kein Termin verschwindet aus dem Raster.
+        tage
+          .filter((tag) => {
+            const wochentag = new Date(`${tag}T12:00:00Z`).getUTCDay();
+            if (wochentag !== 0 && wochentag !== 6) return true;
+            return eintraege.some(
+              (e) => e.staff_member_id === wochenPerson && dayKey(e.starts_at, zone) === tag,
+            );
+          })
+          .map((tag) => ({
+            id: tag,
+            titel: wochentagKurz(tag),
+            unterTitel: tagesZahl(tag),
+            // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
+            hervorgehoben: tag === heute,
+            zusatz: tag === heute ? 'heute' : undefined,
+            aktuellesDatum: tag === heute,
+            baender:
+              wochenPerson && arbeitszeitBekannt
+                ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
+                : null,
+            ziel: zumTag(tag),
+          }));
 
   // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
   const nachPerson =
@@ -1027,8 +1052,55 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             setSprung((n) => n + 1);
           }}
         >
-          Jetzt
+          Heute
         </Button>
+      </div>
+
+      {/* Der Ansichtswechsel im Kopf (Design-Handoff 2026-10-01, Abschnitt 7a):
+          am Rechner „Woche | Team", am Telefon „Tag | Team". Die Woche zeigt
+          die eigenen Termine, der Tag am Telefon ebenso; „Team" ist der Tag mit
+          einer Spalte je Person. Dieselben Ansichten wie bisher - der Weg
+          dorthin steht jetzt sichtbar statt hinter „Ansicht und Filter". */}
+      <div role="group" aria-label="Ansicht" className="mt-2 flex">
+        {(
+          [
+            {
+              wert: 'woche',
+              text: 'Woche',
+              klasse: 'rounded-l-button max-sm:hidden',
+              aktiv: p.ansicht === 'woche',
+              ziel: { ansicht: 'woche' as const, person: user.staffMemberId ?? p.person },
+            },
+            {
+              wert: 'tag-eigen',
+              text: 'Tag',
+              klasse: 'rounded-l-button sm:hidden',
+              aktiv: p.ansicht === 'tag' && p.person !== null,
+              ziel: { ansicht: 'tag' as const, person: user.staffMemberId ?? null },
+            },
+            {
+              wert: 'team',
+              text: 'Team',
+              klasse: 'rounded-r-button',
+              aktiv: p.ansicht === 'tag' && p.person === null,
+              ziel: { ansicht: 'tag' as const, person: null },
+            },
+          ] as const
+        ).map((wahl) => (
+          <button
+            key={wahl.wert}
+            type="button"
+            aria-pressed={wahl.aktiv}
+            onClick={() => setze(wahl.ziel)}
+            className={`border-line-strong inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors [&+&]:-ml-px ${
+              wahl.aktiv
+                ? 'bg-accent text-surface border-accent'
+                : 'text-accent hover:bg-accent-soft'
+            } ${wahl.klasse}`}
+          >
+            {wahl.text}
+          </button>
+        ))}
       </div>
 
       {monatOffen ? (
@@ -1065,18 +1137,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           }}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1" role="group" aria-label="Ansicht">
-              {(['tag', 'woche'] as const).map((a) => (
-                <Button
-                  key={a}
-                  type="button"
-                  variant={p.ansicht === a ? 'primary' : 'secondary'}
-                  aria-pressed={p.ansicht === a}
-                  onClick={() => setze({ ansicht: a })}
-                >
-                  {a === 'tag' ? 'Tag' : 'Woche'}
-                </Button>
-              ))}
+            <div className="flex gap-1">
+              {/* „Woche | Team" steht seit dem Design-Handoff vom 2026-10-01
+                  im Kopf; hier bleibt die Tour. */}
               {/* Die Tour als dritte Ansicht (BEF-044, ANN-113): dieselben
                   Fragen wie hier - Tag und Person -, deshalb reisen beide
                   mit. Die eigene Zeile „Kalender · Touren" über dem Raster
@@ -1518,6 +1581,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               : undefined
           }
           auswahl={auswahl ? anlegenMenue(auswahl) : null}
+          // Ein Tipp auf die Kachel öffnet das Terminpanel (Abschnitt 7a).
+          onWaehlen={(eintrag) =>
+            setGewaehltId((bisher) => (bisher === eintrag.id ? null : eintrag.id))
+          }
+          gewaehlt={gewaehlt?.id ?? null}
           beschriftung={
             p.ansicht === 'tag'
               ? 'Tagesansicht nach behandelnder Person'
@@ -1540,7 +1608,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           stand je nach Bildlauf doch außerhalb. Solange eine
           Rückfrage oder die Anlegen-Leiste offen ist, tritt sie zurück: zwei
           Kästen übereinander wären eine Frage zu viel (CAL-023). */}
-      {rueckgaengig && !vorschlag && !auswahl ? (
+      {rueckgaengig && !vorschlag && !auswahl && !gewaehlt ? (
         <div
           role="status"
           className="border-line-strong bg-surface-sunken nicht-drucken rounded-card fixed inset-x-4 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 flex flex-wrap items-center justify-between gap-3 border px-4 py-3 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:w-[28rem]"
@@ -1569,6 +1637,15 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             </Statusmeldung>
           ) : null}
         </div>
+      ) : null}
+
+      {gewaehlt && !vorschlag && !auswahl ? (
+        <TerminPanel
+          eintrag={gewaehlt}
+          user={user}
+          rueckweg={kalenderStand}
+          onSchliessen={() => setGewaehltId(null)}
+        />
       ) : null}
 
       {/* Ohne Raster keine Ecke: Der Knopf steht dann hier, damit Ansicht
