@@ -5,7 +5,8 @@ Stand 2026-10-01 · Design-Handoff vom 2026-10-01
 gebaut in den Schritten 0 bis 6 des Auftrags, je Schritt eine Pull Request.
 
 **Deckt ab:** UI-Redesign Schritt 1 (Tokens und Gerüst), Schritt 2 (Bausteine), Schritt 3
-(Übersicht als Zeitstrahl), Schritt 4 (Termin). Die Schritte 5 und 6 ergänzen diese Datei.
+(Übersicht als Zeitstrahl), Schritt 4 (Termin), Schritt 5 (Patientenakte). Schritt 6 ergänzt diese
+Datei.
 **Wo:** lokal im WLAN am Handy, solange die Schritte nicht auf `main` liegen
 ([`../DEVELOPMENT.md`](../DEVELOPMENT.md), „Handytest im WLAN"); danach auf der Test-Umgebung.
 **Dauer:** rund 15 Minuten.
@@ -23,6 +24,8 @@ Die Erwartung zur Übersicht in [Kernprozess](kernprozess.md) Schritt 10 („Lie
 | 4   | owner     | Am Rechner im breiten Fenster die **Übersicht** öffnen, das Fenster schmaler ziehen und wieder breiter. Einen Eintrag im **Tagesplan des Teams** anklicken.                                                                                     | Breit steht der Tagesplan des Teams als Karte **rechts** neben dem eigenen Tag, offen, mit „✓ Dokumentiert", „! Nicht angetroffen", „× Abgesagt" ohne Pille; schmal rückt er **unter** den Tag. Die ganze Zeile führt in den Termin, „← Übersicht" wieder zurück. Darunter „Tagesroute auf der Karte" — die Karte lädt erst nach dem Aufklappen.                                                                                                                                       | Redesign Schritt 3   |
 | 5   | therapist | Am Handy einen **kommenden Hausbesuch** öffnen. **Vor der Tür** aufklappen, dann **Niemand öffnet?**; abbrechen. Ganz unten **Termin absagen** öffnen und abbrechen.                                                                            | Über dem Namen klein „TERMIN“, der Name selbst ist der Titel und führt in die Akte. Zwei Kacheln nebeneinander: **Anschrift** mit „Navigation starten →“ als Link und dem Satz zur Übergabe, **Grundlage** mit „Termin n von m“. „Vor der Tür“ sagt schon zugeklappt „Lesen wird protokolliert“. Die Knöpfe stehen in der Karte **Nach dem Termin**; „Termin absagen“ steht leise am Seitenende, Grund und Eingang nebeneinander, sobald Platz ist.                                    | Redesign Schritt 4   |
 | 6   | office    | Am Rechner im breiten Fenster einen Termin von Max öffnen, das Fenster schmaler ziehen. Danach einen **abgesagten** und einen **nicht angetroffenen** Termin öffnen.                                                                            | Breit steht **Abrechnung** (Rechnung an, offene Rechnungen) rechts neben dem Termin, schmal unter den Kacheln. Am abgesagten Termin eine Karte **Absage** mit Grund, Eingang und Ausfallhonorar; am nicht angetroffenen eine Karte **Vermerk** mit „Termin wieder öffnen“ darin. Ein Praxistermin zeigt in der Kachel **Standort** ein lesbares „Praxistermin“.                                                                                                                        | Redesign Schritt 4   |
+| 7   | therapist | Am Handy die Akte von **Max Mustermann** öffnen (Termine), dann **Stammdaten**.                                                                                                                                                                 | Der Name groß, darunter „geb. … · n Jahre · Ort“. Darunter Kacheln zu zweit: **Liege** (grün, „mitnehmen“), **Zugangshinweis**, **Besonderheit**, **! Erstaufnahme offen** mit „Erledigen →“ – nur, was hinterlegt ist. Im Terminbereich oben „Nächster Termin“ und „Grundlage“ mit Balken, „Vergangene Termine“ zugeklappt. Ganz unten die Karten **Behandlungsgrundlage** und **Kontakt**; in den Stammdaten nur die Grundlage.                                                      | Redesign Schritt 5   |
+| 8   | office    | Am Rechner im breiten Fenster dieselbe Akte öffnen, durch **Termine**, **Behandlungsgrundlagen**, **Befund** und **Stammdaten** gehen; das Fenster schmaler ziehen.                                                                             | Breit steht rechts neben jedem Bereich die Spalte mit Grundlage („1 von 6 verbraucht · 3 geplant · 2 frei“) und Kontakt; schmal rückt sie unter den Bereich. Die Stammdaten stehen neben der Spalte untereinander, keine Wörter in Silben; „Stammdaten bearbeiten“ rechts, Beginn und „Als inaktiv markieren“ in der Karte **Verwaltung**.                                                                                                                                             | Redesign Schritt 5   |
 
 **Zu bestätigen:** **ANN-195** (Puffer in echten Minuten, ohne Rundung auf das Raster), **ANN-196**
 (der erste Weg beginnt „jetzt"; nach dem Ende des Termins davor zählt der Balken herunter),
@@ -35,6 +38,13 @@ keine Karte „Angaben"/„Alle Angaben", weil sie den Kopf als Tabelle wiederho
 öffnet sich auch am Rechner nicht von selbst, denn jedes Öffnen ist ein protokolliertes Lesen
 (ANN-137); die Grundlage bleibt neutral, die Akzentfläche trägt die Ausnahme Praxis- oder
 Videotermin (ANN-192); der Kicker heißt „Termin" ohne „· Hausbesuch" (ANN-192).
+
+**Akte anders als im Handoff** (Schritt 5): kein Abzeichen „✓ In Versorgung“ (UX-005e, nur die
+Ausnahme ist markiert); Termine bleiben nach Grundlage gruppiert (AKTE-006, ANN-069) und ohne
+Zähler „Kommende (n)“ – die Liste blättert und kennt keine Gesamtzahl; „Nächster Termin“ nennt keinen
+„Hausbesuch“ (ANN-192); Verlauf, Befund, Dateien und Datenschutz bleiben unverändert; Kacheln im
+Kopf in Reihen von 150 statt 160 px, damit am Telefon zwei nebeneinander passen; Stammdaten
+untereinander, solange der Bereich schmaler als 1024 px ist (PAT-B01).
 
 **Bewusst nicht gebaut** (im Ideenspeicher): Wochentakt der Liege (`IDEA-PRX-051`),
 Abschlussmeldung auf der Übersicht (`IDEA-PRX-052`), eigenes Feld für das Stockwerk

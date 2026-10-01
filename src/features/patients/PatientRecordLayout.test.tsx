@@ -6,6 +6,7 @@ import type * as PatientsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as IntakeApi from '@/features/open-points/intake-api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
 import { RUECKWEG_PARAM, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -28,6 +29,7 @@ const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
 const fetchPatientTreatmentBasisSlots = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
+const fetchIntakeChecklist = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -59,6 +61,15 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
       fetchPatientTreatmentBasesClinical(id) as Promise<VerordnungenApi.ClinicalTreatmentBasis[]>,
     fetchPatientTreatmentBasisSlots: (id: string) =>
       fetchPatientTreatmentBasisSlots(id) as Promise<VerordnungenApi.TreatmentBasisKontingent[]>,
+  };
+});
+
+vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof IntakeApi>();
+  return {
+    ...actual,
+    fetchIntakeChecklist: (id: string) =>
+      fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,
   };
 });
 
@@ -122,6 +133,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       fetchPatientTreatmentBasesClinical,
       fetchPatientTreatmentBasisSlots,
       fetchPatientTreatmentNotesPage,
+      fetchIntakeChecklist,
     ]) {
       mock.mockReset();
     }
@@ -133,6 +145,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     fetchPatientTreatmentBasesClinical.mockResolvedValue([]);
     fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);
+    fetchIntakeChecklist.mockResolvedValue([]);
   });
 
   describe('Kopf der Akte', () => {
@@ -474,9 +487,10 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['therapist']);
 
       await screen.findByRole('heading', { name: 'Max Mustermann' });
-      expect(screen.queryByText('Zugangshinweis:')).not.toBeInTheDocument();
-      expect(screen.queryByText('Besonderheit:')).not.toBeInTheDocument();
-      expect(screen.queryByText('Behandlungsliege:')).not.toBeInTheDocument();
+      // Ohne Angabe keine Kachel und keine Reihe (Design-Handoff 2026-10-01).
+      expect(screen.queryByText('Zugangshinweis')).not.toBeInTheDocument();
+      expect(screen.queryByText('Besonderheit')).not.toBeInTheDocument();
+      expect(screen.queryByText('Liege')).not.toBeInTheDocument();
     });
 
     it('heißt den Zugangshinweis wie das Feld und behält seine Absätze (PAT-07, PAT-13)', async () => {
@@ -488,10 +502,12 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       // der Hinweis ein zweites Mal.
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
 
-      const beschriftung = await screen.findByText('Zugangshinweis:');
-      const wert = beschriftung.nextElementSibling;
+      // Seit dem Design-Handoff vom 2026-10-01 eine Kachel im Kopf.
+      const beschriftung = await screen.findByText('Zugangshinweis');
+      expect(beschriftung.tagName).toBe('DT');
+      const wert = beschriftung.nextElementSibling!;
       expect(wert).toHaveTextContent('Klingel Meier');
-      expect(wert).toHaveClass('whitespace-pre-line');
+      expect(wert.firstElementChild).toHaveClass('whitespace-pre-line');
       expect(wert).toHaveClass('wrap-anywhere');
     });
 
@@ -499,7 +515,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       fetchPatient.mockResolvedValue({ ...aktiv, treatment_table_required: true });
       akteRendern(['therapist']);
 
-      expect(await screen.findByText('Behandlungsliege:')).toBeInTheDocument();
+      expect(await screen.findByText('Liege')).toBeInTheDocument();
       expect(screen.getByText('mitnehmen')).toBeInTheDocument();
     });
   });
@@ -538,6 +554,113 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       // gelesene Eintrag der klinischen Sicht wird protokolliert (ADR-010) -
       // ein Auditeintrag fuer etwas, das niemand sieht, waere falsch.
       expect(fetchPatientTreatmentNotesPage).not.toHaveBeenCalled();
+    });
+  });
+
+  // UI-Redesign Schritt 5 (Design-Handoff 2026-10-01, Abschnitt 7).
+  describe('Kacheln im Kopf und Kontextspalte', () => {
+    const grundlage: VerordnungenApi.TreatmentBasis = {
+      id: '99999999-9999-4999-8999-000000000001',
+      prescriber_id: null,
+      prescriber_name: 'Dr. Synthetisch Roth',
+      prescriber_practice_name: null,
+      treatment_basis_kind: 'first',
+      issued_on: '2026-09-20',
+      frequency_note: null,
+      note: null,
+      items: [],
+      updated_at: '2026-09-20T10:00:00.000000+00',
+    };
+    const aeltere: VerordnungenApi.TreatmentBasis = {
+      ...grundlage,
+      id: '99999999-9999-4999-8999-000000000002',
+      issued_on: '2026-03-01',
+      prescriber_name: 'Dr. Synthetisch Alt',
+    };
+    const kontingent: VerordnungenApi.TreatmentBasisKontingent = {
+      treatment_basis_id: grundlage.id,
+      prescribed: 6,
+      used: 1,
+      planned: 4,
+      upcoming: 3,
+      remaining: 2,
+      covered: 4,
+      uncovered: 0,
+    };
+
+    it('zeigt die offene Erstaufnahme als Kachel mit dem Weg zum ersten Punkt', async () => {
+      fetchIntakeChecklist.mockResolvedValue([
+        { item: 'finding', state: 'open' },
+        { item: 'privacy', state: 'open' },
+        { item: 'anamnesis', state: 'done' },
+      ]);
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+
+      const beschriftung = await screen.findByText('Erstaufnahme offen');
+      expect(beschriftung.tagName).toBe('DT');
+      const kachel = beschriftung.parentElement!;
+      expect(kachel).toHaveTextContent('Befund · Datenschutz und Vertrag');
+      expect(within(kachel).getByRole('link', { name: 'Erledigen' })).toBeInTheDocument();
+    });
+
+    it('nennt in der Kontextspalte die jüngste Grundlage mit ihren Zahlen', async () => {
+      fetchPatientTreatmentBases.mockResolvedValue([aeltere, grundlage]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent]);
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/verlauf`);
+
+      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
+      expect(await within(spalte).findByText('Erstverordnung vom 20.09.2026')).toBeInTheDocument();
+      expect(within(spalte).getByText('Dr. Synthetisch Roth')).toBeInTheDocument();
+      expect(
+        within(spalte).getByText('1 von 6 verbraucht · 3 geplant · 2 frei'),
+      ).toBeInTheDocument();
+      expect(within(spalte).queryByText('Dr. Synthetisch Alt')).toBeNull();
+    });
+
+    it('trägt den Kontakt in der Spalte, aber nicht in den Stammdaten ein zweites Mal', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, phone_mobile: '+49 160 0000005' });
+      const { unmount } = akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
+      expect(within(spalte).getByRole('heading', { name: 'Kontakt' })).toBeInTheDocument();
+      expect(within(spalte).getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
+        'href',
+        'tel:+491600000005',
+      );
+      unmount();
+
+      akteRendern(['office'], STAMMDATEN);
+      await screen.findByRole('button', { name: 'Als inaktiv markieren' });
+      expect(screen.queryByRole('complementary', { name: 'Zur Person' })).toBeNull();
+    });
+
+    it('zeigt im Terminbereich den nächsten Termin und die Grundlage als Kacheln', async () => {
+      fetchPatientTreatmentBases.mockResolvedValue([grundlage]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent]);
+      fetchPatientAppointments.mockResolvedValue([
+        {
+          id: '77777777-7777-4777-8777-000000000001',
+          starts_at: '2027-05-12T07:10:00.000Z',
+          ends_at: '2027-05-12T08:10:00.000Z',
+          appointment_type: 'home_visit',
+          status: 'confirmed',
+          staff_given_name: 'Anna',
+          staff_family_name: 'Beispiel',
+          notification_channels: [],
+          organization_time_zone: 'Europe/Berlin',
+          treatment_basis_id: grundlage.id,
+          treatment_basis_kind: 'first',
+          treatment_basis_issued_on: '2026-09-20',
+          treatment_basis_covered: true,
+        },
+      ]);
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+
+      const naechster = (await screen.findByText('Nächster Termin')).parentElement!;
+      expect(naechster).toHaveTextContent('09:10–10:10 Uhr');
+      expect(naechster).toHaveTextContent('Anna Beispiel');
+      expect(naechster).not.toHaveTextContent('Hausbesuch');
+      const kachel = (await screen.findByText('1 von 6 verbraucht')).closest('div')!;
+      expect(kachel).toHaveTextContent('Erstverordnung vom 20.09.2026');
     });
   });
 });

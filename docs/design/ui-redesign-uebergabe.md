@@ -2,14 +2,14 @@
 
 Stand 2026-10-01 · gilt, bis Schritt 6 gemergt ist; danach löschen.
 
-Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 4 entstanden
+Diese Datei ersetzt für eine neue Session das Gespräch, in dem die Schritte 0 bis 5 entstanden
 sind, und den Download-Ordner des Design-Handoffs. Die Spezifikation steht in
 [`handoff-2026-10-01-uebersicht-termin-akte.md`](handoff-2026-10-01-uebersicht-termin-akte.md);
 die klickbaren Entwürfe (`entwuerfe/`) liegen bewusst nicht im Repository und sind für die
 Schritte 4 bis 6 nicht nötig — die Maße stehen in der Spezifikation.
 
-**Als Nächstes: Schritt 5 (Patientenakte).** Jannes hat ihn noch nicht freigegeben; die neue
-Session beginnt ihn erst auf sein Wort („mach weiter mit Schritt 5").
+**Als Nächstes: Schritt 6 (Kalender-Kacheln).** Jannes hat ihn noch nicht freigegeben; die neue
+Session beginnt ihn erst auf sein Wort („mach weiter mit Schritt 6").
 
 ## Auftrag (aus `AUFTRAG-CLAUDE-CODE.md` des Handoffs, wörtlich)
 
@@ -60,9 +60,9 @@ Die fünf Branches sind gepusht und **aufeinander gestapelt**; keiner liegt auf 
 | 3       | `claude/ui-redesign-3-uebersicht`    | Übersicht als Zeitstrahl, diese Übergabe       |
 | 4       | `claude/ui-redesign-step-3-4-vkmodh` | Termin (Abschnitt 6)                           |
 
-**Schritt 5 zweigt vom Branch des Schritts 4 ab** (`claude/ui-redesign-5-akte`), solange die
-Schritte davor nicht gemergt sind; sind sie es, von `main`. Schritt 4 liegt auf dem Branch, den die
-Session vorgab, nicht auf `claude/ui-redesign-4-termin`. Vor dem Bauen
+**Schritt 6 zweigt vom Branch der Schritte 4 und 5 ab**, solange die Schritte davor nicht gemergt
+sind; sind sie es, von `main`. Die Schritte 4 und 5 liegen auf dem Branch, den die Session vorgab
+(`claude/ui-redesign-step-3-4-vkmodh`), je ein Commit. Vor dem Bauen
 `git fetch origin --prune` und prüfen, ob `main` inzwischen weiter ist — dann `main` in den neuen
 Branch hereinnehmen, nicht die alten Branches umschreiben.
 
@@ -85,6 +85,11 @@ Branch hereinnehmen, nicht die alten Branches umschreiben.
   `textlink`), „Vor der Tür" als Karte, Karte „Nach dem Termin", Zustandskarte mit „Termin wieder
   öffnen", Absage leise am Ende, Abrechnung als Kontextspalte nur für owner/office.
 
+- **Schritt 5 gebaut (2026-10-01):** Kopf der Akte mit Kacheln (`KopfKacheln`), Kontextspalte
+  (`useAktuelleGrundlage`, `useOffeneErstaufnahme`, neuer Baustein `ProgressBar`), Kacheln im
+  Terminbereich, „Vergangene Termine“ als `Disclosure`, Karte „Verwaltung“ in den Stammdaten.
+  Prüfseite `tests/e2e/fixtures/akte.html` (`?bereich=stammdaten`, `?rolle=office`, `?leer=1`).
+
 ## Was bereits anders ist als die Spezifikation
 
 Damit die Schritte 4 bis 6 dieselbe Linie halten:
@@ -100,6 +105,9 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
   von selbst (jedes Öffnen ist ein protokolliertes Lesen, ANN-137). Die Grundlage bleibt neutral,
   die Akzentfläche trägt die Ausnahme Praxis-/Videotermin (ANN-192); das Kennzeichen steht dort
   auf Papier statt als Abzeichen.
+- Akte: siehe [`../sichtung/ui-redesign.md`](../sichtung/ui-redesign.md), „Akte anders als im
+  Handoff“. Wer neben der Kontextspalte steht, wählt seine Spalten über Container-Queries
+  (`@container`, `@5xl`/`@2xl`), nie über die Fensterbreite.
 - Nicht gebaut, im Ideenspeicher (`docs/product/ideen/10-praxisverwaltung.md`): Feld
   `home_visit_floor` (`IDEA-PRX-050`), Wochentakt der Liege (`IDEA-PRX-051`), Abschlussmeldung auf
   der Übersicht (`IDEA-PRX-052`).
@@ -136,7 +144,7 @@ Damit die Schritte 4 bis 6 dieselbe Linie halten:
 
 ## Start einer neuen Session
 
-Den Branch des Schritts 4 wählen (`claude/ui-redesign-step-3-4-vkmodh`) und schreiben:
+Den Branch `claude/ui-redesign-step-3-4-vkmodh` wählen und schreiben:
 
 > Lies `CLAUDE.md`, `docs/STATUS.md` und `docs/design/ui-redesign-uebergabe.md`. Nenne für
-> Schritt 5 (Patientenakte) die Dateien und die sichtbaren Änderungen und baue ihn.
+> Schritt 6 (Kalender-Kacheln) die Dateien und die sichtbaren Änderungen und baue ihn.

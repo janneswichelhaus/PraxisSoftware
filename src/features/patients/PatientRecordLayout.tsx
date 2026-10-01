@@ -1,5 +1,4 @@
 import { useEffect, useLayoutEffect, useRef } from 'react';
-import { IntakeHint } from '@/features/open-points/IntakeHint';
 import { useQuery } from '@tanstack/react-query';
 import {
   Link,
@@ -11,6 +10,17 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import { Textlink } from '@/components/ui/Textlink';
+import { Tile, TileGrid } from '@/components/ui/Tile';
+import { intakeItemTarget, openItemsText } from '@/features/open-points/intake-api';
+import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
+import { grundlageBezeichnung } from '@/features/treatment-bases/api';
+import {
+  kontingentSatz,
+  useAktuelleGrundlage,
+} from '@/features/treatment-bases/useAktuelleGrundlage';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -133,7 +143,7 @@ function Aktenavigation({
             <NavLink
               to={`${bereich.to}${anhang}`}
               end={bereich.end ?? false}
-              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-medium"
+              className="text-ink-muted hover:bg-surface-sunken hover:text-ink rounded-pill aria-[current=page]:bg-accent-soft aria-[current=page]:text-accent text-liste flex min-h-11 items-center px-3 whitespace-nowrap transition-colors aria-[current=page]:font-semibold"
             >
               {bereich.label}
             </NavLink>
@@ -145,53 +155,194 @@ function Aktenavigation({
 }
 
 /**
- * Die Hinweise, die vor der Tür zählen (PAT-005, `IDEA-PRX-001`).
+ * Die Hinweise, die vor der Tür zählen (PAT-005, `IDEA-PRX-001`), seit dem
+ * Design-Handoff vom 2026-10-01 (Abschnitt 7) als Kachelreihe im Kopf:
+ * **Liege**, **Zugangshinweis**, **Besonderheit** und **! Erstaufnahme
+ * offen**. Sie ersetzt die Textzeilen darunter und die Zeile `IntakeHint`.
  *
  * Sie standen bis UI-002a auf der Übersicht der Akte. Mit ihr wären sie in die
  * Stammdaten gerutscht und damit hinter einen Bereichswechsel - „Klingel
- * defekt, bitte anrufen" nützt dort niemandem. Deshalb stehen sie jetzt im
- * Kopf, und nur dann, wenn etwas hinterlegt ist: Wer nichts eingetragen hat,
- * sieht auch keine leere Zeile.
+ * defekt, bitte anrufen" nützt dort niemandem. Deshalb stehen sie im Kopf, und
+ * nur, was hinterlegt ist: Ohne Angabe keine Kachel, ohne Kachel keine Reihe.
  *
  * Absätze bleiben stehen und lange Wörter brechen um, wie in den Stammdaten
  * (PAT-13): „2. OG", „Klingel Meier" und „Schlüssel beim Nachbarn" in drei
- * Zeilen liefen sonst zu einer zusammen, und eine Adresse ohne Leerzeichen
- * schnitt der Kopf ab.
+ * Zeilen liefen sonst zu einer zusammen.
  *
  * Für ein Patientenkonto liefert die Sicht die Felder gar nicht erst; die
- * Zeilen verschwinden dann von allein (ANN-010, ADR-004).
+ * Kacheln verschwinden dann von allein (ANN-010, ADR-004).
+ *
+ * Reihen von 150 statt der 160 px des Handoffs: In der Kopfkarte bleiben am
+ * Telefon 311 px, und erst bei 150 stehen dort zwei Kacheln nebeneinander -
+ * vier untereinander schöben die Bereichsleiste aus dem ersten Bildschirm.
  */
-function HausbesuchHinweise({ patient }: { patient: Patient }) {
+function KopfKacheln({
+  patient,
+  user,
+  aktiv,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  aktiv: boolean;
+}) {
+  const ort = useLocation();
+  const offen = useOffeneErstaufnahme(patient.id, aktiv, user);
   const liege = patient.treatment_table_required === true;
-  if (!patient.home_visit_access_note && !patient.special_note && !liege) return null;
+  if (!patient.home_visit_access_note && !patient.special_note && !liege && offen.length === 0) {
+    return null;
+  }
+  const hier = `${ort.pathname}${ort.search}`;
 
   return (
-    <dl className="mt-2 flex flex-col gap-0.5 text-sm">
-      {/* UX-003a: Die Liege steht vor der Tür mit auf dem Zettel - gesetzt
-          wird sie in den Stammdaten (ANN-116). */}
-      {liege ? (
-        <div className="flex gap-2">
-          <dt className="text-ink-muted shrink-0">Behandlungsliege:</dt>
-          <dd className="text-ink min-w-0">mitnehmen</dd>
-        </div>
+    <div className="px-4 pb-3 sm:px-5 sm:pb-4">
+      <TileGrid spalte="kachel">
+        {/* UX-003a: Die Liege steht vor der Tür mit auf dem Zettel - gesetzt
+            wird sie in den Stammdaten (ANN-116). */}
+        {liege ? (
+          <Tile label="Liege" ton="akzent">
+            mitnehmen
+          </Tile>
+        ) : null}
+        {patient.home_visit_access_note ? (
+          <Tile label="Zugangshinweis">
+            <span className="block whitespace-pre-line">{patient.home_visit_access_note}</span>
+          </Tile>
+        ) : null}
+        {patient.special_note ? (
+          <Tile label="Besonderheit">
+            <span className="block whitespace-pre-line">{patient.special_note}</span>
+          </Tile>
+        ) : null}
+        {/* PRX-013: was zur Erstaufnahme noch fehlt - nur, solange etwas
+            fehlt. Der Weg führt zum ersten offenen Punkt. */}
+        {offen.length > 0 ? (
+          <Tile
+            label="Erstaufnahme offen"
+            ton="warnung"
+            aktion={
+              <Textlink
+                alleinstehend
+                className="gap-1"
+                to={mitRueckweg(intakeItemTarget(patient.id, offen[0]!), hier)}
+              >
+                Erledigen
+                <span aria-hidden="true">→</span>
+              </Textlink>
+            }
+          >
+            {openItemsText(offen)}
+          </Tile>
+        ) : null}
+      </TileGrid>
+    </div>
+  );
+}
+
+/**
+ * Die Kontextspalte der Akte ab 900 px Inhaltsbreite (Design-Handoff
+ * 2026-10-01, Abschnitt 7): die jüngste Behandlungsgrundlage mit ihren Zahlen
+ * und der Kontakt. Darunter steht sie unter dem offenen Bereich.
+ *
+ * Nur, was die Rolle ohnehin liest: Die Grundlage kommt aus den
+ * organisatorischen Lesepfaden der Akte (`useAktuelleGrundlage`), der Kontakt
+ * aus dem bereits geladenen Datensatz. Fehlt beides, gibt es keine Spalte.
+ */
+function useKontext(patient: Patient, user: CurrentUser) {
+  const aktuell = useAktuelleGrundlage(patient.id, user);
+  const strasse = [patient.street, patient.house_number].filter(Boolean).join(' ');
+  const ort = [patient.postal_code, patient.city].filter(Boolean).join(' ');
+  // In den Stammdaten steht der Kontakt schon als eigener Abschnitt - dort
+  // trägt die Spalte ihn nicht ein zweites Mal.
+  const { pathname } = useLocation();
+  const hatKontakt =
+    !pathname.endsWith('/stammdaten') &&
+    Boolean(patient.phone_mobile || patient.phone || patient.email || strasse || ort);
+  return { aktuell, hatKontakt, strasse, ort };
+}
+
+function Kontextspalte({
+  patient,
+  kontext,
+}: {
+  patient: Patient;
+  kontext: ReturnType<typeof useKontext>;
+}) {
+  const { aktuell, hatKontakt, strasse, ort } = kontext;
+  return (
+    <aside aria-label="Zur Person" className="flex min-w-0 flex-col gap-4">
+      {aktuell ? (
+        <Card>
+          <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
+            Behandlungsgrundlage
+          </h2>
+          <p className="text-ink text-liste mt-1 font-semibold">
+            {(() => {
+              const { bauart, praeposition } = grundlageBezeichnung({
+                treatment_basis_kind: aktuell.grundlage.treatment_basis_kind,
+              });
+              return `${bauart} ${praeposition} ${formatDate(aktuell.grundlage.issued_on)}`;
+            })()}
+          </p>
+          {aktuell.grundlage.prescriber_name ? (
+            <p className="text-ink-muted text-sm">{aktuell.grundlage.prescriber_name}</p>
+          ) : null}
+          {aktuell.kontingent ? (
+            <>
+              <ProgressBar wert={aktuell.kontingent.used} von={aktuell.kontingent.prescribed} />
+              <p className="text-ink-muted mt-1.5 text-sm">{kontingentSatz(aktuell.kontingent)}</p>
+            </>
+          ) : null}
+          <Textlink
+            alleinstehend
+            className="gap-1 text-sm"
+            to={`/patienten/${patient.id}/verordnungen`}
+          >
+            Zu den Grundlagen
+            <span aria-hidden="true">→</span>
+          </Textlink>
+        </Card>
       ) : null}
-      {patient.home_visit_access_note ? (
-        <div className="flex gap-2">
-          <dt className="text-ink-muted shrink-0">Zugangshinweis:</dt>
-          <dd className="text-ink min-w-0 wrap-anywhere whitespace-pre-line">
-            {patient.home_visit_access_note}
-          </dd>
-        </div>
+      {hatKontakt ? (
+        <Card>
+          <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">Kontakt</h2>
+          <dl className="mt-1 flex flex-col gap-2 text-sm">
+            {patient.phone_mobile || patient.phone ? (
+              <div>
+                <dt className="text-ink-muted">{patient.phone_mobile ? 'Mobil' : 'Telefon'}</dt>
+                <dd>
+                  <Textlink
+                    alleinstehend
+                    className="tabular-nums"
+                    href={`tel:${(patient.phone_mobile ?? patient.phone ?? '').replace(/[^+\d]/g, '')}`}
+                  >
+                    {patient.phone_mobile ?? patient.phone}
+                  </Textlink>
+                </dd>
+              </div>
+            ) : null}
+            {patient.email ? (
+              <div>
+                <dt className="text-ink-muted">E-Mail</dt>
+                <dd className="wrap-anywhere">
+                  <Textlink alleinstehend href={`mailto:${patient.email}`}>
+                    {patient.email}
+                  </Textlink>
+                </dd>
+              </div>
+            ) : null}
+            {strasse || ort ? (
+              <div>
+                <dt className="text-ink-muted">Anschrift</dt>
+                <dd className="text-ink">
+                  {strasse ? <span className="block">{strasse}</span> : null}
+                  {ort ? <span className="block">{ort}</span> : null}
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </Card>
       ) : null}
-      {patient.special_note ? (
-        <div className="flex gap-2">
-          <dt className="text-ink-muted shrink-0">Besonderheit:</dt>
-          <dd className="text-ink min-w-0 wrap-anywhere whitespace-pre-line">
-            {patient.special_note}
-          </dd>
-        </div>
-      ) : null}
-    </dl>
+    </aside>
   );
 }
 
@@ -257,12 +408,19 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-5 sm:py-4">
       <div className="min-w-0">
-        <h1 className="text-accent text-h4 font-bold">{fullName(patient)}</h1>
+        {/* Der Name als Seitentitel: 26 px am Telefon, 32 ab 640 px, in 800
+            (Design-Handoff 2026-10-01, Abschnitt 7). */}
+        <h1 className="text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold">
+          {fullName(patient)}
+        </h1>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <p className="text-ink-muted text-sm">
             {patient.date_of_birth
               ? `geb. ${formatDate(patient.date_of_birth)}${alter !== null ? ` · ${alter} Jahre` : ''}`
               : 'Geburtsdatum nicht hinterlegt'}
+            {/* Der Ort sagt im Kopf, wohin es geht - die Anschrift steht im
+                Kontakt (Design-Handoff 2026-10-01). */}
+            {patient.city ? ` · ${patient.city}` : ''}
           </p>
           {/* UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand
               an jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. */}
@@ -274,9 +432,6 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
             <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
           ) : null}
         </div>
-        <HausbesuchHinweise patient={patient} />
-        {/* PRX-013: was zur Erstaufnahme noch fehlt - nur, solange etwas fehlt. */}
-        <IntakeHint patientId={patient.id} aktiv={aktiv} user={user} />
       </div>
 
       {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles
@@ -332,6 +487,37 @@ export function AkteEinstieg() {
   return <Navigate to={anhang ? `${ziel}?${anhang}` : ziel} replace />;
 }
 
+function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; anhang: string }) {
+  const kontext = useKontext(patient, user);
+  const mitSpalte = Boolean(kontext.aktuell) || kontext.hatKontakt;
+  return (
+    <>
+      <header className="border-line bg-surface rounded-card overflow-hidden border">
+        <PatientKopf patient={patient} user={user} />
+        <KopfKacheln patient={patient} user={user} aktiv={patient.status === 'active'} />
+        <Aktenavigation patient={patient} user={user} anhang={anhang} />
+      </header>
+
+      {/* Zwei Spalten ab 900 px Inhaltsbreite, wie auf Übersicht und Termin;
+          darunter steht die Kontextspalte unter dem offenen Bereich. */}
+      <div className="@container mt-6">
+        <div
+          className={
+            mitSpalte
+              ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] @zweispaltig:gap-x-8 grid items-start gap-6'
+              : ''
+          }
+        >
+          <div className="min-w-0">
+            <Outlet context={{ patient, user } satisfies PatientRecordContext} />
+          </div>
+          {mitSpalte ? <Kontextspalte patient={patient} kontext={kontext} /> : null}
+        </div>
+      </div>
+    </>
+  );
+}
+
 export function PatientRecordLayout({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
   const [suche] = useSearchParams();
@@ -371,7 +557,12 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
       {/* Solange der Kopf mit dem Namen fehlt, trägt die Seite ihre Gattung
           als Überschrift - im Laden wie im Fehler (UIK-16, PAT-22). */}
       {!data ? <PageHeader title="Patientenakte" /> : null}
-      {isPending ? <LoadingState label="Patientendaten werden geladen …" /> : null}
+      {/* Laden in einer Karte (Design-Handoff 2026-10-01, Abschnitt 3). */}
+      {isPending ? (
+        <Card>
+          <LoadingState label="Patientendaten werden geladen …" />
+        </Card>
+      ) : null}
       {isError ? (
         <ErrorState
           title="Die Patientendaten konnten nicht geladen werden."
@@ -386,18 +577,7 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
         />
       ) : null}
 
-      {data ? (
-        <>
-          <header className="border-line bg-surface rounded-card overflow-hidden border">
-            <PatientKopf patient={data} user={user} />
-            <Aktenavigation patient={data} user={user} anhang={anhang} />
-          </header>
-
-          <div className="mt-6">
-            <Outlet context={{ patient: data, user } satisfies PatientRecordContext} />
-          </div>
-        </>
-      ) : null}
+      {data ? <Akte patient={data} user={user} anhang={anhang} /> : null}
     </>
   );
 }

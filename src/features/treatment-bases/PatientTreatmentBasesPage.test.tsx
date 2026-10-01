@@ -788,12 +788,18 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
     expect(within(kopf).queryByText('Details')).not.toBeInTheDocument();
   });
 
-  it('stellt Zahlen und Angaben erst ab 1280 px nebeneinander (VER-20)', async () => {
+  // Seit dem Design-Handoff vom 2026-10-01 entscheidet die Breite der Karte
+  // (1024 px), nicht die des Fensters: Neben der Akte steht ab 900 px eine
+  // Kontextspalte, und bei 1280 px Fensterbreite wäre die Karte sonst wieder
+  // zu schmal für zwei Spalten.
+  it('stellt Zahlen und Angaben erst ab 1024 px Kartenbreite nebeneinander (VER-20)', async () => {
     renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
     const karte = (await screen.findByText('Folgeverordnung vom 18.06.2026')).closest('li')!;
-    const raster = karte.querySelector('.grid');
-    expect(raster).toHaveClass('xl:grid-cols-2');
+    const raster = karte.querySelector('.grid')!;
+    expect(raster).toHaveClass('@5xl:grid-cols-2');
+    expect(raster.closest('.\\@container')).not.toBeNull();
     expect(raster).not.toHaveClass('lg:grid-cols-2');
+    expect(raster).not.toHaveClass('xl:grid-cols-2');
   });
 });
