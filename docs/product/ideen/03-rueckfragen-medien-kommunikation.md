@@ -227,3 +227,58 @@ Akte steht, ist nicht dokumentiert.
 **Offen.** Die Mechanik: Zuordnung als Kopie oder als Verweis, Herkunftsangabe
 in der Akte, eigenes Auditereignis. Das entscheidet die Spezifikation des
 Kommunikationsfeatures (Etappe 6), nicht ein Loop nebenbei.
+
+---
+
+### IDEA-KOM-008 — Praxispostfach in der Anwendung: Terminwünsche erkennen, Antworten vorformulieren
+
+| | |
+|---|---|
+| Status | notiert · entscheidung nötig |
+| Quelle | Jannes, 2026-09-28 |
+| Berührt | B13, B15, [ADR-002](../../adr/ADR-002-hosting-data-residency.md), [ADR-005](../../adr/ADR-005-provider-independent-ai.md), [ADR-006](../../adr/ADR-006-medical-device-boundary.md), [ADR-008](../../adr/ADR-008-data-retention-and-deletion.md), `IDEA-KOM-007`, KOM-EPIC-003, CAL-013 |
+
+**Stand.** Jannes hat für die Selbstständigkeit **noch kein Postfach**. Gebaut
+ist nur die Gegenrichtung: der Terminzettel als E-Mail-Entwurf, den das eigene
+Mailprogramm auf Klick öffnet (CAL-013). Die strukturierte
+**Online-Terminanfrage** ist bereits für V1 geplant (B15, KOM-EPIC-003).
+
+**Idee.** Die Anwendung liest das Praxispostfach mit. Eingehende Mails mit
+Terminwunsch werden erkannt und als Anfrage vorgelegt (Person zugeordnet,
+Wunschzeiten erfasst); eine KI formuliert Antworten vor — Terminvorschlag,
+Absagebestätigung, Rückfrage nach fehlender Verordnung —, die ein Mensch
+prüft, ändert und selbst abschickt. Weitere Ausbaustufen: Anhänge (Verordnung,
+Arztbrief) direkt der Akte zuordnen, Rechnungsfragen dem Beleg zuordnen.
+
+**Warum.** Ohne Rezeption landen Terminwünsche, Absagen und Fragen verstreut im
+Postfach und werden abends abgetippt. Der Schritt vom Mailtext zum Termin im
+Kalender ist Routine und fehleranfällig.
+
+**Vorsicht.**
+- **Das Postfach selbst ist die erste Entscheidung**, noch vor jeder
+  Integration: Eine Praxis-Mailadresse erhält Gesundheitsdaten, sobald
+  Patient:innen schreiben. Der Mailanbieter ist damit Auftragsverarbeiter
+  (ADR-002: Sitz und Rechenzentrum in der EU, besser in Deutschland, AVV nach
+  Art. 28 DSGVO). Ein privates Gmail-Konto erfüllt das nicht. Die Adresse
+  gehört auf eine eigene Praxisdomain, damit ein Anbieterwechsel die Adresse
+  nicht kostet.
+- **Mitlesen heißt speichern.** Liest die Plattform per IMAP mit, landen
+  unstrukturierte Gesundheitsdaten in der Datenbank — mit Aufbewahrung,
+  Löschung und Auskunft nach ADR-008, Rollenschnitt nach ADR-004 und der Frage,
+  was davon in die Akte gehört (`IDEA-KOM-007`). Das Postfachpasswort oder ein
+  Token läge als Secret auf dem Server.
+- **KI nur als Entwurf.** Jede Mail an ein Sprachmodell ist eine Übermittlung
+  eines Gesundheitsdatums an einen neuen Anbieter — nur über das AI Gateway
+  (ADR-005), nur mit geprüftem Anbieter. Kein automatischer Versand, und keine
+  vorformulierte **fachliche** Antwort auf Beschwerden oder Symptome: Das wäre
+  eine Einschätzung nach ADR-006; hier höchstens der Hinweis „bitte anrufen /
+  bei Notfall 112".
+- **Das Formular ist der sauberere Weg für Terminwünsche.** Die geplante
+  Online-Terminanfrage liefert Wunschzeiten strukturiert und ohne KI; Mails zu
+  erkennen löst ein Problem, das das Formular gar nicht erst entstehen lässt.
+
+**Offen.** (1) Mailanbieter und Domain (Jannes; neuer Dienstleister nach
+ADR-002 — auch B13, der Versand aus der Plattform, könnte über denselben laufen).
+(2) Lesen die Plattform und das Postfach getrennt, oder wird die Plattform zum
+Mailprogramm? (3) Welcher KI-Anbieter, wenn überhaupt (ADR-005). Vor (1) ist
+nichts davon spezifizierbar.
