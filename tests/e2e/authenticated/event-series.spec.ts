@@ -124,7 +124,9 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await page.getByLabel('Absagegrund').selectOption('practice_request');
     await page.getByRole('button', { name: 'Ja, ganze Serie absagen' }).click();
 
-    await expect(page.getByText(/Dieser Termin ist abgesagt/)).toBeVisible();
+    // Der Zustand steht seit UX-005a als Abzeichen in der Kopfzeile, nicht
+    // mehr als Satz.
+    await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
     // Abgesagt heißt abgesagt: Die Serienabsage steht danach nicht mehr da.
     await expect(page.getByRole('button', { name: 'Ganze Serie absagen' })).toHaveCount(0);
   });

@@ -131,9 +131,9 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     // abschließen". Hier ist ausdruecklich der Abschluss ohne Eintrag
     // gemeint; dokumentiert wird gleich danach nachtraeglich.
     await page.getByRole('button', { name: 'Ohne Dokumentation abschließen' }).click();
-    await expect(
-      page.getByText('Dieser Termin ist abgeschlossen.', { exact: false }),
-    ).toBeVisible();
+    // Der Zustand steht seit UX-005a als Abzeichen in der Kopfzeile, nicht
+    // mehr als Satz.
+    await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     // Am abgeschlossenen Termin steht der Weg zur Dokumentation weiter als
     // Knopf im Abschnitt (UX-005g nimmt ihn nur am offenen Termin weg).
