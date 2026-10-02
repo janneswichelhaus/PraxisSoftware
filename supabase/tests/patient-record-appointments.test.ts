@@ -311,9 +311,11 @@ describe('list_patient_treatment_basis_slots', () => {
     ]);
   });
 
-  it('zaehlt Einheiten aus den Positionen und Termine von den Terminen', async () => {
-    // Verordnung mit 10 verordneten und 7 genutzten Einheiten (Seed).
-    await termin({ inStunden: -24, verordnung: VERORDNUNG.maxOffen });
+  it('zaehlt genutzte und verplante Termine von den Terminen (ABN-001)', async () => {
+    // Verordnung mit 10 moeglichen Terminen; die 7 genutzten Einheiten der
+    // Positionen (Seed) sind Leistungsmengen und zaehlen hier nicht mehr
+    // (ANN-210). Ein vergangener, durchgefuehrter Termin ist genutzt.
+    await termin({ inStunden: -24, verordnung: VERORDNUNG.maxOffen, status: 'completed' });
     await termin({ inStunden: 24, verordnung: VERORDNUNG.maxOffen });
     await termin({ inStunden: 48, verordnung: VERORDNUNG.maxOffen });
     // Abgesagt zaehlt nicht: der Platz im Kontingent ist wieder frei.
@@ -325,12 +327,12 @@ describe('list_patient_treatment_basis_slots', () => {
     const offen = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxOffen)!;
 
     expect(offen.prescribed).toBe(10);
-    expect(offen.used).toBe(7);
+    expect(offen.used).toBe(1);
     expect(offen.planned).toBe(3);
     expect(offen.upcoming).toBe(2);
     // Offen ist verordnet abzueglich des GROESSEREN von genutzt und verplant
-    // (ANN-038) - hier also 10 - 7.
-    expect(offen.remaining).toBe(3);
+    // (ANN-038) - hier also 10 - 3.
+    expect(offen.remaining).toBe(7);
   });
 
   it('rechnet verplante Termine gegen das offene Kontingent, sobald sie ueberwiegen', async () => {
@@ -340,7 +342,7 @@ describe('list_patient_treatment_basis_slots', () => {
 
     const { rows } = await slots(users.office);
     const offen = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxOffen)!;
-    expect(offen.used).toBe(7);
+    expect(offen.used).toBe(0);
     expect(offen.planned).toBe(9);
     expect(offen.remaining).toBe(1);
   });
@@ -348,7 +350,15 @@ describe('list_patient_treatment_basis_slots', () => {
   it('meldet die ausgeschoepfte Verordnung mit null offenen Terminen', async () => {
     // Seit VER-EPIC-002 zaehlen alle drei Zahlen **Termine** (ANN-064): Die
     // Verordnung hat zehn moegliche Termine mit zwei Heilmitteln - nicht
-    // zwanzig, weil zwei Positionen darunter haengen.
+    // zwanzig, weil zwei Positionen darunter haengen. Genutzt sind seit
+    // ABN-001 die durchgefuehrten Termine (ANN-210): zehn vergangene.
+    for (let i = 1; i <= 10; i += 1) {
+      await termin({
+        inStunden: -24 * i,
+        verordnung: VERORDNUNG.maxAusgeschoepft,
+        status: 'completed',
+      });
+    }
     const { rows } = await slots(users.office);
     const ausgeschoepft = rows.find((z) => z.treatment_basis_id === VERORDNUNG.maxAusgeschoepft)!;
     expect(ausgeschoepft.prescribed).toBe(10);

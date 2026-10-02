@@ -159,7 +159,9 @@ describe('Deckung einer Behandlungsgrundlage', () => {
       [GRUNDLAGE.erikaAlt],
     );
     expect(rows.map((z) => Number(z.used_quantity))).toEqual([2, 1]);
-    expect(zahlen.used).toBe(2);
+    // Genutzt zaehlt seit ABN-001 durchgefuehrte Termine, nicht die Menge der
+    // Position: hier sind alle zehn erst geplant.
+    expect(zahlen.used).toBe(0);
   });
 
   it('haelt die Constraint used_quantity <= prescribed_quantity aufrecht', async () => {
@@ -442,5 +444,120 @@ describe('transfer_appointments_to_treatment_basis', () => {
       ids,
     ]);
     expect(Number(rows[0]!.anzahl)).toBe(2);
+  });
+});
+
+describe('Genutzt zaehlt Termine, Nichtantreffen belegt nichts (ABN-001, BEF-096)', () => {
+  beforeAll(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres('delete from public.billable_services');
+    await asPostgres('delete from public.appointments');
+  });
+
+  /** Vermerkt ein Nichtantreffen direkt in der Tabelle (Felder wie record_no_show). */
+  async function nichtAngetroffen(id: string): Promise<void> {
+    await asPostgres(
+      `update public.appointments
+          set status = 'no_show', no_show_recorded_at = now(), no_show_recorded_by = $2,
+              fee_basis = 'no_show'
+        where id = $1`,
+      [id, users.ownerTherapist],
+    );
+  }
+
+  it('zaehlt genutzte Termine, nicht die groesste Leistungsmenge', async () => {
+    // Die Folgeverordnung hat 10 moegliche Termine und keine genutzte Menge.
+    // Zwei durchgefuehrte Termine - in der Praxis Termin 1 KG, Termin 2 MT -
+    // sind zwei genutzte Termine, auch wenn je Heilmittel nur eine Einheit
+    // abgerechnet wuerde (ANN-064, ANN-073: getrennte Groessen).
+    await termin({ inStunden: -48, status: 'completed', grundlage: GRUNDLAGE.erikaFrisch });
+    await termin({ inStunden: -24, status: 'documented', grundlage: GRUNDLAGE.erikaFrisch });
+    await termin({ inStunden: 24, grundlage: GRUNDLAGE.erikaFrisch });
+
+    const zahlen = await kontingent(GRUNDLAGE.erikaFrisch);
+    expect(zahlen.prescribed).toBe(10);
+    expect(zahlen.used).toBe(2);
+    expect(zahlen.planned).toBe(3);
+    expect(zahlen.remaining).toBe(7);
+
+    // Die Leistungsmenge der Position bleibt, was die Abrechnung geschrieben hat.
+    const { rows } = await asPostgres<{ used_quantity: number }>(
+      'select used_quantity from public.treatment_base_items where treatment_basis_id = $1',
+      [GRUNDLAGE.erikaFrisch],
+    );
+    expect(rows.map((z) => Number(z.used_quantity))).toEqual([0]);
+  });
+
+  it('zaehlt eine Doppelbehandlung oder mehrere Heilmittel im selben Termin einmal', async () => {
+    const id = await termin({
+      inStunden: -24,
+      status: 'completed',
+      grundlage: GRUNDLAGE.erikaFrisch,
+    });
+    // Zwei erfasste Leistungen am selben Termin (KG als Doppelbehandlung).
+    await asPostgres(
+      `insert into public.billable_services
+         (organization_id, patient_id, appointment_id, catalog_item_id, quantity, performed_on, created_by)
+       values ($1, $2, $3, $4, 2, current_date - 1, $5)`,
+      [organizationId, patients.erika, id, KATALOG_KG, users.ownerTherapist],
+    );
+
+    const zahlen = await kontingent(GRUNDLAGE.erikaFrisch);
+    expect(zahlen.used).toBe(1);
+    expect(zahlen.planned).toBe(1);
+  });
+
+  it('laesst ein Nichtantreffen weder belegen noch verbrauchen noch decken', async () => {
+    const ids = await termine(6, GRUNDLAGE.erikaAlt);
+    await nichtAngetroffen(ids[0]!);
+    const spaeter = await termin({ inStunden: 40, grundlage: GRUNDLAGE.erikaAlt });
+
+    const zahlen = await kontingent(GRUNDLAGE.erikaAlt);
+    // Sechs moegliche, sechs verplante: der nicht angetroffene zaehlt nicht.
+    expect(zahlen.planned).toBe(6);
+    expect(zahlen.used).toBe(0);
+    expect(zahlen.uncovered).toBe(0);
+    expect(zahlen.covered).toBe(6);
+
+    const zeilen = await liste(patients.erika, GRUNDLAGE.erikaAlt);
+    const nachId = new Map(zeilen.map((z) => [z.id, z.treatment_basis_covered]));
+    expect(nachId.get(ids[0]!)).toBeNull();
+    expect(nachId.get(spaeter)).toBe(true);
+
+    // Die Akte zaehlt ihn auch nicht zu den bevorstehenden.
+    const { rows } = await asUser<{ treatment_basis_id: string; upcoming: number }>(
+      users.ownerTherapist,
+      ZAHLEN_AKTE,
+      [patients.erika],
+    );
+    expect(rows.find((z) => z.treatment_basis_id === GRUNDLAGE.erikaAlt)!.upcoming).toBe(6);
+  });
+
+  it('haelt die Ueberplanung als ungedeckt sichtbar', async () => {
+    const ids = await termine(8, GRUNDLAGE.erikaAlt);
+    await nichtAngetroffen(ids[7]!);
+
+    const zahlen = await kontingent(GRUNDLAGE.erikaAlt);
+    expect(zahlen.planned).toBe(7);
+    expect(zahlen.covered).toBe(6);
+    expect(zahlen.uncovered).toBe(1);
+  });
+
+  it('heilt sich, wenn ein Nichtantreffen wieder geoeffnet wird', async () => {
+    const ids = await termine(2, GRUNDLAGE.erikaFrisch);
+    await nichtAngetroffen(ids[0]!);
+    expect((await kontingent(GRUNDLAGE.erikaFrisch)).planned).toBe(1);
+
+    await asPostgres(
+      `update public.appointments
+          set status = 'confirmed', no_show_recorded_at = null, no_show_recorded_by = null,
+              fee_basis = null
+        where id = $1`,
+      [ids[0]],
+    );
+    expect((await kontingent(GRUNDLAGE.erikaFrisch)).planned).toBe(2);
   });
 });

@@ -534,9 +534,10 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
         ['Krankengymnastik', 10, 4],
         ['Waermetherapie', 3, 1],
       ]);
-      // Die Terminzahl folgt der Eingabe, die genutzte Menge der groessten
-      // Position - beides bleibt unterscheidbar.
-      expect(await zahlen(id)).toMatchObject({ prescribed: 4, used: 4, remaining: 0 });
+      // Die Terminzahl folgt der Eingabe; genutzt zaehlt seit ABN-001
+      // durchgefuehrte Termine, nicht die Menge der Position (ANN-210) - ohne
+      // Termin bleibt sie null, die Mengen stehen trotzdem unveraendert da.
+      expect(await zahlen(id)).toMatchObject({ prescribed: 4, used: 0, remaining: 4 });
     });
 
     it('verlangt eine Terminzahl zwischen 1 und 500', async () => {

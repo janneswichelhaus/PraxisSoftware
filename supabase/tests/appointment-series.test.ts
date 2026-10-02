@@ -157,9 +157,11 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       expect(rows[0]).toMatchObject({
         patient_id: patients.max,
         prescribed: 10,
-        used: 7,
+        // Genutzt zaehlt seit ABN-001 durchgefuehrte Termine (ANN-210); die
+        // sieben Einheiten der Positionen aus dem Seed zaehlen nicht mehr.
+        used: 0,
         planned: 0,
-        remaining: 3,
+        remaining: 10,
       });
     });
 
@@ -171,13 +173,13 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
         KONTINGENT,
         [VERORDNUNG.maxOffen],
       );
-      // 10 verordnet, 7 genutzt, 3 verplant - das Maximum aus beiden ist 7.
-      expect(rows[0]).toMatchObject({ planned: 3, remaining: 3 });
+      // 10 moeglich, 0 genutzt, 3 verplant - offen ist 10 - max(0, 3).
+      expect(rows[0]).toMatchObject({ planned: 3, remaining: 7 });
     });
 
     it('zaehlt verplant und genutzt nicht doppelt', async () => {
-      // Acht Termine gegen eine Verordnung mit sieben genutzten Behandlungen:
-      // offen ist 10 - max(7, 8) = 2, nicht 10 - (7 + 8) (ANN-038).
+      // Acht Termine gegen eine Verordnung mit zehn moeglichen: offen ist
+      // 10 - max(genutzt, 8) = 2, nicht die Summe aus beiden (ANN-038).
       await anlegenCommitted(users.office, woechentlich(8));
 
       const { rows } = await asUser<{ planned: number; remaining: number }>(

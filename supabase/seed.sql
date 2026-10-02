@@ -398,6 +398,53 @@ insert into public.appointments (
    null, null, null, null, null, null, null, null);
 
 -- -----------------------------------------------------------------------------
+-- Durchgefuehrte Termine der Vergangenheit (ABN-001, ANN-210)
+--
+-- Genutzt zaehlt seit ABN-001 Behandlungstermine, nicht die Leistungsmenge der
+-- Positionen. Damit die Grundlagen oben weiter das sagen, was ihre Mengen
+-- sagen - Max' Erstverordnung ausgeschoepft (10 von 10), die Folgeverordnung
+-- bei 7 von 10, Erikas alte Verordnung bei 2 von 6, der Selbstzahler bei 1 von
+-- 8 -, stehen hier die Hausbesuche, die dazu stattgefunden haben: woechentlich,
+-- lange vor heute, von Anna durchgefuehrt und abgeschlossen, ohne Dokumentation
+-- (ein `completed` ohne finalisierte Dokumentation zaehlt als genutzt).
+-- Ueber 30 Tage zurueck, damit keine Tages-, Wochen- oder Kennzahlensicht sie
+-- aufnimmt.
+-- -----------------------------------------------------------------------------
+insert into public.appointments (
+  organization_id, patient_id, staff_member_id, treatment_basis_id,
+  appointment_type, status, starts_at, ends_at,
+  visit_street, visit_house_number, visit_postal_code, visit_city,
+  completed_at, completed_by
+)
+select
+  '22222222-2222-4222-8222-000000000001', g.patient, '55555555-5555-4555-8555-000000000002', g.grundlage,
+  'home_visit', 'completed',
+  (current_date - g.tage + time '09:00') at time zone 'Europe/Berlin',
+  (current_date - g.tage + time '10:00') at time zone 'Europe/Berlin',
+  g.strasse, g.hausnummer, g.plz, 'Tuebingen',
+  (current_date - g.tage + time '10:00') at time zone 'Europe/Berlin', '11111111-1111-4111-8111-000000000002'
+from (
+  -- Max, Erstverordnung: zehn Termine, Tag -210 bis -147.
+  select '66666666-6666-4666-8666-000000000001'::uuid as patient, '88888888-8888-4888-8888-000000000001'::uuid as grundlage,
+         210 - 7 * n as tage, 'Beispielstrasse' as strasse, '12' as hausnummer, '72070' as plz
+  from generate_series(0, 9) n
+  union all
+  -- Max, Folgeverordnung: sieben Termine, Tag -126 bis -84.
+  select '66666666-6666-4666-8666-000000000001', '88888888-8888-4888-8888-000000000002',
+         126 - 7 * n, 'Beispielstrasse', '12', '72070'
+  from generate_series(0, 6) n
+  union all
+  -- Erika, alte Verordnung: zwei Termine, Tag -70 und -63.
+  select '66666666-6666-4666-8666-000000000002', '88888888-8888-4888-8888-000000000003',
+         70 - 7 * n, 'Testweg', '7', '72072'
+  from generate_series(0, 1) n
+  union all
+  -- Erika, Selbstzahler: ein Termin, Tag -42.
+  select '66666666-6666-4666-8666-000000000002', '88888888-8888-4888-8888-000000000005',
+         42, 'Testweg', '7', '72072'
+) g;
+
+-- -----------------------------------------------------------------------------
 -- Ein Ereignis des Praxisbetriebs (CAL-015b)
 --
 -- Eine Besprechung in zwei Kalendern, damit in der Abnahme sichtbar ist, was

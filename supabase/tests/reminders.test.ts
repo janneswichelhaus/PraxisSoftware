@@ -94,7 +94,23 @@ describe('Verordnung endet (PRX-016)', () => {
     expect(await endend()).not.toContain(luecke);
   });
 
-  it('nennt eine genutzte Verordnung auch ohne Termine', async () => {
+  it('nennt eine genutzte Verordnung, deren Termine alle stattgefunden haben', async () => {
+    // Genutzt zaehlt seit ABN-001 durchgefuehrte Termine (ANN-210): Drei
+    // Termine in der Vergangenheit, alle abgeschlossen, kein kommender.
+    const id = await verordnung(3);
+    for (const tage of [-21, -14, -7]) await termin(id, tage);
+    await asPostgres(
+      `update public.appointments
+          set status = 'completed', completed_at = ends_at, completed_by = $2
+        where treatment_basis_id = $1`,
+      [id, users.therapist],
+    );
+    expect(await endend()).toContain(id);
+  });
+
+  it('nennt eine Verordnung nicht nur wegen der Leistungsmenge ihrer Positionen', async () => {
+    // Die genutzte Menge einer Position ist eine Groesse der Abrechnung
+    // (ANN-073) und sagt nichts darueber, ob Termine stattgefunden haben.
     const id = await verordnung(3);
     await asPostgres(
       `insert into public.treatment_base_items
@@ -102,7 +118,7 @@ describe('Verordnung endet (PRX-016)', () => {
        values ($1::uuid, $2::uuid, 1, 'Krankengymnastik', 3, 3)`,
       [organizationId, id],
     );
-    expect(await endend()).toContain(id);
+    expect(await endend()).not.toContain(id);
   });
 
   it('schweigt bei Anschluss, beim Selbstzahler und nach dem Abschluss', async () => {

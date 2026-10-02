@@ -609,7 +609,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `verordnungszustand()` in `src/features/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
 
-**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096.
+**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096. **Umgesetzt in ABN-001 (2026-10-02):** `used` zählt seitdem durchgeführte Termine, siehe ANN-210.
 
 ### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
 
@@ -895,7 +895,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
 
-**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099).
+**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099). **ABN-001 (2026-10-02):** `app.treatment_basis_slot_counts` zählt genutzte Termine statt der größten Positionsmenge (ANN-210); die Terminzahl an der Grundlage bleibt.
 
 ### ANN-065 — „Anmerkungen" ist das organisatorische Feld, der Verordnerhinweis bleibt Bestand
 
@@ -931,7 +931,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `app.appointment_is_covered` und die beiden Ausgaben `covered`/`uncovered` in `app.treatment_basis_slot_counts`, beide in `supabase/migrations/20260918140000_appointment_coverage.sql`.
 
-**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038. **Abnahme (Jannes, 2026-10-02):** berechnete Deckung nach zeitlicher Reihenfolge bestätigt. Abgesagte **und nicht angetroffene** Termine belegen und verbrauchen kein Kontingent (heute zählt Nichtantreffen mit — BEF-096); Ausfallhonorar getrennt; Überplanung bleibt ungedeckt sichtbar.
+**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038. **Abnahme (Jannes, 2026-10-02):** berechnete Deckung nach zeitlicher Reihenfolge bestätigt. Abgesagte **und nicht angetroffene** Termine belegen und verbrauchen kein Kontingent (heute zählt Nichtantreffen mit — BEF-096); Ausfallhonorar getrennt; Überplanung bleibt ungedeckt sichtbar. **Umgesetzt in ABN-001 (2026-10-02):** `no_show` zählt an beiden Stellen wie `cancelled` (ANN-210).
 
 ### ANN-068 — Übertragen wird jeder Termin derselben Patient:in außer abgesagt und abgerechnet
 
@@ -2496,3 +2496,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 **Anker.** `app.log_platform_representation` und `public.platform_context` in `supabase/migrations/20261002101000_por_006_acting_for.sql`; Tests in `supabase/tests/platform-acting-for.test.ts`.
 
 **Änderungspfad.** Bündeln je Tag und Zugang: in `app.log_platform_representation` vor dem Einfügen nach einem Eintrag desselben Tages fragen · Aufwand `klein`.
+
+### ANN-210 — Genutzt ist ein durchgeführter Behandlungstermin, auch ohne finalisierte Dokumentation
+
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Praxiswochen, zusammen mit ANN-042
+
+**Annahme.** Das Kontingent einer Behandlungsgrundlage zählt als **genutzt** die Termine im Zustand `completed`, `documented` oder `invoiced`; mehrere Heilmittel oder eine Doppelbehandlung im selben Termin zählen einmal. Als **verplant** zählt jeder Termin außer `cancelled` und `no_show`; Absage und Nichtantreffen belegen, verbrauchen und decken nichts. Die Leistungsmenge je Position (`used_quantity`) bleibt eine getrennte Größe der Abrechnung (ANN-073).
+
+**Begründung.** Abnahme der Annahmen (Jannes, 2026-10-02, BEF-096): Terminzahl und Leistungsmenge sind getrennte Größen (ANN-064), genutzt sind durchgeführte Termine, Nichtantreffen belegt kein Kontingent, das Ausfallhonorar bleibt davon getrennt (ADR-018 Punkt 9). Unsicher und hier als Annahme festgehalten: ob ein Termin, der abgehakt, aber noch nicht dokumentiert ist (`completed`), schon als genutzt zählt — ja, weil die Behandlung stattgefunden hat und ADR-018 Punkt 7 den Zustand nicht von selbst zurücknimmt; die Dokumentation ändert die Zahl nicht mehr.
+
+**Anker.** `app.treatment_basis_slot_counts` und `app.appointment_basis_position` in `supabase/migrations/20261002120000_abn_001_slot_counts.sql`; Tests in `supabase/tests/appointment-coverage.test.ts` („Genutzt zaehlt Termine").
+
+**Änderungspfad.** Genutzt erst ab `documented`: die Statusliste in `app.treatment_basis_slot_counts` kürzen · Aufwand `klein`. Nichtantreffen wieder mitzählen: `no_show` aus beiden `not in`-Listen streichen · Aufwand `klein`, widerspricht aber der Abnahme.
