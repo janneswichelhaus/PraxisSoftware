@@ -895,7 +895,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
 
-**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096.
+**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099).
 
 ### ANN-065 — „Anmerkungen" ist das organisatorische Feld, der Verordnerhinweis bleibt Bestand
 
@@ -919,7 +919,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `HEILMITTEL` und `istBestand()` in `src/features/treatment-bases/heilmittel.ts`.
 
-**Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; der Verzicht auf eine Liste in der Datenbank hebt die serverseitige Prüfung von Pflichtfeldern, Mengen und Berechtigungen nicht auf.
+**Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; der Verzicht auf eine Liste in der Datenbank hebt die serverseitige Prüfung von Pflichtfeldern, Mengen und Berechtigungen nicht auf. Abgleich (2026-10-02, Abnahme Block 4): Die Heilmittelliste beschreibt Verordnung und Erbrachtes, nicht den Preis; sie verändert das Terminhonorar nicht (BEF-099).
 
 ### ANN-067 — Gedeckt sind die frühesten Termine einer Grundlage, gezählt statt zugeteilt
 
@@ -959,7 +959,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 ### ANN-070 — Die Katalogversion ist eine eingefrorene Preisliste, die Leistung verweist auf ihre Position
 
-Technik · offen · 2026-09-19 · — · — · Wiedervorlage: keine — der Rechnungssnapshot aus ABR-EPIC-002a hält den Preis am Dokument fest (ANN-077)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: keine — der Rechnungssnapshot aus ABR-EPIC-002a hält den Preis am Dokument fest (ANN-077)
 
 **Annahme.** Eine Katalogversion ist eine vollständige Preisliste mit Gültigkeitsbeginn. Als Entwurf beliebig änderbar, mit dem Veröffentlichen unveränderlich — Positionen, Preise, Steuerkennzeichen und der Beginn; eine Preisänderung ist deshalb immer eine neue Version. Welche Liste an einem Tag gilt, ist die veröffentlichte mit dem größten Beginn bis zu diesem Tag, und maßgeblich ist der **Leistungstag**, nicht der Tag der Erfassung. Eine Leistung kopiert daher **keinen** Preis, sondern verweist auf die Position. Die steuerliche Einordnung steht je Position in drei Werten: `exempt_healthcare` (Heilbehandlung, § 4 Nr. 14 UStG), `taxable` (etwa Prävention oder Training) und `not_taxable` (kein Leistungsaustausch — der Fall des Ausfallhonorars); welcher Wert im Einzelfall gilt, entscheidet die Praxis mit ihrer Steuerberatung.
 
@@ -967,11 +967,11 @@ Technik · offen · 2026-09-19 · — · — · Wiedervorlage: keine — der Rec
 
 **Anker.** Tabellen `service_catalog_versions` und `service_catalog_items`, die Trigger `service_catalog_versions_frozen` und `service_catalog_items_frozen` sowie `app.active_service_catalog_version()` in `supabase/migrations/20260919100000_service_catalog.sql`.
 
-**Änderungspfad.** Preis doch an der Leistung festhalten: Spalten an `billable_services` und ihre Belegung in `record_billable_services` · Aufwand `mittel`, mit Migration. Einen weiteren Steuersatz zulassen: ein Zahlenfeld neben der Auswahl in `CatalogPage.tsx`, die Spalte nimmt ihn bereits · Aufwand `klein`. Eine veröffentlichte Liste doch korrigierbar machen: die beiden Trigger · Aufwand `klein` — widerspräche ADR-009 Punkt 5.
+**Änderungspfad.** Preis doch an der Leistung festhalten: Spalten an `billable_services` und ihre Belegung in `record_billable_services` · Aufwand `mittel`, mit Migration. Einen weiteren Steuersatz zulassen: ein Zahlenfeld neben der Auswahl in `CatalogPage.tsx`, die Spalte nimmt ihn bereits · Aufwand `klein`. Eine veröffentlichte Liste doch korrigierbar machen: die beiden Trigger · Aufwand `klein` — widerspräche ADR-009 Punkt 5. **Abnahme (Jannes, 2026-10-02):** Versionierung und Leistungstag bestätigt. Maßgeblich ist die mit der Person vereinbarte Honorarregelung, sonst der Tarif; eine neue Preisliste ändert bestehende Vereinbarungen und Historie nicht. Das Behandlungshonorar ist ein Terminhonorar (heute 140 € je 60 Minuten inkl. Dokumentation und Hausbesuch), Heilmittel verändern den Preis nicht — ADR-009 Fassung 4 Punkt 22, BEF-099; Rechnungsdarstellung offen (B17).
 
 ### ANN-071 — Preise pflegt die Inhaberin, Leistungen erfassen Inhaberin und Office
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen — insbesondere, ob eine Therapeutin am Termin selbst erfassen soll
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Praxiswochen — insbesondere, ob eine Therapeutin am Termin selbst erfassen soll
 
 **Ablösung.** abgelöst durch ANN-140 in der Frage „wer Leistungen erfasst“ (seit PRX-009 auch Behandelnde an ihrem eigenen Termin); der Katalog und das Zurücknehmen bleiben wie hier
 
@@ -981,11 +981,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Jannes nach
 
 **Anker.** `app.can_read_service_catalog()` und `app.can_manage_service_catalog()` in `supabase/migrations/20260919100000_service_catalog.sql`; `app.can_read_billable_services()` und `app.can_record_billable_services()` in `supabase/migrations/20260919110000_billable_services.sql`; die Anzeigeweiche `canManageServiceCatalog` und `canRecordBillableServices` in `src/features/session/types.ts`.
 
-**Änderungspfad.** Therapeut:innen erfassen lassen: die beiden `can_*_billable_services()` um `therapist` und `team_lead` erweitern, dazu `canRecordBillableServices` · Aufwand `klein`; ein Einstieg am Termin käme als eigene Aufgabe dazu · Aufwand `mittel`. Office Preise pflegen lassen: `app.can_manage_service_catalog()` · Aufwand `klein`.
+**Änderungspfad.** Therapeut:innen erfassen lassen: die beiden `can_*_billable_services()` um `therapist` und `team_lead` erweitern, dazu `canRecordBillableServices` · Aufwand `klein`; ein Einstieg am Termin käme als eigene Aufgabe dazu · Aufwand `mittel`. Office Preise pflegen lassen: `app.can_manage_service_catalog()` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** an ANN-140 angepasst: Preise pflegt owner; Behandelnde bestätigen erbrachte Leistungen an ihren eigenen dokumentierten Terminen, owner und Büro an allen; Zurücknehmen und Ausfallhonorar bleiben bei owner und Büro.
 
 ### ANN-072 — Eine Leistung entsteht nur aus „dokumentiert" oder aus einem Gebührenanlass, ohne Override
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob der fehlende Override im Alltag stört
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob der fehlende Override im Alltag stört
 
 **Annahme.** `record_billable_services` nimmt einen Termin nur an, wenn er im Zustand `documented` steht **oder** einen Gebührenanlass trägt (`fee_basis`, ADR-018 Fassung 2). Es gibt keinen Weg daran vorbei und keinen begründeten Override. Aus einem dokumentierten Termin entstehen ausschließlich Positionen der Art `treatment`, aus einem Gebührenanlass ausschließlich `absence_fee`; beides rutscht nie ineinander. Ein Ereignis ohne Patient:in erzeugt keine Leistung.
 
@@ -993,7 +993,7 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Die Zustandsprüfung und `v_erwartet` in `public.record_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
 
-**Änderungspfad.** Einen Override einführen: Er wäre eine Änderung an §19 und damit kein Fall für eine Annahme — erst Prinzipien, dann Spalten für Grund und Protokoll an `billable_services` · Aufwand `mittel`. Weitere abrechenbare Ereignisse neben dem Termin: eine eigene Quelle an der Leistung · Aufwand `groß`.
+**Änderungspfad.** Einen Override einführen: Er wäre eine Änderung an §19 und damit kein Fall für eine Annahme — erst Prinzipien, dann Spalten für Grund und Protokoll an `billable_services` · Aufwand `mittel`. Weitere abrechenbare Ereignisse neben dem Termin: eine eigene Quelle an der Leistung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt. Ein abgeschlossener Termin ohne finalisierte Dokumentation ist noch nicht abrechenbar; den fehlenden Dokumentationsstatus sieht auch das Büro (BEF-095).
 
 ### ANN-073 — Die genutzte Menge der Grundlage schreibt die Leistungserfassung fort
 
@@ -1007,11 +1007,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Spalte `billable_services.treatment_base_item_id` sowie die beiden `update public.treatment_base_items`-Blöcke in `record_billable_services` und `delete_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
 
-**Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5. Abgleich (2026-10-02, Abnahme Block 3): `used_quantity` bleibt die Leistungsmenge der Abrechnung, nicht die Zahl genutzter Termine (BEF-096); bei einer Terminübertragung zieht sie mit der Leistung um (BEF-097).
+**Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5. Abgleich (2026-10-02, Abnahme Block 3): `used_quantity` bleibt die Leistungsmenge der Abrechnung, nicht die Zahl genutzter Termine (BEF-096); bei einer Terminübertragung zieht sie mit der Leistung um (BEF-097). Abgleich (2026-10-02, Abnahme Block 4): Die Fortschreibung der Heilmittelmenge wird vom Preis getrennt; bestätigte Heilmittel tragen kein eigenes Honorar mehr (BEF-099).
 
 ### ANN-074 — Die Praxis-Stammdaten sind Pflichtangaben, der Umsatzsteuerstatus wird nicht geraten
 
-Recht · offen · 2026-09-19 · — · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Steuerberatung), spätestens vor dem ersten echten Rechnungslauf
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Steuerberatung), spätestens vor dem ersten echten Rechnungslauf
 
 **Annahme.** Eine Praxis hat genau einen Rechnungsabsender, und ohne Name, Anschrift, Steuernummer und IBAN entsteht keine Zeile — diese vier sind Pflichtspalten. Der umsatzsteuerliche Status (`small_business`, Kleinunternehmerregelung nach § 19 UStG) hat **keinen Vorgabewert**; die Praxis muss ihn setzen, bevor sie eine Rechnung ausstellt. Der Preis einer Katalogposition ist der **Endpreis**: Eine enthaltene Umsatzsteuer wird je Steuersatz herausgerechnet und getrennt ausgewiesen, unter der Kleinunternehmerregelung entfällt der Ausweis und die Rechnung trägt den Hinweis. Das Zahlungsziel steht bei den Stammdaten (Vorgabe 14 Tage) und bestimmt das Fälligkeitsdatum.
 
@@ -1019,11 +1019,11 @@ Recht · offen · 2026-09-19 · — · Prüfpaket · Wiedervorlage: mit der Antw
 
 **Anker.** Tabelle `practice_billing_profiles` und `public.save_practice_billing_profile` in `supabase/migrations/20260919130000_practice_billing_profile.sql`; die Steuergruppen in `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`; die Auswahl ohne Vorbelegung in `src/features/billing/PracticeProfilePage.tsx`.
 
-**Änderungspfad.** Netto je Zeile ausweisen: die Zeilen in `app.build_invoice_document` um Netto und Steuer ergänzen, der Snapshot trägt sie ab dann · Aufwand `klein` — ältere Rechnungen behalten ihre Form, das ist ihr Zweck. Preis als Nettobetrag führen: `unit_price_cents` bekäme eine zweite Bedeutung, also besser eine neue Katalogversion mit anderer Auslegung · Aufwand `groß`.
+**Änderungspfad.** Netto je Zeile ausweisen: die Zeilen in `app.build_invoice_document` um Netto und Steuer ergänzen, der Snapshot trägt sie ab dann · Aufwand `klein` — ältere Rechnungen behalten ihre Form, das ist ihr Zweck. Preis als Nettobetrag führen: `unit_price_cents` bekäme eine zweite Bedeutung, also besser eine neue Katalogversion mit anderer Auslegung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt mit „Steuernummer **oder** USt-IdNr.“ (heute ist die Steuernummer Pflicht — BEF-100); IBAN bleibt Pflicht für den Überweisungsablauf; USt-Status ohne Vorgabe und Endpreise richtig; steuerliche Freigabe über B4.
 
 ### ANN-075 — Die Rechnungsnummer ist lückenlos je Kreis und Kalenderjahr und entsteht beim Ausstellen
 
-Recht · offen · 2026-09-19 · — · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Format und Nummernkreis)
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Format und Nummernkreis)
 
 **Annahme.** Eine Rechnungsnummer hat die Form `Kürzel-Jahr-vierstellig`, etwa `RG-2026-0001`. Das Kürzel wählt die Praxis in den Stammdaten — seit **ABR-010 eines je Leistungsbereich** (`RG` Behandlung, `TR` Training), und beide müssen sich unterscheiden. Das Jahr ist das Kalenderjahr der Ausstellung in der Zeitzone der Praxis, die laufende Zahl beginnt in jedem Jahr wieder bei 1 und wird **lückenlos je Kreis** vergeben; einmalig bleibt jede Nummer über alle Kreise (§ 14 Abs. 4 Nr. 4 UStG erlaubt mehrere Zahlenreihen, doppelte Nummern nicht). Vergeben wird sie erst beim Ausstellen, aus einer eigenen Zeile je Organisation, Jahr und Bereich; unter gleichzeitigen Zugriffen bekommt genau eine Ausstellung die nächste Nummer. Ein Entwurf trägt keine Nummer und lässt sich folgenlos verwerfen.
 
@@ -1031,11 +1031,11 @@ Recht · offen · 2026-09-19 · — · Prüfpaket · Wiedervorlage: mit der Antw
 
 **Anker.** Tabelle `invoice_number_series` und `app.next_invoice_number` in `supabase/migrations/20260919150000_invoices.sql`; der dritte Schlüsselteil, `app.invoice_number_prefix` und das zweite Kürzel in `supabase/migrations/20260921150000_invoice_number_series_per_area.sql` (ABR-010).
 
-**Änderungspfad.** Anderes Format: die `return`-Zeile in `app.next_invoice_number` · Aufwand `klein`. Durchlaufende Nummer über Jahresgrenzen: dieselbe Funktion ohne Jahresanteil, die Tabelle trägt das Jahr weiter · Aufwand `klein`. Andere Kürzel: die Praxis-Stammdaten, ohne Punkt 17 zu berühren · Aufwand `klein`. Bereits vergebene Nummern sind davon nie betroffen — sie stehen im Snapshot.
+**Änderungspfad.** Anderes Format: die `return`-Zeile in `app.next_invoice_number` · Aufwand `klein`. Durchlaufende Nummer über Jahresgrenzen: dieselbe Funktion ohne Jahresanteil, die Tabelle trägt das Jahr weiter · Aufwand `klein`. Andere Kürzel: die Praxis-Stammdaten, ohne Punkt 17 zu berühren · Aufwand `klein`. Bereits vergebene Nummern sind davon nie betroffen — sie stehen im Snapshot. **Abnahme (Jannes, 2026-10-02):** Format, getrennte Kreise, Vergabe beim Ausstellen und Nichtwiederverwendung bestätigt. Korrektur der Begründung: Gesetzlich verlangt ist die Einmaligkeit; die Lückenlosigkeit ist eine interne Praxisregel (ADR-009 Fassung 4 Punkt 17), keine Pflicht aus § 14 UStG.
 
 ### ANN-076 — Der Rechnungsempfänger ist eine eigene Zeile, die Vorgabe ist die Patientin selbst
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob Beihilfe und Versicherung je geteilt abgerechnet werden müssen
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob Beihilfe und Versicherung je geteilt abgerechnet werden müssen
 
 **Annahme.** Ein Rechnungsempfänger ist eine eigene Zeile je Patientin mit einer von fünf Arten: Sorgeberechtigte, Betreuung, Beihilfestelle, private Krankenversicherung, sonstiger Kostenträger. **Die Patientin selbst bekommt keine Zeile**: Ist keine hinterlegte Empfängerin als Vorgabe markiert, geht die Rechnung an sie. Je Patientin sind beliebig viele Empfänger möglich, höchstens einer trägt die Vorgabe; eine Rechnung hat genau einen Empfänger. Pflegen und Rechnungen ausstellen dürfen `owner` und `office`.
 
@@ -1043,11 +1043,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Tabelle `invoice_recipients`, `app.can_read_invoicing()` und `app.can_manage_invoicing()` in `supabase/migrations/20260919140000_invoice_recipients.sql`; die Anzeigeweiche `canManageInvoicing` in `src/features/session/types.ts`.
 
-**Änderungspfad.** Weitere Art: der `check` an `recipient_kind` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Rechnung auf zwei Empfänger aufteilen: eigene Quotenzeilen an der Rechnung, zwei Dokumente je Ausstellung · Aufwand `groß`.
+**Änderungspfad.** Weitere Art: der `check` an `recipient_kind` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Rechnung auf zwei Empfänger aufteilen: eigene Quotenzeilen an der Rechnung, zwei Dokumente je Ausstellung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt. Standard ist die behandelte Person; PKV oder Beihilfe werden durch einen Erstattungsanspruch nicht von selbst Rechnungsempfänger.
 
 ### ANN-077 — Eine Rechnung fasst Person, Kalendermonat und Leistungsbereich zusammen und kennt zwei Zustände
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob der Monat die richtige Klammer ist
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob der Monat die richtige Klammer ist
 
 **Annahme.** Ein Rechnungsentwurf nimmt **alle** noch nicht abgerechneten Leistungen einer Patientin aus einem Kalendermonat **und einem Leistungsbereich** auf; einzelne Zeilen lassen sich nicht abwählen. Je Patientin, Monat und Bereich gibt es höchstens einen Entwurf; eine nachgereichte Leistung ergibt nach dem Ausstellen eine zweite Rechnung für denselben Monat. Seit **ABR-009** ist der Bereich der dritte Schlüssel: Eine Person mit beiden Verhältnissen bekommt in einem Monat zwei Rechnungen, und eine gemischte Rechnung ist schemaseitig unmöglich (ADR-009 Punkt 16). Gebaut sind zwei Zustände, `Entwurf` und `ausgestellt`; die übrigen fünf aus ADR-009 Punkt 7 hängen an Versand, Zahlungen und Storno und entstehen mit ABR-EPIC-002b und -003. Der Snapshot ist ein Dokument mit eigener `schema_version` und enthält keine klinischen Inhalte — der Verordnungsbezug steht als Bauart, Ausstellungsdatum und Verordner:in da, ohne Diagnose.
 
@@ -1055,11 +1055,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** `public.create_invoice_draft`, der Teilindex `invoices_draft_period_key`, der `check` an `invoices.status` und `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`; der dritte Schlüssel und die beiden zusammengesetzten Fremdschlüssel an `invoice_items` in `supabase/migrations/20260921140000_invoice_service_area.sql` (ABR-009).
 
-**Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung.
+**Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-078 — Zahlungen sind Transaktionen mit Richtung, der Zahlungsstand wird gerechnet
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob Überweisung als einziger Weg trägt
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob Überweisung als einziger Weg trägt
 
 **Annahme.** Eine Zahlung ist eine eigene Zeile an einer **ausgestellten** Rechnung: Richtung (Eingang oder Rückzahlung), Betrag in ganzen Cent und immer positiv, Tag, Weg (Überweisung oder „anderer Weg" — **kein Bargeld**, Jannes am 2026-09-19) und eine freiwillige Notiz. Der Zahlungsstand der Rechnung (offen, teilweise bezahlt, bezahlt, überzahlt) und die Überfälligkeit werden aus diesen Zeilen **gerechnet** und nirgends gespeichert. Überzahlung ist erlaubt; zurückgezahlt werden kann höchstens, was eingegangen ist. Eine gebuchte Zahlung lässt sich **nur stornieren, mit Grund** — nicht ändern und nicht löschen; die stornierte Zeile bleibt sichtbar und fällt aus jeder Summe.
 
@@ -1067,11 +1067,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Tabelle `payments` mit dem `check` an `method`, `app.invoice_payment_state`, `app.invoice_paid_cents` und `app.payments_frozen` in `supabase/migrations/20260919160000_payments.sql`.
 
-**Änderungspfad.** Weiterer Zahlungsweg: der `check` an `payments.method` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Bargeld annehmen: derselbe `check`, aber dann mit Kassenbuch, TSE und einer Frage an die Steuerberatung (B4) · Aufwand `groß`. Mahnstufen: eine eigene Aufgabe, ADR-009 nennt das Mahnwesen ausdrücklich als nicht entschieden.
+**Änderungspfad.** Weiterer Zahlungsweg: der `check` an `payments.method` und die Beschriftungen in `src/features/billing/api.ts` · Aufwand `klein`. Bargeld annehmen: derselbe `check`, aber dann mit Kassenbuch, TSE und einer Frage an die Steuerberatung (B4) · Aufwand `groß`. Mahnstufen: eine eigene Aufgabe, ADR-009 nennt das Mahnwesen ausdrücklich als nicht entschieden. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-079 — Storno ist ein eigenes Dokument; „storniert" wird abgeleitet, nicht gesetzt
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob die Praxis die Korrekturrechnung so findet
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob die Praxis die Korrekturrechnung so findet
 
 **Annahme.** Eine ausgestellte Rechnung wird nie geändert. Storniert wird sie durch ein **eigenes Dokument** mit Pflichtgrund, das eine eigene Nummer aus **dem Kreis der Rechnung trägt, die es betrifft** (seit ABR-010 je Leistungsbereich, ADR-009 Punkt 17) und an denselben Empfänger geht. „Storniert" ist deshalb kein dritter Wert in `invoices.status`, sondern die Existenz dieser Zeile. Das Storno gibt die Leistungen wieder frei, ohne eine Rechnungszeile zu löschen (`released_at`), und die Korrekturrechnung merkt sich in `replaces_invoice_id`, welche Rechnung sie ersetzt. Eine Rechnung mit **stehender Zahlung** lässt sich nicht stornieren — erst die Zahlung stornieren, dann die Rechnung.
 
@@ -1079,11 +1079,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Tabelle `invoice_cancellations`, `public.cancel_invoice`, `public.create_correction_draft` und `app.invoice_items_frozen` in `supabase/migrations/20260919170000_invoice_cancellations.sql`.
 
-**Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine weitere Zeile im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`.
+**Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine weitere Zeile im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** eigenes Stornodokument und Korrekturkette bestätigt. Geändert: Eine Zahlung sperrt das Storno nicht mehr; der eingegangene Betrag bleibt und wird mit der Ersatzrechnung verrechnet oder tatsächlich zurückgezahlt; ein Zahlungsstorno korrigiert nur eine falsche Buchung — BEF-100. Bis zur Umsetzung gilt die bisherige Regel.
 
 ### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 — ob vierzehn Tage Frist taugen
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Probewoche 1 — ob vierzehn Tage Frist taugen
 
 **Annahme.** Aus einer **überfälligen** Rechnung entsteht eine Zahlungserinnerung als Dokument: Tag, offener Betrag und eine neue Frist von **vierzehn Tagen**. Keine Stufen, keine Gebühren, keine Verzugszinsen, keine Automatik und **keine eigene Nummer** — sie verweist auf die Rechnungsnummer. Der offene Betrag wird im Dokument **festgeschrieben**; eine spätere Zahlung ändert das Blatt nicht mehr. Mehrere Erinnerungen sind erlaubt und gleichrangig, höchstens eine je Rechnung und Tag; an einer bezahlten oder stornierten Rechnung gibt es keine.
 
@@ -1091,11 +1091,11 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Tabelle `invoice_payment_reminders` und die Konstante `c_frist_tage` in `public.create_payment_reminder` in `supabase/migrations/20260919180000_payment_reminders.sql`.
 
-**Änderungspfad.** Andere Frist: die Konstante `c_frist_tage` · Aufwand `klein`. Mahnstufen und Gebühren: eine eigene Aufgabe mit eigener Rechtsprüfung (ABR-005) · Aufwand `groß`. Erinnerung vor Fälligkeit: die Prüfung in `create_payment_reminder` · Aufwand `klein`.
+**Änderungspfad.** Andere Frist: die Konstante `c_frist_tage` · Aufwand `klein`. Mahnstufen und Gebühren: eine eigene Aufgabe mit eigener Rechtsprüfung (ABR-005) · Aufwand `groß`. Erinnerung vor Fälligkeit: die Prüfung in `create_payment_reminder` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-081 — Abgerechnet ist die Leistung, nicht der Termin
 
-Technik · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Folgestory zu ADR-018 Punkt 2
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit der Folgestory zu ADR-018 Punkt 2
 
 **Annahme.** Der Terminzustand `invoiced` aus ADR-018 bleibt vorerst **unbesetzt**: `issue_invoice` hebt `billable_services.status` auf `invoiced` und lässt den Termin, wo er ist. Wer wissen will, ob ein Termin abgerechnet ist, fragt die Leistung. Jede Stelle, die „abgerechnet" als Grenze braucht — heute der Transfer-Guard aus ANN-068 —, prüft deshalb `billable_services.status`.
 
@@ -1103,11 +1103,11 @@ Technik · offen · 2026-09-20 · — · — · Wiedervorlage: mit der Folgestor
 
 **Anker.** Die Bedingung `not exists (… billable_services … status = 'invoiced')` in `public.transfer_appointments_to_treatment_basis` in `supabase/migrations/20260920106000_transfer_guard_billable_services.sql`.
 
-**Änderungspfad.** ADR-018 Punkt 2 vollständig umsetzen: Statuswechsel in `issue_invoice` und Rückweg in `cancel_invoice` samt gemerktem Vorzustand und Auditereignis `appointment.invoiced`; die Bedingung hier fällt dann ersatzlos weg · Aufwand `mittel`.
+**Änderungspfad.** ADR-018 Punkt 2 vollständig umsetzen: Statuswechsel in `issue_invoice` und Rückweg in `cancel_invoice` samt gemerktem Vorzustand und Auditereignis `appointment.invoiced`; die Bedingung hier fällt dann ersatzlos weg · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-082 — Der Befreiungsgrund ist ein fester Text je Steuerkennzeichen
 
-Recht · offen · 2026-09-20 · — · Prüfpaket · Wiedervorlage: mit der Antwort aus B4 (Steuerberatung, G13), spätestens vor dem ersten echten Rechnungslauf
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit der Antwort aus B4 (Steuerberatung, G13), spätestens vor dem ersten echten Rechnungslauf
 
 **Annahme.** Der Grund der Steuerbefreiung entsteht als **fester Text je Steuerkennzeichen** und nicht als Feld an der Katalogposition: `exempt_healthcare` trägt „Steuerfreie Heilbehandlung nach § 4 Nr. 14 Buchstabe a UStG", `not_taxable` trägt „Nicht steuerbar, kein Leistungsaustausch (§ 1 Abs. 1 Nr. 1 UStG)", `taxable` trägt keinen. Er steht an der **Steuergruppe** des Dokuments, nicht an der Zeile, und damit im Snapshot (`schema_version` 2). Ohne ihn lässt sich eine Rechnung mit steuerfreiem Posten nicht ausstellen.
 
@@ -1115,7 +1115,7 @@ Recht · offen · 2026-09-20 · — · Prüfpaket · Wiedervorlage: mit der Antw
 
 **Anker.** `app.tax_exemption_reason` in `supabase/migrations/20260920120000_invoice_tax_exemption_reason.sql`; die Pflichtprüfung dazu in `app.assert_invoice_tax_lawful` in `supabase/migrations/20260920121000_invoice_tax_lock.sql`.
 
-**Änderungspfad.** Anderer Wortlaut: die Funktion, eine Zeile je Kennzeichen · Aufwand `klein` — ausgestellte Rechnungen behalten ihren Satz, das ist der Zweck des Snapshots. Grund je Katalogposition (mehrere Befreiungstatbestände): neue Spalte an `service_catalog_items`, neue Katalogversion, die Funktion fällt weg · Aufwand `mittel`.
+**Änderungspfad.** Anderer Wortlaut: die Funktion, eine Zeile je Kennzeichen · Aufwand `klein` — ausgestellte Rechnungen behalten ihren Satz, das ist der Zweck des Snapshots. Grund je Katalogposition (mehrere Befreiungstatbestände): neue Spalte an `service_catalog_items`, neue Katalogversion, die Funktion fällt weg · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** feste Texte je Kennzeichen und Speicherung im Snapshot bestätigt, vorbehaltlich B4. Steuerbefreiung und „nicht steuerbar“ bleiben unterschieden; die Einordnung des Ausfallhonorars bestätigt die Steuerberatung (B4).
 
 ### ANN-083 — Die Instrumentenbibliothek liegt als Dateien im Release, nicht in der Datenbank
 
@@ -1179,7 +1179,7 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn alle
 
 ### ANN-088 — Eine Teilzahlung verteilt sich anteilig auf die Steuergruppen ihrer Rechnung
 
-Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B9, wenn die Steuerberatung die Grundlage der Gewinnermittlung benennt
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit B9, wenn die Steuerberatung die Grundlage der Gewinnermittlung benennt
 
 **Annahme.** Auf der Grundlage **Zufluss** wird eine gebuchte Zahlung auf die Steuergruppen ihrer Rechnung verteilt: anteilig nach deren Bruttoanteil am Rechnungsbetrag, in ganzen Cent, der verbleibende Rest an die größten Bruchteile und bei Gleichstand in fester Reihenfolge. Eine Vollzahlung ergibt damit genau die Gruppen des Dokuments, eine Rückzahlung hebt ihren Eingang centgenau auf, und keine Summe verliert einen Cent.
 
@@ -1187,7 +1187,7 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit B9, wenn die 
 
 **Anker.** Die Schritte `abgerundet` und `verteilt` in `public.list_revenue_by_service_area` (`supabase/migrations/20260921160000_revenue_by_service_area.sql`).
 
-**Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu.
+**Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu. **Abnahme (Jannes, 2026-10-02):** anteiliges Verteilen bestätigt. Mehrere Teilzahlungen müssen bei voller Zahlung zusammen exakt die Steuergruppen ergeben; dafür wird kumulativ verteilt statt je Zahlung gerundet, und eine Rückzahlung nimmt ihre Verteilung nachvollziehbar zurück — BEF-100.
 
 ### ANN-089 — `MDR_REVIEW_REQUIRED` wird als Register mit gesperrten Adressen geführt
 
@@ -1707,7 +1707,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-131 — Blätter für den Fensterumschlag: DIN 5008 Form B, Fenster links
 
-Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim ersten Probedruck einer Rechnung im Fensterumschlag
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes beim ersten Probedruck einer Rechnung im Fensterumschlag
 
 **Annahme.** Rechnung, Stornodokument und Zahlungserinnerung werden für einen Fensterumschlag DL nach DIN 5008 Form B mit Fenster links gedruckt: Das Anschriftfeld liegt 20 mm vom linken und 45 mm vom oberen Blattrand und ist 85 × 45 mm groß; die Angaben rechts (Nummer, Datum, behandelte Person) beginnen bei 125 mm; Vermerke stehen unter dem Feld, nicht darin. Am Bildschirm ändert sich nichts.
 
@@ -1715,7 +1715,7 @@ Praxisprozess · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes beim
 
 **Anker.** `Briefkopf` in `src/features/billing/Briefkopf.tsx` (Druckklassen des Anschriftfelds und der Angaben); Nutzung in `InvoicePrintPage.tsx`, `CancellationPrintPage.tsx`, `ReminderPrintPage.tsx`.
 
-**Änderungspfad.** Form A (27 mm von oben) oder Fenster rechts: die Druckklassen in `Briefkopf.tsx` · Aufwand `klein`.
+**Änderungspfad.** Form A (27 mm von oben) oder Fenster rechts: die Druckklassen in `Briefkopf.tsx` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-132 — Die Dringlichkeit auf der Warteliste ist organisatorisch: drei Gründe und ein Datum
 
@@ -1803,7 +1803,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 
 ### ANN-139 — Abrechnungslage am Termin: Position für alle, Empfänger und offene Rechnungen nur für owner und office
 
-Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach der Sichtung; Datenschutzprüfung mit dem Rollenschnitt (ADR-004)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach der Sichtung; Datenschutzprüfung mit dem Rollenschnitt (ADR-004)
 
 **Annahme.** Am Behandlungstermin steht „Termin n von m“ mit der Bauart der Grundlage — gezählt wie die Deckung (nicht abgesagte Termine der Grundlage nach Beginn und Kennung) — für alle Rollen der Terminverwaltung. Der **Standard-Rechnungsempfänger** (ohne Eintrag: die Person selbst) und die **offenen Rechnungen** der Person (Anzahl, offener Betrag, ob eine überfällig ist) kommen nur für owner und office; für Behandelnde und Vertretungen bleiben die Felder leer, entschieden in der Datenbank. „Offen“ heißt wie in der Liste der offenen Posten: ausgestellt, nicht storniert, nicht voll bezahlt — ab Ausstellung, nicht erst ab Fälligkeit; die Überfälligkeit steht daneben. Gezählt werden die offenen Rechnungen der Person aus **beiden** Leistungsbereichen, weil owner und office beide sehen dürfen. Im Erfolgsfall wird nicht protokolliert.
 
@@ -1811,7 +1811,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Jannes nach d
 
 **Anker.** `public.get_appointment_billing_context`, `app.appointment_basis_position` und `app.open_invoices` in `supabase/migrations/20260929120000_prx_008_appointment_billing_context.sql`; Anzeige `src/features/appointments/Abrechnungslage.tsx`; Tests in `supabase/tests/appointment-billing-context.test.ts`.
 
-**Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`.
+**Änderungspfad.** Behandelnde sehen „Rechnung offen“ ohne Betrag: eigene Bedingung für `open_invoice_count` statt `v_darf` · Aufwand `klein`. „Offen“ erst ab Fälligkeit: Bedingung in `app.open_invoices` — trifft dann auch die offenen Posten · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt einschließlich BEF-096 (Nichtantreffen verbraucht keinen Behandlungstermin). Finanzangaben bleiben bei owner und Büro; die gemeinsamen klinischen Leserechte aus Block 2 (BEF-095) gelten für Büro und Behandelnde.
 
 ### ANN-140 — Termin abhaken: Behandelnde bestätigen die Heilmittel an ihrem eigenen Termin, zurücknehmen bleibt beim Büro
 
@@ -1825,7 +1825,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisve
 
 **Anker.** `app.can_record_services_for_appointment` in `supabase/migrations/20260929130000_prx_009_record_at_appointment.sql` (die eine Stelle der Rollenregel), genutzt von `get_billable_service_draft`, `record_billable_services` und `get_appointment_services`; Anzeigeweiche `canRecordAtAppointment` in `src/features/session/types.ts`; Oberfläche `src/features/appointments/HeilmittelBestaetigen.tsx`; Tests in `supabase/tests/record-at-appointment.test.ts`.
 
-**Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`.
+**Änderungspfad.** Auch fremde Termine: Bedingung in `app.can_record_services_for_appointment` streichen · Aufwand `klein`. Behandelnde dürfen zurücknehmen: `delete_billable_services` auf dieselbe Funktion umstellen · Aufwand `klein`. Zurück zu ANN-071: Funktion auf `app.can_record_billable_services()` verkürzen · Aufwand `klein`. Abgleich (2026-10-02, Abnahme Block 4): Bestätigt werden die erbrachten Heilmittel (Mengen); das Terminhonorar entsteht je durchgeführtem Termin einmal, unabhängig von der Auswahl (ADR-009 Fassung 4 Punkt 22, BEF-099).
 
 ### ANN-141 — Verordnung ohne Papier: Das Foto hängt bis zum Erfassen an der Person, sein Objektschlüssel bleibt beim Zuordnen stehen
 

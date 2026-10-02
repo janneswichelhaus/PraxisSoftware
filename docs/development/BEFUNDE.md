@@ -3374,3 +3374,46 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 **Beobachtung.** Seit ANN-065 schreibt das Formular nur noch „Anmerkungen“ (organisatorisch). Der klinische „Hinweis der Verordner:in“ nimmt nichts Neues an. Ein behandlungsrelevanter Hinweis aus einer neuen Verordnung (etwa „keine Belastung über 20 kg“, „Therapieziel …“) hat damit keinen klinischen Ort.
 
 **Erwartet.** Ein klinisches Feld an der Grundlage für behandlungsrelevante Hinweise. Naheliegend ist, `prescriber_note` für neue Eingaben wieder zu öffnen, getrennt von den organisatorischen „Anmerkungen“ und klar beschriftet. Schreiben dürfen die behandelnden Rollen. Das Büro liest es wie die Therapeut:innen (ADR-004 Fassung 2), über dasselbe zentrale Leserecht wie BEF-095.
+
+### BEF-099 — Der Preis entsteht aus den Heilmitteln statt aus einem Terminhonorar
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Abrechnung: Leistungskatalog, Leistungserfassung, Rechnung; Behandlungsgrundlage |
+| Quelle  | Jannes, Abnahme der Annahmen Block 4 (ANN-070, ANN-064, ANN-066, ANN-073, ANN-140) |
+| Status  | eingeplant in ABR-EPIC-007 |
+| Berührt | ADR-009 Fassung 4 Punkte 5 und 22; ADR-020; `record_billable_services`, `get_billable_service_draft`, Katalog (`service_catalog_*`), `treatment_base_items.used_quantity` |
+
+**Beobachtung.** Heute ist jede Katalogposition ein Heilmittel mit eigenem Preis. Am Termin bestätigte Heilmittel (ANN-140) werden je Position als Leistung erfasst und berechnet. KG plus MT plus Hausbesuch ergeben damit drei Preise, und dieselbe Erfassung schreibt die Heilmittelmenge fort (ANN-073). Eine patientenbezogene Honorarvereinbarung gibt es nicht.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Je durchgeführtem Behandlungstermin entsteht genau einmal das vereinbarte Terminhonorar (heute 140 € für 60 Minuten, inklusive Dokumentation und Hausbesuch).
+- Die Heilmittelauswahl verändert den Preis nicht.
+- Die erbrachten Heilmittel werden weiter bestätigt und schreiben die Mengen fort, aber ohne eigenen Preis.
+- Tarife und patientenbezogene Honorarvereinbarungen sind versioniert mit Gültigkeitsbeginn. Maßgeblich ist die am Leistungstag geltende Vereinbarung, sonst der Tarif.
+- Preisänderungen verändern keine erfasste Leistung und keine Rechnung.
+- Bestehende Katalogpositionen und Abrechnungen bleiben erhalten und lesbar.
+- Die Rechnungsdarstellung ist austauschbar an einer Stelle, bis B17 entschieden ist.
+- Terminzahl (BEF-096), Heilmittelmenge (ANN-073) und Rechnungsbetrag müssen danach zusammenpassen; ein Test prüft alle drei an einem Fall.
+
+### BEF-100 — Abrechnung: Steuernummer Pflicht, Storno gesperrt durch Zahlungen, Teilzahlungen einzeln gerundet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Praxis-Stammdaten, Storno, Auswertung „Einnahmen je Leistungsart“ |
+| Quelle  | Jannes, Abnahme der Annahmen Block 4 (ANN-074, ANN-079, ANN-088); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | `practice_billing_profiles.tax_number not null` (`20260919130000_practice_billing_profile.sql`); Storno-Regel in `20260919170000_invoice_cancellations.sql`; Schritte `abgerundet`/`verteilt` in `list_revenue_by_service_area` |
+
+**Beobachtung und erwartet:**
+1. **Steuernummer:** Sie ist Pflicht, die USt-IdNr. optional. Erwartet ist „Steuernummer **oder** USt-IdNr.“ (§ 14 Abs. 4 Nr. 2 UStG); die IBAN bleibt Pflicht.
+2. **Storno:** Eine Rechnung mit stehender Zahlung lässt sich nicht stornieren, erst müsste die Zahlung storniert werden. Ein tatsächlich eingegangener Betrag darf so nicht verschwinden. Erwartet:
+   - Das Storno ist auch mit Zahlung möglich.
+   - Der Betrag wird nachvollziehbar mit der Ersatzrechnung verrechnet oder als tatsächliche Rückzahlung gebucht.
+   - Ein Zahlungsstorno dient nur der Korrektur einer falschen Buchung.
+3. **Teilzahlungen:** Jede Zahlung wird für sich auf die Steuergruppen verteilt und gerundet. Mehrere Teilzahlungen ergeben bei vollständiger Zahlung nicht sicher genau die Gruppen der Rechnung. Erwartet:
+   - kumulativ verteilen: die Summe aller Zahlungen bis einschließlich dieser verteilen, die Verteilung davor abziehen;
+   - eine Rückzahlung nimmt die zugehörige Verteilung nachvollziehbar zurück;
+   - Test mit drei krummen Teilzahlungen.
