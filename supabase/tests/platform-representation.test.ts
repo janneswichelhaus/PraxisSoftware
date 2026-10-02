@@ -1,3 +1,4 @@
+import { zugangsdienstLoescht } from './helpers/zugangsdienst';
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EINWILLIGUNG_BEGLEITUNG_FASSUNG } from '@/lib/vertretung';
@@ -478,6 +479,7 @@ describe('Sorgerecht endet am 18. Geburtstag (Punkt 15, ANN-208)', () => {
     // 31 Tage nach dem Geburtstag faellt das Konto (ADR-023 Punkt 5).
     await geburtsdatum(patients.max, "current_date - interval '18 years' - interval '31 days'");
     await asPostgres('select public.apply_retention()');
+    await zugangsdienstLoescht();
     expect(
       (await asPostgres('select 1 from auth.users where id = $1', [KONTO_BERND])).rows,
     ).toEqual([]);

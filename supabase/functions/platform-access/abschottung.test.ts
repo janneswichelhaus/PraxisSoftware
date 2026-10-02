@@ -7,8 +7,8 @@ import { describe, expect, it } from 'vitest';
  *
  * Er spricht nur mit der eigenen Instanz und dem Versandweg, schreibt nichts
  * auf die Konsole und hat keinen eigenen Datenbankclient: Jeder Zugriff geht
- * über die zwei Funktionen des Zugangsdienstes bzw. die Sitzung der
- * einladenden Person. Geprüft über den Quelltext, wie beim Kartendienst.
+ * über die Funktionen des Zugangsdienstes (seit ABN-011 auch die beiden der
+ * Löschaufträge) bzw. die Sitzung der einladenden Person. Geprüft über den Quelltext, wie beim Kartendienst.
  */
 
 const VERZEICHNIS = join(import.meta.dirname, '.');
@@ -18,7 +18,7 @@ const VERBOTEN: { muster: RegExp; grund: string }[] = [
   { muster: /\bconsole\s*\./, grund: 'Betriebslog' },
   {
     muster:
-      /\/rest\/v1\/(?!rpc\/(platform_invitation_lookup|redeem_platform_invitation|platform_invitation_failed|platform_invitation_mail)\b)/,
+      /\/rest\/v1\/(?!rpc\/(platform_invitation_lookup|redeem_platform_invitation|platform_invitation_failed|platform_invitation_mail|claim_platform_account_deletions|confirm_platform_account_deletion)\b)/,
     grund: 'andere Datenbankpfade',
   },
   { muster: /Deno\.writeTextFile|Deno\.writeFile|Deno\.openKv/, grund: 'Persistenz' },

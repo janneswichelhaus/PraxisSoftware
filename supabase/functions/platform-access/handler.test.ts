@@ -29,6 +29,9 @@ function dienst(ueberschreiben: Partial<Anmeldedienst> = {}): Anmeldedienst {
     kennwortPruefen: vi.fn(() => ok<string | null>(null)),
     kennwortSetzen: vi.fn(() => ok(null)),
     kontoEntfernen: vi.fn(() => ok(null)),
+    loeschauftraege: vi.fn(() => ok<string[]>([])),
+    loeschungBestaetigen: vi.fn(() => ok(null)),
+    istDienstaufruf: vi.fn((kopf: string | null) => kopf === 'Bearer dienst-schluessel'),
     fehlversuch: vi.fn(() => ok(null)),
     einladungsmail: vi.fn(() =>
       ok({
@@ -297,5 +300,47 @@ describe('Zugangsdienst: versenden', () => {
     const antwort = await handler(anfrage(VERSENDEN, { Authorization: 'Bearer sitzung' }));
     expect(await lies(antwort)).toEqual({ ok: false, error: 'address_changed' });
     expect(v.sende).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * ABN-011 (BEF-115): Der Zugangsdienst löscht Plattformkonten über die
+ * Admin-API — nur auf Aufruf mit dem Admin-Schlüssel, bestätigt je Konto.
+ */
+describe('Zugangsdienst: konten_loeschen', () => {
+  const ZWEITES = '99999999-9999-4999-8999-000000000002';
+
+  it('weist einen Aufruf ohne den Admin-Schlüssel ab und löscht nichts', async () => {
+    const d = dienst({
+      loeschauftraege: vi.fn(() => Promise.resolve({ ok: true as const, value: [KONTO] })),
+    });
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    for (const kopf of [{}, { Authorization: 'Bearer falsch' }]) {
+      const antwort = await handler(anfrage({ aufgabe: 'konten_loeschen' }, kopf));
+      expect(antwort.status).toBe(403);
+    }
+    expect(d.loeschauftraege).not.toHaveBeenCalled();
+    expect(d.kontoEntfernen).not.toHaveBeenCalled();
+  });
+
+  it('entfernt jedes Konto und bestätigt es, ein gescheitertes bleibt offen', async () => {
+    const d = dienst({
+      loeschauftraege: vi.fn(() => Promise.resolve({ ok: true as const, value: [KONTO, ZWEITES] })),
+      kontoEntfernen: vi.fn((id: string) =>
+        Promise.resolve(
+          id === KONTO
+            ? { ok: true as const, value: null }
+            : { ok: false as const, error: 'unavailable' as const },
+        ),
+      ),
+    });
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(
+      anfrage({ aufgabe: 'konten_loeschen' }, { Authorization: 'Bearer dienst-schluessel' }),
+    );
+    expect(antwort.status).toBe(200);
+    expect(await lies(antwort)).toEqual({ ok: true, value: { deleted: 1, pending: 1 } });
+    expect(d.loeschungBestaetigen).toHaveBeenCalledTimes(1);
+    expect(d.loeschungBestaetigen).toHaveBeenCalledWith(KONTO);
   });
 });

@@ -65,7 +65,7 @@ comment on function app.is_late_cancellation(text, timestamptz, timestamptz) is
 -- -----------------------------------------------------------------------------
 alter table public.appointments
   add column fee_waived_at timestamptz,
-  add column fee_waived_by uuid references auth.users (id) on delete set null;
+  add column fee_waived_by uuid;
 
 comment on column public.appointments.fee_waived_at is
   'Zeitpunkt, zu dem die Praxis bewusst auf die Gebuehr aus fee_basis verzichtet hat (ABN-006, BEF-094). Der Anlass bleibt; abrechenbar ist er danach nicht mehr (app.billable_fee_basis).';

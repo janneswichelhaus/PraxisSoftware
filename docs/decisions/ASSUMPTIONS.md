@@ -2259,6 +2259,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** Andere Fristen: `app.platform_read_period` bzw. `retention_classes.plattformzugang` ändern · Aufwand `klein`. Konten über den Zugangsdienst löschen: den Löschschritt in eine Warteschlange schreiben lassen, die der Dienst abarbeitet · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Fristen bestätigt. Der Ablauf der Einladung beendet nur einen nie eingelösten Zugang; das Konto fällt erst 30 Tage nach dem Ende aller seiner Zugänge. Gelöscht wird über die unterstützte Admin-API des Anmeldedienstes statt per SQL in `auth.users`; zu prüfen in OPS-001 (BEF-115).
 
+**Umgesetzt (ABN-011, 2026-10-02).** Fristen unverändert; neu ist der Weg. Der Löschlauf entzieht die Zugänge sofort und gibt einen Löschauftrag (`platform_account_deletions`); der Zugangsdienst holt ihn ab (`claim_platform_account_deletions`), entfernt das Konto über die Admin-API des Anmeldedienstes und bestätigt (`confirm_platform_account_deletion`). Erst die Bestätigung schreibt das Löschjournal, und sie wird abgewiesen, solange das Konto noch besteht. Nach einem Restore gibt `reapply_deletion_journal` neue Aufträge. Tests mit zwei Zugängen (einer endet früher) und einer abgelaufenen Einladung zum neuen Kennwort in `supabase/tests/platform-accesses.test.ts`. Den Aufruf durch den Betrieb regelt ANN-217.
+
 ### ANN-190 — Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang
 
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Plattform)
@@ -2596,3 +2598,15 @@ Datenschutz · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: B2 
 **Anker.** `platform_accesses.health_scope`, `.finance_scope`, `app.platform_access_allows` und `app.assert_platform_representation` in `supabase/migrations/20261002134000_abn_010_representation_scopes.sql`; Formular in `src/features/platform-access/Vertretungen.tsx`; Wortlaut in `src/lib/vertretung.ts`; Tests in `supabase/tests/platform-acting-for.test.ts` („Rechte je Art“) und `platform-representation.test.ts`.
 
 **Änderungspfad.** Ein weiterer Bereich: eine Spalte, ein Satz im Wortlaut, ein Fall in `platform_access_allows` · Aufwand `klein`. Vertretung nur für Rechnungen: die Pflicht zur Gesundheitssorge in `assert_platform_representation` und der Constraint lockern, die Gesundheitsfähigkeiten an `health_scope` binden · Aufwand `mittel`.
+
+### ANN-217 — Den Zugangsdienst ruft nach dem Löschlauf der Zeitplan des Betriebs; bis OPS-001 bleiben fällige Konten gesperrt stehen
+
+Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: OPS-001 (Edge Runtime am Testprojekt prüfen)
+
+**Annahme.** Die Aufgabe `konten_loeschen` des Zugangsdienstes ruft der Zeitplan des Betriebs nach jedem Löschlauf auf, mit dem Admin-Schlüssel als Bearer; ein anderer Aufruf wird abgewiesen. Ein abgeholter Auftrag ist 15 Minuten vergeben; was scheitert, kommt beim nächsten Aufruf wieder. Ein Konto, das beim Anmeldedienst schon fehlt (404), gilt als entfernt. Ein Konto, das seit dem Auftrag wieder einen laufenden Zugang hat, wird nicht gelöscht, der Auftrag fällt. Solange die Edge Runtime nicht freigegeben ist (OPS-001), läuft der Aufruf nicht: Fällige Konten stehen dann ohne jeden Zugang beim Anmeldedienst, bis der Dienst scharf ist.
+
+**Begründung.** BEF-115 verlangt die unterstützte Admin-API statt SQL auf `auth.users`. Die Admin-API braucht den `service_role`-Schlüssel und damit eine serverseitige Funktion; die einzige, die ihn hält, ist der Zugangsdienst (ADR-023 Punkt 9). Ein Konto ohne Zugang kann nichts sehen (ADR-023 Punkt 18); das Warten bis OPS-001 ist deshalb ein Fristverzug, kein Zugriffsrisiko. Unsicher: welcher Zeitplan das sein wird (pg_cron, GitHub Actions oder der Anbieter) — das entscheidet OPS-001.
+
+**Anker.** `kontenLoeschen` in `supabase/functions/platform-access/handler.ts`, `istDienstaufruf` und `loeschauftraege` in `anmeldedienst.ts`; `public.claim_platform_account_deletions` in `supabase/migrations/20261002135000_abn_011_platform_account_deletion_queue.sql`; Tests in `supabase/functions/platform-access/handler.test.ts` („konten_loeschen“).
+
+**Änderungspfad.** Anderer Auslöser: nur der Aufruf von außen ändert sich, der Dienst bleibt · Aufwand `klein`. Längere Vergabe eines Auftrags: die 15 Minuten in `claim_platform_account_deletions` · Aufwand `klein`.

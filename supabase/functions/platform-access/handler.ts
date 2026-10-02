@@ -79,7 +79,8 @@ type Auftrag =
       readonly email: string;
       readonly kennwort: string;
     }
-  | { readonly aufgabe: 'versenden'; readonly einladungId: string; readonly code: string };
+  | { readonly aufgabe: 'versenden'; readonly einladungId: string; readonly code: string }
+  | { readonly aufgabe: 'konten_loeschen' };
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -92,6 +93,8 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | ZugangsFehler> {
   }
   if (typeof koerper !== 'object' || koerper === null) return 'invalid_request';
   const d = koerper as Record<string, unknown>;
+  // ABN-011: ohne Code, nur mit dem Admin-Schlüssel (geprüft im Handler).
+  if (d['aufgabe'] === 'konten_loeschen') return { aufgabe: 'konten_loeschen' };
   const code = d['code'];
   if (typeof code !== 'string' || !CODE_MUSTER.test(code)) return 'invitation_invalid';
 
@@ -124,6 +127,15 @@ export function erstelleHandler({
     if (typeof auftrag === 'string') return fehler(auftrag);
 
     if (anmeldedienst === null) return fehler('not_configured');
+
+    if (auftrag.aufgabe === 'konten_loeschen') {
+      if (!anmeldedienst.istDienstaufruf(anfrage.headers.get('Authorization'))) {
+        return fehler('not_allowed');
+      }
+      const geloescht = await kontenLoeschen(anmeldedienst);
+      if (!geloescht.ok) return fehler(geloescht.error);
+      return antwort({ ok: true, value: geloescht.value }, 200);
+    }
 
     const ergebnis =
       auftrag.aufgabe === 'einloesen'
@@ -211,6 +223,27 @@ async function einloesen(
     return gebunden;
   }
   return { ok: true, value: { purpose, organizationName } };
+}
+
+/**
+ * Konten löschen (ABN-011, BEF-115): die Aufträge des Löschlaufs abholen, je
+ * Konto über die Admin-API entfernen und bestätigen. Was scheitert, bleibt
+ * im Auftrag und kommt beim nächsten Aufruf wieder; die Antwort zählt nur,
+ * sie nennt keine Kennungen.
+ */
+async function kontenLoeschen(
+  dienst: Anmeldedienst,
+): Promise<Ausgang<{ deleted: number; pending: number }>> {
+  const auftraege = await dienst.loeschauftraege();
+  if (!auftraege.ok) return auftraege;
+  let geloescht = 0;
+  for (const kontoId of auftraege.value) {
+    const entfernt = await dienst.kontoEntfernen(kontoId);
+    if (!entfernt.ok) continue;
+    const bestaetigt = await dienst.loeschungBestaetigen(kontoId);
+    if (bestaetigt.ok) geloescht += 1;
+  }
+  return { ok: true, value: { deleted: geloescht, pending: auftraege.value.length - geloescht } };
 }
 
 /** Versenden: Adresse vom Server, Text von hier, Zustellung über den Adapter. */

@@ -154,6 +154,51 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
     }
   });
 
+  /** ABN-011: Löschaufträge abholen, Konto entfernen, bestätigen — alles mit dem Admin-Schlüssel. */
+  it('holt Loeschauftraege ab, entfernt ueber die Admin-API und bestaetigt', async () => {
+    const auftraege = mitAntwort(200, [{ account_user_id: 'konto-1' }]);
+    expect(
+      await erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: auftraege }).loeschauftraege(),
+    ).toEqual({ ok: true, value: ['konto-1'] });
+    expect(auftraege.mock.calls[0]![0]).toBe(
+      'https://instanz.invalid/rest/v1/rpc/claim_platform_account_deletions',
+    );
+    expect(kopf(auftraege).Authorization).toBe('Bearer dienst-schluessel');
+
+    const entfernen = mitAntwort(200, {});
+    expect(
+      await erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: entfernen }).kontoEntfernen('konto-1'),
+    ).toEqual({ ok: true, value: null });
+    expect(entfernen.mock.calls[0]![0]).toBe('https://instanz.invalid/auth/v1/admin/users/konto-1');
+    expect(entfernen.mock.calls[0]![1]!.method).toBe('DELETE');
+
+    // Schon fort: gilt als entfernt.
+    expect(
+      await erstelleAnmeldedienst({
+        ...EINRICHTUNG,
+        abrufen: mitAntwort(404, { error_code: 'user_not_found' }),
+      }).kontoEntfernen('konto-1'),
+    ).toEqual({ ok: true, value: null });
+
+    const bestaetigen = mitAntwort(200, null);
+    expect(
+      await erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: bestaetigen }).loeschungBestaetigen(
+        'konto-1',
+      ),
+    ).toEqual({ ok: true, value: null });
+    expect(bestaetigen.mock.calls[0]![0]).toBe(
+      'https://instanz.invalid/rest/v1/rpc/confirm_platform_account_deletion',
+    );
+  });
+
+  it('erkennt den Dienstaufruf nur am vollstaendigen Admin-Schluessel', () => {
+    const dienst = erstelleAnmeldedienst(EINRICHTUNG);
+    expect(dienst.istDienstaufruf('Bearer dienst-schluessel')).toBe(true);
+    expect(dienst.istDienstaufruf('Bearer dienst-schluesse')).toBe(false);
+    expect(dienst.istDienstaufruf('Bearer oeffentlicher-schluessel')).toBe(false);
+    expect(dienst.istDienstaufruf(null)).toBe(false);
+  });
+
   it('meldet einen nicht erreichbaren Dienst als unavailable', async () => {
     const abrufen = vi.fn(() => Promise.reject(new Error('Netz')));
     const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
