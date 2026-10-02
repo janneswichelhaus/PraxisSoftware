@@ -943,7 +943,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/treatment-bases/TermineUebertragenPage.tsx`.
 
-**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097.
+**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097. **Fassung 2 (ABN-002, 2026-10-02, Abnahme Jannes):** Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion auf die Position des Ziels mit demselben Heilmittel mit, die genutzte Menge wandert; ohne passende Position oder bei erschöpftem Kontingent wird der ganze Vorgang abgewiesen (`supabase/migrations/20261002121000_abn_002_transfer_services.sql`). Durchgeführte Termine bietet die Oberfläche zugeklappt an (ANN-211).
 
 ### ANN-069 — Die Akte gruppiert Termine je Richtung, nicht über beide hinweg
 
@@ -2508,3 +2508,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 **Anker.** `app.treatment_basis_slot_counts` und `app.appointment_basis_position` in `supabase/migrations/20261002120000_abn_001_slot_counts.sql`; Tests in `supabase/tests/appointment-coverage.test.ts` („Genutzt zaehlt Termine").
 
 **Änderungspfad.** Genutzt erst ab `documented`: die Statusliste in `app.treatment_basis_slot_counts` kürzen · Aufwand `klein`. Nichtantreffen wieder mitzählen: `no_show` aus beiden `not in`-Listen streichen · Aufwand `klein`, widerspricht aber der Abnahme.
+
+### ANN-211 — Durchgeführte Termine lassen sich übertragen, stehen aber zugeklappt und nicht vorgewählt
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001)
+
+**Annahme.** Die Seite „Termine übertragen“ bietet neben den ungedeckten künftigen Terminen auch die **durchgeführten** Termine der Patient:in an (`completed`, `documented`, nicht am Ziel), als eigenen, zugeklappten Abschnitt „Vergangene Termine“ ohne Vorauswahl, mit dem Hinweis, dass erfasste Leistungen mitziehen. Abgesagte, nicht angetroffene und abgerechnete Termine werden nicht angeboten.
+
+**Begründung.** Die Abnahme (BEF-097) verlangt, dass auch durchgeführte Termine als Zuordnungskorrektur übertragen werden können; der Server erlaubt es seit CAL-022 (ANN-068). Ohne einen Weg in der Oberfläche bliebe die Korrektur unerreichbar. Zugeklappt und ohne Vorauswahl, weil der Regelfall die ungedeckten künftigen Termine sind und eine Korrektur der Vergangenheit eine bewusste Handlung bleiben soll (§13: nichts wandert unbemerkt). Unsicher: ob die Praxis die Korrektur häufiger braucht und der Abschnitt offen stehen sollte.
+
+**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/treatment-bases/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
+
+**Änderungspfad.** Abschnitt offen zeigen oder vorwählen: `Disclosure offen` beziehungsweise Startwert der Auswahl ändern · Aufwand `klein`. Vergangene gar nicht anbieten: den Abschnitt entfernen, der Server bleibt unverändert · Aufwand `klein`.

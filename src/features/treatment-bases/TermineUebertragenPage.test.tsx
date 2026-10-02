@@ -362,3 +362,95 @@ describe('Termine übertragen', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 });
+
+describe('Vergangene Termine zur Zuordnungskorrektur (ABN-002, ANN-211)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fetchPatientTreatmentBasesClinical.mockResolvedValue([
+      grundlage(),
+      grundlage({ id: NEU, treatment_basis_kind: 'follow_up', issued_on: '2026-09-08' }),
+    ]);
+    fetchPatientTreatmentBasisSlots.mockResolvedValue([
+      kontingent(),
+      kontingent({
+        treatment_basis_id: NEU,
+        prescribed: 10,
+        used: 0,
+        planned: 0,
+        upcoming: 0,
+        remaining: 10,
+        covered: 0,
+        uncovered: 0,
+      }),
+    ]);
+    fetchPatientAppointments.mockImplementation((_id: string, abfrage: unknown) =>
+      Promise.resolve(
+        (abfrage as { kuenftig: boolean }).kuenftig
+          ? [termin({ id: 'ungedeckt-1' })]
+          : [
+              termin({
+                id: 'durchgefuehrt',
+                status: 'completed',
+                starts_at: '2026-09-01T07:00:00.000Z',
+                ends_at: '2026-09-01T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+              termin({
+                id: 'dokumentiert',
+                status: 'documented',
+                starts_at: '2026-09-03T07:00:00.000Z',
+                ends_at: '2026-09-03T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+              termin({
+                id: 'abgesagt',
+                status: 'cancelled',
+                starts_at: '2026-09-05T07:00:00.000Z',
+                ends_at: '2026-09-05T08:00:00.000Z',
+                treatment_basis_covered: null,
+              }),
+              termin({
+                id: 'am-ziel',
+                status: 'completed',
+                treatment_basis_id: NEU,
+                starts_at: '2026-09-07T07:00:00.000Z',
+                ends_at: '2026-09-07T08:00:00.000Z',
+                treatment_basis_covered: true,
+              }),
+            ],
+      ),
+    );
+    transferAppointmentsToTreatmentBasis.mockResolvedValue(2);
+  });
+
+  it('bietet durchgeführte Termine zugeklappt und ohne Vorauswahl an', async () => {
+    const user = userEvent.setup();
+    rendern();
+
+    await screen.findByText('Mittwoch, 19. Mai 2027');
+    // Zugeklappt (jsdom zeichnet den Inhalt trotzdem, offen ist das Element nicht).
+    const aufklapper = screen.getByText('Vergangene Termine').closest('details')!;
+    expect(aufklapper).not.toHaveAttribute('open');
+    expect(screen.getByRole('button', { name: '1 Termin übertragen' })).toBeInTheDocument();
+
+    await user.click(screen.getByText('Vergangene Termine'));
+    expect(aufklapper).toHaveAttribute('open');
+    // Zwei durchgeführte stehen zur Wahl, nicht der abgesagte und nicht der am Ziel.
+    expect(screen.getAllByRole('checkbox')).toHaveLength(3);
+    expect(screen.getByText('Dienstag, 1. September 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Samstag, 5. September 2026')).not.toBeInTheDocument();
+    expect(screen.queryByText('Montag, 7. September 2026')).not.toBeInTheDocument();
+    // Ohne Vorauswahl.
+    expect(screen.getByLabelText(/1\. September 2026/)).not.toBeChecked();
+    expect(screen.getByText(/Leistungen ziehen mit/)).toBeInTheDocument();
+
+    // Nicht vorgewählt: der Knopf zählt weiter einen Termin.
+    expect(screen.getByRole('button', { name: '1 Termin übertragen' })).toBeInTheDocument();
+    await user.click(screen.getByLabelText(/1\. September 2026/));
+    await user.click(screen.getByRole('button', { name: '2 Termine übertragen' }));
+    expect(transferAppointmentsToTreatmentBasis).toHaveBeenCalledWith(NEU, [
+      'ungedeckt-1',
+      'durchgefuehrt',
+    ]);
+  });
+});

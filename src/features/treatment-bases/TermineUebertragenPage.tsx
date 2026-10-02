@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Disclosure } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -155,8 +156,28 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
+  /**
+   * Die vergangenen Termine fuer die Zuordnungskorrektur (ABN-002, ANN-211):
+   * Ein durchgefuehrter Termin darf wandern, seine erfassten Leistungen ziehen
+   * serverseitig mit. Angeboten zugeklappt und ohne Vorauswahl - der Regelfall
+   * sind die ungedeckten kuenftigen Termine oben.
+   */
+  const vergangene = useQuery({
+    queryKey: ['patient-appointments', patientId, false, null, HOECHSTZAHL],
+    queryFn: () =>
+      fetchPatientAppointments(patientId!, {
+        kuenftig: false,
+        limit: HOECHSTZAHL,
+        verordnung: null,
+      }),
+    enabled: Boolean(patientId),
+    staleTime: 0,
+    retry: false,
+  });
+
   const [ziel, setZiel] = useState(() => suche.get('ziel') ?? '');
   const [abgewaehlt, setAbgewaehlt] = useState<ReadonlySet<string>>(new Set());
+  const [vergangenGewaehlt, setVergangenGewaehlt] = useState<ReadonlySet<string>>(new Set());
 
   /**
    * Was sich übertragen lässt: ungedeckt, künftig, nicht schon am Ziel.
@@ -174,7 +195,26 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
     [termine.data, ziel],
   );
 
-  const gewaehlt = angebot.filter((termin) => !abgewaehlt.has(termin.id));
+  /**
+   * Durchgefuehrte Termine einer anderen Grundlage (ANN-211). Abgesagt, nicht
+   * angetroffen und abgerechnet bleiben draussen; ohne Grundlage ist ein Termin
+   * ungebunden, nicht falsch zugeordnet.
+   */
+  const vergangenesAngebot = useMemo(
+    () =>
+      (vergangene.data ?? []).filter(
+        (termin) =>
+          (termin.status === 'completed' || termin.status === 'documented') &&
+          termin.treatment_basis_id !== null &&
+          termin.treatment_basis_id !== ziel,
+      ),
+    [vergangene.data, ziel],
+  );
+
+  const gewaehlt = [
+    ...angebot.filter((termin) => !abgewaehlt.has(termin.id)),
+    ...vergangenesAngebot.filter((termin) => vergangenGewaehlt.has(termin.id)),
+  ];
 
   const uebertragen = useMutation({
     mutationFn: (ids: readonly string[]) => transferAppointmentsToTreatmentBasis(ziel, ids),
@@ -195,6 +235,15 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
       const naechste = new Set(bisher);
       if (an) naechste.delete(id);
       else naechste.add(id);
+      return naechste;
+    });
+  }
+
+  function vergangenUmschalten(id: string, an: boolean) {
+    setVergangenGewaehlt((bisher) => {
+      const naechste = new Set(bisher);
+      if (an) naechste.add(id);
+      else naechste.delete(id);
       return naechste;
     });
   }
@@ -234,16 +283,29 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
         }
       />
 
-      {isPending || termine.isPending ? <LoadingState label="Wird geladen …" /> : null}
-      {isError || termine.isError ? (
+      {isPending || termine.isPending || vergangene.isPending ? (
+        <LoadingState label="Wird geladen …" />
+      ) : null}
+      {isError || termine.isError || vergangene.isError ? (
         <ErrorState
           title="Termine oder Grundlagen konnten nicht geladen werden."
           description="Bitte die Verbindung prüfen und erneut versuchen."
-          onErneut={() => Promise.all([erneutLaden(), termine.isError ? termine.refetch() : null])}
+          onErneut={() =>
+            Promise.all([
+              erneutLaden(),
+              termine.isError ? termine.refetch() : null,
+              vergangene.isError ? vergangene.refetch() : null,
+            ])
+          }
         />
       ) : null}
 
-      {!isPending && !termine.isPending && !isError && !termine.isError ? (
+      {!isPending &&
+      !termine.isPending &&
+      !vergangene.isPending &&
+      !isError &&
+      !termine.isError &&
+      !vergangene.isError ? (
         <form onSubmit={absenden} noValidate className="max-w-xl">
           {/* Zwei Abschnitte direkt unter der Seitenüberschrift: Ebene 2
               (VER-16). */}
@@ -295,18 +357,38 @@ export function TermineUebertragenPage({ user }: { user: CurrentUser }) {
                 stehen und lässt sich danach in einem zweiten Vorgang übertragen.
               </Statusmeldung>
             ) : null}
+
+            {vergangenesAngebot.length > 0 ? (
+              <Disclosure summary="Vergangene Termine" anzahl={vergangenesAngebot.length}>
+                <p className="text-ink-muted mb-2 text-sm">
+                  Durchgeführte Termine einer anderen Grundlage, zur Korrektur der Zuordnung.
+                  Erfasste, noch nicht abgerechnete Leistungen ziehen mit; die Zielgrundlage braucht
+                  dafür dasselbe Heilmittel.
+                </p>
+                <ul>
+                  {vergangenesAngebot.map((termin) => (
+                    <Terminzeile
+                      key={termin.id}
+                      termin={termin}
+                      gewaehlt={vergangenGewaehlt.has(termin.id)}
+                      umschalten={vergangenUmschalten}
+                    />
+                  ))}
+                </ul>
+              </Disclosure>
+            ) : null}
           </Section>
 
           {uebertragen.isError ? (
             <Statusmeldung ton="fehler" className="mt-4">
               {uebertragen.error.message} Ein abgesagter oder bereits abgerechneter Termin wird
-              nicht übertragen – dann bleibt alles, wie es war.
+              nicht übertragen – dann bleibt alles, wie es war, auch an den Leistungen.
             </Statusmeldung>
           ) : null}
 
           {/* Ohne Angebot kein Knopf über null Termine (VER-13): Der
               Leerzustand sagt es, der Rückweg steht oben. */}
-          {angebot.length > 0 ? (
+          {angebot.length > 0 || vergangenesAngebot.length > 0 ? (
             <>
               <div className="mt-6 flex flex-wrap gap-3">
                 <Button

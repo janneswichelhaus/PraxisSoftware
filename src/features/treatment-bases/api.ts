@@ -770,6 +770,25 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
 // -----------------------------------------------------------------------------
 
 /**
+ * Die beiden Abweisungen aus ABN-002, in Praxissprache. Alles andere bleibt
+ * der eine Satz - der Server nennt seine Gruende nicht auf dem Bildschirm.
+ */
+function uebertragungsfehler(error: unknown): string {
+  const meldung =
+    typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+  const heilmittel = /no position for remedy (.+)$/.exec(meldung)?.[1];
+  if (heilmittel) {
+    return `Die Zielgrundlage hat keine Position für ${heilmittel}. Zuerst dort das Heilmittel ergänzen, dann übertragen – die erfassten Leistungen ziehen sonst nicht mit.`;
+  }
+  if (meldung.includes('quantity exhausted')) {
+    return 'Das Kontingent der Position am Ziel reicht für die erfassten Leistungen nicht.';
+  }
+  return 'Die Termine konnten nicht übertragen werden.';
+}
+
+/**
  * Überträgt Termine auf eine andere Behandlungsgrundlage derselben Patient:in.
  *
  * Alles oder nichts, und die Prüfungen stehen serverseitig: Die Patient:in
@@ -786,6 +805,6 @@ export async function transferAppointmentsToTreatmentBasis(
     p_appointment_ids: [...terminIds],
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht übertragen werden.');
+  if (error) throw new Error(uebertragungsfehler(error));
   return z.number().catch(terminIds.length).parse(data);
 }
