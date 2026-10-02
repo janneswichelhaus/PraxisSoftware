@@ -116,7 +116,8 @@ export const cancellationReasonLabels: Record<CancellationReason, string> = {
  * Die Gründe, die eine neue Absage tragen kann (ABN-006, BEF-094). Die
  * Verlegung nennt, wer sie veranlasst hat: Verlegt die Patient:in weniger als
  * 24 Stunden vorher, merkt der Server wie bei einer Absage eine Gebühr vor.
- * Der Bestandswert `moved` steht nicht zur Wahl.
+ * Der Bestandswert `moved` steht nicht zur Wahl. Eine reine Zeitänderung
+ * bleibt gebührenfrei (ANN-212).
  */
 export const selectableCancellationReasons: readonly CancellationReason[] = [
   'patient_request',

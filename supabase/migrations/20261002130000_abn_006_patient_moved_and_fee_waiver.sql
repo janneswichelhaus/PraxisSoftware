@@ -33,7 +33,9 @@ alter table public.appointments
 
 -- Die Frist bleibt an ihrer einen Stelle; neu ist nur, welche Gruende sie
 -- ausloesen. Eine Verlegung durch die Patient:in gibt den vereinbarten
--- Termin genauso kurzfristig frei wie eine Absage (ANN-047 Fassung 2).
+-- Termin genauso kurzfristig frei wie eine Absage (ANN-047 Fassung 2). Eine
+-- reine Zeitaenderung ueber update_appointment bleibt gebuehrenfrei: Der
+-- Termin besteht weiter, ein Anlass haengt nur an einem ausgefallenen (ANN-212).
 create or replace function app.is_late_cancellation(
   p_reason      text,
   p_received_at timestamptz,

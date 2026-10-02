@@ -95,7 +95,7 @@ revoke all on function app.platform_account_still_due(uuid) from public, anon, a
 -- -----------------------------------------------------------------------------
 -- Der Zugangsdienst holt Auftraege ab (nur service_role)
 --
--- Ein abgeholter Auftrag ist 15 Minuten vergeben; scheitert der Dienst
+-- Ein abgeholter Auftrag ist 15 Minuten vergeben (ANN-217); scheitert der Dienst
 -- dazwischen, holt ihn der naechste Aufruf wieder. Doppelt loeschen schadet
 -- nicht: Der Anmeldedienst antwortet dann 404, und der Dienst bestaetigt.
 -- -----------------------------------------------------------------------------
@@ -106,9 +106,13 @@ security definer
 set search_path = ''
 as $$
 begin
-  -- Was nicht mehr faellig ist, faellt aus der Schlange.
+  -- Was nicht mehr faellig ist, faellt aus der Schlange. Ein Auftrag nach
+  -- einem Restore bleibt immer: Das Konto steht als geloescht im Journal,
+  -- und das Wiederherstellen allein macht es nicht wieder gueltig
+  -- (Zweitreview B1).
   delete from public.platform_account_deletions d
-   where not app.platform_account_still_due(d.account_user_id);
+   where d.reason <> 'reapply'
+     and not app.platform_account_still_due(d.account_user_id);
 
   return query
   with frei as (
@@ -162,13 +166,26 @@ begin
     raise exception 'account still exists' using errcode = '23514';
   end if;
 
-  -- Beim erneuten Anwenden steht der Eintrag schon im Journal.
+  -- Beim erneuten Anwenden steht der Eintrag schon im Journal; er gilt erst
+  -- jetzt, mit der Bestaetigung, als erneut angewandt (Zweitreview B1).
   if v_auftrag.reason <> 'reapply' then
     insert into public.deletion_journal
       (organization_id, run_id, target_table, target_id, retention_class, due_at)
     values
       (v_auftrag.organization_id, v_auftrag.run_id, 'auth_users', p_account_user_id,
        'plattformzugang', v_auftrag.due_at);
+  else
+    update public.deletion_journal
+       set reapplied_at = now()
+     where target_table = 'auth_users' and target_id = p_account_user_id;
+    insert into public.audit_log (
+      organization_id, actor_user_id, actor_kind, action, subject_type, subject_id, outcome, context
+    )
+    values (
+      v_auftrag.organization_id, null, 'system', 'retention.reapplied', 'organization',
+      v_auftrag.organization_id, 'success',
+      jsonb_build_object('surface', 'restore', 'records', 1)
+    );
   end if;
 
   delete from public.platform_account_deletions d where d.account_user_id = p_account_user_id;
@@ -205,6 +222,11 @@ begin
       and a.account_user_id is not null
       and exists (select 1 from auth.users u where u.id = a.account_user_id)
       and not exists (select 1 from public.user_profiles up where up.id = a.account_user_id)
+      -- Zweitreview B2: Ein Konto mit offenem Auftrag zaehlt nicht bei jedem
+      -- Lauf neu.
+      and not exists (
+        select 1 from public.platform_account_deletions d where d.account_user_id = a.account_user_id
+      )
     group by a.account_user_id
     -- Jeder Zugang des Kontos ist beendet, auch in anderen Organisationen.
     having bool_and(app.platform_access_ended_at(a.id) is not null)
@@ -257,6 +279,7 @@ begin
         and u.created_at + app.platform_read_period() <= now()
         and not exists (select 1 from public.user_profiles up where up.id = u.id)
         and not exists (select 1 from public.platform_accesses a where a.account_user_id = u.id)
+        and not exists (select 1 from public.platform_account_deletions d where d.account_user_id = u.id)
     loop
       perform app.order_platform_account_deletion(
         v_konto.id, p_org, p_run, v_konto.created_at + app.platform_read_period(), 'unbound');
@@ -352,19 +375,35 @@ begin
 
     -- Das Konto einer Plattform liegt beim Anmeldedienst (ADR-023 Punkt 5).
     -- ABN-011 (BEF-115): auch hier ueber die Admin-API. Was nach dem Restore
-    -- wieder da ist, bekommt einen Loeschauftrag; der Journaleintrag gilt
-    -- damit als erneut angewandt.
+    -- wieder da ist, verliert sofort jeden Zugang und bekommt einen
+    -- Loeschauftrag. Als erneut angewandt gilt der Journaleintrag erst mit
+    -- der Bestaetigung (confirm_platform_account_deletion, Zweitreview B1).
     if v_tabelle = 'auth_users' then
-      select array_agg(u.id) into v_geloescht
-      from auth.users u
-      where u.id = any (v_ids);
-      if v_geloescht is not null then
-        perform app.order_platform_account_deletion(
-          j.target_id, j.organization_id, null, j.due_at, 'reapply')
-        from public.deletion_journal j
-        where j.target_table = 'auth_users'
-          and j.target_id = any (v_geloescht);
-      end if;
+      with entzogen as (
+        update public.platform_accesses a
+           set status = 'revoked',
+               revoked_at = coalesce(a.revoked_at, now()),
+               revoked_by = null,
+               revoked_reason = 'account_deleted',
+               locked_at = null,
+               locked_by = null
+         where a.account_user_id = any (v_ids) and a.status <> 'revoked'
+        returning a.id, a.organization_id
+      )
+      insert into public.audit_log (
+        organization_id, actor_user_id, actor_kind, action, subject_type, subject_id, outcome, context
+      )
+      select e.organization_id, null, 'system', 'platform_access.revoked', 'platform_access', e.id,
+             'success', jsonb_build_object('surface', 'restore', 'reason', 'account_deleted')
+      from entzogen e;
+
+      perform app.order_platform_account_deletion(
+        j.target_id, j.organization_id, null, j.due_at, 'reapply')
+      from public.deletion_journal j
+      join auth.users u on u.id = j.target_id
+      where j.target_table = 'auth_users'
+        and j.target_id = any (v_ids);
+      v_geloescht := null;
     else
     -- Tabellenname aus der festen Liste oben, nie aus Benutzereingabe;
     -- die Kennungen gehen als Parameter, nicht als Text.
@@ -408,3 +447,32 @@ begin
   return v_gesamt;
 end;
 $function$;
+
+-- -----------------------------------------------------------------------------
+-- Zweitreview B3: Wer ein Konto wieder an einen laufenden Zugang bindet,
+-- nimmt seinen noch nicht abgeholten Loeschauftrag zurueck. Ein Auftrag nach
+-- einem Restore bleibt (B1). Das Zeitfenster zwischen Abholen und Loeschen
+-- bleibt als Restrisiko (ANN-217).
+-- -----------------------------------------------------------------------------
+create function public.platform_accesses_take_back_deletion()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.account_user_id is not null and new.status in ('active', 'locked') then
+    delete from public.platform_account_deletions d
+     where d.account_user_id = new.account_user_id
+       and d.reason <> 'reapply'
+       and d.claimed_at is null;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function public.platform_accesses_take_back_deletion() from public, anon, authenticated;
+
+create trigger platform_accesses_take_back_deletion
+  after insert or update of account_user_id, status on public.platform_accesses
+  for each row execute function public.platform_accesses_take_back_deletion();

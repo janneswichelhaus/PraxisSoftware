@@ -105,3 +105,28 @@ comment on function public.auth_email_allowed(uuid, text) is
 
 revoke all on function public.auth_email_allowed(uuid, text) from public, anon, authenticated;
 grant execute on function public.auth_email_allowed(uuid, text) to service_role;
+
+-- -----------------------------------------------------------------------------
+-- Zweitreview B4: Jede Adressaenderung verlangt eine neue Bestaetigung - auch
+-- die Rueckkehr zu einer frueher bestaetigten Adresse. Das Merkmal faellt mit
+-- jeder Aenderung von auth.users.email.
+-- -----------------------------------------------------------------------------
+create function app.drop_mailbox_confirmation_on_email_change()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+begin
+  if new.email is distinct from old.email then
+    delete from public.platform_mailbox_confirmations c where c.account_user_id = new.id;
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function app.drop_mailbox_confirmation_on_email_change() from public, anon, authenticated;
+
+create trigger platform_mailbox_confirmation_follows_email
+  after update of email on auth.users
+  for each row execute function app.drop_mailbox_confirmation_on_email_change();

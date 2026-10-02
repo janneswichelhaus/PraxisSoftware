@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * ABN-007 (BEF-098): Der behandlungsrelevante Hinweis aus einer Verordnung hat
@@ -90,6 +97,20 @@ describe('Behandlungsrelevanter Hinweis an der Verordnung', () => {
       expect(await hinweis(VERORDNUNG)).toBe(vorher);
     },
   );
+
+  it('weist Trainingsbetreuung, Plattformkonto und fremde Organisation ab (Zweitreview B8)', async () => {
+    for (const konto of [users.trainer, users.plattformErika]) {
+      await expect(
+        asUser(konto, SETZEN, [VERORDNUNG, 'Synthetisch.', await stand(VERORDNUNG)]),
+      ).rejects.toThrow(/not allowed to write clinical treatment basis notes/);
+    }
+    const fremd = await fremdeOrganisation();
+    await expect(
+      asUser(fremd.owner, SETZEN, [VERORDNUNG, 'Synthetisch.', await stand(VERORDNUNG)]),
+    ).rejects.toThrow(
+      /not allowed to write clinical treatment basis notes|treatment basis not found/,
+    );
+  });
 
   it('setzt am Selbstzahler keinen Hinweis', async () => {
     await expect(

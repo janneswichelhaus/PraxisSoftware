@@ -195,7 +195,14 @@ const vertretungSchema = z.object({
   locked_at: zeitpunkt.nullable(),
   revoked_at: zeitpunkt.nullable(),
   revoked_reason: z
-    .enum(['practice', 'relationship_deleted', 'account_deleted', 'consent_withdrawn'])
+    .enum([
+      'practice',
+      'relationship_deleted',
+      'account_deleted',
+      'consent_withdrawn',
+      // ABN-010: Vollmacht vor dem Vermerk der Gesundheitssorge, entzogen.
+      'scope_unproven',
+    ])
     .nullable(),
   proof_documents: z.array(
     z.enum(['identity_document', 'custody_proof', 'guardianship_certificate', 'power_of_attorney']),

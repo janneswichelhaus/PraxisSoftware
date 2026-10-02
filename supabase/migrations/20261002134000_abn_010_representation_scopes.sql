@@ -17,15 +17,22 @@
 --   * Die Rechte stehen an EINER Stelle: app.platform_access_allows, mit der
 --     neuen Faehigkeit 'billing'.
 --
--- Bestand (nur synthetisch): Rechtliche Vertretungen bekommen keine
--- Rechnungen (nicht nachgewiesen); eine Vorsorgevollmacht ohne Vermerk der
--- Gesundheitssorge bekommt ihn - vor ABN-010 galt sie ungeprueft fuer alles;
--- Begleitungen der Fassung begleitung-2026-10-02 behalten die Rechnungen,
--- denn ihr Wortlaut nannte sie.
+-- Bestand: Rechtliche Vertretungen bekommen keine Rechnungen (nicht
+-- nachgewiesen). Eine Vorsorgevollmacht ohne Vermerk der Gesundheitssorge
+-- wird ENTZOGEN (revoked_reason 'scope_unproven'), statt den Nachweis zu
+-- unterstellen (Zweitreview B7); eine neue Vertretung mit Vermerk ersetzt
+-- sie. Begleitungen der Fassung begleitung-2026-10-02 behalten die
+-- Rechnungen, denn ihr Wortlaut nannte sie.
 -- =============================================================================
 
 alter table public.platform_accesses drop constraint platform_accesses_kind_fields;
 alter table public.platform_accesses rename column guardianship_health_scope to health_scope;
+alter table public.platform_accesses drop constraint platform_accesses_revoked_reason_check;
+alter table public.platform_accesses
+  add constraint platform_accesses_revoked_reason_check check (
+    revoked_reason in ('practice', 'relationship_deleted', 'account_deleted', 'consent_withdrawn',
+                       'scope_unproven')
+  );
 alter table public.platform_accesses add column finance_scope boolean;
 
 -- Der Waechter nennt die neuen Spalten (Art und Nachweis aendern sich nie;
@@ -173,9 +180,31 @@ $function$;
 -- Die einmalige Bestandsuebernahme schreibt am Nachweis vorbei, den der
 -- Waechter sonst zu Recht festhaelt. Nur hier, in derselben Transaktion.
 alter table public.platform_accesses disable trigger platform_accesses_guard;
+-- Der Vermerk true steht nur, weil die Constraint ihn verlangt; der Zugang
+-- ist zugleich entzogen und gibt nichts frei.
+with entzogen as (
+  update public.platform_accesses
+     set health_scope = true,
+         status = 'revoked',
+         revoked_at = coalesce(revoked_at, now()),
+         revoked_reason = coalesce(revoked_reason, 'scope_unproven'),
+         locked_at = null,
+         locked_by = null
+   where access_kind = 'legal_representative' and legal_basis = 'power_of_attorney'
+     and status <> 'revoked'
+  returning id, organization_id
+)
+insert into public.audit_log (
+  organization_id, actor_user_id, actor_kind, action, subject_type, subject_id, outcome, context
+)
+select e.organization_id, null, 'system', 'platform_access.revoked', 'platform_access', e.id,
+       'success', jsonb_build_object('surface', 'system', 'reason', 'scope_unproven')
+from entzogen e;
+-- Schon beendete Vollmachten bekommen den Vermerk nur der Constraint wegen.
 update public.platform_accesses
    set health_scope = true
- where access_kind = 'legal_representative' and legal_basis = 'power_of_attorney';
+ where access_kind = 'legal_representative' and legal_basis = 'power_of_attorney'
+   and health_scope is null;
 update public.platform_accesses
    set finance_scope = false
  where access_kind = 'legal_representative';

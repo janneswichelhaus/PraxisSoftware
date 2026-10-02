@@ -123,13 +123,16 @@ export function erstelleHandler({
   appUrl,
   hookGeheimnis = '',
 }: HandlerOptionen): (anfrage: Request) => Promise<Response> {
+  // Zweitreview B5: gesehene Hook-Aufrufe, je Instanz für die Toleranz der
+  // Signatur gemerkt. Eine Wiederholung bekommt Erfolg und keine zweite Mail.
+  const gesehen = new Map<string, number>();
   return async (anfrage) => {
     if (anfrage.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (anfrage.method !== 'POST') return antwort({ ok: false, error: 'invalid_request' }, 405);
 
     // ABN-012: Ein signierter Aufruf ist der Mail-Hook des Anmeldedienstes.
     if (anfrage.headers.has('webhook-signature')) {
-      return authMail(anfrage, { anmeldedienst, versand, appUrl, hookGeheimnis });
+      return authMail(anfrage, { anmeldedienst, versand, appUrl, hookGeheimnis }, gesehen);
     }
 
     const auftrag = await liesAnfrage(anfrage);
@@ -274,6 +277,7 @@ async function authMail(
     hookGeheimnis,
   }: Required<Pick<HandlerOptionen, 'appUrl' | 'hookGeheimnis'>> &
     Pick<HandlerOptionen, 'anmeldedienst' | 'versand'>,
+  gesehen: Map<string, number>,
 ): Promise<Response> {
   if (hookGeheimnis.trim() === '' || anmeldedienst === null) {
     return hookFehler(503, 'not_configured');
@@ -282,8 +286,13 @@ async function authMail(
   if (!(await pruefeSignatur(hookGeheimnis, anfrage.headers, koerper))) {
     return hookFehler(401, 'session_invalid');
   }
+  const jetzt = Date.now();
+  for (const [id, zeit] of gesehen) if (jetzt - zeit > 600_000) gesehen.delete(id);
+  const nachricht = anfrage.headers.get('webhook-id') ?? '';
+  if (gesehen.has(nachricht)) return antwort({}, 200);
   const mail = liesAuthMail(koerper);
   if (mail === null) return hookFehler(400, 'invalid_request');
+  gesehen.set(nachricht, jetzt);
 
   const erlaubt = await anmeldedienst.authMailErlaubt(mail.kontoId, mail.art);
   if (!erlaubt.ok) return hookFehler(502, 'unavailable');

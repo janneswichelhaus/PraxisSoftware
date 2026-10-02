@@ -148,6 +148,9 @@ function artText(v: Vertretung): string {
 function beendetText(v: Vertretung, zeitzone: string): string {
   const am = v.revoked_at ? formatLocalDate(v.revoked_at, zeitzone) : '—';
   if (v.revoked_reason === 'consent_withdrawn') return `widerrufen am ${am}`;
+  if (v.revoked_reason === 'scope_unproven') {
+    return `beendet am ${am}, Gesundheitssorge nicht vermerkt – bitte neu einrichten`;
+  }
   return `beendet am ${am}`;
 }
 
@@ -400,7 +403,7 @@ function VertretungEinrichten({
               <span className="text-ink-muted block">
                 {k === 'companion'
                   ? 'Angehörige oder Vertraute, mit Einwilligung der Person. Liest mit, schreibt Terminwünsche und Nachrichten; keine Einwilligung, kein Widerruf, kein Datenexport.'
-                  : 'Sorgeberechtigte, Betreuung oder Vorsorgevollmacht. Darf alles, was die Person darf.'}
+                  : 'Sorgeberechtigte, Betreuung oder Vorsorgevollmacht. Darf, was die Person darf, soweit der Nachweis reicht; Rechnungen nur mit Vermögenssorge.'}
               </span>
             </span>
           </label>

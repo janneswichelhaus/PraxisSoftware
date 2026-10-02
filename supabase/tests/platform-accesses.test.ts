@@ -767,6 +767,61 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
     ).rejects.toThrow(/permission denied/);
   });
 
+  /** Zweitreview B1: Ein Restore mit aktivem Zugang belebt das Konto nicht wieder. */
+  it('loescht nach einem Restore auch ein Konto, dessen Zugang wieder aktiv ist', async () => {
+    const id = platformAccesses.tinaTraining;
+    await asUserCommitted(users.office, ENTZIEHEN, [id]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [id],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
+
+    // Restore aus einem Stand, in dem Konto und Zugang aktiv waren.
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'tina.plattform@patient.invalid')`,
+      [users.plattformTina],
+    );
+    await asPostgres(
+      'alter table public.platform_accesses disable trigger platform_accesses_guard',
+    );
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'active', revoked_at = null, revoked_by = null, revoked_reason = null
+        where id = $1`,
+      [id],
+    );
+    await asPostgres('alter table public.platform_accesses enable trigger platform_accesses_guard');
+
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect((await zugang(id))?.status).toBe('revoked');
+    const vorher = await asPostgres<{ reapplied_at: Date | null }>(
+      `select reapplied_at from public.deletion_journal where target_id = $1`,
+      [users.plattformTina],
+    );
+    // Erneut angewandt erst mit der Bestätigung.
+    expect(vorher.rows[0]!.reapplied_at).toBeNull();
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
+    const nachher = await asPostgres<{ reapplied_at: Date | null }>(
+      `select reapplied_at from public.deletion_journal where target_id = $1`,
+      [users.plattformTina],
+    );
+    expect(nachher.rows[0]!.reapplied_at).not.toBeNull();
+  });
+
+  it('zaehlt ein Konto mit offenem Auftrag nicht bei jedem Lauf neu (Zweitreview B2)', async () => {
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.tinaTraining]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    await asPostgres('select public.apply_retention()');
+    // Der zweite Lauf findet nichts Neues: Der Auftrag steht schon.
+    const { rows } = await asPostgres<{ n: number }>('select public.apply_retention() as n');
+    expect(rows[0]!.n).toBe(0);
+  });
+
   it('laesst ein Konto mit einem laufenden Zugang stehen', async () => {
     // Erikas Training endet, die Behandlung laeuft: Das Konto bleibt.
     await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.erikaTraining]);

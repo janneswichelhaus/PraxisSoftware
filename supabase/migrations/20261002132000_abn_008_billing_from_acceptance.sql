@@ -279,6 +279,11 @@ begin
    order by i.id
    for update;
 
+  perform 1 from public.payments p
+   where p.offset_group = p_offset_group and p.organization_id = v_org
+   order by p.id
+   for update;
+
   if not exists (
     select 1 from public.payments p
     where p.offset_group = p_offset_group and p.organization_id = v_org and p.voided_at is null
@@ -746,6 +751,20 @@ begin
 
   v_org := app.current_organization_id();
 
+  -- ABN-008: Eine Verrechnung besteht aus zwei Buchungen, einer an jeder
+  -- Rechnung. Sie werden nur gemeinsam storniert; eine Haelfte allein liesse
+  -- Geld an einer Rechnung auftauchen oder verschwinden. Uebergeben wird
+  -- VOR jeder Sperre: void_offset_payments sperrt erst beide Rechnungen,
+  -- dann beide Zeilen - in fester Reihenfolge (Zweitreview B6).
+  if exists (
+    select 1 from public.payments p
+    where p.id = p_payment_id and p.organization_id = v_org and p.offset_group is not null
+  ) then
+    perform public.void_offset_payments(
+      (select p.offset_group from public.payments p where p.id = p_payment_id), p_reason);
+    return;
+  end if;
+
   select p.* into v_payment
   from public.payments p
   where p.id = p_payment_id and p.organization_id = v_org
@@ -767,14 +786,6 @@ begin
   -- Zahlungssumme derselben Rechnung und muessen deshalb hintereinander
   -- laufen, nicht nebeneinander.
   perform 1 from public.invoices i where i.id = v_payment.invoice_id for update;
-
-  -- ABN-008: Eine Verrechnung besteht aus zwei Buchungen, einer an jeder
-  -- Rechnung. Sie werden nur gemeinsam storniert; eine Haelfte allein liesse
-  -- Geld an einer Rechnung auftauchen oder verschwinden.
-  if v_payment.offset_group is not null then
-    perform public.void_offset_payments(v_payment.offset_group, p_reason);
-    return;
-  end if;
 
   -- Wird ein Eingang storniert, koennten bereits gebuchte Rueckzahlungen
   -- ueber der verbliebenen Summe liegen. Dann zuerst die Rueckzahlung

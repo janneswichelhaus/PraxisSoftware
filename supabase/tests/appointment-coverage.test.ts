@@ -598,7 +598,11 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
   it('zieht eine erfasste Leistung samt Menge auf die Position des Ziels', async () => {
     // Erika frisch (KG) -> Erika Selbstzahler (KG). Ein durchgefuehrter Termin
     // mit erfasster KG.
-    const id = await termin({ inStunden: -26, grundlage: GRUNDLAGE.erikaFrisch, status: 'documented' });
+    const id = await termin({
+      inStunden: -26,
+      grundlage: GRUNDLAGE.erikaFrisch,
+      status: 'documented',
+    });
     await erfassen(id);
     expect((await mengen(GRUNDLAGE.erikaFrisch)).Krankengymnastik).toBe(1);
 
@@ -639,7 +643,11 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
     // KG. Der Weg Max -> Erika scheitert schon an der Patient:in, deshalb
     // ein Ziel derselben Person ohne die Position: Erika frisch (nur KG)
     // bekommt eine Waermetherapie-Leistung von Erika alt.
-    const id = await termin({ inStunden: -26, grundlage: GRUNDLAGE.erikaAlt, status: 'documented' });
+    const id = await termin({
+      inStunden: -26,
+      grundlage: GRUNDLAGE.erikaAlt,
+      status: 'documented',
+    });
     const { rows: katalog } = await asPostgres<{ id: string }>(
       "select i.id from public.service_catalog_items i join public.service_catalog_versions v on v.id = i.catalog_version_id where i.remedy = 'Waermetherapie' and v.published_at is not null limit 1",
     );
@@ -667,7 +675,11 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
       'update public.treatment_base_items set used_quantity = prescribed_quantity where treatment_basis_id = $1',
       [GRUNDLAGE.erikaSelbstzahler],
     );
-    const id = await termin({ inStunden: -26, grundlage: GRUNDLAGE.erikaFrisch, status: 'documented' });
+    const id = await termin({
+      inStunden: -26,
+      grundlage: GRUNDLAGE.erikaFrisch,
+      status: 'documented',
+    });
     await erfassen(id);
 
     await expect(
@@ -678,8 +690,16 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
   });
 
   it('zieht ein Ausfallhonorar ohne Mengenbewegung mit und uebertraegt auch durchgefuehrte Termine', async () => {
-    const vergangen = await termin({ inStunden: -50, grundlage: GRUNDLAGE.erikaAlt, status: 'completed' });
-    const ohnePosition = await termin({ inStunden: -26, grundlage: GRUNDLAGE.erikaAlt, status: 'completed' });
+    const vergangen = await termin({
+      inStunden: -50,
+      grundlage: GRUNDLAGE.erikaAlt,
+      status: 'completed',
+    });
+    const ohnePosition = await termin({
+      inStunden: -26,
+      grundlage: GRUNDLAGE.erikaAlt,
+      status: 'completed',
+    });
     // Eine Leistung ohne Position - wie ein Ausfallhonorar.
     await asPostgres(
       `insert into public.billable_services

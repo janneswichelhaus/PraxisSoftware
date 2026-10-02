@@ -135,6 +135,21 @@ describe('Mail-Hook: verschicken oder stumm verwerfen (ABN-012)', () => {
     );
   });
 
+  it('verschickt einen wiederholten Aufruf derselben Nachricht nicht ein zweites Mal', async () => {
+    const v = versand();
+    const handler = erstelleHandler({
+      anmeldedienst: dienst(true),
+      versand: v,
+      appUrl: 'https://app.invalid',
+      hookGeheimnis: GEHEIMNIS,
+    });
+    const text = JSON.stringify(AUFRUF);
+    const kopf = await signiert(text);
+    expect((await rufe(handler, AUFRUF, kopf)).status).toBe(200);
+    expect((await rufe(handler, AUFRUF, kopf)).status).toBe(200);
+    expect(v.sende).toHaveBeenCalledTimes(1);
+  });
+
   it('weist einen unsignierten oder falsch signierten Aufruf ab und fragt nichts', async () => {
     const d = dienst(true);
     const handler = erstelleHandler({

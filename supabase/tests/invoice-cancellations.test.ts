@@ -491,6 +491,35 @@ describe('Storno und Korrektur', () => {
       ).rejects.toThrow(/not allowed to manage invoices/);
     });
 
+    it('weist fremde Organisation und Therapeutin auch am direkten Storno ab (Zweitreview B8)', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+      const korrektur = await ausgestellteKorrektur(id);
+      const fremd = await fremdeOrganisation();
+      await expect(asUserCommitted(fremd.owner, VERRECHNEN, [id, korrektur, 2000])).rejects.toThrow(
+        /invoice not found/,
+      );
+
+      const { rows } = await asUserCommitted<{ gruppe: string }>(users.office, VERRECHNEN, [
+        id,
+        korrektur,
+        2000,
+      ]);
+      await expect(
+        asUserCommitted(users.therapist, 'select public.void_offset_payments($1::uuid, $2)', [
+          rows[0]!.gruppe,
+          'Versuch',
+        ]),
+      ).rejects.toThrow(/not allowed to manage invoices/);
+      await expect(
+        asUserCommitted(fremd.owner, 'select public.void_offset_payments($1::uuid, $2)', [
+          rows[0]!.gruppe,
+          'Versuch',
+        ]),
+      ).rejects.toThrow(/payment not found|not allowed/);
+      expect(await bezahlt(korrektur)).toBe(2000);
+    });
+
     it('laesst die Verrechnung nicht ueber den Zahlungsweg buchen', async () => {
       const { id } = await bezahlteRechnung(2000);
       await expect(

@@ -467,6 +467,24 @@ describe('Einnahmen je Leistungsart', () => {
       expect((await auswertung('cash')).map(betraege)).toEqual(vorher);
     });
 
+    it('rechnet die Teilzahlung aus dem Vorjahr in den Stand der Restzahlung ein (Zweitreview B8)', async () => {
+      const { id, betrag } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
+      const heuer = await jahr();
+      await buche(id, 3300, { tag: `${heuer - 1}-12-30` });
+      await buche(id, betrag - 3300);
+      const vorjahr = (await auswertung('cash', heuer - 1)).map(betraege);
+      const diesesJahr = (await auswertung('cash', heuer)).map(betraege);
+      const dokument = (await auswertung('accrual')).map(betraege);
+      // Beide Jahre zusammen ergeben genau die Gruppen der Rechnung.
+      const summiert = dokument.map((d, i) => ({
+        ...d,
+        brutto: (vorjahr[i]?.brutto ?? 0) + (diesesJahr[i]?.brutto ?? 0),
+        steuer: (vorjahr[i]?.steuer ?? 0) + (diesesJahr[i]?.steuer ?? 0),
+        netto: (vorjahr[i]?.netto ?? 0) + (diesesJahr[i]?.netto ?? 0),
+      }));
+      expect(summiert).toEqual(dokument);
+    });
+
     it('verteilt nach einer stornierten Zahlung aus dem verbliebenen Stand', async () => {
       const { id, betrag } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
       const falsch = await buche(id, 777);

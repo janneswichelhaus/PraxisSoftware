@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Absage unter 24 Stunden (CAL-014b, ADR-018 Fassung 2 Punkt 8).
@@ -662,6 +669,18 @@ describe('Verzicht auf die Gebühr', () => {
     await expect(
       asUser(users.office, VERZICHTEN, [nachher.id, nachher.updated_at]),
     ).rejects.toThrow(/already recorded as a service/);
+  });
+
+  it('weist eine fremde Organisation und ein Plattformkonto ab (Zweitreview B8)', async () => {
+    const termin = await kurzfristigAbgesagt();
+    const fremd = await fremdeOrganisation();
+    await expect(asUser(fremd.owner, VERZICHTEN, [termin.id, termin.updated_at])).rejects.toThrow(
+      /appointment not found/,
+    );
+    await expect(
+      asUser(users.plattformErika, VERZICHTEN, [termin.id, termin.updated_at]),
+    ).rejects.toThrow(/not allowed to waive fees/);
+    expect((await zeile(termin.id))?.fee_waived_at).toBeNull();
   });
 
   it('weist einen veralteten Stand ab', async () => {

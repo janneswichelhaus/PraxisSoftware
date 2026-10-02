@@ -54,6 +54,14 @@ describe('Wiederherstellung per Mail (ABN-012)', () => {
       users.plattformErika,
     ]);
     expect(await erlaubt(users.plattformErika, 'recovery')).toBe(false);
+
+    // Zurück zur alten Adresse: Auch das verlangt eine neue Bestätigung
+    // (Zweitreview B4) - das Merkmal ist mit der Änderung gefallen.
+    await asPostgres('update auth.users set email = $2 where id = $1', [
+      users.plattformErika,
+      rows[0]!.email,
+    ]);
+    expect(await erlaubt(users.plattformErika, 'recovery')).toBe(false);
   });
 
   it('schickt einem Plattformkonto keinen Anmeldelink, auch mit bestätigtem Postfach', async () => {
