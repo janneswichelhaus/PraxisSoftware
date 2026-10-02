@@ -6,6 +6,17 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.19
+
+Nachzug an Rang 2 nach **ADR-021 Fassung 2** (Punkt 10), entschieden vom Projektinhaber am
+2026-10-02 in der Abnahme der Annahmen, Block 8 (ANN-184). Geändert ist nur die Zeile **Office** in
+der Rollentabelle von **§4.8**: Office liest im Training zusätzlich das Trainingsprotokoll und
+dessen Zustand, schreibt und schließt es aber nicht ab. Mit echten Daten gilt das erst nach der
+Bewertung durch die DSFA (B2); bis dahin wird es mit synthetischen Daten gebaut (§15.2). Die übrigen
+Screening- und Gesundheitsangaben des Trainings bleiben für Office gesperrt. Keine andere Leitplanke
+ändert sich; die Aussage „kein Schluss von einer Rolle auf den anderen Bereich" bleibt, weil Office
+eine Rolle in beiden Bereichen trägt.
+
 ### Änderungsvermerk 0.18.1
 
 Korrekturversion, ändert keine Leitplanke. **ADR-023** (Plattformzugang) ist am 2026-09-30 vom

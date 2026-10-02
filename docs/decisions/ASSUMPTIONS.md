@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 78 Einträge):
+Zusatz `Prüfpaket` (heute 80 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2033,7 +2033,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) ·
 
 ### ANN-172 — Trainingsverhältnisse anlegen, ändern und beenden: owner, Trainingsbetreuung und Büro
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
 
 **Annahme.** Ein Trainingsverhältnis legen `owner`, `trainer` und `office` an, ändern es und beenden es; `therapist` und `team_lead` weder lesend noch schreibend. Jeder abgewiesene Versuch steht als `denied` im Protokoll (HTTP 403, wie G6c).
 
@@ -2045,7 +2045,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-173 — Das zweite Verhältnis entsteht nur bei owner und Büro, und aus der Akte wird nichts übernommen
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Zweckbindung ADR-021 Punkt 7)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Zweckbindung ADR-021 Punkt 7)
 
 **Annahme.** Eine Person, die schon eine Akte hat (oder im Team ist), bekommt ihr Trainingsverhältnis ohne zweite `persons`-Zeile — aber nur durch jemanden, der sie aus der Behandlung ohnehin sieht, also `owner` oder `office`. Der Dublettenhinweis beim Anlegen zeigt der Trainingsbetreuung nur Trainingskund:innen; für sie ist eine Akte „nicht gefunden“, ununterscheidbar von einer fremden Kennung. Kontaktdaten hängen am Verhältnis (`training_contact_details`, Gegenstück zu `patient_contact_details`); beim zweiten Verhältnis wird nichts aus der Akte übernommen, auch keine Adresse — mit kommt nur, was die anlegende Person ins Formular getippt hat (Kontakt, Vertragsbeginn), nie der Name aus dem Formular.
 
@@ -2057,7 +2057,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-174 — Der Name gehört der Person: Eine Änderung im Training gilt auch in der Akte
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2)
 
 **Annahme.** Ändert die Trainingsbetreuung Vor- oder Nachnamen einer Trainingskund:in, ändert sie ihn in `persons` — und damit auch in einer Akte derselben Person, von der sie nichts weiß. Protokolliert wird die Änderung am Trainingsverhältnis (`training_relationship.updated`, Feld `name`). Ausnahme: Ist die Person Mitarbeiter:in oder hat sie ein Konto, ändert den Namen nur, wer Mitarbeiterstammdaten pflegt (owner, office); die Trainingsbetreuung bekommt „name is managed in staff master data“ (Zweitreview).
 
@@ -2069,7 +2069,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-175 — Protokoll im Training: Detailansicht und jede Änderung ja, Trefferliste und Dublettenhinweis nein
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8)
 
 **Annahme.** Wie bei der Akte: Das Öffnen einer Trainingskund:in (`training_relationship.viewed`) und jede Änderung (`.created`, `.updated`, `.ended`, `.reopened`) stehen im Protokoll, Kontaktdaten und Namen nie — bei Änderungen nur die Namen der geänderten Felder, beim Vertragsende der Tag. Die Trefferliste und der Dublettenhinweis zeigen keinen Kontakt und werden nicht protokolliert; ihr abgewiesener Aufruf schon (`training_relationships.read`). Das Geburtsdatum einer Trainingskund:in nennt der Hinweis nur, wenn es genau das eingegebene ist. Bekannt und hingenommen: Wer schreiben darf, kann Beginn und Ende zurückdatieren und damit die Frist früher auslösen — beides steht mit Tag im Protokoll, wie beim Abschluss der Versorgung.
 
@@ -2081,7 +2081,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-176 — Trainingstermine schreiben owner, Trainingsbetreuung und Büro; zugeordnet wird die Trainingsbetreuung
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, DSFA Training)
 
 **Annahme.** Einen Trainingstermin legen `owner`, `trainer` und `office` an, verschieben ihn und sagen ihn ab – dieselbe Stelle wie am Verhältnis (ANN-172). `therapist` und `team_lead` finden einen Trainingstermin über keinen Schreibweg („nicht gefunden“, wie eine unbekannte Kennung); umgekehrt findet die Trainingsbetreuung keinen Behandlungstermin. Betreuen kann einen Trainingstermin nur, wer die Rolle Trainingsbetreuung trägt, mit aktiver Beschäftigung und aktivem Zugang. Wer behandelt und trainiert, trägt beide Rollen. Ein abgewiesenes Anlegen steht als `denied` im Protokoll.
 
@@ -2093,7 +2093,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-177 — Hausbesuch im Training: Anschrift aus dem Trainingskontakt, Hausnummer am letzten Leerzeichen getrennt
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, ANN-003)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, ANN-003)
 
 **Annahme.** Ein Trainingstermin als Hausbesuch (Personal Training zu Hause, ADR-022 Punkt 9) nimmt die Anschrift als Kopie aus `training_contact_details`, nie aus der Akte – auch wenn dieselbe Person eine hat. Weil der Trainingskontakt „Straße und Hausnummer“ in einem Feld führt, wird am letzten Leerzeichen vor einer Hausnummer getrennt, die mit einer Ziffer beginnt („12“, „12a“, „12 a“, „3-5“, „7 / 9“). Gelingt das nicht oder fehlt PLZ oder Ort, wird der Hausbesuch abgewiesen („home visit requires a complete address“), statt eine Hausnummer zu erfinden.
 
@@ -2101,11 +2101,11 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `app.split_street_and_house_number` und `app.training_visit_address` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Fälle in `supabase/tests/training-appointments.test.ts`.
 
-**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`.
+**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Straße und Hausnummer werden getrennte Felder im Trainingskontakt; die Trennung am letzten Leerzeichen entfällt (BEF-111).
 
 ### ANN-178 — Eine Absage im Training setzt kein Ausfallhonorar-Kennzeichen
 
-Recht · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (AGB Personal Training, ADR-022 offene Folgefrage)
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Jannes (AGB Personal Training, ADR-022 offene Folgefrage)
 
 **Annahme.** Wird ein Trainingstermin abgesagt, auch weniger als 24 Stunden vorher, setzt der Server keinen Gebührenanlass (`fee_basis` bleibt leer). Die Oberfläche fragt deshalb weder nach dem Eingang der Absage noch nennt sie ein Ausfallhonorar. Die Absagegründe sind dieselben Codes wie in der Behandlung, im Training als „Kund:in hat abgesagt“ beschriftet.
 
@@ -2113,11 +2113,11 @@ Recht · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (AGB Persona
 
 **Anker.** `v_anlass` in `public.cancel_appointment`, `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Absage in `src/features/training/TrainingAppointmentPage.tsx`.
 
-**Änderungspfad.** Anlass auch im Training: Constraint `appointments_fee_basis_values` um `training` erweitern, Bedingung in `cancel_appointment`, Frage nach dem Eingang in der Absage · Aufwand `mittel`.
+**Änderungspfad.** Anlass auch im Training: Constraint `appointments_fee_basis_values` um `training` erweitern, Bedingung in `cancel_appointment`, Frage nach dem Eingang in der Absage · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Bestätigt: vorerst kein Ausfallhonorar im Training. Die 24-Stunden-Regel der Behandlung (BEF-094) wird nicht automatisch übernommen; ein Anlass im Training braucht eine eigene Entscheidung.
 
 ### ANN-179 — Eine Vereinbarung im Training sperrt nicht, wenn die Anzahl erreicht ist
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 5)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Training Schritt 5)
 
 **Annahme.** Die Trainingsgrundlage heißt in der Oberfläche „Vereinbarung“. Sie wird von owner, Trainingsbetreuung und Büro angelegt (Beginn, vereinbarte Einheiten oder ohne feste Anzahl), abgeschlossen und wieder geöffnet; jede Änderung steht im Protokoll. Die Zahl der Termine (ohne Abgesagte) ist eine Anzeige („7 Termine von 10“), keine Sperre: Ein elfter Termin geht. An einer abgeschlossenen Vereinbarung entstehen keine neuen Termine; die geplanten bleiben. Ein Termin ohne Vereinbarung ist eine Einzelstunde.
 
@@ -2129,7 +2129,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-180 — Die Trainingsbetreuung sieht im Kalender nur Trainingstermine; Lesen protokolliert wie am Behandlungstermin
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-022 Punkt 11, ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-022 Punkt 11, ADR-010)
 
 **Annahme.** Die Trainingsbetreuung öffnet Kalender und eigene Tagesliste und sieht darin nur Trainingstermine – mit dem Namen aus dem Training, nie aus der Akte. Behandlungstermine und interne Termine (Pausen, Besprechungen) sieht sie nicht; die Belegung erfährt sie nur beim Speichern als „belegt“. Arbeitszeiten sieht sie weiterhin nicht (die Policy bleibt bei den Praxisrollen). Protokolliert wird wie am Behandlungstermin: jede Änderung ja, Kalender, Tagesliste und Termindetail nicht; die Termine und Vereinbarungen einer Trainingskund:in gehören zur protokollierten Detailansicht (ANN-175). Jeder abgewiesene Lesezugriff steht als `denied` im Protokoll.
 
@@ -2137,11 +2137,11 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/session/types.ts`.
 
-**Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`.
+**Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Die Trainingsbetreuung sieht relevante belegte Zeiten als anonyme Blöcke „belegt“, ohne Kontext, Namen oder Inhalt, damit sie freie Zeiten erkennt (BEF-112; `PROJECT_PRINCIPLES.md` §4.8, Belegung).
 
 ### ANN-181 — Im Training entsteht eine Leistung aus dem durchgeführten Termin
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 7)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Training Schritt 7)
 
 **Annahme.** Die „vereinbarte Trainingsleistung“ aus §19 ist der durchgeführte Trainingstermin (`completed`, später auch `documented`). Eine Dokumentation wird nicht verlangt, ein Ausfallhonorar gibt es nicht (ANN-178). Erfasst wird wie in der Behandlung durch `owner` und `office` im Bereich **Abrechnung → Leistungen**. Angeboten werden nur Positionen des Bereichs `training`, ohne Vorbelegung. Die Trainingsbetreuung erfasst nicht, und die Ausnahme aus ANN-140 (Behandelnde am eigenen Termin) gilt nur am Behandlungstermin.
 
@@ -2149,11 +2149,11 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Anker.** `app.appointment_is_billable` in `supabase/migrations/20260930120000_trn_007_training_services.sql`; Tests in `supabase/tests/training-services.test.ts`. Dass Behandelnde am Trainingstermin nicht erfassen (`app.can_record_services_for_appointment`), ist keine Annahme, sondern ADR-021 Punkt 6.
 
-**Änderungspfad.** Erst nach dem Trainingsprotokoll abrechnen: Den Zweig `training` in `app.appointment_is_billable` auf `documented` setzen · Aufwand `klein`. Trainingsbetreuung erfasst am eigenen Termin: Zweig in `app.can_record_services_for_appointment` für `trainer` und `training` · Aufwand `klein`.
+**Änderungspfad.** Erst nach dem Trainingsprotokoll abrechnen: Den Zweig `training` in `app.appointment_is_billable` auf `documented` setzen · Aufwand `klein`. Trainingsbetreuung erfasst am eigenen Termin: Zweig in `app.can_record_services_for_appointment` für `trainer` und `training` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Langfristig feste Paketpreise für drei oder sechs Monate Betreuung; die 140 € der Behandlung gelten im Training nicht. Bei Paketen entsteht die Forderung aus der Paketvereinbarung, enthaltene Termine erzeugen keine weitere. Preis, Umfang und Zahlungsweise offen; eingeplant in ABR-EPIC-007 (BEF-114, ADR-009 Punkt 21).
 
 ### ANN-182 — Eine Trainingsrechnung geht an die Kund:in selbst, mit der Anschrift aus dem Training und ohne Geburtsdatum
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, Art. 5 Abs. 1 lit. c DSGVO)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkt 3, Art. 5 Abs. 1 lit. c DSGVO)
 
 **Annahme.** Eine Trainingsrechnung hat keinen abweichenden Empfänger. Empfänger ist die Kund:in selbst, mit Name und Anschrift aus dem Trainingskontakt. Die Zeile „Straße und Hausnummer“ kommt ungeteilt auf die Rechnung. Aus der Akte wird nichts gelesen, auch wenn dieselbe Person eine hat. Die hinterlegten Empfänger (Beihilfe, Versicherung, Betreuung) hängen an der Akte und lassen sich an einer Trainingsrechnung nicht setzen. Die Person, für die geleistet wurde, steht als „Leistung für“ auf der Rechnung, nicht als „Behandelt“, und ohne Geburtsdatum. Fehlt die Anschrift im Training, wird die Rechnung ohne Anschrift ausgestellt.
 
@@ -2161,11 +2161,11 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Zweig `training_relationship_id is not null` in `app.build_invoice_document`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`. Die Oberfläche hat keine eigene Regel: Sie liest den Bereich aus dem Dokument (`personLabel`, `empfaengerart` in `src/features/billing/anzeige.ts`) und bietet die Empfängerwahl nur an einer Rechnung mit Patient:in an.
 
-**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`.
+**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt, mit einer Korrektur: Ohne vollständige Empfängeranschrift wird nicht ausgestellt (BEF-111).
 
 ### ANN-183 — Nach drei Jahren fällt das Trainingsverhältnis bis auf die Belege; diese bleiben bis zum Ende ihrer steuerlichen Frist
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-008 Punkt 2, ADR-021 Punkt 4)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-008 Punkt 2, ADR-021 Punkt 4)
 
 **Annahme.** Drei Jahre nach Vertragsende löscht der Löschlauf das Trainingsverhältnis. Liegt einer seiner Belege (Rechnung, Storno, Erinnerung, Zahlung) noch in der Frist von acht Jahren ab Ende des Kalenderjahres, fällt nur ein Teil: Kontakt mit Anschrift und Geburtsdatum, Termine ohne Leistung und Vereinbarungen ohne verbliebenen Termin. Stehen bleiben die Belege, die abgerechneten Termine mit ihren Leistungen, die Verhältniszeile und der Name der Person. Im Bericht des Laufs erscheint das Verhältnis als `steuerfrist_gehalten`. Nach Ablauf der Belegfrist fällt der Rest. Jeder gelöschte Datensatz steht im Löschjournal und wird nach einem Restore erneut gelöscht.
 
@@ -2179,7 +2179,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-184 — Trainingsprotokolle schreiben, abschließen und lesen nur owner und Trainingsbetreuung
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8)
 
 **Annahme.** Das Trainingsprotokoll schreiben, abschließen und lesen `owner` und `trainer`. Das Büro (`office`) liest es nicht, auch nicht in der Liste der Einheiten. Es sieht aber weiter den Termin mit seinem Zustand und kann ihn als durchgeführt vermerken (ANN-186). `therapist` und `team_lead` erreichen das Protokoll nicht (kein Durchgriff). Jedes Öffnen eines Protokolls, auch in der Liste, steht als `training_protocol.viewed` im Protokoll, jeder abgewiesene Versuch als `denied`.
 
@@ -2187,11 +2187,11 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `app.can_access_training_protocols` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `canWriteTrainingProtocols` in `src/features/session/types.ts`; Tests in `supabase/tests/training-protocols.test.ts`.
 
-**Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`.
+**Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Das Büro liest Trainingsprotokolle und sieht ihren Zustand; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8 und ADR-021 Fassung 2 Punkt 10; scharf erst mit der DSFA (B2). Umsetzung BEF-113.
 
 ### ANN-185 — Ein abgeschlossenes Trainingsprotokoll ist unveränderlich; einen Korrekturweg gibt es in V1 nicht
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
 
 **Annahme.** Ein Trainingsprotokoll ist Entwurf oder abgeschlossen. Den Entwurf können `owner` und `trainer` beliebig oft ändern. Das Abschließen ist ein ausdrücklicher Schritt mit Rückfrage. Danach ist der Text unveränderlich: über jeden Schreibweg, auch am Server vorbei. Es gibt weder Korrektur noch Nachtrag und auch keine automatische Finalisierung.
 
@@ -2199,11 +2199,11 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Anker.** `public.training_protocols_guard` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; Tests in `supabase/tests/training-protocols.test.ts` („ist danach unveraenderlich“).
 
-**Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`.
+**Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Bestätigt: Abgeschlossen bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt (BEF-113).
 
 ### ANN-186 — Am Trainingstermin vermerken owner, Trainingsbetreuung und Büro „durchgeführt“ und öffnen wieder
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Training Schritt 10)
 
 **Annahme.** Einen Trainingstermin vermerken dieselben Rollen als durchgeführt und öffnen ihn wieder, die ihn auch anlegen, verschieben und absagen: `owner`, `trainer` und `office` (ANN-176). „Durchgeführt“ braucht kein Protokoll (wie ANN-005 in der Behandlung). „Dokumentiert“ wird der Termin erst mit dem abgeschlossenen Protokoll, und von dort gibt es keinen Weg zurück (ADR-018 Punkt 2). Neben einem abgeschlossenen Protokoll gibt es keine Absage und kein Nichtantreffen. Ein **Entwurf** fällt bei Absage oder Nichtantreffen im selben Vorgang weg; das Protokoll hält das als `training_protocol.discarded` fest, nur mit Kennungen. Das gilt auch, wenn das Büro absagt, das den Entwurf nicht sieht. Der verworfene Entwurf steht nicht im Löschjournal: Er wurde nicht nach Ablauf einer Frist gelöscht, sondern ist mit seinem Termin entfallen. Nach einem Restore stünde er wieder da, an einem abgesagten Termin.
 
@@ -2211,7 +2211,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Anker.** Rollenprüfung in `public.complete_appointment` und `public.reopen_appointment` in `supabase/migrations/20260930131000_trn_010_training_documented.sql`; `public.appointments_training_protocol_guard` in `supabase/migrations/20260930132000_trn_epic_004_zweitreview.sql`; `TerminAbschluss` in `src/features/training/TrainingProtocol.tsx`.
 
-**Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`.
+**Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Rechte bestätigt. Vor dem Verwerfen eines Entwurfs weist die Oberfläche auf den Verlust hin, und ein verworfener Entwurf taucht nach einer Wiederherstellung nicht wieder auf (BEF-113).
 
 ### ANN-187 — Ein Plattformkonto hat kein Profil in `user_profiles`; Praxis- und Plattformkonto schließen sich in beide Richtungen aus
 

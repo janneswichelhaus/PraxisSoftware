@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.18.1** |
-| **Änderungsdatum** | **2026-09-30** |
-| Vorversion | 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.19** |
+| **Änderungsdatum** | **2026-10-02** |
+| Vorversion | 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -577,7 +577,7 @@ Für die vorhandenen Rollen gilt damit:
 |---|---|---|
 | §4.1 Praxisinhaber | `therapy` und `training` | Vertragspartner beider Verhältnisse; die einzige Rolle, die beide Bereiche aus sich heraus trägt |
 | §4.2 Therapeut | `therapy` | Der offene Zugriff auf alle Patientenakten gilt **innerhalb** der Behandlung und begründet keinen Zugriff auf Trainingsdaten |
-| §4.3 Office | `therapy`; im `training` nur organisatorisch | Termin, Vertragsstatus, erbrachte Leistung, Rechnung, Zahlung. Screening- und Gesundheitsangaben des Trainings sind für Office **gesperrt**, bis die DSFA sie bewertet (Anfrage B2, ADR-007) — §16: im Zweifel restriktiver, später zu öffnen ist billig |
+| §4.3 Office | `therapy`; im `training` organisatorisch, dazu lesend das Trainingsprotokoll | Termin, Vertragsstatus, erbrachte Leistung, Rechnung, Zahlung. Das **Trainingsprotokoll** und seinen Zustand DARF Office lesen, nicht schreiben und nicht abschließen (Projektinhaber, 2026-10-02; ADR-021 Punkt 10); mit echten Daten erst, wenn die DSFA es bewertet hat (Anfrage B2, ADR-007). Übrige Screening- und Gesundheitsangaben des Trainings bleiben für Office **gesperrt**, bis die DSFA sie bewertet — §16: im Zweifel restriktiver, später zu öffnen ist billig |
 | §4.5 Teamleitung | wie §4.2, dazu die organisatorischen Zusatzrechte | keine Trainingsdaten, solange ihr nicht zusätzlich §4.9 zugewiesen ist |
 | §4.6 Patient | `therapy` | eigene Daten des Behandlungsverhältnisses |
 | §4.9 Trainingsbetreuung | `training` | die Rolle, die diese Ziffer auf der Trainingsseite besetzt |

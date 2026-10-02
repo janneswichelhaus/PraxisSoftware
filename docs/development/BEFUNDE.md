@@ -3571,3 +3571,56 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 **Erwartet** (Jannes, 2026-10-02):
 1. **Abstecher-Entwurf (ANN-019):** Weder der Ablauf nach 30 Minuten noch eine automatische Abmeldung oder Sperre löschen Eingaben still. Der Entwurf wird geschützt gesichert, etwa serverseitig als Entwurf wie die Dokumentation oder ausdrücklich verworfen nach Rückfrage. Wiederaufnahme nur mit demselben Konto. Stimmt mit ADR-025 Punkt 4 überein.
 2. **MDR-Freigabe (ANN-089):** Eine Funktion wird erst nach dokumentierter MDR-Prüfung geöffnet. Der Nachweis (wer, wann, Ergebnis, Verweis auf die Prüfung) steht am Registereintrag oder in einem eigenen Freigabevermerk; bloßes Entfernen des Eintrags genügt nicht. Vorhandene Serverzugänge solcher Funktionen werden ebenfalls gesperrt, nicht nur die Adressen der Oberfläche.
+
+### BEF-111 — Trainingskontakt: Hausnummer im Straßenfeld, Rechnung ohne vollständige Anschrift
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Training: Kontakt, Hausbesuch, Rechnung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-177, ANN-182) |
+| Status  | offen |
+| Berührt | ANN-177 (`app.split_street_and_house_number`, `app.training_visit_address`); ANN-182 (`issue_invoice`, `app.build_invoice_document`); `training_contact_details` |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Getrennte Felder (ANN-177):** Der Trainingskontakt führt Straße und Hausnummer als zwei Felder, wie die Akte. Der Hausbesuch übernimmt sie unverändert; die Trennung am letzten Leerzeichen entfällt. Bestehende Einträge werden einmal aufgeteilt, was nicht eindeutig ist, bleibt zur Prüfung stehen.
+2. **Rechnung (ANN-182):** Eine Trainingsrechnung wird ohne vollständige Empfängeranschrift (Straße, Hausnummer, PLZ, Ort) nicht ausgestellt. Die Sperre sitzt im Server (`issue_invoice`), die Oberfläche nennt, was fehlt.
+
+### BEF-112 — Trainingsbetreuung sieht im Kalender keine belegten Zeiten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kalender und Tagesliste der Trainingsbetreuung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-180) |
+| Status  | offen |
+| Berührt | ANN-180 (`public.list_appointments`, `app.may_read_appointment_context`); `PROJECT_PRINCIPLES.md` §4.8 (Belegung); ADR-022 Punkt 11 |
+
+**Erwartet** (Jannes, 2026-10-02): Die Trainingsbetreuung sieht relevante belegte Zeiten (der betroffenen Mitarbeitenden und Räume) als anonyme Blöcke „belegt“, damit sie freie Zeiten erkennt, statt erst beim Speichern davon zu erfahren. Ein Block trägt nur Beginn, Ende und Person, keinen Kontext, keinen Namen, keine Adresse, keinen Zustand. Die Projektion entsteht im Server; ein Test belegt, dass keine Behandlungsdaten herauskommen.
+
+### BEF-113 — Trainingsprotokoll: Büro liest, Nachtrag, Verwerfen mit Hinweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Trainingsprotokoll |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-184, ANN-185, ANN-186) |
+| Status  | offen |
+| Berührt | ANN-184 (`app.can_access_training_protocols`, `canWriteTrainingProtocols`); ANN-185 (`training_protocols_guard`); ANN-186 (`appointments_training_protocol_guard`, Löschjournal); `PROJECT_PRINCIPLES.md` 0.19 §4.8; ADR-021 Fassung 2 Punkt 10 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Büro liest (ANN-184):** Lese- und Schreibrecht getrennt. `office` liest Protokolle und ihren Zustand, auch in der Liste der Einheiten, protokolliert als `training_protocol.viewed`; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen bestätigt.
+2. **Nachtrag (ANN-185):** Ein abgeschlossenes Protokoll bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt, angezeigt unter dem Text, wie in der Behandlung.
+3. **Verwerfen (ANN-186):** Bevor eine Absage oder ein Nichtantreffen einen Entwurf verwirft, weist die Oberfläche auf den Verlust hin, auch dem Büro. Ein verworfener Entwurf steht im Löschjournal und taucht nach einer Wiederherstellung nicht wieder auf.
+
+### BEF-114 — Training: Paketpreise für drei oder sechs Monate
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Abrechnung im Training |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-181) |
+| Status  | offen |
+| Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
+
+**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden).
