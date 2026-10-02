@@ -109,7 +109,7 @@ const FAELLE: Fall[] = [
   ],
   [
     'update_training_client',
-    'select public.update_training_client($1::uuid, $2, $3, null, null, null, null, null, null, current_date) as id',
+    'select public.update_training_client($1::uuid, $2, $3, null, null, null, null, null, null, current_date, null) as id',
     [SEED.trainingRelationships.tina, 'Kein', 'Zugriff'],
     'training_relationship.updated',
   ],

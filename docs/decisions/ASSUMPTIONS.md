@@ -2109,7 +2109,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** `app.split_street_and_house_number` und `app.training_visit_address` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Fälle in `supabase/tests/training-appointments.test.ts`.
 
-**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Straße und Hausnummer werden getrennte Felder im Trainingskontakt; die Trennung am letzten Leerzeichen entfällt (BEF-111).
+**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Straße und Hausnummer werden getrennte Felder im Trainingskontakt; die Trennung am letzten Leerzeichen entfällt (BEF-111). **Fassung 2 (ABN-020, 2026-10-02, BEF-111 Punkt 1):** Der Trainingskontakt führt Straße und Hausnummer getrennt (`training_contact_details.house_number`); der Hausbesuch übernimmt beide unverändert, `app.split_street_and_house_number` entfällt. Bestehende Einträge wurden einmal aufgeteilt, nur wenn eindeutig (Hausnummer beginnt mit einer Ziffer, der Rest endet nicht auf eine Zahl oder einen einzelnen Großbuchstaben); der Rest steht auf der Kontaktseite „zur Prüfung“. `supabase/migrations/20261003107000_abn_020_training_house_number_invoice_address.sql`.
 
 ### ANN-178 — Eine Absage im Training setzt kein Ausfallhonorar-Kennzeichen
 
@@ -2169,7 +2169,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Zweig `training_relationship_id is not null` in `app.build_invoice_document`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`. Die Oberfläche hat keine eigene Regel: Sie liest den Bereich aus dem Dokument (`personLabel`, `empfaengerart` in `src/features/billing/anzeige.ts`) und bietet die Empfängerwahl nur an einer Rechnung mit Patient:in an.
 
-**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt, mit einer Korrektur: Ohne vollständige Empfängeranschrift wird nicht ausgestellt (BEF-111).
+**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt, mit einer Korrektur: Ohne vollständige Empfängeranschrift wird nicht ausgestellt (BEF-111). **Fassung 2 (ABN-020, 2026-10-02, BEF-111 Punkt 2):** `issue_invoice` stellt keine Rechnung ohne vollständige Empfängeranschrift aus (Straße, Hausnummer, PLZ, Ort; `app.assert_invoice_recipient_address`, DETAIL nennt die Felder) — auf Entscheidung von Jannes für **alle** Rechnungen, nicht nur im Training. Die Rechnungsseite nennt, was fehlt, und führt bei Rechnungen an die Person selbst zu den Stammdaten.
 
 ### ANN-183 — Nach drei Jahren fällt das Trainingsverhältnis bis auf die Belege; diese bleiben bis zum Ende ihrer steuerlichen Frist
 

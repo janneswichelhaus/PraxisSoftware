@@ -30,7 +30,7 @@ const { users, persons, trainingRelationships } = SEED;
 const CREATE =
   'select public.create_training_client($1, $2, $3::date, $4, $5, $6, $7, $8, $9::date) as id';
 const UPDATE =
-  'select public.update_training_client($1::uuid, $2, $3, $4::date, $5, $6, $7, $8, $9, $10::date) as id';
+  'select public.update_training_client($1::uuid, $2, $3, $4::date, $5, $6, $7, $8, $9, $10::date, null) as id';
 
 async function anzahl(sql: string, params: unknown[] = []): Promise<number> {
   const { rows } = await asPostgres<{ n: number }>(
@@ -749,7 +749,7 @@ describe('Mandantengrenze (ADR-003)', () => {
     for (const sql of [
       'select public.end_training_relationship($1::uuid) as x',
       'select public.reopen_training_relationship($1::uuid) as x',
-      `select public.update_training_client($1::uuid, 'X', 'Y', null, null, null, null, null, null, current_date) as x`,
+      `select public.update_training_client($1::uuid, 'X', 'Y', null, null, null, null, null, null, current_date, null) as x`,
     ]) {
       const fehler = await abgefangen(asUser(users.trainer, sql, [FREMD_TRAINING]));
       expect(fehler?.message).toMatch(/training relationship not found/);
@@ -770,5 +770,25 @@ describe('Mandantengrenze (ADR-003)', () => {
       ['Peter', 'Fremdpatient'],
     );
     expect(rows).toEqual([]);
+  });
+});
+
+describe('Strasse und Hausnummer getrennt (ABN-020, BEF-111)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+
+  it('schreibt die Hausnummer als eigenes Feld und liest sie zurueck', async () => {
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.office,
+      `select public.create_training_client('Hans', 'Hausnummer', null, null, null,
+         'Lindenweg', '72070', 'Tuebingen', null, '14b') as id`,
+    );
+    const { rows: kunde } = await asUser<{ street: string; house_number: string }>(
+      users.office,
+      'select street, house_number from public.get_training_client($1::uuid)',
+      [rows[0]!.id],
+    );
+    expect(kunde[0]).toEqual({ street: 'Lindenweg', house_number: '14b' });
   });
 });

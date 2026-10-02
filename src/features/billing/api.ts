@@ -566,12 +566,44 @@ export async function setzeEmpfaenger(
   if (error) throw new Error('Der Empfänger konnte nicht gesetzt werden.');
 }
 
+/** Die Felder der Empfängeranschrift in Worten (ABN-020, BEF-111). */
+const ANSCHRIFTFELDER: Record<string, string> = {
+  street: 'Straße',
+  house_number: 'Hausnummer',
+  postal_code: 'PLZ',
+  city: 'Ort',
+};
+
+/**
+ * Was an der Empfängeranschrift fehlt (ABN-020, BEF-111): Der Server stellt
+ * ohne vollständige Anschrift keine Rechnung aus und nennt die Felder.
+ */
+export function fehlendeAnschrift(details: string | undefined): string {
+  const felder = (details ?? '')
+    .split(',')
+    .map((f) => ANSCHRIFTFELDER[f.trim()])
+    .filter(Boolean);
+  const liste = felder.length > 0 ? felder.join(', ') : 'Angaben';
+  return `In der Anschrift des Empfängers fehlt: ${liste}. Bitte in den Kontaktdaten ergänzen und erneut ausstellen.`;
+}
+
+/** Die Empfängeranschrift ist unvollständig - kein Verbindungsproblem (BEF-111). */
+export class AnschriftUnvollstaendig extends Error {
+  constructor(details: string | undefined) {
+    super(fehlendeAnschrift(details));
+    this.name = 'AnschriftUnvollstaendig';
+  }
+}
+
 export async function stelleRechnungAus(invoiceId: string): Promise<string> {
   const { data, error } = (await getSupabase().rpc('issue_invoice', {
     p_invoice_id: invoiceId,
-  })) as { data: unknown; error: { message?: string } | null };
+  })) as { data: unknown; error: { message?: string; details?: string } | null };
 
   if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
+  if (error?.message?.includes('invoice recipient address incomplete')) {
+    throw new AnschriftUnvollstaendig(error.details);
+  }
   if (error) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
   const nummer = z.string().safeParse(data);
   if (!nummer.success) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');

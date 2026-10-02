@@ -35,6 +35,7 @@ import {
   type TrainingClient,
   type TrainingFeld,
   type TrainingWerte,
+  anschriftZurPruefung,
 } from './api';
 import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
@@ -88,7 +89,10 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
   const [gespeichert, setGespeichert] = useState(false);
   const darfSchreiben = canWriteTrainingClients(user.roles);
   const name = `${kundin.given_name} ${kundin.family_name}`;
-  const anschrift = [kundin.street, [kundin.postal_code, kundin.city].filter(Boolean).join(' ')]
+  const anschrift = [
+    [kundin.street, kundin.house_number].filter(Boolean).join(' '),
+    [kundin.postal_code, kundin.city].filter(Boolean).join(' '),
+  ]
     .filter(Boolean)
     .join(', ');
 
@@ -152,7 +156,19 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
                     </a>
                   </DetailRow>
                 ) : null}
-                {anschrift ? <DetailRow label="Anschrift">{anschrift}</DetailRow> : null}
+                {anschrift ? (
+                  <DetailRow label="Anschrift">
+                    {anschrift}
+                    {/* Vor ABN-020 standen Straße und Hausnummer in einem Feld;
+                        was nicht eindeutig zu trennen war, steht zur Prüfung da
+                        (BEF-111). Ohne Hausnummer gibt es keine Rechnung. */}
+                    {anschriftZurPruefung(kundin) ? (
+                      <span className="text-warnung block text-sm">
+                        Bitte prüfen: Die Hausnummer steht noch in der Straße.
+                      </span>
+                    ) : null}
+                  </DetailRow>
+                ) : null}
               </DetailList>
             ) : (
               <p className="text-ink-muted text-sm">Keine Kontaktangaben hinterlegt.</p>

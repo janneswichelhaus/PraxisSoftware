@@ -72,7 +72,10 @@ export function TrainingClientFields({
         <Feldgruppe>
           {feld('phone', 'Telefon', { type: 'tel' })}
           {feld('email', 'E-Mail', { type: 'email' })}
-          {feld('street', 'Straße und Hausnummer', { ...OHNE_AUTOKORREKTUR, maxLength: 200 })}
+          {/* Zwei Felder wie in der Akte (ABN-020, BEF-111): Der Hausbesuch
+              übernimmt sie unverändert, die Rechnung braucht beide. */}
+          {feld('street', 'Straße', { ...OHNE_AUTOKORREKTUR, maxLength: 200 })}
+          {feld('house_number', 'Hausnummer', { ...OHNE_AUTOKORREKTUR, maxLength: 20 })}
           {feld('postal_code', 'PLZ', { inputMode: 'numeric', maxLength: 12 })}
           {feld('city', 'Ort', { ...OHNE_AUTOKORREKTUR, maxLength: 100 })}
         </Feldgruppe>

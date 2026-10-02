@@ -546,9 +546,9 @@ select '22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-00000000
 from generate_series(1, 6) as wochentag;
 
 insert into public.training_contact_details
-  (training_relationship_id, organization_id, email, phone, street, postal_code, city) values
+  (training_relationship_id, organization_id, email, phone, street, house_number, postal_code, city) values
   ('eeeeeeee-eeee-4eee-8eee-000000000001', '22222222-2222-4222-8222-000000000001',
-   'tina.training@kunde.invalid', '+49 7071 0000109', 'Trainingsweg 5', '72076', 'Tuebingen');
+   'tina.training@kunde.invalid', '+49 7071 0000109', 'Trainingsweg', '5', '72076', 'Tuebingen');
 
 insert into public.training_bases
   (id, organization_id, training_relationship_id, status, started_on, agreed_quantity) values
