@@ -546,12 +546,14 @@ describe('EditTreatmentBasisPage', () => {
     expect(screen.getByText('Aus dem Bestand: 1 von 3 genutzt.')).toBeInTheDocument();
   });
 
-  it('zeigt Therapieziel und Verordnerhinweis als Bestandstext statt als Eingabe', async () => {
+  it('zeigt das Therapieziel als Bestandstext, den Hinweis weder als Bestand noch als Eingabe', async () => {
     renderWithProviders(<EditTreatmentBasisPage />);
     await screen.findByRole('option', { name: /Probst/ });
 
     expect(screen.getByText('Synthetisch: Ziel aus dem Bestand.')).toBeInTheDocument();
-    expect(screen.getByText('Synthetisch: Hinweis vom Rezept.')).toBeInTheDocument();
+    // ABN-007: Der behandlungsrelevante Hinweis wird in der Akte gepflegt,
+    // nicht im Formular der Grundlage, das auch das Büro ausfüllt (ANN-214).
+    expect(screen.queryByText('Synthetisch: Hinweis vom Rezept.')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Therapieziel')).not.toBeInTheDocument();
     expect(screen.queryByLabelText('Hinweis der Verordner:in')).not.toBeInTheDocument();
   });

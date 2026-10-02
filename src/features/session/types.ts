@@ -140,7 +140,8 @@ export function canReadTreatmentBases(roles: readonly RoleKey[]): boolean {
  * app.can_read_treatment_basis_clinical().
  */
 export function canReadTreatmentBasisClinical(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => directoryRoles.includes(role));
+  // ABN-007: dasselbe eine Leserecht wie die Dokumentation (BEF-098).
+  return canReadTreatmentNote(roles);
 }
 
 /**

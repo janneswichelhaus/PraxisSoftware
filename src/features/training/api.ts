@@ -480,8 +480,10 @@ export async function createTrainingAppointment(
 export const trainingAbsageLabels: Record<CancellationReason, string> = {
   patient_request: 'Kund:in hat abgesagt',
   practice_request: 'Praxis hat abgesagt',
-  moved: 'Termin verlegt',
+  patient_moved: 'Kund:in hat verlegt',
+  practice_moved: 'Praxis hat verlegt',
   other: 'Sonstiger Grund',
+  moved: 'Termin verlegt',
 };
 
 // -----------------------------------------------------------------------------

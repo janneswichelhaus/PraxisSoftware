@@ -557,6 +557,27 @@
           "vermerk": "Sichtung: Plattform Schritte 4 bis 6"
         },
         {
+          "id": "abn-epic-001",
+          "name": "ABN-EPIC-001 Abnahme der Annahmen, Blöcke 2, 3, 4 und 9",
+          "gewicht": 2,
+          "status": "fertig",
+          "fertig_am": "2026-10-02",
+          "nachweis": "ABN-001 bis ABN-012, Zweitreview",
+          "vermerk": "Sichtung: Plattform Schritte 7 bis 9"
+        },
+        {
+          "id": "abn-epic-001b",
+          "name": "ABN-EPIC-001b Abnahme der Annahmen, Blöcke 5 bis 8",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
+          "id": "abr-epic-007",
+          "name": "ABR-EPIC-007 Terminhonorar",
+          "gewicht": 2,
+          "status": "offen"
+        },
+        {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,

@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Absage unter 24 Stunden (CAL-014b, ADR-018 Fassung 2 Punkt 8).
@@ -274,7 +281,7 @@ describe('Absage unter 24 Stunden: welcher Grund ausloest', () => {
 
   it.each([
     ['practice_request', 'die Praxis sagt ab'],
-    ['moved', 'der Termin wird verlegt'],
+    ['practice_moved', 'die Praxis verlegt'],
     ['other', 'sonstiger Grund'],
   ] as const)('merkt bei %s keine Gebuehr vor (%s)', async (grund, _warum) => {
     const termin = await terminIn(2);
@@ -476,5 +483,227 @@ describe('Nichtantreffen: abhaken ohne Gebuehrenentscheidung', () => {
       [id],
     );
     expect(nachher[0]?.status).toBe('confirmed');
+  });
+});
+
+/**
+ * ABN-006 (BEF-094, ANN-047 Fassung 2, ADR-018 Fassung 4 Punkt 8): Wer
+ * verlegt, entscheidet über die Frist. Verlegt die Patient:in kurzfristig,
+ * fällt der vereinbarte Termin aus wie bei einer Absage; verlegt die Praxis,
+ * bleibt es gebührenfrei.
+ */
+describe('Verlegung: wer sie veranlasst hat', () => {
+  beforeEach(resetDatabase);
+
+  it('merkt bei einer kurzfristigen Verlegung durch die Patient:in eine Gebühr vor', async () => {
+    const termin = await terminIn(20);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'patient_moved',
+      ...(await eingangVorBeginn(termin, 23)),
+    ]);
+
+    expect(await zeile(termin.id)).toMatchObject({
+      status: 'cancelled',
+      cancellation_reason: 'patient_moved',
+      fee_basis: 'late_cancellation',
+    });
+  });
+
+  it('merkt bei einer rechtzeitigen Verlegung durch die Patient:in nichts vor', async () => {
+    const termin = await terminIn(30);
+    await asUserCommitted(users.office, ABSAGEN, [
+      termin.id,
+      termin.updated_at,
+      'patient_moved',
+      null,
+      null,
+    ]);
+
+    expect(await zeile(termin.id)).toMatchObject({
+      cancellation_reason: 'patient_moved',
+      fee_basis: null,
+    });
+  });
+
+  it('nimmt den alten Grund ohne Veranlasser nicht mehr an', async () => {
+    const termin = await terminIn(2);
+    await expect(
+      asUser(users.office, ABSAGEN, [termin.id, termin.updated_at, 'moved', null, null]),
+    ).rejects.toThrow(/cancellation reason is required/);
+  });
+
+  it('lässt Bestandszeilen mit dem alten Grund gültig', async () => {
+    const termin = await terminIn(2);
+    await asPostgres(
+      `update public.appointments
+          set status = 'cancelled', cancellation_reason = 'moved',
+              cancelled_at = now(), cancelled_by = $2::uuid
+        where id = $1`,
+      [termin.id, users.office],
+    );
+    expect(await zeile(termin.id)).toMatchObject({ cancellation_reason: 'moved', fee_basis: null });
+  });
+
+  it.each([['patient_moved'], ['patient_request'], ['moved']])(
+    'nimmt beim Umplanen eines Tages %s nicht an - der Ausfall ist praxisbedingt',
+    async (grund) => {
+      await expect(
+        asUser(users.office, 'select public.cancel_staff_day($1::uuid, current_date, $2)', [
+          TIM,
+          grund,
+        ]),
+      ).rejects.toThrow(/day rescheduling needs a practice reason/);
+    },
+  );
+});
+
+const VERZICHTEN = 'select public.waive_appointment_fee($1::uuid, $2::timestamptz) as id';
+
+async function kurzfristigAbgesagt(): Promise<Termin> {
+  const termin = await terminIn(2);
+  await asUserCommitted(users.office, ABSAGEN, [
+    termin.id,
+    termin.updated_at,
+    'patient_request',
+    null,
+    null,
+  ]);
+  return stand(termin.id);
+}
+
+describe('Verzicht auf die Gebühr', () => {
+  beforeEach(resetDatabase);
+
+  it('vermerkt den Verzicht und lässt den Anlass stehen', async () => {
+    const termin = await kurzfristigAbgesagt();
+    await asUserCommitted(users.office, VERZICHTEN, [termin.id, termin.updated_at]);
+
+    const nachher = await zeile(termin.id);
+    expect(nachher).toMatchObject({
+      status: 'cancelled',
+      fee_basis: 'late_cancellation',
+      fee_waived_by: users.office,
+    });
+    expect(nachher?.fee_waived_at).not.toBeNull();
+
+    const { rows } = await asPostgres<{ actor_user_id: string; context: Record<string, unknown> }>(
+      `select actor_user_id, context from public.audit_log
+        where action = 'appointment.fee_waived' and subject_id = $1`,
+      [termin.id],
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]!.actor_user_id).toBe(users.office);
+    expect(rows[0]!.context).toMatchObject({ surface: 'web', fee_basis: 'late_cancellation' });
+  });
+
+  it('nimmt den Termin aus den offenen Leistungen und lässt kein Ausfallhonorar mehr erfassen', async () => {
+    const termin = await kurzfristigAbgesagt();
+    const offen = async () =>
+      (
+        await asUserCommitted<{ appointment_id: string }>(
+          users.office,
+          'select appointment_id from public.list_open_billable_appointments(200)',
+          [],
+        )
+      ).rows.map((r) => r.appointment_id);
+    expect(await offen()).toContain(termin.id);
+
+    await asUserCommitted(users.office, VERZICHTEN, [termin.id, termin.updated_at]);
+
+    expect(await offen()).not.toContain(termin.id);
+    await expect(
+      asUser(users.office, 'select public.record_billable_services($1::uuid, $2::jsonb)', [
+        termin.id,
+        JSON.stringify([{ catalog_item_id: '00000000-0000-4000-8000-000000000000' }]),
+      ]),
+    ).rejects.toThrow(/neither documented nor a fee occasion/);
+  });
+
+  it('erlaubt den Verzicht nur owner und office', async () => {
+    const termin = await kurzfristigAbgesagt();
+    await expect(
+      asUser(users.therapist, VERZICHTEN, [termin.id, termin.updated_at]),
+    ).rejects.toThrow(/not allowed to waive fees/);
+    expect((await zeile(termin.id))?.fee_waived_at).toBeNull();
+  });
+
+  it('verzichtet nicht ohne Anlass und nicht zweimal', async () => {
+    const ohne = await terminIn(30);
+    await asUserCommitted(users.office, ABSAGEN, [
+      ohne.id,
+      ohne.updated_at,
+      'patient_request',
+      null,
+      null,
+    ]);
+    const ohneStand = await stand(ohne.id);
+    await expect(
+      asUser(users.office, VERZICHTEN, [ohneStand.id, ohneStand.updated_at]),
+    ).rejects.toThrow(/no fee occasion/);
+
+    const termin = await kurzfristigAbgesagt();
+    await asUserCommitted(users.office, VERZICHTEN, [termin.id, termin.updated_at]);
+    const verzichtet = await stand(termin.id);
+    await expect(
+      asUser(users.office, VERZICHTEN, [verzichtet.id, verzichtet.updated_at]),
+    ).rejects.toThrow(/already waived/);
+  });
+
+  it('verzichtet nicht mehr, wenn das Ausfallhonorar schon als Leistung erfasst ist', async () => {
+    const termin = await kurzfristigAbgesagt();
+    const { rows: entwurf } = await asUserCommitted<{ catalog_item_id: string }>(
+      users.office,
+      'select catalog_item_id from public.get_billable_service_draft($1::uuid) where suggested',
+      [termin.id],
+    );
+    expect(entwurf.length).toBeGreaterThan(0);
+    await asUserCommitted(
+      users.office,
+      'select public.record_billable_services($1::uuid, $2::jsonb)',
+      [termin.id, JSON.stringify([{ catalog_item_id: entwurf[0]!.catalog_item_id }])],
+    );
+    const nachher = await stand(termin.id);
+
+    await expect(
+      asUser(users.office, VERZICHTEN, [nachher.id, nachher.updated_at]),
+    ).rejects.toThrow(/already recorded as a service/);
+  });
+
+  it('weist eine fremde Organisation und ein Plattformkonto ab (Zweitreview B8)', async () => {
+    const termin = await kurzfristigAbgesagt();
+    const fremd = await fremdeOrganisation();
+    await expect(asUser(fremd.owner, VERZICHTEN, [termin.id, termin.updated_at])).rejects.toThrow(
+      /appointment not found/,
+    );
+    await expect(
+      asUser(users.plattformErika, VERZICHTEN, [termin.id, termin.updated_at]),
+    ).rejects.toThrow(/not allowed to waive fees/);
+    expect((await zeile(termin.id))?.fee_waived_at).toBeNull();
+  });
+
+  it('weist einen veralteten Stand ab', async () => {
+    const termin = await kurzfristigAbgesagt();
+    await expect(
+      asUser(users.office, VERZICHTEN, [termin.id, '2000-01-01T00:00:00Z']),
+    ).rejects.toThrow(/changed meanwhile/);
+  });
+
+  it('lässt keinen Verzicht ohne Anlass in der Tabelle zu und verwirft ihn mit dem Anlass', async () => {
+    const termin = await terminIn(30);
+    await expect(
+      asPostgres('update public.appointments set fee_waived_at = now() where id = $1', [termin.id]),
+    ).rejects.toThrow(/appointments_fee_waiver_needs_fee/);
+
+    const abgesagt = await kurzfristigAbgesagt();
+    await asUserCommitted(users.office, VERZICHTEN, [abgesagt.id, abgesagt.updated_at]);
+    // Fällt der Anlass weg, fällt der Verzicht mit (Trigger).
+    await asPostgres(
+      `update public.appointments
+          set fee_basis = null where id = $1`,
+      [abgesagt.id],
+    );
+    expect(await zeile(abgesagt.id)).toMatchObject({ fee_waived_at: null, fee_waived_by: null });
   });
 });

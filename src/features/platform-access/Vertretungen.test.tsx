@@ -73,7 +73,8 @@ const PAULA: Vertretung = {
   revoked_at: null,
   revoked_reason: null,
   proof_documents: ['identity_document'],
-  guardianship_health_scope: null,
+  health_scope: null,
+  finance_scope: false,
   proof_recorded_at: '2026-10-01T08:00:00+00:00',
   proof_recorded_by_name: 'Olivia Office',
   consent_recorded_at: '2026-10-01T08:00:00+00:00',
@@ -177,6 +178,7 @@ describe('Vertretungen', () => {
         aufgabenkreis: null,
         fassung: EINWILLIGUNG_BEGLEITUNG_FASSUNG,
         fruehereNachrichten: false,
+        rechnungen: false,
       }),
     );
     // Der Code ist für die vertretende Person, mit eigenem Konto.
@@ -236,8 +238,57 @@ describe('Vertretungen', () => {
         aufgabenkreis: true,
         fassung: null,
         fruehereNachrichten: null,
+        rechnungen: false,
       }),
     );
+  });
+
+  /** ABN-010 (BEF-119): Vollmacht nur mit Gesundheitssorge, Rechnungen nur mit Vermögenssorge. */
+  it('richtet eine Vorsorgevollmacht mit Gesundheits- und Vermögenssorge ein', async () => {
+    const user = userEvent.setup();
+    zeige();
+    await user.click(await screen.findByRole('button', { name: 'Vertretung einrichten' }));
+    const formular = screen.getByRole('form', { name: 'Vertretung einrichten' });
+    await user.click(within(formular).getByRole('radio', { name: /Rechtliche Vertretung/ }));
+    await user.selectOptions(
+      within(formular).getByLabelText('Worauf beruht die Vertretung?'),
+      'power_of_attorney',
+    );
+    await user.type(
+      within(formular).getByLabelText('Name der vertretenden Person'),
+      'Vera Vollmacht',
+    );
+    await user.click(within(formular).getByLabelText('Ausweis der vertretenden Person'));
+    await user.click(within(formular).getByLabelText('Vollmacht'));
+    const senden = within(formular).getByRole('button', { name: 'Code anzeigen' });
+    expect(senden).toBeDisabled();
+    await user.click(within(formular).getByLabelText('Die Vollmacht umfasst die Gesundheitssorge'));
+    await user.click(
+      within(formular).getByLabelText('Die Vollmacht umfasst die Vermögenssorge (Rechnungen)'),
+    );
+    await user.click(senden);
+    await waitFor(() =>
+      expect(invitePlatformRepresentation).toHaveBeenCalledWith('treatment', MAX, {
+        zugangsart: 'legal_representative',
+        grundlage: 'power_of_attorney',
+        name: 'Vera Vollmacht',
+        dokumente: ['identity_document', 'power_of_attorney'],
+        aufgabenkreis: true,
+        fassung: null,
+        fruehereNachrichten: null,
+        rechnungen: true,
+      }),
+    );
+  });
+
+  it('nennt im Wortlaut der Begleitung die Rechnungen nur mit Einwilligung (BEF-116)', async () => {
+    const user = userEvent.setup();
+    zeige();
+    await user.click(await screen.findByRole('button', { name: 'Vertretung einrichten' }));
+    const formular = screen.getByRole('form', { name: 'Vertretung einrichten' });
+    expect(formular).toHaveTextContent('sieht meine Rechnungen und Zahlungen nicht');
+    await user.click(within(formular).getByLabelText('Rechnungen und Zahlungen sind sichtbar'));
+    expect(formular).toHaveTextContent('sieht auch meine Rechnungen und Zahlungen');
   });
 
   it('vermerkt einen Zweifel und laesst dann nur die rechtliche Vertretung zu', async () => {

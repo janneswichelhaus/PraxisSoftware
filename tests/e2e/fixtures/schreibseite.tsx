@@ -64,6 +64,7 @@ const termin: Appointment = {
   no_show_protocol_confirmed: null,
   cancellation_received_at: null,
   fee_basis: null,
+  fee_waived_at: null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
   staff_given_name: 'Anna',

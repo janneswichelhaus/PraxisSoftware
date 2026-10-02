@@ -224,7 +224,7 @@ describe('PracticeProfilePage', () => {
         'Straße: Bitte ausfüllen.',
         'PLZ: Bitte ausfüllen.',
         'Ort: Bitte ausfüllen.',
-        'Steuernummer: Bitte ausfüllen.',
+        'Steuernummer oder USt-IdNr.: Bitte eine von beiden angeben.',
         'Umsatzsteuerlicher Status: Bitte wählen.',
         'Bitte die vollständige IBAN eingeben.',
       ]) {

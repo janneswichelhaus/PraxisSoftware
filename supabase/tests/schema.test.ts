@@ -115,6 +115,8 @@ describe('Schema-Invarianten', () => {
       'appointment_call_states',
       'platform_accesses',
       'platform_access_invitations',
+      // ABN-011: Löschaufträge für Plattformkonten, Organisation fürs Journal.
+      'platform_account_deletions',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

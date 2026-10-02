@@ -177,6 +177,36 @@ describe('Praxis-Stammdaten fuer Rechnungen', () => {
       ).rejects.toThrow(/vat status must be stated explicitly/);
     });
 
+    /** ABN-008 (BEF-100): Steuernummer oder USt-IdNr. (Par. 14 Abs. 4 Nr. 2 UStG). */
+    it('speichert mit USt-IdNr. ohne Steuernummer', async () => {
+      await asUserCommitted(
+        users.ownerTherapist,
+        SPEICHERN,
+        stammdaten({ tax_number: '', vat_id: 'DE123456789' }),
+      );
+      const { rows } = await asPostgres<{ tax_number: string | null; vat_id: string | null }>(
+        'select tax_number, vat_id from public.practice_billing_profiles where organization_id = $1',
+        [organizationId],
+      );
+      expect(rows[0]).toEqual({ tax_number: null, vat_id: 'DE123456789' });
+    });
+
+    it('weist Stammdaten ohne Steuernummer und ohne USt-IdNr. ab - auch an der Tabelle', async () => {
+      await expect(
+        asUserCommitted(
+          users.ownerTherapist,
+          SPEICHERN,
+          stammdaten({ tax_number: '  ', vat_id: null }),
+        ),
+      ).rejects.toThrow(/a tax number or a vat id is required/);
+      await expect(
+        asPostgres(
+          'update public.practice_billing_profiles set tax_number = null, vat_id = null where organization_id = $1',
+          [organizationId],
+        ),
+      ).rejects.toThrow(/practice_billing_profiles_tax_id_present/);
+    });
+
     it('weist eine unplausible IBAN ab', async () => {
       await expect(
         asUser(users.ownerTherapist, SPEICHERN, stammdaten({ iban: 'kein Konto' })),

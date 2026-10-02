@@ -20,8 +20,8 @@ import { Laengenzeichen } from './Laengenzeichen';
 import { istIsoDatum } from './calendar';
 import {
   appointmentTypeHint,
-  cancellationReasonLabels,
   cancellationReasonSchema,
+  waehlbareAbsagegruende,
   cancelStaffDay,
   fetchAssignableTherapists,
   formatLocalDate,
@@ -328,13 +328,11 @@ function Umplanung({
                               Frist eine Ausfallgebühr vorgemerkt; seit CAL-016
                               weist ihn auch der Server ab (ADR-018 Fassung 2
                               Punkt 8.4). */}
-                          {Object.entries(cancellationReasonLabels)
-                            .filter(([wert]) => wert !== 'patient_request')
-                            .map(([wert, beschriftung]) => (
-                              <option key={wert} value={wert}>
-                                {beschriftung}
-                              </option>
-                            ))}
+                          {waehlbareAbsagegruende(true).map(([wert, beschriftung]) => (
+                            <option key={wert} value={wert}>
+                              {beschriftung}
+                            </option>
+                          ))}
                         </Select>
                       </div>
 

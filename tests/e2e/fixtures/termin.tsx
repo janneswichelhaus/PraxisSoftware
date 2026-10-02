@@ -22,10 +22,14 @@ import '@/index.css';
  * Tür: der bestätigte Hausbesuch mit dem Ablauf „Niemand öffnet?"), `fremd`
  * (Jannes am bestätigten Hausbesuch von Anna, mit Mitteilungszeichen),
  * `praxis` (ein Praxistermin: die Ausnahme trägt ihr Kennzeichen) und
- * `abgesagt` (die Absage mit Grund und Ausfallhonorar). Die Daten liegen
+ * `abgesagt` (die Absage mit Grund und Ausfallhonorar), `verlegt` (das Büro
+ * an einer kurzfristigen Verlegung durch die Patient:in, mit „Auf die Gebühr
+ * verzichten“, ABN-006) und `verzichtet` (danach). Die Daten liegen
  * vorab im Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const ansicht = new URLSearchParams(window.location.search).get('ansicht') ?? 'behandelnd';
+/** ABN-006: Verlegung und Verzicht sind Absagen, gesehen vom Büro. */
+const abgesagt = ansicht === 'abgesagt' || ansicht === 'verlegt' || ansicht === 'verzichtet';
 
 const ZONE = 'Europe/Berlin';
 const TERMIN = '77777777-7777-4777-8777-000000000001';
@@ -53,7 +57,7 @@ function nutzer(rolle: RoleKey, name: string, staff: string | null): CurrentUser
 }
 
 const benutzer =
-  ansicht === 'buero'
+  ansicht === 'buero' || ansicht === 'verlegt' || ansicht === 'verzichtet'
     ? nutzer('office', 'Olivia Office', '55555555-5555-4555-8555-000000000003')
     : ansicht === 'fremd'
       ? nutzer('owner', 'Jannes Test', '55555555-5555-4555-8555-000000000001')
@@ -72,7 +76,7 @@ const termin: Appointment = {
   staff_member_id: ANNA,
   location_id: ansicht === 'praxis' ? '33333333-3333-4333-8333-000000000001' : null,
   appointment_type: ansicht === 'praxis' ? 'practice' : 'home_visit',
-  status: ansicht === 'abgesagt' ? 'cancelled' : offen ? 'confirmed' : 'documented',
+  status: abgesagt ? 'cancelled' : offen ? 'confirmed' : 'documented',
   // Ein kommender Termin, damit der Ablauf vor der Tür und die Absage
   // mit Frist so aussehen wie im Alltag.
   starts_at: offen ? '2027-05-12T08:00:00.000Z' : '2026-09-28T08:00:00.000Z',
@@ -82,12 +86,14 @@ const termin: Appointment = {
   visit_house_number: ansicht === 'praxis' ? null : '12',
   visit_postal_code: ansicht === 'praxis' ? null : '72070',
   visit_city: ansicht === 'praxis' ? null : 'Tuebingen',
-  completed_at: offen || ansicht === 'abgesagt' ? null : '2026-09-28T09:05:00.000Z',
-  cancellation_reason: ansicht === 'abgesagt' ? 'patient_request' : null,
+  completed_at: offen || abgesagt ? null : '2026-09-28T09:05:00.000Z',
+  cancellation_reason:
+    ansicht === 'abgesagt' ? 'patient_request' : abgesagt ? 'patient_moved' : null,
   no_show_recorded_at: null,
   no_show_protocol_confirmed: null,
-  cancellation_received_at: ansicht === 'abgesagt' ? '2026-09-27T17:30:00.000Z' : null,
-  fee_basis: ansicht === 'abgesagt' ? 'late_cancellation' : null,
+  cancellation_received_at: abgesagt ? '2026-09-27T17:30:00.000Z' : null,
+  fee_basis: abgesagt ? 'late_cancellation' : null,
+  fee_waived_at: ansicht === 'verzichtet' ? '2026-09-28T07:15:00.000Z' : null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
   staff_given_name: 'Anna',
@@ -196,7 +202,7 @@ const client = new QueryClient({
 });
 client.setQueryData(['appointment', TERMIN], termin);
 client.setQueryData(['treatment-note', TERMIN], {
-  primary: offen || ansicht === 'abgesagt' ? null : eintrag,
+  primary: offen || abgesagt ? null : eintrag,
   addenda: [],
 });
 // Die Rufnummer im Ablauf „Niemand öffnet?" kommt aus der Tagesliste (UX-005b).

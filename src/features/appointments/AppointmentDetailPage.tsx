@@ -26,6 +26,7 @@ import {
   canManageAppointments,
   canReadTreatmentNote,
   canRecordAtAppointment,
+  canRecordBillableServices,
   canWriteTreatmentBases,
   canWriteTreatmentNote,
   type CurrentUser,
@@ -45,6 +46,7 @@ import {
   fetchEventSeries,
   cancellationReasonLabels,
   cancellationReasonSchema,
+  waehlbareAbsagegruende,
   type CancellationReason,
   fetchAppointment,
   folgeterminVorbelegung,
@@ -55,6 +57,7 @@ import {
   patientName,
   recordNoShow,
   reopenAppointment,
+  waiveAppointmentFee,
   schreibeTerminVorbelegung,
   staffName,
   todayInTimeZone,
@@ -146,7 +149,7 @@ function ZustandKarte({
   const honorar = appointment.fee_basis ? (
     // Ohne den Satz „Wird unter Abrechnung → Leistungen erfasst.": gestrichen
     // im Design-Handoff vom 2026-10-01 (Abschnitt 1).
-    <DetailRow label="Ausfallhonorar vorgemerkt">{feeBasisLabels[appointment.fee_basis]}</DetailRow>
+    <DetailRow label={honorarBeschriftung(appointment)}>{honorarText(appointment)}</DetailRow>
   ) : null;
 
   const wiederOeffnen = darfWiederOeffnen ? (
@@ -219,6 +222,59 @@ function ZustandKarte({
 }
 
 /**
+ * Die Zeile zum Ausfallhonorar (ABN-006): Nach einem Verzicht bleibt der
+ * Anlass sichtbar — er ist eine Tatsache —, daneben steht, dass und wann
+ * verzichtet wurde. Wer verzichtet hat, steht im Protokoll (ADR-010).
+ */
+function honorarBeschriftung(appointment: Appointment): string {
+  return appointment.fee_waived_at ? 'Ausfallhonorar' : 'Ausfallhonorar vorgemerkt';
+}
+
+function honorarText(appointment: Appointment): string {
+  const anlass = appointment.fee_basis ? feeBasisLabels[appointment.fee_basis] : '';
+  if (!appointment.fee_waived_at) return anlass;
+  return `${anlass} · verzichtet am ${formatLocalDate(
+    appointment.fee_waived_at,
+    appointment.organization_time_zone,
+  )}`;
+}
+
+/**
+ * Bewusster Verzicht auf die Gebühr (ABN-006, BEF-094) — nur owner und office,
+ * nur solange aus dem Anlass nichts erfasst oder abgerechnet ist. Die
+ * Rückfrage nennt die Folge; verbindlich prüft `waive_appointment_fee`.
+ */
+function GebuehrVerzicht({ appointment, melden }: { appointment: Appointment; melden: Melden }) {
+  const queryClient = useQueryClient();
+  const mutation = useMutation({
+    mutationFn: () => waiveAppointmentFee(appointment.id, appointment.updated_at),
+    onSuccess: () => {
+      nachladen(queryClient, ['appointment', appointment.id], ['appointments']);
+      melden('Auf die Gebühr verzichtet.');
+    },
+  });
+  return (
+    <div className="mt-3 flex">
+      <Rueckfrage
+        ausloeser="Auf die Gebühr verzichten"
+        ausloeserVariante="quiet"
+        bezeichnung="Auf die Gebühr verzichten"
+        bestaetigen="Ja, verzichten"
+        bestaetigenLaeuft="Wird vermerkt …"
+        fehler={mutation.isError ? mutation.error.message : undefined}
+        laeuft={mutation.isPending}
+        onBestaetigen={() => mutation.mutateAsync()}
+      >
+        <p>
+          Der Anlass bleibt vermerkt, eine Gebühr entsteht daraus nicht mehr. Der Verzicht steht im
+          Protokoll und lässt sich nicht zurücknehmen.
+        </p>
+      </Rueckfrage>
+    </div>
+  );
+}
+
+/**
  * Was aus dem Termin geworden ist, als Zeilen der Zeilenliste (Design-Handoff
  * 2026-10-01, Abschnitt 6, Zyklus 3) - dieselben Angaben wie bisher die
  * Karte: Absagegrund, Eingang, Vermerk, Protokoll, Ausfallhonorar.
@@ -228,7 +284,7 @@ function ZustandZeilen({ appointment }: { appointment: Appointment }) {
   const zeitpunkt = (iso: string) =>
     `${formatLocalDate(iso, zone)}, ${formatLocalTime(iso, zone)} Uhr`;
   const honorar = appointment.fee_basis ? (
-    <Zeile label="Ausfallhonorar vorgemerkt">{feeBasisLabels[appointment.fee_basis]}</Zeile>
+    <Zeile label={honorarBeschriftung(appointment)}>{honorarText(appointment)}</Zeile>
   ) : null;
 
   if (appointment.status === 'cancelled') {
@@ -421,13 +477,11 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
           }}
         >
           <option value="">Bitte wählen …</option>
-          {Object.entries(cancellationReasonLabels)
-            .filter(([wert]) => !istEreignis || wert !== 'patient_request')
-            .map(([wert, beschriftung]) => (
-              <option key={wert} value={wert}>
-                {beschriftung}
-              </option>
-            ))}
+          {waehlbareAbsagegruende(istEreignis).map(([wert, beschriftung]) => (
+            <option key={wert} value={wert}>
+              {beschriftung}
+            </option>
+          ))}
         </Select>
 
         {/* Der Eingang, getrennt vom Zeitpunkt der Eingabe (§8, ADR-018
@@ -489,9 +543,9 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
         </p>
       ) : (
         <p className="text-ink-muted mt-3 text-sm">
-          Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt,
-          merkt die Anwendung ein Ausfallhonorar vor. Die Frist wird automatisch berechnet; genau 24
-          Stunden vorher gilt noch als rechtzeitig.
+          Liegt der Eingang weniger als 24 Stunden vor dem Beginn und hat die Patient:in abgesagt
+          oder verlegt, merkt die Anwendung ein Ausfallhonorar vor. Die Frist wird automatisch
+          berechnet; genau 24 Stunden vorher gilt noch als rechtzeitig.
         </p>
       )}
     </Rueckfrage>
@@ -581,13 +635,11 @@ function EreignisAbsageAktion({
           }}
         >
           <option value="">Bitte wählen …</option>
-          {Object.entries(cancellationReasonLabels)
-            .filter(([wert]) => wert !== 'patient_request')
-            .map(([wert, beschriftung]) => (
-              <option key={wert} value={wert}>
-                {beschriftung}
-              </option>
-            ))}
+          {waehlbareAbsagegruende(true).map(([wert, beschriftung]) => (
+            <option key={wert} value={wert}>
+              {beschriftung}
+            </option>
+          ))}
         </Select>
       </div>
       <p className="text-ink-muted mt-3 text-sm">
@@ -687,13 +739,11 @@ function SerieAbsageAktion({ appointment, melden }: { appointment: Appointment; 
           }}
         >
           <option value="">Bitte wählen …</option>
-          {Object.entries(cancellationReasonLabels)
-            .filter(([wert]) => wert !== 'patient_request')
-            .map(([wert, beschriftung]) => (
-              <option key={wert} value={wert}>
-                {beschriftung}
-              </option>
-            ))}
+          {waehlbareAbsagegruende(true).map(([wert, beschriftung]) => (
+            <option key={wert} value={wert}>
+              {beschriftung}
+            </option>
+          ))}
         </Select>
       </div>
       <p className="text-ink-muted mt-3 text-sm">
@@ -880,6 +930,12 @@ function AppointmentDetail({
   const darfWiederOeffnen =
     darfVerwalten && (appointment.status === 'completed' || appointment.status === 'no_show');
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
+  // ABN-006: Verzichten dürfen, wer ein Ausfallhonorar erfasst (owner, office).
+  const darfVerzichten =
+    canRecordBillableServices(user.roles) &&
+    appointment.fee_basis !== null &&
+    appointment.fee_waived_at === null &&
+    (appointment.status === 'cancelled' || appointment.status === 'no_show');
   /**
    * Eine Fehlzeit des Praxisbetriebs (CAL-015b).
    *
@@ -1151,6 +1207,7 @@ function AppointmentDetail({
               melden={melden}
             />
           )}
+          {darfVerzichten ? <GebuehrVerzicht appointment={appointment} melden={melden} /> : null}
 
           {istEreignis ? (
             <Section titel="Fehlzeit" rahmen>

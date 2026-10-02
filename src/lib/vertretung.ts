@@ -44,8 +44,13 @@ export function vollmachtsdokument(grundlage: Rechtsgrundlage): Nachweisdokument
   return 'power_of_attorney';
 }
 
-/** Kennung der geltenden Fassung; dieselbe steht in der Datenbank. */
-export const EINWILLIGUNG_BEGLEITUNG_FASSUNG = 'begleitung-2026-10-02';
+/**
+ * Kennung der geltenden Fassung; dieselbe steht in der Datenbank. Seit
+ * ABN-010 nennt der Wortlaut den Umfang je Bereich, auch die Rechnungen
+ * (BEF-116); die Fassung `begleitung-2026-10-02` bleibt an den Einwilligungen,
+ * die mit ihr erteilt wurden.
+ */
+export const EINWILLIGUNG_BEGLEITUNG_FASSUNG = 'begleitung-2026-10-02b';
 
 /**
  * Der Wortlaut der Einwilligung zur Begleitung (Art. 9 Abs. 2 lit. a DSGVO,
@@ -57,11 +62,15 @@ export function einwilligungBegleitung(angaben: {
   begleitung: string;
   praxis: string;
   fruehereNachrichten: boolean;
+  rechnungen: boolean;
 }): string[] {
   const name = angaben.begleitung.trim() || '…';
   return [
     `Ich möchte, dass ${name} mich auf der Plattform von ${angaben.praxis} begleitet und dafür ein eigenes Konto bekommt.`,
-    `${name} sieht meine Termine, meine Rechnungen und die Unterlagen, die die Praxis für mich freigibt, und kann für mich Terminwünsche und Nachrichten an die Praxis schreiben.`,
+    `${name} sieht meine Termine und die Unterlagen, die die Praxis für mich freigibt, und kann für mich Terminwünsche und Nachrichten an die Praxis schreiben.`,
+    angaben.rechnungen
+      ? `${name} sieht auch meine Rechnungen und Zahlungen.`
+      : `${name} sieht meine Rechnungen und Zahlungen nicht.`,
     angaben.fruehereNachrichten
       ? `${name} sieht auch meine früheren Nachrichten mit den Antworten der Praxis.`
       : `${name} sieht nur Nachrichten ab heute, nicht meine früheren.`,

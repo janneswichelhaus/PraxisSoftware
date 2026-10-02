@@ -25,7 +25,6 @@ import {
 } from '@/features/session/types';
 import {
   KeineStammdaten,
-  ZahlungStehtNoch,
   bereichLabels,
   deleteEntwurf,
   empfaengerartLabels,
@@ -41,8 +40,9 @@ import {
   steuerLabels,
   stelleRechnungAus,
   storniereRechnung,
+  verrechneMitKorrektur,
   zahlungsstandLabels,
-  zahlungswegLabels,
+  zahlungswegAnzeige,
   type Empfaenger,
   type Rechnungsansicht,
 } from './api';
@@ -427,7 +427,11 @@ function Rechnungsbild({
             {`${dokument.issuer.street} ${dokument.issuer.house_number ?? ''}`.trim()},{' '}
             {dokument.issuer.postal_code} {dokument.issuer.city}
           </p>
-          <p className="text-ink-muted mt-1 text-sm">Steuernummer {dokument.issuer.tax_number}</p>
+          <p className="text-ink-muted mt-1 text-sm">
+            {dokument.issuer.tax_number
+              ? `Steuernummer ${dokument.issuer.tax_number}`
+              : `USt-IdNr. ${dokument.issuer.vat_id ?? ''}`}
+          </p>
           {/* Beschriftet und in Vierergruppen (ABR-28); gespeichert bleibt sie,
               wie sie ist. */}
           <p className="text-ink-muted text-sm">
@@ -570,7 +574,7 @@ function Zahlungen({
             >
               <span className="text-ink text-liste">
                 {richtungLabels[zahlung.direction]} ·{' '}
-                {zahlungswegLabels[zahlung.method] ?? zahlung.method}
+                {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
               </span>
               {zahlung.voided_at !== null ? (
                 <span className="ml-2">
@@ -602,7 +606,20 @@ function Zahlungen({
 
         <div className="border-line mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-t pt-3">
           {storniert ? (
-            <span className="text-ink text-liste font-semibold">Storniert – keine Forderung</span>
+            // ABN-008: Was vor dem Storno eingegangen ist, bleibt stehen, bis
+            // es zurückgezahlt oder mit der Korrekturrechnung verrechnet ist.
+            ansicht.paid_cents > 0 ? (
+              <>
+                <span className="text-ink text-liste font-semibold">
+                  Storniert – eingegangen, noch zurückzuzahlen oder zu verrechnen
+                </span>
+                <span className="text-ink text-liste font-semibold tabular-nums">
+                  {formatEuro(ansicht.paid_cents, waehrung)}
+                </span>
+              </>
+            ) : (
+              <span className="text-ink text-liste font-semibold">Storniert – keine Forderung</span>
+            )
           ) : (
             <>
               <span className="flex flex-wrap items-center gap-2">
@@ -620,12 +637,14 @@ function Zahlungen({
         </div>
       </Inhaltsflaeche>
 
-      {/* An einer stornierten Rechnung wird nicht mehr gebucht: Der Server
-          weist die Zahlung ab (R3-004), und ein Formular, das nur noch
-          Fehlermeldungen erzeugt, ist kein Angebot. Die bereits gebuchten
-          Zahlungen bleiben darüber stehen — dieselbe Linie wie bei der
-          Zahlungserinnerung. Das Formular steht außerhalb des Rahmens: Der
-          Rahmen gehört der Auskunft (UI-002c, ABR-33). */}
+      {/* An einer stornierten Rechnung geht kein Eingang mehr ein (R3-004).
+          Seit ABN-008 steht dort, solange Geld eingegangen ist, die
+          Rückzahlung und die Verrechnung mit der Korrekturrechnung. Das
+          Formular steht außerhalb des Rahmens: Der Rahmen gehört der Auskunft
+          (UI-002c, ABR-33). */}
+      {darfBuchen && zeitzone !== null && storniert && ansicht.paid_cents > 0 ? (
+        <Guthaben ansicht={ansicht} waehrung={waehrung} zeitzone={zeitzone} />
+      ) : null}
       {darfBuchen && zeitzone !== null && !storniert ? (
         formularOffen ? (
           <Zahlungsformular
@@ -644,6 +663,90 @@ function Zahlungen({
         )
       ) : null}
     </Section>
+  );
+}
+
+/**
+ * Der eingegangene Betrag an einer stornierten Rechnung (ABN-008, BEF-100).
+ *
+ * Er verschwindet nicht mit dem Storno. Zwei Wege führen ihn ab: die
+ * tatsächliche Rückzahlung an die Zahlende und die Verrechnung mit der
+ * ausgestellten Korrekturrechnung. Ein Zahlungsstorno ist keiner davon — es
+ * korrigiert nur eine falsche Buchung (ANN-079 Fassung 2, ANN-215).
+ */
+function Guthaben({
+  ansicht,
+  waehrung,
+  zeitzone,
+}: {
+  ansicht: Rechnungsansicht;
+  waehrung: string;
+  zeitzone: string;
+}) {
+  const queryClient = useQueryClient();
+  const [weg, setWeg] = useState<'keiner' | 'rueckzahlung'>('keiner');
+  const korrektur = ansicht.correction_invoice_number ? ansicht.correction_invoice_id : null;
+
+  const verrechnen = useMutation({
+    mutationFn: () =>
+      verrechneMitKorrektur({
+        stornierteId: ansicht.id,
+        korrekturId: korrektur ?? '',
+        betragCent: ansicht.paid_cents,
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
+      await queryClient.invalidateQueries({ queryKey: ['rechnungszahlungen', ansicht.id] });
+      if (korrektur) {
+        await queryClient.invalidateQueries({ queryKey: ['rechnung', korrektur] });
+        await queryClient.invalidateQueries({ queryKey: ['rechnungszahlungen', korrektur] });
+      }
+      await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
+      await queryClient.invalidateQueries({ queryKey: ['offene-posten'] });
+      await queryClient.invalidateQueries({ queryKey: ['zahlungen'] });
+    },
+  });
+
+  return (
+    <div className="mt-4 flex flex-col gap-3">
+      <div className="flex flex-wrap gap-2">
+        {korrektur ? (
+          <Rueckfrage
+            ausloeser={`Mit Korrekturrechnung ${ansicht.correction_invoice_number ?? ''} verrechnen`}
+            bestaetigen="Verrechnung buchen"
+            bestaetigenLaeuft="Wird gebucht …"
+            laeuft={verrechnen.isPending}
+            fehler={verrechnen.isError ? verrechnen.error.message : undefined}
+            onBestaetigen={() => verrechnen.mutateAsync()}
+          >
+            <p className="text-ink-muted text-sm">
+              {formatEuro(ansicht.paid_cents, waehrung)} gehen von dieser Rechnung auf die
+              Korrekturrechnung über: hier als Rückzahlung, dort als Eingang, beide als Verrechnung.
+            </p>
+          </Rueckfrage>
+        ) : null}
+        {weg === 'keiner' ? (
+          <Button type="button" variant="secondary" onClick={() => setWeg('rueckzahlung')}>
+            Rückzahlung buchen
+          </Button>
+        ) : null}
+      </div>
+      {!korrektur ? (
+        <p className="text-ink-muted text-sm">
+          Verrechnen lässt sich mit der Korrekturrechnung, sobald sie ausgestellt ist.
+        </p>
+      ) : null}
+      {weg === 'rueckzahlung' ? (
+        <Zahlungsformular
+          invoiceId={ansicht.id}
+          offenCent={0}
+          eingegangenCent={ansicht.paid_cents}
+          waehrung={waehrung}
+          zeitzone={zeitzone}
+          nurRueckzahlung
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -799,13 +902,9 @@ function Stornokette({
   const [grund, setGrund] = useState('');
   const [fehler, setFehler] = useState<string | undefined>(undefined);
 
-  // Dieselbe Abfrage wie die Zahlungsliste darüber - ein Eintrag im Cache.
-  const zahlungen = useQuery({
-    queryKey: ['rechnungszahlungen', ansicht.id],
-    queryFn: () => fetchRechnungszahlungen(ansicht.id),
-    retry: false,
-  });
-  const zahlungSteht = (zahlungen.data ?? []).some((zahlung) => zahlung.voided_at === null);
+  // ABN-008: Eine stehende Zahlung sperrt das Storno nicht mehr; die
+  // Rückfrage sagt, was mit dem eingegangenen Betrag geschieht.
+  const eingegangen = ansicht.paid_cents > 0;
 
   const stornieren = useMutation({
     mutationFn: () => storniereRechnung(ansicht.id, grund.trim()),
@@ -887,25 +986,13 @@ function Stornokette({
       {/* Was das Storno bedeutet, steht in der Rückfrage - dort, wo
           entschieden wird, nicht als Vorrede (UX-005i). */}
       <div>
-        {zahlungSteht ? (
-          <Statusmeldung>
-            Zuerst die gebuchte Zahlung oben stornieren. Erst danach lässt sich die Rechnung
-            stornieren – sonst bliebe ein Geldeingang ohne Forderung.
-          </Statusmeldung>
-        ) : (
+        {
           <Rueckfrage
             ausloeser="Rechnung stornieren"
             bestaetigen="Storno ausstellen"
             bestaetigenLaeuft="Wird storniert …"
             laeuft={stornieren.isPending}
-            fehler={
-              fehler ??
-              (stornieren.error instanceof ZahlungStehtNoch
-                ? 'Zu dieser Rechnung ist eine Zahlung gebucht. Erst die Zahlung stornieren, dann die Rechnung – sonst bliebe ein Geldeingang ohne Forderung.'
-                : stornieren.isError
-                  ? stornieren.error.message
-                  : undefined)
-            }
+            fehler={fehler ?? (stornieren.isError ? stornieren.error.message : undefined)}
             onBestaetigen={() => {
               if (grund.trim().length < 3) {
                 setFehler('Bitte einen Grund angeben – er steht auf dem Stornodokument.');
@@ -927,12 +1014,19 @@ function Stornokette({
               Nummer und lässt sich nicht zurücknehmen. Danach sind die Leistungen wieder
               abzurechnen, und eine Korrekturrechnung lässt sich aus ihnen erstellen.
             </p>
+            {eingegangen ? (
+              <p className="text-ink-muted mt-2 text-sm">
+                Auf diese Rechnung sind {formatEuro(ansicht.paid_cents, ansicht.document.currency)}{' '}
+                eingegangen. Der Betrag bleibt nach dem Storno stehen und wird zurückgezahlt oder
+                mit der Korrekturrechnung verrechnet.
+              </p>
+            ) : null}
             {/* Eine Zeile Grund, keine Seitenbreite (ABR-23). */}
             <div className="mt-2 max-w-xl">
               <Field label="Grund" value={grund} onChange={(e) => setGrund(e.target.value)} />
             </div>
           </Rueckfrage>
-        )}
+        }
       </div>
     </Section>
   );

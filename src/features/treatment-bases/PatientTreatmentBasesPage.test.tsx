@@ -11,6 +11,7 @@ import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
 const fetchPatientTreatmentBasisSlots = vi.fn();
+const setTreatmentBasisClinicalNote = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof TreatmentBasesApi>();
@@ -22,6 +23,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchPatientTreatmentBasesClinical(id) as Promise<TreatmentBasesApi.ClinicalTreatmentBasis[]>,
     fetchPatientTreatmentBasisSlots: (id: string) =>
       fetchPatientTreatmentBasisSlots(id) as Promise<TreatmentBasesApi.TreatmentBasisKontingent[]>,
+    setTreatmentBasisClinicalNote: (id: string, text: string, stand: string) =>
+      setTreatmentBasisClinicalNote(id, text, stand) as Promise<void>,
   };
 });
 
@@ -126,6 +129,69 @@ describe('Verordnungsbereich der Akte', () => {
     fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     fetchBerichteDerAkte.mockReset();
     fetchBerichteDerAkte.mockResolvedValue([]);
+  });
+
+  // ---------------------------------------------------------------------------
+  // ABN-007 (BEF-098): Der behandlungsrelevante Hinweis ist klinisch, getrennt
+  // von den Anmerkungen. Erfassen die behandelnden Rollen, lesen alle mit dem
+  // Leserecht der Dokumentation.
+  // ---------------------------------------------------------------------------
+  describe('Behandlungsrelevanter Hinweis (ABN-007)', () => {
+    it('lässt die Therapeut:in den Hinweis erfassen', async () => {
+      setTreatmentBasisClinicalNote.mockReset();
+      setTreatmentBasisClinicalNote.mockResolvedValue(undefined);
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      const user = userEvent.setup();
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      await user.click(
+        await screen.findByRole('button', { name: 'Behandlungsrelevanten Hinweis erfassen' }),
+      );
+      await user.type(
+        screen.getByLabelText('Behandlungsrelevanter Hinweis'),
+        'Synthetisch: keine Belastung über 20 kg.',
+      );
+      await user.click(screen.getByRole('button', { name: 'Hinweis speichern' }));
+
+      expect(setTreatmentBasisClinicalNote).toHaveBeenCalledWith(
+        'v1',
+        'Synthetisch: keine Belastung über 20 kg.',
+        '2026-06-18T10:00:00.000Z',
+      );
+      expect(await screen.findByText('Hinweis gespeichert.')).toBeInTheDocument();
+    });
+
+    it('zeigt office den Hinweis, getrennt von den Anmerkungen, ohne ihn ändern zu lassen', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([
+        verordnung({
+          prescriber_note: 'Synthetisch: Belastungsgrenze.',
+          note: 'Synthetisch: Rezept liegt im Büro.',
+        }),
+      ]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByText('Synthetisch: Belastungsgrenze.')).toBeInTheDocument();
+      expect(screen.getByText('Behandlungsrelevanter Hinweis')).toBeInTheDocument();
+      expect(screen.getByText('Synthetisch: Rezept liegt im Büro.')).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Behandlungsrelevanten Hinweis/ }),
+      ).not.toBeInTheDocument();
+    });
+
+    it('bietet am Selbstzahler keinen Hinweis an', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([
+        verordnung({ treatment_basis_kind: 'self_pay', prescriber_id: null, diagnosis: null }),
+      ]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      await screen.findByText(/Selbstzahler/);
+      expect(
+        screen.queryByRole('button', { name: /Behandlungsrelevanten Hinweis/ }),
+      ).not.toBeInTheDocument();
+    });
   });
 
   // ---------------------------------------------------------------------------

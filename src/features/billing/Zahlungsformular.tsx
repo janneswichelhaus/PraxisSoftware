@@ -61,6 +61,7 @@ export function Zahlungsformular({
   waehrung,
   zeitzone,
   onFertig,
+  nurRueckzahlung = false,
 }: {
   invoiceId: string;
   /** Der offene Betrag als Vorbelegung. Bei Überzahlung negativ — dann leer. */
@@ -71,10 +72,22 @@ export function Zahlungsformular({
   zeitzone: string;
   /** Nach dem Buchen, mit dem, was gebucht wurde. */
   onFertig?: ((buchung: Buchung) => void) | undefined;
+  /**
+   * An einer stornierten Rechnung (ABN-008): nur die Rückzahlung des
+   * eingegangenen Betrags, vorbelegt mit ihm. Einen Eingang nimmt der Server
+   * dort nicht an.
+   */
+  nurRueckzahlung?: boolean;
 }) {
   const queryClient = useQueryClient();
   const heute = todayInTimeZone(zeitzone);
-  const vorbelegung = offenCent > 0 ? centZuEingabe(offenCent) : '';
+  const vorbelegung = nurRueckzahlung
+    ? eingegangenCent !== undefined && eingegangenCent > 0
+      ? centZuEingabe(eingegangenCent)
+      : ''
+    : offenCent > 0
+      ? centZuEingabe(offenCent)
+      : '';
   const kennung = useId();
   const feldId: Record<Feld, string> = {
     betrag: `${kennung}-betrag`,
@@ -84,7 +97,9 @@ export function Zahlungsformular({
   const [betrag, setBetrag] = useState(vorbelegung);
   const [tag, setTag] = useState(heute);
   const [weg, setWeg] = useState('bank_transfer');
-  const [richtung, setRichtung] = useState<Zahlungsrichtung>('incoming');
+  const [richtung, setRichtung] = useState<Zahlungsrichtung>(
+    nurRueckzahlung ? 'refund' : 'incoming',
+  );
   const [notiz, setNotiz] = useState('');
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
   const [gebucht, setGebucht] = useState<string | null>(null);
@@ -219,25 +234,27 @@ export function Zahlungsformular({
             ))}
           </Select>
         </div>
-        <div className="min-w-44 flex-1">
-          <Select
-            label="Art"
-            value={richtung}
-            onChange={(e) => {
-              const neu = e.target.value === 'refund' ? 'refund' : 'incoming';
-              setRichtung(neu);
-              // Die Rückzahlung beginnt leer; zurück beim Eingang steht der
-              // offene Betrag wieder da, wenn das Feld leer ist (ABR-09).
-              if (neu === 'refund') setBetrag('');
-              else if (betrag.trim() === '') setBetrag(vorbelegung);
-              setFehler({});
-              setGebucht(null);
-            }}
-          >
-            <option value="incoming">Zahlungseingang</option>
-            <option value="refund">Rückzahlung</option>
-          </Select>
-        </div>
+        {nurRueckzahlung ? null : (
+          <div className="min-w-44 flex-1">
+            <Select
+              label="Art"
+              value={richtung}
+              onChange={(e) => {
+                const neu = e.target.value === 'refund' ? 'refund' : 'incoming';
+                setRichtung(neu);
+                // Die Rückzahlung beginnt leer; zurück beim Eingang steht der
+                // offene Betrag wieder da, wenn das Feld leer ist (ABR-09).
+                if (neu === 'refund') setBetrag('');
+                else if (betrag.trim() === '') setBetrag(vorbelegung);
+                setFehler({});
+                setGebucht(null);
+              }}
+            >
+              <option value="incoming">Zahlungseingang</option>
+              <option value="refund">Rückzahlung</option>
+            </Select>
+          </div>
+        )}
       </div>
 
       <Field
@@ -252,7 +269,11 @@ export function Zahlungsformular({
 
       <div>
         <Button type="submit" disabled={buchen.isPending}>
-          {buchen.isPending ? 'Wird gebucht …' : 'Zahlung buchen'}
+          {buchen.isPending
+            ? 'Wird gebucht …'
+            : nurRueckzahlung
+              ? 'Rückzahlung buchen'
+              : 'Zahlung buchen'}
         </Button>
       </div>
 

@@ -288,10 +288,10 @@ export function TreatmentNoteSection({
   const faellig = !abgesagt && !nichtAngetroffen && (appointment.status !== 'confirmed' || vorbei);
   const anlegenHier = darfSchreiben && faellig && !hauptknopfOben;
 
-  // „Dokumentation fehlt" ist eine Aufgabe - nur für die, die sie erledigen
-  // können; wie `istOffen` auf der Übersicht (ANN-201). Das Büro sieht am
-  // Termin ohne Eintrag nichts.
-  if (!isPending && !isError && !eintrag && !(faellig && darfSchreiben)) return null;
+  // „Dokumentation fehlt" sieht, wer Dokumentation lesen darf - auch das
+  // Büro (ABN-005, ANN-201 Fassung 2, ADR-004 Fassung 2). Der Weg zum
+  // Schreiben bleibt bei den behandelnden Rollen (`anlegenHier`).
+  if (!isPending && !isError && !eintrag && !faellig) return null;
 
   const kopfAbzeichen = eintrag ? (
     zustandsAbzeichen(eintrag, frist)

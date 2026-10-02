@@ -134,7 +134,9 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     expect(blick.treatment_basis_id).toBe(GRUNDLAGE_MAX);
     expect(blick.treatment_basis_kind).toBe('follow_up');
     expect(blick.basis_appointment_count).toBe(10);
-    expect(blick.basis_used).toBe(7);
+    // Genutzt zaehlt seit ABN-001 durchgefuehrte Termine (ANN-210); diese
+    // Datei setzt ohne Termine auf. Die Leistungsmenge der Position bleibt 7.
+    expect(blick.basis_used).toBe(0);
     expect(blick.basis_items).toEqual([
       { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 7 },
     ]);

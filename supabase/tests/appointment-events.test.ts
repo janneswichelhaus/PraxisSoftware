@@ -469,7 +469,7 @@ describe('Tag umplanen: nur mit praxisbedingtem Grund (CAL-016)', () => {
   });
 
   it('nimmt die praxisbedingten Gruende an', async () => {
-    for (const grund of ['practice_request', 'moved', 'other']) {
+    for (const grund of ['practice_request', 'practice_moved', 'other']) {
       const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
         ANNA,
         TAG,

@@ -314,37 +314,217 @@ describe('Storno und Korrektur', () => {
     });
   });
 
-  describe('Zahlungen zuerst', () => {
-    it('weist das Storno ab, solange eine Zahlung steht', async () => {
-      const { id, betrag } = await ausgestellteRechnung();
+  /**
+   * ABN-008 (BEF-100, ANN-079 Fassung 2, ANN-215): Eine stehende Zahlung
+   * sperrt das Storno nicht mehr. Der eingegangene Betrag bleibt an der
+   * stornierten Rechnung, bis er zurueckgezahlt oder mit der Ersatzrechnung
+   * verrechnet ist.
+   */
+  describe('Storno trotz Zahlung', () => {
+    const VERRECHNEN = 'select public.offset_payment($1::uuid, $2::uuid, $3::int) as gruppe';
+    const BEZAHLT = 'select app.invoice_paid_cents($1::uuid) as cent';
+
+    async function bezahlt(id: string): Promise<number> {
+      const { rows } = await asPostgres<{ cent: number }>(BEZAHLT, [id]);
+      return rows[0]!.cent;
+    }
+
+    async function bezahlteRechnung(teil?: number) {
+      const rechnung = await ausgestellteRechnung();
+      await asUserCommitted(users.office, BUCHEN, [
+        rechnung.id,
+        teil ?? rechnung.betrag,
+        await heute(),
+        'bank_transfer',
+        'incoming',
+        null,
+      ]);
+      return rechnung;
+    }
+
+    async function ausgestellteKorrektur(id: string): Promise<string> {
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+      return rows[0]!.id;
+    }
+
+    it('storniert trotz Zahlung, und der Betrag bleibt stehen', async () => {
+      const { id, betrag } = await bezahlteRechnung();
+
+      await expect(storniere(id)).resolves.toMatch(/-\d{4}$/);
+      expect(await bezahlt(id)).toBe(betrag);
+
+      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+        `select context from public.audit_log where action = 'invoice.cancelled' and subject_id = $1`,
+        [id],
+      );
+      expect(rows[0]!.context).toMatchObject({ paid_cents: betrag });
+    });
+
+    it('nimmt an der stornierten Rechnung keinen Eingang, aber die Rueckzahlung an', async () => {
+      const { id, betrag } = await bezahlteRechnung();
+      await storniere(id);
+
+      await expect(
+        asUserCommitted(users.office, BUCHEN, [
+          id,
+          100,
+          await heute(),
+          'bank_transfer',
+          'incoming',
+          null,
+        ]),
+      ).rejects.toThrow(/a cancelled invoice takes no payment/);
+      await expect(
+        asUserCommitted(users.office, BUCHEN, [
+          id,
+          betrag + 1,
+          await heute(),
+          'bank_transfer',
+          'refund',
+          null,
+        ]),
+      ).rejects.toThrow(/a refund cannot exceed the payments received/);
+
       await asUserCommitted(users.office, BUCHEN, [
         id,
         betrag,
         await heute(),
         'bank_transfer',
-        'incoming',
-        null,
+        'refund',
+        'Synthetisch: zurueckueberwiesen',
       ]);
-
-      await expect(storniere(id)).rejects.toThrow(/void the payments of this invoice first/);
+      expect(await bezahlt(id)).toBe(0);
     });
 
-    it('laesst es zu, sobald die Zahlung storniert ist', async () => {
-      const { id, betrag } = await ausgestellteRechnung();
-      const { rows } = await asUserCommitted<{ id: string }>(users.office, BUCHEN, [
+    it('verrechnet den Betrag mit der ausgestellten Korrekturrechnung, als verbundenes Paar', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+      const korrektur = await ausgestellteKorrektur(id);
+
+      const { rows } = await asUserCommitted<{ gruppe: string }>(users.office, VERRECHNEN, [
         id,
-        betrag,
-        await heute(),
-        'bank_transfer',
-        'incoming',
-        null,
+        korrektur,
+        2000,
       ]);
-      await asUserCommitted(users.office, 'select public.void_payment($1::uuid, $2::text)', [
-        rows[0]!.id,
-        'Zahlung war einer anderen Rechnung zugeordnet',
+      const gruppe = rows[0]!.gruppe;
+
+      expect(await bezahlt(id)).toBe(0);
+      expect(await bezahlt(korrektur)).toBe(2000);
+
+      const { rows: paar } = await asPostgres<{
+        invoice_id: string;
+        direction: string;
+        method: string;
+      }>(
+        'select invoice_id, direction, method from public.payments where offset_group = $1 order by direction',
+        [gruppe],
+      );
+      expect(paar).toEqual([
+        { invoice_id: korrektur, direction: 'incoming', method: 'offset' },
+        { invoice_id: id, direction: 'refund', method: 'offset' },
       ]);
 
-      await expect(storniere(id)).resolves.toMatch(/-\d{4}$/);
+      const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
+        `select context from public.audit_log where action = 'payment.offset' and subject_id = $1`,
+        [korrektur],
+      );
+      expect(protokoll[0]!.context).toMatchObject({ from_invoice_id: id, amount_cents: 2000 });
+    });
+
+    it('verrechnet nicht mehr als eingegangen und nur mit der Ersatzrechnung', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+
+      // Der Entwurf ist noch keine Ersatzrechnung.
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      await expect(
+        asUserCommitted(users.office, VERRECHNEN, [id, rows[0]!.id, 2000]),
+      ).rejects.toThrow(/only against the issued replacement invoice/);
+
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+      await expect(
+        asUserCommitted(users.office, VERRECHNEN, [id, rows[0]!.id, 2001]),
+      ).rejects.toThrow(/an offset cannot exceed the payments received/);
+
+      // Eine nicht stornierte Rechnung gibt nichts weiter.
+      await expect(asUserCommitted(users.office, VERRECHNEN, [rows[0]!.id, id, 1])).rejects.toThrow(
+        /only a cancelled invoice can pass on its payments/,
+      );
+    });
+
+    it('storniert eine Verrechnung nur als Paar', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+      const korrektur = await ausgestellteKorrektur(id);
+      const { rows } = await asUserCommitted<{ gruppe: string }>(users.office, VERRECHNEN, [
+        id,
+        korrektur,
+        2000,
+      ]);
+      const { rows: haelfte } = await asPostgres<{ id: string }>(
+        `select id from public.payments where offset_group = $1 and invoice_id = $2`,
+        [rows[0]!.gruppe, korrektur],
+      );
+
+      await asUserCommitted(users.office, 'select public.void_payment($1::uuid, $2::text)', [
+        haelfte[0]!.id,
+        'Synthetisch: falsch verrechnet',
+      ]);
+
+      const { rows: paar } = await asPostgres<{ storniert: number }>(
+        'select count(voided_at)::int as storniert from public.payments where offset_group = $1',
+        [rows[0]!.gruppe],
+      );
+      expect(paar[0]!.storniert).toBe(2);
+      expect(await bezahlt(id)).toBe(2000);
+      expect(await bezahlt(korrektur)).toBe(0);
+    });
+
+    it('bleibt der Therapeutin verwehrt (ANN-076)', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+      const korrektur = await ausgestellteKorrektur(id);
+
+      await expect(
+        asUserCommitted(users.therapist, VERRECHNEN, [id, korrektur, 2000]),
+      ).rejects.toThrow(/not allowed to manage invoices/);
+    });
+
+    it('weist fremde Organisation und Therapeutin auch am direkten Storno ab (Zweitreview B8)', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await storniere(id);
+      const korrektur = await ausgestellteKorrektur(id);
+      const fremd = await fremdeOrganisation();
+      await expect(asUserCommitted(fremd.owner, VERRECHNEN, [id, korrektur, 2000])).rejects.toThrow(
+        /invoice not found/,
+      );
+
+      const { rows } = await asUserCommitted<{ gruppe: string }>(users.office, VERRECHNEN, [
+        id,
+        korrektur,
+        2000,
+      ]);
+      await expect(
+        asUserCommitted(users.therapist, 'select public.void_offset_payments($1::uuid, $2)', [
+          rows[0]!.gruppe,
+          'Versuch',
+        ]),
+      ).rejects.toThrow(/not allowed to manage invoices/);
+      await expect(
+        asUserCommitted(fremd.owner, 'select public.void_offset_payments($1::uuid, $2)', [
+          rows[0]!.gruppe,
+          'Versuch',
+        ]),
+      ).rejects.toThrow(/payment not found|not allowed/);
+      expect(await bezahlt(korrektur)).toBe(2000);
+    });
+
+    it('laesst die Verrechnung nicht ueber den Zahlungsweg buchen', async () => {
+      const { id } = await bezahlteRechnung(2000);
+      await expect(
+        asUserCommitted(users.office, BUCHEN, [id, 100, await heute(), 'offset', 'incoming', null]),
+      ).rejects.toThrow(/unknown payment method/);
     });
   });
 

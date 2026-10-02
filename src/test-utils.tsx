@@ -180,6 +180,7 @@ export function testAppointment(overrides: Partial<Appointment> = {}): Appointme
     no_show_protocol_confirmed: null,
     cancellation_received_at: null,
     fee_basis: null,
+    fee_waived_at: null,
     patient_given_name: 'Berta',
     patient_family_name: 'Bestand',
     staff_given_name: 'Anna',

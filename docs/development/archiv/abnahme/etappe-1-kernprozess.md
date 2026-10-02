@@ -2096,8 +2096,8 @@ gebaut ist keine; der Teamchat ist eine Vorschau ohne Patientenbezug.
 ## CAL-018 — Die drei Hausbesuch-Szenarien
 
 Prüfschritte zu CAL-018a (Datenbank) und CAL-018b (Oberfläche). Grundlage:
-`PROJECT_PRINCIPLES.md` §8 („Hausbesuch-Szenarien", seit 0.11), ADR-018 Fassung 3
-Punkt 9, E14 und ANN-055.
+`PROJECT_PRINCIPLES.md` §8 („Hausbesuch-Szenarien", seit 0.11), ADR-018 Fassung 4
+(Punkt 9 unverändert seit Fassung 3), E14 und ANN-055.
 
 > **Wichtig für diese Abnahme:** Der geführte Ablauf steht **nur am
 > bestätigten Hausbesuchstermin**. Der Seed legt einen an: Berta Bestand

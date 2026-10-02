@@ -1,3 +1,4 @@
+import { zugangsdienstLoescht } from './helpers/zugangsdienst';
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
@@ -607,6 +608,7 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
       [patients.max, users.therapist],
     );
     await asPostgres('select public.apply_retention()');
+    await zugangsdienstLoescht();
 
     expect(
       (await asPostgres('select 1 from public.patients where id = $1', [patients.max])).rows,
@@ -639,6 +641,19 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
       [id],
     );
     await asPostgres('select public.apply_retention()');
+    // ABN-011: Der Lauf gibt nur den Auftrag; das Konto steht noch, bis der
+    // Zugangsdienst es ueber die Admin-API entfernt und bestaetigt.
+    expect(
+      (await asPostgres('select 1 from auth.users where id = $1', [users.plattformTina])).rows,
+    ).toHaveLength(1);
+    expect(
+      (
+        await asPostgres(`select 1 from public.deletion_journal where target_id = $1`, [
+          users.plattformTina,
+        ])
+      ).rows,
+    ).toEqual([]);
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
     expect(
       (await asPostgres('select 1 from auth.users where id = $1', [users.plattformTina])).rows,
     ).toEqual([]);
@@ -663,9 +678,148 @@ describe('Plattformzugang im Loeschlauf (ADR-023 Punkt 5, ANN-189)', () => {
       [users.plattformTina],
     );
     await asPostgres('select public.reapply_deletion_journal()');
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
     expect(
       (await asPostgres('select 1 from auth.users where id = $1', [users.plattformTina])).rows,
     ).toEqual([]);
+  });
+
+  /**
+   * ABN-011 (BEF-115): Das Konto faellt 30 Tage nach dem Ende ALLER seiner
+   * Zugaenge - auch wenn einer frueher endet.
+   */
+  it('loescht ein Konto mit zwei Zugaengen erst 30 Tage nach dem spaeteren Ende', async () => {
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.erikaTraining]);
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.erikaBehandlung]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '90 days' where id = $1`,
+      [platformAccesses.erikaTraining],
+    );
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '10 days' where id = $1`,
+      [platformAccesses.erikaBehandlung],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugangsdienstLoescht()).toEqual([]);
+
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [platformAccesses.erikaBehandlung],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformErika]);
+  });
+
+  it('beendet mit einer abgelaufenen Einladung zum neuen Kennwort keinen aktiven Zugang', async () => {
+    const einladung = await einladen(users.office, 'treatment', patients.erika);
+    expect(einladung.purpose).toBe('reset');
+    await asPostgres(
+      `update public.platform_access_invitations set expires_at = now() - interval '60 days'
+        where id = $1`,
+      [einladung.invitation_id],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugangsdienstLoescht()).toEqual([]);
+    expect((await zugang(platformAccesses.erikaBehandlung))?.status).toBe('active');
+  });
+
+  it('bestaetigt eine Loeschung nur, wenn das Konto beim Anmeldedienst fort ist', async () => {
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.tinaTraining]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    await asPostgres('select public.apply_retention()');
+    await expect(
+      asServiceRole('select public.confirm_platform_account_deletion($1::uuid)', [
+        users.plattformTina,
+      ]),
+    ).rejects.toThrow(/account still exists/);
+  });
+
+  it('nimmt einen Auftrag zurueck, wenn das Konto wieder einen laufenden Zugang hat', async () => {
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.tinaTraining]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    await asPostgres('select public.apply_retention()');
+    // Inzwischen bindet die Praxis das Konto an einen neuen Zugang.
+    await asPostgres(
+      `insert into public.platform_accesses
+         (organization_id, relationship_kind, relationship_id, training_relationship_id,
+          account_user_id, status, created_by, activated_at)
+       values ($1, 'training', $2, $2, $3, 'active', $4, now())`,
+      [organizationId, trainingRelationships.tina, users.plattformTina, users.office],
+    );
+    expect(await zugangsdienstLoescht()).toEqual([]);
+    expect((await asPostgres('select 1 from public.platform_account_deletions')).rows).toEqual([]);
+  });
+
+  it('laesst nur den Zugangsdienst Auftraege abholen und bestaetigen', async () => {
+    await expect(
+      asUser(users.ownerTherapist, 'select * from public.claim_platform_account_deletions(10)'),
+    ).rejects.toThrow(/permission denied/);
+    await expect(
+      asUser(users.ownerTherapist, 'select public.confirm_platform_account_deletion($1::uuid)', [
+        users.plattformTina,
+      ]),
+    ).rejects.toThrow(/permission denied/);
+  });
+
+  /** Zweitreview B1: Ein Restore mit aktivem Zugang belebt das Konto nicht wieder. */
+  it('loescht nach einem Restore auch ein Konto, dessen Zugang wieder aktiv ist', async () => {
+    const id = platformAccesses.tinaTraining;
+    await asUserCommitted(users.office, ENTZIEHEN, [id]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [id],
+    );
+    await asPostgres('select public.apply_retention()');
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
+
+    // Restore aus einem Stand, in dem Konto und Zugang aktiv waren.
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'tina.plattform@patient.invalid')`,
+      [users.plattformTina],
+    );
+    await asPostgres(
+      'alter table public.platform_accesses disable trigger platform_accesses_guard',
+    );
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'active', revoked_at = null, revoked_by = null, revoked_reason = null
+        where id = $1`,
+      [id],
+    );
+    await asPostgres('alter table public.platform_accesses enable trigger platform_accesses_guard');
+
+    await asPostgres('select public.reapply_deletion_journal()');
+    expect((await zugang(id))?.status).toBe('revoked');
+    const vorher = await asPostgres<{ reapplied_at: Date | null }>(
+      `select reapplied_at from public.deletion_journal where target_id = $1`,
+      [users.plattformTina],
+    );
+    // Erneut angewandt erst mit der Bestätigung.
+    expect(vorher.rows[0]!.reapplied_at).toBeNull();
+    expect(await zugangsdienstLoescht()).toEqual([users.plattformTina]);
+    const nachher = await asPostgres<{ reapplied_at: Date | null }>(
+      `select reapplied_at from public.deletion_journal where target_id = $1`,
+      [users.plattformTina],
+    );
+    expect(nachher.rows[0]!.reapplied_at).not.toBeNull();
+  });
+
+  it('zaehlt ein Konto mit offenem Auftrag nicht bei jedem Lauf neu (Zweitreview B2)', async () => {
+    await asUserCommitted(users.office, ENTZIEHEN, [platformAccesses.tinaTraining]);
+    await asPostgres(
+      `update public.platform_accesses set revoked_at = now() - interval '31 days' where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    await asPostgres('select public.apply_retention()');
+    // Der zweite Lauf findet nichts Neues: Der Auftrag steht schon.
+    const { rows } = await asPostgres<{ n: number }>('select public.apply_retention() as n');
+    expect(rows[0]!.n).toBe(0);
   });
 
   it('laesst ein Konto mit einem laufenden Zugang stehen', async () => {
@@ -844,6 +998,7 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
       [KONTO_MAX, KONTO_FREMD],
     );
     await asPostgres('select public.apply_retention()');
+    await zugangsdienstLoescht();
     const { rows } = await asPostgres<{ id: string }>(
       'select id from auth.users where id in ($1, $2)',
       [KONTO_MAX, KONTO_FREMD],

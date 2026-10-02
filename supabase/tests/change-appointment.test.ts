@@ -881,7 +881,13 @@ describe('cancel_appointment', () => {
       `select pg_get_constraintdef(oid) as definition
          from pg_constraint where conname = 'appointments_cancellation_reason_values'`,
     );
-    for (const wert of ['patient_request', 'practice_request', 'moved', 'other']) {
+    for (const wert of [
+      'patient_request',
+      'practice_request',
+      'patient_moved',
+      'practice_moved',
+      'other',
+    ]) {
       expect(rows[0]?.definition).toContain(`'${wert}'`);
     }
   });

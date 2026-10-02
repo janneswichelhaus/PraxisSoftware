@@ -282,6 +282,91 @@ describe('CAL-012: Mitteilungsvermerk am Termin', () => {
     });
   });
 
+  describe('Der Vermerk bleibt bei Aenderungen, die die Patient:in nicht betreffen (ABN-003)', () => {
+    async function direkt(id: string, sql: string): Promise<void> {
+      await asPostgres(
+        `update public.appointments set ${sql}, updated_at = now() where id = $1::uuid`,
+        [id],
+      );
+    }
+
+    it('bleibt beim Abhaken des Termins', async () => {
+      const id = await terminAnlegen();
+      // In die Vergangenheit legen (eine relevante Aenderung), DANN vermerken.
+      await direkt(
+        id,
+        "starts_at = now() - interval '2 hours', ends_at = now() - interval '1 hour'",
+      );
+      await setzenCommitted(id, ['phone']);
+
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.complete_appointment($1::uuid, $2::timestamptz)',
+        [id, await standVon(id)],
+      );
+
+      expect(await kanaeleInDerSicht(id)).toEqual(['phone']);
+    });
+
+    it('bleibt bei Grundlage, Gebuehrenanlass und Zustand - alles Internes', async () => {
+      const id = await terminAnlegen();
+      await setzenCommitted(id, ['slip']);
+
+      await direkt(id, "treatment_basis_id = '88888888-8888-4888-8888-000000000002'");
+      await direkt(
+        id,
+        "status = 'completed', completed_at = now(), completed_by = '11111111-1111-4111-8111-000000000002'",
+      );
+      expect(await kanaeleInDerSicht(id)).toEqual(['slip']);
+    });
+
+    it('verfaellt bei Terminart und Ort, Laenge, Adresse und Absage', async () => {
+      const faelle: Array<[string, string, string]> = [
+        [
+          "appointment_type = 'practice', location_id = '33333333-3333-4333-8333-000000000001'",
+          '09:00',
+          '10:00',
+        ],
+        ["ends_at = ends_at + interval '15 minutes'", '11:00', '12:00'],
+      ];
+      for (const [sql, von, bis] of faelle) {
+        const id = await terminAnlegen(von, bis);
+        await setzenCommitted(id, ['phone']);
+        await direkt(id, sql);
+        expect(await kanaeleInDerSicht(id)).toEqual([]);
+      }
+
+      // Adresse eines Hausbesuchs.
+      const hausbesuch = await terminAnlegen('13:00', '14:00');
+      await direkt(
+        hausbesuch,
+        "appointment_type = 'home_visit', location_id = null, visit_street = 'Beispielstrasse', visit_house_number = '12', visit_postal_code = '72070', visit_city = 'Tuebingen'",
+      );
+      await setzenCommitted(hausbesuch, ['phone']);
+      await direkt(hausbesuch, "visit_house_number = '14'");
+      expect(await kanaeleInDerSicht(hausbesuch)).toEqual([]);
+
+      // Absage.
+      const abgesagt = await terminAnlegen('15:00', '16:00');
+      await setzenCommitted(abgesagt, ['phone']);
+      await asUserCommitted(
+        users.office,
+        `select public.cancel_appointment($1::uuid, $2::timestamptz, 'practice_request', null::date, null::time)`,
+        [abgesagt, await standVon(abgesagt)],
+      );
+      expect(await kanaeleInDerSicht(abgesagt)).toEqual([]);
+    });
+
+    it('nimmt im Bestand den alten Stand als Ausgangspunkt', async () => {
+      const id = await terminAnlegen();
+      const { rows } = await asPostgres<{ gleich: boolean }>(
+        'select patient_relevant_changed_at = updated_at as gleich from public.appointments where id = $1::uuid',
+        [id],
+      );
+      expect(rows[0]!.gleich).toBe(true);
+    });
+  });
+
   describe('Mehrere Termine auf einmal (Terminzettel)', () => {
     it('ergaenzt einen Weg bei allen genannten Terminen', async () => {
       const a = await terminAnlegen('09:00', '10:00');

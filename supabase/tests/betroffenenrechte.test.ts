@@ -66,8 +66,9 @@ describe('export_patient_record', () => {
       city: 'Tuebingen',
       date_of_birth: '1957-04-30',
     });
-    // Zwei Termine im Seed, einer davon in der Praxis (CAL-001).
-    expect(tabellen['appointments']).toHaveLength(2);
+    // Zwei Termine im Seed, einer davon in der Praxis (CAL-001), dazu die
+    // siebzehn durchgefuehrten Hausbesuche der beiden Verordnungen (ABN-001).
+    expect(tabellen['appointments']).toHaveLength(19);
     expect(tabellen['appointment_notifications']).toHaveLength(1);
   });
 

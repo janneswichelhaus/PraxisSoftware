@@ -1,3 +1,4 @@
+import { zugangsdienstLoescht } from './helpers/zugangsdienst';
 import { createHash } from 'node:crypto';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { EINWILLIGUNG_BEGLEITUNG_FASSUNG } from '@/lib/vertretung';
@@ -29,7 +30,7 @@ import {
 const { users, patients, trainingRelationships, platformAccesses, organizationId } = SEED;
 
 const VERTRETUNG = `select * from public.invite_platform_representation(
-  $1, $2::uuid, $3, $4, $5, $6::text[], $7::boolean, $8, $9::boolean)`;
+  $1, $2::uuid, $3, $4, $5, $6::text[], $7::boolean, $8, $9::boolean, $10::boolean)`;
 const LISTE = 'select * from public.list_platform_representations($1, $2::uuid)';
 const NEUER_CODE = 'select * from public.renew_platform_representation_code($1::uuid)';
 const ZWEIFEL = 'select public.note_companion_capacity_doubt($1, $2::uuid) as ok';
@@ -54,6 +55,8 @@ interface Angaben {
   aufgabenkreis: boolean | null;
   fassung: string | null;
   fruehere: boolean | null;
+  /** ABN-010: Bereich Rechnungen, nachgewiesen bzw. eingewilligt. */
+  rechnungen: boolean | null;
 }
 
 const BEGLEITUNG_PETRA: Angaben = {
@@ -66,6 +69,7 @@ const BEGLEITUNG_PETRA: Angaben = {
   aufgabenkreis: null,
   fassung: EINWILLIGUNG_BEGLEITUNG_FASSUNG,
   fruehere: false,
+  rechnungen: false,
 };
 
 const BETREUUNG_MAX: Angaben = {
@@ -78,6 +82,7 @@ const BETREUUNG_MAX: Angaben = {
   aufgabenkreis: true,
   fassung: null,
   fruehere: null,
+  rechnungen: false,
 };
 
 function parameter(a: Angaben): unknown[] {
@@ -91,6 +96,7 @@ function parameter(a: Angaben): unknown[] {
     a.aufgabenkreis,
     a.fassung,
     a.fruehere,
+    a.rechnungen,
   ];
 }
 
@@ -136,7 +142,7 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
     const { rows } = await asPostgres<Record<string, unknown>>(
       `select access_kind, status, legal_basis, representative_name, proof_documents,
               proof_recorded_by, consent_text_version, consent_recorded_by,
-              consent_earlier_messages, guardianship_health_scope
+              consent_earlier_messages, health_scope, finance_scope
          from public.platform_accesses where id = $1`,
       [einladung.access_id],
     );
@@ -150,7 +156,8 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
       consent_text_version: EINWILLIGUNG_BEGLEITUNG_FASSUNG,
       consent_recorded_by: users.office,
       consent_earlier_messages: false,
-      guardianship_health_scope: null,
+      health_scope: null,
+      finance_scope: false,
     });
 
     // Vor Ort, ohne Adresse (ANN-204); der Code steht in keinem Auditeintrag.
@@ -179,15 +186,17 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
       grundlage: 'power_of_attorney',
       name: 'Vera Vollmacht',
       dokumente: ['identity_document', 'power_of_attorney', 'custody_proof'],
-      aufgabenkreis: null,
+      aufgabenkreis: true,
+      rechnungen: true,
     });
     const { rows } = await asPostgres<{
       id: string;
       legal_basis: string;
       proof_documents: string[];
-      guardianship_health_scope: boolean | null;
+      health_scope: boolean | null;
+      finance_scope: boolean | null;
     }>(
-      `select id, legal_basis, proof_documents, guardianship_health_scope
+      `select id, legal_basis, proof_documents, health_scope, finance_scope
          from public.platform_accesses where id in ($1, $2) order by legal_basis`,
       [betreuung.access_id, vollmacht.access_id],
     );
@@ -196,14 +205,16 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
         id: betreuung.access_id,
         legal_basis: 'guardianship',
         proof_documents: ['guardianship_certificate', 'identity_document'],
-        guardianship_health_scope: true,
+        health_scope: true,
+        finance_scope: false,
       },
       // Ein Dokument, das nicht zur Grundlage gehört, wird nicht vermerkt.
       {
         id: vollmacht.access_id,
         legal_basis: 'power_of_attorney',
         proof_documents: ['identity_document', 'power_of_attorney'],
-        guardianship_health_scope: null,
+        health_scope: true,
+        finance_scope: true,
       },
     ]);
   });
@@ -229,6 +240,16 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
       'authority document must be seen',
     ],
     ['ohne Gesundheitssorge', { aufgabenkreis: false }, 'guardianship must cover health care'],
+    [
+      'als Vollmacht ohne Gesundheitssorge',
+      {
+        grundlage: 'power_of_attorney',
+        dokumente: ['identity_document', 'power_of_attorney'] as string[],
+        aufgabenkreis: false,
+      },
+      'power of attorney must cover health care',
+    ],
+    ['ohne Angabe zu Rechnungen', { rechnungen: null }, 'finance scope must be stated'],
     [
       'mit Sorgerecht für eine Erwachsene',
       { grundlage: 'custody', dokumente: ['identity_document', 'custody_proof'] as string[] },
@@ -339,9 +360,10 @@ describe('Vertretung einladen (ADR-023 Punkt 13)', () => {
       asPostgres(
         `insert into public.platform_accesses
            (organization_id, relationship_kind, relationship_id, patient_id, access_kind,
-            representative_name, proof_documents, proof_recorded_by, proof_recorded_at, created_by)
+            representative_name, proof_documents, finance_scope, proof_recorded_by,
+            proof_recorded_at, created_by)
          values ($1, 'treatment', $2, $2, 'companion', 'Ohne Einwilligung',
-                 array['identity_document'], $3, now(), $3)`,
+                 array['identity_document'], false, $3, now(), $3)`,
         [organizationId, patients.petra, users.office],
       ),
     ).rejects.toThrow(/platform_accesses_kind_fields/);
@@ -457,9 +479,63 @@ describe('Sorgerecht endet am 18. Geburtstag (Punkt 15, ANN-208)', () => {
     // 31 Tage nach dem Geburtstag faellt das Konto (ADR-023 Punkt 5).
     await geburtsdatum(patients.max, "current_date - interval '18 years' - interval '31 days'");
     await asPostgres('select public.apply_retention()');
+    await zugangsdienstLoescht();
     expect(
       (await asPostgres('select 1 from auth.users where id = $1', [KONTO_BERND])).rows,
     ).toEqual([]);
+  });
+});
+
+/**
+ * ABN-009 (BEF-117, ANN-208): eine Altersrechnung. Volljährig um 0 Uhr am
+ * 18. Geburtstag, wer am 29. Februar geboren ist, im Nichtschaltjahr am
+ * 1. März (§§ 187 Abs. 2, 188 Abs. 2 BGB).
+ */
+describe('Volljährigkeit an einer Stelle (ABN-009)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it.each([
+    ['2008-02-29', '2026-03-01'],
+    ['2008-02-28', '2026-02-28'],
+    ['2008-03-01', '2026-03-01'],
+    ['2004-02-29', '2022-03-01'],
+  ])('macht eine am %s geborene Person am %s volljährig', async (geboren, volljaehrig) => {
+    const { rows } = await asPostgres<{ tag: string }>(
+      `select to_char(app.majority_date($1::date), 'YYYY-MM-DD') as tag`,
+      [geboren],
+    );
+    expect(rows[0]!.tag).toBe(volljaehrig);
+  });
+
+  it('rechnet „minderjährig“ mit demselben Tag wie das Ende des Sorgerechts', async () => {
+    const { rows } = await asPostgres<{ gestern18: boolean; heute18: boolean; morgen18: boolean }>(
+      `with heute as (select (now() at time zone 'Europe/Berlin')::date as tag)
+       select app.platform_is_minor((tag - interval '18 years' - interval '1 day')::date, 'Europe/Berlin') as gestern18,
+              app.platform_is_minor((tag - interval '18 years')::date, 'Europe/Berlin') as heute18,
+              app.platform_is_minor((tag - interval '18 years' + interval '1 day')::date, 'Europe/Berlin') as morgen18
+       from heute`,
+    );
+    expect(rows[0]).toEqual({ gestern18: false, heute18: false, morgen18: true });
+  });
+
+  it('beendet das Sorgerecht eines am 29. Februar geborenen Kindes am 1. März um 0 Uhr', async () => {
+    await geburtsdatum(patients.max, "current_date - interval '17 years'");
+    const einladung = await vertretungEinladen(users.office, {
+      ...BETREUUNG_MAX,
+      grundlage: 'custody',
+      name: 'Sara Sorge',
+      dokumente: ['identity_document', 'custody_proof'],
+      aufgabenkreis: null,
+    });
+    await geburtsdatum(patients.max, "'2008-02-29'");
+    const { rows } = await asPostgres<{ ende: string }>(
+      `select to_char(app.platform_access_ended_at($1::uuid) at time zone 'Europe/Berlin',
+                      'YYYY-MM-DD HH24:MI') as ende`,
+      [einladung.access_id],
+    );
+    expect(rows[0]!.ende).toBe('2026-03-01 00:00');
   });
 });
 
@@ -693,9 +769,9 @@ describe('Zweitreview: Alter, Organisation, Widerruf, Riegel', () => {
          (organization_id, relationship_kind, relationship_id, patient_id, account_user_id, status,
           activated_at, access_kind, representative_name, proof_documents, proof_recorded_by,
           proof_recorded_at, consent_text_version, consent_recorded_by, consent_recorded_at,
-          consent_earlier_messages, created_by)
+          consent_earlier_messages, finance_scope, created_by)
        values ($1, 'treatment', $2, $2, $3, 'active', now(), 'companion', 'Paula Platzhalter',
-               array['identity_document'], $4, now(), $5, $4, now(), false, $4)`,
+               array['identity_document'], $4, now(), $5, $4, now(), false, false, $4)`,
       [
         fremd.organizationId,
         fremd.patient,

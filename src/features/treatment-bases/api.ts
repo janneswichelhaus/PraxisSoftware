@@ -312,6 +312,33 @@ export async function fetchPatientTreatmentBasesClinical(
   return z.array(clinicalTreatmentBasisSchema).parse(data ?? []);
 }
 
+/**
+ * Setzt oder leert den behandlungsrelevanten Hinweis einer Verordnung
+ * (ABN-007, BEF-098). Nur behandelnde Rollen; nicht am Selbstzahler. Ein
+ * leerer Text heißt „kein Hinweis“. Verbindlich prüft der Server.
+ */
+export async function setTreatmentBasisClinicalNote(
+  treatmentBasisId: string,
+  text: string,
+  expectedUpdatedAt: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_treatment_basis_clinical_note', {
+    p_treatment_basis_id: treatmentBasisId,
+    p_prescriber_note: text,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('changed meanwhile')) {
+    throw new Error(
+      'Die Verordnung wurde inzwischen geändert. Bitte die Ansicht neu laden und den Hinweis erneut eintragen.',
+    );
+  }
+  if (error?.message?.includes('too long')) {
+    throw new Error('Der Hinweis ist zu lang (höchstens 2000 Zeichen).');
+  }
+  if (error) throw new Error('Der Hinweis konnte nicht gespeichert werden.');
+}
+
 export const bauartLabels: Record<Bauart, string> = {
   first: 'Erstverordnung',
   follow_up: 'Folgeverordnung',
@@ -577,17 +604,19 @@ export function itemsToFormValues(grundlage: TreatmentBasisDetail): Heilmittelpo
 }
 
 /**
- * Drei Texte, die das Formular seit VER-EPIC-002 nicht mehr zur Eingabe
- * anbietet (Therapieziel, Hinweis der Verordner:in, Empfehlung).
+ * Zwei Texte, die das Formular seit VER-EPIC-002 nicht mehr zur Eingabe
+ * anbietet (Therapieziel, Empfehlung).
  *
  * Sie werden weiter **angezeigt**, solange etwas darin steht: Ein Text, den
  * niemand mehr sieht, ist verloren, auch wenn die Spalte ihn noch trägt. Der
- * Schreibpfad nimmt sie nicht entgegen und rührt sie deshalb nicht an.
+ * Schreibpfad nimmt sie nicht entgegen und rührt sie deshalb nicht an. Der
+ * behandlungsrelevante Hinweis (`prescriber_note`) ist seit ABN-007 kein
+ * Bestand mehr: Die behandelnden Rollen pflegen ihn an der Verordnung in der
+ * Akte, das Formular der Grundlage fasst ihn nicht an (ANN-214).
  */
 export function bestandstexte(grundlage: TreatmentBasisDetail): { feld: string; text: string }[] {
   return [
     { feld: 'Therapieziel', text: grundlage.therapy_goal ?? '' },
-    { feld: 'Hinweis der Verordner:in', text: grundlage.prescriber_note ?? '' },
     {
       feld: 'Empfehlung der Therapeut:in zum Verordnungsende',
       text: grundlage.follow_up_recommendation ?? '',
@@ -770,6 +799,25 @@ export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {
 // -----------------------------------------------------------------------------
 
 /**
+ * Die beiden Abweisungen aus ABN-002, in Praxissprache. Alles andere bleibt
+ * der eine Satz - der Server nennt seine Gruende nicht auf dem Bildschirm.
+ */
+function uebertragungsfehler(error: unknown): string {
+  const meldung =
+    typeof (error as { message?: unknown })?.message === 'string'
+      ? (error as { message: string }).message
+      : '';
+  const heilmittel = /no position for remedy (.+)$/.exec(meldung)?.[1];
+  if (heilmittel) {
+    return `Die Zielgrundlage hat keine Position für ${heilmittel}. Zuerst dort das Heilmittel ergänzen, dann übertragen – die erfassten Leistungen ziehen sonst nicht mit.`;
+  }
+  if (meldung.includes('quantity exhausted')) {
+    return 'Das Kontingent der Position am Ziel reicht für die erfassten Leistungen nicht.';
+  }
+  return 'Die Termine konnten nicht übertragen werden.';
+}
+
+/**
  * Überträgt Termine auf eine andere Behandlungsgrundlage derselben Patient:in.
  *
  * Alles oder nichts, und die Prüfungen stehen serverseitig: Die Patient:in
@@ -786,6 +834,6 @@ export async function transferAppointmentsToTreatmentBasis(
     p_appointment_ids: [...terminIds],
   })) as { data: unknown; error: unknown };
 
-  if (error) throw new Error('Die Termine konnten nicht übertragen werden.');
+  if (error) throw new Error(uebertragungsfehler(error));
   return z.number().catch(terminIds.length).parse(data);
 }

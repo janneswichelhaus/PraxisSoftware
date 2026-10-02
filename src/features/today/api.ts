@@ -152,6 +152,8 @@ export function istOffen(termin: DayPlanEntry, darfDokumentieren: boolean): bool
   if (termin.kind !== 'therapy') return false;
   if (termin.status === 'confirmed') return true;
   if (termin.status !== 'completed') return false;
+  // Die Aufgabe „Doku schreiben" gehört den Schreibenden; den Stand selbst
+  // zeigt `offenGrund` allen, die lesen dürfen (ABN-005, ANN-201 Fassung 2).
   if (!darfDokumentieren) return false;
   return termin.documentation_status !== null && termin.documentation_status !== 'final';
 }

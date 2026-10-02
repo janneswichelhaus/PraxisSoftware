@@ -176,16 +176,13 @@ describe('TreatmentNoteSection', () => {
     }
   });
 
-  it('bietet office fuer einen Termin ohne Eintrag kein Anlegen an', async () => {
+  it('zeigt office „Dokumentation fehlt", aber keinen Weg zum Anlegen (ABN-005)', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: null, addenda: [] });
     rendern(['office'], { status: 'completed' });
 
-    // „Dokumentation fehlt" ist eine Aufgabe für die, die dokumentieren (ANN-201).
-    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalled());
-    await waitFor(() =>
-      expect(screen.queryByText('Dokumentation wird geladen …')).not.toBeInTheDocument(),
-    );
-    expect(screen.queryByText('Dokumentation fehlt')).toBeNull();
+    // Der Stand ist Information fuer alle Leser (ANN-201 Fassung 2, ADR-004
+    // Fassung 2); die Aufgabe bleibt bei den behandelnden Rollen.
+    expect(await screen.findByText('Dokumentation fehlt')).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: /^Doku/ })).toBeNull();
   });
 

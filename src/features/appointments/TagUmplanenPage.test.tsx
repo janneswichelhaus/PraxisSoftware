@@ -259,7 +259,7 @@ describe('TagUmplanenPage', () => {
 
     const { container } = rendern();
     await screen.findByText(/Diese Termine werden abgesagt/);
-    await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
+    await user.selectOptions(screen.getByLabelText('Absagegrund'), 'practice_moved');
     await user.click(screen.getByRole('button', { name: '1 Termin absagen' }));
     await user.click(screen.getByRole('button', { name: 'Ja, alle absagen' }));
     await screen.findByText(/Ein Termin ist abgesagt\. Jetzt anrufen\./);

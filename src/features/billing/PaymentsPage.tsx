@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
-import { fetchZahlungen, richtungLabels, zahlungswegLabels, type ZahlungMitRechnung } from './api';
+import { fetchZahlungen, richtungLabels, zahlungswegAnzeige, type ZahlungMitRechnung } from './api';
 import { Zahlungsstorno } from './Zahlungsstorno';
 
 /**
@@ -121,7 +121,7 @@ function Zahlungszeile({
 
       <p className="text-ink-muted mt-1 text-sm">
         {zahlung.recipient_name} · {richtungLabels[zahlung.direction]} ·{' '}
-        {zahlungswegLabels[zahlung.method] ?? zahlung.method}
+        {zahlungswegAnzeige[zahlung.method] ?? zahlung.method}
         {zahlung.note ? ` · ${zahlung.note}` : ''}
         {storniert && zahlung.void_reason ? ` · storniert: ${zahlung.void_reason}` : ''}
       </p>

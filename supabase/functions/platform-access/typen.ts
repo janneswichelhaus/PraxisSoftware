@@ -1,7 +1,7 @@
 /**
  * Die Verträge des Zugangsdienstes (POR-003, ADR-023 Punkte 7 bis 10).
  *
- * Der Dienst hat zwei Aufgaben und keine dritte:
+ * Der Dienst hat drei Aufgaben und keine vierte:
  *
  * - `einloesen` — öffentlich, ohne Sitzung: Die eingeladene Person schickt
  *   Code, Adresse und Kennwort. Der Dienst legt das Konto beim Anmeldedienst
@@ -9,6 +9,10 @@
  *   den Zugang. Den Admin-Schlüssel sieht der Browser nie (Punkt 9).
  * - `versenden` — mit der Sitzung der einladenden Person: Die Einladung
  *   geht per Mail an die Adresse, die der Server bestimmt (Punkt 10, 11).
+ * - `konten_loeschen` — nur mit dem Admin-Schlüssel, für den Zeitplan des
+ *   Betriebs: Der Dienst holt die Löschaufträge des Löschlaufs ab, entfernt
+ *   die Konten über die Admin-API des Anmeldedienstes und bestätigt jedes
+ *   einzeln (ABN-011, BEF-115). Scharf erst mit OPS-001.
  */
 
 /** Was schiefgehen kann — für die Oberfläche, ohne interne Einzelheiten (§13). */

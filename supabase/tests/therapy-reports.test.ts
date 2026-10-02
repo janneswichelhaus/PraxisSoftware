@@ -193,7 +193,9 @@ describe('Therapiebericht', () => {
     ]);
     expect(bericht.document.koerperschema?.markierungen).toHaveLength(2);
     expect(bericht.document.verordnung.diagnosis).toContain('Schulter');
-    expect(bericht.document.verordnung.termine_durchgefuehrt).toBe(2);
+    // Die beiden Termine der Eintraege und die sieben durchgefuehrten
+    // Hausbesuche der Folgeverordnung aus dem Seed (ABN-001).
+    expect(bericht.document.verordnung.termine_durchgefuehrt).toBe(9);
     expect(bericht.document.empfaenger).toMatchObject({
       family_name: 'Probst',
       fax: '+49 7071 0000402',

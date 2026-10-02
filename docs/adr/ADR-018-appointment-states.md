@@ -25,9 +25,16 @@ berichtigt. Fassung 2 hatte Punkt 4 aus Fassung 1 umgekehrt; Fassung 3 kehrt
 ihn in der Sache zurück — beides Festlegungen des Projektinhabers, beides hier
 als Umkehr benannt (Fassungsregel in `docs/adr/README.md`).
 
+**Fassung 4 (2026-10-02)** — nach der Abnahme der Annahmen durch den
+Projektinhaber (BEF-094, ANN-047): Punkt 8 Nr. 4 neu gefasst. Eine
+kurzfristige Verlegung durch die Patient:in löst die 24-Stunden-Regel aus wie
+eine Absage; die Verlegung nennt deshalb, wer sie veranlasst hat. Neu ist
+Nr. 6, der bewusste Verzicht auf eine Gebühr als eigener Vermerk. Umsetzung
+ABN-006. Alles Übrige gilt unverändert.
+
 ## Datum
 
-2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13
+2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13 · Fassung 4: 2026-10-02
 
 ## Kontext
 
@@ -230,11 +237,18 @@ Daraus folgen fünf Festlegungen:
    liegen **außerhalb** der Regel. Gerechnet wird in absoluten Stunden auf
    Zeitstempeln mit Zone; eine Zeitumstellung verschiebt die Grenze deshalb um
    die Stunde, die sie auch in Wirklichkeit verschiebt.
-4. **Nur die Patientenabsage löst aus.** Eine praxisbedingte Absage
-   (`practice_request`) löst nie eine Gebühr aus. „Verlegt" und „Sonstiger
-   Grund" lösen ebenfalls keine automatische Gebühr aus — beides sagt über den
-   Anlass zu wenig, und eine zu Unrecht vorgemerkte Forderung gegen eine
-   Patientin ist teurer zurückzunehmen als eine nachzutragende (§16).
+4. **Fassung 4 — Was die Patient:in veranlasst, löst aus.** Die Absage durch
+   die Patient:in (`patient_request`) und die **Verlegung durch die
+   Patient:in** (`patient_moved`) lösen die Regel aus: Auch eine kurzfristige
+   Verlegung gibt den vereinbarten Termin frei. Eine Verlegung nennt deshalb,
+   wer sie veranlasst hat; die Praxisverlegung (`practice_moved`) und die
+   praxisbedingte Absage (`practice_request`) lösen nie aus, „Sonstiger Grund"
+   (`other`) ebenfalls nicht. Der Bestandswert `moved` aus der Zeit davor
+   bleibt gültig und wird nicht umgedeutet. Ein Termin, dessen Zeit nur
+   geändert wird, ist nicht ausgefallen und trägt keinen Anlass (ANN-212).
+   *In Fassung 2 stand hier:* „Nur die Patientenabsage löst aus. […]
+   ‚Verlegt' und ‚Sonstiger Grund' lösen ebenfalls keine automatische Gebühr
+   aus — beides sagt über den Anlass zu wenig."
 5. ~~**Das Nichtantreffen trägt keine Gebührenentscheidung.** Der Vermerk ist
    ein datensparsamer organisatorischer Abschluss: ein Tap, kein Formular. Aus
    ihm allein entsteht **keine** Gebühr. Ob das Nichtantreffen beim Hausbesuch
@@ -242,6 +256,12 @@ Daraus folgen fünf Festlegungen:
    entschieden — siehe Punkt 9**, seit CAL-018 (2026-09-16) auch gebaut. Am
    Praxis- und am Videotermin gilt der hier beschriebene Stand weiter
    (ANN-055).
+6. **Fassung 4 — Der Verzicht ist ein eigener Vermerk.** Die Praxis kann im
+   Einzelfall bewusst auf eine Gebühr verzichten. Der Verzicht löscht den
+   Anlass nicht: `fee_basis` bleibt, daneben stehen Zeitpunkt und Person des
+   Verzichts, und das Auditlog führt `appointment.fee_waived`. Danach ist der
+   Anlass nicht mehr abrechenbar. Wer verzichten darf und bis wann, regelt
+   ANN-213.
 
 Der Termin bleibt in allen Fällen als **abgesagt** beziehungsweise **nicht
 angetroffen** erkennbar. Der Gebührenanlass ist ein Merkmal daneben, kein
@@ -391,3 +411,4 @@ hier die Abwägung und nicht nur das Ergebnis.
 | 1 | 2026-09-11 | Angenommen, alle sieben Fragen wie empfohlen. |
 | 2 | 2026-09-12 | Punkt 8 neu (24-Stunden-Frist, Eingang der Absage, nur Patientenabsage); Punkt 4 neu gefasst (Pflichtentscheidung beim Nichtantreffen entfällt) — eine Umkehr von Frage 6. |
 | 3 | 2026-09-13 | Punkt 9 neu (Hausbesuch-Szenarien, E14 erledigt): Nichtantreffen nach Protokoll setzt `no_show` als Gebührenanlass; „Tür geöffnet, keine Behandlung" gilt als durchgeführt mit Pflichtvermerk. Punkt 8 Nr. 5 aufgehoben, Punkt 4 auf zwei Anlässe berichtigt. Korrekturen aus dem Audit: `confirmed → documented` (ANN-036) und Storno-Rückweg nach `cancelled` in der Tabelle; Klarstellung zu „endgültig". Umsetzung CAL-018. Punkte 1, 3, 5–7 unverändert. |
+| 4 | 2026-10-02 | Punkt 8 Nr. 4 neu (Verlegung durch die Patient:in löst aus, `patient_moved`/`practice_moved`), Nr. 6 neu (Verzicht als eigener Vermerk). Umsetzung ABN-006, BEF-094. |

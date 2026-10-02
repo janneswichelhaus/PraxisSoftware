@@ -55,7 +55,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
   });
 
-  test('verlangt keine Behandlungsdokumentation und markiert nichts als fehlend', async ({
+  test('verlangt keine Behandlungsdokumentation und bietet office kein Schreiben an', async ({
     page,
   }) => {
     const tag = laufTag(1);
@@ -65,12 +65,13 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
-    // Keine Rueckfrage nach Inhalten - und für office keine Aufgabe, die es
-    // nicht erledigen kann: ohne Eintrag kein Abschnitt (ANN-201).
-    await expect(page.getByRole('heading', { name: 'Dokumentation' })).toHaveCount(0);
-    expect(await page.getByText(/dokumentation/i).count()).toBe(0);
+    // Keine Rueckfrage nach Inhalten. office liest die Dokumentation und sieht
+    // daher, dass sie fehlt (ABN-005, ANN-201 Fassung 2) - der Weg zum
+    // Schreiben bleibt aber bei den behandelnden Rollen.
+    await expect(page.getByRole('heading', { name: 'Dokumentation' })).toBeVisible();
+    await expect(page.getByText('Dokumentation fehlt')).toBeVisible();
     await expect(page.getByRole('link', { name: /^Doku/ })).toHaveCount(0);
-    await expect(page.getByText(/fehlt|unvollständig/i)).toHaveCount(0);
+    await expect(page.getByText(/unvollständig/i)).toHaveCount(0);
   });
 
   test('bietet am abgeschlossenen Termin weder Bearbeiten noch Absagen an', async ({ page }) => {
@@ -122,7 +123,10 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
-    await expect(eintrag).toContainText('Abgeschlossen');
+    // office liest die Dokumentation (ABN-005, ANN-201 Fassung 2): Die Kachel
+    // zeigt den fehlenden Eintrag, der Zustand steht im Titel.
+    await expect(eintrag).toContainText('Doku offen');
+    await expect(eintrag).toHaveAttribute('title', /Abgeschlossen/);
     // Die Kachel öffnet das Terminpanel; „Termin →" führt zu genau diesem
     // Termin, samt Rückweg (Design-Handoff 2026-10-01, Abschnitt 7a).
     const ziel = await panelZiel(page, terminId);

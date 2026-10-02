@@ -129,9 +129,12 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
                   {formatDate(dokument.patient.date_of_birth)}
                 </Angabe>
               ) : null}
-              <Angabe bezeichnung="Steuernummer" zahl>
-                {absender.tax_number}
-              </Angabe>
+              {/* ABN-008: Steuernummer oder USt-IdNr. — mindestens eine steht. */}
+              {absender.tax_number ? (
+                <Angabe bezeichnung="Steuernummer" zahl>
+                  {absender.tax_number}
+                </Angabe>
+              ) : null}
               {absender.vat_id ? (
                 <Angabe bezeichnung="USt-IdNr." zahl>
                   {absender.vat_id}

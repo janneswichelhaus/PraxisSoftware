@@ -121,7 +121,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Spalten `visit_*` und Constraint `appointments_address_matches_type` in `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist `create_appointment`; Abnahmeschritt CAL-001 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
-**Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge. **Abnahme (Jannes, 2026-10-02):** bestätigt.
+**Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge. **Abnahme (Jannes, 2026-10-02):** bestätigt. **Fassung 2 (ABN-004, 2026-10-02, Abnahme Jannes, BEF-092):** Die Kopie bleibt, aber die Akte nennt künftige bestätigte Hausbesuche mit abweichender Adresse (`list_home_visits_with_outdated_address`) und aktualisiert sie nur auf ausdrücklichen Auftrag, einzeln oder alle (`update_home_visit_addresses`, Audit `appointment.updated` mit `visit_address`), `supabase/migrations/20261002123000_abn_004_home_visit_addresses.sql`. Vergangene Termine behalten ihre damalige Adresse.
 
 **Abnahme (Jannes, 2026-10-02).** Adresskopie bestätigt; vergangene Termine behalten ihre damalige Adresse. Ergänzt: Nach einer Änderung der Stammdaten muss die Akte auf künftige Hausbesuche mit alter Adresse hinweisen und sie gezielt aktualisieren lassen — BEF-092.
 
@@ -579,7 +579,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Tabelle `public.appointment_notifications`, `app.appointment_notification_channels()`, `public.set_appointment_notification()` und `public.add_appointment_notification()` in `supabase/migrations/20260912180000_appointment_notification.sql`; `notificationChannelSchema` in `src/features/appointments/api.ts`.
 
-**Änderungspfad.** Weg streichen oder ergänzen: ein Wert in Constraint, Zod-Schema und Beschriftungstabelle · Aufwand `klein`; gesetzte Vermerke eines gestrichenen Weges wären einmalig zu entfernen. Verfallsregel lockern: Vergleich gegen einen eigenen Zeitstempel, den nur `update_appointment` bei Zeitänderungen bumpt · Aufwand `mittel`. Echter Versand nach B15: eigenes Epic · Aufwand `groß`.
+**Änderungspfad.** Weg streichen oder ergänzen: ein Wert in Constraint, Zod-Schema und Beschriftungstabelle · Aufwand `klein`; gesetzte Vermerke eines gestrichenen Weges wären einmalig zu entfernen. Verfallsregel lockern: Vergleich gegen einen eigenen Zeitstempel, den nur `update_appointment` bei Zeitänderungen bumpt · Aufwand `mittel`. Echter Versand nach B15: eigenes Epic · Aufwand `groß`. **Fassung 2 (ABN-003, 2026-10-02, Abnahme Jannes, BEF-093):** Der Vermerk verfällt nur noch bei Änderungen, die die Patient:in betreffen (Beginn, Ende, Terminart, Ort, Adresse, Person, Absage); Anker ist die Spalte `appointments.patient_relevant_changed_at` mit dem Trigger `appointments_patient_relevant_change` in `supabase/migrations/20261002122000_abn_003_patient_relevant_change.sql`. Weitere Spalten als relevant erklären: die Liste im Trigger ergänzen · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: „Mitgeteilt“ verfällt nur bei Änderungen, die für die Patient:in relevant sind (Zeit, Ort, Terminart, behandelnde Person, Absage), nicht bei Dokumentations- oder Abrechnungsstatus — BEF-093. Bis zur Umsetzung gilt die bisherige Regel.
 
@@ -609,7 +609,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `verordnungszustand()` in `src/features/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
 
-**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096.
+**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096. **Umgesetzt in ABN-001 (2026-10-02):** `used` zählt seitdem durchgeführte Termine, siehe ANN-210.
 
 ### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
 
@@ -679,7 +679,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Änderungspfad.** Weitere Gründe aufnehmen: eine Bedingung in `app.is_late_cancellation` · Aufwand `klein`. Beschriftung von `moved` schärfen: eine Zeile in `cancellationReasonLabels` · Aufwand `klein`. Rückwirkend gilt eine Änderung ausdrücklich nicht: Was ohne Gebührenanlass abgesagt wurde, bleibt ohne.
 
-**Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Eine kurzfristige Verlegung durch die Patient:in fällt unter die 24-Stunden-Regel wie eine Absage; praxisveranlasste Änderungen bleiben gebührenfrei; ein bewusster, protokollierter Gebührenverzicht ist möglich; Nichtantreffen bleibt eigener Anlass nach ADR-018 — BEF-094, mit neuer Fassung von ADR-018 Punkt 8. Bis zur Umsetzung gilt die bisherige Regel.
+**Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Eine kurzfristige Verlegung durch die Patient:in fällt unter die 24-Stunden-Regel wie eine Absage; praxisveranlasste Änderungen bleiben gebührenfrei; ein bewusster, protokollierter Gebührenverzicht ist möglich; Nichtantreffen bleibt eigener Anlass nach ADR-018 — BEF-094, mit neuer Fassung von ADR-018 Punkt 8. **Umgesetzt (ABN-006, 2026-10-02).** Aus `moved` werden `patient_moved` („Patient:in hat verlegt“) und `practice_moved` („Praxis hat verlegt“); `app.is_late_cancellation` löst bei `patient_request` und `patient_moved` aus. `moved` bleibt an Bestandszeilen gültig und wird nicht umgedeutet, neu setzen kann ihn niemand mehr. Der Verzicht ist ANN-213, die Verlegung über eine Zeitänderung ANN-212. Anker jetzt in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; ADR-018 Fassung 4 Punkt 8.
 
 ### ANN-048 — Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit
 
@@ -895,7 +895,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
 
-**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099).
+**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096. Abgleich (2026-10-02, Abnahme Block 4): Neben Terminzahl und Heilmittelmenge ist das Honorar eine dritte, getrennte Größe — je Behandlungstermin einmal das Terminhonorar (ADR-009 Fassung 4 Punkt 22, BEF-099). **ABN-001 (2026-10-02):** `app.treatment_basis_slot_counts` zählt genutzte Termine statt der größten Positionsmenge (ANN-210); die Terminzahl an der Grundlage bleibt.
 
 ### ANN-065 — „Anmerkungen" ist das organisatorische Feld, der Verordnerhinweis bleibt Bestand
 
@@ -908,6 +908,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 **Anker.** Das Feld „Anmerkungen" auf `note` in `src/features/treatment-bases/TreatmentBasisFormFields.tsx`, die Beschriftung in `src/features/treatment-bases/grundlagenfelder.ts`; die Bestandstexte liefert `bestandstexte()` in `src/features/treatment-bases/api.ts`, und `public.update_treatment_basis` in `supabase/migrations/20260918130000_appointment_count.sql` fasst die drei Spalten nicht an.
 
 **Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück. **Abnahme (Jannes, 2026-10-02):** organisatorische Anmerkungen und Erhalt der Bestandstexte bestätigt. Neue behandlungsrelevante Hinweise brauchen weiterhin einen klinischen Ort, den das Büro liest wie die Therapeut:innen — BEF-098.
+
+**Umgesetzt (ABN-007, 2026-10-02).** `prescriber_note` nimmt als „Behandlungsrelevanter Hinweis“ wieder Eingaben an, über eine eigene Funktion und nur in der Akte (ANN-214). Das Formular der Grundlage bleibt bei den organisatorischen „Anmerkungen“ und zeigt den Hinweis nicht mehr als Bestandstext.
 
 ### ANN-066 — Der Heilmittelkatalog ist eine Liste im Code, kein gepflegter Stammdatensatz
 
@@ -931,7 +933,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `app.appointment_is_covered` und die beiden Ausgaben `covered`/`uncovered` in `app.treatment_basis_slot_counts`, beide in `supabase/migrations/20260918140000_appointment_coverage.sql`.
 
-**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038. **Abnahme (Jannes, 2026-10-02):** berechnete Deckung nach zeitlicher Reihenfolge bestätigt. Abgesagte **und nicht angetroffene** Termine belegen und verbrauchen kein Kontingent (heute zählt Nichtantreffen mit — BEF-096); Ausfallhonorar getrennt; Überplanung bleibt ungedeckt sichtbar.
+**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038. **Abnahme (Jannes, 2026-10-02):** berechnete Deckung nach zeitlicher Reihenfolge bestätigt. Abgesagte **und nicht angetroffene** Termine belegen und verbrauchen kein Kontingent (heute zählt Nichtantreffen mit — BEF-096); Ausfallhonorar getrennt; Überplanung bleibt ungedeckt sichtbar. **Umgesetzt in ABN-001 (2026-10-02):** `no_show` zählt an beiden Stellen wie `cancelled` (ANN-210).
 
 ### ANN-068 — Übertragen wird jeder Termin derselben Patient:in außer abgesagt und abgerechnet
 
@@ -943,7 +945,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/treatment-bases/TermineUebertragenPage.tsx`.
 
-**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097.
+**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097. **Fassung 2 (ABN-002, 2026-10-02, Abnahme Jannes):** Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion auf die Position des Ziels mit demselben Heilmittel mit, die genutzte Menge wandert; ohne passende Position oder bei erschöpftem Kontingent wird der ganze Vorgang abgewiesen (`supabase/migrations/20261002121000_abn_002_transfer_services.sql`). Durchgeführte Termine bietet die Oberfläche zugeklappt an (ANN-211).
 
 ### ANN-069 — Die Akte gruppiert Termine je Richtung, nicht über beide hinweg
 
@@ -1021,6 +1023,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Netto je Zeile ausweisen: die Zeilen in `app.build_invoice_document` um Netto und Steuer ergänzen, der Snapshot trägt sie ab dann · Aufwand `klein` — ältere Rechnungen behalten ihre Form, das ist ihr Zweck. Preis als Nettobetrag führen: `unit_price_cents` bekäme eine zweite Bedeutung, also besser eine neue Katalogversion mit anderer Auslegung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt mit „Steuernummer **oder** USt-IdNr.“ (heute ist die Steuernummer Pflicht — BEF-100); IBAN bleibt Pflicht für den Überweisungsablauf; USt-Status ohne Vorgabe und Endpreise richtig; steuerliche Freigabe über B4.
 
+**Umgesetzt (ABN-008, 2026-10-02).** `tax_number` ist optional, wenn `vat_id` steht; die Constraint `practice_billing_profiles_tax_id_present` und `save_practice_billing_profile` verlangen eine von beiden. Rechnung, Storno und Ausdruck nennen, was steht. Anker: `supabase/migrations/20261002132000_abn_008_billing_from_acceptance.sql`.
+
 ### ANN-075 — Die Rechnungsnummer ist lückenlos je Kreis und Kalenderjahr und entsteht beim Ausstellen
 
 Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Format und Nummernkreis)
@@ -1080,6 +1084,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 **Anker.** Tabelle `invoice_cancellations`, `public.cancel_invoice`, `public.create_correction_draft` und `app.invoice_items_frozen` in `supabase/migrations/20260919170000_invoice_cancellations.sql`.
 
 **Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine weitere Zeile im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** eigenes Stornodokument und Korrekturkette bestätigt. Geändert: Eine Zahlung sperrt das Storno nicht mehr; der eingegangene Betrag bleibt und wird mit der Ersatzrechnung verrechnet oder tatsächlich zurückgezahlt; ein Zahlungsstorno korrigiert nur eine falsche Buchung — BEF-100. Bis zur Umsetzung gilt die bisherige Regel.
+
+**Umgesetzt (ABN-008, 2026-10-02).** `cancel_invoice` storniert auch mit stehender Zahlung. Der eingegangene Betrag bleibt an der stornierten Rechnung; sie nimmt danach keinen Eingang, aber die Rückzahlung (`record_payment`, Richtung `refund`) und die Verrechnung mit der Ersatzrechnung (`offset_payment`, ANN-215) an. Ein Zahlungsstorno bleibt die Korrektur einer falschen Buchung.
 
 ### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
 
@@ -1188,6 +1194,8 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 **Anker.** Die Schritte `abgerundet` und `verteilt` in `public.list_revenue_by_service_area` (`supabase/migrations/20260921160000_revenue_by_service_area.sql`).
 
 **Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu. **Abnahme (Jannes, 2026-10-02):** anteiliges Verteilen bestätigt. Mehrere Teilzahlungen müssen bei voller Zahlung zusammen exakt die Steuergruppen ergeben; dafür wird kumulativ verteilt statt je Zahlung gerundet, und eine Rückzahlung nimmt ihre Verteilung nachvollziehbar zurück — BEF-100.
+
+**Umgesetzt (ABN-008, 2026-10-02).** `list_revenue_by_service_area` verteilt kumulativ: je Zahlung die Summe aller Zahlungen der Rechnung bis einschließlich dieser (Reihenfolge Zahlungstag, Erfassung, Kennung) minus die bis zur vorigen, Brutto und Steuer. Die Verteilung selbst steht an einer Stelle, `app.distribute_to_tax_groups`. Test mit drei krummen Teilzahlungen in `supabase/tests/revenue-by-service-area.test.ts`.
 
 ### ANN-089 — `MDR_REVIEW_REQUIRED` wird als Register mit gesperrten Adressen geführt
 
@@ -2249,6 +2257,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** Andere Fristen: `app.platform_read_period` bzw. `retention_classes.plattformzugang` ändern · Aufwand `klein`. Konten über den Zugangsdienst löschen: den Löschschritt in eine Warteschlange schreiben lassen, die der Dienst abarbeitet · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Fristen bestätigt. Der Ablauf der Einladung beendet nur einen nie eingelösten Zugang; das Konto fällt erst 30 Tage nach dem Ende aller seiner Zugänge. Gelöscht wird über die unterstützte Admin-API des Anmeldedienstes statt per SQL in `auth.users`; zu prüfen in OPS-001 (BEF-115).
 
+**Umgesetzt (ABN-011, 2026-10-02).** Fristen unverändert; neu ist der Weg. Der Löschlauf entzieht die Zugänge sofort und gibt einen Löschauftrag (`platform_account_deletions`); der Zugangsdienst holt ihn ab (`claim_platform_account_deletions`), entfernt das Konto über die Admin-API des Anmeldedienstes und bestätigt (`confirm_platform_account_deletion`). Erst die Bestätigung schreibt das Löschjournal, und sie wird abgewiesen, solange das Konto noch besteht. Nach einem Restore gibt `reapply_deletion_journal` neue Aufträge. Tests mit zwei Zugängen (einer endet früher) und einer abgelaufenen Einladung zum neuen Kennwort in `supabase/tests/platform-accesses.test.ts`. Den Aufruf durch den Betrieb regelt ANN-217.
+
 ### ANN-190 — Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang
 
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Plattform)
@@ -2272,6 +2282,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 **Anker.** `einloesen` in `supabase/functions/platform-access/handler.ts`, `kennwortPruefen` in `supabase/functions/platform-access/anmeldedienst.ts`; Personenprüfung in `app.platform_accesses_guard` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`).
 
 **Änderungspfad.** Adresse muss der im Verhältnis entsprechen: Vergleich in `public.redeem_platform_invitation` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt mit Bedingung: Wiederherstellung per Mail nur, wenn das Postfach tatsächlich per Link bestätigt wurde; der beim Anlegen gesetzte Status genügt nicht. Ohne Bestätigung gibt es einen neuen Code nach Identitätsprüfung vor Ort; jede Adressänderung verlangt neue Bestätigung. Die Sperre gilt im Server und im Anmeldedienst, nicht nur in der Oberfläche (BEF-118, B13).
+
+**Umgesetzt (ABN-012, 2026-10-02).** Der Bestätigungsstatus, den der Zugangsdienst beim Anlegen setzt, gilt nur für die Anmeldung. Für die Wiederherstellung per Mail zählt allein das eigene Merkmal eines per Link bestätigten Postfachs (`platform_mailbox_confirmations`), für die Adresse, die das Konto heute trägt (ANN-218).
 
 ### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 
@@ -2393,9 +2405,9 @@ Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** ANN-005 schloss eine Markierung als fehlend aus, damit der Abschluss keine Pflicht zur Dokumentation vortäuscht. Die ausdrückliche Entscheidung von Jannes vom 01.10. geht dieser Annahme vor; die Pflicht selbst bleibt unverändert – gesperrt wird weiterhin erst die Rechnung, nicht der Abschluss (ADR-018, Konsequenzen). Dieselbe Regel gilt schon für die Übersicht (`istOffen`): eine Aufgabe, die jemand nicht erledigen kann, wäre Rauschen.
 
-**Anker.** `TreatmentNoteSection` in `src/features/documentation/TreatmentNoteSection.tsx` (Bedingung `faellig && darfSchreiben`); `offenGrund` in `src/features/today/api.ts`.
+**Anker.** Fassung 2: `app.can_read_treatment_note()` in `list_day_plan` und `list_appointments` (`supabase/migrations/20261002124000_abn_005_documentation_read_right.sql`), `canReadTreatmentNote` in `TreatmentNoteSection` (Bedingung `faellig`) und im Kalender (kein Ausblenden mehr in `CalendarPage.tsx`); `offenGrund` in `src/features/today/api.ts`.
 
-**Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`.
+**Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`. **Fassung 2 (ABN-005, 2026-10-02, Abnahme Jannes, BEF-095):** Stand, „Doku offen“ und Lese-Links folgen dem einen Leserecht für Dokumentation; die Aufgabe („Doku“ schreiben, `istOffen` für die Arbeitskarte) bleibt bei den Schreibenden. Wieder nur Schreibenden zeigen: die Bedingung `darfSchreiben` zurück in `TreatmentNoteSection` und das Ausblenden in `CalendarPage` · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Das Büro liest alle Dokumentation einschließlich Verlauf (ADR-004 Fassung 2) und sieht „Doku offen“ bzw. „Dokumentation fehlt“ wie die Therapeut:innen; Sichtbarkeit hängt am Leserecht, nicht am Schreibrecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen — BEF-095. Bis zur Umsetzung gilt die bisherige Anzeige.
 
@@ -2449,6 +2461,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen sieht eine Vertretung nur, wenn der geprüfte Bereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Freigegeben werden nur nachgewiesene Bereiche, nie pauschal alles (BEF-119).
 
+**Umgesetzt (ABN-010, 2026-10-02).** Gesundheitssorge vermerkt die Praxis jetzt bei Betreuung **und** Vorsorgevollmacht (`health_scope`, bis dahin `guardianship_health_scope`); das Sorgerecht umfasst sie. Rechnungen und Zahlungen nur mit dem zweiten Häkchen „umfasst die Vermögenssorge“ (`finance_scope`, BEF-119). Die Bereiche regelt ANN-216.
+
 ### ANN-206 — Wortlaut der Einwilligung zur Begleitung, versioniert und auf dem Praxisgerät bestätigt
 
 Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13 „Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2")
@@ -2460,6 +2474,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 **Anker.** `EINWILLIGUNG_BEGLEITUNG_FASSUNG` und `einwilligungBegleitung` in `src/lib/vertretung.ts`; `app.platform_companion_consent_version` in `supabase/migrations/20261002100000_por_005_representation.sql`; Gleichlauf im Test „Fassung der Einwilligung" in `supabase/tests/platform-representation.test.ts`.
 
 **Änderungspfad.** Neuer Wortlaut: neue Kennung an beiden Stellen; bestehende Begleitungen behalten ihre Fassung · Aufwand `klein`. Unterschrift statt Häkchen: Unterschriftsfeld und Ablage als Dokument (ADR-017) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Präzisiert: Die Person stimmt ausdrücklich zu. Festgehalten werden Fassung des Wortlauts, benannte Begleitperson, freigegebener Umfang, Zeitpunkt und bestätigende Praxiskraft. Ob Häkchen der Praxis und Fassung als Nachweis genügen, ist nicht entschieden, sondern wird in B2 geprüft (BEF-116).
+
+**Umgesetzt (ABN-010, 2026-10-02).** Neue Fassung `begleitung-2026-10-02b`: Der Wortlaut nennt den Umfang je Bereich, Termine und Unterlagen immer, frühere Nachrichten und Rechnungen je mit Ja oder Nein (BEF-116). Der Nachweis hält Fassung, benannte Begleitperson, Bereiche (`consent_earlier_messages`, `finance_scope`), Zeitpunkt und bestätigende Praxiskraft fest. Das Nachweisverfahren bleibt an einer Stelle, `app.assert_platform_representation`. Ob das Häkchen genügt, entscheidet B2.
 
 ### ANN-207 — Ein Zweifel an der Einwilligungsfähigkeit wird nur als Vorgang vermerkt, ohne Grund
 
@@ -2485,6 +2501,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Andere Altersgrenze: `app.platform_min_age_years` · Aufwand `klein`. Vertretung ohne Geburtsdatum für Erwachsene zulassen: Prüfung in `app.assert_platform_representation` lockern · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Korrektur bestätigt: Bei Geburt am 29. Februar tritt die Volljährigkeit im Nichtschaltjahr am 1. März um 0 Uhr ein (§§ 187 Abs. 2, 188 Abs. 2 BGB). Eigener Zugang und Ende des Sorgerechts rechnen mit derselben Funktion; heute rechnet das Ende des Sorgerechts einen Tag zu früh (BEF-117).
 
+**Umgesetzt (ABN-009, 2026-10-02).** `app.majority_date` liefert den Tag der Volljährigkeit (Geburtstag minus ein Tag plus 18 Jahre plus ein Tag; am 29. Februar im Nichtschaltjahr der 1. März), 0 Uhr in der Zeitzone der Praxis. `app.platform_is_minor`, das Ende des Sorgerechts in `app.platform_access_ended_at` und die Einladung zum eigenen Zugang (bisher in UTC) rufen sie auf. Tests mit 29. Februar, 28. Februar und 1. März in `supabase/tests/platform-representation.test.ts`.
+
 ### ANN-209 — Jeder Aufruf über eine Vertretung wird protokolliert, auch das Gerüst der Plattform
 
 Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)
@@ -2496,3 +2514,111 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 **Anker.** `app.log_platform_representation` und `public.platform_context` in `supabase/migrations/20261002101000_por_006_acting_for.sql`; Tests in `supabase/tests/platform-acting-for.test.ts`.
 
 **Änderungspfad.** Bündeln je Tag und Zugang: in `app.log_platform_representation` vor dem Einfügen nach einem Eintrag desselben Tages fragen · Aufwand `klein`.
+
+### ANN-210 — Genutzt ist ein durchgeführter Behandlungstermin, auch ohne finalisierte Dokumentation
+
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Praxiswochen, zusammen mit ANN-042
+
+**Annahme.** Das Kontingent einer Behandlungsgrundlage zählt als **genutzt** die Termine im Zustand `completed`, `documented` oder `invoiced`; mehrere Heilmittel oder eine Doppelbehandlung im selben Termin zählen einmal. Als **verplant** zählt jeder Termin außer `cancelled` und `no_show`; Absage und Nichtantreffen belegen, verbrauchen und decken nichts. Die Leistungsmenge je Position (`used_quantity`) bleibt eine getrennte Größe der Abrechnung (ANN-073).
+
+**Begründung.** Abnahme der Annahmen (Jannes, 2026-10-02, BEF-096): Terminzahl und Leistungsmenge sind getrennte Größen (ANN-064), genutzt sind durchgeführte Termine, Nichtantreffen belegt kein Kontingent, das Ausfallhonorar bleibt davon getrennt (ADR-018 Punkt 9). Unsicher und hier als Annahme festgehalten: ob ein Termin, der abgehakt, aber noch nicht dokumentiert ist (`completed`), schon als genutzt zählt — ja, weil die Behandlung stattgefunden hat und ADR-018 Punkt 7 den Zustand nicht von selbst zurücknimmt; die Dokumentation ändert die Zahl nicht mehr.
+
+**Anker.** `app.treatment_basis_slot_counts` und `app.appointment_basis_position` in `supabase/migrations/20261002120000_abn_001_slot_counts.sql`; Tests in `supabase/tests/appointment-coverage.test.ts` („Genutzt zaehlt Termine").
+
+**Änderungspfad.** Genutzt erst ab `documented`: die Statusliste in `app.treatment_basis_slot_counts` kürzen · Aufwand `klein`. Nichtantreffen wieder mitzählen: `no_show` aus beiden `not in`-Listen streichen · Aufwand `klein`, widerspricht aber der Abnahme.
+
+### ANN-211 — Durchgeführte Termine lassen sich übertragen, stehen aber zugeklappt und nicht vorgewählt
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001)
+
+**Annahme.** Die Seite „Termine übertragen“ bietet neben den ungedeckten künftigen Terminen auch die **durchgeführten** Termine der Patient:in an (`completed`, `documented`, nicht am Ziel), als eigenen, zugeklappten Abschnitt „Vergangene Termine“ ohne Vorauswahl, mit dem Hinweis, dass erfasste Leistungen mitziehen. Abgesagte, nicht angetroffene und abgerechnete Termine werden nicht angeboten.
+
+**Begründung.** Die Abnahme (BEF-097) verlangt, dass auch durchgeführte Termine als Zuordnungskorrektur übertragen werden können; der Server erlaubt es seit CAL-022 (ANN-068). Ohne einen Weg in der Oberfläche bliebe die Korrektur unerreichbar. Zugeklappt und ohne Vorauswahl, weil der Regelfall die ungedeckten künftigen Termine sind und eine Korrektur der Vergangenheit eine bewusste Handlung bleiben soll (§13: nichts wandert unbemerkt). Unsicher: ob die Praxis die Korrektur häufiger braucht und der Abschnitt offen stehen sollte.
+
+**Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/treatment-bases/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
+
+**Änderungspfad.** Abschnitt offen zeigen oder vorwählen: `Disclosure offen` beziehungsweise Startwert der Auswahl ändern · Aufwand `klein`. Vergangene gar nicht anbieten: den Abschnitt entfernen, der Server bleibt unverändert · Aufwand `klein`.
+
+### ANN-212 — Eine Verlegung mit Gebühr ist eine Absage „Patient:in hat verlegt“; das Verschieben eines Termins bleibt gebührenfrei
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+
+**Annahme.** Die 24-Stunden-Regel einer Verlegung durch die Patient:in (BEF-094) greift am Weg **Absagen → „Patient:in hat verlegt“**: Der vereinbarte Termin wird abgesagt, der Server merkt bei weniger als 24 Stunden die Gebühr vor, der neue Termin wird wie jeder Folgetermin angelegt. Ändert das Büro dagegen nur Datum oder Uhrzeit eines bestätigten Termins (`update_appointment`, Auditereignis `appointment.rescheduled`), entsteht **keine** Gebühr — der Termin besteht weiter, es gibt keinen ausgefallenen Termin, an dem ein Gebührenanlass hängen könnte (ADR-018 Punkt 4: Anlass nur an `cancelled` und `no_show`).
+
+**Begründung.** Ein Gebührenanlass ist an einen ausgefallenen Termin gebunden; ein verschobener Termin ist kein ausgefallener. Den Anlass an eine Zeitänderung zu hängen, hieße entweder einen dritten Anlass an einem bestätigten Termin einzuführen oder den Termin bei der Zeitänderung still in Absage und Neuanlage zu zerlegen — beides größer als die Abnahme verlangt. Unsicher: Wer im Alltag den Termin nur verschiebt, verschenkt die Gebühr, ohne es zu merken.
+
+**Anker.** `app.is_late_cancellation` und die Gründeliste in `public.cancel_appointment` (`supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`); `selectableCancellationReasons` in `src/features/appointments/api.ts`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verlegung: wer sie veranlasst hat“).
+
+**Änderungspfad.** Am Terminformular bei einer Zeitänderung unter 24 Stunden fragen „Hat die Patient:in verlegt?“ und dann den Weg über Absage und Neuanlage gehen · Aufwand `mittel`.
+
+### ANN-213 — Auf eine Gebühr verzichten owner und office, endgültig und nur vor der Erfassung
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+
+**Annahme.** Den Verzicht auf eine Gebühr (BEF-094) vermerken **owner und office** — dieselben Rollen, die ein Ausfallhonorar als Leistung erfassen (ANN-140). Er ist möglich, solange aus dem Anlass weder eine Leistung erfasst noch eine Rechnung ausgestellt ist; danach führt der Weg über das Entfernen der Leistung beziehungsweise das Storno. Er ist **endgültig**: Es gibt keinen Rückweg „Verzicht zurücknehmen“. Der Anlass (`fee_basis`) bleibt stehen, daneben `fee_waived_at` und `fee_waived_by`; die Terminsicht zeigt nur den Zeitpunkt, die Person steht im Auditlog (`appointment.fee_waived`). Kein Freitext zum Grund. Fällt der Anlass weg (Wiederöffnen eines Nichtantreffens), fällt der Verzicht mit. Ein Termin mit Verzicht bleibt unter dem Löschschutz der Termine mit Gebührenanlass (ANN-035): Der Vermerk ist der Nachweis, warum keine Forderung entstand.
+
+**Begründung.** Ein Verzicht ist eine Entscheidung über eine Forderung und gehört zu den Rollen, die Forderungen erfassen; die Behandelnden erfassen am eigenen Termin die Heilmittel, nicht das Ausfallhonorar (ANN-140). Endgültig, weil der Verzicht in der Regel der Patient:in mitgeteilt wird — wie die Absage selbst (ADR-018 Punkt 2). Kein Freitextgrund, weil ein freies Feld am Termin die wahrscheinlichste Stelle für eine Gesundheitsangabe ist (ANN-034).
+
+**Anker.** `public.waive_appointment_fee` und `app.billable_fee_basis` in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; `GebuehrVerzicht` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verzicht auf die Gebühr“) und `AppointmentDetailPage.test.tsx`.
+
+**Änderungspfad.** Rücknahme erlauben: eine zweite Funktion, die beide Spalten leert und protokolliert · Aufwand `klein`. Codierter Grund: eine Spalte mit Werteliste · Aufwand `klein`. Weitere Rollen: die Rollenprüfung in `waive_appointment_fee` · Aufwand `klein`.
+
+### ANN-214 — Den behandlungsrelevanten Hinweis pflegen die behandelnden Rollen in der Akte, nicht im Formular der Grundlage
+
+Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001); Datenschutzprüfung mit ANN-065
+
+**Annahme.** Der klinische Hinweis aus einer Verordnung (`treatment_bases.prescriber_note`, BEF-098) wird **an der Verordnung in der Akte** erfasst und geändert, mit einem eigenen Knopf „Behandlungsrelevanten Hinweis erfassen“ — nicht im Formular der Grundlage, das auch das Büro ausfüllt. Schreiben dürfen **therapist und team_lead** (`app.can_write_treatment_note`, wie die Dokumentation); ein reiner owner-Zugang und das Büro lesen ihn nur. Lesen dürfen alle mit dem Leserecht der Dokumentation (`app.can_read_treatment_note`); `app.can_read_treatment_basis_clinical` ruft es seitdem auf, statt die Rollen ein zweites Mal zu führen. Nur an einer Verordnung, nie am Selbstzahler (ADR-020 Punkt 4). Das Auditlog hält fest, dass das Feld geändert oder geleert wurde, nie den Text.
+
+**Begründung.** Die Abnahme verlangt den Hinweis „getrennt von den organisatorischen Anmerkungen“ und lässt die behandelnden Rollen schreiben. Im gemeinsamen Formular wäre das Feld für das Büro sichtbar, aber gesperrt, und ein Formular, das die Rolle anders behandelt, ist die Stelle, an der so etwas verrutscht. Eine eigene Funktion hält die Rechte an einer Stelle und lässt `create_treatment_basis` und `update_treatment_basis` unverändert (ANN-065). Unsicher: Das Büro tippt die Verordnung ab und sieht den Hinweis auf dem Rezept zuerst; nach dieser Annahme muss es ihn der Therapeut:in weitergeben.
+
+**Anker.** `public.set_treatment_basis_clinical_note` in `supabase/migrations/20261002131000_abn_007_clinical_prescription_note.sql`; `KlinischerHinweis` in `src/features/treatment-bases/KlinischerHinweis.tsx`; Tests in `supabase/tests/treatment-basis-clinical-note.test.ts` und `PatientTreatmentBasesPage.test.tsx`.
+
+**Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.
+
+### ANN-215 — Ein Betrag an einer stornierten Rechnung wird nur mit ihrer ausgestellten Ersatzrechnung verrechnet, als verbundenes Paar
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Abrechnung (ABN-EPIC-001); Steuerberatung mit B9
+
+**Annahme.** „Mit der Ersatzrechnung verrechnen“ (BEF-100) heißt: Der Betrag geht von der stornierten Rechnung auf **die** Rechnung über, die sie ersetzt (`replaces_invoice_id`), sobald diese **ausgestellt** ist — nicht auf eine beliebige offene Rechnung derselben Person und nicht auf einen Entwurf. Gebucht wird ein **Paar**: an der stornierten Rechnung eine Rückzahlung, an der Ersatzrechnung ein Eingang, beide mit dem Weg „Verrechnung“ (`method = 'offset'`), verbunden über `offset_group`, datiert auf den Tag der Verrechnung. Höchstens der eingegangene Betrag; ein Teilbetrag ist möglich. Storniert wird eine Verrechnung nur als Paar. In der Auswertung nach Zufluss heben sich die beiden Hälften in der Summe auf; verteilt wird jede nach den Steuergruppen ihrer Rechnung. Rechte wie beim Buchen einer Zahlung (owner, office). Ein Überschuss der Zahlung über die Ersatzrechnung bleibt dort als Überzahlung stehen und wird von dort zurückgezahlt.
+
+**Begründung.** Die Ersatzrechnung ist der nachvollziehbare Ort: Dieselbe Forderung, korrigiert. Ein Paar statt einer Umhängung der vorhandenen Zahlung, weil eine gebuchte Zahlung nie geändert wird (ANN-078) und jede Rechnung ihre eigene Zahlungsgeschichte behalten muss. Der Tag der Verrechnung statt des ursprünglichen Zahlungstags, weil an diesem Tag gebucht wird; im Zufluss heben sich beide Hälften auf. Unsicher: ob die Steuerberatung für die Zuflussrechnung den ursprünglichen Zahlungstag an der Ersatzrechnung verlangt (B9).
+
+**Anker.** `public.offset_payment`, `public.void_offset_payments` und `payments.offset_group` in `supabase/migrations/20261002132000_abn_008_billing_from_acceptance.sql`; `Guthaben` in `src/features/billing/InvoiceDetailPage.tsx`; Tests in `supabase/tests/invoice-cancellations.test.ts` („Storno trotz Zahlung“).
+
+**Änderungspfad.** Verrechnung mit einer anderen offenen Rechnung derselben Person: die Prüfung auf `replaces_invoice_id` in `offset_payment` lockern · Aufwand `klein`. Ursprünglicher Zahlungstag an der Ersatzrechnung: `paid_on` aus der Quelle übernehmen · Aufwand `klein`.
+
+### ANN-216 — Eine Vertretung trägt zwei Bereiche: Gesundheit immer, Rechnungen nur nachgewiesen
+
+Datenschutz · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: B2 und B5 mit ANN-205 und ANN-206; Jannes in der Sichtung der Plattform (ABN-EPIC-001)
+
+**Annahme.** Freigegeben werden nur nachgewiesene bzw. eingewilligte Bereiche (BEF-119). Die Plattform kennt dafür zwei: **Gesundheit** (Termine, Wünsche, Nachrichten, Befundbogen, freigegebene Unterlagen) und **Rechnungen** (Rechnungen und Zahlungen). Gesundheit ist Voraussetzung jeder Vertretung — die Plattform zeigt Gesundheitsdaten, eine Vollmacht nur für Finanzen begründet hier keinen Zugang. Rechnungen sind immer eine ausdrückliche Ja/Nein-Angabe (`finance_scope`): bei der rechtlichen Vertretung das Häkchen „umfasst die Vermögenssorge“ für Sorgerecht, Betreuung und Vollmacht gleichermaßen, bei der Begleitung ein Satz der Einwilligung. `app.platform_access_allows` ist die eine Stelle: `billing` für den eigenen Zugang und nur mit `finance_scope`; `consent`, `export` und `manage_companions` weiter nur eigener Zugang und rechtliche Vertretung. Bestehende Vertretungen: rechtliche ohne Rechnungen, Begleitungen der alten Fassung mit (ihr Wortlaut nannte sie); eine Vollmacht ohne Vermerk der Gesundheitssorge wird entzogen (`scope_unproven`) und neu eingerichtet, statt den Nachweis zu unterstellen.
+
+**Begründung.** Die Abnahme verlangt die Freigabe je nachgewiesenem Bereich und nennt die Vermögenssorge für Rechnungen ausdrücklich. Zwei Bereiche decken, was POR-EPIC-002 und -003 zeigen; feiner (etwa Termine getrennt von Unterlagen) wäre eine Unterscheidung, die die Praxis vor Ort nicht prüfen kann. Unsicher: ob B5 auch beim Sorgerecht einen ausdrücklichen Vermerk der Gesundheitssorge verlangt (heute: das Sorgerecht umfasst sie).
+
+**Anker.** `platform_accesses.health_scope`, `.finance_scope`, `app.platform_access_allows` und `app.assert_platform_representation` in `supabase/migrations/20261002134000_abn_010_representation_scopes.sql`; Formular in `src/features/platform-access/Vertretungen.tsx`; Wortlaut in `src/lib/vertretung.ts`; Tests in `supabase/tests/platform-acting-for.test.ts` („Rechte je Art“) und `platform-representation.test.ts`.
+
+**Änderungspfad.** Ein weiterer Bereich: eine Spalte, ein Satz im Wortlaut, ein Fall in `platform_access_allows` · Aufwand `klein`. Vertretung nur für Rechnungen: die Pflicht zur Gesundheitssorge in `assert_platform_representation` und der Constraint lockern, die Gesundheitsfähigkeiten an `health_scope` binden · Aufwand `mittel`.
+
+### ANN-217 — Den Zugangsdienst ruft nach dem Löschlauf der Zeitplan des Betriebs; bis OPS-001 bleiben fällige Konten gesperrt stehen
+
+Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: OPS-001 (Edge Runtime am Testprojekt prüfen)
+
+**Annahme.** Die Aufgabe `konten_loeschen` des Zugangsdienstes ruft der Zeitplan des Betriebs nach jedem Löschlauf auf, mit dem Admin-Schlüssel als Bearer; ein anderer Aufruf wird abgewiesen. Ein abgeholter Auftrag ist 15 Minuten vergeben; was scheitert, kommt beim nächsten Aufruf wieder. Ein Konto, das beim Anmeldedienst schon fehlt (404), gilt als entfernt. Ein Konto, das seit dem Auftrag wieder einen laufenden Zugang hat, wird nicht gelöscht, der Auftrag fällt — außer nach einem Restore: Dann verliert das Konto seine Zugänge, und der Auftrag bleibt. Restrisiko: Bindet jemand das Konto genau zwischen Abholen und Löschen neu, zeigt der neue Zugang auf ein gelöschtes Konto; er ist dann wie jeder ohne Konto neu einzuladen. Solange die Edge Runtime nicht freigegeben ist (OPS-001), läuft der Aufruf nicht: Fällige Konten stehen dann ohne jeden Zugang beim Anmeldedienst, bis der Dienst scharf ist.
+
+**Begründung.** BEF-115 verlangt die unterstützte Admin-API statt SQL auf `auth.users`. Die Admin-API braucht den `service_role`-Schlüssel und damit eine serverseitige Funktion; die einzige, die ihn hält, ist der Zugangsdienst (ADR-023 Punkt 9). Ein Konto ohne Zugang kann nichts sehen (ADR-023 Punkt 18); das Warten bis OPS-001 ist deshalb ein Fristverzug, kein Zugriffsrisiko. Unsicher: welcher Zeitplan das sein wird (pg_cron, GitHub Actions oder der Anbieter) — das entscheidet OPS-001.
+
+**Anker.** `kontenLoeschen` in `supabase/functions/platform-access/handler.ts`, `istDienstaufruf` und `loeschauftraege` in `anmeldedienst.ts`; `public.claim_platform_account_deletions` in `supabase/migrations/20261002135000_abn_011_platform_account_deletion_queue.sql`; Tests in `supabase/functions/platform-access/handler.test.ts` („konten_loeschen“).
+
+**Änderungspfad.** Anderer Auslöser: nur der Aufruf von außen ändert sich, der Dienst bleibt · Aufwand `klein`. Längere Vergabe eines Auftrags: die 15 Minuten in `claim_platform_account_deletions` · Aufwand `klein`.
+
+### ANN-218 — Die Sperre der Wiederherstellung wirkt im Anmeldedienst über einen Mail-Hook; bis B13 bestätigt kein Plattformkonto sein Postfach
+
+Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 und OPS-001 (Hook einschalten); Jannes in der Sichtung der Plattform
+
+**Annahme.** Ein Plattformkonto bekommt einen Wiederherstellungslink per Mail nur mit einem per Link bestätigten Postfach für seine heutige Adresse (BEF-118). Die eine Regel ist `public.auth_email_allowed`: Praxiskonten unverändert; Plattformkonten nur `recovery` und nur mit Merkmal, nie einen Anmeldelink. Im Anmeldedienst wirkt sie über dessen **Mail-Hook**: Eingeschaltet verschickt der Anmeldedienst keine Mail mehr selbst, sondern ruft den Zugangsdienst (signiert nach „Standard Webhooks“). Der fragt die Regel und verschickt über den Versandweg oder verwirft **stumm** mit Erfolg, damit die Antwort nicht verrät, ob es ein Plattformkonto ist. Eine wiederholte Nachricht (dieselbe `webhook-id`) geht nicht ein zweites Mal hinaus; das Merkmal fällt mit jeder Adressänderung, auch bei der Rückkehr zu einer früheren Adresse. Der Hook ist abgeschaltet, bis der Versanddienst aus B13 steht und OPS-001 die Edge Runtime freigibt. Bis dahin gilt: Mails an Patient:innen erreichen niemanden (der eingebaute Versand stellt nur an das Projektteam zu, BEF-026), und die Plattform ist nicht scharf. Den Weg, ein Postfach per Link zu bestätigen, baut der Loop, der B13 umsetzt; bis dahin trägt kein Konto das Merkmal, und ein vergessenes Kennwort heißt: neuer Code vor Ort (ADR-023 Punkt 10).
+
+**Begründung.** Der Anmeldedienst verschickt den Wiederherstellungslink an jede bekannte Adresse; sein öffentlicher Endpunkt umgeht jede Oberfläche, und er kennt keine Regel je Konto. Die einzige unterstützte Stelle, an der sich das Verschicken prüfen lässt, ist der Mail-Hook. Er übernimmt dann alle Mails des Anmeldedienstes, auch die der Mitarbeitenden (Kennwort zurücksetzen, Zugangslink), und braucht deshalb einen Versanddienst — der fehlt bis B13. Unsicher: ob der Hook-Weg mit dem in B13 gewählten Anbieter so trägt; der Zugangsdienst spricht ihn ohnehin über den Adapter an.
+
+**Anker.** `public.auth_email_allowed`, `app.platform_mailbox_confirmed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
+
+**Änderungspfad.** Hook einschalten: Eintrag in `supabase/config.toml` bzw. im Cloudprojekt, Secret `SEND_EMAIL_HOOK_SECRET`, Versandweg aus B13 · Aufwand `klein`, sobald B13 steht. Bestätigungsweg: eine Mail mit Link an die Adresse und eine Funktion, die das Merkmal setzt · Aufwand `mittel`.
