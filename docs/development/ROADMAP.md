@@ -714,6 +714,10 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | A | ROL-EPIC-001 Office liest klinische Inhalte (E15) | gesichtet | 2026-09-15 | PR #41 | 2026-09-28 | — |
 | A | CAL-018 Hausbesuch-Szenarien (E14) | gesichtet | 2026-09-16 | `dc529a7`, `6a11fb0` | 2026-09-28 | — |
 | A | CAL-EPIC-004a Freie Terminlänge, Rückfrage beim Ziehen | gesichtet | 2026-09-18 | `ee81ea7`, `e189183` … `1b132ea` | 2026-09-28 | — |
+| A | CAL-EPIC-004b Anlegen-Menü, Fehlzeit und Dauerfehlzeit (CAL-019, CAL-021) | gesichtet | 2026-09-18 | `e189183`, `32b8ec9`, `2cb0327`, `e13a9e2`, `1b132ea`; Chronik 5.9 (BEF-017) | 2026-09-28 | — |
+| A | CAL-EPIC-004c Termine der Akte je Grundlage, Übertragen auf eine Folgeverordnung (AKTE-006) | gesichtet | 2026-09-18 | Chronik, Loop-Tabelle 2026-09-18 (`ee81ea7` … `1b132ea`); BEF-006, BEF-007 (BEF-017) | 2026-09-28 | — |
+| A | UX-013 Funktionssuche in der Kopfleiste (E17 Fassung 2) | gesichtet | 2026-09-18 | Chronik 5.10 (BEF-017) | 2026-09-28 | — |
+| A | GRD-001 Behandlungsgrundlage: Verordnung und Selbstzahler (ADR-020) | gesichtet | 2026-09-18 | Chronik 5.11 (BEF-017) | 2026-09-28 | — |
 | A | FIX-EPIC-004 Kalender-Bedienung (BEF-012 bis BEF-016) | gesichtet | 2026-09-18 | `14a1fa7` … `856a5ac` | 2026-09-28 | — |
 | A | VER-EPIC-002 Verordnung im Office-Alltag | gesichtet | 2026-09-18 | `f734e55`, `ba19245` | 2026-09-28 | — |
 | A | ABR-EPIC-001 Leistungen und Katalog | gesichtet | 2026-09-19 | `3874e83` … `a1384ce` | 2026-09-28 | — |

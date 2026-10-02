@@ -1,5 +1,5 @@
 {
-  "stand": "2026-09-26",
+  "stand": "2026-10-02",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -153,6 +153,42 @@
           "status": "gesichtet",
           "fertig_am": "2026-09-18",
           "nachweis": "`ee81ea7`, `e189183` … `1b132ea`",
+          "gesichtet_am": "2026-09-28"
+        },
+        {
+          "id": "cal-epic-004b",
+          "name": "CAL-EPIC-004b Anlegen-Menü, Fehlzeit und Dauerfehlzeit (CAL-019, CAL-021)",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-09-18",
+          "nachweis": "`e189183`, `32b8ec9`, `2cb0327`, `e13a9e2`, `1b132ea`; Chronik 5.9 (BEF-017)",
+          "gesichtet_am": "2026-09-28"
+        },
+        {
+          "id": "cal-epic-004c",
+          "name": "CAL-EPIC-004c Termine der Akte je Grundlage, Übertragen auf eine Folgeverordnung (AKTE-006)",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-09-18",
+          "nachweis": "Chronik, Loop-Tabelle 2026-09-18 (`ee81ea7` … `1b132ea`); BEF-006, BEF-007 (BEF-017)",
+          "gesichtet_am": "2026-09-28"
+        },
+        {
+          "id": "ux-013",
+          "name": "UX-013 Funktionssuche in der Kopfleiste (E17 Fassung 2)",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-09-18",
+          "nachweis": "Chronik 5.10 (BEF-017)",
+          "gesichtet_am": "2026-09-28"
+        },
+        {
+          "id": "grd-001",
+          "name": "GRD-001 Behandlungsgrundlage: Verordnung und Selbstzahler (ADR-020)",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-09-18",
+          "nachweis": "Chronik 5.11 (BEF-017)",
           "gesichtet_am": "2026-09-28"
         },
         {

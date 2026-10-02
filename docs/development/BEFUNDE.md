@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 ## Zweck
 
@@ -15,6 +15,9 @@ Spur", `ROADMAP.md`, Risiken). Sie hat **keinen Rang** in der
 Dokumentenhierarchie, ist **kein Auftrag** und führt **keine zweite
 Reihenfolge**: Was wann gebaut wird, steht ausschließlich in `ROADMAP.md`.
 Ein Befund wird verbindlich erst im SPEC-Schritt des Loops, der ihn aufnimmt.
+Zu jedem offenen Befund steht in [`BEFUNDE-LOESUNGEN.md`](BEFUNDE-LOESUNGEN.md)
+(Stand 2026-10-02) der heutige Codestand, die empfohlene Lösung und der
+Umsetzungspfad; auch diese Analyse hat keinen Rang.
 
 **Ablaufrunden ruhen.** Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md)
 sind bis Probewoche 1 (Roadmap H1, Feb 2027) eingefroren — Entscheidung von
@@ -48,7 +51,7 @@ aus dem Code — nie aus Telemetrie und nie an Mitarbeitenden (§20).
 | Datum | 2026-09-11 |
 | Bereich | Behandlungsdokumentation (`/termine/:id/dokumentation…`), „Behandlung abschließen" |
 | Quelle | Jannes, 2026-09-11; Codebefund und Messung Claude, 2026-09-11 · aus `IDEA-PRX-038`, 2026-09-12 |
-| Status | offen |
+| Status | erledigt in UI-Redesign Zyklus 2 (Schreibseite, PR #161); nachgemessen 2026-10-02, siehe Nachtrag unten |
 | Berührt | §8.1; ADR-016; UX-007, UX-009, DOK-001/002; `ANN-015`, `ANN-019`; ABR-002 |
 
 **Beobachtung.** Die Textfelder der Dokumentation sollen ohne Scrollen sichtbar
@@ -126,6 +129,17 @@ gedacht; die Runden ruhen bis Probewoche 1 (siehe oben). Bis dahin gilt R6:
 erste Story des nächsten Loops derselben Spur, mit Jannes' eigener
 Beobachtung an einem echten Tag als Eingabe (§20: gemessen wird nur durch ihn
 selbst) — ohne die bleibt jede Umsortierung geraten.
+
+**Nachtrag 2026-10-02, nachgemessen.** Die Schreibseite aus UI-Redesign
+Zyklus 2 (`CompleteTreatmentPage.tsx`) hat kein Untermenü, keine
+Seitenbeschreibung und keinen Hinweistext mehr; Name, Datum und Uhrzeit bleiben
+im Kopf, das Feld füllt die Höhe. Playwright auf der Prüfseite bei 375 × 667:
+Das Feld beginnt bei **105 px** (dazu kommen in der Anwendung die 56 px der
+Kopfzeile, also rund 160 statt 458), sichtbar sind **388 px** (vorher 308,
+davor 254). Festgehalten in `tests/e2e/schreibseite.spec.ts`. Der Folgesatz
+steht nur noch für Vorlesesoftware, das ist die Entscheidung aus ANN-200 und
+mit ihr zu bestätigen; Jannes' Beobachtung an einem echten Tag bleibt die
+letzte Prüfung (§20). Bausteinzeile und Skala laufen unter BEF-057 weiter.
 
 ---
 
@@ -272,7 +286,7 @@ ANN-052 Fassung 2.
 | Datum   | 2026-09-15                                                                                    |
 | Bereich | Verordnungen in der Akte (`/patienten/:id/verordnungen`), Detailzeilen der laufenden Verordnung |
 | Quelle  | Sichtprüfung zu ROL-EPIC-001: `pnpm screenshots --breite=1024` als office und als therapist   |
-| Status  | offen                                                                                         |
+| Status | erledigt in UI-Redesign Schritt 7 (PAT-B01, `DetailList.tsx` mit `wrap-anywhere`, Test in `bausteine.test.tsx`; PR #157) |
 | Berührt | VER-002, AKTE-002; `DetailRow` in `src/components/ui`                                         |
 
 **Beobachtung.** Bei 1024 px meldet das Werkzeug waagerechtes Scrollen um
@@ -295,7 +309,7 @@ die dann seitlich scrollt, widerspricht der Oberflächen-Checkliste
 | Datum   | 2026-09-16                                                                                    |
 | Bereich | Termin (`/termine/:id`)                                                                       |
 | Quelle  | Jannes, 2026-09-16, im Vergleich mit iPrax (`../product/ideen/referenz-iprax.md`)              |
-| Status  | offen — Vorgabe in [`CAL-EPIC-004.md`](archiv/CAL-EPIC-004.md), AKTE-006                              |
+| Status | erledigt in UX-EPIC-005 (PR #154) und UI-Redesign Zyklus 3 (PR #162): Metazeile, Aktionsleiste, Kacheln statt Tabelle; alle sieben Vorgänge behalten ihren Bestätigungsschritt. Vorgabe AKTE-006 bleibt im Archiv |
 | Berührt | CAL-008, CAL-014, CAL-012/013, UX-007, DOK-001/002, ADR-018; `AppointmentDetailPage.tsx`      |
 
 **Beobachtung.** „Die Ansicht eines speziellen Termins mag ich nicht." Die
@@ -584,7 +598,7 @@ UX-012), der neue Termin im Kalender hervorgehoben.
 | Datum   | 2026-09-19                                                                                          |
 | Bereich | Werkzeugkette: `docs/development/fortschritt.json`, `pnpm fortschritt`                              |
 | Quelle  | Loop ABR-EPIC-001, beim Nachstellen des Modells                                                     |
-| Status  | offen                                                                                               |
+| Status | erledigt in Docs-Session 2026-10-02: vier Posten in `fortschritt.json` (Gewicht 1, gesichtet 2026-09-28), Tabelle mit `pnpm fortschritt --schreiben` erzeugt |
 | Berührt | Block A; die Tabelle der fertigen Loops in `ROADMAP.md` nennt sie, das Modell nicht                 |
 
 **Beobachtung.** `fortschritt.json` führt in Block A keine Posten für
@@ -854,7 +868,7 @@ eigener Auftrag lohnt sie nicht.
 | Datum   | 2026-09-21                                                                          |
 | Bereich | Werkzeugkette: Abschnitt „Änderungsvermerk" in `docs/development/ROADMAP.md`        |
 | Quelle  | Loop CAL-027, beim Eintragen der eigenen Zeile                                      |
-| Status  | offen                                                                               |
+| Status | erledigt durch Umbau U3 (2026-09-24): Der Änderungsvermerk führt nur noch Planungsänderungen, Loop-Ergebnisse stehen allein in `fortschritt.json`, und Regel 6 in `scripts/docs-check.mjs` prüft sie gegen die Tabelle. Ein Gate Tabelle ↔ Vermerk wäre heute falsch; MAP-003 bleibt in der Chronik ohne eigenen Vermerk |
 | Berührt | Den Vermerk; Fortschrittstabelle und `fortschritt.json` führen MAP-003 korrekt       |
 
 **Beobachtung.** **MAP-003** (fertig 2026-09-21) hat eine Zeile in der Tabelle
@@ -1660,7 +1674,7 @@ Loop nur mit eigenem Zweitreview mit.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Rahmen aller Seiten: Seitenleiste und Symbolspalte (ab 640 px), Kopfzeile, Untermenü über der Akte (unter 640 px), Web-Manifest                                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs NAV-06, NAV-18, PAT-09, AUTH-07                                                                                                                                                                                                                 |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                       |
+| Status | offen — (2) erledigt im UI-Redesign (`abmeldeKnopf` 14 px grau); (1), (3), (4) offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | `src/app/AppShell.tsx` (Z. 43–51, 165–194, 237, 262), `src/components/ui/buttonStile.ts` (Z. 33), `src/app/navigation.tsx` (Z. 234), `src/features/patients/PatientRecordLayout.tsx` (Z. 247–260), `index.html`, `public/manifest.webmanifest`, `src/marke.test.ts`; DS-001; ANN-109, ANN-110, ANN-113; AKTE-000, UX-002h; BEF-001, BEF-044 |
 
 **Beobachtung.**
@@ -1995,7 +2009,7 @@ Zeile in `ARBEITSBEREICHE.md` nachziehen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                       |
 | Bereich | Kalender (`/kalender`): „Ansicht und Filter“, Wochenansicht, Kacheln; Tour (`/touren`)                                                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs KAL-14, TER-08, KAL-15, KAL-25                                                                                                                                                                                                                                       |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                            |
+| Status | offen — (4) erledigt im UI-Redesign (Personenfarben weg, die Linie an der Kachel sagt den Zustand); (1) bis (3) offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | `src/features/appointments/CalendarPage.tsx` (Z. 81–88, 446–455, 836–946), `src/features/appointments/CalendarGrid.tsx` (Z. 72–84, 347, 788), `src/features/tours/karte/Karte.tsx` (Z. 147, 309), `src/features/tours/TourenPage.tsx` (Z. 103, 146), `src/features/tours/Tourenliste.tsx` (Z. 75), `src/lib/kontrast.test.ts`; ANN-109, ANN-113, ANN-114; DS-001 |
 
 **Beobachtung.**
@@ -2188,7 +2202,7 @@ mehrere Formulare haben gar keinen Schutz vor Verlust (Review ZST-02, NAV-01).
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Bereich | Behandlungsdokumentation (`/termine/:id/abschluss`, `/termine/:id/dokumentation`, Nachtrag); Befund aus Bausteinen; Erhebung (Skalenfragen)                                                                                                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 375, 390 und 820 px, Gegenprüfung; Review-IDs DOK-09, BEF-21, BEF-05                                                                                                                                                                                                                                                                                                                                                |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Status | offen — Teil 1 (Textfeld) erledigt in UI-Redesign Zyklus 2 (Schreibseite, Messung bei BEF-001); Bausteinzeile und Skala offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | `src/features/documentation/TextbausteinLeiste.tsx` (Z. 29–35), `src/features/documentation/DocumentationShell.tsx` (Z. 56), `src/features/documentation/CompleteTreatmentPage.tsx` (Z. 202, 240), `src/features/documentation/TreatmentNoteAddendumPage.tsx` (Z. 91), `src/features/assessments/BausteinFeld.tsx` (Z. 90, 229–285, 418–440), `src/features/assessments/FragebogenFelder.tsx` (Z. 208–228); BEF-001; ANN-129, ANN-130; Oberflächen-Checkliste Punkt 1 |
 
 **Beobachtung.** BEF-001 verlangt, vor jeder Umsortierung neu zu messen.
@@ -2582,7 +2596,7 @@ aber im Ausstellungs- und Löschweg; ADR-013 Punkt 9 dabei prüfen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Bereich | Organisatorisches → Mitarbeitende → Datensatz (`/praxis/team/:id`), Abschnitt „Zugang“; Organisatorisches → Instrumente (`/praxis/instrumente`); Befund der Akte                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs ORG-09, ORG-18, BEF-19                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Status | offen — Trainingsbetreuung erledigt in TRN-003 (`trainer` in `WAEHLBARE_ROLLEN`, Server nimmt ihn an); Rückfragen und Instrumente offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | `src/features/staff/StaffAccountSection.tsx` (Z. 34, 270, 290, 354–410), `src/features/staff/StaffMemberDetailPage.tsx` (Z. 149–176, 284–288), `src/app/navigation.tsx` (`betriebUnterpunkte`), `src/routes/AuthenticatedRoutes.tsx` (Z. 135, 326), `src/features/assessments/PatientBefundPage.tsx` (Z. 111), `src/features/assessments/VerlaufAbschnitt.tsx` (Z. 105); `app.assert_staff_role_keys` (Migration `20260911110000_staff_account_invitations.sql`), Migration `20260920132000_training_role.sql`; ADR-004; ADR-021; ANN-103; STAFF-001; ADR-013 Punkt 9 (Rollen, Sichtbarkeit zwischen Rollen) |
 
 **Beobachtung.**
@@ -2806,7 +2820,7 @@ Patientenliste umbrechen statt kürzen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Bereich | Querschnitt: Tableiste (unter 640 px), Kalender (Stundenachse, Kacheln), Befund-Verlauf (Messreihe), Untermenü (Vorschau-Zeichen), Kopfsuche („Strg K“); Kleingedrucktes am Seitenende; Baustein `Badge`                                                                                                                                                                                                                                                                                                                  |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Messwerte aller Aufnahmen, Gegenprüfung; Review-IDs TOK-02, TOK-03, UIK-23, TOK-04, UIK-B01                                                                                                                                                                                                                                                                                                                                                            |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| Status | offen — `Badge` (28 px, 14 px, Gewicht 600) und die drei 12-px-Fehlertexte erledigt im UI-Redesign; freie Werte unter 12 px und Kleingedrucktes offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | `src/app/AppShell.tsx` (Z. 51), `src/app/navigation.tsx` (Z. 37–45), `src/lib/begriffe.test.ts` (Z. 101), `src/features/appointments/CalendarGrid.tsx` (Z. 411, 425, 827, 832), `src/features/assessments/Messreihenbild.tsx`, `src/components/ui/SubNav.tsx` (Z. 58), `src/app/Funktionssuche.tsx` (Z. 262), `src/components/ui/Badge.tsx` (Z. 56), `src/components/ui/RoleBadge.tsx`, `src/features/account/MeinKontoPage.tsx` (Z. 234), `src/index.css`; DS-001; `docs/product/kanvas/own-motion-praxis.html`; ANN-111 |
 
 **Beobachtung.**
@@ -3550,7 +3564,7 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 | Datum   | 2026-10-02 |
 | Bereich | Kartendienst (`location-provider`), Stammdaten (Verorten), Tour und Fahrpuffer |
 | Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-094, ANN-095, ANN-097) |
-| Status  | offen |
+| Status | offen — Punkt 2 Satz 2 und 3 erledigt seit MAP-006a (`app.drop_coordinate_on_address_change`, künftige Termine werden übertragen); Gate, eindeutige Treffer und Ersatzschätzungen offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
 | Berührt | ANN-094, ANN-095, ANN-097; ADR-019 (Gate Punkt 9, Anbieterprüfung); `LOCATION_DATA_GATE`; Matrix- und Routenantworten |
 
 **Erwartet** (Jannes, 2026-10-02):
