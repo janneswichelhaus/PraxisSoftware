@@ -264,17 +264,18 @@ Nach dem Test `VITE_SUPABASE_URL` zurückstellen, wenn E2E-Tests laufen sollen.
 Alle Konten verwenden das Entwicklungskennwort `LokalerTestzugang!2026`. Das ist
 kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
 
-| E-Mail                            | Rollen                                                    |
-| --------------------------------- | --------------------------------------------------------- |
-| `jannes.test@praxis.invalid`      | owner, therapist                                          |
-| `anna.beispiel@praxis.invalid`    | therapist                                                 |
-| `tim.teamleitung@praxis.invalid`  | therapist, team_lead                                      |
-| `olivia.office@praxis.invalid`    | office                                                    |
-| `max.mustermann@patient.invalid`  | keine (Profil ohne Rolle, seit POR-001)                   |
-| `erika.beispiel@patient.invalid`  | keine (Profil ohne Rolle, seit POR-001)                   |
-| `tom.training@praxis.invalid`     | trainer                                                   |
-| `tina.plattform@patient.invalid`  | Plattformkonto: Zugang zu Tinas Training                  |
-| `erika.plattform@patient.invalid` | Plattformkonto: Zugänge zu Erikas Behandlung und Training |
+| E-Mail                             | Rollen                                                                     |
+| ---------------------------------- | -------------------------------------------------------------------------- |
+| `jannes.test@praxis.invalid`       | owner, therapist                                                           |
+| `anna.beispiel@praxis.invalid`     | therapist                                                                  |
+| `tim.teamleitung@praxis.invalid`   | therapist, team_lead                                                       |
+| `olivia.office@praxis.invalid`     | office                                                                     |
+| `max.mustermann@patient.invalid`   | keine (Profil ohne Rolle, seit POR-001)                                    |
+| `erika.beispiel@patient.invalid`   | keine (Profil ohne Rolle, seit POR-001)                                    |
+| `tom.training@praxis.invalid`      | trainer                                                                    |
+| `tina.plattform@patient.invalid`   | Plattformkonto: Zugang zu Tinas Training                                   |
+| `erika.plattform@patient.invalid`  | Plattformkonto: Zugänge zu Erikas Behandlung und Training                  |
+| `paula.begleitung@patient.invalid` | Plattformkonto: Begleitung für Max (POR-EPIC-001b), Max selbst ohne Zugang |
 
 Plattformkonten haben kein Profil und keine Rolle; sie sehen nur das Gerüst
 unter `/p` (ADR-023, POR-EPIC-001).

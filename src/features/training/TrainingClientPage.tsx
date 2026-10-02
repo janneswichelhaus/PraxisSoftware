@@ -196,6 +196,7 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               verhaeltnisId={kundin.id}
               darfVerwalten={darfSchreiben}
               zeitzone={user.organizationTimeZone}
+              praxis={user.organizationName ?? 'der Praxis'}
             />
           ) : null}
         </>

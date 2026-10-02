@@ -160,8 +160,9 @@ describe('Plattformzugang: einladen (ADR-023 Punkte 6 bis 8)', () => {
       ['treatment', patients.max, 'on_site', false],
       'platform_access.invited',
     );
+    // Max hat seit POR-EPIC-001b eine Begleitung im Seed, aber keinen eigenen Zugang.
     const { rows } = await asPostgres(
-      'select 1 from public.platform_accesses where relationship_id = $1',
+      "select 1 from public.platform_accesses where relationship_id = $1 and access_kind = 'self'",
       [patients.max],
     );
     expect(rows).toEqual([]);

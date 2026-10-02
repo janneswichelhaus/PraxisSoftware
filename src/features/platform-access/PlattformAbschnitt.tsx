@@ -22,6 +22,7 @@ import {
   type Verhaeltnisart,
 } from './api';
 import { QrCode } from './QrCode';
+import { Vertretungen } from './Vertretungen';
 import { ZUSTAND, anzeigezustand } from './zustand';
 
 /**
@@ -37,29 +38,35 @@ import { ZUSTAND, anzeigezustand } from './zustand';
  * Der Code einer Einladung lebt nur in diesem Abschnitt, solange er offen
  * ist. Er steht nirgends sonst: nicht in der Adresse, nicht im
  * Abfragespeicher, nicht in der Datenbank (dort nur sein Hash).
+ *
+ * Darunter stehen die Vertretungen (POR-005): eigene Konten, die für die
+ * Person handeln, mit eigenem Zugang zu diesem Verhältnis.
  */
 export function PlattformAbschnitt({
   art,
   verhaeltnisId,
   darfVerwalten,
   zeitzone,
+  praxis,
 }: {
   art: Verhaeltnisart;
   verhaeltnisId: string;
   darfVerwalten: boolean;
   zeitzone: string;
+  /** Name der Praxis für den Wortlaut der Einwilligung zur Begleitung. */
+  praxis: string;
 }) {
   const schluessel = zugangsschluessel(art, verhaeltnisId);
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: schluessel,
     queryFn: () => getPlatformAccess(art, verhaeltnisId),
   });
-  const [einladung, setEinladung] = useState<Einladung | null>(null);
+  const [einladung, setEinladung] = useState<{ einladung: Einladung; fuer?: string } | null>(null);
 
   return (
     <Section
       titel="Plattform"
-      hinweis="Eigener Zugang der Person zu Terminen und Unterlagen. Er ändert nichts an diesem Verhältnis."
+      hinweis="Eigener Zugang der Person und ihrer Vertretung zu Terminen und Unterlagen. Er ändert nichts an diesem Verhältnis."
       rahmen
     >
       {isPending ? (
@@ -71,16 +78,30 @@ export function PlattformAbschnitt({
           onErneut={refetch}
         />
       ) : einladung ? (
-        <EinladungVorOrt einladung={einladung} onFertig={() => setEinladung(null)} />
-      ) : (
-        <Zustand
-          art={art}
-          verhaeltnisId={verhaeltnisId}
-          zugang={data ?? null}
-          darfVerwalten={darfVerwalten}
-          zeitzone={zeitzone}
-          onEinladungVorOrt={setEinladung}
+        <EinladungVorOrt
+          einladung={einladung.einladung}
+          fuer={einladung.fuer}
+          onFertig={() => setEinladung(null)}
         />
+      ) : (
+        <>
+          <Zustand
+            art={art}
+            verhaeltnisId={verhaeltnisId}
+            zugang={data ?? null}
+            darfVerwalten={darfVerwalten}
+            zeitzone={zeitzone}
+            onEinladungVorOrt={(e) => setEinladung({ einladung: e })}
+          />
+          <Vertretungen
+            art={art}
+            verhaeltnisId={verhaeltnisId}
+            darfVerwalten={darfVerwalten}
+            zeitzone={zeitzone}
+            praxis={praxis}
+            onEinladungVorOrt={(e, fuer) => setEinladung({ einladung: e, fuer })}
+          />
+        </>
       )}
     </Section>
   );
@@ -304,18 +325,23 @@ function MailEinladung({
  */
 export function EinladungVorOrt({
   einladung,
+  fuer,
   onFertig,
 }: {
   einladung: Einladung;
+  /** Bei einer Vertretung: wer scannt (POR-005). Ohne Angabe die Person selbst. */
+  fuer?: string | undefined;
   onFertig: () => void;
 }) {
   const adresse = einloeseadresse(window.location.origin, einladung.code);
+  const wer = fuer ? fuer : 'die Person';
   return (
     <div className="flex flex-col items-start gap-4">
       <p className="text-ink max-w-prose text-sm">
         {einladung.purpose === 'reset'
-          ? 'Bitte die Person diesen Code mit dem eigenen Telefon scannen lassen. Dort setzt sie ein neues Kennwort.'
-          : 'Bitte die Person diesen Code mit dem eigenen Telefon scannen lassen. Dort legt sie Adresse und Kennwort fest.'}
+          ? `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entsteht ein neues Kennwort.`
+          : `Bitte ${wer} diesen Code mit dem eigenen Telefon scannen lassen. Dort entstehen Adresse und Kennwort.`}
+        {fuer ? ' Es ist ein eigenes Konto, nie das der Person.' : ''}
       </p>
       <QrCode inhalt={adresse} bezeichnung="Code zum Einlösen der Einladung" />
       <p className="text-ink-muted text-sm">

@@ -224,6 +224,11 @@ export const AUDIT_ACTIONS = [
   'platform_access.unlocked',
   'platform_access.revoked',
   'platform_accesses.read',
+  // POR-005/006: Vertretung (ADR-023 Punkte 13, 14, 24). Ein Zugriff über
+  // eine Vertretung schreibt das Konto der Vertretung (actor_kind
+  // representative), Gegenstand ist das Verhältnis der vertretenen Person.
+  'platform_access.companion_declined',
+  'platform_representation.read',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -372,6 +377,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'platform_access.unlocked': 'Plattformzugang entsperrt',
   'platform_access.revoked': 'Plattformzugang entzogen',
   'platform_accesses.read': 'Plattformzugang angesehen',
+  'platform_access.companion_declined':
+    'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
+  'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

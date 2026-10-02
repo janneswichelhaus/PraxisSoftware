@@ -280,6 +280,7 @@ describe('Audit-Lesepfad', () => {
       'list_patient_treatment_notes',
       'list_patient_upcoming_appointments',
       'list_payments',
+      'list_platform_representations',
       'list_practice_revenue_months',
       'list_revenue_by_service_area',
       'list_revenue_by_staff',

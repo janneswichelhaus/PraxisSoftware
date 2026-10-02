@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 70 Einträge):
+Zusatz `Prüfpaket` (heute 78 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2374,3 +2374,87 @@ Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `TerminPanel` in `src/features/appointments/TerminPanel.tsx`, Umschalter und Wochenende in `CalendarPage.tsx`, Kachel in `CalendarGrid.tsx`; Migration `20261001200000_cal_doku_stand_im_kalender.sql`; Tests `CalendarPage.test.tsx`, `supabase/tests/list-appointments.test.ts`.
 
 **Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.
+
+### ANN-203 — Die vertretende Person bekommt keine Zeile in `persons`; ihr Name steht am Zugang als Nachweis
+
+Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 13 und Konsequenzen)
+
+**Annahme.** Eine Vertretung (rechtliche Vertretung oder Begleitung) wird in der Praxis nicht als Person angelegt. Ihr Vor- und Nachname steht als Freitext am Zugang (`representative_name`) und gehört zum Nachweis. Er bleibt drei Jahre nach dem Ende des Zugangs stehen, auch wenn das Verhältnis der vertretenen Person vorher fällt. Der Name der vertretenen Person steht nie am Zugang.
+
+**Begründung.** ADR-023 verlangt in den Konsequenzen (Fassung 2) ausdrücklich, dass der Nachweis bei einer Vertretung den Namen der vertretenden Person trägt, weil ihr Konto nach 30 Tagen fällt. Eine eigene `persons`-Zeile wäre ein zweites Datum mit eigener Frist und eigener Löschfrage, ohne Mehrwert: Die Praxis behandelt die vertretende Person nicht. Die Adresse der vertretenden Person liegt nur beim Anmeldedienst (ANN-191). Unsicher: ob die Prüfung den Namen nach dem Ende kürzer halten will als die Auditeinträge.
+
+**Anker.** Spalte `representative_name` und Constraint `platform_accesses_kind_fields` in `supabase/migrations/20261002100000_por_005_representation.sql`; Test „beendet die Vertretung mit dem Verhaeltnis …" in `supabase/tests/platform-representation.test.ts`.
+
+**Änderungspfad.** Kürzere Frist für den Namen: im Löschlauf `representative_name` nach dem Ende des Zugangs leeren und den Constraint für `revoked` lockern · Aufwand `mittel`.
+
+### ANN-204 — Vertretungen werden in V1 nur vor Ort eingeladen
+
+Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5); Mailversand mit B13
+
+**Annahme.** Eine Vertretung bekommt ihren Code nur auf dem Praxisgerät zum Scannen. Eine Einladung per Mail gibt es für Vertretungen nicht, und ihre Adresse wird in der Praxis nicht gespeichert. Einen neuen Code (neue Einladung oder neues Kennwort) gibt es ebenfalls nur vor Ort.
+
+**Begründung.** ADR-023 Punkt 13 verlangt, dass die Praxis den Ausweis der vertretenden Person und bei rechtlicher Vertretung das Dokument der Vollmacht ansieht. Das geschieht ohnehin vor Ort, und dort ist die Übergabe des Codes zugleich die Identitätsprüfung (Punkt 11). Eine Mail ginge an eine Adresse, die die Praxis nicht geprüft hat und die sie sonst nicht braucht. Punkt 13 verlangt außerdem, dass die Begleitung „vor Ort in zwei Minuten" eingerichtet ist. Unsicher: ob Betreuer:innen, die selten in die Praxis kommen, einen Weg per Mail brauchen.
+
+**Anker.** `public.invite_platform_representation` und `app.issue_platform_invitation` (Kanal `on_site`) in `supabase/migrations/20261002100000_por_005_representation.sql`.
+
+**Änderungspfad.** Mail für Vertretungen: Adressfeld am Zugang, Bestätigungsvermerk wie ANN-188, Versand über den Zugangsdienst · Aufwand `mittel`.
+
+### ANN-205 — Der Nachweisvermerk besteht aus Häkchen je Dokumentart; gespeichert wird kein Dokument
+
+Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung und rechtliche Klärung (B5; ADR-023 Punkt 13, Folgefrage Aufgabenkreis)
+
+**Annahme.** Der Nachweis einer Vertretung hält fest, welche Art Dokument angesehen wurde, wer es angesehen hat und wann: immer den Ausweis der vertretenden Person, bei rechtlicher Vertretung zusätzlich den Sorgerechtsnachweis, den Betreuerausweis oder die Vollmacht. Bei einer Betreuung bestätigt die Praxis außerdem mit einem Häkchen, dass der Aufgabenkreis die Gesundheitssorge umfasst; ohne dieses Häkchen gibt es keine Betreuung als Vertretung. Weder ein Scan noch eine Ausweis- oder Aktennummer wird gespeichert. Art und Nachweis eines Zugangs ändern sich nie; ein anderer Umfang ist eine neue Einladung.
+
+**Begründung.** ADR-023 Punkt 13 (Fassung 2): „Gespeichert wird davon nichts, weder Scan noch Ausweisnummer. Der Vermerk hält nur fest, was wer wann gesehen hat." Die Folgefrage zum Aufgabenkreis schlägt den Vermerk „Betreuerausweis gesehen, Aufgabenkreis …" vor. Ein Häkchen statt Freitext hält Gesundheitsangaben aus dem Vermerk heraus. Unsicher: ob der Aufgabenkreis „Gesundheitssorge" genügt oder ob „Vermögenssorge" für Rechnungen dazukommen muss (B5).
+
+**Anker.** `app.assert_platform_representation` und Constraint `platform_accesses_kind_fields` in `supabase/migrations/20261002100000_por_005_representation.sql`; `NACHWEISDOKUMENT` in `src/lib/vertretung.ts`; Formular `VertretungEinrichten` in `src/features/platform-access/Vertretungen.tsx`.
+
+**Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`.
+
+### ANN-206 — Wortlaut der Einwilligung zur Begleitung, versioniert und auf dem Praxisgerät bestätigt
+
+Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13 „Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2")
+
+**Annahme.** Die Einwilligung zur Begleitung hat den Wortlaut aus `einwilligungBegleitung` in der Fassung `begleitung-2026-10-02`. Er nennt die begleitende Person und die Praxis, was die Begleitung sieht und schreiben darf, ob frühere Nachrichten sichtbar sind, was sie nicht darf (Einwilligung, Widerruf, Datenexport, Befund, Dokumentation), die Entbindung von der Schweigepflicht, die Freiwilligkeit ohne Nachteil und den jederzeitigen Widerruf. Die Person liest ihn auf dem Praxisgerät, und die Praxis bestätigt per Häkchen, dass sie selbst eingewilligt hat. Gespeichert werden die Fassung, wer dabei war und wann. Ändert sich die Sichtbarkeit früherer Nachrichten, muss erneut eingewilligt werden. Die Einwilligung im eigenen Konto unter „Ich" kommt mit POR-EPIC-003.
+
+**Begründung.** ADR-023 Punkt 13 verlangt eine ausdrückliche Einwilligung nach Art. 9 Abs. 2 lit. a DSGVO, konkret, informiert, freiwillig, widerruflich und nachweisbar nach Art. 7 Abs. 1. Ohne eigenes Konto bestätigt die Person sie auf dem Praxisgerät, und der Vermerk nennt, wer dabei war. Die Fassung als Kennung macht nachweisbar, welchem Text zugestimmt wurde, ohne den Text je Zugang zu speichern. Unsicher: ob die Prüfung eine Unterschrift oder Textform statt des Häkchens der Praxis verlangt.
+
+**Anker.** `EINWILLIGUNG_BEGLEITUNG_FASSUNG` und `einwilligungBegleitung` in `src/lib/vertretung.ts`; `app.platform_companion_consent_version` in `supabase/migrations/20261002100000_por_005_representation.sql`; Gleichlauf im Test „Fassung der Einwilligung" in `supabase/tests/platform-representation.test.ts`.
+
+**Änderungspfad.** Neuer Wortlaut: neue Kennung an beiden Stellen; bestehende Begleitungen behalten ihre Fassung · Aufwand `klein`. Unterschrift statt Häkchen: Unterschriftsfeld und Ablage als Dokument (ADR-017) · Aufwand `mittel`.
+
+### ANN-207 — Ein Zweifel an der Einwilligungsfähigkeit wird nur als Vorgang vermerkt, ohne Grund
+
+Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13)
+
+**Annahme.** Zweifelt die Praxis daran, dass die Person einwilligen kann, tippt sie im Formular „Zweifel an der Einwilligungsfähigkeit". Dann gibt es keine Begleitung, nur eine rechtliche Vertretung. Vermerkt wird ein Auditeintrag `platform_access.companion_declined` mit der Akte bzw. dem Trainingsverhältnis als Gegenstand und dem Kontext `reason: capacity_doubt`, ohne Freitext und ohne Diagnose. Am Verhältnis selbst wird nichts gespeichert. Der Vermerk sperrt keine spätere Begleitung; er dokumentiert die Entscheidung im Moment.
+
+**Begründung.** ADR-023 Punkt 13: „Der Zweifel wird vermerkt, eine Diagnose nicht." Ein Merkmal an der Akte („nicht einwilligungsfähig") wäre eine Gesundheitsangabe mit eigener Wirkung und würde die Person auf Dauer festlegen. Ein Auditeintrag weist nach, dass und warum keine Begleitung eingerichtet wurde, und fällt nach drei Jahren (ANN-029). Unsicher: ob die Prüfung eine Sperre am Verhältnis erwartet.
+
+**Anker.** `public.note_companion_capacity_doubt` in `supabase/migrations/20261002100000_por_005_representation.sql`; Knopf im Formular `VertretungEinrichten` in `src/features/platform-access/Vertretungen.tsx`.
+
+**Änderungspfad.** Sperre am Verhältnis: Spalte mit Datum und Rücknahme, Prüfung in `app.assert_platform_representation` · Aufwand `mittel`.
+
+### ANN-208 — Ohne Geburtsdatum keine Vertretung; das Sorgerecht endet am 18. Geburtstag in der Zeitzone der Praxis
+
+Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkt 15, W4)
+
+**Annahme.** Eine Vertretung setzt ein Geburtsdatum im Verhältnis voraus, wie der eigene Zugang (ANN-190). Unter 18 Jahren gibt es nur die rechtliche Vertretung durch Sorgeberechtigte, ab 18 kein Sorgerecht und erst dann Betreuung, Vorsorgevollmacht oder Begleitung. Ein Zugang aus dem Sorgerecht endet um 0 Uhr am 18. Geburtstag in der Zeitzone der Praxis, ohne Zutun der Praxis. Damit enden auch Lesefrist und Kontofrist (30 Tage danach). Eine Sorgeberechtigte bekommt danach keinen neuen Code.
+
+**Begründung.** ADR-023 Punkt 15: „Mit dem 18. Geburtstag endet deren Wirkung aus dem Sorgerecht. Das prüft der Server am Geburtsdatum der Person." § 1626 BGB endet mit der Volljährigkeit (§ 2 BGB). Ohne Geburtsdatum ist die Grenze nicht prüfbar, und die restriktive Seite gilt (§16). Das Ende rechnet `app.platform_access_ended_at`, die eine Stelle für Ende, Lesefrist und Löschlauf. Unsicher: ob eine volljährig gewordene Person übergangsweise sehen soll, wer bisher Zugang hatte. Das kommt mit ihrem eigenen Zugang unter „Ich" (POR-007).
+
+**Anker.** `app.assert_platform_representation` und `app.platform_access_ended_at` in `supabase/migrations/20261002100000_por_005_representation.sql` (Grenze `app.platform_min_age_years`); Tests „Sorgerecht endet am 18. Geburtstag" in `supabase/tests/platform-representation.test.ts`.
+
+**Änderungspfad.** Andere Altersgrenze: `app.platform_min_age_years` · Aufwand `klein`. Vertretung ohne Geburtsdatum für Erwachsene zulassen: Prüfung in `app.assert_platform_representation` lockern · Aufwand `klein`.
+
+### ANN-209 — Jeder Aufruf über eine Vertretung wird protokolliert, auch das Gerüst der Plattform
+
+Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)
+
+**Annahme.** Jeder Aufruf einer Plattformprojektion über einen lesbaren Vertretungszugang schreibt einen Auditeintrag `platform_representation.read`, auch der Aufruf des Gerüsts, der nur den Namen der vertretenen Person liefert. Akteurstyp ist `representative`, Akteur das Konto der vertretenden Person. Gegenstand ist die Akte bzw. das Trainingsverhältnis, im Kontext stehen der Zugang, die Art und die Ansicht. Ein gesperrter oder abgelaufener Zugang liest nichts und schreibt nichts. Das eigene Lesen der Person bleibt unprotokolliert.
+
+**Begründung.** ADR-023 Punkt 24 (W5): „jeder Zugriff über eine Vertretung, auch lesend". Schon das Gerüst zeigt den Namen der vertretenen Person und ist damit ein Zugriff auf ihre Daten. Der Gegenstand `patient` sorgt dafür, dass ein Legal Hold auch diese Einträge hält und die Praxis im Protokoll nach der Akte filtern kann. Die Menge ist überschaubar: ein Eintrag je Seitenaufruf. Unsicher: ob die Prüfung eine Bündelung je Sitzung vorzieht.
+
+**Anker.** `app.log_platform_representation` und `public.platform_context` in `supabase/migrations/20261002101000_por_006_acting_for.sql`; Tests in `supabase/tests/platform-acting-for.test.ts`.
+
+**Änderungspfad.** Bündeln je Tag und Zugang: in `app.log_platform_representation` vor dem Einfügen nach einem Eintrag desselben Tages fragen · Aufwand `klein`.
