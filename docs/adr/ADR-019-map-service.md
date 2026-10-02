@@ -2,13 +2,13 @@
 
 ## Status
 
-**Angenommen, Fassung 4** — von Jannes am 2026-09-22 bestätigt.
+**Angenommen, Fassung 5** — Fassung 4 von Jannes am 2026-09-22 bestätigt,
+Fassung 5 am 2026-10-02, F5-1 bis F5-4 wie empfohlen.
 Die Annahme gilt der Zielarchitektur, dem Kandidaten und dem Gate; **produktiv
 freigeschaltet ist damit nichts** — die Freigabe echter Adressen an einen
 Anbieter bleibt am Gate aus Punkt 9 (Vertrag, §203, DSFA).
 
-**Fassung 5 vorgeschlagen (2026-10-02), Bestätigung durch Jannes offen** —
-bis dahin gilt Fassung 4. Anlass ist die Abnahme der Annahmen vom 2026-10-02
+**Fassung 5 (2026-10-02, am selben Tag angenommen).** Anlass ist die Abnahme der Annahmen vom 2026-10-02
 (Block 7, BEF-109; ANN-094, ANN-095, ANN-097). Fassung 5 ändert **nichts an
 der Architektur und nichts am Anbieter**, sondern schärft das Gate und zwei
 Datenregeln im neuen **Abschnitt G (Punkte 34 bis 38)**: Das Gate deckt
@@ -17,7 +17,7 @@ gilt für beide Wege; `synthetic` und `mock` sind in der Produktion technisch
 ausgeschlossen; übernommen wird nur ein eindeutiger Treffer zur vollständigen
 Adresse; eine Ersatzschätzung ist keine Fahrzeit. Die Punkte 1 bis 33
 bleiben Wort für Wort stehen; die Punkte 9, 14 und 16 tragen einen Vermerk
-„Fassung 5, vorgeschlagen". Neu ist außerdem die Änderungshistorie am Ende,
+„Fassung 5". Neu ist außerdem die Änderungshistorie am Ende,
 die die Fassungsregel in `docs/adr/README.md` verlangt und die bisher fehlte.
 
 Fassung 4 ändert **nichts an der Architektur und nichts am Umfang des Gates**,
@@ -60,7 +60,7 @@ Gate fest, das vor Echtdaten zu passieren ist.
 
 2026-09-08 (Fassung 2; Fassung 1 vom selben Tag) · angenommen 2026-09-13 ·
 **Fassung 3 und Fassung 4 vom 2026-09-22, je am selben Tag angenommen** ·
-Fassung 5 vom 2026-10-02, vorgeschlagen
+Fassung 5 vom 2026-10-02, am selben Tag angenommen
 
 ## Kontext
 
@@ -159,7 +159,7 @@ konnten **nicht** verifiziert werden und sind durchgehend als
    und Zweitnutzung, EU-Region, Vertragsmodell, Prüfung der Edge Runtime,
    DSFA-Wiedervorlage. Ein einziger negativer Punkt heißt: Anbieterwechsel
    hinter dem Vertrag, nicht Verzicht auf die Funktion.
-   *Vermerk 2026-10-02 (Fassung 5, vorgeschlagen): Das Gate gilt
+   *Vermerk 2026-10-02 (Fassung 5): Das Gate gilt
    ausdrücklich für alle drei Datenwege aus Punkt 6, auch für die Kacheln
    aus dem Browser, und die Gate-Liste bekommt zwei Punkte (Punkt 34). Der
    technische Schalter gilt für beide Wege (Punkt 35) und schließt
@@ -191,7 +191,7 @@ zurückzubauen ist.
     Öffnen einer Karte; die Koordinate wird als abgeleitetes Stammdatum bei
     der Adresse gespeichert und teilt deren Datenklasse und Frist
     (**ANN-016**).
-    *Vermerk 2026-10-02 (Fassung 5, vorgeschlagen): Ohne Rückfrage
+    *Vermerk 2026-10-02 (Fassung 5): Ohne Rückfrage
     übernommen wird nur ein eindeutiger Treffer zur vollständigen Adresse
     (Punkt 37).*
 15. **Geocoding, Routing und Matrix laufen serverseitig** (**ANN-017**:
@@ -212,7 +212,7 @@ zurückzubauen ist.
     Routing-Rohantworten. Sie werden im Moment der Planung abgerufen,
     angezeigt und verworfen (entschieden 2026-09-08, B7). §9 und §18 werden
     damit strenger erfüllt als gefordert: es entstehen keine Routing-Rohdaten.
-    *Vermerk 2026-10-02 (Fassung 5, vorgeschlagen): Eine Ersatzschätzung des
+    *Vermerk 2026-10-02 (Fassung 5): Eine Ersatzschätzung des
     Anbieters ist keine Fahrzeit und wird nicht als solche angezeigt
     (Punkt 38).*
 17. **Kein Live-Tracking, keine Bewegungsverläufe, keine Auswertung je
@@ -353,7 +353,7 @@ ist.
     einmalige Übergabe einer Adresse, sondern eine wiederholte Übermittlung
     von Koordinaten während einer Fahrt zu einer Patientenadresse.
 
-### G. Gate in der Technik, Treffer und Schätzungen (Fassung 5, vorgeschlagen)
+### G. Gate in der Technik, Treffer und Schätzungen (Fassung 5)
 
 **Anlass.** In der Abnahme vom 2026-10-02 hat Jannes drei Annahmen bestätigt
 und dabei geschärft (BEF-109): `synthetic` ist in der Produktion **technisch**
@@ -511,7 +511,7 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
   von diesem ADR gedeckt — auch dann nicht, wenn sie technisch einfacher
   wäre.
 
-### Konsequenzen der Fassung 5 (vorgeschlagen)
+### Konsequenzen der Fassung 5
 
 - **Ohne bestandenes Gate gibt es in der Produktion keine Karte**, nur die
   Liste mit Nummern (Punkt 35). Das ist strenger als bisher, wo ein
@@ -534,7 +534,8 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
   `docs/datenschutz/kartendienst.md` (Kachelweg, `APP_ENVIRONMENT`), ANN-094,
   ANN-095 und ANN-097 in neuer Fassung mit dem Bau (ABN-EPIC-001c);
   `docs/adr/README.md` nennt die Fassung. Die Prinzipien berühren keine dieser
-  Regeln.
+  Regeln. *Erledigt am 2026-10-02: Gate-Liste, `kartendienst.md`, `README.md`.
+  Die Annahmen bleiben beim Bau.*
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -581,10 +582,12 @@ Grund für „bevorzugter Kandidat", nicht „freigegeben".
 - Wie wird die Endgeräteregel überprüft, ohne das Telefon zu kontrollieren
   (§20)? Vorschlag für BETRIEB-001: schriftliche Bestätigung.
 
-## Bestätigungsfragen zu Fassung 5 — offen
+## Bestätigungsfragen zu Fassung 5 — beantwortet am 2026-10-02
 
-Die Richtung hat Jannes in der Abnahme vom 2026-10-02 entschieden (BEF-109).
-Offen ist, wie sie im ADR steht. **Was die Bestätigung nicht erledigt:** Das
+**Alle vier wie empfohlen bestätigt.** Die Richtung hatte Jannes in der
+Abnahme vom 2026-10-02 entschieden (BEF-109); bestätigt ist hier, wie sie im
+ADR steht. F5-4 legt sich auf „nicht verfügbar" fest, nicht auf eine
+gekennzeichnete Schätzung. **Was die Bestätigung nicht erledigt:** Das
 Gate selbst — Vertrag, §203, DSFA — bleibt bei Jannes und PTV; freigeschaltet
 wird nichts.
 
@@ -637,4 +640,4 @@ Dokumentenrecherche; sie geht mit B2 an die Datenschutzberatung.
 | 2 | 2026-09-08 | In-App-Karte mit PTV Developer als Kandidat, Gate aus Punkt 9; angenommen 2026-09-13 |
 | 3 | 2026-09-22 | Abschnitt F (Führung auf dem Gerät), löst Kontext-Punkt 6 ab; am selben Tag angenommen |
 | 4 | 2026-09-22 | Gate vom Baubeginn auf das Scharfschalten (§15.2), Umfang unverändert; am selben Tag angenommen |
-| 5 | 2026-10-02 | **vorgeschlagen, F5-1 bis F5-4 offen:** Abschnitt G (Punkte 34 bis 38) — Kacheln im Gate mit zwei neuen Punkten der Gate-Liste, ein Schalter für Kacheln und Server-Aufrufe, `synthetic` und `mock` in der Produktion technisch ausgeschlossen (fehlende Umgebung gilt als Produktion), nur eindeutige Treffer zur vollständigen Adresse ohne Rückfrage, Ersatzschätzungen als „Fahrzeit nicht verfügbar" (BEF-109). Punkte 1 bis 33 bleiben stehen; Vermerke an 9, 14 und 16 |
+| 5 | 2026-10-02 | **angenommen am selben Tag, F5-1 bis F5-4 wie empfohlen:** Abschnitt G (Punkte 34 bis 38) — Kacheln im Gate mit zwei neuen Punkten der Gate-Liste, ein Schalter für Kacheln und Server-Aufrufe, `synthetic` und `mock` in der Produktion technisch ausgeschlossen (fehlende Umgebung gilt als Produktion), nur eindeutige Treffer zur vollständigen Adresse ohne Rückfrage, Ersatzschätzungen als „Fahrzeit nicht verfügbar" (BEF-109). Punkte 1 bis 33 bleiben stehen; Vermerke an 9, 14 und 16 |

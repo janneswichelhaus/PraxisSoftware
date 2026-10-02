@@ -4,7 +4,8 @@ Stand: 2026-09-22 · Ergebnis von MAP-001 · **Loop-Vorgabe**: Eingabe für den
 SPEC-Schritt des jeweils aufgerufenen Loops, kein eigener Rang · Reihenfolge
 und Termine bestimmt `ROADMAP.md`, Etappe T.
 
-Grundlage sind ADR-019 Fassung 4 (bestätigt 2026-09-22) und der Vertrag in
+Grundlage sind ADR-019 Fassung 5 (Fassung 4 bestätigt 2026-09-22, Fassung 5 mit
+Abschnitt G am 2026-10-02) und der Vertrag in
 `src/lib/location/contract.ts`. Jeder Loop ist ein eigener
 `/feature-loop`-Aufruf und baut nur seinen Abschnitt. Synthetische Daten,
 Anbieterzugang durch Jannes, Privacy-Regeln und das Gate vor Echtdaten stehen

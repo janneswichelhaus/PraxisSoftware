@@ -2,9 +2,10 @@
 
 ## Status
 
-**Angenommen, Fassung 2** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 3** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
-Fragen 9 bis 14 wie empfohlen (Abschnitte am Ende).
+Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
+Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende).
 
 Fassung 2 ergänzt **Abschnitt G** (Punkte 31 bis 42): **Fotos von
 Patient:innen** mit eigener Einwilligung als Rechtsgrundlage, eigener
@@ -20,8 +21,7 @@ Bezugsdatensatz); für alle anderen Arten gelten sie unverändert. Diese drei
 Punkte, Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage tragen
 einen Vermerk.
 
-**Fassung 3 vorgeschlagen (2026-10-02), Bestätigung durch Jannes offen** —
-bis dahin gilt Fassung 2. Anlass ist die Abnahme der Annahmen vom 2026-10-02
+**Fassung 3 (2026-10-02, am selben Tag angenommen).** Anlass ist die Abnahme der Annahmen vom 2026-10-02
 (Block 6: BEF-105, BEF-106; dazu BEF-059 aus dem UX-Review). Fassung 3 fügt
 drei Abschnitte hinzu:
 
@@ -42,12 +42,10 @@ drei Abschnitte hinzu:
   Aktion. Er schränkt Punkt 15 ein (BEF-059).
 
 **Die Punkte 1 bis 42 bleiben Wort für Wort stehen**; die Punkte 7, 15, 31, 32,
-35, 36 und 38 tragen einen Vermerk „Fassung 3, vorgeschlagen". **Nach der
-Annahme nachzuziehen:** §5 der Prinzipien sagt heute, Fotos von Patient:innen
-„setzen eine eigene, ausdrückliche Einwilligung voraus" — das gilt danach nur
-noch für die Foto-Arbeitshilfe; der Nachzug kommt in einem eigenen Commit mit
-neuer Version (§21). Bis dahin geht Rang 1 vor, und ein Dokumentationsfoto
-ohne Einwilligung wird nicht gebaut.
+35, 36 und 38 tragen einen Vermerk „Fassung 3". §5 der Prinzipien, der für
+jedes Foto der Person eine Einwilligung verlangte, ist mit Version 0.20
+nachgezogen (§21): Die Einwilligung gilt dort nur noch für die
+Foto-Arbeitshilfe.
 
 **Was die Annahme nicht erledigt:** Einordnung, Wortlaut der Einwilligung und
 Frist sind Datenschutz und Recht. Die Annahme gibt den Bau von DOK-006 frei;
@@ -64,7 +62,7 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 ## Datum
 
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
-2026-10-02 (Fassung 3, vorgeschlagen)
+2026-10-02 (Fassung 3, am selben Tag angenommen)
 
 ## Kontext
 
@@ -194,7 +192,7 @@ tut; Punkt 33 entscheidet es hier.
    Eine `pending`-Zeile, die älter als **24 Stunden** ist, wird samt Objekt
    verworfen. Ohne (a) gäbe es keine Stelle für die Berechtigungsprüfung, ohne
    (c) wäre „hochgeladen" eine Behauptung des Browsers.
-   *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Der MIME-Typ in den
+   *Vermerk 2026-10-02 (Fassung 3): Der MIME-Typ in den
    Objektmetadaten übernimmt die Angabe des Browsers und ist keine zweite
    Quelle (ANN-053). Typ, Prüfsumme und Metadaten prüft der Server am Inhalt
    (Punkte 49 bis 52).*
@@ -258,7 +256,7 @@ tut; Punkt 33 entscheidet es hier.
     Rückwegen aus UX-012: kein Name in der Adresszeile).
     *Vermerk 2026-09-26 (Fassung 2): Ein Verweis auf ein
     `patientenfoto` trägt keinen Downloadnamen; angezeigt wird nach Punkt 40.*
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Für alle Arten trägt der
+    *Vermerk 2026-10-02 (Fassung 3): Für alle Arten trägt der
     Verweis zum Anzeigen keinen Downloadnamen (Punkt 54); den Downloadnamen
     trägt nur der Verweis der eigenen Aktion „Herunterladen" (Punkt 55).*
 16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
@@ -406,7 +404,7 @@ tut; Punkt 33 entscheidet es hier.
     Erläuterung in `src/features/files/dokumentarten.ts` wird in DOK-006
     entsprechend geschärft. Bilder, die Patient:innen der Praxis schicken,
     regelt Punkt 42.
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Aus zwei Arten werden
+    *Vermerk 2026-10-02 (Fassung 3): Aus zwei Arten werden
     drei. Ein Foto der Person ist entweder Dokumentationsfoto oder
     Foto-Arbeitshilfe (`patientenfoto`); Punkt 43.*
 32. **Derselbe Weg, ein eigener Bucket.** Patientenfotos laufen durch
@@ -425,7 +423,7 @@ tut; Punkt 33 entscheidet es hier.
     Die Art `patientenfoto` wird **nicht korrigiert**, weder hin noch weg —
     eine Korrektur verschöbe Bucket, Klasse und Einwilligungsbindung; ein Foto
     in der falschen Art wird gelöscht und neu aufgenommen.
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Das Dokumentationsfoto
+    *Vermerk 2026-10-02 (Fassung 3): Das Dokumentationsfoto
     läuft denselben Weg, aber im Bucket `patientenakte` (Punkt 45); auch
     zwischen den beiden Fotoarten gibt es keine Korrektur (Punkt 47).*
 33. **Aufnahme nur über die Kamera der Anwendung.** Ein Patientenfoto
@@ -512,7 +510,7 @@ tut; Punkt 33 entscheidet es hier.
     - Das Gesicht wird nur aufgenommen, wenn es die betroffene Region ist;
       der Kameradialog sagt das (Art. 5 Abs. 1 lit. c DSGVO).
 
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): **Umkehr in einem
+    *Vermerk 2026-10-02 (Fassung 3): **Umkehr in einem
     Punkt.** Fassung 2 stellte jedes Foto der Person auf Einwilligung; in der
     Abnahme vom 2026-10-02 hat Jannes entschieden, dass medizinisch
     notwendige Dokumentationsfotos zur Akte gehören (BEF-106, ANN-126). Dieser
@@ -549,7 +547,7 @@ tut; Punkt 33 entscheidet es hier.
       gesperrt — keine Anzeige, kein Verweis — und werden gelöscht, sobald er
       endet (Art. 17 Abs. 3 lit. e DSGVO).
 
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Der Widerruf wirkt nur
+    *Vermerk 2026-10-02 (Fassung 3): Der Widerruf wirkt nur
     auf Foto-Arbeitshilfen. Er hebt weder eine gesetzliche Aufbewahrungspflicht
     noch einen Legal Hold auf, und Dokumentationsfotos berührt er nicht
     (Punkt 46).*
@@ -585,7 +583,7 @@ tut; Punkt 33 entscheidet es hier.
       will, macht ein neues Foto; was das alte gezeigt hat, steht nach Punkt
       35 im Eintrag.
 
-    *Vermerk 2026-10-02 (Fassung 3, vorgeschlagen): Die Frist gilt nur für
+    *Vermerk 2026-10-02 (Fassung 3): Die Frist gilt nur für
     die Foto-Arbeitshilfe. Ein Dokumentationsfoto hat die Frist der Akte
     (Punkt 45).*
 
@@ -656,7 +654,7 @@ tut; Punkt 33 entscheidet es hier.
     nur im Kameradialog entsteht, noch als `klinisches_bild`, das aus
     ärztlicher Hand stammt. Was sie zeigen, gehört in den Eintrag.
 
-### H. Drei Arten von Fotos (Fassung 3, vorgeschlagen)
+### H. Drei Arten von Fotos (Fassung 3)
 
 **Anlass.** In der Abnahme vom 2026-10-02 hat Jannes ANN-126 geändert (BEF-106):
 Medizinisch notwendige Fotos gehören zur Akte, mit deren Frist; die kurzen
@@ -737,7 +735,7 @@ dort zitierten Quellen. Fassung 3 führt sie nicht als Ersatz ein, sondern
     erkennbar bleibt, und ADR-016 lässt finalisierte Dokumentation nicht
     verschwinden. Für die Arbeitshilfe bleibt es bei Punkt 37 (jederzeit).
 
-### I. Prüfung am Server und Farbe (Fassung 3, vorgeschlagen)
+### I. Prüfung am Server und Farbe (Fassung 3)
 
 **Anlass.** ANN-053 und ANN-125 hat Jannes in der Abnahme geändert (BEF-105):
 Der Dateityp wird am **Inhalt** geprüft, nicht am MIME-Typ, den Browser und
@@ -799,7 +797,7 @@ bleiben erhalten.
     bleibt in beiden Fällen erhalten. Die Prüfsumme wird wie bisher über die
     abgelegten Bytes gebildet.
 
-### J. Öffnen heißt Anzeigen (Fassung 3, vorgeschlagen)
+### J. Öffnen heißt Anzeigen (Fassung 3)
 
 **Anlass.** BEF-059 (UX-Review 2026-09-27): „Öffnen" signiert heute mit dem
 Anzeigenamen als Downloadnamen (Punkt 15) und öffnet ein neues Fenster. Am
@@ -939,7 +937,7 @@ aus Forendiskussionen:
   `patientenfoto`), ANN-127 (Ablehnung, dritter Zweck; ANN-093 mit Vermerk),
   dazu ANN-125 (Metadaten) und ANN-128 (Herausgabe).*
 
-### Konsequenzen der Fassung 3 (vorgeschlagen)
+### Konsequenzen der Fassung 3
 
 - **Zwei Fotoarten heißt eine Entscheidung mehr je Foto.** Wer fotografiert,
   muss vorher wissen, wofür. Das ist der Preis dafür, dass ein Foto weder
@@ -950,9 +948,8 @@ aus Forendiskussionen:
   Kameradialog als einziger Weg, die Anzeige ohne Download und die gesperrte
   Löschung nach dem Aufnahmetag (Punkt 48) — Letztere schützt die Akte, nicht
   die Person. Die DSFA (G14) bewertet beide Arten getrennt.
-- **§5 der Prinzipien muss nachgezogen werden** (Rang 1, §21): Er verlangt
-  heute für jedes Foto der Person eine Einwilligung. Bis zum Nachzug wird kein
-  Dokumentationsfoto ohne Einwilligung gebaut.
+- **§5 der Prinzipien ist nachgezogen** (Rang 1, §21, Version 0.20): Die
+  eigene Einwilligung verlangt er nur noch für die Foto-Arbeitshilfe.
 - **Die Art `patientenfoto` behält ihren Schlüssel**, nur die Oberfläche
   sagt „Arbeitshilfe". Ein umbenannter Schlüssel kostete eine Migration über
   Katalog, Klassen, Funktionen und Tests und brächte nichts außer dem Namen.
@@ -975,6 +972,8 @@ aus Forendiskussionen:
   Version, §21); ANN-053, ANN-125, ANN-126 und ANN-127 in neuer Fassung mit
   dem Bau (ABN-EPIC-001c); `README.md` und der Index in `CLAUDE.md` nennen die
   Fassung; die Erläuterungen in `dokumentarten.ts` und die Klassenliste.
+  *Erledigt am 2026-10-02: §5 mit Version 0.20, `README.md`. Annahmen,
+  Erläuterungen und Klassenliste bleiben beim Bau.*
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -1054,7 +1053,7 @@ aus Forendiskussionen:
   bewusst"). In V1 nicht (Punkt 38); sie käme als eigener, protokollierter
   Vorgang mit Obergrenze, wenn die Praxis den Bedarf zeigt.
 
-**Zur Fassung 3 (vorgeschlagen):**
+**Zur Fassung 3:**
 
 - **Vertretung beim Dokumentationsfoto.** Es braucht keine Einwilligung,
   aber die Person sollte wissen, dass fotografiert wird. Reicht die
@@ -1163,10 +1162,12 @@ Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
     diesen ADR; der Mechanismus dafür (`app.can_see_patient_file_type`)
     existiert noch.
 
-## Bestätigungsfragen zu Fassung 3 — offen
+## Bestätigungsfragen zu Fassung 3 — beantwortet am 2026-10-02
 
-Die Richtung hat Jannes in der Abnahme vom 2026-10-02 entschieden (BEF-105,
-BEF-106; ANN-053, ANN-125, ANN-126). Offen ist, wie sie im ADR steht. Die
+**Alle acht wie empfohlen bestätigt.** Die Richtung hatte Jannes in der
+Abnahme vom 2026-10-02 entschieden (BEF-105, BEF-106; ANN-053, ANN-125,
+ANN-126); bestätigt ist hier, wie sie im ADR steht. Frage 20 weicht damit
+von „gegebenenfalls nachbereinigt" ab: Ein Befund verwirft. Die
 Nummerierung setzt die der Fassung 2 fort. **Was die Bestätigung nicht
 erledigt:** Die Einordnung des Dokumentationsfotos (lit. h) geht in B2,
 Fotos echter Personen gibt es weiter erst nach B2 und der DSFA (Punkt 41),
@@ -1332,4 +1333,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 |---|---|---|
 | 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
 | 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
-| 3 | 2026-10-02 | **vorgeschlagen, Fragen 15 bis 22 offen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. Nachzug §5 der Prinzipien nach der Annahme |
+| 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
