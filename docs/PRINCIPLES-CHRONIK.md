@@ -6,6 +6,19 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.20
+
+Nachzug an Rang 2 nach **ADR-017 Fassung 3** (Abschnitt H), angenommen vom Projektinhaber am
+2026-10-02; die Richtung stammt aus der Abnahme der Annahmen, Block 6 (BEF-106, ANN-126). Geändert
+ist nur **§5**, Absatz „Fotos“: Ein Foto der Person ist entweder **Dokumentationsfoto** —
+erforderlich für die Dokumentation, Teil der Akte mit deren Grundlage und Frist, ohne eigene
+Einwilligung — oder **Arbeitshilfe** für Übergabe und Vergleich; nur die Arbeitshilfe setzt die
+eigene, ausdrückliche Einwilligung voraus. Bisher galt die Einwilligung für jedes Foto der Person.
+Unverändert bleiben die Aufnahme nur über die Kamera der Anwendung, „wer nicht einwilligt, wird
+genauso behandelt“ und „kein Foto ersetzt einen Eintrag“. Mit echten Personen gilt beides erst nach
+B2 und der DSFA (ADR-017 Punkt 41); die Einordnung des Dokumentationsfotos (Art. 9 Abs. 2 lit. h
+DSGVO) geht in B2 und blockiert das Bauen nicht (§15.2).
+
 ### Änderungsvermerk 0.19
 
 Nachzug an Rang 2 nach **ADR-021 Fassung 2** (Punkt 10), entschieden vom Projektinhaber am
