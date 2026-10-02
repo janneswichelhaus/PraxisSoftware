@@ -22,8 +22,8 @@ vi.mock('./patientenfotos', async (importOriginal) => {
   const actual = await importOriginal<typeof FotoApi>();
   return {
     ...actual,
-    fetchPatientenfotos: (id: string) =>
-      fetchPatientenfotos(id) as Promise<FotoApi.Patientenfoto[]>,
+    fetchFotosZurHerausgabe: (id: string) =>
+      fetchPatientenfotos(id) as Promise<FotoApi.HerausgabeFoto[]>,
     gibPatientenfotoHeraus: (id: string) =>
       gibPatientenfotoHeraus(id) as Promise<{ name: string; bild: Blob }>,
   };
@@ -32,12 +32,11 @@ vi.mock('./patientenfotos', async (importOriginal) => {
 const { FotoHerausgabe } = await import('./FotoHerausgabe');
 const { herausgabeDateiname } = await import('./patientenfotos');
 
-const FOTO: FotoApi.Patientenfoto = {
+const FOTO: FotoApi.HerausgabeFoto = {
   id: 'f1',
   display_name: 'Knie rechts/links: Vergleich',
   taken_at: '2026-09-01T08:00:00Z',
-  taken_by_name: 'Anna Beispiel',
-  delete_after: '2027-09-01T08:00:00Z',
+  locked: false,
   object_missing: false,
 };
 
@@ -129,5 +128,14 @@ describe('FotoHerausgabe', { timeout: 20_000 }, () => {
     const { container } = renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
     await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ });
     await pruefeBarrierefreiheit(container);
+  });
+
+  it('bietet auch ein gesperrtes Foto zur Kopie an und sagt, dass es gesperrt ist (BEF-107)', async () => {
+    fetchPatientenfotos.mockResolvedValue([{ ...FOTO, locked: true }]);
+    renderWithProviders(<FotoHerausgabe patientId={PATIENT} />);
+    expect(
+      await screen.findByRole('button', { name: /Kopie für die Person herunterladen/ }),
+    ).toBeEnabled();
+    expect(screen.getByText('· gesperrt')).toBeInTheDocument();
   });
 });

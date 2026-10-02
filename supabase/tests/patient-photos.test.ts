@@ -901,6 +901,7 @@ describe('Patientenfotos (DOK-006b)', () => {
         surface: 'web',
         patient_id: patients.max,
         document_type: 'patientenfoto',
+        gesperrt: false,
       });
 
       const lesen = `select name from storage.objects where bucket_id = '${BUCKET}' and name = $1`;
@@ -931,12 +932,42 @@ describe('Patientenfotos (DOK-006b)', () => {
       ).toBe(0);
     });
 
-    it('gibt kein gesperrtes Foto heraus und keine andere Datei', async () => {
+    it('gibt auch ein gesperrtes, noch vorhandenes Foto heraus, aber keine andere Datei (BEF-107)', async () => {
       const datei = await foto();
       await aufgenommenVor(datei.file_id, '13 months');
+      // Gesperrt fuer die Arbeit, nicht fuer die Auskunft an die Person.
+      await asUserCommitted(users.ownerTherapist, HERAUSGEBEN, [datei.file_id]);
+      const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
+        `select context from public.audit_log where action = 'patient_file.handed_out'`,
+      );
+      expect(protokoll.at(-1)!.context['gesperrt']).toBe(true);
+
+      const { rows: liste } = await asUser<{ id: string; locked: boolean }>(
+        users.ownerTherapist,
+        'select id, locked from public.list_patient_photos_for_access_request($1::uuid)',
+        [patients.max],
+      );
+      expect(liste).toEqual([{ id: datei.file_id, locked: true }]);
+      const { rows: kopie } = await asUser<{
+        d: { tabellen: Record<string, { id: string; gesperrt: boolean }[]> };
+      }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as d', [
+        patients.max,
+      ]);
+      expect(kopie[0]!.d.tabellen['patient_photos']).toMatchObject([
+        { id: datei.file_id, gesperrt: true },
+      ]);
+      // Nur owner sieht die Liste zur Herausgabe.
       expect(
-        (await abgefangen(asUser(users.ownerTherapist, HERAUSGEBEN, [datei.file_id])))?.message,
-      ).toMatch(/not accessible/);
+        (
+          await abgefangen(
+            asUser(
+              users.therapist,
+              'select * from public.list_patient_photos_for_access_request($1::uuid)',
+              [patients.max],
+            ),
+          )
+        )?.code,
+      ).toBe('42501');
 
       const befund = await vorbereiten(users.therapist, { art: 'befund', mime: 'application/pdf' });
       await asPostgres(

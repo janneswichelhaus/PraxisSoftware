@@ -5,10 +5,10 @@ import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
-  fetchPatientenfotos,
+  fetchFotosZurHerausgabe,
   gibPatientenfotoHeraus,
   herausgabeDateiname,
-  type Patientenfoto,
+  type HerausgabeFoto,
 } from './patientenfotos';
 
 /**
@@ -37,7 +37,7 @@ function sichern(name: string, bild: Blob): void {
   URL.revokeObjectURL(adresse);
 }
 
-function Zeile({ foto }: { foto: Patientenfoto }) {
+function Zeile({ foto }: { foto: HerausgabeFoto }) {
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
   const [erledigt, setErledigt] = useState(false);
@@ -59,7 +59,12 @@ function Zeile({ foto }: { foto: Patientenfoto }) {
   return (
     <li className="border-line border-t py-3 first:border-t-0">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-ink text-liste min-w-0 font-medium wrap-anywhere">{foto.display_name}</p>
+        <p className="text-ink text-liste min-w-0 font-medium wrap-anywhere">
+          {foto.display_name}
+          {/* Gesperrt heißt: nicht mehr für die Arbeit - für die Auskunft an
+              die Person selbst bleibt es da (ABN-017, BEF-107). */}
+          {foto.locked ? <span className="text-ink-muted font-normal"> · gesperrt</span> : null}
+        </p>
         {/* Dasselbe Verb auf Knopf und Laufanzeige (WRT-10): Es entsteht ein
             Download, keine Sicherung. */}
         <Button
@@ -67,12 +72,17 @@ function Zeile({ foto }: { foto: Patientenfoto }) {
           variant="secondary"
           groesse="kompakt"
           onClick={() => void herausgeben()}
-          disabled={laeuft}
+          disabled={laeuft || foto.object_missing}
         >
           {laeuft ? 'Wird heruntergeladen …' : 'Kopie für die Person herunterladen'}
           <span className="sr-only">: {foto.display_name}</span>
         </Button>
       </div>
+      {foto.object_missing ? (
+        <Statusmeldung ton="warnung" className="mt-2">
+          Die Datei fehlt in der Ablage; die Kopie kann sie nicht enthalten.
+        </Statusmeldung>
+      ) : null}
       {erledigt ? (
         <Statusmeldung className="mt-2">
           Kopie zum Speichern übergeben und protokolliert. Bitte prüfen, ob die Datei angekommen
@@ -90,8 +100,8 @@ function Zeile({ foto }: { foto: Patientenfoto }) {
 
 export function FotoHerausgabe({ patientId }: { patientId: string }) {
   const fotos = useQuery({
-    queryKey: ['patient-photos', patientId],
-    queryFn: () => fetchPatientenfotos(patientId),
+    queryKey: ['patient-photos', patientId, 'herausgabe'],
+    queryFn: () => fetchFotosZurHerausgabe(patientId),
     retry: false,
   });
 
@@ -100,7 +110,7 @@ export function FotoHerausgabe({ patientId }: { patientId: string }) {
     <Section
       titel="Fotos herausgeben"
       rahmen
-      hinweis="Die Auskunft nennt jedes Foto, enthält es aber nicht. Hier entsteht je Foto eine Kopie für die Person selbst (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
+      hinweis="Zur vollständigen Kopie gehören die Fotos selbst, auch gesperrte. Hier entsteht je Foto eine Kopie für die Person (Art. 15 Abs. 3 und Art. 20 DSGVO) – der einzige Weg, auf dem ein Foto die Anwendung verlässt. Jede Kopie wird protokolliert."
     >
       {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
       {fotos.isError ? (
