@@ -130,16 +130,22 @@ ihrer Stelle im Code mit `ANN-NNN` markiert — nicht am Ende gesammelt.
 `pnpm typecheck`, betroffene Komponententests, bei Migrationen der zugehörige
 Datenbanktest.
 
+Datenbanktests gezielt: `pnpm test:db supabase/tests/<datei>` (rund 15 s je
+Datei) oder ein Namensanfang für einen Bereich
+(`pnpm test:db supabase/tests/appointment-`). Welche Dateien eine geänderte
+Funktion prüfen, findet `grep -l <funktion> supabase/tests`. In der Cloud
+`pnpm db:start`, `export TEST_DATABASE_URL=…` und den Test in einem Aufruf.
+
 **Nach dem Epic** die für den Umfang passenden CI-äquivalenten Checks:
 
-| Änderung betrifft …         | dann mindestens                                                 |
-| --------------------------- | --------------------------------------------------------------- |
-| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test` |
-| Dokumentation               | `pnpm docs:check`                                               |
-| Migrationen, Policies, RPCs | `pnpm test:db`                                                  |
-| Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                            |
-| Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`            |
-| auslieferbaren Code         | `pnpm build`                                                    |
+| Änderung betrifft …         | dann mindestens                                                                        |
+| --------------------------- | -------------------------------------------------------------------------------------- |
+| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`                        |
+| Dokumentation               | `pnpm docs:check`                                                                      |
+| Migrationen, Policies, RPCs | die betroffenen Dateien unter `supabase/tests/` gezielt; das volle `pnpm test:db` in H |
+| Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                                                   |
+| Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`                                   |
+| auslieferbaren Code         | `pnpm build`                                                                           |
 
 Diese Tabelle sagt, **welche Prüfung wann sinnvoll** ist. Welche Prüfungen die
 CI erzwingt, steht abschließend in ADR-013; weicht sie von dieser Tabelle ab,
@@ -216,6 +222,12 @@ Regeln; `PROJECT_PRINCIPLES.md` §12).
 
 Die für den Umfang des Epics erforderlichen Checks aus E **einmal** vollständig
 laufen lassen.
+
+`pnpm test:db` läuft **genau hier und genau einmal** vollständig, nach Review
+und Korrekturen, vor dem Push. Es dauert rund 15 Minuten und damit länger als
+ein Werkzeugaufruf: im Hintergrund starten und auf die Meldung warten, nicht
+abbrechen und nicht neu starten. Wird es rot, die betroffene Datei gezielt
+reparieren und prüfen, dann **einmal** erneut voll.
 
 Identische teure Läufe ohne dazwischenliegende Änderung nicht wiederholen —
 ein zweiter Lauf derselben Suite auf demselben Stand liefert keine neue
