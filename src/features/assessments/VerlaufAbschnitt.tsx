@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Section } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { fetchPatientAppointments, todayInTimeZone } from '@/features/appointments/api';
+import { formatDate } from '@/lib/datum';
 import {
   EINGABETEXTE,
   useTextverlustschutz,
@@ -22,6 +24,8 @@ import {
   ereignisEntfernen,
   ereignisseQueryKey,
   ereignisSetzen,
+  entfernteEreignisseQueryKey,
+  fetchEntfernteEreignisse,
   fetchEreignisse,
   messreihen,
   type Ereignisart,
@@ -70,6 +74,8 @@ export function VerlaufAbschnitt({
   const queryClient = useQueryClient();
   const entfernen = useMutation({
     mutationFn: (id: string) => ereignisEntfernen(id),
+    // Der Schlüssel der entfernten Ereignisse beginnt mit dem der Ereignisse:
+    // Beide Listen laden neu.
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ereignisseQueryKey(patientId) }),
   });
 
@@ -133,6 +139,7 @@ export function VerlaufAbschnitt({
               ereignisse={ereignisse.data}
               onEntfernen={darfSetzen ? (e) => entfernen.mutateAsync(e.id) : undefined}
             />
+            <EntfernteEreignisse patientId={patientId} zeitzone={zeitzone} />
           </Section>
           {darfSetzen ? (
             <Section ebene={3} titel="Ereignis vermerken">
@@ -142,6 +149,76 @@ export function VerlaufAbschnitt({
         </>
       )}
     </Section>
+  );
+}
+
+/**
+ * „Entfernte Ereignisse" (ABN-013, BEF-102): zugeklappt, und geladen erst beim
+ * Aufklappen - jeder gelesene Eintrag wird protokolliert.
+ */
+function EntfernteEreignisse({
+  patientId,
+  zeitzone,
+}: {
+  patientId: string;
+  zeitzone: string | null;
+}) {
+  const [geoeffnet, setGeoeffnet] = useState(false);
+  return (
+    <Disclosure
+      summary="Entfernte Ereignisse"
+      onUmschalten={(offen) => offen && setGeoeffnet(true)}
+    >
+      {geoeffnet ? <EntfernteEreignisListe patientId={patientId} zeitzone={zeitzone} /> : null}
+    </Disclosure>
+  );
+}
+
+function EntfernteEreignisListe({
+  patientId,
+  zeitzone,
+}: {
+  patientId: string;
+  zeitzone: string | null;
+}) {
+  const entfernte = useQuery({
+    queryKey: entfernteEreignisseQueryKey(patientId),
+    queryFn: () => fetchEntfernteEreignisse(patientId),
+  });
+  if (entfernte.isPending) return <LoadingState label="Entfernte Ereignisse werden geladen …" />;
+  if (entfernte.data === undefined) {
+    return (
+      <ErrorState
+        title="Die entfernten Ereignisse konnten nicht geladen werden."
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => entfernte.refetch()}
+      />
+    );
+  }
+  if (entfernte.data.length === 0) {
+    return <p className="text-ink-muted text-sm">Kein Ereignis entfernt.</p>;
+  }
+  return (
+    <ul className="flex flex-col gap-2 text-sm">
+      {entfernte.data.map((e) => (
+        <li key={e.id}>
+          <span className="text-ink-muted tabular-nums">{formatDate(e.occurred_on)}</span>{' '}
+          <span className="text-ink line-through decoration-1">
+            {ereignisartTexte[e.kind]}
+            {e.note ? ` · ${e.note}` : ''}
+          </span>
+          <span className="text-ink-muted block text-xs">
+            Vermerkt von {e.author_name ?? 'unbekannt'}, entfernt am{' '}
+            {formatDate(
+              zeitzone
+                ? todayInTimeZone(zeitzone, new Date(e.removed_at))
+                : e.removed_at.slice(0, 10),
+            )}{' '}
+            von {e.removed_by_name ?? 'unbekannt'}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 

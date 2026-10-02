@@ -284,6 +284,7 @@ describe('Audit-Lesepfad', () => {
       'list_payments',
       'list_platform_representations',
       'list_practice_revenue_months',
+      'list_removed_patient_course_events',
       'list_revenue_by_service_area',
       'list_revenue_by_staff',
       'list_revenue_years',

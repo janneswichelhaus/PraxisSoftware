@@ -128,6 +128,9 @@ export function Aufklappzeichen() {
  *     der Inhalt mit einer Linie darüber;
  *   * `offenAb="lg"` öffnet ihn beim ersten Zeichnen ab 1024 px - für das,
  *     was am Rechner Platz hat und am Telefon nur auf Wunsch steht.
+ *
+ * `onUmschalten` meldet jedes Auf- und Zuklappen - für Inhalt, der erst beim
+ * Öffnen geladen werden soll, weil schon das Lesen protokolliert wird.
  */
 export function Disclosure({
   summary,
@@ -136,6 +139,7 @@ export function Disclosure({
   offen = false,
   offenAb,
   inKarte = false,
+  onUmschalten,
   children,
 }: {
   summary: ReactNode;
@@ -144,6 +148,7 @@ export function Disclosure({
   offen?: boolean;
   offenAb?: 'lg';
   inKarte?: boolean;
+  onUmschalten?: (offen: boolean) => void;
   children: ReactNode;
 }) {
   // Einmal beim ersten Zeichnen gelesen; danach entscheidet die Person. Wer
@@ -152,6 +157,7 @@ export function Disclosure({
   return (
     <details
       open={anfangsOffen}
+      onToggle={onUmschalten ? (e) => onUmschalten(e.currentTarget.open) : undefined}
       // In der Karte 4 px über und unter dem 44 px hohen Kopf: zusammen die
       // 52 px des Handoffs, ohne zwei Mindesthöhen am selben Element.
       className={

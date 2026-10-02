@@ -49,6 +49,29 @@ export type Verlaufsereignis = z.infer<typeof ereignisSchema>;
 
 export const ereignisseQueryKey = (patientId: string) => ['verlaufsereignisse', patientId] as const;
 
+const entferntesEreignisSchema = ereignisSchema.extend({
+  removed_at: z.string(),
+  removed_by_name: z.string().nullable(),
+});
+export type EntferntesEreignis = z.infer<typeof entferntesEreignisSchema>;
+
+export const entfernteEreignisseQueryKey = (patientId: string) =>
+  ['verlaufsereignisse', patientId, 'entfernt'] as const;
+
+/**
+ * Entfernte Ereignisse (ABN-013, BEF-102): Entfernen löscht nicht, es nimmt
+ * das Ereignis aus dem Verlauf. Inhalt, Urheber und wer es wann entfernt hat
+ * bleiben in der Akte. Jeder gelesene Eintrag wird protokolliert - deshalb
+ * lädt die Akte die Liste erst, wenn sie aufgeklappt wird.
+ */
+export async function fetchEntfernteEreignisse(patientId: string): Promise<EntferntesEreignis[]> {
+  const { data, error } = (await getSupabase().rpc('list_removed_patient_course_events', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error('Die entfernten Ereignisse konnten nicht geladen werden.');
+  return z.array(entferntesEreignisSchema).parse(data);
+}
+
 export async function fetchEreignisse(patientId: string): Promise<Verlaufsereignis[]> {
   const { data, error } = (await getSupabase().rpc('list_patient_course_events', {
     p_patient_id: patientId,

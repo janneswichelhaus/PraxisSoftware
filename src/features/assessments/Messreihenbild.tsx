@@ -219,7 +219,8 @@ export function Ereignisliste({
 }
 
 /**
- * Eine Zeile der Liste. „Entfernen" löscht das Ereignis auf dem Server - erst
+ * Eine Zeile der Liste. „Entfernen" nimmt das Ereignis aus dem Verlauf; es
+ * bleibt unter „Entfernte Ereignisse" nachvollziehbar (ABN-013) - erst
  * nach einer Rückfrage, die Art und Tag nennt, und gesperrt, solange es läuft
  * (BEF-01, ZST-14, ZST-20). Bis UXR-009 genügte ein Tipp, und ein zweiter
  * endete in „Das Ereignis wurde nicht gefunden."
@@ -270,7 +271,8 @@ function Ereigniszeile({
             onAbbrechen={() => setFehler(undefined)}
             onBestaetigen={entfernen}
           >
-            „{art}“ vom {tag} wird aus dem Verlauf entfernt.
+            „{art}“ vom {tag} wird aus dem Verlauf entfernt. Es bleibt unter „Entfernte Ereignisse“
+            nachvollziehbar.
           </Rueckfrage>
         </div>
       ) : null}

@@ -1419,7 +1419,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
 
-**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102).
+**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102). **Fassung 2 (ABN-013, 2026-10-02):** `remove_patient_course_event` setzt `removed_at`/`removed_by` statt zu löschen; der Verlauf filtert, `list_removed_patient_course_events` zeigt die Einträge unter „Entfernte Ereignisse“ (geladen erst beim Aufklappen, protokolliert wie der Verlauf), die Auskunft führt sie mit `removed_at`; Frist wie die Akte. `supabase/migrations/20261003100000_abn_013_course_event_removal.sql`.
 
 ### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
 
