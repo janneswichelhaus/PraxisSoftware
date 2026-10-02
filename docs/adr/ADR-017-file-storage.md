@@ -2,9 +2,10 @@
 
 ## Status
 
-**Angenommen, Fassung 2** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 3** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
-Fragen 9 bis 14 wie empfohlen (Abschnitte am Ende).
+Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
+Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende).
 
 Fassung 2 ergänzt **Abschnitt G** (Punkte 31 bis 42): **Fotos von
 Patient:innen** mit eigener Einwilligung als Rechtsgrundlage, eigener
@@ -20,6 +21,32 @@ Bezugsdatensatz); für alle anderen Arten gelten sie unverändert. Diese drei
 Punkte, Punkt 30, „Bewusst nicht Bestandteil" und die HEIC-Folgefrage tragen
 einen Vermerk.
 
+**Fassung 3 (2026-10-02, am selben Tag angenommen).** Anlass ist die Abnahme der Annahmen vom 2026-10-02
+(Block 6: BEF-105, BEF-106; dazu BEF-059 aus dem UX-Review). Fassung 3 fügt
+drei Abschnitte hinzu:
+
+- **Abschnitt H (Punkte 43 bis 48): drei Arten von Fotos.** Neben Dokumentfoto
+  und Foto-Arbeitshilfe (bisher „Patientenfoto") gibt es das
+  **Dokumentationsfoto**: medizinisch notwendig, Teil der Akte, Grundlage
+  Behandlung (Art. 9 Abs. 2 lit. h DSGVO), Klasse `patientenakte`, zehn Jahre.
+  Das ist eine **Umkehr eines einzelnen Punktes** nach der Fassungsregel in
+  `README.md`: Punkt 35 stellte **jedes** Foto der Person auf Einwilligung;
+  Jannes hat das in der Abnahme ausdrücklich umgekehrt (ANN-126). Für die
+  Foto-Arbeitshilfe gelten die Punkte 35 bis 38 unverändert.
+- **Abschnitt I (Punkte 49 bis 53): Prüfung am Server.** Typ an der Signatur,
+  Prüfsumme nachgerechnet, Metadaten nachgeprüft — in einer Edge Function,
+  gebaut ja, scharf mit OPS-001. Dazu die Farbe (sRGB). Er ergänzt Punkt 7 (c)
+  und Punkt 34; ANN-053 hat Jannes in der Abnahme geändert, ANN-125 ergänzt.
+- **Abschnitt J (Punkte 54 und 55): Öffnen heißt Anzeigen.** Die Anzeige ohne
+  Downloadnamen aus Punkt 40 gilt für alle Arten; Herunterladen ist eine eigene
+  Aktion. Er schränkt Punkt 15 ein (BEF-059).
+
+**Die Punkte 1 bis 42 bleiben Wort für Wort stehen**; die Punkte 7, 15, 31, 32,
+35, 36 und 38 tragen einen Vermerk „Fassung 3". §5 der Prinzipien, der für
+jedes Foto der Person eine Einwilligung verlangte, ist mit Version 0.20
+nachgezogen (§21): Die Einwilligung gilt dort nur noch für die
+Foto-Arbeitshilfe.
+
 **Was die Annahme nicht erledigt:** Einordnung, Wortlaut der Einwilligung und
 Frist sind Datenschutz und Recht. Die Annahme gibt den Bau von DOK-006 frei;
 Fotos echter Personen gibt es erst nach B2 und der DSFA (Punkt 41), und für
@@ -34,7 +61,8 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
 ## Datum
 
-2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen)
+2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
+2026-10-02 (Fassung 3, am selben Tag angenommen)
 
 ## Kontext
 
@@ -164,6 +192,10 @@ tut; Punkt 33 entscheidet es hier.
    Eine `pending`-Zeile, die älter als **24 Stunden** ist, wird samt Objekt
    verworfen. Ohne (a) gäbe es keine Stelle für die Berechtigungsprüfung, ohne
    (c) wäre „hochgeladen" eine Behauptung des Browsers.
+   *Vermerk 2026-10-02 (Fassung 3): Der MIME-Typ in den
+   Objektmetadaten übernimmt die Angabe des Browsers und ist keine zweite
+   Quelle (ANN-053). Typ, Prüfsumme und Metadaten prüft der Server am Inhalt
+   (Punkte 49 bis 52).*
 8. **Dateien sind unveränderlich.** Kein Überschreiben (`upsert` aus, kein
    UPDATE-Recht auf `storage.objects`), keine Korrektur an Ort und Stelle. Eine
    berichtigte Fassung ist eine **neue Datei mit Verweis auf die ersetzte**;
@@ -224,6 +256,9 @@ tut; Punkt 33 entscheidet es hier.
     Rückwegen aus UX-012: kein Name in der Adresszeile).
     *Vermerk 2026-09-26 (Fassung 2): Ein Verweis auf ein
     `patientenfoto` trägt keinen Downloadnamen; angezeigt wird nach Punkt 40.*
+    *Vermerk 2026-10-02 (Fassung 3): Für alle Arten trägt der
+    Verweis zum Anzeigen keinen Downloadnamen (Punkt 54); den Downloadnamen
+    trägt nur der Verweis der eigenen Aktion „Herunterladen" (Punkt 55).*
 16. **Objekte werden mit `cacheControl: '0'` hochgeladen.** Der Standardwert
     der Bibliothek ist `3600`. Grund, belegt aus der Anbieterdokumentation:
     Eine am CDN zwischengespeicherte Antwort zu einem signierten Verweis kann
@@ -369,6 +404,9 @@ tut; Punkt 33 entscheidet es hier.
     Erläuterung in `src/features/files/dokumentarten.ts` wird in DOK-006
     entsprechend geschärft. Bilder, die Patient:innen der Praxis schicken,
     regelt Punkt 42.
+    *Vermerk 2026-10-02 (Fassung 3): Aus zwei Arten werden
+    drei. Ein Foto der Person ist entweder Dokumentationsfoto oder
+    Foto-Arbeitshilfe (`patientenfoto`); Punkt 43.*
 32. **Derselbe Weg, ein eigener Bucket.** Patientenfotos laufen durch
     **dieselbe Fachtabelle und dieselben Vorgänge** wie jede Datei — zwei
     Phasen mit Bestätigung, unveränderlich, kurzlebige Verweise, drei
@@ -385,6 +423,9 @@ tut; Punkt 33 entscheidet es hier.
     Die Art `patientenfoto` wird **nicht korrigiert**, weder hin noch weg —
     eine Korrektur verschöbe Bucket, Klasse und Einwilligungsbindung; ein Foto
     in der falschen Art wird gelöscht und neu aufgenommen.
+    *Vermerk 2026-10-02 (Fassung 3): Das Dokumentationsfoto
+    läuft denselben Weg, aber im Bucket `patientenakte` (Punkt 45); auch
+    zwischen den beiden Fotoarten gibt es keine Korrektur (Punkt 47).*
 33. **Aufnahme nur über die Kamera der Anwendung.** Ein Patientenfoto
     entsteht **ausschließlich** im Kameradialog der Anwendung: Live-Bild über
     `getUserMedia` (nur Bild, nie Ton), Auslöser in der Anwendung, das Foto
@@ -468,6 +509,14 @@ tut; Punkt 33 entscheidet es hier.
       „abgelehnt" als erledigtem Stand, nicht als offenem Punkt.
     - Das Gesicht wird nur aufgenommen, wenn es die betroffene Region ist;
       der Kameradialog sagt das (Art. 5 Abs. 1 lit. c DSGVO).
+
+    *Vermerk 2026-10-02 (Fassung 3): **Umkehr in einem
+    Punkt.** Fassung 2 stellte jedes Foto der Person auf Einwilligung; in der
+    Abnahme vom 2026-10-02 hat Jannes entschieden, dass medizinisch
+    notwendige Dokumentationsfotos zur Akte gehören (BEF-106, ANN-126). Dieser
+    Punkt gilt deshalb nur noch für die **Foto-Arbeitshilfe**
+    (`patientenfoto`); das Dokumentationsfoto regeln die Punkte 43 bis 48.
+    Der Wortlaut oben bleibt stehen.*
 36. **Die Einwilligung prüft der Server, der Widerruf sperrt sofort.** Die
     Prüfung sitzt in **einer** Funktion, die Vorbereitung und Bestätigung des
     Uploads (Punkt 7), die Liste und die Verweisausstellung (Punkt 15)
@@ -497,6 +546,11 @@ tut; Punkt 33 entscheidet es hier.
     - Steht ein **Legal Hold** (Punkt 24, ANN-033), bleiben die Fotos
       gesperrt — keine Anzeige, kein Verweis — und werden gelöscht, sobald er
       endet (Art. 17 Abs. 3 lit. e DSGVO).
+
+    *Vermerk 2026-10-02 (Fassung 3): Der Widerruf wirkt nur
+    auf Foto-Arbeitshilfen. Er hebt weder eine gesetzliche Aufbewahrungspflicht
+    noch einen Legal Hold auf, und Dokumentationsfotos berührt er nicht
+    (Punkt 46).*
 37. **Rollenschnitt: klinisch.** Aufnehmen und löschen dürfen `owner`,
     `therapist` und `team_lead` (Punkt 13) — ein misslungenes Foto sofort,
     jedes andere jederzeit. Lesen folgt §4.3: `office` sieht Patientenfotos
@@ -528,6 +582,10 @@ tut; Punkt 33 entscheidet es hier.
     - **Keine Verlängerung in V1**: Wer nach einem Jahr noch vergleichen
       will, macht ein neues Foto; was das alte gezeigt hat, steht nach Punkt
       35 im Eintrag.
+
+    *Vermerk 2026-10-02 (Fassung 3): Die Frist gilt nur für
+    die Foto-Arbeitshilfe. Ein Dokumentationsfoto hat die Frist der Akte
+    (Punkt 45).*
 
     Zu den Zahlen: Übergabe und Vergleich gehören zur laufenden Versorgung.
     Zwölf Monate decken eine Rehabilitation nach Operation mit mehreren
@@ -595,6 +653,176 @@ tut; Punkt 33 entscheidet es hier.
     schicken**, werden in V1 nicht abgelegt — weder als `patientenfoto`, das
     nur im Kameradialog entsteht, noch als `klinisches_bild`, das aus
     ärztlicher Hand stammt. Was sie zeigen, gehört in den Eintrag.
+
+### H. Drei Arten von Fotos (Fassung 3)
+
+**Anlass.** In der Abnahme vom 2026-10-02 hat Jannes ANN-126 geändert (BEF-106):
+Medizinisch notwendige Fotos gehören zur Akte, mit deren Frist; die kurzen
+Fristen und der Widerruf gelten nur für zusätzliche, vorübergehende
+Arbeitshilfen; ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten
+noch einen Legal Hold auf. Das ist die Alternative, die Fassung 2 unter
+Bestätigungsfrage 9 selbst benannt hat, und die verbreitetere Lesart in den
+dort zitierten Quellen. Fassung 3 führt sie nicht als Ersatz ein, sondern
+**neben** der Arbeitshilfe: Beide Zwecke gibt es in der Praxis.
+
+43. **Drei Arten, eine Grenze je Zweck.**
+    - **Foto eines Dokuments** — unverändert nach Punkt 31: bisherige
+      Dokumentart, Klasse `patientenakte`.
+    - **Dokumentationsfoto** — neue Dokumentart **`dokumentationsfoto`**: ein
+      Foto, das die Praxis von der Person aufnimmt, weil es für die
+      Dokumentation der Behandlung **erforderlich** ist — der Ausgangsbefund
+      einer Fehlstellung, eine Wunde oder Narbe im Verlauf, eine Schwellung,
+      die den Behandlungsplan bestimmt. Es ist **Teil der Akte** nach § 630f
+      BGB.
+    - **Foto-Arbeitshilfe** — die bisherige Art `patientenfoto`, in der
+      Oberfläche künftig „Arbeitshilfe": ein Foto für Übergabe und Vergleich,
+      das die Dokumentation nicht braucht. Für sie gelten die Punkte 35 bis 38
+      unverändert.
+
+    Die Grenze ist der Zweck, nicht das Motiv: Dieselbe Narbe kann
+    Dokumentationsfoto oder Arbeitshilfe sein. Ob ein Foto für die
+    Dokumentation erforderlich ist, entscheidet die Therapeut:in fachlich,
+    wie bei jedem anderen Inhalt der Akte; die Anwendung prüft das nicht.
+    Fremde Bilder (`klinisches_bild`) bleiben nach Punkt 31 außen vor.
+44. **Die Wahl fällt vor der Aufnahme, ohne Vorauswahl.** Der Kameradialog
+    fragt, bevor die Kamera startet: „Teil der Dokumentation (Akte, zehn
+    Jahre)" oder „Arbeitshilfe (höchstens zwölf Monate, nur mit
+    Einwilligung)". Keine der beiden ist vorbelegt (dasselbe Muster wie
+    ANN-129 und BEF-059). Ohne erteilte Foto-Einwilligung ist nur die erste
+    Wahl möglich; die zweite steht mit dem Grund da, nicht ausgeblendet. Den
+    Wortlaut legt der Bau als Annahme fest.
+45. **Das Dokumentationsfoto folgt der Akte.**
+    - **Grundlage** ist die Behandlung: Art. 9 Abs. 2 lit. h DSGVO in
+      Verbindung mit § 22 Abs. 1 Nr. 1 lit. b BDSG — wie die Behandlung
+      selbst, die nach ANN-093 keine Einwilligung braucht. Es braucht
+      **keine Einwilligung**; die
+      Prüfung aus Punkt 36 gilt für diese Art nicht. Die Einordnung geht in
+      B2 und blockiert das Bauen nicht (§15.2).
+    - **Klasse `patientenakte`**, zehn Jahre nach Abschluss der Versorgung
+      (Punkt 23 gilt wieder ohne Ausnahme, Anker `care_concluded_on`), Legal
+      Hold nach Punkt 24.
+    - **Bucket `patientenakte`.** Punkt 3 trennt Buckets nach Datenklasse,
+      nicht nach Art; ein eigener Bucket hätte keinen eigenen Löschweg. Die
+      engere Allowlist — **nur JPEG** — setzt die Vorbereitung des Uploads je
+      Art durch (Punkt 7 a), wie heute für `patientenfoto`.
+    - **Derselbe Weg wie die Arbeitshilfe** in allem außer Grundlage, Frist
+      und Bucket: nur über den Kameradialog (Punkt 33), keine
+      Aufnahmemetadaten (Punkt 34), Vergleich ohne Bewertung (Punkt 39),
+      Anzeige ohne Download, keine Vorschaubilder (Punkt 40), nie an das AI
+      Gateway, Bezugsdatensatz die Patient:in (Punkt 32), Rollenschnitt
+      klinisch (Punkt 37), nicht im Training, nicht auf der Plattform in V1.
+      Das Gesicht nur, wenn es die betroffene Region ist (Punkt 35).
+    - **Auch ein Dokumentationsfoto ersetzt keinen Eintrag** (§5, §17): Was
+      es zeigt und wie es zu bewerten ist, steht in Worten im Eintrag; das
+      Foto belegt, der Eintrag sagt.
+46. **Der Widerruf wirkt nur auf Arbeitshilfen.** Widerruft die Person ihre
+    Foto-Einwilligung, gilt Punkt 36 für ihre Arbeitshilfen, nicht für ihre
+    Dokumentationsfotos. Verlangt sie die Löschung eines Dokumentationsfotos,
+    beantwortet das Verfahren der Betroffenenrechte (OPS-006) das Verlangen
+    wie für jeden Inhalt der Akte: Die Aufbewahrungspflicht geht vor (Art. 17
+    Abs. 3 lit. b DSGVO). Ein Legal Hold hält beide Arten an.
+47. **Keine Korrektur zwischen den Arten**, in keine Richtung (Punkt 32
+    gilt für beide Fotoarten). Aus einer Arbeitshilfe wird kein
+    Dokumentationsfoto: Das verlängerte die Frist von einem Jahr auf zehn,
+    gestützt auf eine Einwilligung, die für ein Jahr gegeben wurde. Wer
+    nachträglich merkt, dass ein Foto zur Dokumentation gehört, nimmt ein
+    neues auf; geht das nicht mehr, steht der Befund in Worten im Eintrag.
+48. **Löschen eines Dokumentationsfotos nur am Tag der Aufnahme.** Am
+    Aufnahmetag darf die aufnehmende Person — oder `owner` — eine
+    Fehlaufnahme löschen, protokolliert wie jede Löschung (Punkt 20). Danach
+    ist das Foto Teil der Dokumentation und wird nur noch vom Löschlauf
+    entfernt: § 630f Abs. 1 BGB verlangt, dass der ursprüngliche Inhalt
+    erkennbar bleibt, und ADR-016 lässt finalisierte Dokumentation nicht
+    verschwinden. Für die Arbeitshilfe bleibt es bei Punkt 37 (jederzeit).
+
+### I. Prüfung am Server und Farbe (Fassung 3)
+
+**Anlass.** ANN-053 und ANN-125 hat Jannes in der Abnahme geändert (BEF-105):
+Der Dateityp wird am **Inhalt** geprüft, nicht am MIME-Typ, den Browser und
+Speicher angeben; die Prüfsumme aus dem Browser gilt als „nicht serverseitig
+verifiziert", solange der Server sie nicht nachrechnet; die Metadatenfreiheit
+wird zusätzlich am Server abgesichert; Ausrichtung **und** Farbdarstellung
+bleiben erhalten.
+
+49. **Phase (c) bekommt eine Prüfung am Inhalt.** Nach der Bestätigung aus
+    Punkt 7 liest ein serverseitiger Vorgang das Objekt und prüft drei Dinge:
+    (1) den **Typ an der Signatur** der ersten Bytes gegen die Allowlist
+    (Punkt 18 und 45) und gegen die Ankündigung, (2) die **SHA-256**,
+    nachgerechnet über die abgelegten Bytes, gegen die angekündigte
+    Prüfsumme, (3) bei JPEG und PNG die **Metadatenfreiheit** nach derselben
+    Erlaubnisliste, nach der das Gerät bereinigt (Punkt 34, ANN-125). Das
+    Ergebnis steht in der Zeile aus Punkt 6: geprüft am und Ergebnis je
+    Prüfung. Erst damit ist die Prüfsumme aus Punkt 9 ein Nachweis des
+    Servers und nicht mehr eine Erklärung des Browsers.
+50. **Ausführungsort ist eine Edge Function desselben Projekts**
+    (`patient-file-verify`). Das ist kein neuer Anbieter (Punkt 2), aber die
+    Edge Runtime, die ADR-015 Punkt 20 für Gesundheitsdaten nicht
+    automatisch freigibt — dieselbe Lage wie beim Kartendienst (ADR-019
+    Punkt 15) und beim Zugangsdienst (ADR-023). Deshalb: **gebaut ja, scharf
+    mit OPS-001.** Die Function liest mit dem Service-Schlüssel, den nur sie
+    hat, schreibt nur das Prüfergebnis und loggt nur Dateikennung,
+    Ergebnisklasse und Dauer (ADR-011) — nie Bytes, Namen oder
+    Objektschlüssel. Sie ist zugleich der Ort, an dem später die
+    Virenprüfung aus Punkt 29 läuft; der Ablauf dort (kein `ready`, Objekt
+    gelöscht, Auditeintrag, Meldung) ist derselbe wie in Punkt 52.
+51. **Bis zur Prüfung ist eine Datei als „nicht serverseitig geprüft"
+    gekennzeichnet**, sichtbar an der Datei. In Umgebungen ohne Edge Runtime
+    — die Cloud-Entwicklungsumgebung, die Test-Umgebung mit synthetischen
+    Daten — bleibt es dabei, und die Datei ist trotzdem `ready`. **Mit dem
+    Scharfschalten wird die Prüfung Bedingung für `ready`**: ein benannter
+    Schalter an genau einer Stelle, der in die Go-live-Vorbedingungen
+    (ADR-007 Punkt 5) gehört, wie der Schalter des Kartendienstes (ANN-094).
+    Ohne ihn wäre die Prüfung eine Zusage, die eine ausgefallene Function
+    still bricht.
+52. **Ein Befund der Prüfung heißt Verwerfen, nicht Nachbessern.** Passt der
+    Typ nicht, weicht die Prüfsumme ab oder stehen Metadaten außerhalb der
+    Erlaubnisliste im Bild, wird die Datei nicht `ready` (oder gesperrt, wenn
+    sie es nach Punkt 51 schon war), das Objekt über den Löschauftrag
+    entfernt (Punkt 25), ein Auditeintrag `patient_file.verification_failed`
+    geschrieben und die hochladende Person informiert. Der Server **schreibt
+    keine Bytes um**: Eine Bereinigung am Server änderte die abgelegte
+    Fassung nach der Prüfsumme (Punkt 8 und 9), und ein Rest an Metadaten ist
+    ein Fehler des Geräts oder ein gesteuerter Browser — beides soll
+    auffallen, nicht still repariert werden.
+53. **Farbe: sRGB vor dem Entfernen.** Bilder aus dem Kameradialog entstehen
+    in sRGB und tragen kein Profil (Punkt 34); für sie ändert sich nichts.
+    Trägt ein Bild aus dem Dateiwähler ein **eingebettetes Farbprofil**,
+    rechnet das Gerät es vor dem Entfernen der Metadaten **nach sRGB um**
+    und kodiert es neu; danach braucht es kein Profil mehr und wird richtig
+    dargestellt. Ohne Profil bleibt es bei Punkt 34: Bilddaten byte-gleich.
+    Das ist eine **begrenzte Ausnahme** von „verlustfrei" in Punkt 34 — nur
+    bei vorhandenem Profil, denn ohne Umrechnung zeigt ein Weitraumbild
+    falsche Farben, und ein Profil zu behalten hieße, Hersteller- und
+    Geräteangaben aus seinem Kopf mitzunehmen (ANN-125). Die Ausrichtung
+    bleibt in beiden Fällen erhalten. Die Prüfsumme wird wie bisher über die
+    abgelegten Bytes gebildet.
+
+### J. Öffnen heißt Anzeigen (Fassung 3)
+
+**Anlass.** BEF-059 (UX-Review 2026-09-27): „Öffnen" signiert heute mit dem
+Anzeigenamen als Downloadnamen (Punkt 15) und öffnet ein neues Fenster. Am
+iPhone kommt eine Download-Rückfrage, und die Datei liegt danach im
+Download-Ordner, womöglich in iCloud Drive — das, was Punkt 40 für Fotos
+ausschließt und was Punkt 19 („im eigenen Rahmen der Anwendung") für alle
+Dateien schon meint.
+
+54. **Der Anzeigeweg aus Punkt 40 gilt für alle Arten.** „Öffnen" stellt
+    einen Verweis **ohne** Downloadnamen aus, lädt per `fetch` mit
+    `cache: 'no-store'` in den Speicher der Seite und zeigt im eigenen
+    Rahmen: ein Bild als Bild, ein PDF in einem abgeschotteten Rahmen ohne
+    Skriptrechte, aus einer Objekt-URL, die beim Schließen freigegeben wird.
+    Nie ein Fenster auf den Verweis. Auditiert wird wie bisher die
+    Ausstellung (Punkt 20, 21). Eine neue Bibliothek zum Darstellen von PDF
+    gehört nicht dazu (§15.1); zeigt ein Gerät ein PDF im Rahmen nicht
+    vollständig, bleibt dafür Punkt 55.
+55. **Herunterladen ist eine eigene, ausdrückliche Aktion.** Für alle Arten
+    **außer den beiden Fotoarten** gibt es neben „Öffnen" den Knopf
+    „Herunterladen": Er stellt einen eigenen Verweis **mit** Downloadnamen
+    aus, und der Auditeintrag `patient_file.link_issued` trägt dabei das
+    Kennzeichen „Download". Wer ihn tippt, holt die Datei bewusst auf das
+    Gerät — für einen Arztbrief, der gedruckt werden soll. Fotos von
+    Patient:innen bleiben bei Punkt 40: kein Download, einzige Herausgabe
+    an die Person selbst durch `owner` (ANN-128).
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -709,6 +937,44 @@ aus Forendiskussionen:
   `patientenfoto`), ANN-127 (Ablehnung, dritter Zweck; ANN-093 mit Vermerk),
   dazu ANN-125 (Metadaten) und ANN-128 (Herausgabe).*
 
+### Konsequenzen der Fassung 3
+
+- **Zwei Fotoarten heißt eine Entscheidung mehr je Foto.** Wer fotografiert,
+  muss vorher wissen, wofür. Das ist der Preis dafür, dass ein Foto weder
+  ungewollt zehn Jahre liegt noch ungewollt nach einem Jahr fehlt. Die Wahl
+  ohne Vorauswahl (Punkt 44) macht sie bewusst; ein Tipp mehr am Handy.
+- **Zehn Jahre Körperfotos sind jetzt möglich.** Genau das hatte Fassung 2
+  vermieden. Dagegen stehen die Erforderlichkeit (Punkt 43), der
+  Kameradialog als einziger Weg, die Anzeige ohne Download und die gesperrte
+  Löschung nach dem Aufnahmetag (Punkt 48) — Letztere schützt die Akte, nicht
+  die Person. Die DSFA (G14) bewertet beide Arten getrennt.
+- **§5 der Prinzipien ist nachgezogen** (Rang 1, §21, Version 0.20): Die
+  eigene Einwilligung verlangt er nur noch für die Foto-Arbeitshilfe.
+- **Die Art `patientenfoto` behält ihren Schlüssel**, nur die Oberfläche
+  sagt „Arbeitshilfe". Ein umbenannter Schlüssel kostete eine Migration über
+  Katalog, Klassen, Funktionen und Tests und brächte nichts außer dem Namen.
+- **Die Prüfung am Server gibt es in der Cloud-Umgebung nicht.** Wie beim
+  Kartendienst und beim Zugangsdienst läuft die Edge Function nur lokal mit
+  `supabase start`; geprüft wird dort mit Deno-Tests, und das Gate
+  `pnpm test:db` sieht nur die Spalten, das Kennzeichen und den Schalter
+  (Punkt 51). Bis OPS-001 bleibt jede Datei „nicht serverseitig geprüft" —
+  das ist ehrlich und keine Lücke, denn vor OPS-001 gibt es keine echte
+  Datei (Punkt 2).
+- **Ein Bild mit Farbprofil wird nicht mehr byte-gleich abgelegt** (Punkt 53).
+  Für ein fremdes Dokument mit Profil — selten, meist ein Foto aus einer
+  Kamera-App — ist die abgelegte Fassung neu kodiert. Die Lesbarkeit leidet
+  bei hoher Qualitätsstufe nicht; der Unterschied ist nur in den Bytes.
+- **Öffnen bleibt in der Anwendung**, auch für PDF (Punkt 54). Ob ein iPhone
+  ein PDF im abgeschotteten Rahmen ganz zeigt oder nur die erste Seite, ist
+  am echten Gerät zu prüfen; der Ausweg ist „Herunterladen" (Punkt 55), keine
+  neue Bibliothek.
+- **Nachzuziehen nach der Annahme:** §5 der Prinzipien (eigener Commit, neue
+  Version, §21); ANN-053, ANN-125, ANN-126 und ANN-127 in neuer Fassung mit
+  dem Bau (ABN-EPIC-001c); `README.md` und der Index in `CLAUDE.md` nennen die
+  Fassung; die Erläuterungen in `dokumentarten.ts` und die Klassenliste.
+  *Erledigt am 2026-10-02: §5 mit Version 0.20, `README.md`. Annahmen,
+  Erläuterungen und Klassenliste bleiben beim Bau.*
+
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
 - Die Freigabe von Supabase als produktivem Auftragsverarbeiter — die bleibt
@@ -786,6 +1052,20 @@ aus Forendiskussionen:
 - **Verlängerung im Einzelfall** (`IDEA-KOM-003`: „Verlängerung nur
   bewusst"). In V1 nicht (Punkt 38); sie käme als eigener, protokollierter
   Vorgang mit Obergrenze, wenn die Praxis den Bedarf zeigt.
+
+**Zur Fassung 3:**
+
+- **Vertretung beim Dokumentationsfoto.** Es braucht keine Einwilligung,
+  aber die Person sollte wissen, dass fotografiert wird. Reicht die
+  Datenschutzinformation (PAT-006), oder sagt die Therapeut:in es jedes Mal?
+  Gehört mit dem Wortlaut in B2.
+- **Dokumentationsfotos auf der Plattform.** Als Teil der Akte fallen sie
+  unter das Auskunftsrecht (Art. 15, schon heute über die Auskunft,
+  ABN-EPIC-001b); ob sie auch auf der Plattform erscheinen, entscheidet
+  POR-EPIC-002 mit den freigegebenen Dokumenten, nicht dieser ADR.
+- **Woran erkennt der Server Restmetadaten in einem PDF?** Punkt 49 prüft nur
+  JPEG und PNG, weil das Gerät nur dort bereinigt; PDF bleibt bei der
+  Folgefrage aus Fassung 2.
 
 ## Bestätigungsfragen für Jannes — beantwortet am 2026-09-12
 
@@ -882,6 +1162,64 @@ Freigabe mit echten Personen hängt an B2 und der DSFA (Punkt 41).
     diesen ADR; der Mechanismus dafür (`app.can_see_patient_file_type`)
     existiert noch.
 
+## Bestätigungsfragen zu Fassung 3 — beantwortet am 2026-10-02
+
+**Alle acht wie empfohlen bestätigt.** Die Richtung hatte Jannes in der
+Abnahme vom 2026-10-02 entschieden (BEF-105, BEF-106; ANN-053, ANN-125,
+ANN-126); bestätigt ist hier, wie sie im ADR steht. Frage 20 weicht damit
+von „gegebenenfalls nachbereinigt" ab: Ein Befund verwirft. Die
+Nummerierung setzt die der Fassung 2 fort. **Was die Bestätigung nicht
+erledigt:** Die Einordnung des Dokumentationsfotos (lit. h) geht in B2,
+Fotos echter Personen gibt es weiter erst nach B2 und der DSFA (Punkt 41),
+und die Prüfung am Server wird erst mit OPS-001 scharf.
+
+15. **Drei Fotoarten: Dokumentationsfoto zur Akte (zehn Jahre, ohne
+    Einwilligung), Arbeitshilfe wie bisher (zwölf Monate, Einwilligung)**
+    (Punkte 43, 45, 46)?
+    *Empfehlung: ja* — das ist deine Entscheidung aus der Abnahme, nur
+    ausgeschrieben. *Alternative:* nur noch Dokumentationsfotos und keine
+    Arbeitshilfe mehr — einfacher, aber jedes Übergabefoto läge dann zehn
+    Jahre.
+16. **Die Wahl fällt vor der Aufnahme, ohne Vorauswahl, und es gibt keine
+    Korrektur zwischen den Arten** (Punkte 44 und 47)?
+    *Empfehlung: ja.* Eine Arbeitshilfe nachträglich zur Akte zu machen,
+    verlängerte eine Einwilligung für ein Jahr auf zehn. *Alternative:* die
+    Übernahme Arbeitshilfe → Dokumentation als protokollierter Vorgang der
+    Therapeut:in — bequemer, wenn eine Wunde schon verheilt ist.
+17. **Ein Dokumentationsfoto löschen nur am Aufnahmetag** (aufnehmende
+    Person oder owner), danach nur der Löschlauf (Punkt 48)?
+    *Empfehlung: ja* — es ist Dokumentation, und die verschwindet nach
+    ADR-016 nicht. *Alternative:* wie jede Datei der Akte jederzeit durch
+    therapeutische Rollen (Punkt 13), protokolliert.
+18. **Dokumentationsfotos im Bucket `patientenakte`** statt in einem eigenen
+    (Punkt 45)?
+    *Empfehlung: ja* — Punkt 3 trennt nach Datenklasse, und die Klasse ist
+    dieselbe. Die Grenze „nur JPEG" setzt die Vorbereitung je Art durch.
+19. **Prüfung am Server in einer Edge Function, gebaut jetzt, scharf mit
+    OPS-001; bis dahin „nicht serverseitig geprüft" sichtbar und trotzdem
+    `ready`; mit dem Scharfschalten wird die Prüfung Bedingung** (Punkte 49
+    bis 51)?
+    *Empfehlung: ja.* So bleibt die Cloud-Umgebung benutzbar, und in der
+    Produktion gibt es keine Datei ohne Prüfung. *Alternative:* schon jetzt
+    `pending` bis zur Prüfung — dann gibt es ohne `supabase start` gar keine
+    Dateien mehr, auch nicht in der Test-Umgebung.
+20. **Ein Befund heißt Verwerfen statt Nachbereinigen am Server** (Punkt 52)?
+    Du hattest „gegebenenfalls nachbereinigt" geschrieben.
+    *Empfehlung: verwerfen.* Das Gerät bereinigt schon; ein Rest ist ein
+    Fehler oder ein gesteuerter Browser und soll auffallen. Eine
+    Nachbereinigung am Server änderte die Datei nach ihrer Prüfsumme.
+    *Alternative:* Der Server bereinigt, rechnet die Prüfsumme neu und
+    vermerkt es — mehr Code in der Function, dafür kein verlorener Upload.
+21. **Farbe: Bilder mit Farbprofil werden auf dem Gerät nach sRGB umgerechnet
+    und neu kodiert; ohne Profil bleibt alles byte-gleich** (Punkt 53)?
+    *Empfehlung: ja.* *Alternative:* das Profil behalten und nur Hersteller-
+    und Geräteangaben in seinem Kopf leeren — verlustfrei, aber eine eigene
+    Bereinigung des Profilformats (ANN-125, Aufwand `mittel`).
+22. **Öffnen zeigt jede Datei in der Anwendung; Herunterladen ist ein eigener
+    Knopf mit Kennzeichen im Protokoll, nicht für Fotos** (Punkte 54 und 55)?
+    *Empfehlung: ja.* Ein Rezept soll man ansehen können, ohne dass es im
+    Download-Ordner landet; einen Arztbrief drucken geht weiter.
+
 ## Quellen der Recherche vom 2026-09-12
 
 `supabase.com` ist aus dieser Umgebung gesperrt (Egress-Proxy). Abgerufen
@@ -966,9 +1304,33 @@ Diesmal aus der lokalen Umgebung abgerufen, ohne Egress-Sperre:
 **Rechtsberatung ersetzt auch das nicht.** Einordnung, Wortlaut der
 Einwilligung und Frist gehen mit B2 an die Prüfung (Punkt 41).
 
+## Quellen zur Fassung 3
+
+Keine neue Recherche im Netz; die Fassung schreibt Entscheidungen aus der
+Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
+
+- `docs/development/BEFUNDE.md` BEF-059, BEF-105, BEF-106 und
+  `docs/development/BEFUNDE-LOESUNGEN.md` (Stand und beste Lösung je Befund);
+  die Abnahmevermerke an ANN-053, ANN-125, ANN-126 in `ASSUMPTIONS.md`.
+- `app.patient_file_bucket_for` (`20260926150000_dok_006b_patient_photos.sql`):
+  Buckets je Klasse, `patientenfoto` im eigenen (Punkt 45).
+- `confirm_patient_file_upload` vergleicht Größe und MIME-Typ gegen
+  `storage.objects.metadata`; Signatur nur im Client
+  (`dateiInhaltAblehnungsgrund`), Metadaten nur im Client (`metadaten.ts`,
+  entfernt auch ICC) — Punkte 49 und 53.
+- `src/features/files/api.ts` signiert mit Downloadnamen, `Dateiliste.tsx`
+  öffnet ein Fenster; `ladePatientenfoto` ist der vorhandene Anzeigeweg
+  (Punkt 54).
+- **§ 630f Abs. 1 Satz 2 BGB** (Berichtigungen nur, wenn der ursprüngliche
+  Inhalt erkennbar bleibt) und **Art. 17 Abs. 3 lit. b DSGVO** (kein
+  Löschrecht, soweit eine rechtliche Pflicht die Verarbeitung erfordert):
+  aus der Erinnerung zitiert, nicht in dieser Sitzung abgerufen — gehören mit
+  Punkt 46 und 48 in B2.
+
 ## Änderungshistorie
 
 | Fassung | Datum | Änderung |
 |---|---|---|
 | 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
 | 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
+| 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
