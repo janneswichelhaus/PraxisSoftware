@@ -3624,3 +3624,65 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 | Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
 
 **Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden).
+
+### BEF-115 — Plattformkonten werden per SQL aus `auth.users` gelöscht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Löschlauf, Plattformkonten |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-189) |
+| Status  | offen |
+| Berührt | ANN-189; `public.apply_retention` (Schritt `auth_users`); Zugangsdienst; OPS-001 |
+
+**Erwartet** (Jannes, 2026-10-02): Fristen wie gebaut. Der Ablauf der Einladung beendet nur einen nie eingelösten Zugang; das Konto fällt erst 30 Tage nach dem Ende **aller** seiner Zugänge (Test mit zwei Zugängen, einer endet früher). Gelöscht wird über die unterstützte Admin-API des Anmeldedienstes, etwa als Warteschlange, die der Löschlauf füllt und der Zugangsdienst abarbeitet; Löschjournal und erneutes Löschen nach einem Restore bleiben. In OPS-001 am Testprojekt prüfen.
+
+### BEF-116 — Einwilligung zur Begleitung: Umfang nicht ausdrücklich festgehalten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Vertretung (Begleitung) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-206) |
+| Status  | offen |
+| Berührt | ANN-206; `consent_text_version`, `consent_recorded_by/at`, `consent_earlier_messages`; `einwilligungBegleitung` in `src/lib/vertretung.ts`; B2 |
+
+**Erwartet** (Jannes, 2026-10-02): Die Person stimmt ausdrücklich selbst zu. Der Nachweis hält fest: Fassung des Wortlauts, benannte Begleitperson, **freigegebenen Umfang** (heute nur mittelbar über die Fassung und `consent_earlier_messages`; künftig ausdrücklich je Bereich, siehe BEF-119), Zeitpunkt und bestätigende Praxiskraft. Ob das Häkchen der Praxis als Nachweis genügt oder eine Unterschrift bzw. Textform nötig ist, entscheidet die Prüfung B2; das Nachweisverfahren bleibt bis dahin an einer Stelle austauschbar.
+
+### BEF-117 — Volljährigkeit am 29. Februar uneinheitlich gerechnet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Altersgrenze |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-208); Codeprüfung |
+| Status  | offen |
+| Berührt | ANN-190, ANN-208; `app.platform_is_minor`, `app.platform_access_ended_at`, Einladungsprüfungen in `20260930141000_por_002_platform_accesses.sql` und `20261002100000_por_005_representation.sql` |
+
+**Befund** (Codeprüfung, 2026-10-02): Die Prüfung „minderjährig“ zieht 18 Jahre vom heutigen Tag ab und macht eine am 29. Februar geborene Person im Nichtschaltjahr richtig am 1. März volljährig. Das Ende des Sorgerechts rechnet dagegen Geburtstag plus 18 Jahre, landet auf dem 28. Februar und endet einen Tag zu früh.
+
+**Erwartet** (Jannes, 2026-10-02): Volljährig ist man um 0 Uhr am 18. Geburtstag, bei Geburt am 29. Februar im Nichtschaltjahr am 1. März (§§ 187 Abs. 2, 188 Abs. 2 BGB), in der Zeitzone der Praxis. **Eine** Funktion liefert diesen Tag (etwa Geburtstag minus ein Tag plus 18 Jahre plus ein Tag); eigener Zugang, Vertretungsprüfung und Ende des Sorgerechts rufen sie auf. Testfälle: 29. Februar, 28. Februar, 1. März.
+
+### BEF-118 — Wiederherstellung per Mail ohne bestätigtes Postfach möglich
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Anmeldung und Kennwort |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-191, B13) |
+| Status  | offen |
+| Berührt | ANN-191; Zugangsdienst (Anlegen mit gesetztem Bestätigungsstatus); Kennwort-Wiederherstellung; ADR-023 Punkte 7 und 8; ADR-025 Punkt 7 |
+
+**Erwartet** (Jannes, 2026-10-02): Eine Wiederherstellung per Mail gibt es für ein Plattformkonto nur, wenn das Postfach **tatsächlich** per Link bestätigt wurde; der beim Anlegen automatisch gesetzte Status zählt nicht und braucht ein eigenes Merkmal. Ohne Bestätigung gibt es einen neuen Code nach Identitätsprüfung vor Ort. Jede Adressänderung verlangt eine neue Bestätigung. Die Sperre gilt im Server **und** im Anmeldedienst (kein Wiederherstellungslink an eine unbestätigte Adresse), nicht nur in der Oberfläche; ein Test belegt das.
+
+### BEF-119 — Vertretung: Freigabe nicht nach nachgewiesenem Aufgabenkreis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Vertretung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-205) |
+| Status  | offen |
+| Berührt | ANN-205; `guardianship_health_scope`, `app.assert_platform_representation`, `app.platform_access_allows`; Rechnungen und Zahlungen auf der Plattform (POR-EPIC-002 ff.) |
+
+**Erwartet** (Jannes, 2026-10-02): Ein zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen gibt `app.platform_access_allows` einer Vertretung nur frei, wenn der geprüfte Aufgabenbereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Allgemein: Freigegeben werden nur die nachgewiesenen Bereiche, nie pauschal alles. Das gilt sinngemäß auch für eine Vorsorgevollmacht und für den Umfang einer Begleitung (BEF-116). Die Rechte stehen weiter an einer Stelle, mit Test je Bereich.

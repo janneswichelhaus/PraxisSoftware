@@ -127,7 +127,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-004 — Inhalt des Audit-Kontexts bei organisatorischen Einstellungen
 
-Datenschutz · offen · 2026-08-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Bei `organization.appointment_grid_changed` stehen alter und neuer Minutenwert in `audit_log.context`. Bei Arbeitszeiten (`staff_working_hours.*`, `staff_working_hour_exception.*`) enthält der Kontext Datensatz-Kennungen und bei Abweichungen deren Art (`kind`) — keine Uhrzeiten, keinen Wochentag, kein Datum.
 
@@ -135,7 +135,7 @@ Datenschutz · offen · 2026-08-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `set_appointment_grid` in `supabase/migrations/20260830120000_scheduling_grid.sql`; `set_staff_working_hours` und `set_staff_working_hour_exception` in `20260830130000_working_hours_audit.sql`; `list_audit_events` und `set_documentation_deadline` in `20260904120000_treatment_note_auto_finalisation.sql`.
 
-**Änderungspfad.** Kontextinhalt je Funktion in einer Migration ändern · Aufwand `klein`. Bereits geschriebene Zeilen sind über den Anwendungspfad nicht lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung.
+**Änderungspfad.** Kontextinhalt je Funktion in einer Migration ändern · Aufwand `klein`. Bereits geschriebene Zeilen sind über den Anwendungspfad nicht lesbar; ob sie bereinigt werden müssen, entscheidet die Prüfung. **Abnahme (Jannes, 2026-10-02, Block 1):** bestätigt; nachgetragen mit Block 9.
 
 ### ANN-005 — Terminabschluss ohne Dokumentationspflicht
 
@@ -2215,7 +2215,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-187 — Ein Plattformkonto hat kein Profil in `user_profiles`; Praxis- und Plattformkonto schließen sich in beide Richtungen aus
 
-Technik · offen · 2026-09-30 · — · — · Wiedervorlage: Zweitreview POR-EPIC-001
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Zweitreview POR-EPIC-001
 
 **Annahme.** Ein Konto, das an einen Plattformzugang gebunden ist oder war, bekommt nie eine Zeile in `user_profiles` und damit nie eine Rolle, auch nicht über die Annahme einer Praxiseinladung. Umgekehrt bindet ein Zugang kein Konto, das ein Profil hat, auch keines ohne Rolle. Die Konto-Art ergibt sich damit aus den Daten: Profil heißt Praxiskonto, gebundener Zugang heißt Plattformkonto. Ein eigenes Kennzeichen am Konto gibt es nicht.
 
@@ -2227,7 +2227,7 @@ Technik · offen · 2026-09-30 · — · — · Wiedervorlage: Zweitreview POR-E
 
 ### ANN-188 — Mail-Einladung nur mit Vermerk „Adresse von der Person selbst bestätigt“, gespeichert an der Einladung
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 11)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 11)
 
 **Annahme.** Per Mail wird nur an die Adresse eingeladen, die im Verhältnis steht (Akte bzw. Kontakt im Training). Vorher muss die einladende Person ankreuzen, dass die Person selbst ihr diese Adresse bestätigt hat. Die Einladung speichert die Adresse, wer den Vermerk gesetzt hat und wann. Vor dem Versand prüft der Server, ob die Adresse im Verhältnis noch dieselbe ist. Hat sie sich geändert, wird nicht versandt, und es braucht eine neue Einladung. Wer einlädt, ist zugleich, wer übergibt. Einen eigenen Vermerk „übergeben durch“ gibt es daneben nicht.
 
@@ -2239,7 +2239,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-189 — Ende des Zugangs: Entziehen, Ende der Lesefrist oder Ablauf der letzten Einladung; der Löschlauf entfernt das Konto beim Anmeldedienst selbst
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-008 Validierung; ADR-023 Punkt 5)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-008 Validierung; ADR-023 Punkt 5)
 
 **Annahme.** Ein Zugang endet mit dem frühesten dieser Ereignisse: Er wird entzogen. 30 Tage nach dem Ende des Verhältnisses läuft die Lesefrist ab (DSN-001 D2; Anker ist der Abschluss der Versorgung bzw. das Vertragsende). Ein nie eingelöster Zugang endet mit dem Ablauf seiner letzten Einladung. Fällt das Verhältnis, endet der Zugang sofort. Er löst sich dabei von Verhältnis und Person und behält nur die Kennung des Verhältnisses; die Adressen seiner Einladungen werden geleert. Der Löschlauf entfernt ein Konto, 30 Tage nachdem alle seine Zugänge geendet haben, direkt aus `auth.users`, am Anfang des Laufs, und vermerkt es im Löschjournal als `auth_users`. Zugang und Einladungen fallen drei Jahre nach dem Ende (Datenklasse `plattformzugang`). Beides wird nach einem Restore erneut gelöscht.
 
@@ -2247,11 +2247,11 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `app.platform_access_ended_at`, `app.delete_due_platform_accounts`, `app.delete_due_platform_accesses`, der Riegel in `app.platform_accesses_guard` und die Nachträge in `public.apply_retention` und `public.reapply_deletion_journal`, alle in `supabase/migrations/20260930141000_por_002_platform_accesses.sql`; Konstante `app.platform_read_period`; Tests in `supabase/tests/platform-accesses.test.ts` („im Loeschlauf“).
 
-**Änderungspfad.** Andere Fristen: `app.platform_read_period` bzw. `retention_classes.plattformzugang` ändern · Aufwand `klein`. Konten über den Zugangsdienst löschen: den Löschschritt in eine Warteschlange schreiben lassen, die der Dienst abarbeitet · Aufwand `mittel`.
+**Änderungspfad.** Andere Fristen: `app.platform_read_period` bzw. `retention_classes.plattformzugang` ändern · Aufwand `klein`. Konten über den Zugangsdienst löschen: den Löschschritt in eine Warteschlange schreiben lassen, die der Dienst abarbeitet · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Fristen bestätigt. Der Ablauf der Einladung beendet nur einen nie eingelösten Zugang; das Konto fällt erst 30 Tage nach dem Ende aller seiner Zugänge. Gelöscht wird über die unterstützte Admin-API des Anmeldedienstes statt per SQL in `auth.users`; zu prüfen in OPS-001 (BEF-115).
 
 ### ANN-190 — Ohne Geburtsdatum gibt es keine Einladung zu einem eigenen Zugang
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Plattform)
 
 **Annahme.** Ein eigener Zugang setzt 18 Jahre voraus (ADR-023 Punkt 15, W4). Der Server prüft das beim Einladen am Geburtsdatum im Verhältnis. Fehlt das Geburtsdatum, wird nicht eingeladen, und die Praxis sieht den Hinweis, es zu ergänzen. Das betrifft vor allem Trainingskund:innen, deren Geburtsdatum kein Pflichtfeld ist.
 
@@ -2263,7 +2263,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-191 — Beim Einlösen legt die Person ihre Adresse selbst fest; ein bestehendes Konto derselben Person bestätigt sie mit ihrem Kennwort
 
-Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkte 4, 7, 8)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkte 4, 7, 8)
 
 **Annahme.** Beim Einlösen gibt die Person Adresse und Kennwort ein. Hat die Adresse noch kein Konto, legt der Zugangsdienst eines an, die Adresse gilt als bestätigt. Hat sie schon eines, zum Beispiel weil die Person schon einen Zugang zum Training hat, bestätigt die Person es mit ihrem Kennwort. Ein Konto einer anderen Person weist die Datenbank ab, ebenso ein Praxiskonto. Die Adresse des Kontos darf von der im Verhältnis abweichen. Scheitert das Binden, wird ein gerade angelegtes Konto wieder entfernt.
 
@@ -2271,7 +2271,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `einloesen` in `supabase/functions/platform-access/handler.ts`, `kennwortPruefen` in `supabase/functions/platform-access/anmeldedienst.ts`; Personenprüfung in `app.platform_accesses_guard` (`supabase/migrations/20260930141000_por_002_platform_accesses.sql`).
 
-**Änderungspfad.** Adresse muss der im Verhältnis entsprechen: Vergleich in `public.redeem_platform_invitation` · Aufwand `klein`.
+**Änderungspfad.** Adresse muss der im Verhältnis entsprechen: Vergleich in `public.redeem_platform_invitation` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt mit Bedingung: Wiederherstellung per Mail nur, wenn das Postfach tatsächlich per Link bestätigt wurde; der beim Anlegen gesetzte Status genügt nicht. Ohne Bestätigung gibt es einen neuen Code nach Identitätsprüfung vor Ort; jede Adressänderung verlangt neue Bestätigung. Die Sperre gilt im Server und im Anmeldedienst, nicht nur in der Oberfläche (BEF-118, B13).
 
 ### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 
@@ -2415,7 +2415,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 ### ANN-203 — Die vertretende Person bekommt keine Zeile in `persons`; ihr Name steht am Zugang als Nachweis
 
-Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 13 und Konsequenzen)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, B5; ADR-023 Punkt 13 und Konsequenzen)
 
 **Annahme.** Eine Vertretung (rechtliche Vertretung oder Begleitung) wird in der Praxis nicht als Person angelegt. Ihr Vor- und Nachname steht als Freitext am Zugang (`representative_name`) und gehört zum Nachweis. Er bleibt drei Jahre nach dem Ende des Zugangs stehen, auch wenn das Verhältnis der vertretenen Person vorher fällt. Der Name der vertretenen Person steht nie am Zugang.
 
@@ -2427,7 +2427,7 @@ Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-204 — Vertretungen werden in V1 nur vor Ort eingeladen
 
-Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5); Mailversand mit B13
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5); Mailversand mit B13
 
 **Annahme.** Eine Vertretung bekommt ihren Code nur auf dem Praxisgerät zum Scannen. Eine Einladung per Mail gibt es für Vertretungen nicht, und ihre Adresse wird in der Praxis nicht gespeichert. Einen neuen Code (neue Einladung oder neues Kennwort) gibt es ebenfalls nur vor Ort.
 
@@ -2439,7 +2439,7 @@ Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-205 — Der Nachweisvermerk besteht aus Häkchen je Dokumentart; gespeichert wird kein Dokument
 
-Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung und rechtliche Klärung (B5; ADR-023 Punkt 13, Folgefrage Aufgabenkreis)
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung und rechtliche Klärung (B5; ADR-023 Punkt 13, Folgefrage Aufgabenkreis)
 
 **Annahme.** Der Nachweis einer Vertretung hält fest, welche Art Dokument angesehen wurde, wer es angesehen hat und wann: immer den Ausweis der vertretenden Person, bei rechtlicher Vertretung zusätzlich den Sorgerechtsnachweis, den Betreuerausweis oder die Vollmacht. Bei einer Betreuung bestätigt die Praxis außerdem mit einem Häkchen, dass der Aufgabenkreis die Gesundheitssorge umfasst; ohne dieses Häkchen gibt es keine Betreuung als Vertretung. Weder ein Scan noch eine Ausweis- oder Aktennummer wird gespeichert. Art und Nachweis eines Zugangs ändern sich nie; ein anderer Umfang ist eine neue Einladung.
 
@@ -2447,11 +2447,11 @@ Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** `app.assert_platform_representation` und Constraint `platform_accesses_kind_fields` in `supabase/migrations/20261002100000_por_005_representation.sql`; `NACHWEISDOKUMENT` in `src/lib/vertretung.ts`; Formular `VertretungEinrichten` in `src/features/platform-access/Vertretungen.tsx`.
 
-**Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`.
+**Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen sieht eine Vertretung nur, wenn der geprüfte Bereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Freigegeben werden nur nachgewiesene Bereiche, nie pauschal alles (BEF-119).
 
 ### ANN-206 — Wortlaut der Einwilligung zur Begleitung, versioniert und auf dem Praxisgerät bestätigt
 
-Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13 „Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2")
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13 „Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2")
 
 **Annahme.** Die Einwilligung zur Begleitung hat den Wortlaut aus `einwilligungBegleitung` in der Fassung `begleitung-2026-10-02`. Er nennt die begleitende Person und die Praxis, was die Begleitung sieht und schreiben darf, ob frühere Nachrichten sichtbar sind, was sie nicht darf (Einwilligung, Widerruf, Datenexport, Befund, Dokumentation), die Entbindung von der Schweigepflicht, die Freiwilligkeit ohne Nachteil und den jederzeitigen Widerruf. Die Person liest ihn auf dem Praxisgerät, und die Praxis bestätigt per Häkchen, dass sie selbst eingewilligt hat. Gespeichert werden die Fassung, wer dabei war und wann. Ändert sich die Sichtbarkeit früherer Nachrichten, muss erneut eingewilligt werden. Die Einwilligung im eigenen Konto unter „Ich" kommt mit POR-EPIC-003. Widerrufen kann die Person unter „Ich“ (POR-007) oder in der Praxis; dort vermerkt die Praxis den Widerruf eigens (`record_companion_consent_withdrawn`), damit er im Nachweis als Widerruf steht und nicht als Entziehen.
 
@@ -2459,11 +2459,11 @@ Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** `EINWILLIGUNG_BEGLEITUNG_FASSUNG` und `einwilligungBegleitung` in `src/lib/vertretung.ts`; `app.platform_companion_consent_version` in `supabase/migrations/20261002100000_por_005_representation.sql`; Gleichlauf im Test „Fassung der Einwilligung" in `supabase/tests/platform-representation.test.ts`.
 
-**Änderungspfad.** Neuer Wortlaut: neue Kennung an beiden Stellen; bestehende Begleitungen behalten ihre Fassung · Aufwand `klein`. Unterschrift statt Häkchen: Unterschriftsfeld und Ablage als Dokument (ADR-017) · Aufwand `mittel`.
+**Änderungspfad.** Neuer Wortlaut: neue Kennung an beiden Stellen; bestehende Begleitungen behalten ihre Fassung · Aufwand `klein`. Unterschrift statt Häkchen: Unterschriftsfeld und Ablage als Dokument (ADR-017) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Präzisiert: Die Person stimmt ausdrücklich zu. Festgehalten werden Fassung des Wortlauts, benannte Begleitperson, freigegebener Umfang, Zeitpunkt und bestätigende Praxiskraft. Ob Häkchen der Praxis und Fassung als Nachweis genügen, ist nicht entschieden, sondern wird in B2 geprüft (BEF-116).
 
 ### ANN-207 — Ein Zweifel an der Einwilligungsfähigkeit wird nur als Vorgang vermerkt, ohne Grund
 
-Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13)
 
 **Annahme.** Zweifelt die Praxis daran, dass die Person einwilligen kann, tippt sie im Formular „Zweifel an der Einwilligungsfähigkeit". Dann gibt es keine Begleitung, nur eine rechtliche Vertretung. Vermerkt wird ein Auditeintrag `platform_access.companion_declined` mit der Akte bzw. dem Trainingsverhältnis als Gegenstand und dem Kontext `reason: capacity_doubt`, ohne Freitext und ohne Diagnose. Am Verhältnis selbst wird nichts gespeichert. Der Vermerk sperrt keine spätere Begleitung; er dokumentiert die Entscheidung im Moment.
 
@@ -2475,7 +2475,7 @@ Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-208 — Ohne Geburtsdatum keine Vertretung; das Sorgerecht endet am 18. Geburtstag in der Zeitzone der Praxis
 
-Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkt 15, W4)
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5; ADR-023 Punkt 15, W4)
 
 **Annahme.** Eine Vertretung setzt ein Geburtsdatum im Verhältnis voraus, wie der eigene Zugang (ANN-190). Unter 18 Jahren gibt es nur die rechtliche Vertretung durch Sorgeberechtigte, ab 18 kein Sorgerecht und erst dann Betreuung, Vorsorgevollmacht oder Begleitung. Ein Zugang aus dem Sorgerecht endet um 0 Uhr am 18. Geburtstag in der Zeitzone der Praxis, ohne Zutun der Praxis. Damit enden auch Lesefrist und Kontofrist (30 Tage danach). Eine Sorgeberechtigte bekommt danach keinen neuen Code, auch nicht für eine noch offene Einladung. Umgekehrt endet jede andere Vertretung, sobald das Geburtsdatum die Person minderjährig macht oder fehlt, auch nach einer nachträglichen Korrektur; als Ende gilt dann der Tag der Einladung. Alle Stellen rechnen den Tag in der Zeitzone der Praxis (`app.platform_is_minor`). Ein 29. Februar wird zum 28. Februar volljährig, einen Tag früher, also auf der restriktiven Seite.
 
@@ -2483,11 +2483,11 @@ Recht · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** `app.platform_is_minor`, `app.assert_platform_representation`, `app.platform_access_ended_at` und `public.renew_platform_representation_code` in `supabase/migrations/20261002100000_por_005_representation.sql` (Grenze `app.platform_min_age_years`); Tests „Sorgerecht endet am 18. Geburtstag" in `supabase/tests/platform-representation.test.ts`.
 
-**Änderungspfad.** Andere Altersgrenze: `app.platform_min_age_years` · Aufwand `klein`. Vertretung ohne Geburtsdatum für Erwachsene zulassen: Prüfung in `app.assert_platform_representation` lockern · Aufwand `klein`.
+**Änderungspfad.** Andere Altersgrenze: `app.platform_min_age_years` · Aufwand `klein`. Vertretung ohne Geburtsdatum für Erwachsene zulassen: Prüfung in `app.assert_platform_representation` lockern · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Korrektur bestätigt: Bei Geburt am 29. Februar tritt die Volljährigkeit im Nichtschaltjahr am 1. März um 0 Uhr ein (§§ 187 Abs. 2, 188 Abs. 2 BGB). Eigener Zugang und Ende des Sorgerechts rechnen mit derselben Funktion; heute rechnet das Ende des Sorgerechts einen Tag zu früh (BEF-117).
 
 ### ANN-209 — Jeder Aufruf über eine Vertretung wird protokolliert, auch das Gerüst der Plattform
 
-Datenschutz · offen · 2026-10-02 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)
 
 **Annahme.** Jeder Aufruf einer Plattformprojektion über einen lesbaren Vertretungszugang schreibt einen Auditeintrag `platform_representation.read`, auch der Aufruf des Gerüsts, der nur den Namen der vertretenen Person liefert. Akteurstyp ist `representative`, Akteur das Konto der vertretenden Person. Gegenstand ist die Akte bzw. das Trainingsverhältnis, im Kontext stehen der Zugang, die Art und die Ansicht. Ein gesperrter oder abgelaufener Zugang liest nichts und schreibt nichts. Das eigene Lesen der Person bleibt unprotokolliert.
 
