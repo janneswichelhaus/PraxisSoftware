@@ -24,6 +24,7 @@ import {
   appointmentStatusTon,
   cancelAppointment,
   cancellationReasonSchema,
+  waehlbareAbsagegruende,
   formatLocalDate,
   formatLocalTimeRange,
   type CancellationReason,
@@ -260,7 +261,7 @@ function Absagen({
           }}
         >
           <option value="">Bitte wählen …</option>
-          {Object.entries(trainingAbsageLabels).map(([wert, beschriftung]) => (
+          {waehlbareAbsagegruende(false, trainingAbsageLabels).map(([wert, beschriftung]) => (
             <option key={wert} value={wert}>
               {beschriftung}
             </option>

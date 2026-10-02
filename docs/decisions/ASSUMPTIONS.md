@@ -681,6 +681,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Eine kurzfristige Verlegung durch die Patient:in fällt unter die 24-Stunden-Regel wie eine Absage; praxisveranlasste Änderungen bleiben gebührenfrei; ein bewusster, protokollierter Gebührenverzicht ist möglich; Nichtantreffen bleibt eigener Anlass nach ADR-018 — BEF-094, mit neuer Fassung von ADR-018 Punkt 8. Bis zur Umsetzung gilt die bisherige Regel.
 
+**Umgesetzt (ABN-006, 2026-10-02).** Aus `moved` werden `patient_moved` („Patient:in hat verlegt“) und `practice_moved` („Praxis hat verlegt“); `app.is_late_cancellation` löst bei `patient_request` und `patient_moved` aus. `moved` bleibt an Bestandszeilen gültig und wird nicht umgedeutet, neu setzen kann ihn niemand mehr. Der Verzicht ist ANN-213, die Verlegung über eine Zeitänderung ANN-212. Anker jetzt in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; ADR-018 Fassung 4 Punkt 8.
+
 ### ANN-048 — Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit
 
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Wochen im Betrieb
@@ -2520,3 +2522,27 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 **Anker.** `vergangenesAngebot` und der Aufklapper „Vergangene Termine“ in `src/features/treatment-bases/TermineUebertragenPage.tsx`; Test in `TermineUebertragenPage.test.tsx`.
 
 **Änderungspfad.** Abschnitt offen zeigen oder vorwählen: `Disclosure offen` beziehungsweise Startwert der Auswahl ändern · Aufwand `klein`. Vergangene gar nicht anbieten: den Abschnitt entfernen, der Server bleibt unverändert · Aufwand `klein`.
+
+### ANN-212 — Eine Verlegung mit Gebühr ist eine Absage „Patient:in hat verlegt“; das Verschieben eines Termins bleibt gebührenfrei
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+
+**Annahme.** Die 24-Stunden-Regel einer Verlegung durch die Patient:in (BEF-094) greift am Weg **Absagen → „Patient:in hat verlegt“**: Der vereinbarte Termin wird abgesagt, der Server merkt bei weniger als 24 Stunden die Gebühr vor, der neue Termin wird wie jeder Folgetermin angelegt. Ändert das Büro dagegen nur Datum oder Uhrzeit eines bestätigten Termins (`update_appointment`, Auditereignis `appointment.rescheduled`), entsteht **keine** Gebühr — der Termin besteht weiter, es gibt keinen ausgefallenen Termin, an dem ein Gebührenanlass hängen könnte (ADR-018 Punkt 4: Anlass nur an `cancelled` und `no_show`).
+
+**Begründung.** Ein Gebührenanlass ist an einen ausgefallenen Termin gebunden; ein verschobener Termin ist kein ausgefallener. Den Anlass an eine Zeitänderung zu hängen, hieße entweder einen dritten Anlass an einem bestätigten Termin einzuführen oder den Termin bei der Zeitänderung still in Absage und Neuanlage zu zerlegen — beides größer als die Abnahme verlangt. Unsicher: Wer im Alltag den Termin nur verschiebt, verschenkt die Gebühr, ohne es zu merken.
+
+**Anker.** `app.is_late_cancellation` und die Gründeliste in `public.cancel_appointment` (`supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`); `selectableCancellationReasons` in `src/features/appointments/api.ts`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verlegung: wer sie veranlasst hat“).
+
+**Änderungspfad.** Am Terminformular bei einer Zeitänderung unter 24 Stunden fragen „Hat die Patient:in verlegt?“ und dann den Weg über Absage und Neuanlage gehen · Aufwand `mittel`.
+
+### ANN-213 — Auf eine Gebühr verzichten owner und office, endgültig und nur vor der Erfassung
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+
+**Annahme.** Den Verzicht auf eine Gebühr (BEF-094) vermerken **owner und office** — dieselben Rollen, die ein Ausfallhonorar als Leistung erfassen (ANN-140). Er ist möglich, solange aus dem Anlass weder eine Leistung erfasst noch eine Rechnung ausgestellt ist; danach führt der Weg über das Entfernen der Leistung beziehungsweise das Storno. Er ist **endgültig**: Es gibt keinen Rückweg „Verzicht zurücknehmen“. Der Anlass (`fee_basis`) bleibt stehen, daneben `fee_waived_at` und `fee_waived_by`; die Terminsicht zeigt nur den Zeitpunkt, die Person steht im Auditlog (`appointment.fee_waived`). Kein Freitext zum Grund. Fällt der Anlass weg (Wiederöffnen eines Nichtantreffens), fällt der Verzicht mit. Ein Termin mit Verzicht bleibt unter dem Löschschutz der Termine mit Gebührenanlass (ANN-035): Der Vermerk ist der Nachweis, warum keine Forderung entstand.
+
+**Begründung.** Ein Verzicht ist eine Entscheidung über eine Forderung und gehört zu den Rollen, die Forderungen erfassen; die Behandelnden erfassen am eigenen Termin die Heilmittel, nicht das Ausfallhonorar (ANN-140). Endgültig, weil der Verzicht in der Regel der Patient:in mitgeteilt wird — wie die Absage selbst (ADR-018 Punkt 2). Kein Freitextgrund, weil ein freies Feld am Termin die wahrscheinlichste Stelle für eine Gesundheitsangabe ist (ANN-034).
+
+**Anker.** `public.waive_appointment_fee` und `app.billable_fee_basis` in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; `GebuehrVerzicht` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verzicht auf die Gebühr“) und `AppointmentDetailPage.test.tsx`.
+
+**Änderungspfad.** Rücknahme erlauben: eine zweite Funktion, die beide Spalten leert und protokolliert · Aufwand `klein`. Codierter Grund: eine Spalte mit Werteliste · Aufwand `klein`. Weitere Rollen: die Rollenprüfung in `waive_appointment_fee` · Aufwand `klein`.

@@ -88,6 +88,7 @@ const termin: Appointment = {
   no_show_protocol_confirmed: null,
   cancellation_received_at: ansicht === 'abgesagt' ? '2026-09-27T17:30:00.000Z' : null,
   fee_basis: ansicht === 'abgesagt' ? 'late_cancellation' : null,
+  fee_waived_at: null,
   patient_given_name: 'Max',
   patient_family_name: 'Mustermann',
   staff_given_name: 'Anna',

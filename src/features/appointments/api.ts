@@ -95,17 +95,54 @@ export const appointmentStatusTon: Record<AppointmentStatus, 'positiv' | 'warnun
 export const cancellationReasonSchema = z.enum([
   'patient_request',
   'practice_request',
-  'moved',
+  'patient_moved',
+  'practice_moved',
   'other',
+  // Nur Bestand vor ABN-006: Wer damals verlegt hat, weiß die Zeile nicht.
+  'moved',
 ]);
 export type CancellationReason = z.infer<typeof cancellationReasonSchema>;
 
 export const cancellationReasonLabels: Record<CancellationReason, string> = {
   patient_request: 'Patient:in hat abgesagt',
   practice_request: 'Praxis hat abgesagt',
-  moved: 'Termin verlegt',
+  patient_moved: 'Patient:in hat verlegt',
+  practice_moved: 'Praxis hat verlegt',
   other: 'Sonstiger Grund',
+  moved: 'Termin verlegt',
 };
+
+/**
+ * Die Gründe, die eine neue Absage tragen kann (ABN-006, BEF-094). Die
+ * Verlegung nennt, wer sie veranlasst hat: Verlegt die Patient:in weniger als
+ * 24 Stunden vorher, merkt der Server wie bei einer Absage eine Gebühr vor.
+ * Der Bestandswert `moved` steht nicht zur Wahl.
+ */
+export const selectableCancellationReasons: readonly CancellationReason[] = [
+  'patient_request',
+  'practice_request',
+  'patient_moved',
+  'practice_moved',
+  'other',
+];
+
+/** Gründe, die nicht von der Patient:in ausgehen — für Ereignisse und Tagesumplanung. */
+const PATIENTENGRUENDE: readonly CancellationReason[] = ['patient_request', 'patient_moved'];
+
+/**
+ * Die wählbaren Gründe als Paare aus Wert und Beschriftung. `ohnePatient`
+ * lässt die Gründe weg, die von der Patient:in ausgehen: Ein Ereignis hat keine
+ * Patient:in, und der Ausfall einer behandelnden Person ist praxisbedingt (der
+ * Server weist sie dort ebenfalls ab, CAL-016).
+ */
+export function waehlbareAbsagegruende(
+  ohnePatient: boolean,
+  labels: Record<CancellationReason, string> = cancellationReasonLabels,
+): [CancellationReason, string][] {
+  return selectableCancellationReasons
+    .filter((wert) => !ohnePatient || !PATIENTENGRUENDE.includes(wert))
+    .map((wert) => [wert, labels[wert]]);
+}
 
 /**
  * Gebührenanlass eines Termins (CAL-014b, CAL-018, ADR-018 Punkt 4).
@@ -236,6 +273,9 @@ export const appointmentSchema = z.object({
   // `late_cancellation` entsteht aus der Frist der Absage, `no_show` aus dem
   // bestätigten Protokoll.
   fee_basis: feeBasisSchema.nullable(),
+  // ABN-006: Zeitpunkt eines bewussten Verzichts auf die Gebühr. Der Anlass
+  // bleibt stehen; wer verzichtet hat, steht im Protokoll (ADR-010).
+  fee_waived_at: z.string().nullable(),
   // Die seit der letzten Terminänderung vermerkten Mitteilungswege (CAL-012).
   // Leer heißt „noch nicht mitgeteilt" ODER „seit der Mitteilung geändert" -
   // beides ist derselbe Handlungsbedarf.
@@ -271,7 +311,7 @@ export const TERMIN_SPALTEN =
   'visit_street, visit_house_number, visit_postal_code, visit_city, completed_at, ' +
   'cancellation_reason, cancellation_received_at, no_show_recorded_at, ' +
   'no_show_protocol_confirmed, fee_basis, ' +
-  'notification_channels, treatment_basis_covered, ' +
+  'fee_waived_at, notification_channels, treatment_basis_covered, ' +
   'patient_given_name, patient_family_name, staff_given_name, staff_family_name, ' +
   'location_name, organization_time_zone';
 
@@ -1604,6 +1644,32 @@ export async function cancelAppointment(
   })) as { error: { message?: string } | null };
 
   if (error) throw schreibfehler(error, 'Der Termin konnte nicht abgesagt werden.');
+}
+
+/**
+ * Verzichtet bewusst auf die Gebühr eines Termins mit Gebührenanlass (ABN-006,
+ * BEF-094). Der Anlass bleibt stehen, der Verzicht steht mit der Person im
+ * Protokoll. Nur owner und office, nur solange das Ausfallhonorar weder als
+ * Leistung erfasst noch abgerechnet ist — das prüft der Server.
+ */
+export async function waiveAppointmentFee(
+  appointmentId: string,
+  expectedUpdatedAt: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('waive_appointment_fee', {
+    p_appointment_id: appointmentId,
+    p_expected_updated_at: expectedUpdatedAt,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('already recorded as a service')) {
+    throw new Error(
+      'Das Ausfallhonorar ist schon als Leistung erfasst. Bitte zuerst die Leistung entfernen.',
+    );
+  }
+  if (error?.message?.includes('already invoiced')) {
+    throw new Error('Das Ausfallhonorar ist schon abgerechnet. Der Weg führt über das Storno.');
+  }
+  if (error) throw schreibfehler(error, 'Der Verzicht konnte nicht vermerkt werden.');
 }
 
 /**

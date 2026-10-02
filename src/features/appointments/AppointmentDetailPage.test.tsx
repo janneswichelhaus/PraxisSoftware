@@ -28,6 +28,7 @@ const fetchEventParticipants = vi.fn();
 const cancelAppointmentEvent = vi.fn();
 const fetchEventSeries = vi.fn();
 const cancelEventSeries = vi.fn();
+const waiveAppointmentFee = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -46,6 +47,8 @@ vi.mock('./api', async (importOriginal) => {
       completeAppointment(id, erwartet) as Promise<void>,
     reopenAppointment: (id: string, erwartet: string) =>
       reopenAppointment(id, erwartet) as Promise<void>,
+    waiveAppointmentFee: (id: string, erwartet: string) =>
+      waiveAppointmentFee(id, erwartet) as Promise<void>,
     recordNoShow: (id: string, erwartet: string, protokoll: boolean) =>
       recordNoShow(id, erwartet, protokoll) as Promise<void>,
     fetchEventParticipants: (gruppe: string) =>
@@ -431,7 +434,7 @@ describe('AppointmentDetailPage', () => {
       rendern();
       await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
-      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'moved');
+      await user.selectOptions(screen.getByLabelText('Absagegrund'), 'patient_moved');
 
       const knopf = screen.getByRole('button', { name: 'Ja, Termin absagen' });
       await user.click(knopf);
@@ -860,6 +863,64 @@ describe('AppointmentDetailPage', () => {
       expect(zeile('Absagegrund')).toBe('Patient:in hat abgesagt');
       expect(zeile('Ausfallhonorar vorgemerkt')).toMatch(/weniger als 24 Stunden/);
       expect(screen.queryByText(/Leistungen erfasst/)).toBeNull();
+    });
+
+    /**
+     * ABN-006 (BEF-094): Verzicht als eigener Vermerk. Der Anlass bleibt
+     * sichtbar; der Knopf steht nur bei owner und office und nur, solange
+     * nicht verzichtet ist.
+     */
+    it('bietet office den Verzicht an und ruft ihn mit dem Stand auf', async () => {
+      waiveAppointmentFee.mockResolvedValue(undefined);
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        cancellation_reason: 'patient_moved',
+        cancellation_received_at: '2027-05-12T05:00:00.000Z',
+        fee_basis: 'late_cancellation',
+      });
+      const user = userEvent.setup();
+      rendern(['office']);
+
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      expect(zeile('Absagegrund')).toBe('Patient:in hat verlegt');
+      await user.click(screen.getByRole('button', { name: 'Auf die Gebühr verzichten' }));
+      expect(screen.getByText(/lässt sich nicht zurücknehmen/)).toBeInTheDocument();
+      await user.click(screen.getByRole('button', { name: 'Ja, verzichten' }));
+
+      expect(waiveAppointmentFee).toHaveBeenCalledWith(praxistermin.id, praxistermin.updated_at);
+    });
+
+    it('zeigt den Verzicht neben dem Anlass und bietet ihn nicht erneut an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        cancellation_reason: 'patient_request',
+        cancellation_received_at: '2027-05-12T05:00:00.000Z',
+        fee_basis: 'late_cancellation',
+        fee_waived_at: '2027-05-13T08:00:00.000Z',
+      });
+      rendern(['office']);
+
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      expect(zeile('Ausfallhonorar')).toMatch(
+        /weniger als 24 Stunden vorher · verzichtet am Donnerstag, 13\. Mai 2027/,
+      );
+      expect(screen.queryByRole('button', { name: 'Auf die Gebühr verzichten' })).toBeNull();
+    });
+
+    it('bietet der Therapeut:in keinen Verzicht an', async () => {
+      fetchAppointment.mockResolvedValue({
+        ...praxistermin,
+        status: 'cancelled',
+        cancellation_reason: 'patient_request',
+        cancellation_received_at: '2027-05-12T05:00:00.000Z',
+        fee_basis: 'late_cancellation',
+      });
+      rendern(['therapist']);
+
+      await screen.findByText(/Eine Absage wird nicht zurückgenommen/);
+      expect(screen.queryByRole('button', { name: 'Auf die Gebühr verzichten' })).toBeNull();
     });
 
     it('nennt bei einer Absage ohne Gebuehr keine Gebuehrenzeile', async () => {

@@ -788,7 +788,7 @@ describe('Tag umplanen (CAL-009)', () => {
     await asUserCommitted(users.office, ABSAGEN, [
       schonAbgesagt.id,
       schonAbgesagt.updated_at,
-      'moved',
+      'practice_moved',
       null,
       null,
     ]);
@@ -807,7 +807,7 @@ describe('Tag umplanen (CAL-009)', () => {
       'select cancellation_reason from public.appointments where id = $1',
       [schonAbgesagt.id],
     );
-    expect(grund[0]?.cancellation_reason).toBe('moved');
+    expect(grund[0]?.cancellation_reason).toBe('practice_moved');
   });
 
   /**
