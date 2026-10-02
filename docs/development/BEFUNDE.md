@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-01
+Stand: 2026-10-02
 
 ## Zweck
 
@@ -15,6 +15,9 @@ Spur", `ROADMAP.md`, Risiken). Sie hat **keinen Rang** in der
 Dokumentenhierarchie, ist **kein Auftrag** und führt **keine zweite
 Reihenfolge**: Was wann gebaut wird, steht ausschließlich in `ROADMAP.md`.
 Ein Befund wird verbindlich erst im SPEC-Schritt des Loops, der ihn aufnimmt.
+Zu jedem offenen Befund steht in [`BEFUNDE-LOESUNGEN.md`](BEFUNDE-LOESUNGEN.md)
+(Stand 2026-10-02) der heutige Codestand, die empfohlene Lösung und der
+Umsetzungspfad; auch diese Analyse hat keinen Rang.
 
 **Ablaufrunden ruhen.** Die Ablaufrunden nach [`OPTIMIERUNG.md`](OPTIMIERUNG.md)
 sind bis Probewoche 1 (Roadmap H1, Feb 2027) eingefroren — Entscheidung von
