@@ -477,6 +477,13 @@ export const scoringSchema = z.object({
   subskalen: z.array(subskalaSchema),
   richtung: z.enum(RICHTUNGEN),
   /**
+   * Wie der Zahlenwert zu lesen ist, wenn er weder besser noch schlechter
+   * heißt — Tegner: „höher = aktiver" (ABN-014, BEF-101 Punkt 3, **ANN-085**).
+   * Pflicht, sobald ein Instrument mit Richtung `nicht_anwendbar` etwas
+   * rechnet: Der Wert steht dann mit diesem Satz da, ohne Wertung.
+   */
+  leseart: z.string().min(1).optional(),
+  /**
    * Wörtlich aus dem Inventar — oder `TODO_ENTSCHEIDUNG`, wo die Vorlage „im
    * PDF nicht geregelt" sagt (ODI, RMDQ, NDI, FABQ, PCS und weitere, D6 im
    * Plan). Der Arbeitsauftrag §3 verlangt genau das: nicht erfinden, sondern
@@ -579,6 +586,16 @@ export const scoreMetaSchema = z.object({
     ),
   lizenzstatus: lizenzstatusSchema,
   aktiv: z.boolean(),
+  /**
+   * Mit welchen früheren Fassungen die Werte dieser Fassung vergleichbar sind
+   * (ABN-014, BEF-101 Punkt 4, **ANN-084**). Die Versionsnummer allein sagt
+   * das nicht: Eine Patch-Stelle steht für eine bedeutungserhaltende
+   * Korrektur und ist deshalb immer vergleichbar (der Ladepfad prüft das);
+   * geänderter Frageninhalt, andere Antwortmöglichkeiten oder eine andere
+   * Berechnung werden je Änderung geprüft und hier vermerkt. Der Verlauf
+   * zeichnet nur vergleichbare Fassungen in eine Reihe.
+   */
+  vergleichbar_mit: z.array(versionSchema).optional(),
 });
 
 /**
@@ -697,6 +714,19 @@ export const scoreDefinitionSchema = z
     }
 
     const rechnetEtwas = score.scoring.gesamt !== null || score.scoring.subskalen.length > 0;
+
+    if (
+      rechnetEtwas &&
+      score.scoring.richtung === 'nicht_anwendbar' &&
+      score.scoring.leseart === undefined
+    ) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['scoring', 'leseart'],
+        message:
+          'Ein Wert ohne Richtung braucht seine Leseart, etwa „höher = aktiver" — sonst steht eine Zahl ohne Bedeutung da (ANN-085).',
+      });
+    }
 
     if (!rechnetEtwas && score.scoring.richtung !== 'nicht_anwendbar') {
       ctx.addIssue({

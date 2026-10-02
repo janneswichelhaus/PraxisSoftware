@@ -155,6 +155,12 @@ describe('Erhebung', () => {
       )!;
       expect(within(frage2).getByLabelText('ja')).toBeChecked();
 
+      // Der Erhebungstag ist der des korrigierten Bogens, kein Feld (BEF-101 Punkt 2).
+      expect(screen.queryByLabelText('Datum der Erhebung')).toBeNull();
+      expect(
+        screen.getByText(/^Datum der Erhebung: .* – wie im korrigierten Bogen\.$/),
+      ).toBeInTheDocument();
+
       await user.click(screen.getByText('Abschließen'));
       expect(
         await screen.findByText('Eine Korrektur braucht eine Begründung.'),

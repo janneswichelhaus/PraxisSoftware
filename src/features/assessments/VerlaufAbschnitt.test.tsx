@@ -20,6 +20,7 @@ const fetchEreignisse = vi.fn();
 const ereignisEntfernen = vi.fn();
 const ereignisSetzen = vi.fn();
 const fetchPatientAppointments = vi.fn();
+const fetchEntfernteEreignisse = vi.fn();
 
 vi.mock('./verlauf', async (importOriginal) => {
   const actual = await importOriginal<typeof Verlauf>();
@@ -28,6 +29,8 @@ vi.mock('./verlauf', async (importOriginal) => {
     fetchEreignisse: (id: string) => fetchEreignisse(id) as Promise<Verlauf.Verlaufsereignis[]>,
     ereignisEntfernen: (id: string) => ereignisEntfernen(id) as Promise<void>,
     ereignisSetzen: (eingabe: unknown) => ereignisSetzen(eingabe) as Promise<void>,
+    fetchEntfernteEreignisse: (id: string) =>
+      fetchEntfernteEreignisse(id) as Promise<Verlauf.EntferntesEreignis[]>,
   };
 });
 vi.mock('@/features/appointments/api', async (importOriginal) => {
@@ -214,6 +217,26 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     expect(within(kasten).getByRole('button', { name: 'Verwerfen und weitergehen' })).toBeVisible();
     expect(within(kasten).getByRole('button', { name: 'Hier bleiben' })).toBeVisible();
     expect(within(kasten).queryByRole('button', { name: /Speichern/ })).toBeNull();
+  });
+
+  it('lädt entfernte Ereignisse erst beim Aufklappen und nennt, wer wann entfernt hat (BEF-102)', async () => {
+    fetchEntfernteEreignisse.mockResolvedValue([
+      {
+        ...ereignis({ id: 'x', note: 'Knie-TEP rechts' }),
+        removed_at: '2026-09-10T09:00:00Z',
+        removed_by_name: 'Jannes Beispiel',
+      },
+    ]);
+    abschnitt(false);
+    const kopf = await screen.findByText('Entfernte Ereignisse');
+    // Jeder gelesene Eintrag wird protokolliert: zugeklappt kein Abruf.
+    expect(fetchEntfernteEreignisse).not.toHaveBeenCalled();
+    fireEvent.click(kopf);
+    expect(await screen.findByText('Operation · Knie-TEP rechts')).toBeInTheDocument();
+    expect(fetchEntfernteEreignisse).toHaveBeenCalledWith(PATIENT_ID);
+    expect(
+      screen.getByText(/Vermerkt von Anna Beispiel, entfernt am 10\.09\.2026 von Jannes Beispiel/),
+    ).toBeInTheDocument();
   });
 
   it('bietet office weder Entfernen noch Vermerken an', async () => {

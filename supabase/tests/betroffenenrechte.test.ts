@@ -126,18 +126,38 @@ describe('export_patient_record', () => {
     }
   });
 
-  it('gibt das Auditlog nicht heraus und sagt das in der Auskunft selbst (ANN-092)', async () => {
+  it('nennt Datum und Zweck der Zugriffe, ohne Namen oder Kennung der Beschaeftigten (BEF-107, ANN-092)', async () => {
+    // Ein Zugriff auf die Akte, der im Protokoll steht.
+    await asUserCommitted(users.therapist, 'select * from public.get_patient($1::uuid)', [
+      patients.max,
+    ]).catch(() => undefined);
+    await asUserCommitted(users.ownerTherapist, AUSKUNFT, [patients.max]);
     const { rows } = await asUser<{ daten: Record<string, unknown> }>(
       users.ownerTherapist,
       AUSKUNFT,
       [patients.max],
     );
 
-    const tabellen = Object.keys(rows[0]!.daten['tabellen'] as Record<string, unknown>);
-    expect(tabellen).not.toContain('audit_log');
+    const tabellen = rows[0]!.daten['tabellen'] as Record<string, Record<string, unknown>[]>;
+    expect(tabellen).not.toHaveProperty('audit_log');
+    const zugriffe = tabellen['access_log']!;
+    expect(zugriffe.length).toBeGreaterThan(0);
+    expect(zugriffe.map((z) => z['aktion'])).toContain('patient_record.exported');
+    for (const zeile of zugriffe) {
+      expect(Object.keys(zeile).sort()).toEqual([
+        'aktion',
+        'durch',
+        'ergebnis',
+        'gegenstand',
+        'zeitpunkt',
+      ]);
+    }
+    const text = JSON.stringify(zugriffe);
+    for (const kennung of Object.values(users)) expect(text).not.toContain(kennung);
+    expect(text).not.toContain('Anna');
 
     const hinweise = rows[0]!.daten['nicht_enthalten'] as { was: string; grund: string }[];
-    expect(hinweise.map((h) => h.was)).toContain('Protokoll der Zugriffe auf die Akte');
+    expect(hinweise.map((h) => h.was)).toContain('Namen der Beschaeftigten im Zugriffsprotokoll');
     expect(hinweise.some((h) => h.grund.includes('ANN-092'))).toBe(true);
   });
 

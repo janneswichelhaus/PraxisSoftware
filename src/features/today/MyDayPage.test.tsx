@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { act, render, screen, waitFor, within } from '@testing-library/react';
@@ -883,6 +883,14 @@ describe('Übersicht', () => {
     });
 
     it('fragt beim Oeffnen die Route des Tages ab und schickt nur Koordinaten und Profil (ANN-194, ADR-019 Punkt 12)', async () => {
+      // Beide Besuche muessen am selben Tag liegen; am spaeten Abend faellt der
+      // zweite sonst ueber Mitternacht (BEF-120). Nur die Uhr steht fest, die
+      // Timer bleiben echt.
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-08-31T07:00:00Z'));
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
       const plan = [tagesEintrag({ id: 't1' }), zweiterBesuch()];
       fetchDayPlan.mockResolvedValue(plan);
       fetchDayRoute.mockResolvedValue([

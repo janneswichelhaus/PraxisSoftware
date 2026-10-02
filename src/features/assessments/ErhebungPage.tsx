@@ -494,17 +494,26 @@ function Formular({
         />
 
         <div className="border-line mt-8 flex flex-col gap-4 border-t pt-6">
-          <Field
-            feldId={DATUM_ID}
-            label="Datum der Erhebung"
-            type="date"
-            value={datum}
-            max={heute || undefined}
-            required
-            error={datumFehler}
-            onKeyDown={ohneAbsenden}
-            onChange={(e) => setDatum(e.target.value)}
-          />
+          {korrektur ? (
+            // Eine Korrektur bleibt am Erhebungstag des korrigierten Bogens;
+            // wann korrigiert wurde, hält der Server getrennt fest (ABN-014,
+            // BEF-101 Punkt 2). Im Verlauf steht sie deshalb am selben Tag.
+            <p className="text-ink text-sm">
+              Datum der Erhebung: {formatDate(datum)} – wie im korrigierten Bogen.
+            </p>
+          ) : (
+            <Field
+              feldId={DATUM_ID}
+              label="Datum der Erhebung"
+              type="date"
+              value={datum}
+              max={heute || undefined}
+              required
+              error={datumFehler}
+              onKeyDown={ohneAbsenden}
+              onChange={(e) => setDatum(e.target.value)}
+            />
+          )}
           {korrigiert && !entwurfId ? (
             <TextArea
               feldId={BEGRUENDUNG_ID}

@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MDR_REVIEW_REQUIRED, REGULATORISCHE_PRUEFUNG, mdrSperre } from './mdr';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { MDR_REVIEW_REQUIRED, freigabeVollstaendig, mdrSperre, type MdrEintrag } from './mdr';
 import { arbeitsbereiche } from './navigation';
 import { funktionskatalog } from './funktionen';
 import { roleKeySchema, type RoleKey } from '@/features/session/types';
@@ -35,6 +37,12 @@ const GEFUEHRT = [
  * hier auf, bevor jemand ihn benutzt.
  */
 const FELDER = ['id', 'bezeichnung', 'grundlage', 'keineAusgabe', 'pfade'];
+
+/**
+ * Der Freigabevermerk ist das einzige weitere Feld (ABN-019, BEF-110) - und
+ * kein Schalter: vier Angaben, das Dokument liegt im Repository.
+ */
+const FREIGABE_FELDER = ['geprueftVon', 'geprueftAm', 'ergebnis', 'verweis'];
 
 const ROLLEN: RoleKey[] = [...roleKeySchema.options];
 
@@ -74,15 +82,50 @@ describe('MDR_REVIEW_REQUIRED wird an genau einer Stelle gefuehrt', () => {
 describe('Es gibt keinen Schalter (ADR-006 Punkt 13)', () => {
   it('traegt an keinem Eintrag ein Feld, das etwas aktivieren koennte', () => {
     for (const eintrag of MDR_REVIEW_REQUIRED) {
-      expect(Object.keys(eintrag).sort(), eintrag.id).toEqual([...FELDER].sort());
+      const felder = Object.keys(eintrag).filter((f) => f !== 'freigabe');
+      expect(felder.sort(), eintrag.id).toEqual([...FELDER].sort());
     }
   });
 
-  it('hat keine dokumentierte regulatorische Pruefung', () => {
-    // Solange das `null` ist, bleibt jeder Eintrag gesperrt. Ein anderer Wert
-    // waere eine Typaenderung an `mdr.ts` und stuende im Diff - nicht in einer
-    // Konfiguration (ADR-006 Punkt 6 und 7).
-    expect(REGULATORISCHE_PRUEFUNG).toBeNull();
+  it('hat heute an keinem Eintrag eine dokumentierte regulatorische Pruefung', () => {
+    // Solange kein Vermerk steht, bleibt jeder Eintrag gesperrt. Ein Vermerk
+    // waere ein Eingriff an `mdr.ts` samt Pruefdokument und stuende im Diff -
+    // nicht in einer Konfiguration (ADR-006 Punkt 6 und 7, BEF-110).
+    expect(MDR_REVIEW_REQUIRED.filter((eintrag) => eintrag.freigabe !== undefined)).toEqual([]);
+  });
+
+  it('verlangt fuer einen Vermerk alle vier Angaben und ein vorhandenes Pruefdokument (BEF-110)', () => {
+    for (const eintrag of MDR_REVIEW_REQUIRED.filter((e) => e.freigabe !== undefined)) {
+      expect(Object.keys(eintrag.freigabe!).sort(), eintrag.id).toEqual(
+        [...FREIGABE_FELDER].sort(),
+      );
+      expect(freigabeVollstaendig(eintrag.freigabe), eintrag.id).toBe(true);
+      expect(existsSync(join(process.cwd(), eintrag.freigabe!.verweis)), eintrag.id).toBe(true);
+    }
+  });
+
+  it('oeffnet eine Adresse nur mit vollstaendigem Vermerk, nie durch einen halben', () => {
+    const ki = MDR_REVIEW_REQUIRED.find((e) => e.id === 'ki-analyse')!;
+    const halb: MdrEintrag = {
+      ...ki,
+      freigabe: {
+        geprueftVon: 'B1',
+        geprueftAm: '',
+        ergebnis: 'kein Medizinprodukt',
+        verweis: 'x',
+      },
+    };
+    expect(mdrSperre('/training/ki-analyse', [halb])?.id).toBe('ki-analyse');
+    const voll: MdrEintrag = {
+      ...ki,
+      freigabe: {
+        geprueftVon: 'Externe Pruefung B1',
+        geprueftAm: '2027-01-15',
+        ergebnis: 'Kein Medizinprodukt im Sinne der MDR.',
+        verweis: 'docs/regulatorik/pruefung.md',
+      },
+    };
+    expect(mdrSperre('/training/ki-analyse', [voll])).toBeUndefined();
   });
 });
 

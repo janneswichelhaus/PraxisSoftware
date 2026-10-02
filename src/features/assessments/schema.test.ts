@@ -331,6 +331,21 @@ describe('Score-Definition', () => {
     expect(ergebnis.success).toBe(false);
   });
 
+  it('verlangt bei einem Wert ohne Richtung die Leseart, etwa Tegner (BEF-101 Punkt 3)', () => {
+    const tegner = (leseart?: string) =>
+      score({
+        scoring: {
+          ...score().scoring,
+          richtung: 'nicht_anwendbar',
+          ...(leseart ? { leseart } : {}),
+        },
+      });
+    const ohne = scoreDefinitionSchema.safeParse(tegner());
+    expect(ohne.success).toBe(false);
+    expect(ohne.error?.issues.some((issue) => issue.path.includes('leseart'))).toBe(true);
+    expect(scoreDefinitionSchema.safeParse(tegner('höher = aktiver')).success).toBe(true);
+  });
+
   it('weist einen rechnenden Score ohne Referenzfall zurueck', () => {
     const ergebnis = scoreDefinitionSchema.safeParse(score({ referenzfaelle: [] }));
     expect(ergebnis.success).toBe(false);
@@ -639,6 +654,8 @@ describe('Rechenformen der 18 Instrumente', () => {
           },
           subskalen: [],
           richtung: 'nicht_anwendbar',
+          // Seit ABN-014 Pflicht: der Wert mit seiner Leseart, ohne Wertung.
+          leseart: 'höher = aktiver',
           missing_value_regel: 'n/a',
         },
         referenzfaelle: [

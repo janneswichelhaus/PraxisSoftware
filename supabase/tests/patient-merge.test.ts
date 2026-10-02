@@ -8,7 +8,10 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
-import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
+import {
+  erwarteAbgewiesenenLeseversuch,
+  erwarteAbgewiesenenSchreibversuch,
+} from './helpers/abgewiesen';
 
 /**
  * Zwei Akten derselben Person werden eine (PRX-017, PRX-EPIC-003b).
@@ -734,21 +737,24 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       expect(plan[0]!.plan.blockers).toEqual([]);
       await zusammenfuehren(quelle.patient, ziel.patient);
 
+      // Seit ABN-018 (BEF-108) bleiben beide Gruende wirksam.
       const { rows } = await asPostgres<{ id: string; aktiv: boolean }>(
         `select id, released_at is null as aktiv from public.legal_holds
-         where subject_type = 'patient' and subject_id = $1 order by aktiv desc`,
+         where subject_type = 'patient' and subject_id = $1 order by placed_at, id`,
         [ziel.patient],
       );
-      expect(rows).toEqual([
-        { id: zielSperre, aktiv: true },
-        { id: quellSperre, aktiv: false },
-      ]);
+      expect(rows).toEqual(
+        expect.arrayContaining([
+          { id: zielSperre, aktiv: true },
+          { id: quellSperre, aktiv: true },
+        ]),
+      );
       const audit = await asPostgres<{ context: Record<string, unknown> }>(
         `select context from public.audit_log
          where action = 'patient.merged' and subject_id = $1`,
         [ziel.patient],
       );
-      expect(audit.rows[0]!.context.legal_hold_released).toBe(quellSperre);
+      expect(audit.rows[0]!.context.legal_hold_released).toBeNull();
     });
   });
 
@@ -823,6 +829,73 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [foto],
       );
       expect(journal.rows).toEqual([{ retention_class: 'patientenfoto' }]);
+    });
+  });
+
+  describe('Nachweis an der bleibenden Akte (ABN-018, BEF-108)', () => {
+    it('hinterlaesst einen Vermerk, der mit der Akte lebt und weiterzieht', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Nora', nachname: 'Nachweis' });
+      const quelle = await legeAkteAn({ vorname: 'Nora', nachname: 'Nachweis' });
+      await zusammenfuehren(quelle.patient, ziel.patient);
+
+      const { rows } = await asUser<{
+        merged_by_name: string | null;
+        counts: Record<string, number>;
+      }>(
+        users.ownerTherapist,
+        'select merged_by_name, counts from public.list_patient_merge_records($1::uuid)',
+        [ziel.patient],
+      );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.counts).toHaveProperty('appointments');
+
+      // Wird die bleibende Akte selbst zusammengefuehrt, zieht der Vermerk mit.
+      const dritte = await legeAkteAn({ vorname: 'Nora', nachname: 'Nachweis' });
+      await zusammenfuehren(ziel.patient, dritte.patient);
+      const { rows: weiter } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.patient_merge_records where target_patient_id = $1',
+        [dritte.patient],
+      );
+      expect(weiter[0]!.n).toBe(2);
+
+      // Und er faellt erst mit der Akte.
+      await asPostgres(
+        'select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())',
+        [dritte.patient],
+      );
+      expect(
+        (
+          await asPostgres(
+            'select 1 from public.patient_merge_records where target_patient_id = $1',
+            [dritte.patient],
+          )
+        ).rows,
+      ).toEqual([]);
+    });
+
+    it('zeigt die Vermerke weder einer fremden Praxis noch einem Patientenkonto', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Vera', nachname: 'Vermerk' });
+      const quelle = await legeAkteAn({ vorname: 'Vera', nachname: 'Vermerk' });
+      await zusammenfuehren(quelle.patient, ziel.patient);
+      const LISTE = 'select * from public.list_patient_merge_records($1::uuid)';
+
+      const { owner } = await fremdeOrganisation();
+      const { rows: fremd } = await asUser(owner, LISTE, [ziel.patient]);
+      expect(fremd).toEqual([]);
+
+      // Die Trainingsbetreuung liest das Verzeichnis nicht (ADR-021).
+      await erwarteAbgewiesenenLeseversuch(
+        users.trainer,
+        LISTE,
+        [ziel.patient],
+        'patient_directory.read',
+      );
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        LISTE,
+        [ziel.patient],
+        'patient_directory.read',
+      );
     });
   });
 });

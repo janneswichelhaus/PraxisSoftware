@@ -24,6 +24,8 @@ const SETZEN = 'select public.add_patient_course_event($1::uuid, $2::date, $3, $
 const ENTFERNEN = 'select public.remove_patient_course_event($1::uuid)';
 const LESEN = `select id, occurred_on::text as occurred_on, kind, note, author_name
                  from public.list_patient_course_events($1::uuid)`;
+const ENTFERNTE = `select id, kind, note, author_name, removed_by_name, removed_at is not null as entfernt
+                     from public.list_removed_patient_course_events($1::uuid)`;
 
 async function setzen(
   userId: string = users.therapist,
@@ -103,6 +105,48 @@ describe('Ereignisse im Verlauf', () => {
     }
   });
 
+  it('entfernt nachvollziehbar: Zeile bleibt, Inhalt und Urheber unter "Entfernte Ereignisse" (BEF-102)', async () => {
+    const id = await setzen();
+    await asUserCommitted(users.teamLead, ENTFERNEN, [id]);
+
+    const zeile = await asPostgres<{ removed_by: string; note: string }>(
+      'select removed_by, note from public.patient_course_events where id = $1',
+      [id],
+    );
+    expect(zeile.rows).toEqual([{ removed_by: users.teamLead, note: 'Knie-TEP rechts' }]);
+
+    // Office liest die Akte, also auch die entfernten Ereignisse.
+    const { rows } = await asUser<{ removed_by_name: string | null }>(users.office, ENTFERNTE, [
+      patients.max,
+    ]);
+    expect(rows).toMatchObject([
+      {
+        id,
+        kind: 'operation',
+        note: 'Knie-TEP rechts',
+        author_name: 'Anna Beispiel',
+        entfernt: true,
+      },
+    ]);
+    expect(rows[0]!.removed_by_name).not.toBeNull();
+
+    // Ein zweites Entfernen findet nichts mehr.
+    expect((await fehler(users.teamLead, ENTFERNEN, [id]))?.code).toBe('P0002');
+  });
+
+  it('weist das Lesen entfernter Ereignisse ohne Leserecht ab und haelt die Mandantengrenze', async () => {
+    const id = await setzen();
+    await asUserCommitted(users.therapist, ENTFERNEN, [id]);
+    await erwarteAbgewiesenenLeseversuch(
+      users.trainer,
+      ENTFERNTE,
+      [patients.max],
+      'patient_course_event.viewed',
+    );
+    const f = await fremdeOrganisation();
+    expect((await asUser(f.owner, ENTFERNTE, [patients.max])).rows).toEqual([]);
+  });
+
   it('laesst office lesen, aber nicht setzen oder entfernen', async () => {
     const id = await setzen();
     expect(
@@ -149,6 +193,20 @@ describe('Ereignisse im Verlauf', () => {
       [patients.max],
     );
     expect(rows[0]!.daten.tabellen['patient_course_events']).toHaveLength(1);
+
+    // Ein entferntes Ereignis bleibt Teil der Auskunft, gekennzeichnet.
+    const [ereignis] = (
+      await asPostgres<{ id: string }>('select id from public.patient_course_events')
+    ).rows;
+    await asUserCommitted(users.therapist, ENTFERNEN, [ereignis!.id]);
+    const danach = await asUser<{
+      daten: { tabellen: Record<string, { removed_at: string | null }[]> };
+    }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+      patients.max,
+    ]);
+    const liste = danach.rows[0]!.daten.tabellen['patient_course_events']!;
+    expect(liste).toHaveLength(1);
+    expect(liste[0]!.removed_at).not.toBeNull();
 
     await asPostgres(
       'select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())',

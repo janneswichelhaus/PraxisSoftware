@@ -237,11 +237,14 @@ describe('Erhebung eines Fragebogens', () => {
 
   it('weist beim Ueberschreiben eines Entwurfs abweichende Kennung, Version oder Korrektur ab', async () => {
     const id = await erheben();
-    for (const [instrument, version, korrigiert, grund] of [
-      ['nrs_schmerz', '1.0.0', null, null],
-      ['anamnese_v8', '1.0.1', null, null],
-      ['anamnese_v8', '1.0.0', id, 'Grund'],
-    ]) {
+    // Eine Fassung, die es nicht gibt, weist schon die Pruefung gegen die
+    // Definition ab (ABN-014); eine vorhandene andere Kennung die Identitaet.
+    for (const [instrument, version, korrigiert, grund, meldung] of [
+      ['nrs_schmerz', '1.0.0', null, null, /unknown questionnaire definition/],
+      ['anamnese_v8', '1.0.1', null, null, /unknown questionnaire definition/],
+      ['nrs_schmerz', '0.1.0', null, null, /identity is fixed/],
+      ['anamnese_v8', '1.0.0', id, 'Grund', /identity is fixed/],
+    ] as const) {
       const f = await fehler(users.therapist, SPEICHERN, [
         patients.max,
         id,
@@ -252,7 +255,7 @@ describe('Erhebung eines Fragebogens', () => {
         korrigiert,
         grund,
       ]);
-      expect(f?.message).toMatch(/identity is fixed/);
+      expect(f?.message).toMatch(meldung);
     }
   });
 
@@ -319,7 +322,7 @@ describe('Erhebung eines Fragebogens', () => {
       null,
       null,
     ]);
-    expect(version?.code).toBe('23514');
+    expect(version?.message).toMatch(/unknown questionnaire definition/);
   });
 });
 
@@ -477,5 +480,165 @@ describe('Auskunft und Loeschung', () => {
     );
     const { rows } = await asPostgres('select 1 from public.patient_questionnaire_responses');
     expect(rows).toEqual([]);
+  });
+});
+
+describe('Pruefung gegen die Definition (ABN-014, BEF-101)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+
+  async function speichern(antworten: unknown) {
+    return fehler(users.therapist, SPEICHERN, [
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      JSON.stringify(antworten),
+      null,
+      null,
+    ]);
+  }
+
+  it('nimmt einen vollstaendig gueltigen Bogen an', async () => {
+    expect(
+      await speichern({
+        beruf: { text: 'Tischler' },
+        beschwerden_ort: { markierungen: [{ x: 0.2, y: 0.4, bereich: 'knie_rechts' }] },
+        schmerzen_aktuell: { auswahl: 'ja' },
+        schmerzstaerke: { wert: 10 },
+        schmerzart: { auswahl: ['ruheschmerzen', 'nachtschmerzen'] },
+        erkrankungen: { auswahl: ['asthma', 'andere_erkrankung'], freitext: 'Gicht' },
+        stress_arbeit: { wert: 0 },
+      }),
+    ).toBeNull();
+  });
+
+  it.each([
+    ['eine Frage, die es nicht gibt', { gibt_es_nicht: { auswahl: 'ja' } }, /unknown item/],
+    [
+      'eine Option, die es nicht gibt',
+      { schmerzen_aktuell: { auswahl: 'vielleicht' } },
+      /unknown option/,
+    ],
+    ['einen Skalenwert ueber dem Bereich', { schmerzstaerke: { wert: 11 } }, /out of range/],
+    ['einen Skalenwert unter dem Bereich', { schmerzstaerke: { wert: -1 } }, /out of range/],
+    ['einen gebrochenen Skalenwert', { schmerzstaerke: { wert: 4.5 } }, /out of range/],
+    ['eine Zahl als Text', { schmerzstaerke: { wert: '4' } }, /not a number/],
+    ['ein Feld zu viel', { schmerzstaerke: { wert: 4, notiz: 'x' } }, /not a number/],
+    [
+      '„nein“ zusammen mit einer Angabe',
+      { schmerzart: { auswahl: ['nein', 'ruheschmerzen'] } },
+      /exclusive/,
+    ],
+    [
+      'eine doppelte Option',
+      { schmerzart: { auswahl: ['ruheschmerzen', 'ruheschmerzen'] } },
+      /twice/,
+    ],
+    ['eine leere Auswahl', { schmerzart: { auswahl: [] } }, /not a choice/],
+    [
+      'eine eigene Angabe ohne passende Option',
+      { erkrankungen: { auswahl: ['asthma'], freitext: 'Gicht' } },
+      /without matching option/,
+    ],
+    [
+      'eine leere eigene Angabe',
+      { erkrankungen: { auswahl: ['andere_erkrankung'], freitext: '  ' } },
+      /free text/,
+    ],
+    ['einen zu langen Freitext', { beruf: { text: 'x'.repeat(2001) } }, /free text/],
+    [
+      'einen unbekannten Koerperbereich',
+      { beschwerden_ort: { markierungen: [{ x: 0.2, y: 0.4, bereich: 'fluegel' }] } },
+      /body chart/,
+    ],
+    [
+      'eine Stelle ausserhalb des Bildes',
+      { beschwerden_ort: { markierungen: [{ x: 1.2, y: 0.4, bereich: 'knie_rechts' }] } },
+      /body chart/,
+    ],
+    ['eine leere Markierung', { beschwerden_ort: { markierungen: [{}] } }, /body chart/],
+    [
+      'eine Markierung ohne Bereich',
+      { beschwerden_ort: { markierungen: [{ x: 0.2, y: 0.4, bereich: null }] } },
+      /body chart/,
+    ],
+    [
+      'eine Markierung mit Text statt Zahl',
+      { beschwerden_ort: { markierungen: [{ x: '0.2', y: 0.4, bereich: 'knie_rechts' }] } },
+      /body chart/,
+    ],
+    ['eine leere Skalenangabe', { schmerzstaerke: { wert: null } }, /not a number|out of range/],
+  ])('weist %s ab', async (_name, antworten, meldung) => {
+    const f = await speichern(antworten);
+    expect(f?.code).toBe('22023');
+    expect(f?.message).toMatch(meldung);
+  });
+
+  it('prueft auch beim Ueberschreiben eines Entwurfs', async () => {
+    const id = await erheben();
+    const f = await fehler(users.therapist, SPEICHERN, [
+      patients.max,
+      id,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      JSON.stringify({ schmerzstaerke: { wert: 12 } }),
+      null,
+      null,
+    ]);
+    expect(f?.message).toMatch(/out of range/);
+  });
+
+  it('haelt bei einer Korrektur den Erhebungstag der korrigierten Erhebung (BEF-101 Punkt 2)', async () => {
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, SPEICHERN, [
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      tagInTagen(-5),
+      JSON.stringify(ANTWORTEN),
+      null,
+      null,
+    ]);
+    const alt = rows[0]!.id;
+    await asUserCommitted(users.therapist, ABSCHLIESSEN, [alt]);
+
+    const anderesDatum = await fehler(users.therapist, SPEICHERN, [
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      alt,
+      'Frage 3 falsch übertragen',
+    ]);
+    expect(anderesDatum?.message).toMatch(/keeps the date/);
+
+    const { rows: neu } = await asUserCommitted<{ id: string }>(users.therapist, SPEICHERN, [
+      patients.max,
+      null,
+      'anamnese_v8',
+      '1.0.0',
+      tagInTagen(-5),
+      '{}',
+      alt,
+      'Frage 3 falsch übertragen',
+    ]);
+    // Auch der Entwurf der Korrektur behaelt den Tag.
+    const entwurf = await fehler(users.therapist, SPEICHERN, [
+      patients.max,
+      neu[0]!.id,
+      'anamnese_v8',
+      '1.0.0',
+      HEUTE,
+      '{}',
+      null,
+      null,
+    ]);
+    expect(entwurf?.message).toMatch(/keeps the date/);
   });
 });

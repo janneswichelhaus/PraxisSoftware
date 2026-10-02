@@ -1815,3 +1815,149 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 | Berührt | ANN-205; `guardianship_health_scope`, `app.assert_platform_representation`, `app.platform_access_allows`; Rechnungen und Zahlungen auf der Plattform (POR-EPIC-002 ff.) |
 
 **Erwartet** (Jannes, 2026-10-02): Ein zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen gibt `app.platform_access_allows` einer Vertretung nur frei, wenn der geprüfte Aufgabenbereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Allgemein: Freigegeben werden nur die nachgewiesenen Bereiche, nie pauschal alles. Das gilt sinngemäß auch für eine Vorsorgevollmacht und für den Umfang einer Begleitung (BEF-116). Die Rechte stehen weiter an einer Stelle, mit Test je Bereich.
+
+### BEF-101 — Erhebungen: Server prüft nur die Form, Korrektur ohne eigenes Datum, Tegner ohne Leseart
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Fragebögen und Scores (Erhebung, Verlauf) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-084, ANN-085, ANN-103, ANN-105) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-014, 2026-10-02) |
+| Berührt | `src/features/assessments/definitionen/`, `antwortenSchema`; `patient_questionnaire_responses`; Verlaufsansicht im Befund |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Serverprüfung (ANN-105):** Der Server prüft auch Instrument und Version, gültige Antwortoptionen, Wertebereiche und unzulässige Kombinationen. Er nutzt dafür dieselben Definitionsdateien wie die Anwendung, etwa als vom Build erzeugte Tabelle oder Funktion, nicht als zweite Fassung von Hand. Historische Erhebungen werden mit ihrer **ursprünglichen** Definition angezeigt und ausgewertet; ein Hinweis auf eine neuere Version genügt nicht. Ältere Versionen bleiben dafür im Release.
+2. **Korrektur (ANN-103):** Eine Korrektur bleibt mit der ursprünglichen Erhebung verknüpft. Erhebungsdatum und Korrekturzeitpunkt werden getrennt geführt. Im Verlauf erscheint die Korrektur am Erhebungsdatum, nicht als zusätzliche Messung.
+3. **Tegner (ANN-085):** keine Wertung „besser/schlechter“, aber der Zahlenwert mit dem Hinweis „höher = aktiver“.
+4. **Versionen (ANN-084):** Eine Patch-Stelle steht nur für bedeutungserhaltende Korrekturen. Geänderter Frageninhalt, andere Antwortmöglichkeiten oder eine andere Berechnung sind fachliche Änderungen; ob die Werte vergleichbar bleiben, wird je Änderung geprüft und an der Definition vermerkt. Die Nummer allein sagt das nicht.
+
+### BEF-102 — Ein entferntes Ereignis im Verlauf ist gelöscht statt nachvollziehbar entfernt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Verlauf (Ereignisse: Operation, Erkrankung, Pause, Medikation, Sonstiges) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-106); Codeprüfung Claude |
+| Status  | erledigt in ABN-EPIC-001b (ABN-013, 2026-10-02) |
+| Berührt | ANN-106; `remove_patient_course_event` (`delete from public.patient_course_events`) in `20260926110000_frb_002e_course_events.sql` |
+
+**Beobachtung.** „Entfernen“ löscht die Zeile. Im Auditlog steht nur, dass etwas entfernt wurde, nicht was.
+
+**Erwartet.** Entfernen markiert das Ereignis als entfernt (wer, wann). Ursprünglicher Inhalt und Urheber bleiben in der Akte nachvollziehbar, etwa unter „Entfernte Ereignisse“. Im Verlauf erscheint es nicht mehr. Das Auditlog bleibt bei Metadaten. Die Frist folgt der Akte.
+
+### BEF-103 — Bausteine: unbestätigte Vorschläge im Entwurf, Seitenwechsel, Ergebnis nur als Zeichen, Tippfehler
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund aus Bausteinen (Behandlung abschließen, Dokumentation bearbeiten) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-119, ANN-120, ANN-129, ANN-130) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-015, 2026-10-02) |
+| Berührt | ANN-119, ANN-120, ANN-129, ANN-130; `definitionen/bausteine/*.json`; Bausteinfeld und Navigationsschutz der Dokumentation |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Vorschläge (ANN-120):** Ein Vorschlag gelangt nur durch ausdrückliches Übernehmen in den Dokumentationsentwurf. Beim Verlassen oder Speichern wird **kein** unbestätigter Vorschlag ungesehen angehängt, auch weil der Entwurf später automatisch finalisiert werden kann. Heute geht er laut ANN-120 beim Verlassen mit. Die bisherigen Eingaben (Häkchen, Werte) bleiben trotzdem erhalten, getrennt vom Entwurf, bis die Person übernimmt oder verwirft.
+2. **Seitenwechsel (ANN-129):** Beim Wechsel von „beidseits“ auf eine Seite gehen die Ergebnisse der anderen Seite nicht still verloren; sie bleiben erhalten oder es wird vorher gefragt.
+3. **Ergebnis im Text (ANN-130):** Im gespeicherten Text steht „o.B.“ bzw. „positiv“ ausgeschrieben; ✅/❗ dürfen ergänzen, tragen die Bedeutung aber nicht allein.
+4. **Tippfehler (ANN-119):** Offensichtliche Tippfehler der Vorlage („Supinatin“, „Relocation Tet“, „Lachmann“ und vergleichbare) werden für künftige Einträge korrigiert, als Patch-Version (BEF-101 Punkt 4). Kennungen bleiben, bestehende Dokumentation ändert sich nicht. Die drei unvollständigen Bereiche bleiben sichtbar als unvollständig gekennzeichnet; Fehlendes wird nicht selbst ergänzt (ANN-118).
+
+### BEF-104 — Therapiebericht: Korrektur ohne Kette, Grenze von 50 Einträgen still
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Therapiebericht |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-121, ANN-122); Codeprüfung Claude |
+| Status  | erledigt in ABN-EPIC-001b (ABN-016, 2026-10-02) |
+| Berührt | ANN-121, ANN-122; `therapy_reports` (`20260926140000_dok_005a_therapy_reports.sql`) |
+
+**Erwartet.**
+- Eine Berichtskorrektur verweist auf den ersetzten Bericht und trägt Korrekturgrund, Zeitpunkt und Verfasser:in. Heute gibt es dafür weder Verweis noch Grund.
+- Der eigene Berichtstext der Therapeut:in bleibt der Kern. Wörtliche Dokumentationseinträge sind ergänzende Auszüge; so ist es gebaut, `report_text`.
+- Die Grenze von 50 Einträgen ist beim Auswählen sichtbar, und ein 51. Eintrag wird mit Hinweis abgewiesen, nie still abgeschnitten.
+
+### BEF-107 — Auskunft nach Art. 15: ohne Zugriffe und ohne die Fotos selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | „Auskunft und Löschverlangen“ (OPS-006) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-092, ANN-128) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-017, 2026-10-02) |
+| Berührt | ANN-092, ANN-128; `patient_record.exported`; Auditlog-Lesepfad |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Zugriffe:** Eine umfassende Auskunft berücksichtigt auch Datum und Zweck der Zugriffe auf die Akte, aus dem Auditlog. Namen der Beschäftigten bleiben grundsätzlich weg; begründete Ausnahmen werden im Einzelfall geprüft.
+- **Fotos:** Die vollständige Kopie enthält die Fotos selbst, nicht nur ihre Angaben. Noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen.
+- Herausgabe durch owner und Protokollierung bleiben.
+
+### BEF-108 — Warteliste ohne Aktualitätsprüfung, Nachweis des Zusammenführens nur drei Jahre
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Warteliste; Akten zusammenführen |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-133, ANN-150) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-018, 2026-10-02) |
+| Berührt | ANN-133, ANN-150; `waitlist_entries`; `merge_patients`, Legal Hold |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Warteliste:** Offene Einträge werden regelmäßig auf Aktualität geprüft. Etwa ein Hinweis in „Offene Punkte“, wenn ein Eintrag länger als eine festgelegte Zeit unverändert offen steht; die Zeit ist eine Konstante, als Annahme im Loop.
+2. **Nachweis:** Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, als Vermerk an der bleibenden Akte, und stützt sich nicht allein auf das dreijährige Auditlog.
+3. **Legal Hold:** Alle Gründe bestehender Legal Holds bleiben wirksam. Heute wird beim Zusammenführen die Sperre der Dublette aufgehoben, wenn die bleibende Akte schon eine hat (ANN-150). Künftig bleiben beide Gründe wirksam, etwa mehrere aktive Sperren je Akte oder beide Gründe an der einen Sperre.
+
+### BEF-110 — Abstecher-Entwurf verfällt still, MDR-Freigabe ohne Nachweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Verordnungsformular aus dem Kalender (Abstecher); MDR-Register |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-019, ANN-089) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-019, 2026-10-02) |
+| Berührt | ANN-019 (`src/lib/abstecher.ts`); ANN-089 (`src/app/mdr.ts`); ADR-006; ADR-025 Punkt 4 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Abstecher-Entwurf (ANN-019):** Weder der Ablauf nach 30 Minuten noch eine automatische Abmeldung oder Sperre löschen Eingaben still. Der Entwurf wird geschützt gesichert, etwa serverseitig als Entwurf wie die Dokumentation oder ausdrücklich verworfen nach Rückfrage. Wiederaufnahme nur mit demselben Konto. Stimmt mit ADR-025 Punkt 4 überein.
+2. **MDR-Freigabe (ANN-089):** Eine Funktion wird erst nach dokumentierter MDR-Prüfung geöffnet. Der Nachweis (wer, wann, Ergebnis, Verweis auf die Prüfung) steht am Registereintrag oder in einem eigenen Freigabevermerk; bloßes Entfernen des Eintrags genügt nicht. Vorhandene Serverzugänge solcher Funktionen werden ebenfalls gesperrt, nicht nur die Adressen der Oberfläche.
+
+### BEF-111 — Trainingskontakt: Hausnummer im Straßenfeld, Rechnung ohne vollständige Anschrift
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Training: Kontakt, Hausbesuch, Rechnung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-177, ANN-182) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-020, 2026-10-02) |
+| Berührt | ANN-177 (`app.split_street_and_house_number`, `app.training_visit_address`); ANN-182 (`issue_invoice`, `app.build_invoice_document`); `training_contact_details` |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Getrennte Felder (ANN-177):** Der Trainingskontakt führt Straße und Hausnummer als zwei Felder, wie die Akte. Der Hausbesuch übernimmt sie unverändert; die Trennung am letzten Leerzeichen entfällt. Bestehende Einträge werden einmal aufgeteilt, was nicht eindeutig ist, bleibt zur Prüfung stehen.
+2. **Rechnung (ANN-182):** Eine Trainingsrechnung wird ohne vollständige Empfängeranschrift (Straße, Hausnummer, PLZ, Ort) nicht ausgestellt. Die Sperre sitzt im Server (`issue_invoice`), die Oberfläche nennt, was fehlt.
+
+### BEF-112 — Trainingsbetreuung sieht im Kalender keine belegten Zeiten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kalender und Tagesliste der Trainingsbetreuung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-180) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-021, 2026-10-02) |
+| Berührt | ANN-180 (`public.list_appointments`, `app.may_read_appointment_context`); `PROJECT_PRINCIPLES.md` §4.8 (Belegung); ADR-022 Punkt 11 |
+
+**Erwartet** (Jannes, 2026-10-02): Die Trainingsbetreuung sieht relevante belegte Zeiten (der betroffenen Mitarbeitenden und Räume) als anonyme Blöcke „belegt“, damit sie freie Zeiten erkennt, statt erst beim Speichern davon zu erfahren. Ein Block trägt nur Beginn, Ende und Person, keinen Kontext, keinen Namen, keine Adresse, keinen Zustand. Die Projektion entsteht im Server; ein Test belegt, dass keine Behandlungsdaten herauskommen.
+
+### BEF-113 — Trainingsprotokoll: Büro liest, Nachtrag, Verwerfen mit Hinweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Trainingsprotokoll |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-184, ANN-185, ANN-186) |
+| Status  | erledigt in ABN-EPIC-001b (ABN-022, 2026-10-02) |
+| Berührt | ANN-184 (`app.can_access_training_protocols`, `canWriteTrainingProtocols`); ANN-185 (`training_protocols_guard`); ANN-186 (`appointments_training_protocol_guard`, Löschjournal); `PROJECT_PRINCIPLES.md` 0.19 §4.8; ADR-021 Fassung 2 Punkt 10 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Büro liest (ANN-184):** Lese- und Schreibrecht getrennt. `office` liest Protokolle und ihren Zustand, auch in der Liste der Einheiten, protokolliert als `training_protocol.viewed`; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen bestätigt.
+2. **Nachtrag (ANN-185):** Ein abgeschlossenes Protokoll bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt, angezeigt unter dem Text, wie in der Behandlung.
+3. **Verwerfen (ANN-186):** Bevor eine Absage oder ein Nichtantreffen einen Entwurf verwirft, weist die Oberfläche auf den Verlust hin, auch dem Büro. Ein verworfener Entwurf steht im Löschjournal und taucht nach einer Wiederherstellung nicht wieder auf.

@@ -16,6 +16,7 @@ import { formatDate } from '@/lib/datum';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   canWriteTrainingClients,
+  canReadTrainingProtocols,
   canWriteTrainingProtocols,
   type CurrentUser,
 } from '@/features/session/types';
@@ -32,6 +33,7 @@ import {
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import {
   getTrainingAppointment,
+  getTrainingProtocol,
   istProtokollierbar,
   listTrainingBases,
   trainingAbsageLabels,
@@ -94,6 +96,9 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
   const darfAbschliessen =
     darfSchreiben && (termin.status === 'confirmed' || termin.status === 'completed');
   const darfProtokoll = canWriteTrainingProtocols(user.roles) && istProtokollierbar(termin.status);
+  // ABN-022 (BEF-113): Das Büro liest das Protokoll, schreibt es aber nicht.
+  const liestProtokoll = canReadTrainingProtocols(user.roles);
+  const zeigtProtokoll = liestProtokoll && istProtokollierbar(termin.status);
   const angelegt = leseAngelegtenTermin(suche) === termin.id;
   const hier = `/training/termine/${termin.id}`;
 
@@ -178,6 +183,7 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
               <Absagen
                 termin={termin}
                 name={name}
+                liestProtokoll={liestProtokoll}
                 onAbgesagt={() => setMeldung('Termin abgesagt.')}
               />
             </>
@@ -185,9 +191,9 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
         </div>
       ) : null}
 
-      {darfProtokoll ? (
+      {darfProtokoll || zeigtProtokoll ? (
         <div className="mt-6">
-          <TrainingProtokoll termin={termin} />
+          <TrainingProtokoll termin={termin} darfSchreiben={darfProtokoll} />
         </div>
       ) : null}
     </>
@@ -204,13 +210,24 @@ function Ansicht({ termin, user }: { termin: TrainingAppointment; user: CurrentU
 function Absagen({
   termin,
   name,
+  liestProtokoll,
   onAbgesagt,
 }: {
   termin: TrainingAppointment;
   name: string;
+  liestProtokoll: boolean;
   onAbgesagt: () => void;
 }) {
   const queryClient = useQueryClient();
+  // Ein Protokollentwurf fällt mit der Absage (ANN-186). Die Rückfrage sagt
+  // es vorher - auch dem Büro, das ihn seit ABN-022 lesen darf (BEF-113).
+  const protokoll = useQuery({
+    queryKey: ['training-protocol', termin.id],
+    queryFn: () => getTrainingProtocol(termin.id),
+    enabled: liestProtokoll,
+    retry: false,
+  });
+  const entwurfGehtVerloren = protokoll.data?.status === 'draft';
   const [grund, setGrund] = useState('');
   const [grundFehler, setGrundFehler] = useState<string | undefined>(undefined);
 
@@ -250,6 +267,11 @@ function Absagen({
         Der Trainingstermin mit {name} wird als abgesagt geführt und gibt seinen Zeitraum frei. Eine
         Absage lässt sich nicht zurücknehmen – für einen neuen Termin bitte neu anlegen.
       </p>
+      {entwurfGehtVerloren ? (
+        <p className="text-warnung mt-2 font-semibold">
+          Der Protokollentwurf zu dieser Einheit wird dabei verworfen.
+        </p>
+      ) : null}
       <div className="mt-3 max-w-xs">
         <Select
           label="Absagegrund"

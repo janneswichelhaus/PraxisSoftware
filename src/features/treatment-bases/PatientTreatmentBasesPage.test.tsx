@@ -60,6 +60,9 @@ function berichtszeile(rest: Partial<BerichtApi.Berichtszeile> = {}): BerichtApi
     recommendation: 'Synthetisch: Keine weitere Verordnung.',
     recommendation_by_name: 'Anna Beispiel',
     recommendation_on: '2026-09-21',
+    supersedes_report_id: null,
+    superseded_by_report_id: null,
+    change_reason: null,
     ...rest,
   };
 }

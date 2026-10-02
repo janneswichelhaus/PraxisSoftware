@@ -36,7 +36,7 @@ vi.mock('@/features/patients/api', async (importOriginal) => {
 // Die Herausgabe der Fotos hat ihre eigenen Tests (FotoHerausgabe.test.tsx).
 vi.mock('@/features/files/patientenfotos', async (importOriginal) => ({
   ...(await importOriginal<object>()),
-  fetchPatientenfotos: () => Promise.resolve([]),
+  fetchFotosZurHerausgabe: () => Promise.resolve([]),
 }));
 
 // `renderWithProviders` haengt den Inhalt an eine Platzhalterroute; die Kennung

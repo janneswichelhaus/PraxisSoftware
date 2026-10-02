@@ -51,6 +51,8 @@ const navigate = vi.fn();
 const fetchTextSnippets = vi.fn();
 const fetchAbrechnungslage = vi.fn();
 const fetchPatientTreatmentNotesPage = vi.fn();
+const fetchBefundangaben = vi.fn();
+const befundangabenSichern = vi.fn();
 
 vi.mock('@/features/appointments/abrechnungslage-api', async (importOriginal) => ({
   ...(await importOriginal<typeof LageApi>()),
@@ -88,6 +90,8 @@ vi.mock('./api', async (importOriginal) => {
       fetchPatientTreatmentNotesPage(...args) as Promise<
         DokumentationApi.PatientTreatmentNotesEntry[]
       >,
+    fetchBefundangaben: (id: string) => fetchBefundangaben(id) as Promise<unknown>,
+    befundangabenSichern: (...args: unknown[]) => befundangabenSichern(...args) as Promise<void>,
   };
 });
 
@@ -125,6 +129,10 @@ describe('CompleteTreatmentPage', () => {
     fetchAbrechnungslage.mockResolvedValue(null);
     fetchPatientTreatmentNotesPage.mockReset();
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);
+    fetchBefundangaben.mockReset();
+    fetchBefundangaben.mockResolvedValue(null);
+    befundangabenSichern.mockReset();
+    befundangabenSichern.mockResolvedValue(undefined);
     fetchTextSnippets.mockResolvedValue([
       {
         id: 'b1',
@@ -584,10 +592,11 @@ describe('CompleteTreatmentPage', () => {
   /**
    * Befund aus Bausteinen (FRB-003b). Festgeschrieben wird nur, was im Feld
    * steht (ADR-016 Punkt 4); ein nicht übernommener Vorschlag hält den
-   * Abschluss an, geht aber in einen Entwurf mit, statt verloren zu gehen (§13).
+   * Abschluss an. In einen Entwurf geht er nie mit - seine Angaben werden
+   * daneben gesichert (ABN-015, BEF-103, §13).
    */
   describe('FRB-003b: Befund aus Bausteinen', () => {
-    const VORSCHLAG = 'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test';
+    const VORSCHLAG = 'Knie rechts – Weiterführende Untersuchung\n❗ Lachman-Test: positiv';
 
     async function lachmannPositiv(user: ReturnType<typeof userEvent.setup>) {
       await user.click(await screen.findByRole('button', { name: /^\+ Befund/ }));
@@ -595,7 +604,7 @@ describe('CompleteTreatmentPage', () => {
       const seite = screen.getByRole('group', { name: 'Seite Knie' });
       await user.click(within(seite).getByRole('button', { name: 'rechts' }));
       await user.click(screen.getByText('Weiterführende Untersuchung'));
-      const lachmann = screen.getByRole('group', { name: 'Lachmann-Test' });
+      const lachmann = screen.getByRole('group', { name: 'Lachman-Test' });
       await user.click(within(lachmann).getByRole('button', { name: 'positiv' }));
     }
 
@@ -633,7 +642,7 @@ describe('CompleteTreatmentPage', () => {
       expect(completeTreatment).not.toHaveBeenCalled();
     });
 
-    it('hält auch „Nur als Entwurf speichern“ an, solange der Vorschlag offen ist', async () => {
+    it('sichert bei „Entwurf“ den Text ohne den Vorschlag und die Angaben daneben (BEF-103)', async () => {
       // Ungesehener Text im Entwurf käme über die automatische Finalisierung
       // (ADR-016 Punkt 7) in die Akte (Zweitreview S1).
       const user = userEvent.setup();
@@ -642,11 +651,22 @@ describe('CompleteTreatmentPage', () => {
       await lachmannPositiv(user);
       await user.click(screen.getByRole('button', { name: 'Entwurf' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(/noch nicht im Text/);
-      expect(createTreatmentNote).not.toHaveBeenCalled();
+      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:'));
+      expect(befundangabenSichern).toHaveBeenCalledWith(
+        TERMIN_ID,
+        expect.objectContaining({ seitenwahl: { knie: 'rechts' } }),
+      );
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+          state: {
+            meldung:
+              'Entwurf gespeichert – noch nicht finalisiert. Der Vorschlag aus den Bausteinen ist nicht übernommen; seine Angaben bleiben gesichert.',
+          },
+        }),
+      );
     });
 
-    it('fragt beim Verlassen nach und hängt den Vorschlag beim Speichern an', async () => {
+    it('fragt beim Verlassen nach und sichert nur die Angaben, nicht den Vorschlag als Text', async () => {
       const user = userEvent.setup();
       rendern();
       await lachmannPositiv(user);
@@ -656,7 +676,8 @@ describe('CompleteTreatmentPage', () => {
         await screen.findByRole('group', { name: 'Ungespeicherte Dokumentation' }),
       ).toBeInTheDocument();
       await user.click(screen.getByRole('button', { name: 'Speichern und weiter' }));
-      await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, VORSCHLAG));
+      await waitFor(() => expect(befundangabenSichern).toHaveBeenCalled());
+      expect(createTreatmentNote).not.toHaveBeenCalled();
       expect(completeTreatment).not.toHaveBeenCalled();
     });
 

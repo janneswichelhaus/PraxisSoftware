@@ -33,10 +33,16 @@
  * gegen die Dokumente hält.
  *
  * **Es gibt keinen Schalter.** Kein Feld, keine Umgebungsvariable, kein Flag:
- * Ein Eintrag ist gesperrt, solange er hier steht. Der einzige Weg, eine
- * Funktion zu öffnen, ist, ihren Eintrag zu entfernen — ein sichtbarer Diff an
- * genau einer Datei, den `mdr.test.ts` rot macht, solange
- * `REGULATORISCHE_PRUEFUNG` fehlt.
+ * Ein Eintrag ist gesperrt, solange er keinen **Freigabevermerk** trägt. Seit
+ * ABN-019 (BEF-110, Abnahme Jannes 2026-10-02) genügt das Entfernen des
+ * Eintrags nicht mehr — `mdr.test.ts` hält die Vollzähligkeit —, sondern eine
+ * Funktion öffnet erst mit einer dokumentierten MDR-Prüfung am Eintrag: wer,
+ * wann, mit welchem Ergebnis, und der Verweis auf das Prüfdokument im
+ * Repository. Ein Vermerk ist kein Schalter: Er ist ein Nachweis, der im Diff
+ * steht, und `mdr.test.ts` prüft jedes Feld und dass das Dokument existiert.
+ * Auf dem Server antwortet `app.mdr_released(id)`; jede künftige
+ * Serverfunktion eines klassifizierten Bereichs fragt sie (heute für jede
+ * Kennung `false`).
  *
  * Diese Verortung ist **ANN-089**.
  */
@@ -63,18 +69,35 @@ export interface MdrEintrag {
    * betrifft, was auf ohnehin vorhandenen Seiten steht.
    */
   pfade: readonly string[];
+  /**
+   * Der Freigabevermerk nach dokumentierter MDR-Prüfung (ADR-006 Punkt 6 und
+   * 7, ABN-019, BEF-110). Fehlt er, ist der Eintrag gesperrt.
+   */
+  freigabe?: MdrFreigabe;
 }
 
-/**
- * Die dokumentierte regulatorische Prüfung nach ADR-006 Punkt 6 und 7.
- *
- * `null` — es gibt sie nicht, und der Typ lässt nichts anderes zu. Das ist
- * Absicht: Wäre hier ein Wahrheitswert oder eine Umgebungsvariable, wäre die
- * Sperre ein Schalter, und genau das verbietet Punkt 13. Wer die Prüfung
- * vorlegt, ändert den Typ mit — ein Eingriff, der im Diff steht und nicht in
- * einer Konfiguration verschwindet.
- */
-export const REGULATORISCHE_PRUEFUNG: null = null;
+/** Der Nachweis einer MDR-Prüfung - kein Wahrheitswert, sondern vier Angaben. */
+export interface MdrFreigabe {
+  /** Wer geprüft hat: Person oder Stelle, etwa die externe Prüfung B1. */
+  geprueftVon: string;
+  /** Tag der Prüfung, `YYYY-MM-DD`. */
+  geprueftAm: string;
+  /** Das Ergebnis im Wortlaut der Prüfung, ein Satz. */
+  ergebnis: string;
+  /** Pfad des Prüfdokuments im Repository, etwa `docs/regulatorik/….md`. */
+  verweis: string;
+}
+
+/** Ist der Vermerk vollständig? Nur dann öffnet er etwas. */
+export function freigabeVollstaendig(freigabe: MdrFreigabe | undefined): boolean {
+  return (
+    freigabe !== undefined &&
+    freigabe.geprueftVon.trim() !== '' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(freigabe.geprueftAm) &&
+    freigabe.ergebnis.trim() !== '' &&
+    freigabe.verweis.trim() !== ''
+  );
+}
 
 /**
  * Was heute als `MDR_REVIEW_REQUIRED` geführt wird.
@@ -165,8 +188,13 @@ export const MDR_REVIEW_REQUIRED: readonly MdrEintrag[] = [
  * darunter, aber nicht `/training/ki-analysen`. Ein Ausgabeverbot ohne Pfad
  * kommt hier nie heraus; es hat keine Adresse, an der es zu sperren wäre.
  */
-export function mdrSperre(pfad: string): MdrEintrag | undefined {
-  return MDR_REVIEW_REQUIRED.find((eintrag) =>
-    eintrag.pfade.some((reserviert) => pfad === reserviert || pfad.startsWith(`${reserviert}/`)),
+export function mdrSperre(
+  pfad: string,
+  register: readonly MdrEintrag[] = MDR_REVIEW_REQUIRED,
+): MdrEintrag | undefined {
+  return register.find(
+    (eintrag) =>
+      !freigabeVollstaendig(eintrag.freigabe) &&
+      eintrag.pfade.some((reserviert) => pfad === reserviert || pfad.startsWith(`${reserviert}/`)),
   );
 }

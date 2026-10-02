@@ -3,7 +3,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { getSupabase } from '@/lib/supabase';
-import { alleEntwuerfeVerwerfen } from '@/features/treatment-bases/api';
 import { SessionContext, type SessionState } from './sessionContext';
 
 /**
@@ -62,9 +61,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const raeumen = useCallback(() => {
     queryClient.clear();
-    // Verordnungsentwürfe sind an die Person gebunden, die sie begonnen hat
-    // (VER-003, ANN-019), und liegen außerhalb des Abfragespeichers.
-    alleEntwuerfeVerwerfen();
+    // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
+    // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
+    // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim
+    // freiwilligen Abmelden fragt `AbstecherAbmeldewache`.
   }, [queryClient]);
 
   useEffect(() => {

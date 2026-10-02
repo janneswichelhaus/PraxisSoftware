@@ -23,6 +23,7 @@ import {
   dayKey,
   fetchAppointment,
   fetchAppointments,
+  fetchBelegteZeiten,
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
@@ -53,6 +54,7 @@ import { Monatskalender } from './Monatskalender';
 import type { VerschiebenFrage } from './VerschiebenRueckfrage';
 import {
   arbeitszeitBaender,
+  belegtBaender,
   bereichFuer,
   blaettern,
   FEHLZEIT_BEISPIELE,
@@ -384,6 +386,20 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     placeholderData: keepPreviousData,
   });
 
+  // Belegte Zeiten ohne lesbaren Termin (ABN-021, BEF-112): nur, wer die
+  // Behandlung nicht sieht - die Trainingsbetreuung. Praxisrollen sehen die
+  // Termine selbst; der Server gäbe ihnen ohnehin nichts.
+  const belegt = useQuery({
+    queryKey: ['busy-blocks', bereich.von, bereich.bis, p.person],
+    queryFn: () => fetchBelegteZeiten({ von: bereich.von, bis: bereich.bis, person: p.person }),
+    enabled: Boolean(zone) && !mitBehandlung,
+    retry: false,
+    placeholderData: keepPreviousData,
+  });
+  const belegtDaten = belegt.data ?? [];
+  const belegtFuer = (staffMemberId: string, tag: string) =>
+    zone ? belegtBaender(belegtDaten, staffMemberId, tag, zone, minutesOfDay, dayKey) : [];
+
   // Arbeitszeiten als Hintergrund. Der Wochenplan ist klein und ändert sich
   // selten; die Abweichungen werden auf den sichtbaren Bereich begrenzt.
   const wochenplan = useQuery({
@@ -573,6 +589,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           baender: arbeitszeitBekannt
             ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
             : null,
+          belegt: belegtFuer(t.staff_member_id, bereich.von),
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
       : // Die Woche zeigt Mo–Fr (Design-Handoff 2026-10-01, Abschnitt 7a).
@@ -598,6 +615,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               wochenPerson && arbeitszeitBekannt
                 ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
                 : null,
+            belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
             ziel: zumTag(tag),
           }));
 

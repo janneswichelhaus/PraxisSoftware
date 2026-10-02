@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-01.
+Zuletzt aktualisiert: 2026-10-02.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -317,9 +317,9 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** Ein Entwurf muss die Anlage einer fehlenden Verordner:in überleben; mit der Standard-`gcTime` von fünf Minuten für einen unbeobachteten Cache-Eintrag ist das nicht verlässlich, und den Cache dafür umzuwidmen hieße, seine nächsten Eigenheiten (Rehydrierung, `refetchOnMount`) zu erben. 30 Minuten sind eine Schätzung, keine Messung. Die Benutzerbindung verhindert, dass ein Kontowechsel im selben Tab einen fremden Entwurf übernimmt; das Verwerfen bei Abmeldung ist Verteidigung in der Tiefe, weil die Verordnung klinischen Freitext enthält (§18, ADR-011). Nichts verlässt den Arbeitsspeicher — kein `localStorage`, kein `sessionStorage`, kein Weg über die URL.
 
-**Anker.** `src/lib/abstecher.ts` (`MAX_ALTER_MS`, Bindung an Vorgang und Benutzer); Verwendung in `src/features/treatment-bases/TreatmentBasisFormPage.tsx` und `PrescriberFormPage.tsx`; Verwerfen bei Abmeldung (`alleEntwuerfeVerwerfen`) in `src/features/auth/SessionProvider.tsx`.
+**Anker.** `src/lib/abstecher.ts` (Bindung an Vorgang und Benutzer, `abstecherVerwerfenFuer`); Verwendung in `src/features/treatment-bases/TreatmentBasisFormPage.tsx` und `PrescriberFormPage.tsx`; Rückfrage vor dem freiwilligen Abmelden in `src/app/AbstecherAbmeldewache.tsx` (Fassung 2; bis ABN-019 `MAX_ALTER_MS` und `alleEntwuerfeVerwerfen` im `SessionProvider`).
 
-**Änderungspfad.** Andere Frist: eine Zahl in `MAX_ALTER_MS` · Aufwand `klein`. Mehrere gleichzeitige Entwürfe je Person oder Ausdehnung auf mehrere Tabs: eigener Mechanismus (etwa `BroadcastChannel`) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Ablauf und automatische Abmeldung dürfen keine Eingaben still löschen; der Entwurf wird geschützt gesichert, Wiederaufnahme nur mit demselben Konto (BEF-110, ADR-025 Punkt 4).
+**Änderungspfad.** Wieder eine Frist: eine Zahl in `src/lib/abstecher.ts` · Aufwand `klein`. Mehrere gleichzeitige Entwürfe je Person oder Ausdehnung auf mehrere Tabs: eigener Mechanismus (etwa `BroadcastChannel`) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Ablauf und automatische Abmeldung dürfen keine Eingaben still löschen; der Entwurf wird geschützt gesichert, Wiederaufnahme nur mit demselben Konto (BEF-110, ADR-025 Punkt 4). **Fassung 2 (ABN-019, 2026-10-02, BEF-110 Punkt 1):** Kein stiller Verfall mehr: Ein Abstecher-Entwurf bleibt im Arbeitsspeicher, bis das Formular ihn zurückholt oder die Person ihn ausdrücklich verwirft. Beim freiwilligen Abmelden fragt `AbstecherAbmeldewache` („Zurück“ oder „Verwerfen und abmelden“); eine automatische Abmeldung oder Sperre lässt ihn liegen, gebunden an das Konto, und kein anderes findet ihn. Ein Neuladen verwirft ihn weiter. Ein serverseitiger Entwurf kommt, wenn SEC-EPIC-001 den Entwurfspfad baut (ADR-025 Punkt 4).
 
 ### ANN-020 — Datenklasse und Frist der Textbausteine
 
@@ -1145,7 +1145,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `versionSchema` in `src/features/assessments/schema.ts`.
 
-**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101).
+**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 4):** Die Nummer sagt nicht, ob Werte vergleichbar sind. `meta.vergleichbar_mit` vermerkt es je Fassung; eine reine Patch-Änderung muss dort stehen (Ladepfad `definitionen.ts`), geänderter Inhalt, andere Optionen oder eine andere Berechnung werden je Änderung geprüft. Frühere Fassungen liegen unter `definitionen/scores/archiv/` und bleiben im Release; eine Erhebung wird mit ihrer eigenen Fassung angezeigt (`fassungFuer`), der Verlauf zeichnet nur vergleichbare Fassungen in eine Reihe. Eine eingetragene Fassung ändert sich nie (Trigger an `questionnaire_definitions`, Prüfung in `scripts/definitionen-sql.mjs`).
 
 ### ANN-085 — Ein Instrument ohne Wertung trägt die Richtung `nicht_anwendbar`
 
@@ -1157,7 +1157,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `RICHTUNGEN` in `src/features/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
 
-**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101).
+**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 3):** Rechnet ein Instrument mit Richtung `nicht_anwendbar` etwas, ist `scoring.leseart` Pflicht (Tegner: „höher = aktiver“). Der Wert steht mit diesem Satz im Verlauf und in den Instrumenten, ohne Wertung.
 
 ### ANN-086 — Der Lizenzstatus hängt am Instrument, und `aktiv` hängt an ihm
 
@@ -1205,9 +1205,9 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** ADR-006 verlangt in den „Konsequenzen" ausdrücklich mehr als eine Liste — geführt, sichtbar und technisch wirksam —, und Punkt 13 schließt das Feature-Flag als Weg aus; seit 0.13 steht dieselbe Pflicht in `PROJECT_PRINCIPLES.md` §17 an Rang 1. Wo das geschieht, sagt keines der Dokumente; die offene Folgefrage steht seit Fassung 1. Die Reservierung einer Adresse ist der einzige Riegel, der heute schon wirkt, weil die klassifizierten Funktionen noch nicht gebaut sind: Sie sperrt, ohne etwas zu bauen. Für die drei Ausgabeverbote wäre ein Riegel dagegen eine Behauptung — ADR-006 nimmt ihre technische Durchsetzung ausdrücklich aus, weil sich nicht erzwingen lässt, etwas **nicht** zu bauen.
 
-**Anker.** `MDR_REVIEW_REQUIRED`, `REGULATORISCHE_PRUEFUNG` und `mdrSperre` in `src/app/mdr.ts`; der Riegel darüber in `src/routes/AuthenticatedRoutes.tsx`.
+**Anker.** `MDR_REVIEW_REQUIRED`, `freigabeVollstaendig` und `mdrSperre` in `src/app/mdr.ts`; der Riegel darüber in `src/routes/AuthenticatedRoutes.tsx`; `app.mdr_released` im Server.
 
-**Änderungspfad.** Andere Adresse für eine klassifizierte Funktion: das Feld `pfade` des Eintrags · Aufwand `klein`. Klassifikation aufheben, nachdem die Prüfung vorliegt: Eintrag entfernen, `REGULATORISCHE_PRUEFUNG` mit der Fundstelle belegen, Test nachziehen · Aufwand `klein`, aber nie ohne die dokumentierte Prüfung — das ist die Entscheidung, nicht ihre Umsetzung. **Abnahme (Jannes, 2026-10-02):** geändert: Geöffnet wird erst nach dokumentierter MDR-Prüfung mit Freigabevermerk; bloßes Entfernen des Registereintrags genügt nicht; vorhandene Serverzugänge werden ebenfalls gesperrt (BEF-110).
+**Änderungspfad.** Andere Adresse für eine klassifizierte Funktion: das Feld `pfade` des Eintrags · Aufwand `klein`. Klassifikation aufheben, nachdem die Prüfung vorliegt: Eintrag entfernen, `REGULATORISCHE_PRUEFUNG` mit der Fundstelle belegen, Test nachziehen · Aufwand `klein`, aber nie ohne die dokumentierte Prüfung — das ist die Entscheidung, nicht ihre Umsetzung. **Abnahme (Jannes, 2026-10-02):** geändert: Geöffnet wird erst nach dokumentierter MDR-Prüfung mit Freigabevermerk; bloßes Entfernen des Registereintrags genügt nicht; vorhandene Serverzugänge werden ebenfalls gesperrt (BEF-110). **Fassung 2 (ABN-019, 2026-10-02, BEF-110 Punkt 2):** Geöffnet wird nur mit vollständigem Freigabevermerk am Eintrag (`freigabe`: geprüft von, am, Ergebnis, Verweis auf das Prüfdokument im Repository; `mdr.test.ts` prüft jedes Feld und das Dokument); Entfernen genügt nicht, die Vollzähligkeit hält der Test. `REGULATORISCHE_PRUEFUNG` entfällt. Auf dem Server antwortet `app.mdr_released(id)` (heute für jede Kennung `false`, `supabase/migrations/20261003106000_abn_019_mdr_released.sql`), die jede künftige Serverfunktion eines klassifizierten Bereichs zuerst fragt.
 
 ### ANN-090 — Fehlende Einrichtung des Kartendienstes ist eine eigene Fehlerklasse
 
@@ -1243,7 +1243,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Das Feld `nicht_enthalten` in `public.export_patient_record`, `supabase/migrations/20260922100000_betroffenenrechte.sql`; der Test dazu in `supabase/tests/betroffenenrechte.test.ts`.
 
-**Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** geändert: Zugriffsdaten nicht pauschal ausschließen — bei umfassender Auskunft auch Datum und Zweck der Zugriffe; Beschäftigtennamen grundsätzlich weglassen, begründete Ausnahmen prüfen (BEF-107).
+**Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** geändert: Zugriffsdaten nicht pauschal ausschließen — bei umfassender Auskunft auch Datum und Zweck der Zugriffe; Beschäftigtennamen grundsätzlich weglassen, begründete Ausnahmen prüfen (BEF-107). **Fassung 2 (ABN-017, 2026-10-02, BEF-107):** Die Auskunft enthält den Abschnitt `access_log`: Zeitpunkt, Aktion, Gegenstand, Ergebnis und Art des Handelnden (Praxis, System, Person selbst, Vertretung) jedes Zugriffs auf die Akte, ohne Kennung und Namen der Beschäftigten; den Zweck in Worten setzt die Oberfläche aus dem Auditkatalog (`mitZweck`). Namen nur auf begründetes Verlangen nach Prüfung im Einzelfall, weiter von Hand. `supabase/migrations/20261003104000_abn_017_access_request_completeness.sql`. Wiedervorlage B2.
 
 ### ANN-093 — Einwilligung nur für zwei Zwecke; Papier bleibt Papier
 
@@ -1383,7 +1383,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
 
-**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101).
+**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 2):** Eine Korrektur behält den Erhebungstag der korrigierten Erhebung — der Server weist einen anderen ab, auch am Entwurf der Korrektur; die Erhebungsseite zeigt ihn als Text. Der Korrekturzeitpunkt ist `created_at`, die Akte nennt „Korrektur vom …“. Im Verlauf steht die Korrektur am Erhebungstag, nicht als zusätzliche Messung.
 
 ### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
 
@@ -1407,7 +1407,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
 
-**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung.
+**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung. **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 1):** Der Server prüft Instrument und Fassung, Items, Form je Typ, Optionen, Skalenbereich, freie Angaben, exklusive Optionen und Körperbereiche (`app.assert_questionnaire_answers(instrument, version, answers)` in `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`) — gegen `public.questionnaire_definitions`, erzeugt aus denselben Dateien (ANN-219). Die Anwendung prüft weiter vorab mit Zod.
 
 ### ANN-106 — Der Verlauf zeigt Rohwerte als Punkte mit Ereignissen der Praxis; fünf Ereignisarten, setzen und entfernen statt ändern
 
@@ -1419,7 +1419,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
 
-**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102).
+**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102). **Fassung 2 (ABN-013, 2026-10-02):** `remove_patient_course_event` setzt `removed_at`/`removed_by` statt zu löschen; der Verlauf filtert, `list_removed_patient_course_events` zeigt die Einträge unter „Entfernte Ereignisse“ (geladen erst beim Aufklappen, protokolliert wie der Verlauf), die Auskunft führt sie mit `removed_at`; Frist wie die Akte. `supabase/migrations/20261003100000_abn_013_course_event_removal.sql`.
 
 ### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
 
@@ -1579,7 +1579,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
 
-**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben. **Abnahme (Jannes, 2026-10-02):** geändert: offensichtliche Tippfehler werden für künftige Einträge korrigiert, Kennungen bleiben, bestehende Dokumentation ändert sich nicht (BEF-103).
+**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben. **Abnahme (Jannes, 2026-10-02):** geändert: offensichtliche Tippfehler werden für künftige Einträge korrigiert, Kennungen bleiben, bestehende Dokumentation ändert sich nicht (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 4):** „Relocation Test“, „Supination“, „Lachman-Test“ und „Painful Arc Sign“ sind korrigiert, als Patch-Version 1.0.1 von Schulter, Ellenbogen und Knie; Kennungen bleiben, bestehende Dokumentation ändert sich nicht. Der Wortlauttest in `bausteine.test.ts` führt die Korrekturen in `KORRIGIERT`.
 
 ### ANN-120 — Bausteine erzeugen nur Text: kein gespeichertes Einzelergebnis, der Befund ist die Dokumentation des Termins
 
@@ -1591,7 +1591,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
 
-**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bausteine und Erstbefund als Termindokumentation bestätigt. Geändert: Kein unbestätigter Vorschlag wird beim Verlassen oder Speichern ungesehen an den Entwurf gehängt; die Eingaben bleiben dennoch erhalten (BEF-103). Bis zur Umsetzung gilt die bisherige Regel.
+**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bausteine und Erstbefund als Termindokumentation bestätigt. Geändert: Kein unbestätigter Vorschlag wird beim Verlassen oder Speichern ungesehen an den Entwurf gehängt; die Eingaben bleiben dennoch erhalten (BEF-103). Bis zur Umsetzung gilt die bisherige Regel. **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 1):** Ein nicht übernommener Vorschlag geht **nie** in den Entwurf, auch nicht beim Verlassen. Häkchen, Werte und Seiten werden getrennt vom Entwurf gesichert (`treatment_draft_findings`, `save_treatment_draft_findings`/`get_treatment_draft_findings`, nur dokumentierende Rollen, protokolliert), beim Öffnen zurückgeholt und beim Festschreiben verworfen. „Festschreiben“ hält weiter an, solange ein Vorschlag offen ist; „Entwurf“ nicht mehr. `supabase/migrations/20261003102000_abn_015_treatment_draft_findings.sql`, `src/features/documentation/befundangaben.ts`.
 
 ### ANN-121 — Der Therapiebericht ist ein gespeicherter Datensatz; beim Abschluss friert er als Snapshot ein
 
@@ -1603,7 +1603,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/api.ts`.
 
-**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104).
+**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Eine Korrektur ist ein neuer Bericht derselben Verordnung mit `supersedes_report_id` und `change_reason` (3–500 Zeichen), nur zu einem abgeschlossenen, höchstens einmal; Zeitpunkt und Verfasser:in sind `created_at`/`created_by`. Das Dokument nennt sie (`korrektur`), das Blatt heißt „korrigierte Fassung“, die Verordnung zeigt die Kette und „Korrigieren“ nur am geltenden Bericht. `supabase/migrations/20261003103000_abn_016_therapy_report_correction.sql`.
 
 ### ANN-122 — Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich
 
@@ -1615,7 +1615,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/TherapieberichtPage.tsx`.
 
-**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104).
+**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Beim Auswählen steht „n von 50 Einträgen gewählt“; bei 50 lässt sich kein weiterer Haken setzen. Der eigene Berichtstext bleibt der Kern, die Einträge sind ergänzende Auszüge.
 
 ### ANN-123 — Der Briefkopf kommt aus den Praxis-Stammdaten, ohne Steuer- und Bankangaben
 
@@ -1687,7 +1687,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** `public.hand_out_patient_photo()` in `supabase/migrations/20260926160000_dok_006d_patient_photo_handout.sql`; `gibPatientenfotoHeraus` in `src/features/files/patientenfotos.ts`.
 
-**Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** owner und Protokollierung bestätigt; geändert: Die vollständige Kopie enthält die Fotos selbst, und noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen (BEF-107).
+**Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** owner und Protokollierung bestätigt; geändert: Die vollständige Kopie enthält die Fotos selbst, und noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen (BEF-107). **Fassung 2 (ABN-017, 2026-10-02, BEF-107):** Die Auskunft führt jedes vorhandene Foto (`patient_photos`), auch gesperrte; owner gibt auch ein gesperrtes, noch vorhandenes Foto als Datei heraus (`hand_out_patient_photo`, Audit mit `gesperrt`), die Liste dazu liefert `list_patient_photos_for_access_request`. Bewusst getragen: Die Datenbank kennt keinen Auskunftsvorgang und prüft den Zweck deshalb nicht; die Sperre gilt für `owner` bei der Herausgabe nicht, unabhängig davon, von welcher Seite aus sie geschieht. Das Restrisiko — owner gibt ein gesperrtes Foto ohne Verlangen heraus — fängt das Auditereignis mit `gesperrt` auf, das jede solche Herausgabe einzeln nachweist. Strenger: ein Auskunftsvorgang als Datensatz und dessen Kennung als Pflichtargument · Aufwand `mittel`. Wiedervorlage B2.
 
 ### ANN-129 — Die Seite wird an Extremitäten und Kiefer einmal je Region gewählt, an der Wirbelsäule je Test
 
@@ -1699,7 +1699,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `seitenDes` und `seiteUmstellen` in `src/features/assessments/dokumentationstext.ts`; Oberfläche `SeitenWahl` in `BausteinFeld.tsx`; Tests in `dokumentationstext.test.ts` und `BausteinFeld.test.tsx`.
 
-**Änderungspfad.** Vorauswahl oder zuletzt gewählte Seite: Anfangswert in `useBausteinAuswahl` · Aufwand `klein`. Regionsseite auch an der Wirbelsäule: `seitlicheRegion` · Aufwand `klein`. „bds." nie zusammenfassen: `eintraege` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Seitenwahl bestätigt; beim Wechsel von „beidseits“ auf eine Seite gehen Ergebnisse der anderen Seite nicht still verloren (BEF-103).
+**Änderungspfad.** Vorauswahl oder zuletzt gewählte Seite: Anfangswert in `useBausteinAuswahl` · Aufwand `klein`. Regionsseite auch an der Wirbelsäule: `seitlicheRegion` · Aufwand `klein`. „bds." nie zusammenfassen: `eintraege` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Seitenwahl bestätigt; beim Wechsel von „beidseits“ auf eine Seite gehen Ergebnisse der anderen Seite nicht still verloren (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 2):** Von „beidseits“ auf eine Seite fragt das Feld vorher und nennt die Zahl der Angaben, die verloren gingen (`verworfeneAngaben`); Abbrechen lässt alles stehen.
 
 ### ANN-130 — Der Dokumentationstext aus Bausteinen: Zeichen statt Wort, Ausgangsstellung nur beim Abhaken, gegliedert
 
@@ -1711,7 +1711,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `ERGEBNIS_ZEICHEN` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; `ausgangsstellung` in `bausteinItemSchema` (`schema.ts`) und in `definitionen/bausteine/06-huefte.json` (Version 1.1.0); Tests in `dokumentationstext.test.ts`, `schema.test.ts`, `bausteine.test.ts`.
 
-**Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Gliederung bestätigt; im gespeicherten Text stehen „o.B.“ bzw. „positiv“ ausgeschrieben, die Zeichen ergänzen nur (BEF-103).
+**Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Gliederung bestätigt; im gespeicherten Text stehen „o.B.“ bzw. „positiv“ ausgeschrieben, die Zeichen ergänzen nur (BEF-103). **Fassung 2 (ABN-015, 2026-10-02, BEF-103 Punkt 3):** Im Text steht das Ergebnis ausgeschrieben hinter dem Test („✅ Lachman-Test re.: o.B.“, „❗ …: positiv“); das Zeichen ergänzt nur.
 
 ### ANN-131 — Blätter für den Fensterumschlag: DIN 5008 Form B, Fenster links
 
@@ -1747,7 +1747,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
 
-**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108).
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkt 1):** Offene Einträge, die länger als `app.waitlist_review_interval()` (acht Wochen, ANN-220) unverändert sind, tragen `review_due` und stehen unter „Warteliste prüfen“ in Offene Punkte; „Noch aktuell“ (`confirm_waitlist_entry`, Audit `waitlist_entry.reviewed`) beginnt die Frist neu.
 
 ### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
 
@@ -1953,7 +1953,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108).
+**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkte 2 und 3):** Das Zusammenführen hebt keine Sperre mehr auf; eine Akte kann mehrere aktive Legal Holds tragen (Index ohne `unique`), `place_legal_hold` nimmt eine weitere mit eigenem Grund an, der Aufbewahrungsstand nennt alle Gründe. Der Nachweis steht als `patient_merge_records` an der bleibenden Akte (so lange wie sie, zieht bei einem weiteren Zusammenführen mit) und in „Verwaltung“ der Akte. `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`.
 
 ### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
 
@@ -2109,7 +2109,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** `app.split_street_and_house_number` und `app.training_visit_address` in `supabase/migrations/20260930110000_trn_004_training_appointments.sql`; Fälle in `supabase/tests/training-appointments.test.ts`.
 
-**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Straße und Hausnummer werden getrennte Felder im Trainingskontakt; die Trennung am letzten Leerzeichen entfällt (BEF-111).
+**Änderungspfad.** Eigenes Feld Hausnummer im Trainingskontakt (Spalte, Formular, `app.training_visit_address` liest es) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Straße und Hausnummer werden getrennte Felder im Trainingskontakt; die Trennung am letzten Leerzeichen entfällt (BEF-111). **Fassung 2 (ABN-020, 2026-10-02, BEF-111 Punkt 1):** Der Trainingskontakt führt Straße und Hausnummer getrennt (`training_contact_details.house_number`); der Hausbesuch übernimmt beide unverändert, `app.split_street_and_house_number` entfällt. Bestehende Einträge wurden einmal aufgeteilt, nur wenn eindeutig (Hausnummer beginnt mit einer Ziffer, der Rest endet nicht auf eine Zahl oder einen einzelnen Großbuchstaben); der Rest steht auf der Kontaktseite „zur Prüfung“. `supabase/migrations/20261003107000_abn_020_training_house_number_invoice_address.sql`.
 
 ### ANN-178 — Eine Absage im Training setzt kein Ausfallhonorar-Kennzeichen
 
@@ -2145,7 +2145,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** `app.can_read_calendar`, `public.list_appointments`, `public.list_day_plan`, `public.get_training_appointment` und `public.list_training_client_appointments` in `supabase/migrations/20260930112000_trn_006_calendar_by_context.sql`; `canSeeCalendar` in `src/features/session/types.ts`.
 
-**Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Die Trainingsbetreuung sieht relevante belegte Zeiten als anonyme Blöcke „belegt“, ohne Kontext, Namen oder Inhalt, damit sie freie Zeiten erkennt (BEF-112; `PROJECT_PRINCIPLES.md` §4.8, Belegung).
+**Änderungspfad.** Interne Termine für die Trainingsbetreuung: `app.may_read_appointment_context` für `internal` um `app.can_read_training_relationships()` erweitern · Aufwand `klein`. Termindetail protokollieren: Eintrag in `get_training_appointment` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Die Trainingsbetreuung sieht relevante belegte Zeiten als anonyme Blöcke „belegt“, ohne Kontext, Namen oder Inhalt, damit sie freie Zeiten erkennt (BEF-112; `PROJECT_PRINCIPLES.md` §4.8, Belegung). **Fassung 2 (ABN-021, 2026-10-02, BEF-112):** Die Trainingsbetreuung sieht im Kalender belegte Zeiten der Mitarbeitenden, die sie buchen kann, als anonyme Blöcke „belegt“ (`list_busy_blocks`: genau Person, Beginn, Ende; angrenzende Zeiten verschmolzen; ohne abgesagte; Praxisrollen bekommen nichts; kein Audit, die Belegung ist die in ADR-022 Punkt 11 getragene Restoffenbarung). Räume gibt es im Datenmodell nicht. `supabase/migrations/20261003108000_abn_021_busy_blocks.sql`.
 
 ### ANN-181 — Im Training entsteht eine Leistung aus dem durchgeführten Termin
 
@@ -2169,7 +2169,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Zweig `training_relationship_id is not null` in `app.build_invoice_document`, `supabase/migrations/20260930121000_trn_008_training_invoices.sql`; Tests in `supabase/tests/training-invoices.test.ts`. Die Oberfläche hat keine eigene Regel: Sie liest den Bereich aus dem Dokument (`personLabel`, `empfaengerart` in `src/features/billing/anzeige.ts`) und bietet die Empfängerwahl nur an einer Rechnung mit Patient:in an.
 
-**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt, mit einer Korrektur: Ohne vollständige Empfängeranschrift wird nicht ausgestellt (BEF-111).
+**Änderungspfad.** Eigene Empfänger im Training: Empfängerstammdaten an `training_relationships` binden (Spalte oder eigene Tabelle), `set_invoice_recipient` und der Zweig in `app.build_invoice_document` lesen sie · Aufwand `mittel`. Ausstellen ohne Anschrift sperren: Prüfung in `issue_invoice` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt, mit einer Korrektur: Ohne vollständige Empfängeranschrift wird nicht ausgestellt (BEF-111). **Fassung 2 (ABN-020, 2026-10-02, BEF-111 Punkt 2):** `issue_invoice` stellt keine Rechnung ohne vollständige Empfängeranschrift aus (Straße, Hausnummer, PLZ, Ort; `app.assert_invoice_recipient_address`, DETAIL nennt die Felder) — auf Entscheidung von Jannes für **alle** Rechnungen, nicht nur im Training. Die Rechnungsseite nennt, was fehlt, und führt bei Rechnungen an die Person selbst zu den Stammdaten.
 
 ### ANN-183 — Nach drei Jahren fällt das Trainingsverhältnis bis auf die Belege; diese bleiben bis zum Ende ihrer steuerlichen Frist
 
@@ -2195,7 +2195,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** `app.can_access_training_protocols` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; `canWriteTrainingProtocols` in `src/features/session/types.ts`; Tests in `supabase/tests/training-protocols.test.ts`.
 
-**Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Das Büro liest Trainingsprotokolle und sieht ihren Zustand; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8 und ADR-021 Fassung 2 Punkt 10; scharf erst mit der DSFA (B2). Umsetzung BEF-113.
+**Änderungspfad.** Büro liest mit: `app.can_access_training_protocols` in eine Lese- und eine Schreibfunktion teilen und `office` in die Lesefunktion aufnehmen, dazu `canWriteTrainingProtocols` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: Das Büro liest Trainingsprotokolle und sieht ihren Zustand; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8 und ADR-021 Fassung 2 Punkt 10; scharf erst mit der DSFA (B2). Umsetzung BEF-113. **Fassung 2 (ABN-022, 2026-10-02, BEF-113 Punkt 1):** Lesen und Schreiben getrennt: `app.can_read_training_protocols()` (owner, Trainingsbetreuung, Büro) für `get_training_protocol` und `list_training_protocols`, protokolliert als `training_protocol.viewed`; Schreiben, Abschließen und Nachträge bleiben bei `app.can_access_training_protocols()` (owner, trainer). Das Büro sieht Protokoll und Einheiten nur zum Lesen. **Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen durch das Büro bestätigt.**
 
 ### ANN-185 — Ein abgeschlossenes Trainingsprotokoll ist unveränderlich; einen Korrekturweg gibt es in V1 nicht
 
@@ -2207,7 +2207,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `public.training_protocols_guard` in `supabase/migrations/20260930130000_trn_009_training_protocols.sql`; Tests in `supabase/tests/training-protocols.test.ts` („ist danach unveraenderlich“).
 
-**Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Bestätigt: Abgeschlossen bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt (BEF-113).
+**Änderungspfad.** Nachtrag wie in der Behandlung: eigene Zeile mit Verweis auf das Protokoll, eigener Schreibweg und Anzeige unter dem Text · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Bestätigt: Abgeschlossen bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt (BEF-113). **Fassung 2 (ABN-022, 2026-10-02, BEF-113 Punkt 2):** Korrekturen am abgeschlossenen Protokoll kommen als Nachtrag (`training_protocol_addenda`, `add_training_protocol_addendum`) mit Grund, Verfasser:in und Zeitpunkt, unveränderlich, unter dem Text angezeigt; Audit `training_protocol.addendum_created`.
 
 ### ANN-186 — Am Trainingstermin vermerken owner, Trainingsbetreuung und Büro „durchgeführt“ und öffnen wieder
 
@@ -2219,7 +2219,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** Rollenprüfung in `public.complete_appointment` und `public.reopen_appointment` in `supabase/migrations/20260930131000_trn_010_training_documented.sql`; `public.appointments_training_protocol_guard` in `supabase/migrations/20260930132000_trn_epic_004_zweitreview.sql`; `TerminAbschluss` in `src/features/training/TrainingProtocol.tsx`.
 
-**Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Rechte bestätigt. Vor dem Verwerfen eines Entwurfs weist die Oberfläche auf den Verlust hin, und ein verworfener Entwurf taucht nach einer Wiederherstellung nicht wieder auf (BEF-113).
+**Änderungspfad.** Nur die Trainingsbetreuung schließt ab: `or app.can_write_training_relationships()` in beiden Funktionen durch eine Prüfung auf `trainer` und `owner` ersetzen, dazu `office` im Kontextzweig ausnehmen · Aufwand `klein`. Entwurf sperrt die Absage doch: den Löschzweig in `public.appointments_training_protocol_guard` wieder durch die Sperre ersetzen und einen Weg zum Verwerfen bauen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Rechte bestätigt. Vor dem Verwerfen eines Entwurfs weist die Oberfläche auf den Verlust hin, und ein verworfener Entwurf taucht nach einer Wiederherstellung nicht wieder auf (BEF-113). **Fassung 2 (ABN-022, 2026-10-02, BEF-113 Punkt 3):** Vor der Absage nennt die Rückfrage einen vorhandenen Protokollentwurf, der dabei verworfen wird, auch dem Büro. Der verworfene Entwurf steht im Löschjournal (`appointments_training_protocol_guard`) und taucht nach einer Wiederherstellung nicht wieder auf. `supabase/migrations/20261003109000_abn_022_training_protocol_read_addenda_discard.sql`.
 
 ### ANN-187 — Ein Plattformkonto hat kein Profil in `user_profiles`; Praxis- und Plattformkonto schließen sich in beide Richtungen aus
 
@@ -2622,3 +2622,27 @@ Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 u
 **Anker.** `public.auth_email_allowed`, `app.platform_mailbox_confirmed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
 
 **Änderungspfad.** Hook einschalten: Eintrag in `supabase/config.toml` bzw. im Cloudprojekt, Secret `SEND_EMAIL_HOOK_SECRET`, Versandweg aus B13 · Aufwand `klein`, sobald B13 steht. Bestätigungsweg: eine Mail mit Link an die Adresse und eine Funktion, die das Merkmal setzt · Aufwand `mittel`.
+
+### ANN-219 — Die Definitionen der Fragebögen kommen als erzeugte Migration auf den Server, nicht als zweite Fassung von Hand
+
+Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002) oder dem nächsten neuen Instrument
+
+**Annahme.** Der Server prüft Antworten gegen `public.questionnaire_definitions`, eine Zeile je Fassung (Kennung@Version) mit der Definitionsdatei als jsonb, dazu `app.questionnaire_body_regions()` mit den Kennungen der Körperbereiche. Beides schreibt eine Migration, die `pnpm definitionen:sql --schreiben` aus den Dateien unter `src/features/assessments/definitionen/scores/` (samt `archiv/`) und `koerperschema.ts` erzeugt; jede Fassung trägt einen Marker mit Prüfsumme. Eine eingetragene Fassung ändert sich nie: Das Skript weist eine geänderte Datei derselben Version ab, ein Trigger sperrt Update und Löschen. Die Regeln der Prüfung stehen in plpgsql (`app.assert_questionnaire_answers`) und folgen `antwortSchema`.
+
+**Begründung.** BEF-101 verlangt dieselben Definitionsdateien wie die Anwendung, „etwa als vom Build erzeugte Tabelle oder Funktion“. Eine Tabelle statt einer erzeugten Funktion je Instrument, weil eine Fassung damit Daten bleibt: Sie lässt sich in einem Test mit der Datei vergleichen (`supabase/tests/questionnaire-definitions.test.ts`), und neue Fassungen brauchen keinen neuen Code. Eine Migration statt eines Seeds, weil die Prüfung in jeder Umgebung gelten muss. Unsicher: Die Regeln je Typ stehen zweimal (Zod und plpgsql); ein Unterschied fiele nur über die Tests in `questionnaire-responses.test.ts` auf.
+
+**Anker.** `scripts/definitionen-sql.mjs` und `scripts/definitionen-sql.test.mjs` (meldet eine fehlende Fassung im CI); `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`; erzeugt: `supabase/migrations/20261003101100_questionnaire_definitions.sql`.
+
+**Änderungspfad.** Neues Instrument oder neue Fassung: Datei ablegen, `pnpm definitionen:sql --schreiben` · Aufwand `klein`. Regeln nur noch an einer Stelle: das Zod-Schema als JSON-Schema exportieren und im Server mit einer Prüferweiterung auswerten (neue Abhängigkeit, ADR-015) · Aufwand `mittel`.
+
+### ANN-220 — Ein Wartelisteneintrag ist nach acht Wochen ohne Änderung zu prüfen
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: nach drei Monaten Betrieb mit der Warteliste; Jannes in der Sichtung
+
+**Annahme.** Ein offener Wartelisteneintrag, den acht Wochen niemand geändert oder bestätigt hat, steht unter „Warteliste prüfen“ in Offene Punkte. „Noch aktuell“ bestätigt ihn, ohne etwas zu ändern, und die acht Wochen beginnen neu; „Bearbeiten“ führt ins Formular.
+
+**Begründung.** BEF-108 verlangt eine regelmäßige Prüfung und überlässt die Zeit dem Loop. Eine Verordnung ist 28 Tage nach Ausstellung zu beginnen (Heilmittel-Richtlinie, bei Privatverordnungen üblich übernommen); wer acht Wochen wartet, hat oft schon woanders einen Termin oder eine neue Verordnung. Kürzer (vier Wochen) erzeugte bei ruhigen Phasen ständig Rückfragen an dieselben Personen. Unsicher: wie lang die Warteliste der Praxis tatsächlich ist.
+
+**Anker.** `app.waitlist_review_interval()` und `confirm_waitlist_entry` in `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`; `src/features/open-points/WaitlistReview.tsx`.
+
+**Änderungspfad.** Andere Frist: die Konstante in einer Migration ändern · Aufwand `klein`. Frist je Praxis: Spalte an `organizations` und Einstellung · Aufwand `klein`.

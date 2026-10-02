@@ -19,7 +19,7 @@ import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
-import { bausteinEinfuegen } from './textbausteine';
+import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert } from './Zustaende';
 import {
   completeTreatment,
@@ -97,9 +97,12 @@ function Abschluss({
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
-  // Ein Vorschlag aus den Bausteinen, der noch nicht im Feld steht, ist
-  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b).
-  const geaendert = wert !== gespeichert || bausteine.text !== '';
+  // Angaben in den Bausteinen, die noch nicht gesichert sind, sind
+  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
+  // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
+  const befund = useGesicherteBefundangaben(appointment.id, bausteine, !ohneBehandlung);
+  const textGeaendert = wert !== gespeichert;
+  const geaendert = textGeaendert || befund.ungesichert;
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
 
@@ -107,8 +110,8 @@ function Abschluss({
   // vorhin. Ein Schreibvorgang dauert (FIX-014).
   const wertRef = useRef(wert);
   wertRef.current = wert;
-  const vorschlagRef = useRef(bausteine.text);
-  vorschlagRef.current = bausteine.text;
+  const gespeichertRef = useRef(gespeichert);
+  gespeichertRef.current = gespeichert;
 
   /**
    * Nur den Entwurf sichern - ohne Abschluss und ohne Seitenwechsel.
@@ -119,32 +122,27 @@ function Abschluss({
    * festschreiben (ADR-016, ADR-018).
    */
   async function entwurfSichern(): Promise<boolean> {
-    // Ein noch nicht übernommener Vorschlag geht in den **Entwurf** mit —
-    // erreichbar nur über die Rückfrage des Navigationsschutzes, die
-    // verspricht, dass nichts verloren geht. Beide Schaltflächen halten
-    // vorher an; in den Abschluss geht er nie ungesehen (FRB-003b, ANN-120).
-    const vorschlag = vorschlagRef.current;
-    const zuSichern = vorschlag ? bausteinEinfuegen(wertRef.current, vorschlag) : wertRef.current;
-    const meldung = inhaltFehler(zuSichern);
-    if (meldung) {
-      setFehler(meldung);
-      throw new Error(meldung);
+    // Ein nicht übernommener Vorschlag geht **nicht** in den Entwurf - auch
+    // nicht über die Rückfrage des Navigationsschutzes: Der Entwurf kann von
+    // selbst festgeschrieben werden (ADR-016 Punkt 7). Seine Angaben sichert
+    // `befund` daneben, bis die Person übernimmt oder verwirft (ABN-015,
+    // BEF-103 Punkt 1, ANN-120 Fassung 2).
+    const zuSichern = wertRef.current;
+    if (zuSichern !== gespeichertRef.current) {
+      const meldung = inhaltFehler(zuSichern);
+      if (meldung) {
+        setFehler(meldung);
+        throw new Error(meldung);
+      }
+      if (note) {
+        await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+      } else {
+        await createTreatmentNote(appointment.id, zuSichern);
+      }
     }
-
-    if (note) {
-      await updateTreatmentNote(note.id, note.updated_at, zuSichern);
-    } else {
-      await createTreatmentNote(appointment.id, zuSichern);
-    }
-    if (vorschlag && vorschlagRef.current === vorschlag) {
-      const imFeld = bausteinEinfuegen(wertRef.current, vorschlag);
-      setEntwurf(imFeld);
-      bausteine.leeren();
-      wertRef.current = imFeld;
-      vorschlagRef.current = '';
-    }
+    if (befund.ungesichert) await befund.sichern();
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern && vorschlagRef.current === '';
+    return wertRef.current === zuSichern;
   }
 
   // Die Meldung gilt dem Vorschlag, der sie ausgelöst hat; ist er übernommen
@@ -407,11 +405,19 @@ function Abschluss({
                 className="ml-auto"
                 disabled={laeuft || !geaendert}
                 onClick={() => {
-                  if (!geprueft()) return;
+                  // Ein nicht übernommener Vorschlag hält den Entwurf nicht an:
+                  // Er geht nicht in den Text, seine Angaben werden daneben
+                  // gesichert (ABN-015).
+                  if (textGeaendert) {
+                    const meldung = inhaltFehler(wert);
+                    setFehler(meldung);
+                    if (meldung) return;
+                  }
+                  const meldung = entwurfMeldung(textGeaendert, bausteine.text !== '');
                   void schreiben({
                     ausfuehren: entwurfSichern,
                     fehlertitel: 'Nicht gespeichert',
-                    danach: () => weiterZumTermin('Entwurf gespeichert – noch nicht finalisiert.'),
+                    danach: () => weiterZumTermin(meldung),
                   });
                 }}
               >

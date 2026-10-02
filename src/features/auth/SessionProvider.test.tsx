@@ -16,13 +16,16 @@ const getSession = vi.fn();
 const onAuthStateChange = vi.fn();
 const signOut = vi.fn();
 const unsubscribe = vi.fn();
-const alleEntwuerfeVerwerfen = vi.fn();
+const alleAbstecherVerwerfen = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ auth: { getSession, onAuthStateChange, signOut } }),
 }));
 
-vi.mock('@/features/treatment-bases/api', () => ({ alleEntwuerfeVerwerfen }));
+vi.mock('@/lib/abstecher', async (original) => ({
+  ...(await original<Record<string, unknown>>()),
+  alleAbstecherVerwerfen,
+}));
 
 const { SessionProvider } = await import('./SessionProvider');
 const { useSession } = await import('./sessionContext');
@@ -63,7 +66,7 @@ beforeEach(() => {
   onAuthStateChange.mockReset();
   signOut.mockReset();
   unsubscribe.mockReset();
-  alleEntwuerfeVerwerfen.mockReset();
+  alleAbstecherVerwerfen.mockReset();
 
   getSession.mockResolvedValue({ data: { session: sitzung('anna') } });
   onAuthStateChange.mockImplementation((rueckruf: typeof melde) => {
@@ -107,7 +110,9 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
 
     await waitFor(() => expect(patientenImSpeicher()).toBeUndefined());
-    expect(alleEntwuerfeVerwerfen).toHaveBeenCalled();
+    // Abstecher-Entwürfe räumt hier niemand still ab (ABN-019, BEF-110): Beim
+    // freiwilligen Abmelden fragt `AbstecherAbmeldewache`.
+    expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
   });
 
   it('räumt auch ab, wenn die Abmeldung nicht über die Oberfläche kam — anderer Tab, „Alle Sitzungen beenden", abgelaufene Sitzung', async () => {
@@ -117,7 +122,9 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     act(() => melde?.('SIGNED_OUT', null));
 
     expect(patientenImSpeicher()).toBeUndefined();
-    expect(alleEntwuerfeVerwerfen).toHaveBeenCalled();
+    // Eine automatische Abmeldung verwirft keinen Abstecher-Entwurf (BEF-110);
+    // er bleibt an das Konto gebunden.
+    expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
   });
 
   it('räumt beim Wechsel auf ein anderes Konto ab, auch ohne Abmeldung dazwischen', async () => {
@@ -166,7 +173,7 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     act(() => melde?.('TOKEN_REFRESHED', sitzung('anna')));
 
     expect(patientenImSpeicher()).toEqual([{ id: 'p1', family_name: 'Mustermann' }]);
-    expect(alleEntwuerfeVerwerfen).not.toHaveBeenCalled();
+    expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
   });
 
   it('räumt beim ersten Blick auf eine leere Sitzung nichts ab — das ist kein Wechsel', async () => {
@@ -180,6 +187,6 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     );
     await screen.findByText('keine Sitzung');
 
-    expect(alleEntwuerfeVerwerfen).not.toHaveBeenCalled();
+    expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
   });
 });

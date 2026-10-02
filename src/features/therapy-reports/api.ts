@@ -80,6 +80,16 @@ export const berichtsdokumentSchema = z.object({
   text: quelleSchema.nullable(),
   empfehlung: quelleSchema.nullable(),
   abgeschlossen: z.object({ datum: z.string(), von: z.string().nullable() }).optional(),
+  /** ABN-016 (BEF-104): Eine Korrektur nennt den ersetzten Bericht und ihren Grund. */
+  korrektur: z
+    .object({
+      ersetzt_bericht: z.string(),
+      ersetzt_abgeschlossen_am: z.string().nullable(),
+      grund: z.string(),
+      verfasser: z.string().nullable(),
+      datum: z.string(),
+    })
+    .nullish(),
 });
 export type Berichtsdokument = z.infer<typeof berichtsdokumentSchema>;
 
@@ -109,6 +119,9 @@ const berichtszeileSchema = z.object({
   recommendation: z.string().nullable(),
   recommendation_by_name: z.string().nullable(),
   recommendation_on: z.string().nullable(),
+  supersedes_report_id: z.string().nullable(),
+  superseded_by_report_id: z.string().nullable(),
+  change_reason: z.string().nullable(),
 });
 export type Berichtszeile = z.infer<typeof berichtszeileSchema>;
 
@@ -161,6 +174,15 @@ function meldungFuer(error: { message?: string }, standard: string): Error {
       'Ein angekreuzter Eintrag oder das Körperschema lässt sich nicht mehr übernehmen. Bitte die Seite neu laden.',
     );
   }
+  if (message.includes('already corrected')) {
+    return new Error('Dieser Bericht ist schon korrigiert. Bitte die Korrektur bearbeiten.');
+  }
+  if (message.includes('needs a reason')) {
+    return new Error('Eine Korrektur braucht einen Grund (3 bis 500 Zeichen).');
+  }
+  if (message.includes('only a completed')) {
+    return new Error('Korrigieren lässt sich nur ein abgeschlossener Bericht.');
+  }
   if (message.includes('needs a prescription')) {
     return new Error('Einen Therapiebericht gibt es nur zu einer Verordnung.');
   }
@@ -197,6 +219,29 @@ export async function berichtAnlegen(verordnungId: string): Promise<string> {
     p_treatment_basis_id: verordnungId,
   })) as { data: unknown; error: { message?: string } | null };
   if (error) throw meldungFuer(error, 'Der Therapiebericht konnte nicht angelegt werden.');
+  return z.string().parse(data);
+}
+
+/** Grenzen des Korrekturgrunds, wie im Server (ABN-016). */
+export const GRUND_MIN = 3;
+export const GRUND_MAX = 500;
+
+/**
+ * Einen abgeschlossenen Bericht korrigieren (ABN-016, BEF-104): ein neuer
+ * Bericht derselben Verordnung, der auf den ersetzten verweist und den Grund
+ * trägt. Zeitpunkt und Verfasser:in hält der Server fest.
+ */
+export async function berichtKorrigieren(
+  verordnungId: string,
+  berichtId: string,
+  grund: string,
+): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('create_therapy_report', {
+    p_treatment_basis_id: verordnungId,
+    p_supersedes_report_id: berichtId,
+    p_change_reason: grund.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (error) throw meldungFuer(error, 'Die Korrektur konnte nicht angelegt werden.');
   return z.string().parse(data);
 }
 

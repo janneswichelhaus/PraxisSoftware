@@ -78,6 +78,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Von der Praxis vermerkte Ereignisse wie eine Operation oder eine Erkrankung, mit Tag und kurzer Notiz.',
   },
+  treatment_draft_findings: {
+    label: 'Gesicherte Befundangaben',
+    beschreibung:
+      'Angaben aus den Untersuchungsbausteinen, die noch nicht in die Dokumentation übernommen sind; sie fallen beim Festschreiben weg.',
+  },
   therapy_reports: {
     label: 'Therapieberichte',
     beschreibung:
@@ -102,10 +107,20 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Dateien',
     beschreibung: 'Hochgeladene Dokumente mit Name, Art und Prüfsumme – ohne den Inhalt selbst.',
   },
+  patient_photos: {
+    label: 'Fotos',
+    beschreibung:
+      'Jedes vorhandene Foto, auch gesperrte. Die Fotos selbst gibt die Praxis als Dateien dazu heraus.',
+  },
   patient_privacy_records: {
     label: 'Datenschutz und Einwilligungen',
     beschreibung:
       'Wann Datenschutzinformation und Behandlungsvertrag vorlagen und welche Einwilligungen erteilt oder widerrufen wurden.',
+  },
+  patient_merge_records: {
+    label: 'Zusammengeführte Akten',
+    beschreibung:
+      'Wann eine doppelt angelegte Akte mit dieser zusammengeführt wurde und was dabei mitgezogen ist.',
   },
   legal_holds: {
     label: 'Löschsperren',
@@ -138,6 +153,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
   payments: {
     label: 'Zahlungen',
     beschreibung: 'Gebuchte Zahlungen und Rückzahlungen.',
+  },
+  access_log: {
+    label: 'Zugriffe auf die Akte',
+    beschreibung:
+      'Wann auf die Akte zugegriffen wurde und wozu – ohne Namen der Beschäftigten (Art. 15 Abs. 4 DSGVO).',
   },
 };
 

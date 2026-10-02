@@ -37,8 +37,11 @@ Ladepfad sortiert nach Pfad, der Code kennt keinen Regionsnamen.
   LWS „Behandlung" und HWS „Therapie Hochzervikal". LWS „Untersuchung SIG" ist
   vollständig (Plan D2).
 
-Tippfehler der Vorlage bleiben stehen (**ANN-119**, Plan D3): „Relocation
-Tet", „Supinatin", „Lachmann", „Painfull Arc Sign". Eine Korrektur hebt die
-`version` der Region und ändert keine Kennung.
+Offensichtliche Tippfehler der Vorlage sind seit ABN-015 für künftige Einträge
+korrigiert (Abnahme Jannes, 2026-10-02, BEF-103, **ANN-119** Fassung 2):
+„Relocation Test", „Supination", „Lachman-Test", „Painful Arc Sign" — als
+Patch-Version (`1.0.1`) der Region, ohne geänderte Kennung. Bestehende
+Dokumentation ändert sich nicht; sie ist Text. Die drei unvollständigen
+Bereiche bleiben als unvollständig gekennzeichnet (ANN-118).
 
 Der Zähl- und Wortlauttest steht in `../../bausteine.test.ts`.

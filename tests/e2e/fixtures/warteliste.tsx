@@ -86,6 +86,7 @@ const eintraege: WaitlistEntry[] = [
     created_at: `${tagPlus(-6)}T08:00:00+00:00`,
     updated_at: `${tagPlus(-6)}T08:00:00+00:00`,
     closed_at: null,
+    review_due: false,
   },
   {
     id: '99999999-9999-4999-8999-000000000002',
@@ -112,6 +113,7 @@ const eintraege: WaitlistEntry[] = [
     created_at: `${tagPlus(-1)}T08:00:00+00:00`,
     updated_at: `${tagPlus(-1)}T08:00:00+00:00`,
     closed_at: null,
+    review_due: false,
   },
 ];
 

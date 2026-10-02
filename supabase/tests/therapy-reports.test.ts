@@ -497,3 +497,93 @@ describe('Therapiebericht', () => {
     expect((await asPostgres('select 1 from public.therapy_reports')).rows).toEqual([]);
   });
 });
+
+describe('Berichtskorrektur mit Kette (ABN-016, BEF-104)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  });
+
+  const KORRIGIEREN = 'select public.create_therapy_report($1::uuid, $2::uuid, $3) as id';
+  const KETTE = `select id, supersedes_report_id, superseded_by_report_id, change_reason
+                   from public.list_patient_therapy_reports($1::uuid)`;
+
+  async function abgeschlossenerBericht(): Promise<string> {
+    const id = await anlegen();
+    await speichern(id, { text: 'Synthetischer Berichtstext.' });
+    await abschliessen(id);
+    return id;
+  }
+
+  it('verweist auf den ersetzten Bericht und trägt Grund, Datum und Verfasser:in', async () => {
+    const alt = await abgeschlossenerBericht();
+    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, KORRIGIEREN, [
+      VERORDNUNG,
+      alt,
+      'Falsche Verordnung genannt',
+    ]);
+    const neu = rows[0]!.id;
+
+    const liste = (await asUser(users.therapist, KETTE, [patients.max])).rows;
+    expect(liste).toEqual(
+      expect.arrayContaining([
+        { id: alt, supersedes_report_id: null, superseded_by_report_id: neu, change_reason: null },
+        {
+          id: neu,
+          supersedes_report_id: alt,
+          superseded_by_report_id: null,
+          change_reason: 'Falsche Verordnung genannt',
+        },
+      ]),
+    );
+
+    const dokument = (await lesen(neu)).document as unknown as {
+      korrektur: { ersetzt_bericht: string; grund: string; verfasser: string; datum: string };
+    };
+    expect(dokument.korrektur).toMatchObject({
+      ersetzt_bericht: alt,
+      grund: 'Falsche Verordnung genannt',
+      verfasser: 'Anna Beispiel',
+    });
+
+    // Nach dem Abschluss steht die Korrektur im eingefrorenen Dokument.
+    await speichern(neu, { text: 'Berichtigter synthetischer Text.' });
+    await abschliessen(neu);
+    const fest = (await lesen(neu)).document as unknown as { korrektur: { grund: string } };
+    expect(fest.korrektur.grund).toBe('Falsche Verordnung genannt');
+  });
+
+  it('korrigiert nur einen abgeschlossenen Bericht derselben Verordnung, einmal, mit Grund', async () => {
+    const entwurf = await anlegen();
+    expect(
+      (await fehler(users.therapist, KORRIGIEREN, [VERORDNUNG, entwurf, 'Grund genug']))?.message,
+    ).toMatch(/only a completed/);
+
+    const alt = await abgeschlossenerBericht();
+    expect((await fehler(users.therapist, KORRIGIEREN, [VERORDNUNG, alt, null]))?.message).toMatch(
+      /needs a reason/,
+    );
+    expect(
+      (await fehler(users.therapist, KORRIGIEREN, [VERORDNUNG, null, 'Grund ohne Korrektur']))
+        ?.message,
+    ).toMatch(/belongs to a correction/);
+    expect(
+      (await fehler(users.therapist, KORRIGIEREN, [SELBSTZAHLER, alt, 'Andere Grundlage']))?.code,
+    ).toBe('22023');
+
+    await asUserCommitted(users.therapist, KORRIGIEREN, [VERORDNUNG, alt, 'Erste Korrektur']);
+    expect(
+      (await fehler(users.therapist, KORRIGIEREN, [VERORDNUNG, alt, 'Zweite Korrektur']))?.message,
+    ).toMatch(/already corrected/);
+  });
+
+  it('weist office und eine fremde Praxis ab', async () => {
+    const alt = await abgeschlossenerBericht();
+    expect((await fehler(users.office, KORRIGIEREN, [VERORDNUNG, alt, 'Grund genug']))?.code).toBe(
+      '42501',
+    );
+    const f = await fremdeOrganisation();
+    expect((await fehler(f.owner, KORRIGIEREN, [VERORDNUNG, alt, 'Grund genug']))?.code).toBe(
+      '42501',
+    );
+  });
+});

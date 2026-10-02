@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
+import { auditActionLabels } from '@/features/audit/actions';
 
 /**
  * Betroffenenrechte: Auskunft und Aufbewahrungsstand (OPS-006).
@@ -35,7 +36,28 @@ export async function fetchAuskunft(patientId: string): Promise<Auskunft> {
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Auskunft konnte nicht erstellt werden.');
-  return auskunftSchema.parse(data);
+  return mitZweck(auskunftSchema.parse(data));
+}
+
+/**
+ * Der Zweck eines Zugriffs in Worten (ABN-017, BEF-107): Die Datenbank liefert
+ * die Aktion als Kennung; die Kopie, die die Person liest, nennt sie so, wie
+ * das Protokoll der Praxis sie nennt (`auditActionLabels`).
+ */
+export function mitZweck(auskunft: Auskunft): Auskunft {
+  const zugriffe = auskunft.tabellen['access_log'];
+  if (!zugriffe) return auskunft;
+  const labels: Record<string, string> = auditActionLabels;
+  return {
+    ...auskunft,
+    tabellen: {
+      ...auskunft.tabellen,
+      access_log: zugriffe.map((zeile) => {
+        const aktion = typeof zeile['aktion'] === 'string' ? zeile['aktion'] : '';
+        return { ...zeile, zweck: labels[aktion] ?? aktion };
+      }),
+    },
+  };
 }
 
 const klasseSchema = z.object({

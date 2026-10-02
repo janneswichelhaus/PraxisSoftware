@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { alleAbstecherVerwerfen } from '@/lib/abstecher';
 import {
-  alleEntwuerfeVerwerfen,
   entwurfAblegen,
   entwurfAnsehen,
   entwurfEntfernen,
@@ -28,7 +28,7 @@ const ENTWURF: TreatmentBasisDraft = {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  alleEntwuerfeVerwerfen();
+  alleAbstecherVerwerfen();
 });
 
 afterEach(() => {
@@ -49,12 +49,17 @@ describe('Entwurfsspeicher', () => {
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
   });
 
-  it('verfaellt nach laengerer Zeit von selbst - ein abgebrochener Versuch taucht bei einem spaeteren, unabhaengigen Versuch nicht wieder auf', () => {
+  it('verfaellt nicht still - auch nach 31 Minuten liegt er fuer dieselbe Person bereit (BEF-110)', () => {
     entwurfAblegen(RUECKPFAD, BENUTZER_A, ENTWURF);
 
     vi.advanceTimersByTime(31 * 60 * 1000);
 
-    expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toBeUndefined();
+    expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
+    // Ein unabhaengiger spaeterer Versuch bringt eine neue Kennung mit und
+    // findet deshalb nichts vor.
+    expect(
+      entwurfAnsehen('/patienten/p1/verordnungen/neu?vorgang=anders', BENUTZER_A),
+    ).toBeUndefined();
   });
 
   it('gibt den Entwurf einer anderen Person nie zurueck', () => {
@@ -106,11 +111,11 @@ describe('Entwurfsspeicher', () => {
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
   });
 
-  it('verwirft alle Entwuerfe aller Personen - Abmeldung (VER-003)', () => {
+  it('verwirft alle Entwuerfe aller Personen', () => {
     entwurfAblegen(RUECKPFAD, BENUTZER_A, ENTWURF);
     entwurfAblegen('/patienten/anderer-patient/verordnungen/neu', BENUTZER_B, ENTWURF);
 
-    alleEntwuerfeVerwerfen();
+    alleAbstecherVerwerfen();
 
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toBeUndefined();
     expect(

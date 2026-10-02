@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState } from 'react';
+import { useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -9,7 +9,6 @@ import { EmptyState, ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BausteinFeld } from '@/features/assessments/BausteinFeld';
 import { useBausteinAuswahl } from '@/features/assessments/bausteinauswahl';
-import { VORSCHLAG_OFFEN } from '@/features/assessments/dokumentationstext';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import {
   formatLocalDate,
@@ -23,7 +22,7 @@ import { useEinfuegen } from './einfuegen';
 import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
-import { bausteinEinfuegen } from './textbausteine';
+import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
 import { BereitsFinalisiert } from './Zustaende';
 import {
   createTreatmentNote,
@@ -71,13 +70,15 @@ function Editor({
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
-  const [vorschlagOffen, setVorschlagOffen] = useState(false);
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
-  // Ein Vorschlag aus den Bausteinen, der noch nicht im Feld steht, ist
-  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b).
-  const geaendert = wert !== gespeichert || bausteine.text !== '';
+  // Angaben in den Bausteinen, die noch nicht gesichert sind, sind
+  // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
+  // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
+  const befund = useGesicherteBefundangaben(appointment.id, bausteine, !istNachtrag);
+  const textGeaendert = wert !== gespeichert;
+  const geaendert = textGeaendert || befund.ungesichert;
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
 
   // Der Text, wie er in diesem Augenblick im Feld steht. Ein Schreibvorgang
@@ -87,8 +88,8 @@ function Editor({
   // (FIX-014).
   const wertRef = useRef(wert);
   wertRef.current = wert;
-  const vorschlagRef = useRef(bausteine.text);
-  vorschlagRef.current = bausteine.text;
+  const gespeichertRef = useRef(gespeichert);
+  gespeichertRef.current = gespeichert;
 
   /**
    * Den Entwurf sichern - ohne Seitenwechsel.
@@ -101,36 +102,27 @@ function Editor({
    * Der Rückgabewert sagt, ob **alles Getippte** auf dem Server liegt.
    */
   async function entwurfSichern(): Promise<boolean> {
-    // Ein noch nicht übernommener Vorschlag geht mit — erreichbar nur über die
-    // Rückfrage des Navigationsschutzes, die verspricht, dass nichts verloren
-    // geht. Die Schaltfläche hält vorher an (FRB-003b, ANN-120).
-    const vorschlag = vorschlagRef.current;
-    const zuSichern = vorschlag ? bausteinEinfuegen(wertRef.current, vorschlag) : wertRef.current;
-    const meldung = inhaltFehler(zuSichern);
-    if (meldung) {
-      setFehler(meldung);
-      throw new Error(meldung);
+    // Ein nicht übernommener Vorschlag geht **nicht** in den Entwurf - auch
+    // nicht über die Rückfrage des Navigationsschutzes: Der Entwurf kann von
+    // selbst festgeschrieben werden (ADR-016 Punkt 7). Seine Angaben sichert
+    // `befund` daneben, bis die Person übernimmt oder verwirft (ABN-015,
+    // BEF-103 Punkt 1, ANN-120 Fassung 2).
+    const zuSichern = wertRef.current;
+    if (zuSichern !== gespeichertRef.current) {
+      const meldung = inhaltFehler(zuSichern);
+      if (meldung) {
+        setFehler(meldung);
+        throw new Error(meldung);
+      }
+      if (note) {
+        await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+      } else {
+        await createTreatmentNote(appointment.id, zuSichern);
+      }
     }
-
-    if (note) {
-      // Der gelesene Stand geht unverändert zurück; der Server weist eine
-      // Änderung auf veraltetem Stand ab (ADR-001).
-      await updateTreatmentNote(note.id, note.updated_at, zuSichern);
-    } else {
-      await createTreatmentNote(appointment.id, zuSichern);
-    }
-
-    if (vorschlag && vorschlagRef.current === vorschlag) {
-      // Was während des Speicherns getippt wurde, bleibt stehen; der
-      // Vorschlag steht danach im Feld wie übernommen.
-      const imFeld = bausteinEinfuegen(wertRef.current, vorschlag);
-      setEntwurf(imFeld);
-      bausteine.leeren();
-      wertRef.current = imFeld;
-      vorschlagRef.current = '';
-    }
+    if (befund.ungesichert) await befund.sichern();
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern && vorschlagRef.current === '';
+    return wertRef.current === zuSichern;
   }
 
   const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
@@ -138,27 +130,21 @@ function Editor({
     speichern: entwurfSichern,
   });
 
-  // Die Meldung gilt dem Vorschlag, der sie ausgelöst hat; ist er übernommen
-  // oder verworfen, verschwindet sie, statt beim nächsten wieder zu stehen.
-  useEffect(() => {
-    if (!bausteine.text) setVorschlagOffen(false);
-  }, [bausteine.text]);
-
   function absenden(event: React.FormEvent) {
     event.preventDefault();
 
-    // Gespeichert wird, was im Feld steht und gelesen wurde: Ein Vorschlag aus
-    // den Bausteinen wird erst übernommen oder verworfen (ANN-120). Sonst
-    // könnte ungesehener Text über die automatische Finalisierung (ADR-016
-    // Punkt 7) Bestandteil der Akte werden.
-    if (bausteine.text) {
-      setVorschlagOffen(true);
-      return;
+    // Gespeichert wird, was im Feld steht und gelesen wurde. Ein Vorschlag
+    // aus den Bausteinen geht nicht mit - sonst könnte ungesehener Text über
+    // die automatische Finalisierung (ADR-016 Punkt 7) Bestandteil der Akte
+    // werden; seine Angaben sichert `befund` daneben (ABN-015, ANN-120).
+    if (textGeaendert) {
+      const meldung = inhaltFehler(wert);
+      setFehler(meldung);
+      if (meldung) return;
     }
-
-    const meldung = inhaltFehler(wert);
-    setFehler(meldung);
-    if (meldung) return;
+    const meldung = istNachtrag
+      ? 'Nachtrag als Entwurf gespeichert.'
+      : entwurfMeldung(textGeaendert, bausteine.text !== '');
 
     void schreiben({
       ausfuehren: entwurfSichern,
@@ -168,13 +154,7 @@ function Editor({
         // Termin bekommt mit, was geschehen ist (DOK-15) - der Doku-Abschnitt
         // steht dort erst weit unten.
         freigeben();
-        void navigate(zumTermin, {
-          state: {
-            meldung: istNachtrag
-              ? 'Nachtrag als Entwurf gespeichert.'
-              : 'Entwurf gespeichert – noch nicht finalisiert.',
-          },
-        });
+        void navigate(zumTermin, { state: { meldung } });
       },
     });
   }
@@ -226,7 +206,6 @@ function Editor({
             bausteine={bausteine}
             onUebernehmen={(text) => einfuegen('Befund aus Bausteinen', wert, text)}
             gesperrt={laeuft}
-            meldung={vorschlagOffen && bausteine.text ? VORSCHLAG_OFFEN : undefined}
           />
         )}
 

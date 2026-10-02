@@ -38,6 +38,7 @@ import {
   saveEmpfaenger,
   setzeEmpfaenger,
   steuerLabels,
+  AnschriftUnvollstaendig,
   stelleRechnungAus,
   storniereRechnung,
   verrechneMitKorrektur,
@@ -1329,6 +1330,21 @@ function Entwurfsaktionen({
             folge="Ohne sie lässt sich keine Rechnung ausstellen."
           />
         </div>
+      ) : ausstellen.error instanceof AnschriftUnvollstaendig ? (
+        // ABN-020 (BEF-111): Der Server nennt, was fehlt; die Seite führt
+        // dorthin, wo es zu ergänzen ist - an der Akte, wenn die Rechnung an
+        // die Person selbst geht.
+        <Statusmeldung ton="fehler" className="mt-2">
+          {ausstellen.error.message}
+          {ansicht.patient_id && !ansicht.recipient_id ? (
+            <>
+              {' '}
+              <Textlink to={`/patienten/${ansicht.patient_id}/stammdaten`}>
+                Zu den Stammdaten
+              </Textlink>
+            </>
+          ) : null}
+        </Statusmeldung>
       ) : ausstellen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
           {ausstellen.error.message} Bitte die Verbindung prüfen und erneut versuchen.

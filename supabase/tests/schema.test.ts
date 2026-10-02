@@ -117,6 +117,11 @@ describe('Schema-Invarianten', () => {
       'platform_access_invitations',
       // ABN-011: Löschaufträge für Plattformkonten, Organisation fürs Journal.
       'platform_account_deletions',
+      // ABN-EPIC-001b: gesicherte Befundangaben, Vermerk des Zusammenführens,
+      // Nachtrag am Trainingsprotokoll.
+      'treatment_draft_findings',
+      'patient_merge_records',
+      'training_protocol_addenda',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

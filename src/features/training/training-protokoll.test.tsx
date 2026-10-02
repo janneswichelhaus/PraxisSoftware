@@ -91,6 +91,7 @@ const entwurf = {
   finalized_at: null,
   author_name: 'Tom Trainingsbetreuung',
   finalized_by_name: null,
+  addenda: [],
 };
 
 beforeEach(() => {
@@ -183,13 +184,53 @@ describe('Trainingsprotokoll am Trainingstermin', () => {
     expect(screen.queryByRole('button', { name: 'Wieder öffnen' })).toBeNull();
   });
 
-  it('zeigt dem Büro kein Protokoll (ANN-184) - Abschließen aber schon (ANN-186)', async () => {
+  it('zeigt dem Büro das Protokoll nur zum Lesen (ABN-022, BEF-113) - Abschließen auch (ANN-186)', async () => {
+    getTrainingProtocol.mockResolvedValue(entwurf);
     renderWithProviders(<TrainingAppointmentPage user={testUser(['office'], 'Olivia')} />);
     expect(
       await screen.findByRole('button', { name: 'Als durchgeführt vermerken' }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: 'Trainingsprotokoll' })).toBeNull();
-    expect(getTrainingProtocol).not.toHaveBeenCalled();
+    expect(await screen.findByRole('heading', { name: 'Trainingsprotokoll' })).toBeInTheDocument();
+    expect(await screen.findByText('Kniebeugen 3 x 10')).toBeInTheDocument();
+    expect(screen.queryByLabelText('Was in der Einheit gemacht wurde')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Protokoll abschließen' })).toBeNull();
+  });
+
+  it('nennt vor der Absage den Protokollentwurf, der dabei verworfen wird (BEF-113)', async () => {
+    getTrainingProtocol.mockResolvedValue(entwurf);
+    const nutzer = userEvent.setup();
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['office'], 'Olivia')} />);
+    await nutzer.click(await screen.findByRole('button', { name: 'Termin absagen' }));
+    expect(
+      await screen.findByText('Der Protokollentwurf zu dieser Einheit wird dabei verworfen.'),
+    ).toBeInTheDocument();
+  });
+
+  it('hängt an ein abgeschlossenes Protokoll einen Nachtrag mit Grund, darunter stehend', async () => {
+    getTrainingAppointment.mockResolvedValue({ ...termin, status: 'documented' });
+    getTrainingProtocol.mockResolvedValue({
+      ...entwurf,
+      status: 'final',
+      finalized_at: '2027-05-13T09:10:00+00:00',
+      finalized_by_name: 'Tom Trainingsbetreuung',
+      addenda: [
+        {
+          id: '99999999-9999-4999-8999-000000000002',
+          content: 'Gewicht war 20 kg.',
+          reason: 'Zahl vertippt',
+          created_at: '2027-05-14T08:00:00+00:00',
+          author_name: 'Tom Trainingsbetreuung',
+        },
+      ],
+    });
+    renderWithProviders(<TrainingAppointmentPage user={testUser(['trainer'], 'Tom')} />);
+    expect(await screen.findByText('Gewicht war 20 kg.')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /Nachtrag vom 14\.05\.2027, 10:00 von Tom Trainingsbetreuung · Grund: Zahl vertippt/,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Nachtrag schreiben' })).toBeInTheDocument();
   });
 
   it('bietet am dokumentierten Termin ohne Protokoll keinen Entwurf an (Zweitreview 2)', async () => {
@@ -256,6 +297,7 @@ describe('Einheiten einer Kundin', () => {
     email: null,
     phone: null,
     street: null,
+    house_number: null,
     postal_code: null,
     city: null,
   };

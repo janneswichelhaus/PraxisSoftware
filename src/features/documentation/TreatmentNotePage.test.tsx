@@ -45,6 +45,8 @@ const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
 const navigate = vi.fn();
 const fetchTextSnippets = vi.fn();
+const fetchBefundangaben = vi.fn();
+const befundangabenSichern = vi.fn();
 
 vi.mock('./textbausteine', async (importOriginal) => {
   const actual = await importOriginal<typeof Bausteine>();
@@ -73,6 +75,8 @@ vi.mock('./api', async (importOriginal) => {
       createTreatmentNote(id, inhalt) as Promise<string>,
     updateTreatmentNote: (id: string, stand: string, inhalt: string) =>
       updateTreatmentNote(id, stand, inhalt) as Promise<void>,
+    fetchBefundangaben: (id: string) => fetchBefundangaben(id) as Promise<unknown>,
+    befundangabenSichern: (...args: unknown[]) => befundangabenSichern(...args) as Promise<void>,
   };
 });
 
@@ -114,6 +118,10 @@ describe('TreatmentNotePage', () => {
     updateTreatmentNote.mockResolvedValue(undefined);
     fetchTextSnippets.mockReset();
     fetchTextSnippets.mockResolvedValue([]);
+    fetchBefundangaben.mockReset();
+    fetchBefundangaben.mockResolvedValue(null);
+    befundangabenSichern.mockReset();
+    befundangabenSichern.mockResolvedValue(undefined);
   });
 
   it('legt einen neuen Entwurf an und kehrt zum Termin zurueck', async () => {
@@ -325,7 +333,7 @@ describe('TreatmentNotePage', () => {
       );
     }
 
-    it('speichert nicht, solange ein Vorschlag nicht im Text steht', async () => {
+    it('sichert die Angaben getrennt, ohne den Vorschlag in den Entwurf zu schreiben (BEF-103)', async () => {
       fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
       const user = userEvent.setup();
       rendern();
@@ -333,25 +341,49 @@ describe('TreatmentNotePage', () => {
       // Nur ein Häkchen, kein getippter Text: Das ist trotzdem ungespeicherte Arbeit.
       await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(/noch nicht im Text/);
+      await waitFor(() =>
+        expect(befundangabenSichern).toHaveBeenCalledWith(
+          TERMIN_ID,
+          expect.objectContaining({ seitenwahl: { knie: 'links' } }),
+        ),
+      );
+      // Der Text bleibt unberührt: Der Vorschlag geht nie still in den Entwurf.
       expect(updateTreatmentNote).not.toHaveBeenCalled();
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+          state: { meldung: 'Befundangaben gesichert – noch nicht im Eintrag.' },
+        }),
+      );
     });
 
-    it('hängt den Vorschlag aus der Rückfrage beim Verlassen an den Entwurf', async () => {
+    it('hängt den Vorschlag auch aus der Rückfrage beim Verlassen nicht an (BEF-103)', async () => {
       fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
       const user = userEvent.setup();
       rendern();
       await myofaszial(user);
+      await user.type(feld(), ' Ergänzt.');
       await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
       await user.click(screen.getByRole('button', { name: 'Speichern und weitergehen' }));
 
       await waitFor(() =>
-        expect(updateTreatmentNote).toHaveBeenCalledWith(
-          DOKU_ID,
-          STAND,
-          `${INHALT}\n\nKnie links – Therapie\n• Myofaszial`,
-        ),
+        expect(updateTreatmentNote).toHaveBeenCalledWith(DOKU_ID, STAND, `${INHALT} Ergänzt.`),
       );
+      expect(befundangabenSichern).toHaveBeenCalled();
+    });
+
+    it('holt gesicherte Angaben beim Öffnen zurück', async () => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      fetchBefundangaben.mockResolvedValue({
+        auswahl: { 'knie_myofaszial.links': { ergebnis: 'durchgefuehrt' } },
+        seitenwahl: { knie: 'links' },
+      });
+      const user = userEvent.setup();
+      rendern();
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.click(screen.getByText('Befund aus Bausteinen'));
+      expect(await screen.findByText(/Vorschlag für den Eintrag/)).toBeInTheDocument();
+      // Zurückgeholt ist nichts Ungespeichertes.
+      expect(screen.getByRole('button', { name: 'Als Entwurf speichern' })).toBeDisabled();
     });
   });
 

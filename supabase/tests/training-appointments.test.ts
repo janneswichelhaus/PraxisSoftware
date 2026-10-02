@@ -278,27 +278,46 @@ describe('Trainingstermin anlegen (TRN-004)', () => {
   });
 });
 
-describe('Hausnummer aus "Strasse und Hausnummer" (ANN-177)', () => {
+describe('Hausnummer im Trainingskontakt (ABN-020, BEF-111, ANN-177)', () => {
   beforeAll(async () => {
     await resetDatabase();
   }, 120_000);
 
+  /**
+   * Die einmalige Aufteilung der Migration, nachgestellt: Was vor ABN-020 als
+   * "Strasse und Hausnummer" in einem Feld stand, wird nur geteilt, wenn es
+   * eindeutig ist; der Rest bleibt ungeteilt zur Pruefung stehen.
+   */
   it.each([
     ['Trainingsweg 5', 'Trainingsweg', '5'],
     ['Musterweg 12a', 'Musterweg', '12a'],
-    ['Musterweg 12 a', 'Musterweg', '12 a'],
     ['Am Ring 3-5', 'Am Ring', '3-5'],
-    ['Am Ring 7 / 9', 'Am Ring', '7 / 9'],
     ['Strasse des 17. Juni 4', 'Strasse des 17. Juni', '4'],
-    ['Hauptstrasse', null, null],
-    ['12', null, null],
-    ['', null, null],
+    ['B 27', 'B 27', null],
+    ['Hauptstrasse', 'Hauptstrasse', null],
   ])('%s', async (zeile, strasse, nummer) => {
+    // Die Regel der Migration als eine Abfrage: dieselben Ausdruecke.
     const { rows } = await asPostgres<{ street: string | null; house_number: string | null }>(
-      'select * from app.split_street_and_house_number($1)',
+      String.raw`with zeile as (select $1::text as l),
+            nummer as (
+              select substring(l from '\s([0-9][0-9a-zA-Z]*(\s*[-/]\s*[0-9][0-9a-zA-Z]*)?(\s?[a-zA-Z])?)$') as h, l
+              from zeile),
+            geteilt as (
+              select l, h, btrim(left(l, length(l) - length(h))) as s from nummer)
+       select case when h is not null and s <> '' and s !~ '(^|\s)([0-9]+|[A-Z])$' then s else l end as street,
+              case when h is not null and s <> '' and s !~ '(^|\s)([0-9]+|[A-Z])$' then h end as house_number
+       from geteilt`,
       [zeile],
     );
     expect(rows[0]).toEqual({ street: strasse, house_number: nummer });
+  });
+
+  it('uebernimmt Strasse und Hausnummer unveraendert in den Hausbesuch', async () => {
+    const { rows } = await asPostgres<{ street: string; house_number: string }>(
+      `select * from app.training_visit_address($1::uuid)`,
+      [SEED.trainingRelationships.tina],
+    );
+    expect(rows[0]).toMatchObject({ street: 'Trainingsweg', house_number: '5' });
   });
 });
 

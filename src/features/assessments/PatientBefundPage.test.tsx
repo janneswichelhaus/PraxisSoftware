@@ -122,7 +122,10 @@ describe('Befund der Akte', () => {
       `/patienten/${PATIENT_ID}/befund/erheben?instrument=anamnese_v8&korrigiert=neu`,
     );
     expect(screen.getByText('Durch Korrektur ersetzt')).toBeInTheDocument();
-    expect(screen.getByText('Korrektur: Frage 3 falsch')).toBeInTheDocument();
+    // Korrekturtag getrennt vom Erhebungstag (ABN-014, BEF-101 Punkt 2).
+    expect(
+      screen.getByText(/^Korrektur vom \d{2}\.\d{2}\.\d{4}: Frage 3 falsch$/),
+    ).toBeInTheDocument();
   });
 
   it('laesst den alten Bogen gelten, solange die Korrektur ein Entwurf ist', async () => {
@@ -170,7 +173,10 @@ describe('Befund der Akte', () => {
     seite([erhebung({ definition_version: '0.9.0' })]);
     // UX-005e: Ohne abweichenden Tag oder abweichende Person steht die
     // Fassung allein in der Zeile.
-    expect(await screen.findByText(/^Fassung 0\.9\.0 des Bogens$/)).toBeInTheDocument();
+    // Liegt die Fassung nicht im Release, sagt die Akte, womit sie zeigt (ABN-014).
+    expect(
+      await screen.findByText(/^Fassung 0\.9\.0 liegt nicht vor, gezeigt in Fassung 1\.0\.0$/),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/Version 0\.9\.0/)).toBeNull();
   });
 

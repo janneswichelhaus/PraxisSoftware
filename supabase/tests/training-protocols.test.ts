@@ -268,6 +268,13 @@ describe('TRN-009: Trainingsprotokoll', () => {
 
       const verworfen = await audit('training_protocol.discarded', entwurf.id);
       expect(verworfen).toHaveLength(1);
+      // ABN-022 (BEF-113): im Loeschjournal - nach einer Wiederherstellung
+      // taucht der Entwurf nicht wieder auf.
+      const { rows: journal } = await asPostgres<{ target_table: string }>(
+        'select target_table from public.deletion_journal where target_id = $1',
+        [entwurf.id],
+      );
+      expect(journal).toEqual([{ target_table: 'training_protocols' }]);
       expect(verworfen[0]!.context).toEqual({
         surface: 'web',
         appointment_id: TRAINING_HEUTE,
@@ -568,6 +575,78 @@ describe('TRN-009: Trainingsprotokoll', () => {
     });
   });
 
+  describe('Buero liest, Nachtrag (ABN-022, BEF-113)', () => {
+    const NACHTRAG = 'select public.add_training_protocol_addendum($1::uuid, $2, $3) as id';
+
+    it('laesst office Protokoll und Liste lesen, protokolliert je Protokoll', async () => {
+      const fertig = await schliesseAb(users.trainer, TRAINING_HEUTE, 'Synthetische Einheit');
+      const protokollId = (await protokoll(TRAINING_HEUTE))!.id;
+      const { rows } = await asUserCommitted<{ content: string }>(users.office, LESEN, [
+        TRAINING_HEUTE,
+      ]);
+      expect(rows[0]!.content).toBe('Synthetische Einheit');
+      const { rows: liste } = await asUserCommitted(users.office, LISTE, [
+        trainingRelationships.tina,
+      ]);
+      expect(liste.length).toBeGreaterThan(0);
+      expect(fertig).toBeTruthy();
+      expect((await audit('training_protocol.viewed', protokollId)).length).toBeGreaterThan(0);
+    });
+
+    it('haengt einen Nachtrag mit Grund an ein abgeschlossenes Protokoll; der Text bleibt', async () => {
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Urspruenglicher Text');
+      await asUserCommitted(users.trainer, NACHTRAG, [
+        TRAINING_HEUTE,
+        'Gewicht war 20 kg, nicht 25 kg.',
+        'Zahl vertippt',
+      ]);
+      const { rows } = await asUser<{
+        content: string;
+        addenda: { content: string; reason: string; author_name: string }[];
+      }>(users.office, LESEN, [TRAINING_HEUTE]);
+      expect(rows[0]!.content).toBe('Urspruenglicher Text');
+      expect(rows[0]!.addenda).toMatchObject([
+        { content: 'Gewicht war 20 kg, nicht 25 kg.', reason: 'Zahl vertippt' },
+      ]);
+      expect(rows[0]!.addenda[0]!.author_name).toBeTruthy();
+    });
+
+    it('nimmt keinen Nachtrag an einem Entwurf, ohne Grund oder von office', async () => {
+      const entwurf = await speichere(users.trainer, TRAINING_HEUTE, 'Noch Entwurf');
+      await expect(
+        asUser(users.trainer, NACHTRAG, [TRAINING_HEUTE, 'Text', 'Grund genug']),
+      ).rejects.toThrow(/only a finalized/);
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Jetzt fertig', entwurf.updated_at);
+      await expect(asUser(users.trainer, NACHTRAG, [TRAINING_HEUTE, 'Text', ''])).rejects.toThrow(
+        /needs a reason/,
+      );
+      await erwarteAbgewiesenenSchreibversuch(
+        users.office,
+        NACHTRAG,
+        [TRAINING_HEUTE, 'Text', 'Grund genug'],
+        'training_protocol.updated',
+      );
+    });
+
+    it('nimmt keinen Nachtrag von einem Patientenkonto oder aus einer anderen Praxis', async () => {
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Abgeschlossen');
+      await erwarteAbgewiesenenSchreibversuch(
+        users.patientMax,
+        NACHTRAG,
+        [TRAINING_HEUTE, 'Text', 'Grund genug'],
+        'training_protocol.updated',
+      );
+      const fremd = await fremdeOrganisation();
+      await expect(
+        asUser(fremd.owner, NACHTRAG, [TRAINING_HEUTE, 'Text', 'Grund genug']),
+      ).rejects.toThrow(/training protocol not found/);
+      const { rows } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_protocol_addenda',
+      );
+      expect(rows[0]!.n).toBe(0);
+    });
+  });
+
   describe('kein Durchgriff (ADR-021 Punkt 6, ANN-184)', () => {
     it.each([
       ['therapist', users.therapist],
@@ -594,7 +673,6 @@ describe('TRN-009: Trainingsprotokoll', () => {
     it.each([
       ['therapist', users.therapist],
       ['team_lead', users.teamLead],
-      ['office', users.office],
       ['Patientenkonto', users.patientMax],
     ])('%s liest kein Protokoll', async (_rolle, user) => {
       await schliesseAb(users.trainer, TRAINING_HEUTE, 'Geheim');
@@ -675,6 +753,11 @@ describe('TRN-009: Trainingsprotokoll', () => {
 
     it('loescht die Protokolle mit dem Verhaeltnis und fuehrt sie im Journal', async () => {
       const id = await schliesseAb(users.trainer, TRAINING_VORGESTERN, 'Weg damit');
+      await asUserCommitted(
+        users.trainer,
+        'select public.add_training_protocol_addendum($1::uuid, $2, $3) as id',
+        [TRAINING_VORGESTERN, 'Nachtrag', 'Ergaenzung'],
+      );
       await vertragEndeteVorVierJahren();
 
       await asPostgres(LAUF);
@@ -684,6 +767,12 @@ describe('TRN-009: Trainingsprotokoll', () => {
         [id],
       );
       expect(rows[0]!.n).toBe(0);
+      // Der Nachtrag geht mit seinem Protokoll (ABN-022).
+      const { rows: nachtraege } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_protocol_addenda where protocol_id = $1',
+        [id],
+      );
+      expect(nachtraege[0]!.n).toBe(0);
       const { rows: journal } = await asPostgres<{ retention_class: string }>(
         `select retention_class from public.deletion_journal
           where target_table = 'training_protocols' and target_id = $1`,

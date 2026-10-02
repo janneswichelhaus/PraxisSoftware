@@ -35,6 +35,7 @@ const detailSchema = listeneintragSchema.extend({
   email: z.string().nullable(),
   phone: z.string().nullable(),
   street: z.string().nullable(),
+  house_number: z.string().nullable(),
   postal_code: z.string().nullable(),
   city: z.string().nullable(),
 });
@@ -61,6 +62,7 @@ export const TRAINING_FELDER = [
   'phone',
   'email',
   'street',
+  'house_number',
   'postal_code',
   'city',
   'contract_started_on',
@@ -75,6 +77,7 @@ export const leereTrainingWerte: TrainingWerte = {
   phone: '',
   email: '',
   street: '',
+  house_number: '',
   postal_code: '',
   city: '',
   contract_started_on: '',
@@ -86,7 +89,8 @@ export const TRAINING_BESCHRIFTUNG: Record<TrainingFeld, string> = {
   date_of_birth: 'Geburtsdatum',
   phone: 'Telefon',
   email: 'E-Mail',
-  street: 'Straße und Hausnummer',
+  street: 'Straße',
+  house_number: 'Hausnummer',
   postal_code: 'PLZ',
   city: 'Ort',
   contract_started_on: 'Vertragsbeginn',
@@ -141,6 +145,7 @@ export const trainingWerteSchema = z.object({
       'Bitte eine gültige E-Mail-Adresse angeben.',
     ),
   street: z.string().trim().max(200, 'Höchstens 200 Zeichen.'),
+  house_number: z.string().trim().max(20, 'Höchstens 20 Zeichen.'),
   postal_code: z
     .string()
     .trim()
@@ -167,6 +172,7 @@ function rpcWerte(werte: TrainingWerte) {
     p_email: leerZuNull(werte.email),
     p_phone: leerZuNull(werte.phone),
     p_street: leerZuNull(werte.street),
+    p_house_number: leerZuNull(werte.house_number),
     p_postal_code: leerZuNull(werte.postal_code),
     p_city: leerZuNull(werte.city),
     p_contract_started_on: leerZuNull(werte.contract_started_on),
@@ -181,6 +187,7 @@ export function werteAus(kundin: TrainingClient): TrainingWerte {
     phone: kundin.phone ?? '',
     email: kundin.email ?? '',
     street: kundin.street ?? '',
+    house_number: kundin.house_number ?? '',
     postal_code: kundin.postal_code ?? '',
     city: kundin.city ?? '',
     contract_started_on: kundin.contract_started_on ?? '',
@@ -262,6 +269,7 @@ export async function startTrainingForPerson(
     p_email: alle.p_email,
     p_phone: alle.p_phone,
     p_street: alle.p_street,
+    p_house_number: alle.p_house_number,
     p_postal_code: alle.p_postal_code,
     p_city: alle.p_city,
   });
@@ -505,6 +513,18 @@ const protokollSchema = z.object({
   finalized_at: z.string().nullable(),
   author_name: z.string().nullable(),
   finalized_by_name: z.string().nullable(),
+  /** Nachträge zum abgeschlossenen Protokoll (ABN-022, BEF-113). */
+  addenda: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        content: z.string(),
+        reason: z.string(),
+        created_at: z.string(),
+        author_name: z.string().nullable(),
+      }),
+    )
+    .default([]),
 });
 export type TrainingProtocol = z.infer<typeof protokollSchema>;
 
@@ -538,6 +558,28 @@ export async function getTrainingProtocol(appointmentId: string): Promise<Traini
   if (error) throw new Error(satz);
   const zeilen = antwort(z.array(protokollSchema), data ?? [], satz);
   return zeilen[0] ?? null;
+}
+
+/**
+ * Ein Nachtrag zum abgeschlossenen Protokoll (ABN-022, BEF-113, ANN-185
+ * Fassung 2): Der Text bleibt, der Nachtrag steht mit Grund darunter.
+ */
+export async function addTrainingProtocolAddendum(
+  appointmentId: string,
+  inhalt: string,
+  grund: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_training_protocol_addendum', {
+    p_appointment_id: appointmentId,
+    p_content: inhalt.trim(),
+    p_reason: grund.trim(),
+  })) as { error: { message?: string } | null };
+  if (error) {
+    if (error.message?.includes('needs a reason')) {
+      throw new Error('Ein Nachtrag braucht einen Grund (3 bis 500 Zeichen).');
+    }
+    throw new Error('Der Nachtrag konnte nicht gespeichert werden.');
+  }
 }
 
 /** Die protokollierten Einheiten einer Trainingskund:in, neueste zuerst. */
@@ -614,4 +656,15 @@ export async function finalizeTrainingProtocol(
   })) as { data: unknown; error: { message?: string } | null; status?: number };
   if (ergebnis.error) throw protokollfehler(ergebnis.error, satz);
   if (abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
+}
+
+/**
+ * Eine Anschrift, deren Hausnummer noch in der Straße steht - aus der Zeit vor
+ * ABN-020, als beides ein Feld war und die Aufteilung nicht eindeutig gelang
+ * (BEF-111). Sie bleibt zur Prüfung stehen.
+ */
+export function anschriftZurPruefung(
+  kundin: Pick<TrainingClient, 'street' | 'house_number'>,
+): boolean {
+  return !kundin.house_number && /\d/.test(kundin.street ?? '');
 }

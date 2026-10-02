@@ -550,3 +550,54 @@ describe('Warteliste im Loeschlauf (ANN-133)', () => {
     expect(await vorhanden(id)).toBe(false);
   });
 });
+
+describe('Warteliste pruefen (ABN-018, BEF-108)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  const PRUEFEN = `select id, review_due,
+                      to_char(updated_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"+00"') as updated_at
+                     from public.list_waitlist_entries('open', null)`;
+  const BESTAETIGEN = 'select public.confirm_waitlist_entry($1::uuid, $2::timestamptz)';
+
+  it('meldet einen Eintrag nach acht Wochen ohne Aenderung als zu pruefen; "noch aktuell" setzt neu', async () => {
+    const id = await anlegen();
+    expect((await asUser<{ review_due: boolean }>(users.office, PRUEFEN)).rows[0]!.review_due).toBe(
+      false,
+    );
+    await asPostgres(
+      `update public.waitlist_entries set updated_at = now() - interval '57 days' where id = $1`,
+      [id],
+    );
+    const { rows } = await asUser<{ id: string; review_due: boolean; updated_at: string }>(
+      users.office,
+      PRUEFEN,
+    );
+    expect(rows[0]!.review_due).toBe(true);
+
+    await asUserCommitted(users.office, BESTAETIGEN, [id, rows[0]!.updated_at]);
+    expect((await asUser<{ review_due: boolean }>(users.office, PRUEFEN)).rows[0]!.review_due).toBe(
+      false,
+    );
+    const audit = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log where action = 'waitlist_entry.reviewed'`,
+    );
+    expect(audit.rows).toHaveLength(1);
+
+    // Ein veralteter Stand wird abgewiesen.
+    expect((await fehler(users.office, BESTAETIGEN, [id, rows[0]!.updated_at]))?.code).toBe(
+      '40001',
+    );
+  });
+
+  it('laesst nur die Terminverwaltung bestaetigen und haelt die Mandantengrenze', async () => {
+    const id = await anlegen();
+    const { rows } = await asUser<{ updated_at: string }>(users.office, PRUEFEN);
+    expect((await fehler(users.trainer, BESTAETIGEN, [id, rows[0]!.updated_at]))?.code).toBe(
+      '42501',
+    );
+    const fremd = await fremdeOrganisation();
+    expect((await fehler(fremd.owner, BESTAETIGEN, [id, rows[0]!.updated_at]))?.code).toBe('P0002');
+  });
+});

@@ -287,8 +287,8 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       expect(doc.recipient).toEqual({
         kind: 'self',
         name: 'Tina Trainingskundin',
-        street: 'Trainingsweg 5',
-        house_number: null,
+        street: 'Trainingsweg',
+        house_number: '5',
         postal_code: '72076',
         city: 'Tuebingen',
         reference: null,
@@ -360,7 +360,29 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       expect(leistung.map((l) => l.status)).toEqual(['invoiced']);
     });
 
+    it('stellt ohne Hausnummer im Trainingskontakt nicht aus (BEF-111)', async () => {
+      await asPostgres(
+        `update public.training_contact_details set street = 'B 27', house_number = null
+         where training_relationship_id = $1`,
+        [trainingRelationships.tina],
+      );
+      await trainingsleistung(trainingRelationships.tina);
+      const id = await trainingsentwurf();
+      await expect(asUser(users.office, AUSSTELLEN, [id])).rejects.toMatchObject({
+        message: 'invoice recipient address incomplete',
+        detail: 'house_number',
+      });
+    });
+
     it('zaehlt den Kreis der Behandlung unabhaengig weiter', async () => {
+      // Seit ABN-020 braucht auch die Trainingsrechnung eine vollstaendige
+      // Anschrift; Erika hat im Training noch keine.
+      await asPostgres(
+        `insert into public.training_contact_details
+           (training_relationship_id, organization_id, street, house_number, postal_code, city)
+         values ($1, $2, 'Fiktivgasse', '9', '72074', 'Tuebingen')`,
+        [trainingRelationships.erika, organizationId],
+      );
       await behandlungsleistung();
       await trainingsleistung(trainingRelationships.erika);
       const therapie = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [

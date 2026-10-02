@@ -233,6 +233,13 @@ export const AUDIT_ACTIONS = [
   'appointment.fee_waived',
   // ABN-008: Verrechnung mit der Ersatzrechnung (BEF-100).
   'payment.offset',
+  // ABN-015: Befundangaben getrennt vom Entwurf (BEF-103).
+  'treatment_draft_findings.saved',
+  'treatment_draft_findings.viewed',
+  // ABN-018: Wartelisteneintrag als noch aktuell bestätigt (BEF-108).
+  'waitlist_entry.reviewed',
+  // ABN-022: Nachtrag zum abgeschlossenen Trainingsprotokoll (BEF-113).
+  'training_protocol.addendum_created',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -386,6 +393,10 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
   'appointment.fee_waived': 'Auf die Gebühr eines Termins verzichtet',
   'payment.offset': 'Zahlung mit der Korrekturrechnung verrechnet',
+  'treatment_draft_findings.saved': 'Befundangaben gesichert (noch nicht übernommen)',
+  'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
+  'waitlist_entry.reviewed': 'Wartelisteneintrag als noch aktuell bestätigt',
+  'training_protocol.addendum_created': 'Nachtrag zum Trainingsprotokoll geschrieben',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

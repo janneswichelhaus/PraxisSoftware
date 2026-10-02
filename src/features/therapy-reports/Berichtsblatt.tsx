@@ -128,11 +128,20 @@ export function Berichtsblatt({
         </dl>
       </div>
 
-      <Titel className="mt-10 text-lg font-semibold">Therapiebericht</Titel>
+      <Titel className="mt-10 text-lg font-semibold">
+        Therapiebericht{dokument.korrektur ? ' – korrigierte Fassung' : ''}
+      </Titel>
       <p className="text-ink-muted mt-1 text-sm">
         zur {verordnung.treatment_basis_kind === 'first' ? 'Erstverordnung' : 'Folgeverordnung'} vom{' '}
         {formatDate(verordnung.issued_on)}
       </p>
+      {/* ABN-016 (BEF-104): Die Korrektur sagt, was sie ersetzt und warum. */}
+      {dokument.korrektur ? (
+        <p className="mt-1 text-sm">
+          Ersetzt den Bericht vom {formatDate(dokument.korrektur.ersetzt_abgeschlossen_am)}. Grund
+          der Korrektur: {dokument.korrektur.grund}
+        </p>
+      ) : null}
 
       <section className={ABSCHNITT}>
         <Abschnitt className="text-sm font-semibold">Verordnung</Abschnitt>

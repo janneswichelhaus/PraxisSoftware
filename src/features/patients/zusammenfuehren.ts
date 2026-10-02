@@ -145,3 +145,26 @@ export async function mergePatients(quelle: string, ziel: string): Promise<void>
     throw new Error('Die Akten konnten nicht zusammengeführt werden.');
   }
 }
+
+const vermerkSchema = z.object({
+  id: z.string(),
+  merged_at: z.string(),
+  merged_by_name: z.string().nullable(),
+  counts: z.record(z.string(), z.number()),
+});
+export type Zusammenfuehrungsvermerk = z.infer<typeof vermerkSchema>;
+
+/**
+ * Die Vermerke des Zusammenführens an einer Akte (ABN-018, BEF-108): wann,
+ * durch wen, was mitgezogen ist - so lange wie die Akte, nicht nur so lange
+ * wie das Auditlog.
+ */
+export async function fetchZusammenfuehrungen(
+  patientId: string,
+): Promise<Zusammenfuehrungsvermerk[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_merge_records', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error('Die Vermerke des Zusammenführens konnten nicht geladen werden.');
+  return z.array(vermerkSchema).parse(data ?? []);
+}

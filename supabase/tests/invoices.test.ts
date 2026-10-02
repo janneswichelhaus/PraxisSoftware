@@ -371,6 +371,41 @@ describe('Rechnung', () => {
       expect(nummer[0]?.nummer).toMatch(/^RG-\d{4}-0002$/);
     });
 
+    it('stellt ohne vollstaendige Empfaengeranschrift nicht aus und nennt, was fehlt (BEF-111)', async () => {
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      // Die Beschreibung haelt die Datenbank ueber Tests hinweg (beforeAll):
+      // Die Anschrift wird danach wiederhergestellt.
+      const { rows: vorher } = await asPostgres<{ house_number: string; city: string }>(
+        'select house_number, city from public.patient_contact_details where patient_id = $1',
+        [patients.erika],
+      );
+      await asPostgres(
+        `update public.patient_contact_details set house_number = null, city = '  ' where patient_id = $1`,
+        [patients.erika],
+      );
+      try {
+        await expect(asUser(users.office, AUSSTELLEN, [rows[0]!.id])).rejects.toMatchObject({
+          code: '22023',
+          message: 'invoice recipient address incomplete',
+          detail: 'house_number,city',
+        });
+      } finally {
+        await asPostgres(
+          'update public.patient_contact_details set house_number = $2, city = $3 where patient_id = $1',
+          [patients.erika, vorher[0]!.house_number, vorher[0]!.city],
+        );
+      }
+      const { rows: stand } = await asPostgres<{ status: string }>(
+        'select status from public.invoices where id = $1',
+        [rows[0]!.id],
+      );
+      expect(stand[0]!.status).toBe('draft');
+    });
+
     it('setzt die Leistungen auf "invoiced"', async () => {
       await ausgestellt();
       const { rows } = await asPostgres<{ status: string }>(

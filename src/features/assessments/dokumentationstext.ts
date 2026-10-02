@@ -16,7 +16,8 @@ import type {
  * nichts anderem.
  *
  *   - Ein Absatz je Block, die Überschrift nennt Region und Seite.
- *   - Je Test eine Zeile: `<Zeichen> <Label>< Seite>< Messwert>< – Notiz>`.
+ *   - Je Test eine Zeile: `<Zeichen> <Label>< Seite>< Messwert>: <Ergebnis>< – Notiz>`,
+ *     das Ergebnis ausgeschrieben („o.B.", „positiv"; ABN-015, BEF-103).
  *   - Unterpunkte stehen eingerückt unter ihrer Gruppe; die Bezeichnung einer
  *     Ausgangsstellung entfällt, ihre Unterpunkte stehen direkt im Absatz.
  *   - „Nicht getestet" sammelt sich in einer Zeile am Ende des Absatzes.
@@ -25,8 +26,9 @@ import type {
  *     ohne Angabe erzeugt keine Überschrift.
  *
  * Der Text ist ein **Vorschlag**. Erst wenn die Therapeut:in ihn übernimmt,
- * steht er im Entwurf der Behandlungsdokumentation (ADR-016); die einzelnen
- * Häkchen werden nicht gespeichert (**ANN-120**).
+ * steht er im Entwurf der Behandlungsdokumentation (ADR-016). Die einzelnen
+ * Häkchen werden getrennt vom Entwurf gesichert, bis die Person übernimmt
+ * oder verwirft (ABN-015, **ANN-120** Fassung 2).
  */
 
 /** Die zwei Seiten, unter denen ein seitengetrennter Test Angaben trägt. */
@@ -143,7 +145,8 @@ export function angabenImBlock(block: BausteinBlock, auswahl: Auswahl): number {
  * Die Seite einer Region umstellen, ohne dass Angaben unsichtbar liegen
  * bleiben (**ANN-129**): Von einer Seite auf die andere wandern die Angaben
  * mit — meist war die erste Wahl ein Vertipper. Von „beidseits" auf eine
- * Seite fallen die der anderen Seite weg. Gemessene Tests bleiben unberührt,
+ * Seite fallen die der anderen Seite weg - erst nach einer Rückfrage im Feld
+ * (`verworfeneAngaben`, BEF-103 Punkt 2). Gemessene Tests bleiben unberührt,
  * sie haben immer beide Seiten.
  */
 export function seiteUmstellen(
@@ -166,6 +169,23 @@ export function seiteUmstellen(
     }
   }
   return ergebnis;
+}
+
+/**
+ * Wie viele Angaben ein Seitenwechsel verwerfen würde (ABN-015, BEF-103
+ * Punkt 2): nur von „beidseits" auf eine Seite, die der anderen Seite. Das
+ * Feld fragt dann vorher, statt sie still zu löschen.
+ */
+export function verworfeneAngaben(
+  region: BausteinRegion,
+  auswahl: Auswahl,
+  bisher: Regionsseite | undefined,
+  neu: Regionsseite,
+): number {
+  if (bisher !== 'beidseits' || neu === 'beidseits') return 0;
+  return (
+    Object.keys(auswahl).length - Object.keys(seiteUmstellen(region, auswahl, bisher, neu)).length
+  );
 }
 
 /**
@@ -274,6 +294,10 @@ function schreibe(
     if (item.value_field && messwert && istMesswert(messwert, item.value_field.input)) {
       zeile += ` ${messwert} ${item.value_field.unit}`;
     }
+    // Das Ergebnis steht ausgeschrieben; das Zeichen davor ergänzt, trägt die
+    // Bedeutung aber nicht allein (ABN-015, BEF-103 Punkt 3, ANN-130). Eine
+    // Technik steht als Aufzählung, „durchgeführt" sagt die Liste.
+    if (angabe.ergebnis !== 'durchgefuehrt') zeile += `: ${ERGEBNIS_TEXT[angabe.ergebnis]}`;
     if (notiz) zeile += ` – ${notiz}`;
     absatz.zeilen.push(zeile);
   }

@@ -19,6 +19,8 @@ import {
 import { TASKS_KEY, type Task } from '@/features/open-points/tasks-api';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
+import type { WaitlistEntry } from '@/features/waitlist/api';
+import { WAITLIST_REVIEW_KEY } from '@/features/open-points/WaitlistReview';
 import '@/index.css';
 
 /**
@@ -241,6 +243,37 @@ client.setQueryData([...CALL_LIST_KEY, MORGEN], anrufe);
 client.setQueryData(ENDING_KEY, endend);
 client.setQueryData(IDLE_KEY, ohneAbschluss);
 client.setQueryData(['staff-members'], mitarbeitende);
+// ABN-018 (BEF-108): seit über acht Wochen unverändert - zu prüfen.
+const zuPruefen: WaitlistEntry[] = [
+  {
+    id: '99999999-9999-4999-8999-000000000002',
+    patient_id: '66666666-6666-4666-8666-000000000004',
+    patient_given_name: 'Petra',
+    patient_family_name: 'Probelauf',
+    phone: '+49 7071 0000007',
+    phone_mobile: null,
+    postal_code: '72074',
+    treatment_basis_id: null,
+    treatment_basis_kind: null,
+    treatment_basis_issued_on: null,
+    preferred_staff_member_id: null,
+    preferred_staff_name: null,
+    appointment_type: 'practice',
+    duration_minutes: 45,
+    time_windows: [],
+    earliest_on: null,
+    needed_by: null,
+    priority_reason: 'patient_wish',
+    note: null,
+    status: 'open',
+    placed_appointment_id: null,
+    created_at: `${tagPlus(-70)}T08:00:00+00:00`,
+    updated_at: `${tagPlus(-70)}T08:00:00+00:00`,
+    closed_at: null,
+    review_due: true,
+  },
+];
+client.setQueryData(WAITLIST_REVIEW_KEY, zuPruefen);
 client.setQueryData(['patient', MAX], {
   id: MAX,
   given_name: 'Max',

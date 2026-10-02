@@ -115,6 +115,27 @@ export async function ladePatientenfoto(fileId: string): Promise<Blob> {
   return antwort.blob();
 }
 
+const herausgabeFotoSchema = z.object({
+  id: z.string(),
+  display_name: z.string(),
+  taken_at: z.string(),
+  locked: z.boolean(),
+  object_missing: z.boolean(),
+});
+export type HerausgabeFoto = z.infer<typeof herausgabeFotoSchema>;
+
+/**
+ * Die Fotos für die Auskunft (ABN-017, BEF-107): auch gesperrte, solange sie
+ * vorhanden sind - nur für owner, wie die Auskunft selbst.
+ */
+export async function fetchFotosZurHerausgabe(patientId: string): Promise<HerausgabeFoto[]> {
+  const { data, error } = (await getSupabase().rpc('list_patient_photos_for_access_request', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error('Die Fotos konnten nicht geladen werden.');
+  return z.array(herausgabeFotoSchema).parse(data ?? []);
+}
+
 const herausgabeSchema = z.object({
   bucket_id: z.string(),
   object_key: z.string(),

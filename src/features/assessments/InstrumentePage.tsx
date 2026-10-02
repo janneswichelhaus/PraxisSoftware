@@ -135,7 +135,15 @@ function Instrument({ score }: { score: ScoreDefinition }) {
           Kartenzeile stellte Literaturangaben von 190 Zeichen rechtsbündig
           und trennte am Bildschirm Bezeichnung und Wert um 1 000 px. */}
       <DetailList>
-        <DetailRow label="Fassung">{meta.version}</DetailRow>
+        <DetailRow label="Fassung">
+          {meta.version}
+          {/* BEF-101 Punkt 4: ob frühere Werte vergleichbar sind, steht an der
+              Definition, nicht in der Nummer. */}
+          {meta.vergleichbar_mit?.length
+            ? ` · Werte vergleichbar mit ${meta.vergleichbar_mit.join(', ')}`
+            : ''}
+        </DetailRow>
+        {scoring.leseart ? <DetailRow label="Lesart des Werts">{scoring.leseart}</DetailRow> : null}
         <DetailRow label="Ausgefüllt von">{AUSGEFUELLT_VON[meta.ausgefuellt_von]}</DetailRow>
         <DetailRow label="Lizenz">
           {LIZENZ_TEXT[meta.lizenzstatus.status]}, Stand {datum(meta.lizenzstatus.stand)}
