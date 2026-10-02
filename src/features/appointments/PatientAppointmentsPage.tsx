@@ -14,6 +14,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
+import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 import { formatDate as formatIsoDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
@@ -507,6 +508,10 @@ export function Terminbereich({ patient, user }: { patient: Patient; user: Curre
       ) : neuerTermin ? (
         <Rueckmeldung className="mb-6">Termin angelegt.</Rueckmeldung>
       ) : null}
+
+      {/* ABN-004: Kuenftige Hausbesuche mit alter Adresse, nur mit Auftrag zu
+          aendern (ANN-003 Fassung 2). */}
+      <HausbesucheMitAlterAdresse patientId={patient.id} user={user} />
 
       {verordnung ? (
         <div

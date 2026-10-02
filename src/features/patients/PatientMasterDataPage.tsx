@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { HausbesucheMitAlterAdresse } from '@/features/appointments/HausbesucheMitAlterAdresse';
 import { useLocation } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
@@ -260,6 +261,10 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           Stammdaten bearbeiten
         </ButtonLink>
       </div>
+
+      {/* ABN-004: Nach einer Adressaenderung stehen hier die kuenftigen
+          Hausbesuche, die noch die alte Anschrift tragen (ANN-003 Fassung 2). */}
+      <HausbesucheMitAlterAdresse patientId={patient.id} user={user} />
 
       {/* Zwei Spalten erst ab 1280 px: Person und Kontakt sind kurze Listen und
           stünden untereinander als zwei schmale Streifen in einer leeren
