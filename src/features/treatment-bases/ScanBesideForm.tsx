@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen } from '@/features/files/api';
-import { istAnzeigbar } from '@/features/files/Dateiansicht';
+import { istAnzeigbar } from '@/features/files/dokumentarten';
 
 /**
  * Das Foto der Verordnung neben dem Formular (PRX-011): Das Büro tippt ab,

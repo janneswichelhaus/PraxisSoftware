@@ -105,6 +105,14 @@ export function sichtbarkeitHinweis(art: Dokumentart): string {
 export const NICHT_SERVERSEITIG_GEPRUEFT = 'nicht serverseitig geprüft';
 
 /**
+ * Lässt sich die Datei in der Anwendung zeigen (ADR-017 Punkt 54)? Bis ANN-223
+ * entschieden ist: nur Bilder; ein PDF hat „Herunterladen" (Punkt 55).
+ */
+export function istAnzeigbar(mimeType: string): boolean {
+  return mimeType === 'image/jpeg' || mimeType === 'image/png';
+}
+
+/**
  * Die zulässigen Formate (ADR-017 Punkt 18), doppelt durchgesetzt: am Bucket,
  * beim Vorbereiten und noch einmal bei der Bestätigung gegen das, was
  * tatsächlich abgelegt wurde.

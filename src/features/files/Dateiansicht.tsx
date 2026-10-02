@@ -54,8 +54,3 @@ export function Dateiansicht({
     </section>
   );
 }
-
-/** Lässt sich die Datei in der Anwendung zeigen? Bis ANN-223 entschieden ist: nur Bilder. */
-export function istAnzeigbar(mimeType: string): boolean {
-  return mimeType === 'image/jpeg' || mimeType === 'image/png';
-}

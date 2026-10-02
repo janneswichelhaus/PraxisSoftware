@@ -130,8 +130,9 @@ describe('Dateiliste', () => {
     ]);
     const open = vi.fn();
     vi.stubGlobal('open', open);
+    const freigegeben = vi.fn();
     URL.createObjectURL = vi.fn(() => 'blob:ansicht');
-    URL.revokeObjectURL = vi.fn();
+    URL.revokeObjectURL = freigegeben;
 
     renderWithProviders(
       <Dateiliste
@@ -160,7 +161,7 @@ describe('Dateiliste', () => {
     expect(ladeDateiHerunter).not.toHaveBeenCalled();
 
     await userEvent.click(within(ansicht).getByRole('button', { name: 'Schließen' }));
-    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:ansicht');
+    expect(freigegeben).toHaveBeenCalledWith('blob:ansicht');
     vi.unstubAllGlobals();
   });
 

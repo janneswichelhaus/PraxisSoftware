@@ -9,7 +9,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen, type PatientFile } from './api';
-import { Dateiansicht, istAnzeigbar } from './Dateiansicht';
+import { Dateiansicht } from './Dateiansicht';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
 import { fotoVomHeutigenTag, useKamera } from './kamera';
@@ -20,6 +20,7 @@ import {
   dokumentartHinweise,
   dokumentartLabels,
   formatBytes,
+  istAnzeigbar,
   istKlinisch,
   NICHT_SERVERSEITIG_GEPRUEFT,
   sichtbarkeitHinweis,
