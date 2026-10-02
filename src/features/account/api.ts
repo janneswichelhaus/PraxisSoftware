@@ -20,8 +20,11 @@ import { VerbindungError, WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEin
  * **Die eine Ausnahme ist `sessions_ended`** (ANN-044). Dieser Vorgang nimmt
  * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
  * `log_account_security_event` weist den Aufruf ab. Nachher melden heißt
- * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und ist
- * seine Vorbedingung; scheitert er, unterbleibt das Abmelden.
+ * deshalb: gar nicht melden. Der Vermerk steht dort vor dem Vorgang und hält
+ * den **Versuch** fest. Seit Fassung 2 (Jannes, 2026-10-02) ist er keine
+ * Vorbedingung mehr: Wer ein Telefon verloren hat, darf nicht daran scheitern,
+ * dass das Protokoll gerade nicht schreibt. Scheitert der Vermerk, steht das
+ * im Betriebslog, und die Sitzungen werden trotzdem beendet.
  *
  * **Das geht in die andere Richtung als ANN-041 Fassung 2**, und der
  * Unterschied ist nicht Bequemlichkeit. Dort vermerkt die Anwendung erst, wenn
@@ -56,15 +59,19 @@ async function melde(ereignis: Sicherheitsereignis): Promise<void> {
 }
 
 /**
- * Meldet vorab und ist Vorbedingung: ohne Vermerk kein Vorgang (ANN-044).
+ * Meldet vorab den Versuch (ANN-044, Fassung 2).
  *
  * Der Vermerk hält fest, dass diese Person die Beendigung **ausgelöst** hat —
  * nicht, dass sie überall gewirkt hat. Das ist der ehrliche Inhalt: Ob ein
  * fremdes Gerät den Zugriff schon verloren hat, sieht diese Anwendung nicht.
+ * Scheitert er, hält er den Vorgang nicht auf; der Fehlschlag steht im
+ * Betriebslog wie bei `melde`.
  */
-async function meldeVorab(ereignis: Sicherheitsereignis): Promise<void> {
+async function meldeVersuch(ereignis: Sicherheitsereignis): Promise<void> {
   const { error } = await getSupabase().rpc('log_account_security_event', { p_event: ereignis });
-  if (error) throw new Error('Der Vorgang wurde nicht protokolliert und deshalb nicht ausgeführt.');
+  if (error) {
+    protokolliereFehler({ ereignis: 'audit.kontoereignis_nicht_vermerkt' });
+  }
 }
 
 /**
@@ -115,8 +122,8 @@ export async function aendereKennwort(neuesKennwort: string): Promise<void> {
  */
 export async function beendeAlleSitzungen(): Promise<void> {
   // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
-  // Dateikopf und ANN-044. Wirft der Vermerk, unterbleibt das Abmelden.
-  await meldeVorab('sessions_ended');
+  // Dateikopf und ANN-044. Scheitert der Vermerk, wird trotzdem abgemeldet.
+  await meldeVersuch('sessions_ended');
   const { error } = await getSupabase().auth.signOut({ scope: 'global' });
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');
 }

@@ -92,3 +92,25 @@ export function istEinloesePfad(pfad: string): boolean {
   // POR-003: die Einladung zur Plattform (ADR-023 Punkt 8) als dritte Seite.
   return pfad === WIEDERHERSTELLUNG_PFAD || pfad === ZUGANG_PFAD || pfad === EINLADUNG_PFAD;
 }
+
+/**
+ * Der Einmal-Code aus der Adresse (ANN-043, Fassung 2).
+ *
+ * Die Mail-Vorlagen tragen den `token_hash` seit 2026-10-02 im **Fragment**
+ * (`#token_hash=…`): Ein Fragment geht an keinen Server und steht damit in
+ * keinem Zugriffsprotokoll des Webservers. Ältere Links mit dem Code in der
+ * Abfrage (`?token_hash=…`) gelten weiter, bis sie ablaufen. Die Seite liest
+ * den Code einmal und nimmt ihn sofort aus der Adresszeile
+ * (`ohneEinmalCode`), damit er weder im Verlauf noch auf dem Bildschirm
+ * stehen bleibt.
+ */
+export function einmalCodeAusAdresse(adresse: { hash: string; search: string }): string | null {
+  const ausFragment = new URLSearchParams(adresse.hash.replace(/^#/, '')).get('token_hash');
+  if (ausFragment) return ausFragment;
+  return new URLSearchParams(adresse.search).get('token_hash');
+}
+
+/** Trägt die Adresse noch einen Einmal-Code, der heraus muss? */
+export function traegtEinmalCode(adresse: { hash: string; search: string }): boolean {
+  return einmalCodeAusAdresse(adresse) !== null;
+}

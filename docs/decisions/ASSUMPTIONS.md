@@ -85,7 +85,7 @@ Verlauf der Einträge: `git log -- docs/decisions/ASSUMPTIONS.md`.
 
 ### ANN-001 — Interne Initialfristen des Retention Schedule
 
-Datenschutz · offen · 2026-08-28 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Die Fristen ohne unmittelbare gesetzliche Vorgabe gelten vorläufig so, wie ADR-008 und ADR-011 sie tabellieren — von 7 Tagen (nicht angenommene KI-Entwürfe) über 30 Tage (Routing-Rohdaten, Operational Logs) und 12 Monate (Terminanfragen ohne Behandlungsverhältnis, Auth-/Securitylogs, Teamchat rollierend) bis 3 Jahre (abgesagte Termine und No-shows ohne Rechnung ab Jahresende, organisatorische Patientenkommunikation, Patientenakten-Auditlog, AI-Gateway-Metadaten).
 
@@ -94,6 +94,8 @@ Datenschutz · offen · 2026-08-28 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.retention_classes` in `supabase/migrations/20260911150000_retention_schedule.sql` — die einzige Stelle für alles, was in unserer Datenbank liegt, gelesen nur über `app.retention_interval()`; Zuordnung in `public.retention_assignments`, geprüft von `supabase/tests/retention.test.ts`. **Betriebslogs liegen nicht dort** und hatten deshalb bis OPS-004 als einziger Wert der Tabelle keinen Ort im Code: Ihre 30 Tage stehen seit 2026-09-22 als `BETRIEBSLOG_FRIST_TAGE` in `src/lib/protokoll.ts`, gehalten gegen die Tabelle in ADR-011 Punkt 4. Sie sind dort die **Anforderung**, nicht der gemessene Zustand — R14 (Plattformfrist 1 bis 28 Tage) ist damit sichtbar und nicht stillschweigend auf die kleinere Zahl gedreht.
 
 **Änderungspfad.** Frist ändern: Migration mit `update` auf `public.retention_classes`, Tabelle in ADR-008 nachziehen · Aufwand `klein`. Neue Frist, wo bisher keine galt: zusätzlich fachlicher Anker und Regel in `public.apply_retention()` · Aufwand `mittel`. Betriebslogs gehen den anderen Weg: eine Zahl in `src/lib/protokoll.ts` und dieselbe Zeile in ADR-011 · Aufwand `klein` — dass die Plattform sie einhält, ist damit aber nicht gesagt (R14). Bewusst kein Klickweg in der Oberfläche (ADR-013).
+
+**Abnahme (Jannes, 2026-10-02).** Vorläufig bestätigt; bleibt zur Datenschutzprüfung vorgemerkt. Präzisiert: „30 Tage“ gilt nur für Betriebslogs (ADR-011); Sicherheits- und Authentifizierungslogs (12 Monate) und das Auditlog (drei Jahre, ANN-029) haben eigene Fristen.
 
 ### ANN-002 — Versorgungsstatus `inactive` und Rollenschnitt des Wechsels
 
@@ -111,7 +113,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 ### ANN-003 — Adress-Snapshot beim Hausbesuchstermin
 
-Datenschutz · offen · 2026-08-30 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Bestätigung durch Jannes steht aus
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart; Bestätigung durch Jannes steht aus
 
 **Annahme.** Für Hausbesuche wird die Patientenadresse bei der Terminanlage in den Termin kopiert (`visit_street`, `visit_house_number`, `visit_postal_code`, `visit_city`), nicht referenziert; eine spätere Stammdatenänderung ändert nicht rückwirkend, wohin an diesem Tag gefahren wurde. Die Adresse liegt damit doppelt vor und unterliegt im Termin der Frist „organisatorische Behandlungsdaten" — auch bei abgesagten Terminen.
 
@@ -120,6 +122,8 @@ Datenschutz · offen · 2026-08-30 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Spalten `visit_*` und Constraint `appointments_address_matches_type` in `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist `create_appointment`; Abnahmeschritt CAL-001 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
 **Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt.
 
 ### ANN-004 — Inhalt des Audit-Kontexts bei organisatorischen Einstellungen
 
@@ -181,7 +185,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-08 · Jannes · erledigt · Wie
 
 ### ANN-009 — Systemakteur im Auditlog
 
-Datenschutz · offen · 2026-09-04 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Auditereignisse ohne handelnden Account tragen `actor_kind = 'system'` und keinen `actor_user_id`, alle übrigen bleiben `user` mit Account; eine Constraint erzwingt genau diese Paarung. Die Auditansicht zeigt solche Ereignisse als „System", der Benutzerfilter blendet sie aus. Bei der automatischen Finalisierung wird keine finalisierende Person eingetragen.
 
@@ -190,6 +194,8 @@ Datenschutz · offen · 2026-09-04 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Spalte `audit_log.actor_kind` und Constraint `audit_log_actor_consistent` in `supabase/migrations/20260904120000_treatment_note_auto_finalisation.sql`; `list_audit_events` ebendort; Anzeige in `src/features/audit/AuditLogPage.tsx`.
 
 **Änderungspfad.** Zusätzliche Kennzeichnung des Auslösers: Kontext des Inserts in `finalize_overdue_treatment_notes` erweitern · Aufwand `klein`. Eigener Pseudo-Account statt Systemakteur: Spalte zurückbauen und Konto im Seed anlegen · Aufwand `mittel`, ausdrücklich nicht empfohlen.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt. Nur tatsächliche Systemvorgänge stehen als „System“ im Protokoll, ohne eine Person als Handelnde.
 
 ### ANN-010 — Sichtbarkeit und Frist der internen Versorgungsangaben
 
@@ -377,7 +383,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 ### ANN-025 — Die Anwendung legt keine Authentifizierungskonten an
 
-Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: mit der Entscheidung zu B13 (Mailversand, Empfehlung eigener SMTP-Anbieter, Prüfung in Block 11); Datenschutzprüfung
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; abgelöst durch STAFF-005 (Roadmap G21)
 
 **Annahme.** Die Anwendung erzeugt kein Konto beim Anmeldedienst, sondern verwaltet nur die Berechtigung: `invite_staff_account` legt die Einladung an, `claim_staff_invitation` bindet ein vorhandenes Konto daran. Das Konto entsteht einmalig je Person auf der Oberfläche des Anmeldedienstes; die Anwendung fordert die Anmeldemail nur für ein bestehendes Konto an (`signInWithOtp` mit `shouldCreateUser: false`).
 
@@ -386,6 +392,8 @@ Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: mit de
 **Anker.** `sendeZugangsMail` in `src/features/staff/konto-api.ts` (`shouldCreateUser: false`); die tragende Eigenschaft in `claim_staff_invitation` (`supabase/migrations/20260911110000_staff_account_invitations.sql`): ein Konto ohne passende offene Einladung bleibt zugriffslos.
 
 **Änderungspfad.** Sobald B13 einen Versandweg hat und eine serverseitige Funktion freigegeben ist: eine Funktion mit dem `service_role`-Schlüssel als Secret, aufgerufen aus `sendeZugangsMail`; Datenmodell, Rollen und RPCs bleiben unverändert · Aufwand `mittel`. Zurückzunehmen ist nichts — der heutige Stand ist die restriktive Variante.
+
+**Abnahme (Jannes, 2026-10-02).** Als Übergang bestätigt. Ziel ist, neue Mitarbeitende ganz aus der Anwendung einzuladen, ohne ein Konto auf der Oberfläche des Anmeldedienstes anzulegen: offene Aufgabe G21 STAFF-005 der Roadmap, die diese Annahme ablöst.
 
 ### ANN-026 — Datenklasse und Frist der Einladung
 
@@ -398,6 +406,8 @@ Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `COMMENT ON TABLE public.staff_account_invitations` und die Frist `now() + interval '14 days'` in `invite_staff_account`, beides in `supabase/migrations/20260911110000_staff_account_invitations.sql`.
 
 **Änderungspfad.** Andere Gültigkeit: ein Intervall · Aufwand `klein`. Andere Aufbewahrung: die Zeile `zugangseinladung` in `public.retention_classes` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-02).** 14 Tage Gültigkeit bestätigt. Die zwölf Monate hat Jannes zur Prüfung zurückgegeben. **Prüfergebnis (Claude, 2026-10-02), zu bestätigen:** Der Berechtigungsnachweis hängt nicht an der Einladung. Die Auditeinträge `staff_account.invited` (wer, welche Rollen), `.invitation_accepted` (welches Konto) und `.roles_changed` tragen ihn selbst, verweisen auf die Mitarbeiterin statt auf die Einladung und gelten drei Jahre (ANN-029). Die Einladung trägt danach nur die Adresse, ein Kontaktdatum, für das zwölf Monate zur Datenminimierung passen. Anders bei der Plattform (ADR-023 Punkt 5): Dort steht der Nachweis nur an Zugang und Einladung, deshalb drei Jahre. Vorschlag: Einladung zwölf Monate, Nachweis im Auditlog drei Jahre — getrennt, wie heute gebaut, kein Code.
 
 ### ANN-027 — Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen
 
@@ -601,31 +611,35 @@ Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach
 
 ### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
 
-Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Providerprüfung OPS-001, Teil Auth-Mails
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Providerprüfung OPS-001, Teil Auth-Mails
 
 **Annahme.** Der Rückweg aus einer Auth-Mail läuft über den einmaligen `token_hash`: eigene Vorlagen (`recovery.html`, `magic_link.html`) übergeben `{{ .TokenHash }}` an eine Adresse dieser Anwendung, eingelöst wird mit `verifyOtp`, `detectSessionInUrl` bleibt `false`. Es gibt genau zwei öffentliche Seiten, `/kennwort-neu` und `/zugang`. Nach dem Setzen bleibt die Person nur auf diesem Gerät angemeldet; steht dort schon eine Sitzung, wird zuerst gefragt, und „Angemeldet bleiben" lässt den Link unverbraucht. Ein Verbindungsfehler gilt nicht als verbrauchter Link.
 
 **Begründung.** Der Weg über `{{ .ConfirmationURL }}` verlangt `detectSessionInUrl: true`; dann stünde ein vollwertiges Zugriffs- und Erneuerungstoken im Adressfragment — im Verlauf und für jedes Skript lesbar. Ein `token_hash` ist einmalig, kurzlebig und für sich keine Sitzung (§16). Selbst zerlegte Fragmente mit `setSession` wären Eigenbau an der Sitzungsmechanik, den §3.4 ausschließt; PKCE verlangt den Prüfschlüssel im selben Browserprofil und bricht im häufigsten Praxisfall (angefordert am Praxisrechner, geöffnet am Telefon). Die beiden Seiten geben keine Auskunft über den Kontobestand, weil abgelaufener, benutzter und vorab geöffneter Link denselben Fehler liefern (§13).
 
-**Anker.** `src/features/auth/linkEinloesen.ts` — `loeseLinkEin`, die Unterscheidung von `LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und `istEinloesePfad` (die Liste steht dort und nicht im Gate, weil genau diese Trennung einmal schiefging); Vorlagen unter `supabase/templates/`, Einträge in `supabase/config.toml`.
+**Anker.** `src/features/auth/linkEinloesen.ts` — `loeseLinkEin`, die Unterscheidung von `LinkUngueltigError` und `VerbindungError`, beide Pfadkonstanten und `istEinloesePfad` (die Liste steht dort und nicht im Gate, weil genau diese Trennung einmal schiefging); Vorlagen unter `supabase/templates/`, Einträge in `supabase/config.toml`. Seit Fassung 2 zusätzlich `einmalCodeAusAdresse` in `src/features/auth/linkEinloesen.ts` mit Test `src/features/auth/einmalCode.test.ts`.
 
 **Änderungspfad.** Anderer Wortlaut in der Mail: die Vorlagen · Aufwand `klein`. Zurück auf `detectSessionInUrl: true`: eine Zeile in `src/lib/supabase.ts` und die Vorlagen auf `{{ .ConfirmationURL }}` · Aufwand `klein`, mit den Token im Verlauf als Folge. Auf PKCE wechseln · Aufwand `klein`, aber der geräteübergreifende Fall bricht — nicht empfohlen. Eigener Mailversand: eigenes Epic, neuer Dienstleister nach §3.5 und Rücknahme von B13 · Aufwand `groß`.
 
-### ANN-044 — „Alle Sitzungen beenden": Vermerk als Vorbedingung, und die Zusage nennt das Restfenster
+**Abnahme (Jannes, 2026-10-02).** Bestätigt mit drei Bedingungen, seit Fassung 2 umgesetzt: Der Code gilt eine Stunde (`otp_expiry = 3600` in `supabase/config.toml`, im Cloudprojekt dieselbe Zahl); er steht im Fragment (`#token_hash=…`) und erreicht damit keinen Webserver und kein Zugriffsprotokoll; die Seite liest ihn einmal und nimmt ihn sofort aus der Adresszeile. Die Anwendung protokolliert ihn nirgends.
 
-Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Wert `jwt_expiry` mit OPS-001
+### ANN-044 — „Alle Sitzungen beenden": Vermerk vorab, ohne den Vorgang aufzuhalten, und die Zusage nennt das Restfenster
 
-**Annahme.** Der Vermerk steht vor dem Vorgang „Alle Sitzungen beenden" und ist seine Vorbedingung: Scheitert er, unterbleibt das Abmelden. Er hält die Auslösung fest, nicht die Wirkung. Die Zusage nennt das Restfenster: Sitzungen und Erneuerungstoken löscht der Anmeldedienst sofort, ein ausgestelltes Zugriffstoken bleibt bis `jwt_expiry` gültig; sofort wirkt allein die Sperre des Zugangs, weil die Datenbank bei jeder Anfrage `user_profiles.is_active` liest.
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); `jwt_expiry` des Cloudprojekts mit OPS-001, Zielwert mit SEC-EPIC-001 (ADR-025)
+
+**Annahme.** Der Vermerk steht vor dem Vorgang „Alle Sitzungen beenden" und dokumentiert den Versuch. *(Fassung 2)* Scheitert er, werden die Sitzungen trotzdem beendet; der Fehlschlag steht im Betriebslog. *Fassung 1: „ist seine Vorbedingung: Scheitert er, unterbleibt das Abmelden."* Er hält die Auslösung fest, nicht die Wirkung. Die Zusage nennt das Restfenster: Sitzungen und Erneuerungstoken löscht der Anmeldedienst sofort, ein ausgestelltes Zugriffstoken bleibt bis `jwt_expiry` gültig; sofort wirkt allein die Sperre des Zugangs, weil die Datenbank bei jeder Anfrage `user_profiles.is_active` liest.
 
 **Begründung.** Der Vermerk kann dem Vorgang nicht folgen, weil dieser dem Konto die eigene Sitzung nimmt und `log_account_security_event` `auth.uid()` verlangt — nachher melden hieße gar nicht melden, und ein Auditlog, dessen Einträge nicht zu den Tatsachen passen, ist nach ADR-010 wertlos. Das läuft ANN-041 Fassung 2 entgegen, und zwar bewusst: Dort ist der Ausgang nicht beobachtbar, hier ist er beobachtbar, aber nicht mehr aufschreibbar. Das gemeinsame Prinzip ist dasselbe — nichts festhalten, wofür man nicht einstehen kann.
 
-**Anker.** `src/features/account/api.ts` — Dateikopf und `meldeVorab`; der Text in `src/features/account/MeinKontoPage.tsx`, Abschnitt „Sitzungen"; Tests in `src/features/account/api.test.ts`.
+**Anker.** `src/features/account/api.ts` — Dateikopf und `meldeVersuch`; der Text in `src/features/account/MeinKontoPage.tsx`, Abschnitt „Sitzungen"; Tests in `src/features/account/api.test.ts`.
 
 **Änderungspfad.** Anderer Wortlaut: der Text in `MeinKontoPage` · Aufwand `klein`. Restfenster verkleinern: `jwt_expiry` in `config.toml` und im Cloudprojekt · Aufwand `klein`, mit häufigerem Erneuern als Folge. Vermerk serverseitig aus dem Vorgang erzeugen: Migration mit autonomer Transaktion · Aufwand `mittel`. Sofortiger Widerruf einzelner Token · Aufwand `groß`, zweite Berechtigungsschicht ohne Not.
 
+**Abnahme (Jannes, 2026-10-02).** Geändert (Fassung 2): Ein Fehler beim Protokollieren verhindert das Beenden der Sitzungen nicht mehr; der Vorabeintrag dokumentiert den Versuch, ein Fehlschlag steht im Betriebslog (`meldeVersuch`). Das Restfenster ist `jwt_expiry`: im Repository 3600 Sekunden, und das ist auch der Standard des Anbieters. Den tatsächlichen Wert des Cloudprojekts kann diese Sitzung nicht lesen; er steht im Dashboard unter den JWT- bzw. Sitzungseinstellungen und wird mit OPS-001 abgelesen. Die 60 Minuten sind **kein** bestätigter Zielwert; den legt SEC-EPIC-001 fest (ADR-025).
+
 ### ANN-045 — Das gewöhnliche Abmelden endet nur die eigene Sitzung
 
-Technik · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach dem ersten Feldtag
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach dem ersten Feldtag
 
 **Annahme.** Das gewöhnliche Abmelden läuft mit `scope: 'local'`, ausdrücklich angegeben und nicht als Weglassung. Alle Geräte beendet ausschließlich der eigene Weg auf „Mein Konto".
 
@@ -634,6 +648,8 @@ Technik · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach dem e
 **Anker.** `src/features/auth/SessionProvider.tsx` (`signOut`); Test in `src/features/auth/SessionProvider.test.tsx`.
 
 **Änderungspfad.** Zurück auf global: die Angabe entfernen oder auf `'global'` setzen · Aufwand `klein`; dann ist der Text in `MeinKontoPage.tsx` mitzuändern und „Alle Sitzungen beenden" verliert seinen Zweck. Wahl beim Abmelden anbieten · Aufwand `klein`, aber eine Entscheidung mehr an einer Stelle, an der niemand eine treffen will.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt: Normales Abmelden beendet nur die aktuelle Sitzung; andere Geräte bleiben angemeldet.
 
 ### ANN-046 — Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf
 
@@ -739,7 +755,7 @@ Technik · offen · 2026-09-13 · — · — · Wiedervorlage: mit Weg 3 des Rec
 
 ### ANN-054 — Der Dependency-Audit blockiert den Merge ab Schweregrad `high`
 
-Technik · offen · 2026-09-15 · — · — · Wiedervorlage: mit OPS-002 (Betriebsaufnahme, Roadmap G5)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit OPS-002 (Betriebsaufnahme, Roadmap G5)
 
 **Annahme.** `pnpm audit --audit-level=high` im Job „Secret Scanning und Dependency Audit" lässt `low` und `moderate` durch und macht den Lauf ab `high` rot. Gemeldet werden alle Schweregrade in der Jobausgabe; blockierend sind nur `high` und `critical`.
 
@@ -748,6 +764,8 @@ Technik · offen · 2026-09-15 · — · — · Wiedervorlage: mit OPS-002 (Betr
 **Anker.** `.github/workflows/ci.yml`: der Schritt „Dependency Audit" mit dem Kommentar `ANN-054` über `--audit-level=high`.
 
 **Änderungspfad.** Schwelle senken (`moderate`) oder anheben: ein Wort in `ci.yml` · Aufwand `klein`. Wird zusätzlich eine Ausnahmeliste nötig, kommt sie als `pnpm.auditConfig.ignoreCves` in `package.json` dazu, mit je einer Begründung · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt. Niedrigere Schweregrade bleiben in der Jobausgabe sichtbar und werden bearbeitet, wenn sie ein konkret relevantes Risiko tragen.
 
 ### ANN-055 — Protokoll und Ausfallgebühr des Nichtantreffens gelten am Hausbesuch
 
@@ -849,7 +867,7 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: sobald ein Loop d
 
 ### ANN-063 — Der Löschjournaleintrag wandert beim Umbenennen einer Tabelle mit
 
-Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Wird eine Tabelle umbenannt, schreibt die Migration den **Tabellennamen** in `deletion_journal.target_table` und in `retention_assignments.table_name` auf den neuen Wert um. Alles andere am Journaleintrag — welche Zeile, welche Klasse, wann, durch welchen Lauf — bleibt unverändert, und der zugehörige Auditeintrag wird nicht angefasst.
 
@@ -858,6 +876,8 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Datenschutzprüfu
 **Anker.** Die beiden `update`-Anweisungen in `supabase/migrations/20260918120000_treatment_basis.sql`, Abschnitt 4b.
 
 **Änderungspfad.** Historischen Namen mitführen statt umschreiben: eine Spalte `target_table_at_deletion` an `deletion_journal`, gefüllt beim Schreiben, und `reapply_deletion_journal` löst über eine Zuordnungstabelle auf · Aufwand `mittel`. Umgekehrt — gar nicht umschreiben — hieße, die Wiederanwendung für diese Einträge aufzugeben; das widerspricht ADR-008 Punkt 9.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt. Die Löschung muss auch nach Umbenennung und Wiederherstellung zuverlässig erneut angewendet werden können (`reapply_deletion_journal`).
 
 ### ANN-064 — Die Terminzahl steht an der Grundlage, die Leistungsmenge an der Position
 
@@ -1303,7 +1323,7 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: mit FRB-EPIC-004 
 
 ### ANN-100 — Die Test-Umgebung wird nur auf Knopfdruck neu aufgesetzt, ihr Zugang kommt aus einem Secret
 
-Technik · offen · 2026-09-25 · — · — · Wiedervorlage: G5 (OPS-002), wenn die Produktion eine eigene Pipeline bekommt
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: G5 (OPS-002), wenn die Produktion eine eigene Pipeline bekommt
 
 **Annahme.** Die Test-Umgebung (OPS-002a) bekommt die Migrationen bei **jedem** Lauf nach grüner CI auf `main`, den Seed samt Praxiswoche aber **nur auf Knopfdruck** (Handstart mit „neu aufsetzen"), weil der Seed alles löscht. Seed, Praxiswoche und Zugang laufen in **einer** Transaktion; darin wird das Entwicklungskennwort aus `supabase/seed.sql` für alle Seed-Konten durch das Secret `TESTENV_LOGIN_PASSWORD` (mindestens 12 Zeichen) ersetzt, und fehlt das Secret, bekommt jedes Konto ein eigenes Zufallskennwort — gesperrt statt offen. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen, heute ausgespart. Neu aufgesetzt wird nur eine leere Datenbank (sie bekommt dabei die Kennung `testumgebung.kennung`) oder eine, die diese Kennung schon trägt.
 
@@ -1313,9 +1333,11 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: G5 (OPS-002), wen
 
 **Änderungspfad.** Seed bei jedem Lauf: die Bedingung im Workflow streichen · Aufwand `klein`. Eigene Konten statt Seed-Konten: `zugang.sql` auf eine Liste von Adressen umstellen · Aufwand `klein`. Anderes Fenster: `praxiswoche.sql` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-02).** Bestätigt: Migrationen automatisch nach grüner CI; Neuaufsetzen mit Seed und Praxiswoche ausschließlich von Hand.
+
 ### ANN-101 — Die Test-Umgebung schützt sich mit Kopfzeilen, CSP und einer optionalen zweiten Tür per `.htaccess`
 
-Technik · offen · 2026-09-25 · — · — · Wiedervorlage: vor echten Daten (G5), mit der vollständigen Prüfung des Hosting-Anbieters
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: vor echten Daten (G5), mit der vollständigen Prüfung des Hosting-Anbieters
 
 **Annahme.** Die ausgelieferte Oberfläche bekommt über eine erzeugte `.htaccess`: Umleitung aller Pfade ohne Datei auf `index.html`, `X-Robots-Tag: noindex` samt `robots.txt`, `nosniff`, `Referrer-Policy: no-referrer`, `X-Frame-Options: DENY`, HSTS und eine Content-Security-Policy, die Skripte nur vom eigenen Ursprung und Verbindungen nur zum Supabase-Projekt erlaubt (`style-src 'unsafe-inline'` und `blob:`-Worker für MapLibre). Die zweite Tür ist HTTP-Basic-Auth mit Benutzer `praxis` und dem Secret `TESTENV_TUER_PASSWORD`, als bcrypt neben dem ausgelieferten Ordner `html/` abgelegt (in `/var/www/virtual/<konto>/praxis-test/`, denn in den Heimatordner kommt der Webserver nicht); ohne Secret gibt es keine Tür. Ob Uberspace 8 die `.htaccess` auswertet, prüft der Workflow nach jedem Upload selbst.
 
@@ -1324,6 +1346,8 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: vor echten Daten 
 **Anker.** `htaccess()` und `inhaltsrichtlinie()` in `scripts/testumgebung.mjs`; Test `scripts/testumgebung.test.mjs`; Schritt „Zweite Tuer" in `.github/workflows/test-umgebung.yml`.
 
 **Änderungspfad.** Wertet Uberspace die `.htaccess` nicht aus: Kopfzeilen und Umleitung über die Webserver-Einstellungen von Uberspace (`uberspace web header`, falls vorhanden) oder Anbieterwechsel nach `hosting-optionen.md` Option 2 · Aufwand `mittel`. Kachelschlüssel in der Test-Umgebung: Kachelanbieter in `inhaltsrichtlinie()` · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt. Anmeldung und Datenbankberechtigungen sind die verpflichtende Sicherung; die zusätzliche Passwort-Tür bleibt optional.
 
 ### ANN-102 — Der Anamnesebogen V8 wird ohne Punktwerte übertragen; eine Erhebung speichert die Kennung der Option
 
@@ -1485,7 +1509,7 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der n�
 
 ### ANN-115 — Ein abgewiesener Schreibversuch wird bestätigt protokolliert und mit HTTP 403 beantwortet; der Client prüft den Status
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit `supabase start` (echte HTTP-Antwort über PostgREST)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes lokal mit `supabase start` (echte HTTP-Antwort über PostgREST)
 
 **Annahme.** Die zehn Schreibpfade für Rollen und Konten, Legal Hold und Löschaufträge weisen eine fehlende Rolle ohne Ausnahme ab: `app.record_denied_write` schreibt den Versuch mit `outcome = 'denied'` (Subjekt ist die Organisation), setzt `response.status = 403` lokal zur Transaktion, und der Pfad kehrt vor jedem Schreiben zurück. Ohne Sitzung und ohne Organisation bleibt es bei der Ausnahme; die übrigen Schreibpfade bleiben ohne Eintrag. Die Aufrufer in der Oberfläche werten eine Antwort als gescheitert, wenn ein Fehler **oder** HTTP 403 vorliegt (`abgewiesen` in `src/lib/abgewiesen.ts`).
 
@@ -1494,6 +1518,8 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes lokal mit 
 **Anker.** `app.record_denied_write` in `supabase/migrations/20260926120000_abgewiesene_schreibzugriffe.sql`; die Liste der Pfade in `supabase/tests/abgewiesene-schreibpfade.test.ts`; auf der Clientseite `abgewiesen` in `src/lib/abgewiesen.ts`.
 
 **Änderungspfad.** Weitere Schreibpfade: den Zweig „Rolle fehlt" auf `app.record_denied_write` umstellen und den Pfad in die Liste des Tests aufnehmen · Aufwand `klein` je Pfad. Zurück zur Ausnahme: den Zweig wieder `raise exception` werfen lassen · Aufwand `klein`. Bestätigt PostgREST die Transaktion lokal nicht: Eintrag über eine autonome Verbindung (`dblink`) statt `response.status` · Aufwand `mittel`.
+
+**Abnahme (Jannes, 2026-10-02).** Bestätigt für Abweisungen wegen fehlender Berechtigung in den beschriebenen Schreibpfaden: Der Protokolleintrag bleibt, die fachliche Änderung unterbleibt. Andere Fehler antworten weiter mit ihrem passenden Status.
 
 ### ANN-116 — Die Behandlungsliege ist eine organisatorische Versorgungsangabe der Person
 

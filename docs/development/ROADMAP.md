@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.0 · Stand 2026-09-23 · **in Kraft**
+Version 7.6 · Stand 2026-10-02 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -179,7 +179,7 @@ fehlende Kriterium.
 | --- | --- | --- |
 | M1 | Kernprozess Ende-zu-Ende | Ein synthetischer Fall läuft **lokal** durch: Verordnung → Serie → Termin durchgeführt → Dokumentation finalisiert → Leistung → Rechnung → Zahlung · derselbe Fall als E2E-Test hinter der Anmeldung · von Jannes gesichtet · jede Datenklasse hat Löschpfad und Test |
 | M2 | Software fertig (Feature-Freeze V1) | Blöcke 1 bis 9 gebaut **und gesichtet** · Probewoche 1 durchlaufen, Befunde geschlossen · Kollegin-Test durchlaufen · DSFA-Paket und Anfragen verschickt · kein offener Befund der Klasse „Datenverlust/Falschzuordnung" |
-| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde nach `OPTIMIERUNG.md` |
+| M3 | Go-live-Gate | Ergebnisse aus B1, B2 (DSFA) und B4 liegen vor und sind eingearbeitet · OPS-001 positiv · jede Anbieterprüfung positiv **oder** die Funktion abgeschaltet · ADR-007 sieben Vorbedingungen · kein Register-Eintrag Datenschutz/Recht auf `offen` oder `entschieden (Jannes)` · Restore-Test 1 und 2 · Deployment aus Tag mit Freigabe · Redaction-Prüfung grün · Betriebsdokumentation (13 Positionen) · OPS-007 gegen die Test-Umgebung geprobt · Rückfallplan unterschrieben · Messrunde nach `OPTIMIERUNG.md` · Sitzungssperre nach ADR-025 gebaut und gesichtet (G20) |
 | M4 | Produktionssystem steht | Produktivprojekt in freigegebener EU-Region aus dem freigegebenen Tag · OPS-007 durchlaufen · keine synthetischen Daten · Backup, Monitoring und Release-Takt nach BETRIEB-001 aktiv |
 | M5 | Eröffnung | **Juli 2027.** Probewoche 2 durchlaufen · Restore-Test 3 · Change-Freeze eingehalten · Datenschutzinformation und Behandlungsvertrag nennen alle Auftragsverarbeiter · erster Behandlungstag läuft mit der Software |
 | M6 | Erster Betriebsmonat | Vier Wochen ohne Befund der Klasse „Datenverlust/Falschzuordnung" · Störfallliste ausgewertet · Optimierungsrunde durchgeführt |
@@ -475,6 +475,8 @@ Leistungskontrolle (§20, B6).
 | G14 | DSFA-Paket | Schwellwertprüfung, VVT, TOM mit Endgeräte-Richtlinie, Löschkonzept, Subprozessoren, Datenschutzinformationen, Betroffenenrechte, Breach-Prozess, Nachweistabelle MUSS → Test, Zweckbestimmung — **fertig bis Ende 2026**, verschickt ab Anfang 2027 (E-1), Nachträge für später Gebautes | Claude (Entwurf), Jannes, B2 |
 | G15 | B1 Regulatorische Prüfung | Zweckbestimmung, MDR-Abgrenzung, EU AI Act — über den **ganzen** V1-Umfang | Jannes, extern |
 | G16 | BETRIEB-001 | Störungsmeldung, Triage, Hotfix-Weg, Release-Takt nach M4, Change-Freeze um M5, Endgeräte, Vertretung | Jannes mit Claude |
+| G20 | **SEC-EPIC-001 Sitzungssperre** ([ADR-025](../adr/ADR-025-session-lock.md)) | Erneute Freigabe spätestens 60 Minuten nach Anmeldung oder Freigabe, Inaktivitätssperre (Vorschlag 30 Minuten, W1), Prüfung der Fristen bei jeder Rückkehr vor dem ersten Zeichnen, Durchsetzung in der Datenbank an `app.current_organization_id()` und `app.platform_readable_access` mit Test über alle Tabellen, Freigabe per Passkey hinter Schalter (Beta, W3) mit Kennwort als Rückweg, offene Dokumentation als Entwurf gesichert, Zielwert für `jwt_expiry` (ANN-044). Abmelden bleibt wie es ist (ANN-044, ANN-045). Kritische Änderung mit Zweitreview; gebaut wird lokal, die Einstellungen des Anmeldedienstes kommen mit G3 | Claude, Jannes (W1 bis W3) |
+| G21 | **STAFF-005 Einladung ganz aus der Anwendung** | Neue Mitarbeitende werden aus der Anwendung eingeladen, ohne ein Konto auf der Oberfläche des Anmeldedienstes anzulegen (Jannes, 2026-10-02, zu ANN-025): Zugangsdienst wie bei der Plattform (ADR-023 Punkt 9), Einladung vor Ort per QR oder per Mail (B13); löst ANN-025 ab | Claude |
 | G18 | Go-live-Gate (M3) | Kriterien siehe Meilensteine | Jannes |
 
 **Etappe H — Eröffnung.** H1 **Probewoche 1** (Block 10, auf der Test-Umgebung
@@ -784,6 +786,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.6 | 2026-10-02 | Abnahme der Annahmen, Block 1 (Jannes): neue Anforderung **Sitzungssperre** als [ADR-025](../adr/ADR-025-session-lock.md) und Arbeitspaket **G20 SEC-EPIC-001** vor dem Produktivstart, Kriterium von M3; **G21 STAFF-005** Einladung neuer Mitarbeitender ganz aus der Anwendung (zu ANN-025). Reihenfolge der Blöcke unverändert. |
 | 7.5 | 2026-09-30 | **UX-EPIC-005 Entrümpeln** eingeschoben (Jannes: Terminseite ohne Wiederholungen, „Niemand öffnet?“ hinter einem Knopf, Arbeitszeit im Kalender sichtbar, weitere Stellen mit unnötigen Angaben). Reihenfolge der Blöcke unverändert; POR-EPIC-001 bleibt der nächste Bau-Loop. |
 | 7.4 | 2026-09-29 | **PRX-EPIC-003b Dubletten zusammenführen** aus PRX-EPIC-003 ausgegliedert (Jannes, Freigabe PRX-EPIC-003: „alles wie empfohlen“); in PRX-EPIC-003 bleibt der Hinweis beim Anlegen. BEF-060 Teile 1 und 2 in PRX-EPIC-003. |
 | 7.3 | 2026-09-29 | **UX-EPIC-004** eingeschoben vor PRX-EPIC-003 (Jannes: „Anschließend BEF-071 bis 079 bauen“, dazu BEF-080 und BEF-081 aus derselben Sichtung). |

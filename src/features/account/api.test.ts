@@ -61,11 +61,15 @@ describe('beendeAlleSitzungen', () => {
     expect(signOut).toHaveBeenCalledWith({ scope: 'global' });
   });
 
-  it('meldet sich nicht ab, wenn der Vermerk scheitert — sonst stünde der Vorgang in keinem Nachweis', async () => {
-    rpc.mockResolvedValue({ error: { message: 'not authenticated' } });
+  it('beendet die Sitzungen auch, wenn der Vermerk scheitert (ANN-044, Fassung 2)', async () => {
+    rpc.mockResolvedValue({ error: { message: 'audit down' } });
+    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
 
-    await expect(beendeAlleSitzungen()).rejects.toThrow();
-    expect(signOut).not.toHaveBeenCalled();
+    await expect(beendeAlleSitzungen()).resolves.toBeUndefined();
+    expect(signOut).toHaveBeenCalledWith({ scope: 'global' });
+    // Still bleibt der Fehlschlag nicht: er steht im Betriebslog.
+    expect(konsole).toHaveBeenCalledOnce();
+    konsole.mockRestore();
   });
 
   it('meldet einen Fehlschlag des Anmeldedienstes weiter', async () => {

@@ -74,6 +74,10 @@ enable_anonymous_sign_ins = false
 minimum_password_length = 12
 
 [auth.email]
+# ANN-043 (Fassung 2): Der Einmal-Code aus einer Auth-Mail gilt eine Stunde,
+# ausdruecklich gesetzt statt dem Standard ueberlassen. Dieselbe Zahl gehoert
+# im Cloudprojekt unter Authentication > Providers > Email (OPS-001).
+otp_expiry = 3600
 # ACHTUNG: In aktuellen Supabase-CLI-Versionen schaltet dieses Feld nicht
 # mehr nur die Selbstregistrierung ab, sondern den gesamten E-Mail/
 # Passwort-Provider (GOTRUE_EXTERNAL_EMAIL_ENABLED) - bei false lehnt

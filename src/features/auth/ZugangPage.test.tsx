@@ -41,6 +41,15 @@ beforeEach(() => {
 });
 
 describe('ZugangPage', () => {
+  it('liest den Code aus dem Fragment und nimmt ihn aus der Adresszeile (ANN-043)', async () => {
+    renderWithProviders(<ZugangPage />, `/zugang#token_hash=${HASH}&type=magiclink`);
+
+    await waitFor(() =>
+      expect(verifyOtp).toHaveBeenCalledWith({ token_hash: HASH, type: 'magiclink' }),
+    );
+    expect(navigate).toHaveBeenCalledWith('/zugang', { replace: true });
+  });
+
   it('löst den Link als Anmeldelink ein, nicht als Wiederherstellungslink', async () => {
     renderWithProviders(<ZugangPage />, `/zugang?token_hash=${HASH}&type=magiclink`);
 
