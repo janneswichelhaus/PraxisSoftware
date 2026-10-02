@@ -28,6 +28,7 @@ import {
   fetchEntfernteEreignisse,
   fetchEreignisse,
   messreihen,
+  nichtVergleichbar,
   type Ereignisart,
 } from './verlauf';
 
@@ -80,6 +81,7 @@ export function VerlaufAbschnitt({
   });
 
   const reihen = messreihen(erhebungen, instrumente);
+  const ausgelassen = nichtVergleichbar(erhebungen, instrumente);
   const termintage = (termine.data ?? [])
     .filter((t) => DURCHGEFUEHRT.has(t.status))
     .map((t) =>
@@ -111,6 +113,13 @@ export function VerlaufAbschnitt({
             <Statusmeldung ton="warnung" className="mb-4">
               Die Termine konnten nicht geladen werden; die Striche an der Zeitachse fehlen.
             </Statusmeldung>
+          ) : null}
+          {ausgelassen > 0 ? (
+            <p className="text-ink-muted mb-4 text-sm">
+              {ausgelassen === 1
+                ? 'Eine Erhebung ist in einer Fassung des Bogens, deren Werte mit der heutigen nicht vergleichbar sind; sie steht oben, aber nicht im Bild.'
+                : `${ausgelassen} Erhebungen sind in einer Fassung des Bogens, deren Werte mit der heutigen nicht vergleichbar sind; sie stehen oben, aber nicht im Bild.`}
+            </p>
           ) : null}
           {reihen.length === 0 ? (
             <p className="text-ink-muted text-sm">

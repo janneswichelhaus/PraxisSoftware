@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-01.
+Zuletzt aktualisiert: 2026-10-02.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1145,7 +1145,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `versionSchema` in `src/features/assessments/schema.ts`.
 
-**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101).
+**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 4):** Die Nummer sagt nicht, ob Werte vergleichbar sind. `meta.vergleichbar_mit` vermerkt es je Fassung; eine reine Patch-Änderung muss dort stehen (Ladepfad `definitionen.ts`), geänderter Inhalt, andere Optionen oder eine andere Berechnung werden je Änderung geprüft. Frühere Fassungen liegen unter `definitionen/scores/archiv/` und bleiben im Release; eine Erhebung wird mit ihrer eigenen Fassung angezeigt (`fassungFuer`), der Verlauf zeichnet nur vergleichbare Fassungen in eine Reihe. Eine eingetragene Fassung ändert sich nie (Trigger an `questionnaire_definitions`, Prüfung in `scripts/definitionen-sql.mjs`).
 
 ### ANN-085 — Ein Instrument ohne Wertung trägt die Richtung `nicht_anwendbar`
 
@@ -1157,7 +1157,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `RICHTUNGEN` in `src/features/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
 
-**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101).
+**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 3):** Rechnet ein Instrument mit Richtung `nicht_anwendbar` etwas, ist `scoring.leseart` Pflicht (Tegner: „höher = aktiver“). Der Wert steht mit diesem Satz im Verlauf und in den Instrumenten, ohne Wertung.
 
 ### ANN-086 — Der Lizenzstatus hängt am Instrument, und `aktiv` hängt an ihm
 
@@ -1383,7 +1383,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
 
-**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101).
+**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101). **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 2):** Eine Korrektur behält den Erhebungstag der korrigierten Erhebung — der Server weist einen anderen ab, auch am Entwurf der Korrektur; die Erhebungsseite zeigt ihn als Text. Der Korrekturzeitpunkt ist `created_at`, die Akte nennt „Korrektur vom …“. Im Verlauf steht die Korrektur am Erhebungstag, nicht als zusätzliche Messung.
 
 ### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
 
@@ -1407,7 +1407,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
 
-**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung.
+**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung. **Fassung 2 (ABN-014, 2026-10-02, BEF-101 Punkt 1):** Der Server prüft Instrument und Fassung, Items, Form je Typ, Optionen, Skalenbereich, freie Angaben, exklusive Optionen und Körperbereiche (`app.assert_questionnaire_answers(instrument, version, answers)` in `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`) — gegen `public.questionnaire_definitions`, erzeugt aus denselben Dateien (ANN-219). Die Anwendung prüft weiter vorab mit Zod.
 
 ### ANN-106 — Der Verlauf zeigt Rohwerte als Punkte mit Ereignissen der Praxis; fünf Ereignisarten, setzen und entfernen statt ändern
 
@@ -2622,3 +2622,15 @@ Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 u
 **Anker.** `public.auth_email_allowed`, `app.platform_mailbox_confirmed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
 
 **Änderungspfad.** Hook einschalten: Eintrag in `supabase/config.toml` bzw. im Cloudprojekt, Secret `SEND_EMAIL_HOOK_SECRET`, Versandweg aus B13 · Aufwand `klein`, sobald B13 steht. Bestätigungsweg: eine Mail mit Link an die Adresse und eine Funktion, die das Merkmal setzt · Aufwand `mittel`.
+
+### ANN-219 — Die Definitionen der Fragebögen kommen als erzeugte Migration auf den Server, nicht als zweite Fassung von Hand
+
+Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002) oder dem nächsten neuen Instrument
+
+**Annahme.** Der Server prüft Antworten gegen `public.questionnaire_definitions`, eine Zeile je Fassung (Kennung@Version) mit der Definitionsdatei als jsonb, dazu `app.questionnaire_body_regions()` mit den Kennungen der Körperbereiche. Beides schreibt eine Migration, die `pnpm definitionen:sql --schreiben` aus den Dateien unter `src/features/assessments/definitionen/scores/` (samt `archiv/`) und `koerperschema.ts` erzeugt; jede Fassung trägt einen Marker mit Prüfsumme. Eine eingetragene Fassung ändert sich nie: Das Skript weist eine geänderte Datei derselben Version ab, ein Trigger sperrt Update und Löschen. Die Regeln der Prüfung stehen in plpgsql (`app.assert_questionnaire_answers`) und folgen `antwortSchema`.
+
+**Begründung.** BEF-101 verlangt dieselben Definitionsdateien wie die Anwendung, „etwa als vom Build erzeugte Tabelle oder Funktion“. Eine Tabelle statt einer erzeugten Funktion je Instrument, weil eine Fassung damit Daten bleibt: Sie lässt sich in einem Test mit der Datei vergleichen (`supabase/tests/questionnaire-definitions.test.ts`), und neue Fassungen brauchen keinen neuen Code. Eine Migration statt eines Seeds, weil die Prüfung in jeder Umgebung gelten muss. Unsicher: Die Regeln je Typ stehen zweimal (Zod und plpgsql); ein Unterschied fiele nur über die Tests in `questionnaire-responses.test.ts` auf.
+
+**Anker.** `scripts/definitionen-sql.mjs` und `scripts/definitionen-sql.test.mjs` (meldet eine fehlende Fassung im CI); `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`; erzeugt: `supabase/migrations/20261003101100_questionnaire_definitions.sql`.
+
+**Änderungspfad.** Neues Instrument oder neue Fassung: Datei ablegen, `pnpm definitionen:sql --schreiben` · Aufwand `klein`. Regeln nur noch an einer Stelle: das Zod-Schema als JSON-Schema exportieren und im Server mit einer Prüferweiterung auswerten (neue Abhängigkeit, ADR-015) · Aufwand `mittel`.

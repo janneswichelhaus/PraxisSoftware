@@ -6,6 +6,7 @@ import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { formatDate } from '@/lib/datum';
+import { todayInTimeZone } from '@/features/appointments/api';
 import { usePatientRecord } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
 import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
@@ -18,7 +19,7 @@ import { erhebungenQueryKey, erhebungVerwerfen, fetchErhebungen, type Erhebung }
 import { erhebenPfad } from './darstellung';
 import { ErhebungAnsicht } from './ErhebungAnsicht';
 import { Hervorhebungen } from './Hervorhebungen';
-import { erhebbareInstrumente, instrumentFuer } from './instrumente';
+import { erhebbareInstrumente, fassungFuer, instrumentFuer } from './instrumente';
 import type { ScoreDefinition } from './schema';
 import { VerlaufAbschnitt } from './VerlaufAbschnitt';
 
@@ -122,6 +123,7 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
                     definition={instrument}
                     patientId={patient.id}
                     darfErheben={darfErheben}
+                    zeitzone={user.organizationTimeZone}
                   />
                 ))}
               </ul>
@@ -163,7 +165,11 @@ function Zustand({ erhebung, alle }: { erhebung: Erhebung; alle: readonly Erhebu
  * (UX-005e): ein anderer Tag des Abschlusses, eine andere Person als die
  * erfassende, oder eine ältere Fassung des Bogens.
  */
-function herkunftszeile(erhebung: Erhebung, definition: ScoreDefinition): string | null {
+function herkunftszeile(
+  erhebung: Erhebung,
+  aktuell: ScoreDefinition,
+  angezeigt: ScoreDefinition,
+): string | null {
   const teile: string[] = [];
   const abschlusstag = erhebung.completed_at?.slice(0, 10) ?? null;
   const andererTag = abschlusstag !== null && abschlusstag !== erhebung.recorded_on;
@@ -174,11 +180,30 @@ function herkunftszeile(erhebung: Erhebung, definition: ScoreDefinition): string
     if (abschlusstag) teile.push(`abgeschlossen am ${formatDate(abschlusstag)}`);
   }
   // „Fassung" für die Definition, wie in der Meldung der Erhebungsseite und
-  // in den Instrumenten (BEF-16).
-  if (erhebung.definition_version !== definition.meta.version) {
-    teile.push(`Fassung ${erhebung.definition_version} des Bogens`);
+  // in den Instrumenten (BEF-16). Gezeigt wird die Erhebung in ihrer eigenen
+  // Fassung (ABN-014); nur wenn die nicht im Release liegt, in der aktuellen.
+  if (erhebung.definition_version !== aktuell.meta.version) {
+    teile.push(
+      angezeigt.meta.version === erhebung.definition_version
+        ? `Fassung ${erhebung.definition_version} des Bogens`
+        : `Fassung ${erhebung.definition_version} liegt nicht vor, gezeigt in Fassung ${angezeigt.meta.version}`,
+    );
   }
   return teile.length > 0 ? teile.join(' · ') : null;
+}
+
+/** Die Fassung, mit der eine Erhebung erhoben wurde, sonst die aktuelle (ABN-014). */
+function angezeigteFassung(erhebung: Erhebung, aktuell: ScoreDefinition): ScoreDefinition {
+  return fassungFuer(erhebung.instrument_id, erhebung.definition_version) ?? aktuell;
+}
+
+/** Der Tag, an dem korrigiert wurde - getrennt vom Erhebungstag (BEF-101 Punkt 2). */
+function korrekturtag(erhebung: Erhebung, zeitzone: string | null): string {
+  return formatDate(
+    zeitzone
+      ? todayInTimeZone(zeitzone, new Date(erhebung.created_at))
+      : erhebung.created_at.slice(0, 10),
+  );
 }
 
 /**
@@ -216,19 +241,23 @@ function ErhebungKarte({
   definition,
   patientId,
   darfErheben,
+  zeitzone,
 }: {
   erhebung: Erhebung;
   /** Alle Erhebungen desselben Instruments - für den Stand einer Korrektur. */
   alle: readonly Erhebung[];
+  /** Die aktuelle Fassung des Instruments. */
   definition: ScoreDefinition;
   patientId: string;
   darfErheben: boolean;
+  zeitzone: string | null;
 }) {
   const nachfolger = alle.find((e) => e.id === erhebung.superseded_by_response_id);
   const ersetzt = nachfolger?.status === 'abgeschlossen';
   const korrigierbar = darfErheben && erhebung.status === 'abgeschlossen' && !nachfolger;
   const verwerfbar = darfErheben && erhebung.status === 'entwurf';
-  const herkunft = herkunftszeile(erhebung, definition);
+  const fassung = angezeigteFassung(erhebung, definition);
+  const herkunft = herkunftszeile(erhebung, definition, fassung);
 
   return (
     <li>
@@ -239,19 +268,21 @@ function ErhebungKarte({
         </div>
         {herkunft ? <p className="text-ink-muted mt-1 text-sm">{herkunft}</p> : null}
         {erhebung.change_reason ? (
-          <p className="text-ink mt-1 text-sm">Korrektur: {erhebung.change_reason}</p>
+          <p className="text-ink mt-1 text-sm">
+            Korrektur vom {korrekturtag(erhebung, zeitzone)}: {erhebung.change_reason}
+          </p>
         ) : null}
         {/* Hervorgehoben wird am geltenden, abgeschlossenen Bogen; ein Entwurf ist
             noch keine Angabe, ein ersetzter steht nicht neben seiner Korrektur. */}
         {erhebung.status === 'abgeschlossen' && !ersetzt ? (
           <Hervorhebungen
-            definition={definition}
+            definition={fassung}
             antworten={erhebung.answers}
             datum={erhebung.recorded_on}
           />
         ) : null}
         <Disclosure summary="Antworten">
-          <ErhebungAnsicht definition={definition} antworten={erhebung.answers} />
+          <ErhebungAnsicht definition={fassung} antworten={erhebung.answers} />
         </Disclosure>
         {korrigierbar || verwerfbar ? (
           <div className="mt-3 flex flex-wrap gap-3">
@@ -291,7 +322,8 @@ function FremdeInstrumente({
     <Section titel="Weitere Erhebungen">
       <ul className="flex flex-col gap-3">
         {uebrige.map((erhebung) => {
-          const definition = instrumentFuer(erhebung.instrument_id, scores);
+          const aktuell = instrumentFuer(erhebung.instrument_id, scores);
+          const definition = aktuell ? angezeigteFassung(erhebung, aktuell) : undefined;
           return (
             <li key={erhebung.id}>
               <Card>

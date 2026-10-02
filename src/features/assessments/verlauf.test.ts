@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Erhebung } from './api';
 import { instrumentFuer } from './instrumente';
-import { EREIGNISARTEN, messreihen, tagZahl, zeitraum } from './verlauf';
+import { EREIGNISARTEN, messreihen, nichtVergleichbar, tagZahl, zeitraum } from './verlauf';
 import { readFileSync } from 'node:fs';
 
 const anamnese = instrumentFuer('anamnese_v8')!;
@@ -78,6 +78,26 @@ describe('Messreihen (FRB-002e)', () => {
         ],
       ],
     ]);
+  });
+
+  it('zeichnet nur vergleichbare Fassungen in eine Reihe (BEF-101 Punkt 4)', () => {
+    const erhebungen = [
+      erhebung({ id: 'a', recorded_on: '2026-09-01', answers: { schmerzstaerke: { wert: 7 } } }),
+      erhebung({
+        id: 'b',
+        definition_version: '0.9.0',
+        recorded_on: '2026-08-01',
+        answers: { schmerzstaerke: { wert: 8 } },
+      }),
+    ];
+    expect(messreihen(erhebungen, [anamnese])[0]!.punkte).toEqual([
+      { datum: '2026-09-01', wert: 7 },
+    ]);
+    expect(nichtVergleichbar(erhebungen, [anamnese])).toBe(1);
+
+    const vermerkt = { ...anamnese, meta: { ...anamnese.meta, vergleichbar_mit: ['0.9.0'] } };
+    expect(messreihen(erhebungen, [vermerkt])[0]!.punkte).toHaveLength(2);
+    expect(nichtVergleichbar(erhebungen, [vermerkt])).toBe(0);
   });
 
   it('zeigt mindestens zwei Wochen, damit ein Punkt nicht am Rand klebt', () => {

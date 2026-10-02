@@ -82,7 +82,7 @@ describe('Ladepfad der Definitionen', () => {
   it('nimmt ein leeres Verzeichnis an', () => {
     // Der Zustand von heute. Er darf kein Fehler sein, sonst steht der Weg
     // erst, wenn die erste Datei liegt.
-    expect(ladeDefinitionen({})).toEqual({ bausteine: [], scores: [] });
+    expect(ladeDefinitionen({})).toEqual({ bausteine: [], scores: [], scoreFassungen: [] });
   });
 
   it('ordnet Dateien nach ihrem Verzeichnis zu', () => {
@@ -139,6 +139,60 @@ describe('Ladepfad der Definitionen', () => {
         './definitionen/bausteine/hws.json': region({ id: 'hws', label: 'HWS' }),
       }),
     ).toThrow(/Test- oder Technikkennung "knie_lachmann_test" ist doppelt vergeben/);
+  });
+});
+
+describe('Frühere Fassungen im Archiv (ABN-014, BEF-101)', () => {
+  const nrs = JSON.parse(readFileSync(join(DEFINITIONEN, 'scores/nrs.json'), 'utf8')) as {
+    meta: Record<string, unknown>;
+  };
+  const fassung = (version: string, vergleichbar?: string[]) => ({
+    ...nrs,
+    meta: { ...nrs.meta, version, ...(vergleichbar ? { vergleichbar_mit: vergleichbar } : {}) },
+  });
+
+  it('hält frühere Fassungen neben der aktuellen', () => {
+    const geladen = ladeDefinitionen({
+      './definitionen/scores/nrs.json': fassung('1.0.0'),
+      './definitionen/scores/archiv/nrs_schmerz@0.1.0.json': fassung('0.1.0'),
+    });
+    expect(geladen.scores.map((s) => s.meta.version)).toEqual(['1.0.0']);
+    expect(geladen.scoreFassungen.map((s) => s.meta.version).sort()).toEqual(['0.1.0', '1.0.0']);
+  });
+
+  it('verlangt bei einer Patch-Änderung den Vermerk der Vergleichbarkeit (ANN-084)', () => {
+    expect(() =>
+      ladeDefinitionen({
+        './definitionen/scores/nrs.json': fassung('0.1.1'),
+        './definitionen/scores/archiv/nrs_schmerz@0.1.0.json': fassung('0.1.0'),
+      }),
+    ).toThrow(/nur in der Patch-Stelle/);
+    expect(
+      ladeDefinitionen({
+        './definitionen/scores/nrs.json': fassung('0.1.1', ['0.1.0']),
+        './definitionen/scores/archiv/nrs_schmerz@0.1.0.json': fassung('0.1.0'),
+      }).scoreFassungen,
+    ).toHaveLength(2);
+  });
+
+  it('weist eine archivierte Fassung ab, die nicht älter ist oder zu nichts gehört', () => {
+    expect(() =>
+      ladeDefinitionen({
+        './definitionen/scores/nrs.json': fassung('0.1.0'),
+        './definitionen/scores/archiv/nrs_schmerz@0.2.0.json': fassung('0.2.0'),
+      }),
+    ).toThrow(/nicht älter/);
+    expect(() =>
+      ladeDefinitionen({
+        './definitionen/scores/archiv/nrs_schmerz@0.1.0.json': fassung('0.1.0'),
+      }),
+    ).toThrow(/keinem aktuellen Instrument/);
+  });
+
+  it('weist einen Vermerk auf eine Fassung ab, die es nicht gibt', () => {
+    expect(() =>
+      ladeDefinitionen({ './definitionen/scores/nrs.json': fassung('1.0.0', ['0.9.0']) }),
+    ).toThrow(/die es nicht als ältere gibt/);
   });
 });
 

@@ -92,7 +92,16 @@ export function Messreihenbild({
 
   return (
     <figure className="flex flex-col gap-2">
-      <figcaption className="text-ink text-sm font-medium">{beschriftung(reihe.item)}</figcaption>
+      <figcaption className="text-ink text-sm font-medium">
+        {beschriftung(reihe.item)}
+        {/* Ein Wert ohne Richtung steht mit seiner Leseart da, ohne Wertung
+            (Tegner: „höher = aktiver", ABN-014, BEF-101 Punkt 3). */}
+        {reihe.instrument.scoring.leseart ? (
+          <span className="text-ink-muted block font-normal">
+            {reihe.instrument.scoring.leseart}
+          </span>
+        ) : null}
+      </figcaption>
       <svg viewBox={`0 0 ${BREITE} ${HOEHE}`} className="h-auto w-full max-w-lg" aria-hidden="true">
         {[skala.min, mitte, skala.max].map((wert) => (
           <g key={wert}>

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { giltNoch, type Erhebung } from './api';
+import { vergleichbar } from './instrumente';
 import type { ScoreDefinition, ScoreItem } from './schema';
 
 /**
@@ -126,6 +127,11 @@ export interface Messreihe {
  * Korrektur ersetzt. Ein Entwurf ist keine Angabe, und ein korrigierter Wert
  * neben seiner Korrektur wäre ein Punkt, den es so nie gab. Die Punkte sind
  * die Rohwerte, unverändert — kein Mittel, keine Glättung.
+ *
+ * Und nur Erhebungen in einer Fassung, deren Werte mit der aktuellen
+ * vergleichbar sind (ABN-014, BEF-101 Punkt 4): dieselbe Fassung oder eine,
+ * die die aktuelle in `vergleichbar_mit` nennt. Die übrigen zählt
+ * `nichtVergleichbar`, damit die Lücke gesagt statt verschwiegen wird.
  */
 export function messreihen(
   erhebungen: readonly Erhebung[],
@@ -140,6 +146,8 @@ export function messreihen(
         item,
         punkte: geltend
           .filter((e) => e.instrument_id === instrument.meta.id)
+          // Nur vergleichbare Fassungen in eine Reihe (BEF-101 Punkt 4).
+          .filter((e) => vergleichbar(instrument, e.definition_version))
           .flatMap((e) => {
             const antwort = e.answers[item.id];
             return antwort && 'wert' in antwort
@@ -173,4 +181,22 @@ export function zeitraum(daten: readonly string[]): { von: number; bis: number }
   }
   const rand = Math.max(1, Math.round((bis - von) * 0.04));
   return { von: von - rand, bis: bis + rand };
+}
+
+/**
+ * Wie viele geltende Erhebungen eines Instruments fehlen im Verlauf, weil ihre
+ * Fassung mit der aktuellen nicht vergleichbar ist (BEF-101 Punkt 4)?
+ */
+export function nichtVergleichbar(
+  erhebungen: readonly Erhebung[],
+  instrumente: readonly ScoreDefinition[],
+): number {
+  return erhebungen.filter((e) => {
+    const instrument = instrumente.find((i) => i.meta.id === e.instrument_id);
+    return (
+      instrument !== undefined &&
+      giltNoch(e, erhebungen) &&
+      !vergleichbar(instrument, e.definition_version)
+    );
+  }).length;
 }
