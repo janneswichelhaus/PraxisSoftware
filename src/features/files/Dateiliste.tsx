@@ -8,7 +8,8 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { oeffneDatei, type PatientFile } from './api';
+import { ladeDateiHerunter, ladeDateiZumAnzeigen, type PatientFile } from './api';
+import { Dateiansicht, istAnzeigbar } from './Dateiansicht';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
 import { fotoVomHeutigenTag, useKamera } from './kamera';
@@ -466,9 +467,13 @@ function Artkorrektur({
 /**
  * Eine Zeile der Liste.
  *
- * „Öffnen" erzeugt den Verweis erst beim Tap und öffnet ihn in einem neuen
- * Fenster. Der Verweis lebt 60 Sekunden und ist nicht widerrufbar (ADR-017
- * Punkt 17) — deshalb steht er nirgendwo im Markup und wird nirgends gemerkt.
+ * „Öffnen" zeigt die Datei in der Anwendung (ADR-017 Punkt 54): Verweis ohne
+ * Downloadnamen erst beim Tap, Bytes in den Speicher der Seite, Ansicht unter
+ * der Zeile. „Herunterladen" ist eine eigene Aktion mit eigenem Verweis und
+ * Kennzeichen im Protokoll (Punkt 55). Ein Verweis lebt 60 Sekunden und ist
+ * nicht widerrufbar (Punkt 17) — deshalb steht er nirgendwo im Markup und
+ * wird nirgends gemerkt. Ein PDF zeigt die Anwendung noch nicht selbst
+ * (ANN-223); es hat nur „Herunterladen".
  *
  * „Löschen" nimmt die Datei sofort aus der Akte; das Objekt folgt über den
  * Löschauftrag (Punkt 25). Die Rückfrage sagt, was für die Person zählt: Die
@@ -490,22 +495,38 @@ function Dateizeile({
   darfArtKorrigieren: boolean;
   arten: readonly Dokumentart[];
 }) {
-  const [laeuft, setLaeuft] = useState(false);
+  const [laeuft, setLaeuft] = useState<'oeffnen' | 'herunterladen' | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
+  const [ansicht, setAnsicht] = useState<Blob | null>(null);
+  const ansichtRef = useRef<HTMLElement>(null);
+  const oeffnenRef = useRef<HTMLButtonElement>(null);
   const art = datei.document_type as Dokumentart;
   const loeschen = useDateiLoeschen(patientId);
+  const anzeigbar = istAnzeigbar(datei.mime_type);
 
-  async function oeffnen() {
+  // Nach dem Laden rollt die Ansicht ins Bild und bekommt den Fokus (DAT-06).
+  useEffect(() => {
+    if (!ansicht) return;
+    ansichtRef.current?.scrollIntoView?.({ block: 'nearest' });
+    ansichtRef.current?.focus();
+  }, [ansicht]);
+
+  async function ausfuehren(aktion: 'oeffnen' | 'herunterladen') {
     setFehler(null);
-    setLaeuft(true);
+    setLaeuft(aktion);
     try {
-      const verweis = await oeffneDatei(datei.id);
-      window.open(verweis, '_blank', 'noopener,noreferrer');
+      if (aktion === 'oeffnen') setAnsicht((await ladeDateiZumAnzeigen(datei.id)).bild);
+      else await ladeDateiHerunter(datei.id);
     } catch (ursache) {
       setFehler((ursache as Error).message);
     } finally {
-      setLaeuft(false);
+      setLaeuft(null);
     }
+  }
+
+  function schliessen() {
+    setAnsicht(null);
+    oeffnenRef.current?.focus();
   }
 
   return (
@@ -527,16 +548,29 @@ function Dateizeile({
           <Badge ton={istKlinisch(art) ? 'neutral' : 'akzent'}>
             {istKlinisch(art) ? 'Klinisch' : 'Organisatorisch'}
           </Badge>
-          {datei.object_missing ? null : (
+          {datei.object_missing || !anzeigbar ? null : (
             <Button
+              ref={oeffnenRef}
               type="button"
               variant="secondary"
               groesse="kompakt"
-              onClick={() => void oeffnen()}
-              disabled={laeuft}
+              onClick={() => void ausfuehren('oeffnen')}
+              disabled={laeuft !== null}
             >
-              {laeuft ? 'Wird geöffnet …' : 'Öffnen'}
+              {laeuft === 'oeffnen' ? 'Wird geöffnet …' : 'Öffnen'}
               {/* Die Knopfliste der Vorlesesoftware nennt die Datei (DAT-24). */}
+              <span className="sr-only">: {datei.display_name}</span>
+            </Button>
+          )}
+          {datei.object_missing ? null : (
+            <Button
+              type="button"
+              variant={anzeigbar ? 'quiet' : 'secondary'}
+              groesse="kompakt"
+              onClick={() => void ausfuehren('herunterladen')}
+              disabled={laeuft !== null}
+            >
+              {laeuft === 'herunterladen' ? 'Wird heruntergeladen …' : 'Herunterladen'}
               <span className="sr-only">: {datei.display_name}</span>
             </Button>
           )}
@@ -575,6 +609,14 @@ function Dateizeile({
         <Statusmeldung ton="fehler" className="mt-2">
           {fehler}
         </Statusmeldung>
+      ) : null}
+      {ansicht ? (
+        <Dateiansicht
+          ref={ansichtRef}
+          bild={ansicht}
+          name={datei.display_name}
+          onSchliessen={schliessen}
+        />
       ) : null}
     </li>
   );

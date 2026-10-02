@@ -9,13 +9,24 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const rpc = vi.fn();
 const upload = vi.fn();
 const invoke = vi.fn();
+const createSignedUrl = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ rpc, storage: { from: () => ({ upload }) }, functions: { invoke } }),
+  getSupabase: () => ({
+    rpc,
+    storage: { from: () => ({ upload, createSignedUrl }) },
+    functions: { invoke },
+  }),
 }));
 
-const { VERWORFEN, fuehreLoeschauftragAus, ladeDateiHoch, merkeVerwaisteZurLoeschungVor } =
-  await import('./api');
+const {
+  VERWORFEN,
+  fuehreLoeschauftragAus,
+  ladeDateiHerunter,
+  ladeDateiHoch,
+  ladeDateiZumAnzeigen,
+  merkeVerwaisteZurLoeschungVor,
+} = await import('./api');
 const { enthaelt, jpegVomHandy } = await import('./testbilder');
 const { alleBytes } = await import('./metadaten');
 
@@ -176,5 +187,62 @@ describe('Abweisung ohne Fehlerobjekt', () => {
       /nicht ausgeführt/,
     );
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * ABN-027 (ADR-017 Punkte 54 und 55): Anzeigen ohne Downloadnamen in den
+ * Speicher der Seite, Herunterladen als eigene Aktion mit Kennzeichen.
+ */
+describe('Öffnen und Herunterladen', () => {
+  const FREIGABE = {
+    data: [
+      {
+        bucket_id: 'patientenakte',
+        object_key: 'o/p/f1',
+        display_name: 'Arztbrief',
+        mime_type: 'image/png',
+      },
+    ],
+    error: null,
+  };
+
+  beforeEach(() => {
+    rpc.mockReset();
+    createSignedUrl.mockReset();
+    rpc.mockResolvedValue(FREIGABE);
+    createSignedUrl.mockResolvedValue({
+      data: { signedUrl: 'https://ablage.invalid/signiert' },
+      error: null,
+    });
+  });
+
+  it('zeigt ohne Downloadnamen und lädt mit no-store in den Speicher', async () => {
+    const abruf = vi.fn().mockResolvedValue(new Response(new Uint8Array([0x89, 0x50])));
+    vi.stubGlobal('fetch', abruf);
+    const { bild, mimeType } = await ladeDateiZumAnzeigen('f1');
+    expect(rpc).toHaveBeenCalledWith('issue_patient_file_link', {
+      p_file_id: 'f1',
+      p_download: false,
+    });
+    expect(createSignedUrl).toHaveBeenCalledWith('o/p/f1', 60);
+    expect(abruf).toHaveBeenCalledWith('https://ablage.invalid/signiert', { cache: 'no-store' });
+    expect(mimeType).toBe('image/png');
+    expect(bild.type).toBe('image/png');
+    vi.unstubAllGlobals();
+  });
+
+  it('lädt nur auf ausdrückliche Aktion mit Downloadnamen und Kennzeichen herunter', async () => {
+    const klick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    await ladeDateiHerunter('f1');
+    expect(rpc).toHaveBeenCalledWith('issue_patient_file_link', {
+      p_file_id: 'f1',
+      p_download: true,
+    });
+    expect(createSignedUrl).toHaveBeenCalledWith('o/p/f1', 60, { download: 'Arztbrief' });
+    expect(klick).toHaveBeenCalledTimes(1);
+    klick.mockRestore();
   });
 });

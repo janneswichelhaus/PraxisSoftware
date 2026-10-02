@@ -2670,3 +2670,15 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit OPS-0
 **Anker.** `pruefeAmServer` in `src/features/files/api.ts`; `supabase/functions/patient-file-verify/`; `[functions.patient-file-verify]` in `supabase/config.toml`.
 
 **Änderungspfad.** Auslöser am Server: Speicher-Webhook oder `pg_net`-Trigger auf `confirmation_requested_at` · Aufwand `mittel` (neue Einrichtung). Meldung „Prüfung steht aus“ bei scharfem Schalter: die Bestätigung gibt den Zustand zurück · Aufwand `klein`.
+
+### ANN-223 — „Öffnen“ zeigt Bilder in der Anwendung; ein PDF hat bis zur Entscheidung nur „Herunterladen“
+
+Technik · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: Jannes (Sicherheitsmaßnahme, §15.1); am echten iPhone mit Sichtung Befund
+
+**Annahme.** „Öffnen“ lädt eine Datei ohne Downloadnamen per `fetch` mit `cache: 'no-store'` in den Speicher der Seite und zeigt sie unter der Zeile — für JPEG und PNG. Ein PDF bekommt kein „Öffnen“, sondern nur „Herunterladen“: eigener Verweis mit Downloadnamen, im Protokoll `link_issued` mit `download: true`; für beide Fotoarten weist die Datenbank das Herunterladen ab. Beim Verordnungsfoto neben dem Formular gilt dasselbe.
+
+**Begründung.** ADR-017 Punkt 54 verlangt ein PDF „in einem abgeschotteten Rahmen ohne Skriptrechte“. Geprüft in Chromium (2026-10-02): Ein `iframe` mit `sandbox` zeigt kein PDF (der Betrachter ist im abgeschotteten Rahmen gesperrt), ohne `sandbox` schon; zudem verbietet die Content-Security-Policy der Test-Umgebung Rahmen aus Objekt-URLs (`default-src 'self'`) und `object-src 'none'`. Beides zu öffnen schwächte eine Sicherheitsmaßnahme ab — nach §15.1 ein Stopp, keine Annahme. Punkt 54 lässt für Geräte, die das PDF im Rahmen nicht zeigen, ausdrücklich Punkt 55 zu; bis Jannes entscheidet, gilt das für alle.
+
+**Anker.** `istAnzeigbar` in `src/features/files/Dateiansicht.tsx`; `ladeDateiZumAnzeigen`, `ladeDateiHerunter` in `src/features/files/api.ts`; `issue_patient_file_link(uuid, boolean)` in `supabase/migrations/20261004102000_abn_027_open_means_display.sql`.
+
+**Änderungspfad.** PDF in der Anwendung: Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf` (der PDF-Betrachter des Browsers läuft in eigenem Ursprung) und `frame-src blob:` in `inhaltsrichtlinie` (`scripts/testumgebung.mjs`), dazu `istAnzeigbar` um PDF erweitern · Aufwand `klein`, braucht die Entscheidung von Jannes und einen Vermerk an ADR-017 Punkt 54.

@@ -244,7 +244,8 @@ const verweisSchema = z.object({
 const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
 
 /**
- * Erzeugt genau einen kurzlebigen Verweis auf genau eine Datei.
+ * Holt die Freigabe für genau einen Verweis auf genau eine Datei und
+ * unterschreibt ihn.
  *
  * Zwei Schritte, und die Reihenfolge ist der Punkt: Erst holt
  * `issue_patient_file_link` den Objektschlüssel, protokolliert die Ausstellung
@@ -257,40 +258,68 @@ const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
  * erzeugt hat, **hatte** den Zugriff. Ob die Bytes geflossen sind, sieht diese
  * Anwendung nicht — die Anfrage läuft zwischen Browser und Anbieter.
  *
- * Der Verweis wird **nicht** zurückgegeben, um ihn irgendwo abzulegen: Er lebt
- * eine Minute, ist nicht widerrufbar (Punkt 17) und gehört deshalb nirgendwo
- * hin außer in genau diesen einen Aufruf.
+ * **Anzeigen oder Herunterladen** (ADR-017 Fassung 3, Punkte 54 und 55): Nur
+ * der Verweis der eigenen Aktion „Herunterladen" trägt den Anzeigenamen als
+ * Downloadnamen, und nur dann steht im Protokoll das Kennzeichen `download`.
+ * Der Verweis verlässt dieses Modul nicht: Er lebt eine Minute, ist nicht
+ * widerrufbar (Punkt 17) und gehört nirgendwo hin.
  */
-export async function oeffneDatei(fileId: string): Promise<string> {
-  return (await verweisMitArt(fileId)).url;
-}
-
-/**
- * Wie `oeffneDatei`, dazu das Format - für die eine Stelle, die ein Bild
- * selbst zeigt statt es in einem neuen Fenster zu öffnen: das Foto der
- * Verordnung neben „Grundlage erfassen" (PRX-011). Ein Verweis, ein Tipp,
- * ein Auditeintrag - wie beim Öffnen.
- */
-export async function verweisMitArt(fileId: string): Promise<{ url: string; mimeType: string }> {
+async function verweis(
+  fileId: string,
+  herunterladen: boolean,
+): Promise<{ url: string; mimeType: string; name: string }> {
   const { data, error } = (await getSupabase().rpc('issue_patient_file_link', {
     p_file_id: fileId,
+    p_download: herunterladen,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Datei konnte nicht geöffnet werden. Fehlt die Berechtigung?');
-  const verweis = z.array(verweisSchema).parse(data ?? [])[0];
-  if (!verweis) throw new Error('Die Datei konnte nicht geöffnet werden.');
+  const freigabe = z.array(verweisSchema).parse(data ?? [])[0];
+  if (!freigabe) throw new Error('Die Datei konnte nicht geöffnet werden.');
 
-  const { data: signiert, error: signaturFehler } = await getSupabase()
-    .storage.from(verweis.bucket_id)
-    .createSignedUrl(verweis.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
-      download: verweis.display_name,
-    });
+  const ablage = getSupabase().storage.from(freigabe.bucket_id);
+  const { data: signiert, error: signaturFehler } = herunterladen
+    ? await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
+        download: freigabe.display_name,
+      })
+    : await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
 
   if (signaturFehler || !signiert?.signedUrl) {
     throw new Error('Die Datei ist in der Ablage nicht auffindbar.');
   }
+  return { url: signiert.signedUrl, mimeType: freigabe.mime_type, name: freigabe.display_name };
+}
 
-  return { url: signiert.signedUrl, mimeType: verweis.mime_type };
+/**
+ * Lädt eine Datei zum Ansehen — in den Speicher der Seite, nicht auf das
+ * Gerät (ADR-017 Punkt 54). Verweis ohne Downloadnamen, `fetch` mit
+ * `cache: 'no-store'`, nie ein Fenster auf den Verweis. Der Typ des Blobs ist
+ * der geprüfte Typ der Datei, nicht der, den die Antwort behauptet.
+ */
+export async function ladeDateiZumAnzeigen(
+  fileId: string,
+): Promise<{ bild: Blob; mimeType: string; name: string }> {
+  const { url, mimeType, name } = await verweis(fileId, false);
+  const antwort = await fetch(url, { cache: 'no-store' });
+  if (!antwort.ok) throw new Error('Die Datei konnte nicht geladen werden.');
+  const bild = new Blob([await antwort.arrayBuffer()], { type: mimeType });
+  return { bild, mimeType, name };
+}
+
+/**
+ * Holt eine Datei bewusst auf das Gerät (ADR-017 Punkt 55) — etwa einen
+ * Arztbrief zum Drucken. Eigener Verweis mit Downloadnamen und Kennzeichen im
+ * Protokoll; für Fotos weist die Datenbank ab. Der Verweis wird über einen
+ * Link mit `download` ausgelöst, nicht über ein neues Fenster: Die Antwort
+ * kommt als Anhang und ersetzt die Anwendung nicht.
+ */
+export async function ladeDateiHerunter(fileId: string): Promise<void> {
+  const { url } = await verweis(fileId, true);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.download = '';
+  link.click();
 }
 
 // -----------------------------------------------------------------------------
