@@ -578,7 +578,10 @@
           "id": "abn-epic-001c",
           "name": "ABN-EPIC-001c Dateien, Dokumentationsfotos, Kartendienst (BEF-105, -106, -109)",
           "gewicht": 1,
-          "status": "offen"
+          "status": "in_arbeit",
+          "fertig_am": "2026-10-02",
+          "nachweis": "Fassung 3 von ADR-017 und Fassung 5 von ADR-019 (vorgeschlagen)",
+          "vermerk": "Docs-Session fertig, Bestätigung Jannes offen; Bau danach"
         },
         {
           "id": "abr-epic-007",
