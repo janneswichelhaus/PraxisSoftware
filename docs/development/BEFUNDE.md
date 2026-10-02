@@ -3542,3 +3542,32 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 1. **Warteliste:** Offene Einträge werden regelmäßig auf Aktualität geprüft. Etwa ein Hinweis in „Offene Punkte“, wenn ein Eintrag länger als eine festgelegte Zeit unverändert offen steht; die Zeit ist eine Konstante, als Annahme im Loop.
 2. **Nachweis:** Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, als Vermerk an der bleibenden Akte, und stützt sich nicht allein auf das dreijährige Auditlog.
 3. **Legal Hold:** Alle Gründe bestehender Legal Holds bleiben wirksam. Heute wird beim Zusammenführen die Sperre der Dublette aufgehoben, wenn die bleibende Akte schon eine hat (ANN-150). Künftig bleiben beide Gründe wirksam, etwa mehrere aktive Sperren je Akte oder beide Gründe an der einen Sperre.
+
+### BEF-109 — Kartendienst: Gate in Produktion, eindeutige Treffer, Ersatzschätzungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kartendienst (`location-provider`), Stammdaten (Verorten), Tour und Fahrpuffer |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-094, ANN-095, ANN-097) |
+| Status  | offen |
+| Berührt | ANN-094, ANN-095, ANN-097; ADR-019 (Gate Punkt 9, Anbieterprüfung); `LOCATION_DATA_GATE`; Matrix- und Routenantworten |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Gate (ANN-094):** Der Wert `synthetic` ist in der Produktivumgebung **technisch ausgeschlossen**, nicht nur per Konvention. Die Function erkennt die Umgebung und lehnt ihn dort ab; ein Test belegt das. Die Anbieterprüfung (ADR-019 Punkt 9, G12) deckt auch die **direkt geladenen Kartenkacheln** ab, die am Server vorbei aus dem Browser kommen.
+2. **Verorten (ANN-095):** Automatisch übernommen wird nur ein **eindeutiger** Treffer zur **vollständigen** Adresse. Ändert sich die Adresse, wird die alte Koordinate der Stammdaten verworfen (prüfen, ob das heute so ist). Historische Termine behalten ihren Stand (ANN-003, BEF-092).
+3. **Fahrzeit (ANN-097):** Liefert der Anbieter eine Luftlinien- oder Ersatzschätzung statt einer Routenfahrzeit, was PTV in Matrixantworten tun kann, wird sie ausdrücklich gekennzeichnet oder als „Fahrzeit nicht verfügbar“ behandelt, nie als echte Fahrzeit.
+
+### BEF-110 — Abstecher-Entwurf verfällt still, MDR-Freigabe ohne Nachweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Verordnungsformular aus dem Kalender (Abstecher); MDR-Register |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-019, ANN-089) |
+| Status  | offen |
+| Berührt | ANN-019 (`src/lib/abstecher.ts`); ANN-089 (`src/app/mdr.ts`); ADR-006; ADR-025 Punkt 4 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Abstecher-Entwurf (ANN-019):** Weder der Ablauf nach 30 Minuten noch eine automatische Abmeldung oder Sperre löschen Eingaben still. Der Entwurf wird geschützt gesichert, etwa serverseitig als Entwurf wie die Dokumentation oder ausdrücklich verworfen nach Rückfrage. Wiederaufnahme nur mit demselben Konto. Stimmt mit ADR-025 Punkt 4 überein.
+2. **MDR-Freigabe (ANN-089):** Eine Funktion wird erst nach dokumentierter MDR-Prüfung geöffnet. Der Nachweis (wer, wann, Ergebnis, Verweis auf die Prüfung) steht am Registereintrag oder in einem eigenen Freigabevermerk; bloßes Entfernen des Eintrags genügt nicht. Vorhandene Serverzugänge solcher Funktionen werden ebenfalls gesperrt, nicht nur die Adressen der Oberfläche.
