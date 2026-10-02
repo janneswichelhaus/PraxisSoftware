@@ -22,6 +22,18 @@ import { bibliothek } from './bibliothek';
 
 const QUELLE = join(process.cwd(), 'quellen/bausteine/mt-untersuchung-quelldaten.md');
 
+/**
+ * Offensichtliche Tippfehler der Vorlage, für künftige Einträge korrigiert
+ * (Jannes, Abnahme 2026-10-02, BEF-103 Punkt 4, ANN-119). Bestehende
+ * Dokumentation ändert sich nicht: Sie ist Text.
+ */
+const KORRIGIERT: Record<string, string> = {
+  'Relocation Tet': 'Relocation Test',
+  Supinatin: 'Supination',
+  'Lachmann-Test': 'Lachman-Test',
+  'Painfull Arc Sign': 'Painful Arc Sign',
+};
+
 /** Region → Block → [Zahl der Items, unvollständig?] */
 const ERWARTET: Record<string, Record<string, [number, boolean]>> = {
   hws: {
@@ -95,7 +107,13 @@ describe('Untersuchungsbausteine (P2)', () => {
       // Ein Label aus zwei Zeilen derselben Nummer steht mit „ · " zusammen
       // (HWS Basis 2); geprüft wird jeder Teil für sich.
       for (const teil of text.split(' · ')) {
-        if (!quelle.includes(teil)) fehlend.push(`${wo}: „${teil}"`);
+        // Korrigierte Tippfehler stehen in ihrer Vorlagenform in der Quelle
+        // (ABN-015, BEF-103 Punkt 4).
+        const vorlage = Object.entries(KORRIGIERT).reduce(
+          (t, [vorher, nachher]) => t.replace(nachher, vorher),
+          teil,
+        );
+        if (!quelle.includes(teil) && !quelle.includes(vorlage)) fehlend.push(`${wo}: „${teil}"`);
       }
     };
 
@@ -132,7 +150,7 @@ describe('Untersuchungsbausteine (P2)', () => {
     expect(hinweise.filter((hinweis) => hinweis?.includes('→'))).toEqual([]);
   });
 
-  it('lässt die Tippfehler der Vorlage stehen (ANN-119)', () => {
+  it('korrigiert die offensichtlichen Tippfehler der Vorlage für künftige Einträge (BEF-103, ANN-119)', () => {
     const labels = bibliothek.bausteine.flatMap((region) =>
       region.blocks.flatMap((block) =>
         block.items.flatMap((item) => [
@@ -141,9 +159,17 @@ describe('Untersuchungsbausteine (P2)', () => {
         ]),
       ),
     );
-    for (const wort of ['Relocation Tet', 'Supinatin', 'Lachmann-Test', 'Painfull Arc Sign']) {
-      expect(labels.some((label) => label.includes(wort))).toBe(true);
+    for (const [vorher, nachher] of Object.entries(KORRIGIERT)) {
+      expect(labels.some((label) => label.includes(vorher))).toBe(false);
+      expect(labels.some((label) => label.includes(nachher))).toBe(true);
     }
+    // Eine Korrektur ist eine Patch-Version (BEF-101 Punkt 4); Kennungen bleiben.
+    const version = (id: string) => bibliothek.bausteine.find((r) => r.id === id)?.version;
+    expect([version('schulter'), version('ellenbogen'), version('knie')]).toEqual([
+      '1.0.1',
+      '1.0.1',
+      '1.0.1',
+    ]);
   });
 
   it('bindet Techniken an die Therapieblöcke und Tests an die Untersuchung', () => {

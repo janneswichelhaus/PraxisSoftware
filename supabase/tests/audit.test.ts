@@ -241,6 +241,7 @@ describe('Audit-Lesepfad', () => {
       'get_training_protocol',
       'get_treatment_basis',
       'get_treatment_basis_slots',
+      'get_treatment_draft_findings',
       'get_treatment_note',
       'get_treatment_note_versions',
       'list_appointments',

@@ -20,6 +20,7 @@ import {
   seitenKennung,
   seitlicheRegion,
   ungueltigeMesswerte,
+  verworfeneAngaben,
   type Angabe,
   type Auswahl,
   type Regionsseite,
@@ -127,7 +128,12 @@ export function BausteinFeld({
       </div>
 
       {region && seitlicheRegion(region) ? (
-        <SeitenWahl region={region} wahl={wahl} onWahl={(seite) => seiteWaehlen(region, seite)} />
+        <SeitenWahl
+          region={region}
+          wahl={wahl}
+          auswahl={auswahl}
+          onWahl={(seite) => seiteWaehlen(region, seite)}
+        />
       ) : null}
 
       {region === undefined ? (
@@ -257,33 +263,85 @@ function Zeichen({ gruppe }: { gruppe: 'feld' | 'block' }) {
 function SeitenWahl({
   region,
   wahl,
+  auswahl,
   onWahl,
 }: {
   region: BausteinRegion;
   wahl: Regionsseite | undefined;
+  auswahl: Auswahl;
   onWahl: (seite: Regionsseite) => void;
 }) {
+  // Von „beidseits" auf eine Seite fielen die Angaben der anderen weg: erst
+  // fragen, nie still (ABN-015, BEF-103 Punkt 2).
+  const [frage, setFrage] = useState<{ seite: Regionsseite; anzahl: number } | null>(null);
+  const bestaetigenRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    if (frage) bestaetigenRef.current?.focus();
+  }, [frage]);
+
+  function waehlen(seite: Regionsseite) {
+    const anzahl = verworfeneAngaben(region, auswahl, wahl, seite);
+    if (anzahl > 0) setFrage({ seite, anzahl });
+    else onWahl(seite);
+  }
+
   return (
-    <div
-      role="group"
-      aria-label={`Seite ${region.label}`}
-      className="flex flex-wrap items-center gap-2"
-    >
-      <span aria-hidden="true" className="text-ink text-sm font-medium">
-        Seite
-      </span>
-      {REGIONSSEITEN.map((seite) => (
-        <Button
-          key={seite}
-          type="button"
-          groesse="kompakt"
-          variant={wahl === seite ? 'primary' : 'secondary'}
-          aria-pressed={wahl === seite}
-          onClick={() => onWahl(seite)}
+    <div className="flex flex-col gap-2">
+      <div
+        role="group"
+        aria-label={`Seite ${region.label}`}
+        className="flex flex-wrap items-center gap-2"
+      >
+        <span aria-hidden="true" className="text-ink text-sm font-medium">
+          Seite
+        </span>
+        {REGIONSSEITEN.map((seite) => (
+          <Button
+            key={seite}
+            type="button"
+            groesse="kompakt"
+            variant={wahl === seite ? 'primary' : 'secondary'}
+            aria-pressed={wahl === seite}
+            disabled={frage !== null}
+            onClick={() => waehlen(seite)}
+          >
+            {seite}
+          </Button>
+        ))}
+      </div>
+      {frage ? (
+        <div
+          role="group"
+          aria-label="Seite wechseln"
+          className="border-line rounded-card bg-surface flex flex-col gap-2 border p-3 text-sm"
         >
-          {seite}
-        </Button>
-      ))}
+          <p className="text-ink">
+            Nur {frage.seite}: {frage.anzahl === 1 ? 'Eine Angabe' : `${frage.anzahl} Angaben`} der
+            anderen Seite {frage.anzahl === 1 ? 'geht' : 'gehen'} dabei verloren.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              ref={bestaetigenRef}
+              type="button"
+              groesse="kompakt"
+              onClick={() => {
+                onWahl(frage.seite);
+                setFrage(null);
+              }}
+            >
+              Ja, nur {frage.seite}
+            </Button>
+            <Button
+              type="button"
+              groesse="kompakt"
+              variant="secondary"
+              onClick={() => setFrage(null)}
+            >
+              Abbrechen
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

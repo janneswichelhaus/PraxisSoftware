@@ -44,13 +44,13 @@ test.describe('Bausteine', () => {
       .getByRole('button', { name: 'rechts' })
       .click();
     await page.getByText('Weiterführende Untersuchung').click();
-    const lachmann = page.getByRole('group', { name: 'Lachmann-Test' });
+    const lachmann = page.getByRole('group', { name: 'Lachman-Test' });
     await lachmann.getByRole('button', { name: 'positiv' }).click();
     await page.getByRole('button', { name: 'In den Text übernehmen' }).click();
 
     await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue(
       'Synthetisch: Erstbefund Knie rechts.\n\n' +
-        'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test',
+        'Knie rechts – Weiterführende Untersuchung\n❗ Lachman-Test: positiv',
     );
   });
 });

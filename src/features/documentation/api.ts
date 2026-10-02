@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { appointmentStatusSchema, appointmentTypeSchema } from '@/features/appointments/api';
+import type { BausteinStand } from '@/features/assessments/bausteinauswahl';
 
 /**
  * Datenzugriff auf die Behandlungsdokumentation (DOK-001, DOK-002).
@@ -527,4 +528,45 @@ export async function saveDocumentationDeadline(tage: number): Promise<void> {
   })) as { error: { message?: string } | null };
 
   if (error) throw new Error('Die Dokumentationsfrist konnte nicht gespeichert werden.');
+}
+
+/* -------------------------------------------------------------------------
+ * Befundangaben getrennt vom Entwurf (ABN-015, BEF-103; `befundangaben.ts`)
+ * ------------------------------------------------------------------------- */
+
+const angabeSchema = z.object({
+  ergebnis: z.enum(['ohne_befund', 'positiv', 'nicht_getestet', 'durchgefuehrt']),
+  messwert: z.string().optional(),
+  notiz: z.string().optional(),
+});
+
+const standSchema = z.object({
+  auswahl: z.record(z.string(), angabeSchema),
+  seitenwahl: z.record(z.string(), z.enum(['links', 'rechts', 'beidseits'])),
+});
+
+export const befundangabenQueryKey = (appointmentId: string) =>
+  ['treatment-draft-findings', appointmentId] as const;
+
+export async function fetchBefundangaben(appointmentId: string): Promise<BausteinStand | null> {
+  const { data, error } = (await getSupabase().rpc('get_treatment_draft_findings', {
+    p_appointment_id: appointmentId,
+  })) as { data: { findings: unknown }[] | null; error: unknown };
+  if (error) throw new Error('Die gesicherten Befundangaben konnten nicht geladen werden.');
+  const zeile = data?.[0];
+  if (!zeile) return null;
+  // Ein Stand, der nicht mehr passt, wird nicht zurückgeholt - statt halb.
+  const geprueft = standSchema.safeParse(zeile.findings);
+  return geprueft.success ? geprueft.data : null;
+}
+
+export async function befundangabenSichern(
+  appointmentId: string,
+  stand: BausteinStand | null,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('save_treatment_draft_findings', {
+    p_appointment_id: appointmentId,
+    p_findings: stand,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error('Die Befundangaben konnten nicht gesichert werden.');
 }

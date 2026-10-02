@@ -1,7 +1,7 @@
 {
   "id": "schulter",
   "label": "Schulter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "blocks": [
     {
       "id": "basis",
@@ -53,7 +53,7 @@
             },
             {
               "id": "schulter_impingement_painfull_arc_sign",
-              "label": "Painfull Arc Sign"
+              "label": "Painful Arc Sign"
             },
             {
               "id": "schulter_impingement_empty_can_test",
@@ -99,7 +99,7 @@
             },
             {
               "id": "schulter_laxitaet_instabilitaet_relocation_tet",
-              "label": "Relocation Tet"
+              "label": "Relocation Test"
             }
           ]
         },

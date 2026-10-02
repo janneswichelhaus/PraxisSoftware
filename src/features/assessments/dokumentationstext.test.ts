@@ -112,7 +112,7 @@ describe('Dokumentationstext', () => {
       'knie_lachmann_test.rechts': { ergebnis: 'positiv', notiz: 'Weicher Anschlag.' },
     };
     expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
-      'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test – Weicher Anschlag.',
+      'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test: positiv – Weicher Anschlag.',
     );
   });
 
@@ -128,8 +128,8 @@ describe('Dokumentationstext', () => {
     };
     expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
       [
-        'Basisuntersuchung Knie rechts\n✅ Kniebeuge',
-        'Knie rechts – Weiterführende Untersuchung\n✅ Lachmann-Test',
+        'Basisuntersuchung Knie rechts\n✅ Kniebeuge: o.B.',
+        'Knie rechts – Weiterführende Untersuchung\n✅ Lachmann-Test: o.B.',
         'Knie rechts – Therapie\n• MMB',
       ].join('\n\n'),
     );
@@ -143,7 +143,7 @@ describe('Dokumentationstext', () => {
     };
     expect(dokumentationstext([knie], auswahl, { knie: 'links' })).toBe(
       'Knie links – Weiterführende Untersuchung\n' +
-        '❗ Lachmann-Test\n' +
+        '❗ Lachmann-Test: positiv\n' +
         'Nicht getestet: Mill´s Test (Schmerz bei Streckung); Eccentric Step',
     );
   });
@@ -157,8 +157,8 @@ describe('Dokumentationstext', () => {
     expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
       'Knie rechts – Weiterführende Untersuchung\n' +
         'LET:\n' +
-        '  ❗ Cozen-Test\n' +
-        '✅ Eccentric Step\n\n' +
+        '  ❗ Cozen-Test: positiv\n' +
+        '✅ Eccentric Step: o.B.\n\n' +
         'Knie rechts – Therapie\n' +
         'Arthrogen:\n' +
         '  • Mobilisation mit Kompression – 3 × 30 s',
@@ -173,8 +173,8 @@ describe('Dokumentationstext', () => {
       'knie_lachmann_test.rechts': { ergebnis: 'positiv' },
     };
     expect(dokumentationstext([knie], auswahl, { knie: 'beidseits' })).toBe(
-      'Basisuntersuchung Knie\n✅ Kniebeuge bds.\n\n' +
-        'Knie – Weiterführende Untersuchung\n✅ Lachmann-Test li.\n❗ Lachmann-Test re.',
+      'Basisuntersuchung Knie\n✅ Kniebeuge bds.: o.B.\n\n' +
+        'Knie – Weiterführende Untersuchung\n✅ Lachmann-Test li.: o.B.\n❗ Lachmann-Test re.: positiv',
     );
   });
 
@@ -186,8 +186,8 @@ describe('Dokumentationstext', () => {
     };
     expect(dokumentationstext([knie], auswahl, RECHTS)).toBe(
       'Basisuntersuchung Knie rechts\n' +
-        '✅ Knee to Wall Test li. 9 cm\n' +
-        '❗ Knee to Wall Test re. 5 cm – Ferse hebt ab.',
+        '✅ Knee to Wall Test li. 9 cm: o.B.\n' +
+        '❗ Knee to Wall Test re. 5 cm: positiv – Ferse hebt ab.',
     );
     expect(
       dokumentationstext(
@@ -195,7 +195,7 @@ describe('Dokumentationstext', () => {
         { 'knie_knee_to_wall.rechts': { ergebnis: 'positiv', messwert: 'acht' } },
         RECHTS,
       ),
-    ).toBe('Basisuntersuchung Knie rechts\n❗ Knee to Wall Test re.');
+    ).toBe('Basisuntersuchung Knie rechts\n❗ Knee to Wall Test re.: positiv');
     // Zwei gleiche Ergebnisse mit Wert bleiben zwei Zeilen — die Werte sind der Befund.
     expect(
       dokumentationstext(
@@ -207,7 +207,7 @@ describe('Dokumentationstext', () => {
         RECHTS,
       ),
     ).toBe(
-      'Basisuntersuchung Knie rechts\n✅ Knee to Wall Test li. 9 cm\n✅ Knee to Wall Test re. 9 cm',
+      'Basisuntersuchung Knie rechts\n✅ Knee to Wall Test li. 9 cm: o.B.\n✅ Knee to Wall Test re. 9 cm: o.B.',
     );
   });
 
@@ -232,10 +232,10 @@ describe('Dokumentationstext', () => {
     };
     expect(dokumentationstext(bibliothek.bausteine, auswahl, { huefte: 'rechts' })).toBe(
       'Untersuchung Hüfte rechts\n' +
-        '✅ Flexion\n' +
-        '❗ Beweglichkeit Extension, Innenrotation & Außenrotation – endgradig Leiste\n' +
+        '✅ Flexion: o.B.\n' +
+        '❗ Beweglichkeit Extension, Innenrotation & Außenrotation: positiv – endgradig Leiste\n' +
         'Weiterführende Untersuchung (bei Bedarf):\n' +
-        '  ❗ FADIR (+ Kompression)\n' +
+        '  ❗ FADIR (+ Kompression): positiv\n' +
         'Nicht getestet: Scour Test',
     );
   });
@@ -256,11 +256,11 @@ describe('Dokumentationstext', () => {
       'lws_nervenprovokationstests_slump.rechts': { ergebnis: 'nicht_getestet' },
     };
     expect(dokumentationstext(bibliothek.bausteine, auswahl)).toBe(
-      'LWS – Weiterführende Untersuchung\n✅ Prone Instability Test\n\n' +
+      'LWS – Weiterführende Untersuchung\n✅ Prone Instability Test: o.B.\n\n' +
         'LWS – Neurologische Untersuchungen (bei Bedarf)\n' +
         'Nervenprovokationstests:\n' +
-        '  ✅ Straight leg raise (evtl. mit Add/Ir) li.\n' +
-        '  ❗ Straight leg raise (evtl. mit Add/Ir) re. – ab 40°\n' +
+        '  ✅ Straight leg raise (evtl. mit Add/Ir) li.: o.B.\n' +
+        '  ❗ Straight leg raise (evtl. mit Add/Ir) re.: positiv – ab 40°\n' +
         'Nicht getestet: SLUMP (evtl. mit Add/Ir) bds.',
     );
   });

@@ -93,7 +93,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
   it('erzeugt aus Ergebnis und Notiz den Vorschlag und übernimmt ihn', async () => {
     const { user, uebernehmen } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
-    const lachmann = test_('Lachmann-Test');
+    const lachmann = test_('Lachman-Test');
     // Eine Seitenwahl je Test gibt es nicht mehr — die Region hat sie.
     expect(within(lachmann).queryByRole('button', { name: 'rechts' })).toBeNull();
     expect(within(lachmann).queryByRole('button', { name: 'Notiz' })).toBeNull();
@@ -105,7 +105,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     await user.type(within(lachmann).getByLabelText('Notiz'), 'Weicher Anschlag.');
 
     const erwartet =
-      'Knie rechts – Weiterführende Untersuchung\n❗ Lachmann-Test – Weicher Anschlag.';
+      'Knie rechts – Weiterführende Untersuchung\n❗ Lachman-Test: positiv – Weicher Anschlag.';
     expect(vorschlag()).toBe(erwartet);
     expect(screen.getByRole('button', { name: 'Knie · 1' })).toBeInTheDocument();
 
@@ -130,7 +130,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
   it('klappt einen unauffälligen Test auf eine Zeile ein (BEF-076)', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
-    const lachmann = test_('Lachmann-Test');
+    const lachmann = test_('Lachman-Test');
     await user.click(within(lachmann).getByRole('button', { name: 'o.B.' }));
 
     // Nur noch Name, Ergebnis und „Ändern" - die Schaltflächen sind fort.
@@ -150,7 +150,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
   it('hebt ein Ergebnis mit dem zweiten Tipp wieder auf', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
-    const lachmann = test_('Lachmann-Test');
+    const lachmann = test_('Lachman-Test');
     const positiv = within(lachmann).getByRole('button', { name: 'positiv' });
     await user.click(positiv);
     expect(positiv).toHaveAttribute('aria-pressed', 'true');
@@ -161,26 +161,50 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
   it('nimmt beim Wechsel der Seite die Angaben mit', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
-    await user.click(within(test_('Lachmann-Test')).getByRole('button', { name: 'positiv' }));
+    await user.click(within(test_('Lachman-Test')).getByRole('button', { name: 'positiv' }));
     const wahl = screen.getByRole('group', { name: 'Seite Knie' });
     await user.click(within(wahl).getByRole('button', { name: 'links' }));
 
-    expect(within(test_('Lachmann-Test')).getByRole('button', { name: 'positiv' })).toHaveAttribute(
+    expect(within(test_('Lachman-Test')).getByRole('button', { name: 'positiv' })).toHaveAttribute(
       'aria-pressed',
       'true',
     );
-    expect(vorschlag()).toBe('Knie links – Weiterführende Untersuchung\n❗ Lachmann-Test');
+    expect(vorschlag()).toBe('Knie links – Weiterführende Untersuchung\n❗ Lachman-Test: positiv');
   });
 
   it('zeigt im Seitenvergleich je Test eine Zeile für links und rechts', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'beidseits');
-    await user.click(within(test_('Lachmann-Test, links')).getByRole('button', { name: 'o.B.' }));
+    await user.click(within(test_('Lachman-Test, links')).getByRole('button', { name: 'o.B.' }));
     await user.click(
-      within(test_('Lachmann-Test, rechts')).getByRole('button', { name: 'positiv' }),
+      within(test_('Lachman-Test, rechts')).getByRole('button', { name: 'positiv' }),
     );
     expect(vorschlag()).toBe(
-      'Knie – Weiterführende Untersuchung\n✅ Lachmann-Test li.\n❗ Lachmann-Test re.',
+      'Knie – Weiterführende Untersuchung\n✅ Lachman-Test li.: o.B.\n❗ Lachman-Test re.: positiv',
     );
+  });
+
+  it('fragt vor dem Wechsel von „beidseits“ auf eine Seite, statt Angaben still zu verwerfen (BEF-103)', async () => {
+    const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'beidseits');
+    await user.click(within(test_('Lachman-Test, links')).getByRole('button', { name: 'o.B.' }));
+    await user.click(
+      within(test_('Lachman-Test, rechts')).getByRole('button', { name: 'positiv' }),
+    );
+    const wahl = screen.getByRole('group', { name: 'Seite Knie' });
+    await user.click(within(wahl).getByRole('button', { name: 'rechts' }));
+
+    const frage = screen.getByRole('group', { name: 'Seite wechseln' });
+    expect(frage).toHaveTextContent(
+      'Nur rechts: Eine Angabe der anderen Seite geht dabei verloren.',
+    );
+    await user.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
+    // Nichts verloren.
+    expect(vorschlag()).toBe(
+      'Knie – Weiterführende Untersuchung\n✅ Lachman-Test li.: o.B.\n❗ Lachman-Test re.: positiv',
+    );
+
+    await user.click(within(wahl).getByRole('button', { name: 'rechts' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, nur rechts' }));
+    expect(vorschlag()).toBe('Knie rechts – Weiterführende Untersuchung\n❗ Lachman-Test: positiv');
   });
 
   it('fragt an der Wirbelsäule keine Regionsseite, aber je Nerventest links und rechts', async () => {
@@ -194,7 +218,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     expect(vorschlag()).toBe(
       'LWS – Neurologische Untersuchungen (bei Bedarf)\n' +
         'Nervenprovokationstests:\n' +
-        '  ❗ Straight leg raise (evtl. mit Add/Ir) re.',
+        '  ❗ Straight leg raise (evtl. mit Add/Ir) re.: positiv',
     );
   });
 
@@ -224,13 +248,13 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
     await user.type(feld, 'acht');
     expect(within(k2w).getByText('Bitte eine Zahl eingeben, etwa 1,5.')).toBeInTheDocument();
-    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li.');
+    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li.: o.B.');
     // Übernommen würde der Text ohne den Wert — deshalb erst nach der Korrektur.
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeDisabled();
 
     await user.clear(feld);
     await user.type(feld, '8,5');
-    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li. 8,5 cm');
+    expect(vorschlag()).toBe('Basisuntersuchung Fuß rechts\n✅ Knee to Wall Test li. 8,5 cm: o.B.');
     expect(screen.getByRole('button', { name: 'In den Text übernehmen' })).toBeEnabled();
   });
 
@@ -245,8 +269,8 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
     expect(vorschlag()).toBe(
       'Basisuntersuchung Fuß rechts\n' +
-        '✅ Knee to Wall Test li. 9 cm\n' +
-        '❗ Knee to Wall Test re. 5 cm',
+        '✅ Knee to Wall Test li. 9 cm: o.B.\n' +
+        '❗ Knee to Wall Test re. 5 cm: positiv',
     );
 
     await user.click(screen.getByText('Weiterführende Untersuchung'));
@@ -266,7 +290,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     const { user } = await oeffnen('Ellenbogen', 'Weiterführende Untersuchung', 'links');
     await user.click(within(test_('Cozen-Test')).getByRole('button', { name: 'o.B.' }));
     expect(vorschlag()).toBe(
-      'Ellenbogen links – Weiterführende Untersuchung\nLET:\n  ✅ Cozen-Test',
+      'Ellenbogen links – Weiterführende Untersuchung\nLET:\n  ✅ Cozen-Test: o.B.',
     );
   });
 
@@ -284,11 +308,11 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
     await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
 
     // Ein Tipp allein verwirft nichts mehr.
-    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge');
+    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge: o.B.');
     const frage = screen.getByRole('group', { name: 'Alle Angaben aus den Bausteinen verwerfen' });
     expect(frage).toHaveTextContent(/Messwerte, Notizen und die Seitenwahl werden verworfen/);
     await user.click(within(frage).getByRole('button', { name: 'Abbrechen' }));
-    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge');
+    expect(vorschlag()).toBe('Basisuntersuchung Knie rechts\n✅ Kniebeuge: o.B.');
 
     await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
     await user.click(screen.getByRole('button', { name: 'Ja, alle Angaben verwerfen' }));
@@ -298,7 +322,7 @@ describe('BausteinFeld', { timeout: 20_000 }, () => {
 
   it('wählt ein Ergebnis mit Notiz erst nach einer Rückfrage ab (BEF-01)', async () => {
     const { user } = await oeffnen('Knie', 'Weiterführende Untersuchung', 'rechts');
-    const lachmann = test_('Lachmann-Test');
+    const lachmann = test_('Lachman-Test');
     const positiv = within(lachmann).getByRole('button', { name: 'positiv' });
     await user.click(positiv);
     await user.click(within(lachmann).getByRole('button', { name: 'Notiz' }));

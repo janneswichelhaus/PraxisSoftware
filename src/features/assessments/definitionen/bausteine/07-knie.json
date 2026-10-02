@@ -1,7 +1,7 @@
 {
   "id": "knie",
   "label": "Knie",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "blocks": [
     {
       "id": "basis",
@@ -67,7 +67,7 @@
       "items": [
         {
           "id": "knie_lachmann_test",
-          "label": "Lachmann-Test",
+          "label": "Lachman-Test",
           "type": "test",
           "bilateral": true,
           "result_type": "befund"

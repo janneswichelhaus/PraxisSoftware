@@ -1,7 +1,7 @@
 {
   "id": "ellenbogen",
   "label": "Ellenbogen",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "blocks": [
     {
       "id": "basis",
@@ -10,7 +10,7 @@
       "items": [
         {
           "id": "ellenbogen_flexion_extension_supination_pronation",
-          "label": "Flexion/Extension/Supinatin/Pronation",
+          "label": "Flexion/Extension/Supination/Pronation",
           "type": "test",
           "bilateral": true,
           "result_type": "befund"

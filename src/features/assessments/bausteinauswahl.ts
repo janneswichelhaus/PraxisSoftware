@@ -20,14 +20,19 @@ export interface BausteinAuswahl {
   setzen: (schluessel: string, angabe: Angabe | undefined) => void;
   seiteWaehlen: (region: BausteinRegion, seite: Regionsseite) => void;
   leeren: () => void;
+  /** Einen gesicherten Stand zurückholen (ABN-015). */
+  wiederherstellen: (stand: BausteinStand) => void;
   /** Der Vorschlag aus der Auswahl; leer, solange nichts angegeben ist. */
   text: string;
 }
 
-interface Zustand {
+/** Was von der Auswahl gesichert wird: Häkchen, Werte, Notizen und Seiten (ABN-015). */
+export interface BausteinStand {
   auswahl: Auswahl;
   seitenwahl: Seitenwahl;
 }
+
+type Zustand = BausteinStand;
 
 const LEER: Zustand = { auswahl: {}, seitenwahl: {} };
 
@@ -37,7 +42,8 @@ const LEER: Zustand = { auswahl: {}, seitenwahl: {} };
  * Der Zustand liegt bei der Seite und nicht im Feld: Nur sie weiß, wann der
  * Vorschlag im Entwurf angekommen ist, und nur sie kann den Textverlustschutz
  * fragen lassen, solange er es nicht ist (`PROJECT_PRINCIPLES.md` §13).
- * Gespeichert wird die Auswahl nirgends (ANN-120). Auswahl und Seitenwahl
+ * Gesichert wird die Auswahl getrennt vom Entwurf, nie in seinem Text
+ * (ABN-015, ANN-120 Fassung 2, `befundangaben.ts`). Auswahl und Seitenwahl
  * stehen in einem Zustand, weil ein Seitenwechsel beide zugleich ändert.
  */
 export function useBausteinAuswahl(
@@ -62,10 +68,11 @@ export function useBausteinAuswahl(
   }, []);
 
   const leeren = useCallback(() => setZustand(LEER), []);
+  const wiederherstellen = useCallback((stand: BausteinStand) => setZustand(stand), []);
   const text = useMemo(
     () => dokumentationstext(regionen, auswahl, seitenwahl),
     [regionen, auswahl, seitenwahl],
   );
 
-  return { regionen, auswahl, seitenwahl, setzen, seiteWaehlen, leeren, text };
+  return { regionen, auswahl, seitenwahl, setzen, seiteWaehlen, leeren, wiederherstellen, text };
 }
