@@ -123,7 +123,10 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
-    await expect(eintrag).toContainText('Abgeschlossen');
+    // office liest die Dokumentation (ABN-005, ANN-201 Fassung 2): Die Kachel
+    // zeigt den fehlenden Eintrag, der Zustand steht im Titel.
+    await expect(eintrag).toContainText('Doku offen');
+    await expect(eintrag).toHaveAttribute('title', /Abgeschlossen/);
     // Die Kachel öffnet das Terminpanel; „Termin →" führt zu genau diesem
     // Termin, samt Rückweg (Design-Handoff 2026-10-01, Abschnitt 7a).
     const ziel = await panelZiel(page, terminId);
