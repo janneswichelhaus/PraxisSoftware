@@ -66,7 +66,9 @@ describe('patient-file-verify', () => {
       checksum_ok: true,
       metadata_ok: true,
     });
-    expect(log).toEqual([{ dateiId: DATEI, klasse: 'passed', dauerMs: expect.any(Number) }]);
+    expect(log).toHaveLength(1);
+    expect(log[0]).toMatchObject({ dateiId: DATEI, klasse: 'passed' });
+    expect(typeof log[0]!.dauerMs).toBe('number');
   });
 
   it('meldet einen Befund, ohne die Bytes anzufassen (Punkt 52)', async () => {

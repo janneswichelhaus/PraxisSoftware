@@ -25,9 +25,14 @@ const einrichtung = {
 
 const instanz = fehlendeEinrichtung(einrichtung).length === 0 ? erstelleInstanz(einrichtung) : null;
 
-/** Kennung, Ergebnisklasse und Dauer - nie Bytes, Namen oder Objektschlüssel (ADR-011). */
-function protokolliere(eintrag: Protokolleintrag): void {
-  console.log(JSON.stringify({ dienst: 'patient-file-verify', ...eintrag }));
-}
+/**
+ * Kein eigener Logausgang. Die Klasse jedes Laufs geht an die Anwendung
+ * zurück, ein Befund steht im Auditlog (`patient_file.verification_failed`).
+ * Ein dritter erklärter Ausgang für Betriebslogs neben `src/lib/protokoll.ts`
+ * und `location-provider` wäre eine Entscheidung nach ADR-011 Punkt 6
+ * (`eslint.config.js`, `src/protokollierung.test.ts`) und gehört zu OPS-004,
+ * wenn die Function scharf wird. `protokolliere` bleibt die eine Stelle dafür.
+ */
+function protokolliere(_eintrag: Protokolleintrag): void {}
 
 Deno.serve(erstelleHandler({ instanz, protokolliere }));
