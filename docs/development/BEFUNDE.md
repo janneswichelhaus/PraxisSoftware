@@ -3417,3 +3417,64 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
    - kumulativ verteilen: die Summe aller Zahlungen bis einschließlich dieser verteilen, die Verteilung davor abziehen;
    - eine Rückzahlung nimmt die zugehörige Verteilung nachvollziehbar zurück;
    - Test mit drei krummen Teilzahlungen.
+
+### BEF-101 — Erhebungen: Server prüft nur die Form, Korrektur ohne eigenes Datum, Tegner ohne Leseart
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Fragebögen und Scores (Erhebung, Verlauf) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-084, ANN-085, ANN-103, ANN-105) |
+| Status  | offen |
+| Berührt | `src/features/assessments/definitionen/`, `antwortenSchema`; `patient_questionnaire_responses`; Verlaufsansicht im Befund |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Serverprüfung (ANN-105):** Der Server prüft auch Instrument und Version, gültige Antwortoptionen, Wertebereiche und unzulässige Kombinationen. Er nutzt dafür dieselben Definitionsdateien wie die Anwendung, etwa als vom Build erzeugte Tabelle oder Funktion, nicht als zweite Fassung von Hand. Historische Erhebungen werden mit ihrer **ursprünglichen** Definition angezeigt und ausgewertet; ein Hinweis auf eine neuere Version genügt nicht. Ältere Versionen bleiben dafür im Release.
+2. **Korrektur (ANN-103):** Eine Korrektur bleibt mit der ursprünglichen Erhebung verknüpft. Erhebungsdatum und Korrekturzeitpunkt werden getrennt geführt. Im Verlauf erscheint die Korrektur am Erhebungsdatum, nicht als zusätzliche Messung.
+3. **Tegner (ANN-085):** keine Wertung „besser/schlechter“, aber der Zahlenwert mit dem Hinweis „höher = aktiver“.
+4. **Versionen (ANN-084):** Eine Patch-Stelle steht nur für bedeutungserhaltende Korrekturen. Geänderter Frageninhalt, andere Antwortmöglichkeiten oder eine andere Berechnung sind fachliche Änderungen; ob die Werte vergleichbar bleiben, wird je Änderung geprüft und an der Definition vermerkt. Die Nummer allein sagt das nicht.
+
+### BEF-102 — Ein entferntes Ereignis im Verlauf ist gelöscht statt nachvollziehbar entfernt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Verlauf (Ereignisse: Operation, Erkrankung, Pause, Medikation, Sonstiges) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-106); Codeprüfung Claude |
+| Status  | offen |
+| Berührt | ANN-106; `remove_patient_course_event` (`delete from public.patient_course_events`) in `20260926110000_frb_002e_course_events.sql` |
+
+**Beobachtung.** „Entfernen“ löscht die Zeile. Im Auditlog steht nur, dass etwas entfernt wurde, nicht was.
+
+**Erwartet.** Entfernen markiert das Ereignis als entfernt (wer, wann). Ursprünglicher Inhalt und Urheber bleiben in der Akte nachvollziehbar, etwa unter „Entfernte Ereignisse“. Im Verlauf erscheint es nicht mehr. Das Auditlog bleibt bei Metadaten. Die Frist folgt der Akte.
+
+### BEF-103 — Bausteine: unbestätigte Vorschläge im Entwurf, Seitenwechsel, Ergebnis nur als Zeichen, Tippfehler
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund aus Bausteinen (Behandlung abschließen, Dokumentation bearbeiten) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-119, ANN-120, ANN-129, ANN-130) |
+| Status  | offen |
+| Berührt | ANN-119, ANN-120, ANN-129, ANN-130; `definitionen/bausteine/*.json`; Bausteinfeld und Navigationsschutz der Dokumentation |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Vorschläge (ANN-120):** Ein Vorschlag gelangt nur durch ausdrückliches Übernehmen in den Dokumentationsentwurf. Beim Verlassen oder Speichern wird **kein** unbestätigter Vorschlag ungesehen angehängt, auch weil der Entwurf später automatisch finalisiert werden kann. Heute geht er laut ANN-120 beim Verlassen mit. Die bisherigen Eingaben (Häkchen, Werte) bleiben trotzdem erhalten, getrennt vom Entwurf, bis die Person übernimmt oder verwirft.
+2. **Seitenwechsel (ANN-129):** Beim Wechsel von „beidseits“ auf eine Seite gehen die Ergebnisse der anderen Seite nicht still verloren; sie bleiben erhalten oder es wird vorher gefragt.
+3. **Ergebnis im Text (ANN-130):** Im gespeicherten Text steht „o.B.“ bzw. „positiv“ ausgeschrieben; ✅/❗ dürfen ergänzen, tragen die Bedeutung aber nicht allein.
+4. **Tippfehler (ANN-119):** Offensichtliche Tippfehler der Vorlage („Supinatin“, „Relocation Tet“, „Lachmann“ und vergleichbare) werden für künftige Einträge korrigiert, als Patch-Version (BEF-101 Punkt 4). Kennungen bleiben, bestehende Dokumentation ändert sich nicht. Die drei unvollständigen Bereiche bleiben sichtbar als unvollständig gekennzeichnet; Fehlendes wird nicht selbst ergänzt (ANN-118).
+
+### BEF-104 — Therapiebericht: Korrektur ohne Kette, Grenze von 50 Einträgen still
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Therapiebericht |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-121, ANN-122); Codeprüfung Claude |
+| Status  | offen |
+| Berührt | ANN-121, ANN-122; `therapy_reports` (`20260926140000_dok_005a_therapy_reports.sql`) |
+
+**Erwartet.**
+- Eine Berichtskorrektur verweist auf den ersetzten Bericht und trägt Korrekturgrund, Zeitpunkt und Verfasser:in. Heute gibt es dafür weder Verweis noch Grund.
+- Der eigene Berichtstext der Therapeut:in bleibt der Kern. Wörtliche Dokumentationseinträge sind ergänzende Auszüge; so ist es gebaut, `report_text`.
+- Die Grenze von 50 Einträgen ist beim Auswählen sichtbar, und ein 51. Eintrag wird mit Hinweis abgewiesen, nie still abgeschnitten.

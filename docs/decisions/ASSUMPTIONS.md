@@ -1119,7 +1119,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 ### ANN-083 — Die Instrumentenbibliothek liegt als Dateien im Release, nicht in der Datenbank
 
-Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6 (Ergebnisse erheben und speichern)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P6 (Ergebnisse erheben und speichern)
 
 **Annahme.** Definitionen von Untersuchungsbausteinen und Scores liegen als JSON-Dateien unter `src/features/assessments/definitionen/` und werden zur Bauzeit eingesammelt. Sie tragen **kein** `organization_id`, stehen in keiner Tabelle und sind für alle Mandanten gleich. Ergebnisse gehen den umgekehrten Weg: Sie sind Gesundheitsdaten und kommen mit Datenklasse, Frist und RLS in die Datenbank.
 
@@ -1127,11 +1127,11 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6 (Ergebniss
 
 **Anker.** `ladeDefinitionen()` in `src/features/assessments/definitionen.ts`; das Einsammeln in `src/features/assessments/bibliothek.ts`.
 
-**Änderungspfad.** Bibliothek je Mandant (eigene Instrumente einer Praxis): Tabelle mit `organization_id`, RLS, Löschpfad; der Ladepfad bekommt eine zweite Quelle, das Schema bleibt · Aufwand `mittel`. Zurück in den Code: nicht vorgesehen — das wäre das Leitprinzip selbst.
+**Änderungspfad.** Bibliothek je Mandant (eigene Instrumente einer Praxis): Tabelle mit `organization_id`, RLS, Löschpfad; der Ladepfad bekommt eine zweite Quelle, das Schema bleibt · Aufwand `mittel`. Zurück in den Code: nicht vorgesehen — das wäre das Leitprinzip selbst. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-084 — Definitionen tragen eine semantische Version
 
-Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6, sobald das erste Ergebnis eine `definition_version` speichert
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P6, sobald das erste Ergebnis eine `definition_version` speichert
 
 **Annahme.** `version` ist eine semantische Version (`1.0.0`), kein Datum und kein Zähler. Eine Korrektur am Wortlaut hebt die Patch-Stelle, ein geändertes oder entferntes Item die Minor-, ein anderer Zuschnitt der Subskalen die Major-Stelle.
 
@@ -1139,11 +1139,11 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P6, sobald da
 
 **Anker.** `versionSchema` in `src/features/assessments/schema.ts`.
 
-**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern.
+**Änderungspfad.** Datum oder Zähler: ein regulärer Ausdruck, ein Testfall, die vorhandenen Dateien · Aufwand `klein`, solange kein Ergebnis gespeichert ist; danach `mittel`, weil gespeicherte Fassungen mitwandern. **Abnahme (Jannes, 2026-10-02):** präzisiert: Patch nur für bedeutungserhaltende Korrekturen (Schreibfehler). Geänderter Frageninhalt, Antwortmöglichkeiten oder Berechnung sind fachliche Änderungen; ihre Vergleichbarkeit wird geprüft und vermerkt — die Nummer garantiert sie nicht (BEF-101).
 
 ### ANN-085 — Ein Instrument ohne Wertung trägt die Richtung `nicht_anwendbar`
 
-Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn Anamnesebogen und Tegner-Skala entstehen
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P5, wenn Anamnesebogen und Tegner-Skala entstehen
 
 **Annahme.** `richtung` bleibt Pflichtfeld, bekommt neben `hoch_ist_besser` und `hoch_ist_schlechter` aber den dritten Wert `nicht_anwendbar`. Er gilt für Instrumente ohne Score (Anamnesebogen: „kein Summenscore") und für Skalen, deren Quelle bewusst keine Wertung ausspricht (Tegner: „hoch = aktiver").
 
@@ -1151,7 +1151,7 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn Anam
 
 **Anker.** `RICHTUNGEN` in `src/features/assessments/schema.ts`, samt der Prüfung, dass ein Instrument ohne Gesamtwert und ohne Subskala keine Richtung behaupten darf.
 
-**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll.
+**Änderungspfad.** Zurück auf zwei Werte: die Aufzählung, die Prüfung und je ein Feld in den betroffenen Definitionen · Aufwand `klein` — aber nur zusammen mit einer Antwort darauf, was der Anamnesebogen dann tragen soll. **Abnahme (Jannes, 2026-10-02):** bestätigt als fehlende Wertung „besser/schlechter“; Tegner zeigt seinen Zahlenwert mit „höher = aktiver“ (BEF-101).
 
 ### ANN-086 — Der Lizenzstatus hängt am Instrument, und `aktiv` hängt an ihm
 
@@ -1167,7 +1167,7 @@ Recht · entschieden (Jannes) · 2026-09-21 · Jannes · Prüfpaket · Wiedervor
 
 ### ANN-087 — `skip_logic` entsteht erst mit dem Instrument, das sie braucht
 
-Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn alle 18 Instrumente übertragen sind
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P5, wenn alle 18 Instrumente übertragen sind
 
 **Annahme.** Das Item-Schema der Scores führt **kein** Feld `skip_logic`, obwohl die Skizze im Arbeitsauftrag §3 es nennt. Braucht ein Instrument eine Sprungregel, entsteht das Feld mit ihm — zusammen mit dem Fall, an dem sich prüfen lässt, was es bedeutet.
 
@@ -1175,7 +1175,7 @@ Technik · offen · 2026-09-21 · — · — · Wiedervorlage: mit P5, wenn alle
 
 **Anker.** Der Kommentar an `scoreItemSchema` in `src/features/assessments/schema.ts`, der die Auslassung samt Grund festhält.
 
-**Änderungspfad.** Ein Instrument mit echter Sprungregel: Feld am Item, Prüfung gegen bekannte Item-Kennungen, ein Testfall · Aufwand `klein`.
+**Änderungspfad.** Ein Instrument mit echter Sprungregel: Feld am Item, Prüfung gegen bekannte Item-Kennungen, ein Testfall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-088 — Eine Teilzahlung verteilt sich anteilig auf die Steuergruppen ihrer Rechnung
 
@@ -1301,7 +1301,7 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: Jannes nach
 
 ### ANN-098 — Fehlt ein gewerteter Wert, rechnet der Kern keinen
 
-Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-Plan, je Score mit P4 und P5
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: D6 im FRB-Plan, je Score mit P4 und P5
 
 **Annahme.** Fehlt die Antwort auf ein gewertetes Item, gibt der Rechenkern für die betroffene Skala **keinen Wert** aus und nennt die fehlenden Items. Er zählt nichts als 0, rechnet nichts hoch und bildet keinen Mittelwert über das Beantwortete. Die einzige Ausnahme ist eine Formel, die sie selbst ausspricht: `summe_prozent` mit `aus_gewerteten_items` (FAAM, „nicht zutreffend" verkleinert das Maximum). Gerechnet wird ohne Rundung; gerundet wird bei der Anzeige.
 
@@ -1309,11 +1309,11 @@ Praxisprozess · offen · 2026-09-25 · — · — · Wiedervorlage: D6 im FRB-P
 
 **Anker.** `wende()` in `src/features/assessments/rechnen.ts`; Testfall „gibt keinen Wert, solange ein gewertetes Item fehlt" in `rechnen.test.ts`.
 
-**Änderungspfad.** Je Score eine eigene Missing-Value-Regel, sobald D6 für ihn entschieden ist: maschinenlesbares Feld neben `missing_value_regel`, Auswertung in `wende()`, Referenzfall mit fehlender Antwort · Aufwand `klein`.
+**Änderungspfad.** Je Score eine eigene Missing-Value-Regel, sobald D6 für ihn entschieden ist: maschinenlesbares Feld neben `missing_value_regel`, Auswertung in `wende()`, Referenzfall mit fehlender Antwort · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt: keine eigenmächtige Ersetzung durch 0 oder Hochrechnung; veröffentlichte Regeln des Instruments, auch zu fehlenden Antworten, haben Vorrang; ohne belegte Regel bleibt die Skala ohne Ergebnis und die fehlenden Items werden genannt.
 
 ### ANN-099 — Ohne Vorlage im Repository bleibt ein Instrument inaktiv
 
-Technik · offen · 2026-09-25 · — · — · Wiedervorlage: mit FRB-EPIC-004 (Veränderungsfrage und NRS freigegeben, PSFS gestrichen — Stand 2026-09-29)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit FRB-EPIC-004 (Veränderungsfrage und NRS freigegeben, PSFS gestrichen — Stand 2026-09-29)
 
 **Annahme.** Ein Instrument ohne Vorlage in `quellen/scores/pdf/` darf in der Bibliothek stehen, aber nicht aktiv sein: `quelle.datei` fehlt, `quelle.literatur` nennt die Veröffentlichung, der Wortlaut gilt als vorläufig und die Version bleibt `0.x`. NRS, PSFS und die globale Veränderungsfrage liegen so vor — Wortlaut nach der gängigen deutschen Form, PSFS mit **drei** Aktivitäten (die Originalfassung erlaubt bis zu fünf), Veränderungsfrage **siebenstufig** von −3 bis +3. `prioritaet` steht auf `a`, weil die Roadmap die drei zuerst nennt; im Inventar der 18 kommen sie nicht vor.
 
@@ -1323,7 +1323,7 @@ Technik · offen · 2026-09-25 · — · — · Wiedervorlage: mit FRB-EPIC-004 
 
 **Anker.** Die Prüfung `aktiv` ohne `quelle.datei` in `scoreDefinitionSchema`, `src/features/assessments/schema.ts`; die drei Dateien unter `src/features/assessments/definitionen/scores/`.
 
-**Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`.
+**Änderungspfad.** Bogen in `quellen/scores/pdf/` ablegen, Wortlaut der Datei gegen ihn halten, `quelle.datei` setzen, Version `1.0.0`, `aktiv: true` · Aufwand `klein` je Instrument. Andere Stufenzahl oder fünf Aktivitäten: Items ergänzen, Referenzfall anpassen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Stand übernommen: PSFS entfällt; NRS und Veränderungsfrage werden mit Jannes’ freigegebenem Wortlaut als **Praxisvorgaben** umgesetzt (FRB-EPIC-004); die Frage zu „Beschwerden“ wird nicht als unveränderte, validierte Schmerz-NRS bezeichnet. Die Definitionsdateien stehen noch auf dem alten Stand und werden in FRB-EPIC-004 nachgezogen.
 
 ### ANN-100 — Die Test-Umgebung wird nur auf Knopfdruck neu aufgesetzt, ihr Zugang kommt aus einem Secret
 
@@ -1355,7 +1355,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 ### ANN-102 — Der Anamnesebogen V8 wird ohne Punktwerte übertragen; eine Erhebung speichert die Kennung der Option
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit P4 (erster gewerteter Score, der erhoben wird)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit P4 (erster gewerteter Score, der erhoben wird)
 
 **Annahme.** Optionen tragen eine sprechende Kennung (`nachtschmerzen`); eine Option ohne Punktwert muss eine haben, eine gewertete ohne Kennung wird mit ihrem Punktwert gespeichert (`optionKennung`). Der Bogen wird mit den 39 nummerierten Fragen übertragen, 12a/b und die drei Felder zu Frage 26 als eigene Items unter derselben Nummer; „nein" ist in einer Mehrfachauswahl eine exklusive Option, „Sonstiges?", „andere Erkrankung?", „anderes Ereignis?", „andere Medikamente?" und „Anderes?" tragen eine eigene Angabe. Aus dem Kopf kommen Beruf und Sport/Hobby mit; Name und Alter stehen in der Akte, Datum ist das Erhebungsdatum, die Unterschrift bleibt Papier. „Anmerkungen Therapeut:" ist ein Freitext mit `ausgefuellt_von: therapeut`.
 
@@ -1363,11 +1363,11 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit P4 (erster ge
 
 **Anker.** `optionSchema` und `optionKennung` in `src/features/assessments/schema.ts`; Definition `src/features/assessments/definitionen/scores/anamnese_v8.json`; Tests `anamnese.test.ts`, Wortlaut gegen den Extrakt in `definitionen.test.ts`.
 
-**Änderungspfad.** Andere Aufteilung des Bogens: neue Version der Definition (`1.1.0`), alte Erhebungen behalten ihre `definition_version` · Aufwand `klein`. Kennung statt Punktwert auch an gewerteten Scores: Kennungen in den Dateien nachtragen · Aufwand `klein`.
+**Änderungspfad.** Andere Aufteilung des Bogens: neue Version der Definition (`1.1.0`), alte Erhebungen behalten ihre `definition_version` · Aufwand `klein`. Kennung statt Punktwert auch an gewerteten Scores: Kennungen in den Dateien nachtragen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-103 — Ein Fragebogen ist Entwurf oder abgeschlossen; korrigiert wird als neue Erhebung, erheben nur die behandelnden Rollen
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier Wochen Betrieb mit echten Anamnesen
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: nach vier Wochen Betrieb mit echten Anamnesen
 
 **Annahme.** Eine Erhebung hat zwei Zustände: `entwurf` (frei änderbar, darf verworfen werden) und `abgeschlossen` (unveränderlich, auch gegen direkten Zugriff durch einen Trigger). Eine Korrektur ist eine **neue** Erhebung mit Verweis auf die alte und einer Begründung von 3 bis 500 Zeichen; eine Erhebung wird höchstens einmal ersetzt. Es gibt **keine** automatische Finalisierung wie in ADR-016 Punkt 7. Erheben, abschließen, verwerfen und korrigieren dürfen `owner`, `therapist` und `team_lead`; lesen alle vier Praxisrollen, je gelieferter Erhebung protokolliert.
 
@@ -1375,7 +1375,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: nach vier W
 
 **Anker.** `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql` (`app.guard_questionnaire_response`, `app.can_write_questionnaire_response`, `save_questionnaire_response`); `canWriteQuestionnaire` in `src/features/session/types.ts`; Tests `supabase/tests/questionnaire-responses.test.ts`.
 
-**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`.
+**Änderungspfad.** Automatische Finalisierung: Frist und Lauf nach dem Muster von DOK-002 ergänzen · Aufwand `mittel`. Office darf erfassen (Papierbogen abtippen): Rolle in beiden Funktionen ergänzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Korrektur bleibt mit der ursprünglichen Erhebung verknüpft, Erhebungsdatum und Korrekturzeitpunkt getrennt, im Verlauf keine zusätzliche Messung (BEF-101).
 
 ### ANN-104 — Hervorgehoben werden acht Fragen des Anamnesebogens nach IFOMPT, je Frage und ohne Verknüpfung
 
@@ -1391,7 +1391,7 @@ Recht · entschieden (Jannes) · 2026-09-26 · Jannes (Regeln fachlich bestätig
 
 ### ANN-105 — Die Antworten prüft die Anwendung gegen die Definition, der Server nur ihre Form
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002), bevor Menschen außerhalb der Praxis schreiben
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002), bevor Menschen außerhalb der Praxis schreiben
 
 **Annahme.** Der Server prüft an einer Erhebung Kennung und Version in ihrer Form, dass die Antworten ein Objekt mit Kennungen als Schlüsseln und Objekten als Werten sind, und eine Obergrenze von 64 KiB. Ob eine Antwort zur Frage passt (Option vorhanden, „nein" allein, Skala im Bereich), prüft `antwortenSchema` in der Anwendung gegen die Definitionsdatei. Angezeigt wird eine ältere Erhebung mit der Definition des Releases; eine abweichende Version wird an der Erhebung genannt.
 
@@ -1399,11 +1399,11 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: mit dem Patienten
 
 **Anker.** `app.assert_questionnaire_answers` in `supabase/migrations/20260926100000_frb_002b_questionnaire_responses.sql`; `antwortenSchema` in `src/features/assessments/antworten.ts`.
 
-**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`.
+**Änderungspfad.** Prüfung auch auf dem Server (spätestens für den Patientenlink): die Definition beim Build als Tabelle oder JSON-Schema in eine Migration erzeugen und in `save_questionnaire_response` prüfen · Aufwand `mittel`. Frühere Fassungen der Definition aufbewahren: Datei je Version unter `definitionen/` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** so **nicht** bestätigt: Der Server prüft auch Instrument, Version, Optionen, Wertebereiche und unzulässige Kombinationen, aus denselben Definitionsdateien; historische Erhebungen werden mit ihrer ursprünglichen Definition angezeigt und ausgewertet (BEF-101). Bis zur Umsetzung gilt die bisherige Prüfung.
 
 ### ANN-106 — Der Verlauf zeigt Rohwerte als Punkte mit Ereignissen der Praxis; fünf Ereignisarten, setzen und entfernen statt ändern
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 weitere Instrumente aktivieren
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: wenn P4/P5 weitere Instrumente aktivieren
 
 **Annahme.** Der Verlauf im Befund zeigt je Skalenfrage der aktiven Instrumente die Werte **geltender** Bögen (abgeschlossen, nicht ersetzt) als Punkte mit Zahl, ohne Linie, Trend, Mittel oder Farbe nach Höhe; darunter die Werte als Text. Ereignisse haben fünf Arten (Operation, Erkrankung, Urlaub/Pause, Medikation geändert, Sonstiges) mit Tag und Notiz bis 200 Zeichen, auch in der Zukunft; eine falsche Markierung wird entfernt und neu gesetzt, beides protokolliert, das Auditlog trägt weder Art noch Notiz. Durchgeführte Termine (die letzten 50) stehen als Striche an der Zeitachse.
 
@@ -1411,7 +1411,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: wenn P4/P5 
 
 **Anker.** `patient_course_events` in `supabase/migrations/20260926110000_frb_002e_course_events.sql`; `EREIGNISARTEN` und `messreihen` in `src/features/assessments/verlauf.ts`; `Messreihenbild` in `src/features/assessments/Messreihenbild.tsx`.
 
-**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`.
+**Änderungspfad.** Weitere Art: Constraint und `EREIGNISARTEN` gemeinsam erweitern (Test hält beide gleich) · Aufwand `klein`. Mehr als 50 Termine: eigener Lesepfad nur mit Tagen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Rohwerte und Ereignisarten bestätigt; „Entfernen“ löscht künftig nicht mehr, Inhalt, Urheber und Entfernungszeitpunkt bleiben in der Akte nachvollziehbar, das Auditlog bleibt bei Metadaten (BEF-102).
 
 ### ANN-107 — Das Körperschema ist Jannes' Zeichnung; markiert wird mit einem Kreis an der Stelle, gespeichert Stelle und nächster Bereich
 
@@ -1551,7 +1551,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 ### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt, kein Grenzwert
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes, wenn er die drei Lücken nachliefert (Plan D2)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, wenn er die drei Lücken nachliefert (Plan D2)
 
 **Annahme.** Die neun Regionen stehen wörtlich aus der Vorlage in `definitionen/bausteine/`. Schulter „Untersuchung ACG", LWS „Behandlung" und HWS „Therapie Hochzervikal" tragen `status: "unvollstaendig"` — auch die beiden, vor deren Abbruch Items stehen; LWS „Untersuchung SIG" ist mit sechs Items vollständig. Text hinter „ – " und reine Durchführungsklammern sind Hinweise, die nie in den Dokumentationstext gehen; eine dritte Gliederungsebene wird flach, die Zwischenüberschrift steht als Hinweis. Die Klammer beim Navicular Drop („mehr als 1 cm Differenz im Svgl. → Training Gewölbe") ist **nicht** übernommen. Seitengetrennt sind Extremitäten und Kiefer, an der Wirbelsäule nur Neurologie, Neurodynamik und SIG; wie die Seite abgefragt wird, regelt seit 2026-09-26 ANN-129. Seitengetrennte Tests mit Messwert (Knee to Wall, Navicular Drop) werden je Seite erfasst — das hat Jannes am 2026-09-26 entschieden.
 
@@ -1559,11 +1559,11 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes, wen
 
 **Anker.** `blockSchema` in `src/features/assessments/schema.ts`; Regeln in `src/features/assessments/definitionen/bausteine/README.md`; Test `src/features/assessments/bausteine.test.ts`.
 
-**Änderungspfad.** Lücken nachliefern: Items in die Regionsdatei, Version heben, Zähltest anpassen · Aufwand `klein`. Andere Seitenregel oder Hinweis entfernen: das Feld in den Regionsdateien · Aufwand `klein`.
+**Änderungspfad.** Lücken nachliefern: Items in die Regionsdatei, Version heben, Zähltest anpassen · Aufwand `klein`. Andere Seitenregel oder Hinweis entfernen: das Feld in den Regionsdateien · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die drei unvollständigen Bereiche bleiben sichtbar als unvollständig gekennzeichnet, Fehlendes wird nicht selbst ergänzt.
 
 ### ANN-119 — Tippfehler der Bausteinvorlage bleiben stehen
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes (Plan D3)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Plan D3)
 
 **Annahme.** „Relocation Tet", „Supinatin", „Lachmann", „Painfull Arc Sign" und die übrigen Schreibweisen der Vorlage stehen unverändert in den Bezeichnungen und damit im erzeugten Dokumentationstext; die Kennungen sind davon unabhängig.
 
@@ -1571,11 +1571,11 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes (Pla
 
 **Anker.** `src/features/assessments/definitionen/bausteine/README.md`; Test „lässt die Tippfehler der Vorlage stehen" in `src/features/assessments/bausteine.test.ts`.
 
-**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben.
+**Änderungspfad.** Korrigieren: Labels in den Regionsdateien, Version heben, Quelldatei mit Vermerk anpassen, damit der Wortlauttest die neue Schreibweise hält · Aufwand `klein`. Kennungen bleiben. **Abnahme (Jannes, 2026-10-02):** geändert: offensichtliche Tippfehler werden für künftige Einträge korrigiert, Kennungen bleiben, bestehende Dokumentation ändert sich nicht (BEF-103).
 
 ### ANN-120 — Bausteine erzeugen nur Text: kein gespeichertes Einzelergebnis, der Befund ist die Dokumentation des Termins
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Phase P6 des FRB-Plans (Ergebnisse speichern, Verlauf je Test); Jannes in der Sichtung
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Phase P6 des FRB-Plans (Ergebnisse speichern, Verlauf je Test); Jannes in der Sichtung
 
 **Annahme.** Das Bausteinfeld steht in „Behandlung abschließen" und „Dokumentation bearbeiten" (nicht im Nachtrag, nicht ohne Behandlung). Die Häkchen leben nur auf der Seite; gespeichert wird allein der übernommene Text als Entwurf nach ADR-016. Der Erstbefund ist damit die Dokumentation des Termins der Erstaufnahme, kein eigener Eintragstyp. Ein nicht übernommener Vorschlag gilt als ungespeicherte Arbeit: Er hält „Als Entwurf speichern" und den Abschluss an, bis er im Text steht oder verworfen ist; nur wer die Seite verlässt und in der Rückfrage „Speichern" wählt, bekommt ihn an den Entwurf angehängt. Während eines Schreibvorgangs ist das Feld gesperrt. Keine Kopierschaltfläche.
 
@@ -1583,11 +1583,11 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Phase P6 de
 
 **Anker.** `useBausteinAuswahl` in `src/features/assessments/bausteinauswahl.ts` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; Einbindung in `src/features/documentation/TreatmentNotePage.tsx` und `CompleteTreatmentPage.tsx`; Tests dort und in `src/features/assessments/BausteinFeld.test.tsx`.
 
-**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`.
+**Änderungspfad.** Einzelergebnisse speichern: Tabelle mit Datenklasse, Frist und Policy nach Plan P6, die Auswahl als Entwurf dort ablegen · Aufwand `groß`. Eigener Befund-Eintrag: neuer Eintragstyp nach ADR-016 · Aufwand `groß`. Vorschlag nie automatisch anhängen: die beiden `entwurfSichern` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bausteine und Erstbefund als Termindokumentation bestätigt. Geändert: Kein unbestätigter Vorschlag wird beim Verlassen oder Speichern ungesehen an den Entwurf gehängt; die Eingaben bleiben dennoch erhalten (BEF-103). Bis zur Umsetzung gilt die bisherige Regel.
 
 ### ANN-121 — Der Therapiebericht ist ein gespeicherter Datensatz; beim Abschluss friert er als Snapshot ein
 
-Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; mit Weg 3 aus B14 (serverseitiges PDF nach OPS-001)
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; mit Weg 3 aus B14 (serverseitiges PDF nach OPS-001)
 
 **Annahme.** Ein Therapiebericht hängt an genau einer Verordnung und hat zwei Zustände: `entwurf` (frei änderbar, verwerfbar) und `abgeschlossen` (als `jsonb`-Snapshot mit `schema_version` eingefroren, unveränderlich per Trigger auch für postgres). Eine Korrektur ist ein neuer Bericht; eine Verordnung mit Bericht lässt sich nicht löschen. Gedruckt wird über den Browser (B14 Weg 1); der Druckknopf gilt als Export (`therapy_report.exported`).
 
@@ -1595,11 +1595,11 @@ Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/api.ts`.
 
-**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`.
+**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104).
 
 ### ANN-122 — Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung (Befund Schritt 8)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes in der Sichtung (Befund Schritt 8)
 
 **Annahme.** Zur Auswahl stehen die finalisierten Einträge der ganzen Akte (die 200 jüngsten, die der Verordnung zuerst, weitere zugeklappt, höchstens 50 im Bericht) und abgeschlossene, nicht ersetzte Erhebungen mit Körperschema; angekreuzt ist nichts. Der Bericht übernimmt Einträge wörtlich mit Tag und Verfasser:in, das Körperschema als Bild mit dem Tag der Erhebung, dazu Diagnose, Heilmittel und die **gezählten** stattgefundenen Termine mit erstem und letztem Tag. Eigener Text und Empfehlung stehen mit Verfasser:in und Tag der letzten inhaltlichen Änderung.
 
@@ -1607,7 +1607,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 
 **Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/TherapieberichtPage.tsx`.
 
-**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`.
+**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104).
 
 ### ANN-123 — Der Briefkopf kommt aus den Praxis-Stammdaten, ohne Steuer- und Bankangaben
 
@@ -1623,7 +1623,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-124 — Die Anwendung verschickt keinen Bericht; ob er an die Verordner:in gehen darf, entscheidet die Praxis
 
-Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); vor dem ersten Bericht mit echten Daten
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); vor dem ersten Bericht mit echten Daten
 
 **Annahme.** Der Bericht wird gedruckt, als PDF gespeichert oder gefaxt — von der Praxis, außerhalb der Anwendung. Eine Einwilligung oder Schweigepflichtentbindung für die Übermittlung wird nicht erfasst und nicht geprüft; die Seite sagt nur „Die Anwendung verschickt nichts".
 
@@ -1631,7 +1631,7 @@ Recht · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** Der Hinweis unter dem Druckknopf in `src/features/therapy-reports/TherapieberichtDruckPage.tsx`.
 
-**Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`.
+**Änderungspfad.** Vermerk „Bericht angefordert / Einwilligung liegt vor" vor dem Druck: ein Feld am Bericht und eine Bedingung am Knopf · Aufwand `klein`. Versand aus der Anwendung: eigenes Epic nach ADR-002 · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; die Grundlage der Übermittlung klärt B2 — der Hinweis „Die Anwendung verschickt nichts“ ersetzt diese Klärung nicht.
 
 ### ANN-125 — Beim Entfernen der Metadaten bleibt nur die Ausrichtung und, was der Dekoder braucht
 
@@ -1683,7 +1683,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-129 — Die Seite wird an Extremitäten und Kiefer einmal je Region gewählt, an der Wirbelsäule je Test
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung (Befund, Schritt 6)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes in der Sichtung (Befund, Schritt 6)
 
 **Annahme.** Eine Region, deren Tests und Techniken alle seitengetrennt sind (Schulter, Ellenbogen, Hand, Hüfte, Knie, Fuß, Kiefer), fragt nach der Regionswahl einmal „links", „rechts" oder „beidseits", ohne Vorauswahl; erst danach klappen die Blöcke auf. Bei einer Seite hat jeder Test eine Zeile, und die Seite steht nur in der Überschrift des Textes („Untersuchung Hüfte rechts"). Bei „beidseits" bekommt jeder Test eine Zeile für links und eine für rechts; gleiche Ergebnisse stehen im Text als „bds.". An HWS und LWS gibt es keine Regionsseite: Die seitengetrennten Tests (Neurologie, Neurodynamik, SIG) haben immer eine Zeile je Seite. Gemessene Tests (Knee to Wall, Navicular Drop) haben immer beide Seiten. Ein Wechsel von einer Seite auf die andere nimmt die Angaben mit; von „beidseits" auf eine Seite fallen die der anderen Seite weg.
 
@@ -1691,11 +1691,11 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 
 **Anker.** `seitenDes` und `seiteUmstellen` in `src/features/assessments/dokumentationstext.ts`; Oberfläche `SeitenWahl` in `BausteinFeld.tsx`; Tests in `dokumentationstext.test.ts` und `BausteinFeld.test.tsx`.
 
-**Änderungspfad.** Vorauswahl oder zuletzt gewählte Seite: Anfangswert in `useBausteinAuswahl` · Aufwand `klein`. Regionsseite auch an der Wirbelsäule: `seitlicheRegion` · Aufwand `klein`. „bds." nie zusammenfassen: `eintraege` · Aufwand `klein`.
+**Änderungspfad.** Vorauswahl oder zuletzt gewählte Seite: Anfangswert in `useBausteinAuswahl` · Aufwand `klein`. Regionsseite auch an der Wirbelsäule: `seitlicheRegion` · Aufwand `klein`. „bds." nie zusammenfassen: `eintraege` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Seitenwahl bestätigt; beim Wechsel von „beidseits“ auf eine Seite gehen Ergebnisse der anderen Seite nicht still verloren (BEF-103).
 
 ### ANN-130 — Der Dokumentationstext aus Bausteinen: Zeichen statt Wort, Ausgangsstellung nur beim Abhaken, gegliedert
 
-Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in der Sichtung (Befund, Schritt 6)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes in der Sichtung (Befund, Schritt 6)
 
 **Annahme.** Ein Test hat die Ergebnisse o.B., positiv und nicht getestet (Jannes' Festlegung, ersetzt negativ und nicht beurteilbar). Im Text steht je Block ein Absatz mit Überschrift, je Test eine Zeile mit dem Ergebnis als Zeichen vorn — ✅ für o.B., ❗ für positiv —, dahinter Seite, Messwert und nach „–" die Notiz. „Nicht getestet" steht ausgeschrieben in einer Sammelzeile am Ende des Absatzes. Unterpunkte einer Testgruppe (Impingement, LET, Motorik) stehen eingerückt unter dem Gruppennamen; eine Ausgangsstellung (`ausgangsstellung: true`, heute nur Rückenlage und Bauchlage der Hüfte) steht beim Abhaken, aber nicht im Text. Techniken stehen als Aufzählung mit „•".
 
@@ -1703,7 +1703,7 @@ Praxisprozess · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes in d
 
 **Anker.** `ERGEBNIS_ZEICHEN` und `dokumentationstext` in `src/features/assessments/dokumentationstext.ts`; `ausgangsstellung` in `bausteinItemSchema` (`schema.ts`) und in `definitionen/bausteine/06-huefte.json` (Version 1.1.0); Tests in `dokumentationstext.test.ts`, `schema.test.ts`, `bausteine.test.ts`.
 
-**Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`.
+**Änderungspfad.** Andere Zeichen oder Wörter statt Zeichen: `ERGEBNIS_ZEICHEN` · Aufwand `klein`. Weitere Ausgangsstellungen: das Feld in der Regionsdatei, Version heben · Aufwand `klein`. „Nicht getestet" je Zeile statt gesammelt: `schreibe` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Gliederung bestätigt; im gespeicherten Text stehen „o.B.“ bzw. „positiv“ ausgeschrieben, die Zeichen ergänzen nur (BEF-103).
 
 ### ANN-131 — Blätter für den Fensterumschlag: DIN 5008 Form B, Fenster links
 
@@ -2375,7 +2375,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 ### ANN-200 — Die bisherigen Einträge auf der Schreibseite öffnen nie von selbst
 
-Datenschutz · offen · 2026-10-01 · — · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 12)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Prüfpaket · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 12)
 
 **Annahme.** Auf der Schreibseite stehen die bisherigen Einträge der Person hinter „Verlauf" in der Fußleiste: am Telefon als Blatt, ab 640 px als Spalte. Gelesen wird erst, wenn jemand das Blatt öffnet – über denselben Lesepfad wie der Behandlungsverlauf der Akte, der jeden gezeigten Eintrag als `treatment_note.viewed` protokolliert. Der Handoff lässt die Spalte am Rechner von selbst offen; hier bleibt sie zu, bis jemand sie öffnet. Gezeigt werden die Einträge der jüngsten 20 Termine ohne den gerade dokumentierten. Der Satz zur Folge des Festschreibens steht nicht mehr sichtbar über dem Knopf, sondern als Beschreibung des Knopfes für Vorlesesoftware.
 
@@ -2383,7 +2383,7 @@ Datenschutz · offen · 2026-10-01 · — · — · Prüfpaket · Wiedervorlage:
 
 **Anker.** `BisherigeEintraege` in `src/features/documentation/BisherigeEintraege.tsx`, eingehängt in `CompleteTreatmentPage.tsx`; Test `CompleteTreatmentPage.test.tsx` („liest die bisherigen Einträge erst, wenn jemand den Verlauf öffnet").
 
-**Änderungspfad.** Ab 640 px offen beginnen: Anfangswert von `verlaufOffen` an die Breite binden · Aufwand `klein`.
+**Änderungspfad.** Ab 640 px offen beginnen: Anfangswert von `verlaufOffen` an die Breite binden · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; gleiche Leserechte und gleiche Protokollierung für Büro und Behandelnde (BEF-095).
 
 ### ANN-201 — „Doku offen" ist eine Aufgabe für die, die dokumentieren
 
