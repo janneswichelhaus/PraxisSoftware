@@ -136,7 +136,9 @@ export function erstelleInstanz(
       if (!antwort.ok) return antwort;
       const wert = antwort.wert;
       return typeof wert === 'string' &&
-        ['passed', 'rejected', 'already_verified', 'not_found', 'not_confirmed'].includes(wert)
+        ['passed', 'rejected', 'held', 'already_verified', 'not_found', 'not_confirmed'].includes(
+          wert,
+        )
         ? { ok: true, wert: wert as Eintrag }
         : { ok: false };
     },

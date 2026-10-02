@@ -356,4 +356,23 @@ describe('Dokumentationsfotos (ABN-023)', () => {
     expect(rows[0]?.gehalten).toBe(true);
     expect((await fotoliste()).map((z) => z.id)).toEqual([doku.file_id]);
   });
+
+  // Zweitreview, Checkliste Nr. 1: Rolle ohne klinisches Schreibrecht.
+  it('laesst office kein Dokumentationsfoto aufnehmen oder loeschen und nicht herausgeben', async () => {
+    const aufnahme = await abgefangen(vorbereiten(users.office));
+    expect(aufnahme?.message).toMatch(/not allowed/);
+
+    const doku = await foto();
+    const loeschen = await abgefangen(
+      asUserCommitted(users.office, 'select public.delete_patient_file($1::uuid)', [doku.file_id]),
+    );
+    expect(loeschen?.message).toMatch(/not allowed/);
+
+    for (const wer of [users.office, users.therapist]) {
+      const heraus = await abgefangen(
+        asUser(wer, 'select * from public.hand_out_patient_photo($1::uuid)', [doku.file_id]),
+      );
+      expect(heraus?.message).toMatch(/denied/);
+    }
+  });
 });

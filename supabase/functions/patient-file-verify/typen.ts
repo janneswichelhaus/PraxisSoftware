@@ -24,7 +24,9 @@ export interface Pruefergebnis {
 }
 
 /** Was `record_patient_file_verification` zurückgibt. */
-export type Eintrag = 'passed' | 'rejected' | 'already_verified' | 'not_found' | 'not_confirmed';
+/** `held`: Befund unter Legal Hold - nichts verworfen, nur protokolliert. */
+export type Eintrag =
+  'passed' | 'rejected' | 'held' | 'already_verified' | 'not_found' | 'not_confirmed';
 
 /** Ein Aufruf an die eigene Instanz: Ergebnis oder Fehlerklasse, nie Inhalt. */
 export type Ergebnis<T> = { readonly ok: true; readonly wert: T } | { readonly ok: false };
@@ -38,6 +40,7 @@ export interface Protokolleintrag {
   readonly klasse:
     | 'passed'
     | 'rejected'
+    | 'held'
     | 'already_verified'
     | 'not_found'
     | 'not_confirmed'

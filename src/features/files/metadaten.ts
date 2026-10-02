@@ -233,6 +233,10 @@ function istBildsegment(marker: number): boolean {
 
 function bereinigeJpeg(bytes: Uint8Array): Uint8Array {
   const segmente = jpegSegmente(bytes);
+  // Ohne Bildende ist das Bild abgeschnitten. Die Prüfung am Server
+  // (`patient-file-verify`) verlangt es ebenso; ein solches Bild ginge erst
+  // hoch und würde dann verworfen (Zweitreview ABN-EPIC-001c, Befund 4).
+  if (segmente.at(-1)?.marker !== 0xd9) throw new Error(BESCHAEDIGT);
   let ausrichtung = 1;
   const behalten: Uint8Array[] = [];
 

@@ -38,13 +38,29 @@ function blob(bytes: Uint8Array, typ: string): Blob {
   return new Blob([bytes as BlobPart], { type: typ });
 }
 
-/** Ein ICC-Kopf mit RGB-Farbraum und einer Beschreibung in UTF-16, wie `mluc`. */
-function profil(beschreibung: string): Uint8Array {
-  const kopf = new Uint8Array(128);
+/**
+ * Ein ICC-Profil mit RGB-Farbraum, einer Tag-Tabelle mit `desc` (UTF-16 wie
+ * `mluc`) und einem Copyright, das „sRGB" erwähnen kann.
+ */
+function profil(beschreibung: string, copyright = ''): Uint8Array {
+  const utf16 = (t: string) => {
+    const b = new Uint8Array(t.length * 2);
+    for (let i = 0; i < t.length; i += 1) b[i * 2 + 1] = t.charCodeAt(i);
+    return b;
+  };
+  const desc = verbinde(text('mluc'), utf16(beschreibung));
+  const cprt = verbinde(text('text'), text(copyright));
+  const kopf = new Uint8Array(128 + 4 + 24);
   kopf.set(text('RGB '), 16);
-  const utf16 = new Uint8Array(beschreibung.length * 2);
-  for (let i = 0; i < beschreibung.length; i += 1) utf16[i * 2 + 1] = beschreibung.charCodeAt(i);
-  return verbinde(kopf, text('mluc'), utf16);
+  const ansicht = new DataView(kopf.buffer);
+  ansicht.setUint32(128, 2);
+  kopf.set(text('desc'), 132);
+  ansicht.setUint32(136, kopf.length);
+  ansicht.setUint32(140, desc.length);
+  kopf.set(text('cprt'), 144);
+  ansicht.setUint32(148, kopf.length + desc.length);
+  ansicht.setUint32(152, cprt.length);
+  return verbinde(kopf, desc, cprt);
 }
 
 function jpegMit(icc: Uint8Array): Uint8Array {
@@ -60,6 +76,10 @@ describe('hatFarbprofil', () => {
   it('erkennt ein abweichendes Profil im JPEG und im PNG', async () => {
     expect(await hatFarbprofil(mitProfil(), 'image/jpeg')).toBe(true);
     expect(await hatFarbprofil(jpegMit(profil('Display P3')), 'image/jpeg')).toBe(true);
+    // „sRGB" nur im Copyright macht ein Weitraumprofil nicht zu sRGB.
+    expect(
+      await hatFarbprofil(jpegMit(profil('Display P3', 'derived from sRGB')), 'image/jpeg'),
+    ).toBe(true);
     // Ein Profil, das sich nicht entpacken laesst, gilt als abweichend.
     expect(await hatFarbprofil(pngVomHandy(), 'image/png')).toBe(true);
   });

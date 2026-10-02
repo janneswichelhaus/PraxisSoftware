@@ -26,10 +26,24 @@ interface Abhaengigkeiten {
   readonly jetzt?: () => number;
 }
 
+/**
+ * Die Kopfzeilen für den Aufruf aus dem Browser - wie bei `location-provider`.
+ * `*` ist kein Zugeständnis: Ohne gültige Sitzung gibt der Endpunkt nichts
+ * heraus, nimmt keine Cookies entgegen und antwortet nur mit einer Klasse.
+ * Ohne diese Zeilen scheiterte jeder Aufruf aus der Anwendung am Preflight
+ * (Zweitreview ABN-EPIC-001c, Befund 1).
+ */
+const CORS: Readonly<Record<string, string>> = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Max-Age': '86400',
+};
+
 function json(status: number, rumpf: Record<string, unknown>): Response {
   return new Response(JSON.stringify(rumpf), {
     status,
-    headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
+    headers: { ...CORS, 'Content-Type': 'application/json', 'Cache-Control': 'no-store' },
   });
 }
 
@@ -46,6 +60,7 @@ export function erstelleHandler({
       return json(status, { ergebnis: klasse });
     };
 
+    if (anfrage.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (anfrage.method !== 'POST') return ende(405, 'bad_request');
     if (!instanz) return ende(503, 'not_configured');
 

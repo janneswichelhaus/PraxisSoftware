@@ -117,6 +117,17 @@ describe('patient-file-verify', () => {
     expect(i.eintragen).not.toHaveBeenCalled();
   });
 
+  it('beantwortet den Preflight des Browsers und traegt CORS an jeder Antwort', async () => {
+    const handler = erstelleHandler({ instanz: instanz(), protokolliere: () => undefined });
+    const vorab = await handler(
+      new Request('http://localhost/functions/v1/patient-file-verify', { method: 'OPTIONS' }),
+    );
+    expect(vorab.status).toBe(204);
+    expect(vorab.headers.get('Access-Control-Allow-Methods')).toContain('POST');
+    const antwort = await handler(anfrage());
+    expect(antwort.headers.get('Access-Control-Allow-Origin')).toBe('*');
+  });
+
   it('antwortet ohne Einrichtung mit not_configured', async () => {
     const { status, rumpf } = await lauf(null);
     expect(status).toBe(503);

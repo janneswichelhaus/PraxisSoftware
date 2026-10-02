@@ -52,8 +52,8 @@ interface KarteProps {
   readonly config: MapDisplayConfig | null;
   /**
    * Der Schalter der Function (ADR-019 Punkt 35): Kacheln nur bei `offen`.
-   * Ohne Angabe gilt `offen` - für die Prüfseiten, die ohne Function laufen;
-   * die Anwendung reicht ihn immer herein (`TagesrouteKarte`).
+   * Ohne Angabe gilt `zu` - eine Verwendung, die den Schalter vergisst,
+   * lädt keine Kachel (Zweitreview ABN-EPIC-001c, Befund 8).
    */
   readonly freigabe?: 'offen' | 'zu' | 'pruefen';
   readonly stopps: readonly MapOverlayStop[];
@@ -69,7 +69,7 @@ interface KarteProps {
   readonly route?: readonly Coordinate[] | undefined;
 }
 
-export function Karte({ config, stopps, beschriftung, route, freigabe = 'offen' }: KarteProps) {
+export function Karte({ config, stopps, beschriftung, route, freigabe = 'zu' }: KarteProps) {
   if (config === null) return <OhneKartenmaterial />;
   if (freigabe !== 'offen') return <OhneFreigabe pruefen={freigabe === 'pruefen'} />;
   return (

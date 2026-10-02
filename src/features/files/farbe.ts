@@ -39,25 +39,39 @@ function beginntMit(bytes: Uint8Array, at: number, text: string): boolean {
   return true;
 }
 
-/** Steht „sRGB" im Profil, als ASCII oder als UTF-16 (Beschreibung `desc`/`mluc`)? */
+/**
+ * Beschreibt das Profil sRGB? Gelesen wird nur der Eintrag `desc` aus der
+ * Tag-Tabelle des ICC-Kopfs (ASCII oder UTF-16) - nicht das ganze Profil, wo
+ * „sRGB" auch im Copyright eines Weitraumprofils stehen kann (Zweitreview
+ * ABN-EPIC-001c, Befund 9). Farbraum im Kopf (Byte 16 bis 19) muss RGB sein.
+ */
 function beschreibtSrgb(profil: Uint8Array): boolean {
-  // Farbraum im Kopf (Byte 16 bis 19) muss RGB sein.
-  if (!beginntMit(profil, 16, 'RGB ')) return false;
-  const ascii = 'sRGB';
-  for (let i = 0; i + 8 <= profil.length; i += 1) {
-    if (beginntMit(profil, i, ascii)) return true;
-    if (
-      profil[i] === 0 &&
-      profil[i + 1] === 0x73 &&
-      profil[i + 2] === 0 &&
-      profil[i + 3] === 0x52 &&
-      profil[i + 4] === 0 &&
-      profil[i + 5] === 0x47 &&
-      profil[i + 6] === 0 &&
-      profil[i + 7] === 0x42
-    ) {
-      return true;
+  if (profil.length < 132 || !beginntMit(profil, 16, 'RGB ')) return false;
+  const u32 = (at: number) =>
+    ((profil[at]! << 24) | (profil[at + 1]! << 16) | (profil[at + 2]! << 8) | profil[at + 3]!) >>>
+    0;
+  const anzahl = u32(128);
+  for (let k = 0; k < anzahl && 132 + k * 12 + 12 <= profil.length; k += 1) {
+    const eintrag = 132 + k * 12;
+    if (!beginntMit(profil, eintrag, 'desc')) continue;
+    const start = u32(eintrag + 4);
+    const ende = Math.min(profil.length, start + u32(eintrag + 8));
+    for (let i = start; i + 8 <= ende; i += 1) {
+      if (beginntMit(profil, i, 'sRGB')) return true;
+      if (
+        profil[i] === 0 &&
+        profil[i + 1] === 0x73 &&
+        profil[i + 2] === 0 &&
+        profil[i + 3] === 0x52 &&
+        profil[i + 4] === 0 &&
+        profil[i + 5] === 0x47 &&
+        profil[i + 6] === 0 &&
+        profil[i + 7] === 0x42
+      ) {
+        return true;
+      }
     }
+    return false;
   }
   return false;
 }

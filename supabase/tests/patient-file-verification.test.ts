@@ -271,4 +271,71 @@ describe('Pruefung am Server (ABN-024)', () => {
       expect(fremd).toEqual([]);
     });
   });
+
+  describe('Zweitreview (Befunde 2, 3, 5)', () => {
+    it('gibt die Datei nur der hochladenden Person und nur in den ersten 24 Stunden', async () => {
+      const datei = await hochladen();
+      const fuer = async (person: string) =>
+        (
+          await asServiceRole(
+            'select * from public.patient_file_for_verification($1::uuid, $2::uuid)',
+            [datei.file_id, person],
+          )
+        ).rows;
+      expect(await fuer(users.therapist)).toHaveLength(1);
+      expect(await fuer(users.office)).toEqual([]);
+      expect(await fuer(users.ownerTherapist)).toEqual([]);
+      await asPostgres(
+        "update public.patient_files set created_at = now() - interval '25 hours' where id = $1",
+        [datei.file_id],
+      );
+      expect(await fuer(users.therapist)).toEqual([]);
+    });
+
+    it('verwirft unter Legal Hold nicht, sondern protokolliert den Befund', async () => {
+      const datei = await hochladen('image/jpeg');
+      await asUserCommitted(users.ownerTherapist, 'select public.place_legal_hold($1::uuid, $2)', [
+        patients.max,
+        'Anfrage der Aufsicht',
+      ]);
+      expect(await ergebnis(datei.file_id, true, false, true)).toBe('held');
+      expect((await zeile(datei.file_id))?.status).toBe('ready');
+      const { rows } = await asPostgres<{ held: boolean }>(
+        `select (context ->> 'held')::boolean as held from public.audit_log
+          where action = 'patient_file.verification_failed' and subject_id = $1`,
+        [datei.file_id],
+      );
+      expect(rows).toEqual([{ held: true }]);
+      await asPostgres('delete from public.legal_holds');
+    });
+
+    it('verwirft keine bestaetigte, wartende Datei und bestaetigt sie kein zweites Mal', async () => {
+      await schalter(true);
+      const datei = await hochladen();
+      const verwerfen = await abgefangen(
+        asUserCommitted(users.therapist, 'select public.discard_patient_file_upload($1::uuid)', [
+          datei.file_id,
+        ]),
+      );
+      expect(verwerfen?.message).toMatch(/not accessible/);
+      const zweimal = await abgefangen(
+        asUserCommitted(users.therapist, 'select public.confirm_patient_file_upload($1::uuid)', [
+          datei.file_id,
+        ]),
+      );
+      expect(zweimal?.message).toMatch(/not pending/);
+      expect((await zeile(datei.file_id))?.status).toBe('pending');
+    });
+
+    it('nimmt kein Teilergebnis an', async () => {
+      const datei = await hochladen();
+      const fehler = await abgefangen(
+        asPostgres(
+          'update public.patient_files set verified_at = now(), checksum_verified = true where id = $1',
+          [datei.file_id],
+        ),
+      );
+      expect(fehler?.message).toMatch(/patient_files_verification_complete/);
+    });
+  });
 });
