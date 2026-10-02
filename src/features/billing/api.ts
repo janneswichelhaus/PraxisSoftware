@@ -171,7 +171,8 @@ export const praxisStammdatenSchema = z.object({
   city: z.string(),
   phone: z.string().nullable(),
   email: z.string().nullable(),
-  tax_number: z.string(),
+  // ABN-008: Steuernummer ODER USt-IdNr. (Par. 14 Abs. 4 Nr. 2 UStG).
+  tax_number: z.string().nullable(),
   vat_id: z.string().nullable(),
   small_business: z.boolean(),
   bank_name: z.string().nullable(),
@@ -401,7 +402,7 @@ const dokumentSchema = z.object({
     city: z.string(),
     phone: z.string().nullable(),
     email: z.string().nullable(),
-    tax_number: z.string(),
+    tax_number: z.string().nullable(),
     vat_id: z.string().nullable(),
     small_business: z.boolean(),
     bank_name: z.string().nullable(),
@@ -591,18 +592,40 @@ export async function storniereRechnung(invoiceId: string, grund: string): Promi
     p_reason: grund,
   })) as { data: unknown; error: { message?: string } | null };
 
-  // Der eine Fall, der eine eigene Antwort verdient: Erst das Geld, dann das
-  // Dokument. Alles andere wäre ein Eingang ohne Forderung.
-  if (error?.message?.includes('void the payments of this invoice first')) {
-    throw new ZahlungStehtNoch();
-  }
+  // Seit ABN-008 sperrt eine stehende Zahlung das Storno nicht mehr: Der
+  // eingegangene Betrag bleibt an der stornierten Rechnung stehen, bis er
+  // zurückgezahlt oder mit der Korrekturrechnung verrechnet ist (BEF-100).
   if (error) throw new Error('Die Rechnung konnte nicht storniert werden.');
   const nummer = z.string().safeParse(data);
   if (!nummer.success) throw new Error('Die Rechnung konnte nicht storniert werden.');
   return nummer.data;
 }
 
-export class ZahlungStehtNoch extends Error {}
+/**
+ * Einen an einer stornierten Rechnung eingegangenen Betrag mit ihrer
+ * ausgestellten Korrekturrechnung verrechnen (ABN-008, BEF-100). Der Server
+ * bucht zwei verbundene Zeilen: eine Rückzahlung an der stornierten und einen
+ * Eingang an der Korrekturrechnung, beide als „Verrechnung“.
+ */
+export async function verrechneMitKorrektur(eingabe: {
+  stornierteId: string;
+  korrekturId: string;
+  betragCent: number;
+}): Promise<void> {
+  const { error } = (await getSupabase().rpc('offset_payment', {
+    p_cancelled_invoice_id: eingabe.stornierteId,
+    p_replacement_invoice_id: eingabe.korrekturId,
+    p_amount_cents: eingabe.betragCent,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('cannot exceed')) {
+    throw new Error('Es lässt sich höchstens verrechnen, was auf dieser Rechnung eingegangen ist.');
+  }
+  if (error?.message?.includes('replacement invoice')) {
+    throw new Error('Verrechnet wird nur mit der ausgestellten Korrekturrechnung.');
+  }
+  if (error) throw new Error('Die Verrechnung konnte nicht gebucht werden.');
+}
 
 /** Der Entwurf der Korrekturrechnung zu einer stornierten Rechnung (ABR-003c). */
 export async function erstelleKorrektur(invoiceId: string): Promise<string> {
@@ -704,9 +727,19 @@ export async function erstelleErinnerung(invoiceId: string): Promise<string> {
 // Zahlungen und offene Posten (ABR-004)
 // -----------------------------------------------------------------------------
 
+/** Die Wege, die sich buchen lassen. */
 export const zahlungswegLabels: Record<string, string> = {
   bank_transfer: 'Überweisung',
   other: 'Anderer Weg',
+};
+
+/**
+ * Die Wege in einer Liste gebuchter Zahlungen. Die Verrechnung (ABN-008)
+ * entsteht nur über `verrechneMitKorrektur` und steht deshalb nicht zur Wahl.
+ */
+export const zahlungswegAnzeige: Record<string, string> = {
+  ...zahlungswegLabels,
+  offset: 'Verrechnung',
 };
 
 export const richtungLabels: Record<string, string> = {

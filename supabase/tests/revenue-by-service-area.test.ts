@@ -437,6 +437,46 @@ describe('Einnahmen je Leistungsart', () => {
 
       expect(summe(await auswertung('cash'))).toBe(1 + 3333 + 4567);
     });
+
+    /**
+     * ABN-008 (BEF-100, ANN-088 Fassung 2): kumulativ verteilt. Drei krumme
+     * Teilzahlungen, die zusammen die Rechnung begleichen, ergeben genau die
+     * Gruppen des Dokuments - Brutto und Steuer. Je Zahlung gerundet lagen sie
+     * um Cent daneben.
+     */
+    it('ergibt bei voller Zahlung aus drei krummen Teilzahlungen genau die Gruppen des Dokuments', async () => {
+      const { id, betrag } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
+      // 10500 Cent in drei Teilen. Je Zahlung gerundet kaeme die steuerfreie
+      // Gruppe auf 4499 und die steuerpflichtige auf 6001 Cent.
+      for (const teil of [3300, 3300, betrag - 3300 - 3300]) {
+        await buche(id, teil);
+      }
+
+      const nachDokument = await auswertung('accrual');
+      const nachZufluss = await auswertung('cash');
+      expect(nachZufluss.map(betraege)).toEqual(nachDokument.map(betraege));
+    });
+
+    it('nimmt mit einer Rueckzahlung die Verteilung ihrer Teilzahlung genau zurueck', async () => {
+      const { id } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
+      await buche(id, 3333);
+      const vorher = (await auswertung('cash')).map(betraege);
+      await buche(id, 1111);
+      await buche(id, 1111, { richtung: 'refund' });
+
+      expect((await auswertung('cash')).map(betraege)).toEqual(vorher);
+    });
+
+    it('verteilt nach einer stornierten Zahlung aus dem verbliebenen Stand', async () => {
+      const { id, betrag } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
+      const falsch = await buche(id, 777);
+      await asUserCommitted(users.office, ZAHLUNG_STORNIEREN, [falsch, 'Falsch gebucht']);
+      await buche(id, 3333);
+      await buche(id, betrag - 3333);
+
+      const nachDokument = await auswertung('accrual');
+      expect((await auswertung('cash')).map(betraege)).toEqual(nachDokument.map(betraege));
+    });
   });
 
   describe('die Bereiche bleiben getrennt', () => {

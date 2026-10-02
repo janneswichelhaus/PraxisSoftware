@@ -43,7 +43,7 @@ const LEER: PraxisStammdaten = {
   city: '',
   phone: null,
   email: null,
-  tax_number: '',
+  tax_number: null,
   vat_id: null,
   small_business: false,
   bank_name: null,
@@ -104,7 +104,7 @@ const BESCHRIFTUNG: Record<Prueffeld, string> = {
   street: 'Straße',
   postal_code: 'PLZ',
   city: 'Ort',
-  tax_number: 'Steuernummer',
+  tax_number: 'Steuernummer oder USt-IdNr.',
   steuerstatus: 'Umsatzsteuerlicher Status',
   iban: 'IBAN',
   training_invoice_number_prefix: 'Kürzel der Rechnungsnummer (Training)',
@@ -131,7 +131,9 @@ function pruefe(
   if (eingabe.street.trim() === '') fehler.street = 'Bitte ausfüllen.';
   if (eingabe.postal_code.trim() === '') fehler.postal_code = 'Bitte ausfüllen.';
   if (eingabe.city.trim() === '') fehler.city = 'Bitte ausfüllen.';
-  if (eingabe.tax_number.trim() === '') fehler.tax_number = 'Bitte ausfüllen.';
+  // ABN-008: eine von beiden genügt (§ 14 Abs. 4 Nr. 2 UStG).
+  if ((eingabe.tax_number ?? '').trim() === '' && (eingabe.vat_id ?? '').trim() === '')
+    fehler.tax_number = 'Bitte eine von beiden angeben.';
   if (!/^[A-Z]{2}[0-9]{2}[A-Z0-9]{10,30}$/.test(eingabe.iban.replace(/\s/g, '').toUpperCase()))
     fehler.iban = 'Bitte die vollständige IBAN eingeben.';
   else if (!pruefzifferStimmt(eingabe.iban))
@@ -208,7 +210,10 @@ function Auskunft({ stammdaten }: { stammdaten: PraxisStammdaten | null }) {
           {'\n'}
           {`${stammdaten.postal_code} ${stammdaten.city}`}
         </DetailRow>
-        <DetailRow label="Steuernummer">{stammdaten.tax_number}</DetailRow>
+        {stammdaten.tax_number ? (
+          <DetailRow label="Steuernummer">{stammdaten.tax_number}</DetailRow>
+        ) : null}
+        {stammdaten.vat_id ? <DetailRow label="USt-IdNr.">{stammdaten.vat_id}</DetailRow> : null}
         <DetailRow label="Umsatzsteuer">
           {stammdaten.small_business ? 'Kleinunternehmer:in (§ 19 UStG)' : 'Regelbesteuerung'}
         </DetailRow>
@@ -371,11 +376,12 @@ function Formular({
       <Section titel="Steuer" ebene={2}>
         <Feldgruppe>
           <Field
-            label="Steuernummer *"
+            label="Steuernummer"
             feldId={feldId('tax_number')}
+            hint="Steuernummer oder USt-IdNr. – eine von beiden muss stehen."
             error={fehler.tax_number}
-            value={eingabe.tax_number}
-            onChange={(e) => setzen('tax_number', e.target.value)}
+            value={text('tax_number')}
+            onChange={(e) => setzen('tax_number', e.target.value || null)}
           />
           {/* Kurze Optionen, die Folge im Hinweis: Bei 390 px war der Satz im
               Auswahlfeld abgeschnitten (ABR-B07). Keine Vorbelegung (ANN-074). */}
@@ -395,7 +401,7 @@ function Formular({
             <option value="regel">Regelbesteuerung</option>
           </Select>
           <Field
-            label="Umsatzsteuer-Identifikationsnummer (falls vorhanden)"
+            label="Umsatzsteuer-Identifikationsnummer"
             value={text('vat_id')}
             onChange={(e) => setzen('vat_id', e.target.value || null)}
           />

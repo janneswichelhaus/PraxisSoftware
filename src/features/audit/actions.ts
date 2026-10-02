@@ -231,6 +231,8 @@ export const AUDIT_ACTIONS = [
   'platform_representation.read',
   // ABN-006: bewusster Verzicht auf eine Gebühr (BEF-094).
   'appointment.fee_waived',
+  // ABN-008: Verrechnung mit der Ersatzrechnung (BEF-100).
+  'payment.offset',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -383,6 +385,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
     'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
   'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
   'appointment.fee_waived': 'Auf die Gebühr eines Termins verzichtet',
+  'payment.offset': 'Zahlung mit der Korrekturrechnung verrechnet',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

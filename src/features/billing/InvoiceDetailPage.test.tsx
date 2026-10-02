@@ -5,7 +5,6 @@ import type * as BillingApi from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { rechnungsansicht } from './testdaten';
-import { ZahlungStehtNoch } from './api';
 import { zeigeMitRouten } from './testumgebung';
 
 const fetchRechnung = vi.fn();
@@ -20,6 +19,7 @@ const storniereRechnung = vi.fn();
 const erstelleKorrektur = vi.fn();
 const fetchErinnerungen = vi.fn();
 const erstelleErinnerung = vi.fn();
+const verrechneMitKorrektur = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -38,6 +38,7 @@ vi.mock('./api', async (importOriginal) => {
     erstelleKorrektur: (id: string) => erstelleKorrektur(id) as Promise<string>,
     fetchErinnerungen: (id: string) => fetchErinnerungen(id) as Promise<BillingApi.Erinnerung[]>,
     erstelleErinnerung: (id: string) => erstelleErinnerung(id) as Promise<string>,
+    verrechneMitKorrektur: (...args: unknown[]) => verrechneMitKorrektur(...args) as Promise<void>,
   };
 });
 
@@ -422,8 +423,11 @@ describe('InvoiceDetailPage', () => {
       // Der Server weist die Buchung ab ('a cancelled invoice takes no
       // payment'). Ein Formular, das nur noch Fehlermeldungen erzeugt, ist
       // kein Angebot - die gebuchten Zahlungen bleiben aber sichtbar.
+      // Ohne Eingang (seit ABN-008 bietet ein Eingang Rückzahlung und
+      // Verrechnung an, eigener Test unter „Storno und Korrektur“).
       fetchRechnung.mockResolvedValue({
         ...ausgestellt(),
+        paid_cents: 0,
         cancellation: {
           cancellation_number: 'RG-2026-0002',
           reason: 'Leistung doppelt erfasst',
@@ -492,21 +496,82 @@ describe('InvoiceDetailPage', () => {
       expect(storniereRechnung).toHaveBeenCalledWith('r1', 'Falscher Empfänger');
     });
 
-    it('sagt bei einer gebuchten Zahlung, was zuerst zu tun ist', async () => {
-      // Erst das Geld, dann das Dokument - sonst bliebe ein Eingang ohne
-      // Forderung stehen.
-      fetchRechnung.mockResolvedValue(ausgestellt());
-      storniereRechnung.mockRejectedValue(new ZahlungStehtNoch());
+    it('storniert trotz gebuchter Zahlung und sagt, was mit dem Betrag geschieht (ABN-008)', async () => {
+      fetchRechnung.mockResolvedValue({ ...ausgestellt(), paid_cents: 4500 });
       renderWithProviders(
         <InvoiceDetailPage user={testUser(['office'])} />,
         '/abrechnung/rechnungen/r1',
       );
 
       await userEvent.click(await screen.findByRole('button', { name: 'Rechnung stornieren' }));
+      expect(screen.getByText(/Der Betrag bleibt nach dem Storno stehen/)).toBeInTheDocument();
       await userEvent.type(screen.getByLabelText('Grund'), 'Doppelt erfasst');
       await userEvent.click(screen.getByRole('button', { name: 'Storno ausstellen' }));
 
-      expect(await screen.findByText(/Erst die Zahlung stornieren/)).toBeInTheDocument();
+      expect(storniereRechnung).toHaveBeenCalledWith('r1', 'Doppelt erfasst');
+    });
+
+    it('bietet an der stornierten Rechnung mit Eingang Rückzahlung und Verrechnung an (ABN-008)', async () => {
+      verrechneMitKorrektur.mockResolvedValue(undefined);
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          paid_cents: 4500,
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+          correction_invoice_id: 'r2',
+          correction_invoice_number: 'RG-2026-0003',
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText('Storniert – eingegangen, noch zurückzuzahlen oder zu verrechnen'),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Rückzahlung buchen' })).toBeInTheDocument();
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Mit Korrekturrechnung RG-2026-0003 verrechnen' }),
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Verrechnung buchen' }));
+
+      expect(verrechneMitKorrektur).toHaveBeenCalledWith({
+        stornierteId: 'r1',
+        korrekturId: 'r2',
+        betragCent: 4500,
+      });
+    });
+
+    it('verrechnet erst mit der ausgestellten Korrekturrechnung (ABN-008)', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          paid_cents: 4500,
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Falscher Empfänger',
+            cancelled_on: '2026-09-18',
+          },
+          correction_invoice_id: 'r2',
+          correction_invoice_number: null,
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Verrechnen lässt sich mit der Korrekturrechnung, sobald/),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /verrechnen/ })).toBeNull();
     });
 
     it('zeigt an der stornierten Rechnung Nummer, Grund und den Weg zum Dokument', async () => {
@@ -848,7 +913,7 @@ describe('InvoiceDetailPage', () => {
       expect(screen.getByLabelText('Betrag')).toHaveValue('');
     });
 
-    it('bietet das Storno an der Zahlung an und sagt vorher, was zuerst kommt (ABR-07)', async () => {
+    it('bietet Zahlungs- und Rechnungsstorno nebeneinander an (ABR-07, ABN-008)', async () => {
       fetchRechnung.mockResolvedValue(ausgestellt());
       fetchRechnungszahlungen.mockResolvedValue([
         {
@@ -869,11 +934,9 @@ describe('InvoiceDetailPage', () => {
         '/abrechnung/rechnungen/r1',
       );
 
-      expect(
-        await screen.findByText(/Zuerst die gebuchte Zahlung oben stornieren/),
-      ).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: 'Rechnung stornieren' })).toBeNull();
-      expect(screen.getByRole('button', { name: 'Zahlung stornieren' })).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Zahlung stornieren' })).toBeInTheDocument();
+      // Seit ABN-008 sperrt die Zahlung das Storno der Rechnung nicht mehr.
+      expect(screen.getByRole('button', { name: 'Rechnung stornieren' })).toBeInTheDocument();
     });
 
     it('meldet das Ausstellen mit der Nummer und setzt den Fokus aufs Blatt (ABR-10)', async () => {

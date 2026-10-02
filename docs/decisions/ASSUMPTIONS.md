@@ -1025,6 +1025,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Netto je Zeile ausweisen: die Zeilen in `app.build_invoice_document` um Netto und Steuer ergänzen, der Snapshot trägt sie ab dann · Aufwand `klein` — ältere Rechnungen behalten ihre Form, das ist ihr Zweck. Preis als Nettobetrag führen: `unit_price_cents` bekäme eine zweite Bedeutung, also besser eine neue Katalogversion mit anderer Auslegung · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt mit „Steuernummer **oder** USt-IdNr.“ (heute ist die Steuernummer Pflicht — BEF-100); IBAN bleibt Pflicht für den Überweisungsablauf; USt-Status ohne Vorgabe und Endpreise richtig; steuerliche Freigabe über B4.
 
+**Umgesetzt (ABN-008, 2026-10-02).** `tax_number` ist optional, wenn `vat_id` steht; die Constraint `practice_billing_profiles_tax_id_present` und `save_practice_billing_profile` verlangen eine von beiden. Rechnung, Storno und Ausdruck nennen, was steht. Anker: `supabase/migrations/20261002132000_abn_008_billing_from_acceptance.sql`.
+
 ### ANN-075 — Die Rechnungsnummer ist lückenlos je Kreis und Kalenderjahr und entsteht beim Ausstellen
 
 Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit der Antwort aus G13 (Format und Nummernkreis)
@@ -1084,6 +1086,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 **Anker.** Tabelle `invoice_cancellations`, `public.cancel_invoice`, `public.create_correction_draft` und `app.invoice_items_frozen` in `supabase/migrations/20260919170000_invoice_cancellations.sql`.
 
 **Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine weitere Zeile im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** eigenes Stornodokument und Korrekturkette bestätigt. Geändert: Eine Zahlung sperrt das Storno nicht mehr; der eingegangene Betrag bleibt und wird mit der Ersatzrechnung verrechnet oder tatsächlich zurückgezahlt; ein Zahlungsstorno korrigiert nur eine falsche Buchung — BEF-100. Bis zur Umsetzung gilt die bisherige Regel.
+
+**Umgesetzt (ABN-008, 2026-10-02).** `cancel_invoice` storniert auch mit stehender Zahlung. Der eingegangene Betrag bleibt an der stornierten Rechnung; sie nimmt danach keinen Eingang, aber die Rückzahlung (`record_payment`, Richtung `refund`) und die Verrechnung mit der Ersatzrechnung (`offset_payment`, ANN-215) an. Ein Zahlungsstorno bleibt die Korrektur einer falschen Buchung.
 
 ### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
 
@@ -1192,6 +1196,8 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 **Anker.** Die Schritte `abgerundet` und `verteilt` in `public.list_revenue_by_service_area` (`supabase/migrations/20260921160000_revenue_by_service_area.sql`).
 
 **Änderungspfad.** Eine andere Zuordnung — Tilgungsbestimmung am Zahlungsbeleg oder eine feste Reihenfolge der Kennzeichen: die beiden Schritte und ein Testfall je Regel · Aufwand `klein`, solange die Auswertung nichts speichert — sie rechnet bei jedem Aufruf aus Dokumenten neu. **Abnahme (Jannes, 2026-10-02):** anteiliges Verteilen bestätigt. Mehrere Teilzahlungen müssen bei voller Zahlung zusammen exakt die Steuergruppen ergeben; dafür wird kumulativ verteilt statt je Zahlung gerundet, und eine Rückzahlung nimmt ihre Verteilung nachvollziehbar zurück — BEF-100.
+
+**Umgesetzt (ABN-008, 2026-10-02).** `list_revenue_by_service_area` verteilt kumulativ: je Zahlung die Summe aller Zahlungen der Rechnung bis einschließlich dieser (Reihenfolge Zahlungstag, Erfassung, Kennung) minus die bis zur vorigen, Brutto und Steuer. Die Verteilung selbst steht an einer Stelle, `app.distribute_to_tax_groups`. Test mit drei krummen Teilzahlungen in `supabase/tests/revenue-by-service-area.test.ts`.
 
 ### ANN-089 — `MDR_REVIEW_REQUIRED` wird als Register mit gesperrten Adressen geführt
 
@@ -2560,3 +2566,15 @@ Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Janne
 **Anker.** `public.set_treatment_basis_clinical_note` in `supabase/migrations/20261002131000_abn_007_clinical_prescription_note.sql`; `KlinischerHinweis` in `src/features/treatment-bases/KlinischerHinweis.tsx`; Tests in `supabase/tests/treatment-basis-clinical-note.test.ts` und `PatientTreatmentBasesPage.test.tsx`.
 
 **Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.
+
+### ANN-215 — Ein Betrag an einer stornierten Rechnung wird nur mit ihrer ausgestellten Ersatzrechnung verrechnet, als verbundenes Paar
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Abrechnung (ABN-EPIC-001); Steuerberatung mit B9
+
+**Annahme.** „Mit der Ersatzrechnung verrechnen“ (BEF-100) heißt: Der Betrag geht von der stornierten Rechnung auf **die** Rechnung über, die sie ersetzt (`replaces_invoice_id`), sobald diese **ausgestellt** ist — nicht auf eine beliebige offene Rechnung derselben Person und nicht auf einen Entwurf. Gebucht wird ein **Paar**: an der stornierten Rechnung eine Rückzahlung, an der Ersatzrechnung ein Eingang, beide mit dem Weg „Verrechnung“ (`method = 'offset'`), verbunden über `offset_group`, datiert auf den Tag der Verrechnung. Höchstens der eingegangene Betrag; ein Teilbetrag ist möglich. Storniert wird eine Verrechnung nur als Paar. In der Auswertung nach Zufluss heben sich die beiden Hälften in der Summe auf; verteilt wird jede nach den Steuergruppen ihrer Rechnung. Rechte wie beim Buchen einer Zahlung (owner, office). Ein Überschuss der Zahlung über die Ersatzrechnung bleibt dort als Überzahlung stehen und wird von dort zurückgezahlt.
+
+**Begründung.** Die Ersatzrechnung ist der nachvollziehbare Ort: Dieselbe Forderung, korrigiert. Ein Paar statt einer Umhängung der vorhandenen Zahlung, weil eine gebuchte Zahlung nie geändert wird (ANN-078) und jede Rechnung ihre eigene Zahlungsgeschichte behalten muss. Der Tag der Verrechnung statt des ursprünglichen Zahlungstags, weil an diesem Tag gebucht wird; im Zufluss heben sich beide Hälften auf. Unsicher: ob die Steuerberatung für die Zuflussrechnung den ursprünglichen Zahlungstag an der Ersatzrechnung verlangt (B9).
+
+**Anker.** `public.offset_payment`, `public.void_offset_payments` und `payments.offset_group` in `supabase/migrations/20261002132000_abn_008_billing_from_acceptance.sql`; `Guthaben` in `src/features/billing/InvoiceDetailPage.tsx`; Tests in `supabase/tests/invoice-cancellations.test.ts` („Storno trotz Zahlung“).
+
+**Änderungspfad.** Verrechnung mit einer anderen offenen Rechnung derselben Person: die Prüfung auf `replaces_invoice_id` in `offset_payment` lockern · Aufwand `klein`. Ursprünglicher Zahlungstag an der Ersatzrechnung: `paid_on` aus der Quelle übernehmen · Aufwand `klein`.

@@ -123,9 +123,16 @@ function Stornoblatt({
               <Angabe bezeichnung={personLabel(dokument.service_area, 'blatt')}>
                 {dokument.patient.name}
               </Angabe>
-              <Angabe bezeichnung="Steuernummer" zahl>
-                {absender.tax_number}
-              </Angabe>
+              {/* ABN-008: Steuernummer oder USt-IdNr. — mindestens eine steht. */}
+              {absender.tax_number ? (
+                <Angabe bezeichnung="Steuernummer" zahl>
+                  {absender.tax_number}
+                </Angabe>
+              ) : (
+                <Angabe bezeichnung="USt-IdNr." zahl>
+                  {absender.vat_id}
+                </Angabe>
+              )}
             </Angaben>
           }
         />
