@@ -297,6 +297,7 @@ describe('Einheiten einer Kundin', () => {
     email: null,
     phone: null,
     street: null,
+    house_number: null,
     postal_code: null,
     city: null,
   };

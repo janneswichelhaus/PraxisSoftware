@@ -67,7 +67,8 @@ const tina: TrainingClient = {
   date_of_birth: '1990-01-02',
   email: 'tina.trainingskundin-mit-langer-adresse@beispiel.invalid',
   phone: '+49 7071 0000109',
-  street: 'Trainingsweg 1',
+  street: 'Trainingsweg',
+  house_number: '1',
   postal_code: '72070',
   city: 'Tübingen',
 };
@@ -188,6 +189,7 @@ const entwurf: TrainingProtocol = {
   finalized_at: null,
   author_name: 'Tom Trainingsbetreuung',
   finalized_by_name: null,
+  addenda: [],
 };
 const abgeschlossen: TrainingProtocol = {
   id: '99999999-9999-4999-8999-000000000002',
@@ -200,6 +202,7 @@ const abgeschlossen: TrainingProtocol = {
   finalized_at: um(-2, 11),
   author_name: 'Tom Trainingsbetreuung',
   finalized_by_name: 'Tom Trainingsbetreuung',
+  addenda: [],
 };
 client.setQueryData(['training-protocol', TERMIN], entwurf);
 client.setQueryData(['training-appointment', VORGESTERN], {

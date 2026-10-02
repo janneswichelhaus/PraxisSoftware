@@ -957,17 +957,13 @@ describe('Patientenfotos (DOK-006b)', () => {
         { id: datei.file_id, gesperrt: true },
       ]);
       // Nur owner sieht die Liste zur Herausgabe.
-      expect(
-        (
-          await abgefangen(
-            asUser(
-              users.therapist,
-              'select * from public.list_patient_photos_for_access_request($1::uuid)',
-              [patients.max],
-            ),
-          )
-        )?.code,
-      ).toBe('42501');
+      await expect(
+        asUser(
+          users.therapist,
+          'select * from public.list_patient_photos_for_access_request($1::uuid)',
+          [patients.max],
+        ),
+      ).rejects.toMatchObject({ code: '42501' });
 
       const befund = await vorbereiten(users.therapist, { art: 'befund', mime: 'application/pdf' });
       await asPostgres(
