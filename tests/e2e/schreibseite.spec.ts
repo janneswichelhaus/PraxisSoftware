@@ -82,3 +82,13 @@ test('fragt beim Zurückgehen mit ungespeichertem Text in einer Zeile nach', asy
   await page.getByRole('button', { name: 'Weiterschreiben' }).click();
   await expect(page.getByLabel('Eintrag zur Behandlung')).toHaveValue('Geändert');
 });
+
+test('beginnt das Feld am kleinen Telefon in der oberen Hälfte (BEF-001)', async ({ page }) => {
+  // 375 × 667 ist das Maß der Messungen in BEF-001 (458 px am 2026-09-27).
+  await page.setViewportSize({ width: 375, height: 667 });
+  await page.goto(`${PRUEFSEITE}?ansicht=neu`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+  const feld = (await page.getByLabel('Eintrag zur Behandlung').boundingBox())!;
+  expect(feld.y).toBeLessThanOrEqual(200);
+  expect(feld.y + feld.height).toBeLessThanOrEqual(667);
+});

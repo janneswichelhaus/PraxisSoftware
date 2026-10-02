@@ -23,12 +23,12 @@ tragen keine Arbeit zu diesen Befunden. Aufwand: S (Stunden), M (ein bis zwei Ta
 
 | Befund  | Stand im Code                    | Empfohlene Lösung in einem Satz                                                        | Pfad | Aufw. | Bündel                | Jannes nötig?                       |
 | ------- | -------------------------------- | -------------------------------------------------------------------------------------- | ---- | ----- | --------------------- | ----------------------------------- |
-| BEF-001 | **im Kern erledigt** (Schreibseite) | Nachmessen (Feld bei ≈150 statt 458 px), schließen; Rest in BEF-057                | S    | S     | Docs/Schreibseite 2   | nein (ANN-200 bestätigen)           |
-| BEF-005 | **erledigt** (`DetailList`)      | Status setzen                                                                          | –    | S     | Docs                  | nein                                |
-| BEF-006 | **erledigt** (UX-005, Zyklus 3)  | Status setzen; alle sieben Vorgänge behalten ihre Bestätigung                         | –    | S     | Docs                  | nein                                |
-| BEF-017 | trifft zu                        | Vier Posten in `fortschritt.json`, Gewicht 1, dann `pnpm fortschritt --schreiben`      | –    | S     | Docs                  | nur Gewicht (Empf.: 1 je Posten)    |
+| BEF-001 | **geschlossen 2026-10-02** | Nachgemessen (105 px ohne Kopfzeile, 388 px sichtbar), geschlossen; Rest in BEF-057                | S    | S     | Docs/Schreibseite 2   | nein (ANN-200 bestätigen)           |
+| BEF-005 | **geschlossen 2026-10-02** | Status setzen                                                                          | –    | S     | Docs                  | nein                                |
+| BEF-006 | **geschlossen 2026-10-02** | Status setzen; alle sieben Vorgänge behalten ihre Bestätigung                         | –    | S     | Docs                  | nein                                |
+| BEF-017 | **nachgetragen 2026-10-02** | Vier Posten in `fortschritt.json`, Gewicht 1, dann `pnpm fortschritt --schreiben`      | –    | S     | Docs                  | nur Gewicht (Empf.: 1 je Posten)    |
 | BEF-024 | trifft zu                        | `appointmentKindSchema` importieren + Test gegen `options`                             | –    | S     | Mitnahme G21 STAFF-005 | nein                               |
-| BEF-025 | durch Umbau U3 gegenstandslos    | Schließen; kein neues Gate (Regel 6 in `docs:check` deckt JSON ↔ Tabelle)             | –    | S     | Docs                  | nein                                |
+| BEF-025 | **geschlossen 2026-10-02** | Schließen; kein neues Gate (Regel 6 in `docs:check` deckt JSON ↔ Tabelle)             | –    | S     | Docs                  | nein                                |
 | BEF-026 | entschieden, Adapter steht       | Status „entschieden“; Empfängerkreis verifizieren; Anbieter in Block 11               | A    | S     | Docs / Block 11       | Anbieterwahl erst Block 11          |
 | BEF-046 | trifft zu                        | Option 2: nur Erstladefehler sperrt, Nachladefehler zeigt Hinweis, Eingaben bleiben    | A    | S–M   | Loop Sitzung          | nein (einzeilig bestätigen)         |
 | BEF-047 | (a)(b) treffen zu, (c) überholt  | Option 2; **keine** Timebox, weil ADR-025 die Höchstdauer als Sperre regelt (G20)      | A    | S     | Loop Sitzung          | nein                                |
@@ -87,14 +87,12 @@ A\* = ohne Migration, aber Sichtbarkeit zwischen Rollen (ADR-013 Punkt 9), daher
 
 ## Was sich erledigt hat
 
-Sieben Befunde oder Teile davon sind durch gemergte Loops abgearbeitet, stehen aber noch auf
-„offen“. Sie gehören in einer Docs-Session geschlossen, nicht gebaut:
+Diese Befunde oder Teile davon sind durch gemergte Loops abgearbeitet. **Geschlossen am 2026-10-02** (Docs-Session): BEF-001, BEF-005, BEF-006, BEF-025; BEF-017 nachgetragen; die Teilerledigungen stehen seither in der Statuszeile des jeweiligen Befunds.
 
 - **BEF-001** und **BEF-057 Teil 1**: Die Schreibseite (`CompleteTreatmentPage.tsx`, Zyklus 2)
   hat kein Untermenü, keinen Hinweistext, eine einzeilig scrollende Chipzeile und ein Feld über
   die Höhe; Name, Datum und Zeit bleiben im Kopf. Rechnerisch beginnt das Feld bei 375 × 667 bei
-  rund 150 px statt 458. Noch nicht gemessen: `schreibseite.spec.ts` prüft Knopf und Feldhöhe, aber
-  nicht die Startposition. Der Folgesatz steht nur noch für Vorlesesoftware (`sr-only`), was der
+  rund 160 px statt 458. **Nachgemessen 2026-10-02** auf der Prüfseite bei 375 × 667: Feld ab 105 px (ohne Kopfzeile), 388 px sichtbar; Test in `schreibseite.spec.ts`. Der Folgesatz steht nur noch für Vorlesesoftware (`sr-only`), was der
   Befund als Aufweichung von ADR-016 Punkt 4 genannt hatte; das ist die bewusste Entscheidung aus
   ANN-200 und mit ihr zu bestätigen.
 - **BEF-005**: `DetailList.tsx` setzt `min-w-0 wrap-anywhere`, mit Test und Kommentar auf den Befund.
