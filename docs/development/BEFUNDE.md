@@ -3478,3 +3478,67 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 - Eine Berichtskorrektur verweist auf den ersetzten Bericht und trägt Korrekturgrund, Zeitpunkt und Verfasser:in. Heute gibt es dafür weder Verweis noch Grund.
 - Der eigene Berichtstext der Therapeut:in bleibt der Kern. Wörtliche Dokumentationseinträge sind ergänzende Auszüge; so ist es gebaut, `report_text`.
 - Die Grenze von 50 Einträgen ist beim Auswählen sichtbar, und ein 51. Eintrag wird mit Hinweis abgewiesen, nie still abgeschnitten.
+
+### BEF-105 — Dateien: Typ, Prüfsumme und Metadaten stützen sich auf Angaben des Browsers
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Dateiablage der Akte, Patientenfotos (Upload) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-053, ANN-125) |
+| Status  | offen |
+| Berührt | ANN-053, ANN-125; ADR-017 (Bestätigung, Virenprüfung); `storage.objects.metadata`; Metadaten-Entfernung im Browser |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Dateityp:** Der Server prüft ihn am **Inhalt** der Datei (Signatur der ersten Bytes), nicht am MIME-Typ, den Speicher oder Browser angeben. Der passende Ort ist der serverseitige Schritt, den ADR-017 ohnehin für die Virenprüfung vorsieht.
+- **Prüfsumme:** Die SHA-256 aus dem Browser wird als „nicht serverseitig verifiziert“ geführt, solange der Server sie nicht nachrechnet.
+- **Metadaten:** Die Metadatenfreiheit eines Fotos wird zusätzlich serverseitig geprüft und gegebenenfalls nachbereinigt.
+- **Darstellung:** Ausrichtung **und korrekte Farbdarstellung** bleiben erhalten. Heute entfernt das Gerät auch das Farbprofil (ANN-125); künftig wird das Bild entweder vorher nach sRGB umgerechnet oder ein sRGB-Profil bleibt.
+
+### BEF-106 — Medizinisch notwendige Fotos fallen unter die kurzen Fristen der Foto-Arbeitshilfe
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenfotos, Akte, Löschlauf |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-126, ANN-127) |
+| Status  | offen |
+| Berührt | ANN-126, ANN-127; ADR-017 (Punkte 37 ff., Fotos als Arbeitshilfe, Klasse `patientenfoto`); ADR-008; Legal Hold |
+
+**Beobachtung.** Jedes Patientenfoto ist heute Arbeitshilfe auf Einwilligung: höchstens zwölf Monate, drei Monate nach dem Abschluss, ein Widerruf löscht.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Medizinisch notwendige **Dokumentationsfotos** gehören zur Akte, mit deren Frist (zehn Jahre, ADR-008).
+- Die kurzen Fristen und der Widerruf gelten nur für **zusätzliche, vorübergehende Foto-Arbeitshilfen**.
+- Ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten noch einen Legal Hold auf.
+- Dafür braucht es eine Unterscheidung beim Aufnehmen, eine eigene Datenklasse und eine neue Fassung von ADR-017. Die Rechtsgrundlage der Dokumentationsfotos (Behandlung, Art. 9 Abs. 2 lit. h) geht in B2.
+
+### BEF-107 — Auskunft nach Art. 15: ohne Zugriffe und ohne die Fotos selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | „Auskunft und Löschverlangen“ (OPS-006) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-092, ANN-128) |
+| Status  | offen |
+| Berührt | ANN-092, ANN-128; `patient_record.exported`; Auditlog-Lesepfad |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Zugriffe:** Eine umfassende Auskunft berücksichtigt auch Datum und Zweck der Zugriffe auf die Akte, aus dem Auditlog. Namen der Beschäftigten bleiben grundsätzlich weg; begründete Ausnahmen werden im Einzelfall geprüft.
+- **Fotos:** Die vollständige Kopie enthält die Fotos selbst, nicht nur ihre Angaben. Noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen.
+- Herausgabe durch owner und Protokollierung bleiben.
+
+### BEF-108 — Warteliste ohne Aktualitätsprüfung, Nachweis des Zusammenführens nur drei Jahre
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Warteliste; Akten zusammenführen |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-133, ANN-150) |
+| Status  | offen |
+| Berührt | ANN-133, ANN-150; `waitlist_entries`; `merge_patients`, Legal Hold |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Warteliste:** Offene Einträge werden regelmäßig auf Aktualität geprüft. Etwa ein Hinweis in „Offene Punkte“, wenn ein Eintrag länger als eine festgelegte Zeit unverändert offen steht; die Zeit ist eine Konstante, als Annahme im Loop.
+2. **Nachweis:** Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, als Vermerk an der bleibenden Akte, und stützt sich nicht allein auf das dreijährige Auditlog.
+3. **Legal Hold:** Alle Gründe bestehender Legal Holds bleiben wirksam. Heute wird beim Zusammenführen die Sperre der Dublette aufgehoben, wenn die bleibende Akte schon eine hat (ANN-150). Künftig bleiben beide Gründe wirksam, etwa mehrere aktive Sperren je Akte oder beide Gründe an der einen Sperre.

@@ -735,7 +735,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-052 — Eine Datei verlässt den Speicher nur über einen auditierten Vorgang
 
-Datenschutz · offen · 2026-09-13, Fassung 2 vom 2026-09-15 (FIX-015) · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf); vor jeder UPDATE-Policy auf `storage.objects`; bei jedem Upgrade der Storage-API — Supabase aktualisiert sie im Betrieb ohne Zutun, deshalb läuft `patient-file-access.spec.ts` vor der ersten echten Datei regelmäßig gegen Staging (ROADMAP, OPS-001)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf); vor jeder UPDATE-Policy auf `storage.objects`; bei jedem Upgrade der Storage-API — Supabase aktualisiert sie im Betrieb ohne Zutun, deshalb läuft `patient-file-access.spec.ts` vor der ersten echten Datei regelmäßig gegen Staging (ROADMAP, OPS-001)
 
 **Annahme.** Jede Storage-Operation an einer Datei der Akte braucht eine **einmalige Freigabe** der anfragenden Person. `issue_patient_file_link` protokolliert `patient_file.link_issued` und legt sie für genau diese Datei an; `claim_storage_deletion_order` protokolliert `storage_deletion.claimed` und legt sie für das Objekt genau dieses Löschauftrags an; diese Löschfreigabe gilt nur für die Entfernen-Operation, die die Storage-API in `storage.operation` meldet. Die RLS auf `storage.objects` lässt eine Zeile nur gegen eine passende Freigabe zu, die höchstens 30 Sekunden alt ist, und verbraucht sie dabei. Ein so signierter Verweis gilt danach unverändert 60 Sekunden (ADR-017 Punkt 15).
 
@@ -743,11 +743,11 @@ Datenschutz · offen · 2026-09-13, Fassung 2 vom 2026-09-15 (FIX-015) · — ·
 
 **Anker.** `app.patient_file_access_grant_ttl()`, `app.may_read_patient_file_object`, `app.may_read_storage_object_for_deletion`, `issue_patient_file_link` und `claim_storage_deletion_order` in `supabase/migrations/20260915120000_patient_file_access_grants.sql`; `oeffneDatei` in `src/features/files/api.ts`; Tests in `supabase/tests/patient-file-access.test.ts` und `tests/e2e/authenticated/patient-file-access.spec.ts`.
 
-**Änderungspfad.** Andere Wartezeit: `app.patient_file_access_grant_ttl()` · Aufwand `klein`. Fällt OPS-001 Punkt 5 positiv aus (Entzug eines Verweises ohne Support), kommt ein Werkzeug hinzu · Aufwand `klein`. Wird die Edge Runtime freigegeben, kann die Ausstellung serverseitig unterschreiben, und die Freigabetabelle entfällt · Aufwand `mittel`.
+**Änderungspfad.** Andere Wartezeit: `app.patient_file_access_grant_ttl()` · Aufwand `klein`. Fällt OPS-001 Punkt 5 positiv aus (Entzug eines Verweises ohne Support), kommt ein Werkzeug hinzu · Aufwand `klein`. Wird die Edge Runtime freigegeben, kann die Ausstellung serverseitig unterschreiben, und die Freigabetabelle entfällt · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-053 — Die Bestätigung prüft Größe und MIME-Typ gegen den Objektspeicher; die Prüfsumme bleibt eine Erklärung des Browsers
 
-Technik · offen · 2026-09-13 · — · — · Wiedervorlage: mit Weg 3 des Rechnungs-PDF nach OPS-001 (B14, ADR-009 Punkt 9) und mit dem Restore-Test aus ADR-012 Punkt 6
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: mit Weg 3 des Rechnungs-PDF nach OPS-001 (B14, ADR-009 Punkt 9) und mit dem Restore-Test aus ADR-012 Punkt 6
 
 **Annahme.** Größe und MIME-Typ werden serverseitig gegen `storage.objects.metadata` geprüft, das die Storage-API beim Upload selbst schreibt; weichen sie von der Ankündigung aus Phase (a) ab, bleibt die Datei `pending` und wird nicht sichtbar. Die SHA-256-Prüfsumme wird nicht nachgerechnet: Sie entsteht vor dem Hochladen im Browser, wird in Phase (a) mitgegeben und unverändert festgehalten.
 
@@ -755,7 +755,7 @@ Technik · offen · 2026-09-13 · — · — · Wiedervorlage: mit Weg 3 des Rec
 
 **Anker.** `supabase/migrations/20260913110000_patient_files.sql`: `confirm_patient_file_upload` (Vergleich gegen `storage.objects.metadata`) und der Kommentar an `patient_files.checksum_sha256`; `pruefsumme` in `src/features/files/api.ts` und `dateiInhaltAblehnungsgrund` in `src/features/files/dokumentarten.ts`; Tests in `supabase/tests/patient-files.test.ts`, Abschnitt „Phase (c): bestaetigen".
 
-**Änderungspfad.** Prüfsumme serverseitig nachrechnen: braucht einen Vorgang, der die Datei liest — freigegebene Edge Runtime oder ein Betriebswerkzeug, das den Abgleich aus DAT-003 erweitert · Aufwand `mittel`, zusätzlich eine Providerentscheidung, wenn er außer Haus läuft. Prüfsumme ganz weglassen · Aufwand `klein`, aber ADR-017 Punkt 9 und ADR-009 Punkt 9 verlören ihren einzigen technischen Anker — nicht empfohlen.
+**Änderungspfad.** Prüfsumme serverseitig nachrechnen: braucht einen Vorgang, der die Datei liest — freigegebene Edge Runtime oder ein Betriebswerkzeug, das den Abgleich aus DAT-003 erweitert · Aufwand `mittel`, zusätzlich eine Providerentscheidung, wenn er außer Haus läuft. Prüfsumme ganz weglassen · Aufwand `klein`, aber ADR-017 Punkt 9 und ADR-009 Punkt 9 verlören ihren einzigen technischen Anker — nicht empfohlen. **Abnahme (Jannes, 2026-10-02):** geändert: Der Dateityp wird serverseitig am Inhalt geprüft; Speicher-MIME und Browser-Prüfsumme sind keine unabhängigen Nachweise, die Prüfsumme gilt als „nicht serverseitig verifiziert“ (BEF-105).
 
 ### ANN-054 — Der Dependency-Audit blockiert den Merge ab Schweregrad `high`
 
@@ -1227,7 +1227,7 @@ Technik · offen · 2026-09-22 · — · — · Wiedervorlage: mit der Antwort d
 
 ### ANN-092 — Das Zugriffsprotokoll ist nicht Teil der Auskunft nach Art. 15
 
-Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: mit dem DSFA-Paket (G14), zusammen mit der Frage nach den Namen der Beschäftigten
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit dem DSFA-Paket (G14), zusammen mit der Frage nach den Namen der Beschäftigten
 
 **Annahme.** Die Kopie der Akte nach Art. 15 Abs. 3 DSGVO enthält **keine Auditzeilen**. Verlangt die betroffene Person ausdrücklich Auskunft über die Zugriffe auf ihre Akte, wird sie erteilt — von Hand aus dem Auditlog und ohne die Namen der Beschäftigten, solange kein besonderer Grund dagegen spricht.
 
@@ -1235,11 +1235,11 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: mit de
 
 **Anker.** Das Feld `nicht_enthalten` in `public.export_patient_record`, `supabase/migrations/20260922100000_betroffenenrechte.sql`; der Test dazu in `supabase/tests/betroffenenrechte.test.ts`.
 
-**Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`.
+**Änderungspfad.** Soll das Protokoll mitkommen: einen Abschnitt `audit_log` in die Funktion aufnehmen, Beschriftung in `kategorien.ts` ergänzen, Hinweis streichen · Aufwand `klein`. Soll die Auskunft dazu ganz entfallen: Hinweis umformulieren, Verfahren nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** geändert: Zugriffsdaten nicht pauschal ausschließen — bei umfassender Auskunft auch Datum und Zweck der Zugriffe; Beschäftigtennamen grundsätzlich weglassen, begründete Ausnahmen prüfen (BEF-107).
 
 ### ANN-093 — Einwilligung nur für zwei Zwecke; Papier bleibt Papier
 
-Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), zusammen mit dem Wortlaut der Datenschutzinformation und der Einwilligung im Training
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2), zusammen mit dem Wortlaut der Datenschutzinformation und der Einwilligung im Training
 
 **Annahme.** Die Praxis holt eine Einwilligung für genau zwei Zwecke ein: **Kontakt per unverschlüsselter E-Mail** (`email_contact`) und **Bericht an die verordnende Praxis** (`prescriber_report`, Schweigepflichtentbindung). Die Behandlung selbst braucht keine. Datenschutzinformation und Behandlungsvertrag bleiben Papier; die Akte vermerkt Datum und bei der Information die Fassung. Vermerke werden nie geändert, ein Widerruf ist eine eigene Zeile, und der Stand eines Zwecks ist seine jüngste Eingabe.
 
@@ -1249,7 +1249,7 @@ Datenschutz · offen · 2026-09-22 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Constraint `purpose` und `public.record_patient_privacy_entry()` in `supabase/migrations/20260922130000_datenschutzvermerke.sql`, zuletzt geändert in `20260926150000_dok_006b_patient_photos.sql`; `EINWILLIGUNGSZWECKE` in `src/features/datenschutz/vermerke.ts`; Texte in `src/features/datenschutz/patienteninformation.ts`.
 
-**Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`.
+**Änderungspfad.** Zweck ergänzen oder streichen: ein Wert in Constraint, Konstante und Beschriftung, ein Satz in der Datenschutzinformation · Aufwand `klein`. Einwilligung vor dem Mailweg prüfen: Abfrage des Stands in `AppointmentSlipPage.tsx` vor der Übergabe · Aufwand `mittel`. Unterschrift in der Anwendung: eigenes Epic · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt, mit den Patientenfotos als drittem Zweck (ANN-127).
 
 ### ANN-094 — Ein benannter Schalter öffnet den Kartendienst für eine Umgebung
 
@@ -1611,7 +1611,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-123 — Der Briefkopf kommt aus den Praxis-Stammdaten, ohne Steuer- und Bankangaben
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung
 
 **Annahme.** Kopf und Absenderzeile tragen Name, Anschrift, Telefon und E-Mail aus `practice_billing_profiles`; fehlen die Stammdaten, steht nur der Name der Organisation. Die Serverfunktion liest diese Felder für den Bericht auch für therapist und team_lead, die die Stammdaten sonst nicht lesen; Steuernummer und Bankverbindung liefert sie nicht. Dazu die schwarze Wortmarke, die `marke/README.md` für Rechnung und Fax vorsieht.
 
@@ -1619,7 +1619,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Der Schlüssel `praxis` in `app.therapy_report_dokument`, `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`.
 
-**Änderungspfad.** Nur der Name der Organisation: den Zweig mit `practice_billing_profiles` streichen · Aufwand `klein`. Eigener Briefkopf je Standort: Feld an `locations` und hier lesen · Aufwand `mittel`.
+**Änderungspfad.** Nur der Name der Organisation: den Zweig mit `practice_billing_profiles` streichen · Aufwand `klein`. Eigener Briefkopf je Standort: Feld an `locations` und hier lesen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-124 — Die Anwendung verschickt keinen Bericht; ob er an die Verordner:in gehen darf, entscheidet die Praxis
 
@@ -1635,7 +1635,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 ### ANN-125 — Beim Entfernen der Metadaten bleibt nur die Ausrichtung und, was der Dekoder braucht
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); am echten Gerät in der Sichtung (Fotos Schritt 1)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); am echten Gerät in der Sichtung (Fotos Schritt 1)
 
 **Annahme.** Vor jedem Upload eines JPEG oder PNG — aus dem Dateiwähler wie aus dem Kameradialog — entfernt das Gerät alle Segmente und Chunks neben den Bilddaten: EXIF samt GPS und Vorschaubild, XMP, IPTC, Kommentare, Farbprofile (ICC, `iCCP`), Textchunks, Zeitstempel, JFIF und alles hinter dem Bildende (angehängte Zweitbilder). Erhalten bleiben die Ausrichtung als neues, minimales EXIF-Segment beziehungsweise `eXIf`-Chunk, das Adobe-Segment eines JPEG (Farbumrechnung) und die Farbangaben eines PNG (`gAMA`, `cHRM`, `sRGB`, `sBIT`, `tRNS`) sowie Animationschunks. Die Bilddaten bleiben Byte für Byte. Es gilt eine **Erlaubnisliste**: Ein Segment oder kritischer Chunk, der weder Bilddaten noch bekannte Metadaten ist (reservierter JPEG-Marker, unbekannter kritischer PNG-Chunk), lässt das Bild abweisen; ebenso ein Bild, das sich nicht sicher zerlegen lässt.
 
@@ -1643,11 +1643,11 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `istBildsegment`, `bereinigeJpeg`, `bereinigePng`, `PNG_BEHALTEN` und `PNG_KRITISCH` in `src/features/files/metadaten.ts`; Nachweis in `src/features/files/metadaten.test.ts`.
 
-**Änderungspfad.** Ein Segment mehr oder weniger behalten: eine Bedingung in `bereinigeJpeg` beziehungsweise ein Eintrag in `PNG_BEHALTEN` · Aufwand `klein`. Farbprofil behalten, aber Hersteller- und Geräteangaben darin leeren: eine eigene Bereinigung des ICC-Kopfs · Aufwand `mittel`.
+**Änderungspfad.** Ein Segment mehr oder weniger behalten: eine Bedingung in `bereinigeJpeg` beziehungsweise ein Eintrag in `PNG_BEHALTEN` · Aufwand `klein`. Farbprofil behalten, aber Hersteller- und Geräteangaben darin leeren: eine eigene Bereinigung des ICC-Kopfs · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Ergänzung: Metadatenfreiheit zusätzlich serverseitig absichern; Ausrichtung und korrekte Farbdarstellung erhalten (BEF-105).
 
 ### ANN-126 — Patientenfotos stehen auf Einwilligung, leben höchstens zwölf Monate und sind gesperrt, sobald sie fällig sind
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) und DSFA (G14), vor dem ersten Foto einer echten Person (ADR-017 Punkt 41)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) und DSFA (G14), vor dem ersten Foto einer echten Person (ADR-017 Punkt 41)
 
 **Annahme.** Ein Patientenfoto stützt sich auf die ausdrückliche Einwilligung (Art. 9 Abs. 2 lit. a DSGVO), ist Arbeitshilfe neben der Akte und hat die Klasse `patientenfoto`: fällig zum frühesten von zwölf Monaten nach der Aufnahme, drei Monaten nach dem **festgehaltenen** Abschluss der Versorgung (`care_concluded_at`) und dem ersten Widerruf nach der Aufnahme. **Aufnahme** ist das Anlegen der Zeile vor dem Upload, damit ein Widerruf auch einen laufenden Upload trifft. Ein fälliges Foto ist auf allen Wegen gesperrt — Liste, Verweis, Leseregel am Objekt, Herausgabe, Löschen von Hand —, auch wenn ein Legal Hold die Löschung anhält; dann wird die Sperre festgehalten (`photo_locked_at`), damit eine Wiederaufnahme der Versorgung sie nicht aufhebt. Neue Fotos setzen eine Erteilung voraus und dass ein Foto von jetzt nicht schon fällig wäre (Versorgung höchstens drei Monate abgeschlossen); eine neue Einwilligung gilt nur für neue Fotos. Der Widerruf löscht in derselben Transaktion, das Ende des Hold und die Wiederaufnahme ebenso, sonst der Löschlauf.
 
@@ -1655,11 +1655,11 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Klassenzeile `patientenfoto`, Spalte `patient_files.photo_locked_at` sowie `app.patient_photo_due_at`, `app.patient_photo_accessible` und `app.delete_due_patient_photos` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; Nachweis in `supabase/tests/patient-photos.test.ts`.
 
-**Änderungspfad.** Andere Fristen: Intervall oder Obergrenze der Klassenzeile · Aufwand `klein`. Alternative aus Bestätigungsfrage 9 (Teil der Akte, zehn Jahre, Widerruf stoppt nur neue Fotos): Klassenzeile auf `patientenakte`, `delete_due_patient_photos` aus dem Widerruf nehmen und `patient_photo_due_at` ohne Widerruf rechnen · Aufwand `mittel`.
+**Änderungspfad.** Andere Fristen: Intervall oder Obergrenze der Klassenzeile · Aufwand `klein`. Alternative aus Bestätigungsfrage 9 (Teil der Akte, zehn Jahre, Widerruf stoppt nur neue Fotos): Klassenzeile auf `patientenakte`, `delete_due_patient_photos` aus dem Widerruf nehmen und `patient_photo_due_at` ohne Widerruf rechnen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Medizinisch notwendige Dokumentationsfotos gehören zur Akte; die kurzen Fristen gelten nur für zusätzliche, vorübergehende Foto-Arbeitshilfen; ein Widerruf hebt gesetzliche Aufbewahrung und Legal Hold nicht auf (BEF-106, neue Fassung ADR-017).
 
 ### ANN-127 — Eine Ablehnung ist ein eigener Vermerk; die Fotoeinwilligung ist der dritte Zweck
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) mit dem Wortlaut der Fotoeinwilligung; Erstaufnahme (PRX-EPIC-003)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2) mit dem Wortlaut der Fotoeinwilligung; Erstaufnahme (PRX-EPIC-003)
 
 **Annahme.** `patient_privacy_records` kennt neben Erteilung und Widerruf die Vermerkart `consent_refused` für jeden Zweck: zulässig, solange der Zweck nicht erteilt und nicht schon abgelehnt ist; danach ist eine Erteilung möglich. Die Oberfläche zeigt „abgelehnt am …" als erledigten Stand. Neuer Zweck ist `patient_photos`; der Widerruf dort löscht die Fotos und steht vor dem Vermerken so auf der Seite und der Schaltfläche. Wortlaut der Fotoeinwilligung und ein Satz in der Datenschutzinformation kommen mit B2 — bis dahin nennt die ausgedruckte Information zwei Zwecke, und Fotos echter Personen gibt es nicht (ADR-017 Punkt 41).
 
@@ -1667,11 +1667,11 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Constraints `record_kind`, `purpose` und `purpose_shape` sowie `public.record_patient_privacy_entry()` in `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`; `vermerkartSchema`, `EINWILLIGUNGSZWECKE` und `datenschutzstand` in `src/features/datenschutz/vermerke.ts`; `FOTO_WIDERRUF` in `src/features/datenschutz/PatientDatenschutzPage.tsx`.
 
-**Änderungspfad.** Ablehnung nur für Fotos: eine Bedingung in `record_patient_privacy_entry` und in `moeglicheVermerke` · Aufwand `klein`. Fotoeinwilligung als eigener Druckbogen neben der Datenschutzinformation: ein Blatt in `vorlage.ts` und eine neue Fassung · Aufwand `klein`.
+**Änderungspfad.** Ablehnung nur für Fotos: eine Bedingung in `record_patient_privacy_entry` und in `moeglicheVermerke` · Aufwand `klein`. Fotoeinwilligung als eigener Druckbogen neben der Datenschutzinformation: ein Blatt in `vorlage.ts` und eine neue Fassung · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Ablehnung als eigener Vermerk bestätigt; Widerruf und Löschung gelten nur für Foto-Arbeitshilfen, nicht für Dokumentationsfotos der Akte, und nie gegen Aufbewahrungspflicht oder Legal Hold (BEF-106).
 
 ### ANN-128 — Ein Patientenfoto wird als Einzeldatei durch owner herausgegeben, mit eigenem Auditereignis
 
-Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
 
 **Annahme.** Die Auskunft nach Art. 15 DSGVO nennt jedes Foto wie jede Datei mit Name, Art und Prüfsumme, enthält es aber nicht. Die Kopie des Fotos selbst — nach Art. 15 Abs. 3 und, weil die Einwilligung die Grundlage ist, nach Art. 20 DSGVO — entsteht auf der Seite „Auskunft und Löschverlangen" je Foto als JPEG, nur durch `owner`, nur für ein nicht gesperrtes Foto, protokolliert als `patient_file.handed_out`. Ein Paket aller Fotos gibt es nicht.
 
@@ -1679,7 +1679,7 @@ Datenschutz · offen · 2026-09-26 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `public.hand_out_patient_photo()` in `supabase/migrations/20260926160000_dok_006d_patient_photo_handout.sql`; `gibPatientenfotoHeraus` in `src/features/files/patientenfotos.ts`.
 
-**Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`.
+**Änderungspfad.** Paket mit allen Fotos und einer Übersicht: eine zweite Funktion und ein Archivformat, das Punkt 18 dafür ausdrücklich zulässt · Aufwand `mittel`. Herausgabe auch durch office: Rollenprüfung in `app.auskunft_organisation` bzw. der Funktion · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** owner und Protokollierung bestätigt; geändert: Die vollständige Kopie enthält die Fotos selbst, und noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen (BEF-107).
 
 ### ANN-129 — Die Seite wird an Extremitäten und Kiefer einmal je Region gewählt, an der Wirbelsäule je Test
 
@@ -1731,7 +1731,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 ### ANN-133 — Ein geschlossener Wartelisteneintrag fällt zwölf Monate nach dem Schließen
 
-Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
 
 **Annahme.** Ein offener Eintrag bleibt, bis er geschlossen wird oder mit der Akte fällt. Ein geschlossener — eingeplant oder zurückgezogen — wird zwölf Monate nach dem Schließen gelöscht (Klasse `warteliste`, Anker „Abschluss des Vorgangs“) und im Löschjournal festgehalten. Ein Legal Hold an der Akte hält die Löschung an. Die Auskunft nach Art. 15 enthält die Einträge.
 
@@ -1739,11 +1739,11 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 
 **Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
 
-**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`.
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108).
 
 ### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
 
-Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
 
 **Annahme.** Anlegen, Ändern und Schließen eines Eintrags schreiben je einen Auditeintrag (`waitlist_entry.*`, nur Metadaten, nie die Notiz). Das Lesen der Liste schreibt keinen; ein abgewiesener Leseversuch schon (`waitlist.read`, G6b).
 
@@ -1751,7 +1751,7 @@ Datenschutz · offen · 2026-09-28 · — · — · Wiedervorlage: Datenschutzpr
 
 **Anker.** `public.list_waitlist_entries` in `supabase/migrations/20260928100000_prx_001_waitlist.sql` (kein Auditeintrag im Erfolgsfall); Katalog in `src/features/audit/actions.ts`; Fall in `supabase/tests/abgewiesene-lesepfade.test.ts`.
 
-**Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`.
+**Änderungspfad.** Leseprotokoll: ein `waitlist.viewed` je Aufruf in `list_waitlist_entries`, Wert im Auditkatalog · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-135 — Gebietstage: genaue Postleitzahl, Tageshälfte am Beginn, Warnung statt Sperre
 
@@ -1901,7 +1901,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 ### ANN-147 — Zusammenführen: Die bleibende Akte behält ihre Stammdaten, Leeres füllt die Dublette, Freitexte werden angehängt
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
 
 **Annahme.** Beim Zusammenführen gewinnt in jedem Feld der Stammdaten die Akte, aus der heraus `owner` die Dublette übernimmt; nur leere Felder füllt die Dublette, die Anschrift nur als Ganzes und mit ihrer Verortung. Weichen die Freitexte (Zugangshinweis, Besonderheit, Bemerkung) ab, wird der Text der Dublette durch eine Leerzeile getrennt **angehängt**, nie verworfen; „Mitnehmen“ wird ohne Doppel vereinigt. Hat die bleibende Akte schon einen Standard-Rechnungsempfänger, verliert der der Dublette diese Markierung. Die Vorschau zeigt vor dem Bestätigen, welche Felder in beiden Akten verschieden sind.
 
@@ -1909,11 +1909,11 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Pr
 
 **Anker.** `app.merge_note`, `app.merge_take_along` und der Stammdatenteil von `public.merge_patients` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Tests in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Felder einzeln wählen: Parameter an `merge_patients` und Auswahl in der Vorschau · Aufwand `mittel`. Freitexte verwerfen statt anhängen: `app.merge_note` · Aufwand `klein`.
+**Änderungspfad.** Felder einzeln wählen: Parameter an `merge_patients` und Auswahl in der Vorschau · Aufwand `mittel`. Freitexte verwerfen statt anhängen: `app.merge_note` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-148 — Zusammenführen: aktiv, wenn eine Akte aktiv ist; ein Abschluss bleibt nur, wenn beide abgeschlossen sind, dann der spätere
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
 
 **Annahme.** Nach dem Zusammenführen ist die Person in laufender Versorgung, wenn eine der beiden Akten es war; der Abschluss der Versorgung (Anker der zehnjährigen Aufbewahrung, ANN-032) bleibt nur stehen, wenn beide Akten abgeschlossen waren — dann der spätere. Beginn der Versorgung ist der frühere.
 
@@ -1921,11 +1921,11 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Abschnitt „Versorgungsstand“ in `public.merge_patients` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Test „behält bei zwei Abschlüssen den späteren“ in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Getrennte Fristen je Herkunft: Abschlussdatum an den gewanderten Zeilen statt an der Akte · Aufwand `groß`. Ein Abschluss der Dublette wird verworfen: dieselbe Stelle · Aufwand `klein`.
+**Änderungspfad.** Getrennte Fristen je Herkunft: Abschlussdatum an den gewanderten Zeilen statt an der Akte · Aufwand `groß`. Ein Abschluss der Dublette wird verworfen: dieselbe Stelle · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-149 — Zusammenführen sperrt statt zu raten: Konto an der Dublette, zwei Entwürfe für denselben Monat, zwei offene Wartelisteneinträge ohne Grundlage, zu langer Freitext
 
-Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Sichtung Praxisverwaltung (PRX-EPIC-003b)
 
 **Annahme.** Das Zusammenführen findet nicht statt, solange (a) an der Person der Dublette ein Konto hängt, (b) beide Akten einen Rechnungsentwurf für denselben Monat und Leistungsbereich haben, (c) beide einen offenen Wartelisteneintrag ohne Grundlage haben, (d) ein angehängter Freitext länger würde als erlaubt oder (e) „Mitnehmen“ mehr als zehn Einträge hätte. Die Vorschau nennt den Grund und den Weg: Konto klären, einen Entwurf verwerfen, einen Eintrag schließen, einen Text kürzen.
 
@@ -1933,11 +1933,11 @@ Praxisprozess · offen · 2026-09-29 · — · — · Wiedervorlage: Sichtung Pr
 
 **Anker.** Sperrgründe in `app.patient_merge_plan` in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Texte in `src/features/patients/zusammenfuehren.ts`; Tests „Sperren (ANN-149)“ in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Entwürfe zusammenlegen statt sperren: Zeilen umhängen und einen Entwurf löschen · Aufwand `mittel`. Konto mitnehmen: `user_profiles.person_id` auf die bleibende Person · Aufwand `mittel` (mit Patientenportal POR-EPIC prüfen).
+**Änderungspfad.** Entwürfe zusammenlegen statt sperren: Zeilen umhängen und einen Entwurf löschen · Aufwand `mittel`. Konto mitnehmen: `user_profiles.person_id` auf die bleibende Person · Aufwand `mittel` (mit Patientenportal POR-EPIC prüfen). **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-150 — Zusammenführen: nicht rückgängig, Legal Hold wandert mit, Nachweis ist der Auditeintrag
 
-Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung
 
 **Annahme.** Das Zusammenführen ist nicht rückgängig zu machen. Ein Legal Hold der Dublette zieht auf die bleibende Akte um und gilt dort weiter; steht die bleibende Akte schon unter einer Sperre, wird die der Dublette dabei aufgehoben und bleibt als Nachweis an der bleibenden Akte stehen (für eine Akte gibt es nur eine aktive Sperre). Ein gleichzeitig gesetzter Legal Hold wartet, bis das Zusammenführen fertig ist. Die leere Akte fällt; ihre Person nur, wenn nichts anderes an ihr hängt (Mitarbeiter:in, Konto, Trainingsverhältnis). Nachweis ist ein Auditeintrag `patient.merged` an der bleibenden Akte mit der Kennung der Dublette und den Zahlen je Bereich, ohne Namen und Inhalt; kein Eintrag im Löschjournal. Wird eine Sicherung von vor dem Zusammenführen zurückgespielt, kommt die Dublette zurück; das Wiederherstellungsverfahren (OPS-003) führt sie anhand der Auditeinträge erneut zusammen.
 
@@ -1945,7 +1945,7 @@ Datenschutz · offen · 2026-09-29 · — · Prüfpaket · Wiedervorlage: OPS-00
 
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`.
+**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108).
 
 ### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
 
