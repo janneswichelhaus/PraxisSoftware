@@ -202,7 +202,16 @@ const abgeschlossen: TrainingProtocol = {
   finalized_at: um(-2, 11),
   author_name: 'Tom Trainingsbetreuung',
   finalized_by_name: 'Tom Trainingsbetreuung',
-  addenda: [],
+  // ABN-022 (BEF-113): ein Nachtrag mit Grund; der Text darüber bleibt.
+  addenda: [
+    {
+      id: '99999999-9999-4999-8999-0000000000a1',
+      content: 'Rudern mit 25 kg, nicht 30 kg.',
+      reason: 'Gewicht vertippt',
+      created_at: um(-1, 9),
+      author_name: 'Tom Trainingsbetreuung',
+    },
+  ],
 };
 client.setQueryData(['training-protocol', TERMIN], entwurf);
 client.setQueryData(['training-appointment', VORGESTERN], {

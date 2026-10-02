@@ -180,6 +180,13 @@ for (const ansicht of ['tag', 'woche'] as const) {
   for (const person of [null, ANNA, TIM, TOM]) {
     const eigene = person ? TERMINE.filter((t) => t.staff_member_id === person) : TERMINE;
     client.setQueryData(['appointments', von, bis, person, null, 'active'], eigene);
+    // ABN-021 (BEF-112): eine Behandlung zur Mittagszeit, ohne lesbaren Termin.
+    client.setQueryData(
+      ['busy-blocks', von, bis, person],
+      alsTrainer
+        ? [{ staff_member_id: TOM, starts_at: zeitpunkt('12:30'), ends_at: zeitpunkt('13:30') }]
+        : [],
+    );
   }
 }
 
