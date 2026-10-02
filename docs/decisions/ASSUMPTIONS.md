@@ -911,6 +911,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück. **Abnahme (Jannes, 2026-10-02):** organisatorische Anmerkungen und Erhalt der Bestandstexte bestätigt. Neue behandlungsrelevante Hinweise brauchen weiterhin einen klinischen Ort, den das Büro liest wie die Therapeut:innen — BEF-098.
 
+**Umgesetzt (ABN-007, 2026-10-02).** `prescriber_note` nimmt als „Behandlungsrelevanter Hinweis“ wieder Eingaben an, über eine eigene Funktion und nur in der Akte (ANN-214). Das Formular der Grundlage bleibt bei den organisatorischen „Anmerkungen“ und zeigt den Hinweis nicht mehr als Bestandstext.
+
 ### ANN-066 — Der Heilmittelkatalog ist eine Liste im Code, kein gepflegter Stammdatensatz
 
 Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, sobald ein Heilmittel fehlt; der Leistungskatalog aus ABR-EPIC-001 ist eine eigene Preisliste und trifft das Heilmittel über seine Katalogposition (ANN-073)
@@ -2546,3 +2548,15 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 **Anker.** `public.waive_appointment_fee` und `app.billable_fee_basis` in `supabase/migrations/20261002130000_abn_006_patient_moved_and_fee_waiver.sql`; `GebuehrVerzicht` in `src/features/appointments/AppointmentDetailPage.tsx`; Tests in `supabase/tests/cancellation-notice.test.ts` („Verzicht auf die Gebühr“) und `AppointmentDetailPage.test.tsx`.
 
 **Änderungspfad.** Rücknahme erlauben: eine zweite Funktion, die beide Spalten leert und protokolliert · Aufwand `klein`. Codierter Grund: eine Spalte mit Werteliste · Aufwand `klein`. Weitere Rollen: die Rollenprüfung in `waive_appointment_fee` · Aufwand `klein`.
+
+### ANN-214 — Den behandlungsrelevanten Hinweis pflegen die behandelnden Rollen in der Akte, nicht im Formular der Grundlage
+
+Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001); Datenschutzprüfung mit ANN-065
+
+**Annahme.** Der klinische Hinweis aus einer Verordnung (`treatment_bases.prescriber_note`, BEF-098) wird **an der Verordnung in der Akte** erfasst und geändert, mit einem eigenen Knopf „Behandlungsrelevanten Hinweis erfassen“ — nicht im Formular der Grundlage, das auch das Büro ausfüllt. Schreiben dürfen **therapist und team_lead** (`app.can_write_treatment_note`, wie die Dokumentation); ein reiner owner-Zugang und das Büro lesen ihn nur. Lesen dürfen alle mit dem Leserecht der Dokumentation (`app.can_read_treatment_note`); `app.can_read_treatment_basis_clinical` ruft es seitdem auf, statt die Rollen ein zweites Mal zu führen. Nur an einer Verordnung, nie am Selbstzahler (ADR-020 Punkt 4). Das Auditlog hält fest, dass das Feld geändert oder geleert wurde, nie den Text.
+
+**Begründung.** Die Abnahme verlangt den Hinweis „getrennt von den organisatorischen Anmerkungen“ und lässt die behandelnden Rollen schreiben. Im gemeinsamen Formular wäre das Feld für das Büro sichtbar, aber gesperrt, und ein Formular, das die Rolle anders behandelt, ist die Stelle, an der so etwas verrutscht. Eine eigene Funktion hält die Rechte an einer Stelle und lässt `create_treatment_basis` und `update_treatment_basis` unverändert (ANN-065). Unsicher: Das Büro tippt die Verordnung ab und sieht den Hinweis auf dem Rezept zuerst; nach dieser Annahme muss es ihn der Therapeut:in weitergeben.
+
+**Anker.** `public.set_treatment_basis_clinical_note` in `supabase/migrations/20261002131000_abn_007_clinical_prescription_note.sql`; `KlinischerHinweis` in `src/features/treatment-bases/KlinischerHinweis.tsx`; Tests in `supabase/tests/treatment-basis-clinical-note.test.ts` und `PatientTreatmentBasesPage.test.tsx`.
+
+**Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.

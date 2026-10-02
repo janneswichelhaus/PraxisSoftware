@@ -13,8 +13,10 @@ import {
   canManageAppointments,
   canReadClinicalPatientFiles,
   canWriteTreatmentBases,
+  canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
+import { KlinischerHinweis } from './KlinischerHinweis';
 import { formatDate } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
 import { usePatientRecord } from '@/features/patients/akte';
@@ -243,12 +245,16 @@ function KlinischeAngaben({
       {klinisch?.therapy_goal ? (
         <DetailRow label="Therapieziel">{klinisch.therapy_goal}</DetailRow>
       ) : null}
-      {/* Zwei Bestandsfelder aus der Zeit vor VER-EPIC-002: Sie werden nicht
-          mehr erfasst, aber weiter angezeigt, solange etwas darin steht.
-          ANN-014 bleibt gültig — die Anwendung erzeugt keine Empfehlung. */}
+      {/* ABN-007 (BEF-098): der klinische Hinweis aus der Verordnung, von den
+          behandelnden Rollen gepflegt, getrennt von den Anmerkungen darunter. */}
       {klinisch?.prescriber_note ? (
-        <DetailRow label="Hinweis der Verordner:in">{klinisch.prescriber_note}</DetailRow>
+        <DetailRow label="Behandlungsrelevanter Hinweis">
+          <span className="whitespace-pre-line">{klinisch.prescriber_note}</span>
+        </DetailRow>
       ) : null}
+      {/* Ein Bestandsfeld aus der Zeit vor VER-EPIC-002: Es wird nicht mehr
+          erfasst, aber weiter angezeigt, solange etwas darin steht.
+          ANN-014 bleibt gültig — die Anwendung erzeugt keine Empfehlung. */}
       {klinisch?.follow_up_recommendation ? (
         <DetailRow label="Empfehlung der Therapeut:in zum Verordnungsende">
           {klinisch.follow_up_recommendation}
@@ -528,6 +534,15 @@ function LaufendeVerordnung({
             </DetailList>
           ) : null}
         </div>
+
+        {(() => {
+          const klinisch = klinischeFelder(verordnung);
+          return klinisch &&
+            istVerordnung(verordnung.treatment_basis_kind) &&
+            canWriteTreatmentNote(user.roles) ? (
+            <KlinischerHinweis verordnung={klinisch} patientId={patient.id} />
+          ) : null;
+        })()}
 
         <Verordnungsaktionen
           eintrag={eintrag}
