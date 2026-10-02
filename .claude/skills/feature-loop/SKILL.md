@@ -245,7 +245,8 @@ Dann den Posten in `docs/development/fortschritt.json` nachstellen — `status`
 der Roadmap entsteht daraus und wird nie von Hand geändert. **`docs/STATUS.md` auf die
 nächste Aufgabe stellen** (Jetzt, Danach, Blocker, „Letzte Session" mit den
 lokalen Schritten) und bearbeitete Befunde in `docs/development/BEFUNDE.md`
-als erledigt markieren. **`pnpm docs:check` muss danach grün sein** — es prüft
+als erledigt markieren und ganz erledigte nach
+`docs/development/archiv/BEFUNDE-ERLEDIGT.md` verschieben. **`pnpm docs:check` muss danach grün sein** — es prüft
 die Obergrenzen, die Anker des Registers, die relativen Verweise und die
 Fortschrittstabelle. Ein
 Eintrag ohne durchlaufenen Schritt I wird nicht abgehakt. Merge und Sichtung:
