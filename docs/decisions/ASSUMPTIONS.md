@@ -2495,6 +2495,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Andere Altersgrenze: `app.platform_min_age_years` · Aufwand `klein`. Vertretung ohne Geburtsdatum für Erwachsene zulassen: Prüfung in `app.assert_platform_representation` lockern · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Korrektur bestätigt: Bei Geburt am 29. Februar tritt die Volljährigkeit im Nichtschaltjahr am 1. März um 0 Uhr ein (§§ 187 Abs. 2, 188 Abs. 2 BGB). Eigener Zugang und Ende des Sorgerechts rechnen mit derselben Funktion; heute rechnet das Ende des Sorgerechts einen Tag zu früh (BEF-117).
 
+**Umgesetzt (ABN-009, 2026-10-02).** `app.majority_date` liefert den Tag der Volljährigkeit (Geburtstag minus ein Tag plus 18 Jahre plus ein Tag; am 29. Februar im Nichtschaltjahr der 1. März), 0 Uhr in der Zeitzone der Praxis. `app.platform_is_minor`, das Ende des Sorgerechts in `app.platform_access_ended_at` und die Einladung zum eigenen Zugang (bisher in UTC) rufen sie auf. Tests mit 29. Februar, 28. Februar und 1. März in `supabase/tests/platform-representation.test.ts`.
+
 ### ANN-209 — Jeder Aufruf über eine Vertretung wird protokolliert, auch das Gerüst der Plattform
 
 Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)

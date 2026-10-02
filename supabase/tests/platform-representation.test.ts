@@ -463,6 +463,59 @@ describe('Sorgerecht endet am 18. Geburtstag (Punkt 15, ANN-208)', () => {
   });
 });
 
+/**
+ * ABN-009 (BEF-117, ANN-208): eine Altersrechnung. Volljährig um 0 Uhr am
+ * 18. Geburtstag, wer am 29. Februar geboren ist, im Nichtschaltjahr am
+ * 1. März (§§ 187 Abs. 2, 188 Abs. 2 BGB).
+ */
+describe('Volljährigkeit an einer Stelle (ABN-009)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it.each([
+    ['2008-02-29', '2026-03-01'],
+    ['2008-02-28', '2026-02-28'],
+    ['2008-03-01', '2026-03-01'],
+    ['2004-02-29', '2022-03-01'],
+  ])('macht eine am %s geborene Person am %s volljährig', async (geboren, volljaehrig) => {
+    const { rows } = await asPostgres<{ tag: string }>(
+      `select to_char(app.majority_date($1::date), 'YYYY-MM-DD') as tag`,
+      [geboren],
+    );
+    expect(rows[0]!.tag).toBe(volljaehrig);
+  });
+
+  it('rechnet „minderjährig“ mit demselben Tag wie das Ende des Sorgerechts', async () => {
+    const { rows } = await asPostgres<{ gestern18: boolean; heute18: boolean; morgen18: boolean }>(
+      `with heute as (select (now() at time zone 'Europe/Berlin')::date as tag)
+       select app.platform_is_minor((tag - interval '18 years' - interval '1 day')::date, 'Europe/Berlin') as gestern18,
+              app.platform_is_minor((tag - interval '18 years')::date, 'Europe/Berlin') as heute18,
+              app.platform_is_minor((tag - interval '18 years' + interval '1 day')::date, 'Europe/Berlin') as morgen18
+       from heute`,
+    );
+    expect(rows[0]).toEqual({ gestern18: false, heute18: false, morgen18: true });
+  });
+
+  it('beendet das Sorgerecht eines am 29. Februar geborenen Kindes am 1. März um 0 Uhr', async () => {
+    await geburtsdatum(patients.max, "current_date - interval '17 years'");
+    const einladung = await vertretungEinladen(users.office, {
+      ...BETREUUNG_MAX,
+      grundlage: 'custody',
+      name: 'Sara Sorge',
+      dokumente: ['identity_document', 'custody_proof'],
+      aufgabenkreis: null,
+    });
+    await geburtsdatum(patients.max, "'2008-02-29'");
+    const { rows } = await asPostgres<{ ende: string }>(
+      `select to_char(app.platform_access_ended_at($1::uuid) at time zone 'Europe/Berlin',
+                      'YYYY-MM-DD HH24:MI') as ende`,
+      [einladung.access_id],
+    );
+    expect(rows[0]!.ende).toBe('2026-03-01 00:00');
+  });
+});
+
 describe('Vertretungen in der Praxis lesen und verwalten', () => {
   beforeEach(async () => {
     await resetDatabase();
