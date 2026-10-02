@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as BerichtApi from './api';
 import type { RoleKey } from '@/features/session/types';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -21,6 +22,9 @@ function zeile(rest: Partial<BerichtApi.Berichtszeile> = {}): BerichtApi.Bericht
     recommendation: null,
     recommendation_by_name: null,
     recommendation_on: null,
+    supersedes_report_id: null,
+    superseded_by_report_id: null,
+    change_reason: null,
     ...rest,
   };
 }
@@ -81,5 +85,42 @@ describe('Berichte an der Verordnung (DOK-11, VER-01)', () => {
       'href',
       `/patienten/${PATIENT}/berichte/b1/druck`,
     );
+  });
+});
+
+describe('Berichtskorrektur mit Kette (ABN-016, BEF-104)', () => {
+  it('nennt die Kette und bietet nur am geltenden abgeschlossenen Bericht „Korrigieren“ an', () => {
+    zeigen([
+      zeile({
+        id: 'alt',
+        status: 'abgeschlossen',
+        completed_on: '2026-09-20',
+        superseded_by_report_id: 'neu',
+      }),
+      zeile({
+        id: 'neu',
+        status: 'abgeschlossen',
+        completed_on: '2026-09-26',
+        supersedes_report_id: 'alt',
+        change_reason: 'Falsche Verordnung genannt',
+      }),
+    ]);
+    expect(screen.getByText('· ersetzt durch Korrektur')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^Korrektur vom 26\.09\.2026/ })).toBeInTheDocument();
+    expect(screen.getByText('Grund der Korrektur: Falsche Verordnung genannt')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Korrigieren' })).toHaveLength(1);
+  });
+
+  it('verlangt einen Grund, bevor eine Korrektur entsteht', async () => {
+    const user = userEvent.setup();
+    zeigen([zeile({ status: 'abgeschlossen', completed_on: '2026-09-20' })]);
+    await user.click(screen.getByRole('button', { name: 'Korrigieren' }));
+    await user.click(screen.getByRole('button', { name: 'Korrektur anlegen' }));
+    expect(screen.getByText('Bitte den Grund der Korrektur angeben.')).toBeInTheDocument();
+  });
+
+  it('bietet office keine Korrektur an', () => {
+    zeigen([zeile({ status: 'abgeschlossen', completed_on: '2026-09-20' })], ['office']);
+    expect(screen.queryByRole('button', { name: 'Korrigieren' })).toBeNull();
   });
 });

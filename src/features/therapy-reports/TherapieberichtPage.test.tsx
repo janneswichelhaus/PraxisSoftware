@@ -459,6 +459,16 @@ describe('Therapiebericht: Auswahl der Einträge', () => {
     );
     expect(screen.getByRole('button', { name: 'Entwurf speichern' })).toBeDisabled();
   });
+
+  it('zählt beim Auswählen mit und sperrt bei 50 jeden weiteren Haken (BEF-104)', async () => {
+    const fuenfzig = Array.from({ length: 50 }, (_, i) => `n${i + 10}`);
+    fetchBericht.mockResolvedValue(bericht({ note_ids: fuenfzig }));
+    zeigeFormular();
+
+    expect(await screen.findByText(/50 von 50 Einträgen gewählt/)).toBeInTheDocument();
+    // Ein weiterer, nicht gewählter Eintrag lässt sich nicht ankreuzen.
+    expect(screen.getByRole('checkbox', { name: /22\.06\.2026 · Anna Beispiel/ })).toBeDisabled();
+  });
 });
 
 describe('Therapiebericht als Blatt', () => {

@@ -1603,7 +1603,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Anker.** `public.therapy_reports`, `app.therapy_report_unveraenderlich` und `public.complete_therapy_report` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/api.ts`.
 
-**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104).
+**Änderungspfad.** Nur Druckansicht ohne Ablage: Tabelle und Funktionen zurückbauen, die Empfehlung braucht dann einen eigenen Ort · Aufwand `mittel`. Serverseitiges PDF: Ablage nach ADR-017 an den abgeschlossenen Bericht hängen · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt; eine Berichtskorrektur nennt den ersetzten Bericht, Grund, Zeitpunkt und Verfasser:in (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Eine Korrektur ist ein neuer Bericht derselben Verordnung mit `supersedes_report_id` und `change_reason` (3–500 Zeichen), nur zu einem abgeschlossenen, höchstens einmal; Zeitpunkt und Verfasser:in sind `created_at`/`created_by`. Das Dokument nennt sie (`korrektur`), das Blatt heißt „korrigierte Fassung“, die Verordnung zeigt die Kette und „Korrigieren“ nur am geltenden Bericht. `supabase/migrations/20261003103000_abn_016_therapy_report_correction.sql`.
 
 ### ANN-122 — Was in den Bericht geht, kreuzt die Therapeut:in an; nichts ist vorbelegt, alles wörtlich
 
@@ -1615,7 +1615,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `app.therapy_report_pruefen` und `app.therapy_report_dokument` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql`; `src/features/therapy-reports/TherapieberichtPage.tsx`.
 
-**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104).
+**Änderungspfad.** Andere Auswahlmenge oder Obergrenze: die beiden Funktionen und `EINTRAEGE_MAX` · Aufwand `klein`. Verlaufsereignisse oder Skalen dazu: ein Feld im Dokument und ein Abschnitt im Blatt · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bewusste Auswahl ohne Vorbelegung bestätigt; der eigene Berichtstext bleibt Kern, Einträge sind ergänzende Auszüge; die Grenze von 50 ist sichtbar und schneidet nichts still ab (BEF-104). **Fassung 2 (ABN-016, 2026-10-02, BEF-104):** Beim Auswählen steht „n von 50 Einträgen gewählt“; bei 50 lässt sich kein weiterer Haken setzen. Der eigene Berichtstext bleibt der Kern, die Einträge sind ergänzende Auszüge.
 
 ### ANN-123 — Der Briefkopf kommt aus den Praxis-Stammdaten, ohne Steuer- und Bankangaben
 

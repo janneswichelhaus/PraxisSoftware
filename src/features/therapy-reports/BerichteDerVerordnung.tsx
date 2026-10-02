@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { DetailRow } from '@/components/ui/DetailList';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { TextArea } from '@/components/ui/TextArea';
 import {
   canReadTreatmentNote,
   canWriteTreatmentNote,
@@ -11,7 +13,10 @@ import {
 } from '@/features/session/types';
 import { formatDate } from '@/lib/datum';
 import {
+  GRUND_MAX,
+  GRUND_MIN,
   berichtAnlegen,
+  berichtKorrigieren,
   berichteQueryKey,
   empfehlungDerVerordnung,
   type Berichtszeile,
@@ -115,11 +120,30 @@ export function BerichteDerVerordnung({
                   className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
                 >
                   {entwurf
-                    ? `Entwurf${bericht.author_name ? ` von ${bericht.author_name}` : ''}`
-                    : `Bericht vom ${formatDate(bericht.completed_on)}${
-                        bericht.completed_by_name ? ` · ${bericht.completed_by_name}` : ''
-                      }`}
+                    ? `${bericht.supersedes_report_id ? 'Korrektur im Entwurf' : 'Entwurf'}${
+                        bericht.author_name ? ` von ${bericht.author_name}` : ''
+                      }`
+                    : `${bericht.supersedes_report_id ? 'Korrektur' : 'Bericht'} vom ${formatDate(
+                        bericht.completed_on,
+                      )}${bericht.completed_by_name ? ` · ${bericht.completed_by_name}` : ''}`}
                 </Link>
+                {/* ABN-016 (BEF-104): die Kette, sichtbar an der Verordnung. */}
+                {bericht.superseded_by_report_id ? (
+                  <span className="text-ink-muted text-sm"> · ersetzt durch Korrektur</span>
+                ) : null}
+                {bericht.change_reason ? (
+                  <span className="text-ink-muted block text-sm">
+                    Grund der Korrektur: {bericht.change_reason}
+                  </span>
+                ) : null}
+                {darfSchreiben && !entwurf && !bericht.superseded_by_report_id ? (
+                  <Korrigieren
+                    patientId={patientId}
+                    verordnungId={verordnungId}
+                    berichtId={bericht.id}
+                    datum={formatDate(bericht.completed_on)}
+                  />
+                ) : null}
               </li>
             );
           })}
@@ -159,5 +183,92 @@ export function BerichteDerVerordnung({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * Einen abgeschlossenen Bericht korrigieren (ABN-016, BEF-104): mit Grund, als
+ * neuer Bericht derselben Verordnung, der auf den ersetzten verweist. Der
+ * ersetzte bleibt unverändert und lesbar.
+ */
+function Korrigieren({
+  patientId,
+  verordnungId,
+  berichtId,
+  datum,
+}: {
+  patientId: string;
+  verordnungId: string;
+  berichtId: string;
+  datum: string;
+}) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [offen, setOffen] = useState(false);
+  const [grund, setGrund] = useState('');
+  const [fehler, setFehler] = useState<string | undefined>(undefined);
+  const korrigieren = useMutation({
+    mutationFn: () => berichtKorrigieren(verordnungId, berichtId, grund),
+    onSuccess: async (id) => {
+      await queryClient.invalidateQueries({ queryKey: berichteQueryKey(patientId) });
+      void navigate(`/patienten/${patientId}/berichte/${id}`);
+    },
+  });
+
+  if (!offen) {
+    return (
+      <Button type="button" variant="quiet" groesse="kompakt" onClick={() => setOffen(true)}>
+        Korrigieren
+      </Button>
+    );
+  }
+  return (
+    <form
+      noValidate
+      className="border-line rounded-card mt-1 mb-2 flex flex-col gap-2 border p-3"
+      aria-label={`Bericht vom ${datum} korrigieren`}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (grund.trim().length < GRUND_MIN) {
+          setFehler('Bitte den Grund der Korrektur angeben.');
+          return;
+        }
+        korrigieren.mutate();
+      }}
+    >
+      <TextArea
+        label="Grund der Korrektur"
+        hint="Der Bericht vom bisherigen Tag bleibt unverändert. Die Korrektur verweist auf ihn und nennt diesen Grund."
+        rows={2}
+        maxLength={GRUND_MAX}
+        required
+        error={fehler}
+        value={grund}
+        onChange={(e) => {
+          setGrund(e.target.value);
+          setFehler(undefined);
+        }}
+      />
+      {korrigieren.isError ? (
+        <Statusmeldung ton="fehler">{korrigieren.error.message}</Statusmeldung>
+      ) : null}
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" groesse="kompakt" disabled={korrigieren.isPending}>
+          {korrigieren.isPending ? 'Wird angelegt …' : 'Korrektur anlegen'}
+        </Button>
+        <Button
+          type="button"
+          variant="quiet"
+          groesse="kompakt"
+          onClick={() => {
+            setOffen(false);
+            setGrund('');
+            setFehler(undefined);
+          }}
+        >
+          Abbrechen
+        </Button>
+      </div>
+    </form>
   );
 }

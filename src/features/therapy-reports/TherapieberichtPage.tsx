@@ -380,6 +380,14 @@ function Berichtsformular({
         )} · Entwurf`}
       />
 
+      {bericht.document.korrektur ? (
+        <p className="text-ink mb-6 max-w-2xl text-sm">
+          Korrektur des Berichts vom{' '}
+          {formatDate(bericht.document.korrektur.ersetzt_abgeschlossen_am)}. Grund:{' '}
+          {bericht.document.korrektur.grund}
+        </p>
+      ) : null}
+
       {wechsel ? (
         <Statusmeldung ton="warnung" className="mb-6 max-w-2xl">
           {ungespeichert
@@ -421,6 +429,14 @@ function Berichtsformular({
           <p className="text-ink-muted text-sm">
             Angekreuzte Einträge stehen wörtlich im Bericht, mit Tag und Verfasser:in. Nur
             finalisierte Einträge lassen sich übernehmen; vorausgewählt ist nichts.
+          </p>
+          {/* Die Grenze ist beim Auswählen sichtbar, nicht erst beim Speichern
+              (ABN-016, BEF-104). */}
+          <p className="text-ink text-sm tabular-nums" aria-live="polite">
+            {eingabe.eintraege.length} von {EINTRAEGE_MAX} Einträgen gewählt
+            {eingabe.eintraege.length >= EINTRAEGE_MAX
+              ? ' – mehr passen nicht in einen Bericht.'
+              : ''}
           </p>
           {eintraege.length === 0 ? (
             <Statusmeldung>Die Akte hat noch keinen finalisierten Eintrag.</Statusmeldung>
@@ -541,7 +557,8 @@ function Berichtsformular({
             onAbbrechen={() => abschliessen.reset()}
           >
             Der Bericht wird so eingefroren, wie er jetzt im Formular steht – spätere Änderungen in
-            der Akte erreichen ihn nicht mehr. Eine Korrektur ist ein neuer Bericht.
+            der Akte erreichen ihn nicht mehr. Eine Korrektur ist danach ein neuer Bericht mit
+            Verweis und Grund.
           </Rueckfrage>
         )}
         <Rueckfrage
@@ -588,6 +605,9 @@ function Eintragsliste({
   gewaehlt: readonly string[];
   onUmschalten: (id: string, an: boolean) => void;
 }) {
+  // Bei 50 ist Schluss: Ein weiterer Haken lässt sich nicht setzen, statt dass
+  // der Bericht still kürzer würde (ABN-016, BEF-104).
+  const voll = gewaehlt.length >= EINTRAEGE_MAX;
   return (
     <div>
       {titel ? <p className="text-ink-muted mt-2 text-sm font-medium">{titel}</p> : null}
@@ -609,6 +629,7 @@ function Eintragsliste({
                 </span>
               }
               checked={gewaehlt.includes(eintrag.id)}
+              disabled={voll && !gewaehlt.includes(eintrag.id)}
               onChange={(e) => onUmschalten(eintrag.id, e.target.checked)}
             />
           </li>
