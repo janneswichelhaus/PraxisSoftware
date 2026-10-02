@@ -2483,15 +2483,14 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
     expect(kachel.className).toContain('border-l-warnung');
   });
 
-  it('zeigt dem Büro den Zustand statt der Aufgabe (ANN-201)', async () => {
+  it('zeigt auch dem Büro „Doku offen" - es liest Dokumentation (ABN-005, ANN-201 Fassung 2)', async () => {
     fetchAppointments.mockResolvedValue([
       eintrag({ status: 'completed', documentation_status: 'none' }),
     ]);
     rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
 
     const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
-    expect(within(kachel).getByTestId('kachel-status')).toHaveTextContent('Abgeschlossen');
-    expect(kachel).not.toHaveTextContent('Doku offen');
+    expect(kachel).toHaveTextContent('Doku offen');
   });
 
   it('zeigt einen dokumentierten Termin mit Zeichen und Wort, ohne Warnung', async () => {

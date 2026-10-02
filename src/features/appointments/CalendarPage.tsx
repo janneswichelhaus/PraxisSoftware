@@ -15,7 +15,6 @@ import {
   canReadTrainingClients,
   canWriteTrainingClients,
   type CurrentUser,
-  canWriteTreatmentNote,
 } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -401,16 +400,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     placeholderData: keepPreviousData,
   });
 
-  // „Doku offen" ist eine Aufgabe für die, die dokumentieren (ANN-201): Wer
-  // es nicht darf, sieht an der Kachel den Zustand statt der Aufgabe.
-  const darfDokumentieren = canWriteTreatmentNote(user.roles);
-  const eintraege = useMemo(
-    () =>
-      (termine.data ?? []).map((e) =>
-        darfDokumentieren ? e : { ...e, documentation_status: null },
-      ),
-    [termine.data, darfDokumentieren],
-  );
+  // „Doku offen" sieht, wer Dokumentation lesen darf (ABN-005, ANN-201
+  // Fassung 2): Der Server liefert den Stand nur an diese Rollen
+  // (app.can_read_treatment_note), hier wird nichts mehr ausgeblendet. Die
+  // Aufgabe - „Doku" schreiben - bleibt im Panel bei den Schreibenden.
+  const eintraege = useMemo(() => termine.data ?? [], [termine.data]);
   const gewaehlt = gewaehltId ? (eintraege.find((e) => e.id === gewaehltId) ?? null) : null;
 
   const verschieben = useMutation({

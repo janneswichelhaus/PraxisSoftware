@@ -2393,9 +2393,9 @@ Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Begründung.** ANN-005 schloss eine Markierung als fehlend aus, damit der Abschluss keine Pflicht zur Dokumentation vortäuscht. Die ausdrückliche Entscheidung von Jannes vom 01.10. geht dieser Annahme vor; die Pflicht selbst bleibt unverändert – gesperrt wird weiterhin erst die Rechnung, nicht der Abschluss (ADR-018, Konsequenzen). Dieselbe Regel gilt schon für die Übersicht (`istOffen`): eine Aufgabe, die jemand nicht erledigen kann, wäre Rauschen.
 
-**Anker.** `TreatmentNoteSection` in `src/features/documentation/TreatmentNoteSection.tsx` (Bedingung `faellig && darfSchreiben`); `offenGrund` in `src/features/today/api.ts`.
+**Anker.** Fassung 2: `app.can_read_treatment_note()` in `list_day_plan` und `list_appointments` (`supabase/migrations/20261002124000_abn_005_documentation_read_right.sql`), `canReadTreatmentNote` in `TreatmentNoteSection` (Bedingung `faellig`) und im Kalender (kein Ausblenden mehr in `CalendarPage.tsx`); `offenGrund` in `src/features/today/api.ts`.
 
-**Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`.
+**Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`. **Fassung 2 (ABN-005, 2026-10-02, Abnahme Jannes, BEF-095):** Stand, „Doku offen“ und Lese-Links folgen dem einen Leserecht für Dokumentation; die Aufgabe („Doku“ schreiben, `istOffen` für die Arbeitskarte) bleibt bei den Schreibenden. Wieder nur Schreibenden zeigen: die Bedingung `darfSchreiben` zurück in `TreatmentNoteSection` und das Ausblenden in `CalendarPage` · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Das Büro liest alle Dokumentation einschließlich Verlauf (ADR-004 Fassung 2) und sieht „Doku offen“ bzw. „Dokumentation fehlt“ wie die Therapeut:innen; Sichtbarkeit hängt am Leserecht, nicht am Schreibrecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen — BEF-095. Bis zur Umsetzung gilt die bisherige Anzeige.
 
