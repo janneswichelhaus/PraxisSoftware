@@ -172,7 +172,40 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
     throw fehler;
   }
 
+  // (c, Fassung 3) Die Prüfung am Inhalt (ADR-017 Punkte 49 bis 52).
+  if ((await pruefeAmServer(vorbereitet.file_id)) === 'rejected') {
+    throw new Error(VERWORFEN);
+  }
+
   return vorbereitet.file_id;
+}
+
+/** Was die Person liest, wenn der Server eine Datei verwirft (ADR-017 Punkt 52). */
+export const VERWORFEN =
+  'Die Datei wurde bei der Prüfung am Server verworfen: Format, Prüfsumme oder Metadaten stimmten nicht mit dem Hochgeladenen überein. Bitte die Originaldatei erneut wählen.';
+
+const pruefantwortSchema = z.object({ ergebnis: z.string() });
+
+/**
+ * Löst die Prüfung am Inhalt aus (Edge Function `patient-file-verify`, ABN-025).
+ *
+ * Bis OPS-001 die Edge Runtime freigibt, gibt es die Function in den meisten
+ * Umgebungen nicht; dann bleibt die Datei „nicht serverseitig geprüft"
+ * (Punkt 51), und das ist kein Fehler des Uploads. Nur ein ausdrückliches
+ * `rejected` ist eine Nachricht an die Person: Die Datenbank hat die Datei
+ * schon verworfen, Löschauftrag und Protokoll sind geschrieben (ANN-222).
+ */
+async function pruefeAmServer(fileId: string): Promise<string | null> {
+  try {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>('patient-file-verify', {
+      body: { file_id: fileId },
+    })) as { data: unknown; error: unknown };
+    if (error) return null;
+    const antwort = pruefantwortSchema.safeParse(data);
+    return antwort.success ? antwort.data.ergebnis : null;
+  } catch {
+    return null;
+  }
 }
 
 /**

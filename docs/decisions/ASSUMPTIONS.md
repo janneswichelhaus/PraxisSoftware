@@ -2658,3 +2658,15 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 **Anker.** `FOTOART_WAHL` und `Aufnahme` in `src/features/files/FotosImVerlauf.tsx`.
 
 **Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`. Wahl im Kameradialog selbst: eine Stufe vor dem Kamerastart in `Kameradialog.tsx` · Aufwand `klein`.
+
+### ANN-222 — Die Anwendung löst die Prüfung am Server nach der Bestätigung aus; fehlt die Function, bleibt die Datei ungeprüft
+
+Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit OPS-001 (Scharfschalten der Edge Runtime und des Schalters)
+
+**Annahme.** Nach der Bestätigung ruft die Anwendung die Edge Function `patient-file-verify` mit der Datei-Kennung auf. Die Function prüft die Sitzung, findet nur bestätigte Dateien der eigenen Organisation, liest das Objekt mit einem eigenen Dienstschlüssel (`PATIENT_FILE_VERIFY_SERVICE_KEY`) und trägt das Ergebnis ein. Antwortet sie nicht, bleibt die Datei „nicht serverseitig geprüft“, und der Upload gilt als gelungen; nur ein ausdrückliches „verworfen“ meldet die Anwendung der Person. Eine einmal geprüfte Datei wird nicht noch einmal gelesen.
+
+**Begründung.** ADR-017 Punkt 50 legt den Ausführungsort fest, nicht den Auslöser. Ein Datenbank-Trigger mit Netzaufruf bräuchte eine Erweiterung (`pg_net`) und damit eine neue Abhängigkeit; ein Speicher-Webhook ist Einrichtung beim Anbieter. Der Aufruf aus der Anwendung erfüllt Punkt 52 („die hochladende Person informiert“) ohne weiteren Weg. Bis OPS-001 verhindert das die Cloud-Umgebung nicht, denn die Prüfung ist dort nie Bedingung (Punkt 51). Unsicher: Bei scharfem Schalter bleibt eine Datei ohne Antwort der Function unsichtbar `pending` und fällt nach 24 Stunden weg — die Person sieht dann nur, dass sie fehlt.
+
+**Anker.** `pruefeAmServer` in `src/features/files/api.ts`; `supabase/functions/patient-file-verify/`; `[functions.patient-file-verify]` in `supabase/config.toml`.
+
+**Änderungspfad.** Auslöser am Server: Speicher-Webhook oder `pg_net`-Trigger auf `confirmation_requested_at` · Aufwand `mittel` (neue Einrichtung). Meldung „Prüfung steht aus“ bei scharfem Schalter: die Bestätigung gibt den Zustand zurück · Aufwand `klein`.
