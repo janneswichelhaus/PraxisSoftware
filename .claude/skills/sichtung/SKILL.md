@@ -20,7 +20,7 @@ Abweichungsregel 1). Regeln und Dateien: `docs/sichtung/README.md`.
    Jannes' Antwort warten („ok", „Befund: …", Bildschirmfoto). Nicht mehrere
    Schritte auf einmal abfragen, es sei denn, Jannes will es so.
 4. **Befunde.** Jede Abweichung als `BEF-NNN` nach `docs/development/BEFUNDE.md`
-   (nächste freie Nummer, Bereich, Rolle, Schritt der Sichtung, erwartete und
+   (nächste freie Nummer, auch gegen `archiv/BEFUNDE-ERLEDIGT.md`, Bereich, Rolle, Schritt der Sichtung, erwartete und
    beobachtete Wirkung) — **keine echten Daten, keine Namen außer Seed**.
    Nicht beheben: Ein Befund wird die erste Story des nächsten Loops derselben
    Etappe.

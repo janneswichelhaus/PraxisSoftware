@@ -6,6 +6,15 @@
     "moduleResolution": "bundler",
     "skipLibCheck": true,
 
+    /* Inkrementell: `pnpm typecheck` merkt sich Stand und Fehler je Projekt in
+       node_modules/.tmp und prüft beim nächsten Lauf nur Geändertes und davon
+       Abhängiges nach. Bewusst `tsc -p` je Projekt statt `tsc --build`: Der
+       Build-Modus hält ein Projekt schon für aktuell, wenn keine seiner
+       eigenen Dateien neuer ist, und übersieht so einen Fehler, den eine
+       geänderte importierte Datei in ihm auslöst. Die CI startet ohne diese
+       Dateien und prüft immer alles; `pnpm build` bleibt bei `--force`. */
+    "incremental": true,
+
     /* Strenge Typprüfung: PROJECT_PRINCIPLES.md 12/13 verlangen, dass Fehler
        nicht unbemerkt bleiben. Der Compiler ist die billigste Kontrolle. */
     "strict": true,
