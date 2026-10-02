@@ -16,15 +16,17 @@
  * bewusst ein (`docs/sichtung/kartendienst.md`).
  */
 
-import { waehleAdapter } from './auswahl.ts';
+import { richteEin } from './auswahl.ts';
 import { erstelleHandler } from './handler.ts';
 import { erstelleSitzungspruefung } from './sitzung.ts';
 import type { Protokolleintrag } from './typen.ts';
 
-const adapter = waehleAdapter({
+const { adapter, kartenFreigegeben, gateAbgewiesen } = richteEin({
   LOCATION_PROVIDER: Deno.env.get('LOCATION_PROVIDER'),
   PTV_API_KEY: Deno.env.get('PTV_API_KEY'),
   LOCATION_DATA_GATE: Deno.env.get('LOCATION_DATA_GATE'),
+  // ADR-019 Punkt 36: fehlt es, gilt die Produktion.
+  APP_ENVIRONMENT: Deno.env.get('APP_ENVIRONMENT'),
 });
 
 const pruefeSitzung = erstelleSitzungspruefung({
@@ -48,4 +50,6 @@ function protokolliere(eintrag: Protokolleintrag): void {
   );
 }
 
-Deno.serve(erstelleHandler({ adapter, pruefeSitzung, protokolliere }));
+Deno.serve(
+  erstelleHandler({ adapter, kartenFreigegeben, gateAbgewiesen, pruefeSitzung, protokolliere }),
+);

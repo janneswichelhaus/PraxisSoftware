@@ -165,6 +165,15 @@ export interface GeocodeResult {
   /** Wie genau der Treffer ist; unterhalb `address` bestätigt die Person den Treffer ausdrücklich. */
   readonly precision: 'address' | 'street' | 'locality' | 'unknown';
   /**
+   * Eindeutig zur vollständigen Anschrift (ADR-019 Punkt 37, ANN-095): Die
+   * Anfrage trug Straße, Hausnummer, PLZ und Ort, der Anbieter fand **genau
+   * einen** Treffer, und der ist hausnummergenau. Nur dann übernimmt die
+   * Anwendung die Koordinate ohne Rückfrage.
+   */
+  readonly unique: boolean;
+  /** Wie viele Treffer der Anbieter fand; gezeigt wird der erste. */
+  readonly matchCount: number;
+  /**
    * Anzeigetext des Treffers, damit die Person die Zuordnung prüfen kann.
    * Wird angezeigt, nicht gespeichert.
    */

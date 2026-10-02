@@ -70,6 +70,10 @@ const STATUS: Readonly<Record<LocationErrorCode, number>> = {
 interface HandlerOptionen {
   /** `null`, wenn kein Anbieter eingerichtet ist — dann antwortet die Function `not_configured`. */
   readonly adapter: Anbieteradapter | null;
+  /** Darf die Karte Kacheln laden (ADR-019 Punkt 35)? Fehlt die Angabe: nein. */
+  readonly kartenFreigegeben?: boolean;
+  /** Hat der Schalter in der Produktion abgewiesen (Punkt 36)? Dann steht es im Log. */
+  readonly gateAbgewiesen?: boolean;
   readonly pruefeSitzung: Sitzungspruefung;
   readonly protokolliere: (eintrag: Protokolleintrag) => void;
   /** Für Tests; sonst die Uhr der Laufzeit. */
@@ -78,6 +82,8 @@ interface HandlerOptionen {
 
 export function erstelleHandler({
   adapter,
+  kartenFreigegeben = false,
+  gateAbgewiesen = false,
   pruefeSitzung,
   protokolliere,
   jetzt = () => Date.now(),
@@ -113,7 +119,23 @@ export function erstelleHandler({
       return antwort({ ok: false, error: fehler('invalid_request', 'Anfrage unvollständig') }, 400);
     }
 
+    // ADR-019 Punkt 35: Die Karte fragt, ob sie Kacheln laden darf. Die
+    // Antwort trägt nur den Zustand - keinen Schlüssel, keine Adresse.
+    if (auftrag.aufgabe === 'status') {
+      return antwort(
+        {
+          ok: true,
+          value: { mapReleased: kartenFreigegeben },
+          quelle: adapter?.quelle ?? 'anbieter',
+        },
+        200,
+      );
+    }
+
     if (adapter === null) {
+      // Punkt 36: Ein abgewiesener Schalter steht im Log, ohne Anfrage und
+      // ohne Koordinate (Punkt 18).
+      if (gateAbgewiesen) protokolliere({ anbieter: 'gate', code: 'gate_rejected', dauerMs: 0 });
       return antwort(
         {
           ok: false,
@@ -152,7 +174,8 @@ export function erstelleHandler({
 type Auftrag =
   | { readonly aufgabe: 'route'; readonly anfrage: RouteRequest }
   | { readonly aufgabe: 'matrix'; readonly anfrage: MatrixRequest }
-  | { readonly aufgabe: 'geocode'; readonly anfrage: GeocodeRequest };
+  | { readonly aufgabe: 'geocode'; readonly anfrage: GeocodeRequest }
+  | { readonly aufgabe: 'status' };
 
 /**
  * Die Anfrage des Browsers — oder `null`, wenn irgendetwas daran nicht stimmt.
@@ -176,6 +199,8 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | null> {
 
   const daten = koerper as Record<string, unknown>;
 
+  if (daten['aufgabe'] === 'status') return { aufgabe: 'status' };
+
   // Geocoding trägt kein Profil, sondern eine Anschrift (MAP-006a).
   if (daten['aufgabe'] === 'geocode') {
     const anschrift = anschriftAus(daten['address']);
@@ -188,7 +213,7 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | null> {
 
   const gefragt = daten['aufgabe'];
   if (gefragt !== 'route' && gefragt !== 'matrix') return null;
-  const aufgabe = gefragt satisfies Aufgabe;
+  const aufgabe = gefragt satisfies Exclude<Aufgabe, 'geocode' | 'status'>;
 
   if (aufgabe === 'route') {
     const waypoints = koordinaten(daten['waypoints'], MIN_WEGPUNKTE);

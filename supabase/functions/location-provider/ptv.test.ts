@@ -52,6 +52,18 @@ function alsUrl(ziel: RequestInfo | URL): URL {
 }
 
 describe('PTV-Routing-Adapter', () => {
+  it('gibt fuer eine geschaetzte Route keine Fahrzeit (ADR-019 Punkt 38)', async () => {
+    const geschaetzt = {
+      ...ANTWORT,
+      legs: [{ ...(ANTWORT.legs as object[])[0], estimatedByDirectDistance: true }],
+    };
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(geschaetzt),
+    }).route(STOPPS);
+    expect(ergebnis.ok === false && ergebnis.error.code).toBe('not_found');
+  });
+
   it('schickt nur Koordinaten und Profil - und den Schluessel als Kopfzeile', async () => {
     const abrufen = antwortMit(ANTWORT);
     const adapter = erstellePtvAdapter({ apiKey: 'geheim', abrufen });
@@ -249,6 +261,46 @@ describe('PTV-Matrix-Adapter', () => {
     travelTimes: [600, 660, 720, 300, 360, 420],
     distances: [2000, 2200, 2400, 1000, 1200, 1400],
   };
+
+  // ADR-019 Punkt 38 (ANN-097): Eine Ersatzschaetzung ist keine Fahrzeit.
+  it('macht eine als Schaetzung markierte Relation zu null, in Fahrzeit und Strecke', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({
+        ...MATRIX_ANTWORT,
+        estimatedByDirectDistance: [false, true, false, false, false, false],
+      }),
+    }).matrix(ZWEI_MAL_DREI);
+    expect(ergebnis.ok && ergebnis.value.durationsSeconds).toEqual([
+      [600, null, 720],
+      [300, 360, 420],
+    ]);
+    expect(ergebnis.ok && ergebnis.value.distancesMeters?.[0]?.[1]).toBeNull();
+  });
+
+  it('behandelt ein unbekanntes Kennzeichen je Relation wie eine Schaetzung', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({
+        ...MATRIX_ANTWORT,
+        relationStatus: ['OK', 'OK', 'OK', 'APPROXIMATED', 'OK', 'OK'],
+      }),
+    }).matrix(ZWEI_MAL_DREI);
+    expect(ergebnis.ok && ergebnis.value.durationsSeconds).toEqual([
+      [600, 660, 720],
+      [null, 360, 420],
+    ]);
+  });
+
+  it('nimmt einer ganz geschaetzten Antwort jede Fahrzeit', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit({ ...MATRIX_ANTWORT, estimated: true }),
+    }).matrix(ZWEI_MAL_DREI);
+    expect(ergebnis.ok && ergebnis.value.durationsSeconds.flat().every((z) => z === null)).toBe(
+      true,
+    );
+  });
 
   it('schickt Koordinaten im Koerper und nur Profil und Ergebnisteile in der Adresse', async () => {
     const abrufen = antwortMit(MATRIX_ANTWORT);
@@ -456,9 +508,38 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
       value: {
         position: { lat: 48.5201, lon: 9.0512 },
         precision: 'address',
+        unique: true,
+        matchCount: 1,
         matchLabel: 'Musterweg 1, 72070 Tübingen',
       },
     });
+  });
+
+  // ADR-019 Punkt 37 (ANN-095): eindeutig nur bei vollstaendiger Anfrage, genau
+  // einem Treffer und Hausnummergenauigkeit.
+  it('nennt zwei Treffer nicht eindeutig und zaehlt sie', async () => {
+    const zwei = { locations: [TREFFER.locations[0], TREFFER.locations[0]] };
+    const ergebnis = await erstellePtvAdapter({ apiKey: 'k', abrufen: antwortMit(zwei) }).geocode(
+      ANSCHRIFT,
+    );
+    expect(ergebnis.ok && [ergebnis.value.unique, ergebnis.value.matchCount]).toEqual([false, 2]);
+  });
+
+  it('nennt einen Treffer ohne Hausnummer in der Anfrage nicht eindeutig', async () => {
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(TREFFER),
+    }).geocode({ ...ANSCHRIFT, houseNumber: '' });
+    expect(ergebnis.ok && ergebnis.value.unique).toBe(false);
+  });
+
+  it('nennt einen einzigen, aber nur strassengenauen Treffer nicht eindeutig', async () => {
+    const koerper = { locations: [{ ...TREFFER.locations[0], locationType: 'STREET' }] };
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(koerper),
+    }).geocode(ANSCHRIFT);
+    expect(ergebnis.ok && ergebnis.value.unique).toBe(false);
   });
 
   it.each([

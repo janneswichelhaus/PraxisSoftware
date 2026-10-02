@@ -53,7 +53,13 @@ const LEERE_MATRIX: MatrixErgebnis = { ok: true, value: { durationsSeconds: [] }
 
 const TREFFER: GeocodeErgebnis = {
   ok: true,
-  value: { position: { lat: 48.52, lon: 9.05 }, precision: 'address', matchLabel: 'Musterweg 1' },
+  value: {
+    position: { lat: 48.52, lon: 9.05 },
+    precision: 'address',
+    unique: true,
+    matchCount: 1,
+    matchLabel: 'Musterweg 1',
+  },
 };
 
 function adapterMit(
@@ -73,14 +79,20 @@ function handler(
   {
     sitzung = { befund: 'gueltig' },
     protokolliere = () => {},
+    kartenFreigegeben = false,
+    gateAbgewiesen = false,
   }: {
     sitzung?: Sitzungsergebnis;
     protokolliere?: (eintrag: Protokolleintrag) => void;
+    kartenFreigegeben?: boolean;
+    gateAbgewiesen?: boolean;
   } = {},
 ) {
   let uhr = 1000;
   return erstelleHandler({
     adapter,
+    kartenFreigegeben,
+    gateAbgewiesen,
     pruefeSitzung: () => Promise.resolve(sitzung),
     protokolliere,
     jetzt: () => (uhr += 12),
@@ -93,6 +105,49 @@ async function gelesen<T extends Antwort = RouteAntwort>(antwort: Response): Pro
 }
 
 describe('location-provider', () => {
+  // ADR-019 Punkt 35: Die Karte fragt, ob sie Kacheln laden darf.
+  it.each([true, false])(
+    'meldet den Zustand des Schalters (%s) ohne Schluessel und ohne Anbieteraufruf',
+    async (frei) => {
+      const { adapter, route, matrix, geocode } = adapterMit({ ok: true, value: leereRoute() });
+      const antwort = await handler(adapter, { kartenFreigegeben: frei })(
+        anfrage({ aufgabe: 'status' }),
+      );
+      expect(antwort.status).toBe(200);
+      expect(await antwort.json()).toEqual({
+        ok: true,
+        value: { mapReleased: frei },
+        quelle: 'anbieter',
+      });
+      expect(route).not.toHaveBeenCalled();
+      expect(matrix).not.toHaveBeenCalled();
+      expect(geocode).not.toHaveBeenCalled();
+    },
+  );
+
+  it('meldet den Zustand auch ohne eingerichteten Anbieter, aber nie ohne Sitzung', async () => {
+    const frei = await handler(null, { kartenFreigegeben: false })(anfrage({ aufgabe: 'status' }));
+    expect(await frei.json()).toMatchObject({ ok: true, value: { mapReleased: false } });
+    const ohne = await handler(null, { sitzung: { befund: 'abgelehnt' } })(
+      anfrage({ aufgabe: 'status' }, {}),
+    );
+    expect(ohne.status).toBe(401);
+  });
+
+  // ADR-019 Punkt 36: abgewiesen heisst not_configured, mit gate_rejected im Log.
+  it('antwortet bei abgewiesenem Schalter not_configured und protokolliert gate_rejected', async () => {
+    const log: Protokolleintrag[] = [];
+    const antwort = await handler(null, {
+      gateAbgewiesen: true,
+      protokolliere: (e) => log.push(e),
+    })(anfrage(KOERPER));
+    expect(antwort.status).toBe(503);
+    const koerper = await gelesen(antwort);
+    expect(koerper.ok === false && koerper.error.code).toBe('not_configured');
+    expect(log).toEqual([{ anbieter: 'gate', code: 'gate_rejected', dauerMs: 0 }]);
+    expect(JSON.stringify(log)).not.toContain('48.52');
+  });
+
   it('lehnt einen Aufruf ohne gueltige Sitzung mit 401 ab - ohne den Anbieter zu fragen', async () => {
     const { adapter, route } = adapterMit({ ok: true, value: leereRoute() });
     const antwort = await handler(adapter, { sitzung: { befund: 'abgelehnt' } })(

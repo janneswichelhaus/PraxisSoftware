@@ -240,6 +240,18 @@ describe('Karte', () => {
     vi.unstubAllGlobals();
   });
 
+  // ADR-019 Punkt 35 (ABN-028): ohne offenen Schalter keine einzige Kachel.
+  it.each([
+    ['zu', 'Karte nicht freigegeben'],
+    ['pruefen', 'Karte wird vorbereitet …'],
+  ] as const)('laedt bei Freigabe %s keine Karte und sagt %s', (freigabe, text) => {
+    render(
+      <Karte config={KONFIGURATION} freigabe={freigabe} stopps={stopps(3)} beschriftung="Karte" />,
+    );
+    expect(karten).toHaveLength(0);
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
   it('zeigt fuer n Stopps n Marker mit den Nummern 1 bis n', () => {
     render(<Karte config={KONFIGURATION} stopps={stopps(8)} beschriftung="Karte mit Teststopps" />);
 

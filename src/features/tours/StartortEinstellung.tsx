@@ -7,7 +7,12 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { GeocodeResult, LocationErrorCode } from '@/lib/location/contract';
 import type { Quelle } from '@/lib/location/funktion';
-import { GENAUIGKEIT_TEXT, brauchtBestaetigung, geocodiere } from '@/lib/location/geocode';
+import {
+  GENAUIGKEIT_TEXT,
+  brauchtBestaetigung,
+  geocodiere,
+  trefferanzahlText,
+} from '@/lib/location/geocode';
 import { fetchStandorte, saveTourStart, type Standort } from './startort';
 
 /**
@@ -214,6 +219,9 @@ function StartortFormular({ standort }: { standort: Standort }) {
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.
           </p>
+          {trefferanzahlText(treffer.wert) ? (
+            <Statusmeldung ton="warnung">{trefferanzahlText(treffer.wert)}</Statusmeldung>
+          ) : null}
           {treffer.quelle === 'nachbildung' ? (
             <Statusmeldung ton="warnung">
               Nachbildung ohne Kartendienst: Die Position ist erfunden.

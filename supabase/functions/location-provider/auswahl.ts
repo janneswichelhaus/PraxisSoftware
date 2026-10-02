@@ -20,6 +20,20 @@ export interface Umgebung {
   readonly LOCATION_PROVIDER?: string | undefined;
   readonly PTV_API_KEY?: string | undefined;
   readonly LOCATION_DATA_GATE?: string | undefined;
+  /** ADR-019 Punkt 36: `development`, `test` oder `production`. */
+  readonly APP_ENVIRONMENT?: string | undefined;
+}
+
+export type Umgebungsart = 'development' | 'test' | 'production';
+
+/**
+ * Welche Umgebung das ist — **ohne Angabe oder mit unbekannter Angabe die
+ * Produktion** (ADR-019 Punkt 36, ANN-094 Fassung 3). Wer das Secret vergisst,
+ * bekommt die strengere Regel, nicht die bequemere.
+ */
+export function umgebungsart(wert: string | undefined): Umgebungsart {
+  const art = (wert ?? '').trim().toLowerCase();
+  return art === 'development' || art === 'test' ? art : 'production';
 }
 
 /**
@@ -35,18 +49,62 @@ export interface Umgebung {
  * ist eine Go-live-Vorbedingung (ADR-007 Punkt 5), kein Konfigurationsdetail.
  *
  * Die Nachbildung braucht den Schalter nicht: Sie schickt nichts hinaus.
+ * Seit ADR-019 Fassung 5 (Punkt 36) gilt beides nur außerhalb der Produktion.
  */
 export const DATENFREIGABEN = ['synthetic', 'released'] as const;
 
-export function waehleAdapter(umgebung: Umgebung): Anbieteradapter | null {
+/** Was die Function aus ihren Secrets macht. */
+export interface Einrichtung {
+  /** `null`: nicht eingerichtet oder vom Schalter abgewiesen. */
+  readonly adapter: Anbieteradapter | null;
+  /** Darf die Karte Kacheln laden (ADR-019 Punkt 35)? */
+  readonly kartenFreigegeben: boolean;
+  /** Hat der Schalter in der Produktion abgewiesen (`gate_rejected`, Punkt 36)? */
+  readonly gateAbgewiesen: boolean;
+}
+
+/**
+ * Adapter und Schalter in einem (ADR-019 Punkte 35 und 36).
+ *
+ * **Ein Schalter für beide Wege.** Offen ist er mit `released` oder mit
+ * `synthetic` außerhalb der Produktion; nur dann laden die Kacheln, und nur
+ * dann spricht der Anbieter. **In der Produktion gilt nur `released`:**
+ * `synthetic` und die Nachbildung sind dort technisch ausgeschlossen, nicht
+ * nur per Konvention — beide antworten `not_configured`, und das Log trägt
+ * `gate_rejected`.
+ */
+export function richteEin(umgebung: Umgebung): Einrichtung {
   const anbieter = (umgebung.LOCATION_PROVIDER ?? '').trim().toLowerCase();
   const schluessel = (umgebung.PTV_API_KEY ?? '').trim();
   const freigabe = (umgebung.LOCATION_DATA_GATE ?? '').trim().toLowerCase();
+  const produktion = umgebungsart(umgebung.APP_ENVIRONMENT) === 'production';
+  const gueltig = (DATENFREIGABEN as readonly string[]).includes(freigabe);
+  const kartenFreigegeben = freigabe === 'released' || (freigabe === 'synthetic' && !produktion);
+  const nicht = (gateAbgewiesen: boolean): Einrichtung => ({
+    adapter: null,
+    kartenFreigegeben,
+    gateAbgewiesen,
+  });
 
-  if (anbieter === 'mock') return erstelleNachbildung();
-  if (!(DATENFREIGABEN as readonly string[]).includes(freigabe)) return null;
+  if (anbieter === 'mock') {
+    return produktion
+      ? nicht(true)
+      : { adapter: erstelleNachbildung(), kartenFreigegeben, gateAbgewiesen: false };
+  }
+  if (!gueltig) return nicht(false);
+  if (produktion && freigabe !== 'released') return nicht(true);
   // Der Anbieter ohne Schlüssel ist keine halbe Einrichtung, sondern keine:
   // Jeder Aufruf endete beim Anbieter mit 401.
-  if (anbieter === 'ptv' && schluessel !== '') return erstellePtvAdapter({ apiKey: schluessel });
-  return null;
+  if (anbieter === 'ptv' && schluessel !== '') {
+    return {
+      adapter: erstellePtvAdapter({ apiKey: schluessel }),
+      kartenFreigegeben,
+      gateAbgewiesen: false,
+    };
+  }
+  return nicht(false);
+}
+
+export function waehleAdapter(umgebung: Umgebung): Anbieteradapter | null {
+  return richteEin(umgebung).adapter;
 }

@@ -39,10 +39,16 @@ const OHNE = testPatient({
   geocode_precision: null,
 });
 
-function treffer(precision: string, quelle = 'anbieter') {
+function treffer(precision: string, quelle = 'anbieter', unique = true, matchCount = 1) {
   return {
     ok: true,
-    value: { position: { lat: 48.52, lon: 9.05 }, precision, matchLabel: 'Musterweg 1' },
+    value: {
+      position: { lat: 48.52, lon: 9.05 },
+      precision,
+      unique,
+      matchCount,
+      matchLabel: 'Musterweg 1',
+    },
     quelle,
   };
 }
@@ -96,6 +102,20 @@ describe('AdresseVerorten', () => {
       postalCode: '72070',
       city: 'Tübingen',
     });
+  });
+
+  // ADR-019 Punkt 37 (ANN-095 Fassung 2): zwei Treffer, auch hausnummergenau -
+  // dann entscheidet die Person.
+  it('fragt bei mehreren Treffern nach und sagt, wie viele es sind', async () => {
+    geocodiere.mockResolvedValue(treffer('address', 'anbieter', false, 2));
+    renderWithProviders(<AdresseVerorten patient={OHNE} />);
+    await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));
+
+    expect(await screen.findByText(/kennt 2 Treffer/)).toBeInTheDocument();
+    expect(setPatientAddressCoordinate).not.toHaveBeenCalled();
+    await userEvent.click(screen.getByRole('button', { name: 'Treffer übernehmen' }));
+    await waitFor(() => expect(setPatientAddressCoordinate).toHaveBeenCalledTimes(1));
+    expect(setPatientAddressCoordinate.mock.calls[0]![3]).toBe(true);
   });
 
   it('verlangt unterhalb der Hausnummer eine Bestaetigung', async () => {

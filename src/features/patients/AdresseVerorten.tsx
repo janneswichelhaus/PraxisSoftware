@@ -4,7 +4,12 @@ import { Button } from '@/components/ui/Button';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { GeocodeResult, LocationErrorCode } from '@/lib/location/contract';
-import { GENAUIGKEIT_TEXT, brauchtBestaetigung, geocodiere } from '@/lib/location/geocode';
+import {
+  GENAUIGKEIT_TEXT,
+  brauchtBestaetigung,
+  geocodiere,
+  trefferanzahlText,
+} from '@/lib/location/geocode';
 import type { Quelle } from '@/lib/location/funktion';
 import { setPatientAddressCoordinate, type Patient } from './api';
 
@@ -107,9 +112,10 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
         return;
       }
       setFehler(null);
-      // Hausnummerngenau und vom Anbieter: ohne Rückfrage speichern. Alles
-      // andere legt die Person selbst fest (ANN-016) - auch jede Position der
-      // Nachbildung, damit niemand eine erfundene Koordinate unbemerkt übernimmt.
+      // Eindeutig, hausnummerngenau und vom Anbieter: ohne Rückfrage speichern
+      // (ADR-019 Punkt 37). Alles andere legt die Person selbst fest (ANN-016,
+      // ANN-095) - auch jede Position der Nachbildung, damit niemand eine
+      // erfundene Koordinate unbemerkt übernimmt.
       if (!brauchtBestaetigung(ergebnis.value) && ergebnis.quelle === 'anbieter') {
         speichern.mutate({ wert: ergebnis.value, bestaetigt: false, zu });
         return;
@@ -141,6 +147,9 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.
           </p>
+          {trefferanzahlText(treffer.wert) ? (
+            <Statusmeldung ton="warnung">{trefferanzahlText(treffer.wert)}</Statusmeldung>
+          ) : null}
           {treffer.quelle === 'nachbildung' ? (
             <Statusmeldung ton="warnung">
               Nachbildung ohne Kartendienst: Die Position ist erfunden.

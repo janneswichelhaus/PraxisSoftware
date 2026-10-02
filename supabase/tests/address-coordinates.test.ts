@@ -164,6 +164,25 @@ describe('set_patient_address_coordinate', () => {
     const kontext = JSON.stringify(rows[0]!.context);
     expect(kontext).not.toMatch(/48[.,]5|9[.,]05|Beispielstrasse|72070/);
     expect(rows[0]!.context['precision']).toBe('address');
+    expect(rows[0]!.context['confirmed']).toBe(false);
+  });
+
+  // ABN-028 (ADR-019 Punkt 37): ein hausnummergenauer Treffer unter mehreren
+  // wird bestaetigt - und das Protokoll sagt es.
+  it('protokolliert die Bestaetigung eines nicht eindeutigen hausnummergenauen Treffers', async () => {
+    await asPostgres("delete from public.audit_log where action = 'patient.address_geocoded'");
+    await asUserCommitted(users.therapist, SETZEN, [
+      patients.max,
+      ...MAX,
+      48.53,
+      9.05,
+      'address',
+      true,
+    ]);
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log where action = 'patient.address_geocoded'`,
+    );
+    expect(rows.map((r) => r.context['confirmed'])).toEqual([true]);
   });
 
   it('verlangt unterhalb der Hausnummer eine Bestaetigung (ANN-016)', async () => {
