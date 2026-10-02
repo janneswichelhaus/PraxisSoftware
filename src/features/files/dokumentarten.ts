@@ -97,6 +97,14 @@ export function sichtbarkeitHinweis(art: Dokumentart): string {
 }
 
 /**
+ * Das Kennzeichen an einer Datei, die die Prüfung am Server noch nicht
+ * bestanden hat (ADR-017 Punkt 51). Bis OPS-001 die Edge Runtime freigibt,
+ * trägt es jede Datei — ehrlich, nicht als Warnung: Typ, Prüfsumme und
+ * Metadaten hat bis dahin nur das Gerät geprüft.
+ */
+export const NICHT_SERVERSEITIG_GEPRUEFT = 'nicht serverseitig geprüft';
+
+/**
  * Die zulässigen Formate (ADR-017 Punkt 18), doppelt durchgesetzt: am Bucket,
  * beim Vorbereiten und noch einmal bei der Bestätigung gegen das, was
  * tatsächlich abgelegt wurde.

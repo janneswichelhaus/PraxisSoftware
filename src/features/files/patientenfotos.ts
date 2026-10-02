@@ -51,6 +51,8 @@ const fotoSchema = z.object({
   /** Darf die angemeldete Person löschen? Beim Dokumentationsfoto nur am Aufnahmetag (Punkt 48). */
   deletable: z.boolean(),
   object_missing: z.boolean(),
+  /** Leer: nicht serverseitig geprüft (ADR-017 Punkt 51). */
+  verified_at: z.string().nullable(),
 });
 
 export type Patientenfoto = z.infer<typeof fotoSchema>;

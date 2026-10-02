@@ -20,6 +20,7 @@ import {
   dokumentartLabels,
   formatBytes,
   istKlinisch,
+  NICHT_SERVERSEITIG_GEPRUEFT,
   sichtbarkeitHinweis,
   type Dokumentart,
 } from './dokumentarten';
@@ -518,6 +519,7 @@ function Dateizeile({
             {dokumentartLabels[art] ?? datei.document_type} · {formatBytes(datei.byte_size)}
             {datei.uploaded_at ? ` · ${tagDerPraxis(datei.uploaded_at, zeitzone)}` : ''}
             {datei.uploaded_by_name ? ` · ${datei.uploaded_by_name}` : ''}
+            {datei.verified_at ? '' : ` · ${NICHT_SERVERSEITIG_GEPRUEFT}`}
           </p>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2">

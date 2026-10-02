@@ -16,6 +16,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { loescheDatei } from './api';
+import { NICHT_SERVERSEITIG_GEPRUEFT } from './dokumentarten';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
 import { fotoVomHeutigenTag, useKamera } from './kamera';
@@ -495,6 +496,7 @@ function Fotozeile({
             {foto.delete_after
               ? ` · wird spätestens am ${tagDerPraxis(foto.delete_after, zeitzone)} gelöscht`
               : ' · Teil der Akte'}
+            {foto.verified_at ? '' : ` · ${NICHT_SERVERSEITIG_GEPRUEFT}`}
           </p>
         </div>
         {foto.object_missing ? null : (

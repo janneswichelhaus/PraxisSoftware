@@ -58,6 +58,7 @@ const FOTOS: Patientenfoto[] = [
     delete_after: null,
     deletable: false,
     object_missing: false,
+    verified_at: null,
   },
   {
     id: 'f2',
@@ -68,6 +69,7 @@ const FOTOS: Patientenfoto[] = [
     delete_after: '2027-09-10T14:30:00Z',
     deletable: true,
     object_missing: false,
+    verified_at: null,
   },
   {
     id: 'f1',
@@ -78,6 +80,7 @@ const FOTOS: Patientenfoto[] = [
     delete_after: '2027-08-27T08:00:00Z',
     deletable: true,
     object_missing: false,
+    verified_at: null,
   },
 ];
 

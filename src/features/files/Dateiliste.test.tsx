@@ -50,6 +50,7 @@ function datei(rest: Partial<FilesApi.PatientFile> = {}): FilesApi.PatientFile {
     uploaded_at: '2026-09-13T08:00:00.000Z',
     uploaded_by_name: 'Anna Beispiel',
     object_missing: false,
+    verified_at: null,
     ...rest,
   };
 }
@@ -87,6 +88,28 @@ describe('Dateiliste', () => {
     expect(screen.getByText(/Befund · 200 KB · 13\.09\.2026 · Anna Beispiel/)).toBeInTheDocument();
     // Farbe ist nie allein Bedeutungsträger (Oberflächen-Checkliste Punkt 4).
     expect(screen.getByText('Klinisch')).toBeInTheDocument();
+  });
+
+  it('kennzeichnet eine Datei ohne Prüfung am Server und nur sie (ADR-017 Punkt 51)', async () => {
+    fetchPatientFiles.mockResolvedValue([
+      datei(),
+      datei({ id: 'd2', display_name: 'Arztbrief.pdf', verified_at: '2026-10-02T08:00:00Z' }),
+    ]);
+
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen={false}
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    const ungeprueft = (await screen.findByText('Befund Schulter.pdf')).closest('li')!;
+    expect(ungeprueft).toHaveTextContent('nicht serverseitig geprüft');
+    expect(screen.getByText('Arztbrief.pdf').closest('li')).not.toHaveTextContent(
+      'nicht serverseitig geprüft',
+    );
   });
 
   it('erzeugt den Verweis erst beim Tippen auf „Öffnen“ (ADR-017 Punkt 15)', async () => {

@@ -63,6 +63,7 @@ function foto(rest: Partial<FotoApi.Patientenfoto> = {}): FotoApi.Patientenfoto 
     delete_after: '2027-09-01T08:00:00.000Z',
     deletable: true,
     object_missing: false,
+    verified_at: null,
     ...rest,
   };
 }
@@ -245,7 +246,9 @@ describe('Patientenfotos', () => {
 
     expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
     expect(screen.getByText('01.09.2026 · Anna Beispiel')).toBeVisible();
-    expect(screen.getByText('Arbeitshilfe · wird spätestens am 01.09.2027 gelöscht')).toBeVisible();
+    expect(
+      screen.getByText(/^Arbeitshilfe · wird spätestens am 01.09.2027 gelöscht/),
+    ).toBeVisible();
     expect(container.querySelector('img')).toBeNull();
     expect(ladePatientenfoto).not.toHaveBeenCalled();
   });
@@ -323,7 +326,7 @@ describe('Patientenfotos', () => {
     ]);
     seite();
 
-    expect(await screen.findByText('Dokumentationsfoto · Teil der Akte')).toBeVisible();
+    expect(await screen.findByText(/^Dokumentationsfoto · Teil der Akte/)).toBeVisible();
     expect(screen.queryByText(/wird spätestens/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
   });

@@ -42,6 +42,8 @@ const patientFileSchema = z.object({
   uploaded_at: z.string().nullable(),
   uploaded_by_name: z.string().nullable(),
   object_missing: z.boolean(),
+  /** Leer: nicht serverseitig geprüft (ADR-017 Punkt 51). */
+  verified_at: z.string().nullable(),
 });
 
 export type PatientFile = z.infer<typeof patientFileSchema>;
