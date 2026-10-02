@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
+import { nachSrgb } from './farbe';
 import { alleBytes, bereinigeBild } from './metadaten';
 
 /**
@@ -122,7 +123,11 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   // Ort, Gerät, Aufnahmezeit, Vorschaubild. Verlustfrei, nur die Ausrichtung
   // bleibt. Alles danach - Größe, Prüfsumme, Upload - gilt den bereinigten
   // Bytes: Die Summe belegt die abgelegte Fassung, nicht die empfangene.
-  const datei = await bereinigeBild(auftrag.datei);
+  // Farbe vor der Bereinigung (ADR-017 Punkt 53, ABN-026): Ein Bild mit
+  // eingebettetem Farbprofil wird nach sRGB umgerechnet, sonst zeigte es nach
+  // dem Entfernen des Profils falsche Farben. Ohne Profil bleibt es byte-gleich.
+  const farbrichtig = await nachSrgb(auftrag.datei);
+  const datei = await bereinigeBild(farbrichtig);
   const nachBereinigung = dateiAblehnungsgrund(datei);
   if (nachBereinigung) throw new Error(nachBereinigung);
 

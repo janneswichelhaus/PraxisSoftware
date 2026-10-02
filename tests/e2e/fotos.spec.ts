@@ -201,4 +201,16 @@ test.describe('Fotos', () => {
         .toBe(2);
     }
   });
+
+  test('ein Bild mit abweichendem Farbprofil wird im echten Browser nach sRGB umgerechnet (Punkt 53)', async ({
+    page,
+  }) => {
+    await page.goto(`${PRUEFSEITE}?ansicht=farbe`);
+    const bild = page.getByRole('img', { name: 'JPEG nach der Umrechnung' });
+    await expect(bild).toHaveAttribute('data-typ', 'image/jpeg');
+    await expect(bild).toHaveAttribute('data-abweichendes-profil', 'false');
+    await expect
+      .poll(() => bild.evaluate((b: HTMLImageElement) => (b.complete ? b.naturalWidth : -1)))
+      .toBe(2);
+  });
 });
