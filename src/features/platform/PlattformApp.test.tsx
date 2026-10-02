@@ -14,10 +14,14 @@ import { renderWithProviders } from '@/test-utils';
  */
 
 const ueberallAbmelden = vi.fn();
+const ladeMeineVertretungen = vi.fn();
+const begleitungBeenden = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ueberallAbmelden: () => ueberallAbmelden() as Promise<void>,
+  ladeMeineVertretungen: (...args: unknown[]) => ladeMeineVertretungen(...args) as Promise<unknown>,
+  begleitungBeenden: (...args: unknown[]) => begleitungBeenden(...args) as Promise<void>,
 }));
 
 const { PlattformApp } = await import('./PlattformApp');
@@ -29,6 +33,8 @@ const TRAINING: Plattformzugang = {
   status: 'active',
   readable: true,
   read_until: null,
+  access_kind: 'self',
+  represented_name: null,
 };
 const BEHANDLUNG: Plattformzugang = {
   ...TRAINING,
@@ -52,6 +58,8 @@ function zeige(zugaenge: Plattformzugang[], pfad = '/p') {
 beforeEach(() => {
   vi.clearAllMocks();
   ueberallAbmelden.mockResolvedValue(undefined);
+  ladeMeineVertretungen.mockResolvedValue([]);
+  begleitungBeenden.mockResolvedValue(undefined);
 });
 
 describe('PlattformApp', () => {
@@ -122,5 +130,92 @@ describe('PlattformApp', () => {
     for (const wort of ['Patient', 'Akte', 'Kalender', 'Dokumentation', 'Befund']) {
       expect(container.textContent).not.toContain(wort);
     }
+  });
+});
+
+/** Paula begleitet Max (POR-EPIC-001b). */
+const BEGLEITUNG: Plattformzugang = {
+  ...BEHANDLUNG,
+  access_id: 'cafecafe-cafe-4afe-8afe-000000000004',
+  access_kind: 'companion',
+  represented_name: 'Max Mustermann',
+};
+
+describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
+  it('sagt dauerhaft, fuer wen die Begleitung handelt (ADR-023 Punkt 14)', () => {
+    zeige([BEGLEITUNG]);
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Sie handeln für Max Mustermann · Begleitung',
+    );
+    expect(screen.getByText(/Einwilligungen gibt nur Max Mustermann selbst/)).toBeInTheDocument();
+  });
+
+  it('fuehrt eigene Bereiche und Vertretungen im Schalter getrennt', async () => {
+    const user = userEvent.setup();
+    zeige([BEHANDLUNG, BEGLEITUNG]);
+    const schalter = screen.getByRole('navigation', { name: 'Bereich' });
+    expect(schalter).toHaveTextContent('Behandlung');
+    expect(schalter).toHaveTextContent('Für Max Mustermann');
+    // Der eigene Bereich zuerst: kein Band.
+    expect(screen.queryByText(/Sie handeln für/)).toBeNull();
+    await user.click(screen.getByRole('link', { name: 'Für Max Mustermann' }));
+    expect(screen.getByRole('status')).toHaveTextContent('Sie handeln für Max Mustermann');
+    expect(screen.getByRole('link', { name: 'Für Max Mustermann' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+  });
+
+  it('zeigt unter Ich kein Band und fragt fuer eine Begleitung keine Vertretungen ab', async () => {
+    zeige([BEGLEITUNG], '/p/ich');
+    expect(await screen.findByRole('heading', { level: 1, name: 'Ich' })).toBeInTheDocument();
+    expect(screen.queryByText(/Sie handeln für/)).toBeNull();
+    expect(ladeMeineVertretungen).not.toHaveBeenCalled();
+  });
+
+  it('zeigt der Person, wer fuer sie Zugang hat, und laesst sie eine Begleitung beenden', async () => {
+    ladeMeineVertretungen.mockResolvedValue([
+      {
+        access_id: 'cafecafe-cafe-4afe-8afe-0000000000d4',
+        access_kind: 'companion',
+        legal_basis: null,
+        representative_name: 'Paula Mustermann',
+        status: 'active',
+        since: '2026-10-01T08:00:00Z',
+        can_end: true,
+      },
+      {
+        access_id: 'cafecafe-cafe-4afe-8afe-0000000000d5',
+        access_kind: 'legal_representative',
+        legal_basis: 'guardianship',
+        representative_name: 'Bernd Betreuer',
+        status: 'active',
+        since: '2026-10-01T08:00:00Z',
+        can_end: false,
+      },
+    ]);
+    const user = userEvent.setup();
+    zeige([BEHANDLUNG], '/p/ich');
+    expect(
+      await screen.findByRole('heading', { name: 'Wer für Sie Zugang hat' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Rechtliche Vertretung (Betreuung)')).toBeInTheDocument();
+    expect(screen.getByText('Beenden kann diese Vertretung nur die Praxis.')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Begleitung beenden' }));
+    expect(screen.getByText(/Damit widerrufen Sie Ihre Einwilligung/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Begleitung beenden' }));
+    await waitFor(() =>
+      expect(begleitungBeenden).toHaveBeenCalledWith(
+        BEHANDLUNG.access_id,
+        'cafecafe-cafe-4afe-8afe-0000000000d4',
+      ),
+    );
+  });
+
+  it('zeigt ohne Vertretung keinen Abschnitt', async () => {
+    zeige([BEHANDLUNG], '/p/ich');
+    await waitFor(() => expect(ladeMeineVertretungen).toHaveBeenCalled());
+    expect(screen.queryByRole('heading', { name: /Wer für Sie Zugang hat/ })).toBeNull();
   });
 });
