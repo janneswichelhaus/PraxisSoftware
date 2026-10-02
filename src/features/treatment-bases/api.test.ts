@@ -49,12 +49,17 @@ describe('Entwurfsspeicher', () => {
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
   });
 
-  it('verfaellt nach laengerer Zeit von selbst - ein abgebrochener Versuch taucht bei einem spaeteren, unabhaengigen Versuch nicht wieder auf', () => {
+  it('verfaellt nicht still - auch nach 31 Minuten liegt er fuer dieselbe Person bereit (BEF-110)', () => {
     entwurfAblegen(RUECKPFAD, BENUTZER_A, ENTWURF);
 
     vi.advanceTimersByTime(31 * 60 * 1000);
 
-    expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toBeUndefined();
+    expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
+    // Ein unabhaengiger spaeterer Versuch bringt eine neue Kennung mit und
+    // findet deshalb nichts vor.
+    expect(
+      entwurfAnsehen('/patienten/p1/verordnungen/neu?vorgang=anders', BENUTZER_A),
+    ).toBeUndefined();
   });
 
   it('gibt den Entwurf einer anderen Person nie zurueck', () => {

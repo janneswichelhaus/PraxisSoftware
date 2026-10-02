@@ -66,6 +66,7 @@ import { TreatmentNoteRevisionPage } from '@/features/documentation/TreatmentNot
 import { TreatmentNoteAddendumPage } from '@/features/documentation/TreatmentNoteAddendumPage';
 import { TreatmentNoteHistoryPage } from '@/features/documentation/TreatmentNoteHistoryPage';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
+import { AbstecherAbmeldewache } from '@/app/AbstecherAbmeldewache';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { ProtokollPage } from '@/features/preview/ProtokollPage';
 import { FleetPage } from '@/features/fleet/FleetPage';
@@ -171,6 +172,9 @@ export function AuthenticatedRoutes({
           erzwungene Beendigung einer Sitzung laeuft ueber den
           `SessionProvider` und kommt hier nie vorbei (FIX-014). */}
       <AbmeldeschutzProvider onAbmelden={onSignOut}>
+        {/* Ein Abstecher-Entwurf geht beim Abmelden nur nach Rückfrage
+            verloren (ABN-019, BEF-110). */}
+        <AbstecherAbmeldewache userId={user.profile.id} />
         <AppShell user={user} onSignOut={onSignOut}>
           {gesperrt ? (
             <MdrSperre eintrag={gesperrt} />

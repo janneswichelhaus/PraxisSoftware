@@ -107,7 +107,9 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
 
     await waitFor(() => expect(patientenImSpeicher()).toBeUndefined());
-    expect(alleEntwuerfeVerwerfen).toHaveBeenCalled();
+    // Abstecher-Entwürfe räumt hier niemand still ab (ABN-019, BEF-110): Beim
+    // freiwilligen Abmelden fragt `AbstecherAbmeldewache`.
+    expect(alleEntwuerfeVerwerfen).not.toHaveBeenCalled();
   });
 
   it('räumt auch ab, wenn die Abmeldung nicht über die Oberfläche kam — anderer Tab, „Alle Sitzungen beenden", abgelaufene Sitzung', async () => {
@@ -117,7 +119,9 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     act(() => melde?.('SIGNED_OUT', null));
 
     expect(patientenImSpeicher()).toBeUndefined();
-    expect(alleEntwuerfeVerwerfen).toHaveBeenCalled();
+    // Eine automatische Abmeldung verwirft keinen Abstecher-Entwurf (BEF-110);
+    // er bleibt an das Konto gebunden.
+    expect(alleEntwuerfeVerwerfen).not.toHaveBeenCalled();
   });
 
   it('räumt beim Wechsel auf ein anderes Konto ab, auch ohne Abmeldung dazwischen', async () => {

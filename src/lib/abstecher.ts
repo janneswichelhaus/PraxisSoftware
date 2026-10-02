@@ -24,19 +24,18 @@
  *     selben Tab übernimmt nie den Entwurf einer anderen Person, und ein
  *     unabhängiger neuer Besuch derselben Seite bringt eine neue Kennung mit
  *     und findet deshalb nichts vor.
- *   * **Mit Verfallsfrist.** Ein liegen gebliebener Entwurf gilt nach 30
- *     Minuten als abgebrochener Vorgang und wird beim nächsten Zugriff
- *     verworfen — damit er nicht unbegrenzt im Arbeitsspeicher steht.
+ *   * **Kein stiller Verfall (ABN-019, BEF-110, ANN-019 Fassung 2).** Bis
+ *     hierher galt ein Entwurf nach 30 Minuten als abgebrochen und wurde beim
+ *     nächsten Zugriff still verworfen, ebenso bei jeder Abmeldung. Jetzt
+ *     bleibt er, bis das Formular ihn zurückholt oder die Person ihn
+ *     ausdrücklich verwirft: Beim freiwilligen Abmelden fragt die Anwendung
+ *     (`AbstecherAbmeldewache`); eine automatische Abmeldung oder Sperre
+ *     lässt ihn liegen, und nur dasselbe Konto findet ihn wieder. Ein
+ *     Neuladen verwirft ihn weiterhin - er liegt nur im Arbeitsspeicher.
  *
  * Der Rücksprungpfad selbst trägt die Kennung mit (`?vorgang=…`), damit es für
  * beides genau eine Quelle gibt.
  */
-
-/**
- * ANN-019: Ein Abstecher dauert praxisnah deutlich unter 30 Minuten; danach
- * gilt ein liegen gebliebener Entwurf als abgebrochener Vorgang.
- */
-const MAX_ALTER_MS = 30 * 60 * 1000;
 
 interface Eintrag {
   inhalt: unknown;
@@ -80,14 +79,24 @@ export function abstecherAblegen<T>(vorgang: string, userId: string, inhalt: T):
  * Liest einen Entwurf, ohne ihn zu entfernen (siehe `abstecherEntfernen`) -
  * zwei getrennte Schritte, damit ein lesender Aufruf aus einem
  * Zustands-Initialisierer heraus wiederholbar bleibt (React StrictMode ruft ihn
- * im Entwicklungsmodus zweimal auf). Ein zu alter oder einer anderen Person
- * gehörender Entwurf gilt als nicht vorhanden.
+ * im Entwicklungsmodus zweimal auf). Ein einer anderen Person gehörender
+ * Entwurf gilt als nicht vorhanden; ein alter verfällt nicht still (ABN-019).
  */
 export function abstecherAnsehen<T>(vorgang: string, userId: string): T | undefined {
   const eintrag = speicher.get(schluessel(vorgang, userId));
   if (!eintrag) return undefined;
-  if (Date.now() - eintrag.angelegtAm > MAX_ALTER_MS) return undefined;
   return eintrag.inhalt as T;
+}
+
+/** Liegt für diese Person ein Entwurf, der noch auf seine Rückkehr wartet? */
+export function abstecherOffen(userId: string): boolean {
+  for (const key of speicher.keys()) if (key.startsWith(`${userId} `)) return true;
+  return false;
+}
+
+/** Verwirft die Entwürfe einer Person - nach ihrer ausdrücklichen Antwort (ABN-019). */
+export function abstecherVerwerfenFuer(userId: string): void {
+  for (const key of [...speicher.keys()]) if (key.startsWith(`${userId} `)) speicher.delete(key);
 }
 
 /**
@@ -118,7 +127,7 @@ export function abstecherEntfernen(vorgang: string, userId: string): void {
   speicher.delete(schluessel(vorgang, userId));
 }
 
-/** Verwirft alle Entwürfe aller Benutzer:innen - bei Abmeldung (VER-003). */
+/** Verwirft alle Entwürfe aller Benutzer:innen (Tests; VER-003). */
 export function alleAbstecherVerwerfen(): void {
   speicher.clear();
 }
