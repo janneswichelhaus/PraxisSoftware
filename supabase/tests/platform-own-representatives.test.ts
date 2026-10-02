@@ -49,10 +49,10 @@ async function aufbauen() {
     `insert into public.platform_accesses
        (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
         status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
-        guardianship_health_scope, proof_recorded_by, proof_recorded_at, created_by)
+        health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
      values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
              'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
-             true, $5, now(), $5)`,
+             true, false, $5, now(), $5)`,
     [BERND, organizationId, patients.max, KONTO_BERND, users.office],
   );
 }
@@ -254,10 +254,10 @@ describe('Zweitreview: beendete und fremde Vertretungen unter Ich', () => {
     await asPostgres(
       `insert into public.platform_accesses
          (id, organization_id, relationship_kind, relationship_id, patient_id, status, access_kind,
-          legal_basis, representative_name, proof_documents, proof_recorded_by, proof_recorded_at,
-          created_by)
+          legal_basis, representative_name, proof_documents, finance_scope, proof_recorded_by,
+          proof_recorded_at, created_by)
        values ($1, $2, 'treatment', $3, $3, 'invited', 'legal_representative', 'custody',
-               'Sara Sorge', array['identity_document', 'custody_proof'], $4, now(), $4)`,
+               'Sara Sorge', array['identity_document', 'custody_proof'], false, $4, now(), $4)`,
       [SARA, organizationId, patients.max, users.office],
     );
     await asPostgres(

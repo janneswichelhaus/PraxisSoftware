@@ -163,10 +163,10 @@ describe('Rechte je Art (Punkt 13, W3)', () => {
       `insert into public.platform_accesses
          (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
           status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
-          guardianship_health_scope, proof_recorded_by, proof_recorded_at, created_by)
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
        values ('cafecafe-cafe-4afe-8afe-0000000000c1', $1, 'treatment', $2, $2, $3,
                'active', now(), 'legal_representative', 'guardianship', 'Bernd Betreuer',
-               array['identity_document', 'guardianship_certificate'], true, $4, now(), $4)`,
+               array['identity_document', 'guardianship_certificate'], true, false, $4, now(), $4)`,
       [organizationId, patients.erika, users.plattformTina, users.office],
     );
     for (const recht of ['consent', 'export', 'manage_companions']) {
@@ -174,6 +174,55 @@ describe('Rechte je Art (Punkt 13, W3)', () => {
         await erlaubt(users.plattformTina, 'cafecafe-cafe-4afe-8afe-0000000000c1', recht),
       ).toBe(true);
     }
+  });
+
+  /**
+   * ABN-010 (BEF-119, BEF-116): Rechnungen nur für die nachgewiesenen bzw.
+   * eingewilligten Bereiche. Gesundheitssorge allein gibt keinen
+   * Abrechnungszugriff.
+   */
+  it('Rechnungen: die Person selbst immer, eine Vertretung nur mit dem Bereich', async () => {
+    expect(await erlaubt(users.plattformErika, platformAccesses.erikaBehandlung, 'billing')).toBe(
+      true,
+    );
+    // Paula: Begleitung ohne Einwilligung in Rechnungen (Seed).
+    expect(await erlaubt(users.plattformPaula, PAULA, 'billing')).toBe(false);
+
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ('cafecafe-cafe-4afe-8afe-0000000000c2', $1, 'treatment', $2, $2, $3,
+               'active', now(), 'legal_representative', 'guardianship', 'Bernd Betreuer',
+               array['identity_document', 'guardianship_certificate'], true, false, $4, now(), $4),
+              ('cafecafe-cafe-4afe-8afe-0000000000c3', $1, 'treatment', $2, $2, $5,
+               'active', now(), 'legal_representative', 'power_of_attorney', 'Vera Vollmacht',
+               array['identity_document', 'power_of_attorney'], true, true, $4, now(), $4)`,
+      [organizationId, patients.erika, users.plattformTina, users.office, users.plattformPaula],
+    );
+    // Betreuung nur mit Gesundheitssorge: kein Abrechnungszugriff.
+    expect(
+      await erlaubt(users.plattformTina, 'cafecafe-cafe-4afe-8afe-0000000000c2', 'billing'),
+    ).toBe(false);
+    expect(await erlaubt(users.plattformTina, 'cafecafe-cafe-4afe-8afe-0000000000c2', 'read')).toBe(
+      true,
+    );
+    // Vollmacht mit Vermögenssorge: Rechnungen ja.
+    expect(
+      await erlaubt(users.plattformPaula, 'cafecafe-cafe-4afe-8afe-0000000000c3', 'billing'),
+    ).toBe(true);
+  });
+
+  it('eine Begleitung mit Einwilligung in Rechnungen sieht sie', async () => {
+    await asPostgres(
+      'alter table public.platform_accesses disable trigger platform_accesses_guard',
+    );
+    await asPostgres('update public.platform_accesses set finance_scope = true where id = $1', [
+      PAULA,
+    ]);
+    await asPostgres('alter table public.platform_accesses enable trigger platform_accesses_guard');
+    expect(await erlaubt(users.plattformPaula, PAULA, 'billing')).toBe(true);
   });
 
   it.each([

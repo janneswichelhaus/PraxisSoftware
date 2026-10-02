@@ -200,7 +200,9 @@ const vertretungSchema = z.object({
   proof_documents: z.array(
     z.enum(['identity_document', 'custody_proof', 'guardianship_certificate', 'power_of_attorney']),
   ),
-  guardianship_health_scope: z.boolean().nullable(),
+  // ABN-010: nachgewiesene bzw. eingewilligte Bereiche (BEF-119, BEF-116).
+  health_scope: z.boolean().nullable(),
+  finance_scope: z.boolean().nullable(),
   proof_recorded_at: zeitpunkt,
   proof_recorded_by_name: z.string().nullable(),
   consent_recorded_at: zeitpunkt.nullable(),
@@ -252,6 +254,12 @@ export function vertretungsfehler(meldung: string | undefined): string {
   if (m.includes('guardianship must cover health care')) {
     return 'Eine Betreuung trägt nur, wenn ihr Aufgabenkreis die Gesundheitssorge umfasst.';
   }
+  if (m.includes('power of attorney must cover health care')) {
+    return 'Eine Vorsorgevollmacht trägt nur, wenn sie die Gesundheitssorge umfasst.';
+  }
+  if (m.includes('finance scope must be stated')) {
+    return 'Bitte angeben, ob die Vertretung auch Rechnungen sehen darf.';
+  }
   if (m.includes('legal basis required')) {
     return 'Bitte angeben, worauf die rechtliche Vertretung beruht.';
   }
@@ -278,6 +286,8 @@ export interface VertretungsAngaben {
   aufgabenkreis: boolean | null;
   fassung: string | null;
   fruehereNachrichten: boolean | null;
+  /** ABN-010: Rechnungen und Zahlungen — nachgewiesen bzw. eingewilligt, ja oder nein. */
+  rechnungen: boolean;
 }
 
 export async function invitePlatformRepresentation(
@@ -296,6 +306,7 @@ export async function invitePlatformRepresentation(
     p_health_scope: angaben.aufgabenkreis,
     p_consent_version: angaben.fassung,
     p_earlier_messages: angaben.fruehereNachrichten,
+    p_finance_scope: angaben.rechnungen,
   })) as { data: unknown; error: { message?: string } | null; status?: number };
   if (ergebnis.error) throw new Error(vertretungsfehler(ergebnis.error.message));
   if (abgewiesen(ergebnis)) throw new Error(satz);

@@ -195,7 +195,7 @@ const FAELLE: Fall[] = [
   [
     'invite_platform_representation',
     `select * from public.invite_platform_representation('training', $1::uuid, 'companion', null,
-       'Paula Platzhalter', array['identity_document'], null, 'begleitung-2026-10-02', false)`,
+       'Paula Platzhalter', array['identity_document'], null, 'begleitung-2026-10-02b', false, false)`,
     [IRGENDEINE],
     'platform_access.invited',
   ],

@@ -618,10 +618,13 @@ insert into public.platform_accesses
   (id, organization_id, relationship_kind, relationship_id, patient_id,
    account_user_id, status, created_by, activated_at, access_kind, representative_name,
    proof_documents, proof_recorded_by, proof_recorded_at,
-   consent_text_version, consent_recorded_by, consent_recorded_at, consent_earlier_messages) values
+   consent_text_version, consent_recorded_by, consent_recorded_at, consent_earlier_messages,
+   finance_scope) values
   ('cafecafe-cafe-4afe-8afe-000000000004', '22222222-2222-4222-8222-000000000001',
    'treatment', '66666666-6666-4666-8666-000000000001', '66666666-6666-4666-8666-000000000001',
    '11111111-1111-4111-8111-000000000010', 'active', '11111111-1111-4111-8111-000000000003', now(),
    'companion', 'Paula Mustermann',
    array['identity_document'], '11111111-1111-4111-8111-000000000003', now(),
-   'begleitung-2026-10-02', '11111111-1111-4111-8111-000000000003', now(), false);
+   'begleitung-2026-10-02b', '11111111-1111-4111-8111-000000000003', now(), false,
+   -- ABN-010: Rechnungen nur mit ausdruecklicher Einwilligung; Max hat sie nicht gegeben.
+   false);

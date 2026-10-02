@@ -210,13 +210,16 @@ function VertretungsEintrag({
       </div>
       <p className="text-ink-muted mt-1 text-sm">
         Gesehen: {gesehen}
-        {v.guardianship_health_scope ? ', Aufgabenkreis Gesundheitssorge' : ''} ·{' '}
-        {v.proof_recorded_by_name ?? 'Praxis'}, {datum(v.proof_recorded_at)}
+        {v.health_scope ? ', Gesundheitssorge' : ''}
+        {v.access_kind === 'legal_representative' && v.finance_scope
+          ? ', Vermögenssorge'
+          : ''} · {v.proof_recorded_by_name ?? 'Praxis'}, {datum(v.proof_recorded_at)}
       </p>
       {v.access_kind === 'companion' ? (
         <p className="text-ink-muted text-sm">
           Einwilligung der Person am {datum(v.consent_recorded_at)}
           {v.consent_earlier_messages ? ', mit früheren Nachrichten' : ', ohne frühere Nachrichten'}
+          {v.finance_scope ? ', mit Rechnungen' : ', ohne Rechnungen'}
         </p>
       ) : null}
       {v.ended_at && !abgelaufen && v.legal_basis === 'custody' ? (
@@ -324,6 +327,7 @@ function VertretungEinrichten({
   const [vollmacht, setVollmacht] = useState(false);
   const [aufgabenkreis, setAufgabenkreis] = useState(false);
   const [fruehere, setFruehere] = useState(false);
+  const [rechnungen, setRechnungen] = useState(false);
   const [eingewilligt, setEingewilligt] = useState(false);
   const [zweifel, setZweifel] = useState(false);
 
@@ -338,13 +342,13 @@ function VertretungEinrichten({
         grundlage: zugangsart === 'legal_representative' ? grundlage : null,
         name: name.trim(),
         dokumente,
+        // ABN-010: Gesundheitssorge bei Betreuung und Vorsorgevollmacht.
         aufgabenkreis:
-          zugangsart === 'legal_representative' && grundlage === 'guardianship'
-            ? aufgabenkreis
-            : null,
+          zugangsart === 'legal_representative' && grundlage !== 'custody' ? aufgabenkreis : null,
         fassung:
           zugangsart === 'companion' && eingewilligt ? EINWILLIGUNG_BEGLEITUNG_FASSUNG : null,
         fruehereNachrichten: zugangsart === 'companion' ? fruehere : null,
+        rechnungen,
       });
     },
     onSuccess: async (einladung) => {
@@ -371,7 +375,7 @@ function VertretungEinrichten({
   const vollstaendig =
     name.trim().length >= 2 &&
     ausweis &&
-    (begleitung ? eingewilligt : vollmacht && (grundlage !== 'guardianship' || aufgabenkreis));
+    (begleitung ? eingewilligt : vollmacht && (grundlage === 'custody' || aufgabenkreis));
 
   return (
     <form
@@ -426,6 +430,7 @@ function VertretungEinrichten({
             setGrundlage(e.target.value as Rechtsgrundlage);
             setVollmacht(false);
             setAufgabenkreis(false);
+            setRechnungen(false);
           }}
         >
           {(['guardianship', 'power_of_attorney', 'custody'] as const).map((g) => (
@@ -453,11 +458,30 @@ function VertretungEinrichten({
             onChange={(e) => setVollmacht(e.target.checked)}
           />
         ) : null}
-        {!begleitung && grundlage === 'guardianship' ? (
+        {!begleitung && grundlage !== 'custody' ? (
           <Checkbox
-            label="Der Aufgabenkreis umfasst die Gesundheitssorge"
+            label={
+              grundlage === 'guardianship'
+                ? 'Der Aufgabenkreis umfasst die Gesundheitssorge'
+                : 'Die Vollmacht umfasst die Gesundheitssorge'
+            }
             checked={aufgabenkreis}
             onChange={(e) => setAufgabenkreis(e.target.checked)}
+          />
+        ) : null}
+        {/* ABN-010 (BEF-119): Rechnungen nur bei nachgewiesener Vermögenssorge. */}
+        {!begleitung ? (
+          <Checkbox
+            label={
+              grundlage === 'guardianship'
+                ? 'Der Aufgabenkreis umfasst die Vermögenssorge (Rechnungen)'
+                : grundlage === 'custody'
+                  ? 'Das Sorgerecht umfasst die Vermögenssorge (Rechnungen)'
+                  : 'Die Vollmacht umfasst die Vermögenssorge (Rechnungen)'
+            }
+            hint="Ohne dieses Häkchen sieht die Vertretung keine Rechnungen."
+            checked={rechnungen}
+            onChange={(e) => setRechnungen(e.target.checked)}
           />
         ) : null}
       </fieldset>
@@ -473,12 +497,22 @@ function VertretungEinrichten({
               setEingewilligt(false);
             }}
           />
+          {/* ABN-010 (BEF-116): der Umfang je Bereich, ausdrücklich im Wortlaut. */}
+          <Checkbox
+            label="Rechnungen und Zahlungen sind sichtbar"
+            checked={rechnungen}
+            onChange={(e) => {
+              setRechnungen(e.target.checked);
+              setEingewilligt(false);
+            }}
+          />
           <div className="bg-surface border-line rounded-card border p-3 text-sm">
             <p className="text-ink-muted mb-2">Bitte der Person zum Lesen geben.</p>
             {einwilligungBegleitung({
               begleitung: name,
               praxis,
               fruehereNachrichten: fruehere,
+              rechnungen,
             }).map((satz) => (
               <p key={satz} className="text-ink mt-1">
                 {satz}

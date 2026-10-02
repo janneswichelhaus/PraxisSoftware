@@ -2459,6 +2459,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 **Änderungspfad.** Weitere Dokumentarten oder ein zweiter Aufgabenkreis: Werteliste und Prüfung in `app.assert_platform_representation`, Constraint nachziehen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Anders entschieden als bisher: zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen sieht eine Vertretung nur, wenn der geprüfte Bereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Freigegeben werden nur nachgewiesene Bereiche, nie pauschal alles (BEF-119).
 
+**Umgesetzt (ABN-010, 2026-10-02).** Gesundheitssorge vermerkt die Praxis jetzt bei Betreuung **und** Vorsorgevollmacht (`health_scope`, bis dahin `guardianship_health_scope`); das Sorgerecht umfasst sie. Rechnungen und Zahlungen nur mit dem zweiten Häkchen „umfasst die Vermögenssorge“ (`finance_scope`, BEF-119). Die Bereiche regelt ANN-216.
+
 ### ANN-206 — Wortlaut der Einwilligung zur Begleitung, versioniert und auf dem Praxisgerät bestätigt
 
 Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13 „Den Wortlaut legt POR-EPIC-001b fest, geprüft wird er in B2")
@@ -2470,6 +2472,8 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 **Anker.** `EINWILLIGUNG_BEGLEITUNG_FASSUNG` und `einwilligungBegleitung` in `src/lib/vertretung.ts`; `app.platform_companion_consent_version` in `supabase/migrations/20261002100000_por_005_representation.sql`; Gleichlauf im Test „Fassung der Einwilligung" in `supabase/tests/platform-representation.test.ts`.
 
 **Änderungspfad.** Neuer Wortlaut: neue Kennung an beiden Stellen; bestehende Begleitungen behalten ihre Fassung · Aufwand `klein`. Unterschrift statt Häkchen: Unterschriftsfeld und Ablage als Dokument (ADR-017) · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** Präzisiert: Die Person stimmt ausdrücklich zu. Festgehalten werden Fassung des Wortlauts, benannte Begleitperson, freigegebener Umfang, Zeitpunkt und bestätigende Praxiskraft. Ob Häkchen der Praxis und Fassung als Nachweis genügen, ist nicht entschieden, sondern wird in B2 geprüft (BEF-116).
+
+**Umgesetzt (ABN-010, 2026-10-02).** Neue Fassung `begleitung-2026-10-02b`: Der Wortlaut nennt den Umfang je Bereich, Termine und Unterlagen immer, frühere Nachrichten und Rechnungen je mit Ja oder Nein (BEF-116). Der Nachweis hält Fassung, benannte Begleitperson, Bereiche (`consent_earlier_messages`, `finance_scope`), Zeitpunkt und bestätigende Praxiskraft fest. Das Nachweisverfahren bleibt an einer Stelle, `app.assert_platform_representation`. Ob das Häkchen genügt, entscheidet B2.
 
 ### ANN-207 — Ein Zweifel an der Einwilligungsfähigkeit wird nur als Vorgang vermerkt, ohne Grund
 
@@ -2580,3 +2584,15 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 **Anker.** `public.offset_payment`, `public.void_offset_payments` und `payments.offset_group` in `supabase/migrations/20261002132000_abn_008_billing_from_acceptance.sql`; `Guthaben` in `src/features/billing/InvoiceDetailPage.tsx`; Tests in `supabase/tests/invoice-cancellations.test.ts` („Storno trotz Zahlung“).
 
 **Änderungspfad.** Verrechnung mit einer anderen offenen Rechnung derselben Person: die Prüfung auf `replaces_invoice_id` in `offset_payment` lockern · Aufwand `klein`. Ursprünglicher Zahlungstag an der Ersatzrechnung: `paid_on` aus der Quelle übernehmen · Aufwand `klein`.
+
+### ANN-216 — Eine Vertretung trägt zwei Bereiche: Gesundheit immer, Rechnungen nur nachgewiesen
+
+Datenschutz · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: B2 und B5 mit ANN-205 und ANN-206; Jannes in der Sichtung der Plattform (ABN-EPIC-001)
+
+**Annahme.** Freigegeben werden nur nachgewiesene bzw. eingewilligte Bereiche (BEF-119). Die Plattform kennt dafür zwei: **Gesundheit** (Termine, Wünsche, Nachrichten, Befundbogen, freigegebene Unterlagen) und **Rechnungen** (Rechnungen und Zahlungen). Gesundheit ist Voraussetzung jeder Vertretung — die Plattform zeigt Gesundheitsdaten, eine Vollmacht nur für Finanzen begründet hier keinen Zugang. Rechnungen sind immer eine ausdrückliche Ja/Nein-Angabe (`finance_scope`): bei der rechtlichen Vertretung das Häkchen „umfasst die Vermögenssorge“ für Sorgerecht, Betreuung und Vollmacht gleichermaßen, bei der Begleitung ein Satz der Einwilligung. `app.platform_access_allows` ist die eine Stelle: `billing` für den eigenen Zugang und nur mit `finance_scope`; `consent`, `export` und `manage_companions` weiter nur eigener Zugang und rechtliche Vertretung. Bestehende synthetische Vertretungen: rechtliche ohne Rechnungen, Begleitungen der alten Fassung mit (ihr Wortlaut nannte sie), Vollmachten mit vermerkter Gesundheitssorge.
+
+**Begründung.** Die Abnahme verlangt die Freigabe je nachgewiesenem Bereich und nennt die Vermögenssorge für Rechnungen ausdrücklich. Zwei Bereiche decken, was POR-EPIC-002 und -003 zeigen; feiner (etwa Termine getrennt von Unterlagen) wäre eine Unterscheidung, die die Praxis vor Ort nicht prüfen kann. Unsicher: ob B5 auch beim Sorgerecht einen ausdrücklichen Vermerk der Gesundheitssorge verlangt (heute: das Sorgerecht umfasst sie).
+
+**Anker.** `platform_accesses.health_scope`, `.finance_scope`, `app.platform_access_allows` und `app.assert_platform_representation` in `supabase/migrations/20261002134000_abn_010_representation_scopes.sql`; Formular in `src/features/platform-access/Vertretungen.tsx`; Wortlaut in `src/lib/vertretung.ts`; Tests in `supabase/tests/platform-acting-for.test.ts` („Rechte je Art“) und `platform-representation.test.ts`.
+
+**Änderungspfad.** Ein weiterer Bereich: eine Spalte, ein Satz im Wortlaut, ein Fall in `platform_access_allows` · Aufwand `klein`. Vertretung nur für Rechnungen: die Pflicht zur Gesundheitssorge in `assert_platform_representation` und der Constraint lockern, die Gesundheitsfähigkeiten an `health_scope` binden · Aufwand `mittel`.
