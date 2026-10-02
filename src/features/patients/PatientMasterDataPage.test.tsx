@@ -45,10 +45,12 @@ vi.mock('./api', async (importOriginal) => {
   };
 });
 
-// Der Abschnitt „Plattform" hat eigene Tests (POR-002); hier nur ohne Zugang.
+// Der Abschnitt „Plattform" hat eigene Tests (POR-002, POR-005); hier nur
+// ohne Zugang und ohne Vertretung.
 vi.mock('@/features/platform-access/api', async (importOriginal) => ({
   ...(await importOriginal<typeof ZugangApi>()),
   getPlatformAccess: () => Promise.resolve(null),
+  listPlatformRepresentations: () => Promise.resolve([]),
 }));
 
 const { Stammdaten } = await import('./PatientMasterDataPage');

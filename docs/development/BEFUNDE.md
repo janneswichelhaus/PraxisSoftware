@@ -3261,3 +3261,428 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Die Rechnungsseite nannte den Empfänger dreimal, den Zahlungsstand zweimal, den eigenen Absender mit Bankverbindung auf jeder Rechnung und erklärte Storno und Unveränderlichkeit in sechs Sätzen; die Liste trug „Ausgestellt“ an jeder Rechnung und einen Knopf je Zeile. Die Mitarbeitenden-Seite erklärte die Trennung von Stammdaten und Zugang dreimal, zeigte „Beschäftigung: Aktiv“, „Stand: Eingerichtet“, leere Kontaktzeilen und eine siebenzeilige Admin-Anleitung. Trainingstermine trugen „Art: Hausbesuch“ und „Bestätigt“, jede Einheit „Hausbesuch · Tom“. Lastenräder wiederholten die Wochenübersicht je Rad; Urlaub listete offene Anträge mit „Beantragt“; „Mein Konto“ nannte den eigenen Namen und die Praxis als Zeilen.
 
 **Erwartet.** Regelfälle ohne Abzeichen und Zeile, leere Werte ohne Zeile, Nachschlagetexte zugeklappt, die Rechnungsnummer als Link. Offen geblieben: Das Abzeichen „Nicht für Termine zuordenbar“ in der Mitarbeitendenliste markiert eine Rolle, kein Problem; es bleibt, weil die Liste die Rollen nicht kennt (serverseitige Änderung nötig). Die Praxiseinstellungen über dem Wochenplan (Praxisraster, automatische Finalisierung, Startort) bleiben offen, weil die Suche sie direkt anspringt.
+
+### BEF-092 — Nach einer Adressänderung bleiben künftige Hausbesuche stumm bei der alten Adresse
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenakte, Stammdaten; Termine (Hausbesuch) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-003) |
+| Status  | offen |
+| Berührt | ANN-003; Adresskopie am Termin (`visit_street` …); ADR-018 |
+
+**Beobachtung.** Ein Hausbesuch kopiert die Adresse beim Anlegen (ANN-003). Ändert die Praxis danach die Anschrift in den Stammdaten, behalten auch die **künftigen** Hausbesuche die alte Adresse, und nichts weist darauf hin.
+
+**Erwartet.** Vergangene Termine behalten ihre damalige Adresse. Nach dem Speichern einer neuen Anschrift nennt die Akte die künftigen Hausbesuche mit abweichender Adresse und bietet an, sie gezielt zu aktualisieren (einzeln oder alle). Nichts ändert sich ohne Bestätigung, jede Änderung steht im Protokoll wie eine Terminänderung.
+
+### BEF-093 — „Mitgeteilt“ verfällt auch bei Änderungen, die die Patient:in nicht betreffen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Termin, Mitteilungsvermerk |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-040) |
+| Status  | offen |
+| Berührt | ANN-040; `appointment_notifications`, Regel `notified_at >= appointments.updated_at` in `20260912180000_appointment_notification.sql` |
+
+**Beobachtung.** Der Vermerk gilt nur, solange `notified_at >= appointments.updated_at`. Jede Änderung am Termin hebt `updated_at`, auch Dokumentations- oder Abrechnungsstatus. Damit verfällt „Mitgeteilt“, obwohl sich für die Patient:in nichts geändert hat.
+
+**Erwartet.** Der Vermerk verfällt nur bei Änderungen, die für die Patient:in relevant sind: Beginn und Ende, Ort bzw. Adresse, Terminart, behandelnde Person, Absage. Ein eigener Zeitstempel für die letzte relevante Änderung (per Trigger auf genau diese Spalten) ersetzt `updated_at` in der Regel. Test je relevanter und je interner Änderung.
+
+### BEF-094 — Eine kurzfristige Verlegung durch die Patient:in ist pauschal gebührenfrei, ein Verzicht ist nicht vorgesehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Termin absagen und verschieben, Ausfallhonorar |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-047) |
+| Status  | offen |
+| Berührt | ANN-047, ANN-034; `app.is_late_cancellation()` in `20260912200000_cancellation_notice.sql`; ADR-018 Punkt 8 (Fassung 2: „nur Patientenabsage“) |
+
+**Beobachtung.** Nur `patient_request` löst die 24-Stunden-Regel aus; „Termin verlegt“ ist immer gebührenfrei, egal wer verlegt. Einen bewussten Verzicht auf die Gebühr gibt es nicht.
+
+**Erwartet.** Entscheidung Jannes, 2026-10-02:
+- Verlegt die **Patient:in** weniger als 24 Stunden vorher, kann der ursprüngliche Termin ebenso ausfallen. Die 24-Stunden-Regel gilt dann wie bei der Absage. Dafür braucht die Verlegung die Angabe, wer sie veranlasst hat.
+- Praxisveranlasste Änderungen bleiben gebührenfrei.
+- Die Praxis kann im Einzelfall bewusst verzichten. Der Verzicht ist ein eigener, protokollierter Vermerk mit der Person, die verzichtet hat, kein Löschen des Anlasses.
+- Nichtantreffen bleibt der eigene Gebührenanlass nach ADR-018.
+
+Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, der das baut.
+
+### BEF-095 — Das Büro sieht „Doku offen“ und Dokumentationslinks nicht, obwohl es Dokumentation lesen darf
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenakte, Terminseite, Kalender (Terminpanel), Übersicht |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-201, ANN-202) |
+| Status  | offen |
+| Berührt | ANN-201, ANN-202; ADR-004 Fassung 2 (E15: Office liest klinische Inhalte); `TreatmentNoteSection.tsx` (`faellig && darfSchreiben`), `TerminPanel.tsx`, `offenGrund` in `src/features/today/api.ts`, `list_appointments`/`list_day_plan` (`documentation_status`) |
+
+**Beobachtung.** „Doku offen“ bzw. „Dokumentation fehlt“ hängt in der Oberfläche am **Schreibrecht**. Das Büro sieht beides nicht, ebenso wenig an fremden Terminen den Dokumentationsstatus und den Link zum Lesen. Dabei liest es nach ADR-004 Fassung 2 alle Dokumentation einschließlich Verlauf.
+
+**Erwartet.** Ein zentrales Leserecht für Dokumentation, eine Regel für Akte, Terminansicht, Kalender und Übersicht, ohne eigene Einschränkungen je Oberfläche. Gemeint ist eine Funktion in der Datenbank und eine im Client, geprüft gegen dieselbe Rollenliste. Sichtbarkeit von Status, „Doku offen“ und Lese-Links folgt dem Leserecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen (ADR-016). Gilt auch für fremde Termine.
+
+### BEF-096 — Das Kontingent zählt genutzte Termine aus der größten Leistungsmenge und verplant Nichtantreffen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage, Kontingent („noch 3 von 10“, gedeckt/ungedeckt), Erinnerungen, Statistik |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-042, ANN-067); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | ANN-042, ANN-064, ANN-067, ANN-073; `app.treatment_basis_slot_counts` in `20260918140000_appointment_coverage.sql`; Nutzer in `20260929210000_prx_016_reminders.sql`, `20260929230000_sta_001_practice_statistics.sql` |
+
+**Beobachtung.** Zwei Fehler in derselben Funktion:
+- **Genutzt** ist `max(used_quantity)` über die Positionen der Grundlage, also eine Leistungsmenge. Werden je Termin verschiedene Heilmittel abgerechnet (Termin 1 KG, Termin 2 MT), zählt das einen genutzten Termin statt zwei.
+- **Verplant und gedeckt** zählen jeden nicht abgesagten Termin, also auch einen mit „nicht angetroffen“. Ein Nichtantreffen belegt damit das Kontingent.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Terminzahl und Leistungsmenge bleiben getrennte Größen (ANN-064, ANN-073).
+- **Genutzt** zählt Behandlungstermine: Termine der Grundlage, die durchgeführt sind (durchgeführt, dokumentiert, abgerechnet). Mehrere Heilmittel oder eine Doppelbehandlung im selben Termin zählen einmal.
+- Ausgeschöpft heißt genutzt ≥ möglich. Gebuchte Termine sind nur verplant.
+- Abgesagte und nicht angetroffene Termine belegen und verbrauchen kein Kontingent; ein Ausfallhonorar bleibt davon getrennt.
+- Überplanung bleibt als ungedeckt sichtbar.
+- Die Leistungsmenge je Position (`used_quantity`) zählt weiter die Abrechnung (ANN-073).
+- Tests mit gemischten Heilmitteln je Termin und mit Nichtantreffen.
+
+### BEF-097 — Eine Terminübertragung lässt erfasste, nicht abgerechnete Leistungen bei der alten Grundlage
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage, „Termine übertragen“; Leistungserfassung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-068); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | ANN-068, ANN-073; `transfer_appointments_to_treatment_basis` (`20260920106000_transfer_guard_billable_services.sql`), `billable_services` mit Verweis auf die Position |
+
+**Beobachtung.** Die Übertragung schließt Termine mit abgerechneter Leistung aus, wie gewollt. Hat ein übertragener Termin aber schon eine **erfasste, nicht abgerechnete** Leistung, zeigt diese weiter auf die Position der alten Grundlage, und deren `used_quantity` bleibt dort verbraucht (ANN-073 hält die Wirkung bewusst an der Leistung fest). Terminzuordnung, Leistungszuordnung und Kontingentverbrauch passen danach nicht mehr zusammen.
+
+**Erwartet.** Übertragen werden dürfen auch durchgeführte Termine, als nachvollziehbare Zuordnungskorrektur mit Auditeintrag. Abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion mit: Sie bekommen die passende Position der Zielgrundlage, die genutzte Menge wandert von alt nach neu. Gibt es dort keine passende Position, wird mit einem verständlichen Grund abgewiesen, statt still zu trennen. Test für alle drei Fälle.
+
+### BEF-098 — Behandlungsrelevante Hinweise aus einer Verordnung haben keinen klinischen Ort mehr
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage (Verordnung), klinische Projektion |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-065) |
+| Status  | offen |
+| Berührt | ANN-065; `treatment_bases.prescriber_note` (klinisch, keine neue Eingabe), `treatment_bases.note` (organisatorisch); ADR-020, ADR-004 Fassung 2 |
+
+**Beobachtung.** Seit ANN-065 schreibt das Formular nur noch „Anmerkungen“ (organisatorisch). Der klinische „Hinweis der Verordner:in“ nimmt nichts Neues an. Ein behandlungsrelevanter Hinweis aus einer neuen Verordnung (etwa „keine Belastung über 20 kg“, „Therapieziel …“) hat damit keinen klinischen Ort.
+
+**Erwartet.** Ein klinisches Feld an der Grundlage für behandlungsrelevante Hinweise. Naheliegend ist, `prescriber_note` für neue Eingaben wieder zu öffnen, getrennt von den organisatorischen „Anmerkungen“ und klar beschriftet. Schreiben dürfen die behandelnden Rollen. Das Büro liest es wie die Therapeut:innen (ADR-004 Fassung 2), über dasselbe zentrale Leserecht wie BEF-095.
+
+### BEF-099 — Der Preis entsteht aus den Heilmitteln statt aus einem Terminhonorar
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Abrechnung: Leistungskatalog, Leistungserfassung, Rechnung; Behandlungsgrundlage |
+| Quelle  | Jannes, Abnahme der Annahmen Block 4 (ANN-070, ANN-064, ANN-066, ANN-073, ANN-140) |
+| Status  | eingeplant in ABR-EPIC-007 |
+| Berührt | ADR-009 Fassung 4 Punkte 5 und 22; ADR-020; `record_billable_services`, `get_billable_service_draft`, Katalog (`service_catalog_*`), `treatment_base_items.used_quantity` |
+
+**Beobachtung.** Heute ist jede Katalogposition ein Heilmittel mit eigenem Preis. Am Termin bestätigte Heilmittel (ANN-140) werden je Position als Leistung erfasst und berechnet. KG plus MT plus Hausbesuch ergeben damit drei Preise, und dieselbe Erfassung schreibt die Heilmittelmenge fort (ANN-073). Eine patientenbezogene Honorarvereinbarung gibt es nicht.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Je durchgeführtem Behandlungstermin entsteht genau einmal das vereinbarte Terminhonorar (heute 140 € für 60 Minuten, inklusive Dokumentation und Hausbesuch).
+- Die Heilmittelauswahl verändert den Preis nicht.
+- Die erbrachten Heilmittel werden weiter bestätigt und schreiben die Mengen fort, aber ohne eigenen Preis.
+- Tarife und patientenbezogene Honorarvereinbarungen sind versioniert mit Gültigkeitsbeginn. Maßgeblich ist die am Leistungstag geltende Vereinbarung, sonst der Tarif.
+- Preisänderungen verändern keine erfasste Leistung und keine Rechnung.
+- Bestehende Katalogpositionen und Abrechnungen bleiben erhalten und lesbar.
+- Die Rechnungsdarstellung ist austauschbar an einer Stelle, bis B17 entschieden ist.
+- Terminzahl (BEF-096), Heilmittelmenge (ANN-073) und Rechnungsbetrag müssen danach zusammenpassen; ein Test prüft alle drei an einem Fall.
+
+### BEF-100 — Abrechnung: Steuernummer Pflicht, Storno gesperrt durch Zahlungen, Teilzahlungen einzeln gerundet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Praxis-Stammdaten, Storno, Auswertung „Einnahmen je Leistungsart“ |
+| Quelle  | Jannes, Abnahme der Annahmen Block 4 (ANN-074, ANN-079, ANN-088); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | `practice_billing_profiles.tax_number not null` (`20260919130000_practice_billing_profile.sql`); Storno-Regel in `20260919170000_invoice_cancellations.sql`; Schritte `abgerundet`/`verteilt` in `list_revenue_by_service_area` |
+
+**Beobachtung und erwartet:**
+1. **Steuernummer:** Sie ist Pflicht, die USt-IdNr. optional. Erwartet ist „Steuernummer **oder** USt-IdNr.“ (§ 14 Abs. 4 Nr. 2 UStG); die IBAN bleibt Pflicht.
+2. **Storno:** Eine Rechnung mit stehender Zahlung lässt sich nicht stornieren, erst müsste die Zahlung storniert werden. Ein tatsächlich eingegangener Betrag darf so nicht verschwinden. Erwartet:
+   - Das Storno ist auch mit Zahlung möglich.
+   - Der Betrag wird nachvollziehbar mit der Ersatzrechnung verrechnet oder als tatsächliche Rückzahlung gebucht.
+   - Ein Zahlungsstorno dient nur der Korrektur einer falschen Buchung.
+3. **Teilzahlungen:** Jede Zahlung wird für sich auf die Steuergruppen verteilt und gerundet. Mehrere Teilzahlungen ergeben bei vollständiger Zahlung nicht sicher genau die Gruppen der Rechnung. Erwartet:
+   - kumulativ verteilen: die Summe aller Zahlungen bis einschließlich dieser verteilen, die Verteilung davor abziehen;
+   - eine Rückzahlung nimmt die zugehörige Verteilung nachvollziehbar zurück;
+   - Test mit drei krummen Teilzahlungen.
+
+### BEF-101 — Erhebungen: Server prüft nur die Form, Korrektur ohne eigenes Datum, Tegner ohne Leseart
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Fragebögen und Scores (Erhebung, Verlauf) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-084, ANN-085, ANN-103, ANN-105) |
+| Status  | offen |
+| Berührt | `src/features/assessments/definitionen/`, `antwortenSchema`; `patient_questionnaire_responses`; Verlaufsansicht im Befund |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Serverprüfung (ANN-105):** Der Server prüft auch Instrument und Version, gültige Antwortoptionen, Wertebereiche und unzulässige Kombinationen. Er nutzt dafür dieselben Definitionsdateien wie die Anwendung, etwa als vom Build erzeugte Tabelle oder Funktion, nicht als zweite Fassung von Hand. Historische Erhebungen werden mit ihrer **ursprünglichen** Definition angezeigt und ausgewertet; ein Hinweis auf eine neuere Version genügt nicht. Ältere Versionen bleiben dafür im Release.
+2. **Korrektur (ANN-103):** Eine Korrektur bleibt mit der ursprünglichen Erhebung verknüpft. Erhebungsdatum und Korrekturzeitpunkt werden getrennt geführt. Im Verlauf erscheint die Korrektur am Erhebungsdatum, nicht als zusätzliche Messung.
+3. **Tegner (ANN-085):** keine Wertung „besser/schlechter“, aber der Zahlenwert mit dem Hinweis „höher = aktiver“.
+4. **Versionen (ANN-084):** Eine Patch-Stelle steht nur für bedeutungserhaltende Korrekturen. Geänderter Frageninhalt, andere Antwortmöglichkeiten oder eine andere Berechnung sind fachliche Änderungen; ob die Werte vergleichbar bleiben, wird je Änderung geprüft und an der Definition vermerkt. Die Nummer allein sagt das nicht.
+
+### BEF-102 — Ein entferntes Ereignis im Verlauf ist gelöscht statt nachvollziehbar entfernt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund, Verlauf (Ereignisse: Operation, Erkrankung, Pause, Medikation, Sonstiges) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-106); Codeprüfung Claude |
+| Status  | offen |
+| Berührt | ANN-106; `remove_patient_course_event` (`delete from public.patient_course_events`) in `20260926110000_frb_002e_course_events.sql` |
+
+**Beobachtung.** „Entfernen“ löscht die Zeile. Im Auditlog steht nur, dass etwas entfernt wurde, nicht was.
+
+**Erwartet.** Entfernen markiert das Ereignis als entfernt (wer, wann). Ursprünglicher Inhalt und Urheber bleiben in der Akte nachvollziehbar, etwa unter „Entfernte Ereignisse“. Im Verlauf erscheint es nicht mehr. Das Auditlog bleibt bei Metadaten. Die Frist folgt der Akte.
+
+### BEF-103 — Bausteine: unbestätigte Vorschläge im Entwurf, Seitenwechsel, Ergebnis nur als Zeichen, Tippfehler
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Befund aus Bausteinen (Behandlung abschließen, Dokumentation bearbeiten) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-119, ANN-120, ANN-129, ANN-130) |
+| Status  | offen |
+| Berührt | ANN-119, ANN-120, ANN-129, ANN-130; `definitionen/bausteine/*.json`; Bausteinfeld und Navigationsschutz der Dokumentation |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Vorschläge (ANN-120):** Ein Vorschlag gelangt nur durch ausdrückliches Übernehmen in den Dokumentationsentwurf. Beim Verlassen oder Speichern wird **kein** unbestätigter Vorschlag ungesehen angehängt, auch weil der Entwurf später automatisch finalisiert werden kann. Heute geht er laut ANN-120 beim Verlassen mit. Die bisherigen Eingaben (Häkchen, Werte) bleiben trotzdem erhalten, getrennt vom Entwurf, bis die Person übernimmt oder verwirft.
+2. **Seitenwechsel (ANN-129):** Beim Wechsel von „beidseits“ auf eine Seite gehen die Ergebnisse der anderen Seite nicht still verloren; sie bleiben erhalten oder es wird vorher gefragt.
+3. **Ergebnis im Text (ANN-130):** Im gespeicherten Text steht „o.B.“ bzw. „positiv“ ausgeschrieben; ✅/❗ dürfen ergänzen, tragen die Bedeutung aber nicht allein.
+4. **Tippfehler (ANN-119):** Offensichtliche Tippfehler der Vorlage („Supinatin“, „Relocation Tet“, „Lachmann“ und vergleichbare) werden für künftige Einträge korrigiert, als Patch-Version (BEF-101 Punkt 4). Kennungen bleiben, bestehende Dokumentation ändert sich nicht. Die drei unvollständigen Bereiche bleiben sichtbar als unvollständig gekennzeichnet; Fehlendes wird nicht selbst ergänzt (ANN-118).
+
+### BEF-104 — Therapiebericht: Korrektur ohne Kette, Grenze von 50 Einträgen still
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Therapiebericht |
+| Quelle  | Jannes, Abnahme der Annahmen Block 5 (ANN-121, ANN-122); Codeprüfung Claude |
+| Status  | offen |
+| Berührt | ANN-121, ANN-122; `therapy_reports` (`20260926140000_dok_005a_therapy_reports.sql`) |
+
+**Erwartet.**
+- Eine Berichtskorrektur verweist auf den ersetzten Bericht und trägt Korrekturgrund, Zeitpunkt und Verfasser:in. Heute gibt es dafür weder Verweis noch Grund.
+- Der eigene Berichtstext der Therapeut:in bleibt der Kern. Wörtliche Dokumentationseinträge sind ergänzende Auszüge; so ist es gebaut, `report_text`.
+- Die Grenze von 50 Einträgen ist beim Auswählen sichtbar, und ein 51. Eintrag wird mit Hinweis abgewiesen, nie still abgeschnitten.
+
+### BEF-105 — Dateien: Typ, Prüfsumme und Metadaten stützen sich auf Angaben des Browsers
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Dateiablage der Akte, Patientenfotos (Upload) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-053, ANN-125) |
+| Status  | offen |
+| Berührt | ANN-053, ANN-125; ADR-017 (Bestätigung, Virenprüfung); `storage.objects.metadata`; Metadaten-Entfernung im Browser |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Dateityp:** Der Server prüft ihn am **Inhalt** der Datei (Signatur der ersten Bytes), nicht am MIME-Typ, den Speicher oder Browser angeben. Der passende Ort ist der serverseitige Schritt, den ADR-017 ohnehin für die Virenprüfung vorsieht.
+- **Prüfsumme:** Die SHA-256 aus dem Browser wird als „nicht serverseitig verifiziert“ geführt, solange der Server sie nicht nachrechnet.
+- **Metadaten:** Die Metadatenfreiheit eines Fotos wird zusätzlich serverseitig geprüft und gegebenenfalls nachbereinigt.
+- **Darstellung:** Ausrichtung **und korrekte Farbdarstellung** bleiben erhalten. Heute entfernt das Gerät auch das Farbprofil (ANN-125); künftig wird das Bild entweder vorher nach sRGB umgerechnet oder ein sRGB-Profil bleibt.
+
+### BEF-106 — Medizinisch notwendige Fotos fallen unter die kurzen Fristen der Foto-Arbeitshilfe
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenfotos, Akte, Löschlauf |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-126, ANN-127) |
+| Status  | offen |
+| Berührt | ANN-126, ANN-127; ADR-017 (Punkte 37 ff., Fotos als Arbeitshilfe, Klasse `patientenfoto`); ADR-008; Legal Hold |
+
+**Beobachtung.** Jedes Patientenfoto ist heute Arbeitshilfe auf Einwilligung: höchstens zwölf Monate, drei Monate nach dem Abschluss, ein Widerruf löscht.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Medizinisch notwendige **Dokumentationsfotos** gehören zur Akte, mit deren Frist (zehn Jahre, ADR-008).
+- Die kurzen Fristen und der Widerruf gelten nur für **zusätzliche, vorübergehende Foto-Arbeitshilfen**.
+- Ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten noch einen Legal Hold auf.
+- Dafür braucht es eine Unterscheidung beim Aufnehmen, eine eigene Datenklasse und eine neue Fassung von ADR-017. Die Rechtsgrundlage der Dokumentationsfotos (Behandlung, Art. 9 Abs. 2 lit. h) geht in B2.
+
+### BEF-107 — Auskunft nach Art. 15: ohne Zugriffe und ohne die Fotos selbst
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | „Auskunft und Löschverlangen“ (OPS-006) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-092, ANN-128) |
+| Status  | offen |
+| Berührt | ANN-092, ANN-128; `patient_record.exported`; Auditlog-Lesepfad |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Zugriffe:** Eine umfassende Auskunft berücksichtigt auch Datum und Zweck der Zugriffe auf die Akte, aus dem Auditlog. Namen der Beschäftigten bleiben grundsätzlich weg; begründete Ausnahmen werden im Einzelfall geprüft.
+- **Fotos:** Die vollständige Kopie enthält die Fotos selbst, nicht nur ihre Angaben. Noch vorhandene, gesperrte Fotos sind nicht pauschal ausgeschlossen.
+- Herausgabe durch owner und Protokollierung bleiben.
+
+### BEF-108 — Warteliste ohne Aktualitätsprüfung, Nachweis des Zusammenführens nur drei Jahre
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Warteliste; Akten zusammenführen |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-133, ANN-150) |
+| Status  | offen |
+| Berührt | ANN-133, ANN-150; `waitlist_entries`; `merge_patients`, Legal Hold |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Warteliste:** Offene Einträge werden regelmäßig auf Aktualität geprüft. Etwa ein Hinweis in „Offene Punkte“, wenn ein Eintrag länger als eine festgelegte Zeit unverändert offen steht; die Zeit ist eine Konstante, als Annahme im Loop.
+2. **Nachweis:** Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, als Vermerk an der bleibenden Akte, und stützt sich nicht allein auf das dreijährige Auditlog.
+3. **Legal Hold:** Alle Gründe bestehender Legal Holds bleiben wirksam. Heute wird beim Zusammenführen die Sperre der Dublette aufgehoben, wenn die bleibende Akte schon eine hat (ANN-150). Künftig bleiben beide Gründe wirksam, etwa mehrere aktive Sperren je Akte oder beide Gründe an der einen Sperre.
+
+### BEF-109 — Kartendienst: Gate in Produktion, eindeutige Treffer, Ersatzschätzungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kartendienst (`location-provider`), Stammdaten (Verorten), Tour und Fahrpuffer |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-094, ANN-095, ANN-097) |
+| Status  | offen |
+| Berührt | ANN-094, ANN-095, ANN-097; ADR-019 (Gate Punkt 9, Anbieterprüfung); `LOCATION_DATA_GATE`; Matrix- und Routenantworten |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Gate (ANN-094):** Der Wert `synthetic` ist in der Produktivumgebung **technisch ausgeschlossen**, nicht nur per Konvention. Die Function erkennt die Umgebung und lehnt ihn dort ab; ein Test belegt das. Die Anbieterprüfung (ADR-019 Punkt 9, G12) deckt auch die **direkt geladenen Kartenkacheln** ab, die am Server vorbei aus dem Browser kommen.
+2. **Verorten (ANN-095):** Automatisch übernommen wird nur ein **eindeutiger** Treffer zur **vollständigen** Adresse. Ändert sich die Adresse, wird die alte Koordinate der Stammdaten verworfen (prüfen, ob das heute so ist). Historische Termine behalten ihren Stand (ANN-003, BEF-092).
+3. **Fahrzeit (ANN-097):** Liefert der Anbieter eine Luftlinien- oder Ersatzschätzung statt einer Routenfahrzeit, was PTV in Matrixantworten tun kann, wird sie ausdrücklich gekennzeichnet oder als „Fahrzeit nicht verfügbar“ behandelt, nie als echte Fahrzeit.
+
+### BEF-110 — Abstecher-Entwurf verfällt still, MDR-Freigabe ohne Nachweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Verordnungsformular aus dem Kalender (Abstecher); MDR-Register |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-019, ANN-089) |
+| Status  | offen |
+| Berührt | ANN-019 (`src/lib/abstecher.ts`); ANN-089 (`src/app/mdr.ts`); ADR-006; ADR-025 Punkt 4 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Abstecher-Entwurf (ANN-019):** Weder der Ablauf nach 30 Minuten noch eine automatische Abmeldung oder Sperre löschen Eingaben still. Der Entwurf wird geschützt gesichert, etwa serverseitig als Entwurf wie die Dokumentation oder ausdrücklich verworfen nach Rückfrage. Wiederaufnahme nur mit demselben Konto. Stimmt mit ADR-025 Punkt 4 überein.
+2. **MDR-Freigabe (ANN-089):** Eine Funktion wird erst nach dokumentierter MDR-Prüfung geöffnet. Der Nachweis (wer, wann, Ergebnis, Verweis auf die Prüfung) steht am Registereintrag oder in einem eigenen Freigabevermerk; bloßes Entfernen des Eintrags genügt nicht. Vorhandene Serverzugänge solcher Funktionen werden ebenfalls gesperrt, nicht nur die Adressen der Oberfläche.
+
+### BEF-111 — Trainingskontakt: Hausnummer im Straßenfeld, Rechnung ohne vollständige Anschrift
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Training: Kontakt, Hausbesuch, Rechnung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-177, ANN-182) |
+| Status  | offen |
+| Berührt | ANN-177 (`app.split_street_and_house_number`, `app.training_visit_address`); ANN-182 (`issue_invoice`, `app.build_invoice_document`); `training_contact_details` |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Getrennte Felder (ANN-177):** Der Trainingskontakt führt Straße und Hausnummer als zwei Felder, wie die Akte. Der Hausbesuch übernimmt sie unverändert; die Trennung am letzten Leerzeichen entfällt. Bestehende Einträge werden einmal aufgeteilt, was nicht eindeutig ist, bleibt zur Prüfung stehen.
+2. **Rechnung (ANN-182):** Eine Trainingsrechnung wird ohne vollständige Empfängeranschrift (Straße, Hausnummer, PLZ, Ort) nicht ausgestellt. Die Sperre sitzt im Server (`issue_invoice`), die Oberfläche nennt, was fehlt.
+
+### BEF-112 — Trainingsbetreuung sieht im Kalender keine belegten Zeiten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kalender und Tagesliste der Trainingsbetreuung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-180) |
+| Status  | offen |
+| Berührt | ANN-180 (`public.list_appointments`, `app.may_read_appointment_context`); `PROJECT_PRINCIPLES.md` §4.8 (Belegung); ADR-022 Punkt 11 |
+
+**Erwartet** (Jannes, 2026-10-02): Die Trainingsbetreuung sieht relevante belegte Zeiten (der betroffenen Mitarbeitenden und Räume) als anonyme Blöcke „belegt“, damit sie freie Zeiten erkennt, statt erst beim Speichern davon zu erfahren. Ein Block trägt nur Beginn, Ende und Person, keinen Kontext, keinen Namen, keine Adresse, keinen Zustand. Die Projektion entsteht im Server; ein Test belegt, dass keine Behandlungsdaten herauskommen.
+
+### BEF-113 — Trainingsprotokoll: Büro liest, Nachtrag, Verwerfen mit Hinweis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Trainingsprotokoll |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-184, ANN-185, ANN-186) |
+| Status  | offen |
+| Berührt | ANN-184 (`app.can_access_training_protocols`, `canWriteTrainingProtocols`); ANN-185 (`training_protocols_guard`); ANN-186 (`appointments_training_protocol_guard`, Löschjournal); `PROJECT_PRINCIPLES.md` 0.19 §4.8; ADR-021 Fassung 2 Punkt 10 |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Büro liest (ANN-184):** Lese- und Schreibrecht getrennt. `office` liest Protokolle und ihren Zustand, auch in der Liste der Einheiten, protokolliert als `training_protocol.viewed`; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen bestätigt.
+2. **Nachtrag (ANN-185):** Ein abgeschlossenes Protokoll bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt, angezeigt unter dem Text, wie in der Behandlung.
+3. **Verwerfen (ANN-186):** Bevor eine Absage oder ein Nichtantreffen einen Entwurf verwirft, weist die Oberfläche auf den Verlust hin, auch dem Büro. Ein verworfener Entwurf steht im Löschjournal und taucht nach einer Wiederherstellung nicht wieder auf.
+
+### BEF-114 — Training: Paketpreise für drei oder sechs Monate
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Abrechnung im Training |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-181) |
+| Status  | offen |
+| Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
+
+**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden).
+
+### BEF-115 — Plattformkonten werden per SQL aus `auth.users` gelöscht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Löschlauf, Plattformkonten |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-189) |
+| Status  | offen |
+| Berührt | ANN-189; `public.apply_retention` (Schritt `auth_users`); Zugangsdienst; OPS-001 |
+
+**Erwartet** (Jannes, 2026-10-02): Fristen wie gebaut. Der Ablauf der Einladung beendet nur einen nie eingelösten Zugang; das Konto fällt erst 30 Tage nach dem Ende **aller** seiner Zugänge (Test mit zwei Zugängen, einer endet früher). Gelöscht wird über die unterstützte Admin-API des Anmeldedienstes, etwa als Warteschlange, die der Löschlauf füllt und der Zugangsdienst abarbeitet; Löschjournal und erneutes Löschen nach einem Restore bleiben. In OPS-001 am Testprojekt prüfen.
+
+### BEF-116 — Einwilligung zur Begleitung: Umfang nicht ausdrücklich festgehalten
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Vertretung (Begleitung) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-206) |
+| Status  | offen |
+| Berührt | ANN-206; `consent_text_version`, `consent_recorded_by/at`, `consent_earlier_messages`; `einwilligungBegleitung` in `src/lib/vertretung.ts`; B2 |
+
+**Erwartet** (Jannes, 2026-10-02): Die Person stimmt ausdrücklich selbst zu. Der Nachweis hält fest: Fassung des Wortlauts, benannte Begleitperson, **freigegebenen Umfang** (heute nur mittelbar über die Fassung und `consent_earlier_messages`; künftig ausdrücklich je Bereich, siehe BEF-119), Zeitpunkt und bestätigende Praxiskraft. Ob das Häkchen der Praxis als Nachweis genügt oder eine Unterschrift bzw. Textform nötig ist, entscheidet die Prüfung B2; das Nachweisverfahren bleibt bis dahin an einer Stelle austauschbar.
+
+### BEF-117 — Volljährigkeit am 29. Februar uneinheitlich gerechnet
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Altersgrenze |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-208); Codeprüfung |
+| Status  | offen |
+| Berührt | ANN-190, ANN-208; `app.platform_is_minor`, `app.platform_access_ended_at`, Einladungsprüfungen in `20260930141000_por_002_platform_accesses.sql` und `20261002100000_por_005_representation.sql` |
+
+**Befund** (Codeprüfung, 2026-10-02): Die Prüfung „minderjährig“ zieht 18 Jahre vom heutigen Tag ab und macht eine am 29. Februar geborene Person im Nichtschaltjahr richtig am 1. März volljährig. Das Ende des Sorgerechts rechnet dagegen Geburtstag plus 18 Jahre, landet auf dem 28. Februar und endet einen Tag zu früh.
+
+**Erwartet** (Jannes, 2026-10-02): Volljährig ist man um 0 Uhr am 18. Geburtstag, bei Geburt am 29. Februar im Nichtschaltjahr am 1. März (§§ 187 Abs. 2, 188 Abs. 2 BGB), in der Zeitzone der Praxis. **Eine** Funktion liefert diesen Tag (etwa Geburtstag minus ein Tag plus 18 Jahre plus ein Tag); eigener Zugang, Vertretungsprüfung und Ende des Sorgerechts rufen sie auf. Testfälle: 29. Februar, 28. Februar, 1. März.
+
+### BEF-118 — Wiederherstellung per Mail ohne bestätigtes Postfach möglich
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Anmeldung und Kennwort |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-191, B13) |
+| Status  | offen |
+| Berührt | ANN-191; Zugangsdienst (Anlegen mit gesetztem Bestätigungsstatus); Kennwort-Wiederherstellung; ADR-023 Punkte 7 und 8; ADR-025 Punkt 7 |
+
+**Erwartet** (Jannes, 2026-10-02): Eine Wiederherstellung per Mail gibt es für ein Plattformkonto nur, wenn das Postfach **tatsächlich** per Link bestätigt wurde; der beim Anlegen automatisch gesetzte Status zählt nicht und braucht ein eigenes Merkmal. Ohne Bestätigung gibt es einen neuen Code nach Identitätsprüfung vor Ort. Jede Adressänderung verlangt eine neue Bestätigung. Die Sperre gilt im Server **und** im Anmeldedienst (kein Wiederherstellungslink an eine unbestätigte Adresse), nicht nur in der Oberfläche; ein Test belegt das.
+
+### BEF-119 — Vertretung: Freigabe nicht nach nachgewiesenem Aufgabenkreis
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Plattform, Vertretung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 9 (ANN-205) |
+| Status  | offen |
+| Berührt | ANN-205; `guardianship_health_scope`, `app.assert_platform_representation`, `app.platform_access_allows`; Rechnungen und Zahlungen auf der Plattform (POR-EPIC-002 ff.) |
+
+**Erwartet** (Jannes, 2026-10-02): Ein zweites Häkchen „Aufgabenkreis umfasst Vermögenssorge“. Rechnungen und Zahlungen gibt `app.platform_access_allows` einer Vertretung nur frei, wenn der geprüfte Aufgabenbereich sie umfasst; Gesundheitssorge allein gibt keinen Abrechnungszugriff. Allgemein: Freigegeben werden nur die nachgewiesenen Bereiche, nie pauschal alles. Das gilt sinngemäß auch für eine Vorsorgevollmacht und für den Umfang einer Begleitung (BEF-116). Die Rechte stehen weiter an einer Stelle, mit Test je Bereich.

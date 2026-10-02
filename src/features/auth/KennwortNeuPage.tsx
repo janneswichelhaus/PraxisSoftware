@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Field } from '@/components/ui/Field';
@@ -11,7 +11,12 @@ import { kennwortFehler, type Kennwortfehler } from '@/features/account/kennwort
 import { useFokusNachWechsel } from './fokus';
 import { hinweisAngemeldet } from './fremdeSitzung';
 import { useSession } from './sessionContext';
-import { VerbindungError, loeseLinkEin } from './linkEinloesen';
+import {
+  VerbindungError,
+  einmalCodeAusAdresse,
+  loeseLinkEin,
+  traegtEinmalCode,
+} from './linkEinloesen';
 
 /**
  * Neues Kennwort über den Link aus der Mail setzen (FIX-001).
@@ -51,10 +56,14 @@ const FELD_KENNWORT = 'kennwort-neu';
 const FELD_WIEDERHOLUNG = 'kennwort-neu-wiederholung';
 
 export function KennwortNeuPage() {
-  const [suche] = useSearchParams();
   const navigate = useNavigate();
   const { session } = useSession();
-  const tokenHash = suche.get('token_hash');
+  const ort = useLocation();
+  // ANN-043, Fassung 2: einmal lesen, dann aus der Adresszeile nehmen.
+  const [tokenHash] = useState(() => einmalCodeAusAdresse(ort));
+  useEffect(() => {
+    if (traegtEinmalCode(ort)) void navigate(ort.pathname, { replace: true });
+  }, [ort, navigate]);
   // Das angemeldete Konto - vor dem Einlösen das bisherige, danach das des
   // Links (AUTH-04, AUTH-05).
   const konto = session?.user.email;

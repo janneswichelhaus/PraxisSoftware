@@ -191,6 +191,32 @@ const FAELLE: Fall[] = [
     [IRGENDEINE],
     'platform_access.invitation_sent',
   ],
+  // POR-005: Vertretung - dieselben Rollen wie beim eigenen Zugang.
+  [
+    'invite_platform_representation',
+    `select * from public.invite_platform_representation('training', $1::uuid, 'companion', null,
+       'Paula Platzhalter', array['identity_document'], null, 'begleitung-2026-10-02', false)`,
+    [IRGENDEINE],
+    'platform_access.invited',
+  ],
+  [
+    'renew_platform_representation_code',
+    'select * from public.renew_platform_representation_code($1::uuid)',
+    [IRGENDEINE],
+    'platform_access.invited',
+  ],
+  [
+    'record_companion_consent_withdrawn',
+    'select public.record_companion_consent_withdrawn($1::uuid) as status',
+    [IRGENDEINE],
+    'platform_access.revoked',
+  ],
+  [
+    'note_companion_capacity_doubt',
+    "select public.note_companion_capacity_doubt('training', $1::uuid) as ok",
+    [IRGENDEINE],
+    'platform_access.companion_declined',
+  ],
   [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
@@ -209,7 +235,8 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
     // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
-    // Trainingsprotokoll, seit POR-002 der Plattformzugang.
+    // Trainingsprotokoll, seit POR-002 der Plattformzugang, seit POR-005 die
+    // Vertretung.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`

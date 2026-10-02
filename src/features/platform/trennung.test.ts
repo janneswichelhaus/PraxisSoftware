@@ -68,9 +68,13 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
         ),
       ];
     });
+    // POR-007: „Wer für mich Zugang hat" und das Beenden einer Begleitung -
+    // beide prüfen den Zugang über app.platform_access_allows.
     expect([...new Set(aufrufe)].sort()).toEqual([
       'function:platform-access',
+      'rpc:end_platform_companion',
       'rpc:platform_context',
+      'rpc:platform_representatives',
     ]);
   });
 

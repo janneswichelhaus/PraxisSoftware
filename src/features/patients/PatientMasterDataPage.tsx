@@ -415,6 +415,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           verhaeltnisId={patient.id}
           darfVerwalten={darfVerorten}
           zeitzone={user.organizationTimeZone}
+          praxis={user.organizationName ?? 'der Praxis'}
         />
       ) : null}
 

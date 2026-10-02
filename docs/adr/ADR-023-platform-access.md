@@ -15,6 +15,8 @@ selbst. **Punkte 11 und 13 werden geschärft**: Mail nur an eine persönlich bes
 Ausweis und Vollmacht bei Vertretungen ansehen, Bedingungen der Einwilligung zur Begleitung. Die
 übrigen 23 Punkte und W1 bis W6 bleiben unverändert.
 
+**Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
+
 ## Datum
 
 2026-09-30 · Fassung 2: 2026-09-30

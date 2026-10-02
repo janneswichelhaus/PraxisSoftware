@@ -29,6 +29,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   // eigenen Datei (Punkt 23).
   'public.platform_context':
     'Praxisname und eigene Zugänge; Negativfälle in platform-context.test.ts',
+  'public.platform_representatives':
+    'Wer für die Person Zugang hat (POR-007); Negativfälle in platform-own-representatives.test.ts',
+  'public.end_platform_companion':
+    'Begleitung beenden (POR-007); Negativfälle in platform-own-representatives.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',
@@ -241,6 +245,14 @@ describe('Abschottung der Praxis gegen Plattformkonten (ADR-023 Punkt 21)', () =
     },
     120_000,
   );
+
+  it('zeigt einer Begleitung keine Zeile der Praxis (POR-EPIC-001b)', async () => {
+    // Eine Vertretung ist ein zweiter Akteurstyp mit eigenem Zugang; auch sie
+    // erreicht die Praxis nur über die Plattformprojektionen.
+    const befund = await pruefe(SEED.users.plattformPaula, true);
+    expect(befund.tabellen).toEqual([]);
+    expect(befund.funktionen).toEqual([]);
+  }, 120_000);
 
   it('zeigt einem Konto mit Profil, aber ohne Praxisrolle keine Zeile (Punkt 20)', async () => {
     // Bis POR-001 las dieses Konto über den Selbstzugriff seine eigene Akte,

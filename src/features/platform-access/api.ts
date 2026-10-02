@@ -179,3 +179,164 @@ export async function sendPlatformInvitation(einladungId: string, code: string):
 export function einloeseadresse(ursprung: string, code: string): string {
   return `${ursprung.replace(/\/+$/, '')}/einladung#code=${encodeURIComponent(code)}`;
 }
+
+// -----------------------------------------------------------------------------
+// Vertretung (POR-005, ADR-023 Punkte 13 bis 15)
+// -----------------------------------------------------------------------------
+
+const vertretungSchema = z.object({
+  id: z.string().uuid(),
+  access_kind: z.enum(['legal_representative', 'companion']),
+  legal_basis: z.enum(['custody', 'guardianship', 'power_of_attorney']).nullable(),
+  representative_name: z.string(),
+  status: z.enum(['invited', 'active', 'locked', 'revoked']),
+  created_at: zeitpunkt,
+  activated_at: zeitpunkt.nullable(),
+  locked_at: zeitpunkt.nullable(),
+  revoked_at: zeitpunkt.nullable(),
+  revoked_reason: z
+    .enum(['practice', 'relationship_deleted', 'account_deleted', 'consent_withdrawn'])
+    .nullable(),
+  proof_documents: z.array(
+    z.enum(['identity_document', 'custody_proof', 'guardianship_certificate', 'power_of_attorney']),
+  ),
+  guardianship_health_scope: z.boolean().nullable(),
+  proof_recorded_at: zeitpunkt,
+  proof_recorded_by_name: z.string().nullable(),
+  consent_recorded_at: zeitpunkt.nullable(),
+  consent_earlier_messages: z.boolean().nullable(),
+  invitation_purpose: z.enum(['activate', 'reset']).nullable(),
+  invitation_expires_at: zeitpunkt.nullable(),
+  ended_at: zeitpunkt.nullable(),
+});
+export type Vertretung = z.infer<typeof vertretungSchema>;
+
+export function vertretungsschluessel(art: Verhaeltnisart, verhaeltnisId: string) {
+  return ['platform-representations', art, verhaeltnisId] as const;
+}
+
+export async function listPlatformRepresentations(
+  art: Verhaeltnisart,
+  verhaeltnisId: string,
+): Promise<Vertretung[]> {
+  const satz = 'Die Vertretungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('list_platform_representations', {
+    p_relationship_kind: art,
+    p_relationship_id: verhaeltnisId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(vertretungSchema), ergebnis.data ?? [], satz);
+}
+
+/** Warum eine Vertretung nicht eingerichtet wurde — in der Sprache der Praxis. */
+export function vertretungsfehler(meldung: string | undefined): string {
+  const m = (meldung ?? '').toLowerCase();
+  if (m.includes('date of birth required')) {
+    return 'Ohne Geburtsdatum gibt es keine Vertretung: Ob Sorgerecht oder Begleitung passt, hängt am Alter. Bitte das Geburtsdatum ergänzen.';
+  }
+  if (m.includes('minor needs custody')) {
+    return 'Die Person ist unter 18. Für sie gibt es nur die rechtliche Vertretung durch Sorgeberechtigte.';
+  }
+  if (m.includes('custody ends at majority')) {
+    return 'Die Person ist volljährig. Ein Sorgerecht trägt hier nicht mehr; möglich sind Betreuung, Vorsorgevollmacht oder Begleitung.';
+  }
+  if (m.includes('representative name required')) {
+    return 'Bitte den Namen der vertretenden Person angeben.';
+  }
+  if (m.includes('identity document must be seen')) {
+    return 'Bitte den Ausweis der vertretenden Person ansehen und abhaken.';
+  }
+  if (m.includes('authority document must be seen')) {
+    return 'Bitte das Dokument ansehen und abhaken, das die Vertretung belegt.';
+  }
+  if (m.includes('guardianship must cover health care')) {
+    return 'Eine Betreuung trägt nur, wenn ihr Aufgabenkreis die Gesundheitssorge umfasst.';
+  }
+  if (m.includes('legal basis required')) {
+    return 'Bitte angeben, worauf die rechtliche Vertretung beruht.';
+  }
+  if (m.includes('consent of the person required') || m.includes('consent scope required')) {
+    return 'Die Person muss der Begleitung selbst zustimmen. Bitte die Einwilligung bestätigen lassen.';
+  }
+  if (m.includes('has ended')) {
+    return 'Diese Vertretung ist beendet. Bitte eine neue einrichten.';
+  }
+  if (m.includes('reset needs every area')) {
+    return 'Ein neues Kennwort gilt für alle Bereiche dieses Kontos. Ausstellen kann es nur, wer alle seine Zugänge verwaltet – etwa die Praxisinhaber:in oder das Büro.';
+  }
+  if (m.includes('locked')) {
+    return 'Der Zugang ist gesperrt. Bitte zuerst entsperren.';
+  }
+  return 'Die Vertretung konnte nicht eingerichtet werden.';
+}
+
+export interface VertretungsAngaben {
+  zugangsart: 'legal_representative' | 'companion';
+  grundlage: 'custody' | 'guardianship' | 'power_of_attorney' | null;
+  name: string;
+  dokumente: string[];
+  aufgabenkreis: boolean | null;
+  fassung: string | null;
+  fruehereNachrichten: boolean | null;
+}
+
+export async function invitePlatformRepresentation(
+  art: Verhaeltnisart,
+  verhaeltnisId: string,
+  angaben: VertretungsAngaben,
+): Promise<Einladung> {
+  const satz = 'Die Vertretung konnte nicht eingerichtet werden.';
+  const ergebnis = (await getSupabase().rpc('invite_platform_representation', {
+    p_relationship_kind: art,
+    p_relationship_id: verhaeltnisId,
+    p_access_kind: angaben.zugangsart,
+    p_legal_basis: angaben.grundlage,
+    p_representative_name: angaben.name,
+    p_proof_documents: angaben.dokumente,
+    p_health_scope: angaben.aufgabenkreis,
+    p_consent_version: angaben.fassung,
+    p_earlier_messages: angaben.fruehereNachrichten,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) throw new Error(vertretungsfehler(ergebnis.error.message));
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  const zeile = antwort(z.array(einladungSchema), ergebnis.data ?? [], satz)[0];
+  if (!zeile) throw new Error(satz);
+  return zeile;
+}
+
+export async function renewPlatformRepresentationCode(zugangId: string): Promise<Einladung> {
+  const satz = 'Der Code konnte nicht ausgestellt werden.';
+  const ergebnis = (await getSupabase().rpc('renew_platform_representation_code', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: { message?: string } | null; status?: number };
+  if (ergebnis.error) throw new Error(vertretungsfehler(ergebnis.error.message));
+  if (abgewiesen(ergebnis)) throw new Error(satz);
+  const zeile = antwort(z.array(einladungSchema), ergebnis.data ?? [], satz)[0];
+  if (!zeile) throw new Error(satz);
+  return zeile;
+}
+
+/** Vermerkt den Zweifel an der Einwilligungsfähigkeit — ohne Grund (ANN-207). */
+export async function noteCompanionCapacityDoubt(
+  art: Verhaeltnisart,
+  verhaeltnisId: string,
+): Promise<void> {
+  const satz = 'Der Vermerk konnte nicht gespeichert werden.';
+  const ergebnis = (await getSupabase().rpc('note_companion_capacity_doubt', {
+    p_relationship_kind: art,
+    p_relationship_id: verhaeltnisId,
+  })) as { data: unknown; error: unknown; status?: number };
+  if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data !== true) throw new Error(satz);
+}
+
+/**
+ * Die Person widerruft ihre Einwilligung zur Begleitung in der Praxis. Steht
+ * im Nachweis als Widerruf, nicht als Entziehen (ADR-023 Punkte 5, 13).
+ */
+export async function recordCompanionConsentWithdrawn(zugangId: string): Promise<void> {
+  const satz = 'Der Widerruf konnte nicht vermerkt werden.';
+  const ergebnis = (await getSupabase().rpc('record_companion_consent_withdrawn', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown; status?: number };
+  if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
+}

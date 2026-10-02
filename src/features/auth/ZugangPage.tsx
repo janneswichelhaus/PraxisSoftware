@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -8,7 +8,12 @@ import { Vollseite } from '@/app/Vollseite';
 import { useFokusNachWechsel } from './fokus';
 import { hinweisAngemeldet } from './fremdeSitzung';
 import { useSession } from './sessionContext';
-import { VerbindungError, loeseLinkEin } from './linkEinloesen';
+import {
+  VerbindungError,
+  einmalCodeAusAdresse,
+  loeseLinkEin,
+  traegtEinmalCode,
+} from './linkEinloesen';
 
 /**
  * Anmelden über den Link aus der Zugangsmail (FIX-002).
@@ -30,10 +35,14 @@ import { VerbindungError, loeseLinkEin } from './linkEinloesen';
 type Zustand = 'fremde-sitzung' | 'einloesen' | 'ungueltig' | 'verbindung';
 
 export function ZugangPage() {
-  const [suche] = useSearchParams();
   const navigate = useNavigate();
   const { session } = useSession();
-  const tokenHash = suche.get('token_hash');
+  const ort = useLocation();
+  // ANN-043, Fassung 2: einmal lesen, dann aus der Adresszeile nehmen.
+  const [tokenHash] = useState(() => einmalCodeAusAdresse(ort));
+  useEffect(() => {
+    if (traegtEinmalCode(ort)) void navigate(ort.pathname, { replace: true });
+  }, [ort, navigate]);
   const konto = session?.user.email;
 
   /**

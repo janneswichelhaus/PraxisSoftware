@@ -21,6 +21,7 @@ const invitePlatformAccess = vi.fn();
 const sendPlatformInvitation = vi.fn();
 const setPlatformAccessLocked = vi.fn();
 const revokePlatformAccess = vi.fn();
+const listPlatformRepresentations = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof ZugangApi>();
@@ -33,6 +34,8 @@ vi.mock('./api', async (importOriginal) => {
     setPlatformAccessLocked: (...args: unknown[]) =>
       setPlatformAccessLocked(...args) as Promise<void>,
     revokePlatformAccess: (...args: unknown[]) => revokePlatformAccess(...args) as Promise<void>,
+    listPlatformRepresentations: (...args: unknown[]) =>
+      listPlatformRepresentations(...args) as Promise<unknown>,
   };
 });
 
@@ -78,6 +81,7 @@ function zeige(darfVerwalten = true) {
       verhaeltnisId={MAX}
       darfVerwalten={darfVerwalten}
       zeitzone="Europe/Berlin"
+      praxis="Test Praxis Tuebingen"
     />,
   );
 }
@@ -85,6 +89,7 @@ function zeige(darfVerwalten = true) {
 describe('Abschnitt Plattform', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    listPlatformRepresentations.mockResolvedValue([]);
     invitePlatformAccess.mockResolvedValue(EINLADUNG);
     sendPlatformInvitation.mockResolvedValue(undefined);
     setPlatformAccessLocked.mockResolvedValue(undefined);

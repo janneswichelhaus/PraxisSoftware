@@ -31,7 +31,19 @@ test.describe('Plattform', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=abschnitt-aktiv`);
       await expect(page.getByText('Eingerichtet')).toBeVisible();
-      await expect(page.getByRole('button', { name: 'Sperren' })).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Sperren' }).first()).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      // POR-005: Vertretungen und das Formular mit dem Wortlaut der Einwilligung.
+      await expect(page.getByText('Paula Mustermann-Langenscheidt')).toBeVisible();
+      await page.getByRole('button', { name: 'Vertretung einrichten' }).click();
+      await expect(page.getByRole('form', { name: 'Vertretung einrichten' })).toBeVisible();
+      await page.getByLabel('Name der vertretenden Person').fill('Paula Mustermann-Langenscheidt');
+      await expect(page.getByText(/Ich möchte, dass Paula Mustermann-Langenscheidt/)).toBeVisible();
+      for (const name of [/^Begleitung/, /^Rechtliche Vertretung/]) {
+        const ziel = await page.getByRole('radio', { name }).boundingBox();
+        expect(ziel).not.toBeNull();
+      }
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=qr`);
@@ -64,6 +76,21 @@ test.describe('Plattform', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=ich`);
       await expect(page.getByRole('button', { name: 'Überall abmelden' })).toBeVisible();
+      // POR-007: wer für die Person Zugang hat, mit „Begleitung beenden".
+      await expect(page.getByRole('heading', { name: /Wer für Sie Zugang hat/ })).toBeVisible();
+      const beenden = await page.getByRole('button', { name: 'Begleitung beenden' }).boundingBox();
+      expect(beenden!.height).toBeGreaterThanOrEqual(44);
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      // POR-006: „Sie handeln für …" steht über dem Inhalt, der Schalter
+      // trennt eigenen Bereich und Begleitung.
+      await page.goto(`${PRUEFSEITE}?seite=handeln-fuer`);
+      await expect(page.getByRole('status')).toContainText(
+        'Sie handeln für Maximilian Mustermann-Langenscheidt',
+      );
+      const fuer = page.getByRole('link', { name: 'Für Maximilian Mustermann-Langenscheidt' });
+      await expect(fuer).toHaveAttribute('aria-current', 'page');
+      expect((await fuer.boundingBox())!.height).toBeGreaterThanOrEqual(44);
       expect(await ueberlaeuft(page)).toBe(false);
 
       await page.goto(`${PRUEFSEITE}?seite=gesperrt`);

@@ -66,6 +66,7 @@ verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
 | 021 | Behandlung und Training getrennt, Rechtsverhältnis, Trainingsdaten, §203    |
 | 022 | Terminkontext, Trainingsgrundlage, Trainingsprotokoll, ein Kalender         |
 | 023 | Plattformzugang: Konten, Einladung, Identität, Vertretung, Sitzung, RLS     |
+| 025 | Sitzungssperre: Frist, Inaktivität, erneute Freigabe, Passkey, Entwürfe     |
 
 ## Repository
 
@@ -73,8 +74,7 @@ Modularer Monolith nach ADR-015: Feature-Code fachlich unter `src/features/<dom�
 Microservices, keine Clean-Architecture-Schichten. Verzeichnisse: `README.md`, „Struktur".
 
 `marke/` ist die **einzige Quelle** für Wortmarke und App-Symbole (`marke/README.md`); ausgeliefert
-über byte-gleiche Kopien in `public/marke/`, die `src/marke.test.ts` festhält. Keine zweite Fassung,
-kein Umfärben.
+über byte-gleiche Kopien in `public/marke/` (`src/marke.test.ts`). Keine zweite Fassung, kein Umfärben.
 
 ## Befehle
 

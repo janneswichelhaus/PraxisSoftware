@@ -445,11 +445,15 @@ export const SEED = {
     plattformTina: '11111111-1111-4111-8111-000000000008',
     /** Plattformkonto ohne Profil, aktive Zugänge zu Erikas Behandlung und Training. */
     plattformErika: '11111111-1111-4111-8111-000000000009',
+    /** Plattformkonto ohne Profil, begleitet Max (POR-EPIC-001b). */
+    plattformPaula: '11111111-1111-4111-8111-000000000010',
   },
   platformAccesses: {
     tinaTraining: 'cafecafe-cafe-4afe-8afe-000000000001',
     erikaBehandlung: 'cafecafe-cafe-4afe-8afe-000000000002',
     erikaTraining: 'cafecafe-cafe-4afe-8afe-000000000003',
+    /** Begleitung: Paula für Max' Behandlung (POR-EPIC-001b). */
+    paulaBegleitungMax: 'cafecafe-cafe-4afe-8afe-000000000004',
   },
   patients: {
     max: '66666666-6666-4666-8666-000000000001',

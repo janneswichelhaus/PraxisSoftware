@@ -86,7 +86,10 @@ values
   -- Plattformkonten (POR-EPIC-001): ohne Profil und ohne Rolle, Zugriff nur
   -- ueber ihre Zugaenge unten (ADR-023 Punkte 2 und 3).
   ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000008', 'authenticated', 'authenticated', 'tina.plattform@patient.invalid',  extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
-  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000009', 'authenticated', 'authenticated', 'erika.plattform@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000009', 'authenticated', 'authenticated', 'erika.plattform@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', ''),
+  -- POR-EPIC-001b: Paula begleitet ihren Vater Max (ADR-023 Punkt 13). Eigenes
+  -- Konto, eigene Person; Max selbst hat keinen Zugang.
+  ('00000000-0000-0000-0000-000000000000', '11111111-1111-4111-8111-000000000010', 'authenticated', 'authenticated', 'paula.begleitung@patient.invalid', extensions.crypt('LokalerTestzugang!2026', extensions.gen_salt('bf')), now(), '{"provider":"email","providers":["email"]}', '{}', now(), now(), '', '', '', '', '', '', '', '');
 
 -- -----------------------------------------------------------------------------
 -- Organisation und Standort
@@ -556,3 +559,19 @@ insert into public.platform_accesses
   ('cafecafe-cafe-4afe-8afe-000000000003', '22222222-2222-4222-8222-000000000001',
    'training', 'eeeeeeee-eeee-4eee-8eee-000000000002', null, 'eeeeeeee-eeee-4eee-8eee-000000000002',
    '11111111-1111-4111-8111-000000000009', 'active', '11111111-1111-4111-8111-000000000003', now());
+
+-- POR-EPIC-001b: Paula Mustermann begleitet Max (Begleitung, ADR-023 Punkt 13).
+-- Nachweis: Ausweis gesehen, Einwilligung von Max auf dem Praxisgeraet
+-- bestaetigt, beides durch Olivia (Buero). Gespeichert ist kein Dokument
+-- (ANN-205), der Wortlaut steht in src/lib/vertretung.ts (ANN-206).
+insert into public.platform_accesses
+  (id, organization_id, relationship_kind, relationship_id, patient_id,
+   account_user_id, status, created_by, activated_at, access_kind, representative_name,
+   proof_documents, proof_recorded_by, proof_recorded_at,
+   consent_text_version, consent_recorded_by, consent_recorded_at, consent_earlier_messages) values
+  ('cafecafe-cafe-4afe-8afe-000000000004', '22222222-2222-4222-8222-000000000001',
+   'treatment', '66666666-6666-4666-8666-000000000001', '66666666-6666-4666-8666-000000000001',
+   '11111111-1111-4111-8111-000000000010', 'active', '11111111-1111-4111-8111-000000000003', now(),
+   'companion', 'Paula Mustermann',
+   array['identity_document'], '11111111-1111-4111-8111-000000000003', now(),
+   'begleitung-2026-10-02', '11111111-1111-4111-8111-000000000003', now(), false);

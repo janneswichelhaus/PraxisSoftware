@@ -108,6 +108,27 @@ describe('AuditLogPage', () => {
     expect(zeile).not.toHaveTextContent('Unbekannt');
   });
 
+  it('zeigt einen Zugriff ueber eine Vertretung unterscheidbar (ADR-023 Punkt 14, POR-006)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [
+        {
+          ...event('1', 'platform_representation.read', '', 1),
+          actor_kind: 'representative',
+          actor_display_name: null,
+        },
+      ],
+      totalCount: 1,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const zeile = await screen.findByRole('listitem');
+    expect(zeile).toHaveTextContent('Vertretung (Plattform)');
+    expect(zeile).toHaveTextContent('Plattform über eine Vertretung geöffnet · Patient:in');
+    expect(zeile).not.toHaveTextContent('Unbekannt');
+  });
+
   it('nennt Kontoereignisse und Textbausteine in der Sprache der Oberflaeche (ORG-20)', async () => {
     fetchAuditEvents.mockResolvedValue({
       events: [

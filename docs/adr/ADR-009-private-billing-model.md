@@ -2,14 +2,16 @@
 
 ## Status
 
-**Angenommen — Fassung 3** (2026-09-23). Fassung 1 am 2026-08-28, Fassung 2
+**Angenommen — Fassung 4** (2026-10-02). Fassung 1 am 2026-08-28, Fassung 2
 (Punkte 15 bis 20, zwei Leistungsbereiche, E18) am 2026-09-20, Fassung 3
-(Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23. Die Punkte 1 bis
-20 gelten unverändert; Punkt 13 trägt einen Erledigungsvermerk.
+(Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23, Fassung 4
+(Punkt 22, Terminhonorar; Präzisierungen an Punkt 5 und 17) am 2026-10-02 aus
+der Abnahme der Annahmen durch den Projektinhaber. Die Punkte 1 bis 21 gelten
+unverändert; Punkt 13 trägt einen Erledigungsvermerk.
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3)
+2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4)
 
 ## Kontext
 
@@ -90,6 +92,10 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 5. **Leistungskatalog und Preisvereinbarungen werden versioniert.**
    Historische Leistungen und Rechnungen dürfen durch spätere Preisänderungen
    nicht verändert werden.
+   *(Fassung 4)* Maßgeblich für den Preis einer Leistung ist die am
+   **Leistungstag** geltende **mit der Person vereinbarte Honorarregelung**;
+   nur wo keine besteht, gilt der allgemeine Tarif. Eine neue allgemeine
+   Preisliste verändert bestehende Vereinbarungen nicht von selbst.
 6. **Steuerliche Eigenschaften werden explizit pro Leistung beziehungsweise
    Leistungsversion gespeichert und nicht durch KI bestimmt.**
 7. Rechnungen besitzen mindestens die Zustände **Entwurf, ausgestellt,
@@ -142,6 +148,9 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
     **lückenlos** innerhalb seines Kalenderjahres, und **jede vergebene Nummer
     bleibt innerhalb der Organisation einmalig** — mehrere Zahlenreihen sind
     nach § 14 Abs. 4 Nr. 4 UStG ausdrücklich zulässig, doppelte Nummern nicht.
+    *(Fassung 4)* Gesetzlich verlangt ist die **Einmaligkeit**; die
+    **Lückenlosigkeit** ist eine **interne Regel der Praxis**, die Rückfragen
+    einer Prüfung vorbeugt, keine Pflicht aus § 14 UStG.
     Am ausgestellten Dokument muss erkennbar sein, aus welchem Kreis seine
     Nummer stammt. Korrektur- und Stornodokumente (Punkt 9) nehmen ihre Nummer
     aus dem Kreis der Rechnung, die sie betreffen.
@@ -184,6 +193,30 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
     Steuerkennzeichen am Posten (Punkt 15). Welches Kennzeichen Abo und Paket
     tragen, klärt die Steuerberatung (B4); bis dahin gilt eine Annahme nach
     §15.1 an genau einer Stelle.
+
+22. *(Fassung 4)* **Das Behandlungshonorar ist ein Terminhonorar.** Je
+    durchgeführtem Behandlungstermin entsteht **genau einmal** das vereinbarte
+    Sitzungshonorar (Stand 2026-10-02: 140 € je 60-Minuten-Termin,
+    einschließlich Dokumentation und Hausbesuch). Drei Größen werden
+    **getrennt** geführt und nie auseinander errechnet:
+    - **verordnete Heilmittel** mit ihren Mengen an der Behandlungsgrundlage
+      (ADR-020);
+    - **erbrachte Leistungen** je Termin, also welche Heilmittel tatsächlich
+      angewandt wurden; sie schreiben die Heilmittelmengen fort;
+    - die **Honorarberechnung**, also das Terminhonorar nach Tarif oder
+      Vereinbarung (Punkt 5).
+
+    Die Auswahl der Heilmittel (KG, MT, Hausbesuch, Doppelbehandlung)
+    **verändert den Preis nicht** von selbst. Tarife und patientenbezogene
+    Honorarvereinbarungen sind versioniert mit Gültigkeitsbeginn. Eine
+    Preisänderung verändert **keine** erfasste Leistung und **keine** Rechnung
+    (Punkt 10). Bestehende Katalogpositionen und bisherige Abrechnungen bleiben
+    erhalten und lesbar. Das Ausfallhonorar bleibt ein eigener Anlass
+    (ADR-018). **Offen** ist, wie das Honorar auf der Rechnung erscheint: als
+    eine Zeile je Termin oder aufgeteilt auf Einzelpositionen, etwa für die
+    Erstattung durch Beihilfe und private Versicherung
+    (`OPEN_DECISIONS.md` B17). Die Aufteilung ist dann Darstellung; der Betrag
+    je Termin bleibt das Terminhonorar.
 
 ## Konsequenzen
 
@@ -344,6 +377,12 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 - Wie greifen Zugriffsrechte des Office (§4.3) auf Rechnungen mit
   Leistungsangaben, solange C1 nicht entschieden ist?
 
+**Neu mit Fassung 4:**
+
+- Wie erscheint das Terminhonorar auf der Rechnung — eine Zeile oder
+  Einzelpositionen je Heilmittel —, und was verlangen Beihilfe und private
+  Versicherung für die Erstattung? (`OPEN_DECISIONS.md` B17, mit B4.)
+
 **Neu mit Fassung 2:**
 
 - Wie wird der **Grund der Steuerbefreiung** geführt — als fester Text je
@@ -369,3 +408,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | 1       | 2026-08-28 | Erstfassung, angenommen. Punkte 1 bis 14. |
 | 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
 | 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |
+| 4       | 2026-10-02 | **Punkt 22 ergänzt: Terminhonorar** — je durchgeführtem Behandlungstermin genau einmal das vereinbarte Sitzungshonorar; verordnete Heilmittel, erbrachte Leistungen und Honorarberechnung getrennt; die Heilmittelauswahl verändert den Preis nicht; Tarif und patientenbezogene Vereinbarung versioniert. **Punkt 5 präzisiert:** die mit der Person vereinbarte Regelung geht dem allgemeinen Tarif vor. **Punkt 17 präzisiert:** Lückenlosigkeit ist interne Praxisregel, gesetzlich verlangt ist die Einmaligkeit. Rechnungsdarstellung offen (B17). Anlass: Abnahme der Annahmen, Block 4 (Jannes). Punkte 1 bis 21 sonst unverändert. |

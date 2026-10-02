@@ -2,8 +2,10 @@
 
 ## Status
 
-**Angenommen** (2026-09-20), alle neun Punkte wie vorgeschlagen; fachlich
-entschieden vom Projektinhaber am 2026-09-17 (E18). Löst keinen ADR ab.
+**Angenommen — Fassung 2** (2026-10-02). Fassung 1 am 2026-09-20, alle neun
+Punkte wie vorgeschlagen; fachlich entschieden vom Projektinhaber am 2026-09-17
+(E18). Fassung 2 ergänzt Punkt 10 (Büro im Training) aus der Abnahme der
+Annahmen, Block 8. Die Punkte 1 bis 9 gelten unverändert. Löst keinen ADR ab.
 
 ## Datum
 
@@ -102,6 +104,19 @@ Aussage nicht, er wendet sie an.
 als Abkürzung benutzt. Es heißt **Physiotherapie** oder **Personal Training**,
 ausgeschrieben.
 
+**10. Das Büro liest im Training mit, schreibt aber nicht (Fassung 2).** Das
+Büro (`office`) ist im Training organisatorisch tätig (`PROJECT_PRINCIPLES.md`
+§4.8). Es liest zusätzlich das **Trainingsprotokoll** und dessen Zustand, damit
+es Rückfragen zu Terminen und Rechnungen ohne Umweg beantworten kann.
+Schreiben, Abschließen und Nachtragen bleiben bei Inhaber:in und
+Trainingsbetreuung. Jedes Lesen ist auditpflichtig nach Punkt 8. Übrige
+Screening- und Gesundheitsangaben des Trainings bleiben für das Büro gesperrt.
+Mit echten Daten gilt das Leserecht erst, wenn die DSFA es bewertet hat
+(Anfrage B2, ADR-007); bis dahin wird es mit synthetischen Daten gebaut und
+geprüft. Das ist **kein Durchgriff** im Sinne von Punkt 6: Das Büro trägt eine
+Rolle in beiden Bereichen, und gelesen wird innerhalb des Trainingsverhältnisses.
+Entschieden vom Projektinhaber am 2026-10-02 (ANN-184).
+
 ## Konsequenzen
 
 - **Die zweite Verhältnistabelle trägt das volle Fundament** aus ADR-014 und
@@ -197,4 +212,5 @@ ausgeschrieben.
 | Fassung | Datum | Änderung |
 | --- | --- | --- |
 | 1 | 2026-09-20 | Erstfassung, vorgeschlagen nach E18 (Projektinhaber, 2026-09-17); Schritt 1 von sieben. |
+| 2 | 2026-10-02 | **Punkt 10 ergänzt:** Das Büro liest Trainingsprotokolle und ihren Zustand; Schreiben und Abschließen bleiben bei Inhaber:in und Trainingsbetreuung; mit echten Daten erst nach der DSFA (B2). Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8. Anlass: Abnahme der Annahmen, Block 8 (ANN-184). Punkte 1 bis 9 unverändert. |
 </content>
