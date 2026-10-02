@@ -756,3 +756,28 @@ export function ausserhalbArbeitszeit(
 export function kachelZeilen(hoehePx: number): number {
   return Math.max(1, Math.floor((hoehePx - 10) / 16));
 }
+
+/**
+ * Belegte Zeiten einer Person an einem Kalendertag als Minutenbänder
+ * (ABN-021, BEF-112). Ein Block über Mitternacht wird an den Tagesgrenzen
+ * abgeschnitten. Reine Darstellung - ob ein Termin passt, prüft der Server.
+ */
+export function belegtBaender(
+  bloecke: readonly { staff_member_id: string; starts_at: string; ends_at: string }[],
+  staffMemberId: string,
+  tag: string,
+  zone: string,
+  minuten: (iso: string, zone: string) => number,
+  tagDes: (iso: string, zone: string) => string,
+): Zeitband[] {
+  return bloecke
+    .filter((b) => b.staff_member_id === staffMemberId)
+    .flatMap((b) => {
+      const beginnTag = tagDes(b.starts_at, zone);
+      const endeTag = tagDes(b.ends_at, zone);
+      if (beginnTag > tag || endeTag < tag) return [];
+      const von = beginnTag < tag ? 0 : minuten(b.starts_at, zone);
+      const bis = endeTag > tag ? 24 * 60 : minuten(b.ends_at, zone);
+      return bis > von ? [{ vonMinute: von, bisMinute: bis }] : [];
+    });
+}

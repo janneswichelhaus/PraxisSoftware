@@ -226,6 +226,12 @@ export interface GitterSpalte {
    */
   baender: Zeitband[] | null;
   /**
+   * Belegte Zeiten ohne Termin dahinter (ABN-021, BEF-112): Was die
+   * Trainingsbetreuung nicht als Termin lesen darf, steht als anonymer Block
+   * „belegt" da - ohne Namen, Kontext oder Zustand.
+   */
+  belegt?: readonly Zeitband[];
+  /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
    * Das Gitter kennt weiterhin weder Personen noch Daten — was der Wechsel
@@ -742,6 +748,27 @@ export function CalendarGrid({
                       />
                     ))
                   : null}
+
+                {/* Belegt, aber ohne lesbaren Termin (ABN-021, BEF-112):
+                    sichtbar, nicht ziehbar, kein Panel; die freie Fläche
+                    daneben bleibt antippbar. */}
+                {(s.belegt ?? []).map((b, i) => (
+                  <div
+                    key={`belegt-${i}`}
+                    data-testid="belegt"
+                    className="border-line-strong bg-surface-sunken text-ink-muted pointer-events-none absolute inset-x-1 overflow-hidden rounded-sm border border-dashed px-1.5 py-0.5 text-xs"
+                    style={{
+                      top: `${minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                      height: `${minuteZuPixel(b.bisMinute, fenster.vonMinute, stundenHoehe) - minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
+                    }}
+                  >
+                    belegt
+                    <span className="sr-only">
+                      {' '}
+                      {minuteZuZeit(b.vonMinute)} bis {minuteZuZeit(b.bisMinute)}
+                    </span>
+                  </div>
+                ))}
 
                 {/* Die drei Linienarten von fein nach kraeftig: die spaetere
                   Regel gewinnt bei gleicher Deckkraft nicht, aber die

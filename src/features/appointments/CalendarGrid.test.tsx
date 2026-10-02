@@ -98,3 +98,33 @@ describe('Kalender-Kachel', () => {
     expect(screen.getByTestId('kachel-status')).toHaveTextContent('! Nicht angetroffen');
   });
 });
+
+describe('Belegt-Block (ABN-021, BEF-112)', () => {
+  it('zeigt eine belegte Zeit als „belegt“ mit Uhrzeit für Vorlesesoftware, ohne Link', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Tom Training',
+            baender: [],
+            belegt: [{ vonMinute: 540, bisMinute: 600 }],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    const block = screen.getByTestId('belegt');
+    expect(block).toHaveTextContent('belegt 09:00 bis 10:00');
+    expect(block.closest('a')).toBeNull();
+    expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+});

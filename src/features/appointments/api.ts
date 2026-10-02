@@ -1426,6 +1426,32 @@ export async function fetchAppointments(query: CalendarQuery): Promise<CalendarE
   return z.array(calendarEntrySchema).parse(data ?? []);
 }
 
+const belegtSchema = z.object({
+  staff_member_id: z.string(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+});
+export type BelegtBlock = z.infer<typeof belegtSchema>;
+
+/**
+ * Belegte Zeiten, die die Trainingsbetreuung nicht als Termin sieht (ABN-021,
+ * BEF-112): je Person nur Beginn und Ende, verschmolzen, ohne jeden Kontext.
+ * Praxisrollen bekommen eine leere Liste - sie sehen die Termine selbst.
+ */
+export async function fetchBelegteZeiten(query: {
+  von: string;
+  bis: string;
+  person: string | null;
+}): Promise<BelegtBlock[]> {
+  const { data, error } = (await getSupabase().rpc('list_busy_blocks', {
+    p_from: query.von,
+    p_to: query.bis,
+    p_staff_member_id: query.person,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error('Die belegten Zeiten konnten nicht geladen werden.');
+  return z.array(belegtSchema).parse(data ?? []);
+}
+
 /**
  * Kalendertag eines Zeitpunkts in einer Zeitzone als `YYYY-MM-DD`.
  *

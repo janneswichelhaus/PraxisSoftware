@@ -7,6 +7,7 @@ import {
   ZOOMSTUFEN,
   ZOOM_STANDARD,
   arbeitszeitBaender,
+  belegtBaender,
   aufRaster,
   ausserhalbArbeitszeit,
   bereichFuer,
@@ -38,6 +39,7 @@ import {
   type Arbeitsausnahme,
   type Arbeitsblock,
 } from './calendar';
+import { dayKey, minutesOfDay } from './api';
 
 describe('Ungespeicherte Fehlzeit (KAL-20)', () => {
   const anfang = {
@@ -794,5 +796,25 @@ describe('Kalenderwoche und Monatsblatt (BEF-039)', () => {
     expect(blatt.at(-1)![6]).toBe('2027-06-06');
     expect(blatt).toHaveLength(6);
     expect(blatt.every((woche) => woche.length === 7)).toBe(true);
+  });
+});
+
+describe('belegtBaender (ABN-021, BEF-112)', () => {
+  const bloecke = [
+    { staff_member_id: 'tom', starts_at: '2027-03-10T07:00:00Z', ends_at: '2027-03-10T09:00:00Z' },
+    { staff_member_id: 'tom', starts_at: '2027-03-10T22:00:00Z', ends_at: '2027-03-11T01:00:00Z' },
+    { staff_member_id: 'anna', starts_at: '2027-03-10T10:00:00Z', ends_at: '2027-03-10T11:00:00Z' },
+  ];
+
+  it('rechnet die Blöcke einer Person in Minuten des Tages, an Mitternacht geschnitten', () => {
+    expect(
+      belegtBaender(bloecke, 'tom', '2027-03-10', 'Europe/Berlin', minutesOfDay, dayKey),
+    ).toEqual([
+      { vonMinute: 8 * 60, bisMinute: 10 * 60 },
+      { vonMinute: 23 * 60, bisMinute: 24 * 60 },
+    ]);
+    expect(
+      belegtBaender(bloecke, 'tom', '2027-03-11', 'Europe/Berlin', minutesOfDay, dayKey),
+    ).toEqual([{ vonMinute: 0, bisMinute: 2 * 60 }]);
   });
 });
