@@ -255,6 +255,8 @@ describe('Audit-Lesepfad', () => {
       'list_ending_prescriptions',
       'list_event_participants',
       'list_event_series',
+      // ABN-004: die kuenftigen Hausbesuche mit alter Adresse (owner, office).
+      'list_home_visits_with_outdated_address',
       'list_invoice_candidates',
       'list_invoice_payments',
       'list_invoice_recipients',

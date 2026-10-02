@@ -408,15 +408,18 @@ insert into public.appointments (
 -- lange vor heute, von Anna durchgefuehrt und abgeschlossen, ohne Dokumentation
 -- (ein `completed` ohne finalisierte Dokumentation zaehlt als genutzt).
 -- Ueber 30 Tage zurueck, damit keine Tages-, Wochen- oder Kennzahlensicht sie
--- aufnimmt.
+-- aufnimmt. Feste Kennungen mit dem Praefix der Seed-Termine (aaaaaaaa-...),
+-- damit die Test-Umgebung sie von den Terminen ihrer Praxiswoche unterscheidet
+-- (scripts/testumgebung.mjs, supabase/tests/testumgebung.test.ts).
 -- -----------------------------------------------------------------------------
 insert into public.appointments (
-  organization_id, patient_id, staff_member_id, treatment_basis_id,
+  id, organization_id, patient_id, staff_member_id, treatment_basis_id,
   appointment_type, status, starts_at, ends_at,
   visit_street, visit_house_number, visit_postal_code, visit_city,
   completed_at, completed_by
 )
 select
+  ('aaaaaaaa-aaaa-4aaa-8aaa-' || lpad((100 + row_number() over (order by g.patient, g.tage desc))::text, 12, '0'))::uuid,
   '22222222-2222-4222-8222-000000000001', g.patient, '55555555-5555-4555-8555-000000000002', g.grundlage,
   'home_visit', 'completed',
   (current_date - g.tage + time '09:00') at time zone 'Europe/Berlin',
