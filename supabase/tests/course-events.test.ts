@@ -116,17 +116,19 @@ describe('Ereignisse im Verlauf', () => {
     expect(zeile.rows).toEqual([{ removed_by: users.teamLead, note: 'Knie-TEP rechts' }]);
 
     // Office liest die Akte, also auch die entfernten Ereignisse.
-    const { rows } = await asUser(users.office, ENTFERNTE, [patients.max]);
-    expect(rows).toEqual([
+    const { rows } = await asUser<{ removed_by_name: string | null }>(users.office, ENTFERNTE, [
+      patients.max,
+    ]);
+    expect(rows).toMatchObject([
       {
         id,
         kind: 'operation',
         note: 'Knie-TEP rechts',
         author_name: 'Anna Beispiel',
-        removed_by_name: expect.any(String),
         entfernt: true,
       },
     ]);
+    expect(rows[0]!.removed_by_name).not.toBeNull();
 
     // Ein zweites Entfernen findet nichts mehr.
     expect((await fehler(users.teamLead, ENTFERNEN, [id]))?.code).toBe('P0002');

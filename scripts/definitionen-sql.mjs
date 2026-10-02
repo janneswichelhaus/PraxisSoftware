@@ -46,11 +46,13 @@ export async function sammleDefinitionen(verzeichnis = SCORES) {
   for (const unter of ['', 'archiv']) {
     let namen;
     try {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade unter dem Repository, fest im Quelltext.
       namen = await readdir(join(verzeichnis, unter));
     } catch {
       continue;
     }
     for (const name of namen.filter((n) => n.endsWith('.json')).sort()) {
+      // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade unter dem Repository, fest im Quelltext.
       const roh = JSON.parse(await readFile(join(verzeichnis, unter, name), 'utf8'));
       const json = JSON.stringify(roh);
       fassungen.push({
@@ -163,6 +165,7 @@ export function naechsterZeitstempel(dateinamen, jetzt = new Date()) {
 
 export async function pruefen() {
   const dateinamen = (await readdir(MIGRATIONEN)).filter((n) => n.endsWith('.sql')).sort();
+  // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade unter dem Repository, fest im Quelltext.
   const texte = await Promise.all(dateinamen.map((n) => readFile(join(MIGRATIONEN, n), 'utf8')));
   const ergebnis = fehlendeMigration(
     await sammleDefinitionen(),
@@ -182,6 +185,7 @@ if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
     console.log('Alle Fassungen der Fragebögen sind als Migration eingetragen.');
   } else if (process.argv.includes('--schreiben')) {
     const name = `${naechsterZeitstempel(dateinamen)}_questionnaire_definitions.sql`;
+    // eslint-disable-next-line security/detect-non-literal-fs-filename -- Pfade unter dem Repository, fest im Quelltext.
     await writeFile(join(MIGRATIONEN, name), sql);
     console.log(`Neue Migration: supabase/migrations/${name}`);
   } else {
