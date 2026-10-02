@@ -3323,3 +3323,54 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 **Beobachtung.** „Doku offen“ bzw. „Dokumentation fehlt“ hängt in der Oberfläche am **Schreibrecht**. Das Büro sieht beides nicht, ebenso wenig an fremden Terminen den Dokumentationsstatus und den Link zum Lesen. Dabei liest es nach ADR-004 Fassung 2 alle Dokumentation einschließlich Verlauf.
 
 **Erwartet.** Ein zentrales Leserecht für Dokumentation, eine Regel für Akte, Terminansicht, Kalender und Übersicht, ohne eigene Einschränkungen je Oberfläche. Gemeint ist eine Funktion in der Datenbank und eine im Client, geprüft gegen dieselbe Rollenliste. Sichtbarkeit von Status, „Doku offen“ und Lese-Links folgt dem Leserecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen (ADR-016). Gilt auch für fremde Termine.
+
+### BEF-096 — Das Kontingent zählt genutzte Termine aus der größten Leistungsmenge und verplant Nichtantreffen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage, Kontingent („noch 3 von 10“, gedeckt/ungedeckt), Erinnerungen, Statistik |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-042, ANN-067); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | ANN-042, ANN-064, ANN-067, ANN-073; `app.treatment_basis_slot_counts` in `20260918140000_appointment_coverage.sql`; Nutzer in `20260929210000_prx_016_reminders.sql`, `20260929230000_sta_001_practice_statistics.sql` |
+
+**Beobachtung.** Zwei Fehler in derselben Funktion:
+- **Genutzt** ist `max(used_quantity)` über die Positionen der Grundlage, also eine Leistungsmenge. Werden je Termin verschiedene Heilmittel abgerechnet (Termin 1 KG, Termin 2 MT), zählt das einen genutzten Termin statt zwei.
+- **Verplant und gedeckt** zählen jeden nicht abgesagten Termin, also auch einen mit „nicht angetroffen“. Ein Nichtantreffen belegt damit das Kontingent.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Terminzahl und Leistungsmenge bleiben getrennte Größen (ANN-064, ANN-073).
+- **Genutzt** zählt Behandlungstermine: Termine der Grundlage, die durchgeführt sind (durchgeführt, dokumentiert, abgerechnet). Mehrere Heilmittel oder eine Doppelbehandlung im selben Termin zählen einmal.
+- Ausgeschöpft heißt genutzt ≥ möglich. Gebuchte Termine sind nur verplant.
+- Abgesagte und nicht angetroffene Termine belegen und verbrauchen kein Kontingent; ein Ausfallhonorar bleibt davon getrennt.
+- Überplanung bleibt als ungedeckt sichtbar.
+- Die Leistungsmenge je Position (`used_quantity`) zählt weiter die Abrechnung (ANN-073).
+- Tests mit gemischten Heilmitteln je Termin und mit Nichtantreffen.
+
+### BEF-097 — Eine Terminübertragung lässt erfasste, nicht abgerechnete Leistungen bei der alten Grundlage
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage, „Termine übertragen“; Leistungserfassung |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-068); Codeprüfung Claude, 2026-10-02 |
+| Status  | offen |
+| Berührt | ANN-068, ANN-073; `transfer_appointments_to_treatment_basis` (`20260920106000_transfer_guard_billable_services.sql`), `billable_services` mit Verweis auf die Position |
+
+**Beobachtung.** Die Übertragung schließt Termine mit abgerechneter Leistung aus, wie gewollt. Hat ein übertragener Termin aber schon eine **erfasste, nicht abgerechnete** Leistung, zeigt diese weiter auf die Position der alten Grundlage, und deren `used_quantity` bleibt dort verbraucht (ANN-073 hält die Wirkung bewusst an der Leistung fest). Terminzuordnung, Leistungszuordnung und Kontingentverbrauch passen danach nicht mehr zusammen.
+
+**Erwartet.** Übertragen werden dürfen auch durchgeführte Termine, als nachvollziehbare Zuordnungskorrektur mit Auditeintrag. Abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen ziehen in derselben Transaktion mit: Sie bekommen die passende Position der Zielgrundlage, die genutzte Menge wandert von alt nach neu. Gibt es dort keine passende Position, wird mit einem verständlichen Grund abgewiesen, statt still zu trennen. Test für alle drei Fälle.
+
+### BEF-098 — Behandlungsrelevante Hinweise aus einer Verordnung haben keinen klinischen Ort mehr
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Behandlungsgrundlage (Verordnung), klinische Projektion |
+| Quelle  | Jannes, Abnahme der Annahmen Block 3 (ANN-065) |
+| Status  | offen |
+| Berührt | ANN-065; `treatment_bases.prescriber_note` (klinisch, keine neue Eingabe), `treatment_bases.note` (organisatorisch); ADR-020, ADR-004 Fassung 2 |
+
+**Beobachtung.** Seit ANN-065 schreibt das Formular nur noch „Anmerkungen“ (organisatorisch). Der klinische „Hinweis der Verordner:in“ nimmt nichts Neues an. Ein behandlungsrelevanter Hinweis aus einer neuen Verordnung (etwa „keine Belastung über 20 kg“, „Therapieziel …“) hat damit keinen klinischen Ort.
+
+**Erwartet.** Ein klinisches Feld an der Grundlage für behandlungsrelevante Hinweise. Naheliegend ist, `prescriber_note` für neue Eingaben wieder zu öffnen, getrennt von den organisatorischen „Anmerkungen“ und klar beschriftet. Schreiben dürfen die behandelnden Rollen. Das Büro liest es wie die Therapeut:innen (ADR-004 Fassung 2), über dasselbe zentrale Leserecht wie BEF-095.

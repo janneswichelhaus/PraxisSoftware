@@ -237,7 +237,7 @@ Praxisprozess · verworfen · 2026-09-19 · ANN-064, ANN-073 · erledigt · Wied
 
 ### ANN-013 — Datenklasse und Frist der Verordnerkartei
 
-Datenschutz · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess (Verzeichnis der Verarbeitungstätigkeiten)
 
 **Annahme.** `prescribers` enthält berufliche Kontaktdaten Dritter und ist kein Gesundheits- und kein Patientendatum — erst die Verordnung stellt den Bezug her. Datenklasse: Stammdaten, aufbewahrt, solange eine Verordnung darauf verweist (`on delete restrict`). Sichtbar für alle vier Praxisrollen, nicht für Patientenkonten; erfasst wird nur, was Identifikation und Folgeverordnung brauchen — keine Arztnummer, keine Betriebsstättennummer.
 
@@ -245,11 +245,11 @@ Datenschutz · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Tabelle `public.prescribers` mit Tabellenkommentar und Policy `prescribers_select_staff_only` in `supabase/migrations/20260907110000_prescriptions.sql`; Formularfelder in `src/features/treatment-bases/PrescriberFormFields.tsx`.
 
-**Änderungspfad.** Eigene Löschregel oder kürzere Frist: Regel in LOE-001 ergänzen · Aufwand `klein`, solange keine Verordnung verweist. Information nach Art. 14 DSGVO: Textbaustein in G8/G14 · Aufwand `klein`, außerhalb des Codes.
+**Änderungspfad.** Eigene Löschregel oder kürzere Frist: Regel in LOE-001 ergänzen · Aufwand `klein`, solange keine Verordnung verweist. Information nach Art. 14 DSGVO: Textbaustein in G8/G14 · Aufwand `klein`, außerhalb des Codes. **Abnahme (Jannes, 2026-10-02):** bestätigt; berufliche Kontaktdaten sind personenbezogene Stammdaten, für sich keine Gesundheitsdaten.
 
 ### ANN-014 — „Empfehlung zum Verordnungsende" ist eine erfasste Angabe, keine Systemempfehlung
 
-Recht · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7). Seit DOK-005 (2026-09-26) wird die Empfehlung im Therapiebericht geschrieben, mit Verfasser:in und Tag
+Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; B1 (externe MDR-Abgrenzung, ADR-006 Punkt 7). Seit DOK-005 (2026-09-26) wird die Empfehlung im Therapiebericht geschrieben, mit Verfasser:in und Tag
 
 **Annahme.** Das Feld „Empfehlung zum Verordnungsende" nimmt die Empfehlung der Therapeut:in auf, die sie selbst formuliert und verantwortet; die Anwendung erzeugt, ergänzt und bewertet sie nicht. Daneben zeigt sie ausschließlich eine Rechnung („noch 3 von 10") und, wenn nichts mehr offen ist, den neutralen Sachsatz „Kontingent ausgeschöpft" — keine Handlungsempfehlung, keine Prognose, keine Ampel, keine Erinnerung.
 
@@ -257,7 +257,7 @@ Recht · offen · 2026-09-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 **Anker.** Spalte `treatment_bases.follow_up_recommendation` mit Spaltenkommentar in `supabase/migrations/20260918120000_treatment_basis.sql`; Bestandstext im Formular in `src/features/treatment-bases/TreatmentBasisFormFields.tsx` (seit VER-EPIC-002 nicht mehr neu erfassbar, ANN-065); Darstellung von Empfehlung und Restkontingent in `src/features/treatment-bases/PatientTreatmentBasesPage.tsx`, der Sachsatz „Kontingent ausgeschöpft“ in `src/features/appointments/AppointmentSeriesPage.tsx`; seit DOK-005 die Spalte `therapy_reports.recommendation` in `supabase/migrations/20260926140000_dok_005a_therapy_reports.sql` und ihre Anzeige an der Verordnung in `src/features/therapy-reports/BerichteDerVerordnung.tsx`.
 
-**Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der Oberfläche · Aufwand `klein`. Feld ganz entfernen: Spalte und Formularfeld zurückbauen · Aufwand `klein`. Eine automatische Erinnerung oder Bewertung wäre keine Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10.
+**Änderungspfad.** Feld oder Sachsatz anders beschriften: eine Stelle in der Oberfläche · Aufwand `klein`. Feld ganz entfernen: Spalte und Formularfeld zurückbauen · Aufwand `klein`. Eine automatische Erinnerung oder Bewertung wäre keine Änderung dieser Annahme, sondern `MDR_REVIEW_REQUIRED` nach ADR-006 Punkt 6 und ein eigenes Epic nach B9 und B10. **Abnahme (Jannes, 2026-10-02):** bestätigt; Empfehlungen stammen von der Therapeut:in, die App zeigt nur den organisatorischen Kontingentstand.
 
 ### ANN-015 — Umfang und Wortlaut der Verbindungsanzeige
 
@@ -397,7 +397,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-026 — Datenklasse und Frist der Einladung
 
-Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (die Frist); die Klasse steht seit LOE-001a im Retention Schedule
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (die Frist); die Klasse steht seit LOE-001a im Retention Schedule
 
 **Annahme.** Eine Einladung (`public.staff_account_invitations`) ist ein Zugangs- und Authentifizierungsdatum, kein Gesundheits- und kein Beschäftigtendatum im Sinne von §20. Frist: 12 Monate nach Abschluss des Vorgangs, wie „Normale Authentifizierungs- und Securitylogs" in ADR-008. Die Gültigkeit einer offenen Einladung beträgt 14 Tage; sie läuft ab, statt aufgeräumt zu werden — kein Hintergrundjob, kein unbeobachtet kippender Zustand.
 
@@ -407,7 +407,7 @@ Datenschutz · offen · 2026-09-11 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Andere Gültigkeit: ein Intervall · Aufwand `klein`. Andere Aufbewahrung: die Zeile `zugangseinladung` in `public.retention_classes` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-02).** 14 Tage Gültigkeit bestätigt. Die zwölf Monate hat Jannes zur Prüfung zurückgegeben. **Prüfergebnis (Claude, 2026-10-02), zu bestätigen:** Der Berechtigungsnachweis hängt nicht an der Einladung. Die Auditeinträge `staff_account.invited` (wer, welche Rollen), `.invitation_accepted` (welches Konto) und `.roles_changed` tragen ihn selbst, verweisen auf die Mitarbeiterin statt auf die Einladung und gelten drei Jahre (ANN-029). Die Einladung trägt danach nur die Adresse, ein Kontaktdatum, für das zwölf Monate zur Datenminimierung passen. Anders bei der Plattform (ADR-023 Punkt 5): Dort steht der Nachweis nur an Zugang und Einladung, deshalb drei Jahre. Vorschlag: Einladung zwölf Monate, Nachweis im Auditlog drei Jahre — getrennt, wie heute gebaut, kein Code.
+**Abnahme (Jannes, 2026-10-02).** 14 Tage Gültigkeit bestätigt. Die zwölf Monate hat Jannes zur Prüfung zurückgegeben. **Prüfergebnis (Claude, 2026-10-02), zu bestätigen:** Der Berechtigungsnachweis hängt nicht an der Einladung. Die Auditeinträge `staff_account.invited` (wer, welche Rollen), `.invitation_accepted` (welches Konto) und `.roles_changed` tragen ihn selbst, verweisen auf die Mitarbeiterin statt auf die Einladung und gelten drei Jahre (ANN-029). Die Einladung trägt danach nur die Adresse, ein Kontaktdatum, für das zwölf Monate zur Datenminimierung passen. Anders bei der Plattform (ADR-023 Punkt 5): Dort steht der Nachweis nur an Zugang und Einladung, deshalb drei Jahre. Vorschlag: Einladung zwölf Monate, Nachweis im Auditlog drei Jahre — getrennt, wie heute gebaut, kein Code. **Abnahme (Jannes, 2026-10-02):** bestätigt unter der Trennung: Einladung zwölf Monate nach Abschluss; der vollständige, davon unabhängige Berechtigungsnachweis steht drei Jahre im Auditlog.
 
 ### ANN-027 — Mindestlänge des Kennworts: 12 Zeichen, keine Zeichenklassen
 
@@ -599,7 +599,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-042 — Wann eine Verordnung ausgeschöpft ist
 
-Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach den ersten Praxiswochen; die genutzte Menge kommt seit ABR-EPIC-001 aus der Leistungserfassung (ANN-073)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Praxiswochen; die genutzte Menge kommt seit ABR-EPIC-001 aus der Leistungserfassung (ANN-073)
 
 **Ablösung.** ersetzt ANN-012 in der Frage, wann eine Verordnung ausgeschöpft ist · **ANN-064** ersetzt die Bezugsgröße: gezählt werden seit VER-EPIC-002 Termine
 
@@ -609,7 +609,7 @@ Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach
 
 **Anker.** `verordnungszustand()` in `src/features/treatment-bases/grundlagen.ts` — die eine Stelle, an der die Regel steht; Tests in `src/features/treatment-bases/PatientTreatmentBasesPage.test.tsx`.
 
-**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration.
+**Änderungspfad.** Schwelle ändern (etwa „ausgeschöpft erst, wenn jeder Termin stattgefunden hat"): `verordnungszustand()` · Aufwand `klein`. Ablauf nach Zeit ergänzen: Feld `valid_until` an `prescriptions`, im Formular und in `create/update_prescription` gepflegt · Aufwand `mittel`, mit Migration. **Abnahme (Jannes, 2026-10-02):** bestätigt mit Präzisierung: ausgeschöpft bei genutzte ≥ mögliche **Behandlungstermine**; gebuchte Termine sind nur verplant; mehrere Heilmittel oder Doppelbehandlung erzeugen keine weiteren Termine; kein Ablauf nach Zeit. Die heutige Zählung aus der größten Positionsmenge zählt zu wenig — BEF-096.
 
 ### ANN-043 — Auth-Links werden über den `token_hash` eingelöst, nicht über eine Sitzung in der Adresszeile
 
@@ -859,7 +859,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-18 · Jannes · Prüfpaket · Wie
 
 ### ANN-062 — Die Adresse der Akte behält `verordnungen`, die Beschriftung nicht
 
-Technik · offen · 2026-09-18 · — · — · Wiedervorlage: sobald ein Loop die Routen der Akte ohnehin anfasst — AKTE-006 hat sie nicht angefasst
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: sobald ein Loop die Routen der Akte ohnehin anfasst — AKTE-006 hat sie nicht angefasst
 
 **Annahme.** Die sichtbaren Beschriftungen folgen ADR-020 Punkt 7 — der Bereich der Akte heißt „Behandlungsgrundlagen", die einzelne Karte nennt ihre Bauart. Das **Adressfragment bleibt** `/patienten/:id/verordnungen` (samt `…/neu`, `…/:id/bearbeiten`, `…/:id/serie` und dem Filter `?verordnung=` an den Terminen), ebenso die Sprungmarke `#verordnung-<id>`.
 
@@ -867,7 +867,7 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: sobald ein Loop d
 
 **Anker.** Die Routen unter `/patienten/:patientId/verordnungen` in `src/routes/AuthenticatedRoutes.tsx`; der Bereichseintrag in `src/features/patients/akte.ts` trägt die Beschriftung neben demselben Pfad.
 
-**Änderungspfad.** Adressfragment mitziehen: die vier Routen in `AuthenticatedRoutes.tsx`, `zurueck`/`verordnerRueckpfad` in `TreatmentBasisFormPage.tsx`, die Links in `PatientTreatmentBasesPage.tsx` und `PatientAppointmentsPage.tsx`, der Parametername `verordnung` im Kalenderstand, dazu die angemeldeten E2E-Tests · Aufwand `klein`, aber jedes bestehende Lesezeichen läuft ins Leere; sinnvoll nur zusammen mit einem Loop, der diese Seiten ohnehin öffnet.
+**Änderungspfad.** Adressfragment mitziehen: die vier Routen in `AuthenticatedRoutes.tsx`, `zurueck`/`verordnerRueckpfad` in `TreatmentBasisFormPage.tsx`, die Links in `PatientTreatmentBasesPage.tsx` und `PatientAppointmentsPage.tsx`, der Parametername `verordnung` im Kalenderstand, dazu die angemeldeten E2E-Tests · Aufwand `klein`, aber jedes bestehende Lesezeichen läuft ins Leere; sinnvoll nur zusammen mit einem Loop, der diese Seiten ohnehin öffnet. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-063 — Der Löschjournaleintrag wandert beim Umbenennen einer Tabelle mit
 
@@ -895,11 +895,11 @@ Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wie
 
 **Anker.** Spalte `appointment_count` samt Kommentar und die Ableitung für den Bestand in `supabase/migrations/20260918130000_appointment_count.sql`; dort auch `app.treatment_basis_slot_counts` (die drei Zahlen) und `app.write_treatment_base_items` (Mengen bleiben stehen). In der Oberfläche `treatmentBasisFormSchema` und `rpcPositionen` in `src/features/treatment-bases/api.ts`.
 
-**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück.
+**Änderungspfad.** Leistungsmenge wieder von Hand pflegen: ein Zahlenfeld je angehaktem Heilmittel im Formular, `rpcPositionen` schickt die Menge mit — der Schreibpfad nimmt sie bereits entgegen · Aufwand `klein`. Terminzahl wieder aus den Positionen ableiten: `app.treatment_basis_slot_counts` und die Spalte zurückbauen · Aufwand `mittel`, und der Befund von 2026-09-13 wäre zurück. Abgleich (2026-10-02, Abnahme Block 3): Terminzahl und Leistungsmenge bleiben getrennt; „genutzt“ an der Grundlage wird künftig aus durchgeführten Terminen gezählt, nicht aus `used_quantity` — BEF-096.
 
 ### ANN-065 — „Anmerkungen" ist das organisatorische Feld, der Verordnerhinweis bleibt Bestand
 
-Datenschutz · offen · 2026-09-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Jannes, sobald er eine Weile Verordnungen erfasst hat
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; Jannes, sobald er eine Weile Verordnungen erfasst hat
 
 **Annahme.** Das eine Textfeld „Anmerkungen" schreibt in die **organisatorische** Spalte `treatment_bases.note` — für beide Bauarten, in beiden Projektionen, für alle vier Praxisrollen sichtbar. Der klinische `prescriber_note` („Hinweis der Verordner:in") nimmt **keine neue Eingabe** mehr entgegen; ein vorhandener Text bleibt stehen, wird mit seiner Herkunft angezeigt und niemals zusammengeführt, überschrieben oder vervielfacht. Dasselbe gilt für `therapy_goal` und `follow_up_recommendation`.
 
@@ -907,11 +907,11 @@ Datenschutz · offen · 2026-09-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Das Feld „Anmerkungen" auf `note` in `src/features/treatment-bases/TreatmentBasisFormFields.tsx`, die Beschriftung in `src/features/treatment-bases/grundlagenfelder.ts`; die Bestandstexte liefert `bestandstexte()` in `src/features/treatment-bases/api.ts`, und `public.update_treatment_basis` in `supabase/migrations/20260918130000_appointment_count.sql` fasst die drei Spalten nicht an.
 
-**Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück.
+**Änderungspfad.** „Anmerkungen" auf `prescriber_note` legen: das Feld im Formular umhängen, den Parameter in beiden Schreibpfaden wieder aufnehmen, ein zweites Feld für den Selbstzahler vorsehen · Aufwand `klein` bis `mittel`. Bestandstexte ganz entfernen: `bestandstexte()` streichen und die drei Spalten in einer Migration leeren · Aufwand `klein`, aber ein Textverlust ohne Weg zurück. **Abnahme (Jannes, 2026-10-02):** organisatorische Anmerkungen und Erhalt der Bestandstexte bestätigt. Neue behandlungsrelevante Hinweise brauchen weiterhin einen klinischen Ort, den das Büro liest wie die Therapeut:innen — BEF-098.
 
 ### ANN-066 — Der Heilmittelkatalog ist eine Liste im Code, kein gepflegter Stammdatensatz
 
-Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald ein Heilmittel fehlt; der Leistungskatalog aus ABR-EPIC-001 ist eine eigene Preisliste und trifft das Heilmittel über seine Katalogposition (ANN-073)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, sobald ein Heilmittel fehlt; der Leistungskatalog aus ABR-EPIC-001 ist eine eigene Preisliste und trifft das Heilmittel über seine Katalogposition (ANN-073)
 
 **Annahme.** Die vordefinierte Heilmittelauswahl steht als fünf Einträge in `src/features/treatment-bases/heilmittel.ts`: Krankengymnastik, KG als Doppelbehandlung, Manuelle Therapie, MT als Doppelbehandlung, Hausbesuch. Jeder Eintrag ist ein eigenes Kästchen und schließt keinen anderen aus. Die **Datenbank prüft den Wert nicht**: Ein Heilmittel außerhalb der Liste bleibt gültig, wird im Formular als angehakter Bestandseintrag mit seiner Menge angezeigt und verschwindet nur, wenn jemand es ausdrücklich abhakt.
 
@@ -919,11 +919,11 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald ei
 
 **Anker.** `HEILMITTEL` und `istBestand()` in `src/features/treatment-bases/heilmittel.ts`.
 
-**Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`.
+**Änderungspfad.** Weiteres Heilmittel: eine Zeile in `heilmittel.ts` · Aufwand `klein`. Eintrag entfernen: dieselbe Zeile streichen — vorhandene Positionen bleiben als Bestand stehen · Aufwand `klein`. Echte Katalogtabelle mit Preisen: gehört zu ABR-001, dort mit Versionierung und Steuerkennzeichen (ADR-009) · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt; der Verzicht auf eine Liste in der Datenbank hebt die serverseitige Prüfung von Pflichtfeldern, Mengen und Berechtigungen nicht auf.
 
 ### ANN-067 — Gedeckt sind die frühesten Termine einer Grundlage, gezählt statt zugeteilt
 
-Praxisprozess · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes nach den ersten Wochen mit Dauerterminen; die Leistungserfassung prüft die Deckung nicht, ihre Grenze ist die Constraint an der Position (ANN-073)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Wochen mit Dauerterminen; die Leistungserfassung prüft die Deckung nicht, ihre Grenze ist die Constraint an der Position (ANN-073)
 
 **Annahme.** Ob eine Behandlungsgrundlage einen Termin trägt, ist **gerechnet und nicht gespeichert**: Die nicht abgesagten Termine einer Grundlage werden nach Beginn geordnet (bei gleichem Beginn nach Kennung), die ersten `appointment_count` gelten als gedeckt, jeder weitere als geplant, aber ungedeckt. Ein abgesagter Termin macht keine Aussage — er verbraucht nichts, und sein Platz rückt an den nächsten weiter. Ein Termin ohne Grundlage ist nicht ungedeckt, sondern ungebunden. Die Zahlen `covered` und `uncovered` an der Grundlage sind dieselbe Rechnung als Summe.
 
@@ -931,11 +931,11 @@ Praxisprozess · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes nach
 
 **Anker.** `app.appointment_is_covered` und die beiden Ausgaben `covered`/`uncovered` in `app.treatment_basis_slot_counts`, beide in `supabase/migrations/20260918140000_appointment_coverage.sql`.
 
-**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038.
+**Änderungspfad.** Andere Reihenfolge (etwa Anlagedatum statt Beginn): die `order by`-Entsprechung in `app.appointment_is_covered` ändern · Aufwand `klein`. Echte Zuteilung je Termin: eine Spalte an `appointments`, Pflege in jedem Schreibpfad samt Absage und Übertragung · Aufwand `groß`. Abgesagte mitzählen: die Bedingung `status <> 'cancelled'` an beiden Stellen streichen · Aufwand `klein`, widerspricht aber ANN-038. **Abnahme (Jannes, 2026-10-02):** berechnete Deckung nach zeitlicher Reihenfolge bestätigt. Abgesagte **und nicht angetroffene** Termine belegen und verbrauchen kein Kontingent (heute zählt Nichtantreffen mit — BEF-096); Ausfallhonorar getrennt; Überplanung bleibt ungedeckt sichtbar.
 
 ### ANN-068 — Übertragen wird jeder Termin derselben Patient:in außer abgesagt und abgerechnet
 
-Praxisprozess · offen · 2026-09-18 · — · — · Wiedervorlage: keine eigene — seit R3-001 prüft die Übertragung zusätzlich die Leistungszeile (`20260920106000_transfer_guard_billable_services.sql`)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: keine eigene — seit R3-001 prüft die Übertragung zusätzlich die Leistungszeile (`20260920106000_transfer_guard_billable_services.sql`)
 
 **Annahme.** `transfer_appointments_to_treatment_basis` nimmt jeden Termin an, der zur Patient:in der **Zielgrundlage** gehört und weder `cancelled` noch `invoiced` ist — auch einen vergangenen oder bereits durchgeführten. Die Patient:in kommt aus der Zielgrundlage und nicht vom Aufrufer. Das **Kontingent des Ziels wird nicht geprüft**: Die Übertragung darf es überschreiten, und was dann nicht mehr gedeckt ist, zeigt die Akte (ANN-067). Alles oder nichts; ein einziger unzulässiger Termin lässt den ganzen Vorgang scheitern. Die Oberfläche bietet davon nur die **ungedeckten künftigen** Termine an. `updated_at` bleibt unberührt, der Mitteilungsvermerk gilt weiter.
 
@@ -943,11 +943,11 @@ Praxisprozess · offen · 2026-09-18 · — · — · Wiedervorlage: keine eigen
 
 **Anker.** Die Bedingung `status not in ('cancelled', 'invoiced')` in `public.transfer_appointments_to_treatment_basis`, `supabase/migrations/20260918140000_appointment_coverage.sql`; das Angebot der Oberfläche in `angebot` in `src/features/treatment-bases/TermineUebertragenPage.tsx`.
 
-**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen.
+**Änderungspfad.** Weitere Zustände ausschließen: die Liste in der Funktion ergänzen und den Testfall spiegeln · Aufwand `klein`. Kontingent des Ziels doch prüfen: eine Abfrage vor dem Schreiben, Fehlermeldung mit Zahl · Aufwand `klein`, widerspricht aber CAL-022. Die Leistungsprüfung steht seit R3-001 neben der Zustandsprüfung; sie zurückzunehmen hieße, abgerechnete Termine wieder übertragbar zu machen. **Abnahme (Jannes, 2026-10-02):** Übertragung samt Überplanung und durchgeführter Termine als nachvollziehbare Zuordnungskorrektur bestätigt; abgerechnete Leistungen bleiben ausgeschlossen. Erfasste, nicht abgerechnete Leistungen müssen mitziehen, damit Termin, Leistung und Verbrauch zusammenpassen — BEF-097.
 
 ### ANN-069 — Die Akte gruppiert Termine je Richtung, nicht über beide hinweg
 
-Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald er die Akte einer Person mit mehreren Verordnungen im Alltag benutzt
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, sobald er die Akte einer Person mit mehreren Verordnungen im Alltag benutzt
 
 **Annahme.** Der Terminbereich der Akte behält die beiden Abschnitte „Kommende Termine" und „Vergangene Termine" und gruppiert **innerhalb** jedes Abschnitts nach Behandlungsgrundlage: je Grundlage eine Überschrift mit Bauart und Ausstellungsdatum, daneben ihre Deckung, darunter ihre Termine. Termine ohne Grundlage stehen in einem eigenen, so benannten Abschnitt am Ende. Die Reihenfolge der Gruppen ist die des Bereichs „Behandlungsgrundlagen" (neueste zuerst). Gruppiert wird, was geladen ist; die Deckungszahlen kommen vom Server und zählen immer alle Termine der Grundlage.
 
@@ -955,7 +955,7 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald er
 
 **Anker.** `gruppiere()` und `Gruppenkopf` in `src/features/appointments/PatientAppointmentsPage.tsx`.
 
-**Änderungspfad.** Grundlage als oberste Ebene: `Terminliste` je Gruppe zweimal aufrufen, Cursor je Gruppe und Richtung · Aufwand `mittel`. Gruppierung ganz zurücknehmen: `gruppiere()` streichen, die flache Liste mit dem Grundlagenlink je Zeile steht in der Historie · Aufwand `klein`.
+**Änderungspfad.** Grundlage als oberste Ebene: `Terminliste` je Gruppe zweimal aufrufen, Cursor je Gruppe und Richtung · Aufwand `mittel`. Gruppierung ganz zurücknehmen: `gruppiere()` streichen, die flache Liste mit dem Grundlagenlink je Zeile steht in der Historie · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-070 — Die Katalogversion ist eine eingefrorene Preisliste, die Leistung verweist auf ihre Position
 
@@ -1007,7 +1007,7 @@ Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 
 
 **Anker.** Spalte `billable_services.treatment_base_item_id` sowie die beiden `update public.treatment_base_items`-Blöcke in `record_billable_services` und `delete_billable_services` in `supabase/migrations/20260919110000_billable_services.sql`.
 
-**Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5.
+**Änderungspfad.** Fortschreibung zurücknehmen: die beiden Blöcke streichen, die Spalte bleibt als Nachweis · Aufwand `klein`. Über das Kontingent hinaus abrechnen zulassen: die Constraint `treatment_base_items_used_within_prescribed` · Aufwand `klein` — widerspräche ADR-020 Punkt 5. Abgleich (2026-10-02, Abnahme Block 3): `used_quantity` bleibt die Leistungsmenge der Abrechnung, nicht die Zahl genutzter Termine (BEF-096); bei einer Terminübertragung zieht sie mit der Leistung um (BEF-097).
 
 ### ANN-074 — Die Praxis-Stammdaten sind Pflichtangaben, der Umsatzsteuerstatus wird nicht geraten
 
