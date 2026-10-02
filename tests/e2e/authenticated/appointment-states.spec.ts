@@ -74,14 +74,14 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
 
-    await page.getByLabel('Absagegrund').selectOption('moved');
+    await page.getByLabel('Absagegrund').selectOption('practice_moved');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
-    await expect(detailWert(page, 'Absagegrund')).toContainText('Termin verlegt');
+    await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
 
     await page.reload();
-    await expect(detailWert(page, 'Absagegrund')).toContainText('Termin verlegt');
+    await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
   });
 });
 
