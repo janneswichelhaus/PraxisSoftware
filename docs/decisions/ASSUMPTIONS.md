@@ -121,9 +121,9 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Spalten `visit_*` und Constraint `appointments_address_matches_type` in `supabase/migrations/20260830100100_appointments.sql`; einziger Schreiber ist `create_appointment`; Abnahmeschritt CAL-001 in `docs/development/archiv/abnahme/etappe-0-patienten-und-termine.md`.
 
-**Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge.
+**Änderungspfad.** Kürzere Frist oder Entfernen bei abgesagten Terminen: `visit_*` in `cancel_appointment` auf `null` setzen · Aufwand `klein`. Referenz statt Kopie: Migration entfernt die Spalten, der Nachweis liest die Stammdaten · Aufwand `mittel`, mit dem Verlust der historischen Adresse als Folge. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
-**Abnahme (Jannes, 2026-10-02).** Bestätigt.
+**Abnahme (Jannes, 2026-10-02).** Adresskopie bestätigt; vergangene Termine behalten ihre damalige Adresse. Ergänzt: Nach einer Änderung der Stammdaten muss die Akte auf künftige Hausbesuche mit alter Adresse hinweisen und sie gezielt aktualisieren lassen — BEF-092.
 
 ### ANN-004 — Inhalt des Audit-Kontexts bei organisatorischen Einstellungen
 
@@ -571,7 +571,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wie
 
 ### ANN-040 — Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag
 
-Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006
 
 **Annahme.** Ein Termin trägt einen Vermerk, ob und auf welchem Weg er der Patient:in mitgeteilt wurde: vier Wege (persönlich, telefonisch, Terminzettel ausgehändigt, per E-Mail) — `sms` und `messenger` fehlen bewusst. Der Vermerk verfällt mit jeder Terminänderung (gültig nur, solange `notified_at >= appointments.updated_at`), gelöscht wird dabei nichts. Der Vorgang ist auditiert (`appointment.notified`), mit den Wegen im Kontext und ohne jeden Inhalt. Seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans Mailprogramm (ANN-041).
 
@@ -581,9 +581,11 @@ Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Weg streichen oder ergänzen: ein Wert in Constraint, Zod-Schema und Beschriftungstabelle · Aufwand `klein`; gesetzte Vermerke eines gestrichenen Weges wären einmalig zu entfernen. Verfallsregel lockern: Vergleich gegen einen eigenen Zeitstempel, den nur `update_appointment` bei Zeitänderungen bumpt · Aufwand `mittel`. Echter Versand nach B15: eigenes Epic · Aufwand `groß`.
 
+**Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: „Mitgeteilt“ verfällt nur bei Änderungen, die für die Patient:in relevant sind (Zeit, Ort, Terminart, behandelnde Person, Absage), nicht bei Dokumentations- oder Abrechnungsstatus — BEF-093. Bis zur Umsetzung gilt die bisherige Regel.
+
 ### ANN-041 — Termin-E-Mail als Handoff ins eigene Mailprogramm
 
-Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der dokumentierte Wunsch je Patient:in mit PAT-006
 
 **Ablösung.** ersetzt ANN-039 Punkt 2 (Versand)
 
@@ -593,7 +595,7 @@ Datenschutz · offen · 2026-09-12 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `src/features/appointments/terminmail.ts` — Inhalt, Betreff, Längengrenze und Übergabe an einer Stelle; Oberfläche `src/features/appointments/TermineMailen.tsx` in `AppointmentSlipPage.tsx`; Tests in `terminmail.test.ts` und `TermineMailen.test.tsx`.
 
-**Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und `MAIL_BETREFF` · Aufwand `klein`. Den Weg zurücknehmen: `TermineMailen` aus `AppointmentSlipPage.tsx` entfernen, beide Dateien löschen; der Weg `email` bleibt als Vermerk von Hand · Aufwand `klein`. Dokumentierten Wunsch je Patient:in verlangen: Kennzeichen in den Kontaktdaten plus Bedingung · Aufwand `mittel`, gehört zu PAT-006. Echter Versand: eigenes Epic · Aufwand `groß`.
+**Änderungspfad.** Inhalt oder Betreff ändern: `terminMailText` und `MAIL_BETREFF` · Aufwand `klein`. Den Weg zurücknehmen: `TermineMailen` aus `AppointmentSlipPage.tsx` entfernen, beide Dateien löschen; der Weg `email` bleibt als Vermerk von Hand · Aufwand `klein`. Dokumentierten Wunsch je Patient:in verlangen: Kennzeichen in den Kontaktdaten plus Bedingung · Aufwand `mittel`, gehört zu PAT-006. Echter Versand: eigenes Epic · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-042 — Wann eine Verordnung ausgeschöpft ist
 
@@ -653,7 +655,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 ### ANN-046 — Navigationsschutz: Data Router, drei Wege, und „Speichern" heißt Entwurf
 
-Technik · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach dem ersten Feldtag mit Dokumentation unterwegs
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach dem ersten Feldtag mit Dokumentation unterwegs
 
 **Ablösung.** ersetzt ANN-015 im Textverlustschutz
 
@@ -663,11 +665,11 @@ Technik · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach dem e
 
 **Anker.** `src/features/documentation/Textverlustschutz.tsx` (`useTextverlustschutz`); Router in `src/app/App.tsx`, Abmeldeschutz in `src/app/abmeldeschutz.ts` und `AbmeldeschutzProvider.tsx`; Tests in `Textverlustschutz.test.tsx` (29 Fälle) und `tests/e2e/authenticated/treatment-note-workflows.spec.ts`.
 
-**Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt der Schutz für interne Navigation ersatzlos · Aufwand `klein`. Speichern auch für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidung gegen ADR-016 · Aufwand `klein`, Folge `groß`. Schutz auf weitere Formulare ausdehnen: je Formular ein Aufruf des Hooks · Aufwand `klein` je Stelle.
+**Änderungspfad.** Zurück auf `<BrowserRouter>`: zwei Dateien, dann entfällt der Schutz für interne Navigation ersatzlos · Aufwand `klein`. Speichern auch für die Korrektur anbieten: ein Parameter mehr, aber eine fachliche Entscheidung gegen ADR-016 · Aufwand `klein`, Folge `groß`. Schutz auf weitere Formulare ausdehnen: je Formular ein Aufruf des Hooks · Aufwand `klein` je Stelle. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-047 — Nur die Patientenabsage löst die Ausfallgebühr aus; „verlegt" und „sonstiger Grund" nicht
 
-Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes in Probewoche 1; der Leistungskatalog (ABR-EPIC-001) übernimmt den Gebührenanlass unverändert
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes in Probewoche 1; der Leistungskatalog (ABR-EPIC-001) übernimmt den Gebührenanlass unverändert
 
 **Annahme.** Von den vier Absagegründen (ANN-034) löst genau einer die 24-Stunden-Regel aus: `patient_request`. `practice_request` ist ausdrücklich ausgenommen; `moved` („Termin verlegt") und `other` („Sonstiger Grund") lösen ebenfalls nicht aus — das ist die Lücke, die diese Annahme schließt.
 
@@ -677,9 +679,11 @@ Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes in P
 
 **Änderungspfad.** Weitere Gründe aufnehmen: eine Bedingung in `app.is_late_cancellation` · Aufwand `klein`. Beschriftung von `moved` schärfen: eine Zeile in `cancellationReasonLabels` · Aufwand `klein`. Rückwirkend gilt eine Änderung ausdrücklich nicht: Was ohne Gebührenanlass abgesagt wurde, bleibt ohne.
 
+**Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Eine kurzfristige Verlegung durch die Patient:in fällt unter die 24-Stunden-Regel wie eine Absage; praxisveranlasste Änderungen bleiben gebührenfrei; ein bewusster, protokollierter Gebührenverzicht ist möglich; Nichtantreffen bleibt eigener Anlass nach ADR-018 — BEF-094, mit neuer Fassung von ADR-018 Punkt 8. Bis zur Umsetzung gilt die bisherige Regel.
+
 ### ANN-048 — Der Eingang der Absage wird in Ortszeit erfasst, ohne Vorbelegung aus der Vergangenheit
 
-Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach den ersten Wochen im Betrieb
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Wochen im Betrieb
 
 **Annahme.** Die Absage-Rückfrage fragt „Wann ist die Absage eingegangen?" mit zwei Antworten — „Gerade eben" (vorbelegt) und „Früher – jetzt erst eingetragen", die erst Datum und Uhrzeit einblendet. Bei „Gerade eben" schickt die Anwendung kein Datum, die Datenbank setzt `now()`; eine falsch gehende Uhr im Browser entscheidet nie über eine Forderung. Datum und Uhrzeit werden in Ortszeit der Praxis erfasst, die Umrechnung macht der Server.
 
@@ -687,11 +691,11 @@ Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach
 
 **Anker.** `AbsageAktion` in `src/features/appointments/AppointmentDetailPage.tsx` und der Parameterblock von `public.cancel_appointment` in `supabase/migrations/20260912200000_cancellation_notice.sql`; Tests in `AppointmentDetailPage.test.tsx` und `supabase/tests/cancellation-notice.test.ts`.
 
-**Änderungspfad.** Vorbelegung entfernen und eine Antwort verlangen: ein Anfangswert und eine Prüfung · Aufwand `klein`. Den Eingang zur Pflichtangabe für jede Absage machen · Aufwand `klein`, aber dann trägt jede Absage am Telefon einen Tap mehr.
+**Änderungspfad.** Vorbelegung entfernen und eine Antwort verlangen: ein Anfangswert und eine Prüfung · Aufwand `klein`. Den Eingang zur Pflichtangabe für jede Absage machen · Aufwand `klein`, aber dann trägt jede Absage am Telefon einen Tap mehr. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-049 — Ereignisse stehen in derselben Tabelle wie Behandlungstermine
 
-Technik · offen · 2026-09-12 · — · — · Wiedervorlage: keine — die Abgrenzung hält in der Leistungserfassung, ein Ereignis erzeugt keine Leistung (ANN-072)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: keine — die Abgrenzung hält in der Leistungserfassung, ein Ereignis erzeugt keine Leistung (ANN-072)
 
 **Ablösung.** abgelöst durch ANN-051 in der Frage der gemeinsamen Kennung
 
@@ -701,11 +705,11 @@ Technik · offen · 2026-09-12 · — · — · Wiedervorlage: keine — die Abg
 
 **Anker.** `supabase/migrations/20260912210000_appointment_events.sql` — Kopfkommentar und Constraints; Tests in `supabase/tests/appointment-events.test.ts` (26 Fälle).
 
-**Änderungspfad.** Eigene Tabelle: Migration mit Datenübernahme, neue Belegungsprüfung über beide Tabellen, jede Kalenderabfrage anfassen · Aufwand `groß`.
+**Änderungspfad.** Eigene Tabelle: Migration mit Datenübernahme, neue Belegungsprüfung über beide Tabellen, jede Kalenderabfrage anfassen · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-050 — Der Kalender trägt Patient:in und Verordnung als Kontext mit
 
-Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach den ersten Wochen im Betrieb
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes nach den ersten Wochen im Betrieb
 
 **Annahme.** Der Kalenderstand führt neben `patient` einen zweiten Kontextparameter `verordnung`; beide stehen als Kennung in der Adresse, nie als Name und nie als Diagnose (ADR-011). Ist der Kalender auf eine Patient:in gefiltert, führt ein Tap auf eine freie Stelle direkt in deren Terminformular — mit Verordnung, wenn eine mitgereist ist — statt über die Patientensuche; der Rückweg ist der Kalenderstand.
 
@@ -713,11 +717,11 @@ Praxisprozess · offen · 2026-09-12 · — · — · Wiedervorlage: Jannes nach
 
 **Anker.** `KalenderParameter.verordnung` in `src/features/appointments/calendar.ts` und `freieZeit` in `src/features/appointments/CalendarPage.tsx`; Tests in `CalendarPage.test.tsx` und `calendar.test.ts`.
 
-**Änderungspfad.** Kontextweg herausnehmen: zwei Stellen · Aufwand `klein`. Patientenfilter beim Planen nur hervorheben statt ausblenden: eine Änderung in der Darstellung des Gitters · Aufwand `klein` bis `mittel`.
+**Änderungspfad.** Kontextweg herausnehmen: zwei Stellen · Aufwand `klein`. Patientenfilter beim Planen nur hervorheben statt ausblenden: eine Änderung in der Darstellung des Gitters · Aufwand `klein` bis `mittel`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-051 — Ein Teamereignis ist ein Vorgang; die einzelne Teilnahme bleibt davon getrennt
 
-Praxisprozess · offen · 2026-09-13 · — · — · Wiedervorlage: Jannes, nach der ersten Woche mit Teambesprechungen im Kalender
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, nach der ersten Woche mit Teambesprechungen im Kalender
 
 **Ablösung.** ersetzt ANN-049 in der Frage der gemeinsamen Kennung
 
@@ -727,7 +731,7 @@ Praxisprozess · offen · 2026-09-13 · — · — · Wiedervorlage: Jannes, nac
 
 **Anker.** `supabase/migrations/20260913100000_event_groups.sql`: `event_group_id`, `update_appointment_event`, `cancel_appointment_event`, `list_event_participants` und der Trigger `appointments_event_group_guard`; `updateAppointmentEvent` in `src/features/appointments/api.ts`; Oberfläche in `EditEventPage.tsx` und `AppointmentDetailPage.tsx`.
 
-**Änderungspfad.** Beteiligte nachträglich hinzufügen: Personenliste im Formular und ein Einfügezweig in `update_appointment_event` · Aufwand `mittel`. Trennung zwischen Ereignis und Teilnahme aufgeben: der Trigger bleibt, `update_appointment` verlöre seinen Ereigniszweig · Aufwand `klein`, Folge `mittel` (Personentausch nur noch über Absage und Neueintrag).
+**Änderungspfad.** Beteiligte nachträglich hinzufügen: Personenliste im Formular und ein Einfügezweig in `update_appointment_event` · Aufwand `mittel`. Trennung zwischen Ereignis und Teilnahme aufgeben: der Trigger bleibt, `update_appointment` verlöre seinen Ereigniszweig · Aufwand `klein`, Folge `mittel` (Personentausch nur noch über Absage und Neueintrag). **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-052 — Eine Datei verlässt den Speicher nur über einen auditierten Vorgang
 
@@ -819,7 +823,7 @@ Technik · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervor
 
 ### ANN-059 — Serie und Vorkommen sind zwei Kennungen; serienweite Vorgänge wirken nach vorn
 
-Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald er eine Dauerfehlzeit eine Weile geführt hat — insbesondere, ob „die ganze Serie" ohne die vergangenen Vorkommen das Erwartete tut
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes, sobald er eine Dauerfehlzeit eine Weile geführt hat — insbesondere, ob „die ganze Serie" ohne die vergangenen Vorkommen das Erwartete tut
 
 **Annahme.** Eine Dauerfehlzeit bekommt mit `appointments.event_series_id` eine **zweite** Kennung neben der Gruppenkennung aus CAL-017: Die Gruppe ist ein Vorkommen mit allen Beteiligten, die Serie sind alle Vorkommen. Serienweite Änderung und Absage wirken ausschließlich auf die **noch nicht begonnenen** Vorkommen; begonnene und bereits abgesagte bleiben unberührt und werden übersprungen. Die Tage einer Serie ändert kein serienweiter Vorgang — wer sie verschieben will, sagt die Serie ab und legt eine neue an.
 
@@ -827,11 +831,11 @@ Technik · offen · 2026-09-18 · — · — · Wiedervorlage: Jannes, sobald er
 
 **Anker.** `event_series_id`, `create_event_series`, `update_event_series`, `cancel_event_series` in `supabase/migrations/20260918110000_event_series.sql`; `createEventSeries`, `updateEventSeries`, `cancelEventSeries` in `src/features/appointments/api.ts`.
 
-**Änderungspfad.** Serienweite Vorgänge auch auf begonnene Vorkommen: die `having`-Bedingung in beiden Funktionen streichen · Aufwand `klein`. Serie um Tage verschieben: ein weiterer Parameter und eine Neuberechnung der Tage in `update_event_series` · Aufwand `mittel`. Zurück zu einer Kennung: nicht ohne Verlust von „dieses Vorkommen" · Aufwand `groß`.
+**Änderungspfad.** Serienweite Vorgänge auch auf begonnene Vorkommen: die `having`-Bedingung in beiden Funktionen streichen · Aufwand `klein`. Serie um Tage verschieben: ein weiterer Parameter und eine Neuberechnung der Tage in `update_event_series` · Aufwand `mittel`. Zurück zu einer Kennung: nicht ohne Verlust von „dieses Vorkommen" · Aufwand `groß`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-060 — Die Bezeichnung einer Fehlzeit ist organisatorisch, und geprüft wird das am Feld
 
-Datenschutz · offen · 2026-09-18 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
 
 **Annahme.** Die frei benannte Bezeichnung einer Fehlzeit (CAL-021) ist eine **organisatorische** Angabe: kein Patientenname, keine Diagnose, kein klinischer Inhalt. Durchgesetzt wird das an drei Stellen und ausdrücklich **nicht** durch eine inhaltliche Prüfung des Freitexts: der Hinweis am Eingabefeld sagt die Regel, die Länge ist auf 120 Zeichen begrenzt, und der Titel erscheint weder im Auditkontext noch in einem Log noch in der Adresszeile. Er steht allein an der Zeile und als Aufschrift im Gitter.
 
@@ -839,7 +843,7 @@ Datenschutz · offen · 2026-09-18 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** Hinweis und Längengrenze am Feld `Bezeichnung` in `src/features/appointments/EreignisFormFields.tsx`; der Auditkontext ohne Titel in `supabase/migrations/20260913100000_event_groups.sql` (`create_appointment_event`, `update_appointment_event`).
 
-**Änderungspfad.** Bezeichnung aus einer Liste statt Freitext: ein Wertebereich in der Datenbank und eine Auswahl im Formular · Aufwand `mittel`. Prüfung gegen den Patientenbestand: eine Abfrage im Schreibpfad · Aufwand `mittel` — widerspräche der Begründung. Titel im Auditkontext: ein Feld in `jsonb_build_object` · Aufwand `klein`, aber eine neue Datenschutzentscheidung.
+**Änderungspfad.** Bezeichnung aus einer Liste statt Freitext: ein Wertebereich in der Datenbank und eine Auswahl im Formular · Aufwand `mittel`. Prüfung gegen den Patientenbestand: eine Abfrage im Schreibpfad · Aufwand `mittel` — widerspräche der Begründung. Titel im Auditkontext: ein Feld in `jsonb_build_object` · Aufwand `klein`, aber eine neue Datenschutzentscheidung. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-061 — Die Kopfleistensuche findet Funktionen und Namen, keine klinischen Inhalte
 
@@ -1497,7 +1501,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 ### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
 
-Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der nächsten Sichtung am Rechner (breiter Bildschirm) und am Handy
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes bei der nächsten Sichtung am Rechner (breiter Bildschirm) und am Handy
 
 **Annahme.** Der Kalender (`/kalender`) nutzt die ganze Fläche neben der Seitenleiste: keine Kappung auf 1200 px, 8 bis 12 px Rand, kein Kasten um das Raster, nur eine Linie oben und unten. Alle übrigen Seiten behalten die Kappung aus DS-001. Der Abstand unter der Kopfzeile ist überall kleiner (20 bis 24 px statt 32 px).
 
@@ -1505,7 +1509,7 @@ Technik · offen · 2026-09-26 · — · — · Wiedervorlage: Jannes bei der n�
 
 **Anker.** `RANDLOSE_SEITEN` in `src/app/navigation.tsx`, angewendet in `<main>` in `src/app/AppShell.tsx`; geprüft in `src/app/AppShell.test.tsx`.
 
-**Änderungspfad.** Weitere Seite randlos: ihren Pfad in `RANDLOSE_SEITEN` aufnehmen · Aufwand `klein`. Zurück zum Kasten: den Eintrag entfernen und in `CalendarGrid` `rounded-card border` wieder setzen · Aufwand `klein`.
+**Änderungspfad.** Weitere Seite randlos: ihren Pfad in `RANDLOSE_SEITEN` aufnehmen · Aufwand `klein`. Zurück zum Kasten: den Eintrag entfernen und in `CalendarGrid` `rounded-card border` wieder setzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-115 — Ein abgewiesener Schreibversuch wird bestätigt protokolliert und mit HTTP 403 beantwortet; der Client prüft den Status
 
@@ -2271,7 +2275,7 @@ Datenschutz · offen · 2026-09-30 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
 
 **Annahme.** Die Regel-Terminart dieser Praxis ist der Hausbesuch. Er steht deshalb an keinem Termin, keiner Kalenderkachel, keiner Tageskarte und keiner Terminzeile als Wort; nur eine abweichende Art wird gekennzeichnet — der Praxistermin mit seinem Standort, der Videotermin mit einem Hinweis, dass noch kein Videolink erzeugt wird. Wer den Ort eines Hausbesuchs sucht, findet die Anschrift mit dem Navigationsknopf.
 
@@ -2279,11 +2283,11 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Anker.** `REGEL_TERMINART` und `appointmentTypeHint` in `src/features/appointments/api.ts`; alle Kacheln und Zeilen lesen die Terminart darüber.
 
-**Änderungspfad.** Anderer Regelfall (etwa eine Praxis, die überwiegend im Haus behandelt): `REGEL_TERMINART` auf `practice` setzen · Aufwand `klein`. Terminart immer zeigen: `appointmentTypeHint` gibt stets das Etikett zurück · Aufwand `klein`.
+**Änderungspfad.** Anderer Regelfall (etwa eine Praxis, die überwiegend im Haus behandelt): `REGEL_TERMINART` auf `practice` setzen · Aufwand `klein`. Terminart immer zeigen: `appointmentTypeHint` gibt stets das Etikett zurück · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-193 — Die behandelnde Person steht am Termin nur, wenn sie nicht die angemeldete Person ist
 
-Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
 
 **Annahme.** Auf der Terminseite steht die behandelnde Person nur, wenn sie von der angemeldeten Person abweicht — für das Büro also immer, für die Therapeut:in nur an fremden Terminen. Am eigenen Termin ist die Angabe klar und entfällt. Der Status „Bestätigt“ steht ebenfalls nur für Vorlesesoftware; sichtbar ist nur ein abweichender Zustand (abgesagt, nicht angetroffen, abgeschlossen, dokumentiert, abgerechnet).
 
@@ -2291,7 +2295,7 @@ Praxisprozess · offen · 2026-09-30 · — · — · Wiedervorlage: Jannes (Sic
 
 **Anker.** `fremdePerson` in `src/features/appointments/AppointmentHeadline.tsx`.
 
-**Änderungspfad.** Person immer zeigen: die Bedingung `fremdePerson` entfernen · Aufwand `klein`. Status immer sichtbar: den Zweig für `confirmed` in derselben Datei durch das Abzeichen ersetzen · Aufwand `klein`.
+**Änderungspfad.** Person immer zeigen: die Bedingung `fremdePerson` entfernen · Aufwand `klein`. Status immer sichtbar: den Zweig für `confirmed` in derselben Datei durch das Abzeichen ersetzen · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-194 — Die Übersicht ruft die Route des eigenen Tages beim Öffnen ab
 
@@ -2307,7 +2311,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-01 · Jannes · Prüfpaket · Wie
 
 ### ANN-195 — Der Wegbalken rechnet in echten Minuten, die Rundung aus §8.1 bleibt beim Server
 
-Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
 
 **Annahme.** Der Puffer im Wegbalken ist die Zeit zwischen zwei Terminen minus der geschätzten Fahrzeit, in Minuten und **ohne** Rundung auf das Praxisraster; die Stufen sind bis 0 rot, bis 3 dunkles Orange, unter 5 helleres Orange, ab 5 grün (Entscheidung Jannes im Handoff). Der Balken ist eine Auskunft für unterwegs und sperrt nichts. Die Angebotsregel aus §8.1 — frühester Beginn auf das Raster aufgerundet — gilt unverändert in `check_travel_buffers` und damit in Tour und Kalender (ANN-097).
 
@@ -2317,9 +2321,11 @@ Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Andere Schwellen: `travelLevel` · Aufwand `klein`. Gerundeter Puffer wie in der Tour: die Übersicht reicht ihre Paare an `check_travel_buffers` und gibt dem Balken das Ergebnis · Aufwand `mittel`.
 
+**Abnahme (Jannes, 2026-10-02).** Bestätigt mit eindeutigen Grenzen: rot bei ≤ 0 Minuten, orange bei > 0 und < 5 Minuten (zwei Stufen), grün ab 5 Minuten; der Puffer steht als Zahl daneben. So ist es gebaut (`travelLevel` in `src/components/ui/travelPlan.ts`, „… min Puffer“).
+
 ### ANN-196 — Der Wegbalken beginnt am Ende des Termins davor und zählt danach herunter; der erste Weg beginnt jetzt
 
-Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
+Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign)
 
 **Annahme.** Der große Wegbalken beginnt am geplanten Ende des Termins davor. Gibt es keinen — der erste Weg des Tages — oder ist dieses Ende schon vorbei, beginnt er **jetzt**: Der Puffer ist dann, was bis zum Beginn des nächsten Termins nach Abzug der Fahrzeit noch bleibt, und schrumpft mit der Uhr. Der erste Weg rechnet vom verorteten Standort der Praxis (wie die Tagesroute, ANN-096); ohne verorteten Standort gibt es für ihn keinen Balken.
 
@@ -2329,9 +2335,11 @@ Praxisprozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Fester Aufbruch aus dem Arbeitszeitbeginn: `naechsterWeg` bekommt die Uhrzeit hereingereicht, die Übersicht liest den Wochenplan · Aufwand `mittel`. Immer der geplante Abstand: die Bedingung `jetzt <= …` in `naechsterWeg` entfernen · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-02).** Bestätigt für die aktuelle Anfahrt in „Mein Tag“. Bei der Planung künftiger Tage geht der erste Weg nie von der aktuellen Uhrzeit aus; `naechsterWeg` läuft nur auf der Tagesseite für heute.
+
 ### ANN-197 — Das Stockwerk kommt vom Anfang des Zugangshinweises, bis es ein eigenes Feld gibt
 
-Technik · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign); eigenes Feld als `IDEA-PRX-050`
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung der Übersicht nach dem UI-Redesign); eigenes Feld als `IDEA-PRX-050`
 
 **Annahme.** Die Stockwerk-Pille der Tageskarte zeigt die **erste Angabe** des Zugangshinweises, wenn sie die Form „[Zahl.] Ebene [Seite]" hat (etwa „2. OG links", „EG", „Hochparterre") und vor einem Komma, Semikolon, Gedankenstrich oder Zeilenumbruch steht. Der Rest steht als Zugangshinweis hinter dem Info-Knopf. Alles andere bleibt ganz im Zugangshinweis — lieber keine Pille als eine falsche. Gespeichert oder umgeschrieben wird nichts.
 
@@ -2339,11 +2347,11 @@ Technik · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 
 **Anker.** `zugangMitStockwerk` in `src/features/today/stockwerk.ts`; Tests `src/features/today/stockwerk.test.ts`.
 
-**Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`.
+**Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-198 — Der Hinweis auf die vorherige Absage bleibt am Hausbesuch als eine Zeile
 
-Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 10)
+Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 10)
 
 **Annahme.** Im Ablauf „Niemand öffnet?" bleibt unter „Tür geöffnet, aber keine Behandlung?" eine Zeile zum dritten Szenario: „Vorher abgesagt? Dann am Seitenende ‚Termin absagen'." Die Folge – Ausfallhonorar bei einem Eingang unter 24 Stunden – steht in der Absage-Rückfrage, nicht mehr hier.
 
@@ -2351,11 +2359,11 @@ Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 
 **Anker.** `HomeVisitFlow` in `src/features/appointments/HomeVisitFlow.tsx`; Test `AppointmentDetailPage.test.tsx` („Vorher abgesagt?").
 
-**Änderungspfad.** Ganz streichen, wenn Jannes entscheidet, dass die Absage-Rückfrage das Szenario allein erklärt (dann ADR-018 Punkt 9.3 so lesen oder ergänzen) · Aufwand `klein`.
+**Änderungspfad.** Ganz streichen, wenn Jannes entscheidet, dass die Absage-Rückfrage das Szenario allein erklärt (dann ADR-018 Punkt 9.3 so lesen oder ergänzen) · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-199 — Der Haken und die kompakten Knöpfe bleiben bei 44 px
 
-Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 11)
+Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 11)
 
 **Annahme.** Der Design-Handoff vom 2026-10-01 (Zyklen 2–4) nennt Kompaktknöpfe und den kleinen Haken mit 40 px, Chips mit 36/32 px. Im Repo bleiben sie bei 44 px; nur der Haken als Hauptknopf einer Karte wird 48 px groß.
 
@@ -2363,7 +2371,7 @@ Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sicht
 
 **Anker.** `symbolknopfKlassen` und `kartenAktionKlassen` in `src/components/ui/buttonStile.ts`; Test `bausteine.test.tsx` („nie 40").
 
-**Änderungspfad.** Eine Größe `dicht` (40 px) in `buttonStile.ts` ergänzen und nur am Rechner verwenden · Aufwand `klein`.
+**Änderungspfad.** Eine Größe `dicht` (40 px) in `buttonStile.ts` ergänzen und nur am Rechner verwenden · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
 ### ANN-200 — Die bisherigen Einträge auf der Schreibseite öffnen nie von selbst
 
@@ -2379,7 +2387,7 @@ Datenschutz · offen · 2026-10-01 · — · — · Prüfpaket · Wiedervorlage:
 
 ### ANN-201 — „Doku offen" ist eine Aufgabe für die, die dokumentieren
 
-Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 13)
+Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 13)
 
 **Annahme.** Abschließen und Dokumentieren sind getrennt (Design-Handoff 2026-10-01, Entscheidung Jannes): Der Haken schließt einen Termin ohne Eintrag ab, wie bisher erlaubt (ANN-005). Danach steht „Doku offen" (Übersicht) bzw. „Dokumentation fehlt" (Termin) als Warnung – aber nur für Rollen, die dokumentieren dürfen. Das Büro sieht am abgeschlossenen Termin ohne Eintrag nichts. Ein bestätigter Termin in der Zukunft hat keinen Doku-Abschnitt; der Weg dahin ist „Doku" in der Aktionsleiste.
 
@@ -2389,9 +2397,11 @@ Prozess · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung 
 
 **Änderungspfad.** Auch dem Büro zeigen: Bedingung `darfSchreiben` streichen · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-02).** Anders entschieden als bisher: Das Büro liest alle Dokumentation einschließlich Verlauf (ADR-004 Fassung 2) und sieht „Doku offen“ bzw. „Dokumentation fehlt“ wie die Therapeut:innen; Sichtbarkeit hängt am Leserecht, nicht am Schreibrecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen — BEF-095. Bis zur Umsetzung gilt die bisherige Anzeige.
+
 ### ANN-202 — Der Kalender nach dem Handoff: Panel als Karte, Kopf bleibt schlank
 
-Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 15)
+Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 15)
 
 **Annahme.** Umgesetzt aus Abschnitt 7a: „Woche | Team“ (am Handy „Tag | Team“) als Umschalter im Kopf; die Woche zeigt Mo–Fr, Samstag und Sonntag nur mit Termin der gezeigten Person; die Kachel trägt Zeit, Name und eine Zeile „! Doku offen“, „✓ Dokumentiert“ oder „× Abgesagt“, die Linie links wird bei offener Doku zur Warnung; ein Tipp öffnet ein Terminpanel mit Haken, „Doku“, „Bisherige Doku →“ und „Termin →“ – am fremden Termin ohne Haken und Doku, dafür mit der behandelnden Person. Anders als im Handoff: Das Panel ist überall eine Karte (am Handy ein Blatt), nicht ab 1200 px eine feste Spalte; „Tag“ am Handy ist die eigene Spalte im Tagesraster, keine Zeilenliste mit Wegbalken; der Kopf bleibt ohne sichtbare Überschrift (BEF-039); „Heute“ springt weiter zur Linie der aktuellen Uhrzeit statt sich abzuschalten. Den Doku-Stand liefert `list_appointments` nur Rollen mit `can_read_treatment_evidence`, wie die Tagesliste.
 
@@ -2400,6 +2410,8 @@ Oberfläche · offen · 2026-10-01 · — · — · Wiedervorlage: Jannes (Sicht
 **Anker.** `TerminPanel` in `src/features/appointments/TerminPanel.tsx`, Umschalter und Wochenende in `CalendarPage.tsx`, Kachel in `CalendarGrid.tsx`; Migration `20261001200000_cal_doku_stand_im_kalender.sql`; Tests `CalendarPage.test.tsx`, `supabase/tests/list-appointments.test.ts`.
 
 **Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.
+
+**Abnahme (Jannes, 2026-10-02).** Gestaltung bestätigt. Ergänzt: Dokumentationsstatus und Links zum Lesen müssen auch für das Büro und an fremden Terminen da sein — BEF-095, mit einem zentralen Leserecht für Akte, Termin, Kalender und Übersicht (ADR-004).
 
 ### ANN-203 — Die vertretende Person bekommt keine Zeile in `persons`; ihr Name steht am Zugang als Nachweis
 

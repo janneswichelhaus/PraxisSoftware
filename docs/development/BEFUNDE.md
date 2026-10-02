@@ -3261,3 +3261,65 @@ Suchseite mit der Warnung erscheint.
 **Beobachtung.** Die Rechnungsseite nannte den Empfänger dreimal, den Zahlungsstand zweimal, den eigenen Absender mit Bankverbindung auf jeder Rechnung und erklärte Storno und Unveränderlichkeit in sechs Sätzen; die Liste trug „Ausgestellt“ an jeder Rechnung und einen Knopf je Zeile. Die Mitarbeitenden-Seite erklärte die Trennung von Stammdaten und Zugang dreimal, zeigte „Beschäftigung: Aktiv“, „Stand: Eingerichtet“, leere Kontaktzeilen und eine siebenzeilige Admin-Anleitung. Trainingstermine trugen „Art: Hausbesuch“ und „Bestätigt“, jede Einheit „Hausbesuch · Tom“. Lastenräder wiederholten die Wochenübersicht je Rad; Urlaub listete offene Anträge mit „Beantragt“; „Mein Konto“ nannte den eigenen Namen und die Praxis als Zeilen.
 
 **Erwartet.** Regelfälle ohne Abzeichen und Zeile, leere Werte ohne Zeile, Nachschlagetexte zugeklappt, die Rechnungsnummer als Link. Offen geblieben: Das Abzeichen „Nicht für Termine zuordenbar“ in der Mitarbeitendenliste markiert eine Rolle, kein Problem; es bleibt, weil die Liste die Rollen nicht kennt (serverseitige Änderung nötig). Die Praxiseinstellungen über dem Wochenplan (Praxisraster, automatische Finalisierung, Startort) bleiben offen, weil die Suche sie direkt anspringt.
+
+### BEF-092 — Nach einer Adressänderung bleiben künftige Hausbesuche stumm bei der alten Adresse
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenakte, Stammdaten; Termine (Hausbesuch) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-003) |
+| Status  | offen |
+| Berührt | ANN-003; Adresskopie am Termin (`visit_street` …); ADR-018 |
+
+**Beobachtung.** Ein Hausbesuch kopiert die Adresse beim Anlegen (ANN-003). Ändert die Praxis danach die Anschrift in den Stammdaten, behalten auch die **künftigen** Hausbesuche die alte Adresse, und nichts weist darauf hin.
+
+**Erwartet.** Vergangene Termine behalten ihre damalige Adresse. Nach dem Speichern einer neuen Anschrift nennt die Akte die künftigen Hausbesuche mit abweichender Adresse und bietet an, sie gezielt zu aktualisieren (einzeln oder alle). Nichts ändert sich ohne Bestätigung, jede Änderung steht im Protokoll wie eine Terminänderung.
+
+### BEF-093 — „Mitgeteilt“ verfällt auch bei Änderungen, die die Patient:in nicht betreffen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Termin, Mitteilungsvermerk |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-040) |
+| Status  | offen |
+| Berührt | ANN-040; `appointment_notifications`, Regel `notified_at >= appointments.updated_at` in `20260912180000_appointment_notification.sql` |
+
+**Beobachtung.** Der Vermerk gilt nur, solange `notified_at >= appointments.updated_at`. Jede Änderung am Termin hebt `updated_at`, auch Dokumentations- oder Abrechnungsstatus. Damit verfällt „Mitgeteilt“, obwohl sich für die Patient:in nichts geändert hat.
+
+**Erwartet.** Der Vermerk verfällt nur bei Änderungen, die für die Patient:in relevant sind: Beginn und Ende, Ort bzw. Adresse, Terminart, behandelnde Person, Absage. Ein eigener Zeitstempel für die letzte relevante Änderung (per Trigger auf genau diese Spalten) ersetzt `updated_at` in der Regel. Test je relevanter und je interner Änderung.
+
+### BEF-094 — Eine kurzfristige Verlegung durch die Patient:in ist pauschal gebührenfrei, ein Verzicht ist nicht vorgesehen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Termin absagen und verschieben, Ausfallhonorar |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-047) |
+| Status  | offen |
+| Berührt | ANN-047, ANN-034; `app.is_late_cancellation()` in `20260912200000_cancellation_notice.sql`; ADR-018 Punkt 8 (Fassung 2: „nur Patientenabsage“) |
+
+**Beobachtung.** Nur `patient_request` löst die 24-Stunden-Regel aus; „Termin verlegt“ ist immer gebührenfrei, egal wer verlegt. Einen bewussten Verzicht auf die Gebühr gibt es nicht.
+
+**Erwartet.** Entscheidung Jannes, 2026-10-02:
+- Verlegt die **Patient:in** weniger als 24 Stunden vorher, kann der ursprüngliche Termin ebenso ausfallen. Die 24-Stunden-Regel gilt dann wie bei der Absage. Dafür braucht die Verlegung die Angabe, wer sie veranlasst hat.
+- Praxisveranlasste Änderungen bleiben gebührenfrei.
+- Die Praxis kann im Einzelfall bewusst verzichten. Der Verzicht ist ein eigener, protokollierter Vermerk mit der Person, die verzichtet hat, kein Löschen des Anlasses.
+- Nichtantreffen bleibt der eigene Gebührenanlass nach ADR-018.
+
+Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, der das baut.
+
+### BEF-095 — Das Büro sieht „Doku offen“ und Dokumentationslinks nicht, obwohl es Dokumentation lesen darf
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenakte, Terminseite, Kalender (Terminpanel), Übersicht |
+| Quelle  | Jannes, Abnahme der Annahmen Block 2 (ANN-201, ANN-202) |
+| Status  | offen |
+| Berührt | ANN-201, ANN-202; ADR-004 Fassung 2 (E15: Office liest klinische Inhalte); `TreatmentNoteSection.tsx` (`faellig && darfSchreiben`), `TerminPanel.tsx`, `offenGrund` in `src/features/today/api.ts`, `list_appointments`/`list_day_plan` (`documentation_status`) |
+
+**Beobachtung.** „Doku offen“ bzw. „Dokumentation fehlt“ hängt in der Oberfläche am **Schreibrecht**. Das Büro sieht beides nicht, ebenso wenig an fremden Terminen den Dokumentationsstatus und den Link zum Lesen. Dabei liest es nach ADR-004 Fassung 2 alle Dokumentation einschließlich Verlauf.
+
+**Erwartet.** Ein zentrales Leserecht für Dokumentation, eine Regel für Akte, Terminansicht, Kalender und Übersicht, ohne eigene Einschränkungen je Oberfläche. Gemeint ist eine Funktion in der Datenbank und eine im Client, geprüft gegen dieselbe Rollenliste. Sichtbarkeit von Status, „Doku offen“ und Lese-Links folgt dem Leserecht. Bearbeiten und Finalisieren bleiben bei den behandelnden Rollen (ADR-016). Gilt auch für fremde Termine.
