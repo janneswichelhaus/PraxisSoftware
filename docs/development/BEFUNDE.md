@@ -1751,3 +1751,15 @@ ohnehin nicht nebenbei angefasst werden.
 
 **Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden).
 
+
+### BEF-120 — Ein Übersichtstest hängt an der Uhrzeit des Laufs
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Tests, Übersicht |
+| Quelle  | Loop ABN-EPIC-001b, voller Lauf von `pnpm test` am Abend |
+| Status  | offen |
+| Berührt | `src/features/today/MyDayPage.test.tsx` („fragt beim Oeffnen die Route des Tages ab …“, ANN-194) |
+
+**Beobachtet:** Der Test legt die Termine relativ zur echten Uhr (in 60 Minuten, danach 75 Minuten Abstand). Um 21:18 Uhr Berliner Zeit fällt der zweite Termin über Mitternacht, und „≈ 9 min Rad · 66 min Puffer“ erscheint nicht; auf `main` ebenso rot, also unabhängig von ABN-EPIC-001b. **Erwartet:** Der Test setzt die Uhr fest (`vi.setSystemTime` auf einen Vormittag) und ist zu jeder Tageszeit grün. Aufwand klein; nicht in diesem Loop, weil außerhalb der berührten Module.

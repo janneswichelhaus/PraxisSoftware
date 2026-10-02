@@ -890,9 +890,12 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [ziel.patient],
         'patient_directory.read',
       );
-      await expect(asUser(users.patientMax, LISTE, [ziel.patient])).rejects.toMatchObject({
-        code: '42501',
-      });
+      await erwarteAbgewiesenenLeseversuch(
+        users.patientMax,
+        LISTE,
+        [ziel.patient],
+        'patient_directory.read',
+      );
     });
   });
 });
