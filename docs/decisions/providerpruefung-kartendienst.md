@@ -205,6 +205,15 @@ MAP-006.
 9. DSFA-Wiedervorlage „wesentliche Änderung der Routing-/Standortverarbeitung"
    (ADR-007 Punkt 2), Nennung in Datenschutzinformation (PAT-006) und
    Verzeichnis der Verarbeitungstätigkeiten (G14).
+10. **Kachelweg** (ADR-019 Fassung 5, Punkt 34): Der DPA nennt die
+    Vector-Maps-API und den Host für Style, Sprites und Glyphen
+    (`vectormaps-resources.myptv.com`, BEF-021) ausdrücklich; belegt ist, was
+    der Anbieter aus Kachelanfragen speichert (IP-Adresse, Ausschnitt,
+    Referrer), wie lange und ohne Zweitnutzung, und ob ein CDN außerhalb der
+    Subprozessorliste ausliefert.
+11. **Schätzungen** (ADR-019 Fassung 5, Punkt 38): Belegt ist, ob und woran
+    Matrix- und Routenantworten der OSM-APIs eine Ersatzschätzung (Luftlinie,
+    nicht routbarer Punkt) kenntlich machen.
 
 Fällt Punkt 1 bis 5 negativ aus, bleibt der Adapter, und der Anbieter wechselt
 — das ist der Zweck des Vertrags in `src/lib/location/contract.ts`. Zweiter

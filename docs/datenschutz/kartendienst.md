@@ -34,7 +34,9 @@ Wiedervorlage betrachtet vier Wege getrennt:
 
 1. **Kacheln aus dem Browser.** Unverändert seit MAP-002: Kartenausschnitt und Zoom, mittelbar
    also, wo gearbeitet wird. Neu ist nur, dass die Tour **echte** Stopps zeigt — die Kachelanfrage
-   selbst trägt weiterhin keinen Stopp.
+   selbst trägt weiterhin keinen Stopp. Der Anbieter sieht dabei die IP-Adresse des Geräts, den
+   Zeitpunkt und den Referrer; deshalb gehört dieser Weg zum Gate (ADR-019 Fassung 5, Punkt 34,
+   Gate-Liste Punkt 10), und die Karte lädt Kacheln nur bei offenem Schalter (Punkt 35).
 2. **Geocoding vom Server (neu).** Die Anschrift geht **einmal je Änderung** an den Anbieter, auf
    ausdrückliche Handlung („Adresse verorten", ANN-095), nie beim Öffnen einer Karte. Die
    Anschrift steht dabei in der Anfrageadresse beim Anbieter (Endpunkt nur mit `GET`); in eigenen
@@ -72,11 +74,18 @@ braucht deshalb keinen neuen Eintrag. Die Auskunft nach Art. 15 enthält die Koo
 Ohne den Wert `synthetic` oder `released` antwortet die Function mit „nicht eingerichtet", auch
 wenn ein Schlüssel vorliegt. Für die Produktion gilt:
 
-- `released` wird erst gesetzt, wenn alle neun Punkte des Gates aus ADR-019 Punkt 9 positiv
-  abgeschlossen und in den DSFA-Unterlagen abgelegt sind (Vertrag mit Nennung der OSM-APIs,
-  §203-Verpflichtung, Subprozessoren, Retention und Zweitnutzung, EU-Region, Paid Plan, Prüfung
-  der Edge Runtime nach OPS-001, DSFA-Wiedervorlage).
-- `synthetic` ist in einer Umgebung mit echten Daten **nie** zulässig.
+- `released` wird erst gesetzt, wenn alle elf Punkte des Gates aus ADR-019 Punkt 9 und 34
+  positiv abgeschlossen und in den DSFA-Unterlagen abgelegt sind (Vertrag mit Nennung der
+  OSM-APIs, §203-Verpflichtung, Subprozessoren, Retention und Zweitnutzung, EU-Region, Paid Plan,
+  Prüfung der Edge Runtime nach OPS-001, DSFA-Wiedervorlage, Kachelweg, Kennzeichen von
+  Schätzungen).
+- `synthetic` ist in einer Umgebung mit echten Daten **nie** zulässig. Ab ABN-EPIC-001c ist das
+  technisch erzwungen (ADR-019 Fassung 5, Punkt 36): Das Secret `APP_ENVIRONMENT`
+  (`development`, `test`, `production`) steht neben dem Schalter; fehlt es oder ist es
+  unbekannt, gilt `production`, und dort antworten `synthetic` und `mock` mit „nicht
+  eingerichtet“.
+- Derselbe Schalter gibt die Kacheln frei: Die Karte lädt sie nur, wenn die Function meldet,
+  dass er offen ist (Punkt 35).
 - Wer den Schalter setzt, vermerkt Datum und Grundlage in den DSFA-Unterlagen.
 
 ## Datenschutzinformation (PAT-006)

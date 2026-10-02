@@ -580,8 +580,8 @@
           "gewicht": 1,
           "status": "in_arbeit",
           "fertig_am": "2026-10-02",
-          "nachweis": "Fassung 3 von ADR-017 und Fassung 5 von ADR-019 (vorgeschlagen)",
-          "vermerk": "Docs-Session fertig, Bestätigung Jannes offen; Bau danach"
+          "nachweis": "ADR-017 Fassung 3, ADR-019 Fassung 5, Prinzipien 0.20 (PR #170)",
+          "vermerk": "Docs-Session fertig und bestätigt (alle wie empfohlen); Bau folgt"
         },
         {
           "id": "abr-epic-007",
