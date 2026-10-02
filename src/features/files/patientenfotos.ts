@@ -1,11 +1,18 @@
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import { ladeDateiHoch } from './api';
+import { dokumentartLabels } from './dokumentarten';
 
 /**
- * Datenzugriff auf die Fotos einer Patient:in (DOK-006, ADR-017 Abschnitt G).
+ * Datenzugriff auf die Fotos einer Patient:in (DOK-006, ADR-017 Abschnitte G
+ * und H).
  *
- * Ein Patientenfoto ist eine Datei wie jede andere und nimmt denselben
+ * Zwei Arten (ADR-017 Fassung 3, Punkt 43): das **Dokumentationsfoto**
+ * (`dokumentationsfoto`, Teil der Akte, keine Einwilligung, zehn Jahre) und
+ * die **Arbeitshilfe** (`patientenfoto`, Einwilligung, höchstens zwölf
+ * Monate). Beide teilen Aufnahme- und Anzeigeweg.
+ *
+ * Ein Foto der Person ist eine Datei wie jede andere und nimmt denselben
  * Upload-Weg (`ladeDateiHoch`: zwei Phasen, Metadaten entfernt). Anders ist,
  * wie es **angezeigt** wird (Punkt 40):
  *
@@ -24,12 +31,25 @@ import { ladeDateiHoch } from './api';
  * (Punkt 36). Diese Datei blendet nichts aus.
  */
 
+/** Die beiden Fotoarten (Punkt 43). Der Schlüssel der Arbeitshilfe bleibt `patientenfoto`. */
+export const FOTOARTEN = ['dokumentationsfoto', 'patientenfoto'] as const;
+export type Fotoart = (typeof FOTOARTEN)[number];
+
+export const fotoartLabels: Record<Fotoart, string> = {
+  dokumentationsfoto: dokumentartLabels.dokumentationsfoto,
+  patientenfoto: dokumentartLabels.patientenfoto,
+};
+
 const fotoSchema = z.object({
   id: z.string(),
+  document_type: z.enum(FOTOARTEN),
   display_name: z.string(),
   taken_at: z.string(),
   taken_by_name: z.string().nullable(),
-  delete_after: z.string(),
+  /** Nur die Arbeitshilfe hat ein eigenes Löschdatum; das Dokumentationsfoto folgt der Akte. */
+  delete_after: z.string().nullable(),
+  /** Darf die angemeldete Person löschen? Beim Dokumentationsfoto nur am Aufnahmetag (Punkt 48). */
+  deletable: z.boolean(),
   object_missing: z.boolean(),
 });
 
@@ -47,13 +67,15 @@ export async function fetchPatientenfotos(patientId: string): Promise<Patientenf
 /**
  * Nimmt ein Foto aus dem Kameradialog in die Akte auf.
  *
- * Der einzige Weg zu einem Patientenfoto (Punkt 33): Der Aufrufer bekommt das
- * Bild aus dem Kameradialog, nie aus einem Dateiwähler. Ob die Einwilligung
+ * Der einzige Weg zu einem Foto der Person (Punkt 33): Der Aufrufer bekommt
+ * das Bild aus dem Kameradialog, nie aus einem Dateiwähler. Die Art steht vor
+ * der Aufnahme fest (Punkt 44). Ob die Einwilligung für eine Arbeitshilfe
  * vorliegt, prüft der Server bei der Vorbereitung und noch einmal bei der
  * Bestätigung.
  */
 export async function speicherePatientenfoto(auftrag: {
   patientId: string;
+  art: Fotoart;
   anzeigename: string;
   foto: Blob;
 }): Promise<string> {
@@ -61,7 +83,7 @@ export async function speicherePatientenfoto(auftrag: {
     return await ladeDateiHoch({
       patientId: auftrag.patientId,
       grundlageId: null,
-      documentType: 'patientenfoto',
+      documentType: auftrag.art,
       displayName: auftrag.anzeigename,
       datei: auftrag.foto,
     });
@@ -70,6 +92,11 @@ export async function speicherePatientenfoto(auftrag: {
     // Foto, und der häufigste Grund ist die fehlende Einwilligung.
     const meldung = (ursache as Error).message;
     if (meldung.includes('Berechtigung')) {
+      if (auftrag.art === 'dokumentationsfoto') {
+        throw new Error(
+          'Das Foto konnte nicht gespeichert werden. Darf Ihre Rolle Fotos aufnehmen?',
+        );
+      }
       throw new Error(
         'Das Foto konnte nicht gespeichert werden. Liegt die Einwilligung vor, ist die Versorgung nicht seit mehr als drei Monaten abgeschlossen, und darf Ihre Rolle Fotos aufnehmen?',
       );
@@ -117,6 +144,7 @@ export async function ladePatientenfoto(fileId: string): Promise<Blob> {
 
 const herausgabeFotoSchema = z.object({
   id: z.string(),
+  document_type: z.enum(FOTOARTEN),
   display_name: z.string(),
   taken_at: z.string(),
   locked: z.boolean(),

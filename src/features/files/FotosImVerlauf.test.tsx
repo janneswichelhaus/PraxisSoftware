@@ -56,10 +56,12 @@ const { Patientenfotos } = await import('./FotosImVerlauf');
 function foto(rest: Partial<FotoApi.Patientenfoto> = {}): FotoApi.Patientenfoto {
   return {
     id: 'f1',
+    document_type: 'patientenfoto',
     display_name: 'Knie rechts',
     taken_at: '2026-09-01T08:00:00.000Z',
     taken_by_name: 'Anna Beispiel',
     delete_after: '2027-09-01T08:00:00.000Z',
+    deletable: true,
     object_missing: false,
     ...rest,
   };
@@ -93,6 +95,13 @@ function kameraEinbauen() {
   );
 }
 
+const DOKU = /^Teil der Dokumentation/;
+const HILFE = /^Arbeitshilfe \(/;
+
+async function waehlen(user: ReturnType<typeof userEvent.setup>, art: RegExp = DOKU) {
+  await user.click(await screen.findByRole('radio', { name: art }));
+}
+
 function seite(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
   return renderWithProviders(<Patientenfotos patientId={PATIENT} user={testUser(rollen)} />);
 }
@@ -115,12 +124,16 @@ describe('Patientenfotos', () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   });
 
-  it('sagt ohne Einwilligung, dass keine Fotos entstehen, und bietet keine Aufnahme an', async () => {
+  it('bietet ohne Einwilligung nur das Dokumentationsfoto an und sagt, warum (ADR-017 Punkt 44)', async () => {
     fetchDatenschutzvermerke.mockResolvedValue([]);
     seite();
 
-    expect(await screen.findByText(/Keine Einwilligung vermerkt/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/Keine Einwilligung zu Arbeitshilfen vermerkt/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
+    expect(screen.getByRole('radio', { name: DOKU })).toBeEnabled();
+    expect(screen.getByText(/Nicht möglich: Es ist keine Einwilligung/)).toBeVisible();
     expect(screen.getByRole('link', { name: 'Zum Datenschutz der Akte' })).toHaveAttribute(
       'href',
       `/patienten/${PATIENT}/datenschutz`,
@@ -132,14 +145,40 @@ describe('Patientenfotos', () => {
       { ...ERTEILT, record_kind: 'consent_refused', occurred_on: '2026-09-02' },
     ]);
     seite();
-    expect(await screen.findByText(/Einwilligung abgelehnt am 02.09.2026/)).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
+    expect(
+      await screen.findByText(/Einwilligung zu Arbeitshilfen abgelehnt am 02.09.2026/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
+  });
+
+  it('startet ohne Vorauswahl: Aufnehmen erst nach der Wahl, danach wieder ohne (Punkt 44)', async () => {
+    const user = userEvent.setup();
+    seite();
+
+    const aufnehmen = await screen.findByRole('button', { name: 'Foto aufnehmen' });
+    expect(screen.getByRole('radio', { name: DOKU })).not.toBeChecked();
+    expect(screen.getByRole('radio', { name: HILFE })).not.toBeChecked();
+    expect(aufnehmen).toBeDisabled();
+
+    await waehlen(user, HILFE);
+    expect(aufnehmen).toBeEnabled();
+    await user.click(aufnehmen);
+    await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
+    await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
+    await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
+
+    await waitFor(() => expect(speicherePatientenfoto).toHaveBeenCalledTimes(1));
+    expect((speicherePatientenfoto.mock.calls[0]![0] as { art: string }).art).toBe('patientenfoto');
+    expect(await screen.findByText(/ist gespeichert/)).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: HILFE })).not.toBeChecked();
+    expect(screen.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
   });
 
   it('nimmt ein Foto nur über die Kamera auf - nirgends ein Dateiwähler (Punkt 33)', async () => {
     const user = userEvent.setup();
     const { container } = seite();
 
+    await waehlen(user);
     await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
     const dialog = await screen.findByRole('dialog', { name: 'Foto aufnehmen' });
     expect(
@@ -156,10 +195,12 @@ describe('Patientenfotos', () => {
     await waitFor(() => expect(speicherePatientenfoto).toHaveBeenCalledTimes(1));
     const auftrag = speicherePatientenfoto.mock.calls[0]![0] as {
       patientId: string;
+      art: string;
       anzeigename: string;
       foto: Blob;
     };
     expect(auftrag.patientId).toBe(PATIENT);
+    expect(auftrag.art).toBe('dokumentationsfoto');
     expect(auftrag.anzeigename).toBe('Knie rechts, Schwellung');
     expect(auftrag.foto.type).toBe('image/jpeg');
     expect(await screen.findByText(/ist gespeichert/)).toBeInTheDocument();
@@ -175,6 +216,7 @@ describe('Patientenfotos', () => {
       .mockResolvedValueOnce('neu');
     seite();
 
+    await waehlen(user);
     await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
     await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
     await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
@@ -202,9 +244,8 @@ describe('Patientenfotos', () => {
     const { container } = seite();
 
     expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
-    expect(
-      screen.getByText(/01.09.2026 · Anna Beispiel · wird spätestens am 01.09.2027/),
-    ).toBeVisible();
+    expect(screen.getByText('01.09.2026 · Anna Beispiel')).toBeVisible();
+    expect(screen.getByText('Arbeitshilfe · wird spätestens am 01.09.2027 gelöscht')).toBeVisible();
     expect(container.querySelector('img')).toBeNull();
     expect(ladePatientenfoto).not.toHaveBeenCalled();
   });
@@ -276,6 +317,30 @@ describe('Patientenfotos', () => {
     expect(screen.queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
   });
 
+  it('führt ein Dokumentationsfoto als Teil der Akte, ohne Löschen nach dem Aufnahmetag (Punkt 48)', async () => {
+    fetchPatientenfotos.mockResolvedValue([
+      foto({ document_type: 'dokumentationsfoto', delete_after: null, deletable: false }),
+    ]);
+    seite();
+
+    expect(await screen.findByText('Dokumentationsfoto · Teil der Akte')).toBeVisible();
+    expect(screen.queryByText(/wird spätestens/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
+  });
+
+  it('nennt beim Löschen eines Dokumentationsfotos am Aufnahmetag die Grenze', async () => {
+    const user = userEvent.setup();
+    fetchPatientenfotos.mockResolvedValue([
+      foto({ document_type: 'dokumentationsfoto', delete_after: null, deletable: true }),
+    ]);
+    seite();
+
+    await user.click(await screen.findByRole('button', { name: 'Löschen' }));
+    expect(screen.getByRole('group', { name: '„Knie rechts“ löschen' })).toHaveTextContent(
+      'nur am Tag der Aufnahme löschen',
+    );
+  });
+
   it('löscht erst nach einer Rückfrage', async () => {
     const user = userEvent.setup();
     fetchPatientenfotos.mockResolvedValue([foto()]);
@@ -315,13 +380,22 @@ describe('Patientenfotos', () => {
       expect(
         await screen.findByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
       ).toBeInTheDocument();
-      expect(screen.queryByText(/Keine Einwilligung vermerkt/)).toBeNull();
-      expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).toBeNull();
+      expect(
+        screen.queryByText(
+          /Keine Einwilligung zu Arbeitshilfen vermerkt|Es ist keine Einwilligung/,
+        ),
+      ).toBeNull();
+      // Das Dokumentationsfoto braucht keine Einwilligung; die Arbeitshilfe
+      // bleibt zu, bis der Stand geladen ist.
+      expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
+      expect(screen.getByRole('radio', { name: DOKU })).toBeEnabled();
 
       fetchDatenschutzvermerke.mockResolvedValue([ERTEILT]);
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
-      expect(await screen.findByText(/Einwilligung erteilt am 30.08.2026/)).toBeInTheDocument();
-      expect(await screen.findByRole('button', { name: 'Foto aufnehmen' })).toBeInTheDocument();
+      expect(
+        await screen.findByText(/Einwilligung zu Arbeitshilfen erteilt am 30.08.2026/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('radio', { name: HILFE })).toBeEnabled();
     });
 
     it('sagt, solange die Einwilligung lädt, genau das', () => {
@@ -368,6 +442,7 @@ describe('Patientenfotos', () => {
       const user = userEvent.setup();
       seite();
 
+      await waehlen(user);
       await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
       await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
       await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
@@ -375,7 +450,9 @@ describe('Patientenfotos', () => {
       await waitFor(() =>
         expect(screen.getByRole('button', { name: 'Foto speichern' })).toHaveFocus(),
       );
-      expect(screen.getByRole('heading', { level: 3, name: 'Neues Foto' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { level: 3, name: 'Neues Foto · Dokumentationsfoto' }),
+      ).toBeInTheDocument();
     });
 
     it('bietet am Rechner ohne Kamera keine Aufnahme an und sagt, warum (DAT-25)', async () => {

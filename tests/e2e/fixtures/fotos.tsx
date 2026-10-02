@@ -51,26 +51,32 @@ const nutzer: CurrentUser = {
 const FOTOS: Patientenfoto[] = [
   {
     id: 'f3',
+    document_type: 'dokumentationsfoto',
     display_name: 'Testgegenstand, dritte Aufnahme',
     taken_at: '2026-09-24T09:15:00Z',
     taken_by_name: 'Anna Beispiel',
-    delete_after: '2027-09-24T09:15:00Z',
+    delete_after: null,
+    deletable: false,
     object_missing: false,
   },
   {
     id: 'f2',
+    document_type: 'patientenfoto',
     display_name: 'Testgegenstand, zweite Aufnahme',
     taken_at: '2026-09-10T14:30:00Z',
     taken_by_name: 'Tim Teamleitung',
     delete_after: '2027-09-10T14:30:00Z',
+    deletable: true,
     object_missing: false,
   },
   {
     id: 'f1',
+    document_type: 'patientenfoto',
     display_name: 'Testgegenstand, erste Aufnahme',
     taken_at: '2026-08-27T08:00:00Z',
     taken_by_name: 'Anna Beispiel',
     delete_after: '2027-08-27T08:00:00Z',
+    deletable: true,
     object_missing: false,
   },
 ];

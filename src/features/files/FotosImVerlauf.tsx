@@ -21,18 +21,22 @@ import { Kameradialog } from './Kameradialog';
 import { fotoVomHeutigenTag, useKamera } from './kamera';
 import {
   fetchPatientenfotos,
+  fotoartLabels,
   ladePatientenfoto,
   speicherePatientenfoto,
+  type Fotoart,
   type Patientenfoto,
 } from './patientenfotos';
 
 /**
- * Fotos im Verlauf (DOK-006, ADR-017 Abschnitt G).
+ * Fotos im Verlauf (DOK-006, ADR-017 Abschnitte G und H).
  *
- * Arbeitshilfe für Übergabe und Vergleich — nicht die Dokumentation. Was die
- * Therapeut:in auf einem Foto oder im Vergleich zweier Fotos als wesentlich
- * sieht, steht in Worten im Eintrag (Punkt 35). Das sagt der Abschnitt, bevor
- * er irgendetwas anbietet.
+ * Zwei Arten (Punkt 43): das **Dokumentationsfoto** gehört zur Akte, die
+ * **Arbeitshilfe** ist für Übergabe und Vergleich und liegt neben ihr. Die
+ * Wahl fällt vor der Aufnahme, ohne Vorauswahl (Punkt 44). Keines ersetzt
+ * einen Eintrag: Was die Therapeut:in auf einem Foto oder im Vergleich zweier
+ * Fotos als wesentlich sieht, steht in Worten im Eintrag (Punkte 35 und 45).
+ * Das sagt der Abschnitt, bevor er irgendetwas anbietet.
  *
  * Was hier bewusst fehlt, weil ADR-017 es ausschließt:
  *
@@ -94,19 +98,22 @@ function Einwilligungsstand({
   patientId: string;
   stand: ReturnType<typeof datenschutzstand>['einwilligungen'][number] | undefined;
 }) {
+  // Die Einwilligung gilt nur der Arbeitshilfe; Dokumentationsfotos berührt
+  // sie nicht (ADR-017 Punkt 46).
   if (stand?.erteilt) {
     return (
       <p className="text-ink-muted text-sm">
-        Einwilligung erteilt am {kalendertag(stand.seit)}. Ein Widerruf löscht alle Fotos sofort.
+        Einwilligung zu Arbeitshilfen erteilt am {kalendertag(stand.seit)}. Ein Widerruf löscht alle
+        Arbeitshilfen sofort; Dokumentationsfotos bleiben in der Akte.
       </p>
     );
   }
 
   const text = stand?.abgelehnt
-    ? `Einwilligung abgelehnt am ${kalendertag(stand.seit)}. Ohne Einwilligung entstehen keine Fotos.`
+    ? `Einwilligung zu Arbeitshilfen abgelehnt am ${kalendertag(stand.seit)}. Möglich sind nur Dokumentationsfotos.`
     : stand?.seit
-      ? `Einwilligung widerrufen am ${kalendertag(stand.seit)}. Neue Fotos erst nach einer neuen Einwilligung.`
-      : 'Keine Einwilligung vermerkt. Fotos entstehen erst, wenn sie vorliegt.';
+      ? `Einwilligung zu Arbeitshilfen widerrufen am ${kalendertag(stand.seit)}. Neue Arbeitshilfen erst nach einer neuen Einwilligung.`
+      : 'Keine Einwilligung zu Arbeitshilfen vermerkt. Möglich sind nur Dokumentationsfotos.';
 
   return (
     <div>
@@ -122,9 +129,38 @@ function Einwilligungsstand({
 // Aufnahme
 // -----------------------------------------------------------------------------
 
-function Aufnahme({ patientId }: { patientId: string }) {
+/**
+ * Die beiden Wahlmöglichkeiten vor der Aufnahme (ADR-017 Punkt 44, Wortlaut
+ * ANN-221). Was die Art bedeutet, steht in der Wahl selbst — Frist und
+ * Einwilligung —, damit niemand ein Foto ungewollt zehn Jahre liegen lässt
+ * oder ungewollt nach einem Jahr verliert.
+ */
+const FOTOART_WAHL: Record<Fotoart, { titel: string; text: string }> = {
+  dokumentationsfoto: {
+    titel: 'Teil der Dokumentation (Akte, zehn Jahre)',
+    text: 'Für die Dokumentation der Behandlung erforderlich. Keine Einwilligung nötig; löschen nur heute.',
+  },
+  patientenfoto: {
+    titel: 'Arbeitshilfe (höchstens zwölf Monate, nur mit Einwilligung)',
+    text: 'Für Übergabe und Vergleich. Ein Widerruf löscht sie sofort.',
+  },
+};
+
+function Aufnahme({
+  patientId,
+  einwilligungErteilt,
+}: {
+  patientId: string;
+  /**
+   * Darf eine Arbeitshilfe entstehen? `null`: Der Stand ist nicht geladen -
+   * dann nein, ohne eine fehlende Einwilligung zu behaupten (DAT-03).
+   */
+  einwilligungErteilt: boolean | null;
+}) {
   const queryClient = useQueryClient();
   const kamera = useKamera();
+  // Keine Vorauswahl, auch nicht nach dem letzten Foto (Punkt 44).
+  const [art, setArt] = useState<Fotoart | null>(null);
   const [kameraOffen, setKameraOffen] = useState(false);
   const [foto, setFoto] = useState<Blob | null>(null);
   const [vorschau, setVorschau] = useState<string | null>(null);
@@ -133,7 +169,7 @@ function Aufnahme({ patientId }: { patientId: string }) {
   const speichernRef = useRef<HTMLButtonElement>(null);
 
   const speichern = useMutation({
-    mutationFn: (auftrag: { foto: Blob; anzeigename: string }) =>
+    mutationFn: (auftrag: { art: Fotoart; foto: Blob; anzeigename: string }) =>
       speicherePatientenfoto({ patientId, ...auftrag }),
     onSuccess: (_id, auftrag) => {
       setErfolg(`„${auftrag.anzeigename}“ ist gespeichert.`);
@@ -168,7 +204,13 @@ function Aufnahme({ patientId }: { patientId: string }) {
     setFoto(null);
     setVorschau(null);
     setName('');
+    setArt(null);
   }
+
+  // Wird die Einwilligung widerrufen, während die Arbeitshilfe gewählt ist,
+  // gilt die Wahl nicht mehr.
+  const gewaehlt = art === 'patientenfoto' && !einwilligungErteilt ? null : art;
+  const gruppe = `fotoart-${patientId}`;
 
   if (kamera === 'ohneSchnittstelle') {
     return (
@@ -197,7 +239,7 @@ function Aufnahme({ patientId }: { patientId: string }) {
               (DAT-20). Kein gestrichelter Kasten - Ablegen per Ziehen gibt es
               nicht (DAT-21). */}
           <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-            Neues Foto
+            Neues Foto{gewaehlt ? ` · ${fotoartLabels[gewaehlt]}` : ''}
           </h3>
           <img
             src={vorschau}
@@ -219,9 +261,14 @@ function Aufnahme({ patientId }: { patientId: string }) {
             <Button
               ref={speichernRef}
               type="button"
-              disabled={speichern.isPending}
+              disabled={speichern.isPending || !gewaehlt}
               onClick={() =>
-                speichern.mutate({ foto, anzeigename: name.trim() || fotoVomHeutigenTag() })
+                gewaehlt &&
+                speichern.mutate({
+                  art: gewaehlt,
+                  foto,
+                  anzeigename: name.trim() || fotoVomHeutigenTag(),
+                })
               }
             >
               {speichern.isPending ? 'Wird gespeichert …' : 'Foto speichern'}
@@ -244,9 +291,48 @@ function Aufnahme({ patientId }: { patientId: string }) {
           <Fotoverlustschutz />
         </div>
       ) : (
-        <Button type="button" onClick={() => setKameraOffen(true)}>
-          Foto aufnehmen
-        </Button>
+        <div className="flex flex-col gap-3">
+          <fieldset className="flex flex-col gap-1">
+            <legend className="text-ink text-sm font-medium">Wofür ist das Foto?</legend>
+            {(['dokumentationsfoto', 'patientenfoto'] as const).map((k) => {
+              const gesperrt = k === 'patientenfoto' && !einwilligungErteilt;
+              return (
+                <label
+                  key={k}
+                  className={`flex min-h-11 items-start gap-3 py-1 ${gesperrt ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                >
+                  <input
+                    type="radio"
+                    name={gruppe}
+                    className="border-line-strong text-accent focus-visible:outline-accent mt-0.5 size-5 shrink-0"
+                    checked={gewaehlt === k}
+                    disabled={gesperrt}
+                    onChange={() => setArt(k)}
+                  />
+                  <span className="text-sm">
+                    <span
+                      className={`block font-medium ${gesperrt ? 'text-ink-muted' : 'text-ink'}`}
+                    >
+                      {FOTOART_WAHL[k].titel}
+                    </span>
+                    <span className="text-ink-muted block">
+                      {!gesperrt
+                        ? FOTOART_WAHL[k].text
+                        : einwilligungErteilt === null
+                          ? 'Nicht möglich, solange der Stand der Einwilligung nicht geladen ist.'
+                          : 'Nicht möglich: Es ist keine Einwilligung zu Arbeitshilfen vermerkt.'}
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
+          </fieldset>
+          <div>
+            <Button type="button" disabled={!gewaehlt} onClick={() => setKameraOffen(true)}>
+              Foto aufnehmen
+            </Button>
+          </div>
+        </div>
       )}
 
       {erfolg ? (
@@ -402,8 +488,13 @@ function Fotozeile({
           <p className="text-ink text-liste font-medium">{foto.display_name}</p>
           <p className="text-ink-muted mt-0.5">
             {tagDerPraxis(foto.taken_at, zeitzone)}
-            {foto.taken_by_name ? ` · ${foto.taken_by_name}` : ''} · wird spätestens am{' '}
-            {tagDerPraxis(foto.delete_after, zeitzone)} gelöscht
+            {foto.taken_by_name ? ` · ${foto.taken_by_name}` : ''}
+          </p>
+          <p className="text-ink-muted mt-0.5">
+            {fotoartLabels[foto.document_type]}
+            {foto.delete_after
+              ? ` · wird spätestens am ${tagDerPraxis(foto.delete_after, zeitzone)} gelöscht`
+              : ' · Teil der Akte'}
           </p>
         </div>
         {foto.object_missing ? null : (
@@ -441,6 +532,9 @@ function Fotozeile({
                 <span className="wrap-anywhere">
                   „{foto.display_name}“ wird sofort aus der Liste entfernt. Das lässt sich nicht
                   rückgängig machen.
+                  {foto.document_type === 'dokumentationsfoto'
+                    ? ' Ein Dokumentationsfoto lässt sich nur am Tag der Aufnahme löschen.'
+                    : ''}
                 </span>
               </Rueckfrage>
             ) : null}
@@ -552,7 +646,7 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
   return (
     <Section
       titel="Fotos"
-      hinweis="Arbeitshilfe für Übergabe und Vergleich, neben der Akte. Ein Foto ersetzt keinen Eintrag: Was wesentlich ist, steht in Worten in der Dokumentation."
+      hinweis="Dokumentationsfotos gehören zur Akte, Arbeitshilfen für Übergabe und Vergleich liegen neben ihr. Kein Foto ersetzt einen Eintrag: Was wesentlich ist, steht in Worten in der Dokumentation."
     >
       {/* Gesagt wird nur, was geladen ist (DAT-03, ZST-09): Scheitert das
           Laden der Vermerke, steht nicht „Keine Einwilligung vermerkt" da,
@@ -562,16 +656,19 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
       ) : vermerke.isError ? (
         <ErrorState
           title="Der Stand der Einwilligung konnte nicht geladen werden."
-          description="Bis er geladen ist, lassen sich keine Fotos aufnehmen. Bitte die Verbindung prüfen und erneut versuchen."
+          description="Bis er geladen ist, lassen sich nur Dokumentationsfotos aufnehmen. Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => vermerke.refetch()}
         />
       ) : (
         <Einwilligungsstand patientId={patientId} stand={einwilligung} />
       )}
 
-      {darfAufnehmen && einwilligung?.erteilt ? (
+      {darfAufnehmen && !vermerke.isPending ? (
         <div className="mt-3">
-          <Aufnahme patientId={patientId} />
+          <Aufnahme
+            patientId={patientId}
+            einwilligungErteilt={vermerke.isSuccess ? einwilligung?.erteilt === true : null}
+          />
         </div>
       ) : null}
 
@@ -596,7 +693,7 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
                 foto={foto}
                 zeitzone={zeitzone}
                 patientId={patientId}
-                darfLoeschen={darfAufnehmen}
+                darfLoeschen={darfAufnehmen && foto.deletable}
                 ausgewaehlt={gewaehlt.includes(foto.id)}
                 auswahlVoll={gewaehlt.length >= 2}
                 laeuft={laeuft}

@@ -34,6 +34,7 @@ const { herausgabeDateiname } = await import('./patientenfotos');
 
 const FOTO: FotoApi.HerausgabeFoto = {
   id: 'f1',
+  document_type: 'patientenfoto',
   display_name: 'Knie rechts/links: Vergleich',
   taken_at: '2026-09-01T08:00:00Z',
   locked: false,
