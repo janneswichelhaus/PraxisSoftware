@@ -155,9 +155,27 @@ as $$ select 'begleitung-2026-10-02' $$;
 
 revoke all on function app.platform_companion_consent_version() from public, anon, authenticated;
 
+-- ANN-208: minderjaehrig am heutigen Tag in der Zeitzone der Praxis. `null`
+-- ohne Geburtsdatum - die Aufrufer behandeln das restriktiv. Die eine Stelle
+-- fuer Einladen, neuen Code und das Ende eines Vertretungszugangs
+-- (Zweitreview: vorher rechnete die Einladung in UTC, das Ende in der Praxis).
+create function app.platform_is_minor(p_date_of_birth date, p_time_zone text)
+returns boolean
+language sql
+stable
+set search_path = ''
+as $$
+  select p_date_of_birth > (now() at time zone p_time_zone)::date
+                           - make_interval(years => app.platform_min_age_years())
+$$;
+
+revoke all on function app.platform_is_minor(date, text) from public, anon, authenticated;
+
 -- -----------------------------------------------------------------------------
 -- 4. Das Ende eines Zugangs: am 18. Geburtstag endet das Sorgerecht
---    (Punkt 15, ANN-208). Sonst unveraendert.
+--    (Punkt 15, ANN-208). Zweitreview: Jede andere Vertretung endet, sobald
+--    die Person nach ihrem Geburtsdatum minderjaehrig ist oder keins mehr
+--    traegt - auch nach einer nachtraeglichen Korrektur. Sonst unveraendert.
 -- -----------------------------------------------------------------------------
 create or replace function app.platform_access_ended_at(p_access_id uuid)
 returns timestamptz
@@ -187,6 +205,10 @@ as $$
                at time zone o.time_zone),
             -- Ohne Geburtsdatum ist das Sorgerecht nicht pruefbar: beendet.
             a.created_at)
+        end,
+        case when a.access_kind <> 'self' and a.legal_basis is distinct from 'custody'
+              and coalesce(app.platform_is_minor(r.date_of_birth, o.time_zone), true)
+          then a.created_at
         end
       )
   end
@@ -246,6 +268,13 @@ begin
        or new.proof_documents is distinct from old.proof_documents
        or new.consent_text_version is distinct from old.consent_text_version
        or new.consent_earlier_messages is distinct from old.consent_earlier_messages
+       or new.guardianship_health_scope is distinct from old.guardianship_health_scope
+       or new.proof_recorded_by is distinct from old.proof_recorded_by
+       or new.proof_recorded_at is distinct from old.proof_recorded_at
+       or new.consent_recorded_by is distinct from old.consent_recorded_by
+       or new.consent_recorded_at is distinct from old.consent_recorded_at
+       or new.relationship_kind is distinct from old.relationship_kind
+       or new.organization_id is distinct from old.organization_id
        or new.relationship_id is distinct from old.relationship_id) then
     raise exception 'platform access kind and proof are fixed' using errcode = '23514';
   end if;
@@ -341,6 +370,7 @@ create function app.assert_platform_representation(
   p_access_kind     text,
   p_legal_basis     text,
   p_date_of_birth   date,
+  p_time_zone       text,
   p_name            text,
   p_proof_documents text[],
   p_health_scope    boolean,
@@ -366,8 +396,7 @@ begin
   if p_date_of_birth is null then
     raise exception 'date of birth required' using errcode = '22023';
   end if;
-  v_minderjaehrig := p_date_of_birth > (now() at time zone 'UTC')::date
-                       - make_interval(years => app.platform_min_age_years());
+  v_minderjaehrig := app.platform_is_minor(p_date_of_birth, p_time_zone);
 
   if p_proof_documents is null or not (p_proof_documents @> array['identity_document']::text[]) then
     raise exception 'identity document must be seen' using errcode = '22023';
@@ -408,7 +437,7 @@ begin
 end;
 $$;
 
-revoke all on function app.assert_platform_representation(text, text, date, text, text[], boolean, text, boolean)
+revoke all on function app.assert_platform_representation(text, text, date, text, text, text[], boolean, text, boolean)
   from public, anon, authenticated;
 
 -- Der Code einer Einladung: 24 Zufallsbytes, URL-tauglich kodiert (wie
@@ -499,7 +528,8 @@ begin
   end if;
 
   perform app.assert_platform_representation(
-    p_access_kind, p_legal_basis, v_rel.date_of_birth, p_representative_name,
+    p_access_kind, p_legal_basis, v_rel.date_of_birth,
+    (select o.time_zone from public.organizations o where o.id = v_org), p_representative_name,
     p_proof_documents, p_health_scope, p_consent_version, p_earlier_messages
   );
 
@@ -579,6 +609,7 @@ declare
   v_access  public.platform_accesses%rowtype;
   v_purpose text;
   v_inv     record;
+  v_minderjaehrig boolean;
 begin
   v_actor := auth.uid();
   if v_actor is null then
@@ -595,10 +626,19 @@ begin
   if v_access.access_kind = 'self' then
     raise exception 'use invite_platform_access for the person' using errcode = '22023';
   end if;
-  -- Ein beendetes Sorgerecht oder eine abgelaufene Lesefrist bekommt keinen
-  -- neuen Code.
-  if v_access.status = 'active'
-     and coalesce(app.platform_access_ended_at(v_access.id) <= now(), false) then
+  -- Eine abgelaufene Lesefrist bekommt keinen neuen Code, und keine
+  -- Vertretung, deren Art nicht mehr zum Alter passt - auch nicht als offene
+  -- Einladung (Zweitreview; Punkt 15, ANN-208): ein Sorgerecht ab 18, jede
+  -- andere Art unter 18 oder ohne Geburtsdatum.
+  v_minderjaehrig := app.platform_is_minor(
+    (select r.date_of_birth
+       from app.platform_relationship(v_access.relationship_kind, v_access.relationship_id) r),
+    (select o.time_zone from public.organizations o where o.id = v_org)
+  );
+  if (v_access.status = 'active'
+      and coalesce(app.platform_access_ended_at(v_access.id) <= now(), false))
+     or v_minderjaehrig is null
+     or v_minderjaehrig <> (v_access.legal_basis is not distinct from 'custody') then
     raise exception 'platform access has ended' using errcode = '22023';
   end if;
 
@@ -606,12 +646,13 @@ begin
     v_purpose := 'activate';
   elsif v_access.status = 'active' then
     v_purpose := 'reset';
-    -- Wie POR-002: Ein neues Kennwort gilt fuer das ganze Konto.
+    -- Wie POR-002: Ein neues Kennwort gilt fuer das ganze Konto. Zweitreview:
+    -- auch ueber Organisationen hinweg - die Rolle hier gilt nur hier.
     if exists (
       select 1 from public.platform_accesses b
       where b.account_user_id = v_access.account_user_id
         and b.status <> 'revoked'
-        and not app.can_manage_platform_access(b.relationship_kind)
+        and (b.organization_id <> v_org or not app.can_manage_platform_access(b.relationship_kind))
     ) then
       raise exception 'reset needs every area of this account' using errcode = '22023';
     end if;
@@ -764,3 +805,230 @@ grant execute on function public.list_platform_representations(text, uuid) to au
 
 comment on function public.list_platform_representations(text, uuid) is
   'POR-005: Vertretungen eines Verhaeltnisses mit Art, Name der vertretenden Person, Nachweis und Zustand fuer den Abschnitt "Plattform". Rollen, die das Verhaeltnis lesen; abgewiesen mit denied (platform_accesses.read). Ohne Konto, Adresse und Code.';
+
+-- -----------------------------------------------------------------------------
+-- 11. Zweitreview: Neues Kennwort fuer den eigenen Zugang nur, wenn das Konto
+--     keinen lebenden Zugang in einer anderen Organisation hat. Sonst
+--     unveraendert aus POR-002.
+-- -----------------------------------------------------------------------------
+create or replace function public.invite_platform_access(
+  p_relationship_kind text,
+  p_relationship_id   uuid,
+  p_channel           text,
+  p_address_confirmed boolean default false
+)
+returns table (
+  access_id     uuid,
+  invitation_id uuid,
+  purpose       text,
+  code          text,
+  expires_at    timestamptz
+)
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor   uuid;
+  v_org     uuid;
+  v_rel     record;
+  v_access  public.platform_accesses%rowtype;
+  v_purpose text;
+  v_code    text;
+  v_inv     uuid;
+  v_expires timestamptz;
+  v_email   text;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+  if not app.can_manage_platform_access(p_relationship_kind) then
+    perform app.record_denied_write(v_actor, 'platform_access.invited', 'not allowed to manage platform access');
+    return;
+  end if;
+  v_org := app.current_organization_id();
+
+  if p_channel is null or p_channel not in ('on_site', 'email') then
+    raise exception 'unknown channel' using errcode = '22023';
+  end if;
+
+  select * into v_rel
+  from app.platform_relationship(p_relationship_kind, p_relationship_id) r
+  where r.organization_id = v_org;
+  if not found then
+    raise exception 'relationship not found' using errcode = 'P0002';
+  end if;
+
+  -- Punkt 15 (W4): Unter 18 gibt es keinen eigenen Zugang. Ohne Geburtsdatum
+  -- laesst sich das nicht pruefen, und die restriktive Seite gilt (§16,
+  -- ANN-190).
+  if v_rel.date_of_birth is null then
+    raise exception 'date of birth required' using errcode = '22023';
+  end if;
+  -- W1 (Punkt 2): eine Person mit Praxiskonto bekommt keinen Zugang.
+  if exists (
+    select 1 from public.user_profiles up
+    join public.user_roles ur on ur.user_id = up.id
+    where up.person_id = v_rel.person_id
+  ) then
+    raise exception 'person has a practice account' using errcode = '22023';
+  end if;
+  if v_rel.date_of_birth > (now() at time zone 'UTC')::date
+                           - make_interval(years => app.platform_min_age_years()) then
+    raise exception 'person is under age' using errcode = '22023';
+  end if;
+
+  -- Punkt 11 (Fassung 2, ANN-188): Mail nur an die Adresse im Verhaeltnis,
+  -- und nur, wenn die einladende Person vermerkt, dass die Person sie selbst
+  -- bestaetigt hat.
+  if p_channel = 'email' then
+    if v_rel.email is null then
+      raise exception 'no email address on record' using errcode = '22023';
+    end if;
+    if not coalesce(p_address_confirmed, false) then
+      raise exception 'address must be confirmed by the person' using errcode = '22023';
+    end if;
+    v_email := v_rel.email;
+  end if;
+
+  select * into v_access
+  from public.platform_accesses a
+  where a.relationship_id = p_relationship_id
+    and a.relationship_kind = p_relationship_kind
+    and a.access_kind = 'self'
+    and a.status <> 'revoked'
+  for update;
+
+  if not found then
+    insert into public.platform_accesses (
+      organization_id, relationship_kind, relationship_id,
+      patient_id, training_relationship_id, created_by
+    )
+    values (
+      v_org, p_relationship_kind, p_relationship_id,
+      case when p_relationship_kind = 'treatment' then p_relationship_id end,
+      case when p_relationship_kind = 'training' then p_relationship_id end,
+      v_actor
+    )
+    returning * into v_access;
+    v_purpose := 'activate';
+  elsif v_access.status = 'invited' then
+    v_purpose := 'activate';
+  elsif v_access.status = 'active' then
+    v_purpose := 'reset';
+    -- Zweitreview: Ein neues Kennwort gilt fuer das ganze Konto und damit
+    -- fuer jeden seiner Zugaenge. Ausstellen darf es nur, wer alle lebenden
+    -- Zugaenge des Kontos verwalten darf - sonst oeffnete die
+    -- Trainingsbetreuung den Weg in die Behandlung und umgekehrt (§4.8).
+    if exists (
+      select 1 from public.platform_accesses b
+      where b.account_user_id = v_access.account_user_id
+        and b.status <> 'revoked'
+        -- POR-005, Zweitreview: auch ueber Organisationen hinweg. Die Rolle
+        -- gilt nur in der eigenen Praxis; ein Konto mit Zugang in einer
+        -- zweiten Praxis bekommt hier kein neues Kennwort.
+        and (b.organization_id <> v_org or not app.can_manage_platform_access(b.relationship_kind))
+    ) then
+      raise exception 'reset needs every area of this account' using errcode = '22023';
+    end if;
+  else
+    raise exception 'platform access is locked' using errcode = '22023';
+  end if;
+
+  update public.platform_access_invitations i
+     set status = 'revoked', revoked_at = now()
+   where i.platform_access_id = v_access.id and i.status = 'pending';
+
+  -- 24 Zufallsbytes, URL-tauglich kodiert: 32 Zeichen, nicht zu erraten.
+  v_code := translate(encode(extensions.gen_random_bytes(24), 'base64'), '+/', '-_');
+  v_expires := now() + app.platform_invitation_validity();
+
+  insert into public.platform_access_invitations (
+    organization_id, platform_access_id, purpose, channel, code_hash, email,
+    address_confirmed_by, address_confirmed_at, expires_at, created_by
+  )
+  values (
+    v_org, v_access.id, v_purpose, p_channel, app.platform_code_hash(v_code), v_email,
+    case when p_channel = 'email' then v_actor end,
+    case when p_channel = 'email' then now() end,
+    v_expires, v_actor
+  )
+  returning id into v_inv;
+
+  perform app.log_platform_access_event(
+    v_org, v_actor, 'user', 'platform_access.invited', v_access.id,
+    jsonb_build_object('surface', 'web', 'channel', p_channel, 'purpose', v_purpose,
+                       'relationship_kind', p_relationship_kind)
+  );
+
+  return query select v_access.id, v_inv, v_purpose, v_code, v_expires;
+end;
+$$;
+
+revoke all on function public.invite_platform_access(text, uuid, text, boolean) from public, anon;
+grant execute on function public.invite_platform_access(text, uuid, text, boolean) to authenticated;
+
+comment on function public.invite_platform_access(text, uuid, text, boolean) is
+  'POR-002: laedt zu einem Plattformzugang ein (vor Ort oder per Mail an die bestaetigte Adresse, ANN-188) und liefert den Code einmal. Rollen, die das Verhaeltnis schreiben (ADR-023 Punkt 6); abgewiesen mit denied und HTTP 403.';
+
+-- -----------------------------------------------------------------------------
+-- 12. Widerruf einer Begleitung, erklaert in der Praxis (Punkte 5, 13)
+--
+-- Zweitreview: Der Wortlaut der Einwilligung sagt "widerrufen bei der Praxis
+-- oder unter 'Ich'". Erklaert die Person den Widerruf in der Praxis, steht er
+-- als Widerruf im Nachweis (`consent_withdrawn`), nicht als Entziehen durch
+-- die Praxis. Wirkung wie ein Entziehen.
+-- -----------------------------------------------------------------------------
+create function public.record_companion_consent_withdrawn(p_access_id uuid)
+returns text
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_actor  uuid;
+  v_org    uuid;
+  v_access public.platform_accesses%rowtype;
+begin
+  v_actor := auth.uid();
+  if v_actor is null then
+    raise exception 'not authenticated' using errcode = '42501';
+  end if;
+  v_org := app.current_organization_id();
+
+  v_access := app.platform_access_for_update(p_access_id, v_org);
+  if v_access.id is null or not app.can_manage_platform_access(v_access.relationship_kind) then
+    perform app.record_denied_write(v_actor, 'platform_access.revoked', 'not allowed to manage platform access');
+    return null;
+  end if;
+  if v_access.access_kind <> 'companion' then
+    raise exception 'only a companion rests on consent' using errcode = '22023';
+  end if;
+  if v_access.status = 'revoked' then
+    raise exception 'platform access is already revoked' using errcode = '22023';
+  end if;
+
+  update public.platform_accesses
+     set status = 'revoked', revoked_at = now(), revoked_by = v_actor,
+         revoked_reason = 'consent_withdrawn', locked_at = null, locked_by = null
+   where id = v_access.id;
+
+  update public.platform_access_invitations
+     set status = 'revoked', revoked_at = now()
+   where platform_access_id = v_access.id and status = 'pending';
+
+  perform app.log_platform_access_event(
+    v_org, v_actor, 'user', 'platform_access.revoked', v_access.id,
+    jsonb_build_object('surface', 'web', 'reason', 'consent_withdrawn',
+                       'previous_status', v_access.status)
+  );
+  return 'revoked';
+end;
+$$;
+
+revoke all on function public.record_companion_consent_withdrawn(uuid) from public, anon;
+grant execute on function public.record_companion_consent_withdrawn(uuid) to authenticated;
+
+comment on function public.record_companion_consent_withdrawn(uuid) is
+  'POR-005: vermerkt den in der Praxis erklaerten Widerruf der Einwilligung zur Begleitung (ADR-023 Punkte 5, 13) und beendet sie mit Grund consent_withdrawn. Rollen, die das Verhaeltnis schreiben; abgewiesen mit denied und HTTP 403.';

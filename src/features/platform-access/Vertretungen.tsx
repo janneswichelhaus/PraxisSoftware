@@ -24,6 +24,7 @@ import {
   invitePlatformRepresentation,
   listPlatformRepresentations,
   noteCompanionCapacityDoubt,
+  recordCompanionConsentWithdrawn,
   renewPlatformRepresentationCode,
   revokePlatformAccess,
   setPlatformAccessLocked,
@@ -179,6 +180,10 @@ function VertretungsEintrag({
     mutationFn: () => revokePlatformAccess(v.id),
     onSuccess: neuLaden,
   });
+  const widerrufen = useMutation({
+    mutationFn: () => recordCompanionConsentWithdrawn(v.id),
+    onSuccess: neuLaden,
+  });
 
   // Ein Sorgerecht endet am 18. Geburtstag, auch ohne Zutun (ANN-208).
   const abgelaufen = v.ended_at !== null && new Date(v.ended_at).getTime() <= Date.now();
@@ -256,6 +261,20 @@ function VertretungsEintrag({
                 {aktiv
                   ? `${v.representative_name} sieht ab sofort nichts mehr. Das lässt sich zurücknehmen.`
                   : `${v.representative_name} kann wieder für die Person handeln.`}
+              </p>
+            </Rueckfrage>
+          ) : null}
+          {v.access_kind === 'companion' ? (
+            <Rueckfrage
+              ausloeser="Widerruf vermerken"
+              bestaetigen="Widerruf vermerken"
+              bestaetigenLaeuft="Wird vermerkt …"
+              fehler={widerrufen.error?.message}
+              onBestaetigen={() => widerrufen.mutateAsync()}
+            >
+              <p>
+                Die Person widerruft ihre Einwilligung hier in der Praxis. {v.representative_name}{' '}
+                sieht ab sofort nichts mehr; im Nachweis steht der Widerruf.
               </p>
             </Rueckfrage>
           ) : null}

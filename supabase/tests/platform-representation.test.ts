@@ -7,6 +7,7 @@ import {
   asServiceRole,
   asUser,
   asUserCommitted,
+  FREMDE_ORGANISATION,
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
@@ -632,5 +633,139 @@ describe('Fassung der Einwilligung (ANN-206)', () => {
       'select app.platform_companion_consent_version() as v',
     );
     expect(rows[0]?.v).toBe(EINWILLIGUNG_BEGLEITUNG_FASSUNG);
+  });
+});
+
+describe('Zweitreview: Alter, Organisation, Widerruf, Riegel', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function aktiveBegleitungPetra(): Promise<string> {
+    const einladung = await vertretungEinladen(users.office, BEGLEITUNG_PETRA);
+    await neuesKonto(KONTO_PAULA, 'paula@patient.invalid');
+    await asServiceRole(EINLOESEN, [h(einladung.code), KONTO_PAULA]);
+    return einladung.access_id;
+  }
+
+  it.each([
+    ['nachtraeglich minderjaehrig', "current_date - interval '10 years'"],
+    ['ohne Geburtsdatum', null],
+  ])('beendet eine Begleitung, wenn die Person %s ist (Punkt 15)', async (_fall, ausdruck) => {
+    const id = await aktiveBegleitungPetra();
+    expect((await asUser<{ readable: boolean }>(KONTO_PAULA, KONTEXT)).rows[0]?.readable).toBe(
+      true,
+    );
+    await geburtsdatum(patients.petra, ausdruck);
+    expect((await asUser<{ readable: boolean }>(KONTO_PAULA, KONTEXT)).rows[0]?.readable).toBe(
+      false,
+    );
+    await expect(asUser(users.office, NEUER_CODE, [id])).rejects.toThrow(
+      'platform access has ended',
+    );
+  });
+
+  it('stellt einer offenen Sorgerechtseinladung nach dem 18. Geburtstag keinen neuen Code aus', async () => {
+    await geburtsdatum(patients.max, "current_date - interval '17 years'");
+    const einladung = await vertretungEinladen(users.office, {
+      ...BETREUUNG_MAX,
+      grundlage: 'custody',
+      name: 'Sara Sorge',
+      dokumente: ['identity_document', 'custody_proof'],
+      aufgabenkreis: null,
+    });
+    await geburtsdatum(patients.max, "current_date - interval '18 years' - interval '1 day'");
+    await expect(asUser(users.office, NEUER_CODE, [einladung.access_id])).rejects.toThrow(
+      'platform access has ended',
+    );
+  });
+
+  it('stellt kein neues Kennwort aus, wenn das Konto einen Zugang in einer anderen Praxis hat', async () => {
+    const fremd = await fremdeOrganisation();
+    await asPostgres(
+      `update public.patient_contact_details set date_of_birth = '1950-01-01' where patient_id = $1`,
+      [fremd.patient],
+    );
+    // Paula begleitet Petra hier und zugleich jemanden in der fremden Praxis.
+    const id = await aktiveBegleitungPetra();
+    await asPostgres(
+      `insert into public.platform_accesses
+         (organization_id, relationship_kind, relationship_id, patient_id, account_user_id, status,
+          activated_at, access_kind, representative_name, proof_documents, proof_recorded_by,
+          proof_recorded_at, consent_text_version, consent_recorded_by, consent_recorded_at,
+          consent_earlier_messages, created_by)
+       values ($1, 'treatment', $2, $2, $3, 'active', now(), 'companion', 'Paula Platzhalter',
+               array['identity_document'], $4, now(), $5, $4, now(), false, $4)`,
+      [
+        fremd.organizationId,
+        fremd.patient,
+        KONTO_PAULA,
+        fremd.owner,
+        EINWILLIGUNG_BEGLEITUNG_FASSUNG,
+      ],
+    );
+    await expect(asUser(users.ownerTherapist, NEUER_CODE, [id])).rejects.toThrow(
+      'reset needs every area of this account',
+    );
+    // Derselbe Riegel am eigenen Zugang (POR-002): Erika mit einer
+    // Begleitung in der fremden Praxis bekommt hier kein neues Kennwort.
+    await asPostgres(
+      `update public.platform_accesses set account_user_id = $1 where account_user_id = $2 and organization_id = $3`,
+      [users.plattformErika, KONTO_PAULA, fremd.organizationId],
+    );
+    await expect(
+      asUser(
+        users.ownerTherapist,
+        "select * from public.invite_platform_access('treatment', $1::uuid, 'on_site', false)",
+        [patients.erika],
+      ),
+    ).rejects.toThrow('reset needs every area of this account');
+  });
+
+  it('vermerkt einen in der Praxis erklaerten Widerruf als Widerruf', async () => {
+    const id = await aktiveBegleitungPetra();
+    await asUserCommitted(
+      users.office,
+      'select public.record_companion_consent_withdrawn($1::uuid)',
+      [id],
+    );
+    const { rows } = await asPostgres<{ status: string; revoked_reason: string }>(
+      'select status, revoked_reason from public.platform_accesses where id = $1',
+      [id],
+    );
+    expect(rows[0]).toEqual({ status: 'revoked', revoked_reason: 'consent_withdrawn' });
+    const log = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log where action = 'platform_access.revoked' and subject_id = $1`,
+      [id],
+    );
+    expect(log.rows[0]?.context).toMatchObject({ reason: 'consent_withdrawn', surface: 'web' });
+    // Eine rechtliche Vertretung beruht nicht auf einer Einwilligung.
+    const betreuung = await vertretungEinladen(users.office, BETREUUNG_MAX);
+    await expect(
+      asUser(users.office, 'select public.record_companion_consent_withdrawn($1::uuid)', [
+        betreuung.access_id,
+      ]),
+    ).rejects.toThrow('only a companion rests on consent');
+  });
+
+  it('haelt auch Zeitpunkt und Urheber des Nachweises fest', async () => {
+    const id = await aktiveBegleitungPetra();
+    for (const aenderung of [
+      "proof_recorded_at = now() - interval '1 day'",
+      'consent_recorded_by = null',
+      `organization_id = '${FREMDE_ORGANISATION.organizationId}'`,
+    ]) {
+      await expect(
+        asPostgres(`update public.platform_accesses set ${aenderung} where id = $1`, [id]),
+      ).rejects.toThrow();
+    }
+  });
+
+  it('andere Organisation: keine Liste, kein Vermerk', async () => {
+    const fremd = await fremdeOrganisation();
+    expect((await asUser(users.office, LISTE, ['treatment', fremd.patient])).rows).toEqual([]);
+    await expect(asUser(users.office, ZWEIFEL, ['treatment', fremd.patient])).rejects.toThrow(
+      'relationship not found',
+    );
   });
 });

@@ -21,6 +21,7 @@ const listPlatformRepresentations = vi.fn();
 const invitePlatformRepresentation = vi.fn();
 const noteCompanionCapacityDoubt = vi.fn();
 const renewPlatformRepresentationCode = vi.fn();
+const recordCompanionConsentWithdrawn = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof ZugangApi>();
@@ -35,6 +36,8 @@ vi.mock('./api', async (importOriginal) => {
       noteCompanionCapacityDoubt(...args) as Promise<void>,
     renewPlatformRepresentationCode: (...args: unknown[]) =>
       renewPlatformRepresentationCode(...args) as Promise<unknown>,
+    recordCompanionConsentWithdrawn: (...args: unknown[]) =>
+      recordCompanionConsentWithdrawn(...args) as Promise<void>,
   };
 });
 
@@ -118,6 +121,17 @@ describe('Vertretungen', () => {
     expect(eintrag).toHaveTextContent('Einwilligung der Person am');
     expect(eintrag).toHaveTextContent('ohne frühere Nachrichten');
     expect(within(eintrag).getByRole('button', { name: 'Sperren' })).toBeInTheDocument();
+  });
+
+  it('vermerkt einen Widerruf, den die Person in der Praxis erklaert', async () => {
+    listPlatformRepresentations.mockResolvedValue([PAULA]);
+    recordCompanionConsentWithdrawn.mockResolvedValue(undefined);
+    const user = userEvent.setup();
+    zeige();
+    const eintrag = (await screen.findByText('Paula Mustermann')).closest('li')!;
+    await user.click(within(eintrag).getByRole('button', { name: 'Widerruf vermerken' }));
+    await user.click(within(eintrag).getByRole('button', { name: 'Widerruf vermerken' }));
+    await waitFor(() => expect(recordCompanionConsentWithdrawn).toHaveBeenCalledWith(PAULA.id));
   });
 
   it('zeigt ohne Schreibrecht keinen Knopf', async () => {

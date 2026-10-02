@@ -515,7 +515,10 @@
           "id": "por-epic-001b",
           "name": "POR-EPIC-001b Vertretung",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-02",
+          "nachweis": "POR-005 bis POR-007, Zweitreview",
+          "vermerk": "Sichtung: Plattform Schritte 4 bis 6"
         },
         {
           "id": "por-epic-002",

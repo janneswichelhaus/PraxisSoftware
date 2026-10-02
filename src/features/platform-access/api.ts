@@ -328,3 +328,15 @@ export async function noteCompanionCapacityDoubt(
   })) as { data: unknown; error: unknown; status?: number };
   if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data !== true) throw new Error(satz);
 }
+
+/**
+ * Die Person widerruft ihre Einwilligung zur Begleitung in der Praxis. Steht
+ * im Nachweis als Widerruf, nicht als Entziehen (ADR-023 Punkte 5, 13).
+ */
+export async function recordCompanionConsentWithdrawn(zugangId: string): Promise<void> {
+  const satz = 'Der Widerruf konnte nicht vermerkt werden.';
+  const ergebnis = (await getSupabase().rpc('record_companion_consent_withdrawn', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown; status?: number };
+  if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
+}

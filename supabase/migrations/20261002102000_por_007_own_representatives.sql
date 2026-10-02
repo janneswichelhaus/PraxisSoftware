@@ -54,6 +54,9 @@ begin
     and a.id <> v_eigen.id
     and a.access_kind <> 'self'
     and a.status in ('invited', 'active', 'locked')
+    -- Zweitreview: eine beendete Vertretung (Sorgerecht ab 18, Lesefrist)
+    -- steht hier nicht mehr, auch solange der Loeschlauf sie noch fuehrt.
+    and coalesce(app.platform_access_ended_at(a.id) > now(), true)
   order by a.access_kind, a.created_at;
 end;
 $$;

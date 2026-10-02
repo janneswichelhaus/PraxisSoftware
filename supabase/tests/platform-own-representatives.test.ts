@@ -1,5 +1,12 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  fremdeOrganisation,
+  resetDatabase,
+} from './helpers/db';
 
 /**
  * Unter „Ich": wer für mich Zugang hat (POR-007, ADR-023 Punkte 13, 14, 23).
@@ -224,6 +231,84 @@ describe('Wer für mich Zugang hat (Punkt 14)', () => {
     );
     expect((await asUser(KONTO_MAX, LISTE, [MAX_SELBST])).rows).toEqual([]);
     const { rows } = await asUserCommitted<{ ok: boolean }>(KONTO_MAX, BEENDEN, [
+      MAX_SELBST,
+      PAULA,
+    ]);
+    expect(rows[0]?.ok).toBe(false);
+  });
+});
+
+describe('Zweitreview: beendete und fremde Vertretungen unter Ich', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+    await aufbauen();
+  }, 120_000);
+
+  it('zeigt ein mit 18 beendetes Sorgerecht nicht mehr (Punkt 15)', async () => {
+    const SARA = 'cafecafe-cafe-4afe-8afe-0000000000d3';
+    await asPostgres(
+      `update public.patient_contact_details set date_of_birth = current_date - interval '17 years'
+        where patient_id = $1`,
+      [patients.max],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, status, access_kind,
+          legal_basis, representative_name, proof_documents, proof_recorded_by, proof_recorded_at,
+          created_by)
+       values ($1, $2, 'treatment', $3, $3, 'invited', 'legal_representative', 'custody',
+               'Sara Sorge', array['identity_document', 'custody_proof'], $4, now(), $4)`,
+      [SARA, organizationId, patients.max, users.office],
+    );
+    await asPostgres(
+      `insert into public.platform_access_invitations
+         (organization_id, platform_access_id, purpose, channel, code_hash, expires_at, created_by)
+       values ($1, $2, 'activate', 'on_site', repeat('a', 64), now() + interval '7 days', $3)`,
+      [organizationId, SARA, users.office],
+    );
+    // Max ist minderjährig: der eigene Zugang wäre so nicht entstanden, für
+    // die Liste zählt hier nur das Ende des Sorgerechts.
+    await asPostgres(
+      `update public.patient_contact_details set date_of_birth = current_date - interval '18 years' - interval '1 day'
+        where patient_id = $1`,
+      [patients.max],
+    );
+    const { rows } = await asUser<{ access_id: string }>(KONTO_MAX, LISTE, [MAX_SELBST]);
+    expect(rows.map((z) => z.access_id)).not.toContain(SARA);
+  });
+
+  it('beendet eine schon entzogene Begleitung nicht ein zweites Mal', async () => {
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now(), revoked_reason = 'practice' where id = $1`,
+      [PAULA],
+    );
+    const { rows } = await asUserCommitted<{ ok: boolean }>(KONTO_MAX, BEENDEN, [
+      MAX_SELBST,
+      PAULA,
+    ]);
+    expect(rows[0]?.ok).toBe(false);
+    expect((await zugang(PAULA))?.revoked_reason).toBe('practice');
+  });
+
+  it('eigener Zugang nur eingeladen: nichts zu sehen, nichts zu beenden', async () => {
+    await asPostgres(
+      `update public.platform_accesses set status = 'invited', account_user_id = null, activated_at = null
+        where id = $1`,
+      [MAX_SELBST],
+    );
+    expect((await asUser(KONTO_MAX, LISTE, [MAX_SELBST])).rows).toEqual([]);
+    const { rows } = await asUserCommitted<{ ok: boolean }>(KONTO_MAX, BEENDEN, [
+      MAX_SELBST,
+      PAULA,
+    ]);
+    expect(rows[0]?.ok).toBe(false);
+  });
+
+  it('andere Organisation: das Konto der fremden owner:in sieht und beendet nichts', async () => {
+    const fremd = await fremdeOrganisation();
+    expect((await asUser(fremd.owner, LISTE, [MAX_SELBST])).rows).toEqual([]);
+    const { rows } = await asUserCommitted<{ ok: boolean }>(fremd.owner, BEENDEN, [
       MAX_SELBST,
       PAULA,
     ]);

@@ -206,6 +206,12 @@ const FAELLE: Fall[] = [
     'platform_access.invited',
   ],
   [
+    'record_companion_consent_withdrawn',
+    'select public.record_companion_consent_withdrawn($1::uuid) as status',
+    [IRGENDEINE],
+    'platform_access.revoked',
+  ],
+  [
     'note_companion_capacity_doubt',
     "select public.note_companion_capacity_doubt('training', $1::uuid) as ok",
     [IRGENDEINE],
