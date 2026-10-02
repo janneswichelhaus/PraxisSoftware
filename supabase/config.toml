@@ -98,6 +98,17 @@ double_confirm_changes = true
 subject = "Neues Kennwort setzen"
 content_path = "./supabase/templates/recovery.html"
 
+# ABN-012 (BEF-118, ANN-218): Mail-Hook des Anmeldedienstes. Eingeschaltet
+# verschickt der Anmeldedienst seine Mails ueber den Zugangsdienst, und der
+# schickt einem Plattformkonto ohne per Link bestaetigtes Postfach keinen
+# Wiederherstellungslink. Bewusst AUS: Er braucht die Edge Runtime und den
+# Versanddienst aus B13 - beides schaltet OPS-001 ein, im Cloudprojekt unter
+# Authentication > Hooks > Send Email (config.toml wirkt dort nicht).
+# [auth.hook.send_email]
+# enabled = true
+# uri = "http://host.docker.internal:54321/functions/v1/platform-access"
+# secrets = "env(SEND_EMAIL_HOOK_SECRET)"
+
 # Zugangsmail an eine offene Einladung (FIX-002, ANN-043), gleiche Bauart.
 # Im Cloudprojekt: Authentication > Email Templates > Magic Link.
 [auth.email.template.magic_link]

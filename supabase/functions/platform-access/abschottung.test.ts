@@ -18,7 +18,7 @@ const VERBOTEN: { muster: RegExp; grund: string }[] = [
   { muster: /\bconsole\s*\./, grund: 'Betriebslog' },
   {
     muster:
-      /\/rest\/v1\/(?!rpc\/(platform_invitation_lookup|redeem_platform_invitation|platform_invitation_failed|platform_invitation_mail|claim_platform_account_deletions|confirm_platform_account_deletion)\b)/,
+      /\/rest\/v1\/(?!rpc\/(platform_invitation_lookup|redeem_platform_invitation|platform_invitation_failed|platform_invitation_mail|claim_platform_account_deletions|confirm_platform_account_deletion|auth_email_allowed)\b)/,
     grund: 'andere Datenbankpfade',
   },
   { muster: /Deno\.writeTextFile|Deno\.writeFile|Deno\.openKv/, grund: 'Persistenz' },

@@ -31,6 +31,8 @@ export interface Anmeldedienst {
   readonly loeschauftraege: () => Promise<Ergebnis<string[]>>;
   /** ABN-011: eine Löschung bestätigen; erst dann steht sie im Löschjournal. */
   readonly loeschungBestaetigen: (kontoId: string) => Promise<Ergebnis<null>>;
+  /** ABN-012: Darf der Anmeldedienst diese Mail an dieses Konto schicken? */
+  readonly authMailErlaubt: (kontoId: string, art: string) => Promise<Ergebnis<boolean>>;
   /** Trägt die Anfrage den Admin-Schlüssel? Nur dann gibt es `konten_loeschen`. */
   readonly istDienstaufruf: (authorization: string | null) => boolean;
   readonly einladungsmail: (
@@ -179,8 +181,10 @@ export function erstelleAnmeldedienst({
     },
 
     async kontoAnlegen(email, kennwort) {
-      // Die Adresse gilt als bestätigt: Bestätigt hat sie die Übergabe vor
-      // Ort oder die Mail an die Adresse im Verhältnis (ADR-023 Punkt 11).
+      // Bestätigt für die Anmeldung: Die Übergabe vor Ort bzw. die Mail an die
+      // Adresse im Verhältnis hat die Person geprüft (ADR-023 Punkt 11). Für
+      // die Wiederherstellung per Mail zählt das NICHT - dafür gibt es das
+      // eigene Merkmal eines per Link bestätigten Postfachs (ABN-012, BEF-118).
       // Die Marke `platform_account` lässt den Löschlauf ein Konto finden,
       // das nie gebunden wurde (Zweitreview, ANN-189).
       const r = await rufe('/auth/v1/admin/users', 'POST', admin, {
@@ -270,6 +274,17 @@ export function erstelleAnmeldedienst({
       });
       if (r === null || r.status >= 300) return { ok: false, error: 'unavailable' };
       return { ok: true, value: null };
+    },
+
+    async authMailErlaubt(kontoId, art) {
+      const r = await rufe('/rest/v1/rpc/auth_email_allowed', 'POST', admin, {
+        p_user_id: kontoId,
+        p_action: art,
+      });
+      if (r === null || r.status !== 200 || typeof r.daten !== 'boolean') {
+        return { ok: false, error: 'unavailable' };
+      }
+      return { ok: true, value: r.daten };
     },
 
     istDienstaufruf(authorization) {

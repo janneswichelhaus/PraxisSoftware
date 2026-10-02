@@ -36,5 +36,7 @@ Deno.serve(
     anmeldedienst,
     versand,
     appUrl: Deno.env.get('APP_URL') ?? '',
+    // ABN-012: Mail-Hook des Anmeldedienstes, eingeschaltet mit B13 (OPS-001).
+    hookGeheimnis: Deno.env.get('SEND_EMAIL_HOOK_SECRET') ?? '',
   }),
 );

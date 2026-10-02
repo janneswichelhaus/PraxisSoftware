@@ -2285,6 +2285,8 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** Adresse muss der im Verhältnis entsprechen: Vergleich in `public.redeem_platform_invitation` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** Bestätigt mit Bedingung: Wiederherstellung per Mail nur, wenn das Postfach tatsächlich per Link bestätigt wurde; der beim Anlegen gesetzte Status genügt nicht. Ohne Bestätigung gibt es einen neuen Code nach Identitätsprüfung vor Ort; jede Adressänderung verlangt neue Bestätigung. Die Sperre gilt im Server und im Anmeldedienst, nicht nur in der Oberfläche (BEF-118, B13).
 
+**Umgesetzt (ABN-012, 2026-10-02).** Der Bestätigungsstatus, den der Zugangsdienst beim Anlegen setzt, gilt nur für die Anmeldung. Für die Wiederherstellung per Mail zählt allein das eigene Merkmal eines per Link bestätigten Postfachs (`platform_mailbox_confirmations`), für die Adresse, die das Konto heute trägt (ANN-218).
+
 ### ANN-192 — Der Hausbesuch ist die Regel und trägt kein Wort; Praxis- und Videotermin tragen ihr Kennzeichen
 
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
@@ -2610,3 +2612,15 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: OPS-001 (
 **Anker.** `kontenLoeschen` in `supabase/functions/platform-access/handler.ts`, `istDienstaufruf` und `loeschauftraege` in `anmeldedienst.ts`; `public.claim_platform_account_deletions` in `supabase/migrations/20261002135000_abn_011_platform_account_deletion_queue.sql`; Tests in `supabase/functions/platform-access/handler.test.ts` („konten_loeschen“).
 
 **Änderungspfad.** Anderer Auslöser: nur der Aufruf von außen ändert sich, der Dienst bleibt · Aufwand `klein`. Längere Vergabe eines Auftrags: die 15 Minuten in `claim_platform_account_deletions` · Aufwand `klein`.
+
+### ANN-218 — Die Sperre der Wiederherstellung wirkt im Anmeldedienst über einen Mail-Hook; bis B13 bestätigt kein Plattformkonto sein Postfach
+
+Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 und OPS-001 (Hook einschalten); Jannes in der Sichtung der Plattform
+
+**Annahme.** Ein Plattformkonto bekommt einen Wiederherstellungslink per Mail nur mit einem per Link bestätigten Postfach für seine heutige Adresse (BEF-118). Die eine Regel ist `public.auth_email_allowed`: Praxiskonten unverändert; Plattformkonten nur `recovery` und nur mit Merkmal, nie einen Anmeldelink. Im Anmeldedienst wirkt sie über dessen **Mail-Hook**: Eingeschaltet verschickt der Anmeldedienst keine Mail mehr selbst, sondern ruft den Zugangsdienst (signiert nach „Standard Webhooks“). Der fragt die Regel und verschickt über den Versandweg oder verwirft **stumm** mit Erfolg, damit die Antwort nicht verrät, ob es ein Plattformkonto ist. Der Hook ist abgeschaltet, bis der Versanddienst aus B13 steht und OPS-001 die Edge Runtime freigibt. Bis dahin gilt: Mails an Patient:innen erreichen niemanden (der eingebaute Versand stellt nur an das Projektteam zu, BEF-026), und die Plattform ist nicht scharf. Den Weg, ein Postfach per Link zu bestätigen, baut der Loop, der B13 umsetzt; bis dahin trägt kein Konto das Merkmal, und ein vergessenes Kennwort heißt: neuer Code vor Ort (ADR-023 Punkt 10).
+
+**Begründung.** Der Anmeldedienst verschickt den Wiederherstellungslink an jede bekannte Adresse; sein öffentlicher Endpunkt umgeht jede Oberfläche, und er kennt keine Regel je Konto. Die einzige unterstützte Stelle, an der sich das Verschicken prüfen lässt, ist der Mail-Hook. Er übernimmt dann alle Mails des Anmeldedienstes, auch die der Mitarbeitenden (Kennwort zurücksetzen, Zugangslink), und braucht deshalb einen Versanddienst — der fehlt bis B13. Unsicher: ob der Hook-Weg mit dem in B13 gewählten Anbieter so trägt; der Zugangsdienst spricht ihn ohnehin über den Adapter an.
+
+**Anker.** `public.auth_email_allowed`, `app.platform_mailbox_confirmed` und `platform_mailbox_confirmations` in `supabase/migrations/20261002136000_abn_012_platform_mailbox_confirmation.sql`; `supabase/functions/platform-access/authmail.ts`; der abgeschaltete Eintrag in `supabase/config.toml`; Tests in `supabase/tests/platform-mailbox.test.ts` und `supabase/functions/platform-access/authmail.test.ts`.
+
+**Änderungspfad.** Hook einschalten: Eintrag in `supabase/config.toml` bzw. im Cloudprojekt, Secret `SEND_EMAIL_HOOK_SECRET`, Versandweg aus B13 · Aufwand `klein`, sobald B13 steht. Bestätigungsweg: eine Mail mit Link an die Adresse und eine Funktion, die das Merkmal setzt · Aufwand `mittel`.

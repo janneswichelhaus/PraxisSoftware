@@ -17,6 +17,7 @@
  */
 
 import type { Anmeldedienst } from './anmeldedienst.ts';
+import { authMailInhalt, liesAuthMail, pruefeSignatur } from './authmail.ts';
 import { einladungstext, type Versandweg } from './versand.ts';
 import {
   codeHash,
@@ -59,6 +60,8 @@ interface HandlerOptionen {
   readonly versand: Versandweg | null;
   /** Adresse der Anwendung für den Link in der Mail (`site_url`). */
   readonly appUrl: string;
+  /** ABN-012: Geheimnis des Mail-Hooks; leer heißt, der Hook ist nicht eingerichtet. */
+  readonly hookGeheimnis?: string;
 }
 
 function antwort(koerper: unknown, status: number): Response {
@@ -118,10 +121,16 @@ export function erstelleHandler({
   anmeldedienst,
   versand,
   appUrl,
+  hookGeheimnis = '',
 }: HandlerOptionen): (anfrage: Request) => Promise<Response> {
   return async (anfrage) => {
     if (anfrage.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
     if (anfrage.method !== 'POST') return antwort({ ok: false, error: 'invalid_request' }, 405);
+
+    // ABN-012: Ein signierter Aufruf ist der Mail-Hook des Anmeldedienstes.
+    if (anfrage.headers.has('webhook-signature')) {
+      return authMail(anfrage, { anmeldedienst, versand, appUrl, hookGeheimnis });
+    }
 
     const auftrag = await liesAnfrage(anfrage);
     if (typeof auftrag === 'string') return fehler(auftrag);
@@ -244,6 +253,47 @@ async function kontenLoeschen(
     if (bestaetigt.ok) geloescht += 1;
   }
   return { ok: true, value: { deleted: geloescht, pending: auftraege.value.length - geloescht } };
+}
+
+/** Die Antwort an den Anmeldedienst im Fehlerfall (Format der Auth-Hooks). */
+function hookFehler(status: number, code: ZugangsFehler): Response {
+  return antwort({ error: { http_code: status, message: code } }, status);
+}
+
+/**
+ * Der Mail-Hook (ABN-012, BEF-118): signiert prüfen, die Datenbank fragen,
+ * dann verschicken oder stumm verwerfen. Erfolg ist für den Anmeldedienst ein
+ * leeres Objekt — in beiden Fällen.
+ */
+async function authMail(
+  anfrage: Request,
+  {
+    anmeldedienst,
+    versand,
+    appUrl,
+    hookGeheimnis,
+  }: Required<Pick<HandlerOptionen, 'appUrl' | 'hookGeheimnis'>> &
+    Pick<HandlerOptionen, 'anmeldedienst' | 'versand'>,
+): Promise<Response> {
+  if (hookGeheimnis.trim() === '' || anmeldedienst === null) {
+    return hookFehler(503, 'not_configured');
+  }
+  const koerper = await anfrage.text();
+  if (!(await pruefeSignatur(hookGeheimnis, anfrage.headers, koerper))) {
+    return hookFehler(401, 'session_invalid');
+  }
+  const mail = liesAuthMail(koerper);
+  if (mail === null) return hookFehler(400, 'invalid_request');
+
+  const erlaubt = await anmeldedienst.authMailErlaubt(mail.kontoId, mail.art);
+  if (!erlaubt.ok) return hookFehler(502, 'unavailable');
+  // Stumm verworfen: Die Antwort verrät nicht, dass es ein Plattformkonto ist.
+  if (!erlaubt.value) return antwort({}, 200);
+
+  if (versand === null || appUrl.trim() === '') return hookFehler(503, 'not_configured');
+  const gesendet = await versand.sende({ an: mail.an, ...authMailInhalt(mail, appUrl) });
+  if (!gesendet.ok) return hookFehler(502, 'unavailable');
+  return antwort({}, 200);
 }
 
 /** Versenden: Adresse vom Server, Text von hier, Zustellung über den Adapter. */

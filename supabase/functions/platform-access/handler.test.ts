@@ -32,6 +32,7 @@ function dienst(ueberschreiben: Partial<Anmeldedienst> = {}): Anmeldedienst {
     loeschauftraege: vi.fn(() => ok<string[]>([])),
     loeschungBestaetigen: vi.fn(() => ok(null)),
     istDienstaufruf: vi.fn((kopf: string | null) => kopf === 'Bearer dienst-schluessel'),
+    authMailErlaubt: vi.fn(() => ok(true)),
     fehlversuch: vi.fn(() => ok(null)),
     einladungsmail: vi.fn(() =>
       ok({
