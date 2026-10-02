@@ -513,6 +513,18 @@ const protokollSchema = z.object({
   finalized_at: z.string().nullable(),
   author_name: z.string().nullable(),
   finalized_by_name: z.string().nullable(),
+  /** Nachträge zum abgeschlossenen Protokoll (ABN-022, BEF-113). */
+  addenda: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        content: z.string(),
+        reason: z.string(),
+        created_at: z.string(),
+        author_name: z.string().nullable(),
+      }),
+    )
+    .default([]),
 });
 export type TrainingProtocol = z.infer<typeof protokollSchema>;
 
@@ -546,6 +558,28 @@ export async function getTrainingProtocol(appointmentId: string): Promise<Traini
   if (error) throw new Error(satz);
   const zeilen = antwort(z.array(protokollSchema), data ?? [], satz);
   return zeilen[0] ?? null;
+}
+
+/**
+ * Ein Nachtrag zum abgeschlossenen Protokoll (ABN-022, BEF-113, ANN-185
+ * Fassung 2): Der Text bleibt, der Nachtrag steht mit Grund darunter.
+ */
+export async function addTrainingProtocolAddendum(
+  appointmentId: string,
+  inhalt: string,
+  grund: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_training_protocol_addendum', {
+    p_appointment_id: appointmentId,
+    p_content: inhalt.trim(),
+    p_reason: grund.trim(),
+  })) as { error: { message?: string } | null };
+  if (error) {
+    if (error.message?.includes('needs a reason')) {
+      throw new Error('Ein Nachtrag braucht einen Grund (3 bis 500 Zeichen).');
+    }
+    throw new Error('Der Nachtrag konnte nicht gespeichert werden.');
+  }
 }
 
 /** Die protokollierten Einheiten einer Trainingskund:in, neueste zuerst. */

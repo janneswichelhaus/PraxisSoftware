@@ -21,6 +21,7 @@ import {
 } from '@/features/documentation/Textverlustschutz';
 import {
   finalizeTrainingProtocol,
+  addTrainingProtocolAddendum,
   getTrainingProtocol,
   listTrainingProtocols,
   saveTrainingProtocol,
@@ -104,7 +105,18 @@ function invalidiereTermin(
   void queryClient.invalidateQueries({ queryKey: ['day-plan'] });
 }
 
-export function TrainingProtokoll({ termin }: { termin: TrainingAppointment }) {
+/**
+ * Das Protokoll am Termin. Lesen dürfen seit ABN-022 auch das Büro
+ * (`darfSchreiben` false: nur der Text, kein Feld); schreiben, abschließen und
+ * Nachträge anhängen owner und Trainingsbetreuung (BEF-113).
+ */
+export function TrainingProtokoll({
+  termin,
+  darfSchreiben = true,
+}: {
+  termin: TrainingAppointment;
+  darfSchreiben?: boolean;
+}) {
   const protokoll = useQuery({
     queryKey: ['training-protocol', termin.id],
     queryFn: () => getTrainingProtocol(termin.id),
@@ -126,7 +138,22 @@ export function TrainingProtokoll({ termin }: { termin: TrainingAppointment }) {
           <LoadingState label="Trainingsprotokoll wird geladen …" />
         )
       ) : protokoll.data?.status === 'final' ? (
-        <Abgeschlossen protokoll={protokoll.data} zone={termin.organization_time_zone} />
+        <Abgeschlossen
+          protokoll={protokoll.data}
+          zone={termin.organization_time_zone}
+          termin={termin}
+          darfNachtragen={darfSchreiben}
+        />
+      ) : !darfSchreiben ? (
+        // Das Büro liest den Entwurf, schreibt aber nicht (ANN-184 Fassung 2).
+        protokoll.data ? (
+          <div className="flex flex-col gap-2">
+            <Badge>Entwurf</Badge>
+            <p className="text-ink leading-relaxed whitespace-pre-wrap">{protokoll.data.content}</p>
+          </div>
+        ) : (
+          <p className="text-ink-muted text-sm">Noch kein Protokoll.</p>
+        )
       ) : termin.status === 'confirmed' || termin.status === 'completed' ? (
         <Entwurf termin={termin} protokoll={protokoll.data} />
       ) : (
@@ -139,7 +166,17 @@ export function TrainingProtokoll({ termin }: { termin: TrainingAppointment }) {
   );
 }
 
-function Abgeschlossen({ protokoll, zone }: { protokoll: TrainingProtocol; zone: string }) {
+function Abgeschlossen({
+  protokoll,
+  zone,
+  termin,
+  darfNachtragen,
+}: {
+  protokoll: TrainingProtocol;
+  zone: string;
+  termin: TrainingAppointment;
+  darfNachtragen: boolean;
+}) {
   return (
     <div className="flex flex-col gap-3">
       <p className="text-ink leading-relaxed whitespace-pre-wrap">{protokoll.content}</p>
@@ -150,7 +187,88 @@ function Abgeschlossen({ protokoll, zone }: { protokoll: TrainingProtocol; zone:
             beim Abschließen; hier steht nur der Stand (UX-005i). */}
         {protokoll.finalized_by_name ? ` von ${protokoll.finalized_by_name}` : ''}.
       </p>
+      {/* Nachträge unter dem Text, wie in der Behandlung (ABN-022, BEF-113). */}
+      {protokoll.addenda.map((n) => (
+        <div key={n.id} className="border-line border-l-2 pl-3">
+          <p className="text-ink-muted text-sm">
+            Nachtrag vom {zeitpunkt(n.created_at, zone)}
+            {n.author_name ? ` von ${n.author_name}` : ''} · Grund: {n.reason}
+          </p>
+          <p className="text-ink leading-relaxed whitespace-pre-wrap">{n.content}</p>
+        </div>
+      ))}
+      {darfNachtragen ? <Nachtrag termin={termin} /> : null}
     </div>
+  );
+}
+
+/** Einen Nachtrag mit Grund anhängen - der Text darüber bleibt (ANN-185 Fassung 2). */
+function Nachtrag({ termin }: { termin: TrainingAppointment }) {
+  const queryClient = useQueryClient();
+  const [offen, setOffen] = useState(false);
+  const [inhalt, setInhalt] = useState('');
+  const [grund, setGrund] = useState('');
+  const [fehler, setFehler] = useState<string | undefined>(undefined);
+  const nachtragen = useMutation({
+    mutationFn: () => addTrainingProtocolAddendum(termin.id, inhalt, grund),
+    onSuccess: async () => {
+      setOffen(false);
+      setInhalt('');
+      setGrund('');
+      await queryClient.invalidateQueries({ queryKey: ['training-protocol', termin.id] });
+    },
+  });
+
+  if (!offen) {
+    return (
+      <div>
+        <Button type="button" variant="secondary" onClick={() => setOffen(true)}>
+          Nachtrag schreiben
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <form
+      noValidate
+      className="flex flex-col gap-3"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (inhalt.trim() === '' || grund.trim().length < 3) {
+          setFehler('Bitte Nachtrag und Grund angeben.');
+          return;
+        }
+        setFehler(undefined);
+        nachtragen.mutate();
+      }}
+    >
+      <TextArea
+        label="Nachtrag"
+        rows={3}
+        maxLength={5000}
+        value={inhalt}
+        onChange={(e) => setInhalt(e.target.value)}
+      />
+      <TextArea
+        label="Grund des Nachtrags"
+        rows={2}
+        maxLength={500}
+        error={fehler}
+        value={grund}
+        onChange={(e) => setGrund(e.target.value)}
+      />
+      {nachtragen.isError ? (
+        <Statusmeldung ton="fehler">{nachtragen.error.message}</Statusmeldung>
+      ) : null}
+      <div className="flex flex-wrap gap-3">
+        <Button type="submit" disabled={nachtragen.isPending}>
+          {nachtragen.isPending ? 'Wird gespeichert …' : 'Nachtrag speichern'}
+        </Button>
+        <Button type="button" variant="quiet" onClick={() => setOffen(false)}>
+          Abbrechen
+        </Button>
+      </div>
+    </form>
   );
 }
 

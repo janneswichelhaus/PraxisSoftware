@@ -19,7 +19,7 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import {
   canWriteTrainingClients,
-  canWriteTrainingProtocols,
+  canReadTrainingProtocols,
   type CurrentUser,
 } from '@/features/session/types';
 import {
@@ -203,7 +203,8 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
           {/* TRN-009: die protokollierten Einheiten - nur owner und
               Trainingsbetreuung (ANN-184). */}
-          {canWriteTrainingProtocols(user.roles) ? <TrainingEinheiten kundin={kundin} /> : null}
+          {/* ABN-022 (BEF-113): auch das Büro sieht die Einheiten. */}
+          {canReadTrainingProtocols(user.roles) ? <TrainingEinheiten kundin={kundin} /> : null}
           {/* POR-002: der eigene Zugang zur Plattform, getrennt von einem
               Zugang zur Behandlung (§4.8, ADR-023 Punkt 4). */}
           {user.organizationTimeZone ? (

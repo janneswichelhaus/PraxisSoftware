@@ -410,12 +410,21 @@ export function canWriteTrainingClients(roles: readonly RoleKey[]): boolean {
 }
 
 /**
- * Wer Trainingsprotokolle schreibt, abschließt und liest (TRN-009, ANN-184):
- * owner und Trainingsbetreuung, nicht das Büro. Verbindlich ist
+ * Wer Trainingsprotokolle schreibt und abschließt (TRN-009, ANN-184): owner
+ * und Trainingsbetreuung, nicht das Büro. Verbindlich ist
  * app.can_access_training_protocols().
  */
 export function canWriteTrainingProtocols(roles: readonly RoleKey[]): boolean {
   return roles.some((role) => role === 'owner' || role === 'trainer');
+}
+
+/**
+ * Wer Trainingsprotokolle liest (ABN-022, BEF-113, ANN-184 Fassung 2): dazu
+ * das Büro - für Rückfragen zur Rechnung. Verbindlich ist
+ * app.can_read_training_protocols(); jedes Lesen protokolliert der Server.
+ */
+export function canReadTrainingProtocols(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => role === 'owner' || role === 'trainer' || role === 'office');
 }
 
 /**
