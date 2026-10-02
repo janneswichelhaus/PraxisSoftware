@@ -159,7 +159,7 @@ begin
       end if;
       if v_val ? 'freitext' then
         if jsonb_typeof(v_val->'freitext') <> 'string'
-           or length(btrim(v_val->>'freitext')) not between 1 and 2000 then
+           or length(regexp_replace(v_val->>'freitext', '^\s+|\s+$', '', 'g')) not between 1 and 2000 then
           raise exception 'free text out of range' using errcode = '22023';
         end if;
         -- Eine eigene Angabe gehoert zu einer Option, die sie vorsieht.
@@ -174,10 +174,12 @@ begin
         raise exception 'answer is not a number' using errcode = '22023';
       end if;
       v_zahl := (v_val->>'wert')::numeric;
-      if v_typ = 'skala' and (
-           v_zahl <> trunc(v_zahl)
-           or v_zahl < (v_item->'skala'->>'min')::numeric
-           or v_zahl > (v_item->'skala'->>'max')::numeric) then
+      -- Positiv formuliert: Fehlt ein Wert der Definition, ist NULL nicht
+      -- "in Ordnung", sondern abgewiesen (Zweitreview H1).
+      if v_typ = 'skala' and not coalesce(
+           v_zahl = trunc(v_zahl)
+           and v_zahl >= (v_item->'skala'->>'min')::numeric
+           and v_zahl <= (v_item->'skala'->>'max')::numeric, false) then
         raise exception 'value out of range' using errcode = '22023';
       end if;
 
@@ -186,7 +188,8 @@ begin
          or jsonb_typeof(v_val->'text') is distinct from 'string' then
         raise exception 'answer is not a text' using errcode = '22023';
       end if;
-      v_text := btrim(v_val->>'text');
+      -- Jeder Leerraum wie Zods .trim(), nicht nur Leerzeichen (Zweitreview N1).
+      v_text := regexp_replace(v_val->>'text', '^\s+|\s+$', '', 'g');
       if length(v_text) not between 1 and 2000 then
         raise exception 'free text out of range' using errcode = '22023';
       end if;
@@ -198,12 +201,22 @@ begin
         raise exception 'answer is not a body chart' using errcode = '22023';
       end if;
       for v_m in select e from jsonb_array_elements(v_val->'markierungen') e loop
-        if jsonb_typeof(v_m) <> 'object'
-           or (select array_agg(k order by k) from jsonb_object_keys(v_m) k) <> array['bereich', 'x', 'y']
-           or jsonb_typeof(v_m->'x') <> 'number' or jsonb_typeof(v_m->'y') <> 'number'
-           or (v_m->>'x')::numeric not between 0 and 1
-           or (v_m->>'y')::numeric not between 0 and 1
-           or not ((v_m->>'bereich') = any (app.questionnaire_body_regions())) then
+        -- Schritt fuer Schritt und positiv: Erst die Form, dann die Werte -
+        -- ein leeres Objekt oder ein fehlender Bereich ergibt nie NULL statt
+        -- "abgewiesen" (Zweitreview H1).
+        if jsonb_typeof(v_m) is distinct from 'object'
+           or not coalesce(
+                (select array_agg(k order by k) from jsonb_object_keys(v_m) k)
+                  = array['bereich', 'x', 'y'], false)
+           or jsonb_typeof(v_m->'x') is distinct from 'number'
+           or jsonb_typeof(v_m->'y') is distinct from 'number'
+           or jsonb_typeof(v_m->'bereich') is distinct from 'string' then
+          raise exception 'body chart mark out of range' using errcode = '22023';
+        end if;
+        if not coalesce(
+             (v_m->>'x')::numeric between 0 and 1
+             and (v_m->>'y')::numeric between 0 and 1
+             and (v_m->>'bereich') = any (app.questionnaire_body_regions()), false) then
           raise exception 'body chart mark out of range' using errcode = '22023';
         end if;
       end loop;
@@ -214,6 +227,8 @@ begin
   end loop;
 end;
 $$;
+
+revoke all on function app.questionnaire_body_regions() from public, anon;
 
 comment on function app.assert_questionnaire_answers(text, text, jsonb) is
   'Prueft Antworten gegen die Definition der genannten Fassung (ABN-014, BEF-101): Item, Form je Typ, Optionen, Skalenbereich, freie Angaben, exklusive Optionen, Koerperbereiche. Dieselben Regeln wie antwortSchema in src/features/assessments/antworten.ts.';

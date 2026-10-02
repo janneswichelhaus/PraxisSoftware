@@ -756,7 +756,7 @@ export function CalendarGrid({
                   <div
                     key={`belegt-${i}`}
                     data-testid="belegt"
-                    className="border-line-strong bg-surface-sunken text-ink-muted pointer-events-none absolute inset-x-1 overflow-hidden rounded-sm border border-dashed px-1.5 py-0.5 text-xs"
+                    className="border-line-strong bg-surface-sunken text-ink-muted rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 py-0.5 text-xs"
                     style={{
                       top: `${minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,
                       height: `${minuteZuPixel(b.bisMinute, fenster.vonMinute, stundenHoehe) - minuteZuPixel(b.vonMinute, fenster.vonMinute, stundenHoehe)}px`,

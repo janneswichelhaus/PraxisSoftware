@@ -102,7 +102,8 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
   if not app.can_access_training_protocols() then
-    raise exception 'not allowed to write training protocols' using errcode = '42501';
+    perform app.record_denied_write(v_actor, 'training_protocol.updated', 'not allowed to write training protocols');
+    return null;
   end if;
   v_org := app.current_organization_id();
   if v_org is null then

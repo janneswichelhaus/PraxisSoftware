@@ -164,6 +164,13 @@ const FAELLE: Fall[] = [
     [IRGENDEINE],
     'training_protocol.finalized',
   ],
+  // ABN-022: der Nachtrag am abgeschlossenen Protokoll.
+  [
+    'add_training_protocol_addendum',
+    "select public.add_training_protocol_addendum($1::uuid, 'Kein Zugriff', 'Kein Grund') as id",
+    [IRGENDEINE],
+    'training_protocol.updated',
+  ],
   // POR-002: Plattformzugang - die Rollen, die das Verhaeltnis schreiben
   // (ADR-023 Punkt 6). Die Therapeutin schreibt kein Training, und eine
   // unbekannte Kennung wird wie eine fremde abgewiesen.
@@ -235,7 +242,7 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // und Loeschauftraege; seit PRX-017 dazu das Zusammenfuehren von Akten,
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
     // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
-    // Trainingsprotokoll, seit POR-002 der Plattformzugang, seit POR-005 die
+    // Trainingsprotokoll (seit ABN-022 mit Nachtrag), seit POR-002 der Plattformzugang, seit POR-005 die
     // Vertretung.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.

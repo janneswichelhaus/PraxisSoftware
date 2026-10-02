@@ -988,6 +988,16 @@ describe('Patientenfotos (DOK-006b)', () => {
         /not accessible/,
       );
     });
+
+    it('listet einer fremden Praxis oder einem Patientenkonto keine Fotos zur Herausgabe (ABN-017)', async () => {
+      await foto();
+      const LISTE = 'select * from public.list_patient_photos_for_access_request($1::uuid)';
+      const { owner } = await fremdeOrganisation();
+      await expect(asUser(owner, LISTE, [patients.max])).rejects.toMatchObject({ code: '42501' });
+      await expect(asUser(users.patientMax, LISTE, [patients.max])).rejects.toMatchObject({
+        code: '42501',
+      });
+    });
   });
 
   describe('Nachgezogen aus dem Zweitreview', () => {

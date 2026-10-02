@@ -5,7 +5,6 @@ import {
   abstecherAnsehen,
   abstecherEntfernen,
   abstecherErgaenzen,
-  alleAbstecherVerwerfen,
 } from '@/lib/abstecher';
 
 /**
@@ -705,11 +704,6 @@ export function entwurfVerordnerNachtragen(
   verordnerId: string,
 ): void {
   abstecherErgaenzen<TreatmentBasisDraft>(vorgang, userId, { neuerVerordnerId: verordnerId });
-}
-
-/** Verwirft alle Entwürfe aller Benutzer:innen - bei Abmeldung (VER-003). */
-export function alleEntwuerfeVerwerfen(): void {
-  alleAbstecherVerwerfen();
 }
 
 /**

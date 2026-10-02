@@ -559,6 +559,18 @@ describe('Pruefung gegen die Definition (ABN-014, BEF-101)', () => {
       { beschwerden_ort: { markierungen: [{ x: 1.2, y: 0.4, bereich: 'knie_rechts' }] } },
       /body chart/,
     ],
+    ['eine leere Markierung', { beschwerden_ort: { markierungen: [{}] } }, /body chart/],
+    [
+      'eine Markierung ohne Bereich',
+      { beschwerden_ort: { markierungen: [{ x: 0.2, y: 0.4, bereich: null }] } },
+      /body chart/,
+    ],
+    [
+      'eine Markierung mit Text statt Zahl',
+      { beschwerden_ort: { markierungen: [{ x: '0.2', y: 0.4, bereich: 'knie_rechts' }] } },
+      /body chart/,
+    ],
+    ['eine leere Skalenangabe', { schmerzstaerke: { wert: null } }, /not a number|out of range/],
   ])('weist %s ab', async (_name, antworten, meldung) => {
     const f = await speichern(antworten);
     expect(f?.code).toBe('22023');

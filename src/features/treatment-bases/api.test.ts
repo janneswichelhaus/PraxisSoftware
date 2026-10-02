@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { alleAbstecherVerwerfen } from '@/lib/abstecher';
 import {
-  alleEntwuerfeVerwerfen,
   entwurfAblegen,
   entwurfAnsehen,
   entwurfEntfernen,
@@ -28,7 +28,7 @@ const ENTWURF: TreatmentBasisDraft = {
 
 beforeEach(() => {
   vi.useFakeTimers();
-  alleEntwuerfeVerwerfen();
+  alleAbstecherVerwerfen();
 });
 
 afterEach(() => {
@@ -111,11 +111,11 @@ describe('Entwurfsspeicher', () => {
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toEqual(ENTWURF);
   });
 
-  it('verwirft alle Entwuerfe aller Personen - Abmeldung (VER-003)', () => {
+  it('verwirft alle Entwuerfe aller Personen', () => {
     entwurfAblegen(RUECKPFAD, BENUTZER_A, ENTWURF);
     entwurfAblegen('/patienten/anderer-patient/verordnungen/neu', BENUTZER_B, ENTWURF);
 
-    alleEntwuerfeVerwerfen();
+    alleAbstecherVerwerfen();
 
     expect(entwurfAnsehen(RUECKPFAD, BENUTZER_A)).toBeUndefined();
     expect(

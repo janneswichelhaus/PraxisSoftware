@@ -8,7 +8,10 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
-import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
+import {
+  erwarteAbgewiesenenLeseversuch,
+  erwarteAbgewiesenenSchreibversuch,
+} from './helpers/abgewiesen';
 
 /**
  * Zwei Akten derselben Person werden eine (PRX-017, PRX-EPIC-003b).
@@ -868,6 +871,28 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
           )
         ).rows,
       ).toEqual([]);
+    });
+
+    it('zeigt die Vermerke weder einer fremden Praxis noch einem Patientenkonto', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Vera', nachname: 'Vermerk' });
+      const quelle = await legeAkteAn({ vorname: 'Vera', nachname: 'Vermerk' });
+      await zusammenfuehren(quelle.patient, ziel.patient);
+      const LISTE = 'select * from public.list_patient_merge_records($1::uuid)';
+
+      const { owner } = await fremdeOrganisation();
+      const { rows: fremd } = await asUser(owner, LISTE, [ziel.patient]);
+      expect(fremd).toEqual([]);
+
+      // Die Trainingsbetreuung liest das Verzeichnis nicht (ADR-021).
+      await erwarteAbgewiesenenLeseversuch(
+        users.trainer,
+        LISTE,
+        [ziel.patient],
+        'patient_directory.read',
+      );
+      await expect(asUser(users.patientMax, LISTE, [ziel.patient])).rejects.toMatchObject({
+        code: '42501',
+      });
     });
   });
 });

@@ -60,6 +60,8 @@ begin
 end;
 $$;
 
+revoke all on function app.drop_draft_findings_on_finalisation() from public, anon, authenticated;
+
 create trigger treatment_notes_drop_draft_findings
   after insert or update of status on public.treatment_notes
   for each row execute function app.drop_draft_findings_on_finalisation();

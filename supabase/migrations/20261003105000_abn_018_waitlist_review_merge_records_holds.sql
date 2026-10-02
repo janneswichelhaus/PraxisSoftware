@@ -470,7 +470,6 @@ returns table (
   counts          jsonb
 )
 language plpgsql
-stable
 security definer
 set search_path = ''
 as $$
@@ -481,6 +480,7 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
   if not app.can_read_patient_directory() then
+    perform app.record_denied_read(auth.uid(), 'patient_directory.read', 'not allowed to read merge records');
     return;
   end if;
   v_org := app.current_organization_id();
@@ -497,7 +497,7 @@ end;
 $$;
 
 comment on function public.list_patient_merge_records(uuid) is
-  'Vermerke des Zusammenfuehrens an einer Akte (ABN-018, BEF-108): wann, durch wen, was mitgezogen ist. Wer das Verzeichnis liest; nur Zahlen, keine Inhalte.';
+  'Vermerke des Zusammenfuehrens an einer Akte (ABN-018, BEF-108): wann, durch wen, was mitgezogen ist. Wer das Verzeichnis liest; nur Zahlen, keine Inhalte. Abgewiesen wird protokolliert; ein erfolgreiches Lesen nicht eigens, weil es Teil der Akte ist, deren Oeffnen schon als patient_record.viewed protokolliert wird.';
 
 revoke all on function public.list_patient_merge_records(uuid) from public, anon;
 grant execute on function public.list_patient_merge_records(uuid) to authenticated;
@@ -514,6 +514,8 @@ as $$
   -- ANN-220: acht Wochen unveraendert offen.
   select interval '8 weeks'
 $$;
+
+revoke all on function app.waitlist_review_interval() from public, anon;
 
 comment on function app.waitlist_review_interval() is
   'Nach wie langer Zeit ohne Aenderung ein offener Wartelisteneintrag zu pruefen ist (ABN-018, BEF-108, ANN-220).';
@@ -922,8 +924,18 @@ begin
       ) order by al.occurred_at)
       from public.audit_log al
       where al.organization_id = v_org
-        and ((al.subject_type = 'patient' and al.subject_id = p_patient_id)
-             or al.context ->> 'patient_id' = p_patient_id::text)
+        -- Auch die Zugriffe auf zusammengefuehrte Doppelanlagen gehoeren
+        -- zu dieser Person (ABN-018, BEF-108).
+        and ((al.subject_type = 'patient' and al.subject_id = any(array(
+                select p_patient_id
+                union all
+                select mr2.source_patient_id from public.patient_merge_records mr2
+                where mr2.target_patient_id = p_patient_id and mr2.organization_id = v_org)))
+             or al.context ->> 'patient_id' = any(array(
+                select p_patient_id::text
+                union all
+                select mr2.source_patient_id::text from public.patient_merge_records mr2
+                where mr2.target_patient_id = p_patient_id and mr2.organization_id = v_org)))
     ), '[]'::jsonb),
 
     -- ABN-018 (BEF-108): Nachweise des Zusammenfuehrens an dieser Akte.

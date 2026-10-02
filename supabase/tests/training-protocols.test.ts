@@ -620,9 +620,30 @@ describe('TRN-009: Trainingsprotokoll', () => {
       await expect(asUser(users.trainer, NACHTRAG, [TRAINING_HEUTE, 'Text', ''])).rejects.toThrow(
         /needs a reason/,
       );
+      await erwarteAbgewiesenenSchreibversuch(
+        users.office,
+        NACHTRAG,
+        [TRAINING_HEUTE, 'Text', 'Grund genug'],
+        'training_protocol.updated',
+      );
+    });
+
+    it('nimmt keinen Nachtrag von einem Patientenkonto oder aus einer anderen Praxis', async () => {
+      await schliesseAb(users.trainer, TRAINING_HEUTE, 'Abgeschlossen');
+      await erwarteAbgewiesenenSchreibversuch(
+        users.patientMax,
+        NACHTRAG,
+        [TRAINING_HEUTE, 'Text', 'Grund genug'],
+        'training_protocol.updated',
+      );
+      const fremd = await fremdeOrganisation();
       await expect(
-        asUser(users.office, NACHTRAG, [TRAINING_HEUTE, 'Text', 'Grund genug']),
-      ).rejects.toMatchObject({ code: '42501' });
+        asUser(fremd.owner, NACHTRAG, [TRAINING_HEUTE, 'Text', 'Grund genug']),
+      ).rejects.toThrow(/training protocol not found/);
+      const { rows } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_protocol_addenda',
+      );
+      expect(rows[0]!.n).toBe(0);
     });
   });
 
@@ -732,6 +753,11 @@ describe('TRN-009: Trainingsprotokoll', () => {
 
     it('loescht die Protokolle mit dem Verhaeltnis und fuehrt sie im Journal', async () => {
       const id = await schliesseAb(users.trainer, TRAINING_VORGESTERN, 'Weg damit');
+      await asUserCommitted(
+        users.trainer,
+        'select public.add_training_protocol_addendum($1::uuid, $2, $3) as id',
+        [TRAINING_VORGESTERN, 'Nachtrag', 'Ergaenzung'],
+      );
       await vertragEndeteVorVierJahren();
 
       await asPostgres(LAUF);
@@ -741,6 +767,12 @@ describe('TRN-009: Trainingsprotokoll', () => {
         [id],
       );
       expect(rows[0]!.n).toBe(0);
+      // Der Nachtrag geht mit seinem Protokoll (ABN-022).
+      const { rows: nachtraege } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_protocol_addenda where protocol_id = $1',
+        [id],
+      );
+      expect(nachtraege[0]!.n).toBe(0);
       const { rows: journal } = await asPostgres<{ retention_class: string }>(
         `select retention_class from public.deletion_journal
           where target_table = 'training_protocols' and target_id = $1`,
