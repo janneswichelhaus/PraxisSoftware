@@ -33,6 +33,8 @@ async function kontext(konto: string) {
     status: string;
     readable: boolean;
     read_until: string | null;
+    access_kind: string;
+    represented_name: string | null;
   }>(konto, KONTEXT);
   return rows;
 }
@@ -73,15 +75,20 @@ describe('platform_context', () => {
         status: 'active',
         readable: true,
         read_until: null,
+        access_kind: 'self',
+        represented_name: null,
       },
     ]);
-    // Keine Kennung des Verhältnisses, kein Name, keine Anschrift (Punkt 22).
+    // Keine Kennung des Verhältnisses, keine Anschrift (Punkt 22); ein Name
+    // nur bei einer Vertretung (POR-006).
     expect(Object.keys(tina[0]!).sort()).toEqual([
       'access_id',
+      'access_kind',
       'organization_name',
       'read_until',
       'readable',
       'relationship_kind',
+      'represented_name',
       'status',
     ]);
   });

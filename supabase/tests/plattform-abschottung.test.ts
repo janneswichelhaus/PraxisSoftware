@@ -242,6 +242,14 @@ describe('Abschottung der Praxis gegen Plattformkonten (ADR-023 Punkt 21)', () =
     120_000,
   );
 
+  it('zeigt einer Begleitung keine Zeile der Praxis (POR-EPIC-001b)', async () => {
+    // Eine Vertretung ist ein zweiter Akteurstyp mit eigenem Zugang; auch sie
+    // erreicht die Praxis nur über die Plattformprojektionen.
+    const befund = await pruefe(SEED.users.plattformPaula, true);
+    expect(befund.tabellen).toEqual([]);
+    expect(befund.funktionen).toEqual([]);
+  }, 120_000);
+
   it('zeigt einem Konto mit Profil, aber ohne Praxisrolle keine Zeile (Punkt 20)', async () => {
     // Bis POR-001 las dieses Konto über den Selbstzugriff seine eigene Akte,
     // Person und Anschrift. Das eigene Profil ist die eine Ausnahme: Ohne es

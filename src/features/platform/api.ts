@@ -17,6 +17,10 @@ const kontextSchema = z.object({
   status: z.enum(['active', 'locked']),
   readable: z.boolean(),
   read_until: z.string().nullable(),
+  /** POR-006: eigener Zugang oder Vertretung (ADR-023 Punkt 13). */
+  access_kind: z.enum(['self', 'legal_representative', 'companion']),
+  /** Nur an einer lesbaren Vertretung: für wen sie handelt (Punkt 14). */
+  represented_name: z.string().nullable(),
 });
 export type Plattformzugang = z.infer<typeof kontextSchema>;
 export type Bereich = Plattformzugang['relationship_kind'];
@@ -52,4 +56,46 @@ export const BEREICHSNAME: Record<Bereich, string> = {
 export async function ueberallAbmelden(): Promise<void> {
   const { error } = await getSupabase().auth.signOut({ scope: 'global' });
   if (error) throw new Error('Die Abmeldung auf allen Geräten ist nicht gelungen.');
+}
+
+// -----------------------------------------------------------------------------
+// Unter „Ich": wer für mich Zugang hat (POR-007, ADR-023 Punkt 14)
+// -----------------------------------------------------------------------------
+
+const vertretungSchema = z.object({
+  access_id: z.string().uuid(),
+  access_kind: z.enum(['legal_representative', 'companion']),
+  legal_basis: z.enum(['custody', 'guardianship', 'power_of_attorney']).nullable(),
+  representative_name: z.string(),
+  status: z.enum(['invited', 'active', 'locked']),
+  since: z.string(),
+  can_end: z.boolean(),
+});
+export type MeineVertretung = z.infer<typeof vertretungSchema>;
+
+export function vertretungenSchluessel(zugangId: string) {
+  return ['platform-representatives', zugangId] as const;
+}
+
+/**
+ * Wer für die Person Zugang hat. Der Server antwortet nur über den eigenen
+ * Zugang oder eine rechtliche Vertretung; einer Begleitung leer.
+ */
+export async function ladeMeineVertretungen(zugangId: string): Promise<MeineVertretung[]> {
+  const satz = 'Die Liste konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_representatives', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(vertretungSchema), ergebnis.data ?? [], satz);
+}
+
+/** Eine Begleitung beenden — der Widerruf der Einwilligung (Punkt 13). */
+export async function begleitungBeenden(zugangId: string, begleitungId: string): Promise<void> {
+  const satz = 'Die Begleitung konnte nicht beendet werden. Bitte wenden Sie sich an die Praxis.';
+  const ergebnis = (await getSupabase().rpc('end_platform_companion', {
+    p_access_id: zugangId,
+    p_companion_access_id: begleitungId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
 }
