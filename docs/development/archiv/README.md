@@ -10,4 +10,5 @@ lebenden Dokumenten steht. Geschichte der Entscheidungen: Chroniken und Git.
 | [`VER-EPIC-002.md`](VER-EPIC-002.md) | Plan „Verordnung im Office-Alltag" | gebaut 2026-09-18 |
 | [`E18-LEISTUNGSBEREICHE.md`](E18-LEISTUNGSBEREICHE.md) | Plan der Entscheidung E18: Behandlung und Training getrennt (ADR-021, ADR-022, Etappe L) | alle Schritte erledigt 2026-09-21 |
 | [`MAP-LOOPS-ERLEDIGT.md`](MAP-LOOPS-ERLEDIGT.md) | Zuschnitte MAP-002 bis MAP-005 aus `MAP-LOOPS.md` | gebaut 2026-09-22 |
+| [`BEFUNDE-ERLEDIGT.md`](BEFUNDE-ERLEDIGT.md) | Geschlossene Befunde aus `BEFUNDE.md`; neue kommen beim Abschluss ihres Loops dazu | fortlaufend seit 2026-10-02 |
 | [`abnahme/`](abnahme/) | Abnahmeschritte je Loop bis 2026-09-23; ersetzt durch die Sichtung je Etappe ([`../../sichtung/`](../../sichtung/README.md)) | Umbau U3 |
