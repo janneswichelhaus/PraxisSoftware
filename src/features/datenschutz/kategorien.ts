@@ -117,6 +117,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Wann Datenschutzinformation und Behandlungsvertrag vorlagen und welche Einwilligungen erteilt oder widerrufen wurden.',
   },
+  patient_merge_records: {
+    label: 'Zusammengeführte Akten',
+    beschreibung:
+      'Wann eine doppelt angelegte Akte mit dieser zusammengeführt wurde und was dabei mitgezogen ist.',
+  },
   legal_holds: {
     label: 'Löschsperren',
     beschreibung: 'Vorgänge, für die die Akte von der automatischen Löschung ausgenommen ist.',

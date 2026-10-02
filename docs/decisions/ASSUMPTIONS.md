@@ -1747,7 +1747,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Klasse `warteliste` und zwei Zuordnungen in `supabase/migrations/20260928100000_prx_001_waitlist.sql`; Regel in `public.apply_retention`, Reihenfolge in `public.reapply_deletion_journal`; Beschriftung in `src/features/retention/klassen.ts`; Tests „Warteliste im Loeschlauf“ in `supabase/tests/waitlist.test.ts`.
 
-**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108).
+**Änderungspfad.** Andere Frist: `retention_interval` der Klasse `warteliste` (Datenänderung) · Aufwand `klein`. Löschen sofort beim Schließen: Regel im Lauf auf `closed_at` ohne Intervall · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt; offene Einträge werden regelmäßig auf Aktualität geprüft (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkt 1):** Offene Einträge, die länger als `app.waitlist_review_interval()` (acht Wochen, ANN-220) unverändert sind, tragen `review_due` und stehen unter „Warteliste prüfen“ in Offene Punkte; „Noch aktuell“ (`confirm_waitlist_entry`, Audit `waitlist_entry.reviewed`) beginnt die Frist neu.
 
 ### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
 
@@ -1953,7 +1953,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 **Anker.** Umhängen der Legal Holds, Löschen der leeren Akte und Auditeintrag in `public.merge_patients`, Sperre der Akte in `public.place_legal_hold`, beide in `supabase/migrations/20260929220000_prx_017_patient_merge.sql`; Hinweis „nicht rückgängig“ in `src/features/patients/ZusammenfuehrenPage.tsx`; Tests in `supabase/tests/patient-merge.test.ts`.
 
-**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108).
+**Änderungspfad.** Rückgängig innerhalb einer Frist: Herkunft je gewanderter Zeile speichern · Aufwand `groß`. Journaleintrag für die gefallene Akte: eine Zeile in `merge_patients` und eine Regel im Nachziehen nach dem Restore · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** geändert: Der Nachweis des Zusammenführens bleibt so lange wie die betroffene Akte, nicht nur drei Jahre im Auditlog; alle Gründe bestehender Legal Holds bleiben wirksam (BEF-108). **Fassung 2 (ABN-018, 2026-10-02, BEF-108 Punkte 2 und 3):** Das Zusammenführen hebt keine Sperre mehr auf; eine Akte kann mehrere aktive Legal Holds tragen (Index ohne `unique`), `place_legal_hold` nimmt eine weitere mit eigenem Grund an, der Aufbewahrungsstand nennt alle Gründe. Der Nachweis steht als `patient_merge_records` an der bleibenden Akte (so lange wie sie, zieht bei einem weiteren Zusammenführen mit) und in „Verwaltung“ der Akte. `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`.
 
 ### ANN-151 — Statistik: Umsatz ist brutto nach Rechnungsstellung, als Praxissumme mit der Aufteilung je Bereich; der Zahlungseingang steht getrennt daneben
 
@@ -2634,3 +2634,15 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit dem P
 **Anker.** `scripts/definitionen-sql.mjs` und `scripts/definitionen-sql.test.mjs` (meldet eine fehlende Fassung im CI); `supabase/migrations/20261003101000_abn_014_questionnaire_definitions.sql`; erzeugt: `supabase/migrations/20261003101100_questionnaire_definitions.sql`.
 
 **Änderungspfad.** Neues Instrument oder neue Fassung: Datei ablegen, `pnpm definitionen:sql --schreiben` · Aufwand `klein`. Regeln nur noch an einer Stelle: das Zod-Schema als JSON-Schema exportieren und im Server mit einer Prüferweiterung auswerten (neue Abhängigkeit, ADR-015) · Aufwand `mittel`.
+
+### ANN-220 — Ein Wartelisteneintrag ist nach acht Wochen ohne Änderung zu prüfen
+
+Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: nach drei Monaten Betrieb mit der Warteliste; Jannes in der Sichtung
+
+**Annahme.** Ein offener Wartelisteneintrag, den acht Wochen niemand geändert oder bestätigt hat, steht unter „Warteliste prüfen“ in Offene Punkte. „Noch aktuell“ bestätigt ihn, ohne etwas zu ändern, und die acht Wochen beginnen neu; „Bearbeiten“ führt ins Formular.
+
+**Begründung.** BEF-108 verlangt eine regelmäßige Prüfung und überlässt die Zeit dem Loop. Eine Verordnung ist 28 Tage nach Ausstellung zu beginnen (Heilmittel-Richtlinie, bei Privatverordnungen üblich übernommen); wer acht Wochen wartet, hat oft schon woanders einen Termin oder eine neue Verordnung. Kürzer (vier Wochen) erzeugte bei ruhigen Phasen ständig Rückfragen an dieselben Personen. Unsicher: wie lang die Warteliste der Praxis tatsächlich ist.
+
+**Anker.** `app.waitlist_review_interval()` und `confirm_waitlist_entry` in `supabase/migrations/20261003105000_abn_018_waitlist_review_merge_records_holds.sql`; `src/features/open-points/WaitlistReview.tsx`.
+
+**Änderungspfad.** Andere Frist: die Konstante in einer Migration ändern · Aufwand `klein`. Frist je Praxis: Spalte an `organizations` und Einstellung · Aufwand `klein`.

@@ -236,6 +236,8 @@ export const AUDIT_ACTIONS = [
   // ABN-015: Befundangaben getrennt vom Entwurf (BEF-103).
   'treatment_draft_findings.saved',
   'treatment_draft_findings.viewed',
+  // ABN-018: Wartelisteneintrag als noch aktuell bestätigt (BEF-108).
+  'waitlist_entry.reviewed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -391,6 +393,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'payment.offset': 'Zahlung mit der Korrekturrechnung verrechnet',
   'treatment_draft_findings.saved': 'Befundangaben gesichert (noch nicht übernommen)',
   'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
+  'waitlist_entry.reviewed': 'Wartelisteneintrag als noch aktuell bestätigt',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

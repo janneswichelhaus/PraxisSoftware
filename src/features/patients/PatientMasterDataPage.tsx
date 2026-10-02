@@ -7,6 +7,7 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
+import { Zusammenfuehrungsvermerke } from './Zusammenfuehrungsvermerke';
 import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -405,6 +406,10 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                   ) : null}
                 </div>
               ) : null}
+              <Zusammenfuehrungsvermerke
+                patientId={patient.id}
+                zeitzone={user.organizationTimeZone}
+              />
             </Section>
           </div>
         </div>

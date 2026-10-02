@@ -46,6 +46,7 @@ function testEntry(rest: Partial<WaitlistApi.WaitlistEntry> = {}): WaitlistApi.W
     created_at: '2026-09-20T08:00:00+00:00',
     updated_at: '2026-09-20T08:00:00+00:00',
     closed_at: null,
+    review_due: false,
     ...rest,
   };
 }

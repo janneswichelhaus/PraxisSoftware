@@ -78,6 +78,8 @@ const entrySchema = z.object({
   created_at: z.string(),
   updated_at: z.string(),
   closed_at: z.string().nullable(),
+  /** Lange unverändert offen: zu prüfen (ABN-018, BEF-108, ANN-220). */
+  review_due: z.boolean(),
 });
 
 export type WaitlistEntry = z.infer<typeof entrySchema>;
@@ -182,6 +184,20 @@ export async function withdrawWaitlistEntry(
     p_appointment_id: null,
   })) as { error: { code?: string; message?: string } | null };
   if (error) throw writeError(error, 'Der Eintrag konnte nicht geschlossen werden.');
+}
+
+/**
+ * Einen lange unveränderten Eintrag als noch aktuell bestätigen (ABN-018,
+ * BEF-108): Die Prüfung beginnt von vorn, der Eintrag bleibt, wie er ist.
+ */
+export async function confirmWaitlistEntry(
+  entry: Pick<WaitlistEntry, 'id' | 'updated_at'>,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('confirm_waitlist_entry', {
+    p_entry_id: entry.id,
+    p_expected_updated_at: entry.updated_at,
+  })) as { error: { code?: string; message?: string } | null };
+  if (error) throw writeError(error, 'Der Eintrag konnte nicht bestätigt werden.');
 }
 
 /**

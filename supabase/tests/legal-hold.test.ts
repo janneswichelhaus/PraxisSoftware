@@ -64,12 +64,18 @@ describe('place_legal_hold', () => {
     expect(JSON.stringify(rows[0]?.context)).not.toContain('Behandlungsfehler');
   });
 
-  it('laesst keine zweite laufende Sperre auf derselben Akte zu', async () => {
-    await setzen(users.ownerTherapist, patients.max, 'Erster Grund');
+  it('laesst eine zweite Sperre mit eigenem Grund zu; jede bleibt wirksam (BEF-108)', async () => {
+    const erste = await setzen(users.ownerTherapist, patients.max, 'Erster Grund');
+    const zweite = await setzen(users.ownerTherapist, patients.max, 'Zweiter Grund');
+    expect(zweite).not.toBe(erste);
 
-    await expect(
-      asUser(users.ownerTherapist, SETZEN, [patients.max, 'Zweiter Grund']),
-    ).rejects.toThrow(/already under legal hold/);
+    // Die eine aufheben laesst die andere wirken.
+    await asUserCommitted(users.ownerTherapist, AUFHEBEN, [erste]);
+    const { rows } = await asPostgres<{ gesperrt: boolean }>(
+      `select app.under_legal_hold($1::uuid, 'patient', $2::uuid) as gesperrt`,
+      [SEED.organizationId, patients.max],
+    );
+    expect(rows[0]!.gesperrt).toBe(true);
   });
 
   it('verlangt einen Grund', async () => {
