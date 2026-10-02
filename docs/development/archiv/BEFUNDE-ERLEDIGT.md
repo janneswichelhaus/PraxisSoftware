@@ -1961,3 +1961,52 @@ Dafür braucht ADR-018 eine neue Fassung zu Punkt 8; sie entsteht mit dem Loop, 
 1. **Büro liest (ANN-184):** Lese- und Schreibrecht getrennt. `office` liest Protokolle und ihren Zustand, auch in der Liste der Einheiten, protokolliert als `training_protocol.viewed`; Schreiben und Abschließen bleiben bei owner und Trainingsbetreuung. Scharf mit echten Daten erst, wenn die DSFA (B2) das Lesen bestätigt.
 2. **Nachtrag (ANN-185):** Ein abgeschlossenes Protokoll bleibt unveränderlich. Korrekturen kommen als verknüpfter Nachtrag mit Grund, Verfasser:in und Zeitpunkt, angezeigt unter dem Text, wie in der Behandlung.
 3. **Verwerfen (ANN-186):** Bevor eine Absage oder ein Nichtantreffen einen Entwurf verwirft, weist die Oberfläche auf den Verlust hin, auch dem Büro. Ein verworfener Entwurf steht im Löschjournal und taucht nach einer Wiederherstellung nicht wieder auf.
+
+### BEF-105 — Dateien: Typ, Prüfsumme und Metadaten stützen sich auf Angaben des Browsers
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Dateiablage der Akte, Patientenfotos (Upload) |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-053, ANN-125) |
+| Status | erledigt in ABN-EPIC-001c (ABN-024 Spalten und Schalter, ABN-025 Edge Function `patient-file-verify`, ABN-026 sRGB; ANN-053 Fassung 2, ANN-125 Fassung 3, ANN-222); scharf mit OPS-001 |
+| Berührt | ANN-053, ANN-125; ADR-017 (Bestätigung, Virenprüfung); `storage.objects.metadata`; Metadaten-Entfernung im Browser |
+
+**Erwartet** (Jannes, 2026-10-02):
+- **Dateityp:** Der Server prüft ihn am **Inhalt** der Datei (Signatur der ersten Bytes), nicht am MIME-Typ, den Speicher oder Browser angeben. Der passende Ort ist der serverseitige Schritt, den ADR-017 ohnehin für die Virenprüfung vorsieht.
+- **Prüfsumme:** Die SHA-256 aus dem Browser wird als „nicht serverseitig verifiziert“ geführt, solange der Server sie nicht nachrechnet.
+- **Metadaten:** Die Metadatenfreiheit eines Fotos wird zusätzlich serverseitig geprüft und gegebenenfalls nachbereinigt.
+- **Darstellung:** Ausrichtung **und korrekte Farbdarstellung** bleiben erhalten. Heute entfernt das Gerät auch das Farbprofil (ANN-125); künftig wird das Bild entweder vorher nach sRGB umgerechnet oder ein sRGB-Profil bleibt.
+
+### BEF-106 — Medizinisch notwendige Fotos fallen unter die kurzen Fristen der Foto-Arbeitshilfe
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Patientenfotos, Akte, Löschlauf |
+| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-126, ANN-127) |
+| Status | erledigt in ABN-EPIC-001c (ABN-023; ANN-126, -127, -128 Fassung 3, ANN-221) |
+| Berührt | ANN-126, ANN-127; ADR-017 (Punkte 37 ff., Fotos als Arbeitshilfe, Klasse `patientenfoto`); ADR-008; Legal Hold |
+
+**Beobachtung.** Jedes Patientenfoto ist heute Arbeitshilfe auf Einwilligung: höchstens zwölf Monate, drei Monate nach dem Abschluss, ein Widerruf löscht.
+
+**Erwartet** (Jannes, 2026-10-02):
+- Medizinisch notwendige **Dokumentationsfotos** gehören zur Akte, mit deren Frist (zehn Jahre, ADR-008).
+- Die kurzen Fristen und der Widerruf gelten nur für **zusätzliche, vorübergehende Foto-Arbeitshilfen**.
+- Ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten noch einen Legal Hold auf.
+- Dafür braucht es eine Unterscheidung beim Aufnehmen, eine eigene Datenklasse und eine neue Fassung von ADR-017. Die Rechtsgrundlage der Dokumentationsfotos (Behandlung, Art. 9 Abs. 2 lit. h) geht in B2.
+
+### BEF-109 — Kartendienst: Gate in Produktion, eindeutige Treffer, Ersatzschätzungen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Kartendienst (`location-provider`), Stammdaten (Verorten), Tour und Fahrpuffer |
+| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-094, ANN-095, ANN-097) |
+| Status | erledigt in ABN-EPIC-001c (ABN-028; ANN-094 Fassung 3, ANN-095 und ANN-097 Fassung 2) |
+| Berührt | ANN-094, ANN-095, ANN-097; ADR-019 (Gate Punkt 9, Anbieterprüfung); `LOCATION_DATA_GATE`; Matrix- und Routenantworten |
+
+**Erwartet** (Jannes, 2026-10-02):
+1. **Gate (ANN-094):** Der Wert `synthetic` ist in der Produktivumgebung **technisch ausgeschlossen**, nicht nur per Konvention. Die Function erkennt die Umgebung und lehnt ihn dort ab; ein Test belegt das. Die Anbieterprüfung (ADR-019 Punkt 9, G12) deckt auch die **direkt geladenen Kartenkacheln** ab, die am Server vorbei aus dem Browser kommen.
+2. **Verorten (ANN-095):** Automatisch übernommen wird nur ein **eindeutiger** Treffer zur **vollständigen** Adresse. Ändert sich die Adresse, wird die alte Koordinate der Stammdaten verworfen (prüfen, ob das heute so ist). Historische Termine behalten ihren Stand (ANN-003, BEF-092).
+3. **Fahrzeit (ANN-097):** Liefert der Anbieter eine Luftlinien- oder Ersatzschätzung statt einer Routenfahrzeit, was PTV in Matrixantworten tun kann, wird sie ausdrücklich gekennzeichnet oder als „Fahrzeit nicht verfügbar“ behandelt, nie als echte Fahrzeit.
