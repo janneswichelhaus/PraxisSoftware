@@ -103,9 +103,9 @@ test.describe('DOK-002: Finalisieren', () => {
     await finalisierterEintrag(page, laufTag(1));
 
     await page.getByRole('link', { name: 'Änderungsverlauf' }).click();
-    // Der Link traegt den Rueckweg (`?zurueck=`).
+    // Unter dem Termin, mit Rueckweg (`?zurueck=`).
     await expect(page).toHaveURL((url) =>
-      /^\/dokumentation\/[0-9a-f-]{36}\/verlauf$/.test(url.pathname),
+      /\/dokumentation\/[0-9a-f-]{36}\/verlauf$/.test(url.pathname),
     );
 
     const version1 = page.getByLabel('Version 1');

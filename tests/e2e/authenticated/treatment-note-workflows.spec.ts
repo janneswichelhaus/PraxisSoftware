@@ -315,13 +315,15 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
+    // Der Link traegt den Rueckweg in den Kalender (`?zurueck=`).
+    const schreibseite = (url: URL) => url.pathname === `/termine/${terminId}/abschluss`;
+    await expect(page).toHaveURL(schreibseite);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 
     await page.goBack();
 
     await expect(rueckfrage(page)).toBeVisible();
-    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
+    await expect(page).toHaveURL(schreibseite);
 
     await rueckfrage(page).getByRole('button', { name: 'Verwerfen', exact: true }).click();
     await expect(page).toHaveURL(terminImKalender(terminId));
