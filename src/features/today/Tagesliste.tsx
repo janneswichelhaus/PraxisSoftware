@@ -1,4 +1,4 @@
-import { useId, useState, type ReactNode } from 'react';
+import { Fragment, useId, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
@@ -39,13 +39,13 @@ const namenslink =
  * Die Uhrzeit des Beginns steht am Zeitstrahl daneben; die Karte nennt die
  * ganze Spanne in der Nebenzeile, weil das Ende am Strahl nicht steht.
  *
- * **Pillen statt Textblock:** Stockwerk, Liege und offene Erstaufnahme stehen
- * als Pillen unter der Anschrift. Zugangshinweis und Besonderheit liegen
- * hinter dem Info-Knopf am Ende der Adresszeile - und hinter der
- * Stockwerk-Pille, die dasselbe aufklappt: Sie sind wichtig, wenn man vor
- * der Tür steht, und sonst Text, den Umstehende mitlesen. Ohne Hinweise gibt
- * es keinen Knopf. Das Stockwerk kommt vorerst vom Anfang des Zugangshinweises
- * (ANN-197, `stockwerk.ts`).
+ * **Pillen statt Textblock:** Liege und offene Erstaufnahme stehen als Pillen
+ * unter der Anschrift. Etage, Zugangshinweis, Besonderheit und Rufnummern
+ * liegen hinter dem Info-Knopf am Ende der Adresszeile (Jannes 2026-10-03,
+ * AKTE-008): Sie sind wichtig, wenn man vor der Tür steht, und sonst Text,
+ * den Umstehende mitlesen. Ohne eine dieser Angaben gibt es keinen Knopf.
+ * Die Etage kommt vorerst vom Anfang des Zugangshinweises (ANN-197,
+ * `stockwerk.ts`) - ein eigenes Feld `home_visit_floor` gibt es noch nicht.
  *
  * Freitexte - Name, Anschrift, Zugangshinweis, Besonderheit - brechen auch
  * mitten im Wort um (UEB-16, wie BEF-005): Ein Hinweis ohne Trennstelle
@@ -83,7 +83,8 @@ export function Tageskarte({
   const art = einordnung(termin);
   const { stockwerk, rest: zugang } = zugangMitStockwerk(termin.home_visit_access_note);
   const besonderheit = termin.special_note?.trim() || null;
-  const hatInfo = zugang !== null || besonderheit !== null;
+  const hatInfo =
+    stockwerk !== null || zugang !== null || besonderheit !== null || nummern.length > 0;
   const liege = termin.treatment_table_required === true;
   const fehlt = termin.kind === 'therapy' && termin.patient_id ? (erstaufnahme ?? []) : [];
   // Der Verweis auf die Hinweise steht nur da, solange es sie im Dokument
@@ -164,7 +165,7 @@ export function Tageskarte({
             // hinaus, ohne sie höher zu machen.
             <button
               type="button"
-              aria-label="Zugang und Besonderheiten"
+              aria-label="Etage, Zugang und Kontakt"
               {...info}
               className="text-accent hover:bg-accent-soft rounded-button -my-2.5 -ml-1 inline-flex size-11 shrink-0 items-center justify-center transition-colors duration-120"
             >
@@ -181,21 +182,8 @@ export function Tageskarte({
         </div>
       ) : null}
 
-      {stockwerk || liege || fehlt.length > 0 ? (
+      {liege || fehlt.length > 0 ? (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-          {stockwerk ? (
-            hatInfo ? (
-              <button
-                type="button"
-                {...info}
-                className={`${pille} border-line-strong text-ink hover:bg-accent-soft border transition-colors duration-120`}
-              >
-                {stockwerk}
-              </button>
-            ) : (
-              <span className={`${pille} border-line-strong text-ink border`}>{stockwerk}</span>
-            )
-          ) : null}
           {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
           {liege ? (
             <span className={`${pille} bg-accent-soft text-accent`}>
@@ -224,8 +212,14 @@ export function Tageskarte({
       {hatInfo && infoOffen ? (
         <dl
           id={infoId}
-          className="bg-canvas rounded-button text-ink mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
+          className="bg-canvas rounded-button text-ink mt-2.5 grid grid-cols-[auto_minmax(0,1fr)] items-baseline gap-x-3 gap-y-1 px-3 py-2.5 text-sm"
         >
+          {stockwerk ? (
+            <>
+              <dt className="text-ink-muted font-semibold">Etage</dt>
+              <dd className="min-w-0 font-semibold wrap-anywhere">{stockwerk}</dd>
+            </>
+          ) : null}
           {zugang ? (
             <>
               <dt className="text-ink-muted font-semibold">Zugangshinweis</dt>
@@ -238,6 +232,22 @@ export function Tageskarte({
               <dd className="min-w-0 wrap-anywhere">{besonderheit}</dd>
             </>
           ) : null}
+          {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8):
+              Textlinks mit 44 px Tippziel. Bis AKTE-008 standen die Nummern
+              offen unter den Handlungen; jetzt hier (Jannes 2026-10-03). */}
+          {nummern.map((nummer) => (
+            <Fragment key={nummer.label}>
+              <dt className="text-ink-muted font-semibold">{nummer.label}</dt>
+              <dd className="min-w-0">
+                <a
+                  href={nummer.href}
+                  className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center font-semibold tabular-nums underline underline-offset-3 transition-colors"
+                >
+                  {nummer.anzeige}
+                </a>
+              </dd>
+            </Fragment>
+          ))}
         </dl>
       ) : null}
 
@@ -248,26 +258,7 @@ export function Tageskarte({
         </div>
       ) : null}
 
-      {/* Kontakt ist Aktion, nicht Text (Oberflächen-Checkliste Punkt 8). Die
-          Nummern stehen hinter den Handlungen (`IDEA-PRX-040`): wichtig, aber
-          selten - gebraucht werden sie, wenn niemand öffnet. Weggeklappt
-          werden sie deshalb nicht; im Hausflur mit Handschuhen ist die Nummer
-          die einzige Handlung, die den Besuch noch rettet. */}
       <div className="border-line mt-3 flex flex-wrap items-center justify-between gap-x-4 border-t pt-1">
-        <div className="flex flex-wrap gap-x-4">
-          {nummern.map((nummer) => (
-            <a
-              key={nummer.label}
-              href={nummer.href}
-              className="text-accent hover:text-accent-hover inline-flex min-h-11 items-center gap-1.5 text-sm transition-colors"
-            >
-              <span className="text-ink-muted">{nummer.label}</span>
-              <span className="font-semibold tabular-nums underline underline-offset-3">
-                {nummer.anzeige}
-              </span>
-            </a>
-          ))}
-        </div>
         {/* Der Pfeil zeigt die Richtung, er gehört nicht zum Namen des Links
             (WRT-08): Vorlesesoftware sagt sonst „Pfeil nach rechts". Den
             Abstand davor trägt `gap-1` - ein Leerzeichen am Ende des Textes

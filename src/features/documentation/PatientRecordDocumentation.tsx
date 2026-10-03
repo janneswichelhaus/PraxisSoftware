@@ -1,17 +1,23 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { canReadTreatmentNote, type CurrentUser } from '@/features/session/types';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import {
+  canReadTreatmentNote,
+  canWriteTreatmentNote,
+  type CurrentUser,
+} from '@/features/session/types';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
   appointmentTypeHint,
   formatLocalTime,
+  fetchAppointment,
   formatLocalTimeRange,
   staffName,
 } from '@/features/appointments/api';
@@ -20,6 +26,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import {
   fetchDocumentationDeadline,
   fetchPatientTreatmentNotesPage,
+  fetchTreatmentDocumentation,
   naechsteAkteSeite,
   type AkteCursor,
   type PatientTreatmentNotesEntry,
@@ -262,7 +269,16 @@ function AkteEintrag({
  * zuerst. Jeder gelesene Eintrag wird serverseitig protokolliert (ADR-010,
  * ADR-016 Punkt 9); die Seitengroesse begrenzt, wie viel ein Aufruf offenlegt.
  */
-function Behandlungsdokumentation({ patient, user }: { patient: Patient; user: CurrentUser }) {
+function Behandlungsdokumentation({
+  patient,
+  user,
+  ohneTermin,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  /** Der Termin, der oben als „Dieser Termin" steht - hier nicht ein zweites Mal. */
+  ohneTermin: string | null;
+}) {
   const organisation = user.profile.organization_id;
   const { data: fristTage } = useQuery({
     queryKey: ['documentation-deadline', organisation],
@@ -283,7 +299,9 @@ function Behandlungsdokumentation({ patient, user }: { patient: Patient; user: C
     retry: false,
   });
 
-  const termine: PatientTreatmentNotesEntry[] = seiten.data?.pages.flat() ?? [];
+  const termine: PatientTreatmentNotesEntry[] = (seiten.data?.pages.flat() ?? []).filter(
+    (termin) => termin.appointment_id !== ohneTermin,
+  );
   const verlauf = `/patienten/${patient.id}/doku`;
   const monate = nachMonat(termine);
   // Die Sprungleiste lohnt erst ab zwei Monaten (Abschnitt 7). Sie kennt nur,
@@ -410,10 +428,134 @@ function Behandlungsdokumentation({ patient, user }: { patient: Patient; user: C
 export function PatientRecordDocumentation({
   patient,
   user,
+  ohneTermin = null,
 }: {
   patient: Patient;
   user: CurrentUser;
+  ohneTermin?: string | null;
 }) {
   if (!canReadTreatmentNote(user.roles)) return null;
-  return <Behandlungsdokumentation patient={patient} user={user} />;
+  return <Behandlungsdokumentation patient={patient} user={user} ohneTermin={ohneTermin} />;
+}
+
+/**
+ * „Dieser Termin" oben in der Doku (AKTE-008, ANN-225): der Eintrag zum
+ * Termin, aus dem man kommt - über `?termin=` von der Tageskarte.
+ *
+ * Gelesen über dieselben Wege wie die Schreibseite (`fetchAppointment`,
+ * `get_treatment_note`, unter denselben Schlüsseln); jeder gelieferte
+ * Eintrag wird auf dem Server protokolliert (ADR-010). Ein Termin einer
+ * anderen Person zeigt nichts.
+ *
+ * Geschrieben wird nicht hier, sondern auf der Schreibseite außerhalb des
+ * Aktenrahmens (UX-009: wer tippt, sieht die Bereichsleiste nicht). Der Knopf
+ * führt dorthin und wieder zurück. Ein festgeschriebener Eintrag wird am
+ * Termin korrigiert oder ergänzt, wie überall in der Akte.
+ */
+export function DieserTermin({
+  patient,
+  user,
+  terminId,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  terminId: string;
+}) {
+  const ort = useLocation();
+  const darfLesen = canReadTreatmentNote(user.roles);
+  const termin = useQuery({
+    queryKey: ['appointment', terminId],
+    queryFn: () => fetchAppointment(terminId),
+    enabled: darfLesen,
+    retry: false,
+  });
+  const dokumentation = useQuery({
+    queryKey: ['treatment-note', terminId],
+    queryFn: () => fetchTreatmentDocumentation(terminId),
+    enabled: darfLesen && termin.data?.patient_id === patient.id,
+    retry: false,
+  });
+  const { data: fristTage } = useQuery({
+    queryKey: ['documentation-deadline', user.profile.organization_id],
+    queryFn: () => fetchDocumentationDeadline(user.profile.organization_id),
+    enabled: darfLesen,
+    retry: false,
+  });
+
+  if (!darfLesen) return null;
+  if (termin.isPending) return <LoadingState label="Der Termin wird geladen …" />;
+  if (termin.isError) {
+    return (
+      <ErrorState
+        title="Der Termin konnte nicht geladen werden."
+        description="Bitte die Verbindung prüfen und erneut versuchen."
+        onErneut={() => termin.refetch()}
+      />
+    );
+  }
+  const daten = termin.data;
+  if (!daten || daten.patient_id !== patient.id) return null;
+
+  const kopf: RecordAppointment = {
+    appointment_id: daten.id,
+    starts_at: daten.starts_at,
+    ends_at: daten.ends_at,
+    appointment_type: daten.appointment_type,
+    appointment_status: daten.status,
+    staff_given_name: daten.staff_given_name ?? '',
+    staff_family_name: daten.staff_family_name ?? '',
+    organization_time_zone: daten.organization_time_zone,
+  };
+  const hier = `${ort.pathname}${ort.search}`;
+  const eintraege = dokumentation.data
+    ? [
+        ...(dokumentation.data.primary ? [dokumentation.data.primary] : []),
+        ...dokumentation.data.addenda,
+      ]
+    : [];
+  const haupteintrag = dokumentation.data?.primary ?? null;
+  const schreiben =
+    canWriteTreatmentNote(user.roles) && dokumentation.data && haupteintrag?.status !== 'final'
+      ? haupteintrag
+        ? 'Weiterschreiben'
+        : 'Eintrag schreiben'
+      : null;
+
+  return (
+    <Section titel="Dieser Termin">
+      <div className="border-line bg-surface rounded-card border px-4 py-3.5">
+        <TerminKopf termin={kopf} rueckweg={hier} />
+        {dokumentation.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
+        {dokumentation.isError ? (
+          <ErrorState
+            title="Die Dokumentation konnte nicht geladen werden."
+            description="Bitte die Verbindung prüfen und erneut versuchen."
+            onErneut={() => dokumentation.refetch()}
+          />
+        ) : null}
+        {dokumentation.data && eintraege.length === 0 ? (
+          <p className="text-ink-muted text-liste mt-2">Noch kein Eintrag.</p>
+        ) : null}
+        {eintraege.map((note) => (
+          <AkteEintrag
+            key={note.id}
+            termin={kopf}
+            note={note}
+            rueckweg={hier}
+            fristTage={fristTage}
+          />
+        ))}
+        {schreiben ? (
+          <ButtonLink
+            to={mitRueckweg(`/termine/${terminId}/abschluss`, hier)}
+            variant={haupteintrag ? 'secondary' : 'primary'}
+            groesse="kompakt"
+            className="mt-3"
+          >
+            {schreiben}
+          </ButtonLink>
+        ) : null}
+      </div>
+    </Section>
+  );
 }
