@@ -13,7 +13,14 @@ import { Wortmarke } from '@/components/ui/Wortmarke';
 import { type CurrentUser } from '@/features/session/types';
 import { Funktionssuche } from './Funktionssuche';
 import { useAbmeldeanfrage } from './abmeldeschutz';
-import { aktiverBereich, arbeitsbereiche, istRandlos, mehrSymbol, tableiste } from './navigation';
+import {
+  aktiverBereich,
+  arbeitsbereiche,
+  istRandlos,
+  mehrSymbol,
+  tableiste,
+  zeigtUnterleiste,
+} from './navigation';
 import { useSeitenwechsel } from './seitenwechsel';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
 
@@ -383,7 +390,7 @@ export function AppShell({
               : 'max-w-inhalt mx-auto w-full min-w-0 px-4 pt-4 pb-28 focus:outline-none sm:px-6 sm:pt-6 sm:pb-10 lg:px-8 lg:pb-12'
           }
         >
-          {aktuell && aktuell.unterpunkte.length > 0 ? (
+          {aktuell && aktuell.unterpunkte.length > 0 && zeigtUnterleiste(pathname) ? (
             // Eigener Schlüssel je Bereich: Eine aufgeklappte Vorschau bleibt
             // nicht offen, wenn man den Bereich wechselt (UX-002h).
             <SubNav
