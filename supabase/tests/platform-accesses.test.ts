@@ -981,19 +981,34 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
     await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
   });
 
-  it('protokolliert das Ende eines Zugangs auch, wenn das Verhaeltnis faellt (ADR-010)', async () => {
+  it('beendet den Zugang mit dem Verhaeltnis - nachgewiesen am Zugang, nicht im Log (LOG-EPIC-001)', async () => {
     await asPostgres(
       'select app.delete_training_relationship($1::uuid, extensions.gen_random_uuid(), now())',
       [trainingRelationships.tina],
     );
-    const { rows } = await asPostgres<{ actor_kind: string; context: Record<string, unknown> }>(
-      `select actor_kind, context from public.audit_log
-        where action = 'platform_access.revoked' and subject_id = $1`,
+    const { rows: amZugang } = await asPostgres<{
+      status: string;
+      revoked_reason: string;
+      revoked_by: string | null;
+      beendet: boolean;
+    }>(
+      `select status, revoked_reason, revoked_by, revoked_at is not null as beendet
+         from public.platform_accesses where id = $1`,
       [platformAccesses.tinaTraining],
     );
-    expect(rows).toEqual([
-      { actor_kind: 'system', context: { surface: 'system', reason: 'relationship_deleted' } },
+    expect(amZugang).toEqual([
+      {
+        status: 'revoked',
+        revoked_reason: 'relationship_deleted',
+        revoked_by: null,
+        beendet: true,
+      },
     ]);
+    const { rows } = await asPostgres(
+      `select 1 from public.audit_log where action = 'platform_access.revoked' and subject_id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    expect(rows).toEqual([]);
   });
 
   it('beendet den Zugang, wenn der Loeschlauf das Konto entfernt - ohne eigenen Auditeintrag (LOG-EPIC-001)', async () => {

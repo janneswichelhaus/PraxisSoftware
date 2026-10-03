@@ -19,8 +19,9 @@
 --   * delete_due_platform_accesses haelt einen Zugang mit diesem Vermerk so
 --     lange wie die Akte bzw. das Trainingsverhaeltnis.
 --   * export_patient_record nimmt in die Zugriffe nur erfolgreiche auf.
---   * Entzuege im Loeschlauf und bei der Wiederanwendung zaehlt
---     retention.applied; sie stehen nicht mehr einzeln im Log.
+--   * Entzuege im Loeschlauf, bei der Wiederanwendung und mit dem Fallen des
+--     Verhaeltnisses (platform_accesses_guard) zaehlt retention.applied bzw.
+--     zeigt der Zugang selbst; sie stehen nicht mehr einzeln im Log.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION app.close_waitlist_entry(p_org uuid, p_actor uuid, p_entry_id uuid, p_outcome text, p_appointment_id uuid)
@@ -301,6 +302,143 @@ begin
 
 
   return true;
+end;
+$function$;
+
+CREATE OR REPLACE FUNCTION app.platform_accesses_guard()
+ RETURNS trigger
+ LANGUAGE plpgsql
+ SECURITY DEFINER
+ SET search_path TO ''
+AS $function$
+declare
+  v_person uuid;
+begin
+  -- Faellt das Verhaeltnis (on delete set null), endet der Zugang, und seine
+  -- Einladungen verlieren die Adresse (ADR-023 Punkt 5).
+  if tg_op = 'UPDATE'
+     and new.patient_id is null and new.training_relationship_id is null
+     and (old.patient_id is not null or old.training_relationship_id is not null) then
+    if new.status <> 'revoked' then
+      new.status := 'revoked';
+      new.revoked_at := now();
+      new.revoked_by := null;
+      new.revoked_reason := 'relationship_deleted';
+      new.locked_at := null;
+      new.locked_by := null;
+    end if;
+    update public.platform_access_invitations i
+       set email = null,
+           status = case when i.status = 'pending' then 'revoked' else i.status end,
+           revoked_at = case when i.status = 'pending' then now() else i.revoked_at end
+     where i.platform_access_id = new.id;
+    -- LOG-EPIC-001: Das Ende mit dem Verhaeltnis zeigt der Zugang selbst
+    -- (revoked_reason 'relationship_deleted', revoked_at); im Loeschlauf
+    -- zaehlt retention.applied.
+    return new;
+  end if;
+
+  -- POR-005: Art und Nachweis eines Zugangs aendern sich nie. Ein anderer
+  -- Umfang ist eine neue Einladung.
+  if tg_op = 'UPDATE' and (
+       new.access_kind is distinct from old.access_kind
+       or new.legal_basis is distinct from old.legal_basis
+       or new.representative_name is distinct from old.representative_name
+       or new.proof_documents is distinct from old.proof_documents
+       or new.consent_text_version is distinct from old.consent_text_version
+       or new.consent_earlier_messages is distinct from old.consent_earlier_messages
+       or new.health_scope is distinct from old.health_scope
+       or new.finance_scope is distinct from old.finance_scope
+       or new.proof_recorded_by is distinct from old.proof_recorded_by
+       or new.proof_recorded_at is distinct from old.proof_recorded_at
+       or new.consent_recorded_by is distinct from old.consent_recorded_by
+       or new.consent_recorded_at is distinct from old.consent_recorded_at
+       or new.relationship_kind is distinct from old.relationship_kind
+       or new.organization_id is distinct from old.organization_id
+       or new.relationship_id is distinct from old.relationship_id) then
+    raise exception 'platform access kind and proof are fixed' using errcode = '23514';
+  end if;
+
+  if new.account_user_id is not null
+     and (tg_op = 'INSERT' or new.account_user_id is distinct from old.account_user_id) then
+    perform pg_advisory_xact_lock(hashtext('platform_account:' || new.account_user_id::text));
+
+    if exists (select 1 from public.user_profiles up where up.id = new.account_user_id) then
+      raise exception 'practice account cannot hold platform access' using errcode = '23514';
+    end if;
+
+    select r.person_id into v_person
+    from app.platform_relationship(new.relationship_kind, new.relationship_id) r;
+
+    perform pg_advisory_xact_lock(hashtext('platform_person:' || v_person::text));
+
+    if new.access_kind = 'self' then
+      if exists (
+        select 1 from public.user_profiles up
+        join public.user_roles ur on ur.user_id = up.id
+        where up.person_id = v_person
+      ) then
+        raise exception 'person has a practice account' using errcode = '23514';
+      end if;
+
+      if exists (
+        select 1
+        from public.platform_accesses a
+        cross join lateral app.platform_relationship(a.relationship_kind, a.relationship_id) r
+        where a.id <> new.id
+          and a.access_kind = 'self'
+          and a.status <> 'revoked'
+          and a.account_user_id is not null
+          and a.account_user_id <> new.account_user_id
+          and r.person_id = v_person
+      ) then
+        raise exception 'person already has another account' using errcode = '23514';
+      end if;
+
+      if exists (
+        select 1
+        from public.platform_accesses a
+        cross join lateral app.platform_relationship(a.relationship_kind, a.relationship_id) r
+        where a.account_user_id = new.account_user_id
+          and a.id <> new.id
+          and a.access_kind = 'self'
+          and a.status <> 'revoked'
+          and r.person_id is distinct from v_person
+      ) then
+        raise exception 'account belongs to another person' using errcode = '23514';
+      end if;
+
+      -- POR-005: Wer diese Person vertritt, ist nicht diese Person.
+      if exists (
+        select 1
+        from public.platform_accesses a
+        cross join lateral app.platform_relationship(a.relationship_kind, a.relationship_id) r
+        where a.account_user_id = new.account_user_id
+          and a.id <> new.id
+          and a.access_kind <> 'self'
+          and a.status <> 'revoked'
+          and r.person_id = v_person
+      ) then
+        raise exception 'account represents this person' using errcode = '23514';
+      end if;
+    else
+      -- POR-005: Eine Vertretung ist nie das Konto der vertretenen Person
+      -- (Punkt 13: "Gehoert das Konto nicht zur Person des Verhaeltnisses").
+      if exists (
+        select 1
+        from public.platform_accesses a
+        cross join lateral app.platform_relationship(a.relationship_kind, a.relationship_id) r
+        where a.account_user_id = new.account_user_id
+          and a.id <> new.id
+          and a.access_kind = 'self'
+          and a.status <> 'revoked'
+          and r.person_id = v_person
+      ) then
+        raise exception 'account belongs to the represented person' using errcode = '23514';
+      end if;
+    end if;
+  end if;
+  return new;
 end;
 $function$;
 
