@@ -2726,3 +2726,27 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken
 **Änderungspfad.** Eigene Dokumentart `anmeldebogen`: Katalogeintrag, `dokumentarten.ts` und die Bedingung in `app.intake_checklist` · Aufwand `klein`. Wieder mit Vermerken: die Optionen in `moeglicheVermerke` · Aufwand `klein`.
 
 **Ablösung.** ersetzt ANN-224 in der Bedingung für den Anmeldebogen.
+
+### ANN-227 — Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen
+
+Praxisprozess · offen · 2026-10-03 · Claude (Akte entschlacken: Daten übertragen) · erledigt · Wiedervorlage: Jannes in der Sichtung der Behandlungsgrundlagen
+
+**Annahme.** Im Fenster „Daten übertragen“ trägt jede Position ihre eigene Anzahl („6 × KG“). Die Zahl möglicher Termine der Grundlage ist dann ohne eigene Angabe die größte Anzahl einer Position; das Feld „Termine“ bleibt im Fenster änderbar. „Hausbesuch je Termin“ legt die Position Hausbesuch mit dieser Terminzahl an – kein eigenes Kennzeichen, keine Migration. Die Pos.-Nr. steht nur zur Orientierung neben dem Heilmittel und kommt aus der gültigen Preisliste.
+
+**Begründung.** Auf einem Privatrezept steht meist ein Heilmittel mit seiner Anzahl; mehrere Heilmittel werden in der Regel je Termin zusammen erbracht. Die größte Anzahl ist deshalb die beste Vorgabe, die Summe wäre bei „6 × KG + 6 × Wärme“ doppelt so groß. Unsicher: Rezepte mit gestaffelten Heilmitteln (erst MT, dann KG) – dafür bleibt das Feld änderbar.
+
+**Anker.** `terminzahl` in `src/features/treatment-bases/DatenUebertragenFenster.tsx`; Test in `src/features/treatment-bases/GrundlagenKacheln.test.tsx`.
+
+**Änderungspfad.** Summe statt Maximum oder Pflichtfeld: die eine Zeile `groessteAnzahl` · Aufwand `klein`.
+
+### ANN-228 — Die Diagnose der Verordnung steht auf der Rechnung
+
+Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: „Diagnose drauf“) · Prüfpaket · Wiedervorlage: Datenschutzberatung vor dem Scharfschalten (PROJECT_PRINCIPLES.md §15.2)
+
+**Annahme.** Neue Rechnungsdokumente (`schema_version` 4) tragen je Behandlungsgrundlage ICD-10-Code und Diagnosetext der Verordnung, dazu wie bisher Datum und verordnende Ärzt:in. Therapieziel und Verordnerhinweis bleiben weg; am Selbstzahler gibt es keine Diagnose. Ausgestellte Rechnungen behalten ihren Snapshot (ADR-009 Punkt 10). Der ICD-10-Code ist ein eigenes Feld an der Grundlage (`diagnosis_icd10`) mit eigener Schreibfunktion und Protokoll.
+
+**Begründung.** Private Krankenversicherung und Beihilfe erstatten Heilmittel nur mit Diagnose; ohne sie fordern sie die Verordnung nach, und die Rechnung geht ohnehin nur zusammen mit dem Rezept hinaus. Bisher stand die Diagnose aus Datensparsamkeit bewusst nicht darauf. Die Rechnung geht an die behandelte Person oder an eine von ihr benannte Stelle; die Übermittlung dient der Erstattung in ihrem Interesse. Unsicher ist, ob bei abweichender Empfänger:in (etwa Angehörige) eine Einwilligung nötig ist – das prüft die Datenschutzberatung vor der Inbetriebnahme. Entwickelt wird mit synthetischen Daten trotzdem jetzt (§15.2).
+
+**Anker.** Der Schalter `app.invoice_shows_diagnosis()` in `supabase/migrations/20261004140000_rechnung_diagnose.sql`; Anzeige `diagnoseText` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/invoice-diagnosis.test.ts` und `src/features/billing/InvoicePrintPage.test.tsx`.
+
+**Änderungspfad.** Diagnose wieder weg: der Schalter liefert `false` (neue Migration) · Aufwand `klein`. Nur bei Empfänger:in „selbst“ oder Kasse: Bedingung im Schalter um die Rechnung erweitern · Aufwand `mittel`.
