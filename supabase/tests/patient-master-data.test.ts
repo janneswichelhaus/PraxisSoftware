@@ -145,7 +145,7 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
     });
   });
 
-  it('aendert die neuen Felder und protokolliert nur ihre Namen', async () => {
+  it('aendert die neuen Felder und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.office, AENDERN, [
       patients.erika,
       'Erika',
@@ -171,16 +171,13 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
     expect(gelesen?.institution).toBe('Betreutes Wohnen Fiktiv');
     expect(gelesen?.primary_therapist_staff_member_id).toBe(ANNA);
 
-    const { rows } = await asPostgres<{ context: { changed_fields: string[] } }>(
-      `select context from public.audit_log
-        where action = 'patient.updated' and subject_id = $1::uuid
-        order by occurred_at desc limit 1`,
+    // Die Aenderung der Stammdaten steht nicht mehr im Auditlog (LOG-EPIC-001,
+    // ANN-230) - also auch keine Inhalte dort (ADR-010, ADR-011).
+    const { rows } = await asPostgres<{ action: string }>(
+      `select action from public.audit_log where subject_id = $1::uuid and outcome = 'success'`,
       [patients.erika],
     );
-    const felder = rows[0]!.context.changed_fields;
-    expect(felder.sort()).toEqual(['institution', 'primary_therapist_staff_member_id']);
-    // Keine Inhalte im Auditlog, nur Feldnamen (ADR-010, ADR-011).
-    expect(JSON.stringify(rows[0]!.context)).not.toContain('Fiktiv');
+    expect(rows).toEqual([]);
   });
 
   it('weist eine feste Therapeut:in ausserhalb der Organisation ab', async () => {

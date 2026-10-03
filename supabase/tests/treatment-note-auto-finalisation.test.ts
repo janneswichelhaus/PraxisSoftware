@@ -21,8 +21,9 @@ import {
  *     angelegter Eintrag bekommt seine eigene Frist (ANN-008),
  *   * der Vorgang ist idempotent und fuer keine Anwendungsrolle ausfuehrbar
  *     (ANN-007),
- *   * das Auditlog traegt einen Systemakteur ohne Account und ohne Inhalt
- *     (ANN-009, ADR-010).
+ *   * die automatische Finalisierung weist der Eintrag selbst nach
+ *     (finalized_by leer, LOG-EPIC-001); das Auditlog fuehrt Systemereignisse
+ *     weiter ohne Account und ohne Klarnamen (ANN-009, ADR-010).
  *
  * Alle Inhalte in dieser Datei sind erkennbar synthetisch und stammen aus
  * keinem realen Behandlungsfall (PROJECT_PRINCIPLES.md 3.1).
@@ -224,28 +225,32 @@ describe('DOK-004: Automatische Finalisierung nach Frist', () => {
     ]);
   });
 
-  it('protokolliert treatment_note.auto_finalized mit Systemakteur, Fristende und ohne Inhalt (ADR-010)', async () => {
+  it('weist die automatische Finalisierung am Eintrag nach, ohne Auditeintrag und ohne Inhalt (LOG-EPIC-001)', async () => {
     const t = await terminVorTagen(4);
     const d = await entwurf(t.id, 4, 'Synthetisch: Geheimer Inhalt, gehoert nicht ins Auditlog.');
 
     await lauf();
 
-    const eintrag = (await auditEintraege('treatment_note.auto_finalized')).find(
-      (e) => e.subject_id === d.id,
-    );
-    expect(eintrag).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: null,
-      actor_kind: 'system',
-      outcome: 'success',
-    });
-    expect(eintrag?.context).toMatchObject({
-      surface: 'scheduler',
+    // Der Systemakteur ist am Eintrag sichtbar: automatisch, ohne Person
+    // (ANN-230; finalized_by bleibt leer).
+    const zeile = await dokuZeile(d.id);
+    expect(zeile).toMatchObject({
+      status: 'final',
+      finalisation_kind: 'automatic',
+      finalized_by: null,
       appointment_id: t.id,
-      patient_id: patients.max,
     });
-    expect(typeof eintrag?.context.due_at).toBe('string');
-    expect(JSON.stringify(eintrag?.context)).not.toContain('Geheimer');
+    expect(zeile.finalized_at).toBeInstanceOf(Date);
+
+    const { rows } = await asPostgres<{ action: string }>(
+      'select action from public.audit_log where subject_id = $1',
+      [d.id],
+    );
+    expect(rows).toEqual([]);
+    const { rows: alle } = await asPostgres<{ eintrag: string }>(
+      'select row_to_json(a)::text as eintrag from public.audit_log a',
+    );
+    for (const { eintrag } of alle) expect(eintrag).not.toContain('Geheimer');
   });
 
   it('laesst einen Entwurf innerhalb der Frist unberuehrt', async () => {
@@ -440,14 +445,38 @@ describe('DOK-004: Automatische Finalisierung nach Frist', () => {
 
 describe('DOK-004: Systemakteur im Auditlog', () => {
   let dokuId: string;
+  let terminId: string;
 
   beforeAll(async () => {
     await resetDatabaseOhneTermine();
     const t = await terminVorTagen(3);
     const d = await entwurf(t.id, 3);
     dokuId = d.id;
+    terminId = t.id;
     await lauf();
+    // Die automatische Finalisierung schreibt seit LOG-EPIC-001 nichts mehr
+    // ins Auditlog. Ein Systemereignis, das bleibt, ist der Loeschlauf
+    // (retention.applied); er wird hier so eingetragen, wie apply_retention
+    // es tut, damit der Lesepfad am Systemakteur geprueft werden kann.
+    await asPostgres(
+      `insert into public.audit_log
+         (organization_id, actor_user_id, actor_kind, action, subject_type, subject_id, outcome, context)
+       values ($1, null, 'system', 'retention.applied', 'organization', $1, 'success', '{}'::jsonb)`,
+      [organizationId],
+    );
   }, 120_000);
+
+  it('schreibt fuer die automatische Finalisierung keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    expect(await dokuZeile(dokuId)).toMatchObject({
+      finalisation_kind: 'automatic',
+      finalized_by: null,
+    });
+    const { rows } = await asPostgres<{ action: string }>(
+      'select action from public.audit_log where subject_id = $1',
+      [dokuId],
+    );
+    expect(rows).toEqual([]);
+  });
 
   it('zeigt owner das Systemereignis ohne Account und ohne Klarnamen', async () => {
     const { rows } = await asUser<{
@@ -457,11 +486,11 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
       actor_display_name: string | null;
     }>(
       users.ownerTherapist,
-      "select * from public.list_audit_events(null, null, null, 'treatment_note.auto_finalized')",
+      "select * from public.list_audit_events(null, null, null, 'retention.applied')",
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({
-      subject_id: dokuId,
+      subject_id: organizationId,
       actor_user_id: null,
       actor_kind: 'system',
       actor_display_name: null,
@@ -471,14 +500,16 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
   it('blendet Systemereignisse im Benutzerfilter aus', async () => {
     const { rows } = await asUser(
       users.ownerTherapist,
-      "select * from public.list_audit_events(null, null, $1, 'treatment_note.auto_finalized')",
+      "select * from public.list_audit_events(null, null, $1, 'retention.applied')",
       [users.therapist],
     );
     expect(rows).toEqual([]);
   });
 
   it('fuehrt Benutzerereignisse weiterhin als user mit Account', async () => {
-    const eintraege = await auditEintraege('treatment_note.created');
+    // Das Lesen der Dokumentation bleibt als Oeffnen der Akte protokolliert.
+    await asUserCommitted(users.therapist, LESEN, [terminId]);
+    const eintraege = await auditEintraege('patient_record.viewed');
     expect(eintraege.length).toBeGreaterThan(0);
     for (const e of eintraege) {
       expect(e.actor_kind).toBe('user');
@@ -513,6 +544,13 @@ describe('DOK-004: Frist konfigurieren', () => {
     await resetDatabaseOhneTermine();
   }, 120_000);
 
+  async function auditAnzahl(): Promise<number> {
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.audit_log',
+    );
+    return rows[0]!.n;
+  }
+
   async function frist(): Promise<number> {
     const { rows } = await asPostgres<{ tage: number }>(
       'select documentation_auto_finalize_days as tage from public.organizations where id = $1',
@@ -525,7 +563,8 @@ describe('DOK-004: Frist konfigurieren', () => {
     expect(await frist()).toBe(1);
   });
 
-  it('laesst owner die Frist setzen und protokolliert Alt- und Neuwert (ANN-004)', async () => {
+  it('laesst owner die Frist setzen und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    const vorher = await auditAnzahl();
     const { rows } = await asUserCommitted<{ tage: number }>(
       users.ownerTherapist,
       FRIST_SETZEN,
@@ -534,25 +573,17 @@ describe('DOK-004: Frist konfigurieren', () => {
     expect(rows[0]!.tage).toBe(3);
     expect(await frist()).toBe(3);
 
-    const eintraege = await auditEintraege('organization.documentation_deadline_changed');
-    expect(eintraege.at(-1)).toMatchObject({
-      subject_type: 'organization',
-      subject_id: organizationId,
-      actor_user_id: users.ownerTherapist,
-      actor_kind: 'user',
-      outcome: 'success',
-    });
-    expect(eintraege.at(-1)?.context).toMatchObject({ surface: 'web', previous_days: 1, days: 3 });
+    // Die Frist steht an der Organisation; das Auditlog fuehrt die Aenderung
+    // nicht mehr (ANN-230).
+    expect(await auditAnzahl()).toBe(vorher);
 
     await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [1]);
   });
 
   it('schreibt bei unveraendertem Wert weder Daten noch Auditeintrag', async () => {
-    const vorher = (await auditEintraege('organization.documentation_deadline_changed')).length;
+    const vorher = await auditAnzahl();
     await asUserCommitted(users.ownerTherapist, FRIST_SETZEN, [1]);
-    expect((await auditEintraege('organization.documentation_deadline_changed')).length).toBe(
-      vorher,
-    );
+    expect(await auditAnzahl()).toBe(vorher);
   });
 
   it('wirkt unmittelbar auf den Finalisierer', async () => {

@@ -168,19 +168,23 @@ describe('Verordnung ohne Papier (PRX-011)', () => {
       expect(offen.rows).toEqual([]);
     });
 
-    it('protokolliert patient_file.assigned ohne Dateinamen', async () => {
+    it('ordnet zu und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
       const datei = await abgelegterScan(users.therapist);
       await asUserCommitted(users.office, ZUORDNEN, [datei.file_id, VERORDNUNG_MAX]);
 
-      const { rows } = await asPostgres<{ eintrag: string; actor_user_id: string }>(
-        `select row_to_json(a)::text as eintrag, actor_user_id from public.audit_log a
-          where a.action = 'patient_file.assigned'`,
+      const zeile = await asPostgres<{ treatment_basis_id: string }>(
+        'select treatment_basis_id from public.patient_files where id = $1',
+        [datei.file_id],
       );
-      expect(rows).toHaveLength(1);
-      expect(rows[0]!.actor_user_id).toBe(users.office);
-      expect(rows[0]!.eintrag).toContain(VERORDNUNG_MAX);
-      expect(rows[0]!.eintrag).not.toContain('Verordnung.jpg');
-      expect(rows[0]!.eintrag).not.toContain(datei.object_key);
+      expect(zeile.rows).toEqual([{ treatment_basis_id: VERORDNUNG_MAX }]);
+
+      // Die Zuordnung ist eine anerkannte Luecke (ANN-230): kein Eintrag, also
+      // auch weder Dateiname noch Objektschluessel im Auditlog.
+      const { rows } = await asPostgres<{ action: string }>(
+        `select action from public.audit_log where subject_id = $1 and outcome = 'success'`,
+        [datei.file_id],
+      );
+      expect(rows).toEqual([]);
     });
 
     it('ordnet nur einmal zu', async () => {

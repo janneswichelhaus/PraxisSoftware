@@ -205,44 +205,23 @@ describe('set_patient_status: Audit', () => {
     await setzenCommitted(users.teamLead, AKTIV, 'inactive');
   }, 120_000);
 
-  it('erzeugt genau ein patient.status_changed-Ereignis mit Akteur und Bezug', async () => {
-    const { rows } = await asPostgres<{
-      actor_user_id: string;
-      organization_id: string;
-      subject_type: string;
-      subject_id: string;
-      outcome: string;
-      occurred_at: Date;
-    }>("select * from public.audit_log where action = 'patient.status_changed'");
-
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_user_id).toBe(users.teamLead);
-    expect(rows[0]?.organization_id).toBe(organizationId);
-    expect(rows[0]?.subject_type).toBe('patient');
-    expect(rows[0]?.subject_id).toBe(AKTIV);
-    expect(rows[0]?.outcome).toBe('success');
-    expect(rows[0]?.occurred_at).toBeInstanceOf(Date);
-  });
-
-  it('haelt den neuen Status fest, aber keine Stammdaten', async () => {
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'patient.status_changed'",
+  it('setzt den Status an der Akte und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    // Der Statuswechsel ist eine anerkannte Luecke (ANN-230): die Akte zeigt
+    // den Stand, das Auditlog fuehrt ihn nicht mehr - und damit auch keine
+    // Stammdaten.
+    expect(await statusVon(AKTIV)).toBe('inactive');
+    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
+      'select action, context from public.audit_log',
     );
-    expect(rows[0]?.context).toEqual({ surface: 'web', status: 'inactive' });
-
-    const inhalt = JSON.stringify(rows[0]?.context);
-    for (const stammdatum of ['Max', 'Mustermann', '1957-04-30', 'Tuebingen', '72070']) {
-      expect(inhalt).not.toContain(stammdatum);
-    }
+    expect(rows).toEqual([]);
   });
 
-  it('zeigt das Ereignis im owner-Lesepfad', async () => {
+  it('zeigt im owner-Lesepfad kein Schreibereignis (LOG-EPIC-001)', async () => {
     const { rows } = await asUser<{ subject_id: string }>(
       users.ownerTherapist,
-      "select subject_id from public.list_audit_events(null, null, null, 'patient.status_changed')",
+      'select subject_id from public.list_audit_events(null, null, null, null)',
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_id).toBe(AKTIV);
+    expect(rows.filter((r) => r.subject_id === AKTIV)).toEqual([]);
   });
 });
 
@@ -251,17 +230,15 @@ describe('set_patient_status: Atomaritaet', () => {
     await resetDatabase();
   }, 120_000);
 
-  it('rollt den Statuswechsel zurueck, wenn der Auditeintrag scheitert', async () => {
-    // Statuswechsel und Protokolleintrag gehoeren zusammen: das Audit ist die
-    // tragende Kompensation fuer die Offenheit der Kartei (ADR-004, ADR-010).
-    // Ein Status, der ohne seinen Eintrag stehenbliebe, waere unbemerkt.
+  it('haengt nicht an einem Auditeintrag: der Wechsel gelingt auch bei gesperrtem Auditlog (LOG-EPIC-001)', async () => {
+    // Seit LOG-EPIC-001 schreibt der Statuswechsel nichts ins Auditlog. Ein
+    // Auditlog, das jeden neuen Eintrag ablehnt, darf ihn deshalb nicht
+    // aufhalten - schluege er fehl, schriebe er doch noch einen Eintrag.
     await asPostgres(`alter table public.audit_log
-       add constraint test_audit_blockiert check (action <> 'patient.status_changed')`);
+       add constraint test_audit_blockiert check (false) not valid`);
     try {
-      await expect(setzenCommitted(users.office, AKTIV, 'inactive')).rejects.toThrow(
-        /test_audit_blockiert/,
-      );
-      expect(await statusVon(AKTIV)).toBe('active');
+      await setzenCommitted(users.office, AKTIV, 'inactive');
+      expect(await statusVon(AKTIV)).toBe('inactive');
     } finally {
       await asPostgres('alter table public.audit_log drop constraint test_audit_blockiert');
     }
@@ -277,9 +254,7 @@ describe('set_patient_status: Wechsel ohne Aenderung', () => {
   }, 120_000);
 
   it('erzeugt kein Auditereignis', async () => {
-    const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'patient.status_changed'",
-    );
+    const { rows } = await asPostgres('select id from public.audit_log');
     expect(rows).toEqual([]);
   });
 

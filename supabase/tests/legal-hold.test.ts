@@ -52,16 +52,30 @@ describe('place_legal_hold', () => {
     });
   });
 
-  it('protokolliert legal_hold.placed an der Akte, ohne den Grund ins Auditlog zu schreiben', async () => {
+  it('weist das Setzen an der Sperre nach und schreibt den Grund nicht ins Auditlog (LOG-EPIC-001)', async () => {
     const id = await setzen(users.ownerTherapist, patients.max, 'Behandlungsfehlervorwurf');
 
-    const { rows } = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-      `select subject_id::text as subject_id, context from public.audit_log
-       where action = 'legal_hold.placed'`,
+    // Wer und wann stehen an der Sperre selbst (ANN-230).
+    const sperre = await asPostgres<{
+      subject_id: string;
+      placed_by: string;
+      placed_at: string | null;
+    }>(
+      `select subject_id::text as subject_id, placed_by::text as placed_by, placed_at::text as placed_at
+       from public.legal_holds where id = $1`,
+      [id],
     );
-    expect(rows[0]?.subject_id).toBe(patients.max);
-    expect(rows[0]?.context).toMatchObject({ hold_id: id });
-    expect(JSON.stringify(rows[0]?.context)).not.toContain('Behandlungsfehler');
+    expect(sperre.rows[0]).toMatchObject({
+      subject_id: patients.max,
+      placed_by: users.ownerTherapist,
+    });
+    expect(sperre.rows[0]?.placed_at).not.toBeNull();
+
+    // Im Auditlog steht kein Schreibvorgang und damit auch kein Grund.
+    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
+      'select action, context from public.audit_log',
+    );
+    expect(rows).toEqual([]);
   });
 
   it('laesst eine zweite Sperre mit eigenem Grund zu; jede bleibt wirksam (BEF-108)', async () => {
@@ -110,14 +124,33 @@ describe('release_legal_hold', () => {
     expect(rows[0]).toEqual({ released_by: users.ownerTherapist, vorhanden: true });
   });
 
-  it('protokolliert legal_hold.released an der Akte', async () => {
+  it('weist das Aufheben an der Sperre nach, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await setzen(users.ownerTherapist, patients.max, 'Vorgang abgeschlossen');
     await asUserCommitted(users.ownerTherapist, AUFHEBEN, [id]);
 
-    const { rows } = await asPostgres<{ subject_id: string }>(
-      `select subject_id::text as subject_id from public.audit_log where action = 'legal_hold.released'`,
+    const sperre = await asPostgres<{
+      subject_id: string;
+      placed_by: string;
+      placed_at: string | null;
+      released_by: string | null;
+      released_at: string | null;
+    }>(
+      `select subject_id::text as subject_id, placed_by::text as placed_by, placed_at::text as placed_at,
+              released_by::text as released_by, released_at::text as released_at
+       from public.legal_holds where id = $1`,
+      [id],
     );
-    expect(rows[0]?.subject_id).toBe(patients.max);
+    expect(sperre.rows[0]).toMatchObject({
+      subject_id: patients.max,
+      placed_by: users.ownerTherapist,
+      released_by: users.ownerTherapist,
+    });
+    expect(sperre.rows[0]?.placed_at).not.toBeNull();
+    expect(sperre.rows[0]?.released_at).not.toBeNull();
+    expect(sperre.rows[0]!.released_at! >= sperre.rows[0]!.placed_at!).toBe(true);
+
+    const { rows } = await asPostgres<{ action: string }>('select action from public.audit_log');
+    expect(rows).toEqual([]);
   });
 
   it('hebt eine bereits aufgehobene Sperre nicht ein zweites Mal auf', async () => {

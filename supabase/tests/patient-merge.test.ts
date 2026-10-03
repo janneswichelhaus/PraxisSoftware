@@ -578,27 +578,34 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
       expect(rows[0]).toEqual({ status: 'active', care_concluded_on: null });
     });
 
-    it('weist den Vorgang nach, ohne Namen und Inhalt (ANN-150)', async () => {
+    it('weist den Vorgang am Vermerk der Akte nach, ohne Namen und Inhalt (ANN-150, LOG-EPIC-001)', async () => {
+      // Wer und wann stehen am Vermerk (ANN-230), nicht im Auditlog.
       const { rows } = await asPostgres<{
-        actor_user_id: string;
-        subject_type: string;
-        outcome: string;
-        context: Record<string, unknown>;
+        merged_by: string;
+        merged_at: string | null;
+        source_patient_id: string;
+        counts: Record<string, unknown>;
       }>(
-        `select actor_user_id, subject_type, outcome, context from public.audit_log
-         where action = 'patient.merged' and subject_id = $1`,
+        `select merged_by, merged_at::text as merged_at, source_patient_id, counts
+           from public.patient_merge_records where target_patient_id = $1`,
         [ziel.patient],
       );
       expect(rows).toHaveLength(1);
       expect(rows[0]).toMatchObject({
-        actor_user_id: users.ownerTherapist,
-        subject_type: 'patient',
-        outcome: 'success',
+        merged_by: users.ownerTherapist,
+        source_patient_id: quelle.patient,
       });
-      expect(rows[0]!.context.source_patient_id).toBe(quelle.patient);
-      expect(rows[0]!.context.moved).toMatchObject({ appointments: 1, invoices_issued: 1 });
-      expect(JSON.stringify(rows[0]!.context)).not.toMatch(/Petra|Zusammen|Synthetisch/);
+      expect(rows[0]!.merged_at).not.toBeNull();
+      expect(rows[0]!.counts).toMatchObject({ appointments: 1, invoices_issued: 1 });
+      expect(JSON.stringify(rows[0])).not.toMatch(/Petra|Zusammen|Synthetisch/);
       expect(ergebnis.target_patient_id).toBe(ziel.patient);
+
+      const audit = await asPostgres<{ action: string }>(
+        `select action from public.audit_log
+         where subject_id in ($1, $2) and outcome = 'success'`,
+        [ziel.patient, quelle.patient],
+      );
+      expect(audit.rows).toEqual([]);
     });
 
     it('hält die ausgestellte Rechnung außerhalb des Vorgangs weiter fest', async () => {
@@ -762,12 +769,17 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
           { id: quellSperre, aktiv: true },
         ]),
       );
-      const audit = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log
-         where action = 'patient.merged' and subject_id = $1`,
+      // Keine Sperre wurde aufgehoben, und der Vorgang steht am Vermerk.
+      const aufgehoben = await asPostgres<{ released_by: string | null }>(
+        'select released_by from public.legal_holds where id in ($1, $2)',
+        [zielSperre, quellSperre],
+      );
+      expect(aufgehoben.rows).toEqual([{ released_by: null }, { released_by: null }]);
+      const vermerk = await asPostgres<{ merged_by: string }>(
+        'select merged_by from public.patient_merge_records where target_patient_id = $1',
         [ziel.patient],
       );
-      expect(audit.rows[0]!.context.legal_hold_released).toBeNull();
+      expect(vermerk.rows).toEqual([{ merged_by: users.ownerTherapist }]);
     });
   });
 

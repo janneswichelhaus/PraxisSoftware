@@ -259,14 +259,17 @@ describe('Erhebung eines Fragebogens', () => {
     }
   });
 
-  it('verwirft einen Entwurf und protokolliert es', async () => {
+  it('verwirft einen Entwurf und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await erheben();
     await asUserCommitted(users.therapist, VERWERFEN, [id]);
     const { rows } = await asUser(users.therapist, LESEN, [patients.max]);
     expect(rows).toEqual([]);
-    expect(
-      (await auditZeilen('questionnaire_response.discarded')).map((z) => z.subject_id),
-    ).toEqual([id]);
+    // Verworfene Entwuerfe sind eine anerkannte Luecke (ANN-230).
+    const audit = await asPostgres<{ action: string }>(
+      `select action from public.audit_log where subject_id = $1`,
+      [id],
+    );
+    expect(audit.rows).toEqual([]);
   });
 
   it('weist ein Datum in der Zukunft, fremde Formen und zu grosse Antworten ab', async () => {
@@ -361,9 +364,13 @@ describe('Rollen und Grenzen (ADR-013 Punkt 9 Nr. 1)', () => {
 
   it('schreibt keine Antworten ins Auditlog (ADR-010 Punkt 3)', async () => {
     await erheben();
+    // Das Oeffnen der Akte bleibt protokolliert (LOG-EPIC-001) - geprueft wird
+    // an allen verbleibenden Eintraegen.
+    await asUserCommitted(users.office, LESEN, [patients.max]);
     const { rows } = await asPostgres<{ context: string }>(
-      `select context::text as context from public.audit_log where action like 'questionnaire_response.%'`,
+      `select row_to_json(a)::text as context from public.audit_log a`,
     );
+    expect(rows.length).toBeGreaterThan(0);
     for (const zeile of rows) expect(zeile.context).not.toMatch(/schmerz|auswahl|wert/);
   });
 

@@ -114,6 +114,23 @@ async function auditEintraege(action: string) {
   return rows;
 }
 
+/** Alle Auditzeilen zu einem Eintrag, samt Inhalt als Text (LOG-EPIC-001). */
+async function auditZumEintrag(id: string) {
+  const { rows } = await asPostgres<{ action: string }>(
+    'select action from public.audit_log where subject_id = $1',
+    [id],
+  );
+  return rows;
+}
+
+/** Das gesamte Auditlog als Text - fuer die Pruefung, dass kein Inhalt darin steht. */
+async function auditAlsText(): Promise<string> {
+  const { rows } = await asPostgres<{ eintrag: string }>(
+    'select row_to_json(a)::text as eintrag from public.audit_log a',
+  );
+  return rows.map((r) => r.eintrag).join('\n');
+}
+
 // =============================================================================
 // Anlegen
 // =============================================================================
@@ -158,26 +175,23 @@ describe('DOK-001: Behandlungsdokumentation anlegen', () => {
     });
   });
 
-  it('protokolliert treatment_note.created ohne Behandlungsinhalt (ADR-010)', async () => {
+  it('weist das Anlegen am Eintrag nach und schreibt keinen Auditeintrag, also keinen Inhalt (LOG-EPIC-001)', async () => {
     const t = await termin();
     const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [
       t.id,
       'Synthetisch: Geheimer Inhalt, der nirgends im Auditlog stehen darf.',
     ]);
 
-    const eintraege = await auditEintraege('treatment_note.created');
-    const eigener = eintraege.find((e) => e.subject_id === rows[0]!.id);
-    expect(eigener).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: users.therapist,
-      outcome: 'success',
-    });
-    expect(eigener?.context).toMatchObject({
-      surface: 'web',
+    // Wer und wann stehen am Eintrag (ANN-230).
+    const zeile = await dokuZeile(rows[0]!.id);
+    expect(zeile).toMatchObject({
       appointment_id: t.id,
-      patient_id: patients.max,
+      created_by: users.therapist,
     });
-    expect(JSON.stringify(eigener?.context)).not.toContain('Geheimer Inhalt');
+    expect(zeile?.['created_at']).toBeInstanceOf(Date);
+
+    expect(await auditZumEintrag(rows[0]!.id)).toEqual([]);
+    expect(await auditAlsText()).not.toContain('Geheimer Inhalt');
   });
 
   it('erlaubt die Dokumentation eines abgeschlossenen Termins', async () => {
@@ -294,7 +308,7 @@ describe('DOK-001: Entwurf bearbeiten', () => {
     });
   });
 
-  it('protokolliert treatment_note.updated ohne Behandlungsinhalt', async () => {
+  it('weist das Aendern am Eintrag nach und schreibt keinen Auditeintrag, also keinen Inhalt (LOG-EPIC-001)', async () => {
     const d = await entwurf();
     await asUserCommitted(users.therapist, AENDERN, [
       d.id,
@@ -302,13 +316,13 @@ describe('DOK-001: Entwurf bearbeiten', () => {
       'Synthetisch: Zweiter geheimer Inhalt.',
     ]);
 
-    const eintraege = await auditEintraege('treatment_note.updated');
-    const eigener = eintraege.find((e) => e.subject_id === d.id);
-    expect(eigener).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: users.therapist,
-    });
-    expect(JSON.stringify(eigener?.context)).not.toContain('geheimer Inhalt');
+    // Wer und wann stehen am Eintrag (ANN-230).
+    const danach = await dokuStand(d.id);
+    expect(danach.updated_at).not.toBe(d.updated_at);
+    expect(await dokuZeile(d.id)).toMatchObject({ updated_by: users.therapist });
+
+    expect(await auditZumEintrag(d.id)).toEqual([]);
+    expect(await auditAlsText()).not.toContain('geheimer Inhalt');
   });
 
   it('weist eine Aenderung auf veraltetem Stand ab und laesst den Text stehen (ADR-001)', async () => {
@@ -330,8 +344,7 @@ describe('DOK-001: Entwurf bearbeiten', () => {
     const danach = await dokuStand(d.id);
     expect(danach.updated_at).toBe(d.updated_at);
 
-    const eintraege = await auditEintraege('treatment_note.updated');
-    expect(eintraege.filter((e) => e.subject_id === d.id)).toEqual([]);
+    expect(await auditZumEintrag(d.id)).toEqual([]);
   });
 
   it('verlangt einen erwarteten Stand', async () => {

@@ -123,7 +123,7 @@ describe('complete_treatment', () => {
 
     // Seit CAL-008d hebt die Finalisierung den Termin auf documented
     // (ADR-018 Punkt 3). Der Abschluss ist dabei trotzdem passiert:
-    // completed_at steht, und appointment.completed liegt im Auditlog.
+    // completed_at steht (ANN-230: das Datenmodell ist der Nachweis).
     const nachher = await terminLesen(t.id);
     expect(nachher.status).toBe('documented');
     expect(nachher.completed_at).not.toBeNull();
@@ -243,7 +243,7 @@ describe('complete_treatment', () => {
     ).rejects.toThrow(/treatment note is already final/);
   });
 
-  it('protokolliert dieselben Ereignisse wie die Einzelschritte (ADR-010, ADR-016 Punkt 9)', async () => {
+  it('weist dieselben Schritte am Datenmodell nach wie die Einzelschritte, ohne Auditeintrag (LOG-EPIC-001, ADR-016 Punkt 9)', async () => {
     const t = await termin();
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [
       t.id,
@@ -252,13 +252,40 @@ describe('complete_treatment', () => {
       null,
     ]);
 
+    // Wer und wann stehen an den Fachtabellen (ANN-230).
+    const notiz = await asPostgres<{
+      created_by: string;
+      finalized_by: string | null;
+      finalized_at: string | null;
+    }>(
+      `select created_by, finalized_by, finalized_at::text as finalized_at
+         from public.treatment_notes where appointment_id = $1`,
+      [t.id],
+    );
+    expect(notiz.rows).toHaveLength(1);
+    expect(notiz.rows[0]!.created_by).toBe(users.therapist);
+    expect(notiz.rows[0]!.finalized_by).toBe(users.therapist);
+    expect(notiz.rows[0]!.finalized_at).not.toBeNull();
+
+    const version = await asPostgres<{ author_id: string }>(
+      `select v.author_id
+         from public.treatment_note_versions v
+         join public.treatment_notes n on n.id = v.note_id
+        where n.appointment_id = $1`,
+      [t.id],
+    );
+    expect(version.rows).toEqual([{ author_id: users.therapist }]);
+
+    const abschluss = await asPostgres<{ completed_by: string | null }>(
+      'select completed_by from public.appointments where id = $1',
+      [t.id],
+    );
+    expect(abschluss.rows[0]!.completed_by).toBe(users.therapist);
+
     const { rows } = await asPostgres<{ action: string }>(
       'select action from public.audit_log order by occurred_at, action',
     );
-    const aktionen = rows.map((zeile) => zeile.action);
-    expect(aktionen).toContain('treatment_note.created');
-    expect(aktionen).toContain('treatment_note.finalized');
-    expect(aktionen).toContain('appointment.completed');
+    expect(rows).toEqual([]);
   });
 
   it('schreibt bei einem abgewiesenen Aufruf keinen Auditeintrag', async () => {

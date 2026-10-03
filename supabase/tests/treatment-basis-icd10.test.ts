@@ -64,12 +64,17 @@ describe('ICD-10 an der Behandlungsgrundlage', () => {
     ]);
     expect(Object.keys(org.rows[0] ?? {})).not.toContain('diagnosis_icd10');
 
-    const audit = await asPostgres<{ n: string }>(
-      `select count(*) as n from public.audit_log
-        where subject_id = $1 and action = 'treatment_basis.updated'`,
+    // Wer den Code gesetzt hat, steht an der Grundlage (LOG-EPIC-001, ANN-230).
+    const kopf = await asPostgres<{ updated_by: string | null }>(
+      'select updated_by from public.treatment_bases where id = $1',
       [id],
     );
-    expect(Number(audit.rows[0]?.n)).toBe(1);
+    expect(kopf.rows).toEqual([{ updated_by: users.office }]);
+    const audit = await asPostgres<{ n: string }>(
+      'select count(*) as n from public.audit_log where subject_id = $1',
+      [id],
+    );
+    expect(Number(audit.rows[0]?.n)).toBe(0);
   });
 
   it('leert den Code mit einer leeren Angabe', async () => {
