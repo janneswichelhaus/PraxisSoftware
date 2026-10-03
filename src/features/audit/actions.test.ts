@@ -6,8 +6,8 @@ import { auditSubjectLabels } from './actions';
  * Die Gegenstände einer Auditzeile, wie die Datenbank sie zulässt (ORG-20).
  *
  * Die Aktionen hält der Datenbanktest in `supabase/tests/audit.test.ts` gegen
- * die Constraint. Für die Gegenstände gab es das nicht - und so fehlten
- * `text_snippet` und `user_account`, bis die Liste „user_account" anzeigte.
+ * die Constraint. Für die Gegenstände gab es das nicht - und so fehlte
+ * `user_account`, bis die Liste „user_account" anzeigte.
  * Gelesen wird die jüngste Migration, die die Constraint setzt; die Prüfung
  * braucht keine Datenbank.
  */
@@ -27,18 +27,14 @@ function gegenstaendeDerDatenbank(): string[] {
 }
 
 describe('auditSubjectLabels', () => {
-  it('beschriftet jeden Gegenstand, den die Datenbank zulaesst', () => {
+  it('beschriftet genau die Gegenstände, die die Datenbank zulässt (LOG-EPIC-001)', () => {
     const gegenstaende = gegenstaendeDerDatenbank();
     // Gegenprobe: die Liste ist wirklich gelesen worden.
     expect(gegenstaende).toContain('patient');
-    expect(gegenstaende.length).toBeGreaterThan(10);
-
-    const ohneBeschriftung = gegenstaende.filter((schluessel) => !auditSubjectLabels[schluessel]);
-    expect(ohneBeschriftung).toEqual([]);
+    expect([...gegenstaende].sort()).toEqual(Object.keys(auditSubjectLabels).sort());
   });
 
-  it('nennt Textbaustein und Zugang in der Sprache der Oberflaeche', () => {
-    expect(auditSubjectLabels.text_snippet).toBe('Textbaustein');
+  it('nennt den Zugang in der Sprache der Oberflaeche', () => {
     expect(auditSubjectLabels.user_account).toBe('Zugang');
   });
 });

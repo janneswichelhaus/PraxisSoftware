@@ -23,7 +23,6 @@ import {
 import {
   invitePlatformRepresentation,
   listPlatformRepresentations,
-  noteCompanionCapacityDoubt,
   recordCompanionConsentWithdrawn,
   renewPlatformRepresentationCode,
   revokePlatformAccess,
@@ -352,6 +351,7 @@ function VertretungEinrichten({
           zugangsart === 'companion' && eingewilligt ? EINWILLIGUNG_BEGLEITUNG_FASSUNG : null,
         fruehereNachrichten: zugangsart === 'companion' ? fruehere : null,
         rechnungen,
+        zweifel: zweifel && zugangsart === 'legal_representative',
       });
     },
     onSuccess: async (einladung) => {
@@ -361,13 +361,13 @@ function VertretungEinrichten({
       onEingerichtet(einladung, name.trim());
     },
   });
-  const zweifeln = useMutation({
-    mutationFn: () => noteCompanionCapacityDoubt(art, verhaeltnisId),
-    onSuccess: () => {
-      setZweifel(true);
-      setZugangsart('legal_representative');
-    },
-  });
+  // LOG-EPIC-001: Der Zweifel wird mit der rechtlichen Vertretung gespeichert
+  // (ANN-207 Fassung 2), nicht mehr sofort als Auditeintrag.
+  function zweifeln(): Promise<void> {
+    setZweifel(true);
+    setZugangsart('legal_representative');
+    return Promise.resolve();
+  }
 
   function absenden(event: FormEvent) {
     event.preventDefault();
@@ -413,7 +413,7 @@ function VertretungEinrichten({
       {zweifel ? (
         <Statusmeldung ton="warnung">
           Eine Begleitung gibt es nicht, weil die Praxis an der Einwilligungsfähigkeit zweifelt;
-          möglich ist eine rechtliche Vertretung. Vermerkt ist nur der Zweifel, ohne Grund.
+          möglich ist eine rechtliche Vertretung. An ihr wird nur der Zweifel vermerkt, ohne Grund.
         </Statusmeldung>
       ) : null}
 
@@ -534,11 +534,10 @@ function VertretungEinrichten({
               ausloeserVariante="quiet"
               bestaetigen="Vermerken"
               bestaetigenLaeuft="Wird vermerkt …"
-              fehler={zweifeln.error?.message}
-              onBestaetigen={() => zweifeln.mutateAsync()}
+              onBestaetigen={zweifeln}
             >
               <p>
-                Dann gibt es keine Begleitung, nur eine rechtliche Vertretung. Vermerkt wird nur,
+                Dann gibt es keine Begleitung, nur eine rechtliche Vertretung. An ihr wird vermerkt,
                 dass gezweifelt wurde, kein Grund und keine Diagnose.
               </p>
             </Rueckfrage>

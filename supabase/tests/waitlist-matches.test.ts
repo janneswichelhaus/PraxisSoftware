@@ -162,23 +162,30 @@ describe('Nachrücken: Übernahme in einer Transaktion (PRX-004)', () => {
       '10:00',
     ]);
     const termin = rows[0]!.id;
-    const { rows: stand } = await asPostgres<{ status: string; placed_appointment_id: string }>(
-      'select status, placed_appointment_id from public.waitlist_entries where id = $1',
+    const { rows: stand } = await asPostgres<{
+      status: string;
+      placed_appointment_id: string;
+      closed_by: string;
+    }>(
+      'select status, placed_appointment_id, closed_by from public.waitlist_entries where id = $1',
       [id],
     );
-    expect(stand[0]).toEqual({ status: 'placed', placed_appointment_id: termin });
-    const { rows: termine } = await asPostgres<{ patient_id: string }>(
-      'select patient_id from public.appointments where id = $1',
+    expect(stand[0]).toEqual({
+      status: 'placed',
+      placed_appointment_id: termin,
+      closed_by: users.office,
+    });
+    const { rows: termine } = await asPostgres<{ patient_id: string; created_by: string }>(
+      'select patient_id, created_by from public.appointments where id = $1',
       [termin],
     );
-    expect(termine[0]!.patient_id).toBe(patients.max);
-    const { rows: audit } = await asPostgres<{ action: string }>(
-      `select action from public.audit_log where subject_id in ($1, $2) order by occurred_at`,
+    expect(termine[0]).toEqual({ patient_id: patients.max, created_by: users.office });
+    // Wer und wann stehen an Termin und Eintrag, nicht im Auditlog (LOG-EPIC-001).
+    const { rows: audit } = await asPostgres(
+      'select 1 from public.audit_log where subject_id in ($1, $2)',
       [id, termin],
     );
-    expect(audit.map((a) => a.action)).toEqual(
-      expect.arrayContaining(['appointment.created', 'waitlist_entry.closed']),
-    );
+    expect(audit).toEqual([]);
   });
 
   it('schließt nichts, wenn der Termin scheitert', async () => {

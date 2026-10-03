@@ -140,7 +140,7 @@ describe('Nichtantreffen am Hausbesuch: das Protokoll ist Pflicht', () => {
     expect((await zeile(termin.id)).status).toBe('confirmed');
   });
 
-  it('schreibt die Bestaetigung und den Anlass in den Auditeintrag, ohne klinischen Inhalt', async () => {
+  it('haelt Bestaetigung, Anlass und Person am Termin fest, nicht im Auditlog (LOG-EPIC-001)', async () => {
     const termin = await terminAm('home_visit');
 
     await asUserCommitted(users.ownerTherapist, NICHT_ANGETROFFEN, [
@@ -149,21 +149,19 @@ describe('Nichtantreffen am Hausbesuch: das Protokoll ist Pflicht', () => {
       true,
     ]);
 
+    const nachher = await zeile(termin.id);
+    expect(nachher.no_show_protocol_confirmed).toBe(true);
+    expect(nachher.fee_basis).toBe('no_show');
+    expect(nachher.no_show_recorded_by).toBe(users.ownerTherapist);
+    expect(nachher.no_show_recorded_at).not.toBeNull();
+
+    // Kein Erfolgseintrag zum Termin - und damit kein klinischer Inhalt.
     const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
       `select context from public.audit_log
-        where action = 'appointment.no_show' and subject_id = $1`,
+        where outcome = 'success' and subject_id = $1`,
       [termin.id],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.context.protocol_confirmed).toBe(true);
-    expect(rows[0]!.context.fee_basis).toBe('no_show');
-    expect(Object.keys(rows[0]!.context).sort()).toEqual([
-      'fee_basis',
-      'patient_id',
-      'protocol_confirmed',
-      'staff_member_id',
-      'surface',
-    ]);
+    expect(rows).toEqual([]);
   });
 
   it('raeumt Anlass und Bestaetigung beim Wiederoeffnen ab', async () => {

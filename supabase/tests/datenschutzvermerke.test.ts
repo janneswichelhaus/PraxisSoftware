@@ -17,7 +17,7 @@ import {
  * nicht. Beide Zeilen bleiben stehen, der Stand ergibt sich aus der juengsten
  * (Art. 7 Abs. 1 DSGVO - die Praxis muss die Einwilligung auch fuer die Zeit
  * vor dem Widerruf nachweisen koennen). Danach Rollen, Mandantengrenze,
- * Auditeintrag und die Auskunft.
+ * der Nachweis am Datenmodell (ANN-230) und die Auskunft.
  */
 
 const { users, patients } = SEED;
@@ -247,30 +247,24 @@ describe('record_patient_privacy_entry', () => {
     expect(ohneZweck?.code).toBe('23514');
   });
 
-  it('schreibt einen Auditeintrag ohne Inhalt', async () => {
+  it('weist den Vermerk an seiner Zeile nach und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await vermerken('consent_granted', 'email_contact', null, HEUTE);
 
-    const { rows } = await asPostgres<{
-      actor_user_id: string;
-      subject_id: string;
-      outcome: string;
-      context: Record<string, unknown>;
+    // Wer und wann stehen am Vermerk selbst (ANN-230).
+    const zeile = await asPostgres<{
+      patient_id: string;
+      recorded_by: string;
+      recorded_at: Date | null;
     }>(
-      `select actor_user_id, subject_id, outcome, context
-         from public.audit_log where action = 'patient_privacy.recorded'`,
+      'select patient_id, recorded_by, recorded_at from public.patient_privacy_records where id = $1',
+      [id],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      actor_user_id: users.office,
-      subject_id: patients.max,
-      outcome: 'success',
-    });
-    expect(rows[0]!.context).toEqual({
-      surface: 'web',
-      record_id: id,
-      record_kind: 'consent_granted',
-      purpose: 'email_contact',
-    });
+    expect(zeile.rows).toHaveLength(1);
+    expect(zeile.rows[0]).toMatchObject({ patient_id: patients.max, recorded_by: users.office });
+    expect(zeile.rows[0]!.recorded_at).toBeInstanceOf(Date);
+
+    const { rows } = await asPostgres<{ action: string }>('select action from public.audit_log');
+    expect(rows).toEqual([]);
   });
 
   it.each([

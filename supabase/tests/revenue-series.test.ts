@@ -191,30 +191,51 @@ describe('Vergütungsmodell (STA-005)', () => {
     await resetDatabaseOhneTermine();
   }, 120_000);
 
-  async function protokoll() {
+  interface ModellStand {
+    model: string;
+    changed_by: string | null;
+    changed_at: string;
+  }
+
+  /** Wer und wann der letzten Aenderung stehen am Modell (LOG-EPIC-001). */
+  async function stand(): Promise<ModellStand[]> {
     return (
-      await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-        `select subject_id, context from public.audit_log
-         where action = 'staff_member.compensation_model_changed' order by occurred_at, id`,
+      await asPostgres<ModellStand>(
+        `select model, changed_by,
+                to_char(changed_at, 'YYYY-MM-DD"T"HH24:MI:SS.US') as changed_at
+           from public.staff_compensation_models where staff_member_id = $1`,
+        [ANNA],
       )
     ).rows;
   }
 
-  it('setzt owner das Modell, protokolliert Alt- und Neuwert und entfernt es mit null', async () => {
-    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'revenue_share']);
-    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'revenue_share']);
-    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'fixed_salary']);
-    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, null]);
+  async function auditErfolge(): Promise<number> {
+    const { rows } = await asPostgres<{ n: number }>(
+      "select count(*)::int as n from public.audit_log where outcome = 'success'",
+    );
+    return rows[0]!.n;
+  }
 
-    const eintraege = await protokoll();
-    expect(eintraege.map((e) => e.context)).toEqual([
-      { surface: 'web', previous: null, model: 'revenue_share' },
-      { surface: 'web', previous: 'revenue_share', model: 'fixed_salary' },
-      { surface: 'web', previous: 'fixed_salary', model: null },
+  it('setzt owner das Modell, haelt wer/wann am Datensatz fest und entfernt es mit null (LOG-EPIC-001)', async () => {
+    const auditVorher = await auditErfolge();
+    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'revenue_share']);
+    const erst = await stand();
+    expect(erst).toHaveLength(1);
+    expect(erst[0]).toMatchObject({ model: 'revenue_share', changed_by: users.ownerTherapist });
+
+    // Dasselbe Modell noch einmal ist kein Vorgang: Die Zeile bleibt unberuehrt.
+    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'revenue_share']);
+    expect(await stand()).toEqual(erst);
+
+    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'fixed_salary']);
+    expect(await stand()).toMatchObject([
+      { model: 'fixed_salary', changed_by: users.ownerTherapist },
     ]);
-    expect(eintraege.every((e) => e.subject_id === ANNA)).toBe(true);
+
+    await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, null]);
     const { rows } = await asPostgres('select 1 from public.staff_compensation_models');
     expect(rows).toHaveLength(0);
+    expect(await auditErfolge()).toBe(auditVorher);
   });
 
   it('weist ein unbekanntes Modell und eine fremde Person ab', async () => {

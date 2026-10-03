@@ -355,7 +355,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
   });
 
   describe('Phase (c): bestaetigen', () => {
-    it('macht die Datei erst nach der Bestaetigung sichtbar und protokolliert sie', async () => {
+    it('macht die Datei erst nach der Bestaetigung sichtbar und weist sie an der Datei nach (LOG-EPIC-001)', async () => {
       const datei = await vorbereiten(users.therapist);
       await objektAblegen(datei.object_key);
 
@@ -374,23 +374,41 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(rows[0]!.display_name).toBe('Rezept.pdf');
       expect(rows[0]!.object_missing).toBe(false);
 
-      const audit = await asPostgres<{
-        action: string;
-        subject_id: string;
-        context: Record<string, unknown>;
+      // Wer und wann stehen an der Datei (ANN-230), nicht im Auditlog.
+      const zeile = await asPostgres<{
+        patient_id: string;
+        document_type: string;
+        uploaded_by: string;
+        bestaetigt: boolean;
       }>(
-        "select action, subject_id, context from public.audit_log where action = 'patient_file.uploaded'",
+        `select patient_id, document_type, uploaded_by, confirmed_at is not null as bestaetigt
+           from public.patient_files where id = $1`,
+        [datei.file_id],
       );
-      expect(audit.rows).toHaveLength(1);
-      expect(audit.rows[0]!.subject_id).toBe(datei.file_id);
-      expect(audit.rows[0]!.context).toMatchObject({
-        patient_id: patients.max,
-        document_type: 'verordnungsscan',
-      });
+      expect(zeile.rows).toEqual([
+        {
+          patient_id: patients.max,
+          document_type: 'verordnungsscan',
+          uploaded_by: users.therapist,
+          bestaetigt: true,
+        },
+      ]);
+      const audit = await asPostgres<{ action: string }>(
+        'select action from public.audit_log where subject_id = $1',
+        [datei.file_id],
+      );
+      expect(audit.rows).toEqual([]);
     });
 
     it('traegt weder Anzeigenamen noch Objektschluessel in das Auditlog (ADR-017 Punkt 20)', async () => {
       const datei = await abgelegteDatei(users.therapist);
+      // Das Herunterladen bleibt protokolliert (LOG-EPIC-001) - an diesem
+      // Eintrag wird geprueft.
+      await asUserCommitted(
+        users.therapist,
+        'select object_key from public.issue_patient_file_link($1::uuid, true)',
+        [datei.file_id],
+      );
       const { rows } = await asPostgres<{ eintrag: string }>(
         "select row_to_json(a)::text as eintrag from public.audit_log a where a.action like 'patient_file.%'",
       );

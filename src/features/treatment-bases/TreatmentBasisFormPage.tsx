@@ -491,16 +491,12 @@ function GrundlagenFormular({
             laeuft={loeschen.isPending}
             onBestaetigen={() => loeschen.mutateAsync()}
           >
-            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln. Der Vorgang wird
-            protokolliert. Für eine falsch zugeordnete Grundlage ist das der richtige Weg; für eine
-            abgelaufene nicht – sie gehört in die Akte.
+            Die Grundlage wird endgültig entfernt, samt ihren Heilmitteln. Für eine falsch
+            zugeordnete Grundlage ist das der richtige Weg; für eine abgelaufene nicht – sie gehört
+            in die Akte.
           </Rueckfrage>
         </div>
       ) : null}
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Anlegen, Ändern und Löschen einer Behandlungsgrundlage werden protokolliert.
-      </p>
     </>
   );
 }

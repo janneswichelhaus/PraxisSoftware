@@ -229,24 +229,22 @@ describe('Dokumentationsfotos (ABN-023)', () => {
   });
 
   describe('Loeschen nur am Aufnahmetag (Punkt 48)', () => {
-    it('erlaubt der aufnehmenden Person am Aufnahmetag, mit Auditeintrag', async () => {
+    it('erlaubt der aufnehmenden Person am Aufnahmetag, nachgewiesen am Loeschauftrag (LOG-EPIC-001)', async () => {
       const doku = await foto();
       await asUserCommitted(users.therapist, 'select public.delete_patient_file($1::uuid)', [
         doku.file_id,
       ]);
+      // Wer geloescht hat, steht am Loeschauftrag (ANN-230), nicht im Auditlog.
       expect(
         await anzahl(
-          `select count(*) from public.audit_log
-            where action = 'patient_file.deleted' and subject_id = $1
-              and context ->> 'document_type' = 'dokumentationsfoto'`,
-          [doku.file_id],
+          `select count(*) from public.storage_deletion_orders
+            where object_key = $1 and ordered_by = $2 and ordered_at is not null`,
+          [doku.object_key, users.therapist],
         ),
       ).toBe(1);
       expect(
-        await anzahl('select count(*) from public.storage_deletion_orders where object_key = $1', [
-          doku.object_key,
-        ]),
-      ).toBe(1);
+        await anzahl('select count(*) from public.audit_log where subject_id = $1', [doku.file_id]),
+      ).toBe(0);
     });
 
     it('erlaubt owner am Aufnahmetag, einer anderen Therapeut:in nicht', async () => {

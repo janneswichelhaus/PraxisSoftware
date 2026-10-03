@@ -136,11 +136,13 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
       [LENA],
     );
     expect(rows[0]?.treatment_table_required).toBe(false);
+    // Die Angabe steht an der Akte; einen Auditeintrag gibt es dafuer nicht
+    // mehr (LOG-EPIC-001, ANN-230).
     const audit = await asPostgres<{ action: string }>(
-      `select action from public.audit_log where subject_id = $1 and action = 'patient.updated'`,
+      `select action from public.audit_log where subject_id = $1 and outcome = 'success'`,
       [LENA],
     );
-    expect(audit.rows).toHaveLength(1);
+    expect(audit.rows).toEqual([]);
   });
 
   it('erledigt das Verordnungsfoto mit einem Scan und laesst es beim Selbstzahler entfallen', async () => {

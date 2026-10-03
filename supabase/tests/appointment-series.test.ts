@@ -363,32 +363,39 @@ describe('CAL-007: Terminserie aus einer Verordnung', () => {
       expect(rows.map((r) => r.fenster)).toEqual(['01:00']);
     });
 
-    it('schreibt je Termin einen eigenen appointment.created-Eintrag (ADR-018 Punkt 5)', async () => {
+    it('haelt je Termin fest, wer ihn angelegt hat (ADR-018 Punkt 5, LOG-EPIC-001)', async () => {
       await anlegenCommitted(users.office, woechentlich(3));
 
-      const { rows } = await asPostgres<{ anzahl: string }>(
-        `select count(*)::text as anzahl from public.audit_log
-          where action = 'appointment.created'`,
+      const { rows } = await asPostgres<{ created_by: string; created_at: Date | null }>(
+        'select created_by, created_at from public.appointments where treatment_basis_id = $1::uuid',
+        [VERORDNUNG.maxOffen],
       );
-      expect(Number(rows[0]!.anzahl)).toBe(3);
+      expect(rows.map((r) => r.created_by)).toEqual([users.office, users.office, users.office]);
+      expect(rows.every((r) => r.created_at !== null)).toBe(true);
     });
 
-    it('nennt die Verordnung im Auditkontext, aber keinen klinischen Inhalt', async () => {
+    it('nennt die Verordnung am Termin und schreibt keinen klinischen Inhalt ins Auditlog', async () => {
       await anlegenCommitted(users.office, woechentlich(1));
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'appointment.created'`,
+      const { rows } = await asPostgres<{ treatment_basis_id: string }>(
+        'select treatment_basis_id from public.appointments',
       );
-      expect(rows[0]?.context).toMatchObject({ treatment_basis_id: VERORDNUNG.maxOffen });
-      expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Schulter|Krankengymnastik/i);
+      expect(rows.map((r) => r.treatment_basis_id)).toEqual([VERORDNUNG.maxOffen]);
+
+      const protokoll = await asPostgres<{ context: Record<string, unknown> }>(
+        'select context from public.audit_log',
+      );
+      expect(JSON.stringify(protokoll.rows.map((r) => r.context))).not.toMatch(
+        /Schulter|Krankengymnastik/i,
+      );
     });
 
-    it('schreibt kein eigenes Serienereignis', async () => {
+    it('schreibt weder ein Serienereignis noch einen Eintrag je Termin (LOG-EPIC-001)', async () => {
       await anlegenCommitted(users.office, woechentlich(2));
       const { rows } = await asPostgres<{ action: string }>(
-        'select distinct action from public.audit_log',
+        "select distinct action from public.audit_log where outcome = 'success'",
       );
-      expect(rows.map((r) => r.action)).toEqual(['appointment.created']);
+      expect(rows.map((r) => r.action)).toEqual([]);
     });
 
     it('legt bei einem Konflikt keinen einzigen Termin an', async () => {

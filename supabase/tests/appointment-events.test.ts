@@ -218,17 +218,26 @@ describe('Ereignis anlegen', () => {
     ).rejects.toThrow(/not allowed to create appointments/);
   });
 
-  it('protokolliert je Zeile ein appointment.created mit der Art', async () => {
+  it('haelt je Zeile fest, wer angelegt hat - ohne Auditeintrag (LOG-EPIC-001)', async () => {
+    const { rows: vorher } = await asPostgres<{ anzahl: string }>(
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
+    );
     await ereignis({ personen: [ANNA, OLIVIA] });
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-        where action = 'appointment.created' and context->>'kind' = 'internal'`,
-    );
+    const rows = await zeilen();
     expect(rows).toHaveLength(2);
-    // Kein Personenbezug ueber die Beteiligten hinaus, kein Titel im Log.
-    expect(rows[0]?.context).not.toHaveProperty('patient_id');
-    expect(rows[0]?.context).not.toHaveProperty('title');
+    expect(rows.map((r) => r.created_by)).toEqual([users.office, users.office]);
+    expect(rows.every((r) => r.created_at !== null)).toBe(true);
+
+    const { rows: nachher } = await asPostgres<{ anzahl: string }>(
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
+    );
+    expect(nachher[0]!.anzahl).toBe(vorher[0]!.anzahl);
+    // Kein Titel im Auditlog - auch nicht in einem verbliebenen Eintrag.
+    const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(protokoll.map((r) => r.context))).not.toMatch(/Teambesprechung/);
   });
 });
 
@@ -406,7 +415,7 @@ describe('Ereignis: absagen ohne Gebuehrenanlass (CAL-016)', () => {
     expect(rows[0]).toMatchObject({ status: 'cancelled', fee_basis: null });
   });
 
-  it('meldet die Absage ohne Gebuehr ins Protokoll', async () => {
+  it('haelt die Absage ohne Gebuehr am Termin fest, nicht im Auditlog (LOG-EPIC-001)', async () => {
     const e = await ereignisGleich();
     await asUserCommitted(users.office, ABSAGEN, [
       e.id,
@@ -416,11 +425,21 @@ describe('Ereignis: absagen ohne Gebuehrenanlass (CAL-016)', () => {
       null,
     ]);
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'appointment.cancelled' and subject_id = $1",
+    const { rows } = await asPostgres<{
+      fee_basis: string | null;
+      cancelled_by: string | null;
+      cancelled_at: Date | null;
+    }>('select fee_basis, cancelled_by, cancelled_at from public.appointments where id = $1', [
+      e.id,
+    ]);
+    expect(rows[0]).toMatchObject({ fee_basis: null, cancelled_by: users.office });
+    expect(rows[0]?.cancelled_at).not.toBeNull();
+
+    const { rows: protokoll } = await asPostgres<{ anzahl: string }>(
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success' and subject_id = $1",
       [e.id],
     );
-    expect(rows[0]?.context).toMatchObject({ fee: false });
+    expect(protokoll[0]?.anzahl).toBe('0');
   });
 
   /**
@@ -918,17 +937,26 @@ describe('Ereignis als ein Vorgang (CAL-017)', () => {
     expect(zeilenDanach.map((r) => r.fee_basis)).toEqual([null, null]);
   });
 
-  it('protokolliert je abgesagter Zeile einen Eintrag', async () => {
+  it('haelt je abgesagter Zeile fest, wer abgesagt hat (LOG-EPIC-001)', async () => {
     const g = await gruppe();
     await asUserCommitted(users.office, EREIGNIS_ABSAGEN, [g.id, g.stand, 'practice_request']);
 
-    const { rows } = await asPostgres<{ anzahl: string }>(
+    const { rows } = await asPostgres<{ cancelled_by: string | null; cancelled_at: Date | null }>(
+      `select cancelled_by, cancelled_at from public.appointments
+        where event_group_id = $1::uuid`,
+      [g.id],
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows.map((r) => r.cancelled_by)).toEqual([users.office, users.office]);
+    expect(rows.every((r) => r.cancelled_at !== null)).toBe(true);
+
+    const { rows: protokoll } = await asPostgres<{ anzahl: string }>(
       `select count(*)::text as anzahl from public.audit_log
-        where action = 'appointment.cancelled'
+        where outcome = 'success'
           and subject_id in (select id from public.appointments where event_group_id = $1::uuid)`,
       [g.id],
     );
-    expect(rows[0]?.anzahl).toBe('2');
+    expect(protokoll[0]?.anzahl).toBe('0');
   });
 
   it('weist eine Absage auf veraltetem Stand ab', async () => {

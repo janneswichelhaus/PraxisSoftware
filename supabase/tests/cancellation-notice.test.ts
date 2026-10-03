@@ -294,7 +294,7 @@ describe('Absage unter 24 Stunden: welcher Grund ausloest', () => {
     });
   });
 
-  it('sagt im Auditlog, ob eine Gebuehr entstanden ist - ohne den Grund zu nennen', async () => {
+  it('haelt Gebuehr, Eingang und Person an der Zeile fest - nicht im Auditlog (LOG-EPIC-001)', async () => {
     const termin = await terminIn(20);
     await asUserCommitted(users.office, ABSAGEN, [
       termin.id,
@@ -305,17 +305,33 @@ describe('Absage unter 24 Stunden: welcher Grund ausloest', () => {
       ...(await eingangVorBeginn(termin, 23)),
     ]);
 
+    const nachher = await zeile(termin.id);
+    expect(nachher).toMatchObject({
+      status: 'cancelled',
+      cancellation_reason: 'patient_request',
+      fee_basis: 'late_cancellation',
+      cancelled_by: users.office,
+    });
+    // Nachgetragen: Der Eingang liegt vor der Erfassung.
+    expect((nachher?.cancellation_received_at as Date).getTime()).toBeLessThan(
+      (nachher?.cancelled_at as Date).getTime(),
+    );
+
+    // ANN-034: Der codierte Absagegrund steht an der Zeile und nicht im
+    // Auditlog - dort wuerde er die Zeile ueberleben. Seit LOG-EPIC-001
+    // schreibt die Absage gar keinen Eintrag.
     const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
       `select context from public.audit_log
-        where action = 'appointment.cancelled' and subject_id = $1`,
+        where outcome = 'success' and subject_id = $1`,
       [termin.id],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.context).toMatchObject({ fee: true, received_later: true, surface: 'web' });
-    // ANN-034: Der codierte Absagegrund steht an der Zeile und nicht im
-    // Auditlog - dort wuerde er die Zeile ueberleben.
-    expect(rows[0]?.context).not.toHaveProperty('reason');
-    expect(rows[0]?.context).not.toHaveProperty('fee_basis');
+    expect(rows).toEqual([]);
+    const alle = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(alle.rows.map((r) => r.context))).not.toMatch(
+      /patient_request|late_cancellation/,
+    );
   });
 });
 
@@ -588,14 +604,14 @@ describe('Verzicht auf die Gebühr', () => {
     });
     expect(nachher?.fee_waived_at).not.toBeNull();
 
-    const { rows } = await asPostgres<{ actor_user_id: string; context: Record<string, unknown> }>(
-      `select actor_user_id, context from public.audit_log
-        where action = 'appointment.fee_waived' and subject_id = $1`,
+    // Wer und wann stehen an der Zeile, ein Auditeintrag entsteht nicht
+    // (LOG-EPIC-001).
+    const { rows } = await asPostgres(
+      `select id from public.audit_log
+        where outcome = 'success' and subject_id = $1`,
       [termin.id],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.actor_user_id).toBe(users.office);
-    expect(rows[0]!.context).toMatchObject({ surface: 'web', fee_basis: 'late_cancellation' });
+    expect(rows).toEqual([]);
   });
 
   it('nimmt den Termin aus den offenen Leistungen und lässt kein Ausfallhonorar mehr erfassen', async () => {

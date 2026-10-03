@@ -14,8 +14,8 @@ import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
  * Ereignisse im Verlauf (FRB-002e, ANN-106).
  *
  * Eine Markierung ist eine Angabe der Praxis, gesetzt und entfernt, nie
- * geändert. Geprüft werden Rollen nach ADR-013 Punkt 9 Nr. 1, das Auditlog
- * ohne Notiz und die Auskunft nach Art. 15.
+ * geändert. Geprüft werden Rollen nach ADR-013 Punkt 9 Nr. 1, der Nachweis
+ * am Datenmodell statt im Auditlog (ANN-230) und die Auskunft nach Art. 15.
  */
 
 const { users, patients } = SEED;
@@ -86,23 +86,32 @@ describe('Ereignisse im Verlauf', () => {
     expect(lang?.code).toBe('23514');
   });
 
-  it('entfernt eine Markierung und protokolliert Setzen und Entfernen ohne Art und Notiz', async () => {
+  it('weist Setzen und Entfernen an der Markierung nach und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await setzen();
     await asUserCommitted(users.teamLead, ENTFERNEN, [id]);
     expect((await asUser(users.therapist, LESEN, [patients.max])).rows).toEqual([]);
 
-    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-      `select action, context from public.audit_log
-        where action like 'patient_course_event.%' and outcome = 'success' order by occurred_at`,
+    // Wer und wann stehen an der Markierung selbst (ANN-230).
+    const zeile = await asPostgres<{
+      created_by: string;
+      created_at: string | null;
+      removed_by: string | null;
+      removed_at: string | null;
+    }>(
+      `select created_by, created_at::text as created_at, removed_by, removed_at::text as removed_at
+         from public.patient_course_events where id = $1`,
+      [id],
     );
-    expect(rows.map((r) => r.action)).toEqual([
-      'patient_course_event.created',
-      'patient_course_event.removed',
-    ]);
-    // Weder Notiz noch Art: "Operation" waere schon eine klinische Angabe.
-    for (const zeile of rows) {
-      expect(zeile.context).toEqual({ surface: 'web', patient_id: patients.max });
-    }
+    expect(zeile.rows[0]!.created_by).toBe(users.therapist);
+    expect(zeile.rows[0]!.created_at).not.toBeNull();
+    expect(zeile.rows[0]!.removed_by).toBe(users.teamLead);
+    expect(zeile.rows[0]!.removed_at).not.toBeNull();
+
+    // Weder Notiz noch Art im Auditlog: es steht dort gar kein Schreibvorgang.
+    const { rows } = await asPostgres<{ action: string }>(
+      `select action from public.audit_log where outcome = 'success' order by occurred_at`,
+    );
+    expect(rows).toEqual([]);
   });
 
   it('entfernt nachvollziehbar: Zeile bleibt, Inhalt und Urheber unter "Entfernte Ereignisse" (BEF-102)', async () => {

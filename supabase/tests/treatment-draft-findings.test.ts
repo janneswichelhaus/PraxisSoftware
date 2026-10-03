@@ -49,7 +49,7 @@ describe('Befundangaben getrennt vom Entwurf', () => {
     await resetDatabase();
   });
 
-  it('sichert die Auswahl ohne Text und liefert sie zurück, protokolliert ohne Inhalt', async () => {
+  it('sichert die Auswahl ohne Text und liefert sie zurück, ohne Inhalt im Auditlog (LOG-EPIC-001)', async () => {
     const termin = await behandlungstermin();
     await asUserCommitted(users.therapist, SICHERN, [termin, JSON.stringify(BEFUND)]);
     const { rows } = await asUserCommitted(users.therapist, LESEN, [termin]);
@@ -62,18 +62,22 @@ describe('Befundangaben getrennt vom Entwurf', () => {
     );
     expect(notiz.rows).toEqual([]);
 
-    const audit = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-      `select action, context from public.audit_log
-        where action like 'treatment_draft_findings.%' order by occurred_at`,
+    // Wer zuletzt gesichert hat, steht an der Zeile (ANN-230).
+    const gesichert = await asPostgres<{ updated_by: string; vorhanden: boolean }>(
+      `select updated_by, updated_at is not null as vorhanden
+         from public.treatment_draft_findings where appointment_id = $1`,
+      [termin],
     );
-    // Das Laden steht als Öffnen der Akte im Protokoll (LOG-EPIC-001).
-    expect(audit.rows.map((r) => r.action)).toEqual(['treatment_draft_findings.saved']);
-    for (const zeile of audit.rows)
-      expect(Object.keys(zeile.context).sort()).toEqual(['patient_id', 'surface']);
-    const geoeffnet = await asPostgres(
-      "select id from public.audit_log where action = 'patient_record.viewed'",
+    expect(gesichert.rows).toEqual([{ updated_by: users.therapist, vorhanden: true }]);
+
+    // Im Protokoll steht nur das Laden als Öffnen der Akte (LOG-EPIC-001) -
+    // ohne Befundangaben.
+    const audit = await asPostgres<{ action: string; eintrag: string }>(
+      `select action, row_to_json(a)::text as eintrag from public.audit_log a
+        where outcome = 'success' order by occurred_at`,
     );
-    expect(geoeffnet.rows.length).toBeGreaterThan(0);
+    expect(audit.rows.map((r) => r.action)).toEqual(['patient_record.viewed']);
+    for (const zeile of audit.rows) expect(zeile.eintrag).not.toMatch(/lachmann|positiv|rechts/);
   });
 
   it('verwirft mit einer leeren Auswahl', async () => {

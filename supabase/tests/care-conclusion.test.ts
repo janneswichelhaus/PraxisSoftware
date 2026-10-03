@@ -31,8 +31,7 @@ async function abschlussVon(patientId: string) {
 async function letzteEreignisse(patientId: string) {
   const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
     `select action, context from public.audit_log
-     where subject_type = 'patient' and subject_id = $1
-       and action in ('patient.care_concluded', 'patient.care_reopened')
+     where subject_id = $1
      order by occurred_at`,
     [patientId],
   );
@@ -67,17 +66,18 @@ describe('conclude_patient_care: berechtigte Rollen', () => {
     });
   });
 
-  it('protokolliert Abschluss und Ruecknahme mit dem Tag im Kontext (ADR-010)', async () => {
+  it('weist den Abschluss an der Akte nach und schreibt fuer Abschluss und Ruecknahme keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.therapist, ABSCHLIESSEN, [patients.max, '2026-09-01']);
-    await asUserCommitted(users.therapist, ZURUECKNEHMEN, [patients.max]);
 
-    const ereignisse = await letzteEreignisse(patients.max);
-    expect(ereignisse.map((e) => e.action)).toEqual([
-      'patient.care_concluded',
-      'patient.care_reopened',
-    ]);
-    expect(ereignisse[0]?.context).toMatchObject({ concluded_on: '2026-09-01' });
-    expect(ereignisse[1]?.context).toMatchObject({ previous_concluded_on: '2026-09-01' });
+    // Wer und wann stehen an der Akte (ANN-230), nicht im Auditlog.
+    const abschluss = await abschlussVon(patients.max);
+    expect(abschluss?.care_concluded_on).toBe('2026-09-01');
+    expect(abschluss?.care_concluded_by).toBe(users.therapist);
+    expect(abschluss?.care_concluded_at).not.toBeNull();
+    expect(await letzteEreignisse(patients.max)).toEqual([]);
+
+    await asUserCommitted(users.therapist, ZURUECKNEHMEN, [patients.max]);
+    expect(await letzteEreignisse(patients.max)).toEqual([]);
   });
 
   it('schreibt bei einer Ruecknahme ohne Abschluss weder Daten noch Auditeintrag', async () => {

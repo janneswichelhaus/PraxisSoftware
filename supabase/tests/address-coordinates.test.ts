@@ -141,36 +141,34 @@ describe('set_patient_address_coordinate', () => {
     ['office', users.office],
     ['owner', users.ownerTherapist],
     ['team_lead', users.teamLead],
-  ])('setzt die Koordinate als %s und protokolliert ohne Koordinate', async (_, konto) => {
-    await asPostgres(
-      'update public.patient_contact_details set lat = null, lon = null, geocode_precision = null where patient_id = $1',
-      [patients.max],
-    );
-    await asUserCommitted(konto, SETZEN, [patients.max, ...MAX, 48.53, 9.05, 'address', false]);
+  ])(
+    'setzt die Koordinate als %s und schreibt keinen Auditeintrag (LOG-EPIC-001)',
+    async (_, konto) => {
+      await asPostgres(
+        'update public.patient_contact_details set lat = null, lon = null, geocode_precision = null where patient_id = $1',
+        [patients.max],
+      );
+      await asUserCommitted(konto, SETZEN, [patients.max, ...MAX, 48.53, 9.05, 'address', false]);
 
-    expect(await koordinateVon(patients.max)).toEqual({
-      lat: 48.53,
-      lon: 9.05,
-      geocode_precision: 'address',
-    });
+      expect(await koordinateVon(patients.max)).toEqual({
+        lat: 48.53,
+        lon: 9.05,
+        geocode_precision: 'address',
+      });
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown>; subject_id: string }>(
-      `select context, subject_id from public.audit_log
-       where action = 'patient.address_geocoded' and actor_user_id = $1`,
-      [konto],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.subject_id).toBe(patients.max);
-    const kontext = JSON.stringify(rows[0]!.context);
-    expect(kontext).not.toMatch(/48[.,]5|9[.,]05|Beispielstrasse|72070/);
-    expect(rows[0]!.context['precision']).toBe('address');
-    expect(rows[0]!.context['confirmed']).toBe(false);
-  });
+      // Die Geocodierung steht nur an der Adresse, nicht im Auditlog (ANN-230):
+      // also auch keine Koordinate und keine Adresse dort.
+      const { rows } = await asPostgres<{ action: string }>(
+        'select action from public.audit_log where actor_user_id = $1',
+        [konto],
+      );
+      expect(rows).toEqual([]);
+    },
+  );
 
   // ABN-028 (ADR-019 Punkt 37): ein hausnummergenauer Treffer unter mehreren
-  // wird bestaetigt - und das Protokoll sagt es.
-  it('protokolliert die Bestaetigung eines nicht eindeutigen hausnummergenauen Treffers', async () => {
-    await asPostgres("delete from public.audit_log where action = 'patient.address_geocoded'");
+  // wird bestaetigt - die Akte traegt die Koordinate, das Auditlog nichts.
+  it('nimmt die Bestaetigung eines nicht eindeutigen hausnummergenauen Treffers an und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.therapist, SETZEN, [
       patients.max,
       ...MAX,
@@ -179,10 +177,16 @@ describe('set_patient_address_coordinate', () => {
       'address',
       true,
     ]);
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'patient.address_geocoded'`,
+    expect(await koordinateVon(patients.max)).toEqual({
+      lat: 48.53,
+      lon: 9.05,
+      geocode_precision: 'address',
+    });
+    const { rows } = await asPostgres<{ action: string }>(
+      `select action from public.audit_log where subject_id = $1 and action <> 'access.denied'`,
+      [patients.max],
     );
-    expect(rows.map((r) => r.context['confirmed'])).toEqual([true]);
+    expect(rows).toEqual([]);
   });
 
   it('verlangt unterhalb der Hausnummer eine Bestaetigung (ANN-016)', async () => {
@@ -360,7 +364,7 @@ describe('Koordinate im Hausbesuchs-Snapshot', () => {
 describe('set_location_tour_start', () => {
   const PRAXIS = ['Praxisplatz', '3', '72072', 'Tuebingen'] as const;
 
-  it('setzt Adresse und Koordinate als owner und protokolliert ohne Koordinate', async () => {
+  it('setzt Adresse und Koordinate als owner und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.ownerTherapist, START, [
       LOCATION,
       ...PRAXIS,
@@ -375,11 +379,12 @@ describe('set_location_tour_start', () => {
     );
     expect(rows[0]).toEqual({ house_number: '3', lat: 48.52 });
 
-    const audit = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'organization.tour_start_changed'`,
+    // Der Startort steht am Standort, nicht im Auditlog (ANN-230).
+    const audit = await asPostgres<{ action: string }>(
+      'select action from public.audit_log where actor_user_id = $1',
+      [users.ownerTherapist],
     );
-    expect(audit.rows).toHaveLength(1);
-    expect(JSON.stringify(audit.rows[0]!.context)).not.toMatch(/48[.,]52|Praxisplatz/);
+    expect(audit.rows).toEqual([]);
   });
 
   it.each([

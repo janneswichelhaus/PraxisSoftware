@@ -171,7 +171,6 @@ describe('Zahlungserinnerung', () => {
     await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.appointments');
     await asPostgres('update public.treatment_base_items set used_quantity = 0');
-    await asPostgres("delete from public.audit_log where action like 'invoice%'");
   });
 
   describe('Ausstellen', () => {
@@ -477,19 +476,39 @@ describe('Zahlungserinnerung', () => {
       ).rejects.toThrow(/a payment reminder cannot be changed/);
     });
 
-    it('steht im Protokoll, ohne den Empfaenger zu nennen (ADR-011)', async () => {
-      const { id, nummer } = await ausgestellteRechnung();
+    it('haelt wer und wann am Dokument fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+      const { id } = await ausgestellteRechnung();
       await faelligSeit(id, 3);
-      await erinnere(id);
+      const vorher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
+      );
+      const erinnerung = await erinnere(id);
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log
-          where action = 'invoice.reminder_created' and subject_id = $1`,
-        [id],
+      const { rows } = await asPostgres<{
+        invoice_id: string;
+        created_by: string;
+        created_at: Date | null;
+      }>(
+        `select invoice_id, created_by, created_at from public.invoice_payment_reminders
+          where id = $1`,
+        [erinnerung],
       );
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.context.invoice_number).toBe(nummer);
-      expect(JSON.stringify(rows[0]!.context)).not.toContain('Erika');
+      expect(rows[0]!.invoice_id).toBe(id);
+      expect(rows[0]!.created_by).toBe(users.office);
+      expect(rows[0]!.created_at).not.toBeNull();
+
+      const nachher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
+      );
+      expect(nachher.rows[0]!.n).toBe(vorher.rows[0]!.n);
+      const { rows: amDokument } = await asPostgres(
+        'select 1 from public.audit_log where subject_id = $1 or subject_id = $2',
+        [id, erinnerung],
+      );
+      expect(amDokument).toEqual([]);
     });
 
     it('bleibt fremden Augen verschlossen (ADR-004)', async () => {

@@ -79,7 +79,7 @@ describe('Hausbesuche mit alter Adresse (ABN-004)', () => {
     expect(await liste(users.office, patients.max)).toEqual([]);
   });
 
-  it('nennt den kuenftigen Hausbesuch nach einem Umzug und aktualisiert ihn auf Auftrag', async () => {
+  it('nennt den kuenftigen Hausbesuch nach einem Umzug und aktualisiert ihn auf Auftrag, ohne Auditeintrag', async () => {
     const id = await hausbesuch(patients.max);
     await umziehen(patients.max, 'Neue Strasse', '3');
 
@@ -97,14 +97,17 @@ describe('Hausbesuche mit alter Adresse (ABN-004)', () => {
     });
     expect(await liste(users.office, patients.max)).toEqual([]);
 
-    const protokoll = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-      "select subject_id, context from public.audit_log where action = 'appointment.updated'",
+    // Seit LOG-EPIC-001 schreibt die Aktualisierung keinen Auditeintrag
+    // (anerkannte Luecke: Terminaenderung); keine Anschrift im Auditlog.
+    const eintraege = await asPostgres(
+      "select id from public.audit_log where outcome = 'success' and subject_id = $1",
+      [id],
     );
-    expect(protokoll.rows).toHaveLength(1);
-    expect(protokoll.rows[0]!.subject_id).toBe(id);
-    expect(protokoll.rows[0]!.context.changed_fields).toEqual(['visit_address']);
-    expect(protokoll.rows[0]!.context.reason).toBe('patient_address_changed');
-    expect(JSON.stringify(protokoll.rows[0]!.context)).not.toMatch(/Strasse|72070/);
+    expect(eintraege.rows).toEqual([]);
+    const protokoll = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(protokoll.rows.map((z) => z.context))).not.toMatch(/Strasse|72070/);
   });
 
   it('laesst vergangene, abgesagte und Praxistermine unberuehrt', async () => {

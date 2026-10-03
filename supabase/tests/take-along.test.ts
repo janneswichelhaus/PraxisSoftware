@@ -34,7 +34,7 @@ async function liste(patientId: string): Promise<string[] | null> {
 async function auditZeilen(patientId: string): Promise<{ context: unknown }[]> {
   const { rows } = await asPostgres<{ context: unknown }>(
     `select context from public.audit_log
-      where action = 'patient.updated' and subject_id = $1::uuid order by occurred_at`,
+      where subject_id = $1::uuid order by occurred_at`,
     [patientId],
   );
   return rows;
@@ -70,17 +70,18 @@ describe('set_take_along_items (PRX-007)', () => {
     ]);
   });
 
-  it('protokolliert patient.updated mit dem Feldnamen, nie mit dem Inhalt', async () => {
+  it('setzt die Liste und schreibt keinen Auditeintrag, also auch keinen Inhalt (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.office, SETZEN, [patients.erika, ['Kinesiotape']]);
-    const zeilen = await auditZeilen(patients.erika);
-    expect(zeilen).toHaveLength(1);
-    expect(zeilen[0]!.context).toEqual({ surface: 'web', changed_fields: ['take_along_items'] });
+    expect(await liste(patients.erika)).toEqual(['Kinesiotape']);
+    // Die Mitnahmeliste ist eine anerkannte Luecke (ANN-230).
+    expect(await auditZeilen(patients.erika)).toEqual([]);
   });
 
   it('schreibt ohne tatsächliche Änderung keinen Auditeintrag', async () => {
     await asUserCommitted(users.office, SETZEN, [patients.erika, ['Theraband']]);
     await asUserCommitted(users.office, SETZEN, [patients.erika, [' Theraband']]);
-    expect(await auditZeilen(patients.erika)).toHaveLength(1);
+    expect(await liste(patients.erika)).toEqual(['Theraband']);
+    expect(await auditZeilen(patients.erika)).toEqual([]);
   });
 
   it('legt die Versorgungsangaben an, wenn es noch keine gibt', async () => {

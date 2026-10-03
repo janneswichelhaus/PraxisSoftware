@@ -493,8 +493,7 @@ export function ArbeitszeitRueckfrage({
     <Dialogfenster titel={titel} onSchliessen={onAbbrechen}>
       {vergangenheit ? (
         <p className="text-ink text-sm">
-          Der Tag liegt in der Vergangenheit. Der Termin wird nachgetragen und im Protokoll als
-          nachgetragen vermerkt.
+          Der Tag liegt in der Vergangenheit. Der Termin wird nachgetragen.
         </p>
       ) : null}
       {arbeitszeit ? (

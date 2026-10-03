@@ -247,11 +247,10 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
       expect(await objektVorhanden(objectKey)).toBe(true);
     });
 
-    it('gibt nach der Loeschfreigabe genau eine Operation frei und protokolliert die Freigabe', async () => {
+    it('gibt nach der Loeschfreigabe genau eine Operation frei und weist die Quittung am Auftrag nach (LOG-EPIC-001)', async () => {
       const { orderId, objectKey } = await offenerAuftrag();
 
       await asUserCommitted(users.ownerTherapist, LOESCHFREIGABE, [orderId]);
-      expect(await auditAnzahl('storage_deletion.claimed')).toBe(1);
 
       // Verbraucht eine Abfrage unter der Entfernen-Operation die Freigabe, ohne
       // zu loeschen, bleibt das Objekt liegen - und der Auftrag offen, weil die
@@ -262,9 +261,8 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
       expect(geloescht.rows).toEqual([]);
       expect(await objektVorhanden(objectKey)).toBe(true);
 
-      // Mit einer neuen, wieder protokollierten Freigabe gelingt das Loeschen.
+      // Mit einer neuen Freigabe gelingt das Loeschen.
       await asUserCommitted(users.ownerTherapist, LOESCHFREIGABE, [orderId]);
-      expect(await auditAnzahl('storage_deletion.claimed')).toBe(2);
       const zweiter = await asStorageApi(users.ownerTherapist, ENTFERNEN, LOESCHEN, [objectKey]);
       expect(zweiter.rows).toHaveLength(1);
 
@@ -273,7 +271,24 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
         'select public.receipt_storage_deletion_order($1::uuid)',
         [orderId],
       );
-      expect(await auditAnzahl('storage_deletion.receipted')).toBe(1);
+      // Wer geloescht und wer quittiert hat, steht am Auftrag (ANN-230); das
+      // Auditlog fuehrt Freigabe und Quittung nicht mehr.
+      const auftrag = await asPostgres<{
+        ordered_by: string | null;
+        receipted_by: string | null;
+        quittiert: boolean;
+      }>(
+        `select ordered_by, receipted_by, receipted_at is not null as quittiert
+           from public.storage_deletion_orders where id = $1`,
+        [orderId],
+      );
+      expect(auftrag.rows).toEqual([
+        { ordered_by: users.therapist, receipted_by: users.ownerTherapist, quittiert: true },
+      ]);
+      const audit = await asPostgres<{ action: string }>(
+        "select action from public.audit_log where outcome = 'success'",
+      );
+      expect(audit.rows).toEqual([]);
     });
 
     it('oeffnet mit der Loeschfreigabe kein Lesen, Signieren, Kopieren oder Auflisten', async () => {

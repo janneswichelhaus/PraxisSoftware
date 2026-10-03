@@ -81,6 +81,25 @@ async function genutzt(): Promise<number> {
   return rows[0]!.used_quantity;
 }
 
+/** Wer die Leistungen am Termin erfasst hat (billable_services.created_by). */
+async function erfasstVon(terminId: string): Promise<string[]> {
+  const { rows } = await asPostgres<{ created_by: string; created_at: Date | null }>(
+    'select created_by, created_at from public.billable_services where appointment_id = $1',
+    [terminId],
+  );
+  expect(rows.every((z) => z.created_at !== null)).toBe(true);
+  return rows.map((z) => z.created_by);
+}
+
+/** Erfolgreiche Auditeintraege zum Termin - seit LOG-EPIC-001 keine. */
+async function erfolgreicheAuditeintraege(terminId: string): Promise<number> {
+  const { rows } = await asPostgres<{ anzahl: string }>(
+    "select count(*)::text as anzahl from public.audit_log where outcome = 'success' and subject_id = $1",
+    [terminId],
+  );
+  return Number(rows[0]!.anzahl);
+}
+
 describe('Heilmittel am eigenen Termin bestätigen (PRX-009)', () => {
   beforeEach(async () => {
     await resetDatabaseOhneTermine();
@@ -99,12 +118,10 @@ describe('Heilmittel am eigenen Termin bestätigen (PRX-009)', () => {
     await asUserCommitted(users.therapist, ERFASSEN, [id, KG_EINMAL]);
     expect(await genutzt()).toBe(1);
 
-    const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-        where action = 'billable_service.recorded' and subject_id = $1`,
-      [id],
-    );
-    expect(protokoll[0]!.context).toMatchObject({ recorded_by_role: 'treating' });
+    // Wer erfasst hat, steht an der Leistung - die behandelnde Person selbst
+    // (LOG-EPIC-001); ein Auditeintrag entsteht nicht.
+    expect(await erfasstVon(id)).toEqual([users.therapist]);
+    expect(await erfolgreicheAuditeintraege(id)).toBe(0);
   });
 
   it('lässt die Teamleitung an ihrem eigenen Termin erfassen', async () => {
@@ -130,12 +147,10 @@ describe('Heilmittel am eigenen Termin bestätigen (PRX-009)', () => {
   it('lässt office weiter an jedem Termin erfassen und kennzeichnet es', async () => {
     const id = await termin(ANNA, 3);
     await asUserCommitted(users.office, ERFASSEN, [id, KG_EINMAL]);
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-        where action = 'billable_service.recorded' and subject_id = $1`,
-      [id],
-    );
-    expect(rows[0]!.context).toMatchObject({ recorded_by_role: 'billing' });
+    // Gekennzeichnet ueber die erfassende Person an der Leistung: das Buero,
+    // nicht die behandelnde Person (LOG-EPIC-001).
+    expect(await erfasstVon(id)).toEqual([users.office]);
+    expect(await erfolgreicheAuditeintraege(id)).toBe(0);
   });
 
   it('lässt die Therapeutin nicht zurücknehmen - das bleibt beim Büro', async () => {

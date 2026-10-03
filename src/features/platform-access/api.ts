@@ -295,6 +295,11 @@ export interface VertretungsAngaben {
   fruehereNachrichten: boolean | null;
   /** ABN-010: Rechnungen und Zahlungen — nachgewiesen bzw. eingewilligt, ja oder nein. */
   rechnungen: boolean;
+  /**
+   * Zweifel an der Einwilligungsfähigkeit (ADR-023 Punkt 13): wird ohne Grund
+   * am Zugang der rechtlichen Vertretung vermerkt (ANN-207, LOG-EPIC-001).
+   */
+  zweifel?: boolean;
 }
 
 export async function invitePlatformRepresentation(
@@ -314,6 +319,7 @@ export async function invitePlatformRepresentation(
     p_consent_version: angaben.fassung,
     p_earlier_messages: angaben.fruehereNachrichten,
     p_finance_scope: angaben.rechnungen,
+    p_capacity_doubt: angaben.zweifel ?? false,
   })) as { data: unknown; error: { message?: string } | null; status?: number };
   if (ergebnis.error) throw new Error(vertretungsfehler(ergebnis.error.message));
   if (abgewiesen(ergebnis)) throw new Error(satz);
@@ -332,19 +338,6 @@ export async function renewPlatformRepresentationCode(zugangId: string): Promise
   const zeile = antwort(z.array(einladungSchema), ergebnis.data ?? [], satz)[0];
   if (!zeile) throw new Error(satz);
   return zeile;
-}
-
-/** Vermerkt den Zweifel an der Einwilligungsfähigkeit — ohne Grund (ANN-207). */
-export async function noteCompanionCapacityDoubt(
-  art: Verhaeltnisart,
-  verhaeltnisId: string,
-): Promise<void> {
-  const satz = 'Der Vermerk konnte nicht gespeichert werden.';
-  const ergebnis = (await getSupabase().rpc('note_companion_capacity_doubt', {
-    p_relationship_kind: art,
-    p_relationship_id: verhaeltnisId,
-  })) as { data: unknown; error: unknown; status?: number };
-  if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data !== true) throw new Error(satz);
 }
 
 /**

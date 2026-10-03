@@ -40,6 +40,24 @@ interface Aufgabe {
   done_by_name: string | null;
 }
 
+interface Stand {
+  created_by: string | null;
+  updated_by: string | null;
+  done_by: string | null;
+  done_at: string | null;
+}
+
+/** Wer und wann an der Aufgabe, mikrosekundengenau (LOG-EPIC-001). */
+async function stand(id: string): Promise<Stand> {
+  const { rows } = await asPostgres<Stand>(
+    `select created_by, updated_by, done_by,
+            to_char(done_at, 'YYYY-MM-DD"T"HH24:MI:SS.US') as done_at
+       from public.tasks where id = $1`,
+    [id],
+  );
+  return rows[0]!;
+}
+
 async function anlegen(
   konto: string = users.office,
   f: { titel?: string; faellig?: string | null; an?: string | null; patient?: string | null } = {},
@@ -106,20 +124,32 @@ describe('Aufgaben (PRX-012)', () => {
   it('erledigt und oeffnet wieder - ein doppelter Tipp schreibt nichts zweimal', async () => {
     const id = await anlegen();
     await asUserCommitted(users.therapist, ERLEDIGEN, [id, true]);
+    const nachErstemTipp = await stand(id);
     await asUserCommitted(users.therapist, ERLEDIGEN, [id, true]);
+    expect(await stand(id)).toEqual(nachErstemTipp);
     const erledigt = await asUser<Aufgabe>(users.office, LISTE, ['done', null]);
     expect(erledigt.rows[0]).toMatchObject({ id, status: 'done' });
     expect(erledigt.rows[0]!.done_by_name).toBeTruthy();
 
+    // Wer und wann stehen an der Aufgabe, nicht im Auditlog (LOG-EPIC-001).
+    expect(nachErstemTipp).toMatchObject({
+      created_by: users.office,
+      done_by: users.therapist,
+      updated_by: users.therapist,
+    });
+    expect(nachErstemTipp.done_at).not.toBeNull();
+
     await asUserCommitted(users.office, ERLEDIGEN, [id, false]);
-    const { rows } = await asPostgres<{ action: string }>(
-      `select action from public.audit_log where subject_id = $1 order by occurred_at, action`,
-      [id],
-    );
-    expect(rows.map((r) => r.action)).toEqual(['task.created', 'task.completed', 'task.reopened']);
+    expect(await stand(id)).toMatchObject({
+      done_by: null,
+      done_at: null,
+      updated_by: users.office,
+    });
+    const { rows } = await asPostgres('select 1 from public.audit_log where subject_id = $1', [id]);
+    expect(rows).toEqual([]);
   });
 
-  it('schreibt ins Auditlog nie Titel oder Notiz (ADR-010 Punkt 3)', async () => {
+  it('schreibt ins Auditlog nie Titel oder Notiz (ADR-010 Punkt 3, LOG-EPIC-001)', async () => {
     const id = await anlegen(users.office, { titel: 'Rückruf Frau Geheimname' });
     await asUserCommitted(users.office, AENDERN, [
       id,
@@ -129,16 +159,20 @@ describe('Aufgaben (PRX-012)', () => {
       null,
       patients.max,
     ]);
+    // Anlegen und Aendern schreiben keinen Auditeintrag mehr (LOG-EPIC-001);
+    // Titel und Notiz stehen in keinem Eintrag.
     const { rows } = await asPostgres<{ eintrag: string }>(
-      `select row_to_json(a)::text as eintrag from public.audit_log a where subject_id = $1`,
+      `select row_to_json(a)::text as eintrag from public.audit_log a
+        where subject_id = $1
+           or row_to_json(a)::text like '%Geheimname%'
+           or row_to_json(a)::text like '%Geheimwort%'`,
       [id],
     );
-    expect(rows).toHaveLength(2);
-    for (const r of rows) {
-      expect(r.eintrag).not.toContain('Geheimname');
-      expect(r.eintrag).not.toContain('Geheimwort');
-      expect(r.eintrag).toContain(patients.max);
-    }
+    expect(rows).toEqual([]);
+    expect(await stand(id)).toMatchObject({
+      created_by: users.office,
+      updated_by: users.office,
+    });
   });
 
   it('weist Trainingsbetreuung und Patientenkonto beim Schreiben ab', async () => {
