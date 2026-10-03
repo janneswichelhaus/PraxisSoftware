@@ -227,7 +227,7 @@ describe('CompleteTreatmentPage', () => {
     );
     expect(screen.getByRole('link', { name: /Verlauf in der Akte/ })).toHaveAttribute(
       'href',
-      expect.stringMatching(/^\/patienten\/.+\/verlauf\?zurueck=/),
+      expect.stringMatching(/^\/patienten\/.+\/doku\?zurueck=/),
     );
 
     await user.click(screen.getByRole('button', { name: 'Bisherige Einträge schließen' }));

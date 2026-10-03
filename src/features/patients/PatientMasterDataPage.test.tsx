@@ -3,6 +3,8 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as ZugangApi from '@/features/platform-access/api';
+import type * as VermerkeApi from '@/features/datenschutz/vermerke';
+import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -53,7 +55,34 @@ vi.mock('@/features/platform-access/api', async (importOriginal) => ({
   listPlatformRepresentations: () => Promise.resolve([]),
 }));
 
+// AKTE-007: Anmeldebogen und Dateien stehen jetzt hier; ihre Inhalte prüfen
+// eigene Tests, hier nur, dass und für wen sie stehen.
+const fetchDatenschutzvermerke = vi.fn();
+vi.mock('@/features/datenschutz/vermerke', async (importOriginal) => ({
+  ...(await importOriginal<typeof VermerkeApi>()),
+  fetchDatenschutzvermerke: (id: string) =>
+    fetchDatenschutzvermerke(id) as Promise<VermerkeApi.Datenschutzvermerk[]>,
+}));
+const fetchPatientFiles = vi.fn();
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FilesApi>()),
+  fetchPatientFiles: (id: string) => fetchPatientFiles(id) as Promise<FilesApi.PatientFile[]>,
+}));
+
 const { Stammdaten } = await import('./PatientMasterDataPage');
+
+/**
+ * Die Fehlermeldung mit Text. Seit AKTE-007 steht in den Stammdaten auch das
+ * Hinzufügen beim Anmeldebogen, und dessen Ansagebereich (`role="alert"`,
+ * leer bis zur Ablehnung einer Datei) ist ständig da.
+ */
+async function meldung(text: RegExp): Promise<HTMLElement> {
+  return waitFor(() => {
+    const treffer = screen.getAllByRole('alert').find((el) => text.test(el.textContent ?? ''));
+    if (!treffer) throw new Error(`Keine Meldung mit ${String(text)}`);
+    return treffer;
+  });
+}
 
 /**
  * Stammdaten und Verwaltung (AKTE-005).
@@ -70,6 +99,62 @@ describe('Stammdaten der Akte', () => {
     setPatientStatus.mockResolvedValue(undefined);
     concludePatientCare.mockResolvedValue(undefined);
     reopenPatientCare.mockResolvedValue(undefined);
+    fetchDatenschutzvermerke.mockReset().mockResolvedValue([]);
+    fetchPatientFiles.mockReset().mockResolvedValue([]);
+  });
+
+  describe('Anmeldebogen und Dateien (AKTE-007)', () => {
+    it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
+      'zeigt %s den Anmeldebogen samt Einwilligungen unter einem Anker',
+      async (role) => {
+        renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
+
+        const titel = await screen.findByRole('heading', { name: 'Anmeldebogen' });
+        expect(titel.closest('#anmeldebogen')).not.toBeNull();
+        expect(screen.getByRole('heading', { name: 'Einwilligungen' })).toBeInTheDocument();
+        expect(screen.getByText('Datenschutzinformation')).toBeInTheDocument();
+        expect(screen.getByText('Behandlungsvertrag')).toBeInTheDocument();
+      },
+    );
+
+    it('zeigt einem Patientenkonto keinen Anmeldebogen und fragt nicht danach', () => {
+      renderWithProviders(
+        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
+      );
+      expect(screen.queryByRole('heading', { name: 'Anmeldebogen' })).toBeNull();
+      expect(fetchDatenschutzvermerke).not.toHaveBeenCalled();
+      expect(fetchPatientFiles).not.toHaveBeenCalled();
+    });
+
+    it('legt Einwilligung und Vertrag zum Anmeldebogen, Unbekanntes unter „Sonstige Dateien"', async () => {
+      const datei = (art: string, name: string): FilesApi.PatientFile => ({
+        id: name,
+        treatment_basis_id: null,
+        document_type: art,
+        is_clinical: false,
+        display_name: name,
+        mime_type: 'application/pdf',
+        byte_size: 1024,
+        uploaded_at: '2026-09-13T08:00:00.000Z',
+        uploaded_by_name: 'Anna Beispiel',
+        object_missing: false,
+        verified_at: null,
+      });
+      fetchPatientFiles.mockResolvedValue([
+        datei('vertrag', 'Vertrag unterschrieben.pdf'),
+        datei('kuenftige_art', 'Unbekannt.pdf'),
+        datei('befund', 'Befund.pdf'),
+      ]);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+
+      const vertrag = await screen.findByText('Vertrag unterschrieben.pdf');
+      expect(vertrag.closest('#anmeldebogen')).not.toBeNull();
+      const sonstige = await screen.findByText('Unbekannt.pdf');
+      expect(sonstige.closest('#anmeldebogen')).toBeNull();
+      expect(screen.getByText('Sonstige Dateien')).toBeInTheDocument();
+      // Der Befund gehört in die Doku.
+      expect(screen.queryByText('Befund.pdf')).toBeNull();
+    });
   });
 
   // Mit Rückweg in die Stammdaten samt dem der Akte (PAT-08).
@@ -470,7 +555,7 @@ describe('Stammdaten der Akte', () => {
       const buttons = screen.getAllByRole('button', { name: 'Versorgung abschließen' });
       await user.click(buttons[buttons.length - 1]!);
 
-      expect(await screen.findByRole('alert')).toHaveTextContent(/konnte nicht gespeichert werden/);
+      expect(await meldung(/konnte nicht gespeichert werden/)).toBeInTheDocument();
     });
   });
 
@@ -539,7 +624,7 @@ describe('Stammdaten der Akte', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
 
       await user.click(screen.getByRole('button', { name: 'Liege mitnehmen' }));
-      expect(await screen.findByRole('alert')).toHaveTextContent(/Behandlungsliege/);
+      expect(await meldung(/Behandlungsliege/)).toBeInTheDocument();
     });
 
     it('zeigt einem Patientenkonto weder Angabe noch Knopf', () => {

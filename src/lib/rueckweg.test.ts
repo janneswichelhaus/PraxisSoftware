@@ -82,6 +82,12 @@ describe('leseRueckweg', () => {
 });
 
 describe('mitRueckweg', () => {
+  it('laesst einen Anker am Ende (AKTE-007)', () => {
+    expect(mitRueckweg('/patienten/p1/stammdaten#anmeldebogen', '/offen')).toBe(
+      '/patienten/p1/stammdaten?zurueck=%2Foffen#anmeldebogen',
+    );
+  });
+
   it('haengt den kodierten Rueckweg an', () => {
     expect(mitRueckweg('/termine/t1', '/kalender?ansicht=tag&datum=2027-05-12')).toBe(
       `/termine/t1?${RUECKWEG_PARAM}=${encodeURIComponent('/kalender?ansicht=tag&datum=2027-05-12')}`,
@@ -116,7 +122,11 @@ describe('rueckwegBeschriftung', () => {
     ['/patienten?suche=mus&status=alle', 'Zurück zu den Patient:innen'],
     ['/patienten/abc', 'Zurück zur Akte'],
     ['/patienten/abc/termine', 'Zurück zu den Terminen der Akte'],
-    ['/patienten/abc/verlauf', 'Zurück zum Behandlungsverlauf'],
+    ['/patienten/abc/doku', 'Zurück zur Doku'],
+    // AKTE-007: Alte Adressen leiten weiter und heißen wie ihr Ziel.
+    ['/patienten/abc/verlauf', 'Zurück zur Doku'],
+    ['/patienten/abc/befund', 'Zurück zur Doku'],
+    ['/patienten/abc/dateien', 'Zurück zu den Stammdaten'],
     ['/termine/t1', 'Zurück zum Termin'],
     ['/termine/neu', 'Zurück zur Terminanlage'],
     ['/praxis/team/s1', 'Zurück zu den Mitarbeitenden'],
@@ -130,7 +140,7 @@ describe('rueckwegBeschriftung', () => {
     ['/patienten/abc/verordnungen', 'Zurück zu den Behandlungsgrundlagen'],
     ['/patienten/abc/verordnungen/neu', 'Zurück zur Grundlage'],
     ['/patienten/abc/verordnungen/g1/bearbeiten', 'Zurück zur Grundlage'],
-    ['/patienten/abc/datenschutz', 'Zurück zum Datenschutz der Akte'],
+    ['/patienten/abc/datenschutz', 'Zurück zu den Stammdaten'],
     ['/verordner', 'Zurück zu den Verordner:innen'],
     ['/termine/dauertermin?person=p1', 'Zurück zum Dauertermin'],
     ['/touren', 'Zurück zur Tour'],

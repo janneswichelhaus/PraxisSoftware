@@ -10,13 +10,12 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { Card } from '@/components/ui/Card';
+import { Card, Disclosure } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Textlink } from '@/components/ui/Textlink';
-import { Tile, TileGrid } from '@/components/ui/Tile';
-import { intakeItemTarget, openItemsText } from '@/features/open-points/intake-api';
+import { intakeItemTarget } from '@/features/open-points/intake-api';
 import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
-import { grundlageBezeichnung } from '@/features/treatment-bases/api';
+import { grundlageBezeichnung, type TreatmentBasis } from '@/features/treatment-bases/api';
 import {
   kontingentSatz,
   useAktuelleGrundlage,
@@ -33,9 +32,11 @@ import {
   type CurrentUser,
   type RoleKey,
 } from '@/features/session/types';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
 import { istInternerPfad, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
 import {
+  ALTE_AKTENBEREICHE,
   aktenBereiche,
   ersterAktenbereich,
   usePatientRecord,
@@ -155,87 +156,112 @@ function Aktenavigation({
 }
 
 /**
- * Die Hinweise, die vor der Tür zählen (PAT-005, `IDEA-PRX-001`), seit dem
- * Design-Handoff vom 2026-10-01 (Abschnitt 7) als Kachelreihe im Kopf:
- * **Liege**, **Zugangshinweis**, **Besonderheit** und **! Erstaufnahme
- * offen**. Sie ersetzt die Textzeilen darunter und die Zeile `IntakeHint`.
+ * „! Anmeldebogen fehlt" - eine Zeile im Kopf, solange der Anmeldebogen fehlt
+ * (AKTE-007, ANN-224). Sie führt zum Anmeldebogen in den Stammdaten.
  *
- * Sie standen bis UI-002a auf der Übersicht der Akte. Mit ihr wären sie in die
- * Stammdaten gerutscht und damit hinter einen Bereichswechsel - „Klingel
- * defekt, bitte anrufen" nützt dort niemandem. Deshalb stehen sie im Kopf, und
- * nur, was hinterlegt ist: Ohne Angabe keine Kachel, ohne Kachel keine Reihe.
+ * Bis AKTE-007 stand hier die Kachel „Erstaufnahme offen" mit allen offenen
+ * Punkten. Jetzt zählt im Kopf nur der Anmeldebogen: Ein fehlendes
+ * Verordnungsfoto steht weiter unter „Offene Punkte", löst diese Zeile aber
+ * nicht aus - es ist Arbeit fürs Büro, kein Hinweis vor der Behandlung.
+ */
+function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  const ort = useLocation();
+  const offen = useOffeneErstaufnahme(patient.id, patient.status === 'active', user);
+  if (!offen.includes('registration_form')) return null;
+  const hier = `${ort.pathname}${ort.search}`;
+  return (
+    <p className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
+      <span>
+        <span aria-hidden="true">! </span>
+        {BEGRIFFE.anmeldebogen} fehlt
+      </span>
+      <Textlink
+        alleinstehend
+        className="gap-1"
+        to={mitRueckweg(intakeItemTarget(patient.id, 'registration_form'), hier)}
+      >
+        Erledigen
+        <span aria-hidden="true">→</span>
+      </Textlink>
+    </p>
+  );
+}
+
+/**
+ * Zugangshinweis und Besonderheit (PAT-005, `IDEA-PRX-001`) - seit AKTE-007
+ * gemeinsam hinter „Hinweise", standardmäßig zu. Die Zeile nennt, was
+ * drinsteht („Zugang · Besonderheit"), damit niemand aufklappt, um ein leeres
+ * Feld zu finden. Die Daten bleiben zwei Felder.
  *
  * Absätze bleiben stehen und lange Wörter brechen um, wie in den Stammdaten
  * (PAT-13): „2. OG", „Klingel Meier" und „Schlüssel beim Nachbarn" in drei
  * Zeilen liefen sonst zu einer zusammen.
  *
- * Für ein Patientenkonto liefert die Sicht die Felder gar nicht erst; die
- * Kacheln verschwinden dann von allein (ANN-010, ADR-004).
- *
- * Reihen von 150 statt der 160 px des Handoffs: In der Kopfkarte bleiben am
- * Telefon 311 px, und erst bei 150 stehen dort zwei Kacheln nebeneinander -
- * vier untereinander schöben die Bereichsleiste aus dem ersten Bildschirm.
+ * Für ein Patientenkonto liefert die Sicht die Felder gar nicht erst; der
+ * Aufklapper verschwindet dann von allein (ANN-010, ADR-004).
  */
-function KopfKacheln({
-  patient,
-  user,
-  aktiv,
-}: {
-  patient: Patient;
-  user: CurrentUser;
-  aktiv: boolean;
-}) {
-  const ort = useLocation();
-  const offen = useOffeneErstaufnahme(patient.id, aktiv, user);
-  const liege = patient.treatment_table_required === true;
-  if (!patient.home_visit_access_note && !patient.special_note && !liege && offen.length === 0) {
-    return null;
-  }
-  const hier = `${ort.pathname}${ort.search}`;
-
+function HinweiseImKopf({ patient }: { patient: Patient }) {
+  const teile = [
+    patient.home_visit_access_note ? 'Zugang' : null,
+    patient.special_note ? 'Besonderheit' : null,
+  ].filter((teil): teil is string => teil !== null);
+  if (teile.length === 0) return null;
   return (
-    <div className="px-4 pb-3 sm:px-5 sm:pb-4">
-      <TileGrid spalte="kachel">
-        {/* UX-003a: Die Liege steht vor der Tür mit auf dem Zettel - gesetzt
-            wird sie in den Stammdaten (ANN-116). */}
-        {liege ? (
-          <Tile label="Liege" ton="akzent">
-            mitnehmen
-          </Tile>
-        ) : null}
+    <Disclosure
+      inKarte
+      kopf="label"
+      summary={
+        <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+          <span>Hinweise</span>
+          <span className="text-ink-muted text-sm font-normal tracking-normal normal-case">
+            {teile.join(' · ')}
+          </span>
+        </span>
+      }
+    >
+      <dl className="flex flex-col gap-3 text-sm">
         {patient.home_visit_access_note ? (
-          <Tile label="Zugangshinweis">
-            <span className="block whitespace-pre-line">{patient.home_visit_access_note}</span>
-          </Tile>
+          <div>
+            <dt className="text-ink-muted">Zugangshinweis</dt>
+            <dd className="text-ink wrap-anywhere">
+              <span className="block whitespace-pre-line">{patient.home_visit_access_note}</span>
+            </dd>
+          </div>
         ) : null}
         {patient.special_note ? (
-          <Tile label="Besonderheit">
-            <span className="block whitespace-pre-line">{patient.special_note}</span>
-          </Tile>
+          <div>
+            <dt className="text-ink-muted">Besonderheit</dt>
+            <dd className="text-ink wrap-anywhere">
+              <span className="block whitespace-pre-line">{patient.special_note}</span>
+            </dd>
+          </div>
         ) : null}
-        {/* PRX-013: was zur Erstaufnahme noch fehlt - nur, solange etwas
-            fehlt. Der Weg führt zum ersten offenen Punkt. */}
-        {offen.length > 0 ? (
-          <Tile
-            label="Erstaufnahme offen"
-            ton="warnung"
-            aktion={
-              <Textlink
-                alleinstehend
-                className="gap-1"
-                to={mitRueckweg(intakeItemTarget(patient.id, offen[0]!), hier)}
-              >
-                Erledigen
-                <span aria-hidden="true">→</span>
-              </Textlink>
-            }
-          >
-            {openItemsText(offen)}
-          </Tile>
-        ) : null}
-      </TileGrid>
+      </dl>
+    </Disclosure>
+  );
+}
+
+/** Hinweiszeile und Hinweise unter den Knöpfen; ohne beides kein Abstand. */
+function KopfHinweise({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  return (
+    <div className="flex flex-col gap-3 px-4 pb-3 empty:hidden sm:px-5 sm:pb-4">
+      <AnmeldebogenHinweis patient={patient} user={user} />
+      <HinweiseImKopf patient={patient} />
     </div>
   );
+}
+
+/**
+ * Wie die Person abgerechnet wird, als Abzeichen im Kopf (AKTE-007).
+ *
+ * An der Person gibt es kein Feld für Kostenträger oder Abrechnungsart; die
+ * Praxis rechnet privat ab (ADR-009). Was sich unterscheidet, ist die Bauart
+ * der Grundlage (ADR-020): Verordnung oder Selbstzahler. Das Abzeichen folgt
+ * deshalb der jüngsten Grundlage, über denselben organisatorischen Lesepfad
+ * wie die Kontextspalte (ANN-011). Ohne Grundlage kein Abzeichen.
+ */
+function versicherungsart(kind: TreatmentBasis['treatment_basis_kind']): string {
+  return kind === 'self_pay' ? 'Selbstzahler' : 'Privat · mit Verordnung';
 }
 
 /**
@@ -393,6 +419,7 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
   const darfVerordnen = canWriteTreatmentBases(user.roles);
   const aktiv = patient.status === 'active';
   const ort = useLocation();
+  const aktuell = useAktuelleGrundlage(patient.id, user);
 
   // Die Formulare kehren dorthin zurück, wo sie geöffnet wurden - samt dem
   // Rückweg der Akte selbst, der in der Adresse mitreist (PAT-08, TER-03).
@@ -432,6 +459,19 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
             <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
           ) : null}
         </div>
+        {/* AKTE-007: Abrechnungsart und Liege als Abzeichen - die Liege steht
+            vor der Tür mit auf dem Zettel (UX-003a), gesetzt wird sie in den
+            Stammdaten (ANN-116). */}
+        {aktuell || patient.treatment_table_required === true ? (
+          <div className="mt-2 flex flex-wrap gap-2">
+            {aktuell ? (
+              <Badge>{versicherungsart(aktuell.grundlage.treatment_basis_kind)}</Badge>
+            ) : null}
+            {patient.treatment_table_required === true ? (
+              <Badge ton="akzent">Liege mitnehmen</Badge>
+            ) : null}
+          </div>
+        ) : null}
       </div>
 
       {/* Die beiden Vorgänge, die im Alltag aus der Akte heraus entstehen. Alles
@@ -487,6 +527,29 @@ export function AkteEinstieg() {
   return <Navigate to={anhang ? `${ziel}?${anhang}` : ziel} replace />;
 }
 
+/**
+ * Eine abgelöste Adresse der Akte (AKTE-007): `/verlauf` und `/befund` führen
+ * in die Doku, `/datenschutz` zum Anmeldebogen, `/dateien` in die Stammdaten.
+ * Der Rückweg der Akte (`?zurueck=`) wandert mit; `replace`, damit „Zurück"
+ * im Browser nicht auf der Weiterleitung landet.
+ */
+export function AlterAktenbereich({ alt }: { alt: keyof typeof ALTE_AKTENBEREICHE }) {
+  const { patient } = usePatientRecord();
+  const [suche] = useSearchParams();
+  const [pfad, anker] = ALTE_AKTENBEREICHE[alt].split('#');
+  const anhang = suche.toString();
+  return (
+    <Navigate
+      to={{
+        pathname: `/patienten/${patient.id}/${pfad}`,
+        search: anhang ? `?${anhang}` : '',
+        hash: anker ? `#${anker}` : '',
+      }}
+      replace
+    />
+  );
+}
+
 function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; anhang: string }) {
   const kontext = useKontext(patient, user);
   const mitSpalte = Boolean(kontext.aktuell) || kontext.hatKontakt;
@@ -494,7 +557,7 @@ function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; 
     <>
       <header className="border-line bg-surface rounded-card overflow-hidden border">
         <PatientKopf patient={patient} user={user} />
-        <KopfKacheln patient={patient} user={user} aktiv={patient.status === 'active'} />
+        <KopfHinweise patient={patient} user={user} />
         <Aktenavigation patient={patient} user={user} anhang={anhang} />
       </header>
 

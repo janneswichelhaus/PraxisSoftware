@@ -6,9 +6,9 @@ import { fetchIntakeChecklist, type IntakeItem } from './intake-api';
  * Was zur Erstaufnahme einer Person noch fehlt (PRX-013) - nur für die Rollen
  * der Kartei und nur, solange sie in Versorgung ist.
  *
- * Bis zum Design-Handoff vom 2026-10-01 stand das als Zeile `IntakeHint` im
- * Kopf der Akte; jetzt trägt es eine Kachel (Abschnitt 7). Die Abfrage ist
- * dieselbe, unter demselben Schlüssel.
+ * Im Kopf der Akte trägt es seit AKTE-007 nur noch die Zeile „Anmeldebogen
+ * fehlt" (ANN-224); die Tagesliste und „Offene Punkte" nennen alle offenen
+ * Punkte. Die Abfrage ist dieselbe, unter demselben Schlüssel.
  */
 export function useOffeneErstaufnahme(
   patientId: string,

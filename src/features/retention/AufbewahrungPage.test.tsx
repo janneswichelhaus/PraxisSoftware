@@ -424,7 +424,7 @@ describe('AufbewahrungPage', () => {
       expect(screen.getByText(/Max Mustermann/)).toBeInTheDocument();
       expect(screen.getByRole('link', { name: 'Akte öffnen' })).toHaveAttribute(
         'href',
-        '/patienten/p1/dateien',
+        '/patienten/p1/verordnungen',
       );
     });
 

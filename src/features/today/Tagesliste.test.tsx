@@ -248,15 +248,17 @@ describe('Tageskarte', () => {
         <Tageskarte
           termin={eintrag()}
           kicker="Erster Weg"
-          erstaufnahme={['finding', 'treatment_table']}
+          erstaufnahme={['prescription_photo', 'registration_form']}
         />,
       );
-      const pille = screen.getByRole('link', { name: 'Erstaufnahme offen: Befund · Liege' });
+      const pille = screen.getByRole('link', {
+        name: 'Erstaufnahme offen: Verordnungsfoto · Anmeldebogen',
+      });
       expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
       expect(pille).toHaveClass('bg-warnung-soft', 'text-warnung', 'min-h-9');
       // Zeichen und Pfeil sind Bild; was fehlt, steht nur für Vorlesesoftware.
       expect(pille.querySelectorAll('[aria-hidden="true"]')).toHaveLength(2);
-      expect(pille.querySelector('.sr-only')).toHaveTextContent(': Befund · Liege');
+      expect(pille.querySelector('.sr-only')).toHaveTextContent(': Verordnungsfoto · Anmeldebogen');
     });
 
     it('zeigt ohne Stockwerk, Liege und offene Erstaufnahme keine Pillenreihe', () => {
@@ -277,7 +279,7 @@ describe('Tageskarte', () => {
         <Tageskarte
           termin={eintrag({ kind: 'training', patient_id: null })}
           kicker="Nächster Weg"
-          erstaufnahme={['finding']}
+          erstaufnahme={['registration_form']}
         />,
       );
       expect(screen.queryByText(/Erstaufnahme/)).toBeNull();

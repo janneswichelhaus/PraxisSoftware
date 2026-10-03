@@ -185,6 +185,8 @@ test.describe('Fotos', () => {
   test('am Dokument steht „Dokument fotografieren“ neben dem Dateiwähler', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=dokument`);
+    // AKTE-007: Beim Anmeldebogen steht das Hinzufügen eingeklappt.
+    await page.getByText('Unterschriebenes Blatt hinzufügen').click();
     await expect(page.getByLabel('Datei')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Dokument fotografieren' })).toBeVisible();
     expect(await ueberlaeuft(page)).toBe(false);

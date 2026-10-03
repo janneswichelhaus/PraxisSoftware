@@ -1,8 +1,6 @@
 import { useOutletContext } from 'react-router-dom';
 import {
   canManageAppointments,
-  canReadPatientDirectory,
-  canReadPatientFiles,
   canReadTreatmentBases,
   canReadTreatmentNote,
   type CurrentUser,
@@ -35,18 +33,29 @@ interface Aktenbereich {
 }
 
 /**
- * Die Bereiche der Akte in der Reihenfolge des Arbeitstags.
+ * Wo in den Stammdaten der Anmeldebogen steht - Ziel des Hinweises im Kopf,
+ * der Erstaufnahme und der alten Adresse `/datenschutz` (AKTE-007).
+ */
+export const ANMELDEBOGEN_ANKER = 'anmeldebogen';
+
+/**
+ * Die Bereiche der Akte in der Reihenfolge des Arbeitstags - genau vier
+ * (AKTE-007, Jannes 2026-10-03).
  *
  * Termine zuerst, weil dort gearbeitet wird. Stammdaten zuletzt, weil sie sich
  * am seltensten ändern - sie sind die Auskunft, die man einmal bei der
  * Aufnahme braucht (§13: das Häufige zuerst).
  *
  * **Einen Bereich „Übersicht" gibt es nicht mehr** (UI-002a). Er war ein
- * Auszug aus den vier anderen - nächste Termine, laufende Grundlagen,
+ * Auszug aus den anderen - nächste Termine, laufende Grundlagen,
  * letzter Behandlungsstand - und kostete bei jedem Aufruf der Akte einen Tap,
- * bevor irgendetwas zu tun war. Wer die Akte öffnet, landet jetzt dort, wo
- * gearbeitet wird. Die beiden Angaben, die vor einem Hausbesuch zählen und
- * sonst nur in den Stammdaten stünden, stehen im Kopf der Akte.
+ * bevor irgendetwas zu tun war.
+ *
+ * **Bis AKTE-007 waren es sieben.** „Behandlungsverlauf" und „Befund" sind
+ * jetzt die „Doku", „Datenschutz" ist der Anmeldebogen in den Stammdaten, und
+ * „Dateien" gibt es nicht mehr: Jede Datei steht im Bereich, zu dem sie
+ * gehört (`dateibereich` in `features/files/dokumentarten.ts`). Die alten
+ * Adressen leiten weiter (`ALTE_AKTENBEREICHE`).
  *
  * Die Rollenprüfung steuert ausschließlich die Navigation. Sie ist **keine**
  * Zugriffskontrolle: Wer eine Adresse direkt aufruft, bekommt vom Server
@@ -64,30 +73,28 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
     // (ADR-020 Punkt 7). Das Adressfragment bleibt `verordnungen` (ANN-062).
     bereiche.push({ to: `${basis}/verordnungen`, label: 'Behandlungsgrundlagen' });
   }
-  // Seit E15 steht hier für alle vier Praxisrollen dieselbe klinische Sicht,
-  // office eingeschlossen (ROL-001); jeder gelesene Eintrag wird protokolliert.
+  // Verlauf, Befund samt Anamnesebogen und die klinischen Dateien. Seit E15
+  // für alle vier Praxisrollen dieselbe klinische Sicht, office eingeschlossen
+  // (ROL-001); jeder gelesene Eintrag wird protokolliert.
   if (canReadTreatmentNote(user.roles)) {
-    bereiche.push({ to: `${basis}/verlauf`, label: 'Behandlungsverlauf' });
-    // FRB-EPIC-002: Anamnese und Messwerte. Dieselbe Leserolle wie der
-    // Verlauf; jeder gelieferte Bogen wird auf dem Server protokolliert.
-    bereiche.push({ to: `${basis}/befund`, label: 'Befund' });
-  }
-  // Dateien vor den Stammdaten: „was liegt uns vor" wird im Gespräch häufiger
-  // gebraucht als eine Adresse. Was `office` dort sieht, entscheidet die
-  // Dokumentart in der Datenbank, nicht diese Zeile (ADR-017 Punkt 12).
-  if (canReadPatientFiles(user.roles)) {
-    bereiche.push({ to: `${basis}/dateien`, label: 'Dateien' });
-  }
-  // Datenschutz vor den Stammdaten und hinter den Dateien: gebraucht bei der
-  // Aufnahme und bei einer Rückfrage, nicht im Tagesgeschäft (PAT-006). Die
-  // vier Praxisrollen, dieselben wie die Kartei; verbindlich ist die RLS.
-  if (canReadPatientDirectory(user.roles)) {
-    bereiche.push({ to: `${basis}/datenschutz`, label: 'Datenschutz' });
+    bereiche.push({ to: `${basis}/doku`, label: 'Doku' });
   }
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 
   return bereiche;
 }
+
+/**
+ * Die Adressen der abgelösten Bereiche und wohin sie heute führen (AKTE-007).
+ * Gespeicherte Rückwege und Lesezeichen landen so im neuen Bereich statt auf
+ * einer leeren Seite.
+ */
+export const ALTE_AKTENBEREICHE = {
+  verlauf: 'doku',
+  befund: 'doku',
+  datenschutz: `stammdaten#${ANMELDEBOGEN_ANKER}`,
+  dateien: 'stammdaten',
+} as const satisfies Record<string, string>;
 
 /**
  * Wohin `/patienten/:id` führt (UI-002a).

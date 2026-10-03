@@ -333,13 +333,15 @@ describe('Übersicht', () => {
         patient_id: 'p1',
         patient_given_name: 'Erika',
         patient_family_name: 'Beispiel',
-        open_items: ['finding', 'treatment_table'],
+        open_items: ['prescription_photo', 'registration_form'],
       },
     ]);
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     // Die Pille sagt, dass etwas fehlt, und führt in die Akte; was fehlt,
     // hört Vorlesesoftware gleich mit.
-    const pille = await screen.findByRole('link', { name: 'Erstaufnahme offen: Befund · Liege' });
+    const pille = await screen.findByRole('link', {
+      name: 'Erstaufnahme offen: Verordnungsfoto · Anmeldebogen',
+    });
     expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
     expect(within(await findeKarte()).getByRole('link', { name: /Erstaufnahme offen/ })).toBe(
       pille,
@@ -739,7 +741,7 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       expect(await screen.findByRole('link', { name: 'Bisherige Doku' })).toHaveAttribute(
         'href',
-        `/patienten/p1/verlauf?zurueck=${encodeURIComponent('/')}`,
+        `/patienten/p1/doku?zurueck=${encodeURIComponent('/')}`,
       );
     });
 

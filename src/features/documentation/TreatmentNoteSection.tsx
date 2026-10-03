@@ -311,7 +311,7 @@ export function TreatmentNoteSection({
         {kopfAbzeichen}
         {eintrag && appointment.patient_id ? (
           <Textlink
-            to={mitRueckweg(`/patienten/${appointment.patient_id}/verlauf`, rueckweg)}
+            to={mitRueckweg(`/patienten/${appointment.patient_id}/doku`, rueckweg)}
             className="ml-auto inline-flex min-h-11 items-center text-sm"
           >
             Eintrag in der Akte →

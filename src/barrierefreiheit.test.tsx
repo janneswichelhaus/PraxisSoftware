@@ -131,7 +131,7 @@ const { PatientMasterDataFields } = await import('@/features/patients/PatientMas
 const { TreatmentBasisFormFields } =
   await import('@/features/treatment-bases/TreatmentBasisFormFields');
 const { Verordnungsbereich } = await import('@/features/treatment-bases/PatientTreatmentBasesPage');
-const { Dateienbereich } = await import('@/features/files/PatientFilesPage');
+const { DokuDateien } = await import('@/features/files/Aktendateien');
 const { Rueckfrage } = await import('@/components/ui/Rueckfrage');
 const { Section } = await import('@/components/ui/Section');
 const { DetailList, DetailRow } = await import('@/components/ui/DetailList');
@@ -305,11 +305,13 @@ describe('Barrierefreiheit der Kernformulare', () => {
     const { container } = renderWithProviders(
       <main>
         <h1>Max Mustermann</h1>
-        <Dateienbereich patientId="pat-1" user={testUser(['therapist'])} />
+        <DokuDateien patientId="pat-1" user={testUser(['therapist'])} />
       </main>,
     );
 
     expect(await screen.findByText('Befund Schulter.pdf')).toBeInTheDocument();
+    // AKTE-007: Das Hinzufügen steht in der Doku eingeklappt - geöffnet geprüft.
+    await userEvent.click(screen.getByText('Dokument hinzufügen'));
     await pruefeBarrierefreiheit(container);
 
     await userEvent.click(screen.getByRole('button', { name: 'Löschen' }));

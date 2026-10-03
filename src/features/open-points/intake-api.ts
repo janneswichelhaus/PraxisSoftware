@@ -1,40 +1,33 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
+import { BEGRIFFE } from '@/lib/begriffe';
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Erstaufnahme-Checkliste (PRX-013, ANN-143): fünf Punkte, abgeleitet aus der
- * Akte. Nichts davon wird hier gesetzt - erledigt ist ein Punkt, wenn in der
- * Akte steht, was er verlangt.
+ * Erstaufnahme-Checkliste (PRX-013; seit AKTE-007 zwei Punkte, ANN-224):
+ * Verordnungsfoto und Anmeldebogen, abgeleitet aus der Akte. Nichts davon wird
+ * hier gesetzt - erledigt ist ein Punkt, wenn in der Akte steht, was er
+ * verlangt.
  */
 
-export const INTAKE_ITEMS = [
-  'prescription_photo',
-  'anamnesis',
-  'privacy',
-  'finding',
-  'treatment_table',
-] as const;
+export const INTAKE_ITEMS = ['prescription_photo', 'registration_form'] as const;
 export type IntakeItem = (typeof INTAKE_ITEMS)[number];
 
 export const intakeItemLabels: Record<IntakeItem, string> = {
   prescription_photo: 'Verordnungsfoto',
-  anamnesis: 'Anamnesebogen',
-  privacy: 'Datenschutz und Vertrag',
-  finding: 'Befund',
-  treatment_table: 'Liege',
+  // Datenschutzinformation, Behandlungsvertrag und Kontaktdaten auf einem
+  // Blatt (ANN-224).
+  registration_form: BEGRIFFE.anmeldebogen,
 };
 
 /** Wo der Punkt in der Akte erledigt wird. */
 export function intakeItemTarget(patientId: string, item: IntakeItem): string {
-  const bereich: Record<IntakeItem, string> = {
+  const ziel: Record<IntakeItem, string> = {
     prescription_photo: 'verordnungen',
-    anamnesis: 'befund',
-    privacy: 'datenschutz',
-    finding: 'befund',
-    treatment_table: 'befund',
+    registration_form: `stammdaten#${ANMELDEBOGEN_ANKER}`,
   };
-  return `/patienten/${patientId}/${bereich[item]}`;
+  return `/patienten/${patientId}/${ziel[item]}`;
 }
 
 const itemSchema = z.enum(INTAKE_ITEMS);
@@ -73,7 +66,7 @@ export async function fetchOpenIntakes(): Promise<OpenIntake[]> {
   return antwort(z.array(openIntakeSchema), data ?? [], satz);
 }
 
-/** „Befund · Liege" - die offenen Punkte als eine Zeile. */
+/** „Verordnungsfoto · Anmeldebogen" - die offenen Punkte als eine Zeile. */
 export function openItemsText(items: readonly IntakeItem[]): string {
   return items.map((item) => intakeItemLabels[item]).join(' · ');
 }

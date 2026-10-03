@@ -1,3 +1,5 @@
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
+
 /**
  * Die Dokumentarten der Dateiablage — Beschriftung und Erläuterung (DAT-001).
  *
@@ -222,4 +224,59 @@ export function dateiAblehnungsgrund(datei: { type: string; size: number }): str
     return `Die Datei ist mit ${formatBytes(datei.size)} zu groß. Erlaubt sind bis zu ${formatBytes(MAX_BYTES)}.`;
   }
   return null;
+}
+
+/**
+ * Wo in der Akte eine Datei steht (AKTE-007): Den Bereich „Dateien" gibt es
+ * nicht mehr, jede Datei erscheint im Reiter ihres Bereichs - die eine Stelle
+ * dieser Zuordnung.
+ *
+ *   * `grundlagen`  - Behandlungsgrundlagen: der Verordnungsscan;
+ *   * `doku`        - Doku: was zu Befund und Behandlung gehört;
+ *   * `anmeldebogen`- Stammdaten, beim Anmeldebogen: Einwilligung und Vertrag;
+ *   * `sonstige`    - Stammdaten, „Sonstige Dateien": eine Art, die hier
+ *     (noch) niemand zugeordnet hat. So fällt keine Datei durch.
+ *
+ * Die beiden Fotoarten stehen ohnehin in der Doku (`FotosImVerlauf`); die
+ * Dateiliste bekommt sie vom Server gar nicht erst.
+ */
+export type Dateibereich = 'grundlagen' | 'doku' | 'anmeldebogen' | 'sonstige';
+
+const DATEIBEREICHE: Record<Dokumentart, Dateibereich> = {
+  verordnungsscan: 'grundlagen',
+  befund: 'doku',
+  arztbrief: 'doku',
+  klinisches_bild: 'doku',
+  dokumentationsfoto: 'doku',
+  patientenfoto: 'doku',
+  einwilligung: 'anmeldebogen',
+  vertrag: 'anmeldebogen',
+};
+
+export function dateibereich(art: string): Dateibereich {
+  return (DATEIBEREICHE as Record<string, Dateibereich | undefined>)[art] ?? 'sonstige';
+}
+
+/** Welche Arten in einem Bereich hinzugefügt werden - die Rolle filtert danach noch. */
+export function artenImBereich(bereich: Dateibereich): readonly Dokumentart[] {
+  return DOKUMENTARTEN.filter(
+    (art) =>
+      DATEIBEREICHE[art] === bereich &&
+      // Fotos entstehen nur über die Kamera im Verlauf (ADR-017 G und H), der
+      // Scan nur an seiner Grundlage (Punkt 10).
+      art !== 'dokumentationsfoto' &&
+      art !== 'patientenfoto' &&
+      art !== 'verordnungsscan',
+  );
+}
+
+/** Der Reiter der Akte, in dem eine Datei dieser Art steht (AKTE-007). */
+export function aktenortDerDatei(patientId: string, art: string): string {
+  const ort: Record<Dateibereich, string> = {
+    grundlagen: 'verordnungen',
+    doku: 'doku',
+    anmeldebogen: `stammdaten#${ANMELDEBOGEN_ANKER}`,
+    sonstige: 'stammdaten',
+  };
+  return `/patienten/${patientId}/${ort[dateibereich(art)]}`;
 }

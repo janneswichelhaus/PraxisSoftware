@@ -242,7 +242,8 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
     const datei = await dateiAblegen(request, `BEF-004 Oeffnen ${LAUF}.pdf`);
 
     await anmelden(page, KONTEN.therapist);
-    await page.goto(`/patienten/${PATIENTEN.max}/dateien`);
+    // AKTE-007: Ein Befund steht in der Doku.
+    await page.goto(`/patienten/${PATIENTEN.max}/doku`);
 
     const zeile = page.getByRole('listitem').filter({ hasText: datei.name });
     await expect(zeile).toBeVisible();

@@ -135,9 +135,9 @@ describe('Patientenfotos', () => {
     expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
     expect(screen.getByRole('radio', { name: DOKU })).toBeEnabled();
     expect(screen.getByText(/Nicht möglich: Es ist keine Einwilligung/)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Zum Datenschutz der Akte' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Zu den Einwilligungen' })).toHaveAttribute(
       'href',
-      `/patienten/${PATIENT}/datenschutz`,
+      `/patienten/${PATIENT}/stammdaten#anmeldebogen`,
     );
   });
 

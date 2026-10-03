@@ -14,7 +14,7 @@ async function ueberlaeuft(page: Page): Promise<boolean> {
   );
 }
 
-for (const abfrage of ['', '?bereich=stammdaten', '?rolle=office', '?leer=1']) {
+for (const abfrage of ['', '?bereich=stammdaten', '?bereich=doku', '?rolle=office', '?leer=1']) {
   test(`läuft bei 375 px nicht waagerecht über (${abfrage || 'Termine'})`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(PRUEFSEITE + abfrage);
@@ -23,13 +23,33 @@ for (const abfrage of ['', '?bereich=stammdaten', '?rolle=office', '?leer=1']) {
   });
 }
 
-test('am Telefon stehen die Kacheln im Kopf zu zweit nebeneinander', async ({ page }) => {
+// AKTE-007: Abzeichen, Hinweiszeile und die eingeklappten Hinweise.
+test('am Telefon stehen Abzeichen, „Anmeldebogen fehlt" und die Hinweise im ersten Bildschirm', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 375, height: 800 });
   await page.goto(PRUEFSEITE);
-  const liege = (await page.getByText('Liege', { exact: true }).boundingBox())!;
-  const zugang = (await page.getByText('Zugangshinweis', { exact: true }).boundingBox())!;
-  expect(Math.abs(liege.y - zugang.y)).toBeLessThan(2);
-  expect(zugang.x).toBeGreaterThan(liege.x);
+  const art = page.getByText('Privat · mit Verordnung', { exact: true });
+  const liege = page.getByText('Liege mitnehmen', { exact: true });
+  await expect(art).toBeInViewport();
+  await expect(liege).toBeInViewport();
+  // Badge 28 px, 14/600 (Design).
+  const box = (await art.boundingBox())!;
+  expect(Math.round(box.height)).toBe(28);
+  expect(await art.evaluate((el) => getComputedStyle(el).fontWeight)).toBe('600');
+
+  await expect(page.getByText(/Anmeldebogen fehlt/)).toBeInViewport();
+  const hinweise = page.locator('summary', { hasText: 'Hinweise' });
+  await expect(hinweise).toBeInViewport();
+  await expect(hinweise).toContainText('Zugang · Besonderheit');
+  // Standardmäßig zu - der Zugangshinweis steht erst nach dem Aufklappen da.
+  await expect(page.getByText('Zugangshinweis', { exact: true })).toBeHidden();
+  await hinweise.click();
+  await expect(page.getByText('Zugangshinweis', { exact: true })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Bereiche der Akte' })).toContainText(
+    'TermineBehandlungsgrundlagenDokuStammdaten',
+  );
+  expect(await ueberlaeuft(page)).toBe(false);
 });
 
 test('am Rechner steht die Kontextspalte rechts neben dem Bereich', async ({ page }) => {
@@ -67,13 +87,14 @@ test('die Stammdaten bleiben neben der Kontextspalte einspaltig lesbar (PAT-B01)
   expect(adresse.height).toBeLessThan(30);
 });
 
-test('ohne Hinweise, Grundlage und Kontakt gibt es weder Kachelreihe noch Spalte', async ({
+test('ohne Hinweise, Grundlage und Kontakt gibt es weder Hinweise noch Spalte', async ({
   page,
 }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${PRUEFSEITE}?leer=1`);
   await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
-  await expect(page.getByText('Zugangshinweis', { exact: true })).toHaveCount(0);
+  await expect(page.locator('summary', { hasText: 'Hinweise' })).toHaveCount(0);
+  await expect(page.getByText(/Anmeldebogen fehlt/)).toHaveCount(0);
   await expect(page.getByRole('complementary', { name: 'Zur Person' })).toHaveCount(0);
 });
 
@@ -84,7 +105,7 @@ test.describe('Akte: Behandlungsverlauf nach Monat', () => {
       page,
     }) => {
       await page.setViewportSize({ width: breite, height: 900 });
-      await page.goto('/tests/e2e/fixtures/akte.html?bereich=verlauf');
+      await page.goto('/tests/e2e/fixtures/akte.html?bereich=doku');
       const leiste = page.getByRole('navigation', { name: 'Springen zu' });
       await expect(leiste).toBeVisible();
       await page.getByRole('link', { name: 'Juli 2026' }).click();

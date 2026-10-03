@@ -507,7 +507,7 @@ function MeinTag({
               Anzeige hier ist Darstellung, verbindlich prüft der Lesepfad. */}
           {darfDokuLesen ? (
             <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}/verlauf`, '/')}
+              to={mitRueckweg(`/patienten/${termin.patient_id}/doku`, '/')}
               className={kartenAktionKlassen()}
             >
               Bisherige Doku

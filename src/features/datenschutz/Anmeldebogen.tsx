@@ -14,7 +14,8 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { todayInTimeZone } from '@/features/appointments/api';
-import { usePatientRecord } from '@/features/patients/akte';
+import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
+import { BEGRIFFE } from '@/lib/begriffe';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
 import { DATENSCHUTZINFORMATION_FASSUNG } from './patienteninformation';
@@ -31,7 +32,12 @@ import {
 } from './vermerke';
 
 /**
- * Datenschutz in der Akte (PAT-006).
+ * Der Anmeldebogen in der Akte (PAT-006; seit AKTE-007 in den Stammdaten).
+ *
+ * Bis AKTE-007 ein eigener Bereich „Datenschutz". Datenschutzinformation und
+ * Behandlungsvertrag stehen auf dem Anmeldebogen, zusammen mit den
+ * Kontaktdaten (ANN-224); deshalb steht dieser Teil jetzt dort, wo die
+ * Kontaktdaten stehen, und die alte Adresse leitet hierher.
  *
  * Drei Fragen, die bei der Aufnahme und bei jeder Rückfrage einer Patientin
  * auftauchen: Hat sie die Datenschutzinformation bekommen — und welche
@@ -39,16 +45,11 @@ import {
  * eingewilligt, und hat sie etwas widerrufen?
  *
  * Die Papiere selbst bleiben Papier (E-13). Die Seite hält nur fest, dass und
- * wann; wer den Scan ablegen will, nutzt den Bereich „Dateien".
+ * wann; ein Scan des unterschriebenen Blatts liegt direkt darunter.
  *
  * Schreiben dürfen die vier Praxisrollen — die Aufnahme macht oft das Büro.
  * Die Seite steht nur ihnen offen; verbindlich prüft der Server (ADR-004).
  */
-
-export function PatientDatenschutzPage() {
-  const { patient, user } = usePatientRecord();
-  return <Datenschutz patient={patient} user={user} />;
-}
 
 export function Datenschutz({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const vermerke = useQuery({
@@ -71,7 +72,7 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
 
   return (
     <>
-      <Unterlagen stand={stand} patientId={patient.id} />
+      <Unterlagen stand={stand} patientId={patient.id} user={user} />
       <Einwilligungen stand={stand} />
       <VermerkErfassen stand={stand} patientId={patient.id} zeitzone={user.organizationTimeZone} />
       <Verlauf vermerke={vermerke.data} />
@@ -79,15 +80,23 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
   );
 }
 
-function Unterlagen({ stand, patientId }: { stand: Datenschutzstand; patientId: string }) {
+function Unterlagen({
+  stand,
+  patientId,
+  user,
+}: {
+  stand: Datenschutzstand;
+  patientId: string;
+  user: CurrentUser;
+}) {
   const ort = useLocation();
   const info = stand.datenschutzinformation;
   const veraltet = info !== null && info.fassung !== DATENSCHUTZINFORMATION_FASSUNG;
 
   return (
     <Section
-      titel="Unterlagen"
-      hinweis="Beide bleiben Papier. Hier steht nur, dass und wann sie vorlagen."
+      titel={BEGRIFFE.anmeldebogen}
+      hinweis="Kontaktdaten, Datenschutzinformation und Behandlungsvertrag auf einem Blatt. Es bleibt Papier; hier steht, dass und wann es vorlag."
       aktion={
         // Die Blätter führen hierher zurück, samt dem Rückweg der Akte
         // (PAT-08).
@@ -130,6 +139,12 @@ function Unterlagen({ stand, patientId }: { stand: Datenschutzstand; patientId: 
           )}
         </DetailRow>
       </DetailList>
+      {/* AKTE-007: Einwilligung und Vertrag als Datei stehen hier statt im
+          abgelösten Bereich „Dateien". */}
+      {/* Die Trennlinie zieht der Aufklapper selbst. */}
+      <div className="mt-3 empty:hidden">
+        <AnmeldebogenDateien patientId={patientId} user={user} />
+      </div>
     </Section>
   );
 }
@@ -270,6 +285,9 @@ function VermerkErfassen({
       // damit kein zweiter Tipp denselben Vermerk noch einmal schreibt.
       setWert('');
       await queryClient.invalidateQueries({ queryKey: ['datenschutzvermerke', patientId] });
+      // Die beiden Vermerke erledigen den Anmeldebogen der Erstaufnahme - der
+      // Hinweis im Kopf der Akte verschwindet ohne Neuladen (AKTE-007).
+      await queryClient.invalidateQueries({ queryKey: ['open-points'] });
       // Ein Vermerk zur Fotoeinwilligung ändert, welche Fotos es gibt und ob
       // neue entstehen dürfen (ADR-017 Punkt 36).
       if (vermerk.zweck === 'patient_photos') {

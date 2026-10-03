@@ -30,6 +30,7 @@ import {
   useLoeschauftraegeAusfuehren,
   useVerwaisteVormerken,
 } from '@/features/files/dateien';
+import { aktenortDerDatei } from '@/features/files/dokumentarten';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
@@ -444,7 +445,7 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
                   </span>
                 </span>
                 <Textlink
-                  to={`/patienten/${datei.patient_id}/dateien`}
+                  to={aktenortDerDatei(datei.patient_id, datei.document_type)}
                   alleinstehend
                   className="text-sm"
                 >

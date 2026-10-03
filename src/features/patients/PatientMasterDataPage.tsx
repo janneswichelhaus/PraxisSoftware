@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HausbesucheMitAlterAdresse } from '@/features/appointments/HausbesucheMitAlterAdresse';
 import { useLocation } from 'react-router-dom';
@@ -21,7 +21,9 @@ import {
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
-import { usePatientRecord } from './akte';
+import { ANMELDEBOGEN_ANKER, usePatientRecord } from './akte';
+import { Datenschutz } from '@/features/datenschutz/Anmeldebogen';
+import { SonstigeDateien } from '@/features/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
@@ -37,7 +39,8 @@ import {
  * Stammdaten und Verwaltung (AKTE-005).
  *
  * Der Bereich, der am seltensten gebraucht wird und deshalb zuletzt steht:
- * Anschrift, Kontakt, Versorgungsdaten - und die beiden Vorgänge, die eine
+ * Anschrift, Kontakt, Versorgungsdaten, seit AKTE-007 der Anmeldebogen und
+ * die Dateien ohne eigenen Bereich - und die beiden Vorgänge, die eine
  * Akte aus dem laufenden Betrieb nehmen. Genau deshalb stehen sie hier unten
  * und nicht im Kopf: Ein versehentlicher Tap auf „Versorgung abschließen"
  * startet eine zehnjährige Aufbewahrung (ADR-008).
@@ -247,6 +250,13 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Stammdaten „Zurück zur Liste" da, auch wenn man aus dem Kalender kam.
   const hier = `${ort.pathname}${ort.search}`;
 
+  // Wer über „Erledigen" oder die alte Adresse `/datenschutz` kommt, landet
+  // beim Anmeldebogen (AKTE-007). Der Router rollt nicht von selbst zum Anker.
+  useEffect(() => {
+    if (ort.hash !== `#${ANMELDEBOGEN_ANKER}`) return;
+    document.getElementById(ANMELDEBOGEN_ANKER)?.scrollIntoView?.({ block: 'start' });
+  }, [ort.hash]);
+
   return (
     <>
       {/* Der Weg ins Formular steht über den Abschnitten und nicht im Kopf von
@@ -414,6 +424,18 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           </div>
         </div>
       </div>
+
+      {/* AKTE-007: Der Anmeldebogen - Datenschutzinformation, Vertrag und
+          Einwilligungen samt ihrer Scans - steht bei den Kontaktdaten, die auf
+          demselben Blatt stehen (ANN-224). Dieselben vier Praxisrollen wie
+          bisher der Bereich „Datenschutz"; verbindlich ist die RLS. */}
+      {darfVerorten ? (
+        <div id={ANMELDEBOGEN_ANKER} className="mt-10 scroll-mt-4">
+          <Datenschutz patient={patient} user={user} />
+        </div>
+      ) : null}
+
+      <SonstigeDateien patientId={patient.id} user={user} />
 
       {/* POR-002: der eigene Zugang der Person zur Plattform (DSN-001
           Abschnitt 6). Dieselben Rollen wie die Kartei laden ein, sperren und

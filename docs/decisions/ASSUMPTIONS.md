@@ -1871,6 +1871,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-
 
 **Änderungspfad.** Ein Punkt mehr oder anders: `app.intake_checklist` und die Liste in `intake-api.ts` · Aufwand `klein`. Papierbogen zählt: im Punkt `anamnesis` zusätzlich eine Datei einer neuen Dokumentart prüfen · Aufwand `mittel`. Zurück zu „nein“ als Standard: Spalte wieder `not null default false` · Aufwand `klein`.
 
+**Ablösung.** abgelöst durch ANN-224 in der Zahl der Punkte (seit AKTE-007 nur Verordnungsfoto und Anmeldebogen); der dritte Zustand der Liege gilt weiter.
+
 ### ANN-144 — Anrufliste: „erreicht“ ist ein Mitteilungsvermerk, „nicht erreicht“ ein Stand am Termin für zwei Wochen
 
 Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Abnahme PRX-EPIC-003) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Retention Schedule (ADR-007, ADR-008)
@@ -2682,3 +2684,18 @@ Technik · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: Jannes 
 **Anker.** `istAnzeigbar` in `src/features/files/dokumentarten.ts`; `ladeDateiZumAnzeigen`, `ladeDateiHerunter` in `src/features/files/api.ts`; `issue_patient_file_link(uuid, boolean)` in `supabase/migrations/20261004102000_abn_027_open_means_display.sql`.
 
 **Änderungspfad.** PDF in der Anwendung: Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf` (der PDF-Betrachter des Browsers läuft in eigenem Ursprung) und `frame-src blob:` in `inhaltsrichtlinie` (`scripts/testumgebung.mjs`), dazu `istAnzeigbar` um PDF erweitern · Aufwand `klein`, braucht die Entscheidung von Jannes und einen Vermerk an ADR-017 Punkt 54.
+
+### ANN-224 — Erstaufnahme: nur Verordnungsfoto und Anmeldebogen; der Anmeldebogen sind die Vermerke zu Datenschutzinformation und Vertrag
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte · Kopf, Reiter und Hinweis) · erledigt · Wiedervorlage: wenn der eigene Anmeldebogen gestaltet ist (`IDEA-PRX-054`)
+
+**Annahme.** Die Erstaufnahme-Checkliste hat zwei Punkte: **Verordnungsfoto** (unverändert aus ANN-143) und **Anmeldebogen** (`registration_form`). Der Anmeldebogen ist ein Blatt mit Kontaktdaten, Datenschutzinformation und Behandlungsvertrag; erledigt ist er, sobald die beiden vorhandenen Vermerke „Datenschutzinformation ausgehändigt“ **und** „Behandlungsvertrag unterschrieben“ in der Akte stehen — keine neue Spalte, keine neue Vermerkart, kein Datenumzug. Anamnesebogen, Befund und Liege sind kein Punkt mehr; der Anamnesebogen bleibt klinisch und steht im Reiter Doku. Der Kopf der Akte zeigt nur „! Anmeldebogen fehlt“; ein fehlendes Verordnungsfoto steht weiter in der Tagesliste und unter „Offene Punkte“. Freiwillige Einwilligungen zählen wie bisher nicht.
+
+**Begründung.** Jannes (2026-10-03): Es gibt zwei Bögen — den Anamnesebogen (vor dem ersten Termin, klinisch) und den Anmeldebogen (Datenschutz, Vertrag, Kontaktdaten); die Checkliste soll ausschließlich Anmeldebogen und Verordnungsgrundlage enthalten. Das Blatt ist noch nicht gestaltet; die beiden Vermerke sind heute die eine Stelle, an der sein Vorliegen steht, und sie bleiben einzeln nachweisbar (PAT-006, Fassung der Datenschutzinformation). Unsicher: ob die Praxis künftig einen einzigen Vermerk „Anmeldebogen unterschrieben“ will.
+
+**Anker.** `app.intake_checklist` und `list_open_intakes` in `supabase/migrations/20261004110000_akte_anmeldebogen_checklist.sql`; `INTAKE_ITEMS`, Beschriftung und Ziel in `src/features/open-points/intake-api.ts`; `BEGRIFFE.anmeldebogen` in `src/lib/begriffe.ts`; Tests in `supabase/tests/intake-checklist.test.ts`.
+
+**Änderungspfad.** Ein Vermerk statt zweier: neue Vermerkart in `patient_privacy_records` und der Punkt `registration_form` in `app.intake_checklist` · Aufwand `mittel`. Ein Punkt mehr: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
+
+**Ablösung.** ersetzt ANN-143 in der Zahl der Punkte.
+

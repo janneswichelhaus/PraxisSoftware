@@ -19,14 +19,14 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `akte.html` (UI-Redesign Schritt 5).
  *
- * `?bereich=termine` (Standard), `stammdaten` oder `verlauf`, `?rolle=therapist`
+ * `?bereich=termine` (Standard), `stammdaten` oder `doku`, `?rolle=therapist`
  * (Standard) oder `office`, `?leer=1` für eine Akte ohne Hinweise, Grundlage
  * und Kontakt. Die Daten liegen vorab im Cache; gesprochen wird mit keinem
  * Server. Alles ist synthetisch.
  */
 const suche = new URLSearchParams(window.location.search);
-const bereich = ['stammdaten', 'verlauf'].includes(suche.get('bereich') ?? '')
-  ? (suche.get('bereich') as 'stammdaten' | 'verlauf')
+const bereich = ['stammdaten', 'doku'].includes(suche.get('bereich') ?? '')
+  ? (suche.get('bereich') as 'stammdaten' | 'doku')
   : 'termine';
 const rolle: RoleKey = suche.get('rolle') === 'office' ? 'office' : 'therapist';
 const leer = suche.get('leer') === '1';
@@ -163,11 +163,13 @@ client.setQueryData(
   leer
     ? []
     : [
-        { item: 'finding', state: 'open' },
-        { item: 'privacy', state: 'open' },
-        { item: 'anamnesis', state: 'done' },
+        { item: 'prescription_photo', state: 'done' },
+        { item: 'registration_form', state: 'open' },
       ],
 );
+// AKTE-007: Anmeldebogen und Dateien stehen in den Stammdaten.
+client.setQueryData(['datenschutzvermerke', PATIENT], []);
+client.setQueryData(['patient-files', PATIENT], []);
 client.setQueryData(['patient-next-appointment', PATIENT, null], kommende.slice(0, 1));
 client.setQueryData(['patient-appointments', PATIENT, true, null], {
   pages: [kommende],
@@ -260,7 +262,7 @@ const router = createMemoryRouter(
         { path: 'termine', element: <PatientAppointmentsPage /> },
         { path: 'stammdaten', element: <PatientMasterDataPage /> },
         {
-          path: 'verlauf',
+          path: 'doku',
           element: <PatientRecordDocumentation patient={patient} user={nutzer} />,
         },
         { path: '*', element: <p>Ende der Prüfseite.</p> },

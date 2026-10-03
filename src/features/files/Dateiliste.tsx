@@ -36,8 +36,8 @@ import {
 /**
  * Dateien einer Akte: anzeigen, hinzufügen, öffnen (DAT-001, ADR-017).
  *
- * Ein Baustein für zwei Stellen — den Bereich „Dateien" der Akte und die
- * einzelne Verordnung (VER-004). Der Unterschied ist ein Parameter, nicht eine
+ * Ein Baustein für die Reiter der Akte (AKTE-007: je Reiter ein Ausschnitt,
+ * `Aktendateien.tsx`) und die einzelne Verordnung (VER-004). Der Unterschied ist ein Parameter, nicht eine
  * zweite Umsetzung: An einer Verordnung ist die Art auf den Verordnungsscan
  * festgelegt, in der Akte wird sie gewählt.
  *
@@ -659,6 +659,17 @@ interface DateilisteProps {
   hinzufuegenEingeklapptWeitere?: string;
   /** Leer als ein Satz statt als großer Leerzustand - in einer Karte (VER-01). */
   leerKompakt?: boolean;
+  /**
+   * Nur diese Dateien zeigen - der Ausschnitt eines Aktenreiters (AKTE-007).
+   * Der Server liefert dieselbe Liste; der Filter verteilt sie nur auf die
+   * Reiter und ist keine Zugriffskontrolle (ADR-004).
+   */
+  auswahl?: (datei: PatientFile) => boolean;
+  /**
+   * Welche Arten hier hinzugefügt werden können (AKTE-007). Zusammen mit dem
+   * Schreibrecht der Rolle; bleibt nichts übrig, gibt es kein Hinzufügen.
+   */
+  hinzufuegbar?: readonly Dokumentart[];
 }
 
 export function Dateiliste({
@@ -673,14 +684,20 @@ export function Dateiliste({
   hinzufuegenEingeklappt,
   hinzufuegenEingeklapptWeitere,
   leerKompakt = false,
+  auswahl,
+  hinzufuegbar,
 }: DateilisteProps) {
-  const { dateien, isPending, isError, veraltet, erneutLaden, verborgen } = useDateien(
-    patientId,
-    user,
-    grundlageId,
-  );
+  const {
+    dateien: alleDateien,
+    isPending,
+    isError,
+    veraltet,
+    erneutLaden,
+    verborgen,
+  } = useDateien(patientId, user, grundlageId);
 
   if (verborgen) return null;
+  const dateien = auswahl ? alleDateien.filter(auswahl) : alleDateien;
 
   // Sehen dürfen seit E15 alle vier Praxisrollen jede Art (ROL-002). Was
   // hinzugefügt, gelöscht und korrigiert werden darf, hängt dagegen am
@@ -694,11 +711,14 @@ export function Dateiliste({
   // An der Verordnung gibt es genau eine sinnvolle Art (ADR-017 Punkt 12:
   // Vorbelegung aus dem Kontext). In der Akte stehen die Arten zur Wahl, die
   // die Rolle hinzufügen darf.
-  const arten: readonly Dokumentart[] = grundlageId
+  const rollenarten: readonly Dokumentart[] = grundlageId
     ? (['verordnungsscan'] as const)
     : klinischSchreiben
       ? (['befund', 'arztbrief', 'klinisches_bild', 'einwilligung', 'vertrag'] as const)
       : (['einwilligung', 'vertrag'] as const);
+  const arten = hinzufuegbar
+    ? rollenarten.filter((art) => hinzufuegbar.includes(art))
+    : rollenarten;
 
   // Beim Korrigieren steht an einer Verordnung mehr zur Wahl als beim Anlegen:
   // Was dort als Scan liegt, kann ein Arztbrief sein, den jemand am falschen
@@ -772,9 +792,10 @@ export function Dateiliste({
     </>
   );
 
-  const uploadfeld = darfHinzufuegen ? (
-    <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
-  ) : null;
+  const uploadfeld =
+    darfHinzufuegen && arten.length > 0 ? (
+      <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
+    ) : null;
 
   return (
     <>

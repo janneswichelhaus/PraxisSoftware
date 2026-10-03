@@ -23,7 +23,8 @@ export function Behandlungsliege({
 }) {
   const queryClient = useQueryClient();
   // Drei Zustände seit PRX-013 (ANN-143): ja, nein, oder noch nicht
-  // entschieden - dann steht die Liege in der Erstaufnahme als offen.
+  // entschieden. Seit AKTE-007 zählt die Erstaufnahme die Liege nicht mehr
+  // (ANN-224); der dritte Zustand bleibt eine Aussage der Akte.
   const stand = patient.treatment_table_required ?? null;
 
   const mutation = useMutation({
@@ -32,8 +33,6 @@ export function Behandlungsliege({
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       // Die Übersicht liest das Merkmal über die Tagesliste.
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
-      // Die Erstaufnahme zählt die Entscheidung (PRX-013).
-      await queryClient.invalidateQueries({ queryKey: ['open-points'] });
     },
   });
 

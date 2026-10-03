@@ -70,7 +70,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     await anmelden(page, KONTEN.therapist);
     const terminId = await finalisierterEintrag(page, laufTag());
 
-    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
+    await page.goto(`/patienten/${PATIENTEN.max}/doku`);
     const akte = page.getByRole('region', { name: 'Behandlungsdokumentation' });
     await expect(akte).toBeVisible();
 
@@ -91,7 +91,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
 
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
-    await page.goto(`/patienten/${PATIENTEN.max}/verlauf`);
+    await page.goto(`/patienten/${PATIENTEN.max}/doku`);
 
     // E15: office liest denselben Eintrag (ADR-004 Fassung 2 Punkt 3) - und
     // bekommt keinen zweiten, datensparsamen Nachweis daneben.
