@@ -61,6 +61,28 @@ describe('AuditLogPage', () => {
     );
   });
 
+  it('nennt bei einer Abweisung die Operation und wie oft binnen zehn Minuten (LOG-EPIC-001)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [
+        {
+          ...event('1', 'access.denied', 'Anna Beispiel', 1),
+          subject_type: 'organization',
+          outcome: 'denied',
+          denied_operation: 'appointments.read',
+          denied_count: 3,
+        },
+      ],
+      totalCount: 1,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const zeile = await screen.findByRole('listitem');
+    expect(zeile).toHaveTextContent('Zugriff abgewiesen: Termine gelesen · 3×');
+    expect(within(zeile).getByText('Abgewiesen')).toBeInTheDocument();
+  });
+
   it('traegt das Wort des Menuepunkts als Titel (ORG-07)', async () => {
     fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
     fetchOrganizationMembers.mockResolvedValue([]);

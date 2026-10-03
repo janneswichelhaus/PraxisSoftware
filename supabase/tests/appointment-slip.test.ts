@@ -156,7 +156,8 @@ describe('CAL-011: Terminzettel', () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ subject_id: patients.max, actor_user_id: users.office });
-    expect(rows[0]?.context).toMatchObject({ surface: 'web', view: 'appointment_slip' });
+    // LOG-EPIC-001: "Akte geöffnet", einmal am Tag, ohne Angabe der Ansicht.
+    expect(rows[0]?.context).toEqual({});
     // Metadaten, kein Inhalt (ADR-010 Punkt 3).
     expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Mustermann|Anna|Tuebingen/i);
   });

@@ -552,22 +552,18 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows[1]?.author_name).toBe('Tim Teamleitung');
   });
 
-  it('protokolliert das Lesen des Verlaufs gesondert (Punkt 9)', async () => {
+  it('protokolliert das Lesen des Verlaufs als Öffnen der Akte (Punkt 9, LOG-EPIC-001)', async () => {
     const f = await finalisiert();
     await asUserCommitted(users.ownerTherapist, VERLAUF, [f.id]);
 
-    const eigener = (await auditEintraege('treatment_note.history_viewed')).find(
-      (a) => a.subject_id === f.id,
+    const eigener = (await auditEintraege('patient_record.viewed')).find(
+      (a) => a.actor_user_id === users.ownerTherapist,
     );
-    expect(eigener).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: users.ownerTherapist,
-      outcome: 'success',
-    });
-    expect(eigener?.context).toMatchObject({ patient_id: patients.max });
+    expect(eigener).toMatchObject({ subject_id: patients.max, outcome: 'success' });
+    expect(await auditEintraege('treatment_note.history_viewed')).toEqual([]);
   });
 
-  it('laesst office den Verlauf lesen und protokolliert ihn gesondert (E15, Punkt 8 und 9)', async () => {
+  it('laesst office den Verlauf lesen und protokolliert das Öffnen der Akte (E15, Punkt 8 und 9)', async () => {
     const f = await finalisiert();
 
     const { rows } = await asUserCommitted<{ version_no: number; content: string }>(
@@ -578,11 +574,10 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ version_no: 1, content: ENTWURF });
 
-    const eigener = (await auditEintraege('treatment_note.history_viewed')).find(
-      (a) => a.subject_id === f.id && a.actor_user_id === users.office,
+    const eigener = (await auditEintraege('patient_record.viewed')).find(
+      (a) => a.subject_id === patients.max && a.actor_user_id === users.office,
     );
-    expect(eigener).toMatchObject({ subject_type: 'treatment_note', outcome: 'success' });
-    expect(eigener?.context).toMatchObject({ patient_id: patients.max });
+    expect(eigener).toMatchObject({ outcome: 'success' });
   });
 
   it('laesst ein Patientenkonto den Verlauf nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {

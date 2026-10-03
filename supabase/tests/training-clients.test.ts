@@ -585,7 +585,7 @@ describe('Lesen (TRN-001)', () => {
     ]);
     expect(rows).toEqual([expect.objectContaining({ given_name: 'Tina' })]);
     expect(await audit('training_relationship.viewed', trainingRelationships.tina)).toEqual([
-      { outcome: 'success', context: { surface: 'web' } },
+      { outcome: 'success', context: {} },
     ]);
   });
 
