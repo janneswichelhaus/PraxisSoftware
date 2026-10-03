@@ -37,6 +37,9 @@ jobs:
       - uses: actions/setup-node@v5
         with:
           node-version: '22'
+          # Das Skript braucht keine Abhaengigkeiten; ohne pnpm im Job darf
+          # setup-node dessen Cache nicht automatisch einschalten.
+          package-manager-cache: false
 
       - name: Pruefskript der Basis verwenden, wenn vorhanden
         env:
