@@ -133,7 +133,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster genau dieses
     // Termins (seit 2026-10-03 statt der Terminseite).
     const fenster = await terminImKalenderOeffnen(page, terminId);
-    await expect(fenster.getByRole('heading', { level: 2 })).toContainText('Mustermann');
+    await expect(fenster.getByRole('heading', { level: 2, name: /Mustermann/ })).toBeVisible();
   });
 });
 

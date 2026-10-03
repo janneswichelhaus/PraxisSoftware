@@ -103,7 +103,10 @@ test.describe('DOK-002: Finalisieren', () => {
     await finalisierterEintrag(page, laufTag(1));
 
     await page.getByRole('link', { name: 'Änderungsverlauf' }).click();
-    await expect(page).toHaveURL(/\/dokumentation\/[0-9a-f-]{36}\/verlauf$/);
+    // Der Link traegt den Rueckweg (`?zurueck=`).
+    await expect(page).toHaveURL((url) =>
+      /^\/dokumentation\/[0-9a-f-]{36}\/verlauf$/.test(url.pathname),
+    );
 
     const version1 = page.getByLabel('Version 1');
     await expect(version1).toBeVisible();

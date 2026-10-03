@@ -17,6 +17,7 @@ import {
   terminImKalender,
   terminNeuLaden,
   TERMIN_IM_KALENDER,
+  fensterSchliessen,
 } from './helpers';
 
 /**
@@ -169,6 +170,8 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
+    // Das Fenster ist modal; „Abmelden" dahinter erreicht erst nach dem Schliessen.
+    await fensterSchliessen(page);
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
     await terminOeffnen(page, terminId);

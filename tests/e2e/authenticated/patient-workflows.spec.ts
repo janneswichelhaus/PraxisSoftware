@@ -32,7 +32,8 @@ test.describe('PAT-002: Stammdaten bearbeiten', () => {
     await page.goto(`/patienten/${PATIENTEN.erika}/stammdaten`);
     await expect(page.getByRole('heading', { name: 'Erika Beispiel' })).toBeVisible();
 
-    await page.getByRole('link', { name: 'Stammdaten bearbeiten' }).click();
+    // Seit 2026-10-03 fuehrt jede Karte ins Formular.
+    await page.getByRole('link', { name: 'Person bearbeiten' }).click();
     await expect(page.getByRole('heading', { name: 'Stammdaten bearbeiten' })).toBeVisible();
 
     await page.getByLabel('Ort', { exact: true }).fill(neuerOrt);
@@ -48,7 +49,7 @@ test.describe('PAT-002: Stammdaten bearbeiten', () => {
     await expect(detailWert(page, 'Adresse')).toContainText(neuerOrt);
 
     // Ausgangszustand wiederherstellen, damit der Lauf wiederholbar bleibt.
-    await page.getByRole('link', { name: 'Stammdaten bearbeiten' }).click();
+    await page.getByRole('link', { name: 'Person bearbeiten' }).click();
     await page.getByLabel('Ort', { exact: true }).fill(SEED_ORT);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
     await expect(detailWert(page, 'Adresse')).toContainText(SEED_ORT);

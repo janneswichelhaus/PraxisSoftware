@@ -111,7 +111,8 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
-    await expect(page).toHaveURL(/\/bearbeiten$/);
+    // Der Link traegt seit 2026-10-03 den Rueckweg (`?zurueck=`).
+    await expect(page).toHaveURL((url) => url.pathname.endsWith('/bearbeiten'));
   });
 
   test('meldet einen Bearbeitungskonflikt und lässt den Termin unverändert', async ({
@@ -218,7 +219,7 @@ test.describe('CAL-003: Absagen', () => {
     // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster genau dieses
     // Termins (seit 2026-10-03 statt der Terminseite).
     const fenster = await terminImKalenderOeffnen(page, terminId);
-    await expect(fenster.getByRole('heading', { level: 2 })).toContainText('Mustermann');
+    await expect(fenster.getByRole('heading', { level: 2, name: /Mustermann/ })).toBeVisible();
   });
 
   test('gibt den Zeitraum eines abgesagten Termins wieder frei', async ({ page }) => {

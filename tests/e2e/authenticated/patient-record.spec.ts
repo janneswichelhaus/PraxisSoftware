@@ -169,16 +169,14 @@ test.describe('GRD-001: beide Bauarten in der Akte', () => {
     await expect(
       page.getByRole('heading', { name: 'Aktuelle Behandlungsgrundlagen' }),
     ).toBeVisible();
-    // In der Liste des Bereichs - die jüngste Grundlage steht seit dem
-    // Design-Handoff vom 2026-10-01 zusätzlich in der Kontextspalte.
+    // In der Liste des Bereichs - und seit 2026-10-03 als Kachel oben (die
+    // Kontextspalte ist entfallen).
     const liste = page.locator('[id^="verordnung-"]');
     await expect(liste.getByText('Selbstzahler seit 03.09.2026')).toBeVisible();
     await expect(liste.getByText('Folgeverordnung vom 08.09.2026')).toBeVisible();
-    await expect(
-      page
-        .getByRole('complementary', { name: 'Zur Person' })
-        .getByText('Folgeverordnung vom 08.09.2026'),
-    ).toBeVisible();
+    const kacheln = page.getByRole('region', { name: /Behandlungsgrundlagen/ });
+    await expect(kacheln.getByRole('button', { name: /08\.09\.2026/ })).toBeVisible();
+    await expect(kacheln.getByRole('button', { name: /03\.09\.2026/ })).toBeVisible();
   });
 
   test('fragt im Formular zuerst nach der Bauart und laesst die Verordner:in fallen', async ({

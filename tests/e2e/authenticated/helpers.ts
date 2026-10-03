@@ -284,6 +284,15 @@ export async function aktionenOeffnen(page: Page): Promise<Locator> {
   return fenster;
 }
 
+/**
+ * Schliesst das offene Fenster (Escape). Das Fenster ist modal: Solange es
+ * steht, erreicht kein Klick die Navigation oder „Abmelden" dahinter.
+ */
+export async function fensterSchliessen(page: Page): Promise<void> {
+  await page.keyboard.press('Escape');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+}
+
 /** Laedt den Kalender mit gewaehltem Termin neu und oeffnet dessen Fenster wieder. */
 export async function terminNeuLaden(page: Page): Promise<Locator> {
   await page.reload();

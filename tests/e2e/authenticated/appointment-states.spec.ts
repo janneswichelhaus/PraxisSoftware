@@ -108,9 +108,11 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await expect(detailWert(page, 'Status')).toContainText('Nicht angetroffen');
     await expect(page.getByText('Gebühr vorgemerkt')).toHaveCount(0);
 
-    // Kein zweites Vermerken, kein Absagen - erst wieder oeffnen.
-    await expect(page.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
+    // Kein zweites Vermerken, kein Absagen - erst wieder oeffnen. Im Fenster
+    // gesucht: Die Kalenderkachel dahinter nennt den Status in ihrem Namen.
+    const fenster = page.getByRole('dialog');
+    await expect(fenster.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
+    await expect(fenster.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
