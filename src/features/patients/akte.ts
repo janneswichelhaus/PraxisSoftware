@@ -68,16 +68,18 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   if (canManageAppointments(user.roles)) {
     bereiche.push({ to: `${basis}/termine`, label: 'Termine' });
   }
+  // Verlauf, Befund samt Anamnesebogen und die klinischen Dateien. Seit E15
+  // für alle vier Praxisrollen dieselbe klinische Sicht, office eingeschlossen
+  // (ROL-001); jeder gelesene Eintrag wird protokolliert.
+  // Doku vor den Grundlagen (Akte entschlacken, 2026-10-03): am Termin der
+  // häufigere Weg.
+  if (canReadTreatmentNote(user.roles)) {
+    bereiche.push({ to: `${basis}/doku`, label: 'Doku' });
+  }
   if (canReadTreatmentBases(user.roles)) {
     // Der Bereich zeigt beide Bauarten, deshalb steht hier das Oberwort
     // (ADR-020 Punkt 7). Das Adressfragment bleibt `verordnungen` (ANN-062).
     bereiche.push({ to: `${basis}/verordnungen`, label: 'Behandlungsgrundlagen' });
-  }
-  // Verlauf, Befund samt Anamnesebogen und die klinischen Dateien. Seit E15
-  // für alle vier Praxisrollen dieselbe klinische Sicht, office eingeschlossen
-  // (ROL-001); jeder gelesene Eintrag wird protokolliert.
-  if (canReadTreatmentNote(user.roles)) {
-    bereiche.push({ to: `${basis}/doku`, label: 'Doku' });
   }
   bereiche.push({ to: `${basis}/stammdaten`, label: 'Stammdaten' });
 

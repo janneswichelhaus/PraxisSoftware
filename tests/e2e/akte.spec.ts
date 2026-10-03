@@ -47,7 +47,7 @@ test('am Telefon stehen Abzeichen, „Anmeldebogen fehlt" und die Hinweise im er
   await hinweise.click();
   await expect(page.getByText('Zugangshinweis', { exact: true })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Bereiche der Akte' })).toContainText(
-    'TermineBehandlungsgrundlagenDokuStammdaten',
+    'TermineDokuBehandlungsgrundlagenStammdaten',
   );
   expect(await ueberlaeuft(page)).toBe(false);
 });

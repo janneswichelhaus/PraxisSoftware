@@ -297,8 +297,8 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
         expect(eintraege.map((link) => link.textContent)).toEqual([
           'Termine',
-          'Behandlungsgrundlagen',
           'Doku',
+          'Behandlungsgrundlagen',
           'Stammdaten',
         ]);
       },
@@ -386,7 +386,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
      * 120 px breit, und seine Lage verschiebt sich mit dem `scrollLeft`.
      */
     it('rollt den offenen Bereich am Telefon ins Bild, ohne die Seite zu rollen (PAT-01)', async () => {
-      const bereiche = ['Termine', 'Behandlungsgrundlagen', 'Doku', 'Stammdaten'];
+      const bereiche = ['Termine', 'Doku', 'Behandlungsgrundlagen', 'Stammdaten'];
       vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
         this: Element,
       ) {

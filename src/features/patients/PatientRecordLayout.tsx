@@ -111,8 +111,8 @@ function Aktenavigation({
   const liste = useRef<HTMLUListElement>(null);
 
   // Der offene Bereich steht im Bild (PAT-01, RSP-04). Bis dahin stand die
-  // Leiste am Telefon immer am Anfang: Auf „Stammdaten" - dem letzten von
-  // sieben Bereichen - war der markierte Eintrag nicht zu sehen, auch nicht
+  // Leiste am Telefon immer am Anfang: Auf „Stammdaten" - dem letzten der
+  // Bereiche - war der markierte Eintrag nicht zu sehen, auch nicht
   // nach dem Speichern der Stammdaten. Vor dem Zeichnen, damit die Leiste
   // nicht erst am Anfang steht und dann springt.
   useLayoutEffect(() => {
@@ -126,9 +126,9 @@ function Aktenavigation({
     // offen ist. Zwei gleich aussehende Reihen übereinander wären ein Rätsel.
     //
     // Schmal scrollt die Reihe waagerecht, statt in zwei Zeilen umzubrechen -
-    // die sieben Bereiche brauchen zusammen rund 800 px. Ab 640 px bricht sie
-    // wie die SubNav um (PAT-01): Am Tablet fehlten sonst Datenschutz und
-    // Stammdaten, und mit der Maus gibt es keine Wischgeste.
+    // die vier Bereiche sind am Telefon breiter als der Bildschirm. Ab 640 px
+    // bricht sie wie die SubNav um (PAT-01): Mit der Maus gibt es keine
+    // Wischgeste.
     <nav aria-label="Bereiche der Akte" className="border-line border-t">
       <ul
         ref={liste}
