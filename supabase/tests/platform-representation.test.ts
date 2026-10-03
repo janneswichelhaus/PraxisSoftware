@@ -711,7 +711,7 @@ describe('Zweifel-Vermerk im Loeschlauf (LOG-EPIC-001, ANN-207 Fassung 2)', () =
     await asPostgres(
       `update public.platform_accesses
           set status = 'revoked', revoked_at = now() - interval '4 years', revoked_by = $2,
-              revoked_reason = 'revoked'
+              revoked_reason = 'practice'
         where id = $1`,
       [id, users.office],
     );

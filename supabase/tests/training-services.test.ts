@@ -109,18 +109,41 @@ describe('TRN-007: Leistung am Trainingsverhaeltnis', () => {
       ]);
     });
 
-    it('protokolliert das Verhaeltnis und keine Patientenkennung', async () => {
+    it('schreibt keinen Auditeintrag - wer und wann stehen an der Leistung (LOG-EPIC-001)', async () => {
       const termin = await trainingstermin();
+      const auditVorher = async () =>
+        (
+          await asPostgres<{ n: number }>(
+            "select count(*)::int as n from public.audit_log where outcome = 'success'",
+          )
+        ).rows[0]!.n;
+      const vorher = await auditVorher();
       await asUserCommitted(users.office, ERFASSEN, [termin, pt()]);
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log
-         where action = 'billable_service.recorded' and subject_id = $1`,
+      const { rows } = await asPostgres<{
+        created_by: string;
+        erfasst: boolean;
+        training_relationship_id: string;
+        patient_id: string | null;
+      }>(
+        `select created_by, created_at is not null as erfasst, training_relationship_id, patient_id
+           from public.billable_services where appointment_id = $1`,
         [termin],
       );
-      expect(rows).toHaveLength(1);
-      expect(rows[0]?.context.training_relationship_id).toBe(trainingRelationships.tina);
-      expect(rows[0]?.context).not.toHaveProperty('patient_id');
+      expect(rows).toEqual([
+        {
+          created_by: users.office,
+          erfasst: true,
+          training_relationship_id: trainingRelationships.tina,
+          patient_id: null,
+        },
+      ]);
+      expect(await auditVorher()).toBe(vorher);
+      const { rows: amTermin } = await asPostgres(
+        'select 1 from public.audit_log where subject_id = $1',
+        [termin],
+      );
+      expect(amTermin).toEqual([]);
     });
 
     it('wartet, bis der Termin stattgefunden hat (ANN-181)', async () => {

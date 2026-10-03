@@ -191,16 +191,24 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
         recipient_id: null,
       });
 
-      const { rows: audit } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'invoice.draft_created' and subject_id = $1`,
+      // Wer und wann, und was gebuendelt wurde, zeigt der Entwurf selbst; im
+      // Auditlog steht dazu nichts (LOG-EPIC-001).
+      const { rows: werWann } = await asPostgres<{
+        created_by: string;
+        angelegt: boolean;
+        positionen: number;
+      }>(
+        `select i.created_by, i.created_at is not null as angelegt,
+                (select count(*)::int from public.invoice_items it where it.invoice_id = i.id) as positionen
+           from public.invoices i where i.id = $1`,
         [id],
       );
-      expect(audit[0]?.context).toMatchObject({
-        training_relationship_id: trainingRelationships.tina,
-        service_area: 'training',
-        item_count: 1,
-      });
-      expect(audit[0]?.context).not.toHaveProperty('patient_id');
+      expect(werWann[0]).toEqual({ created_by: users.office, angelegt: true, positionen: 1 });
+      const { rows: audit } = await asPostgres(
+        'select 1 from public.audit_log where subject_id = $1',
+        [id],
+      );
+      expect(audit).toEqual([]);
     });
 
     it('laesst je Kundin und Monat hoechstens einen Entwurf zu (ANN-077)', async () => {

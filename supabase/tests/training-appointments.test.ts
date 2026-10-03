@@ -88,13 +88,15 @@ async function updatedAt(id: string): Promise<string> {
   return rows[0]!.t;
 }
 
-async function audit(action: string, subjectId: string) {
-  const { rows } = await asPostgres<{ outcome: string; context: Record<string, unknown> }>(
-    `select outcome, context from public.audit_log
-     where action = $1 and subject_id = $2 order by occurred_at, id`,
-    [action, subjectId],
+/**
+ * Erfolgseintraege im Auditlog insgesamt. Schreibwege legen keine an - wer und
+ * wann stehen in den Spalten der Fachtabellen (LOG-EPIC-001, ANN-230).
+ */
+async function erfolgsEintraege(): Promise<number> {
+  const { rows } = await asPostgres<{ n: number }>(
+    "select count(*)::int as n from public.audit_log where outcome = 'success'",
   );
-  return rows;
+  return rows[0]!.n;
 }
 
 /** Tim (therapist, team_lead) betreut zusaetzlich Training - die Haeufung nach §4.8. */
@@ -139,6 +141,7 @@ describe('Trainingstermin anlegen (TRN-004)', () => {
     ['office', users.office, 3],
     ['owner', users.ownerTherapist, 4],
   ])('laesst %s einen Trainingstermin anlegen', async (_rolle, user, tage) => {
+    const auditVorher = await erfolgsEintraege();
     const id = await lege(user, { datum: tagInTagen(tage + 10) });
     const r = await zeile(id);
     expect(r.kind).toBe('training');
@@ -147,20 +150,13 @@ describe('Trainingstermin anlegen (TRN-004)', () => {
     expect(r.training_relationship_id).toBe(trainingRelationships.tina);
     expect(r.status).toBe('confirmed');
 
-    // Kennungen, kein Name, keine Anschrift (ADR-010 Punkt 3). Ob der Tag in
-    // Toms Wochenplan liegt, haengt vom Wochentag ab - geprueft wird die Art.
-    const eintrag = (await audit('appointment.created', id))[0]!;
-    expect(eintrag.outcome).toBe('success');
-    expect(typeof eintrag.context.outside_working_hours).toBe('boolean');
-    expect({ ...eintrag.context, outside_working_hours: null }).toEqual({
-      surface: 'web',
-      kind: 'training',
-      training_relationship_id: trainingRelationships.tina,
-      staff_member_id: TOM,
-      training_basis_id: null,
-      outside_working_hours: null,
-      in_the_past: false,
-    });
+    expect(r.staff_member_id).toBe(TOM);
+    expect(r.training_basis_id).toBeNull();
+
+    // Wer und wann zeigt der Termin selbst, nicht das Auditlog (LOG-EPIC-001).
+    expect(r.created_by).toBe(user);
+    expect(r.created_at).toBeInstanceOf(Date);
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it.each([
@@ -268,7 +264,10 @@ describe('Trainingstermin anlegen (TRN-004)', () => {
       /^appointment date is in the past$/,
     );
     const id = await lege(users.trainer, { datum: tagInTagen(-3), vergangen: true });
-    expect((await audit('appointment.created', id))[0]?.context.in_the_past).toBe(true);
+    // Dass nachgetragen wurde, zeigt der Termin: Er beginnt vor seiner Anlage.
+    const r = await zeile(id);
+    expect(r.created_by).toBe(users.trainer);
+    expect((r.starts_at as Date).getTime()).toBeLessThan((r.created_at as Date).getTime());
   });
 
   it('haelt das Raster', async () => {
@@ -326,8 +325,10 @@ describe('Verschieben und Absagen (TRN-004)', () => {
     await resetDatabase();
   }, 120_000);
 
-  it('laesst die Trainingsbetreuung verschieben und protokolliert das Verhaeltnis', async () => {
+  it('laesst die Trainingsbetreuung verschieben und behaelt das Verhaeltnis', async () => {
     const id = await lege(users.trainer, { datum: tagInTagen(30) });
+    const vorher = await zeile(id);
+    const auditVorher = await erfolgsEintraege();
     await asUserCommitted(users.trainer, UPDATE, [
       id,
       await updatedAt(id),
@@ -340,18 +341,15 @@ describe('Verschieben und Absagen (TRN-004)', () => {
     ]);
     const r = await zeile(id);
     expect(r.kind).toBe('training');
-    const kontext = (await audit('appointment.rescheduled', id))[0]!.context;
-    expect(typeof kontext.outside_working_hours).toBe('boolean');
-    expect({ ...kontext, outside_working_hours: null }).toEqual({
-      surface: 'web',
-      patient_id: null,
-      staff_member_id: TOM,
-      changed_fields: ['starts_at', 'ends_at'],
-      outside_working_hours: null,
-      in_the_past: false,
-      kind: 'training',
-      training_relationship_id: trainingRelationships.tina,
-    });
+    expect(r.patient_id).toBeNull();
+    expect(r.staff_member_id).toBe(TOM);
+    expect(r.training_relationship_id).toBe(trainingRelationships.tina);
+    // Verschoben hat sich nur die Zeit; das Verschieben steht nicht im
+    // Auditlog (LOG-EPIC-001), der Termin traegt den neuen Stand.
+    expect(r.starts_at).not.toEqual(vorher.starts_at);
+    expect(r.ends_at).not.toEqual(vorher.ends_at);
+    expect(r.updated_at).not.toEqual(vorher.updated_at);
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it('ordnet beim Verschieben nur Trainingsbetreuung zu', async () => {
@@ -396,15 +394,11 @@ describe('Verschieben und Absagen (TRN-004)', () => {
     const r = await zeile(TRAINING_HEUTE);
     expect(r.status).toBe('cancelled');
     expect(r.fee_basis).toBeNull();
-    expect((await audit('appointment.cancelled', TRAINING_HEUTE))[0]?.context).toEqual({
-      surface: 'web',
-      patient_id: null,
-      staff_member_id: TOM,
-      fee: false,
-      received_later: false,
-      kind: 'training',
-      training_relationship_id: trainingRelationships.tina,
-    });
+    // Wer und wann abgesagt hat, traegt der Termin (LOG-EPIC-001).
+    expect(r.cancelled_by).toBe(users.trainer);
+    expect(r.cancelled_at).toBeInstanceOf(Date);
+    expect(r.patient_id).toBeNull();
+    expect(r.training_relationship_id).toBe(trainingRelationships.tina);
   });
 
   it('laesst den Kontext auch beim Verschieben nicht wechseln (ADR-022 Punkt 10)', async () => {
@@ -870,21 +864,27 @@ describe('Vereinbarungen (TRN-005)', () => {
 
   const CREATE_BASIS = 'select public.create_training_basis($1::uuid, $2::date, $3) as id';
 
-  it('legt eine Vereinbarung an und protokolliert sie', async () => {
+  it('legt eine Vereinbarung an - wer und wann stehen an ihr (LOG-EPIC-001)', async () => {
+    const auditVorher = await erfolgsEintraege();
     const { rows } = await asUserCommitted<{ id: string }>(users.trainer, CREATE_BASIS, [
       trainingRelationships.tina,
       null,
       5,
     ]);
     const id = rows[0]!.id;
-    expect((await audit('training_basis.created', id))[0]).toEqual({
-      outcome: 'success',
-      context: {
-        surface: 'web',
-        training_relationship_id: trainingRelationships.tina,
-        agreed_quantity: 5,
-      },
+    const { rows: basis } = await asPostgres<Record<string, unknown>>(
+      `select training_relationship_id, agreed_quantity, created_by,
+              created_at is not null as angelegt
+         from public.training_bases where id = $1`,
+      [id],
+    );
+    expect(basis[0]).toEqual({
+      training_relationship_id: trainingRelationships.tina,
+      agreed_quantity: 5,
+      created_by: users.trainer,
+      angelegt: true,
     });
+    expect(await erfolgsEintraege()).toBe(auditVorher);
 
     const liste = await asUser<{ id: string; agreed_quantity: number; appointment_count: number }>(
       users.trainer,
@@ -918,15 +918,28 @@ describe('Vereinbarungen (TRN-005)', () => {
       2,
     ]);
     const id = rows[0]!.id;
+    const stand = async () =>
+      (
+        await asPostgres<{ status: string; updated_by: string | null; updated_at: Date | null }>(
+          'select status, updated_by, updated_at from public.training_bases where id = $1',
+          [id],
+        )
+      ).rows[0]!;
+
     await asUserCommitted(users.trainer, 'select public.conclude_training_basis($1::uuid)', [id]);
     await expect(
       asUser(users.trainer, CREATE, termin({ basis: id, datum: tagInTagen(50) })),
     ).rejects.toThrow(/^training basis is concluded$/);
-    expect(await audit('training_basis.concluded', id)).toHaveLength(1);
+    // Wer zuletzt den Stand gesetzt hat, steht an der Vereinbarung (LOG-EPIC-001).
+    const abgeschlossen = await stand();
+    expect(abgeschlossen).toMatchObject({ status: 'concluded', updated_by: users.trainer });
+    expect(abgeschlossen.updated_at).toBeInstanceOf(Date);
 
     await asUserCommitted(users.trainer, 'select public.reopen_training_basis($1::uuid)', [id]);
     await lege(users.trainer, { basis: id, datum: tagInTagen(50) });
-    expect(await audit('training_basis.reopened', id)).toHaveLength(1);
+    const wieder = await stand();
+    expect(wieder).toMatchObject({ status: 'active', updated_by: users.trainer });
+    expect(wieder.updated_at!.getTime()).toBeGreaterThan(abgeschlossen.updated_at!.getTime());
   });
 
   it('sperrt nicht, wenn die vereinbarte Anzahl erreicht ist (ANN-179)', async () => {

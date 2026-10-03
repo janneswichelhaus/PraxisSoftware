@@ -373,11 +373,35 @@ describe('Plattformzugang: einloesen durch den Zugangsdienst (Punkte 7, 9, 10)',
       asServiceRole(EINLOESEN, [h(einladung.code), users.plattformTina]),
     ).rejects.toThrow(/invitation not valid/);
 
+    const auditVorher = await asPostgres('select 1 from public.audit_log where subject_id = $1', [
+      platformAccesses.erikaBehandlung,
+    ]);
     await asServiceRole(EINLOESEN, [h(einladung.code), users.plattformErika]);
-    const audit = await asPostgres<{ actor_kind: string }>(
-      `select actor_kind from public.audit_log where action = 'platform_access.password_reset'`,
+
+    // Das neue Kennwort weist die Einladung selbst nach - wer sie ausgestellt
+    // hat und wann sie eingeloest wurde; das Auditlog fuehrt es nicht mehr
+    // (LOG-EPIC-001).
+    const { rows: einloesung } = await asPostgres<{
+      purpose: string;
+      status: string;
+      created_by: string;
+      eingeloest: boolean;
+    }>(
+      `select purpose, status, created_by, redeemed_at is not null as eingeloest
+         from public.platform_access_invitations where id = $1`,
+      [einladung.invitation_id],
     );
-    expect(audit.rows).toEqual([{ actor_kind: 'platform' }]);
+    expect(einloesung).toEqual([
+      { purpose: 'reset', status: 'redeemed', created_by: users.office, eingeloest: true },
+    ]);
+    expect(await zugang(platformAccesses.erikaBehandlung)).toMatchObject({
+      status: 'active',
+      account_user_id: users.plattformErika,
+    });
+    const auditNachher = await asPostgres('select 1 from public.audit_log where subject_id = $1', [
+      platformAccesses.erikaBehandlung,
+    ]);
+    expect(auditNachher.rows).toHaveLength(auditVorher.rows.length);
   });
 });
 
@@ -972,7 +996,7 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
     ]);
   });
 
-  it('protokolliert das Ende, wenn der Loeschlauf das Konto entfernt', async () => {
+  it('beendet den Zugang, wenn der Loeschlauf das Konto entfernt - ohne eigenen Auditeintrag (LOG-EPIC-001)', async () => {
     await asPostgres(
       `update public.training_relationships set contract_ended_on = current_date - 90 where id = $1`,
       [trainingRelationships.tina],
@@ -982,12 +1006,25 @@ describe('Plattformzugang: Befunde aus dem Zweitreview', () => {
       status: 'revoked',
       revoked_reason: 'account_deleted',
     });
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
+    // Wann und dass es der Lauf war (kein Mensch), steht am Zugang; den Entzug
+    // zaehlt retention.applied, ein eigener Eintrag entsteht nicht.
+    const { rows: amZugang } = await asPostgres<{ revoked_by: string | null; beendet: boolean }>(
+      `select revoked_by, revoked_at is not null as beendet
+         from public.platform_accesses where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    expect(amZugang).toEqual([{ revoked_by: null, beendet: true }]);
+    const { rows } = await asPostgres(
+      `select 1 from public.audit_log
         where action = 'platform_access.revoked' and subject_id = $1`,
       [platformAccesses.tinaTraining],
     );
-    expect(rows.map((r) => r.context['reason'])).toEqual(['account_deleted']);
+    expect(rows).toEqual([]);
+    const { rows: lauf } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where action = 'retention.applied' order by occurred_at desc, id desc limit 1`,
+    );
+    expect(Number(lauf[0]?.context['plattformkonto'])).toBeGreaterThan(0);
   });
 
   it('raeumt ein nie gebundenes Konto des Zugangsdienstes nach 30 Tagen ab', async () => {
