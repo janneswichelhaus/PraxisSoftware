@@ -52,29 +52,19 @@ test('am Telefon stehen Abzeichen, „Anmeldebogen fehlt" und die Hinweise im er
   expect(await ueberlaeuft(page)).toBe(false);
 });
 
-test('am Rechner steht die Kontextspalte rechts neben dem Bereich', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto(PRUEFSEITE);
-  const spalte = page.getByRole('complementary', { name: 'Zur Person' });
-  await expect(spalte.getByText('1 von 6 verbraucht · 3 geplant · 2 frei')).toBeVisible();
-  const rechts = (await spalte.boundingBox())!;
-  const links = (await page.getByText('Nächster Termin').boundingBox())!;
-  expect(rechts.x).toBeGreaterThan(links.x + links.width);
-});
+// Akte entschlacken (2026-10-03): Kontakt steht in den Stammdaten, die
+// Grundlage hat ihren eigenen Bereich - keine Kontextspalte mehr.
+for (const breite of [375, 1280]) {
+  test(`führt keine Kontextspalte und nutzt die volle Breite (${breite} px)`, async ({ page }) => {
+    await page.setViewportSize({ width: breite, height: 900 });
+    await page.goto(PRUEFSEITE);
+    await expect(page.getByText('Nächster Termin')).toBeVisible();
+    await expect(page.getByRole('complementary', { name: 'Zur Person' })).toHaveCount(0);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+}
 
-test('am Telefon steht die Kontextspalte unter dem Bereich', async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 800 });
-  await page.goto(PRUEFSEITE);
-  const spalte = (await page.getByRole('complementary', { name: 'Zur Person' }).boundingBox())!;
-  const vergangene = (await page
-    .getByRole('heading', { name: 'Vergangene Termine' })
-    .boundingBox())!;
-  expect(spalte.y).toBeGreaterThan(vergangene.y);
-});
-
-test('die Stammdaten bleiben neben der Kontextspalte einspaltig lesbar (PAT-B01)', async ({
-  page,
-}) => {
+test('die Stammdaten bleiben einspaltig lesbar (PAT-B01)', async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 900 });
   await page.goto(`${PRUEFSEITE}?bereich=stammdaten`);
   const person = (await page.getByRole('heading', { name: 'Person' }).boundingBox())!;

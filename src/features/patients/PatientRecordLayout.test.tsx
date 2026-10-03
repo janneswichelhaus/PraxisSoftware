@@ -636,7 +636,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         { ...basis, id: 'neu', treatment_basis_kind: 'self_pay', issued_on: '2026-09-30' },
       ]);
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
-      // Im Kopf; die Kontextspalte nennt die Grundlage ein zweites Mal.
       const imKopf = (await screen.findAllByText('Selbstzahler')).filter((el) =>
         el.closest('header'),
       );
@@ -691,7 +690,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   // UI-Redesign Schritt 5 (Design-Handoff 2026-10-01, Abschnitt 7).
-  describe('Kacheln im Kopf und Kontextspalte', () => {
+  describe('Kacheln im Kopf, keine Kontextspalte', () => {
     const grundlage: VerordnungenApi.TreatmentBasis = {
       id: '99999999-9999-4999-8999-000000000001',
       prescriber_id: null,
@@ -721,34 +720,19 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       uncovered: 0,
     };
 
-    it('nennt in der Kontextspalte die jüngste Grundlage mit ihren Zahlen', async () => {
+    it('führt keine Kontextspalte mehr - Kontakt steht in den Stammdaten', async () => {
+      // Akte entschlacken (2026-10-03): Kontakt und Grundlage standen unter
+      // jedem Bereich ein zweites Mal.
+      fetchPatient.mockResolvedValue({ ...aktiv, phone_mobile: '+49 160 0000005' });
       fetchPatientTreatmentBases.mockResolvedValue([aeltere, grundlage]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent]);
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/doku`);
 
-      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
-      expect(await within(spalte).findByText('Erstverordnung vom 20.09.2026')).toBeInTheDocument();
-      expect(within(spalte).getByText('Dr. Synthetisch Roth')).toBeInTheDocument();
-      expect(
-        within(spalte).getByText('1 von 6 verbraucht · 3 geplant · 2 frei'),
-      ).toBeInTheDocument();
-      expect(within(spalte).queryByText('Dr. Synthetisch Alt')).toBeNull();
-    });
-
-    it('trägt den Kontakt in der Spalte, aber nicht in den Stammdaten ein zweites Mal', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, phone_mobile: '+49 160 0000005' });
-      const { unmount } = akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
-      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
-      expect(within(spalte).getByRole('heading', { name: 'Kontakt' })).toBeInTheDocument();
-      expect(within(spalte).getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
-        'href',
-        'tel:+491600000005',
-      );
-      unmount();
-
-      akteRendern(['office'], STAMMDATEN);
-      await screen.findByRole('button', { name: 'Als inaktiv markieren' });
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      await waitFor(() => expect(fetchPatientTreatmentBases).toHaveBeenCalled());
       expect(screen.queryByRole('complementary', { name: 'Zur Person' })).toBeNull();
+      expect(screen.queryByRole('link', { name: '+49 160 0000005' })).toBeNull();
+      expect(screen.queryByText('Dr. Synthetisch Roth')).toBeNull();
     });
 
     it('zeigt im Terminbereich den nächsten Termin und die Grundlage als Kacheln', async () => {
