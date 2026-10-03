@@ -8,6 +8,7 @@ import {
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
+import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
 /**
  * Im Kalender, ohne eigenen Zugang (AKTE-009, ANN-226).
@@ -43,7 +44,8 @@ async function setzen(
 async function protokoll(): Promise<{ action: string; context: { changed_fields: string[] } }[]> {
   const { rows } = await asPostgres<{ action: string; context: { changed_fields: string[] } }>(
     `select action, context from public.audit_log
-      where subject_id = $1 and action = 'staff_member.updated' order by occurred_at`,
+      where subject_id = $1 and action = 'staff_member.updated' and outcome = 'success'
+      order by occurred_at`,
     [NINA],
   );
   return rows;
@@ -151,9 +153,12 @@ describe('set_staff_member_schedulable (AKTE-009)', () => {
     ['team_lead', users.teamLead],
     ['trainer', users.trainer],
     ['Patientenkonto', users.patientMax],
-  ])('weist %s ab und aendert nichts', async (_rolle, konto) => {
-    await expect(asUser(konto, SETZEN, [NINA, true, true])).rejects.toThrow(
-      /not allowed to manage staff/,
+  ])('weist %s bestaetigt ab und aendert nichts (G6c)', async (_rolle, konto) => {
+    await erwarteAbgewiesenenSchreibversuch(
+      konto,
+      SETZEN,
+      [NINA, true, true],
+      'staff_member.updated',
     );
     expect(await liste(BEHANDELNDE)).not.toContain(NINA);
     expect(await protokoll()).toEqual([]);

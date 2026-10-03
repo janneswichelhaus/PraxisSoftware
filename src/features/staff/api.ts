@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 
 /**
@@ -342,10 +343,13 @@ export async function setzeKalender(
   staffMemberId: string,
   kalender: { behandlung: boolean; training: boolean },
 ): Promise<void> {
-  const { error } = (await getSupabase().rpc('set_staff_member_schedulable', {
+  const antwort = (await getSupabase().rpc('set_staff_member_schedulable', {
     p_staff_member_id: staffMemberId,
     p_treatment: kalender.behandlung,
     p_training: kalender.training,
-  })) as { error: unknown };
-  if (error) throw new Error('Die Angabe zum Kalender konnte nicht gespeichert werden.');
+  })) as { error: unknown; status: number };
+  // Eine Abweisung kommt als HTTP 403 ohne Fehlerkörper (G6c, ANN-115).
+  if (abgewiesen(antwort)) {
+    throw new Error('Die Angabe zum Kalender konnte nicht gespeichert werden.');
+  }
 }

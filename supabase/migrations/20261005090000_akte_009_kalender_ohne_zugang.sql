@@ -134,7 +134,10 @@ begin
     raise exception 'not authenticated' using errcode = '42501';
   end if;
   if not app.can_manage_staff_accounts() then
-    raise exception 'not allowed to manage staff' using errcode = '42501';
+    -- G6c: wie die uebrigen Schreibpfade fuer Konten abgewiesen - bestaetigter
+    -- denied-Eintrag, HTTP 403, keine Ausnahme, nichts geaendert.
+    perform app.record_denied_write(v_actor, 'staff_member.updated', 'not allowed to manage staff');
+    return;
   end if;
   v_org := app.current_organization_id();
   if v_org is null then
@@ -184,7 +187,7 @@ end;
 $$;
 
 comment on function public.set_staff_member_schedulable(uuid, boolean, boolean) is
-  'Nimmt eine Person in den Kalender fuer Behandlungen und/oder Training auf oder nimmt sie heraus - ohne Zugang, Kennwort oder Rolle (AKTE-009, ANN-226). Allein owner; protokolliert als staff_member.updated mit den geaenderten Feldnamen.';
+  'Nimmt eine Person in den Kalender fuer Behandlungen und/oder Training auf oder nimmt sie heraus - ohne Zugang, Kennwort oder Rolle (AKTE-009, ANN-226). Allein owner; protokolliert als staff_member.updated mit den geaenderten Feldnamen, eine Abweisung als denied-Eintrag mit HTTP 403 (G6c).';
 
 revoke all on function public.set_staff_member_schedulable(uuid, boolean, boolean) from public, anon;
 grant execute on function public.set_staff_member_schedulable(uuid, boolean, boolean) to authenticated;
