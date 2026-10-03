@@ -449,11 +449,12 @@ describe('Loeschlauf: Auditlog', () => {
     await resetDatabase();
   }, 120_000);
 
+  /** Ein Auditeintrag der Dreijahresklasse (LOG-EPIC-001: Lesen faellt nach zwoelf Monaten). */
   async function auditeintrag(jahre: number, patientId = patients.max): Promise<string> {
     const { rows } = await asPostgres<{ id: string }>(
       `insert into public.audit_log
          (organization_id, actor_user_id, action, subject_type, subject_id, occurred_at)
-       values ($1::uuid, $2::uuid, 'patient_record.viewed', 'patient', $3::uuid,
+       values ($1::uuid, $2::uuid, 'patient_record.exported', 'patient', $3::uuid,
                now() - ($4::int * interval '1 year'))
        returning id::text as id`,
       [organizationId, users.therapist, patientId, jahre],
@@ -610,7 +611,12 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
     expect(rows.map((r) => r.class_key)).toEqual([
       'anrufstand',
       'auditlog',
+      // LOG-EPIC-001: Lese- und Sicherheitsereignisse, eigene Frist; Regel und
+      // Tests in apply_retention bzw. audit-fristen.test.ts.
+      'auditlog_lesen_sicherheit',
       'aufgabe',
+      'loeschauftrag',
+      'loeschjournal',
       'patientenakte',
       'patientenfoto',
       // POR-002: Regel in app.delete_due_platform_accesses und
