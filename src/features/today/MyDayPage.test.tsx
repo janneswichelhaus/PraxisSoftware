@@ -348,30 +348,41 @@ describe('Übersicht', () => {
     );
   });
 
-  it('trennt Doku und Abschluss: Doku als Weg, der Haken schließt ab (Handoff 6a)', async () => {
+  it('trennt Doku und Abschluss: ein Doku-Knopf, der Haken schließt ab (Handoff 6a, AKTE-008)', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     const karte = await findeKarte();
 
-    // Schreiben ohne Abschluss: der Abschluss schreibt als Version 1 fest.
-    // Der Name beginnt mit dem sichtbaren Wort, damit die Sprachsteuerung
-    // „Doku" trifft (UEB-10, WCAG 2.5.3).
-    const doku = within(karte).getByRole('link', { name: 'Doku schreiben' });
+    // Genau ein Doku-Knopf (Jannes 2026-10-03): Er führt in die Doku der
+    // Akte, mit diesem Termin oben. Der Name beginnt mit dem sichtbaren Wort,
+    // damit die Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3).
+    expect(within(karte).getAllByRole('link', { name: /^Doku/ })).toHaveLength(1);
+    expect(within(karte).queryByRole('link', { name: /Bisherige/ })).toBeNull();
+    const doku = within(karte).getByRole('link', { name: 'Doku zu diesem Termin' });
     // Mit Rueckweg auf die Uebersicht (UX-012).
     expect(doku).toHaveAttribute(
       'href',
-      `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
+      `/patienten/p1/doku?termin=t1&zurueck=${encodeURIComponent('/')}`,
     );
     expect(doku).not.toHaveAttribute('aria-label');
     // Sichtbar bleibt es kurz: Der Rest steht nur für Vorlesesoftware da.
     expect(doku.firstChild?.textContent?.trim()).toBe('Doku');
-    expect(doku.querySelector('.sr-only')).toHaveTextContent('schreiben');
+    expect(doku.querySelector('.sr-only')).toHaveTextContent('zu diesem Termin');
+    // Sekundär und kompakt, 44 px hoch.
+    expect(doku.className).not.toContain('bg-accent ');
 
-    // Vor dem Beginn steht der Haken klein neben der Navigation: ein Knopf,
-    // kein Weg - er schließt ab, ohne zu dokumentieren.
-    const haken = within(karte).getByRole('button', { name: /^Termin abschließen/ });
-    expect(haken).toHaveAttribute('title', 'Termin abschließen');
+    // Vor dem Beginn steht der Haken als Symbolknopf neben „Doku", unter der
+    // Navigation: ein Knopf, kein Weg - er schließt ab, ohne zu dokumentieren.
+    const haken = within(karte).getByRole('button', { name: 'Behandlung abschließen' });
+    expect(haken).toHaveAttribute('title', 'Behandlung abschließen');
     expect(haken.className).not.toContain('bg-accent ');
     expect(haken).toHaveClass('size-11');
+    const reihe = haken.parentElement!;
+    expect(reihe).toHaveClass('grid', 'grid-cols-[minmax(0,1fr)_44px]', 'gap-2');
+    expect(reihe).toContainElement(doku);
+    const navigation = within(karte).getByRole('button', { name: 'Navigation starten' });
+    expect(
+      navigation.compareDocumentPosition(reihe) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it('schließt mit dem Haken ab, ohne zu dokumentieren, und meldet „Doku offen"', async () => {
@@ -381,7 +392,7 @@ describe('Übersicht', () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     const karte = await findeKarte();
 
-    await user.click(within(karte).getByRole('button', { name: /^Termin abschließen/ }));
+    await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
 
     // Der Stand wird unmittelbar vorher gelesen - die Tagesliste kennt ihn nicht.
     await waitFor(() =>
@@ -397,25 +408,9 @@ describe('Übersicht', () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
     const karte = await findeKarte();
 
-    await user.click(within(karte).getByRole('button', { name: /^Termin abschließen/ }));
+    await user.click(within(karte).getByRole('button', { name: 'Behandlung abschließen' }));
 
     expect(await screen.findByText('Der Termin wurde inzwischen geändert.')).toBeInTheDocument();
-  });
-
-  it('setzt die Rufnummern hinter die Handlungen, ohne sie wegzunehmen', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    const karte = await findeKarte();
-
-    const ziele = within(karte)
-      .getAllByRole('link')
-      .map((l) => l.getAttribute('href') ?? '');
-    const doku = ziele.findIndex((z) => z.includes('/abschluss'));
-    const nummer = ziele.findIndex((z) => z.startsWith('tel:'));
-
-    expect(doku).toBeGreaterThanOrEqual(0);
-    // Sie sind weiterhin da - im Hausflur die einzige Rettung eines
-    // gescheiterten Besuchs -, stehen aber nicht mehr vorn.
-    expect(nummer).toBeGreaterThan(doku);
   });
 
   it('stellt den eigenen Tag vor den Tagesplan des Teams', async () => {
@@ -446,14 +441,16 @@ describe('Übersicht', () => {
     const karte = await findeKarte();
 
     expect(within(karte).getByText('Testweg 7, 72072 Tuebingen')).toBeInTheDocument();
-    // Das Stockwerk als Pille; der Rest des Hinweises steht nicht offen da.
-    const stockwerk = within(karte).getByRole('button', { name: 'Erdgeschoss' });
+    // Etage, Zugang und Nummer stehen nicht offen da (AKTE-008) - keine
+    // Etagen-Pille, ein Tipp auf (i) zeigt alles.
+    expect(within(karte).queryByText('Erdgeschoss')).toBeNull();
     expect(within(karte).queryByText('Klingel "Beispiel".')).toBeNull();
-    await user.click(stockwerk);
+    await user.click(within(karte).getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+    expect(within(karte).getByText('Erdgeschoss')).toBeInTheDocument();
     expect(within(karte).getByText('Klingel "Beispiel".')).toBeInTheDocument();
 
     // Kontakt ist Aktion, nicht Text: die Nummer waehlt, statt nur dazustehen.
-    const mobil = within(karte).getByRole('link', { name: /Mobil/ });
+    const mobil = within(karte).getByRole('link', { name: '+49 160 0000006' });
     expect(mobil).toHaveAttribute('href', 'tel:+491600000006');
   });
 
@@ -556,7 +553,7 @@ describe('Übersicht', () => {
       expect(meldung.parentElement).toHaveClass('bg-warnung-soft', 'rounded-card');
       // Entscheidend: die Anschrift steht noch da - und der Weg zum Hinweis.
       expect(screen.getByText('Testweg 7, 72072 Tuebingen')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Erdgeschoss' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeInTheDocument();
     });
 
     it('aktualisiert den alten Stand ueber die Abfrage, nicht ueber ein Neuladen (UEB-05)', async () => {
@@ -729,7 +726,7 @@ describe('Übersicht', () => {
       const haken = await screen.findByRole('button', { name: /^Termin abschließen/ });
       expect(haken.className).toContain('bg-accent ');
       expect(haken).toHaveClass('size-12');
-      expect(screen.getByRole('link', { name: 'Doku schreiben' }).className).toContain(
+      expect(screen.getByRole('link', { name: 'Doku zu diesem Termin' }).className).toContain(
         'bg-accent ',
       );
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
@@ -737,18 +734,19 @@ describe('Übersicht', () => {
       expect(screen.getAllByRole('button', { name: /^Termin abschließen/ })).toHaveLength(1);
     });
 
-    it('fuehrt mit einem Tipp zur bisherigen Doku, mit Rueckweg', async () => {
-      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      expect(await screen.findByRole('link', { name: 'Bisherige Doku' })).toHaveAttribute(
+    it('fuehrt mit einem Tipp zur Doku des Termins, mit Rueckweg - auch das Buero', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+      const karte = await findeKarte();
+      expect(within(karte).getByRole('link', { name: 'Doku zu diesem Termin' })).toHaveAttribute(
         'href',
-        `/patienten/p1/doku?zurueck=${encodeURIComponent('/')}`,
+        `/patienten/p1/doku?termin=t1&zurueck=${encodeURIComponent('/')}`,
       );
     });
 
-    it('bietet die bisherige Doku nur Rollen an, die den Verlauf lesen', async () => {
+    it('bietet die Doku nur Rollen an, die den Verlauf lesen', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['patient'], 'Max Mustermann')} />);
       await screen.findByRole('heading', { name: 'Ihr Zugang' });
-      expect(screen.queryByRole('link', { name: 'Bisherige Doku' })).toBeNull();
+      expect(screen.queryByRole('link', { name: /^Doku/ })).toBeNull();
     });
 
     it('klappt den Plan des Teams fuer Behandelnde zu, fuer das Buero nicht', async () => {
@@ -811,16 +809,16 @@ describe('Übersicht', () => {
       const haken = within(karte).getByRole('button', { name: /^Termin abschließen/ });
       expect(haken.className).toContain('bg-accent ');
       expect(haken).toHaveClass('size-12');
-      const doku = within(karte).getByRole('link', { name: 'Doku schreiben' });
+      const doku = within(karte).getByRole('link', { name: 'Doku zu diesem Termin' });
       expect(doku).toHaveAttribute(
         'href',
-        `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
+        `/patienten/p1/doku?termin=t1&zurueck=${encodeURIComponent('/')}`,
       );
       expect(doku.className).toContain('bg-accent ');
       // Die Navigation entfällt.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
-      // Nachlesen bleibt.
-      expect(within(karte).getByRole('link', { name: 'Bisherige Doku' })).toBeInTheDocument();
+      // Ein Doku-Knopf, auch hier (AKTE-008).
+      expect(within(karte).getAllByRole('link', { name: /^Doku/ })).toHaveLength(1);
       // Ein laufender Besuch beginnt nicht mehr „in … Minuten".
       expect(within(karte).queryByText(/^in \d+ Minuten?$/)).toBeNull();
     });
@@ -837,7 +835,9 @@ describe('Übersicht', () => {
       expect(
         within(karte).getByRole('button', { name: /^Termin abschließen/ }),
       ).toBeInTheDocument();
-      expect(within(karte).getByRole('link', { name: 'Doku schreiben' })).toBeInTheDocument();
+      expect(
+        within(karte).getByRole('link', { name: 'Doku zu diesem Termin' }),
+      ).toBeInTheDocument();
     });
 
     it('bietet einer Rolle ohne Schreibrecht an der Doku keinen Abschluss an', async () => {
@@ -851,7 +851,9 @@ describe('Übersicht', () => {
 
       const karte = await findeKarte();
       expect(within(karte).queryByRole('link', { name: /abschließen/i })).toBeNull();
-      expect(within(karte).queryByRole('link', { name: 'Doku schreiben' })).toBeNull();
+      // Lesen darf es: „Doku" führt in die Doku der Akte (AKTE-008), als
+      // einziger Knopf - geschrieben wird dort nicht.
+      expect(within(karte).getAllByRole('link', { name: /^Doku/ })).toHaveLength(1);
       expect(within(karte).getByRole('link', { name: 'Termin öffnen' })).toBeInTheDocument();
     });
 
@@ -1185,12 +1187,12 @@ describe('Übersicht', () => {
       expect(within(karte).getByRole('link', { name: 'Erika Beispiel' })).toBeInTheDocument();
       // Abgeschlossen: kein Haken mehr, nur „Doku".
       expect(within(karte).queryByRole('button', { name: /^Termin abschließen/ })).toBeNull();
-      const abschluesse = within(karte).getAllByRole('link', { name: 'Doku schreiben' });
+      const abschluesse = within(karte).getAllByRole('link', { name: 'Doku zu diesem Termin' });
       expect(abschluesse).toHaveLength(1);
       expect(abschluesse[0]!.className).toContain('bg-accent ');
       expect(abschluesse[0]).toHaveAttribute(
         'href',
-        `/termine/t1/abschluss?zurueck=${encodeURIComponent('/')}`,
+        `/patienten/p1/doku?termin=t1&zurueck=${encodeURIComponent('/')}`,
       );
       // Die zweite offene Dokumentation steht als Zeile da und führt in ihren Termin.
       const zweite = imStrahl().getByRole('link', { name: /Max Mustermann/ });

@@ -2,7 +2,8 @@ import { Befund } from '@/features/assessments/PatientBefundPage';
 import { DokuDateien } from '@/features/files/Aktendateien';
 import { Patientenfotos } from '@/features/files/FotosImVerlauf';
 import { usePatientRecord } from '@/features/patients/akte';
-import { PatientRecordDocumentation } from './PatientRecordDocumentation';
+import { useSearchParams } from 'react-router-dom';
+import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
 
 /**
  * Der Reiter „Doku" der Akte (AKTE-007): Behandlungsverlauf, Befund samt
@@ -22,8 +23,17 @@ import { PatientRecordDocumentation } from './PatientRecordDocumentation';
  */
 export function PatientDokuPage() {
   const { patient, user } = usePatientRecord();
+  // Von der Tageskarte mit dem Termin vorausgewählt (AKTE-008): oben sein
+  // Eintrag, darunter die übrigen, neueste zuerst.
+  const [suche] = useSearchParams();
+  const terminId = suche.get('termin');
   return (
     <>
+      {terminId ? (
+        <div className="mb-8">
+          <DieserTermin patient={patient} user={user} terminId={terminId} />
+        </div>
+      ) : null}
       <nav aria-label="Teile der Doku" className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-sm">
         <a href="#doku-befund" className="text-accent flex min-h-11 items-center underline">
           Zum Befund
@@ -35,7 +45,7 @@ export function PatientDokuPage() {
       {/* Je Person ein eigener Abschnitt: Ein ungespeichertes Foto oder eine
           offene Ansicht wandert beim Wechsel der Akte nicht mit. */}
       <Patientenfotos key={patient.id} patientId={patient.id} user={user} />
-      <PatientRecordDocumentation patient={patient} user={user} />
+      <PatientRecordDocumentation patient={patient} user={user} ohneTermin={terminId} />
       <div id="doku-befund" className="mt-10 scroll-mt-4">
         <Befund patient={patient} user={user} />
       </div>

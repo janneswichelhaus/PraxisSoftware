@@ -168,6 +168,23 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     },
   );
 
+  // AKTE-008: Der vorausgewählte Termin steht oben als „Dieser Termin"; die
+  // Liste darunter nennt ihn nicht ein zweites Mal.
+  it('laesst den oben gezeigten Termin in der Liste aus', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation
+        patient={patient}
+        user={testUser(['therapist'])}
+        ohneTermin="77777777-7777-4777-8777-000000000001"
+      />,
+    );
+    const abschnitt = await screen.findByRole('region', { name: 'Behandlungsdokumentation' });
+    const zeilen = await within(abschnitt).findAllByRole('listitem');
+    expect(zeilen).toHaveLength(1);
+    expect(zeilen[0]).toHaveTextContent('Abgesagt');
+    expect(abschnitt).not.toHaveTextContent(INHALT);
+  });
+
   it('nennt die finalisierende Person nur, wenn sie nicht die behandelnde ist (UX-005e)', async () => {
     fetchPatientTreatmentNotesPage.mockResolvedValue([
       akteTermin(1, [eintrag({ finalized_by_name: 'Tim Teamleitung' })]),
