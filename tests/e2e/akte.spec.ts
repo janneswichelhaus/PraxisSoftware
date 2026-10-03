@@ -71,18 +71,34 @@ for (const breite of [375, 1280]) {
   });
 }
 
-test('die Stammdaten bleiben einspaltig lesbar (PAT-B01)', async ({ page }) => {
-  await page.setViewportSize({ width: 1280, height: 900 });
-  await page.goto(`${PRUEFSEITE}?bereich=stammdaten`);
-  const person = (await page.getByRole('heading', { name: 'Person' }).boundingBox())!;
-  const kontakt = (await page.getByRole('heading', { name: 'Kontakt' }).boundingBox())!;
-  // Untereinander, nicht nebeneinander: Die Hauptspalte ist schmaler als 1024 px.
-  expect(kontakt.y).toBeGreaterThan(person.y);
-  expect(Math.abs(kontakt.x - person.x)).toBeLessThan(2);
-  // Die Anschrift steht in einer Zeile und nicht Silbe für Silbe.
-  const adresse = (await page.getByText('Beispielstrasse 12, 72070 Tuebingen').boundingBox())!;
-  expect(adresse.height).toBeLessThan(30);
-});
+// Akte entschlacken (2026-10-03, Entwurf 5i/5j): Karten ab 340 px
+// nebeneinander - lesbar bleiben sie dabei (PAT-B01).
+for (const [breite, nebeneinander] of [
+  [375, false],
+  [1280, true],
+] as const) {
+  test(`die Stammdaten stehen als Karten und bleiben lesbar (PAT-B01, ${breite} px)`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: breite, height: 900 });
+    await page.goto(`${PRUEFSEITE}?bereich=stammdaten`);
+    const person = (await page.getByRole('heading', { name: 'Person' }).boundingBox())!;
+    const kontakt = (await page.getByRole('heading', { name: 'Kontakt' }).boundingBox())!;
+    const hausbesuch = (await page.getByRole('heading', { name: 'Hausbesuch' }).boundingBox())!;
+    if (nebeneinander) {
+      // Kontakt und Hausbesuch in derselben Reihe, Kanten auf einer Höhe.
+      expect(Math.abs(kontakt.y - hausbesuch.y)).toBeLessThan(2);
+      expect(hausbesuch.x).toBeGreaterThan(kontakt.x + 300);
+    } else {
+      expect(kontakt.y).toBeGreaterThan(person.y);
+      expect(Math.abs(kontakt.x - person.x)).toBeLessThan(2);
+    }
+    // Die Anschrift steht nicht Silbe für Silbe.
+    const adresse = (await page.getByText('Beispielstrasse 12, 72070 Tuebingen').boundingBox())!;
+    expect(adresse.height).toBeLessThan(nebeneinander ? 30 : 50);
+    expect(await ueberlaeuft(page)).toBe(false);
+  });
+}
 
 test('ohne Hinweise, Grundlage und Kontakt gibt es weder Hinweise noch Spalte', async ({
   page,

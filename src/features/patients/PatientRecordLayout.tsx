@@ -13,8 +13,10 @@ import { Badge } from '@/components/ui/Badge';
 import { Disclosure } from '@/components/ui/Card';
 import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
 import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
-import { type TreatmentBasis } from '@/features/treatment-bases/api';
-import { useAktuelleGrundlage } from '@/features/treatment-bases/useAktuelleGrundlage';
+import {
+  useAktuelleGrundlage,
+  versicherungsart,
+} from '@/features/treatment-bases/useAktuelleGrundlage';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -237,19 +239,6 @@ function KopfHinweise({ patient, user }: { patient: Patient; user: CurrentUser }
       <HinweiseImKopf patient={patient} />
     </div>
   );
-}
-
-/**
- * Wie die Person abgerechnet wird, als Abzeichen im Kopf (AKTE-007).
- *
- * An der Person gibt es kein Feld für Kostenträger oder Abrechnungsart; die
- * Praxis rechnet privat ab (ADR-009). Was sich unterscheidet, ist die Bauart
- * der Grundlage (ADR-020): Verordnung oder Selbstzahler. Das Abzeichen folgt
- * deshalb der jüngsten Grundlage, über denselben organisatorischen Lesepfad
- * wie der Reiter Behandlungsgrundlagen (ANN-011). Ohne Grundlage kein Abzeichen.
- */
-function versicherungsart(kind: TreatmentBasis['treatment_basis_kind']): string {
-  return kind === 'self_pay' ? 'Selbstzahler' : 'Privat · mit Verordnung';
 }
 
 /**

@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Badge } from '@/components/ui/Badge';
 import { HausbesucheMitAlterAdresse } from '@/features/appointments/HausbesucheMitAlterAdresse';
 import { useLocation } from 'react-router-dom';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -17,13 +18,22 @@ import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnit
 import {
   canChangePatientStatus,
   canConcludePatientCare,
+  canManageInvoicing,
   canReadPatientDirectory,
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
-import { Anmeldebogen, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
-import { SonstigeDateien } from '@/features/files/Aktendateien';
+import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
+import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
+import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
+import { zugangMitStockwerk } from '@/features/today/stockwerk';
+import {
+  useAktuelleGrundlage,
+  versicherungsart,
+} from '@/features/treatment-bases/useAktuelleGrundlage';
+import { BEGRIFFE } from '@/lib/begriffe';
+import { AnmeldebogenDateien, SonstigeDateien } from '@/features/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
 import { Mitnehmen } from './Mitnehmen';
@@ -209,6 +219,149 @@ function VersorgungAbschliessen({
   );
 }
 
+/**
+ * Eine Karte der Stammdaten (Akte entschlacken, 2026-10-03): Label in
+ * Versalien, rechts ein leises „Bearbeiten" mit 44 px Tippziel ins Formular.
+ */
+function Karte({
+  titel,
+  bearbeiten,
+  children,
+}: {
+  titel: string;
+  /** Ziel von „Bearbeiten"; ohne steht kein Knopf. */
+  bearbeiten?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Section
+      titel={titel}
+      rahmen
+      aktion={
+        bearbeiten ? (
+          <ButtonLink
+            to={bearbeiten}
+            variant="quiet"
+            groesse="kompakt"
+            aria-label={`${titel} bearbeiten`}
+          >
+            Bearbeiten
+          </ButtonLink>
+        ) : null
+      }
+    >
+      {children}
+    </Section>
+  );
+}
+
+/**
+ * Der Anmeldebogen als Karte (ANN-226): fehlt er, steht die Karte auf der
+ * Warnfläche mit dem Knopf zum Foto; liegt er vor, nennt sie das und zeigt
+ * die Blätter aufklappbar. Der Zustand ist derselbe Punkt der Erstaufnahme
+ * wie im Kopf der Akte (`app.intake_checklist`, gleicher Abfrageschlüssel).
+ */
+function AnmeldebogenKarte({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  const punkte = useQuery({
+    queryKey: ['open-points', 'intake', patient.id],
+    queryFn: () => fetchIntakeChecklist(patient.id),
+    retry: false,
+  });
+  const stand = punkte.data?.find((p) => p.item === 'registration_form')?.state;
+  const fehlt = stand === 'open';
+
+  return (
+    <section aria-labelledby="anmeldebogen-karte">
+      <div className="flex min-h-8 flex-wrap items-center justify-between gap-3">
+        <h2
+          id="anmeldebogen-karte"
+          className="text-ink-muted tracking-label text-xs font-semibold uppercase"
+        >
+          {BEGRIFFE.anmeldebogen}
+        </h2>
+        {stand === 'open' ? <Badge ton="warnung">Fehlt</Badge> : null}
+        {stand === 'done' ? <Badge ton="positiv">Liegt vor</Badge> : null}
+      </div>
+      <div
+        className={`rounded-card mt-3 border px-4 py-3 sm:px-5 ${
+          fehlt ? 'bg-warnung-soft border-transparent' : 'bg-surface border-line'
+        }`}
+      >
+        <p className="text-ink text-sm">Enthält die Datenschutzerklärung.</p>
+        <div className="mt-3">
+          <AnmeldebogenFoto patientId={patient.id} />
+        </div>
+        {/* Die Trennlinie zieht der Aufklapper selbst. */}
+        <div className="mt-3 empty:hidden">
+          <AnmeldebogenDateien patientId={patient.id} user={user} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/**
+ * Abrechnung (Akte entschlacken, 2026-10-03). An der Person gibt es kein Feld
+ * für die Versicherung; sie folgt der jüngsten Grundlage wie das Abzeichen im
+ * Kopf. „Rechnung an" ist die Standard-Empfänger:in aus den Rechnungsempfängern
+ * (ABR-003a), sonst die Person selbst - und steht nur für die Rollen, die
+ * Empfänger lesen dürfen (`app.can_read_invoicing`, owner und office).
+ * Gepflegt werden Empfänger am Rechnungsentwurf; deshalb kein „Bearbeiten".
+ */
+function AbrechnungKarte({
+  patient,
+  user,
+  address,
+}: {
+  patient: Patient;
+  user: CurrentUser;
+  address: string;
+}) {
+  const aktuell = useAktuelleGrundlage(patient.id, user);
+  const darfEmpfaenger = canManageInvoicing(user.roles);
+  const empfaenger = useQuery({
+    queryKey: ['rechnungsempfaenger', patient.id],
+    queryFn: () => fetchEmpfaenger(patient.id),
+    enabled: darfEmpfaenger,
+    retry: false,
+  });
+  const standard = empfaenger.data?.find((e) => e.is_default) ?? null;
+  const anschrift = standard
+    ? [
+        [standard.street, standard.house_number].filter(Boolean).join(' '),
+        [standard.postal_code, standard.city].filter(Boolean).join(' '),
+      ]
+        .filter(Boolean)
+        .join(', ')
+    : null;
+
+  if (!aktuell && !darfEmpfaenger) return null;
+
+  return (
+    <Karte titel="Abrechnung">
+      <DetailList schmal>
+        {aktuell ? (
+          <DetailRow label="Versicherung">
+            {versicherungsart(aktuell.grundlage.treatment_basis_kind)}
+          </DetailRow>
+        ) : null}
+        {darfEmpfaenger && empfaenger.isSuccess ? (
+          <>
+            <DetailRow label="Rechnung an">
+              {standard
+                ? `${standard.name} (${empfaengerartLabels[standard.recipient_kind] ?? standard.recipient_kind})`
+                : `${patient.given_name} ${patient.family_name}`}
+            </DetailRow>
+            <DetailRow label="Anschrift">
+              {standard ? anschrift || '—' : address ? 'wie Hausbesuch' : '—'}
+            </DetailRow>
+          </>
+        ) : null}
+      </DetailList>
+    </Karte>
+  );
+}
+
 export function PatientMasterDataPage() {
   const { patient, user } = usePatientRecord();
   return <Stammdaten patient={patient} user={user} />;
@@ -234,13 +387,14 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // Zusammenführen ist ein Vorgang der Praxisleitung (PRX-018,
   // app.can_merge_patients).
   const darfZusammenfuehren = isOwner(user.roles);
-  // UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der Akte, sobald
-  // sie gesetzt sind - hier zählen nur die Angaben, die der Kopf nicht trägt.
   const hatVersorgungsangaben = Boolean(patient.remark || patient.primary_therapist_name);
   // UX-005e: Die Kartenposition ist eine Zeile, solange sie fehlt; verortet
   // steht sie nicht als Dauerzeile da (ANN-016).
   const kartenpositionOffen = darfVerorten && !patient.geocode_precision;
-  const hatPersonAngaben = Boolean(patient.institution || address) || kartenpositionOffen;
+  const zugang = zugangMitStockwerk(patient.home_visit_access_note);
+  const hatHausbesuchsangaben = Boolean(
+    address || kartenpositionOffen || zugang.stockwerk || zugang.rest || patient.special_note,
+  );
   const hatKontaktdaten = Boolean(
     patient.phone_mobile || patient.phone || patient.phone_work || patient.fax || patient.email,
   );
@@ -249,6 +403,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   // der in der Adresse mitreist (PAT-08). Sonst stand nach dem Speichern der
   // Stammdaten „Zurück zur Liste" da, auch wenn man aus dem Kalender kam.
   const hier = `${ort.pathname}${ort.search}`;
+  const bearbeiten = mitRueckweg(`/patienten/${patient.id}/bearbeiten`, hier);
 
   // Wer über „Erledigen" oder die alte Adresse `/datenschutz` kommt, landet
   // beim Anmeldebogen (AKTE-007). Der Router rollt nicht von selbst zum Anker.
@@ -261,185 +416,148 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
 
   return (
     <>
-      {/* Der Weg ins Formular steht über den Abschnitten und nicht im Kopf von
-          „Person": Er bearbeitet alle Abschnitte, und nebeneinander stehen die
-          Köpfe der beiden Spalten so auf derselben Höhe (PAT-B01). */}
-      {/* Rechts über den Abschnitten (Design-Handoff 2026-10-01, Abschnitt 7). */}
-      <div className="mb-6 flex justify-end">
-        <ButtonLink
-          to={mitRueckweg(`/patienten/${patient.id}/bearbeiten`, hier)}
-          variant="secondary"
-          groesse="kompakt"
-        >
-          Stammdaten bearbeiten
-        </ButtonLink>
-      </div>
-
       {/* ABN-004: Nach einer Adressaenderung stehen hier die kuenftigen
           Hausbesuche, die noch die alte Anschrift tragen (ANN-003 Fassung 2). */}
       <HausbesucheMitAlterAdresse patientId={patient.id} user={user} />
 
-      {/* Zwei Spalten erst ab 1280 px: Person und Kontakt sind kurze Listen und
-          stünden untereinander als zwei schmale Streifen in einer leeren
-          Fläche. Darunter blieben der Wertspalte neben der 176-px-Beschriftung
-          knapp 100 px - Adresse und Zugangshinweis standen zu ein, zwei Wörtern
-          je Zeile, und die Seite lief seitlich über (PAT-B01). Jeder Abschnitt
-          steht in einem eigenen Rasterfeld - damit greift `first:mt-0` in
-          jedem Feld und die Spalten beginnen auf derselben Höhe.
+      {/* Akte entschlacken (2026-10-03, Entwurf 5i/5j): Karten statt zweier
+          langer Spalten. Jede Karte steht für sich, ab 340 px nebeneinander;
+          ob eine zweite oder dritte Spalte passt, entscheidet die Breite des
+          Inhalts, nicht die des Fensters. Jede Karte führt ins Formular -
+          das Formular bearbeitet alle Angaben zugleich. */}
+      <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] items-start gap-4 [&>section]:mt-0">
+        {/* AKTE-007, ANN-226: der Anmeldebogen zuerst - solange er fehlt, ist
+            er die Aufgabe dieser Seite. */}
+        {darfVerorten ? (
+          <div id={ANMELDEBOGEN_ANKER} className="scroll-mt-4">
+            <AnmeldebogenKarte patient={patient} user={user} />
+          </div>
+        ) : null}
 
-          Seit dem Design-Handoff vom 2026-10-01 steht neben der Akte ab 900 px
-          eine Kontextspalte; ob zwei Spalten passen, entscheidet deshalb die
-          eigene Breite (1024 px, `@5xl`), nicht mehr die des Fensters. Bei
-          1280 px Fensterbreite liefen die Werte sonst wieder zu einzelnen
-          Silben zusammen. */}
-      <div className="@container">
-        <div className="grid gap-x-8 gap-y-8 @5xl:grid-cols-2">
-          {/* UX-005e: Das Geburtsdatum steht im Kopf über jedem Bereich und
-            wird hier nicht wiederholt; ein Abschnitt ohne Zeile entfällt. */}
-          {hatPersonAngaben ? (
-            <div>
-              <Section titel="Person" rahmen>
-                <DetailList>
-                  {patient.institution ? (
-                    <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
-                  ) : null}
-                  {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
-                  {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
+        <Karte titel="Person" bearbeiten={bearbeiten}>
+          <DetailList schmal>
+            <DetailRow label="Name">
+              {patient.given_name} {patient.family_name}
+            </DetailRow>
+            <DetailRow label="Geboren">{formatDate(patient.date_of_birth)}</DetailRow>
+            {patient.institution ? (
+              <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
+            ) : null}
+          </DetailList>
+        </Karte>
+
+        <Karte titel="Kontakt" bearbeiten={bearbeiten}>
+          {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
+              sagt das ein Satz statt vier Gedankenstriche. */}
+          {hatKontaktdaten ? (
+            <DetailList schmal>
+              <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+              <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
+              <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
+              {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
+              {patient.email ? (
+                <DetailRow label="E-Mail">
+                  <Textlink
+                    href={`mailto:${patient.email}`}
+                    alleinstehend
+                    className={KONTAKT_IN_DER_ZEILE}
+                  >
+                    {patient.email}
+                  </Textlink>
+                </DetailRow>
+              ) : null}
+            </DetailList>
+          ) : (
+            <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
+          )}
+        </Karte>
+
+        {/* UX-005e: ohne Zeile keine Karte. */}
+        {hatHausbesuchsangaben ? (
+          <Karte titel="Hausbesuch" bearbeiten={bearbeiten}>
+            <DetailList schmal>
+              {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
+              {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
                   Verorten darf, wer die Stammdaten ändern darf; verbindlich
                   prüft set_patient_address_coordinate (ADR-004). */}
-                  {kartenpositionOffen ? (
-                    <DetailRow label="Kartenposition">
-                      <AdresseVerorten patient={patient} />
-                    </DetailRow>
-                  ) : null}
-                </DetailList>
-              </Section>
-            </div>
-          ) : null}
-
-          <div>
-            <Section titel="Kontakt" rahmen>
-              {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
-                sagt das ein Satz statt vier Gedankenstriche. */}
-              {hatKontaktdaten ? (
-                <DetailList>
-                  <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
-                  <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
-                  <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
-                  {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
-                  {patient.email ? (
-                    <DetailRow label="E-Mail">
-                      <Textlink
-                        href={`mailto:${patient.email}`}
-                        alleinstehend
-                        className={KONTAKT_IN_DER_ZEILE}
-                      >
-                        {patient.email}
-                      </Textlink>
-                    </DetailRow>
-                  ) : null}
-                </DetailList>
-              ) : (
-                <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
-              )}
-            </Section>
-          </div>
-
-          {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert die
-            Sicht sie gar nicht erst; der Abschnitt bleibt dann leer und
-            verschwindet (ANN-010, ADR-004). Der Zugangshinweis steht zusätzlich
-            auf der Übersicht - vor einem Hausbesuch ist er die Angabe, die man
-            unterwegs sucht. Der Abschnitt heißt wie im Formular (PAT-07). */}
-          {/* UX-003a: Die Behandlungsliege steht hier für jede Praxisrolle, auch
-            wenn sonst nichts hinterlegt ist - sonst gäbe es keinen Ort, sie
-            zu setzen. Dieselbe Rollenmenge wie update_patient; verbindlich
-            prüft set_treatment_table_required (ADR-004). */}
-          {hatVersorgungsangaben || darfLiegeSetzen ? (
-            <div>
-              <Section titel="Hausbesuch und Praxisangaben" rahmen>
-                <DetailList>
-                  {darfLiegeSetzen ? (
-                    <DetailRow label="Behandlungsliege">
-                      <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
-                    </DetailRow>
-                  ) : null}
-                  {/* PRX-007: Mitnehmen, von Hand gepflegt (ANN-138). Dieselbe
-                    Rollenmenge wie die Liege; verbindlich prüft
-                    set_take_along_items. */}
-                  {darfLiegeSetzen ? (
-                    <DetailRow label="Material">
-                      <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
-                    </DetailRow>
-                  ) : null}
-                  {/* UX-005e: Zugangshinweis und Besonderheit stehen im Kopf der
-                    Akte (HausbesuchHinweise) - bearbeitet werden sie weiter im
-                    Formular. */}
-                  {patient.primary_therapist_name ? (
-                    <DetailRow label="Feste Therapeut:in">
-                      {patient.primary_therapist_name}
-                    </DetailRow>
-                  ) : null}
-                  {patient.remark ? (
-                    <DetailRow label="Bemerkung">{patient.remark}</DetailRow>
-                  ) : null}
-                </DetailList>
-              </Section>
-            </div>
-          ) : null}
-
-          {/* Versorgung und ihre Vorgänge in einem Abschnitt „Verwaltung"
-            (Design-Handoff 2026-10-01, Abschnitt 7): Beginn und Abschluss
-            stehen neben „Als inaktiv markieren" und „Versorgung
-            abschließen", statt darunter in einem eigenen Block.
-            UX-005e: Ohne erklärende Sätze - was ein Vorgang tut, sagt seine
-            Rückfrage, bevor er ausgelöst wird. */}
-          <div>
-            <Section titel="Verwaltung" rahmen>
-              <DetailList>
-                <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
-                {/* UX-005e: Der Status steht als Ausnahme im Kopf der Akte, der
-                  Regelfall bekommt keine Zeile. Der Abschluss ist der Anker der
-                  zehnjaehrigen Aufbewahrung (ADR-008, LOE-001b) und steht nur,
-                  wenn er gesetzt ist - „Laufende Versorgung" war der Regelfall. */}
-                {patient.care_concluded_on ? (
-                  <DetailRow label="Abschluss">
-                    {`${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`}
-                  </DetailRow>
-                ) : null}
-              </DetailList>
-              {darfStatusWechseln || darfAbschliessen ? (
-                <div className="border-line mt-3 flex flex-wrap items-start gap-3 border-t pt-3">
-                  {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
-                  {darfAbschliessen ? (
-                    <VersorgungAbschliessen
-                      patient={patient}
-                      zeitzone={user.organizationTimeZone}
-                    />
-                  ) : null}
-                </div>
+              {kartenpositionOffen ? (
+                <DetailRow label="Kartenposition">
+                  <AdresseVerorten patient={patient} />
+                </DetailRow>
               ) : null}
-              <Zusammenfuehrungsvermerke
-                patientId={patient.id}
-                zeitzone={user.organizationTimeZone}
-              />
-            </Section>
-          </div>
-        </div>
+              {/* ANN-197: Die Etage ist der Anfang des Zugangshinweises, bis es
+                  ein eigenes Feld gibt - dieselbe Regel wie auf der Tageskarte. */}
+              {zugang.stockwerk ? <DetailRow label="Etage">{zugang.stockwerk}</DetailRow> : null}
+              {zugang.rest ? <DetailRow label="Zugang">{zugang.rest}</DetailRow> : null}
+              {patient.special_note ? (
+                <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
+              ) : null}
+            </DetailList>
+          </Karte>
+        ) : null}
+
+        <AbrechnungKarte patient={patient} user={user} address={address} />
+
+        {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert
+            die Sicht sie gar nicht erst (ANN-010, ADR-004). UX-003a: Die
+            Behandlungsliege steht hier für jede Praxisrolle - sonst gäbe es
+            keinen Ort, sie zu setzen; verbindlich prüft
+            set_treatment_table_required. */}
+        {hatVersorgungsangaben || darfLiegeSetzen ? (
+          <Karte titel="Praxis" bearbeiten={bearbeiten}>
+            <DetailList schmal>
+              {darfLiegeSetzen ? (
+                <DetailRow label="Behandlungsliege">
+                  <Behandlungsliege patient={patient} darfAendern={darfLiegeSetzen} />
+                </DetailRow>
+              ) : null}
+              {/* PRX-007: Mitnehmen, von Hand gepflegt (ANN-138). */}
+              {darfLiegeSetzen ? (
+                <DetailRow label="Material">
+                  <Mitnehmen patient={patient} darfAendern={darfLiegeSetzen} />
+                </DetailRow>
+              ) : null}
+              {patient.primary_therapist_name ? (
+                <DetailRow label="Feste Therapeut:in">{patient.primary_therapist_name}</DetailRow>
+              ) : null}
+              {patient.remark ? <DetailRow label="Bemerkung">{patient.remark}</DetailRow> : null}
+            </DetailList>
+          </Karte>
+        ) : null}
+
+        {/* Versorgung und ihre Vorgänge (Design-Handoff 2026-10-01,
+            Abschnitt 7). UX-005e: Ohne erklärende Sätze - was ein Vorgang
+            tut, sagt seine Rückfrage, bevor er ausgelöst wird. */}
+        <Karte titel="Verwaltung">
+          <DetailList schmal>
+            <DetailRow label="Beginn">{formatDate(patient.care_started_on)}</DetailRow>
+            {/* Der Abschluss ist der Anker der zehnjaehrigen Aufbewahrung
+                (ADR-008, LOE-001b) und steht nur, wenn er gesetzt ist. */}
+            {patient.care_concluded_on ? (
+              <DetailRow label="Abschluss">
+                {`${formatDate(patient.care_concluded_on)} – Aufbewahrung bis ${jahrPlus(patient.care_concluded_on, 10)}`}
+              </DetailRow>
+            ) : null}
+          </DetailList>
+          {darfStatusWechseln || darfAbschliessen ? (
+            <div className="border-line mt-3 flex flex-wrap items-start gap-3 border-t pt-3">
+              {darfStatusWechseln ? <StatusAktion patient={patient} /> : null}
+              {darfAbschliessen ? (
+                <VersorgungAbschliessen patient={patient} zeitzone={user.organizationTimeZone} />
+              ) : null}
+            </div>
+          ) : null}
+          <Zusammenfuehrungsvermerke patientId={patient.id} zeitzone={user.organizationTimeZone} />
+        </Karte>
       </div>
 
-      {/* AKTE-007, ANN-226: Der Anmeldebogen - das Foto des unterschriebenen
-          Blatts - steht bei den Kontaktdaten, die auf demselben Blatt stehen;
-          darunter die Einwilligungen. Dieselben vier Praxisrollen wie
-          bisher der Bereich „Datenschutz"; verbindlich ist die RLS. */}
+      {/* Die Einwilligungen (Mail, Bericht, Fotos) bleiben ein eigener
+          Abschnitt: Die Fotoeinwilligung schaltet serverseitig die
+          Foto-Arbeitshilfe frei (ADR-017 Punkt 35). */}
       {darfVerorten ? (
-        <>
-          <div id={ANMELDEBOGEN_ANKER} className="mt-10 scroll-mt-4">
-            <Anmeldebogen patient={patient} user={user} />
-          </div>
-          <div id={EINWILLIGUNGEN_ANKER} className="scroll-mt-4">
-            <Datenschutz patient={patient} user={user} />
-          </div>
-        </>
+        <div id={EINWILLIGUNGEN_ANKER} className="mt-10 scroll-mt-4">
+          <Datenschutz patient={patient} user={user} />
+        </div>
       ) : null}
 
       <SonstigeDateien patientId={patient.id} user={user} />

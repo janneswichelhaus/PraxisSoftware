@@ -236,6 +236,7 @@ client.setQueryData(
       ],
 );
 client.setQueryData(['therapieberichte', PATIENT], []);
+client.setQueryData(['rechnungsempfaenger', PATIENT], []);
 for (const id of [GRUNDLAGE, ALT]) client.setQueryData(['patient-files', PATIENT, id], []);
 client.setQueryData(
   ['open-points', 'intake', PATIENT],

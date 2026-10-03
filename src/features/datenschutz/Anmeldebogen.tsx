@@ -10,7 +10,6 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { todayInTimeZone } from '@/features/appointments/api';
-import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
 import { DokumentFoto } from '@/features/files/DokumentFoto';
 import { BEGRIFFE } from '@/lib/begriffe';
 import type { Patient } from '@/features/patients/api';
@@ -68,23 +67,6 @@ export function AnmeldebogenFoto({
       sofort
       ausloeser={ausloeser}
     />
-  );
-}
-
-/** Der Abschnitt in den Stammdaten: das Foto und die Liste der Blätter. */
-export function Anmeldebogen({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  return (
-    <Section
-      titel={BEGRIFFE.anmeldebogen}
-      hinweis="Das unterschriebene Blatt mit Kontaktdaten, Datenschutzinformation und Behandlungsvertrag. Ein Foto genügt."
-      rahmen
-    >
-      <AnmeldebogenFoto patientId={patient.id} />
-      {/* Die Trennlinie zieht der Aufklapper selbst. */}
-      <div className="mt-3 empty:hidden">
-        <AnmeldebogenDateien patientId={patient.id} user={user} />
-      </div>
-    </Section>
   );
 }
 

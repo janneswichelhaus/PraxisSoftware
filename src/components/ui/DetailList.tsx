@@ -15,14 +15,33 @@ import type { ReactNode } from 'react';
  * rechtsbündige Zeile **innerhalb einer Karte**. Diese hier hat eine
  * Beschriftungsspalte und bricht auf schmalen Displays um.
  */
-export function DetailList({ children }: { children: ReactNode }) {
-  return <dl className="divide-line border-line mt-2 divide-y border-t">{children}</dl>;
+export function DetailList({
+  children,
+  schmal = false,
+}: {
+  children: ReactNode;
+  /**
+   * Beschriftung 112 statt 176 px breit - in den Karten der Stammdaten, die
+   * ab 340 px nebeneinander stehen (Akte entschlacken, 2026-10-03).
+   */
+  schmal?: boolean;
+}) {
+  return (
+    <dl
+      data-schmal={schmal ? '' : undefined}
+      className="divide-line border-line group/detail mt-2 divide-y border-t"
+    >
+      {children}
+    </dl>
+  );
 }
 
 export function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-0.5 py-3 sm:flex-row sm:gap-6 sm:py-2.5">
-      <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0">{label}</dt>
+      <dt className="text-ink-muted text-sm sm:w-44 sm:shrink-0 sm:group-data-schmal/detail:w-28">
+        {label}
+      </dt>
       {/* whitespace-pre-line: mehrzeilige Freitexte wie der Zugangshinweis
           behalten ihre Absaetze (PAT-005).
 
