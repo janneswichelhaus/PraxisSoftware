@@ -283,6 +283,9 @@ const treatmentBasisSchema = z.object({
  */
 const clinicalTreatmentBasisSchema = treatmentBasisSchema.extend({
   diagnosis: z.string().nullable(),
+  // Seit 2026-10-03 (Akte entschlacken). Optional, damit ein Stand ohne die
+  // Spalte - etwa ein älterer Test-Doppelgänger - nicht am Schema scheitert.
+  diagnosis_icd10: z.string().nullable().optional(),
   therapy_goal: z.string().nullable(),
   prescriber_note: z.string().nullable(),
   follow_up_recommendation: z.string().nullable(),
@@ -492,6 +495,12 @@ export interface Heilmittelposition {
   remedy: string;
   /** Mengen einer vorhandenen Position — nur Anzeige. */
   bestand: { verordnet: number; genutzt: number } | null;
+  /**
+   * Die verordnete Menge, wenn sie ausdrücklich erfasst wird - im Fenster
+   * „Daten übertragen" (Akte entschlacken, 2026-10-03). Ohne Angabe vergibt der
+   * Server wie bisher die Terminzahl (ANN-064).
+   */
+  menge?: number;
 }
 
 const ganzeZahl = z
@@ -714,9 +723,11 @@ export function entwurfVerordnerNachtragen(
  * verloren gehen noch stillschweigend umgedeutet werden.
  */
 function rpcPositionen(positionen: readonly Heilmittelposition[]) {
-  return positionen.map((position) =>
-    position.id ? { id: position.id, remedy: position.remedy } : { remedy: position.remedy },
-  );
+  return positionen.map((position) => ({
+    ...(position.id ? { id: position.id } : {}),
+    remedy: position.remedy,
+    ...(position.menge === undefined ? {} : { prescribed_quantity: position.menge }),
+  }));
 }
 
 /**
@@ -773,6 +784,33 @@ export async function updateTreatmentBasis(
   // Keine Details aus der Datenbank nach außen: eine fremde und eine
   // unbekannte ID sollen auch in der Oberfläche gleich aussehen.
   if (error) throw new Error('Die Behandlungsgrundlage konnte nicht gespeichert werden.');
+}
+
+/**
+ * Das Muster eines ICD-10-GM-Codes, etwa `G20.00`, `M54.5` oder `G20.00G` -
+ * dasselbe wie die Prüfung in der Datenbank (`set_treatment_basis_icd10`).
+ */
+// Verankert, jede optionale Gruppe beginnt mit eigenem Zeichen - das Muster
+// laeuft linear.
+// eslint-disable-next-line security/detect-unsafe-regex
+export const ICD10_MUSTER = /^[A-Z][0-9]{2}(\.[0-9A-Z!*+-]{1,5})?[GVZALR]?$/;
+
+/** Großschreibung und ohne Leerzeichen, wie der Server ihn speichert. */
+export function icd10Normalisiert(code: string): string {
+  return code.trim().toUpperCase();
+}
+
+/**
+ * Setzt den ICD-10-Code einer Verordnung (Akte entschlacken, 2026-10-03).
+ * Ein leerer Code leert ihn. Klinisch wie die Diagnose; verbindlich prüft der
+ * Server Rolle, Mandant, Format und Bauart.
+ */
+export async function setTreatmentBasisIcd10(grundlageId: string, code: string): Promise<void> {
+  const { error } = await getSupabase().rpc('set_treatment_basis_icd10', {
+    p_treatment_basis_id: grundlageId,
+    p_code: code,
+  });
+  if (error) throw new Error('Der ICD-10-Code konnte nicht gespeichert werden.');
 }
 
 export async function deleteTreatmentBasis(grundlageId: string): Promise<void> {

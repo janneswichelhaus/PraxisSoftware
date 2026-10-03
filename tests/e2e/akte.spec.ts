@@ -14,7 +14,14 @@ async function ueberlaeuft(page: Page): Promise<boolean> {
   );
 }
 
-for (const abfrage of ['', '?bereich=stammdaten', '?bereich=doku', '?rolle=office', '?leer=1']) {
+for (const abfrage of [
+  '',
+  '?bereich=stammdaten',
+  '?bereich=doku',
+  '?bereich=verordnungen',
+  '?rolle=office',
+  '?leer=1',
+]) {
   test(`läuft bei 375 px nicht waagerecht über (${abfrage || 'Termine'})`, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(PRUEFSEITE + abfrage);
@@ -112,6 +119,34 @@ test.describe('Akte: Behandlungsverlauf nach Monat', () => {
           () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
         ),
       ).toBe(false);
+    });
+  }
+});
+
+// Akte entschlacken (2026-10-03): die Behandlungsgrundlagen als Kachelleiste.
+test.describe('Akte: Behandlungsgrundlagen als Kacheln', () => {
+  for (const [breite, kachel] of [
+    [375, 156],
+    [1280, 188],
+  ] as const) {
+    test(`Foto zuerst, abgeschlossen zuletzt, ${kachel} × 216 px (${breite} px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?bereich=verordnungen`);
+      const leiste = page.getByRole('region', { name: /Behandlungsgrundlagen/ }).getByRole('list');
+      const kacheln = leiste.getByRole('button');
+      await expect(kacheln).toHaveCount(4);
+      await expect(kacheln.first()).toContainText('Daten fehlen');
+      await expect(kacheln.last()).toContainText('Abgeschlossen');
+      const box = (await kacheln.nth(1).boundingBox())!;
+      expect(Math.round(box.width)).toBe(kachel);
+      expect(Math.round(box.height)).toBe(216);
+      expect(await ueberlaeuft(page)).toBe(false);
+
+      await kacheln.first().click();
+      await expect(page.getByRole('dialog', { name: 'Daten übertragen' })).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
     });
   }
 });

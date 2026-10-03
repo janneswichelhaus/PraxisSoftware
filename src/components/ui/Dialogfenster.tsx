@@ -42,12 +42,15 @@ import { Button } from './Button';
 export function Dialogfenster({
   titel,
   onSchliessen,
+  breit = false,
   children,
 }: {
   /** Überschrift und zugängliche Bezeichnung des Fensters. */
   titel: string;
   /** Escape, Klick daneben: das Abbrechen. */
   onSchliessen: () => void;
+  /** Ein Arbeitsfenster mit zwei Spalten am Rechner, etwa „Daten übertragen". */
+  breit?: boolean;
   children: ReactNode;
 }) {
   const titelId = useId();
@@ -173,7 +176,7 @@ export function Dialogfenster({
         onKeyDown={tastatur}
         // Radius 14, 24 innen wie die Rueckfrage-Karte (DS-001); unten auf dem
         // Telefon, mittig auf dem Bildschirm - mit dem Daumen erreichbar.
-        className="bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full max-w-lg overflow-y-auto border-2 p-6"
+        className={`bg-surface border-line-strong rounded-card max-h-[calc(100dvh-2rem)] w-full ${breit ? 'max-w-4xl' : 'max-w-lg'} overflow-y-auto border-2 p-6`}
       >
         {/* Titel nach Handoff c_Dialog als H3 (24/700), am Telefon als H4
             (20/700, UIK-22): Bei 390 px brachen dort vier der sechs Titel

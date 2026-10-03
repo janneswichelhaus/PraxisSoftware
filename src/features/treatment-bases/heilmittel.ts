@@ -32,15 +32,33 @@ export interface Heilmittel {
   remedy: string;
   /** Was am Kästchen steht. */
   beschriftung: string;
+  /** Kurzname auf der Kachel der Grundlage (Akte entschlacken, 2026-10-03). */
+  kurz: string;
 }
 
 export const HEILMITTEL: readonly Heilmittel[] = [
-  { remedy: 'Krankengymnastik', beschriftung: 'Krankengymnastik (KG)' },
-  { remedy: 'Krankengymnastik als Doppelbehandlung', beschriftung: 'KG als Doppelbehandlung' },
-  { remedy: 'Manuelle Therapie', beschriftung: 'Manuelle Therapie (MT)' },
-  { remedy: 'Manuelle Therapie als Doppelbehandlung', beschriftung: 'MT als Doppelbehandlung' },
-  { remedy: 'Hausbesuch', beschriftung: 'Hausbesuch' },
+  { remedy: 'Krankengymnastik', beschriftung: 'Krankengymnastik (KG)', kurz: 'KG' },
+  {
+    remedy: 'Krankengymnastik als Doppelbehandlung',
+    beschriftung: 'KG als Doppelbehandlung',
+    kurz: 'KG Doppelbeh.',
+  },
+  { remedy: 'Manuelle Therapie', beschriftung: 'Manuelle Therapie (MT)', kurz: 'MT' },
+  {
+    remedy: 'Manuelle Therapie als Doppelbehandlung',
+    beschriftung: 'MT als Doppelbehandlung',
+    kurz: 'MT Doppelbeh.',
+  },
+  { remedy: 'Hausbesuch', beschriftung: 'Hausbesuch', kurz: 'Hausbesuch' },
 ];
+
+/** Der Kurzname eines Heilmittels; ein Bestandswert steht, wie er ist. */
+export function heilmittelKurz(remedy: string): string {
+  return HEILMITTEL.find((eintrag) => eintrag.remedy === remedy)?.kurz ?? remedy;
+}
+
+/** Das Heilmittel „Hausbesuch" - die Checkbox „Hausbesuch je Termin" legt es an. */
+export const HAUSBESUCH = 'Hausbesuch';
 
 /** `true`, wenn dieses Heilmittel nicht (mehr) im Katalog steht. */
 export function istBestand(remedy: string): boolean {
