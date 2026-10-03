@@ -81,16 +81,12 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Kommende Termine' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Vergangene Termine' })).toBeInTheDocument();
-    // Der Rueckweg fuehrt in den Terminbereich der Akte zurueck (UX-012).
-    const zurueck = encodeURIComponent(`/patienten/${PATIENT_ID}/termine`);
-    expect(await screen.findByRole('link', { name: /19\. Mai 2027/ })).toHaveAttribute(
-      'href',
-      `/termine/kuenftig?zurueck=${zurueck}`,
-    );
-    expect(screen.getByRole('link', { name: /8\. September 2026/ })).toHaveAttribute(
-      'href',
-      `/termine/vergangen?zurueck=${zurueck}`,
-    );
+    // Ein Termin hat keine eigene Seite mehr; die Zeile ist kein Link
+    // (Akte entschlacken, 2026-10-03).
+    expect(await screen.findByText(/19\. Mai 2027/, { selector: 'li span' })).toBeInTheDocument();
+    expect(screen.getByText(/8\. September 2026/, { selector: 'li span' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /19\. Mai 2027/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /8\. September 2026/ })).toBeNull();
   });
 
   it('zeigt abgesagte Termine mit ihrem Zustand', async () => {
@@ -114,7 +110,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
     antwortet([termin({ id: 'gedeckt', treatment_basis_covered: true })], []);
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
-    await screen.findByRole('link', { name: /Mai 2027/ });
+    await screen.findByText(/Mai 2027/, { selector: 'li span' });
     expect(screen.queryByText('Ohne Deckung')).not.toBeInTheDocument();
   });
 
@@ -128,18 +124,18 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
   });
 
   // Der Mitteilungsvermerk (CAL-012) wird hinter der Anmeldung geprueft, und
-  // die dortige Zusicherung greift die Zeile ueber den Link des Termins. Bis
+  // die dortige Zusicherung greift die Zeile ueber das Datum des Termins. Bis
   // UI-002a war die ganze Zeile der Link (Uebersicht der Akte); hier steht das
   // Zeichen NEBEN ihm. Genau daran ist die Spezifikation gescheitert - dieser
   // Test haelt die Struktur fest, damit das nicht erst in CI auffaellt.
-  it('stellt das Mitteilungszeichen neben den Link, in dieselbe Zeile', async () => {
+  it('stellt das Mitteilungszeichen neben das Datum, in dieselbe Zeile', async () => {
     antwortet([termin({ id: 'kuenftig', notification_channels: ['phone'] })], []);
     renderWithProviders(<Terminbereich patient={patient} user={testUser(['office'])} />);
 
-    const link = await screen.findByRole('link', { name: /Mai 2027/ });
-    expect(link).not.toHaveTextContent('Telefon');
+    const datum = (await screen.findByText(/Mai 2027/, { selector: 'li span' })).parentElement!;
+    expect(datum).not.toHaveTextContent('Telefon');
 
-    const zeile = link.closest('li');
+    const zeile = datum.closest('li');
     expect(zeile).not.toBeNull();
     expect(zeile).toHaveTextContent('Telefon');
   });
@@ -398,7 +394,7 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
 
     antwortet([termin({ id: 'wieder' })], []);
     await user.click(knoepfe[0]!);
-    expect(await screen.findByRole('link', { name: /Mai 2027/ })).toBeInTheDocument();
+    expect(await screen.findByText(/Mai 2027/, { selector: 'li span' })).toBeInTheDocument();
   });
 
   describe('TER-04: nach dem Anlegen', () => {
@@ -450,7 +446,9 @@ describe('Terminbereich der Akte (AKTE-003)', () => {
       );
 
       expect(await screen.findByText('Termin angelegt.')).toBeInTheDocument();
-      const [neu, anderer] = await screen.findAllByRole('link', { name: /Mai 2027/ });
+      const [neu, anderer] = (await screen.findAllByText(/Mai 2027/, { selector: 'li span' })).map(
+        (datum) => datum.parentElement,
+      );
       expect(neu).toHaveClass('bg-accent-soft');
       expect(anderer).not.toHaveClass('bg-accent-soft');
     });

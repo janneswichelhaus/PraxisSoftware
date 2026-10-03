@@ -138,7 +138,7 @@ describe('TreatmentNotePage', () => {
     expect(updateTreatmentNote).not.toHaveBeenCalled();
     // Der Termin erfährt, was geschehen ist (DOK-15).
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
         state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
       }),
     );
@@ -156,15 +156,12 @@ describe('TreatmentNotePage', () => {
         '/',
       );
       // „Abbrechen“ und nach dem Speichern: zum Termin, der den Rückweg behält.
-      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
-        'href',
-        `/termine/${TERMIN_ID}?zurueck=%2F`,
-      );
+      expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
 
       await user.type(feld(), 'Neuer synthetischer Eintrag.');
       await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+        expect(navigate).toHaveBeenCalledWith('/', {
           state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
         }),
       );
@@ -174,9 +171,9 @@ describe('TreatmentNotePage', () => {
       rendern();
 
       await waitFor(() => expect(feld()).toHaveValue(''));
-      expect(screen.getByRole('link', { name: /Zurück zum Termin/ })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: /Zurück zum Kalender/ })).toHaveAttribute(
         'href',
-        `/termine/${TERMIN_ID}`,
+        `/kalender?termin=${TERMIN_ID}`,
       );
     });
   });
@@ -350,7 +347,7 @@ describe('TreatmentNotePage', () => {
       // Der Text bleibt unberührt: Der Vorschlag geht nie still in den Entwurf.
       expect(updateTreatmentNote).not.toHaveBeenCalled();
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
           state: { meldung: 'Befundangaben gesichert – noch nicht im Eintrag.' },
         }),
       );

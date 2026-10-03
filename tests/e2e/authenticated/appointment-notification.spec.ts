@@ -5,9 +5,11 @@ import {
   anmelden,
   arbeitszeitBestaetigen,
   nahtag,
-  terminLinkWahl,
   terminUeberOberflaeche,
   zeitImLauf,
+  terminOeffnen,
+  TERMIN_IM_KALENDER,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -45,18 +47,13 @@ const terminAnlegen = (page: Page, tag: string, von: string) =>
 /**
  * Der Eintrag dieses Termins in der Terminliste der Akte.
  *
- * Bewusst die ganze **Zeile** und nicht nur ihr Link: Seit UI-002a fuehrt
- * `/patienten/:id` in den Terminbereich statt auf die entfallene Uebersicht,
- * und dort steht das Mitteilungszeichen NEBEN dem Link in derselben Zeile
- * (`Terminzeile`), waehrend auf der Uebersicht die ganze Zeile der Link war.
- * Die Zusicherung bleibt dieselbe - das Zeichen muss an genau diesem Termin
- * stehen -, nur der Ausschnitt stimmt wieder mit der Oberflaeche ueberein.
+ * Die ganze **Zeile**, adressiert ueber ihre Kennung (`data-termin`): Seit
+ * 2026-10-03 ist sie kein Link mehr. Das Mitteilungszeichen steht neben dem
+ * Datum in derselben Zeile (`Terminzeile`) - die Zusicherung bleibt, dass es
+ * an genau diesem Termin steht.
  */
 function akteneintrag(page: Page, terminId: string) {
-  return page
-    .locator('li')
-    .filter({ has: page.locator(terminLinkWahl(terminId)) })
-    .first();
+  return page.locator(`li[data-termin="${terminId}"]`).first();
 }
 
 /**
@@ -77,14 +74,14 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await page.goto(`/patienten/${PATIENTEN.max}`);
     await expect(akteneintrag(page, terminId)).not.toContainText('Telefon');
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await mitteilungOeffnen(page);
     await page.getByLabel('Telefonisch mitgeteilt').check();
     await page.getByRole('button', { name: 'Vermerk speichern' }).click();
     await expect(page.getByText('Vermerk gespeichert.')).toBeVisible();
 
     // Der Vermerk überlebt das Neuladen - er kommt aus der Datenbank.
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(page.getByLabel('Telefonisch mitgeteilt')).toBeChecked();
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
@@ -109,12 +106,12 @@ test.describe('CAL-012: Mitteilungsvermerk', () => {
     await page.goto(`/termine/${terminId}/bearbeiten`);
     await page.getByLabel('Beginn *').fill(zeit(120));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
     await page.goto(`/patienten/${PATIENTEN.max}`);
     await expect(akteneintrag(page, terminId)).not.toContainText('Persönlich');
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(page.getByLabel('Persönlich gesagt')).not.toBeChecked();
   });
 

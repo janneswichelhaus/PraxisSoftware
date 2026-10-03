@@ -90,7 +90,7 @@ describe('Dieser Termin in der Doku (AKTE-008)', () => {
 
     expect(await screen.findByRole('heading', { name: 'Dieser Termin' })).toBeInTheDocument();
     expect(await screen.findByText(INHALT)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '12.05.2027' })).toBeInTheDocument();
+    expect(screen.getByText('12.05.2027')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Weiterschreiben' })).toHaveAttribute(
       'href',
       `/termine/${TERMIN_ID}/abschluss?zurueck=${encodeURIComponent(DOKU)}`,

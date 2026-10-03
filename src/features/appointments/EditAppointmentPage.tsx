@@ -47,6 +47,8 @@ import {
   type AppointmentFormValues,
   type AppointmentType,
   type AssignableTherapist,
+  kalenderZumTermin,
+  zurueckZumTermin,
 } from './api';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
 
@@ -221,7 +223,7 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
       await queryClient.invalidateQueries({ queryKey: ['appointments'] });
       // Gespeichert ist gespeichert: Der eigene Weg danach ist kein Verlust.
       freigeben();
-      void navigate(mitRueckweg(`/termine/${appointmentId}`, rueckweg), { replace: true });
+      void navigate(zurueckZumTermin(rueckweg, appointmentId!), { replace: true });
     },
   });
 
@@ -322,17 +324,12 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     });
   }
 
-  const zumTermin = mitRueckweg(`/termine/${appointmentId ?? ''}`, rueckweg);
+  const zumTermin = zurueckZumTermin(rueckweg, appointmentId ?? '');
 
   // Der Rückweg steht in jedem Zustand der Seite - beim Laden, im Fehlerfall
   // und am abgesagten Termin (TER-03, ZST-08). Er folgt dem mitgereisten Weg;
   // ohne ihn führt er zum Termin.
-  const kopf = (
-    <Rueckweg
-      standard={`/termine/${appointmentId ?? ''}`}
-      beschriftung={istEreignis ? 'Zurück zur Fehlzeit' : 'Zurück zum Termin'}
-    />
-  );
+  const kopf = <Rueckweg standard={kalenderZumTermin(appointmentId ?? '')} />;
 
   // Ersetzt wird das Formular nur, solange es keinen Termin gibt: Ein
   // gescheitertes Nachladen nimmt eine angefangene Änderung nicht mehr mit

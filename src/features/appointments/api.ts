@@ -3,6 +3,7 @@ import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
 import { formatDate } from '@/lib/datum';
+import { istInternerPfad } from '@/lib/rueckweg';
 import { SERIE_HOECHSTZAHL, type Serientermin } from './serie';
 
 /**
@@ -451,14 +452,42 @@ export function patientName(
  * Namen zurückhält —, steht ein Gedankenstrich da und keine leere Zeile
  * (PROJECT_PRINCIPLES.md §13).
  */
+/** Der Suchparameter, mit dem der Kalender einen Termin öffnet (Akte entschlacken, 2026-10-03). */
+export const TERMIN_PARAM = 'termin';
+
+/**
+ * Der Weg zu einem Termin, seit er keine eigene Seite mehr hat: der Kalender
+ * am Tag des Termins, der Termin im Panel gewählt (`?termin=`). Der Kalender
+ * liest den Tag selbst aus dem Termin - wer verlinkt, braucht nur die Kennung.
+ */
+export function kalenderZumTermin(id: string): string {
+  return `/kalender?${TERMIN_PARAM}=${encodeURIComponent(id)}`;
+}
+
+/**
+ * Zurück zu einem Termin nach einem Formular: in den Kalender, aus dem man
+ * kam, mit dem Termin gewählt - sonst dorthin, wo man herkam, und ohne
+ * Rückweg in den Kalender am Tag des Termins.
+ */
+export function zurueckZumTermin(rueckweg: string | null | undefined, id: string): string {
+  if (!istInternerPfad(rueckweg)) return kalenderZumTermin(id);
+  if (!rueckweg.startsWith('/kalender')) return rueckweg;
+  const [pfad, suche = ''] = rueckweg.split('?');
+  const parameter = new URLSearchParams(suche);
+  parameter.set(TERMIN_PARAM, id);
+  return `${pfad}?${parameter.toString()}`;
+}
+
 /**
  * Wo ein Termin geöffnet wird (TRN-004): Der Trainingstermin hat seine Seite
- * im Trainingsbereich, jeder andere die Terminseite der Praxis. Eine Stelle
- * für Kalender, Tagesplan und Tour, damit kein Trainingstermin auf der Seite
- * der Behandlung landet.
+ * im Trainingsbereich, jeder andere steht im Kalender (`kalenderZumTermin`).
+ * Eine Stelle für Tagesplan, Tour und Warteliste, damit kein Trainingstermin
+ * im Kalender der Behandlung gesucht wird.
  */
 export function terminPfad(termin: Pick<Appointment, 'id' | 'kind'>): string {
-  return termin.kind === 'training' ? `/training/termine/${termin.id}` : `/termine/${termin.id}`;
+  return termin.kind === 'training'
+    ? `/training/termine/${termin.id}`
+    : kalenderZumTermin(termin.id);
 }
 
 export function terminBezeichnung(

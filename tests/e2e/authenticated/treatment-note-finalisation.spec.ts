@@ -10,6 +10,9 @@ import {
   zeitImLauf,
   zugriffstoken,
   erwarteProtokollierteAbweisung,
+  aktionenOeffnen,
+  terminImKalender,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -50,7 +53,8 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
   await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
-  await expect(page).toHaveURL(`/termine/${terminId}`);
+  await expect(page).toHaveURL(terminImKalender(terminId));
+  await aktionenOeffnen(page);
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
@@ -73,7 +77,8 @@ test.describe('DOK-002: Finalisieren', () => {
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'Finalisieren' }).click();
@@ -89,7 +94,7 @@ test.describe('DOK-002: Finalisieren', () => {
     await expect(page.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Korrigieren' })).toBeVisible();
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
   });
 
@@ -126,7 +131,8 @@ test.describe('DOK-002: Korrigieren', () => {
     await page.getByLabel('Begründung der Korrektur').fill(BEGRUENDUNG);
     await page.getByRole('button', { name: 'Korrektur festschreiben' }).click();
 
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(KORRIGIERT)).toBeVisible();
     await expect(page.getByText(/2 Versionen/)).toBeVisible();
 
@@ -154,7 +160,8 @@ test.describe('DOK-002: Nachtragen', () => {
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
     await page.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }).click();
 
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(NACHTRAG)).toBeVisible();
     await expect(page.getByText('Nachtrag', { exact: true })).toBeVisible();
     // Der Ursprungseintrag bleibt unveraendert finalisiert.
@@ -162,7 +169,7 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText('✓Festgeschrieben · Version 1', { exact: true })).toBeVisible();
     await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(page.getByText(NACHTRAG)).toBeVisible();
   });
 
@@ -175,14 +182,16 @@ test.describe('DOK-002: Nachtragen', () => {
     await page.getByRole('link', { name: 'Nachtrag hinzufügen' }).click();
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
     await page.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
 
     await page.getByRole('link', { name: 'Nachtrag bearbeiten' }).click();
     await expect(page.getByLabel('Nachtrag')).toHaveValue(NACHTRAG);
     await page.getByLabel('Nachtrag').fill(`${NACHTRAG} Ergaenzt.`);
     await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
 
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(`${NACHTRAG} Ergaenzt.`)).toBeVisible();
 
     // Der Nachtrag wird gesondert finalisiert; der Ursprung bleibt unberuehrt.

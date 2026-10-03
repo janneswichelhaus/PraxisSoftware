@@ -10,6 +10,7 @@ import {
   supabaseKonfiguration,
   tagImFenster,
   zugriffstoken,
+  terminOeffnen,
 } from './helpers';
 
 /**
@@ -172,7 +173,7 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
     await page.getByRole('button', { name: 'Trotz offener Termine deaktivieren' }).click();
     await expect(inaktivHinweis(page)).toBeVisible();
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Status')).toHaveText('Bestätigt');
 
     await annaReaktivieren(request);

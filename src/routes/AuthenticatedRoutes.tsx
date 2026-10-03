@@ -45,7 +45,7 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { DauerterminStartPage } from '@/features/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
-import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
+import { kalenderZumTermin } from '@/features/appointments/api';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -323,10 +323,10 @@ export function AuthenticatedRoutes({
                     path="/patienten/:patientId/termine/neu"
                     element={<NewAppointmentPage user={user} />}
                   />
-                  <Route
-                    path="/termine/:appointmentId"
-                    element={<AppointmentDetailPage user={user} />}
-                  />
+                  {/* Der Termin hat keine eigene Seite mehr (Akte entschlacken,
+                    2026-10-03): Lesezeichen und alte Verweise führen in den
+                    Kalender, der den Termin wählt. */}
+                  <Route path="/termine/:appointmentId" element={<ZumKalender />} />
                   {/* Das ganze Ereignis - Bezeichnung, Zeit und Ort fuer alle
                     Beteiligten zugleich (CAL-017). Der Weg daneben aendert
                     eine einzelne Teilnahme. */}
@@ -560,4 +560,10 @@ function ZurSchreibseite() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const { search } = useLocation();
   return <Navigate replace to={`/termine/${appointmentId ?? ''}/abschluss${search}`} />;
+}
+
+/** `/termine/:id` führt in den Kalender, der Termin im Panel (`kalenderZumTermin`). */
+function ZumKalender() {
+  const { appointmentId } = useParams<{ appointmentId: string }>();
+  return <Navigate replace to={kalenderZumTermin(appointmentId ?? '')} />;
 }

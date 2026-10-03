@@ -7,6 +7,7 @@ import {
   laufTagImFenster,
   supabaseKonfiguration,
   zugriffstoken,
+  TERMIN_IM_KALENDER,
 } from './helpers';
 
 /**
@@ -174,7 +175,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await anmelden(page, KONTEN.office);
     await terminFormular(page, { tag, von, bis });
 
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
     await expect(page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' })).toHaveCount(0);
   });
 
@@ -199,7 +200,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await expect(page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' })).toBeVisible();
 
     await page.getByRole('button', { name: 'Termin trotzdem anlegen' }).click();
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
   });
 
   test('fragt an einem Tag ohne hinterlegte Arbeitszeit ebenfalls nach', async ({ page }) => {
@@ -218,7 +219,7 @@ test.describe('CAL-005: Rueckfrage ausserhalb der Arbeitszeit', () => {
     await anmelden(page, KONTEN.office);
     await terminFormular(page, { tag, von: '19:00', bis: '20:00' });
     await page.getByRole('button', { name: 'Termin trotzdem anlegen' }).click();
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
 
     // Derselbe Zeitraum, erneut bestaetigt: die Ueberschneidung bleibt.
     await terminFormular(page, { tag, von: '19:00', bis: '20:00' });

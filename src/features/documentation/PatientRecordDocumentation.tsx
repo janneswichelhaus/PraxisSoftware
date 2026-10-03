@@ -1,5 +1,5 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -87,21 +87,19 @@ function nachMonat(
  * „Abgeschlossen", „Dokumentiert" sind in einer Dokumentationsliste der
  * Regelfall und sagen nichts.
  */
-function TerminKopf({ termin, rueckweg }: { termin: RecordAppointment; rueckweg: string }) {
+function TerminKopf({ termin }: { termin: RecordAppointment }) {
   const zone = termin.organization_time_zone;
   const ausgefallen =
     termin.appointment_status === 'cancelled' || termin.appointment_status === 'no_show';
   return (
     <>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <Link
-          to={mitRueckweg(`/termine/${termin.appointment_id}`, rueckweg)}
-          // 15 px in 600 (Design-Handoff 2026-10-01, Abschnitt 7): Das Datum
-          // ist der Kopf der Karte, keine Seitenüberschrift.
-          className="text-accent text-liste font-semibold hover:underline"
-        >
+        {/* 15 px in 600 (Design-Handoff 2026-10-01, Abschnitt 7): Das Datum
+            ist der Kopf der Karte, keine Seitenüberschrift. Kein Link mehr -
+            der Termin hat keine eigene Seite (Akte entschlacken, 2026-10-03). */}
+        <span className="text-ink text-liste font-semibold">
           {kurzesDatum(termin.starts_at, zone)}
-        </Link>
+        </span>
         {ausgefallen ? (
           <Badge ton={appointmentStatusTon[termin.appointment_status]}>
             {appointmentStatusLabels[termin.appointment_status]}
@@ -187,17 +185,20 @@ function akteHerkunft(note: TreatmentNote, termin: RecordAppointment): string {
 }
 
 /**
- * Ein Eintrag in der Akte - Haupteintrag oder Nachtrag - ohne Handlungen.
+ * Ein Eintrag in der Akte - Haupteintrag oder Nachtrag.
  *
  * Der Freitext steht unveraendert da; die Anwendung fuegt ihm nichts hinzu
- * (ADR-006). Bearbeitet, finalisiert, korrigiert und nachgetragen wird am
- * Termin: die Akte ist der Ort zum Lesen, nicht der zweite Ort zum Schreiben.
+ * (ADR-006). Geschrieben wird auf den Schreibseiten ausserhalb des
+ * Aktenrahmens (UX-009). Seit der Termin keine eigene Seite mehr hat (Akte
+ * entschlacken, 2026-10-03), stehen die Wege zu Nachtrag und Korrektur eines
+ * festgeschriebenen Eintrags hier (ADR-016 Punkt 6) - vorher am Termin.
  */
 function AkteEintrag({
   termin,
   note,
   rueckweg,
   fristTage,
+  darfSchreiben,
 }: {
   termin: RecordAppointment;
   note: TreatmentNote;
@@ -205,6 +206,8 @@ function AkteEintrag({
   rueckweg: string;
   /** Die Frist der Praxis in Tagen, sobald geladen (ADR-016 Punkt 7). */
   fristTage: number | undefined;
+  /** Darf die Rolle dokumentieren (canWriteTreatmentNote)? Verbindlich prüft der Server. */
+  darfSchreiben: boolean;
 }) {
   const frist = fristDatum(termin.starts_at, termin.organization_time_zone, fristTage);
   const istNachtrag = note.addendum_to_note_id !== null;
@@ -245,17 +248,48 @@ function AkteEintrag({
           : null}
       </p>
 
-      {note.version_count > 0 ? (
-        <Textlink
-          to={mitRueckweg(
-            `/termine/${termin.appointment_id}/dokumentation/${note.id}/verlauf`,
-            rueckweg,
-          )}
-          alleinstehend
-          className="text-sm"
-        >
-          Änderungsverlauf
-        </Textlink>
+      {(darfSchreiben && final) || note.version_count > 0 ? (
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Ergänzen ist der Regelfall, Ändern die Ausnahme (ADR-016 Punkt 6):
+              der Nachtrag vorn, die Korrektur leise dahinter (DOK-14). Zu
+              einem Nachtrag gibt es keinen weiteren. */}
+          {darfSchreiben && final && !istNachtrag ? (
+            <ButtonLink
+              to={mitRueckweg(
+                `/termine/${termin.appointment_id}/dokumentation/${note.id}/nachtrag`,
+                rueckweg,
+              )}
+              variant="secondary"
+              groesse="kompakt"
+            >
+              Nachtrag hinzufügen
+            </ButtonLink>
+          ) : null}
+          {darfSchreiben && final ? (
+            <ButtonLink
+              to={mitRueckweg(
+                `/termine/${termin.appointment_id}/dokumentation/${note.id}/korrektur`,
+                rueckweg,
+              )}
+              variant="quiet"
+              groesse="kompakt"
+            >
+              Korrigieren
+            </ButtonLink>
+          ) : null}
+          {note.version_count > 0 ? (
+            <Textlink
+              to={mitRueckweg(
+                `/termine/${termin.appointment_id}/dokumentation/${note.id}/verlauf`,
+                rueckweg,
+              )}
+              alleinstehend
+              className="text-sm"
+            >
+              Änderungsverlauf
+            </Textlink>
+          ) : null}
+        </div>
       ) : null}
     </div>
   );
@@ -378,10 +412,11 @@ function Behandlungsdokumentation({
               {monat.termine.map((termin) => (
                 <li
                   key={termin.appointment_id}
+                  data-termin={termin.appointment_id}
                   // Innen 14/16 (Design-Handoff 2026-10-01, Abschnitt 7).
                   className="border-line bg-surface rounded-card border px-4 py-3.5"
                 >
-                  <TerminKopf termin={termin} rueckweg={verlauf} />
+                  <TerminKopf termin={termin} />
 
                   {termin.notes.length === 0 ? (
                     <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
@@ -393,6 +428,7 @@ function Behandlungsdokumentation({
                         note={note}
                         rueckweg={verlauf}
                         fristTage={fristTage}
+                        darfSchreiben={canWriteTreatmentNote(user.roles)}
                       />
                     ))
                   )}
@@ -524,7 +560,7 @@ export function DieserTermin({
   return (
     <Section titel="Dieser Termin">
       <div className="border-line bg-surface rounded-card border px-4 py-3.5">
-        <TerminKopf termin={kopf} rueckweg={hier} />
+        <TerminKopf termin={kopf} />
         {dokumentation.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
         {dokumentation.isError ? (
           <ErrorState
@@ -543,6 +579,7 @@ export function DieserTermin({
             note={note}
             rueckweg={hier}
             fristTage={fristTage}
+            darfSchreiben={canWriteTreatmentNote(user.roles)}
           />
         ))}
         {schreiben ? (

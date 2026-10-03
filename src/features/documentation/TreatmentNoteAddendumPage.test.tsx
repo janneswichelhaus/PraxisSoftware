@@ -119,7 +119,7 @@ describe('TreatmentNoteAddendumPage', () => {
     });
     // Der Termin erfährt, was geschehen ist (DOK-15).
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
         state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
       }),
     );
@@ -130,13 +130,10 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern(['therapist'], '?zurueck=%2F');
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
-      'href',
-      `/termine/${TERMIN_ID}?zurueck=%2F`,
-    );
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
     await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+      expect(navigate).toHaveBeenCalledWith('/', {
         state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
       }),
     );

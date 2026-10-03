@@ -1,8 +1,6 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, Navigate, useLocation, useParams, useSearchParams } from 'react-router-dom';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { Rueckweg } from '@/components/ui/Rueckweg';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { Select } from '@/components/ui/Select';
 import { Field } from '@/components/ui/Field';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
@@ -11,7 +9,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
 import { TerminMetazeile, TerminZeilen, Zeile } from './TerminKompakt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Textlink } from '@/components/ui/Textlink';
 import { Card } from '@/components/ui/Card';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { AbrechnungAbschnitt } from './Abrechnungslage';
@@ -34,9 +31,8 @@ import {
 import { PrescriptionPhoto } from '@/features/files/PrescriptionPhoto';
 import { TreatmentNoteSection } from '@/features/documentation/TreatmentNoteSection';
 import { WaitlistMatches } from '@/features/waitlist/WaitlistMatches';
-import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
-import { NachladeHinweis, Rueckmeldung } from './Rueckmeldungen';
-import { leseAngelegtenTermin, leseMeldung } from './terminformular';
+import { mitRueckweg } from '@/lib/rueckweg';
+import { Rueckmeldung } from './Rueckmeldungen';
 import {
   appointmentStatusLabels,
   appointmentToFormValues,
@@ -868,57 +864,30 @@ function StatusAktion({
 }
 
 /**
- * Die Bestätigung eines gerade angelegten Folgetermins (TER-04).
+ * Die Aktionen an einem Termin, als Fenster über dem Kalender (Akte
+ * entschlacken, 2026-10-03).
  *
- * Das Formular kehrt auf diesen Termin zurück und hängt die Kennung des neuen
- * an (`?neu=`). Vorher stand man danach wortlos wieder auf dem alten Termin -
- * „Folgetermin anlegen" unverändert daneben, und ein zweiter Versuch ergab
- * eine Dublette. Tag und Zeit kommen aus dem neuen Termin selbst.
+ * Bis dahin hatte jeder Termin eine eigene Seite (`/termine/:id`). Jannes:
+ * „Ein Termin soll keine eigene Unterseite bekommen" - was an ihr zu tun war,
+ * steht jetzt hier, geöffnet aus dem Terminpanel des Kalenders („Aktionen").
+ * Haken und „Doku" bleiben im Panel selbst; das Fenster trägt den Rest:
+ * ändern, nicht angetroffen, wieder öffnen, auf die Gebühr verzichten,
+ * Folgetermin, Mitteilung, Heilmittel, Verordnungsfoto, Nachrücken und die
+ * Absagen. Jede Aktion ist dieselbe wie vorher, mit derselben Rückfrage;
+ * verbindlich prüfen die Serverfunktionen (ADR-018, ADR-004).
  */
-function FolgeterminMeldung({ neuId, zumTermin }: { neuId: string; zumTermin: string }) {
-  const neu = useQuery({
-    queryKey: ['appointment', neuId],
-    queryFn: () => fetchAppointment(neuId),
-    retry: false,
-  });
-
-  // Erst, wenn feststeht, was dasteht: Die Zeile nimmt beim Erscheinen den
-  // Fokus, und ein Satz, der sich danach ändert, würde zweimal vorgelesen.
-  if (neu.isPending) return null;
-
-  const termin = neu.data;
-  const zone = termin?.organization_time_zone;
-  return (
-    <Rueckmeldung className="mb-6">
-      {termin && zone
-        ? `Folgetermin am ${formatLocalDate(termin.starts_at, zone)} um ${formatLocalTime(termin.starts_at, zone)} Uhr angelegt.`
-        : 'Folgetermin angelegt.'}{' '}
-      <Textlink to={mitRueckweg(`/termine/${neuId}`, zumTermin)}>Folgetermin öffnen</Textlink>
-    </Rueckmeldung>
-  );
-}
-
-function AppointmentDetail({
+function TerminAktionen({
   appointment,
   user,
   eingehend,
   zumTermin,
-  eingangsmeldung,
-  neuerTermin,
-  nachladeFehler,
 }: {
   appointment: Appointment;
   user: CurrentUser;
-  /** Der Rückweg dieser Seite - für die Unterseiten desselben Termins. */
+  /** Der Kalenderstand - Rückweg für die Formulare dieses Termins. */
   eingehend: string;
-  /** Der Weg zurück zu diesem Termin - für die Wege zu anderen Gegenständen. */
+  /** Der Kalenderstand mit diesem Termin - Rückweg für andere Gegenstände. */
   zumTermin: string;
-  /** Was ein anderer Vorgang beim Hierherkommen bestätigt (DOK-15, ZST-17). */
-  eingangsmeldung: string | null;
-  /** Der gerade angelegte Folgetermin (TER-04). */
-  neuerTermin: string | null;
-  /** Das Nachladen ist gescheitert; der Stand kann veraltet sein (ZST-03). */
-  nachladeFehler: { laeuft: boolean; erneut: () => void } | null;
 }) {
   const darfVerwalten = canManageAppointments(user.roles);
   // Geaendert wird ausschliesslich aus „bestätigt". Abgesagte, dokumentierte
@@ -937,27 +906,18 @@ function AppointmentDetail({
     appointment.fee_waived_at === null &&
     (appointment.status === 'cancelled' || appointment.status === 'no_show');
   /**
-   * Eine Fehlzeit des Praxisbetriebs (CAL-015b).
-   *
-   * Es hat keine Patient:in, keine Dokumentation und keinen Abschluss - und
-   * damit auch keinen Weg in die Abrechnung (§19). Was bleibt: verschieben und
-   * absagen.
+   * Eine Fehlzeit des Praxisbetriebs (CAL-015b): keine Patient:in, keine
+   * Dokumentation, kein Abschluss - und damit kein Weg in die Abrechnung
+   * (§19). Was bleibt: verschieben und absagen.
    */
   const istEreignis = appointment.kind === 'internal';
-
-  /**
-   * Der Hausbesuch führt seinen eigenen Ablauf (CAL-018).
-   *
-   * Die drei Szenarien aus E14 gelten dort — und nur dort (ANN-055). Was in
-   * der Praxis passiert, bleibt bei den Schaltflächen von vorher.
-   */
+  /** Der Hausbesuch führt seinen eigenen Ablauf (CAL-018, ANN-055). */
   const istHausbesuch = !istEreignis && appointment.appointment_type === 'home_visit';
 
   /**
-   * Die Bestätigung des letzten Vorgangs auf dieser Seite (ZST-16).
-   *
-   * Mit laufender Nummer: Eine zweite, gleichlautende Bestätigung ist eine
-   * neue Zeile und nimmt den Fokus erneut.
+   * Die Bestätigung des letzten Vorgangs (ZST-16). Mit laufender Nummer: Eine
+   * zweite, gleichlautende Bestätigung ist eine neue Zeile und nimmt den
+   * Fokus erneut.
    */
   const [bestaetigung, setBestaetigung] = useState<{ nummer: number; text: string } | null>(null);
   const [abschlussFehler, setAbschlussFehler] = useState<string | null>(null);
@@ -966,13 +926,7 @@ function AppointmentDetail({
     setBestaetigung((bisher) => ({ nummer: (bisher?.nummer ?? 0) + 1, text }));
   };
 
-  /**
-   * Die Beteiligten des Ereignisses (CAL-017).
-   *
-   * Sie machen aus n Zeilen einen sichtbaren Vorgang: Wer hier steht, hat
-   * denselben Zeitraum belegt, und eine Änderung trifft alle zugleich. Für
-   * einen Behandlungstermin wird gar nicht erst gefragt.
-   */
+  /** Die Beteiligten des Ereignisses (CAL-017) - nur an einer Fehlzeit. */
   const beteiligte = useQuery({
     queryKey: ['event-participants', appointment.event_group_id],
     queryFn: () => fetchEventParticipants(appointment.event_group_id!),
@@ -980,13 +934,7 @@ function AppointmentDetail({
     retry: false,
   });
 
-  /**
-   * Die Serie, zu der dieses Ereignis gehört - eine Dauerfehlzeit (CAL-021).
-   *
-   * Sie steht hier, damit der Termin sagen kann, dass er einer von mehreren
-   * ist. Ohne das stünde weiter unten ein „Ganze Serie absagen" ohne
-   * erkennbaren Anlass.
-   */
+  /** Die Serie, zu der dieses Ereignis gehört - eine Dauerfehlzeit (CAL-021). */
   const serie = useQuery({
     queryKey: ['event-series', appointment.event_series_id],
     queryFn: () => fetchEventSeries(appointment.event_series_id!),
@@ -998,485 +946,334 @@ function AppointmentDetail({
   const offeneTeilnahmen = beteiligteListe.filter((b) => b.status === 'confirmed');
   const serienVorkommen = serie.data ?? [];
 
-  /**
-   * Die Kontextspalte ab 900 px Inhaltsbreite (Design-Handoff 2026-10-01,
-   * Abschnitt 6) trägt die Abrechnung - und nur, wenn der Server sie zeigt
-   * (owner und office, ANN-139). Ohne sie bleibt die Seite einspaltig; eine
-   * leere Spalte neben dem Termin wäre Platz, der nichts sagt. Die Karte
-   * „Angaben" des Handoffs gibt es nicht: Sie wiederholte den Kopf als
-   * Tabelle, und die ist seit UX-005a weg (Entscheidung Jannes, 2026-10-01).
-   */
+  // Die Abrechnung nur, wenn der Server sie zeigt (owner und office, ANN-139).
   const lage = useAbrechnungslage(appointment.id);
-  const zweispaltig = appointment.kind === 'therapy' && lage.data?.billing_visible === true;
+  const mitAbrechnung = appointment.kind === 'therapy' && lage.data?.billing_visible === true;
 
   return (
-    // Gemessen wird der Inhalt, nicht das Fenster (`--container-zweispaltig`),
-    // wie auf der Übersicht. Unter der Schwelle steht die Abrechnung zwischen
-    // Kacheln und dem Rest - dort, wo sie bisher stand (BEF-081); darüber
-    // rechts neben beidem.
-    <div className="@container">
-      <div
-        className={
-          zweispaltig
-            ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] @zweispaltig:grid-rows-[auto_1fr] @zweispaltig:gap-x-8 grid items-start'
-            : 'max-w-3xl'
-        }
-      >
-        <div className="@zweispaltig:col-start-1 @zweispaltig:row-start-1 min-w-0">
-          <PageHeader
-            /* Der Name ist der Titel und führt von hier direkt in die Akte
-               (UX-012); was für ein Eintrag das ist, sagt die Zeile darüber
-               (Design-Handoff 2026-10-01, Abschnitt 6). Der Hausbesuch trägt dort
-               kein Wort (ANN-192) - die Ausnahme sagt die Kachel des Ortes. Der
-               Rückweg reist mit, damit der Weg zurück am Termin endet und nicht
-               in der Liste. */
-            // Am Behandlungstermin kein Kicker mehr: Name, Zustand und eine
-            // Metazeile (Design-Handoff 2026-10-01, Abschnitt 6, Zyklus 3).
-            {...(istEreignis ? { kicker: 'Fehlzeit' } : {})}
-            title={
-              istEreignis ? (
-                (appointment.title ?? 'Fehlzeit')
-              ) : (
-                <Link
-                  to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
-                  className="underline decoration-2 underline-offset-5 hover:no-underline"
-                >
-                  {patientName(appointment)}
-                </Link>
-              )
-            }
-            /* Datum, Zeit, Zustand und Mitteilungszeichen direkt unter dem
-               Namen (UX-005a) - was einen Termin ausmacht, ohne Tabelle. Der
-               Satz darunter sagt nur noch, was aus einem Zustand ohne Rückweg
-               folgt. */
-            description={
-              istEreignis ? (
-                <>
-                  <AppointmentHeadline appointment={appointment} user={user} />
-                  {zustandsHinweis(appointment) ? (
-                    <p className="mt-1">{zustandsHinweis(appointment)}</p>
-                  ) : null}
-                </>
-              ) : (
-                <TerminMetazeile
-                  appointment={appointment}
-                  user={user}
-                  darfVerwalten={darfVerwalten}
-                  zumTermin={zumTermin}
-                  hinweis={zustandsHinweis(appointment)}
-                />
-              )
-            }
-            actions={
-              darfAendern ? (
-                <div className="flex flex-wrap gap-3">
-                  {/* Zwei Wege, und der Unterschied steht in der Beschriftung
-                      (CAL-017): „Fehlzeit bearbeiten" trifft alle Beteiligten
-                      zugleich, „Teilnahme ändern" nur diese eine Zeile. Ohne die
-                      Trennung wäre jede Verschiebung eine Wette darauf, was
-                      gemeint war.
-
-                      Kompakte Sekundärknöpfe aus dem Baustein (TER-16, UIK-14):
-                      vorher eine eigene Klassenkette in Tinte, 15 px und 500. */}
-                  {istEreignis ? (
-                    <ButtonLink
-                      to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
-                      variant="secondary"
-                      groesse="kompakt"
-                    >
-                      Fehlzeit bearbeiten
-                    </ButtonLink>
-                  ) : null}
-                  <ButtonLink
-                    to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
-                    variant={istEreignis ? 'secondary' : 'quiet'}
-                    groesse="kompakt"
-                  >
-                    {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
-                  </ButtonLink>
-                </div>
-              ) : null
-            }
-          />
-
-          {nachladeFehler ? (
-            <NachladeHinweis
-              className="mb-6"
-              laeuft={nachladeFehler.laeuft}
-              onErneut={nachladeFehler.erneut}
-            />
-          ) : null}
-
-          {/* Die Bestätigung steht oben, wo man nach dem Vorgang hinsieht - auch
-              wenn der Knopf dazu weit unten saß (ZST-16, TER-17). Ein Vorgang auf
-              dieser Seite geht der Meldung vor, mit der man hergekommen ist. */}
-          {bestaetigung ? (
-            <Rueckmeldung key={bestaetigung.nummer} className="mb-6">
-              {bestaetigung.text}
-            </Rueckmeldung>
-          ) : neuerTermin && neuerTermin !== appointment.id ? (
-            <FolgeterminMeldung neuId={neuerTermin} zumTermin={zumTermin} />
-          ) : eingangsmeldung ? (
-            <Rueckmeldung className="mb-6">{eingangsmeldung}</Rueckmeldung>
-          ) : null}
-
-          {/* Die Aktionsleiste am bestätigten Behandlungstermin (Design-Handoff
-              2026-10-01, Abschnitt 6, Zyklus 3): Haken, „Doku", am Hausbesuch
-              „Niemand öffnet?" mit dem Protokoll darunter und „Ohne
-              Behandlung", an Praxis und Video „Nicht angetroffen". Abschließen
-              und Dokumentieren sind getrennt (Abschnitt 6a): Der Haken schließt
-              ohne Dokumentation ab (ANN-005), „Doku" öffnet die Schreibseite.
-              Ein Ereignis wird weder abgeschlossen noch dokumentiert (CAL-015b). */}
-          {darfAendern && !istEreignis ? (
-            <div
-              role="group"
-              aria-label="Nach dem Termin"
-              className="border-line mt-4 flex flex-wrap items-center gap-2 border-y py-3"
-            >
-              <TerminAbschliessenKnopf
-                appointmentId={appointment.id}
-                stand={appointment.updated_at}
-                variant="primary"
-                onAbgeschlossen={() =>
-                  melden(
-                    darfDokumentieren
-                      ? 'Termin abgeschlossen. Doku offen.'
-                      : 'Termin abgeschlossen.',
-                  )
-                }
-                onFehler={setAbschlussFehler}
-              />
-              {darfDokumentieren ? (
-                <ButtonLink
-                  to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
-                  groesse="kompakt"
-                >
-                  Doku <span className="sr-only">schreiben</span>
-                </ButtonLink>
-              ) : null}
-              {istHausbesuch ? (
-                <>
-                  <HomeVisitFlow appointment={appointment} melden={melden} />
-                  {darfDokumentieren ? (
-                    <ButtonLink
-                      to={mitRueckweg(
-                        `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
-                        eingehend,
-                      )}
-                      variant="quiet"
-                      groesse="kompakt"
-                    >
-                      Ohne Behandlung
-                    </ButtonLink>
-                  ) : null}
-                </>
-              ) : (
-                <NichtAngetroffenAktion appointment={appointment} melden={melden} />
-              )}
-              {abschlussFehler ? (
-                <Statusmeldung ton="fehler" className="basis-full">
-                  {abschlussFehler}
-                </Statusmeldung>
-              ) : null}
-            </div>
-          ) : null}
-
-          {/* Die Dokumentation direkt unter der Leiste, ohne Karte (Zyklus 3).
-              Klinische Inhalte kommen über einen eigenen, protokollierten
-              Lesepfad (DOK-001); an einem Ereignis gibt es sie nicht. */}
-          {istEreignis ? null : (
-            <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
-          )}
-
-          {/* Anschrift, Vor der Tür, Zuletzt - und darunter, was aus dem Termin
-              geworden ist - als Zeilen statt Kacheln (Zyklus 3). */}
-          {istEreignis ? null : (
-            <TerminZeilen
-              appointment={appointment}
-              darfKurzblick={canReadTreatmentNote(user.roles)}
-              darfVerlauf={canReadTreatmentNote(user.roles)}
-              zumTermin={zumTermin}
-            >
-              <ZustandZeilen appointment={appointment} />
-            </TerminZeilen>
-          )}
-          {istEreignis ? null : (
-            <WiederOeffnen
-              appointment={appointment}
-              darfWiederOeffnen={darfWiederOeffnen}
-              melden={melden}
-            />
-          )}
-          {darfVerzichten ? <GebuehrVerzicht appointment={appointment} melden={melden} /> : null}
-
-          {istEreignis ? (
-            <Section titel="Fehlzeit" rahmen>
-              <DetailList>
-                <DetailRow label="Fehlzeit">{appointment.title ?? '—'}</DetailRow>
-                <DetailRow label="Diese Teilnahme">{staffName(appointment)}</DetailRow>
-                {/* Aus n Zeilen wird hier ein sichtbarer Vorgang: Wer hier steht,
-                    hat denselben Zeitraum belegt, und „Fehlzeit bearbeiten" trifft
-                    alle zugleich (CAL-017). Jede andere Teilnahme führt zu ihrem
-                    Termin - dort wird sie getauscht oder abgesagt (TER-15). */}
-                {beteiligteListe.length > 1 ? (
-                  <DetailRow label="Beteiligte">
-                    {/* Die Links stehen je für sich und sind 44 px hoch - am
-                        Telefon ein Ziel für den Daumen, nicht für die Fingerspitze. */}
-                    <span className="inline-flex flex-wrap items-center">
-                      {beteiligteListe.map((b, index) => {
-                        const name =
-                          b.status === 'confirmed'
-                            ? b.display_name
-                            : `${b.display_name} (${appointmentStatusLabels[b.status]})`;
-                        return (
-                          <Fragment key={b.appointment_id}>
-                            {index > 0 ? <span className="mr-1">, </span> : null}
-                            {b.appointment_id === appointment.id ? (
-                              <span>{name}</span>
-                            ) : (
-                              <Textlink
-                                alleinstehend
-                                to={mitRueckweg(`/termine/${b.appointment_id}`, zumTermin)}
-                              >
-                                {name}
-                              </Textlink>
-                            )}
-                          </Fragment>
-                        );
-                      })}
-                    </span>
-                    <span className="text-ink-muted mt-1 block text-sm">
-                      Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
-                    </span>
-                  </DetailRow>
-                ) : null}
-                {/* Dieses Vorkommen ist eines von mehreren (CAL-021). Die Zeile
-                    sagt es, bevor weiter unten „Ganze Serie absagen" steht. */}
-                {appointment.event_series_id && serienVorkommen.length > 0 ? (
-                  <DetailRow label="Dauerfehlzeit">
-                    <span>
-                      Vorkommen{' '}
-                      {serienVorkommen.findIndex(
-                        (v) => v.event_group_id === appointment.event_group_id,
-                      ) + 1}{' '}
-                      von {serienVorkommen.length}
-                    </span>
-                    <span className="text-ink-muted mt-1 block text-sm">
-                      Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze
-                      Serie.
-                    </span>
-                  </DetailRow>
-                ) : null}
-                <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
-                  {locationSummary(appointment)}
-                </DetailRow>
-                {appointment.status === 'cancelled' ? (
-                  <DetailRow label="Absagegrund">
-                    {appointment.cancellation_reason
-                      ? cancellationReasonLabels[appointment.cancellation_reason]
-                      : 'Nicht erfasst'}
-                  </DetailRow>
-                ) : null}
-              </DetailList>
-            </Section>
+    <div className="flex flex-col">
+      {istEreignis ? (
+        <div className="text-ink-muted text-sm">
+          <AppointmentHeadline appointment={appointment} user={user} />
+          {zustandsHinweis(appointment) ? (
+            <p className="mt-1">{zustandsHinweis(appointment)}</p>
           ) : null}
         </div>
+      ) : (
+        <TerminMetazeile
+          appointment={appointment}
+          user={user}
+          darfVerwalten={darfVerwalten}
+          zumTermin={zumTermin}
+          hinweis={zustandsHinweis(appointment)}
+        />
+      )}
 
-        {/* BEF-081: Empfänger und offene Rechnungen als eigener Abschnitt statt
-            zweier Zeilen zwischen den Termindaten - nur für owner und office. */}
-        {zweispaltig ? (
-          <aside className="@zweispaltig:col-start-2 @zweispaltig:row-span-2 @zweispaltig:row-start-1 @zweispaltig:mt-0 mt-6 min-w-0">
-            <AbrechnungAbschnitt appointmentId={appointment.id} />
-          </aside>
+      {bestaetigung ? (
+        <Rueckmeldung key={bestaetigung.nummer} className="mt-4">
+          {bestaetigung.text}
+        </Rueckmeldung>
+      ) : null}
+
+      {/* Die Dokumentation dieses Termins, wie bisher auf der Terminseite:
+          lesen, finalisieren, Nachtrag und Korrektur (DOK-001, ADR-016).
+          Klinische Inhalte kommen über einen eigenen, protokollierten
+          Lesepfad; an einer Fehlzeit gibt es sie nicht. */}
+      {istEreignis ? null : (
+        <TreatmentNoteSection appointment={appointment} user={user} eingehend={eingehend} />
+      )}
+
+      {istEreignis ? null : (
+        <TerminZeilen
+          appointment={appointment}
+          darfKurzblick={canReadTreatmentNote(user.roles)}
+          darfVerlauf={canReadTreatmentNote(user.roles)}
+          zumTermin={zumTermin}
+        >
+          <ZustandZeilen appointment={appointment} />
+        </TerminZeilen>
+      )}
+
+      {istEreignis ? (
+        <DetailList>
+          <DetailRow label="Fehlzeit">{appointment.title ?? '—'}</DetailRow>
+          <DetailRow label="Diese Teilnahme">{staffName(appointment)}</DetailRow>
+          {/* Wer hier steht, hat denselben Zeitraum belegt, und „Fehlzeit
+              bearbeiten" trifft alle zugleich (CAL-017). */}
+          {beteiligteListe.length > 1 ? (
+            <DetailRow label="Beteiligte">
+              {beteiligteListe
+                .map((b) =>
+                  b.status === 'confirmed'
+                    ? b.display_name
+                    : `${b.display_name} (${appointmentStatusLabels[b.status]})`,
+                )
+                .join(', ')}
+              <span className="text-ink-muted mt-1 block text-sm">
+                Bezeichnung, Zeit und Ort gelten für alle Beteiligten.
+              </span>
+            </DetailRow>
+          ) : null}
+          {/* Dieses Vorkommen ist eines von mehreren (CAL-021). */}
+          {appointment.event_series_id && serienVorkommen.length > 0 ? (
+            <DetailRow label="Dauerfehlzeit">
+              <span>
+                Vorkommen{' '}
+                {serienVorkommen.findIndex((v) => v.event_group_id === appointment.event_group_id) +
+                  1}{' '}
+                von {serienVorkommen.length}
+              </span>
+              <span className="text-ink-muted mt-1 block text-sm">
+                Ändern und Absagen gelten wahlweise für dieses Vorkommen oder für die ganze Serie.
+              </span>
+            </DetailRow>
+          ) : null}
+          <DetailRow label={ortsBeschriftung(appointment.appointment_type)}>
+            {locationSummary(appointment)}
+          </DetailRow>
+          {appointment.status === 'cancelled' ? (
+            <DetailRow label="Absagegrund">
+              {appointment.cancellation_reason
+                ? cancellationReasonLabels[appointment.cancellation_reason]
+                : 'Nicht erfasst'}
+            </DetailRow>
+          ) : null}
+        </DetailList>
+      ) : null}
+
+      {/* Die Aktionen als Auswahl untereinander: Jede ist ein Knopf, der ihre
+          Rückfrage oder ihr Formular öffnet. */}
+      <div role="group" aria-label="Aktionen" className="mt-4 flex flex-col items-start gap-3">
+        {/* Haken und „Doku": abschließen ohne Dokumentation (ANN-005,
+            Abschnitt 6a) - für alle, die Termine verwalten, wie bisher auf der
+            Terminseite. Im Panel stehen beide nur am eigenen Termin. */}
+        {darfAendern && !istEreignis ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <TerminAbschliessenKnopf
+              appointmentId={appointment.id}
+              stand={appointment.updated_at}
+              variant="primary"
+              onAbgeschlossen={() =>
+                melden(
+                  darfDokumentieren ? 'Termin abgeschlossen. Doku offen.' : 'Termin abgeschlossen.',
+                )
+              }
+              onFehler={setAbschlussFehler}
+            />
+            {/* „Doku" öffnet die Schreibseite; abschließen und dokumentieren
+                sind getrennt (Abschnitt 6a). */}
+            {darfDokumentieren ? (
+              <ButtonLink
+                to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
+                groesse="kompakt"
+              >
+                Doku <span className="sr-only">schreiben</span>
+              </ButtonLink>
+            ) : null}
+            {abschlussFehler ? (
+              <Statusmeldung ton="fehler" className="basis-full">
+                {abschlussFehler}
+              </Statusmeldung>
+            ) : null}
+          </div>
         ) : null}
 
-        <div className="@zweispaltig:col-start-1 @zweispaltig:row-start-2 min-w-0">
-          {/* Am Ereignis bleibt die Karte des Zustands (Absage, Wiederöffnen). */}
-          {istEreignis ? (
-            <ZustandKarte
+        {darfAendern && !istEreignis ? (
+          istHausbesuch ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <HomeVisitFlow appointment={appointment} melden={melden} />
+              {darfDokumentieren ? (
+                <ButtonLink
+                  to={mitRueckweg(
+                    `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
+                    eingehend,
+                  )}
+                  variant="quiet"
+                  groesse="kompakt"
+                >
+                  Ohne Behandlung
+                </ButtonLink>
+              ) : null}
+            </div>
+          ) : (
+            <NichtAngetroffenAktion appointment={appointment} melden={melden} />
+          )
+        ) : null}
+
+        {darfAendern ? (
+          <div className="flex flex-wrap gap-3">
+            {/* Zwei Wege an der Fehlzeit, und der Unterschied steht in der
+                Beschriftung (CAL-017): „Fehlzeit bearbeiten" trifft alle
+                Beteiligten zugleich, „Teilnahme ändern" nur diese eine Zeile. */}
+            {istEreignis ? (
+              <ButtonLink
+                to={mitRueckweg(`/termine/${appointment.id}/ereignis-bearbeiten`, eingehend)}
+                variant="secondary"
+                groesse="kompakt"
+              >
+                Fehlzeit bearbeiten
+              </ButtonLink>
+            ) : null}
+            <ButtonLink
+              to={mitRueckweg(`/termine/${appointment.id}/bearbeiten`, eingehend)}
+              variant="secondary"
+              groesse="kompakt"
+            >
+              {istEreignis ? 'Teilnahme ändern' : 'Bearbeiten'}
+            </ButtonLink>
+          </div>
+        ) : null}
+
+        {istEreignis ? null : (
+          <WiederOeffnen
+            appointment={appointment}
+            darfWiederOeffnen={darfWiederOeffnen}
+            melden={melden}
+          />
+        )}
+        {darfVerzichten ? <GebuehrVerzicht appointment={appointment} melden={melden} /> : null}
+
+        {/* Am Ereignis bleibt die Karte des Zustands (Absage, Wiederöffnen). */}
+        {istEreignis ? (
+          <ZustandKarte
+            appointment={appointment}
+            darfWiederOeffnen={darfWiederOeffnen}
+            melden={melden}
+          />
+        ) : null}
+
+        {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
+            Besuchs - auch am abgeschlossenen Termin (UX-003, IDEA-PRX-007). */}
+        {darfVerwalten && !istEreignis && appointment.status !== 'cancelled' ? (
+          <ButtonLink
+            to={mitRueckweg(
+              `/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
+                folgeterminVorbelegung(appointment),
+              )}`,
+              zumTermin,
+            )}
+            variant="secondary"
+            groesse="kompakt"
+          >
+            Folgetermin anlegen
+          </ButtonLink>
+        ) : null}
+      </div>
+
+      {/* Nachrücken (PRX-004): Ein abgesagter Behandlungstermin in der Zukunft
+          ist ein freier Platz - ohne die Person, die gerade abgesagt hat. */}
+      {darfVerwalten &&
+      appointment.kind === 'therapy' &&
+      appointment.status === 'cancelled' &&
+      new Date(appointment.starts_at).getTime() > Date.now() ? (
+        <div className="mt-6">
+          <WaitlistMatches
+            slot={(() => {
+              const platz = appointmentToFormValues(appointment);
+              return {
+                staffMemberId: appointment.staff_member_id,
+                date: platz.date,
+                start: platz.start_time,
+                end: platz.end_time,
+                excludePatientId: appointment.patient_id,
+              };
+            })()}
+            back={zumTermin}
+          />
+        </div>
+      ) : null}
+
+      {/* Verordnung ohne Papier (PRX-011): ein Foto am Termin, das Büro
+          erfasst daraus die Grundlage (ANN-011); verbindlich prüft der Server. */}
+      {!istEreignis &&
+      appointment.patient_id &&
+      appointment.status !== 'cancelled' &&
+      canWriteTreatmentBases(user.roles) ? (
+        <Section titel="Verordnung" ebene={3}>
+          <PrescriptionPhoto patientId={appointment.patient_id} />
+        </Section>
+      ) : null}
+
+      {/* „Ist der Termin schon mitgeteilt?" - nur am bevorstehenden
+          Behandlungstermin (CAL-012). */}
+      {darfVerwalten && !istEreignis && appointment.status === 'confirmed' ? (
+        <div className="mt-6">
+          <MitteilungVermerken appointment={appointment} />
+        </div>
+      ) : null}
+
+      {/* Termin abhaken (PRX-009): die geleisteten Heilmittel bestätigen - die
+          behandelnde Person an ihrem Termin, das Büro an jedem (ANN-140). */}
+      {appointment.kind === 'therapy' &&
+      canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId) ? (
+        <HeilmittelBestaetigen appointment={appointment} user={user} />
+      ) : null}
+
+      {/* BEF-081: Empfänger und offene Rechnungen - nur für owner und office. */}
+      {mitAbrechnung ? (
+        <div className="mt-6">
+          <AbrechnungAbschnitt appointmentId={appointment.id} />
+        </div>
+      ) : null}
+
+      {/* Die Absagen am Ende: selten, ohne Rückweg und deshalb nicht neben den
+          Handlungen des Besuchs (Design-Handoff 2026-10-01, Abschnitt 6). */}
+      {darfAendern ? (
+        <div className="border-line mt-6 flex flex-wrap items-start gap-3 border-t pt-4">
+          {/* „Fehlzeit absagen" trifft alle noch offenen Teilnahmen, „Nur diese
+              Teilnahme absagen" diese eine (CAL-017). */}
+          {istEreignis && offeneTeilnahmen.length > 1 ? (
+            <EreignisAbsageAktion
               appointment={appointment}
-              darfWiederOeffnen={darfWiederOeffnen}
+              beteiligte={beteiligteListe}
               melden={melden}
             />
           ) : null}
-
-          {/* Nachrücken (PRX-004): Ein abgesagter Behandlungstermin in der
-              Zukunft ist ein freier Platz. Die Liste zeigt, wer darauf passt -
-              ohne die Person, die gerade abgesagt hat. */}
-          {darfVerwalten &&
-          appointment.kind === 'therapy' &&
-          appointment.status === 'cancelled' &&
-          new Date(appointment.starts_at).getTime() > Date.now() ? (
-            <div className="mt-6">
-              <WaitlistMatches
-                slot={(() => {
-                  const platz = appointmentToFormValues(appointment);
-                  return {
-                    staffMemberId: appointment.staff_member_id,
-                    date: platz.date,
-                    start: platz.start_time,
-                    end: platz.end_time,
-                    excludePatientId: appointment.patient_id,
-                  };
-                })()}
-                back={zumTermin}
-              />
-            </div>
+          {/* Die Absage der ganzen Dauerfehlzeit (CAL-021). */}
+          {istEreignis && appointment.event_series_id ? (
+            <SerieAbsageAktion appointment={appointment} melden={melden} />
           ) : null}
-
-          {/* Der Folgetermin ist der häufigste Einzelvorgang am Ende eines
-              Besuchs. Er steht auch am abgeschlossenen Termin: dort wird er
-              tatsächlich gebraucht (UX-003, IDEA-PRX-007). */}
-          {darfVerwalten && !istEreignis && appointment.status !== 'cancelled' ? (
-            <div className="mt-5 flex">
-              <ButtonLink
-                to={mitRueckweg(
-                  `/patienten/${appointment.patient_id}/termine/neu${schreibeTerminVorbelegung(
-                    folgeterminVorbelegung(appointment),
-                  )}`,
-                  zumTermin,
-                )}
-                variant="secondary"
-              >
-                Folgetermin anlegen
-              </ButtonLink>
-            </div>
-          ) : null}
-
-          {/* Verordnung ohne Papier (PRX-011): ein Foto am Termin, das Büro
-              erfasst daraus die Grundlage. Wer Grundlagen schreibt, darf auch
-              ihren Scan ablegen (ANN-011); verbindlich prüft der Server. */}
-          {!istEreignis &&
-          appointment.patient_id &&
-          appointment.status !== 'cancelled' &&
-          canWriteTreatmentBases(user.roles) ? (
-            <Section titel="Verordnung" ebene={3}>
-              <PrescriptionPhoto patientId={appointment.patient_id} />
-            </Section>
-          ) : null}
-
-          {/* „Ist der Termin schon mitgeteilt?" ist eine organisatorische Frage am
-              bevorstehenden Termin - an einem abgesagten oder abgeschlossenen gibt
-              es nichts mehr mitzuteilen (CAL-012). */}
-          {/* Ein Ereignis teilt niemand einer Patient:in mit. */}
-          {darfVerwalten && !istEreignis && appointment.status === 'confirmed' ? (
-            <div className="mt-8">
-              <MitteilungVermerken appointment={appointment} />
-            </div>
-          ) : null}
-
-          {/* Am Termin steht der Hinweis in der Kachel des Ortes (UX-005a). */}
-          {istEreignis && appointment.appointment_type === 'video' ? (
-            <p className="text-ink-muted mt-6 max-w-prose text-sm">
-              Für Videotermine wird noch kein Videolink erzeugt.
-            </p>
-          ) : null}
-
-          {/* Termin abhaken (PRX-009): nach der Dokumentation die geleisteten
-              Heilmittel bestätigen - die behandelnde Person an ihrem Termin,
-              das Büro an jedem (ANN-140). Verbindlich prüft der Server. */}
-          {appointment.kind === 'therapy' &&
-          canRecordAtAppointment(user.roles, appointment.staff_member_id, user.staffMemberId) ? (
-            <HeilmittelBestaetigen appointment={appointment} user={user} />
-          ) : null}
-
-          {/* Die Absagen am Seitenende (Design-Handoff 2026-10-01, Abschnitt 6):
-              selten, ohne Rückweg und deshalb nicht neben den Handlungen des
-              Besuchs. */}
-          {darfAendern ? (
-            <div className="border-line mt-8 flex flex-wrap items-start gap-3 border-t pt-4">
-              {/* Zwei Absagen, und der Unterschied steht in der Beschriftung
-                  (CAL-017): „Fehlzeit absagen" trifft alle noch offenen
-                  Teilnahmen, „Nur diese Teilnahme absagen" diese eine. Die
-                  zweite steht daneben, weil sie der seltenere Fall ist. */}
-              {istEreignis && offeneTeilnahmen.length > 1 ? (
-                <EreignisAbsageAktion
-                  appointment={appointment}
-                  beteiligte={beteiligteListe}
-                  melden={melden}
-                />
-              ) : null}
-              {/* Und die dritte Absage, wenn dieses Ereignis zu einer
-                  Dauerfehlzeit gehoert (CAL-021): Sie trifft alle noch kommenden
-                  Vorkommen der Serie. */}
-              {istEreignis && appointment.event_series_id ? (
-                <SerieAbsageAktion appointment={appointment} melden={melden} />
-              ) : null}
-              <AbsageAktion appointment={appointment} melden={melden} />
-            </div>
-          ) : null}
-
-          {/* Bis UX-005a stand hier eine Fußnote: Zeiten in der Zeitzone der
-              Praxis, nur organisatorische Angaben, was die Navigation übergibt.
-              Die ersten beiden Sätze sagten, was jeder hier weiß (Kennzeichnung,
-              ARBEITSBEREICHE.md §2); der dritte steht jetzt an der Schaltfläche,
-              die ihn braucht (ADR-019 Punkt 23). */}
+          <AbsageAktion appointment={appointment} melden={melden} />
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }
 
-export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
-  const { appointmentId } = useParams<{ appointmentId: string }>();
-  const [suche] = useSearchParams();
-  // Was ein anderer Vorgang beim Seitenwechsel mitgibt - ungeprüft, bis
-  // `leseMeldung` es liest.
-  const zustand: unknown = useLocation().state;
-
-  // Zwei verschiedene Wege, und die Unterscheidung ist der Punkt (UX-012):
-  //
-  //   * `eingehend` ist der Rückweg DIESER Seite - Kalender, Akte, Tagesliste.
-  //     Er wird an die Unterseiten desselben Termins weitergereicht
-  //     (Bearbeiten, Abschluss), damit er über diese Stationen nicht verloren
-  //     geht.
-  //   * `zumTermin` ist der Rückweg zu DIESEM Termin, samt seinem eigenen
-  //     Rückweg. Ihn bekommen die Wege zu anderen Gegenständen - die Akte, das
-  //     Formular für den Folgetermin -, damit man von dort hierher zurückkommt
-  //     und von hier weiter dorthin, wo man hergekommen ist.
-  const eingehend = leseRueckweg(suche, '');
-  const zumTermin = mitRueckweg(`/termine/${appointmentId}`, eingehend);
-
-  const { data, isPending, isError, isFetching, refetch } = useQuery({
+/**
+ * Das Fenster „Aktionen" eines Termins (Akte entschlacken, 2026-10-03). Lädt
+ * den Termin über denselben Lesepfad wie vorher die Terminseite
+ * (`appointment_directory`) und hält ihn nach jeder Aktion frisch - die
+ * Aktionen laden `['appointment', id]` selbst nach.
+ */
+export function TerminAktionenDialog({
+  appointmentId,
+  user,
+  eingehend,
+  zumTermin,
+  onSchliessen,
+}: {
+  appointmentId: string;
+  user: CurrentUser;
+  eingehend: string;
+  zumTermin: string;
+  onSchliessen: () => void;
+}) {
+  const { data, isPending, isError, refetch } = useQuery({
     queryKey: ['appointment', appointmentId],
-    queryFn: () => fetchAppointment(appointmentId!),
-    enabled: Boolean(appointmentId),
+    queryFn: () => fetchAppointment(appointmentId),
     retry: false,
   });
 
-  /**
-   * Wohin „zurück" ohne mitgereisten Weg führt (TER-03).
-   *
-   * Aus dem Termin selbst abgeleitet: ein Behandlungstermin in die Terminliste
-   * seiner Akte, eine Fehlzeit in den Kalender. Bis UXR-005 führte er immer
-   * in die Patientenliste - auch von einer Fehlzeit, die keine Patient:in hat.
-   * Solange der Termin nicht geladen ist, ist der Kalender das Ziel: Dort
-   * stehen alle Termine.
-   */
-  const standard =
-    data && data.kind !== 'internal' && data.patient_id
-      ? `/patienten/${data.patient_id}/termine`
-      : '/kalender';
-
-  // Ein Trainingstermin hat seine Seite im Trainingsbereich (TRN-004) - hier
-  // stünden Abschließen, Dokumentation und Akte, die es an ihm nicht gibt.
-  if (data?.kind === 'training') {
-    return <Navigate to={mitRueckweg(`/training/termine/${data.id}`, eingehend)} replace />;
-  }
+  const titel = !data
+    ? 'Termin'
+    : data.kind === 'internal'
+      ? (data.title ?? 'Fehlzeit')
+      : patientName(data);
 
   return (
-    <>
-      <Rueckweg standard={standard} />
-
-      {/* Auch ohne Termin trägt die Seite einen Titel - Vorlesesoftware findet
-          sonst keine Überschrift (UIK-16). */}
-      {!data ? <PageHeader title="Termin" /> : null}
-
-      {/* Laden in einer Karte mit Ort und Grundlage in Zielgröße
-          (Design-Handoff 2026-10-01, Abschnitt 3). */}
-      {isPending ? <LoadingState label="Termin wird geladen …" inKarte kacheln={2} /> : null}
-      {/* Ersetzt wird der Termin nur, solange es keinen gibt; ein
-          gescheitertes Nachladen meldet sich über dem Stand (ZST-03). */}
+    <Dialogfenster titel={titel} onSchliessen={onSchliessen}>
+      {isPending ? <LoadingState label="Termin wird geladen …" /> : null}
       {isError && !data ? (
         <ErrorState
           title="Der Termin konnte nicht geladen werden."
@@ -1491,16 +1288,18 @@ export function AppointmentDetailPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
       {data ? (
-        <AppointmentDetail
+        <TerminAktionen
           appointment={data}
           user={user}
           eingehend={eingehend}
           zumTermin={zumTermin}
-          eingangsmeldung={leseMeldung(zustand)}
-          neuerTermin={leseAngelegtenTermin(suche)}
-          nachladeFehler={isError ? { laeuft: isFetching, erneut: () => void refetch() } : null}
         />
       ) : null}
-    </>
+      <div className="border-line mt-6 flex justify-end border-t pt-4">
+        <Button type="button" variant="secondary" onClick={onSchliessen}>
+          Schließen
+        </Button>
+      </div>
+    </Dialogfenster>
   );
 }

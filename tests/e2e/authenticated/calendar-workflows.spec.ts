@@ -71,7 +71,6 @@ test.describe('CAL-002: Kalender', () => {
     );
 
     await terminImKalenderOeffnen(page, terminId);
-    await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
 

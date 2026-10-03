@@ -246,7 +246,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
   });
 
-  it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen und jeden Termin', async () => {
+  it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen', async () => {
     renderWithProviders(
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
@@ -259,17 +259,12 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
     );
 
-    // UX-005e: Das Datum ist der Weg zum Termin - keine eigene Zeile „Zum
-    // Termin" mehr.
+    // Das Datum ist der Kopf der Karte, kein Weg mehr: Ein Termin hat keine
+    // eigene Seite (Akte entschlacken, 2026-10-03).
     expect(screen.queryByRole('link', { name: 'Zum Termin' })).not.toBeInTheDocument();
-    const termin = screen.getByRole('link', { name: '05.05.2027' });
-    expect(termin.getAttribute('href')).toMatch(
-      /^\/termine\/77777777-7777-4777-8777-000000000002\?zurueck=/,
-    );
-    expect(screen.getByRole('link', { name: '12.05.2027' })).toHaveAttribute(
-      'href',
-      `/termine/77777777-7777-4777-8777-000000000001?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
-    );
+    expect(screen.getByText('05.05.2027')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: '05.05.2027' })).toBeNull();
+    expect(screen.queryByRole('link', { name: '12.05.2027' })).toBeNull();
   });
 
   it('kennzeichnet Entwurf mit Frist und festgeschriebene Version als Etikett (UIK-18, Abschnitt 7)', async () => {
@@ -342,23 +337,36 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     ).toBeInTheDocument();
   });
 
-  it.each([['therapist'], ['office']] as const)(
-    'bietet %s in der Akte keine Schreibhandlungen an',
-    async (role) => {
-      renderWithProviders(<PatientRecordDocumentation patient={patient} user={testUser([role])} />);
-      await screen.findByText(INHALT);
+  it('bietet office in der Akte keine Schreibhandlungen an', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['office'])} />,
+    );
+    await screen.findByText(INHALT);
 
-      for (const name of [
-        'Finalisieren',
-        'Korrigieren',
-        'Nachtrag hinzufügen',
-        'Dokumentation bearbeiten',
-      ]) {
-        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
-      }
-    },
-  );
+    for (const name of ['Finalisieren', 'Korrigieren', 'Nachtrag hinzufügen']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  // Seit der Termin keine eigene Seite mehr hat (Akte entschlacken,
+  // 2026-10-03), stehen Nachtrag und Korrektur am festgeschriebenen Eintrag in
+  // der Akte (ADR-016 Punkt 6). Geschrieben wird weiter auf den Schreibseiten.
+  it('bietet therapist am festgeschriebenen Eintrag Nachtrag und Korrektur an', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+    await screen.findByText(INHALT);
+
+    const zurueck = encodeURIComponent(`/patienten/${PATIENT_ID}/doku`);
+    const korrektur = screen
+      .getAllByRole('link', { name: 'Korrigieren' })[0]!
+      .getAttribute('href')!;
+    expect(korrektur).toContain('/korrektur?zurueck=');
+    expect(korrektur.endsWith(`zurueck=${zurueck}`)).toBe(true);
+    expect(screen.getAllByRole('link', { name: 'Nachtrag hinzufügen' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Finalisieren' })).not.toBeInTheDocument();
+  });
 
   it('nennt den leeren Zustand, wenn es keine Termine in der Akte gibt', async () => {
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);

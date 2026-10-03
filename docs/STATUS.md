@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-03 · letzte Session: AKTE-008 (Tageskarte: ein Doku-Knopf, Etage im Info-Aufklapper)
+# Status · Stand 2026-10-03 · letzte Session: Akte entschlacken, Teil 1 (Kopf, Anmeldebogen, Termine)
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -56,4 +56,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**ABN-EPIC-001c gebaut** (sechs Stories, ein Commit je Story, Zweitreview gelaufen, Befunde 1 bis 5, 8 und 9 behoben, 6 und 7 im Bericht). Neue Annahmen: ANN-221 bis ANN-223; neue Fassungen: ANN-053, -094, -095, -097, -125 bis -128. Befunde BEF-105, -106, -109 erledigt und archiviert, BEF-059 Teil 1 erledigt. **Lokale Schritte:** `git pull origin ccr-baf14ba6-1udxll` (oder nach dem Merge `main`); kein `pnpm install`; `pnpm dlx supabase@2.116.0 db reset` (vier Migrationen); in `supabase/functions/.env.local` `APP_ENVIRONMENT=development` ergänzen.
+**Akte entschlacken, Teil 1 gebaut (2026-10-03, Branch `claude/optimize-ui-paths-66z4r4`, Runde mit Jannes läuft, weitere Reiter folgen):** In der Akte keine Unterleiste „Patient:innen | Verordner:innen“ und keine Seitenspalte (Kontakt, Grundlage) mehr. **Anmeldebogen per Foto:** „! Anmeldebogen fehlt → Fotografieren“ öffnet die Kamera, das Foto (Art `vertrag`) erledigt den Punkt (**ANN-226**, eine Migration); Datenschutzinformation und Behandlungsvertrag werden nicht mehr einzeln vermerkt, die Einwilligungen stehen vorerst darunter. **Keine Terminseite mehr:** Zeilen der Akte sind keine Links; Tagesliste, Tour, Warteliste und Formulare führen in den Kalender (`/kalender?termin=<id>`), das Panel öffnet mit „Aktionen …“ ein Fenster mit allem, was auf der Seite stand (Haken, Doku, Absagen, nicht angetroffen, Gebühr, Folgetermin, Verordnungsfoto, Mitteilung, Heilmittel, Abrechnung, Dokumentation); Nachtrag und Korrektur stehen zusätzlich am Eintrag im Reiter Doku. Alte Links leiten um. Die angemeldeten E2E sind angepasst, laufen aber nur in der CI. **Lokale Schritte:** `git pull origin claude/optimize-ui-paths-66z4r4`; kein `pnpm install`; `pnpm dlx supabase@2.116.0 db reset` (eine Migration).

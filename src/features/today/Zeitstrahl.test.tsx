@@ -137,7 +137,7 @@ describe('Zeitstrahl', () => {
     expect(within(erste).queryByRole('link')).toBeNull();
 
     const zeile = screen.getByRole('link', { name: /Test Max/ });
-    expect(zeile).toHaveAttribute('href', `/termine/b?zurueck=${encodeURIComponent('/')}`);
+    expect(zeile).toHaveAttribute('href', `/kalender?termin=b&zurueck=${encodeURIComponent('/')}`);
     // Ein Tippziel von 44 px, und die ganze Zeile gehört dazu.
     expect(zeile).toHaveClass('min-h-11');
     expect(zeile).toHaveTextContent('Beispielstrasse 12 · Anfahrt ≈ 9 min');
@@ -187,7 +187,10 @@ describe('Zeitstrahl', () => {
     expect(screen.getByRole('link', { name: /Test Video/ })).toHaveTextContent('Video');
     const fehlzeit = screen.getByRole('link', { name: /Teambesprechung/ });
     expect(fehlzeit).toHaveTextContent('Fehlzeit · Praxis · Hauptstandort');
-    expect(fehlzeit).toHaveAttribute('href', `/termine/f?zurueck=${encodeURIComponent('/')}`);
+    expect(fehlzeit).toHaveAttribute(
+      'href',
+      `/kalender?termin=f&zurueck=${encodeURIComponent('/')}`,
+    );
     // „Steht aus" ist der Regelfall und trägt kein Abzeichen (UX-005h).
     expect(screen.queryByText('Steht aus')).toBeNull();
   });

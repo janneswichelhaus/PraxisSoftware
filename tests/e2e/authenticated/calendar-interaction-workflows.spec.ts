@@ -8,6 +8,7 @@ import {
   laufTagImFenster,
   terminKachel,
   terminUeberOberflaeche,
+  terminOeffnen,
 } from './helpers';
 
 /**
@@ -200,7 +201,7 @@ test.describe('CAL-006: Verschieben', () => {
     });
     await verschiebenBestaetigen(page);
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');
     // Die Zeit bleibt unveraendert - verschoben wurde nur die Spalte.
     await expect(detailWert(page, 'Zeit')).toContainText(`${von}–${bis}`);
@@ -221,7 +222,7 @@ test.describe('CAL-006: Verschieben', () => {
     await page.getByText('So bedienen Sie den Kalender', { exact: true }).click();
     await expect(page.getByText(/über „Bearbeiten“ in der Detailansicht/)).toBeVisible();
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(page.getByRole('link', { name: 'Bearbeiten' })).toBeVisible();
   });
 
@@ -248,7 +249,7 @@ test.describe('CAL-006: Verschieben', () => {
     });
 
     // Der Termin bleibt unveraendert bei seiner Person.
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
   });
@@ -284,7 +285,7 @@ test.describe('CAL-006: Verschieben', () => {
     await expect(page.getByRole('group', { name: /verschieben|Arbeitszeit/ })).toHaveCount(1);
 
     // Ohne Bestaetigung bleibt der Termin, wo er war.
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Zeit')).toContainText(`${von}–${bis}`);
   });
 
@@ -321,7 +322,7 @@ test.describe('CAL-006: Verschieben', () => {
     await expect(kasten).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Rückgängig' })).toHaveCount(0);
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Zeit')).toContainText(`${von}–${bis}`);
   });
 });

@@ -328,6 +328,16 @@ describe('AuthenticatedRoutes', () => {
       expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
     });
 
+    // Der Termin hat keine eigene Seite mehr (Akte entschlacken, 2026-10-03):
+    // Alte Links führen in den Kalender.
+    it('leitet die alte Terminadresse in den Kalender um', async () => {
+      renderWithProviders(
+        <AuthenticatedRoutes user={testUser(['office'])} onSignOut={vi.fn()} />,
+        TERMIN_DETAIL,
+      );
+      expect(await screen.findByRole('heading', { name: 'Kalender' })).toBeInTheDocument();
+    });
+
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
       'oeffnet %s den Kalender',
       async (role) => {

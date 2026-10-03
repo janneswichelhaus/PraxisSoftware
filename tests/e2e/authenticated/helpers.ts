@@ -234,7 +234,7 @@ export async function arbeitszeitBestaetigen(
     | 'Serie trotzdem anlegen'
     | 'Trotzdem ändern'
     | 'Trotzdem eintragen',
-  weiter: RegExp,
+  weiter: RegExp | ((url: URL) => boolean),
 ): Promise<void> {
   const rueckfrage = page.getByRole('dialog', { name: 'Außerhalb der Arbeitszeit' });
 
@@ -252,18 +252,50 @@ export async function arbeitszeitBestaetigen(
 }
 
 /**
- * CSS-Auswahl fuer den Weg zu EINEM bestimmten Termin.
- *
- * Seit UX-012b traegt ein Weg seinen Rueckweg in der Adresse: Aus
- * `/termine/<id>` wird im Kalender und in der Akte
- * `/termine/<id>?zurueck=<pfad>`. Das **Ziel** ist dasselbe geblieben, nur die
- * Adresse ist laenger - ein Vergleich auf Gleichheit traf deshalb nichts mehr.
- *
- * Geprueft wird weiterhin die genaue Kennung: Entweder endet die Adresse dort,
- * oder es folgt das Fragezeichen. Ein anderer Termin passt damit nicht.
+ * Die Adresse des Kalenders mit gewaehltem Termin - irgendeinem
+ * (`TERMIN_IM_KALENDER`) oder genau diesem
+ * (`terminImKalender`).
  */
-export function terminLinkWahl(appointmentId: string): string {
-  return `a[href="/termine/${appointmentId}"], a[href^="/termine/${appointmentId}?"]`;
+export function TERMIN_IM_KALENDER(url: URL): boolean {
+  return (
+    url.pathname === '/kalender' && /^[0-9a-f-]{36}$/.test(url.searchParams.get('termin') ?? '')
+  );
+}
+
+export function terminImKalender(appointmentId: string): (url: URL) => boolean {
+  return (url) => url.pathname === '/kalender' && url.searchParams.get('termin') === appointmentId;
+}
+
+/** Die Kennung des im Kalender gewaehlten Termins aus der Adresse. */
+export function terminAusAdresse(page: Page): string {
+  const id = new URL(page.url()).searchParams.get('termin');
+  if (!id) throw new Error(`Kein Termin in der Adresse: ${page.url()}`);
+  return id;
+}
+
+/**
+ * Oeffnet das Fenster „Aktionen" des im Kalender gewaehlten Termins - der
+ * Ersatz fuer die fruehere Terminseite (Akte entschlacken, 2026-10-03).
+ */
+export async function aktionenOeffnen(page: Page): Promise<Locator> {
+  await page.getByRole('button', { name: 'Aktionen …' }).click();
+  const fenster = page.getByRole('dialog');
+  await expect(fenster).toBeVisible();
+  return fenster;
+}
+
+/** Laedt den Kalender mit gewaehltem Termin neu und oeffnet dessen Fenster wieder. */
+export async function terminNeuLaden(page: Page): Promise<Locator> {
+  await page.reload();
+  await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+  return aktionenOeffnen(page);
+}
+
+/** Oeffnet einen Termin ueber seine Kennung: Kalender, Panel, Fenster „Aktionen". */
+export async function terminOeffnen(page: Page, appointmentId: string): Promise<Locator> {
+  await page.goto(`/kalender?termin=${appointmentId}`);
+  await expect(page).toHaveURL(terminImKalender(appointmentId));
+  return aktionenOeffnen(page);
 }
 
 /**
@@ -281,19 +313,12 @@ export function terminKachel(page: Page, appointmentId: string): Locator {
 }
 
 /**
- * Öffnet einen Termin aus dem Kalender: Tipp auf die Kachel, dann „Termin →"
- * im Terminpanel (Design-Handoff 2026-10-01, Abschnitt 7a).
+ * Öffnet einen Termin aus dem Kalender: Tipp auf die Kachel, dann „Aktionen …"
+ * im Terminpanel (seit 2026-10-03 statt der Terminseite).
  */
-export async function terminImKalenderOeffnen(page: Page, appointmentId: string): Promise<void> {
+export async function terminImKalenderOeffnen(page: Page, appointmentId: string): Promise<Locator> {
   await terminKachel(page, appointmentId).click();
-  await page.getByRole('link', { name: /^(Termin|Fehlzeit) →$/ }).click();
-}
-
-/** Das Ziel von „Termin →" im Panel des gewählten Termins. */
-export async function panelZiel(page: Page, appointmentId: string): Promise<URL> {
-  await terminKachel(page, appointmentId).click();
-  const link = page.getByRole('link', { name: /^(Termin|Fehlzeit) →$/ });
-  return new URL((await link.getAttribute('href'))!, 'http://ort.invalid');
+  return aktionenOeffnen(page);
 }
 
 /**
@@ -529,9 +554,13 @@ export async function terminUeberOberflaeche(
   await page.getByLabel('Beginn *').fill(opts.von);
   if (opts.bis) await expect(page.getByText(`${opts.bis} Uhr`)).toBeVisible();
   await page.getByRole('button', { name: 'Termin anlegen' }).click();
-  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
-  await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-  return page.url().split('/').pop()!;
+  await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
+  await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+  // Wie frueher auf der Terminseite: Danach steht der Termin mit seinen
+  // Aktionen offen.
+  const id = terminAusAdresse(page);
+  await aktionenOeffnen(page);
+  return id;
 }
 
 /**

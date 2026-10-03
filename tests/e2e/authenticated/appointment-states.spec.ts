@@ -11,6 +11,8 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   kalenderOptionenOeffnen,
+  terminOeffnen,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -80,7 +82,7 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
     await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
   });
 });
@@ -186,7 +188,7 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetischer Behandlungstext, E2E.');
     await page.getByRole('button', { name: 'Festschreiben' }).click();
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Status')).toContainText('Dokumentiert');
 
     // Ohne Rueckweg: weder aendern noch absagen noch wieder oeffnen.

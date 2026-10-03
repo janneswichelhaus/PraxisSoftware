@@ -10,6 +10,8 @@ import {
   tagImFenster,
   zeitImLauf,
   kalenderOptionenOeffnen,
+  aktionenOeffnen,
+  TERMIN_IM_KALENDER,
 } from './helpers';
 
 /**
@@ -69,14 +71,13 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     const kachel = page.getByRole('button', { name: bezeichnung });
     await expect(kachel.first()).toBeVisible();
 
-    // Die Kachel öffnet das Terminpanel, „Fehlzeit →" die Detailansicht
-    // (Design-Handoff 2026-10-01, Abschnitt 7a).
+    // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster der
+    // Fehlzeit (seit 2026-10-03 statt der Detailansicht).
     await kachel.first().click();
-    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
+    await aktionenOeffnen(page);
 
-    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
-    // Überschrift, „Fehlzeit" steht als Zeile darüber.
-    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
+    // Der Titel der Fehlzeit ist die Überschrift des Fensters.
+    await expect(page.getByRole('heading', { level: 2, name: bezeichnung })).toBeVisible();
     await expect(detailWert(page, 'Fehlzeit')).toContainText('Teambesprechung');
     await expect(detailWert(page, 'Zeit')).toContainText(von);
 
@@ -129,7 +130,7 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await expect(kacheln).toHaveCount(2);
 
     await kacheln.first().click();
-    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
+    await aktionenOeffnen(page);
     await expect(detailWert(page, 'Beteiligte')).toContainText('Anna Beispiel');
     await expect(detailWert(page, 'Beteiligte')).toContainText('Tim Teamleitung');
 
@@ -142,8 +143,10 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByLabel('Ende *').fill(neuBis);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Trotzdem ändern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Trotzdem ändern', TERMIN_IM_KALENDER);
 
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(detailWert(page, 'Fehlzeit')).toContainText(`${bezeichnung} neu`);
     await expect(detailWert(page, 'Zeit')).toContainText(neuVon);
 
@@ -177,7 +180,7 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     await page.getByRole('button', { name: bezeichnung }).first().click();
-    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
+    await aktionenOeffnen(page);
     await page.getByRole('button', { name: 'Fehlzeit absagen', exact: true }).click();
     // „Patient:in hat abgesagt" steht hier nicht zur Wahl (CAL-016).
     await page.getByLabel('Absagegrund').selectOption('practice_request');
@@ -223,7 +226,7 @@ test.describe('CAL-015: Fehlzeit eintragen', () => {
     await page.getByLabel('Datum *').fill(tag);
     await page.getByLabel('Beginn *').fill(von);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(/bereits einen Termin/)).toBeVisible();
   });
@@ -269,10 +272,9 @@ test.describe('CAL-017: Die Ereignisseiten auf drei Breiten', () => {
     // 2. Die Detailansicht mit beiden Aktionspaaren.
     await page.goto(`/kalender?ansicht=tag&datum=${tag}`);
     await page.getByRole('button', { name: bezeichnung }).first().click();
-    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
-    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
-    // Überschrift, „Fehlzeit" steht als Zeile darüber.
-    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
+    await aktionenOeffnen(page);
+    // Der Titel der Fehlzeit ist die Überschrift des Fensters.
+    await expect(page.getByRole('heading', { level: 2, name: bezeichnung })).toBeVisible();
 
     await pruefeBreiten(page, async () => {
       await expect(

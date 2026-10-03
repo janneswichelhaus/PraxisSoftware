@@ -6,11 +6,13 @@ import {
   anmelden,
   rpcAufrufen,
   tagImFenster,
-  terminLinkWahl,
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
   erwarteProtokollierteAbweisung,
+  terminOeffnen,
+  aktionenOeffnen,
+  terminImKalender,
 } from './helpers';
 
 /**
@@ -52,7 +54,8 @@ async function finalisierterEintrag(page: Page, tag: string): Promise<string> {
   await page.goto(`/termine/${terminId}/abschluss`);
   await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
   await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
-  await expect(page).toHaveURL(`/termine/${terminId}`);
+  await expect(page).toHaveURL(terminImKalender(terminId));
+  await aktionenOeffnen(page);
 
   await page.getByRole('button', { name: 'Finalisieren' }).click();
   await page.getByRole('button', { name: 'Ja, jetzt finalisieren' }).click();
@@ -75,9 +78,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     await expect(akte).toBeVisible();
 
     // Die Zeile genau dieses Termins - andere Laeufe hinterlassen weitere.
-    const zeile = akte
-      .getByRole('listitem')
-      .filter({ has: page.locator(terminLinkWahl(terminId)) });
+    const zeile = akte.locator(`li[data-termin="${terminId}"]`);
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
     // UX-005e: In der Akte traegt der finalisierte Eintrag kein Etikett; die
     // Herkunftszeile nennt die Finalisierung kurz und ohne die behandelnde
@@ -97,9 +98,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     // bekommt keinen zweiten, datensparsamen Nachweis daneben.
     const officeAkte = page.getByRole('region', { name: 'Behandlungsdokumentation' });
     await expect(officeAkte).toBeVisible();
-    const officeZeile = officeAkte
-      .getByRole('listitem')
-      .filter({ has: page.locator(terminLinkWahl(terminId)) });
+    const officeZeile = officeAkte.locator(`li[data-termin="${terminId}"]`);
     await expect(officeZeile.getByText(ENTWURF)).toBeVisible();
     await expect(page.getByRole('region', { name: 'Behandlungsnachweis' })).toHaveCount(0);
 
@@ -108,7 +107,7 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     await expect(page.getByLabel('Version 1')).toBeVisible();
 
     // Am Termin: lesen ja, schreiben nein (PROJECT_PRINCIPLES.md 4.3).
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(page.getByText(ENTWURF)).toBeVisible();
     await expect(page.getByRole('link', { name: /Nachtrag/ })).toHaveCount(0);
     await expect(page.getByRole('link', { name: /Korrig/ })).toHaveCount(0);
