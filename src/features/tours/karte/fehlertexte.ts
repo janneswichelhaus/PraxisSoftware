@@ -72,7 +72,10 @@ export const FEHLERTEXTE: Readonly<Record<LocationErrorCode, Fehlertext>> = {
   },
   not_found: {
     titel: 'Keine Route gefunden',
-    erklaerung: 'Zwischen diesen Punkten hat der Kartendienst keinen Weg für das Rad gefunden.',
+    // ADR-019 Punkt 38: Auch eine Ersatzschätzung des Anbieters endet hier -
+    // sie ist keine Fahrzeit.
+    erklaerung:
+      'Zwischen diesen Punkten hat der Kartendienst keinen Weg für das Rad berechnet; die Fahrzeit ist nicht verfügbar.',
   },
   invalid_request: {
     titel: 'Die Stopps ließen sich so nicht anfragen',

@@ -127,6 +127,10 @@ function nachgebildeterPunkt(anschrift: GeocodeRequest): GeocodeErgebnis {
         lon: Math.round((MITTE.lon + Math.cos(winkel) * abstand * 1.5) * 1e6) / 1e6,
       },
       precision: anschrift.houseNumber === '' ? 'street' : 'address',
+      // Die Nachbildung ist nie eindeutig: Ihre Position ist erfunden, und
+      // die Oberfläche lässt jede bestätigen (ANN-016, ADR-019 Punkt 37).
+      unique: false,
+      matchCount: 1,
       matchLabel:
         `${anschrift.street} ${anschrift.houseNumber}, ${anschrift.postalCode} ${anschrift.city}`
           .replace(/\s+,/, ',')

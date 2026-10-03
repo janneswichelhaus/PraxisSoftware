@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
+import { nachSrgb } from './farbe';
 import { alleBytes, bereinigeBild } from './metadaten';
 
 /**
@@ -42,6 +43,8 @@ const patientFileSchema = z.object({
   uploaded_at: z.string().nullable(),
   uploaded_by_name: z.string().nullable(),
   object_missing: z.boolean(),
+  /** Leer: nicht serverseitig geprüft (ADR-017 Punkt 51). */
+  verified_at: z.string().nullable(),
 });
 
 export type PatientFile = z.infer<typeof patientFileSchema>;
@@ -120,7 +123,11 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   // Ort, Gerät, Aufnahmezeit, Vorschaubild. Verlustfrei, nur die Ausrichtung
   // bleibt. Alles danach - Größe, Prüfsumme, Upload - gilt den bereinigten
   // Bytes: Die Summe belegt die abgelegte Fassung, nicht die empfangene.
-  const datei = await bereinigeBild(auftrag.datei);
+  // Farbe vor der Bereinigung (ADR-017 Punkt 53, ABN-026): Ein Bild mit
+  // eingebettetem Farbprofil wird nach sRGB umgerechnet, sonst zeigte es nach
+  // dem Entfernen des Profils falsche Farben. Ohne Profil bleibt es byte-gleich.
+  const farbrichtig = await nachSrgb(auftrag.datei);
+  const datei = await bereinigeBild(farbrichtig);
   const nachBereinigung = dateiAblehnungsgrund(datei);
   if (nachBereinigung) throw new Error(nachBereinigung);
 
@@ -170,7 +177,40 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
     throw fehler;
   }
 
+  // (c, Fassung 3) Die Prüfung am Inhalt (ADR-017 Punkte 49 bis 52).
+  if ((await pruefeAmServer(vorbereitet.file_id)) === 'rejected') {
+    throw new Error(VERWORFEN);
+  }
+
   return vorbereitet.file_id;
+}
+
+/** Was die Person liest, wenn der Server eine Datei verwirft (ADR-017 Punkt 52). */
+export const VERWORFEN =
+  'Die Datei wurde bei der Prüfung am Server verworfen: Format, Prüfsumme oder Metadaten stimmten nicht mit dem Hochgeladenen überein. Bitte die Originaldatei erneut wählen.';
+
+const pruefantwortSchema = z.object({ ergebnis: z.string() });
+
+/**
+ * Löst die Prüfung am Inhalt aus (Edge Function `patient-file-verify`, ABN-025).
+ *
+ * Bis OPS-001 die Edge Runtime freigibt, gibt es die Function in den meisten
+ * Umgebungen nicht; dann bleibt die Datei „nicht serverseitig geprüft"
+ * (Punkt 51), und das ist kein Fehler des Uploads. Nur ein ausdrückliches
+ * `rejected` ist eine Nachricht an die Person: Die Datenbank hat die Datei
+ * schon verworfen, Löschauftrag und Protokoll sind geschrieben (ANN-222).
+ */
+async function pruefeAmServer(fileId: string): Promise<string | null> {
+  try {
+    const { data, error } = (await getSupabase().functions.invoke<unknown>('patient-file-verify', {
+      body: { file_id: fileId },
+    })) as { data: unknown; error: unknown };
+    if (error) return null;
+    const antwort = pruefantwortSchema.safeParse(data);
+    return antwort.success ? antwort.data.ergebnis : null;
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -204,7 +244,8 @@ const verweisSchema = z.object({
 const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
 
 /**
- * Erzeugt genau einen kurzlebigen Verweis auf genau eine Datei.
+ * Holt die Freigabe für genau einen Verweis auf genau eine Datei und
+ * unterschreibt ihn.
  *
  * Zwei Schritte, und die Reihenfolge ist der Punkt: Erst holt
  * `issue_patient_file_link` den Objektschlüssel, protokolliert die Ausstellung
@@ -217,40 +258,68 @@ const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
  * erzeugt hat, **hatte** den Zugriff. Ob die Bytes geflossen sind, sieht diese
  * Anwendung nicht — die Anfrage läuft zwischen Browser und Anbieter.
  *
- * Der Verweis wird **nicht** zurückgegeben, um ihn irgendwo abzulegen: Er lebt
- * eine Minute, ist nicht widerrufbar (Punkt 17) und gehört deshalb nirgendwo
- * hin außer in genau diesen einen Aufruf.
+ * **Anzeigen oder Herunterladen** (ADR-017 Fassung 3, Punkte 54 und 55): Nur
+ * der Verweis der eigenen Aktion „Herunterladen" trägt den Anzeigenamen als
+ * Downloadnamen, und nur dann steht im Protokoll das Kennzeichen `download`.
+ * Der Verweis verlässt dieses Modul nicht: Er lebt eine Minute, ist nicht
+ * widerrufbar (Punkt 17) und gehört nirgendwo hin.
  */
-export async function oeffneDatei(fileId: string): Promise<string> {
-  return (await verweisMitArt(fileId)).url;
-}
-
-/**
- * Wie `oeffneDatei`, dazu das Format - für die eine Stelle, die ein Bild
- * selbst zeigt statt es in einem neuen Fenster zu öffnen: das Foto der
- * Verordnung neben „Grundlage erfassen" (PRX-011). Ein Verweis, ein Tipp,
- * ein Auditeintrag - wie beim Öffnen.
- */
-export async function verweisMitArt(fileId: string): Promise<{ url: string; mimeType: string }> {
+async function verweis(
+  fileId: string,
+  herunterladen: boolean,
+): Promise<{ url: string; mimeType: string; name: string }> {
   const { data, error } = (await getSupabase().rpc('issue_patient_file_link', {
     p_file_id: fileId,
+    p_download: herunterladen,
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Datei konnte nicht geöffnet werden. Fehlt die Berechtigung?');
-  const verweis = z.array(verweisSchema).parse(data ?? [])[0];
-  if (!verweis) throw new Error('Die Datei konnte nicht geöffnet werden.');
+  const freigabe = z.array(verweisSchema).parse(data ?? [])[0];
+  if (!freigabe) throw new Error('Die Datei konnte nicht geöffnet werden.');
 
-  const { data: signiert, error: signaturFehler } = await getSupabase()
-    .storage.from(verweis.bucket_id)
-    .createSignedUrl(verweis.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
-      download: verweis.display_name,
-    });
+  const ablage = getSupabase().storage.from(freigabe.bucket_id);
+  const { data: signiert, error: signaturFehler } = herunterladen
+    ? await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
+        download: freigabe.display_name,
+      })
+    : await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
 
   if (signaturFehler || !signiert?.signedUrl) {
     throw new Error('Die Datei ist in der Ablage nicht auffindbar.');
   }
+  return { url: signiert.signedUrl, mimeType: freigabe.mime_type, name: freigabe.display_name };
+}
 
-  return { url: signiert.signedUrl, mimeType: verweis.mime_type };
+/**
+ * Lädt eine Datei zum Ansehen — in den Speicher der Seite, nicht auf das
+ * Gerät (ADR-017 Punkt 54). Verweis ohne Downloadnamen, `fetch` mit
+ * `cache: 'no-store'`, nie ein Fenster auf den Verweis. Der Typ des Blobs ist
+ * der geprüfte Typ der Datei, nicht der, den die Antwort behauptet.
+ */
+export async function ladeDateiZumAnzeigen(
+  fileId: string,
+): Promise<{ bild: Blob; mimeType: string; name: string }> {
+  const { url, mimeType, name } = await verweis(fileId, false);
+  const antwort = await fetch(url, { cache: 'no-store' });
+  if (!antwort.ok) throw new Error('Die Datei konnte nicht geladen werden.');
+  const bild = new Blob([await antwort.arrayBuffer()], { type: mimeType });
+  return { bild, mimeType, name };
+}
+
+/**
+ * Holt eine Datei bewusst auf das Gerät (ADR-017 Punkt 55) — etwa einen
+ * Arztbrief zum Drucken. Eigener Verweis mit Downloadnamen und Kennzeichen im
+ * Protokoll; für Fotos weist die Datenbank ab. Der Verweis wird über einen
+ * Link mit `download` ausgelöst, nicht über ein neues Fenster: Die Antwort
+ * kommt als Anhang und ersetzt die Anwendung nicht.
+ */
+export async function ladeDateiHerunter(fileId: string): Promise<void> {
+  const { url } = await verweis(fileId, true);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.download = '';
+  link.click();
 }
 
 // -----------------------------------------------------------------------------

@@ -19,6 +19,7 @@ export const DOKUMENTARTEN = [
   'befund',
   'arztbrief',
   'klinisches_bild',
+  'dokumentationsfoto',
   'patientenfoto',
   'einwilligung',
   'vertrag',
@@ -31,7 +32,9 @@ export const dokumentartLabels: Record<Dokumentart, string> = {
   befund: 'Befund',
   arztbrief: 'Arztbrief',
   klinisches_bild: 'Klinisches Bild',
-  patientenfoto: 'Patientenfoto',
+  dokumentationsfoto: 'Dokumentationsfoto',
+  // ADR-017 Punkt 43: Der Schlüssel bleibt, die Oberfläche sagt „Arbeitshilfe".
+  patientenfoto: 'Arbeitshilfe',
   einwilligung: 'Einwilligung',
   vertrag: 'Vertrag',
 };
@@ -40,14 +43,18 @@ export const dokumentartHinweise: Record<Dokumentart, string> = {
   verordnungsscan: 'Foto oder Scan des Rezepts. Nur an einer Verordnung.',
   befund: 'Befund einer Untersuchung.',
   arztbrief: 'Schreiben einer ärztlichen Stelle.',
-  // ADR-017 Punkt 31: nie ein Foto, das die Praxis selbst von der Person
-  // macht - das wäre ein Weg an Einwilligung und Frist vorbei.
+  // ADR-017 Punkte 31 und 43: nie ein Foto, das die Praxis selbst von der
+  // Person macht - das wäre ein Weg am Kameradialog und an der Wahl der Art
+  // vorbei.
   klinisches_bild:
     'Röntgen, MRT, Ultraschall oder ein Bild aus ärztlicher oder klinischer Hand. Kein Foto, das die Praxis selbst von der Person macht.',
-  // ADR-017 Abschnitt G: entsteht nur im Kameradialog im Verlauf, nie hier
-  // über den Dateiwähler - die Dateiliste bietet die Art nicht an.
+  // ADR-017 Abschnitte G und H: Beide Fotoarten entstehen nur im Kameradialog
+  // im Verlauf, nie hier über den Dateiwähler - die Dateiliste bietet sie
+  // nicht an.
+  dokumentationsfoto:
+    'Foto der Person, das für die Dokumentation der Behandlung erforderlich ist. Teil der Akte (zehn Jahre), keine Einwilligung, nur über die Kamera der Anwendung, löschen nur am Aufnahmetag.',
   patientenfoto:
-    'Foto, das die Praxis von der Person aufnimmt. Nur mit Einwilligung, nur über die Kamera der Anwendung, gelöscht nach spätestens zwölf Monaten.',
+    'Foto der Person für Übergabe und Vergleich, das die Dokumentation nicht braucht. Nur mit Einwilligung, nur über die Kamera der Anwendung, gelöscht nach spätestens zwölf Monaten.',
   einwilligung: 'Unterschriebene Einwilligung oder Datenschutzinformation.',
   vertrag: 'Behandlungsvertrag oder vergleichbare Vereinbarung.',
 };
@@ -65,6 +72,7 @@ export const KLINISCHE_DOKUMENTARTEN: readonly Dokumentart[] = [
   'befund',
   'arztbrief',
   'klinisches_bild',
+  'dokumentationsfoto',
   'patientenfoto',
 ];
 
@@ -86,6 +94,22 @@ export function sichtbarkeitHinweis(art: Dokumentart): string {
   return istKlinisch(art)
     ? 'Klinisch: sichtbar für alle Praxisrollen; hinzufügen und löschen nur Praxisinhaber:in, Therapeut:innen und Teamleitung.'
     : 'Organisatorisch: sichtbar für alle Praxisrollen; auch das Praxismanagement darf sie hinzufügen und löschen.';
+}
+
+/**
+ * Das Kennzeichen an einer Datei, die die Prüfung am Server noch nicht
+ * bestanden hat (ADR-017 Punkt 51). Bis OPS-001 die Edge Runtime freigibt,
+ * trägt es jede Datei — ehrlich, nicht als Warnung: Typ, Prüfsumme und
+ * Metadaten hat bis dahin nur das Gerät geprüft.
+ */
+export const NICHT_SERVERSEITIG_GEPRUEFT = 'nicht serverseitig geprüft';
+
+/**
+ * Lässt sich die Datei in der Anwendung zeigen (ADR-017 Punkt 54)? Bis ANN-223
+ * entschieden ist: nur Bilder; ein PDF hat „Herunterladen" (Punkt 55).
+ */
+export function istAnzeigbar(mimeType: string): boolean {
+  return mimeType === 'image/jpeg' || mimeType === 'image/png';
 }
 
 /**

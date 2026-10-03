@@ -129,7 +129,7 @@ describe('AufbewahrungPage', () => {
     fetchRetentionSchedule.mockResolvedValue([akte, fotos, beschaeftigte]);
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
-    expect(await screen.findByText('Patientenfotos')).toBeInTheDocument();
+    expect(await screen.findByText('Foto-Arbeitshilfen')).toBeInTheDocument();
     expect(screen.getByText('1 Jahr')).toBeInTheDocument();
     expect(screen.getByText('ab dem Ereignis')).toBeInTheDocument();
     expect(

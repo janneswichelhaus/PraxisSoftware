@@ -21,7 +21,7 @@ const deleteTreatmentBasis = vi.fn();
 const navigate = vi.fn();
 const fetchPatient = vi.fn();
 const ordneScanZu = vi.fn();
-const verweisMitArt = vi.fn();
+const ladeDateiZumAnzeigen = vi.fn();
 
 // PRX-011: Zuordnen und Anzeigen des Verordnungsfotos.
 vi.mock('@/features/files/api', async (importOriginal) => {
@@ -30,8 +30,8 @@ vi.mock('@/features/files/api', async (importOriginal) => {
     ...actual,
     ordneScanZu: (fileId: string, grundlageId: string) =>
       ordneScanZu(fileId, grundlageId) as Promise<void>,
-    verweisMitArt: (fileId: string) =>
-      verweisMitArt(fileId) as Promise<{ url: string; mimeType: string }>,
+    ladeDateiZumAnzeigen: (fileId: string) =>
+      ladeDateiZumAnzeigen(fileId) as Promise<{ bild: Blob; mimeType: string; name: string }>,
   };
 });
 
@@ -928,8 +928,14 @@ describe('Verordnung ohne Papier (PRX-011)', () => {
     createTreatmentBasis.mockResolvedValue('neue-id');
     ordneScanZu.mockReset();
     ordneScanZu.mockResolvedValue(undefined);
-    verweisMitArt.mockReset();
-    verweisMitArt.mockResolvedValue({ url: 'https://ablage.invalid/foto', mimeType: 'image/jpeg' });
+    ladeDateiZumAnzeigen.mockReset();
+    ladeDateiZumAnzeigen.mockResolvedValue({
+      bild: new Blob(['jpeg'], { type: 'image/jpeg' }),
+      mimeType: 'image/jpeg',
+      name: 'Verordnung',
+    });
+    URL.createObjectURL = vi.fn(() => 'blob:foto');
+    URL.revokeObjectURL = vi.fn();
     navigate.mockReset();
     fetchPatient.mockReset();
     fetchPatient.mockResolvedValue(
@@ -947,14 +953,14 @@ describe('Verordnung ohne Papier (PRX-011)', () => {
 
     const foto = screen.getByRole('complementary', { name: 'Foto der Verordnung' });
     expect(within(foto).queryByRole('img')).not.toBeInTheDocument();
-    expect(verweisMitArt).not.toHaveBeenCalled();
+    expect(ladeDateiZumAnzeigen).not.toHaveBeenCalled();
 
     await user.click(within(foto).getByRole('button', { name: 'Foto anzeigen' }));
     expect(await within(foto).findByRole('img', { name: 'Foto der Verordnung' })).toHaveAttribute(
       'src',
-      'https://ablage.invalid/foto',
+      'blob:foto',
     );
-    expect(verweisMitArt).toHaveBeenCalledWith(SCAN);
+    expect(ladeDateiZumAnzeigen).toHaveBeenCalledWith(SCAN);
   });
 
   it('haengt das Foto beim Speichern an die neue Grundlage', async () => {

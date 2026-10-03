@@ -61,7 +61,7 @@ describe('Fahrtabschnitt', () => {
   it('nennt eine unbekannte Fahrzeit ungeprueft - nie "passt"', () => {
     render(<Fahrtabschnitt sekunden={null} pruefung={null} zeitzone="Europe/Berlin" />);
     const zeile = screen.getByText(/nicht geprüft/);
-    expect(zeile).toHaveTextContent('Fahrzeit unbekannt – nicht geprüft');
+    expect(zeile).toHaveTextContent('Fahrzeit nicht verfügbar – nicht geprüft');
     // Auf Papier sagt die Zeile nichts, was hilft (TER-12).
     expect(zeile).toHaveClass('print:hidden');
     expect(screen.queryByText(/passt/)).toBeNull();

@@ -240,6 +240,8 @@ export const AUDIT_ACTIONS = [
   'waitlist_entry.reviewed',
   // ABN-022: Nachtrag zum abgeschlossenen Trainingsprotokoll (BEF-113).
   'training_protocol.addendum_created',
+  // ABN-024: Datei bei der Prüfung am Server verworfen (ADR-017 Punkt 52).
+  'patient_file.verification_failed',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -397,6 +399,7 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
   'waitlist_entry.reviewed': 'Wartelisteneintrag als noch aktuell bestätigt',
   'training_protocol.addendum_created': 'Nachtrag zum Trainingsprotokoll geschrieben',
+  'patient_file.verification_failed': 'Datei bei der Prüfung am Server verworfen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
   'prescription.viewed': 'Verordnung gelesen',

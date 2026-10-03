@@ -996,7 +996,7 @@ Bildschirm. Nach der Umsetzung neu messen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                       |
 | Bereich | Akte → Dateien (`/patienten/:id/dateien`); Behandlungsgrundlagen → „Scan des Rezepts“; Verlauf → Fotos                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs DAT-02, DAT-07, DAT-18                                                                                                                                                                                                                        |
-| Status  | offen                                                                                                                                                                                                                                                                                                                            |
+| Status  | offen — Teil (1) „Öffnen heißt Anzeigen“ erledigt in ABN-EPIC-001c (ABN-027; PDF in der App offen, ANN-223); Teile (2) und (3) offen |
 | Berührt | `src/features/files/api.ts` (Z. 235–237), `src/features/files/Dateiliste.tsx` (Z. 64, 100, 126, 213, 362–400), `src/features/files/dokumentarten.ts` (Z. 77–78), `src/features/files/kamera.ts` (Z. 16–22), `src/features/files/FotosImVerlauf.tsx` (Z. 160, 190); ADR-017 Punkt 12, 15, 17, 19 und 40; ANN-129; ADR-013 Punkt 9 |
 
 **Beobachtung.**
@@ -1690,55 +1690,6 @@ ohnehin nicht nebenbei angefasst werden.
 - Die Rechnungsdarstellung ist austauschbar an einer Stelle, bis B17 entschieden ist.
 - Terminzahl (BEF-096), Heilmittelmenge (ANN-073) und Rechnungsbetrag müssen danach zusammenpassen; ein Test prüft alle drei an einem Fall.
 
-### BEF-105 — Dateien: Typ, Prüfsumme und Metadaten stützen sich auf Angaben des Browsers
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-02 |
-| Bereich | Dateiablage der Akte, Patientenfotos (Upload) |
-| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-053, ANN-125) |
-| Status  | eingeplant in ABN-EPIC-001c (neue Fassungen ADR-017 und ADR-019 vorher; Zuschnitt 2026-10-02) |
-| Berührt | ANN-053, ANN-125; ADR-017 (Bestätigung, Virenprüfung); `storage.objects.metadata`; Metadaten-Entfernung im Browser |
-
-**Erwartet** (Jannes, 2026-10-02):
-- **Dateityp:** Der Server prüft ihn am **Inhalt** der Datei (Signatur der ersten Bytes), nicht am MIME-Typ, den Speicher oder Browser angeben. Der passende Ort ist der serverseitige Schritt, den ADR-017 ohnehin für die Virenprüfung vorsieht.
-- **Prüfsumme:** Die SHA-256 aus dem Browser wird als „nicht serverseitig verifiziert“ geführt, solange der Server sie nicht nachrechnet.
-- **Metadaten:** Die Metadatenfreiheit eines Fotos wird zusätzlich serverseitig geprüft und gegebenenfalls nachbereinigt.
-- **Darstellung:** Ausrichtung **und korrekte Farbdarstellung** bleiben erhalten. Heute entfernt das Gerät auch das Farbprofil (ANN-125); künftig wird das Bild entweder vorher nach sRGB umgerechnet oder ein sRGB-Profil bleibt.
-
-### BEF-106 — Medizinisch notwendige Fotos fallen unter die kurzen Fristen der Foto-Arbeitshilfe
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-02 |
-| Bereich | Patientenfotos, Akte, Löschlauf |
-| Quelle  | Jannes, Abnahme der Annahmen Block 6 (ANN-126, ANN-127) |
-| Status  | eingeplant in ABN-EPIC-001c (neue Fassungen ADR-017 und ADR-019 vorher; Zuschnitt 2026-10-02) |
-| Berührt | ANN-126, ANN-127; ADR-017 (Punkte 37 ff., Fotos als Arbeitshilfe, Klasse `patientenfoto`); ADR-008; Legal Hold |
-
-**Beobachtung.** Jedes Patientenfoto ist heute Arbeitshilfe auf Einwilligung: höchstens zwölf Monate, drei Monate nach dem Abschluss, ein Widerruf löscht.
-
-**Erwartet** (Jannes, 2026-10-02):
-- Medizinisch notwendige **Dokumentationsfotos** gehören zur Akte, mit deren Frist (zehn Jahre, ADR-008).
-- Die kurzen Fristen und der Widerruf gelten nur für **zusätzliche, vorübergehende Foto-Arbeitshilfen**.
-- Ein Widerruf hebt weder gesetzliche Aufbewahrungspflichten noch einen Legal Hold auf.
-- Dafür braucht es eine Unterscheidung beim Aufnehmen, eine eigene Datenklasse und eine neue Fassung von ADR-017. Die Rechtsgrundlage der Dokumentationsfotos (Behandlung, Art. 9 Abs. 2 lit. h) geht in B2.
-
-### BEF-109 — Kartendienst: Gate in Produktion, eindeutige Treffer, Ersatzschätzungen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-02 |
-| Bereich | Kartendienst (`location-provider`), Stammdaten (Verorten), Tour und Fahrpuffer |
-| Quelle  | Jannes, Abnahme der Annahmen Block 7 (ANN-094, ANN-095, ANN-097) |
-| Status | eingeplant in ABN-EPIC-001c — Punkt 2 Satz 2 und 3 erledigt seit MAP-006a; Gate, eindeutige Treffer und Ersatzschätzungen offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
-| Berührt | ANN-094, ANN-095, ANN-097; ADR-019 (Gate Punkt 9, Anbieterprüfung); `LOCATION_DATA_GATE`; Matrix- und Routenantworten |
-
-**Erwartet** (Jannes, 2026-10-02):
-1. **Gate (ANN-094):** Der Wert `synthetic` ist in der Produktivumgebung **technisch ausgeschlossen**, nicht nur per Konvention. Die Function erkennt die Umgebung und lehnt ihn dort ab; ein Test belegt das. Die Anbieterprüfung (ADR-019 Punkt 9, G12) deckt auch die **direkt geladenen Kartenkacheln** ab, die am Server vorbei aus dem Browser kommen.
-2. **Verorten (ANN-095):** Automatisch übernommen wird nur ein **eindeutiger** Treffer zur **vollständigen** Adresse. Ändert sich die Adresse, wird die alte Koordinate der Stammdaten verworfen (prüfen, ob das heute so ist). Historische Termine behalten ihren Stand (ANN-003, BEF-092).
-3. **Fahrzeit (ANN-097):** Liefert der Anbieter eine Luftlinien- oder Ersatzschätzung statt einer Routenfahrzeit, was PTV in Matrixantworten tun kann, wird sie ausdrücklich gekennzeichnet oder als „Fahrzeit nicht verfügbar“ behandelt, nie als echte Fahrzeit.
-
 ### BEF-114 — Training: Paketpreise für drei oder sechs Monate
 
 |         |   |
@@ -1763,3 +1714,15 @@ ohnehin nicht nebenbei angefasst werden.
 | Berührt | `src/features/today/MyDayPage.test.tsx` („fragt beim Oeffnen die Route des Tages ab …“, ANN-194) |
 
 **Beobachtet:** Der Test legt die Termine relativ zur echten Uhr (in 60 Minuten, danach 75 Minuten Abstand). Um 21:18 Uhr Berliner Zeit fällt der zweite Termin über Mitternacht, und „≈ 9 min Rad · 66 min Puffer“ erscheint nicht; auf `main` ebenso rot, also unabhängig von ABN-EPIC-001b. **Erwartet:** Der Test setzt die Uhr fest (`vi.setSystemTime` auf einen Vormittag) und ist zu jeder Tageszeit grün. Behoben im selben PR, weil die CI sonst am Abend rot wird.
+
+### BEF-121 — Ein Plattformtest hängt an der Uhrzeit des Laufs (Volljährigkeit)
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Tests, Plattformzugang |
+| Quelle  | Loop ABN-EPIC-001c, voller Lauf von `pnpm test:db` um 22:40 Uhr UTC |
+| Status  | erledigt in ABN-EPIC-001c (PR #171: Tag der Praxis im Test; die CI war zur selben Uhrzeit rot) |
+| Berührt | `supabase/tests/platform-accesses.test.ts` („verlangt ein Geburtsdatum und mindestens 18 Jahre“, ANN-190, ANN-208) |
+
+**Beobachtet:** Der Test setzt das Geburtsdatum über `current_date` der Datenbank (UTC), die Einladung rechnet die Volljährigkeit am Tag der Praxis (Europe/Berlin). Zwischen 22 und 24 Uhr UTC ist das schon der nächste Tag; „noch nicht 18“ wird dann zu „18“, und die Einladung geht durch. Unabhängig von ABN-EPIC-001c (Datei nicht berührt). **Erwartet:** Der Test rechnet das Geburtsdatum mit dem Tag in der Zeitzone der Praxis (`(now() at time zone 'Europe/Berlin')::date`) und ist zu jeder Uhrzeit grün. Klein, Pfad S.

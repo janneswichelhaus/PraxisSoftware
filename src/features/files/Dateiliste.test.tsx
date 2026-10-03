@@ -16,7 +16,8 @@ import { renderWithProviders, testUser } from '@/test-utils';
 
 const fetchPatientFiles = vi.fn();
 const ladeDateiHoch = vi.fn();
-const oeffneDatei = vi.fn();
+const ladeDateiZumAnzeigen = vi.fn();
+const ladeDateiHerunter = vi.fn();
 const loescheDatei = vi.fn();
 const korrigiereDokumentart = vi.fn();
 
@@ -27,7 +28,9 @@ vi.mock('./api', async (importOriginal) => {
     fetchPatientFiles: (id: string, verordnung?: string | null) =>
       fetchPatientFiles(id, verordnung) as Promise<FilesApi.PatientFile[]>,
     ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
-    oeffneDatei: (id: string) => oeffneDatei(id) as Promise<string>,
+    ladeDateiZumAnzeigen: (id: string) =>
+      ladeDateiZumAnzeigen(id) as Promise<{ bild: Blob; mimeType: string; name: string }>,
+    ladeDateiHerunter: (id: string) => ladeDateiHerunter(id) as Promise<void>,
     loescheDatei: (id: string) => loescheDatei(id) as Promise<void>,
     korrigiereDokumentart: (id: string, art: string) =>
       korrigiereDokumentart(id, art) as Promise<void>,
@@ -50,6 +53,7 @@ function datei(rest: Partial<FilesApi.PatientFile> = {}): FilesApi.PatientFile {
     uploaded_at: '2026-09-13T08:00:00.000Z',
     uploaded_by_name: 'Anna Beispiel',
     object_missing: false,
+    verified_at: null,
     ...rest,
   };
 }
@@ -65,7 +69,12 @@ describe('Dateiliste', () => {
     vi.clearAllMocks();
     fetchPatientFiles.mockResolvedValue([]);
     ladeDateiHoch.mockResolvedValue('neu');
-    oeffneDatei.mockResolvedValue('https://beispiel.invalid/signiert');
+    ladeDateiZumAnzeigen.mockResolvedValue({
+      bild: new Blob(['jpeg'], { type: 'image/jpeg' }),
+      mimeType: 'image/jpeg',
+      name: 'Röntgen.jpg',
+    });
+    ladeDateiHerunter.mockResolvedValue(undefined);
     loescheDatei.mockResolvedValue(undefined);
     korrigiereDokumentart.mockResolvedValue(undefined);
   });
@@ -89,10 +98,11 @@ describe('Dateiliste', () => {
     expect(screen.getByText('Klinisch')).toBeInTheDocument();
   });
 
-  it('erzeugt den Verweis erst beim Tippen auf „Öffnen“ (ADR-017 Punkt 15)', async () => {
-    fetchPatientFiles.mockResolvedValue([datei()]);
-    const open = vi.fn();
-    vi.stubGlobal('open', open);
+  it('kennzeichnet eine Datei ohne Prüfung am Server und nur sie (ADR-017 Punkt 51)', async () => {
+    fetchPatientFiles.mockResolvedValue([
+      datei(),
+      datei({ id: 'd2', display_name: 'Arztbrief.pdf', verified_at: '2026-10-02T08:00:00Z' }),
+    ]);
 
     renderWithProviders(
       <Dateiliste
@@ -103,21 +113,77 @@ describe('Dateiliste', () => {
       />,
     );
 
-    await screen.findByText('Befund Schulter.pdf');
+    const ungeprueft = (await screen.findByText('Befund Schulter.pdf')).closest('li')!;
+    expect(ungeprueft).toHaveTextContent('nicht serverseitig geprüft');
+    expect(screen.getByText('Arztbrief.pdf').closest('li')).not.toHaveTextContent(
+      'nicht serverseitig geprüft',
+    );
+  });
+
+  it('zeigt ein Bild erst auf „Öffnen“ in der Anwendung, ohne Fenster (ADR-017 Punkte 15 und 54)', async () => {
+    fetchPatientFiles.mockResolvedValue([
+      datei({
+        display_name: 'Röntgen.jpg',
+        mime_type: 'image/jpeg',
+        document_type: 'klinisches_bild',
+      }),
+    ]);
+    const open = vi.fn();
+    vi.stubGlobal('open', open);
+    const freigegeben = vi.fn();
+    URL.createObjectURL = vi.fn(() => 'blob:ansicht');
+    URL.revokeObjectURL = freigegeben;
+
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen={false}
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await screen.findByText('Röntgen.jpg');
     // Die Liste allein hat noch keinen Verweis erzeugt - sonst stünde in jedem
     // Auditlog eine Ausstellung je angezeigter Zeile (Punkt 21).
-    expect(oeffneDatei).not.toHaveBeenCalled();
+    expect(ladeDateiZumAnzeigen).not.toHaveBeenCalled();
 
     // Die Knopfliste der Vorlesesoftware nennt die Datei (DAT-24).
-    await userEvent.click(screen.getByRole('button', { name: 'Öffnen: Befund Schulter.pdf' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Öffnen: Röntgen.jpg' }));
 
-    await waitFor(() => expect(oeffneDatei).toHaveBeenCalledWith('d1'));
-    expect(open).toHaveBeenCalledWith(
-      'https://beispiel.invalid/signiert',
-      '_blank',
-      'noopener,noreferrer',
+    await waitFor(() => expect(ladeDateiZumAnzeigen).toHaveBeenCalledWith('d1'));
+    const ansicht = await screen.findByRole('region', { name: 'Ansicht: Röntgen.jpg' });
+    expect(within(ansicht).getByRole('img', { name: 'Röntgen.jpg' })).toHaveAttribute(
+      'src',
+      'blob:ansicht',
     );
+    expect(open).not.toHaveBeenCalled();
+    expect(ladeDateiHerunter).not.toHaveBeenCalled();
+
+    await userEvent.click(within(ansicht).getByRole('button', { name: 'Schließen' }));
+    expect(freigegeben).toHaveBeenCalledWith('blob:ansicht');
     vi.unstubAllGlobals();
+  });
+
+  it('holt eine Datei nur auf „Herunterladen“ auf das Gerät (Punkt 55)', async () => {
+    fetchPatientFiles.mockResolvedValue([datei()]);
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen={false}
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await screen.findByText('Befund Schulter.pdf');
+    // Ein PDF zeigt die Anwendung noch nicht selbst (ANN-223): kein „Öffnen".
+    expect(screen.queryByRole('button', { name: /^Öffnen/ })).not.toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Herunterladen: Befund Schulter.pdf' }),
+    );
+    await waitFor(() => expect(ladeDateiHerunter).toHaveBeenCalledWith('d1'));
+    expect(ladeDateiZumAnzeigen).not.toHaveBeenCalled();
   });
 
   it('meldet eine fehlende Datei als Fehler und bietet sie nicht zum Öffnen an', async () => {
@@ -489,7 +555,7 @@ describe('Dateiliste', () => {
       // Beide Dateien sind sichtbar und zu öffnen (ADR-004 Fassung 2 Punkt 3) ...
       expect(await screen.findByText('Befund Schulter.pdf')).toBeInTheDocument();
       expect(screen.getByText('Einwilligung.pdf')).toBeInTheDocument();
-      expect(screen.getAllByRole('button', { name: /^Öffnen/ })).toHaveLength(2);
+      expect(screen.getAllByRole('button', { name: /^Herunterladen/ })).toHaveLength(2);
       // ... gelöscht wird nur die organisatorische, korrigiert keine (Punkt 13).
       expect(screen.getAllByRole('button', { name: 'Löschen' })).toHaveLength(1);
       expect(screen.queryByRole('button', { name: /^Art korrigieren/ })).not.toBeInTheDocument();

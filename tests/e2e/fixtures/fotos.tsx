@@ -6,14 +6,24 @@ import type { Datenschutzvermerk } from '@/features/datenschutz/vermerke';
 import { Dateienbereich } from '@/features/files/PatientFilesPage';
 import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/FotosImVerlauf';
 import type { Patientenfoto } from '@/features/files/patientenfotos';
-import { entferneMetadaten } from '@/features/files/metadaten';
-import { basis, CHROMIUM_PNG, jpegVomHandy, pngVomHandy } from '@/features/files/testbilder';
+import { hatFarbprofil, nachSrgb } from '@/features/files/farbe';
+import { alleBytes, entferneMetadaten, jpegSegmente } from '@/features/files/metadaten';
+import {
+  basis,
+  CHROMIUM_JPEG,
+  CHROMIUM_PNG,
+  jpegSegment,
+  jpegVomHandy,
+  pngVomHandy,
+  text,
+  verbinde,
+} from '@/features/files/testbilder';
 import '@/index.css';
 
 /**
  * Einstieg der Prüfseite aus `fotos.html` (DOK-006).
  *
- * Vier Ansichten über `?ansicht=`:
+ * Fünf Ansichten über `?ansicht=` (`farbe`: ABN-026, siehe unten):
  *
  *   * `fotos` — der Abschnitt „Fotos" im Verlauf mit Einwilligung und drei
  *     Fotos; „Foto aufnehmen" öffnet den Kameradialog, den die künstliche
@@ -51,27 +61,36 @@ const nutzer: CurrentUser = {
 const FOTOS: Patientenfoto[] = [
   {
     id: 'f3',
+    document_type: 'dokumentationsfoto',
     display_name: 'Testgegenstand, dritte Aufnahme',
     taken_at: '2026-09-24T09:15:00Z',
     taken_by_name: 'Anna Beispiel',
-    delete_after: '2027-09-24T09:15:00Z',
+    delete_after: null,
+    deletable: false,
     object_missing: false,
+    verified_at: null,
   },
   {
     id: 'f2',
+    document_type: 'patientenfoto',
     display_name: 'Testgegenstand, zweite Aufnahme',
     taken_at: '2026-09-10T14:30:00Z',
     taken_by_name: 'Tim Teamleitung',
     delete_after: '2027-09-10T14:30:00Z',
+    deletable: true,
     object_missing: false,
+    verified_at: null,
   },
   {
     id: 'f1',
+    document_type: 'patientenfoto',
     display_name: 'Testgegenstand, erste Aufnahme',
     taken_at: '2026-08-27T08:00:00Z',
     taken_by_name: 'Anna Beispiel',
     delete_after: '2027-08-27T08:00:00Z',
+    deletable: true,
     object_missing: false,
+    verified_at: null,
   },
 ];
 
@@ -141,7 +160,37 @@ function bereinigung() {
   );
 }
 
+/**
+ * ABN-026: ein JPEG mit einem Farbprofil, das nicht sRGB ist, durch die
+ * Umrechnung im echten Browser. Das Profil ist synthetisch und für den
+ * Dekoder unbrauchbar - geprüft wird der Weg, nicht die Farbmetrik: Danach
+ * ist es ein lesbares JPEG ohne abweichendes Profil.
+ */
+async function farbe() {
+  const ohne = entferneMetadaten(basis(CHROMIUM_JPEG), 'image/jpeg');
+  const kopf = new Uint8Array(128);
+  kopf.set(text('RGB '), 16);
+  const mit = verbinde(
+    ohne.subarray(0, 2),
+    jpegSegment(0xe2, verbinde(text('ICC_PROFILE\0\x01\x01'), kopf, text('Display P3'))),
+    ohne.subarray(2),
+  );
+  const ergebnis = await nachSrgb(new Blob([mit as BlobPart], { type: 'image/jpeg' }));
+  const bytes = await alleBytes(ergebnis);
+  return (
+    <img
+      src={URL.createObjectURL(ergebnis)}
+      alt="JPEG nach der Umrechnung"
+      width={80}
+      data-typ={ergebnis.type}
+      data-abweichendes-profil={String(await hatFarbprofil(bytes, 'image/jpeg'))}
+      data-segmente={jpegSegmente(bytes).length}
+    />
+  );
+}
+
 async function inhalt() {
+  if (ansicht === 'farbe') return farbe();
   if (ansicht === 'vergleich') return vergleich();
   if (ansicht === 'dokument') return <Dateienbereich patientId={PATIENT} user={nutzer} />;
   if (ansicht === 'bereinigung') return bereinigung();

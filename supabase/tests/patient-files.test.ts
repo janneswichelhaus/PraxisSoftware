@@ -161,6 +161,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         'befund',
         'arztbrief',
         'klinisches_bild',
+        'dokumentationsfoto',
         'patientenfoto',
       ]);
       expect(organisatorisch).toEqual(['einwilligung', 'vertrag']);

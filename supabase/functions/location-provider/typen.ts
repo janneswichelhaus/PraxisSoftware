@@ -42,6 +42,15 @@ export type GeocodeRequest = PostalAddress;
 export interface GeocodeResult {
   readonly position: Coordinate;
   readonly precision: 'address' | 'street' | 'locality' | 'unknown';
+  /**
+   * Eindeutig zur vollständigen Anschrift (ADR-019 Punkt 37, ANN-095): Die
+   * Anfrage trug Straße, Hausnummer, PLZ und Ort, der Anbieter fand **genau
+   * einen** Treffer, und der ist hausnummergenau. Nur dann übernimmt die
+   * Anwendung die Koordinate ohne Rückfrage.
+   */
+  readonly unique: boolean;
+  /** Wie viele Treffer der Anbieter fand; gezeigt wird der erste. */
+  readonly matchCount: number;
   /** Anzeigetext des Treffers zum Prüfen; wird angezeigt, nie gespeichert. */
   readonly matchLabel?: string;
 }
@@ -175,7 +184,7 @@ export type GeocodeAntwort =
 export type Antwort =
   | {
       readonly ok: true;
-      readonly value: RouteResult | MatrixResult | GeocodeResult;
+      readonly value: RouteResult | MatrixResult | GeocodeResult | Kartenstatus;
       readonly quelle: Quelle;
     }
   | { readonly ok: false; readonly error: LocationError };
@@ -188,7 +197,15 @@ export type Antwort =
  * nicht stillschweigend eine Route. Seit MAP-004 trägt **jede** Anfrage das
  * Feld — auch die Route, die es bis dahin nicht brauchte.
  */
-export type Aufgabe = 'route' | 'matrix' | 'geocode';
+export type Aufgabe = 'route' | 'matrix' | 'geocode' | 'status';
+
+/**
+ * Der Zustand des Schalters für die Karte (ADR-019 Punkt 35): Kacheln lädt
+ * die Karte nur, wenn er offen ist. Kein Schlüssel, keine Adresse.
+ */
+export interface Kartenstatus {
+  readonly mapReleased: boolean;
+}
 
 /**
  * Die drei Aufrufe des Vertrags. `matrix()` kam mit MAP-004 und heißt im
@@ -213,7 +230,8 @@ export interface Anbieteradapter {
 export interface Protokolleintrag {
   /** Wer meldet: die Anbieterkennung des Adapters, oder `sitzung` für die Prüfung davor. */
   readonly anbieter: string;
-  readonly code: LocationErrorCode | 'ok';
+  /** `gate_rejected`: Der Schalter hat in der Produktion abgewiesen (ADR-019 Punkt 36). */
+  readonly code: LocationErrorCode | 'ok' | 'gate_rejected';
   readonly dauerMs: number;
 }
 

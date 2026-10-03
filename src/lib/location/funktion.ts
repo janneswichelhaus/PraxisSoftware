@@ -31,7 +31,7 @@ const FUNCTION = 'location-provider';
  * Form der Anfrage geraten (`handler.ts`). Ein Verb, keine Angabe über eine
  * Person: Was hinausgeht, bleiben Koordinaten und ein Fahrprofil.
  */
-export type Aufgabe = 'route' | 'matrix' | 'geocode';
+export type Aufgabe = 'route' | 'matrix' | 'geocode' | 'status';
 
 /**
  * Woher die Antwort stammt.

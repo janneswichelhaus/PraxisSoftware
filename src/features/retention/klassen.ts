@@ -20,12 +20,12 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   patientenakte: {
     label: 'Klinische Patientenakte',
     beschreibung:
-      'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis und die Stammdaten der Patient:in.',
+      'Dokumentation, Verordnungen, Termine mit Behandlungsnachweis, Dokumentationsfotos und die Stammdaten der Patient:in.',
   },
   patientenfoto: {
-    label: 'Patientenfotos',
+    label: 'Foto-Arbeitshilfen',
     beschreibung:
-      'Fotos, die die Praxis mit Einwilligung von der Person aufnimmt. Arbeitshilfe neben der Akte, nicht Teil von ihr; beim Widerruf sofort gelöscht (ADR-017).',
+      'Fotos für Übergabe und Vergleich, die die Praxis mit Einwilligung von der Person aufnimmt. Neben der Akte, nicht Teil von ihr; beim Widerruf sofort gelöscht. Dokumentationsfotos gehören zur Akte (ADR-017).',
   },
   trainingsverhaeltnis: {
     label: 'Trainingsverhältnis',

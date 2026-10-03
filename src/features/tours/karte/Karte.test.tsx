@@ -240,8 +240,27 @@ describe('Karte', () => {
     vi.unstubAllGlobals();
   });
 
+  // ADR-019 Punkt 35 (ABN-028): ohne offenen Schalter keine einzige Kachel.
+  it.each([
+    ['zu', 'Karte nicht freigegeben'],
+    ['pruefen', 'Karte wird vorbereitet …'],
+  ] as const)('laedt bei Freigabe %s keine Karte und sagt %s', (freigabe, text) => {
+    render(
+      <Karte config={KONFIGURATION} freigabe={freigabe} stopps={stopps(3)} beschriftung="Karte" />,
+    );
+    expect(karten).toHaveLength(0);
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
   it('zeigt fuer n Stopps n Marker mit den Nummern 1 bis n', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(8)} beschriftung="Karte mit Teststopps" />);
+    render(
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(8)}
+        beschriftung="Karte mit Teststopps"
+      />,
+    );
 
     expect(marker).toHaveLength(8);
     expect(marker.map((einer) => einer.element.textContent)).toEqual([
@@ -264,7 +283,9 @@ describe('Karte', () => {
   });
 
   it('setzt jeden Marker auf seine Koordinate, Laenge vor Breite', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(2)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(2)} beschriftung="Karte" />,
+    );
 
     // MapLibre erwartet [lon, lat]. Vertauscht laegen die Tuebinger Stopps
     // im Indischen Ozean - ein Fehler, den kein Typ faengt.
@@ -273,7 +294,9 @@ describe('Karte', () => {
   });
 
   it('richtet den Ausschnitt beim Laden auf alle Stopps', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
+    );
 
     expect(karten[0]?.ausschnitt).toEqual([
       [9.05, 48.52],
@@ -282,7 +305,9 @@ describe('Karte', () => {
   });
 
   it('uebernimmt Style und Zoomgrenzen aus der Konfiguration', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
 
     const optionen = karten[0]?.optionen;
     expect(optionen?.style).toBe(KONFIGURATION.styleUrl);
@@ -292,7 +317,9 @@ describe('Karte', () => {
   });
 
   it('zeigt die eigene Quellenangabe, wenn der Style keine nennt (BEF-022)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
 
     // Vor dem Laden steht nichts - die Frage laesst sich erst danach
     // beantworten.
@@ -305,7 +332,9 @@ describe('Karte', () => {
   });
 
   it('haelt sich zurueck, wenn der Style seine Quelle selbst nennt (BEF-022)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
     const karte = angelegteKarte();
 
     // Genau der Fall des Anbieters: Die geladene Quelle bringt ihre Angabe
@@ -320,7 +349,9 @@ describe('Karte', () => {
   });
 
   it('erkennt die Quelle auch, wenn erst der Style sie beschreibt (BEF-022)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
     const karte = angelegteKarte();
 
     // Manche Styles tragen die Angabe direkt bei der Quelle, ohne TileJSON.
@@ -332,7 +363,9 @@ describe('Karte', () => {
   });
 
   it('springt ein, wenn keine Ebene die Quelle mit der Angabe benutzt (BEF-022)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
     const karte = angelegteKarte();
 
     // MapLibre zeigt die Angabe einer Quelle nur, wenn eine Ebene sie
@@ -346,7 +379,9 @@ describe('Karte', () => {
   });
 
   it('reicht die Autorisierung des Adapters durch und kennt selbst keinen Schluessel', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
 
     const angepasst = karten[0]?.optionen.transformRequest?.('https://kartendienst.invalid/1/2/3');
     expect(angepasst?.headers).toEqual({ ApiKey: 'test-schluessel' });
@@ -370,7 +405,9 @@ describe('Karte', () => {
   });
 
   it('setzt die Marker in die Farben des Systems, nicht in Standardfarben (TOK-08)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(1)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
 
     const nummer = screen.getByText('1');
     expect(nummer).toHaveClass('bg-accent', 'text-surface', 'border-surface');
@@ -394,7 +431,9 @@ describe('Karte', () => {
   });
 
   it('sagt es, wenn kein Kartenmaterial ankommt (BEF-021)', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
+    );
 
     const hinweis = /Kartenmaterial konnte nicht geladen werden/;
     expect(screen.queryByText(hinweis)).not.toBeInTheDocument();
@@ -408,7 +447,9 @@ describe('Karte', () => {
   });
 
   it('nimmt den Hinweis zurueck, sobald die Karte doch laedt', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
+    );
 
     karten[0]?.ausloesen('error');
     karten[0]?.ausloesen('load');
@@ -420,7 +461,7 @@ describe('Karte', () => {
 
   it('baut die Karte nicht neu, wenn der Aufrufer die Stoppliste neu berechnet', () => {
     const { rerender } = render(
-      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />,
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
     );
     expect(karten).toHaveLength(1);
 
@@ -429,7 +470,9 @@ describe('Karte', () => {
     // Haengt die Karte an der Liste, entsteht hier eine zweite: Kacheln neu
     // geladen, Bildausschnitt zurueckgesetzt, und im schlimmsten Fall in
     // jedem Rendern erneut.
-    rerender(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    rerender(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
+    );
 
     expect(karten).toHaveLength(1);
     expect(karten[0]?.entfernt).toBe(false);
@@ -437,7 +480,7 @@ describe('Karte', () => {
 
   it('raeumt Karte und Marker beim Verlassen der Seite ab', () => {
     const { unmount } = render(
-      <Karte config={KONFIGURATION} stopps={stopps(2)} beschriftung="Karte" />,
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(2)} beschriftung="Karte" />,
     );
 
     unmount();
@@ -469,7 +512,15 @@ describe('Route auf der Karte (MAP-003b)', () => {
   }
 
   it('zeichnet die Linie erst, wenn der Style steht', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    render(
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={LINIE}
+      />,
+    );
     const karte = angelegteKarte();
 
     // Vorher nimmt MapLibre keine Ebene an - eine Karte ohne Style hat keine.
@@ -482,7 +533,15 @@ describe('Route auf der Karte (MAP-003b)', () => {
   });
 
   it('legt die Linie als GeoJSON in Laenge-vor-Breite ab', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    render(
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={LINIE}
+      />,
+    );
     const karte = angelegteKarte();
     karte.ausloesen('load');
 
@@ -503,7 +562,15 @@ describe('Route auf der Karte (MAP-003b)', () => {
   });
 
   it('zeichnet in der Farbe der Marker und nicht in irgendeiner', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />);
+    render(
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={LINIE}
+      />,
+    );
     const karte = angelegteKarte();
     karte.ausloesen('load');
 
@@ -520,7 +587,9 @@ describe('Route auf der Karte (MAP-003b)', () => {
   });
 
   it('legt ohne Route keine Ebene an', () => {
-    render(<Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" />);
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(3)} beschriftung="Karte" />,
+    );
     const karte = angelegteKarte();
     karte.ausloesen('load');
 
@@ -530,7 +599,13 @@ describe('Route auf der Karte (MAP-003b)', () => {
 
   it('ersetzt die Linie, statt eine zweite Ebene anzulegen', () => {
     const { rerender } = render(
-      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />,
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={LINIE}
+      />,
     );
     const karte = angelegteKarte();
     karte.styleGeladen = true;
@@ -539,6 +614,7 @@ describe('Route auf der Karte (MAP-003b)', () => {
     rerender(
       <Karte
         config={KONFIGURATION}
+        freigabe="offen"
         stopps={stopps(3)}
         beschriftung="Karte"
         route={[...LINIE, { lat: 48.54, lon: 9.07 }]}
@@ -552,7 +628,13 @@ describe('Route auf der Karte (MAP-003b)', () => {
 
   it('raeumt die Routenebene beim Verlassen der Seite ab', () => {
     const { unmount } = render(
-      <Karte config={KONFIGURATION} stopps={stopps(3)} beschriftung="Karte" route={LINIE} />,
+      <Karte
+        config={KONFIGURATION}
+        freigabe="offen"
+        stopps={stopps(3)}
+        beschriftung="Karte"
+        route={LINIE}
+      />,
     );
     const karte = angelegteKarte();
     karte.styleGeladen = true;

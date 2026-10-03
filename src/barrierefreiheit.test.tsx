@@ -53,6 +53,7 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
         uploaded_at: '2026-09-13T08:00:00.000Z',
         uploaded_by_name: 'Anna Beispiel',
         object_missing: false,
+        verified_at: null,
       },
     ]),
 }));

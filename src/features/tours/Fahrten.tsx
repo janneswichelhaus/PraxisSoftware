@@ -97,7 +97,7 @@ export function Fahrtabschnitt({
     // Auf Papier sagt die Zeile nichts, was hilft (TER-12).
     return (
       <p className="text-ink-muted ml-10 border-l-2 border-dashed pl-3 text-sm print:hidden">
-        Fahrzeit unbekannt – nicht geprüft
+        Fahrzeit nicht verfügbar – nicht geprüft
       </p>
     );
   }

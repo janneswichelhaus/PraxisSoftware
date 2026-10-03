@@ -205,7 +205,9 @@ export function erstellePtvAdapter({
       );
     },
     geocode(request: GeocodeRequest, signal?: AbortSignal): Promise<GeocodeErgebnis> {
-      return hole(geocodingAdresse(request), { signal }, geocodingAuswerten);
+      return hole(geocodingAdresse(request), { signal }, (koerper) =>
+        geocodingAuswerten(koerper, request),
+      );
     },
   };
 }
@@ -275,8 +277,13 @@ function genauigkeit(typ: unknown): GeocodeResult['precision'] {
   return 'unknown';
 }
 
-/** Der erste Treffer des Anbieters — der beste nach seiner eigenen Reihenfolge. */
-function geocodingAuswerten(koerper: unknown): GeocodeErgebnis {
+/**
+ * Der erste Treffer des Anbieters — der beste nach seiner eigenen Reihenfolge
+ * —, dazu, ob er **eindeutig** ist (ADR-019 Punkt 37, ANN-095): vollständige
+ * Anfrage mit Hausnummer, genau ein Treffer, hausnummergenau. Ohne das
+ * übernimmt die Anwendung nichts ohne Rückfrage.
+ */
+function geocodingAuswerten(koerper: unknown, anfrage: GeocodeRequest): GeocodeErgebnis {
   if (typeof koerper !== 'object' || koerper === null) {
     return fehler('unavailable', 'Antwort ohne Objekt');
   }
@@ -294,11 +301,20 @@ function geocodingAuswerten(koerper: unknown): GeocodeErgebnis {
     return fehler('unavailable', 'Treffer ohne Koordinate');
   }
   const label = erster['formattedAddress'];
+  const precision = genauigkeit(erster['locationType']);
+  const vollstaendig = [
+    anfrage.street,
+    anfrage.houseNumber,
+    anfrage.postalCode,
+    anfrage.city,
+  ].every((feld) => feld.trim() !== '');
   return {
     ok: true,
     value: {
       position: { lat, lon },
-      precision: genauigkeit(erster['locationType']),
+      precision,
+      unique: vollstaendig && treffer.length === 1 && precision === 'address',
+      matchCount: treffer.length,
       ...(typeof label === 'string' && label.trim() !== '' ? { matchLabel: label.trim() } : {}),
     },
   };
@@ -353,6 +369,18 @@ function matrixAuswerten(koerper: unknown, request: MatrixRequest): MatrixErgebn
 
   const strecken = gefaltet(daten['distances'], zeilen, spalten);
 
+  // ADR-019 Punkt 38: Eine Ersatzschätzung ist keine Fahrzeit. Jede als
+  // geschätzt oder unbekannt markierte Relation wird zu `null` - in Fahrzeit
+  // und Strecke, damit keine Zahl übrig bleibt, mit der jemand plant.
+  const geschaetzt = geschaetzteRelationen(daten, zeilen, spalten);
+  for (let i = 0; i < zeilen; i += 1) {
+    for (let j = 0; j < spalten; j += 1) {
+      if (!geschaetzt[i * spalten + j]) continue;
+      fahrzeiten[i]![j] = null;
+      if (strecken !== null) strecken[i]![j] = null;
+    }
+  }
+
   return {
     ok: true,
     value: {
@@ -362,6 +390,58 @@ function matrixAuswerten(koerper: unknown, request: MatrixRequest): MatrixErgebn
       ...(strecken === null ? {} : { distancesMeters: strecken }),
     },
   };
+}
+
+/**
+ * Woran eine Antwort eine Ersatzschätzung kenntlich machen könnte (ADR-019
+ * Punkt 38, ANN-097). Belegt ist keines davon (Gate-Liste Punkt 11); die
+ * Liste ist deshalb großzügig, und jedes Kennzeichen, das hier nicht steht,
+ * wird wie eine Schätzung behandelt (`geschaetzteRelationen`).
+ */
+const SCHAETZUNG = ['estimatedByDirectDistance', 'isEstimated', 'estimated', 'directDistance'];
+
+/** Die Felder einer Matrixantwort, die Werte tragen und keine Kennzeichen sind. */
+const MATRIXWERTE = new Set(['travelTimes', 'distances']);
+
+/** Ist ein Eintrag ein gesetztes Kennzeichen? Zahlen sind Werte, keine Kennzeichen. */
+function gesetzt(wert: unknown): boolean {
+  if (wert === true) return true;
+  return typeof wert === 'string' && !['', 'OK', 'NONE', 'SUCCEEDED'].includes(wert.toUpperCase());
+}
+
+/**
+ * Welche Relationen eine Schätzung oder ein unbekanntes Kennzeichen tragen.
+ *
+ * Ein Kennzeichen für die ganze Antwort (`true` unter einem Namen aus
+ * `SCHAETZUNG`) trifft alle; eine Liste je Relation neben den Werten trifft
+ * die Relationen, an denen sie gesetzt ist — gleich unter welchem Namen.
+ */
+function geschaetzteRelationen(
+  daten: Record<string, unknown>,
+  zeilen: number,
+  spalten: number,
+): boolean[] {
+  const anzahl = zeilen * spalten;
+  const markiert = new Array<boolean>(anzahl).fill(false);
+  for (const [name, wert] of Object.entries(daten)) {
+    if (MATRIXWERTE.has(name)) continue;
+    if (SCHAETZUNG.includes(name) && gesetzt(wert)) return markiert.fill(true);
+    if (Array.isArray(wert) && wert.length === anzahl) {
+      (wert as unknown[]).forEach((eintrag, k) => {
+        if (gesetzt(eintrag)) markiert[k] = true;
+      });
+    }
+  }
+  return markiert;
+}
+
+/** Trägt eine Routenantwort oder einer ihrer Abschnitte ein Schätzungskennzeichen? */
+function routeGeschaetzt(daten: Record<string, unknown>): boolean {
+  const traegt = (objekt: unknown) =>
+    typeof objekt === 'object' &&
+    objekt !== null &&
+    SCHAETZUNG.some((name) => gesetzt((objekt as Record<string, unknown>)[name]));
+  return traegt(daten) || (Array.isArray(daten['legs']) && daten['legs'].some(traegt));
 }
 
 /** Flache Liste in Zeilen — oder `null`, wenn sie keine Matrix dieser Größe ist. */
@@ -392,6 +472,10 @@ function auswerten(koerper: unknown): RouteErgebnis {
     return fehler('unavailable', 'Antwort ohne Objekt');
   }
   const daten = koerper as Record<string, unknown>;
+
+  // ADR-019 Punkt 38: Eine geschätzte Route ist keine Route. Ohne Fahrzeit
+  // zeigt die Oberfläche „Fahrzeit nicht verfügbar" und prüft den Puffer nicht.
+  if (routeGeschaetzt(daten)) return fehler('not_found', 'Ersatzschätzung statt Route');
 
   const distanz = zahl(daten['distance']);
   const dauer = zahl(daten['travelTime']);

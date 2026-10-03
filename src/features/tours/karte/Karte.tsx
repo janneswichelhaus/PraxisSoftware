@@ -50,6 +50,12 @@ const ROUTENFARBE = '#004429';
 interface KarteProps {
   /** `null`, solange kein Kachelschlüssel konfiguriert ist. */
   readonly config: MapDisplayConfig | null;
+  /**
+   * Der Schalter der Function (ADR-019 Punkt 35): Kacheln nur bei `offen`.
+   * Ohne Angabe gilt `zu` - eine Verwendung, die den Schalter vergisst,
+   * lädt keine Kachel (Zweitreview ABN-EPIC-001c, Befund 8).
+   */
+  readonly freigabe?: 'offen' | 'zu' | 'pruefen';
   readonly stopps: readonly MapOverlayStop[];
   /** Zugänglicher Name der Karte, zum Beispiel „Karte mit acht Teststopps". */
   readonly beschriftung: string;
@@ -63,8 +69,9 @@ interface KarteProps {
   readonly route?: readonly Coordinate[] | undefined;
 }
 
-export function Karte({ config, stopps, beschriftung, route }: KarteProps) {
+export function Karte({ config, stopps, beschriftung, route, freigabe = 'zu' }: KarteProps) {
   if (config === null) return <OhneKartenmaterial />;
+  if (freigabe !== 'offen') return <OhneFreigabe pruefen={freigabe === 'pruefen'} />;
   return (
     <Kartenflaeche
       config={config}
@@ -93,6 +100,25 @@ function OhneKartenmaterial() {
       <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
         Liste und Navigation funktionieren trotzdem.
       </p>
+    </div>
+  );
+}
+
+/**
+ * Der Hinweis, solange der Schalter der Function zu ist (ADR-019 Punkt 35):
+ * keine Kachelanfrage, die Tour steht als Liste mit Nummern daneben.
+ */
+function OhneFreigabe({ pruefen }: { pruefen: boolean }) {
+  return (
+    <div className="rounded-card border-line bg-surface-sunken border border-dashed px-4 py-8 text-center">
+      <p className="text-ink text-liste font-medium">
+        {pruefen ? 'Karte wird vorbereitet …' : 'Karte nicht freigegeben'}
+      </p>
+      {pruefen ? null : (
+        <p className="text-ink-muted mx-auto mt-1.5 max-w-prose text-sm">
+          Liste und Navigation funktionieren trotzdem.
+        </p>
+      )}
     </div>
   );
 }

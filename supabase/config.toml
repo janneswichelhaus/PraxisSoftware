@@ -143,5 +143,15 @@ verify_jwt = true
 [functions.platform-access]
 verify_jwt = false
 
+# Die Pruefung am Inhalt (ABN-025, ADR-017 Punkte 49 bis 52). `verify_jwt`
+# ist an: Ausgeloest wird sie von der hochladenden Person; die Function
+# prueft die Sitzung zusaetzlich selbst und findet nur Dateien ihrer
+# Organisation. Den Dienstschluessel liest sie nur aus dem eigens zu setzenden
+# Secret PATIENT_FILE_VERIFY_SERVICE_KEY; ohne ihn antwortet sie "nicht
+# eingerichtet". Scharf erst nach OPS-001 (ADR-015 Punkt 20), zusammen mit
+# app.patient_file_verification_required().
+[functions.patient-file-verify]
+verify_jwt = true
+
 [analytics]
 enabled = false

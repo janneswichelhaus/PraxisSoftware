@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { brauchtBestaetigung, geocodiere } from './geocode';
+import { brauchtBestaetigung, geocodiere, trefferanzahlText } from './geocode';
 
 /**
  * Geocoding aus dem Browser (MAP-006a, ANN-016): was hinausgeht und wann
@@ -58,6 +58,17 @@ describe('Geocoding', () => {
     ['locality', true],
     ['unknown', true],
   ] as const)('verlangt bei Genauigkeit %s eine Bestaetigung: %s', (precision, erwartet) => {
-    expect(brauchtBestaetigung({ position: { lat: 0, lon: 0 }, precision })).toBe(erwartet);
+    expect(
+      brauchtBestaetigung({ position: { lat: 0, lon: 0 }, precision, unique: true, matchCount: 1 }),
+    ).toBe(erwartet);
+  });
+
+  // ADR-019 Punkt 37 (ANN-095): auch hausnummergenau nur ohne Rueckfrage,
+  // wenn der Treffer eindeutig ist.
+  it('verlangt fuer einen nicht eindeutigen hausnummergenauen Treffer eine Bestaetigung', () => {
+    const treffer = { position: { lat: 0, lon: 0 }, precision: 'address', matchCount: 2 } as const;
+    expect(brauchtBestaetigung({ ...treffer, unique: false })).toBe(true);
+    expect(trefferanzahlText({ ...treffer, unique: false })).toMatch(/2 Treffer/);
+    expect(trefferanzahlText({ ...treffer, unique: true, matchCount: 1 })).toBeNull();
   });
 });

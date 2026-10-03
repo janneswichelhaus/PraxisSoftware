@@ -8,13 +8,25 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const rpc = vi.fn();
 const upload = vi.fn();
+const invoke = vi.fn();
+const createSignedUrl = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ rpc, storage: { from: () => ({ upload }) } }),
+  getSupabase: () => ({
+    rpc,
+    storage: { from: () => ({ upload, createSignedUrl }) },
+    functions: { invoke },
+  }),
 }));
 
-const { fuehreLoeschauftragAus, ladeDateiHoch, merkeVerwaisteZurLoeschungVor } =
-  await import('./api');
+const {
+  VERWORFEN,
+  fuehreLoeschauftragAus,
+  ladeDateiHerunter,
+  ladeDateiHoch,
+  ladeDateiZumAnzeigen,
+  merkeVerwaisteZurLoeschungVor,
+} = await import('./api');
 const { enthaelt, jpegVomHandy } = await import('./testbilder');
 const { alleBytes } = await import('./metadaten');
 
@@ -43,6 +55,52 @@ describe('ladeDateiHoch', () => {
 });
 
 /**
+ * ABN-025 (ADR-017 Punkte 49 bis 52): Nach der Bestätigung löst die Anwendung
+ * die Prüfung am Inhalt aus. Fehlt die Function, bleibt die Datei „nicht
+ * serverseitig geprüft"; verwirft der Server, erfährt es die Person.
+ */
+describe('ladeDateiHoch — Prüfung am Server', () => {
+  const PDF = [0x25, 0x50, 0x44, 0x46, 0x2d, 0x31];
+
+  beforeEach(() => {
+    rpc.mockReset();
+    upload.mockReset();
+    invoke.mockReset();
+    rpc.mockImplementation((name: string) =>
+      Promise.resolve(
+        name === 'prepare_patient_file_upload'
+          ? {
+              data: [{ file_id: 'f1', bucket_id: 'patientenakte', object_key: 'o/p/f1' }],
+              error: null,
+            }
+          : { data: null, error: null },
+      ),
+    );
+    upload.mockResolvedValue({ error: null });
+  });
+
+  it('ruft die Prüfung mit der Datei-Kennung auf und meldet eine bestandene nicht', async () => {
+    invoke.mockResolvedValue({ data: { ergebnis: 'passed' }, error: null });
+    await expect(ladeDateiHoch(auftrag(PDF, 'application/pdf'))).resolves.toBe('f1');
+    expect(invoke).toHaveBeenCalledWith('patient-file-verify', { body: { file_id: 'f1' } });
+  });
+
+  it('nimmt eine fehlende Function hin: die Datei bleibt ungeprüft, der Upload gelingt', async () => {
+    invoke.mockResolvedValue({ data: null, error: new Error('nicht erreichbar') });
+    await expect(ladeDateiHoch(auftrag(PDF, 'application/pdf'))).resolves.toBe('f1');
+    invoke.mockRejectedValue(new Error('Netz'));
+    await expect(ladeDateiHoch(auftrag(PDF, 'application/pdf'))).resolves.toBe('f1');
+  });
+
+  it('sagt der Person, dass der Server die Datei verworfen hat (Punkt 52)', async () => {
+    invoke.mockResolvedValue({ data: { ergebnis: 'rejected' }, error: null });
+    await expect(ladeDateiHoch(auftrag(PDF, 'application/pdf'))).rejects.toThrow(VERWORFEN);
+    // Verworfen hat schon die Datenbank - kein zweites Aufräumen.
+    expect(rpc).not.toHaveBeenCalledWith('discard_patient_file_upload', expect.anything());
+  });
+});
+
+/**
  * ADR-017 Punkt 34 (DOK-006): Ein Bild verliert seine Aufnahmemetadaten, bevor
  * es das Gerät verlässt - und alles, was der Server erfährt, gilt der
  * bereinigten Fassung.
@@ -51,6 +109,7 @@ describe('ladeDateiHoch — Metadaten', () => {
   beforeEach(() => {
     rpc.mockReset();
     upload.mockReset();
+    invoke.mockReset();
   });
 
   it('lädt ein Handyfoto ohne Ort und Vorschaubild hoch; Größe und Prüfsumme gelten den bereinigten Bytes', async () => {
@@ -128,5 +187,62 @@ describe('Abweisung ohne Fehlerobjekt', () => {
       /nicht ausgeführt/,
     );
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * ABN-027 (ADR-017 Punkte 54 und 55): Anzeigen ohne Downloadnamen in den
+ * Speicher der Seite, Herunterladen als eigene Aktion mit Kennzeichen.
+ */
+describe('Öffnen und Herunterladen', () => {
+  const FREIGABE = {
+    data: [
+      {
+        bucket_id: 'patientenakte',
+        object_key: 'o/p/f1',
+        display_name: 'Arztbrief',
+        mime_type: 'image/png',
+      },
+    ],
+    error: null,
+  };
+
+  beforeEach(() => {
+    rpc.mockReset();
+    createSignedUrl.mockReset();
+    rpc.mockResolvedValue(FREIGABE);
+    createSignedUrl.mockResolvedValue({
+      data: { signedUrl: 'https://ablage.invalid/signiert' },
+      error: null,
+    });
+  });
+
+  it('zeigt ohne Downloadnamen und lädt mit no-store in den Speicher', async () => {
+    const abruf = vi.fn().mockResolvedValue(new Response(new Uint8Array([0x89, 0x50])));
+    vi.stubGlobal('fetch', abruf);
+    const { bild, mimeType } = await ladeDateiZumAnzeigen('f1');
+    expect(rpc).toHaveBeenCalledWith('issue_patient_file_link', {
+      p_file_id: 'f1',
+      p_download: false,
+    });
+    expect(createSignedUrl).toHaveBeenCalledWith('o/p/f1', 60);
+    expect(abruf).toHaveBeenCalledWith('https://ablage.invalid/signiert', { cache: 'no-store' });
+    expect(mimeType).toBe('image/png');
+    expect(bild.type).toBe('image/png');
+    vi.unstubAllGlobals();
+  });
+
+  it('lädt nur auf ausdrückliche Aktion mit Downloadnamen und Kennzeichen herunter', async () => {
+    const klick = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined);
+    await ladeDateiHerunter('f1');
+    expect(rpc).toHaveBeenCalledWith('issue_patient_file_link', {
+      p_file_id: 'f1',
+      p_download: true,
+    });
+    expect(createSignedUrl).toHaveBeenCalledWith('o/p/f1', 60, { download: 'Arztbrief' });
+    expect(klick).toHaveBeenCalledTimes(1);
+    klick.mockRestore();
   });
 });

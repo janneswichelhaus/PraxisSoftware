@@ -151,6 +151,8 @@ if (!wurzel) throw new Error('Wurzelelement der Prüfseite fehlt.');
 createRoot(wurzel).render(
   <MemoryRouter>
     <Karte
+      // Pruefseite ohne Function: der Schalter gilt als offen (ADR-019 Punkt 35).
+      freigabe="offen"
       config={config}
       stopps={MARKER}
       beschriftung={`Karte mit ${MARKER.length} Teststopps in Tübingen`}

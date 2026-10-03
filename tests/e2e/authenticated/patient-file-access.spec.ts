@@ -236,7 +236,9 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
     expect(quittung.status(), 'Quittung').toBeLessThan(300);
   });
 
-  test('oeffnet eine Datei aus der Akte weiterhin', async ({ page, request }) => {
+  // ABN-027 (ADR-017 Punkt 55): Ein PDF holt „Herunterladen" auf das Gerät -
+  // ein Download, kein neues Fenster.
+  test('laedt eine Datei aus der Akte weiterhin herunter', async ({ page, request }) => {
     const datei = await dateiAblegen(request, `BEF-004 Oeffnen ${LAUF}.pdf`);
 
     await anmelden(page, KONTEN.therapist);
@@ -245,9 +247,9 @@ test.describe('BEF-004: Storage-API am auditierten Weg vorbei', () => {
     const zeile = page.getByRole('listitem').filter({ hasText: datei.name });
     await expect(zeile).toBeVisible();
 
-    const neueSeite = page.context().waitForEvent('page');
-    await zeile.getByRole('button', { name: 'Öffnen' }).click();
-    await neueSeite;
+    const download = page.waitForEvent('download');
+    await zeile.getByRole('button', { name: /^Herunterladen/ }).click();
+    await download;
 
     await expect(zeile.getByText('Die Datei ist in der Ablage nicht auffindbar.')).toHaveCount(0);
   });

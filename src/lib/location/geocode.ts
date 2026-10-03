@@ -26,9 +26,24 @@ export const GENAUIGKEIT_TEXT: Record<GeocodeResult['precision'], string> = {
   unknown: 'Genauigkeit unbekannt',
 };
 
-/** Muss die Person den Treffer bestätigen, bevor er gespeichert wird? */
+/**
+ * Muss die Person den Treffer bestätigen, bevor er gespeichert wird?
+ *
+ * Ohne Rückfrage nur ein **eindeutiger** Treffer zur vollständigen Anschrift
+ * (ADR-019 Punkt 37, ANN-095 Fassung 2): hausnummergenau, genau einer, und die
+ * Anfrage trug Straße, Hausnummer, PLZ und Ort. Fehlt die Angabe (eine
+ * ältere Function), gilt der Treffer als nicht eindeutig.
+ */
 export function brauchtBestaetigung(treffer: GeocodeResult): boolean {
-  return treffer.precision !== OHNE_BESTAETIGUNG;
+  return treffer.precision !== OHNE_BESTAETIGUNG || treffer.unique !== true;
+}
+
+/** „3 Treffer, gezeigt ist der erste." - oder nichts, wenn es nur einen gab. */
+export function trefferanzahlText(treffer: GeocodeResult): string | null {
+  const anzahl = treffer.matchCount;
+  return typeof anzahl === 'number' && anzahl > 1
+    ? `Der Kartendienst kennt ${anzahl} Treffer zu dieser Anschrift; gezeigt ist der erste. Stimmt er nicht, die Anschrift genauer erfassen.`
+    : null;
 }
 
 export function geocodiere(

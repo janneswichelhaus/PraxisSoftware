@@ -253,4 +253,11 @@ describe('bereinigeBild', () => {
     const pdf = new File(['%PDF-1.7 Autor'], 'Arztbrief.pdf', { type: 'application/pdf' });
     expect(await bereinigeBild(pdf)).toBe(pdf);
   });
+
+  it('nimmt ein abgeschnittenes JPEG ohne Bildende nicht an - wie der Server', () => {
+    const ganz = entferneMetadaten(basis(CHROMIUM_JPEG), 'image/jpeg');
+    expect(() => entferneMetadaten(ganz.subarray(0, ganz.length - 2), 'image/jpeg')).toThrow(
+      /beschädigt/,
+    );
+  });
 });

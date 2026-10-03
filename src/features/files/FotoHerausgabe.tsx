@@ -6,6 +6,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
   fetchFotosZurHerausgabe,
+  fotoartLabels,
   gibPatientenfotoHeraus,
   herausgabeDateiname,
   type HerausgabeFoto,
@@ -61,6 +62,7 @@ function Zeile({ foto }: { foto: HerausgabeFoto }) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-ink text-liste min-w-0 font-medium wrap-anywhere">
           {foto.display_name}
+          <span className="text-ink-muted font-normal"> · {fotoartLabels[foto.document_type]}</span>
           {/* Gesperrt heißt: nicht mehr für die Arbeit - für die Auskunft an
               die Person selbst bleibt es da (ABN-017, BEF-107). */}
           {foto.locked ? <span className="text-ink-muted font-normal"> · gesperrt</span> : null}

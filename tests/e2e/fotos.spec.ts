@@ -73,8 +73,13 @@ test.describe('Fotos', () => {
   }) => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
-    await expect(page.getByText(/Einwilligung erteilt am 27.08.2026/)).toBeVisible();
+    await expect(
+      page.getByText(/Einwilligung zu Arbeitshilfen erteilt am 27.08.2026/),
+    ).toBeVisible();
 
+    // ADR-017 Punkt 44: ohne Vorauswahl, erst die Wahl öffnet die Kamera.
+    await expect(page.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
+    await page.getByRole('radio', { name: /^Teil der Dokumentation/ }).check();
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
     const dialog = page.getByRole('dialog', { name: 'Foto aufnehmen' });
     await expect(dialog.getByText(/Gesicht nur, wenn es selbst/)).toBeVisible();
@@ -107,7 +112,7 @@ test.describe('Fotos', () => {
     expect(kopf.marker).not.toContain(0xe1);
 
     await dialog.getByRole('button', { name: 'Foto verwenden' }).click();
-    await expect(page.getByText('Neues Foto')).toBeVisible();
+    await expect(page.getByText('Neues Foto · Dokumentationsfoto')).toBeVisible();
     await expect(page.getByLabel('Name')).toHaveValue(/^Foto vom \d{2}\.\d{2}\.\d{4}$/);
 
     // Nur Bild, nie Ton.
@@ -123,6 +128,7 @@ test.describe('Fotos', () => {
     page,
   }) => {
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
+    await page.getByRole('radio', { name: /^Arbeitshilfe \(/ }).check();
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
     await page.getByRole('button', { name: 'Auslösen' }).click();
     await page.getByRole('button', { name: 'Foto verwenden' }).click();
@@ -135,6 +141,7 @@ test.describe('Fotos', () => {
   test('Abbrechen beendet die Kamera', async ({ page }) => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
+    await page.getByRole('radio', { name: /^Arbeitshilfe \(/ }).check();
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
     await expect(page.getByRole('button', { name: 'Auslösen' })).toBeVisible();
     expect(await laufendeSpuren(page)).toBeGreaterThan(0);
@@ -148,6 +155,9 @@ test.describe('Fotos', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
     await expect(page.getByText('Testgegenstand, erste Aufnahme', { exact: true })).toBeVisible();
+    // ABN-023: beide Fotoarten in einer Liste, das Dokumentationsfoto ohne Löschdatum.
+    await expect(page.getByText('Dokumentationsfoto · Teil der Akte')).toBeVisible();
+    await expect(page.getByText(/^Arbeitshilfe · wird spätestens am/).first()).toBeVisible();
     await expect(page.locator('main img')).toHaveCount(0);
     expect(await ueberlaeuft(page)).toBe(false);
   });
@@ -190,5 +200,17 @@ test.describe('Fotos', () => {
         .poll(() => bild.evaluate((b: HTMLImageElement) => (b.complete ? b.naturalWidth : -1)))
         .toBe(2);
     }
+  });
+
+  test('ein Bild mit abweichendem Farbprofil wird im echten Browser nach sRGB umgerechnet (Punkt 53)', async ({
+    page,
+  }) => {
+    await page.goto(`${PRUEFSEITE}?ansicht=farbe`);
+    const bild = page.getByRole('img', { name: 'JPEG nach der Umrechnung' });
+    await expect(bild).toHaveAttribute('data-typ', 'image/jpeg');
+    await expect(bild).toHaveAttribute('data-abweichendes-profil', 'false');
+    await expect
+      .poll(() => bild.evaluate((b: HTMLImageElement) => (b.complete ? b.naturalWidth : -1)))
+      .toBe(2);
   });
 });

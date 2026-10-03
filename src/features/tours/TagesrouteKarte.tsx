@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import type { Coordinate } from '@/lib/location/contract';
 import { createMapDisplayConfig } from '@/lib/location/display';
+import { useKartenfreigabe } from '@/lib/location/kartenfreigabe';
 import { useRoute } from '@/lib/location/route';
 import { Karte } from './karte/Karte';
 import { PRAXISPROFIL, kartenmarker, routenplan, type Stopp } from './tagesroute';
@@ -23,6 +24,8 @@ export default function TagesrouteKarte({
   readonly stopps: readonly Stopp[];
 }) {
   const config = useMemo(() => createMapDisplayConfig(), []);
+  // ADR-019 Punkt 35: Kacheln erst, wenn die Function den Schalter offen meldet.
+  const freigegeben = useKartenfreigabe(config !== null);
   const marker = useMemo(() => kartenmarker(start, stopps), [start, stopps]);
   const { punkte } = useMemo(() => routenplan(start, stopps), [start, stopps]);
   const route = useRoute(punkte, PRAXISPROFIL);
@@ -34,6 +37,7 @@ export default function TagesrouteKarte({
     <div className="print:hidden">
       <Karte
         config={config}
+        freigabe={freigegeben === undefined ? 'pruefen' : freigegeben ? 'offen' : 'zu'}
         stopps={marker}
         beschriftung={`Karte der Tagesroute mit ${marker.length} ${marker.length === 1 ? 'Punkt' : 'Punkten'}`}
         route={linie}
