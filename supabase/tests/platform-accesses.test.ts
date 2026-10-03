@@ -176,6 +176,8 @@ describe('Plattformzugang: einladen (ADR-023 Punkte 6 bis 8)', () => {
     ).rejects.toThrow(/relationship not found/);
   });
 
+  // BEF-121: Der Tag der Praxis (Europe/Berlin, wie die Einladung rechnet),
+  // nicht current_date in UTC - sonst ist der Test zwischen 22 und 24 Uhr UTC rot.
   it('verlangt ein Geburtsdatum und mindestens 18 Jahre (Punkt 15, ANN-190)', async () => {
     await asPostgres(
       `update public.patient_contact_details set date_of_birth = null where patient_id = $1`,
@@ -187,7 +189,7 @@ describe('Plattformzugang: einladen (ADR-023 Punkte 6 bis 8)', () => {
 
     await asPostgres(
       `update public.patient_contact_details
-          set date_of_birth = (current_date - interval '18 years' + interval '1 day')::date
+          set date_of_birth = ((now() at time zone 'Europe/Berlin')::date - interval '18 years' + interval '1 day')::date
         where patient_id = $1`,
       [patients.max],
     );
@@ -197,7 +199,7 @@ describe('Plattformzugang: einladen (ADR-023 Punkte 6 bis 8)', () => {
 
     await asPostgres(
       `update public.patient_contact_details
-          set date_of_birth = (current_date - interval '18 years')::date
+          set date_of_birth = ((now() at time zone 'Europe/Berlin')::date - interval '18 years')::date
         where patient_id = $1`,
       [patients.max],
     );
