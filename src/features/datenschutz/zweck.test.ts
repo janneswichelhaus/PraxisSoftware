@@ -11,14 +11,14 @@ describe('mitZweck', () => {
       rechtsgrundlage: 'Art. 15 Abs. 3 DSGVO',
       tabellen: {
         access_log: [
-          { aktion: 'treatment_note.viewed', zeitpunkt: '2026-10-01T08:00:00Z' },
+          { aktion: 'patient_record.viewed', zeitpunkt: '2026-10-01T08:00:00Z' },
           { aktion: 'unbekannt.x', zeitpunkt: '2026-10-01T09:00:00Z' },
         ],
       },
       nicht_enthalten: [],
     };
     const zeilen = mitZweck(auskunft).tabellen['access_log']!;
-    expect(zeilen[0]!['zweck']).toBe('Behandlungsdokumentation gelesen');
+    expect(zeilen[0]!['zweck']).toBe('Patientenakte geöffnet');
     expect(zeilen[1]!['zweck']).toBe('unbekannt.x');
   });
 });

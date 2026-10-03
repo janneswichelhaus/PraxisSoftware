@@ -351,30 +351,15 @@ describe('Umsatz je behandelnder Person (STA-006)', () => {
     await expect(asAnon(JE_PERSON, [6])).rejects.toThrow(/permission denied/i);
   });
 
-  it('protokolliert jeden Aufruf mit Umfang, ohne Betraege', async () => {
+  it('protokolliert den Blick auf den Umsatz je Person nicht (LOG-EPIC-001, §20)', async () => {
+    // Das Protokoll dient Datenschutz und Sicherheit, nie der Leistungs- oder
+    // Verhaltenskontrolle von Mitarbeitenden (ADR-010 Fassung 3).
     await asUserCommitted(users.ownerTherapist, MODELL, [ANNA, 'revenue_share']);
+    await asPostgres('delete from public.audit_log');
     await jePerson(users.ownerTherapist);
     await jePerson(users.therapist);
-    const { rows } = await asPostgres<{
-      subject_type: string;
-      subject_id: string;
-      context: Record<string, unknown>;
-    }>(
-      `select subject_type, subject_id, context from public.audit_log
-       where action = 'statistics.staff_revenue_viewed' order by occurred_at, id`,
-    );
-    expect(rows).toEqual([
-      {
-        subject_type: 'organization',
-        subject_id: organizationId,
-        context: { surface: 'web', scope: 'all', months: 6 },
-      },
-      {
-        subject_type: 'staff_member',
-        subject_id: ANNA,
-        context: { surface: 'web', scope: 'self', months: 6 },
-      },
-    ]);
+    const { rows } = await asPostgres('select id from public.audit_log');
+    expect(rows).toEqual([]);
   });
 
   it('endet an der Organisationsgrenze', async () => {
@@ -388,14 +373,14 @@ describe('Umsatz je behandelnder Person (STA-006)', () => {
     await asUserCommitted(users.ownerTherapist, MODELL, [TOM, 'revenue_share']);
     const vorher = (
       await asPostgres(
-        `select 1 from public.audit_log where action = 'statistics.read' and actor_user_id = $1`,
+        `select 1 from public.audit_log where action = 'access.denied' and actor_user_id = $1`,
         [users.trainer],
       )
     ).rows.length;
     expect(await jePerson(users.trainer)).toEqual([]);
     const nachher = (
       await asPostgres(
-        `select 1 from public.audit_log where action = 'statistics.read' and actor_user_id = $1`,
+        `select 1 from public.audit_log where action = 'access.denied' and actor_user_id = $1`,
         [users.trainer],
       )
     ).rows.length;

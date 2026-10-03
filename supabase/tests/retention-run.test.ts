@@ -870,7 +870,7 @@ describe('Loeschjournal', () => {
 
     await asUserCommitted(users.therapist, 'select * from public.list_deletion_runs(50)');
     const { rows: eintraege } = await asPostgres<{ actor_user_id: string; outcome: string }>(
-      "select actor_user_id, outcome from public.audit_log where action = 'deletion_runs.read'",
+      "select actor_user_id, outcome from public.audit_log where action = 'access.denied' and context ->> 'operation' = 'deletion_runs.read'",
     );
     expect(eintraege).toEqual([{ actor_user_id: users.therapist, outcome: 'denied' }]);
   });

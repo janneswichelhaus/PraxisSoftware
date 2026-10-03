@@ -12,6 +12,7 @@ import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeld
 import {
   AUDIT_ACTIONS,
   auditActionLabels,
+  auditOperationLabels,
   auditOutcomeLabels,
   auditSubjectLabels,
   type AuditAction,
@@ -76,6 +77,13 @@ function EventRow({ event }: { event: AuditEvent }) {
       <span className="text-ink text-liste mt-0.5 block min-w-0 wrap-anywhere lg:mt-0">
         <span className="sr-only">Vorgang: </span>
         {label(auditActionLabels, event.action)}
+        {event.denied_operation ? (
+          <span className="text-ink-muted">
+            {': '}
+            {label(auditOperationLabels, event.denied_operation)}
+            {(event.denied_count ?? 1) > 1 ? ` · ${event.denied_count}×` : ''}
+          </span>
+        ) : null}
         <span className="text-ink-muted">
           {' · '}
           {label(auditSubjectLabels, event.subject_type)}{' '}
@@ -272,8 +280,11 @@ export function AuditLogPage() {
           Was wird protokolliert?
         </summary>
         <p className="text-ink-muted mt-2 text-xs leading-relaxed">
-          Der Aufruf dieser Seite wird selbst protokolliert. Angezeigt werden ausschließlich
-          Metadaten; Inhalte der Patientenakte sind nicht Bestandteil des Protokolls.
+          Protokolliert wird nur, was die Daten selbst nicht zeigen: das Öffnen einer Akte (einmal
+          am Tag je Person), Herunterladen und Herausgeben, Zugänge und abgewiesene Zugriffe.
+          Angezeigt werden ausschließlich Metadaten; Inhalte der Patientenakte sind nicht
+          Bestandteil des Protokolls. Das Protokoll dient Datenschutz und Sicherheit, nie der
+          Kontrolle von Mitarbeitenden.
         </p>
       </details>
     </>

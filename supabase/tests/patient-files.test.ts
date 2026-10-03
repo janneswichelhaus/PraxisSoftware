@@ -453,7 +453,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(Object.keys(rows[0]!)).not.toContain('object_key');
     });
 
-    it('liefert den Schluessel nur ueber den auditierten Vorgang', async () => {
+    it('liefert den Schluessel zum Anzeigen ohne Protokoll, zum Herunterladen mit (LOG-EPIC-001)', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
       const { rows } = await asUserCommitted<{ object_key: string; display_name: string }>(
@@ -463,41 +463,54 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       );
       expect(rows[0]!.object_key).toBe(datei.object_key);
       expect(rows[0]!.display_name).toBe('Rezept.pdf');
+      // Anzeigen steht nicht im Protokoll.
+      expect(
+        (
+          await asPostgres(
+            "select id from public.audit_log where action in ('patient_file.downloaded', 'patient_record.viewed')",
+          )
+        ).rows,
+      ).toEqual([]);
 
-      const audit = await asPostgres<{ subject_id: string }>(
-        "select subject_id from public.audit_log where action = 'patient_file.link_issued'",
+      await asUserCommitted(
+        users.therapist,
+        'select object_key from public.issue_patient_file_link($1::uuid, true)',
+        [datei.file_id],
+      );
+      const audit = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
+        "select subject_id, context from public.audit_log where action = 'patient_file.downloaded'",
       );
       expect(audit.rows).toHaveLength(1);
       expect(audit.rows[0]!.subject_id).toBe(datei.file_id);
+      expect(audit.rows[0]!.context).toMatchObject({ patient_id: patients.max });
     });
 
-    it('protokolliert jeden einzelnen Zugriff, nicht nur den ersten', async () => {
+    it('protokolliert jedes einzelne Herunterladen, nicht nur das erste', async () => {
       const datei = await abgelegteDatei(users.therapist);
       for (let i = 0; i < 3; i += 1) {
         await asUserCommitted(
           users.therapist,
-          'select object_key from public.issue_patient_file_link($1::uuid)',
+          'select object_key from public.issue_patient_file_link($1::uuid, true)',
           [datei.file_id],
         );
       }
       const { rows } = await asPostgres<{ anzahl: string }>(
-        "select count(*) as anzahl from public.audit_log where action = 'patient_file.link_issued'",
+        "select count(*) as anzahl from public.audit_log where action = 'patient_file.downloaded'",
       );
       expect(Number(rows[0]!.anzahl)).toBe(3);
     });
 
-    it('gibt office den Verweis auf eine klinische Datei und protokolliert ihn (E15)', async () => {
+    it('gibt office den Verweis auf eine klinische Datei und protokolliert das Herunterladen (E15)', async () => {
       const datei = await abgelegteDatei(users.therapist);
       const { rows } = await asUserCommitted<{ object_key: string }>(
         users.office,
-        'select object_key from public.issue_patient_file_link($1::uuid)',
+        'select object_key from public.issue_patient_file_link($1::uuid, true)',
         [datei.file_id],
       );
       expect(rows[0]!.object_key).toBe(datei.object_key);
 
-      // ADR-010 Punkt 14: die Ausstellung des Verweises ist das Download-Ereignis.
       const audit = await asPostgres<{ subject_id: string; actor_user_id: string }>(
-        "select subject_id, actor_user_id from public.audit_log where action = 'patient_file.link_issued'",
+        "select subject_id, actor_user_id from public.audit_log where action = 'patient_file.downloaded'",
       );
       expect(audit.rows).toEqual([{ subject_id: datei.file_id, actor_user_id: users.office }]);
     });
@@ -520,7 +533,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
         patients.max,
       ]);
       const { rows } = await asPostgres<{ anzahl: string }>(
-        "select count(*) as anzahl from public.audit_log where action = 'patient_file.link_issued'",
+        "select count(*) as anzahl from public.audit_log where action in ('patient_file.downloaded', 'patient_record.viewed')",
       );
       expect(Number(rows[0]!.anzahl)).toBe(0);
     });
@@ -819,7 +832,7 @@ describe('Dateiablage der Patientenakte (DAT-001)', () => {
       expect(objekt.rows).toEqual([]);
 
       const audit = await asPostgres(
-        "select id from public.audit_log where action = 'patient_file.link_issued'",
+        "select id from public.audit_log where action = 'patient_file.downloaded'",
       );
       expect(audit.rows).toEqual([]);
     });

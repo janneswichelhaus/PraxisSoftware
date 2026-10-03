@@ -202,7 +202,10 @@ describe('TRN-009: Trainingsprotokoll', () => {
       expect(rows).toEqual([
         expect.objectContaining({ status: 'draft', content: 'Kniebeugen 3 x 10' }),
       ]);
-      expect(await audit('training_protocol.viewed', erst.id)).toHaveLength(1);
+      // LOG-EPIC-001: protokolliert ist das Öffnen des Verhältnisses, einmal am Tag.
+      expect(await audit('training_relationship.viewed', trainingRelationships.tina)).toHaveLength(
+        1,
+      );
 
       await expect(
         asUser(users.trainer, SPEICHERN, [TRAINING_HEUTE, 'Zweiter Stand', null]),
@@ -547,7 +550,7 @@ describe('TRN-009: Trainingsprotokoll', () => {
   });
 
   describe('Einheiten einer Kundin', () => {
-    it('listet die Protokolle neueste zuerst und protokolliert jedes gezeigte', async () => {
+    it('listet die Protokolle neueste zuerst und protokolliert das Öffnen einmal', async () => {
       const heute = await speichere(users.trainer, TRAINING_HEUTE, 'Heute');
       const vorgestern = await schliesseAb(users.trainer, TRAINING_VORGESTERN, 'Vorgestern');
 
@@ -560,8 +563,10 @@ describe('TRN-009: Trainingsprotokoll', () => {
         [heute.id, 'draft', 'Heute'],
         [vorgestern, 'final', 'Vorgestern'],
       ]);
-      expect(await audit('training_protocol.viewed', heute.id)).toHaveLength(1);
-      expect(await audit('training_protocol.viewed', vorgestern)).toHaveLength(1);
+      expect(await audit('training_relationship.viewed', trainingRelationships.tina)).toHaveLength(
+        1,
+      );
+      expect(await audit('training_protocol.viewed', heute.id)).toHaveLength(0);
 
       // Erika trainiert auch, hat aber kein Protokoll: nichts von Tina.
       const { rows: erika } = await asUser(users.trainer, LISTE, [trainingRelationships.erika]);
@@ -578,7 +583,7 @@ describe('TRN-009: Trainingsprotokoll', () => {
   describe('Buero liest, Nachtrag (ABN-022, BEF-113)', () => {
     const NACHTRAG = 'select public.add_training_protocol_addendum($1::uuid, $2, $3) as id';
 
-    it('laesst office Protokoll und Liste lesen, protokolliert je Protokoll', async () => {
+    it('laesst office Protokoll und Liste lesen, protokolliert das Öffnen', async () => {
       const fertig = await schliesseAb(users.trainer, TRAINING_HEUTE, 'Synthetische Einheit');
       const protokollId = (await protokoll(TRAINING_HEUTE))!.id;
       const { rows } = await asUserCommitted<{ content: string }>(users.office, LESEN, [
@@ -590,7 +595,10 @@ describe('TRN-009: Trainingsprotokoll', () => {
       ]);
       expect(liste.length).toBeGreaterThan(0);
       expect(fertig).toBeTruthy();
-      expect((await audit('training_protocol.viewed', protokollId)).length).toBeGreaterThan(0);
+      expect(protokollId).toBeTruthy();
+      expect(
+        (await audit('training_relationship.viewed', trainingRelationships.tina)).length,
+      ).toBeGreaterThan(0);
     });
 
     it('haengt einen Nachtrag mit Grund an ein abgeschlossenes Protokoll; der Text bleibt', async () => {

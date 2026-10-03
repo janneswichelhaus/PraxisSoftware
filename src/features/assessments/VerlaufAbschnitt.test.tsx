@@ -229,7 +229,7 @@ describe('Messverlauf', { timeout: 20_000 }, () => {
     ]);
     abschnitt(false);
     const kopf = await screen.findByText('Entfernte Ereignisse');
-    // Jeder gelesene Eintrag wird protokolliert: zugeklappt kein Abruf.
+    // Lesen öffnet die Akte im Protokoll: zugeklappt kein Abruf.
     expect(fetchEntfernteEreignisse).not.toHaveBeenCalled();
     fireEvent.click(kopf);
     expect(await screen.findByText('Operation · Knie-TEP rechts')).toBeInTheDocument();

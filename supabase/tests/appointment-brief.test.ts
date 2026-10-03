@@ -172,37 +172,31 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     expect(rows[0]!.last_note_status).toBe('draft');
   });
 
-  it('protokolliert jedes Aufklappen, den gezeigten Eintrag zusätzlich', async () => {
+  it('protokolliert das Aufklappen als Öffnen der Akte, einmal am Tag (LOG-EPIC-001)', async () => {
     const vorher = await termin({ tage: -7, status: 'documented' });
     const heute = await termin({ tage: 1 });
-    const letzter = await eintrag(vorher, 'Synthetisch: Eintrag.');
+    await eintrag(vorher, 'Synthetisch: Eintrag.');
 
     await asUserCommitted(users.office, BLICK, [heute]);
+    await asUserCommitted(users.office, BLICK, [heute]);
 
-    const blicke = await protokoll('appointment_brief.viewed', users.office);
-    expect(blicke).toHaveLength(1);
-    expect(blicke[0]).toMatchObject({
-      subject_type: 'appointment',
-      subject_id: heute,
+    const geoeffnet = await protokoll('patient_record.viewed', users.office);
+    expect(geoeffnet).toHaveLength(1);
+    expect(geoeffnet[0]).toMatchObject({
+      subject_type: 'patient',
+      subject_id: patients.max,
       outcome: 'success',
-      context: { surface: 'web', patient_id: patients.max, treatment_note_id: letzter },
     });
-    const gelesen = await protokoll('treatment_note.viewed', users.office);
-    expect(gelesen).toHaveLength(1);
-    expect(gelesen[0]).toMatchObject({
-      subject_type: 'treatment_note',
-      subject_id: letzter,
-      context: { surface: 'appointment_brief', appointment_id: heute, patient_id: patients.max },
-    });
+    expect(await protokoll('appointment_brief.viewed', users.office)).toHaveLength(0);
+    expect(await protokoll('treatment_note.viewed', users.office)).toHaveLength(0);
     // Kein Freitext im Protokoll (ADR-010 Punkt 3).
-    expect(JSON.stringify([...blicke, ...gelesen])).not.toContain('Synthetisch');
+    expect(JSON.stringify(geoeffnet)).not.toContain('Synthetisch');
   });
 
-  it('schreibt ohne gezeigten Eintrag nur den Blick ins Protokoll', async () => {
+  it('schreibt auch ohne gezeigten Eintrag das Öffnen der Akte', async () => {
     const heute = await termin({ tage: 1 });
     await asUserCommitted(users.therapist, BLICK, [heute]);
-    expect(await protokoll('appointment_brief.viewed', users.therapist)).toHaveLength(1);
-    expect(await protokoll('treatment_note.viewed', users.therapist)).toHaveLength(0);
+    expect(await protokoll('patient_record.viewed', users.therapist)).toHaveLength(1);
   });
 
   it('weist Trainingsbetreuung und Patientenkonto protokolliert ab', async () => {
@@ -234,7 +228,7 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     );
     const { rows } = await asUser(users.office, BLICK, [fremd[0]!.id]);
     expect(rows).toEqual([]);
-    expect(await protokoll('appointment_brief.viewed', users.office)).toHaveLength(0);
+    expect(await protokoll('patient_record.viewed', users.office)).toHaveLength(0);
   });
 
   it('kommt ohne Grundlage aus', async () => {
@@ -249,6 +243,6 @@ describe('Vertretungs-Kurzblick (PRX-006)', () => {
     const training = await termin({ tage: 1, kind: 'training' });
     const { rows } = await asUser(users.therapist, BLICK, [training]);
     expect(rows).toEqual([]);
-    expect(await protokoll('appointment_brief.viewed', users.therapist)).toHaveLength(0);
+    expect(await protokoll('patient_record.viewed', users.therapist)).toHaveLength(0);
   });
 });

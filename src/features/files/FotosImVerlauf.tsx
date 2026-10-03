@@ -819,8 +819,7 @@ export function Patientenfotos({
 
       <div className="border-line mt-4 border-t pt-3">
         <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
-          Jedes Öffnen eines Fotos wird protokolliert. Fotos lassen sich hier weder herunterladen
-          noch teilen.
+          Fotos lassen sich hier weder herunterladen noch teilen.
         </p>
       </div>
     </Section>

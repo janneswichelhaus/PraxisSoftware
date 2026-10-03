@@ -18,8 +18,6 @@ const KLINISCH = 'select * from public.list_patient_treatment_bases_clinical($1:
 
 const MAX_ERST = '88888888-8888-4888-8888-000000000001';
 const MAX_FOLGE = '88888888-8888-4888-8888-000000000002';
-const ERIKA_ERST = '88888888-8888-4888-8888-000000000003';
-const ERIKA_FOLGE = '88888888-8888-4888-8888-000000000004';
 /** Die zweite Bauart (GRD-001, ADR-020): Selbstzahler, ohne Verordner:in. */
 const ERIKA_SELBSTZAHLER = '88888888-8888-4888-8888-000000000005';
 const UNBEKANNT = '66666666-6666-4666-8666-0000000000ff';
@@ -113,23 +111,26 @@ describe('VER-002: Verordnungen in der Akte', () => {
     }
   });
 
-  it('liefert office die klinischen Felder und protokolliert je Verordnung (E15)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
+  it('liefert office die klinischen Felder und protokolliert das Öffnen der Akte (E15)', async () => {
+    await asPostgres('delete from public.audit_log');
 
     const { rows } = await asUserCommitted<Zeile>(users.office, KLINISCH, [patients.max]);
     expect(rows.map((r) => r.id)).toEqual([MAX_FOLGE, MAX_ERST]);
     expect(rows[0]?.diagnosis).toContain('Bewegungseinschraenkung');
 
     const { rows: audit } = await asPostgres<{
+      action: string;
       subject_id: string;
       actor_user_id: string;
       context: Record<string, unknown>;
-    }>(
-      `select subject_id, actor_user_id, context from public.audit_log
-        where action = 'treatment_basis.viewed'`,
-    );
-    expect(audit.map((a) => a.subject_id).sort()).toEqual([MAX_ERST, MAX_FOLGE].sort());
-    expect(audit.every((a) => a.actor_user_id === users.office)).toBe(true);
+    }>('select action, subject_id, actor_user_id, context from public.audit_log');
+    // LOG-EPIC-001: einmal je Person, Akte und Tag statt je Verordnung.
+    expect(audit).toHaveLength(1);
+    expect(audit[0]).toMatchObject({
+      action: 'patient_record.viewed',
+      subject_id: patients.max,
+      actor_user_id: users.office,
+    });
     // Keine klinischen Inhalte im Auditlog (ADR-010 Punkt 3, ADR-011).
     expect(JSON.stringify(audit.map((a) => a.context))).not.toMatch(/Bewegungseinschraenkung/);
   });
@@ -151,37 +152,36 @@ describe('VER-002: Verordnungen in der Akte', () => {
     await expect(asAnon(ORGANISATORISCH, [patients.max])).rejects.toThrow(/permission denied/i);
   });
 
-  it('protokolliert je gelesener Verordnung genau einen Zugriff (ADR-010)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
+  it('protokolliert das Lesen als Öffnen der Akte, einmal am Tag (ADR-010)', async () => {
+    await asPostgres('delete from public.audit_log');
+    await asUserCommitted(users.therapist, KLINISCH, [patients.erika]);
     await asUserCommitted(users.therapist, KLINISCH, [patients.erika]);
 
     const { rows } = await asPostgres<{
+      action: string;
+      subject_type: string;
       subject_id: string;
       actor_user_id: string;
       context: Record<string, unknown>;
-    }>(
-      `select subject_id, actor_user_id, context from public.audit_log
-        where action = 'treatment_basis.viewed' and subject_type = 'treatment_basis'`,
-    );
-    // Erika hat drei Grundlagen - genau drei Eintraege, kein Sammeleintrag.
-    // Der Selbstzahler wird wie jede Verordnung protokolliert: Die Datenklasse
-    // haengt an der Tabelle, nicht an der Bauart (ADR-020 Punkt 4).
-    expect(rows.map((r) => r.subject_id).sort()).toEqual(
-      [ERIKA_ERST, ERIKA_FOLGE, ERIKA_SELBSTZAHLER].sort(),
-    );
-    expect(rows.every((r) => r.actor_user_id === users.therapist)).toBe(true);
-    expect(rows[0]?.context).toMatchObject({ surface: 'web', patient_id: patients.erika });
+    }>('select action, subject_type, subject_id, actor_user_id, context from public.audit_log');
+    // Erika hat drei Grundlagen; protokolliert ist das Öffnen ihrer Akte,
+    // einmal, nicht je Grundlage und nicht je Aufruf (LOG-EPIC-001).
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      action: 'patient_record.viewed',
+      subject_type: 'patient',
+      subject_id: patients.erika,
+      actor_user_id: users.therapist,
+    });
     // Keine klinischen Inhalte im Auditlog (ADR-010 Punkt 3, ADR-011).
     expect(JSON.stringify(rows.map((r) => r.context))).not.toMatch(/Nacken|Verspannung/i);
   });
 
   it('protokolliert die organisatorische Sicht nicht', async () => {
-    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
+    await asPostgres('delete from public.audit_log');
     await asUserCommitted(users.office, ORGANISATORISCH, [patients.max]);
 
-    const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'treatment_basis.viewed'",
-    );
+    const { rows } = await asPostgres("select id from public.audit_log where outcome = 'success'");
     expect(rows).toEqual([]);
   });
 
@@ -196,12 +196,10 @@ describe('VER-002: Verordnungen in der Akte', () => {
   });
 
   it('protokolliert nichts, wenn nichts gelesen wurde', async () => {
-    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
+    await asPostgres('delete from public.audit_log');
     await asUserCommitted(users.therapist, KLINISCH, [UNBEKANNT]);
 
-    const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'treatment_basis.viewed'",
-    );
+    const { rows } = await asPostgres('select id from public.audit_log');
     expect(rows).toEqual([]);
   });
 

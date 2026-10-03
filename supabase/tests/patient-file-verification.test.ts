@@ -166,7 +166,7 @@ describe('Pruefung am Server (ABN-024)', () => {
         context: Record<string, unknown>;
       }>(
         `select actor_kind, outcome, context from public.audit_log
-          where action = 'patient_file.verification_failed' and subject_id = $1`,
+          where action = 'access.denied' and context ->> 'operation' = 'patient_file.verification' and subject_id = $1`,
         [datei.file_id],
       );
       expect(protokoll).toHaveLength(1);
@@ -302,7 +302,7 @@ describe('Pruefung am Server (ABN-024)', () => {
       expect((await zeile(datei.file_id))?.status).toBe('ready');
       const { rows } = await asPostgres<{ held: boolean }>(
         `select (context ->> 'held')::boolean as held from public.audit_log
-          where action = 'patient_file.verification_failed' and subject_id = $1`,
+          where action = 'access.denied' and context ->> 'operation' = 'patient_file.verification' and subject_id = $1`,
         [datei.file_id],
       );
       expect(rows).toEqual([{ held: true }]);

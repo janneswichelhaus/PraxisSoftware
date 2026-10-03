@@ -261,7 +261,7 @@ describe('invite_staff_account', () => {
     expect(await auditEintraege()).toEqual([]);
     const { rows } = await asPostgres<{ context: unknown }>(
       `select context from public.audit_log
-        where action = 'staff_account.invited' and outcome = 'denied'`,
+        where action = 'access.denied' and context ->> 'operation' = 'staff_account.invited' and outcome = 'denied'`,
     );
     expect(JSON.stringify(rows)).not.toContain('nina.neu');
     expect(JSON.stringify(rows)).not.toContain(staffId);

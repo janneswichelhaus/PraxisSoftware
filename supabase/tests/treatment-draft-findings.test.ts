@@ -66,12 +66,14 @@ describe('Befundangaben getrennt vom Entwurf', () => {
       `select action, context from public.audit_log
         where action like 'treatment_draft_findings.%' order by occurred_at`,
     );
-    expect(audit.rows.map((r) => r.action)).toEqual([
-      'treatment_draft_findings.saved',
-      'treatment_draft_findings.viewed',
-    ]);
+    // Das Laden steht als Öffnen der Akte im Protokoll (LOG-EPIC-001).
+    expect(audit.rows.map((r) => r.action)).toEqual(['treatment_draft_findings.saved']);
     for (const zeile of audit.rows)
       expect(Object.keys(zeile.context).sort()).toEqual(['patient_id', 'surface']);
+    const geoeffnet = await asPostgres(
+      "select id from public.audit_log where action = 'patient_record.viewed'",
+    );
+    expect(geoeffnet.rows.length).toBeGreaterThan(0);
   });
 
   it('verwirft mit einer leeren Auswahl', async () => {

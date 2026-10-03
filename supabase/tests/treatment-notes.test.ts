@@ -376,7 +376,6 @@ describe('DOK-001: Entwurf bearbeiten', () => {
 describe('DOK-001: Lesen', () => {
   /** Termin mit Dokumentation. */
   let terminId: string;
-  let dokuId: string;
   /** Termin ohne Dokumentation. */
   let ohneDoku: Stand;
 
@@ -384,8 +383,7 @@ describe('DOK-001: Lesen', () => {
     await resetDatabaseOhneTermine();
     const t = await termin();
     terminId = t.id;
-    const { rows } = await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [t.id, TEXT]);
-    dokuId = rows[0]!.id;
+    await asUserCommitted<{ id: string }>(users.therapist, ANLEGEN, [t.id, TEXT]);
     ohneDoku = await termin();
   }, 120_000);
 
@@ -406,19 +404,17 @@ describe('DOK-001: Lesen', () => {
     });
   });
 
-  it('protokolliert jeden Lesezugriff als treatment_note.viewed (ADR-010)', async () => {
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
-
+  it('protokolliert das Lesen als Öffnen der Akte, einmal am Tag (ADR-010, LOG-EPIC-001)', async () => {
+    await asUserCommitted(users.teamLead, LESEN, [terminId]);
     await asUserCommitted(users.teamLead, LESEN, [terminId]);
 
-    const eintraege = await auditEintraege('treatment_note.viewed');
-    expect(eintraege.length).toBe(vorher + 1);
-    expect(eintraege.at(-1)).toMatchObject({
-      subject_type: 'treatment_note',
-      subject_id: dokuId,
-      actor_user_id: users.teamLead,
-    });
-    expect(JSON.stringify(eintraege.at(-1)?.context)).not.toContain('Uebungen angeleitet');
+    const eintraege = (await auditEintraege('patient_record.viewed')).filter(
+      (e) => e.actor_user_id === users.teamLead,
+    );
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]).toMatchObject({ subject_type: 'patient', subject_id: patients.max });
+    expect(JSON.stringify(eintraege[0]?.context)).not.toContain('Uebungen angeleitet');
+    expect(await auditEintraege('treatment_note.viewed')).toEqual([]);
   });
 
   it('laesst owner lesen (4.1)', async () => {
@@ -429,19 +425,15 @@ describe('DOK-001: Lesen', () => {
   });
 
   it('laesst office lesen und protokolliert den Zugriff (E15, ADR-004 Fassung 2)', async () => {
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
-
     const { rows } = await asUserCommitted<{ content: string }>(users.office, LESEN, [terminId]);
     expect(rows[0]?.content).toBe(TEXT);
 
-    const eintraege = await auditEintraege('treatment_note.viewed');
-    expect(eintraege.length).toBe(vorher + 1);
-    expect(eintraege.at(-1)).toMatchObject({
-      subject_type: 'treatment_note',
-      subject_id: dokuId,
-      actor_user_id: users.office,
-    });
-    expect(JSON.stringify(eintraege.at(-1)?.context)).not.toContain('Uebungen angeleitet');
+    const eintraege = (await auditEintraege('patient_record.viewed')).filter(
+      (e) => e.actor_user_id === users.office,
+    );
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]).toMatchObject({ subject_type: 'patient', subject_id: patients.max });
+    expect(JSON.stringify(eintraege[0]?.context)).not.toContain('Uebungen angeleitet');
   });
 
   it('laesst ein Patientenkonto nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {
@@ -454,10 +446,10 @@ describe('DOK-001: Lesen', () => {
   });
 
   it('liefert fuer einen Termin ohne Dokumentation nichts und protokolliert nichts', async () => {
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
+    const vorher = (await auditEintraege('patient_record.viewed')).length;
     const { rows } = await asUserCommitted(users.therapist, LESEN, [ohneDoku.id]);
     expect(rows).toEqual([]);
-    expect((await auditEintraege('treatment_note.viewed')).length).toBe(vorher);
+    expect((await auditEintraege('patient_record.viewed')).length).toBe(vorher);
   });
 
   it('liefert fuer einen unbekannten Termin dasselbe leere Ergebnis', async () => {

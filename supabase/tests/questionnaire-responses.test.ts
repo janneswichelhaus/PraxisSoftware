@@ -348,14 +348,15 @@ describe('Rollen und Grenzen (ADR-013 Punkt 9 Nr. 1)', () => {
     expect(office?.code).toBe('42501');
   });
 
-  it('laesst office lesen (ADR-004 Fassung 2) und protokolliert je Erhebung', async () => {
-    const id = await erheben();
+  it('laesst office lesen (ADR-004 Fassung 2) und protokolliert das Öffnen der Akte', async () => {
+    await erheben();
     const { rows } = await asUserCommitted(users.office, LESEN, [patients.max]);
     expect(rows).toHaveLength(1);
-    const gelesen = await auditZeilen('questionnaire_response.viewed');
-    expect(gelesen).toEqual([
-      { subject_id: id, context: { surface: 'web', patient_id: patients.max } },
+    // LOG-EPIC-001: einmal je Person, Akte und Tag statt je Erhebung.
+    expect(await auditZeilen('patient_record.viewed')).toEqual([
+      { subject_id: patients.max, context: {} },
     ]);
+    expect(await auditZeilen('questionnaire_response.viewed')).toEqual([]);
   });
 
   it('schreibt keine Antworten ins Auditlog (ADR-010 Punkt 3)', async () => {

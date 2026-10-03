@@ -511,21 +511,18 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows[1]?.version_count).toBe(0);
   });
 
-  it('protokolliert je gelesenem Eintrag einen Zugriff (ADR-010)', async () => {
+  it('protokolliert das Lesen von Eintrag und Nachtrag als ein Öffnen der Akte (ADR-010)', async () => {
     const f = await finalisiert();
     const eltern = await dokuZeile(f.id);
-    const { rows: nachtrag } = await asUserCommitted<{ id: string }>(users.therapist, NACHTRAGEN, [
-      f.id,
-      NACHTRAG,
-    ]);
+    await asUserCommitted(users.therapist, NACHTRAGEN, [f.id, NACHTRAG]);
 
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
     await asUserCommitted(users.ownerTherapist, LESEN, [eltern?.appointment_id]);
-    const nachher = await auditEintraege('treatment_note.viewed');
-
-    expect(nachher.length - vorher).toBe(2);
-    const eigene = nachher.filter((a) => a.actor_user_id === users.ownerTherapist);
-    expect(eigene.map((a) => a.subject_id).sort()).toEqual([f.id, nachtrag[0]!.id].sort());
+    const eigene = (await auditEintraege('patient_record.viewed')).filter(
+      (a) => a.actor_user_id === users.ownerTherapist,
+    );
+    // LOG-EPIC-001: einmal je Person, Akte und Tag, nicht je Eintrag.
+    expect(eigene).toHaveLength(1);
+    expect(await auditEintraege('treatment_note.viewed')).toEqual([]);
   });
 
   it('liefert den Verlauf mit Inhalt, Begruendung und Urheber je Version', async () => {
@@ -555,22 +552,18 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows[1]?.author_name).toBe('Tim Teamleitung');
   });
 
-  it('protokolliert das Lesen des Verlaufs gesondert (Punkt 9)', async () => {
+  it('protokolliert das Lesen des Verlaufs als Öffnen der Akte (Punkt 9, LOG-EPIC-001)', async () => {
     const f = await finalisiert();
     await asUserCommitted(users.ownerTherapist, VERLAUF, [f.id]);
 
-    const eigener = (await auditEintraege('treatment_note.history_viewed')).find(
-      (a) => a.subject_id === f.id,
+    const eigener = (await auditEintraege('patient_record.viewed')).find(
+      (a) => a.actor_user_id === users.ownerTherapist,
     );
-    expect(eigener).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: users.ownerTherapist,
-      outcome: 'success',
-    });
-    expect(eigener?.context).toMatchObject({ patient_id: patients.max });
+    expect(eigener).toMatchObject({ subject_id: patients.max, outcome: 'success' });
+    expect(await auditEintraege('treatment_note.history_viewed')).toEqual([]);
   });
 
-  it('laesst office den Verlauf lesen und protokolliert ihn gesondert (E15, Punkt 8 und 9)', async () => {
+  it('laesst office den Verlauf lesen und protokolliert das Öffnen der Akte (E15, Punkt 8 und 9)', async () => {
     const f = await finalisiert();
 
     const { rows } = await asUserCommitted<{ version_no: number; content: string }>(
@@ -581,11 +574,10 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ version_no: 1, content: ENTWURF });
 
-    const eigener = (await auditEintraege('treatment_note.history_viewed')).find(
-      (a) => a.subject_id === f.id && a.actor_user_id === users.office,
+    const eigener = (await auditEintraege('patient_record.viewed')).find(
+      (a) => a.subject_id === patients.max && a.actor_user_id === users.office,
     );
-    expect(eigener).toMatchObject({ subject_type: 'treatment_note', outcome: 'success' });
-    expect(eigener?.context).toMatchObject({ patient_id: patients.max });
+    expect(eigener).toMatchObject({ outcome: 'success' });
   });
 
   it('laesst ein Patientenkonto den Verlauf nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {

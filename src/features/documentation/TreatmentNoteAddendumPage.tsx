@@ -145,8 +145,8 @@ function Formular({
       </form>
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Ändern und
-        Lesen werden protokolliert.
+        Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
+        wird protokolliert.
       </p>
     </>
   );

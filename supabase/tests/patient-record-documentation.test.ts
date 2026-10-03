@@ -481,25 +481,19 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
     expect(zeilen[2]!.notes).toEqual([]);
   });
 
-  it('protokolliert je gelesenem Eintrag treatment_note.viewed - ohne Inhalt (ADR-010)', async () => {
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
-
+  it('protokolliert das Lesen als Öffnen der Akte, einmal am Tag - ohne Inhalt (ADR-010)', async () => {
+    await akte(users.teamLead, patients.erika);
     await akte(users.teamLead, patients.erika);
 
-    const eintraege = await auditEintraege('treatment_note.viewed');
-    const neue = eintraege.slice(vorher);
-    // Haupteintrag, Nachtrag und der Entwurf des zweiten Termins: drei
-    // Eintraege, keiner fuer den Termin ohne Dokumentation.
-    expect(neue.map((e) => e.subject_id).sort()).toEqual(
-      [finalDoku.id, nachtragId, entwurfDoku.id].sort(),
+    const eintraege = (await auditEintraege('patient_record.viewed')).filter(
+      (e) => e.actor_user_id === users.teamLead && e.subject_id === patients.erika,
     );
-    for (const e of neue) {
-      expect(e).toMatchObject({ actor_user_id: users.teamLead, outcome: 'success' });
-      expect(e.context).toMatchObject({ surface: 'web', patient_id: patients.erika });
-      expect(typeof e.context.appointment_id).toBe('string');
-      expect(JSON.stringify(e.context)).not.toContain('Geheim');
-      expect(JSON.stringify(e.context)).not.toContain('Nachtrag in der Akte');
-    }
+    // LOG-EPIC-001: ein Eintrag für die Akte statt je gelesenem Eintrag.
+    expect(eintraege).toHaveLength(1);
+    expect(eintraege[0]).toMatchObject({ outcome: 'success' });
+    expect(JSON.stringify(eintraege[0]!.context)).not.toContain('Geheim');
+    expect(JSON.stringify(eintraege[0]!.context)).not.toContain('Nachtrag in der Akte');
+    expect(await auditEintraege('treatment_note.viewed')).toEqual([]);
   });
 
   it('protokolliert nichts, wenn die Seite keine Dokumentation enthaelt', async () => {
@@ -517,22 +511,16 @@ describe('DOK-003: Klinische Sicht der Akte', () => {
     expect(zeilen[0]!.notes[0]!.content).toBe(GEHEIM);
   });
 
-  it('laesst office lesen und protokolliert je Eintrag (E15, ADR-004 Fassung 2)', async () => {
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
-
+  it('laesst office lesen und protokolliert das Öffnen der Akte (E15, ADR-004 Fassung 2)', async () => {
     const zeilen = await akte(users.office, patients.erika);
     expect(zeilen[0]!.notes[0]!.content).toBe(GEHEIM);
 
-    // Dieselbe Protokollierung wie bei den therapeutischen Rollen: drei
-    // gelesene Eintraege, drei Auditeintraege - ohne Inhalt.
-    const neue = (await auditEintraege('treatment_note.viewed')).slice(vorher);
-    expect(neue.map((e) => e.subject_id).sort()).toEqual(
-      [finalDoku.id, nachtragId, entwurfDoku.id].sort(),
+    // Dieselbe Protokollierung wie bei den therapeutischen Rollen - ohne Inhalt.
+    const eintraege = (await auditEintraege('patient_record.viewed')).filter(
+      (e) => e.actor_user_id === users.office && e.subject_id === patients.erika,
     );
-    for (const e of neue) {
-      expect(e).toMatchObject({ actor_user_id: users.office, outcome: 'success' });
-      expect(JSON.stringify(e.context)).not.toContain('Geheim');
-    }
+    expect(eintraege).toHaveLength(1);
+    expect(JSON.stringify(eintraege[0]!.context)).not.toContain('Geheim');
   });
 
   it('laesst ein Patientenkonto nicht lesen und protokolliert den Versuch (4.6, G6a)', async () => {

@@ -173,8 +173,9 @@ describe('BEF-004: Dateizugriff nur ueber den auditierten Weg', () => {
       const dritter = await asUserCommitted(users.office, LESEN, [datei.object_key]);
       expect(dritter.rows).toHaveLength(1);
 
-      // Zwei Zugriffe, zwei Auditeintraege (ADR-010 Punkt 14).
-      expect(await auditAnzahl('patient_file.link_issued')).toBe(2);
+      // Zwei Verweise zum Anzeigen: kein Protokoll, das steht nur beim
+      // Herunterladen (LOG-EPIC-001, ADR-017 Punkt 55).
+      expect(await auditAnzahl('patient_file.downloaded')).toBe(0);
     });
 
     it('bindet die Freigabe an die Person, der der Verweis ausgestellt wurde', async () => {

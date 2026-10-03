@@ -371,10 +371,10 @@ describe('Patientenfotos (DOK-006b)', () => {
 
       expect(
         await anzahl(
-          `select count(*) from public.audit_log where action = 'patient_file.link_issued' and subject_id = $1`,
+          `select count(*) from public.audit_log where action like 'patient_file.%' and action <> 'patient_file.uploaded' and subject_id = $1`,
           [datei.file_id],
         ),
-      ).toBe(1);
+      ).toBe(0);
     });
   });
 
@@ -799,7 +799,7 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect(
         await anzahl(
           `select count(*) from public.audit_log
-            where action = 'patient_files.read' and outcome = 'denied' and actor_user_id = $1`,
+            where action = 'access.denied' and context ->> 'operation' = 'patient_files.read' and outcome = 'denied' and actor_user_id = $1`,
           [users.trainer],
         ),
       ).toBe(1);

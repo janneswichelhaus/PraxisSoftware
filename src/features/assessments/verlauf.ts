@@ -62,7 +62,7 @@ export const entfernteEreignisseQueryKey = (patientId: string) =>
 /**
  * Entfernte Ereignisse (ABN-013, BEF-102): Entfernen löscht nicht, es nimmt
  * das Ereignis aus dem Verlauf. Inhalt, Urheber und wer es wann entfernt hat
- * bleiben in der Akte. Jeder gelesene Eintrag wird protokolliert - deshalb
+ * bleiben in der Akte. Das Lesen steht als Öffnen der Akte im Protokoll - deshalb
  * lädt die Akte die Liste erst, wenn sie aufgeklappt wird.
  */
 export async function fetchEntfernteEreignisse(patientId: string): Promise<EntferntesEreignis[]> {

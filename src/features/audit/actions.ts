@@ -11,7 +11,6 @@ export const AUDIT_ACTIONS = [
   // OPS-006: die Auskunft nach Art. 15 DSGVO ist ein Export klinischer Daten
   // und damit auditpflichtig (ADR-010 Punkt 2).
   'patient_record.exported',
-  'audit_log.read',
   'patient.created',
   'patient.updated',
   'patient.status_changed',
@@ -54,26 +53,21 @@ export const AUDIT_ACTIONS = [
   'account.mfa_removed',
   'treatment_note.created',
   'treatment_note.updated',
-  'treatment_note.viewed',
   'treatment_note.finalized',
   'treatment_note.auto_finalized',
   'treatment_note.revised',
   'treatment_note.addendum_created',
-  'treatment_note.history_viewed',
   // Bis GRD-001 geschrieben, seitdem nur noch gelesen: Auditzeilen werden
   // niemals umgeschrieben (ADR-010, ADR-020 Punkt 8).
-  'prescription.viewed',
   'prescription.created',
   'prescription.updated',
   'prescription.deleted',
-  'treatment_basis.viewed',
   'treatment_basis.created',
   'treatment_basis.updated',
   'treatment_basis.deleted',
   // CAL-022: ein Ereignis je Uebertragung, nicht je Termin.
   'treatment_basis.appointments_transferred',
   'patient_file.uploaded',
-  'patient_file.link_issued',
   'patient_file.deleted',
   'patient_file.type_corrected',
   // DOK-006d: Kopie eines Patientenfotos an die Person selbst (ADR-017
@@ -121,23 +115,9 @@ export const AUDIT_ACTIONS = [
   // OPS-007: die Einrichtung der einen Organisation, einmalig aus dem
   // SQL-Editor (ADR-003, ADR-010 Punkt 2).
   'organization.bootstrapped',
-  // OPS-004: nur mit outcome 'denied' — das erfolgreiche Lesen der
-  // Löschläufe bleibt ohne Eintrag, der abgewiesene Versuch nicht.
-  'deletion_runs.read',
   // PAT-006: Datenschutzinformation, Behandlungsvertrag, Einwilligung und
   // Widerruf — ein Ereignis, Art und Zweck im Kontext.
   'patient_privacy.recorded',
-  // G6b: nur mit outcome 'denied' — abgewiesene Lesezugriffe je Datenbereich.
-  'appointments.read',
-  'patient_directory.read',
-  'treatment_bases.read',
-  'treatment_evidence.read',
-  'patient_files.read',
-  'text_snippets.read',
-  'invoicing.read',
-  'billable_services.read',
-  'legal_holds.read',
-  'storage_deletion.read',
   // MAP-006a: Koordinate zur Adresse und Startort der Tagesroute (ANN-016).
   'patient.address_geocoded',
   'organization.tour_start_changed',
@@ -146,30 +126,24 @@ export const AUDIT_ACTIONS = [
   'questionnaire_response.updated',
   'questionnaire_response.completed',
   'questionnaire_response.discarded',
-  'questionnaire_response.viewed',
   // FRB-002e: Ereignisse im Verlauf (ANN-106).
   'patient_course_event.created',
   'patient_course_event.removed',
-  'patient_course_event.viewed',
   // DOK-005a: Therapiebericht an die Verordner:in (ANN-121); der Druckknopf
   // gilt als Export (ADR-010 Punkt 2).
   'therapy_report.created',
   'therapy_report.updated',
   'therapy_report.completed',
   'therapy_report.discarded',
-  'therapy_report.viewed',
   'therapy_report.exported',
   // PRX-001: Warteliste. Lesen ist wie der Kalender nicht auditiert (ANN-134);
   // ein abgewiesener Leseversuch schon.
   'waitlist_entry.created',
   'waitlist_entry.updated',
   'waitlist_entry.closed',
-  'waitlist.read',
   // PRX-002: Gebiete sind eine Praxisregel ohne Personenbezug.
   'territory.saved',
   'territory.removed',
-  // PRX-006: Vertretungs-Kurzblick am Termin, je Aufklappen (ANN-137).
-  'appointment_brief.viewed',
   // PRX-011: ein offener Verordnungsscan wird einer Grundlage zugeordnet.
   'patient_file.assigned',
   // PRX-012: Aufgaben und Wiedervorlagen. Lesen ist wie die Warteliste nicht
@@ -179,20 +153,15 @@ export const AUDIT_ACTIONS = [
   'task.completed',
   'task.reopened',
   'task.deleted',
-  'tasks.read',
   // PRX-014: Ergebnis eines Anrufs der Anrufliste, ohne Inhalt.
   'appointment.call_recorded',
   // PRX-017: Eine Dublette ist in dieser Akte aufgegangen - Kennung der
   // Dublette und Zahlen, keine Namen (ANN-150).
   'patient.merged',
-  // STA-001: nur der abgewiesene Versuch, die Kennzahlen zu lesen.
-  'statistics.read',
   // STA-002: Zielwert der Praxisfuehrung geaendert, mit altem und neuem Wert.
   'organization.practice_target_changed',
   // STA-005: Verguetungsmodell einer Person geaendert, nur die Modellwerte.
   'staff_member.compensation_model_changed',
-  // STA-006: Umsatz je Person angesehen - Umfang, keine Betraege.
-  'statistics.staff_revenue_viewed',
   // TRN-001: das Trainingsverhaeltnis auf dem Niveau der Akte (ADR-021
   // Punkt 8). Die Detailansicht ist protokolliert, die Trefferliste nur im
   // abgewiesenen Fall.
@@ -201,7 +170,6 @@ export const AUDIT_ACTIONS = [
   'training_relationship.ended',
   'training_relationship.reopened',
   'training_relationship.viewed',
-  'training_relationships.read',
   // TRN-005: Vereinbarungen im Training (Trainingsgrundlage, ADR-022 Punkt 5).
   'training_basis.created',
   'training_basis.concluded',
@@ -211,7 +179,6 @@ export const AUDIT_ACTIONS = [
   'training_protocol.created',
   'training_protocol.updated',
   'training_protocol.finalized',
-  'training_protocol.viewed',
   // Zweitreview: ein Entwurf fällt mit Absage oder Nichtantreffen.
   'training_protocol.discarded',
   // POR-002: Plattformzugang (ADR-023 Punkt 6, W5). `activated` und
@@ -223,7 +190,6 @@ export const AUDIT_ACTIONS = [
   'platform_access.locked',
   'platform_access.unlocked',
   'platform_access.revoked',
-  'platform_accesses.read',
   // POR-005/006: Vertretung (ADR-023 Punkte 13, 14, 24). Ein Zugriff über
   // eine Vertretung schreibt das Konto der Vertretung (actor_kind
   // representative), Gegenstand ist das Verhältnis der vertretenen Person.
@@ -235,13 +201,14 @@ export const AUDIT_ACTIONS = [
   'payment.offset',
   // ABN-015: Befundangaben getrennt vom Entwurf (BEF-103).
   'treatment_draft_findings.saved',
-  'treatment_draft_findings.viewed',
   // ABN-018: Wartelisteneintrag als noch aktuell bestätigt (BEF-108).
   'waitlist_entry.reviewed',
   // ABN-022: Nachtrag zum abgeschlossenen Trainingsprotokoll (BEF-113).
   'training_protocol.addendum_created',
-  // ABN-024: Datei bei der Prüfung am Server verworfen (ADR-017 Punkt 52).
-  'patient_file.verification_failed',
+  // LOG-EPIC-001: Herunterladen einer Datei (das Anzeigen steht nicht im
+  // Protokoll) und jede Abweisung, Operation und Zähler im Kontext.
+  'patient_file.downloaded',
+  'access.denied',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -249,7 +216,6 @@ export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
   'patient_record.exported': 'Auskunft aus der Akte erteilt',
-  'audit_log.read': 'Protokoll gelesen',
   'patient.created': 'Patient:in angelegt',
   'patient.updated': 'Stammdaten geändert',
   'patient.status_changed': 'Versorgungsstatus geändert',
@@ -292,12 +258,10 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'account.mfa_removed': 'Zweiter Faktor entfernt',
   'treatment_note.created': 'Behandlungsdokumentation angelegt',
   'treatment_note.updated': 'Behandlungsdokumentation geändert',
-  'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
   'treatment_note.finalized': 'Behandlungsdokumentation finalisiert',
   'treatment_note.auto_finalized': 'Behandlungsdokumentation automatisch finalisiert',
   'treatment_note.revised': 'Behandlungsdokumentation korrigiert',
   'treatment_note.addendum_created': 'Nachtrag angelegt',
-  'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
   'text_snippet.created': 'Textbaustein angelegt',
   'text_snippet.updated': 'Textbaustein geändert',
   'text_snippet.deleted': 'Textbaustein gelöscht',
@@ -320,67 +284,46 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'payment.recorded': 'Zahlung erfasst',
   'payment.voided': 'Zahlung storniert',
   'organization.bootstrapped': 'Praxis eingerichtet',
-  'deletion_runs.read': 'Löschläufe gelesen',
   'patient_privacy.recorded': 'Datenschutzvermerk erfasst',
-  'appointments.read': 'Termine gelesen',
-  'patient_directory.read': 'Patientenverzeichnis durchsucht',
-  'treatment_bases.read': 'Behandlungsgrundlagen gelesen',
-  'treatment_evidence.read': 'Behandlungsnachweis gelesen',
-  'patient_files.read': 'Dateien der Akte gelesen',
-  'text_snippets.read': 'Textbausteine gelesen',
-  'invoicing.read': 'Abrechnung gelesen',
-  'billable_services.read': 'Leistungen gelesen',
-  'legal_holds.read': 'Löschsperren gelesen',
-  'storage_deletion.read': 'Löschaufträge der Ablage gelesen',
   'patient.address_geocoded': 'Adresse auf der Karte verortet',
   'organization.tour_start_changed': 'Startort der Touren geändert',
   'questionnaire_response.created': 'Fragebogen begonnen',
   'questionnaire_response.updated': 'Fragebogen-Entwurf geändert',
   'questionnaire_response.completed': 'Fragebogen abgeschlossen',
   'questionnaire_response.discarded': 'Fragebogen-Entwurf verworfen',
-  'questionnaire_response.viewed': 'Fragebogen gelesen',
   'patient_course_event.created': 'Ereignis im Verlauf gesetzt',
   'patient_course_event.removed': 'Ereignis im Verlauf entfernt',
-  'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',
   'therapy_report.created': 'Therapiebericht begonnen',
   'therapy_report.updated': 'Therapiebericht-Entwurf geändert',
   'therapy_report.completed': 'Therapiebericht abgeschlossen',
   'therapy_report.discarded': 'Therapiebericht-Entwurf verworfen',
-  'therapy_report.viewed': 'Therapiebericht gelesen',
   'therapy_report.exported': 'Therapiebericht gedruckt',
   'waitlist_entry.created': 'Auf die Warteliste gesetzt',
   'waitlist_entry.updated': 'Wartelisteneintrag geändert',
   'waitlist_entry.closed': 'Von der Warteliste genommen',
-  'waitlist.read': 'Warteliste gelesen',
   'territory.saved': 'Gebiet gespeichert',
   'territory.removed': 'Gebiet entfernt',
-  'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   'patient_file.assigned': 'Verordnungsfoto einer Grundlage zugeordnet',
   'task.created': 'Aufgabe angelegt',
   'task.updated': 'Aufgabe geändert',
   'task.completed': 'Aufgabe erledigt',
   'task.reopened': 'Aufgabe wieder geöffnet',
   'task.deleted': 'Aufgabe gelöscht',
-  'tasks.read': 'Aufgaben gelesen',
   'appointment.call_recorded': 'Anruf zum Termin vermerkt',
   'patient.merged': 'Dublette in die Akte übernommen',
-  'statistics.read': 'Statistiken gelesen',
   'organization.practice_target_changed': 'Zielwert der Statistik geändert',
   'staff_member.compensation_model_changed': 'Vergütungsmodell geändert',
-  'statistics.staff_revenue_viewed': 'Umsatz je Person angesehen',
   'training_relationship.created': 'Trainingskund:in angelegt',
   'training_relationship.updated': 'Trainingskund:in geändert',
   'training_relationship.ended': 'Trainingsvertrag beendet',
   'training_relationship.reopened': 'Trainingsvertrag wieder aufgenommen',
   'training_relationship.viewed': 'Trainingskund:in geöffnet',
-  'training_relationships.read': 'Trainingskund:innen gelesen',
   'training_basis.created': 'Vereinbarung im Training angelegt',
   'training_basis.concluded': 'Vereinbarung im Training abgeschlossen',
   'training_basis.reopened': 'Vereinbarung im Training wieder geöffnet',
   'training_protocol.created': 'Trainingsprotokoll angelegt',
   'training_protocol.updated': 'Trainingsprotokoll geändert',
   'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
-  'training_protocol.viewed': 'Trainingsprotokoll gelesen',
   'training_protocol.discarded': 'Entwurf des Trainingsprotokolls verworfen',
   'platform_access.invited': 'Zur Plattform eingeladen',
   'platform_access.invitation_sent': 'Einladung zur Plattform per Mail versandt',
@@ -389,36 +332,97 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'platform_access.locked': 'Plattformzugang gesperrt',
   'platform_access.unlocked': 'Plattformzugang entsperrt',
   'platform_access.revoked': 'Plattformzugang entzogen',
-  'platform_accesses.read': 'Plattformzugang angesehen',
   'platform_access.companion_declined':
     'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
   'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
   'appointment.fee_waived': 'Auf die Gebühr eines Termins verzichtet',
   'payment.offset': 'Zahlung mit der Korrekturrechnung verrechnet',
   'treatment_draft_findings.saved': 'Befundangaben gesichert (noch nicht übernommen)',
-  'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
   'waitlist_entry.reviewed': 'Wartelisteneintrag als noch aktuell bestätigt',
   'training_protocol.addendum_created': 'Nachtrag zum Trainingsprotokoll geschrieben',
-  'patient_file.verification_failed': 'Datei bei der Prüfung am Server verworfen',
   // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
   // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
-  'prescription.viewed': 'Verordnung gelesen',
   'prescription.created': 'Verordnung erfasst',
   'prescription.updated': 'Verordnung geändert',
   'prescription.deleted': 'Verordnung gelöscht',
-  'treatment_basis.viewed': 'Behandlungsgrundlage gelesen',
   'treatment_basis.created': 'Behandlungsgrundlage erfasst',
   'treatment_basis.updated': 'Behandlungsgrundlage geändert',
   'treatment_basis.deleted': 'Behandlungsgrundlage gelöscht',
   'treatment_basis.appointments_transferred': 'Termine auf diese Grundlage übertragen',
   'patient_file.uploaded': 'Datei zur Akte hinzugefügt',
-  'patient_file.link_issued': 'Datei zum Öffnen freigegeben',
   'patient_file.deleted': 'Datei gelöscht',
   'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
   'patient_file.handed_out': 'Foto an die Person herausgegeben',
   'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
   'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
   'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',
+  'patient_file.downloaded': 'Datei heruntergeladen',
+  'access.denied': 'Zugriff abgewiesen',
+};
+
+/**
+ * Beschriftung der abgewiesenen Operation (`access.denied`, LOG-EPIC-001).
+ *
+ * Eine Abweisung nennt in `context.operation` den Namen, unter dem der
+ * Lese- oder Schreibpfad abgewiesen wurde. Diese Namen sind keine Aktionen
+ * des Auditlogs mehr; `supabase/tests/audit-protokoll-lesen.test.ts` prüft,
+ * dass jeder Aufruf von `app.record_denied_*` hier eine Beschriftung hat.
+ */
+export const auditOperationLabels: Record<string, string> = {
+  'appointment.created': 'Termin angelegt',
+  'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
+  'appointments.read': 'Termine gelesen',
+  'audit_log.read': 'Protokoll gelesen',
+  'billable_services.read': 'Leistungen gelesen',
+  'deletion_runs.read': 'Löschläufe gelesen',
+  'invoicing.read': 'Abrechnung gelesen',
+  'legal_hold.placed': 'Löschsperre gesetzt',
+  'legal_hold.released': 'Löschsperre aufgehoben',
+  'legal_holds.read': 'Löschsperren gelesen',
+  'patient.merged': 'Dublette in die Akte übernommen',
+  'patient_course_event.viewed': 'Ereignisse im Verlauf gelesen',
+  'patient_directory.read': 'Patientenverzeichnis durchsucht',
+  'patient_files.read': 'Dateien der Akte gelesen',
+  'patient_record.viewed': 'Patientenakte geöffnet',
+  'platform_access.companion_declined':
+    'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
+  'platform_access.invitation_sent': 'Einladung zur Plattform per Mail versandt',
+  'platform_access.invited': 'Zur Plattform eingeladen',
+  'platform_access.revoked': 'Plattformzugang entzogen',
+  'platform_accesses.read': 'Plattformzugang angesehen',
+  'questionnaire_response.viewed': 'Fragebogen gelesen',
+  'staff_account.invitation_revoked': 'Einladung zurückgenommen',
+  'staff_account.invited': 'Zugang eingeladen',
+  'staff_account.password_reset_requested': 'Kennwort zurücksetzen angestoßen',
+  'staff_account.roles_changed': 'Rollen geändert',
+  'staff_member.updated': 'Mitarbeiterstammdaten geändert',
+  'statistics.read': 'Statistiken gelesen',
+  'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
+  'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',
+  'storage_deletion.read': 'Löschaufträge der Ablage gelesen',
+  'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
+  'tasks.read': 'Aufgaben gelesen',
+  'text_snippets.read': 'Textbausteine gelesen',
+  'therapy_report.viewed': 'Therapiebericht gelesen',
+  'training_basis.concluded': 'Vereinbarung im Training abgeschlossen',
+  'training_basis.created': 'Vereinbarung im Training angelegt',
+  'training_basis.reopened': 'Vereinbarung im Training wieder geöffnet',
+  'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
+  'training_protocol.updated': 'Trainingsprotokoll geändert',
+  'training_protocol.viewed': 'Trainingsprotokoll gelesen',
+  'training_relationship.created': 'Trainingskund:in angelegt',
+  'training_relationship.ended': 'Trainingsvertrag beendet',
+  'training_relationship.reopened': 'Trainingsvertrag wieder aufgenommen',
+  'training_relationship.updated': 'Trainingskund:in geändert',
+  'training_relationship.viewed': 'Trainingskund:in geöffnet',
+  'training_relationships.read': 'Trainingskund:innen gelesen',
+  'treatment_bases.read': 'Behandlungsgrundlagen gelesen',
+  'treatment_basis.viewed': 'Behandlungsgrundlage gelesen',
+  'treatment_draft_findings.viewed': 'Gesicherte Befundangaben geladen',
+  'treatment_evidence.read': 'Behandlungsnachweis gelesen',
+  'treatment_note.history_viewed': 'Änderungsverlauf gelesen',
+  'treatment_note.viewed': 'Behandlungsdokumentation gelesen',
+  'waitlist.read': 'Warteliste gelesen',
 };
 
 /**

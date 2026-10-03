@@ -61,6 +61,28 @@ describe('AuditLogPage', () => {
     );
   });
 
+  it('nennt bei einer Abweisung die Operation und wie oft binnen zehn Minuten (LOG-EPIC-001)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [
+        {
+          ...event('1', 'access.denied', 'Anna Beispiel', 1),
+          subject_type: 'organization',
+          outcome: 'denied',
+          denied_operation: 'appointments.read',
+          denied_count: 3,
+        },
+      ],
+      totalCount: 1,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+
+    const zeile = await screen.findByRole('listitem');
+    expect(zeile).toHaveTextContent('Zugriff abgewiesen: Termine gelesen · 3×');
+    expect(within(zeile).getByText('Abgewiesen')).toBeInTheDocument();
+  });
+
   it('traegt das Wort des Menuepunkts als Titel (ORG-07)', async () => {
     fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
     fetchOrganizationMembers.mockResolvedValue([]);
@@ -159,11 +181,11 @@ describe('AuditLogPage', () => {
     await screen.findByText('Keine Einträge im gewählten Zeitraum');
 
     await user.selectOptions(await screen.findByLabelText('Person'), 'u-2');
-    await user.selectOptions(screen.getByLabelText('Aktion'), 'audit_log.read');
+    await user.selectOptions(screen.getByLabelText('Aktion'), 'access.denied');
 
     await waitFor(() => {
       expect(fetchAuditEvents).toHaveBeenLastCalledWith(
-        expect.objectContaining({ actorUserId: 'u-2', action: 'audit_log.read', page: 0 }),
+        expect.objectContaining({ actorUserId: 'u-2', action: 'access.denied', page: 0 }),
       );
     });
   });

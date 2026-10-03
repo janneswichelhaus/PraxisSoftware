@@ -154,7 +154,8 @@ describe('Audit-Lesepfad', () => {
       outcome: string;
     }>(
       `select actor_user_id, organization_id, subject_id, outcome
-       from public.audit_log where action = 'audit_log.read'`,
+       from public.audit_log
+       where action = 'access.denied' and context ->> 'operation' = 'audit_log.read'`,
     );
     expect(rows.map((r) => r.actor_user_id).sort()).toEqual([...abgewiesen].sort());
     for (const row of rows) {
@@ -169,10 +170,15 @@ describe('Audit-Lesepfad', () => {
     const { rows } = await asUser<{ actor_user_id: string; outcome: string }>(
       users.ownerTherapist,
       'select * from public.list_audit_events(null, null, null, $1)',
-      ['audit_log.read'],
+      ['access.denied'],
     );
     expect(rows).toEqual([
-      expect.objectContaining({ actor_user_id: users.office, outcome: 'denied' }),
+      expect.objectContaining({
+        actor_user_id: users.office,
+        outcome: 'denied',
+        denied_operation: 'audit_log.read',
+        denied_count: 1,
+      }),
     ]);
   });
 
@@ -392,7 +398,7 @@ describe('Audit-Lesepfad', () => {
     const { rows } = await asUser(
       users.ownerTherapist,
       'select * from public.list_audit_events(null, null, null, $1)',
-      ['audit_log.read'],
+      ['access.denied'],
     );
     expect(rows).toEqual([]);
   });
@@ -423,18 +429,10 @@ describe('Audit-Lesepfad', () => {
     expect(rows.length).toBeLessThanOrEqual(200);
   });
 
-  it('protokolliert den Zugriff auf das Auditlog selbst', async () => {
+  it('protokolliert das Lesen des Auditlogs nicht (ADR-010 Fassung 3, LOG-EPIC-001)', async () => {
+    const vorher = (await asPostgres('select id from public.audit_log')).rows.length;
     await committedAs(users.ownerTherapist, 'select * from public.list_audit_events()');
-    const { rows } = await asPostgres<{
-      action: string;
-      actor_user_id: string;
-      subject_id: string;
-    }>(
-      "select action, actor_user_id, subject_id from public.audit_log where action = 'audit_log.read'",
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_user_id).toBe(users.ownerTherapist);
-    expect(rows[0]?.subject_id).toBe(organizationId);
+    expect((await asPostgres('select id from public.audit_log')).rows).toHaveLength(vorher);
   });
 
   it('taugt der Benutzerfilter nicht als Existenz-Orakel', async () => {

@@ -339,7 +339,7 @@ describe('Audit-Log (ADR-010)', () => {
     expect(rows[0]?.action).toBe('patient_record.viewed');
     expect(rows[0]?.actor_user_id).toBe(users.therapist);
     expect(rows[0]?.subject_id).toBe(patients.max);
-    expect(rows[0]?.context).toEqual({ surface: 'web' });
+    expect(rows[0]?.context).toEqual({});
     await asPostgres('delete from public.audit_log');
   });
 
