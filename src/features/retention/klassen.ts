@@ -39,7 +39,13 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   },
   auditlog: {
     label: 'Protokoll',
-    beschreibung: 'Nachweis sensibler Zugriffe. Nur Metadaten, keine klinischen Inhalte.',
+    beschreibung:
+      'Exporte, Herunterladen, Plattformzugänge, Konten und Rechte, Löschläufe. Nur Metadaten, keine klinischen Inhalte.',
+  },
+  auditlog_lesen_sicherheit: {
+    label: 'Protokoll: Lesen und Sicherheit',
+    beschreibung:
+      'Wer an welchem Tag eine Akte geöffnet hat, abgewiesene Zugriffe und Ereignisse am eigenen Konto. Nur Metadaten.',
   },
   zugangseinladung: {
     label: 'Einladungen zu Zugängen',
@@ -99,7 +105,12 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   loeschjournal: {
     label: 'Löschjournal',
     beschreibung:
-      'Nachweis wirksam gewordener Löschungen. Enthält nach der Löschung keine Personendaten mehr.',
+      'Liste wirksam gewordener Löschungen, damit sie nach einer Wiederherstellung nachgezogen werden. Enthält keine Personendaten.',
+  },
+  loeschauftrag: {
+    label: 'Löschaufträge der Ablage',
+    beschreibung:
+      'Aufträge, eine Datei aus der Ablage zu entfernen, mit Quittung. Offene bleiben, bis sie ausgeführt sind.',
   },
   konfiguration: {
     label: 'Konfiguration',
