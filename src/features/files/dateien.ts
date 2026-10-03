@@ -18,7 +18,8 @@ import {
 /**
  * Die Dateien einer Akte — für die beiden Stellen, die sie zeigen (DAT-001).
  *
- * Der Bereich „Dateien" zeigt alle, die Verordnung nur ihren eigenen Scan.
+ * Die Akte fragt alle und verteilt sie auf ihre Reiter (AKTE-007), die
+ * Verordnung fragt nur ihren eigenen Scan.
  * Beide fragen denselben Lesepfad; getrennte Abfrageschlüssel, damit ein
  * Upload an der Verordnung nicht die ganze Aktenliste neu lädt und umgekehrt
  * kein Filter verloren geht.

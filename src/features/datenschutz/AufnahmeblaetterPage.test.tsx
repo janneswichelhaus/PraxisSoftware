@@ -67,7 +67,7 @@ describe('Aufnahmeblätter', () => {
 
     expect(screen.getByRole('link', { name: 'in der Akte vermerken' })).toHaveAttribute(
       'href',
-      `/patienten/${PATIENT_ID}/datenschutz`,
+      `/patienten/${PATIENT_ID}/stammdaten#anmeldebogen`,
     );
   });
 

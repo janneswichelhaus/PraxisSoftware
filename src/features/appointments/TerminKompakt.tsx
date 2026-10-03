@@ -261,7 +261,7 @@ export function TerminZeilen({
         <Zeile label="Zuletzt">
           <Textlink
             alleinstehend
-            to={mitRueckweg(`/patienten/${appointment.patient_id}/verlauf`, zumTermin)}
+            to={mitRueckweg(`/patienten/${appointment.patient_id}/doku`, zumTermin)}
           >
             Verlauf →
           </Textlink>

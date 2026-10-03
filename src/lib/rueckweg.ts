@@ -78,8 +78,13 @@ export function leseRueckweg(suche: URLSearchParams, standard: string): string {
  */
 export function mitRueckweg(ziel: string, rueckweg: string | null | undefined): string {
   if (!istInternerPfad(rueckweg)) return ziel;
-  const trenner = ziel.includes('?') ? '&' : '?';
-  return `${ziel}${trenner}${RUECKWEG_PARAM}=${encodeURIComponent(rueckweg)}`;
+  // Ein Anker bleibt am Ende (AKTE-007: `…/stammdaten#anmeldebogen`) - hinter
+  // ihm wäre der Rückweg Teil des Ankers und ginge verloren.
+  const rautePos = ziel.indexOf('#');
+  const ohneAnker = rautePos === -1 ? ziel : ziel.slice(0, rautePos);
+  const anker = rautePos === -1 ? '' : ziel.slice(rautePos);
+  const trenner = ohneAnker.includes('?') ? '&' : '?';
+  return `${ohneAnker}${trenner}${RUECKWEG_PARAM}=${encodeURIComponent(rueckweg)}${anker}`;
 }
 
 /** Das Formular einer Behandlungsgrundlage - neu oder in Bearbeitung (VER-11). */
@@ -93,7 +98,7 @@ const GRUNDLAGENFORMULAR = /^\/patienten\/[^/]+\/verordnungen\/(?:neu|[^/]+\/bea
  * hingehört — und sie ließe sich verstellen. Aus dem Pfad folgt sie eindeutig.
  */
 export function rueckwegBeschriftung(pfad: string): string {
-  const ohneSuche = pfad.split('?')[0] ?? pfad;
+  const ohneSuche = pfad.split(/[?#]/)[0] ?? pfad;
 
   // Die Wörter sind die des Menüs und der Seitentitel (NAV-16, ANN-111):
   // „Patient:innen" statt „Patientenliste", „Behandlungsgrundlagen" statt
@@ -108,9 +113,10 @@ export function rueckwegBeschriftung(pfad: string): string {
     if (GRUNDLAGENFORMULAR.test(ohneSuche)) return 'Zurück zur Grundlage';
     if (ohneSuche.endsWith('/termine')) return 'Zurück zu den Terminen der Akte';
     if (ohneSuche.endsWith('/verordnungen')) return 'Zurück zu den Behandlungsgrundlagen';
-    if (ohneSuche.endsWith('/verlauf')) return 'Zurück zum Behandlungsverlauf';
-    if (ohneSuche.endsWith('/stammdaten')) return 'Zurück zu den Stammdaten';
-    if (ohneSuche.endsWith('/datenschutz')) return 'Zurück zum Datenschutz der Akte';
+    // AKTE-007: `/verlauf` und `/befund` sind die Doku; die alten Adressen
+    // leiten weiter und heißen deshalb wie das Ziel.
+    if (/\/(doku|verlauf|befund)$/.test(ohneSuche)) return 'Zurück zur Doku';
+    if (/\/(stammdaten|datenschutz|dateien)$/.test(ohneSuche)) return 'Zurück zu den Stammdaten';
     if (ohneSuche.endsWith('/terminzettel')) return 'Zurück zum Terminzettel';
     return 'Zurück zur Akte';
   }

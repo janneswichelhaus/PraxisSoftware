@@ -284,7 +284,7 @@ function Behandlungsdokumentation({ patient, user }: { patient: Patient; user: C
   });
 
   const termine: PatientTreatmentNotesEntry[] = seiten.data?.pages.flat() ?? [];
-  const verlauf = `/patienten/${patient.id}/verlauf`;
+  const verlauf = `/patienten/${patient.id}/doku`;
   const monate = nachMonat(termine);
   // Die Sprungleiste lohnt erst ab zwei Monaten (Abschnitt 7). Sie kennt nur,
   // was geladen ist; ältere Monate kommen mit „Ältere Termine anzeigen" dazu.

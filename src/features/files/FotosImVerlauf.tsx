@@ -1,3 +1,4 @@
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
 import { useEffect, useRef, useState, type Ref } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
@@ -119,8 +120,12 @@ function Einwilligungsstand({
   return (
     <div>
       <p className="text-ink-muted text-sm">{text}</p>
-      <Textlink to={`/patienten/${patientId}/datenschutz`} alleinstehend className="text-sm">
-        Zum Datenschutz der Akte
+      <Textlink
+        to={`/patienten/${patientId}/stammdaten#${ANMELDEBOGEN_ANKER}`}
+        alleinstehend
+        className="text-sm"
+      >
+        Zu den Einwilligungen
       </Textlink>
     </div>
   );

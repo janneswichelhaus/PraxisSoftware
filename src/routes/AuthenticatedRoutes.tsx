@@ -10,17 +10,19 @@ import { CallListPage } from '@/features/open-points/CallListPage';
 import { PatientsListPage } from '@/features/patients/PatientsListPage';
 import { NewPatientPage } from '@/features/patients/NewPatientPage';
 import { EditPatientPage } from '@/features/patients/EditPatientPage';
-import { AkteEinstieg, PatientRecordLayout } from '@/features/patients/PatientRecordLayout';
+import {
+  AkteEinstieg,
+  AlterAktenbereich,
+  PatientRecordLayout,
+} from '@/features/patients/PatientRecordLayout';
+import { ALTE_AKTENBEREICHE } from '@/features/patients/akte';
 import { PatientMasterDataPage } from '@/features/patients/PatientMasterDataPage';
 import { BetroffenenrechtePage } from '@/features/datenschutz/BetroffenenrechtePage';
 import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
-import { PatientDatenschutzPage } from '@/features/datenschutz/PatientDatenschutzPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
-import { PatientFilesPage } from '@/features/files/PatientFilesPage';
-import { PatientCoursePage } from '@/features/documentation/PatientCoursePage';
-import { PatientBefundPage } from '@/features/assessments/PatientBefundPage';
+import { PatientDokuPage } from '@/features/documentation/PatientDokuPage';
 import { ErhebungPage } from '@/features/assessments/ErhebungPage';
 import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
 import { TherapieberichtDruckPage } from '@/features/therapy-reports/TherapieberichtDruckPage';
@@ -194,8 +196,9 @@ export function AuthenticatedRoutes({
                   <Route path="/offen" element={<OpenPointsPage user={user} />} />
                   <Route path="/patienten" element={<PatientsListPage />} />
                   <Route path="/patienten/neu" element={<NewPatientPage />} />
-                  {/* Die Akte ist ein Rahmen mit fünf Bereichen (AKTE-000, seit
-                  UI-002a ohne „Übersicht", seit DAT-001 mit „Dateien"). Der Rahmen lädt die Patient:in
+                  {/* Die Akte ist ein Rahmen mit vier Bereichen (AKTE-000, seit
+                  AKTE-007 Termine, Behandlungsgrundlagen, Doku, Stammdaten;
+                  die alten Adressen leiten weiter). Der Rahmen lädt die Patient:in
                   einmal und protokolliert den Zugriff einmal; ein
                   Bereichswechsel wechselt nur den Inhalt. Die Formulare stehen
                   bewusst daneben und nicht darin: Wer tippt, soll die
@@ -206,11 +209,15 @@ export function AuthenticatedRoutes({
                       <Route path="termine" element={<PatientAppointmentsPage />} />
                     ) : null}
                     <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
-                    <Route path="verlauf" element={<PatientCoursePage />} />
-                    <Route path="befund" element={<PatientBefundPage />} />
-                    <Route path="dateien" element={<PatientFilesPage />} />
-                    <Route path="datenschutz" element={<PatientDatenschutzPage />} />
+                    <Route path="doku" element={<PatientDokuPage />} />
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
+                    {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
+                      <Route
+                        key={alt}
+                        path={alt}
+                        element={<AlterAktenbereich alt={alt as keyof typeof ALTE_AKTENBEREICHE} />}
+                      />
+                    ))}
                   </Route>
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
                   {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}

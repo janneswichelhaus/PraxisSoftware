@@ -87,12 +87,14 @@ vi.mock('@/features/documentation/api', async (importOriginal) => {
   };
 });
 
-const { AkteEinstieg, PatientRecordLayout } = await import('./PatientRecordLayout');
+const { AkteEinstieg, AlterAktenbereich, PatientRecordLayout } =
+  await import('./PatientRecordLayout');
+const { ALTE_AKTENBEREICHE } = await import('./akte');
 const { PatientMasterDataPage } = await import('./PatientMasterDataPage');
 const { PatientAppointmentsPage } = await import('@/features/appointments/PatientAppointmentsPage');
 const { PatientTreatmentBasesPage } =
   await import('@/features/treatment-bases/PatientTreatmentBasesPage');
-const { PatientCoursePage } = await import('@/features/documentation/PatientCoursePage');
+const { PatientDokuPage } = await import('@/features/documentation/PatientDokuPage');
 
 /**
  * Die Akte wird als Routenbaum gerendert und nicht als einzelne Komponente:
@@ -114,8 +116,15 @@ function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
         <Route index element={<AkteEinstieg />} />
         <Route path="termine" element={<PatientAppointmentsPage />} />
         <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
-        <Route path="verlauf" element={<PatientCoursePage />} />
+        <Route path="doku" element={<PatientDokuPage />} />
         <Route path="stammdaten" element={<PatientMasterDataPage />} />
+        {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
+          <Route
+            key={alt}
+            path={alt}
+            element={<AlterAktenbereich alt={alt as keyof typeof ALTE_AKTENBEREICHE} />}
+          />
+        ))}
       </Route>
     </Routes>,
     pfad,
@@ -269,23 +278,46 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   describe('Bereichsnavigation', () => {
-    it('fuehrt alle sieben Bereiche fuer eine therapeutische Rolle', async () => {
-      akteRendern(['therapist']);
+    // AKTE-007: genau vier Bereiche. Verlauf und Befund sind die Doku,
+    // Datenschutz ist der Anmeldebogen in den Stammdaten, „Dateien" gibt es
+    // nicht mehr.
+    it.each([['therapist'], ['office'], ['owner'], ['team_lead']] as const)(
+      'fuehrt fuer %s genau vier Bereiche in fester Reihenfolge',
+      async (rolle) => {
+        akteRendern([rolle]);
+
+        const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
+        const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
+        expect(eintraege.map((link) => link.textContent)).toEqual([
+          'Termine',
+          'Behandlungsgrundlagen',
+          'Doku',
+          'Stammdaten',
+        ]);
+      },
+    );
+
+    it.each([
+      ['verlauf', '/doku', ''],
+      ['befund', '/doku', ''],
+      ['datenschutz', '/stammdaten', '#anmeldebogen'],
+      ['dateien', '/stammdaten', ''],
+    ])('leitet die alte Adresse /%s weiter - samt Rückweg (AKTE-007)', async (alt, ziel, anker) => {
+      const zurueck = '/kalender?ansicht=tag';
+      akteRendern(
+        ['therapist'],
+        `/patienten/${PATIENT_ID}/${alt}?${RUECKWEG_PARAM}=${encodeURIComponent(zurueck)}`,
+      );
 
       const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
-      const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
-      // "Dateien" ist seit DAT-001 dabei und steht vor den Stammdaten: "was
-      // liegt uns vor" wird im Gespraech haeufiger gebraucht als eine Adresse.
-      // "Datenschutz" (PAT-006) steht dazwischen: Aufnahme und Rueckfrage.
-      expect(eintraege.map((link) => link.textContent)).toEqual([
-        'Termine',
-        'Behandlungsgrundlagen',
-        'Behandlungsverlauf',
-        'Befund',
-        'Dateien',
-        'Datenschutz',
-        'Stammdaten',
-      ]);
+      const aktiv = await within(navigation).findByRole('link', { current: 'page' });
+      expect(linkZiel(aktiv)).toEqual({
+        pfad: `/patienten/${PATIENT_ID}${ziel}`,
+        zurueck,
+      });
+      expect(ALTE_AKTENBEREICHE[alt as keyof typeof ALTE_AKTENBEREICHE]).toBe(
+        `${ziel.slice(1)}${anker}`,
+      );
     });
 
     // UI-002a: Der Bereich ist samt seiner Schaltflaeche weg - nicht nur
@@ -347,15 +379,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
      * 120 px breit, und seine Lage verschiebt sich mit dem `scrollLeft`.
      */
     it('rollt den offenen Bereich am Telefon ins Bild, ohne die Seite zu rollen (PAT-01)', async () => {
-      const bereiche = [
-        'Termine',
-        'Behandlungsgrundlagen',
-        'Behandlungsverlauf',
-        'Befund',
-        'Dateien',
-        'Datenschutz',
-        'Stammdaten',
-      ];
+      const bereiche = ['Termine', 'Behandlungsgrundlagen', 'Doku', 'Stammdaten'];
       vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
         this: Element,
       ) {
@@ -381,13 +405,13 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         akteRendern(['therapist'], STAMMDATEN);
         const navigation = await screen.findByRole('navigation', { name: 'Bereiche der Akte' });
 
-        // „Stammdaten" liegt bei 720-840 px, sichtbar sind 300: Die Leiste
+        // „Stammdaten" liegt bei 360-480 px, sichtbar sind 300: Die Leiste
         // rollt, bis der Bereich ganz und 24 px vom Nachbarn zu sehen sind.
         expect(within(navigation).getByRole('link', { name: 'Stammdaten' })).toHaveAttribute(
           'aria-current',
           'page',
         );
-        expect(within(navigation).getByRole('list').scrollLeft).toBe(840 + 24 - 300);
+        expect(within(navigation).getByRole('list').scrollLeft).toBe(480 + 24 - 300);
         expect(seiteRollen).not.toHaveBeenCalled();
       } finally {
         vi.restoreAllMocks();
@@ -465,17 +489,37 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     });
   });
 
-  describe('Hinweise vor dem Hausbesuch im Kopf (UI-002a)', () => {
-    it('nennt Zugang und Besonderheit, wenn sie hinterlegt sind', async () => {
+  describe('Hinweise vor dem Hausbesuch im Kopf (UI-002a, AKTE-007)', () => {
+    it('legt Zugang und Besonderheit unter „Hinweise", standardmäßig zu', async () => {
       fetchPatient.mockResolvedValue({
         ...aktiv,
         home_visit_access_note: 'Klingel defekt, bitte anrufen',
         special_note: 'Hund im Flur',
       });
+      const user = userEvent.setup();
       akteRendern(['therapist']);
 
-      expect(await screen.findByText('Klingel defekt, bitte anrufen')).toBeInTheDocument();
-      expect(screen.getByText('Hund im Flur')).toBeInTheDocument();
+      const kopf = (await screen.findByText('Hinweise')).closest('summary')!;
+      // Die Zeile sagt, was drinsteht - beides, als zwei Felder.
+      expect(kopf).toHaveTextContent('Zugang · Besonderheit');
+      const aufklapper = kopf.closest('details')!;
+      expect(aufklapper).not.toHaveAttribute('open');
+      await user.click(kopf);
+      expect(aufklapper).toHaveAttribute('open');
+      expect(within(aufklapper).getByText('Klingel defekt, bitte anrufen')).toBeVisible();
+      expect(within(aufklapper).getByText('Hund im Flur')).toBeVisible();
+    });
+
+    it('nennt in der Zeile nur, was hinterlegt ist', async () => {
+      fetchPatient.mockResolvedValue({
+        ...aktiv,
+        home_visit_access_note: null,
+        special_note: 'Hund im Flur',
+      });
+      akteRendern(['therapist']);
+      const kopf = (await screen.findByText('Hinweise')).closest('summary')!;
+      expect(kopf).toHaveTextContent('Besonderheit');
+      expect(kopf).not.toHaveTextContent('Zugang');
     });
 
     it('laesst den Kopf leer, wenn nichts hinterlegt ist', async () => {
@@ -487,10 +531,9 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       akteRendern(['therapist']);
 
       await screen.findByRole('heading', { name: 'Max Mustermann' });
-      // Ohne Angabe keine Kachel und keine Reihe (Design-Handoff 2026-10-01).
-      expect(screen.queryByText('Zugangshinweis')).not.toBeInTheDocument();
-      expect(screen.queryByText('Besonderheit')).not.toBeInTheDocument();
-      expect(screen.queryByText('Liege')).not.toBeInTheDocument();
+      // Ohne Angabe kein Aufklapper und kein Abzeichen.
+      expect(screen.queryByText('Hinweise')).not.toBeInTheDocument();
+      expect(screen.queryByText('Liege mitnehmen')).not.toBeInTheDocument();
     });
 
     it('heißt den Zugangshinweis wie das Feld und behält seine Absätze (PAT-07, PAT-13)', async () => {
@@ -502,7 +545,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       // der Hinweis ein zweites Mal.
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
 
-      // Seit dem Design-Handoff vom 2026-10-01 eine Kachel im Kopf.
       const beschriftung = await screen.findByText('Zugangshinweis');
       expect(beschriftung.tagName).toBe('DT');
       const wert = beschriftung.nextElementSibling!;
@@ -511,18 +553,109 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(wert).toHaveClass('wrap-anywhere');
     });
 
-    it('nennt die Behandlungsliege, wenn sie gebraucht wird (UX-003a)', async () => {
+    it('nennt die Behandlungsliege als Abzeichen, wenn sie gebraucht wird (UX-003a)', async () => {
       fetchPatient.mockResolvedValue({ ...aktiv, treatment_table_required: true });
       akteRendern(['therapist']);
 
-      expect(await screen.findByText('Liege')).toBeInTheDocument();
-      expect(screen.getByText('mitnehmen')).toBeInTheDocument();
+      expect(await screen.findByText('Liege mitnehmen')).toBeInTheDocument();
+    });
+  });
+
+  // AKTE-007: Die Kachel „Erstaufnahme offen" ist einer Zeile gewichen, die
+  // nur den Anmeldebogen kennt (ANN-224).
+  describe('Hinweis „Anmeldebogen fehlt"', () => {
+    it('erscheint bei fehlendem Anmeldebogen und führt zum Anmeldebogen', async () => {
+      fetchIntakeChecklist.mockResolvedValue([
+        { item: 'prescription_photo', state: 'done' },
+        { item: 'registration_form', state: 'open' },
+      ]);
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+
+      const zeile = (await screen.findByText(/Anmeldebogen fehlt/)).closest('p')!;
+      const erledigen = within(zeile).getByRole('link', { name: 'Erledigen' });
+      const ziel = new URL(erledigen.getAttribute('href')!, 'http://akte.test');
+      expect(ziel.pathname).toBe(STAMMDATEN);
+      expect(ziel.hash).toBe('#anmeldebogen');
+      expect(ziel.searchParams.get(RUECKWEG_PARAM)).toBe(`/patienten/${PATIENT_ID}/termine`);
+      expect(screen.queryByText('Erstaufnahme offen')).toBeNull();
+    });
+
+    it('erscheint nicht bei fehlendem Verordnungsfoto', async () => {
+      fetchIntakeChecklist.mockResolvedValue([
+        { item: 'prescription_photo', state: 'open' },
+        { item: 'registration_form', state: 'done' },
+      ]);
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+
+      await waitFor(() => expect(fetchIntakeChecklist).toHaveBeenCalledWith(PATIENT_ID));
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      expect(screen.queryByText(/Anmeldebogen fehlt/)).toBeNull();
+    });
+
+    it('erscheint nicht bei fehlendem Befund - der ist kein Punkt mehr', async () => {
+      // Eine Antwort in der alten Form: Was die Liste nicht kennt, zählt nicht.
+      fetchIntakeChecklist.mockResolvedValue([{ item: 'registration_form', state: 'done' }]);
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
+
+      await waitFor(() => expect(fetchIntakeChecklist).toHaveBeenCalled());
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      expect(screen.queryByText(/Anmeldebogen fehlt/)).toBeNull();
+    });
+
+    it('fragt bei einer Person außerhalb der Versorgung nicht', async () => {
+      fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      expect(fetchIntakeChecklist).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Abzeichen zur Abrechnungsart (AKTE-007)', () => {
+    const basis: VerordnungenApi.TreatmentBasis = {
+      id: '99999999-9999-4999-8999-000000000009',
+      prescriber_id: null,
+      prescriber_name: 'Dr. Synthetisch Roth',
+      prescriber_practice_name: null,
+      treatment_basis_kind: 'first',
+      issued_on: '2026-09-20',
+      frequency_note: null,
+      note: null,
+      items: [],
+      updated_at: '2026-09-20T10:00:00.000000+00',
+    };
+
+    it('nennt „Privat · mit Verordnung" bei einer Verordnung', async () => {
+      fetchPatientTreatmentBases.mockResolvedValue([basis]);
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
+      expect(await screen.findByText('Privat · mit Verordnung')).toBeInTheDocument();
+    });
+
+    it('nennt „Selbstzahler" nach der jüngsten Grundlage', async () => {
+      fetchPatientTreatmentBases.mockResolvedValue([
+        basis,
+        { ...basis, id: 'neu', treatment_basis_kind: 'self_pay', issued_on: '2026-09-30' },
+      ]);
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
+      // Im Kopf; die Kontextspalte nennt die Grundlage ein zweites Mal.
+      const imKopf = (await screen.findAllByText('Selbstzahler')).filter((el) =>
+        el.closest('header'),
+      );
+      expect(imKopf).toHaveLength(1);
+      expect(screen.queryByText('Privat · mit Verordnung')).toBeNull();
+    });
+
+    it('zeigt ohne Grundlage kein Abzeichen', async () => {
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      await waitFor(() => expect(fetchPatientTreatmentBases).toHaveBeenCalled());
+      expect(screen.queryByText('Selbstzahler')).toBeNull();
+      expect(screen.queryByText('Privat · mit Verordnung')).toBeNull();
     });
   });
 
   describe('Bereiche hinter ihren Adressen', () => {
     it('zeigt office im Verlauf die Behandlungsdokumentation (E15, ROL-001)', async () => {
-      akteRendern(['office'], `/patienten/${PATIENT_ID}/verlauf`);
+      akteRendern(['office'], `/patienten/${PATIENT_ID}/doku`);
 
       expect(
         await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
@@ -535,7 +668,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     it.each([['owner'], ['therapist'], ['team_lead']] as const)(
       'zeigt %s im Verlauf die Behandlungsdokumentation',
       async (role) => {
-        akteRendern([role], `/patienten/${PATIENT_ID}/verlauf`);
+        akteRendern([role], `/patienten/${PATIENT_ID}/doku`);
 
         expect(
           await screen.findByRole('region', { name: 'Behandlungsdokumentation' }),
@@ -588,25 +721,10 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       uncovered: 0,
     };
 
-    it('zeigt die offene Erstaufnahme als Kachel mit dem Weg zum ersten Punkt', async () => {
-      fetchIntakeChecklist.mockResolvedValue([
-        { item: 'finding', state: 'open' },
-        { item: 'privacy', state: 'open' },
-        { item: 'anamnesis', state: 'done' },
-      ]);
-      akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
-
-      const beschriftung = await screen.findByText('Erstaufnahme offen');
-      expect(beschriftung.tagName).toBe('DT');
-      const kachel = beschriftung.parentElement!;
-      expect(kachel).toHaveTextContent('Befund · Datenschutz und Vertrag');
-      expect(within(kachel).getByRole('link', { name: 'Erledigen' })).toBeInTheDocument();
-    });
-
     it('nennt in der Kontextspalte die jüngste Grundlage mit ihren Zahlen', async () => {
       fetchPatientTreatmentBases.mockResolvedValue([aeltere, grundlage]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent]);
-      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/verlauf`);
+      akteRendern(['therapist'], `/patienten/${PATIENT_ID}/doku`);
 
       const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
       expect(await within(spalte).findByText('Erstverordnung vom 20.09.2026')).toBeInTheDocument();

@@ -19,6 +19,7 @@ import {
 import { KlinischerHinweis } from './KlinischerHinweis';
 import { formatDate } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
+import { OffeneVerordnungsfotos } from '@/features/files/Aktendateien';
 import { usePatientRecord } from '@/features/patients/akte';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { Deckungszeichen } from '@/features/appointments/Deckungszeichen';
@@ -405,10 +406,10 @@ function terminlink(patientId: string, verordnungId: string): string {
 /**
  * Der Scan des Rezepts an seiner Verordnung (VER-004, ADR-017).
  *
- * Er steht hier und nicht im Bereich „Dateien", weil er zu genau diesem
- * Auftrag gehört: Ohne Bezugsdatensatz hätte er weder Berechtigung noch Frist
- * (ADR-017 Punkt 10). Im Bereich „Dateien" taucht er trotzdem auf — gelesen
- * wird derselbe Pfad.
+ * Er steht hier, weil er zu genau diesem Auftrag gehört: Ohne
+ * Bezugsdatensatz hätte er weder Berechtigung noch Frist (ADR-017 Punkt 10).
+ * Seit AKTE-007 ist das der einzige Ort eines zugeordneten Scans; ein noch
+ * nicht zugeordneter steht oben im Reiter (`OffeneVerordnungsfotos`).
  *
  * **Für alle vier Praxisrollen sichtbar** (E15, ROL-002). Der Scan zeigt das
  * ganze Blatt samt Diagnose - und die liest `office` seit ADR-004 Fassung 2
@@ -661,7 +662,15 @@ function AbgeschlosseneVerordnung({
 
 export function PatientTreatmentBasesPage() {
   const { patient, user } = usePatientRecord();
-  return <Verordnungsbereich patient={patient} user={user} />;
+  return (
+    <>
+      {/* AKTE-007: Verordnungsfotos, die noch an keiner Grundlage hängen,
+          stehen hier statt im abgelösten Bereich „Dateien"; die zugeordneten
+          an ihrer Grundlage. */}
+      <OffeneVerordnungsfotos patientId={patient.id} user={user} />
+      <Verordnungsbereich patient={patient} user={user} />
+    </>
+  );
 }
 
 /** Der Anker einer Grundlage in der Adresse: `…/verordnungen#verordnung-<id>`. */

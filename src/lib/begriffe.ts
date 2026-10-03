@@ -98,6 +98,12 @@ export const BEGRIFFE = {
   trainingskundInnen: 'Trainingskund:innen',
   /** Wer wann was getan hat (ADR-010) - Menü, Seitentitel und Aufbewahrung (BEF-080). */
   protokoll: 'Protokoll',
+  /**
+   * Das eine Blatt der Aufnahme: Kontaktdaten, Datenschutzinformation und
+   * Behandlungsvertrag (AKTE-007, ANN-224). Nicht der Anamnesebogen - der ist
+   * klinisch und steht in der Doku.
+   */
+  anmeldebogen: 'Anmeldebogen',
 } as const;
 
 /**
@@ -167,5 +173,12 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
       // Die Terminliste an der Person (UX-012) zeigt dieselben Einträge.
       'src/features/staff/',
     ],
+  },
+  {
+    // Datenschutzinformation und Behandlungsvertrag sind Teil des
+    // Anmeldebogens, kein eigener Punkt mehr (AKTE-007, ANN-224).
+    muster: /Datenschutz und Vertrag/,
+    statt: BEGRIFFE.anmeldebogen,
+    quelle: 'Akte · Kopf, Reiter und Hinweis, Jannes 2026-10-03 (ANN-224)',
   },
 ];

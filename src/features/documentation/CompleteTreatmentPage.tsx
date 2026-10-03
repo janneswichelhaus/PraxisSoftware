@@ -445,7 +445,7 @@ function Abschluss({
             <BisherigeEintraege
               patientId={appointment.patient_id}
               appointmentId={appointment.id}
-              zurAkte={mitRueckweg(`/patienten/${appointment.patient_id}/verlauf`, hierher)}
+              zurAkte={mitRueckweg(`/patienten/${appointment.patient_id}/doku`, hierher)}
               onAnzahl={setVerlaufAnzahl}
               onSchliessen={() => setVerlaufOffen(false)}
             />

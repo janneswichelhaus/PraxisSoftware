@@ -1,3 +1,4 @@
+import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
 import { useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Rueckweg } from '@/components/ui/Rueckweg';
@@ -36,7 +37,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
           trennt ihn vom Blatt. */}
       <div className="nicht-drucken mx-auto mb-4 flex max-w-[210mm] flex-wrap items-start justify-between gap-x-4">
         <Rueckweg
-          standard={`/patienten/${patientId}/datenschutz`}
+          standard={`/patienten/${patientId}/stammdaten`}
           beschriftung="Zurück zum Datenschutz der Akte"
         />
         <Button type="button" onClick={() => window.print()}>
@@ -75,7 +76,10 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
             sprechen (UEB-15). */}
         <p className="text-ink-muted max-w-prose text-sm">
           Nach dem Aushändigen mit dem Datum und der Fassung, die oben steht,{' '}
-          <Textlink to={`/patienten/${patientId}/datenschutz`}>in der Akte vermerken</Textlink>.
+          <Textlink to={`/patienten/${patientId}/stammdaten#${ANMELDEBOGEN_ANKER}`}>
+            in der Akte vermerken
+          </Textlink>
+          .
         </p>
       </div>
     </>

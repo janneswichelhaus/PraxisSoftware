@@ -7,7 +7,6 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { formatDate } from '@/lib/datum';
 import { todayInTimeZone } from '@/features/appointments/api';
-import { usePatientRecord } from '@/features/patients/akte';
 import type { Patient } from '@/features/patients/api';
 import { Behandlungsliege } from '@/features/patients/Behandlungsliege';
 import {
@@ -24,7 +23,7 @@ import type { ScoreDefinition } from './schema';
 import { VerlaufAbschnitt } from './VerlaufAbschnitt';
 
 /**
- * Der Befund in der Akte (FRB-EPIC-002).
+ * Der Befund in der Akte (FRB-EPIC-002), seit AKTE-007 im Reiter „Doku".
  *
  * Eine Frage je Abschnitt: Was hat die Person im Anamnesebogen gesagt — und
  * wo liegt ein Bogen noch als Entwurf? Erhoben wird auf einer eigenen Seite
@@ -40,11 +39,6 @@ import { VerlaufAbschnitt } from './VerlaufAbschnitt';
  * den Stammdaten mit demselben Schreibpfad — kein zweiter Wert (ANN-116).
  * Sie steht auch dann, wenn die Fragebögen nicht laden.
  */
-export function PatientBefundPage() {
-  const { patient, user } = usePatientRecord();
-  return <Befund patient={patient} user={user} />;
-}
-
 interface BefundProps {
   patient: Patient;
   user: CurrentUser;

@@ -239,7 +239,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     // Vom Verlauf aus führt der Rückweg wieder in die Akte (DOK-01).
     expect(verlauf[0]).toHaveAttribute(
       'href',
-      `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/verlauf`)}`,
+      `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
     );
 
     // UX-005e: Das Datum ist der Weg zum Termin - keine eigene Zeile „Zum
@@ -251,7 +251,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     );
     expect(screen.getByRole('link', { name: '12.05.2027' })).toHaveAttribute(
       'href',
-      `/termine/77777777-7777-4777-8777-000000000001?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/verlauf`)}`,
+      `/termine/77777777-7777-4777-8777-000000000001?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
     );
   });
 

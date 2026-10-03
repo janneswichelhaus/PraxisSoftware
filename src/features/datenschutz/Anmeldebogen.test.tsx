@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useQuery } from '@tanstack/react-query';
 import type * as VermerkeApi from './vermerke';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -21,7 +22,7 @@ vi.mock('./vermerke', async (importOriginal) => {
   };
 });
 
-const { Datenschutz } = await import('./PatientDatenschutzPage');
+const { Datenschutz } = await import('./Anmeldebogen');
 
 function seite(vermerke: VermerkeApi.Datenschutzvermerk[] = []) {
   fetchDatenschutzvermerke.mockResolvedValue(vermerke);
@@ -160,6 +161,31 @@ describe('Datenschutz der Akte', () => {
     expect(meldung).toHaveTextContent('✓');
     // Danach steht die Auswahl wieder auf „Bitte wählen".
     expect(screen.getByLabelText('Was ist geschehen?')).toHaveValue('');
+  });
+
+  // AKTE-007: Der Hinweis „Anmeldebogen fehlt" im Kopf liest die Erstaufnahme.
+  // Nach einem Vermerk lädt sie neu, sonst stünde der Hinweis bis zum
+  // nächsten Aufruf der Akte.
+  it('lädt nach einem Vermerk die Erstaufnahme neu', async () => {
+    const user = userEvent.setup();
+    const erstaufnahme = vi.fn().mockResolvedValue([]);
+    function Kopf() {
+      useQuery({ queryKey: ['open-points', 'intake', PATIENT_ID], queryFn: erstaufnahme });
+      return null;
+    }
+    fetchDatenschutzvermerke.mockResolvedValue([]);
+    renderWithProviders(
+      <>
+        <Kopf />
+        <Datenschutz patient={testPatient({ id: PATIENT_ID })} user={testUser(['office'])} />
+      </>,
+      DATENSCHUTZ,
+    );
+    await waitFor(() => expect(erstaufnahme).toHaveBeenCalledTimes(1));
+
+    await vermerken(user, 'treatment_contract_signed');
+
+    await waitFor(() => expect(erstaufnahme).toHaveBeenCalledTimes(2));
   });
 
   it('gibt einen Widerruf mit Zweck und ohne Fassung weiter', async () => {

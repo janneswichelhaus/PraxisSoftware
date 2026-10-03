@@ -131,13 +131,13 @@ const erstaufnahmen: OpenIntake[] = [
     patient_id: PETRA,
     patient_given_name: 'Petra',
     patient_family_name: 'Platzhalter',
-    open_items: ['prescription_photo', 'anamnesis', 'finding', 'treatment_table'],
+    open_items: ['prescription_photo', 'registration_form'],
   },
   {
     patient_id: ERIKA,
     patient_given_name: 'Erika',
     patient_family_name: 'Beispiel',
-    open_items: ['privacy'],
+    open_items: ['registration_form'],
   },
 ];
 

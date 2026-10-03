@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
   SEED,
@@ -13,11 +11,10 @@ import {
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
- * Erstaufnahme-Checkliste (PRX-013, ANN-143).
+ * Erstaufnahme-Checkliste (PRX-013; seit AKTE-007 zwei Punkte, ANN-224).
  *
  * Die Liste ist abgeleitet - jeder Test legt an, was in der Akte steht, und
- * prüft, was die Liste daraus macht. Dazu die Rollen, die Mandantengrenze und
- * die Regionen gegen die Bausteine.
+ * prüft, was die Liste daraus macht. Dazu die Rollen und die Mandantengrenze.
  */
 const { users, patients, organizationId } = SEED;
 
@@ -80,64 +77,47 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     await neuePerson();
   }, 120_000);
 
-  it('beginnt mit fuenf offenen Punkten in fester Reihenfolge', async () => {
+  it('beginnt mit zwei offenen Punkten in fester Reihenfolge (ANN-224)', async () => {
     const { rows } = await asUser<{ item: string; state: string }>(users.office, CHECKLISTE, [
       LENA,
     ]);
     expect(rows).toEqual([
       { item: 'prescription_photo', state: 'open' },
-      { item: 'anamnesis', state: 'open' },
-      { item: 'privacy', state: 'open' },
-      { item: 'finding', state: 'open' },
-      { item: 'treatment_table', state: 'open' },
+      { item: 'registration_form', state: 'open' },
     ]);
   });
 
-  it('erledigt den Anamnesebogen nur abgeschlossen', async () => {
-    await bogen('anamnese_v8', 'entwurf');
-    expect((await checkliste()).anamnesis).toBe('open');
-    await bogen('anamnese_v8', 'abgeschlossen');
-    expect((await checkliste()).anamnesis).toBe('done');
-  });
-
-  it('erledigt den Befund mit einem abgeschlossenen Bogen einer Region, nicht mit der Anamnese', async () => {
-    await bogen('anamnese_v8', 'abgeschlossen');
-    expect((await checkliste()).finding).toBe('open');
-    await bogen('knie', 'entwurf');
-    expect((await checkliste()).finding).toBe('open');
-    await bogen('knie', 'abgeschlossen');
-    expect((await checkliste()).finding).toBe('done');
-  });
-
-  it('verlangt Datenschutzinformation und Behandlungsvertrag', async () => {
+  it('verlangt fuer den Anmeldebogen Datenschutzinformation und Behandlungsvertrag', async () => {
     await vermerk('privacy_notice_handed_out');
-    expect((await checkliste()).privacy).toBe('open');
+    expect((await checkliste()).registration_form).toBe('open');
     await vermerk('treatment_contract_signed');
-    expect((await checkliste()).privacy).toBe('done');
+    expect((await checkliste()).registration_form).toBe('done');
   });
 
-  it('erledigt die Liege mit einer Entscheidung - auch mit nein', async () => {
-    // Bisher war „nein“ der Standard; jetzt ist es eine Entscheidung (ANN-143).
+  it('fragt weder Anamnesebogen noch Befund noch Liege ab (ANN-224)', async () => {
+    // Abgeschlossene Boegen erledigen nichts, und fehlende fehlen nicht:
+    // zwei Punkte, keiner davon klinisch.
+    await bogen('anamnese_v8', 'abgeschlossen');
+    await bogen('knie', 'abgeschlossen');
+    expect(await checkliste()).toEqual({ prescription_photo: 'open', registration_form: 'open' });
+  });
+
+  it('laesst die Liege weiter unentschieden zu - als Aussage der Akte, nicht der Liste', async () => {
     await asUserCommitted(
       users.therapist,
       'select public.set_treatment_table_required($1::uuid, false)',
       [LENA],
     );
-    expect((await checkliste()).treatment_table).toBe('done');
-    const { rows } = await asPostgres<{ action: string }>(
+    const { rows } = await asPostgres<{ treatment_table_required: boolean | null }>(
+      'select treatment_table_required from public.patient_care_details where patient_id = $1',
+      [LENA],
+    );
+    expect(rows[0]?.treatment_table_required).toBe(false);
+    const audit = await asPostgres<{ action: string }>(
       `select action from public.audit_log where subject_id = $1 and action = 'patient.updated'`,
       [LENA],
     );
-    expect(rows).toHaveLength(1);
-  });
-
-  it('laesst die Liege offen, solange nur andere Versorgungsangaben stehen', async () => {
-    await asPostgres(
-      `insert into public.patient_care_details (patient_id, organization_id, home_visit_access_note)
-       values ($1::uuid, $2::uuid, 'Synthetisch: Klingel links')`,
-      [LENA, organizationId],
-    );
-    expect((await checkliste()).treatment_table).toBe('open');
+    expect(audit.rows).toHaveLength(1);
   });
 
   it('erledigt das Verordnungsfoto mit einem Scan und laesst es beim Selbstzahler entfallen', async () => {
@@ -161,22 +141,13 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     const vorher = await asUser<{ patient_id: string; open_items: string[] }>(users.office, LISTE);
     expect(vorher.rows.find((r) => r.patient_id === LENA)?.open_items).toEqual([
       'prescription_photo',
-      'anamnesis',
-      'privacy',
-      'finding',
-      'treatment_table',
+      'registration_form',
     ]);
 
+    // Ohne Anamnese, Befund und Liege: Die zwei Punkte genuegen.
     await grundlage('self_pay');
-    await bogen('anamnese_v8', 'abgeschlossen');
-    await bogen('hws', 'abgeschlossen');
     await vermerk('privacy_notice_handed_out');
     await vermerk('treatment_contract_signed');
-    await asPostgres(
-      `insert into public.patient_care_details (patient_id, organization_id, treatment_table_required)
-       values ($1::uuid, $2::uuid, true)`,
-      [LENA, organizationId],
-    );
 
     const nachher = await asUser<{ patient_id: string }>(users.office, LISTE);
     expect(nachher.rows.map((r) => r.patient_id)).not.toContain(LENA);
@@ -195,7 +166,7 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
         rows.map((r) => r.patient_id),
         konto,
       ).toContain(LENA);
-      expect(Object.keys(await checkliste(konto))).toHaveLength(5);
+      expect(Object.keys(await checkliste(konto))).toHaveLength(2);
     }
   });
 
@@ -221,18 +192,6 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     await expect(asUser(null, LISTE)).rejects.toThrow(/not authenticated/);
     await expect(asAnon(LISTE)).rejects.toThrow(/permission denied/i);
   });
-
-  it('kennt dieselben neun Regionen wie die Bausteine des Befunds', async () => {
-    const ordner = join(process.cwd(), 'src/features/assessments/definitionen/bausteine');
-    const ids = readdirSync(ordner)
-      .filter((datei) => datei.endsWith('.json'))
-      .map((datei) => (JSON.parse(readFileSync(join(ordner, datei), 'utf8')) as { id: string }).id)
-      .sort();
-    const { rows } = await asPostgres<{ ids: string[] }>(
-      'select app.intake_finding_instruments() as ids',
-    );
-    expect([...rows[0]!.ids].sort()).toEqual(ids);
-  });
 });
 
 describe('Erstaufnahme der Seed-Akten', () => {
@@ -242,6 +201,6 @@ describe('Erstaufnahme der Seed-Akten', () => {
 
   it('liefert fuer Max eine vollstaendige Liste', async () => {
     const { rows } = await asUser<{ item: string }>(users.office, CHECKLISTE, [patients.max]);
-    expect(rows).toHaveLength(5);
+    expect(rows).toHaveLength(2);
   });
 });

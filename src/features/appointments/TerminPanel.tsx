@@ -213,7 +213,7 @@ export function TerminPanel({
         {behandlung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
-            to={mitRueckweg(`/patienten/${eintrag.patient_id}/verlauf`, rueckweg)}
+            to={mitRueckweg(`/patienten/${eintrag.patient_id}/doku`, rueckweg)}
           >
             Bisherige Doku →
           </Textlink>

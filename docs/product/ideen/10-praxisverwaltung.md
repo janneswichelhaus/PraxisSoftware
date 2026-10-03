@@ -1325,3 +1325,32 @@ erzeugt? (2) Wird festgehalten, ob die Versicherung zugesagt hat (Vermerk an der
 Verordnung) — das wäre ein neues Feld. (3) Diagnose ja/nein. Die erste Frage
 berührt ADR-009 und ADR-008 und ist deshalb vor einer Spezifikation zu
 entscheiden.
+
+### IDEA-PRX-054 — Eigener Anmeldebogen der Praxis zum Ausdrucken
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-10-03 (Akte · Kopf, Reiter und Hinweis) |
+| Berührt | PAT-006, AKTE-007, ANN-224, `src/features/datenschutz/AufnahmeblaetterPage.tsx`; §3.1 |
+
+**Stand.** Seit AKTE-007 heißt das Blatt der Aufnahme „Anmeldebogen":
+Kontaktdaten, Datenschutzinformation und Behandlungsvertrag auf einem Blatt.
+In der Akte steht davon nur, **dass und wann** Datenschutzinformation und
+Vertrag vorlagen (zwei Vermerke); „Blätter zum Ausdrucken" druckt heute
+Datenschutzinformation und Vertrag als getrennte Blätter. Den Bogen selbst hat
+die Praxis noch nicht gestaltet; als Vorlage diente ein Papierbogen einer
+anderen Praxis (Name, Anschrift, Krankenversicherung, Dauertermine, freie
+Tage, Absageregel 24 Stunden, Abrechnungssätze, Kosten je Behandlung,
+Einwilligung in Mail und SMS samt Dienstleistern, Unterschrift).
+
+**Idee.** Die Druckseite gibt den eigenen Anmeldebogen als **ein** Blatt aus,
+mit den Stammdaten der Person vorausgefüllt, wo sie schon bekannt sind. Ein
+Vermerk „Anmeldebogen unterschrieben" könnte dann die beiden heutigen Vermerke
+ersetzen.
+
+**Vorsicht.** Einwilligungen (Mail, SMS, Bericht, Fotos) bleiben freiwillig
+und getrennt ankreuzbar (Art. 7 Abs. 4 DSGVO); die Unterschrift unter den
+Vertrag darf sie nicht mit einschließen. Die Dienstleister auf dem Blatt
+müssen die sein, die die Praxis tatsächlich nutzt (ADR-002). Abrechnungssätze
+auf dem Blatt kommen aus dem Leistungskatalog, nicht als Freitext.

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { CurrentUser } from '@/features/session/types';
 import type { Datenschutzvermerk } from '@/features/datenschutz/vermerke';
-import { Dateienbereich } from '@/features/files/PatientFilesPage';
+import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
 import { Ansicht, Patientenfotos, type Geladen } from '@/features/files/FotosImVerlauf';
 import type { Patientenfoto } from '@/features/files/patientenfotos';
 import { hatFarbprofil, nachSrgb } from '@/features/files/farbe';
@@ -31,7 +31,7 @@ import '@/index.css';
  *     Server, und genau das zeigt die Fehlermeldung mit dem Angebot, es
  *     erneut zu versuchen.
  *   * `vergleich` — zwei Fotos nebeneinander, aus Formen im Canvas gezeichnet.
- *   * `dokument` — der Bereich „Dateien" mit „Dokument fotografieren" neben
+ *   * `dokument` — die Dateien beim Anmeldebogen (AKTE-007) mit „Dokument fotografieren" neben
  *     dem Dateiwähler.
  *   * `bereinigung` — ein JPEG und ein PNG mit Ortsangabe und Vorschaubild,
  *     durch die Metadatenentfernung geschickt und im echten Browser
@@ -192,7 +192,9 @@ async function farbe() {
 async function inhalt() {
   if (ansicht === 'farbe') return farbe();
   if (ansicht === 'vergleich') return vergleich();
-  if (ansicht === 'dokument') return <Dateienbereich patientId={PATIENT} user={nutzer} />;
+  // AKTE-007: Das Hinzufügen eines Dokuments steht in den Reitern; hier das
+  // beim Anmeldebogen, das jede Praxisrolle offen sieht.
+  if (ansicht === 'dokument') return <AnmeldebogenDateien patientId={PATIENT} user={nutzer} />;
   if (ansicht === 'bereinigung') return bereinigung();
   return <Patientenfotos patientId={PATIENT} user={nutzer} />;
 }
