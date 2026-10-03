@@ -137,24 +137,24 @@ describe('Behandlungsrelevanter Hinweis an der Verordnung', () => {
     ).rejects.toThrow(/too long/);
   });
 
-  it('protokolliert die Änderung ohne den Text', async () => {
+  it('weist die Änderung an der Verordnung nach und schreibt den Text nicht ins Auditlog (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.therapist, SETZEN, [
       VERORDNUNG,
       'Synthetisch: Belastungsgrenze.',
       await stand(VERORDNUNG),
     ]);
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-        where action = 'treatment_basis.updated' and subject_id = $1
-        order by occurred_at desc limit 1`,
+    // Wer zuletzt geändert hat, steht an der Verordnung (ANN-230).
+    const kopf = await asPostgres<{ updated_by: string | null; patient_id: string }>(
+      'select updated_by, patient_id from public.treatment_bases where id = $1',
       [VERORDNUNG],
     );
-    expect(rows[0]!.context).toMatchObject({
-      field: 'prescriber_note',
-      cleared: false,
-      patient_id: patients.max,
-    });
-    expect(JSON.stringify(rows[0]!.context)).not.toContain('Belastungsgrenze');
+    expect(kopf.rows).toEqual([{ updated_by: users.therapist, patient_id: patients.max }]);
+
+    const { rows } = await asPostgres<{ eintrag: string; subject_id: string | null }>(
+      'select row_to_json(a)::text as eintrag, subject_id from public.audit_log a',
+    );
+    expect(rows.filter((r) => r.subject_id === VERORDNUNG)).toEqual([]);
+    for (const zeile of rows) expect(zeile.eintrag).not.toContain('Belastungsgrenze');
   });
 
   it('nutzt für die klinische Sicht das eine Leserecht der Dokumentation', async () => {

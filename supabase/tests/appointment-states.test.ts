@@ -77,6 +77,18 @@ async function anlegen(von = '09:00', bis = '10:00'): Promise<Termin> {
   return stand(rows[0]!.id);
 }
 
+/**
+ * Erfolgreiche Auditeintraege insgesamt. Zustandswechsel protokolliert das
+ * Auditlog seit LOG-EPIC-001 nicht mehr; wer und wann stehen am Termin bzw.
+ * an der Dokumentation.
+ */
+async function erfolgreicheAuditeintraege(): Promise<number> {
+  const { rows } = await asPostgres<{ anzahl: string }>(
+    "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
+  );
+  return Number(rows[0]!.anzahl);
+}
+
 /** Setzt einen Zustand, den heute noch kein Schreibpfad erzeugt. */
 async function zustandSetzen(id: string, status: string): Promise<Termin> {
   await asPostgres(
@@ -373,20 +385,19 @@ describe('Nicht angetroffen (CAL-008c, ADR-018 Punkt 4)', () => {
     expect(await zustand(termin.id)).toBe('no_show');
   });
 
-  it('protokolliert appointment.no_show ohne Gebuehrenangabe', async () => {
+  it('schreibt fuer den Vermerk keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const termin = await anlegen();
+    const vorher = await erfolgreicheAuditeintraege();
     await asUserCommitted(users.office, NICHT_ANGETROFFEN, [termin.id, termin.updated_at]);
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-        where action = 'appointment.no_show' and subject_id = $1`,
-      [termin.id],
-    );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.context).toMatchObject({ surface: 'web' });
-    // Ein Schluessel, der immer `false` traegt, waere eine Zusicherung, die
-    // niemand gegeben hat.
-    expect(rows[0]?.context).not.toHaveProperty('fee');
+    // Der Nachweis ist der Termin selbst: wer, wann - und keine Gebuehr.
+    expect(await zeile(termin.id)).toMatchObject({
+      status: 'no_show',
+      no_show_recorded_by: users.office,
+      fee_basis: null,
+    });
+    expect((await zeile(termin.id))?.no_show_recorded_at).not.toBeNull();
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
   });
 
   it('vermerkt einen abgesagten Termin nicht', async () => {
@@ -562,18 +573,24 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
     expect(rows[0]?.completed_by).toBeNull();
   });
 
-  it('protokolliert appointment.documented genau einmal', async () => {
+  it('weist die Finalisierung an der Dokumentation nach, nicht im Auditlog (LOG-EPIC-001)', async () => {
     const termin = await anlegen();
     const notiz = await entwurf(termin.id);
+    const vorher = await erfolgreicheAuditeintraege();
     await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
 
-    const { rows } = await asPostgres<{ actor_kind: string }>(
-      `select actor_kind from public.audit_log
-        where action = 'appointment.documented' and subject_id = $1`,
-      [termin.id],
+    const { rows } = await asPostgres<{
+      finalized_by: string | null;
+      finalized_at: string | null;
+      finalisation_kind: string | null;
+    }>(
+      'select finalized_by, finalized_at, finalisation_kind from public.treatment_notes where id = $1',
+      [notiz],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_kind).toBe('user');
+    expect(rows[0]).toMatchObject({ finalized_by: users.therapist, finalisation_kind: 'manual' });
+    expect(rows[0]?.finalized_at).not.toBeNull();
+    expect(await zustand(termin.id)).toBe('documented');
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
   });
 
   it('laesst den Zustand bei einer Korrektur unveraendert (ADR-018 Punkt 2)', async () => {
@@ -592,7 +609,7 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
     expect(await invarianteGilt()).toBe(true);
   });
 
-  it('erzeugt fuer einen finalisierten Nachtrag kein zweites Ereignis', async () => {
+  it('erzeugt fuer einen finalisierten Nachtrag kein Ereignis (LOG-EPIC-001)', async () => {
     const termin = await anlegen();
     const notiz = await entwurf(termin.id);
     await asUserCommitted(users.therapist, FINALISIEREN, [notiz, await notizStand(notiz)]);
@@ -602,14 +619,10 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
       'Nachtrag zum Befund.',
     ]);
     const nachtrag = rows[0]!.id;
+    const vorher = await erfolgreicheAuditeintraege();
     await asUserCommitted(users.therapist, FINALISIEREN, [nachtrag, await notizStand(nachtrag)]);
 
-    const { rows: ereignisse } = await asPostgres<{ anzahl: string }>(
-      `select count(*)::text as anzahl from public.audit_log
-        where action = 'appointment.documented' and subject_id = $1`,
-      [termin.id],
-    );
-    expect(ereignisse[0]?.anzahl).toBe('1');
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
     expect(await zustand(termin.id)).toBe('documented');
   });
 
@@ -632,18 +645,26 @@ describe('Dokumentiert: gesetzt, nicht abgeleitet (CAL-008d, ADR-018 Punkt 3)', 
       [termin.id],
     );
 
+    const vorher = await erfolgreicheAuditeintraege();
     await asPostgres('select public.finalize_overdue_treatment_notes()');
 
     expect(await zustand(termin.id)).toBe('documented');
     expect(await invarianteGilt()).toBe(true);
 
-    const { rows } = await asPostgres<{ actor_kind: string }>(
-      `select actor_kind from public.audit_log
-        where action = 'appointment.documented' and subject_id = $1`,
+    // Ohne handelnde Person: automatisch finalisiert, finalized_by bleibt leer
+    // (DOK-004). Ein Auditeintrag entsteht nicht (LOG-EPIC-001).
+    const { rows } = await asPostgres<{
+      finalized_by: string | null;
+      finalized_at: string | null;
+      finalisation_kind: string | null;
+    }>(
+      'select finalized_by, finalized_at, finalisation_kind from public.treatment_notes where appointment_id = $1',
       [termin.id],
     );
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_kind).toBe('system');
+    expect(rows[0]).toMatchObject({ finalized_by: null, finalisation_kind: 'automatic' });
+    expect(rows[0]?.finalized_at).not.toBeNull();
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
   });
 
   it('haelt die Invariante nach "Behandlung abschliessen" in einem Schritt', async () => {
@@ -740,16 +761,19 @@ describe('Tag umplanen (CAL-009)', () => {
     ]);
   });
 
-  it('schreibt je Termin ein eigenes appointment.cancelled und kein Sammelereignis', async () => {
-    await anlegen('09:00', '10:00');
-    await anlegen('11:00', '12:00');
+  it('haelt die Absage je Termin fest und schreibt kein Auditereignis (LOG-EPIC-001)', async () => {
+    const a = await anlegen('09:00', '10:00');
+    const b = await anlegen('11:00', '12:00');
+    const vorher = await erfolgreicheAuditeintraege();
     await asUserCommitted(users.office, TAG_UMPLANEN, [ANNA, TAG, 'practice_request']);
 
-    const { rows } = await asPostgres<{ anzahl: string }>(
-      `select count(*)::text as anzahl from public.audit_log
-        where action = 'appointment.cancelled'`,
+    const { rows } = await asPostgres<{ cancelled_by: string | null; cancelled_at: string | null }>(
+      'select cancelled_by, cancelled_at from public.appointments where id = any($1::uuid[]) order by starts_at',
+      [[a.id, b.id]],
     );
-    expect(rows[0]?.anzahl).toBe('2');
+    expect(rows.map((r) => r.cancelled_by)).toEqual([users.office, users.office]);
+    expect(rows.every((r) => r.cancelled_at !== null)).toBe(true);
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
   });
 
   it('laesst die Termine anderer Personen unberuehrt', async () => {
@@ -846,6 +870,7 @@ describe('Tag umplanen (CAL-009)', () => {
   });
 
   it('zaehlt an einem leeren Tag null und schreibt nichts', async () => {
+    const vorher = await erfolgreicheAuditeintraege();
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, TAG_UMPLANEN, [
       ANNA,
       tagInTagen(72),
@@ -853,10 +878,6 @@ describe('Tag umplanen (CAL-009)', () => {
     ]);
     expect(rows[0]!.anzahl).toBe(0);
 
-    const { rows: audit } = await asPostgres<{ anzahl: string }>(
-      `select count(*)::text as anzahl from public.audit_log
-        where action = 'appointment.cancelled'`,
-    );
-    expect(audit[0]?.anzahl).toBe('0');
+    expect(await erfolgreicheAuditeintraege()).toBe(vorher);
   });
 });

@@ -191,33 +191,29 @@ describe('complete_appointment: Vorgang', () => {
     expect(await zeile(t.id)).toMatchObject({ status: 'confirmed' });
   });
 
-  it('protokolliert appointment.completed ohne Terminzeit', async () => {
+  it('weist den Abschluss am Termin nach und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen();
     await asUserCommitted(users.office, ABSCHLIESSEN, [t.id, t.updated_at]);
 
-    const { rows } = await asPostgres<{
-      action: string;
-      outcome: string;
-      subject_id: string;
-      context: Record<string, unknown>;
-    }>(
-      `select action, outcome, subject_id, context from public.audit_log
-        where action = 'appointment.completed' and organization_id = $1`,
+    expect(await zeile(t.id)).toMatchObject({ status: 'completed', completed_by: users.office });
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log
+        where outcome = 'success' and organization_id = $1`,
       [organizationId],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ outcome: 'success', subject_id: t.id });
-    // ADR-010: Metadaten, niemals die konkrete Terminzeit.
-    expect(JSON.stringify(rows[0]?.context)).not.toMatch(/\d{2}:\d{2}/);
+    expect(rows).toHaveLength(0);
+    // ADR-010: Was im Auditlog steht, nennt niemals die konkrete Terminzeit.
+    const alle = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(alle.rows.map((r) => r.context))).not.toMatch(/\d{2}:\d{2}/);
   });
 
   it('erzeugt bei einem abgewiesenen Abschluss kein Erfolgsaudit', async () => {
     const t = await anlegen();
     await asUser(users.patientMax, ABSCHLIESSEN, [t.id, t.updated_at]).catch(() => undefined);
 
-    const { rows } = await asPostgres(
-      `select 1 from public.audit_log where action = 'appointment.completed'`,
-    );
+    const { rows } = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
     expect(rows).toHaveLength(0);
   });
 });
@@ -415,15 +411,19 @@ describe('reopen_appointment', () => {
     );
   });
 
-  it('leert Abschlusszeitpunkt und Akteur', async () => {
+  it('leert Abschlusszeitpunkt und Akteur und haelt die Ruecknahme fest (LOG-EPIC-001)', async () => {
     const t = await abgeschlossen();
     await asUserCommitted(users.office, OEFFNEN, [t.id, t.updated_at]);
 
-    expect(await zeile(t.id)).toMatchObject({
+    const nachher = await zeile(t.id);
+    expect(nachher).toMatchObject({
       status: 'confirmed',
       completed_at: null,
       completed_by: null,
+      reopened_by: users.office,
     });
+    // Wer zurueckgenommen hat, zeigt das Datenmodell - nicht das Auditlog.
+    expect(nachher?.['reopened_at']).toBeInstanceOf(Date);
   });
 
   it('laesst einen geplanten Termin nicht wieder oeffnen', async () => {
@@ -452,24 +452,28 @@ describe('reopen_appointment', () => {
     expect(await zeile(t.id)).toMatchObject({ status: 'completed' });
   });
 
-  it('haelt die Historie im Auditlog vollstaendig', async () => {
+  it('zeigt nach Ruecknahme und erneutem Abschluss beides am Termin (LOG-EPIC-001)', async () => {
     const t = await abgeschlossen();
-    await asUserCommitted(users.office, OEFFNEN, [t.id, t.updated_at]);
+    await asUserCommitted(users.teamLead, OEFFNEN, [t.id, t.updated_at]);
     const offen = await stand(t.id);
     await asUserCommitted(users.office, ABSCHLIESSEN, [offen.id, offen.updated_at]);
 
-    const { rows } = await asPostgres<{ action: string }>(
-      `select action from public.audit_log
-        where subject_id = $1 and action in ('appointment.completed', 'appointment.reopened')
-        order by occurred_at, action`,
+    // Die letzte Ruecknahme bleibt sichtbar, der neue Abschluss steht daneben;
+    // ins Auditlog geht keiner der drei Schritte.
+    const nachher = await zeile(t.id);
+    expect(nachher).toMatchObject({
+      status: 'completed',
+      completed_by: users.office,
+      reopened_by: users.teamLead,
+    });
+    expect((nachher?.['reopened_at'] as Date).getTime()).toBeLessThanOrEqual(
+      (nachher?.['completed_at'] as Date).getTime(),
+    );
+    const { rows } = await asPostgres(
+      `select id from public.audit_log where subject_id = $1 and outcome = 'success'`,
       [t.id],
     );
-    // Nichts wird still entfernt: beide Abschluesse und die Oeffnung bleiben.
-    expect(rows.map((r) => r.action)).toEqual([
-      'appointment.completed',
-      'appointment.reopened',
-      'appointment.completed',
-    ]);
+    expect(rows).toEqual([]);
   });
 });
 

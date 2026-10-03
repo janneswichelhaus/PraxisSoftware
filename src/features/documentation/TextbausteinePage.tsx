@@ -414,11 +414,6 @@ export function TextbausteinePage({ user }: { user: CurrentUser }) {
           </Section>
         </>
       ) : null}
-
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Anlegen, Ändern und Löschen werden protokolliert – mit Titel und Geltungsbereich, ohne den
-        Text selbst.
-      </p>
     </>
   );
 }

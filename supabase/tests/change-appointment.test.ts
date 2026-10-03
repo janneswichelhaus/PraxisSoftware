@@ -146,25 +146,28 @@ describe('update_appointment: berechtigte Rollen', () => {
   });
 
   // FIX-019, ANN-057: zurueckgelegt in die Vergangenheit nur mit Bestaetigung
-  // (zehnter Parameter), und der Auditeintrag sagt es.
-  it('legt einen Termin mit Bestaetigung in die Vergangenheit und vermerkt es im Audit', async () => {
+  // (zehnter Parameter). Einen Auditeintrag schreibt die Aenderung seit
+  // LOG-EPIC-001 nicht mehr (anerkannte Luecke: Terminaenderung).
+  it('legt einen Termin mit Bestaetigung in die Vergangenheit und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
-    await asPostgres("delete from public.audit_log where action like 'appointment.%'");
+    await asPostgres("delete from public.audit_log where outcome = 'success'");
     await asUserCommitted(
       users.office,
       'select public.update_appointment($1::uuid, $2::timestamptz, $3::uuid, $4, $5::date, $6::time, $7::time, $8::uuid, true, true) as id',
       aendernArgs(t, { tag: tagInTagen(-7) }),
     );
 
-    const { rows } = await asPostgres<{ tag: string; context: Record<string, unknown> }>(
-      `select (a.starts_at at time zone 'Europe/Berlin')::date::text as tag, l.context
+    const { rows } = await asPostgres<{ tag: string }>(
+      `select (a.starts_at at time zone 'Europe/Berlin')::date::text as tag
          from public.appointments a
-         join public.audit_log l on l.subject_id = a.id and l.action = 'appointment.rescheduled'
         where a.id = $1`,
       [t.id],
     );
     expect(rows[0]!.tag).toBe(tagInTagen(-7));
-    expect(rows[0]!.context).toMatchObject({ in_the_past: true });
+    const { rows: audit } = await asPostgres(
+      "select id from public.audit_log where outcome = 'success'",
+    );
+    expect(audit).toEqual([]);
   });
 
   it('weist ein Patientenkonto ab', async () => {
@@ -446,7 +449,7 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
   it('hinterlaesst bei einem Konflikt weder Teilaenderung noch Erfolgsaudit', async () => {
     const t = await anlegen({});
     await aendernCommitted(users.office, t, { staff: STAFF.tim });
-    await asPostgres("delete from public.audit_log where action like 'appointment.%'");
+    await asPostgres("delete from public.audit_log where outcome = 'success'");
 
     await expect(
       aendern(users.teamLead, t, { staff: STAFF.jannes, von: '16:00', bis: '17:00' }),
@@ -463,7 +466,7 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
     expect(rows[0]?.lokal).toBe('09:00');
 
     const { rows: audits } = await asPostgres<{ anzahl: string }>(
-      "select count(*)::text as anzahl from public.audit_log where action like 'appointment.%'",
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
     );
     expect(audits[0]?.anzahl).toBe('0');
   });
@@ -584,11 +587,13 @@ describe('update_appointment: konkurrierende Bearbeitung', () => {
       expect(fehler?.message).toMatch(/changed meanwhile|already cancelled/);
       await b.query('rollback').catch(() => undefined);
 
-      const { rows } = await asPostgres<{ anzahl: string }>(
-        "select count(*)::text as anzahl from public.audit_log where action = 'appointment.cancelled' and subject_id = $1",
+      // Genau eine Absage zaehlt: die erste, und sie steht mit ihrer Person
+      // am Termin (LOG-EPIC-001).
+      const { rows } = await asPostgres<{ status: string; cancelled_by: string | null }>(
+        'select status, cancelled_by from public.appointments where id = $1',
         [t.id],
       );
-      expect(rows[0]?.anzahl).toBe('1');
+      expect(rows[0]).toEqual({ status: 'cancelled', cancelled_by: users.office });
     } finally {
       await a.end();
       await b.end();
@@ -616,39 +621,42 @@ describe('update_appointment: Audit', () => {
     await asPostgres('delete from public.audit_log');
   });
 
+  /**
+   * Erfolgreiche Auditeintraege. Eine Terminaenderung schreibt seit
+   * LOG-EPIC-001 keinen Eintrag mehr (anerkannte Luecke: wer geaendert hat,
+   * zeigt das Datenmodell nicht); geprueft wird, dass auch keiner entsteht.
+   */
   async function ereignisse() {
     const { rows } = await asPostgres<{
       action: string;
       subject_id: string;
       outcome: string;
       context: Record<string, unknown>;
-    }>(
-      "select * from public.audit_log where action like 'appointment.%' and action <> 'appointment.created' order by occurred_at",
-    );
+    }>("select * from public.audit_log where outcome = 'success' order by occurred_at");
     return rows;
   }
 
-  it('protokolliert eine reine Zeitverschiebung als appointment.rescheduled', async () => {
+  it('verschiebt einen Termin rein zeitlich, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
     await aendernCommitted(users.office, t, { von: '11:00', bis: '12:00' });
 
-    const rows = await ereignisse();
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.action).toBe('appointment.rescheduled');
-    expect((rows[0]?.context.changed_fields as string[]).sort()).toEqual(['ends_at', 'starts_at']);
+    const { rows } = await asPostgres<{ lokal: string }>(
+      "select to_char(starts_at at time zone 'Europe/Berlin', 'HH24:MI') as lokal from public.appointments where id = $1",
+      [t.id],
+    );
+    expect(rows[0]?.lokal).toBe('11:00');
+    expect(await ereignisse()).toHaveLength(0);
   });
 
-  it('protokolliert eine reine organisatorische Aenderung als appointment.updated', async () => {
+  it('aendert einen Termin rein organisatorisch, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
     await aendernCommitted(users.office, t, { staff: STAFF.tim });
 
-    const rows = await ereignisse();
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.action).toBe('appointment.updated');
-    expect(rows[0]?.context.changed_fields).toEqual(['staff_member_id']);
+    expect((await zeile(t.id))?.staff_member_id).toBe(STAFF.tim);
+    expect(await ereignisse()).toHaveLength(0);
   });
 
-  it('erzeugt bei Zeit UND organisatorischer Aenderung genau ein appointment.updated', async () => {
+  it('aendert Zeit UND Organisatorisches in einem Vorgang, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
     await aendernCommitted(users.office, t, {
       staff: STAFF.tim,
@@ -658,24 +666,38 @@ describe('update_appointment: Audit', () => {
       bis: '12:00',
     });
 
-    const rows = await ereignisse();
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.action).toBe('appointment.updated');
-    // Die Zeitfelder sind ueber changed_fields gekennzeichnet.
-    expect((rows[0]?.context.changed_fields as string[]).sort()).toEqual(
-      ['appointment_type', 'ends_at', 'location_id', 'staff_member_id', 'starts_at'].sort(),
+    const { rows } = await asPostgres<{
+      staff_member_id: string;
+      appointment_type: string;
+      location_id: string | null;
+      lokal: string;
+    }>(
+      `select staff_member_id, appointment_type, location_id,
+              to_char(starts_at at time zone 'Europe/Berlin', 'HH24:MI') as lokal
+         from public.appointments where id = $1`,
+      [t.id],
     );
+    expect(rows[0]).toEqual({
+      staff_member_id: STAFF.tim,
+      appointment_type: 'practice',
+      location_id: LOCATION,
+      lokal: '11:00',
+    });
+    expect(await ereignisse()).toHaveLength(0);
   });
 
-  it('nennt changed_fields exakt und reihenfolgeunabhaengig', async () => {
+  it('aendert nur Terminart und abgeleiteten Standort, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({ typ: 'practice' });
+    const vorher = await zeile(t.id);
     await aendernCommitted(users.office, t, { typ: 'video' });
 
-    const felder = (await ereignisse())[0]?.context.changed_fields as string[];
-    // appointment_type und der daraus abgeleitete Standort - sonst nichts.
-    expect([...felder].sort()).toEqual(['appointment_type', 'location_id']);
-    expect(felder).not.toContain('starts_at');
-    expect(felder).not.toContain('patient_id');
+    const nachher = await zeile(t.id);
+    // appointment_type und der daraus abgeleitete Standort - Zeit und
+    // Patient:in bleiben.
+    expect(nachher).toMatchObject({ appointment_type: 'video', location_id: null });
+    expect(nachher?.starts_at).toEqual(vorher?.starts_at);
+    expect(nachher?.patient_id).toBe(vorher?.patient_id);
+    expect(await ereignisse()).toHaveLength(0);
   });
 
   it('schreibt bei einem Speichern ohne Aenderung weder Daten noch Audit', async () => {
@@ -688,43 +710,43 @@ describe('update_appointment: Audit', () => {
     expect(await ereignisse()).toHaveLength(0);
   });
 
-  it('kopiert keine Stammdaten und keine konkreten Zeiten in den Kontext', async () => {
+  it('bringt keine Stammdaten und keine konkreten Zeiten ins Auditlog', async () => {
     const t = await anlegen({ typ: 'home_visit' });
     await aendernCommitted(users.office, t, { typ: 'home_visit', von: '11:00', bis: '12:00' });
 
-    const kontext = JSON.stringify((await ereignisse())[0]?.context);
+    expect(await ereignisse()).toHaveLength(0);
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    const kontext = JSON.stringify(rows.map((r) => r.context));
     for (const verboten of ['Max', 'Mustermann', 'Beispielstrasse', '72070', '11:00', TAG]) {
       expect(kontext).not.toContain(verboten);
     }
   });
 
-  it('enthaelt ausschliesslich zugelassene Kontextschluessel', async () => {
+  it('schreibt auch fuer einen Personenwechsel nichts ins Auditlog (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
     await aendernCommitted(users.office, t, { staff: STAFF.tim });
 
-    expect(Object.keys((await ereignisse())[0]!.context).sort()).toEqual(
-      [
-        'changed_fields',
-        'patient_id',
-        'staff_member_id',
-        'surface',
-        'outside_working_hours',
-        // FIX-019: ein Kennzeichen, kein Inhalt.
-        'in_the_past',
-      ].sort(),
-    );
+    const { rows } = await asPostgres('select id from public.audit_log');
+    expect(rows).toEqual([]);
   });
 
-  it('haelt den Ereigniskatalog deckungsgleich mit der Anwendung', async () => {
-    const { rows } = await asPostgres<{ definition: string }>(
-      "select pg_get_constraintdef(oid) as definition from pg_constraint where conname = 'audit_log_action_check'",
-    );
+  it('laesst die entfallenen Terminereignisse im Katalog nicht mehr zu (LOG-EPIC-001)', async () => {
     for (const aktion of [
       'appointment.updated',
       'appointment.rescheduled',
       'appointment.cancelled',
     ]) {
-      expect(rows[0]?.definition).toContain(aktion);
+      await expect(
+        asPostgres(
+          `insert into public.audit_log
+             (organization_id, actor_user_id, action, subject_type, subject_id, outcome)
+           values ($1, $2, $3, 'patient', $4, 'success')`,
+          [organizationId, users.office, aktion, patients.max],
+        ),
+        `${aktion} darf nicht mehr eingetragen werden`,
+      ).rejects.toThrow(/audit_log_action_check/);
     }
   });
 });
@@ -786,47 +808,29 @@ describe('cancel_appointment', () => {
     });
   });
 
-  it('protokolliert appointment.cancelled', async () => {
+  it('weist die Absage am Termin nach und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const t = await anlegen({});
     await absagenCommitted(users.office, t);
 
-    const { rows } = await asPostgres<{
-      action: string;
-      actor_user_id: string;
-      subject_type: string;
-      subject_id: string;
-      outcome: string;
-      context: Record<string, unknown>;
-    }>("select * from public.audit_log where action = 'appointment.cancelled'");
+    // Wer, wann und ob eine Gebuehr entsteht, steht an der Zeile.
+    const z = await zeile(t.id);
+    expect(z).toMatchObject({ status: 'cancelled', cancelled_by: users.office, fee_basis: null });
+    expect(z?.cancelled_at).not.toBeNull();
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
-      actor_user_id: users.office,
-      subject_type: 'appointment',
-      subject_id: t.id,
-      outcome: 'success',
-    });
-    // `fee` und `received_later` kommen mit CAL-014b dazu: Die
-    // Gebuehrenentscheidung begruendet spaeter eine Forderung und gehoert
-    // deshalb ins Protokoll; ob der Eingang nachgetragen wurde, sagt, warum
-    // die Frist so ausgegangen ist. Der codierte Absagegrund bleibt draussen
-    // (ANN-034) - er wuerde sonst die Zeile ueberleben.
-    expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      ['fee', 'patient_id', 'received_later', 'staff_member_id', 'surface'].sort(),
-    );
-    expect(rows[0]!.context).toMatchObject({ fee: false, received_later: false });
+    const { rows } = await asPostgres("select id from public.audit_log where outcome = 'success'");
+    expect(rows).toEqual([]);
   });
 
   it('weist eine erneute Absage ab und erzeugt kein Erfolgsaudit', async () => {
     const t = await anlegen({});
     await absagenCommitted(users.office, t);
-    await asPostgres("delete from public.audit_log where action = 'appointment.cancelled'");
+    await asPostgres("delete from public.audit_log where outcome = 'success'");
 
     const aktuell = await stand(t.id);
     await expect(absagen(users.office, aktuell)).rejects.toThrow(/already cancelled/);
 
     const { rows } = await asPostgres<{ anzahl: string }>(
-      "select count(*)::text as anzahl from public.audit_log where action = 'appointment.cancelled'",
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
     );
     expect(rows[0]?.anzahl).toBe('0');
   });
@@ -915,13 +919,19 @@ describe('cancel_appointment', () => {
     const t = await anlegen({ von: '18:00', bis: '19:00' });
     await asUserCommitted(users.office, ABSAGEN, [t.id, t.updated_at, 'patient_request']);
 
+    expect((await zeile(t.id))?.cancellation_reason).toBe('patient_request');
+    // Seit LOG-EPIC-001 schreibt die Absage keinen Eintrag; was im Auditlog
+    // steht, nennt den Grund nicht.
     const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
       `select context from public.audit_log
-        where action = 'appointment.cancelled' and subject_id = $1`,
+        where outcome = 'success' and subject_id = $1`,
       [t.id],
     );
-    expect(rows).toHaveLength(1);
-    expect(JSON.stringify(rows[0]?.context)).not.toContain('patient_request');
+    expect(rows).toHaveLength(0);
+    const alle = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(alle.rows.map((r) => r.context))).not.toContain('patient_request');
   });
 });
 

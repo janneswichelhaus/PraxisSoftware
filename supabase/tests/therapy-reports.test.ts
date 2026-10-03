@@ -301,9 +301,27 @@ describe('Therapiebericht', () => {
     expect((await fehler(users.therapist, ANLEGEN, [SELBSTZAHLER]))?.code).toBe('22023');
   });
 
-  it('verwirft einen Entwurf und protokolliert alles ohne Inhalt', async () => {
+  it('verwirft einen Entwurf; im Auditlog bleibt nur der Druck, ohne Inhalt (LOG-EPIC-001)', async () => {
     const id = await anlegen();
     await speichern(id, { text: 'Synthetischer Berichtstext.' });
+
+    // Anlegen und Aendern weist der Bericht selbst nach (ANN-230).
+    const bericht = await asPostgres<{
+      created_by: string;
+      updated_by: string | null;
+      report_text_updated_by: string | null;
+    }>(
+      'select created_by, updated_by, report_text_updated_by from public.therapy_reports where id = $1',
+      [id],
+    );
+    expect(bericht.rows).toEqual([
+      {
+        created_by: users.therapist,
+        updated_by: users.therapist,
+        report_text_updated_by: users.therapist,
+      },
+    ]);
+
     await asUserCommitted(users.therapist, DRUCK, [id]);
     await asUserCommitted(users.therapist, VERWERFEN, [id]);
     expect((await asUser(users.therapist, LISTE, [patients.max])).rows).toEqual([]);
@@ -312,14 +330,7 @@ describe('Therapiebericht', () => {
       `select action, context from public.audit_log
         where action like 'therapy_report.%' and outcome = 'success' order by occurred_at, action`,
     );
-    expect(rows.map((r) => r.action)).toEqual(
-      expect.arrayContaining([
-        'therapy_report.created',
-        'therapy_report.updated',
-        'therapy_report.exported',
-        'therapy_report.discarded',
-      ]),
-    );
+    expect(rows.map((r) => r.action)).toEqual(['therapy_report.exported']);
     for (const zeile of rows) {
       expect(JSON.stringify(zeile.context)).not.toContain('Synthetisch');
       expect(zeile.context['patient_id']).toBe(patients.max);

@@ -111,6 +111,30 @@ async function audit(action: string, subjectId: string) {
   return rows;
 }
 
+/**
+ * Wer und wann am Protokoll - das Datenmodell traegt sie, das Auditlog nicht
+ * mehr (LOG-EPIC-001, ANN-230).
+ */
+async function werWann(termin: string) {
+  const { rows } = await asPostgres<{
+    created_by: string;
+    updated_by: string | null;
+    finalized_by: string | null;
+    finalisiert: boolean;
+  }>(
+    `select created_by, updated_by, finalized_by, finalized_at is not null as finalisiert
+       from public.training_protocols where appointment_id = $1`,
+    [termin],
+  );
+  return rows[0];
+}
+
+/** Alle Auditeintraege als Text - um zu zeigen, dass kein Inhalt darin steht. */
+async function auditAlsText(): Promise<string> {
+  const { rows } = await asPostgres('select action, context from public.audit_log');
+  return JSON.stringify(rows);
+}
+
 /** Ein weiterer Trainingstermin Tinas, in `tage` Tagen, bestaetigt. */
 async function trainingstermin(tage: number): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
@@ -186,13 +210,14 @@ describe('TRN-009: Trainingsprotokoll', () => {
       const erst = await speichere(users.trainer, TRAINING_HEUTE, 'Kniebeugen 3 x 10');
       expect(erst.id).toBeTruthy();
 
-      const angelegt = await audit('training_protocol.created', erst.id);
-      expect(angelegt).toHaveLength(1);
-      expect(angelegt[0]!.context).toEqual({
-        surface: 'web',
-        appointment_id: TRAINING_HEUTE,
-        training_relationship_id: trainingRelationships.tina,
+      // Wer angelegt hat, steht am Protokoll; das Schreiben selbst nicht im
+      // Auditlog (LOG-EPIC-001).
+      expect(await werWann(TRAINING_HEUTE)).toMatchObject({
+        created_by: users.trainer,
+        finalized_by: null,
+        finalisiert: false,
       });
+      expect(await audit('training_protocol.created', erst.id)).toEqual([]);
 
       const { rows } = await asUserCommitted<{ status: string; content: string }>(
         users.trainer,
@@ -222,9 +247,16 @@ describe('TRN-009: Trainingsprotokoll', () => {
       );
       expect(zweit.id).toBe(erst.id);
       expect((await protokoll(TRAINING_HEUTE))?.content).toBe('Kniebeugen 3 x 12');
-      const geaendert = await audit('training_protocol.updated', erst.id);
-      expect(geaendert).toHaveLength(1);
-      expect(JSON.stringify(geaendert)).not.toContain('Kniebeugen');
+      expect(await werWann(TRAINING_HEUTE)).toMatchObject({
+        created_by: users.trainer,
+        updated_by: users.ownerTherapist,
+      });
+      // Im Auditlog steht nur das Oeffnen des Verhaeltnisses - kein Inhalt.
+      const { rows: erfolge } = await asPostgres<{ action: string }>(
+        "select action from public.audit_log where outcome = 'success' order by occurred_at, id",
+      );
+      expect(erfolge.map((e) => e.action)).toEqual(['training_relationship.viewed']);
+      expect(await auditAlsText()).not.toContain('Kniebeugen');
 
       // Der Termin bleibt, wo er war: Ein Entwurf dokumentiert nichts.
       expect(await terminStatus(TRAINING_HEUTE)).toBe('confirmed');
@@ -259,7 +291,7 @@ describe('TRN-009: Trainingsprotokoll', () => {
       );
     });
 
-    it('verwirft einen Entwurf mit der Absage und protokolliert das (Zweitreview 1)', async () => {
+    it('verwirft einen Entwurf mit der Absage und belegt das im Loeschjournal (Zweitreview 1)', async () => {
       const entwurf = await speichere(users.trainer, TRAINING_HEUTE, 'Vorgeschrieben');
       // Das Buero sieht den Entwurf nicht - und kann trotzdem absagen.
       await asUserCommitted(users.office, ABSAGEN, [
@@ -269,21 +301,23 @@ describe('TRN-009: Trainingsprotokoll', () => {
       expect(await terminStatus(TRAINING_HEUTE)).toBe('cancelled');
       expect(await protokoll(TRAINING_HEUTE)).toBeUndefined();
 
-      const verworfen = await audit('training_protocol.discarded', entwurf.id);
-      expect(verworfen).toHaveLength(1);
       // ABN-022 (BEF-113): im Loeschjournal - nach einer Wiederherstellung
-      // taucht der Entwurf nicht wieder auf.
-      const { rows: journal } = await asPostgres<{ target_table: string }>(
-        'select target_table from public.deletion_journal where target_id = $1',
+      // taucht der Entwurf nicht wieder auf. Das Journal ist zugleich der
+      // Nachweis des Verwerfens; das Auditlog fuehrt ihn nicht mehr
+      // (LOG-EPIC-001). Wer abgesagt hat, steht am Termin.
+      const { rows: journal } = await asPostgres<{ target_table: string; geloescht: boolean }>(
+        `select target_table, deleted_at is not null as geloescht
+           from public.deletion_journal where target_id = $1`,
         [entwurf.id],
       );
-      expect(journal).toEqual([{ target_table: 'training_protocols' }]);
-      expect(verworfen[0]!.context).toEqual({
-        surface: 'web',
-        appointment_id: TRAINING_HEUTE,
-        training_relationship_id: trainingRelationships.tina,
-        reason: 'cancelled',
-      });
+      expect(journal).toEqual([{ target_table: 'training_protocols', geloescht: true }]);
+      const { rows: termin } = await asPostgres<{ cancelled_by: string }>(
+        'select cancelled_by from public.appointments where id = $1',
+        [TRAINING_HEUTE],
+      );
+      expect(termin[0]?.cancelled_by).toBe(users.office);
+      expect(await audit('training_protocol.discarded', entwurf.id)).toEqual([]);
+      expect(await auditAlsText()).not.toContain('Vorgeschrieben');
     });
 
     it('verwirft einen Entwurf auch beim Nichtantreffen', async () => {
@@ -356,22 +390,28 @@ describe('TRN-009: Trainingsprotokoll', () => {
         finalized_by: users.trainer,
       });
       expect(await terminStatus(TRAINING_HEUTE)).toBe('documented');
-      expect(await audit('training_protocol.finalized', id)).toHaveLength(1);
-
-      const dokumentiert = await audit('appointment.documented', TRAINING_HEUTE);
-      expect(dokumentiert).toHaveLength(1);
-      expect(dokumentiert[0]!.context).toMatchObject({
-        kind: 'training',
-        training_relationship_id: trainingRelationships.tina,
+      // Wer und wann abgeschlossen hat, belegt das Protokoll - und damit auch
+      // das documented am Termin (LOG-EPIC-001).
+      expect(await werWann(TRAINING_HEUTE)).toMatchObject({
+        created_by: users.trainer,
+        finalized_by: users.trainer,
+        finalisiert: true,
       });
+      expect(await audit('training_protocol.finalized', id)).toEqual([]);
+      expect(await audit('appointment.documented', TRAINING_HEUTE)).toEqual([]);
+      expect(await auditAlsText()).not.toContain('Rudern');
     });
 
     it('legt ohne Entwurf gleich abgeschlossen an - auch am durchgefuehrten Termin', async () => {
       const id = await schliesseAb(users.ownerTherapist, TRAINING_VORGESTERN, 'Zirkel, 40 min');
       expect((await protokoll(TRAINING_VORGESTERN))?.status).toBe('final');
       expect(await terminStatus(TRAINING_VORGESTERN)).toBe('documented');
-      expect(await audit('training_protocol.created', id)).toHaveLength(1);
-      expect(await audit('training_protocol.finalized', id)).toHaveLength(1);
+      expect(id).toBe((await protokoll(TRAINING_VORGESTERN))?.id);
+      expect(await werWann(TRAINING_VORGESTERN)).toMatchObject({
+        created_by: users.ownerTherapist,
+        finalized_by: users.ownerTherapist,
+        finalisiert: true,
+      });
     });
 
     it('ist danach unveraenderlich - ueber jeden Weg (ANN-185)', async () => {
@@ -469,11 +509,23 @@ describe('TRN-009: Trainingsprotokoll', () => {
         await terminStand(TRAINING_HEUTE),
       ]);
       expect(await terminStatus(TRAINING_HEUTE)).toBe('completed');
-      const abgeschlossen = await audit('appointment.completed', TRAINING_HEUTE);
-      expect(abgeschlossen).toHaveLength(1);
-      expect(abgeschlossen[0]!.context).toMatchObject({
-        kind: 'training',
-        training_relationship_id: trainingRelationships.tina,
+      // Wer und wann stehen am Termin (LOG-EPIC-001).
+      const termin = async () =>
+        (
+          await asPostgres<{
+            completed_by: string | null;
+            reopened_by: string | null;
+            reopened: boolean;
+          }>(
+            `select completed_by, reopened_by, reopened_at is not null as reopened
+               from public.appointments where id = $1`,
+            [TRAINING_HEUTE],
+          )
+        ).rows[0];
+      expect(await termin()).toEqual({
+        completed_by: users.trainer,
+        reopened_by: null,
+        reopened: false,
       });
 
       await asUserCommitted(users.trainer, OEFFNEN, [
@@ -481,9 +533,10 @@ describe('TRN-009: Trainingsprotokoll', () => {
         await terminStand(TRAINING_HEUTE),
       ]);
       expect(await terminStatus(TRAINING_HEUTE)).toBe('confirmed');
-      expect((await audit('appointment.reopened', TRAINING_HEUTE))[0]!.context).toMatchObject({
-        kind: 'training',
-        from_status: 'completed',
+      expect(await termin()).toEqual({
+        completed_by: null,
+        reopened_by: users.trainer,
+        reopened: true,
       });
     });
 

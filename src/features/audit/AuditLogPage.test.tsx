@@ -111,11 +111,11 @@ describe('AuditLogPage', () => {
     fetchAuditEvents.mockResolvedValue({
       events: [
         {
-          ...event('1', 'treatment_note.auto_finalized', '', 1),
+          ...event('1', 'retention.applied', '', 1),
           actor_user_id: null,
           actor_kind: 'system',
           actor_display_name: null,
-          subject_type: 'treatment_note',
+          subject_type: 'organization',
         },
       ],
       totalCount: 1,
@@ -126,7 +126,7 @@ describe('AuditLogPage', () => {
 
     const zeile = await screen.findByRole('listitem');
     expect(zeile).toHaveTextContent('System');
-    expect(zeile).toHaveTextContent('Behandlungsdokumentation automatisch finalisiert');
+    expect(zeile).toHaveTextContent('Löschlauf ausgeführt');
     expect(zeile).not.toHaveTextContent('Unbekannt');
   });
 
@@ -151,14 +151,17 @@ describe('AuditLogPage', () => {
     expect(zeile).not.toHaveTextContent('Unbekannt');
   });
 
-  it('nennt Kontoereignisse und Textbausteine in der Sprache der Oberflaeche (ORG-20)', async () => {
+  it('nennt Konto- und Rechteereignisse in der Sprache der Oberflaeche (ORG-20)', async () => {
     fetchAuditEvents.mockResolvedValue({
       events: [
         {
           ...event('1', 'account.password_changed', 'Tim Teamleitung', 2),
           subject_type: 'user_account',
         },
-        { ...event('2', 'text_snippet.updated', 'Anna Beispiel', 2), subject_type: 'text_snippet' },
+        {
+          ...event('2', 'staff_account.roles_changed', 'Anna Beispiel', 2),
+          subject_type: 'staff_member',
+        },
       ],
       totalCount: 2,
     });
@@ -168,8 +171,8 @@ describe('AuditLogPage', () => {
 
     const [konto, baustein] = await screen.findAllByRole('listitem');
     expect(konto).toHaveTextContent('Eigenes Kennwort geändert · Zugang');
-    expect(baustein).toHaveTextContent('Textbaustein geändert · Textbaustein');
-    expect(document.body.textContent).not.toMatch(/user_account|text_snippet/);
+    expect(baustein).toHaveTextContent('Rollen geändert · Mitarbeiter:in');
+    expect(document.body.textContent).not.toMatch(/user_account|staff_member/);
   });
 
   it('reicht die Filter an den Server weiter statt clientseitig zu filtern', async () => {

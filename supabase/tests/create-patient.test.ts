@@ -300,44 +300,40 @@ describe('create_patient: Audit', () => {
     patientId = await anlegenCommitted(users.teamLead, 'Aud', 'Ittest');
   }, 120_000);
 
-  it('erzeugt genau ein patient.created-Ereignis mit Akteur, Organisation und Bezug', async () => {
+  it('weist Akteur, Zeitpunkt, Organisation und Bezug am Datensatz nach (LOG-EPIC-001)', async () => {
+    // Wer und wann stehen an der Akte (ANN-230), nicht im Auditlog.
     const { rows } = await asPostgres<{
-      action: string;
-      actor_user_id: string;
+      created_by: string;
+      created_at: Date;
       organization_id: string;
-      subject_type: string;
-      subject_id: string;
-      outcome: string;
-      occurred_at: Date;
-    }>("select * from public.audit_log where action = 'patient.created'");
+      person_created_by: string;
+    }>(
+      `select p.created_by, p.created_at, p.organization_id, pe.created_by as person_created_by
+         from public.patients p join public.persons pe on pe.id = p.person_id
+        where p.id = $1`,
+      [patientId],
+    );
 
     expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_user_id).toBe(users.teamLead);
+    expect(rows[0]?.created_by).toBe(users.teamLead);
+    expect(rows[0]?.person_created_by).toBe(users.teamLead);
     expect(rows[0]?.organization_id).toBe(organizationId);
-    expect(rows[0]?.subject_type).toBe('patient');
-    expect(rows[0]?.subject_id).toBe(patientId);
-    expect(rows[0]?.outcome).toBe('success');
-    expect(rows[0]?.occurred_at).toBeInstanceOf(Date);
+    expect(rows[0]?.created_at).toBeInstanceOf(Date);
   });
 
-  it('kopiert keine Stammdaten in den Auditinhalt', async () => {
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'patient.created'",
+  it('schreibt keinen Auditeintrag und damit keine Stammdaten ins Auditlog (LOG-EPIC-001)', async () => {
+    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
+      'select action, context from public.audit_log',
     );
-    const inhalt = JSON.stringify(rows[0]?.context);
-    expect(rows[0]?.context).toEqual({ surface: 'web' });
-    for (const stammdatum of ['Aud', 'Ittest', '1980-03-14']) {
-      expect(inhalt).not.toContain(stammdatum);
-    }
+    expect(rows).toEqual([]);
   });
 
-  it('zeigt das Ereignis im owner-Lesepfad', async () => {
+  it('zeigt im owner-Lesepfad kein Schreibereignis zum neuen Patienten (LOG-EPIC-001)', async () => {
     const { rows } = await asUser<{ action: string; subject_id: string }>(
       users.ownerTherapist,
-      "select action, subject_id from public.list_audit_events(null, null, null, 'patient.created')",
+      'select action, subject_id from public.list_audit_events(null, null, null, null)',
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_id).toBe(patientId);
+    expect(rows.filter((r) => r.subject_id === patientId)).toEqual([]);
   });
 });
 
@@ -393,17 +389,24 @@ describe('create_patient: Mandantentrennung', () => {
     expect(sichtbar.rows).toEqual([]);
   });
 
-  it('protokolliert das Ereignis in der Organisation des Aufrufers', async () => {
-    const { rows } = await asPostgres<{ organization_id: string }>(
-      "select distinct organization_id from public.audit_log where action = 'patient.created'",
+  it('weist das Anlegen in der Organisation des Aufrufers nach, ohne Auditeintrag (LOG-EPIC-001)', async () => {
+    const { rows } = await asPostgres<{ organization_id: string; created_by: string }>(
+      `select organization_id, created_by from public.patients where created_by = $1`,
+      [fremderOwner],
     );
-    expect(rows.map((r) => r.organization_id)).toEqual([fremdeOrg]);
+    expect(rows).toEqual([{ organization_id: fremdeOrg, created_by: fremderOwner }]);
 
-    // Der owner der Testpraxis sieht dieses Ereignis nicht.
-    const fremdSicht = await asUser(
-      users.ownerTherapist,
-      "select id from public.list_audit_events(null, null, null, 'patient.created')",
+    const audit = await asPostgres<{ action: string }>(
+      'select action from public.audit_log where organization_id = $1',
+      [fremdeOrg],
     );
-    expect(fremdSicht.rows).toEqual([]);
+    expect(audit.rows).toEqual([]);
+
+    // Der owner der Testpraxis sieht im Auditlog nichts aus der fremden Praxis.
+    const fremdSicht = await asUser<{ actor_user_id: string | null }>(
+      users.ownerTherapist,
+      'select actor_user_id from public.list_audit_events(null, null, null, null)',
+    );
+    expect(fremdSicht.rows.filter((r) => r.actor_user_id === fremderOwner)).toEqual([]);
   });
 });

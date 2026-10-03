@@ -161,15 +161,35 @@ describe('Rechnungsempfaenger', () => {
       ).rejects.toThrow();
     });
 
-    it('protokolliert das Anlegen ohne den Namen (ADR-011)', async () => {
-      await asUserCommitted(users.office, SPEICHERN, empfaenger());
-
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'invoice_recipient.created'
-          order by occurred_at desc limit 1`,
+    it('haelt das Anlegen am Datensatz fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+      const vorher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
       );
-      expect(rows[0]?.context.recipient_kind).toBe('aid_authority');
-      expect(JSON.stringify(rows[0]?.context)).not.toContain('Beihilfestelle');
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, SPEICHERN, empfaenger());
+
+      const { rows: angelegt } = await asPostgres<{
+        recipient_kind: string;
+        created_by: string;
+        created_at: Date | null;
+      }>(
+        'select recipient_kind, created_by, created_at from public.invoice_recipients where id = $1',
+        [rows[0]?.id],
+      );
+      expect(angelegt[0]?.recipient_kind).toBe('aid_authority');
+      expect(angelegt[0]?.created_by).toBe(users.office);
+      expect(angelegt[0]?.created_at).not.toBeNull();
+
+      const nachher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
+      );
+      expect(nachher.rows[0]?.n).toBe(vorher.rows[0]?.n);
+      // Der Name bleibt aus jedem Protokoll heraus (ADR-011).
+      const { rows: name } = await asPostgres(
+        "select 1 from public.audit_log where context::text like '%Beihilfestelle%'",
+      );
+      expect(name).toEqual([]);
     });
   });
 

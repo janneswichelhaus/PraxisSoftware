@@ -21,8 +21,9 @@ import {
  * Die Schreibwege laufen ueber Serverfunktionen; RLS bleibt die zweite Linie.
  * Geprueft wird, wer schreibt (owner, trainer, office - ANN-172), dass
  * `patients` unberuehrt bleibt, dass eine vorhandene Person ihr zweites
- * Verhaeltnis ohne Dublette bekommt (ANN-173) und dass jede Aenderung und
- * jedes Oeffnen protokolliert ist (ADR-021 Punkt 8).
+ * Verhaeltnis ohne Dublette bekommt (ANN-173), dass jedes Oeffnen protokolliert
+ * ist (ADR-021 Punkt 8) und dass wer und wann eines Schreibvorgangs im
+ * Datenmodell stehen statt im Auditlog (LOG-EPIC-001).
  */
 
 const { users, persons, trainingRelationships } = SEED;
@@ -49,6 +50,14 @@ async function audit(action: string, subjectId: string) {
   return rows;
 }
 
+/**
+ * Erfolgseintraege im Auditlog insgesamt. Schreibwege legen keine an - wer und
+ * wann stehen in den Spalten der Fachtabellen (LOG-EPIC-001, ANN-230).
+ */
+async function erfolgsEintraege(): Promise<number> {
+  return anzahl("select 1 from public.audit_log where outcome = 'success'");
+}
+
 describe('Trainingskund:in anlegen (TRN-001, TRN-002)', () => {
   beforeAll(async () => {
     await resetDatabase();
@@ -61,6 +70,7 @@ describe('Trainingskund:in anlegen (TRN-001, TRN-002)', () => {
   ])('laesst %s eine Person ohne Akte anlegen', async (_rolle, user) => {
     const personenVorher = await anzahl('select 1 from public.persons');
     const patientenVorher = await anzahl('select 1 from public.patients');
+    const auditVorher = await erfolgsEintraege();
 
     const { rows } = await asUserCommitted<{ id: string }>(user, CREATE, [
       ' Lena ',
@@ -109,12 +119,28 @@ describe('Trainingskund:in anlegen (TRN-001, TRN-002)', () => {
     );
     expect(zeile[0]?.contract_started_on).toBe(heute[0]?.tag);
 
-    const eintraege = await audit('training_relationship.created', id);
-    expect(eintraege).toHaveLength(1);
-    expect(eintraege[0]).toEqual({
-      outcome: 'success',
-      context: { surface: 'web', new_person: true },
+    // Wer und wann zeigt das Datenmodell, nicht das Auditlog (LOG-EPIC-001).
+    const { rows: werWann } = await asPostgres<{
+      verhaeltnis_von: string;
+      person_von: string;
+      kontakt_von: string;
+      angelegt: boolean;
+    }>(
+      `select t.created_by as verhaeltnis_von, pe.created_by as person_von,
+              d.created_by as kontakt_von, t.created_at is not null as angelegt
+         from public.training_relationships t
+         join public.persons pe on pe.id = t.person_id
+         join public.training_contact_details d on d.training_relationship_id = t.id
+        where t.id = $1`,
+      [id],
+    );
+    expect(werWann[0]).toEqual({
+      verhaeltnis_von: user,
+      person_von: user,
+      kontakt_von: user,
+      angelegt: true,
     });
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it.each([
@@ -166,6 +192,7 @@ describe('Das zweite Verhaeltnis einer vorhandenen Person (ANN-173)', () => {
 
   it('bindet eine Patientin ohne zweite Person an - fuer office', async () => {
     const personenVorher = await anzahl('select 1 from public.persons');
+    const auditVorher = await erfolgsEintraege();
     const { rows } = await asUserCommitted<{ id: string }>(users.office, START, [
       persons.max,
       null,
@@ -183,10 +210,13 @@ describe('Das zweite Verhaeltnis einer vorhandenen Person (ANN-173)', () => {
     // Aus der Akte wird nichts uebernommen - auch keine Kontaktdaten.
     expect(zeile[0]?.email).toBeNull();
 
-    expect((await audit('training_relationship.created', id))[0]?.context).toEqual({
-      surface: 'web',
-      new_person: false,
-    });
+    // Wer angebunden hat, traegt das Verhaeltnis selbst (LOG-EPIC-001).
+    const { rows: werWann } = await asPostgres<{ created_by: string }>(
+      'select created_by from public.training_relationships where id = $1',
+      [id],
+    );
+    expect(werWann[0]?.created_by).toBe(users.office);
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it('nimmt Kontakt und Beginn aus dem Aufruf mit - nicht aus der Akte', async () => {
@@ -344,7 +374,8 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
   const END = 'select public.end_training_relationship($1::uuid, $2::date) as tag';
   const REOPEN = 'select public.reopen_training_relationship($1::uuid) as id';
 
-  it('aendert Name, Kontakt und Beginn und protokolliert nur die Feldnamen', async () => {
+  it('aendert Name, Kontakt und Beginn - wer zuletzt, steht am Kontakt (LOG-EPIC-001)', async () => {
+    const auditVorher = await erfolgsEintraege();
     await asUserCommitted(users.trainer, UPDATE, [
       tina,
       'Tina',
@@ -372,15 +403,26 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
       email: 'tina@beispiel.invalid',
     });
 
-    const eintraege = await audit('training_relationship.updated', tina);
-    expect(eintraege.at(-1)?.context).toEqual({
-      surface: 'web',
-      fields: ['name', 'contract_started_on', 'contact'],
-    });
+    const { rows: werWann } = await asPostgres<{ updated_by: string; geaendert: boolean }>(
+      `select updated_by, updated_at is not null as geaendert
+         from public.training_contact_details where training_relationship_id = $1`,
+      [tina],
+    );
+    expect(werWann[0]).toEqual({ updated_by: users.trainer, geaendert: true });
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it('schreibt nichts, wenn sich nichts aendert', async () => {
-    const vorher = (await audit('training_relationship.updated', tina)).length;
+    const stand = async () =>
+      (
+        await asPostgres<{ updated_at: string }>(
+          `select updated_at::text from public.training_contact_details
+            where training_relationship_id = $1`,
+          [tina],
+        )
+      ).rows[0]?.updated_at;
+    const vorher = await stand();
+    const auditVorher = await erfolgsEintraege();
     await asUserCommitted(users.trainer, UPDATE, [
       tina,
       'Tina',
@@ -393,7 +435,8 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
       null,
       tagInTagen(-30),
     ]);
-    expect(await audit('training_relationship.updated', tina)).toHaveLength(vorher);
+    expect(await stand()).toBe(vorher);
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it('beendet nicht in der Zukunft und nicht vor dem Beginn', async () => {
@@ -406,16 +449,16 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
   });
 
   it('setzt das Vertragsende als Anker und nimmt es wieder zurueck', async () => {
+    // Beenden und Wiederaufnehmen schreiben keinen Auditeintrag; wer, traegt
+    // das Datenmodell bewusst nicht (LOG-EPIC-001, akzeptierte Luecke).
+    const auditVorher = await erfolgsEintraege();
     await asUserCommitted(users.office, END, [tina, tagInTagen(-1)]);
     const { rows } = await asPostgres<{ status: string; ende: string }>(
       `select status, contract_ended_on::text as ende from public.training_relationships where id = $1`,
       [tina],
     );
     expect(rows[0]).toEqual({ status: 'inactive', ende: tagInTagen(-1) });
-    expect((await audit('training_relationship.ended', tina)).at(-1)?.context).toEqual({
-      surface: 'web',
-      ended_on: tagInTagen(-1),
-    });
+    expect(await erfolgsEintraege()).toBe(auditVorher);
 
     // Nie still umdatiert.
     expect((await abgefangen(asUser(users.trainer, END, [tina, null])))?.message).toMatch(
@@ -447,10 +490,7 @@ describe('Aendern, Beenden, Wiederaufnehmen (TRN-001)', () => {
       [tina],
     );
     expect(wieder[0]).toEqual({ status: 'active', ende: null });
-    expect((await audit('training_relationship.reopened', tina)).at(-1)?.context).toEqual({
-      surface: 'web',
-      previous_ended_on: tagInTagen(-1),
-    });
+    expect(await erfolgsEintraege()).toBe(auditVorher);
   });
 
   it.each([

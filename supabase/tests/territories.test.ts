@@ -191,16 +191,27 @@ describe('Gebietstage (PRX-002)', () => {
     expect(await fehler(fremd.owner, SPEICHERN, [null, null, 'Nord', ['72070'], '[]'])).toBeNull();
   });
 
-  it('protokolliert Speichern und Entfernen nur mit Zahlen', async () => {
+  it('haelt das Speichern am Gebiet fest und schreibt beim Speichern und Entfernen keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await nordAnlegen();
+    const { rows: gebiet } = await asPostgres<{
+      created_by: string;
+      updated_by: string;
+      updated_at: Date | null;
+    }>('select created_by, updated_by, updated_at from public.territories where id = $1', [id]);
+    expect(gebiet).toHaveLength(1);
+    expect(gebiet[0]).toMatchObject({ created_by: users.office, updated_by: users.office });
+    expect(gebiet[0]!.updated_at).not.toBeNull();
+
     await asUserCommitted(users.office, 'select public.remove_territory($1::uuid)', [id]);
-    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-      `select action, context from public.audit_log where subject_id = $1 order by occurred_at`,
+    const { rows } = await asPostgres(
+      `select 1 from public.audit_log
+        where subject_id = $1 or context::text like '%72070%'`,
       [id],
     );
-    expect(rows.map((r) => r.action)).toEqual(['territory.saved', 'territory.removed']);
-    expect(rows[0]!.context).toMatchObject({ created: true, postal_codes: 2, day_parts: 2 });
-    expect(JSON.stringify(rows)).not.toContain('72070');
+    expect(rows).toEqual([]);
+    expect((await asPostgres('select 1 from public.territories where id = $1', [id])).rows).toEqual(
+      [],
+    );
     expect((await asPostgres('select 1 from public.territory_postal_codes')).rows).toEqual([]);
   });
 });

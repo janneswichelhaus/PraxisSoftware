@@ -213,18 +213,29 @@ describe('Praxis-Stammdaten fuer Rechnungen', () => {
       ).rejects.toThrow();
     });
 
-    it('protokolliert die Aenderung ohne die Steuernummer (ADR-011)', async () => {
+    it('haelt wer/wann der Aenderung am Datensatz fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+      const vorher = await asPostgres<{ n: number }>(
+        "select count(*)::int as n from public.audit_log where outcome = 'success'",
+      );
       await asUserCommitted(users.ownerTherapist, SPEICHERN, stammdaten());
 
-      const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-        `select action, context from public.audit_log
-          where action = 'organization.billing_profile_changed'
-          order by occurred_at desc limit 1`,
+      const { rows } = await asPostgres<{ updated_by: string; updated_at: Date | null }>(
+        'select updated_by, updated_at from public.practice_billing_profiles where organization_id = $1',
+        [organizationId],
       );
+      expect(rows).toHaveLength(1);
+      expect(rows[0]?.updated_by).toBe(users.ownerTherapist);
+      expect(rows[0]?.updated_at).not.toBeNull();
 
-      expect(rows[0]?.action).toBe('organization.billing_profile_changed');
-      expect(JSON.stringify(rows[0]?.context)).not.toContain('86123');
-      expect(rows[0]?.context.created).toBe(false);
+      const nachher = await asPostgres<{ n: number }>(
+        "select count(*)::int as n from public.audit_log where outcome = 'success'",
+      );
+      expect(nachher.rows[0]?.n).toBe(vorher.rows[0]?.n);
+      // Die Steuernummer steht in keinem Protokoll (ADR-011).
+      const { rows: steuernummer } = await asPostgres(
+        "select 1 from public.audit_log where context::text like '%86123%'",
+      );
+      expect(steuernummer).toEqual([]);
     });
   });
 

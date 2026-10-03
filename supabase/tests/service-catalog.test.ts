@@ -101,7 +101,6 @@ describe('Leistungskatalog', () => {
     await asPostgres(
       'alter table public.service_catalog_versions enable trigger service_catalog_versions_frozen',
     );
-    await asPostgres("delete from public.audit_log where action like 'service_catalog.%'");
   });
 
   describe('Wer liest und wer pflegt', () => {
@@ -349,8 +348,11 @@ describe('Leistungskatalog', () => {
     });
   });
 
-  describe('Auditspur', () => {
-    it('protokolliert Anlegen, Befuellen, Veroeffentlichen und Verwerfen', async () => {
+  describe('Nachweis im Datenmodell (LOG-EPIC-001)', () => {
+    it('haelt wer/wann von Anlegen, Befuellen und Veroeffentlichen fest, ohne Auditeintrag', async () => {
+      const auditVorher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log',
+      );
       const id = await entwurfAnlegen();
       await asUserCommitted(users.ownerTherapist, POSITIONEN, [id, JSON.stringify(EINE_POSITION)]);
       await asUserCommitted(users.ownerTherapist, VEROEFFENTLICHEN, [id]);
@@ -358,21 +360,36 @@ describe('Leistungskatalog', () => {
       const zweite = await entwurfAnlegen('Zum Verwerfen', '2032-01-01');
       await asUserCommitted(users.ownerTherapist, VERWERFEN, [zweite]);
 
-      // Das Auditlog hat keinen Tabellenlesepfad (ADR-010 Fassung 2); geprueft
-      // wird deshalb an der Tabelle selbst.
-      const { rows } = await asPostgres<{ action: string; subject_type: string }>(
-        "select action, subject_type from public.audit_log where action like 'service_catalog.%' order by occurred_at",
+      const { rows: version } = await asPostgres<{
+        created_by: string;
+        published_by: string;
+        published_at: Date | null;
+      }>(
+        'select created_by, published_by, published_at from public.service_catalog_versions where id = $1',
+        [id],
       );
-      expect(rows.map((zeile) => zeile.action)).toEqual([
-        'service_catalog.version_created',
-        'service_catalog.version_updated',
-        'service_catalog.version_published',
-        'service_catalog.version_created',
-        'service_catalog.version_deleted',
-      ]);
-      expect(new Set(rows.map((zeile) => zeile.subject_type))).toEqual(
-        new Set(['service_catalog_version']),
+      expect(version).toHaveLength(1);
+      expect(version[0]!.created_by).toBe(users.ownerTherapist);
+      expect(version[0]!.published_by).toBe(users.ownerTherapist);
+      expect(version[0]!.published_at).not.toBeNull();
+
+      const { rows: positionen } = await asPostgres<{ created_by: string }>(
+        'select created_by from public.service_catalog_items where catalog_version_id = $1',
+        [id],
       );
+      expect(positionen.length).toBeGreaterThan(0);
+      expect(positionen.every((p) => p.created_by === users.ownerTherapist)).toBe(true);
+
+      // Der verworfene Entwurf ist fort; das Auditlog bleibt unberuehrt.
+      const { rows: verworfen } = await asPostgres(
+        'select 1 from public.service_catalog_versions where id = $1',
+        [zweite],
+      );
+      expect(verworfen).toEqual([]);
+      const auditNachher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log',
+      );
+      expect(auditNachher.rows[0]!.n).toBe(auditVorher.rows[0]!.n);
     });
   });
 

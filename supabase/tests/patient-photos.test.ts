@@ -252,14 +252,20 @@ describe('Patientenfotos (DOK-006b)', () => {
       ab.setFullYear(ab.getFullYear() + 1);
       expect(bis.getTime()).toBe(ab.getTime());
 
-      // Das Hochladen ist auditiert wie jede Datei (Punkt 20).
+      // Das Hochladen weist die Datei selbst nach wie jede Datei (Punkt 20,
+      // LOG-EPIC-001): wer und wann stehen an der Zeile, nicht im Auditlog.
       const hochgeladen = await anzahl(
-        `select count(*) from public.audit_log
-          where action = 'patient_file.uploaded' and subject_id = $1
-            and context ->> 'document_type' = 'patientenfoto'`,
-        [datei.file_id],
+        `select count(*) from public.patient_files
+          where id = $1 and document_type = 'patientenfoto'
+            and uploaded_by = $2 and confirmed_at is not null`,
+        [datei.file_id, users.therapist],
       );
       expect(hochgeladen).toBe(1);
+      expect(
+        await anzahl('select count(*) from public.audit_log where subject_id = $1', [
+          datei.file_id,
+        ]),
+      ).toBe(0);
     });
 
     it('bestaetigt nicht, wenn zwischen Vorbereitung und Bestaetigung widerrufen wurde', async () => {
@@ -379,7 +385,7 @@ describe('Patientenfotos (DOK-006b)', () => {
   });
 
   describe('Widerruf (Punkt 36)', () => {
-    it('loescht beim Widerruf in derselben Transaktion: Zeilen, Auftraege, Journal, Audit', async () => {
+    it('loescht beim Widerruf in derselben Transaktion: Zeilen, Auftraege, Journal - ohne Auditeintrag (LOG-EPIC-001)', async () => {
       await vermerken('consent_granted');
       const eins = await foto();
       const zwei = await foto();
@@ -406,28 +412,29 @@ describe('Patientenfotos (DOK-006b)', () => {
           [[eins.file_id, zwei.file_id]],
         ),
       ).toBe(2);
-      const { rows: geloescht } = await asPostgres<{ actor: string; reason: string }>(
-        `select actor_user_id as actor, context ->> 'reason' as reason from public.audit_log
-          where action = 'patient_file.deleted' and subject_id = any($1::uuid[])`,
-        [[eins.file_id, zwei.file_id]],
+      // Wer den Widerruf festgehalten und damit geloescht hat, steht am
+      // Vermerk und an den Loeschauftraegen (ANN-230), nicht im Auditlog.
+      const { rows: geloescht } = await asPostgres<{ ordered_by: string }>(
+        `select ordered_by from public.storage_deletion_orders
+          where bucket_id = $1 and object_key = any($2)`,
+        [BUCKET, [eins.object_key, zwei.object_key]],
       );
-      expect(geloescht).toEqual([
-        { actor: users.office, reason: 'consent_withdrawn' },
-        { actor: users.office, reason: 'consent_withdrawn' },
-      ]);
-      const { rows: vermerk } = await asPostgres<{ fotos: string }>(
-        `select context ->> 'photos_deleted' as fotos from public.audit_log
-          where action = 'patient_privacy.recorded' and context ->> 'record_kind' = 'consent_withdrawn'`,
-      );
-      expect(vermerk[0]?.fotos).toBe('2');
-      // Kein Name, kein Objektschluessel im Auditkontext (ADR-017 Punkt 20).
-      const { rows: kontexte } = await asPostgres<{ context: string }>(
-        "select context::text as context from public.audit_log where action = 'patient_file.deleted'",
-      );
-      for (const { context } of kontexte) {
-        expect(context).not.toContain('Foto vom');
-        expect(context).not.toContain(eins.object_key);
-      }
+      expect(geloescht).toEqual([{ ordered_by: users.office }, { ordered_by: users.office }]);
+      expect(
+        await anzahl(
+          `select count(*) from public.patient_privacy_records
+            where patient_id = $1 and record_kind = 'consent_withdrawn' and recorded_by = $2`,
+          [patients.max, users.office],
+        ),
+      ).toBe(1);
+      // Damit auch kein Name und kein Objektschluessel im Auditlog (ADR-017 Punkt 20).
+      expect(
+        await anzahl(
+          `select count(*) from public.audit_log
+            where subject_id = any($1::uuid[]) or subject_id = $2`,
+          [[eins.file_id, zwei.file_id], patients.max],
+        ),
+      ).toBe(0);
     });
 
     it('verlangt nach dem Widerruf eine neue Erteilung; die gilt nur fuer neue Fotos', async () => {
@@ -519,20 +526,20 @@ describe('Patientenfotos (DOK-006b)', () => {
           [datei.file_id],
         ),
       ).toBe(1);
+      // Wer mit dem Aufheben die Loeschung ausgeloest hat, steht am
+      // Loeschauftrag (ANN-230), nicht im Auditlog.
       expect(
         await anzahl(
-          `select count(*) from public.audit_log
-            where action = 'patient_file.deleted' and subject_id = $1
-              and context ->> 'reason' = 'legal_hold_released' and actor_user_id = $2`,
-          [datei.file_id, users.ownerTherapist],
+          `select count(*) from public.storage_deletion_orders
+            where bucket_id = $1 and object_key = $2 and ordered_by = $3`,
+          [BUCKET, datei.object_key, users.ownerTherapist],
         ),
       ).toBe(1);
       expect(
-        await anzahl(
-          `select count(*) from public.storage_deletion_orders where bucket_id = $1 and object_key = $2`,
-          [BUCKET, datei.object_key],
-        ),
-      ).toBe(1);
+        await anzahl('select count(*) from public.audit_log where subject_id = $1', [
+          datei.file_id,
+        ]),
+      ).toBe(0);
     });
 
     it('Erteilung, Widerruf, Hold, neue Erteilung: das alte Foto bleibt gesperrt, das neue ist nutzbar', async () => {

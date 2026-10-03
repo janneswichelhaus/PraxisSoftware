@@ -33,7 +33,9 @@ const VERTRETUNG = `select * from public.invite_platform_representation(
   $1, $2::uuid, $3, $4, $5, $6::text[], $7::boolean, $8, $9::boolean, $10::boolean)`;
 const LISTE = 'select * from public.list_platform_representations($1, $2::uuid)';
 const NEUER_CODE = 'select * from public.renew_platform_representation_code($1::uuid)';
-const ZWEIFEL = 'select public.note_companion_capacity_doubt($1, $2::uuid) as ok';
+/** Mit Zweifel an der Einwilligungsfaehigkeit (LOG-EPIC-001, ANN-207 Fassung 2). */
+const MIT_ZWEIFEL = `select * from public.invite_platform_representation(
+  $1, $2::uuid, $3, $4, $5, $6::text[], $7::boolean, $8, $9::boolean, $10::boolean, true)`;
 const EINLOESEN = 'select public.redeem_platform_invitation($1, $2::uuid) as access_id';
 const KONTEXT = 'select * from public.platform_context()';
 
@@ -628,38 +630,34 @@ describe('Vertretungen in der Praxis lesen und verwalten', () => {
     );
   });
 
-  it('vermerkt einen Zweifel an der Einwilligungsfaehigkeit ohne Grund (ANN-207)', async () => {
-    await asUserCommitted(users.therapist, ZWEIFEL, ['treatment', patients.petra]);
-    const { rows } = await asPostgres<{
-      subject_type: string;
-      subject_id: string;
-      context: unknown;
-      actor_user_id: string;
-    }>(
-      `select subject_type, subject_id, context, actor_user_id from public.audit_log
-        where action = 'platform_access.companion_declined'`,
+  it('vermerkt einen Zweifel an der Einwilligungsfaehigkeit am Zugang, ohne Grund (ANN-207)', async () => {
+    const { rows } = await asUserCommitted<Einladung>(
+      users.therapist,
+      MIT_ZWEIFEL,
+      parameter(BETREUUNG_MAX),
     );
-    expect(rows).toEqual([
+    const { rows: zugang } = await asPostgres<Record<string, unknown>>(
+      `select access_kind, companion_declined_by, companion_declined_reason,
+              companion_declined_at is not null as vermerkt
+         from public.platform_accesses where id = $1`,
+      [rows[0]!.access_id],
+    );
+    expect(zugang).toEqual([
       {
-        subject_type: 'patient',
-        subject_id: patients.petra,
-        context: { surface: 'web', reason: 'capacity_doubt' },
-        actor_user_id: users.therapist,
+        access_kind: 'legal_representative',
+        companion_declined_by: users.therapist,
+        companion_declined_reason: 'capacity_doubt',
+        vermerkt: true,
       },
     ]);
-    // Keine Begleitung entsteht.
+    // LOG-EPIC-001: der Vermerk ist Teil des Datenmodells, kein Auditeintrag.
     expect(
-      (
-        await asPostgres(`select 1 from public.platform_accesses where relationship_id = $1`, [
-          patients.petra,
-        ])
-      ).rows,
+      (await asPostgres("select 1 from public.audit_log where action like '%companion%'")).rows,
     ).toEqual([]);
-    await erwarteAbgewiesenenSchreibversuch(
-      users.therapist,
-      ZWEIFEL,
-      ['training', trainingRelationships.tina],
-      'platform_access.companion_declined',
+
+    // Eine Begleitung mit Zweifel gibt es nicht.
+    await expect(asUser(users.office, MIT_ZWEIFEL, parameter(BEGLEITUNG_PETRA))).rejects.toThrow(
+      /capacity doubt allows only a legal representative/,
     );
   });
 });
@@ -700,6 +698,62 @@ describe('Vertretung im Loeschlauf (ADR-023 Punkt 5, Konsequenzen)', () => {
     expect(
       (await asPostgres('select 1 from public.persons where id = $1', [SEED.persons.tina])).rows,
     ).toEqual([]);
+  });
+});
+
+describe('Zweifel-Vermerk im Loeschlauf (LOG-EPIC-001, ANN-207 Fassung 2)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  /** Beendet den Zugang vor vier Jahren - drei Jahre Frist sind damit um. */
+  async function vorVierJahrenBeendet(id: string): Promise<void> {
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', revoked_at = now() - interval '4 years', revoked_by = $2,
+              revoked_reason = 'practice'
+        where id = $1`,
+      [id, users.office],
+    );
+  }
+
+  async function loeschlauf(): Promise<void> {
+    await asPostgres(
+      'select app.delete_due_platform_accesses($1::uuid, extensions.gen_random_uuid())',
+      [organizationId],
+    );
+  }
+
+  async function vorhanden(id: string): Promise<boolean> {
+    return (
+      (await asPostgres('select 1 from public.platform_accesses where id = $1', [id])).rows
+        .length === 1
+    );
+  }
+
+  it('haelt einen Zugang mit Zweifel-Vermerk so lange wie die Akte', async () => {
+    const ohne = await vertretungEinladen(users.office, BETREUUNG_MAX);
+    const { rows } = await asUserCommitted<Einladung>(users.office, MIT_ZWEIFEL, [
+      ...parameter(BETREUUNG_MAX).slice(0, 4),
+      'Berta Betreuerin',
+      ...parameter(BETREUUNG_MAX).slice(5),
+    ]);
+    const mit = rows[0]!;
+    await vorVierJahrenBeendet(ohne.access_id);
+    await vorVierJahrenBeendet(mit.access_id);
+
+    await loeschlauf();
+    // Ohne Vermerk nach drei Jahren weg, mit Vermerk bleibt er bei der Akte.
+    expect(await vorhanden(ohne.access_id)).toBe(false);
+    expect(await vorhanden(mit.access_id)).toBe(true);
+
+    // Faellt die Akte, setzt ihr Loeschen den Verweis auf null - dann faellt
+    // auch der Vermerk.
+    await asPostgres('update public.platform_accesses set patient_id = null where id = $1', [
+      mit.access_id,
+    ]);
+    await loeschlauf();
+    expect(await vorhanden(mit.access_id)).toBe(false);
   });
 });
 
@@ -840,8 +894,12 @@ describe('Zweitreview: Alter, Organisation, Widerruf, Riegel', () => {
   it('andere Organisation: keine Liste, kein Vermerk', async () => {
     const fremd = await fremdeOrganisation();
     expect((await asUser(users.office, LISTE, ['treatment', fremd.patient])).rows).toEqual([]);
-    await expect(asUser(users.office, ZWEIFEL, ['treatment', fremd.patient])).rejects.toThrow(
-      'relationship not found',
-    );
+    await expect(
+      asUser(
+        users.office,
+        MIT_ZWEIFEL,
+        parameter({ ...BETREUUNG_MAX, verhaeltnis: fremd.patient }),
+      ),
+    ).rejects.toThrow('relationship not found');
   });
 });

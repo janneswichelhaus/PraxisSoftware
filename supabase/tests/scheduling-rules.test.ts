@@ -211,29 +211,23 @@ describe('set_appointment_grid', () => {
     ).rejects.toThrow(/appointment_grid_minutes/);
   });
 
-  it('protokolliert alten und neuen Wert', async () => {
+  // Eine Praxiseinstellung - seit LOG-EPIC-001 ohne Auditeintrag (anerkannte
+  // Luecke: wer das Raster geaendert hat, zeigt das Datenmodell nicht).
+  it('aendert das Raster und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.ownerTherapist, RASTER, [15]);
 
-    const { rows } = await asPostgres<{
-      action: string;
-      subject_type: string;
-      context: Record<string, unknown>;
-    }>(
-      `select action, subject_type, context from public.audit_log
-        where action = 'organization.appointment_grid_changed'`,
+    const { rows: org } = await asPostgres<{ appointment_grid_minutes: number }>(
+      'select appointment_grid_minutes from public.organizations where id = $1',
+      [organizationId],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_type).toBe('organization');
-    // Ein Minutenraster ist eine organisatorische Einstellung und ausdruecklich
-    // kein Gesundheits- oder Stammdatenwert (ADR-010).
-    expect(rows[0]?.context).toMatchObject({ previous_minutes: 5, minutes: 15 });
+    expect(org[0]?.appointment_grid_minutes).toBe(15);
+    const { rows } = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
+    expect(rows).toHaveLength(0);
   });
 
   it('schreibt bei unveraendertem Wert weder Daten noch Audit', async () => {
     await asUserCommitted(users.ownerTherapist, RASTER, [5]);
-    const { rows } = await asPostgres(
-      `select 1 from public.audit_log where action = 'organization.appointment_grid_changed'`,
-    );
+    const { rows } = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
     expect(rows).toHaveLength(0);
   });
 });
@@ -890,30 +884,37 @@ describe('CAL-005: Grenzen der Bestaetigung', () => {
     await anlegenVersuch({ von: '19:00', bis: '20:00' }).catch(() => undefined);
 
     const termine = await asPostgres('select 1 from public.appointments');
-    const audit = await asPostgres(
-      `select 1 from public.audit_log where action = 'appointment.created'`,
-    );
+    const audit = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
     expect(termine.rows).toHaveLength(0);
     expect(audit.rows).toHaveLength(0);
   });
 
-  it('vermerkt die Bestaetigung im Audit', async () => {
-    await anlegen({ von: '19:00', bis: '20:00', bestaetigt: true });
+  it('legt den bestaetigten Termin mit Person an und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    const t = await anlegen({ von: '19:00', bis: '20:00', bestaetigt: true });
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'appointment.created'`,
+    const { rows: termin } = await asPostgres<{ created_by: string }>(
+      'select created_by from public.appointments where id = $1',
+      [t.id],
     );
-    expect(rows[0]?.context).toMatchObject({ outside_working_hours: true });
-    // Weiterhin keine konkrete Terminzeit im Kontext (ADR-010).
-    expect(JSON.stringify(rows[0]?.context)).not.toMatch(/\d{2}:\d{2}/);
+    expect(termin[0]?.created_by).toBe(users.office);
+    const { rows } = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
+    expect(rows).toHaveLength(0);
+    // Keine konkrete Terminzeit im Auditlog (ADR-010).
+    const alle = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(alle.rows.map((r) => r.context))).not.toMatch(/\d{2}:\d{2}/);
   });
 
-  it('vermerkt einen Termin innerhalb der Arbeitszeit als nicht bestaetigt', async () => {
-    await anlegen({ von: '09:00', bis: '10:00' });
+  it('schreibt auch fuer einen Termin innerhalb der Arbeitszeit keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    const t = await anlegen({ von: '09:00', bis: '10:00' });
 
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'appointment.created'`,
+    const { rows: termin } = await asPostgres<{ created_by: string }>(
+      'select created_by from public.appointments where id = $1',
+      [t.id],
     );
-    expect(rows[0]?.context).toMatchObject({ outside_working_hours: false });
+    expect(termin[0]?.created_by).toBe(users.office);
+    const { rows } = await asPostgres(`select 1 from public.audit_log where outcome = 'success'`);
+    expect(rows).toHaveLength(0);
   });
 });

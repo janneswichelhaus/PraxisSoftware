@@ -417,11 +417,22 @@ describe('Warteliste (PRX-001)', () => {
       { id: mitGrundlage, status: 'withdrawn' },
       { id: ohne, status: 'open' },
     ]);
-    const { rows: audit } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where subject_id = $1 and action = 'waitlist_entry.closed'`,
+    // Wer und wann des Schliessens stehen am Eintrag (LOG-EPIC-001).
+    const { rows: geschlossen } = await asPostgres<{
+      closed_by: string;
+      closed_at: Date | null;
+      treatment_basis_id: string | null;
+    }>(
+      'select closed_by, closed_at, treatment_basis_id from public.waitlist_entries where id = $1',
       [mitGrundlage],
     );
-    expect(audit[0]!.context).toMatchObject({ reason: 'treatment_basis_deleted' });
+    expect(geschlossen[0]).toMatchObject({ closed_by: users.therapist, treatment_basis_id: null });
+    expect(geschlossen[0]!.closed_at).not.toBeNull();
+    const { rows: audit } = await asPostgres(
+      'select 1 from public.audit_log where subject_id = $1',
+      [mitGrundlage],
+    );
+    expect(audit).toEqual([]);
   });
 
   it('behaelt den Wunsch, wenn die Grundlage faellt und kein zweiter Eintrag besteht', async () => {
@@ -440,20 +451,37 @@ describe('Warteliste (PRX-001)', () => {
     expect(zeile).toMatchObject({ id, status: 'open', treatment_basis_kind: null });
   });
 
-  it('protokolliert Anlegen, Aendern und Schliessen ohne die Notiz (ADR-010)', async () => {
+  it('haelt wer/wann von Anlegen und Schliessen am Eintrag fest, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await anlegen();
     const zeile = (await liste())[0]!;
     await asUserCommitted(users.office, SCHLIESSEN, [id, zeile.updated_at, 'withdrawn', null]);
 
-    const { rows } = await asPostgres<{ action: string; subject_type: string; context: unknown }>(
-      `select action, subject_type, context from public.audit_log
-        where subject_id = $1 order by occurred_at`,
+    const { rows: eintrag } = await asPostgres<{
+      status: string;
+      created_by: string;
+      closed_by: string;
+      closed_at: Date | null;
+      updated_by: string;
+    }>(
+      `select status, created_by, closed_by, closed_at, updated_by
+         from public.waitlist_entries where id = $1`,
       [id],
     );
-    expect(rows.map((r) => r.action)).toEqual(['waitlist_entry.created', 'waitlist_entry.closed']);
-    expect(rows.every((r) => r.subject_type === 'waitlist_entry')).toBe(true);
-    expect(JSON.stringify(rows)).not.toContain('erreichbar');
-    expect(rows[1]!.context).toMatchObject({ outcome: 'withdrawn', patient_id: patients.max });
+    expect(eintrag[0]).toMatchObject({
+      status: 'withdrawn',
+      created_by: users.office,
+      closed_by: users.office,
+      updated_by: users.office,
+    });
+    expect(eintrag[0]!.closed_at).not.toBeNull();
+
+    // Die Notiz gelangt in keinen Auditeintrag (ADR-010).
+    const { rows } = await asPostgres(
+      `select 1 from public.audit_log
+        where subject_id = $1 or context::text like '%erreichbar%'`,
+      [id],
+    );
+    expect(rows).toEqual([]);
   });
 
   it('gehoert zur Auskunft nach Art. 15', async () => {
@@ -580,10 +608,15 @@ describe('Warteliste pruefen (ABN-018, BEF-108)', () => {
     expect((await asUser<{ review_due: boolean }>(users.office, PRUEFEN)).rows[0]!.review_due).toBe(
       false,
     );
-    const audit = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'waitlist_entry.reviewed'`,
+    // "Noch aktuell" steht am Eintrag (updated_by/updated_at), nicht im
+    // Auditlog (LOG-EPIC-001).
+    const bestaetigt = await asPostgres<{ updated_by: string }>(
+      'select updated_by from public.waitlist_entries where id = $1',
+      [id],
     );
-    expect(audit.rows).toHaveLength(1);
+    expect(bestaetigt.rows[0]!.updated_by).toBe(users.office);
+    const audit = await asPostgres('select 1 from public.audit_log where subject_id = $1', [id]);
+    expect(audit.rows).toEqual([]);
 
     // Ein veralteter Stand wird abgewiesen.
     expect((await fehler(users.office, BESTAETIGEN, [id, rows[0]!.updated_at]))?.code).toBe(

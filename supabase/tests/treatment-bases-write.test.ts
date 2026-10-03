@@ -128,33 +128,38 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     ]);
   });
 
-  it('protokolliert das Anlegen ohne klinische Inhalte (ADR-010)', async () => {
+  it('weist das Anlegen an der Verordnung nach, ohne Auditeintrag und ohne klinische Inhalte (LOG-EPIC-001)', async () => {
     const id = await anlegen(users.therapist, { diagnose: 'Synthetisch: Diagnose Schulter.' });
 
-    const { rows } = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-      `select subject_id, context from public.audit_log
-        where action = 'treatment_basis.created'`,
+    // Wer und wann stehen an der Verordnung (ANN-230).
+    const { rows: kopf } = await asPostgres<{ created_by: string; vorhanden: boolean }>(
+      'select created_by, created_at is not null as vorhanden from public.treatment_bases where id = $1',
+      [id],
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_id).toBe(id);
-    expect(rows[0]?.context).toMatchObject({ surface: 'web', patient_id: patients.max });
-    expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Schulter/i);
+    expect(kopf).toEqual([{ created_by: users.therapist, vorhanden: true }]);
+
+    const { rows } = await asPostgres<{ eintrag: string; subject_id: string | null }>(
+      'select row_to_json(a)::text as eintrag, subject_id from public.audit_log a',
+    );
+    expect(rows.filter((r) => r.subject_id === id)).toEqual([]);
+    for (const zeile of rows) expect(zeile.eintrag).not.toMatch(/Schulter/i);
   });
 
   it('laesst office anlegen, aendern und loeschen (PRX-010, ANN-011 Stand 2026-09-28)', async () => {
     // Office tippt die Verordnung mit dem Foto daneben ab (PRX-EPIC-003).
     const id = await anlegen(users.office, { diagnose: 'Synthetisch: Diagnose Knie.' });
     await asUserCommitted(users.office, AENDERN, aendernArgumente(id));
-    const { rows } = await asPostgres<{ action: string; actor_user_id: string }>(
-      `select action, actor_user_id from public.audit_log
-        where subject_id = $1 order by occurred_at, action`,
+    // Wer angelegt und geaendert hat, steht an der Verordnung (LOG-EPIC-001).
+    const { rows } = await asPostgres<{ created_by: string; updated_by: string | null }>(
+      'select created_by, updated_by from public.treatment_bases where id = $1',
       [id],
     );
-    expect(rows.map((r) => r.action)).toEqual([
-      'treatment_basis.created',
-      'treatment_basis.updated',
-    ]);
-    expect(rows.every((r) => r.actor_user_id === users.office)).toBe(true);
+    expect(rows).toEqual([{ created_by: users.office, updated_by: users.office }]);
+    const { rows: audit } = await asPostgres(
+      'select id from public.audit_log where subject_id = $1',
+      [id],
+    );
+    expect(audit).toEqual([]);
     await asUserCommitted(users.office, LOESCHEN, [id]);
     const { rows: rest } = await asPostgres('select 1 from public.treatment_bases where id = $1', [
       id,
@@ -420,7 +425,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(audit).toEqual([]);
   });
 
-  it('loescht endgueltig samt Positionen und haelt den Vorgang im Auditlog fest', async () => {
+  it('loescht endgueltig samt Positionen und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await anlegen(users.therapist);
     await asPostgres("delete from public.audit_log where subject_type = 'treatment_basis'");
 
@@ -435,10 +440,12 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     );
     expect(reste).toEqual([]);
 
-    const { rows: audit } = await asPostgres<{ subject_id: string }>(
-      `select subject_id from public.audit_log where action = 'treatment_basis.deleted'`,
+    // Das Loeschen ist eine anerkannte Luecke (ANN-230).
+    const { rows: audit } = await asPostgres(
+      'select id from public.audit_log where subject_id = $1',
+      [id],
     );
-    expect(audit[0]?.subject_id).toBe(id);
+    expect(audit).toEqual([]);
   });
 
   it('meldet eine unbekannte Verordnung beim Loeschen und beim Aendern gleich', async () => {
@@ -754,21 +761,26 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       ).rejects.toThrow();
     });
 
-    it('protokolliert ihn unter dem neuen Wert und mit dem neuen Bezugstyp', async () => {
+    it('weist ihn unter dem neuen Wert an der Grundlage nach, ohne Auditeintrag (LOG-EPIC-001)', async () => {
       const { rows } = await asUserCommitted<{ id: string }>(
         users.therapist,
         ANLEGEN,
         selbstzahlerArgumente(),
       );
 
-      const { rows: audit } = await asPostgres<{ action: string; subject_type: string }>(
-        `select action, subject_type from public.audit_log
-          where subject_id = $1 and action like 'treatment_basis%'`,
+      const { rows: kopf } = await asPostgres<{
+        treatment_basis_kind: string;
+        created_by: string;
+      }>('select treatment_basis_kind, created_by from public.treatment_bases where id = $1', [
+        rows[0]!.id,
+      ]);
+      expect(kopf).toEqual([{ treatment_basis_kind: 'self_pay', created_by: users.therapist }]);
+
+      const { rows: audit } = await asPostgres<{ action: string }>(
+        'select action from public.audit_log where subject_id = $1',
         [rows[0]!.id],
       );
-      expect(audit).toEqual([
-        { action: 'treatment_basis.created', subject_type: 'treatment_basis' },
-      ]);
+      expect(audit).toEqual([]);
     });
 
     it('laesst eine Verordnung zum Selbstzahler werden - und zurueck', async () => {

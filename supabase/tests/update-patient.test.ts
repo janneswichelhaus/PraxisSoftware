@@ -401,10 +401,9 @@ describe('update_patient: Atomaritaet', () => {
   });
 
   it('schreibt bei einem Fehler auch keinen Auditeintrag', async () => {
-    const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'patient.updated' and subject_id = $1",
-      [patientId],
-    );
+    const { rows } = await asPostgres('select id from public.audit_log where subject_id = $1', [
+      patientId,
+    ]);
     expect(rows).toEqual([]);
   });
 });
@@ -419,68 +418,32 @@ describe('update_patient: Audit', () => {
     await aendernCommitted(users.teamLead, patientId, { family: 'Auditiert', city: 'Aachen' });
   }, 120_000);
 
-  it('erzeugt genau ein patient.updated-Ereignis mit Akteur, Organisation und Bezug', async () => {
-    const { rows } = await asPostgres<{
-      actor_user_id: string;
-      organization_id: string;
-      subject_type: string;
-      subject_id: string;
-      outcome: string;
-      occurred_at: Date;
-    }>("select * from public.audit_log where action = 'patient.updated'");
-
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.actor_user_id).toBe(users.teamLead);
-    expect(rows[0]?.organization_id).toBe(organizationId);
-    expect(rows[0]?.subject_type).toBe('patient');
-    expect(rows[0]?.subject_id).toBe(patientId);
-    expect(rows[0]?.outcome).toBe('success');
-    expect(rows[0]?.occurred_at).toBeInstanceOf(Date);
-  });
-
-  it('haelt genau die tatsaechlich geaenderten Feldnamen fest', async () => {
-    const { rows } = await asPostgres<{
-      context: { surface?: string; changed_fields?: string[] };
-    }>("select context from public.audit_log where action = 'patient.updated'");
-    const kontext = rows[0]?.context;
-
-    // Der Auditkontext traegt nichts ausser Oberflaeche und Feldnamen.
-    expect(Object.keys(kontext ?? {}).sort()).toEqual(['changed_fields', 'surface']);
-    expect(kontext?.surface).toBe('web');
-
-    // Genau die geaenderten Felder - nicht mehr, nicht weniger, nicht anders
-    // benannt. Die Reihenfolge im Array hat keine fachliche Bedeutung und
-    // wird deshalb bewusst nicht mitgeprueft.
-    expect([...(kontext?.changed_fields ?? [])].sort()).toEqual(['city', 'family_name']);
-  });
-
-  it('kopiert keine Stammdatenwerte in den Auditinhalt', async () => {
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'patient.updated'",
+  it('aendert die Akte und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+    // Die Aenderung der Stammdaten ist eine anerkannte Luecke (ANN-230): die
+    // Akte zeigt den Stand, das Auditlog fuehrt ihn nicht mehr - also auch
+    // weder Feldnamen noch Stammdatenwerte.
+    const akte = await asPostgres<{ family_name: string; city: string }>(
+      `select pe.family_name, c.city
+         from public.patients p
+         join public.persons pe on pe.id = p.person_id
+         join public.patient_contact_details c on c.patient_id = p.id
+        where p.id = $1`,
+      [patientId],
     );
-    const inhalt = JSON.stringify(rows[0]?.context);
-    for (const wert of [
-      'Berta',
-      'Bestand',
-      'Auditiert',
-      'Aachen',
-      'Koeln',
-      '1970-05-06',
-      '50667',
-      '0221 111111',
-      'berta.bestand@example.invalid',
-    ]) {
-      expect(inhalt).not.toContain(wert);
-    }
+    expect(akte.rows).toEqual([{ family_name: 'Auditiert', city: 'Aachen' }]);
+
+    const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
+      'select action, context from public.audit_log',
+    );
+    expect(rows).toEqual([]);
   });
 
-  it('zeigt das Ereignis im owner-Lesepfad', async () => {
+  it('zeigt im owner-Lesepfad kein Schreibereignis (LOG-EPIC-001)', async () => {
     const { rows } = await asUser<{ subject_id: string }>(
       users.ownerTherapist,
-      "select subject_id from public.list_audit_events(null, null, null, 'patient.updated')",
+      'select subject_id from public.list_audit_events(null, null, null, null)',
     );
-    expect(rows).toHaveLength(1);
-    expect(rows[0]?.subject_id).toBe(patientId);
+    expect(rows.filter((r) => r.subject_id === patientId)).toEqual([]);
   });
 });
 
@@ -497,9 +460,7 @@ describe('update_patient: Absenden ohne Aenderung', () => {
   }, 120_000);
 
   it('erzeugt kein Auditereignis', async () => {
-    const { rows } = await asPostgres(
-      "select id from public.audit_log where action = 'patient.updated'",
-    );
+    const { rows } = await asPostgres('select id from public.audit_log');
     expect(rows).toEqual([]);
   });
 

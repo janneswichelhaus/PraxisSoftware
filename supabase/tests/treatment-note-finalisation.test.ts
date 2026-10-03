@@ -111,6 +111,23 @@ async function auditEintraege(action: string) {
   return rows;
 }
 
+/** Alle Auditzeilen zu einem Eintrag (LOG-EPIC-001). */
+async function auditZumEintrag(id: string) {
+  const { rows } = await asPostgres<{ action: string }>(
+    'select action from public.audit_log where subject_id = $1',
+    [id],
+  );
+  return rows;
+}
+
+/** Das gesamte Auditlog als Text - fuer die Pruefung, dass kein Inhalt darin steht. */
+async function auditAlsText(): Promise<string> {
+  const { rows } = await asPostgres<{ eintrag: string }>(
+    'select row_to_json(a)::text as eintrag from public.audit_log a',
+  );
+  return rows.map((r) => r.eintrag).join('\n');
+}
+
 /**
  * Legt einen Termin an. Jeder Aufruf bekommt einen eigenen Kalendertag - sonst
  * griffe der Ueberschneidungsschutz aus CAL-001.
@@ -236,20 +253,18 @@ describe('DOK-002: Finalisierung von Hand', () => {
     expect(await versionen(f.id)).toHaveLength(1);
   });
 
-  it('protokolliert treatment_note.finalized ohne Behandlungsinhalt (ADR-010)', async () => {
+  it('weist die Finalisierung am Eintrag nach, ohne Auditeintrag und ohne Inhalt im Auditlog (LOG-EPIC-001)', async () => {
     const e = await entwurf('Synthetisch: Geheimer Inhalt, der nirgends im Auditlog stehen darf.');
     await asUserCommitted(users.therapist, FINALISIEREN, [e.id, e.updated_at]);
 
-    const eigener = (await auditEintraege('treatment_note.finalized')).find(
-      (a) => a.subject_id === e.id,
-    );
-    expect(eigener).toMatchObject({
-      subject_type: 'treatment_note',
-      actor_user_id: users.therapist,
-      outcome: 'success',
-    });
-    expect(eigener?.context).toMatchObject({ surface: 'web', patient_id: patients.max });
-    expect(JSON.stringify(eigener?.context)).not.toContain('Geheimer Inhalt');
+    // Wer und wann stehen am Eintrag und an der Version (ANN-230).
+    const zeile = await dokuZeile(e.id);
+    expect(zeile).toMatchObject({ status: 'final', finalized_by: users.therapist });
+    expect(zeile?.['finalized_at']).toBeInstanceOf(Date);
+    expect((await versionen(e.id)).map((v) => v.author_id)).toEqual([users.therapist]);
+
+    expect(await auditZumEintrag(e.id)).toEqual([]);
+    expect(await auditAlsText()).not.toContain('Geheimer Inhalt');
   });
 
   it('weist eine unbekannte Dokumentation wie eine fremde ab', async () => {
@@ -368,14 +383,21 @@ describe('DOK-002: Korrektur eines finalisierten Eintrags', () => {
       'Geheime Begruendung.',
     ]);
 
-    const eigener = (await auditEintraege('treatment_note.revised')).find(
-      (a) => a.subject_id === f.id,
+    // Die Korrektur weist die Version nach (LOG-EPIC-001, ANN-230): Urheber
+    // und Zeitpunkt stehen dort, nicht im Auditlog.
+    const { rows: v2 } = await asPostgres<{ author_id: string; recorded_at: Date }>(
+      `select author_id, recorded_at from public.treatment_note_versions
+        where note_id = $1 and version_no = 2`,
+      [f.id],
     );
-    expect(eigener).toMatchObject({ actor_user_id: users.therapist, outcome: 'success' });
-    expect(eigener?.context).toMatchObject({ version_no: 2, patient_id: patients.max });
-    const kontext = JSON.stringify(eigener?.context);
-    expect(kontext).not.toContain('Geheimer Korrekturtext');
-    expect(kontext).not.toContain('Geheime Begruendung');
+    expect(v2).toHaveLength(1);
+    expect(v2[0]!.author_id).toBe(users.therapist);
+    expect(v2[0]!.recorded_at).toBeInstanceOf(Date);
+
+    expect(await auditZumEintrag(f.id)).toEqual([]);
+    const audit = await auditAlsText();
+    expect(audit).not.toContain('Geheimer Korrekturtext');
+    expect(audit).not.toContain('Geheime Begruendung');
   });
 });
 
@@ -468,18 +490,20 @@ describe('DOK-002: Nachtrag als eigener Eintrag', () => {
     );
   });
 
-  it('protokolliert treatment_note.addendum_created mit dem Ursprungsbezug', async () => {
+  it('weist den Nachtrag mit dem Ursprungsbezug am Eintrag nach, ohne Auditeintrag (LOG-EPIC-001)', async () => {
     const f = await finalisiert();
     const { rows } = await asUserCommitted<{ id: string }>(users.therapist, NACHTRAGEN, [
       f.id,
       'Synthetisch: Geheimer Nachtragstext.',
     ]);
 
-    const eigener = (await auditEintraege('treatment_note.addendum_created')).find(
-      (a) => a.subject_id === rows[0]!.id,
-    );
-    expect(eigener?.context).toMatchObject({ parent_note_id: f.id, patient_id: patients.max });
-    expect(JSON.stringify(eigener?.context)).not.toContain('Geheimer Nachtragstext');
+    // Ursprungsbezug, Urheber und Zeitpunkt stehen am Nachtrag (ANN-230).
+    const zeile = await dokuZeile(rows[0]!.id);
+    expect(zeile).toMatchObject({ addendum_to_note_id: f.id, created_by: users.therapist });
+    expect(zeile?.['created_at']).toBeInstanceOf(Date);
+
+    expect(await auditZumEintrag(rows[0]!.id)).toEqual([]);
+    expect(await auditAlsText()).not.toContain('Geheimer Nachtragstext');
   });
 });
 
@@ -591,13 +615,13 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
   });
 
   it('liefert zu einer unbekannten Dokumentation nichts und protokolliert nichts', async () => {
-    const vorher = (await auditEintraege('treatment_note.history_viewed')).length;
+    const vorher = (await asPostgres('select id from public.audit_log')).rows.length;
     const { rows } = await asUserCommitted(users.therapist, VERLAUF, [
       '99999999-9999-4999-8999-000000000002',
     ]);
 
     expect(rows).toEqual([]);
-    expect((await auditEintraege('treatment_note.history_viewed')).length).toBe(vorher);
+    expect((await asPostgres('select id from public.audit_log')).rows.length).toBe(vorher);
   });
 
   it('haelt den Verlauf ueber den Anwendungspfad unerreichbar (ADR-004)', async () => {

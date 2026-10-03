@@ -26,7 +26,7 @@ async function merkmal(patientId: string): Promise<boolean | null> {
 async function auditZeilen(patientId: string): Promise<{ context: unknown }[]> {
   const { rows } = await asPostgres<{ context: unknown }>(
     `select context from public.audit_log
-      where action = 'patient.updated' and subject_id = $1::uuid
+      where subject_id = $1::uuid
       order by occurred_at`,
     [patientId],
   );
@@ -39,7 +39,8 @@ async function auditZeilen(patientId: string): Promise<{ context: unknown }[]> {
  * Das Merkmal liegt bei den internen Versorgungsangaben (ANN-010) und erbt
  * deren Rollenschnitt. Geprueft wird hier der eigene, kleine Schreibpfad -
  * seine Berechtigung steht in der Datenbank, nicht in der Oberflaeche
- * (ADR-004) - und dass er protokolliert wie update_patient (ADR-010).
+ * (ADR-004) - und dass er wie update_patient keinen Auditeintrag mehr
+ * schreibt (LOG-EPIC-001, ANN-230).
  */
 describe('set_treatment_table_required', () => {
   beforeEach(async () => {
@@ -60,15 +61,12 @@ describe('set_treatment_table_required', () => {
     expect(await merkmal(patients.erika)).toBe(false);
   });
 
-  it('protokolliert patient.updated mit dem Feldnamen, nie mit dem Wert', async () => {
+  it('setzt das Merkmal und schreibt keinen Auditeintrag, also auch keinen Wert (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.therapist, SETZEN, [patients.erika, true]);
 
-    const zeilen = await auditZeilen(patients.erika);
-    expect(zeilen).toHaveLength(1);
-    expect(zeilen[0]!.context).toEqual({
-      surface: 'web',
-      changed_fields: ['treatment_table_required'],
-    });
+    expect(await merkmal(patients.erika)).toBe(true);
+    // Das Merkmal ist eine anerkannte Luecke (ANN-230).
+    expect(await auditZeilen(patients.erika)).toEqual([]);
   });
 
   it('schreibt ohne tatsaechliche Aenderung weder Wert noch Auditeintrag', async () => {
