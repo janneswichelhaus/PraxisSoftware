@@ -22,7 +22,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { ANMELDEBOGEN_ANKER, usePatientRecord } from './akte';
-import { Datenschutz } from '@/features/datenschutz/Anmeldebogen';
+import { Anmeldebogen, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
 import { SonstigeDateien } from '@/features/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
 import { Behandlungsliege } from './Behandlungsliege';
@@ -425,14 +425,17 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
         </div>
       </div>
 
-      {/* AKTE-007: Der Anmeldebogen - Datenschutzinformation, Vertrag und
-          Einwilligungen samt ihrer Scans - steht bei den Kontaktdaten, die auf
-          demselben Blatt stehen (ANN-224). Dieselben vier Praxisrollen wie
+      {/* AKTE-007, ANN-226: Der Anmeldebogen - das Foto des unterschriebenen
+          Blatts - steht bei den Kontaktdaten, die auf demselben Blatt stehen;
+          darunter die Einwilligungen. Dieselben vier Praxisrollen wie
           bisher der Bereich „Datenschutz"; verbindlich ist die RLS. */}
       {darfVerorten ? (
-        <div id={ANMELDEBOGEN_ANKER} className="mt-10 scroll-mt-4">
+        <>
+          <div id={ANMELDEBOGEN_ANKER} className="mt-10 scroll-mt-4">
+            <Anmeldebogen patient={patient} user={user} />
+          </div>
           <Datenschutz patient={patient} user={user} />
-        </div>
+        </>
       ) : null}
 
       <SonstigeDateien patientId={patient.id} user={user} />

@@ -7,6 +7,7 @@ import type * as DokumentationApi from '@/features/documentation/api';
 import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
 import { RUECKWEG_PARAM, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -63,6 +64,12 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
       fetchPatientTreatmentBasisSlots(id) as Promise<VerordnungenApi.TreatmentBasisKontingent[]>,
   };
 });
+
+const ladeDateiHoch = vi.fn();
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FilesApi>()),
+  ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
+}));
 
 vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
@@ -564,20 +571,38 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   // AKTE-007: Die Kachel „Erstaufnahme offen" ist einer Zeile gewichen, die
   // nur den Anmeldebogen kennt (ANN-224).
   describe('Hinweis „Anmeldebogen fehlt"', () => {
-    it('erscheint bei fehlendem Anmeldebogen und führt zum Anmeldebogen', async () => {
+    // ANN-226: Ein Tipp im Kopf, ein Foto - kein Umweg über die Stammdaten.
+    it('erscheint bei fehlendem Anmeldebogen und nimmt das Foto direkt auf', async () => {
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+      ladeDateiHoch.mockReset().mockResolvedValue('neu');
       fetchIntakeChecklist.mockResolvedValue([
         { item: 'prescription_photo', state: 'done' },
         { item: 'registration_form', state: 'open' },
       ]);
       akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
 
-      const zeile = (await screen.findByText(/Anmeldebogen fehlt/)).closest('p')!;
-      const erledigen = within(zeile).getByRole('link', { name: 'Erledigen' });
-      const ziel = new URL(erledigen.getAttribute('href')!, 'http://akte.test');
-      expect(ziel.pathname).toBe(STAMMDATEN);
-      expect(ziel.hash).toBe('#anmeldebogen');
-      expect(ziel.searchParams.get(RUECKWEG_PARAM)).toBe(`/patienten/${PATIENT_ID}/termine`);
+      const zeile = (await screen.findByText(/Anmeldebogen fehlt/)).parentElement!;
+      expect(within(zeile).getByRole('button', { name: 'Fotografieren' })).toBeInTheDocument();
+      expect(within(zeile).queryByRole('link')).toBeNull();
       expect(screen.queryByText('Erstaufnahme offen')).toBeNull();
+
+      const aufrufeVorher = fetchIntakeChecklist.mock.calls.length;
+      await user.upload(
+        within(zeile).getByLabelText('Anmeldebogen als Datei'),
+        new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], 'bogen.jpg', { type: 'image/jpeg' }),
+      );
+
+      await waitFor(() => expect(ladeDateiHoch).toHaveBeenCalledTimes(1));
+      expect(ladeDateiHoch.mock.calls[0]![0]).toMatchObject({
+        patientId: PATIENT_ID,
+        grundlageId: null,
+        documentType: 'vertrag',
+      });
+      // Die Erstaufnahme lädt neu - der Hinweis verschwindet ohne Neuladen.
+      await waitFor(() =>
+        expect(fetchIntakeChecklist.mock.calls.length).toBeGreaterThan(aufrufeVorher),
+      );
     });
 
     it('erscheint nicht bei fehlendem Verordnungsfoto', async () => {

@@ -11,8 +11,7 @@ import {
 } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Disclosure } from '@/components/ui/Card';
-import { Textlink } from '@/components/ui/Textlink';
-import { intakeItemTarget } from '@/features/open-points/intake-api';
+import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
 import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
 import { type TreatmentBasis } from '@/features/treatment-bases/api';
 import { useAktuelleGrundlage } from '@/features/treatment-bases/useAktuelleGrundlage';
@@ -153,7 +152,7 @@ function Aktenavigation({
 
 /**
  * „! Anmeldebogen fehlt" - eine Zeile im Kopf, solange der Anmeldebogen fehlt
- * (AKTE-007, ANN-224). Sie führt zum Anmeldebogen in den Stammdaten.
+ * (AKTE-007, ANN-224). Sie öffnet die Kamera für das Foto des Blatts (ANN-226).
  *
  * Bis AKTE-007 stand hier die Kachel „Erstaufnahme offen" mit allen offenen
  * Punkten. Jetzt zählt im Kopf nur der Anmeldebogen: Ein fehlendes
@@ -161,25 +160,18 @@ function Aktenavigation({
  * nicht aus - es ist Arbeit fürs Büro, kein Hinweis vor der Behandlung.
  */
 function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  const ort = useLocation();
   const offen = useOffeneErstaufnahme(patient.id, patient.status === 'active', user);
   if (!offen.includes('registration_form')) return null;
-  const hier = `${ort.pathname}${ort.search}`;
+  // ANN-226: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
+  // ohne Umweg über die Stammdaten.
   return (
-    <p className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
-      <span>
+    <div className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
+      <p>
         <span aria-hidden="true">! </span>
         {BEGRIFFE.anmeldebogen} fehlt
-      </span>
-      <Textlink
-        alleinstehend
-        className="gap-1"
-        to={mitRueckweg(intakeItemTarget(patient.id, 'registration_form'), hier)}
-      >
-        Erledigen
-        <span aria-hidden="true">→</span>
-      </Textlink>
-    </p>
+      </p>
+      <AnmeldebogenFoto patientId={patient.id} ausloeser="link" knopf="Fotografieren" />
+    </div>
   );
 }
 

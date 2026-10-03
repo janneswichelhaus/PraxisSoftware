@@ -1,10 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
-import { ButtonLink } from '@/components/ui/ButtonLink';
-import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
@@ -12,9 +9,9 @@ import { Section, Feldgruppe } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
-import { mitRueckweg } from '@/lib/rueckweg';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { AnmeldebogenDateien } from '@/features/files/Aktendateien';
+import { DokumentFoto } from '@/features/files/DokumentFoto';
 import { BEGRIFFE } from '@/lib/begriffe';
 import type { Patient } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
@@ -34,23 +31,73 @@ import {
 /**
  * Der Anmeldebogen in der Akte (PAT-006; seit AKTE-007 in den Stammdaten).
  *
- * Bis AKTE-007 ein eigener Bereich „Datenschutz". Datenschutzinformation und
- * Behandlungsvertrag stehen auf dem Anmeldebogen, zusammen mit den
- * Kontaktdaten (ANN-224); deshalb steht dieser Teil jetzt dort, wo die
- * Kontaktdaten stehen, und die alte Adresse leitet hierher.
+ * Seit 2026-10-03 (ANN-226) ist der Anmeldebogen ein Foto: Kontaktdaten,
+ * Datenschutzinformation und Behandlungsvertrag stehen auf einem Blatt, die
+ * Person unterschreibt es, die Praxis fotografiert es. Das Foto ist der
+ * Nachweis; die Vermerke „Datenschutzinformation ausgehändigt" und
+ * „Behandlungsvertrag unterschrieben" werden nicht mehr einzeln erfasst. Im
+ * Bestand zählen sie weiter (`app.intake_checklist`).
  *
- * Drei Fragen, die bei der Aufnahme und bei jeder Rückfrage einer Patientin
- * auftauchen: Hat sie die Datenschutzinformation bekommen — und welche
- * Fassung? Liegt der Behandlungsvertrag unterschrieben vor? Wozu hat sie
- * eingewilligt, und hat sie etwas widerrufen?
- *
- * Die Papiere selbst bleiben Papier (E-13). Die Seite hält nur fest, dass und
- * wann; ein Scan des unterschriebenen Blatts liegt direkt darunter.
- *
- * Schreiben dürfen die vier Praxisrollen — die Aufnahme macht oft das Büro.
- * Die Seite steht nur ihnen offen; verbindlich prüft der Server (ADR-004).
+ * Das Foto geht als Datei der Art `vertrag` in die Akte - organisatorisch,
+ * das Büro sieht sie (ADR-017 Punkt 12).
  */
+export function AnmeldebogenFoto({
+  patientId,
+  ausloeser = 'knopf',
+  knopf = `${BEGRIFFE.anmeldebogen} fotografieren`,
+}: {
+  patientId: string;
+  ausloeser?: 'knopf' | 'link';
+  knopf?: string;
+}) {
+  const queryClient = useQueryClient();
+  return (
+    <DokumentFoto
+      patientId={patientId}
+      documentType="vertrag"
+      anzeigename={BEGRIFFE.anmeldebogen}
+      knopf={knopf}
+      dateiLabel={`${BEGRIFFE.anmeldebogen} als Datei`}
+      kameraTitel={`Foto des ${BEGRIFFE.anmeldebogen}s`}
+      kameraHinweis="Das unterschriebene Blatt flach hinlegen und ganz ins Bild nehmen. Das Foto bleibt in der Anwendung und landet nicht in der Mediathek des Geräts."
+      vorschauAlt={`Foto des ${BEGRIFFE.anmeldebogen}s, noch nicht gespeichert`}
+      erfolg={`Der ${BEGRIFFE.anmeldebogen} liegt in der Akte.`}
+      // Ein Foto erledigt den Anmeldebogen der Erstaufnahme - der Hinweis im
+      // Kopf der Akte verschwindet ohne Neuladen (ANN-226).
+      onErfolg={() => void queryClient.invalidateQueries({ queryKey: ['open-points'] })}
+      sofort
+      ausloeser={ausloeser}
+    />
+  );
+}
 
+/** Der Abschnitt in den Stammdaten: das Foto und die Liste der Blätter. */
+export function Anmeldebogen({ patient, user }: { patient: Patient; user: CurrentUser }) {
+  return (
+    <Section
+      titel={BEGRIFFE.anmeldebogen}
+      hinweis="Das unterschriebene Blatt mit Kontaktdaten, Datenschutzinformation und Behandlungsvertrag. Ein Foto genügt."
+      rahmen
+    >
+      <AnmeldebogenFoto patientId={patient.id} />
+      {/* Die Trennlinie zieht der Aufklapper selbst. */}
+      <div className="mt-3 empty:hidden">
+        <AnmeldebogenDateien patientId={patient.id} user={user} />
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Einwilligungen (PAT-006): Wozu hat die Person eingewilligt, und hat sie
+ * etwas widerrufen? Freiwillig und über die Behandlung hinaus; die
+ * Fotoeinwilligung schaltet serverseitig die Foto-Arbeitshilfe frei
+ * (ADR-017 Punkt 35). Wo dieser Teil künftig steht, entscheidet die Runde
+ * zum Reiter Stammdaten.
+ *
+ * Schreiben dürfen die vier Praxisrollen; verbindlich prüft der Server
+ * (ADR-004).
+ */
 export function Datenschutz({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const vermerke = useQuery({
     queryKey: ['datenschutzvermerke', patient.id],
@@ -72,80 +119,10 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
 
   return (
     <>
-      <Unterlagen stand={stand} patientId={patient.id} user={user} />
       <Einwilligungen stand={stand} />
       <VermerkErfassen stand={stand} patientId={patient.id} zeitzone={user.organizationTimeZone} />
       <Verlauf vermerke={vermerke.data} />
     </>
-  );
-}
-
-function Unterlagen({
-  stand,
-  patientId,
-  user,
-}: {
-  stand: Datenschutzstand;
-  patientId: string;
-  user: CurrentUser;
-}) {
-  const ort = useLocation();
-  const info = stand.datenschutzinformation;
-  const veraltet = info !== null && info.fassung !== DATENSCHUTZINFORMATION_FASSUNG;
-
-  return (
-    <Section
-      titel={BEGRIFFE.anmeldebogen}
-      hinweis="Kontaktdaten, Datenschutzinformation und Behandlungsvertrag auf einem Blatt. Es bleibt Papier; hier steht, dass und wann es vorlag."
-      aktion={
-        // Die Blätter führen hierher zurück, samt dem Rückweg der Akte
-        // (PAT-08).
-        <ButtonLink
-          to={mitRueckweg(
-            `/patienten/${patientId}/aufnahmeblaetter`,
-            `${ort.pathname}${ort.search}`,
-          )}
-          variant="secondary"
-        >
-          Blätter zum Ausdrucken
-        </ButtonLink>
-      }
-      rahmen
-    >
-      <DetailList>
-        <DetailRow label="Datenschutzinformation">
-          {info ? (
-            <>
-              ausgehändigt am {formatDate(info.am)} · Fassung {info.fassung}
-              {/* Ein Zustand als Etikett mit Zeichen statt einer farbigen
-                  Zeile ohne (PAT-14, DS-001). */}
-              {veraltet ? (
-                <div className="mt-1">
-                  <Badge ton="warnung">
-                    Inzwischen gilt Fassung {DATENSCHUTZINFORMATION_FASSUNG}
-                  </Badge>
-                </div>
-              ) : null}
-            </>
-          ) : (
-            <span className="text-ink-muted">nicht vermerkt</span>
-          )}
-        </DetailRow>
-        <DetailRow label="Behandlungsvertrag">
-          {stand.behandlungsvertrag ? (
-            <>unterschrieben am {formatDate(stand.behandlungsvertrag.am)}</>
-          ) : (
-            <span className="text-ink-muted">nicht vermerkt</span>
-          )}
-        </DetailRow>
-      </DetailList>
-      {/* AKTE-007: Einwilligung und Vertrag als Datei stehen hier statt im
-          abgelösten Bereich „Dateien". */}
-      {/* Die Trennlinie zieht der Aufklapper selbst. */}
-      <div className="mt-3 empty:hidden">
-        <AnmeldebogenDateien patientId={patientId} user={user} />
-      </div>
-    </Section>
   );
 }
 
@@ -190,18 +167,9 @@ interface Vermerkoption {
 }
 
 function moeglicheVermerke(stand: Datenschutzstand): Vermerkoption[] {
-  const liste: Vermerkoption[] = [
-    {
-      wert: 'privacy_notice_handed_out',
-      label: 'Datenschutzinformation ausgehändigt',
-      zusammenfassung: `Datenschutzinformation ausgehändigt, Fassung ${DATENSCHUTZINFORMATION_FASSUNG}`,
-    },
-    {
-      wert: 'treatment_contract_signed',
-      label: 'Behandlungsvertrag unterschrieben',
-      zusammenfassung: 'Behandlungsvertrag unterschrieben',
-    },
-  ];
+  // Datenschutzinformation und Behandlungsvertrag belegt seit ANN-226 das
+  // Foto des Anmeldebogens - hier stehen nur noch die Einwilligungen.
+  const liste: Vermerkoption[] = [];
   function einwilligung(
     art: 'consent_granted' | 'consent_withdrawn' | 'consent_refused',
     zweck: Einwilligungszweck,
@@ -285,9 +253,6 @@ function VermerkErfassen({
       // damit kein zweiter Tipp denselben Vermerk noch einmal schreibt.
       setWert('');
       await queryClient.invalidateQueries({ queryKey: ['datenschutzvermerke', patientId] });
-      // Die beiden Vermerke erledigen den Anmeldebogen der Erstaufnahme - der
-      // Hinweis im Kopf der Akte verschwindet ohne Neuladen (AKTE-007).
-      await queryClient.invalidateQueries({ queryKey: ['open-points'] });
       // Ein Vermerk zur Fotoeinwilligung ändert, welche Fotos es gibt und ob
       // neue entstehen dürfen (ADR-017 Punkt 36).
       if (vermerk.zweck === 'patient_photos') {
@@ -312,11 +277,9 @@ function VermerkErfassen({
             // Die Fassung steht im Hinweis und nicht in der Auswahl: Bei 375 px
             // schnitt der geschlossene Zustand sie ab.
             hint={
-              gewaehlt?.wert === 'privacy_notice_handed_out'
-                ? `Vermerkt wird Fassung ${DATENSCHUTZINFORMATION_FASSUNG} – die auf den Blättern zum Ausdrucken.`
-                : fotoWiderruf
-                  ? 'Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht – außer eine Löschsperre hält sie; dann bleiben sie gesperrt bis zu ihrem Ende. Neue Fotos brauchen eine neue Einwilligung.'
-                  : undefined
+              fotoWiderruf
+                ? 'Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht – außer eine Löschsperre hält sie; dann bleiben sie gesperrt bis zu ihrem Ende. Neue Fotos brauchen eine neue Einwilligung.'
+                : undefined
             }
             value={gewaehlt?.wert ?? ''}
             onChange={(e) => {

@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { useQuery } from '@tanstack/react-query';
 import type * as VermerkeApi from './vermerke';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
@@ -64,20 +63,26 @@ describe('Datenschutz der Akte', () => {
     vermerkeSpeichern.mockResolvedValue(undefined);
   });
 
-  it('zeigt ohne Vermerk, dass nichts vorliegt', async () => {
+  it('zeigt ohne Vermerk, dass nichts erteilt ist', async () => {
     seite();
 
-    expect(await screen.findByText('Datenschutzinformation')).toBeInTheDocument();
-    expect(screen.getAllByText('nicht vermerkt')).toHaveLength(2);
     // Etiketten beginnen groß (WRT-16).
-    expect(screen.getAllByText('Nicht erteilt')).toHaveLength(3);
+    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(3);
     expect(screen.getByText('Fotos im Behandlungsverlauf')).toBeInTheDocument();
+  });
 
-    // Die Blätter führen hierher zurück (PAT-08).
-    const blaetter = screen.getByRole('link', { name: 'Blätter zum Ausdrucken' });
-    const ziel = new URL(blaetter.getAttribute('href') ?? '', 'http://akte.test');
-    expect(ziel.pathname).toBe(`/patienten/${PATIENT_ID}/aufnahmeblaetter`);
-    expect(ziel.searchParams.get('zurueck')).toBe(DATENSCHUTZ);
+  // ANN-226: Datenschutzinformation und Behandlungsvertrag belegt das Foto
+  // des Anmeldebogens - als Vermerk stehen sie nicht mehr zur Wahl.
+  it('bietet nur noch Einwilligungen zum Vermerken an', async () => {
+    seite();
+
+    const auswahl: HTMLSelectElement = await screen.findByLabelText('Was ist geschehen?');
+    const optionen = [...auswahl.options].map((o) => o.value);
+    expect(optionen).not.toContain('privacy_notice_handed_out');
+    expect(optionen).not.toContain('treatment_contract_signed');
+    expect(optionen).toContain('consent_granted:email_contact');
+    expect(screen.queryByText('Datenschutzinformation')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Blätter zum Ausdrucken' })).toBeNull();
   });
 
   it('bietet nach einer Erteilung den Widerruf an und nicht die zweite Erteilung', async () => {
@@ -111,7 +116,7 @@ describe('Datenschutz der Akte', () => {
     expect(auswahl).toHaveDisplayValue('Bitte wählen …');
     expect(screen.getByRole('button', { name: 'Vermerken' })).toBeDisabled();
 
-    await user.selectOptions(auswahl, 'treatment_contract_signed');
+    await user.selectOptions(auswahl, 'consent_granted:email_contact');
     expect(screen.getByRole('button', { name: 'Vermerken' })).toBeEnabled();
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
   });
@@ -123,10 +128,10 @@ describe('Datenschutz der Akte', () => {
     const datum = await screen.findByLabelText('Datum auf dem Papier');
     await user.clear(datum);
     await user.type(datum, '2026-09-15');
-    const kasten = await waehlenUndFragen(user, 'treatment_contract_signed');
+    const kasten = await waehlenUndFragen(user, 'consent_granted:email_contact');
 
     expect(kasten).toHaveTextContent(
-      'Vermerken: Behandlungsvertrag unterschrieben, 15.09.2026. Vermerke lassen sich nicht ändern.',
+      'Vermerken: Einwilligung erteilt – Kontakt per E-Mail, 15.09.2026. Vermerke lassen sich nicht ändern.',
     );
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
 
@@ -136,56 +141,31 @@ describe('Datenschutz der Akte', () => {
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
   });
 
-  it('vermerkt die Datenschutzinformation mit der aktuellen Fassung', async () => {
+  it('vermerkt eine Einwilligung mit Datum und ohne Fassung', async () => {
     const user = userEvent.setup();
     seite();
 
     const datum = await screen.findByLabelText('Datum auf dem Papier');
     await user.clear(datum);
     await user.type(datum, '2026-09-15');
-    await vermerken(user, 'privacy_notice_handed_out');
+    await vermerken(user, 'consent_granted:email_contact');
 
     await waitFor(() =>
       expect(vermerkeSpeichern).toHaveBeenCalledWith({
         patientId: PATIENT_ID,
-        art: 'privacy_notice_handed_out',
-        fassung: '2026-09',
+        art: 'consent_granted',
+        zweck: 'email_contact',
         datum: '2026-09-15',
       }),
     );
     // Eine Bestätigung als Erfolg mit Zeichen (UIK-21).
     const meldung = await screen.findByRole('status', {
       name: (_name, element) =>
-        element.textContent?.includes('Vermerkt: Datenschutzinformation ausgehändigt.') ?? false,
+        element.textContent?.includes('Vermerkt: Einwilligung erteilt.') ?? false,
     });
     expect(meldung).toHaveTextContent('✓');
     // Danach steht die Auswahl wieder auf „Bitte wählen".
     expect(screen.getByLabelText('Was ist geschehen?')).toHaveValue('');
-  });
-
-  // AKTE-007: Der Hinweis „Anmeldebogen fehlt" im Kopf liest die Erstaufnahme.
-  // Nach einem Vermerk lädt sie neu, sonst stünde der Hinweis bis zum
-  // nächsten Aufruf der Akte.
-  it('lädt nach einem Vermerk die Erstaufnahme neu', async () => {
-    const user = userEvent.setup();
-    const erstaufnahme = vi.fn().mockResolvedValue([]);
-    function Kopf() {
-      useQuery({ queryKey: ['open-points', 'intake', PATIENT_ID], queryFn: erstaufnahme });
-      return null;
-    }
-    fetchDatenschutzvermerke.mockResolvedValue([]);
-    renderWithProviders(
-      <>
-        <Kopf />
-        <Datenschutz patient={testPatient({ id: PATIENT_ID })} user={testUser(['office'])} />
-      </>,
-      DATENSCHUTZ,
-    );
-    await waitFor(() => expect(erstaufnahme).toHaveBeenCalledTimes(1));
-
-    await vermerken(user, 'treatment_contract_signed');
-
-    await waitFor(() => expect(erstaufnahme).toHaveBeenCalledTimes(2));
   });
 
   it('gibt einen Widerruf mit Zweck und ohne Fassung weiter', async () => {
@@ -284,7 +264,7 @@ describe('Datenschutz der Akte', () => {
     vermerkeSpeichern.mockRejectedValue(new Error('Das Datum darf nicht in der Zukunft liegen.'));
     seite();
 
-    const kasten = await vermerken(user, 'treatment_contract_signed');
+    const kasten = await vermerken(user, 'consent_granted:email_contact');
 
     expect(await within(kasten).findByRole('alert')).toHaveTextContent(
       'Das Datum darf nicht in der Zukunft liegen.',
@@ -292,23 +272,6 @@ describe('Datenschutz der Akte', () => {
     // Der Kasten bleibt offen, nichts ist vermerkt.
     expect(screen.getByRole('group', { name: 'Vermerken' })).toBeInTheDocument();
     expect(screen.queryByText(/^Vermerkt:/)).not.toBeInTheDocument();
-  });
-
-  it('weist auf eine veraltete Fassung hin', async () => {
-    seite([
-      {
-        id: 'v1',
-        record_kind: 'privacy_notice_handed_out',
-        purpose: null,
-        notice_version: '2025-01',
-        occurred_on: '2025-01-10',
-        recorded_at: '2025-01-10T08:00:00Z',
-      },
-    ]);
-
-    // Als Etikett mit Zeichen statt einer farbigen Zeile (PAT-14).
-    const etikett = await screen.findByText('Inzwischen gilt Fassung 2026-09');
-    expect(etikett).toHaveTextContent('!');
   });
 
   it('bietet nach einem Ladefehler einen neuen Versuch an', async () => {
@@ -329,7 +292,7 @@ describe('Datenschutz der Akte', () => {
 
   it('besteht die Barrierefreiheitspruefung', async () => {
     const { container } = seite();
-    await screen.findByText('Datenschutzinformation');
+    await screen.findByText('Fotos im Behandlungsverlauf');
     await pruefeBarrierefreiheit(container);
   });
 });

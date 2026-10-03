@@ -105,15 +105,22 @@ describe('Stammdaten der Akte', () => {
 
   describe('Anmeldebogen und Dateien (AKTE-007)', () => {
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-      'zeigt %s den Anmeldebogen samt Einwilligungen unter einem Anker',
+      'zeigt %s den Anmeldebogen als Foto unter einem Anker, die Einwilligungen darunter',
       async (role) => {
+        Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
         renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
 
         const titel = await screen.findByRole('heading', { name: 'Anmeldebogen' });
-        expect(titel.closest('#anmeldebogen')).not.toBeNull();
-        expect(screen.getByRole('heading', { name: 'Einwilligungen' })).toBeInTheDocument();
-        expect(screen.getByText('Datenschutzinformation')).toBeInTheDocument();
-        expect(screen.getByText('Behandlungsvertrag')).toBeInTheDocument();
+        const anker = titel.closest('#anmeldebogen');
+        expect(anker).not.toBeNull();
+        expect(
+          within(anker as HTMLElement).getByLabelText('Anmeldebogen als Datei'),
+        ).toBeInTheDocument();
+        // ANN-226: keine Einzelvermerke mehr für Datenschutzinformation und Vertrag.
+        expect(screen.queryByText('Datenschutzinformation')).toBeNull();
+        expect(screen.queryByText('Behandlungsvertrag')).toBeNull();
+        const einwilligungen = await screen.findByRole('heading', { name: 'Einwilligungen' });
+        expect(einwilligungen.closest('#anmeldebogen')).toBeNull();
       },
     );
 

@@ -60,6 +60,20 @@ async function vermerk(art: string): Promise<void> {
   );
 }
 
+let dateiNr = 0;
+
+async function datei(art: string, status: 'ready' | 'pending' = 'ready'): Promise<void> {
+  dateiNr += 1;
+  await asPostgres(
+    `insert into public.patient_files
+       (organization_id, patient_id, document_type, display_name, mime_type, byte_size,
+        checksum_sha256, status, confirmed_at)
+     values ($1::uuid, $2::uuid, $3, 'Anmeldebogen', 'image/jpeg', 10, $4, $5,
+             case when $5 = 'ready' then now() end)`,
+    [organizationId, LENA, art, String(dateiNr).padStart(64, 'e'), status],
+  );
+}
+
 async function grundlage(art: 'first' | 'self_pay'): Promise<void> {
   await asPostgres(
     `insert into public.treatment_bases
@@ -87,7 +101,16 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     ]);
   });
 
-  it('verlangt fuer den Anmeldebogen Datenschutzinformation und Behandlungsvertrag', async () => {
+  it('erledigt den Anmeldebogen mit seinem Foto (ANN-226)', async () => {
+    await datei('vertrag', 'pending');
+    expect((await checkliste()).registration_form).toBe('open');
+    await datei('einwilligung');
+    expect((await checkliste()).registration_form).toBe('open');
+    await datei('vertrag');
+    expect((await checkliste()).registration_form).toBe('done');
+  });
+
+  it('laesst den Bestand mit beiden Vermerken erledigt (ANN-224)', async () => {
     await vermerk('privacy_notice_handed_out');
     expect((await checkliste()).registration_form).toBe('open');
     await vermerk('treatment_contract_signed');

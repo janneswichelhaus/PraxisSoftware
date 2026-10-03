@@ -2713,3 +2713,16 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Übersicht · Tag
 
 **Änderungspfad.** Direkt auf die Schreibseite: das Ziel `doku` in `MyDayPage.tsx` · Aufwand `klein`. In der Akte schreiben: ein Formular in `DieserTermin` mit eigenem Verlustschutz · Aufwand `mittel`.
 
+### ANN-226 — Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: Anmeldebogen per Foto) · erledigt · Wiedervorlage: wenn der eigene Anmeldebogen gestaltet ist (`IDEA-PRX-054`)
+
+**Annahme.** Der Papier-Anmeldebogen trägt Kontaktdaten, Datenschutzinformation und die Unterschrift unter den Behandlungsvertrag. Das Foto des unterschriebenen Blatts ist der Nachweis für beides. Es geht als Datei der Art `vertrag` (organisatorisch, das Büro sieht sie) mit dem Anzeigenamen „Anmeldebogen, Foto vom …“ in die Akte, ohne Vorschau und ohne zweiten Tipp: Das „Foto verwenden“ im Kameradialog ist die Bestätigung. Aufgenommen wird es direkt aus der Zeile „! Anmeldebogen fehlt“ im Kopf der Akte („Fotografieren“) oder im Abschnitt Anmeldebogen der Stammdaten; ohne Kamera öffnet sich der Dateiwähler. Die Vermerke „Datenschutzinformation ausgehändigt“ und „Behandlungsvertrag unterschrieben“ werden nicht mehr einzeln erfasst; im Bestand erledigen sie den Punkt weiter. Die Einwilligungen (Mail, Bericht, Fotos) bleiben als eigener Abschnitt in den Stammdaten, bis die Runde zum Reiter Stammdaten über ihren Platz entscheidet. Die Fotoeinwilligung schaltet serverseitig die Foto-Arbeitshilfe frei und muss deshalb erfassbar bleiben.
+
+**Begründung.** Jannes (2026-10-03): „Wenn man auf Anmeldebogen tippt, soll man direkt ein Foto machen können, ähnlich wie bei Verordnung. Datenschutzinformation und Behandlungsvertrag kann also weg.“ Keine neue Dokumentart: `vertrag` trägt den Behandlungsvertrag schon heute und ist organisatorisch klassifiziert. Eine neue Art hätte Katalog, Fristen und Rollenschnitt berührt, ohne dass sich am Inhalt etwas ändert. Unsicher ist zweierlei. Erstens, ob die Fassung der Datenschutzinformation am Foto ablesbar bleibt, wenn das Blatt sich ändert. Zweitens, ob ein anderer hochgeladener Vertrag den Punkt fälschlich erledigt.
+
+**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261004120000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/datenschutz/Anmeldebogen.test.tsx`.
+
+**Änderungspfad.** Eigene Dokumentart `anmeldebogen`: Katalogeintrag, `dokumentarten.ts` und die Bedingung in `app.intake_checklist` · Aufwand `klein`. Wieder mit Vermerken: die Optionen in `moeglicheVermerke` · Aufwand `klein`.
+
+**Ablösung.** ersetzt ANN-224 in der Bedingung für den Anmeldebogen.
