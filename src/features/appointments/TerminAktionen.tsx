@@ -870,8 +870,9 @@ function StatusAktion({
  * Bis dahin hatte jeder Termin eine eigene Seite (`/termine/:id`). Jannes:
  * „Ein Termin soll keine eigene Unterseite bekommen" - was an ihr zu tun war,
  * steht jetzt hier, geöffnet aus dem Terminpanel des Kalenders („Aktionen").
- * Haken und „Doku" bleiben im Panel selbst; das Fenster trägt den Rest:
- * ändern, nicht angetroffen, wieder öffnen, auf die Gebühr verzichten,
+ * Das Fenster trägt alles, was dort stand: Haken und „Doku" (im Panel stehen
+ * sie nur am eigenen Termin, das Büro braucht sie auch an fremden), ändern,
+ * nicht angetroffen, wieder öffnen, auf die Gebühr verzichten,
  * Folgetermin, Mitteilung, Heilmittel, Verordnungsfoto, Nachrücken und die
  * Absagen. Jede Aktion ist dieselbe wie vorher, mit derselben Rückfrage;
  * verbindlich prüfen die Serverfunktionen (ADR-018, ADR-004).

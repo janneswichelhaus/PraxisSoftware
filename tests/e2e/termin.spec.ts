@@ -97,13 +97,15 @@ test.describe('Termin: Anordnung nach dem Design-Handoff', () => {
   test('am Hausbesuch: Handlungen in der Auswahl, die Absage leise am Ende', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=hausbesuch`);
-    // Haken und „Doku" stehen im Terminpanel; hier „Niemand öffnet?" und
-    // „Ohne Behandlung" (Akte entschlacken, 2026-10-03).
+    // Der Haken steht genau einmal in der Auswahl - im Panel nur am eigenen
+    // Termin, das Büro braucht ihn auch hier; dazu „Niemand öffnet?" (Akte
+    // entschlacken, 2026-10-03).
     const auswahl = page.getByRole('group', { name: 'Aktionen' });
     const niemand = auswahl.getByRole('button', { name: 'Niemand öffnet?' });
     await expect(niemand).toBeVisible();
     expect((await niemand.boundingBox())!.height).toBeGreaterThanOrEqual(44);
-    await expect(page.getByRole('button', { name: 'Termin abschließen' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Termin abschließen' })).toHaveCount(1);
+    await expect(auswahl.getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
     const absage = page.getByRole('button', { name: 'Termin absagen' });
     await absage.scrollIntoViewIfNeeded();
     const oben = (await auswahl.boundingBox())!;
