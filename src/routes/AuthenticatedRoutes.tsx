@@ -22,6 +22,7 @@ import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
+import { PatientBefundSeite } from '@/features/assessments/PatientBefundPage';
 import { PatientDokuPage } from '@/features/documentation/PatientDokuPage';
 import { ErhebungPage } from '@/features/assessments/ErhebungPage';
 import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
@@ -210,6 +211,7 @@ export function AuthenticatedRoutes({
                     ) : null}
                     <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
                     <Route path="doku" element={<PatientDokuPage />} />
+                    <Route path="doku/befund" element={<PatientBefundSeite />} />
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
                     {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
                       <Route

@@ -21,7 +21,7 @@ import {
   isOwner,
   type CurrentUser,
 } from '@/features/session/types';
-import { ANMELDEBOGEN_ANKER, usePatientRecord } from './akte';
+import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
 import { Anmeldebogen, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
 import { SonstigeDateien } from '@/features/files/Aktendateien';
 import { AdresseVerorten } from './AdresseVerorten';
@@ -252,9 +252,11 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
 
   // Wer über „Erledigen" oder die alte Adresse `/datenschutz` kommt, landet
   // beim Anmeldebogen (AKTE-007). Der Router rollt nicht von selbst zum Anker.
+  // Ebenso „Zu den Einwilligungen" aus dem Fenster „Foto aufnehmen".
   useEffect(() => {
-    if (ort.hash !== `#${ANMELDEBOGEN_ANKER}`) return;
-    document.getElementById(ANMELDEBOGEN_ANKER)?.scrollIntoView?.({ block: 'start' });
+    const anker = ort.hash.slice(1);
+    if (anker !== ANMELDEBOGEN_ANKER && anker !== EINWILLIGUNGEN_ANKER) return;
+    document.getElementById(anker)?.scrollIntoView?.({ block: 'start' });
   }, [ort.hash]);
 
   return (
@@ -434,7 +436,9 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           <div id={ANMELDEBOGEN_ANKER} className="mt-10 scroll-mt-4">
             <Anmeldebogen patient={patient} user={user} />
           </div>
-          <Datenschutz patient={patient} user={user} />
+          <div id={EINWILLIGUNGEN_ANKER} className="scroll-mt-4">
+            <Datenschutz patient={patient} user={user} />
+          </div>
         </>
       ) : null}
 

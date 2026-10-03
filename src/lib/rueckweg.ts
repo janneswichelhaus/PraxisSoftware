@@ -115,6 +115,7 @@ export function rueckwegBeschriftung(pfad: string): string {
     if (ohneSuche.endsWith('/verordnungen')) return 'Zurück zu den Behandlungsgrundlagen';
     // AKTE-007: `/verlauf` und `/befund` sind die Doku; die alten Adressen
     // leiten weiter und heißen deshalb wie das Ziel.
+    if (ohneSuche.endsWith('/doku/befund')) return 'Zurück zum Befund';
     if (/\/(doku|verlauf|befund)$/.test(ohneSuche)) return 'Zurück zur Doku';
     if (/\/(stammdaten|datenschutz|dateien)$/.test(ohneSuche)) return 'Zurück zu den Stammdaten';
     if (ohneSuche.endsWith('/terminzettel')) return 'Zurück zum Terminzettel';

@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -87,7 +89,14 @@ function nachMonat(
  * „Abgeschlossen", „Dokumentiert" sind in einer Dokumentationsliste der
  * Regelfall und sagen nichts.
  */
-function TerminKopf({ termin }: { termin: RecordAppointment }) {
+function TerminKopf({
+  termin,
+  ohneDatum = false,
+}: {
+  termin: RecordAppointment;
+  /** Im Lese-Fenster steht das Datum schon im Titel. */
+  ohneDatum?: boolean;
+}) {
   const zone = termin.organization_time_zone;
   const ausgefallen =
     termin.appointment_status === 'cancelled' || termin.appointment_status === 'no_show';
@@ -97,9 +106,11 @@ function TerminKopf({ termin }: { termin: RecordAppointment }) {
         {/* 15 px in 600 (Design-Handoff 2026-10-01, Abschnitt 7): Das Datum
             ist der Kopf der Karte, keine Seitenüberschrift. Kein Link mehr -
             der Termin hat keine eigene Seite (Akte entschlacken, 2026-10-03). */}
-        <span className="text-ink text-liste font-semibold">
-          {kurzesDatum(termin.starts_at, zone)}
-        </span>
+        {ohneDatum ? null : (
+          <span className="text-ink text-liste font-semibold">
+            {kurzesDatum(termin.starts_at, zone)}
+          </span>
+        )}
         {ausgefallen ? (
           <Badge ton={appointmentStatusTon[termin.appointment_status]}>
             {appointmentStatusLabels[termin.appointment_status]}
@@ -117,6 +128,70 @@ function TerminKopf({ termin }: { termin: RecordAppointment }) {
           .join(' · ')}
       </p>
     </>
+  );
+}
+
+/**
+ * „5 Einträge" - gezählt wird, was geladen ist. Gibt es ältere Seiten, steht
+ * „mehr als": Eine eigene Zählabfrage vorab wäre ein zweiter Lesezugriff auf
+ * die klinische Sicht (ADR-010) für eine Zahl.
+ */
+function eintraegeText(anzahl: number, mehr: boolean): string {
+  if (mehr) return `Mehr als ${anzahl} Einträge`;
+  return anzahl === 1 ? '1 Eintrag' : `${anzahl} Einträge`;
+}
+
+/**
+ * Eine Zeile der Doku (Akte entschlacken, 2026-10-03): Datum, Zeit und
+ * behandelnde Person, darunter der Eintrag in zwei Zeilen. Ein Tipp öffnet
+ * das Lese-Fenster mit dem vollen Text und den Wegen zu Nachtrag und
+ * Korrektur.
+ */
+function DokuZeile({
+  termin,
+  onOeffnen,
+}: {
+  termin: RecordAppointment & { notes: TreatmentNote[] };
+  onOeffnen: () => void;
+}) {
+  const zone = termin.organization_time_zone;
+  const haupt = termin.notes.find((n) => n.addendum_to_note_id === null) ?? termin.notes[0];
+  const ausgefallen =
+    termin.appointment_status === 'cancelled' || termin.appointment_status === 'no_show';
+  const entwurf = termin.notes.some((n) => n.status === 'draft');
+  return (
+    <button
+      type="button"
+      onClick={onOeffnen}
+      className="hover:bg-surface-sunken flex w-full items-start gap-3 px-4 py-3 text-left transition-colors focus-visible:-outline-offset-2"
+    >
+      <span className="min-w-0 flex-1">
+        <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-ink text-base font-semibold tabular-nums">
+            {kurzesDatum(termin.starts_at, zone)}
+          </span>
+          <span className="text-ink-muted text-sm">
+            {[formatLocalTimeRange(termin.starts_at, termin.ends_at, zone), staffName(termin)].join(
+              ' · ',
+            )}
+          </span>
+          {ausgefallen ? (
+            <Badge ton={appointmentStatusTon[termin.appointment_status]}>
+              {appointmentStatusLabels[termin.appointment_status]}
+            </Badge>
+          ) : null}
+          {entwurf ? <Badge ton="warnung">Entwurf</Badge> : null}
+        </span>
+        <span
+          className={`text-liste mt-1 line-clamp-2 block leading-snug ${haupt ? 'text-ink' : 'text-ink-muted'} ${FREITEXT}`}
+        >
+          {haupt ? haupt.content : 'Keine Dokumentation.'}
+        </span>
+      </span>
+      <span aria-hidden="true" className="text-accent mt-0.5 text-lg leading-none">
+        →
+      </span>
+    </button>
   );
 }
 
@@ -199,6 +274,7 @@ function AkteEintrag({
   rueckweg,
   fristTage,
   darfSchreiben,
+  ohneWeiterschreiben = false,
 }: {
   termin: RecordAppointment;
   note: TreatmentNote;
@@ -208,6 +284,8 @@ function AkteEintrag({
   fristTage: number | undefined;
   /** Darf die Rolle dokumentieren (canWriteTreatmentNote)? Verbindlich prüft der Server. */
   darfSchreiben: boolean;
+  /** „Dieser Termin" trägt seinen eigenen Knopf zum Weiterschreiben. */
+  ohneWeiterschreiben?: boolean;
 }) {
   const frist = fristDatum(termin.starts_at, termin.organization_time_zone, fristTage);
   const istNachtrag = note.addendum_to_note_id !== null;
@@ -248,8 +326,23 @@ function AkteEintrag({
           : null}
       </p>
 
-      {(darfSchreiben && final) || note.version_count > 0 ? (
+      {darfSchreiben || note.version_count > 0 ? (
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Ein Entwurf wird auf der Schreibseite weitergeschrieben (UX-009). */}
+          {darfSchreiben && !final && !(ohneWeiterschreiben && !istNachtrag) ? (
+            <ButtonLink
+              to={mitRueckweg(
+                istNachtrag
+                  ? `/termine/${termin.appointment_id}/dokumentation/${note.id}/bearbeiten`
+                  : `/termine/${termin.appointment_id}/abschluss`,
+                rueckweg,
+              )}
+              variant="secondary"
+              groesse="kompakt"
+            >
+              {istNachtrag ? 'Nachtrag bearbeiten' : 'Weiterschreiben'}
+            </ButtonLink>
+          ) : null}
           {/* Ergänzen ist der Regelfall, Ändern die Ausnahme (ADR-016 Punkt 6):
               der Nachtrag vorn, die Korrektur leise dahinter (DOK-14). Zu
               einem Nachtrag gibt es keinen weiteren. */}
@@ -338,45 +431,49 @@ function Behandlungsdokumentation({
   );
   const verlauf = `/patienten/${patient.id}/doku`;
   const monate = nachMonat(termine);
-  // Die Sprungleiste lohnt erst ab zwei Monaten (Abschnitt 7). Sie kennt nur,
-  // was geladen ist; ältere Monate kommen mit „Ältere Termine anzeigen" dazu.
+  // Die Monats-Chips lohnen erst ab zwei Monaten (Abschnitt 7). Sie kennen
+  // nur, was geladen ist; ältere Monate kommen mit „Ältere Termine anzeigen".
   const mitLeiste = monate.length >= 2;
+  // Das Lese-Fenster hält die Kennung, nicht den Termin: Nach einem Nachladen
+  // zeigt es den frischen Stand.
+  const [offen, setOffen] = useState<string | null>(null);
+  const offenerTermin = offen ? (termine.find((t) => t.appointment_id === offen) ?? null) : null;
 
   return (
     // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
     // Überschrift kommt aus `Section` wie überall sonst (UIK-20, TOK-05).
-    <div role="region" aria-label="Behandlungsdokumentation" className="mt-8">
+    <div role="region" aria-label="Behandlungsdokumentation">
       {/* Der Hinweis auf das Protokoll steht wieder unter der Überschrift: Der
           Design-Handoff vom 2026-10-01 behält ihn ausdrücklich (Abschnitt 1,
           Entscheidung Jannes), nachdem UX-005e ihn gestrichen hatte. Er steht
           vor dem Lesen, nicht danach. */}
       <Section
         titel="Behandlungsdokumentation"
-        hinweis={mitLeiste ? undefined : 'Jeder gelesene Eintrag wird protokolliert.'}
+        hinweis="Jeder gelesene Eintrag wird protokolliert."
+        aktion={
+          seiten.data && termine.length > 0 ? (
+            <span className="text-ink-muted text-sm">
+              {eintraegeText(termine.length, Boolean(seiten.hasNextPage))}
+            </span>
+          ) : undefined
+        }
       >
-        {/* Sprungleiste (Design-Handoff 2026-10-01, Abschnitt 7): bleibt beim
-            Scrollen oben stehen, je Monat ein Ziel; der Hinweis auf das
-            Protokoll steht dann hier statt unter der Überschrift. */}
+        {/* Monats-Chips (Akte entschlacken, 2026-10-03): bleiben beim Scrollen
+            oben stehen, je Monat ein Ziel. */}
         {mitLeiste ? (
           <nav
             aria-label="Springen zu"
-            className="bg-canvas sticky top-14 z-10 -mx-1 mb-3 flex items-center gap-x-2 gap-y-1 overflow-x-auto px-1 py-2 sm:flex-wrap"
+            className="bg-canvas sticky top-14 z-10 -mx-1 mb-3 flex gap-2 overflow-x-auto px-1 py-2 sm:flex-wrap"
           >
-            <span className="text-ink-muted tracking-label shrink-0 text-xs font-semibold whitespace-nowrap uppercase">
-              Springen zu
-            </span>
             {monate.map((monat) => (
               <a
                 key={monat.schluessel}
                 href={`#monat-${monat.schluessel}`}
-                className="border-line-strong text-accent hover:bg-accent-soft rounded-pill inline-flex min-h-11 shrink-0 items-center border px-3 text-sm font-semibold whitespace-nowrap transition-colors"
+                className="border-line-strong text-ink hover:bg-accent-soft rounded-pill inline-flex min-h-11 shrink-0 items-center border px-4 text-sm font-semibold whitespace-nowrap transition-colors"
               >
                 {monat.titel}
               </a>
             ))}
-            <span className="text-ink-muted ml-auto shrink-0 text-[13px] whitespace-nowrap">
-              Lesen wird protokolliert
-            </span>
           </nav>
         ) : null}
         {seiten.isPending ? <LoadingState label="Dokumentation wird geladen …" /> : null}
@@ -393,50 +490,63 @@ function Behandlungsdokumentation({
           <EmptyState title="Noch kein Eintrag." inKarte />
         ) : null}
 
-        {/* Nach Monat gruppiert (Abschnitt 7); je Termin eine Karte (BEF-078). */}
+        {/* Nach Monat gruppiert; je Termin eine Zeile, ein Tipp öffnet den
+            Eintrag im Lese-Fenster (Akte entschlacken, 2026-10-03). */}
         {monate.map((monat) => (
           <section
             key={monat.schluessel}
             id={`monat-${monat.schluessel}`}
             aria-labelledby={`monat-titel-${monat.schluessel}`}
-            // Die Sprungleiste steht beim Ziel noch oben - der Titel darunter.
+            // Die Chips stehen beim Ziel noch oben - der Titel darunter.
             className="mt-5 scroll-mt-32 first-of-type:mt-0"
           >
             <h3
               id={`monat-titel-${monat.schluessel}`}
-              className="text-ink-muted tracking-label mb-2 text-xs font-semibold uppercase"
+              className="text-accent text-h4 mb-2 font-bold"
             >
               {monat.titel}
             </h3>
-            <ol className="flex flex-col gap-3">
+            <ol className="border-line bg-surface rounded-card overflow-hidden border">
               {monat.termine.map((termin) => (
                 <li
                   key={termin.appointment_id}
                   data-termin={termin.appointment_id}
-                  // Innen 14/16 (Design-Handoff 2026-10-01, Abschnitt 7).
-                  className="border-line bg-surface rounded-card border px-4 py-3.5"
+                  className="border-line border-t first:border-t-0"
                 >
-                  <TerminKopf termin={termin} />
-
-                  {termin.notes.length === 0 ? (
-                    <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
-                  ) : (
-                    termin.notes.map((note) => (
-                      <AkteEintrag
-                        key={note.id}
-                        termin={termin}
-                        note={note}
-                        rueckweg={verlauf}
-                        fristTage={fristTage}
-                        darfSchreiben={canWriteTreatmentNote(user.roles)}
-                      />
-                    ))
-                  )}
+                  <DokuZeile termin={termin} onOeffnen={() => setOffen(termin.appointment_id)} />
                 </li>
               ))}
             </ol>
           </section>
         ))}
+
+        {offenerTermin ? (
+          <Dialogfenster
+            titel={kurzesDatum(offenerTermin.starts_at, offenerTermin.organization_time_zone)}
+            onSchliessen={() => setOffen(null)}
+          >
+            <TerminKopf termin={offenerTermin} ohneDatum />
+            {offenerTermin.notes.length === 0 ? (
+              <p className="text-ink-muted text-liste mt-2">Keine Dokumentation.</p>
+            ) : (
+              offenerTermin.notes.map((note) => (
+                <AkteEintrag
+                  key={note.id}
+                  termin={offenerTermin}
+                  note={note}
+                  rueckweg={verlauf}
+                  fristTage={fristTage}
+                  darfSchreiben={canWriteTreatmentNote(user.roles)}
+                />
+              ))
+            )}
+            <div className="border-line mt-5 flex justify-end border-t pt-4">
+              <Button type="button" variant="secondary" onClick={() => setOffen(null)}>
+                Schließen
+              </Button>
+            </div>
+          </Dialogfenster>
+        ) : null}
 
         <WeitereSeite
           sichtbar={Boolean(seiten.hasNextPage)}
@@ -580,6 +690,7 @@ export function DieserTermin({
             rueckweg={hier}
             fristTage={fristTage}
             darfSchreiben={canWriteTreatmentNote(user.roles)}
+            ohneWeiterschreiben
           />
         ))}
         {schreiben ? (

@@ -124,6 +124,7 @@ function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
         <Route path="termine" element={<PatientAppointmentsPage />} />
         <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
         <Route path="doku" element={<PatientDokuPage />} />
+        <Route path="doku/befund" element={<p>Befund-Seite</p>} />
         <Route path="stammdaten" element={<PatientMasterDataPage />} />
         {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
           <Route
@@ -306,7 +307,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
 
     it.each([
       ['verlauf', '/doku', ''],
-      ['befund', '/doku', ''],
+      ['befund', '/doku', '/befund'],
       ['datenschutz', '/stammdaten', '#anmeldebogen'],
       ['dateien', '/stammdaten', ''],
     ])('leitet die alte Adresse /%s weiter - samt Rückweg (AKTE-007)', async (alt, ziel, anker) => {

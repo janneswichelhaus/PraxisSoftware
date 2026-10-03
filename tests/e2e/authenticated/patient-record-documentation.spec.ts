@@ -80,15 +80,19 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     // Die Zeile genau dieses Termins - andere Laeufe hinterlassen weitere.
     const zeile = akte.locator(`li[data-termin="${terminId}"]`);
     await expect(zeile.getByText(ENTWURF)).toBeVisible();
-    // UX-005e: In der Akte traegt der finalisierte Eintrag kein Etikett; die
+    // Die Zeile oeffnet das Lese-Fenster (Akte entschlacken, 2026-10-03).
+    // UX-005e: Der finalisierte Eintrag traegt kein Etikett „Finalisiert"; die
     // Herkunftszeile nennt die Finalisierung kurz und ohne die behandelnde
     // Person (Anna hat selbst finalisiert).
-    await expect(zeile.getByText('✓Finalisiert', { exact: true })).toHaveCount(0);
-    await expect(zeile.getByText(/^Finalisiert \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/)).toBeVisible();
-    await expect(zeile.getByRole('link', { name: 'Änderungsverlauf' })).toBeVisible();
-    // Gelesen wird in der Akte, geschrieben am Termin.
-    await expect(akte.getByRole('link', { name: 'Korrigieren' })).toHaveCount(0);
-    await expect(akte.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
+    await zeile.getByRole('button').click();
+    const fenster = page.getByRole('dialog');
+    await expect(fenster.getByText('✓Finalisiert', { exact: true })).toHaveCount(0);
+    await expect(fenster.getByText(/^Finalisiert \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/)).toBeVisible();
+    await expect(fenster.getByRole('link', { name: 'Änderungsverlauf' })).toBeVisible();
+    // Nachtrag und Korrektur stehen seit dem Wegfall der Terminseite hier.
+    await expect(fenster.getByRole('link', { name: 'Korrigieren' })).toBeVisible();
+    await expect(fenster.getByRole('button', { name: 'Finalisieren' })).toHaveCount(0);
+    await fenster.getByRole('button', { name: 'Schließen' }).click();
 
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
@@ -103,7 +107,11 @@ test.describe('DOK-003, ROL-001: Dokumentation in der Akte', () => {
     await expect(page.getByRole('region', { name: 'Behandlungsnachweis' })).toHaveCount(0);
 
     // Der Aenderungsverlauf ist ein Lesepfad und steht office offen.
-    await officeZeile.getByRole('link', { name: 'Änderungsverlauf' }).click();
+    await officeZeile.getByRole('button').click();
+    await expect(page.getByRole('dialog').getByRole('link', { name: 'Korrigieren' })).toHaveCount(
+      0,
+    );
+    await page.getByRole('dialog').getByRole('link', { name: 'Änderungsverlauf' }).click();
     await expect(page.getByLabel('Version 1')).toBeVisible();
 
     // Am Termin: lesen ja, schreiben nein (PROJECT_PRINCIPLES.md 4.3).

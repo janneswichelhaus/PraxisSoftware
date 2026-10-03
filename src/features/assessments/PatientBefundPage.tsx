@@ -5,6 +5,8 @@ import { Card, Disclosure } from '@/components/ui/Card';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
+import { Textlink } from '@/components/ui/Textlink';
+import { usePatientRecord } from '@/features/patients/akte';
 import { formatDate } from '@/lib/datum';
 import { todayInTimeZone } from '@/features/appointments/api';
 import type { Patient } from '@/features/patients/api';
@@ -339,5 +341,21 @@ function FremdeInstrumente({
         })}
       </ul>
     </Section>
+  );
+}
+
+/**
+ * Die Befund-Seite in der Akte (`doku/befund`, Akte entschlacken, 2026-10-03):
+ * Bögen, Liege und Messverlauf, erreicht über die Befund-Karte der Doku.
+ */
+export function PatientBefundSeite() {
+  const { patient, user } = usePatientRecord();
+  return (
+    <>
+      <Textlink alleinstehend to={`/patienten/${patient.id}/doku`} className="mb-4 gap-1">
+        <span aria-hidden="true">←</span> Zur Doku
+      </Textlink>
+      <Befund patient={patient} user={user} />
+    </>
   );
 }

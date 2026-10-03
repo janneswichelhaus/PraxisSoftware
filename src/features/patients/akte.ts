@@ -38,6 +38,9 @@ interface Aktenbereich {
  */
 export const ANMELDEBOGEN_ANKER = 'anmeldebogen';
 
+/** Die Einwilligungen in den Stammdaten - Ziel von „Zu den Einwilligungen" (Foto aufnehmen). */
+export const EINWILLIGUNGEN_ANKER = 'einwilligungen';
+
 /**
  * Die Bereiche der Akte in der Reihenfolge des Arbeitstags - genau vier
  * (AKTE-007, Jannes 2026-10-03).
@@ -93,7 +96,7 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
  */
 export const ALTE_AKTENBEREICHE = {
   verlauf: 'doku',
-  befund: 'doku',
+  befund: 'doku/befund',
   datenschutz: `stammdaten#${ANMELDEBOGEN_ANKER}`,
   dateien: 'stammdaten',
 } as const satisfies Record<string, string>;

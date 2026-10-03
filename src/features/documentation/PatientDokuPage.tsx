@@ -1,4 +1,4 @@
-import { Befund } from '@/features/assessments/PatientBefundPage';
+import { BefundKarte } from '@/features/assessments/BefundKarte';
 import { DokuDateien } from '@/features/files/Aktendateien';
 import { Patientenfotos } from '@/features/files/FotosImVerlauf';
 import { usePatientRecord } from '@/features/patients/akte';
@@ -6,17 +6,11 @@ import { useSearchParams } from 'react-router-dom';
 import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
 
 /**
- * Der Reiter „Doku" der Akte (AKTE-007): Behandlungsverlauf, Befund samt
- * Anamnesebogen und die Dateien zu Befund und Behandlung.
- *
- * Bis AKTE-007 waren das drei Bereiche - „Behandlungsverlauf" (AKTE-004),
- * „Befund" (FRB-EPIC-002) und der klinische Teil von „Dateien". Sie
- * beantworten dieselbe Frage: Was wissen wir klinisch über diese Person?
- *
- * Der Verlauf steht oben, weil er täglich gebraucht wird; darüber seit
- * DOK-006 die Fotos der Person (ADR-017 Abschnitt G). Weil der Verlauf die
- * längste Liste der Akte ist, führt eine Zeile ganz oben zu Befund und
- * Dateien, statt sie hinter jeder Seite des Verlaufs zu verstecken.
+ * Der Reiter „Doku" der Akte (AKTE-007; Anordnung seit Akte entschlacken,
+ * 2026-10-03): oben der Befund als eine Karte mit Weg auf seine Seite, dann
+ * die Behandlungsdokumentation, dann Fotos und Dateien in einer Karte. Am
+ * Rechner steht die Dokumentation links, Befund und Fotos rechts daneben -
+ * gemessen am Inhalt, nicht am Fenster (`--container-zweispaltig`).
  *
  * Gelesen wird wie bisher: jeder gelieferte Eintrag und Bogen wird auf dem
  * Server protokolliert (ADR-010).
@@ -34,23 +28,28 @@ export function PatientDokuPage() {
           <DieserTermin patient={patient} user={user} terminId={terminId} />
         </div>
       ) : null}
-      <nav aria-label="Teile der Doku" className="mb-4 flex flex-wrap gap-x-5 gap-y-1 text-sm">
-        <a href="#doku-befund" className="text-accent flex min-h-11 items-center underline">
-          Zum Befund
-        </a>
-        <a href="#doku-dateien" className="text-accent flex min-h-11 items-center underline">
-          Zu den Dateien
-        </a>
-      </nav>
-      {/* Je Person ein eigener Abschnitt: Ein ungespeichertes Foto oder eine
-          offene Ansicht wandert beim Wechsel der Akte nicht mit. */}
-      <Patientenfotos key={patient.id} patientId={patient.id} user={user} />
-      <PatientRecordDocumentation patient={patient} user={user} ohneTermin={terminId} />
-      <div id="doku-befund" className="mt-10 scroll-mt-4">
-        <Befund patient={patient} user={user} />
-      </div>
-      <div id="doku-dateien" className="mt-10 scroll-mt-4">
-        <DokuDateien patientId={patient.id} user={user} />
+      {/* Eine Fassung je Teil: am Telefon untereinander (Befund, Dokumentation,
+          Fotos und Dateien), am Rechner die Dokumentation links über beide
+          Zeilen, Befund und Fotos rechts. */}
+      <div className="@container">
+        <div className="@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,400px)] @zweispaltig:grid-rows-[auto_1fr] @zweispaltig:gap-x-8 grid items-start gap-6">
+          <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-1 min-w-0">
+            <BefundKarte patient={patient} />
+          </div>
+          <div className="@zweispaltig:col-start-1 @zweispaltig:row-span-2 @zweispaltig:row-start-1 min-w-0">
+            <PatientRecordDocumentation patient={patient} user={user} ohneTermin={terminId} />
+          </div>
+          <div className="@zweispaltig:col-start-2 @zweispaltig:row-start-2 min-w-0">
+            {/* Je Person ein eigener Abschnitt: Ein ungespeichertes Foto oder
+                eine offene Ansicht wandert beim Wechsel der Akte nicht mit. */}
+            <Patientenfotos
+              key={patient.id}
+              patientId={patient.id}
+              user={user}
+              dateien={<DokuDateien patientId={patient.id} user={user} ohneAbschnitt />}
+            />
+          </div>
+        </div>
       </div>
     </>
   );

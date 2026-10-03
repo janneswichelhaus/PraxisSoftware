@@ -73,14 +73,15 @@ test.describe('Fotos', () => {
   }) => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
-    await expect(
-      page.getByText(/Einwilligung zu Arbeitshilfen erteilt am 27.08.2026/),
-    ).toBeVisible();
+    // Die Wahl steht im Fenster „Foto aufnehmen" (Akte entschlacken, 2026-10-03).
+    await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
+    const wahl = page.getByRole('dialog', { name: 'Foto aufnehmen' });
+    await expect(wahl.getByText(/Einwilligung erteilt am 27.08.2026/)).toBeVisible();
 
     // ADR-017 Punkt 44: ohne Vorauswahl, erst die Wahl öffnet die Kamera.
-    await expect(page.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
-    await page.getByRole('radio', { name: /^Teil der Dokumentation/ }).check();
-    await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
+    await expect(wahl.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
+    await wahl.getByRole('radio', { name: /^Teil der Dokumentation/ }).check();
+    await wahl.getByRole('button', { name: 'Foto aufnehmen' }).click();
     const dialog = page.getByRole('dialog', { name: 'Foto aufnehmen' });
     await expect(dialog.getByText(/Gesicht nur, wenn es selbst/)).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Auslösen' })).toBeVisible();
@@ -128,8 +129,15 @@ test.describe('Fotos', () => {
     page,
   }) => {
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
-    await page.getByRole('radio', { name: /^Arbeitshilfe \(/ }).check();
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
+    await page
+      .getByRole('dialog', { name: 'Foto aufnehmen' })
+      .getByRole('radio', { name: /^Arbeitshilfe \(/ })
+      .check();
+    await page
+      .getByRole('dialog', { name: 'Foto aufnehmen' })
+      .getByRole('button', { name: 'Foto aufnehmen' })
+      .click();
     await page.getByRole('button', { name: 'Auslösen' }).click();
     await page.getByRole('button', { name: 'Foto verwenden' }).click();
     await page.getByRole('button', { name: 'Foto speichern' }).click();
@@ -141,8 +149,15 @@ test.describe('Fotos', () => {
   test('Abbrechen beendet die Kamera', async ({ page }) => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
-    await page.getByRole('radio', { name: /^Arbeitshilfe \(/ }).check();
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
+    await page
+      .getByRole('dialog', { name: 'Foto aufnehmen' })
+      .getByRole('radio', { name: /^Arbeitshilfe \(/ })
+      .check();
+    await page
+      .getByRole('dialog', { name: 'Foto aufnehmen' })
+      .getByRole('button', { name: 'Foto aufnehmen' })
+      .click();
     await expect(page.getByRole('button', { name: 'Auslösen' })).toBeVisible();
     expect(await laufendeSpuren(page)).toBeGreaterThan(0);
 
