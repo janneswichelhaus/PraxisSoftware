@@ -215,7 +215,6 @@ describe('Storno und Korrektur', () => {
     await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.appointments');
     await asPostgres('update public.treatment_base_items set used_quantity = 0');
-    await asPostgres("delete from public.audit_log where action like 'invoice%'");
   });
 
   describe('Das Stornodokument', () => {
@@ -354,11 +353,12 @@ describe('Storno und Korrektur', () => {
       await expect(storniere(id)).resolves.toMatch(/-\d{4}$/);
       expect(await bezahlt(id)).toBe(betrag);
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'invoice.cancelled' and subject_id = $1`,
+      // Wer storniert hat, steht am Stornodokument (LOG-EPIC-001).
+      const { rows } = await asPostgres<{ created_by: string }>(
+        'select created_by from public.invoice_cancellations where invoice_id = $1',
         [id],
       );
-      expect(rows[0]!.context).toMatchObject({ paid_cents: betrag });
+      expect(rows).toEqual([{ created_by: users.office }]);
     });
 
     it('nimmt an der stornierten Rechnung keinen Eingang, aber die Rueckzahlung an', async () => {
@@ -425,11 +425,15 @@ describe('Storno und Korrektur', () => {
         { invoice_id: id, direction: 'refund', method: 'offset' },
       ]);
 
-      const { rows: protokoll } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'payment.offset' and subject_id = $1`,
-        [korrektur],
+      // Wer verrechnet hat, steht an beiden Buchungen des Paars (LOG-EPIC-001).
+      const { rows: erfasst } = await asPostgres<{ created_by: string; amount_cents: number }>(
+        'select created_by, amount_cents from public.payments where offset_group = $1',
+        [gruppe],
       );
-      expect(protokoll[0]!.context).toMatchObject({ from_invoice_id: id, amount_cents: 2000 });
+      expect(erfasst).toEqual([
+        { created_by: users.office, amount_cents: 2000 },
+        { created_by: users.office, amount_cents: 2000 },
+      ]);
     });
 
     it('verrechnet nicht mehr als eingegangen und nur mit der Ersatzrechnung', async () => {
@@ -639,19 +643,38 @@ describe('Storno und Korrektur', () => {
       expect(gelesen.cancellation?.cancelled_on).toBe(await heute());
     });
 
-    it('protokolliert das Storno ohne den Grund (ADR-011)', async () => {
-      // Ein freier Text kann Patientenbezug tragen; Logs fuehren keinen.
+    it('haelt das Storno am Dokument fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
+      // Ein freier Text kann Patientenbezug tragen; Logs fuehren keinen (ADR-011).
       const { id } = await ausgestellteRechnung();
+      const vorher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
+      );
       await storniere(id, 'Anschrift der Beihilfestelle falsch');
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log
-          where action = 'invoice.cancelled' and subject_id = $1`,
+      const { rows } = await asPostgres<{
+        cancellation_number: string;
+        created_by: string;
+        created_at: Date | null;
+      }>(
+        `select cancellation_number, created_by, created_at from public.invoice_cancellations
+          where invoice_id = $1`,
         [id],
       );
       expect(rows).toHaveLength(1);
-      expect(rows[0]!.context.cancellation_number).toMatch(/-\d{4}$/);
-      expect(JSON.stringify(rows[0]!.context)).not.toContain('Beihilfestelle');
+      expect(rows[0]!.cancellation_number).toMatch(/-\d{4}$/);
+      expect(rows[0]!.created_by).toBe(users.office);
+      expect(rows[0]!.created_at).not.toBeNull();
+
+      const nachher = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+        [users.office],
+      );
+      expect(nachher.rows[0]!.n).toBe(vorher.rows[0]!.n);
+      const { rows: grund } = await asPostgres(
+        "select 1 from public.audit_log where context::text like '%Beihilfestelle%'",
+      );
+      expect(grund).toEqual([]);
     });
   });
 

@@ -340,7 +340,11 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     }
   });
 
-  it('setzt beim erlaubten Schreiben keinen Status und schreibt success', async () => {
+  it('setzt beim erlaubten Schreiben keinen Status und haelt wer/wann am Datensatz fest (LOG-EPIC-001)', async () => {
+    const auditVorher = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+      [users.ownerTherapist],
+    );
     const { rows, status } = await asUserCommittedMitStatus<{ id: string }>(
       users.ownerTherapist,
       'select public.place_legal_hold($1::uuid, $2) as id',
@@ -348,11 +352,19 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     );
     expect(rows[0]?.id).toMatch(/^[0-9a-f-]{36}$/);
     expect(status).toBeNull();
-    const eintrag = await asPostgres<{ outcome: string }>(
-      `select outcome from public.audit_log
-        where action = 'legal_hold.placed' and actor_user_id = $1`,
+    // Das Datenmodell ist der Nachweis: wer und wann stehen am Legal Hold.
+    const hold = await asPostgres<{ placed_by: string; placed_at: Date | null }>(
+      'select placed_by, placed_at from public.legal_holds where id = $1',
+      [rows[0]?.id],
+    );
+    expect(hold.rows).toHaveLength(1);
+    expect(hold.rows[0]?.placed_by).toBe(users.ownerTherapist);
+    expect(hold.rows[0]?.placed_at).not.toBeNull();
+    // Der erlaubte Schreibweg schreibt keinen Auditeintrag mehr.
+    const auditNachher = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.audit_log where actor_user_id = $1',
       [users.ownerTherapist],
     );
-    expect(eintrag.rows.map((r) => r.outcome)).toEqual(['success']);
+    expect(auditNachher.rows[0]?.n).toBe(auditVorher.rows[0]?.n);
   });
 });

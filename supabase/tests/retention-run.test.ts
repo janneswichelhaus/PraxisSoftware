@@ -937,18 +937,17 @@ describe('Wiederanwendung nach einer Wiederherstellung (ADR-008 Punkt 8)', () =>
     await abgeschlossenVor(patients.petra, 11);
     await lauf();
     await akteZurueckspielen(patients.petra, rows[0]!.person_id);
+    const auditVorher = await anzahl('select count(*) from public.audit_log');
     await nachziehen();
 
+    // Das Journal ist der Nachweis (reapplied_at); ein eigenes Auditereignis
+    // gibt es dafuer nicht mehr (LOG-EPIC-001).
     const { rows: nachgezogen } = await asPostgres<{ count: string }>(
       `select count(*) from public.deletion_journal
        where target_table = 'patients' and reapplied_at is not null`,
     );
     expect(Number(nachgezogen[0]?.count)).toBe(1);
-
-    const { rows: ereignis } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where action = 'retention.reapplied'`,
-    );
-    expect(ereignis).toHaveLength(1);
+    expect(await anzahl('select count(*) from public.audit_log')).toBe(auditVorher);
   });
 
   it('verweigert den Dienst, wenn das Journal eine Tabelle ohne Loeschreihenfolge nennt', async () => {

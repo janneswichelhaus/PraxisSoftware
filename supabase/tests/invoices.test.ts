@@ -151,7 +151,6 @@ describe('Rechnung', () => {
     await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.appointments');
     await asPostgres('update public.treatment_base_items set used_quantity = 0');
-    await asPostgres("delete from public.audit_log where action like 'invoice%'");
   });
 
   describe('Arbeitsliste', () => {
@@ -549,14 +548,21 @@ describe('Rechnung', () => {
       );
     });
 
-    it('protokolliert das Ausstellen mit Nummer und Betrag (ADR-010)', async () => {
-      await ausgestellt();
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'invoice.issued'
-          order by occurred_at desc limit 1`,
+    it('haelt wer und wann des Ausstellens mit Nummer und Betrag an der Rechnung fest (LOG-EPIC-001)', async () => {
+      const rechnung = await ausgestellt();
+      const { rows } = await asPostgres<{
+        invoice_number: string;
+        total_cents: number;
+        issued_by: string;
+        issued_at: Date | null;
+      }>(
+        'select invoice_number, total_cents, issued_by, issued_at from public.invoices where id = $1',
+        [rechnung.id],
       );
-      expect(rows[0]?.context.invoice_number).toMatch(/^RG-/);
-      expect(rows[0]?.context.total_cents).toBe(4500);
+      expect(rows[0]?.invoice_number).toMatch(/^RG-/);
+      expect(rows[0]?.total_cents).toBe(4500);
+      expect(rows[0]?.issued_by).toBe(users.office);
+      expect(rows[0]?.issued_at).not.toBeNull();
     });
   });
 

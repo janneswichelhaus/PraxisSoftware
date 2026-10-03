@@ -176,16 +176,24 @@ describe('Textbausteine', () => {
       );
     });
 
-    it('protokolliert Titel und Geltungsbereich, nie den Text', async () => {
+    it('haelt wer/wann am Baustein fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
       await asUserCommitted(users.therapist, ANLEGEN, ['Mein Baustein', 'Geheimer Text', false]);
 
-      const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-        'select action, context from public.audit_log',
+      const { rows: baustein } = await asPostgres<{
+        staff_member_id: string | null;
+        created_by: string;
+        created_at: Date | null;
+      }>(
+        `select staff_member_id, created_by, created_at from public.treatment_text_snippets
+          where title = 'Mein Baustein'`,
       );
-      expect(rows).toHaveLength(1);
-      expect(rows[0]!.action).toBe('text_snippet.created');
-      expect(rows[0]!.context).toMatchObject({ shared: false, title: 'Mein Baustein' });
-      expect(JSON.stringify(rows[0]!.context)).not.toContain('Geheimer Text');
+      expect(baustein).toHaveLength(1);
+      expect(baustein[0]!.staff_member_id).toBe(STAFF_ANNA);
+      expect(baustein[0]!.created_by).toBe(users.therapist);
+      expect(baustein[0]!.created_at).not.toBeNull();
+
+      const { rows } = await asPostgres('select 1 from public.audit_log');
+      expect(rows).toEqual([]);
     });
 
     it('schreibt bei einem abgewiesenen Aufruf keinen Auditeintrag', async () => {
@@ -242,15 +250,17 @@ describe('Textbausteine', () => {
       expect((await liste(users.therapist)).rows).toEqual([]);
     });
 
-    it('protokolliert das Loeschen mit Titel und Geltungsbereich', async () => {
+    it('loescht ohne Auditeintrag (LOG-EPIC-001)', async () => {
       const id = await baustein({ titel: 'Weg damit', staff: STAFF_ANNA });
       await asUserCommitted(users.therapist, LOESCHEN, [id]);
 
-      const { rows } = await asPostgres<{ action: string; context: Record<string, unknown> }>(
-        'select action, context from public.audit_log',
+      const { rows: weg } = await asPostgres(
+        'select 1 from public.treatment_text_snippets where id = $1',
+        [id],
       );
-      expect(rows[0]!.action).toBe('text_snippet.deleted');
-      expect(rows[0]!.context).toMatchObject({ shared: false, title: 'Weg damit' });
+      expect(weg).toEqual([]);
+      const { rows } = await asPostgres('select 1 from public.audit_log');
+      expect(rows).toEqual([]);
     });
   });
 

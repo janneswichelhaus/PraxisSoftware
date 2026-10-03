@@ -11,9 +11,10 @@ import {
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
 /**
- * Zielwerte der Praxisfuehrung (STA-002). Allein owner liest und setzt; jede
- * Aenderung steht im Protokoll, ein Leeren loescht den Wert, und niemand
- * erreicht die Tabelle an den Funktionen vorbei.
+ * Zielwerte der Praxisfuehrung (STA-002). Allein owner liest und setzt; wer
+ * zuletzt geaendert hat, steht am Datensatz (updated_by/updated_at,
+ * LOG-EPIC-001), ein Leeren loescht den Wert, und niemand erreicht die
+ * Tabelle an den Funktionen vorbei.
  */
 const { users, organizationId } = SEED;
 
@@ -38,14 +39,28 @@ async function setze(kennzahl: string, wert: number | null, konto: string = user
   return asUserCommitted<{ wert: number | null }>(konto, SETZEN, [kennzahl, wert]);
 }
 
-async function protokoll(): Promise<Array<{ context: Record<string, unknown> }>> {
+interface Stand {
+  updated_by: string | null;
+  updated_at: string;
+}
+
+/** Wer und wann der letzten Aenderung, mikrosekundengenau (LOG-EPIC-001). */
+async function stand(): Promise<Stand[]> {
   return (
-    await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log
-       where action = 'organization.practice_target_changed' and outcome = 'success'
-       order by occurred_at, id`,
+    await asPostgres<Stand>(
+      `select updated_by, to_char(updated_at, 'YYYY-MM-DD"T"HH24:MI:SS.US') as updated_at
+         from public.practice_targets where organization_id = $1`,
+      [organizationId],
     )
   ).rows;
+}
+
+/** Erfolgreiche Auditeintraege: Das Setzen eines Ziels schreibt keinen mehr. */
+async function auditErfolge(): Promise<number> {
+  const { rows } = await asPostgres<{ n: number }>(
+    "select count(*)::int as n from public.audit_log where outcome = 'success'",
+  );
+  return rows[0]!.n;
 }
 
 describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
@@ -63,7 +78,8 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
     });
   });
 
-  it('setzt jeden Zielwert einzeln und protokolliert alten und neuen Wert', async () => {
+  it('setzt jeden Zielwert einzeln und haelt wer/wann am Datensatz fest (LOG-EPIC-001)', async () => {
+    const auditVorher = await auditErfolge();
     await setze('revenue_cents', 1_200_000);
     await setze('open_items_cents', 300_000);
     await setze('utilization_percent', 85);
@@ -79,27 +95,27 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
       absences: 4,
     });
 
-    const eintraege = await protokoll();
-    expect(eintraege).toHaveLength(6);
-    expect(eintraege.at(-1)!.context).toEqual({
-      surface: 'web',
-      target: 'revenue_cents',
-      previous: 1_200_000,
-      value: 1_500_000,
-    });
+    const zeilen = await stand();
+    expect(zeilen).toHaveLength(1);
+    expect(zeilen[0]!.updated_by).toBe(users.ownerTherapist);
+    expect(await auditErfolge()).toBe(auditVorher);
   });
 
-  it('schreibt ohne Aenderung keinen Eintrag', async () => {
+  it('schreibt ohne Aenderung nichts (LOG-EPIC-001)', async () => {
     await setze('absences', 4);
+    const vorher = await stand();
+    const auditVorher = await auditErfolge();
     await setze('absences', 4);
-    expect(await protokoll()).toHaveLength(1);
+    expect(await stand()).toEqual(vorher);
+    expect(await auditErfolge()).toBe(auditVorher);
   });
 
   it('legt beim Leeren eines leeren Ziels keine Zeile an', async () => {
+    const auditVorher = await auditErfolge();
     await setze('absences', null);
     const { rows } = await asPostgres('select 1 from public.practice_targets');
     expect(rows).toHaveLength(0);
-    expect(await protokoll()).toHaveLength(0);
+    expect(await auditErfolge()).toBe(auditVorher);
   });
 
   it('faellt mit der Organisation (Loeschpfad)', async () => {
@@ -123,7 +139,9 @@ describe('Zielwerte der Praxisfuehrung (STA-002)', () => {
     await setze('utilization_percent', 80);
     await setze('utilization_percent', null);
     expect((await ziele()).utilization_percent).toBeNull();
-    expect((await protokoll()).at(-1)!.context).toMatchObject({ previous: 80, value: null });
+    const zeilen = await stand();
+    expect(zeilen).toHaveLength(1);
+    expect(zeilen[0]!.updated_by).toBe(users.ownerTherapist);
   });
 
   it('weist eine unbekannte Kennzahl und Werte ausserhalb des Bereichs ab', async () => {

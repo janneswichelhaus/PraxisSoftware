@@ -133,6 +133,14 @@ async function genutzt(positionId = POSITION_FRISCH): Promise<number> {
   return rows[0]!.used_quantity;
 }
 
+async function auditAnzahl(akteur: string): Promise<number> {
+  const { rows } = await asPostgres<{ n: number }>(
+    'select count(*)::int as n from public.audit_log where actor_user_id = $1',
+    [akteur],
+  );
+  return rows[0]!.n;
+}
+
 describe('Leistungserfassung', () => {
   beforeAll(async () => {
     await resetDatabaseOhneTermine();
@@ -144,7 +152,6 @@ describe('Leistungserfassung', () => {
     await asPostgres('update public.treatment_base_items set used_quantity = 0 where id = $1', [
       POSITION_FRISCH,
     ]);
-    await asPostgres("delete from public.audit_log where action like 'billable_service.%'");
   });
 
   describe('Woraus eine Leistung entstehen darf', () => {
@@ -538,9 +545,10 @@ describe('Leistungserfassung', () => {
     });
   });
 
-  describe('Auditspur', () => {
-    it('protokolliert je Vorgang ein Ereignis am Termin', async () => {
+  describe('Nachweis im Datenmodell (LOG-EPIC-001)', () => {
+    it('haelt wer und wann an der Leistung fest und schreibt keinen Auditeintrag', async () => {
       const id = await termin({ vorStunden: 66 });
+      const auditVorher = await auditAnzahl(users.office);
       await asUserCommitted(users.office, ERFASSEN, [
         id,
         JSON.stringify([
@@ -548,24 +556,24 @@ describe('Leistungserfassung', () => {
           { catalog_item_id: KATALOG.hausbesuch, quantity: 1 },
         ]),
       ]);
-      await asUserCommitted(users.office, ENTFERNEN, [id]);
 
-      const { rows } = await asPostgres<{
-        action: string;
-        subject_type: string;
-        subject_id: string;
-        context: { item_count: number };
-      }>(
-        "select action, subject_type, subject_id, context from public.audit_log where action like 'billable_service.%' order by occurred_at",
+      const { rows } = await asPostgres<{ created_by: string; created_at: Date | null }>(
+        'select created_by, created_at from public.billable_services where appointment_id = $1',
+        [id],
       );
+      expect(rows).toHaveLength(2);
+      for (const zeile of rows) {
+        expect(zeile.created_by).toBe(users.office);
+        expect(zeile.created_at).not.toBeNull();
+      }
 
-      expect(rows.map((zeile) => zeile.action)).toEqual([
-        'billable_service.recorded',
-        'billable_service.removed',
-      ]);
-      expect(rows[0]!.subject_type).toBe('appointment');
-      expect(rows[0]!.subject_id).toBe(id);
-      expect(rows[0]!.context.item_count).toBe(2);
+      await asUserCommitted(users.office, ENTFERNEN, [id]);
+      const danach = await asPostgres(
+        'select 1 from public.billable_services where appointment_id = $1',
+        [id],
+      );
+      expect(danach.rows).toEqual([]);
+      expect(await auditAnzahl(users.office)).toBe(auditVorher);
     });
   });
 

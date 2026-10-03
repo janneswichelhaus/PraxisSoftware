@@ -96,7 +96,12 @@ async function satz(staffId: string) {
   return rows[0]!;
 }
 
-async function auditEintraege(action?: string) {
+/**
+ * Alle Auditeintraege seit dem Zuruecksetzen (der Seed leert das Auditlog).
+ * Mitarbeiterstammdaten und Status schreiben keinen Eintrag mehr; wer und wann
+ * des Anlegens stehen am Datensatz (LOG-EPIC-001, ANN-230).
+ */
+async function auditEintraege() {
   const { rows } = await asPostgres<{
     action: string;
     subject_type: string;
@@ -106,9 +111,7 @@ async function auditEintraege(action?: string) {
   }>(
     `select action, subject_type, subject_id, outcome, context
        from public.audit_log
-      where action like 'staff_member.%' ${action ? 'and action = $1' : ''}
       order by occurred_at, id`,
-    action ? [action] : [],
   );
   return rows;
 }
@@ -478,7 +481,7 @@ describe('create_staff_member', () => {
     expect(nachher.rows[0]?.anzahl).toBe(vorher.rows[0]?.anzahl);
   });
 
-  it('protokolliert staff_member.created ohne Stammdaten', async () => {
+  it('haelt wer/wann des Anlegens am Datensatz fest und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const id = await anlegen(users.ownerTherapist, {
       vorname: 'Nina',
       nachname: 'Neu',
@@ -486,16 +489,13 @@ describe('create_staff_member', () => {
       privatTelefon: '+49 7071 4711',
     });
 
-    const eintraege = await auditEintraege('staff_member.created');
-    expect(eintraege).toHaveLength(1);
-    expect(eintraege[0]?.subject_type).toBe('staff_member');
-    expect(eintraege[0]?.subject_id).toBe(id);
-    expect(eintraege[0]?.context).toEqual({ surface: 'web' });
-
-    const roh = JSON.stringify(eintraege[0]);
-    for (const wert of ['Nina', 'Neu', 'nina.neu@praxis.invalid', '4711']) {
-      expect(roh).not.toContain(wert);
-    }
+    const { rows } = await asPostgres<{ created_by: string; created_at: Date | null }>(
+      'select created_by, created_at from public.staff_members where id = $1',
+      [id],
+    );
+    expect(rows[0]?.created_by).toBe(users.ownerTherapist);
+    expect(rows[0]?.created_at).not.toBeNull();
+    expect(await auditEintraege()).toEqual([]);
   });
 
   it('schreibt bei einem abgewiesenen Aufruf keinen Auditeintrag', async () => {
@@ -543,7 +543,7 @@ describe('update_staff_member', () => {
     expect((await satz(STAFF.anna)).work_email).toBeNull();
   });
 
-  it('protokolliert ausschliesslich die Namen der geaenderten Felder', async () => {
+  it('aendert die dienstliche Mail und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const bestand = await unveraenderteEingabe(STAFF.anna);
 
     await asUserCommitted(users.ownerTherapist, AENDERN, [
@@ -551,13 +551,11 @@ describe('update_staff_member', () => {
       ...anlageArgs({ ...bestand, dienstMail: 'anna.neu@praxis.invalid' }),
     ]);
 
-    const eintraege = await auditEintraege('staff_member.updated');
-    expect(eintraege).toHaveLength(1);
-    expect(eintraege[0]?.context).toEqual({ surface: 'web', changed_fields: ['work_email'] });
-    expect(JSON.stringify(eintraege[0])).not.toContain('anna.neu@praxis.invalid');
+    expect((await satz(STAFF.anna)).work_email).toBe('anna.neu@praxis.invalid');
+    expect(await auditEintraege()).toEqual([]);
   });
 
-  it('nennt bei einer Namensaenderung nur das Feld, nicht den Namen', async () => {
+  it('aendert den Namen und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const bestand = await unveraenderteEingabe(STAFF.anna);
 
     await asUserCommitted(users.ownerTherapist, AENDERN, [
@@ -565,12 +563,11 @@ describe('update_staff_member', () => {
       ...anlageArgs({ ...bestand, vorname: 'Anna-Lena' }),
     ]);
 
-    const eintraege = await auditEintraege('staff_member.updated');
-    expect(eintraege[0]?.context).toEqual({ surface: 'web', changed_fields: ['name'] });
-    expect(JSON.stringify(eintraege[0])).not.toContain('Anna-Lena');
+    expect((await unveraenderteEingabe(STAFF.anna)).vorname).toBe('Anna-Lena');
+    expect(await auditEintraege()).toEqual([]);
   });
 
-  it('nennt bei einer Privatdatenaenderung nur das Sammelfeld', async () => {
+  it('aendert Privatdaten und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     const bestand = await unveraenderteEingabe(STAFF.anna);
 
     await asUserCommitted(users.ownerTherapist, AENDERN, [
@@ -578,15 +575,15 @@ describe('update_staff_member', () => {
       ...anlageArgs({ ...bestand, privatTelefon: '+49 7071 4711' }),
     ]);
 
-    const eintraege = await auditEintraege('staff_member.updated');
-    expect(eintraege[0]?.context).toEqual({ surface: 'web', changed_fields: ['private_details'] });
-    expect(JSON.stringify(eintraege[0])).not.toContain('4711');
+    expect((await unveraenderteEingabe(STAFF.anna)).privatTelefon).toBe('+49 7071 4711');
+    expect(await auditEintraege()).toEqual([]);
   });
 
   it('schreibt ohne tatsaechliche Aenderung keinen Auditeintrag', async () => {
     const bestand = await unveraenderteEingabe(STAFF.anna);
     await asUserCommitted(users.ownerTherapist, AENDERN, [STAFF.anna, ...anlageArgs(bestand)]);
-    expect(await auditEintraege('staff_member.updated')).toEqual([]);
+    expect(await unveraenderteEingabe(STAFF.anna)).toEqual(bestand);
+    expect(await auditEintraege()).toEqual([]);
   });
 
   it('aendert den Beschaeftigungsstatus nicht mit', async () => {
@@ -627,16 +624,13 @@ describe('set_staff_employment_status', () => {
     expect((await satz(STAFF.olivia)).employment_status).toBe('active');
   });
 
-  it('protokolliert beide Richtungen ohne Stammdaten', async () => {
+  it('schreibt in beide Richtungen keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await asUserCommitted(users.ownerTherapist, STATUS, [STAFF.olivia, 'inactive', false]);
+    expect((await satz(STAFF.olivia)).employment_status).toBe('inactive');
     await asUserCommitted(users.ownerTherapist, STATUS, [STAFF.olivia, 'active', false]);
+    expect((await satz(STAFF.olivia)).employment_status).toBe('active');
 
-    const eintraege = await auditEintraege('staff_member.status_changed');
-    expect(eintraege.map((e) => e.context)).toEqual([
-      { surface: 'web', employment_status: 'inactive', open_future_appointments: 0 },
-      { surface: 'web', employment_status: 'active', open_future_appointments: 0 },
-    ]);
-    expect(JSON.stringify(eintraege)).not.toContain('Olivia');
+    expect(await auditEintraege()).toEqual([]);
   });
 
   it('schreibt bei gleichem Status weder Daten noch Audit', async () => {
@@ -685,12 +679,8 @@ describe('set_staff_employment_status', () => {
       staff_member_id: STAFF.anna,
     });
 
-    const eintraege = await auditEintraege('staff_member.status_changed');
-    expect(eintraege[0]?.context).toEqual({
-      surface: 'web',
-      employment_status: 'inactive',
-      open_future_appointments: 1,
-    });
+    // Der Status steht am Datensatz; ein Auditeintrag entfaellt (LOG-EPIC-001).
+    expect(await auditEintraege()).toEqual([]);
   });
 
   it('braucht fuer einen rein vergangenen Terminbestand keine Bestaetigung', async () => {

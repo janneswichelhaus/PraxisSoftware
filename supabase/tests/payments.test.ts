@@ -217,7 +217,6 @@ describe('Zahlung', () => {
     await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.appointments');
     await asPostgres('update public.treatment_base_items set used_quantity = 0');
-    await asPostgres("delete from public.audit_log where action like 'payment%'");
   });
 
   describe('Erfassen', () => {
@@ -581,35 +580,42 @@ describe('Zahlung', () => {
     });
   });
 
-  describe('Auditspur (ADR-010)', () => {
-    it('protokolliert Erfassen und Stornieren', async () => {
+  describe('Nachweis im Datenmodell (LOG-EPIC-001)', () => {
+    it('haelt wer und wann von Erfassen und Stornieren an der Zahlung fest', async () => {
       const { id } = await ausgestellteRechnung();
       const zahlung = await buche(id, 1000);
       await asUserCommitted(users.office, STORNIEREN, [zahlung, 'Falsch erfasst']);
 
-      const { rows } = await asPostgres<{ action: string; subject_type: string; context: unknown }>(
-        `select action, subject_type, context from public.audit_log
-          where subject_id = $1 order by occurred_at`,
-        [zahlung],
-      );
-      expect(rows.map((r) => r.action)).toEqual(['payment.recorded', 'payment.voided']);
-      expect(rows.every((r) => r.subject_type === 'payment')).toBe(true);
+      const { rows } = await asPostgres<{
+        created_by: string;
+        created_at: Date | null;
+        voided_by: string;
+        voided_at: Date | null;
+      }>('select created_by, created_at, voided_by, voided_at from public.payments where id = $1', [
+        zahlung,
+      ]);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.created_by).toBe(users.office);
+      expect(rows[0]!.created_at).not.toBeNull();
+      expect(rows[0]!.voided_by).toBe(users.office);
+      expect(rows[0]!.voided_at).not.toBeNull();
     });
 
-    it('schreibt keinen Namen und keinen klinischen Inhalt in den Kontext (ADR-011)', async () => {
+    it('schreibt keinen Auditeintrag und damit weder Namen noch Notiz ins Auditlog', async () => {
       const { id } = await ausgestellteRechnung();
       const zahlung = await buche(id, 1000, { notiz: 'Ueberweisung Sparkasse' });
+      await asUserCommitted(users.office, STORNIEREN, [zahlung, 'Falsch erfasst']);
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        'select context from public.audit_log where subject_id = $1',
-        [zahlung],
-      );
-      const text = JSON.stringify(rows[0]?.context);
-      expect(text).not.toContain('Erika');
-      expect(text).not.toContain('Beispiel');
+      const { rows } = await asPostgres('select 1 from public.audit_log where subject_id = $1', [
+        zahlung,
+      ]);
+      expect(rows).toEqual([]);
       // Auch die Notiz bleibt draussen: Sie ist Freitext und koennte alles
-      // enthalten, was jemand hineinschreibt.
-      expect(text).not.toContain('Sparkasse');
+      // enthalten, was jemand hineinschreibt (ADR-011).
+      const { rows: notiz } = await asPostgres(
+        "select 1 from public.audit_log where context::text like '%Sparkasse%'",
+      );
+      expect(notiz).toEqual([]);
     });
   });
 

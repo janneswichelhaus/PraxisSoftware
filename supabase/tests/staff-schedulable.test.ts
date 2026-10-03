@@ -41,10 +41,11 @@ async function setzen(
   await asUserCommitted(konto, SETZEN, [NINA, behandlung, training]);
 }
 
-async function protokoll(): Promise<{ action: string; context: { changed_fields: string[] } }[]> {
-  const { rows } = await asPostgres<{ action: string; context: { changed_fields: string[] } }>(
-    `select action, context from public.audit_log
-      where subject_id = $1 and action = 'staff_member.updated' and outcome = 'success'
+/** Erfolgreiche Auditeintraege zu Nina - die Merkmale schreiben keine mehr (LOG-EPIC-001). */
+async function protokoll(): Promise<{ action: string }[]> {
+  const { rows } = await asPostgres<{ action: string }>(
+    `select action from public.audit_log
+      where subject_id = $1 and outcome = 'success'
       order by occurred_at`,
     [NINA],
   );
@@ -123,15 +124,19 @@ describe('set_staff_member_schedulable (AKTE-009)', () => {
     expect(await liste(BEHANDELNDE)).toContain(ANNA);
   });
 
-  it('protokolliert die geaenderten Felder - und nichts, wenn sich nichts aendert', async () => {
+  it('setzt die Merkmale und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await setzen(true, false);
     await setzen(true, false);
     await setzen(true, true);
-    const eintraege = await protokoll();
-    expect(eintraege.map((e) => e.context.changed_fields)).toEqual([
-      ['schedulable_treatment'],
-      ['schedulable_training'],
-    ]);
+    const { rows } = await asPostgres<{
+      schedulable_treatment: boolean;
+      schedulable_training: boolean;
+    }>(
+      'select schedulable_treatment, schedulable_training from public.staff_members where id = $1',
+      [NINA],
+    );
+    expect(rows[0]).toEqual({ schedulable_treatment: true, schedulable_training: true });
+    expect(await protokoll()).toEqual([]);
   });
 
   it('zeigt die Merkmale in der Mitarbeiterliste', async () => {

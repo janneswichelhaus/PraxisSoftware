@@ -219,21 +219,32 @@ describe('OPS-007 — Bootstrap-Runbook, geprobt auf einer Datenbank ohne Seed',
       expect(await zaehle('public.staff_account_invitations')).toBe(1);
     });
 
-    it('jeder dieser Schritte steht im Auditlog, der Bootstrap bleibt der erste', async () => {
+    it('Konten stehen im Auditlog, der Bootstrap bleibt der erste (LOG-EPIC-001)', async () => {
       const { rows } = await asPostgres<{ action: string }>(
         'select action from public.audit_log order by occurred_at, id',
       );
-      expect(rows[0]?.action).toBe('organization.bootstrapped');
-      expect(rows.map((r) => r.action)).toEqual(
-        expect.arrayContaining([
-          'staff_account.roles_changed',
-          'organization.billing_profile_changed',
-          'service_catalog.version_created',
-          'organization.appointment_grid_changed',
-          'staff_member.created',
-          'staff_account.invited',
-        ]),
+      // Im Auditlog bleibt nur, was das Datenmodell nicht zeigt: Einrichtung und Konten.
+      expect(rows.map((r) => r.action)).toEqual([
+        'organization.bootstrapped',
+        'staff_account.roles_changed',
+        'staff_account.invited',
+      ]);
+    });
+
+    it('wer die übrigen Schritte getan hat, zeigt das Datenmodell (LOG-EPIC-001)', async () => {
+      const profil = await asPostgres<{ created_by: string; updated_by: string }>(
+        'select created_by, updated_by from public.practice_billing_profiles',
       );
+      expect(profil.rows).toEqual([{ created_by: OWNER_ID, updated_by: OWNER_ID }]);
+      const preisliste = await asPostgres<{ created_by: string }>(
+        'select created_by from public.service_catalog_versions',
+      );
+      expect(preisliste.rows).toEqual([{ created_by: OWNER_ID }]);
+      const mitarbeitende = await asPostgres<{ created_by: string }>(
+        `select created_by from public.staff_members
+          order by created_at desc, id limit 1`,
+      );
+      expect(mitarbeitende.rows).toEqual([{ created_by: OWNER_ID }]);
     });
   });
 
