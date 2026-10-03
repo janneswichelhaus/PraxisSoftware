@@ -1,5 +1,5 @@
 -- =============================================================================
--- Rechnung: Diagnose aus der Behandlungsgrundlage (ANN-228)
+-- Rechnung: Diagnose aus der Behandlungsgrundlage (ANN-229)
 --
 -- Jannes 2026-10-03 ("Diagnose drauf"): Auf die Rechnung kommen Diagnose
 -- (ICD-10 und Text), Verordnungsdatum und verordnende Aerzt:in aus der
@@ -25,12 +25,12 @@ language sql
 immutable
 set search_path = ''
 as $$
-  -- ANN-228: true = die Diagnose der Verordnung steht auf der Rechnung.
+  -- ANN-229: true = die Diagnose der Verordnung steht auf der Rechnung.
   select true
 $$;
 
 comment on function app.invoice_shows_diagnosis() is
-  'Schalter fuer ANN-228: Steht die Diagnose der Verordnung (ICD-10 und Text) auf der Rechnung? Einzige Stelle; false stellt den Stand vor schema_version 4 her.';
+  'Schalter fuer ANN-229: Steht die Diagnose der Verordnung (ICD-10 und Text) auf der Rechnung? Einzige Stelle; false stellt den Stand vor schema_version 4 her.';
 
 revoke all on function app.invoice_shows_diagnosis() from public, anon, authenticated;
 
@@ -152,7 +152,7 @@ begin
   ) g;
 
   -- Verordnungsbezug: Bauart, Ausstellungsdatum, Verordner:in - und seit
-  -- schema_version 4 die Diagnose der Verordnung, ICD-10 und Text (ANN-228).
+  -- schema_version 4 die Diagnose der Verordnung, ICD-10 und Text (ANN-229).
   -- Private Kassen und Beihilfe erwarten sie auf der Rechnung. Ob sie
   -- draufsteht, entscheidet allein app.invoice_shows_diagnosis(). Therapieziel
   -- und Verordnerhinweis bleiben weg (Datensparsamkeit), am Selbstzahler gibt
@@ -300,4 +300,4 @@ $function$
 ;
 
 comment on function app.build_invoice_document(uuid) is
-  'Baut das Rechnungsdokument aus Stammdaten, Empfaenger, Leistungen und Steuergruppen (ABR-003, ADR-009 Punkt 10). Dieselbe Funktion liefert die Entwurfsansicht und den Snapshot beim Ausstellen. Seit ABR-006 mit dem Grund der Steuerbefreiung je Gruppe, seit ABR-010 mit dem Leistungsbereich, seit TRN-008 mit Empfaenger und Person aus dem Trainingsverhaeltnis (ANN-182), seit schema_version 4 mit der Diagnose der Verordnung (ANN-228, Schalter app.invoice_shows_diagnosis).';
+  'Baut das Rechnungsdokument aus Stammdaten, Empfaenger, Leistungen und Steuergruppen (ABR-003, ADR-009 Punkt 10). Dieselbe Funktion liefert die Entwurfsansicht und den Snapshot beim Ausstellen. Seit ABR-006 mit dem Grund der Steuerbefreiung je Gruppe, seit ABR-010 mit dem Leistungsbereich, seit TRN-008 mit Empfaenger und Person aus dem Trainingsverhaeltnis (ANN-182), seit schema_version 4 mit der Diagnose der Verordnung (ANN-229, Schalter app.invoice_shows_diagnosis).';

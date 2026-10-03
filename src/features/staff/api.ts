@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 
 /**
@@ -33,6 +34,9 @@ const staffMemberSchema = z.object({
   street: z.string().nullable(),
   postal_code: z.string().nullable(),
   city: z.string().nullable(),
+  // AKTE-009: im Kalender auch ohne eigenen Zugang (ANN-226).
+  schedulable_treatment: z.boolean(),
+  schedulable_training: z.boolean(),
 });
 
 export type StaffMember = z.infer<typeof staffMemberSchema>;
@@ -40,7 +44,7 @@ export type StaffMember = z.infer<typeof staffMemberSchema>;
 const SELECT =
   'id, person_id, given_name, family_name, employment_status, work_email, work_phone, ' +
   'primary_location_id, primary_location_name, date_of_birth, private_email, private_phone, ' +
-  'street, postal_code, city';
+  'street, postal_code, city, schedulable_treatment, schedulable_training';
 
 export async function fetchStaffMembers(): Promise<StaffMember[]> {
   const { data, error } = await getSupabase()
@@ -328,4 +332,24 @@ export async function setzeVerguetungsmodell(
     p_model: modell,
   })) as { error: unknown };
   if (error) throw new Error('Das Vergütungsmodell konnte nicht gespeichert werden.');
+}
+
+/**
+ * Nimmt eine Person in den Kalender auf oder heraus - für Behandlungen und für
+ * Personal Training getrennt, ohne Zugang, Kennwort oder Rolle (AKTE-009,
+ * ANN-226). Nur owner; verbindlich prüft der Server.
+ */
+export async function setzeKalender(
+  staffMemberId: string,
+  kalender: { behandlung: boolean; training: boolean },
+): Promise<void> {
+  const antwort = (await getSupabase().rpc('set_staff_member_schedulable', {
+    p_staff_member_id: staffMemberId,
+    p_treatment: kalender.behandlung,
+    p_training: kalender.training,
+  })) as { error: unknown; status: number };
+  // Eine Abweisung kommt als HTTP 403 ohne Fehlerkörper (G6c, ANN-115).
+  if (abgewiesen(antwort)) {
+    throw new Error('Die Angabe zum Kalender konnte nicht gespeichert werden.');
+  }
 }

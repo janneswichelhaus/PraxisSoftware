@@ -154,7 +154,7 @@ function Aktenavigation({
 
 /**
  * „! Anmeldebogen fehlt" - eine Zeile im Kopf, solange der Anmeldebogen fehlt
- * (AKTE-007, ANN-224). Sie öffnet die Kamera für das Foto des Blatts (ANN-226).
+ * (AKTE-007, ANN-224). Sie öffnet die Kamera für das Foto des Blatts (ANN-227).
  *
  * Bis AKTE-007 stand hier die Kachel „Erstaufnahme offen" mit allen offenen
  * Punkten. Jetzt zählt im Kopf nur der Anmeldebogen: Ein fehlendes
@@ -164,7 +164,7 @@ function Aktenavigation({
 function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const offen = useOffeneErstaufnahme(patient.id, patient.status === 'active', user);
   if (!offen.includes('registration_form')) return null;
-  // ANN-226: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
+  // ANN-227: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
   // ohne Umweg über die Stammdaten.
   return (
     <div className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">

@@ -49,6 +49,8 @@ function person(nummer: number, vorname: string, nachname: string): StaffMember 
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
   };
 }
 

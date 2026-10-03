@@ -2713,7 +2713,19 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Übersicht · Tag
 
 **Änderungspfad.** Direkt auf die Schreibseite: das Ziel `doku` in `MyDayPage.tsx` · Aufwand `klein`. In der Akte schreiben: ein Formular in `DieserTermin` mit eigenem Verlustschutz · Aufwand `mittel`.
 
-### ANN-226 — Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt
+### ANN-226 — Im Kalender steht, wen owner dort hinnimmt – auch ohne eigenen Zugang
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zugang) · erledigt · Wiedervorlage: wenn owner Zugänge selbst anlegen soll (Edge Function nach ADR-023 Punkt 9, nach OPS-001)
+
+**Annahme.** Eine Person ist für Behandlungen zuordenbar, wenn sie aktiv beschäftigt ist **und** entweder owner sie in den Kalender genommen hat (`staff_members.schedulable_treatment`) **oder** sie – wie bisher – einen aktiven Zugang mit der Rolle Therapeut:in oder Teamleitung hat; für Personal Training ebenso mit `schedulable_training` oder der Rolle trainer. Das Merkmal setzt allein owner, auf der Detailseite der Person unter „Kalender“; jede Änderung steht als `staff_member.updated` mit den Feldnamen im Protokoll, ein abgewiesener Versuch wie bei den Konten als denied-Eintrag mit HTTP 403 (G6c). Dabei entsteht weder ein Zugang noch ein Kennwort noch eine Rolle: Anmelden kann sich die Person weiterhin nur über die Einladung (ANN-025). Wer im Kalender steht, aber keinen Zugang hat, bekommt Termine; dokumentieren und abschließen tun dann andere.
+
+**Begründung.** Jannes (2026-10-03): Neu angelegte Therapeut:innen sollen sofort im Kalender stehen, ohne ihren Zugang selbst zu aktivieren. Ein Zugang, den owner samt Kennwort anlegt, bräuchte einen Admin-Schlüssel am Server und weichte die Bestätigung der E-Mail-Adresse auf – das hat Jannes verworfen. Der zweite Weg ergänzt den ersten, statt ihn zu ersetzen; bestehende Konten und Tests bleiben unberührt. Unsicher: ob ein Zugang mit Behandlungsrolle die Person künftig auch automatisch in den Kalender nehmen soll, ohne dass owner das Merkmal setzt – heute tut er das über den bisherigen Weg ohnehin.
+
+**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; `StaffCalendarSection` in `src/features/staff/StaffCalendarSection.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
+
+**Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
+
+### ANN-227 — Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt
 
 Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: Anmeldebogen per Foto) · erledigt · Wiedervorlage: wenn der eigene Anmeldebogen gestaltet ist (`IDEA-PRX-054`)
 
@@ -2721,13 +2733,13 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken
 
 **Begründung.** Jannes (2026-10-03): „Wenn man auf Anmeldebogen tippt, soll man direkt ein Foto machen können, ähnlich wie bei Verordnung. Datenschutzinformation und Behandlungsvertrag kann also weg.“ Keine neue Dokumentart: `vertrag` trägt den Behandlungsvertrag schon heute und ist organisatorisch klassifiziert. Eine neue Art hätte Katalog, Fristen und Rollenschnitt berührt, ohne dass sich am Inhalt etwas ändert. Unsicher ist zweierlei. Erstens, ob die Fassung der Datenschutzinformation am Foto ablesbar bleibt, wenn das Blatt sich ändert. Zweitens, ob ein anderer hochgeladener Vertrag den Punkt fälschlich erledigt.
 
-**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261004120000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/datenschutz/Anmeldebogen.test.tsx`.
+**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261005100000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/datenschutz/Anmeldebogen.test.tsx`.
 
 **Änderungspfad.** Eigene Dokumentart `anmeldebogen`: Katalogeintrag, `dokumentarten.ts` und die Bedingung in `app.intake_checklist` · Aufwand `klein`. Wieder mit Vermerken: die Optionen in `moeglicheVermerke` · Aufwand `klein`.
 
 **Ablösung.** ersetzt ANN-224 in der Bedingung für den Anmeldebogen.
 
-### ANN-227 — Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen
+### ANN-228 — Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen
 
 Praxisprozess · offen · 2026-10-03 · Claude (Akte entschlacken: Daten übertragen) · erledigt · Wiedervorlage: Jannes in der Sichtung der Behandlungsgrundlagen
 
@@ -2739,7 +2751,7 @@ Praxisprozess · offen · 2026-10-03 · Claude (Akte entschlacken: Daten übertr
 
 **Änderungspfad.** Summe statt Maximum oder Pflichtfeld: die eine Zeile `groessteAnzahl` · Aufwand `klein`.
 
-### ANN-228 — Die Diagnose der Verordnung steht auf der Rechnung
+### ANN-229 — Die Diagnose der Verordnung steht auf der Rechnung
 
 Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: „Diagnose drauf“) · Prüfpaket · Wiedervorlage: Datenschutzberatung vor dem Scharfschalten (PROJECT_PRINCIPLES.md §15.2)
 
@@ -2747,6 +2759,6 @@ Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: 
 
 **Begründung.** Private Krankenversicherung und Beihilfe erstatten Heilmittel nur mit Diagnose; ohne sie fordern sie die Verordnung nach, und die Rechnung geht ohnehin nur zusammen mit dem Rezept hinaus. Bisher stand die Diagnose aus Datensparsamkeit bewusst nicht darauf. Die Rechnung geht an die behandelte Person oder an eine von ihr benannte Stelle; die Übermittlung dient der Erstattung in ihrem Interesse. Unsicher ist, ob bei abweichender Empfänger:in (etwa Angehörige) eine Einwilligung nötig ist – das prüft die Datenschutzberatung vor der Inbetriebnahme. Entwickelt wird mit synthetischen Daten trotzdem jetzt (§15.2).
 
-**Anker.** Der Schalter `app.invoice_shows_diagnosis()` in `supabase/migrations/20261004140000_rechnung_diagnose.sql`; Anzeige `diagnoseText` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/invoice-diagnosis.test.ts` und `src/features/billing/InvoicePrintPage.test.tsx`.
+**Anker.** Der Schalter `app.invoice_shows_diagnosis()` in `supabase/migrations/20261005120000_rechnung_diagnose.sql`; Anzeige `diagnoseText` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/invoice-diagnosis.test.ts` und `src/features/billing/InvoicePrintPage.test.tsx`.
 
 **Änderungspfad.** Diagnose wieder weg: der Schalter liefert `false` (neue Migration) · Aufwand `klein`. Nur bei Empfänger:in „selbst“ oder Kasse: Bedingung im Schalter um die Rechnung erweitern · Aufwand `mittel`.

@@ -572,7 +572,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   // AKTE-007: Die Kachel „Erstaufnahme offen" ist einer Zeile gewichen, die
   // nur den Anmeldebogen kennt (ANN-224).
   describe('Hinweis „Anmeldebogen fehlt"', () => {
-    // ANN-226: Ein Tipp im Kopf, ein Foto - kein Umweg über die Stammdaten.
+    // ANN-227: Ein Tipp im Kopf, ein Foto - kein Umweg über die Stammdaten.
     it('erscheint bei fehlendem Anmeldebogen und nimmt das Foto direkt auf', async () => {
       const user = userEvent.setup();
       Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });

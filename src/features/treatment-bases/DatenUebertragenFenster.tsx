@@ -148,7 +148,7 @@ function Formular({
   const [fehler, setFehler] = useState<Record<string, string>>({});
   const [hinweis, setHinweis] = useState<string | null>(null);
 
-  // ANN-227: Ohne eigene Angabe ist die Zahl der Termine die größte Anzahl
+  // ANN-228: Ohne eigene Angabe ist die Zahl der Termine die größte Anzahl
   // einer Position - auf einer Verordnung über 10 × KG sind es 10 Termine.
   const groessteAnzahl = Math.max(0, ...zeilen.map((z) => Number(z.anzahl) || 0));
   const terminzahl = termine.trim() === '' ? String(groessteAnzahl || '') : termine;

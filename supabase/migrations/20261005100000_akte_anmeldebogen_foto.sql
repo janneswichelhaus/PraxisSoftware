@@ -1,6 +1,6 @@
 -- =============================================================================
 -- Akte entschlacken: Der Anmeldebogen ist erledigt, sobald sein Foto da ist
--- (ANN-226 loest ANN-224 im Punkt registration_form ab)
+-- (ANN-227 loest ANN-224 im Punkt registration_form ab)
 --
 -- Jannes 2026-10-03: "Wenn man auf Anmeldebogen tippt, soll man direkt ein
 -- Foto machen koennen, aehnlich wie bei Verordnung. Datenschutzinformation und
@@ -9,7 +9,7 @@
 --   * ANMELDEBOGEN (registration_form): erledigt mit einer bestaetigten Datei
 --     der Art 'vertrag' an der Person. Das Foto des unterschriebenen Blatts
 --     ist der Nachweis fuer Datenschutzinformation und Behandlungsvertrag
---     (ANN-226). Keine neue Dokumentart: 'vertrag' ist organisatorisch (office
+--     (ANN-227). Keine neue Dokumentart: 'vertrag' ist organisatorisch (office
 --     sieht sie) und traegt schon heute den Behandlungsvertrag; die Akte legt
 --     das Foto als "Anmeldebogen, <Datum>" ab.
 --   * BESTAND: Wer die beiden Vermerke schon hat, bleibt erledigt. Nichts
@@ -47,7 +47,7 @@ as $$
            else 'open'
          end
   union all
-  -- ANN-226: Anmeldebogen - das Foto des unterschriebenen Blatts (Art
+  -- ANN-227: Anmeldebogen - das Foto des unterschriebenen Blatts (Art
   -- 'vertrag'). Bestand: die beiden Vermerke aus ANN-224 genuegen weiter.
   select 'registration_form',
          case
@@ -70,4 +70,4 @@ as $$
 $$;
 
 comment on function app.intake_checklist(uuid, uuid) is
-  'Die zwei Punkte der Erstaufnahme einer Person, abgeleitet aus der Akte (AKTE-007, ANN-224, ANN-226): Verordnungsfoto und Anmeldebogen (Foto des Blatts als Datei der Art vertrag, im Bestand auch die beiden Vermerke); done, open oder not_needed. Keine Pruefung der Rolle - das tun die Aufrufer.';
+  'Die zwei Punkte der Erstaufnahme einer Person, abgeleitet aus der Akte (AKTE-007, ANN-224, ANN-227): Verordnungsfoto und Anmeldebogen (Foto des Blatts als Datei der Art vertrag, im Bestand auch die beiden Vermerke); done, open oder not_needed. Keine Pruefung der Rolle - das tun die Aufrufer.';

@@ -222,7 +222,11 @@ der sieben Pflicht-Secrets, wird übersprungen, nicht rot.
 Actions → „Test-Umgebung" → „Run workflow" auf `main`, Haken bei „neu
 aufsetzen". Beim allerersten Lauf gegen ein leeres Projekt geschieht das von
 selbst. Die Praxiswoche sind die Werktage von vorgestern bis in vier Tagen;
-nach einer Woche einfach wieder neu aufsetzen (ANN-100).
+nach einer Woche einfach wieder neu aufsetzen (ANN-100). Zum Seed kommen dort
+zwölf weitere Testpatient:innen (`supabase/testumgebung/testpatienten.sql`,
+AKTE-009) – lange Namen, minderjährig, Einrichtung, ohne Telefon, mit und ohne
+Grundlage, Anmeldebogen teils offen – mit vierzehn Terminen je Werktag. Der
+lokale Seed behält seine drei Personen, weil die Tests auf sie zählen.
 
 **Zugang.** Dieselben Konten wie unter „Testkonten", aber **nie** mit dem
 Entwicklungskennwort: Alle Konten bekommen das Kennwort aus dem Secret

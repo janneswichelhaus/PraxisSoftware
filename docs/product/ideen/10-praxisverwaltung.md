@@ -1361,7 +1361,7 @@ auf dem Blatt kommen aus dem Leistungskatalog, nicht als Freitext.
 |---|---|
 | Status | notiert |
 | Quelle | Jannes, 2026-10-03 (Akte entschlacken · Behandlungsgrundlagen) |
-| Berührt | ADR-005, ADR-002, ADR-007, `DatenUebertragenFenster.tsx`, ANN-227 |
+| Berührt | ADR-005, ADR-002, ADR-007, `DatenUebertragenFenster.tsx`, ANN-228 |
 
 **Stand.** Seit 2026-10-03 tippt die Praxis die Verordnung im Fenster „Daten
 übertragen" vom Foto ab: Datum, Ärzt:in, ICD-10, Diagnose, Positionen.

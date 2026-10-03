@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { SEED, asPostgres, asUser, asUserCommitted, resetDatabaseOhneTermine } from './helpers/db';
 
 /**
- * Die Diagnose der Verordnung auf der Rechnung (ANN-228, schema_version 4).
+ * Die Diagnose der Verordnung auf der Rechnung (ANN-229, schema_version 4).
  *
  *   * Der Entwurf und der Snapshot nennen ICD-10 und Diagnosetext der
  *     Grundlage, an der die Leistung haengt.
@@ -82,7 +82,7 @@ interface Rechnung {
   rechnung: { document: { schema_version: number; treatment_bases: Grundlage[] } };
 }
 
-describe('Diagnose auf der Rechnung (ANN-228)', () => {
+describe('Diagnose auf der Rechnung (ANN-229)', () => {
   beforeEach(async () => {
     await resetDatabaseOhneTermine();
     await asPostgres('delete from public.invoice_number_series');

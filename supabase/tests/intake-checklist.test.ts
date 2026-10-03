@@ -101,7 +101,7 @@ describe('Erstaufnahme-Checkliste (PRX-013)', () => {
     ]);
   });
 
-  it('erledigt den Anmeldebogen mit seinem Foto (ANN-226)', async () => {
+  it('erledigt den Anmeldebogen mit seinem Foto (ANN-227)', async () => {
     await datei('vertrag', 'pending');
     expect((await checkliste()).registration_form).toBe('open');
     await datei('einwilligung');

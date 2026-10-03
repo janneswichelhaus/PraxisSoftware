@@ -97,7 +97,7 @@ describe('Datenschutz der Akte', () => {
     expect(screen.getByText('Fotos im Behandlungsverlauf')).toBeInTheDocument();
   });
 
-  // ANN-226: Datenschutzinformation und Behandlungsvertrag belegt das Foto
+  // ANN-227: Datenschutzinformation und Behandlungsvertrag belegt das Foto
   // des Anmeldebogens - als Vermerk stehen sie nicht mehr zur Wahl.
   it('bietet nur noch Einwilligungen zum Vermerken an', async () => {
     seite();

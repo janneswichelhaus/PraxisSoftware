@@ -217,7 +217,7 @@ describe('GrundlagenKacheln', () => {
       TreatmentBasesApi.Heilmittelposition[],
     ];
     expect(patientId).toBe(PATIENT);
-    // ANN-227: ohne eigene Angabe die größte Anzahl einer Position.
+    // ANN-228: ohne eigene Angabe die größte Anzahl einer Position.
     expect(werte.appointment_count).toBe(6);
     expect(positionen).toEqual([
       expect.objectContaining({ remedy: 'Krankengymnastik', menge: 6 }),

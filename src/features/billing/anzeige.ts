@@ -109,7 +109,7 @@ export function empfaengerart(kind: string, bereich: Leistungsbereich | undefine
 
 /**
  * „Diagnose: M54.2 Zervikalsyndrom" - ICD-10 und Text der Verordnung, seit
- * schema_version 4 (ANN-228). `null`, wenn der Snapshot keine trägt.
+ * schema_version 4 (ANN-229). `null`, wenn der Snapshot keine trägt.
  */
 export function diagnoseText(basis: {
   diagnosis_icd10?: string | null | undefined;

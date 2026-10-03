@@ -608,6 +608,8 @@ describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
           street: null,
           postal_code: null,
           city: null,
+          schedulable_treatment: false,
+          schedulable_training: false,
         }}
       />,
     );

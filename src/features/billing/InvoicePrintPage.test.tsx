@@ -137,7 +137,7 @@ describe('Rechnungsblatt', () => {
     expect(screen.queryByText(/Diagnose:/)).not.toBeInTheDocument();
   });
 
-  it('nennt seit schema_version 4 die Diagnose der Verordnung (ANN-228)', async () => {
+  it('nennt seit schema_version 4 die Diagnose der Verordnung (ANN-229)', async () => {
     fetchRechnung.mockResolvedValue(
       ausgestellt({
         schema_version: 4,

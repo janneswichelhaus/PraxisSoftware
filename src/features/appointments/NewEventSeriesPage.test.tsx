@@ -36,6 +36,8 @@ const personen: StaffApi.StaffMember[] = [
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
   },
 ];
 

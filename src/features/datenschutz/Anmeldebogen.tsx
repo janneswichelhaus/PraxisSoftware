@@ -31,7 +31,7 @@ import {
 /**
  * Der Anmeldebogen in der Akte (PAT-006; seit AKTE-007 in den Stammdaten).
  *
- * Seit 2026-10-03 (ANN-226) ist der Anmeldebogen ein Foto: Kontaktdaten,
+ * Seit 2026-10-03 (ANN-227) ist der Anmeldebogen ein Foto: Kontaktdaten,
  * Datenschutzinformation und Behandlungsvertrag stehen auf einem Blatt, die
  * Person unterschreibt es, die Praxis fotografiert es. Das Foto ist der
  * Nachweis; die Vermerke „Datenschutzinformation ausgehändigt" und
@@ -63,7 +63,7 @@ export function AnmeldebogenFoto({
       vorschauAlt={`Foto des ${BEGRIFFE.anmeldebogen}s, noch nicht gespeichert`}
       erfolg={`Der ${BEGRIFFE.anmeldebogen} liegt in der Akte.`}
       // Ein Foto erledigt den Anmeldebogen der Erstaufnahme - der Hinweis im
-      // Kopf der Akte verschwindet ohne Neuladen (ANN-226).
+      // Kopf der Akte verschwindet ohne Neuladen (ANN-227).
       onErfolg={() => void queryClient.invalidateQueries({ queryKey: ['open-points'] })}
       sofort
       ausloeser={ausloeser}
@@ -176,7 +176,7 @@ type Vorgang = 'consent_granted' | 'consent_withdrawn' | 'consent_refused';
  * Was sich zu einem Zweck vermerken lässt: Erteilt wird widerrufen; sonst
  * erteilt - und abgelehnt, solange es nicht schon abgelehnt ist (ADR-017
  * Punkt 35). Datenschutzinformation und Behandlungsvertrag belegt seit
- * ANN-226 das Foto des Anmeldebogens.
+ * ANN-227 das Foto des Anmeldebogens.
  */
 function moeglicheVorgaenge(stand: Einwilligungsstand): Vorgang[] {
   if (stand.erteilt) return ['consent_withdrawn'];

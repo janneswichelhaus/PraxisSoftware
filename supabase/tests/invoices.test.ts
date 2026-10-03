@@ -437,11 +437,11 @@ describe('Rechnung', () => {
     });
 
     // Bis 2026-10-03 stand die Diagnose nie auf der Rechnung (ADR-004
-    // Fassung 2). Jannes hat entschieden: Diagnose drauf (ANN-228) - an genau
+    // Fassung 2). Jannes hat entschieden: Diagnose drauf (ANN-229) - an genau
     // einer Stelle, `app.invoice_shows_diagnosis()`. Dieser Test hält beide
     // Seiten der Zusage fest: abgeschaltet keine Diagnose, und Therapieziel
     // und Verordnerhinweis stehen in keinem Fall darauf.
-    it('nennt den Verordnungsbezug, die Diagnose nur über den Schalter (ANN-228)', async () => {
+    it('nennt den Verordnungsbezug, die Diagnose nur über den Schalter (ANN-229)', async () => {
       const { rows } = await asPostgres<{
         diagnosis: string | null;
         therapy_goal: string | null;

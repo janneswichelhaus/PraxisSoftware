@@ -256,7 +256,7 @@ function Karte({
 }
 
 /**
- * Der Anmeldebogen als Karte (ANN-226): fehlt er, steht die Karte auf der
+ * Der Anmeldebogen als Karte (ANN-227): fehlt er, steht die Karte auf der
  * Warnfläche mit dem Knopf zum Foto; liegt er vor, nennt sie das und zeigt
  * die Blätter aufklappbar. Der Zustand ist derselbe Punkt der Erstaufnahme
  * wie im Kopf der Akte (`app.intake_checklist`, gleicher Abfrageschlüssel).
@@ -426,7 +426,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           Inhalts, nicht die des Fensters. Jede Karte führt ins Formular -
           das Formular bearbeitet alle Angaben zugleich. */}
       <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,340px),1fr))] items-start gap-4 [&>section]:mt-0">
-        {/* AKTE-007, ANN-226: der Anmeldebogen zuerst - solange er fehlt, ist
+        {/* AKTE-007, ANN-227: der Anmeldebogen zuerst - solange er fehlt, ist
             er die Aufgabe dieser Seite. */}
         {darfVerorten ? (
           <div id={ANMELDEBOGEN_ANKER} className="scroll-mt-4">

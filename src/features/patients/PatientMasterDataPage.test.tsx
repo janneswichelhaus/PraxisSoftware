@@ -188,7 +188,7 @@ describe('Stammdaten der Akte', () => {
         expect(
           within(anker as HTMLElement).getByLabelText('Anmeldebogen als Datei'),
         ).toBeInTheDocument();
-        // ANN-226: keine Einzelvermerke mehr für Datenschutzinformation und Vertrag.
+        // ANN-227: keine Einzelvermerke mehr für Datenschutzinformation und Vertrag.
         expect(screen.queryByText('Datenschutzinformation')).toBeNull();
         expect(screen.queryByText('Behandlungsvertrag')).toBeNull();
         const einwilligungen = await screen.findByRole('heading', { name: 'Einwilligungen' });

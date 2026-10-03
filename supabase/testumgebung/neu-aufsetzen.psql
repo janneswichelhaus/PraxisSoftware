@@ -17,5 +17,6 @@ select set_config('praxis.zugang_passwort', :'passwort', false) \g /dev/null
 
 \ir kennung.sql
 \ir ../seed.sql
+\ir testpatienten.sql
 \ir praxiswoche.sql
 \ir zugang.sql
