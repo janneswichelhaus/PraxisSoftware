@@ -2,7 +2,10 @@
 
 ## Status
 
-Angenommen — **Fassung 2** (2026-09-08).
+Angenommen — **Fassung 3** (2026-10-03).
+
+Fassung 3 kehrt Punkt 9 (Auditpflicht) auf Entscheidung des Projektinhabers um
+(LOG-EPIC-001); die übrigen Punkte sind unverändert.
 
 Fassung 2 ergänzt Punkt 10 und lässt die Punkte 1 bis 9 unverändert. Fassung 1
 vom 2026-09-01 bleibt in der Git-Historie nachlesbar; was geändert wurde, steht
@@ -10,7 +13,7 @@ unten in der Änderungshistorie.
 
 ## Datum
 
-2026-09-01 (Fassung 1); 2026-09-08 (Fassung 2)
+2026-09-01 (Fassung 1); 2026-09-08 (Fassung 2); 2026-10-03 (Fassung 3)
 
 ## Kontext
 
@@ -92,9 +95,15 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
    Einträge (ADR-004). Der Versionsverlauf unterliegt derselben
    rollenabhängigen Projektion wie der Eintrag selbst.
 
-9. **Auditpflicht.** Erstellen, Finalisieren, Ändern und Lesen eines Eintrags
-   sind auditpflichtig nach ADR-010 — als Metadaten, ohne klinischen Inhalt im
-   Auditlog.
+9. **Auditpflicht** (Fassung 3). Erstellen, Finalisieren und Ändern weist der
+   Eintrag selbst nach: `created_by`, `finalized_by`, `finalized_at` und die
+   Versionen mit Urheber und Zeitpunkt (Punkte 4 bis 6). Das Lesen ist
+   auditpflichtig nach [ADR-010](ADR-010-audit-and-privileged-access.md)
+   Fassung 3 als „Akte geöffnet“: höchstens ein Eintrag je Person, Akte und
+   Kalendertag, als Metadaten ohne klinischen Inhalt. *Fassung 2 lautete:
+   „Erstellen, Finalisieren, Ändern und Lesen eines Eintrags sind
+   auditpflichtig nach ADR-010 — als Metadaten, ohne klinischen Inhalt im
+   Auditlog.“*
 
 10. **Ein KI-Vorschlag ist kein Entwurf** (Fassung 2). Ein Transkript oder ein
     strukturierter Vorschlag, der aus einem Diktat oder einer anderen
@@ -192,3 +201,4 @@ Weitere Randbedingungen aus bereits getroffenen Entscheidungen:
 | ------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1       | 2026-09-01 | Erstfassung, angenommen.                                                                                                                                                                                                                                            |
 | 2       | 2026-09-08 | **Punkt 10 ergänzt:** ein KI-Vorschlag ist kein `Entwurf` und wird von der automatischen Finalisierung nach Punkt 7 nicht erfasst; erst die ausdrückliche Übernahme macht ihn zum Entwurf. Dazu drei Konsequenzen, die Abgrenzung zu Diktat/KI-Entwürfen präzisiert und eine offene Folgefrage zum Fristanker. Anlass: Entscheidung von Jannes zur Sprachdokumentation, verbindlich in `PROJECT_PRINCIPLES.md` §6.3 (Version 0.5). Die Punkte 1 bis 9 sind unverändert. |
+| 3       | 2026-10-03 | **Punkt 9 umgekehrt** (LOG-EPIC-001, Entscheidung des Projektinhabers): Schreibvorgänge weist der Eintrag selbst nach, das Lesen steht als „Akte geöffnet“ einmal je Person, Akte und Tag im Auditlog (ADR-010 Fassung 3). Die übrigen Punkte sind unverändert. |

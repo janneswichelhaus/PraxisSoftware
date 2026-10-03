@@ -6,6 +6,21 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.21
+
+Nachzug an Rang 2 nach **ADR-010 Fassung 3** und **ADR-016 Fassung 3**, entschieden vom
+Projektinhaber am 2026-10-03 (LOG-EPIC-001, ANN-230). Leitprinzip: **Das Datenmodell ist die
+Nachweisführung**; das Auditlog hält nur, was es nicht abbildet. Geändert sind: **§4.2** — Zugriffe
+auf Patientenakten bleiben auditierbar, als „Akte geöffnet“ höchstens einmal je Person, Akte und
+Kalendertag; Schreibvorgänge weist die unveränderliche Akte nach; der monatliche Report entfällt
+zugunsten der Auswertung bei Anlass; der Lesepfad des Protokolls wird nicht mehr selbst
+protokolliert; dafür die ausdrückliche Zweckbindung (nie Leistungs- oder Verhaltenskontrolle, §20).
+**§4.3** — „Nachvollziehbarkeit“ statt „Auditlog“ als tragende Kompensation. **§8** — ein
+Zustandswechsel hält am Termin fest, wer ihn wann vorgenommen hat, statt eines eigenen
+Auditeintrags. Unverändert bleiben die Auditierbarkeit des Lesens (auch im Training, §4.8), die
+Beschränkung auf Metadaten, die Unveränderbarkeit über den Anwendungspfad und das Lesen allein durch
+den Inhaber.
+
 ### Änderungsvermerk 0.20
 
 Nachzug an Rang 2 nach **ADR-017 Fassung 3** (Abschnitt H), angenommen vom Projektinhaber am

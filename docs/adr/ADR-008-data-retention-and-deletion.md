@@ -2,11 +2,13 @@
 
 ## Status
 
-Angenommen
+Angenommen — **Fassung 2** (2026-10-03): Die Fristen des Auditlogs,
+des Löschjournals und der Löschaufträge im Retention Schedule
+(LOG-EPIC-001). Alles Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-10-03
 
 ## Kontext
 
@@ -73,8 +75,11 @@ gehört zu den Vorbedingungen des Produktivstarts.
 | Nicht angenommene KI-Entwürfe | maximal 7 Tage | interne Initialentscheidung |
 | Angenommene KI-Inhalte | Retention des Zieldokuments | abgeleitet |
 | AI-Gateway-Auditmetadaten | initial 3 Jahre, ohne vollständige Prompts und Outputs | interne Initialentscheidung |
-| Patientenakten-Auditlogs | initial 3 Jahre | interne Initialentscheidung |
+| Auditlog: Lese- und Sicherheitsereignisse (Fassung 2) | 12 Monate | interne Entscheidung |
+| Auditlog: übrige Einträge (Fassung 2) | 3 Jahre | interne Entscheidung |
 | Normale Authentifizierungs- und Securitylogs | initial 12 Monate | interne Initialentscheidung |
+| Löschjournal (Fassung 2) | 60 Tage ab der Löschung (Backups 30 Tage, ADR-012) | abgeleitet |
+| Quittierte Löschaufträge der Ablage (Fassung 2) | 3 Jahre ab der Quittung; offene nie | interne Entscheidung |
 | Interner Teamchat | initial rollierend 12 Monate; dauerhaft relevante Inhalte MÜSSEN in den dafür vorgesehenen Fachprozess übernommen werden | interne Initialentscheidung |
 
 **Fristen ohne unmittelbare gesetzliche Vorgabe sind interne
@@ -155,3 +160,10 @@ Verankerung im Code und Änderungspfad.
 - Wie werden Dateien und Anhänge behandelt, die in mehreren Kontexten
   referenziert sind? *Beantwortet mit ADR-017 Punkt 10 (eine Datei, ein
   Bezugsdatensatz; Frist vom Bezugsdatensatz geerbt).*
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-10-03 | Retention Schedule (LOG-EPIC-001): Auditlog in zwei Fristen (12 Monate Lesen und Sicherheit, 3 Jahre übrige), Löschjournal 60 Tage, quittierte Löschaufträge 3 Jahre; ein Legal Hold hält jeden Auditeintrag seiner Akte ([ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3). Übrige Punkte unverändert. |

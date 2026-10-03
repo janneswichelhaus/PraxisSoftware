@@ -376,7 +376,7 @@ kann; die übrigen beantworten sich im Loop, der das Thema baut.
 | Frontend-Hosting und dessen Prüfung; `service_role` nie im Browser; Nachweis der Freigabe | ADR-015, ADR-013 | B16; OPS-002a, OPS-002 (G5) |
 | Schweregrade im Dependency-Scan | ADR-013 | ANN-054 (Schwelle `high`); OPS-002 (G5) |
 | Backup-Lebenszyklus, Notfallzugang, Restore-Dokumentation, Degraded-Kerninformationen | ADR-012 | OPS-003 (G7), E2 (G10) |
-| Schwelle „größerer Export"; Eskalation beim Report | ADR-010 | G6 (OPS-004 Rest; in ADR-004 noch OPS-005) |
+| ~~Schwelle „größerer Export"; Eskalation beim Report~~ Mit LOG-EPIC-001 (2026-10-03): drei benannte Exporte, kein Report, Auswertung bei Anlass | ADR-010 | ADR-010 Fassung 3 (Punkte 16, 19) |
 | Wie werden Berechtigungsänderungen protokolliert; Umgehungsschutz des Policy-Layers | ADR-004 | STAFF-EPIC-002, G6 |
 | Löschnachweis nach Restore; Legal-Hold-Rechte; Teamchat rollierend löschen | ADR-008 | ANN-033; LOE-002; TEAM-001 |
 | Rechtsgrundlage je Verarbeitung und Einwilligungsmodell; Betroffenenrechte technisch | ADR-007 | PAT-006 (G8), OPS-006 (G9), G14 |

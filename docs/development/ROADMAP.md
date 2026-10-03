@@ -762,6 +762,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | ABN-EPIC-001 Abnahme der Annahmen, Blöcke 2, 3, 4 und 9 | fertig | 2026-10-02 | ABN-001 bis ABN-012, Zweitreview | — | Sichtung: Plattform Schritte 7 bis 9 |
 | B | ABN-EPIC-001b Abnahme der Annahmen, Blöcke 5 bis 8 | fertig | 2026-10-02 | ABN-013 bis ABN-022, Zweitreview | — | ohne BEF-105, -106, -109 (ABN-EPIC-001c); Sichtung: Befund und Training je Schritte 13 bis 15 |
 | B | ABN-EPIC-001c Dateien, Dokumentationsfotos, Kartendienst (BEF-105, -106, -109) | fertig | 2026-10-02 | ABN-023 bis ABN-028, Zweitreview; vorher ADR-017 Fassung 3, ADR-019 Fassung 5 (PR #170) | — | Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9 |
+| B | LOG-EPIC-001 Protokollierung auf das Mindestmaß | fertig | 2026-10-03 | PRs #177 bis #180 (gestapelt), ADR-010 Fassung 3, PROJECT_PRINCIPLES 0.21 | — | ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

@@ -9,6 +9,8 @@ Vorgabe steht in Punkt 2: `internal` bekommt kein eigenes Feld, weil es als
 [ADR-020](ADR-020-treatment-basis.md) nicht ab, sondern zieht die Grenze
 daneben.
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-09-20

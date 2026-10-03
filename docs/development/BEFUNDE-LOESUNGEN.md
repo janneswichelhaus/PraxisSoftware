@@ -804,7 +804,7 @@ _Entscheidung:_ keine zwingende; 1b/2a als Annahme.
 **Audit, Aufbewahrung, MDR-Sperre (BEF-065).** _Stand:_ alles trifft zu. `shortReference` kürzt auf
 12 Zeichen, volle Kennung nur im `title`; Ergebnis als grauer Text; Filter in `useState`;
 `list_audit_events(p_limit, p_offset)` ohne Stichtag, daher Verschiebung durch das eigene
-`audit_log.read`; `AUDIT_ACTIONS` ungruppiert. UX-005i hat nur Fußnoten eingeklappt.
+`audit_log.read` (seit LOG-EPIC-001 entfallen); `AUDIT_ACTIONS` ungruppiert. UX-005i hat nur Fußnoten eingeklappt.
 `AufbewahrungPage.tsx:490–537`: Plan → Löschsperren → Offene Löschaufträge → Abgleich → Journal;
 „Fristen ändern sich über eine Migration“, „Kürzel ANN-NNN“, „Objektspeicher“. `MdrSperre.tsx` und
 `mdr-sperre.spec.ts` unverändert. _Beste Lösung:_ Option 2. Audit: `list_audit_events` um

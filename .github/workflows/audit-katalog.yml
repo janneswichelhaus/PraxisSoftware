@@ -1,0 +1,61 @@
+# =============================================================================
+# Rueckfallschutz der Protokollierung (LOG-EPIC-001, ADR-010).
+#
+# Die Menge der Aktionen des Auditlogs (supabase/audit-aktionen.txt) aendert
+# sich nur mit dem Label "freigabe-audit", zuletzt gesetzt vom Inhaber des
+# Repositorys. Eigener Workflow, damit das Setzen eines Labels nicht die ganze
+# CI neu startet. Als Pflichtpruefung wirkt er erst, wenn er in der Branch
+# Protection eingetragen ist (Repository-Einstellung, docs/DEVELOPMENT.md).
+#
+# Geprueft wird mit dem Skript der Basis, sobald es dort liegt: Ein Pull
+# Request kann seine eigene Pruefung so nicht still abschwaechen.
+# =============================================================================
+name: Katalog der Protokollierung
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
+
+concurrency:
+  group: audit-katalog-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  issues: read
+  pull-requests: read
+
+jobs:
+  katalog:
+    name: Aktionen des Auditlogs unveraendert oder freigegeben
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          # Das Skript braucht keine Abhaengigkeiten; ohne pnpm im Job darf
+          # setup-node dessen Cache nicht automatisch einschalten.
+          package-manager-cache: false
+
+      - name: Pruefskript der Basis verwenden, wenn vorhanden
+        env:
+          BASIS: origin/${{ github.base_ref }}
+        run: |
+          if git show "$BASIS:scripts/audit-aktionen-check.mjs" > "$RUNNER_TEMP/audit-aktionen-check.mjs" 2>/dev/null; then
+            echo "SKRIPT=$RUNNER_TEMP/audit-aktionen-check.mjs" >> "$GITHUB_ENV"
+          else
+            echo "SKRIPT=scripts/audit-aktionen-check.mjs" >> "$GITHUB_ENV"
+          fi
+
+      - name: Aktionen vergleichen
+        env:
+          BASIS: origin/${{ github.base_ref }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
+          PR_NUMMER: ${{ github.event.pull_request.number }}
+          FREIGEBENDE: ${{ github.repository_owner }}
+        run: node "$SKRIPT" "$BASIS"
