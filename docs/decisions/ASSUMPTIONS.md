@@ -2363,6 +2363,8 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 **Änderungspfad.** Eigenes Feld: Spalte `home_visit_floor` mit Migration und Schreibpfad (`IDEA-PRX-050`), die Karte liest sie direkt, `stockwerk.ts` entfällt · Aufwand `mittel`. Weitere Schreibweisen: die Wortlisten in `stockwerk.ts` · Aufwand `klein`. **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
+**Verweis.** Seit AKTE-008 (Jannes, 2026-10-03) ist das Stockwerk keine Pille mehr, sondern die erste Zeile „Etage“ im Info-Aufklapper der Tageskarte; die Regel zum Abtrennen gilt unverändert.
+
 ### ANN-198 — Der Hinweis auf die vorherige Absage bleibt am Hausbesuch als eine Zeile
 
 Prozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 10)
@@ -2698,4 +2700,16 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte · Kopf, Rei
 **Änderungspfad.** Ein Vermerk statt zweier: neue Vermerkart in `patient_privacy_records` und der Punkt `registration_form` in `app.intake_checklist` · Aufwand `mittel`. Ein Punkt mehr: `app.intake_checklist` und `INTAKE_ITEMS` · Aufwand `klein`.
 
 **Ablösung.** ersetzt ANN-143 in der Zahl der Punkte.
+
+### ANN-225 — „Doku“ auf der Tageskarte führt in den Reiter Doku mit dem Termin oben; geschrieben wird auf der Schreibseite
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Übersicht · Tageskarte: Doku zusammenführen) · erledigt · Wiedervorlage: Sichtung der Übersicht
+
+**Annahme.** Die Tageskarte hat genau einen Knopf „Doku“ (statt „Bisherige Doku“ und „Doku“). Er führt in den Reiter Doku der Akte mit `?termin=<id>`. Dort steht oben „Dieser Termin“: der Eintrag zu diesem Termin samt Nachträgen, oder „Noch kein Eintrag.“; darunter die übrigen Einträge, neueste zuerst, ohne diesen Termin. Schreiben heißt dort „Eintrag schreiben“ bzw. „Weiterschreiben“ und führt auf die bestehende Schreibseite außerhalb des Aktenrahmens, mit Rückweg in die Doku; an einem festgeschriebenen Eintrag gibt es den Knopf nicht (Korrektur und Nachtrag am Termin). Den Knopf sehen alle Rollen, die die Doku lesen (auch das Büro); schreiben nur die dokumentierenden.
+
+**Begründung.** Jannes legt Ziel und Inhalt fest („oben der Eintrag zu diesem Termin, neu oder vorhanden, darunter die bisherigen Einträge“). Offen war nur, ob in der Akte selbst getippt wird. Nein: Formulare stehen bewusst außerhalb des Aktenrahmens, damit ein Tipp auf die Bereichsleiste keinen Text verwirft (UX-009, AKTE-000). Gelesen wird über die vorhandenen Wege (`fetchAppointment`, `get_treatment_note`), jeder gelieferte Eintrag wird protokolliert (ADR-010). Unsicher: ob der zusätzliche Tipp bis zum Schreiben im Alltag stört — dann könnte „Doku“ direkt auf die Schreibseite führen, die die bisherigen Einträge schon daneben zeigt.
+
+**Anker.** `doku` in der Karte von `src/features/today/MyDayPage.tsx`; `DieserTermin` in `src/features/documentation/PatientRecordDocumentation.tsx`; `?termin=` in `src/features/documentation/PatientDokuPage.tsx`; Tests `src/features/documentation/DieserTermin.test.tsx`, `src/features/today/MyDayPage.test.tsx`.
+
+**Änderungspfad.** Direkt auf die Schreibseite: das Ziel `doku` in `MyDayPage.tsx` · Aufwand `klein`. In der Akte schreiben: ein Formular in `DieserTermin` mit eigenem Verlustschutz · Aufwand `mittel`.
 

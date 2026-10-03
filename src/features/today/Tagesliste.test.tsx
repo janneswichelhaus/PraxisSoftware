@@ -157,29 +157,33 @@ describe('Tageskarte', () => {
   });
 
   describe('Pillen und Info-Knopf (Design-Handoff 2026-10-01)', () => {
-    it('zeigt das Stockwerk als Pille und haelt Zugang und Besonderheit zugeklappt', () => {
+    // AKTE-008 (Jannes 2026-10-03): Die Etage ist keine Pille mehr; sie
+    // steht mit Zugang, Besonderheit und den Rufnummern im Info-Aufklapper.
+    it('zeigt keine Etagen-Pille und haelt Etage, Zugang, Besonderheit und Nummern zugeklappt', () => {
       renderWithProviders(<Tageskarte termin={eintrag()} kicker="Erster Weg" />);
 
       // Die Anschrift in einer Zeile.
       expect(screen.getByText('Beispielstrasse 12, 72070 Tuebingen').tagName).toBe('ADDRESS');
-      const pille = screen.getByRole('button', { name: '2. OG links' });
-      expect(pille).toHaveAttribute('aria-expanded', 'false');
-      expect(pille).toHaveClass('min-h-9', 'rounded-pill', 'border-line-strong');
-      // Der Rest des Hinweises und die Besonderheit stehen nicht offen da:
-      // Die Übersicht wird im Treppenhaus mitgelesen.
+      expect(screen.queryByText('2. OG links')).toBeNull();
+      expect(screen.queryByRole('button', { name: '2. OG links' })).toBeNull();
+      // Nichts davon steht offen da: Die Übersicht wird im Treppenhaus
+      // mitgelesen.
       expect(screen.queryByText('Klingel „Mustermann“.')).toBeNull();
       expect(screen.queryByText('Hund im Flur.')).toBeNull();
+      expect(screen.queryByRole('link', { name: /0000005/ })).toBeNull();
+      const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+      expect(knopf).toHaveAttribute('aria-expanded', 'false');
       // Kein Verweis auf etwas, das es im Dokument nicht gibt (UIK-08).
-      expect(pille).not.toHaveAttribute('aria-controls');
+      expect(knopf).not.toHaveAttribute('aria-controls');
     });
 
-    it('klappt beides ueber den Info-Knopf auf - und ueber die Stockwerk-Pille wieder zu', async () => {
+    it('klappt Etage, Zugang, Besonderheit und Rufnummern in dieser Reihenfolge auf', async () => {
       const user = userEvent.setup();
       const { container } = renderWithProviders(
-        <Tageskarte termin={eintrag()} kicker="Erster Weg" />,
+        <Tageskarte termin={eintrag({ patient_phone: '+49 7071 0000009' })} kicker="Erster Weg" />,
       );
 
-      const knopf = screen.getByRole('button', { name: 'Zugang und Besonderheiten' });
+      const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
       // 44 px Tippziel, auch wenn das Bild nur 22 px misst.
       expect(knopf).toHaveClass('size-11');
       expect(knopf).toHaveAttribute('type', 'button');
@@ -188,37 +192,77 @@ describe('Tageskarte', () => {
       expect(knopf).toHaveAttribute('aria-expanded', 'true');
       const hinweise = container.querySelector('dl')!;
       expect(knopf).toHaveAttribute('aria-controls', hinweise.id);
-      // „Zugangshinweis" wie im Feld der Stammdaten (WRT-17) - ohne das
-      // Stockwerk, das schon in der Pille steht.
-      expect(within(hinweise).getByText('Zugangshinweis').tagName).toBe('DT');
+      expect(Array.from(hinweise.querySelectorAll('dt')).map((dt) => dt.textContent)).toEqual([
+        'Etage',
+        'Zugangshinweis',
+        'Besonderheit',
+        'Mobil',
+        'Telefon',
+      ]);
+      // Die Etage hervorgehoben, der Zugangshinweis ohne sie.
+      const etage = within(hinweise).getByText('2. OG links');
+      expect(etage).toHaveClass('font-semibold');
       expect(within(hinweise).getByText('Klingel „Mustermann“.')).toBeInTheDocument();
-      expect(within(hinweise).queryByText(/2\. OG/)).toBeNull();
-      expect(within(hinweise).getByText('Besonderheit').tagName).toBe('DT');
       expect(within(hinweise).getByText('Hund im Flur.')).toBeInTheDocument();
-      expect(screen.queryByText('Zugang')).toBeNull();
+      // Kontakt ist Aktion: Textlinks auf tel:, 44 px hoch.
+      const mobil = within(hinweise).getByRole('link', { name: '+49 160 0000005' });
+      expect(mobil).toHaveAttribute('href', 'tel:+491600000005');
+      expect(mobil).toHaveClass('min-h-11');
+      expect(within(hinweise).getByRole('link', { name: '+49 7071 0000009' })).toHaveAttribute(
+        'href',
+        'tel:+4970710000009',
+      );
 
       await pruefeBarrierefreiheit(container);
 
-      // Beide Knöpfe zeigen denselben Zustand und schalten dasselbe.
-      const pille = screen.getByRole('button', { name: '2. OG links' });
-      expect(pille).toHaveAttribute('aria-expanded', 'true');
-      await user.click(pille);
+      await user.click(knopf);
       expect(container.querySelector('dl')).toBeNull();
-      expect(knopf).toHaveAttribute('aria-expanded', 'false');
     });
 
-    it('macht aus dem Stockwerk keinen Knopf, wenn es nichts aufzuklappen gibt', () => {
+    it('zeigt den Info-Knopf schon fuer eine Etage allein', async () => {
+      const user = userEvent.setup();
       renderWithProviders(
         <Tageskarte
-          termin={eintrag({ home_visit_access_note: '1. OG', special_note: null })}
+          termin={eintrag({
+            home_visit_access_note: '1. OG',
+            special_note: null,
+            patient_phone_mobile: null,
+          })}
           kicker="Erster Weg"
         />,
       );
-      expect(screen.getByText('1. OG').tagName).toBe('SPAN');
-      expect(screen.queryByRole('button')).toBeNull();
+      expect(screen.queryByText('1. OG')).toBeNull();
+      await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
+      expect(screen.getByText('1. OG')).toBeInTheDocument();
+      expect(screen.queryByText('Zugangshinweis')).toBeNull();
     });
 
-    it('zeigt ohne erkennbares Stockwerk nur den Info-Knopf - der Hinweis bleibt ganz', async () => {
+    it('zeigt den Info-Knopf schon fuer eine Rufnummer allein', () => {
+      renderWithProviders(
+        <Tageskarte
+          termin={eintrag({ home_visit_access_note: null, special_note: null })}
+          kicker="Erster Weg"
+        />,
+      );
+      expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeInTheDocument();
+    });
+
+    it('zeigt ohne Etage, Zugang, Besonderheit und Rufnummer keinen Info-Knopf', () => {
+      renderWithProviders(
+        <Tageskarte
+          termin={eintrag({
+            home_visit_access_note: null,
+            special_note: null,
+            patient_phone: null,
+            patient_phone_mobile: null,
+          })}
+          kicker="Erster Weg"
+        />,
+      );
+      expect(screen.queryByRole('button', { name: 'Etage, Zugang und Kontakt' })).toBeNull();
+    });
+
+    it('laesst einen Hinweis ohne erkennbare Etage ganz', async () => {
       const user = userEvent.setup();
       renderWithProviders(
         <Tageskarte
@@ -226,9 +270,9 @@ describe('Tageskarte', () => {
           kicker="Erster Weg"
         />,
       );
-      expect(screen.getAllByRole('button')).toHaveLength(1);
-      await user.click(screen.getByRole('button', { name: 'Zugang und Besonderheiten' }));
+      await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
       expect(screen.getByText('Klingel Müller, 2. OG')).toBeInTheDocument();
+      expect(screen.queryByText('Etage')).toBeNull();
       expect(screen.queryByText('Besonderheit')).toBeNull();
     });
 
@@ -271,7 +315,8 @@ describe('Tageskarte', () => {
       );
       expect(screen.queryByText('Liege')).toBeNull();
       expect(screen.queryByText(/Erstaufnahme/)).toBeNull();
-      expect(document.querySelector('.rounded-pill')).toBeNull();
+      // Pillen sind 36 px hoch; das Bild im Info-Knopf ist keine.
+      expect(document.querySelector('.rounded-pill.min-h-9')).toBeNull();
     });
 
     it('zeigt die Erstaufnahme nur am Behandlungstermin', () => {
@@ -286,7 +331,7 @@ describe('Tageskarte', () => {
     });
   });
 
-  it('stellt die Hauptaktion ueber die uebrigen Handlungen und die Rufnummern dahinter', () => {
+  it('stellt die Hauptaktion ueber die uebrigen Handlungen; Rufnummern stehen nicht offen da', () => {
     renderWithProviders(
       <Tageskarte
         termin={eintrag({ patient_phone: '+49 7071 0000005' })}
@@ -297,17 +342,12 @@ describe('Tageskarte', () => {
     );
     const haupt = screen.getByRole('button', { name: 'Navigation starten' });
     const doku = screen.getByRole('link', { name: 'Doku' });
-    const mobil = screen.getByRole('link', { name: /Mobil/ });
-    const telefon = screen.getByRole('link', { name: /Telefon/ });
-    const danach = (a: Element, b: Element) =>
-      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    expect(danach(haupt, doku)).toBe(true);
-    // Kontakt ist Aktion, nicht Text: die Nummer wählt, statt nur dazustehen -
-    // wichtig, aber selten, deshalb hinter den Handlungen (IDEA-PRX-040).
-    expect(danach(doku, mobil)).toBe(true);
-    expect(mobil).toHaveAttribute('href', 'tel:+491600000005');
-    expect(mobil).toHaveClass('min-h-11');
-    expect(telefon).toHaveAttribute('href', 'tel:+4970710000005');
+    expect(Boolean(haupt.compareDocumentPosition(doku) & Node.DOCUMENT_POSITION_FOLLOWING)).toBe(
+      true,
+    );
+    // AKTE-008: Die Nummern stehen im Info-Aufklapper (Test oben), nicht mehr
+    // unter den Handlungen.
+    expect(screen.queryByRole('link', { name: /0000005/ })).toBeNull();
   });
 
   it('bricht Freitexte auch mitten im Wort um (UEB-16)', async () => {
@@ -319,7 +359,7 @@ describe('Tageskarte', () => {
         kicker="Erster Weg"
       />,
     );
-    await user.click(screen.getByRole('button', { name: 'Zugang und Besonderheiten' }));
+    await user.click(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' }));
 
     const stellen = screen.getAllByText(langesWort);
     expect(stellen).toHaveLength(2);

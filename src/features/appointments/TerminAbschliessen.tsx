@@ -26,6 +26,7 @@ export function TerminAbschliessenKnopf({
   appointmentId,
   stand,
   name,
+  beschriftung,
   variant = 'secondary',
   groesse = 'normal',
   onAbgeschlossen,
@@ -40,6 +41,11 @@ export function TerminAbschliessenKnopf({
   stand?: string;
   /** Name der Patient:in - unterscheidet die Haken einer Liste für Vorlesesoftware. */
   name?: string | null;
+  /**
+   * Der zugängliche Name, wo der Zusammenhang die Person schon nennt - die
+   * Tageskarte: „Behandlung abschließen" (Jannes 2026-10-03).
+   */
+  beschriftung?: string;
   variant?: Variant;
   groesse?: SymbolGroesse;
   onAbgeschlossen?: () => void;
@@ -73,8 +79,8 @@ export function TerminAbschliessenKnopf({
 
   return (
     <Symbolknopf
-      beschriftung={name ? `Termin abschließen: ${name}` : 'Termin abschließen'}
-      title="Termin abschließen"
+      beschriftung={beschriftung ?? (name ? `Termin abschließen: ${name}` : 'Termin abschließen')}
+      title={beschriftung ?? 'Termin abschließen'}
       variant={variant}
       groesse={groesse}
       disabled={mutation.isPending}

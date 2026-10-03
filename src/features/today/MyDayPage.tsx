@@ -13,7 +13,6 @@ import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
-import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
@@ -376,13 +375,18 @@ function MeinTag({
    * Der Haken an einem bestätigten Behandlungstermin (Abschnitt 6a): schließt
    * ab, ohne zu dokumentieren. Die Doku bleibt danach als „Doku offen" stehen.
    */
-  function haken(termin: DayPlanEntry, groesse: 'normal' | 'gross' = 'normal'): ReactNode {
+  function haken(
+    termin: DayPlanEntry,
+    groesse: 'normal' | 'gross' = 'normal',
+    beschriftung?: string,
+  ): ReactNode {
     if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
     const name = terminName(termin);
     return (
       <TerminAbschliessenKnopf
         appointmentId={termin.id}
         name={name}
+        {...(beschriftung ? { beschriftung } : {})}
         variant={groesse === 'gross' ? 'primary' : 'secondary'}
         groesse={groesse}
         onAbgeschlossen={() =>
@@ -472,59 +476,60 @@ function MeinTag({
                 anfahrt ? ` · ≈ ${anfahrt.minuten} min` : ''
               }`;
 
-    const doku = mitRueckweg(`/termine/${termin.id}/abschluss`, '/');
-    const darfDoku = darfDokumentieren && behandlung;
+    // Ein Ziel für die Doku (Jannes 2026-10-03): der Reiter „Doku" der Akte
+    // mit diesem Termin oben (AKTE-008, ANN-225). Er ersetzt „Bisherige Doku" und den
+    // direkten Weg auf die Schreibseite - geschrieben wird von dort aus.
+    const doku = termin.patient_id
+      ? mitRueckweg(`/patienten/${termin.patient_id}/doku?termin=${termin.id}`, '/')
+      : null;
+    const zeigtDoku = behandlung && doku !== null && (darfDokuLesen || darfDokumentieren);
+    // Der zugängliche Name beginnt mit dem sichtbaren Wort, damit auch die
+    // Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3).
+    const dokuKnopf = (variante: 'primary' | 'secondary', klassen: string) =>
+      zeigtDoku && doku ? (
+        <ButtonLink
+          to={doku}
+          variant={variante}
+          groesse={variante === 'secondary' ? 'kompakt' : 'normal'}
+          className={klassen}
+        >
+          Doku <span className="sr-only">zu diesem Termin</span>
+        </ButtonLink>
+      ) : null;
 
     // Ein Hauptknopf je Ansicht (UX-EPIC-002): die Navigation, solange der
-    // Besuch wartet; ab dem Beginn - und davor, wenn es kein Ziel für die
-    // Navigation gibt (Praxis, Video) - Haken und „Doku". Abschließen und
-    // Dokumentieren sind getrennt (Design-Handoff 2026-10-01, Abschnitt 6a):
-    // Der Haken schließt ab, „Doku" öffnet die Schreibseite.
-    const grosserHaken = haken(termin, 'gross');
-    const hauptaktion =
-      !arbeitet && hatNavigation ? (
-        <NavigationZumTermin termin={termin} hauptknopf breit />
-      ) : grosserHaken || darfDoku ? (
-        <div className="flex w-full items-center gap-2">
-          {grosserHaken}
-          {darfDoku ? (
-            <ButtonLink to={doku} className="flex-1">
-              Doku <span className="sr-only">schreiben</span>
-            </ButtonLink>
-          ) : null}
-        </div>
-      ) : null;
-    const kleinerHaken = !arbeitet && hatNavigation ? haken(termin) : null;
-
-    const aktionen =
-      behandlung && (darfDokuLesen || darfDokumentieren || kleinerHaken) ? (
+    // Besuch wartet; darunter „Doku" und der Haken in einer Reihe. Ab dem
+    // Beginn - und davor, wenn es kein Ziel für die Navigation gibt (Praxis,
+    // Video) - ist der Haken der Hauptknopf (Design-Handoff 2026-10-01,
+    // Abschnitt 6a): Der Haken schließt ab, „Doku" führt zur Doku.
+    let hauptaktion: ReactNode = null;
+    if (!arbeitet && hatNavigation) {
+      const kleinerHaken = haken(termin, 'normal', 'Behandlung abschließen');
+      const reihe =
+        zeigtDoku && kleinerHaken ? (
+          <div className="grid grid-cols-[minmax(0,1fr)_44px] gap-2">
+            {dokuKnopf('secondary', '')}
+            {kleinerHaken}
+          </div>
+        ) : (
+          (dokuKnopf('secondary', 'w-full') ?? kleinerHaken)
+        );
+      hauptaktion = (
         <>
-          {/* Vor dem Beginn steht der Haken klein neben den übrigen Zielen;
-              ab dem Beginn ist er Teil des Hauptknopfs. */}
-          {kleinerHaken}
-          {/* UX-EPIC-003: Vor der Tür die bisherige Doku mit einem Tipp. Der
-              Verlauf der Akte protokolliert jeden Lesezugriff (ADR-010); die
-              Anzeige hier ist Darstellung, verbindlich prüft der Lesepfad. */}
-          {darfDokuLesen ? (
-            <Link
-              to={mitRueckweg(`/patienten/${termin.patient_id}/doku`, '/')}
-              className={kartenAktionKlassen()}
-            >
-              Bisherige Doku
-            </Link>
-          ) : null}
-          {/* Schreiben, ohne abzuschließen (IDEA-PRX-040): Der Abschluss
-              schreibt die Dokumentation als Version 1 fest; wer während des
-              Besuchs mitschreibt, braucht den Weg ohne diese Folge. Der
-              zugängliche Name beginnt mit dem sichtbaren Wort, damit auch die
-              Sprachsteuerung „Doku" trifft (UEB-10, WCAG 2.5.3). */}
-          {darfDoku && !arbeitet && hatNavigation ? (
-            <Link to={doku} className={kartenAktionKlassen()}>
-              Doku <span className="sr-only">schreiben</span>
-            </Link>
-          ) : null}
+          <NavigationZumTermin termin={termin} hauptknopf breit />
+          {reihe}
         </>
-      ) : null;
+      );
+    } else {
+      const grosserHaken = haken(termin, 'gross');
+      hauptaktion =
+        grosserHaken || zeigtDoku ? (
+          <div className="flex w-full items-center gap-2">
+            {grosserHaken}
+            {dokuKnopf('primary', 'flex-1')}
+          </div>
+        ) : null;
+    }
 
     return (
       <Tageskarte
@@ -536,7 +541,6 @@ function MeinTag({
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
         hauptaktion={hauptaktion}
-        aktionen={aktionen}
       />
     );
   }

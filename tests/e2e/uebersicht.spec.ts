@@ -122,27 +122,47 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
   await ohneUeberlauf(page);
 });
 
-test('haelt Zugang und Besonderheit hinter Stockwerk-Pille und Info-Knopf', async ({ page }) => {
+// AKTE-008: keine Etagen-Pille mehr; Etage, Zugang, Besonderheit und
+// Rufnummern hinter dem Info-Knopf. Darunter genau ein „Doku" neben dem Haken.
+test('haelt Etage, Zugang und Kontakt hinter dem Info-Knopf', async ({ page }) => {
   await oeffne(page, '08:05', 375);
   const karte = page.getByRole('article');
 
   await expect(karte.getByText('Testweg 7, 72072 Tuebingen')).toBeVisible();
-  const pille = karte.getByRole('button', { name: 'Erdgeschoss' });
-  const info = karte.getByRole('button', { name: 'Zugang und Besonderheiten' });
+  await expect(karte.getByRole('button', { name: 'Erdgeschoss' })).toHaveCount(0);
+  await expect(karte.getByText('Erdgeschoss', { exact: true })).toHaveCount(0);
+  const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
   await expect(karte.getByText('Schlüssel bei der Nachbarin.', { exact: false })).toHaveCount(0);
+  await expect(karte.locator('a[href^="tel:"]')).toHaveCount(0);
 
   // Der Info-Knopf: 22 px im Bild, 44 px zum Tippen.
   const kasten = (await info.boundingBox())!;
   expect(kasten.width).toBeGreaterThanOrEqual(44);
   expect(kasten.height).toBeGreaterThanOrEqual(44);
-  expect((await pille.boundingBox())!.height).toBeGreaterThanOrEqual(36);
 
   await info.click();
+  await expect(karte.getByText('Etage', { exact: true })).toBeVisible();
+  await expect(karte.getByText('Erdgeschoss', { exact: true })).toBeVisible();
   await expect(karte.getByText('Zugangshinweis', { exact: true })).toBeVisible();
   await expect(karte.getByText('Klingel "Beispiel". Schlüssel bei der Nachbarin.')).toBeVisible();
-  await expect(pille).toHaveAttribute('aria-expanded', 'true');
-  await pille.click();
+  const nummer = karte.locator('a[href^="tel:"]').first();
+  expect((await nummer.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  await info.click();
   await expect(karte.getByText('Zugangshinweis', { exact: true })).toHaveCount(0);
+
+  // Unter der Navigation: „Doku" und der Haken in einer Reihe, 44 px hoch.
+  await expect(karte.getByRole('link', { name: /^Doku/ })).toHaveCount(1);
+  const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
+  const haken = (await karte
+    .getByRole('button', { name: 'Behandlung abschließen' })
+    .boundingBox())!;
+  const navi = (await karte.getByRole('button', { name: 'Navigation starten' }).boundingBox())!;
+  expect(doku.height).toBe(44);
+  expect(haken.width).toBe(44);
+  expect(haken.height).toBe(44);
+  expect(Math.abs(doku.y - haken.y)).toBeLessThanOrEqual(1);
+  expect(doku.y).toBeGreaterThan(navi.y + navi.height - 1);
+  expect(haken.x).toBeGreaterThan(doku.x + doku.width);
 
   // Die offene Erstaufnahme führt in die Akte.
   await expect(karte.getByRole('link', { name: /Erstaufnahme offen/ })).toBeVisible();
@@ -156,7 +176,7 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   await expect(karte.getByRole('heading', { name: 'Jetzt · bis 09:30' })).toBeVisible();
   // Haken 48 und „Doku" teilen sich den Hauptknopf, in einer Reihe (Handoff 6a).
   const haken = (await karte.getByRole('button', { name: /^Termin abschließen/ }).boundingBox())!;
-  const doku = (await karte.getByRole('link', { name: 'Doku schreiben' }).boundingBox())!;
+  const doku = (await karte.getByRole('link', { name: 'Doku zu diesem Termin' }).boundingBox())!;
   expect(haken.height).toBe(48);
   expect(haken.width).toBe(48);
   expect(doku.height).toBe(48);
@@ -212,7 +232,7 @@ test('klappt am Tagesende die offene Dokumentation aus', async ({ page }) => {
   const karte = page.getByRole('article');
   await expect(karte.getByRole('heading', { name: 'Doku offen' })).toBeVisible();
   await expect(karte.getByText('Doku im Entwurf')).toBeVisible();
-  await expect(karte.getByRole('link', { name: 'Doku schreiben' })).toBeVisible();
+  await expect(karte.getByRole('link', { name: 'Doku zu diesem Termin' })).toBeVisible();
   // Abgeschlossen: kein Haken mehr.
   await expect(karte.getByRole('button', { name: /^Termin abschließen/ })).toHaveCount(0);
   await ohneUeberlauf(page);
