@@ -5,6 +5,8 @@ import type * as PatientsApi from './api';
 import type * as ZugangApi from '@/features/platform-access/api';
 import type * as VermerkeApi from '@/features/datenschutz/vermerke';
 import type * as FilesApi from '@/features/files/api';
+import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as BillingApi from '@/features/billing/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -69,6 +71,19 @@ vi.mock('@/features/files/api', async (importOriginal) => ({
   fetchPatientFiles: (id: string) => fetchPatientFiles(id) as Promise<FilesApi.PatientFile[]>,
 }));
 
+// Akte entschlacken (2026-10-03): Zustand des Anmeldebogens und „Rechnung an".
+const fetchIntakeChecklist = vi.fn();
+vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof IntakeApi>()),
+  fetchIntakeChecklist: (id: string) =>
+    fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,
+}));
+const fetchEmpfaenger = vi.fn();
+vi.mock('@/features/billing/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof BillingApi>()),
+  fetchEmpfaenger: (id: string) => fetchEmpfaenger(id) as Promise<BillingApi.Empfaenger[]>,
+}));
+
 const { Stammdaten } = await import('./PatientMasterDataPage');
 
 /**
@@ -101,19 +116,84 @@ describe('Stammdaten der Akte', () => {
     reopenPatientCare.mockResolvedValue(undefined);
     fetchDatenschutzvermerke.mockReset().mockResolvedValue([]);
     fetchPatientFiles.mockReset().mockResolvedValue([]);
+    fetchIntakeChecklist.mockReset().mockResolvedValue([]);
+    fetchEmpfaenger.mockReset().mockResolvedValue([]);
+  });
+
+  describe('Karten (Akte entschlacken, 2026-10-03)', () => {
+    it('zeigt den fehlenden Anmeldebogen mit Hinweis und Knopf zum Foto', async () => {
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+      fetchIntakeChecklist.mockResolvedValue([{ item: 'registration_form', state: 'open' }]);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+
+      const karte = (await screen.findByRole('heading', { name: 'Anmeldebogen' })).closest(
+        'section',
+      )!;
+      expect(await within(karte).findByText('Fehlt')).toBeInTheDocument();
+      expect(within(karte).getByText('Enthält die Datenschutzerklärung.')).toBeInTheDocument();
+    });
+
+    it('sagt „Liegt vor", sobald das Foto da ist', async () => {
+      fetchIntakeChecklist.mockResolvedValue([{ item: 'registration_form', state: 'done' }]);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+      expect(await screen.findByText('Liegt vor')).toBeInTheDocument();
+      expect(screen.queryByText('Fehlt')).toBeNull();
+    });
+
+    it('nennt dem Büro die Standard-Empfänger:in unter „Rechnung an"', async () => {
+      fetchEmpfaenger.mockResolvedValue([
+        {
+          id: 'e1',
+          recipient_kind: 'aid_authority',
+          name: 'Beihilfestelle Fiktiv',
+          street: 'Amtsweg',
+          house_number: '3',
+          postal_code: '70173',
+          city: 'Stuttgart',
+          reference: null,
+          is_default: true,
+        },
+      ]);
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+
+      expect(await screen.findByText('Beihilfestelle Fiktiv (Beihilfestelle)')).toBeInTheDocument();
+      expect(screen.getByText('Amtsweg 3, 70173 Stuttgart')).toBeInTheDocument();
+    });
+
+    it('rechnet ohne Empfänger:in an die Person selbst, Anschrift wie Hausbesuch', async () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+      const zeile = (await screen.findByText('Rechnung an')).nextElementSibling;
+      expect(zeile).toHaveTextContent(`${aktiv.given_name} ${aktiv.family_name}`);
+      expect(screen.getByText('wie Hausbesuch')).toBeInTheDocument();
+    });
+
+    it('fragt für die Behandlung keine Rechnungsempfänger ab', async () => {
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Anmeldebogen' });
+      expect(fetchEmpfaenger).not.toHaveBeenCalled();
+      expect(screen.queryByText('Rechnung an')).toBeNull();
+    });
   });
 
   describe('Anmeldebogen und Dateien (AKTE-007)', () => {
     it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-      'zeigt %s den Anmeldebogen samt Einwilligungen unter einem Anker',
+      'zeigt %s den Anmeldebogen als Foto unter einem Anker, die Einwilligungen darunter',
       async (role) => {
+        Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
         renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
 
         const titel = await screen.findByRole('heading', { name: 'Anmeldebogen' });
-        expect(titel.closest('#anmeldebogen')).not.toBeNull();
-        expect(screen.getByRole('heading', { name: 'Einwilligungen' })).toBeInTheDocument();
-        expect(screen.getByText('Datenschutzinformation')).toBeInTheDocument();
-        expect(screen.getByText('Behandlungsvertrag')).toBeInTheDocument();
+        const anker = titel.closest('#anmeldebogen');
+        expect(anker).not.toBeNull();
+        expect(
+          within(anker as HTMLElement).getByLabelText('Anmeldebogen als Datei'),
+        ).toBeInTheDocument();
+        // ANN-227: keine Einzelvermerke mehr für Datenschutzinformation und Vertrag.
+        expect(screen.queryByText('Datenschutzinformation')).toBeNull();
+        expect(screen.queryByText('Behandlungsvertrag')).toBeNull();
+        const einwilligungen = await screen.findByRole('heading', { name: 'Einwilligungen' });
+        expect(einwilligungen.closest('#anmeldebogen')).toBeNull();
+        expect(einwilligungen.closest('#einwilligungen')).not.toBeNull();
       },
     );
 
@@ -157,30 +237,33 @@ describe('Stammdaten der Akte', () => {
     });
   });
 
-  // Mit Rückweg in die Stammdaten samt dem der Akte (PAT-08).
+  // Akte entschlacken (2026-10-03): Jede Karte führt ins Formular - mit
+  // Rückweg in die Stammdaten samt dem der Akte (PAT-08).
   it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-    'bietet %s die Bearbeitung der Stammdaten an',
+    'bietet %s an jeder Karte „Bearbeiten" an',
     (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />, STAMMDATEN);
 
-      expect(linkZiel(screen.getByRole('link', { name: 'Stammdaten bearbeiten' }))).toEqual({
-        pfad: `/patienten/${PATIENT_ID}/bearbeiten`,
-        zurueck: STAMMDATEN,
-      });
+      for (const karte of ['Person', 'Kontakt', 'Hausbesuch']) {
+        expect(linkZiel(screen.getByRole('link', { name: `${karte} bearbeiten` }))).toEqual({
+          pfad: `/patienten/${PATIENT_ID}/bearbeiten`,
+          zurueck: STAMMDATEN,
+        });
+      }
     },
   );
 
-  it('zeigt Anschrift und Versorgungsbeginn - ohne Status- und Geburtsdatumszeile (UX-005e)', () => {
+  it('zeigt Name, Geburtsdatum, Anschrift und Versorgungsbeginn - ohne Statuszeile', () => {
     renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
     expect(screen.getByText('Musterweg 12b, 72070 Tübingen')).toBeInTheDocument();
     expect(screen.getByText('05.01.2026')).toBeInTheDocument();
-    // Der Kopf der Akte traegt Geburtsdatum und - als Ausnahme - den Status;
-    // der Regelfall „Aktiv" bekommt hier keine Zeile.
+    expect(screen.getByText('Geboren')).toBeInTheDocument();
+    expect(screen.getByText('19.07.1985')).toBeInTheDocument();
+    // Der Kopf der Akte traegt - als Ausnahme - den Status; der Regelfall
+    // „Aktiv" bekommt hier keine Zeile.
     expect(screen.queryByText('Aktiv')).not.toBeInTheDocument();
     expect(screen.queryByText('Status')).not.toBeInTheDocument();
-    expect(screen.queryByText('Geburtsdatum')).not.toBeInTheDocument();
-    expect(screen.queryByText('19.07.1985')).not.toBeInTheDocument();
   });
 
   // UX-005e: Ein leerer Wert bekommt keine Zeile, ein Satz ersetzt vier
@@ -225,11 +308,11 @@ describe('Stammdaten der Akte', () => {
       expect(screen.queryByText(/Verortet/)).not.toBeInTheDocument();
     });
 
-    it('laesst den Abschnitt „Person" weg, wenn er keine Zeile haette', () => {
+    it('laesst die Karte „Hausbesuch" weg, wenn sie keine Zeile haette', () => {
       renderWithProviders(
         <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
       );
-      expect(screen.queryByText('Person')).not.toBeInTheDocument();
+      expect(screen.queryByText('Hausbesuch')).not.toBeInTheDocument();
     });
 
     it('schreibt keinen Protokollhinweis unter die Stammdaten', () => {
@@ -239,7 +322,7 @@ describe('Stammdaten der Akte', () => {
   });
 
   describe('Hausbesuch und Praxisangaben (PAT-005)', () => {
-    it('zeigt feste Therapeut:in und Bemerkung - Zugang und Besonderheit stehen im Kopf (UX-005e)', () => {
+    it('zeigt Etage, Zugang und Besonderheit im Hausbesuch, feste Therapeut:in und Bemerkung in der Praxis', () => {
       renderWithProviders(
         <Stammdaten
           patient={testPatient({
@@ -255,12 +338,13 @@ describe('Stammdaten der Akte', () => {
 
       expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
       expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
-      // Der Kopf der Akte traegt beide Hinweise, sobald sie gesetzt sind
-      // (HausbesuchHinweise) - der Bereich wiederholt sie nicht.
-      expect(screen.queryByText('Zugangshinweis')).not.toBeInTheDocument();
-      expect(screen.queryByText('2. OG links, Klingel "Mustermann".')).not.toBeInTheDocument();
-      expect(screen.queryByText('Besonderheit')).not.toBeInTheDocument();
-      expect(screen.queryByText('Hund im Flur.')).not.toBeInTheDocument();
+      // Seit 2026-10-03 trägt die Karte „Hausbesuch" sie; die Etage ist der
+      // Anfang des Zugangshinweises (ANN-197).
+      expect(screen.getByText('Etage').nextElementSibling).toHaveTextContent('2. OG links');
+      expect(screen.getByText('Zugang').nextElementSibling).toHaveTextContent(
+        'Klingel "Mustermann".',
+      );
+      expect(screen.getByText('Hund im Flur.')).toBeInTheDocument();
     });
 
     it('laesst den Abschnitt weg, wenn die Sicht nichts liefert', () => {
@@ -270,7 +354,7 @@ describe('Stammdaten der Akte', () => {
         <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
       );
 
-      expect(screen.queryByText('Hausbesuch und Praxisangaben')).not.toBeInTheDocument();
+      expect(screen.queryByText('Praxis')).not.toBeInTheDocument();
     });
 
     it('bietet die Mobilnummer als Anruf an', () => {

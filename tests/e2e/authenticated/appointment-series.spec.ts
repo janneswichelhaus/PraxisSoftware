@@ -9,6 +9,7 @@ import {
   laufTagImFenster,
   tagImFenster,
   zeitImLauf,
+  TERMIN_IM_KALENDER,
 } from './helpers';
 
 /**
@@ -72,7 +73,7 @@ test.describe('CAL-010a: Terminfenster', () => {
     await expect(page.getByText(`${zeit(65)} Uhr`)).toBeVisible();
 
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(`${zeit(5)}–${zeit(65)} Uhr`)).toBeVisible();
   });
@@ -162,7 +163,7 @@ test.describe('CAL-007: Terminserie', () => {
     await page.getByLabel('Datum *').fill(belegt);
     await page.getByLabel('Beginn *').fill(zeit());
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
     await page.goto(SERIE);
     await page.getByLabel('Behandelnde Person *').selectOption({ label: 'Anna Beispiel' });

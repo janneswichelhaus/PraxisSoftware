@@ -93,6 +93,18 @@ vi.mock('./api', async (importOriginal) => {
 const { PatientRecordDocumentation } = await import('./PatientRecordDocumentation');
 const { AKTE_SEITENGROESSE } = await import('./api');
 
+/**
+ * Öffnet das Lese-Fenster eines Termins über seine Zeile (Akte entschlacken,
+ * 2026-10-03): Die Liste zeigt Datum und zwei Zeilen Text, der Rest steht im
+ * Fenster.
+ */
+async function fensterOeffnen(datum: string): Promise<HTMLElement> {
+  const knopf = (await screen.findAllByRole('button')).find((b) => b.textContent?.includes(datum));
+  if (!knopf) throw new Error(`Keine Zeile für ${datum}`);
+  await userEvent.click(knopf);
+  return screen.findByRole('dialog', { name: datum });
+}
+
 describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
   beforeEach(() => {
     fetchPatientTreatmentNotesPage.mockReset();
@@ -125,10 +137,8 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     ]);
   });
 
-  // E15: office liest dieselbe Sicht wie die therapeutischen Rollen
-  // (PROJECT_PRINCIPLES.md 4.3, ADR-004 Fassung 2).
   it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-    'zeigt %s die Eintraege samt Inhalt, Herkunft und Verlauf',
+    'zeigt %s die Eintraege als Zeilen und im Lese-Fenster samt Herkunft',
     async (role) => {
       renderWithProviders(<PatientRecordDocumentation patient={patient} user={testUser([role])} />);
 
@@ -136,35 +146,32 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       const zeilen = await within(abschnitt).findAllByRole('listitem');
       expect(zeilen).toHaveLength(2);
 
-      // Kurz im Kopf der Karte (Design-Handoff 2026-10-01, Abschnitt 7).
+      // Die Zeile: Datum, Zeit · behandelnde Person, der Eintrag gekürzt.
       expect(zeilen[0]).toHaveTextContent('12.05.2027');
-      expect(zeilen[0]).toHaveTextContent('09:00–10:00 Uhr · Praxis · Anna Beispiel');
-      // UX-005e: Ein abgeschlossener Termin ist in der Dokumentation der
-      // Regelfall und traegt kein Etikett; ebenso wenig der finalisierte
-      // Eintrag - die Herkunftszeile nennt die Finalisierung kurz, ohne die
-      // behandelnde Person noch einmal zu nennen.
+      expect(zeilen[0]).toHaveTextContent('09:00–10:00 Uhr · Anna Beispiel');
       expect(zeilen[0]).not.toHaveTextContent('Abgeschlossen');
       expect(zeilen[0]).toHaveTextContent(INHALT);
-      // Der festgeschriebene Eintrag trägt „✓ Version 1" (Abschnitt 7).
-      expect(within(zeilen[0]!).getByText('Version 1')).toBeInTheDocument();
-      expect(zeilen[0]).toHaveTextContent('Finalisiert 12.05.2027, 11:32');
-      expect(zeilen[0]).not.toHaveTextContent('von Anna Beispiel');
-      expect(zeilen[0]).not.toHaveTextContent('Verfasst von');
-      expect(zeilen[0]).toHaveTextContent('Nachtrag');
-      expect(zeilen[0]).toHaveTextContent(NACHTRAG_INHALT);
-      expect(zeilen[0]).toHaveTextContent('wird am 13.05. automatisch festgeschrieben');
-      // Eine andere Person als die behandelnde steht dran.
-      expect(zeilen[0]).toHaveTextContent('Zuletzt geändert 13.05.2027, 08:15 von Tim Teamleitung');
-
       // Nur ein Termin, der nicht stattfand, traegt sein Etikett.
       expect(zeilen[1]).toHaveTextContent('Abgesagt');
       expect(zeilen[1]).toHaveTextContent('Keine Dokumentation.');
+      expect(abschnitt).toHaveTextContent('2 Einträge');
+
+      // Im Fenster: Etikett, Herkunft, Nachtrag (Design-Handoff, Abschnitt 7).
+      const fenster = await fensterOeffnen('12.05.2027');
+      expect(fenster).toHaveTextContent('09:00–10:00 Uhr · Praxis · Anna Beispiel');
+      expect(within(fenster).getByText('Version 1')).toBeInTheDocument();
+      expect(fenster).toHaveTextContent('Finalisiert 12.05.2027, 11:32');
+      expect(fenster).not.toHaveTextContent('von Anna Beispiel');
+      expect(fenster).not.toHaveTextContent('Verfasst von');
+      expect(fenster).toHaveTextContent('Nachtrag');
+      expect(fenster).toHaveTextContent(NACHTRAG_INHALT);
+      expect(fenster).toHaveTextContent('wird am 13.05. automatisch festgeschrieben');
+      expect(fenster).toHaveTextContent('Zuletzt geändert 13.05.2027, 08:15 von Tim Teamleitung');
 
       expect(fetchPatientTreatmentNotesPage).toHaveBeenCalledWith(PATIENT_ID, null);
       expect(screen.queryByText(/werden je Eintrag protokolliert/)).not.toBeInTheDocument();
       // Der eine Satz vor dem Lesen bleibt (Design-Handoff 2026-10-01, Abschnitt 1).
       expect(screen.getByText('Jeder gelesene Eintrag wird protokolliert.')).toBeInTheDocument();
-      expect(screen.queryByText('Neueste zuerst. Geschrieben wird am Termin.')).toBeNull();
     },
   );
 
@@ -197,10 +204,12 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
-    const zeilen = await screen.findAllByRole('listitem');
-    expect(zeilen[0]).toHaveTextContent('Finalisiert 12.05.2027, 11:32 von Tim Teamleitung');
-    expect(zeilen[1]).toHaveTextContent('Automatisch finalisiert 12.05.2027, 11:32');
-    expect(zeilen[1]).not.toHaveTextContent(' von ');
+    const erstes = await fensterOeffnen('12.05.2027');
+    expect(erstes).toHaveTextContent('Finalisiert 12.05.2027, 11:32 von Tim Teamleitung');
+    await userEvent.click(within(erstes).getByRole('button', { name: 'Schließen' }));
+    const zweites = await fensterOeffnen('05.05.2027');
+    expect(zweites).toHaveTextContent('Automatisch finalisiert 12.05.2027, 11:32');
+    expect(zweites).not.toHaveTextContent(' von ');
   });
 
   it('zeigt einen nicht angetroffenen Termin mit Etikett, einen bestaetigten ohne (UX-005e)', async () => {
@@ -243,15 +252,17 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
-    expect(await screen.findByText('Ohne Behandlung')).toBeInTheDocument();
+    const fenster = await fensterOeffnen('12.05.2027');
+    expect(within(fenster).getByText('Ohne Behandlung')).toBeInTheDocument();
   });
 
-  it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen und jeden Termin', async () => {
+  it('verlinkt den Aenderungsverlauf nur fuer Eintraege mit Versionen', async () => {
     renderWithProviders(
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
-    const verlauf = await screen.findAllByRole('link', { name: 'Änderungsverlauf' });
+    const fenster = await fensterOeffnen('12.05.2027');
+    const verlauf = within(fenster).getAllByRole('link', { name: 'Änderungsverlauf' });
     expect(verlauf).toHaveLength(1);
     // Vom Verlauf aus führt der Rückweg wieder in die Akte (DOK-01).
     expect(verlauf[0]).toHaveAttribute(
@@ -259,17 +270,11 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       `/termine/77777777-7777-4777-8777-000000000001/dokumentation/${HAUPT_ID}/verlauf?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
     );
 
-    // UX-005e: Das Datum ist der Weg zum Termin - keine eigene Zeile „Zum
-    // Termin" mehr.
+    // Das Datum ist der Kopf der Karte, kein Weg mehr: Ein Termin hat keine
+    // eigene Seite (Akte entschlacken, 2026-10-03).
     expect(screen.queryByRole('link', { name: 'Zum Termin' })).not.toBeInTheDocument();
-    const termin = screen.getByRole('link', { name: '05.05.2027' });
-    expect(termin.getAttribute('href')).toMatch(
-      /^\/termine\/77777777-7777-4777-8777-000000000002\?zurueck=/,
-    );
-    expect(screen.getByRole('link', { name: '12.05.2027' })).toHaveAttribute(
-      'href',
-      `/termine/77777777-7777-4777-8777-000000000001?zurueck=${encodeURIComponent(`/patienten/${PATIENT_ID}/doku`)}`,
-    );
+    expect(screen.queryByRole('link', { name: '05.05.2027' })).toBeNull();
+    expect(screen.queryByRole('link', { name: '12.05.2027' })).toBeNull();
   });
 
   it('kennzeichnet Entwurf mit Frist und festgeschriebene Version als Etikett (UIK-18, Abschnitt 7)', async () => {
@@ -277,14 +282,15 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
     );
 
-    const entwurf = await screen.findByText('Entwurf · Frist 13.05.');
+    const fenster = await fensterOeffnen('12.05.2027');
+    const entwurf = within(fenster).getByText('Entwurf · Frist 13.05.');
     // Kein Rahmen für Bedienbares an einem Etikett; Zeichen und Wort (UIK-18).
     expect(entwurf).not.toHaveClass('border-line-strong');
     expect(entwurf).toHaveTextContent('!');
-    expect(screen.getByText('Version 1')).toHaveTextContent('✓');
+    expect(within(fenster).getByText('Version 1')).toHaveTextContent('✓');
   });
 
-  it('gruppiert nach Monat und springt ab zwei Monaten über eine Leiste (Abschnitt 7)', async () => {
+  it('gruppiert nach Monat und springt ab zwei Monaten über Chips (Abschnitt 7)', async () => {
     const [erster] = (await fetchPatientTreatmentNotesPage.getMockImplementation()?.(
       patient.id,
       null,
@@ -312,10 +318,10 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       'href',
       '#monat-2027-04',
     );
-    expect(within(leiste).getByText('Lesen wird protokolliert')).toBeInTheDocument();
+    expect(within(leiste).queryByText('Springen zu')).toBeNull();
     expect(screen.getByRole('heading', { level: 3, name: 'Mai 2027' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { level: 3, name: 'April 2027' })).toBeInTheDocument();
-    // Kein Schreibknopf im Verlauf: geschrieben wird am Termin.
+    // Kein Schreibknopf in der Liste: geschrieben wird auf der Schreibseite.
     expect(screen.queryByRole('link', { name: /Behandlungsnotiz|^Doku/ })).toBeNull();
   });
 
@@ -342,23 +348,41 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     ).toBeInTheDocument();
   });
 
-  it.each([['therapist'], ['office']] as const)(
-    'bietet %s in der Akte keine Schreibhandlungen an',
-    async (role) => {
-      renderWithProviders(<PatientRecordDocumentation patient={patient} user={testUser([role])} />);
-      await screen.findByText(INHALT);
+  it('bietet office in der Akte keine Schreibhandlungen an', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['office'])} />,
+    );
+    await fensterOeffnen('12.05.2027');
 
-      for (const name of [
-        'Finalisieren',
-        'Korrigieren',
-        'Nachtrag hinzufügen',
-        'Dokumentation bearbeiten',
-      ]) {
-        expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
-        expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
-      }
-    },
-  );
+    for (const name of ['Finalisieren', 'Korrigieren', 'Nachtrag hinzufügen', 'Weiterschreiben']) {
+      expect(screen.queryByRole('button', { name })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  // Seit der Termin keine eigene Seite mehr hat (Akte entschlacken,
+  // 2026-10-03), stehen Nachtrag und Korrektur am festgeschriebenen Eintrag in
+  // der Akte (ADR-016 Punkt 6). Geschrieben wird weiter auf den Schreibseiten.
+  it('bietet therapist am festgeschriebenen Eintrag Nachtrag und Korrektur an', async () => {
+    renderWithProviders(
+      <PatientRecordDocumentation patient={patient} user={testUser(['therapist'])} />,
+    );
+    const fenster = await fensterOeffnen('12.05.2027');
+
+    const zurueck = encodeURIComponent(`/patienten/${PATIENT_ID}/doku`);
+    const korrektur = screen
+      .getAllByRole('link', { name: 'Korrigieren' })[0]!
+      .getAttribute('href')!;
+    expect(korrektur).toContain('/korrektur?zurueck=');
+    expect(korrektur.endsWith(`zurueck=${zurueck}`)).toBe(true);
+    expect(screen.getAllByRole('link', { name: 'Nachtrag hinzufügen' }).length).toBeGreaterThan(0);
+    expect(screen.queryByRole('button', { name: 'Finalisieren' })).not.toBeInTheDocument();
+    // Der Nachtrag im Entwurf wird auf der Schreibseite weiterbearbeitet.
+    expect(within(fenster).getByRole('link', { name: 'Nachtrag bearbeiten' })).toHaveAttribute(
+      'href',
+      expect.stringContaining(`/dokumentation/${NACHTRAG_ID}/bearbeiten?zurueck=`),
+    );
+  });
 
   it('nennt den leeren Zustand, wenn es keine Termine in der Akte gibt', async () => {
     fetchPatientTreatmentNotesPage.mockResolvedValue([]);

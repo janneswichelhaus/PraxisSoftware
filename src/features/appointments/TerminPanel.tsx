@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
@@ -47,8 +48,8 @@ function tagKurz(iso: string, zone: string): string {
  * des Tages, Haken und „Doku", ohne den Kalender zu verlassen.
  *
  * Am fremden Termin gibt es weder Haken noch „Doku" - wer wessen Termin
- * abschließt, bleibt eine Sache der behandelnden Person; der Termin selbst ist
- * einen Tipp entfernt. Die Anschrift kommt aus der Termindetailansicht
+ * abschließt, bleibt eine Sache der behandelnden Person; die übrigen Aktionen
+ * sind einen Tipp entfernt („Aktionen …“). Die Anschrift kommt aus der Termindetailansicht
  * (`appointment_directory`), dieselbe Quelle wie die Terminseite; der
  * Kalender selbst liefert sie nicht (Datensparsamkeit, CAL-002).
  *
@@ -61,12 +62,15 @@ export function TerminPanel({
   user,
   rueckweg,
   onSchliessen,
+  onAktionen,
 }: {
   eintrag: CalendarEntry;
   user: CurrentUser;
-  /** Der Kalenderstand - der Weg zurück aus Termin und Schreibseite. */
+  /** Der Kalenderstand - der Weg zurück aus Formular und Schreibseite. */
   rueckweg: string;
   onSchliessen: () => void;
+  /** Öffnet das Fenster mit den übrigen Aktionen am Termin (`TerminAktionenDialog`). */
+  onAktionen: () => void;
 }) {
   const zone = user.organizationTimeZone ?? 'Europe/Berlin';
   const titelRef = useRef<HTMLHeadingElement>(null);
@@ -209,7 +213,7 @@ export function TerminPanel({
         </div>
       ) : null}
 
-      <div className="mt-2 flex flex-wrap gap-x-4">
+      <div className="mt-2 flex flex-wrap items-center gap-x-4">
         {behandlung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
@@ -218,9 +222,18 @@ export function TerminPanel({
             Bisherige Doku →
           </Textlink>
         ) : null}
-        <Textlink alleinstehend to={mitRueckweg(terminPfad(eintrag), rueckweg)}>
-          {eintrag.kind === 'internal' ? 'Fehlzeit →' : 'Termin →'}
-        </Textlink>
+        {/* Der Trainingstermin hat seine Seite im Trainingsbereich (TRN-004);
+            jeder andere hat keine eigene Seite mehr, seine Aktionen stehen im
+            Fenster (Akte entschlacken, 2026-10-03). */}
+        {eintrag.kind === 'training' ? (
+          <Textlink alleinstehend to={mitRueckweg(terminPfad(eintrag), rueckweg)}>
+            Training →
+          </Textlink>
+        ) : (
+          <Button type="button" variant="secondary" groesse="kompakt" onClick={onAktionen}>
+            Aktionen …
+          </Button>
+        )}
       </div>
     </section>
   );

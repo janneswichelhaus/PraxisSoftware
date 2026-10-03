@@ -432,7 +432,10 @@ describe('Übersicht', () => {
     expect(screen.queryByText(/^Erledigt heute/)).toBeNull();
     const erledigt = imStrahl().getByRole('link', { name: /Petra Platzhalter/ });
     expect(within(erledigt).getByText('Abgeschlossen')).toBeInTheDocument();
-    expect(erledigt).toHaveAttribute('href', `/termine/t3?zurueck=${encodeURIComponent('/')}`);
+    expect(erledigt).toHaveAttribute(
+      'href',
+      `/kalender?termin=t3&zurueck=${encodeURIComponent('/')}`,
+    );
   });
 
   it('traegt Anschrift und Rufnummer als Waehlziel, den Zugangshinweis einen Tipp entfernt', async () => {
@@ -693,7 +696,10 @@ describe('Übersicht', () => {
       // Der zweite Besuch ist eine Zeile, die als Ganzes in den Termin führt -
       // „Danach" und „Weitere offene heute" gibt es nicht mehr.
       const zeile = imStrahl().getByRole('link', { name: /Max Mustermann/ });
-      expect(zeile).toHaveAttribute('href', `/termine/t2?zurueck=${encodeURIComponent('/')}`);
+      expect(zeile).toHaveAttribute(
+        'href',
+        `/kalender?termin=t2&zurueck=${encodeURIComponent('/')}`,
+      );
       expect(zeile).toHaveTextContent('Beispielstrasse 12');
       expect(karte).not.toContainElement(zeile);
       expect(screen.queryByText('Danach')).toBeNull();
@@ -1085,7 +1091,7 @@ describe('Übersicht', () => {
       const spaeter = imStrahl().getByRole('link', { name: /Teambesprechung/ });
       expect(spaeter).toHaveAttribute(
         'href',
-        `/termine/f-spaeter?zurueck=${encodeURIComponent('/')}`,
+        `/kalender?termin=f-spaeter&zurueck=${encodeURIComponent('/')}`,
       );
       expect(spaeter).toHaveTextContent('Fehlzeit · Praxis · Hauptstandort');
 
@@ -1197,7 +1203,10 @@ describe('Übersicht', () => {
       // Die zweite offene Dokumentation steht als Zeile da und führt in ihren Termin.
       const zweite = imStrahl().getByRole('link', { name: /Max Mustermann/ });
       expect(zweite).toHaveTextContent('Doku offen');
-      expect(zweite).toHaveAttribute('href', `/termine/t2?zurueck=${encodeURIComponent('/')}`);
+      expect(zweite).toHaveAttribute(
+        'href',
+        `/kalender?termin=t2&zurueck=${encodeURIComponent('/')}`,
+      );
       // Kein Besuch steht aus: keine Navigation, und oben der Tagesabschluss.
       expect(screen.queryByRole('button', { name: 'Navigation starten' })).toBeNull();
       expect(screen.getByText('Alle Besuche erledigt')).toBeInTheDocument();
@@ -1272,7 +1281,10 @@ describe('Übersicht', () => {
       expect(zeilen).toHaveLength(3);
       // Die ganze Zeile führt in den Termin, mit dem Rückweg in die Übersicht.
       const erste = within(zeilen[0]!).getByRole('link');
-      expect(erste).toHaveAttribute('href', `/termine/t1?zurueck=${encodeURIComponent('/')}`);
+      expect(erste).toHaveAttribute(
+        'href',
+        `/kalender?termin=t1&zurueck=${encodeURIComponent('/')}`,
+      );
       expect(erste).toHaveClass('min-h-12');
       // Zeichen und Wort ohne Pille; der bestätigte Termin trägt nichts.
       const dokumentiert = within(erste).getByText('Dokumentiert');
@@ -1344,7 +1356,7 @@ describe('Übersicht', () => {
       // Ein Name, ein Ziel: In der Zeile ist die ganze Zeile das Ziel.
       expect(imStrahl().getByRole('link', { name: /Max Mustermann/ })).toHaveAttribute(
         'href',
-        `/termine/t2?zurueck=${encodeURIComponent('/')}`,
+        `/kalender?termin=t2&zurueck=${encodeURIComponent('/')}`,
       );
     });
 

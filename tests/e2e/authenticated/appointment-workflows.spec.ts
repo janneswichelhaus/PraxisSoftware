@@ -9,9 +9,13 @@ import {
   direktesEinfuegenVersuchen,
   rpcAufrufen,
   tagImFenster,
-  terminLinkWahl,
   terminUeberApi,
   zugriffstoken,
+  terminOeffnen,
+  aktionenOeffnen,
+  TERMIN_IM_KALENDER,
+  terminNeuLaden,
+  terminAusAdresse,
 } from './helpers';
 
 /**
@@ -88,16 +92,15 @@ test.describe('CAL-001: Termin anlegen', () => {
     const zurueckInDerAkte = /\/patienten\/[0-9a-f-]{36}\/termine\?neu=[0-9a-f-]{36}$/;
     await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', zurueckInDerAkte);
 
-    // Erfolg: Bestätigung in der Akte, von dort in die Detailansicht des
-    // neuen Termins.
+    // Erfolg: Bestätigung in der Akte. Der Termin hat keine eigene Seite
+    // mehr (2026-10-03): seine Angaben stehen im Fenster über dem Kalender.
     await expect(page).toHaveURL(zurueckInDerAkte);
     const adresse = new URL(page.url());
     expect(adresse.pathname).toBe(`/patienten/${PATIENTEN.max}/termine`);
     await expect(page.getByText('Termin angelegt.')).toBeVisible();
     const terminId = adresse.searchParams.get('neu')!;
-    await page.locator(terminLinkWahl(terminId)).click();
-    await expect(page).toHaveURL((url) => url.pathname === `/termine/${terminId}`);
-    await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+    await terminOeffnen(page, terminId);
+    await expect(page.getByRole('heading', { level: 2, name: 'Max Mustermann' })).toBeVisible();
 
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Anna Beispiel');
     // UX-005a: Die Terminart steht als Kennzeichen in der Kachel des Ortes,
@@ -109,9 +112,7 @@ test.describe('CAL-001: Termin anlegen', () => {
 
     // Nach dem Neuladen weiterhin sichtbar - der Termin kommt aus der
     // Datenbank und nicht aus dem Zustand der Anwendung.
-    const url = page.url();
-    await page.reload();
-    await expect(page).toHaveURL(url);
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
   });
@@ -125,10 +126,11 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Datum *').fill(TAG);
     await page.getByLabel('Beginn *').fill(BEGINN);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
-    const appointmentId = page.url().split('/').pop()!;
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    const appointmentId = terminAusAdresse(page);
+    await aktionenOeffnen(page);
 
     // Die Oberfläche zeigt die Ortszeit …
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
@@ -157,7 +159,7 @@ test.describe('CAL-001: Termin anlegen', () => {
     await page.getByLabel('Datum *').fill(TAG);
     await page.getByLabel('Beginn *').fill(laufZeit(15));
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
     // Verständliche Meldung, kein Wechsel in eine Detailansicht.
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
@@ -178,9 +180,10 @@ test.describe('CAL-001: Termin anlegen', () => {
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();
 
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
-    await expect(page).toHaveURL(/\/termine\/[0-9a-f-]{36}$/);
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-192).
     await expect(page.getByText('Praxistermin')).toHaveCount(0);
     await expect(detailWert(page, 'Anschrift')).toContainText('Testweg');

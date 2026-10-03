@@ -118,7 +118,7 @@ export function Erhebung({
   });
   const ausgangslage = useRef<Ausgangslage | null>(null);
 
-  const zurueck = `/patienten/${patientId ?? ''}/doku`;
+  const zurueck = `/patienten/${patientId ?? ''}/doku/befund`;
   const definition = erhebbareInstrumente().find(
     (score) => score.meta.id === suche.get('instrument'),
   );
@@ -311,7 +311,7 @@ function Formular({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const zurueck = `/patienten/${patient.id}/doku`;
+  const zurueck = `/patienten/${patient.id}/doku/befund`;
 
   const [antworten, setAntworten] = useState<Antworten>(
     () => entwurf?.answers ?? korrigiert?.answers ?? {},

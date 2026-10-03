@@ -11,6 +11,8 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   kalenderOptionenOeffnen,
+  terminOeffnen,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -80,7 +82,7 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
     await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Absagegrund')).toContainText('Praxis hat verlegt');
   });
 });
@@ -106,9 +108,11 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await expect(detailWert(page, 'Status')).toContainText('Nicht angetroffen');
     await expect(page.getByText('Gebühr vorgemerkt')).toHaveCount(0);
 
-    // Kein zweites Vermerken, kein Absagen - erst wieder oeffnen.
-    await expect(page.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
+    // Kein zweites Vermerken, kein Absagen - erst wieder oeffnen. Im Fenster
+    // gesucht: Die Kalenderkachel dahinter nennt den Status in ihrem Namen.
+    const fenster = page.getByRole('dialog');
+    await expect(fenster.getByRole('button', { name: 'Nicht angetroffen' })).toHaveCount(0);
+    await expect(fenster.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
@@ -186,7 +190,7 @@ test.describe('CAL-008d: Dokumentiert kommt aus der Finalisierung', () => {
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetischer Behandlungstext, E2E.');
     await page.getByRole('button', { name: 'Festschreiben' }).click();
 
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(detailWert(page, 'Status')).toContainText('Dokumentiert');
 
     // Ohne Rueckweg: weder aendern noch absagen noch wieder oeffnen.

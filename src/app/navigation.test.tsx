@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 import { testUser } from '@/test-utils';
 import type { SubNavEintrag } from '@/components/ui/SubNav';
 import type { RoleKey } from '@/features/session/types';
-import { aktiverBereich, arbeitsbereiche, canSeeBilling, tableiste } from './navigation';
+import {
+  aktiverBereich,
+  arbeitsbereiche,
+  canSeeBilling,
+  tableiste,
+  zeigtUnterleiste,
+} from './navigation';
 
 /**
  * Die Zuordnung von Pfaden zu Arbeitsbereichen entscheidet, welcher Eintrag in
@@ -276,6 +282,21 @@ describe('aktiverBereich', () => {
 
   it('gibt fuer einen unbekannten Pfad keinen Bereich zurueck', () => {
     expect(aktiverBereich(bereiche, '/gibt-es-nicht')).toBeUndefined();
+  });
+});
+
+describe('zeigtUnterleiste', () => {
+  it.each([
+    ['/patienten', true],
+    ['/patienten/neu', true],
+    ['/verordner', true],
+    ['/verordner/neu', true],
+    ['/patienten/abc', false],
+    ['/patienten/abc/termine', false],
+    ['/patienten/abc/termine/neu', false],
+    ['/patienten/neuer-name', false],
+  ])('%s -> %s', (pfad, erwartet) => {
+    expect(zeigtUnterleiste(pfad)).toBe(erwartet);
   });
 });
 

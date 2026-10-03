@@ -10,7 +10,13 @@ import { PatientRecordDocumentation } from '@/features/documentation/PatientReco
 import type { PatientTreatmentNotesEntry, TreatmentNote } from '@/features/documentation/api';
 import type { Patient } from '@/features/patients/api';
 import type { PatientAppointment } from '@/features/appointments/api';
-import type { TreatmentBasis, TreatmentBasisKontingent } from '@/features/treatment-bases/api';
+import type {
+  ClinicalTreatmentBasis,
+  TreatmentBasis,
+  TreatmentBasisKontingent,
+} from '@/features/treatment-bases/api';
+import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
+import type { PatientFile } from '@/features/files/api';
 import { tagePlus } from '@/features/appointments/calendar';
 import { todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser, RoleKey } from '@/features/session/types';
@@ -19,14 +25,14 @@ import '@/index.css';
 /**
  * Einstieg der Prüfseite aus `akte.html` (UI-Redesign Schritt 5).
  *
- * `?bereich=termine` (Standard), `stammdaten` oder `doku`, `?rolle=therapist`
+ * `?bereich=termine` (Standard), `stammdaten`, `doku` oder `verordnungen`, `?rolle=therapist`
  * (Standard) oder `office`, `?leer=1` für eine Akte ohne Hinweise, Grundlage
  * und Kontakt. Die Daten liegen vorab im Cache; gesprochen wird mit keinem
  * Server. Alles ist synthetisch.
  */
 const suche = new URLSearchParams(window.location.search);
-const bereich = ['stammdaten', 'doku'].includes(suche.get('bereich') ?? '')
-  ? (suche.get('bereich') as 'stammdaten' | 'doku')
+const bereich = ['stammdaten', 'doku', 'verordnungen'].includes(suche.get('bereich') ?? '')
+  ? (suche.get('bereich') as 'stammdaten' | 'doku' | 'verordnungen')
   : 'termine';
 const rolle: RoleKey = suche.get('rolle') === 'office' ? 'office' : 'therapist';
 const leer = suche.get('leer') === '1';
@@ -152,12 +158,86 @@ const kontingent: TreatmentBasisKontingent = {
   uncovered: 0,
 };
 
+/**
+ * Reiter Behandlungsgrundlagen (Akte entschlacken, 2026-10-03): ein Foto ohne
+ * Daten, die laufende Verordnung, ein Selbstzahler und eine abgeschlossene.
+ */
+function position(id: string, remedy: string, verordnet: number, genutzt: number) {
+  return {
+    id,
+    sort_order: 1,
+    remedy,
+    prescribed_quantity: verordnet,
+    used_quantity: genutzt,
+    remaining_quantity: verordnet - genutzt,
+  };
+}
+const klinisch = { therapy_goal: null, prescriber_note: null, follow_up_recommendation: null };
+const ALT = '99999999-9999-4999-8999-000000000002';
+const SELBST = '99999999-9999-4999-8999-000000000003';
+const grundlagenKlinisch: ClinicalTreatmentBasis[] = [
+  {
+    ...grundlage,
+    ...klinisch,
+    items: [position('i1', 'Krankengymnastik', 6, 1), position('i2', 'Hausbesuch', 6, 1)],
+    diagnosis: 'Synthetisch: Schulter rechts.',
+    diagnosis_icd10: 'M75.1',
+  },
+  {
+    ...grundlage,
+    ...klinisch,
+    id: SELBST,
+    prescriber_id: null,
+    prescriber_name: null,
+    treatment_basis_kind: 'self_pay',
+    issued_on: '2026-09-25',
+    items: [position('i3', 'Manuelle Therapie', 10, 0)],
+    diagnosis: null,
+    diagnosis_icd10: null,
+  },
+  {
+    ...grundlage,
+    ...klinisch,
+    id: ALT,
+    issued_on: '2026-03-02',
+    items: [position('i4', 'Krankengymnastik', 6, 6)],
+    diagnosis: 'Synthetisch: Knie links.',
+    diagnosis_icd10: 'M17.1',
+  },
+];
+const offenesFoto: PatientFile = {
+  id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+  treatment_basis_id: null,
+  document_type: 'verordnungsscan',
+  is_clinical: true,
+  display_name: 'Verordnung, 01.10.2026',
+  mime_type: 'image/jpeg',
+  byte_size: 1000,
+  uploaded_at: '2026-10-01T08:00:00.000Z',
+  uploaded_by_name: 'Anna Beispiel',
+  object_missing: false,
+  verified_at: null,
+};
+
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
 client.setQueryData(['patient', PATIENT], patient);
 client.setQueryData(['patient-treatment-bases', PATIENT], leer ? [] : [grundlage]);
-client.setQueryData(['patient-treatment-basis-slots', PATIENT], leer ? [] : [kontingent]);
+client.setQueryData(['patient-treatment-bases-clinical', PATIENT], leer ? [] : grundlagenKlinisch);
+client.setQueryData(
+  ['patient-treatment-basis-slots', PATIENT],
+  leer
+    ? []
+    : [
+        kontingent,
+        { ...kontingent, treatment_basis_id: SELBST, prescribed: 10, used: 0, remaining: 10 },
+        { ...kontingent, treatment_basis_id: ALT, used: 6, planned: 6, upcoming: 0, remaining: 0 },
+      ],
+);
+client.setQueryData(['therapieberichte', PATIENT], []);
+client.setQueryData(['rechnungsempfaenger', PATIENT], []);
+for (const id of [GRUNDLAGE, ALT]) client.setQueryData(['patient-files', PATIENT, id], []);
 client.setQueryData(
   ['open-points', 'intake', PATIENT],
   leer
@@ -169,7 +249,10 @@ client.setQueryData(
 );
 // AKTE-007: Anmeldebogen und Dateien stehen in den Stammdaten.
 client.setQueryData(['datenschutzvermerke', PATIENT], []);
-client.setQueryData(['patient-files', PATIENT], []);
+client.setQueryData(
+  ['patient-files', PATIENT],
+  bereich === 'verordnungen' && !leer ? [offenesFoto] : [],
+);
 client.setQueryData(['patient-next-appointment', PATIENT, null], kommende.slice(0, 1));
 client.setQueryData(['patient-appointments', PATIENT, true, null], {
   pages: [kommende],
@@ -265,6 +348,7 @@ const router = createMemoryRouter(
           path: 'doku',
           element: <PatientRecordDocumentation patient={patient} user={nutzer} />,
         },
+        { path: 'verordnungen', element: <PatientTreatmentBasesPage /> },
         { path: '*', element: <p>Ende der Prüfseite.</p> },
       ],
     },

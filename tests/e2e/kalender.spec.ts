@@ -124,7 +124,7 @@ test.describe('Kalender', () => {
       await expect(kachel).toBeVisible();
       await expect(page.getByRole('button', { name: /Berta Bestand/ })).toHaveCount(0);
       await kachel.click();
-      await expect(page.getByRole('link', { name: 'Termin →' })).toHaveAttribute(
+      await expect(page.getByRole('link', { name: 'Training →' })).toHaveAttribute(
         'href',
         /^\/training\/termine\//,
       );

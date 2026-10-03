@@ -159,7 +159,7 @@ describe('Tourenliste nach dem UX-Review (UXR-003)', () => {
     const [ersterStopp] = screen.getAllByRole('link', { name: 'Erika Beispiel' });
     expect(ersterStopp).toHaveAttribute(
       'href',
-      `/termine/a?zurueck=${encodeURIComponent('/touren?tag=2026-09-10&person=anna')}`,
+      `/kalender?termin=a&zurueck=${encodeURIComponent('/touren?tag=2026-09-10&person=anna')}`,
     );
     // Als Link erkennbar, auch ohne Maus, und 44 px hoch (RSP-06, UIK-15).
     expect(ersterStopp).toHaveClass('text-accent', 'underline', 'min-h-11');
@@ -173,7 +173,7 @@ describe('Tourenliste nach dem UX-Review (UXR-003)', () => {
     const [ersterStopp] = screen.getAllByRole('link', { name: 'Erika Beispiel' });
     expect(ersterStopp).toHaveAttribute(
       'href',
-      `/termine/a?zurueck=${encodeURIComponent('/touren?tag=2026-09-11&person=jannes')}`,
+      `/kalender?termin=a&zurueck=${encodeURIComponent('/touren?tag=2026-09-11&person=jannes')}`,
     );
   });
 

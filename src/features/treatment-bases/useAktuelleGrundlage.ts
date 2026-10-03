@@ -50,3 +50,16 @@ export function useAktuelleGrundlage(
 export function kontingentSatz(kontingent: TreatmentBasisKontingent): string {
   return `${kontingent.used} von ${kontingent.prescribed} verbraucht · ${kontingent.upcoming} geplant · ${kontingent.remaining} frei`;
 }
+
+/**
+ * Wie die Person abgerechnet wird, als Abzeichen im Kopf (AKTE-007).
+ *
+ * An der Person gibt es kein Feld für Kostenträger oder Abrechnungsart; die
+ * Praxis rechnet privat ab (ADR-009). Was sich unterscheidet, ist die Bauart
+ * der Grundlage (ADR-020): Verordnung oder Selbstzahler. Das Abzeichen folgt
+ * deshalb der jüngsten Grundlage, über denselben organisatorischen Lesepfad
+ * wie der Reiter Behandlungsgrundlagen (ANN-011). Ohne Grundlage kein Abzeichen.
+ */
+export function versicherungsart(kind: TreatmentBasis['treatment_basis_kind']): string {
+  return kind === 'self_pay' ? 'Selbstzahler' : 'Privat · mit Verordnung';
+}

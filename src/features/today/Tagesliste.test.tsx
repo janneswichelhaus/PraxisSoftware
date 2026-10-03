@@ -376,7 +376,10 @@ describe('Tageskarte', () => {
     renderWithProviders(<Tageskarte termin={eintrag()} kicker="Erster Weg" />);
 
     const termin = screen.getByRole('link', { name: 'Termin öffnen' });
-    expect(termin).toHaveAttribute('href', `/termine/t1?zurueck=${encodeURIComponent('/')}`);
+    expect(termin).toHaveAttribute(
+      'href',
+      `/kalender?termin=t1&zurueck=${encodeURIComponent('/')}`,
+    );
     // Sichtbar steht der Pfeil noch da, nur ausgeblendet für Vorlesesoftware.
     expect(termin.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
   });

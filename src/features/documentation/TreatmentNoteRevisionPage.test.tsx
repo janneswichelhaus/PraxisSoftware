@@ -127,7 +127,7 @@ describe('TreatmentNoteRevisionPage', () => {
     });
     // Der Termin erfährt, welche Version entstanden ist (DOK-15).
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
         state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
       }),
     );
@@ -138,10 +138,7 @@ describe('TreatmentNoteRevisionPage', () => {
     rendern(['therapist'], '?zurueck=%2F');
 
     await waitFor(() => expect(feld()).toHaveValue(INHALT));
-    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
-      'href',
-      `/termine/${TERMIN_ID}?zurueck=%2F`,
-    );
+    expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
     expect(screen.getByRole('link', { name: 'Nachtrag' })).toHaveAttribute(
       'href',
       `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/nachtrag?zurueck=%2F`,
@@ -151,7 +148,7 @@ describe('TreatmentNoteRevisionPage', () => {
     await user.type(grundfeld(), 'Zahlendreher.');
     await user.click(screen.getByRole('button', { name: 'Korrektur festschreiben' }));
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+      expect(navigate).toHaveBeenCalledWith('/', {
         state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
       }),
     );

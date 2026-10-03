@@ -10,15 +10,12 @@ import {
   useSearchParams,
 } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
-import { Card, Disclosure } from '@/components/ui/Card';
-import { ProgressBar } from '@/components/ui/ProgressBar';
-import { Textlink } from '@/components/ui/Textlink';
-import { intakeItemTarget } from '@/features/open-points/intake-api';
+import { Disclosure } from '@/components/ui/Card';
+import { AnmeldebogenFoto } from '@/features/datenschutz/Anmeldebogen';
 import { useOffeneErstaufnahme } from '@/features/open-points/useOffeneErstaufnahme';
-import { grundlageBezeichnung, type TreatmentBasis } from '@/features/treatment-bases/api';
 import {
-  kontingentSatz,
   useAktuelleGrundlage,
+  versicherungsart,
 } from '@/features/treatment-bases/useAktuelleGrundlage';
 import { kartenAktionKlassen } from '@/components/ui/buttonStile';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -116,8 +113,8 @@ function Aktenavigation({
   const liste = useRef<HTMLUListElement>(null);
 
   // Der offene Bereich steht im Bild (PAT-01, RSP-04). Bis dahin stand die
-  // Leiste am Telefon immer am Anfang: Auf „Stammdaten" - dem letzten von
-  // sieben Bereichen - war der markierte Eintrag nicht zu sehen, auch nicht
+  // Leiste am Telefon immer am Anfang: Auf „Stammdaten" - dem letzten der
+  // Bereiche - war der markierte Eintrag nicht zu sehen, auch nicht
   // nach dem Speichern der Stammdaten. Vor dem Zeichnen, damit die Leiste
   // nicht erst am Anfang steht und dann springt.
   useLayoutEffect(() => {
@@ -131,9 +128,9 @@ function Aktenavigation({
     // offen ist. Zwei gleich aussehende Reihen übereinander wären ein Rätsel.
     //
     // Schmal scrollt die Reihe waagerecht, statt in zwei Zeilen umzubrechen -
-    // die sieben Bereiche brauchen zusammen rund 800 px. Ab 640 px bricht sie
-    // wie die SubNav um (PAT-01): Am Tablet fehlten sonst Datenschutz und
-    // Stammdaten, und mit der Maus gibt es keine Wischgeste.
+    // die vier Bereiche sind am Telefon breiter als der Bildschirm. Ab 640 px
+    // bricht sie wie die SubNav um (PAT-01): Mit der Maus gibt es keine
+    // Wischgeste.
     <nav aria-label="Bereiche der Akte" className="border-line border-t">
       <ul
         ref={liste}
@@ -157,7 +154,7 @@ function Aktenavigation({
 
 /**
  * „! Anmeldebogen fehlt" - eine Zeile im Kopf, solange der Anmeldebogen fehlt
- * (AKTE-007, ANN-224). Sie führt zum Anmeldebogen in den Stammdaten.
+ * (AKTE-007, ANN-224). Sie öffnet die Kamera für das Foto des Blatts (ANN-227).
  *
  * Bis AKTE-007 stand hier die Kachel „Erstaufnahme offen" mit allen offenen
  * Punkten. Jetzt zählt im Kopf nur der Anmeldebogen: Ein fehlendes
@@ -165,25 +162,18 @@ function Aktenavigation({
  * nicht aus - es ist Arbeit fürs Büro, kein Hinweis vor der Behandlung.
  */
 function AnmeldebogenHinweis({ patient, user }: { patient: Patient; user: CurrentUser }) {
-  const ort = useLocation();
   const offen = useOffeneErstaufnahme(patient.id, patient.status === 'active', user);
   if (!offen.includes('registration_form')) return null;
-  const hier = `${ort.pathname}${ort.search}`;
+  // ANN-227: Ein Tipp öffnet die Kamera, das Foto erledigt den Anmeldebogen -
+  // ohne Umweg über die Stammdaten.
   return (
-    <p className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
-      <span>
+    <div className="bg-warnung-soft text-warnung rounded-card flex min-h-11 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2 text-sm font-semibold">
+      <p>
         <span aria-hidden="true">! </span>
         {BEGRIFFE.anmeldebogen} fehlt
-      </span>
-      <Textlink
-        alleinstehend
-        className="gap-1"
-        to={mitRueckweg(intakeItemTarget(patient.id, 'registration_form'), hier)}
-      >
-        Erledigen
-        <span aria-hidden="true">→</span>
-      </Textlink>
-    </p>
+      </p>
+      <AnmeldebogenFoto patientId={patient.id} ausloeser="link" knopf="Fotografieren" />
+    </div>
   );
 }
 
@@ -248,127 +238,6 @@ function KopfHinweise({ patient, user }: { patient: Patient; user: CurrentUser }
       <AnmeldebogenHinweis patient={patient} user={user} />
       <HinweiseImKopf patient={patient} />
     </div>
-  );
-}
-
-/**
- * Wie die Person abgerechnet wird, als Abzeichen im Kopf (AKTE-007).
- *
- * An der Person gibt es kein Feld für Kostenträger oder Abrechnungsart; die
- * Praxis rechnet privat ab (ADR-009). Was sich unterscheidet, ist die Bauart
- * der Grundlage (ADR-020): Verordnung oder Selbstzahler. Das Abzeichen folgt
- * deshalb der jüngsten Grundlage, über denselben organisatorischen Lesepfad
- * wie die Kontextspalte (ANN-011). Ohne Grundlage kein Abzeichen.
- */
-function versicherungsart(kind: TreatmentBasis['treatment_basis_kind']): string {
-  return kind === 'self_pay' ? 'Selbstzahler' : 'Privat · mit Verordnung';
-}
-
-/**
- * Die Kontextspalte der Akte ab 900 px Inhaltsbreite (Design-Handoff
- * 2026-10-01, Abschnitt 7): die jüngste Behandlungsgrundlage mit ihren Zahlen
- * und der Kontakt. Darunter steht sie unter dem offenen Bereich.
- *
- * Nur, was die Rolle ohnehin liest: Die Grundlage kommt aus den
- * organisatorischen Lesepfaden der Akte (`useAktuelleGrundlage`), der Kontakt
- * aus dem bereits geladenen Datensatz. Fehlt beides, gibt es keine Spalte.
- */
-function useKontext(patient: Patient, user: CurrentUser) {
-  const aktuell = useAktuelleGrundlage(patient.id, user);
-  const strasse = [patient.street, patient.house_number].filter(Boolean).join(' ');
-  const ort = [patient.postal_code, patient.city].filter(Boolean).join(' ');
-  // In den Stammdaten steht der Kontakt schon als eigener Abschnitt - dort
-  // trägt die Spalte ihn nicht ein zweites Mal.
-  const { pathname } = useLocation();
-  const hatKontakt =
-    !pathname.endsWith('/stammdaten') &&
-    Boolean(patient.phone_mobile || patient.phone || patient.email || strasse || ort);
-  return { aktuell, hatKontakt, strasse, ort };
-}
-
-function Kontextspalte({
-  patient,
-  kontext,
-}: {
-  patient: Patient;
-  kontext: ReturnType<typeof useKontext>;
-}) {
-  const { aktuell, hatKontakt, strasse, ort } = kontext;
-  return (
-    <aside aria-label="Zur Person" className="flex min-w-0 flex-col gap-4">
-      {aktuell ? (
-        <Card>
-          <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-            Behandlungsgrundlage
-          </h2>
-          <p className="text-ink text-liste mt-1 font-semibold">
-            {(() => {
-              const { bauart, praeposition } = grundlageBezeichnung({
-                treatment_basis_kind: aktuell.grundlage.treatment_basis_kind,
-              });
-              return `${bauart} ${praeposition} ${formatDate(aktuell.grundlage.issued_on)}`;
-            })()}
-          </p>
-          {aktuell.grundlage.prescriber_name ? (
-            <p className="text-ink-muted text-sm">{aktuell.grundlage.prescriber_name}</p>
-          ) : null}
-          {aktuell.kontingent ? (
-            <>
-              <ProgressBar wert={aktuell.kontingent.used} von={aktuell.kontingent.prescribed} />
-              <p className="text-ink-muted mt-1.5 text-sm">{kontingentSatz(aktuell.kontingent)}</p>
-            </>
-          ) : null}
-          <Textlink
-            alleinstehend
-            className="gap-1 text-sm"
-            to={`/patienten/${patient.id}/verordnungen`}
-          >
-            Zu den Grundlagen
-            <span aria-hidden="true">→</span>
-          </Textlink>
-        </Card>
-      ) : null}
-      {hatKontakt ? (
-        <Card>
-          <h2 className="text-ink-muted tracking-label text-xs font-semibold uppercase">Kontakt</h2>
-          <dl className="mt-1 flex flex-col gap-2 text-sm">
-            {patient.phone_mobile || patient.phone ? (
-              <div>
-                <dt className="text-ink-muted">{patient.phone_mobile ? 'Mobil' : 'Telefon'}</dt>
-                <dd>
-                  <Textlink
-                    alleinstehend
-                    className="tabular-nums"
-                    href={`tel:${(patient.phone_mobile ?? patient.phone ?? '').replace(/[^+\d]/g, '')}`}
-                  >
-                    {patient.phone_mobile ?? patient.phone}
-                  </Textlink>
-                </dd>
-              </div>
-            ) : null}
-            {patient.email ? (
-              <div>
-                <dt className="text-ink-muted">E-Mail</dt>
-                <dd className="wrap-anywhere">
-                  <Textlink alleinstehend href={`mailto:${patient.email}`}>
-                    {patient.email}
-                  </Textlink>
-                </dd>
-              </div>
-            ) : null}
-            {strasse || ort ? (
-              <div>
-                <dt className="text-ink-muted">Anschrift</dt>
-                <dd className="text-ink">
-                  {strasse ? <span className="block">{strasse}</span> : null}
-                  {ort ? <span className="block">{ort}</span> : null}
-                </dd>
-              </div>
-            ) : null}
-          </dl>
-        </Card>
-      ) : null}
-    </aside>
   );
 }
 
@@ -551,8 +420,8 @@ export function AlterAktenbereich({ alt }: { alt: keyof typeof ALTE_AKTENBEREICH
 }
 
 function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; anhang: string }) {
-  const kontext = useKontext(patient, user);
-  const mitSpalte = Boolean(kontext.aktuell) || kontext.hatKontakt;
+  // Keine Kontextspalte mehr (Akte entschlacken, 2026-10-03): Kontakt steht in
+  // den Stammdaten, die Grundlage hat ihren eigenen Bereich.
   return (
     <>
       <header className="border-line bg-surface rounded-card overflow-hidden border">
@@ -561,21 +430,8 @@ function Akte({ patient, user, anhang }: { patient: Patient; user: CurrentUser; 
         <Aktenavigation patient={patient} user={user} anhang={anhang} />
       </header>
 
-      {/* Zwei Spalten ab 900 px Inhaltsbreite, wie auf Übersicht und Termin;
-          darunter steht die Kontextspalte unter dem offenen Bereich. */}
-      <div className="@container mt-6">
-        <div
-          className={
-            mitSpalte
-              ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] @zweispaltig:gap-x-8 grid items-start gap-6'
-              : ''
-          }
-        >
-          <div className="min-w-0">
-            <Outlet context={{ patient, user } satisfies PatientRecordContext} />
-          </div>
-          {mitSpalte ? <Kontextspalte patient={patient} kontext={kontext} /> : null}
-        </div>
+      <div className="mt-6 min-w-0">
+        <Outlet context={{ patient, user } satisfies PatientRecordContext} />
       </div>
     </>
   );

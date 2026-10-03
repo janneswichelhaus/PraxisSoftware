@@ -12,7 +12,11 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
-  panelZiel,
+  terminImKalenderOeffnen,
+  aktionenOeffnen,
+  terminImKalender,
+  TERMIN_IM_KALENDER,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -58,13 +62,14 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
 
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
-    await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
 
     // Und die Änderung überlebt das Neuladen.
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
@@ -82,8 +87,10 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Die Adresse wird übernommen und nicht erfragt.
     await expect(page.getByText('Adresse des Hausbesuchs')).toBeVisible();
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(detailWert(page, 'Behandelnde Person')).toContainText('Tim Teamleitung');
     // Der Hausbesuch ist der Regelfall und trägt kein Wort dafür (ANN-192).
     await expect(page.getByText('Praxistermin')).toHaveCount(0);
@@ -101,10 +108,11 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     await page.getByRole('link', { name: 'Bearbeiten' }).click();
     await page.getByLabel('Beginn *').fill(zeit(15));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
-    await expect(page).toHaveURL(/\/bearbeiten$/);
+    // Der Link traegt seit 2026-10-03 den Rueckweg (`?zurueck=`).
+    await expect(page).toHaveURL((url) => url.pathname.endsWith('/bearbeiten'));
   });
 
   test('meldet einen Bearbeitungskonflikt und lässt den Termin unverändert', async ({
@@ -156,7 +164,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Jetzt speichert das offene Formular auf einem veralteten Stand.
     await page.getByLabel('Beginn *').fill(zeit(240));
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(/zwischenzeitlich von einer anderen Person/)).toBeVisible();
 
@@ -192,7 +200,7 @@ test.describe('CAL-003: Absagen', () => {
 
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
     await expect(detailWert(page, 'Absagegrund')).toContainText('Patient:in hat abgesagt');
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Status')).toContainText('Abgesagt');
 
     // Keine Aktionen mehr an einem abgesagten Termin.
@@ -208,10 +216,10 @@ test.describe('CAL-003: Absagen', () => {
     const eintrag = terminKachel(page, terminId);
     await expect(eintrag).toBeVisible();
     await expect(eintrag).toContainText('Abgesagt');
-    // Die Kachel öffnet das Terminpanel; „Termin →" führt zu genau diesem
-    // Termin, samt Rückweg (Design-Handoff 2026-10-01, Abschnitt 7a).
-    const ziel = await panelZiel(page, terminId);
-    expect(ziel.pathname).toBe(`/termine/${terminId}`);
+    // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster genau dieses
+    // Termins (seit 2026-10-03 statt der Terminseite).
+    const fenster = await terminImKalenderOeffnen(page, terminId);
+    await expect(fenster.getByRole('heading', { level: 2, name: /Mustermann/ })).toBeVisible();
   });
 
   test('gibt den Zeitraum eines abgesagten Termins wieder frei', async ({ page }) => {

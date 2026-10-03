@@ -429,6 +429,10 @@ const dokumentSchema = z.object({
       kind: z.string(),
       issued_on: z.string(),
       prescriber: z.string().nullable(),
+      // Seit schema_version 4 (ANN-229): die Diagnose der Verordnung. Ältere
+      // Snapshots tragen sie nicht.
+      diagnosis_icd10: z.string().nullable().optional(),
+      diagnosis: z.string().nullable().optional(),
     }),
   ),
   items: z.array(

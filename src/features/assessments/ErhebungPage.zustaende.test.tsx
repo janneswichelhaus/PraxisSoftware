@@ -123,7 +123,9 @@ describe('Erhebung – Zustände und Schutz (UXR-009)', { timeout: 20_000 }, () 
     await waitFor(() => expect(erhebungVerwerfen).toHaveBeenCalledWith('d1'));
     expect(erhebungVerwerfen).toHaveBeenCalledTimes(1);
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/doku`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/patienten/${PATIENT_ID}/doku/befund`, {
+        replace: true,
+      }),
     );
   });
 
@@ -193,7 +195,7 @@ describe('Erhebung – Zustände und Schutz (UXR-009)', { timeout: 20_000 }, () 
     );
     expect(screen.getByRole('link', { name: '← Zurück zum Befund' })).toHaveAttribute(
       'href',
-      `/patienten/${PATIENT_ID}/doku`,
+      `/patienten/${PATIENT_ID}/doku/befund`,
     );
 
     await user.click(screen.getByRole('button', { name: 'Entwurf verwerfen und neu erheben' }));

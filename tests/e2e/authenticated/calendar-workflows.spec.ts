@@ -12,6 +12,7 @@ import {
   zugriffstoken,
   kalenderOptionenOeffnen,
   terminImKalenderOeffnen,
+  fensterSchliessen,
 } from './helpers';
 
 /**
@@ -55,6 +56,8 @@ test.describe('CAL-002: Kalender', () => {
     // Über die Navigation in den Kalender, dann gezielt auf den Tag. Der
     // Arbeitsbereich heisst "Kalender"; der erste Treffer ist sein Eintrag in
     // der seitlichen Navigation, nicht der gleichnamige Punkt im Untermenue.
+    // Das Fenster „Aktionen" steht nach dem Anlegen offen und ist modal.
+    await fensterSchliessen(page);
     await page.getByRole('link', { name: 'Kalender' }).first().click();
     await expect(page.getByRole('heading', { name: 'Kalender' })).toBeVisible();
 
@@ -71,7 +74,6 @@ test.describe('CAL-002: Kalender', () => {
     );
 
     await terminImKalenderOeffnen(page, terminId);
-    await expect(page).toHaveURL((u) => u.pathname === `/termine/${terminId}`);
     await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
   });
 

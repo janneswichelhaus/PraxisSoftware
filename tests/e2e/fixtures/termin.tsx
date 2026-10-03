@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type { Appointment } from '@/features/appointments/api';
-import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
+import { TerminAktionenDialog } from '@/features/appointments/TerminAktionen';
 import type { Abrechnungslage } from '@/features/appointments/abrechnungslage-api';
 import type { Kurzblick } from '@/features/appointments/kurzblick-api';
 import type { LeistungenAmTermin } from '@/features/appointments/leistungenAmTermin';
@@ -13,7 +13,8 @@ import type { CurrentUser, RoleKey } from '@/features/session/types';
 import '@/index.css';
 
 /**
- * Einstieg der Prüfseite aus `termin.html` (PRX-EPIC-002, UX-EPIC-005).
+ * Einstieg der Prüfseite aus `termin.html` (PRX-EPIC-002, UX-EPIC-005) - das
+ * Fenster „Aktionen“ eines Termins (Akte entschlacken, 2026-10-03).
  *
  * Ansichten über `?ansicht=`: `behandelnd` (Anna an ihrem dokumentierten
  * Hausbesuch: Zähler, Kurzblick, Heilmittel bestätigen), `buero` (derselbe
@@ -251,10 +252,23 @@ const rahmen = (kind: ReactNode) => <main className="mx-auto max-w-5xl px-4 py-6
 
 const router = createMemoryRouter(
   [
-    { path: '/termine/:appointmentId', element: rahmen(<AppointmentDetailPage user={benutzer} />) },
+    // Seit 2026-10-03 hat der Termin keine eigene Seite: Seine Aktionen stehen
+    // im Fenster über dem Kalender. Die Prüfseite zeigt das Fenster offen.
+    {
+      path: '/kalender',
+      element: rahmen(
+        <TerminAktionenDialog
+          appointmentId={TERMIN}
+          user={benutzer}
+          eingehend="/kalender"
+          zumTermin={`/kalender?termin=${TERMIN}`}
+          onSchliessen={() => undefined}
+        />,
+      ),
+    },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },
   ],
-  { initialEntries: [`/termine/${TERMIN}`] },
+  { initialEntries: ['/kalender'] },
 );
 
 createRoot(document.getElementById('wurzel')!).render(

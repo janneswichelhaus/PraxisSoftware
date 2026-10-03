@@ -5,7 +5,7 @@ import { NowMarker } from '@/components/ui/NowMarker';
 import { TravelBar } from '@/components/ui/TravelBar';
 import { zeitstrahlRaster, zeitstrahlSchiene } from '@/components/ui/timelineStile';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { formatLocalTime } from '@/features/appointments/api';
+import { formatLocalTime, kalenderZumTermin } from '@/features/appointments/api';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
 import { einordnung, terminName, type Anfahrt } from './tagesstart';
@@ -141,7 +141,9 @@ export function Zeitstrahl({
           const beginn = Date.parse(termin.starts_at);
           const grund = offenGrund(termin);
           const ziel = mitRueckweg(
-            termin.kind === 'training' ? `/training/termine/${termin.id}` : `/termine/${termin.id}`,
+            termin.kind === 'training'
+              ? `/training/termine/${termin.id}`
+              : kalenderZumTermin(termin.id),
             '/',
           );
           // Uhrzeit und Punkt stehen auf der Höhe der Namenszeile - und die

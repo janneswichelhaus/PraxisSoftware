@@ -327,16 +327,16 @@ describe('EditEventPage', () => {
     expect(screen.getByText('Die Tage der Serie bleiben, wie sie sind.')).toBeInTheDocument();
   });
 
-  it('fuehrt von jeder Teilnahme zum Termin, an dem sie sich aendern laesst (TER-15)', async () => {
+  it('fuehrt von jeder Teilnahme in den Kalender, wo sie sich aendern laesst (TER-15)', async () => {
     rendern();
 
     const anna = await screen.findByRole('link', { name: 'Anna Beispiel' });
     const ziel = new URL(anna.getAttribute('href')!, 'http://test');
-    expect(ziel.pathname).toBe(`/termine/${TERMIN_ID}`);
-    expect(ziel.searchParams.get('zurueck')).toBe(`/termine/${TERMIN_ID}/ereignis-bearbeiten`);
+    expect(ziel.pathname).toBe('/kalender');
+    expect(ziel.searchParams.get('termin')).toBe(TERMIN_ID);
     expect(screen.getByRole('link', { name: 'Tim Teamleitung' })).toHaveAttribute(
       'href',
-      expect.stringMatching(/^\/termine\/77777777-7777-4777-8777-000000000002\?/) as string,
+      '/kalender?termin=77777777-7777-4777-8777-000000000002',
     );
   });
 

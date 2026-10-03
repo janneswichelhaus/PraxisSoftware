@@ -13,7 +13,10 @@ import {
   terminUeberOberflaeche,
   zeitImLauf,
   zugriffstoken,
-  panelZiel,
+  terminImKalenderOeffnen,
+  aktionenOeffnen,
+  TERMIN_IM_KALENDER,
+  terminNeuLaden,
 } from './helpers';
 
 /**
@@ -51,7 +54,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await expect(detailWert(page, 'Abgeschlossen am')).not.toBeEmpty();
 
     // Und der Abschluss ueberlebt das Neuladen.
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
   });
 
@@ -105,7 +108,7 @@ test.describe('CAL-004: Termin abschliessen', () => {
     await page.getByLabel('Datum *').fill(tag);
     await page.getByLabel('Beginn *').fill(von);
     await page.getByRole('button', { name: 'Termin anlegen' }).click();
-    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Termin trotzdem anlegen', TERMIN_IM_KALENDER);
 
     await expect(page.getByText(/hat die behandelnde Person bereits einen Termin/)).toBeVisible();
   });
@@ -127,10 +130,10 @@ test.describe('CAL-004: Termin abschliessen', () => {
     // zeigt den fehlenden Eintrag, der Zustand steht im Titel.
     await expect(eintrag).toContainText('Doku offen');
     await expect(eintrag).toHaveAttribute('title', /Abgeschlossen/);
-    // Die Kachel öffnet das Terminpanel; „Termin →" führt zu genau diesem
-    // Termin, samt Rückweg (Design-Handoff 2026-10-01, Abschnitt 7a).
-    const ziel = await panelZiel(page, terminId);
-    expect(ziel.pathname).toBe(`/termine/${terminId}`);
+    // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster genau dieses
+    // Termins (seit 2026-10-03 statt der Terminseite).
+    const fenster = await terminImKalenderOeffnen(page, terminId);
+    await expect(fenster.getByRole('heading', { level: 2, name: /Mustermann/ })).toBeVisible();
   });
 });
 
@@ -154,7 +157,9 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await page.getByRole('link', { name: 'Bearbeiten' }).click();
     await page.getByLabel('Beginn *').fill(neuVon);
     await page.getByRole('button', { name: 'Änderungen speichern' }).click();
-    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', /\/termine\/[0-9a-f-]{36}$/);
+    await arbeitszeitBestaetigen(page, 'Änderung trotzdem speichern', TERMIN_IM_KALENDER);
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
   });
 

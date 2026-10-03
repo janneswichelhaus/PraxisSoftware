@@ -1,7 +1,7 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Disclosure } from '@/components/ui/Card';
@@ -9,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
-import { Textlink } from '@/components/ui/Textlink';
+import { textlinkKlassen } from '@/components/ui/buttonStile';
 import {
   canManageAppointments,
   canReadTrainingClients,
@@ -37,7 +37,8 @@ import {
   todayInTimeZone,
   updateAppointment,
   type TerminVorbelegung,
-  terminPfad,
+  TERMIN_PARAM,
+  appointmentToFormValues,
 } from './api';
 import {
   CalendarGrid,
@@ -47,6 +48,9 @@ import {
   type GitterSpalte,
 } from './CalendarGrid';
 import { TerminPanel } from './TerminPanel';
+import { TerminAktionenDialog } from './TerminAktionen';
+import { Rueckmeldung } from './Rueckmeldungen';
+import { leseMeldung } from './terminformular';
 import { letzterKalenderstand, merkeKalenderstand } from './kalenderstand';
 import { SpannenBild } from './Laengenzeichen';
 import { naechsteAuswahl, type Spanne } from './useSpanneAufziehen';
@@ -281,6 +285,24 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   const [auswahl, setAuswahl] = useState<Spanne | null>(null);
   // Der Termin im Panel (Design-Handoff 2026-10-01, Abschnitt 7a).
   const [gewaehltId, setGewaehltId] = useState<string | null>(null);
+  // Der Termin, dessen Fenster „Aktionen" offen ist (Akte entschlacken, 2026-10-03).
+  const [aktionenId, setAktionenId] = useState<string | null>(null);
+  /**
+   * Ein Termin aus einem Link (`?termin=`, `kalenderZumTermin`): Seit der
+   * Termin keine eigene Seite mehr hat, führen Tagesliste, Tour, Warteliste
+   * und Formulare hierher. Gemerkt wird die Kennung beim ersten Lesen - der
+   * gemerkte Kalenderstand schreibt die Adresse sonst ohne sie neu.
+   */
+  const terminImLink = suche.get(TERMIN_PARAM);
+  // Was eine Schreibseite beim Zurückkommen bestätigt (DOK-15, ZST-17) - bis
+  // 2026-10-03 stand es auf der Terminseite. Gemerkt beim ersten Lesen: Das
+  // Umschreiben der Adresse nimmt den Zustand der Navigation nicht mit.
+  const ortZustand: unknown = useLocation().state;
+  const [eingangsmeldung] = useState(() => leseMeldung(ortZustand));
+  const [sprungZiel, setSprungZiel] = useState<string | null>(null);
+  useEffect(() => {
+    if (terminImLink) setSprungZiel(terminImLink);
+  }, [terminImLink]);
   /** Monatskalender und Ansicht/Filter sind eingeklappt, bis man sie braucht (BEF-039). */
   const [monatOffen, setMonatOffen] = useState(false);
   const [optionenOffen, setOptionenOffen] = useState(false);
@@ -305,6 +327,49 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     }
     merkeKalenderstand(user.profile.id, new URLSearchParams(kalenderSuche), heute);
   }, [ausGemerktem, kalenderSuche, heute, user.profile.id, setSuche]);
+  const sprungTermin = useQuery({
+    queryKey: ['appointment', sprungZiel],
+    queryFn: () => fetchAppointment(sprungZiel!),
+    enabled: Boolean(sprungZiel),
+    retry: false,
+  });
+  useEffect(() => {
+    if (!sprungZiel || sprungTermin.isPending) return;
+    const termin = sprungTermin.data;
+    setSprungZiel(null);
+    if (!termin) {
+      // Nicht (mehr) da oder nicht freigegeben: Der Kalender bleibt, wo er ist.
+      if (terminImLink) setSuche(new URLSearchParams(kalenderSuche), { replace: true });
+      return;
+    }
+    // Der Tag des Termins in der Zeit der Praxis; eine Personenauswahl folgt
+    // der behandelnden Person, ein Zustandsfilter lässt den Termin sichtbar.
+    const datum = appointmentToFormValues(termin).date;
+    const zustand: KalenderParameter['status'] =
+      termin.status === 'cancelled' || termin.status === 'no_show' ? 'all' : p.status;
+    const ziel = schreibeParameter({
+      ...p,
+      ansicht: 'tag',
+      datum,
+      person: p.person ? termin.staff_member_id : null,
+      status: zustand,
+      patient: null,
+      verordnung: null,
+    });
+    // Die Kennung bleibt in der Adresse, solange der Termin gewählt ist: Ein
+    // Neuladen zeigt ihn wieder, und Tests finden ihn dort.
+    ziel.set(TERMIN_PARAM, termin.id);
+    setSuche(ziel, { replace: true });
+    setGewaehltId(termin.id);
+  }, [
+    sprungZiel,
+    sprungTermin.isPending,
+    sprungTermin.data,
+    p,
+    kalenderSuche,
+    terminImLink,
+    setSuche,
+  ]);
   const rueckgaengigRef = useRef<HTMLButtonElement>(null);
   const rueckgaengigFokussieren = useRef(false);
   useEffect(() => {
@@ -1424,21 +1489,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         <Statusmeldung ton="erfolg" className="mt-4">
           Termin angelegt.{' '}
           {gitterEintraege.some((g) => g.eintrag.id === neuerTermin) ? (
-            // Im Satz unterstrichen, nicht nur an der Farbe erkennbar (TOK-12).
-            // Ein Trainingstermin öffnet im Trainingsbereich (TRN-004).
-            <Textlink
-              to={mitRueckweg(
-                terminPfad(
-                  gitterEintraege.find((g) => g.eintrag.id === neuerTermin)?.eintrag ?? {
-                    id: neuerTermin,
-                    kind: 'therapy',
-                  },
-                ),
-                kalenderStand,
-              )}
+            // Kein eigener Termin mehr: Der Knopf wählt ihn im Panel aus.
+            <button
+              type="button"
+              className={textlinkKlassen(false)}
+              onClick={() => setGewaehltId(neuerTermin)}
             >
               Termin öffnen
-            </Textlink>
+            </button>
           ) : (
             'Er liegt außerhalb des gezeigten Ausschnitts.'
           )}
@@ -1447,6 +1505,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
 
       {/* Zurück aus dem Fehlzeit-Formular (KAL-22): Die Fehlzeit kann an
           einem anderen Tag liegen - die Zeile sagt, dass es geklappt hat. */}
+      {eingangsmeldung ? <Rueckmeldung className="mt-4">{eingangsmeldung}</Rueckmeldung> : null}
+
       {eingetragen ? (
         <Statusmeldung ton="erfolg" className="mt-4">
           {eingetragen === 'dauerfehlzeit' ? BEGRIFFE.dauerfehlzeit : BEGRIFFE.fehlzeit}{' '}
@@ -1651,12 +1711,28 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      {gewaehlt && !vorschlag && !auswahl ? (
+      {/* Solange das Fenster „Aktionen" offen ist, weicht das Panel: Es läge
+          ohnehin gesperrt darunter, und nichts stünde doppelt da. */}
+      {gewaehlt && !vorschlag && !auswahl && !aktionenId ? (
         <TerminPanel
           eintrag={gewaehlt}
           user={user}
           rueckweg={kalenderStand}
-          onSchliessen={() => setGewaehltId(null)}
+          onSchliessen={() => {
+            setGewaehltId(null);
+            if (terminImLink) setSuche(new URLSearchParams(kalenderSuche), { replace: true });
+          }}
+          onAktionen={() => setAktionenId(gewaehlt.id)}
+        />
+      ) : null}
+
+      {aktionenId ? (
+        <TerminAktionenDialog
+          appointmentId={aktionenId}
+          user={user}
+          eingehend={kalenderStand}
+          zumTermin={`${kalenderStand}&${TERMIN_PARAM}=${aktionenId}`}
+          onSchliessen={() => setAktionenId(null)}
         />
       ) : null}
 

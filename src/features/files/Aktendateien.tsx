@@ -40,23 +40,32 @@ function ohneGrundlage(datei: PatientFile): boolean {
  * entstehen mit Kamera, Einwilligung und Frist (DAT-01, ADR-017 „scharfe
  * Kante").
  */
-export function DokuDateien({ patientId, user }: { patientId: string; user: CurrentUser }) {
+export function DokuDateien({
+  patientId,
+  user,
+  ohneAbschnitt = false,
+}: {
+  patientId: string;
+  user: CurrentUser;
+  /** In der Karte „Fotos und Dateien" der Doku: ohne eigene Überschrift und Rahmen. */
+  ohneAbschnitt?: boolean;
+}) {
   if (!canReadPatientFiles(user.roles)) return null;
-  return (
-    <Section titel="Dateien zu Befund und Behandlung">
-      <Dateiliste
-        patientId={patientId}
-        user={user}
-        darfHinzufuegen={canWriteClinicalPatientFiles(user.roles)}
-        auswahl={imBereich('doku')}
-        hinzufuegbar={artenImBereich('doku')}
-        rahmen
-        hinzufuegenEingeklappt="Dokument hinzufügen"
-        leerHinweis="Noch kein Befund, Arztbrief oder klinisches Bild."
-        leerKompakt
-      />
-    </Section>
+  const liste = (
+    <Dateiliste
+      patientId={patientId}
+      user={user}
+      darfHinzufuegen={canWriteClinicalPatientFiles(user.roles)}
+      auswahl={imBereich('doku')}
+      hinzufuegbar={artenImBereich('doku')}
+      rahmen={!ohneAbschnitt}
+      hinzufuegenEingeklappt="Dokument hinzufügen"
+      leerHinweis="Noch kein Befund, Arztbrief oder klinisches Bild."
+      leerKompakt
+    />
   );
+  if (ohneAbschnitt) return liste;
+  return <Section titel="Dateien zu Befund und Behandlung">{liste}</Section>;
 }
 
 /** Stammdaten, beim Anmeldebogen: Einwilligung und Vertrag als Scan. */

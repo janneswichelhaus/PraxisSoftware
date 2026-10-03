@@ -332,6 +332,16 @@ describe('AppShell: Orientierung (UXR-002)', () => {
     );
   });
 
+  it('zeigt in einer Akte keine Unterleiste „Patient:innen | Verordner:innen"', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/patienten/abc/termine',
+    );
+    expect(screen.queryByRole('navigation', { name: 'Bereich Patient:innen' })).toBeNull();
+  });
+
   it('markiert „Verordner:innen" auch auf dem Formular (VER-B01)', () => {
     renderWithProviders(
       <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>

@@ -7,7 +7,7 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as RouterModul from 'react-router-dom';
-import { renderWithProviders, testUser } from '@/test-utils';
+import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { ZOOM_STANDARD } from './calendar';
 
 /**
@@ -427,7 +427,10 @@ describe('CalendarPage', () => {
       expect(within(timSpalte).getByRole('button', { name: /Erika Beispiel/ })).toBeInTheDocument();
     });
 
-    it('öffnet nach einem Tipp das Terminpanel mit dem Weg zur Detailansicht (Abschnitt 7a)', async () => {
+    it('öffnet nach einem Tipp das Terminpanel und daraus das Fenster „Aktionen“', async () => {
+      fetchAppointment.mockResolvedValue(
+        testAppointment({ id: '77777777-7777-4777-8777-000000000001', patient_id: PATIENT }),
+      );
       const user = userEvent.setup();
       rendern('/kalender?ansicht=tag&datum=2027-05-12');
       const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
@@ -435,25 +438,46 @@ describe('CalendarPage', () => {
       await user.click(kachel);
       expect(kachel).toHaveAttribute('aria-pressed', 'true');
       const panel = screen.getByRole('region', { name: /Max Mustermann/ });
-      const link = within(panel).getByRole('link', { name: 'Termin →' });
-      expect(link.getAttribute('href')).toMatch(
-        /^\/termine\/77777777-7777-4777-8777-000000000001\?/,
-      );
+      // Der Termin hat keine eigene Seite mehr (Akte entschlacken, 2026-10-03).
+      expect(within(panel).queryByRole('link', { name: /Termin →/ })).toBeNull();
+      await user.click(within(panel).getByRole('button', { name: 'Aktionen …' }));
+      const fenster = await screen.findByRole('dialog');
+      expect(await within(fenster).findByRole('button', { name: 'Termin absagen' })).toBeVisible();
+      await user.click(within(fenster).getByRole('button', { name: 'Schließen' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
     });
 
-    // UX-012: Der Weg zurueck fuehrt in genau diesen Kalenderstand - mit
-    // Ansicht, Datum und Filtern. Vorher landete man auf der Patientenliste.
     it('nimmt Ansicht, Datum und Filter als Rueckweg mit', async () => {
+      fetchAppointment.mockResolvedValue(
+        testAppointment({ id: '77777777-7777-4777-8777-000000000001', patient_id: PATIENT }),
+      );
       const user = userEvent.setup();
       rendern('/kalender?ansicht=tag&datum=2027-05-12&status=all');
       await user.click(await screen.findByRole('button', { name: /Max Mustermann/ }));
-      const link = screen.getByRole('link', { name: 'Termin →' });
+      await user.click(screen.getByRole('button', { name: 'Aktionen …' }));
+      const link = await within(await screen.findByRole('dialog')).findByRole('link', {
+        name: 'Bearbeiten',
+      });
 
       const zurueck = new URL(link.getAttribute('href')!, 'http://x').searchParams.get('zurueck');
       const parameter = new URLSearchParams(zurueck!.split('?')[1]);
       expect(parameter.get('ansicht')).toBe('tag');
       expect(parameter.get('datum')).toBe('2027-05-12');
       expect(parameter.get('status')).toBe('all');
+    });
+
+    // Ein Link von Tagesliste, Tour oder Formular (`?termin=`) öffnet den Tag
+    // des Termins mit gewähltem Termin (Akte entschlacken, 2026-10-03).
+    it('springt über ?termin= zum Tag des Termins und wählt ihn aus', async () => {
+      fetchAppointment.mockResolvedValue(
+        testAppointment({ id: '77777777-7777-4777-8777-000000000001', patient_id: PATIENT }),
+      );
+      rendern('/kalender?termin=77777777-7777-4777-8777-000000000001');
+      expect(await screen.findByRole('region', { name: /Max Mustermann/ })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Max Mustermann/ })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
     });
 
     it('zeigt in der Wochenansicht Montag bis Freitag (Abschnitt 7a)', async () => {
@@ -1351,9 +1375,13 @@ describe('CalendarPage', () => {
       expect(kachel.className).toContain('border-accent');
       const meldung = screen.getByRole('status');
       expect(meldung).toHaveTextContent(/Termin angelegt/);
-      // Eine Erfolgsmeldung mit Zeichen (UIK-21), der Link im Satz unterstrichen (TOK-12).
+      // Eine Erfolgsmeldung mit Zeichen (UIK-21), der Weg im Satz unterstrichen
+      // (TOK-12). Er wählt den Termin im Panel - eine Terminseite gibt es nicht mehr.
       expect(meldung).toHaveTextContent('✓');
-      expect(screen.getByRole('link', { name: 'Termin öffnen' })).toHaveClass('underline');
+      const oeffnen = screen.getByRole('button', { name: 'Termin öffnen' });
+      expect(oeffnen).toHaveClass('underline');
+      fireEvent.click(oeffnen);
+      expect(screen.getByRole('region', { name: /Max Mustermann/ })).toBeInTheDocument();
     });
 
     it('fuehrt aus der Wochenansicht mit dem Tag der Spalte in die Terminanlage', async () => {
@@ -2377,7 +2405,7 @@ describe('CalendarPage', () => {
 
       const kachel = await screen.findByRole('button', { name: /Tina Trainingskundin/ });
       fireEvent.click(kachel);
-      expect(screen.getByRole('link', { name: 'Termin →' }).getAttribute('href')).toMatch(
+      expect(screen.getByRole('link', { name: 'Training →' }).getAttribute('href')).toMatch(
         /^\/training\/termine\/77777777-7777-4777-8777-0000000000aa/,
       );
       // Vorgelesen wird das Wort, nicht das Zeichen (KAL-16).

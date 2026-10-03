@@ -1354,3 +1354,30 @@ und getrennt ankreuzbar (Art. 7 Abs. 4 DSGVO); die Unterschrift unter den
 Vertrag darf sie nicht mit einschließen. Die Dienstleister auf dem Blatt
 müssen die sein, die die Praxis tatsächlich nutzt (ADR-002). Abrechnungssätze
 auf dem Blatt kommen aus dem Leistungskatalog, nicht als Freitext.
+
+### IDEA-PRX-055 — Verordnung vom Foto automatisch erkennen
+
+| | |
+|---|---|
+| Status | notiert |
+| Quelle | Jannes, 2026-10-03 (Akte entschlacken · Behandlungsgrundlagen) |
+| Berührt | ADR-005, ADR-002, ADR-007, `DatenUebertragenFenster.tsx`, ANN-228 |
+
+**Stand.** Seit 2026-10-03 tippt die Praxis die Verordnung im Fenster „Daten
+übertragen" vom Foto ab: Datum, Ärzt:in, ICD-10, Diagnose, Positionen.
+Gebaut ist keine Erkennung.
+
+**Idee.** Eine Edge Function `prescription-extract` hinter dem AI Gateway
+(ADR-005) liest das Foto und füllt das Fenster als **Entwurf** vor, mit dem
+Kennzeichen „unsicher" je Feld; gespeichert wird erst nach Prüfung. Bis zur
+Freigabe antwortet ein Mock-Anbieter.
+
+**Kandidaten mit Verarbeitung in der EU** (Preise vor der Entscheidung
+prüfen, Größenordnung wenige Cent je Foto): Mistral OCR (Paris), ein
+Vision-Modell über einen EU-Cloud-Standort (etwa Frankfurt), Azure Document
+Intelligence (EU-Region). Vision-Modelle lesen Datum und ICD meist gut,
+Handschrift der Ärzt:in unsicher - deshalb Prüfpflicht je Feld.
+
+**Vorsicht.** Ein neuer Anbieter für Gesundheitsdaten (Art. 9 DSGVO) ist ein
+Stopp: AVV, Eintrag in der DSFA (ADR-007), Anbieterprüfung (ADR-002), §203
+StGB. Jannes entscheidet; vorher wird nichts gebaut.

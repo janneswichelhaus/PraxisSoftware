@@ -8,6 +8,7 @@ import {
   tagImFenster,
   zeitImLauf,
   kalenderOptionenOeffnen,
+  aktionenOeffnen,
 } from './helpers';
 
 /**
@@ -109,17 +110,16 @@ test.describe('CAL-021: Dauerfehlzeit', () => {
     await arbeitszeitBestaetigen(page, 'Trotzdem eintragen', /\/kalender/);
 
     await expect(page).toHaveURL(/\/kalender/);
-    // Die Kachel öffnet das Terminpanel, „Fehlzeit →" die Detailansicht
-    // (Design-Handoff 2026-10-01, Abschnitt 7a).
+    // Die Kachel öffnet das Terminpanel, „Aktionen …" das Fenster der
+    // Fehlzeit (seit 2026-10-03 statt der Detailansicht).
     const kachel = page.getByRole('button', { name: bezeichnung });
     await expect(kachel.first()).toBeVisible();
     await kachel.first().click();
-    await page.getByRole('link', { name: 'Fehlzeit →' }).click();
+    await aktionenOeffnen(page);
 
     // Das Vorkommen sagt, dass es eines von dreien ist (CAL-021).
-    // Seit dem Design-Handoff vom 2026-10-01 ist der Titel der Fehlzeit die
-    // Überschrift, „Fehlzeit" steht als Zeile darüber.
-    await expect(page.getByRole('heading', { level: 1, name: bezeichnung })).toBeVisible();
+    // Der Titel der Fehlzeit ist die Überschrift des Fensters.
+    await expect(page.getByRole('heading', { level: 2, name: bezeichnung })).toBeVisible();
     await expect(detailWert(page, 'Dauerfehlzeit')).toContainText('Vorkommen 1 von 3');
 
     // Eine Fehlzeit ist keine Behandlung: kein Abschluss, keine Leistung (§19).

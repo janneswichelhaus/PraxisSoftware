@@ -173,7 +173,7 @@ describe('EditAppointmentPage', () => {
       false,
     );
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
   });
 
@@ -408,13 +408,15 @@ describe('EditAppointmentPage', () => {
     rendern();
     await formularAbwarten();
 
+    // Ohne mitgereisten Weg in den Kalender, der Termin gewählt - eine
+    // Terminseite gibt es nicht mehr (Akte entschlacken, 2026-10-03).
     expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
       'href',
-      `/termine/${TERMIN_ID}`,
+      `/kalender?termin=${TERMIN_ID}`,
     );
-    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
       'href',
-      `/termine/${TERMIN_ID}`,
+      `/kalender?termin=${TERMIN_ID}`,
     );
     expect(updateAppointment).not.toHaveBeenCalled();
   });
@@ -429,7 +431,7 @@ describe('EditAppointmentPage', () => {
 
     expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute(
       'href',
-      `/termine/${TERMIN_ID}?zurueck=${encodeURIComponent(kalender)}`,
+      `/kalender?ansicht=tag&termin=${TERMIN_ID}`,
     );
     // Der Rückweg oben folgt dem mitgereisten Weg (Rueckweg-Baustein, TER-03).
     expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
@@ -446,7 +448,7 @@ describe('EditAppointmentPage', () => {
       await screen.findByText('Abgesagte Termine werden nicht bearbeitet'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
   });
 
   it('meldet einen nicht freigegebenen Termin ohne Details', async () => {
@@ -456,7 +458,7 @@ describe('EditAppointmentPage', () => {
     expect(await screen.findByText('Nicht gefunden')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Änderungen speichern' })).not.toBeInTheDocument();
     // Der Rückweg bleibt auch im Fehlerfall (ZST-08).
-    expect(screen.getByRole('link', { name: '← Zurück zum Termin' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
   });
 
   it('meldet einen Ladefehler als Ladefehler und bietet einen neuen Versuch an (TER-11)', async () => {

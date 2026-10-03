@@ -12,6 +12,12 @@ import {
   zeitImLauf,
   zugriffstoken,
   erwarteProtokollierteAbweisung,
+  terminOeffnen,
+  aktionenOeffnen,
+  terminImKalender,
+  terminNeuLaden,
+  TERMIN_IM_KALENDER,
+  fensterSchliessen,
 } from './helpers';
 
 /**
@@ -56,12 +62,13 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
     await expect(page.getByText(/^!?Entwurf/).first()).toBeVisible();
     await expect(page.getByText(/Verfasst von Anna Beispiel/)).toBeVisible();
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
   });
 
@@ -74,7 +81,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
 
     // Am offenen Termin führt „Doku“ in der Aktionsleiste zurück (Zyklus 3).
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
@@ -83,10 +91,11 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await page.getByLabel('Eintrag zur Behandlung').fill(ERGAENZT);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
 
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText(ERGAENZT)).toBeVisible();
 
-    await page.reload();
+    await terminNeuLaden(page);
     await expect(page.getByText(ERGAENZT)).toBeVisible();
   });
 
@@ -119,7 +128,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     await page.getByRole('link', { name: 'Zurück' }).click();
     await rueckfrage.getByRole('button', { name: 'Verwerfen', exact: true }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText('Synthetisch: noch nicht gespeichert.')).toHaveCount(0);
   });
 
@@ -140,6 +150,8 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
 
     await expect(page.getByText(ENTWURF)).toBeVisible();
   });
@@ -154,13 +166,17 @@ test.describe('DOK-001, ROL-001: Office liest den Eintrag, schreibt ihn nicht', 
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
+    // Das Fenster ist modal; „Abmelden" dahinter erreicht erst nach dem Schliessen.
+    await fensterSchliessen(page);
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
     await anmelden(page, KONTEN.office);
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
 
-    await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: 'Max Mustermann' })).toBeVisible();
     // Seit E15 liest office den klinischen Inhalt (ADR-004 Fassung 2 Punkt 3) ...
     await expect(page.getByText(ENTWURF)).toBeVisible();
     // ... bearbeiten und finalisieren bleiben den therapeutischen Rollen (4.3).
@@ -178,6 +194,8 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     const officeToken = await zugriffstoken(request, KONTEN.office);
@@ -221,6 +239,8 @@ test.describe('DOK-001: Serverseitige Grenzen', () => {
     await page.goto(`/termine/${terminId}/abschluss`);
     await page.getByLabel('Eintrag zur Behandlung').fill(ENTWURF);
     await page.getByRole('button', { name: 'Entwurf', exact: true }).click();
+    await expect(page).toHaveURL(TERMIN_IM_KALENDER);
+    await aktionenOeffnen(page);
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     // Gaebe es einen direkten Tabellenzugriff, liesse sich klinischer Freitext
@@ -278,7 +298,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     // Erst gespeichert, dann weitergegangen - und ausdruecklich nur als
     // Entwurf: Der Termin bleibt bestaetigt (ADR-016).
     await expect(page).toHaveURL(/\/kalender/);
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(page.getByText(OFFEN)).toBeVisible();
     // Nur der Entwurf wurde gesichert: Der Termin ist nicht abgeschlossen und
     // die Dokumentation nicht festgeschrieben (ADR-016, ADR-018).
@@ -295,16 +315,19 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await page.getByRole('button', { name: 'Termin abschließen' }).click();
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
+    // Der Link traegt den Rueckweg in den Kalender (`?zurueck=`).
+    const schreibseite = (url: URL) => url.pathname === `/termine/${terminId}/abschluss`;
+    await expect(page).toHaveURL(schreibseite);
     await page.getByLabel('Eintrag zur Behandlung').fill('Synthetisch: Zurueck-Taste.');
 
     await page.goBack();
 
     await expect(rueckfrage(page)).toBeVisible();
-    await expect(page).toHaveURL(`/termine/${terminId}/abschluss`);
+    await expect(page).toHaveURL(schreibseite);
 
     await rueckfrage(page).getByRole('button', { name: 'Verwerfen', exact: true }).click();
-    await expect(page).toHaveURL(`/termine/${terminId}`);
+    await expect(page).toHaveURL(terminImKalender(terminId));
+    await aktionenOeffnen(page);
     await expect(page.getByText('Synthetisch: Zurueck-Taste.')).toHaveCount(0);
   });
 
@@ -341,7 +364,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
 
     await anmelden(page, KONTEN.therapist);
-    await page.goto(`/termine/${terminId}`);
+    await terminOeffnen(page, terminId);
     await expect(page.getByText(text)).toBeVisible();
   });
 

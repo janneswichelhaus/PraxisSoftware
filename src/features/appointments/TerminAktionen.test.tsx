@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
-import type * as RouterModul from 'react-router-dom';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as TagesApi from '@/features/today/api';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
@@ -95,12 +92,10 @@ vi.mock('@/features/today/api', async (importOriginal) => {
   };
 });
 
-vi.mock('react-router-dom', async (importOriginal) => ({
-  ...(await importOriginal<typeof RouterModul>()),
-  useParams: () => ({ appointmentId: TERMIN_ID }),
-}));
+const { TerminAktionenDialog } = await import('./TerminAktionen');
 
-const { AppointmentDetailPage } = await import('./AppointmentDetailPage');
+/** Der Kalenderstand, aus dem das Fenster geöffnet wird. */
+const KALENDER = '/kalender?ansicht=tag&datum=2027-05-12';
 
 /**
  * Wer die Seite ansieht - mit dem Namen aus dem Seed, damit die Kennung zur
@@ -118,8 +113,14 @@ const NAMEN: Record<string, string> = {
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['office']) {
   return renderWithProviders(
-    <AppointmentDetailPage user={testUser(rollen, NAMEN[rollen[0] ?? 'office'])} />,
-    `/termine/${TERMIN_ID}`,
+    <TerminAktionenDialog
+      appointmentId={TERMIN_ID}
+      user={testUser(rollen, NAMEN[rollen[0] ?? 'office'])}
+      eingehend={KALENDER}
+      zumTermin={`${KALENDER}&termin=${TERMIN_ID}`}
+      onSchliessen={vi.fn()}
+    />,
+    KALENDER,
   );
 }
 
@@ -136,7 +137,7 @@ function zeile(beschriftung: string): string {
   return klon.textContent?.replace(/\s+/g, ' ').trim() ?? '';
 }
 
-describe('AppointmentDetailPage', () => {
+describe('TerminAktionenDialog', () => {
   beforeEach(() => {
     fetchAppointment.mockReset();
     cancelAppointment.mockReset();
@@ -312,11 +313,11 @@ describe('AppointmentDetailPage', () => {
         rendern([rolle]);
         await screen.findByText('Berta Bestand');
 
-        // Ohne eigenen Rueckweg bleibt die Adresse schlicht: Die Bearbeitung
-        // kehrt ohnehin zum Termin zurueck (UX-012).
+        // Die Bearbeitung kehrt in den Kalender zurück, aus dem das Fenster
+        // geöffnet wurde (UX-012).
         expect(screen.getByRole('link', { name: 'Bearbeiten' })).toHaveAttribute(
           'href',
-          `/termine/${TERMIN_ID}/bearbeiten`,
+          `/termine/${TERMIN_ID}/bearbeiten?zurueck=${encodeURIComponent(KALENDER)}`,
         );
         expect(screen.getByRole('button', { name: 'Termin absagen' })).toBeInTheDocument();
       },
@@ -608,11 +609,11 @@ describe('AppointmentDetailPage', () => {
 
       const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
       expect(knopf).toHaveAttribute('aria-expanded', 'false');
-      // Aktionsleiste (Zyklus 3): Haken, „Doku", „Niemand öffnet?", „Ohne Behandlung".
-      const leiste = screen.getByRole('group', { name: 'Nach dem Termin' });
-      expect(within(leiste).getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
-      expect(within(leiste).getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
-      expect(within(leiste).getByRole('link', { name: 'Ohne Behandlung' })).toHaveAttribute(
+      // Die Auswahl (Akte entschlacken, 2026-10-03): Haken, „Doku",
+      // „Niemand öffnet?", „Ohne Behandlung".
+      expect(screen.getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
+      expect(screen.getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
+      expect(screen.getByRole('link', { name: 'Ohne Behandlung' })).toHaveAttribute(
         'href',
         expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
       );
@@ -992,7 +993,6 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       expect(await screen.findByRole('heading', { name: /Teambesprechung/ })).toBeInTheDocument();
-      expect(zeile('Fehlzeit')).toBe('Teambesprechung');
       expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
       expect(screen.queryByRole('link', { name: /Mustermann/ })).not.toBeInTheDocument();
     });
@@ -1091,34 +1091,27 @@ describe('AppointmentDetailPage', () => {
       ).toBeInTheDocument();
     });
 
-    it('fuehrt von jeder anderen Teilnahme zu ihrem Termin (TER-15)', async () => {
+    it('nennt jede Teilnahme beim Namen, ohne Weg auf eine Terminseite (TER-15)', async () => {
       fetchAppointment.mockResolvedValue(ereignis);
       fetchEventParticipants.mockResolvedValue(zweiBeteiligte);
       rendern();
 
-      // Die eigene Teilnahme ist diese Seite - sie ist kein Link.
-      const tim = await screen.findByRole('link', { name: 'Tim Teamleitung' });
-      expect(tim).toHaveAttribute(
-        'href',
-        `/termine/${zweiBeteiligte[1]!.appointment_id}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
-      );
-      expect(screen.queryByRole('link', { name: 'Anna Beispiel' })).not.toBeInTheDocument();
+      // Die andere Teilnahme steht im Kalender daneben; eine eigene Seite hat
+      // sie nicht mehr (Akte entschlacken, 2026-10-03).
+      expect(await screen.findByText(/Tim Teamleitung/)).toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Tim Teamleitung' })).toBeNull();
     });
 
     it('nennt an der Fehlzeit die Fehlzeit, nicht den Termin (TER-22)', async () => {
       fetchAppointment.mockResolvedValue(ereignis);
       rendern();
 
-      await screen.findByRole('heading', { name: /Teambesprechung/ });
-      expect(screen.getByRole('heading', { level: 2, name: 'Fehlzeit' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Teambesprechung' }),
+      ).toBeInTheDocument();
       // Keine Fußnote mehr, die sagt, was jeder hier weiß (UX-005a).
       expect(screen.queryByText(/enthält ausschließlich organisatorische/)).not.toBeInTheDocument();
-      // Ohne mitgereisten Weg führt „zurück" von einer Fehlzeit in den
-      // Kalender, nicht in die Patientenliste (TER-03).
-      expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toHaveAttribute(
-        'href',
-        '/kalender',
-      );
+      expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
     });
 
     it('sagt das ganze Ereignis auf dem Stand der Gruppe ab', async () => {
@@ -1208,6 +1201,21 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryAllByText(/dokumentation/i)).toEqual([]);
     });
 
+    it('zeigt die Meldung, wenn der Abschluss abgewiesen wird', async () => {
+      completeAppointment.mockRejectedValue(
+        new Error('Der Termin konnte nicht abgeschlossen werden.'),
+      );
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Berta Bestand');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(
+        await screen.findByText('Der Termin konnte nicht abgeschlossen werden.'),
+      ).toBeInTheDocument();
+    });
+
     it('markiert einen abgeschlossenen Termin nicht als unvollstaendig', async () => {
       fetchAppointment.mockResolvedValue(abgeschlossen);
       rendern();
@@ -1266,39 +1274,16 @@ describe('AppointmentDetailPage', () => {
 
       expect(screen.queryByRole('button', { name: 'Termin abschließen' })).not.toBeInTheDocument();
     });
-
-    it('zeigt die Meldung, wenn der Abschluss abgewiesen wird', async () => {
-      completeAppointment.mockRejectedValue(
-        new Error('Der Termin konnte nicht abgeschlossen werden.'),
-      );
-      const user = userEvent.setup();
-      rendern();
-      await screen.findByText('Berta Bestand');
-
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
-
-      expect(
-        await screen.findByText('Der Termin konnte nicht abgeschlossen werden.'),
-      ).toBeInTheDocument();
-    });
   });
 
-  // UX-012: Der Name im Kopf ist der Weg in die Akte - und er nimmt den Weg
-  // zurueck zu diesem Termin mit.
-  it('verlinkt den Namen im Kopf in die Patientenakte, mit Rueckweg zum Termin', async () => {
+  // Der Name ist der Titel des Fensters; der Weg in die Akte steht im
+  // Terminpanel (Akte entschlacken, 2026-10-03).
+  it('trägt den Namen als Titel des Fensters', async () => {
     rendern();
-    const link = await screen.findByRole('link', { name: 'Berta Bestand' });
-    expect(link).toHaveAttribute(
-      'href',
-      `/patienten/${PATIENT_ID}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
-    );
-  });
-
-  it('fuehrt den Namen nur einmal als Link - die Zeile darunter bleibt Text', async () => {
-    rendern();
-    await screen.findByText('Berta Bestand');
-
-    expect(screen.getAllByRole('link', { name: 'Berta Bestand' })).toHaveLength(1);
+    expect(
+      await screen.findByRole('heading', { level: 2, name: 'Berta Bestand' }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Berta Bestand' })).toBeInTheDocument();
   });
 
   it('zeigt keine klinischen Angaben', async () => {
@@ -1337,8 +1322,8 @@ describe('AppointmentDetailPage', () => {
     it('bietet therapeutischen Rollen den Weg zur Dokumentation an', async () => {
       rendern(['therapist']);
 
-      // Am offenen Termin ist der Weg oben „Doku" in der Aktionsleiste; ein
-      // zweites im Abschnitt gibt es nicht (DOK-14).
+      // Am offenen Termin steht „Doku" neben dem Haken; ein zweites im
+      // Abschnitt gibt es nicht (DOK-14).
       expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveAttribute(
         'href',
         expect.stringContaining(`/termine/${TERMIN_ID}/abschluss`),
@@ -1404,7 +1389,7 @@ describe('AppointmentDetailPage', () => {
       expect(link).toHaveAttribute(
         'href',
         `/patienten/${PATIENT_ID}/termine/neu?datum=2027-05-19&beginn=09%3A00&ende=10%3A00&art=home_visit&person=55555555-5555-4555-8555-000000000002&zurueck=${encodeURIComponent(
-          `/termine/${TERMIN_ID}`,
+          `${KALENDER}&termin=${TERMIN_ID}`,
         )}`,
       );
     });
@@ -1554,6 +1539,33 @@ describe('AppointmentDetailPage', () => {
       expect(zeileUm(meldung)).toHaveFocus();
     });
 
+    it('bestätigt den Abschluss und nimmt den Fokus dorthin', async () => {
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Berta Bestand');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(zeileUm(await screen.findByText('Termin abgeschlossen.'))).toHaveFocus();
+    });
+
+    /**
+     * ZST-B01: Die Bestätigung folgt dem Server, nicht dem Nachladen. Hängt
+     * das Nachladen im Funkloch, stand bisher sekundenlang „Wird abgeschlossen …"
+     * da, obwohl der Vorgang längst gespeichert war.
+     */
+    it('wartet mit der Bestätigung nicht auf das Nachladen', async () => {
+      fetchAppointment.mockResolvedValueOnce(praxistermin);
+      fetchAppointment.mockImplementation(() => new Promise(() => undefined));
+      const user = userEvent.setup();
+      rendern();
+      await screen.findByText('Berta Bestand');
+
+      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
+
+      expect(await screen.findByText(/^Termin abgeschlossen\./)).toBeInTheDocument();
+    });
+
     it('nennt nach einer kurzfristigen Absage das vorgemerkte Ausfallhonorar (BEF-079)', async () => {
       const user = userEvent.setup();
       rendern();
@@ -1574,16 +1586,6 @@ describe('AppointmentDetailPage', () => {
           'Termin abgesagt · Ausfallhonorar vorgemerkt: Absage weniger als 24 Stunden vorher.',
         ),
       ).toBeInTheDocument();
-    });
-
-    it('bestätigt den Abschluss und nimmt den Fokus dorthin', async () => {
-      const user = userEvent.setup();
-      rendern();
-      await screen.findByText('Berta Bestand');
-
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
-
-      expect(zeileUm(await screen.findByText('Termin abgeschlossen.'))).toHaveFocus();
     });
 
     it('bestätigt das Nichtantreffen am Hausbesuch samt Honorar', async () => {
@@ -1616,90 +1618,10 @@ describe('AppointmentDetailPage', () => {
         ),
       ).toBeInTheDocument();
     });
-
-    /**
-     * ZST-B01: Die Bestätigung folgt dem Server, nicht dem Nachladen. Hängt
-     * das Nachladen im Funkloch, stand bisher sekundenlang „Wird abgeschlossen …"
-     * da, obwohl der Vorgang längst gespeichert war.
-     */
-    it('wartet mit der Bestätigung nicht auf das Nachladen', async () => {
-      fetchAppointment.mockResolvedValueOnce(praxistermin);
-      fetchAppointment.mockImplementation(() => new Promise(() => undefined));
-      const user = userEvent.setup();
-      rendern();
-      await screen.findByText('Berta Bestand');
-
-      await user.click(screen.getByRole('button', { name: 'Termin abschließen' }));
-
-      expect(await screen.findByText(/^Termin abgeschlossen\./)).toBeInTheDocument();
-    });
-
-    it('zeigt, was ein anderer Vorgang beim Hierherkommen bestätigt (DOK-15, ZST-17)', async () => {
-      const queryClient = new QueryClient({
-        defaultOptions: { queries: { retry: false, gcTime: 0 } },
-      });
-      const router = createMemoryRouter(
-        [{ path: '*', element: <AppointmentDetailPage user={testUser(['office'])} /> }],
-        {
-          initialEntries: [
-            {
-              pathname: `/termine/${TERMIN_ID}`,
-              state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
-            },
-          ],
-        },
-      );
-      render(
-        <QueryClientProvider client={queryClient}>
-          <RouterProvider router={router} />
-        </QueryClientProvider>,
-      );
-
-      const meldung = await screen.findByText('Entwurf gespeichert – noch nicht finalisiert.');
-      expect(zeileUm(meldung)).toHaveFocus();
-    });
-
-    it('bestätigt einen angelegten Folgetermin mit Tag, Zeit und Weg dorthin (TER-04)', async () => {
-      const NEU = '77777777-7777-4777-8777-000000000009';
-      fetchAppointment.mockImplementation((id: string) =>
-        Promise.resolve(
-          id === NEU
-            ? {
-                ...praxistermin,
-                id: NEU,
-                starts_at: '2027-05-19T07:00:00.000Z',
-                ends_at: '2027-05-19T08:00:00.000Z',
-              }
-            : praxistermin,
-        ),
-      );
-      renderWithProviders(
-        <AppointmentDetailPage user={testUser(['office'])} />,
-        `/termine/${TERMIN_ID}?neu=${NEU}`,
-      );
-
-      expect(
-        await screen.findByText(/^Folgetermin am Mittwoch, 19\. Mai 2027 um 09:00 Uhr angelegt\./),
-      ).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Folgetermin öffnen' })).toHaveAttribute(
-        'href',
-        `/termine/${NEU}?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
-      );
-    });
   });
 
   describe('Rückweg, Zustände und Wege (TER-03, TER-15, TER-16, UIK-16)', () => {
-    it('führt ohne mitgereisten Weg in die Terminliste der Akte, nicht in die Patientenliste', async () => {
-      rendern();
-      await screen.findByText('Berta Bestand');
-
-      expect(
-        screen.getByRole('link', { name: '← Zurück zu den Terminen der Akte' }),
-      ).toHaveAttribute('href', `/patienten/${PATIENT_ID}/termine`);
-      expect(screen.queryByText(/Zurück zur Patientenliste/)).not.toBeInTheDocument();
-    });
-
-    it('meldet einen Ladefehler mit Titel, Rückweg und neuem Versuch', async () => {
+    it('meldet einen Ladefehler mit Titel und neuem Versuch', async () => {
       fetchAppointment.mockRejectedValueOnce(new Error('Netz weg'));
       const user = userEvent.setup();
       rendern();
@@ -1707,9 +1629,8 @@ describe('AppointmentDetailPage', () => {
       expect(
         await screen.findByText('Der Termin konnte nicht geladen werden.'),
       ).toBeInTheDocument();
-      expect(screen.getByRole('heading', { level: 1, name: 'Termin' })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { level: 2, name: 'Termin' })).toBeInTheDocument();
       expect(screen.getByText('Bitte die Verbindung prüfen und erneut versuchen.')).toBeVisible();
-      expect(screen.getByRole('link', { name: '← Zurück zum Kalender' })).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
       expect(await screen.findByText('Berta Bestand')).toBeInTheDocument();
@@ -1723,7 +1644,7 @@ describe('AppointmentDetailPage', () => {
         await screen.findByRole('link', { name: 'Auf andere Grundlage übertragen' }),
       ).toHaveAttribute(
         'href',
-        `/patienten/${PATIENT_ID}/termine-uebertragen?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
+        `/patienten/${PATIENT_ID}/termine-uebertragen?zurueck=${encodeURIComponent(`${KALENDER}&termin=${TERMIN_ID}`)}`,
       );
     });
 
@@ -1770,26 +1691,28 @@ describe('AppointmentDetailPage', () => {
       fetchAppointment.mockResolvedValue(praxistermin);
       rendern();
 
-      const titel = await screen.findByRole('heading', { level: 1, name: 'Berta Bestand' });
-      expect(within(titel).getByRole('link', { name: 'Berta Bestand' })).toHaveAttribute(
-        'href',
-        expect.stringContaining(`/patienten/${PATIENT_ID}`),
-      );
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Berta Bestand' }),
+      ).toBeInTheDocument();
       // Kicker und Kacheln sind der Metazeile gewichen.
       expect(screen.queryByText('Termin', { selector: 'p' })).toBeNull();
     });
 
-    it('stellt die Handlungen in die Aktionsleiste und die Absage ans Ende', async () => {
+    it('stellt die Handlungen in die Auswahl und die Absage ans Ende', async () => {
       fetchAppointment.mockResolvedValue(praxistermin);
       rendern(['owner']);
 
-      const karte = await screen.findByRole('group', { name: 'Nach dem Termin' });
-      expect(within(karte).getByRole('button', { name: /abschließen/ })).toBeInTheDocument();
-      expect(within(karte).getByRole('button', { name: 'Nicht angetroffen' })).toBeInTheDocument();
-      // Die Absage steht nicht in der Karte, sondern als letzter Knopf der Seite.
-      expect(within(karte).queryByRole('button', { name: 'Termin absagen' })).toBeNull();
+      const auswahl = await screen.findByRole('group', { name: 'Aktionen' });
+      expect(
+        within(auswahl).getByRole('button', { name: 'Nicht angetroffen' }),
+      ).toBeInTheDocument();
+      expect(within(auswahl).getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
+      // Die Absage steht nicht in der Auswahl, sondern als letzter Knopf vor
+      // „Schließen".
+      expect(within(auswahl).queryByRole('button', { name: 'Termin absagen' })).toBeNull();
       const knoepfe = screen.getAllByRole('button');
-      expect(knoepfe[knoepfe.length - 1]).toHaveTextContent('Termin absagen');
+      expect(knoepfe.at(-1)).toHaveTextContent('Schließen');
+      expect(knoepfe.at(-2)).toHaveTextContent('Termin absagen');
     });
 
     it('stellt den Vermerk als Zeilen und „Termin wieder öffnen" darunter', async () => {
@@ -1807,7 +1730,7 @@ describe('AppointmentDetailPage', () => {
       expect(screen.queryByRole('group', { name: 'Nach dem Termin' })).toBeNull();
     });
 
-    it('nennt eine Fehlzeit in der Zeile über ihrem Titel', async () => {
+    it('trägt an einer Fehlzeit ihre Bezeichnung als Titel', async () => {
       fetchAppointment.mockResolvedValue({
         ...praxistermin,
         kind: 'internal',
@@ -1818,10 +1741,9 @@ describe('AppointmentDetailPage', () => {
       rendern();
 
       expect(
-        await screen.findByRole('heading', { level: 1, name: 'Teambesprechung' }),
+        await screen.findByRole('heading', { level: 2, name: 'Teambesprechung' }),
       ).toBeInTheDocument();
-      expect(screen.getByText('Fehlzeit', { selector: 'p' })).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Nach dem Termin' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Nicht angetroffen' })).toBeNull();
     });
   });
 });

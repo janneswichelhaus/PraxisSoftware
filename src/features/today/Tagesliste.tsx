@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/Badge';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { Textlink } from '@/components/ui/Textlink';
 import { mitRueckweg } from '@/lib/rueckweg';
-import { formatLocalTimeRange } from '@/features/appointments/api';
+import { formatLocalTimeRange, kalenderZumTermin } from '@/features/appointments/api';
 import { openItemsText, type IntakeItem } from '@/features/open-points/intake-api';
 import {
   adressZeilen,
@@ -266,7 +266,9 @@ export function Tageskarte({
         <Textlink
           alleinstehend
           to={mitRueckweg(
-            termin.kind === 'training' ? `/training/termine/${termin.id}` : `/termine/${termin.id}`,
+            termin.kind === 'training'
+              ? `/training/termine/${termin.id}`
+              : kalenderZumTermin(termin.id),
             '/',
           )}
           className="ml-auto gap-1 text-sm font-semibold"

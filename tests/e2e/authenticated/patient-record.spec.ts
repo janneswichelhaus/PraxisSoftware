@@ -5,7 +5,6 @@ import {
   TAGESFENSTER,
   anmelden,
   tagImFenster,
-  terminLinkWahl,
   terminUeberOberflaeche,
   zeitImLauf,
 } from './helpers';
@@ -90,9 +89,10 @@ test.describe('AKTE-003: Termine mit Historie', () => {
     // und dieses Tagesfenster liegt am weitesten in der Zukunft - der Termin
     // steht also am Ende der Liste und kann auf einer spaeteren Seite liegen.
     // Deshalb wird geblaettert, bis er da ist (oder nichts mehr nachkommt).
-    const eintrag = page.locator(terminLinkWahl(terminId));
+    // Die Zeile ist seit 2026-10-03 kein Link mehr; sie traegt ihre Kennung.
+    const eintrag = page.locator(`li[data-termin="${terminId}"]`);
     const weitere = page.getByRole('button', { name: 'Weitere Termine anzeigen' });
-    const alleTermine = page.locator('a[href^="/termine/"]');
+    const alleTermine = page.locator('li[data-termin]');
     for (let versuch = 0; versuch < 5; versuch += 1) {
       if ((await eintrag.count()) > 0) break;
       if ((await weitere.count()) === 0) break;
@@ -169,16 +169,14 @@ test.describe('GRD-001: beide Bauarten in der Akte', () => {
     await expect(
       page.getByRole('heading', { name: 'Aktuelle Behandlungsgrundlagen' }),
     ).toBeVisible();
-    // In der Liste des Bereichs - die jüngste Grundlage steht seit dem
-    // Design-Handoff vom 2026-10-01 zusätzlich in der Kontextspalte.
+    // In der Liste des Bereichs - und seit 2026-10-03 als Kachel oben (die
+    // Kontextspalte ist entfallen).
     const liste = page.locator('[id^="verordnung-"]');
     await expect(liste.getByText('Selbstzahler seit 03.09.2026')).toBeVisible();
     await expect(liste.getByText('Folgeverordnung vom 08.09.2026')).toBeVisible();
-    await expect(
-      page
-        .getByRole('complementary', { name: 'Zur Person' })
-        .getByText('Folgeverordnung vom 08.09.2026'),
-    ).toBeVisible();
+    const kacheln = page.getByRole('region', { name: /Behandlungsgrundlagen/ });
+    await expect(kacheln.getByRole('button', { name: /08\.09\.2026/ })).toBeVisible();
+    await expect(kacheln.getByRole('button', { name: /03\.09\.2026/ })).toBeVisible();
   });
 
   test('fragt im Formular zuerst nach der Bauart und laesst die Verordner:in fallen', async ({

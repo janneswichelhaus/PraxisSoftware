@@ -1,10 +1,11 @@
-import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
-import { useEffect, useRef, useState, type Ref } from 'react';
+import { EINWILLIGUNGEN_ANKER } from '@/features/patients/akte';
+import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
-import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -93,42 +94,26 @@ function fotoSchluessel(patientId: string) {
 // Einwilligung
 // -----------------------------------------------------------------------------
 
-function Einwilligungsstand({
-  patientId,
-  stand,
-}: {
-  patientId: string;
-  stand: ReturnType<typeof datenschutzstand>['einwilligungen'][number] | undefined;
-}) {
-  // Die Einwilligung gilt nur der Arbeitshilfe; Dokumentationsfotos berührt
-  // sie nicht (ADR-017 Punkt 46).
+type EinwilligungStand = ReturnType<typeof datenschutzstand>['einwilligungen'][number];
+
+/**
+ * Was die Einwilligung zu Arbeitshilfen erlaubt, als Satz für die Wahl im
+ * Fenster „Foto aufnehmen" (Akte entschlacken, 2026-10-03). Die Einwilligung
+ * gilt nur der Arbeitshilfe; Dokumentationsfotos berührt sie nicht (ADR-017
+ * Punkt 46).
+ */
+function einwilligungsSatz(stand: EinwilligungStand | undefined, geladen: boolean): string {
+  if (!geladen) return 'Nicht möglich, solange der Stand der Einwilligung nicht geladen ist.';
   if (stand?.erteilt) {
-    return (
-      <p className="text-ink-muted text-sm">
-        Einwilligung zu Arbeitshilfen erteilt am {kalendertag(stand.seit)}. Ein Widerruf löscht alle
-        Arbeitshilfen sofort; Dokumentationsfotos bleiben in der Akte.
-      </p>
-    );
+    return `Einwilligung erteilt am ${kalendertag(stand.seit)}. Ein Widerruf löscht alle Arbeitshilfen sofort.`;
   }
-
-  const text = stand?.abgelehnt
-    ? `Einwilligung zu Arbeitshilfen abgelehnt am ${kalendertag(stand.seit)}. Möglich sind nur Dokumentationsfotos.`
-    : stand?.seit
-      ? `Einwilligung zu Arbeitshilfen widerrufen am ${kalendertag(stand.seit)}. Neue Arbeitshilfen erst nach einer neuen Einwilligung.`
-      : 'Keine Einwilligung zu Arbeitshilfen vermerkt. Möglich sind nur Dokumentationsfotos.';
-
-  return (
-    <div>
-      <p className="text-ink-muted text-sm">{text}</p>
-      <Textlink
-        to={`/patienten/${patientId}/stammdaten#${ANMELDEBOGEN_ANKER}`}
-        alleinstehend
-        className="text-sm"
-      >
-        Zu den Einwilligungen
-      </Textlink>
-    </div>
-  );
+  if (stand?.abgelehnt) {
+    return `Nicht möglich: Die Einwilligung zu Arbeitshilfen wurde am ${kalendertag(stand.seit)} abgelehnt.`;
+  }
+  if (stand?.seit) {
+    return `Nicht möglich: Die Einwilligung zu Arbeitshilfen wurde am ${kalendertag(stand.seit)} widerrufen.`;
+  }
+  return 'Nicht möglich: Es ist keine Einwilligung zu Arbeitshilfen vermerkt.';
 }
 
 // -----------------------------------------------------------------------------
@@ -155,6 +140,9 @@ const FOTOART_WAHL: Record<Fotoart, { titel: string; text: string }> = {
 function Aufnahme({
   patientId,
   einwilligungErteilt,
+  einwilligung,
+  wahlOffen,
+  onWahlSchliessen,
 }: {
   patientId: string;
   /**
@@ -162,6 +150,10 @@ function Aufnahme({
    * dann nein, ohne eine fehlende Einwilligung zu behaupten (DAT-03).
    */
   einwilligungErteilt: boolean | null;
+  einwilligung: EinwilligungStand | undefined;
+  /** Das Fenster „Foto aufnehmen" mit der Wahl der Art ist offen. */
+  wahlOffen: boolean;
+  onWahlSchliessen: () => void;
 }) {
   const queryClient = useQueryClient();
   const kamera = useKamera();
@@ -296,55 +288,99 @@ function Aufnahme({
           ) : null}
           <Fotoverlustschutz />
         </div>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <fieldset className="flex flex-col gap-1">
-            <legend className="text-ink text-sm font-medium">Wofür ist das Foto?</legend>
-            {(['dokumentationsfoto', 'patientenfoto'] as const).map((k) => {
-              const gesperrt = k === 'patientenfoto' && !einwilligungErteilt;
-              return (
-                <label
-                  key={k}
-                  className={`flex min-h-11 items-start gap-3 py-1 ${gesperrt ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <input
-                    type="radio"
-                    name={gruppe}
-                    className="border-line-strong text-accent focus-visible:outline-accent mt-0.5 size-5 shrink-0"
-                    checked={gewaehlt === k}
-                    disabled={gesperrt}
-                    onChange={() => setArt(k)}
-                  />
-                  <span className="text-sm">
-                    <span
-                      className={`block font-medium ${gesperrt ? 'text-ink-muted' : 'text-ink'}`}
-                    >
-                      {FOTOART_WAHL[k].titel}
-                    </span>
-                    <span className="text-ink-muted block">
-                      {!gesperrt
-                        ? FOTOART_WAHL[k].text
-                        : einwilligungErteilt === null
-                          ? 'Nicht möglich, solange der Stand der Einwilligung nicht geladen ist.'
-                          : 'Nicht möglich: Es ist keine Einwilligung zu Arbeitshilfen vermerkt.'}
-                    </span>
-                  </span>
-                </label>
-              );
-            })}
-          </fieldset>
-          <div>
-            <Button type="button" disabled={!gewaehlt} onClick={() => setKameraOffen(true)}>
-              Foto aufnehmen
-            </Button>
-          </div>
-        </div>
-      )}
+      ) : null}
 
       {erfolg ? (
         <Statusmeldung ton="erfolg" className="mt-2 wrap-anywhere">
           {erfolg}
         </Statusmeldung>
+      ) : null}
+
+      {wahlOffen ? (
+        <Dialogfenster titel="Foto aufnehmen" onSchliessen={onWahlSchliessen}>
+          <fieldset className="flex flex-col gap-3">
+            <legend className="text-ink mb-3 text-sm">Wofür ist das Foto?</legend>
+            {(['dokumentationsfoto', 'patientenfoto'] as const).map((k) => {
+              const gesperrt = k === 'patientenfoto' && !einwilligungErteilt;
+              const aktiv = gewaehlt === k;
+              return (
+                <div
+                  key={k}
+                  className={`rounded-card border-2 px-4 py-3 ${
+                    gesperrt
+                      ? 'border-line bg-surface-sunken'
+                      : aktiv
+                        ? 'border-accent bg-accent-soft'
+                        : 'border-line'
+                  }`}
+                >
+                  <label
+                    className={`flex items-start gap-3 ${gesperrt ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <input
+                      type="radio"
+                      name={gruppe}
+                      className="border-line-strong text-accent focus-visible:outline-accent mt-0.5 size-5 shrink-0"
+                      checked={aktiv}
+                      disabled={gesperrt}
+                      onChange={() => setArt(k)}
+                    />
+                    <span className="text-sm">
+                      <span
+                        className={`block font-medium ${gesperrt ? 'text-ink-muted' : 'text-ink'}`}
+                      >
+                        {FOTOART_WAHL[k].titel}
+                      </span>
+                      {k === 'patientenfoto' ? (
+                        <span
+                          className={`block ${gesperrt ? 'text-warnung font-semibold' : 'text-ink-muted'}`}
+                        >
+                          {gesperrt ? <span aria-hidden="true">! </span> : null}
+                          {gesperrt
+                            ? einwilligungsSatz(einwilligung, einwilligungErteilt !== null)
+                            : `${FOTOART_WAHL[k].text} ${einwilligungsSatz(einwilligung, true)}`}
+                        </span>
+                      ) : (
+                        <span className="text-ink-muted block">{FOTOART_WAHL[k].text}</span>
+                      )}
+                    </span>
+                  </label>
+                  {gesperrt && einwilligungErteilt !== null ? (
+                    <div className="mt-1 pl-8">
+                      <Textlink
+                        to={`/patienten/${patientId}/stammdaten#${EINWILLIGUNGEN_ANKER}`}
+                        alleinstehend
+                        className="text-sm"
+                      >
+                        Zu den Einwilligungen
+                      </Textlink>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })}
+          </fieldset>
+          <p className="text-ink-muted mt-4 text-sm">
+            Kein Foto ersetzt einen Eintrag: Was wesentlich ist, steht in Worten in der
+            Dokumentation.
+          </p>
+          <div className="mt-5 flex flex-wrap justify-end gap-3">
+            <Button type="button" variant="quiet" onClick={onWahlSchliessen}>
+              Abbrechen
+            </Button>
+            <Button
+              type="button"
+              disabled={!gewaehlt}
+              onClick={() => {
+                onWahlSchliessen();
+                setErfolg(null);
+                setKameraOffen(true);
+              }}
+            >
+              Foto aufnehmen
+            </Button>
+          </div>
+        </Dialogfenster>
       ) : null}
 
       {kameraOffen ? (
@@ -567,8 +603,19 @@ function Fotozeile({
 /** Wofür gerade ein Foto lädt: eine Zeile oder der Vergleich. */
 type Ladeort = { art: 'zeile'; fotoId: string } | { art: 'vergleich' };
 
-export function Patientenfotos({ patientId, user }: { patientId: string; user: CurrentUser }) {
+export function Patientenfotos({
+  patientId,
+  user,
+  dateien,
+}: {
+  patientId: string;
+  user: CurrentUser;
+  /** Die Dateien der Doku, in derselben Karte unter den Fotos. */
+  dateien?: ReactNode;
+}) {
   const darfSehen = canReadClinicalPatientFiles(user.roles);
+  const kamera = useKamera();
+  const [wahlOffen, setWahlOffen] = useState(false);
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
   const darfAufnehmen = canWriteClinicalPatientFiles(user.roles);
 
@@ -651,32 +698,43 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
     fehler?.ort.art === 'zeile' && fehler.ort.fotoId === fotoId ? fehler.text : null;
 
   return (
+    // Fotos und Dateien in einer Karte (Akte entschlacken, 2026-10-03). Was
+    // Dokumentationsfoto und Arbeitshilfe bedeuten und was die Einwilligung
+    // erlaubt, steht im Fenster „Foto aufnehmen", wo gewählt wird.
     <Section
-      titel="Fotos"
-      hinweis="Dokumentationsfotos gehören zur Akte, Arbeitshilfen für Übergabe und Vergleich liegen neben ihr. Kein Foto ersetzt einen Eintrag: Was wesentlich ist, steht in Worten in der Dokumentation."
+      titel="Fotos und Dateien"
+      rahmen
+      aktion={
+        darfAufnehmen && kamera === 'vorhanden' ? (
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={vermerke.isPending}
+            onClick={() => setWahlOffen(true)}
+          >
+            Foto aufnehmen
+          </Button>
+        ) : undefined
+      }
     >
       {/* Gesagt wird nur, was geladen ist (DAT-03, ZST-09): Scheitert das
-          Laden der Vermerke, steht nicht „Keine Einwilligung vermerkt" da,
-          während darunter Fotos stehen - und aufgenommen wird dann nicht. */}
-      {vermerke.isPending ? (
-        <Statusmeldung>Einwilligung wird geladen …</Statusmeldung>
-      ) : vermerke.isError ? (
+          Laden der Vermerke, lassen sich nur Dokumentationsfotos aufnehmen. */}
+      {vermerke.isError ? (
         <ErrorState
           title="Der Stand der Einwilligung konnte nicht geladen werden."
           description="Bis er geladen ist, lassen sich nur Dokumentationsfotos aufnehmen. Bitte die Verbindung prüfen und erneut versuchen."
           onErneut={() => vermerke.refetch()}
         />
-      ) : (
-        <Einwilligungsstand patientId={patientId} stand={einwilligung} />
-      )}
+      ) : null}
 
       {darfAufnehmen && !vermerke.isPending ? (
-        <div className="mt-3">
-          <Aufnahme
-            patientId={patientId}
-            einwilligungErteilt={vermerke.isSuccess ? einwilligung?.erteilt === true : null}
-          />
-        </div>
+        <Aufnahme
+          patientId={patientId}
+          einwilligungErteilt={vermerke.isSuccess ? einwilligung?.erteilt === true : null}
+          einwilligung={einwilligung}
+          wahlOffen={wahlOffen}
+          onWahlSchliessen={() => setWahlOffen(false)}
+        />
       ) : null}
 
       <Inhaltsflaeche className="mt-4">
@@ -689,7 +747,7 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
           />
         ) : null}
         {fotos.data && liste.length === 0 ? (
-          <EmptyState title="Keine Fotos" description="Für diese Person liegt kein Foto vor." />
+          <p className="text-ink text-liste">Für diese Person liegt kein Foto vor.</p>
         ) : null}
 
         {liste.length > 0 ? (
@@ -757,10 +815,14 @@ export function Patientenfotos({ patientId, user }: { patientId: string; user: C
 
       {/* Die Größe des Kleingedruckten entscheidet Jannes für alle Stellen
           zugleich (TOK-04); bis dahin bleibt sie hier, wie sie ist. */}
-      <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
-        Jedes Öffnen eines Fotos wird protokolliert. Fotos lassen sich hier weder herunterladen noch
-        teilen.
-      </p>
+      {dateien ? <div className="mt-4">{dateien}</div> : null}
+
+      <div className="border-line mt-4 border-t pt-3">
+        <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
+          Jedes Öffnen eines Fotos wird protokolliert. Fotos lassen sich hier weder herunterladen
+          noch teilen.
+        </p>
+      </div>
     </Section>
   );
 }

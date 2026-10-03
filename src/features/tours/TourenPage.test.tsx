@@ -165,7 +165,7 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
     const stopp = await screen.findByRole('link', { name: 'Max Mustermann' });
     expect(stopp).toHaveAttribute(
       'href',
-      `/termine/t1?zurueck=${encodeURIComponent('/touren?tag=2026-09-10&person=jannes')}`,
+      `/kalender?termin=t1&zurueck=${encodeURIComponent('/touren?tag=2026-09-10&person=jannes')}`,
     );
   });
 

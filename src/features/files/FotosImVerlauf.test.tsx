@@ -99,8 +99,27 @@ function kameraEinbauen() {
 const DOKU = /^Teil der Dokumentation/;
 const HILFE = /^Arbeitshilfe \(/;
 
-async function waehlen(user: ReturnType<typeof userEvent.setup>, art: RegExp = DOKU) {
-  await user.click(await screen.findByRole('radio', { name: art }));
+type Nutzer = ReturnType<typeof userEvent.setup>;
+
+/**
+ * Öffnet das Fenster „Foto aufnehmen" (Akte entschlacken, 2026-10-03): Die
+ * Wahl der Art steht dort, nicht mehr in der Karte.
+ */
+async function wahlOeffnen(user: Nutzer): Promise<HTMLElement> {
+  await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+  return screen.findByRole('dialog', { name: 'Foto aufnehmen' });
+}
+
+async function waehlen(user: Nutzer, art: RegExp = DOKU): Promise<HTMLElement> {
+  const fenster = await wahlOeffnen(user);
+  await user.click(within(fenster).getByRole('radio', { name: art }));
+  return fenster;
+}
+
+/** Wählt die Art und öffnet die Kamera. */
+async function aufnehmen(user: Nutzer, art: RegExp = DOKU): Promise<void> {
+  const fenster = await waehlen(user, art);
+  await user.click(within(fenster).getByRole('button', { name: 'Foto aufnehmen' }));
 }
 
 function seite(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
@@ -126,44 +145,47 @@ describe('Patientenfotos', () => {
   });
 
   it('bietet ohne Einwilligung nur das Dokumentationsfoto an und sagt, warum (ADR-017 Punkt 44)', async () => {
+    const user = userEvent.setup();
     fetchDatenschutzvermerke.mockResolvedValue([]);
     seite();
 
-    expect(
-      await screen.findByText(/Keine Einwilligung zu Arbeitshilfen vermerkt/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
-    expect(screen.getByRole('radio', { name: DOKU })).toBeEnabled();
-    expect(screen.getByText(/Nicht möglich: Es ist keine Einwilligung/)).toBeVisible();
-    expect(screen.getByRole('link', { name: 'Zu den Einwilligungen' })).toHaveAttribute(
+    const fenster = await wahlOeffnen(user);
+    expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
+    expect(within(fenster).getByRole('radio', { name: DOKU })).toBeEnabled();
+    expect(within(fenster).getByText(/Nicht möglich: Es ist keine Einwilligung/)).toBeVisible();
+    expect(within(fenster).getByRole('link', { name: 'Zu den Einwilligungen' })).toHaveAttribute(
       'href',
-      `/patienten/${PATIENT}/stammdaten#anmeldebogen`,
+      `/patienten/${PATIENT}/stammdaten#einwilligungen`,
     );
+    expect(fenster).toHaveTextContent('Kein Foto ersetzt einen Eintrag');
   });
 
   it('nennt eine Ablehnung als erledigten Stand', async () => {
+    const user = userEvent.setup();
     fetchDatenschutzvermerke.mockResolvedValue([
       { ...ERTEILT, record_kind: 'consent_refused', occurred_on: '2026-09-02' },
     ]);
     seite();
-    expect(
-      await screen.findByText(/Einwilligung zu Arbeitshilfen abgelehnt am 02.09.2026/),
-    ).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
+    const fenster = await wahlOeffnen(user);
+    expect(fenster).toHaveTextContent(
+      'Nicht möglich: Die Einwilligung zu Arbeitshilfen wurde am 02.09.2026 abgelehnt.',
+    );
+    expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
   });
 
   it('startet ohne Vorauswahl: Aufnehmen erst nach der Wahl, danach wieder ohne (Punkt 44)', async () => {
     const user = userEvent.setup();
     seite();
 
-    const aufnehmen = await screen.findByRole('button', { name: 'Foto aufnehmen' });
-    expect(screen.getByRole('radio', { name: DOKU })).not.toBeChecked();
-    expect(screen.getByRole('radio', { name: HILFE })).not.toBeChecked();
-    expect(aufnehmen).toBeDisabled();
+    let fenster = await wahlOeffnen(user);
+    const weiter = within(fenster).getByRole('button', { name: 'Foto aufnehmen' });
+    expect(within(fenster).getByRole('radio', { name: DOKU })).not.toBeChecked();
+    expect(within(fenster).getByRole('radio', { name: HILFE })).not.toBeChecked();
+    expect(weiter).toBeDisabled();
 
-    await waehlen(user, HILFE);
-    expect(aufnehmen).toBeEnabled();
-    await user.click(aufnehmen);
+    await user.click(within(fenster).getByRole('radio', { name: HILFE }));
+    expect(weiter).toBeEnabled();
+    await user.click(weiter);
     await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
     await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
     await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
@@ -171,16 +193,16 @@ describe('Patientenfotos', () => {
     await waitFor(() => expect(speicherePatientenfoto).toHaveBeenCalledTimes(1));
     expect((speicherePatientenfoto.mock.calls[0]![0] as { art: string }).art).toBe('patientenfoto');
     expect(await screen.findByText(/ist gespeichert/)).toBeInTheDocument();
-    expect(screen.getByRole('radio', { name: HILFE })).not.toBeChecked();
-    expect(screen.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
+    fenster = await wahlOeffnen(user);
+    expect(within(fenster).getByRole('radio', { name: HILFE })).not.toBeChecked();
+    expect(within(fenster).getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
   });
 
   it('nimmt ein Foto nur über die Kamera auf - nirgends ein Dateiwähler (Punkt 33)', async () => {
     const user = userEvent.setup();
     const { container } = seite();
 
-    await waehlen(user);
-    await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+    await aufnehmen(user);
     const dialog = await screen.findByRole('dialog', { name: 'Foto aufnehmen' });
     expect(
       within(dialog).getByText(/Gesicht nur, wenn es selbst die betroffene Region/),
@@ -217,8 +239,7 @@ describe('Patientenfotos', () => {
       .mockResolvedValueOnce('neu');
     seite();
 
-    await waehlen(user);
-    await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+    await aufnehmen(user);
     await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
     await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
     await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
@@ -383,28 +404,31 @@ describe('Patientenfotos', () => {
       expect(
         await screen.findByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
       ).toBeInTheDocument();
-      expect(
-        screen.queryByText(
-          /Keine Einwilligung zu Arbeitshilfen vermerkt|Es ist keine Einwilligung/,
-        ),
-      ).toBeNull();
+      expect(screen.queryByText(/Es ist keine Einwilligung/)).toBeNull();
       // Das Dokumentationsfoto braucht keine Einwilligung; die Arbeitshilfe
       // bleibt zu, bis der Stand geladen ist.
-      expect(screen.getByRole('radio', { name: HILFE })).toBeDisabled();
-      expect(screen.getByRole('radio', { name: DOKU })).toBeEnabled();
+      let fenster = await wahlOeffnen(user);
+      expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
+      expect(within(fenster).getByRole('radio', { name: DOKU })).toBeEnabled();
+      expect(fenster).not.toHaveTextContent('Es ist keine Einwilligung');
+      await user.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
 
       fetchDatenschutzvermerke.mockResolvedValue([ERTEILT]);
       await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
-      expect(
-        await screen.findByText(/Einwilligung zu Arbeitshilfen erteilt am 30.08.2026/),
-      ).toBeInTheDocument();
-      expect(screen.getByRole('radio', { name: HILFE })).toBeEnabled();
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
+        ).toBeNull(),
+      );
+      fenster = await wahlOeffnen(user);
+      expect(fenster).toHaveTextContent('Einwilligung erteilt am 30.08.2026');
+      expect(within(fenster).getByRole('radio', { name: HILFE })).toBeEnabled();
     });
 
-    it('sagt, solange die Einwilligung lädt, genau das', () => {
+    it('lässt, solange die Einwilligung lädt, noch nicht aufnehmen', async () => {
       fetchDatenschutzvermerke.mockReturnValue(new Promise(() => undefined));
       seite();
-      expect(screen.getByText('Einwilligung wird geladen …')).toBeInTheDocument();
+      expect(await screen.findByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
       expect(screen.queryByText(/Keine Einwilligung vermerkt/)).toBeNull();
     });
 
@@ -445,8 +469,7 @@ describe('Patientenfotos', () => {
       const user = userEvent.setup();
       seite();
 
-      await waehlen(user);
-      await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+      await aufnehmen(user);
       await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
       await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
 

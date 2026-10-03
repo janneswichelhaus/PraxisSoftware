@@ -254,7 +254,7 @@ describe('CompleteTreatmentPage', () => {
     expect(createTreatmentNote).not.toHaveBeenCalled();
     expect(updateTreatmentNote).not.toHaveBeenCalled();
     // Zurück zum Termin, der erfährt, was geschehen ist (DOK-15, ZST-17).
-    expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+    expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
       state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
     });
   });
@@ -268,7 +268,7 @@ describe('CompleteTreatmentPage', () => {
 
     await user.click(screen.getByRole('button', { name: 'Festschreiben' }));
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}?zurueck=%2F`, {
+      expect(navigate).toHaveBeenCalledWith('/', {
         state: { meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.' },
       }),
     );
@@ -327,7 +327,7 @@ describe('CompleteTreatmentPage', () => {
     await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledTimes(1));
     expect(completeTreatment).not.toHaveBeenCalled();
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
         state: { meldung: 'Entwurf gespeichert – noch nicht finalisiert.' },
       }),
     );
@@ -657,7 +657,7 @@ describe('CompleteTreatmentPage', () => {
         expect.objectContaining({ seitenwahl: { knie: 'rechts' } }),
       );
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
           state: {
             meldung:
               'Entwurf gespeichert – noch nicht finalisiert. Der Vorschlag aus den Bausteinen ist nicht übernommen; seine Angaben bleiben gesichert.',
@@ -723,7 +723,7 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.getByLabelText('Eintrag zur Behandlung')).toHaveValue('Befund:');
       fertig();
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, {
+        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
           state: {
             meldung: 'Eintrag als Version 1 festgeschrieben. Der Termin ist abgeschlossen.',
           },

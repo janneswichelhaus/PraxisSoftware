@@ -419,6 +419,19 @@ export function istRandlos(pathname: string): boolean {
   return (RANDLOSE_SEITEN as readonly string[]).includes(pathname);
 }
 
+/**
+ * Seiten ohne Unterleiste des Bereichs (Akte entschlacken, 2026-10-03).
+ *
+ * In einer Akte steht „Patient:innen | Verordner:innen" über der Tableiste der
+ * Akte - zwei Navigationsreihen übereinander, von denen die obere an dieser
+ * Stelle nichts zu wählen hat. Ausgenommen ist das Anlageformular `/patienten/neu`.
+ */
+const AKTE_PFAD = /^\/patienten\/(?!neu(?:\/|$))[^/]+(?:\/|$)/;
+
+export function zeigtUnterleiste(pathname: string): boolean {
+  return !AKTE_PFAD.test(pathname);
+}
+
 export function aktiverBereich(
   bereiche: Arbeitsbereich[],
   pathname: string,

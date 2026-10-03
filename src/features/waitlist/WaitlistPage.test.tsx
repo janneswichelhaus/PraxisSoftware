@@ -85,7 +85,7 @@ describe('WaitlistPage (PRX-001)', () => {
     expect(await screen.findByText(/Termin angelegt – der Eintrag ist eingeplant/)).toBeVisible();
     expect(screen.getByRole('link', { name: 'Termin öffnen' })).toHaveAttribute(
       'href',
-      `/termine/${termin}`,
+      `/kalender?termin=${termin}`,
     );
   });
 
@@ -127,7 +127,10 @@ describe('WaitlistPage (PRX-001)', () => {
     await user.click(await screen.findByRole('button', { name: 'Geschlossen' }));
 
     expect(await screen.findByText('Eingeplant')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Zum Termin' })).toHaveAttribute('href', '/termine/a1');
+    expect(screen.getByRole('link', { name: 'Zum Termin' })).toHaveAttribute(
+      'href',
+      '/kalender?termin=a1',
+    );
     expect(screen.queryByRole('link', { name: /Anrufen/ })).not.toBeInTheDocument();
   });
 });

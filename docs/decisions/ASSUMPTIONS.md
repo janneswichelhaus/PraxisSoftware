@@ -2725,3 +2725,40 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zug
 
 **Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
 
+### ANN-227 — Der Anmeldebogen ist erledigt, sobald sein Foto in der Akte liegt
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: Anmeldebogen per Foto) · erledigt · Wiedervorlage: wenn der eigene Anmeldebogen gestaltet ist (`IDEA-PRX-054`)
+
+**Annahme.** Der Papier-Anmeldebogen trägt Kontaktdaten, Datenschutzinformation und die Unterschrift unter den Behandlungsvertrag. Das Foto des unterschriebenen Blatts ist der Nachweis für beides. Es geht als Datei der Art `vertrag` (organisatorisch, das Büro sieht sie) mit dem Anzeigenamen „Anmeldebogen, Foto vom …“ in die Akte, ohne Vorschau und ohne zweiten Tipp: Das „Foto verwenden“ im Kameradialog ist die Bestätigung. Aufgenommen wird es direkt aus der Zeile „! Anmeldebogen fehlt“ im Kopf der Akte („Fotografieren“) oder im Abschnitt Anmeldebogen der Stammdaten; ohne Kamera öffnet sich der Dateiwähler. Die Vermerke „Datenschutzinformation ausgehändigt“ und „Behandlungsvertrag unterschrieben“ werden nicht mehr einzeln erfasst; im Bestand erledigen sie den Punkt weiter. Die Einwilligungen (Mail, Bericht, Fotos) bleiben als eigener Abschnitt in den Stammdaten, bis die Runde zum Reiter Stammdaten über ihren Platz entscheidet. Die Fotoeinwilligung schaltet serverseitig die Foto-Arbeitshilfe frei und muss deshalb erfassbar bleiben.
+
+**Begründung.** Jannes (2026-10-03): „Wenn man auf Anmeldebogen tippt, soll man direkt ein Foto machen können, ähnlich wie bei Verordnung. Datenschutzinformation und Behandlungsvertrag kann also weg.“ Keine neue Dokumentart: `vertrag` trägt den Behandlungsvertrag schon heute und ist organisatorisch klassifiziert. Eine neue Art hätte Katalog, Fristen und Rollenschnitt berührt, ohne dass sich am Inhalt etwas ändert. Unsicher ist zweierlei. Erstens, ob die Fassung der Datenschutzinformation am Foto ablesbar bleibt, wenn das Blatt sich ändert. Zweitens, ob ein anderer hochgeladener Vertrag den Punkt fälschlich erledigt.
+
+**Anker.** Der Punkt `registration_form` in `app.intake_checklist` (`supabase/migrations/20261005100000_akte_anmeldebogen_foto.sql`); `AnmeldebogenFoto` in `src/features/datenschutz/Anmeldebogen.tsx`; Tests in `supabase/tests/intake-checklist.test.ts`, `src/features/patients/PatientRecordLayout.test.tsx` und `src/features/datenschutz/Anmeldebogen.test.tsx`.
+
+**Änderungspfad.** Eigene Dokumentart `anmeldebogen`: Katalogeintrag, `dokumentarten.ts` und die Bedingung in `app.intake_checklist` · Aufwand `klein`. Wieder mit Vermerken: die Optionen in `moeglicheVermerke` · Aufwand `klein`.
+
+**Ablösung.** ersetzt ANN-224 in der Bedingung für den Anmeldebogen.
+
+### ANN-228 — Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen
+
+Praxisprozess · offen · 2026-10-03 · Claude (Akte entschlacken: Daten übertragen) · erledigt · Wiedervorlage: Jannes in der Sichtung der Behandlungsgrundlagen
+
+**Annahme.** Im Fenster „Daten übertragen“ trägt jede Position ihre eigene Anzahl („6 × KG“). Die Zahl möglicher Termine der Grundlage ist dann ohne eigene Angabe die größte Anzahl einer Position; das Feld „Termine“ bleibt im Fenster änderbar. „Hausbesuch je Termin“ legt die Position Hausbesuch mit dieser Terminzahl an – kein eigenes Kennzeichen, keine Migration. Die Pos.-Nr. steht nur zur Orientierung neben dem Heilmittel und kommt aus der gültigen Preisliste.
+
+**Begründung.** Auf einem Privatrezept steht meist ein Heilmittel mit seiner Anzahl; mehrere Heilmittel werden in der Regel je Termin zusammen erbracht. Die größte Anzahl ist deshalb die beste Vorgabe, die Summe wäre bei „6 × KG + 6 × Wärme“ doppelt so groß. Unsicher: Rezepte mit gestaffelten Heilmitteln (erst MT, dann KG) – dafür bleibt das Feld änderbar.
+
+**Anker.** `terminzahl` in `src/features/treatment-bases/DatenUebertragenFenster.tsx`; Test in `src/features/treatment-bases/GrundlagenKacheln.test.tsx`.
+
+**Änderungspfad.** Summe statt Maximum oder Pflichtfeld: die eine Zeile `groessteAnzahl` · Aufwand `klein`.
+
+### ANN-229 — Die Diagnose der Verordnung steht auf der Rechnung
+
+Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: „Diagnose drauf“) · Prüfpaket · Wiedervorlage: Datenschutzberatung vor dem Scharfschalten (PROJECT_PRINCIPLES.md §15.2)
+
+**Annahme.** Neue Rechnungsdokumente (`schema_version` 4) tragen je Behandlungsgrundlage ICD-10-Code und Diagnosetext der Verordnung, dazu wie bisher Datum und verordnende Ärzt:in. Therapieziel und Verordnerhinweis bleiben weg; am Selbstzahler gibt es keine Diagnose. Ausgestellte Rechnungen behalten ihren Snapshot (ADR-009 Punkt 10). Der ICD-10-Code ist ein eigenes Feld an der Grundlage (`diagnosis_icd10`) mit eigener Schreibfunktion und Protokoll.
+
+**Begründung.** Private Krankenversicherung und Beihilfe erstatten Heilmittel nur mit Diagnose; ohne sie fordern sie die Verordnung nach, und die Rechnung geht ohnehin nur zusammen mit dem Rezept hinaus. Bisher stand die Diagnose aus Datensparsamkeit bewusst nicht darauf. Die Rechnung geht an die behandelte Person oder an eine von ihr benannte Stelle; die Übermittlung dient der Erstattung in ihrem Interesse. Unsicher ist, ob bei abweichender Empfänger:in (etwa Angehörige) eine Einwilligung nötig ist – das prüft die Datenschutzberatung vor der Inbetriebnahme. Entwickelt wird mit synthetischen Daten trotzdem jetzt (§15.2).
+
+**Anker.** Der Schalter `app.invoice_shows_diagnosis()` in `supabase/migrations/20261005120000_rechnung_diagnose.sql`; Anzeige `diagnoseText` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/invoice-diagnosis.test.ts` und `src/features/billing/InvoicePrintPage.test.tsx`.
+
+**Änderungspfad.** Diagnose wieder weg: der Schalter liefert `false` (neue Migration) · Aufwand `klein`. Nur bei Empfänger:in „selbst“ oder Kasse: Bedingung im Schalter um die Rechnung erweitern · Aufwand `mittel`.

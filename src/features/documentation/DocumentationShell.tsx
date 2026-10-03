@@ -3,8 +3,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckweg } from '@/components/ui/Rueckweg';
-import { fetchAppointment, type Appointment } from '@/features/appointments/api';
-import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
+import {
+  fetchAppointment,
+  kalenderZumTermin,
+  zurueckZumTermin,
+  type Appointment,
+} from '@/features/appointments/api';
+import { leseRueckweg } from '@/lib/rueckweg';
 import { fetchTreatmentDocumentation, type TreatmentDocumentation } from './api';
 
 /**
@@ -58,7 +63,9 @@ export function DocumentationShell({
 }) {
   const [suche] = useSearchParams();
   const eingehend = leseRueckweg(suche, '');
-  const termin = `/termine/${appointmentId ?? ''}`;
+  // Der Termin hat keine eigene Seite mehr (Akte entschlacken, 2026-10-03):
+  // Ohne mitgereisten Weg führt „zurück" in den Kalender, der Termin gewählt.
+  const termin = kalenderZumTermin(appointmentId ?? '');
 
   const terminAbfrage = useQuery({
     queryKey: ['appointment', appointmentId],
@@ -79,7 +86,7 @@ export function DocumentationShell({
   return (
     <>
       {eigenerKopf && bereit ? null : appointmentId ? (
-        <Rueckweg standard={termin} beschriftung="Zurück zum Termin" />
+        <Rueckweg standard={termin} />
       ) : (
         <Rueckweg standard="/kalender" />
       )}
@@ -110,7 +117,7 @@ export function DocumentationShell({
             appointment: terminAbfrage.data,
             dokumentation: doku.data,
             eingehend,
-            zumTermin: mitRueckweg(termin, eingehend),
+            zumTermin: zurueckZumTermin(eingehend, appointmentId ?? ''),
           })
         : null}
     </>

@@ -7,6 +7,7 @@ import type * as DokumentationApi from '@/features/documentation/api';
 import type * as VerordnungenApi from '@/features/treatment-bases/api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as IntakeApi from '@/features/open-points/intake-api';
+import type * as FilesApi from '@/features/files/api';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import type { RoleKey } from '@/features/session/types';
 import { RUECKWEG_PARAM, rueckwegBeschriftung } from '@/lib/rueckweg';
@@ -64,6 +65,12 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => {
   };
 });
 
+const ladeDateiHoch = vi.fn();
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FilesApi>()),
+  ladeDateiHoch: (auftrag: FilesApi.UploadAuftrag) => ladeDateiHoch(auftrag) as Promise<string>,
+}));
+
 vi.mock('@/features/open-points/intake-api', async (importOriginal) => {
   const actual = await importOriginal<typeof IntakeApi>();
   return {
@@ -117,6 +124,7 @@ function akteRendern(roles: RoleKey[], pfad = `/patienten/${PATIENT_ID}`) {
         <Route path="termine" element={<PatientAppointmentsPage />} />
         <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
         <Route path="doku" element={<PatientDokuPage />} />
+        <Route path="doku/befund" element={<p>Befund-Seite</p>} />
         <Route path="stammdaten" element={<PatientMasterDataPage />} />
         {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
           <Route
@@ -290,8 +298,8 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         const eintraege = screen.getAllByRole('link').filter((link) => navigation.contains(link));
         expect(eintraege.map((link) => link.textContent)).toEqual([
           'Termine',
-          'Behandlungsgrundlagen',
           'Doku',
+          'Behandlungsgrundlagen',
           'Stammdaten',
         ]);
       },
@@ -299,7 +307,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
 
     it.each([
       ['verlauf', '/doku', ''],
-      ['befund', '/doku', ''],
+      ['befund', '/doku', '/befund'],
       ['datenschutz', '/stammdaten', '#anmeldebogen'],
       ['dateien', '/stammdaten', ''],
     ])('leitet die alte Adresse /%s weiter - samt Rückweg (AKTE-007)', async (alt, ziel, anker) => {
@@ -379,7 +387,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
      * 120 px breit, und seine Lage verschiebt sich mit dem `scrollLeft`.
      */
     it('rollt den offenen Bereich am Telefon ins Bild, ohne die Seite zu rollen (PAT-01)', async () => {
-      const bereiche = ['Termine', 'Behandlungsgrundlagen', 'Doku', 'Stammdaten'];
+      const bereiche = ['Termine', 'Doku', 'Behandlungsgrundlagen', 'Stammdaten'];
       vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockImplementation(function (
         this: Element,
       ) {
@@ -564,20 +572,38 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   // AKTE-007: Die Kachel „Erstaufnahme offen" ist einer Zeile gewichen, die
   // nur den Anmeldebogen kennt (ANN-224).
   describe('Hinweis „Anmeldebogen fehlt"', () => {
-    it('erscheint bei fehlendem Anmeldebogen und führt zum Anmeldebogen', async () => {
+    // ANN-227: Ein Tipp im Kopf, ein Foto - kein Umweg über die Stammdaten.
+    it('erscheint bei fehlendem Anmeldebogen und nimmt das Foto direkt auf', async () => {
+      const user = userEvent.setup();
+      Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
+      ladeDateiHoch.mockReset().mockResolvedValue('neu');
       fetchIntakeChecklist.mockResolvedValue([
         { item: 'prescription_photo', state: 'done' },
         { item: 'registration_form', state: 'open' },
       ]);
       akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
 
-      const zeile = (await screen.findByText(/Anmeldebogen fehlt/)).closest('p')!;
-      const erledigen = within(zeile).getByRole('link', { name: 'Erledigen' });
-      const ziel = new URL(erledigen.getAttribute('href')!, 'http://akte.test');
-      expect(ziel.pathname).toBe(STAMMDATEN);
-      expect(ziel.hash).toBe('#anmeldebogen');
-      expect(ziel.searchParams.get(RUECKWEG_PARAM)).toBe(`/patienten/${PATIENT_ID}/termine`);
+      const zeile = (await screen.findByText(/Anmeldebogen fehlt/)).parentElement!;
+      expect(within(zeile).getByRole('button', { name: 'Fotografieren' })).toBeInTheDocument();
+      expect(within(zeile).queryByRole('link')).toBeNull();
       expect(screen.queryByText('Erstaufnahme offen')).toBeNull();
+
+      const aufrufeVorher = fetchIntakeChecklist.mock.calls.length;
+      await user.upload(
+        within(zeile).getByLabelText('Anmeldebogen als Datei'),
+        new File([new Uint8Array([0xff, 0xd8, 0xff, 0xd9])], 'bogen.jpg', { type: 'image/jpeg' }),
+      );
+
+      await waitFor(() => expect(ladeDateiHoch).toHaveBeenCalledTimes(1));
+      expect(ladeDateiHoch.mock.calls[0]![0]).toMatchObject({
+        patientId: PATIENT_ID,
+        grundlageId: null,
+        documentType: 'vertrag',
+      });
+      // Die Erstaufnahme lädt neu - der Hinweis verschwindet ohne Neuladen.
+      await waitFor(() =>
+        expect(fetchIntakeChecklist.mock.calls.length).toBeGreaterThan(aufrufeVorher),
+      );
     });
 
     it('erscheint nicht bei fehlendem Verordnungsfoto', async () => {
@@ -636,7 +662,6 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
         { ...basis, id: 'neu', treatment_basis_kind: 'self_pay', issued_on: '2026-09-30' },
       ]);
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/termine`);
-      // Im Kopf; die Kontextspalte nennt die Grundlage ein zweites Mal.
       const imKopf = (await screen.findAllByText('Selbstzahler')).filter((el) =>
         el.closest('header'),
       );
@@ -691,7 +716,7 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
   });
 
   // UI-Redesign Schritt 5 (Design-Handoff 2026-10-01, Abschnitt 7).
-  describe('Kacheln im Kopf und Kontextspalte', () => {
+  describe('Kacheln im Kopf, keine Kontextspalte', () => {
     const grundlage: VerordnungenApi.TreatmentBasis = {
       id: '99999999-9999-4999-8999-000000000001',
       prescriber_id: null,
@@ -721,34 +746,19 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       uncovered: 0,
     };
 
-    it('nennt in der Kontextspalte die jüngste Grundlage mit ihren Zahlen', async () => {
+    it('führt keine Kontextspalte mehr - Kontakt steht in den Stammdaten', async () => {
+      // Akte entschlacken (2026-10-03): Kontakt und Grundlage standen unter
+      // jedem Bereich ein zweites Mal.
+      fetchPatient.mockResolvedValue({ ...aktiv, phone_mobile: '+49 160 0000005' });
       fetchPatientTreatmentBases.mockResolvedValue([aeltere, grundlage]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent]);
       akteRendern(['therapist'], `/patienten/${PATIENT_ID}/doku`);
 
-      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
-      expect(await within(spalte).findByText('Erstverordnung vom 20.09.2026')).toBeInTheDocument();
-      expect(within(spalte).getByText('Dr. Synthetisch Roth')).toBeInTheDocument();
-      expect(
-        within(spalte).getByText('1 von 6 verbraucht · 3 geplant · 2 frei'),
-      ).toBeInTheDocument();
-      expect(within(spalte).queryByText('Dr. Synthetisch Alt')).toBeNull();
-    });
-
-    it('trägt den Kontakt in der Spalte, aber nicht in den Stammdaten ein zweites Mal', async () => {
-      fetchPatient.mockResolvedValue({ ...aktiv, phone_mobile: '+49 160 0000005' });
-      const { unmount } = akteRendern(['office'], `/patienten/${PATIENT_ID}/termine`);
-      const spalte = await screen.findByRole('complementary', { name: 'Zur Person' });
-      expect(within(spalte).getByRole('heading', { name: 'Kontakt' })).toBeInTheDocument();
-      expect(within(spalte).getByRole('link', { name: '+49 160 0000005' })).toHaveAttribute(
-        'href',
-        'tel:+491600000005',
-      );
-      unmount();
-
-      akteRendern(['office'], STAMMDATEN);
-      await screen.findByRole('button', { name: 'Als inaktiv markieren' });
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      await waitFor(() => expect(fetchPatientTreatmentBases).toHaveBeenCalled());
       expect(screen.queryByRole('complementary', { name: 'Zur Person' })).toBeNull();
+      expect(screen.queryByRole('link', { name: '+49 160 0000005' })).toBeNull();
+      expect(screen.queryByText('Dr. Synthetisch Roth')).toBeNull();
     });
 
     it('zeigt im Terminbereich den nächsten Termin und die Grundlage als Kacheln', async () => {

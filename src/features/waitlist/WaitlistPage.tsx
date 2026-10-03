@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
-import { todayInTimeZone } from '@/features/appointments/api';
+import { kalenderZumTermin, todayInTimeZone } from '@/features/appointments/api';
 import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
 import { leseAngelegtenTermin } from '@/features/appointments/terminformular';
 import type { CurrentUser } from '@/features/session/types';
@@ -135,7 +135,7 @@ function EntryItem({ entry, today }: { entry: WaitlistEntry; today: string }) {
       ) : entry.placed_appointment_id ? (
         <p className="mt-2 text-sm">
           <Link
-            to={`/termine/${entry.placed_appointment_id}`}
+            to={kalenderZumTermin(entry.placed_appointment_id)}
             className="text-accent underline underline-offset-2"
           >
             Zum Termin
@@ -179,7 +179,7 @@ export function WaitlistPage({ user }: { user: CurrentUser }) {
       {neuerTermin ? (
         <Rueckmeldung className="mb-4">
           Termin angelegt – der Eintrag ist eingeplant und steht unter „Geschlossen“.{' '}
-          <Textlink to={`/termine/${neuerTermin}`}>Termin öffnen</Textlink>
+          <Textlink to={kalenderZumTermin(neuerTermin)}>Termin öffnen</Textlink>
         </Rueckmeldung>
       ) : null}
 

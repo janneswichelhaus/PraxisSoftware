@@ -16,7 +16,6 @@ import { usePatientRecord } from '@/features/patients/akte';
 import { WaitlistNotice } from '@/features/waitlist/WaitlistNotice';
 import { HausbesucheMitAlterAdresse } from './HausbesucheMitAlterAdresse';
 import { formatDate as formatIsoDate } from '@/lib/datum';
-import { mitRueckweg } from '@/lib/rueckweg';
 import type { Patient } from '@/features/patients/api';
 import { canReadTreatmentBases, type CurrentUser } from '@/features/session/types';
 import {
@@ -100,11 +99,9 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function Terminzeile({
   termin,
-  patientId,
   hervorgehoben,
 }: {
   termin: PatientAppointment;
-  patientId: string;
   /** Gerade angelegt - beim Zurückkommen aus dem Formular (TER-04). */
   hervorgehoben: boolean;
 }) {
@@ -114,13 +111,16 @@ function Terminzeile({
     // Die Trennlinie steht zwischen den Zeilen, nicht ueber der ersten: Im
     // weissen Rahmen (UI-002c) waere sie dort eine zweite Kante neben dem
     // Rahmen selbst.
-    <li className="border-line border-t first:border-t-0">
+    // `data-termin`: der Anker für Prüfungen hinter der Anmeldung - die Zeile
+    // ist seit 2026-10-03 kein Link mehr, der den Termin trug.
+    <li className="border-line border-t first:border-t-0" data-termin={termin.id}>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1 py-2">
-        <Link
-          to={mitRueckweg(`/termine/${termin.id}`, `/patienten/${patientId}/termine`)}
+        {/* Kein Link: Ein Termin hat keine eigene Seite mehr (Akte
+            entschlacken, 2026-10-03) - seine Aktionen stehen im Kalender. */}
+        <div
           // Der eben angelegte Termin trägt die Fläche der aktiven Auswahl;
           // die Bestätigung über der Liste sagt es in Worten (TER-04).
-          className={`${hervorgehoben ? 'bg-accent-soft' : 'hover:bg-surface-sunken'} rounded-button -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center px-2 transition-colors`}
+          className={`${hervorgehoben ? 'bg-accent-soft' : ''} rounded-button -mx-2 flex min-h-11 min-w-48 flex-1 flex-col justify-center px-2`}
         >
           <span className="text-ink text-liste font-medium">
             {formatLocalDate(termin.starts_at, zone)}
@@ -133,7 +133,7 @@ function Terminzeile({
               : ''}
             {` · ${staffName(termin)}`}
           </span>
-        </Link>
+        </div>
 
         {/* Wege und Zustand beantworten dieselbe Frage: Ist an diesem Termin
             noch etwas zu tun? (CAL-012) */}
@@ -329,7 +329,6 @@ function Terminliste({
               <Terminzeile
                 key={termin.id}
                 termin={termin}
-                patientId={patientId}
                 hervorgehoben={termin.id === neuerTermin}
               />
             ))}
@@ -393,16 +392,6 @@ function Terminkacheln({
             zusatz={[appointmentTypeHint(naechster.appointment_type), staffName(naechster)]
               .filter(Boolean)
               .join(' · ')}
-            aktion={
-              <Textlink
-                alleinstehend
-                className="gap-1"
-                to={mitRueckweg(`/termine/${naechster.id}`, `/patienten/${patient.id}/termine`)}
-              >
-                Öffnen
-                <span aria-hidden="true">→</span>
-              </Textlink>
-            }
           >
             {dayKey(naechster.starts_at, zone) === heute
               ? 'Heute'

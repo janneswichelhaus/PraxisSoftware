@@ -5,7 +5,7 @@ import { expect, test, type Page } from '@playwright/test';
  * (PRX-EPIC-002).
  *
  * Die Komponententests prüfen Inhalt, Wege und Rollen. Hier geht es um das,
- * was jsdom nicht misst: ob die Terminseite mit Kurzblick, Zähler und
+ * was jsdom nicht misst: ob das Fenster „Aktionen“ mit Kurzblick, Zähler und
  * Heilmitteln bei 375 px ohne waagerechtes Scrollen auskommt, ob der
  * Kurzblick zugeklappt beginnt und ob die Bedienelemente Tippziele sind.
  */
@@ -77,43 +77,39 @@ test.describe('Termin: Anordnung nach dem Design-Handoff', () => {
     test(`${ansicht} läuft bei 375 px nicht waagerecht über`, async ({ page }) => {
       await page.setViewportSize({ width: 375, height: 800 });
       await page.goto(`${PRUEFSEITE}?ansicht=${ansicht}`);
-      await expect(page.getByRole('heading', { level: 1, name: 'Max Mustermann' })).toBeVisible();
+      await expect(page.getByRole('heading', { level: 2, name: 'Max Mustermann' })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });
   }
 
-  test('am Rechner steht die Abrechnung rechts neben der Metazeile', async ({ page }) => {
-    await page.setViewportSize({ width: 1280, height: 900 });
-    await page.goto(`${PRUEFSEITE}?ansicht=buero`);
-    const abrechnung = page.getByRole('heading', { name: 'Abrechnung' });
-    const kacheln = page.getByText('Termin 8 von 10');
-    await expect(abrechnung).toBeVisible();
-    const rechts = (await abrechnung.boundingBox())!;
-    const links = (await kacheln.boundingBox())!;
-    expect(rechts.x).toBeGreaterThan(links.x + links.width);
-  });
+  // Im Fenster einspaltig: Die Abrechnung steht unter der Metazeile, am
+  // Telefon wie am Rechner.
+  for (const breite of [375, 1280]) {
+    test(`die Abrechnung steht unter der Metazeile (${breite} px)`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?ansicht=buero`);
+      const abrechnung = (await page.getByRole('heading', { name: 'Abrechnung' }).boundingBox())!;
+      const kachel = (await page.getByText('Termin 8 von 10').boundingBox())!;
+      expect(abrechnung.y).toBeGreaterThan(kachel.y);
+    });
+  }
 
-  test('am Telefon steht die Abrechnung unter der Metazeile', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
-    await page.goto(`${PRUEFSEITE}?ansicht=buero`);
-    const abrechnung = (await page.getByRole('heading', { name: 'Abrechnung' }).boundingBox())!;
-    const kachel = (await page.getByText('Termin 8 von 10').boundingBox())!;
-    expect(abrechnung.y).toBeGreaterThan(kachel.y);
-  });
-
-  test('am Hausbesuch: Handlungen in der Aktionsleiste, die Absage leise am Ende', async ({
-    page,
-  }) => {
+  test('am Hausbesuch: Handlungen in der Auswahl, die Absage leise am Ende', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=hausbesuch`);
-    // Die Aktionsleiste (Zyklus 3): Haken, Doku, Niemand öffnet?, Ohne Behandlung.
-    const leiste = page.getByRole('group', { name: 'Nach dem Termin' });
-    await expect(leiste.getByRole('button', { name: 'Niemand öffnet?' })).toBeVisible();
-    const haken = (await leiste.getByRole('button', { name: 'Termin abschließen' }).boundingBox())!;
-    expect(haken.height).toBeGreaterThanOrEqual(44);
+    // Der Haken steht genau einmal in der Auswahl - im Panel nur am eigenen
+    // Termin, das Büro braucht ihn auch hier; dazu „Niemand öffnet?" (Akte
+    // entschlacken, 2026-10-03).
+    const auswahl = page.getByRole('group', { name: 'Aktionen' });
+    const niemand = auswahl.getByRole('button', { name: 'Niemand öffnet?' });
+    await expect(niemand).toBeVisible();
+    expect((await niemand.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    await expect(page.getByRole('button', { name: 'Termin abschließen' })).toHaveCount(1);
+    await expect(auswahl.getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
     const absage = page.getByRole('button', { name: 'Termin absagen' });
-    const nachDemTermin = (await leiste.boundingBox())!;
-    expect((await absage.boundingBox())!.y).toBeGreaterThan(nachDemTermin.y);
+    await absage.scrollIntoViewIfNeeded();
+    const oben = (await auswahl.boundingBox())!;
+    expect((await absage.boundingBox())!.y).toBeGreaterThan(oben.y);
     expect((await absage.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   });
 });

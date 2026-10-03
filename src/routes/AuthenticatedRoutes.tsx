@@ -22,6 +22,7 @@ import { ZusammenfuehrenPage } from '@/features/patients/ZusammenfuehrenPage';
 import { AufnahmeblaetterPage } from '@/features/datenschutz/AufnahmeblaetterPage';
 import { PatientAppointmentsPage } from '@/features/appointments/PatientAppointmentsPage';
 import { PatientTreatmentBasesPage } from '@/features/treatment-bases/PatientTreatmentBasesPage';
+import { PatientBefundSeite } from '@/features/assessments/PatientBefundPage';
 import { PatientDokuPage } from '@/features/documentation/PatientDokuPage';
 import { ErhebungPage } from '@/features/assessments/ErhebungPage';
 import { TherapieberichtPage } from '@/features/therapy-reports/TherapieberichtPage';
@@ -45,7 +46,7 @@ import { NewAppointmentStartPage } from '@/features/appointments/NewAppointmentS
 import { DauerterminStartPage } from '@/features/appointments/DauerterminStartPage';
 import { AppointmentSeriesPage } from '@/features/appointments/AppointmentSeriesPage';
 import { AppointmentSlipPage } from '@/features/appointments/AppointmentSlipPage';
-import { AppointmentDetailPage } from '@/features/appointments/AppointmentDetailPage';
+import { kalenderZumTermin } from '@/features/appointments/api';
 import { EditAppointmentPage } from '@/features/appointments/EditAppointmentPage';
 import { EditEventPage } from '@/features/appointments/EditEventPage';
 import { AuditLogPage } from '@/features/audit/AuditLogPage';
@@ -210,6 +211,7 @@ export function AuthenticatedRoutes({
                     ) : null}
                     <Route path="verordnungen" element={<PatientTreatmentBasesPage />} />
                     <Route path="doku" element={<PatientDokuPage />} />
+                    <Route path="doku/befund" element={<PatientBefundSeite />} />
                     <Route path="stammdaten" element={<PatientMasterDataPage />} />
                     {Object.keys(ALTE_AKTENBEREICHE).map((alt) => (
                       <Route
@@ -323,10 +325,10 @@ export function AuthenticatedRoutes({
                     path="/patienten/:patientId/termine/neu"
                     element={<NewAppointmentPage user={user} />}
                   />
-                  <Route
-                    path="/termine/:appointmentId"
-                    element={<AppointmentDetailPage user={user} />}
-                  />
+                  {/* Der Termin hat keine eigene Seite mehr (Akte entschlacken,
+                    2026-10-03): Lesezeichen und alte Verweise führen in den
+                    Kalender, der den Termin wählt. */}
+                  <Route path="/termine/:appointmentId" element={<ZumKalender />} />
                   {/* Das ganze Ereignis - Bezeichnung, Zeit und Ort fuer alle
                     Beteiligten zugleich (CAL-017). Der Weg daneben aendert
                     eine einzelne Teilnahme. */}
@@ -560,4 +562,10 @@ function ZurSchreibseite() {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const { search } = useLocation();
   return <Navigate replace to={`/termine/${appointmentId ?? ''}/abschluss${search}`} />;
+}
+
+/** `/termine/:id` führt in den Kalender, der Termin im Panel (`kalenderZumTermin`). */
+function ZumKalender() {
+  const { appointmentId } = useParams<{ appointmentId: string }>();
+  return <Navigate replace to={kalenderZumTermin(appointmentId ?? '')} />;
 }

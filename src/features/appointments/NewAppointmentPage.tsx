@@ -29,6 +29,7 @@ import {
   fetchAssignableTherapists,
   fetchLocations,
   istAusserhalbArbeitszeit,
+  kalenderZumTermin,
   istVergangenheit,
   liegtInVergangenheit,
   leererTermin,
@@ -288,7 +289,7 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
       // Gespeichert ist gespeichert: Der eigene Weg danach ist kein Verlust.
       freigeben();
       void navigate(
-        rueckweg ? mitAngelegtemTermin(rueckweg, appointmentId) : `/termine/${appointmentId}`,
+        rueckweg ? mitAngelegtemTermin(rueckweg, appointmentId) : kalenderZumTermin(appointmentId),
         {
           replace: true,
         },

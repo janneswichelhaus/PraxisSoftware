@@ -234,6 +234,11 @@ einem Verwurf. Neue Einträge hängen hinten an.
   ADR-002 und geht jeder Integration voraus. **Keiner der Einträge ist ein
   Auftrag.**
 
+- **2026-10-03** — Jannes fragt, ob die Verordnung vom Foto automatisch
+  erkannt werden kann: als Empfehlung beantwortet, nicht gebaut
+  (`IDEA-PRX-055`, neu). Weg über das AI Gateway, Anbieterwahl ist ein
+  Stopp nach ADR-002. **Kein Auftrag.**
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |

@@ -16,6 +16,7 @@ import {
   canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
+import { GrundlagenKacheln } from './GrundlagenKacheln';
 import { KlinischerHinweis } from './KlinischerHinweis';
 import { formatDate } from '@/lib/datum';
 import { Dateiliste } from '@/features/files/Dateiliste';
@@ -662,13 +663,27 @@ function AbgeschlosseneVerordnung({
 
 export function PatientTreatmentBasesPage() {
   const { patient, user } = usePatientRecord();
+  // Dieselbe Abfrage wie im Verordnungsbereich darunter - ein Schlüssel, eine
+  // Anfrage.
+  const { aktuell, abgeschlossen } = useVerordnungenDerAkte(patient.id, user);
   return (
     <>
-      {/* AKTE-007: Verordnungsfotos, die noch an keiner Grundlage hängen,
-          stehen hier statt im abgelösten Bereich „Dateien"; die zugeordneten
-          an ihrer Grundlage. */}
-      <OffeneVerordnungsfotos patientId={patient.id} user={user} />
+      {/* Akte entschlacken (2026-10-03): oben die Kachelleiste - Fotos ohne
+          Daten, laufende, abgeschlossene. Darunter die ausführlichen Karten
+          mit Zahlen und Aktionen; die Kacheln springen dorthin. */}
+      <GrundlagenKacheln
+        patientId={patient.id}
+        user={user}
+        aktuell={aktuell}
+        abgeschlossen={abgeschlossen}
+      />
       <Verordnungsbereich patient={patient} user={user} />
+      {/* AKTE-007: Verordnungsfotos, die noch an keiner Grundlage hängen. Seit
+          der Kachelleiste stehen sie oben als Kachel; hier bleibt die Liste
+          zum Ansehen und Löschen eines falschen Fotos. */}
+      <div className="mt-8">
+        <OffeneVerordnungsfotos patientId={patient.id} user={user} />
+      </div>
     </>
   );
 }

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -17,7 +17,7 @@ import {
   type Verlustschutztexte,
 } from '@/features/documentation/Textverlustschutz';
 import { alsFormularfehler } from '@/lib/formularfehler';
-import { mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
+import { RUECKWEG_PARAM } from '@/lib/rueckweg';
 import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { EreignisArbeitszeitRueckfrage, EreignisFormFields } from './EreignisFormFields';
 import {
@@ -38,6 +38,8 @@ import {
   updateAppointmentEvent,
   updateEventSeries,
   type EreignisFormValues,
+  kalenderZumTermin,
+  zurueckZumTermin,
 } from './api';
 import { formatDate } from '@/lib/datum';
 
@@ -76,7 +78,6 @@ const FEHLZEITTEXTE: Verlustschutztexte = {
 export function EditEventPage({ user }: { user: CurrentUser }) {
   const { appointmentId } = useParams<{ appointmentId: string }>();
   const navigate = useNavigate();
-  const ort = useLocation();
   const [suche] = useSearchParams();
   const rueckweg = suche.get(RUECKWEG_PARAM);
   const queryClient = useQueryClient();
@@ -165,7 +166,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
       await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
       // Gespeichert: Der eigene Weg hinaus ist kein Verlust (ANN-046).
       freigeben();
-      void navigate(mitRueckweg(`/termine/${appointmentId}`, rueckweg), { replace: true });
+      void navigate(zurueckZumTermin(rueckweg, appointmentId!), { replace: true });
     },
   });
 
@@ -238,7 +239,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
   }
 
   const daten = termin.data;
-  const zurueck = mitRueckweg(`/termine/${daten.id}`, rueckweg);
+  const zurueck = zurueckZumTermin(rueckweg, daten.id);
 
   if (daten.kind !== 'internal' || !gruppeId) {
     return (
@@ -414,13 +415,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                       >
                         {/* Die Teilnahme ist der Weg zum Austauschen oder
                             Absagen (TER-15) - mit Rückweg hierher. */}
-                        <Textlink
-                          alleinstehend
-                          to={mitRueckweg(
-                            `/termine/${person.appointment_id}`,
-                            `${ort.pathname}${ort.search}`,
-                          )}
-                        >
+                        <Textlink alleinstehend to={kalenderZumTermin(person.appointment_id)}>
                           {person.display_name}
                         </Textlink>
                         {person.status === 'confirmed' ? null : (

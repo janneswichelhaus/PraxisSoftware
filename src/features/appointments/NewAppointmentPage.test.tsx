@@ -391,7 +391,7 @@ describe('NewAppointmentPage', () => {
       false,
     );
     await waitFor(() =>
-      expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, { replace: true }),
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
   });
 
@@ -685,7 +685,7 @@ describe('NewAppointmentPage', () => {
         ),
       );
       await waitFor(() =>
-        expect(navigate).toHaveBeenCalledWith(`/termine/${TERMIN_ID}`, expect.anything()),
+        expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, expect.anything()),
       );
     });
 

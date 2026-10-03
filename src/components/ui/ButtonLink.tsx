@@ -22,6 +22,7 @@ export function ButtonLink({
   groesse = 'normal',
   className = '',
   replace,
+  'aria-label': beschriftung,
   children,
 }: {
   to: string;
@@ -29,6 +30,8 @@ export function ButtonLink({
   groesse?: Groesse;
   className?: string;
   replace?: boolean;
+  /** Wenn die sichtbare Beschriftung allein nicht sagt, was sie bearbeitet. */
+  'aria-label'?: string;
   children: ReactNode;
 }) {
   return (
@@ -36,6 +39,7 @@ export function ButtonLink({
       to={to}
       className={knopfKlassen(variant, groesse, className)}
       {...(replace === undefined ? {} : { replace })}
+      {...(beschriftung === undefined ? {} : { 'aria-label': beschriftung })}
     >
       {children}
     </Link>
