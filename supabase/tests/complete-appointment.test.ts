@@ -415,15 +415,19 @@ describe('reopen_appointment', () => {
     );
   });
 
-  it('leert Abschlusszeitpunkt und Akteur', async () => {
+  it('leert Abschlusszeitpunkt und Akteur und haelt die Ruecknahme fest (LOG-EPIC-001)', async () => {
     const t = await abgeschlossen();
     await asUserCommitted(users.office, OEFFNEN, [t.id, t.updated_at]);
 
-    expect(await zeile(t.id)).toMatchObject({
+    const nachher = await zeile(t.id);
+    expect(nachher).toMatchObject({
       status: 'confirmed',
       completed_at: null,
       completed_by: null,
+      reopened_by: users.office,
     });
+    // Wer zurueckgenommen hat, zeigt das Datenmodell - nicht das Auditlog.
+    expect(nachher?.['reopened_at']).toBeInstanceOf(Date);
   });
 
   it('laesst einen geplanten Termin nicht wieder oeffnen', async () => {

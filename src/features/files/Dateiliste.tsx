@@ -337,7 +337,7 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
  * Aufgeklappt statt in einem Dialog, weil die Folge mitgelesen werden soll:
  * Die Auswahl zeigt bei jeder Art, wer die Datei danach sieht. ADR-017
  * Punkt 13 nennt das ausdrücklich keinen Stammdatenvorgang — die Änderung
- * verschiebt eine Sichtbarkeitsgrenze und wird protokolliert.
+ * verschiebt eine Sichtbarkeitsgrenze.
  *
  * Der Kasten sieht aus und führt den Fokus wie die Rückfrage daneben (DAT-22,
  * DAT-11): beim Öffnen in die Auswahl, beim Abbrechen und nach dem Übernehmen

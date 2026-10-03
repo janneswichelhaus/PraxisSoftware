@@ -73,7 +73,7 @@ export function aktenBereiche(patientId: string, user: CurrentUser): Aktenbereic
   }
   // Verlauf, Befund samt Anamnesebogen und die klinischen Dateien. Seit E15
   // für alle vier Praxisrollen dieselbe klinische Sicht, office eingeschlossen
-  // (ROL-001); jeder gelesene Eintrag wird protokolliert.
+  // (ROL-001); das Lesen protokolliert das Öffnen der Akte.
   // Doku vor den Grundlagen (Akte entschlacken, 2026-10-03): am Termin der
   // häufigere Weg.
   if (canReadTreatmentNote(user.roles)) {

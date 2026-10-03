@@ -81,7 +81,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   });
 
   describe('Datei loeschen', () => {
-    it('loescht die Zeile, protokolliert und hinterlaesst einen offenen Auftrag', async () => {
+    it('loescht die Zeile und hinterlaesst einen offenen Auftrag mit der loeschenden Person', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
       await asUserCommitted(users.therapist, 'select public.delete_patient_file($1::uuid)', [
@@ -91,32 +91,19 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       const zeilen = await asPostgres('select id from public.patient_files');
       expect(zeilen.rows).toEqual([]);
 
-      const audit = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-        "select subject_id, context from public.audit_log where action = 'patient_file.deleted'",
-      );
-      expect(audit.rows).toHaveLength(1);
-      expect(audit.rows[0]!.subject_id).toBe(datei.file_id);
-      expect(audit.rows[0]!.context).toMatchObject({ document_type: 'verordnungsscan' });
-
-      const auftraege = await asPostgres<{ object_key: string; receipted_at: string | null }>(
-        'select object_key, receipted_at from public.storage_deletion_orders',
-      );
+      const auftraege = await asPostgres<{
+        object_key: string;
+        receipted_at: string | null;
+        ordered_by: string | null;
+      }>('select object_key, receipted_at, ordered_by from public.storage_deletion_orders');
       expect(auftraege.rows).toHaveLength(1);
       expect(auftraege.rows[0]!.object_key).toBe(datei.object_key);
       expect(auftraege.rows[0]!.receipted_at).toBeNull();
-    });
-
-    it('haelt den Anzeigenamen aus dem Auditeintrag heraus (ADR-017 Punkt 20)', async () => {
-      const datei = await abgelegteDatei(users.therapist, { name: 'Rezept Schulter.pdf' });
-      await asUserCommitted(users.therapist, 'select public.delete_patient_file($1::uuid)', [
-        datei.file_id,
-      ]);
-
-      const { rows } = await asPostgres<{ eintrag: string }>(
-        "select row_to_json(a)::text as eintrag from public.audit_log a where a.action = 'patient_file.deleted'",
-      );
-      expect(rows[0]!.eintrag).not.toContain('Rezept Schulter.pdf');
-      expect(rows[0]!.eintrag).not.toContain(datei.object_key);
+      // LOG-EPIC-001: Wer geloescht hat, steht am Auftrag, nicht im Auditlog.
+      expect(auftraege.rows[0]!.ordered_by).toBe(users.therapist);
+      expect(
+        (await asPostgres("select id from public.audit_log where outcome = 'success'")).rows,
+      ).toEqual([]);
     });
 
     it('laesst office eine klinische Datei nicht loeschen', async () => {
@@ -171,7 +158,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
   });
 
   describe('Dokumentart korrigieren (ADR-017 Punkt 13)', () => {
-    it('verschiebt die Schreibgrenze und protokolliert beide Arten', async () => {
+    it('verschiebt die Schreibgrenze', async () => {
       const datei = await abgelegteDatei(users.therapist, {
         verordnungId: null,
         art: 'befund',
@@ -197,15 +184,6 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       const nachher = await asUser(users.office, LISTE, [patients.max]);
       expect(nachher.rows).toEqual([{ document_type: 'einwilligung', is_clinical: false }]);
       expect(await abgefangen(asUser(users.office, LOESCHEN, [datei.file_id]))).toBeNull();
-
-      const audit = await asPostgres<{ context: Record<string, unknown> }>(
-        "select context from public.audit_log where action = 'patient_file.type_corrected'",
-      );
-      expect(audit.rows).toHaveLength(1);
-      expect(audit.rows[0]!.context).toMatchObject({
-        document_type_before: 'befund',
-        document_type: 'einwilligung',
-      });
     });
 
     it('laesst office die Art nicht aendern - auch nicht an der eigenen Datei', async () => {
@@ -242,7 +220,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       expect(fehler?.message).toMatch(/prescription scan needs a treatment basis/);
     });
 
-    it('weist eine unbekannte Art ab und protokolliert nichts bei gleicher Art', async () => {
+    it('weist eine unbekannte Art ab und laesst die gleiche Art zu', async () => {
       const datei = await abgelegteDatei(users.therapist);
 
       const unbekannt = await abgefangen(
@@ -259,10 +237,11 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         'select public.set_patient_file_document_type($1::uuid, $2)',
         [datei.file_id, 'verordnungsscan'],
       );
-      const audit = await asPostgres(
-        "select id from public.audit_log where action = 'patient_file.type_corrected'",
+      const { rows } = await asPostgres<{ document_type: string }>(
+        'select document_type from public.patient_files where id = $1',
+        [datei.file_id],
       );
-      expect(audit.rows).toEqual([]);
+      expect(rows).toEqual([{ document_type: 'verordnungsscan' }]);
     });
   });
 
@@ -325,7 +304,7 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
       expect(rows[0]!.receipted_at).toBeNull();
     });
 
-    it('quittiert, sobald das Objekt weg ist, und protokolliert das', async () => {
+    it('quittiert, sobald das Objekt weg ist, mit der quittierenden Person', async () => {
       const { orderId, objectKey } = await offenerAuftrag();
 
       // Der Weg, den die Oberflaeche geht: Schluessel holen, Objekt entfernen,
@@ -361,15 +340,6 @@ describe('Dateien loeschen und Loeschauftraege quittieren (DAT-002)', () => {
         'select id from public.list_storage_deletion_orders()',
       );
       expect(offen.rows).toEqual([]);
-
-      const audit = await asPostgres<{ subject_id: string; eintrag: string }>(
-        `select a.subject_id, row_to_json(a)::text as eintrag from public.audit_log a
-          where a.action = 'storage_deletion.receipted'`,
-      );
-      expect(audit.rows).toHaveLength(1);
-      expect(audit.rows[0]!.subject_id).toBe(orderId);
-      // Der Objektschluessel gehoert nicht ins Log (ADR-011).
-      expect(audit.rows[0]!.eintrag).not.toContain(objectKey);
     });
 
     it('quittiert keinen Auftrag zweimal', async () => {

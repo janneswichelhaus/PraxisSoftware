@@ -226,12 +226,6 @@ const FAELLE: Fall[] = [
     'platform_access.revoked',
   ],
   [
-    'note_companion_capacity_doubt',
-    "select public.note_companion_capacity_doubt('training', $1::uuid) as ok",
-    [IRGENDEINE],
-    'platform_access.companion_declined',
-  ],
-  [
     'receipt_storage_deletion_order',
     'select public.receipt_storage_deletion_order($1::uuid)',
     [IRGENDEINE],

@@ -179,7 +179,7 @@ describe('StatisticsPage (STA-003)', () => {
     expect(within(verlauf).getAllByText('Zahlungseingang')).toHaveLength(2);
     expect(within(verlauf).getByRole('table')).toBeInTheDocument();
 
-    // Umsatz je Person erst auf Wunsch - jeder Abruf wird protokolliert.
+    // Umsatz je Person erst auf Wunsch.
     const personen = screen.getByRole('region', { name: 'Umsatz nach Therapeut:in' });
     expect(fetchUmsatzJePerson).not.toHaveBeenCalled();
     await userEvent.click(

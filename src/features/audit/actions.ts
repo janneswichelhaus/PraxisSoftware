@@ -7,39 +7,24 @@
  * Filterwert ins Leere laufen.
  */
 export const AUDIT_ACTIONS = [
+  // Akte geöffnet: höchstens einmal je Person, Akte und Kalendertag; ebenso
+  // das Trainingsverhältnis und das Lesen über eine Vertretung (ADR-023).
   'patient_record.viewed',
-  // OPS-006: die Auskunft nach Art. 15 DSGVO ist ein Export klinischer Daten
-  // und damit auditpflichtig (ADR-010 Punkt 2).
+  'training_relationship.viewed',
+  'platform_representation.read',
+  // Herunterladen einer Datei; das Anzeigen steht nicht im Protokoll.
+  'patient_file.downloaded',
+  // Exporte: Auskunft nach Art. 15 DSGVO, Therapiebericht, Foto an die Person.
   'patient_record.exported',
-  'patient.created',
-  'patient.updated',
-  'patient.status_changed',
-  'patient.care_concluded',
-  'patient.care_reopened',
-  'legal_hold.placed',
-  'legal_hold.released',
-  'retention.applied',
-  'retention.reapplied',
-  'appointment.created',
-  'appointment.updated',
-  'appointment.rescheduled',
-  'appointment.cancelled',
-  'appointment.no_show',
-  'appointment.completed',
-  'appointment.documented',
-  'appointment.reopened',
-  'appointment.notified',
-  'organization.appointment_grid_changed',
-  'organization.documentation_deadline_changed',
-  'staff_working_hours.created',
-  'staff_working_hours.updated',
-  'staff_working_hours.removed',
-  'staff_working_hour_exception.created',
-  'staff_working_hour_exception.updated',
-  'staff_working_hour_exception.removed',
-  'staff_member.created',
-  'staff_member.updated',
-  'staff_member.status_changed',
+  'therapy_report.exported',
+  'patient_file.handed_out',
+  // Portalzugang (ADR-023).
+  'platform_access.invited',
+  'platform_access.activated',
+  'platform_access.locked',
+  'platform_access.unlocked',
+  'platform_access.revoked',
+  // Konten und Rechte, Sicherheitsereignisse des eigenen Kontos.
   'staff_account.invited',
   'staff_account.invitation_revoked',
   'staff_account.invitation_accepted',
@@ -51,200 +36,28 @@ export const AUDIT_ACTIONS = [
   'account.sessions_ended',
   'account.mfa_enrolled',
   'account.mfa_removed',
-  'treatment_note.created',
-  'treatment_note.updated',
-  'treatment_note.finalized',
-  'treatment_note.auto_finalized',
-  'treatment_note.revised',
-  'treatment_note.addendum_created',
-  // Bis GRD-001 geschrieben, seitdem nur noch gelesen: Auditzeilen werden
-  // niemals umgeschrieben (ADR-010, ADR-020 Punkt 8).
-  'prescription.created',
-  'prescription.updated',
-  'prescription.deleted',
-  'treatment_basis.created',
-  'treatment_basis.updated',
-  'treatment_basis.deleted',
-  // CAL-022: ein Ereignis je Uebertragung, nicht je Termin.
-  'treatment_basis.appointments_transferred',
-  'patient_file.uploaded',
-  'patient_file.deleted',
-  'patient_file.type_corrected',
-  // DOK-006d: Kopie eines Patientenfotos an die Person selbst (ADR-017
-  // Punkt 40) - ein Export nach außen, kein Zugriff in der Praxis.
-  'patient_file.handed_out',
-  'storage_deletion.claimed',
-  'storage_deletion.receipted',
-  // G6c: nur abgewiesen - der erlaubte Weg protokolliert das Vormerken nicht,
-  // die Ausfuehrung steht unter `claimed` und `receipted`.
-  'storage_deletion.ordered',
-  'text_snippet.created',
-  'text_snippet.updated',
-  'text_snippet.deleted',
-  // ABR-001: Ein Preis entscheidet über eine Forderung; das Veröffentlichen
-  // macht ihn unveränderlich.
-  'service_catalog.version_created',
-  'service_catalog.version_updated',
-  'service_catalog.version_published',
-  'service_catalog.version_deleted',
-  // ABR-002: ein Ereignis je Vorgang, nicht je Leistung.
-  'billable_service.recorded',
-  'billable_service.removed',
-  // ABR-000: der Absender der Rechnung.
-  'organization.billing_profile_changed',
-  // ABR-003a: der Empfänger ist eine eigene Entität (ADR-009 Punkt 2).
-  'invoice_recipient.created',
-  'invoice_recipient.updated',
-  'invoice_recipient.deleted',
-  // ABR-003: Das Ausstellen ist der Vorgang, nach dem nichts mehr zu ändern
-  // ist (ADR-009 Punkt 9).
-  'invoice.draft_created',
-  'invoice.draft_deleted',
-  'invoice.recipient_changed',
-  'invoice.issued',
-  // ABR-003c: Das Storno ist ein eigenes Dokument; die Rechnung selbst bleibt
-  // unverändert (ADR-009 Punkt 9).
-  'invoice.cancelled',
-  // ABR-003d: Die Zahlungserinnerung ist ein Dokument ohne Stufe und ohne
-  // Gebühr (IDEA-PRX-012).
-  'invoice.reminder_created',
-  // ABR-004: Eine Zahlung wird erfasst oder storniert — geändert oder
-  // gelöscht wird sie nie (ADR-009 Punkt 12).
-  'payment.recorded',
-  'payment.voided',
-  // OPS-007: die Einrichtung der einen Organisation, einmalig aus dem
-  // SQL-Editor (ADR-003, ADR-010 Punkt 2).
   'organization.bootstrapped',
-  // PAT-006: Datenschutzinformation, Behandlungsvertrag, Einwilligung und
-  // Widerruf — ein Ereignis, Art und Zweck im Kontext.
-  'patient_privacy.recorded',
-  // MAP-006a: Koordinate zur Adresse und Startort der Tagesroute (ANN-016).
-  'patient.address_geocoded',
-  'organization.tour_start_changed',
-  // FRB-EPIC-002: erhobene Fragebögen (ANN-103).
-  'questionnaire_response.created',
-  'questionnaire_response.updated',
-  'questionnaire_response.completed',
-  'questionnaire_response.discarded',
-  // FRB-002e: Ereignisse im Verlauf (ANN-106).
-  'patient_course_event.created',
-  'patient_course_event.removed',
-  // DOK-005a: Therapiebericht an die Verordner:in (ANN-121); der Druckknopf
-  // gilt als Export (ADR-010 Punkt 2).
-  'therapy_report.created',
-  'therapy_report.updated',
-  'therapy_report.completed',
-  'therapy_report.discarded',
-  'therapy_report.exported',
-  // PRX-001: Warteliste. Lesen ist wie der Kalender nicht auditiert (ANN-134);
-  // ein abgewiesener Leseversuch schon.
-  'waitlist_entry.created',
-  'waitlist_entry.updated',
-  'waitlist_entry.closed',
-  // PRX-002: Gebiete sind eine Praxisregel ohne Personenbezug.
-  'territory.saved',
-  'territory.removed',
-  // PRX-011: ein offener Verordnungsscan wird einer Grundlage zugeordnet.
-  'patient_file.assigned',
-  // PRX-012: Aufgaben und Wiedervorlagen. Lesen ist wie die Warteliste nicht
-  // auditiert; ein abgewiesener Leseversuch schon.
-  'task.created',
-  'task.updated',
-  'task.completed',
-  'task.reopened',
-  'task.deleted',
-  // PRX-014: Ergebnis eines Anrufs der Anrufliste, ohne Inhalt.
-  'appointment.call_recorded',
-  // PRX-017: Eine Dublette ist in dieser Akte aufgegangen - Kennung der
-  // Dublette und Zahlen, keine Namen (ANN-150).
-  'patient.merged',
-  // STA-002: Zielwert der Praxisfuehrung geaendert, mit altem und neuem Wert.
-  'organization.practice_target_changed',
-  // STA-005: Verguetungsmodell einer Person geaendert, nur die Modellwerte.
-  'staff_member.compensation_model_changed',
-  // TRN-001: das Trainingsverhaeltnis auf dem Niveau der Akte (ADR-021
-  // Punkt 8). Die Detailansicht ist protokolliert, die Trefferliste nur im
-  // abgewiesenen Fall.
-  'training_relationship.created',
-  'training_relationship.updated',
-  'training_relationship.ended',
-  'training_relationship.reopened',
-  'training_relationship.viewed',
-  // TRN-005: Vereinbarungen im Training (Trainingsgrundlage, ADR-022 Punkt 5).
-  'training_basis.created',
-  'training_basis.concluded',
-  'training_basis.reopened',
-  // TRN-009: das Trainingsprotokoll (ADR-022 Punkt 7). Jedes Lesen ist
-  // protokolliert wie an der Dokumentation (ADR-021 Punkt 8).
-  'training_protocol.created',
-  'training_protocol.updated',
-  'training_protocol.finalized',
-  // Zweitreview: ein Entwurf fällt mit Absage oder Nichtantreffen.
-  'training_protocol.discarded',
-  // POR-002: Plattformzugang (ADR-023 Punkt 6, W5). `activated` und
-  // `password_reset` schreibt das Plattformkonto selbst (actor_kind platform).
-  'platform_access.invited',
-  'platform_access.invitation_sent',
-  'platform_access.activated',
-  'platform_access.password_reset',
-  'platform_access.locked',
-  'platform_access.unlocked',
-  'platform_access.revoked',
-  // POR-005/006: Vertretung (ADR-023 Punkte 13, 14, 24). Ein Zugriff über
-  // eine Vertretung schreibt das Konto der Vertretung (actor_kind
-  // representative), Gegenstand ist das Verhältnis der vertretenen Person.
-  'platform_access.companion_declined',
-  'platform_representation.read',
-  // ABN-006: bewusster Verzicht auf eine Gebühr (BEF-094).
-  'appointment.fee_waived',
-  // ABN-008: Verrechnung mit der Ersatzrechnung (BEF-100).
-  'payment.offset',
-  // ABN-015: Befundangaben getrennt vom Entwurf (BEF-103).
-  'treatment_draft_findings.saved',
-  // ABN-018: Wartelisteneintrag als noch aktuell bestätigt (BEF-108).
-  'waitlist_entry.reviewed',
-  // ABN-022: Nachtrag zum abgeschlossenen Trainingsprotokoll (BEF-113).
-  'training_protocol.addendum_created',
-  // LOG-EPIC-001: Herunterladen einer Datei (das Anzeigen steht nicht im
-  // Protokoll) und jede Abweisung, Operation und Zähler im Kontext.
-  'patient_file.downloaded',
+  // Jede Abweisung; Operation und Zähler stehen im Kontext.
   'access.denied',
+  // Der Löschlauf, eine Zusammenfassung je Lauf und Organisation.
+  'retention.applied',
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
+  'training_relationship.viewed': 'Trainingskund:in geöffnet',
+  'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
+  'patient_file.downloaded': 'Datei heruntergeladen',
   'patient_record.exported': 'Auskunft aus der Akte erteilt',
-  'patient.created': 'Patient:in angelegt',
-  'patient.updated': 'Stammdaten geändert',
-  'patient.status_changed': 'Versorgungsstatus geändert',
-  'patient.care_concluded': 'Versorgung abgeschlossen',
-  'patient.care_reopened': 'Abschluss der Versorgung zurückgenommen',
-  'legal_hold.placed': 'Löschsperre gesetzt',
-  'legal_hold.released': 'Löschsperre aufgehoben',
-  'retention.applied': 'Löschlauf ausgeführt',
-  'retention.reapplied': 'Löschungen nach Wiederherstellung nachgezogen',
-  'appointment.created': 'Termin angelegt',
-  'appointment.updated': 'Termin geändert',
-  'appointment.rescheduled': 'Termin verschoben',
-  'appointment.cancelled': 'Termin abgesagt',
-  'appointment.no_show': 'Niemand angetroffen',
-  'appointment.completed': 'Termin abgeschlossen',
-  'appointment.documented': 'Termin dokumentiert',
-  'appointment.reopened': 'Termin wieder geöffnet',
-  'appointment.notified': 'Mitteilung an die Patient:in vermerkt',
-  'organization.appointment_grid_changed': 'Praxisraster geändert',
-  'organization.documentation_deadline_changed': 'Dokumentationsfrist geändert',
-  'staff_working_hours.created': 'Wochenarbeitszeit angelegt',
-  'staff_working_hours.updated': 'Wochenarbeitszeit geändert',
-  'staff_working_hours.removed': 'Wochenarbeitszeit entfernt',
-  'staff_working_hour_exception.created': 'Abweichung angelegt',
-  'staff_working_hour_exception.updated': 'Abweichung geändert',
-  'staff_working_hour_exception.removed': 'Abweichung aufgehoben',
-  'staff_member.created': 'Mitarbeiter:in angelegt',
-  'staff_member.updated': 'Mitarbeiterstammdaten geändert',
-  'staff_member.status_changed': 'Beschäftigungsstatus geändert',
+  'therapy_report.exported': 'Therapiebericht gedruckt',
+  'patient_file.handed_out': 'Foto an die Person herausgegeben',
+  'platform_access.invited': 'Zur Plattform eingeladen',
+  'platform_access.activated': 'Plattformzugang eingerichtet',
+  'platform_access.locked': 'Plattformzugang gesperrt',
+  'platform_access.unlocked': 'Plattformzugang entsperrt',
+  'platform_access.revoked': 'Plattformzugang entzogen',
   'staff_account.invited': 'Zugang eingeladen',
   'staff_account.invitation_revoked': 'Einladung zurückgenommen',
   'staff_account.invitation_accepted': 'Einladung angenommen',
@@ -256,108 +69,9 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'account.sessions_ended': 'Alle eigenen Sitzungen beendet',
   'account.mfa_enrolled': 'Zweiter Faktor eingerichtet',
   'account.mfa_removed': 'Zweiter Faktor entfernt',
-  'treatment_note.created': 'Behandlungsdokumentation angelegt',
-  'treatment_note.updated': 'Behandlungsdokumentation geändert',
-  'treatment_note.finalized': 'Behandlungsdokumentation finalisiert',
-  'treatment_note.auto_finalized': 'Behandlungsdokumentation automatisch finalisiert',
-  'treatment_note.revised': 'Behandlungsdokumentation korrigiert',
-  'treatment_note.addendum_created': 'Nachtrag angelegt',
-  'text_snippet.created': 'Textbaustein angelegt',
-  'text_snippet.updated': 'Textbaustein geändert',
-  'text_snippet.deleted': 'Textbaustein gelöscht',
-  'service_catalog.version_created': 'Preisliste angelegt',
-  'service_catalog.version_updated': 'Preisliste geändert',
-  'service_catalog.version_published': 'Preisliste in Kraft gesetzt',
-  'service_catalog.version_deleted': 'Preislistenentwurf verworfen',
-  'billable_service.recorded': 'Leistungen zum Termin erfasst',
-  'billable_service.removed': 'Leistungen zum Termin entfernt',
-  'organization.billing_profile_changed': 'Praxis-Stammdaten für Rechnungen geändert',
-  'invoice_recipient.created': 'Rechnungsempfänger angelegt',
-  'invoice_recipient.updated': 'Rechnungsempfänger geändert',
-  'invoice_recipient.deleted': 'Rechnungsempfänger entfernt',
-  'invoice.draft_created': 'Rechnungsentwurf angelegt',
-  'invoice.draft_deleted': 'Rechnungsentwurf verworfen',
-  'invoice.recipient_changed': 'Empfänger des Entwurfs gewählt',
-  'invoice.issued': 'Rechnung ausgestellt',
-  'invoice.cancelled': 'Rechnung storniert',
-  'invoice.reminder_created': 'Zahlungserinnerung ausgestellt',
-  'payment.recorded': 'Zahlung erfasst',
-  'payment.voided': 'Zahlung storniert',
   'organization.bootstrapped': 'Praxis eingerichtet',
-  'patient_privacy.recorded': 'Datenschutzvermerk erfasst',
-  'patient.address_geocoded': 'Adresse auf der Karte verortet',
-  'organization.tour_start_changed': 'Startort der Touren geändert',
-  'questionnaire_response.created': 'Fragebogen begonnen',
-  'questionnaire_response.updated': 'Fragebogen-Entwurf geändert',
-  'questionnaire_response.completed': 'Fragebogen abgeschlossen',
-  'questionnaire_response.discarded': 'Fragebogen-Entwurf verworfen',
-  'patient_course_event.created': 'Ereignis im Verlauf gesetzt',
-  'patient_course_event.removed': 'Ereignis im Verlauf entfernt',
-  'therapy_report.created': 'Therapiebericht begonnen',
-  'therapy_report.updated': 'Therapiebericht-Entwurf geändert',
-  'therapy_report.completed': 'Therapiebericht abgeschlossen',
-  'therapy_report.discarded': 'Therapiebericht-Entwurf verworfen',
-  'therapy_report.exported': 'Therapiebericht gedruckt',
-  'waitlist_entry.created': 'Auf die Warteliste gesetzt',
-  'waitlist_entry.updated': 'Wartelisteneintrag geändert',
-  'waitlist_entry.closed': 'Von der Warteliste genommen',
-  'territory.saved': 'Gebiet gespeichert',
-  'territory.removed': 'Gebiet entfernt',
-  'patient_file.assigned': 'Verordnungsfoto einer Grundlage zugeordnet',
-  'task.created': 'Aufgabe angelegt',
-  'task.updated': 'Aufgabe geändert',
-  'task.completed': 'Aufgabe erledigt',
-  'task.reopened': 'Aufgabe wieder geöffnet',
-  'task.deleted': 'Aufgabe gelöscht',
-  'appointment.call_recorded': 'Anruf zum Termin vermerkt',
-  'patient.merged': 'Dublette in die Akte übernommen',
-  'organization.practice_target_changed': 'Zielwert der Statistik geändert',
-  'staff_member.compensation_model_changed': 'Vergütungsmodell geändert',
-  'training_relationship.created': 'Trainingskund:in angelegt',
-  'training_relationship.updated': 'Trainingskund:in geändert',
-  'training_relationship.ended': 'Trainingsvertrag beendet',
-  'training_relationship.reopened': 'Trainingsvertrag wieder aufgenommen',
-  'training_relationship.viewed': 'Trainingskund:in geöffnet',
-  'training_basis.created': 'Vereinbarung im Training angelegt',
-  'training_basis.concluded': 'Vereinbarung im Training abgeschlossen',
-  'training_basis.reopened': 'Vereinbarung im Training wieder geöffnet',
-  'training_protocol.created': 'Trainingsprotokoll angelegt',
-  'training_protocol.updated': 'Trainingsprotokoll geändert',
-  'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
-  'training_protocol.discarded': 'Entwurf des Trainingsprotokolls verworfen',
-  'platform_access.invited': 'Zur Plattform eingeladen',
-  'platform_access.invitation_sent': 'Einladung zur Plattform per Mail versandt',
-  'platform_access.activated': 'Plattformzugang eingerichtet',
-  'platform_access.password_reset': 'Neues Kennwort für die Plattform gesetzt',
-  'platform_access.locked': 'Plattformzugang gesperrt',
-  'platform_access.unlocked': 'Plattformzugang entsperrt',
-  'platform_access.revoked': 'Plattformzugang entzogen',
-  'platform_access.companion_declined':
-    'Begleitung nicht eingerichtet (Zweifel an der Einwilligung)',
-  'platform_representation.read': 'Plattform über eine Vertretung geöffnet',
-  'appointment.fee_waived': 'Auf die Gebühr eines Termins verzichtet',
-  'payment.offset': 'Zahlung mit der Korrekturrechnung verrechnet',
-  'treatment_draft_findings.saved': 'Befundangaben gesichert (noch nicht übernommen)',
-  'waitlist_entry.reviewed': 'Wartelisteneintrag als noch aktuell bestätigt',
-  'training_protocol.addendum_created': 'Nachtrag zum Trainingsprotokoll geschrieben',
-  // Die alten Werte behalten ihren alten Wortlaut: Sie stehen an Zeilen, die
-  // vor GRD-001 entstanden sind, und die betrafen nur Verordnungen.
-  'prescription.created': 'Verordnung erfasst',
-  'prescription.updated': 'Verordnung geändert',
-  'prescription.deleted': 'Verordnung gelöscht',
-  'treatment_basis.created': 'Behandlungsgrundlage erfasst',
-  'treatment_basis.updated': 'Behandlungsgrundlage geändert',
-  'treatment_basis.deleted': 'Behandlungsgrundlage gelöscht',
-  'treatment_basis.appointments_transferred': 'Termine auf diese Grundlage übertragen',
-  'patient_file.uploaded': 'Datei zur Akte hinzugefügt',
-  'patient_file.deleted': 'Datei gelöscht',
-  'patient_file.type_corrected': 'Dokumentart einer Datei korrigiert',
-  'patient_file.handed_out': 'Foto an die Person herausgegeben',
-  'storage_deletion.claimed': 'Löschung in der Ablage freigegeben',
-  'storage_deletion.receipted': 'Löschung in der Ablage quittiert',
-  'storage_deletion.ordered': 'Verwaiste Objekte zum Löschen vorgemerkt',
-  'patient_file.downloaded': 'Datei heruntergeladen',
   'access.denied': 'Zugriff abgewiesen',
+  'retention.applied': 'Löschlauf ausgeführt',
 };
 
 /**
@@ -436,32 +150,13 @@ export const auditOperationLabels: Record<string, string> = {
  */
 export const auditSubjectLabels: Record<string, string> = {
   patient: 'Patient:in',
-  organization: 'Organisation',
-  appointment: 'Termin',
-  staff_working_hours: 'Wochenarbeitszeit',
-  staff_working_hour_exception: 'Arbeitszeitabweichung',
-  staff_member: 'Mitarbeiter:in',
-  treatment_note: 'Behandlungsdokumentation',
-  prescription: 'Verordnung',
-  treatment_basis: 'Behandlungsgrundlage',
-  text_snippet: 'Textbaustein',
-  user_account: 'Zugang',
-  patient_file: 'Datei der Akte',
-  questionnaire_response: 'Fragebogen',
-  patient_course_event: 'Ereignis im Verlauf',
-  therapy_report: 'Therapiebericht',
-  waitlist_entry: 'Wartelisteneintrag',
-  territory: 'Gebiet',
-  task: 'Aufgabe',
   training_relationship: 'Trainingsverhältnis',
-  training_basis: 'Vereinbarung im Training',
-  training_protocol: 'Trainingsprotokoll',
+  patient_file: 'Datei der Akte',
+  therapy_report: 'Therapiebericht',
   platform_access: 'Plattformzugang',
-  storage_deletion_order: 'Löschauftrag der Ablage',
-  service_catalog_version: 'Preisliste',
-  invoice_recipient: 'Rechnungsempfänger',
-  invoice: 'Rechnung',
-  payment: 'Zahlung',
+  staff_member: 'Mitarbeiter:in',
+  user_account: 'Zugang',
+  organization: 'Organisation',
 };
 
 export const auditOutcomeLabels: Record<string, string> = {

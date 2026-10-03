@@ -19,7 +19,6 @@ const MAX = '66666666-6666-4666-8666-000000000001';
 const getPlatformAccess = vi.fn();
 const listPlatformRepresentations = vi.fn();
 const invitePlatformRepresentation = vi.fn();
-const noteCompanionCapacityDoubt = vi.fn();
 const renewPlatformRepresentationCode = vi.fn();
 const recordCompanionConsentWithdrawn = vi.fn();
 
@@ -32,8 +31,6 @@ vi.mock('./api', async (importOriginal) => {
       listPlatformRepresentations(...args) as Promise<unknown>,
     invitePlatformRepresentation: (...args: unknown[]) =>
       invitePlatformRepresentation(...args) as Promise<unknown>,
-    noteCompanionCapacityDoubt: (...args: unknown[]) =>
-      noteCompanionCapacityDoubt(...args) as Promise<void>,
     renewPlatformRepresentationCode: (...args: unknown[]) =>
       renewPlatformRepresentationCode(...args) as Promise<unknown>,
     recordCompanionConsentWithdrawn: (...args: unknown[]) =>
@@ -110,7 +107,6 @@ describe('Vertretungen', () => {
     getPlatformAccess.mockResolvedValue(OHNE_ZUGANG);
     listPlatformRepresentations.mockResolvedValue([]);
     invitePlatformRepresentation.mockResolvedValue(EINLADUNG);
-    noteCompanionCapacityDoubt.mockResolvedValue(undefined);
   });
 
   it('zeigt eine Begleitung mit Nachweis und Einwilligung', async () => {
@@ -179,6 +175,7 @@ describe('Vertretungen', () => {
         fassung: EINWILLIGUNG_BEGLEITUNG_FASSUNG,
         fruehereNachrichten: false,
         rechnungen: false,
+        zweifel: false,
       }),
     );
     // Der Code ist für die vertretende Person, mit eigenem Konto.
@@ -239,6 +236,7 @@ describe('Vertretungen', () => {
         fassung: null,
         fruehereNachrichten: null,
         rechnungen: false,
+        zweifel: false,
       }),
     );
   });
@@ -277,6 +275,7 @@ describe('Vertretungen', () => {
         fassung: null,
         fruehereNachrichten: null,
         rechnungen: true,
+        zweifel: false,
       }),
     );
   });
@@ -291,7 +290,7 @@ describe('Vertretungen', () => {
     expect(formular).toHaveTextContent('sieht auch meine Rechnungen und Zahlungen');
   });
 
-  it('vermerkt einen Zweifel und laesst dann nur die rechtliche Vertretung zu', async () => {
+  it('vermerkt einen Zweifel an der rechtlichen Vertretung und laesst nur diese zu', async () => {
     const user = userEvent.setup();
     zeige();
     await user.click(await screen.findByRole('button', { name: 'Vertretung einrichten' }));
@@ -300,10 +299,28 @@ describe('Vertretungen', () => {
       within(formular).getByRole('button', { name: 'Zweifel an der Einwilligungsfähigkeit' }),
     );
     await user.click(within(formular).getByRole('button', { name: 'Vermerken' }));
-    await waitFor(() => expect(noteCompanionCapacityDoubt).toHaveBeenCalledWith('treatment', MAX));
     expect(within(formular).getByRole('radio', { name: /Begleitung/ })).toBeDisabled();
     expect(within(formular).getByRole('radio', { name: /Rechtliche Vertretung/ })).toBeChecked();
-    expect(formular).toHaveTextContent('Vermerkt ist nur der Zweifel, ohne Grund.');
+    expect(formular).toHaveTextContent('An ihr wird nur der Zweifel vermerkt, ohne Grund.');
+
+    // LOG-EPIC-001: gespeichert wird der Zweifel mit dem Zugang (ANN-207).
+    await user.type(
+      within(formular).getByLabelText('Name der vertretenden Person'),
+      'Bernd Betreuer',
+    );
+    await user.click(within(formular).getByLabelText('Ausweis der vertretenden Person'));
+    await user.click(within(formular).getByLabelText('Betreuerausweis'));
+    await user.click(
+      within(formular).getByLabelText('Der Aufgabenkreis umfasst die Gesundheitssorge'),
+    );
+    await user.click(within(formular).getByRole('button', { name: 'Code anzeigen' }));
+    await waitFor(() =>
+      expect(invitePlatformRepresentation).toHaveBeenCalledWith(
+        'treatment',
+        MAX,
+        expect.objectContaining({ zugangsart: 'legal_representative', zweifel: true }),
+      ),
+    );
   });
 
   it('nennt die Gründe des Servers in der Sprache der Praxis', () => {
