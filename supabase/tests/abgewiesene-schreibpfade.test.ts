@@ -46,6 +46,13 @@ const FAELLE: Fall[] = [
     'staff_account.roles_changed',
   ],
   [
+    // AKTE-009: dieselbe Rechtepruefung wie die Konten (ANN-226).
+    'set_staff_member_schedulable',
+    'select public.set_staff_member_schedulable($1::uuid, $2::boolean, $3::boolean)',
+    [ANNA, true, true],
+    'staff_member.updated',
+  ],
+  [
     'set_staff_account_active',
     'select public.set_staff_account_active($1::uuid, $2)',
     [ANNA, true],
@@ -243,7 +250,7 @@ describe('Abgewiesene Schreibpfade (G6c)', () => {
     // seit TRN-001 die Schreibwege des Trainingsverhaeltnisses, seit TRN-004
     // und TRN-005 Trainingstermin und Vereinbarung, seit TRN-009 das
     // Trainingsprotokoll (seit ABN-022 mit Nachtrag), seit POR-002 der Plattformzugang, seit POR-005 die
-    // Vertretung.
+    // Vertretung, seit AKTE-009 der Kalender ohne Zugang.
     // Ein neuer Pfad ist Absicht, ein fehlender ein
     // Rueckschritt - beides soll ein Review sehen.
     const { rows } = await asPostgres<{ proname: string }>(`
