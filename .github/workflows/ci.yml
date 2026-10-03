@@ -79,6 +79,9 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v5
+        with:
+          # Die ganze Geschichte: Das Migrationen-Gate vergleicht mit main.
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -89,6 +92,15 @@ jobs:
 
       - name: Install
         run: pnpm install --frozen-lockfile
+
+      # BEF-123: Eine Migration, die schon auf main liegt, ist in der
+      # Test-Umgebung eingespielt und wird dort nie wieder ausgefuehrt. Wer sie
+      # aendert, aendert nur das Repository. Im Pull Request prueft die CI den
+      # Merge mit dem aktuellen main, auf main den Push gegen den Stand davor.
+      - name: Ausgelieferte Migrationen unveraendert
+        env:
+          BASIS: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
+        run: node scripts/migrationen-check.mjs "$BASIS"
 
       - name: Migrationen und RLS-Tests
         run: pnpm test:db

@@ -309,6 +309,7 @@ pnpm test:watch      # dieselben Tests, laufend
 pnpm test:db         # Migrationen + RLS gegen echtes PostgreSQL
 pnpm test:e2e        # Playwright
 pnpm docs:check      # Obergrenzen, Register, Verweise, Querverweise, Nummern, Fortschrittstabelle
+pnpm migrationen:check  # Migrationen von main unverändert, neue hinten angehängt
 pnpm fortschritt     # Stand bis zur Eröffnung; --schreiben erzeugt die Roadmap-Tabelle
 pnpm db:reset        # Test-Datenbank aus Migrationen neu aufsetzen
 pnpm scan:secrets    # Secret-Scan über versionierte Dateien
@@ -325,6 +326,16 @@ Eintrag**; dass jede `ANN-NNN` des Registers einen Anker in `src/`,
 Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige
 Nummern (G19); und dass die Fortschrittstabelle der Roadmap genau die ist, die
 `pnpm fortschritt --schreiben` aus `development/fortschritt.json` erzeugt.
+
+`pnpm migrationen:check` läuft im Job „Migrationen und RLS-Policies" vor
+`test:db` (BEF-123). Eine Migration, die auf `main` liegt, ist in der
+Test-Umgebung eingespielt; `supabase db push` führt sie dort nie wieder aus.
+Das Gate weist deshalb jede Änderung, Umbenennung oder Löschung einer solchen
+Datei ab, ebenso eine neue Migration, deren Version nicht hinter der jüngsten
+auf `main` liegt. Eine Korrektur ist eine neue Migration. Migrationen, die nur
+auf dem Branch liegen, dürfen bis zum Merge geändert werden. Lokal vergleicht
+das Gate mit `origin/main` (vorher `git fetch origin main`), im Pull Request
+mit dem Merge auf den aktuellen `main`.
 
 **Modell und Aufwand.** `.claude/settings.json` setzt Opus 5 projektweit. Einen
 Aufwand je Aufgabe kennt die Datei nicht; die Regel „Migration, RLS, Policy
