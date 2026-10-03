@@ -120,15 +120,24 @@ describe('Anrufliste (PRX-014)', () => {
     const [zeile] = await liste();
     expect(zeile).toMatchObject({ notified_channels: ['phone'], call_outcome: null });
 
-    const { rows } = await asPostgres<{ action: string }>(
-      `select action from public.audit_log where subject_id = $1 order by occurred_at, action`,
+    // Der Nachweis ist der Mitteilungsvermerk mit Person und Zeitpunkt, kein
+    // Auditeintrag (LOG-EPIC-001).
+    const { rows } = await asPostgres<{ channel: string; notified_by: string | null }>(
+      `select channel, notified_by from public.appointment_notifications
+        where appointment_id = $1 and notified_at is not null`,
       [id],
     );
-    expect(rows.map((r) => r.action)).toEqual([
-      'appointment.call_recorded',
-      'appointment.call_recorded',
-      'appointment.notified',
-    ]);
+    expect(rows).toEqual([{ channel: 'phone', notified_by: users.office }]);
+    const stand = await asPostgres(
+      'select id from public.appointment_call_states where appointment_id = $1',
+      [id],
+    );
+    expect(stand.rows).toEqual([]);
+    const audit = await asPostgres<{ action: string }>(
+      `select action from public.audit_log where subject_id = $1 and outcome = 'success'`,
+      [id],
+    );
+    expect(audit.rows).toEqual([]);
   });
 
   it('nimmt einen Tipp daneben zurueck', async () => {
@@ -139,18 +148,25 @@ describe('Anrufliste (PRX-014)', () => {
     expect(zeile!.call_outcome).toBeNull();
   });
 
-  it('protokolliert das Ergebnis ohne Inhalt', async () => {
+  it('haelt das Ergebnis mit Person und Zeitpunkt am Termin fest, nicht im Auditlog (LOG-EPIC-001)', async () => {
     const id = await termin();
     await asUserCommitted(users.office, VERMERKEN, [id, 'voicemail']);
-    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-      `select context from public.audit_log where subject_id = $1 and action = 'appointment.call_recorded'`,
+    const { rows } = await asPostgres<{
+      outcome: string;
+      recorded_by: string | null;
+      recorded_at: string | null;
+    }>(
+      'select outcome, recorded_by, recorded_at from public.appointment_call_states where appointment_id = $1',
       [id],
     );
-    expect(rows[0]!.context).toEqual({
-      surface: 'web',
-      patient_id: patients.max,
-      call_outcome: 'voicemail',
-    });
+    expect(rows[0]).toMatchObject({ outcome: 'voicemail', recorded_by: users.office });
+    expect(rows[0]!.recorded_at).not.toBeNull();
+
+    const audit = await asPostgres<{ context: Record<string, unknown> }>(
+      `select context from public.audit_log where subject_id = $1 and outcome = 'success'`,
+      [id],
+    );
+    expect(audit.rows).toEqual([]);
   });
 
   it('weist unbekannte Ergebnisse, Ereignisse und fremde Termine ab', async () => {

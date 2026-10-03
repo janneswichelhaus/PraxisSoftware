@@ -466,6 +466,11 @@ describe('create_appointment: Audit', () => {
     await asPostgres('delete from public.audit_log');
   });
 
+  /**
+   * Erfolgreiche Auditeintraege. Das Anlegen schreibt seit LOG-EPIC-001
+   * keinen Eintrag mehr - wer und wann stehen am Termin (created_by,
+   * created_at).
+   */
   async function eintrag() {
     const { rows } = await asPostgres<{
       organization_id: string;
@@ -475,51 +480,36 @@ describe('create_appointment: Audit', () => {
       subject_id: string;
       outcome: string;
       context: Record<string, unknown>;
-    }>("select * from public.audit_log where action = 'appointment.created'");
+    }>("select * from public.audit_log where outcome = 'success'");
     return rows;
   }
 
-  it('protokolliert appointment.created mit Akteur, Organisation und Bezug', async () => {
+  it('haelt Akteur, Organisation und Bezug am Termin fest (LOG-EPIC-001)', async () => {
     const id = await anlegenCommitted(users.teamLead, { typ: 'home_visit' });
-    const rows = await eintrag();
 
-    expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({
+    const z = await termin(id);
+    expect(z).toMatchObject({
       organization_id: organizationId,
-      actor_user_id: users.teamLead,
-      subject_type: 'appointment',
-      subject_id: id,
-      outcome: 'success',
-    });
-  });
-
-  it('enthaelt ausschliesslich zugelassene Kontextschluessel', async () => {
-    await anlegenCommitted(users.office, { typ: 'home_visit' });
-    const rows = await eintrag();
-
-    expect(Object.keys(rows[0]!.context).sort()).toEqual(
-      // treatment_basis_id kam mit CAL-007 dazu und ist eine ID, kein Inhalt;
-      // in_the_past mit FIX-019 - ein Kennzeichen, kein Inhalt.
-      [
-        'patient_id',
-        'staff_member_id',
-        'surface',
-        'outside_working_hours',
-        'treatment_basis_id',
-        'in_the_past',
-      ].sort(),
-    );
-    expect(rows[0]!.context).toMatchObject({
-      surface: 'web',
+      created_by: users.teamLead,
       patient_id: patients.max,
       staff_member_id: STAFF.anna,
     });
+    expect(z?.created_at).toBeInstanceOf(Date);
+    expect(await eintrag()).toHaveLength(0);
   });
 
-  it('kopiert keine Stammdaten und keine konkreten Terminzeiten in den Kontext', async () => {
+  it('schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     await anlegenCommitted(users.office, { typ: 'home_visit' });
-    const rows = await eintrag();
-    const serialisiert = JSON.stringify(rows[0]!.context);
+
+    expect(await eintrag()).toEqual([]);
+  });
+
+  it('bringt keine Stammdaten und keine konkreten Terminzeiten ins Auditlog', async () => {
+    await anlegenCommitted(users.office, { typ: 'home_visit' });
+    const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    const serialisiert = JSON.stringify(rows.map((r) => r.context));
 
     for (const verboten of [
       'Max',
@@ -535,12 +525,15 @@ describe('create_appointment: Audit', () => {
     }
   });
 
-  it('haelt den Ereigniskatalog deckungsgleich mit der Anwendung', async () => {
-    const { rows } = await asPostgres<{ definition: string }>(
-      `select pg_get_constraintdef(oid) as definition
-         from pg_constraint where conname = 'audit_log_action_check'`,
-    );
-    expect(rows[0]?.definition).toContain('appointment.created');
+  it('laesst appointment.created im Ereigniskatalog nicht mehr zu (LOG-EPIC-001)', async () => {
+    await expect(
+      asPostgres(
+        `insert into public.audit_log
+           (organization_id, actor_user_id, action, subject_type, subject_id, outcome)
+         values ($1, $2, 'appointment.created', 'patient', $3, 'success')`,
+        [organizationId, users.office, patients.max],
+      ),
+    ).rejects.toThrow(/audit_log_action_check/);
   });
 });
 
@@ -632,10 +625,10 @@ describe('create_appointment: fachliche Pruefungen', () => {
   });
 
   // FIX-019, ANN-057: Die Vergangenheit ist erlaubt, aber nie unbemerkt. Die
-  // Bestaetigung ist der zehnte Parameter; der Auditeintrag traegt das
-  // Kennzeichen, damit ein nachgetragener Termin spaeter als solcher erkennbar
-  // bleibt (ADR-010).
-  it('nimmt einen vergangenen Kalendertag mit Bestaetigung an und vermerkt ihn im Audit', async () => {
+  // Bestaetigung ist der zehnte Parameter. Seit LOG-EPIC-001 bleibt ein
+  // nachgetragener Termin ueber das Datenmodell als solcher erkennbar: Er ist
+  // nach seinem Beginn angelegt (created_at > starts_at), mit Person.
+  it('nimmt einen vergangenen Kalendertag mit Bestaetigung an und weist ihn als nachgetragen aus', async () => {
     await asPostgres('delete from public.audit_log');
     const { rows } = await asUserCommitted<{ id: string }>(
       users.office,
@@ -644,19 +637,20 @@ describe('create_appointment: fachliche Pruefungen', () => {
     );
     expect(rows[0]!.id).toBeTruthy();
 
-    const audit = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'appointment.created'",
-    );
-    expect(audit.rows[0]!.context).toMatchObject({ in_the_past: true });
+    const z = await termin(rows[0]!.id);
+    expect(z?.created_by).toBe(users.office);
+    expect((z?.created_at as Date).getTime()).toBeGreaterThan((z?.starts_at as Date).getTime());
+    const audit = await asPostgres("select id from public.audit_log where outcome = 'success'");
+    expect(audit.rows).toEqual([]);
   });
 
-  it('vermerkt einen kuenftigen Termin nicht als vergangen', async () => {
+  it('weist einen kuenftigen Termin nicht als nachgetragen aus', async () => {
     await asPostgres('delete from public.audit_log');
-    await anlegenCommitted(users.office, {});
-    const audit = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'appointment.created'",
-    );
-    expect(audit.rows[0]!.context).toMatchObject({ in_the_past: false });
+    const id = await anlegenCommitted(users.office, {});
+    const z = await termin(id);
+    expect((z?.created_at as Date).getTime()).toBeLessThan((z?.starts_at as Date).getTime());
+    const audit = await asPostgres("select id from public.audit_log where outcome = 'success'");
+    expect(audit.rows).toEqual([]);
   });
 
   it('erlaubt den laufenden Kalendertag der Praxiszeitzone', async () => {
@@ -703,7 +697,7 @@ describe('create_appointment: fachliche Pruefungen', () => {
       'select count(*)::text as anzahl from public.appointments',
     );
     const { rows: audits } = await asPostgres<{ anzahl: string }>(
-      "select count(*)::text as anzahl from public.audit_log where action = 'appointment.created'",
+      "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
     );
     expect(termine[0]?.anzahl).toBe('0');
     expect(audits[0]?.anzahl).toBe('0');

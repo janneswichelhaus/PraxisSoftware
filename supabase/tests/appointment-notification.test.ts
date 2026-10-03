@@ -396,16 +396,21 @@ describe('CAL-012: Mitteilungsvermerk am Termin', () => {
       expect(await kanaeleInDerAkte(id)).toEqual(['slip']);
     });
 
-    it('schreibt je Termin einen eigenen Auditeintrag', async () => {
+    it('haelt je Termin fest, wer vermerkt hat - ohne Auditeintrag (LOG-EPIC-001)', async () => {
       const a = await terminAnlegen('09:00', '10:00');
       const b = await terminAnlegen('11:00', '12:00');
-      await asPostgres("delete from public.audit_log where action <> 'appointment.notified'");
+      await asPostgres('delete from public.audit_log');
       await asUserCommitted(users.office, ERGAENZEN, [[a, b], 'slip']);
 
-      const { rows } = await asPostgres<{ subject_id: string }>(
-        `select subject_id from public.audit_log where action = 'appointment.notified'`,
+      const { rows } = await asPostgres<{ appointment_id: string; notified_by: string }>(
+        `select appointment_id, notified_by from public.appointment_notifications
+          where channel = 'slip' and notified_at is not null`,
       );
-      expect(rows.map((r) => r.subject_id).sort()).toEqual([a, b].sort());
+      expect(rows.map((r) => r.appointment_id).sort()).toEqual([a, b].sort());
+      expect(rows.map((r) => r.notified_by)).toEqual([users.office, users.office]);
+
+      const audit = await asPostgres("select id from public.audit_log where outcome = 'success'");
+      expect(audit.rows).toEqual([]);
     });
 
     it('legt bei einem unbekannten Termin keinen einzigen Vermerk an', async () => {
@@ -424,41 +429,49 @@ describe('CAL-012: Mitteilungsvermerk am Termin', () => {
     });
   });
 
-  describe('Audit (ADR-010)', () => {
-    it('protokolliert die Wege, aber keinen Inhalt', async () => {
+  describe('Audit (ADR-010, LOG-EPIC-001)', () => {
+    it('haelt die Wege mit Person und Zeitpunkt am Termin fest, nicht im Auditlog', async () => {
       const id = await terminAnlegen();
       await asPostgres('delete from public.audit_log');
       await setzenCommitted(id, ['email', 'phone']);
 
       const { rows } = await asPostgres<{
-        actor_user_id: string;
-        subject_type: string;
-        context: Record<string, unknown>;
+        channel: string;
+        notified_by: string;
+        notified_at: Date | null;
       }>(
-        `select actor_user_id, subject_type, context from public.audit_log
-          where action = 'appointment.notified'`,
+        `select channel, notified_by, notified_at from public.appointment_notifications
+          where appointment_id = $1::uuid order by channel`,
+        [id],
       );
-      expect(rows).toHaveLength(1);
-      expect(rows[0]?.subject_type).toBe('appointment');
-      expect(rows[0]?.actor_user_id).toBe(users.office);
-      expect(rows[0]?.context).toMatchObject({
-        surface: 'web',
-        patient_id: patients.max,
-        channels: ['email', 'phone'],
-      });
-      expect(JSON.stringify(rows[0]?.context)).not.toMatch(/Mustermann|Beispiel/i);
+      expect(rows.map((r) => r.channel)).toEqual(['email', 'phone']);
+      expect(rows.map((r) => r.notified_by)).toEqual([users.office, users.office]);
+      expect(rows.every((r) => r.notified_at !== null)).toBe(true);
+
+      // Kein Erfolgseintrag - und was im Auditlog steht, nennt keinen Inhalt.
+      const audit = await asPostgres<{ context: Record<string, unknown> }>(
+        "select context from public.audit_log where outcome = 'success'",
+      );
+      expect(audit.rows).toEqual([]);
+      const alle = await asPostgres<{ context: Record<string, unknown> }>(
+        'select context from public.audit_log',
+      );
+      expect(JSON.stringify(alle.rows.map((r) => r.context))).not.toMatch(/Mustermann|Beispiel/i);
     });
 
-    it('protokolliert auch die Ruecknahme, mit leerer Wegeliste', async () => {
+    it('schreibt auch fuer die Ruecknahme keinen Auditeintrag', async () => {
       const id = await terminAnlegen();
       await setzenCommitted(id, ['slip']);
       await asPostgres('delete from public.audit_log');
       await setzenCommitted(id, []);
 
-      const { rows } = await asPostgres<{ context: Record<string, unknown> }>(
-        `select context from public.audit_log where action = 'appointment.notified'`,
+      const { rows } = await asPostgres(
+        'select id from public.appointment_notifications where appointment_id = $1::uuid',
+        [id],
       );
-      expect(rows[0]?.context).toMatchObject({ channels: [] });
+      expect(rows).toEqual([]);
+      const audit = await asPostgres("select id from public.audit_log where outcome = 'success'");
+      expect(audit.rows).toEqual([]);
     });
   });
 

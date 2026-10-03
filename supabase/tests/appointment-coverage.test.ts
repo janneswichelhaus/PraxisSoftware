@@ -18,7 +18,9 @@ import {
  *     bestehen - und was darueber hinausgeht, heisst ungedeckt und ist an
  *     jeder Stelle sichtbar, an der es vorkommt.
  *   * **Uebertragen ist ein Vorgang, kein Nebeneffekt.** Alles oder nichts,
- *     dieselbe Patient:in, nie ein abgerechneter Termin, ein Auditeintrag.
+ *     dieselbe Patient:in, nie ein abgerechneter Termin. Einen Auditeintrag
+ *     schreibt er seit LOG-EPIC-001 nicht mehr - der Nachweis ist die
+ *     Grundlage am Termin.
  */
 
 const { users, organizationId, patients } = SEED;
@@ -46,6 +48,17 @@ const LISTE =
   'select * from public.list_patient_appointments($1::uuid, $2::boolean, 50, null, null, $3::uuid)';
 const UEBERTRAGEN =
   'select public.transfer_appointments_to_treatment_basis($1::uuid, $2::uuid[]) as anzahl';
+
+/**
+ * Erfolgreiche Auditeintraege insgesamt. Schreibvorgaenge protokolliert das
+ * Auditlog seit LOG-EPIC-001 nicht mehr; der Nachweis steht im Datenmodell.
+ */
+async function erfolgreicheAuditeintraege(): Promise<number> {
+  const { rows } = await asPostgres<{ anzahl: string }>(
+    "select count(*)::text as anzahl from public.audit_log where outcome = 'success'",
+  );
+  return Number(rows[0]!.anzahl);
+}
 
 /** Krankengymnastik aus der geltenden Preisliste (supabase/seed.sql). */
 const KATALOG_KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
@@ -281,11 +294,12 @@ describe('transfer_appointments_to_treatment_basis', () => {
     ).rejects.toThrow(/not allowed to update appointments/);
   });
 
-  it('uebertraegt die ungedeckten Termine vollstaendig und protokolliert einmal', async () => {
+  it('uebertraegt die ungedeckten Termine vollstaendig und schreibt keinen Auditeintrag (LOG-EPIC-001)', async () => {
     // Abnahmefall 5: zehn Termine an einer Grundlage mit sechs moeglichen,
     // die vier ungedeckten wandern auf die Folgeverordnung.
     const ids = await termine(10, GRUNDLAGE.erikaAlt);
     const ungedeckt = ids.slice(6);
+    const auditVorher = await erfolgreicheAuditeintraege();
 
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.ownerTherapist, UEBERTRAGEN, [
       GRUNDLAGE.erikaFrisch,
@@ -302,15 +316,23 @@ describe('transfer_appointments_to_treatment_basis', () => {
     expect(neu.covered).toBe(4);
     expect(neu.uncovered).toBe(0);
 
-    const protokoll = await asPostgres<{ subject_id: string; context: Record<string, unknown> }>(
-      "select subject_id, context from public.audit_log where action = 'treatment_basis.appointments_transferred'",
+    // Der Nachweis ist die Grundlage am Termin, nicht ein Auditeintrag.
+    const verschoben = await asPostgres<{ treatment_basis_id: string }>(
+      'select treatment_basis_id from public.appointments where id = any($1::uuid[])',
+      [ungedeckt],
     );
-    expect(protokoll.rows).toHaveLength(1);
-    expect(protokoll.rows[0]!.subject_id).toBe(GRUNDLAGE.erikaFrisch);
-    expect(protokoll.rows[0]!.context.patient_id).toBe(patients.erika);
-    expect(protokoll.rows[0]!.context.appointment_count).toBe(4);
-    // Ohne klinischen Inhalt: keine Diagnose, keine Notiz, kein Name.
-    expect(JSON.stringify(protokoll.rows[0]!.context)).not.toMatch(/diagnos|Nacken|Erika/i);
+    expect(verschoben.rows.map((z) => z.treatment_basis_id)).toEqual(
+      Array(4).fill(GRUNDLAGE.erikaFrisch),
+    );
+    expect(await erfolgreicheAuditeintraege()).toBe(auditVorher);
+    // Ohne klinischen Inhalt: Was im Auditlog steht, nennt weder Diagnose,
+    // Notiz noch Namen.
+    const protokoll = await asPostgres<{ context: Record<string, unknown> }>(
+      'select context from public.audit_log',
+    );
+    expect(JSON.stringify(protokoll.rows.map((z) => z.context))).not.toMatch(
+      /diagnos|Nacken|Erika/i,
+    );
   });
 
   it('laesst den Mitteilungsvermerk stehen - der Zeitpunkt aendert sich nicht', async () => {
@@ -605,6 +627,7 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
     });
     await erfassen(id);
     expect((await mengen(GRUNDLAGE.erikaFrisch)).Krankengymnastik).toBe(1);
+    const auditVorher = await erfolgreicheAuditeintraege();
 
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.ownerTherapist, UEBERTRAGEN, [
       GRUNDLAGE.erikaSelbstzahler,
@@ -629,13 +652,9 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
     // Der durchgefuehrte Termin zaehlt am Ziel als genutzt (ABN-001).
     expect((await kontingent(GRUNDLAGE.erikaSelbstzahler)).used).toBe(1);
 
-    const protokoll = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'treatment_basis.appointments_transferred'",
-    );
-    expect(protokoll.rows[0]!.context.service_count).toBe(1);
-    expect(protokoll.rows[0]!.context.moved_quantities).toEqual([
-      { remedy: 'Krankengymnastik', quantity: 1 },
-    ]);
+    // Die bewegte Menge zeigt das Datenmodell oben; ins Auditlog geht nichts
+    // (LOG-EPIC-001).
+    expect(await erfolgreicheAuditeintraege()).toBe(auditVorher);
   });
 
   it('weist ab und aendert nichts, wenn das Ziel keine Position fuer das Heilmittel hat', async () => {
@@ -707,6 +726,7 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
        values ($1, $2, $3, $4, 1, current_date - 1, $5)`,
       [organizationId, patients.erika, ohnePosition, KATALOG_KG, users.ownerTherapist],
     );
+    const auditVorher = await erfolgreicheAuditeintraege();
 
     const { rows } = await asUserCommitted<{ anzahl: number }>(users.ownerTherapist, UEBERTRAGEN, [
       GRUNDLAGE.erikaFrisch,
@@ -715,10 +735,21 @@ describe('Leistungen ziehen bei einer Uebertragung mit (ABN-002, BEF-097)', () =
     expect(Number(rows[0]!.anzahl)).toBe(2);
     expect((await mengen(GRUNDLAGE.erikaFrisch)).Krankengymnastik).toBe(0);
 
-    const protokoll = await asPostgres<{ context: Record<string, unknown> }>(
-      "select context from public.audit_log where action = 'treatment_basis.appointments_transferred'",
+    // Beide Termine und die Leistung ohne Position haengen jetzt am Ziel;
+    // ein Auditeintrag entsteht nicht (LOG-EPIC-001).
+    const ziel = await asPostgres<{ treatment_basis_id: string }>(
+      'select treatment_basis_id from public.appointments where id = any($1::uuid[])',
+      [[vergangen, ohnePosition]],
     );
-    expect(protokoll.rows[0]!.context.service_count).toBe(0);
-    expect(protokoll.rows[0]!.context.appointment_count).toBe(2);
+    expect(ziel.rows.map((z) => z.treatment_basis_id)).toEqual([
+      GRUNDLAGE.erikaFrisch,
+      GRUNDLAGE.erikaFrisch,
+    ]);
+    const leistungen = await asPostgres<{ anzahl: string }>(
+      'select count(*)::text as anzahl from public.billable_services where appointment_id = $1 and treatment_base_item_id is null',
+      [ohnePosition],
+    );
+    expect(Number(leistungen.rows[0]!.anzahl)).toBe(1);
+    expect(await erfolgreicheAuditeintraege()).toBe(auditVorher);
   });
 });
