@@ -111,6 +111,19 @@ interface Bestand {
  */
 let naechsterTermin = 0;
 
+/**
+ * Beginn des Termins einer Füllung: `tage` Tage zurück, immer um 20:00 UTC
+ * (BEF-122). Bis dahin lag er auf der Uhrzeit des Laufs - und die Seed-Termine
+ * von Anna (samstags 07:00-08:00 UTC) kollidierten mit ihm, wenn der Test
+ * zwischen etwa 06:15 und 08:00 UTC lief. Um 20 Uhr liegt kein Seed-Termin.
+ */
+function terminBeginn(tage: number): string {
+  const tag = new Date();
+  tag.setUTCHours(20, 0, 0, 0);
+  tag.setUTCDate(tag.getUTCDate() - tage);
+  return tag.toISOString();
+}
+
 async function fuelle(patient: string): Promise<Bestand> {
   // Jede Füllung bekommt ihren eigenen Tag: Anna darf keine zwei Termine
   // gleichzeitig haben.
@@ -131,12 +144,12 @@ async function fuelle(patient: string): Promise<Bestand> {
         visit_street, visit_house_number, visit_postal_code, visit_city,
         visit_lat, visit_lon, visit_geocode_precision,
         treatment_basis_id, status, completed_at, completed_by)
-     values ($1, $2, $3, 'home_visit', now() - make_interval(days => $6),
-             now() - make_interval(days => $6) + interval '45 minutes',
+     values ($1, $2, $3, 'home_visit', $6::timestamptz,
+             $6::timestamptz + interval '45 minutes',
              'Altstraße', '7', '50667', 'Köln', 50.94, 6.95, 'address',
-             $4, 'completed', now() - make_interval(days => $6), $5)
+             $4, 'completed', $6::timestamptz, $5)
      returning id`,
-    [ORG, patient, ANNA_STAFF, grundlage, users.therapist, tage],
+    [ORG, patient, ANNA_STAFF, grundlage, users.therapist, terminBeginn(tage)],
   );
   const eintrag = await q(
     `insert into public.treatment_notes
