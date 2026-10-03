@@ -33,18 +33,44 @@ function seite(vermerke: VermerkeApi.Datenschutzvermerk[] = []) {
 
 type Nutzer = ReturnType<typeof userEvent.setup>;
 
-/**
- * Wählt einen Vorgang und tippt auf den Knopf (PAT-04). Gibt den Kasten der
- * Rückfrage zurück, damit ein Test ihn prüfen kann, bevor er bestätigt.
- */
-async function waehlenUndFragen(user: Nutzer, wert: string, knopf = 'Vermerken') {
-  await user.selectOptions(await screen.findByLabelText('Was ist geschehen?'), wert);
-  await user.click(screen.getByRole('button', { name: knopf }));
-  return screen.getByRole('group', { name: knopf });
+const ZWECK = {
+  email_contact: 'Kontakt per E-Mail',
+  prescriber_report: 'Bericht an die verordnende Praxis',
+  patient_photos: 'Fotos im Behandlungsverlauf',
+} as const;
+
+/** Öffnet das Fenster eines Zwecks über seine Zeile in der Karte. */
+async function fensterOeffnen(user: Nutzer, zweck: keyof typeof ZWECK) {
+  const zeile = await screen.findByRole('button', {
+    name: (name) => name.startsWith(ZWECK[zweck]),
+  });
+  await user.click(zeile);
+  return screen.getByRole('dialog', { name: ZWECK[zweck] });
 }
 
-async function vermerken(user: Nutzer, wert: string, knopf = 'Vermerken') {
-  const kasten = await waehlenUndFragen(user, wert, knopf);
+/**
+ * Wählt im Fenster einen Vorgang und tippt auf den Knopf (PAT-04). Gibt den
+ * Kasten der Rückfrage zurück, damit ein Test ihn prüfen kann.
+ */
+async function waehlenUndFragen(
+  user: Nutzer,
+  zweck: keyof typeof ZWECK,
+  vorgang: string,
+  knopf = 'Speichern',
+) {
+  const fenster = await fensterOeffnen(user, zweck);
+  await user.click(within(fenster).getByRole('radio', { name: vorgang }));
+  await user.click(within(fenster).getByRole('button', { name: knopf }));
+  return within(fenster).getByRole('group', { name: knopf });
+}
+
+async function vermerken(
+  user: Nutzer,
+  zweck: keyof typeof ZWECK,
+  vorgang: string,
+  knopf = 'Speichern',
+) {
+  const kasten = await waehlenUndFragen(user, zweck, vorgang, knopf);
   await user.click(within(kasten).getByRole('button', { name: knopf }));
   return kasten;
 }
@@ -76,11 +102,14 @@ describe('Datenschutz der Akte', () => {
   it('bietet nur noch Einwilligungen zum Vermerken an', async () => {
     seite();
 
-    const auswahl: HTMLSelectElement = await screen.findByLabelText('Was ist geschehen?');
-    const optionen = [...auswahl.options].map((o) => o.value);
-    expect(optionen).not.toContain('privacy_notice_handed_out');
-    expect(optionen).not.toContain('treatment_contract_signed');
-    expect(optionen).toContain('consent_granted:email_contact');
+    const user = userEvent.setup();
+    expect(await screen.findAllByRole('button', { name: /Nicht erteilt/ })).toHaveLength(3);
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    expect(
+      within(fenster)
+        .getAllByRole('radio')
+        .map((r) => r.closest('label')?.textContent),
+    ).toEqual(['Einwilligung erteilt', 'Einwilligung abgelehnt']);
     expect(screen.queryByText('Datenschutzinformation')).toBeNull();
     expect(screen.queryByRole('link', { name: 'Blätter zum Ausdrucken' })).toBeNull();
   });
@@ -97,27 +126,27 @@ describe('Datenschutz der Akte', () => {
       },
     ]);
 
-    const auswahl = await screen.findByLabelText('Was ist geschehen?');
-    const optionen = [...(auswahl as HTMLSelectElement).options].map((o) => o.textContent);
-    expect(optionen).toContain('Einwilligung widerrufen: Kontakt per E-Mail');
-    expect(optionen).not.toContain('Einwilligung erteilt: Kontakt per E-Mail');
-    expect(optionen).toContain('Einwilligung erteilt: Bericht an die verordnende Praxis');
-    expect(screen.getByText('Erteilt am 01.09.2026')).toBeInTheDocument();
+    const user = userEvent.setup();
+    expect(await screen.findByText('Erteilt am 01.09.2026')).toBeInTheDocument();
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    expect(
+      within(fenster).getByRole('radio', { name: 'Einwilligung widerrufen' }),
+    ).toBeInTheDocument();
+    expect(within(fenster).queryByRole('radio', { name: 'Einwilligung erteilt' })).toBeNull();
   });
 
   // PAT-04: Beim Öffnen ist nichts gewählt - ein Tipp auf „Vermerken" schrieb
   // vorher eine Angabe, die sich nie mehr ändern lässt.
-  it('belegt nichts vor und sperrt das Vermerken bis zur Wahl', async () => {
+  it('belegt nichts vor und sperrt das Speichern bis zur Wahl', async () => {
     const user = userEvent.setup();
     seite();
 
-    const auswahl = await screen.findByLabelText('Was ist geschehen?');
-    expect(auswahl).toHaveValue('');
-    expect(auswahl).toHaveDisplayValue('Bitte wählen …');
-    expect(screen.getByRole('button', { name: 'Vermerken' })).toBeDisabled();
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    for (const radio of within(fenster).getAllByRole('radio')) expect(radio).not.toBeChecked();
+    expect(within(fenster).getByRole('button', { name: 'Speichern' })).toBeDisabled();
 
-    await user.selectOptions(auswahl, 'consent_granted:email_contact');
-    expect(screen.getByRole('button', { name: 'Vermerken' })).toBeEnabled();
+    await user.click(within(fenster).getByRole('radio', { name: 'Einwilligung erteilt' }));
+    expect(within(fenster).getByRole('button', { name: 'Speichern' })).toBeEnabled();
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
   });
 
@@ -125,10 +154,13 @@ describe('Datenschutz der Akte', () => {
     const user = userEvent.setup();
     seite();
 
-    const datum = await screen.findByLabelText('Datum auf dem Papier');
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    const datum = within(fenster).getByLabelText('Datum auf dem Papier');
     await user.clear(datum);
     await user.type(datum, '2026-09-15');
-    const kasten = await waehlenUndFragen(user, 'consent_granted:email_contact');
+    await user.click(within(fenster).getByRole('radio', { name: 'Einwilligung erteilt' }));
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    const kasten = within(fenster).getByRole('group', { name: 'Speichern' });
 
     expect(kasten).toHaveTextContent(
       'Vermerken: Einwilligung erteilt – Kontakt per E-Mail, 15.09.2026. Vermerke lassen sich nicht ändern.',
@@ -137,7 +169,7 @@ describe('Datenschutz der Akte', () => {
 
     // Abbrechen schreibt nichts.
     await user.click(within(kasten).getByRole('button', { name: 'Abbrechen' }));
-    expect(screen.queryByRole('group', { name: 'Vermerken' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: 'Speichern' })).not.toBeInTheDocument();
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
   });
 
@@ -145,10 +177,17 @@ describe('Datenschutz der Akte', () => {
     const user = userEvent.setup();
     seite();
 
-    const datum = await screen.findByLabelText('Datum auf dem Papier');
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    const datum = within(fenster).getByLabelText('Datum auf dem Papier');
     await user.clear(datum);
     await user.type(datum, '2026-09-15');
-    await vermerken(user, 'consent_granted:email_contact');
+    await user.click(within(fenster).getByRole('radio', { name: 'Einwilligung erteilt' }));
+    await user.click(within(fenster).getByRole('button', { name: 'Speichern' }));
+    await user.click(
+      within(within(fenster).getByRole('group', { name: 'Speichern' })).getByRole('button', {
+        name: 'Speichern',
+      }),
+    );
 
     await waitFor(() =>
       expect(vermerkeSpeichern).toHaveBeenCalledWith({
@@ -164,8 +203,8 @@ describe('Datenschutz der Akte', () => {
         element.textContent?.includes('Vermerkt: Einwilligung erteilt.') ?? false,
     });
     expect(meldung).toHaveTextContent('✓');
-    // Danach steht die Auswahl wieder auf „Bitte wählen".
-    expect(screen.getByLabelText('Was ist geschehen?')).toHaveValue('');
+    // Danach ist das Fenster zu - kein zweiter Tipp schreibt denselben Vermerk.
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 
   it('gibt einen Widerruf mit Zweck und ohne Fassung weiter', async () => {
@@ -181,7 +220,7 @@ describe('Datenschutz der Akte', () => {
       },
     ]);
 
-    await vermerken(user, 'consent_withdrawn:prescriber_report');
+    await vermerken(user, 'prescriber_report', 'Einwilligung widerrufen');
 
     await waitFor(() =>
       expect(vermerkeSpeichern).toHaveBeenCalledWith(
@@ -195,7 +234,7 @@ describe('Datenschutz der Akte', () => {
     const user = userEvent.setup();
     const { unmount } = seite();
 
-    await vermerken(user, 'consent_refused:patient_photos');
+    await vermerken(user, 'patient_photos', 'Einwilligung abgelehnt');
     await waitFor(() =>
       expect(vermerkeSpeichern).toHaveBeenCalledWith(
         expect.objectContaining({ art: 'consent_refused', zweck: 'patient_photos' }),
@@ -214,10 +253,11 @@ describe('Datenschutz der Akte', () => {
       },
     ]);
     expect(await screen.findByText('Abgelehnt am 01.09.2026')).toBeInTheDocument();
-    const auswahl: HTMLSelectElement = screen.getByLabelText('Was ist geschehen?');
-    const optionen = [...auswahl.options].map((o) => o.value);
-    expect(optionen).not.toContain('consent_refused:patient_photos');
-    expect(optionen).toContain('consent_granted:patient_photos');
+    const fenster = await fensterOeffnen(userEvent.setup(), 'patient_photos');
+    expect(within(fenster).queryByRole('radio', { name: 'Einwilligung abgelehnt' })).toBeNull();
+    expect(
+      within(fenster).getByRole('radio', { name: 'Einwilligung erteilt' }),
+    ).toBeInTheDocument();
   });
 
   it('fragt vor dem Widerruf der Fotoeinwilligung und sagt, dass die Fotos sofort geloescht werden', async () => {
@@ -233,11 +273,9 @@ describe('Datenschutz der Akte', () => {
       },
     ]);
 
-    await user.selectOptions(
-      await screen.findByLabelText('Was ist geschehen?'),
-      'consent_withdrawn:patient_photos',
-    );
-    // Der Hinweis am Feld nennt dieselbe Sache wie die übrige Anwendung und
+    const fenster = await fensterOeffnen(user, 'patient_photos');
+    await user.click(within(fenster).getByRole('radio', { name: 'Einwilligung widerrufen' }));
+    // Der Hinweis im Fenster nennt dieselbe Sache wie die übrige Anwendung und
     // steht im richtigen Numerus (PAT-17, WRT-19).
     const hinweis = screen.getByText(/alle Fotos dieser Person sofort gelöscht/);
     expect(hinweis).toHaveTextContent('außer eine Löschsperre hält sie');
@@ -264,13 +302,13 @@ describe('Datenschutz der Akte', () => {
     vermerkeSpeichern.mockRejectedValue(new Error('Das Datum darf nicht in der Zukunft liegen.'));
     seite();
 
-    const kasten = await vermerken(user, 'consent_granted:email_contact');
+    const kasten = await vermerken(user, 'email_contact', 'Einwilligung erteilt');
 
     expect(await within(kasten).findByRole('alert')).toHaveTextContent(
       'Das Datum darf nicht in der Zukunft liegen.',
     );
     // Der Kasten bleibt offen, nichts ist vermerkt.
-    expect(screen.getByRole('group', { name: 'Vermerken' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Speichern' })).toBeInTheDocument();
     expect(screen.queryByText(/^Vermerkt:/)).not.toBeInTheDocument();
   });
 
@@ -287,7 +325,28 @@ describe('Datenschutz der Akte', () => {
     expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
-    expect(await screen.findByLabelText('Was ist geschehen?')).toBeInTheDocument();
+    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(3);
+  });
+
+  it('klappt den Verlauf mit Anzahl ein und zeigt die Beschreibung erst im Fenster', async () => {
+    const user = userEvent.setup();
+    seite([
+      {
+        id: 'v1',
+        record_kind: 'consent_granted',
+        purpose: 'email_contact',
+        notice_version: null,
+        occurred_on: '2026-09-01',
+        recorded_at: '2026-09-01T08:00:00Z',
+      },
+    ]);
+
+    const verlauf = (await screen.findByText('Verlauf (1)')).closest('details')!;
+    expect(verlauf).not.toHaveAttribute('open');
+    expect(screen.queryByText(/nach Hinweis auf das Risiko/)).toBeNull();
+
+    const fenster = await fensterOeffnen(user, 'email_contact');
+    expect(within(fenster).getByText(/nach Hinweis auf das Risiko/)).toBeInTheDocument();
   });
 
   it('besteht die Barrierefreiheitspruefung', async () => {

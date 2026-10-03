@@ -193,6 +193,7 @@ describe('Stammdaten der Akte', () => {
         expect(screen.queryByText('Behandlungsvertrag')).toBeNull();
         const einwilligungen = await screen.findByRole('heading', { name: 'Einwilligungen' });
         expect(einwilligungen.closest('#anmeldebogen')).toBeNull();
+        expect(einwilligungen.closest('#einwilligungen')).not.toBeNull();
       },
     );
 

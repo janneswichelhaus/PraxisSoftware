@@ -86,9 +86,11 @@ for (const [breite, nebeneinander] of [
     const kontakt = (await page.getByRole('heading', { name: 'Kontakt' }).boundingBox())!;
     const hausbesuch = (await page.getByRole('heading', { name: 'Hausbesuch' }).boundingBox())!;
     if (nebeneinander) {
-      // Kontakt und Hausbesuch in derselben Reihe, Kanten auf einer Höhe.
-      expect(Math.abs(kontakt.y - hausbesuch.y)).toBeLessThan(2);
-      expect(hausbesuch.x).toBeGreaterThan(kontakt.x + 300);
+      // Person und Kontakt in derselben Reihe, Kanten auf einer Höhe; der
+      // Hausbesuch beginnt die nächste.
+      expect(Math.abs(person.y - kontakt.y)).toBeLessThan(2);
+      expect(kontakt.x).toBeGreaterThan(person.x + 300);
+      expect(hausbesuch.y).toBeGreaterThan(person.y);
     } else {
       expect(kontakt.y).toBeGreaterThan(person.y);
       expect(Math.abs(kontakt.x - person.x)).toBeLessThan(2);

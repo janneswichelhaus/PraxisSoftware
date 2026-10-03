@@ -434,6 +434,15 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           </div>
         ) : null}
 
+        {/* Die Einwilligungen (Mail, Bericht, Fotos) neben dem Anmeldebogen,
+            auf dem sie angekreuzt werden. Die Fotoeinwilligung schaltet
+            serverseitig die Foto-Arbeitshilfe frei (ADR-017 Punkt 35). */}
+        {darfVerorten ? (
+          <div id={EINWILLIGUNGEN_ANKER} className="scroll-mt-4">
+            <Datenschutz patient={patient} user={user} />
+          </div>
+        ) : null}
+
         <Karte titel="Person" bearbeiten={bearbeiten}>
           <DetailList schmal>
             <DetailRow label="Name">
@@ -550,15 +559,6 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           <Zusammenfuehrungsvermerke patientId={patient.id} zeitzone={user.organizationTimeZone} />
         </Karte>
       </div>
-
-      {/* Die Einwilligungen (Mail, Bericht, Fotos) bleiben ein eigener
-          Abschnitt: Die Fotoeinwilligung schaltet serverseitig die
-          Foto-Arbeitshilfe frei (ADR-017 Punkt 35). */}
-      {darfVerorten ? (
-        <div id={EINWILLIGUNGEN_ANKER} className="mt-10 scroll-mt-4">
-          <Datenschutz patient={patient} user={user} />
-        </div>
-      ) : null}
 
       <SonstigeDateien patientId={patient.id} user={user} />
 
