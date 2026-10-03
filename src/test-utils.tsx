@@ -218,6 +218,8 @@ export function testStaffMember(overrides: Partial<StaffMember> = {}): StaffMemb
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
     ...overrides,
   };
 }

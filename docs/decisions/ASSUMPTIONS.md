@@ -2713,3 +2713,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Übersicht · Tag
 
 **Änderungspfad.** Direkt auf die Schreibseite: das Ziel `doku` in `MyDayPage.tsx` · Aufwand `klein`. In der Akte schreiben: ein Formular in `DieserTermin` mit eigenem Verlustschutz · Aufwand `mittel`.
 
+### ANN-226 — Im Kalender steht, wen owner dort hinnimmt – auch ohne eigenen Zugang
+
+Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Kalender ohne Zugang) · erledigt · Wiedervorlage: wenn owner Zugänge selbst anlegen soll (Edge Function nach ADR-023 Punkt 9, nach OPS-001)
+
+**Annahme.** Eine Person ist für Behandlungen zuordenbar, wenn sie aktiv beschäftigt ist **und** entweder owner sie in den Kalender genommen hat (`staff_members.schedulable_treatment`) **oder** sie – wie bisher – einen aktiven Zugang mit der Rolle Therapeut:in oder Teamleitung hat; für Personal Training ebenso mit `schedulable_training` oder der Rolle trainer. Das Merkmal setzt allein owner, auf der Detailseite der Person unter „Kalender“; jede Änderung steht als `staff_member.updated` mit den Feldnamen im Protokoll. Dabei entsteht weder ein Zugang noch ein Kennwort noch eine Rolle: Anmelden kann sich die Person weiterhin nur über die Einladung (ANN-025). Wer im Kalender steht, aber keinen Zugang hat, bekommt Termine; dokumentieren und abschließen tun dann andere.
+
+**Begründung.** Jannes (2026-10-03): Neu angelegte Therapeut:innen sollen sofort im Kalender stehen, ohne ihren Zugang selbst zu aktivieren. Ein Zugang, den owner samt Kennwort anlegt, bräuchte einen Admin-Schlüssel am Server und weichte die Bestätigung der E-Mail-Adresse auf – das hat Jannes verworfen. Der zweite Weg ergänzt den ersten, statt ihn zu ersetzen; bestehende Konten und Tests bleiben unberührt. Unsicher: ob ein Zugang mit Behandlungsrolle die Person künftig auch automatisch in den Kalender nehmen soll, ohne dass owner das Merkmal setzt – heute tut er das über den bisherigen Weg ohnehin.
+
+**Anker.** `app.is_assignable_therapist`, `app.is_assignable_trainer`, `set_staff_member_schedulable` in `supabase/migrations/20261005090000_akte_009_kalender_ohne_zugang.sql`; `StaffCalendarSection` in `src/features/staff/StaffCalendarSection.tsx`; Tests `supabase/tests/staff-schedulable.test.ts`.
+
+**Änderungspfad.** Kalender nur noch über das Merkmal (der Zugang reicht nicht mehr): den zweiten Zweig in beiden Prädikaten streichen und das Merkmal aus den bestehenden Konten befüllen · Aufwand `mittel`. Auch office darf das Merkmal setzen: `app.can_manage_staff_master_data` statt `app.can_manage_staff_accounts` · Aufwand `klein`.
+

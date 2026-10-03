@@ -159,12 +159,46 @@ describe('Test-Umgebung neu aufsetzen (OPS-002a)', () => {
     expect(tage.size).toBeGreaterThanOrEqual(4);
     expect(tage.size).toBeLessThanOrEqual(5);
     expect([...tage].some((tag) => tag > heute)).toBe(true);
-    expect(termine).toHaveLength(tage.size * 4);
+    // Vier Termine mit den Seed-Personen, zehn mit den Testpatient:innen
+    // aus testpatienten.sql (AKTE-009).
+    expect(termine).toHaveLength(tage.size * 14);
     expect(termine.every((termin) => termin.wochentag >= 1 && termin.wochentag <= 5)).toBe(true);
 
     for (const termin of termine) {
       expect(termin.status).toBe(termin.tag < heute ? 'completed' : 'confirmed');
     }
+  });
+
+  // AKTE-009: zwölf zusätzliche, verschiedene Testpatient:innen - nur in der
+  // Test-Umgebung, der lokale Seed behält seine drei.
+  it('legt die zusätzlichen Testpatient:innen an - synthetisch, mit Anmeldebogen teils offen', async () => {
+    expect(neuAufsetzen(KENNWORT).status).toBe(0);
+    const { rows } = await asPostgres<{ anzahl: string; aktiv: string }>(
+      `select count(*) as anzahl, count(*) filter (where status = 'active') as aktiv
+         from public.patients where id::text like '66666666-6666-4666-8666-0000000001%'`,
+    );
+    expect(rows[0]).toEqual({ anzahl: '12', aktiv: '11' });
+
+    // Die Erstaufnahme: der Anmeldebogen ist bei manchen offen, bei manchen da.
+    const offen = await asUser<{ patient_id: string; open_items: string[] }>(
+      SEED.users.office,
+      'select patient_id, open_items from public.list_open_intakes()',
+    );
+    const mitAnmeldebogenOffen = offen.rows.filter(
+      (r) =>
+        r.patient_id.startsWith('66666666-6666-4666-8666-0000000001') &&
+        r.open_items.includes('registration_form'),
+    );
+    expect(mitAnmeldebogenOffen.length).toBeGreaterThan(0);
+    expect(mitAnmeldebogenOffen.length).toBeLessThan(11);
+
+    // Jede Diagnose ist als synthetisch gekennzeichnet.
+    const { rows: diagnosen } = await asPostgres<{ diagnosis: string }>(
+      `select diagnosis from public.treatment_bases
+        where id::text like '88888888-8888-4888-8888-0000000001%' and diagnosis is not null`,
+    );
+    expect(diagnosen.length).toBeGreaterThan(0);
+    expect(diagnosen.every((d) => d.diagnosis.startsWith('Synthetisch:'))).toBe(true);
   });
 
   it('ein zweiter Lauf erzeugt dieselbe Woche, keine doppelten Termine', async () => {

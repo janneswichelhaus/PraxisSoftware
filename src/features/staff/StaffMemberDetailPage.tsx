@@ -32,6 +32,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { StaffAccountSection } from './StaffAccountSection';
+import { StaffCalendarSection } from './StaffCalendarSection';
 import { StaffCompensationSection } from './StaffCompensationSection';
 import {
   fetchStaffFutureAppointments,
@@ -320,6 +321,10 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           </DetailList>
         </Section>
       ) : null}
+
+      {/* AKTE-009: in den Kalender nehmen, ohne dass die Person ihren Zugang
+          selbst einrichtet (ANN-226). Allein owner, wie der Zugang. */}
+      {isOwner(user.roles) ? <StaffCalendarSection staff={staff} /> : null}
 
       {darfZugang ? <StaffAccountSection staff={staff} /> : null}
 

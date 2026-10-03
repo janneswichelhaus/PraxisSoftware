@@ -36,6 +36,8 @@ const personen: StaffApi.StaffMember[] = [
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
   },
   {
     id: OLIVIA,
@@ -53,6 +55,8 @@ const personen: StaffApi.StaffMember[] = [
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
   },
   {
     id: '55555555-5555-4555-8555-000000000009',
@@ -70,6 +74,8 @@ const personen: StaffApi.StaffMember[] = [
     street: null,
     postal_code: null,
     city: null,
+    schedulable_treatment: false,
+    schedulable_training: false,
   },
 ];
 
