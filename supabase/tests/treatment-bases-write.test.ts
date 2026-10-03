@@ -381,9 +381,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     expect(rows[0]?.args ?? '').not.toMatch(/organization/i);
   });
 
-  it('liefert get_treatment_basis allen Praxisrollen und protokolliert je Zugriff (E15)', async () => {
+  it('liefert get_treatment_basis allen Praxisrollen und protokolliert das Öffnen der Akte (E15)', async () => {
     const id = await anlegen(users.therapist);
-    await asPostgres("delete from public.audit_log where subject_type = 'treatment_basis'");
+    await asPostgres('delete from public.audit_log');
 
     // ADR-004 Fassung 2 Punkt 3: office liest die Verordnung samt Diagnose -
     // anlegen, aendern und loeschen darf es weiterhin nicht (ANN-011, oben).
@@ -395,10 +395,12 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       expect(rows[0]?.patient_id).toBe(patients.max);
     }
 
-    const { rows: audit } = await asPostgres<{ actor_user_id: string }>(
-      `select actor_user_id from public.audit_log where action = 'treatment_basis.viewed'`,
+    // LOG-EPIC-001: je Person einmal am Tag "Akte geöffnet", Gegenstand die Akte.
+    const { rows: audit } = await asPostgres<{ actor_user_id: string; subject_id: string }>(
+      `select actor_user_id, subject_id from public.audit_log where action = 'patient_record.viewed'`,
     );
     expect(audit.map((a) => a.actor_user_id).sort()).toEqual([users.teamLead, users.office].sort());
+    expect(audit.every((a) => a.subject_id === patients.max)).toBe(true);
 
     // G6a: kein Ergebnis, aber ein denied-Eintrag, der die Abweisung überlebt.
     await erwarteAbgewiesenenLeseversuch(users.patientMax, HOLEN, [id], 'treatment_basis.viewed');
@@ -412,7 +414,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
     // abgewiesenen Versuch eines Patientenkontos (G6a).
     const { rows: audit } = await asPostgres(
       `select id from public.audit_log
-       where action = 'treatment_basis.viewed' and actor_user_id = $1`,
+       where action = 'patient_record.viewed' and actor_user_id = $1`,
       [users.therapist],
     );
     expect(audit).toEqual([]);
@@ -807,9 +809,9 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
       expect(zurueck[0]?.prescriber_id).toBe(HAUSARZT);
     });
 
-    it('haelt die alten Auditwerte weiter im Wertebereich (ADR-010, ADR-020 Punkt 8)', async () => {
-      // Auditzeilen werden niemals umgeschrieben. Was vor GRD-001 entstanden
-      // ist, muss auch danach noch einfuegbar und damit lesbar sein.
+    it('laesst die entfernten Verordnungswerte nicht mehr zu (LOG-EPIC-001)', async () => {
+      // Seit LOG-EPIC-001 ist der Katalog abschliessend (ADR-010 Fassung 3);
+      // die toten Werte aus der Zeit vor GRD-001 sind entfernt.
       await expect(
         asPostgres(
           `insert into public.audit_log
@@ -817,7 +819,7 @@ describe('VER-003: Verordnung anlegen, aendern und loeschen', () => {
            values ($1, $2, 'prescription.viewed', 'prescription', $3, 'success')`,
           [SEED.organizationId, users.therapist, patients.max],
         ),
-      ).resolves.toBeDefined();
+      ).rejects.toThrow(/audit_log_action_check/);
     });
   });
 });
@@ -911,7 +913,7 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
   });
 
   it('endet auch fuer die klinische Sicht von office an der eigenen Praxis (E15)', async () => {
-    await asPostgres("delete from public.audit_log where action = 'treatment_basis.viewed'");
+    await asPostgres('delete from public.audit_log');
 
     const { rows: liste } = await asUserCommitted(users.office, KLINISCH, [fremderPatient]);
     expect(liste).toEqual([]);
@@ -920,7 +922,7 @@ describe('VER-003: Mandantentrennung (ADR-003)', () => {
 
     // Nichts gelesen, nichts protokolliert.
     const { rows: audit } = await asPostgres(
-      "select id from public.audit_log where action = 'treatment_basis.viewed'",
+      "select id from public.audit_log where action = 'patient_record.viewed'",
     );
     expect(audit).toEqual([]);
   });

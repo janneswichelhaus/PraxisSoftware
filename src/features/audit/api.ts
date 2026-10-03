@@ -20,6 +20,9 @@ const auditEventSchema = z.object({
   subject_type: z.string(),
   subject_id: z.string().nullable(),
   outcome: z.string(),
+  /** Nur bei `access.denied`: die abgewiesene Operation und wie oft binnen zehn Minuten. */
+  denied_operation: z.string().nullable().optional(),
+  denied_count: z.number().nullable().optional(),
   total_count: z.union([z.number(), z.string()]).transform(Number),
 });
 

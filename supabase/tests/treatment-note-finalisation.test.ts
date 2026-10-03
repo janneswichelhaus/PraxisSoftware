@@ -511,21 +511,18 @@ describe('DOK-002: Lesen von Eintrag und Verlauf', () => {
     expect(rows[1]?.version_count).toBe(0);
   });
 
-  it('protokolliert je gelesenem Eintrag einen Zugriff (ADR-010)', async () => {
+  it('protokolliert das Lesen von Eintrag und Nachtrag als ein Öffnen der Akte (ADR-010)', async () => {
     const f = await finalisiert();
     const eltern = await dokuZeile(f.id);
-    const { rows: nachtrag } = await asUserCommitted<{ id: string }>(users.therapist, NACHTRAGEN, [
-      f.id,
-      NACHTRAG,
-    ]);
+    await asUserCommitted(users.therapist, NACHTRAGEN, [f.id, NACHTRAG]);
 
-    const vorher = (await auditEintraege('treatment_note.viewed')).length;
     await asUserCommitted(users.ownerTherapist, LESEN, [eltern?.appointment_id]);
-    const nachher = await auditEintraege('treatment_note.viewed');
-
-    expect(nachher.length - vorher).toBe(2);
-    const eigene = nachher.filter((a) => a.actor_user_id === users.ownerTherapist);
-    expect(eigene.map((a) => a.subject_id).sort()).toEqual([f.id, nachtrag[0]!.id].sort());
+    const eigene = (await auditEintraege('patient_record.viewed')).filter(
+      (a) => a.actor_user_id === users.ownerTherapist,
+    );
+    // LOG-EPIC-001: einmal je Person, Akte und Tag, nicht je Eintrag.
+    expect(eigene).toHaveLength(1);
+    expect(await auditEintraege('treatment_note.viewed')).toEqual([]);
   });
 
   it('liefert den Verlauf mit Inhalt, Begruendung und Urheber je Version', async () => {

@@ -33,13 +33,15 @@ async function datei(art: string, mime: string): Promise<string> {
   return d.file_id;
 }
 
-async function protokoll(fileId: string): Promise<unknown[]> {
-  const { rows } = await asPostgres<{ download: unknown }>(
-    `select context -> 'download' as download from public.audit_log
-      where action = 'patient_file.link_issued' and subject_id = $1 order by occurred_at`,
+/** Die protokollierten Downloads einer Datei; das Anzeigen steht nicht im Protokoll (LOG-EPIC-001). */
+async function protokoll(fileId: string): Promise<string[]> {
+  const { rows } = await asPostgres<{ action: string }>(
+    `select action from public.audit_log
+      where subject_id = $1 and action like 'patient_file.%' and action <> 'patient_file.uploaded'
+      order by occurred_at`,
     [fileId],
   );
-  return rows.map((r) => r.download);
+  return rows.map((r) => r.action);
 }
 
 describe('Öffnen und Herunterladen (ABN-027)', () => {
@@ -54,7 +56,7 @@ describe('Öffnen und Herunterladen (ABN-027)', () => {
     await asPostgres("delete from public.audit_log where action like 'patient_file.%'");
   });
 
-  it('protokolliert Anzeigen und Herunterladen unterscheidbar (Punkt 55)', async () => {
+  it('protokolliert nur das Herunterladen, nicht das Anzeigen (Punkt 55, LOG-EPIC-001)', async () => {
     const id = await datei('arztbrief', 'application/pdf');
     await asUserCommitted(
       users.therapist,
@@ -66,7 +68,7 @@ describe('Öffnen und Herunterladen (ABN-027)', () => {
       'select * from public.issue_patient_file_link($1::uuid, true)',
       [id],
     );
-    expect(await protokoll(id)).toEqual([false, true]);
+    expect(await protokoll(id)).toEqual(['patient_file.downloaded']);
   });
 
   it('gibt ein Dokumentationsfoto nicht zum Herunterladen heraus, nur zum Anzeigen', async () => {

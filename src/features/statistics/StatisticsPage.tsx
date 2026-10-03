@@ -85,7 +85,7 @@ function Praxisstatistik() {
     <>
       <PageHeader
         title="Statistiken"
-        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt –, darunter der Verlauf. Umsatz je Person sehen nur du und die Person selbst bei Umsatzbeteiligung; jeder Blick darauf steht im Protokoll."
+        description="Fünf Zahlen für die Praxisführung – jede mit Ziel und dem nächsten Schritt –, darunter der Verlauf. Umsatz je Person sehen nur du und die Person selbst bei Umsatzbeteiligung."
         actions={
           k && ziele.data ? (
             <Button variant="secondary" onClick={() => sichereCsv(k, ziele.data)} type="button">
@@ -462,7 +462,7 @@ function Verlauf({ monat, heute }: { monat: string | null; heute: string }) {
         {!personenZeigen && !jePerson.data ? (
           <div>
             <p className="text-ink-muted mb-3 max-w-prose text-sm">
-              Umsatz je Person sind Beschäftigtendaten. Jeder Abruf steht im Protokoll.
+              Umsatz je Person sind Beschäftigtendaten.
             </p>
             <Button type="button" variant="secondary" onClick={() => setPersonenZeigen(true)}>
               Umsatz je Person anzeigen

@@ -159,11 +159,11 @@ describe('AuditLogPage', () => {
     await screen.findByText('Keine Einträge im gewählten Zeitraum');
 
     await user.selectOptions(await screen.findByLabelText('Person'), 'u-2');
-    await user.selectOptions(screen.getByLabelText('Aktion'), 'audit_log.read');
+    await user.selectOptions(screen.getByLabelText('Aktion'), 'access.denied');
 
     await waitFor(() => {
       expect(fetchAuditEvents).toHaveBeenLastCalledWith(
-        expect.objectContaining({ actorUserId: 'u-2', action: 'audit_log.read', page: 0 }),
+        expect.objectContaining({ actorUserId: 'u-2', action: 'access.denied', page: 0 }),
       );
     });
   });

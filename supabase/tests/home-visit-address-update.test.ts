@@ -178,7 +178,7 @@ describe('Hausbesuche mit alter Adresse (ABN-004)', () => {
     );
 
     const abgewiesen = await asPostgres<{ anzahl: string }>(
-      "select count(*) as anzahl from public.audit_log where action = 'appointments.read' and outcome = 'denied'",
+      "select count(*) as anzahl from public.audit_log where action = 'access.denied' and context ->> 'operation' = 'appointments.read' and outcome = 'denied'",
     );
     expect(Number(abgewiesen.rows[0]!.anzahl)).toBeGreaterThanOrEqual(2);
     expect(organizationId).toBeTruthy();

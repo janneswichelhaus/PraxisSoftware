@@ -417,24 +417,24 @@ selbst, weil sie RLS umgehen.
 Für die Behandlungsdokumentation gilt zusätzlich: `public.treatment_notes` und
 `public.treatment_note_versions` haben **kein** `SELECT`-Recht und keine Policy.
 Gelesen wird ausschließlich über `get_treatment_note` und
-`get_treatment_note_versions`, und beide Funktionen schreiben ihren Eintrag —
-`treatment_note.viewed` beziehungsweise `treatment_note.history_viewed` — in
-derselben Transaktion. Damit gibt es keinen Weg, klinischen Freitext ohne
-Protokolleintrag zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
+`get_treatment_note_versions`, und beide Funktionen schreiben in derselben
+Transaktion „Akte geöffnet“ (`patient_record.viewed`, höchstens einmal je
+Person, Akte und Kalendertag über `app.log_record_access`, LOG-EPIC-001,
+ANN-230). Damit gibt es keinen Weg, klinischen Freitext ohne Protokolleintrag
+zu lesen (ADR-010). Die Begründung einer Korrektur zählt dabei
 wie Inhalt: sie steht in der Versionstabelle, niemals im Auditlog.
 
 In der Akte gilt dasselbe Muster (DOK-003, ROL-001):
 `list_patient_treatment_notes` liefert allen vier Praxisrollen — seit E15 auch
-`office` — die Einträge aller Termine eines Patienten und protokolliert **je
-Eintrag** `treatment_note.viewed`; das Öffnen der Akte steht zusätzlich als
-`patient_record.viewed`. Der Behandlungsnachweis
+`office` — die Einträge aller Termine eines Patienten und protokolliert
+dasselbe „Akte geöffnet“, einmal am Tag statt je Eintrag. Der Behandlungsnachweis
 `list_patient_treatment_evidence` bleibt als Rechnungssicht ohne klinischen
 Inhalt und ohne eigenen Auditeintrag bestehen (ADR-004 Fassung 2 Punkt 4); die
 Akte fragt ihn nicht mehr an. Beide Sichten blättern über dieselbe Seitenregel
 `app.patient_record_page` mit höchstens 50 Terminen je Aufruf. Verordnung mit
-Diagnose (`prescription.viewed`) und klinische Dateien
-(`patient_file.link_issued`) liest `office` seit ROL-002 ebenso; die
-Schreibrechte sind unverändert.
+Diagnose und klinische Dateien liest `office` seit ROL-002 ebenso; protokolliert
+werden das Öffnen der Akte und das Herunterladen einer Datei
+(`patient_file.downloaded`). Die Schreibrechte sind unverändert.
 
 Seit DOK-004 kennt das Auditlog einen **Systemakteur**: Ereignisse eines
 zeitgesteuerten Vorgangs — heute die automatische Finalisierung — tragen

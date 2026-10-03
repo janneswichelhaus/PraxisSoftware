@@ -230,8 +230,8 @@ function Editor({
       </form>
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
-        Der Entwurf wird auf dem Server gespeichert, nicht auf diesem Gerät. Anlegen, Ändern und
-        Lesen werden protokolliert.
+        Der Entwurf wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
+        wird protokolliert.
       </p>
     </>
   );

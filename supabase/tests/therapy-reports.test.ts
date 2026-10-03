@@ -316,7 +316,6 @@ describe('Therapiebericht', () => {
       expect.arrayContaining([
         'therapy_report.created',
         'therapy_report.updated',
-        'therapy_report.viewed',
         'therapy_report.exported',
         'therapy_report.discarded',
       ]),
@@ -327,7 +326,7 @@ describe('Therapiebericht', () => {
     }
   });
 
-  it('protokolliert die Auswahlquellen je Eintrag und Erhebung', async () => {
+  it('protokolliert das Lesen der Auswahlquellen als Öffnen der Akte', async () => {
     const eintrag = await eintragAnlegen('Synthetisch: Quelle.', 4);
     const anderer = await eintragAnlegen('Synthetisch: ohne Verordnung.', 6, 'final', null);
     const koerper = await koerperschemaAnlegen();
@@ -346,9 +345,11 @@ describe('Therapiebericht', () => {
     );
     const { rows: protokoll } = await asPostgres<{ action: string; subject_id: string }>(
       `select action, subject_id from public.audit_log
-        where action in ('treatment_note.viewed', 'questionnaire_response.viewed') and outcome = 'success'`,
+        where action = 'patient_record.viewed' and actor_user_id = $1`,
+      [users.therapist],
     );
-    expect(protokoll.map((p) => p.subject_id).sort()).toEqual([eintrag, anderer, koerper].sort());
+    // LOG-EPIC-001: einmal je Person, Akte und Tag statt je Quelle.
+    expect(protokoll).toEqual([{ action: 'patient_record.viewed', subject_id: patients.max }]);
   });
 
   it('lässt office lesen und drucken, aber nicht schreiben', async () => {

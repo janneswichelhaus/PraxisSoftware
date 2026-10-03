@@ -449,7 +449,7 @@ function Behandlungsdokumentation({
           vor dem Lesen, nicht danach. */}
       <Section
         titel="Behandlungsdokumentation"
-        hinweis="Jeder gelesene Eintrag wird protokolliert."
+        hinweis="Das Öffnen der Akte wird protokolliert."
         aktion={
           seiten.data && termine.length > 0 ? (
             <span className="text-ink-muted text-sm">

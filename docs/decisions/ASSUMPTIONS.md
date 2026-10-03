@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-02.
+Zuletzt aktualisiert: 2026-10-03.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -2762,3 +2762,15 @@ Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: 
 **Anker.** Der Schalter `app.invoice_shows_diagnosis()` in `supabase/migrations/20261005120000_rechnung_diagnose.sql`; Anzeige `diagnoseText` in `src/features/billing/anzeige.ts`; Tests in `supabase/tests/invoice-diagnosis.test.ts` und `src/features/billing/InvoicePrintPage.test.tsx`.
 
 **Änderungspfad.** Diagnose wieder weg: der Schalter liefert `false` (neue Migration) · Aufwand `klein`. Nur bei Empfänger:in „selbst“ oder Kasse: Bedingung im Schalter um die Rechnung erweitern · Aufwand `mittel`.
+
+### ANN-230 — Protokollierung auf das Mindestmaß: Lesen je Akte und Tag, eine Aktion je Abweisung
+
+Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (LOG-EPIC-001, Freigabe) · Prüfpaket · Wiedervorlage: Nachzug in ADR-010, ADR-016 und PROJECT_PRINCIPLES (LOG-EPIC-001, PR d)
+
+**Annahme.** Leitprinzip: Das Datenmodell ist die Nachweisführung; das Auditlog hält nur, was es nicht abbildet. PR (a): „Akte geöffnet“ (`patient_record.viewed`, `training_relationship.viewed`) steht höchstens einmal je Person, Akte und Kalendertag der Praxis, auch beim Lesen über eine Vertretung; jeder Lesepfad auf klinische Inhalte schreibt nur noch diesen Eintrag statt eines `*.viewed` je Datensatz. Eine Datei steht nur beim Herunterladen im Protokoll (`patient_file.downloaded`). Jede Abweisung ist `access.denied` mit `context.operation`; gleichartige (Person, Operation) binnen zehn Minuten fasst ein Zähler zusammen. Das Lesen des Protokolls und des Umsatzes je Person wird nicht protokolliert.
+
+**Begründung.** Kleine Praxis, wenige Rollen, Lesen des Protokolls nur durch owner, unveränderliche Akte mit `created_by`, `finalized_by` und Versionen als Nachweis: Wer an welchem Tag in welcher Akte war, genügt für Art. 5, 15 und 32 DSGVO; die Zeile je Datensatz erzeugte hunderte Einträge am Tag ohne Mehrwert. Bis PR (d) widerspricht das dem Wortlaut von ADR-010 Punkte 2 und 13, ADR-016 Punkt 9 und PROJECT_PRINCIPLES §4.2 und §8 (§21: hier festgehalten, in PR d aufgelöst). Unsicher: ob die Prüfung eine feinere Körnung als den Tag verlangt.
+
+**Anker.** `app.log_record_access` und `app.record_denied_read` in `supabase/migrations/20261006100000_log_001a_protokoll_lesen.sql`; die Lesepfade in `supabase/migrations/20261006100100_log_001a_lesepfade.sql`; Katalog `src/features/audit/actions.ts`; Tests in `supabase/tests/audit-protokoll-lesen.test.ts`.
+
+**Änderungspfad.** Feinere Körnung: Tagesgrenze im Helfer durch Stunde ersetzen · Aufwand `klein`. Zurück zu je Datensatz: die Lesepfade wieder einzeln schreiben lassen · Aufwand `groß`.

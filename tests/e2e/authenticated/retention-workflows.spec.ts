@@ -254,10 +254,12 @@ test.describe('LOE-002a: Der Löschlauf ist kein Anwendungsvorgang', () => {
     // Und der Versuch ist über die API hinweg tatsächlich bestätigt worden:
     // owner sieht ihn im Auditlog als abgewiesen.
     const protokoll = await rpcAufrufen(request, ownerToken, 'list_audit_events', {
-      p_action: 'deletion_runs.read',
+      p_action: 'access.denied',
     });
     expect(protokoll.status(), 'Auditlog für owner').toBe(200);
-    const eintraege = (await protokoll.json()) as { outcome: string }[];
+    const eintraege = (
+      (await protokoll.json()) as { outcome: string; denied_operation: string | null }[]
+    ).filter((eintrag) => eintrag.denied_operation === 'deletion_runs.read');
     expect(eintraege.length, 'abgewiesener Versuch im Auditlog').toBeGreaterThan(0);
     expect(eintraege.every((eintrag) => eintrag.outcome === 'denied')).toBe(true);
   });

@@ -163,7 +163,7 @@ export function VerlaufAbschnitt({
 
 /**
  * „Entfernte Ereignisse" (ABN-013, BEF-102): zugeklappt, und geladen erst beim
- * Aufklappen - jeder gelesene Eintrag wird protokolliert.
+ * Aufklappen - das Lesen protokolliert das Öffnen der Akte.
  */
 function EntfernteEreignisse({
   patientId,

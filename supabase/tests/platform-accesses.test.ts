@@ -496,7 +496,7 @@ describe('Plattformzugang: Abschnitt "Plattform" und Mail (Punkte 6, 10, 11)', (
     const { rows } = await asUserCommitted(users.trainer, ZUSTAND, ['treatment', patients.erika]);
     expect(rows).toEqual([]);
     const denied = await asPostgres(
-      `select 1 from public.audit_log where action = 'platform_accesses.read' and outcome = 'denied' and actor_user_id = $1`,
+      `select 1 from public.audit_log where action = 'access.denied' and context ->> 'operation' = 'platform_accesses.read' and outcome = 'denied' and actor_user_id = $1`,
       [users.trainer],
     );
     expect(denied.rows).toHaveLength(1);

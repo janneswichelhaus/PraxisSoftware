@@ -171,7 +171,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       expect(fetchPatientTreatmentNotesPage).toHaveBeenCalledWith(PATIENT_ID, null);
       expect(screen.queryByText(/werden je Eintrag protokolliert/)).not.toBeInTheDocument();
       // Der eine Satz vor dem Lesen bleibt (Design-Handoff 2026-10-01, Abschnitt 1).
-      expect(screen.getByText('Jeder gelesene Eintrag wird protokolliert.')).toBeInTheDocument();
+      expect(screen.getByText('Das Öffnen der Akte wird protokolliert.')).toBeInTheDocument();
     },
   );
 

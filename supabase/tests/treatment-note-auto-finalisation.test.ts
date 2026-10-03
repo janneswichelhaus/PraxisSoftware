@@ -490,14 +490,14 @@ describe('DOK-004: Systemakteur im Auditlog', () => {
     await expect(
       asPostgres(
         `insert into public.audit_log (organization_id, actor_user_id, actor_kind, action, subject_type, subject_id)
-         values ($1, null, 'user', 'audit_log.read', 'organization', $1)`,
+         values ($1, null, 'user', 'organization.bootstrapped', 'organization', $1)`,
         [organizationId],
       ),
     ).rejects.toThrow(/audit_log_actor_consistent/);
     await expect(
       asPostgres(
         `insert into public.audit_log (organization_id, actor_user_id, actor_kind, action, subject_type, subject_id)
-         values ($1, $2, 'system', 'audit_log.read', 'organization', $1)`,
+         values ($1, $2, 'system', 'organization.bootstrapped', 'organization', $1)`,
         [organizationId, users.ownerTherapist],
       ),
     ).rejects.toThrow(/audit_log_actor_consistent/);
