@@ -32,6 +32,8 @@ eine Absage; die Verlegung nennt deshalb, wer sie veranlasst hat. Neu ist
 Nr. 6, der bewusste Verzicht auf eine Gebühr als eigener Vermerk. Umsetzung
 ABN-006. Alles Übrige gilt unverändert.
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-09-11 · Fassung 2: 2026-09-12 · Fassung 3: 2026-09-13 · Fassung 4: 2026-10-02

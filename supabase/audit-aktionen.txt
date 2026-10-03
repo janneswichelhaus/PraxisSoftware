@@ -1,0 +1,35 @@
+# Abschliessender Katalog der Aktionen des Auditlogs (ADR-010 Punkt 16, LOG-EPIC-001).
+#
+# Deckungsgleich mit der Check-Constraint audit_log_action_check und mit
+# AUDIT_ACTIONS in src/features/audit/actions.ts (Tests in
+# scripts/audit-aktionen-check.test.mjs und supabase/tests/audit.test.ts).
+# Aendert sich diese Menge, ist die CI rot - ausser der Pull Request traegt das
+# Label "freigabe-audit", gesetzt vom Inhaber des Repositorys
+# (.github/workflows/audit-katalog.yml). Neue Protokollierung nur mit
+# ADR-010-Aenderung und dieser Freigabe.
+patient_record.viewed
+training_relationship.viewed
+patient_file.downloaded
+patient_record.exported
+therapy_report.exported
+patient_file.handed_out
+platform_representation.read
+platform_access.invited
+platform_access.activated
+platform_access.locked
+platform_access.unlocked
+platform_access.revoked
+staff_account.invited
+staff_account.invitation_revoked
+staff_account.invitation_accepted
+staff_account.roles_changed
+staff_account.locked
+staff_account.unlocked
+staff_account.password_reset_requested
+account.password_changed
+account.sessions_ended
+account.mfa_enrolled
+account.mfa_removed
+organization.bootstrapped
+access.denied
+retention.applied

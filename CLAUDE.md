@@ -91,18 +91,15 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 
 - **`supabase start` ist dort nicht möglich** (Egress-Proxy blockiert Container-Images, 403): kein
   GoTrue, kein E2E hinter der Anmeldung.
-- **`pnpm test:db` läuft trotzdem** (lokales PostgreSQL-Binär, kein Docker) und ist dort das
-  wichtigste Gate — **nicht wegen `supabase start` überspringen.** Der Cluster überlebt einen
-  Werkzeugaufruf nicht zuverlässig: `pnpm db:start`,
+- **`pnpm test:db` läuft trotzdem** (lokales PostgreSQL, kein Docker), das wichtigste Gate — **nicht
+  überspringen.** `pnpm db:start`,
   `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres` und `pnpm test:db` in
   **einem** Aufruf; `ECONNREFUSED 127.0.0.1:54329` ist kein Testfehler.
-- `node_modules` und `PLAYWRIGHT_CHROMIUM_EXECUTABLE` setzt der SessionStart-Hook
-  (`.claude/hooks/session-start.sh`).
+- `node_modules` und `PLAYWRIGHT_CHROMIUM_EXECUTABLE` setzt `.claude/hooks/session-start.sh`.
 
 ## Harte Regeln
 
-- **Keine echten Patientendaten** — nirgends. Nur synthetische Daten. Das gilt auch für
-  Bildschirmfotos aus fremder Software.
+- **Keine echten Patientendaten** — nirgends, auch nicht auf Bildschirmfotos fremder Software.
 - **Keine Produktionscredentials** für Coding- oder KI-Werkzeuge.
 - **Keine Secrets im Repository.** `.env*` außer `.env.example` bleibt ungetrackt.
 - **Autorisierung niemals nur über die UI.** Ausgeblendete Elemente sind keine Zugriffskontrolle.
@@ -110,11 +107,14 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 - **Security-, RLS- und Datenschutztests werden niemals entfernt, deaktiviert oder abgeschwächt, um
   einen Build grün zu bekommen.** Dasselbe gilt für Secret-Scanning und die übrigen CI-Gates. Wenn
   ein Gate nur durch Abschwächung erfüllbar wäre: stoppen und berichten.
-- Keine patientenbezogenen Daten in Logs (ADR-011).
+- **Protokollierung (ADR-010):** Das Datenmodell ist der Nachweis; ins Auditlog nur dessen Liste.
+  Neue Protokollierung nur mit ADR-Änderung und Jannes' Freigabe (Label `freigabe-audit`, nur er).
+  Zweck nur Datenschutz/Sicherheit, nie Leistungs- oder Verhaltenskontrolle. Betriebslogs: ADR-011.
 - **Keine neuen Provider, Frameworks oder wesentlichen Dependencies** ohne fachliche Notwendigkeit
   und Prüfung gegen die ADRs.
 - **Keine ungefragten Refactorings** außerhalb der berührten Module; was nur auffällt, wird
-  vorgeschlagen. Keine Zukunftsfeatures prophylaktisch bauen (ADR-014).
+  vorgeschlagen. Keine Zukunftsfeatures prophylaktisch bauen (ADR-014). Sicherheits- und
+  Compliance-Mechanismen über die Anforderung hinaus nur vorschlagen, nicht ungefragt bauen.
 - **Kein Produktionsdeployment durch Coding-Agenten** (ADR-013), keine Cloud-Ressourcen ohne Auftrag.
 - **Jede Änderung muss durch Tests oder eine andere objektive Verifikation überprüfbar sein.** Keine
   Prüfung als erfolgreich melden, die nicht tatsächlich gelaufen ist. Datenbank- oder

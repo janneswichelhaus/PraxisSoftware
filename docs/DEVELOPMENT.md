@@ -471,8 +471,10 @@ deckungsgleich.
    HTTP 403 über `app.record_denied_write` für Rollen und Konten, Legal Hold und
    Löschaufträge, ohne Eintrag für den Rest (ANN-115). Die echte HTTP-Antwort
    über PostgREST ist nur lokal mit `supabase start` zu sehen.
-7. **Kein monatlicher Audit-Report** (ADR-010 führt ihn als SOLLTE) und keine
-   Auswertung oder Alarmierung.
+7. **Kein Audit-Report und keine Alarmierung** — gewollt: ADR-010 Fassung 3
+   wertet bei Anlass aus. Der Katalog hat 26 Aktionen
+   (`supabase/audit-aktionen.txt`); eine Änderung braucht das Label
+   `freigabe-audit` (LOG-EPIC-001).
 8. **Die Dateiablage ist gebaut, aber nicht produktiv** — vor der ersten
    echten Datei OPS-001 und ein getesteter Sicherungsweg für den
    Objektspeicher ([ADR-017](adr/ADR-017-file-storage.md), OPS-003).
@@ -494,8 +496,11 @@ Diese Einstellungen lassen sich nicht aus dem Code setzen:
   Anzeigenamen „Lint, Typecheck, Tests, Build" (`quality`), „Migrationen und
   RLS-Policies" (`database`), „Secret Scanning und Dependency Audit"
   (`security`), „End-to-End" (`e2e`), „End-to-End hinter der Anmeldung"
-  (`e2e-supabase`); Force Push und Deletions aus; keine Pflicht-Approvals
-  (ADR-013).
+  (`e2e-supabase`) und „Aktionen des Auditlogs unveraendert oder freigegeben"
+  (`audit-katalog.yml`, LOG-EPIC-001); Force Push und Deletions aus; keine
+  Pflicht-Approvals (ADR-013).
+- Das Label `freigabe-audit` anlegen. Es setzt nur Jannes; die Prüfung erkennt
+  die Freigabe nur, wenn der Inhaber des Repositorys es zuletzt gesetzt hat.
 - GitHub Secret Scanning und Push Protection aktivieren.
 - Gemergte Branches automatisch löschen („Automatically delete head
   branches"). „Allow auto-merge" entfällt — auf diesem GitHub-Plan nicht

@@ -9,6 +9,8 @@
 der Abnahme der Annahmen durch den Projektinhaber. Die Punkte 1 bis 21 gelten
 unverändert; Punkt 13 trägt einen Erledigungsvermerk.
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4)

@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.20** |
-| **Änderungsdatum** | **2026-10-02** |
-| Vorversion | 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.21** |
+| **Änderungsdatum** | **2026-10-03** |
+| Vorversion | 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -368,13 +368,18 @@ Ein individuelles Benutzerkonto ist Pflicht.
 
 **Zugriffe auf Patientenakten MÜSSEN auditierbar sein.** Da die bewusste
 Offenheit dieser Rolle die naheliegende technische Beschränkung entfernt, ist
-das Auditlog die tragende Kompensationsmaßnahme und damit
-sicherheitskritisch. Der Katalog auditpflichtiger Ereignisse, die Beschränkung
-auf Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
-Anwendungspfad, die Aufbewahrungsfrist und der monatliche Audit-/Security-Report
-sind in [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md) geregelt.
-Lesen darf das Auditlog in V1 allein der Praxisinhaber, über einen eigenen,
-selbst auditierten Lesepfad (ADR-010). Dieselbe Auditpflicht gilt
+die Nachvollziehbarkeit die tragende Kompensationsmaßnahme und damit
+sicherheitskritisch. **Das Datenmodell ist die Nachweisführung:** Wer was wann
+angelegt, geändert oder finalisiert hat, zeigt die unveränderliche Akte; das
+Auditlog hält nur, was sie nicht abbildet — das Öffnen einer Akte (höchstens
+einmal je Person, Akte und Kalendertag), Herunterladen, Exporte, Zugänge und
+Rechte, abgewiesene Zugriffe. Den abschließenden Katalog, die Beschränkung auf
+Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
+Anwendungspfad und die Fristen regelt
+[ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md); ausgewertet wird
+bei Anlass. Lesen darf das Auditlog in V1 allein der Praxisinhaber, über einen
+eigenen Lesepfad. Protokolle dienen ausschließlich Datenschutz und Sicherheit,
+nie der Leistungs- oder Verhaltenskontrolle (§20). Dieselbe Auditpflicht gilt
 für jeden lesenden Zugriff des Office auf klinische Inhalte (§4.3).
 
 Therapeut:innen dürfen insbesondere:
@@ -410,8 +415,9 @@ Zugriff auf alle klinischen Inhalte einer Patientenakte im selben Umfang wie
 Therapeut:innen: Diagnose und Verordnung einschließlich Scan,
 Behandlungsdokumentation mit Verlauf, Befunde, patientenbezogene Nachrichten.
 Office schreibt keine klinische Dokumentation und keine Befunde. Jeder Zugriff
-ist auditpflichtig wie bei Therapeut:innen (§4.2, ADR-010); das Auditlog ist
-damit auch für diese Rolle die tragende Kompensationsmaßnahme. Die
+ist auditpflichtig wie bei Therapeut:innen (§4.2, ADR-010); die
+Nachvollziehbarkeit ist damit auch für diese Rolle die tragende
+Kompensationsmaßnahme. Die
 datenschutzrechtliche Bewertung dieser Öffnung (Need-to-know, DSFA) gehört in
 die Anfrage B2 ([ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md)).
 
@@ -918,8 +924,9 @@ erreichbar (§4.6).
 Drei Aussagen sind dabei verbindlich:
 
 - **Jeder Zustandswechsel läuft über eine Serverfunktion mit eigener
-  Rollenprüfung und eigenem Auditeintrag.** Es gibt keinen freien
-  Statuswechsel über die Tabelle.
+  Rollenprüfung, die am Termin festhält, wer ihn wann vorgenommen hat**
+  (`cancelled_by`, `completed_by`, `reopened_by` …; ADR-010 Punkt 15). Es gibt
+  keinen freien Statuswechsel über die Tabelle.
 - **Dokumentiert und abgerechnet setzt der Vorgang, dem die Tatsache gehört** —
   die Finalisierung der Dokumentation beziehungsweise die Ausstellung der
   Rechnung, in derselben Transaktion. Damit bekommt §19 seinen technischen

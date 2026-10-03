@@ -57,10 +57,11 @@ Datei gesichert und ausgedruckt oder übergeben.
 Die Kopie nennt am Ende selbst, was sie **nicht** enthält:
 
 - **Inhalt hochgeladener Dateien.** Sie werden auf Verlangen gesondert herausgegeben.
-- **Das Zugriffsprotokoll.** Wer die Akte gelesen hat, ist zugleich ein Datensatz über
-  beschäftigte Personen (Art. 15 Abs. 4 DSGVO, `PROJECT_PRINCIPLES.md` §20). Es wird auf
-  ausdrückliches Verlangen erteilt — von Hand aus dem Auditlog, ohne die Namen der Beschäftigten,
-  wenn kein besonderer Grund dagegen spricht (**ANN-092**).
+- **Namen im Zugriffsprotokoll.** Die Kopie enthält unter „Zugriffe auf die Akte“, wann die
+  Akte geöffnet (einmal je Tag), eine Datei heruntergeladen oder ein Export erstellt wurde und ob
+  durch die Praxis oder eine Vertretung (ANN-092, ADR-010 Fassung 3). Wer genau, ist zugleich ein
+  Datensatz über Beschäftigte (Art. 15 Abs. 4 DSGVO, §20) und wird nur auf ausdrückliches
+  Verlangen und nach Abwägung von Hand ergänzt.
 - **Daten eines Trainingsverhältnisses.** Training ist ein eigenes Rechtsverhältnis mit eigener
   Akte ([ADR-021](../adr/ADR-021-service-areas-and-legal-relationships.md)); die Auskunft dazu wird
   getrennt erteilt und heute von Hand zusammengestellt.
@@ -129,8 +130,8 @@ trägt:
 
 - **Keine Vorgangsakte.** Eingang, Frist und Antwort werden außerhalb der Software geführt. Eine
   Wiedervorlage erinnert an nichts.
-- **Kein Zugriffsprotokoll auf Knopfdruck** für die betroffene Person; es wird von Hand aus dem
-  Auditlog erstellt (ANN-092).
+- **Keine Namen im Zugriffsprotokoll auf Knopfdruck**; sie werden nur auf Verlangen von Hand
+  ergänzt (ANN-092).
 - **Kein eigener Zustand für Art. 18.**
 - **Kein Selbstbedienungsweg.** Ein Patientenportal gibt es nicht (`PROJECT_PRINCIPLES.md` §4.6);
   jedes Verlangen läuft über die Praxis.

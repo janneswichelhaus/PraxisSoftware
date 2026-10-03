@@ -12,6 +12,8 @@ hier ausdrücklich als solche benannt (Fassungsregel in `docs/adr/README.md`);
 `PROJECT_PRINCIPLES.md` §4.3/§4.4 sind mit Version 0.10 nachgezogen (§21).
 Umgesetzt ist der neue Rollenschnitt mit ROL-EPIC-001 (PR #41).
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-08-28 · Fassung 2: 2026-09-13
@@ -147,8 +149,8 @@ als P0 offen.
 - Was genau gilt als auditpflichtiger Zugriff — Trefferliste, Detailansicht,
   Export, KI-Zusammenfassung? Wie lange wird aufbewahrt, wer darf lesen, und
   wer wertet regelmäßig aus (C4)? *Beantwortet mit ADR-010 (Katalog, drei
-  Jahre) und ADR-010 Fassung 2 (Lesepfad); offen bleibt die Auswertung
-  (monatlicher Report, OPS-005).*
+  Jahre) und ADR-010 Fassung 2 (Lesepfad); die Auswertung mit ADR-010
+  Fassung 3: bei Anlass, kein Report.*
 - Wie wird technisch verhindert, dass ein neuer Endpunkt, ein Job oder ein
   Report den Policy-Layer umgeht?
 - Wie wird das Berechtigungsmodell getestet, und welche Testarten sind

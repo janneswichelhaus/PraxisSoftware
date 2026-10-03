@@ -9,6 +9,8 @@ Index in `CLAUDE.md` und in der Tabelle in `PROJECT_PRINCIPLES.md` §21 (0.11.1)
 Er ändert keine Aussage der Prinzipien — er führt §14 und §19 für die
 Planungsklammer aus.
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-09-16
