@@ -20,7 +20,9 @@ vi.mock('./api', async (importOriginal) => {
 const { InvoicePrintPage } = await import('./InvoicePrintPage');
 
 /** Die ausgestellte Fassung desselben Dokuments. */
-function ausgestellt(): BillingApi.Rechnungsansicht {
+function ausgestellt(
+  dokument: Partial<BillingApi.Rechnungsdokument> = {},
+): BillingApi.Rechnungsansicht {
   return rechnungsansicht(
     {
       status: 'issued',
@@ -28,7 +30,7 @@ function ausgestellt(): BillingApi.Rechnungsansicht {
       issued_on: '2026-09-01',
       due_on: '2026-09-15',
     },
-    { invoice_number: 'RG-2026-0001', issued_on: '2026-09-01', due_on: '2026-09-15' },
+    { invoice_number: 'RG-2026-0001', issued_on: '2026-09-01', due_on: '2026-09-15', ...dokument },
   );
 }
 
@@ -125,14 +127,35 @@ describe('Rechnungsblatt', () => {
     expect(screen.getAllByText('45,00 €').length).toBeGreaterThan(0);
   });
 
-  it('nennt die Behandlungsgrundlage ohne Diagnose', async () => {
-    // Die Rechnung geht regelmäßig an Dritte; klinische Inhalte gehören nicht
-    // dorthin (ADR-004 Fassung 2). Der Server liefert sie gar nicht erst.
+  it('nennt die Behandlungsgrundlage - ein Snapshot vor schema_version 4 ohne Diagnose', async () => {
     fetchRechnung.mockResolvedValue(ausgestellt());
     zeige();
 
     expect(
       await screen.findByText(/Erstverordnung vom 01.07.2026 · Dr. Fiktiv Beispiel/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Diagnose:/)).not.toBeInTheDocument();
+  });
+
+  it('nennt seit schema_version 4 die Diagnose der Verordnung (ANN-228)', async () => {
+    fetchRechnung.mockResolvedValue(
+      ausgestellt({
+        schema_version: 4,
+        treatment_bases: [
+          {
+            kind: 'first',
+            issued_on: '2026-07-01',
+            prescriber: 'Dr. Fiktiv Beispiel',
+            diagnosis_icd10: 'M54.2',
+            diagnosis: 'Synthetisch: Zervikalsyndrom.',
+          },
+        ],
+      }),
+    );
+    zeige();
+
+    expect(
+      await screen.findByText('Diagnose: M54.2 Synthetisch: Zervikalsyndrom.'),
     ).toBeInTheDocument();
   });
 

@@ -106,3 +106,15 @@ export function empfaengerart(kind: string, bereich: Leistungsbereich | undefine
   if (bereich === 'training' && kind === 'self') return 'Kund:in selbst';
   return empfaengerartLabels[kind] ?? 'Kostenträger';
 }
+
+/**
+ * „Diagnose: M54.2 Zervikalsyndrom" - ICD-10 und Text der Verordnung, seit
+ * schema_version 4 (ANN-228). `null`, wenn der Snapshot keine trägt.
+ */
+export function diagnoseText(basis: {
+  diagnosis_icd10?: string | null | undefined;
+  diagnosis?: string | null | undefined;
+}): string | null {
+  const teile = [basis.diagnosis_icd10, basis.diagnosis].filter(Boolean);
+  return teile.length > 0 ? `Diagnose: ${teile.join(' ')}` : null;
+}

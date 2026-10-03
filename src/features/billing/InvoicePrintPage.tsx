@@ -8,7 +8,7 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
-import { monatsname, grundlageText, ibanInGruppen, personLabel } from './anzeige';
+import { monatsname, diagnoseText, grundlageText, ibanInGruppen, personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -291,6 +291,9 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
                   {/* Dieselben Wörter wie in der Akte (ABR-18). */}
                   {grundlageText(basis.kind, basis.issued_on)}
                   {basis.prescriber ? ` · ${basis.prescriber}` : ''}
+                  {diagnoseText(basis) ? (
+                    <span className="block">{diagnoseText(basis)}</span>
+                  ) : null}
                 </li>
               ))}
             </ul>

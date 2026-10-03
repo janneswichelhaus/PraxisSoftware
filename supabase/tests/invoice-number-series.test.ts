@@ -196,14 +196,14 @@ describe('Nummernkreis je Leistungsbereich', () => {
       expect(kreise).toEqual([{ service_area: 'therapy', next_number: 2 }]);
     });
 
-    it('nennt ihren Bereich im Snapshot (schema_version 3)', async () => {
+    it('nennt ihren Bereich im Snapshot (seit schema_version 3)', async () => {
       const id = await ausgestellt(KATALOG.kg, 30);
 
       const { rows } = await asUser<{
         rechnung: { document: { schema_version: number; service_area: string } };
       }>(users.office, DOKUMENT, [id]);
 
-      expect(rows[0]?.rechnung.document.schema_version).toBe(3);
+      expect(rows[0]?.rechnung.document.schema_version).toBeGreaterThanOrEqual(3);
       // Ein Kuerzel darf sich aendern, ein ausgestelltes Dokument nicht -
       // deshalb steht der Bereich auch ausgeschrieben da.
       expect(rows[0]?.rechnung.document.service_area).toBe('therapy');

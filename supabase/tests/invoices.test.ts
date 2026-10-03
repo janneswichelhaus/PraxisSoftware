@@ -436,16 +436,44 @@ describe('Rechnung', () => {
       expect(rows[0]?.rechnung.document.issuer.legal_name).toBe('Test Praxis Tuebingen');
     });
 
-    it('nennt den Verordnungsbezug ohne Diagnose (ADR-004 Fassung 2)', async () => {
+    // Bis 2026-10-03 stand die Diagnose nie auf der Rechnung (ADR-004
+    // Fassung 2). Jannes hat entschieden: Diagnose drauf (ANN-228) - an genau
+    // einer Stelle, `app.invoice_shows_diagnosis()`. Dieser Test hält beide
+    // Seiten der Zusage fest: abgeschaltet keine Diagnose, und Therapieziel
+    // und Verordnerhinweis stehen in keinem Fall darauf.
+    it('nennt den Verordnungsbezug, die Diagnose nur über den Schalter (ANN-228)', async () => {
+      const { rows } = await asPostgres<{
+        diagnosis: string | null;
+        therapy_goal: string | null;
+      }>('select diagnosis, therapy_goal from public.treatment_bases where id = $1', [
+        GRUNDLAGE_FRISCH,
+      ]);
+      const diagnose = rows[0]!.diagnosis!;
+      const ziel = rows[0]!.therapy_goal!;
+      expect(diagnose).toBeTruthy();
+      expect(ziel).toBeTruthy();
+
       const rechnung = await ausgestellt();
       expect(rechnung.document.treatment_bases).toHaveLength(1);
+      expect(JSON.stringify(rechnung.document)).toContain(diagnose);
+      expect(JSON.stringify(rechnung.document)).not.toContain(ziel);
 
-      const { rows } = await asPostgres<{ diagnosis: string | null }>(
-        'select diagnosis from public.treatment_bases where id = $1',
-        [GRUNDLAGE_FRISCH],
+      // Abgeschaltet: dasselbe Dokument ohne Diagnose.
+      await asPostgres(
+        "create or replace function app.invoice_shows_diagnosis() returns boolean language sql immutable set search_path = '' as $$ select false $$",
       );
-      expect(rows[0]?.diagnosis).toBeTruthy();
-      expect(JSON.stringify(rechnung.document)).not.toContain(rows[0]!.diagnosis);
+      try {
+        const { rows: dok } = await asPostgres<{ dokument: unknown }>(
+          'select app.build_invoice_document(id) as dokument from public.invoices where status = $1',
+          ['issued'],
+        );
+        expect(JSON.stringify(dok[0]!.dokument)).not.toContain(diagnose);
+        expect(JSON.stringify(dok[0]!.dokument)).not.toContain(ziel);
+      } finally {
+        await asPostgres(
+          "create or replace function app.invoice_shows_diagnosis() returns boolean language sql immutable set search_path = '' as $$ select true $$",
+        );
+      }
     });
 
     it('rechnet die enthaltene Umsatzsteuer aus dem Endpreis heraus (ANN-074)', async () => {

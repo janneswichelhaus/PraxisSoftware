@@ -49,6 +49,7 @@ import {
 } from './api';
 import {
   empfaengerart,
+  diagnoseText,
   grundlageText,
   ibanInGruppen,
   monatsname,
@@ -407,6 +408,7 @@ function Rechnungsbild({
                     seit …", nicht „Selbstzahlerin vom …". */}
                 {grundlageText(basis.kind, basis.issued_on)}
                 {basis.prescriber ? ` · ${basis.prescriber}` : ''}
+                {diagnoseText(basis) ? <span className="block">{diagnoseText(basis)}</span> : null}
               </li>
             ))}
           </ul>
