@@ -7,6 +7,8 @@ Punkte wie vorgeschlagen; fachlich entschieden vom Projektinhaber am 2026-09-17
 (E18). Fassung 2 ergänzt Punkt 10 (Büro im Training) aus der Abnahme der
 Annahmen, Block 8. Die Punkte 1 bis 9 gelten unverändert. Löst keinen ADR ab.
 
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
+
 ## Datum
 
 2026-09-20

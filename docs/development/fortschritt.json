@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-02",
+  "stand": "2026-10-03",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -582,6 +582,15 @@
           "fertig_am": "2026-10-02",
           "nachweis": "ABN-023 bis ABN-028, Zweitreview; vorher ADR-017 Fassung 3, ADR-019 Fassung 5 (PR #170)",
           "vermerk": "Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9"
+        },
+        {
+          "id": "log-epic-001",
+          "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-03",
+          "nachweis": "PRs #177 bis #180 (gestapelt), ADR-010 Fassung 3, PROJECT_PRINCIPLES 0.21",
+          "vermerk": "ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs"
         },
         {
           "id": "abr-epic-007",

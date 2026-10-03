@@ -85,7 +85,7 @@ Verlauf der Einträge: `git log -- docs/decisions/ASSUMPTIONS.md`.
 
 ### ANN-001 — Interne Initialfristen des Retention Schedule
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart · **LOG-EPIC-001:** gilt weiter für `retention.applied` und am Server verworfene Dateien (`access.denied`). · **LOG-EPIC-001 (2026-10-03):** gegenstandslos – Einstellungen und Arbeitszeiten schreiben keinen Auditeintrag mehr (ANN-230).
 
 **Annahme.** Die Fristen ohne unmittelbare gesetzliche Vorgabe gelten vorläufig so, wie ADR-008 und ADR-011 sie tabellieren — von 7 Tagen (nicht angenommene KI-Entwürfe) über 30 Tage (Routing-Rohdaten, Operational Logs) und 12 Monate (Terminanfragen ohne Behandlungsverhältnis, Auth-/Securitylogs, Teamchat rollierend) bis 3 Jahre (abgesagte Termine und No-shows ohne Rechnung ab Jahresende, organisatorische Patientenkommunikation, Patientenakten-Auditlog, AI-Gateway-Metadaten).
 
@@ -435,7 +435,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 ### ANN-029 — Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte
 
-Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart
+Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart · **LOG-EPIC-001:** eigene Fristen bleiben, jetzt zwei – Lesen und Sicherheit 12 Monate, übrige 3 Jahre (ADR-010 Fassung 3, ANN-230).
 
 **Annahme.** Ein Auditeintrag wird drei Jahre nach dem Ereignis gelöscht, unabhängig davon, ob die Akte, auf die er sich bezieht, noch besteht. Die Löschung einer Patientenakte löscht nicht die Auditeinträge über die Zugriffe auf sie.
 
@@ -459,7 +459,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 ### ANN-031 — Das Löschjournal hat selbst keine Frist
 
-Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage)
+Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung; erneut mit OPS-003, sobald der Backup-Lebenszyklus definiert ist (ADR-012, offene Folgefrage) · **LOG-EPIC-001:** abgelöst – das Löschjournal lebt 60 Tage (Backups 30 Tage, ADR-012 Fassung 2).
 
 **Annahme.** Das Löschjournal (`deletion_journal`) wird nicht automatisch gelöscht. Es hält je gelöschtem Datensatz Tabelle, Kennung, Datenklasse, Fälligkeit und Zeitpunkt fest — keinen Namen, keinen Inhalt, keine Fremdschlüssel auf bestehende Daten.
 
@@ -557,7 +557,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-12 · Jannes · erledigt · Wie
 
 ### ANN-039 — Terminzettel: Inhalt, Druck, Aufruf als Aktenzugriff protokolliert
 
-Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Versandweg seit CAL-013 in ANN-041 und B15
+Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Versandweg seit CAL-013 in ANN-041 und B15 · **LOG-EPIC-001:** gilt, als „Akte geöffnet“ einmal je Person, Akte und Tag (ANN-230).
 
 **Ablösung.** abgelöst durch ANN-041 in Punkt 2 (Versand)
 
@@ -571,7 +571,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-12 · Jannes · Prüfpaket · Wie
 
 ### ANN-040 — Mitteilungsvermerk: vier Wege, Verfall mit jeder Terminänderung, Auditeintrag
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); der Weg `email` zusätzlich mit B15 und PAT-006 · **LOG-EPIC-001:** gegenstandslos – der Vermerk steht am Termin (`notified_by`), nicht im Auditlog.
 
 **Annahme.** Ein Termin trägt einen Vermerk, ob und auf welchem Weg er der Patient:in mitgeteilt wurde: vier Wege (persönlich, telefonisch, Terminzettel ausgehändigt, per E-Mail) — `sms` und `messenger` fehlen bewusst. Der Vermerk verfällt mit jeder Terminänderung (gültig nur, solange `notified_at >= appointments.updated_at`), gelöscht wird dabei nichts. Der Vorgang ist auditiert (`appointment.notified`), mit den Wegen im Kontext und ohne jeden Inhalt. Seit CAL-013 entsteht der Weg `email` auch aus der Übergabe ans Mailprogramm (ANN-041).
 
@@ -627,7 +627,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-044 — „Alle Sitzungen beenden": Vermerk vorab, ohne den Vorgang aufzuhalten, und die Zusage nennt das Restfenster
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); `jwt_expiry` des Cloudprojekts mit OPS-001, Zielwert mit SEC-EPIC-001 (ADR-025)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); `jwt_expiry` des Cloudprojekts mit OPS-001, Zielwert mit SEC-EPIC-001 (ADR-025) · **LOG-EPIC-001:** gilt weiter (`account.sessions_ended` bleibt im Katalog).
 
 **Annahme.** Der Vermerk steht vor dem Vorgang „Alle Sitzungen beenden" und dokumentiert den Versuch. *(Fassung 2)* Scheitert er, werden die Sitzungen trotzdem beendet; der Fehlschlag steht im Betriebslog. *Fassung 1: „ist seine Vorbedingung: Scheitert er, unterbleibt das Abmelden."* Er hält die Auslösung fest, nicht die Wirkung. Die Zusage nennt das Restfenster: Sitzungen und Erneuerungstoken löscht der Anmeldedienst sofort, ein ausgestelltes Zugriffstoken bleibt bis `jwt_expiry` gültig; sofort wirkt allein die Sperre des Zugangs, weil die Datenbank bei jeder Anfrage `user_profiles.is_active` liest.
 
@@ -735,7 +735,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-052 — Eine Datei verlässt den Speicher nur über einen auditierten Vorgang
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf); vor jeder UPDATE-Policy auf `storage.objects`; bei jedem Upgrade der Storage-API — Supabase aktualisiert sie im Betrieb ohne Zutun, deshalb läuft `patient-file-access.spec.ts` vor der ersten echten Datei regelmäßig gegen Staging (ROADMAP, OPS-001)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); erneut, sobald OPS-001 Punkt 5 beantwortet ist (Entzug eines Verweises vor Ablauf); vor jeder UPDATE-Policy auf `storage.objects`; bei jedem Upgrade der Storage-API — Supabase aktualisiert sie im Betrieb ohne Zutun, deshalb läuft `patient-file-access.spec.ts` vor der ersten echten Datei regelmäßig gegen Staging (ROADMAP, OPS-001) · **LOG-EPIC-001:** geändert – protokolliert wird nur das Herunterladen (`patient_file.downloaded`), nicht das Anzeigen.
 
 **Annahme.** Jede Storage-Operation an einer Datei der Akte braucht eine **einmalige Freigabe** der anfragenden Person. `issue_patient_file_link` protokolliert `patient_file.link_issued` und legt sie für genau diese Datei an; `claim_storage_deletion_order` protokolliert `storage_deletion.claimed` und legt sie für das Objekt genau dieses Löschauftrags an; diese Löschfreigabe gilt nur für die Entfernen-Operation, die die Storage-API in `storage.operation` meldet. Die RLS auf `storage.objects` lässt eine Zeile nur gegen eine passende Freigabe zu, die höchstens 30 Sekunden alt ist, und verbraucht sie dabei. Ein so signierter Verweis gilt danach unverändert 60 Sekunden (ADR-017 Punkt 15).
 
@@ -799,7 +799,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-17, bestätigt 2026-09-18 · Ja
 
 ### ANN-057 — Die Vergangenheit ist erlaubt, aber nie unbemerkt: Bestätigung und Auditkennzeichen
 
-Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervorlage: ABR-EPIC-001 behandelt nachgetragene Termine wie alle anderen; Datenschutzprüfung nur, falls `in_the_past` je als Merkmal am Termin gespeichert würde
+Praxisprozess · entschieden (Jannes) · 2026-09-18 · Jannes · erledigt · Wiedervorlage: ABR-EPIC-001 behandelt nachgetragene Termine wie alle anderen; Datenschutzprüfung nur, falls `in_the_past` je als Merkmal am Termin gespeichert würde · **LOG-EPIC-001:** gegenstandslos – einen nachgetragenen Termin zeigen `created_at` und `starts_at`.
 
 **Annahme.** `create_appointment` und `update_appointment` nehmen einen Tag vor dem heutigen Praxistag nur mit `p_confirmed_past = true` an; ohne Bestätigung bleibt die Abweisung aus CAL-003. Es gibt keine Grenze nach hinten und keinen Begründungstext; der Auditeintrag trägt `in_the_past`. Die Oberfläche fragt vor dem Server, wenn sie den Tag kennt (Formular, Kalender), und nimmt den Hinweis in denselben Kasten wie den Arbeitszeit-Hinweis. Eine Ausnahme: Ein Bestandstermin, dessen Tag schon vergangen ist, lässt sich organisatorisch ändern (Person, Art, Ort, Uhrzeit am selben Tag), ohne dass gefragt wird — die Bestätigung gilt dann dem Tag, der schon war, und der Auditeintrag trägt `in_the_past` trotzdem.
 
@@ -1235,7 +1235,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 ### ANN-092 — Das Zugriffsprotokoll ist nicht Teil der Auskunft nach Art. 15
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit dem DSFA-Paket (G14), zusammen mit der Frage nach den Namen der Beschäftigten
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: mit dem DSFA-Paket (G14), zusammen mit der Frage nach den Namen der Beschäftigten · **LOG-EPIC-001:** angepasst – die Auskunft nennt nur noch die Aktionen aus ADR-010 Fassung 3 und keine Abweisungen.
 
 **Annahme.** Die Kopie der Akte nach Art. 15 Abs. 3 DSGVO enthält **keine Auditzeilen**. Verlangt die betroffene Person ausdrücklich Auskunft über die Zugriffe auf ihre Akte, wird sie erteilt — von Hand aus dem Auditlog und ohne die Namen der Beschäftigten, solange kein besonderer Grund dagegen spricht.
 
@@ -1521,7 +1521,7 @@ Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervor
 
 ### ANN-115 — Ein abgewiesener Schreibversuch wird bestätigt protokolliert und mit HTTP 403 beantwortet; der Client prüft den Status
 
-Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes lokal mit `supabase start` (echte HTTP-Antwort über PostgREST)
+Technik · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes lokal mit `supabase start` (echte HTTP-Antwort über PostgREST) · **LOG-EPIC-001:** gilt, als `access.denied` mit Operation und Zähler (ANN-230).
 
 **Annahme.** Die zehn Schreibpfade für Rollen und Konten, Legal Hold und Löschaufträge weisen eine fehlende Rolle ohne Ausnahme ab: `app.record_denied_write` schreibt den Versuch mit `outcome = 'denied'` (Subjekt ist die Organisation), setzt `response.status = 403` lokal zur Transaktion, und der Pfad kehrt vor jedem Schreiben zurück. Ohne Sitzung und ohne Organisation bleibt es bei der Ausnahme; die übrigen Schreibpfade bleiben ohne Eintrag. Die Aufrufer in der Oberfläche werten eine Antwort als gescheitert, wenn ein Fehler **oder** HTTP 403 vorliegt (`abgewiesen` in `src/lib/abgewiesen.ts`).
 
@@ -1679,7 +1679,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-128 — Ein Patientenfoto wird als Einzeldatei durch owner herausgegeben, mit eigenem Auditereignis
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2); Verfahren der Betroffenenrechte (OPS-006) · **LOG-EPIC-001:** gilt weiter (`patient_file.handed_out` bleibt im Katalog).
 
 **Annahme.** Die Auskunft nach Art. 15 DSGVO nennt jedes Foto wie jede Datei mit Name, Art und Prüfsumme, enthält es aber nicht. Die Kopie des Fotos selbst — nach Art. 15 Abs. 3 und, weil die Einwilligung die Grundlage ist, nach Art. 20 DSGVO — entsteht auf der Seite „Auskunft und Löschverlangen" je Foto als JPEG, nur durch `owner`, nur für ein nicht gesperrtes Foto, protokolliert als `patient_file.handed_out`. Ein Paket aller Fotos gibt es nicht.
 
@@ -1751,7 +1751,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-134 — Das Lesen der Warteliste wird wie das Lesen des Kalenders nicht protokolliert
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010) · **LOG-EPIC-001:** gilt; der abgewiesene Versuch steht als `access.denied`.
 
 **Annahme.** Anlegen, Ändern und Schließen eines Eintrags schreiben je einen Auditeintrag (`waitlist_entry.*`, nur Metadaten, nie die Notiz). Das Lesen der Liste schreibt keinen; ein abgewiesener Leseversuch schon (`waitlist.read`, G6b).
 
@@ -1787,7 +1787,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Praxisve
 
 ### ANN-137 — Kurzblick am Termin: aufklappbar, jedes Aufklappen protokolliert, letzter Haupteintrag im Wortlaut
 
-Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 5) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Sichtung Praxisverwaltung, Schritt 5) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010); Jannes nach der Sichtung · **LOG-EPIC-001:** geändert – das Aufklappen schreibt „Akte geöffnet“, einmal je Person, Akte und Tag (ANN-230).
 
 **Annahme.** Der Vertretungs-Kurzblick steht an jedem Behandlungstermin **zugeklappt** und wird erst beim Aufklappen gelesen. Er zeigt Zugangshinweis, Besonderheit, feste Therapeut:in, die Grundlage mit Terminzahl und Mengen je Heilmittel und den **letzten Haupteintrag** der Person vor diesem Termin im Wortlaut — auch einen Entwurf, als Entwurf gekennzeichnet; Nachträge nur in der Akte. Jedes Aufklappen schreibt `appointment_brief.viewed`, der gezeigte Eintrag zusätzlich `treatment_note.viewed` mit der Oberfläche `appointment_brief`. Lesen dürfen die Rollen, die Termine **und** Dokumentation lesen (owner, therapist, team_lead, office); Trainingsbetreuung und Patientenkonto werden protokolliert abgewiesen.
 
@@ -1947,7 +1947,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-150 — Zusammenführen: nicht rückgängig, Legal Hold wandert mit, Nachweis ist der Auditeintrag
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung · **LOG-EPIC-001:** geändert – Nachweis ist `patient_merge_records` mit `merged_by`, kein Auditeintrag.
 
 **Annahme.** Das Zusammenführen ist nicht rückgängig zu machen. Ein Legal Hold der Dublette zieht auf die bleibende Akte um und gilt dort weiter; steht die bleibende Akte schon unter einer Sperre, wird die der Dublette dabei aufgehoben und bleibt als Nachweis an der bleibenden Akte stehen (für eine Akte gibt es nur eine aktive Sperre). Ein gleichzeitig gesetzter Legal Hold wartet, bis das Zusammenführen fertig ist. Die leere Akte fällt; ihre Person nur, wenn nichts anderes an ihr hängt (Mitarbeiter:in, Konto, Trainingsverhältnis). Nachweis ist ein Auditeintrag `patient.merged` an der bleibenden Akte mit der Kennung der Dublette und den Zahlen je Bereich, ohne Namen und Inhalt; kein Eintrag im Löschjournal. Wird eine Sicherung von vor dem Zusammenführen zurückgespielt, kommt die Dublette zurück; das Wiederherstellungsverfahren (OPS-003) führt sie anhand der Auditeinträge erneut zusammen.
 
@@ -1995,7 +1995,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-
 
 ### ANN-154 — Statistik: Der erfolgreiche Aufruf wird nicht protokolliert, der abgewiesene schon
 
-Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-001) · Prüfpaket · Wiedervorlage: Datenschutzprüfung mit dem Auditkatalog (ADR-010) · **LOG-EPIC-001:** gilt; der abgewiesene Versuch steht als `access.denied`.
 
 **Annahme.** `get_practice_statistics` und `get_practice_targets` schreiben beim erfolgreichen Aufruf durch `owner` keinen Auditeintrag; ein abgewiesener Aufruf liefert keine Zeile und steht als `statistics.read` mit Ausgang „abgewiesen“ im Protokoll. Der CSV-Export entsteht im Browser aus derselben Antwort und wird ebenfalls nicht protokolliert. Das Ändern eines Zielwerts wird protokolliert (`organization.practice_target_changed`).
 
@@ -2019,7 +2019,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-29 · Jannes (Bericht STA-EPIC-
 
 ### ANN-156 — Umsatz je Person: der behandelnden Person zugeordnet; owner sieht alle, wer Umsatzbeteiligung hat, sich selbst; jeder Aufruf protokolliert
 
-Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · Prüfpaket · Wiedervorlage: Datenschutzprüfung Beschäftigtendaten (Art. 88 DSGVO, § 26 BDSG), Vergütungsmodelle (IDEA-PRX-047)
+Datenschutz · entschieden (Jannes) · 2026-09-29 · Jannes (B6 aufgelöst) · Prüfpaket · Wiedervorlage: Datenschutzprüfung Beschäftigtendaten (Art. 88 DSGVO, § 26 BDSG), Vergütungsmodelle (IDEA-PRX-047) · **LOG-EPIC-001:** verworfen – der Blick auf den Umsatz je Person wird nicht protokolliert (Zweckbindung, ADR-010 Fassung 3 Punkt 20).
 
 **Annahme.** Der Umsatz nach Rechnungsstellung wird je Monat der Person zugeordnet, die den Termin der abgerechneten Leistung behandelt hat; was sich keiner Person zuordnen lässt (etwa ein nach dem Storno gelöschter Posten), steht als „ohne Zuordnung“, sodass die Summe eines Monats immer der Praxisumsatz ist. `owner` sieht alle Personen mit Namen — erst auf Klick, weil jeder Abruf protokolliert wird —, eine Person mit Umsatzbeteiligung ausschließlich die eigenen Zahlen (maßgeblich ist das Modell am Mitarbeiterdatensatz, nicht die Rolle; ein inaktiver Beschäftigungsstatus sperrt nicht, das Konto schon), alle anderen nichts. Jeder erfolgreiche Aufruf steht als `statistics.staff_revenue_viewed` mit Umfang (alle oder selbst), ohne Beträge, im Protokoll. Die Auswertung liest keine Zeiten, Wege, Orte oder Ausfälle je Person (§20).
 
@@ -2079,7 +2079,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-175 — Protokoll im Training: Detailansicht und jede Änderung ja, Trefferliste und Dublettenhinweis nein
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-010, ADR-021 Punkt 8) · **LOG-EPIC-001:** geändert – Öffnen einmal je Person, Verhältnis und Tag; Änderungen weist das Datenmodell nach.
 
 **Annahme.** Wie bei der Akte: Das Öffnen einer Trainingskund:in (`training_relationship.viewed`) und jede Änderung (`.created`, `.updated`, `.ended`, `.reopened`) stehen im Protokoll, Kontaktdaten und Namen nie — bei Änderungen nur die Namen der geänderten Felder, beim Vertragsende der Tag. Die Trefferliste und der Dublettenhinweis zeigen keinen Kontakt und werden nicht protokolliert; ihr abgewiesener Aufruf schon (`training_relationships.read`). Das Geburtsdatum einer Trainingskund:in nennt der Hinweis nur, wenn es genau das eingegebene ist. Bekannt und hingenommen: Wer schreiben darf, kann Beginn und Ende zurückdatieren und damit die Frist früher auslösen — beides steht mit Tag im Protokoll, wie beim Abschluss der Versorgung.
 
@@ -2139,7 +2139,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-180 — Die Trainingsbetreuung sieht im Kalender nur Trainingstermine; Lesen protokolliert wie am Behandlungstermin
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-022 Punkt 11, ADR-010)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-022 Punkt 11, ADR-010) · **LOG-EPIC-001:** geändert – Lesen als „Trainingsverhältnis geöffnet“ einmal je Tag (ANN-230).
 
 **Annahme.** Die Trainingsbetreuung öffnet Kalender und eigene Tagesliste und sieht darin nur Trainingstermine – mit dem Namen aus dem Training, nie aus der Akte. Behandlungstermine und interne Termine (Pausen, Besprechungen) sieht sie nicht; die Belegung erfährt sie nur beim Speichern als „belegt“. Arbeitszeiten sieht sie weiterhin nicht (die Policy bleibt bei den Praxisrollen). Protokolliert wird wie am Behandlungstermin: jede Änderung ja, Kalender, Tagesliste und Termindetail nicht; die Termine und Vereinbarungen einer Trainingskund:in gehören zur protokollierten Detailansicht (ANN-175). Jeder abgewiesene Lesezugriff steht als `denied` im Protokoll.
 
@@ -2189,7 +2189,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 ### ANN-184 — Trainingsprotokolle schreiben, abschließen und lesen nur owner und Trainingsbetreuung
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (ADR-021 Punkte 6 und 8, §4.8) · **LOG-EPIC-001:** geändert – Lesen als „Trainingsverhältnis geöffnet“ einmal je Tag (ANN-230).
 
 **Annahme.** Das Trainingsprotokoll schreiben, abschließen und lesen `owner` und `trainer`. Das Büro (`office`) liest es nicht, auch nicht in der Liste der Einheiten. Es sieht aber weiter den Termin mit seinem Zustand und kann ihn als durchgeführt vermerken (ANN-186). `therapist` und `team_lead` erreichen das Protokoll nicht (kein Durchgriff). Jedes Öffnen eines Protokolls, auch in der Liste, steht als `training_protocol.viewed` im Protokoll, jeder abgewiesene Versuch als `denied`.
 
@@ -2391,7 +2391,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 ### ANN-200 — Die bisherigen Einträge auf der Schreibseite öffnen nie von selbst
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Prüfpaket · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 12)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Prüfpaket · Wiedervorlage: Jannes (Sichtung UI-Redesign Schritt 12) · **LOG-EPIC-001:** geändert – das Öffnen des Blatts schreibt „Akte geöffnet“ einmal je Tag statt je Eintrag.
 
 **Annahme.** Auf der Schreibseite stehen die bisherigen Einträge der Person hinter „Verlauf" in der Fußleiste: am Telefon als Blatt, ab 640 px als Spalte. Gelesen wird erst, wenn jemand das Blatt öffnet – über denselben Lesepfad wie der Behandlungsverlauf der Akte, der jeden gezeigten Eintrag als `treatment_note.viewed` protokolliert. Der Handoff lässt die Spalte am Rechner von selbst offen; hier bleibt sie zu, bis jemand sie öffnet. Gezeigt werden die Einträge der jüngsten 20 Termine ohne den gerade dokumentierten. Der Satz zur Folge des Festschreibens steht nicht mehr sichtbar über dem Knopf, sondern als Beschreibung des Knopfes für Vorlesesoftware.
 
@@ -2483,7 +2483,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 ### ANN-207 — Ein Zweifel an der Einwilligungsfähigkeit wird nur als Vorgang vermerkt, ohne Grund
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 13) · **Fassung 2 (2026-10-03, LOG-EPIC-001):** Der Zweifel wird nicht mehr als Auditeintrag vermerkt, sondern als Feld am Zugang der rechtlichen Vertretung (`companion_declined_at/by/reason`, fester Grund `capacity_doubt`), aufbewahrt wie die Akte; folgt keine rechtliche Vertretung, bleibt er ungespeichert. Anker: `invite_platform_representation` in `supabase/migrations/20261006110100_log_001b_schreibpfade.sql`.
 
 **Annahme.** Zweifelt die Praxis daran, dass die Person einwilligen kann, tippt sie im Formular „Zweifel an der Einwilligungsfähigkeit". Dann gibt es keine Begleitung, nur eine rechtliche Vertretung. Vermerkt wird ein Auditeintrag `platform_access.companion_declined` mit der Akte bzw. dem Trainingsverhältnis als Gegenstand und dem Kontext `reason: capacity_doubt`, ohne Freitext und ohne Diagnose. Am Verhältnis selbst wird nichts gespeichert. Der Vermerk sperrt keine spätere Begleitung; er dokumentiert die Entscheidung im Moment.
 
@@ -2509,7 +2509,7 @@ Recht · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervor
 
 ### ANN-209 — Jeder Aufruf über eine Vertretung wird protokolliert, auch das Gerüst der Plattform
 
-Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5)
+Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2; ADR-023 Punkt 24, W5) · **LOG-EPIC-001:** geändert – Zugriffe über eine Vertretung einmal je Tag und Akte (ANN-230).
 
 **Annahme.** Jeder Aufruf einer Plattformprojektion über einen lesbaren Vertretungszugang schreibt einen Auditeintrag `platform_representation.read`, auch der Aufruf des Gerüsts, der nur den Namen der vertretenen Person liefert. Akteurstyp ist `representative`, Akteur das Konto der vertretenden Person. Gegenstand ist die Akte bzw. das Trainingsverhältnis, im Kontext stehen der Zugang, die Art und die Ansicht. Ein gesperrter oder abgelaufener Zugang liest nichts und schreibt nichts. Das eigene Lesen der Person bleibt unprotokolliert.
 
@@ -2765,11 +2765,11 @@ Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken: 
 
 ### ANN-230 — Protokollierung auf das Mindestmaß: Lesen je Akte und Tag, eine Aktion je Abweisung
 
-Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (LOG-EPIC-001, Freigabe) · Prüfpaket · Wiedervorlage: Nachzug in ADR-010, ADR-016 und PROJECT_PRINCIPLES (LOG-EPIC-001, PR d)
+Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (LOG-EPIC-001, Freigabe) · Prüfpaket · Wiedervorlage: Datenschutzberatung vor dem Scharfschalten · in ADR überführt: ADR-010 Fassung 3, ADR-016 Fassung 3, PROJECT_PRINCIPLES 0.21
 
 **Annahme.** Leitprinzip: Das Datenmodell ist die Nachweisführung; das Auditlog hält nur, was es nicht abbildet. PR (a): „Akte geöffnet“ (`patient_record.viewed`, `training_relationship.viewed`) steht höchstens einmal je Person, Akte und Kalendertag der Praxis, auch beim Lesen über eine Vertretung; jeder Lesepfad auf klinische Inhalte schreibt nur noch diesen Eintrag statt eines `*.viewed` je Datensatz. Eine Datei steht nur beim Herunterladen im Protokoll (`patient_file.downloaded`). Jede Abweisung ist `access.denied` mit `context.operation`; gleichartige (Person, Operation) binnen zehn Minuten fasst ein Zähler zusammen. Das Lesen des Protokolls und des Umsatzes je Person wird nicht protokolliert.
 
-**Begründung.** Kleine Praxis, wenige Rollen, Lesen des Protokolls nur durch owner, unveränderliche Akte mit `created_by`, `finalized_by` und Versionen als Nachweis: Wer an welchem Tag in welcher Akte war, genügt für Art. 5, 15 und 32 DSGVO; die Zeile je Datensatz erzeugte hunderte Einträge am Tag ohne Mehrwert. Bis PR (d) widerspricht das dem Wortlaut von ADR-010 Punkte 2 und 13, ADR-016 Punkt 9 und PROJECT_PRINCIPLES §4.2 und §8 (§21: hier festgehalten, in PR d aufgelöst). Unsicher: ob die Prüfung eine feinere Körnung als den Tag verlangt.
+**Begründung.** Kleine Praxis, wenige Rollen, Lesen des Protokolls nur durch owner, unveränderliche Akte mit `created_by`, `finalized_by` und Versionen als Nachweis: Wer an welchem Tag in welcher Akte war, genügt für Art. 5, 15 und 32 DSGVO; die Zeile je Datensatz erzeugte hunderte Einträge am Tag ohne Mehrwert. PR (b) und (c): Schreibvorgänge weist das Datenmodell nach (Lücken geschlossen: `reopened_by`, `ordered_by`, Zweifel am Zugang), 26 Aktionen; Fristen 12 Monate Lesen und Sicherheit, 3 Jahre übrige; Legal Hold über die ganze Akte; Löschjournal 60 Tage. Unsicher: ob die Prüfung eine feinere Körnung als den Tag verlangt.
 
 **Anker.** `app.log_record_access` und `app.record_denied_read` in `supabase/migrations/20261006100000_log_001a_protokoll_lesen.sql`; die Lesepfade in `supabase/migrations/20261006100100_log_001a_lesepfade.sql`; Katalog `src/features/audit/actions.ts`; Tests in `supabase/tests/audit-protokoll-lesen.test.ts`.
 

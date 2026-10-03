@@ -2,11 +2,14 @@
 
 ## Status
 
-Angenommen
+Angenommen — **Fassung 2** (2026-10-03): Punkt 4 teilt die Auditlogs in
+Lese- und Sicherheitsereignisse (12 Monate) und übrige Einträge (3 Jahre)
+und bestätigt die 12 Monate für Sicherheitsereignisse (LOG-EPIC-001). Alles
+Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-10-03
 
 ## Kontext
 
@@ -54,7 +57,8 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
    |---|---|
    | Operational Logs | 30 Tage |
    | Authentication-/Security-Logs | 12 Monate |
-   | Audit Logs | 3 Jahre |
+   | Audit Logs: Lese- und Sicherheitsereignisse (Fassung 2) | 12 Monate |
+   | Audit Logs: übrige Einträge | 3 Jahre |
    | AI-Gateway-Auditmetadaten | 3 Jahre |
 
 5. **Externe Error- und Observability-Dienste unterliegen denselben
@@ -145,3 +149,10 @@ Dieser ADR schließt den offenen Punkt E5 und konkretisiert §3.6.
   (ADR-001)?
 - Was passiert bei einem festgestellten Redaction-Fehler — greift dann der
   Data-Breach-Prozess aus ADR-007?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-10-03 | LOG-EPIC-001: Punkt 4 trennt im Auditlog Lese- und Sicherheitsereignisse (12 Monate, bestätigt) von den übrigen Einträgen (3 Jahre); welche Aktion wohin gehört, regelt [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Übrige Punkte unverändert. |

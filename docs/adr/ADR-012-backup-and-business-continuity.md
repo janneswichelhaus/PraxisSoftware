@@ -2,11 +2,13 @@
 
 ## Status
 
-Angenommen
+Angenommen — **Fassung 2** (2026-10-03): Punkt 12 legt die Aufbewahrung der
+Backups auf 30 Tage fest (Entscheidung des Projektinhabers, LOG-EPIC-001).
+Alles Übrige gilt unverändert.
 
 ## Datum
 
-2026-08-28
+2026-08-28 · Fassung 2: 2026-10-03
 
 ## Kontext
 
@@ -84,6 +86,14 @@ gelöschten Daten in Backups umzugehen ist.
 11. **Kritische Betriebsabläufe dürfen nicht ausschließlich von
     undokumentiertem Wissen des Entwicklers abhängen.**
 
+### Aufbewahrung der Backups (Fassung 2)
+
+12. **Backups werden 30 Tage aufbewahrt** (Fassung 2). Das Löschjournal, mit
+    dem Löschungen nach einem Restore nachgezogen werden
+    ([ADR-008](ADR-008-data-retention-and-deletion.md) Punkt 8), lebt deshalb
+    60 Tage: Backupfrist plus 30 Tage Puffer. Ein längerer Backup-Lebenszyklus
+    verlangt zuerst eine längere Journalfrist.
+
 ## Konsequenzen
 
 - RPO und RTO werden zu Auswahlkriterien der Infrastruktur, nicht zu
@@ -151,3 +161,10 @@ gelöschten Daten in Backups umzugehen ist.
   braucht dafür einen eigenen Sicherungsweg (OPS-003).*
 - Wie verhält sich der RTO-Wert zu einem Ausfall des Identitätsanbieters oder
   eines anderen externen Dienstes, den wir nicht wiederherstellen können?
+
+## Änderungshistorie
+
+| Fassung | Datum | Änderung |
+|---|---|---|
+| 1 | 2026-08-28 | Angenommen. |
+| 2 | 2026-10-03 | Punkt 12: Backups 30 Tage, Löschjournal 60 Tage (LOG-EPIC-001). Beantwortet die Folgefrage zur Aufbewahrungsdauer; Generationen und Ablageort bleiben offen. Übrige Punkte unverändert. |
