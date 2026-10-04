@@ -301,6 +301,28 @@ Danach die beiden Dateien aus Schritt 2b auf dem eigenen Rechner löschen
 lebt nur noch in GitHub, ein neuer ist in einer Minute erzeugt. Dann Claude
 sagen: **„Konten stehen"** (ohne Werte).
 
+### Schritt 2e — Kartendienst in der Test-Umgebung (optional, etwa 15 Minuten)
+
+Jannes, 2026-10-04: Karte, Route und Fahrzeiten sollen auch in der
+Test-Umgebung laufen, **nur mit synthetischen Adressen** (ADR-019 Punkt 15).
+Zwei Schlüssel von PTV Developer: den **Serverschlüssel** (Route, Fahrzeiten,
+Verorten) und einen **eigenen Kachelschlüssel** fürs Kartenbild, nie derselbe
+— der Kachelschlüssel steht sichtbar im Browser (ADR-019 Punkt 19).
+
+1. **Supabase → Account → Access Tokens → Generate new token**, Name
+   `praxis-test-deploy`. Der Token gilt für **alle** Projekte des Kontos:
+   Bevor dort ein Produktivprojekt entsteht, wird er widerrufen oder das
+   Produktivprojekt kommt in ein eigenes Konto (ADR-013).
+2. **GitHub, Umgebung `test`** (wie Schritt 2d): `TESTENV_SUPABASE_ACCESS_TOKEN`
+   (der Token) und `TESTENV_PTV_TILE_API_KEY` (der Kachelschlüssel).
+3. **Supabase, Testprojekt → Edge Functions → Secrets**, vier Einträge:
+   `LOCATION_PROVIDER` = `ptv`, `PTV_API_KEY` = Serverschlüssel,
+   `LOCATION_DATA_GATE` = `synthetic`, `APP_ENVIRONMENT` = `test`. Der
+   Serverschlüssel liegt nur hier, nicht in GitHub.
+4. **GitHub → Actions → Test-Umgebung → Run workflow** (ohne „neu
+   aufsetzen"). Danach am Handy **Kalender → Touren**: Karte mit Route; in der
+   Übersicht Wegbalken und Fahrzeiten.
+
 ### Schritt 3 — Claude baut OPS-002a (gebaut 2026-09-25)
 
 Gebaut als `.github/workflows/test-umgebung.yml`; Bedienung in
