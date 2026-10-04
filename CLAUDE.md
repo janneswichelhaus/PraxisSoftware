@@ -145,6 +145,6 @@ Zuschnitt, Zweitreview und Bericht stehen dort.
 - Eine Funktionsidee außerhalb des Auftrags — von Jannes oder aus dem Loop — **kommt nach
   `docs/product/`, nicht in den Code.** Auch gute, besonders die.
 - Kleine Commits, einer je Story. Nach dem Epic stoppen und berichten, das nächste nie selbst beginnen.
-- **Abschlussbericht:** neue Annahmen mit je einem Satz, Vorschlag für den nächsten Loop, lokale
-  Update-Schritte für Jannes — mindestens `git pull origin <branch>`; `pnpm install` bei geänderten
-  Abhängigkeiten; `pnpm dlx supabase@2.116.0 db reset` bei geänderten Migrationen oder Seed.
+- **Abschlussbericht:** neue Annahmen mit je einem Satz, Vorschlag für den nächsten Loop. Jannes arbeitet
+  online (Cloud-Session, Test-Umgebung liefert `main` selbst aus); lokale Schritte nur als Fußnote:
+  `git pull`, `pnpm install` bei neuen Abhängigkeiten, `db reset` bei Migrationen oder Seed.
