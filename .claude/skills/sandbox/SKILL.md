@@ -163,7 +163,7 @@ Prototyp, ist das Austragen dessen erste Story.
 5. Was der Prototyp offen lässt
 6. Die Frage an Jannes: `/sandbox <Thema> übernehmen` oder
    `/sandbox <Thema> verwerfen`
-7. Update-Schritte: `git pull origin <branch>`
+7. Fußnote für lokales Arbeiten: `git pull origin <branch>`
 
 **Danach stoppen.** Kein Härtungs-Ticket und kein Feature-Loop ohne
 ausdrückliches „übernehmen".
