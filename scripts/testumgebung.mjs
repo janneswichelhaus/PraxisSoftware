@@ -111,25 +111,39 @@ export function pruefeKonfiguration({ supabaseUrl, anonKey, databaseUrl }) {
 }
 
 /**
+ * Die Hosts des Kartendienstes, die der Browser selbst erreicht: Kacheln
+ * (`api.myptv.com`) sowie Style, Sprites und Glyphen
+ * (`vectormaps-resources.myptv.com`). Dieselben Hosts nennt der
+ * Anzeigeadapter `src/lib/location/ptv-display.ts`; ein Test hält beide
+ * Stellen gleich. Route und Verorten laufen über die Edge Function, also über
+ * das Supabase-Projekt, nie direkt aus dem Browser (ADR-019 Punkt 6).
+ */
+export const KARTENDIENST_HOSTS = [
+  'https://api.myptv.com',
+  'https://vectormaps-resources.myptv.com',
+];
+
+/**
  * Content-Security-Policy der Test-Umgebung.
  *
  * Skripte nur vom eigenen Ursprung; Verbindungen nur dorthin und zum
  * Supabase-Projekt. `style-src 'unsafe-inline'`, weil MapLibre und einzelne
- * Bausteine Stilattribute setzen; `blob:` für den Worker von MapLibre.
- * Kartenkacheln sind in der Test-Umgebung nicht konfiguriert - kommt ein
- * Kachelschlüssel dazu, braucht die Policy den Kachelanbieter.
+ * Bausteine Stilattribute setzen; `blob:` für den Worker von MapLibre. Nur mit
+ * `kartendienst` kommen die Hosts des Kartendienstes dazu - ohne
+ * Kachelschlüssel lädt die Karte nichts und braucht sie nicht.
  */
-export function inhaltsrichtlinie(supabaseUrl) {
+export function inhaltsrichtlinie(supabaseUrl, { kartendienst = false } = {}) {
   const supabase = new URL(supabaseUrl).origin;
   const websocket = supabase.replace(/^https:/, 'wss:');
+  const karte = kartendienst ? ` ${KARTENDIENST_HOSTS.join(' ')}` : '';
   return [
     "default-src 'self'",
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline'",
-    `img-src 'self' data: blob: ${supabase}`,
+    `img-src 'self' data: blob: ${supabase}${karte}`,
     `media-src 'self' blob: ${supabase}`,
     "font-src 'self'",
-    `connect-src 'self' ${supabase} ${websocket}`,
+    `connect-src 'self' ${supabase} ${websocket}${karte}`,
     "worker-src 'self' blob:",
     "object-src 'none'",
     "base-uri 'self'",
@@ -156,7 +170,7 @@ export const BERECHTIGUNGSRICHTLINIE = 'camera=(self), microphone=(), payment=()
  * schützt keine Daten (das tun Supabase Auth und RLS), sie hält Suchmaschinen
  * und Zufallsbesuche fern.
  */
-export function htaccess({ supabaseUrl, tuerDatei }) {
+export function htaccess({ supabaseUrl, tuerDatei, kartendienst = false }) {
   const zeilen = [
     '# Erzeugt von scripts/testumgebung.mjs (OPS-002a, ANN-101). Nicht von Hand ändern.',
     'Options -Indexes',
@@ -176,7 +190,7 @@ export function htaccess({ supabaseUrl, tuerDatei }) {
     // Test prüft den ganzen Wert, damit die Kopfzeile nicht weiter aufgeht.
     `Header always set Permissions-Policy "${BERECHTIGUNGSRICHTLINIE}"`,
     'Header always set Strict-Transport-Security "max-age=31536000"',
-    `Header always set Content-Security-Policy "${inhaltsrichtlinie(supabaseUrl)}"`,
+    `Header always set Content-Security-Policy "${inhaltsrichtlinie(supabaseUrl, { kartendienst })}"`,
     '',
     '# index.html nie aus dem Zwischenspeicher: sonst sieht das Handy nach',
     '# einer Auslieferung den alten Stand. Die Dateien unter /assets/ tragen',
@@ -273,7 +287,11 @@ async function main([befehl, argument]) {
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- Auslieferungsordner aus dem Workflow, fester Dateiname.
     await writeFile(
       path.join(argument, '.htaccess'),
-      htaccess({ supabaseUrl: env.TESTENV_SUPABASE_URL, tuerDatei: env.TUER_DATEI || null }),
+      htaccess({
+        supabaseUrl: env.TESTENV_SUPABASE_URL,
+        tuerDatei: env.TUER_DATEI || null,
+        kartendienst: env.KARTENDIENST === 'an',
+      }),
     );
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- wie oben.
     await writeFile(path.join(argument, 'robots.txt'), robotsTxt());

@@ -235,10 +235,18 @@ gesperrt. Vor der Seite steht die **zweite Tür** (Benutzer `praxis`, Kennwort
 aus `TESTENV_TUER_PASSWORD`), sofern das Secret gesetzt ist (ANN-101). Die
 beiden Secrets sind optional und liegen wie die übrigen in der Umgebung `test`.
 
-**Grenzen.** Keine Mails (Kennwort vergessen, Einladungen: BEF-026), keine
-Edge Functions (ADR-015 Punkt 20), keine Kartenkacheln. Die Karte zeigt ihren
-Hinweis. Das kostenlose Supabase-Projekt pausiert nach einer Woche ohne
-Nutzung; im Dashboard wieder starten.
+**Kartendienst (optional, 2026-10-04).** Mit den Secrets
+`TESTENV_SUPABASE_ACCESS_TOKEN` und `TESTENV_PTV_TILE_API_KEY` liefert der
+Lauf die Edge Function `location-provider` aus, baut den Kachelschlüssel ein
+und lässt den Kartendienst in der Content-Security-Policy zu. Die Einstellungen
+der Function setzt Jannes im Supabase-Projekt selbst
+([`hosting-optionen.md`](decisions/hosting-optionen.md), Schritt 2e); der
+Workflow schreibt sie nicht. Nur synthetische Adressen (ADR-019 Punkt 15).
+
+**Grenzen.** Keine Mails (Kennwort vergessen, Einladungen: BEF-026); außer
+`location-provider` keine Edge Functions (ADR-015 Punkt 20). Ohne Kartendienst
+zeigt die Karte ihren Hinweis. Das kostenlose Supabase-Projekt pausiert nach
+einer Woche ohne Nutzung; im Dashboard wieder starten.
 
 ## Handytest im WLAN
 

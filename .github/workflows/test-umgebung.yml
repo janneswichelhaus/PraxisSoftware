@@ -11,6 +11,14 @@
 # (docs/decisions/hosting-optionen.md, Schritt 2d). Fehlt eines der sieben
 # Pflicht-Secrets, wird die Auslieferung uebersprungen statt rot.
 #
+# Kartendienst (optional, Jannes 2026-10-04): Mit den Secrets
+# TESTENV_SUPABASE_ACCESS_TOKEN und TESTENV_PTV_TILE_API_KEY liefert der Lauf
+# zusaetzlich den Code der Edge Function `location-provider` aus und baut den
+# Kachelschluessel ein. Ihre Einstellungen (Anbieter, Serverschluessel,
+# Schalter `synthetic`, Umgebung `test`; ADR-019 Punkte 35 und 36) setzt
+# Jannes im Supabase-Projekt selbst - dieser Workflow schreibt sie nicht.
+# Ohne sie antwortet die Function "Kein Kartendienst eingerichtet".
+#
 # Seed und Praxiswoche loeschen alles in der Test-Umgebung. Sie laufen deshalb
 # nur auf Knopfdruck (Handstart mit "neu aufsetzen") und beim allerersten Lauf
 # gegen ein leeres Projekt (ANN-100).
@@ -87,6 +95,24 @@ jobs:
             echo "bereit=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Kartendienst eingerichtet?
+        id: karte
+        if: steps.secrets.outputs.bereit == 'true'
+        env:
+          TESTENV_SUPABASE_ACCESS_TOKEN: ${{ secrets.TESTENV_SUPABASE_ACCESS_TOKEN }}
+          TESTENV_PTV_TILE_API_KEY: ${{ secrets.TESTENV_PTV_TILE_API_KEY }}
+        run: |
+          if [ -n "$TESTENV_SUPABASE_ACCESS_TOKEN" ] && [ -n "$TESTENV_PTV_TILE_API_KEY" ]; then
+            echo "an=true" >> "$GITHUB_OUTPUT"
+            echo "KARTENDIENST=an" >> "$GITHUB_ENV"
+          elif [ -n "$TESTENV_SUPABASE_ACCESS_TOKEN$TESTENV_PTV_TILE_API_KEY" ]; then
+            echo "::warning::Kartendienst unvollstaendig (Zugriffstoken und Kachelschluessel gehoeren zusammen) - die Karte bleibt aus."
+            echo "an=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Kartendienst nicht eingerichtet - die Karte bleibt aus."
+            echo "an=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Gepruefter Stand von main?
         id: bereit
         if: steps.secrets.outputs.bereit == 'true'
@@ -140,11 +166,14 @@ jobs:
         run: node scripts/testumgebung.mjs konfiguration
 
       - name: Build
-        # Nur die beiden oeffentlichen Werte - alles hier landet im Bundle.
+        # Nur oeffentliche Werte - alles hier landet im Bundle. Der
+        # Kachelschluessel ist eine im Browser sichtbare Abrechnungskennung
+        # (ADR-019 Punkt 19), nie der Serverschluessel.
         if: steps.bereit.outputs.bereit == 'true'
         env:
           VITE_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
+          VITE_PTV_TILE_API_KEY: ${{ steps.karte.outputs.an == 'true' && secrets.TESTENV_PTV_TILE_API_KEY || '' }}
         run: pnpm build
 
       - uses: supabase/setup-cli@v1
@@ -158,6 +187,21 @@ jobs:
         env:
           TESTENV_DATABASE_URL: ${{ secrets.TESTENV_DATABASE_URL }}
         run: supabase db push --db-url "$TESTENV_DATABASE_URL" --yes
+
+      - name: Kartendienst ausliefern
+        # Nur der Code der einen Function, gebuendelt beim Anbieter (ohne
+        # Docker); `verify_jwt` kommt aus supabase/config.toml. Nur
+        # synthetische Daten: ADR-015 Punkt 20 und ADR-019 Punkt 15 lassen
+        # Edge Functions bis OPS-001 nur so laufen.
+        if: steps.bereit.outputs.bereit == 'true' && steps.karte.outputs.an == 'true'
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.TESTENV_SUPABASE_ACCESS_TOKEN }}
+          TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
+        run: |
+          # Die Form der URL hat "Konfiguration pruefen" schon belegt.
+          ref=${TESTENV_SUPABASE_URL#https://}
+          ref=${ref%%.supabase.co*}
+          supabase functions deploy location-provider --project-ref "$ref" --use-api
 
       - name: Neu aufsetzen - Seed, Praxiswoche, Zugang
         if: steps.bereit.outputs.bereit == 'true'

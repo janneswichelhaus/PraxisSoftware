@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
+  KARTENDIENST_HOSTS,
   TIEFE_ROUTE,
   htaccess,
   inhaltsrichtlinie,
@@ -155,6 +157,33 @@ describe('inhaltsrichtlinie', () => {
     expect(csp).toContain("object-src 'none'");
     expect(csp).not.toContain('unsafe-eval');
     expect(csp).not.toContain('"');
+  });
+});
+
+describe('inhaltsrichtlinie mit Kartendienst', () => {
+  it('nennt den Kartendienst nur, wenn er eingerichtet ist', () => {
+    const ohne = inhaltsrichtlinie(SUPABASE_URL);
+    expect(ohne).not.toContain('myptv');
+
+    const mit = inhaltsrichtlinie(SUPABASE_URL, { kartendienst: true });
+    const hosts = KARTENDIENST_HOSTS.join(' ');
+    expect(mit).toContain(`connect-src 'self' ${SUPABASE_URL} wss://${REF}.supabase.co ${hosts};`);
+    expect(mit).toContain(`img-src 'self' data: blob: ${SUPABASE_URL} ${hosts};`);
+    // Skripte bleiben beim eigenen Ursprung, auch mit Karte.
+    expect(mit).toContain("script-src 'self';");
+    expect(htaccess({ supabaseUrl: SUPABASE_URL, kartendienst: true })).toContain(mit);
+  });
+
+  it('kennt genau die Hosts, die der Anzeigeadapter anspricht', () => {
+    const adapter = readFileSync('src/lib/location/ptv-display.ts', 'utf8');
+    const imAdapter = [...adapter.matchAll(/https:\/\/([a-z0-9.-]+\.myptv\.com)\//g)].map(
+      (treffer) => treffer[1],
+    );
+    const kachelHosts = /KACHEL_HOSTS[^=]*= \[([^\]]*)\]/.exec(adapter)?.[1] ?? '';
+    for (const host of kachelHosts.matchAll(/'([^']+)'/g)) imAdapter.push(host[1]);
+    expect(new Set(imAdapter)).toEqual(
+      new Set(KARTENDIENST_HOSTS.map((url) => new URL(url).hostname)),
+    );
   });
 });
 
