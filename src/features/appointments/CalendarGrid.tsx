@@ -967,7 +967,9 @@ export function CalendarGrid({
                     );
                   }
                   // UBK-016: Der ganze Block ist eine Fläche. Ein Tipp markiert
-                  // ihn und öffnet das Menü - und keine Zeile darunter.
+                  // ihn und öffnet das Menü - und keine Zeile darunter. Ohne
+                  // z-index: über Linien und Lücken, unter den Kacheln - ragt
+                  // der Weg in den Termin davor, gehört der Tipp dem Termin.
                   const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
                   const rechts =
                     spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
@@ -977,7 +979,7 @@ export function CalendarGrid({
                         type="button"
                         data-testid="fahrweg"
                         aria-expanded={gewaehlt}
-                        className={`${flaeche} ${lage} z-20 cursor-pointer`}
+                        className={`${flaeche} ${lage} cursor-pointer`}
                         style={{ top: `${oben}px`, height: `${Math.max(hoehe, 1)}px` }}
                         onClick={() => setGewaehlterWeg(gewaehlt ? null : schluessel)}
                       >

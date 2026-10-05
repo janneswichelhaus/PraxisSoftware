@@ -418,13 +418,17 @@ export function useWegpruefung(
   if (!umgebung) return { stand: 'laedt' };
 
   const antwort = pruefung.data?.[0];
+  // Ohne Arbeitszeit ist der Tagesrand unbekannt: Eine Seite ohne Termin ist
+  // dann nicht geprüft, nicht „offen“ - sonst sähe ein Ladefehler aus wie ein
+  // leerer Tag (Zweitreview O4).
+  const randUnbekannt = wochenplan.isError || ausnahmen.isError;
   const seite = (
     nachbar: Nachbar | null,
     fahrt: number | null,
     luft: number | null | undefined,
     fruehester: string | null | undefined,
   ): Seite => {
-    if (!nachbar) return { stand: 'offen' };
+    if (!nachbar) return randUnbekannt ? { stand: 'nicht_geprueft' } : { stand: 'offen' };
     if (!nachbar.position) return { stand: 'nachbar_nicht_verortet' };
     if (!routeFertig) return { stand: 'laedt' };
     if (fahrt === null) return { stand: 'nicht_geprueft' };

@@ -148,9 +148,19 @@ export function useTagesfahrzeiten({
   );
   // Erst wenn feststeht, ob es einen Startort gibt: Sonst gingen zwei Routen
   // hinaus - eine ohne und gleich darauf eine mit Startpunkt.
-  // UBK-015, ANN-240: Der Tag beginnt an der Garage, falls gesetzt.
-  const start = useMemo(() => tagesorte(standorte.data).start, [standorte.data]);
-  const punkte = useMemo(() => routenplan(start, stopps).punkte, [start, stopps]);
+  // UBK-015, ANN-240: Der Tag beginnt an der Garage, falls gesetzt, und endet
+  // dort. Den Rückweg zeigt die Übersicht nicht; sie fragt ihn mit, damit
+  // Übersicht, Tour und Kalender dieselbe Route teilen (ein Abruf beim Anbieter).
+  const orte = useMemo(() => tagesorte(standorte.data), [standorte.data]);
+  const start = orte.start;
+  const punkte = useMemo(
+    () =>
+      routenplan(
+        start,
+        orte.ende && stopps.length > 0 ? [...stopps, { position: orte.ende }] : stopps,
+      ).punkte,
+    [start, orte.ende, stopps],
+  );
   const route = usePlanungsroute(punkte, { aktiv: fragen && !standorte.isPending });
 
   return useMemo(() => {

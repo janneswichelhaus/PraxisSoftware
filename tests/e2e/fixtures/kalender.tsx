@@ -214,10 +214,11 @@ const standort: Standort = {
   geocode_precision: 'address',
 };
 client.setQueryData(['standorte'], [standort]);
-// Der letzte Wert ist der Rückweg zur Praxis (UBK-015).
+// Der letzte Wert ist der Rückweg zur Praxis (UBK-015). Tims Weg zu Gustav
+// (35 Min.) ragt fünf Minuten in Fridas Termin - der knappe Fall.
 const FAHRMINUTEN: Record<string, number[]> = {
   [ANNA]: [15, 20, 25, 18, 16],
-  [TIM]: [12, 25, 10, 14],
+  [TIM]: [12, 35, 10, 14],
 };
 for (const person of [ANNA, TIM]) {
   const punkte: Tagesstopp[] = PRAXISTERMINE.filter(

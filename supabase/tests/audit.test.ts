@@ -227,6 +227,8 @@ describe('Audit-Lesepfad', () => {
     expect(rows.map((r) => r.proname)).toEqual([
       'check_appointment_slots',
       'check_travel_buffers',
+      // UBK-012: „Passt es?“ - wie check_travel_buffers (ANN-238).
+      'check_travel_fit',
       'count_orphaned_patient_file_objects',
       'find_free_slots',
       'find_possible_duplicates',
@@ -251,6 +253,8 @@ describe('Audit-Lesepfad', () => {
       'get_treatment_draft_findings',
       'get_treatment_note',
       'get_treatment_note_versions',
+      // UBK-012: Koordinate der Patientenadresse fuer „Passt es?“ (ANN-238).
+      'get_visit_position',
       'list_appointments',
       'list_assignable_trainers',
       'list_audit_events',

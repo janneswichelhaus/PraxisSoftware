@@ -281,8 +281,14 @@ client.setQueryData(['travel-time-factor'], 1);
 client.setQueryData(['day-plan', heute, STAFF], tag);
 client.setQueryData(['day-route', heute, STAFF], punkte);
 client.setQueryData(['standorte'], [standort]);
+// Mit dem Ende des Tages als letztem Punkt - wie Tour und Kalender (UBK-015).
+const stopps = stoppsDesTages(tag, punkte);
 client.setQueryData(
-  ['route', PRAXISPROFIL, routenplan(startpunkt(standort), stoppsDesTages(tag, punkte)).punkte],
+  [
+    'route',
+    PRAXISPROFIL,
+    routenplan(startpunkt(standort), [...stopps, { position: startpunkt(standort) }]).punkte,
+  ],
   route,
 );
 client.setQueryData(['appointment', tag[0]!.id, 'abrechnungslage'], lage);

@@ -152,6 +152,16 @@ describe('check_travel_fit', () => {
     ],
     ['mit Text statt Zeit', { index: 0, duration_minutes: 30, starts_at: 'morgen' }],
     [
+      'mit Sekundenbruchteilen - ganze Sekunden wie beim Fahrpuffer',
+      {
+        index: 0,
+        duration_minutes: 30,
+        starts_at: '2026-09-10T10:00:00+02:00',
+        previous_end: '2026-09-10T09:00:00+02:00',
+        travel_to_seconds: 600.5,
+      },
+    ],
+    [
       'mit Text statt Index',
       { index: 'a', duration_minutes: 30, starts_at: '2026-09-10T10:00:00+02:00' },
     ],
@@ -226,12 +236,12 @@ describe('get_visit_position', () => {
 
   it('gibt die Koordinate der Patientenadresse - und nur sie', async () => {
     const { rows } = await asUser(users.office, POSITION, [patients.max]);
-    expect(rows).toEqual([{ lat: 48.52, lon: 9.05, geocode_precision: 'address' }]);
+    expect(rows).toEqual([{ lat: 48.52, lon: 9.05 }]);
   });
 
   it('gibt fuer eine nicht verortete Adresse eine Zeile ohne Koordinate', async () => {
     const { rows } = await asUser(users.therapist, POSITION, [patients.erika]);
-    expect(rows).toEqual([{ lat: null, lon: null, geocode_precision: null }]);
+    expect(rows).toEqual([{ lat: null, lon: null }]);
   });
 
   it.each([
@@ -255,6 +265,12 @@ describe('get_visit_position', () => {
     // Erikas Plattformkonto fragt nach Max: abgewiesen, bevor eine Kennung zählt.
     await expect(asUser(users.plattformErika, POSITION, [patients.max])).rejects.toMatchObject({
       code: '42501',
+    });
+  });
+
+  it('weist eine fehlende Kennung ab wie eine unbekannte', async () => {
+    await expect(asUser(users.office, POSITION, [null])).rejects.toMatchObject({
+      code: 'P0002',
     });
   });
 

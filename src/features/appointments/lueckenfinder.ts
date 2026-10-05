@@ -151,7 +151,7 @@ export function useLueckenfinder({
   dauer: number;
   /** Rolle darf die Tagesroute lesen, Tag ab heute, Tagesansicht. */
   aktiv: boolean;
-  /** Heute: Lücken, die vor dieser Minute enden, entfallen. */
+  /** Heute: Eine Lücke beginnt frühestens in dieser Minute; was davor endet, entfällt. */
   abMinute?: number;
 }): Lueckenfinder {
   const an = aktiv && patientId !== null && zeitzone !== null && spalten.length > 0;
@@ -185,7 +185,12 @@ export function useLueckenfinder({
     return spalten.map((s, i) => {
       const stopps = routen[i]?.data;
       if (!s.baender || !stopps) return null;
-      const luecken = freieLuecken(s.baender, s.belegt).filter((l) => l.bisMinute > abMinute);
+      // Heute beginnt eine Lücke frühestens jetzt: Der Server rechnet die
+      // Anfahrt ab ihrem Beginn, und was davor liegt, ist vorbei.
+      const ab = s.baender
+        .map((b) => ({ vonMinute: Math.max(b.vonMinute, abMinute), bisMinute: b.bisMinute }))
+        .filter((b) => b.bisMinute > b.vonMinute);
+      const luecken = freieLuecken(ab, s.belegt);
       const umfeld = luecken.map((l) => umfeldDer(l, stopps, orte, zeitzone));
       const orteDerSpalte = [
         ...new Map(

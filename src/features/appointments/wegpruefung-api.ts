@@ -10,12 +10,11 @@ import type { Coordinate } from '@/lib/location/contract';
 const positionSchema = z.object({
   lat: z.number().nullable(),
   lon: z.number().nullable(),
-  geocode_precision: z.string().nullable(),
 });
 
 /**
  * Die Koordinate der Patientenadresse für einen neuen Hausbesuch - `null`,
- * solange die Adresse nicht verortet ist. Nur Koordinate, kein Name, keine
+ * solange die Adresse nicht verortet ist. Nur die Koordinate, kein Name, keine
  * Adresse (ANN-016).
  */
 export async function fetchVisitPosition(patientId: string): Promise<Coordinate | null> {

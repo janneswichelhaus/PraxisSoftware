@@ -175,6 +175,19 @@ test.describe('Kalender', () => {
       await expect(menue).toContainText('≈ 20 Min.');
       await expect(menue.getByRole('link', { name: 'Zur Tour' })).toBeVisible();
       await expect(page.getByRole('group', { name: 'Was soll hier entstehen?' })).toHaveCount(0);
+      // Ragt ein Weg in den Termin davor, liegt die Kachel oben: Der Tipp auf
+      // ihr Ende gehört dem Termin, nicht dem Weg (Zweitreview S2).
+      const tim = page.locator('[role=group][aria-label^="Tim Teamleitung"]');
+      const frida = (await tim.getByRole('button', { name: /^Frida Test/ }).boundingBox())!;
+      const oben = await page.evaluate(
+        ([x, y]) =>
+          document
+            .elementFromPoint(x!, y!)
+            ?.closest('[data-testid]')
+            ?.getAttribute('data-testid') ?? null,
+        [frida.x + frida.width / 2, frida.y + frida.height - 2],
+      );
+      expect(oben).not.toBe('fahrweg');
       const ueberlauf = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );

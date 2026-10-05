@@ -51,7 +51,8 @@ export async function fordereRouteAn(
  * Seit UBK-010 steht die Abfrage einmal hier: Der Fachcode stellt sie über
  * `usePlanungsroute` (`src/features/tours/fahrzeitfaktor.ts`), das den
  * Fahrzeitfaktor der Praxis anwendet; Übersicht, Tour und Kalender teilen
- * dieselbe Antwort, weil der Schlüssel derselbe ist.
+ * dieselbe Antwort, weil der Schlüssel derselbe ist - seit UBK-015 mit dem
+ * Ende des Tages als letztem Punkt, auch wo der Rückweg nicht gezeigt wird.
  */
 export function routenAbfrage(waypoints: readonly Coordinate[], profile: TravelProfile) {
   return {

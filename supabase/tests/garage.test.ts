@@ -116,6 +116,40 @@ describe('Garage am Standort', () => {
     ).rejects.toMatchObject({ code: '22023' });
   });
 
+  it('nimmt eine Koordinate unterhalb der Hausnummer nur bestaetigt', async () => {
+    await asUserCommitted(users.ownerTherapist, SETZEN, [
+      LOCATION,
+      ...GARAGE,
+      48.53,
+      9.07,
+      'street',
+      true,
+    ]);
+    expect(await garage()).toMatchObject({ garage_geocode_precision: 'street', garage_lat: 48.53 });
+  });
+
+  it('haelt Koordinate und Adresse zusammen - auch an den Funktionen vorbei', async () => {
+    const setzen = (spalten: string) =>
+      asPostgres(`update public.locations set ${spalten} where id = $1`, [LOCATION]);
+    // Eine Koordinate ohne Adresse verbietet die Tabelle selbst.
+    await expect(
+      setzen(`garage_lat = 48.53, garage_lon = 9.07, garage_geocode_precision = 'address'`),
+    ).rejects.toMatchObject({ code: '23514' });
+    // Mit Adresse: keine Breite ohne Länge, keine Genauigkeit ohne Koordinate.
+    await setzen(
+      `garage_street = 'Radweg', garage_postal_code = '72072', garage_city = 'Tuebingen'`,
+    );
+    await expect(
+      setzen(`garage_lat = 48.53, garage_geocode_precision = 'address'`),
+    ).rejects.toMatchObject({ code: '23514' });
+    await expect(setzen(`garage_geocode_precision = 'address'`)).rejects.toMatchObject({
+      code: '23514',
+    });
+    await expect(setzen(`garage_lat = 48.53, garage_lon = 9.07`)).rejects.toMatchObject({
+      code: '23514',
+    });
+  });
+
   it.each([
     ['therapist', users.therapist],
     ['office', users.office],

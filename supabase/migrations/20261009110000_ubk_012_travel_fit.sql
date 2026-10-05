@@ -12,7 +12,8 @@
 --   * get_visit_position: die Koordinate der Patientenadresse fuer einen
 --     NEUEN Hausbesuch. Die Kartei liefert sie bewusst nicht (ANN-016); die
 --     Terminsuche gibt sie mit denselben Rechten heraus (find_free_slots,
---     target_lat). Nur Koordinate und Genauigkeit - kein Name, keine Adresse.
+--     target_lat). Nur die Koordinate - keine Genauigkeit, kein Name, keine
+--     Adresse.
 --     Zum Kartendienst geht sie wie jede Koordinate nur ueber die eigene
 --     Function (ADR-019 Punkt 12 und 13).
 --
@@ -37,12 +38,13 @@
 -- -----------------------------------------------------------------------------
 create function public.get_visit_position(p_patient_id uuid)
 returns table (
-  lat               double precision,
-  lon               double precision,
-  geocode_precision text
+  lat double precision,
+  lon double precision
 )
 language plpgsql
-stable
+-- volatile, nicht stable: Die Abweisung schreibt einen denied-Eintrag; hinter
+-- PostgREST liefe eine stable-Funktion in einer Nur-Lese-Transaktion (TRN-EPIC-001).
+volatile
 security definer
 set search_path = ''
 as $$
@@ -71,7 +73,7 @@ begin
   -- Ohne Kontaktzeile oder ohne Verortung: eine Zeile mit null. Das
   -- Formular sagt dann "Adresse nicht verortet" statt einer Zeit.
   return query
-    select cd.lat, cd.lon, cd.geocode_precision
+    select cd.lat, cd.lon
     from (select 1) eins
     left join public.patient_contact_details cd
       on cd.patient_id = p_patient_id and cd.organization_id = v_org;
@@ -79,7 +81,7 @@ end;
 $$;
 
 comment on function public.get_visit_position(uuid) is
-  'UBK-012, ANN-238: Koordinate und Genauigkeit der Patientenadresse fuer einen neuen Hausbesuch - ohne Name und Adresse. Rechte wie find_free_slots (can_create_appointment); abgewiesen mit denied-Eintrag (G6b).';
+  'UBK-012, ANN-238: Koordinate der Patientenadresse fuer einen neuen Hausbesuch - ohne Name und Adresse. Rechte wie find_free_slots (can_create_appointment); abgewiesen mit denied-Eintrag (G6b).';
 
 revoke all on function public.get_visit_position(uuid) from public, anon;
 grant execute on function public.get_visit_position(uuid) to authenticated;
@@ -107,7 +109,9 @@ returns table (
   departure_slack_minutes integer
 )
 language plpgsql
-stable
+-- volatile, nicht stable: Die Abweisung schreibt einen denied-Eintrag; hinter
+-- PostgREST liefe eine stable-Funktion in einer Nur-Lese-Transaktion (TRN-EPIC-001).
+volatile
 security definer
 set search_path = ''
 as $$
@@ -158,9 +162,9 @@ begin
       v_dauer  := (v_item ->> 'duration_minutes')::integer;
       v_beginn := (v_item ->> 'starts_at')::timestamptz;
       v_vorher := (v_item ->> 'previous_end')::timestamptz;
-      v_hin    := (v_item ->> 'travel_to_seconds')::numeric::integer;
+      v_hin    := (v_item ->> 'travel_to_seconds')::integer;
       v_danach := (v_item ->> 'next_start')::timestamptz;
-      v_weiter := (v_item ->> 'travel_from_seconds')::numeric::integer;
+      v_weiter := (v_item ->> 'travel_from_seconds')::integer;
     exception
       when others then
         raise exception 'invalid item' using errcode = '22023';

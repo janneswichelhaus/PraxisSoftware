@@ -20,7 +20,7 @@ const { fetchDayRoute, fetchStandorte, rufeFunktionAuf, checkTravelFit, fetchVis
     checkTravelFit: vi.fn(),
     fetchVisitPosition: vi.fn(),
   }));
-const arbeitszeit = vi.hoisted(() => ({ wochenplan: [] as unknown[] }));
+const arbeitszeit = vi.hoisted(() => ({ wochenplan: [] as unknown[], fehler: false }));
 
 vi.mock('@/features/tours/tagesroute', async (importOriginal) => ({
   ...(await importOriginal<typeof TagesrouteModul>()),
@@ -37,7 +37,10 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
 vi.mock('@/features/scheduling/api', () => ({
-  fetchWorkingHours: () => Promise.resolve(arbeitszeit.wochenplan),
+  fetchWorkingHours: () =>
+    arbeitszeit.fehler
+      ? Promise.reject(new Error('Arbeitszeiten nicht geladen'))
+      : Promise.resolve(arbeitszeit.wochenplan),
   fetchWorkingHourExceptions: () => Promise.resolve([]),
 }));
 vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
@@ -116,6 +119,7 @@ beforeEach(() => {
   fetchVisitPosition.mockReset();
   fetchStandorte.mockResolvedValue([STANDORT]);
   arbeitszeit.wochenplan = [];
+  arbeitszeit.fehler = false;
 });
 
 describe('Bausteine', () => {
@@ -336,6 +340,29 @@ describe('useWegpruefung', () => {
       }),
     );
     expect(checkTravelFit).not.toHaveBeenCalled();
+  });
+
+  it('nennt eine Seite ohne Termin nicht geprueft, wenn die Arbeitszeit nicht laedt', async () => {
+    arbeitszeit.fehler = true;
+    fetchDayRoute.mockResolvedValue([stopp('a', '08:30', '09:30', 48.51)]);
+    rufeFunktionAuf.mockResolvedValue(route(12));
+    checkTravelFit.mockResolvedValue([
+      {
+        item_index: 0,
+        starts_at: '2027-05-12T08:00:00Z',
+        arrival_earliest_start: '2027-05-12T07:45:00Z',
+        arrival_slack_minutes: 15,
+        next_earliest_start: null,
+        departure_slack_minutes: null,
+      },
+    ]);
+    const { result } = renderHook(() => useWegpruefung(PRAXISTERMIN), { wrapper });
+    await waitFor(() =>
+      expect(result.current).toMatchObject({
+        an: { stand: 'geprueft', luft: 15 },
+        weiter: { stand: 'nicht_geprueft' },
+      }),
+    );
   });
 
   it('nimmt fuer einen bestehenden Hausbesuch die Position aus seiner Tagesroute', async () => {

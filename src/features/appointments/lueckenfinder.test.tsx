@@ -226,6 +226,34 @@ describe('useLueckenfinder', () => {
     expect(items[0]).not.toHaveProperty('starts_at');
   });
 
+  it('rechnet heute ab jetzt, nicht ab dem vergangenen Beginn der Luecke', async () => {
+    fetchDayRoute.mockResolvedValue([stopp('a', '08:00', '09:00', 48.51)]);
+    rufeFunktionAuf.mockImplementation(
+      (_: string, koerper: { origins: unknown[]; destinations: unknown[] }) =>
+        Promise.resolve(matrixAntwort(koerper, 600)),
+    );
+    checkTravelFit.mockResolvedValue([]);
+    const { result } = renderHook(
+      () =>
+        useLueckenfinder({
+          ...EINGABE,
+          spalten: [
+            { ...SPALTE, baender: [band('08:00', '17:00')], belegt: [band('08:00', '09:00')] },
+          ],
+          abMinute: minute('10:40'),
+        }),
+      { wrapper },
+    );
+    await waitFor(() => expect(checkTravelFit).toHaveBeenCalled());
+    const items = checkTravelFit.mock.calls[0]![0] as Record<string, unknown>[];
+    expect(items[0]).toMatchObject({ previous_end: zeitpunktIn(TAG, minute('10:40'), ZONE) });
+    await waitFor(() => expect(result.current).toMatchObject({ stand: 'bereit' }));
+    const r = result.current;
+    expect(r.stand === 'bereit' ? r.jeSpalte.get('anna')?.[0]?.vonMinute : null).toBe(
+      minute('10:40'),
+    );
+  });
+
   it('nennt eine zu kurze Luecke, ohne zu fragen', async () => {
     fetchDayRoute.mockResolvedValue([]);
     rufeFunktionAuf.mockImplementation(

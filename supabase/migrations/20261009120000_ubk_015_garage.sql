@@ -28,9 +28,13 @@ alter table public.locations
   add column garage_lat double precision,
   add column garage_lon double precision,
   add column garage_geocode_precision text,
+  -- Mit ausdruecklichem "is not null": Ein CHECK, der NULL ergibt, gilt als
+  -- erfuellt - sonst kaeme eine Breite ohne Laenge oder eine Genauigkeit ohne
+  -- Koordinate durch.
   add constraint locations_garage_coordinate_check check (
     (garage_lat is null and garage_lon is null and garage_geocode_precision is null)
-    or (garage_lat between -90 and 90
+    or (garage_lat is not null and garage_lon is not null and garage_geocode_precision is not null
+        and garage_lat between -90 and 90
         and garage_lon between -180 and 180
         and garage_geocode_precision in ('address', 'street', 'locality', 'unknown')
         and garage_street is not null and garage_postal_code is not null and garage_city is not null)

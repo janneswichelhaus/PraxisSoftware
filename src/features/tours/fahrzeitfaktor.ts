@@ -14,7 +14,7 @@ import { PRAXISPROFIL } from './tagesroute';
 // Anwendung zeigt oder prüfen lässt, entsteht deshalb hier aus der Antwort
 // des Kartendienstes: mal Faktor, auf ganze Sekunden gerundet. Diese Datei
 // ist die **eine Stelle**; der Fachcode fragt Route und Matrix nur über die
-// Hooks unten an (`fahrzeitfaktor.test.ts` hält das am Quelltext fest).
+// Hooks unten an (`fahrzeitfaktor.test.tsx` hält das am Quelltext fest).
 //
 // Gespeichert wird wie bisher nichts (ADR-019 Punkt 16): Im Zwischenspeicher
 // liegt die Antwort des Kartendienstes, der Faktor wirkt beim Lesen. Ändert
