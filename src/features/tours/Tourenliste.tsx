@@ -72,12 +72,21 @@ export function Tourenliste({
   stopps,
   zeitzone,
   startGewaehlt,
+  startText = 'Start an der Praxis',
+  ende = null,
   zwischen,
   rueckweg,
 }: {
   readonly stopps: readonly Stopp[];
   readonly zeitzone: string;
   readonly startGewaehlt: boolean;
+  /** „Start an der Garage“ oder „… an der Praxis“ (UBK-015). */
+  readonly startText?: string;
+  /**
+   * Das Ende der Tour mit dem Rückweg dorthin (UBK-015) - die letzte Zeile.
+   * Ohne Angabe endet die Liste mit dem letzten Besuch.
+   */
+  readonly ende?: { readonly text: string; readonly fahrt: ReactNode } | null;
   /** Was zwischen Stopp i und i+1 steht — Fahrzeit und Fahrpuffer (MAP-006c). */
   readonly zwischen?: (index: number) => ReactNode;
   /**
@@ -122,7 +131,7 @@ export function Tourenliste({
         {startGewaehlt ? (
           <li className="border-line text-ink-muted flex items-center gap-3 border-b py-2 text-sm">
             <Nummer>S</Nummer>
-            Start an der Praxis
+            {startText}
           </li>
         ) : null}
         {stopps.map((stopp, index) => {
@@ -177,6 +186,15 @@ export function Tourenliste({
             </li>
           );
         })}
+        {ende ? (
+          <li data-testid="tour-ende" className="border-line border-t">
+            {ende.fahrt}
+            <div className="text-ink-muted flex items-center gap-3 py-2 text-sm">
+              <Nummer>Z</Nummer>
+              {ende.text}
+            </div>
+          </li>
+        ) : null}
       </ol>
 
       <details className="group mt-4 print:hidden">

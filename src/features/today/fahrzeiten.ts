@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
 import type { Routenquelle } from '@/lib/location/route';
-import { fetchStandorte, startpunkt } from '@/features/tours/startort';
+import { fetchStandorte, tagesorte } from '@/features/tours/startort';
 import { usePlanungsroute } from '@/features/tours/fahrzeitfaktor';
 import {
   fahrzeitZwischen,
@@ -148,7 +148,8 @@ export function useTagesfahrzeiten({
   );
   // Erst wenn feststeht, ob es einen Startort gibt: Sonst gingen zwei Routen
   // hinaus - eine ohne und gleich darauf eine mit Startpunkt.
-  const start = useMemo(() => startpunkt(standorte.data?.[0]), [standorte.data]);
+  // UBK-015, ANN-240: Der Tag beginnt an der Garage, falls gesetzt.
+  const start = useMemo(() => tagesorte(standorte.data).start, [standorte.data]);
   const punkte = useMemo(() => routenplan(start, stopps).punkte, [start, stopps]);
   const route = usePlanungsroute(punkte, { aktiv: fragen && !standorte.isPending });
 

@@ -3,11 +3,12 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
 import type { Routenquelle } from '@/lib/location/route';
 import { usePlanungsrouten } from '@/features/tours/fahrzeitfaktor';
-import { fetchStandorte, startpunkt } from '@/features/tours/startort';
+import { fetchStandorte, tagesorte } from '@/features/tours/startort';
 import {
   fahrzeitZwischen,
   fetchDayRoute,
   routenplan,
+  streckeZwischen,
   type Tagesstopp,
 } from '@/features/tours/tagesroute';
 import { minutesOfDay } from './api';
@@ -44,6 +45,13 @@ export interface Fahrweg {
   bisMinute: number;
   /** Die Fahrzeit in ganzen Minuten. */
   minuten: number;
+  /** Die Strecke in Metern, wenn der Kartendienst sie nennt (UBK-016). */
+  meter?: number | null;
+  /**
+   * Der Rückweg nach dem letzten Besuch zur Garage oder Praxis (UBK-015):
+   * Er beginnt am Ende dieses Termins, statt vor seinem Beginn zu enden.
+   */
+  rueckweg?: boolean;
   /**
    * Die Anschrift am Termin weicht von der Akte ab (ANN-236): keine Fahrzeit,
    * sondern ein Warnblock fester Länge (`VERALTET_MINUTEN`).
@@ -92,9 +100,23 @@ function stoppsAus(punkte: readonly Tagesstopp[]) {
     }));
 }
 
-/** Die Wegpunkte der Route einer Spalte - dieselben wie in Übersicht und Tour. */
-export function wegpunkte(punkte: readonly Tagesstopp[], start: Coordinate | null): Coordinate[] {
-  return routenplan(start, stoppsAus(punkte)).punkte;
+/**
+ * Die Wegpunkte der Route einer Spalte - dieselben wie in der Tour mit ihrer
+ * Voreinstellung (UBK-015): Start, die Stopps, das Ende.
+ */
+export function wegpunkte(
+  punkte: readonly Tagesstopp[],
+  start: Coordinate | null,
+  ende: Coordinate | null = null,
+): Coordinate[] {
+  return routenplan(start, mitEnde(stoppsAus(punkte), ende)).punkte;
+}
+
+function mitEnde<T extends { position: Coordinate | null }>(
+  stopps: readonly T[],
+  ende: Coordinate | null,
+): { position: Coordinate | null }[] {
+  return ende && stopps.length > 0 ? [...stopps, { position: ende }] : [...stopps];
 }
 
 /**
@@ -109,11 +131,17 @@ export function wegpunkte(punkte: readonly Tagesstopp[], start: Coordinate | nul
 export function fahrwegeAusRoute(
   punkte: readonly Tagesstopp[],
   start: Coordinate | null,
-  abschnitte: readonly { readonly durationSeconds: number }[] | null,
+  abschnitte:
+    readonly { readonly durationSeconds: number; readonly distanceMeters?: number }[] | null,
   zeitzone: string,
+  ende: Coordinate | null = null,
 ): Fahrweg[] {
   const stopps = stoppsAus(punkte);
-  const { index } = routenplan(start, stopps);
+  const { index } = routenplan(start, mitEnde(stopps, ende));
+  const strecke = (von: number | null, nach: number | null) =>
+    abschnitte && abschnitte.every((a) => typeof a.distanceMeters === 'number')
+      ? streckeZwischen(von, nach, abschnitte as readonly { readonly distanceMeters: number }[])
+      : null;
   const wege: Fahrweg[] = [];
   stopps.forEach(({ punkt }, i) => {
     const hier = index.at(i) ?? null;
@@ -123,8 +151,33 @@ export function fahrwegeAusRoute(
     const minuten = Math.round(sekunden / 60);
     if (minuten <= 0) return;
     const beginn = minutesOfDay(punkt.starts_at, zeitzone);
-    wege.push({ terminId: punkt.id, vonMinute: beginn - minuten, bisMinute: beginn, minuten });
+    wege.push({
+      terminId: punkt.id,
+      vonMinute: beginn - minuten,
+      bisMinute: beginn,
+      minuten,
+      meter: strecke(davor, hier),
+    });
   });
+  // UBK-015: der Rückweg vom letzten Besuch zur Garage oder Praxis.
+  const letzter = stopps.at(-1);
+  if (ende && letzter) {
+    const von = index.at(stopps.length - 1) ?? null;
+    const nach = index.at(stopps.length) ?? null;
+    const sekunden = fahrzeitZwischen(von, nach, abschnitte);
+    const minuten = sekunden === null ? 0 : Math.round(sekunden / 60);
+    if (minuten > 0) {
+      const ab = minutesOfDay(letzter.punkt.ends_at, zeitzone);
+      wege.push({
+        terminId: letzter.punkt.id,
+        vonMinute: ab,
+        bisMinute: ab + minuten,
+        minuten,
+        meter: strecke(von, nach),
+        rueckweg: true,
+      });
+    }
+  }
   return wege;
 }
 
@@ -168,7 +221,9 @@ export function useFahrwege({
     enabled: offen.length > 0,
     retry: false,
   });
-  const start = useMemo(() => startpunkt(standorte.data?.[0]), [standorte.data]);
+  // UBK-015, ANN-240: Beginn und Ende an der Garage, falls gesetzt.
+  const orte = useMemo(() => tagesorte(standorte.data), [standorte.data]);
+  const start = orte.start;
 
   const tagesrouten = useQueries({
     queries: offen.map((s) => ({
@@ -182,7 +237,7 @@ export function useFahrwege({
   // zwei Routen hinaus, eine ohne und gleich darauf eine mit Startpunkt.
   const startBekannt = !standorte.isPending;
   const punkteJeSpalte = offen.map((_, i) =>
-    startBekannt && tagesrouten[i]?.data ? wegpunkte(tagesrouten[i].data, start) : [],
+    startBekannt && tagesrouten[i]?.data ? wegpunkte(tagesrouten[i].data, start, orte.ende) : [],
   );
 
   // Eine Route je verschiedener Folge von Wegpunkten: Zwei Spalten mit
@@ -208,7 +263,7 @@ export function useFahrwege({
     const wege = veralteteWege(punkte, zeitzone);
     if (antwort?.ok === true) {
       if (antwort.value.quelle === 'nachbildung') quelle = 'nachbildung';
-      wege.push(...fahrwegeAusRoute(punkte, start, antwort.value.route.legs, zeitzone));
+      wege.push(...fahrwegeAusRoute(punkte, start, antwort.value.route.legs, zeitzone, orte.ende));
     }
     if (wege.length > 0) jeSpalte.set(spalte.id, wege);
   });

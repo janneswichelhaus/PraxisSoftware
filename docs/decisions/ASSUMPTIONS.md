@@ -2833,7 +2833,7 @@ Technik · offen · 2026-10-05 · Claude (UBK-EPIC-001) · — · Wiedervorlage:
 
 **Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
 
-**Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`.
+**Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`. **UBK-015 (2026-10-05):** Der erste Weg beginnt an der Garage, falls gesetzt, und nach dem letzten Besuch steht der Rückweg als Block (ANN-240).
 
 ### ANN-236 — Eine veraltete Anschrift am Termin ergibt keine Fahrzeit; nach dem Verorten fragt die Akte nach dem Umstellen
 
@@ -2882,3 +2882,15 @@ Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `freieLuecken`, `umfeldDer`, `useLueckenfinder`, `MIN_LUECKE_MINUTEN` in `src/features/appointments/lueckenfinder.ts`; `usePlanungsmatrizen` in `src/features/tours/fahrzeitfaktor.ts`; `lueckenDarstellung` und `zurueckgenommen` in `CalendarGrid.tsx`; `lueckenSpalten`, `lueckenHinweis` in `CalendarPage.tsx`; Tests `lueckenfinder.test.tsx`, `CalendarPage.test.tsx` („UBK-014“, „AKTE-003“).
 
 **Änderungspfad.** Andere Dauer, etwa aus der Verordnung: `dauer` in `useLueckenfinder` aus dem Kalenderstand · Aufwand `klein`. Ein Band je Tag statt je Lücke: Darstellung in `CalendarGrid.tsx` · Aufwand `klein`. Auch in der Woche: `lueckenSpalten` für Tage statt Personen · Aufwand `klein`, kostet zwei Matrizen je Tag. Andere Termine wieder ausblenden: `zurueckgenommen` in `CalendarPage.tsx` · Aufwand `klein`.
+
+### ANN-240 — Garage je Standort: Beginn und Ende der Tour, getrennt vom Startort; Rückweg in Tour und Kalender
+
+Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in der Sichtung (Kartendienst)
+
+**Annahme.** Jeder Standort kann eine Garage (Abstellort der Räder) tragen — eigene Spalten neben dem Startort, gesetzt und entfernt nur von owner unter Organisatorisches → Planung, mit derselben Verortung wie der Startort (eindeutiger Treffer, sonst Bestätigung). Der Startort bleibt die Koordinate der Praxistermine. Wo der Tag am Rad beginnt und endet, ist die Garage, falls gesetzt, sonst die Praxis (`tagesorte`): so rechnen Übersicht, Kalender-Fahrwege, „Passt es?“ und der Lückenfinder. Die Tour bietet für den Start Garage / Praxis / erster Besuch und für das Ende Garage / Praxis / letzter Besuch, voreingestellt wie oben; die Wahl gilt für den Besuch der Seite. Der Rückweg steht als letzte Fahrzeile der Tour („Rückweg 18 Min. · 4,0 km“, „Ende an der Garage“) und im Kalender als Block „Rückweg ≈ n min“ ab dem Ende des letzten Besuchs; die Übersicht zeigt ihn nicht. Der Rückweg wird nicht gegen den Fahrpuffer geprüft — es folgt kein Termin.
+
+**Begründung.** Zuschnitt Jannes (UBK-EPIC-002): „eine Praxisadresse, keine persönliche“ (§20) — eine Wohnadresse von Mitarbeitenden wäre ein Beschäftigtendatum beim Kartendienst; die Oberfläche sagt das, erzwingen lässt es sich nicht. Den Startort auf die Garage zu setzen, verschöbe die Praxistermine an die Garage. Je Standort statt je Person, weil die Räder der Praxis gehören (`IDEA-PRX-017` bleibt für einen Startort je Tag). Kein Auditeintrag (ADR-010 Fassung 3, wie der Startort); Datenklasse und Frist des Standorts.
+
+**Anker.** `supabase/migrations/20261009120000_ubk_015_garage.sql` (`set_location_garage`, `clear_location_garage`, Trigger `locations_drop_garage_coordinate`); `garagenpunkt`, `tagesorte`, `saveGarage`, `clearGarage` in `src/features/tours/startort.ts`; `GarageEinstellung` in `StartortEinstellung.tsx`; `Ortswahl` in `TourenPage.tsx`; `rueckweg` in `useFahrten` (`fahrpuffer.ts`) und in `fahrwegeAusRoute` (`src/features/appointments/fahrwege.ts`); Tests `supabase/tests/garage.test.ts`, `TourenPage.test.tsx`, `StartortEinstellung.test.tsx`, `fahrwege.test.ts`, `tagesroute.test.ts`, `CalendarGrid.test.tsx`.
+
+**Änderungspfad.** Rückweg auch in der Übersicht: `tagesorte(...).ende` in `useTagesfahrzeiten` · Aufwand `klein`. Ein Startort je Tag oder Person: eigenes Epic nach §20-Prüfung (`IDEA-PRX-017`) · Aufwand `mittel`. Tour ohne Wahl, immer Garage: `Ortswahl` entfernen · Aufwand `klein`.

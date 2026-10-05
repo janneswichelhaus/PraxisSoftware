@@ -34,7 +34,7 @@ import {
   saveDocumentationDeadline,
 } from '@/features/documentation/api';
 import { FahrzeitfaktorEinstellung } from '@/features/tours/FahrzeitfaktorEinstellung';
-import { StartortEinstellung } from '@/features/tours/StartortEinstellung';
+import { GarageEinstellung, StartortEinstellung } from '@/features/tours/StartortEinstellung';
 import {
   RASTER_WERTE,
   WOCHENTAGE,
@@ -1248,6 +1248,8 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
       {darfRaster ? (
         <div className="mt-8 space-y-8">
           <StartortEinstellung />
+          {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
+          <GarageEinstellung />
           {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
           <FahrzeitfaktorEinstellung />
         </div>

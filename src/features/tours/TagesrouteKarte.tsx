@@ -19,15 +19,22 @@ import { kartenmarker, routenplan, type Stopp } from './tagesroute';
 export default function TagesrouteKarte({
   start,
   stopps,
+  ende = null,
 }: {
   readonly start: Coordinate | null;
   readonly stopps: readonly Stopp[];
+  /** Das Ende der Tour (UBK-015): Die Linie führt nach dem letzten Besuch dorthin. */
+  readonly ende?: Coordinate | null;
 }) {
   const config = useMemo(() => createMapDisplayConfig(), []);
   // ADR-019 Punkt 35: Kacheln erst, wenn die Function den Schalter offen meldet.
   const freigegeben = useKartenfreigabe(config !== null);
-  const marker = useMemo(() => kartenmarker(start, stopps), [start, stopps]);
-  const { punkte } = useMemo(() => routenplan(start, stopps), [start, stopps]);
+  const marker = useMemo(() => kartenmarker(start, stopps, ende), [start, stopps, ende]);
+  // Dieselben Wegpunkte wie die Fahrtabschnitte der Liste - eine Abfrage.
+  const { punkte } = useMemo(
+    () => routenplan(start, ende ? [...stopps, { position: ende }] : stopps),
+    [start, stopps, ende],
+  );
   const route = usePlanungsroute(punkte);
   const linie = route.data?.ok === true ? route.data.value.route.geometry : undefined;
 

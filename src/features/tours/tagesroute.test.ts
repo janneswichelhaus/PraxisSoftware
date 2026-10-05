@@ -129,3 +129,40 @@ describe('streckeZwischen (UBK-008)', () => {
     expect(streckeZwischen(0, 1, null)).toBeNull();
   });
 });
+
+describe('tagesorte und Kartenmarker (UBK-015, ANN-240)', async () => {
+  const { tagesorte } = await import('./startort');
+  const { kartenmarker } = await import('./tagesroute');
+  const PRAXIS = {
+    id: 'ort',
+    name: 'Praxis',
+    street: 'Praxisweg',
+    house_number: '1',
+    postal_code: '72070',
+    city: 'Tuebingen',
+    lat: 48.5,
+    lon: 9.05,
+    geocode_precision: 'address' as const,
+  };
+
+  it('beginnt und endet an der Garage, falls gesetzt, sonst an der Praxis', () => {
+    expect(tagesorte([PRAXIS])).toEqual({
+      start: { lat: 48.5, lon: 9.05 },
+      ende: { lat: 48.5, lon: 9.05 },
+    });
+    expect(tagesorte([{ ...PRAXIS, garage_lat: 48.49, garage_lon: 9.04 }])).toEqual({
+      start: { lat: 48.49, lon: 9.04 },
+      ende: { lat: 48.49, lon: 9.04 },
+    });
+    expect(tagesorte([])).toEqual({ start: null, ende: null });
+  });
+
+  it('setzt ein eigenes Zeichen nur fuer ein Ende an anderem Ort', () => {
+    const start = { lat: 48.49, lon: 9.04 };
+    expect(kartenmarker(start, [], start).map((m) => m.label)).toEqual(['S']);
+    expect(kartenmarker(start, [], { lat: 48.5, lon: 9.05 }).map((m) => m.label)).toEqual([
+      'S',
+      'Z',
+    ]);
+  });
+});

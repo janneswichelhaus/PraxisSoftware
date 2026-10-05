@@ -239,7 +239,12 @@ export interface GitterSpalte {
    * lang wie die Fahrzeit, endend am Beginn des Besuchs. Darstellung, keine
    * Prüfung - ob es zu knapp ist, sagt der Fahrpuffer (ANN-097).
    */
-  fahrwege?: readonly (Zeitband & { minuten: number; veraltet?: boolean })[];
+  fahrwege?: readonly (Zeitband & {
+    minuten: number;
+    veraltet?: boolean;
+    /** UBK-015: der Rückweg nach dem letzten Besuch. */
+    rueckweg?: boolean;
+  })[];
   /** Lückenfinder (UBK-014): die freien Lücken, eingefärbt. Ohne Angabe keine. */
   luecken?: readonly GitterLuecke[] | undefined;
   /**
@@ -910,12 +915,14 @@ export function CalendarGrid({
                     >
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
                       <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
-                        {w.veraltet ? '! Adresse veraltet' : `Weg ≈ ${w.minuten} min`}
+                        {w.veraltet
+                          ? '! Adresse veraltet'
+                          : `${w.rueckweg ? 'Rückweg' : 'Weg'} ≈ ${w.minuten} min`}
                       </span>
                       <span className="sr-only">
                         {w.veraltet
                           ? `Fahrzeit nicht verfügbar: Die Adresse am Termin um ${minuteZuZeit(w.bisMinute)} ist veraltet`
-                          : `Fahrweg etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
+                          : `${w.rueckweg ? 'Rückweg' : 'Fahrweg'} etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
                       </span>
                     </div>
                   );

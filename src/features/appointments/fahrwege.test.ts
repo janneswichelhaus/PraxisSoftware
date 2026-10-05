@@ -31,15 +31,38 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
     const punkte = [punkt('b', '09:00', 48.52), punkt('a', '07:00', 48.51)];
     expect(wegpunkte(punkte, START)).toHaveLength(3);
     expect(fahrwegeAusRoute(punkte, START, abschnitte(12, 19.6), ZONE)).toEqual([
-      { terminId: 'a', vonMinute: 9 * 60 - 12, bisMinute: 9 * 60, minuten: 12 },
-      { terminId: 'b', vonMinute: 11 * 60 - 20, bisMinute: 11 * 60, minuten: 20 },
+      { terminId: 'a', vonMinute: 9 * 60 - 12, bisMinute: 9 * 60, minuten: 12, meter: null },
+      { terminId: 'b', vonMinute: 11 * 60 - 20, bisMinute: 11 * 60, minuten: 20, meter: null },
+    ]);
+  });
+
+  it('zeichnet den Rueckweg nach dem letzten Besuch zur Garage oder Praxis (UBK-015)', () => {
+    const punkte = [punkt('a', '07:00', 48.51), punkt('b', '09:00', 48.52)];
+    const GARAGE = { lat: 48.49, lon: 9.04 };
+    expect(wegpunkte(punkte, GARAGE, GARAGE)).toHaveLength(4);
+    const mitStrecke = [10, 15, 18].map((m) => ({
+      durationSeconds: m * 60,
+      distanceMeters: m * 250,
+    }));
+    expect(fahrwegeAusRoute(punkte, GARAGE, mitStrecke, ZONE, GARAGE)).toEqual([
+      { terminId: 'a', vonMinute: 9 * 60 - 10, bisMinute: 9 * 60, minuten: 10, meter: 2500 },
+      { terminId: 'b', vonMinute: 11 * 60 - 15, bisMinute: 11 * 60, minuten: 15, meter: 3750 },
+      // Vom Ende des letzten Besuchs an, nicht vor einem Beginn.
+      {
+        terminId: 'b',
+        vonMinute: 11 * 60,
+        bisMinute: 11 * 60 + 18,
+        minuten: 18,
+        meter: 4500,
+        rueckweg: true,
+      },
     ]);
   });
 
   it('zeichnet ohne Startort keinen ersten Weg - ungeprueft ist nicht kurz', () => {
     const punkte = [punkt('a', '07:00', 48.51), punkt('b', '09:00', 48.52)];
     expect(fahrwegeAusRoute(punkte, null, abschnitte(15), ZONE)).toEqual([
-      { terminId: 'b', vonMinute: 11 * 60 - 15, bisMinute: 11 * 60, minuten: 15 },
+      { terminId: 'b', vonMinute: 11 * 60 - 15, bisMinute: 11 * 60, minuten: 15, meter: null },
     ]);
   });
 

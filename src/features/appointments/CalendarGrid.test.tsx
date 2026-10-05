@@ -142,6 +142,8 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
               { vonMinute: 470, bisMinute: 485, minuten: 15 },
               // ANN-236: veraltete Anschrift - ein Warnblock, keine Zahl.
               { vonMinute: 585, bisMinute: 600, minuten: 0, veraltet: true },
+              // UBK-015: der Rückweg nach dem letzten Besuch.
+              { vonMinute: 660, bisMinute: 678, minuten: 18, rueckweg: true },
             ],
           },
         ]}
@@ -174,5 +176,9 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     );
     expect(veraltet).toHaveClass('border-warnung', 'pointer-events-none');
     expect(veraltet).not.toHaveTextContent('Weg ≈');
+
+    const rueck = screen.getAllByTestId('fahrweg')[2]!;
+    expect(rueck).toHaveTextContent('Rückweg ≈ 18 min');
+    expect(rueck).toHaveTextContent('Rückweg etwa 18 Minuten, 11:00 bis 11:18');
   });
 });
