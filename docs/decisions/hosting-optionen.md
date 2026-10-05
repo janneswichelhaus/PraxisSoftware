@@ -303,25 +303,27 @@ sagen: **„Konten stehen"** (ohne Werte).
 
 ### Schritt 2e — Kartendienst in der Test-Umgebung (optional, etwa 15 Minuten)
 
-Jannes, 2026-10-04: Karte, Route und Fahrzeiten sollen auch in der
-Test-Umgebung laufen, **nur mit synthetischen Adressen** (ADR-019 Punkt 15).
-Zwei Schlüssel von PTV Developer: den **Serverschlüssel** (Route, Fahrzeiten,
-Verorten) und einen **eigenen Kachelschlüssel** fürs Kartenbild, nie derselbe
-— der Kachelschlüssel steht sichtbar im Browser (ADR-019 Punkt 19).
+Jannes, 2026-10-04: Route und Fahrzeiten sollen auch in der Test-Umgebung
+laufen, **nur mit synthetischen Adressen** (ADR-019 Punkt 15). Der
+**Serverschlüssel** von PTV Developer (Route, Fahrzeiten, Verorten) liegt nur
+im Supabase-Projekt. Das **Kartenbild** braucht einen **eigenen
+Kachelschlüssel** — er steht sichtbar im Browser, der Serverschlüssel nie
+(ADR-019 Punkt 19). Der kostenlose Plan hat nur einen Schlüssel (2026-10-05):
+Ohne zweiten bleibt das Kartenbild aus, Route und Fahrzeiten laufen trotzdem.
 
 1. **Supabase → Account → Access Tokens → Generate new token**, Name
-   `praxis-test-deploy`. Der Token gilt für **alle** Projekte des Kontos:
-   Bevor dort ein Produktivprojekt entsteht, wird er widerrufen oder das
-   Produktivprojekt kommt in ein eigenes Konto (ADR-013).
-2. **GitHub, Umgebung `test`** (wie Schritt 2d): `TESTENV_SUPABASE_ACCESS_TOKEN`
-   (der Token) und `TESTENV_PTV_TILE_API_KEY` (der Kachelschlüssel).
+   `praxis-test-deploy`, Rechte: Edge Functions lesen und schreiben, Projekt
+   lesen, sonst nichts. Der Token gilt für alle Projekte des Kontos, auf die
+   er Rechte hat: Bevor dort ein Produktivprojekt entsteht, wird er widerrufen
+   oder das Produktivprojekt kommt in ein eigenes Konto (ADR-013).
+2. **GitHub, Umgebung `test`** (wie Schritt 2d): `TESTENV_SUPABASE_ACCESS_TOKEN`.
+   Nur mit einem zweiten PTV-Schlüssel zusätzlich `TESTENV_PTV_TILE_API_KEY`.
 3. **Supabase, Testprojekt → Edge Functions → Secrets**, vier Einträge:
    `LOCATION_PROVIDER` = `ptv`, `PTV_API_KEY` = Serverschlüssel,
-   `LOCATION_DATA_GATE` = `synthetic`, `APP_ENVIRONMENT` = `test`. Der
-   Serverschlüssel liegt nur hier, nicht in GitHub.
+   `LOCATION_DATA_GATE` = `synthetic`, `APP_ENVIRONMENT` = `test`.
 4. **GitHub → Actions → Test-Umgebung → Run workflow** (ohne „neu
-   aufsetzen"). Danach am Handy **Kalender → Touren**: Karte mit Route; in der
-   Übersicht Wegbalken und Fahrzeiten.
+   aufsetzen"). Danach am Handy **Kalender → Touren**: Route und Fahrzeiten; in
+   der Übersicht Wegbalken.
 
 ### Schritt 3 — Claude baut OPS-002a (gebaut 2026-09-25)
 
