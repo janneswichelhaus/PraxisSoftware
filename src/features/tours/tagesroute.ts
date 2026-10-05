@@ -159,6 +159,27 @@ export function fahrzeitZwischen(
 }
 
 /**
+ * Die Strecke zwischen zwei aufeinanderfolgenden Stopps in Metern - dieselbe
+ * Rechnung wie `fahrzeitZwischen`, über die Länge der Abschnitte (UBK-008).
+ * Nur zur Anzeige in der Tour; geprüft wird weiter allein die Fahrzeit.
+ */
+export function streckeZwischen(
+  von: number | null,
+  nach: number | null,
+  abschnitte: readonly { readonly distanceMeters: number }[] | null,
+): number | null {
+  if (von === null || nach === null || abschnitte === null) return null;
+  if (nach < von) return null;
+  let summe = 0;
+  for (let i = von; i < nach; i += 1) {
+    const abschnitt = abschnitte[i];
+    if (!abschnitt) return null;
+    summe += abschnitt.distanceMeters;
+  }
+  return summe;
+}
+
+/**
  * Das Navigationsziel eines Stopps (MAP-006d, ANN-018): die Koordinate, sonst
  * die Anschrift ohne Namen. Ein Praxistermin hat keines. Die Position der
  * Route hat Vorrang; `navigationsZiel` nimmt die der Tagesliste.

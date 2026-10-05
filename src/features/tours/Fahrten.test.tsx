@@ -13,6 +13,23 @@ const PRUEFUNG = {
 };
 
 describe('Fahrtabschnitt', () => {
+  it('nennt neben der Fahrzeit die Strecke des Abschnitts (UBK-008)', () => {
+    render(
+      <Fahrtabschnitt
+        sekunden={1320}
+        meter={7120}
+        pruefung={{ ...PRUEFUNG, shortfall_minutes: 0 }}
+        zeitzone="Europe/Berlin"
+      />,
+    );
+    expect(screen.getByText(/Fahrt 22 Min\. · 7,1 km · passt/)).toBeInTheDocument();
+  });
+
+  it('laesst die Strecke weg, wenn sie fehlt oder null ist', () => {
+    render(<Fahrtabschnitt sekunden={600} meter={0} pruefung={null} zeitzone="Europe/Berlin" />);
+    expect(screen.getByText('Fahrt 10 Min.')).toBeInTheDocument();
+  });
+
   it('warnt bei Unterschreitung mit Minuten und fruehestem Beginn', () => {
     render(<Fahrtabschnitt sekunden={720} pruefung={PRUEFUNG} zeitzone="Europe/Berlin" />);
     const zeile = screen.getByText(/Fahrt 12 Min\./);

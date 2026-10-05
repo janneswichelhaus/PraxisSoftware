@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DayPlanEntry } from '@/features/today/api';
 import {
   fahrzeitZwischen,
+  streckeZwischen,
   kartenmarker,
   routenplan,
   stoppsDesTages,
@@ -114,5 +115,17 @@ describe('routenplan und fahrzeitZwischen', () => {
     expect(fahrzeitZwischen(index[1]!, index[2]!, abschnitte)).toBeNull();
     expect(fahrzeitZwischen(index[1]!, index[3]!, abschnitte)).toBe(720);
     expect(fahrzeitZwischen(index[1]!, index[3]!, null)).toBeNull();
+  });
+});
+
+describe('streckeZwischen (UBK-008)', () => {
+  const abschnitte = [{ distanceMeters: 1200 }, { distanceMeters: 3400 }];
+  it('summiert die Abschnitte zwischen zwei Wegpunkten', () => {
+    expect(streckeZwischen(0, 2, abschnitte)).toBe(4600);
+    expect(streckeZwischen(1, 2, abschnitte)).toBe(3400);
+  });
+  it('gibt ohne Position oder Route nichts', () => {
+    expect(streckeZwischen(null, 1, abschnitte)).toBeNull();
+    expect(streckeZwischen(0, 1, null)).toBeNull();
   });
 });

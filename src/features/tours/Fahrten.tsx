@@ -83,11 +83,17 @@ export function Routenzusammenfassung({
  */
 export function Fahrtabschnitt({
   sekunden,
+  meter = null,
   pruefung,
   zeitzone,
   naechsterBeginn,
 }: {
   readonly sekunden: number | null;
+  /**
+   * Die Strecke des Abschnitts (UBK-008, Wunsch Jannes): zum Vergleich mit
+   * anderen Routenplanern - nur Anzeige, geprüft wird die Fahrzeit.
+   */
+  readonly meter?: number | null;
   readonly pruefung: Pufferpruefung | null;
   readonly zeitzone: string;
   /** Beginn des nächsten Stopps (`starts_at`), für die verbleibende Luft. */
@@ -101,7 +107,10 @@ export function Fahrtabschnitt({
       </p>
     );
   }
-  const fahrt = `Fahrt ${formatiereFahrzeit(sekunden)}`;
+  const fahrt =
+    meter === null || meter <= 0
+      ? `Fahrt ${formatiereFahrzeit(sekunden)}`
+      : `Fahrt ${formatiereFahrzeit(sekunden)} · ${formatiereStrecke(meter)}`;
   if (pruefung === null) {
     return <p className="text-ink-muted border-line ml-10 border-l-2 pl-3 text-sm">{fahrt}</p>;
   }
