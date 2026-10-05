@@ -13,6 +13,19 @@ const PRUEFUNG = {
 };
 
 describe('Fahrtabschnitt', () => {
+  it('sagt bei zwei Terminen am selben Ort „Gleicher Ort" statt einer Fahrzeit (UBK-009)', () => {
+    render(
+      <Fahrtabschnitt
+        sekunden={0}
+        meter={0}
+        pruefung={{ ...PRUEFUNG, shortfall_minutes: 0 }}
+        zeitzone="Europe/Berlin"
+      />,
+    );
+    expect(screen.getByText('Gleicher Ort – keine Fahrt')).toBeInTheDocument();
+    expect(screen.queryByText(/unter 1 Min/)).toBeNull();
+  });
+
   it('nennt neben der Fahrzeit die Strecke des Abschnitts (UBK-008)', () => {
     render(
       <Fahrtabschnitt

@@ -107,6 +107,15 @@ export function Fahrtabschnitt({
       </p>
     );
   }
+  // Zwei Termine am selben Ort: Es wird nicht gefahren - „unter 1 Min."
+  // klänge nach einer Fahrt (Sichtung Jannes 2026-10-05, UBK-009).
+  if (sekunden === 0) {
+    return (
+      <p className="text-ink-muted border-line ml-10 border-l-2 pl-3 text-sm">
+        Gleicher Ort – keine Fahrt
+      </p>
+    );
+  }
   const fahrt =
     meter === null || meter <= 0
       ? `Fahrt ${formatiereFahrzeit(sekunden)}`

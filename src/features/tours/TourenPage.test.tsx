@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { fireEvent, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as TodayApi from '@/features/today/api';
@@ -111,8 +111,28 @@ describe('TourenPage', () => {
     expect(await screen.findByText('Max Mustermann')).toBeInTheDocument();
     expect(fetchDayPlan).toHaveBeenCalledWith('2026-09-10', 'jannes');
     expect(fetchDayRoute).toHaveBeenCalledWith('2026-09-10', 'jannes');
+    // UBK-009: Am Telefon steht die Karte zugeklappt - die Liste zuerst. Sie
+    // wird erst gezeichnet, wenn jemand sie aufklappt.
+    expect(screen.queryByText('Kartenattrappe')).toBeNull();
+    fireEvent.click(screen.getByText('Karte'));
     expect(await screen.findByText('Kartenattrappe')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Drucken' })).toBeInTheDocument();
+  });
+
+  it('stellt Person und Tag in eine Zeile und den Start an die Liste (UBK-009)', async () => {
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+    await screen.findByText('Max Mustermann');
+    const person = screen.getByLabelText('Person');
+    const tag = screen.getByLabelText('Tag');
+    expect(person.closest('.grid')).toBe(tag.closest('.grid'));
+    expect(person.closest('.grid')).toHaveClass('grid-cols-2');
+    // Der Start steht in der Liste, nach ihrer Überschrift.
+    const liste = screen.getByRole('heading', { name: /^Tourenliste/ });
+    expect(
+      liste.compareDocumentPosition(screen.getByLabelText('Start')) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.queryByText(/Die Besuche eines Tages in Fahrtreihenfolge/)).toBeNull();
   });
 
   it('nimmt die Person aus der Adresse', async () => {
