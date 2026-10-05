@@ -2805,7 +2805,7 @@ Recht · entschieden (Jannes) · 2026-10-05 · Jannes (B17, „wie empfohlen“)
 
 **Annahme.** Auf der Rechnung steht je bestätigtem Heilmittel eine Position. Ihr Betrag ist der Anteil am Terminhonorar im Verhältnis der Preise der Heilmittel in der am Leistungstag geltenden Preisliste; Restcents gehen an den größten Bruchteil, bei Gleichstand an die erste Position der Liste. Die Summe je Termin ist genau das Honorar. Ein Vergleichsbetrag (Kassen- oder Beihilfesatz) steht nicht auf der Rechnung.
 
-**Begründung.** Beihilfe (§ 23 BBhV mit Anlage 9) und private Versicherung erstatten je Heilmittel; eine Zeile je Termin ließe sich keinem Höchstbetrag zuordnen (ADR-009 Punkt 23). Die Preise der Heilmittel pflegt owner ohnehin; als Gewichte gibt jede Kombination eine Aufteilung ohne eigene Pflege. Unsicher: ob eine Erstattungsstelle eine Aufteilung beanstandet, die von ihren Höchstbeträgen abweicht.
+**Begründung.** Beihilfe (Paragraf 23 BBhV mit Anlage 9) und private Versicherung erstatten je Heilmittel; eine Zeile je Termin ließe sich keinem Höchstbetrag zuordnen (ADR-009 Punkt 23). Die Preise der Heilmittel pflegt owner ohnehin; als Gewichte gibt jede Kombination eine Aufteilung ohne eigene Pflege. Unsicher: ob eine Erstattungsstelle eine Aufteilung beanstandet, die von ihren Höchstbeträgen abweicht.
 
 **Anker.** `app.session_fee_lines` in `supabase/migrations/20261007110000_abr_031_session_fee_recording.sql`.
 

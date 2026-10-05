@@ -1668,28 +1668,6 @@ ohnehin nicht nebenbei angefasst werden.
 
 **Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
 
-### BEF-099 — Der Preis entsteht aus den Heilmitteln statt aus einem Terminhonorar
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-02 |
-| Bereich | Abrechnung: Leistungskatalog, Leistungserfassung, Rechnung; Behandlungsgrundlage |
-| Quelle  | Jannes, Abnahme der Annahmen Block 4 (ANN-070, ANN-064, ANN-066, ANN-073, ANN-140) |
-| Status  | eingeplant in ABR-EPIC-007 |
-| Berührt | ADR-009 Fassung 4 Punkte 5 und 22; ADR-020; `record_billable_services`, `get_billable_service_draft`, Katalog (`service_catalog_*`), `treatment_base_items.used_quantity` |
-
-**Beobachtung.** Heute ist jede Katalogposition ein Heilmittel mit eigenem Preis. Am Termin bestätigte Heilmittel (ANN-140) werden je Position als Leistung erfasst und berechnet. KG plus MT plus Hausbesuch ergeben damit drei Preise, und dieselbe Erfassung schreibt die Heilmittelmenge fort (ANN-073). Eine patientenbezogene Honorarvereinbarung gibt es nicht.
-
-**Erwartet** (Jannes, 2026-10-02):
-- Je durchgeführtem Behandlungstermin entsteht genau einmal das vereinbarte Terminhonorar (heute 140 € für 60 Minuten, inklusive Dokumentation und Hausbesuch).
-- Die Heilmittelauswahl verändert den Preis nicht.
-- Die erbrachten Heilmittel werden weiter bestätigt und schreiben die Mengen fort, aber ohne eigenen Preis.
-- Tarife und patientenbezogene Honorarvereinbarungen sind versioniert mit Gültigkeitsbeginn. Maßgeblich ist die am Leistungstag geltende Vereinbarung, sonst der Tarif.
-- Preisänderungen verändern keine erfasste Leistung und keine Rechnung.
-- Bestehende Katalogpositionen und Abrechnungen bleiben erhalten und lesbar.
-- Die Rechnungsdarstellung ist austauschbar an einer Stelle, bis B17 entschieden ist.
-- Terminzahl (BEF-096), Heilmittelmenge (ANN-073) und Rechnungsbetrag müssen danach zusammenpassen; ein Test prüft alle drei an einem Fall.
-
 ### BEF-114 — Training: Paketpreise für drei oder sechs Monate
 
 |         |   |
@@ -1700,7 +1678,7 @@ ohnehin nicht nebenbei angefasst werden.
 | Status  | offen |
 | Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
 
-**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden).
+**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden). **2026-10-05:** aus ABR-EPIC-007 herausgelöst, eigener kleiner Loop, sobald die drei Angaben feststehen.
 
 
 ### BEF-120 — Ein Übersichtstest hängt an der Uhrzeit des Laufs

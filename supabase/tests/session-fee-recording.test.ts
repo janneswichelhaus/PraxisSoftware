@@ -323,4 +323,41 @@ describe('Terminhonorar je Termin', () => {
       ).rejects.toThrow(/immutable/);
     });
   });
+
+  describe('Loeschen nach der Frist (ADR-008)', () => {
+    it('faellt mit der Akte: Honorar, Vereinbarung und Leistung', async () => {
+      await asUserCommitted(users.ownerTherapist, VEREINBAREN, [
+        patients.petra,
+        '2026-01-01',
+        11000,
+      ]);
+      stunde += 2;
+      const { rows } = await asPostgres<{ id: string }>(
+        `insert into public.appointments (
+           organization_id, patient_id, staff_member_id, location_id,
+           appointment_type, status, starts_at, ends_at, completed_at, completed_by
+         ) values (
+           $1, $2, $3, $4, 'practice', 'documented',
+           date_trunc('hour', now()) - make_interval(hours => $5::int),
+           date_trunc('hour', now()) - make_interval(hours => $5::int - 1),
+           now(), $6
+         ) returning id`,
+        [organizationId, patients.petra, STAFF_ANNA, LOCATION, stunde, users.ownerTherapist],
+      );
+      await erfassen(rows[0]!.id, [KATALOG.kg]);
+      expect(await honorar(rows[0]!.id)).toMatchObject([{ amount_cents: 11000 }]);
+
+      await asPostgres('select app.delete_patient_record($1::uuid, gen_random_uuid(), now())', [
+        patients.petra,
+      ]);
+
+      const { rows: rest } = await asPostgres<{ honorare: number; vereinbarungen: number }>(
+        `select
+           (select count(*)::int from public.appointment_session_fees where appointment_id = $1) as honorare,
+           (select count(*)::int from public.patient_fee_agreements where patient_id = $2) as vereinbarungen`,
+        [rows[0]!.id, patients.petra],
+      );
+      expect(rest[0]).toEqual({ honorare: 0, vereinbarungen: 0 });
+    });
+  });
 });
