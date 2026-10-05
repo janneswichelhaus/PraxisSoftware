@@ -32,6 +32,8 @@ const leistungenAmTerminSchema = z.object({
   recorded_at: z.string().nullable(),
   recorded_by_name: z.string().nullable(),
   basis_items: z.array(positionSchema).nullable(),
+  /** Festgeschriebenes Terminhonorar; nur für owner und office (ABR-031). */
+  session_fee_cents: z.number().nullable().default(null),
 });
 export type LeistungenAmTermin = z.infer<typeof leistungenAmTerminSchema>;
 

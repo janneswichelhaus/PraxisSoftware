@@ -38,6 +38,11 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     currency: 'EUR',
     has_draft: false,
     draft_id: null,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
+    first_performed_on: null,
+    last_performed_on: null,
     ...rest,
   };
 }
@@ -64,6 +69,9 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     payment_state: 'unpaid',
     overdue: false,
     cancelled: false,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
     ...rest,
   };
 }
@@ -168,6 +176,41 @@ describe('InvoicesPage', () => {
         service_area: 'therapy',
       }),
     );
+  });
+
+  it('buendelt nach Verordnung und legt den Entwurf fuer sie an (ABR-032)', async () => {
+    const nutzer = userEvent.setup();
+    fetchKandidaten.mockResolvedValue([
+      kandidat({
+        treatment_basis_id: 'g1',
+        basis_kind: 'follow_up',
+        basis_issued_on: '2026-07-15',
+        first_performed_on: '2026-07-22',
+        last_performed_on: '2026-08-27',
+      }),
+    ]);
+    createEntwurf.mockResolvedValue('neu-2');
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText('Folgeverordnung vom 15.07.2026')).toBeInTheDocument();
+    expect(screen.getByText('22.07.2026 bis 27.08.2026')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Entwurf anlegen' }));
+    expect(createEntwurf).toHaveBeenCalledWith(
+      expect.objectContaining({ treatment_basis_id: 'g1' }),
+    );
+  });
+
+  it('nennt an der Rechnung ihre Verordnung statt des Monats (ABR-032)', async () => {
+    fetchRechnungen.mockResolvedValue([
+      rechnung({ basis_kind: 'first', basis_issued_on: '2026-07-15', treatment_basis_id: 'g1' }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(
+      await screen.findByText(/Erstverordnung vom 15.07.2026 · Behandlung/),
+    ).toBeInTheDocument();
   });
 
   it('bietet keinen zweiten Entwurf fuer denselben Monat an', async () => {

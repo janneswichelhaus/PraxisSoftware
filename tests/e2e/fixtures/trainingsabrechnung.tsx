@@ -75,6 +75,7 @@ const vorschlag: Vorschlag[] = [
     tax_rate_permille: 190,
     service_area: 'training',
     suggested: false,
+    in_session_fee: false,
   },
 ];
 
@@ -96,6 +97,7 @@ const leistungen: Leistung[] = [
     tax_treatment: 'taxable',
     tax_rate_permille: 190,
     status: 'billable',
+    session_fee: false,
   },
 ];
 
@@ -111,6 +113,11 @@ const kandidaten: Kandidat[] = [
     currency: 'EUR',
     has_draft: false,
     draft_id: null,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
+    first_performed_on: null,
+    last_performed_on: null,
   },
   {
     patient_id: null,
@@ -123,6 +130,11 @@ const kandidaten: Kandidat[] = [
     currency: 'EUR',
     has_draft: false,
     draft_id: null,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
+    first_performed_on: null,
+    last_performed_on: null,
   },
 ];
 
@@ -148,6 +160,9 @@ const rechnungen: Rechnung[] = [
     payment_state: 'unpaid',
     overdue: false,
     cancelled: false,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
   },
   {
     id: AUSGESTELLT,
@@ -170,6 +185,9 @@ const rechnungen: Rechnung[] = [
     payment_state: 'unpaid',
     overdue: false,
     cancelled: false,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
   },
 ];
 

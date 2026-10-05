@@ -26,6 +26,7 @@ import {
   fetchKatalogPositionen,
   fetchKatalogVersionen,
   publishKatalogVersion,
+  setTarif,
   steuerLabels,
   writeKatalogPositionen,
   type KatalogPosition,
@@ -657,6 +658,7 @@ function Preisliste({
       }
       rahmen={!bearbeitbar}
     >
+      <Tarif version={version} bearbeitbar={bearbeitbar} />
       {!bearbeitbar ? (
         <ul className="divide-line divide-y">
           {positionen.data.length === 0 ? (
@@ -812,6 +814,99 @@ function Preisliste({
         </div>
       )}
     </Section>
+  );
+}
+
+/**
+ * Der Tarif des Terminhonorars an der Preisliste (ABR-030, ADR-009 Punkt 22,
+ * ANN-231).
+ *
+ * Je Behandlungstermin entsteht genau einmal dieses Honorar, es sei denn,
+ * mit der Person ist ein anderes vereinbart. Die Preise der Heilmittel
+ * darunter verändern es nicht; auf der Rechnung teilen sie es nur auf
+ * (ANN-233). Gespeichert wird getrennt von den Positionen, eigener Knopf,
+ * eigener Aufruf; mit dem Inkraftsetzen friert der Tarif mit der Liste ein.
+ */
+function Tarif({ version, bearbeitbar }: { version: KatalogVersion; bearbeitbar: boolean }) {
+  const queryClient = useQueryClient();
+  const [eingabe, setEingabe] = useState<string | null>(null);
+  const [geprueft, setGeprueft] = useState(false);
+  const wert =
+    eingabe ?? (version.session_fee_cents === null ? '' : centZuEingabe(version.session_fee_cents));
+  const cent = wert.trim() === '' ? null : parseEuroZuCent(wert);
+  const fehler =
+    geprueft && wert.trim() !== '' && cent === null
+      ? 'Bitte einen Betrag in Euro eingeben oder das Feld leeren.'
+      : undefined;
+
+  const speichern = useMutation({
+    mutationFn: () => setTarif(version.id, cent),
+    onSuccess: async () => {
+      setEingabe(null);
+      setGeprueft(false);
+      await queryClient.invalidateQueries({ queryKey: ['katalog-versionen'] });
+    },
+  });
+
+  if (!bearbeitbar) {
+    return version.session_fee_cents === null ? (
+      <p className="text-ink-muted mb-3 text-sm">
+        Kein Terminhonorar. Ohne Vereinbarung lassen sich an Terminen in dieser Zeit keine
+        Heilmittel bestätigen.
+      </p>
+    ) : (
+      <p className="text-ink text-liste mb-3">
+        Terminhonorar je Behandlungstermin{' '}
+        <strong className="font-medium tabular-nums">
+          {formatEuro(version.session_fee_cents)}
+        </strong>
+      </p>
+    );
+  }
+
+  const geaendert = eingabe !== null;
+  return (
+    <form
+      className="border-line mb-6 flex flex-col gap-3 border-b pb-6"
+      aria-label="Terminhonorar"
+      onSubmit={(event) => {
+        event.preventDefault();
+        setGeprueft(true);
+        if (wert.trim() !== '' && cent === null) return;
+        speichern.mutate();
+      }}
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="sm:w-56">
+          <Field
+            label="Terminhonorar je Behandlungstermin"
+            inputMode="decimal"
+            value={wert}
+            hint="in Euro, einschließlich Dokumentation und Hausbesuch"
+            error={fehler}
+            onChange={(event) => setEingabe(event.target.value)}
+          />
+        </div>
+        <div>
+          <Button
+            type="submit"
+            variant={geaendert ? 'primary' : 'secondary'}
+            disabled={speichern.isPending || !geaendert}
+          >
+            {speichern.isPending ? 'Wird gespeichert …' : 'Terminhonorar speichern'}
+          </Button>
+        </div>
+      </div>
+      <p className="text-ink-muted text-sm">
+        Gilt einmal je Termin, egal welche Heilmittel bestätigt werden. Die Preise der Heilmittel
+        teilen es auf der Rechnung auf.
+      </p>
+      {speichern.isError ? (
+        <Statusmeldung ton="fehler">
+          {speichern.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+        </Statusmeldung>
+      ) : null}
+    </form>
   );
 }
 

@@ -30,6 +30,8 @@ export const katalogVersionSchema = z.object({
   label: z.string(),
   valid_from: z.string(),
   published_at: z.string().nullable(),
+  /** Tarif des Terminhonorars in Cent (ABR-030, ANN-231); null: keiner. */
+  session_fee_cents: z.number().nullable(),
 });
 
 export type KatalogVersion = z.infer<typeof katalogVersionSchema>;
@@ -73,7 +75,7 @@ export const artLabels: Record<KatalogPosition['item_kind'], string> = {
 export async function fetchKatalogVersionen(): Promise<KatalogVersion[]> {
   const { data, error } = await getSupabase()
     .from('service_catalog_versions')
-    .select('id, label, valid_from, published_at')
+    .select('id, label, valid_from, published_at, session_fee_cents')
     .order('valid_from', { ascending: false });
 
   if (error) throw new Error('Die Preislisten konnten nicht geladen werden.');
@@ -149,6 +151,85 @@ export async function publishKatalogVersion(versionId: string): Promise<void> {
   });
 
   if (error) throw new Error('Die Preisliste konnte nicht in Kraft gesetzt werden.');
+}
+
+/** Tarif des Terminhonorars am Entwurf setzen (ABR-030). Nur owner, verbindlich am Server. */
+export async function setTarif(versionId: string, cent: number | null): Promise<void> {
+  const { error } = await getSupabase().rpc('set_service_catalog_session_fee', {
+    p_version_id: versionId,
+    p_session_fee_cents: cent,
+  });
+
+  if (error) throw new Error('Das Terminhonorar konnte nicht gespeichert werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Honorarvereinbarung je Person (ABR-030, ADR-009 Punkte 5 und 22, ANN-231)
+// -----------------------------------------------------------------------------
+
+const vereinbarungSchema = z.object({
+  id: z.string(),
+  valid_from: z.string(),
+  session_fee_cents: z.number(),
+  created_at: z.string(),
+  created_by_name: z.string().nullable(),
+});
+
+export type Honorarvereinbarung = z.infer<typeof vereinbarungSchema>;
+
+const honorarSchema = z.object({
+  current_cents: z.number().nullable(),
+  current_source: z.enum(['agreement', 'tariff']).nullable(),
+  current_valid_from: z.string().nullable(),
+  agreements: z.array(vereinbarungSchema),
+});
+
+export type Honorarstand = z.infer<typeof honorarSchema>;
+
+/** Das heute geltende Honorar und die Vereinbarungen; `null` heißt: nicht sichtbar. */
+export async function fetchHonorar(patientId: string): Promise<Honorarstand | null> {
+  const { data, error } = (await getSupabase().rpc('get_patient_session_fee', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+
+  if (error) throw new Error('Das Honorar konnte nicht geladen werden.');
+  const zeilen = z.array(honorarSchema).parse(data ?? []);
+  return zeilen[0] ?? null;
+}
+
+export class VereinbarungAmSelbenTag extends Error {}
+
+export async function createVereinbarung(
+  patientId: string,
+  gueltigAb: string,
+  cent: number,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('create_patient_fee_agreement', {
+    p_patient_id: patientId,
+    p_valid_from: gueltigAb,
+    p_session_fee_cents: cent,
+  })) as { error: { message?: string } | null };
+
+  if (
+    error?.message?.includes('already exists') ||
+    error?.message?.includes('patient_fee_agreements_patient_from_key')
+  ) {
+    throw new VereinbarungAmSelbenTag();
+  }
+  if (error) throw new Error('Die Vereinbarung konnte nicht gespeichert werden.');
+}
+
+export async function deleteVereinbarung(id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_patient_fee_agreement', {
+    p_agreement_id: id,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('already applied')) {
+    throw new Error(
+      'Die Vereinbarung ist schon an einem Termin angewandt und bleibt als Nachweis stehen.',
+    );
+  }
+  if (error) throw new Error('Die Vereinbarung konnte nicht entfernt werden.');
 }
 
 export async function deleteKatalogVersion(versionId: string): Promise<void> {
@@ -310,6 +391,13 @@ const kandidatSchema = z.object({
   // BEF-018: Die Zeile sagt nicht nur, dass ein Entwurf steht — sie führt
   // auch hin. Ohne die Kennung war er in der Liste darunter zu suchen.
   draft_id: z.string().nullable(),
+  // ABR-032: Mit Grundlage ist die Verordnung die Klammer der Rechnung
+  // (ANN-077 Fassung 2); ohne bleibt es der Monat.
+  treatment_basis_id: z.string().nullable().default(null),
+  basis_kind: z.string().nullable().default(null),
+  basis_issued_on: z.string().nullable().default(null),
+  first_performed_on: z.string().nullable().default(null),
+  last_performed_on: z.string().nullable().default(null),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -363,6 +451,10 @@ const rechnungSchema = z.object({
   // Storniert ist ein abgeleiteter Zustand: Es gibt ein Stornodokument zu
   // dieser Rechnung (ABR-003c, ANN-079). An der Rechnung steht dazu nichts.
   cancelled: z.boolean(),
+  /** Die Verordnung als Klammer (ABR-032); null: Monat oder Training. */
+  treatment_basis_id: z.string().nullable().default(null),
+  basis_kind: z.string().nullable().default(null),
+  basis_issued_on: z.string().nullable().default(null),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
@@ -387,6 +479,8 @@ export async function fetchRechnungen(): Promise<Rechnung[]> {
 const dokumentSchema = z.object({
   schema_version: z.number(),
   period_month: z.string(),
+  // ABR-032 (schema_version 5): erster und letzter Leistungstag.
+  service_period: z.object({ from: z.string(), to: z.string() }).nullable().optional(),
   // ABR-010: der Leistungsbereich im Snapshot (ADR-009 Punkt 17). `optional`,
   // weil Snapshots mit `schema_version` 1 und 2 ihn noch nicht tragen.
   service_area: z.enum(['therapy', 'training']).optional(),
@@ -447,6 +541,8 @@ const dokumentSchema = z.object({
       currency: z.string(),
       tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
       tax_rate_permille: z.number(),
+      // ABR-032 (schema_version 5): Anteil am Terminhonorar (ANN-233).
+      session_fee: z.boolean().optional(),
     }),
   ),
   tax_groups: z.array(
@@ -532,21 +628,30 @@ export async function createEntwurf(
   kandidat: Pick<
     Kandidat,
     'patient_id' | 'training_relationship_id' | 'period_month' | 'service_area'
-  >,
+  > &
+    Partial<Pick<Kandidat, 'treatment_basis_id'>>,
 ): Promise<string> {
   const { data, error } = (
-    kandidat.training_relationship_id
-      ? await getSupabase().rpc('create_training_invoice_draft', {
-          p_training_relationship_id: kandidat.training_relationship_id,
-          p_period_month: kandidat.period_month,
+    kandidat.treatment_basis_id
+      ? // ABR-032: eine Rechnung je Behandlungsgrundlage (ANN-077 Fassung 2).
+        await getSupabase().rpc('create_invoice_draft_for_basis', {
+          p_treatment_basis_id: kandidat.treatment_basis_id,
         })
-      : await getSupabase().rpc('create_invoice_draft', {
-          p_patient_id: kandidat.patient_id,
-          p_period_month: kandidat.period_month,
-          p_service_area: kandidat.service_area,
-        })
-  ) as { data: unknown; error: unknown };
+      : kandidat.training_relationship_id
+        ? await getSupabase().rpc('create_training_invoice_draft', {
+            p_training_relationship_id: kandidat.training_relationship_id,
+            p_period_month: kandidat.period_month,
+          })
+        : await getSupabase().rpc('create_invoice_draft', {
+            p_patient_id: kandidat.patient_id,
+            p_period_month: kandidat.period_month,
+            p_service_area: kandidat.service_area,
+          })
+  ) as { data: unknown; error: { message?: string } | null };
 
+  if (error?.message?.includes('already exists')) {
+    throw new Error('Für diese Verordnung steht schon ein Entwurf. Bitte die Liste neu laden.');
+  }
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
   const id = z.string().uuid().safeParse(data);
   if (!id.success) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
@@ -607,6 +712,12 @@ export async function stelleRechnungAus(invoiceId: string): Promise<string> {
   if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
   if (error?.message?.includes('invoice recipient address incomplete')) {
     throw new AnschriftUnvollstaendig(error.details);
+  }
+  // ABR-032: Ein Termin liegt inzwischen auf einer anderen Verordnung.
+  if (error?.message?.includes('do not belong to the treatment basis')) {
+    throw new Error(
+      'Ein Termin dieser Rechnung gehört inzwischen zu einer anderen Verordnung. Bitte den Entwurf verwerfen und neu anlegen.',
+    );
   }
   if (error) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
   const nummer = z.string().safeParse(data);
@@ -938,6 +1049,8 @@ const vorschlagSchema = z.object({
   tax_rate_permille: z.number(),
   service_area: z.enum(['therapy', 'training']),
   suggested: z.boolean(),
+  /** Heilmittel am Behandlungstermin: geht im Terminhonorar auf (ABR-031). */
+  in_session_fee: z.boolean().default(false),
 });
 
 export type Vorschlag = z.infer<typeof vorschlagSchema>;
@@ -974,6 +1087,8 @@ const leistungSchema = z.object({
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
   status: z.enum(['billable', 'invoiced']),
+  /** Anteil am Terminhonorar statt Katalogpreis (ABR-031, ANN-233). */
+  session_fee: z.boolean().default(false),
 });
 
 export type Leistung = z.infer<typeof leistungSchema>;
@@ -991,6 +1106,9 @@ export async function fetchLeistungen(): Promise<Leistung[]> {
 
 export class KontingentAusgeschoepft extends Error {}
 
+/** Für den Leistungstag gilt weder ein Tarif noch eine Vereinbarung (ABR-031). */
+export class KeinTerminhonorar extends Error {}
+
 export async function recordLeistungen(
   appointmentId: string,
   positionen: { catalog_item_id: string; quantity: number }[],
@@ -1001,6 +1119,7 @@ export async function recordLeistungen(
   })) as { error: { message?: string } | null };
 
   if (error?.message?.includes('quantity exhausted')) throw new KontingentAusgeschoepft();
+  if (error?.message?.includes('no session fee')) throw new KeinTerminhonorar();
   if (error) throw new Error('Die Leistungen konnten nicht erfasst werden.');
 }
 

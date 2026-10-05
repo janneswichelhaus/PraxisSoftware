@@ -16,6 +16,7 @@ const offen: LeistungenApi.LeistungenAmTermin = {
   recorded_at: null,
   recorded_by_name: null,
   basis_items: [{ remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: 7 }],
+  session_fee_cents: null,
 };
 
 function vorschlag(id: string, label: string, suggested: boolean): BillingApi.Vorschlag {
@@ -30,6 +31,7 @@ function vorschlag(id: string, label: string, suggested: boolean): BillingApi.Vo
     tax_rate_permille: 0,
     service_area: 'therapy',
     suggested,
+    in_session_fee: true,
   };
 }
 
@@ -56,6 +58,7 @@ vi.mock('@/features/billing/api', async (importOriginal) => {
 });
 
 const { HeilmittelBestaetigen } = await import('./HeilmittelBestaetigen');
+const BillingErrors = await import('@/features/billing/api');
 
 function rendern(status: 'documented' | 'completed' | 'invoiced' = 'documented') {
   return renderWithProviders(
@@ -152,5 +155,25 @@ describe('Termin abhaken: Heilmittel bestätigen (PRX-009)', () => {
     expect(container).toBeEmptyDOMElement();
     expect(screen.queryByText(/dokumentation/i)).toBeNull();
     expect(fetchLeistungenAmTermin).not.toHaveBeenCalled();
+  });
+
+  it('nennt das festgeschriebene Terminhonorar, wenn der Server es liefert (ABR-031)', async () => {
+    fetchLeistungenAmTermin.mockResolvedValue({
+      ...offen,
+      services: [{ code: 'KG', label: 'Krankengymnastik', quantity: 1, status: 'billable' }],
+      session_fee_cents: 14000,
+    });
+    rendern();
+    expect(await screen.findByText('140,00 €')).toBeInTheDocument();
+    expect(screen.getByText(/Terminhonorar/)).toBeInTheDocument();
+  });
+
+  it('sagt, wenn fuer den Tag kein Terminhonorar gilt (ABR-031)', async () => {
+    const user = userEvent.setup();
+    recordLeistungen.mockRejectedValue(new BillingErrors.KeinTerminhonorar());
+    rendern();
+    await user.click(await screen.findByRole('button', { name: 'Heilmittel bestätigen' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, so bestätigen' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/kein Terminhonorar/);
   });
 });

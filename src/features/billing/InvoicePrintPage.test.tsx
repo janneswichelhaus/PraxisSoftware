@@ -427,4 +427,55 @@ describe('Rechnungsblatt', () => {
       expect(screen.queryByText(/Selbstzahlerin/)).toBeNull();
     });
   });
+
+  describe('Positionen mit Behandlungstagen (ABR-032)', () => {
+    const zeile = (tag: string, code: string, label: string, preis: number) => ({
+      performed_on: tag,
+      code,
+      label,
+      item_kind: 'treatment' as const,
+      quantity: 1,
+      unit_price_cents: preis,
+      line_total_cents: preis,
+      currency: 'EUR',
+      tax_treatment: 'exempt_healthcare' as const,
+      tax_rate_permille: 0,
+      session_fee: true,
+    });
+
+    it('fasst ab schema_version 5 je Heilmittel zusammen und nennt die Tage', async () => {
+      fetchRechnung.mockResolvedValue(
+        ausgestellt({
+          schema_version: 5,
+          service_period: { from: '2026-07-22', to: '2026-08-27' },
+          items: [
+            zeile('2026-07-22', 'KG', 'Krankengymnastik', 10000),
+            zeile('2026-07-22', 'HB', 'Hausbesuchspauschale', 4000),
+            zeile('2026-08-27', 'KG', 'Krankengymnastik', 10000),
+            zeile('2026-08-27', 'HB', 'Hausbesuchspauschale', 4000),
+          ],
+          totals: { total_cents: 28000, tax_total_cents: 0 },
+        }),
+      );
+      zeige();
+
+      expect(
+        await screen.findByText(/Leistungen vom 22.07.2026 bis 27.08.2026/),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Pos.' })).toBeInTheDocument();
+      expect(screen.getByText('Krankengymnastik (KG)')).toBeInTheDocument();
+      expect(screen.getAllByText('Behandlungstage: 22.07.2026, 27.08.2026')).toHaveLength(2);
+      expect(screen.getByText('200,00 €')).toBeInTheDocument();
+      expect(screen.getByText('280,00 €')).toBeInTheDocument();
+    });
+
+    it('zeigt eine aeltere Rechnung, wie sie ausgestellt wurde', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt());
+      zeige();
+
+      expect(await screen.findByText(/Leistungen im August 2026/)).toBeInTheDocument();
+      expect(screen.getByRole('columnheader', { name: 'Datum' })).toBeInTheDocument();
+      expect(screen.queryByText(/Behandlungstage/)).toBeNull();
+    });
+  });
 });

@@ -20,7 +20,6 @@ const JANNES = '55555555-5555-4555-8555-000000000001';
 const ANNA = '55555555-5555-4555-8555-000000000002';
 const TIM = '55555555-5555-4555-8555-000000000004';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
-const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
 const TZ = 'Europe/Berlin';
 
 const KATALOG = {
@@ -55,7 +54,8 @@ async function termin(staff: string, stunde: number): Promise<string> {
       staff,
       LOCATION,
       stunde,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
@@ -122,8 +122,9 @@ describe('Umsatz der letzten Monate und Leistungen (STA-004)', () => {
     const nachher = (await asUser<Monat>(users.ownerTherapist, MONATE, [12])).rows;
     const letzter = nachher.at(-1)!;
     const davor = vorher.at(-1)!;
-    expect(n(letzter.revenue_cents) - n(davor.revenue_cents)).toBe(4500);
-    expect(n(letzter.revenue_therapy_cents) - n(davor.revenue_therapy_cents)).toBe(4500);
+    // Das Terminhonorar des einen Termins (ABR-031).
+    expect(n(letzter.revenue_cents) - n(davor.revenue_cents)).toBe(14000);
+    expect(n(letzter.revenue_therapy_cents) - n(davor.revenue_therapy_cents)).toBe(14000);
     expect(n(letzter.payments_cents) - n(davor.payments_cents)).toBe(2000);
 
     // Dieselbe Zahl wie die Kennzahl des Monats: eine Regel, zwei Leser.
@@ -330,8 +331,9 @@ describe('Umsatz je behandelnder Person (STA-006)', () => {
       [JANNES, KATALOG.kg],
     ]);
     const nachher = await jePerson(users.ownerTherapist);
-    expect(summeFuer(nachher, ANNA) - summeFuer(vorher, ANNA)).toBe(4500 + 5500);
-    expect(summeFuer(nachher, JANNES) - summeFuer(vorher, JANNES)).toBe(4500);
+    // Je Termin das Terminhonorar, gleich welches Heilmittel (ABR-031).
+    expect(summeFuer(nachher, ANNA) - summeFuer(vorher, ANNA)).toBe(14000 + 14000);
+    expect(summeFuer(nachher, JANNES) - summeFuer(vorher, JANNES)).toBe(14000);
     expect(nachher.find((z) => z.staff_member_id === ANNA)!.staff_name).toBe('Anna Beispiel');
   });
 
@@ -435,7 +437,7 @@ describe('Umsatz je behandelnder Person (STA-006)', () => {
     );
     expect(summe).toBe(n(praxis.rows[0]!.revenue_cents));
     const ohne = zeilen.find((z) => z.month.getTime() === monat && z.staff_member_id === null);
-    expect(n(ohne!.revenue_cents)).toBe(5500);
+    expect(n(ohne!.revenue_cents)).toBe(14000);
     expect(ohne!.staff_name).toBeNull();
   });
 });

@@ -596,7 +596,10 @@
           "id": "abr-epic-007",
           "name": "ABR-EPIC-007 Terminhonorar",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-05",
+          "nachweis": "ABR-030 bis ABR-032, ADR-009 Fassung 5 (B17 entschieden), Zweitreview",
+          "vermerk": "ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 10 bis 12"
         },
         {
           "id": "por-epic-002",

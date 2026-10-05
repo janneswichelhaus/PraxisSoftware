@@ -8,7 +8,15 @@ import { Textlink } from '@/components/ui/Textlink';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, steuerLabels, type Rechnungsansicht } from './api';
-import { monatsname, diagnoseText, grundlageText, ibanInGruppen, personLabel } from './anzeige';
+import {
+  monatsname,
+  diagnoseText,
+  grundlageText,
+  ibanInGruppen,
+  personLabel,
+  positionenMitTagen,
+  zeitraumText,
+} from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
 
 /**
@@ -94,9 +102,81 @@ function Inhalt({ rechnung }: { rechnung: UseQueryResult<Rechnungsansicht> }) {
   return <Rechnungsblatt ansicht={rechnung.data} />;
 }
 
+/**
+ * Die Leistungen als Positionen mit ihren Behandlungstagen (ABR-032, ADR-009
+ * Punkt 23): je Heilmittel eine Zeile mit Einzelpreis, Menge und Betrag,
+ * darunter die Tage. So ordnen Beihilfe und private Versicherung jede
+ * Position ihrem Erstattungssatz zu. Die Beträge stehen im Dokument; hier
+ * wird nur zusammengefasst.
+ */
+function Positionstabelle({ dokument }: { dokument: Rechnungsansicht['document'] }) {
+  const positionen = positionenMitTagen(dokument.items);
+  return (
+    <table className="w-full border-collapse text-sm">
+      <thead>
+        <tr className="border-line-strong border-b text-left">
+          <th scope="col" className="py-1 pr-3 font-medium">
+            Pos.
+          </th>
+          <th scope="col" className="py-1 pr-3 font-medium">
+            Leistung
+          </th>
+          <th scope="col" className="py-1 pr-3 text-right font-medium">
+            Einzelpreis
+          </th>
+          <th scope="col" className="py-1 pr-3 text-right font-medium">
+            Menge
+          </th>
+          <th scope="col" className="py-1 text-right font-medium">
+            Betrag
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        {positionen.map((position, index) => (
+          <tr
+            key={`${position.code}-${position.unit_price_cents}-${index}`}
+            className="border-line border-b align-top"
+          >
+            <td className="py-1 pr-3 tabular-nums">{index + 1}</td>
+            <td className="py-1 pr-3">
+              {position.label} ({position.code})
+              {position.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
+              <span className="text-ink-muted print:text-ink block text-xs tabular-nums">
+                Behandlungstage: {position.tage.map((tag) => formatDate(tag)).join(', ')}
+              </span>
+            </td>
+            <td className="py-1 pr-3 text-right tabular-nums">
+              {formatEuro(position.unit_price_cents, position.currency)}
+            </td>
+            <td className="py-1 pr-3 text-right tabular-nums">{position.menge}</td>
+            <td className="py-1 text-right tabular-nums">
+              {formatEuro(position.summe_cents, position.currency)}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row" colSpan={4} className="py-2 pr-3 text-right font-semibold">
+            Gesamtbetrag
+          </th>
+          <td className="py-2 text-right font-semibold tabular-nums">
+            {formatEuro(dokument.totals.total_cents, dokument.currency)}
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+  );
+}
+
 function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
   const dokument = ansicht.document;
   const entwurf = ansicht.status === 'draft';
+  // ABR-032: Ab schema_version 5 Positionen mit Behandlungstagen; ältere
+  // Rechnungen erscheinen, wie sie ausgestellt wurden (ADR-009 Punkt 11).
+  const gruppiert = dokument.schema_version >= 5;
+  const zeitraum = zeitraumText(dokument.service_period);
   const absender = dokument.issuer;
 
   return (
@@ -179,8 +259,11 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           </p>
         ) : null}
         <p className="text-ink-muted print:text-ink mt-1 text-sm">
-          Für die folgenden Leistungen im {monatsname(dokument.period_month)} stellen wir in
-          Rechnung:
+          {/* ABR-032: Mit schema_version 5 steht der Zeitraum der Leistungen
+              im Dokument; ältere Rechnungen nennen ihren Monat. */}
+          {zeitraum
+            ? `Für die folgenden Leistungen vom ${zeitraum} stellen wir in Rechnung:`
+            : `Für die folgenden Leistungen im ${monatsname(dokument.period_month)} stellen wir in Rechnung:`}
         </p>
 
         {/* Die Leistungstabelle hat fünf Spalten und passt damit auf A4, aber
@@ -197,58 +280,62 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
           role="region"
           aria-label="Leistungen, waagerecht rollbar"
         >
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-line-strong border-b text-left">
-                <th scope="col" className="py-1 pr-3 font-medium">
-                  Datum
-                </th>
-                <th scope="col" className="py-1 pr-3 font-medium">
-                  Leistung
-                </th>
-                <th scope="col" className="py-1 pr-3 text-right font-medium">
-                  Menge
-                </th>
-                <th scope="col" className="py-1 pr-3 text-right font-medium">
-                  Einzelpreis
-                </th>
-                <th scope="col" className="py-1 text-right font-medium">
-                  Betrag
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {dokument.items.map((zeile, index) => (
-                <tr
-                  key={`${zeile.performed_on}-${zeile.code}-${index}`}
-                  className="border-line border-b"
-                >
-                  <td className="py-1 pr-3 tabular-nums">{formatDate(zeile.performed_on)}</td>
-                  <td className="py-1 pr-3">
-                    {zeile.label} ({zeile.code})
-                    {zeile.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
-                  </td>
-                  <td className="py-1 pr-3 text-right tabular-nums">{zeile.quantity}</td>
-                  <td className="py-1 pr-3 text-right tabular-nums">
-                    {formatEuro(zeile.unit_price_cents, zeile.currency)}
-                  </td>
-                  <td className="py-1 text-right tabular-nums">
-                    {formatEuro(zeile.line_total_cents, zeile.currency)}
+          {gruppiert ? (
+            <Positionstabelle dokument={dokument} />
+          ) : (
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr className="border-line-strong border-b text-left">
+                  <th scope="col" className="py-1 pr-3 font-medium">
+                    Datum
+                  </th>
+                  <th scope="col" className="py-1 pr-3 font-medium">
+                    Leistung
+                  </th>
+                  <th scope="col" className="py-1 pr-3 text-right font-medium">
+                    Menge
+                  </th>
+                  <th scope="col" className="py-1 pr-3 text-right font-medium">
+                    Einzelpreis
+                  </th>
+                  <th scope="col" className="py-1 text-right font-medium">
+                    Betrag
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {dokument.items.map((zeile, index) => (
+                  <tr
+                    key={`${zeile.performed_on}-${zeile.code}-${index}`}
+                    className="border-line border-b"
+                  >
+                    <td className="py-1 pr-3 tabular-nums">{formatDate(zeile.performed_on)}</td>
+                    <td className="py-1 pr-3">
+                      {zeile.label} ({zeile.code})
+                      {zeile.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
+                    </td>
+                    <td className="py-1 pr-3 text-right tabular-nums">{zeile.quantity}</td>
+                    <td className="py-1 pr-3 text-right tabular-nums">
+                      {formatEuro(zeile.unit_price_cents, zeile.currency)}
+                    </td>
+                    <td className="py-1 text-right tabular-nums">
+                      {formatEuro(zeile.line_total_cents, zeile.currency)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <th scope="row" colSpan={4} className="py-2 pr-3 text-right font-semibold">
+                    Gesamtbetrag
+                  </th>
+                  <td className="py-2 text-right font-semibold tabular-nums">
+                    {formatEuro(dokument.totals.total_cents, dokument.currency)}
                   </td>
                 </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr>
-                <th scope="row" colSpan={4} className="py-2 pr-3 text-right font-semibold">
-                  Gesamtbetrag
-                </th>
-                <td className="py-2 text-right font-semibold tabular-nums">
-                  {formatEuro(dokument.totals.total_cents, dokument.currency)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
+              </tfoot>
+            </table>
+          )}
         </div>
         <p className="nicht-drucken text-ink-muted mt-1 text-sm sm:hidden">
           Die Tabelle lässt sich seitlich wischen; rechts folgt der Betrag.

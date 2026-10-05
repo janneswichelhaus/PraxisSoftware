@@ -44,9 +44,6 @@ const { users, organizationId, patients } = SEED;
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
 
-/** Behandlungsgrundlage aus supabase/seed.sql: Erika, 10 Termine, 0 genutzt. */
-const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
-
 /** Katalogpositionen aus supabase/seed.sql, Preisliste 2026. */
 const KATALOG = {
   /** Krankengymnastik, 45,00 Euro, steuerfreie Heilbehandlung. */
@@ -124,7 +121,8 @@ async function termin(stundeImMonat: number): Promise<string> {
       STAFF_ANNA,
       LOCATION,
       stundeImMonat,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
@@ -157,7 +155,8 @@ async function ausfalltermin(stundeImMonat: number): Promise<string> {
       STAFF_ANNA,
       LOCATION,
       stundeImMonat,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
@@ -291,14 +290,15 @@ describe('Einnahmen je Leistungsart', () => {
     });
 
     it('schluesselt eine gemischte Rechnung je Kennzeichen und Satz auf', async () => {
-      // KG ist steuerfrei (45,00), SZL steuerpflichtig zu 19 Prozent (60,00).
+      // KG steuerfrei mit dem Terminhonorar (140,00, ABR-031), SZL ohne
+      // Heilmittel mit eigenem Preis, steuerpflichtig zu 19 Prozent (60,00).
       await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
       const zeilen = await auswertung('accrual');
 
       const frei = zeile(zeilen, 'exempt_healthcare');
       const pflichtig = zeile(zeilen, 'taxable', 190);
 
-      expect(betraege(frei!)).toEqual({ brutto: 4500, steuer: 0, netto: 4500 });
+      expect(betraege(frei!)).toEqual({ brutto: 14000, steuer: 0, netto: 14000 });
       // 6000 * 190 / 1190 = 957,98 -> 958.
       expect(betraege(pflichtig!)).toEqual({ brutto: 6000, steuer: 958, netto: 5042 });
     });
@@ -383,20 +383,22 @@ describe('Einnahmen je Leistungsart', () => {
     });
 
     it('verteilt eine Teilzahlung centgenau auf die Steuergruppen', async () => {
-      // 45,00 steuerfrei und 60,00 steuerpflichtig, gezahlt werden 50,00.
+      // 140,00 steuerfrei (Terminhonorar) und 60,00 steuerpflichtig, gezahlt
+      // werden 33,33 - ein Betrag, der nicht ohne Rest aufgeht.
       const { id } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
-      await buche(id, 5000);
+      await buche(id, 3333);
 
       const zeilen = await auswertung('cash');
-      expect(summe(zeilen)).toBe(5000);
+      expect(summe(zeilen)).toBe(3333);
 
-      // 5000 * 4500 / 10500 = 2142,857... -> 2142 plus den einen offenen Cent,
-      // weil ihr Rest der groessere ist. 5000 * 6000 / 10500 = 2857,14 -> 2857.
-      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(2143);
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(2857);
+      // 3333 * 14000 / 20000 = 2333,1 -> 2333; 3333 * 6000 / 20000 = 999,9
+      // -> 999 plus den einen offenen Cent, weil ihr Rest der groessere ist.
+      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(2333);
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(1000);
       // Steuer nur dort, wo das Dokument welche ausweist (Punkt 18).
       expect(betraege(zeile(zeilen, 'exempt_healthcare')!).steuer).toBe(0);
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(456);
+      // 1000 * 190 / 1190 = 159,66 -> 160.
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(160);
     });
 
     it('laesst die Rueckzahlung den Eingang genau aufheben', async () => {

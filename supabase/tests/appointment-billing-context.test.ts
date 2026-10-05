@@ -97,13 +97,11 @@ async function ausgestellteRechnung(): Promise<{ id: string; betrag: number }> {
     'select public.record_billable_services($1::uuid, $2::jsonb)',
     [id, JSON.stringify([{ catalog_item_id: KG, quantity: 1 }])],
   );
-  const { rows: monat } = await asPostgres<{ monat: string }>(
-    `select to_char(date_trunc('month', (now() at time zone 'Europe/Berlin')::date), 'YYYY-MM-DD') as monat`,
-  );
+  // ABR-032: Die Rechnung fasst die Leistungen ihrer Grundlage zusammen.
   const { rows } = await asUserCommitted<{ id: string }>(
     users.office,
-    'select public.create_invoice_draft($1::uuid, $2::date) as id',
-    [patients.erika, monat[0]!.monat],
+    'select public.create_invoice_draft_for_basis($1::uuid) as id',
+    [GRUNDLAGE],
   );
   const rechnung = rows[0]!.id;
   await asUserCommitted(users.office, 'select public.issue_invoice($1::uuid)', [rechnung]);

@@ -3,9 +3,12 @@ import {
   empfaengerart,
   grundlageText,
   ibanInGruppen,
+  klammerText,
   monatsname,
   personLabel,
+  positionenMitTagen,
   zahlungsTon,
+  zeitraumText,
 } from './anzeige';
 
 describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
@@ -51,5 +54,68 @@ describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
     expect(empfaengerart('self', 'training')).toBe('Kund:in selbst');
     expect(empfaengerart('self', 'therapy')).toBe('Patient:in selbst');
     expect(empfaengerart('aid_authority', 'therapy')).toBe('Beihilfestelle');
+  });
+
+  describe('Rechnung je Verordnung (ABR-032)', () => {
+    const zeile = (tag: string, code: string, preis: number) => ({
+      performed_on: tag,
+      code,
+      label: code === 'KG' ? 'Krankengymnastik' : 'Hausbesuchspauschale',
+      item_kind: 'treatment',
+      quantity: 1,
+      unit_price_cents: preis,
+      line_total_cents: preis,
+      currency: 'EUR',
+      tax_treatment: 'exempt_healthcare',
+      tax_rate_permille: 0,
+    });
+
+    it('fasst gleiche Positionen mit ihren Behandlungstagen zusammen', () => {
+      const positionen = positionenMitTagen([
+        zeile('2026-08-27', 'KG', 10000),
+        zeile('2026-08-27', 'HB', 4000),
+        zeile('2026-07-22', 'KG', 10000),
+        zeile('2026-07-29', 'KG', 10000),
+        zeile('2026-07-29', 'HB', 4000),
+      ]);
+      expect(positionen).toEqual([
+        expect.objectContaining({
+          code: 'KG',
+          menge: 3,
+          unit_price_cents: 10000,
+          summe_cents: 30000,
+          tage: ['2026-07-22', '2026-07-29', '2026-08-27'],
+        }),
+        expect.objectContaining({ code: 'HB', menge: 2, summe_cents: 8000 }),
+      ]);
+    });
+
+    it('trennt Positionen mit verschiedenem Anteil und erfindet keinen Betrag', () => {
+      // Am Termin ohne Hausbesuch traegt KG das ganze Honorar.
+      const positionen = positionenMitTagen([
+        zeile('2026-07-22', 'KG', 14000),
+        zeile('2026-07-29', 'KG', 10000),
+      ]);
+      expect(positionen.map((p) => p.summe_cents)).toEqual([14000, 10000]);
+    });
+
+    it('nennt die Verordnung als Klammer, ohne sie den Monat', () => {
+      expect(
+        klammerText({
+          basis_kind: 'follow_up',
+          basis_issued_on: '2026-09-08',
+          period_month: '2026-09-01',
+        }),
+      ).toBe('Folgeverordnung vom 08.09.2026');
+      expect(klammerText({ period_month: '2026-09-01' })).toBe('September 2026');
+    });
+
+    it('nennt den Zeitraum, an einem Tag nur den Tag', () => {
+      expect(zeitraumText({ from: '2026-07-22', to: '2026-08-27' })).toBe(
+        '22.07.2026 bis 27.08.2026',
+      );
+      expect(zeitraumText({ from: '2026-07-22', to: '2026-07-22' })).toBe('22.07.2026');
+      expect(zeitraumText(undefined)).toBeNull();
+    });
   });
 });

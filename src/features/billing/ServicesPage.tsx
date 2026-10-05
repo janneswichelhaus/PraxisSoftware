@@ -16,6 +16,7 @@ import { formatEuro } from '@/lib/geld';
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   KeinKatalog,
+  KeinTerminhonorar,
   KontingentAusgeschoepft,
   artLabels,
   bereichLabels,
@@ -205,6 +206,7 @@ function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; child
             <span className="tabular-nums">
               {formatEuro(zeile.unit_price_cents, zeile.currency)}
             </span>
+            {zeile.session_fee ? <span>· Anteil am Terminhonorar</span> : null}
             <span>· {steuerLabels[zeile.tax_treatment]}</span>
             {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
             {zeile.item_kind === 'absence_fee' ? (
@@ -416,8 +418,9 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
     const gefunden: Record<string, string> = {};
     const positionen: { catalog_item_id: string; quantity: number }[] = [];
     for (const zeile of gewaehlteZeilen) {
-      // Unberührt heißt: die vorgeschlagene Menge 1 - wie bisher.
-      const menge = alsMenge(mengen[zeile.catalog_item_id] ?? '1');
+      // Unberührt heißt: die vorgeschlagene Menge 1 - wie bisher. Im
+      // Terminhonorar ist jedes Heilmittel einmal da (ABR-031, ANN-232).
+      const menge = zeile.in_session_fee ? 1 : alsMenge(mengen[zeile.catalog_item_id] ?? '1');
       if (menge === null) gefunden[zeile.catalog_item_id] = MENGENFEHLER;
       else positionen.push({ catalog_item_id: zeile.catalog_item_id, quantity: menge });
     }
@@ -454,8 +457,8 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
               aria-label={`Menge ${zeile.label} (${zeile.code})`}
               feldId={feldId(zeile.catalog_item_id)}
               inputMode="numeric"
-              value={mengen[zeile.catalog_item_id] ?? '1'}
-              disabled={!auswahl[zeile.catalog_item_id]}
+              value={zeile.in_session_fee ? '1' : (mengen[zeile.catalog_item_id] ?? '1')}
+              disabled={!auswahl[zeile.catalog_item_id] || zeile.in_session_fee}
               error={
                 auswahl[zeile.catalog_item_id] ? mengenfehler[zeile.catalog_item_id] : undefined
               }
@@ -507,7 +510,15 @@ function Erfassungsformular({ termin, onFertig }: { termin: OffenerTermin; onFer
           ) : null}
         </div>
       ) : null}
-      {erfassen.isError && !(erfassen.error instanceof KontingentAusgeschoepft) ? (
+      {erfassen.error instanceof KeinTerminhonorar ? (
+        <Statusmeldung ton="fehler">
+          Für diesen Tag gilt kein Terminhonorar: Die Preisliste nennt keins, und mit der Person ist
+          keins vereinbart. Die Praxisinhaber:in legt es in der Preisliste oder in der Akte fest.
+        </Statusmeldung>
+      ) : null}
+      {erfassen.isError &&
+      !(erfassen.error instanceof KontingentAusgeschoepft) &&
+      !(erfassen.error instanceof KeinTerminhonorar) ? (
         <Statusmeldung ton="fehler">
           {erfassen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
         </Statusmeldung>
@@ -521,9 +532,15 @@ function Positionsbeschriftung({ zeile }: { zeile: Vorschlag }) {
     <span className="flex flex-wrap items-baseline gap-x-2">
       <span className="text-ink">{zeile.label}</span>
       <span className="text-ink-muted text-sm">({zeile.code})</span>
-      <span className="text-ink text-sm tabular-nums">
-        {formatEuro(zeile.unit_price_cents, zeile.currency)}
-      </span>
+      {/* ABR-031: Ein Heilmittel kostet am Behandlungstermin nichts eigenes;
+          es geht im Terminhonorar auf. */}
+      {zeile.in_session_fee ? (
+        <span className="text-ink-muted text-sm">im Terminhonorar</span>
+      ) : (
+        <span className="text-ink text-sm tabular-nums">
+          {formatEuro(zeile.unit_price_cents, zeile.currency)}
+        </span>
+      )}
       <span className="text-ink-muted text-sm">· {steuerLabels[zeile.tax_treatment]}</span>
       {zeile.suggested ? <Badge ton="akzent">Aus der Grundlage</Badge> : null}
     </span>

@@ -23,7 +23,7 @@ vi.mock('./api', async (importOriginal) => {
 });
 
 const { ServicesPage } = await import('./ServicesPage');
-const { KeinKatalog, KontingentAusgeschoepft } = await import('./api');
+const { KeinKatalog, KeinTerminhonorar, KontingentAusgeschoepft } = await import('./api');
 
 function termin(rest: Partial<BillingApi.OffenerTermin> = {}): BillingApi.OffenerTermin {
   return {
@@ -54,6 +54,7 @@ function vorschlag(rest: Partial<BillingApi.Vorschlag> = {}): BillingApi.Vorschl
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     suggested: true,
+    in_session_fee: false,
     ...rest,
   };
 }
@@ -76,6 +77,7 @@ function leistung(rest: Partial<BillingApi.Leistung> = {}): BillingApi.Leistung 
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     status: 'billable',
+    session_fee: false,
     ...rest,
   };
 }
@@ -232,6 +234,64 @@ describe('ServicesPage', () => {
 
     // 2 × 45,00 € + 1 × 18,00 €
     expect(await screen.findByText('108,00 €')).toBeInTheDocument();
+  });
+
+  it('zeigt Heilmittel im Terminhonorar ohne eigenen Preis und mit Menge 1 (ABR-031)', async () => {
+    const nutzer = userEvent.setup();
+    fetchOffeneTermine.mockResolvedValue([termin()]);
+    fetchVorschlag.mockResolvedValue([
+      vorschlag({ in_session_fee: true }),
+      vorschlag({
+        catalog_item_id: 'k7',
+        code: 'SZL',
+        label: 'Selbstzahlerleistung',
+        unit_price_cents: 6000,
+        suggested: false,
+      }),
+    ]);
+    recordLeistungen.mockResolvedValue(undefined);
+
+    renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+    await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
+
+    expect(await screen.findByText('im Terminhonorar')).toBeInTheDocument();
+    expect(screen.queryByText('45,00 €')).toBeNull();
+    expect(screen.getByText('60,00 €')).toBeInTheDocument();
+    expect(screen.getByRole('textbox', { name: 'Menge Krankengymnastik (KG)' })).toBeDisabled();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Eine Leistung erfassen' }));
+    expect(recordLeistungen).toHaveBeenCalledWith('t1', [{ catalog_item_id: 'k1', quantity: 1 }]);
+  });
+
+  it('erklaert, wenn fuer den Tag kein Terminhonorar gilt (ABR-031)', async () => {
+    const nutzer = userEvent.setup();
+    fetchOffeneTermine.mockResolvedValue([termin()]);
+    fetchVorschlag.mockResolvedValue([vorschlag({ in_session_fee: true })]);
+    recordLeistungen.mockRejectedValue(new KeinTerminhonorar());
+
+    renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+    await nutzer.click(await screen.findByRole('button', { name: 'Leistungen erfassen' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Eine Leistung erfassen' }));
+
+    expect(await screen.findByText(/Für diesen Tag gilt kein Terminhonorar/)).toBeInTheDocument();
+  });
+
+  it('kennzeichnet den Anteil am Terminhonorar in der Liste (ABR-031)', async () => {
+    fetchLeistungen.mockResolvedValue([
+      leistung({ unit_price_cents: 10000, session_fee: true }),
+      leistung({
+        id: 'l2',
+        code: 'HB',
+        label: 'Hausbesuchspauschale',
+        unit_price_cents: 4000,
+        session_fee: true,
+      }),
+    ]);
+
+    renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+
+    expect(await screen.findByText('140,00 €')).toBeInTheDocument();
+    expect(screen.getAllByText(/Anteil am Terminhonorar/)).toHaveLength(2);
   });
 
   it('nimmt eine Erfassung nach Rueckfrage zurueck', async () => {

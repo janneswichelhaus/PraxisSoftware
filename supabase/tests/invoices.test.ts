@@ -110,7 +110,9 @@ async function termin(opts: {
       STAFF_ANNA,
       LOCATION,
       opts.stundeImMonat,
-      opts.grundlage === undefined ? GRUNDLAGE_FRISCH : opts.grundlage,
+      // ABR-032: ohne Angabe keine Grundlage, damit der Monat die Klammer
+      // bleibt; die Klammer je Verordnung prueft invoice-per-basis.test.ts.
+      opts.grundlage === undefined ? null : opts.grundlage,
       users.ownerTherapist,
     ],
   );
@@ -168,8 +170,10 @@ describe('Rechnung', () => {
       expect(rows).toHaveLength(1);
       expect(rows[0]?.patient_id).toBe(patients.erika);
       expect(rows[0]?.service_count).toBe(2);
-      // Krankengymnastik 45,00 + Manuelle Therapie 55,00
-      expect(rows[0]?.total_cents).toBe(10_000);
+      // Zwei Behandlungstermine mit je einem Heilmittel: zweimal das
+      // Terminhonorar von 140,00 (ABR-031, ADR-009 Punkt 22) - nicht mehr
+      // Krankengymnastik 45,00 + Manuelle Therapie 55,00.
+      expect(rows[0]?.total_cents).toBe(28_000);
       expect(rows[0]?.has_draft).toBe(false);
     });
 
@@ -452,7 +456,18 @@ describe('Rechnung', () => {
       expect(diagnose).toBeTruthy();
       expect(ziel).toBeTruthy();
 
-      const rechnung = await ausgestellt();
+      // ABR-032: Die Verordnung steht auf der Rechnung ihrer Grundlage.
+      await leistung(KATALOG.kg, { stundeImMonat: 30, grundlage: GRUNDLAGE_FRISCH });
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.create_invoice_draft_for_basis($1::uuid) as id',
+        [GRUNDLAGE_FRISCH],
+      );
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        entwurf[0]!.id,
+      ]);
+      const rechnung = dok[0]!.rechnung;
       expect(rechnung.document.treatment_bases).toHaveLength(1);
       expect(JSON.stringify(rechnung.document)).toContain(diagnose);
       expect(JSON.stringify(rechnung.document)).not.toContain(ziel);
@@ -499,16 +514,17 @@ describe('Rechnung', () => {
       ]);
       const rechnung = dok[0]!.rechnung;
 
-      // Krankengymnastik 45,00 steuerfrei + Training 60,00 mit 9,58 Steuer.
+      // Terminhonorar 140,00 steuerfrei + Selbstzahlerleistung ohne Heilmittel
+      // mit eigenem Preis 60,00 und 9,58 Steuer (ABR-031, ANN-232).
       expect(rechnung.document.tax_groups).toHaveLength(2);
-      expect(rechnung.document.totals.total_cents).toBe(10_500);
+      expect(rechnung.document.totals.total_cents).toBe(20_000);
       expect(rechnung.document.totals.tax_total_cents).toBe(958);
 
       const steuerfrei = rechnung.document.tax_groups.find(
         (gruppe) => gruppe.tax_treatment === 'exempt_healthcare',
       );
       expect(steuerfrei?.tax_cents).toBe(0);
-      expect(steuerfrei?.net_cents).toBe(4500);
+      expect(steuerfrei?.net_cents).toBe(14000);
     });
 
     it('weist bei einer Heilbehandlung keine Umsatzsteuer aus', async () => {
@@ -560,7 +576,8 @@ describe('Rechnung', () => {
         [rechnung.id],
       );
       expect(rows[0]?.invoice_number).toMatch(/^RG-/);
-      expect(rows[0]?.total_cents).toBe(4500);
+      // Das Terminhonorar des einen Termins (ABR-031).
+      expect(rows[0]?.total_cents).toBe(14000);
       expect(rows[0]?.issued_by).toBe(users.office);
       expect(rows[0]?.issued_at).not.toBeNull();
     });
@@ -872,7 +889,8 @@ describe('Rechnung', () => {
         LISTE,
       );
       expect(entwurf[0]?.status).toBe('draft');
-      expect(entwurf[0]?.total_cents).toBe(4500);
+      // Das Terminhonorar des einen Termins (ABR-031).
+      expect(entwurf[0]?.total_cents).toBe(14000);
 
       await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
 
@@ -881,7 +899,7 @@ describe('Rechnung', () => {
         LISTE,
       );
       expect(fertig[0]?.status).toBe('issued');
-      expect(fertig[0]?.total_cents).toBe(4500);
+      expect(fertig[0]?.total_cents).toBe(14000);
     });
 
     it('weist die Therapeutin ab', async () => {

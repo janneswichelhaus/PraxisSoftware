@@ -2,18 +2,19 @@
 
 ## Status
 
-**Angenommen — Fassung 4** (2026-10-02). Fassung 1 am 2026-08-28, Fassung 2
+**Angenommen — Fassung 5** (2026-10-05). Fassung 1 am 2026-08-28, Fassung 2
 (Punkte 15 bis 20, zwei Leistungsbereiche, E18) am 2026-09-20, Fassung 3
 (Punkt 21, Nachsorge-Abo und Trainingspaket) am 2026-09-23, Fassung 4
 (Punkt 22, Terminhonorar; Präzisierungen an Punkt 5 und 17) am 2026-10-02 aus
-der Abnahme der Annahmen durch den Projektinhaber. Die Punkte 1 bis 21 gelten
-unverändert; Punkt 13 trägt einen Erledigungsvermerk.
+der Abnahme der Annahmen durch den Projektinhaber, Fassung 5 (Punkt 23,
+Rechnungsdarstellung beim Terminhonorar, B17) am 2026-10-05. Die Punkte 1 bis
+22 gelten unverändert; Punkt 13 trägt einen Erledigungsvermerk.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
 
 ## Datum
 
-2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4)
+2026-08-28 (Fassung 1); 2026-09-20 (Fassung 2); 2026-09-23 (Fassung 3); 2026-10-02 (Fassung 4); 2026-10-05 (Fassung 5)
 
 ## Kontext
 
@@ -218,7 +219,34 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
     eine Zeile je Termin oder aufgeteilt auf Einzelpositionen, etwa für die
     Erstattung durch Beihilfe und private Versicherung
     (`OPEN_DECISIONS.md` B17). Die Aufteilung ist dann Darstellung; der Betrag
-    je Termin bleibt das Terminhonorar.
+    je Termin bleibt das Terminhonorar. *(Beantwortet mit Punkt 23.)*
+
+23. *(Fassung 5)* **Die Rechnung über Terminhonorare zeigt Einzelpositionen je
+    Heilmittel.** Beihilfe (Paragraf 23 BBhV mit Anlage 9, entsprechend die
+    Landesverordnungen) erstattet Heilmittel **je Leistung** bis zu einem
+    Höchstbetrag und nur mit ärztlicher Verordnung; die private
+    Krankenversicherung erstattet nach ihrem Tarif und erwartet dieselbe
+    Gliederung. Eine Zeile „Behandlung“ ließe sich keinem Höchstbetrag
+    zuordnen. Deshalb gilt:
+    - Je Termin wird das Terminhonorar auf die **am Termin bestätigten
+      Heilmittel** aufgeteilt. Die Summe der Positionen eines Termins ist
+      **genau** das Terminhonorar; die Aufteilung verändert keinen Betrag,
+      sie gliedert ihn.
+    - Aufgeteilt wird **anteilig nach den Preisen der Heilmittel in der am
+      Leistungstag geltenden Preisliste** (Gewichte); Restcents nach dem
+      größten Bruchteil, bei Gleichstand an die erste Position. Die Regel
+      steht an **genau einer Stelle** und ist dort austauschbar.
+    - Die Rechnung nennt je Position Kürzel (Heilmittel-Positionsnummer),
+      Bezeichnung, Einzelpreis, Menge und die **Behandlungstage**, dazu die
+      Verordnung mit Datum, verordnender Ärzt:in und Diagnose (ICD-10,
+      ANN-229).
+    - **Eine Rechnung fasst die Leistungen einer Behandlungsgrundlage
+      zusammen** (je Verordnung), nicht mehr eines Kalendermonats. Leistungen
+      an Terminen ohne Grundlage bleiben beim Kalendermonat.
+    - Punkt 15 gilt unverändert: Das Steuerkennzeichen jeder Position ist das
+      ihrer Katalogposition.
+    Ob neben der Position ein Vergleichsbetrag (Kassen- oder Beihilfesatz)
+    steht, ist nicht entschieden; ohne Entscheidung steht keiner da.
 
 ## Konsequenzen
 
@@ -379,11 +407,24 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 - Wie greifen Zugriffsrechte des Office (§4.3) auf Rechnungen mit
   Leistungsangaben, solange C1 nicht entschieden ist?
 
+**Neu mit Fassung 5:**
+
+- Braucht eine Beihilfestelle neben der Position einen Vergleichsbetrag, und
+  stimmen die Gewichte (Preise der Heilmittel) mit dem überein, was ein
+  Erstattungsfall tatsächlich anerkennt? Prüfen am ersten echten
+  Erstattungsfall.
+- Reicht die Klammer „eine Rechnung je Verordnung“ bei langen Verordnungen,
+  oder braucht es zusätzlich eine Monatsgrenze?
+- Wer ein Honorar über dem Erstattungsbetrag vereinbart, muss vor der
+  Behandlung in Textform über die Kosten informieren (§ 630c Abs. 3 BGB).
+  Wie die Plattform das unterstützt, ist nicht entschieden.
+
 **Neu mit Fassung 4:**
 
-- Wie erscheint das Terminhonorar auf der Rechnung — eine Zeile oder
+- ~~Wie erscheint das Terminhonorar auf der Rechnung — eine Zeile oder
   Einzelpositionen je Heilmittel —, und was verlangen Beihilfe und private
-  Versicherung für die Erstattung? (`OPEN_DECISIONS.md` B17, mit B4.)
+  Versicherung für die Erstattung? (`OPEN_DECISIONS.md` B17, mit B4.)~~
+  *Beantwortet mit Punkt 23 (Fassung 5).*
 
 **Neu mit Fassung 2:**
 
@@ -411,3 +452,4 @@ Fassung 2 baut darauf auf, statt daneben etwas Zweites zu stellen.
 | 2       | 2026-09-20 | **Punkte 15 bis 20 ergänzt, angenommen:** Das Steuerkennzeichen hängt am **Posten**, nie am Kunden, am Rechtsverhältnis oder am Terminkontext (Punkt 15, drei Kennzeichen; das ermäßigte bleibt bis B4 inaktiv). Eine Rechnung trägt **genau einen Leistungsbereich**, gemischte sind ausgeschlossen (Punkt 16). Daraus folgen **getrennte Nummernkreise** je Bereich und Kalenderjahr, lückenlos je Kreis und einmalig über alle (Punkt 17, § 14 Abs. 4 Nr. 4 UStG) — das beantwortet die offene Folgefrage aus Fassung 1 zur Führung des Nummernkreises. Punkt 18 ist der **§ 14c-Riegel**: kein Steuerausweis am steuerfreien Posten, der Befreiungsgrund als Pflichtangabe im Snapshot, die Sperre serverseitig und als verbindlicher Testfall in `pnpm test:db`. Punkt 19 führt die Auswertung **„Einnahmen je Leistungsart"** für die getrennte Gewinnermittlung ein; sie benennt ihre Grundlage, statt sie zu wählen. Punkt 20 verzichtet in V1 auf die **Kleinbetragsrechnung** nach § 33 UStDV. Anlass: Festlegungen des Projektinhabers vom 2026-09-17 (E18 Abschnitt 3), **Schritt 4 von sieben**. Die Punkte 1 bis 14 sind unverändert und werden nur enger gefasst; kein Code, kein Schema, keine Migration. |
 | 3       | 2026-09-23 | **Punkt 21 ergänzt:** Nachsorge-Abo (Bereich `therapy`, Monatsrechnung, frühestens ab Ende der Behandlungsgrundlage, monatlich kündbar) und Trainingspaket (fester Zeitraum, nicht pausierbar) als abrechenbare Ereignisse. Erledigungsvermerk an Punkt 13 (kein Override in V1). Punkte 1 bis 20 unverändert. Anlass: Entscheidungen des Projektinhabers vom 2026-09-23 (`../development/UMBAU.md`, E-4). |
 | 4       | 2026-10-02 | **Punkt 22 ergänzt: Terminhonorar** — je durchgeführtem Behandlungstermin genau einmal das vereinbarte Sitzungshonorar; verordnete Heilmittel, erbrachte Leistungen und Honorarberechnung getrennt; die Heilmittelauswahl verändert den Preis nicht; Tarif und patientenbezogene Vereinbarung versioniert. **Punkt 5 präzisiert:** die mit der Person vereinbarte Regelung geht dem allgemeinen Tarif vor. **Punkt 17 präzisiert:** Lückenlosigkeit ist interne Praxisregel, gesetzlich verlangt ist die Einmaligkeit. Rechnungsdarstellung offen (B17). Anlass: Abnahme der Annahmen, Block 4 (Jannes). Punkte 1 bis 21 sonst unverändert. |
+| 5       | 2026-10-05 | **Punkt 23 ergänzt: Rechnungsdarstellung beim Terminhonorar** (B17 entschieden, Jannes): Einzelpositionen je bestätigtem Heilmittel, das Terminhonorar anteilig nach den Preisen der Heilmittel aufgeteilt, Summe je Termin genau das Honorar; Behandlungstage je Position, Verordnung und Diagnose auf der Rechnung; eine Rechnung je Behandlungsgrundlage statt je Kalendermonat. Anlass: Prüfung einer Musterrechnung gegen die Vorgaben von Beihilfe (Paragraf 23 BBhV, Anlage 9) und privater Krankenversicherung. Punkte 1 bis 22 unverändert. |

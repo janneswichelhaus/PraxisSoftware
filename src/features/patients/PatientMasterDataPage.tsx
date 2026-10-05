@@ -19,6 +19,7 @@ import {
   canChangePatientStatus,
   canConcludePatientCare,
   canManageInvoicing,
+  canManageServiceCatalog,
   canReadPatientDirectory,
   isOwner,
   type CurrentUser,
@@ -26,6 +27,7 @@ import {
 import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './akte';
 import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
 import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
+import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
 import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
 import { zugangMitStockwerk } from '@/features/today/stockwerk';
 import {
@@ -358,6 +360,16 @@ function AbrechnungKarte({
           </>
         ) : null}
       </DetailList>
+      {/* ABR-030: Das Terminhonorar sehen dieselben Rollen wie den
+          Empfänger (owner, office); festlegen darf nur owner (ANN-231).
+          Verbindlich prüft der Server. */}
+      {darfEmpfaenger ? (
+        <Honorarvereinbarung
+          patientId={patient.id}
+          darfFestlegen={canManageServiceCatalog(user.roles)}
+          heute={user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : null}
+        />
+      ) : null}
     </Karte>
   );
 }

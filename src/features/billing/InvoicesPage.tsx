@@ -24,7 +24,7 @@ import {
   type Kandidat,
   type OffenerPosten,
 } from './api';
-import { monatsname, zahlungsTon } from './anzeige';
+import { klammerText, monatsname, zahlungsTon, zeitraumText } from './anzeige';
 import { Zahlungsformular, type Buchung } from './Zahlungsformular';
 
 /**
@@ -91,7 +91,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Rechnungen"
-        description="Privatrechnungen aus erfassten Leistungen, je Person und Monat."
+        description="Privatrechnungen aus erfassten Leistungen, je Person und Verordnung."
       />
 
       <Section
@@ -212,7 +212,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
                     (ABR-003c, ANN-079). */}
                 {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
                 <span className="text-ink-muted text-sm">
-                  {monatsname(rechnung.period_month)} · {bereichLabels[rechnung.service_area]} ·{' '}
+                  {klammerText(rechnung)} · {bereichLabels[rechnung.service_area]} ·{' '}
                   {rechnung.patient_name}
                 </span>
                 <span className="text-ink text-liste ml-auto font-medium tabular-nums">
@@ -382,7 +382,16 @@ function KandidatenKarte({
     <Card>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="text-ink text-liste font-medium">{kandidat.patient_name}</span>
-        <span className="text-ink-muted text-sm">{monatsname(kandidat.period_month)}</span>
+        {/* ABR-032: Mit Grundlage ist die Verordnung die Klammer, darunter
+            der Zeitraum ihrer Leistungen; ohne bleibt es der Monat. */}
+        <span className="text-ink-muted text-sm">{klammerText(kandidat)}</span>
+        {kandidat.treatment_basis_id &&
+        kandidat.first_performed_on &&
+        kandidat.last_performed_on ? (
+          <span className="text-ink-muted text-sm tabular-nums">
+            {zeitraumText({ from: kandidat.first_performed_on, to: kandidat.last_performed_on })}
+          </span>
+        ) : null}
         {/* ABR-009: Eine Rechnung trägt genau einen Bereich; die Zeile sagt,
             welchen sie meint (ADR-009 Punkt 16). */}
         <span className="text-ink-muted text-sm">{bereichLabels[kandidat.service_area]}</span>
@@ -408,9 +417,11 @@ function KandidatenKarte({
       {kandidat.has_draft ? (
         <>
           <Statusmeldung className="mt-2">
-            Für diesen Monat und Bereich steht bereits ein Entwurf. Diese Leistungen sind später
-            erfasst worden; sie kommen auf eine zweite Rechnung, sobald der Entwurf ausgestellt oder
-            verworfen ist.
+            {kandidat.treatment_basis_id
+              ? 'Für diese Verordnung steht bereits ein Entwurf.'
+              : 'Für diesen Monat und Bereich steht bereits ein Entwurf.'}{' '}
+            Diese Leistungen sind später erfasst worden; sie kommen auf eine zweite Rechnung, sobald
+            der Entwurf ausgestellt oder verworfen ist.
           </Statusmeldung>
           {/* BEF-018: Der Hinweis führt dorthin - seit UXR-010 als eigene
               Kartenaktion statt als graue Unterstreichung im Satz (ABR-25). */}

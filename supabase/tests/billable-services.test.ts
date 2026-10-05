@@ -411,9 +411,21 @@ describe('Leistungserfassung', () => {
 
       await asUserCommitted(users.office, ERFASSEN, [
         id,
-        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 2 }]),
+        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
       ]);
-      expect(await genutzt()).toBe(2);
+      expect(await genutzt()).toBe(1);
+    });
+
+    it('nimmt im Terminhonorar jedes Heilmittel einmal (ABR-031, ANN-232)', async () => {
+      // Eine Doppelbehandlung ist eine eigene Position, keine Menge 2.
+      const id = await termin({ vorStunden: 53 });
+      await expect(
+        asUserCommitted(users.office, ERFASSEN, [
+          id,
+          JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 2 }]),
+        ]),
+      ).rejects.toThrow(/each remedy is recorded once/);
+      expect(await genutzt()).toBe(0);
     });
 
     it('bleibt unberuehrt von einer Position ohne Heilmittel der Grundlage', async () => {
@@ -429,9 +441,9 @@ describe('Leistungserfassung', () => {
       const id = await termin({ vorStunden: 56 });
       await asUserCommitted(users.office, ERFASSEN, [
         id,
-        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 3 }]),
+        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
       ]);
-      expect(await genutzt()).toBe(3);
+      expect(await genutzt()).toBe(1);
 
       const { rows } = await asUserCommitted<{ anzahl: number }>(users.office, ENTFERNEN, [id]);
       expect(Number(rows[0]!.anzahl)).toBe(1);
@@ -519,7 +531,7 @@ describe('Leistungserfassung', () => {
       const id = await termin({ vorStunden: 64 });
       await asUserCommitted(users.office, ERFASSEN, [
         id,
-        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 2 }]),
+        JSON.stringify([{ catalog_item_id: KATALOG.kg, quantity: 1 }]),
       ]);
 
       const { rows } = await asUser<{
@@ -530,13 +542,16 @@ describe('Leistungserfassung', () => {
         tax_treatment: string;
         status: string;
         patient_name: string;
+        session_fee: boolean;
       }>(users.office, LISTE);
 
       expect(rows).toHaveLength(1);
+      // Seit ABR-031 traegt das einzige Heilmittel das ganze Terminhonorar.
       expect(rows[0]).toMatchObject({
         code: 'KG',
-        quantity: 2,
-        unit_price_cents: 4500,
+        quantity: 1,
+        unit_price_cents: 14000,
+        session_fee: true,
         currency: 'EUR',
         tax_treatment: 'exempt_healthcare',
         status: 'billable',

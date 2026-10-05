@@ -61,7 +61,7 @@ tragen keine Arbeit zu diesen Befunden. Aufwand: S (Stunden), M (ein bis zwei Ta
 | BEF-096 | trifft voll zu                   | `used` = Termine in `completed/documented/invoiced`; `no_show` wie `cancelled`         | A    | M     | ABN-EPIC-001 Grundlage | nein                               |
 | BEF-097 | trifft zu                        | Leistungen ziehen in derselben Transaktion mit (Matching über `remedy`), sonst Abweisung | A  | M     | ABN-EPIC-001 Grundlage | UI für vergangene Termine? (Empf.: ja) |
 | BEF-098 | trifft zu                        | `prescriber_note` wieder öffnen, nur Verordnung, office darf nicht ändern              | A    | S–M   | ABN-EPIC-001 Doku     | nein                                |
-| BEF-099 | nichts gebaut                    | Terminhonorar als Katalogart `session_fee`, `patient_fee_agreements`, Preis-Snapshot an der Leistung | A | L | ABR-EPIC-007a      | **ja**: Doppelbehandlung = 1 oder 2 Honorare |
+| BEF-099 | gebaut ABR-EPIC-007 (2026-10-05) | Tarif an der Preisliste, `patient_fee_agreements`, `appointment_session_fees`, Aufteilung nach Heilmittelpreisen, Rechnung je Verordnung | A | L | ABR-EPIC-007 | nein: Doppelbehandlung ist eine Position im **einen** Honorar (ADR-009 Punkt 22) |
 | BEF-100 | alle drei treffen zu             | Steuernummer **oder** USt-IdNr.; Storno mit Zahlung + Verrechnungsbuchung; kumulative Verteilung | A | S+M–L+S | ABN-EPIC-001 Abrechnung | Verrechnung nur auf Korrektur oder jede Rechnung derselben Person? |
 | BEF-101 | (2) weitgehend erfüllt, (1)(3)(4) offen | Definitionen als erzeugte Tabelle + Serverprüfung; Datum bei Korrektur gesperrt; Leseart; Vergleichbarkeitsmarke | A | L | ABN-EPIC-001 Befund | nein                        |
 | BEF-102 | trifft zu (hartes `delete`)      | Soft Delete `removed_at/by`, Projektion „Entfernte Ereignisse“, im Export              | A    | S     | ABN-EPIC-001 Befund   | nein                                |
@@ -698,7 +698,7 @@ Position → Abweisung, Kontingentgrenze; `TermineUebertragenPage.tsx` + Test. M
 _Entscheidung:_ Vergangene Termine in der Oberfläche anbieten? Empfehlung ja, zugeklappt, mit Hinweis
 „Leistungen ziehen mit“.
 
-**Terminhonorar statt Heilmittelpreise (BEF-099).** _Stand:_ nichts gebaut. Der Katalog
+**Terminhonorar statt Heilmittelpreise (BEF-099).** _Stand 2026-10-05:_ gebaut in ABR-EPIC-007, anders als hier skizziert: Tarif als Betrag an der Katalogversion statt eigener Katalogart, Honorar je Termin in `appointment_session_fees`, Heilmittelpreise als Gewichte der Aufteilung (ANN-231 bis ANN-233, ADR-009 Punkt 23). Die Skizze darunter bleibt als Herleitung stehen. Der Katalog
 (`service_catalog_versions` mit `valid_from`, `published_at`) ist **bereits versioniert mit
 Gültigkeitsbeginn**; `service_catalog_items(code, item_kind in ('treatment', 'absence_fee'), remedy,
 unit_price_cents, tax_treatment, tax_rate_permille)`; `billable_services` ohne Preis, der Preis wird

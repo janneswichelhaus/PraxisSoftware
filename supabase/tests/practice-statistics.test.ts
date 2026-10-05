@@ -24,7 +24,6 @@ const ANNA = '55555555-5555-4555-8555-000000000002';
 const OLIVIA = '55555555-5555-4555-8555-000000000003';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
 const PROBST = '77777777-7777-4777-8777-000000000001';
-const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
 const TZ = 'Europe/Berlin';
 
 const KATALOG = {
@@ -112,7 +111,8 @@ async function dokumentierterTermin(stundeImMonat: number): Promise<string> {
       ANNA,
       LOCATION,
       stundeImMonat,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
