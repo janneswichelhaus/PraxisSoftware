@@ -55,6 +55,7 @@ import { navigationsZiel } from '@/lib/location/navigation';
 import {
   besuchsphase,
   besucheDesTages,
+  hausbesucheDesTages,
   bisBeginn,
   dokuText,
   fokusDesTages,
@@ -276,8 +277,10 @@ function LiegeZeile({ liege }: { liege: LiegeHeute }) {
  * Liege-Zeile und Wegbalken - einmal, über dem Zeitstrahl.
  *
  * Sie sagt, was der Fall ist, und behauptet nicht mehr: „Alle Besuche
- * erledigt" heißt, dass niemand mehr anzufahren ist. Eine Dokumentation, die
- * noch offen ist, steht darunter im Zeitstrahl als ausgeklappte Karte.
+ * erledigt" heißt, dass jeder Besuch abgehakt ist; „Kein Weg mehr offen",
+ * dass nach der Uhr niemand mehr anzufahren ist, aber noch ein Haken fehlt
+ * (ANN-117 Fassung 2). Was noch offen ist, steht darunter im Zeitstrahl als
+ * ausgeklappte Karte.
  */
 function Tagesabschluss({
   fortschritt,
@@ -288,13 +291,16 @@ function Tagesabschluss({
 }) {
   const titelId = useId();
   const doku = dokuText(fortschritt);
+  // ANN-117 Fassung 2: Nach der Uhr ist kein Weg mehr offen; „erledigt" sagt
+  // die Karte erst, wenn auch jeder Besuch abgehakt ist.
+  const alleAbgehakt = fortschritt.erledigt === fortschritt.gesamt;
   return (
     <section aria-labelledby={titelId} className="bg-surface-inverse rounded-card px-4 py-4">
       {/* Salbei ist nur auf Tiefgrün Textfarbe, und nur in 12 px und 600. */}
       <p className="text-salbei tracking-label text-xs font-semibold uppercase">Heute</p>
       <h2 id={titelId} className="text-surface text-h3 tracking-display mt-1 font-extrabold">
-        <span aria-hidden="true">✓ </span>
-        Alle Besuche erledigt
+        {alleAbgehakt ? <span aria-hidden="true">✓ </span> : null}
+        {alleAbgehakt ? 'Alle Besuche erledigt' : 'Kein Weg mehr offen'}
       </h2>
       <p className="text-accent-soft mt-1 text-sm tabular-nums">
         {doku ? `${fortschrittText(fortschritt)} · ${doku}` : fortschrittText(fortschritt)}
@@ -419,6 +425,7 @@ function MeinTag({
     staffMemberId,
     plan: termine,
     aktiv: mitBehandlung,
+    jetzt,
   });
 
   // PRX-008: „Termin n von m" an der ausgeklappten Karte - derselbe Lesepfad
@@ -447,8 +454,9 @@ function MeinTag({
   }
   if (!termine) return null;
 
-  const wege = wegeDesTages(sortiert);
+  const wege = wegeDesTages(sortiert, jetzt);
   const besuche = besucheDesTages(sortiert);
+  const hausbesuche = hausbesucheDesTages(sortiert);
   const stehtBesuchAus = fokus?.art === 'besuch';
   const weg = naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt);
 
@@ -465,9 +473,13 @@ function MeinTag({
     const anfahrt = fahrzeiten.anfahrten.get(termin.id);
     const ende = formatLocalTime(termin.ends_at, zone);
 
+    // ANN-117 Fassung 2: Ein vorbeigegangener, nicht abgehakter Besuch hält
+    // die Karte nur, wenn kein Weg mehr aussteht - dann zum Abschließen.
     const kicker =
       fokus.art === 'dokumentation'
-        ? 'Doku offen'
+        ? termin.status === 'confirmed'
+          ? `Seit ${ende} offen`
+          : 'Doku offen'
         : phase === 'laeuft'
           ? `Jetzt · bis ${ende}`
           : phase === 'ueberfaellig'
@@ -590,7 +602,9 @@ function MeinTag({
         </Card>
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
-          {besuche.length > 0 ? <LiegeZeile liege={liegeHeute(sortiert)} /> : null}
+          {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
+              mit Praxisterminen gibt es die Frage nicht. */}
+          {hausbesuche.length > 0 ? <LiegeZeile liege={liegeHeute(sortiert, jetzt)} /> : null}
           {weg ? (
             <TravelBar titel={weg.titel} von={weg.von} bis={weg.bis} fahrtMin={weg.fahrtMin} />
           ) : null}
@@ -674,8 +688,8 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
 
   const sortiert = useMemo(() => [...(tag.data ?? [])].sort(nachUhrzeit), [tag.data]);
   const fokus = useMemo(
-    () => fokusDesTages(sortiert, darfDokumentieren),
-    [sortiert, darfDokumentieren],
+    () => fokusDesTages(sortiert, darfDokumentieren, jetzt),
+    [sortiert, darfDokumentieren, jetzt],
   );
   const fortschritt = useMemo(
     () => tagesfortschritt(sortiert, fokus?.art === 'besuch' ? fokus.termin.id : null),
@@ -685,6 +699,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   // ANN-117: Zugeklappt nur für die, die selbst unterwegs sind: Das Büro hat meist
   // keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache.
   const teamplanZugeklappt = eigeneTagesliste && darfDokumentieren;
+  // BEF-051: Wer nicht dokumentiert (das Büro), plant zuerst - der Plan des
+  // Teams steht dann vor der eigenen Liste, und die Seite bleibt einspaltig.
+  const teamplanZuerst = eigeneTagesliste && !darfDokumentieren;
+  const zweispaltig = eigeneTagesliste && !teamplanZuerst;
 
   if (!praxisrolle) {
     // UEB-08: Der Satz sagt, wozu der Zugang heute dient, und nennt den Weg
@@ -706,6 +724,18 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     );
   }
 
+  // MAP-006b: die Tagesroute auf der Karte, erst beim Aufklappen geladen. Nur
+  // für die Praxisrollen - der Server gibt sie der Trainingsbetreuung nicht -
+  // und nur mit einem Hausbesuch: Ohne ihn lüde sie nur „Heute gibt es keinen
+  // Besuch mit Ort" (BEF-051).
+  const tagesroute =
+    isTherapyStaff(user.roles) &&
+    tag.data &&
+    user.staffMemberId &&
+    hausbesucheDesTages(sortiert).length > 0 ? (
+      <TagesrouteAufklapper datum={heute} staffMemberId={user.staffMemberId} plan={sortiert} />
+    ) : null;
+
   const teamplan = darfTermine ? (
     <Teamplan
       abfrage={team}
@@ -725,7 +755,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     <div className="@container">
       <div
         className={
-          eigeneTagesliste
+          zweispaltig
             ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] @zweispaltig:gap-x-8 grid items-start gap-6'
             : 'lg:max-w-3xl'
         }
@@ -744,6 +774,8 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               ) : undefined
             }
           />
+
+          {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
 
           {eigeneTagesliste && user.staffMemberId ? (
             <MeinTag
@@ -769,22 +801,15 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               Bildschirm (UX-EPIC-003). */}
           <OpenPointsSummary user={user} today={heute} />
 
+          {teamplanZuerst && tagesroute ? <div className="mt-6">{tagesroute}</div> : null}
+
           {eigeneTagesliste ? null : <div className="mt-6">{teamplan}</div>}
         </div>
 
-        {eigeneTagesliste ? (
+        {zweispaltig ? (
           <aside className="flex min-w-0 flex-col gap-4">
             {teamplan}
-            {/* MAP-006b: die Tagesroute auf der Karte, erst beim Aufklappen
-                geladen. Nur für die Praxisrollen - der Server gibt sie der
-                Trainingsbetreuung nicht. */}
-            {isTherapyStaff(user.roles) && tag.data && user.staffMemberId ? (
-              <TagesrouteAufklapper
-                datum={heute}
-                staffMemberId={user.staffMemberId}
-                plan={sortiert}
-              />
-            ) : null}
+            {tagesroute}
           </aside>
         ) : null}
       </div>

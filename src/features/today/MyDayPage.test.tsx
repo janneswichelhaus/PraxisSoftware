@@ -1380,4 +1380,76 @@ describe('Übersicht', () => {
       expect(screen.queryByText(/^\d+ offene?$/)).toBeNull();
     });
   });
+
+  describe('UBK-EPIC-001: die Uhr statt des Hakens, die Liege am Hausbesuch', () => {
+    it('macht nach dem Ende eines nicht abgehakten Besuchs den naechsten zum Weg (ANN-117 Fassung 2)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({ id: 't1', starts_at: inMinuten(-90), ends_at: inMinuten(-45) }),
+        zweiterBesuch(),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const karte = await findeKarte();
+      expect(within(karte).getByRole('link', { name: 'Max Mustermann' })).toBeInTheDocument();
+      expect(within(karte).getByRole('heading', { name: 'Nächster Weg' })).toBeInTheDocument();
+      // Der liegengebliebene steht als Zeile da, mit Wort und Haken.
+      const zeile = imStrahl().getByRole('link', { name: /Erika Beispiel/ });
+      expect(zeile).toHaveTextContent('Nicht abgeschlossen');
+      expect(
+        imStrahl().getByRole('button', { name: /^Termin abschließen.*Erika Beispiel/ }),
+      ).toBeInTheDocument();
+      // Erledigt ist nur, was abgehakt ist.
+      expect(screen.getByText('0 von 2 Besuchen erledigt')).toBeInTheDocument();
+    });
+
+    it('sagt nach dem letzten Besuch „Kein Weg mehr offen", solange ein Haken fehlt', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          id: 't1',
+          starts_at: inMinuten(-200),
+          ends_at: inMinuten(-155),
+          status: 'completed',
+          documentation_status: 'final',
+        }),
+        zweiterBesuch({ starts_at: inMinuten(-90), ends_at: inMinuten(-45) }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByRole('heading', { level: 2, name: 'Kein Weg mehr offen' }),
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
+      // Der liegengebliebene ist die Karte - zum Abschließen.
+      const karte = await findeKarte();
+      expect(within(karte).getByRole('link', { name: 'Max Mustermann' })).toBeInTheDocument();
+    });
+
+    it('zeigt keine Liege-Zeile an einem Tag nur mit Praxisterminen (BEF-051)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({
+          id: 't1',
+          appointment_type: 'practice',
+          location_name: 'Hauptstandort',
+          treatment_table_required: true,
+        }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const karte = await findeKarte();
+      expect(screen.queryByText('Liege heute')).toBeNull();
+      // Auch die Pille steht nur am Hausbesuch.
+      expect(within(karte).queryByText('Liege')).toBeNull();
+      expect(screen.queryByText('Tagesroute auf der Karte')).toBeNull();
+    });
+
+    it('stellt fuer das Buero den Plan des Teams vor die eigene Liste (BEF-051)', async () => {
+      renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
+
+      const tagesablauf = await screen.findByRole('heading', { name: 'Tagesablauf' });
+      const teamplan = screen.getByRole('heading', { name: 'Tagesplan des Teams' });
+      expect(
+        teamplan.compareDocumentPosition(tagesablauf) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+  });
 });

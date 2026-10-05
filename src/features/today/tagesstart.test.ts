@@ -8,9 +8,11 @@ import {
   einordnung,
   fokusDesTages,
   fortschrittText,
+  hausbesucheDesTages,
   liegeHeute,
   liegeText,
   naechsterWeg,
+  nichtAbgeschlossen,
   tagesfortschritt,
   terminName,
   wegeDesTages,
@@ -23,6 +25,9 @@ const HEUTE = '2026-09-26';
 function zeitpunkt(um: string): number {
   return Date.parse(`${HEUTE}T${um}:00.000Z`);
 }
+
+/** Vor allem, was der Tag bringt: Jeder bestätigte Termin steht noch aus. */
+const FRUEH = Date.parse(`${HEUTE}T00:00:00.000Z`);
 
 function eintrag(
   teil: Partial<DayPlanEntry> & { id: string; um: string; bis?: string },
@@ -68,86 +73,182 @@ describe('Tagesstart (UX-EPIC-003)', () => {
   });
 
   it('macht einen Trainingstermin nie zum ersten Weg', () => {
-    const wege = wegeDesTages([
-      eintrag({ id: 't', um: '06:00', kind: 'training', patient_id: null }),
-      eintrag({ id: 'a', um: '07:00' }),
-    ]);
+    const wege = wegeDesTages(
+      [
+        eintrag({ id: 't', um: '06:00', kind: 'training', patient_id: null }),
+        eintrag({ id: 'a', um: '07:00' }),
+      ],
+      FRUEH,
+    );
     expect(wege.erster?.id).toBe('a');
     expect(wege.istErsterDesTages).toBe(true);
   });
 
   it('zaehlt einen nicht angetroffenen Besuch mit, macht ihn aber nicht zum Weg', () => {
-    const wege = wegeDesTages([
-      eintrag({ id: 'a', um: '07:00', status: 'no_show' }),
-      eintrag({ id: 'b', um: '09:00', treatment_table_required: true }),
-    ]);
+    const wege = wegeDesTages(
+      [
+        eintrag({ id: 'a', um: '07:00', status: 'no_show' }),
+        eintrag({ id: 'b', um: '09:00', treatment_table_required: true }),
+      ],
+      FRUEH,
+    );
     expect(wege.erster?.id).toBe('b');
     expect(wege.istErsterDesTages).toBe(false);
     expect(
-      liegeHeute([
-        eintrag({ id: 'a', um: '07:00', status: 'no_show' }),
-        eintrag({ id: 'b', um: '09:00', treatment_table_required: true }),
-      ]),
+      liegeHeute(
+        [
+          eintrag({ id: 'a', um: '07:00', status: 'no_show' }),
+          eintrag({ id: 'b', um: '09:00', treatment_table_required: true }),
+        ],
+        FRUEH,
+      ),
     ).toMatchObject({ noetig: true, besuch: 2 });
   });
 
   it('nennt den ersten ausstehenden Besuch, auch aus einer unsortierten Liste', () => {
-    const wege = wegeDesTages([
-      eintrag({ id: 'b', um: '09:00' }),
-      eintrag({ id: 'a', um: '07:00' }),
-      eintrag({ id: 'c', um: '11:00' }),
-    ]);
+    const wege = wegeDesTages(
+      [
+        eintrag({ id: 'b', um: '09:00' }),
+        eintrag({ id: 'a', um: '07:00' }),
+        eintrag({ id: 'c', um: '11:00' }),
+      ],
+      FRUEH,
+    );
     expect(wege.erster?.id).toBe('a');
     expect(wege.istErsterDesTages).toBe(true);
   });
 
   it('spricht nach dem ersten erledigten Besuch vom naechsten Weg', () => {
-    const wege = wegeDesTages([
-      eintrag({ id: 'a', um: '07:00', status: 'completed' }),
-      eintrag({ id: 'b', um: '09:00' }),
-    ]);
+    const wege = wegeDesTages(
+      [eintrag({ id: 'a', um: '07:00', status: 'completed' }), eintrag({ id: 'b', um: '09:00' })],
+      FRUEH,
+    );
     expect(wege.erster?.id).toBe('b');
     expect(wege.istErsterDesTages).toBe(false);
   });
 
   it('hat keinen Weg, wenn nichts mehr aussteht', () => {
-    const wege = wegeDesTages([eintrag({ id: 'a', um: '07:00', status: 'completed' })]);
+    const wege = wegeDesTages([eintrag({ id: 'a', um: '07:00', status: 'completed' })], FRUEH);
     expect(wege.erster).toBeNull();
   });
 
   it('sagt „Ja · ab 2. Besuch", wenn erst der zweite die Liege braucht (§9)', () => {
-    const liege = liegeHeute([
-      eintrag({ id: 'a', um: '07:00' }),
-      eintrag({ id: 'b', um: '08:30', treatment_table_required: true }),
-      eintrag({ id: 'c', um: '10:00', treatment_table_required: true }),
-    ]);
+    const liege = liegeHeute(
+      [
+        eintrag({ id: 'a', um: '07:00' }),
+        eintrag({ id: 'b', um: '08:30', treatment_table_required: true }),
+        eintrag({ id: 'c', um: '10:00', treatment_table_required: true }),
+      ],
+      FRUEH,
+    );
     expect(liege).toMatchObject({ noetig: true, besuch: 2 });
     // Die Uhrzeit steht dabei, damit die Zahl nicht nachgezählt werden muss.
     expect(liegeText(liege)).toBe('Ja · ab 2. Besuch 10:30');
   });
 
   it('zaehlt einen erledigten Besuch mit, braucht fuer ihn aber keine Liege mehr', () => {
-    const liege = liegeHeute([
-      eintrag({ id: 'a', um: '07:00', status: 'completed', treatment_table_required: true }),
-      eintrag({ id: 'b', um: '08:30' }),
-      eintrag({ id: 'c', um: '10:00', treatment_table_required: true }),
-    ]);
+    const liege = liegeHeute(
+      [
+        eintrag({ id: 'a', um: '07:00', status: 'completed', treatment_table_required: true }),
+        eintrag({ id: 'b', um: '08:30' }),
+        eintrag({ id: 'c', um: '10:00', treatment_table_required: true }),
+      ],
+      FRUEH,
+    );
     expect(liege).toMatchObject({ noetig: true, besuch: 3 });
   });
 
   it('sagt „Nein", wenn keine ausstehende Behandlung die Liege braucht', () => {
-    expect(liegeText(liegeHeute([eintrag({ id: 'a', um: '07:00' })]))).toBe('Nein');
+    expect(liegeText(liegeHeute([eintrag({ id: 'a', um: '07:00' })], FRUEH))).toBe('Nein');
     // Am Training liefert die Tagesliste das Merkmal nicht (ADR-022 Punkt 11).
     expect(
-      liegeHeute([
-        eintrag({ id: 't', um: '07:00', kind: 'training', treatment_table_required: null }),
-      ]),
+      liegeHeute(
+        [eintrag({ id: 't', um: '07:00', kind: 'training', treatment_table_required: null })],
+        FRUEH,
+      ),
     ).toEqual({ noetig: false });
     expect(
-      liegeHeute([
-        eintrag({ id: 'a', um: '07:00', status: 'cancelled', treatment_table_required: true }),
-      ]),
+      liegeHeute(
+        [eintrag({ id: 'a', um: '07:00', status: 'cancelled', treatment_table_required: true })],
+        FRUEH,
+      ),
     ).toEqual({ noetig: false });
+  });
+});
+
+describe('Die Uhr statt des Hakens (ANN-117 Fassung 2)', () => {
+  const a = eintrag({ id: 'a', um: '07:00', bis: '08:00', treatment_table_required: true });
+  const b = eintrag({ id: 'b', um: '09:00', bis: '10:00' });
+  const c = eintrag({ id: 'c', um: '11:00', bis: '12:00', treatment_table_required: true });
+  const plan = [a, b, c];
+
+  it('macht nach dem Ende eines nicht abgehakten Besuchs den naechsten zum Weg', () => {
+    // 08:30: a ist vorbei, aber nicht abgehakt.
+    const wege = wegeDesTages(plan, zeitpunkt('08:30'));
+    expect(wege.erster?.id).toBe('b');
+    expect(wege.istErsterDesTages).toBe(false);
+    expect(fokusDesTages(plan, true, zeitpunkt('08:30'))).toMatchObject({
+      art: 'besuch',
+      termin: { id: 'b' },
+    });
+    expect(nichtAbgeschlossen(a, zeitpunkt('08:30'))).toBe(true);
+    expect(nichtAbgeschlossen(b, zeitpunkt('08:30'))).toBe(false);
+  });
+
+  it('haelt den laufenden Besuch bis zu seinem Ende, auch ohne Haken', () => {
+    expect(wegeDesTages(plan, zeitpunkt('07:59')).erster?.id).toBe('a');
+    expect(wegeDesTages(plan, zeitpunkt('08:00')).erster?.id).toBe('b');
+  });
+
+  it('geht nach einem fruehen Haken auch vor dem Ende weiter', () => {
+    const abgehakt = [{ ...a, status: 'completed' as const }, b, c];
+    expect(wegeDesTages(abgehakt, zeitpunkt('07:30')).erster?.id).toBe('b');
+  });
+
+  it('zaehlt die Liege nach der Uhr: Ein vorbeigegangener Besuch braucht sie nicht mehr', () => {
+    expect(liegeHeute(plan, zeitpunkt('06:00'))).toMatchObject({ noetig: true, besuch: 1 });
+    expect(liegeHeute(plan, zeitpunkt('08:30'))).toMatchObject({ noetig: true, besuch: 3 });
+  });
+
+  it('klappt nach dem letzten Besuch den ersten nicht abgehakten aus - zum Abschliessen', () => {
+    const fokus = fokusDesTages(plan, true, zeitpunkt('12:30'));
+    expect(fokus).toMatchObject({ art: 'dokumentation', termin: { id: 'a' } });
+    // Gezählt als erledigt wird weiter nur, was abgehakt ist.
+    expect(tagesfortschritt(plan, null).erledigt).toBe(0);
+  });
+
+  it('liegt an einem kuenftigen Tag ganz vor, an einem vergangenen ganz hinter einem (ANN-234)', () => {
+    expect(wegeDesTages(plan, 0).erster?.id).toBe('a');
+    expect(wegeDesTages(plan, 8.64e15).erster).toBeNull();
+  });
+});
+
+describe('Die Liege nur am Hausbesuch (BEF-051, ANN-116 Fassung 2)', () => {
+  it('sagt „Nein" an einem Praxistermin, auch wenn die Person die Liege braucht', () => {
+    const liege = liegeHeute(
+      [
+        eintrag({
+          id: 'p',
+          um: '14:00',
+          appointment_type: 'practice',
+          treatment_table_required: true,
+        }),
+      ],
+      FRUEH,
+    );
+    expect(liegeText(liege)).toBe('Nein');
+  });
+
+  it('zaehlt an einem gemischten Tag nur die Hausbesuche', () => {
+    const plan = [
+      eintrag({ id: 'p', um: '06:00', appointment_type: 'practice' }),
+      eintrag({ id: 'a', um: '07:00' }),
+      eintrag({ id: 'b', um: '08:30', treatment_table_required: true }),
+    ];
+    expect(hausbesucheDesTages(plan).map((t) => t.id)).toEqual(['a', 'b']);
+    expect(liegeText(liegeHeute(plan, FRUEH))).toBe('Ja · ab 2. Besuch 10:30');
+    // Der Praxistermin bleibt ein Besuch des Tages - der erste Weg führt zu ihm.
+    expect(wegeDesTages(plan, FRUEH).erster?.id).toBe('p');
   });
 });
 
@@ -160,6 +261,7 @@ describe('Der ausgeklappte Termin (Design-Handoff 2026-10-01)', () => {
         eintrag({ id: 'b', um: '09:00' }),
       ],
       true,
+      FRUEH,
     );
     // Der Besuch geht der offenen Dokumentation vor: Zu ihm muss man fahren.
     expect(fokus).toMatchObject({ art: 'besuch', termin: { id: 'b' } });
@@ -173,6 +275,7 @@ describe('Der ausgeklappte Termin (Design-Handoff 2026-10-01)', () => {
         eintrag({ id: 't1', um: '10:00', kind: 'training', patient_id: null }),
       ],
       false,
+      FRUEH,
     );
     expect(fokus).toMatchObject({ art: 'besuch', termin: { id: 't1' } });
   });
@@ -183,9 +286,12 @@ describe('Der ausgeklappte Termin (Design-Handoff 2026-10-01)', () => {
       eintrag({ id: 'b', um: '09:00', status: 'completed', documentation_status: 'draft' }),
       eintrag({ id: 'c', um: '11:00', status: 'completed', documentation_status: 'none' }),
     ];
-    expect(fokusDesTages(plan, true)).toMatchObject({ art: 'dokumentation', termin: { id: 'b' } });
+    expect(fokusDesTages(plan, true, FRUEH)).toMatchObject({
+      art: 'dokumentation',
+      termin: { id: 'b' },
+    });
     // Für alle anderen wäre es eine Aufgabe, die sie nicht erledigen können.
-    expect(fokusDesTages(plan, false)).toBeNull();
+    expect(fokusDesTages(plan, false, FRUEH)).toBeNull();
   });
 
   it('gibt es nicht, wenn alles erledigt ist, und nie fuer eine Fehlzeit oder Absage', () => {
@@ -198,9 +304,10 @@ describe('Der ausgeklappte Termin (Design-Handoff 2026-10-01)', () => {
           eintrag({ id: 'n', um: '11:00', status: 'no_show' }),
         ],
         true,
+        FRUEH,
       ),
     ).toBeNull();
-    expect(fokusDesTages([], true)).toBeNull();
+    expect(fokusDesTages([], true, FRUEH)).toBeNull();
   });
 
   it('wartet bis zum Beginn, laeuft bis zum Ende und ist danach ueberfaellig', () => {

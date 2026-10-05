@@ -85,7 +85,9 @@ export function Tageskarte({
   const besonderheit = termin.special_note?.trim() || null;
   const hatInfo =
     stockwerk !== null || zugang !== null || besonderheit !== null || nummern.length > 0;
-  const liege = termin.treatment_table_required === true;
+  // Die Liege fährt nur zum Hausbesuch mit (BEF-051, ANN-116 Fassung 2).
+  const liege =
+    termin.treatment_table_required === true && termin.appointment_type === 'home_visit';
   const fehlt = termin.kind === 'therapy' && termin.patient_id ? (erstaufnahme ?? []) : [];
   // Der Verweis auf die Hinweise steht nur da, solange es sie im Dokument
   // gibt (wie bei der Suche, UIK-08).

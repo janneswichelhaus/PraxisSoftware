@@ -8,18 +8,24 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTime, kalenderZumTermin } from '@/features/appointments/api';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
-import { einordnung, terminName, type Anfahrt } from './tagesstart';
+import { einordnung, nichtAbgeschlossen, terminName, type Anfahrt } from './tagesstart';
 
-/** Wie ein Termin im Strahl steht: vor sich, hinter sich oder ausgefallen. */
-type Stand = 'kommt' | 'erledigt' | 'ausgefallen';
+/**
+ * Wie ein Termin im Strahl steht: vor sich, hinter sich, ausgefallen - oder
+ * vorbei, aber nicht abgehakt (ANN-117 Fassung 2).
+ */
+type Stand = 'kommt' | 'erledigt' | 'ausgefallen' | 'liegengeblieben';
 
 /**
  * Eine Fehlzeit wird weder abgeschlossen noch dokumentiert; hinter sich hat man
- * sie, wenn ihr Ende erreicht ist (UEB-02).
+ * sie, wenn ihr Ende erreicht ist (UEB-02). Ein Besuch, dessen Ende erreicht
+ * ist, ohne dass ihn jemand abgehakt hat, kommt nicht mehr - er ist
+ * liegengeblieben und sagt es in der Zeile.
  */
 function standVon(termin: DayPlanEntry, jetzt: number): Stand {
   if (termin.status === 'cancelled' || termin.status === 'no_show') return 'ausgefallen';
   if (termin.kind === 'internal') return Date.parse(termin.ends_at) <= jetzt ? 'erledigt' : 'kommt';
+  if (nichtAbgeschlossen(termin, jetzt)) return 'liegengeblieben';
   return termin.status === 'confirmed' ? 'kommt' : 'erledigt';
 }
 
@@ -57,15 +63,19 @@ function Punkt({
   istFokus: boolean;
   gefuellt: boolean;
 }) {
-  const hinter = stand !== 'kommt';
+  const hinter = stand === 'erledigt' || stand === 'ausgefallen';
   const farbe = hinter
     ? 'border-accent bg-accent text-surface'
-    : istFokus
-      ? `border-accent ${gefuellt ? 'bg-accent' : 'bg-surface'}`
-      : 'border-line-strong bg-surface-sunken';
+    : stand === 'liegengeblieben'
+      ? 'border-warnung bg-surface'
+      : istFokus
+        ? `border-accent ${gefuellt ? 'bg-accent' : 'bg-surface'}`
+        : 'border-line-strong bg-surface-sunken';
   return (
     <span
-      data-punkt={hinter ? stand : istFokus ? 'naechster' : 'spaeter'}
+      data-punkt={
+        hinter || stand === 'liegengeblieben' ? stand : istFokus ? 'naechster' : 'spaeter'
+      }
       className={`rounded-pill relative flex size-3.5 items-center justify-center border-2 text-[10px] leading-none font-bold transition-colors duration-200 ${farbe}`}
     >
       {stand === 'erledigt' ? '✓' : stand === 'ausgefallen' ? '×' : null}
@@ -139,7 +149,7 @@ export function Zeitstrahl({
               ? { anfahrt, vorher: anfahrt.vorher }
               : null;
           const beginn = Date.parse(termin.starts_at);
-          const grund = offenGrund(termin);
+          const grund = stand === 'liegengeblieben' ? 'Nicht abgeschlossen' : offenGrund(termin);
           const ziel = mitRueckweg(
             termin.kind === 'training'
               ? `/training/termine/${termin.id}`
@@ -157,7 +167,7 @@ export function Zeitstrahl({
               <li className={zeitstrahlRaster} data-termin={termin.id}>
                 <span
                   className={`text-liste font-semibold tabular-nums ${zeitOben} ${
-                    stand === 'kommt' ? 'text-ink' : 'text-ink-muted'
+                    stand === 'kommt' || stand === 'liegengeblieben' ? 'text-ink' : 'text-ink-muted'
                   }`}
                 >
                   {formatLocalTime(termin.starts_at, zeitzone)}
@@ -199,7 +209,7 @@ export function Zeitstrahl({
                         <span className="min-w-0 flex-1 basis-40">
                           <span
                             className={`block text-base wrap-anywhere ${
-                              stand === 'kommt'
+                              stand === 'kommt' || stand === 'liegengeblieben'
                                 ? 'text-ink font-semibold'
                                 : 'text-ink-muted font-medium'
                             }`}
