@@ -2810,3 +2810,15 @@ Recht · entschieden (Jannes) · 2026-10-05 · Jannes (B17, „wie empfohlen“)
 **Anker.** `app.session_fee_lines` in `supabase/migrations/20261007110000_abr_031_session_fee_recording.sql`.
 
 **Änderungspfad.** Andere Gewichte (etwa Beihilfe-Höchstbeträge als eigenes Feld): nur `app.session_fee_lines` · Aufwand `klein`. Eine Zeile je Termin: dieselbe Funktion · Aufwand `klein`.
+
+### ANN-234 — Die Übersicht wechselt den Tag um je einen Kalendertag, der Tag steht in der Adresse
+
+Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-001, „Tageswechsel in der Übersicht“ als Umschalten auf Vortag und Folgetag bestätigt) · erledigt · Wiedervorlage: Jannes in der Sichtung
+
+**Annahme.** Unter dem Kopf der Übersicht stehen „‹ Vortag“, „Folgetag ›“ und, an einem anderen Tag, „Heute“; gewechselt wird um je einen Kalendertag, auch über das Wochenende. Der gezeigte Tag steht als `?tag=JJJJ-MM-TT` in der Adresse, ein ungültiger Wert führt auf heute. An einem anderen Tag gelten dieselben Regeln wie heute, gemessen an einem Bezugszeitpunkt: Ein künftiger Tag liegt ganz vor einem (alles wartet, der erste Besuch ist der „Erste Weg“, kein Haken), ein vergangener ganz hinter einem (nicht Abgehaktes steht als „Nicht abgeschlossen“ da und lässt sich abhaken). Jetzt-Marke und Wegbalken gibt es nur heute; Liege-Zeile („Liege morgen“), Zeitstrahl mit Anfahrten, Teamplan und Tagesroute zeigen den gewählten Tag. Offene Punkte bleiben beim heutigen Stand.
+
+**Begründung.** Abends den nächsten Tag samt Liege sehen und morgens den Vortag abhaken sind die beiden Fälle, die der Auftrag meint. Ein Datum in der Adresse ist kein Personenbezug (ADR-013 Punkt 9 Nr. 5) und macht den Tag mit „zurück“ erreichbar. Der Bezugszeitpunkt statt einer zweiten Logik hält ANN-117 Fassung 2 an einer Stelle. Unsicher: ob am Freitag „Folgetag“ den Montag zeigen soll.
+
+**Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/today/tageswahl.ts`; `TagWechsel` in `src/features/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
+
+**Änderungspfad.** Wochenende überspringen oder größere Sprünge: `tagePlus` in `TagWechsel` durch eine Werktagsfunktion ersetzen · Aufwand `klein`. Haken auch an künftigen Tagen: die Bedingung `datum > heute` in `MeinTag` · Aufwand `klein`.

@@ -105,6 +105,7 @@ export function Zeitstrahl({
   plan,
   fokusId,
   jetzt,
+  jetztMarke = true,
   zeitzone,
   anfahrten,
   karte,
@@ -115,6 +116,11 @@ export function Zeitstrahl({
   /** Der ausgeklappte Termin, oder `null`. */
   fokusId: string | null;
   jetzt: number;
+  /**
+   * Die Jetzt-Marke - nur am heutigen Tag. An einem anderen Tag der Übersicht
+   * (ANN-234) gibt es kein Jetzt auf der Schiene.
+   */
+  jetztMarke?: boolean;
   zeitzone: string;
   anfahrten: ReadonlyMap<string, Anfahrt>;
   /** Die Karte des ausgeklappten Termins. */
@@ -125,9 +131,10 @@ export function Zeitstrahl({
    */
   haken?: (termin: DayPlanEntry) => ReactNode;
 }) {
-  const jetztText = formatLocalTime(new Date(jetzt).toISOString(), zeitzone);
+  const jetztText = jetztMarke ? formatLocalTime(new Date(jetzt).toISOString(), zeitzone) : '';
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
-  const markeVor = vorIndex < 0 ? plan.length : vorIndex;
+  // Ohne Marke steht sie hinter dem letzten Termin - und wird dort nicht gezeichnet.
+  const markeVor = !jetztMarke || vorIndex < 0 ? plan.length : vorIndex;
 
   return (
     <section aria-labelledby="zeitstrahl-titel" className="mt-5">
@@ -137,7 +144,7 @@ export function Zeitstrahl({
       <ol>
         {plan.map((termin, index) => {
           const istFokus = termin.id === fokusId;
-          const letzter = index === plan.length - 1 && markeVor !== plan.length;
+          const letzter = index === plan.length - 1 && (!jetztMarke || markeVor !== plan.length);
           const stand = standVon(termin, jetzt);
           const anfahrt = anfahrten.get(termin.id);
           const uebergang =
@@ -246,7 +253,7 @@ export function Zeitstrahl({
             </Fragment>
           );
         })}
-        {markeVor === plan.length ? <NowMarker zeit={jetztText} letzter /> : null}
+        {jetztMarke && markeVor === plan.length ? <NowMarker zeit={jetztText} letzter /> : null}
       </ol>
     </section>
   );

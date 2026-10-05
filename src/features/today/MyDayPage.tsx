@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -51,6 +51,7 @@ import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntr
 import { Tageskarte } from './Tagesliste';
 import { Zeitstrahl } from './Zeitstrahl';
 import { useTagesfahrzeiten } from './fahrzeiten';
+import { TagesWort, bezugszeitpunkt, gewaehlterTag, tagesPfad, tagesWort } from './tageswahl';
 import { navigationsZiel } from '@/lib/location/navigation';
 import {
   besuchsphase,
@@ -173,12 +174,16 @@ function useJetzt(): number {
 function Teamplan({
   abfrage,
   heute,
+  tagWort,
   zeitzone,
   offen,
   offenAbLg,
 }: {
   abfrage: UseQueryResult<CalendarEntry[]>;
+  /** Der gezeigte Tag (ANN-234) - meist heute. */
   heute: string;
+  /** „Heute", „Morgen", „Am Mi., 7.10." für den Leerzustand. */
+  tagWort: string;
   zeitzone: string;
   offen: boolean;
   /** In der Kontextspalte: am Rechner von Anfang an offen. */
@@ -209,7 +214,7 @@ function Teamplan({
             onErneut={() => refetch()}
           />
         ) : alleHeute.length === 0 ? (
-          <EmptyState title="Heute sind keine Termine geplant" />
+          <EmptyState title={`${tagWort} sind keine Termine geplant`} />
         ) : (
           <ListRows rahmen={false}>
             {alleHeute.map((termin) => (
@@ -259,10 +264,12 @@ function Teamplan({
  * Antwort steht als Wort da - „Ja · ab 2. Besuch 10:00" oder „Nein" -, das
  * Häkchen davor ist Schmuck.
  */
-function LiegeZeile({ liege }: { liege: LiegeHeute }) {
+function LiegeZeile({ liege, tagWort }: { liege: LiegeHeute; tagWort: string }) {
   return (
     <dl className="bg-accent-soft rounded-card flex min-h-13 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
-      <dt className="text-accent tracking-label text-xs font-semibold uppercase">Liege heute</dt>
+      <dt className="text-accent tracking-label text-xs font-semibold uppercase">
+        Liege {tagWort}
+      </dt>
       <dd className="text-accent text-base font-semibold tabular-nums">
         {liege.noetig ? <span aria-hidden="true">✓ </span> : null}
         {liegeText(liege)}
@@ -285,9 +292,16 @@ function LiegeZeile({ liege }: { liege: LiegeHeute }) {
 function Tagesabschluss({
   fortschritt,
   morgen,
+  tagWort,
+  istHeute,
+  datum,
 }: {
   fortschritt: Tagesfortschritt;
   morgen: string;
+  /** „Heute", „Gestern" … über dem Titel (ANN-234). */
+  tagWort: string;
+  istHeute: boolean;
+  datum: string;
 }) {
   const titelId = useId();
   const doku = dokuText(fortschritt);
@@ -297,7 +311,7 @@ function Tagesabschluss({
   return (
     <section aria-labelledby={titelId} className="bg-surface-inverse rounded-card px-4 py-4">
       {/* Salbei ist nur auf Tiefgrün Textfarbe, und nur in 12 px und 600. */}
-      <p className="text-salbei tracking-label text-xs font-semibold uppercase">Heute</p>
+      <p className="text-salbei tracking-label text-xs font-semibold uppercase">{tagWort}</p>
       <h2 id={titelId} className="text-surface text-h3 tracking-display mt-1 font-extrabold">
         {alleAbgehakt ? <span aria-hidden="true">✓ </span> : null}
         {alleAbgehakt ? 'Alle Besuche erledigt' : 'Kein Weg mehr offen'}
@@ -307,13 +321,41 @@ function Tagesabschluss({
       </p>
       {/* Auf Tiefgrün ist der Fokusrahmen Papier, nicht Hauptfarbe. */}
       <Link
-        to={`/kalender?ansicht=tag&datum=${morgen}`}
+        to={`/kalender?ansicht=tag&datum=${istHeute ? morgen : datum}`}
         className="text-surface focus-visible:outline-surface mt-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline underline-offset-3"
       >
-        Morgen im Kalender
+        {istHeute ? 'Morgen im Kalender' : 'Diesen Tag im Kalender'}
         <Pfeil />
       </Link>
     </section>
+  );
+}
+
+/**
+ * Vortag, heute, Folgetag (UBK-003, ANN-234): eine Zeile unter dem Kopf.
+ *
+ * Links statt Knöpfe - der Tag steht in der Adresse, und „zurück" im Browser
+ * führt wieder auf den Tag davor. „Heute" erscheint nur, wenn ein anderer Tag
+ * gezeigt wird; dann sagt die Zeile auch, welcher.
+ */
+function TagWechsel({ tag, heute, istHeute }: { tag: string; heute: string; istHeute: boolean }) {
+  return (
+    <nav aria-label="Tag wechseln" className="mb-4 flex flex-wrap items-center gap-2">
+      <ButtonLink to={tagesPfad(tagePlus(tag, -1), heute)} variant="secondary" groesse="kompakt">
+        <span aria-hidden="true">‹</span> Vortag
+      </ButtonLink>
+      {istHeute ? null : (
+        <ButtonLink to="/" variant="secondary" groesse="kompakt">
+          Heute
+        </ButtonLink>
+      )}
+      <ButtonLink to={tagesPfad(tagePlus(tag, 1), heute)} variant="secondary" groesse="kompakt">
+        Folgetag <span aria-hidden="true">›</span>
+      </ButtonLink>
+      {istHeute ? null : (
+        <p className="text-accent text-sm font-semibold">{TagesWort(tag, heute)}</p>
+      )}
+    </nav>
   );
 }
 
@@ -354,6 +396,7 @@ function MeinTag({
   mitBehandlung,
   zeitzone,
   jetzt,
+  heute,
 }: {
   abfrage: UseQueryResult<DayPlanEntry[]>;
   /** Die Tagesliste nach Uhrzeit; leer, solange nichts geladen ist. */
@@ -369,9 +412,14 @@ function MeinTag({
   /** Sieht die Rolle Akten? Sonst fragt die Liste nicht nach Erstaufnahmen (TRN-006). */
   mitBehandlung: boolean;
   zeitzone: string;
+  /** Der Bezugszeitpunkt des gezeigten Tags (`bezugszeitpunkt`, ANN-234). */
   jetzt: number;
+  /** Der heutige Tag der Praxis - `datum` kann davon abweichen (ANN-234). */
+  heute: string;
 }) {
   const { data: termine, isPending, isError, isFetching, dataUpdatedAt, refetch } = abfrage;
+  const istHeute = datum === heute;
+  const tagWort = tagesWort(datum, heute);
 
   // Was der Haken bewirkt hat - oder warum nicht (Design-Handoff 2026-10-01,
   // Abschnitt 5a Punkt 4). Steht oben, nimmt den Fokus.
@@ -387,6 +435,8 @@ function MeinTag({
     beschriftung?: string,
   ): ReactNode {
     if (!darfTermine || termin.kind !== 'therapy' || termin.status !== 'confirmed') return null;
+    // Ein künftiger Tag wird nicht abgehakt (ANN-234): Der Besuch war noch nicht.
+    if (datum > heute) return null;
     const name = terminName(termin);
     return (
       <TerminAbschliessenKnopf
@@ -458,7 +508,9 @@ function MeinTag({
   const besuche = besucheDesTages(sortiert);
   const hausbesuche = hausbesucheDesTages(sortiert);
   const stehtBesuchAus = fokus?.art === 'besuch';
-  const weg = naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt);
+  // Der Wegbalken rechnet von jetzt (ANN-196) - an einem anderen Tag gibt es
+  // kein Jetzt, nur die Anfahrten am Zeitstrahl (ANN-234).
+  const weg = istHeute ? naechsterWeg(sortiert, fokus, fahrzeiten.anfahrten, jetzt) : null;
 
   function karte(): ReactNode {
     if (!fokus) return null;
@@ -598,13 +650,15 @@ function MeinTag({
         // Der Titel sagt, was der Fall ist (UEB-11): An einem Tag ohne Besuch
         // ist nichts „erledigt". Eine Fehlzeit steht darunter im Zeitstrahl.
         <Card>
-          <EmptyState title="Heute sind Ihnen keine Besuche zugeordnet" />
+          <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
         </Card>
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
               mit Praxisterminen gibt es die Frage nicht. */}
-          {hausbesuche.length > 0 ? <LiegeZeile liege={liegeHeute(sortiert, jetzt)} /> : null}
+          {hausbesuche.length > 0 ? (
+            <LiegeZeile liege={liegeHeute(sortiert, jetzt)} tagWort={tagWort} />
+          ) : null}
           {weg ? (
             <TravelBar titel={weg.titel} von={weg.von} bis={weg.bis} fahrtMin={weg.fahrtMin} />
           ) : null}
@@ -618,7 +672,13 @@ function MeinTag({
           ) : null}
         </div>
       ) : (
-        <Tagesabschluss fortschritt={fortschritt} morgen={morgen} />
+        <Tagesabschluss
+          fortschritt={fortschritt}
+          morgen={morgen}
+          tagWort={TagesWort(datum, heute)}
+          istHeute={istHeute}
+          datum={datum}
+        />
       )}
 
       {sortiert.length > 0 ? (
@@ -626,6 +686,7 @@ function MeinTag({
           plan={sortiert}
           fokusId={fokus?.termin.id ?? null}
           jetzt={jetzt}
+          jetztMarke={istHeute}
           zeitzone={zeitzone}
           anfahrten={fahrzeiten.anfahrten}
           karte={karte()}
@@ -642,7 +703,14 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   const darfTermine = canManageAppointments(user.roles);
   const praxisrolle = isStaff(user.roles);
   const darfDokumentieren = canWriteTreatmentNote(user.roles);
-  const jetzt = useJetzt();
+  const uhr = useJetzt();
+  // ANN-234: der gezeigte Tag, aus der Adresse; ohne Angabe heute. An einem
+  // anderen Tag misst die Seite nicht an der Uhr, sondern liegt ganz vor oder
+  // ganz hinter ihm.
+  const [suche] = useSearchParams();
+  const tag = gewaehlterTag(suche.get('tag'), heute);
+  const istHeute = tag === heute;
+  const jetzt = bezugszeitpunkt(tag, heute, uhr);
 
   /**
    * Der Tagesplan des Teams fragt genau einen Kalendertag ab.
@@ -655,13 +723,14 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
    * funktioniert - es war kein abgelaufener Anmeldezustand.
    */
   const morgen = tagePlus(heute, 1);
+  const folgetag = tagePlus(tag, 1);
 
   const team = useQuery({
-    queryKey: ['appointments', heute, morgen, null, null, 'active'],
+    queryKey: ['appointments', tag, folgetag, null, null, 'active'],
     queryFn: () =>
       fetchAppointments({
-        von: heute,
-        bis: morgen,
+        von: tag,
+        bis: folgetag,
         person: null,
         standort: null,
         status: 'active',
@@ -676,9 +745,9 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     (darfTermine || canWriteTrainingClients(user.roles)) && Boolean(user.staffMemberId);
   const staffMemberId = user.staffMemberId ?? '';
 
-  const tag = useQuery({
-    queryKey: ['day-plan', heute, staffMemberId],
-    queryFn: () => fetchDayPlan(heute, staffMemberId),
+  const tagesliste = useQuery({
+    queryKey: ['day-plan', tag, staffMemberId],
+    queryFn: () => fetchDayPlan(tag, staffMemberId),
     enabled: praxisrolle && eigeneTagesliste,
     retry: false,
     // Die zuletzt geladene Liste bleibt im Arbeitsspeicher der Seite lesbar,
@@ -686,7 +755,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     gcTime: TAGESPLAN_VORHALTEDAUER_MS,
   });
 
-  const sortiert = useMemo(() => [...(tag.data ?? [])].sort(nachUhrzeit), [tag.data]);
+  const sortiert = useMemo(() => [...(tagesliste.data ?? [])].sort(nachUhrzeit), [tagesliste.data]);
   const fokus = useMemo(
     () => fokusDesTages(sortiert, darfDokumentieren, jetzt),
     [sortiert, darfDokumentieren, jetzt],
@@ -730,16 +799,17 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   // Besuch mit Ort" (BEF-051).
   const tagesroute =
     isTherapyStaff(user.roles) &&
-    tag.data &&
+    tagesliste.data &&
     user.staffMemberId &&
     hausbesucheDesTages(sortiert).length > 0 ? (
-      <TagesrouteAufklapper datum={heute} staffMemberId={user.staffMemberId} plan={sortiert} />
+      <TagesrouteAufklapper datum={tag} staffMemberId={user.staffMemberId} plan={sortiert} />
     ) : null;
 
   const teamplan = darfTermine ? (
     <Teamplan
       abfrage={team}
-      heute={heute}
+      heute={tag}
+      tagWort={TagesWort(tag, heute)}
       zeitzone={zeitzone}
       offen={!teamplanZugeklappt}
       offenAbLg={eigeneTagesliste}
@@ -763,7 +833,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         <div className="min-w-0">
           <PageHeader
             title={`${greeting()}, ${firstName(user.profile.display_name)}`}
-            description={langesDatum(heute)}
+            description={langesDatum(tag)}
             actions={
               // Tagesfortschritt im Kopf: ein Punkt je Behandlungsbesuch.
               // Fehlzeiten und Training zählen nicht (ANN-117).
@@ -775,15 +845,19 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             }
           />
 
+          {eigeneTagesliste || darfTermine ? (
+            <TagWechsel tag={tag} heute={heute} istHeute={istHeute} />
+          ) : null}
+
           {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}
 
           {eigeneTagesliste && user.staffMemberId ? (
             <MeinTag
-              abfrage={tag}
+              abfrage={tagesliste}
               sortiert={sortiert}
               fokus={fokus}
               fortschritt={fortschritt}
-              datum={heute}
+              datum={tag}
               morgen={morgen}
               staffMemberId={user.staffMemberId}
               darfDokumentieren={darfDokumentieren}
@@ -792,6 +866,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
               mitBehandlung={isTherapyStaff(user.roles)}
               zeitzone={zeitzone}
               jetzt={jetzt}
+              heute={heute}
             />
           ) : null}
 
