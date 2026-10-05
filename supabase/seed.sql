@@ -248,9 +248,13 @@ insert into public.treatment_base_items (id, organization_id, treatment_basis_id
 -- das kommende Jahr. Veroeffentlicht wird erst nach den Positionen - eine
 -- Version, die schon in Kraft ist, nimmt keine mehr an.
 -- -----------------------------------------------------------------------------
-insert into public.service_catalog_versions (id, organization_id, label, valid_from) values
-  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000001', '22222222-2222-4222-8222-000000000001', 'Preisliste 2026', '2026-01-01'),
-  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000002', '22222222-2222-4222-8222-000000000001', 'Preisliste 2027 (Entwurf)', '2027-01-01');
+-- Seit ABR-030 traegt jede Preisliste den Tarif des Terminhonorars
+-- (ADR-009 Punkt 22, ANN-231): synthetisch 140 Euro je Behandlungstermin.
+-- Die Preise der Heilmittel darunter sind seitdem die Gewichte, nach denen
+-- das Honorar auf der Rechnung aufgeteilt wird (ANN-233).
+insert into public.service_catalog_versions (id, organization_id, label, valid_from, session_fee_cents) values
+  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000001', '22222222-2222-4222-8222-000000000001', 'Preisliste 2026', '2026-01-01', 14000),
+  ('bbbbbbbb-bbbb-4bbb-8bbb-000000000002', '22222222-2222-4222-8222-000000000001', 'Preisliste 2027 (Entwurf)', '2027-01-01', 14500);
 
 -- Seit ABR-008 traegt jede Position ihren Leistungsbereich (ADR-009 Punkt 16,
 -- ADR-021 Punkt 2). Der Bestand ist durchweg Behandlung; die eine

@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-03.
+Zuletzt aktualisiert: 2026-10-05.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -1059,7 +1059,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Anker.** `public.create_invoice_draft`, der Teilindex `invoices_draft_period_key`, der `check` an `invoices.status` und `app.build_invoice_document` in `supabase/migrations/20260919150000_invoices.sql`; der dritte Schlüssel und die beiden zusammengesetzten Fremdschlüssel an `invoice_items` in `supabase/migrations/20260921140000_invoice_service_area.sql` (ABR-009).
 
-**Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung. **Abnahme (Jannes, 2026-10-02):** bestätigt.
+**Änderungspfad.** Andere Klammer als der Monat (je Verordnung, je Termin): `create_invoice_draft` und der Teilindex · Aufwand `mittel`. Einzelne Zeilen abwählen: eine Auswahl an `create_invoice_draft`, dazu eine sichtbare Anzeige des Rests · Aufwand `mittel` — widerspräche der Begründung oben. Diagnose in den Snapshot: der Block `treatment_bases` in `app.build_invoice_document` · Aufwand `klein`, aber eine Datenschutzentscheidung. **Abnahme (Jannes, 2026-10-02):** bestätigt. **Fassung 2 (ABR-032, 2026-10-05, Entscheidung Jannes zu B17):** Die Klammer ist die **Behandlungsgrundlage** (je Verordnung) statt des Kalendermonats: `create_invoice_draft_for_basis` nimmt alle offenen Leistungen der Termine einer Grundlage auf, je Grundlage höchstens ein Entwurf (`invoices.treatment_basis_id`, Teilindex `invoices_draft_basis_key`); `period_month` nennt dann den Monat der ersten Leistung. Leistungen an Terminen ohne Grundlage bleiben beim Monat. Die Diagnose steht seit ANN-229 im Snapshot. `supabase/migrations/20261007120000_abr_032_invoice_per_treatment_basis.sql`.
 
 ### ANN-078 — Zahlungen sind Transaktionen mit Richtung, der Zahlungsstand wird gerechnet
 
@@ -2774,3 +2774,39 @@ Datenschutz · entschieden (Jannes) · 2026-10-03 · Jannes (LOG-EPIC-001, Freig
 **Anker.** `app.log_record_access` und `app.record_denied_read` in `supabase/migrations/20261006100000_log_001a_protokoll_lesen.sql`; die Lesepfade in `supabase/migrations/20261006100100_log_001a_lesepfade.sql`; Katalog `src/features/audit/actions.ts`; Tests in `supabase/tests/audit-protokoll-lesen.test.ts`.
 
 **Änderungspfad.** Feinere Körnung: Tagesgrenze im Helfer durch Stunde ersetzen · Aufwand `klein`. Zurück zu je Datensatz: die Lesepfade wieder einzeln schreiben lassen · Aufwand `groß`.
+
+### ANN-231 — Der Tarif des Terminhonorars steht an der Preisliste, die Vereinbarung je Person daneben
+
+Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (ABR-EPIC-007, „wie empfohlen“) · Wiedervorlage: Probewoche 1
+
+**Annahme.** Der allgemeine Tarif ist ein Betrag an der Katalogversion (`service_catalog_versions.session_fee_cents`) und wird mit ihr veröffentlicht und eingefroren. Eine patientenbezogene Honorarvereinbarung ist ein unveränderlicher Eintrag mit Betrag und Gültigkeitsbeginn (`patient_fee_agreements`); eine Änderung ist ein neuer Eintrag. Am Leistungstag gilt die jüngste Vereinbarung bis zu diesem Tag, sonst der Tarif der dann gültigen Preisliste. Anlegen und Entfernen einer noch nie angewandten Vereinbarung darf nur owner (wie ANN-071), lesen owner und office.
+
+**Begründung.** ADR-009 Punkte 5 und 22: versioniert mit Gültigkeitsbeginn, Vereinbarung vor Tarif, eine neue Preisliste ändert keine Vereinbarung. Die Preisliste ist schon versioniert und eingefroren (ANN-070); ein zweites Versionsmodell für einen Betrag wäre eine zweite Wahrheit. Preisbildung ist Praxiseinstellung (§4.1).
+
+**Anker.** `app.session_fee_on` in `supabase/migrations/20261007100000_abr_030_session_fee_tariff.sql`; Oberfläche `src/features/billing/Honorarvereinbarung.tsx`.
+
+**Änderungspfad.** Auch office legt Vereinbarungen an: `app.can_manage_fee_agreements` · Aufwand `klein`. Tarif je Heilmittel-Kombination statt eines Betrags: eigene Tabelle je Version · Aufwand `mittel`.
+
+### ANN-232 — Das Terminhonorar entsteht einmal je Termin und wird beim Bestätigen festgeschrieben
+
+Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (ABR-EPIC-007) · Wiedervorlage: Probewoche 1
+
+**Annahme.** Bestätigt jemand an einem Behandlungstermin mindestens ein Heilmittel, entsteht genau ein Eintrag in `appointment_session_fees` mit dem am Leistungstag geltenden Betrag (ANN-231), festgeschrieben; eine spätere oder rückwirkende Vereinbarung ändert ihn nicht. Ohne Tarif und Vereinbarung lässt sich nichts bestätigen. Im Terminhonorar ist die Menge je Heilmittel 1 (eine Doppelbehandlung ist eine eigene Position). Eine Position ohne Heilmittel (etwa eine Selbstzahlerleistung) und das Ausfallhonorar behalten ihren eigenen Preis. Leistungen, die vor ABR-EPIC-007 erfasst wurden, behalten ihre Katalogpreise.
+
+**Begründung.** ADR-009 Punkt 22: genau einmal je Termin, die Heilmittelauswahl ändert den Preis nicht, eine Preisänderung ändert keine erfasste Leistung. Festschreiben statt Nachschlagen macht die Zusage unabhängig davon, wann eine Vereinbarung angelegt wird. Unsicher: ob es Behandlungstermine gibt, die kein Heilmittel tragen und trotzdem ein Honorar auslösen.
+
+**Anker.** `public.record_billable_services` in `supabase/migrations/20261007110000_abr_031_session_fee_recording.sql`.
+
+**Änderungspfad.** Honorar ohne Heilmittel: Bedingung in `record_billable_services` · Aufwand `klein`. Betrag nachträglich korrigieren: Erfassung zurücknehmen und neu bestätigen (heute schon möglich, solange keine Rechnung daran hängt).
+
+### ANN-233 — Das Honorar wird auf die Heilmittel nach ihren Preisen in der Preisliste aufgeteilt
+
+Recht · entschieden (Jannes) · 2026-10-05 · Jannes (B17, „wie empfohlen“) · Prüfpaket · Wiedervorlage: erster echter Erstattungsfall mit Beihilfe oder privater Versicherung
+
+**Annahme.** Auf der Rechnung steht je bestätigtem Heilmittel eine Position. Ihr Betrag ist der Anteil am Terminhonorar im Verhältnis der Preise der Heilmittel in der am Leistungstag geltenden Preisliste; Restcents gehen an den größten Bruchteil, bei Gleichstand an die erste Position der Liste. Die Summe je Termin ist genau das Honorar. Ein Vergleichsbetrag (Kassen- oder Beihilfesatz) steht nicht auf der Rechnung.
+
+**Begründung.** Beihilfe (§ 23 BBhV mit Anlage 9) und private Versicherung erstatten je Heilmittel; eine Zeile je Termin ließe sich keinem Höchstbetrag zuordnen (ADR-009 Punkt 23). Die Preise der Heilmittel pflegt owner ohnehin; als Gewichte gibt jede Kombination eine Aufteilung ohne eigene Pflege. Unsicher: ob eine Erstattungsstelle eine Aufteilung beanstandet, die von ihren Höchstbeträgen abweicht.
+
+**Anker.** `app.session_fee_lines` in `supabase/migrations/20261007110000_abr_031_session_fee_recording.sql`.
+
+**Änderungspfad.** Andere Gewichte (etwa Beihilfe-Höchstbeträge als eigenes Feld): nur `app.session_fee_lines` · Aufwand `klein`. Eine Zeile je Termin: dieselbe Funktion · Aufwand `klein`.

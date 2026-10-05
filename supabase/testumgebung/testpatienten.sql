@@ -136,3 +136,14 @@ where not exists (
   select 1 from public.patient_privacy_records v
   where v.patient_id = p.id::uuid and v.record_kind = k.art
 );
+
+-- Honorarvereinbarung (ABR-030, ANN-231): Clara zahlt seit Beginn ihrer
+-- Versorgung ein vereinbartes Terminhonorar statt des Tarifs - damit Akte,
+-- Bestaetigung und Rechnung den Unterschied zeigen.
+insert into public.patient_fee_agreements (organization_id, patient_id, valid_from, session_fee_cents, created_by)
+select '22222222-2222-4222-8222-000000000001', '66666666-6666-4666-8666-000000000106',
+       current_date - 120, 12000, '11111111-1111-4111-8111-000000000001'
+where not exists (
+  select 1 from public.patient_fee_agreements f
+  where f.patient_id = '66666666-6666-4666-8666-000000000106'
+);

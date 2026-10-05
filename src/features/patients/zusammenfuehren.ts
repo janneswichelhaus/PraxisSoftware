@@ -27,6 +27,7 @@ export const ZAEHLER = [
   'invoices',
   'invoices_issued',
   'invoice_recipients',
+  'fee_agreements',
   'patient_files',
   'privacy_records',
   'questionnaire_responses',
@@ -59,6 +60,7 @@ const BEREICHE: Record<Zaehler, [string, string]> = {
   invoices: ['Rechnung', 'Rechnungen'],
   invoices_issued: ['davon ausgestellt', 'davon ausgestellt'],
   invoice_recipients: ['Rechnungsempfänger', 'Rechnungsempfänger'],
+  fee_agreements: ['Honorarvereinbarung', 'Honorarvereinbarungen'],
   patient_files: ['Datei', 'Dateien'],
   privacy_records: ['Datenschutzvermerk', 'Datenschutzvermerke'],
   questionnaire_responses: ['Bogen', 'Bögen'],
@@ -109,6 +111,8 @@ const SPERREN: Record<string, string> = {
     'An der Person der Dublette hängt ein Zugang zur Anwendung. Er verlöre seine Akte – bitte die Dublette öffnen und diese Akte von dort aus übernehmen.',
   draft_invoice_overlap:
     'Beide Akten haben einen Rechnungsentwurf für denselben Monat. Bitte einen der beiden Entwürfe verwerfen.',
+  fee_agreement_overlap:
+    'Beide Akten haben eine Honorarvereinbarung ab demselben Tag. Bitte die nicht angewandte entfernen.',
   open_waitlist_overlap:
     'Beide Akten stehen ohne Grundlage auf der Warteliste. Bitte einen der beiden Einträge schließen.',
   note_too_long:

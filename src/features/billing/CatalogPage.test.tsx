@@ -12,6 +12,7 @@ const createKatalogVersion = vi.fn();
 const writeKatalogPositionen = vi.fn();
 const publishKatalogVersion = vi.fn();
 const deleteKatalogVersion = vi.fn();
+const setTarif = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -25,6 +26,7 @@ vi.mock('./api', async (importOriginal) => {
       writeKatalogPositionen(...args) as Promise<void>,
     publishKatalogVersion: (id: string) => publishKatalogVersion(id) as Promise<void>,
     deleteKatalogVersion: (id: string) => deleteKatalogVersion(id) as Promise<void>,
+    setTarif: (...args: unknown[]) => setTarif(...args) as Promise<void>,
   };
 });
 
@@ -39,6 +41,7 @@ function version(
     label: 'Preisliste 2026',
     valid_from: '2026-01-01',
     published_at: '2025-12-20T08:00:00Z',
+    session_fee_cents: 14000,
     ...rest,
   };
 }
@@ -72,6 +75,7 @@ describe('CatalogPage', () => {
     writeKatalogPositionen.mockReset();
     publishKatalogVersion.mockReset();
     deleteKatalogVersion.mockReset();
+    setTarif.mockReset();
     fetchKatalogPositionen.mockResolvedValue([position('p1')]);
   });
 
@@ -603,6 +607,60 @@ describe('CatalogPage', () => {
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
       await waitFor(() => expect(fetchKatalogVersionen).toHaveBeenCalledTimes(1));
+    });
+  });
+
+  describe('Terminhonorar (ABR-030)', () => {
+    it('nennt den Tarif einer Preisliste in Kraft ohne Feld zum Aendern', async () => {
+      fetchKatalogVersionen.mockResolvedValue([version('v1')]);
+
+      renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+      expect(await screen.findByText('140,00 €')).toBeInTheDocument();
+      expect(screen.getByText(/Terminhonorar je Behandlungstermin/)).toBeInTheDocument();
+      expect(screen.queryByLabelText(/Terminhonorar/)).not.toBeInTheDocument();
+    });
+
+    it('sagt, wenn eine Preisliste keins hat', async () => {
+      fetchKatalogVersionen.mockResolvedValue([version('v1', { session_fee_cents: null })]);
+
+      renderWithProviders(<CatalogPage user={testUser(['office'])} />, '/abrechnung/katalog');
+
+      expect(await screen.findByText(/Kein Terminhonorar/)).toBeInTheDocument();
+    });
+
+    it('speichert den Tarif am Entwurf getrennt von den Positionen', async () => {
+      const nutzer = userEvent.setup();
+      fetchKatalogVersionen.mockResolvedValue([version('v2', { published_at: null })]);
+      setTarif.mockResolvedValue(undefined);
+
+      renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+      const feld = await screen.findByLabelText(/Terminhonorar je Behandlungstermin/);
+      expect(feld).toHaveValue('140,00');
+      expect(screen.getByRole('button', { name: 'Terminhonorar speichern' })).toBeDisabled();
+
+      await nutzer.clear(feld);
+      await nutzer.type(feld, '150');
+      await nutzer.click(screen.getByRole('button', { name: 'Terminhonorar speichern' }));
+
+      expect(setTarif).toHaveBeenCalledWith('v2', 15000);
+      expect(writeKatalogPositionen).not.toHaveBeenCalled();
+    });
+
+    it('nimmt keinen unlesbaren Betrag an', async () => {
+      const nutzer = userEvent.setup();
+      fetchKatalogVersionen.mockResolvedValue([version('v2', { published_at: null })]);
+
+      renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+      const feld = await screen.findByLabelText(/Terminhonorar je Behandlungstermin/);
+      await nutzer.clear(feld);
+      await nutzer.type(feld, 'viel');
+      await nutzer.click(screen.getByRole('button', { name: 'Terminhonorar speichern' }));
+
+      expect(screen.getByText(/Bitte einen Betrag in Euro/)).toBeInTheDocument();
+      expect(setTarif).not.toHaveBeenCalled();
     });
   });
 });

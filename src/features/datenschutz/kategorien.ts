@@ -130,6 +130,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Erfasste Leistungen',
     beschreibung: 'Die abrechenbaren Leistungen je Termin.',
   },
+  fee_agreements: {
+    label: 'Honorarvereinbarungen',
+    beschreibung:
+      'Das mit der Person vereinbarte Honorar je Behandlungstermin und ab wann es gilt.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',
