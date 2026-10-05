@@ -1,5 +1,5 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
-import { useFahrwege, type FahrwegSpalte } from './fahrwege';
+import { useFahrwege, type Fahrweg, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
 import type { Terminort, Wegfrage } from './wegpruefung';
 import { useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
@@ -33,6 +33,7 @@ import {
   fetchAssignableTrainers,
   fetchLocations,
   formatLocalTime,
+  terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
@@ -748,6 +749,37 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
         }))
       : undefined;
 
+  /**
+   * UBK-016, ANN-241: Was das Menü an einem Fahrweg sagt - von → nach mit den
+   * Namen aus den geladenen Terminen (keine neue Abfrage), Minuten, Kilometer,
+   * das Ziel für „Navigation starten" und der Weg in die Tour. Ein Warnblock
+   * (ANN-236) bleibt Darstellung.
+   */
+  function mitAuskunft(wege: readonly Fahrweg[], datum: string, person: string | null) {
+    if (!person) return wege;
+    const name = (id: string) => {
+      const termin = eintraege.find((e) => e.id === id);
+      return termin ? terminBezeichnung(termin) : 'Termin';
+    };
+    const tourZiel = `/touren?${new URLSearchParams({ tag: datum, person }).toString()}`;
+    return wege.map((w) =>
+      w.veraltet
+        ? w
+        : {
+            ...w,
+            auskunft: {
+              von: w.vonTerminId ? name(w.vonTerminId) : (w.ort ?? 'Praxis'),
+              nach: w.rueckweg ? (w.ort ?? 'Praxis') : name(w.terminId),
+              minuten: w.minuten,
+              meter: w.meter ?? null,
+              ziel: w.ziel ? { kind: 'coordinate' as const, position: w.ziel } : null,
+              rueckweg: w.rueckweg === true,
+              tourZiel,
+            },
+          },
+    );
+  }
+
   const spaltenModell: GitterSpalte[] =
     p.ansicht === 'tag'
       ? tagesPersonen.map((t) => ({
@@ -760,7 +792,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
             : null,
           belegt: belegtFuer(t.staff_member_id, bereich.von),
-          fahrwege: fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
+          fahrwege: mitAuskunft(
+            fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
+            bereich.von,
+            t.staff_member_id,
+          ),
           luecken: lueckenDer(t.staff_member_id),
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
@@ -777,7 +813,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
               : null,
           belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
-          fahrwege: fahrwege.jeSpalte.get(tag) ?? [],
+          fahrwege: mitAuskunft(fahrwege.jeSpalte.get(tag) ?? [], tag, wochenPerson),
           ziel: zumTag(tag),
         }));
 

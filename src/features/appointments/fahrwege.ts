@@ -3,7 +3,7 @@ import { useQueries, useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
 import type { Routenquelle } from '@/lib/location/route';
 import { usePlanungsrouten } from '@/features/tours/fahrzeitfaktor';
-import { fetchStandorte, tagesorte } from '@/features/tours/startort';
+import { fetchStandorte, garagenpunkt, tagesorte } from '@/features/tours/startort';
 import {
   fahrzeitZwischen,
   fetchDayRoute,
@@ -47,6 +47,15 @@ export interface Fahrweg {
   minuten: number;
   /** Die Strecke in Metern, wenn der Kartendienst sie nennt (UBK-016). */
   meter?: number | null;
+  /**
+   * Von wo gefahren wird (UBK-016): der Termin davor, oder `null` für den
+   * Startort des Tages (Garage oder Praxis, `vonOrt`).
+   */
+  vonTerminId?: string | null;
+  /** Garage oder Praxis - am ersten Weg der Start, am Rückweg das Ziel. */
+  ort?: 'Garage' | 'Praxis';
+  /** Die Koordinate des Ziels, für „Navigation starten" (UBK-016, ANN-018). */
+  ziel?: Coordinate | null;
   /**
    * Der Rückweg nach dem letzten Besuch zur Garage oder Praxis (UBK-015):
    * Er beginnt am Ende dieses Termins, statt vor seinem Beginn zu enden.
@@ -135,6 +144,8 @@ export function fahrwegeAusRoute(
     readonly { readonly durationSeconds: number; readonly distanceMeters?: number }[] | null,
   zeitzone: string,
   ende: Coordinate | null = null,
+  /** Was Start und Ende sind (UBK-016): die Garage, falls gesetzt, sonst die Praxis. */
+  ort: 'Garage' | 'Praxis' = 'Praxis',
 ): Fahrweg[] {
   const stopps = stoppsAus(punkte);
   const { index } = routenplan(start, mitEnde(stopps, ende));
@@ -157,6 +168,9 @@ export function fahrwegeAusRoute(
       bisMinute: beginn,
       minuten,
       meter: strecke(davor, hier),
+      vonTerminId: i === 0 ? null : stopps[i - 1]!.punkt.id,
+      ...(i === 0 ? { ort } : {}),
+      ziel: stopps[i]!.position,
     });
   });
   // UBK-015: der Rückweg vom letzten Besuch zur Garage oder Praxis.
@@ -175,6 +189,9 @@ export function fahrwegeAusRoute(
         minuten,
         meter: strecke(von, nach),
         rueckweg: true,
+        vonTerminId: letzter.punkt.id,
+        ort,
+        ziel: ende,
       });
     }
   }
@@ -263,7 +280,16 @@ export function useFahrwege({
     const wege = veralteteWege(punkte, zeitzone);
     if (antwort?.ok === true) {
       if (antwort.value.quelle === 'nachbildung') quelle = 'nachbildung';
-      wege.push(...fahrwegeAusRoute(punkte, start, antwort.value.route.legs, zeitzone, orte.ende));
+      wege.push(
+        ...fahrwegeAusRoute(
+          punkte,
+          start,
+          antwort.value.route.legs,
+          zeitzone,
+          orte.ende,
+          garagenpunkt(standorte.data?.[0]) ? 'Garage' : 'Praxis',
+        ),
+      );
     }
     if (wege.length > 0) jeSpalte.set(spalte.id, wege);
   });

@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -39,6 +40,7 @@ import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 import { WegauskunftFuer } from './Wegauskunft';
 import type { Wegfrage } from './wegpruefung';
+import { FahrwegMenue, type FahrwegAuskunft } from './FahrwegMenue';
 import type { Lueckenstufe } from './lueckenfinder';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
@@ -244,6 +246,11 @@ export interface GitterSpalte {
     veraltet?: boolean;
     /** UBK-015: der Rückweg nach dem letzten Besuch. */
     rueckweg?: boolean;
+    /**
+     * UBK-016: Was das Menü zum Weg sagt. Mit Angabe ist der Block eine
+     * Fläche, die einen Tipp annimmt; ohne bleibt er Darstellung.
+     */
+    auskunft?: FahrwegAuskunft | undefined;
   })[];
   /** Lückenfinder (UBK-014): die freien Lücken, eingefärbt. Ohne Angabe keine. */
   luecken?: readonly GitterLuecke[] | undefined;
@@ -560,6 +567,8 @@ export function CalendarGrid({
   // dem Zeichnen gemessen, damit er nicht erst an der falschen Stelle
   // aufblitzt.
   const [rueckfrageLage, setRueckfrageLage] = useState<number | null>(null);
+  // UBK-016: der angetippte Fahrweg - markiert als Ganzes, mit Menü daneben.
+  const [gewaehlterWeg, setGewaehlterWeg] = useState<string | null>(null);
   useLayoutEffect(() => {
     if (!vorschlag) {
       if (rueckfrageLage !== null) setRueckfrageLage(null);
@@ -902,17 +911,10 @@ export function CalendarGrid({
                   if (bis <= von) return null;
                   const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
                   const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
-                  return (
-                    <div
-                      key={`weg-${w.vonMinute}-${w.bisMinute}`}
-                      data-testid={w.veraltet ? 'fahrweg-veraltet' : 'fahrweg'}
-                      className={`${
-                        w.veraltet
-                          ? 'border-warnung bg-warnung-soft text-warnung'
-                          : 'border-accent/40 bg-accent-soft text-accent'
-                      } rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 text-xs leading-4 font-semibold`}
-                      style={{ top: `${oben}px`, height: `${hoehe}px` }}
-                    >
+                  const schluessel = `${s.id}-${w.vonMinute}-${w.bisMinute}`;
+                  const gewaehlt = gewaehlterWeg === schluessel && w.auskunft !== undefined;
+                  const inhalt = (
+                    <>
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
                       <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
                         {w.veraltet
@@ -922,9 +924,60 @@ export function CalendarGrid({
                       <span className="sr-only">
                         {w.veraltet
                           ? `Fahrzeit nicht verfügbar: Die Adresse am Termin um ${minuteZuZeit(w.bisMinute)} ist veraltet`
-                          : `${w.rueckweg ? 'Rückweg' : 'Fahrweg'} etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
+                          : `${w.rueckweg ? 'Rückweg' : 'Fahrweg'}${
+                              w.auskunft ? ` von ${w.auskunft.von} nach ${w.auskunft.nach},` : ''
+                            } etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
                       </span>
-                    </div>
+                    </>
+                  );
+                  const flaeche = w.veraltet
+                    ? 'border-warnung bg-warnung-soft text-warnung'
+                    : gewaehlt
+                      ? 'border-accent bg-accent-soft text-accent border-2 border-solid'
+                      : 'border-accent/40 bg-accent-soft text-accent border border-dashed';
+                  const lage =
+                    'rounded-button absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold';
+                  if (!w.auskunft || w.veraltet) {
+                    return (
+                      <div
+                        key={`weg-${w.vonMinute}-${w.bisMinute}`}
+                        data-testid={w.veraltet ? 'fahrweg-veraltet' : 'fahrweg'}
+                        className={`${flaeche} ${lage} pointer-events-none ${w.veraltet ? 'border border-dashed' : ''}`}
+                        style={{ top: `${oben}px`, height: `${hoehe}px` }}
+                      >
+                        {inhalt}
+                      </div>
+                    );
+                  }
+                  // UBK-016: Der ganze Block ist eine Fläche. Ein Tipp markiert
+                  // ihn und öffnet das Menü - und keine Zeile darunter.
+                  const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                  const rechts =
+                    spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                  return (
+                    <Fragment key={`weg-${w.vonMinute}-${w.bisMinute}`}>
+                      <button
+                        type="button"
+                        data-testid="fahrweg"
+                        aria-expanded={gewaehlt}
+                        className={`${flaeche} ${lage} z-20 cursor-pointer`}
+                        style={{ top: `${oben}px`, height: `${Math.max(hoehe, 1)}px` }}
+                        onClick={() => setGewaehlterWeg(gewaehlt ? null : schluessel)}
+                      >
+                        {inhalt}
+                      </button>
+                      {gewaehlt && w.auskunft ? (
+                        <FahrwegMenue
+                          weg={w.auskunft}
+                          onSchliessen={() => setGewaehlterWeg(null)}
+                          className={[
+                            'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
+                            rechts ? 'right-1' : 'left-1',
+                          ].join(' ')}
+                          style={{ top: `${oben + Math.max(hoehe, 1) + 4}px` }}
+                        />
+                      ) : null}
+                    </Fragment>
                   );
                 })}
 

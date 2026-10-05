@@ -2771,10 +2771,11 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       await waitFor(() => expect(within(anna).getAllByTestId('fahrweg')).toHaveLength(2));
       const [erster, zweiter] = within(anna).getAllByTestId('fahrweg');
       expect(erster).toHaveTextContent('Weg ≈ 12 min');
-      expect(erster).toHaveTextContent('Fahrweg etwa 12 Minuten, 08:48 bis 09:00');
-      expect(zweiter).toHaveTextContent('Fahrweg etwa 20 Minuten, 10:40 bis 11:00');
-      // Nicht antippbar: Die freie Fläche darunter bleibt eine Auswahl.
-      expect(erster).toHaveClass('pointer-events-none');
+      // Vom Startort der Praxis (ohne Garage) - der Name kommt aus den Terminen.
+      expect(erster).toHaveTextContent(
+        /Fahrweg von Praxis nach .+, etwa 12 Minuten, 08:48 bis 09:00/,
+      );
+      expect(zweiter).toHaveTextContent(/etwa 20 Minuten, 10:40 bis 11:00/);
       // Die andere Spalte hat keine Besuche mit Ort - keine Blöcke.
       const tim = screen.getByRole('group', { name: /^Tim Teamleitung/ });
       expect(within(tim).queryByTestId('fahrweg')).toBeNull();
@@ -2798,7 +2799,7 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
 
       // 12 Minuten des Kartendienstes mal 1,5.
       const block = await screen.findByTestId('fahrweg');
-      expect(block).toHaveTextContent('Fahrweg etwa 18 Minuten, 08:42 bis 09:00');
+      expect(block).toHaveTextContent(/etwa 18 Minuten, 08:42 bis 09:00/);
     });
   });
 
@@ -2873,6 +2874,57 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       );
       // ADR-011: In der Adresse steht nur die Kennung.
       expect(window.location.search).not.toMatch(/Mustermann/);
+    });
+  });
+
+  it('oeffnet am angetippten Fahrweg ein Menue - und keine Auswahl darunter (UBK-016, ANN-241)', async () => {
+    await mitUhr(async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockImplementation((_datum: string, person: string) =>
+        Promise.resolve(
+          person === STAFF_ANNA
+            ? [
+                punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+                punkt('b', '2027-05-12T09:00:00.000Z', '2027-05-12T10:00:00.000Z', 48.52),
+              ]
+            : [],
+        ),
+      );
+      fetchAppointments.mockResolvedValue([
+        eintrag({ id: 'a' }),
+        eintrag({
+          id: 'b',
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+          starts_at: '2027-05-12T09:00:00.000Z',
+          ends_at: '2027-05-12T10:00:00.000Z',
+        }),
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12, 20));
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}`);
+
+      await waitFor(() => expect(screen.getAllByTestId('fahrweg')).toHaveLength(2));
+      const zweiter = screen.getAllByTestId('fahrweg')[1]!;
+      expect(zweiter.tagName).toBe('BUTTON');
+      await user.click(zweiter);
+
+      // Der ganze Block ist markiert, das Menü nennt den Weg.
+      expect(zweiter).toHaveAttribute('aria-expanded', 'true');
+      expect(zweiter).toHaveClass('border-solid', 'border-2');
+      const menue = screen.getByRole('group', { name: 'Fahrweg' });
+      expect(menue).toHaveTextContent('Max Mustermann → nach Erika Beispiel');
+      expect(menue).toHaveTextContent('≈ 20 Min. · 4,0 km');
+      expect(within(menue).getByRole('button', { name: 'Navigation starten' })).toHaveFocus();
+      expect(within(menue).getByRole('link', { name: 'Zur Tour' })).toHaveAttribute(
+        'href',
+        `/touren?tag=2027-05-12&person=${STAFF_ANNA}`,
+      );
+      // Kein Anlegen-Menü: Der Tipp galt dem Weg, nicht der Zeile darunter.
+      expect(screen.queryByRole('group', { name: 'Was soll hier entstehen?' })).toBeNull();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('group', { name: 'Fahrweg' })).toBeNull();
     });
   });
 

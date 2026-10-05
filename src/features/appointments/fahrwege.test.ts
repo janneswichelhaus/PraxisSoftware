@@ -31,8 +31,26 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
     const punkte = [punkt('b', '09:00', 48.52), punkt('a', '07:00', 48.51)];
     expect(wegpunkte(punkte, START)).toHaveLength(3);
     expect(fahrwegeAusRoute(punkte, START, abschnitte(12, 19.6), ZONE)).toEqual([
-      { terminId: 'a', vonMinute: 9 * 60 - 12, bisMinute: 9 * 60, minuten: 12, meter: null },
-      { terminId: 'b', vonMinute: 11 * 60 - 20, bisMinute: 11 * 60, minuten: 20, meter: null },
+      {
+        terminId: 'a',
+        vonMinute: 9 * 60 - 12,
+        bisMinute: 9 * 60,
+        minuten: 12,
+        meter: null,
+        // UBK-016: vom Startort, zum Ort des Besuchs.
+        vonTerminId: null,
+        ort: 'Praxis',
+        ziel: { lat: 48.51, lon: 9.05 },
+      },
+      {
+        terminId: 'b',
+        vonMinute: 11 * 60 - 20,
+        bisMinute: 11 * 60,
+        minuten: 20,
+        meter: null,
+        vonTerminId: 'a',
+        ziel: { lat: 48.52, lon: 9.05 },
+      },
     ]);
   });
 
@@ -44,10 +62,27 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
       durationSeconds: m * 60,
       distanceMeters: m * 250,
     }));
-    expect(fahrwegeAusRoute(punkte, GARAGE, mitStrecke, ZONE, GARAGE)).toEqual([
-      { terminId: 'a', vonMinute: 9 * 60 - 10, bisMinute: 9 * 60, minuten: 10, meter: 2500 },
-      { terminId: 'b', vonMinute: 11 * 60 - 15, bisMinute: 11 * 60, minuten: 15, meter: 3750 },
-      // Vom Ende des letzten Besuchs an, nicht vor einem Beginn.
+    expect(fahrwegeAusRoute(punkte, GARAGE, mitStrecke, ZONE, GARAGE, 'Garage')).toEqual([
+      {
+        terminId: 'a',
+        vonMinute: 9 * 60 - 10,
+        bisMinute: 9 * 60,
+        minuten: 10,
+        meter: 2500,
+        vonTerminId: null,
+        ort: 'Garage',
+        ziel: { lat: 48.51, lon: 9.05 },
+      },
+      {
+        terminId: 'b',
+        vonMinute: 11 * 60 - 15,
+        bisMinute: 11 * 60,
+        minuten: 15,
+        meter: 3750,
+        vonTerminId: 'a',
+        ziel: { lat: 48.52, lon: 9.05 },
+      },
+      // Vom Ende des letzten Besuchs an, nicht vor einem Beginn - zur Garage.
       {
         terminId: 'b',
         vonMinute: 11 * 60,
@@ -55,6 +90,9 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
         minuten: 18,
         meter: 4500,
         rueckweg: true,
+        vonTerminId: 'b',
+        ort: 'Garage',
+        ziel: GARAGE,
       },
     ]);
   });
@@ -62,7 +100,15 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
   it('zeichnet ohne Startort keinen ersten Weg - ungeprueft ist nicht kurz', () => {
     const punkte = [punkt('a', '07:00', 48.51), punkt('b', '09:00', 48.52)];
     expect(fahrwegeAusRoute(punkte, null, abschnitte(15), ZONE)).toEqual([
-      { terminId: 'b', vonMinute: 11 * 60 - 15, bisMinute: 11 * 60, minuten: 15, meter: null },
+      {
+        terminId: 'b',
+        vonMinute: 11 * 60 - 15,
+        bisMinute: 11 * 60,
+        minuten: 15,
+        meter: null,
+        vonTerminId: 'a',
+        ziel: { lat: 48.52, lon: 9.05 },
+      },
     ]);
   });
 
