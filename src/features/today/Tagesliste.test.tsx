@@ -372,16 +372,49 @@ describe('Tageskarte', () => {
     );
   });
 
-  it('liest beim Termin-Link keinen Pfeil mit vor (WRT-08)', () => {
-    renderWithProviders(<Tageskarte termin={eintrag()} kicker="Erster Weg" />);
+  it('oeffnet mit der ganzen Karte den Termin - ohne Fusszeile (UBK-004)', () => {
+    const { container } = renderWithProviders(
+      <Tageskarte termin={eintrag()} kicker="Erster Weg" />,
+    );
 
     const termin = screen.getByRole('link', { name: 'Termin öffnen' });
     expect(termin).toHaveAttribute(
       'href',
       `/kalender?termin=t1&zurueck=${encodeURIComponent('/')}`,
     );
-    // Sichtbar steht der Pfeil noch da, nur ausgeblendet für Vorlesesoftware.
-    expect(termin.querySelector('[aria-hidden="true"]')).toHaveTextContent('→');
+    // Die Fläche des Links spannt sich über die Karte, die selbst der Bezug ist.
+    expect(termin).toHaveClass('after:absolute', 'after:inset-0');
+    expect(container.querySelector('article')).toHaveClass('relative');
+    // Kein sichtbarer „Termin öffnen →" mehr.
+    expect(screen.queryByText('→')).toBeNull();
+    expect(container.querySelector('.border-t')).toBeNull();
+    // Die eigenen Ziele liegen darüber, sonst träfe jeder Tipp den Termin.
+    expect(screen.getByRole('link', { name: 'Max Mustermann' })).toHaveClass('relative', 'z-10');
+    expect(screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' })).toHaveClass(
+      'relative',
+      'z-10',
+    );
+  });
+
+  it('nennt eine Fehlzeit als Fehlzeit', () => {
+    renderWithProviders(
+      <Tageskarte
+        termin={eintrag({ kind: 'internal', patient_id: null, title: 'Teambesprechung' })}
+        kicker="Jetzt"
+      />,
+    );
+    expect(screen.getByRole('link', { name: 'Fehlzeit öffnen' })).toBeInTheDocument();
+  });
+
+  it('stellt das „i" in die Namenszeile, nicht hinter die Anschrift (UBK-004)', () => {
+    renderWithProviders(<Tageskarte termin={eintrag()} kicker="Erster Weg" />);
+    const knopf = screen.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+    const name = screen.getByRole('link', { name: 'Max Mustermann' });
+    expect(knopf.parentElement).toBe(name.closest('p')!.parentElement);
+    const anschrift = screen.getByText('Beispielstrasse 12, 72070 Tuebingen');
+    expect(
+      anschrift.compareDocumentPosition(knopf) & Node.DOCUMENT_POSITION_PRECEDING,
+    ).toBeTruthy();
   });
 
   it('ist eine weisse Karte ohne Schatten', () => {
