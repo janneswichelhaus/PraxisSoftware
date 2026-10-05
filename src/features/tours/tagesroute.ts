@@ -114,7 +114,8 @@ export function kartenmarker(start: Coordinate | null, stopps: readonly Stopp[])
  */
 export function routenplan(
   start: Coordinate | null,
-  stopps: readonly Stopp[],
+  // Nur die Position zählt - auch der Kalender rechnet so, ohne Tagesliste (UBK-005).
+  stopps: readonly { readonly position: Coordinate | null }[],
 ): { readonly punkte: Coordinate[]; readonly index: (number | null)[] } {
   const punkte: Coordinate[] = [];
   const hinzu = (punkt: Coordinate): number => {

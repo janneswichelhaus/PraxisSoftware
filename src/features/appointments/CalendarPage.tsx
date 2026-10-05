@@ -1,4 +1,5 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
+import { useFahrwege, type FahrwegSpalte } from './fahrwege';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -14,6 +15,7 @@ import {
   canManageAppointments,
   canReadTrainingClients,
   canWriteTrainingClients,
+  isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
@@ -643,6 +645,37 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     beschriftung: `Tagesansicht aller behandelnden Personen am ${wochentagKurz(tag)} ${tagesZahl(tag)}`,
   });
 
+  // Die Woche zeigt Mo–Fr (Design-Handoff 2026-10-01, Abschnitt 7a).
+  // Samstag und Sonntag stehen nur da, wenn dort ein Termin der gezeigten
+  // Person liegt - kein Termin verschwindet aus dem Raster.
+  const wochenTage = tage.filter((tag) => {
+    const wochentag = new Date(`${tag}T12:00:00Z`).getUTCDay();
+    if (wochentag !== 0 && wochentag !== 6) return true;
+    return eintraege.some(
+      (e) => e.staff_member_id === wochenPerson && dayKey(e.starts_at, zone) === tag,
+    );
+  });
+
+  // UBK-005, ANN-235: Fahrwege als Blöcke - je Spalte eine Person an einem
+  // Tag. Nur für die Praxisrollen, wie in der Übersicht: Der Server gibt die
+  // Tagesroute der Trainingsbetreuung nicht.
+  const fahrwegSpalten: FahrwegSpalte[] =
+    p.ansicht === 'tag'
+      ? tagesPersonen.map((t) => ({
+          id: t.staff_member_id,
+          datum: bereich.von,
+          person: t.staff_member_id,
+        }))
+      : wochenPerson
+        ? wochenTage.map((tag) => ({ id: tag, datum: tag, person: wochenPerson }))
+        : [];
+  const fahrwege = useFahrwege({
+    spalten: fahrwegSpalten,
+    heute,
+    zeitzone: zone ?? null,
+    aktiv: isTherapyStaff(user.roles),
+  });
+
   const spaltenModell: GitterSpalte[] =
     p.ansicht === 'tag'
       ? tagesPersonen.map((t) => ({
@@ -655,34 +688,25 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
             : null,
           belegt: belegtFuer(t.staff_member_id, bereich.von),
+          fahrwege: fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
-      : // Die Woche zeigt Mo–Fr (Design-Handoff 2026-10-01, Abschnitt 7a).
-        // Samstag und Sonntag stehen nur da, wenn dort ein Termin der
-        // gezeigten Person liegt - kein Termin verschwindet aus dem Raster.
-        tage
-          .filter((tag) => {
-            const wochentag = new Date(`${tag}T12:00:00Z`).getUTCDay();
-            if (wochentag !== 0 && wochentag !== 6) return true;
-            return eintraege.some(
-              (e) => e.staff_member_id === wochenPerson && dayKey(e.starts_at, zone) === tag,
-            );
-          })
-          .map((tag) => ({
-            id: tag,
-            titel: wochentagKurz(tag),
-            unterTitel: tagesZahl(tag),
-            // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
-            hervorgehoben: tag === heute,
-            zusatz: tag === heute ? 'heute' : undefined,
-            aktuellesDatum: tag === heute,
-            baender:
-              wochenPerson && arbeitszeitBekannt
-                ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
-                : null,
-            belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
-            ziel: zumTag(tag),
-          }));
+      : wochenTage.map((tag) => ({
+          id: tag,
+          titel: wochentagKurz(tag),
+          unterTitel: tagesZahl(tag),
+          // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
+          hervorgehoben: tag === heute,
+          zusatz: tag === heute ? 'heute' : undefined,
+          aktuellesDatum: tag === heute,
+          baender:
+            wochenPerson && arbeitszeitBekannt
+              ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
+              : null,
+          belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
+          fahrwege: fahrwege.jeSpalte.get(tag) ?? [],
+          ziel: zumTag(tag),
+        }));
 
   // Die Wochenansicht zeigt genau eine Person; alles andere blendet sie aus.
   const nachPerson =
@@ -1429,6 +1453,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     Grau schraffiert: außerhalb der Arbeitszeit der Person – auch ein Tag ohne
                     hinterlegte Arbeitszeit. Die weiße Fläche ist ihre Arbeitszeit.
                   </li>
+                  <li>
+                    Gestrichelt in Grün, „Weg ≈ n min“: die Fahrt zum Besuch, vom Termin davor oder
+                    vom Startort der Praxis. Ob es reicht, sagt der Fahrpuffer.
+                  </li>
                 </ul>
                 <p>
                   Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der
@@ -1438,6 +1466,14 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             </Disclosure>
           ) : null}
         </div>
+      ) : null}
+
+      {/* Eine Nachbildung ohne Kartendienst sieht aus wie eine Fahrzeit; die
+          Seite sagt es dazu, wie Tour und Übersicht (MAP-006c). */}
+      {fahrwege.nachbildung ? (
+        <Statusmeldung ton="warnung" className="mt-3">
+          Nachbildung ohne Kartendienst: Die Fahrwege sind über die Luftlinie mit 15 km/h gerechnet.
+        </Statusmeldung>
       ) : null}
 
       {/* MAP-006c: Fahrpuffer nach §8.1, wo Person und Tag feststehen. Der

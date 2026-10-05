@@ -2822,3 +2822,15 @@ Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-00
 **Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/today/tageswahl.ts`; `TagWechsel` in `src/features/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
 
 **Änderungspfad.** Wochenende überspringen oder größere Sprünge: `tagePlus` in `TagWechsel` durch eine Werktagsfunktion ersetzen · Aufwand `klein`. Haken auch an künftigen Tagen: die Bedingung `datum > heute` in `MeinTag` · Aufwand `klein`.
+
+### ANN-235 — Fahrwege im Kalender: beim Anzeigen abgerufen, ab heute, vom Startort der Praxis
+
+Technik · offen · 2026-10-05 · Claude (UBK-EPIC-001) · — · Wiedervorlage: Jannes in der Sichtung; Gate aus ADR-019 Punkt 9 vor echten Adressen
+
+**Annahme.** Der Kalender zeigt vor jedem Termin mit Ort einen gestrichelten Block „Weg ≈ n min“, so lang wie die Fahrzeit und endend am Beginn des Termins – in der Tagesansicht in jeder Spalte einer Person, in der Woche an jedem gezeigten Tag der Person. Der erste Weg des Tages beginnt am Startort der Praxis (erster Standort, wie Übersicht und Tour). Abgerufen wird beim Anzeigen, nur für Tage ab heute und nur für die Praxisrollen: je Spalte `list_day_route` und eine Route über die eigene Function, mit denselben Schlüsseln wie Übersicht und Tour, sodass dieselben Stopps nur einmal beim Anbieter landen. Ohne Fahrzeit (Position, Route oder Startort fehlt, Ersatzschätzung) gibt es keinen Block. Der Block ist Darstellung: Er nimmt keinen Tipp an, und ob ein Übergang zu knapp ist, sagt weiter allein der Fahrpuffer (ANN-097).
+
+**Begründung.** ADR-019 Punkt 3 nennt Fahrzeiten im Kalender als Ziel, Punkt 12, 13 und 16 werden eingehalten (nur Koordinaten und Profil, nichts gespeichert). Vergangene Tage werden nicht mehr geplant und kosten beim Anbieter nur Kontingent. Der Startort entspricht ANN-196 („Start am Rad“), ohne eine Beschäftigtenadresse beim Dienst (ADR-019, `startort.ts`). Unsicher: ob eine Tagesansicht mit vielen Personen das Kontingent des Anbieters spürbar belastet – je Person und Tag eine Route, im Zwischenspeicher der Sitzung.
+
+**Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
+
+**Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`.
