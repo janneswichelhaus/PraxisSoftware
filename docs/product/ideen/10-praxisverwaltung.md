@@ -427,7 +427,7 @@ des Textes (WCAG 1.4.1).
 
 | | |
 |---|---|
-| Status | vorschlag · entscheidung nötig |
+| Status | notiert · entscheidung nötig |
 | Quelle | Wettbewerbsanalyse 2026-09-06 (iPrax, thevea, appointmed mit SumUp) |
 | Berührt | §3.5, ADR-002, ADR-009, ABR-004 |
 
@@ -1384,3 +1384,37 @@ Handschrift der Ärzt:in unsicher - deshalb Prüfpflicht je Feld.
 **Vorsicht.** Ein neuer Anbieter für Gesundheitsdaten (Art. 9 DSGVO) ist ein
 Stopp: AVV, Eintrag in der DSFA (ADR-007), Anbieterprüfung (ADR-002), §203
 StGB. Jannes entscheidet; vorher wird nichts gebaut.
+
+### IDEA-PRX-056 — Reihenfolgevorschlag für den Tag
+
+| | |
+|---|---|
+| Status | notiert · entscheidung nötig |
+| Quelle | Jannes, 2026-10-05 (UBK-EPIC-002: „Optimierung fände ich aber gut") |
+| Berührt | §9, §20; ADR-019 Punkt 3 und „Bewusst nicht Bestandteil"; ADR-018; `TagUmplanenPage`, ANN-237, ANN-239 |
+
+**Stand.** Nicht gebaut. ADR-019 Punkt 3 legt `optimizeRoute()` ausdrücklich
+nicht an; Tourenoptimierung ist dort ein eigenes Epic nach §9 „später KANN".
+Gebaut sind Matrix, Fahrzeitfaktor und Lückenfinder (UBK-EPIC-002).
+
+**Idee.** Für einen geplanten Tag einer Person schlägt die Tour eine
+Reihenfolge der Hausbesuche vor, die weniger fährt — gerechnet **in der
+Anwendung** aus der vorhandenen Matrix (nur Koordinaten, wie beim
+Lückenfinder), nicht über einen Optimierungsdienst des Anbieters. Der
+Vorschlag zeigt gesparte Minuten und die neuen Zeiten; übernommen wird er nur
+auf ausdrückliche Bestätigung über „Tag umplanen", Termin für Termin mit den
+üblichen Prüfungen. Feste Zeiten (Patientenwunsch, Praxistermin) bleiben
+stehen.
+
+**Warum.** Bei vier bis sechs Hausbesuchen am Tag ist die Reihenfolge der
+größte Hebel auf die Fahrzeit; die Praxis plant sie heute im Kopf.
+
+**Vorsicht.** Ein Vorschlag, keine Automatik: Termine sind mit Patient:innen
+vereinbart, eine Umstellung braucht deren Zustimmung. Kein Optimierungsdienst
+des Anbieters (neuer Datenfluss, ADR-002/ADR-019) und keine Auswertung, wer
+wie schnell fährt (§20).
+
+**Offen.** Eine neue Fassung von ADR-019, die die Reihenfolgebildung in der
+Anwendung erlaubt (Punkt 3 bleibt: kein `optimizeRoute()` beim Anbieter); welche
+Termine als fest gelten; ob der Vorschlag auch Lücken für neue Besuche
+berücksichtigt.
