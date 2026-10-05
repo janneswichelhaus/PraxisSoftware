@@ -29,7 +29,7 @@ Stand 2026-09-25 · ersetzt für die Sichtung die Einzelschritte in
 ## Nicht in dieser Sichtung
 
 - Betrieb **ohne** Kachelschlüssel (Hinweis „Kartenkacheln nicht konfiguriert", keine `myptv`-Anfrage) und fehlende `SUPABASE_URL`/`SUPABASE_ANON_KEY` — die Meldungstexte halten Tests fest.
-- Die Geocoding-Antwort der echten API: Pfad und Feldnamen (`geocoding-osm/v1`) sind abgeleitet, nicht geprüft — Schritt 7 zeigt, ob sie stimmen; scheitert er mit „Anfrage nicht gültig", gehört die `serve`-Zeile in einen Befund.
+- Die Geocoding-Antwort der echten API: Pfad und Feldnamen waren abgeleitet und falsch (`locations/by-address` gibt es nur bei HERE); jede Adresse hieß „kein Treffer“ (BEF-125, Sichtung 2026-10-05). Seit FIX-UBK-001 nach PTVs Client der OSM-Variante: `places/by-address`, `country`, Antwort `places` mit OSM-Haupttag. Schritt 7 zeigt, ob es jetzt trifft.
 - Abmelden mit offener Seite, beendetes `functions serve` („Routenfunktion antwortet nicht"), Tastaturbedienung der Karte — gedeckt durch Komponenten- und E2E-Tests (`tests/e2e/karte.spec.ts`).
 - Dass keine Fahrzeit gespeichert wird und die Koordinate mit der Adresse verfällt — gedeckt durch `pnpm test:db`.
 - Die Profilfrage (MAP-003c) — am 2026-09-22 für das Lastenrad entschieden.
