@@ -538,54 +538,6 @@ nie ein klinischer Inhalt.
 einem Titel je Route. „Own Motion“ bleibt als Zusatz, wie ANN-023 es für die
 Marke vorsieht.
 
-### BEF-051 — Übersicht: Die Liege wird auch für Praxistermine angekündigt, und das Büro beginnt jeden Tag mit einem leeren Block
-
-|         |                                                                                                                                                                                                                                                                                                                 |
-| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                      |
-| Bereich | Übersicht (`/`): Tagesstart, Tageskarte, eigene Tagesliste und Plan des Teams                                                                                                                                                                                                                                   |
-| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs UEB-B01, UEB-07                                                                                                                                                                                                     |
-| Status  | offen                                                                                                                                                                                                                                                                                                           |
-| Berührt | `src/features/today/tagesstart.ts` (`besucheDesTages`, `liegeHeute`), `src/features/today/tagesstart.test.ts`, `src/features/today/Tagesliste.tsx` (Z. 102–107), `src/features/today/MyDayPage.tsx` (Z. 151, 285–297, 380, 437–439), `src/features/tours/TagesrouteAufklapper.tsx` (Z. 68–70); ANN-116, ANN-117 |
-
-**Beobachtung.**
-
-- **Liege am Praxistermin.** Im Seed hat Jannes heute nur einen Termin in der
-  Praxis (16:00, Hauptstandort). Die Übersicht sagt „Liege heute: ja, ab 1.
-  Besuch (16:00 Uhr)“, die Karte „Praxis · Hauptstandort … Behandlungsliege:
-  mitnehmen“. Gezählt werden alle nicht abgesagten Behandlungstermine, gezeigt
-  wird das Merkmal ohne Blick auf die Terminart; die Tests decken nur
-  Hausbesuche ab. An gemischten Tagen zählt „ab n. Besuch“ die Praxistermine mit
-  — genau die Angabe, nach der morgens gepackt wird.
-- **Büro.** Die eigene Tagesliste erscheint für jede Rolle mit
-  Mitarbeiterdatensatz, auch für office. Der Code sagt selbst: „Das Büro hat
-  meist keine eigenen Besuche, für es ist der Plan des Teams die Hauptsache“.
-  Oben stehen trotzdem „Offen heute“ mit „Ihre Besuche mit Anschrift …“, ein
-  Leerzustand „Heute ist nichts mehr offen“ — der behauptet, es habe etwas
-  gegeben — und „Tagesroute auf der Karte“, das nur „Heute gibt es keinen Besuch
-  mit Ort.“ lädt. Der Plan des Teams beginnt bei 1440 px erst bei rund 590 px.
-
-**Frage an Jannes.** (1) Gilt die Liege nur für Hausbesuche, auch in der Zählung
-„ab n. Besuch“? (2) Soll für Rollen ohne Dokumentationsrecht der Plan des Teams
-vor der eigenen Liste stehen?
-
-**Optionen.**
-
-1. **Nur berichtigen:** Merkmal und Zählung nur an Hausbesuchen, mit einem Test
-   für den Praxistermin; ANN-117 („Behandlungsbesuche“) auf Hausbesuche
-   nachziehen. Für das Büro ohne eigene Einträge eine Zeile „Ihnen sind heute
-   keine Termine zugeordnet.“ statt des Abschnitts, die Tagesroute nur mit
-   mindestens einem Hausbesuch. Folge: keine neue Festlegung außer dem Wortlaut
-   von ANN-117; der Teamplan rückt um den leeren Block nach oben.
-2. **Wie 1, dazu für Rollen ohne Dokumentationsrecht der Plan des Teams
-   zuerst.** Folge: Das Büro sieht zuerst, was es plant; die Reihenfolge der
-   Übersicht hängt dann an der Rolle.
-
-**Empfehlung.** Option 2. Die Liege gehört an den Hausbesuch — ANN-116
-beschreibt sie als das, „was mitzunehmen ist“ —, und für das Büro ist der
-Teamplan nach der eigenen Begründung im Code die Hauptsache. Beides mit der
-ausstehenden Sichtung zu ANN-116 und ANN-117 bestätigen.
-
 ### BEF-052 — Gedruckte Blätter: Die Übersicht druckt ohne Rufnummern und spätere Besuche; Aufnahmeblätter und Terminzettel tragen keinen Absender
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |

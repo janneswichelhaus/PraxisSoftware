@@ -12,7 +12,7 @@ import {
   type Stopp,
 } from '@/features/tours/tagesroute';
 import type { DayPlanEntry } from './api';
-import type { Anfahrt } from './tagesstart';
+import { stehtAus, type Anfahrt } from './tagesstart';
 
 // -----------------------------------------------------------------------------
 // Fahrzeiten des eigenen Tages für die Übersicht (Design-Handoff 2026-10-01)
@@ -69,11 +69,15 @@ export function anfahrtenAusRoute(
   return anfahrten;
 }
 
-/** Steht heute noch ein Besuch mit Ort aus? Sonst gibt es keinen Weg zu rechnen. */
-function hatAusstehendenWeg(plan: readonly DayPlanEntry[]): boolean {
+/**
+ * Steht heute noch ein Besuch mit Ort aus? Sonst gibt es keinen Weg zu
+ * rechnen. Nach der Uhr wie der nächste Weg (ANN-117 Fassung 2): Ein
+ * vorbeigegangener, nicht abgehakter Besuch fragt keine Route mehr an.
+ */
+function hatAusstehendenWeg(plan: readonly DayPlanEntry[], jetzt: number): boolean {
   return plan.some(
     (termin) =>
-      termin.status === 'confirmed' &&
+      stehtAus(termin, jetzt) &&
       (termin.kind === 'therapy' || termin.kind === 'training') &&
       (termin.appointment_type === 'home_visit' || termin.appointment_type === 'practice'),
   );
@@ -106,14 +110,18 @@ export function useTagesfahrzeiten({
   staffMemberId,
   plan,
   aktiv,
+  jetzt,
 }: {
   datum: string;
   staffMemberId: string;
   plan: readonly DayPlanEntry[] | undefined;
   /** Darf die Rolle die Tagesroute lesen? Der Server gibt sie nur Praxisrollen. */
   aktiv: boolean;
+  /** Der Bezugszeitpunkt der Übersicht (`tagesstart.ts`). */
+  jetzt: number;
 }): Tagesfahrzeiten {
-  const fragen = FAHRZEITEN_BEIM_OEFFNEN && aktiv && plan !== undefined && hatAusstehendenWeg(plan);
+  const fragen =
+    FAHRZEITEN_BEIM_OEFFNEN && aktiv && plan !== undefined && hatAusstehendenWeg(plan, jetzt);
 
   const tagesroute = useQuery({
     queryKey: ['day-route', datum, staffMemberId],

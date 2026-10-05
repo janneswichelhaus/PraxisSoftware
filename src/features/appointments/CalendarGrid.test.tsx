@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, within } from '@testing-library/react';
 import { renderWithProviders } from '@/test-utils';
 import type { CalendarEntry } from './api';
 import { CalendarGrid } from './CalendarGrid';
@@ -126,5 +126,43 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     expect(block).toHaveTextContent('belegt 09:00 bis 10:00');
     expect(block.closest('a')).toBeNull();
     expect(screen.queryAllByRole('link')).toHaveLength(0);
+  });
+
+  it('zeichnet Fahrwege als Bloecke unter den Kacheln, abgeschnitten am Fenster (UBK-005)', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Anna Beispiel',
+            baender: [],
+            fahrwege: [
+              { vonMinute: 528, bisMinute: 540, minuten: 12 },
+              // Beginnt vor dem Fenster: nur der sichtbare Teil.
+              { vonMinute: 470, bisMinute: 485, minuten: 15 },
+            ],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+
+    const [weg, frueh] = screen.getAllByTestId('fahrweg');
+    expect(weg).toHaveTextContent('Weg ≈ 12 min');
+    expect(weg).toHaveClass('pointer-events-none', 'border-dashed');
+    expect(weg!.style.top).toBe('64px');
+    expect(weg!.style.height).toBe('16px');
+    // 5 Minuten sichtbar: zu niedrig für die Zahl, vorgelesen wird sie trotzdem.
+    expect(frueh!.style.top).toBe('0px');
+    expect(within(frueh!).getByText('Weg ≈ 15 min')).toHaveClass('hidden');
+    expect(frueh).toHaveTextContent('Fahrweg etwa 15 Minuten, 07:50 bis 08:05');
   });
 });

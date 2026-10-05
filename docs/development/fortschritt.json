@@ -602,6 +602,15 @@
           "vermerk": "ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 10 bis 12"
         },
         {
+          "id": "ubk-epic-001",
+          "name": "UBK-EPIC-001 Übersicht nach der Uhr, Tageswechsel, Tageskarte, Fahrwege im Kalender (BEF-051)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-05",
+          "nachweis": "UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv`",
+          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 14 und 15"
+        },
+        {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,

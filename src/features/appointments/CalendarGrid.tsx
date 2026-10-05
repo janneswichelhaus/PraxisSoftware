@@ -232,6 +232,12 @@ export interface GitterSpalte {
    */
   belegt?: readonly Zeitband[];
   /**
+   * Fahrwege vor den Besuchen dieser Spalte (UBK-005, ANN-235): ein Block so
+   * lang wie die Fahrzeit, endend am Beginn des Besuchs. Darstellung, keine
+   * Prüfung - ob es zu knapp ist, sagt der Fahrpuffer (ANN-097).
+   */
+  fahrwege?: readonly (Zeitband & { minuten: number })[];
+  /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
    * Das Gitter kennt weiterhin weder Personen noch Daten — was der Wechsel
@@ -797,6 +803,35 @@ export function CalendarGrid({
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   />
                 ))}
+
+                {/* Fahrwege (UBK-005): über den Linien, unter den Kacheln, nicht antippbar - die
+                    freie Fläche darunter bleibt eine Auswahl. Ragt der Weg in
+                    den Termin davor, liegt die Kachel darüber; was sichtbar
+                    bleibt, ist der Rest der Fahrt. */}
+                {(s.fahrwege ?? []).map((w) => {
+                  const von = Math.max(w.vonMinute, fenster.vonMinute);
+                  const bis = Math.min(w.bisMinute, fenster.bisMinute);
+                  if (bis <= von) return null;
+                  const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
+                  const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
+                  return (
+                    <div
+                      key={`weg-${w.vonMinute}-${w.bisMinute}`}
+                      data-testid="fahrweg"
+                      className="border-accent/40 bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 text-xs leading-4 font-semibold"
+                      style={{ top: `${oben}px`, height: `${hoehe}px` }}
+                    >
+                      {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
+                      <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
+                        Weg ≈ {w.minuten} min
+                      </span>
+                      <span className="sr-only">
+                        Fahrweg etwa {w.minuten} Minuten, {minuteZuZeit(w.vonMinute)} bis{' '}
+                        {minuteZuZeit(w.bisMinute)}
+                      </span>
+                    </div>
+                  );
+                })}
 
                 {/* Die aktuelle Uhrzeit (BEF-039). Die erste heutige Spalte
                   trägt den Anker für „Jetzt"; außerhalb des Fensters steht

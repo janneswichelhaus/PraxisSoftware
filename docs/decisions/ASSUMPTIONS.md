@@ -1543,11 +1543,11 @@ Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozes
 
 **Anker.** Spalte und `public.set_treatment_table_required` in `supabase/migrations/20260926130000_ux_003a_treatment_table.sql`, dort auch `patient_directory`, `export_patient_record` und `list_day_plan`; Oberfläche `src/features/patients/Behandlungsliege.tsx`; Tests `supabase/tests/treatment-table.test.ts`.
 
-**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären.
+**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären. **Fassung 2 (UBK-EPIC-001, 2026-10-05, BEF-051):** Die Liege gehört an den **Hausbesuch**: Liege-Zeile, die Zählung „ab n. Besuch“ (`hausbesucheDesTages` in `src/features/today/tagesstart.ts`) und die Pille an der Karte (`Tageskarte`) berücksichtigen nur `appointment_type = 'home_visit'`; an einem Tag nur mit Praxisterminen gibt es keine Liege-Zeile. Der Server liefert das Merkmal weiter an jedem Behandlungstermin; es dort am Praxistermin zu leeren, wäre sauberer (Datenminimierung), kostet aber eine Migration und ist als Folgeschritt vorgeschlagen. **Bestätigt (Jannes, 2026-10-05):** „Die Liege ist nur bei Hausbesuchen relevant.“ Änderungspfad: die Funktion und die Bedingung an der Pille · Aufwand `klein`.
 
 ### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
 
-Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 10) · erledigt · Wiedervorlage: —
+Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung Kernprozess, Schritt 10; Fassung 2 im Auftrag UBK-EPIC-001) · erledigt · Wiedervorlage: —
 
 **Annahme.** Die Übersicht zeigt oben den **nächsten noch anzufahrenden** Besuch (Status bestätigt) als „Erster Weg" — „Nächster Weg", sobald heute schon ein Besuch lag — und den übernächsten als knappe Vorschau „Danach". „Liege heute: ja, ab n. Besuch (Uhrzeit)" zählt n in der Folge der Behandlungsbesuche des Tages ohne Absagen (Fehlzeiten und Training zählen nicht, wie bei „Offen heute"); ein erledigter Besuch zählt mit, braucht aber keine Liege mehr. Braucht keine noch ausstehende Behandlung die Liege, steht dort „nein". Der Plan des Teams ist für behandelnde Rollen zugeklappt, für das Büro offen. **Seit dem Design-Handoff vom 2026-10-01** steht der Tag als Zeitstrahl da: Der nächste Besuch ist die ausgeklappte Karte, die Vorschau „Danach" ist entfallen, und die Liege-Zeile lautet „Ja · ab n. Besuch Uhrzeit" oder „Nein"; die Zählung gilt unverändert.
 
@@ -1555,7 +1555,7 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Anker.** `besucheDesTages`, `wegeDesTages` und `liegeHeute` in `src/features/today/tagesstart.ts`; Tests `src/features/today/tagesstart.test.ts`.
 
-**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`.
+**Änderungspfad.** Andere Zählung oder anderer Wortlaut: die drei Funktionen und ihre Tests · Aufwand `klein`. Plan des Teams immer offen: die Bedingung `teamplanZugeklappt` in `src/features/today/MyDayPage.tsx` · Aufwand `klein`. **Fassung 2 (UBK-EPIC-001, 2026-10-05, Auftrag Jannes: „nächster Weg nach Uhrzeit statt nach Abhaken“):** Noch anzufahren ist ein Besuch, der bestätigt ist **und dessen Ende noch nicht erreicht ist** (`stehtAus` in `tagesstart.ts`); nach seinem Ende gibt die Übersicht den nächsten Weg frei, auch ohne Haken, und nach einem frühen Haken ebenso. Der vorbeigegangene, nicht abgehakte Besuch bleibt im Zeitstrahl mit „Nicht abgeschlossen“ und dem Haken stehen; erst wenn kein Weg mehr aussteht, wird er die ausgeklappte Karte („Seit … offen“). Liege-Zeile, Wegbalken und Fahrzeitabfrage folgen derselben Regel; „n von m Besuchen erledigt“ zählt weiter nur Abgehaktes, und der Tagesabschluss sagt „Alle Besuche erledigt“ nur dann, sonst „Kein Weg mehr offen“. Gezählt wird für „ab n. Besuch“ seit BEF-051 nur unter Hausbesuchen (ANN-116 Fassung 2). Tests: `tagesstart.test.ts` („Die Uhr statt des Hakens“), `MyDayPage.test.tsx` (UBK-EPIC-001).
 
 ### ANN-118 — Übertragung der MT-Bausteine: drei Lücken offen, SIG vollständig, Hinweise getrennt, kein Grenzwert
 
@@ -2427,7 +2427,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 **Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.
 
-**Abnahme (Jannes, 2026-10-02).** Gestaltung bestätigt. Ergänzt: Dokumentationsstatus und Links zum Lesen müssen auch für das Büro und an fremden Terminen da sein — BEF-095, mit einem zentralen Leserecht für Akte, Termin, Kalender und Übersicht (ADR-004).
+**Abnahme (Jannes, 2026-10-02).** Gestaltung bestätigt. Ergänzt: Dokumentationsstatus und Links zum Lesen müssen auch für das Büro und an fremden Terminen da sein — BEF-095, mit einem zentralen Leserecht für Akte, Termin, Kalender und Übersicht (ADR-004). **Fassung 2 (Jannes, 2026-10-05):** Die Woche zeigt **Montag bis Sonntag durchgehend**, auch ohne Termin am Wochenende; der Filter `wochenTage` in `CalendarPage.tsx` nimmt alle sieben Tage. Test: „zeigt in der Wochenansicht Montag bis Sonntag durchgehend“ in `CalendarPage.test.tsx`.
 
 ### ANN-203 — Die vertretende Person bekommt keine Zeile in `persons`; ihr Name steht am Zugang als Nachweis
 
@@ -2810,3 +2810,27 @@ Recht · entschieden (Jannes) · 2026-10-05 · Jannes (B17, „wie empfohlen“)
 **Anker.** `app.session_fee_lines` in `supabase/migrations/20261007110000_abr_031_session_fee_recording.sql`.
 
 **Änderungspfad.** Andere Gewichte (etwa Beihilfe-Höchstbeträge als eigenes Feld): nur `app.session_fee_lines` · Aufwand `klein`. Eine Zeile je Termin: dieselbe Funktion · Aufwand `klein`.
+
+### ANN-234 — Die Übersicht wechselt den Tag um je einen Kalendertag, der Tag steht in der Adresse
+
+Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-001, Umschalten auf Vortag und Folgetag bestätigt; „Samstag passt“) · erledigt · Wiedervorlage: —
+
+**Annahme.** Unter dem Kopf der Übersicht stehen „‹ Vortag“, „Folgetag ›“ und, an einem anderen Tag, „Heute“; gewechselt wird um je einen Kalendertag, auch über das Wochenende. Der gezeigte Tag steht als `?tag=JJJJ-MM-TT` in der Adresse, ein ungültiger Wert führt auf heute. An einem anderen Tag gelten dieselben Regeln wie heute, gemessen an einem Bezugszeitpunkt: Ein künftiger Tag liegt ganz vor einem (alles wartet, der erste Besuch ist der „Erste Weg“, kein Haken), ein vergangener ganz hinter einem (nicht Abgehaktes steht als „Nicht abgeschlossen“ da und lässt sich abhaken). Jetzt-Marke und Wegbalken gibt es nur heute; Liege-Zeile („Liege morgen“), Zeitstrahl mit Anfahrten, Teamplan und Tagesroute zeigen den gewählten Tag. Offene Punkte bleiben beim heutigen Stand.
+
+**Begründung.** Abends den nächsten Tag samt Liege sehen und morgens den Vortag abhaken sind die beiden Fälle, die der Auftrag meint. Ein Datum in der Adresse ist kein Personenbezug (ADR-013 Punkt 9 Nr. 5) und macht den Tag mit „zurück“ erreichbar. Der Bezugszeitpunkt statt einer zweiten Logik hält ANN-117 Fassung 2 an einer Stelle. Am Freitag zeigt „Folgetag“ den Samstag – so entschieden (Jannes, 2026-10-05).
+
+**Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/today/tageswahl.ts`; `TagWechsel` in `src/features/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
+
+**Änderungspfad.** Wochenende überspringen oder größere Sprünge: `tagePlus` in `TagWechsel` durch eine Werktagsfunktion ersetzen · Aufwand `klein`. Haken auch an künftigen Tagen: die Bedingung `datum > heute` in `MeinTag` · Aufwand `klein`.
+
+### ANN-235 — Fahrwege im Kalender: beim Anzeigen abgerufen, ab heute, vom Startort der Praxis
+
+Technik · offen · 2026-10-05 · Claude (UBK-EPIC-001) · — · Wiedervorlage: Jannes in der Sichtung; Gate aus ADR-019 Punkt 9 vor echten Adressen
+
+**Annahme.** Der Kalender zeigt vor jedem Termin mit Ort einen gestrichelten Block „Weg ≈ n min“, so lang wie die Fahrzeit und endend am Beginn des Termins – in der Tagesansicht in jeder Spalte einer Person, in der Woche an jedem gezeigten Tag der Person. Der erste Weg des Tages beginnt am Startort der Praxis (erster Standort, wie Übersicht und Tour). Abgerufen wird beim Anzeigen, nur für Tage ab heute und nur für die Praxisrollen: je Spalte `list_day_route` und eine Route über die eigene Function, mit denselben Schlüsseln wie Übersicht und Tour, sodass dieselben Stopps nur einmal beim Anbieter landen. Ohne Fahrzeit (Position, Route oder Startort fehlt, Ersatzschätzung) gibt es keinen Block. Der Block ist Darstellung: Er nimmt keinen Tipp an, und ob ein Übergang zu knapp ist, sagt weiter allein der Fahrpuffer (ANN-097).
+
+**Begründung.** ADR-019 Punkt 3 nennt Fahrzeiten im Kalender als Ziel, Punkt 12, 13 und 16 werden eingehalten (nur Koordinaten und Profil, nichts gespeichert). Vergangene Tage werden nicht mehr geplant und kosten beim Anbieter nur Kontingent. Der Startort entspricht ANN-196 („Start am Rad“), ohne eine Beschäftigtenadresse beim Dienst (ADR-019, `startort.ts`). Unsicher: ob eine Tagesansicht mit vielen Personen das Kontingent des Anbieters spürbar belastet – je Person und Tag eine Route, im Zwischenspeicher der Sitzung.
+
+**Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
+
+**Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`.

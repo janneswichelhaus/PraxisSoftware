@@ -30,9 +30,38 @@ export function besucheDesTages(plan: readonly DayPlanEntry[]): DayPlanEntry[] {
     .sort(nachUhrzeit);
 }
 
-/** Noch anzufahren: bestätigt und damit weder erledigt noch abgesagt. */
-function stehtAus(termin: DayPlanEntry): boolean {
-  return termin.status === 'confirmed';
+/**
+ * Die Hausbesuche unter den Besuchen des Tages - nur nach ihnen zählt die
+ * Liege (BEF-051, ANN-116 Fassung 2): Sie ist das, was mit aufs Rad muss, und
+ * zu einem Praxistermin fährt sie nicht mit.
+ */
+export function hausbesucheDesTages(plan: readonly DayPlanEntry[]): DayPlanEntry[] {
+  return besucheDesTages(plan).filter((termin) => termin.appointment_type === 'home_visit');
+}
+
+/**
+ * Noch vor einem (ANN-117 Fassung 2): bestätigt - also weder abgehakt noch
+ * abgesagt oder nicht angetroffen - und sein Ende ist noch nicht erreicht.
+ *
+ * Die Uhr entscheidet, nicht der Haken: Wer einen Besuch nicht abhakt, bekommt
+ * nach dessen Ende trotzdem den nächsten Weg. Wer früher abhakt, auch. Ein
+ * vorbeigegangener, nicht abgehakter Besuch bleibt im Zeitstrahl mit
+ * „Nicht abgeschlossen“ stehen (`nichtAbgeschlossen`).
+ *
+ * `jetzt` kommt von außen, damit die Grenze prüfbar bleibt - und damit ein
+ * anderer Tag der Übersicht (ANN-234) ganz vor oder ganz hinter einem liegt.
+ */
+export function stehtAus(termin: DayPlanEntry, jetzt: number): boolean {
+  return termin.status === 'confirmed' && Date.parse(termin.ends_at) > jetzt;
+}
+
+/** Vorbei, aber nicht abgehakt: Das Ende ist erreicht, der Termin steht noch auf bestätigt. */
+export function nichtAbgeschlossen(termin: DayPlanEntry, jetzt: number): boolean {
+  return (
+    (termin.kind === 'therapy' || termin.kind === 'training') &&
+    termin.status === 'confirmed' &&
+    Date.parse(termin.ends_at) <= jetzt
+  );
 }
 
 export interface Wege {
@@ -42,9 +71,9 @@ export interface Wege {
   istErsterDesTages: boolean;
 }
 
-export function wegeDesTages(plan: readonly DayPlanEntry[]): Wege {
+export function wegeDesTages(plan: readonly DayPlanEntry[], jetzt: number): Wege {
   const besuche = besucheDesTages(plan);
-  const erster = besuche.find(stehtAus) ?? null;
+  const erster = besuche.find((termin) => stehtAus(termin, jetzt)) ?? null;
   return {
     erster,
     istErsterDesTages: erster !== null && besuche[0]?.id === erster.id,
@@ -55,12 +84,14 @@ export function wegeDesTages(plan: readonly DayPlanEntry[]): Wege {
  * Der eine Termin, den der Zeitstrahl ausgeklappt zeigt.
  *
  *   * `besuch` - der nächste noch anzufahrende Behandlungsbesuch
- *     (`wegeDesTages`, ANN-117); steht keiner mehr aus, der nächste
- *     ausstehende Trainingstermin: Für die Trainingsbetreuung ist er der
- *     Besuch, und nur die Karte trägt Anschrift und Rufnummer;
- *   * `dokumentation` - kein Besuch steht mehr aus, aber eine Dokumentation
- *     ist noch nicht festgeschrieben (`istOffen`). Die Karte führt dann in den
- *     Abschluss, eine Navigation gibt es nicht mehr (UEB-04).
+ *     (`wegeDesTages`, ANN-117 Fassung 2: nach der Uhr); steht keiner mehr
+ *     aus, der nächste ausstehende Trainingstermin: Für die
+ *     Trainingsbetreuung ist er der Besuch, und nur die Karte trägt Anschrift
+ *     und Rufnummer;
+ *   * `dokumentation` - kein Besuch steht mehr aus, aber einer ist nicht
+ *     abgehakt oder eine Dokumentation ist noch nicht festgeschrieben
+ *     (`istOffen`). Die Karte führt dann in den Abschluss, eine Navigation
+ *     gibt es nicht mehr (UEB-04).
  */
 export interface Fokus {
   termin: DayPlanEntry;
@@ -70,12 +101,13 @@ export interface Fokus {
 export function fokusDesTages(
   plan: readonly DayPlanEntry[],
   darfDokumentieren: boolean,
+  jetzt: number,
 ): Fokus | null {
-  const besuch = wegeDesTages(plan).erster;
+  const besuch = wegeDesTages(plan, jetzt).erster;
   if (besuch) return { termin: besuch, art: 'besuch' };
 
   const sortiert = [...plan].sort(nachUhrzeit);
-  const training = sortiert.find((termin) => termin.kind === 'training' && stehtAus(termin));
+  const training = sortiert.find((termin) => termin.kind === 'training' && stehtAus(termin, jetzt));
   if (training) return { termin: training, art: 'besuch' };
 
   const ohneDoku = sortiert.find((termin) => istOffen(termin, darfDokumentieren));
@@ -122,8 +154,9 @@ export interface Tagesfortschritt {
  * Gezählt werden die Behandlungsbesuche wie bei der Liege (ANN-117):
  * Fehlzeiten und Training zählen nicht, eine Absage auch nicht - sie bekommt
  * aber ihren Punkt, damit die Reihe den Tag zeigt, wie er im Kalender stand.
- * „Erledigt" ist ein Besuch, zu dem niemand mehr fährt: abgeschlossen,
- * dokumentiert, abgerechnet oder nicht angetroffen.
+ * „Erledigt" ist ein Besuch, der abgehakt ist: abgeschlossen, dokumentiert,
+ * abgerechnet oder nicht angetroffen. Hier zählt der Haken, nicht die Uhr
+ * (ANN-117 Fassung 2): Der Satz sagt, was getan ist.
  */
 export function tagesfortschritt(
   plan: readonly DayPlanEntry[],
@@ -138,7 +171,7 @@ export function tagesfortschritt(
       if (termin.status === 'confirmed') return termin.id === naechsterId ? 'naechster' : 'offen';
       return 'erledigt';
     }),
-    erledigt: besuche.filter((termin) => !stehtAus(termin)).length,
+    erledigt: besuche.filter((termin) => termin.status !== 'confirmed').length,
     gesamt: besuche.length,
     dokumentiert: besuche.filter(
       (termin) =>
@@ -167,7 +200,7 @@ export type LiegeHeute =
   | { noetig: false }
   | {
       noetig: true;
-      /** Position in `besucheDesTages`, ab 1 gezählt. */
+      /** Position in `hausbesucheDesTages`, ab 1 gezählt. */
       besuch: number;
       termin: DayPlanEntry;
     };
@@ -175,15 +208,18 @@ export type LiegeHeute =
 /**
  * Muss die Behandlungsliege heute noch mit (§9, ANN-116)?
  *
- * Maßgeblich ist der früheste noch **anzufahrende** Besuch, dessen Person sie
- * braucht: Ist der Besuch mit Liege schon vorbei, muss sie für den Rest des
- * Tages nicht mehr aufs Rad. Das Merkmal liefert die Tagesliste nur am
+ * Maßgeblich ist der früheste noch **anzufahrende** Hausbesuch, dessen Person
+ * sie braucht: Ist der Besuch mit Liege schon vorbei - nach der Uhr oder
+ * abgehakt (ANN-117 Fassung 2) -, muss sie für den Rest des Tages nicht mehr
+ * aufs Rad. Gezählt wird nur unter Hausbesuchen (BEF-051, ANN-116 Fassung 2):
+ * Zum Praxistermin fährt keine Liege mit, und „ab 2. Besuch“ meint den
+ * zweiten Halt mit dem Rad. Das Merkmal liefert die Tagesliste nur am
  * Behandlungstermin; am Training ist es leer und zählt als nein.
  */
-export function liegeHeute(plan: readonly DayPlanEntry[]): LiegeHeute {
-  const besuche = besucheDesTages(plan);
+export function liegeHeute(plan: readonly DayPlanEntry[], jetzt: number): LiegeHeute {
+  const besuche = hausbesucheDesTages(plan);
   const index = besuche.findIndex(
-    (termin) => stehtAus(termin) && termin.treatment_table_required === true,
+    (termin) => stehtAus(termin, jetzt) && termin.treatment_table_required === true,
   );
   if (index < 0) return { noetig: false };
   return { noetig: true, besuch: index + 1, termin: besuche[index]! };
@@ -286,7 +322,7 @@ export function naechsterWeg(
         .find(
           (termin) =>
             termin.id !== fokus.termin.id &&
-            stehtAus(termin) &&
+            stehtAus(termin, jetzt) &&
             termin.starts_at >= fokus.termin.starts_at &&
             anfahrten.has(termin.id),
         );
@@ -295,7 +331,7 @@ export function naechsterWeg(
 
   const zone = ziel.organization_time_zone;
   const { vorher } = anfahrt;
-  const erster = wartet && wegeDesTages(plan).istErsterDesTages && vorher === null;
+  const erster = wartet && wegeDesTages(plan, jetzt).istErsterDesTages && vorher === null;
   return {
     titel: wartet ? (erster ? 'Erster Weg' : 'Nächster Weg') : 'Nächster Weg danach',
     von:

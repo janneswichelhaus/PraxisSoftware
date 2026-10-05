@@ -30,7 +30,8 @@ import '@/index.css';
  * fertig im Zwischenspeicher - hinaus geht nichts. Welche Uhrzeit „jetzt" ist,
  * stellt der Test über die Uhr des Browsers.
  *
- * `?ansicht=abend` zeigt den Tag, wenn alles erledigt ist, `?ansicht=doku`
+ * `?ansicht=morgen` zeigt denselben Tag als morgigen über `?tag=` (UBK-003,
+ * ANN-234). `?ansicht=abend` zeigt den Tag, wenn alles erledigt ist, `?ansicht=doku`
  * mit einer noch offenen Dokumentation, `?ansicht=akte` die Stammdaten einer
  * Person mit dem Schalter für die Liege.
  */
@@ -298,6 +299,23 @@ client.setQueryData(
 client.setQueryData(['platform-access', 'treatment', '66666666-6666-4666-8666-000000000002'], null);
 client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'active'], team);
 
+// UBK-003: derselbe Tag, einen Tag später - für den Tageswechsel.
+const morgen = tagePlus(heute, 1);
+const einenTagSpaeter = (iso: string) => new Date(Date.parse(iso) + 86_400_000).toISOString();
+const tagMorgen = tag.map((termin) => ({
+  ...termin,
+  starts_at: einenTagSpaeter(termin.starts_at),
+  ends_at: einenTagSpaeter(termin.ends_at),
+}));
+const punkteMorgen = punkte.map((punkt) => ({
+  ...punkt,
+  starts_at: einenTagSpaeter(punkt.starts_at),
+  ends_at: einenTagSpaeter(punkt.ends_at),
+}));
+client.setQueryData(['day-plan', morgen, STAFF], tagMorgen);
+client.setQueryData(['day-route', morgen, STAFF], punkteMorgen);
+client.setQueryData(['appointments', morgen, tagePlus(morgen, 1), null, null, 'active'], []);
+
 const patient: Patient = {
   id: '66666666-6666-4666-8666-000000000002',
   status: 'active',
@@ -329,7 +347,13 @@ const patient: Patient = {
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>
     <MemoryRouter
-      initialEntries={[ansicht === 'akte' ? `/patienten/${patient.id}/stammdaten` : '/']}
+      initialEntries={[
+        ansicht === 'akte'
+          ? `/patienten/${patient.id}/stammdaten`
+          : ansicht === 'morgen'
+            ? `/?tag=${morgen}`
+            : '/',
+      ]}
     >
       <VorschauProvider>
         <AppShell user={nutzer} onSignOut={() => undefined}>

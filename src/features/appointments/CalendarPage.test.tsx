@@ -7,6 +7,9 @@ import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
 import type * as RouterModul from 'react-router-dom';
+import type * as TagesrouteModul from '@/features/tours/tagesroute';
+import type * as StartortModul from '@/features/tours/startort';
+import type * as FunktionModul from '@/lib/location/funktion';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 import { ZOOM_STANDARD } from './calendar';
 
@@ -128,6 +131,26 @@ const bestand = {
   organization_time_zone: 'Europe/Berlin',
 };
 
+// Fahrwege (UBK-005): Punkte des Tages, Startort und die Route über die
+// eigene Function. Ohne Angabe gibt es keine Punkte - und damit keine Blöcke.
+const fetchDayRoute = vi.fn();
+vi.mock('@/features/tours/tagesroute', async (importOriginal) => ({
+  ...(await importOriginal<typeof TagesrouteModul>()),
+  fetchDayRoute: (datum: string, person: string) =>
+    fetchDayRoute(datum, person) as Promise<TagesrouteModul.Tagesstopp[]>,
+}));
+const fetchStandorte = vi.fn();
+vi.mock('@/features/tours/startort', async (importOriginal) => ({
+  ...(await importOriginal<typeof StartortModul>()),
+  fetchStandorte: () => fetchStandorte() as Promise<StartortModul.Standort[]>,
+}));
+const rufeFunktionAuf = vi.fn();
+vi.mock('@/lib/location/funktion', async (importOriginal) => ({
+  ...(await importOriginal<typeof FunktionModul>()),
+  rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
+    rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
+}));
+
 const { CalendarPage } = await import('./CalendarPage');
 const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
@@ -187,6 +210,11 @@ describe('CalendarPage', () => {
       { staff_member_id: STAFF_TIM, display_name: 'Tim Teamleitung' },
     ]);
     fetchLocations.mockResolvedValue([{ id: ORT, name: 'Hauptstandort Tuebingen' }]);
+    fetchDayRoute.mockReset();
+    fetchDayRoute.mockResolvedValue([]);
+    fetchStandorte.mockReset();
+    fetchStandorte.mockResolvedValue([]);
+    rufeFunktionAuf.mockReset();
   });
 
   describe('Zeitbereiche', () => {
@@ -480,25 +508,15 @@ describe('CalendarPage', () => {
       );
     });
 
-    it('zeigt in der Wochenansicht Montag bis Freitag (Abschnitt 7a)', async () => {
+    it('zeigt in der Wochenansicht Montag bis Sonntag durchgehend (ANN-202 Fassung 2)', async () => {
+      // Auch ohne Termin am Wochenende stehen Samstag und Sonntag da.
+      fetchAppointments.mockResolvedValue([]);
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
 
-      for (const tag of ['10.05.', '11.05.', '12.05.', '13.05.', '14.05.']) {
+      for (const tag of ['10.05.', '11.05.', '12.05.', '13.05.', '14.05.', '15.05.', '16.05.']) {
         expect(await screen.findByText(tag)).toBeInTheDocument();
       }
-      expect(screen.queryByText('15.05.')).toBeNull();
-      expect(screen.queryByText('16.05.')).toBeNull();
-    });
-
-    it('zeigt das Wochenende, sobald dort ein Termin liegt - nichts verschwindet', async () => {
-      fetchAppointments.mockResolvedValue([
-        eintrag({ starts_at: '2027-05-15T07:00:00.000Z', ends_at: '2027-05-15T08:00:00.000Z' }),
-      ]);
-      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
-
-      expect(await screen.findByText('15.05.')).toBeInTheDocument();
-      expect(screen.queryByText('16.05.')).toBeNull();
     });
 
     it('ordnet einen Termin dem Kalendertag der Praxis zu', async () => {
@@ -637,12 +655,20 @@ describe('CalendarPage', () => {
       const koepfe = screen.getAllByRole('link', {
         name: /Tagesansicht aller behandelnden Personen/,
       });
-      expect(koepfe).toHaveLength(5);
+      expect(koepfe).toHaveLength(7);
       const tage = koepfe.map((k) =>
         new URLSearchParams(k.getAttribute('href')!.split('?')[1]).get('datum'),
       );
-      // Montag bis Freitag der Woche, in der der 12.05.2027 liegt.
-      expect(tage).toEqual(['2027-05-10', '2027-05-11', '2027-05-12', '2027-05-13', '2027-05-14']);
+      // Montag bis Sonntag der Woche, in der der 12.05.2027 liegt (ANN-202 Fassung 2).
+      expect(tage).toEqual([
+        '2027-05-10',
+        '2027-05-11',
+        '2027-05-12',
+        '2027-05-13',
+        '2027-05-14',
+        '2027-05-15',
+        '2027-05-16',
+      ]);
     });
   });
 
@@ -2573,5 +2599,181 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
       expect.stringContaining('/termine/77777777-7777-4777-8777-000000000001/abschluss'),
     );
     expect(within(panel).queryByText(/Behandelnde Person/)).toBeNull();
+  });
+});
+
+describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
+  beforeEach(() => {
+    vergissKalenderstaende();
+    fetchAppointments.mockReset();
+    fetchAppointments.mockResolvedValue([eintrag()]);
+    fetchAssignableTherapists.mockReset();
+    fetchAssignableTherapists.mockResolvedValue([
+      { staff_member_id: STAFF_ANNA, display_name: 'Anna Beispiel' },
+      { staff_member_id: STAFF_TIM, display_name: 'Tim Teamleitung' },
+    ]);
+    fetchAssignableTrainers.mockReset();
+    fetchAssignableTrainers.mockResolvedValue([]);
+    fetchLocations.mockReset();
+    fetchLocations.mockResolvedValue([{ id: ORT, name: 'Hauptstandort Tuebingen' }]);
+    fetchWorkingHours.mockReset();
+    fetchWorkingHours.mockResolvedValue([]);
+    fetchWorkingHourExceptions.mockReset();
+    fetchWorkingHourExceptions.mockResolvedValue([]);
+    fetchDayRoute.mockReset();
+    fetchDayRoute.mockResolvedValue([]);
+    fetchStandorte.mockReset();
+    fetchStandorte.mockResolvedValue([]);
+    rufeFunktionAuf.mockReset();
+  });
+
+  /** Ein Punkt der Tagesroute: Kennung, Zeit, Koordinate - mehr gibt es nicht. */
+  function punkt(id: string, beginn: string, ende: string, lat: number) {
+    return {
+      id,
+      kind: 'therapy',
+      appointment_type: 'home_visit' as const,
+      status: 'confirmed',
+      starts_at: beginn,
+      ends_at: ende,
+      lat,
+      lon: 9.05,
+      geocode_precision: 'address' as const,
+      position_source: 'visit' as const,
+    };
+  }
+  const STANDORT = {
+    id: ORT,
+    name: 'Hauptstandort Tuebingen',
+    street: 'Praxisweg',
+    house_number: '1',
+    postal_code: '72070',
+    city: 'Tuebingen',
+    lat: 48.5,
+    lon: 9.05,
+    geocode_precision: 'address' as const,
+  };
+  function route(quelle: 'anbieter' | 'nachbildung', ...minuten: number[]) {
+    return {
+      ok: true,
+      quelle,
+      value: {
+        distanceMeters: 5000,
+        durationSeconds: minuten.reduce((summe, m) => summe + m * 60, 0),
+        legs: minuten.map((m) => ({ distanceMeters: m * 200, durationSeconds: m * 60 })),
+        geometry: [],
+      },
+    };
+  }
+
+  async function mitUhr(test: () => Promise<void>) {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    // 05:00 UTC = 07:00 in Tuebingen, vor allen Terminen des Tages.
+    vi.setSystemTime(new Date('2027-05-12T05:00:00Z'));
+    try {
+      await test();
+    } finally {
+      vi.useRealTimers();
+    }
+  }
+
+  it('zeichnet vor jedem Besuch einen Block so lang wie die Fahrzeit, nur mit Koordinaten zum Dienst', async () => {
+    await mitUhr(async () => {
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockImplementation((_datum: string, person: string) =>
+        Promise.resolve(
+          person === STAFF_ANNA
+            ? [
+                punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+                punkt('b', '2027-05-12T09:00:00.000Z', '2027-05-12T10:00:00.000Z', 48.52),
+              ]
+            : [],
+        ),
+      );
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12, 20));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12');
+
+      const anna = await screen.findByRole('group', { name: /^Anna Beispiel/ });
+      await waitFor(() => expect(within(anna).getAllByTestId('fahrweg')).toHaveLength(2));
+      const [erster, zweiter] = within(anna).getAllByTestId('fahrweg');
+      expect(erster).toHaveTextContent('Weg ≈ 12 min');
+      expect(erster).toHaveTextContent('Fahrweg etwa 12 Minuten, 08:48 bis 09:00');
+      expect(zweiter).toHaveTextContent('Fahrweg etwa 20 Minuten, 10:40 bis 11:00');
+      // Nicht antippbar: Die freie Fläche darunter bleibt eine Auswahl.
+      expect(erster).toHaveClass('pointer-events-none');
+      // Die andere Spalte hat keine Besuche mit Ort - keine Blöcke.
+      const tim = screen.getByRole('group', { name: /^Tim Teamleitung/ });
+      expect(within(tim).queryByTestId('fahrweg')).toBeNull();
+
+      // ADR-019 Punkt 12: an die Function nur Koordinaten und das Profil.
+      const [, koerper] = rufeFunktionAuf.mock.calls[0] as [string, Record<string, unknown>];
+      expect(Object.keys(koerper).sort()).toEqual(['profile', 'waypoints']);
+      expect(JSON.stringify(koerper)).not.toMatch(/Mustermann|2027|"a"/);
+    });
+  });
+
+  it('fragt fuer einen vergangenen Tag nichts an', async () => {
+    await mitUhr(async () => {
+      rendern('/kalender?ansicht=tag&datum=2027-05-11');
+      await screen.findByRole('group', { name: /^Anna Beispiel/ });
+      expect(fetchDayRoute).not.toHaveBeenCalled();
+      expect(screen.queryByTestId('fahrweg')).toBeNull();
+    });
+  });
+
+  it('fragt in der Woche je Werktag der gezeigten Person ab heute', async () => {
+    await mitUhr(async () => {
+      rendern('/kalender?ansicht=woche&datum=2027-05-12&person=' + STAFF_ANNA);
+      await waitFor(() => expect(fetchDayRoute).toHaveBeenCalled());
+      const tage = fetchDayRoute.mock.calls.map(([datum]) => datum as string).sort();
+      // Mittwoch bis Sonntag - Montag und Dienstag sind vorbei.
+      expect(tage).toEqual(['2027-05-12', '2027-05-13', '2027-05-14', '2027-05-15', '2027-05-16']);
+      expect(fetchDayRoute.mock.calls.every(([, person]) => person === STAFF_ANNA)).toBe(true);
+    });
+  });
+
+  it('sagt dazu, wenn die Fahrwege eine Nachbildung ohne Kartendienst sind', async () => {
+    await mitUhr(async () => {
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockResolvedValue([
+        punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('nachbildung', 9));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&person=' + STAFF_ANNA);
+      expect(
+        await screen.findByText(/Nachbildung ohne Kartendienst: Die Fahrwege/),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('zeigt ohne Route keinen Block - ungeprueft ist nicht kurz', async () => {
+    await mitUhr(async () => {
+      fetchDayRoute.mockResolvedValue([
+        punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+        punkt('b', '2027-05-12T09:00:00.000Z', '2027-05-12T10:00:00.000Z', 48.52),
+      ]);
+      rufeFunktionAuf.mockResolvedValue({
+        ok: false,
+        error: { kind: 'not_configured', message: 'aus' },
+      });
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&person=' + STAFF_ANNA);
+      await waitFor(() => expect(rufeFunktionAuf).toHaveBeenCalled());
+      expect(screen.queryByTestId('fahrweg')).toBeNull();
+    });
+  });
+
+  it('fragt fuer die Trainingsbetreuung keine Fahrwege an', async () => {
+    await mitUhr(async () => {
+      fetchAssignableTrainers.mockResolvedValue([
+        { staff_member_id: STAFF_ANNA, display_name: 'Tom Trainingsbetreuung' },
+      ]);
+      fetchAppointments.mockResolvedValue([]);
+      renderWithProviders(
+        <CalendarPage user={testUser(['trainer'], 'Tom Trainingsbetreuung')} />,
+        '/kalender?ansicht=tag&datum=2027-05-12',
+      );
+      await screen.findByRole('group', { name: /Tom Trainingsbetreuung/ });
+      expect(fetchDayRoute).not.toHaveBeenCalled();
+    });
   });
 });

@@ -125,14 +125,11 @@ test.describe('CAL-006: Darstellung', () => {
 
     const woche = page.getByRole('region', { name: 'Wochenansicht einer behandelnden Person' });
     await expect(woche).toBeVisible();
-    // Mo–Fr stehen immer da; Samstag und Sonntag nur mit einem Termin der
-    // gezeigten Person (Design-Handoff 2026-10-01, Abschnitt 7a; ANN-202).
-    for (const wochentag of [/^Mo\b/, /^Di\b/, /^Mi\b/, /^Do\b/, /^Fr\b/]) {
+    // Montag bis Sonntag stehen immer da (ANN-202 Fassung 2, Jannes 2026-10-05).
+    for (const wochentag of [/^Mo\b/, /^Di\b/, /^Mi\b/, /^Do\b/, /^Fr\b/, /^Sa\b/, /^So\b/]) {
       await expect(woche.getByRole('group', { name: wochentag })).toHaveCount(1);
     }
-    const spalten = await woche.getByRole('group').count();
-    expect(spalten).toBeGreaterThanOrEqual(5);
-    expect(spalten).toBeLessThanOrEqual(7);
+    await expect(woche.getByRole('group')).toHaveCount(7);
 
     // In der Woche gibt es kein "Alle": es steht immer genau eine Person im Gitter.
     const auswahl = page.getByLabel('Behandelnde Person');

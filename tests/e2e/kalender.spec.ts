@@ -143,4 +143,31 @@ test.describe('Kalender', () => {
       await expect(menue.getByRole('button', { name: /^Neuer Termin/ })).toHaveCount(0);
     });
   }
+
+  for (const breite of [375, 1280]) {
+    test(`zeichnet Fahrwege als Bloecke vor den Hausbesuchen (${breite} px, UBK-005)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 740 });
+      await page.goto(PRUEFSEITE);
+      const spalte = annaSpalte(page);
+      await expect(spalte).toBeVisible();
+
+      const wege = spalte.getByTestId('fahrweg');
+      await expect(wege).toHaveCount(4);
+      await expect(wege.nth(0)).toContainText('Weg ≈ 15 min');
+      // Der Block endet an der Oberkante des Besuchs, zu dem gefahren wird.
+      const weg = (await wege.nth(1).boundingBox())!;
+      const kachel = (await spalte.getByRole('button', { name: /Carl Muster/ }).boundingBox())!;
+      expect(Math.abs(weg.y + weg.height - kachel.y)).toBeLessThanOrEqual(2);
+      // Die Fehlzeit hat keinen Ort und damit keinen Weg; Tims Spalte hat drei.
+      await expect(
+        page.locator('[role=group][aria-label^="Tim Teamleitung"]').getByTestId('fahrweg'),
+      ).toHaveCount(3);
+      const ueberlauf = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      );
+      expect(ueberlauf).toBe(false);
+    });
+  }
 });

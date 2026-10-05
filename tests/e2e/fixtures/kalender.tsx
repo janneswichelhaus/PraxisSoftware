@@ -7,6 +7,10 @@ import { bereichFuer } from '@/features/appointments/calendar';
 import { todayInTimeZone, type CalendarEntry } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
 import type { WorkingHour } from '@/features/scheduling/api';
+import { wegpunkte } from '@/features/appointments/fahrwege';
+import { PRAXISPROFIL, type Tagesstopp } from '@/features/tours/tagesroute';
+import { startpunkt, type Standort } from '@/features/tours/startort';
+import type { Routenergebnis } from '@/lib/location/route';
 import '@/index.css';
 
 /**
@@ -17,6 +21,9 @@ import '@/index.css';
  * Server: Die Abfragen des gezeigten Tages und seiner Woche sind vorab
  * gefüllt und veralten nicht. Wer blättert, verlässt den gefüllten Bereich;
  * dann meldet die Seite, dass nichts geladen werden konnte.
+ *
+ * Seit UBK-005 liegen Tagesroute, Startort und Route jeder Person im
+ * Zwischenspeicher: Vor jedem Hausbesuch steht ein Fahrweg (ANN-235).
  *
  * `?rolle=trainer` zeigt denselben Kalender, wie ihn die Trainingsbetreuung
  * sieht (TRN-006): Toms Spalte mit seinen Trainingsterminen, sonst nichts.
@@ -188,6 +195,53 @@ for (const ansicht of ['tag', 'woche'] as const) {
         : [],
     );
   }
+}
+
+// UBK-005: Fahrwege. Erfundene Punkte in Tübingen, keine Wohnadresse; die
+// Route je Person mit festen Minuten, vom Startort der Praxis aus.
+const standort: Standort = {
+  id: ORT,
+  name: 'Hauptstandort Tuebingen',
+  street: 'Praxisweg',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+  lat: 48.5204,
+  lon: 9.0527,
+  geocode_precision: 'address',
+};
+client.setQueryData(['standorte'], [standort]);
+const FAHRMINUTEN: Record<string, number[]> = { [ANNA]: [15, 20, 25, 18], [TIM]: [12, 25, 10] };
+for (const person of [ANNA, TIM]) {
+  const punkte: Tagesstopp[] = PRAXISTERMINE.filter(
+    (t) => t.staff_member_id === person && t.kind === 'therapy',
+  ).map((t, i) => ({
+    id: t.id,
+    kind: t.kind,
+    appointment_type: 'home_visit',
+    status: t.status,
+    starts_at: t.starts_at,
+    ends_at: t.ends_at,
+    lat: 48.52 + (i + 1) * 0.004,
+    lon: 9.05 + (person === ANNA ? 0.003 : -0.003) * (i + 1),
+    geocode_precision: 'address',
+    position_source: 'visit',
+  }));
+  client.setQueryData(['day-route', heute, person], punkte);
+  const minuten = FAHRMINUTEN[person]!;
+  const route: Routenergebnis = {
+    ok: true,
+    value: {
+      quelle: 'anbieter',
+      route: {
+        distanceMeters: 8000,
+        durationSeconds: minuten.reduce((summe, m) => summe + m * 60, 0),
+        legs: minuten.map((m) => ({ distanceMeters: m * 200, durationSeconds: m * 60 })),
+        geometry: [],
+      },
+    },
+  };
+  client.setQueryData(['route', PRAXISPROFIL, wegpunkte(punkte, startpunkt(standort))], route);
 }
 
 const start = new URLSearchParams(window.location.search).get('start') ?? `ansicht=tag`;
