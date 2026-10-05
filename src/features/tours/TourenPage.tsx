@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
+import { Disclosure } from '@/components/ui/Card';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -50,6 +51,15 @@ export function TourenPage({ user }: { user: CurrentUser }) {
   const tag = suche.get('tag') ?? todayInTimeZone(zeitzone);
   const gewuenscht = suche.get('person');
   const [startwahl, setStartwahl] = useState<Startwahl>('standort');
+  // UBK-009: Die Karte steht am Telefon zugeklappt, am Rechner offen - die
+  // Liste ist das, wofür man die Tour öffnet. Gezeichnet (und damit Kacheln
+  // geladen) wird sie erst, wenn sie offen ist.
+  const [karteOffen, setKarteOffen] = useState(
+    () =>
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(min-width: 1024px)').matches,
+  );
 
   const personen = useQuery({
     queryKey: ['assignable-therapists'],
@@ -104,9 +114,10 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       {/* Die Tour ist eine Ansicht des Kalenders (BEF-044, ANN-113): Der Weg
           zurück führt in die Tagesansicht mit demselben Tag und derselben
           Person, nicht an den Anfang. */}
+      {/* UBK-009: kein Erklärsatz über der Bedienung - die Liste soll ohne
+          Scrollen beginnen (Sichtung Jannes 2026-10-05). */}
       <PageHeader
         title="Tour"
-        description="Die Besuche eines Tages in Fahrtreihenfolge – mit Karte, Route und Fahrzeiten."
         actions={
           <span className="print:hidden">
             <ButtonLink
@@ -123,7 +134,9 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         }
       />
 
-      <div className="mb-6 grid max-w-3xl gap-4 sm:grid-cols-3 print:hidden">
+      {/* Person und Tag in einer Zeile, auch am Telefon (UBK-009); der Start
+          steht an der Liste, wo er wirkt. */}
+      <div className="mb-4 grid max-w-xl grid-cols-2 gap-3 print:hidden">
         <Select label="Person" value={person} onChange={(e) => setzen('person', e.target.value)}>
           {(personen.data ?? []).map((p) => (
             <option key={p.staff_member_id} value={p.staff_member_id}>
@@ -137,16 +150,6 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           value={tag}
           onChange={(e) => setzen('tag', e.target.value)}
         />
-        <Select
-          label="Start"
-          value={startwahl}
-          onChange={(e) => setStartwahl(e.target.value === 'erster' ? 'erster' : 'standort')}
-        >
-          <option value="standort" disabled={praxisstart === null}>
-            {praxisOption}
-          </option>
-          <option value="erster">Erster Besuch</option>
-        </Select>
       </div>
 
       {/* Ohne Personen gibt es keine Tour - das sagt die Seite, statt eine
@@ -176,26 +179,46 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         />
       ) : (
         <>
-          <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
-            <TagesrouteKarte start={start} stopps={stopps} />
-          </Suspense>
+          <div className="mb-4 print:hidden">
+            <Disclosure
+              kopf="label"
+              offen={karteOffen}
+              onUmschalten={setKarteOffen}
+              summary={<h2>Karte</h2>}
+            >
+              {karteOffen ? (
+                <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
+                  <TagesrouteKarte start={start} stopps={stopps} />
+                </Suspense>
+              ) : null}
+            </Disclosure>
+          </div>
 
-          <Section
-            titel={['Tourenliste', personName, formatDate(tag)].filter(Boolean).join(' · ')}
-            aktion={
-              <Button
-                type="button"
-                variant="secondary"
-                className="print:hidden"
-                onClick={() => window.print()}
-              >
-                Drucken
-              </Button>
-            }
-          >
+          <Section titel={['Tourenliste', personName, formatDate(tag)].filter(Boolean).join(' · ')}>
             {/* Routensumme und ihre Meldungen gehören zur Bedienung, nicht
                 aufs Papier (TER-12). */}
-            <div className="mb-4 print:hidden">
+            <div className="mb-4 space-y-3 print:hidden">
+              {/* Start und Drucken in einer Zeile: Am Telefon steht die Liste
+                  so ohne Scrollen im Blick (UBK-009). */}
+              <div className="flex items-end gap-3">
+                <div className="w-56 min-w-0">
+                  <Select
+                    label="Start"
+                    value={startwahl}
+                    onChange={(e) =>
+                      setStartwahl(e.target.value === 'erster' ? 'erster' : 'standort')
+                    }
+                  >
+                    <option value="standort" disabled={praxisstart === null}>
+                      {praxisOption}
+                    </option>
+                    <option value="erster">Erster Besuch</option>
+                  </Select>
+                </div>
+                <Button type="button" variant="secondary" onClick={() => window.print()}>
+                  Drucken
+                </Button>
+              </div>
               <Routenzusammenfassung
                 laedt={fahrten.route.isFetching}
                 ergebnis={fahrten.route.data}
