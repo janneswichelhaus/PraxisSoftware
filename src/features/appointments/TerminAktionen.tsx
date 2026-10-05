@@ -61,6 +61,7 @@ import {
   type Appointment,
   type EventParticipant,
 } from './api';
+import { TAGESLAGE } from './tageslage';
 
 /**
  * Meldet der Seite einen bestätigten Vorgang (ZST-16, TER-17).
@@ -394,7 +395,9 @@ function AbsageAktion({ appointment, melden }: { appointment: Appointment; melde
     onSuccess: async () => {
       // Der Termin selbst, der Kalender und die Tagesliste zeigen sonst
       // weiter einen bestätigten Termin.
-      nachladen(queryClient, ['appointment', appointment.id], ['appointments'], ['day-plan']);
+      // UBK-011: mit Tagesroute und Fahrpuffer - der Fahrweg zum abgesagten
+      // Termin fällt sonst erst nach dem Neuladen weg.
+      nachladen(queryClient, ['appointment', appointment.id], ...TAGESLAGE);
       if (istEreignis) {
         melden('Teilnahme abgesagt.');
         return;

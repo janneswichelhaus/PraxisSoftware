@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as DokumentationApi from '@/features/documentation/api';
 import type * as TagesApi from '@/features/today/api';
@@ -391,6 +392,7 @@ describe('TerminAktionenDialog', () => {
 
     it('sagt nach Bestaetigung mit dem gelesenen Stand und dem Grund ab', async () => {
       const user = userEvent.setup();
+      const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
       rendern();
       await screen.findByText('Berta Bestand');
       await user.click(screen.getByRole('button', { name: 'Termin absagen' }));
@@ -407,6 +409,10 @@ describe('TerminAktionenDialog', () => {
           null,
         ),
       );
+      // UBK-011: Der Fahrweg zum abgesagten Termin fällt ohne Neuladen weg.
+      await waitFor(() => expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] }));
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+      neuLaden.mockRestore();
     });
 
     it('sagt ohne ausgewaehlten Grund nicht ab (CAL-008b)', async () => {

@@ -41,6 +41,7 @@ import {
   type TrainingAppointment,
 } from './api';
 import { TerminAbschluss, TrainingProtokoll } from './TrainingProtocol';
+import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 
 /**
  * Ein Trainingstermin (TRN-004, TRN-006).
@@ -235,8 +236,8 @@ function Absagen({
     mutationFn: (g: CancellationReason) => cancelAppointment(termin.id, termin.updated_at, g),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['training-appointment', termin.id] });
-      void queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      void queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // UBK-011: Trainingstermine stehen in derselben Tagesroute (ADR-022).
+      void tageslageNeuLaden(queryClient);
       void queryClient.invalidateQueries({ queryKey: ['training-bases'] });
       void queryClient.invalidateQueries({ queryKey: ['training-client-appointments'] });
       onAbgesagt();

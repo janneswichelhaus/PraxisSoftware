@@ -50,6 +50,7 @@ import {
   kalenderZumTermin,
   zurueckZumTermin,
 } from './api';
+import { tageslageNeuLaden } from './tageslage';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
 
 /** Die Felder, an denen sich eine Eingabe vom gespeicherten Termin unterscheiden kann. */
@@ -220,7 +221,8 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
     onSuccess: async () => {
       // Detailansicht und Kalender zeigen sonst weiter den alten Stand.
       await queryClient.invalidateQueries({ queryKey: ['appointment', appointmentId] });
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // UBK-011: auch Tour, Fahrwege und Fahrpuffer.
+      await tageslageNeuLaden(queryClient);
       // Gespeichert ist gespeichert: Der eigene Weg danach ist kein Verlust.
       freigeben();
       void navigate(zurueckZumTermin(rueckweg, appointmentId!), { replace: true });

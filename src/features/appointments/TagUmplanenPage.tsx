@@ -28,6 +28,7 @@ import {
   formatLocalTimeRange,
   type CancellationReason,
 } from './api';
+import { tageslageNeuLaden } from './tageslage';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004).
@@ -212,8 +213,8 @@ function Umplanung({
         },
         { replace: true },
       );
-      await queryClient.invalidateQueries({ queryKey: ['day-plan', datum, staffMemberId] });
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // UBK-011: Tagesliste, Kalender, Tour und Fahrpuffer.
+      await tageslageNeuLaden(queryClient);
     },
   });
 

@@ -886,12 +886,17 @@ describe('CalendarPage', () => {
     }
 
     it('verschiebt einen Termin auf eine andere Uhrzeit', async () => {
+      const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
       const kachel = await tagesansicht();
 
       ziehen(kachel, { dy: EINE_STUNDE });
       await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      // UBK-011: Die Fahrwege wandern mit, ohne Neuladen.
+      await waitFor(() => expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] }));
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+      neuLaden.mockRestore();
       const { werte, bestaetigt } = letzterSchreibvorgang();
       expect(werte).toMatchObject({
         staff_member_id: STAFF_ANNA,

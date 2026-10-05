@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as StaffApi from '@/features/staff/api';
@@ -150,6 +151,7 @@ describe('EditAppointmentPage', () => {
 
   it('speichert gegen den gelesenen Stand', async () => {
     const user = userEvent.setup();
+    const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
     rendern();
     await formularAbwarten();
 
@@ -175,6 +177,10 @@ describe('EditAppointmentPage', () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
+    // UBK-011: auch Tagesroute und Fahrpuffer.
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] });
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+    neuLaden.mockRestore();
   });
 
   it('wechselt die behandelnde Person', async () => {

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
@@ -365,6 +366,7 @@ describe('NewAppointmentPage', () => {
 
   it('legt einen Praxistermin mit Standort an und wechselt zur Detailansicht', async () => {
     const user = userEvent.setup();
+    const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
     rendern();
     await formularAbwarten();
 
@@ -393,6 +395,11 @@ describe('NewAppointmentPage', () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
+    // UBK-011: Tour, Übersicht und Fahrwege stimmen ohne Neuladen.
+    for (const queryKey of [['appointments'], ['day-plan'], ['day-route'], ['travel-buffers']]) {
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey });
+    }
+    neuLaden.mockRestore();
   });
 
   it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {

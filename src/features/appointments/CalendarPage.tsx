@@ -1,5 +1,6 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useFahrwege, type FahrwegSpalte } from './fahrwege';
+import { tageslageNeuLaden } from './tageslage';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -528,8 +529,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       // Nach dem Verschieben steht der Fokus auf „Rückgängig" (KAL-01).
       if (auftrag.zurueck) rueckgaengigFokussieren.current = true;
       // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // UBK-011: mit Tagesroute und Fahrpuffer - die Fahrwege wandern mit.
+      await tageslageNeuLaden(queryClient);
       // Nach dem Zurückholen gibt es keine Leiste mehr: Der Fokus geht an die
       // Kachel, die zurückgewandert ist (KAL-21).
       if (!auftrag.zurueck) setRasterFokus({ kachel: auftrag.v.terminId });

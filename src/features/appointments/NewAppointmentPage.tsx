@@ -42,6 +42,7 @@ import {
   type AppointmentType,
   type TerminVorbelegung,
 } from './api';
+import { tageslageNeuLaden } from './tageslage';
 import {
   DAUER_PARAM,
   leseDauer,
@@ -279,7 +280,9 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         wartelisteId,
       ),
     onSuccess: async (appointmentId) => {
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // UBK-011: Kalender, Tagesliste, Tour und Fahrpuffer - sonst stehen
+      // Fahrwege und Fahrzeiten bis zum Neuladen auf dem alten Tag.
+      await tageslageNeuLaden(queryClient);
       if (wartelisteId) await queryClient.invalidateQueries({ queryKey: ['waitlist'] });
       // Zurück, wo das Anlegen begann (BEF-016): Wer aus dem Kalender kam,
       // landet wieder im Kalender, mit dem neuen Termin hervorgehoben; wer vom
