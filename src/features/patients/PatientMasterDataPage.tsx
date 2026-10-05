@@ -503,7 +503,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                   prüft set_patient_address_coordinate (ADR-004). */}
               {kartenpositionOffen ? (
                 <DetailRow label="Kartenposition">
-                  <AdresseVerorten patient={patient} />
+                  <AdresseVerorten patient={patient} user={user} />
                 </DetailRow>
               ) : null}
               {/* ANN-197: Die Etage ist der Anfang des Zugangshinweises, bis es

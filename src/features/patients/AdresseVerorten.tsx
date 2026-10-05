@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -11,6 +11,11 @@ import {
   trefferanzahlText,
 } from '@/lib/location/geocode';
 import type { Quelle } from '@/lib/location/funktion';
+import {
+  aktualisiereHausbesuchAdressen,
+  fetchVeralteteHausbesuche,
+} from '@/features/appointments/api';
+import { canManageAppointments, type CurrentUser } from '@/features/session/types';
 import { setPatientAddressCoordinate, type Patient } from './api';
 
 /**
@@ -75,8 +80,81 @@ function vollstaendigeAnschrift(patient: Patient): Anschrift | null {
   };
 }
 
-export function AdresseVerorten({ patient }: { patient: Patient }) {
+/**
+ * Die Rückfrage direkt nach dem Verorten (UBK-006, ANN-236): Eine neue
+ * Koordinate gilt nur für Hausbesuche, die schon die neue Anschrift tragen.
+ * Stehen künftige Besuche noch auf der alten, fragt die App hier mit, statt
+ * sie mit der alten Position weiterrechnen zu lassen. Umgestellt wird nur auf
+ * Tipp; der Server übernimmt dabei Anschrift und Kartenposition aus der Akte
+ * (`update_home_visit_addresses`, Trigger `copy_visit_coordinate`).
+ */
+function UmstellenNachVerorten({ patientId }: { patientId: string }) {
   const queryClient = useQueryClient();
+  const veraltet = useQuery({
+    queryKey: ['home-visits-outdated-address', patientId],
+    queryFn: () => fetchVeralteteHausbesuche(patientId),
+    staleTime: 0,
+    retry: false,
+  });
+  const umstellen = useMutation({
+    mutationFn: (ids: readonly string[]) => aktualisiereHausbesuchAdressen(ids),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: ['home-visits-outdated-address', patientId],
+      });
+      await queryClient.invalidateQueries({ queryKey: ['patient-appointments', patientId] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-next-appointment', patientId] });
+      await queryClient.invalidateQueries({ queryKey: ['day-route'] });
+    },
+  });
+
+  if (umstellen.isSuccess) {
+    return (
+      <Statusmeldung ton="erfolg">
+        Umgestellt: Die künftigen Hausbesuche haben jetzt Anschrift und Kartenposition aus der Akte.
+      </Statusmeldung>
+    );
+  }
+  const besuche = veraltet.data ?? [];
+  if (besuche.length === 0) return null;
+
+  return (
+    <Statusmeldung ton="warnung">
+      <p className="font-medium">
+        {besuche.length === 1
+          ? 'Ein künftiger Hausbesuch nennt noch die alte Anschrift.'
+          : `${besuche.length} künftige Hausbesuche nennen noch die alte Anschrift.`}{' '}
+        Für {besuche.length === 1 ? 'ihn' : 'sie'} gilt die neue Kartenposition erst nach dem
+        Umstellen – bis dahin gibt es dort keine Fahrzeit.
+      </p>
+      <Button
+        type="button"
+        groesse="kompakt"
+        className="mt-2"
+        disabled={umstellen.isPending}
+        onClick={() => umstellen.mutate(besuche.map((b) => b.id))}
+      >
+        {umstellen.isPending
+          ? 'Wird umgestellt …'
+          : besuche.length === 1
+            ? 'Auf die neue Anschrift umstellen'
+            : `Alle ${besuche.length} auf die neue Anschrift umstellen`}
+      </Button>
+      {umstellen.isError ? (
+        <p role="alert" className="text-danger mt-2 text-sm">
+          {umstellen.error.message}
+        </p>
+      ) : null}
+    </Statusmeldung>
+  );
+}
+
+export function AdresseVerorten({ patient, user }: { patient: Patient; user?: CurrentUser }) {
+  const queryClient = useQueryClient();
+  // UBK-006: Nach dem Verorten in dieser Sitzung fragt die Seite mit, ob die
+  // künftigen Hausbesuche umgestellt werden sollen - nur wer Termine ändert.
+  const [ebenVerortet, setEbenVerortet] = useState(false);
+  const fragtMit = ebenVerortet && user !== undefined && canManageAppointments(user.roles);
   const anschrift = vollstaendigeAnschrift(patient);
   // Der Treffer trägt die Anschrift, zu der er gehört: Gespeichert wird genau
   // diese, nicht die, die beim Tippen auf „übernehmen" gerade angezeigt wird.
@@ -100,7 +178,11 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
     }) => setPatientAddressCoordinate(patient.id, zu, wert, bestaetigt),
     onSuccess: async () => {
       setTreffer(null);
+      setEbenVerortet(true);
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      await queryClient.invalidateQueries({
+        queryKey: ['home-visits-outdated-address', patient.id],
+      });
     },
   });
 
@@ -125,11 +207,19 @@ export function AdresseVerorten({ patient }: { patient: Patient }) {
   });
 
   if (patient.geocode_precision) {
-    return (
+    const verortet = (
       <span>
         Verortet, {GENAUIGKEIT_TEXT[patient.geocode_precision]}
         {patient.geocode_precision !== 'address' ? ' (bestätigt)' : ''}
       </span>
+    );
+    return fragtMit ? (
+      <div className="space-y-2">
+        <p>{verortet}</p>
+        <UmstellenNachVerorten patientId={patient.id} />
+      </div>
+    ) : (
+      verortet
     );
   }
 
