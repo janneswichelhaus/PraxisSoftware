@@ -235,10 +235,13 @@ gesperrt. Vor der Seite steht die **zweite Tür** (Benutzer `praxis`, Kennwort
 aus `TESTENV_TUER_PASSWORD`), sofern das Secret gesetzt ist (ANN-101). Die
 beiden Secrets sind optional und liegen wie die übrigen in der Umgebung `test`.
 
-**Kartendienst (optional, 2026-10-04).** Mit den Secrets
-`TESTENV_SUPABASE_ACCESS_TOKEN` und `TESTENV_PTV_TILE_API_KEY` liefert der
-Lauf die Edge Function `location-provider` aus, baut den Kachelschlüssel ein
-und lässt den Kartendienst in der Content-Security-Policy zu. Die Einstellungen
+**Kartendienst (optional, 2026-10-04).** Mit dem Secret
+`TESTENV_SUPABASE_ACCESS_TOKEN` liefert der Lauf die Edge Function
+`location-provider` aus (Route, Fahrzeiten, Verorten). Erst mit einem eigenen
+Kachelschlüssel `TESTENV_PTV_TILE_API_KEY` kommt das Kartenbild dazu, samt
+Kartendienst in der Content-Security-Policy; der kostenlose PTV-Plan hat nur
+einen Schlüssel, und der Serverschlüssel gehört nie ins Bundle (ADR-019
+Punkt 19). Die Einstellungen
 der Function setzt Jannes im Supabase-Projekt selbst
 ([`hosting-optionen.md`](decisions/hosting-optionen.md), Schritt 2e); der
 Workflow schreibt sie nicht. Nur synthetische Adressen (ADR-019 Punkt 15).

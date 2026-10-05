@@ -11,10 +11,12 @@
 # (docs/decisions/hosting-optionen.md, Schritt 2d). Fehlt eines der sieben
 # Pflicht-Secrets, wird die Auslieferung uebersprungen statt rot.
 #
-# Kartendienst (optional, Jannes 2026-10-04): Mit den Secrets
-# TESTENV_SUPABASE_ACCESS_TOKEN und TESTENV_PTV_TILE_API_KEY liefert der Lauf
-# zusaetzlich den Code der Edge Function `location-provider` aus und baut den
-# Kachelschluessel ein. Ihre Einstellungen (Anbieter, Serverschluessel,
+# Kartendienst (optional, Jannes 2026-10-04): Mit dem Secret
+# TESTENV_SUPABASE_ACCESS_TOKEN liefert der Lauf zusaetzlich den Code der Edge
+# Function `location-provider` aus (Route, Fahrzeiten, Verorten). Mit
+# TESTENV_PTV_TILE_API_KEY - einem eigenen Schluessel, nie dem
+# Serverschluessel (ADR-019 Punkt 19) - kommt das Kartenbild dazu; ohne ihn
+# zeigt die Karte ihren Hinweis. Die Einstellungen der Function (Anbieter, Serverschluessel,
 # Schalter `synthetic`, Umgebung `test`; ADR-019 Punkte 35 und 36) setzt
 # Jannes im Supabase-Projekt selbst - dieser Workflow schreibt sie nicht.
 # Ohne sie antwortet die Function "Kein Kartendienst eingerichtet".
@@ -102,15 +104,24 @@ jobs:
           TESTENV_SUPABASE_ACCESS_TOKEN: ${{ secrets.TESTENV_SUPABASE_ACCESS_TOKEN }}
           TESTENV_PTV_TILE_API_KEY: ${{ secrets.TESTENV_PTV_TILE_API_KEY }}
         run: |
-          if [ -n "$TESTENV_SUPABASE_ACCESS_TOKEN" ] && [ -n "$TESTENV_PTV_TILE_API_KEY" ]; then
-            echo "an=true" >> "$GITHUB_OUTPUT"
+          if [ -z "$TESTENV_SUPABASE_ACCESS_TOKEN" ]; then
+            echo "an=false" >> "$GITHUB_OUTPUT"
+            echo "kacheln=false" >> "$GITHUB_OUTPUT"
+            if [ -n "$TESTENV_PTV_TILE_API_KEY" ]; then
+              echo "::warning::Kachelschluessel ohne Zugriffstoken - ohne Function bleibt die Karte aus."
+            else
+              echo "::notice::Kartendienst nicht eingerichtet - die Karte bleibt aus."
+            fi
+            exit 0
+          fi
+          echo "an=true" >> "$GITHUB_OUTPUT"
+          if [ -n "$TESTENV_PTV_TILE_API_KEY" ]; then
+            echo "kacheln=true" >> "$GITHUB_OUTPUT"
+            # Nur fuer die Kacheln braucht die Seite den Kartendienst in der CSP.
             echo "KARTENDIENST=an" >> "$GITHUB_ENV"
-          elif [ -n "$TESTENV_SUPABASE_ACCESS_TOKEN$TESTENV_PTV_TILE_API_KEY" ]; then
-            echo "::warning::Kartendienst unvollstaendig (Zugriffstoken und Kachelschluessel gehoeren zusammen) - die Karte bleibt aus."
-            echo "an=false" >> "$GITHUB_OUTPUT"
           else
-            echo "::notice::Kartendienst nicht eingerichtet - die Karte bleibt aus."
-            echo "an=false" >> "$GITHUB_OUTPUT"
+            echo "kacheln=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Ohne Kachelschluessel: Route und Fahrzeiten ja, Kartenbild nein."
           fi
 
       - name: Gepruefter Stand von main?
@@ -173,7 +184,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
-          VITE_PTV_TILE_API_KEY: ${{ steps.karte.outputs.an == 'true' && secrets.TESTENV_PTV_TILE_API_KEY || '' }}
+          VITE_PTV_TILE_API_KEY: ${{ steps.karte.outputs.kacheln == 'true' && secrets.TESTENV_PTV_TILE_API_KEY || '' }}
         run: pnpm build
 
       - uses: supabase/setup-cli@v1
