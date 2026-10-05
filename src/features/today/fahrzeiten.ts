@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
-import { useRoute, type Routenquelle } from '@/lib/location/route';
+import type { Routenquelle } from '@/lib/location/route';
 import { fetchStandorte, startpunkt } from '@/features/tours/startort';
+import { usePlanungsroute } from '@/features/tours/fahrzeitfaktor';
 import {
-  PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
   routenplan,
@@ -150,7 +150,7 @@ export function useTagesfahrzeiten({
   // hinaus - eine ohne und gleich darauf eine mit Startpunkt.
   const start = useMemo(() => startpunkt(standorte.data?.[0]), [standorte.data]);
   const punkte = useMemo(() => routenplan(start, stopps).punkte, [start, stopps]);
-  const route = useRoute(punkte, PRAXISPROFIL, { aktiv: fragen && !standorte.isPending });
+  const route = usePlanungsroute(punkte, { aktiv: fragen && !standorte.isPending });
 
   return useMemo(() => {
     const veraltet = new Set(stopps.filter((s) => s.veraltet).map((s) => s.termin.id));

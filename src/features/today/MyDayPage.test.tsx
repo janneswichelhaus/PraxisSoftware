@@ -220,6 +220,12 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+// UBK-010: Fahrzeitfaktor 1,0 - die Zahlen des Kartendienstes bleiben
+// stehen; der Faktor selbst ist in `fahrzeitfaktor.test.ts` geprüft.
+vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
+  fetchFahrzeitfaktor: () => Promise.resolve(1),
+  saveFahrzeitfaktor: () => Promise.resolve(),
+}));
 
 /** Ein Punkt der Tagesroute zu einem Eintrag der Tagesliste. */
 function routenpunkt(

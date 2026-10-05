@@ -3,10 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import type { Coordinate } from '@/lib/location/contract';
-import { useRoute } from '@/lib/location/route';
 import { fetchDayPlan } from '@/features/today/api';
+import { usePlanungsroute } from './fahrzeitfaktor';
 import {
-  PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
   streckeZwischen,
@@ -90,7 +89,7 @@ export function useTagesstopps(tag: string, person: string, stand = '') {
  */
 export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
   const plan = useMemo(() => routenplan(start, stopps), [start, stopps]);
-  const route = useRoute(plan.punkte, PRAXISPROFIL);
+  const route = usePlanungsroute(plan.punkte);
   const abschnitte = route.data?.ok === true ? route.data.value.route.legs : null;
 
   const fahrzeiten = useMemo(

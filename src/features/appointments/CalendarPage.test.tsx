@@ -150,6 +150,13 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+// UBK-010: Der Fahrzeitfaktor der Praxis. 1,0 lässt die Zahlen des
+// Kartendienstes stehen; der eigene Fall unten setzt ihn.
+const fahrzeitfaktor = { wert: 1 };
+vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
+  fetchFahrzeitfaktor: () => Promise.resolve(fahrzeitfaktor.wert),
+  saveFahrzeitfaktor: () => Promise.resolve(),
+}));
 
 const { CalendarPage } = await import('./CalendarPage');
 const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
@@ -2625,6 +2632,7 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
     fetchStandorte.mockReset();
     fetchStandorte.mockResolvedValue([]);
     rufeFunktionAuf.mockReset();
+    fahrzeitfaktor.wert = 1;
   });
 
   /** Ein Punkt der Tagesroute: Kennung, Zeit, Koordinate - mehr gibt es nicht. */
@@ -2709,6 +2717,22 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       const [, koerper] = rufeFunktionAuf.mock.calls[0] as [string, Record<string, unknown>];
       expect(Object.keys(koerper).sort()).toEqual(['profile', 'waypoints']);
       expect(JSON.stringify(koerper)).not.toMatch(/Mustermann|2027|"a"/);
+    });
+  });
+
+  it('rechnet die Bloecke mit dem Fahrzeitfaktor der Praxis (UBK-010, ANN-237)', async () => {
+    await mitUhr(async () => {
+      fahrzeitfaktor.wert = 1.5;
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockResolvedValue([
+        punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&person=' + STAFF_ANNA);
+
+      // 12 Minuten des Kartendienstes mal 1,5.
+      const block = await screen.findByTestId('fahrweg');
+      expect(block).toHaveTextContent('Fahrweg etwa 18 Minuten, 08:42 bis 09:00');
     });
   });
 

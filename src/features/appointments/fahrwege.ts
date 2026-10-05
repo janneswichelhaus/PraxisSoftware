@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
-import { fordereRouteAn, type Routenquelle } from '@/lib/location/route';
+import type { Routenquelle } from '@/lib/location/route';
+import { usePlanungsrouten } from '@/features/tours/fahrzeitfaktor';
 import { fetchStandorte, startpunkt } from '@/features/tours/startort';
 import {
-  PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
   routenplan,
@@ -193,17 +193,9 @@ export function useFahrwege({
       punkteJeSpalte.filter((punkte) => punkte.length >= 2).map((p) => [JSON.stringify(p), p]),
     ).entries(),
   ];
-  const routen = useQueries({
-    queries: folgen.map(([, punkte]) => ({
-      // Derselbe Schlüssel wie `useRoute`: Die Übersicht teilt die Antwort.
-      queryKey: ['route', PRAXISPROFIL, punkte],
-      queryFn: ({ signal }: { signal: AbortSignal }) =>
-        fordereRouteAn(punkte, PRAXISPROFIL, signal),
-      staleTime: Infinity,
-      gcTime: 30_000,
-      retry: false,
-    })),
-  });
+  // Derselbe Schlüssel wie in Übersicht und Tour: Sie teilen die Antwort,
+  // und der Fahrzeitfaktor greift an derselben Stelle (UBK-010).
+  const routen = usePlanungsrouten(folgen.map(([, punkte]) => punkte));
   const routeZu = new Map(folgen.map(([schluessel], i) => [schluessel, routen[i]?.data]));
 
   if (!gefragt || zeitzone === null) return KEINE;
