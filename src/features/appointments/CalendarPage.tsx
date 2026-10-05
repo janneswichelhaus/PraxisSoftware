@@ -1,6 +1,7 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useFahrwege, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
+import type { Terminort, Wegfrage } from './wegpruefung';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -760,6 +761,38 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   );
 
   /** Übersetzt eine Zielspalte zurück in Person und Datum. */
+  /**
+   * „Passt es?“ zu einer Verschiebung (UBK-013): dieselbe Frage wie im
+   * Terminformular (UBK-012). Ein Hausbesuch behält seine Anschrift; seine
+   * Position steht in der Route seines bisherigen Tages. Ohne Recht auf die
+   * Tagesroute fragt das Ziehen nicht - die Trainingsbetreuung zieht ihre
+   * Termine ohne Auskunft, statt Abweisungen zu sammeln.
+   */
+  function wegfrageFuer(ziel: {
+    terminId: string;
+    spalteId: string;
+    startMinute: number;
+  }): Wegfrage | null {
+    const g = bekannt.current.get(ziel.terminId);
+    if (!g || !zone || g.eintrag.kind === 'internal') return null;
+    const e = g.eintrag;
+    const ort: Terminort =
+      e.appointment_type === 'home_visit'
+        ? { art: 'bestehend', terminId: e.id, datum: g.datum, person: e.staff_member_id }
+        : e.appointment_type === 'practice' && e.location_id
+          ? { art: 'practice', standortId: e.location_id }
+          : { art: 'video' };
+    return {
+      person: p.ansicht === 'tag' ? ziel.spalteId : e.staff_member_id,
+      datum: p.ansicht === 'tag' ? bereich.von : ziel.spalteId,
+      beginnMinute: ziel.startMinute,
+      endeMinute: ziel.startMinute + (g.endeMinute - g.beginnMinute),
+      ort,
+      ohneTermin: e.id,
+      zeitzone: zone,
+    };
+  }
+
   function ablegen(ziel: { terminId: string; spalteId: string; startMinute: number }) {
     // Nach dem Blaettern waehrend der Geste steht der Termin nicht mehr im
     // gezeigten Ausschnitt; sein Ursprung kommt dann aus dem Gedaechtnis
@@ -1617,6 +1650,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Auch bei offener Rückfrage darf weitergezogen werden (BEF-015):
           // Die nächste Geste ersetzt den Vorschlag, statt gesperrt zu sein.
           ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          // UBK-013: „Passt es?“ in Ziehvorschau und Rückfrage.
+          wegfrage={isTherapyStaff(user.roles) ? wegfrageFuer : undefined}
+          zeitzone={zone}
           // Rückfrage beim Verschieben (CAL-023, FIX-017): immer, auch bei
           // freier Zielzeit, gezeichnet im Gitter - und der Hinweis auf die
           // Arbeitszeit steht in ihr, nicht in einem zweiten Kasten dahinter.

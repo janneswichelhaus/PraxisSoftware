@@ -1,5 +1,6 @@
+import { useEffect, useState } from 'react';
 import { formatLocalTime } from './api';
-import type { Seite, Wegpruefung } from './wegpruefung';
+import { useWegpruefung, type Seite, type Wegfrage, type Wegpruefung } from './wegpruefung';
 
 /**
  * „Passt es?“ - An- und Weiterfahrt eines geplanten Termins (UBK-012,
@@ -12,12 +13,16 @@ import type { Seite, Wegpruefung } from './wegpruefung';
 export function Wegauskunft({
   pruefung,
   zeitzone,
-  kompakt = false,
+  variante = 'formular',
 }: {
   pruefung: Wegpruefung;
   zeitzone: string;
-  /** Für die Ziehvorschau (UBK-013): ohne Überschrift und Erklärsatz. */
-  kompakt?: boolean;
+  /**
+   * `formular`: mit Überschrift und dem Satz, dass es nur Auskunft ist.
+   * `rueckfrage`: in der Rückfrage nach dem Ziehen (UBK-013), knapper.
+   * `ziehen`: während der Geste - nur die Zeilen, nichts wird vorgelesen.
+   */
+  variante?: 'formular' | 'rueckfrage' | 'ziehen';
 }) {
   if (pruefung.stand === 'aus') return null;
 
@@ -28,13 +33,23 @@ export function Wegauskunft({
 
   return (
     <div
-      className={kompakt ? 'space-y-0.5' : 'mt-6 space-y-1'}
-      // Beim Ziehen ändert sich die Auskunft ständig; vorgelesen wird sie im
-      // Formular, nicht bei jedem Rasterschritt.
-      {...(kompakt ? {} : { role: 'status', 'aria-live': 'polite' as const })}
+      className={
+        variante === 'formular'
+          ? 'mt-6 space-y-1'
+          : variante === 'rueckfrage'
+            ? 'mt-3 space-y-0.5'
+            : 'space-y-0.5'
+      }
+      // Beim Ziehen ändert sich die Auskunft mit jedem Rasterschritt; vorgelesen
+      // wird sie im Formular und in der Rückfrage danach.
+      {...(variante === 'ziehen' ? {} : { role: 'status', 'aria-live': 'polite' as const })}
       data-testid="wegauskunft"
     >
-      {kompakt ? null : <p className="text-ink text-sm font-semibold">Passt es?</p>}
+      {variante === 'ziehen' ? null : (
+        <p className={`text-ink font-semibold ${variante === 'formular' ? 'text-sm' : 'text-xs'}`}>
+          Passt es?
+        </p>
+      )}
       {zeilen.map((zeile) => (
         <p key={zeile.text} className={`text-sm ${farbe[zeile.ton]}`}>
           {zeile.ton === 'gut' ? (
@@ -50,13 +65,50 @@ export function Wegauskunft({
           {zeile.detail ? <span className="text-ink-muted"> · {zeile.detail}</span> : null}
         </p>
       ))}
-      {zuKnapp && !kompakt ? (
+      {zuKnapp && variante === 'formular' ? (
         <p className="text-ink-muted text-xs">
           Nur Auskunft – der Termin lässt sich trotzdem anlegen.
         </p>
       ) : null}
     </div>
   );
+}
+
+/**
+ * Die Auskunft zu einer Frage, die sich laufend ändert - die Ziehvorschau und
+ * die Rückfrage danach (UBK-013). Beim Ziehen wird erst gefragt, wenn die
+ * Vorschau einen Augenblick stillsteht: Sonst ginge an jedem Rasterschritt
+ * eine Route und eine Prüfung hinaus.
+ */
+export function WegauskunftFuer({
+  frage,
+  zeitzone,
+  variante,
+  verzoegerung = 0,
+}: {
+  frage: Wegfrage | null;
+  zeitzone: string;
+  variante: 'rueckfrage' | 'ziehen';
+  /** Millisekunden Stillstand, bevor gefragt wird. */
+  verzoegerung?: number;
+}) {
+  const ruhig = useRuhig(frage, verzoegerung);
+  const pruefung = useWegpruefung(ruhig);
+  return <Wegauskunft pruefung={pruefung} zeitzone={zeitzone} variante={variante} />;
+}
+
+/** Der Wert, sobald er `ms` lang gleich geblieben ist; verglichen wird der Inhalt. */
+function useRuhig<T>(wert: T, ms: number): T {
+  const schluessel = JSON.stringify(wert);
+  const [ruhig, setRuhig] = useState<{ schluessel: string; wert: T }>({ schluessel, wert });
+  useEffect(() => {
+    if (ms <= 0) return;
+    const zeit = setTimeout(() => setRuhig({ schluessel, wert }), ms);
+    return () => clearTimeout(zeit);
+    // `wert` folgt seinem Schlüssel; ein neues Objekt mit gleichem Inhalt startet nichts neu.
+  }, [schluessel, ms]);
+  if (ms <= 0) return wert;
+  return ruhig.wert;
 }
 
 type Ton = 'gut' | 'knapp' | 'nicht' | 'still';

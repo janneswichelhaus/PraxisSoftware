@@ -150,6 +150,12 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+// UBK-013: die Serverrechnung von „Passt es?“.
+const checkTravelFit = vi.fn();
+vi.mock('./wegpruefung-api', () => ({
+  checkTravelFit: (fragen: unknown) => checkTravelFit(fragen) as Promise<unknown>,
+  fetchVisitPosition: () => Promise.resolve(null),
+}));
 // UBK-010: Der Fahrzeitfaktor der Praxis. 1,0 lässt die Zahlen des
 // Kartendienstes stehen; der eigene Fall unten setzt ihn.
 const fahrzeitfaktor = { wert: 1 };
@@ -1071,6 +1077,54 @@ describe('CalendarPage', () => {
         expect(kasten).not.toHaveTextContent(/außerhalb/);
         expect(updateAppointment).not.toHaveBeenCalled();
         expect(fetchAppointment).not.toHaveBeenCalled();
+      });
+
+      it('zeigt beim Ziehen und in der Rueckfrage „Passt es?“ - nur als Auskunft (UBK-013)', async () => {
+        fetchStandorte.mockResolvedValue([
+          {
+            id: ORT,
+            name: 'Hauptstandort Tuebingen',
+            street: 'Praxisweg',
+            house_number: '1',
+            postal_code: '72070',
+            city: 'Tuebingen',
+            lat: 48.5,
+            lon: 9.05,
+            geocode_precision: 'address',
+          },
+        ]);
+        fetchDayRoute.mockResolvedValue([]);
+        checkTravelFit.mockReset();
+        checkTravelFit.mockResolvedValue([
+          {
+            item_index: 0,
+            starts_at: '2027-05-12T08:00:00Z',
+            arrival_earliest_start: '2027-05-12T05:00:00Z',
+            arrival_slack_minutes: 180,
+            next_earliest_start: '2027-05-12T09:00:00Z',
+            departure_slack_minutes: 420,
+          },
+        ]);
+        const kachel = await tagesansicht();
+
+        // Ziehen, ohne loszulassen: Die Leiste unten nennt die neue Zeit.
+        fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+        fireEvent.pointerMove(window, { clientX: 150, clientY: 200 + EINE_STUNDE, button: 0 });
+        const leiste = await screen.findByTestId('zieh-auskunft');
+        expect(leiste).toHaveTextContent('Neu · 10:00–11:00 Uhr · Passt es?');
+        // Gefragt wird erst, wenn die Vorschau stillsteht - dann mit der neuen Zeit.
+        await waitFor(() => expect(leiste).toHaveTextContent('Anfahrt: passt · 180 Min. Luft'));
+        expect(checkTravelFit.mock.calls[0]![0]).toEqual([
+          expect.objectContaining({ starts_at: '2027-05-12T08:00:00.000Z', duration_minutes: 60 }),
+        ]);
+
+        fireEvent.pointerUp(window, { clientX: 150, clientY: 200 + EINE_STUNDE });
+        expect(screen.queryByTestId('zieh-auskunft')).toBeNull();
+        // In der Rückfrage steht dieselbe Auskunft; verschieben lässt es sich trotzdem.
+        const kasten = await rueckfrage();
+        await waitFor(() => expect(kasten).toHaveTextContent('Anfahrt: passt · 180 Min. Luft'));
+        expect(kasten).toHaveTextContent('Rückfahrt: passt · 420 Min. Luft');
+        expect(within(kasten).getByRole('button', { name: 'Verschieben' })).toBeEnabled();
       });
 
       it('zeichnet den alten Platz als Umriss und den neuen als Kachel im Gitter (FIX-017)', async () => {

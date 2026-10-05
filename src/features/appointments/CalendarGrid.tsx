@@ -37,6 +37,8 @@ import {
 } from './api';
 import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
+import { WegauskunftFuer } from './Wegauskunft';
+import type { Wegfrage } from './wegpruefung';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -297,7 +299,19 @@ export function CalendarGrid({
   laedtNach = false,
   fokus = null,
   startSpalte = null,
+  wegfrage,
+  zeitzone = null,
 }: {
+  /**
+   * „Passt es?“ zu einer Verschiebung (UBK-013): Die Seite weiß, welche
+   * Person, welcher Tag und welcher Ort zu einer Spalte gehören. Ohne Angabe
+   * zeigt das Ziehen keine Auskunft.
+   */
+  wegfrage?:
+    | ((ziel: { terminId: string; spalteId: string; startMinute: number }) => Wegfrage | null)
+    | undefined;
+  /** Zeitzone der Praxis - für die Uhrzeiten der Auskunft. */
+  zeitzone?: string | null;
   /**
    * Was in der Ecke über der Zeitachse steht (BEF-039): der Knopf zu Ansicht
    * und Filter. Die Ecke bleibt beim waagerechten Bildlauf stehen - damit ist
@@ -942,6 +956,19 @@ export function CalendarGrid({
                             fehler={vorschlag.fehler}
                             onBestaetigen={vorschlag.onBestaetigen}
                             onAbbrechen={vorschlag.onAbbrechen}
+                            auskunft={
+                              wegfrage && zeitzone ? (
+                                <WegauskunftFuer
+                                  frage={wegfrage({
+                                    terminId: vorschlag.terminId,
+                                    spalteId: vorschlag.spalteId,
+                                    startMinute: vorschlag.startMinute,
+                                  })}
+                                  zeitzone={zeitzone}
+                                  variante="rueckfrage"
+                                />
+                              ) : undefined
+                            }
                             className={[
                               'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
                               rechts ? 'right-1' : 'left-1',
@@ -1018,6 +1045,32 @@ export function CalendarGrid({
         Telefons, und lässt die Spalte der Auswahl frei. Außerhalb des
         Gitters, weil dessen waagerechter Bildlauf ein `sticky` darin an
         den Kasten statt an das Fenster bände. */}
+      {/* UBK-013: Beim Ziehen steht „Passt es?“ am unteren Rand - der Finger
+          deckt die Vorschau selbst zu. Gefragt wird, wenn die Vorschau einen
+          Augenblick stillsteht. */}
+      {ziehen.vorschau && wegfrage && zeitzone ? (
+        <div
+          data-testid="zieh-auskunft"
+          aria-hidden="true"
+          className="border-line-strong bg-surface rounded-card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 border-2 px-3 py-2 sm:bottom-4"
+        >
+          <p className="text-ink text-sm font-semibold tabular-nums">
+            Neu · {minuteZuZeit(ziehen.vorschau.startMinute)}–
+            {minuteZuZeit(ziehen.vorschau.startMinute + ziehen.vorschau.dauer)} Uhr · Passt es?
+          </p>
+          <WegauskunftFuer
+            frage={wegfrage({
+              terminId: ziehen.vorschau.terminId,
+              spalteId: ziehen.vorschau.spalteId,
+              startMinute: ziehen.vorschau.startMinute,
+            })}
+            zeitzone={zeitzone}
+            variante="ziehen"
+            verzoegerung={250}
+          />
+        </div>
+      ) : null}
+
       {auswahl ? (
         <AnlegenMenue
           auswahl={auswahl}

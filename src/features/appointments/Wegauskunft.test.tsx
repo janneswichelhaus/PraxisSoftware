@@ -117,7 +117,7 @@ describe('Wegauskunft', () => {
     render(
       <Wegauskunft
         zeitzone={ZONE}
-        kompakt
+        variante="ziehen"
         pruefung={{ stand: 'bereit', an: geprueft({}), weiter: { stand: 'offen' } }}
       />,
     );
