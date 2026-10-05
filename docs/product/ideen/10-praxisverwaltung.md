@@ -984,7 +984,7 @@ wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
 
 | | |
 |---|---|
-| Status | überführt → CAL-015c |
+| Status | überführt → CAL-015c, UBK-014 |
 | Quelle | Jannes, 2026-09-12 (Gespräch über die Oberfläche) |
 | Berührt | §8.1, §9, §20; CAL-015c (gebaut), ANN-050; `IDEA-PRX-008` (automatische Terminsuche), `IDEA-PRX-017` (Startort je Tag), `IDEA-PRX-031` (Gebietstage), `IDEA-PRX-032` (Fahrzeit je Weg); MAP-004, MAP-006; E12; B6 |
 
@@ -992,7 +992,10 @@ wurde — heute steht das nur als Absagegrund an jedem einzelnen Termin.
 Kalender scrollen, freie Lücke antippen — ist am 2026-09-12 als CAL-015c
 gebaut (ANN-050; `../../development/ARBEITSBEREICHE.md`, „Von der Verordnung
 in den Kalender"). Teil 2 — die Einfärbung, wo der Termin mit Fahrweg
-hineinpasst — hängt an MAP-006 und dem Gate aus ADR-019 und bleibt `notiert`.
+hineinpasst — ist am 2026-10-05 als UBK-014 gebaut (ANN-239): je freie Lücke
+passt / knapp / passt nicht, nur in der Tagesansicht; die offene Frage unten
+ist damit für den Anfang beantwortet (Abstufung je Lücke). Echte Adressen
+erst nach dem Gate aus ADR-019.
 
 **Idee.** Zwei Schritte statt eines Formulars. Erst **eine Person auswählen**,
 dann **durch den Kalender scrollen** und die Lücke selbst suchen. Der Kalender

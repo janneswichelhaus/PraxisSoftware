@@ -39,6 +39,7 @@ import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
 import { WegauskunftFuer } from './Wegauskunft';
 import type { Wegfrage } from './wegpruefung';
+import type { Lueckenstufe } from './lueckenfinder';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -239,6 +240,8 @@ export interface GitterSpalte {
    * Prüfung - ob es zu knapp ist, sagt der Fahrpuffer (ANN-097).
    */
   fahrwege?: readonly (Zeitband & { minuten: number; veraltet?: boolean })[];
+  /** Lückenfinder (UBK-014): die freien Lücken, eingefärbt. Ohne Angabe keine. */
+  luecken?: readonly GitterLuecke[] | undefined;
   /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
@@ -247,6 +250,35 @@ export interface GitterSpalte {
    * Ohne Ziel bleibt der Kopf eine Beschriftung.
    */
   ziel?: { to: string; beschriftung: string };
+}
+
+/**
+ * Farbe, Zeichen und Wort je Stufe des Lückenfinders. Farbe trägt nie allein
+ * (WCAG 1.4.1): Das Wort steht immer dabei. Dieselben Grenzen wie der
+ * Wegbalken (ANN-195, `luftStufe`).
+ */
+const lueckenDarstellung: Record<
+  Exclude<Lueckenstufe, 'laedt'>,
+  { flaeche: string; zeichen: string; text: string }
+> = {
+  passt: { flaeche: 'bg-accent-soft/70 text-accent', zeichen: '✓', text: 'passt' },
+  knapp: { flaeche: 'bg-warnung-soft text-warnung', zeichen: '!', text: 'knapp' },
+  nicht: { flaeche: 'bg-danger-soft/70 text-danger', zeichen: '×', text: 'passt nicht' },
+  zu_kurz: { flaeche: 'bg-danger-soft/70 text-danger', zeichen: '×', text: 'zu kurz' },
+  ungeprueft: { flaeche: 'bg-surface-sunken text-ink-muted', zeichen: '?', text: 'nicht geprüft' },
+};
+
+/**
+ * Eine freie Lücke, eingefärbt vom Lückenfinder (UBK-014, ANN-239): passt,
+ * knapp oder passt nicht - mit Fahrweg vom Termin davor und zum Termin
+ * danach. Nur Auskunft: Die Fläche darunter bleibt antippbar.
+ */
+export interface GitterLuecke {
+  vonMinute: number;
+  bisMinute: number;
+  stufe: Lueckenstufe;
+  /** Frühester Beginn als „hh:mm“. */
+  ab: string | null;
 }
 
 export interface GitterEintrag {
@@ -258,6 +290,12 @@ export interface GitterEintrag {
   ziehbar: boolean;
   /** Gerade angelegt - beim Zurückkommen aus dem Formular hervorgehoben (FIX-016). */
   neu?: boolean;
+  /**
+   * Belegt, aber nicht gemeint: Mit Patientenfilter stehen die übrigen
+   * Termine als neutrale, gestrichelte Kachel da, statt zu verschwinden
+   * (BEF-053 Punkt 1, ANN-239) - eine Lücke sieht nur frei aus, wenn sie es ist.
+   */
+  zurueckgenommen?: boolean;
 }
 
 /**
@@ -822,6 +860,37 @@ export function CalendarGrid({
                     freie Fläche darunter bleibt eine Auswahl. Ragt der Weg in
                     den Termin davor, liegt die Kachel darüber; was sichtbar
                     bleibt, ist der Rest der Fahrt. */}
+                {/* UBK-014: Lücken unter Fahrwegen und Kacheln - eine Auskunft,
+                  die den Tipp auf die freie Fläche nicht abfängt. */}
+                {(s.luecken ?? []).map((l) => {
+                  const von = Math.max(l.vonMinute, fenster.vonMinute);
+                  const bis = Math.min(l.bisMinute, fenster.bisMinute);
+                  if (bis <= von || l.stufe === 'laedt') return null;
+                  const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
+                  const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
+                  const darstellung = lueckenDarstellung[l.stufe];
+                  const text =
+                    l.ab && (l.stufe === 'passt' || l.stufe === 'knapp')
+                      ? `${darstellung.text} ab ${l.ab}`
+                      : darstellung.text;
+                  return (
+                    <div
+                      key={`luecke-${l.vonMinute}`}
+                      data-testid="luecke"
+                      data-stufe={l.stufe}
+                      className={`${darstellung.flaeche} pointer-events-none absolute inset-x-0 overflow-hidden px-1.5 pt-0.5 text-xs leading-4 font-semibold`}
+                      style={{ top: `${oben}px`, height: `${hoehe}px` }}
+                    >
+                      <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
+                        {darstellung.zeichen} {text}
+                      </span>
+                      <span className="sr-only">
+                        {`Lücke ${minuteZuZeit(l.vonMinute)} bis ${minuteZuZeit(l.bisMinute)}: ${text}`}
+                      </span>
+                    </div>
+                  );
+                })}
+
                 {(s.fahrwege ?? []).map((w) => {
                   const von = Math.max(w.vonMinute, fenster.vonMinute);
                   const bis = Math.min(w.bisMinute, fenster.bisMinute);
@@ -1138,7 +1207,7 @@ function Kachel({
   // angetroffen, eine Fehlzeit und der alte Platz einer Verschiebung stehen
   // auf dem Seitengrund; abgesagt und der alte Platz zusätzlich gestrichelt.
   const abgesagt = eintrag.status === 'cancelled';
-  const zurueckgelassen = gedimmt || bisher;
+  const zurueckgelassen = gedimmt || bisher || gitter.zurueckgenommen === true;
   const aufGrund = abgesagt || eintrag.status === 'no_show' || eintrag.kind === 'internal';
   const zeile3 = unterzeile(eintrag);
   // BEF-072: So viele Zeilen, wie ganz hineinpassen - eine halb
@@ -1147,6 +1216,7 @@ function Kachel({
 
   const titel = [
     bisher ? 'Bisher' : null,
+    gitter.zurueckgenommen ? 'Belegt' : null,
     `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
     // Warum eine Kachel nicht zieht, steht dran - eine stumme Kachel sieht
     // aus wie ein Fehler (BEF-015).
@@ -1181,8 +1251,8 @@ function Kachel({
         ? 'border-line-strong'
         : 'border-line',
     // Nach der Randfarbe: Die Linie links behält ihre Statusfarbe, auch an
-    // einer hervorgehobenen Kachel.
-    statusLinie(eintrag),
+    // einer hervorgehobenen Kachel. Eine zurückgenommene Kachel ist neutral.
+    gitter.zurueckgenommen ? 'border-l-line-strong' : statusLinie(eintrag),
     // Bewusst NICHT `touch-none` (UX-010): Der Bildlauf bleibt beim Browser;
     // das Verschieben beginnt erst nach dem langen Druck.
     ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : '',

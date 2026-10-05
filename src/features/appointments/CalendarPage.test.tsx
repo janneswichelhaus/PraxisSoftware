@@ -152,9 +152,10 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
 }));
 // UBK-013: die Serverrechnung von „Passt es?“.
 const checkTravelFit = vi.fn();
+const fetchVisitPosition = vi.fn(() => Promise.resolve(null as unknown));
 vi.mock('./wegpruefung-api', () => ({
   checkTravelFit: (fragen: unknown) => checkTravelFit(fragen) as Promise<unknown>,
-  fetchVisitPosition: () => Promise.resolve(null),
+  fetchVisitPosition: () => fetchVisitPosition(),
 }));
 // UBK-010: Der Fahrzeitfaktor der Praxis. 1,0 lässt die Zahlen des
 // Kartendienstes stehen; der eigene Fall unten setzt ihn.
@@ -2025,7 +2026,7 @@ describe('CalendarPage', () => {
   describe('AKTE-003: Patientenfilter aus der Akte', () => {
     const ANDERE = '66666666-6666-4666-8666-000000000002';
 
-    it('zeigt nur die Termine der uebergebenen Patient:in', async () => {
+    it('hebt die Termine der Patient:in hervor und zeigt andere als belegt (BEF-053, ANN-239)', async () => {
       fetchAppointments.mockResolvedValue([
         eintrag(),
         eintrag({
@@ -2039,15 +2040,21 @@ describe('CalendarPage', () => {
       ]);
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
 
-      expect(await screen.findByRole('button', { name: /Max Mustermann/ })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Erika Beispiel/ })).toBeNull();
+      const eigene = await screen.findByRole('button', { name: /Max Mustermann/ });
+      expect(eigene.className).not.toContain('border-dashed');
+      // Bis BEF-053 verschwand dieser Termin - und seine Zeit sah frei aus.
+      const andere = screen.getByRole('button', { name: /Erika Beispiel/ });
+      expect(andere.className).toContain('border-dashed');
+      expect(andere).toHaveAttribute('title', expect.stringMatching(/^Belegt/));
     });
 
     it('nennt den Filter und den Namen aus den geladenen Terminen', async () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
 
       const hinweis = await screen.findByRole('status');
-      expect(hinweis).toHaveTextContent('Nur die Termine von Max Mustermann');
+      expect(hinweis).toHaveTextContent(
+        'Termine von Max Mustermann sind hervorgehoben; andere Zeiten sind als belegt markiert.',
+      );
       expect(within(hinweis).getByRole('link', { name: 'Zur Akte' })).toHaveAttribute(
         'href',
         `/patienten/${PATIENT}/termine`,
@@ -2060,7 +2067,7 @@ describe('CalendarPage', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Filter aufheben' }));
 
-      await waitFor(() => expect(screen.queryByText(/Nur die Termine von/)).toBeNull());
+      await waitFor(() => expect(screen.queryByText(/sind hervorgehoben/)).toBeNull());
     });
 
     it('erklaert eine leere Ansicht mit dem Filter statt mit dem Tag', async () => {
@@ -2792,6 +2799,80 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       // 12 Minuten des Kartendienstes mal 1,5.
       const block = await screen.findByTestId('fahrweg');
       expect(block).toHaveTextContent('Fahrweg etwa 18 Minuten, 08:42 bis 09:00');
+    });
+  });
+
+  it('faerbt mit gewaehlter Patient:in die freien Luecken (UBK-014, ANN-239)', async () => {
+    await mitUhr(async () => {
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchWorkingHours.mockResolvedValue([
+        { id: 'w', staff_member_id: STAFF_ANNA, weekday: 3, starts_at: '08:00', ends_at: '13:00' },
+      ]);
+      fetchVisitPosition.mockResolvedValue({ lat: 48.53, lon: 9.07 });
+      fetchAppointments.mockResolvedValue([
+        eintrag({ appointment_type: 'home_visit', location_id: null }),
+      ]);
+      fetchDayRoute.mockImplementation((_datum: string, person: string) =>
+        Promise.resolve(
+          person === STAFF_ANNA
+            ? [
+                punkt(
+                  '77777777-7777-4777-8777-000000000001',
+                  '2027-05-12T07:00:00.000Z',
+                  '2027-05-12T08:00:00.000Z',
+                  48.51,
+                ),
+              ]
+            : [],
+        ),
+      );
+      rufeFunktionAuf.mockImplementation(
+        (aufgabe: string, koerper: { origins?: unknown[]; destinations?: unknown[] }) =>
+          Promise.resolve(
+            aufgabe === 'matrix'
+              ? {
+                  ok: true,
+                  quelle: 'anbieter',
+                  value: {
+                    durationsSeconds: (koerper.origins ?? []).map(() =>
+                      (koerper.destinations ?? []).map(() => 900),
+                    ),
+                  },
+                }
+              : route('anbieter', 12),
+          ),
+      );
+      checkTravelFit.mockReset();
+      checkTravelFit.mockImplementation((items: { index: number }[]) =>
+        Promise.resolve(
+          items.map((it) => ({
+            item_index: it.index,
+            starts_at: it.index === 0 ? '2027-05-12T06:20:00Z' : '2027-05-12T08:20:00Z',
+            arrival_earliest_start: null,
+            arrival_slack_minutes: 0,
+            next_earliest_start: null,
+            departure_slack_minutes: it.index === 0 ? -15 : 40,
+          })),
+        ),
+      );
+      rendern(
+        `/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}&patient=66666666-6666-4666-8666-0000000000aa`,
+      );
+
+      const anna = await screen.findByRole('group', { name: /^Anna Beispiel/ });
+      await waitFor(() => expect(within(anna).getAllByTestId('luecke')).toHaveLength(2));
+      const [frueh, spaeter] = within(anna).getAllByTestId('luecke');
+      // 08:00-09:00 vor dem Besuch: Der Weg vom Startort reicht nicht.
+      expect(frueh).toHaveAttribute('data-stufe', 'nicht');
+      expect(frueh).toHaveTextContent('× passt nicht');
+      // 10:00-13:00: passt ab 10:20.
+      expect(spaeter).toHaveAttribute('data-stufe', 'passt');
+      expect(spaeter).toHaveTextContent('✓ passt ab 10:20');
+      expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
+        /Freie Lücken: ✓ passt, ! knapp, × passt nicht/,
+      );
+      // ADR-011: In der Adresse steht nur die Kennung.
+      expect(window.location.search).not.toMatch(/Mustermann/);
     });
   });
 

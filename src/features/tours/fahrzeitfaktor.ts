@@ -160,3 +160,21 @@ export function usePlanungsmatrix(
     select: auswahl,
   });
 }
+
+/** Mehrere Matrizen auf einmal (Lückenfinder, je Spalte hin und zurück). */
+export function usePlanungsmatrizen(
+  anfragen: readonly { origins: readonly Coordinate[]; destinations: readonly Coordinate[] }[],
+) {
+  const faktor = useFahrzeitfaktor();
+  const auswahl = useCallback(
+    (antwort: Matrixergebnis) => planungsmatrix(antwort, faktor ?? FAHRZEITFAKTOR_VOREINSTELLUNG),
+    [faktor],
+  );
+  return useQueries({
+    queries: anfragen.map(({ origins, destinations }) => ({
+      ...matrixAbfrage(origins, destinations, PRAXISPROFIL),
+      enabled: faktor !== null && matrixZulaessig(origins, destinations),
+      select: auswahl,
+    })),
+  });
+}

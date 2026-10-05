@@ -2,6 +2,7 @@ import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useFahrwege, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
 import type { Terminort, Wegfrage } from './wegpruefung';
+import { useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -31,6 +32,7 @@ import {
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
+  formatLocalTime,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
@@ -49,6 +51,7 @@ import {
   type GitterAuswahl,
   type GitterEintrag,
   type GitterFokus,
+  type GitterLuecke,
   type GitterSpalte,
 } from './CalendarGrid';
 import { TerminPanel } from './TerminPanel';
@@ -672,6 +675,79 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     aktiv: isTherapyStaff(user.roles),
   });
 
+  // UBK-014, ANN-239: Lückenfinder - mit gewählter Patient:in färbt die
+  // Tagesansicht die freien Lücken. Nur ab heute, nur in der Tagesansicht,
+  // nur für die Praxisrollen (Tagesroute und Adresse der Akte).
+  const lueckenSpalten = useMemo((): LueckenSpalte[] => {
+    if (p.ansicht !== 'tag' || !p.patient || !zone || bereich.von < heute) return [];
+    return tagesPersonen.map((t) => ({
+      id: t.staff_member_id,
+      person: t.staff_member_id,
+      baender: arbeitszeitBekannt
+        ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
+        : null,
+      belegt: [
+        ...eintraege
+          .filter(
+            (e) =>
+              e.staff_member_id === t.staff_member_id &&
+              e.status !== 'cancelled' &&
+              dayKey(e.starts_at, zone) === bereich.von,
+          )
+          .map((e) => ({
+            vonMinute: minutesOfDay(e.starts_at, zone),
+            bisMinute: minutesOfDay(e.ends_at, zone),
+          })),
+        ...belegtFuer(t.staff_member_id, bereich.von),
+      ],
+    }));
+    // Die Bänder hängen an den geladenen Arbeitszeiten und Belegungen.
+  }, [
+    p.ansicht,
+    p.patient,
+    zone,
+    bereich.von,
+    heute,
+    tagesPersonen,
+    arbeitszeitBekannt,
+    wochenplanDaten,
+    ausnahmenDaten,
+    eintraege,
+    belegtDaten,
+  ]);
+  const luecken = useLueckenfinder({
+    spalten: lueckenSpalten,
+    datum: bereich.von,
+    patientId: p.patient,
+    zeitzone: zone ?? null,
+    dauer: TERMINFENSTER_MINUTEN,
+    aktiv: isTherapyStaff(user.roles),
+    abMinute: bereich.von === heute && jetztMinute !== null ? jetztMinute : 0,
+  });
+  const lueckenHinweis =
+    p.ansicht !== 'tag'
+      ? 'Freie Lücken mit Fahrweg zeigt die Tagesansicht.'
+      : bereich.von < heute
+        ? null
+        : luecken.stand === 'nicht_verortet'
+          ? 'Die Adresse ist nicht verortet – Lücken nicht geprüft.'
+          : luecken.stand === 'laedt'
+            ? 'Freie Lücken werden geprüft …'
+            : luecken.stand === 'bereit'
+              ? `Freie Lücken: ✓ passt, ! knapp, × passt nicht – mit Fahrweg vom Termin davor und zum Termin danach, ${TERMINFENSTER_MINUTEN} Minuten Termin. Nur Auskunft.${
+                  luecken.ungeprueft ? ' Einige Lücken ließen sich nicht prüfen.' : ''
+                }`
+              : null;
+  const lueckenDer = (spalte: string): GitterLuecke[] | undefined =>
+    luecken.stand === 'bereit'
+      ? (luecken.jeSpalte.get(spalte) ?? []).map((l) => ({
+          vonMinute: l.vonMinute,
+          bisMinute: l.bisMinute,
+          stufe: l.stufe,
+          ab: l.ab && zone ? formatLocalTime(l.ab, zone) : null,
+        }))
+      : undefined;
+
   const spaltenModell: GitterSpalte[] =
     p.ansicht === 'tag'
       ? tagesPersonen.map((t) => ({
@@ -685,6 +761,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             : null,
           belegt: belegtFuer(t.staff_member_id, bereich.von),
           fahrwege: fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
+          luecken: lueckenDer(t.staff_member_id),
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
       : wochenTage.map((tag) => ({
@@ -713,7 +790,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // ohnehin vollständig, und eine eigene Serverabfrage je Patient:in wäre ein
   // zweiter Weg zu denselben Daten. Was sichtbar ist, entscheidet unverändert
   // die RLS (ADR-004).
-  const sichtbar = p.patient ? nachPerson.filter((e) => e.patient_id === p.patient) : nachPerson;
+  //
+  // BEF-053 Punkt 1 (ANN-239): Die übrigen Termine bleiben als „belegt“
+  // stehen, statt zu verschwinden - sonst sähe beim Planen jede Zeit frei aus.
+  const sichtbar = nachPerson;
 
   // Der Name für die Filteranzeige stammt aus den geladenen Terminen und nicht
   // aus einer zusätzlichen Abfrage: Wer aus der Akte kommt, landet auf einem
@@ -735,6 +815,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // gezogen: Die Geste liest den Termin über die Sicht der Praxis.
     ziehbar: e.status === 'confirmed' && e.kind !== 'training' && darfAendern,
     ...(e.id === neuerTermin ? { neu: true } : {}),
+    ...(p.patient && e.patient_id !== p.patient ? { zurueckgenommen: true } : {}),
   }));
 
   /**
@@ -1532,15 +1613,23 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           role="status"
           className="border-line-strong bg-surface-sunken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
         >
-          <p className="text-ink text-sm">
-            Nur die Termine von{' '}
-            <strong>
-              {gefilterterName
-                ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
-                : 'einer Patient:in'}
-            </strong>
-            . Andere Termine dieses Zeitraums sind ausgeblendet.
-          </p>
+          <div className="min-w-0 space-y-1">
+            <p className="text-ink text-sm">
+              Termine von{' '}
+              <strong>
+                {gefilterterName
+                  ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
+                  : 'einer Patient:in'}
+              </strong>{' '}
+              sind hervorgehoben; andere Zeiten sind als belegt markiert.
+            </p>
+            {/* UBK-014: was die Farben der Lücken heißen - und wann es keine gibt. */}
+            {lueckenHinweis ? (
+              <p className="text-ink-muted text-sm" data-testid="lueckenfinder-hinweis">
+                {lueckenHinweis}
+              </p>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-2">
             <ButtonLink to={`/patienten/${p.patient}/termine`} variant="secondary">
               Zur Akte
@@ -1625,7 +1714,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {/* Der Leerzustand steht über dem Raster und nennt den Filter
           (KAL-26) - unter 1 250 px Raster sah ihn niemand. Nicht während
           ein neuer Ausschnitt lädt: Dann stünde der alte Zustand da. */}
-      {rasterDa && !laedtNach && gitterEintraege.length === 0 ? (
+      {rasterDa && !laedtNach && gitterEintraege.every((g) => g.zurueckgenommen === true) ? (
         <EmptyState title={leerTitel(p)} />
       ) : null}
 
