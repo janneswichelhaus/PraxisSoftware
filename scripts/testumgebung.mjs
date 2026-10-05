@@ -20,7 +20,9 @@
  * Die reinen Funktionen hält `scripts/testumgebung.test.mjs` fest. Kein
  * Befehl gibt einen Schlüssel oder ein Kennwort aus.
  */
+import dns from 'node:dns';
 import { writeFile } from 'node:fs/promises';
+import net from 'node:net';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -299,6 +301,12 @@ async function main([befehl, argument]) {
   }
 
   if (befehl === 'pruefen' && argument) {
+    // Nur IPv4, wie `ssh -4` im Workflow: Der Runner hat kein IPv6, und
+    // Node probiert sonst beide Familien parallel mit 250 ms je Versuch. Am
+    // 2026-10-05 lief die IPv4-Verbindung zu Uberspace darüber in ETIMEDOUT,
+    // obwohl das Hochladen eine Sekunde vorher geklappt hatte.
+    dns.setDefaultResultOrder('ipv4first');
+    net.setDefaultAutoSelectFamily(false);
     const fehler = await pruefeAuslieferung({
       adresse: argument,
       tuerKennwort: env.TESTENV_TUER_PASSWORD || null,
