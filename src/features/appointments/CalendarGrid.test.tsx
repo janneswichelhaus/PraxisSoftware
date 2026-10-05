@@ -182,3 +182,41 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     expect(rueck).toHaveTextContent('Rückweg etwa 18 Minuten, 11:00 bis 11:18');
   });
 });
+
+describe('Lückenfinder im Gitter (UBK-014)', () => {
+  it('setzt das Wort der letzten Lücke unter den Rückweg, sonst läge es darunter', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Anna Beispiel',
+            baender: [],
+            fahrwege: [{ vonMinute: 600, bisMinute: 615, minuten: 15, rueckweg: true }],
+            luecken: [
+              { vonMinute: 540, bisMinute: 570, stufe: 'zu_kurz', ab: null },
+              { vonMinute: 600, bisMinute: 660, stufe: 'nicht', ab: null },
+            ],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+
+    const [frueh, letzte] = screen.getAllByTestId('luecke-wort');
+    expect(frueh).toHaveTextContent('× zu kurz');
+    expect(frueh!.style.marginTop).toBe('');
+    // 15 Minuten Rückweg bei 80 px je Stunde.
+    expect(letzte).toHaveTextContent('× passt nicht');
+    expect(letzte!.style.marginTop).toBe('20px');
+    expect(letzte).toHaveClass('block');
+  });
+});

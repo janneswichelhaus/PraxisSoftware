@@ -883,6 +883,18 @@ export function CalendarGrid({
                   const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
                   const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
                   const darstellung = lueckenDarstellung[l.stufe];
+                  // Die letzte Lücke beginnt mit dem Rückweg: Ihr Wort steht
+                  // darunter, sonst läge es unter dem Block.
+                  const rueckweg = (s.fahrwege ?? []).find(
+                    (w) => w.rueckweg === true && w.vonMinute <= von && w.bisMinute > von,
+                  );
+                  const versatz = rueckweg
+                    ? minuteZuPixel(
+                        Math.min(rueckweg.bisMinute, bis),
+                        fenster.vonMinute,
+                        stundenHoehe,
+                      ) - oben
+                    : 0;
                   const text =
                     l.ab && (l.stufe === 'passt' || l.stufe === 'knapp')
                       ? `${darstellung.text} ab ${l.ab}`
@@ -895,7 +907,12 @@ export function CalendarGrid({
                       className={`${darstellung.flaeche} pointer-events-none absolute inset-x-0 overflow-hidden px-1.5 pt-0.5 text-xs leading-4 font-semibold`}
                       style={{ top: `${oben}px`, height: `${hoehe}px` }}
                     >
-                      <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
+                      <span
+                        aria-hidden="true"
+                        data-testid="luecke-wort"
+                        className={hoehe - versatz >= 16 ? 'block' : 'hidden'}
+                        style={versatz > 0 ? { marginTop: `${versatz}px` } : undefined}
+                      >
                         {darstellung.zeichen} {text}
                       </span>
                       <span className="sr-only">
