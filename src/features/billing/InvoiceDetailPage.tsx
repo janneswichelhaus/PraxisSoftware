@@ -55,6 +55,7 @@ import {
   monatsname,
   personLabel,
   zahlungsTon,
+  zeitraumText,
 } from './anzeige';
 import { Zahlungsformular } from './Zahlungsformular';
 import { Zahlungsstorno } from './Zahlungsstorno';
@@ -92,7 +93,8 @@ function titel(ansicht: Rechnungsansicht): string {
 function beschreibung(ansicht: Rechnungsansicht): string {
   const dokument = ansicht.document;
   return [
-    monatsname(dokument.period_month),
+    // ABR-032: der Leistungszeitraum, ältere Snapshots nennen den Monat.
+    zeitraumText(dokument.service_period) ?? monatsname(dokument.period_month),
     // Snapshots mit `schema_version` 1 und 2 tragen keinen Bereich.
     dokument.service_area ? bereichLabels[dokument.service_area] : null,
     formatEuro(dokument.totals.total_cents, dokument.currency),

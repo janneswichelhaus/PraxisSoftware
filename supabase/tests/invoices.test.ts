@@ -110,7 +110,9 @@ async function termin(opts: {
       STAFF_ANNA,
       LOCATION,
       opts.stundeImMonat,
-      opts.grundlage === undefined ? GRUNDLAGE_FRISCH : opts.grundlage,
+      // ABR-032: ohne Angabe keine Grundlage, damit der Monat die Klammer
+      // bleibt; die Klammer je Verordnung prueft invoice-per-basis.test.ts.
+      opts.grundlage === undefined ? null : opts.grundlage,
       users.ownerTherapist,
     ],
   );
@@ -454,7 +456,18 @@ describe('Rechnung', () => {
       expect(diagnose).toBeTruthy();
       expect(ziel).toBeTruthy();
 
-      const rechnung = await ausgestellt();
+      // ABR-032: Die Verordnung steht auf der Rechnung ihrer Grundlage.
+      await leistung(KATALOG.kg, { stundeImMonat: 30, grundlage: GRUNDLAGE_FRISCH });
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.create_invoice_draft_for_basis($1::uuid) as id',
+        [GRUNDLAGE_FRISCH],
+      );
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      const { rows: dok } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        entwurf[0]!.id,
+      ]);
+      const rechnung = dok[0]!.rechnung;
       expect(rechnung.document.treatment_bases).toHaveLength(1);
       expect(JSON.stringify(rechnung.document)).toContain(diagnose);
       expect(JSON.stringify(rechnung.document)).not.toContain(ziel);

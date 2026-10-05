@@ -404,18 +404,16 @@ describe('transfer_appointments_to_treatment_basis', () => {
       'select public.record_billable_services($1::uuid, $2::jsonb)',
       [abgerechnet, JSON.stringify([{ catalog_item_id: KATALOG_KG, quantity: 1 }])],
     );
-    // Der Monat des Termins, nicht der von heute: In den ersten Stunden eines
-    // Monats liegt der Termin von vor 26 Stunden im Vormonat (gefunden in
-    // POR-EPIC-001, 2026-10-01 Berliner Zeit).
-    const { rows: monat } = await asPostgres<{ monat: string }>(
-      `select to_char(date_trunc('month', a.starts_at at time zone 'Europe/Berlin'), 'YYYY-MM-DD') as monat
-         from public.appointments a where a.id = $1`,
+    // ABR-032: Die Rechnung fasst die Leistungen der Grundlage des Termins
+    // zusammen, nicht eines Monats.
+    const { rows: grundlage } = await asPostgres<{ id: string }>(
+      'select a.treatment_basis_id as id from public.appointments a where a.id = $1',
       [abgerechnet],
     );
     const { rows: entwurf } = await asUserCommitted<{ id: string }>(
       users.office,
-      'select public.create_invoice_draft($1::uuid, $2::date) as id',
-      [patients.erika, monat[0]!.monat],
+      'select public.create_invoice_draft_for_basis($1::uuid) as id',
+      [grundlage[0]!.id],
     );
     await asUserCommitted(users.office, 'select public.issue_invoice($1::uuid)', [entwurf[0]!.id]);
 

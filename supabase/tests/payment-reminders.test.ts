@@ -33,7 +33,6 @@ const { users, organizationId, patients } = SEED;
 
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
-const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
 const KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
 
 const ENTWURF = 'select public.create_invoice_draft($1::uuid, $2::date) as id';
@@ -96,7 +95,8 @@ async function ausgestellteRechnung(): Promise<{ id: string; nummer: string; bet
          at time zone 'Europe/Berlin',
        $5, now(), $6
      ) returning id`,
-    [organizationId, patients.erika, STAFF_ANNA, LOCATION, GRUNDLAGE_FRISCH, users.ownerTherapist],
+    // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+    [organizationId, patients.erika, STAFF_ANNA, LOCATION, null, users.ownerTherapist],
   );
 
   await asUserCommitted(
@@ -413,14 +413,7 @@ describe('Zahlungserinnerung', () => {
              at time zone 'Europe/Berlin',
            $5, now(), $6
          ) returning id`,
-        [
-          organizationId,
-          patients.erika,
-          STAFF_ANNA,
-          LOCATION,
-          GRUNDLAGE_FRISCH,
-          users.ownerTherapist,
-        ],
+        [organizationId, patients.erika, STAFF_ANNA, LOCATION, null, users.ownerTherapist],
       );
       await asUserCommitted(
         users.ownerTherapist,

@@ -386,6 +386,13 @@ const kandidatSchema = z.object({
   // BEF-018: Die Zeile sagt nicht nur, dass ein Entwurf steht — sie führt
   // auch hin. Ohne die Kennung war er in der Liste darunter zu suchen.
   draft_id: z.string().nullable(),
+  // ABR-032: Mit Grundlage ist die Verordnung die Klammer der Rechnung
+  // (ANN-077 Fassung 2); ohne bleibt es der Monat.
+  treatment_basis_id: z.string().nullable().default(null),
+  basis_kind: z.string().nullable().default(null),
+  basis_issued_on: z.string().nullable().default(null),
+  first_performed_on: z.string().nullable().default(null),
+  last_performed_on: z.string().nullable().default(null),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -439,6 +446,10 @@ const rechnungSchema = z.object({
   // Storniert ist ein abgeleiteter Zustand: Es gibt ein Stornodokument zu
   // dieser Rechnung (ABR-003c, ANN-079). An der Rechnung steht dazu nichts.
   cancelled: z.boolean(),
+  /** Die Verordnung als Klammer (ABR-032); null: Monat oder Training. */
+  treatment_basis_id: z.string().nullable().default(null),
+  basis_kind: z.string().nullable().default(null),
+  basis_issued_on: z.string().nullable().default(null),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
@@ -463,6 +474,8 @@ export async function fetchRechnungen(): Promise<Rechnung[]> {
 const dokumentSchema = z.object({
   schema_version: z.number(),
   period_month: z.string(),
+  // ABR-032 (schema_version 5): erster und letzter Leistungstag.
+  service_period: z.object({ from: z.string(), to: z.string() }).nullable().optional(),
   // ABR-010: der Leistungsbereich im Snapshot (ADR-009 Punkt 17). `optional`,
   // weil Snapshots mit `schema_version` 1 und 2 ihn noch nicht tragen.
   service_area: z.enum(['therapy', 'training']).optional(),
@@ -523,6 +536,8 @@ const dokumentSchema = z.object({
       currency: z.string(),
       tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
       tax_rate_permille: z.number(),
+      // ABR-032 (schema_version 5): Anteil am Terminhonorar (ANN-233).
+      session_fee: z.boolean().optional(),
     }),
   ),
   tax_groups: z.array(
@@ -608,19 +623,25 @@ export async function createEntwurf(
   kandidat: Pick<
     Kandidat,
     'patient_id' | 'training_relationship_id' | 'period_month' | 'service_area'
-  >,
+  > &
+    Partial<Pick<Kandidat, 'treatment_basis_id'>>,
 ): Promise<string> {
   const { data, error } = (
-    kandidat.training_relationship_id
-      ? await getSupabase().rpc('create_training_invoice_draft', {
-          p_training_relationship_id: kandidat.training_relationship_id,
-          p_period_month: kandidat.period_month,
+    kandidat.treatment_basis_id
+      ? // ABR-032: eine Rechnung je Behandlungsgrundlage (ANN-077 Fassung 2).
+        await getSupabase().rpc('create_invoice_draft_for_basis', {
+          p_treatment_basis_id: kandidat.treatment_basis_id,
         })
-      : await getSupabase().rpc('create_invoice_draft', {
-          p_patient_id: kandidat.patient_id,
-          p_period_month: kandidat.period_month,
-          p_service_area: kandidat.service_area,
-        })
+      : kandidat.training_relationship_id
+        ? await getSupabase().rpc('create_training_invoice_draft', {
+            p_training_relationship_id: kandidat.training_relationship_id,
+            p_period_month: kandidat.period_month,
+          })
+        : await getSupabase().rpc('create_invoice_draft', {
+            p_patient_id: kandidat.patient_id,
+            p_period_month: kandidat.period_month,
+            p_service_area: kandidat.service_area,
+          })
   ) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');

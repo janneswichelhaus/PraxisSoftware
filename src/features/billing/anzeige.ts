@@ -118,3 +118,98 @@ export function diagnoseText(basis: {
   const teile = [basis.diagnosis_icd10, basis.diagnosis].filter(Boolean);
   return teile.length > 0 ? `Diagnose: ${teile.join(' ')}` : null;
 }
+
+/**
+ * Die Klammer einer Rechnung oder eines Kandidaten (ABR-032, ANN-077
+ * Fassung 2): die Verordnung, wenn eine dahintersteht, sonst der Monat.
+ */
+export function klammerText(eintrag: {
+  basis_kind?: string | null;
+  basis_issued_on?: string | null;
+  period_month: string;
+}): string {
+  return eintrag.basis_kind && eintrag.basis_issued_on
+    ? grundlageText(eintrag.basis_kind, eintrag.basis_issued_on)
+    : monatsname(eintrag.period_month);
+}
+
+/**
+ * Der Leistungszeitraum: „22.07.2026 bis 27.08.2026", an einem Tag nur der
+ * Tag. Ohne Angabe (Snapshots vor `schema_version` 5) `null`.
+ */
+export function zeitraumText(
+  zeitraum: { from: string; to: string } | null | undefined,
+): string | null {
+  if (!zeitraum) return null;
+  return zeitraum.from === zeitraum.to
+    ? formatDate(zeitraum.from)
+    : `${formatDate(zeitraum.from)} bis ${formatDate(zeitraum.to)}`;
+}
+
+/** Eine Zeile des Rechnungsdokuments, soweit die Gruppierung sie braucht. */
+interface Dokumentzeile {
+  performed_on: string;
+  code: string;
+  label: string;
+  item_kind: string;
+  quantity: number;
+  unit_price_cents: number;
+  line_total_cents: number;
+  currency: string;
+  tax_treatment: string;
+  tax_rate_permille: number;
+}
+
+export interface Rechnungsposition {
+  code: string;
+  label: string;
+  item_kind: string;
+  unit_price_cents: number;
+  currency: string;
+  menge: number;
+  summe_cents: number;
+  /** Behandlungstage, aufsteigend, je Tag einmal. */
+  tage: string[];
+}
+
+/**
+ * Gleiche Positionen mit ihren Behandlungstagen (ABR-032, ADR-009 Punkt 23).
+ *
+ * So erwarten Beihilfe und private Versicherung die Rechnung: je Heilmittel
+ * eine Position mit Einzelpreis, Menge und den Tagen, an denen es erbracht
+ * wurde. Gleich ist eine Position mit demselben Kürzel, derselben
+ * Bezeichnung, demselben Einzelpreis und derselben steuerlichen Einordnung;
+ * verschiedene Anteile am Terminhonorar bleiben getrennte Positionen. Die
+ * Beträge kommen unverändert aus dem Dokument - hier wird nur addiert, was
+ * dort schon steht.
+ */
+export function positionenMitTagen(zeilen: readonly Dokumentzeile[]): Rechnungsposition[] {
+  const gruppen = new Map<string, Rechnungsposition>();
+  for (const z of zeilen) {
+    const schluessel = [
+      z.code,
+      z.label,
+      z.item_kind,
+      z.unit_price_cents,
+      z.currency,
+      z.tax_treatment,
+      z.tax_rate_permille,
+    ].join('|');
+    const gruppe = gruppen.get(schluessel) ?? {
+      code: z.code,
+      label: z.label,
+      item_kind: z.item_kind,
+      unit_price_cents: z.unit_price_cents,
+      currency: z.currency,
+      menge: 0,
+      summe_cents: 0,
+      tage: [],
+    };
+    gruppe.menge += z.quantity;
+    gruppe.summe_cents += z.line_total_cents;
+    if (!gruppe.tage.includes(z.performed_on)) gruppe.tage.push(z.performed_on);
+    gruppen.set(schluessel, gruppe);
+  }
+  for (const gruppe of gruppen.values()) gruppe.tage.sort();
+  return [...gruppen.values()];
+}

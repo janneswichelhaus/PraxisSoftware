@@ -22,7 +22,8 @@ const KATALOG = {
   mt: 'cccccccc-cccc-4ccc-8ccc-000000000003',
 } as const;
 
-const ENTWURF = 'select public.create_invoice_draft($1::uuid, $2::date, $3::text) as id';
+// ABR-032: eine Rechnung je Behandlungsgrundlage.
+const ENTWURF = 'select public.create_invoice_draft_for_basis($1::uuid) as id';
 const AUSSTELLEN = 'select public.issue_invoice($1::uuid) as nummer';
 const DOKUMENT = 'select public.get_invoice($1::uuid) as rechnung';
 
@@ -62,13 +63,6 @@ async function leistung(position: string, stundeImMonat: number): Promise<void> 
   );
 }
 
-async function monat(): Promise<string> {
-  const { rows } = await asPostgres<{ monat: string }>(
-    `select to_char(date_trunc('month', (now() at time zone 'Europe/Berlin')::date), 'YYYY-MM-DD') as monat`,
-  );
-  return rows[0]!.monat;
-}
-
 interface Grundlage {
   kind: string;
   issued_on: string;
@@ -97,14 +91,12 @@ describe('Diagnose auf der Rechnung (ANN-229)', () => {
   it('nennt ICD-10 und Diagnose der Verordnung im Entwurf - ohne Therapieziel', async () => {
     await leistung(KATALOG.kg, 30);
     const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
-      patients.erika,
-      await monat(),
-      'therapy',
+      GRUNDLAGE_FRISCH,
     ]);
     const { rows } = await asUser<Rechnung>(users.office, DOKUMENT, [entwurf[0]!.id]);
     const dokument = rows[0]!.rechnung.document;
 
-    expect(dokument.schema_version).toBe(4);
+    expect(dokument.schema_version).toBe(5);
     expect(dokument.treatment_bases).toHaveLength(1);
     const grundlage = dokument.treatment_bases[0]!;
     expect(grundlage.diagnosis_icd10).toBe('M54.2');
@@ -117,9 +109,7 @@ describe('Diagnose auf der Rechnung (ANN-229)', () => {
   it('haelt den ausgestellten Snapshot fest, auch wenn sich die Grundlage aendert', async () => {
     await leistung(KATALOG.kg, 30);
     const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
-      patients.erika,
-      await monat(),
-      'therapy',
+      GRUNDLAGE_FRISCH,
     ]);
     const id = entwurf[0]!.id;
     await asUserCommitted(users.office, AUSSTELLEN, [id]);

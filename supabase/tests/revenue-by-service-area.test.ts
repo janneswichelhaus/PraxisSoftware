@@ -44,9 +44,6 @@ const { users, organizationId, patients } = SEED;
 const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
 const LOCATION = '33333333-3333-4333-8333-000000000001';
 
-/** Behandlungsgrundlage aus supabase/seed.sql: Erika, 10 Termine, 0 genutzt. */
-const GRUNDLAGE_FRISCH = '88888888-8888-4888-8888-000000000004';
-
 /** Katalogpositionen aus supabase/seed.sql, Preisliste 2026. */
 const KATALOG = {
   /** Krankengymnastik, 45,00 Euro, steuerfreie Heilbehandlung. */
@@ -124,7 +121,8 @@ async function termin(stundeImMonat: number): Promise<string> {
       STAFF_ANNA,
       LOCATION,
       stundeImMonat,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
@@ -157,7 +155,8 @@ async function ausfalltermin(stundeImMonat: number): Promise<string> {
       STAFF_ANNA,
       LOCATION,
       stundeImMonat,
-      GRUNDLAGE_FRISCH,
+      // ABR-032: ohne Grundlage, damit der Monat die Klammer bleibt.
+      null,
       users.ownerTherapist,
     ],
   );
