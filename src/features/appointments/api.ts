@@ -1491,6 +1491,46 @@ export function dayKey(isoTimestamp: string, timeZone: string): string {
   return todayInTimeZone(timeZone, new Date(isoTimestamp));
 }
 
+/**
+ * Der Zeitpunkt zu einer Ortszeit der Praxis (UBK-012): Kalendertag und
+ * Minuten seit Mitternacht in `timeZone`, als ISO-Zeitstempel in UTC.
+ *
+ * Das Gegenstück zu `dayKey` und `minutesOfDay`. Der Versatz der Zone wird am
+ * Zielzeitpunkt bestimmt und einmal nachgeprüft - so trägt die Rechnung auch
+ * über eine Zeitumstellung.
+ */
+export function zeitpunktIn(datum: string, minute: number, timeZone: string): string {
+  const [jahr, monat, tag] = datum.split('-').map(Number) as [number, number, number];
+  const alsUtc = Date.UTC(jahr, monat - 1, tag, Math.floor(minute / 60), minute % 60);
+  let ziel = alsUtc - zonenversatz(alsUtc, timeZone);
+  ziel = alsUtc - zonenversatz(ziel, timeZone);
+  return new Date(ziel).toISOString();
+}
+
+/** Ortszeit minus UTC in Millisekunden zum Zeitpunkt `ms`. */
+function zonenversatz(ms: number, timeZone: string): number {
+  const teile = new Intl.DateTimeFormat('en-GB', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+    timeZone,
+  }).formatToParts(new Date(ms));
+  const zahl = (typ: string) => Number(teile.find((t) => t.type === typ)?.value ?? '0');
+  const ortszeit = Date.UTC(
+    zahl('year'),
+    zahl('month') - 1,
+    zahl('day'),
+    zahl('hour'),
+    zahl('minute'),
+    zahl('second'),
+  );
+  return ortszeit - Math.floor(ms / 1000) * 1000;
+}
+
 /** Minuten seit Mitternacht in einer Zeitzone - Grundlage der Anordnung. */
 export function minutesOfDay(isoTimestamp: string, timeZone: string): number {
   const teile = new Intl.DateTimeFormat('en-GB', {

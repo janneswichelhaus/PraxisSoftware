@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -51,6 +51,8 @@ import {
   zurueckZumTermin,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
+import { Wegauskunft } from './Wegauskunft';
+import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import { speicherfehlerText, terminFehlerliste, terminFeldfehler } from './terminformular';
 
 /** Die Felder, an denen sich eine Eingabe vom gespeicherten Termin unterscheiden kann. */
@@ -179,6 +181,28 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
   const gespeichert = termin.data ? appointmentToFormValues(termin.data) : null;
   /** Der gespeicherte Tag des Termins - nur ein anderer Tag davor ist ein Zurücklegen. */
   const vorbefuelltesDatum = gespeichert?.date ?? '';
+
+  // UBK-012: „Passt es?“. Ein Hausbesuch, der Hausbesuch bleibt, behält seine
+  // Anschrift (ANN-003); seine Position steht in der Route seines Tages.
+  const wegfrage = useMemo(() => {
+    const t = termin.data;
+    if (!t || t.kind === 'internal' || !user.organizationTimeZone) return null;
+    const bestehend =
+      t.appointment_type === 'home_visit'
+        ? {
+            terminId: t.id,
+            datum: appointmentToFormValues(t).date,
+            person: t.staff_member_id,
+          }
+        : null;
+    return frageAusFormular(werte, {
+      patientId: t.patient_id,
+      zeitzone: user.organizationTimeZone,
+      bestehend,
+      ohneTermin: t.id,
+    });
+  }, [werte, termin.data, user.organizationTimeZone]);
+  const weg = useWegpruefung(wegfrage);
 
   /**
    * Weicht etwas vom gespeicherten Termin ab (TER-05)?
@@ -566,6 +590,11 @@ export function EditAppointmentPage({ user }: { user: CurrentUser }) {
             </>
           }
         />
+
+        {/* UBK-012: An- und Weiterfahrt, nur Auskunft. */}
+        {user.organizationTimeZone ? (
+          <Wegauskunft pruefung={weg} zeitzone={user.organizationTimeZone} />
+        ) : null}
 
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -
             über den Knöpfen (TER-05). */}

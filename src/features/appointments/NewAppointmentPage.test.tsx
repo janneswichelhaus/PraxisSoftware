@@ -81,6 +81,31 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useParams: () => ({ patientId: PATIENT_ID }),
 }));
 
+// UBK-012: Die Prüfung selbst steht in `wegpruefung.test.tsx`; hier zählt,
+// welche Frage das Formular stellt und was es dazu zeigt.
+const wegfragen = vi.hoisted((): { letzte: unknown } => ({ letzte: null }));
+vi.mock('./wegpruefung', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useWegpruefung: (frage: unknown) => {
+    wegfragen.letzte = frage;
+    return frage === null
+      ? { stand: 'aus' }
+      : {
+          stand: 'bereit',
+          an: {
+            stand: 'geprueft',
+            luft: -5,
+            stufe: 'nicht',
+            fruehester: '2027-05-12T07:20:00Z',
+            fahrtMinuten: 18,
+            nachbar: 'termin',
+            nachbarZeit: '2027-05-12T06:45:00Z',
+          },
+          weiter: { stand: 'offen' },
+        };
+  },
+}));
+
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
 const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
 
@@ -400,6 +425,33 @@ describe('NewAppointmentPage', () => {
       expect(neuLaden).toHaveBeenCalledWith({ queryKey });
     }
     neuLaden.mockRestore();
+  });
+
+  it('sagt „Passt es?“, sobald Person, Zeit und Ort feststehen - ohne zu sperren (UBK-012)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    expect(screen.queryByText('Passt es?')).toBeNull();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'practice');
+    await zeitenSetzen(user);
+
+    expect(await screen.findByText('Passt es?')).toBeInTheDocument();
+    expect(
+      screen.getByText('Anfahrt: zu knapp um 5 Min., frühester Beginn 09:20 Uhr'),
+    ).toBeInTheDocument();
+    expect(wegfragen.letzte).toMatchObject({
+      person: STAFF_ANNA,
+      datum: '2027-05-12',
+      beginnMinute: 9 * 60,
+      endeMinute: 10 * 60,
+      ort: { art: 'practice', standortId: ORT_HAUPT },
+    });
+
+    // Nur Auskunft: Anlegen geht trotzdem.
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
   });
 
   it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {

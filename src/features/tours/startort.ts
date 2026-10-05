@@ -39,6 +39,19 @@ export function startpunkt(standort: Standort | undefined): Coordinate | null {
   return { lat: standort.lat, lon: standort.lon };
 }
 
+/**
+ * Wo der Tag am Rad beginnt und endet (UBK-012): der Startort der Praxis, ohne
+ * ihn beides `null`. Von hier rechnen „Passt es?“ und der Lückenfinder die
+ * Anfahrt zum Arbeitsbeginn und die Rückfahrt zum Arbeitsende.
+ */
+export function tagesorte(standorte: readonly Standort[] | undefined): {
+  start: Coordinate | null;
+  ende: Coordinate | null;
+} {
+  const praxis = startpunkt(standorte?.[0]);
+  return { start: praxis, ende: praxis };
+}
+
 export async function saveTourStart(
   standortId: string,
   anschrift: { street: string; houseNumber: string; postalCode: string; city: string },
