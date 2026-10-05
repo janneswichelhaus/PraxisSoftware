@@ -194,6 +194,14 @@ describe('location-provider', () => {
 
     expect(antwort.status).toBe(204);
     expect(antwort.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    // Jede Kopfzeile, die supabase-js bei `functions.invoke` setzt, muss
+    // erlaubt sein - sonst schickt der Browser den POST nie ab.
+    const erlaubt = (antwort.headers.get('Access-Control-Allow-Headers') ?? '')
+      .split(',')
+      .map((kopf) => kopf.trim().toLowerCase());
+    expect(erlaubt).toEqual(
+      expect.arrayContaining(['authorization', 'apikey', 'content-type', 'x-client-info']),
+    );
   });
 
   it('nimmt nur POST', async () => {
