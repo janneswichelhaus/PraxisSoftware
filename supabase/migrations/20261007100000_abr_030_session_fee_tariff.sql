@@ -121,6 +121,11 @@ create index patient_fee_agreements_org_idx
 revoke all on public.patient_fee_agreements from anon, authenticated;
 alter table public.patient_fee_agreements enable row level security;
 
+insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
+values ('patient_fee_agreements', 'abrechnungsdaten', 'ueber_elterndatensatz',
+        'Honorarvereinbarungen einer Patientin (ABR-030). Fallen mit der Akte (on delete cascade), nachdem die festgeschriebenen Honorare mit ihren Terminen geloescht sind (FK restrict).',
+        19);
+
 -- Unveraenderlich bis auf den einen Weg, der die Person wechselt: das
 -- Zusammenfuehren zweier Akten (merge_patients).
 create or replace function app.patient_fee_agreement_stays_frozen()

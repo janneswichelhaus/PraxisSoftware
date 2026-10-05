@@ -75,6 +75,7 @@ const vorschlag: Vorschlag[] = [
     tax_rate_permille: 190,
     service_area: 'training',
     suggested: false,
+    in_session_fee: false,
   },
 ];
 
@@ -96,6 +97,7 @@ const leistungen: Leistung[] = [
     tax_treatment: 'taxable',
     tax_rate_permille: 190,
     status: 'billable',
+    session_fee: false,
   },
 ];
 

@@ -1014,6 +1014,8 @@ const vorschlagSchema = z.object({
   tax_rate_permille: z.number(),
   service_area: z.enum(['therapy', 'training']),
   suggested: z.boolean(),
+  /** Heilmittel am Behandlungstermin: geht im Terminhonorar auf (ABR-031). */
+  in_session_fee: z.boolean().default(false),
 });
 
 export type Vorschlag = z.infer<typeof vorschlagSchema>;
@@ -1050,6 +1052,8 @@ const leistungSchema = z.object({
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
   status: z.enum(['billable', 'invoiced']),
+  /** Anteil am Terminhonorar statt Katalogpreis (ABR-031, ANN-233). */
+  session_fee: z.boolean().default(false),
 });
 
 export type Leistung = z.infer<typeof leistungSchema>;
@@ -1067,6 +1071,9 @@ export async function fetchLeistungen(): Promise<Leistung[]> {
 
 export class KontingentAusgeschoepft extends Error {}
 
+/** Für den Leistungstag gilt weder ein Tarif noch eine Vereinbarung (ABR-031). */
+export class KeinTerminhonorar extends Error {}
+
 export async function recordLeistungen(
   appointmentId: string,
   positionen: { catalog_item_id: string; quantity: number }[],
@@ -1077,6 +1084,7 @@ export async function recordLeistungen(
   })) as { error: { message?: string } | null };
 
   if (error?.message?.includes('quantity exhausted')) throw new KontingentAusgeschoepft();
+  if (error?.message?.includes('no session fee')) throw new KeinTerminhonorar();
   if (error) throw new Error('Die Leistungen konnten nicht erfasst werden.');
 }
 

@@ -291,14 +291,15 @@ describe('Einnahmen je Leistungsart', () => {
     });
 
     it('schluesselt eine gemischte Rechnung je Kennzeichen und Satz auf', async () => {
-      // KG ist steuerfrei (45,00), SZL steuerpflichtig zu 19 Prozent (60,00).
+      // KG steuerfrei mit dem Terminhonorar (140,00, ABR-031), SZL ohne
+      // Heilmittel mit eigenem Preis, steuerpflichtig zu 19 Prozent (60,00).
       await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
       const zeilen = await auswertung('accrual');
 
       const frei = zeile(zeilen, 'exempt_healthcare');
       const pflichtig = zeile(zeilen, 'taxable', 190);
 
-      expect(betraege(frei!)).toEqual({ brutto: 4500, steuer: 0, netto: 4500 });
+      expect(betraege(frei!)).toEqual({ brutto: 14000, steuer: 0, netto: 14000 });
       // 6000 * 190 / 1190 = 957,98 -> 958.
       expect(betraege(pflichtig!)).toEqual({ brutto: 6000, steuer: 958, netto: 5042 });
     });
@@ -383,20 +384,21 @@ describe('Einnahmen je Leistungsart', () => {
     });
 
     it('verteilt eine Teilzahlung centgenau auf die Steuergruppen', async () => {
-      // 45,00 steuerfrei und 60,00 steuerpflichtig, gezahlt werden 50,00.
+      // 140,00 steuerfrei (Terminhonorar) und 60,00 steuerpflichtig, gezahlt
+      // werden 50,00.
       const { id } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
       await buche(id, 5000);
 
       const zeilen = await auswertung('cash');
       expect(summe(zeilen)).toBe(5000);
 
-      // 5000 * 4500 / 10500 = 2142,857... -> 2142 plus den einen offenen Cent,
-      // weil ihr Rest der groessere ist. 5000 * 6000 / 10500 = 2857,14 -> 2857.
-      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(2143);
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(2857);
+      // 5000 * 14000 / 20000 = 3500 und 5000 * 6000 / 20000 = 1500, ohne Rest.
+      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(3500);
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(1500);
       // Steuer nur dort, wo das Dokument welche ausweist (Punkt 18).
       expect(betraege(zeile(zeilen, 'exempt_healthcare')!).steuer).toBe(0);
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(456);
+      // 1500 * 190 / 1190 = 239,49 -> 239.
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(239);
     });
 
     it('laesst die Rueckzahlung den Eingang genau aufheben', async () => {

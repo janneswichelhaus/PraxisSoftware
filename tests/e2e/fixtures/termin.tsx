@@ -181,6 +181,7 @@ const leistungen: LeistungenAmTermin = {
     { remedy: 'Krankengymnastik', prescribed_quantity: 10, used_quantity: bestaetigt ? 10 : 7 },
     { remedy: 'Wärmetherapie', prescribed_quantity: 10, used_quantity: bestaetigt ? 10 : 7 },
   ],
+  session_fee_cents: null,
 };
 
 function vorschlag(id: string, code: string, label: string, suggested: boolean): Vorschlag {
@@ -195,6 +196,7 @@ function vorschlag(id: string, code: string, label: string, suggested: boolean):
     tax_rate_permille: 0,
     service_area: 'therapy',
     suggested,
+    in_session_fee: true,
   };
 }
 

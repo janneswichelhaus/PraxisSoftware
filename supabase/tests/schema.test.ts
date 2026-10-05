@@ -108,6 +108,7 @@ describe('Schema-Invarianten', () => {
       'patient_questionnaire_responses',
       'patient_course_events',
       'patient_fee_agreements',
+      'appointment_session_fees',
       'therapy_reports',
       'waitlist_entries',
       'territories',

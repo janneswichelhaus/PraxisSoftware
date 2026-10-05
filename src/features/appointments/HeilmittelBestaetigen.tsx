@@ -6,9 +6,11 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
+import { formatEuro } from '@/lib/geld';
 import {
   fetchVorschlag,
   KeinKatalog,
+  KeinTerminhonorar,
   KontingentAusgeschoepft,
   recordLeistungen,
   type Vorschlag,
@@ -70,6 +72,14 @@ function Erfasst({ stand, user }: { stand: LeistungenAmTermin; user: CurrentUser
       </ul>
       {stand.recorded_by_name ? (
         <p className="text-ink-muted mt-1 text-xs">Bestätigt von {stand.recorded_by_name}.</p>
+      ) : null}
+      {/* ABR-031: Das Honorar liefert der Server nur den Rollen der
+          Abrechnung; für alle anderen bleibt die Zeile leer. */}
+      {stand.session_fee_cents !== null ? (
+        <p className="text-ink mt-2 text-sm">
+          Terminhonorar{' '}
+          <span className="font-medium tabular-nums">{formatEuro(stand.session_fee_cents)}</span>
+        </p>
       ) : null}
       <Kontingent positionen={stand.basis_items} />
       {kontingentErreicht(stand.basis_items) ? <KontingentHinweis user={user} /> : null}
@@ -173,7 +183,9 @@ function Auswahl({
               erfassen.isError
                 ? erfassen.error instanceof KontingentAusgeschoepft
                   ? 'Die Grundlage ist bereits ausgeschöpft. Bitte im Büro klären, auf welche Grundlage der Termin gehört.'
-                  : erfassen.error.message
+                  : erfassen.error instanceof KeinTerminhonorar
+                    ? 'Für diesen Tag gilt kein Terminhonorar. Bitte im Büro klären – die Praxisinhaber:in legt es in der Preisliste oder in der Akte fest.'
+                    : erfassen.error.message
                 : undefined
             }
             onBestaetigen={() => erfassen.mutateAsync(ausgewaehlt)}
