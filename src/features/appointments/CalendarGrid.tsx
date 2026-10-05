@@ -236,7 +236,7 @@ export interface GitterSpalte {
    * lang wie die Fahrzeit, endend am Beginn des Besuchs. Darstellung, keine
    * Prüfung - ob es zu knapp ist, sagt der Fahrpuffer (ANN-097).
    */
-  fahrwege?: readonly (Zeitband & { minuten: number })[];
+  fahrwege?: readonly (Zeitband & { minuten: number; veraltet?: boolean })[];
   /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
@@ -817,17 +817,22 @@ export function CalendarGrid({
                   return (
                     <div
                       key={`weg-${w.vonMinute}-${w.bisMinute}`}
-                      data-testid="fahrweg"
-                      className="border-accent/40 bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 text-xs leading-4 font-semibold"
+                      data-testid={w.veraltet ? 'fahrweg-veraltet' : 'fahrweg'}
+                      className={`${
+                        w.veraltet
+                          ? 'border-warnung bg-warnung-soft text-warnung'
+                          : 'border-accent/40 bg-accent-soft text-accent'
+                      } rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 text-xs leading-4 font-semibold`}
                       style={{ top: `${oben}px`, height: `${hoehe}px` }}
                     >
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
                       <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
-                        Weg ≈ {w.minuten} min
+                        {w.veraltet ? '! Adresse veraltet' : `Weg ≈ ${w.minuten} min`}
                       </span>
                       <span className="sr-only">
-                        Fahrweg etwa {w.minuten} Minuten, {minuteZuZeit(w.vonMinute)} bis{' '}
-                        {minuteZuZeit(w.bisMinute)}
+                        {w.veraltet
+                          ? `Fahrzeit nicht verfügbar: Die Adresse am Termin um ${minuteZuZeit(w.bisMinute)} ist veraltet`
+                          : `Fahrweg etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
                       </span>
                     </div>
                   );

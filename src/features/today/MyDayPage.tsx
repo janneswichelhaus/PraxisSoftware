@@ -66,6 +66,7 @@ import {
   naechsterWeg,
   tagesfortschritt,
   terminName,
+  VERALTET_TEXT,
   wegeDesTages,
   type Fokus,
   type LiegeHeute,
@@ -605,6 +606,9 @@ function MeinTag({
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }
         hauptaktion={hauptaktion}
+        hinweis={
+          fokus.art === 'besuch' && fahrzeiten.veraltet.has(termin.id) ? VERALTET_TEXT : null
+        }
       />
     );
   }
@@ -689,6 +693,7 @@ function MeinTag({
           jetztMarke={istHeute}
           zeitzone={zeitzone}
           anfahrten={fahrzeiten.anfahrten}
+          veraltet={fahrzeiten.veraltet}
           karte={karte()}
           haken={haken}
         />

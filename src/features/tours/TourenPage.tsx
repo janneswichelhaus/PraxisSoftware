@@ -215,6 +215,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               zwischen={(index) => (
                 <Fahrtabschnitt
                   sekunden={fahrten.zwischen[index]?.sekunden ?? null}
+                  meter={fahrten.zwischen[index]?.meter ?? null}
                   pruefung={fahrten.zwischen[index]?.pruefung ?? null}
                   zeitzone={zeitzone}
                   naechsterBeginn={stopps[index + 1]?.termin.starts_at}

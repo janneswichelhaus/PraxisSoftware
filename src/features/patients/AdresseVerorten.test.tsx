@@ -3,7 +3,8 @@ import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PatientsApi from './api';
 import type * as Geocode from '@/lib/location/geocode';
-import { renderWithProviders, testPatient } from '@/test-utils';
+import type * as AppointmentsApi from '@/features/appointments/api';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 /**
  * Adresse verorten (MAP-006a, ANN-016): nur auf Handlung, nur ohne
@@ -24,6 +25,20 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     setPatientAddressCoordinate: (...args: unknown[]) =>
       setPatientAddressCoordinate(...args) as Promise<void>,
+  };
+});
+
+// UBK-006: künftige Hausbesuche mit alter Anschrift und ihr Umstellen.
+const fetchVeralteteHausbesuche = vi.fn();
+const aktualisiereHausbesuchAdressen = vi.fn();
+vi.mock('@/features/appointments/api', async (importOriginal) => {
+  const actual = await importOriginal<typeof AppointmentsApi>();
+  return {
+    ...actual,
+    fetchVeralteteHausbesuche: (...args: unknown[]) =>
+      fetchVeralteteHausbesuche(...args) as unknown,
+    aktualisiereHausbesuchAdressen: (...args: unknown[]) =>
+      aktualisiereHausbesuchAdressen(...args) as unknown,
   };
 });
 
@@ -54,6 +69,10 @@ function treffer(precision: string, quelle = 'anbieter', unique = true, matchCou
 }
 
 beforeEach(() => {
+  fetchVeralteteHausbesuche.mockReset();
+  fetchVeralteteHausbesuche.mockResolvedValue([]);
+  aktualisiereHausbesuchAdressen.mockReset();
+  aktualisiereHausbesuchAdressen.mockResolvedValue(2);
   geocodiere.mockReset();
   setPatientAddressCoordinate.mockReset();
   setPatientAddressCoordinate.mockResolvedValue(undefined);
@@ -190,5 +209,65 @@ describe('AdresseVerorten', () => {
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent(satz);
     expect(meldung.textContent).not.toMatch(/Routenfunktion|Serverschlüssel|Anfrage nicht gültig/);
+  });
+
+  describe('UBK-006: nach dem Verorten die alten Hausbesuche mitfragen (ANN-236)', () => {
+    const besuch = (id: string) => ({
+      id,
+      starts_at: '2026-10-06T08:30:00Z',
+      ends_at: '2026-10-06T09:30:00Z',
+      staff_given_name: 'Jannes',
+      staff_family_name: 'Test',
+      visit_street: 'Altweg',
+      visit_house_number: '3',
+      visit_postal_code: '72070',
+      visit_city: 'Tübingen',
+      organization_time_zone: 'Europe/Berlin',
+    });
+
+    it('fragt nach dem Verorten, ob die kuenftigen Hausbesuche umgestellt werden', async () => {
+      geocodiere.mockResolvedValue(treffer('address'));
+      fetchVeralteteHausbesuche.mockResolvedValue([besuch('a'), besuch('b')]);
+      const user = testUser(['therapist']);
+      const { rerender } = renderWithProviders(<AdresseVerorten patient={OHNE} user={user} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));
+      await waitFor(() => expect(setPatientAddressCoordinate).toHaveBeenCalled());
+
+      // Die Akte lädt neu, jetzt mit Koordinate.
+      rerender(<AdresseVerorten patient={{ ...OHNE, geocode_precision: 'address' }} user={user} />);
+      expect(
+        await screen.findByText(/2 künftige Hausbesuche nennen noch die alte Anschrift/),
+      ).toBeInTheDocument();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Alle 2 auf die neue Anschrift umstellen' }),
+      );
+      await waitFor(() => expect(aktualisiereHausbesuchAdressen).toHaveBeenCalledWith(['a', 'b']));
+      expect(await screen.findByText(/Umgestellt/)).toBeInTheDocument();
+    });
+
+    it('fragt nicht, wenn nichts abweicht, und nicht ohne Recht an Terminen', async () => {
+      geocodiere.mockResolvedValue(treffer('address'));
+      fetchVeralteteHausbesuche.mockResolvedValue([besuch('a')]);
+      const ohneRecht = testUser(['trainer']);
+      const { rerender } = renderWithProviders(<AdresseVerorten patient={OHNE} user={ohneRecht} />);
+      await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));
+      await waitFor(() => expect(setPatientAddressCoordinate).toHaveBeenCalled());
+      rerender(
+        <AdresseVerorten patient={{ ...OHNE, geocode_precision: 'address' }} user={ohneRecht} />,
+      );
+      expect(screen.queryByText(/alte Anschrift/)).toBeNull();
+      expect(fetchVeralteteHausbesuche).not.toHaveBeenCalled();
+    });
+
+    it('fragt beim blossen Anzeigen einer verorteten Adresse nicht', () => {
+      renderWithProviders(
+        <AdresseVerorten
+          patient={{ ...OHNE, geocode_precision: 'address' }}
+          user={testUser(['therapist'])}
+        />,
+      );
+      expect(fetchVeralteteHausbesuche).not.toHaveBeenCalled();
+    });
   });
 });

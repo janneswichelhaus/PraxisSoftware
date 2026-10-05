@@ -8,7 +8,13 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { formatLocalTime, kalenderZumTermin } from '@/features/appointments/api';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
 import { dayPlanStatusLabels, dayPlanStatusTon, offenGrund, type DayPlanEntry } from './api';
-import { einordnung, nichtAbgeschlossen, terminName, type Anfahrt } from './tagesstart';
+import {
+  VERALTET_TEXT,
+  einordnung,
+  nichtAbgeschlossen,
+  terminName,
+  type Anfahrt,
+} from './tagesstart';
 
 /**
  * Wie ein Termin im Strahl steht: vor sich, hinter sich, ausgefallen - oder
@@ -108,6 +114,7 @@ export function Zeitstrahl({
   jetztMarke = true,
   zeitzone,
   anfahrten,
+  veraltet,
   karte,
   haken,
 }: {
@@ -123,6 +130,8 @@ export function Zeitstrahl({
   jetztMarke?: boolean;
   zeitzone: string;
   anfahrten: ReadonlyMap<string, Anfahrt>;
+  /** Termine mit veralteter Anschrift: keine Fahrzeit, ein Wort dazu (ANN-236). */
+  veraltet?: ReadonlySet<string>;
   /** Die Karte des ausgeklappten Termins. */
   karte: ReactNode;
   /**
@@ -156,7 +165,11 @@ export function Zeitstrahl({
               ? { anfahrt, vorher: anfahrt.vorher }
               : null;
           const beginn = Date.parse(termin.starts_at);
-          const grund = stand === 'liegengeblieben' ? 'Nicht abgeschlossen' : offenGrund(termin);
+          const grund =
+            stand === 'liegengeblieben'
+              ? 'Nicht abgeschlossen'
+              : (offenGrund(termin) ??
+                (stand === 'kommt' && veraltet?.has(termin.id) ? VERALTET_TEXT : null));
           const ziel = mitRueckweg(
             termin.kind === 'training'
               ? `/training/termine/${termin.id}`

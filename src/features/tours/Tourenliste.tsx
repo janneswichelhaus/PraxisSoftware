@@ -152,8 +152,16 @@ export function Tourenliste({
                   </p>
                   <p className="text-ink-muted text-sm">
                     {anschrift(stopp)}
-                    {stopp.position === null ? ' · ohne Kartenposition' : ''}
+                    {stopp.position === null && !stopp.veraltet ? ' · ohne Kartenposition' : ''}
                   </p>
+                  {/* ANN-236: Die Akte nennt inzwischen eine andere Anschrift -
+                      ohne Position, ohne Fahrzeit, bis der Termin umgestellt ist. */}
+                  {stopp.veraltet ? (
+                    <p className="text-warnung text-sm font-medium">
+                      <span aria-hidden="true">! </span>
+                      Fahrzeit nicht verfügbar – Adresse am Termin veraltet
+                    </p>
+                  ) : null}
                 </div>
                 {ziel ? (
                   <button

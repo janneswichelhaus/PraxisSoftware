@@ -140,6 +140,8 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
               { vonMinute: 528, bisMinute: 540, minuten: 12 },
               // Beginnt vor dem Fenster: nur der sichtbare Teil.
               { vonMinute: 470, bisMinute: 485, minuten: 15 },
+              // ANN-236: veraltete Anschrift - ein Warnblock, keine Zahl.
+              { vonMinute: 585, bisMinute: 600, minuten: 0, veraltet: true },
             ],
           },
         ]}
@@ -164,5 +166,13 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     expect(frueh!.style.top).toBe('0px');
     expect(within(frueh!).getByText('Weg ≈ 15 min')).toHaveClass('hidden');
     expect(frueh).toHaveTextContent('Fahrweg etwa 15 Minuten, 07:50 bis 08:05');
+
+    const veraltet = screen.getByTestId('fahrweg-veraltet');
+    expect(veraltet).toHaveTextContent('! Adresse veraltet');
+    expect(veraltet).toHaveTextContent(
+      'Fahrzeit nicht verfügbar: Die Adresse am Termin um 10:00 ist veraltet',
+    );
+    expect(veraltet).toHaveClass('border-warnung', 'pointer-events-none');
+    expect(veraltet).not.toHaveTextContent('Weg ≈');
   });
 });

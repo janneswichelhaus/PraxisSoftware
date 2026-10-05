@@ -48,6 +48,8 @@ export function HausbesucheMitAlterAdresse({
       });
       await queryClient.invalidateQueries({ queryKey: ['patient-appointments', patientId] });
       await queryClient.invalidateQueries({ queryKey: ['patient-next-appointment', patientId] });
+      // ANN-236: Mit der neuen Anschrift gibt es wieder eine Fahrzeit.
+      await queryClient.invalidateQueries({ queryKey: ['day-route'] });
     },
   });
 

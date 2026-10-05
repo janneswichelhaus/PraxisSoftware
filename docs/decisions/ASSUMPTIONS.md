@@ -2834,3 +2834,15 @@ Technik · offen · 2026-10-05 · Claude (UBK-EPIC-001) · — · Wiedervorlage:
 **Anker.** `FAHRWEGE_IM_KALENDER`, `fahrwegeAusRoute` und `useFahrwege` in `src/features/appointments/fahrwege.ts`; Darstellung `fahrwege` in `CalendarGrid.tsx`; Tests `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx` („Fahrwege als Bloecke“).
 
 **Änderungspfad.** Abschalten: `FAHRWEGE_IM_KALENDER = false` · Aufwand `klein`. Erst auf Tipp abrufen oder nur mit Personenfilter: die Bedingung `gefragt` in `useFahrwege` · Aufwand `klein`. Ohne ersten Weg vom Startort: `start` in `useFahrwege` auf `null` · Aufwand `klein`.
+
+### ANN-236 — Eine veraltete Anschrift am Termin ergibt keine Fahrzeit; nach dem Verorten fragt die Akte nach dem Umstellen
+
+Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Sichtung: Fahrzeit 10 statt 33 Minuten; „bau beides, (a) zuerst“) · erledigt · Wiedervorlage: —
+
+**Annahme.** (a) Nach einem erfolgreichen „Adresse verorten“ in der Akte fragt die Seite direkt mit, wenn künftige Hausbesuche noch die alte Anschrift tragen: „n künftige Hausbesuche nennen noch die alte Anschrift … Alle n auf die neue Anschrift umstellen“ – nur für Rollen, die Termine ändern, und nur auf Tipp; umgestellt wird mit Anschrift und Kartenposition aus der Akte. (b) `list_day_route` meldet je Stopp `address_outdated`, wenn ein künftiger bestätigter Behandlungs-Hausbesuch eine andere Anschrift trägt als die vollständige Anschrift der Akte – dieselbe Regel wie `list_home_visits_with_outdated_address` –, und liefert für ihn keine Koordinate. Übersicht und Tour sagen dort „Fahrzeit nicht verfügbar – Adresse am Termin veraltet“, der Kalender zeigt statt des Fahrwegs einen gelben Block „! Adresse veraltet“ (15 Minuten, nur Darstellung). Vergangene oder begonnene Termine behalten ihre Anschrift und Koordinate (ANN-003).
+
+**Begründung.** Eine Fahrzeit aus einer veralteten Koordinate sieht aus wie eine richtige und verleitet zur falschen Planung (Sichtung 2026-10-05: 10 Minuten statt rund einer halben Stunde); ungeprüft ist nicht „kurz“ (MAP-004b, ADR-019 Punkt 38 sinngemäß). Der Snapshot am Termin bleibt die Regel (ANN-003, ABN-004); umgestellt wird weiter nie von selbst. Die neue Angabe ist ein Ja/Nein ohne Namen und Adresse (ADR-019 Punkt 12, ADR-004 Projektionen).
+
+**Anker.** `supabase/migrations/20261008100000_ubk_007_day_route_address_outdated.sql`; `UmstellenNachVerorten` in `src/features/patients/AdresseVerorten.tsx`; `VERALTET_TEXT` in `src/features/today/tagesstart.ts`; `veralteteWege` in `src/features/appointments/fahrwege.ts`; Tests `supabase/tests/day-route.test.ts`, `AdresseVerorten.test.tsx`, `fahrwege.test.ts`, `CalendarGrid.test.tsx`, `MyDayPage.test.tsx`.
+
+**Änderungspfad.** Ohne Warnblock im Kalender: `veralteteWege` nicht mehr aufnehmen · Aufwand `klein`. Beim Verorten automatisch umstellen statt fragen: `UmstellenNachVerorten` ruft das Umstellen selbst auf · Aufwand `klein`, berührt aber ANN-003 (vorher entscheiden). Die alte Koordinate trotzdem zeigen: die `case`-Zweige in `list_day_route` · Aufwand `klein`.

@@ -9,6 +9,7 @@ import {
   PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
+  streckeZwischen,
   routenplan,
   stoppsDesTages,
   type Stopp,
@@ -98,6 +99,7 @@ export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
         from: stopps[i]!.termin.id,
         to: stopp.termin.id,
         sekunden: fahrzeitZwischen(plan.index[i] ?? null, plan.index[i + 1] ?? null, abschnitte),
+        meter: streckeZwischen(plan.index[i] ?? null, plan.index[i + 1] ?? null, abschnitte),
       })),
     [stopps, plan.index, abschnitte],
   );
@@ -117,6 +119,7 @@ export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
   const nachVon = new Map((pruefung.data ?? []).map((p) => [p.from_appointment_id, p]));
   const zwischen = fahrzeiten.map((f) => ({
     sekunden: f.sekunden,
+    meter: f.meter,
     pruefung: nachVon.get(f.from) ?? null,
   }));
 

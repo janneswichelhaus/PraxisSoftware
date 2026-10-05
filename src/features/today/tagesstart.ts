@@ -260,6 +260,9 @@ export interface NaechsterWeg {
   fahrtMin: number;
 }
 
+/** ANN-236: statt einer Fahrzeit, wenn die Anschrift am Termin nicht mehr zur Akte passt. */
+export const VERALTET_TEXT = 'Fahrzeit nicht verfügbar – Adresse am Termin veraltet';
+
 /** Was zur Einordnung in der Nebenzeile steht - der Hausbesuch trägt kein Wort (ANN-192). */
 export function einordnung(termin: DayPlanEntry): string {
   // Eine Fehlzeit ohne Bezeichnung heißt in der Namenszeile schon „Fehlzeit"

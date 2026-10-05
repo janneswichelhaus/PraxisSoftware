@@ -402,7 +402,11 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   const hatVersorgungsangaben = Boolean(patient.remark || patient.primary_therapist_name);
   // UX-005e: Die Kartenposition ist eine Zeile, solange sie fehlt; verortet
   // steht sie nicht als Dauerzeile da (ANN-016).
-  const kartenpositionOffen = darfVerorten && !patient.geocode_precision;
+  // UBK-006 (ANN-236): Nach dem Verorten bleibt die Zeile stehen, bis die
+  // Rückfrage zu den künftigen Hausbesuchen beantwortet ist - sonst
+  // verschwände sie mit der neuen Koordinate, bevor sie gefragt hat.
+  const [ebenVerortet, setEbenVerortet] = useState(false);
+  const kartenpositionOffen = darfVerorten && (!patient.geocode_precision || ebenVerortet);
   const zugang = zugangMitStockwerk(patient.home_visit_access_note);
   const hatHausbesuchsangaben = Boolean(
     address || kartenpositionOffen || zugang.stockwerk || zugang.rest || patient.special_note,
@@ -430,7 +434,8 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
     <>
       {/* ABN-004: Nach einer Adressaenderung stehen hier die kuenftigen
           Hausbesuche, die noch die alte Anschrift tragen (ANN-003 Fassung 2). */}
-      <HausbesucheMitAlterAdresse patientId={patient.id} user={user} />
+      {/* Solange die Rückfrage am Verorten steht, nicht zweimal dieselbe Liste. */}
+      {ebenVerortet ? null : <HausbesucheMitAlterAdresse patientId={patient.id} user={user} />}
 
       {/* Akte entschlacken (2026-10-03, Entwurf 5i/5j): Karten statt zweier
           langer Spalten. Jede Karte steht für sich, ab 340 px nebeneinander;
@@ -503,7 +508,11 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
                   prüft set_patient_address_coordinate (ADR-004). */}
               {kartenpositionOffen ? (
                 <DetailRow label="Kartenposition">
-                  <AdresseVerorten patient={patient} />
+                  <AdresseVerorten
+                    patient={patient}
+                    user={user}
+                    onVerortet={() => setEbenVerortet(true)}
+                  />
                 </DetailRow>
               ) : null}
               {/* ANN-197: Die Etage ist der Anfang des Zugangshinweises, bis es

@@ -2097,3 +2097,19 @@ ausstehenden Sichtung zu ANN-116 und ANN-117 bestätigen.
 
 **Behoben.** Nach PTVs Client `ptv-logistics/clients-geocoding-osm-api`: `places/by-address`, Land als `country`, Antwort `places` mit `referencePosition`, `formattedAddress`, `category` und `type`. Die Genauigkeit kommt aus dem OSM-Haupttag (`highway` straßengenau, Ort/Postleitzahl/Grenze ortsgenau) und, für die Hausnummer, aus der Anschrift des Treffers: hausnummergenau nur, wenn die angefragte Nummer dort wiederkehrt. Nie höher als belegt – sonst fragt die Anwendung nach (ADR-019 Punkt 37).
 
+### BEF-126 — Eine Fahrzeit aus der alten Anschrift sieht aus wie eine richtige
+
+|          |                                                                                                                       |
+| -------- | --------------------------------------------------------------------------------------------------------------------- |
+| Datum    | 2026-10-05                                                                                                            |
+| Bereich  | Übersicht, Kalender (Fahrwege), Tour; Akte → Stammdaten „Adresse verorten“                                            |
+| Quelle   | Jannes, Sichtung auf der Test-Umgebung: zwei echte Adressen, 10 Minuten in der App, rund 30 bei Google Maps           |
+| Status   | erledigt in UBK-006/007 (2026-10-05)                                                                                  |
+| Berührt  | `list_day_route`, `AdresseVerorten.tsx`, `PatientMasterDataPage.tsx`, `fahrwege.ts`, `Zeitstrahl.tsx`; ANN-003, ANN-236 |
+
+**Beobachtung.** Nach dem Eintippen und Verorten neuer Adressen zeigt die App zwischen zwei Besuchen 10 Minuten.
+
+**Ursache.** Der eine Termin war ein Praxistermin – der Weg begann am Hauptstandort mit erfundener Koordinate. Der Hausbesuch trug noch die kopierte alte Anschrift samt Koordinate (ANN-003); das Verorten übernimmt die neue Koordinate nur in Termine mit der neuen Anschrift, und das Umstellen war ein eigener, leicht übersehener Schritt.
+
+**Behoben.** Nach dem Verorten fragt die Akte nach dem Umstellen; eine veraltete Anschrift am künftigen Hausbesuch ergibt keine Fahrzeit mehr, sondern den Hinweis „Adresse am Termin veraltet“ (ANN-236).
+
