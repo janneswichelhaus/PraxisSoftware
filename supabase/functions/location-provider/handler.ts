@@ -37,10 +37,15 @@ import type { Sitzungspruefung } from './sitzung.ts';
  * und antwortet mit Koordinaten, die der Aufrufer selbst geschickt hat. Eine
  * Herkunftsliste wäre hier eine Kontrolle, die nichts kontrolliert — die
  * Autorisierung liegt an der Sitzung.
+ *
+ * `x-client-info` schickt supabase-js bei jedem Aufruf mit. Fehlt es hier,
+ * lehnt der Browser nach der Vorabanfrage ab, und der eigentliche Aufruf
+ * erreicht die Function nie (Test-Umgebung, 2026-10-05: nur `OPTIONS 204`
+ * im Log, kein `POST`).
  */
 const CORS: Readonly<Record<string, string>> = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, apikey, content-type, x-client-info',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Max-Age': '86400',
 };
