@@ -32,7 +32,11 @@ interface Zeile {
   lon: number | null;
   geocode_precision: string | null;
   position_source: string;
+  address_outdated: boolean;
 }
+
+/** Ein Tag in der Zukunft - nur dort kann eine Adresse am Termin veraltet sein (ANN-236). */
+const KUENFTIG = new Date(Date.now() + 3 * 86_400_000).toISOString().slice(0, 10);
 
 async function termin(opts: {
   von: string;
@@ -42,6 +46,7 @@ async function termin(opts: {
   staff?: string;
   patient?: string;
   hausnummer?: string;
+  tag?: string;
 }): Promise<string> {
   const typ = opts.typ ?? 'home_visit';
   const status = opts.status ?? 'confirmed';
@@ -67,7 +72,7 @@ async function termin(opts: {
       typ === 'practice' ? LOCATION : null,
       typ,
       status,
-      TAG,
+      opts.tag ?? TAG,
       opts.von,
       opts.bis,
       hausbesuch ? 'Beispielstrasse' : null,
@@ -96,6 +101,7 @@ describe('list_day_route', () => {
     expect(rows).toHaveLength(1);
     expect(Object.keys(rows[0]!).sort()).toEqual(
       [
+        'address_outdated',
         'appointment_type',
         'ends_at',
         'geocode_precision',
@@ -131,6 +137,52 @@ describe('list_day_route', () => {
     const { rows } = await asUser<Zeile>(users.therapist, LESEN, [TAG, ANNA]);
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ lat: null, lon: null, geocode_precision: null });
+    // Vergangen: Der Termin behielt seine damalige Anschrift - nichts ist veraltet.
+    expect(rows[0]!.address_outdated).toBe(false);
+  });
+
+  describe('UBK-007: veraltete Adresse am kuenftigen Hausbesuch (ANN-236)', () => {
+    it('liefert einen Hausbesuch mit der Anschrift der Akte mit Koordinate', async () => {
+      await termin({ von: '09:00', bis: '10:00', tag: KUENFTIG });
+      const { rows } = await asUser<Zeile>(users.therapist, LESEN, [KUENFTIG, ANNA]);
+      expect(rows[0]).toMatchObject({ address_outdated: false, lat: 48.5305, lon: 9.049 });
+    });
+
+    it('meldet eine abweichende Anschrift und gibt dann keine Koordinate', async () => {
+      const id = await termin({ von: '09:00', bis: '10:00', tag: KUENFTIG });
+      // Die Akte zieht um; der Termin behaelt seinen Snapshot samt Koordinate.
+      await asPostgres(
+        `update public.patient_contact_details set house_number = '14' where patient_id = $1`,
+        [patients.max],
+      );
+      const stand = await asPostgres<{ visit_lat: number | null }>(
+        'select visit_lat from public.appointments where id = $1',
+        [id],
+      );
+      expect(stand.rows[0]!.visit_lat).toBe(48.5305);
+
+      const { rows } = await asUser<Zeile>(users.therapist, LESEN, [KUENFTIG, ANNA]);
+      expect(rows[0]).toMatchObject({
+        address_outdated: true,
+        lat: null,
+        lon: null,
+        geocode_precision: null,
+      });
+      // Weiter kein Name und keine Adresse.
+      expect(JSON.stringify(rows)).not.toMatch(/Beispielstrasse|72070/);
+    });
+
+    it('meldet nichts fuer Praxistermine und abgeschlossene Besuche', async () => {
+      await termin({ von: '08:00', bis: '09:00', typ: 'practice', tag: KUENFTIG });
+      await termin({ von: '09:00', bis: '10:00', tag: KUENFTIG, hausnummer: '99' });
+      await asPostgres(
+        `update public.appointments set status = 'completed', completed_at = now(), completed_by = $1
+          where visit_house_number = '99'`,
+        [users.ownerTherapist],
+      );
+      const { rows } = await asUser<Zeile>(users.therapist, LESEN, [KUENFTIG, ANNA]);
+      expect(rows.map((z) => z.address_outdated)).toEqual([false, false]);
+    });
   });
 
   it('zeigt nur die gewaehlte Person', async () => {

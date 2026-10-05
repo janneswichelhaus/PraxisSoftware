@@ -71,6 +71,7 @@ export function Tageskarte({
   erstaufnahme,
   hauptaktion,
   aktionen,
+  hinweis,
 }: {
   termin: DayPlanEntry;
   /** Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10". */
@@ -85,13 +86,15 @@ export function Tageskarte({
   hauptaktion?: ReactNode;
   /** Die übrigen Handlungen, kompakt nebeneinander. */
   aktionen?: ReactNode;
+  /** Eine Warnung zum Weg, etwa die veraltete Anschrift am Termin (ANN-236). */
+  hinweis?: string | null;
 }) {
   const [infoOffen, setInfoOffen] = useState(false);
   const infoId = useId();
   const zone = termin.organization_time_zone;
   const adresse = adressZeilen(termin);
   const nummern = rufnummern(termin);
-  const grund = offenGrund(termin);
+  const grund = offenGrund(termin) ?? hinweis ?? null;
   const art = einordnung(termin);
   const { stockwerk, rest: zugang } = zugangMitStockwerk(termin.home_visit_access_note);
   const besonderheit = termin.special_note?.trim() || null;

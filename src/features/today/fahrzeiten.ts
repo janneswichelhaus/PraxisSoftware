@@ -91,9 +91,15 @@ export interface Tagesfahrzeiten {
    * aus wie eine Fahrzeit - die Seite muss es dazusagen.
    */
   quelle: Routenquelle | null;
+  /**
+   * Termine, deren Anschrift von der Akte abweicht (ANN-236): Für sie gibt es
+   * keine Fahrzeit, und die Seite sagt, warum.
+   */
+  veraltet: ReadonlySet<string>;
 }
 
 const KEINE: ReadonlyMap<string, Anfahrt> = new Map();
+const NICHTS: ReadonlySet<string> = new Set();
 
 /**
  * Die Fahrzeiten des eigenen Tages.
@@ -147,10 +153,13 @@ export function useTagesfahrzeiten({
   const route = useRoute(punkte, PRAXISPROFIL, { aktiv: fragen && !standorte.isPending });
 
   return useMemo(() => {
-    if (route.data?.ok !== true) return { anfahrten: KEINE, quelle: null };
+    const veraltet = new Set(stopps.filter((s) => s.veraltet).map((s) => s.termin.id));
+    const markiert = veraltet.size > 0 ? veraltet : NICHTS;
+    if (route.data?.ok !== true) return { anfahrten: KEINE, quelle: null, veraltet: markiert };
     return {
       anfahrten: anfahrtenAusRoute(stopps, start, route.data.value.route.legs),
       quelle: route.data.value.quelle,
+      veraltet: markiert,
     };
   }, [route.data, stopps, start]);
 }

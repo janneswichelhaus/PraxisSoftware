@@ -294,6 +294,12 @@ function imStrahl() {
   return within(screen.getByRole('heading', { name: 'Tagesablauf' }).closest('section')!);
 }
 
+/** Eine Zeile im Strahl, sobald sie da ist. */
+async function imStrahlFinden(name: RegExp): Promise<HTMLElement> {
+  await screen.findByRole('heading', { name: 'Tagesablauf' });
+  return await waitFor(() => imStrahl().getByRole('link', { name }));
+}
+
 /** Die ausgeklappte Karte des Zeitstrahls. */
 async function findeKarte(): Promise<HTMLElement> {
   return await screen.findByRole('article');
@@ -1527,6 +1533,25 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />, '/?tag=2026-02-30');
       await screen.findByRole('navigation', { name: 'Tag wechseln' });
       expect(fetchDayPlan).toHaveBeenCalledWith(heute(), EIGENE_STAFF_ID);
+    });
+  });
+
+  describe('UBK-007: veraltete Anschrift am Termin (ANN-236)', () => {
+    it('zeigt statt einer Fahrzeit, dass die Adresse am Termin veraltet ist', async () => {
+      const erster = tagesEintrag({ id: 't1' });
+      const zweiter = zweiterBesuch();
+      fetchDayPlan.mockResolvedValue([erster, zweiter]);
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockResolvedValue([
+        routenpunkt(erster, 48.53, 9.06),
+        { ...routenpunkt(zweiter, 0, 0), lat: null, lon: null, address_outdated: true },
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12));
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      const zeile = await imStrahlFinden(/Max Mustermann/);
+      expect(zeile).toHaveTextContent('Fahrzeit nicht verfügbar – Adresse am Termin veraltet');
+      expect(zeile).not.toHaveTextContent('Anfahrt ≈');
     });
   });
 });

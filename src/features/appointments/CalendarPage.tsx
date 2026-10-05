@@ -1451,6 +1451,11 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     Gestrichelt in Grün, „Weg ≈ n min“: die Fahrt zum Besuch, vom Termin davor oder
                     vom Startort der Praxis. Ob es reicht, sagt der Fahrpuffer.
                   </li>
+                  <li>
+                    Gelb gestrichelt, „! Adresse veraltet“: Die Akte nennt inzwischen eine andere
+                    Anschrift. In der Akte unter Stammdaten den Termin umstellen, dann gibt es
+                    wieder eine Fahrzeit.
+                  </li>
                 </ul>
                 <p>
                   Der Kalender zeigt ausschließlich organisatorische Angaben. Zeiten gelten in der

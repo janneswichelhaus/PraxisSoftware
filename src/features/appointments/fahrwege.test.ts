@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Tagesstopp } from '@/features/tours/tagesroute';
-import { fahrwegeAusRoute, wegpunkte } from './fahrwege';
+import { VERALTET_MINUTEN, fahrwegeAusRoute, veralteteWege, wegpunkte } from './fahrwege';
 
 const ZONE = 'Europe/Berlin';
 const START = { lat: 48.5, lon: 9.05 };
@@ -52,5 +52,23 @@ describe('Fahrwege im Kalender (UBK-005, ANN-235)', () => {
     const gleich = [punkt('a', '07:00', 48.51), punkt('b', '09:00', 48.51)];
     expect(wegpunkte(gleich, null)).toHaveLength(1);
     expect(fahrwegeAusRoute(gleich, null, abschnitte(), ZONE)).toEqual([]);
+  });
+
+  it('legt vor einen Termin mit veralteter Anschrift einen Warnblock statt eines Wegs (ANN-236)', () => {
+    const punkte = [
+      punkt('a', '07:00', 48.51),
+      { ...punkt('b', '09:00', null), address_outdated: true },
+    ];
+    expect(veralteteWege(punkte, ZONE)).toEqual([
+      {
+        terminId: 'b',
+        vonMinute: 11 * 60 - VERALTET_MINUTEN,
+        bisMinute: 11 * 60,
+        minuten: 0,
+        veraltet: true,
+      },
+    ]);
+    // Ohne Position gibt es auch keinen Weg dorthin.
+    expect(fahrwegeAusRoute(punkte, null, [], ZONE)).toEqual([]);
   });
 });

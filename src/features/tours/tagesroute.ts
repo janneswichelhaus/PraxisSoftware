@@ -31,6 +31,9 @@ const tagesstoppSchema = z.object({
   lon: z.number().nullable(),
   geocode_precision: z.enum(['address', 'street', 'locality', 'unknown']).nullable(),
   position_source: z.enum(['visit', 'location']),
+  // UBK-007, ANN-236: Die Anschrift am künftigen Hausbesuch weicht von der
+  // Akte ab; der Server gibt dann keine Koordinate.
+  address_outdated: z.boolean().optional(),
 });
 
 export type Tagesstopp = z.infer<typeof tagesstoppSchema>;
@@ -51,6 +54,8 @@ export interface Stopp {
   /** `null`, wenn die Adresse (noch) nicht verortet ist — der Stopp fehlt dann auf der Karte. */
   readonly position: Coordinate | null;
   readonly genauigkeit: Tagesstopp['geocode_precision'];
+  /** Die Anschrift am Termin ist veraltet (ANN-236) - die Position fehlt deshalb. */
+  readonly veraltet?: boolean;
 }
 
 /**
@@ -75,6 +80,7 @@ export function stoppsDesTages(
       position:
         punkt.lat !== null && punkt.lon !== null ? { lat: punkt.lat, lon: punkt.lon } : null,
       genauigkeit: punkt.geocode_precision,
+      veraltet: punkt.address_outdated === true,
     });
   }
   return stopps;

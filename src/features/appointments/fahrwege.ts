@@ -44,6 +44,34 @@ export interface Fahrweg {
   bisMinute: number;
   /** Die Fahrzeit in ganzen Minuten. */
   minuten: number;
+  /**
+   * Die Anschrift am Termin weicht von der Akte ab (ANN-236): keine Fahrzeit,
+   * sondern ein Warnblock fester Länge (`VERALTET_MINUTEN`).
+   */
+  veraltet?: boolean;
+}
+
+/** Länge des Warnblocks vor einem Termin mit veralteter Anschrift - nur Darstellung. */
+export const VERALTET_MINUTEN = 15;
+
+/**
+ * Warnblöcke für die Termine, deren Anschrift nicht mehr zur Akte passt
+ * (ANN-236). Der Server gibt für sie keine Koordinate; statt still keinen
+ * Weg zu zeigen, sagt der Kalender, warum.
+ */
+export function veralteteWege(punkte: readonly Tagesstopp[], zeitzone: string): Fahrweg[] {
+  return punkte
+    .filter((punkt) => punkt.address_outdated === true)
+    .map((punkt) => {
+      const beginn = minutesOfDay(punkt.starts_at, zeitzone);
+      return {
+        terminId: punkt.id,
+        vonMinute: beginn - VERALTET_MINUTEN,
+        bisMinute: beginn,
+        minuten: 0,
+        veraltet: true,
+      };
+    });
 }
 
 /** Eine Spalte, für die Fahrwege gefragt sind: eine Person an einem Tag. */
@@ -183,10 +211,13 @@ export function useFahrwege({
   let quelle: Routenquelle | null = null;
   offen.forEach((spalte, i) => {
     const punkte = tagesrouten[i]?.data;
+    if (!punkte) return;
     const antwort = routeZu.get(JSON.stringify(punkteJeSpalte[i]));
-    if (!punkte || antwort?.ok !== true) return;
-    if (antwort.value.quelle === 'nachbildung') quelle = 'nachbildung';
-    const wege = fahrwegeAusRoute(punkte, start, antwort.value.route.legs, zeitzone);
+    const wege = veralteteWege(punkte, zeitzone);
+    if (antwort?.ok === true) {
+      if (antwort.value.quelle === 'nachbildung') quelle = 'nachbildung';
+      wege.push(...fahrwegeAusRoute(punkte, start, antwort.value.route.legs, zeitzone));
+    }
     if (wege.length > 0) jeSpalte.set(spalte.id, wege);
   });
   return { jeSpalte, nachbildung: quelle === 'nachbildung' };
