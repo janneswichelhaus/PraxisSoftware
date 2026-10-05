@@ -645,16 +645,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     beschriftung: `Tagesansicht aller behandelnden Personen am ${wochentagKurz(tag)} ${tagesZahl(tag)}`,
   });
 
-  // Die Woche zeigt Mo–Fr (Design-Handoff 2026-10-01, Abschnitt 7a).
-  // Samstag und Sonntag stehen nur da, wenn dort ein Termin der gezeigten
-  // Person liegt - kein Termin verschwindet aus dem Raster.
-  const wochenTage = tage.filter((tag) => {
-    const wochentag = new Date(`${tag}T12:00:00Z`).getUTCDay();
-    if (wochentag !== 0 && wochentag !== 6) return true;
-    return eintraege.some(
-      (e) => e.staff_member_id === wochenPerson && dayKey(e.starts_at, zone) === tag,
-    );
-  });
+  // ANN-202 Fassung 2 (Jannes 2026-10-05): Die Woche zeigt Montag bis
+  // Sonntag durchgehend. Bis dahin standen Samstag und Sonntag nur mit einem
+  // Termin der gezeigten Person da (Design-Handoff 2026-10-01, Abschnitt 7a).
+  const wochenTage = tage;
 
   // UBK-005, ANN-235: Fahrwege als Blöcke - je Spalte eine Person an einem
   // Tag. Nur für die Praxisrollen, wie in der Übersicht: Der Server gibt die

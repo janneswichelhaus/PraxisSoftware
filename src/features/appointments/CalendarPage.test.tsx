@@ -508,25 +508,15 @@ describe('CalendarPage', () => {
       );
     });
 
-    it('zeigt in der Wochenansicht Montag bis Freitag (Abschnitt 7a)', async () => {
+    it('zeigt in der Wochenansicht Montag bis Sonntag durchgehend (ANN-202 Fassung 2)', async () => {
+      // Auch ohne Termin am Wochenende stehen Samstag und Sonntag da.
+      fetchAppointments.mockResolvedValue([]);
       rendern();
       await waitFor(() => expect(fetchAppointments).toHaveBeenCalled());
 
-      for (const tag of ['10.05.', '11.05.', '12.05.', '13.05.', '14.05.']) {
+      for (const tag of ['10.05.', '11.05.', '12.05.', '13.05.', '14.05.', '15.05.', '16.05.']) {
         expect(await screen.findByText(tag)).toBeInTheDocument();
       }
-      expect(screen.queryByText('15.05.')).toBeNull();
-      expect(screen.queryByText('16.05.')).toBeNull();
-    });
-
-    it('zeigt das Wochenende, sobald dort ein Termin liegt - nichts verschwindet', async () => {
-      fetchAppointments.mockResolvedValue([
-        eintrag({ starts_at: '2027-05-15T07:00:00.000Z', ends_at: '2027-05-15T08:00:00.000Z' }),
-      ]);
-      rendern(`/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`);
-
-      expect(await screen.findByText('15.05.')).toBeInTheDocument();
-      expect(screen.queryByText('16.05.')).toBeNull();
     });
 
     it('ordnet einen Termin dem Kalendertag der Praxis zu', async () => {
@@ -665,12 +655,20 @@ describe('CalendarPage', () => {
       const koepfe = screen.getAllByRole('link', {
         name: /Tagesansicht aller behandelnden Personen/,
       });
-      expect(koepfe).toHaveLength(5);
+      expect(koepfe).toHaveLength(7);
       const tage = koepfe.map((k) =>
         new URLSearchParams(k.getAttribute('href')!.split('?')[1]).get('datum'),
       );
-      // Montag bis Freitag der Woche, in der der 12.05.2027 liegt.
-      expect(tage).toEqual(['2027-05-10', '2027-05-11', '2027-05-12', '2027-05-13', '2027-05-14']);
+      // Montag bis Sonntag der Woche, in der der 12.05.2027 liegt (ANN-202 Fassung 2).
+      expect(tage).toEqual([
+        '2027-05-10',
+        '2027-05-11',
+        '2027-05-12',
+        '2027-05-13',
+        '2027-05-14',
+        '2027-05-15',
+        '2027-05-16',
+      ]);
     });
   });
 
@@ -2728,8 +2726,8 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       rendern('/kalender?ansicht=woche&datum=2027-05-12&person=' + STAFF_ANNA);
       await waitFor(() => expect(fetchDayRoute).toHaveBeenCalled());
       const tage = fetchDayRoute.mock.calls.map(([datum]) => datum as string).sort();
-      // Mittwoch bis Freitag - Montag und Dienstag sind vorbei.
-      expect(tage).toEqual(['2027-05-12', '2027-05-13', '2027-05-14']);
+      // Mittwoch bis Sonntag - Montag und Dienstag sind vorbei.
+      expect(tage).toEqual(['2027-05-12', '2027-05-13', '2027-05-14', '2027-05-15', '2027-05-16']);
       expect(fetchDayRoute.mock.calls.every(([, person]) => person === STAFF_ANNA)).toBe(true);
     });
   });

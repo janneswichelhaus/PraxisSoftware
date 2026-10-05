@@ -1543,7 +1543,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozes
 
 **Anker.** Spalte und `public.set_treatment_table_required` in `supabase/migrations/20260926130000_ux_003a_treatment_table.sql`, dort auch `patient_directory`, `export_patient_record` und `list_day_plan`; Oberfläche `src/features/patients/Behandlungsliege.tsx`; Tests `supabase/tests/treatment-table.test.ts`.
 
-**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären. **Fassung 2 (UBK-EPIC-001, 2026-10-05, BEF-051):** Die Liege gehört an den **Hausbesuch**: Liege-Zeile, die Zählung „ab n. Besuch“ (`hausbesucheDesTages` in `src/features/today/tagesstart.ts`) und die Pille an der Karte (`Tageskarte`) berücksichtigen nur `appointment_type = 'home_visit'`; an einem Tag nur mit Praxisterminen gibt es keine Liege-Zeile. Der Server liefert das Merkmal weiter an jedem Behandlungstermin; es dort am Praxistermin zu leeren, wäre sauberer (Datenminimierung), kostet aber eine Migration und ist als Folgeschritt vorgeschlagen. Zu bestätigen mit der Sichtung. Änderungspfad: die Funktion und die Bedingung an der Pille · Aufwand `klein`.
+**Änderungspfad.** Enger (etwa ohne Office): eigene Rollenfunktion statt `app.can_update_patient()` im Schreibpfad und eine Projektion ohne die Spalte · Aufwand `mittel`. Als Befundinhalt führen (klinische Dokumentation): Spalte in den Befund verlegen, Datenumzug und neuer Lesepfad der Tagesliste · Aufwand `groß` — deshalb vor echten Daten zu klären. **Fassung 2 (UBK-EPIC-001, 2026-10-05, BEF-051):** Die Liege gehört an den **Hausbesuch**: Liege-Zeile, die Zählung „ab n. Besuch“ (`hausbesucheDesTages` in `src/features/today/tagesstart.ts`) und die Pille an der Karte (`Tageskarte`) berücksichtigen nur `appointment_type = 'home_visit'`; an einem Tag nur mit Praxisterminen gibt es keine Liege-Zeile. Der Server liefert das Merkmal weiter an jedem Behandlungstermin; es dort am Praxistermin zu leeren, wäre sauberer (Datenminimierung), kostet aber eine Migration und ist als Folgeschritt vorgeschlagen. **Bestätigt (Jannes, 2026-10-05):** „Die Liege ist nur bei Hausbesuchen relevant.“ Änderungspfad: die Funktion und die Bedingung an der Pille · Aufwand `klein`.
 
 ### ANN-117 — Tagesstart: erster Weg und „ab dem n-ten Besuch" zählen nach den Besuchen des Tages
 
@@ -2427,7 +2427,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiede
 
 **Änderungspfad.** Panel ab 1200 px als Spalte: Rasterbreite in `CalendarPage` um 320 px kürzen · Aufwand `mittel`. Tagesliste am Handy mit Wegbalken: eigene Darstellung aus `list_day_plan` · Aufwand `mittel`.
 
-**Abnahme (Jannes, 2026-10-02).** Gestaltung bestätigt. Ergänzt: Dokumentationsstatus und Links zum Lesen müssen auch für das Büro und an fremden Terminen da sein — BEF-095, mit einem zentralen Leserecht für Akte, Termin, Kalender und Übersicht (ADR-004).
+**Abnahme (Jannes, 2026-10-02).** Gestaltung bestätigt. Ergänzt: Dokumentationsstatus und Links zum Lesen müssen auch für das Büro und an fremden Terminen da sein — BEF-095, mit einem zentralen Leserecht für Akte, Termin, Kalender und Übersicht (ADR-004). **Fassung 2 (Jannes, 2026-10-05):** Die Woche zeigt **Montag bis Sonntag durchgehend**, auch ohne Termin am Wochenende; der Filter `wochenTage` in `CalendarPage.tsx` nimmt alle sieben Tage. Test: „zeigt in der Wochenansicht Montag bis Sonntag durchgehend“ in `CalendarPage.test.tsx`.
 
 ### ANN-203 — Die vertretende Person bekommt keine Zeile in `persons`; ihr Name steht am Zugang als Nachweis
 
@@ -2813,11 +2813,11 @@ Recht · entschieden (Jannes) · 2026-10-05 · Jannes (B17, „wie empfohlen“)
 
 ### ANN-234 — Die Übersicht wechselt den Tag um je einen Kalendertag, der Tag steht in der Adresse
 
-Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-001, „Tageswechsel in der Übersicht“ als Umschalten auf Vortag und Folgetag bestätigt) · erledigt · Wiedervorlage: Jannes in der Sichtung
+Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-001, Umschalten auf Vortag und Folgetag bestätigt; „Samstag passt“) · erledigt · Wiedervorlage: —
 
 **Annahme.** Unter dem Kopf der Übersicht stehen „‹ Vortag“, „Folgetag ›“ und, an einem anderen Tag, „Heute“; gewechselt wird um je einen Kalendertag, auch über das Wochenende. Der gezeigte Tag steht als `?tag=JJJJ-MM-TT` in der Adresse, ein ungültiger Wert führt auf heute. An einem anderen Tag gelten dieselben Regeln wie heute, gemessen an einem Bezugszeitpunkt: Ein künftiger Tag liegt ganz vor einem (alles wartet, der erste Besuch ist der „Erste Weg“, kein Haken), ein vergangener ganz hinter einem (nicht Abgehaktes steht als „Nicht abgeschlossen“ da und lässt sich abhaken). Jetzt-Marke und Wegbalken gibt es nur heute; Liege-Zeile („Liege morgen“), Zeitstrahl mit Anfahrten, Teamplan und Tagesroute zeigen den gewählten Tag. Offene Punkte bleiben beim heutigen Stand.
 
-**Begründung.** Abends den nächsten Tag samt Liege sehen und morgens den Vortag abhaken sind die beiden Fälle, die der Auftrag meint. Ein Datum in der Adresse ist kein Personenbezug (ADR-013 Punkt 9 Nr. 5) und macht den Tag mit „zurück“ erreichbar. Der Bezugszeitpunkt statt einer zweiten Logik hält ANN-117 Fassung 2 an einer Stelle. Unsicher: ob am Freitag „Folgetag“ den Montag zeigen soll.
+**Begründung.** Abends den nächsten Tag samt Liege sehen und morgens den Vortag abhaken sind die beiden Fälle, die der Auftrag meint. Ein Datum in der Adresse ist kein Personenbezug (ADR-013 Punkt 9 Nr. 5) und macht den Tag mit „zurück“ erreichbar. Der Bezugszeitpunkt statt einer zweiten Logik hält ANN-117 Fassung 2 an einer Stelle. Am Freitag zeigt „Folgetag“ den Samstag – so entschieden (Jannes, 2026-10-05).
 
 **Anker.** `gewaehlterTag`, `bezugszeitpunkt` und `tagesWort` in `src/features/today/tageswahl.ts`; `TagWechsel` in `src/features/today/MyDayPage.tsx`; Tests `tageswahl.test.ts`, `MyDayPage.test.tsx` („UBK-003“).
 
