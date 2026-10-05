@@ -273,15 +273,18 @@ export function TourenPage({ user }: { user: CurrentUser }) {
                 ende && fahrten.rueckweg
                   ? {
                       text: endArt === 'garage' ? 'Ende an der Garage' : 'Ende an der Praxis',
-                      fahrt: (
-                        <Fahrtabschnitt
-                          titel="Rückweg"
-                          sekunden={fahrten.rueckweg.sekunden}
-                          meter={fahrten.rueckweg.meter}
-                          pruefung={null}
-                          zeitzone={zeitzone}
-                        />
-                      ),
+                      // Endet der Tag am Ort des letzten Besuchs, gibt es
+                      // keinen Rückweg - nur das Ende.
+                      fahrt:
+                        fahrten.rueckweg.sekunden === 0 ? null : (
+                          <Fahrtabschnitt
+                            titel="Rückweg"
+                            sekunden={fahrten.rueckweg.sekunden}
+                            meter={fahrten.rueckweg.meter}
+                            pruefung={null}
+                            zeitzone={zeitzone}
+                          />
+                        ),
                     }
                   : null
               }

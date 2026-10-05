@@ -154,16 +154,27 @@ test.describe('Kalender', () => {
       await expect(spalte).toBeVisible();
 
       const wege = spalte.getByTestId('fahrweg');
-      await expect(wege).toHaveCount(4);
+      // Vier Wege zu den Besuchen und der Rückweg zur Praxis (UBK-015).
+      await expect(wege).toHaveCount(5);
       await expect(wege.nth(0)).toContainText('Weg ≈ 15 min');
+      await expect(wege.nth(4)).toContainText('Rückweg ≈ 16 min');
       // Der Block endet an der Oberkante des Besuchs, zu dem gefahren wird.
       const weg = (await wege.nth(1).boundingBox())!;
-      const kachel = (await spalte.getByRole('button', { name: /Carl Muster/ }).boundingBox())!;
+      const kachel = (await spalte.getByRole('button', { name: /^Carl Muster/ }).boundingBox())!;
       expect(Math.abs(weg.y + weg.height - kachel.y)).toBeLessThanOrEqual(2);
-      // Die Fehlzeit hat keinen Ort und damit keinen Weg; Tims Spalte hat drei.
+      // Die Fehlzeit hat keinen Ort und damit keinen Weg; Tims Spalte hat drei
+      // und den Rückweg.
       await expect(
         page.locator('[role=group][aria-label^="Tim Teamleitung"]').getByTestId('fahrweg'),
-      ).toHaveCount(3);
+      ).toHaveCount(4);
+      // UBK-016: Ein Tipp markiert den ganzen Weg und öffnet das Menü daneben -
+      // ohne Anlegen-Leiste und ohne waagerechten Bildlauf.
+      await wege.nth(1).click();
+      const menue = page.getByRole('group', { name: 'Fahrweg' });
+      await expect(menue).toBeVisible();
+      await expect(menue).toContainText('≈ 20 Min.');
+      await expect(menue.getByRole('link', { name: 'Zur Tour' })).toBeVisible();
+      await expect(page.getByRole('group', { name: 'Was soll hier entstehen?' })).toHaveCount(0);
       const ueberlauf = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
       );

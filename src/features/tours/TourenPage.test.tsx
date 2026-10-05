@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as TodayApi from '@/features/today/api';
@@ -217,6 +217,35 @@ describe('TourenPage: Garage und Rueckweg (UBK-015, ANN-240)', () => {
     const ende = await screen.findByTestId('tour-ende');
     expect(ende).toHaveTextContent('Ende an der Garage');
     expect(ende).toHaveTextContent(/Rückweg 18 Min\. · 4,0 km/);
+  });
+
+  it('zeigt keinen Rueckweg, wenn der letzte Besuch an der Garage liegt - nur das Ende', async () => {
+    fetchStandorte.mockResolvedValue([
+      { ...PRAXIS, garage_street: 'Radweg', garage_lat: 48.49, garage_lon: 9.04 },
+    ]);
+    rufeFunktionAuf.mockResolvedValue({
+      ok: true,
+      quelle: 'anbieter',
+      value: {
+        distanceMeters: 3000,
+        durationSeconds: 10 * 60,
+        legs: [
+          { distanceMeters: 3000, durationSeconds: 10 * 60 },
+          { distanceMeters: 0, durationSeconds: 0 },
+        ],
+        geometry: [],
+      },
+    });
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+
+    const ende = await screen.findByTestId('tour-ende');
+    // Erst wenn die Route da ist, steht fest, dass kein Rückweg kommt.
+    await waitFor(() => expect(rufeFunktionAuf).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Route und Fahrzeiten werden berechnet …')).toBeNull(),
+    );
+    expect(ende).toHaveTextContent('Ende an der Garage');
+    expect(ende).not.toHaveTextContent('Gleicher Ort');
   });
 
   it('nimmt ohne Garage die Praxis und laesst das Ende am letzten Besuch zu', async () => {

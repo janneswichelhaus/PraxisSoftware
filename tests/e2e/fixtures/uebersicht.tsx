@@ -275,6 +275,9 @@ const lage: Abrechnungslage = {
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
+// UBK-010: Fahrzeitfaktor 1,0 - die Minuten der Prüfseite stehen, wie sie
+// eingetragen sind (ANN-237).
+client.setQueryData(['travel-time-factor'], 1);
 client.setQueryData(['day-plan', heute, STAFF], tag);
 client.setQueryData(['day-route', heute, STAFF], punkte);
 client.setQueryData(['standorte'], [standort]);

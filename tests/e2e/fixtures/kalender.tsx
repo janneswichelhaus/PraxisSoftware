@@ -161,6 +161,9 @@ const WOCHENPLAN: WorkingHour[] = [1, 2, 3, 4, 5, 6, 7].flatMap((weekday) => [
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
+// UBK-010: Fahrzeitfaktor 1,0 - die Minuten der Prüfseite stehen, wie sie
+// eingetragen sind (ANN-237).
+client.setQueryData(['travel-time-factor'], 1);
 // Die Spalten des Kalenders unter dem Schlüssel der Seite (TRN-006): die
 // Therapeutin fragt nur die behandelnden Personen, die Trainingsbetreuung nur
 // die Trainingsbetreuung.
@@ -211,7 +214,11 @@ const standort: Standort = {
   geocode_precision: 'address',
 };
 client.setQueryData(['standorte'], [standort]);
-const FAHRMINUTEN: Record<string, number[]> = { [ANNA]: [15, 20, 25, 18], [TIM]: [12, 25, 10] };
+// Der letzte Wert ist der Rückweg zur Praxis (UBK-015).
+const FAHRMINUTEN: Record<string, number[]> = {
+  [ANNA]: [15, 20, 25, 18, 16],
+  [TIM]: [12, 25, 10, 14],
+};
 for (const person of [ANNA, TIM]) {
   const punkte: Tagesstopp[] = PRAXISTERMINE.filter(
     (t) => t.staff_member_id === person && t.kind === 'therapy',
@@ -241,7 +248,10 @@ for (const person of [ANNA, TIM]) {
       },
     },
   };
-  client.setQueryData(['route', PRAXISPROFIL, wegpunkte(punkte, startpunkt(standort))], route);
+  client.setQueryData(
+    ['route', PRAXISPROFIL, wegpunkte(punkte, startpunkt(standort), startpunkt(standort))],
+    route,
+  );
 }
 
 const start = new URLSearchParams(window.location.search).get('start') ?? `ansicht=tag`;
