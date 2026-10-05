@@ -7,6 +7,8 @@ import type * as VermerkeApi from '@/features/datenschutz/vermerke';
 import type * as FilesApi from '@/features/files/api';
 import type * as IntakeApi from '@/features/open-points/intake-api';
 import type * as BillingApi from '@/features/billing/api';
+import type * as AppointmentsApi from '@/features/appointments/api';
+import type * as Geocode from '@/lib/location/geocode';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
@@ -35,6 +37,7 @@ const setPatientStatus = vi.fn();
 const concludePatientCare = vi.fn();
 const reopenPatientCare = vi.fn();
 const setTreatmentTableRequired = vi.fn();
+const setPatientAddressCoordinate = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof PatientsApi>();
@@ -46,8 +49,24 @@ vi.mock('./api', async (importOriginal) => {
     reopenPatientCare: (id: string) => reopenPatientCare(id) as Promise<void>,
     setTreatmentTableRequired: (id: string, wert: boolean) =>
       setTreatmentTableRequired(id, wert) as Promise<void>,
+    setPatientAddressCoordinate: (...args: unknown[]) =>
+      setPatientAddressCoordinate(...args) as Promise<void>,
   };
 });
+
+// UBK-006: Verorten und künftige Hausbesuche mit alter Anschrift.
+const geocodiere = vi.fn();
+vi.mock('@/lib/location/geocode', async (importOriginal) => ({
+  ...(await importOriginal<typeof Geocode>()),
+  geocodiere: (...args: unknown[]) => geocodiere(...args) as unknown,
+}));
+const fetchVeralteteHausbesuche = vi.fn(() => Promise.resolve([] as unknown[]));
+const aktualisiereHausbesuchAdressen = vi.fn();
+vi.mock('@/features/appointments/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof AppointmentsApi>()),
+  fetchVeralteteHausbesuche: () => fetchVeralteteHausbesuche() as unknown,
+  aktualisiereHausbesuchAdressen: (ids: string[]) => aktualisiereHausbesuchAdressen(ids) as unknown,
+}));
 
 // Der Abschnitt „Plattform" hat eigene Tests (POR-002, POR-005); hier nur
 // ohne Zugang und ohne Vertretung.
@@ -717,6 +736,63 @@ describe('Stammdaten der Akte', () => {
       );
       expect(screen.queryByText('Behandlungsliege')).not.toBeInTheDocument();
       expect(screen.queryByRole('button', { name: /Liege/ })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('UBK-006: nach dem Verorten die alten Hausbesuche mitfragen (ANN-236)', () => {
+    it('laesst die Zeile nach dem Verorten fuer die Rueckfrage stehen - ohne die Liste doppelt', async () => {
+      const ohne = testPatient({
+        id: 'p-umzug',
+        street: 'Walhau',
+        house_number: '43',
+        postal_code: '72070',
+        city: 'Tübingen',
+        geocode_precision: null,
+      });
+      geocodiere.mockResolvedValue({
+        ok: true,
+        quelle: 'anbieter',
+        value: {
+          position: { lat: 48.53, lon: 9.0 },
+          precision: 'address',
+          unique: true,
+          matchCount: 1,
+          matchLabel: 'Walhau 43, 72070 Tübingen',
+        },
+      });
+      setPatientAddressCoordinate.mockResolvedValue(undefined);
+      fetchVeralteteHausbesuche.mockResolvedValue([
+        {
+          id: 'b1',
+          starts_at: '2026-10-06T08:30:00Z',
+          ends_at: '2026-10-06T09:30:00Z',
+          staff_given_name: 'Jannes',
+          staff_family_name: 'Test',
+          visit_street: 'Altweg',
+          visit_house_number: '3',
+          visit_postal_code: '72070',
+          visit_city: 'Tübingen',
+          organization_time_zone: 'Europe/Berlin',
+        },
+      ]);
+      const user = testUser(['office']);
+      const { rerender } = renderWithProviders(<Stammdaten patient={ohne} user={user} />);
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Adresse verorten' }));
+      await waitFor(() => expect(setPatientAddressCoordinate).toHaveBeenCalled());
+      // Die Akte lädt neu - jetzt mit Koordinate; die Zeile bleibt.
+      rerender(<Stammdaten patient={{ ...ohne, geocode_precision: 'address' }} user={user} />);
+
+      expect(
+        await screen.findByText(/Ein künftiger Hausbesuch nennt noch die alte Anschrift/),
+      ).toBeInTheDocument();
+      // Der Hinweis oben auf der Seite tritt so lange zurück.
+      expect(screen.queryByText(/nennt noch die alte Adresse/)).toBeNull();
+
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Auf die neue Anschrift umstellen' }),
+      );
+      await waitFor(() => expect(aktualisiereHausbesuchAdressen).toHaveBeenCalledWith(['b1']));
     });
   });
 });

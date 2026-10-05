@@ -149,7 +149,16 @@ function UmstellenNachVerorten({ patientId }: { patientId: string }) {
   );
 }
 
-export function AdresseVerorten({ patient, user }: { patient: Patient; user?: CurrentUser }) {
+export function AdresseVerorten({
+  patient,
+  user,
+  onVerortet,
+}: {
+  patient: Patient;
+  user?: CurrentUser;
+  /** Meldet der Seite das Verorten - die Zeile bleibt dann für die Rückfrage stehen. */
+  onVerortet?: () => void;
+}) {
   const queryClient = useQueryClient();
   // UBK-006: Nach dem Verorten in dieser Sitzung fragt die Seite mit, ob die
   // künftigen Hausbesuche umgestellt werden sollen - nur wer Termine ändert.
@@ -179,6 +188,7 @@ export function AdresseVerorten({ patient, user }: { patient: Patient; user?: Cu
     onSuccess: async () => {
       setTreffer(null);
       setEbenVerortet(true);
+      onVerortet?.();
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
       await queryClient.invalidateQueries({
         queryKey: ['home-visits-outdated-address', patient.id],
