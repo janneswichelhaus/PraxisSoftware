@@ -2080,3 +2080,20 @@ vor der eigenen Liste stehen?
 beschreibt sie als das, „was mitzunehmen ist“ —, und für das Büro ist der
 Teamplan nach der eigenen Begründung im Code die Hauptsache. Beides mit der
 ausstehenden Sichtung zu ANN-116 und ANN-117 bestätigen.
+
+### BEF-125 — Verorten meldet zu jeder Adresse „kein Treffer“
+
+|          |                                                                                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum    | 2026-10-05                                                                                                                                            |
+| Bereich  | Akte → Stammdaten „Adresse verorten“, Startort der Tour (Function `location-provider`, Aufgabe `geocode`)                                             |
+| Quelle   | Jannes, Sichtung auf der Test-Umgebung mit einer echten, zufällig gewählten Anschrift                                                                  |
+| Status   | erledigt in FIX-UBK-001 (2026-10-05)                                                                                                                  |
+| Berührt  | `supabase/functions/location-provider/ptv.ts` (`GEOCODING_URL`, `geocodingAdresse`, `geocodingAuswerten`, `genauigkeit`); ADR-019 Punkt 37; ANN-095 |
+
+**Beobachtung.** Trotz korrekt eingegebener Anschrift steht „Zu dieser Adresse hat der Kartendienst keinen Treffer gefunden. Bitte die Schreibweise prüfen.“
+
+**Ursache.** Der Adapter fragte `geocoding-osm/v1/locations/by-address` mit `countryFilter` und las `locations`/`locationType` – Pfad und Felder der HERE-Variante, für die OSM-Variante nur abgeleitet und nie gegen die echte API geprüft. PTV antwortete mit 404, und 404 ist bei uns `not_found`.
+
+**Behoben.** Nach PTVs Client `ptv-logistics/clients-geocoding-osm-api`: `places/by-address`, Land als `country`, Antwort `places` mit `referencePosition`, `formattedAddress`, `category` und `type`. Die Genauigkeit kommt aus dem OSM-Haupttag (`highway` straßengenau, Ort/Postleitzahl/Grenze ortsgenau) und, für die Hausnummer, aus der Anschrift des Treffers: hausnummergenau nur, wenn die angefragte Nummer dort wiederkehrt. Nie höher als belegt – sonst fragt die Anwendung nach (ADR-019 Punkt 37).
+

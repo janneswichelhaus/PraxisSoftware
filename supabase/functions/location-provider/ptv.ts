@@ -64,23 +64,26 @@ const ROUTING_URL = 'https://api.myptv.com/routing-osm/v1/routes';
 const MATRIX_URL = 'https://api.myptv.com/matrixrouting-osm/v1/matrices';
 
 /**
- * Geocoding OSM API (MAP-006a).
+ * Geocoding OSM API (MAP-006a, FIX-UBK-001).
  *
- * **Belegtiefe: abgeleitet, nicht geprüft** — wie die Matrix bis zu ihrer
- * Abnahme. Die OSM-Variante hat nach derselben Regel wie Routing und Kacheln
- * einen eigenen Pfad (`geocoding-osm/v1`); die Feldnamen der Antwort
- * (`locations`, `referencePosition`, `locationType`, `formattedAddress`)
- * stammen aus PTVs Client `clients-geocoding-api` der HERE-Variante
- * (Providerprüfung, Teil 1, Punkt 2). Die HERE-Variante `geocoding/v1` wird
- * **nicht** verwendet (ADR-019 Punkt 7). Die Sichtung Kartendienst hat einen
- * Schritt dafür.
+ * **Belegtiefe: aus PTVs Client `ptv-logistics/clients-geocoding-osm-api`**
+ * (2026-10-05, `PlacesApi.searchPlacesByAddress`, Modelle `Place` und
+ * `PlacesSearchResult`). Bis dahin war der Pfad aus der HERE-Variante
+ * abgeleitet (`locations/by-address` mit `countryFilter`, Antwort
+ * `locations` mit `locationType`) - den gibt es in der OSM-Variante nicht;
+ * der Anbieter antwortete mit 404, und jede Adresse hieß „kein Treffer"
+ * (Sichtung Jannes, 2026-10-05). Die OSM-Variante heißt `places/by-address`,
+ * nimmt das Land als `country` und liefert `places` mit `referencePosition`,
+ * `formattedAddress` sowie `category` und `type` - Schlüssel und Wert des
+ * OSM-Haupttags statt einer Genauigkeitsstufe (`genauigkeit`). Die
+ * HERE-Variante `geocoding/v1` wird **nicht** verwendet (ADR-019 Punkt 7).
  *
  * Die Anschrift steht — anders als die Matrix-Punkte — in der Adresse der
  * Anfrage, weil der Endpunkt nur `GET` kennt. Sie verlässt damit genau diese
  * Function und erreicht genau den Anbieter; in unserem Log steht sie nie
  * (ADR-019 Punkt 18).
  */
-const GEOCODING_URL = 'https://api.myptv.com/geocoding-osm/v1/locations/by-address';
+const GEOCODING_URL = 'https://api.myptv.com/geocoding-osm/v1/places/by-address';
 
 /**
  * Kantenlänge des erlaubten Rechtecks um alle Punkte einer Matrix.
@@ -256,7 +259,7 @@ function matrixKoerper(request: MatrixRequest) {
 /** Die fünf Felder der Anschrift, sonst nichts — kein Name, keine Kennung (ADR-019 Punkt 12). */
 function geocodingAdresse(request: GeocodeRequest): string {
   const abfrage = new URLSearchParams();
-  abfrage.append('countryFilter', request.countryCode);
+  abfrage.append('country', request.countryCode);
   abfrage.append('postalCode', request.postalCode);
   abfrage.append('locality', request.city);
   abfrage.append('street', request.street);
@@ -264,17 +267,68 @@ function geocodingAdresse(request: GeocodeRequest): string {
   return `${GEOCODING_URL}?${abfrage.toString()}`;
 }
 
+/** OSM-Werte von `place`, die einen Ort oder Ortsteil meinen, kein Haus. */
+const ORTSTYPEN = new Set([
+  'country',
+  'state',
+  'region',
+  'province',
+  'county',
+  'municipality',
+  'city',
+  'town',
+  'village',
+  'hamlet',
+  'borough',
+  'suburb',
+  'quarter',
+  'neighbourhood',
+  'city_block',
+  'locality',
+  'isolated_dwelling',
+  'farm',
+  'postcode',
+]);
+
 /**
- * Genauigkeit des Treffers in der Sprache des Vertrags. Unterhalb von
- * `address` bestätigt die Person den Treffer (ANN-016); was hier unbekannt
- * ist, wird deshalb nie zur Hausnummer hochgestuft.
+ * Genauigkeit des Treffers in der Sprache des Vertrags (ANN-016, ANN-095).
+ *
+ * Die OSM-Variante kennt keine Stufe wie `EXACT_ADDRESS`; sie nennt den
+ * OSM-Haupttag des Treffers (`category` = Schlüssel, `type` = Wert). Daraus:
+ * eine Straße (`highway`) ist straßengenau, ein Ort, ein Ortsteil, eine
+ * Postleitzahl oder eine Grenze (`place` mit Ortstyp, `boundary`) ortsgenau.
+ * Hausnummergenau ist ein Treffer nur, wenn die angefragte Hausnummer in
+ * seiner Anschrift wiederkehrt - ein Gebäude ohne die Nummer ist kein Beleg.
+ * Was hier unbekannt ist, wird nie zur Hausnummer hochgestuft: Unterhalb von
+ * `address` bestätigt die Person den Treffer.
  */
-function genauigkeit(typ: unknown): GeocodeResult['precision'] {
-  if (typ === 'EXACT_ADDRESS' || typ === 'INTERPOLATED_ADDRESS') return 'address';
-  if (typ === 'STREET') return 'street';
-  if (typ === 'LOCALITY' || typ === 'POSTAL_CODE' || typ === 'DISTRICT' || typ === 'SUBDISTRICT')
-    return 'locality';
+function genauigkeit(
+  ort: Record<string, unknown>,
+  anfrage: GeocodeRequest,
+): GeocodeResult['precision'] {
+  const kategorie = typeof ort['category'] === 'string' ? ort['category'] : '';
+  const typ = typeof ort['type'] === 'string' ? ort['type'] : '';
+  if (kategorie === 'highway') return 'street';
+  if (kategorie === 'boundary' || (kategorie === 'place' && ORTSTYPEN.has(typ))) return 'locality';
+  const anschrift = ort['formattedAddress'];
+  if (typeof anschrift === 'string' && traegtHausnummer(anschrift, anfrage.houseNumber)) {
+    return 'address';
+  }
   return 'unknown';
+}
+
+/**
+ * Steht die Hausnummer als eigenes Wort in der Anschrift des Treffers?
+ * „12a" trifft auch „12 a"; „1" trifft nicht „12" und nicht „72070".
+ */
+function traegtHausnummer(anschrift: string, hausnummer: string): boolean {
+  const gesucht = hausnummer.toLowerCase().replace(/\s+/g, '');
+  if (gesucht === '') return false;
+  const woerter = anschrift
+    .toLowerCase()
+    .split(/[\s,]+/)
+    .filter(Boolean);
+  return woerter.some((wort, i) => wort === gesucht || wort + (woerter[i + 1] ?? '') === gesucht);
 }
 
 /**
@@ -287,7 +341,7 @@ function geocodingAuswerten(koerper: unknown, anfrage: GeocodeRequest): GeocodeE
   if (typeof koerper !== 'object' || koerper === null) {
     return fehler('unavailable', 'Antwort ohne Objekt');
   }
-  const treffer = (koerper as Record<string, unknown>)['locations'];
+  const treffer = (koerper as Record<string, unknown>)['places'];
   if (!Array.isArray(treffer)) return fehler('unavailable', 'Antwort ohne Trefferliste');
   if (treffer.length === 0) return fehler('not_found', 'kein Treffer');
 
@@ -301,7 +355,7 @@ function geocodingAuswerten(koerper: unknown, anfrage: GeocodeRequest): GeocodeE
     return fehler('unavailable', 'Treffer ohne Koordinate');
   }
   const label = erster['formattedAddress'];
-  const precision = genauigkeit(erster['locationType']);
+  const precision = genauigkeit(erster, anfrage);
   const vollstaendig = [
     anfrage.street,
     anfrage.houseNumber,

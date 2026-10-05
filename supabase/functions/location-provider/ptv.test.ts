@@ -467,11 +467,15 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
     countryCode: 'DE',
   };
 
+  // Die Form der OSM-Variante aus PTVs Client `clients-geocoding-osm-api`
+  // (`PlacesSearchResult`, `Place`): `places`, OSM-Haupttag als `category`
+  // und `type`, keine Genauigkeitsstufe (FIX-UBK-001).
   const TREFFER = {
-    locations: [
+    places: [
       {
         formattedAddress: 'Musterweg 1, 72070 Tübingen',
-        locationType: 'EXACT_ADDRESS',
+        category: 'building',
+        type: 'house',
         referencePosition: { latitude: 48.5201, longitude: 9.0512 },
       },
     ],
@@ -483,10 +487,13 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
 
     const [ziel, optionen] = abrufen.mock.calls[0]!;
     const url = alsUrl(ziel);
-    expect(url.pathname).toBe('/geocoding-osm/v1/locations/by-address');
+    // Der Pfad der OSM-Variante; `locations/by-address` gibt es nur bei HERE
+    // und brachte 404 - jede Adresse hieß „kein Treffer" (FIX-UBK-001).
+    expect(url.pathname).toBe('/geocoding-osm/v1/places/by-address');
     expect([...url.searchParams.keys()].sort()).toEqual(
-      ['countryFilter', 'houseNumber', 'locality', 'postalCode', 'street'].sort(),
+      ['country', 'houseNumber', 'locality', 'postalCode', 'street'].sort(),
     );
+    expect(url.searchParams.get('country')).toBe('DE');
     expect(url.searchParams.get('apiKey')).toBeNull();
     expect((optionen?.headers as Record<string, string>)['ApiKey']).toBe('geheim');
     expect(optionen?.method).toBe('GET');
@@ -518,7 +525,7 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
   // ADR-019 Punkt 37 (ANN-095): eindeutig nur bei vollstaendiger Anfrage, genau
   // einem Treffer und Hausnummergenauigkeit.
   it('nennt zwei Treffer nicht eindeutig und zaehlt sie', async () => {
-    const zwei = { locations: [TREFFER.locations[0], TREFFER.locations[0]] };
+    const zwei = { places: [TREFFER.places[0], TREFFER.places[0]] };
     const ergebnis = await erstellePtvAdapter({ apiKey: 'k', abrufen: antwortMit(zwei) }).geocode(
       ANSCHRIFT,
     );
@@ -534,7 +541,9 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
   });
 
   it('nennt einen einzigen, aber nur strassengenauen Treffer nicht eindeutig', async () => {
-    const koerper = { locations: [{ ...TREFFER.locations[0], locationType: 'STREET' }] };
+    const koerper = {
+      places: [{ ...TREFFER.places[0], category: 'highway', type: 'residential' }],
+    };
     const ergebnis = await erstellePtvAdapter({
       apiKey: 'k',
       abrufen: antwortMit(koerper),
@@ -543,14 +552,22 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
   });
 
   it.each([
-    ['INTERPOLATED_ADDRESS', 'address'],
-    ['STREET', 'street'],
-    ['LOCALITY', 'locality'],
-    ['POSTAL_CODE', 'locality'],
-    ['IRGENDWAS', 'unknown'],
-    [undefined, 'unknown'],
-  ])('stuft %j als %s ein - nie hoeher', async (typ, erwartet) => {
-    const koerper = { locations: [{ ...TREFFER.locations[0], locationType: typ }] };
+    ['building', 'house', 'Musterweg 1, 72070 Tübingen', 'address'],
+    ['place', 'house', 'Musterweg 1, 72070 Tübingen', 'address'],
+    ['amenity', 'doctors', 'Musterweg 1, 72070 Tübingen', 'address'],
+    ['highway', 'residential', 'Musterweg, 72070 Tübingen', 'street'],
+    ['place', 'city', 'Tübingen', 'locality'],
+    ['place', 'postcode', '72070 Tübingen', 'locality'],
+    ['boundary', 'administrative', 'Tübingen', 'locality'],
+    // Ohne die angefragte Hausnummer ist ein Gebäude kein Beleg - auch nicht
+    // „12" für „1" oder die Postleitzahl.
+    ['building', 'house', 'Musterweg 12, 72070 Tübingen', 'unknown'],
+    ['building', 'yes', 'Musterweg, 72070 Tübingen', 'unknown'],
+    [undefined, undefined, undefined, 'unknown'],
+  ])('stuft %s/%s „%s" als %s ein - nie hoeher', async (category, type, adresse, erwartet) => {
+    const koerper = {
+      places: [{ ...TREFFER.places[0], category, type, formattedAddress: adresse }],
+    };
     const ergebnis = await erstellePtvAdapter({
       apiKey: 'k',
       abrufen: antwortMit(koerper),
@@ -561,24 +578,40 @@ describe('PTV-Geocoding-Adapter (MAP-006a)', () => {
   it('meldet "kein Treffer" als not_found', async () => {
     const ergebnis = await erstellePtvAdapter({
       apiKey: 'k',
-      abrufen: antwortMit({ locations: [] }),
+      abrufen: antwortMit({ places: [] }),
     }).geocode(ANSCHRIFT);
     expect(ergebnis.ok === false && ergebnis.error.code).toBe('not_found');
   });
 
   it.each([
     ['ohne Trefferliste', {}],
-    ['ohne Koordinate', { locations: [{ locationType: 'EXACT_ADDRESS' }] }],
+    ['ohne Koordinate', { places: [{ category: 'building', type: 'house' }] }],
     [
       'mit Koordinate ausserhalb der Erde',
-      { locations: [{ referencePosition: { latitude: 91, longitude: 9 } }] },
+      { places: [{ referencePosition: { latitude: 91, longitude: 9 } }] },
     ],
+    // Die Form der HERE-Variante ist hier keine Trefferliste.
+    ['in der Form der HERE-Variante', { locations: [] }],
   ])('nimmt eine Antwort %s nicht als Treffer', async (_, koerper) => {
     const ergebnis = await erstellePtvAdapter({
       apiKey: 'k',
       abrufen: antwortMit(koerper),
     }).geocode(ANSCHRIFT);
     expect(ergebnis.ok === false && ergebnis.error.code).toBe('unavailable');
+  });
+
+  it('erkennt „12 a" als Hausnummer 12a', async () => {
+    const koerper = {
+      places: [{ ...TREFFER.places[0], formattedAddress: 'Musterweg 12 a, 72070 Tübingen' }],
+    };
+    const ergebnis = await erstellePtvAdapter({
+      apiKey: 'k',
+      abrufen: antwortMit(koerper),
+    }).geocode({ ...ANSCHRIFT, houseNumber: '12a' });
+    expect(ergebnis.ok && [ergebnis.value.precision, ergebnis.value.unique]).toEqual([
+      'address',
+      true,
+    ]);
   });
 
   it('traegt keine Anschrift in eine Fehlermeldung', async () => {
