@@ -196,13 +196,21 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
 });
 
 test('zaehlt den Weg herunter, sobald der Termin davor vorbei ist', async ({ page }) => {
-  // 10:40: Der erste Besuch (bis 09:30) ist nicht abgeschlossen, der zweite
-  // hätte um 10:00 begonnen.
-  await oeffne(page, '10:40', 375);
-  const balken = page.getByRole('region', { name: 'Nächster Weg danach' });
+  // 11:10: Der zweite Besuch (bis 11:00) ist nicht abgehakt. Nach der Uhr
+  // (ANN-117 Fassung 2) ist der dritte um 11:30 der nächste Weg - 26 Minuten
+  // Fahrt, ab jetzt gerechnet.
+  await oeffne(page, '11:10', 375);
+  const balken = page.getByRole('region', { name: 'Nächster Weg' });
+  await expect(balken).toContainText('Jetzt');
+  await expect(balken).toContainText('Petra Platzhalter');
   await expect(balken).toContainText('! Zu spät, Abfahrt sofort');
-  await expect(balken).toContainText('9 min zu knapp');
-  await expect(balken).toContainText('0 min eingeplant');
+  await expect(balken).toContainText('6 min zu knapp');
+  // Der liegengebliebene Besuch steht als Zeile mit „Nicht abgeschlossen“ da.
+  const zeilen = page
+    .getByRole('heading', { name: 'Tagesablauf' })
+    .locator('..')
+    .getByRole('listitem');
+  await expect(zeilen.filter({ hasText: 'Max Mustermann' })).toContainText('Nicht abgeschlossen');
 });
 
 for (const breite of [375, 1280]) {
@@ -308,4 +316,60 @@ test('pflegt in der Akte das Material mit einer Zeile je Eintrag (PRX-007)', asy
   await page.getByRole('button', { name: 'Liste ändern' }).click();
   await expect(page.getByLabel('Material zum Mitnehmen')).toHaveValue('Theraband\nKinesiotape');
   await ohneUeberlauf(page);
+});
+
+for (const breite of [375, 1280]) {
+  test(`zeigt am Abend den morgigen Tag mit Liege und erstem Weg (${breite} px, ANN-234)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '20:00', breite, '?ansicht=morgen');
+
+    const nav = page.getByRole('navigation', { name: 'Tag wechseln' });
+    await expect(nav.getByRole('link', { name: 'Heute' })).toBeVisible();
+    await expect(nav).toContainText('Morgen');
+    const liege = page.getByText('Liege morgen', { exact: true }).locator('..');
+    await expect(liege).toContainText('Ja · ab 2. Besuch 10:00');
+    const karte = page.getByRole('article');
+    await expect(karte.getByRole('heading', { name: /^Erster Weg/ })).toBeVisible();
+    // Kein Jetzt am anderen Tag, kein Haken für einen Besuch, der noch nicht war.
+    await expect(page.getByText(/^Jetzt, /)).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /abschließen/ })).toHaveCount(0);
+    // Die Knöpfe sind Tippziele.
+    for (const link of await nav.getByRole('link').all()) {
+      expect((await link.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+    }
+    await ohneUeberlauf(page);
+  });
+}
+
+test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem Namen (UBK-004)', async ({
+  page,
+}) => {
+  await oeffne(page, '08:05', 375);
+  const karte = page.getByRole('article');
+  const name = karte.getByRole('link', { name: 'Erika Beispiel' });
+  const info = karte.getByRole('button', { name: 'Etage, Zugang und Kontakt' });
+  const n = (await name.boundingBox())!;
+  const i = (await info.boundingBox())!;
+  // Auf einer Höhe: Die Mitten liegen höchstens 6 px auseinander.
+  expect(Math.abs(n.y + n.height / 2 - (i.y + i.height / 2))).toBeLessThanOrEqual(6);
+  // Keine Fußzeile mehr; „Termin öffnen" steht nur für Vorlesesoftware da.
+  await expect(karte.locator('.border-t')).toHaveCount(0);
+  await expect(karte.getByText('Termin öffnen', { exact: true })).toHaveClass(/sr-only/);
+
+  // Das „i" klappt auf und öffnet nicht den Termin.
+  await info.click();
+  await expect(karte.getByText('Zugangshinweis')).toBeVisible();
+  // Ein Tipp auf die Anschrift trifft den Link des Termins, einer auf den
+  // Namen den der Akte. Die Prüfseite hat keine Routen - gemessen wird, was
+  // unter dem Finger liegt.
+  const ziel = async (text: string) => {
+    const kasten = (await karte.getByText(text, { exact: true }).boundingBox())!;
+    return page.evaluate(
+      ([x, y]) => document.elementFromPoint(x!, y!)?.closest('a')?.getAttribute('href') ?? null,
+      [kasten.x + kasten.width / 2, kasten.y + kasten.height / 2],
+    );
+  };
+  expect(await ziel('Testweg 7, 72072 Tuebingen')).toMatch(/^\/kalender\?termin=/);
+  expect(await ziel('Erika Beispiel')).toMatch(/^\/patienten\//);
 });
