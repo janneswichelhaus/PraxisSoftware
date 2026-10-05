@@ -384,20 +384,21 @@ describe('Einnahmen je Leistungsart', () => {
 
     it('verteilt eine Teilzahlung centgenau auf die Steuergruppen', async () => {
       // 140,00 steuerfrei (Terminhonorar) und 60,00 steuerpflichtig, gezahlt
-      // werden 50,00.
+      // werden 33,33 - ein Betrag, der nicht ohne Rest aufgeht.
       const { id } = await ausgestellteRechnung([KATALOG.kg, KATALOG.szl]);
-      await buche(id, 5000);
+      await buche(id, 3333);
 
       const zeilen = await auswertung('cash');
-      expect(summe(zeilen)).toBe(5000);
+      expect(summe(zeilen)).toBe(3333);
 
-      // 5000 * 14000 / 20000 = 3500 und 5000 * 6000 / 20000 = 1500, ohne Rest.
-      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(3500);
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(1500);
+      // 3333 * 14000 / 20000 = 2333,1 -> 2333; 3333 * 6000 / 20000 = 999,9
+      // -> 999 plus den einen offenen Cent, weil ihr Rest der groessere ist.
+      expect(betraege(zeile(zeilen, 'exempt_healthcare')!).brutto).toBe(2333);
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).brutto).toBe(1000);
       // Steuer nur dort, wo das Dokument welche ausweist (Punkt 18).
       expect(betraege(zeile(zeilen, 'exempt_healthcare')!).steuer).toBe(0);
-      // 1500 * 190 / 1190 = 239,49 -> 239.
-      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(239);
+      // 1000 * 190 / 1190 = 159,66 -> 160.
+      expect(betraege(zeile(zeilen, 'taxable', 190)!).steuer).toBe(160);
     });
 
     it('laesst die Rueckzahlung den Eingang genau aufheben', async () => {

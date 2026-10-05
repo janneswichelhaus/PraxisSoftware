@@ -210,7 +210,12 @@ export async function createVereinbarung(
     p_session_fee_cents: cent,
   })) as { error: { message?: string } | null };
 
-  if (error?.message?.includes('already exists')) throw new VereinbarungAmSelbenTag();
+  if (
+    error?.message?.includes('already exists') ||
+    error?.message?.includes('patient_fee_agreements_patient_from_key')
+  ) {
+    throw new VereinbarungAmSelbenTag();
+  }
   if (error) throw new Error('Die Vereinbarung konnte nicht gespeichert werden.');
 }
 
@@ -642,8 +647,11 @@ export async function createEntwurf(
             p_period_month: kandidat.period_month,
             p_service_area: kandidat.service_area,
           })
-  ) as { data: unknown; error: unknown };
+  ) as { data: unknown; error: { message?: string } | null };
 
+  if (error?.message?.includes('already exists')) {
+    throw new Error('Für diese Verordnung steht schon ein Entwurf. Bitte die Liste neu laden.');
+  }
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
   const id = z.string().uuid().safeParse(data);
   if (!id.success) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
@@ -704,6 +712,12 @@ export async function stelleRechnungAus(invoiceId: string): Promise<string> {
   if (error?.message?.includes('practice billing profile missing')) throw new KeineStammdaten();
   if (error?.message?.includes('invoice recipient address incomplete')) {
     throw new AnschriftUnvollstaendig(error.details);
+  }
+  // ABR-032: Ein Termin liegt inzwischen auf einer anderen Verordnung.
+  if (error?.message?.includes('do not belong to the treatment basis')) {
+    throw new Error(
+      'Ein Termin dieser Rechnung gehört inzwischen zu einer anderen Verordnung. Bitte den Entwurf verwerfen und neu anlegen.',
+    );
   }
   if (error) throw new Error('Die Rechnung konnte nicht ausgestellt werden.');
   const nummer = z.string().safeParse(data);

@@ -347,6 +347,16 @@ describe('Terminhonorar je Termin', () => {
       await erfassen(rows[0]!.id, [KATALOG.kg]);
       expect(await honorar(rows[0]!.id)).toMatchObject([{ amount_cents: 11000 }]);
 
+      // Vorher steht das Honorar in der Kopie nach Art. 15 DSGVO.
+      const { rows: kopie } = await asUser<{
+        daten: { tabellen: { session_fees: { amount_cents: number }[] } };
+      }>(users.ownerTherapist, 'select public.export_patient_record($1::uuid) as daten', [
+        patients.petra,
+      ]);
+      expect(kopie[0]!.daten.tabellen.session_fees).toEqual([
+        expect.objectContaining({ amount_cents: 11000, source: 'agreement' }),
+      ]);
+
       await asPostgres('select app.delete_patient_record($1::uuid, gen_random_uuid(), now())', [
         patients.petra,
       ]);

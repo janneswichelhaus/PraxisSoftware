@@ -130,6 +130,10 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Erfasste Leistungen',
     beschreibung: 'Die abrechenbaren Leistungen je Termin.',
   },
+  session_fees: {
+    label: 'Terminhonorare',
+    beschreibung: 'Das je Behandlungstermin festgeschriebene Honorar und woher es kam.',
+  },
   fee_agreements: {
     label: 'Honorarvereinbarungen',
     beschreibung:

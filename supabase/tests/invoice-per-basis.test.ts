@@ -71,8 +71,12 @@ interface Dokument {
   };
 }
 
-/** Ein dokumentierter Termin `vorTagen` Tage vor heute, 10 Uhr Praxiszeit. */
-async function termin(vorTagen: number, grundlage: string | null = GRUNDLAGE): Promise<string> {
+/** Ein dokumentierter Termin `vorTagen` Tage vor heute, `stunde` Uhr Praxiszeit. */
+async function termin(
+  vorTagen: number,
+  grundlage: string | null = GRUNDLAGE,
+  stunde = 10,
+): Promise<string> {
   const { rows } = await asPostgres<{ id: string }>(
     `insert into public.appointments (
        organization_id, patient_id, staff_member_id, location_id,
@@ -80,8 +84,8 @@ async function termin(vorTagen: number, grundlage: string | null = GRUNDLAGE): P
        completed_at, completed_by
      ) values (
        $1, $2, $3, $4, 'practice', 'documented',
-       ((now() at time zone 'Europe/Berlin')::date - $5::int + time '10:00') at time zone 'Europe/Berlin',
-       ((now() at time zone 'Europe/Berlin')::date - $5::int + time '11:00') at time zone 'Europe/Berlin',
+       ((now() at time zone 'Europe/Berlin')::date - $5::int + make_time($8::int, 0, 0)) at time zone 'Europe/Berlin',
+       ((now() at time zone 'Europe/Berlin')::date - $5::int + make_time($8::int + 1, 0, 0)) at time zone 'Europe/Berlin',
        $6, now(), $7
      ) returning id`,
     [
@@ -92,6 +96,7 @@ async function termin(vorTagen: number, grundlage: string | null = GRUNDLAGE): P
       vorTagen,
       grundlage,
       users.ownerTherapist,
+      stunde,
     ],
   );
   return rows[0]!.id;
@@ -306,6 +311,34 @@ describe('Rechnung je Behandlungsgrundlage', () => {
     );
     expect(rechnung[0]!.treatment_basis_id).toBe(GRUNDLAGE);
     expect((await dokument(neu[0]!.id)).totals.total_cents).toBe(14000);
+  });
+
+  it('nimmt in die Korrektur einer Monatsrechnung keine Leistung mit Grundlage (Zweitreview)', async () => {
+    // Im selben Monat: ein Termin ohne Grundlage, einer mit.
+    await bestaetigen(await termin(2, null), [KATALOG.kg]);
+    const { rows: monat } = await asPostgres<{ monat: string }>(
+      `select to_char(date_trunc('month', (now() at time zone 'Europe/Berlin')::date - 2), 'YYYY-MM-DD') as monat`,
+    );
+    const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF_MONAT, [
+      patients.erika,
+      monat[0]!.monat,
+    ]);
+    await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+    await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2::text)', [
+      rows[0]!.id,
+      'Empfaenger falsch',
+    ]);
+    await bestaetigen(await termin(2, GRUNDLAGE, 14), [KATALOG.kg]);
+
+    const { rows: neu } = await asUserCommitted<{ id: string }>(
+      users.office,
+      'select public.create_correction_draft($1::uuid) as id',
+      [rows[0]!.id],
+    );
+    expect((await dokument(neu[0]!.id)).items).toHaveLength(1);
+    await asUserCommitted(users.office, AUSSTELLEN, [neu[0]!.id]);
+    // Die Leistung mit Grundlage bleibt fuer ihre Verordnung abzurechnen.
+    expect((await kandidaten()).filter((k) => k.treatment_basis_id === GRUNDLAGE)).toHaveLength(1);
   });
 
   it('laesst nur die Rollen der Abrechnung und nur die eigene Praxis anlegen', async () => {

@@ -204,6 +204,32 @@ describe('Tarif und Honorarvereinbarung', () => {
       ).rejects.toThrow(/permission denied/);
     });
 
+    it('laesst ein Patientenkonto weder anlegen noch den Tarif setzen', async () => {
+      await expect(
+        asUserCommitted(users.patientMax, ANLEGEN, [patients.max, '2026-02-01', 11000]),
+      ).rejects.toThrow(/not allowed/);
+      await expect(asUserCommitted(users.patientMax, TARIF, [KATALOG.entwurf, 1])).rejects.toThrow(
+        /not allowed/,
+      );
+    });
+
+    it('entfernt und setzt nichts in einer anderen Praxis', async () => {
+      const { rows } = await asUserCommitted<{ id: string }>(users.ownerTherapist, ANLEGEN, [
+        patients.max,
+        '2026-02-01',
+        11000,
+      ]);
+      const fremd = await fremdeOrganisation();
+      await expect(asUserCommitted(fremd.owner, ENTFERNEN, [rows[0]!.id])).rejects.toThrow(
+        /not found/,
+      );
+      await expect(asUserCommitted(fremd.owner, TARIF, [KATALOG.entwurf, 1])).rejects.toThrow(
+        /not found/,
+      );
+      const { rows: rest } = await asPostgres('select 1 from public.patient_fee_agreements');
+      expect(rest).toHaveLength(1);
+    });
+
     it('legt keine Vereinbarung fuer eine Akte einer anderen Praxis an', async () => {
       const fremd = await fremdeOrganisation();
       await expect(

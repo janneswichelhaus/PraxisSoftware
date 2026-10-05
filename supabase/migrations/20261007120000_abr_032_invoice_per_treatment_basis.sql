@@ -479,11 +479,13 @@ begin
       and b.training_relationship_id is not distinct from v_alt.training_relationship_id
       and b.status = 'billable'
       and b.service_area = v_alt.service_area
-      -- ABR-032: dieselbe Klammer wie die stornierte Rechnung. Eine Rechnung
-      -- aus der Zeit vor ABR-032 hat keine Grundlage und bleibt beim Monat.
+      -- ABR-032: dieselbe Klammer wie die stornierte Rechnung - die Grundlage,
+      -- ohne sie der Monat, und dann nur Leistungen ohne Grundlage (die
+      -- gehoeren auf die Rechnung ihrer Verordnung).
       and (
         (v_alt.treatment_basis_id is not null and a.treatment_basis_id = v_alt.treatment_basis_id)
         or (v_alt.treatment_basis_id is null
+            and a.treatment_basis_id is null
             and date_trunc('month', b.performed_on)::date = v_alt.period_month)
       )
       and not exists (

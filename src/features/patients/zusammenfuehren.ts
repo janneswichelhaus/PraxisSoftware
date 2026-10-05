@@ -112,7 +112,7 @@ const SPERREN: Record<string, string> = {
   draft_invoice_overlap:
     'Beide Akten haben einen Rechnungsentwurf für denselben Monat. Bitte einen der beiden Entwürfe verwerfen.',
   fee_agreement_overlap:
-    'Beide Akten haben eine Honorarvereinbarung ab demselben Tag. Bitte die nicht angewandte entfernen.',
+    'Beide Akten haben eine Honorarvereinbarung ab demselben Tag. Bitte eine davon entfernen; ist sie schon an einem Termin angewandt, vorher die Erfassung dieser Termine im Büro zurücknehmen.',
   open_waitlist_overlap:
     'Beide Akten stehen ohne Grundlage auf der Warteliste. Bitte einen der beiden Einträge schließen.',
   note_too_long:
