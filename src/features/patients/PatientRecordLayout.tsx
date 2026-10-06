@@ -203,8 +203,9 @@ function HinweiseImKopf({ patient }: { patient: Patient }) {
   ].filter((teil): teil is string => teil !== null);
   if (teile.length === 0) return null;
   return (
+    // Ohne eigene Karte: Der Kopf ist schon eine (Leitfaden L2) - eine Linie
+    // trennt die Hinweise von den Knöpfen.
     <Disclosure
-      inKarte
       kopf="label"
       summary={
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
