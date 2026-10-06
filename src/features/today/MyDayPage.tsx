@@ -459,6 +459,45 @@ function MeinTag({
     );
   }
 
+  /**
+   * „Doku" an jeder Zeile des Zeitstrahls (Leitfaden schlank und klar, L3;
+   * Jannes 2026-10-06): an jedem Behandlungstermin des Tages, auch nach dem
+   * Abschließen und nach dem Festschreiben - erledigt heißt nicht
+   * unerreichbar. Das Ziel ist dasselbe wie an der Karte, der Reiter „Doku"
+   * der Akte mit diesem Termin oben (AKTE-008, ANN-225); er zeigt je nach
+   * Stand Schreibseite, Entwurf oder den festgeschriebenen Eintrag mit dem Weg
+   * zum Nachtrag (ADR-016). Abgesagt und nicht angetroffen bekommen keinen
+   * Knopf: Zu ihnen entsteht keine Dokumentation (ADR-018).
+   */
+  function zeilenAktionen(termin: DayPlanEntry): ReactNode {
+    const mitDoku =
+      termin.kind === 'therapy' &&
+      termin.patient_id !== null &&
+      (darfDokuLesen || darfDokumentieren) &&
+      termin.status !== 'cancelled' &&
+      termin.status !== 'no_show';
+    const knopf = haken(termin);
+    if (!mitDoku && !knopf) return null;
+    return (
+      <>
+        {mitDoku ? (
+          <ButtonLink
+            to={mitRueckweg(`/patienten/${termin.patient_id}/doku?termin=${termin.id}`, '/')}
+            variant="secondary"
+            groesse="kompakt"
+            className="shrink-0"
+          >
+            Doku{' '}
+            <span className="sr-only">
+              zum Termin um {formatLocalTime(termin.starts_at, zeitzone)} Uhr
+            </span>
+          </ButtonLink>
+        ) : null}
+        {knopf}
+      </>
+    );
+  }
+
   // PRX-013: Was zur Erstaufnahme noch fehlt, steht an der Karte - vor der
   // Tür, wo man es noch mitnehmen oder erledigen kann. Dieselbe Abfrage wie
   // unter „Offene Punkte".
@@ -695,7 +734,7 @@ function MeinTag({
           anfahrten={fahrzeiten.anfahrten}
           veraltet={fahrzeiten.veraltet}
           karte={karte()}
-          haken={haken}
+          aktionen={zeilenAktionen}
         />
       ) : null}
     </>

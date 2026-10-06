@@ -116,7 +116,7 @@ export function Zeitstrahl({
   anfahrten,
   veraltet,
   karte,
-  haken,
+  aktionen,
 }: {
   /** Die Tagesliste, nach Uhrzeit sortiert. */
   plan: readonly DayPlanEntry[];
@@ -135,10 +135,11 @@ export function Zeitstrahl({
   /** Die Karte des ausgeklappten Termins. */
   karte: ReactNode;
   /**
-   * Der Haken einer Zeile (Design-Handoff 2026-10-01, Abschnitt 6a): rechts
-   * neben der Zeile, nicht in ihr - ein Knopf darf nicht in einem Link liegen.
+   * Die Knöpfe einer Zeile - „Doku" und der Haken (Design-Handoff 2026-10-01,
+   * Abschnitt 6a; Leitfaden schlank und klar, L3): rechts neben der Zeile,
+   * nicht in ihr - ein Knopf darf nicht in einem Link liegen.
    */
-  haken?: (termin: DayPlanEntry) => ReactNode;
+  aktionen?: (termin: DayPlanEntry) => ReactNode;
 }) {
   const jetztText = jetztMarke ? formatLocalTime(new Date(jetzt).toISOString(), zeitzone) : '';
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
@@ -258,7 +259,7 @@ export function Zeitstrahl({
                           )}
                         </span>
                       </Link>
-                      {haken?.(termin)}
+                      {aktionen?.(termin)}
                     </div>
                   )}
                 </div>
