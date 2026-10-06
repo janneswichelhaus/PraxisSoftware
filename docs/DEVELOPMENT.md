@@ -245,6 +245,11 @@ Punkt 19). Die Einstellungen
 der Function setzt Jannes im Supabase-Projekt selbst
 ([`hosting-optionen.md`](decisions/hosting-optionen.md), Schritt 2e); der
 Workflow schreibt sie nicht. Nur synthetische Adressen (ADR-019 Punkt 15).
+Scheitert das Ausliefern der Function, etwa bei einer Störung der
+Verwaltungs-API von Supabase, bleibt der Lauf trotzdem grün mit einer Warnung:
+Die Oberfläche wird ausgeliefert, die Function behält ihren bisherigen Stand.
+Danach den Workflow einmal von Hand starten (ohne „neu aufsetzen"); scheitert
+er erneut, das Secret `TESTENV_SUPABASE_ACCESS_TOKEN` prüfen (2026-10-06).
 
 **Grenzen.** Keine Mails (Kennwort vergessen, Einladungen: BEF-026); außer
 `location-provider` keine Edge Functions (ADR-015 Punkt 20). Ohne Kartendienst
