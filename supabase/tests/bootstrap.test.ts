@@ -2,7 +2,14 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { asAnon, asPostgres, asUser, asUserCommitted, resetDatabaseOhneSeed } from './helpers/db';
+import {
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabaseOhneSeed,
+  jwtClaims,
+} from './helpers/db';
 
 /**
  * OPS-007: die Probe des Bootstrap-Runbooks.
@@ -291,7 +298,7 @@ describe('OPS-007 — Bootstrap weist ab und legt dabei nichts an', () => {
     await expect(
       asPostgres(
         `begin;
-         select set_config('request.jwt.claims', '{"sub":"${OWNER_ID}","role":"authenticated"}', true);
+         select set_config('request.jwt.claims', '${jwtClaims(OWNER_ID)}', true);
          ${BOOTSTRAP_LITERAL};
          commit;`,
       ),

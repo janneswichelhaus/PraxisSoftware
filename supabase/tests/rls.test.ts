@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase, jwtClaims } from './helpers/db';
 
 const { users, patients, organizationId } = SEED;
 
@@ -325,7 +325,7 @@ describe('Audit-Log (ADR-010)', () => {
     await asPostgres(
       `begin;
        select set_config('role', 'authenticated', true);
-       select set_config('request.jwt.claims', '{"sub":"${users.therapist}","role":"authenticated"}', true);
+       select set_config('request.jwt.claims', '${jwtClaims(users.therapist)}', true);
        select public.log_patient_record_view('${patients.max}');
        commit;`,
     );

@@ -77,6 +77,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Vermerk „nicht erreicht“ oder „Nachricht hinterlassen“ an einem Termin. Fällt zwei Wochen nach dem Termin; „erreicht“ steht als Mitteilung am Termin.',
   },
+  sitzungsvermerk: {
+    label: 'Sitzungssperre',
+    beschreibung:
+      'Zeitpunkt der letzten Bedienung je angemeldeter Sitzung, damit sich die Anwendung nach 30 Minuten ohne Bedienung sperrt. Fällt einen Tag danach und mit dem Konto.',
+  },
   personenstammdaten: {
     label: 'Personenstammdaten',
     beschreibung:

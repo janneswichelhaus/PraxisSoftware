@@ -3080,3 +3080,15 @@ Technik · entschieden (Claude) · 2026-10-06 · Claude (Runde 3, Handoff Kalend
 **Anker.** `GESTEN_MERKER`, `spanneGelernt` und `spanneMerken` in `src/features/appointments/gestenMerker.ts`, gelesen in `src/features/appointments/AnlegenMenue.tsx`.
 
 **Änderungspfad.** Je Sitzung neu: `localStorage` durch `sessionStorage` ersetzen · Aufwand `klein`. Beim Abmelden löschen: den Merker in `raeumen` des `SessionProvider` entfernen wie den Startbild-Merker · Aufwand `klein`.
+
+### ANN-256 — Sitzungssperre im Server: letzte Anmeldung aus `amr`, letzte Bedienung als Vermerk je Sitzung, höchstens einmal je Minute
+
+Datenschutz · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 W1 und W2; Auftrag Jannes „nach 30/60 min automatisch ausloggen“) · erledigt · Wiedervorlage: Datenschutzprüfung vor dem Go-live (M3)
+
+**Annahme.** Die Datenbank sperrt jede Anfrage einer Sitzung, deren letzte Anmeldung (jüngster Zeitstempel im Claim `amr`) 60 Minuten oder deren letzte Bedienung 30 Minuten zurückliegt (W1 (a), Jannes). Die letzte Bedienung ist ein Vermerk je `session_id` in `public.session_activity` (W2 (a)): Konto und Zeitpunkt, kein Inhalt, keine Seite. Die Anwendung schreibt ihn bei einem Tipp, Klick oder Tastendruck höchstens einmal je Minute über `session_status(true)`; eine gesperrte Sitzung bekommt keinen Vermerk mehr. Ein Token ohne `amr` oder `session_id` gilt als gesperrt. Datenklasse `sitzungsvermerk`: ein Tag nach der letzten Bedienung, die Löschung macht `session_status` selbst; fällt mit dem Konto.
+
+**Begründung.** ADR-025 Punkt 6 verlangt die Prüfung an einer Stelle in der Datenbank; sie steht in `app.session_open()` und hängt an den vier Funktionen, über die jede Policy, Projektion und RPC liest (`current_organization_id`, `current_person_id`, `has_any_role`, `platform_readable_access`). W2 (b), die Token-Erneuerung, misst Netzwerkverkehr statt Bedienung. Einmal je Minute hält die Schreiblast klein; die Oberfläche rechnet ihre Frist ab dem letzten Vermerk und sperrt deshalb höchstens eine Minute früher als nach der letzten Bedienung, nie später als der Server. Ein Tag Aufbewahrung: Nach 60 Minuten ist die Sitzung ohnehin gesperrt, der Rest ist Spielraum. Unsicher: ob die Datenschutzprüfung den Vermerk als Leistungs- oder Verhaltenskontrolle (§20) sehen könnte — er steht nur dem Server zur Verfügung, kein Konto kann ihn lesen, und er wird nach einem Tag gelöscht.
+
+**Anker.** `app.session_open()`, `app.session_max_duration()`, `app.session_idle_timeout()` und `public.session_status` in `supabase/migrations/20261012100000_sec_001_sitzungssperre.sql`; geprüft in `supabase/tests/sitzungssperre.test.ts`.
+
+**Änderungspfad.** Andere Fristen: die beiden Konstanten-Funktionen und `SPERRFRISTEN` in der Oberfläche ändern · Aufwand `klein`. Je Kontoart verschieden (W1 (c)): `app.session_idle_timeout()` nach `user_profiles` unterscheiden · Aufwand `klein`. Ohne Vermerk (W2 (b)): `session_activity` entfernen und die Inaktivität aus `iat` lesen · Aufwand `mittel`.

@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, resetDatabase } from './helpers/db';
+import { SEED, asAnon, asPostgres, asUser, resetDatabase, jwtClaims } from './helpers/db';
 import { AUDIT_ACTIONS } from '@/features/audit/actions';
 
 const { users, patients, organizationId } = SEED;
@@ -9,7 +9,7 @@ async function committedAs(userId: string, sql: string): Promise<void> {
   await asPostgres(
     `begin;
      select set_config('role', 'authenticated', true);
-     select set_config('request.jwt.claims', '{"sub":"${userId}","role":"authenticated"}', true);
+     select set_config('request.jwt.claims', '${jwtClaims(userId)}', true);
      ${sql};
      commit;`,
   );

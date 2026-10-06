@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabaseOhneTermine,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
@@ -191,7 +192,7 @@ async function alsOffice(client: Client): Promise<void> {
   await client.query('begin');
   await client.query("select set_config('role', 'authenticated', true)");
   await client.query("select set_config('request.jwt.claims', $1, true)", [
-    JSON.stringify({ sub: users.office, role: 'authenticated' }),
+    jwtClaims(users.office),
   ]);
 }
 

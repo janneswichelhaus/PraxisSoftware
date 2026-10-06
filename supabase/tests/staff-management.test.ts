@@ -10,6 +10,7 @@ import {
   resetDatabaseOhneTermine,
   tagInTagen,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
 
@@ -852,9 +853,7 @@ describe('Nebenlaeufigkeit von Deaktivierung und Terminzuweisung', () => {
   async function beginne(c: Client, userId: string) {
     await c.query('begin');
     await c.query("select set_config('role', 'authenticated', true)");
-    await c.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: 'authenticated' }),
-    ]);
+    await c.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(userId)]);
   }
 
   it('laesst eine Terminanlage nicht an einer bereits deaktivierten Person vorbeilaufen', async () => {

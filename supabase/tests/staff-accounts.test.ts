@@ -6,6 +6,7 @@ import {
   asUser,
   asUserCommitted,
   resetDatabaseOhneTermine,
+  jwtClaims,
 } from './helpers/db';
 import { erwarteAbgewiesenenSchreibversuch } from './helpers/abgewiesen';
 
@@ -901,7 +902,7 @@ describe('app.has_strong_authentication', () => {
     const { rows } = await asPostgres<{ stark: boolean }>(
       `select set_config('request.jwt.claims', $1, false) is not null
               and app.has_strong_authentication() as stark`,
-      [JSON.stringify({ sub: users.ownerTherapist, role: 'authenticated', aal: 'aal2' })],
+      [jwtClaims(users.ownerTherapist, { aal: 'aal2' })],
     );
     expect(rows[0]?.stark).toBe(true);
   });
