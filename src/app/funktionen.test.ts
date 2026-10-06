@@ -54,6 +54,24 @@ describe('funktionskatalog', () => {
     expect(arbeitszeiten?.vorschau).toBeUndefined();
   });
 
+  it('findet das Vorschau-Protokoll für jede Rolle (BEF-049, RAH-004)', () => {
+    // Bis zum Handoff vom 2026-10-05 führte nur der Satz auf `/bereiche`
+    // dorthin - und den sah, wer keine Tableiste mit „Mehr" hatte, nie.
+    for (const rollen of [['owner'], ['therapist'], ['patient']] as const) {
+      const katalog = funktionskatalog(testUser([...rollen], 'Max Mustermann'));
+      const treffer = sucheFunktionen(katalog, 'Vorschau');
+      const protokoll = treffer.find((eintrag) => eintrag.id === 'seite-vorschau-protokoll');
+      expect(protokoll, rollen.join()).toMatchObject({
+        art: 'Seite',
+        bezeichnung: 'Vorschau-Protokoll',
+        ziel: '/vorschau/protokoll',
+      });
+    }
+    expect(
+      bezeichnungen(sucheFunktionen(funktionskatalog(testUser(['owner'])), 'simuliert')),
+    ).toContain('Vorschau-Protokoll');
+  });
+
   it('bietet einem Patientenkonto keine Vorgänge der Praxis an', () => {
     const katalog = funktionskatalog(testUser(['patient'], 'Max Mustermann'));
     const namen = bezeichnungen(katalog);

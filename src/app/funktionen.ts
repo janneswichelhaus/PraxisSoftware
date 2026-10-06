@@ -298,6 +298,18 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     stichworte: ['kennwort', 'passwort', 'sitzung', 'profil', 'zwei-faktor'],
   });
 
+  // Das Vorschau-Protokoll (BEF-049, RAH-004): Bis hierher führte nur der
+  // Satz auf `/bereiche` dorthin - und den sahen Rollen ohne „Mehr" nie. Die
+  // Route steht jeder angemeldeten Rolle offen.
+  eintraege.push({
+    id: 'seite-vorschau-protokoll',
+    art: 'Seite',
+    bezeichnung: 'Vorschau-Protokoll',
+    hinweis: 'Was in Vorschauen dieser Sitzung simuliert wurde',
+    ziel: '/vorschau/protokoll',
+    stichworte: ['vorschau', 'protokoll', 'simuliert', 'sitzung'],
+  });
+
   return eintraege;
 }
 
