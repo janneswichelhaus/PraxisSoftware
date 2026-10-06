@@ -181,16 +181,18 @@ describe('sucheFunktionen', () => {
   it('findet Seiten unter dem, was auf ihnen steht (ORG-07)', () => {
     // Bis UXR-002 fanden „Audit", „Frist" oder „Löschung" nichts, obwohl es
     // die Seiten gibt - der Katalog kannte nur die Menünamen.
+    // Seit RAH-005 heißt der Menüpunkt „Sicherheit und Aufbewahrung"; die
+    // Aufbewahrung findet die Suche weiter als eigene Seite.
     for (const [begriff, seite] of [
-      ['audit', 'Protokoll'],
-      ['protokoll', 'Protokoll'],
-      ['sicherheit', 'Protokoll'],
+      ['audit', 'Sicherheit und Aufbewahrung'],
+      ['protokoll', 'Sicherheit und Aufbewahrung'],
+      ['sicherheit', 'Sicherheit und Aufbewahrung'],
       ['frist', 'Arbeitszeiten'],
       ['raster', 'Arbeitszeiten'],
       ['startort', 'Arbeitszeiten'],
       ['planung', 'Arbeitszeiten'],
-      ['loschung', 'Aufbewahrung'],
-      ['Löschsperre', 'Aufbewahrung'],
+      ['loschung', 'Aufbewahrung und Löschung'],
+      ['Löschsperre', 'Aufbewahrung und Löschung'],
     ] as const) {
       expect(bezeichnungen(sucheFunktionen(katalog, begriff)), begriff).toContain(seite);
     }

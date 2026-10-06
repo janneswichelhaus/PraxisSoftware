@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { act, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation, useNavigationType } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
@@ -820,6 +820,44 @@ describe('SubNav', () => {
       '/abrechnung/auswertung',
     );
     expect(screen.getByRole('list').scrollLeft).toBe(0);
+    // Nichts liegt rechts außer Sicht: kein Verlauf.
+    expect(document.querySelector('[data-verlauf]')).toBeNull();
+  });
+
+  it('zeigt am rechten Rand einen Verlauf, solange dort noch Einträge liegen (RAH-005)', () => {
+    geometrie();
+    renderWithProviders(
+      <SubNav eintraege={abrechnung} label="Bereich Abrechnung" />,
+      '/abrechnung',
+    );
+    const liste = screen.getByRole('list');
+    // Sechs Einträge à 120 px, 300 sichtbar, Anfang: rechts liegt noch etwas.
+    const verlauf = document.querySelector('[data-verlauf]')!;
+    expect(verlauf).not.toBeNull();
+    // Dekorativ, von der Fläche nach durchsichtig, nur unter 640 px, nicht
+    // klickbar - der letzte sichtbare Eintrag bleibt darunter zu treffen.
+    expect(verlauf).toHaveAttribute('aria-hidden', 'true');
+    expect(verlauf).toHaveTextContent('›');
+    expect(verlauf.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'w-18',
+        'from-canvas',
+        'to-transparent',
+        'sm:hidden',
+        'pointer-events-none',
+        'text-line-strong',
+      ]),
+    );
+
+    // Ans Ende gerollt: nichts mehr rechts, der Verlauf geht.
+    liste.scrollLeft = 720 - 300;
+    fireEvent.scroll(liste);
+    expect(document.querySelector('[data-verlauf]')).toBeNull();
+
+    // Wieder zurück: er kommt wieder.
+    liste.scrollLeft = 0;
+    fireEvent.scroll(liste);
+    expect(document.querySelector('[data-verlauf]')).not.toBeNull();
   });
 });
 

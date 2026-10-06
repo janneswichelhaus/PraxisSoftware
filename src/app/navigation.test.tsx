@@ -226,7 +226,11 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
 
   it('nennt Menüpunkte wie die Seiten, die sie öffnen (ABR-26, ORG-07)', () => {
     expect(punkt(['owner'], 'abrechnung', '/abrechnung/katalog')?.label).toBe('Leistungskatalog');
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe('Protokoll');
+    // Seit RAH-005 ein Punkt für Protokoll und Aufbewahrung; die Seite dahinter
+    // heißt weiter „Protokoll", der Reiter nennt sie so.
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe(
+      'Sicherheit und Aufbewahrung',
+    );
     expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.label).toBe('Arbeitszeiten');
   });
 
@@ -235,11 +239,18 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
       expect.arrayContaining(['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']),
     );
     expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.stichworte).toEqual(
-      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit']),
+      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung']),
     );
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')?.stichworte).toEqual(
-      expect.arrayContaining(['Löschung', 'Löschsperre']),
-    );
+  });
+
+  it('führt Protokoll und Aufbewahrung als einen Punkt, aktiv auf beiden Seiten (RAH-005)', () => {
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')).toBeUndefined();
+    const sicherheit = punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit');
+    expect(sicherheit?.pfade).toEqual(['/praxis/sicherheit']);
+    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    expect(
+      betrieb?.unterpunkte.filter((eintrag) => eintrag.to.startsWith('/praxis/sicherheit')),
+    ).toHaveLength(1);
   });
 
   it('verspricht Raster, Frist und Startort nur der Rolle, die sie auf der Seite sieht', () => {

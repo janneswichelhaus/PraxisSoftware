@@ -235,20 +235,19 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
   if (isOwner(roles)) {
-    // Menüpunkt und Seitentitel tragen dasselbe Wort (ORG-07): bis UXR-002
-    // öffnete „Sicherheit" eine Seite namens „Audit". Das alte Wort findet
-    // die Suche weiter.
+    // Protokoll und Aufbewahrung sind **ein** Punkt (Handoff Rahmen vom
+    // 2026-10-05, RAH-005): Beides sind Nachweise der Praxisleitung, keine
+    // Arbeitsvorräte (LOE-002b, ADR-008), und zwei Punkte dafür machten das
+    // Untermenü am Telefon um einen Bildschirm länger. Der Punkt öffnet das
+    // Protokoll; die Aufbewahrung ist dort der zweite Reiter
+    // (`SicherheitReiter`), die Routen bleiben. `pfade`: aktiv auf beiden
+    // Seiten. Die alten Wörter - Audit, Protokoll, Löschung - findet die
+    // Suche weiter (ORG-07).
     eintraege.push({
       to: '/praxis/sicherheit/audit',
-      label: 'Protokoll',
-      stichworte: ['Audit', 'Zugriffe', 'Sicherheit'],
-    });
-    // Aufbewahrung und Loeschung gehoeren zur Praxisleitung wie das Auditlog:
-    // beides sind Nachweise, keine Arbeitsvorraete (LOE-002b, ADR-008).
-    eintraege.push({
-      to: '/praxis/sicherheit/aufbewahrung',
-      label: 'Aufbewahrung',
-      stichworte: ['Löschung', 'Löschsperre'],
+      label: 'Sicherheit und Aufbewahrung',
+      pfade: ['/praxis/sicherheit'],
+      stichworte: ['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung', 'Löschsperre'],
     });
   }
   eintraege.push(

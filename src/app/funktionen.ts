@@ -7,6 +7,7 @@ import {
   canReadPatientDirectory,
   canWriteTrainingClients,
   canWriteTreatmentBases,
+  isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -272,6 +273,22 @@ function vorgaenge(user: CurrentUser): Funktion[] {
       bereich: BEREICHE.termine.label,
       stichworte: ['training', 'personal training', 'coaching', 'neu', 'planen'],
       rueckweg: true,
+    });
+  }
+
+  // Die Aufbewahrung ist seit RAH-005 kein eigener Menüpunkt mehr, sondern
+  // der zweite Reiter unter „Sicherheit und Aufbewahrung". Die Suche führt
+  // weiter unmittelbar auf die Seite - dieselbe Rollenbedingung wie ihre
+  // Route.
+  if (isOwner(roles)) {
+    eintraege.push({
+      id: 'seite-aufbewahrung',
+      art: 'Seite',
+      bezeichnung: 'Aufbewahrung und Löschung',
+      hinweis: 'Aufbewahrungsplan, Löschsperren, Löschjournal',
+      ziel: '/praxis/sicherheit/aufbewahrung',
+      bereich: BEREICHE.betrieb.label,
+      stichworte: ['löschung', 'löschsperre', 'frist', 'sicherheit'],
     });
   }
 

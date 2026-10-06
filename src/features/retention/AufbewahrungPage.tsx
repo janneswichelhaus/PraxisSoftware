@@ -31,6 +31,7 @@ import {
   useVerwaisteVormerken,
 } from '@/features/files/dateien';
 import { aktenortDerDatei } from '@/features/files/dokumentarten';
+import { SicherheitReiter } from '@/features/audit/SicherheitReiter';
 import type { CurrentUser } from '@/features/session/types';
 
 /**
@@ -490,6 +491,8 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
 export function AufbewahrungPage({ user }: { user: CurrentUser }) {
   return (
     <>
+      {/* Zweiter Reiter unter „Sicherheit und Aufbewahrung" (RAH-005). */}
+      <SicherheitReiter />
       <PageHeader
         title="Aufbewahrung und Löschung"
         description="Was wie lange bleibt, was gerade zurückgehalten wird und was gelöscht wurde. Fristen ändern sich über eine Migration, nicht hier."
