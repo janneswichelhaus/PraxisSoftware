@@ -268,9 +268,8 @@ export function AppointmentFormFields({
       {art === 'home_visit' ? hausbesuch : null}
 
       {art === 'video' ? (
-        <div className="border-line bg-surface-sunken rounded-card border p-4">
-          <p className="text-ink text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
-        </div>
+        // Ein Satz, kein Kasten (Leitfaden L2).
+        <p className="text-ink-muted text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
       ) : null}
     </Feldgruppe>
   );

@@ -1902,3 +1902,26 @@ describe('Kleingedrucktes (BEF-068 Option 2, Variante K-A; SKN-004)', () => {
     expect(satz.className).not.toContain('text-xs');
   });
 });
+
+describe('Kein Kasten im Kasten: Meldung und Rückfrage (Leitfaden L2)', () => {
+  it('setzt die Fehlermeldung als Fläche mit Linie links, ohne Rahmen und Radius', () => {
+    renderWithProviders(<ErrorState title="Nicht geladen." />);
+    const meldung = screen.getByRole('alert');
+    expect(meldung).toHaveClass('border-l-4', 'border-danger');
+    expect(meldung).not.toHaveClass('rounded-card');
+    expect(meldung).not.toHaveClass('border');
+  });
+
+  it('setzt die offene Rückfrage ebenso', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Rueckfrage ausloeser="Löschen" bestaetigen="Ja, löschen" onBestaetigen={() => undefined}>
+        Wirklich?
+      </Rueckfrage>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Löschen' }));
+    const gruppe = screen.getByRole('group', { name: 'Löschen' });
+    expect(gruppe).toHaveClass('border-l-4');
+    expect(gruppe).not.toHaveClass('rounded-card');
+  });
+});

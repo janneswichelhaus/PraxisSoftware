@@ -162,9 +162,9 @@ export function BausteinFeld({
       {text ? (
         <Section titel="Vorschlag für den Eintrag" ebene={ebene}>
           <div className="flex flex-col gap-3">
-            {/* Eine Auskunft, kein vertiefter Bedienbereich: auf Papier mit
-                  Linie (UI-002c, BEF-18). */}
-            <p className="bg-surface border-line rounded-card text-ink border p-3 text-sm wrap-anywhere whitespace-pre-wrap">
+            {/* Eine Auskunft, kein vertiefter Bedienbereich (UI-002c, BEF-18):
+                mit Linie links, ohne Kasten im Kasten (Leitfaden L2). */}
+            <p className="border-line-strong text-ink border-l-2 py-0.5 pl-3 text-sm wrap-anywhere whitespace-pre-wrap">
               {text}
             </p>
             {streifen ? null : (
@@ -315,7 +315,7 @@ function SeitenWahl({
         <div
           role="group"
           aria-label="Seite wechseln"
-          className="border-line rounded-card bg-surface flex flex-col gap-2 border p-3 text-sm"
+          className="border-line-strong bg-surface-sunken flex flex-col gap-2 border-l-4 py-3 pr-3 pl-4 text-sm"
         >
           <p className="text-ink">
             Nur {frage.seite}: {frage.anzahl === 1 ? 'Eine Angabe' : `${frage.anzahl} Angaben`} der

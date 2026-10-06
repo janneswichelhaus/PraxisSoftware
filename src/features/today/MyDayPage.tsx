@@ -692,9 +692,8 @@ function MeinTag({
       {besuche.length === 0 && !stehtBesuchAus ? (
         // Der Titel sagt, was der Fall ist (UEB-11): An einem Tag ohne Besuch
         // ist nichts „erledigt". Eine Fehlzeit steht darunter im Zeitstrahl.
-        <Card>
-          <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
-        </Card>
+        // Ohne Karte drumherum: ein Satz ist kein Kasten (Leitfaden L2).
+        <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur

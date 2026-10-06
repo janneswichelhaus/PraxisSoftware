@@ -37,10 +37,10 @@ export function Hervorhebungen({
   if (definition.hervorhebungen.length === 0) return null;
 
   return (
-    // Ein Rahmen um eine Auskunft, kein Eingabefeld: Linie und Radius einer
-    // Fläche (BEF-18), nicht `line-strong` und `rounded-field`. Die
-    // Überschrift steht eine Ebene unter dem Abschnitt des Bogens (h3).
-    <div className="border-line rounded-card mt-3 border px-4 py-3">
+    // Eine Auskunft mit Linie links statt eines Rahmens (Leitfaden L2): Sie
+    // steht in der Karte der Erhebung. Die Überschrift steht eine Ebene unter
+    // dem Abschnitt des Bogens (h3).
+    <div className="border-line-strong mt-3 border-l-2 py-1 pl-4">
       <h3 className="text-ink-muted tracking-label text-xs font-semibold uppercase">
         Hervorgehobene Angaben
       </h3>

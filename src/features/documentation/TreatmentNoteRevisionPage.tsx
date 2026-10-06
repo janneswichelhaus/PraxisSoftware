@@ -146,10 +146,10 @@ function Formular({
         kompakt
       />
 
-      {/* Ein Hinweis, kein Bedienelement: vertieft, mit der Trennlinie statt
-          des Rahmens für Bedienbares (DOK-19) - so bleibt er von der
-          Rückfrage des Schutzes unterscheidbar. */}
-      <div className="border-line bg-surface-sunken rounded-card mb-6 max-w-2xl border p-4">
+      {/* Ein Hinweis, kein Bedienelement (DOK-19): Text mit Linie links,
+          ohne Kasten (Leitfaden L2) - die Rückfrage des Schutzes ist vertieft
+          und bleibt so unterscheidbar. */}
+      <div className="border-line-strong mb-6 max-w-2xl border-l-2 py-0.5 pl-4">
         <p className="text-ink text-sm leading-relaxed">
           Der bisherige Wortlaut bleibt als eigene Version erhalten und abrufbar. Eine Korrektur ist
           für echte Fehler gedacht – wer nachträglich etwas ergänzen möchte, legt stattdessen einen{' '}

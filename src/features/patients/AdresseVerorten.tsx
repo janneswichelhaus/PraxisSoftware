@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import type { GeocodeResult, LocationErrorCode } from '@/lib/location/contract';
 import {
@@ -241,8 +240,9 @@ export function AdresseVerorten({
       <p>Noch nicht verortet – ohne Kartenposition fehlt der Hausbesuch auf der Tourenkarte.</p>
       {treffer ? (
         // Der Treffer ist eine Auskunft und steht deshalb auf der Fläche des
-        // Systems, nicht in einem eigenen Kasten (PAT-14).
-        <Inhaltsflaeche className="space-y-2">
+        // Systems, nicht in einem eigenen Kasten (PAT-14, Leitfaden L2): eine
+        // Linie links, er steht schon in der Karte „Person“.
+        <div className="border-line-strong space-y-2 border-l-2 pl-3">
           <p>
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.
@@ -273,7 +273,7 @@ export function AdresseVerorten({
               Verwerfen
             </Button>
           </div>
-        </Inhaltsflaeche>
+        </div>
       ) : (
         <Button
           type="button"

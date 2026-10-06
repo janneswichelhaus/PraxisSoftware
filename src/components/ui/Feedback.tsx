@@ -130,7 +130,11 @@ export function ErrorState({
   }
 
   return (
-    <div role="alert" className="rounded-card border-danger/25 bg-danger-soft border px-4 py-3">
+    // Eine Meldung mit Linie links statt einer Karte (Leitfaden L2): Sie
+    // steht fast immer in einem Abschnitt, der schon eine Karte ist - als
+    // eigener Kasten wurde sie der Kasten im Kasten. Die Fläche in Rot bleibt:
+    // Farbe trägt hier Bedeutung (L5).
+    <div role="alert" className="border-danger bg-danger-soft border-l-4 py-3 pr-4 pl-4">
       {/* Titel und Erklärung sind Fließtext: eigene Zeilenlänge, seit das
           Gerüst die volle Fensterbreite nutzt (UI-001). */}
       <p className="text-danger text-liste max-w-prose font-medium">{title}</p>
