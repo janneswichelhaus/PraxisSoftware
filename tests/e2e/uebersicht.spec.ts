@@ -90,7 +90,13 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
 
   // Die späteren Besuche: eine Zeile mit Ort und Anfahrt, darüber der Übergang.
   const zweite = eintraege.nth(2);
-  await expect(zweite.getByRole('link')).toContainText('Beispielstrasse 12 · Anfahrt ≈ 9 min');
+  await expect(zweite.getByRole('link', { name: /Mustermann/ })).toContainText(
+    'Beispielstrasse 12 · Anfahrt ≈ 9 min',
+  );
+  // Daneben ein eigener Knopf „Doku" mit 44 px Tippziel (Leitfaden L3).
+  const doku = zweite.getByRole('link', { name: /^Doku zum Termin um / });
+  await expect(doku).toBeVisible();
+  expect((await doku.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   await expect(zweite).toContainText('≈ 9 min Rad · 21 min Puffer');
   // 11:00 bis 11:30 bei 26 Minuten Fahrt: knapp, mit Zeichen und Zahl.
   await expect(eintraege.nth(3)).toContainText('! ≈ 26 min Rad · 4 min Puffer');

@@ -98,9 +98,11 @@ vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
     fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,
 }));
 const fetchEmpfaenger = vi.fn();
+const fetchHonorar = vi.fn();
 vi.mock('@/features/billing/api', async (importOriginal) => ({
   ...(await importOriginal<typeof BillingApi>()),
   fetchEmpfaenger: (id: string) => fetchEmpfaenger(id) as Promise<BillingApi.Empfaenger[]>,
+  fetchHonorar: (id: string) => fetchHonorar(id) as Promise<BillingApi.Honorarstand | null>,
 }));
 
 const { Stammdaten } = await import('./PatientMasterDataPage');
@@ -137,6 +139,7 @@ describe('Stammdaten der Akte', () => {
     fetchPatientFiles.mockReset().mockResolvedValue([]);
     fetchIntakeChecklist.mockReset().mockResolvedValue([]);
     fetchEmpfaenger.mockReset().mockResolvedValue([]);
+    fetchHonorar.mockReset().mockResolvedValue(null);
   });
 
   describe('Karten (Akte entschlacken, 2026-10-03)', () => {
@@ -184,31 +187,35 @@ describe('Stammdaten der Akte', () => {
     it('nennt „Rechnung an" nur, wenn die Rechnung nicht an die Person selbst geht (L2)', async () => {
       // Ohne Empfänger:in und mit der Person als Standard wiederholte die
       // Zeile nur Name und Adresse von oben (Jannes 2026-10-06).
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
+      await waitFor(() => expect(fetchEmpfaenger).toHaveBeenCalled());
+      expect(screen.queryByText('Rechnung an')).toBeNull();
+      expect(screen.queryByText('Rechnungsanschrift')).toBeNull();
+      expect(screen.queryByText('wie Hausbesuch')).toBeNull();
+    });
+
+    it('zeigt das Terminhonorar in der Verwaltung nur owner und office (ABR-030)', async () => {
+      // Seit SLK-003 steht die Vereinbarung in der Karte „Verwaltung", die
+      // alle Praxisrollen sehen - das Honorar aber weiter nur die Rollen der
+      // Rechnungsempfänger (Zweitreview SLK, Negativtest).
+      fetchHonorar.mockResolvedValue({
+        current_cents: null,
+        current_source: null,
+        current_valid_from: null,
+        agreements: [],
+      });
       const { unmount } = renderWithProviders(
         <Stammdaten patient={aktiv} user={testUser(['office'])} />,
       );
-      await waitFor(() => expect(fetchEmpfaenger).toHaveBeenCalled());
-      expect(screen.queryByText('Rechnung an')).toBeNull();
-      expect(screen.queryByText('wie Hausbesuch')).toBeNull();
+      const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
+      expect(await within(verwaltung).findByText(/Kein Terminhonorar/)).toBeInTheDocument();
       unmount();
 
-      fetchEmpfaenger.mockResolvedValue([
-        {
-          id: 'e0',
-          recipient_kind: 'self',
-          name: `${aktiv.given_name} ${aktiv.family_name}`,
-          street: 'Musterweg',
-          house_number: '12b',
-          postal_code: '72070',
-          city: 'Tübingen',
-          reference: null,
-          is_default: true,
-        },
-      ]);
-      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-      await waitFor(() => expect(fetchEmpfaenger).toHaveBeenCalledTimes(2));
-      expect(screen.queryByText('Rechnung an')).toBeNull();
-      expect(screen.queryByText('Rechnungsanschrift')).toBeNull();
+      fetchHonorar.mockClear();
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Verwaltung' });
+      expect(screen.queryByText(/Terminhonorar/)).toBeNull();
+      expect(fetchHonorar).not.toHaveBeenCalled();
     });
 
     it('fragt für die Behandlung keine Rechnungsempfänger ab', async () => {

@@ -323,8 +323,10 @@ function AbrechnungZeilen({ patient, user }: { patient: Patient; user: CurrentUs
     enabled: darfEmpfaenger,
     retry: false,
   });
-  const standard = empfaenger.data?.find((e) => e.is_default) ?? null;
-  const abweichend = standard && standard.recipient_kind !== 'self' ? standard : null;
+  // Eine gespeicherte Empfänger:in ist nie die Person selbst: `self` lässt
+  // die Tabelle nicht zu (ABR-003a), es entsteht nur in Leseabfragen als
+  // Ersatz. Jede Standard-Empfänger:in ist also eine Abweichung.
+  const abweichend = empfaenger.data?.find((e) => e.is_default) ?? null;
   const anschrift = abweichend
     ? [
         [abweichend.street, abweichend.house_number].filter(Boolean).join(' '),
