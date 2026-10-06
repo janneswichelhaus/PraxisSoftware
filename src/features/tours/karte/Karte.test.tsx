@@ -18,6 +18,7 @@ interface KartenOptionen {
   transformRequest?: (url: string) => { url: string; headers?: Record<string, string> };
   minZoom?: number;
   maxZoom?: number;
+  cooperativeGestures?: boolean;
   locale?: Record<string, string>;
 }
 
@@ -314,6 +315,21 @@ describe('Karte', () => {
     expect(optionen?.minZoom).toBe(0);
     expect(optionen?.maxZoom).toBe(17);
     expect(optionen?.locale?.['Map.Title']).toBe('Karte');
+  });
+
+  it('lässt einen Finger die Seite rollen und sagt die Geste auf Deutsch (Runde 3)', () => {
+    render(
+      <Karte config={KONFIGURATION} freigabe="offen" stopps={stopps(1)} beschriftung="Karte" />,
+    );
+
+    const optionen = karten[0]?.optionen;
+    expect(optionen?.cooperativeGestures).toBe(true);
+    expect(optionen?.locale?.['CooperativeGesturesHandler.MobileHelpText']).toBe(
+      'Zum Verschieben der Karte zwei Finger verwenden',
+    );
+    expect(optionen?.locale?.['CooperativeGesturesHandler.WindowsHelpText']).toBe(
+      'Zum Zoomen Strg und Mausrad verwenden',
+    );
   });
 
   it('zeigt die eigene Quellenangabe, wenn der Style keine nennt (BEF-022)', () => {
