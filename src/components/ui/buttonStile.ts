@@ -27,7 +27,7 @@ export type Variant = 'primary' | 'secondary' | 'quiet';
 // gesperrter Hauptknopf sonst neben einem aktiven Sekundaerknopf fast
 // gleich aussah; gestrichelt heisst in der App schon „nicht bedienbar,
 // Platzhalter" (belegte Zeit im Kalender, leere Karte). Der Zustand haengt
-// deshalb an der Variante, nicht an der Basis.
+// deshalb an der Variante, nicht an der Basis (ANN-252).
 const basis =
   'nicht-drucken inline-flex h-12 items-center justify-center gap-2 rounded-button px-5 ' +
   'text-base font-bold transition-colors disabled:cursor-not-allowed';

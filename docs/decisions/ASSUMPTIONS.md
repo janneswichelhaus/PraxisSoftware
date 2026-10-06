@@ -3026,3 +3026,15 @@ Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `supabase/migrations/20261010100000_por_008_platform_appointments.sql` (`app.platform_appointment_history`, `platform_appointments`; neu gefasst in `20261010120000_por_010_platform_appointment_change.sql`); `terminBeschreibung` in `src/features/platform/terminbeschreibung.ts`; Tests `supabase/tests/platform-appointments.test.ts` (Spaltenliste, Fremdzugriff), `Termine.test.tsx`.
 
 **Änderungspfad.** Anderer Zeitraum: `app.platform_appointment_history` in einer neuen Migration · Aufwand `klein`. Weitere Spalten (etwa das Honorar): Spaltenliste in `platform_appointments` und Test der Datensparsamkeit · Aufwand `klein`, vorher ADR-023 Punkt 22 prüfen.
+
+### ANN-252 — Schrift und Knöpfe nach Runde 2: nichts unter 12 px außer der Absenderzeile, Kleingedrucktes 14 px, gesperrt heißt gestrichelt
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 5) · erledigt · Wiedervorlage: —
+
+**Annahme.** Kein Lesetext unter 12 px; die Tableiste steht in 12 px ohne seitlichen Innenabstand (statt 11 px, Variante L-B), die Symbolspalte ebenso. Kleingedrucktes am Seitenende hat 14 px über den Baustein `Kleingedrucktes` (Variante K-A). Ein gesperrter Haupt- oder Sekundärknopf zeigt eine gestrichelte Kontur in `line-strong` ohne Fläche, der leise Knopf nur leisen Text (Variante B). Einzige Schrift unter 12 px ist die Absenderzeile auf Papier (`--text-absenderzeile`); Haken und Kreuz im Zeitstrahl sind gezeichnet.
+
+**Begründung.** BEF-068 Option 2 und BEF-069 Option 1 (Jannes 2026-10-05), Varianten auf der Leinwand am 2026-10-06 gewählt. Gemessen: „Organisation“ in 12/600 ist 69 px breit, bei 360 px hat jedes Ziel 72 px (vorher mit 11 px und Innenabstand 0,8 px Luft). Gestrichelt statt durchgezogen, weil ein gesperrter Hauptknopf neben einem aktiven Sekundärknopf sonst fast gleich aussah. Handoff `docs/design/handoff-2026-10-06-schrift-und-knoepfe.md`.
+
+**Anker.** `--text-leiste`, `--text-kleingedruckt`, `--text-absenderzeile` in `src/index.css`; die Varianten in `src/components/ui/buttonStile.ts`; Wächter „Kein Lesetext unter 12 px“ in `src/designsystem.test.ts`; E2E `tests/e2e/tableiste.spec.ts`.
+
+**Änderungspfad.** Andere Größe: das Token ändern · Aufwand `klein`. Gesperrt anders zeigen: die drei Varianten in `buttonStile.ts` · Aufwand `klein`.

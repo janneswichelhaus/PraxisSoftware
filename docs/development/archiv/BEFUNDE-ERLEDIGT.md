@@ -1315,6 +1315,111 @@ Kiefer, an der Wirbelsäule je Nerventest eine Zeile links und rechts
 eingerückt, Techniken mit „•“, Ausgangsstellung nur beim Abhaken (ANN-130);
 die Notiz öffnet sich auf Tipp.
 
+### BEF-068 — Schrift: 11 px ohne Token an Tableiste und Kalender, 12 px für Hinweise und Fehler, Abzeichen unter dem Maß des Handoffs
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| Bereich | Querschnitt: Tableiste (unter 640 px), Kalender (Stundenachse, Kacheln), Befund-Verlauf (Messreihe), Untermenü (Vorschau-Zeichen), Kopfsuche („Strg K“); Kleingedrucktes am Seitenende; Baustein `Badge`                                                                                                                                                                                                                                                                                                                  |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Messwerte aller Aufnahmen, Gegenprüfung; Review-IDs TOK-02, TOK-03, UIK-23, TOK-04, UIK-B01                                                                                                                                                                                                                                                                                                                                                            |
+| Status  | erledigt 2026-10-06 in SKN-EPIC-001 (Runde 2): Option 2 mit Varianten L-B (Leiste 12 px ohne Innenabstand) und K-A (Kleingedrucktes 14 px); dichte Angaben auf 12 px, Absenderzeile als einzige Ausnahme, Wächter in `designsystem.test.ts` (ANN-252) |
+| Berührt | `src/app/AppShell.tsx` (Z. 51), `src/app/navigation.tsx` (Z. 37–45), `src/lib/begriffe.test.ts` (Z. 101), `src/features/appointments/CalendarGrid.tsx` (Z. 411, 425, 827, 832), `src/features/assessments/Messreihenbild.tsx`, `src/components/ui/SubNav.tsx` (Z. 58), `src/app/Funktionssuche.tsx` (Z. 262), `src/components/ui/Badge.tsx` (Z. 56), `src/components/ui/RoleBadge.tsx`, `src/features/account/MeinKontoPage.tsx` (Z. 234), `src/index.css`; DS-001; `docs/product/kanvas/own-motion-praxis.html`; ANN-111 |
+
+**Beobachtung.**
+
+- **Unter 12 px.** Die kleinste Stufe des Systems ist 12 px. Darunter liegen:
+  die Beschriftung der Tableiste (11 px, auf jeder Seite unter 640 px),
+  Stundenachse und Kachelzeilen im Kalender (11 px; die Kachel kürzt schon so
+  „Dokumen…“), die halben Stunden (10 px in abgeschwächter Farbe, rund 3,4:1 auf
+  Weiß — unter AA; nur bei großer Stundenhöhe sichtbar), das Vorschau-Zeichen
+  und „Strg K“ (11 px), die Messreihe im Befund-Verlauf (9 px in Bildeinheiten,
+  am Handy effektiv rund 10 px). Keiner dieser Werte ist ein Token. Die 11 px
+  der Tableiste stecken in der Rechnung der Kurzformen: „Organisation“ braucht
+  in 12 px 68,4 px, Platz je Ziel ist bei 375 px 67 px; mit knapperem
+  Innenabstand passt es bei 375 px, bei 360 px (eine häufige Android-Breite)
+  nicht.
+- **12 px als Hinweisgröße.** 55 Stellen setzen dieselbe Kette als
+  Kleingedrucktes am Seitenende — darunter „Jedes Öffnen eines Fotos wird
+  protokolliert.“ —, dazu 32 Meta- und Statustexte und drei Fehlertexte (Termin,
+  Fehlzeit, Serie), während die Feldbausteine Fehler in 14 px setzen. Das
+  Geheimnis zum Abtippen bei der Zwei-Faktor-Einrichtung steht in 12 px. Der
+  Handoff sieht für Hinweis und Meta 14 px vor (`--type-body-sm`), 12 px nur für
+  Etikett und Label.
+- **Abzeichen.** `Badge` setzt 12 px mit Gewicht 500 und ist rund 20 px hoch;
+  der Handoff legt 28 px Höhe, 14 px mit Gewicht 600 und 12 px Innenabstand
+  fest. Der Grundlagen-Commit von DS-001 kündigte die Abzeichen „in eigenen
+  Stories“ an; typografisch angefasst wurde der Baustein seitdem nicht.
+  Statusangaben wie „Steht aus“ sind damit die kleinste Schrift auf der Karte.
+
+**Frage an Jannes.** Gilt „kein Text unter 12 px“ als Regel des Design-Systems,
+und mit welchen Ausnahmen? Wie groß ist Kleingedrucktes? Übernimmt `Badge` das
+Maß des Handoffs?
+
+**Optionen.**
+
+1. **Festschreiben, was ist:** 11 px als benanntes Token für Tableiste und
+   Tastenhinweis, 12 px als benannte Fußnoten-Rolle, das kompakte Abzeichen als
+   bewusste Abweichung vom Handoff; nur die Pflicht umsetzen (halbe Stunde ohne
+   Abschwächung, die drei Fehlertexte wie am Feld). Folge: optisch fast nichts;
+   keine freien Werte mehr, ein Test verbietet neue.
+2. **Mindestens 12 px, Hinweise 14 px:** Stundenachse, Kachelzeilen und
+   Vorschau-Zeichen auf 12 px (zusammen mit dem Kachelaufbau, Review KAL-23 —
+   12 px kostet dort Zeilen), die Messreihe so gerechnet, dass ab 300 px
+   Bildbreite 12 px entstehen, Kleingedrucktes über einen Baustein in 14 px,
+   `Badge` nach Handoff (28 px). Die Tableiste bleibt bei 11 px, als Token.
+   Folge: besser lesbar am Lenker; die dichten Stellen (Tageskarte,
+   Listenzeilen, Suchtreffer) sind nach dem Umbau der Abzeichen zu sichten.
+3. **Wie 2, auch die Tableiste auf 12 px** mit knapperem Innenabstand und einem
+   E2E-Test bei 360 und 375 px. Folge: Bei 360 px schiebt die Leiste die Seite
+   um knapp 1 px quer, solange keine Kurzform kürzer wird.
+
+**Empfehlung.** Option 2. Zuerst den Baustein „Kleingedrucktes“ mit der heutigen
+Optik anlegen und die 55 Stellen umstellen — die Größe ist danach eine Zeile.
+Ohne Entscheidung und sofort (die halbe Stunde ohne Abschwächung ist seit
+UXR-001 erledigt): die drei
+Fehlertexte wie am Feld, das Geheimnis in 14 px Festbreitenschrift;
+Statusetiketten, die heute als eigene Pillen gebaut sind, über `Badge` (Review
+UIK-18).
+
+### BEF-069 — Ein gesperrter Hauptknopf ist auf der Seitenfläche nicht als Knopf zu erkennen
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                              |
+| Bereich | Formulare ohne Kasten (UI-002c): Dokumentation, Korrektur, Nachtrag, Abschluss; Kommunikation und „Schlüssel entnehmen“ (Vorschau); Rückfragen während „Wird ausgeführt …“                                                                                                                                                                                                              |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Pixelprobe, Gegenprüfung; Review-IDs UIK-04, VOR-19                                                                                                                                                                                                                                                                  |
+| Status  | erledigt 2026-10-06 in SKN-EPIC-001 (Runde 2): Option 1 als Variante B, gestrichelte Kontur in `line-strong`, keine Fläche; Grund auf der Schlüsselseite (ANN-252) |
+| Berührt | `src/components/ui/buttonStile.ts` (Z. 24, 56), `src/index.css` (Z. 62, 70), `src/components/ui/Rueckfrage.tsx` (Z. 115), `src/features/documentation/TreatmentNotePage.tsx` (Z. 192), `src/features/teamchat/TeamChatPage.tsx` (Z. 260), `src/features/fleet/KeyPage.tsx` (Z. 102), `src/lib/kontrast.test.ts`; DS-001; UI-002b, UI-002c; `docs/product/kanvas/own-motion-praxis.html` |
+
+**Beobachtung.** Gesperrt heißt
+`disabled:bg-surface-sunken disabled:text-ink-muted`; `surface-sunken` und
+`canvas` tragen denselben Wert (#eceee8), und der Hauptknopf hat keinen Rand.
+Seit UI-002b/UI-002c stehen Formulare direkt auf der Seitenfläche — dort
+verschwindet die Knopfform. Pixelprobe in der leeren Dokumentation (390 px): Die
+ganze Zeile um „Als Entwurf speichern“ ist einheitlich #eceee8; übrig bleibt
+grauer Fettdruck neben dem ebenso grauen „Abbrechen“. Gesperrt ist der Knopf
+dort bis zur ersten Eingabe, und nichts sagt, warum. Dasselbe in Kommunikation,
+auf der Schlüsselseite — dort sehen „Entnahme bestätigen“ und der Link „Zurück
+zur Radflotte“ gleich aus — und in der Rückfrage während „Wird ausgeführt …“.
+Der Handoff sieht diese Fläche vor, gedacht war sie für Papierweiß, nicht für
+die Seitenfläche. Eigene Farben statt Transparenz sind in DS-001 festgelegt.
+
+**Frage an Jannes.** Wie soll ein gesperrter Hauptknopf aussehen?
+
+**Optionen.**
+
+1. **Kontur:** Rand in `line-strong`, die Fläche bleibt. Folge: die kleinste
+   Änderung; trägt auf der Seitenfläche und in der Rückfrage und bleibt bei den
+   eigenen Farben aus DS-001.
+2. **Dunklere Füllung** (`line`): Text darauf 4,75:1 (AA), gegen die
+   Seitenfläche aber nur 1,23:1. Folge: mehr Fläche, weniger Form.
+3. **Nicht sperren,** sondern beim Tippen ohne Änderung sagen, was fehlt (wie im
+   Check-Up: „Die Bestätigung fehlt noch …“). Folge: eine Verhaltensänderung in
+   jedem Formular, ein eigener Loop.
+
+**Empfehlung.** Option 1, das Farbpaar in `kontrast.test.ts` festhalten; wo der
+Grund nicht offensichtlich ist, steht neben dem Knopf, was fehlt.
+
 ### BEF-071 — Nach „Termin anlegen“ aus der Terminsuche steht man wieder auf der Suche, mit einer Meldung, die wie ein Fehler klingt
 
 |         |                                                                                                                                             |

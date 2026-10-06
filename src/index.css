@@ -213,8 +213,8 @@
      Abschnitt 2). Seit Runde 2 (Handoff Schrift und Knöpfe 2026-10-06,
      Variante L-B) 12 px statt 11: „Organisation“ in 12/600 ist 69 px breit,
      bei 360 px stehen der Tableiste ohne seitlichen Innenabstand 72 px je
-     Ziel zur Verfügung. Wie `text-liste` bewusst ohne Unter-Token für die
-     Zeilenhöhe. */
+     Ziel zur Verfügung (ANN-252). Wie `text-liste` bewusst ohne Unter-Token
+     für die Zeilenhöhe. */
   --text-leiste: 0.75rem;
 
   /* Kleingedrucktes am Seitenende, nur im Baustein `Kleingedrucktes`

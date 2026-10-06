@@ -95,7 +95,7 @@ const auswahlstrich =
  * accent, 1,66:1 - ist am Lenker und in der Sonne kaum zu sehen. Der Strich
  * ist ein Rand, kein Schatten (DS-001); inaktiv ist er durchsichtig, damit
  * beim Wechsel nichts springt. Die Beschriftung steht seit Runde 2 in 12 px
- * (`text-leiste`, Variante L-B, ANN-111 Fassung 2); dafür hat die Zelle keinen
+ * (`text-leiste`, Variante L-B, ANN-252); dafür hat die Zelle keinen
  * seitlichen Innenabstand - „Organisation" in 12/600 ist 69 px breit, bei
  * 360 px hat jedes der fünf Ziele 72 px.
  */
