@@ -272,10 +272,21 @@ describe('Ort auf der Kachel (UBK-017, ANN-242)', () => {
     expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Musterweg 12');
   });
 
-  it('laesst den Ort weg, wo die Zeile nicht ganz passt - und behauptet ohne Straße nichts', () => {
-    // 30 Minuten bei 80 px je Stunde: 40 px, zwei Zeilen.
+  it('laesst den Ort weg, wo die Zeile nicht ganz passt', () => {
+    // 30 Minuten bei 80 px je Stunde: 40 px, eine Zeile.
     const kurz = kachel({ visit_street: 'Musterweg', visit_house_number: '12' }, 30);
     expect(within(kurz).queryByTestId('kachel-ort')).toBeNull();
+  });
+
+  it('zeigt mit Zustand bei drei Zeilen keinen angeschnittenen Ort - der Tooltip nennt ihn', () => {
+    // 45 Minuten: 60 px, drei Zeilen - die dritte trägt den Zustand (BEF-072).
+    const link = kachel(
+      { status: 'no_show', visit_street: 'Musterweg', visit_house_number: '12' },
+      45,
+    );
+    expect(within(link).getByTestId('kachel-status')).toHaveTextContent('! Nicht angetroffen');
+    expect(within(link).queryByTestId('kachel-ort')).toBeNull();
+    expect(link).toHaveAttribute('title', expect.stringContaining('Musterweg 12'));
   });
 
   it('nennt ohne Straße am Hausbesuch keinen Ort', () => {
