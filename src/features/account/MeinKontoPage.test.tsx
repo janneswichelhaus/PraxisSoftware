@@ -163,6 +163,17 @@ describe('MeinKontoPage', () => {
     expect(screen.getByText('ABCD EFGH IJKL MNOP')).toBeInTheDocument();
   });
 
+  it('setzt das Geheimnis zum Abtippen in 14 px Festbreite (SKN-008)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+
+    await user.click(await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' }));
+    const geheimnis = await screen.findByTestId('totp-geheimnis');
+    expect(geheimnis).toHaveTextContent('ABCD EFGH IJKL MNOP');
+    expect(geheimnis).toHaveClass('font-mono', 'text-sm', 'text-ink');
+    expect(geheimnis).not.toHaveClass('text-xs');
+  });
+
   it('schließt die Einrichtung erst mit einem Code ab', async () => {
     const user = userEvent.setup();
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);

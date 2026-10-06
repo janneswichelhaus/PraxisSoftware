@@ -292,8 +292,17 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
                 alt="QR-Code zum Einrichten des zweiten Faktors"
                 className="border-line rounded-image bg-surface mt-4 w-44 border p-2"
               />
-              <p className="text-ink-muted mt-2 text-xs break-all">
-                Zum Abtippen: <code>{einrichtung.secret}</code>
+              {/* 14 px in Festbreite (Runde 2, SKN-008): Wer abtippt, muss
+                  0 und O, 1 und l auseinanderhalten - in 12 px Leise ging
+                  das kaum. Der zweite Faktor bleibt einrichtbar (ANN-028). */}
+              <p className="text-ink-muted mt-2 text-sm">
+                Zum Abtippen:{' '}
+                <code
+                  data-testid="totp-geheimnis"
+                  className="text-ink font-mono text-sm tracking-wide break-all"
+                >
+                  {einrichtung.secret}
+                </code>
               </p>
 
               <div className="mt-4 flex max-w-xs flex-col gap-3">

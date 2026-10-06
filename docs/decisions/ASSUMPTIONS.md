@@ -433,6 +433,8 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei `owner`-Zugänge einen bestätigten Faktor haben: `app.has_strong_authentication()` in die Policies der Zugangsverwaltung aufnehmen und den genannten Test umdrehen · Aufwand `klein`. Vorher nicht — die Rücknahme wäre ein privilegierter Produktionszugriff und damit `groß`.
 
+**Bestätigt (Jannes, 2026-10-06):** „Behalten, aber erstmal nicht einrichten. Wichtiger ist, dass Nutzer nach 30/60 min automatisch ausgeloggt werden.“ Der zweite Faktor bleibt einrichtbar und wird nicht erzwungen; Jannes richtet ihn vorerst nicht ein. Vorrang hat die Sitzungssperre nach ADR-025 (SEC-EPIC-001). Das Geheimnis „Zum Abtippen“ steht seit SKN-008 in 14 px Festbreite.
+
 ### ANN-029 — Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte
 
 Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart · **LOG-EPIC-001:** eigene Fristen bleiben, jetzt zwei – Lesen und Sicherheit 12 Monate, übrige 3 Jahre (ADR-010 Fassung 3, ANN-230).
