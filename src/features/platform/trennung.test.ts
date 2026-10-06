@@ -31,6 +31,8 @@ const ERLAUBT: readonly RegExp[] = [
   // des Releases (ANN-083), kein Datenzugriff; die Erhebungen selbst kommen
   // über die Plattformprojektion.
   /^@\/features\/assessments\/(FragebogenFelder|antworten|darstellung|instrumente|schema)$/,
+  // POR-014: die Bildansicht - ein Baustein ohne Datenzugriff (ADR-017 Punkt 54).
+  /^@\/features\/files\/Dateiansicht$/,
   /^\.\//,
 ];
 
@@ -80,11 +82,14 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:complete_platform_questionnaire_response',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
+      // POR-014: freigegebene Dokumente und ihr Verweis.
+      'rpc:issue_platform_file_link',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
       'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
       'rpc:platform_context',
+      'rpc:platform_files',
       // POR-013: eigene Rechnungen.
       'rpc:platform_invoice',
       'rpc:platform_invoices',

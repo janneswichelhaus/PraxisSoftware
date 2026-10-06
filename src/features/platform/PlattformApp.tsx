@@ -18,6 +18,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { Befundbogen } from './Befundbogen';
+import { Dokumente } from './Dokumente';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { Termine } from './Termine';
@@ -135,6 +136,16 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Rechnung zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/dokumente`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Dokumente zugang={z} />}
               />
             }
           />
@@ -405,17 +416,26 @@ function Ich({
           </Rueckfrage>
         </div>
       </Section>
-      {/* POR-013: Rechnungen je Bereich; Dokumente folgen mit POR-014. Ob
+      {/* POR-013/014: Rechnungen und Dokumente je Bereich. Ob
           eine Begleitung Rechnungen sieht, entscheidet der Server (billing). */}
       {zugaenge.length > 0 ? (
         <Section titel="Unterlagen" rahmen>
           <ul className="flex flex-col gap-2">
             {zugaenge.map((z) => (
-              <li key={z.access_id}>
+              <li key={z.access_id} className="flex flex-col gap-2">
                 <Textlink to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}>
                   Rechnungen
                   {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
                 </Textlink>
+                {/* POR-014: Dokumente gibt es nur in der Behandlung. */}
+                {z.relationship_kind === 'treatment' ? (
+                  <Textlink
+                    to={`${PLATTFORM_PFAD}/dokumente?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                  >
+                    Dokumente
+                    {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                  </Textlink>
+                ) : null}
               </li>
             ))}
           </ul>

@@ -95,6 +95,7 @@ function scan(rest: Partial<DateienApi.PatientFile> = {}): DateienApi.PatientFil
     uploaded_by_name: 'Anna Beispiel',
     object_missing: false,
     verified_at: null,
+    released_at: null,
     ...rest,
   };
 }

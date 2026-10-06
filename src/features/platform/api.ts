@@ -476,3 +476,91 @@ export async function ladeRechnung(
   if (ergebnis.data === null || ergebnis.data === undefined) return null;
   return antwort(rechnungSchema, ergebnis.data, satz);
 }
+
+// -----------------------------------------------------------------------------
+// Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 54, 55, ANN-246)
+// -----------------------------------------------------------------------------
+
+const dokumentSchema = z.object({
+  id: z.string().uuid(),
+  document_type: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+  byte_size: z.coerce.number(),
+  released_at: z.string(),
+});
+export type Dokument = z.infer<typeof dokumentSchema>;
+
+export function dokumenteSchluessel(zugangId: string) {
+  return ['platform-files', zugangId] as const;
+}
+
+/** Die einzeln freigegebenen Dokumente der Akte - nur im Behandlungszugang. */
+export async function ladeDokumente(zugangId: string): Promise<Dokument[]> {
+  const satz = 'Ihre Dokumente konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_files', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(dokumentSchema), ergebnis.data ?? [], satz);
+}
+
+const verweisSchema = z.object({
+  bucket_id: z.string(),
+  object_key: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+});
+
+/** Gültigkeit eines signierten Verweises in Sekunden (ADR-017 Punkt 15). */
+const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
+
+/**
+ * Der Verweis auf genau ein freigegebenes Dokument: erst die einmalige
+ * Freigabe des Servers (protokolliert als Abruf, ADR-023 Punkt 24), dann die
+ * Unterschrift der Ablage, die sie verbraucht (ADR-017 Punkte 15, 20, 21).
+ * Der Verweis verlässt dieses Modul nicht.
+ */
+async function dokumentVerweis(
+  zugangId: string,
+  dokumentId: string,
+  herunterladen: boolean,
+): Promise<{ url: string; mimeType: string; name: string }> {
+  const satz = 'Das Dokument konnte nicht geöffnet werden.';
+  const ergebnis = (await getSupabase().rpc('issue_platform_file_link', {
+    p_access_id: zugangId,
+    p_file_id: dokumentId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const freigabe = antwort(z.array(verweisSchema), ergebnis.data ?? [], satz)[0];
+  if (!freigabe) throw new Error(satz);
+  const ablage = getSupabase().storage.from(freigabe.bucket_id);
+  const { data: signiert, error } = herunterladen
+    ? await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
+        download: freigabe.display_name,
+      })
+    : await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
+  if (error || !signiert?.signedUrl) throw new Error(satz);
+  return { url: signiert.signedUrl, mimeType: freigabe.mime_type, name: freigabe.display_name };
+}
+
+/** Ein Bild zum Ansehen in der Anwendung (ADR-017 Punkt 54). */
+export async function ladeDokumentZumAnzeigen(
+  zugangId: string,
+  dokumentId: string,
+): Promise<{ bild: Blob; name: string }> {
+  const { url, mimeType, name } = await dokumentVerweis(zugangId, dokumentId, false);
+  const antwortDerAblage = await fetch(url, { cache: 'no-store' });
+  if (!antwortDerAblage.ok) throw new Error('Das Dokument konnte nicht geladen werden.');
+  return { bild: new Blob([await antwortDerAblage.arrayBuffer()], { type: mimeType }), name };
+}
+
+/** Ein Dokument auf das Gerät holen (ADR-017 Punkt 55), etwa ein PDF. */
+export async function ladeDokumentHerunter(zugangId: string, dokumentId: string): Promise<void> {
+  const { url } = await dokumentVerweis(zugangId, dokumentId, true);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.download = '';
+  link.click();
+}

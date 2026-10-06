@@ -9,6 +9,7 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatLocalDate } from '@/features/appointments/api';
+import { fetchPatientFiles } from '@/features/files/api';
 import {
   einloeseadresse,
   getPlatformAccess,
@@ -187,6 +188,10 @@ function Zustand({
         {zustand === 'revoked' ? (
           <DetailRow label="Entzogen am">{datum(zugang?.revoked_at ?? null)}</DetailRow>
         ) : null}
+        {/* POR-014 (DSN-001 Abschnitt 6): was die Person unter „Dokumente" sieht. */}
+        {art === 'treatment' && (aktiv || gesperrt) ? (
+          <FreigegebeneDokumente patientId={verhaeltnisId} />
+        ) : null}
         {zugang?.invitation_id ? (
           <DetailRow label={zugang.invitation_purpose === 'reset' ? 'Neues Kennwort' : 'Einladung'}>
             {zugang.invitation_channel === 'email'
@@ -349,5 +354,24 @@ export function EinladungVorOrt({
       </p>
       <Button onClick={onFertig}>Fertig</Button>
     </div>
+  );
+}
+
+/**
+ * „Freigegeben: n Dokumente" (POR-014): dieselbe Liste wie in der Akte,
+ * gezählt nach der Freigabe. Ohne Leserecht auf Dateien keine Zeile.
+ */
+function FreigegebeneDokumente({ patientId }: { patientId: string }) {
+  const { data } = useQuery({
+    queryKey: ['patient-files', patientId, 'plattform'],
+    queryFn: () => fetchPatientFiles(patientId, null),
+    retry: false,
+  });
+  if (!data) return null;
+  const anzahl = data.filter((d) => d.released_at).length;
+  return (
+    <DetailRow label="Freigegeben">
+      {anzahl === 0 ? 'kein Dokument' : anzahl === 1 ? '1 Dokument' : `${anzahl} Dokumente`}
+    </DetailRow>
   );
 }

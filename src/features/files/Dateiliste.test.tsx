@@ -19,6 +19,7 @@ const ladeDateiHoch = vi.fn();
 const ladeDateiZumAnzeigen = vi.fn();
 const ladeDateiHerunter = vi.fn();
 const loescheDatei = vi.fn();
+const setzeFreigabe = vi.fn();
 const korrigiereDokumentart = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -32,6 +33,7 @@ vi.mock('./api', async (importOriginal) => {
       ladeDateiZumAnzeigen(id) as Promise<{ bild: Blob; mimeType: string; name: string }>,
     ladeDateiHerunter: (id: string) => ladeDateiHerunter(id) as Promise<void>,
     loescheDatei: (id: string) => loescheDatei(id) as Promise<void>,
+    setzeFreigabe: (id: string, frei: boolean) => setzeFreigabe(id, frei) as Promise<void>,
     korrigiereDokumentart: (id: string, art: string) =>
       korrigiereDokumentart(id, art) as Promise<void>,
   };
@@ -54,6 +56,7 @@ function datei(rest: Partial<FilesApi.PatientFile> = {}): FilesApi.PatientFile {
     uploaded_by_name: 'Anna Beispiel',
     object_missing: false,
     verified_at: null,
+    released_at: null,
     ...rest,
   };
 }
@@ -648,6 +651,44 @@ describe('Dateiliste', () => {
  * „Dokument fotografieren" in der Akte, „Rezept fotografieren" an der
  * Verordnung.
  */
+describe('Dateiliste — Freigabe für die Plattform (POR-014, DSN-001 D3)', () => {
+  beforeEach(() => {
+    fetchPatientFiles.mockReset();
+    setzeFreigabe.mockReset();
+    setzeFreigabe.mockResolvedValue(undefined);
+  });
+
+  it('laesst eine Behandlungsrolle eine Datei einzeln freigeben', async () => {
+    const nutzer = userEvent.setup();
+    fetchPatientFiles.mockResolvedValue([datei()]);
+    renderWithProviders(
+      <Dateiliste patientId={PATIENT} user={testUser(['therapist'])} darfHinzufuegen />,
+    );
+    await nutzer.click(await screen.findByRole('button', { name: 'Für die Person freigeben' }));
+    expect(screen.getByText(/erscheint auf der Plattform der Person/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Freigeben' }));
+    await waitFor(() => expect(setzeFreigabe).toHaveBeenCalledWith('d1', true));
+  });
+
+  it('zeigt die Freigabe als Wort und bietet die Ruecknahme an', async () => {
+    fetchPatientFiles.mockResolvedValue([datei({ released_at: '2026-10-06T08:00:00.000Z' })]);
+    renderWithProviders(
+      <Dateiliste patientId={PATIENT} user={testUser(['therapist'])} darfHinzufuegen />,
+    );
+    expect(await screen.findByText('Für die Person freigegeben')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Freigabe zurücknehmen' })).toBeInTheDocument();
+  });
+
+  it('bietet dem Buero keine Freigabe an (ANN-246)', async () => {
+    fetchPatientFiles.mockResolvedValue([datei({ document_type: 'vertrag', is_clinical: false })]);
+    renderWithProviders(
+      <Dateiliste patientId={PATIENT} user={testUser(['office'])} darfHinzufuegen />,
+    );
+    await screen.findByText('Befund Schulter.pdf');
+    expect(screen.queryByRole('button', { name: /freigeben/i })).not.toBeInTheDocument();
+  });
+});
+
 describe('Dateiliste — Scanzeile an der Verordnung (BEF-060 Teil 2)', () => {
   beforeEach(() => {
     vi.clearAllMocks();

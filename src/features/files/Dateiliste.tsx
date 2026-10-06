@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
@@ -8,7 +9,7 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { ladeDateiHerunter, ladeDateiZumAnzeigen, type PatientFile } from './api';
+import { ladeDateiHerunter, ladeDateiZumAnzeigen, setzeFreigabe, type PatientFile } from './api';
 import { Dateiansicht } from './Dateiansicht';
 import { Fotoverlustschutz } from './Fotoverlustschutz';
 import { Kameradialog } from './Kameradialog';
@@ -481,12 +482,18 @@ function Artkorrektur({
  * Datei ist weg, und das lässt sich nicht rückgängig machen (DAT-23). Sie
  * wartet auf das Ergebnis und zeigt einen Fehlschlag im Kasten (ZST-06).
  */
+/** Fotos erscheinen nie auf der Plattform (ADR-017 Punkt 37, ANN-246). */
+function istFoto(art: string): boolean {
+  return art === 'patientenfoto' || art === 'dokumentationsfoto';
+}
+
 function Dateizeile({
   datei,
   patientId,
   zeitzone,
   darfLoeschen,
   darfArtKorrigieren,
+  darfFreigeben,
   arten,
 }: {
   datei: PatientFile;
@@ -494,8 +501,15 @@ function Dateizeile({
   zeitzone: string;
   darfLoeschen: boolean;
   darfArtKorrigieren: boolean;
+  /** POR-014: für die Person auf der Plattform freigeben (Behandlungsrollen). */
+  darfFreigeben: boolean;
   arten: readonly Dokumentart[];
 }) {
+  const queryClient = useQueryClient();
+  const freigabe = useMutation({
+    mutationFn: (freigegeben: boolean) => setzeFreigabe(datei.id, freigegeben),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['patient-files', patientId] }),
+  });
   const [laeuft, setLaeuft] = useState<'oeffnen' | 'herunterladen' | null>(null);
   const [fehler, setFehler] = useState<string | null>(null);
   const [ansicht, setAnsicht] = useState<Blob | null>(null);
@@ -549,6 +563,7 @@ function Dateizeile({
           <Badge ton={istKlinisch(art) ? 'neutral' : 'akzent'}>
             {istKlinisch(art) ? 'Klinisch' : 'Organisatorisch'}
           </Badge>
+          {datei.released_at ? <Badge ton="positiv">Für die Person freigegeben</Badge> : null}
           {datei.object_missing || !anzeigbar ? null : (
             <Button
               ref={oeffnenRef}
@@ -577,6 +592,26 @@ function Dateizeile({
           )}
           {darfArtKorrigieren ? (
             <Artkorrektur datei={datei} patientId={patientId} arten={arten} />
+          ) : null}
+          {/* POR-014 (DSN-001 D3): einzeln freigeben, jederzeit zurücknehmen;
+              Fotos bietet die Liste gar nicht an. */}
+          {darfFreigeben && !datei.object_missing ? (
+            <Rueckfrage
+              ausloeser={datei.released_at ? 'Freigabe zurücknehmen' : 'Für die Person freigeben'}
+              ausloeserVariante="quiet"
+              bezeichnung={`„${datei.display_name}“ ${datei.released_at ? 'nicht mehr' : ''} für die Person freigeben`}
+              bestaetigen={datei.released_at ? 'Freigabe zurücknehmen' : 'Freigeben'}
+              bestaetigenLaeuft="Wird gespeichert …"
+              fehler={freigabe.isError ? freigabe.error.message : undefined}
+              onAbbrechen={() => freigabe.reset()}
+              onBestaetigen={() => freigabe.mutateAsync(!datei.released_at)}
+            >
+              <span className="wrap-anywhere">
+                {datei.released_at
+                  ? `„${datei.display_name}“ verschwindet sofort von der Plattform der Person.`
+                  : `„${datei.display_name}“ erscheint auf der Plattform der Person unter „Dokumente“. Sie kann die Datei ansehen und herunterladen; jeder Abruf steht im Protokoll.`}
+              </span>
+            </Rueckfrage>
           ) : null}
           {darfLoeschen ? (
             <Rueckfrage
@@ -784,6 +819,7 @@ export function Dateiliste({
                   (datei.document_type === 'verordnungsscan' && grundlagenSchreiben))
               }
               darfArtKorrigieren={darfArtKorrigieren}
+              darfFreigeben={klinischSchreiben && !istFoto(datei.document_type)}
               arten={korrekturarten}
             />
           ))}

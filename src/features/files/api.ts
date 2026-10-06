@@ -45,9 +45,32 @@ const patientFileSchema = z.object({
   object_missing: z.boolean(),
   /** Leer: nicht serverseitig geprüft (ADR-017 Punkt 51). */
   verified_at: z.string().nullable(),
+  /** POR-014 (DSN-001 D3): seit wann die Person die Datei auf der Plattform sieht; leer: nicht freigegeben. */
+  released_at: z.string().nullable().default(null),
 });
 
 export type PatientFile = z.infer<typeof patientFileSchema>;
+
+/**
+ * Eine Datei für die Person auf der Plattform freigeben oder die Freigabe
+ * zurücknehmen (POR-014, ANN-246). Nur Behandlungsrollen, nie Fotos; prüft
+ * der Server.
+ */
+export async function setzeFreigabe(fileId: string, freigegeben: boolean): Promise<void> {
+  const { error } = (await getSupabase().rpc('set_patient_file_release', {
+    p_file_id: fileId,
+    p_released: freigegeben,
+  })) as { error: { message?: string } | null };
+  if (error) {
+    if (error.message?.includes('photos'))
+      throw new Error('Fotos lassen sich nicht auf der Plattform freigeben.');
+    throw new Error(
+      freigegeben
+        ? 'Die Datei konnte nicht freigegeben werden. Fehlt die Berechtigung?'
+        : 'Die Freigabe konnte nicht zurückgenommen werden.',
+    );
+  }
+}
 
 export async function fetchPatientFiles(
   patientId: string,

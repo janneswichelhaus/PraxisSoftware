@@ -217,6 +217,7 @@ const offenesFoto: PatientFile = {
   uploaded_by_name: 'Anna Beispiel',
   object_missing: false,
   verified_at: null,
+  released_at: null,
 };
 
 const client = new QueryClient({

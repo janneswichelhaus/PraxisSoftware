@@ -238,6 +238,7 @@ describe('Stammdaten der Akte', () => {
         uploaded_by_name: 'Anna Beispiel',
         object_missing: false,
         verified_at: null,
+        released_at: null,
       });
       fetchPatientFiles.mockResolvedValue([
         datei('vertrag', 'Vertrag unterschrieben.pdf'),
