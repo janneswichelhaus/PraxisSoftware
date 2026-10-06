@@ -29,7 +29,6 @@ export const STAMMDATEN_BESCHRIFTUNG: Record<StammdatenFeld, string> = {
   phone_mobile: 'Mobil',
   phone: 'Telefon (privat)',
   phone_work: 'Telefon (geschäftlich)',
-  fax: 'Telefax',
   email: 'E-Mail',
   institution: 'Einrichtung',
   street: 'Straße',

@@ -32,7 +32,6 @@ const petra = {
   phone: '+49 7071 0000003',
   phone_work: null,
   phone_mobile: null,
-  fax: null,
   institution: null,
   street: 'Beispielweg',
   house_number: '3',

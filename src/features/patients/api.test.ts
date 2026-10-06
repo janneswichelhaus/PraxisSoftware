@@ -66,7 +66,6 @@ describe('fetchPatients (R3-012)', () => {
       'house_number',
       'primary_therapist',
       'institution',
-      'fax',
     ]) {
       expect(spalten).not.toContain(feld);
     }

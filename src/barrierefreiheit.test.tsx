@@ -183,7 +183,6 @@ const leereStammdaten = {
   phone: '',
   phone_work: '',
   phone_mobile: '',
-  fax: '',
   institution: '',
   street: '',
   house_number: '',

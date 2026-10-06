@@ -88,7 +88,6 @@ const FELDER: Record<string, string> = {
   phone: 'Telefon',
   phone_mobile: 'Mobil',
   phone_work: 'Telefon dienstlich',
-  fax: 'Fax',
   institution: 'Einrichtung',
   primary_therapist_staff_member_id: 'Therapeut:in',
   treatment_table_required: 'Behandlungsliege',

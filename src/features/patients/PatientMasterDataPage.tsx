@@ -412,7 +412,7 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
     address || kartenpositionOffen || zugang.stockwerk || zugang.rest || patient.special_note,
   );
   const hatKontaktdaten = Boolean(
-    patient.phone_mobile || patient.phone || patient.phone_work || patient.fax || patient.email,
+    patient.phone_mobile || patient.phone || patient.phone_work || patient.email,
   );
 
   // Formulare und Auskunft kehren hierher zurück - samt dem Rückweg der Akte,
@@ -480,7 +480,6 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
               <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
               <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
-              {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
               {patient.email ? (
                 <DetailRow label="E-Mail">
                   <Textlink

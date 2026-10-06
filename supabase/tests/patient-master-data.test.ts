@@ -14,17 +14,17 @@ const { users, patients } = SEED;
 const ANLEGEN = `
   select public.create_patient(
     $1, $2, $3::date, null, null, null, null, null, null,
-    $4, $5, $6, $7, $8::uuid, $9, $10, $11
+    $4, $5, $6, $7::uuid, $8, $9, $10
   ) as id`;
 
 const AENDERN = `
   select public.update_patient(
     $1::uuid, $2, $3, $4::date, $5, $6, $7, $8, $9, $10,
-    $11, $12, $13, $14, $15::uuid, $16, $17, $18
+    $11, $12, $13, $14::uuid, $15, $16, $17
   ) as id`;
 
 const KARTEI = `
-  select phone_work, phone_mobile, fax, institution,
+  select phone_work, phone_mobile, institution,
          primary_therapist_staff_member_id, primary_therapist_name,
          home_visit_access_note, special_note, remark
   from public.patient_directory where id = $1::uuid`;
@@ -35,7 +35,6 @@ const FREMDE_ID = '99999999-9999-4999-8999-000000000001';
 interface Kartei {
   phone_work: string | null;
   phone_mobile: string | null;
-  fax: string | null;
   institution: string | null;
   primary_therapist_staff_member_id: string | null;
   primary_therapist_name: string | null;
@@ -95,7 +94,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
       '1980-03-14',
       '+49 7071 0000900',
       '+49 160 0000900',
-      '+49 7071 0000901',
       'Pflegedienst Fiktiv',
       ANNA,
       'Hintereingang, Code 1234.',
@@ -108,7 +106,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
     expect(gelesen).toMatchObject({
       phone_work: '+49 7071 0000900',
       phone_mobile: '+49 160 0000900',
-      fax: '+49 7071 0000901',
       institution: 'Pflegedienst Fiktiv',
       primary_therapist_staff_member_id: ANNA,
       primary_therapist_name: 'Anna Beispiel',
@@ -125,7 +122,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
       '1975-01-01',
       '   ',
       '',
-      null,
       '  ',
       null,
       '',
@@ -136,7 +132,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
     expect(gelesen).toMatchObject({
       phone_work: null,
       phone_mobile: null,
-      fax: null,
       institution: null,
       primary_therapist_staff_member_id: null,
       home_visit_access_note: null,
@@ -159,7 +154,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
       'Tuebingen',
       null,
       '+49 160 0000006',
-      null,
       'Betreutes Wohnen Fiktiv',
       ANNA,
       'Erdgeschoss, Klingel "Beispiel". Schluessel bei Nachbarin Frau Fiktiv im 1. OG.',
@@ -196,7 +190,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
         null,
         null,
         null,
-        null,
         FREMDE_ID,
         null,
         null,
@@ -212,7 +205,6 @@ describe('PAT-005: erweiterte Stammdaten und interne Versorgungsangaben', () => 
         'Max',
         'Manipuliert',
         '1957-04-30',
-        null,
         null,
         null,
         null,
@@ -282,7 +274,6 @@ describe('Mandantentrennung (ADR-003)', () => {
         null,
         null,
         null,
-        null,
         fremderStaffMember,
         null,
         null,
@@ -296,5 +287,41 @@ describe('Mandantentrennung (ADR-003)', () => {
       [patients.max],
     );
     expect(rows[0]?.primary_therapist_staff_member_id).not.toBe(fremderStaffMember);
+  });
+});
+
+describe('SLK-001: kein Telefax bei Patient:innen', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('hat weder Spalte noch Parameter fuer ein Telefax der Patient:innen', async () => {
+    const { rows: spalten } = await asPostgres<{ tabelle: string }>(
+      `select table_name as tabelle from information_schema.columns
+        where table_schema = 'public' and column_name = 'fax'
+        order by table_name`,
+    );
+    // Das Telefax der Verordner:innen bleibt: Arztpraxen fuehren es (L1).
+    expect(spalten.map((s) => s.tabelle)).toEqual(['prescribers']);
+
+    const { rows: parameter } = await asPostgres<{ name: string }>(
+      `select p.proname as name from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public'
+          and p.proname in ('create_patient', 'update_patient')
+          and 'p_fax' = any(p.proargnames)`,
+    );
+    expect(parameter).toEqual([]);
+  });
+
+  it('nennt im Auszug fuer die Betroffenenrechte kein Telefax mehr', async () => {
+    const { rows } = await asPostgres<{ funde: number }>(
+      `select count(*)::int as funde from pg_proc p
+         join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname in ('public', 'app')
+          and p.proname in ('export_patient_record', 'merge_patients', 'patient_merge_plan')
+          and p.prosrc ~* '\\mfax\\M'`,
+    );
+    expect(rows[0]?.funde).toBe(0);
   });
 });

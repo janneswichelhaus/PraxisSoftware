@@ -166,7 +166,6 @@ describe('NewPatientPage', () => {
       phone: null,
       phone_work: null,
       phone_mobile: null,
-      fax: null,
       institution: null,
       street: null,
       house_number: null,
@@ -384,13 +383,9 @@ describe('NewPatientPage', () => {
   it('ordnet Kontakt wie die Anzeige und begrenzt die Freitexte', () => {
     renderWithProviders(<NewPatientPage />);
 
-    const kontakt = [
-      'Mobil',
-      'Telefon (privat)',
-      'Telefon (geschäftlich)',
-      'Telefax',
-      'E-Mail',
-    ].map((feld) => screen.getByLabelText(feld));
+    const kontakt = ['Mobil', 'Telefon (privat)', 'Telefon (geschäftlich)', 'E-Mail'].map((feld) =>
+      screen.getByLabelText(feld),
+    );
     for (let i = 1; i < kontakt.length; i += 1) {
       expect(
         kontakt[i - 1]!.compareDocumentPosition(kontakt[i]!) & Node.DOCUMENT_POSITION_FOLLOWING,

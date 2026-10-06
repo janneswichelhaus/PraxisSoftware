@@ -93,7 +93,6 @@ export function testPatient(overrides: Partial<Patient> = {}): Patient {
     phone: null,
     phone_work: null,
     phone_mobile: null,
-    fax: null,
     institution: null,
     street: null,
     house_number: null,

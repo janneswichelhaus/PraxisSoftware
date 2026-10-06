@@ -168,16 +168,6 @@ export function PatientMasterDataFields({
             onChange={(event) => onChange('phone_work', event.target.value)}
           />
           <Field
-            label="Telefax"
-            name="fax"
-            feldId={stammdatenFeldId('fax')}
-            type="tel"
-            autoComplete="off"
-            value={werte.fax}
-            error={fehler.fax}
-            onChange={(event) => onChange('fax', event.target.value)}
-          />
-          <Field
             label="E-Mail"
             name="email"
             feldId={stammdatenFeldId('email')}
