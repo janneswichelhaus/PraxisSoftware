@@ -16,4 +16,8 @@ elementPrototyp.scrollIntoView ??= () => {
 
 afterEach(() => {
   cleanup();
+  // Merker im Browser-Speicher (Startbild, Gesten-Hinweis) gelten je Test
+  // neu - sonst hinge ein Ergebnis an der Reihenfolge der Tests.
+  window.localStorage.clear();
+  window.sessionStorage.clear();
 });

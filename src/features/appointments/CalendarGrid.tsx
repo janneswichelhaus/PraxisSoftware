@@ -44,6 +44,7 @@ import { FahrwegMenue, type FahrwegAuskunft } from './FahrwegMenue';
 import type { Lueckenstufe } from './lueckenfinder';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
+import { auswahlBildlauf } from './auswahlBildlauf';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
 import { useZweiFingerZoom } from './useZweiFingerZoom';
 
@@ -610,6 +611,31 @@ export function CalendarGrid({
     // Ohne Bildlauf: Die Stelle ist im Bild, und ein Sprung nähme sie heraus.
     (ziel ?? ersatz)?.focus({ preventScroll: true });
   }, [fokus]);
+
+  // Die Auswahl rollt über die Anlegen-Leiste, wenn diese sie verdeckt
+  // (Runde 3, Handoff Kalender und Tour 2026-10-06): danach im oberen Drittel
+  // des freien Bereichs, darunter Platz für den zweiten Tipp. Als Layout-
+  // Effekt vor dem Fokus in der Leiste, damit Vorlesesoftware nicht an einer
+  // verdeckten Stelle landet. Reduzierte Bewegung: ohne Animation.
+  const auswahlFlaecheRef = useRef<HTMLDivElement>(null);
+  const anlegenLeisteRef = useRef<HTMLDivElement>(null);
+  const auswahlSchluessel = auswahl
+    ? `${auswahl.spalteId}|${auswahl.vonMinute}|${auswahl.bisMinute}`
+    : null;
+  useLayoutEffect(() => {
+    const flaeche = auswahlFlaecheRef.current;
+    const leiste = anlegenLeisteRef.current;
+    if (!auswahlSchluessel || !flaeche || !leiste) return;
+    const a = flaeche.getBoundingClientRect();
+    const weg = auswahlBildlauf({
+      auswahlOben: a.top,
+      auswahlUnten: a.bottom,
+      leisteOben: leiste.getBoundingClientRect().top,
+    });
+    if (weg === 0) return;
+    const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
+    window.scrollBy({ top: weg, behavior: ruhig ? 'auto' : 'smooth' });
+  }, [auswahlSchluessel]);
 
   // Die Lage des Rückfragekastens aus seiner gemessenen Höhe (KAL-13). Vor
   // dem Zeichnen gemessen, damit er nicht erst an der falschen Stelle
@@ -1201,6 +1227,7 @@ export function CalendarGrid({
                   dem Gitter, damit die Spalte frei bleibt (BEF-035). */}
                 {auswahl && auswahl.spalteId === s.id ? (
                   <div
+                    ref={auswahlFlaecheRef}
                     data-testid="auswahl-flaeche"
                     className="border-accent bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
                     style={{
@@ -1269,6 +1296,7 @@ export function CalendarGrid({
 
       {auswahl ? (
         <AnlegenMenue
+          ref={anlegenLeisteRef}
           auswahl={auswahl}
           className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 sm:bottom-4"
         />

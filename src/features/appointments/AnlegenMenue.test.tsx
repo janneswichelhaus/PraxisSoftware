@@ -79,3 +79,53 @@ describe('AnlegenMenue', () => {
     expect(onSchliessen).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('AnlegenMenue am Handy (Runde 3, Handoff Kalender und Tour)', () => {
+  it('blendet unter 640 px die Hinweiszeilen aus, nicht aber den Grund einer gesperrten Wahl', () => {
+    render(
+      <AnlegenMenue
+        auswahl={{
+          spalteId: 'a',
+          vonMinute: 540,
+          bisMinute: 600,
+          onSchliessen: () => undefined,
+          eintraege: [
+            {
+              schluessel: 'termin',
+              beschriftung: 'Neuer Termin',
+              hinweis: '09:00 Uhr, 60 Minuten',
+              onWaehlen: () => undefined,
+            },
+            {
+              schluessel: 'dauertermin',
+              beschriftung: 'Dauertermin',
+              hinweis: 'Zuerst die Patient:in wählen.',
+              deaktiviert: true,
+              onWaehlen: () => undefined,
+            },
+          ],
+        }}
+      />,
+    );
+    expect(screen.getByText('09:00 Uhr, 60 Minuten')).toHaveClass('max-sm:hidden');
+    expect(screen.getByText('Zuerst die Patient:in wählen.')).not.toHaveClass('max-sm:hidden');
+  });
+
+  it('zeigt den Gesten-Hinweis nur, bis einmal eine Spanne aufgezogen wurde', () => {
+    const eintraege = [{ schluessel: 't', beschriftung: 'Neuer Termin', onWaehlen: () => {} }];
+    const auswahl = { spalteId: 'a', onSchliessen: () => undefined, eintraege };
+    const { rerender, unmount } = render(
+      <AnlegenMenue auswahl={{ ...auswahl, vonMinute: 540, bisMinute: 540 }} />,
+    );
+    expect(screen.getByText(/Zweites Feld antippen/)).toBeInTheDocument();
+    // Zweiter Tipp: Die Spanne steht.
+    rerender(<AnlegenMenue auswahl={{ ...auswahl, vonMinute: 540, bisMinute: 600 }} />);
+    expect(screen.queryByText(/Zweites Feld antippen/)).toBeNull();
+    unmount();
+
+    // Die nächste Auswahl, wieder ein einzelnes Feld: Der Hinweis kommt nicht wieder.
+    render(<AnlegenMenue auswahl={{ ...auswahl, vonMinute: 600, bisMinute: 600 }} />);
+    expect(screen.queryByText(/Zweites Feld antippen/)).toBeNull();
+    expect(window.localStorage.getItem('kalender-spanne-gelernt')).toBe('1');
+  });
+});
