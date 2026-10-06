@@ -143,11 +143,9 @@ function Terminzeile({
         : null;
   return (
     <ListRow
-      to={
-        aenderbar
-          ? `${PLATTFORM_PFAD}/termine/${termin.id}${bereich ? `?${bereich}` : ''}`
-          : undefined
-      }
+      {...(aenderbar
+        ? { to: `${PLATTFORM_PFAD}/termine/${termin.id}${bereich ? `?${bereich}` : ''}` }
+        : {})}
       zeit={
         <span className="flex flex-col leading-tight">
           <span>{tagKurz(termin.starts_at)}</span>

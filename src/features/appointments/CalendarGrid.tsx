@@ -196,8 +196,13 @@ function statusLinie(eintrag: CalendarEntry): string {
  */
 function unterzeile(
   eintrag: CalendarEntry,
+  wunsch?: 'change' | 'cancel',
 ): { zeichen: string | null; text: string; farbe: string } | null {
   if (dokuOffen(eintrag)) return { zeichen: '!', text: 'Doku offen', farbe: 'text-warnung' };
+  // POR-011: der offene Wunsch der Person geht dem Ort vor - er ist zu tun.
+  if (wunsch && eintrag.status === 'confirmed') {
+    return { zeichen: '!', text: WUNSCH_TEXT[wunsch], farbe: 'text-warnung' };
+  }
   if (eintrag.status !== 'confirmed') {
     const ton = appointmentStatusTon[eintrag.status];
     return {
@@ -209,6 +214,12 @@ function unterzeile(
   const ort = ortDerKachel(eintrag);
   return ort ? { zeichen: null, text: ort, farbe: 'text-ink-muted' } : null;
 }
+
+/** Das Wort zum offenen Wunsch auf der Kachel (POR-011). */
+const WUNSCH_TEXT: Record<'change' | 'cancel', string> = {
+  change: 'Änderung angefragt',
+  cancel: 'Absage angefragt',
+};
 
 /**
  * Der Ort auf der Kachel (UBK-017, ANN-242): am Hausbesuch Straße und
@@ -324,6 +335,11 @@ export interface GitterEintrag {
    * (BEF-053 Punkt 1, ANN-239) - eine Lücke sieht nur frei aus, wenn sie es ist.
    */
   zurueckgenommen?: boolean;
+  /**
+   * Ein offener Wunsch der Person von der Plattform an diesem Termin
+   * (POR-011): Änderung oder Absage - auf der Kachel als Wort mit Zeichen.
+   */
+  wunsch?: 'change' | 'cancel';
 }
 
 /**
@@ -1304,7 +1320,7 @@ function Kachel({
   const abgesagt = eintrag.status === 'cancelled';
   const zurueckgelassen = gedimmt || bisher || gitter.zurueckgenommen === true;
   const aufGrund = abgesagt || eintrag.status === 'no_show' || eintrag.kind === 'internal';
-  const zeile3 = unterzeile(eintrag);
+  const zeile3 = unterzeile(eintrag, gitter.wunsch);
   // UBK-017: Trägt die dritte Zeile den Zustand, steht der Ort in der
   // vierten - wenn die Kachel hoch genug ist.
   const ort = ortDerKachel(eintrag);
@@ -1325,6 +1341,7 @@ function Kachel({
     abweichung === null ? null : abweichendeLaengeText(abweichung),
     vermerk,
     dokuOffen(eintrag) ? 'Doku offen' : null,
+    gitter.wunsch ? WUNSCH_TEXT[gitter.wunsch] : null,
     ortDerKachel(eintrag),
   ]
     .filter(Boolean)
