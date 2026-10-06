@@ -647,6 +647,15 @@
           "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7"
         },
         {
+          "id": "dok-epic-001",
+          "name": "DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "DOK-001 bis DOK-004, E2E tests/e2e/befund.spec.ts (Skala 44 px, zwei Reihen) und tests/e2e/bausteine.spec.ts (Testzeile eine Reihe)",
+          "vermerk": "BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11"
+        },
+        {
           "id": "kut-epic-001",
           "name": "KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern",
           "gewicht": 1,

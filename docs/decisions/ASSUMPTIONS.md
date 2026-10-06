@@ -3104,3 +3104,15 @@ Technik · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 P
 **Anker.** `VORLAUF_MS`, `SICHERUNG_HOECHSTENS_MS` in `src/features/auth/sitzungssperre/sperrstand.ts`; Phasen `gesperrt` und `halten` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Freigabe in `Sperrseite.tsx`; Sicherungen über `useSperrsicherung` in `Textverlustschutz.tsx` und `Fotoverlustschutz.tsx`.
 
 **Änderungspfad.** Ungesicherten Text verwerfen statt halten: in `sperren` immer `gesperrt` wählen · Aufwand `klein`. Passkey: hinter einem Schalter in `Sperrseite` `signInWithPasskey` anbieten, sobald OPS-001 ihn bestätigt · Aufwand `mittel`. Längerer Vorlauf: `VORLAUF_MS` · Aufwand `klein`.
+
+### ANN-258 — Skala am Handy in zwei Reihen, Befund aus Bausteinen ohne Kasten im Kasten
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Dokumentation, BEF-057 Option 2 nach Entscheidung Jannes 2026-10-05; Auftrag Jannes „Design konsequent auf jeden Bereich anwenden“) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Handy
+
+**Annahme.** Eine Skala mit mehr als sechs Stufen steht unter 640 px in zwei Reihen (0–5 und 6–10), jede Stufe mindestens 44 × 44 px; ab 640 px in einer Reihe. Darunter steht der gewählte Wert als Text („gewählt: 6“). Im Befund aus Bausteinen trennen Linien die Blöcke statt eigener Rahmen; die Seitenmarke steht am Handy über der Knopfreihe, die drei Ergebnisse gleich breit in einer Reihe, „+ Notiz“ darunter. Die Bausteinleiste über dem Freitext läuft am Handy waagerecht und hält beim Laden ihre Höhe frei. Im Nachtrag ist der Ursprungseintrag zugeklappt und zeigt seine erste Zeile.
+
+**Begründung.** Jannes hat für BEF-057 Option 2 gewählt („dichter am Handy“). Die Skala aus Option 3 kommt dazu, weil elf Stufen zu je 29 px die Mindestgröße von 44 px (Oberflächen-Checkliste Punkt 1) verfehlen und ein Fehltipp einen Messwert verfälscht, der im Verlauf weiterlebt; die Empfehlung im Befund nannte genau diese Verbindung. Die zweireihige Skala sieht am Handy anders aus als der Papierbogen — Inhalt, Reihenfolge und Anker bleiben gleich. Unsicher: ob Jannes die Skala lieber einreihig mit kleineren Stufen hätte.
+
+**Anker.** `spaltenAmHandy` in `Skala` (`src/features/assessments/FragebogenFelder.tsx`); `ergebnis-knoepfe` und die Blockklassen in `src/features/assessments/BausteinFeld.tsx`; `src/features/documentation/TextbausteinLeiste.tsx`; `src/features/documentation/TreatmentNoteAddendumPage.tsx`. Geprüft in `tests/e2e/befund.spec.ts` und `tests/e2e/bausteine.spec.ts`.
+
+**Änderungspfad.** Skala einreihig: `spaltenAmHandy` auf `stufen.length` · Aufwand `klein`. Blockrahmen zurück: die Klassen am `<details>` des Blocks · Aufwand `klein`.
