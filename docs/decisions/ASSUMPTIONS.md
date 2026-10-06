@@ -2291,7 +2291,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wie
 
 Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wiedervorlage: Jannes (Sichtung Praxisverwaltung Schritt 9)
 
-**Annahme.** Die Regel-Terminart dieser Praxis ist der Hausbesuch. Er steht deshalb an keinem Termin, keiner Kalenderkachel, keiner Tageskarte und keiner Terminzeile als Wort; nur eine abweichende Art wird gekennzeichnet — der Praxistermin mit seinem Standort, der Videotermin mit einem Hinweis, dass noch kein Videolink erzeugt wird. Wer den Ort eines Hausbesuchs sucht, findet die Anschrift mit dem Navigationsknopf.
+**Annahme.** Die Regel-Terminart dieser Praxis ist der Hausbesuch. Er steht deshalb an keinem Termin, keiner Kalenderkachel, keiner Tageskarte und keiner Terminzeile als Wort; nur eine abweichende Art wird gekennzeichnet — der Praxistermin mit seinem Standort, der Videotermin mit einem Hinweis, dass noch kein Videolink erzeugt wird. Wer den Ort eines Hausbesuchs sucht, findet die Anschrift mit dem Navigationsknopf. *Seit UBK-017 (ANN-242) steht auf der Kalenderkachel des Hausbesuchs Straße und Hausnummer – ein Ort, kein Wort der Terminart.*
 
 **Begründung.** Jannes (2026-09-30): „Hausbesuch ist Standard, nur ein Praxistermin muss auffallen.“ Ein Wort, das an jeder Stelle steht, sagt nichts mehr und frisst am Telefon eine Zeile je Karte (§5, ADR-015 Punkt zur Bedienbarkeit). Die Terminart bleibt im Datenmodell und in allen Formularen wählbar; nur die Anzeige des Regelfalls entfällt. Eine Praxis mit anderem Regelfall ändert eine Konstante.
 
@@ -2906,3 +2906,15 @@ Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `FahrwegMenue.tsx`; `gewaehlterWeg` und der Block als `button` in `CalendarGrid.tsx`; `mitAuskunft` in `CalendarPage.tsx`; `vonTerminId`, `ort`, `ziel`, `meter` in `fahrwegeAusRoute` (`fahrwege.ts`); Tests `FahrwegMenue.test.tsx`, `CalendarPage.test.tsx` („UBK-016“), `fahrwege.test.ts`.
 
 **Änderungspfad.** Wieder nur Darstellung: `auskunft` in `mitAuskunft` weglassen · Aufwand `klein`. Andere Ziel-App: wie am Termin nach der Gerätebewertung (MAP-005c) · Aufwand `klein`.
+
+### ANN-242 — Ort auf der Kalenderkachel: Straße und Hausnummer am Hausbesuch, Standort am Praxistermin
+
+Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (Rückfrage UBK-017: „Straße mitliefern“) · erledigt · Wiedervorlage: Jannes in der Sichtung (UI-Redesign)
+
+**Annahme.** Die Kalenderkachel nennt den Ort: am Hausbesuch Straße und Hausnummer aus dem Snapshot am Termin (ANN-003), am Praxistermin den Standort, am Videotermin das Wort der Terminart. Steht in der dritten Zeile ein Zustand („! Nicht angetroffen“, „! Doku offen“), rückt der Ort in die vierte, wenn die Kachel hoch genug ist; im Tooltip steht er immer. `list_appointments` liefert dafür zwei Spalten mehr, nur am Hausbesuch; Postleitzahl, Ort, Koordinate und Kontaktdaten bleiben draußen. Rechte und Zeilen unverändert: Wer die Zeile sieht, sah schon den Namen.
+
+**Begründung.** Zuschnitt Jannes (UBK-EPIC-002) ging davon aus, dass der Kalender die Straße schon liefert; das stimmte nur für den Standort, und ein Datensparsamkeitstest verbot den Adress-Snapshot ausdrücklich. Ein harter Stopp (§15.1); Jannes hat am 2026-10-06 entschieden. Straße und Hausnummer sind der Teil der Anschrift, den die behandelnde Person zur Planung braucht; Postleitzahl und Ort sagen in einer Praxis mit einem Einzugsgebiet wenig und machen die Zeile zur vollständigen Anschrift. Unsicher: ob Büro und Teamleitung in der Wochenübersicht die Straße brauchen – sie sehen die Zeile ohnehin mit Namen.
+
+**Anker.** `supabase/migrations/20261009130000_ubk_017_place_on_tile.sql` (`list_appointments`); `ortDerKachel` und `zeile4` in `CalendarGrid.tsx`; `visit_street`, `visit_house_number` im Kalenderschema (`api.ts`); Tests `list-appointments.test.ts` („Datensparsamkeit“, „Ort auf der Kachel“), `CalendarGrid.test.tsx` („UBK-017“).
+
+**Änderungspfad.** Ohne Straße: die zwei Spalten in einer neuen Migration wieder entfernen und `ortDerKachel` am Hausbesuch `null` liefern lassen; der Datensparsamkeitstest nimmt sie zurück in die verbotene Liste · Aufwand `klein`.

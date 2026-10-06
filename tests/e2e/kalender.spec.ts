@@ -160,7 +160,10 @@ test.describe('Kalender', () => {
       await expect(wege.nth(4)).toContainText('Rückweg ≈ 16 min');
       // Der Block endet an der Oberkante des Besuchs, zu dem gefahren wird.
       const weg = (await wege.nth(1).boundingBox())!;
-      const kachel = (await spalte.getByRole('button', { name: /^Carl Muster/ }).boundingBox())!;
+      const carl = spalte.getByRole('button', { name: /^Carl Muster/ });
+      // UBK-017: Auf der Kachel steht der Ort des Hausbesuchs.
+      await expect(carl.getByTestId('kachel-ort')).toHaveText(/^Beispielweg \d+$/);
+      const kachel = (await carl.boundingBox())!;
       expect(Math.abs(weg.y + weg.height - kachel.y)).toBeLessThanOrEqual(2);
       // Die Fehlzeit hat keinen Ort und damit keinen Weg; Tims Spalte hat drei
       // und den Rückweg.

@@ -191,8 +191,8 @@ function statusLinie(eintrag: CalendarEntry): string {
 /**
  * Die dritte Zeile der Kachel (Design-Handoff 2026-10-01, Abschnitt 7a):
  * Zeichen und Wort für einen abweichenden Zustand - „! Doku offen",
- * „✓ Dokumentiert", „× Abgesagt" -, sonst der Ort, wenn er vom Regelfall
- * abweicht (ANN-192).
+ * „✓ Dokumentiert", „× Abgesagt" -, sonst der Ort: am Hausbesuch Straße und
+ * Hausnummer (UBK-017), am Praxistermin der Standort (ANN-192).
  */
 function unterzeile(
   eintrag: CalendarEntry,
@@ -206,8 +206,24 @@ function unterzeile(
       farbe: ton in STATUS_FARBE ? STATUS_FARBE[ton] : 'text-ink-muted',
     };
   }
-  const ort = ortsHinweis(eintrag);
+  const ort = ortDerKachel(eintrag);
   return ort ? { zeichen: null, text: ort, farbe: 'text-ink-muted' } : null;
+}
+
+/**
+ * Der Ort auf der Kachel (UBK-017, ANN-242): am Hausbesuch Straße und
+ * Hausnummer, am Praxistermin der Standort, sonst das Wort der Terminart.
+ * Postleitzahl und Ort liefert der Kalender nicht - auf der Kachel steht der
+ * Weg zur Tür, nicht die Anschrift.
+ */
+function ortDerKachel(eintrag: CalendarEntry): string | null {
+  if (eintrag.appointment_type === 'home_visit') {
+    const strasse = eintrag.visit_street?.trim();
+    if (!strasse) return null;
+    const nummer = eintrag.visit_house_number?.trim();
+    return nummer ? `${strasse} ${nummer}` : strasse;
+  }
+  return ortsHinweis(eintrag);
 }
 
 export interface GitterSpalte {
@@ -1280,7 +1296,7 @@ function Kachel({
   const abweichung = abweichendeLaengeMinuten(eintrag);
   // Drei Zeilen (Design-Handoff 2026-10-01, Abschnitt 7a): Zeit, Name,
   // Unterzeile mit Zeichen und Wort - „! Doku offen", „✓ Dokumentiert",
-  // „× Abgesagt" - oder dem Ort, wenn er vom Regelfall abweicht.
+  // „× Abgesagt" - oder dem Ort; mit Zustand steht der Ort in Zeile vier.
   //
   // Zustände mit eigenen Flächen statt Deckkraft (KAL-18): Abgesagt, nicht
   // angetroffen, eine Fehlzeit und der alte Platz einer Verschiebung stehen
@@ -1289,6 +1305,10 @@ function Kachel({
   const zurueckgelassen = gedimmt || bisher || gitter.zurueckgenommen === true;
   const aufGrund = abgesagt || eintrag.status === 'no_show' || eintrag.kind === 'internal';
   const zeile3 = unterzeile(eintrag);
+  // UBK-017: Trägt die dritte Zeile den Zustand, steht der Ort in der
+  // vierten - wenn die Kachel hoch genug ist.
+  const ort = ortDerKachel(eintrag);
+  const zeile4 = zeile3 && ort && zeile3.text !== ort ? ort : null;
   // BEF-072: So viele Zeilen, wie ganz hineinpassen - eine halb
   // angeschnittene Zeile entfällt lieber. Jede Zeile ist 16 px hoch.
   const zeilen = kachelZeilen(hoehe);
@@ -1305,7 +1325,7 @@ function Kachel({
     abweichung === null ? null : abweichendeLaengeText(abweichung),
     vermerk,
     dokuOffen(eintrag) ? 'Doku offen' : null,
-    ortsHinweis(eintrag),
+    ortDerKachel(eintrag),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -1387,7 +1407,13 @@ function Kachel({
       {zeile3 && zeilen >= 3 ? (
         <span
           className={`block truncate text-xs leading-4 font-medium ${zeile3.farbe}`}
-          data-testid={zeile3.farbe === 'text-ink-muted' ? undefined : 'kachel-status'}
+          data-testid={
+            zeile3.text === ort
+              ? 'kachel-ort'
+              : zeile3.farbe === 'text-ink-muted'
+                ? undefined
+                : 'kachel-status'
+          }
         >
           {zeile3.zeichen ? <span aria-hidden="true">{zeile3.zeichen} </span> : null}
           {zeile3.text}
@@ -1395,6 +1421,11 @@ function Kachel({
       ) : zeile3 && zeile3.farbe !== 'text-ink-muted' ? (
         // Zu niedrig für die dritte Zeile: Der Zustand bleibt vorgelesen.
         <span className="sr-only">{zeile3.text}</span>
+      ) : null}
+      {zeile4 && zeilen >= 4 ? (
+        <span className="text-ink-muted block truncate text-xs leading-4" data-testid="kachel-ort">
+          {zeile4}
+        </span>
       ) : null}
     </>
   );

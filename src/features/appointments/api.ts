@@ -1407,6 +1407,12 @@ const calendarEntrySchema = z.object({
    * die den Nachweis nicht lesen. Kein Inhalt.
    */
   documentation_status: z.enum(['none', 'draft', 'final']).nullable().default(null),
+  /**
+   * Der Ort auf der Kachel (UBK-017, ANN-242): Straße und Hausnummer nur am
+   * Hausbesuch, aus dem Snapshot am Termin - Postleitzahl und Ort nicht.
+   */
+  visit_street: z.string().nullable().default(null),
+  visit_house_number: z.string().nullable().default(null),
 });
 
 /**

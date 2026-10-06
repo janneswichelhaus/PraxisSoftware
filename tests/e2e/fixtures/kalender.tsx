@@ -107,6 +107,9 @@ function termin(
     staff_given_name: person === ANNA ? 'Anna' : 'Tim',
     staff_family_name: person === ANNA ? 'Beispiel' : 'Teamleitung',
     location_name: 'Hauptstandort Tuebingen',
+    // UBK-017: der Ort auf der Kachel - erfundene Straßen, keine Wohnadresse.
+    visit_street: name ? 'Beispielweg' : null,
+    visit_house_number: name ? String(laufend) : null,
   };
 }
 

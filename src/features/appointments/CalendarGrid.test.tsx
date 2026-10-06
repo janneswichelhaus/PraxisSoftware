@@ -220,3 +220,66 @@ describe('Lückenfinder im Gitter (UBK-014)', () => {
     expect(letzte).toHaveClass('block');
   });
 });
+
+describe('Ort auf der Kachel (UBK-017, ANN-242)', () => {
+  function kachel(teil: Partial<CalendarEntry>, hoeheMinuten = 60) {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[
+          {
+            eintrag: termin(teil),
+            spalteId: 'st-1',
+            beginnMinute: 540,
+            endeMinute: 540 + hoeheMinuten,
+            ziehbar: false,
+          },
+        ]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    return screen.getAllByRole('link')[0]!;
+  }
+
+  it('nennt am Hausbesuch Straße und Hausnummer in der dritten Zeile', () => {
+    const link = kachel({ visit_street: 'Musterweg', visit_house_number: '12' });
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Musterweg 12');
+    expect(link).toHaveAttribute('title', expect.stringContaining('Musterweg 12'));
+  });
+
+  it('nennt am Praxistermin den Standort', () => {
+    const link = kachel({
+      appointment_type: 'practice',
+      location_name: 'Hauptstandort Tuebingen',
+      visit_street: null,
+    });
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Hauptstandort Tuebingen');
+  });
+
+  it('setzt den Ort unter den Zustand, wenn die Kachel vier Zeilen hat', () => {
+    const link = kachel(
+      { status: 'no_show', visit_street: 'Musterweg', visit_house_number: '12' },
+      60,
+    );
+    expect(within(link).getByTestId('kachel-status')).toHaveTextContent('! Nicht angetroffen');
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Musterweg 12');
+  });
+
+  it('laesst den Ort weg, wo die Zeile nicht ganz passt - und behauptet ohne Straße nichts', () => {
+    // 30 Minuten bei 80 px je Stunde: 40 px, zwei Zeilen.
+    const kurz = kachel({ visit_street: 'Musterweg', visit_house_number: '12' }, 30);
+    expect(within(kurz).queryByTestId('kachel-ort')).toBeNull();
+  });
+
+  it('nennt ohne Straße am Hausbesuch keinen Ort', () => {
+    const link = kachel({ visit_street: null, visit_house_number: null });
+    expect(within(link).queryByTestId('kachel-ort')).toBeNull();
+  });
+});
