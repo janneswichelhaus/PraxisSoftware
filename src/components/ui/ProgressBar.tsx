@@ -10,7 +10,7 @@ export function ProgressBar({ wert, von }: { wert: number; von: number }) {
   if (von <= 0) return null;
   const anteil = Math.min(1, Math.max(0, wert / von));
   return (
-    <span aria-hidden="true" className="bg-line rounded-pill mt-2 block h-1.5 overflow-hidden">
+    <span aria-hidden="true" className="bg-spur rounded-pill mt-2 block h-1.5 overflow-hidden">
       <span
         data-fortschritt=""
         className="bg-accent rounded-pill block h-full"

@@ -440,10 +440,10 @@ describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
       readFileSync(join(stamm, 'public/manifest.webmanifest'), 'utf8'),
     ) as { theme_color: string; background_color: string };
     expect(manifest.theme_color).toBe('#ffffff');
-    expect(manifest.background_color).toBe('#eceee8');
-    // #eceee8 ist die Flaeche - derselbe Wert, den `--color-canvas` als
-    // Oklch traegt (Kommentar in index.css).
-    expect(css).toMatch(/Fläche #eceee8 — Grund der Seite/);
+    expect(manifest.background_color).toBe('#ffffff');
+    // #ffffff ist seit Grundton B die Flaeche - derselbe Wert, den
+    // `--color-canvas` als Oklch traegt (Kommentar in index.css).
+    expect(css).toMatch(/Fläche #ffffff — Grund der Seite/);
     const html = readFileSync(join(stamm, 'index.html'), 'utf8');
     expect(html).toContain('<meta name="theme-color" content="#ffffff" />');
   });

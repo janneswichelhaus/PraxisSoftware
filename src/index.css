@@ -56,18 +56,26 @@
      Weiß bringt 1,17:1: immer noch ruhig, aber die Karte hebt sich ab, und
      Termine stehen in einem erkennbaren Rahmen. Die Aufgabenteilung von
      DS-001 („das Design System ist Quelle für alles Visuelle") gilt weiter —
-     sie steht unter der Entscheidung des Projektinhabers, nicht darüber. */
+     sie steht unter der Entscheidung des Projektinhabers, nicht darüber.
+     Seit Grundton B (2026-10-06) ist auch die Fläche weiß; die Karte grenzt
+     sich durch ihre Linie ab, nicht mehr durch den Ton. */
 
-  /* Fläche #eceee8 — Grund der Seite. */
-  --color-canvas: oklch(94.6% 0.0082 121.6);
+  /* **Grundton B seit 2026-10-06** (Leitfaden schlank und klar, L5; Wahl
+     Jannes auf der Leinwand, Reihe 7): „zu grau-grünlich, etwas öko“. Die
+     Fläche ist jetzt Weiß; Gruppen entstehen durch Linien und Abstand statt
+     durch getönte Kästen, Farbe tragen nur Marke und Bedeutung. Die Grautöne
+     darunter sind neutral (ohne Grünstich).
+
+     Fläche #ffffff — Grund der Seite, gleich Papier (ANN-253). */
+  --color-canvas: oklch(100% 0 0);
   /* Weiß — Karten, Kopfzeile, jede Fläche, die Inhalt trägt. Liegt ÜBER
      canvas, nicht darunter (UI-002b; bis dahin Papier #f6f7f4). */
   --color-surface: oklch(100% 0 0);
-  /* Fläche #eceee8 — vertiefte Stelle auf einer Karte (Hover, Arbeitszeit im
-     Kalender, neutrale Etiketten). Gleicher Wert wie canvas, andere Rolle:
-     dort der Seitengrund, hier die Vertiefung auf Papier. Was fachlichen
-     Inhalt trägt, gehört nicht hierher, sondern auf `surface` (UI-002c). */
-  --color-surface-sunken: oklch(94.6% 0.0082 121.6);
+  /* Hellgrau #f4f5f7 — vertiefte Stelle (Hover, Rückfrage, Arbeitszeit im
+     Kalender, neutrale Etiketten). Seit Grundton B nicht mehr gleich der
+     Fläche, sondern eine Stufe darunter. Was fachlichen Inhalt trägt, gehört
+     nicht hierher, sondern auf `surface` (UI-002c). */
+  --color-surface-sunken: oklch(97% 0.0029 264.5);
   /* Weiß — Eingabefelder. Bis UI-002b waren sie die hellste Fläche und damit
      schon an der Farbe als Feld erkennbar. Auf weißem Papier geht das nicht
      mehr; seitdem trägt das allein ihre Umrandung `line-strong`, die dafür
@@ -86,10 +94,11 @@
      und als Token gestrichen (TOK-07); `src/designsystem.test.ts` hält ihren
      Namen aus `src/` fern, damit keine Seite sie aus Gewohnheit zurückholt. */
 
-  /* Tinte #111e17 */
-  --color-ink: oklch(22% 0.0229 160.2);
-  /* Leise #545d58 */
-  --color-ink-muted: oklch(46.9% 0.0138 161.6);
+  /* Tinte #14181b (bis Grundton B #111e17) */
+  --color-ink: oklch(20.6% 0.0086 240.3);
+  /* Leise #5a6169 — 6.3:1 auf Weiß, 5.8:1 auf der Vertiefung (bis Grundton B
+     #545d58) */
+  --color-ink-muted: oklch(48.9% 0.0155 251.7);
 
   /* --- Linien mit Pflichten ------------------------------------------------
      Zwei Linien, klar getrennt: `line` trennt nur (Kartenrahmen, Tabellen-
@@ -97,10 +106,16 @@
      Bedienbares (Felder, Sekundärknöpfe, Chips) und hält ≥ 3:1 auf Papier,
      Fläche und Weiß — WCAG 1.4.11. */
 
-  /* Linie #d7d8d2 */
-  --color-line: oklch(88% 0.0082 114.2);
-  /* #6f7873 — 4.24:1 auf Papier, 3.90:1 auf Fläche, 4.56:1 auf Weiß. */
-  --color-line-strong: oklch(56.4% 0.0132 161.8);
+  /* Linie #e6e8eb (bis Grundton B #d7d8d2) */
+  --color-line: oklch(93% 0.0046 258.3);
+  /* #767c84 — 4.2:1 auf Weiß, 3.9:1 auf der Vertiefung (bis Grundton B
+     #6f7873). */
+  --color-line-strong: oklch(58.4% 0.0142 255.6);
+  /* Spur #8c939b — die leere, ganze Länge eines Balkens (Wegbalken,
+     Fortschritt). Leitfaden L4: Ein Balken zeigt leer und voll, mit
+     mindestens 3:1 gegen den Grund (WCAG 1.4.11). Vorher trug der Wegbalken
+     Salbei hell als Spur, 1,01:1 auf der Fläche - man sah nur die Füllung. */
+  --color-spur: oklch(66% 0.0144 251.6);
 
   /* --- Marke und Aktionen --------------------------------------------------- */
 

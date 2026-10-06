@@ -1278,7 +1278,7 @@ describe('Wegbalken (TravelBar)', () => {
     expect(klassenVon(fahrt)).toEqual(
       expect.arrayContaining(['bg-accent', 'left-1/2', '-translate-x-1/2', 'rounded-pill']),
     );
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-accent-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
     expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
     // Keine Marker, keine Kreise, keine Bewegung, kein Schatten.
     expect(fahrt.parentElement!.children).toHaveLength(2);
@@ -1303,7 +1303,7 @@ describe('Wegbalken (TravelBar)', () => {
     expect(klassenVon(screen.getByText('3 min Puffer'))).toContain('text-warnung');
     let fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
     expect(klassenVon(fahrt)).toContain('bg-warnung');
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-warnung-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
     unmount();
 
     renderWithProviders(
@@ -1323,7 +1323,7 @@ describe('Wegbalken (TravelBar)', () => {
     fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
     expect(fahrt.style.width).toBe('100%');
     expect(klassenVon(fahrt)).toContain('bg-danger');
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-danger-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
   });
 
   it('nimmt das hellere Orange nur als Flaeche, nie als Textfarbe', () => {
@@ -1383,7 +1383,7 @@ describe('Wegbalken (TravelBar)', () => {
     // Spur 4 px, Fahrt 6 px.
     expect(klassenVon(fahrt)).toEqual(expect.arrayContaining(['h-1.5', 'bg-accent']));
     expect(klassenVon(fahrt.previousElementSibling)).toEqual(
-      expect.arrayContaining(['h-1', 'bg-accent-soft']),
+      expect.arrayContaining(['h-1', 'bg-spur']),
     );
     expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
     unmount();
@@ -1807,7 +1807,7 @@ describe('ProgressBar', () => {
     const { container } = renderWithProviders(<ProgressBar wert={1} von={6} />);
     const balken = container.firstElementChild as HTMLElement;
     expect(balken).toHaveAttribute('aria-hidden', 'true');
-    expect(balken).toHaveClass('h-1.5', 'bg-line');
+    expect(balken).toHaveClass('h-1.5', 'bg-spur');
     const fuellung = balken.querySelector<HTMLElement>('[data-fortschritt]')!;
     expect(fuellung).toHaveClass('bg-accent');
     expect(fuellung.style.width).toBe('17%');

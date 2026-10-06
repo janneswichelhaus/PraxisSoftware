@@ -54,8 +54,10 @@ describe('Kontrastrechnung', () => {
   it('liest die Tokens aus src/index.css', () => {
     // Findet die Suche nichts, waere jede folgende Zusicherung wertlos.
     expect(Object.keys(tokens).length).toBeGreaterThanOrEqual(12);
-    // Tinte #111e17 aus tokens/colors.css des Design Systems (DS-001).
-    expect(tokens.ink).toEqual({ L: 0.22, C: 0.0229, H: 160.2 });
+    // Tinte #14181b, neutral seit Grundton B (bis dahin #111e17 aus DS-001).
+    expect(tokens.ink!.L).toBeCloseTo(0.206, 3);
+    expect(tokens.ink!.C).toBeCloseTo(0.0086, 4);
+    expect(tokens.ink!.H).toBeCloseTo(240.3, 1);
   });
 });
 
@@ -147,15 +149,25 @@ describe('Farbtokens erfuellen WCAG AA', () => {
     );
   });
 
-  // UI-002b: Karten tragen Weiss, damit sie sich vom Seitengrund abheben.
-  // Vorher lagen Papier (#f6f7f4) und Flaeche (#eceee8) bei 1.09:1 - eine
-  // Karte war als Karte nicht zu erkennen, und der getoente Grund stand
-  // optisch hinter dem Inhalt statt unter ihm. Der Wert steht hier als
-  // Zusicherung, damit ein Zurueckdrehen eine Entscheidung ist und kein
-  // Versehen.
-  it('traegt auf Karten Weiss und hebt sie vom Seitengrund ab', () => {
+  // UI-002b: Karten tragen Weiss. Seit Grundton B (Jannes 2026-10-06,
+  // Leitfaden L5) ist auch der Seitengrund weiss - die Entscheidung, die
+  // dieser Test verlangte, statt eines Versehens. Was eine Gruppe abgrenzt,
+  // sind Linie und Abstand; die Vertiefung bleibt eine Stufe dunkler, damit
+  // Hover, Rueckfrage und Etiketten weiter als Flaeche lesbar sind.
+  it('traegt Karten und Seitengrund in Weiss, die Vertiefung eine Stufe darunter (Grundton B)', () => {
     expect(tokens.surface).toEqual({ L: 1, C: 0, H: 0 });
-    expect(kontrastverhaeltnis(tokens.surface!, tokens.canvas!)).toBeGreaterThanOrEqual(1.15);
+    expect(tokens.canvas).toEqual(tokens.surface);
+    expect(kontrastverhaeltnis(tokens.surface!, tokens['surface-sunken']!)).toBeGreaterThanOrEqual(
+      1.08,
+    );
+  });
+
+  // Leitfaden L4: Die leere Spur eines Balkens zeigt die ganze Laenge mit
+  // mindestens 3:1 gegen jeden Grund, auf dem Balken stehen.
+  it('zeigt die Spur eines Balkens mit mindestens 3:1 auf Papier und Flaeche', () => {
+    for (const grund of ['surface', 'canvas'] as const) {
+      expect(kontrastverhaeltnis(tokens.spur!, tokens[grund]!)).toBeGreaterThanOrEqual(3);
+    }
   });
 
   // Die Gegenprobe dazu: Eingabefelder sind seit UI-002b nicht mehr heller

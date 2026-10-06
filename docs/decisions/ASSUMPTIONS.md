@@ -3038,3 +3038,16 @@ Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 5
 **Anker.** `--text-leiste`, `--text-kleingedruckt`, `--text-absenderzeile` in `src/index.css`; die Varianten in `src/components/ui/buttonStile.ts`; Wächter „Kein Lesetext unter 12 px“ in `src/designsystem.test.ts`; E2E `tests/e2e/tableiste.spec.ts`.
 
 **Änderungspfad.** Andere Größe: das Token ändern · Aufwand `klein`. Gesperrt anders zeigen: die drei Varianten in `buttonStile.ts` · Aufwand `klein`.
+
+### ANN-253 — Grundton B: weiße Fläche, neutrale Grautöne, sichtbare Spur der Balken
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 7) · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Seitenfläche ist Weiß wie Papier; die Vertiefung (Hover, Rückfrage, Arbeitszeit im Kalender) ist #f4f5f7; Tinte, Leise und beide Linien sind neutral ohne Grünstich (#14181b, #5a6169, #e6e8eb, #767c84). Die leere Spur von Wegbalken und Fortschrittsbalken trägt `--color-spur` (#8c939b) mit mindestens 3:1. Hauptfarbe, Tiefgrün der Seitenleiste, Salbei hell für „erledigt“, Warnung und Fehler bleiben. Manifest und Startbild beginnen auf Weiß.
+
+**Begründung.** Jannes am 2026-10-06: Der Hintergrund sei zu grau-grünlich, „das Ganze sieht etwas öko aus“, die leere Spur des Fahrzeit-Balkens war nicht zu sehen (gemessen 1,01:1). Von drei Varianten (Hellgrau, Weiß, gebrochenes Weiß) gewählt: B. Leitfaden `docs/design/leitfaden-schlank.md`, L4 und L5. Unsicher: ob Karten mit der hellen Linie auf Weiß am Handy in der Sonne genug abgrenzen; das prüft die Sichtung.
+
+**Anker.** `--color-canvas`, `--color-surface-sunken`, `--color-ink`, `--color-ink-muted`, `--color-line`, `--color-line-strong`, `--color-spur` in `src/index.css`; Kontrastpaare in `src/lib/kontrast.test.ts`; `public/manifest.webmanifest`.
+
+**Änderungspfad.** Anderer Grundton: die Tokens ändern, `kontrast.test.ts` rechnet nach · Aufwand `klein`.
+

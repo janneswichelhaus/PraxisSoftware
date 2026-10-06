@@ -69,7 +69,7 @@ leeren Balken. Gemessen: Die Spur in Salbei hell steht auf der Seitenfläche mit
 **Regel:** Jede Fortschritts- oder Zeitspur zeigt ihre ganze Länge mit mindestens 3:1 gegen den
 Untergrund (WCAG 1.4.11); die Füllung hebt sich davon ab.
 
-**Umgesetzt:** offen, kommt mit L5 (der Untergrund ändert sich).
+**Umgesetzt:** SLK-004 — Token `--color-spur` (#8c939b, 3,1:1 auf Weiß) für Wegbalken und Fortschrittsbalken, in jeder Stufe dieselbe Spur.
 
 ## L5 · Neutraler, heller Grund
 
@@ -79,9 +79,7 @@ moderne Touch fehlt.
 **Regel:** Die Seitenfläche und die Grautöne werden neutral; Farbe tragen nur Marke (Hauptfarbe,
 Tiefgrün der Seitenleiste) und Bedeutung (Warnung, Fehler, erledigt).
 
-**Umgesetzt:** offen. Varianten auf der Leinwand „Design-Audit Praxisplattform“, Reihe 7; Jannes
-wählt. Danach ändern sich die Tokens in `src/index.css` und die Kontrastpaare in
-`src/lib/kontrast.test.ts`.
+**Umgesetzt:** SLK-004 — Grundton B (Wahl Jannes 2026-10-06, Leinwand Reihe 7): Fläche Weiß, Vertiefung #f4f5f7, Tinte, Leise und Linien neutral, Manifest und Startbild auf Weiß (ANN-253). Gruppen durch Linien statt Kästen werden Bereich für Bereich nach L2 umgebaut.
 
 ## Vorgehen
 
