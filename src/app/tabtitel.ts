@@ -1,6 +1,6 @@
 /**
  * Der Titel des Browser-Tabs je Route (BEF-050, Option 1; Handoff Rahmen vom
- * 2026-10-05, RAH-008).
+ * 2026-10-05, RAH-008; ANN-245).
  *
  * Bis dahin hieß jeder Tab „Own Motion": Wer Kalender und drei Akten
  * nebeneinander offen hatte, sah vier gleiche Tabs, und Vorlesesoftware sagte

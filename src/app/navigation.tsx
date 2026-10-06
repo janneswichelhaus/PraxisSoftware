@@ -467,7 +467,7 @@ export function aktiverBereich(
  * die Bereiche nicht, rücken die restlichen hinter „Mehr".
  *
  * **Reife vor Reihenfolge** (BEF-049, Option 2, Handoff Rahmen vom
- * 2026-10-05): Ein Bereich, der ganz Vorschau ist (`vorschau`, heute nur die
+ * 2026-10-05, ANN-244): Ein Bereich, der ganz Vorschau ist (`vorschau`, heute nur die
  * Kommunikation), bekommt keinen der vier Plätze - bis dahin stand bei
  * therapist und team_lead „Nachrichten" in der Leiste, und der Weg zu
  * Mitarbeitenden und Arbeitszeiten lag hinter „Mehr". Sichtbar sind die ersten

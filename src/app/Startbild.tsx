@@ -167,6 +167,16 @@ export function Startbild({
   const ziel = useRef<Lage | null>(null);
   const fertig = useRef(false);
   const dauer = reduziert ? REDUZIERT_DAUER : STARTBILD_DAUER;
+  // `onFertig` als Referenz: Der Takt hängt nicht an der Identität der
+  // Rückruffunktion, sonst starteten Uhr und Bild bei jedem Rendern des
+  // Aufrufers neu.
+  const fertigMelden = useRef(onFertig);
+  fertigMelden.current = onFertig;
+  const beenden = useCallback(() => {
+    if (fertig.current) return;
+    fertig.current = true;
+    fertigMelden.current();
+  }, []);
 
   // Der Merker beim Start, nicht am Ende: Ein abgebrochenes Intro wiederholt
   // sich nicht beim nächsten Seitenwechsel.
@@ -182,10 +192,7 @@ export function Startbild({
       const sekunden = (jetzt - start.current) / 1000;
       if (sekunden >= dauer) {
         setT(dauer);
-        if (!fertig.current) {
-          fertig.current = true;
-          onFertig();
-        }
+        beenden();
         return;
       }
       setT(sekunden);
@@ -193,7 +200,7 @@ export function Startbild({
     };
     anfrage = requestAnimationFrame(schritt);
     return () => cancelAnimationFrame(anfrage);
-  }, [dauer, onFertig, uhrzeit]);
+  }, [beenden, dauer, uhrzeit]);
 
   const bild: Bild = reduziert ? (t < REDUZIERT_MARKE_AB ? 1 : t < dauer ? 5 : 6) : bildZu(t);
 
@@ -216,10 +223,7 @@ export function Startbild({
   const ueberspringen = useCallback(() => {
     if (uhrzeit !== undefined) return;
     if (reduziert) {
-      if (!fertig.current) {
-        fertig.current = true;
-        onFertig();
-      }
+      beenden();
       return;
     }
     const jetzt = performance.now();
@@ -227,7 +231,7 @@ export function Startbild({
     if (bisher >= BILDENDE.wortmarke) return;
     start.current = jetzt - BILDENDE.wortmarke * 1000;
     setT(BILDENDE.wortmarke);
-  }, [onFertig, reduziert, uhrzeit]);
+  }, [beenden, reduziert, uhrzeit]);
 
   const zentrum = mitte(geraet, fenster.breite, fenster.hoehe);
   const k = zentrum.breite / MARKE_640.breite;
