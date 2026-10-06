@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act } from 'react';
+import { act, type ReactElement } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
 import { useAbmeldeanfrage } from '@/app/abmeldeschutz';
+import {
+  SperrsicherungKontext,
+  type Sicherung,
+} from '@/features/auth/sitzungssperre/sperrsicherung';
 import {
   DOKUMENTATIONSTEXTE,
   EINGABETEXTE,
@@ -705,5 +709,51 @@ describe('Textverlustschutz: eigene Texte fuer Formulare ohne Dokumentation', ()
     expect(kasten).toHaveTextContent(
       'Speichern ist hier kein Zwischenschritt: Korrektur und Nachtrag werden mit dem Absenden Bestandteil der Akte. Bitte zurückgehen und den Eintrag abschließen.',
     );
+  });
+});
+
+describe('Textverlustschutz vor der Sitzungssperre (SEC-003, ADR-025 Punkt 4)', () => {
+  function mitSperre(seite: ReactElement): Set<Sicherung> {
+    const angemeldet = new Set<Sicherung>();
+    renderWithProviders(
+      <SperrsicherungKontext.Provider
+        value={{
+          meldeAn: (s) => {
+            angemeldet.add(s);
+            return () => angemeldet.delete(s);
+          },
+        }}
+      >
+        {seite}
+      </SperrsicherungKontext.Provider>,
+      '/dokumentation',
+    );
+    return angemeldet;
+  }
+
+  it('sichert offenen Text als Entwurf auf dem Weg von „Speichern“', async () => {
+    const speichern = vi.fn(() => Promise.resolve(true));
+    const [sicherung] = [...mitSperre(<Pruefseite speichern={speichern} />)];
+    await expect(sicherung!()).resolves.toBe(true);
+    expect(speichern).toHaveBeenCalledTimes(1);
+  });
+
+  it('meldet „nicht gesichert“, wenn das Speichern scheitert oder es keinen Entwurf gibt', async () => {
+    const [scheitert] = [
+      ...mitSperre(<Pruefseite speichern={() => Promise.reject(new Error('offline'))} />),
+    ];
+    await expect(scheitert!()).resolves.toBe(false);
+  });
+
+  it('meldet ohne Entwurfsweg „nicht gesichert“', async () => {
+    const [ohneWeg] = [...mitSperre(<Pruefseite />)];
+    await expect(ohneWeg!()).resolves.toBe(false);
+  });
+
+  it('hat ohne offenen Text nichts zu sichern', async () => {
+    const speichern = vi.fn(() => Promise.resolve(true));
+    const [sicherung] = [...mitSperre(<Pruefseite ungespeichert={false} speichern={speichern} />)];
+    await expect(sicherung!()).resolves.toBe(true);
+    expect(speichern).not.toHaveBeenCalled();
   });
 });

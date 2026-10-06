@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { useAbmeldewache } from '@/app/abmeldeschutz';
+import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
 import { useIstVerbunden } from '@/app/verbindung';
 
 /**
@@ -274,6 +275,23 @@ export function useTextverlustschutz({
     if (!ungespeichertRef.current) return false;
     setAbmeldenGefragt(true);
     return true;
+  });
+
+  // Vor der Sitzungssperre (ADR-025 Punkt 4): Offener Text geht als Entwurf
+  // auf den Server, auf demselben Weg wie „Speichern“ hier (ANN-046). Ohne
+  // Entwurfsweg oder ohne Erfolg meldet die Sicherung „nein“ - dann hält die
+  // Sperre die Seite verborgen fest (ANN-257).
+  const speichernRef = useRef(speichern);
+  speichernRef.current = speichern;
+  useSperrsicherung(async () => {
+    if (!ungespeichertRef.current) return true;
+    const sichern = speichernRef.current;
+    if (!sichern) return false;
+    try {
+      return await sichern();
+    } catch {
+      return false;
+    }
   });
 
   const offen = blockiert || abmeldenGefragt;

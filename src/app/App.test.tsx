@@ -22,6 +22,12 @@ vi.mock('@/features/auth/SessionProvider', () => ({
   SessionProvider: ({ children }: { children: ReactNode }) => children,
 }));
 
+// Die Sitzungssperre hat eigene Tests (`Sitzungssperre.test.tsx`); hier
+// geht es um die Zustände dahinter.
+vi.mock('@/features/auth/sitzungssperre/Sitzungssperre', () => ({
+  Sitzungssperre: ({ children }: { children: ReactNode }) => children,
+}));
+
 vi.mock('@/features/auth/sessionContext', () => ({
   useSession: () => ({
     session: { user: { id: '00000000-0000-0000-0000-000000000001' } },
