@@ -2,23 +2,13 @@ import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import {
-  TAGESZEITEN,
-  TAGESZEIT_NAME,
-  terminWuenschen,
-  wuenscheSchluessel,
-  type Plattformzugang,
-  type Tageszeit,
-} from './api';
+import { terminWuenschen, wuenscheSchluessel, type Plattformzugang, type Tageszeit } from './api';
 import { PLATTFORM_PFAD } from './pfade';
-import { naechsteWerktage, wochentagMitDatum } from './zeit';
+import { Wunschfelder } from './Wunschfelder';
 
-/** Wie viele Werktage zur Auswahl stehen - zugleich die Grenze des Servers. */
-export const WUNSCHTAGE = 14;
-export const NOTIZ_MAX = 500;
+const NOTIZ_MAX = 500;
 
 /**
  * „Termin wünschen" (POR-009, DSN-001 4.1): Welche Tage und Tageszeiten
@@ -37,7 +27,6 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
   const [zeiten, setZeiten] = useState<Tageszeit[]>([]);
   const [notiz, setNotiz] = useState('');
   const [pruefung, setPruefung] = useState<string | null>(null);
-  const werktage = naechsteWerktage(WUNSCHTAGE);
 
   const senden = useMutation({
     mutationFn: () => terminWuenschen({ zugangId: zugang.access_id, tage, zeiten, notiz }),
@@ -46,10 +35,6 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
       void navigate(`${zurueck}${zurueck.includes('?') ? '&' : '?'}gesendet=1`, { replace: true });
     },
   });
-
-  function umschalten<T extends string>(liste: T[], wert: T): T[] {
-    return liste.includes(wert) ? liste.filter((x) => x !== wert) : [...liste, wert];
-  }
 
   function absenden(e: React.FormEvent) {
     e.preventDefault();
@@ -81,37 +66,7 @@ export function Terminwunsch({ zugang }: { zugang: Plattformzugang }) {
         Ein vereinbarter Termin ist das noch nicht.
       </p>
       <form onSubmit={absenden} noValidate className="mt-6 flex flex-col gap-8">
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-ink mb-2 text-base font-semibold">Welche Tage passen?</legend>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {werktage.map((tag) => (
-              <Checkbox
-                key={tag}
-                label={wochentagMitDatum(tag)}
-                checked={tage.includes(tag)}
-                onChange={() => setTage((t) => umschalten(t, tag))}
-              />
-            ))}
-          </div>
-          <p className="text-ink-muted text-sm">
-            Einen anderen Tag oder Wochenende schreiben Sie bitte unten in die Zeile.
-          </p>
-        </fieldset>
-
-        <fieldset className="flex flex-col gap-2">
-          <legend className="text-ink mb-2 text-base font-semibold">Welche Tageszeit passt?</legend>
-          <div className="grid gap-2 sm:grid-cols-3">
-            {TAGESZEITEN.map((zeit) => (
-              <Checkbox
-                key={zeit}
-                label={TAGESZEIT_NAME[zeit]}
-                checked={zeiten.includes(zeit)}
-                onChange={() => setZeiten((z) => umschalten(z, zeit))}
-              />
-            ))}
-          </div>
-          <p className="text-ink-muted text-sm">Ohne Angabe: jede Tageszeit.</p>
-        </fieldset>
+        <Wunschfelder tage={tage} zeiten={zeiten} onTage={setTage} onZeiten={setZeiten} />
 
         <TextArea
           label="Was sollen wir noch wissen? (freiwillig)"

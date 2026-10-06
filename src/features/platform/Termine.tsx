@@ -45,15 +45,11 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     queryKey: wuenscheSchluessel(zugang.access_id),
     queryFn: () => ladeWuensche(zugang.access_id),
   });
-  const wunschPfad = `${PLATTFORM_PFAD}/termine/wunsch${
-    suche.get('bereich') || suche.get('zugang')
-      ? `?${new URLSearchParams(
-          Object.fromEntries(
-            [...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang'),
-          ),
-        ).toString()}`
-      : ''
-  }`;
+  // Der gewählte Bereich reist in jeden Link mit (D6).
+  const bereich = new URLSearchParams(
+    Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
+  ).toString();
+  const wunschPfad = `${PLATTFORM_PFAD}/termine/wunsch${bereich ? `?${bereich}` : ''}`;
 
   return (
     <>
@@ -78,13 +74,13 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
           onErneut={() => termine.refetch()}
         />
       ) : (
-        <Terminlisten termine={termine.data} />
+        <Terminlisten termine={termine.data} bereich={bereich} />
       )}
     </>
   );
 }
 
-function Terminlisten({ termine }: { termine: Termin[] }) {
+function Terminlisten({ termine, bereich }: { termine: Termin[]; bereich: string }) {
   const jetzt = new Date();
   const kommende = termine.filter((t) => kuenftig(t.ends_at, jetzt));
   const vergangene = termine.filter((t) => !kuenftig(t.ends_at, jetzt)).reverse();
@@ -99,7 +95,7 @@ function Terminlisten({ termine }: { termine: Termin[] }) {
         ) : (
           <ListRows>
             {kommende.map((t) => (
-              <Terminzeile key={t.id} termin={t} />
+              <Terminzeile key={t.id} termin={t} bereich={bereich} />
             ))}
           </ListRows>
         )}
@@ -124,11 +120,34 @@ const ZUSTAND: Record<Termin['status'], { wort: string; ton: Ton } | null> = {
   completed: { wort: 'durchgeführt', ton: 'positiv' },
 };
 
-function Terminzeile({ termin, gedaempft = false }: { termin: Termin; gedaempft?: boolean }) {
+function Terminzeile({
+  termin,
+  bereich = '',
+  gedaempft = false,
+}: {
+  termin: Termin;
+  bereich?: string;
+  gedaempft?: boolean;
+}) {
   const { titel, ort } = terminBeschreibung(termin);
   const zustand = ZUSTAND[termin.status];
+  // Nur ein bestätigter künftiger Termin führt zur Seite mit Ändern und
+  // Absagen (POR-010); ein offener Wunsch steht als Wort an der Zeile.
+  const aenderbar =
+    termin.status === 'confirmed' && new Date(termin.starts_at).getTime() > Date.now();
+  const wunsch =
+    termin.open_request_kind === 'cancel'
+      ? 'Absage angefragt'
+      : termin.open_request_kind === 'change'
+        ? 'Änderung angefragt'
+        : null;
   return (
     <ListRow
+      to={
+        aenderbar
+          ? `${PLATTFORM_PFAD}/termine/${termin.id}${bereich ? `?${bereich}` : ''}`
+          : undefined
+      }
       zeit={
         <span className="flex flex-col leading-tight">
           <span>{tagKurz(termin.starts_at)}</span>
@@ -137,7 +156,13 @@ function Terminzeile({ termin, gedaempft = false }: { termin: Termin; gedaempft?
       }
       titel={titel}
       meta={ort ?? undefined}
-      status={zustand ? <Badge ton={zustand.ton}>{zustand.wort}</Badge> : undefined}
+      status={
+        zustand ? (
+          <Badge ton={zustand.ton}>{zustand.wort}</Badge>
+        ) : wunsch ? (
+          <Badge ton="akzent">{wunsch}</Badge>
+        ) : undefined
+      }
       gedaempft={gedaempft || termin.status === 'cancelled'}
     />
   );

@@ -117,6 +117,13 @@ const terminSchema = z.object({
   visit_house_number: z.string().nullable(),
   visit_postal_code: z.string().nullable(),
   visit_city: z.string().nullable(),
+  /**
+   * POR-010: Ein Absagewunsch jetzt läge unter 24 Stunden - gerechnet vom
+   * Server (ADR-018 Punkt 8), nur am bestätigten künftigen Termin.
+   */
+  late_notice: z.boolean().nullable(),
+  /** POR-010: der offene Wunsch an diesem Termin. */
+  open_request_kind: z.enum(['change', 'cancel']).nullable(),
 });
 export type Termin = z.infer<typeof terminSchema>;
 
@@ -221,4 +228,35 @@ export async function wunschZurueckziehen(zugangId: string, wunschId: string): P
     p_request_id: wunschId,
   })) as { data: unknown; error: unknown };
   if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
+}
+
+/**
+ * Termin ändern oder absagen - als Wunsch (POR-010, D4). Die Absage trägt
+ * das Büro ein; als Eingang gilt der Zeitpunkt dieses Wunsches (ANN-244).
+ */
+export async function terminAendernWuenschen(eingabe: {
+  zugangId: string;
+  terminId: string;
+  art: 'change' | 'cancel';
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment_change', {
+    p_access_id: eingabe.zugangId,
+    p_appointment_id: eingabe.terminId,
+    p_kind: eingabe.art,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) {
+    const m = ergebnis.error.message ?? '';
+    if (m.includes('request already open'))
+      throw new Error('Zu diesem Termin liegt schon ein Wunsch vor. Die Praxis meldet sich.');
+    if (m.includes('not confirmed') || m.includes('has started') || m.includes('not found'))
+      throw new Error('Dieser Termin lässt sich nicht mehr ändern. Bitte rufen Sie die Praxis an.');
+    throw new Error(wunschfehler(m));
+  }
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
 }

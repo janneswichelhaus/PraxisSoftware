@@ -18,7 +18,8 @@ vi.mock('./api', async (importOriginal) => ({
   terminWuenschen: (...args: unknown[]) => terminWuenschen(...args) as Promise<string>,
 }));
 
-const { Terminwunsch, WUNSCHTAGE } = await import('./Terminwunsch');
+const { Terminwunsch } = await import('./Terminwunsch');
+const { WUNSCHTAGE } = await import('./Wunschfelder');
 const { naechsteWerktage, wochentagMitDatum } = await import('./zeit');
 
 const ZUGANG: Plattformzugang = {

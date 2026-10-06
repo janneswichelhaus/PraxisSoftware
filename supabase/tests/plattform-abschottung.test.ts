@@ -41,6 +41,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Termin wünschen (POR-009); ohne lesbaren Zugang abgewiesen (42501)',
   'public.withdraw_platform_appointment_request':
     'Wunsch zurückziehen (POR-009); ohne lesbaren Zugang false',
+  'public.request_platform_appointment_change':
+    'Termin ändern oder absagen als Wunsch (POR-010); ohne lesbaren Zugang abgewiesen (42501)',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

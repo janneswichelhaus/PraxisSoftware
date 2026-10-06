@@ -80,6 +80,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_context',
       'rpc:platform_representatives',
       'rpc:request_platform_appointment',
+      // POR-010: Termin ändern oder absagen als Wunsch.
+      'rpc:request_platform_appointment_change',
       'rpc:withdraw_platform_appointment_request',
     ]);
   });

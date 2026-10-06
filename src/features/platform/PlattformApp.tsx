@@ -18,6 +18,7 @@ import {
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { Termine } from './Termine';
+import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
 
 /**
@@ -91,6 +92,16 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Terminwunsch zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/termine/:terminId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Terminaenderung zugang={z} />}
               />
             }
           />
@@ -480,7 +491,7 @@ function Reiterleiste() {
         <li className="flex-1">
           <Link
             to={`${PLATTFORM_PFAD}/termine${search}`}
-            aria-current={pathname === `${PLATTFORM_PFAD}/termine` ? 'page' : undefined}
+            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/termine`) ? 'page' : undefined}
             className={REITER}
           >
             <svg

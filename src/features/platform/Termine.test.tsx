@@ -54,6 +54,8 @@ const HAUSBESUCH: Termin = {
   visit_house_number: '7',
   visit_postal_code: '72072',
   visit_city: 'Tuebingen',
+  late_notice: false,
+  open_request_kind: null,
 };
 const PRAXIS_VERGANGEN: Termin = {
   ...HAUSBESUCH,
@@ -67,6 +69,7 @@ const PRAXIS_VERGANGEN: Termin = {
   visit_house_number: null,
   visit_postal_code: null,
   visit_city: null,
+  late_notice: null,
 };
 const ABGESAGT: Termin = {
   ...HAUSBESUCH,
