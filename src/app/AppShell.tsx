@@ -70,11 +70,12 @@ const seitenLink =
  * einzige Ortsangabe, und ein Unterschied nur im Farbton - ink-muted gegen
  * accent, 1,66:1 - ist am Lenker und in der Sonne kaum zu sehen. Der Strich
  * ist ein Rand, kein Schatten (DS-001); inaktiv ist er durchsichtig, damit
- * beim Wechsel nichts springt. Die Beschriftung bleibt bei 11 px (ANN-111).
+ * beim Wechsel nichts springt. Die Beschriftung bleibt bei 11 px (ANN-111),
+ * seit RAH-001 als Token `text-leiste` (BEF-068, Option 2).
  */
 const tabLink =
   'text-ink-muted aria-[current=page]:text-accent flex min-h-14 flex-col items-center justify-center ' +
-  'gap-0.5 border-t-3 border-transparent px-1 text-[0.6875rem] transition-colors ' +
+  'gap-0.5 border-t-3 border-transparent px-1 text-leiste transition-colors ' +
   'aria-[current=page]:border-accent aria-[current=page]:font-semibold';
 
 /**
