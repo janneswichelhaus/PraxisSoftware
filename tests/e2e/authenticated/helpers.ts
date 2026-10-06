@@ -591,5 +591,15 @@ export async function kalenderOptionenOeffnen(page: Page): Promise<void> {
   const knopf = page.getByRole('button', { name: /^Ansicht und Filter/ });
   await expect(knopf).toBeVisible();
   if ((await knopf.getAttribute('aria-expanded')) !== 'true') await knopf.click();
-  await expect(page.getByRole('group', { name: 'Ansicht und Filter' })).toBeVisible();
+  const feld = page.getByRole('group', { name: 'Ansicht und Filter' });
+  await expect(feld).toBeVisible();
+  // Seit Runde 3 (KUT-002) stehen die Anlegewege zugeklappt unter „Ohne
+  // Raster anlegen“; die Tests nutzen sie als Weg ohne Zeigegerät.
+  const ohneRaster = feld.locator('details', { hasText: 'Ohne Raster anlegen' });
+  if (
+    (await ohneRaster.count()) > 0 &&
+    !(await ohneRaster.evaluate((d) => (d as HTMLDetailsElement).open))
+  ) {
+    await ohneRaster.locator('summary').click();
+  }
 }
