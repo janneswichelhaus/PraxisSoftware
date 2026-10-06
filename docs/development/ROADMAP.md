@@ -783,6 +783,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | C | G11 OPS-007 Bootstrap Produktion (Runbook) | in_arbeit | 2026-09-22 | `a870992`, `f3b9497` | — | Probe gegen die Test-Umgebung offen |
 | C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
 | C | G19 Dokumentationsgate erweitern | fertig | 2026-09-22 | `7b95c22`, PR #102 | — | — |
+| C | G20 SEC-EPIC-001 Sitzungssperre (ADR-025) | fertig | 2026-10-06 | SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html | — | Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); Passkey (W3) offen bis OPS-001; Sichtung: Betriebsreife Schritt 15 |
 | E | D → ADR-018 Terminzustände | gesichtet | — | — | — | — |
 | E | E10 Schreibrecht Mitarbeiterdaten | gesichtet | — | — | — | — |
 | E | E8 → ADR-017 Dateiablage | gesichtet | — | — | — | — |

@@ -976,6 +976,15 @@
           "status": "fertig",
           "fertig_am": "2026-09-22",
           "nachweis": "`7b95c22`, PR #102"
+        },
+        {
+          "id": "g20",
+          "name": "G20 SEC-EPIC-001 Sitzungssperre (ADR-025)",
+          "gewicht": 2,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html",
+          "vermerk": "Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); Passkey (W3) offen bis OPS-001; Sichtung: Betriebsreife Schritt 15"
         }
       ]
     },
