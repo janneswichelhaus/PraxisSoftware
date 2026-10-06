@@ -1,5 +1,6 @@
-import type { ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Wortmarke } from '@/components/ui/Wortmarke';
+import { ANMELDEN_TITEL } from './tabtitel';
 
 /**
  * Eine Seite außerhalb des Anwendungsrahmens (AUTH-12, AUTH-13).
@@ -41,6 +42,13 @@ export function Vollseite({
   kleingedrucktes?: ReactNode;
   children: ReactNode;
 }) {
+  // Der Tab heißt außerhalb des Rahmens „Anmelden – Own Motion" (BEF-050,
+  // RAH-008) - auf der Anmeldemaske wie auf jeder Türseite davor und danach.
+  // Nach dem Abmelden löst das den Titel der letzten Seite ab.
+  useEffect(() => {
+    document.title = ANMELDEN_TITEL;
+  }, []);
+
   return (
     <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
       <div className="mb-8">

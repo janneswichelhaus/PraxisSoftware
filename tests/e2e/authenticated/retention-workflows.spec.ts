@@ -36,10 +36,16 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
   test('führt owner über das Untermenü zum Aufbewahrungsplan', async ({ page }) => {
     await anmelden(page, KONTEN.owner);
 
-    // Der Weg, den Jannes geht: Organisatorisches, dann der neue Punkt im
-    // Untermenü.
+    // Der Weg, den Jannes geht: Organisatorisches, dann der Punkt im
+    // Untermenü - seit RAH-005 „Sicherheit und Aufbewahrung", der auf dem
+    // Protokoll öffnet - und dort der Reiter „Aufbewahrung".
     await page.goto('/praxis/team');
-    await page.getByRole('link', { name: 'Aufbewahrung' }).click();
+    await page.getByRole('link', { name: 'Sicherheit und Aufbewahrung' }).click();
+    await expect(page.getByRole('heading', { name: 'Protokoll' })).toBeVisible();
+    await page
+      .getByRole('navigation', { name: 'Sicherheit und Aufbewahrung' })
+      .getByRole('link', { name: 'Aufbewahrung' })
+      .click();
 
     await expect(page.getByRole('heading', { name: 'Aufbewahrung und Löschung' })).toBeVisible();
 
@@ -86,6 +92,7 @@ test.describe('LOE-002b: Aufbewahrungsübersicht', () => {
     await anmelden(page, KONTEN.therapist);
 
     await page.goto('/praxis/team');
+    await expect(page.getByRole('link', { name: 'Sicherheit und Aufbewahrung' })).toHaveCount(0);
     await expect(page.getByRole('link', { name: 'Aufbewahrung' })).toHaveCount(0);
 
     // Der direkte Aufruf landet auf „Übersicht" - die Seite gibt nichts preis.

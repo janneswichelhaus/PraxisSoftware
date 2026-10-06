@@ -96,6 +96,32 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
     if (liste.current && aktiv) rolleInsBild(liste.current, aktiv);
   }, [pathname]);
 
+  /**
+   * Liegen rechts noch Einträge außer Sicht? Dann zeigt ein Verlauf am rechten
+   * Rand, dass es weitergeht (Handoff Rahmen vom 2026-10-05, RAH-005): Eine
+   * Leiste, die genau mit einem Wort endet, sah bis dahin vollständig aus.
+   * Gemessen nach dem Rollen zum aktiven Eintrag, bei jedem Rollen und wenn
+   * sich die Breite ändert; mit aufgeklappter Vorschau neu, weil dann mehr
+   * Einträge in der Zeile stehen.
+   */
+  const [weiterRechts, setWeiterRechts] = useState(false);
+  useLayoutEffect(() => {
+    const element = liste.current;
+    if (!element) return;
+    const messen = () => {
+      setWeiterRechts(element.scrollWidth - element.clientWidth - element.scrollLeft > 1);
+    };
+    messen();
+    element.addEventListener('scroll', messen, { passive: true });
+    const beobachter =
+      typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(messen);
+    beobachter?.observe(element);
+    return () => {
+      element.removeEventListener('scroll', messen);
+      beobachter?.disconnect();
+    };
+  }, [pathname, offen]);
+
   if (eintraege.length < 2) return null;
 
   const echte = eintraege.filter((eintrag) => !eintrag.vorschau);
@@ -112,7 +138,7 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
   return (
     // -mx-4/px-4: Die Linie reicht am Telefon bis zum Rand; der Wert folgt dem
     // Innenabstand des Inhalts dort (`AppShell`, 16 px).
-    <nav aria-label={label} className="border-line -mx-4 mb-6 border-b px-4">
+    <nav aria-label={label} className="border-line relative -mx-4 mb-6 border-b px-4">
       {/* Schmal: eine scrollbare Zeile, damit sie nicht die halbe Seite belegt.
           Breit: umbrechen - ein waagerecht verstecktes Menue findet auf dem
           Desktop niemand, weil es dort keine Wischgeste gibt. */}
@@ -148,6 +174,23 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
           </li>
         ) : null}
       </ul>
+      {/* Der Verlauf: 72 px von der Fläche der Seite nach durchsichtig, mit
+          „›" in `line-strong`, nur solange rechts noch etwas liegt und nur,
+          wo die Leiste rollt (unter 640 px). Rein dekorativ - was dahinter
+          liegt, erreicht man durch Rollen, und Vorlesesoftware liest die
+          ganze Liste. Am rechten Rand der Leiste, also im Innenabstand des
+          `nav`, und nicht klickbar, damit der letzte sichtbare Eintrag
+          darunter weiter zu treffen ist. Von der Fläche (`canvas`), nicht
+          von Weiß: Darauf steht die Leiste. */}
+      {weiterRechts ? (
+        <span
+          aria-hidden="true"
+          data-verlauf
+          className="from-canvas text-line-strong pointer-events-none absolute inset-y-0 right-4 flex w-18 items-center justify-end bg-linear-to-l to-transparent pr-1 text-xl sm:hidden"
+        >
+          ›
+        </span>
+      ) : null}
     </nav>
   );
 }

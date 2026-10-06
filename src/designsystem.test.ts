@@ -379,6 +379,42 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   });
 });
 
+describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
+  /**
+   * Spezifikation Abschnitt 2, `docs/design/handoff-2026-10-05-rahmen.md`:
+   * drei Masse, dazu die Farben der installierten App. Die 11 px der
+   * Tableiste sind seit BEF-068 ein benannter Wert, kein freier mehr.
+   */
+  it('fuehrt die Beschriftung der Leisten mit 11 px als Token, ohne eigene Zeilenhoehe', () => {
+    expect(css).toMatch(/--text-leiste:\s*0\.6875rem;/);
+    expect(css).not.toMatch(/--text-leiste--line-height\s*:/);
+    // Die Tableiste liest das Token statt des freien Werts.
+    const geruest = readFileSync(join(stamm, 'src/app/AppShell.tsx'), 'utf8');
+    expect(geruest).toContain('text-leiste');
+    expect(geruest).not.toContain('text-[0.6875rem]');
+  });
+
+  it('fuehrt Auswahlstrich und Symbolspalte als Masse', () => {
+    expect(css).toMatch(/--spacing-auswahlstrich:\s*3px;/);
+    expect(css).toMatch(/--spacing-symbolspalte:\s*84px;/);
+  });
+
+  it('gibt der installierten App die Farben der Anwendung (BEF-048, Option 1)', () => {
+    // Leiste weiss wie die Kopfzeile, Startbild auf der Flaeche: so gibt es
+    // keinen Sprung vom Systemstart in die Anwendung.
+    const manifest = JSON.parse(
+      readFileSync(join(stamm, 'public/manifest.webmanifest'), 'utf8'),
+    ) as { theme_color: string; background_color: string };
+    expect(manifest.theme_color).toBe('#ffffff');
+    expect(manifest.background_color).toBe('#eceee8');
+    // #eceee8 ist die Flaeche - derselbe Wert, den `--color-canvas` als
+    // Oklch traegt (Kommentar in index.css).
+    expect(css).toMatch(/Fläche #eceee8 — Grund der Seite/);
+    const html = readFileSync(join(stamm, 'index.html'), 'utf8');
+    expect(html).toContain('<meta name="theme-color" content="#ffffff" />');
+  });
+});
+
 describe('Textstufen', () => {
   /**
    * Das System kennt zwei Textstufen, `ink` und `ink-muted` (DS-001). Die

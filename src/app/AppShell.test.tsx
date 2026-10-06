@@ -1,10 +1,12 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { AppShell } from './AppShell';
+import { AbmeldeschutzProvider } from './AbmeldeschutzProvider';
+import { useAbmeldewache } from './abmeldeschutz';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 describe('AppShell', () => {
@@ -174,10 +176,13 @@ describe('AppShell', () => {
 
     // „Abmelden" ist der seltenste Vorgang des Tages: 14 px, leise, nicht
     // fett und nicht in der Hauptfarbe - aber weiter ein Tippziel von 44 px
-    // und weiter ein Knopf, der abmeldet.
+    // und weiter ein Knopf, der abmeldet. Seit RAH-003 gelten Wort und
+    // Farbe ab sm; am Telefon ist es ein Symbolknopf.
     const abmelden = screen.getByRole('button', { name: 'Abmelden' });
     const klassen = abmelden.className.split(/\s+/);
-    expect(klassen).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'min-h-11']));
+    expect(klassen).toEqual(
+      expect.arrayContaining(['sm:text-ink-muted', 'sm:text-sm', 'sm:min-h-11']),
+    );
     expect(klassen).not.toContain('text-accent');
     expect(klassen).not.toContain('font-bold');
     expect(abmelden).toHaveAttribute('type', 'button');
@@ -313,6 +318,32 @@ describe('AppShell: Orientierung (UXR-002)', () => {
     expect(aktiv.className).toContain('aria-[current=page]:font-semibold');
     // Kein Schatten als Zeichen (DS-001).
     expect(aktiv.className).not.toMatch(/shadow|ring-/);
+  });
+
+  it('stellt die Kommunikation am Telefon hinter „Mehr" und markiert „Mehr" dort (BEF-049)', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/team',
+    );
+    const leiste = tableiste();
+    // Übersicht, Kalender, Patienten, Organisation, Mehr - nicht Nachrichten.
+    expect(
+      within(leiste)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Übersicht', 'Kalender', 'Patienten', 'Organisation', 'Mehr']);
+    expect(within(leiste).getByRole('link', { name: 'Mehr' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
+    // In der Seitenleiste bleibt die Kommunikation an ihrem Platz und aktiv.
+    const seite = screen.getAllByRole('navigation', { name: 'Arbeitsbereiche' })[0]!;
+    expect(within(seite).getByRole('link', { name: 'Kommunikation' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    );
   });
 
   it('markiert „Rechnungen" auch auf der Rechnung selbst (NAV-15, ABR-29)', () => {
@@ -456,6 +487,197 @@ describe('AppShell: Orientierung (UXR-002)', () => {
 });
 
 // -----------------------------------------------------------------------------
+// Handoff Rahmen vom 2026-10-05: Seitenleiste und Symbolspalte (RAH-002)
+// -----------------------------------------------------------------------------
+
+/** Die Seitenleiste ab sm - die erste Navigation dieses Namens. */
+function seitenleiste() {
+  return screen.getAllByRole('navigation', { name: 'Arbeitsbereiche' })[0]!;
+}
+
+describe('AppShell: Seitenleiste und Symbolspalte (RAH-002)', () => {
+  it('zeichnet den aktiven Bereich mit Fläche und Salbei-Strich aus, den Hover ohne Fläche', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/kalender',
+    );
+    const leiste = seitenleiste();
+    const aktiv = within(leiste).getByRole('link', { name: 'Kalender' });
+    const ruhig = within(leiste).getByRole('link', { name: 'Patient:innen' });
+    expect(aktiv).toHaveAttribute('aria-current', 'page');
+    expect(ruhig).not.toHaveAttribute('aria-current');
+    // Auswahl: Hauptfarbe gefüllt, Papier, 600 - und der Strich am linken
+    // Rand der Leiste. Er ist Darstellung, `aria-current` bleibt das Zeichen.
+    expect(aktiv.className).toContain('aria-[current=page]:bg-accent');
+    expect(aktiv.className).toContain('aria-[current=page]:font-semibold');
+    const strich = aktiv.querySelector('[aria-hidden="true"].w-auswahlstrich');
+    expect(strich).not.toBeNull();
+    expect(strich!.className).toContain('bg-salbei');
+    expect(strich!.className).toContain('absolute');
+    expect(ruhig.querySelector('.w-auswahlstrich')).toBeNull();
+    // Hover hebt nur den Text; bis zum Handoff sahen Hover und Auswahl
+    // gleich aus (beide Hauptfarbe gefüllt, 1,35:1 zwischen beiden).
+    expect(ruhig.className).toContain('hover:text-surface');
+    expect(ruhig.className).not.toContain('hover:bg-accent');
+    // Ruhe in Salbei, 500.
+    expect(ruhig.className).toContain('text-salbei');
+    expect(ruhig.className).toContain('font-medium');
+  });
+
+  it('beschriftet die Symbolspalte mit der Kurzform und hält den vollen Namen als zugänglichen Namen', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/patienten',
+    );
+    const leiste = seitenleiste();
+    // 84 statt 72 breit (Variante 2b), ab lg die Seitenleiste mit 248.
+    expect(leiste.className).toContain('w-symbolspalte');
+    expect(leiste.className).toContain('lg:w-62');
+    const eintrag = within(leiste).getByRole('link', { name: 'Patient:innen' });
+    // Die Kurzform ist sichtbarer Text in `text-leiste` (11 px), nur unter lg;
+    // für Vorlesesoftware ausgeblendet, damit der Link nicht zweimal heißt.
+    const kurz = eintrag.querySelector('[aria-hidden="true"].lg\\:hidden');
+    expect(kurz).not.toBeNull();
+    expect(kurz).toHaveTextContent('Patienten');
+    expect(kurz!.className).not.toContain('sr-only');
+    expect(eintrag.className).toContain('text-leiste');
+    expect(eintrag.className).toContain('lg:text-liste');
+    // Der Tooltip trägt denselben Wortlaut wie der sichtbare Text; kein
+    // `aria-label`, der Name kommt aus dem Text.
+    expect(eintrag).toHaveAttribute('title', 'Patienten');
+    expect(eintrag).not.toHaveAttribute('aria-label');
+    // Der volle Name bleibt für Vorlesesoftware da und wird ab lg sichtbar.
+    const voll = eintrag.querySelector('.sr-only');
+    expect(voll).toHaveTextContent('Patient:innen');
+    expect(voll!.className).toContain('lg:not-sr-only');
+    // Wo Kurzform und Name gleich lauten, gibt es keinen Tooltip.
+    expect(within(leiste).getByRole('link', { name: 'Kalender' })).not.toHaveAttribute('title');
+    // Jeder Eintrag der Symbolspalte ist 56 hoch, Symbol über Beschriftung.
+    expect(eintrag.className).toContain('h-14');
+    expect(eintrag.className).toContain('flex-col');
+    expect(eintrag.className).toContain('lg:flex-row');
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Handoff Rahmen vom 2026-10-05: Kopfzeile unter 640 px, Variante 1b (RAH-003)
+// -----------------------------------------------------------------------------
+
+/** Eine Seite, die vor dem Abmelden fragt, solange etwas offen ist. */
+function Wache({ ungespeichert }: { ungespeichert: boolean }) {
+  const [fragt, setFragt] = useState(false);
+  const abmelden = useAbmeldewache(() => {
+    if (!ungespeichert) return false;
+    setFragt(true);
+    return true;
+  });
+  if (!fragt) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setFragt(false);
+        abmelden?.();
+      }}
+    >
+      Verwerfen und abmelden
+    </button>
+  );
+}
+
+describe('AppShell: Abmelden in der Kopfzeile (RAH-003)', () => {
+  it('ist am Telefon ein Symbolknopf 44 in line-strong, ab sm das Wort in 14/400', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    // Ein Knopf, nicht zwei: Vorlesesoftware hört „Abmelden" genau einmal.
+    const knoepfe = screen.getAllByRole('button', { name: 'Abmelden' });
+    expect(knoepfe).toHaveLength(1);
+    const knopf = knoepfe[0]!;
+    expect(knopf).toHaveAttribute('aria-label', 'Abmelden');
+    expect(knopf).toHaveAttribute('title', 'Abmelden');
+    const klassen = knopf.className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['size-11', 'text-line-strong', 'sm:size-auto', 'sm:ml-5.5']),
+    );
+    expect(knopf.className).not.toMatch(/shadow|ring-/);
+    // Das Symbol nur am Telefon, das Wort nur ab sm - im selben Element.
+    const symbol = knopf.querySelector('svg')!;
+    expect(symbol).toHaveAttribute('aria-hidden', 'true');
+    expect(symbol.getAttribute('viewBox')).toBe('0 0 20 20');
+    expect(symbol.getAttribute('stroke-width')).toBe('1.75');
+    expect(symbol.classList.contains('sm:hidden')).toBe(true);
+    const wort = within(knopf).getByText('Abmelden');
+    expect(wort.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['sr-only', 'sm:not-sr-only']),
+    );
+  });
+
+  it('sagt „Wird abgemeldet …" unter der Kopfzeile, sobald die Sitzung endet', () => {
+    const onSignOut = vi.fn();
+    const { container } = renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={onSignOut}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(screen.queryByText('Wird abgemeldet …')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+    const meldung = screen.getByText('Wird abgemeldet …');
+    const status = meldung.closest('[role="status"]')!;
+    expect(status).not.toBeNull();
+    // In der klebenden Hülle unter der Kopfzeile, nicht im Inhalt.
+    expect(container.querySelector('header')!.parentElement).toContainElement(
+      status as HTMLElement,
+    );
+    expect(screen.getByRole('main')).not.toContainElement(status as HTMLElement);
+    // Akzentfläche, Radius 14, 15/600 in der Hauptfarbe, Kreis vorn.
+    expect(meldung.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'bg-accent-soft',
+        'text-accent',
+        'rounded-card',
+        'min-h-11',
+        'text-liste',
+        'font-semibold',
+      ]),
+    );
+    const kreis = meldung.querySelector('svg')!;
+    expect(kreis).toHaveAttribute('aria-hidden', 'true');
+    expect(kreis.classList.contains('motion-reduce:animate-none')).toBe(true);
+  });
+
+  it('wartet mit der Meldung, solange eine Wache das Abmelden noch anhält (FIX-014)', async () => {
+    const onSignOut = vi.fn();
+    renderWithProviders(
+      <AbmeldeschutzProvider onAbmelden={onSignOut}>
+        <AppShell user={testUser(['therapist'])} onSignOut={onSignOut}>
+          <Wache ungespeichert />
+        </AppShell>
+      </AbmeldeschutzProvider>,
+    );
+    const nutzer = userEvent.setup();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
+    // Die Wache fragt; die Sitzung läuft weiter, also keine Meldung.
+    expect(onSignOut).not.toHaveBeenCalled();
+    expect(screen.queryByText('Wird abgemeldet …')).toBeNull();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen und abmelden' }));
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Wird abgemeldet …')).toBeInTheDocument();
+  });
+});
+
+// -----------------------------------------------------------------------------
 // Seitenwechsel: Bildlauf und Fokus (NAV-09, VER-06)
 //
 // Ein `MemoryRouter` statt des Data Routers aus `renderWithProviders`: Hier
@@ -522,6 +744,24 @@ describe('AppShell: Seitenwechsel (NAV-09, VER-06)', () => {
     expect(screen.getByText('Seite /kalender')).toBeInTheDocument();
     expect(gesetzt).toHaveBeenCalledWith(0);
     expect(screen.getByRole('main')).toHaveFocus();
+  });
+
+  it('nennt den Tab wie die Seite - fest je Route, nie mit Daten (BEF-050, RAH-008)', async () => {
+    const user = userEvent.setup();
+    mitRouter(
+      <AppShell user={testUser(['therapist'], 'Anna Beispiel')} onSignOut={vi.fn()}>
+        <Seite />
+      </AppShell>,
+    );
+    // Schon beim ersten Zeichnen, nicht erst nach einem Wechsel.
+    expect(document.title).toBe('Übersicht – Own Motion');
+
+    await user.click(screen.getAllByRole('link', { name: 'Kalender' })[0]!);
+    expect(document.title).toBe('Kalender – Own Motion');
+
+    await user.click(screen.getAllByRole('link', { name: 'Patient:innen' })[0]!);
+    expect(document.title).toBe('Patient:innen – Own Motion');
+    expect(document.title).not.toContain('Anna');
   });
 
   it('lässt den Fokus, den die neue Seite selbst setzt', async () => {

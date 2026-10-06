@@ -46,6 +46,18 @@ describe('Vollseite', () => {
     expect(screen.getByRole('main')).toContainElement(screen.getByRole('status'));
   });
 
+  it('nennt den Tab „Anmelden – Own Motion" (BEF-050, RAH-008)', () => {
+    document.title = 'Akte – Own Motion';
+    render(
+      <Vollseite titel="Zugang gesperrt">
+        <p>Inhalt</p>
+      </Vollseite>,
+    );
+    // Auch die Türseiten nach dem Abmelden: Der Titel der letzten Seite
+    // bleibt nicht am Tab stehen.
+    expect(document.title).toBe('Anmelden – Own Motion');
+  });
+
   it('ist für Vorlesesoftware sauber', async () => {
     const { container } = render(
       <Vollseite titel="Anmelden" kleingedrucktes="Ein Hinweis.">

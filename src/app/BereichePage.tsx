@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { textlinkKlassen } from '@/components/ui/buttonStile';
 import type { CurrentUser } from '@/features/session/types';
 import { arbeitsbereiche } from './navigation';
 
@@ -35,12 +36,18 @@ export function BereichePage({ user }: { user: CurrentUser }) {
         ))}
       </ul>
 
+      {/* Der Satz sagt, was der Stand ist (BEF-049, RAH-004): Die Liste
+          darüber kennzeichnet keinen Bereich; die Vorschauen stehen in den
+          Untermenüs, und die Kommunikation ist als Ganzes eine. Der Weg zum
+          Protokoll steht jeder Rolle offen - die Tableiste nennt „Mehr" auch
+          dort, wo der eigene Bereich darin liegt. */}
       <p className="text-ink-muted mt-8 max-w-prose text-sm">
-        Bereiche ohne fertige Hintergrundfunktionen sind als Vorschau gekennzeichnet. Dort entstehen
-        keine echten Vorgänge.{' '}
-        <Link to="/vorschau/protokoll" className="text-accent hover:text-accent-hover underline">
-          Vorschau-Protokoll dieser Sitzung
+        Vorschauen — im Untermenü so bezeichnet — und die Kommunikation speichern nichts; was dort
+        simuliert wurde, steht im{' '}
+        <Link to="/vorschau/protokoll" className={textlinkKlassen()}>
+          Vorschau-Protokoll
         </Link>
+        .
       </p>
     </>
   );

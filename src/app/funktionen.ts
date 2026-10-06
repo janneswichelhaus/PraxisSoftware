@@ -7,6 +7,7 @@ import {
   canReadPatientDirectory,
   canWriteTrainingClients,
   canWriteTreatmentBases,
+  isOwner,
   type CurrentUser,
 } from '@/features/session/types';
 
@@ -275,6 +276,22 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     });
   }
 
+  // Die Aufbewahrung ist seit RAH-005 kein eigener Menüpunkt mehr, sondern
+  // der zweite Reiter unter „Sicherheit und Aufbewahrung". Die Suche führt
+  // weiter unmittelbar auf die Seite - dieselbe Rollenbedingung wie ihre
+  // Route.
+  if (isOwner(roles)) {
+    eintraege.push({
+      id: 'seite-aufbewahrung',
+      art: 'Seite',
+      bezeichnung: 'Aufbewahrung und Löschung',
+      hinweis: 'Aufbewahrungsplan, Löschsperren, Löschjournal',
+      ziel: '/praxis/sicherheit/aufbewahrung',
+      bereich: BEREICHE.betrieb.label,
+      stichworte: ['löschung', 'löschsperre', 'frist', 'sicherheit'],
+    });
+  }
+
   if (canManageStaffMasterData(roles)) {
     eintraege.push({
       id: 'vorgang-mitarbeitende-anlegen',
@@ -296,6 +313,18 @@ function vorgaenge(user: CurrentUser): Funktion[] {
     hinweis: 'Kennwort, zweiter Faktor, Sitzungen',
     ziel: '/mein-konto',
     stichworte: ['kennwort', 'passwort', 'sitzung', 'profil', 'zwei-faktor'],
+  });
+
+  // Das Vorschau-Protokoll (BEF-049, RAH-004): Bis hierher führte nur der
+  // Satz auf `/bereiche` dorthin - und den sahen Rollen ohne „Mehr" nie. Die
+  // Route steht jeder angemeldeten Rolle offen.
+  eintraege.push({
+    id: 'seite-vorschau-protokoll',
+    art: 'Seite',
+    bezeichnung: 'Vorschau-Protokoll',
+    hinweis: 'Was in Vorschauen dieser Sitzung simuliert wurde',
+    ziel: '/vorschau/protokoll',
+    stichworte: ['vorschau', 'protokoll', 'simuliert', 'sitzung'],
   });
 
   return eintraege;

@@ -620,6 +620,15 @@
           "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15"
         },
         {
+          "id": "rah-epic-001",
+          "name": "RAH-EPIC-001 Design-Runde 1 Rahmen: Seitenleiste und Symbolspalte, Kopfzeile, Tableiste nach Reife, Sicherheit und Aufbewahrung, Praxiseinstellungen, Rückweg in der Akte, Tab-Titel, Startbild",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "RAH-001 bis RAH-010, Branch `claude/epic-cori-rmq1ty`, Handoff docs/design/handoff-2026-10-05-rahmen.md, Prüfseite tests/e2e/fixtures/startbild.html",
+          "vermerk": "Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3"
+        },
+        {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,

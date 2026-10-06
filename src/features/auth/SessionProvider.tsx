@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useQueryClient } from '@tanstack/react-query';
 import type { Session } from '@supabase/supabase-js';
 import { protokolliereFehler } from '@/lib/protokoll';
+import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { getSupabase } from '@/lib/supabase';
 import { SessionContext, type SessionState } from './sessionContext';
 
@@ -61,6 +62,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const raeumen = useCallback(() => {
     queryClient.clear();
+    // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Die nächste
+    // Anmeldung in diesem Tab beginnt wieder mit dem Intro - auch die eines
+    // anderen Kontos.
+    startbildZuruecksetzen();
     // Abstecher-Entwürfe bleiben (ABN-019, BEF-110, ANN-019 Fassung 2): Sie
     // sind an das Konto gebunden, das sie begonnen hat, und kein anderes
     // findet sie. Eine automatische Abmeldung verwirft sie nicht still; beim
