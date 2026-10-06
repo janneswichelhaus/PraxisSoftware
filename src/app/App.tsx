@@ -262,7 +262,9 @@ function Gate() {
   // Die Sitzungssperre steht vor allem, was angemeldet zu sehen ist - Praxis
   // wie Plattform (SEC-EPIC-001, ADR-025): erst prüfen, dann zeigen.
   return (
-    <Sitzungssperre>
+    // Je Konto eine eigene Sperre: Meldet sich in einem zweiten Tab ein
+    // anderes Konto an, fällt eine festgehaltene Seite weg (Zweitreview).
+    <Sitzungssperre key={session.user.id}>
       <AuthenticatedApp />
     </Sitzungssperre>
   );

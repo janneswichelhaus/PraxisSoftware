@@ -3,10 +3,12 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Vollseite } from '@/app/Vollseite';
+import { PortalZielKontext } from '@/components/ui/portalZiel';
 import { useSession } from '../sessionContext';
 import {
   BEDIENUNG_MELDEN_ALLE_MS,
   SICHERUNG_HOECHSTENS_MS,
+  VORLAUF_MS,
   ersteFrist,
   ladeSperrstand,
   sperrzeitpunkt,
@@ -107,6 +109,9 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
         phaseRef.current = 'gesperrt';
         setPhase('gesperrt');
       } else {
+        // Die festgehaltene Seite braucht ihre eigenen Abfragen; alles andere
+        // verlässt den Speicher (Punkt 3).
+        queryClient.removeQueries({ type: 'inactive' });
         phaseRef.current = 'halten';
         setPhase('halten');
       }
@@ -122,8 +127,16 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
       }
       sperrAm.current = sperrzeitpunkt(stand, antwortAm);
       sperrGrund.current = ersteFrist(stand);
-      setTakt((n) => n + 1);
       const vorher = phaseRef.current;
+      // Im Vorlauf: Der Server sieht die Sitzung noch offen, nimmt also noch
+      // Entwürfe an - jetzt sperren, nicht erst, wenn er zu ist (Punkt 4).
+      // Gilt nicht für eine gerade freigegebene Sitzung: Dort ist die Frist
+      // frisch, und ein Vorlauf läge nie in der Vergangenheit.
+      if (sperrAm.current <= Date.now() && vorher !== 'gesperrt' && vorher !== 'halten') {
+        void sperren(sperrGrund.current);
+        return;
+      }
+      setTakt((n) => n + 1);
       if (vorher === 'offen') return;
       if (vorher === 'halten') {
         // Die verborgene Seite kommt zurück; was sie zeigt, wird frisch geholt.
@@ -169,7 +182,18 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
   // gemeldet, geht es ohne Sperre weiter.
   useEffect(() => {
     if (phase !== 'offen' || sperrAm.current === null) return;
-    const uhr = setTimeout(() => void pruefen(), Math.max(0, sperrAm.current - Date.now()));
+    const uhr = setTimeout(
+      () => {
+        // Kam die Uhr zu spät (Gerät schlief, ohne Rückkehr-Ereignis) und ist
+        // auch die Frist des Servers um: erst verbergen, dann fragen.
+        if (sperrAm.current !== null && Date.now() >= sperrAm.current + VORLAUF_MS) {
+          phaseRef.current = 'pruefen';
+          setPhase('pruefen');
+        }
+        void pruefen();
+      },
+      Math.max(0, sperrAm.current - Date.now()),
+    );
     return () => clearTimeout(uhr);
   }, [phase, takt, pruefen]);
 
@@ -235,6 +259,7 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
     [],
   );
 
+  const [portalZiel, setPortalZiel] = useState<HTMLElement | null>(null);
   const sichtbar = phase === 'offen';
   const steht = phase === 'offen' || phase === 'pruefen' || phase === 'halten';
 
@@ -280,7 +305,10 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
           inert={!sichtbar}
           aria-hidden={sichtbar ? undefined : true}
         >
-          {children}
+          <PortalZielKontext.Provider value={portalZiel}>{children}</PortalZielKontext.Provider>
+          {/* Fenster (`Dialogfenster`) werden hier gezeichnet, nicht am
+              `body`: So verbirgt die Sperre sie mit (Zweitreview). */}
+          <div ref={setPortalZiel} data-testid="sitzung-fenster" />
         </div>
       ) : null}
     </SperrsicherungKontext.Provider>

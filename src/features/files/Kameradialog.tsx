@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
+import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { kameraVerfuegbar } from './kamera';
 
@@ -201,6 +202,15 @@ export function Kameradialog({
     strom.current = null;
     onSchliessen();
   }
+
+  // Vor der Sitzungssperre schließt die Kamera (Zweitreview SEC-EPIC-001):
+  // Ein laufender Kamerastrom hinter der Sperrseite wäre ein offenes Auge.
+  // Ein noch nicht übernommenes Bild geht dabei verloren - übernommene Fotos
+  // hält der Fotoverlustschutz fest.
+  useSperrsicherung(() => {
+    abbrechen();
+    return Promise.resolve(true);
+  });
 
   return (
     <Dialogfenster titel={titel} onSchliessen={abbrechen}>

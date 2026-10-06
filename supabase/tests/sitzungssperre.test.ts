@@ -207,6 +207,36 @@ describe('Sitzungssperre im Server (SEC-001, ADR-025)', () => {
       expect((await alsToken<{ n: number }>(ohneSitzung, PATIENTEN))[0]!.n).toBe(0);
     });
 
+    it('zählt einen zweiten Faktor nicht als Anmeldung - die Sperre bleibt', async () => {
+      const basis = JSON.parse(claims(users.therapist, { angemeldetVor: 61 })) as Record<
+        string,
+        unknown
+      >;
+      basis.amr = [
+        { method: 'password', timestamp: vor(61) },
+        { method: 'totp', timestamp: vor(0) },
+      ];
+      const token = JSON.stringify(basis);
+      expect((await alsToken<{ n: number }>(token, PATIENTEN))[0]!.n).toBe(0);
+      const [stand] = await alsToken<Stand>(token, 'select * from public.session_status()');
+      expect(stand!.reason).toBe('hoechstdauer');
+    });
+
+    it('sperrt ein Token mit einer Sitzungskennung, die keine UUID ist', async () => {
+      const token = claims(users.therapist, { sitzung: 'keine-uuid' });
+      expect((await alsToken<{ n: number }>(token, PATIENTEN))[0]!.n).toBe(0);
+    });
+
+    it('sperrt auch den Weg der Dateiablage (Storage-Policies)', async () => {
+      const lesen = `select count(*)::int as n from storage.objects`;
+      const offenN = (await alsToken<{ n: number }>(claims(users.ownerTherapist, {}), lesen))[0]!.n;
+      const gesperrtN = (
+        await alsToken<{ n: number }>(claims(users.ownerTherapist, { angemeldetVor: 61 }), lesen)
+      )[0]!.n;
+      expect(gesperrtN).toBe(0);
+      expect(offenN).toBeGreaterThanOrEqual(gesperrtN);
+    });
+
     it('öffnet nichts mit einer Anmeldung aus der Zukunft', async () => {
       const token = claims(users.therapist, { angemeldetVor: -120 });
       expect((await alsToken<{ n: number }>(token, PATIENTEN))[0]!.n).toBe(0);

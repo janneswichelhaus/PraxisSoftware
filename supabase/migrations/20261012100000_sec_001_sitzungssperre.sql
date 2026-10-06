@@ -118,10 +118,19 @@ begin
   if v_amr is null or jsonb_typeof(v_amr) <> 'array' then
     return null;
   end if;
+  -- Nur Anmeldungen mit einem ersten Faktor zaehlen. Ein zweiter Faktor
+  -- (`totp`, `phone`, `webauthn`) laesst sich mit einem gesperrten Token
+  -- einrichten und bestaetigen; zaehlte er, hoebe er die Sperre ohne
+  -- Kennwort auf (Zweitreview SEC-EPIC-001). Unbekannte Methoden zaehlen
+  -- nicht - lieber eine Anmeldung zu viel.
   return (
     select to_timestamp(max((e ->> 'timestamp')::double precision))
     from jsonb_array_elements(v_amr) e
-    where jsonb_typeof(e) = 'object' and jsonb_typeof(e -> 'timestamp') = 'number'
+    where jsonb_typeof(e) = 'object'
+      and jsonb_typeof(e -> 'timestamp') = 'number'
+      and e ->> 'method' in (
+        'password', 'otp', 'magiclink', 'recovery', 'invite', 'email/signup', 'oauth', 'sso/saml'
+      )
   );
 end;
 $$;
@@ -129,7 +138,7 @@ $$;
 comment on function app.jwt_session_id() is
   'Claim session_id des Tokens; null, wenn er fehlt oder keine UUID ist (ADR-025).';
 comment on function app.jwt_last_authentication() is
-  'Juengster Zeitstempel im Claim amr des Tokens: die letzte Anmeldung (ADR-025 Punkt 1); null ohne amr.';
+  'Juengster Zeitstempel einer Anmeldung mit erstem Faktor im Claim amr (ADR-025 Punkt 1); ein zweiter Faktor zaehlt nicht. null ohne passende Angabe.';
 
 -- Die beiden Zeitpunkte der laufenden Sitzung; ohne Token oder Claims leer.
 create or replace function app.session_times(
@@ -294,7 +303,8 @@ begin
     return query select
       true,
       case
-        when v_zeiten.last_authentication is null then 'unbekannt'
+        when v_zeiten.last_authentication is null
+          or v_zeiten.last_authentication > now() + interval '1 minute' then 'unbekannt'
         when now() >= v_zeiten.last_authentication + app.session_max_duration() then 'hoechstdauer'
         else 'inaktiv'
       end,

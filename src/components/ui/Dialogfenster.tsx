@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from './Button';
+import { usePortalZiel } from './portalZiel';
 
 /**
  * Fenster über dem aktuellen Inhalt (FIX-016, ANN-058).
@@ -54,6 +55,7 @@ export function Dialogfenster({
   children: ReactNode;
 }) {
   const titelId = useId();
+  const ziel = usePortalZiel();
   const fensterRef = useRef<HTMLDivElement>(null);
   const schliessenRef = useRef(onSchliessen);
   schliessenRef.current = onSchliessen;
@@ -188,7 +190,7 @@ export function Dialogfenster({
         <div className="mt-3">{children}</div>
       </div>
     </div>,
-    document.body,
+    ziel,
   );
 }
 

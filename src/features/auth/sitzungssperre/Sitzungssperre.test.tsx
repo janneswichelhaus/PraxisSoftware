@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/reac
 import type * as SperrstandModul from './sperrstand';
 import type { Sperrstand } from './sperrstand';
 import { useSperrsicherung } from './sperrsicherung';
+import { Dialogfenster } from '@/components/ui/Dialogfenster';
 
 /**
  * Die Sitzungssperre der Oberfläche (SEC-002, SEC-003; ADR-025).
@@ -302,5 +303,74 @@ describe('Sperrseite: entsperren', () => {
     zeichne();
     await warte();
     expect(screen.getByRole('button', { name: 'Entsperren' })).toBeDisabled();
+  });
+});
+
+describe('Sitzungssperre: Befunde aus dem Zweitreview', () => {
+  it('sperrt im Vorlauf, solange der Server noch offen ist, und sichert dabei', async () => {
+    const sicherung = vi.fn(() => Promise.resolve(true));
+    ladeSperrstand.mockResolvedValueOnce(offen(60, 3000));
+    zeichne(sicherung);
+    await warte();
+    // Die Uhr läuft 20 s vor der Frist ab; der Server meldet ehrlich „noch 19 s“.
+    ladeSperrstand.mockResolvedValue(offen(19, 2900));
+    await warte(41_000);
+    expect(sicherung).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    expect(screen.getByText(/als Entwurf gesichert/)).toBeInTheDocument();
+    // Kein Dauerfeuer von Abfragen im Vorlauf.
+    expect(ladeSperrstand.mock.calls.length).toBeLessThanOrEqual(3);
+  });
+
+  it('verbirgt ein offenes Fenster mit der Seite', async () => {
+    function MitFenster() {
+      useSperrsicherung(() => Promise.resolve(false));
+      return (
+        <Dialogfenster titel="Foto übernehmen?" onSchliessen={() => undefined}>
+          <p>Kamerabild</p>
+        </Dialogfenster>
+      );
+    }
+    queryClient = new QueryClient();
+    ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+    render(
+      <QueryClientProvider client={queryClient}>
+        <Sitzungssperre>
+          <MitFenster />
+        </Sitzungssperre>
+      </QueryClientProvider>,
+    );
+    await warte();
+    const fenster = screen.getByRole('dialog', { name: 'Foto übernehmen?' });
+    expect(screen.getByTestId('sitzung-fenster')).toContainElement(fenster);
+
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(11_000);
+    expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
+    expect(screen.getByText('Kamerabild')).not.toBeVisible();
+    expect(screen.queryByRole('dialog')).toBeNull();
+  });
+
+  it('wirft beim Festhalten die Abfragen anderer Seiten weg', async () => {
+    ladeSperrstand.mockResolvedValueOnce(offen(30, 3000));
+    zeichne(() => Promise.resolve(false));
+    await warte();
+    // Eine Abfrage ohne Beobachter - etwa die einer vorher besuchten Seite.
+    queryClient.setQueryData(['andere-akte'], { name: 'Erika Beispiel' });
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    await warte(11_000);
+    expect(screen.getByText(/ließ sich nicht sichern/)).toBeInTheDocument();
+    expect(queryClient.getQueryData(['andere-akte'])).toBeUndefined();
+  });
+
+  it('verbirgt bei einer verspäteten Uhr nach Ablauf der Serverfrist sofort', async () => {
+    ladeSperrstand.mockResolvedValueOnce(offen(60, 3000));
+    zeichne();
+    await warte();
+    ladeSperrstand.mockReturnValue(new Promise(() => undefined));
+    // Die Uhr springt über die Frist des Servers hinaus, bevor der Zeitgeber läuft.
+    vi.setSystemTime(Date.now() + 5 * 60_000);
+    await warte(41_000);
+    expect(screen.getByText('Akte von Max Mustermann')).not.toBeVisible();
   });
 });
