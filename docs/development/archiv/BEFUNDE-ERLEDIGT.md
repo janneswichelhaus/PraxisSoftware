@@ -2218,3 +2218,117 @@ ausstehenden Sichtung zu ANN-116 und ANN-117 bestätigen.
 
 **Behoben.** Nach dem Verorten fragt die Akte nach dem Umstellen; eine veraltete Anschrift am künftigen Hausbesuch ergibt keine Fahrzeit mehr, sondern den Hinweis „Adresse am Termin veraltet“ (ANN-236).
 
+### BEF-053 — Kalender: Beim Planen aus der Verordnung wirken belegte Zeiten frei, und die Anlegen-Leiste deckt am Handy die Auswahl zu
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                                       |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                            |
+| Bereich | Kalender (`/kalender`): Planen aus Akte und Verordnung (`?patient=…&verordnung=…`), Anlegen-Leiste                                                                                                                                                                                                                                                                                                    |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs KAL-04, KAL-12, RSP-17                                                                                                                                                                                                                                                                                    |
+| Status  | entschieden 2026-10-05 (Jannes), Option 1 — (1) erledigt mit UBK-014 (2026-10-05: andere Termine als „belegt“, ANN-239); (2) erledigt mit KUT-003 (2026-10-06: Leiste dichter, Gesten-Hinweis einmal, Raster rollt die Auswahl frei; ANN-108 beantwortet, ANN-255) |
+| Berührt | `src/features/appointments/CalendarPage.tsx` (Z. 466, 618–625, 1028), `src/features/appointments/calendar.ts` (Z. 146), `src/features/treatment-bases/PatientTreatmentBasesPage.tsx` (Z. 296), `src/features/appointments/CalendarGrid.tsx` (Z. 709), `src/features/appointments/AnlegenMenue.tsx` (Z. 54–97), `tests/e2e/kalender.spec.ts` (Z. 42); ANN-050, ANN-108; AKTE-003; `ARBEITSBEREICHE.md` |
+
+**Beobachtung.**
+
+- **Patientenfilter.** Mit `?patient=` zeigt das Raster nur die Termine dieser
+  Person; alle anderen Termine und Fehlzeiten verschwinden („Andere Termine …
+  ausgeblendet“). Genau das ist der Planungsweg aus Akte und Verordnung:
+  Tagesansicht aller Personen, ein Tipp auf eine scheinbar freie Stelle führt
+  direkt ins Formular (ANN-050). Jede Zeit wirkt frei; die Überschneidung meldet
+  erst der Server nach dem Ausfüllen — dann zurück, raten, neu versuchen. Die
+  eigene Beschreibung des Parameters sagt etwas anderes: „was im Gitter
+  hervorgehoben bleibt“ (`calendar.ts:146`). Am Code belegt, ohne Bild.
+- **Anlegen-Leiste.** Die Leiste ist bei 390 × 844 rund 190 px hoch und steht
+  über der Tableiste; unten sind damit rund 250 px belegt. Im Browser liegt nach
+  einem Tipp bei 15:00 die ganze Auswahl unter der Leiste, der Fokus springt
+  ohne Bildlauf hinein, und das Feld für den zweiten Tipp einer Spanne ist
+  verdeckt. Bei 1440 px steht die Leiste am Fensterende, rund 470 px von der
+  Auswahl. Der E2E-Test rollt die Auswahl eigens nach oben und prüft „deckt
+  nicht zu“ nur dort. Das beantwortet die offene Frage aus ANN-108 („ob die
+  Leiste … zu viel vom Raster verdeckt“) mit ja.
+
+**Frage an Jannes.** (1) Soll der Patientenfilter die übrigen Termine
+zurücknehmen statt ausblenden? (2) Wie soll die Leiste mit einer Auswahl im
+unteren Drittel umgehen?
+
+**Optionen.**
+
+1. **Zurücknehmen und hochrollen:** Andere Einträge erscheinen als neutrale,
+   gestrichelte Kachel „belegt“ mit vollem Text, die der Patient:in wie bisher;
+   der Hinweis sagt „Termine von … sind hervorgehoben; andere Zeiten sind als
+   belegt markiert.“ Nach dem Öffnen der Leiste rollt das Raster, bis die
+   Auswahl über ihr steht; am Handy wird die Leiste dichter (Hinweiszeilen der
+   Einträge weg, Gesten-Hinweis nur beim ersten Mal, rund 140 statt 190 px).
+   Folge: Planen ohne Fehlversuche; sichtbar wird nichts Neues, der Ausschnitt
+   ist ohnehin geladen (ANN-050, AKTE-003).
+2. **Filter bleibt, Leiste wandert:** Ausblenden wie heute; die Leiste zurück an
+   die Auswahl, aber seitlich (Änderungspfad von ANN-108). Folge: Das Raster
+   zeigt weiter nicht, was belegt ist; neben einer schmalen Spalte ist am Handy
+   wenig Platz.
+3. **Wie heute.** Folge: Fehlversuche beim Planen aus der Verordnung und eine
+   verdeckte Auswahl im unteren Drittel.
+
+**Empfehlung.** Option 1 — ANN-050 nennt „hervorheben statt ausblenden“ selbst
+im Änderungspfad. Dazu ein E2E-Fall mit einem Tipp im unteren Drittel, und die
+Zeile in `ARBEITSBEREICHE.md` nachziehen.
+
+### BEF-054 — Kalender und Tour: Tour braucht zwei Tipps und zeigt am Handy zuerst Filter und Karte, die Woche passt am Tablet nicht, Personenfarben tragen keine Bedeutung
+
+|         |                                                                                                                                                                                                                                                                                                                                                                  |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                       |
+| Bereich | Kalender (`/kalender`): „Ansicht und Filter“, Wochenansicht, Kacheln; Tour (`/touren`)                                                                                                                                                                                                                                                                           |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs KAL-14, TER-08, KAL-15, KAL-25                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-05 (Jannes), Option 2 — (4) erledigt im UI-Redesign (Personenfarben weg, die Linie an der Kachel sagt den Zustand); (1) bis (3) erledigt mit KUT-001 bis KUT-006 (2026-10-06: Tour im Kopf, Liste vor Karte, Woche 7.5rem, Karte mit zwei Fingern; ANN-113 Fassung 2, ANN-254) |
+| Berührt | `src/features/appointments/CalendarPage.tsx` (Z. 81–88, 446–455, 836–946), `src/features/appointments/CalendarGrid.tsx` (Z. 72–84, 347, 788), `src/features/tours/karte/Karte.tsx` (Z. 147, 309), `src/features/tours/TourenPage.tsx` (Z. 103, 146), `src/features/tours/Tourenliste.tsx` (Z. 75), `src/lib/kontrast.test.ts`; ANN-109, ANN-113, ANN-114; DS-001 |
+
+**Beobachtung.**
+
+- **Ansicht und Filter.** Hinter dem Symbol in der Rasterecke liegen neben den
+  Filtern auch „Tour“, „Tag umplanen“ und alle Anlegewege. Das Feld ist bei
+  390 px rund 490 px hoch und schiebt das Raster nach unten; Standort und Status
+  sind bei 1440 px je rund 560 px breit. Die Tour braucht damit zwei Tipps — die
+  offene Frage aus ANN-113.
+- **Tour am Handy.** Reihenfolge bei 390 px: Kopf mit „Zum Kalender“ (rund
+  150 px), drei gestapelte Filter (rund 250 px), die Karte mit 60 % der
+  Fensterhöhe (bei 844 px rund 506 px), erst dann Routensumme, „Ganzer Tag“ und
+  Stopps — „Ganzer Tag“ erst unterhalb von rund 1 100 px. Ein Finger auf der
+  Karte verschiebt die Karte, nicht die Seite. Bei 1440 px stehen Karte und
+  Liste untereinander, die Liste beginnt unter dem Falz.
+- **Woche am Tablet.** Jede Spalte ist mindestens 144 px breit, und die Woche
+  hat immer sieben Tage: 1 060 px. Bei 820 px sind 724 px nutzbar — 4,7 Tage,
+  Freitag angeschnitten, Samstag und Sonntag nur per waagerechtem Wischen, das
+  mit Ziehen und Blättern konkurriert; bei 1280 px fehlt ein Stück vom Sonntag.
+  Das Wochenende steht auch ohne Arbeitszeit da. Die Begründung für breite
+  Spalten im Code gilt der Tagesansicht mit sechs Personen.
+- **Personenfarben.** Sechs Farben als freie Werte im Code, weder in der Palette
+  noch im Kontrasttest; eine liegt nahe der Farbe für Fehler. Sie unterscheiden
+  nichts, was nicht schon die Spalte (Tagesansicht) oder die einzige Person
+  (Woche) sagt.
+
+**Frage an Jannes.** (1) Tour mit einem Tipp? (2) Am Handy zuerst Liste oder
+Karte? (3) Wochenende ohne Arbeitszeit schmal oder weg? (4) Personenfarben
+behalten?
+
+**Optionen.**
+
+1. **Klein:** „Tour“ ab 640 px neben „Jetzt“ (Änderungspfad von ANN-113); die
+   Anlegeknöpfe im Feld eingeklappt („Ohne Raster anlegen“); in der Woche
+   schmalere Spalten (rund 96 px, die Tagesansicht bleibt bei 144 px);
+   Personenfarben gestrichen (die eigene Person in der Hauptfarbe, andere
+   neutral). Folge: Das Feld wird am Handy kürzer, die Woche passt bei 820 px;
+   die Tour bleibt am Handy kartenlastig.
+2. **Wie 1, dazu die Tour ordnen:** unter 640 px die Liste mit „Ganzer Tag“ vor
+   der Karte (oder die Karte auf rund 40 % der Höhe), die Filter als eine Zeile
+   „Anna Beispiel · So., 27.09. – ändern“, ab 1024 px Karte und Liste
+   nebeneinander; Wochenende ohne Arbeitszeit und ohne Termine schmal, nicht
+   ausgeblendet. Folge: Die Tour ist am Lenker in einem Bildschirm bedienbar;
+   ANN-113 und ANN-114 werden fortgeschrieben.
+3. **Personenfarben behalten, aber als Tokens** mit Kontrastprüfung (mindestens
+   3:1) und ohne den rötlichen Ton. Folge: Farbe bleibt ein
+   Wiedererkennungszeichen, trägt aber keine eigene Bedeutung.
+
+**Empfehlung.** Option 2 mit gestrichenen Personenfarben. Ohne Entscheidung und
+sofort: die Karte nur mit zwei Fingern verschieben (`cooperativeGestures`, gilt
+auch für die Tagesroute der Übersicht), Standort und Status in schmaler Breite,
+Fokus und Escape im Feld (Review KAL-21).

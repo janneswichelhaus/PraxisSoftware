@@ -647,6 +647,15 @@
           "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7"
         },
         {
+          "id": "kut-epic-001",
+          "name": "KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "KUT-001 bis KUT-006, Handoff docs/design/handoff-2026-10-06-kalender-und-tour.md, E2E tests/e2e/kalender.spec.ts (Tipp im unteren Drittel, Tour im Kopf)",
+          "vermerk": "Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10"
+        },
+        {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,

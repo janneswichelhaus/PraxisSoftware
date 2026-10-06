@@ -1445,6 +1445,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Änderungspfad.** Das zweite Feld mitzählen: in `naechsteAuswahl` das Ende um das Praxisraster verlängern · Aufwand `klein`. Menü zurück an die Auswahl, aber seitlich oder oberhalb: den Platz in `CalendarGrid` ändern · Aufwand `klein`.
 
+**Beantwortet (Jannes, Runde 3, 2026-10-06):** Die Leiste verdeckte am Handy zu viel. Seitdem ist sie unter 640 px dichter (keine Hinweiszeilen, je zwei Wahlen in einer Reihe), der Gesten-Hinweis steht nur bis zur ersten Spanne (ANN-255), und die Seite rollt eine verdeckte Auswahl ins obere Drittel über der Leiste (`auswahlBildlauf` in `src/features/appointments/auswahlBildlauf.ts`).
+
 ### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
 
 Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
@@ -1506,6 +1508,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 **Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
 
 **Änderungspfad.** Ein Tipp: den Knopf aus der Gruppe in den Kopf über dem Raster ziehen (ab `sm`, am Handy neben „Jetzt") · Aufwand `klein`. Zeile zurück: `unterpunkte` wieder füllen · Aufwand `klein`. Die Tour als echte Ansicht im Raster (ohne Seitenwechsel) · Aufwand `mittel`.
+
+**Fassung 2 (Jannes, Runde 3, 2026-10-06):** „Tour" steht mit einem Tipp im Kopf, rechts neben „Tag | Team" bzw. „Woche | Team", auf allen Breiten; im Feld „Ansicht und Filter" entfällt sie, die Anlegewege stehen dort zugeklappt unter „Ohne Raster anlegen". Anker jetzt: der Link „Tour" nach der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
 
 ### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
 
@@ -3051,3 +3055,26 @@ Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 7
 
 **Änderungspfad.** Anderer Grundton: die Tokens ändern, `kontrast.test.ts` rechnet nach · Aufwand `klein`.
 
+### ANN-254 — Tour am Handy: Liste vor Karte, Felder hinter „ändern"; ab 1024 px zwei Spalten
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 6, Runde 3 „alles A") · erledigt · Wiedervorlage: —
+
+**Annahme.** Unter 640 px zeigt die Tour oben eine Zeile „Name · Tag" mit „Start und Ende: …" und dem Textknopf „ändern", der Person, Tag, Start und Ende aufklappt; danach Summe, „Navigation: ganzer Tag" über die ganze Breite, die Stopps, „Tourenliste drucken" und zuletzt die zugeklappte Karte. Zwischen 640 und 1023 px stehen die vier Felder offen in einer Zeile und die Karte zugeklappt über der Liste; ab 1024 px links die Liste, rechts die Karte offen und beim Rollen oben stehend. Im Dokument steht die Liste immer vor der Karte.
+
+**Begründung.** BEF-054: Am Handy kamen zuerst Filter und Karte, die Liste - wofür man die Tour öffnet - erst nach zwei Bildschirmen. Variante A der Runde 3, gewählt von Jannes. Unsicher: ob die Karte am Tablet über oder unter der Liste besser steht.
+
+**Anker.** Felder `tour-felder`, `felderOffen` und das Raster der zwei Spalten in `src/features/tours/TourenPage.tsx`; Kopfzeile aus `src/features/tours/tourKopf.ts`.
+
+**Änderungspfad.** Karte am Tablet unter die Liste: `sm:order-first` am Kartenbereich streichen · Aufwand `klein`. Felder auch am Handy offen: `felderOffen` mit `true` beginnen · Aufwand `klein`.
+
+### ANN-255 — Der Gesten-Hinweis im Kalender steht bis zur ersten Spanne; der Merker ist ein Wahrheitswert in `localStorage`
+
+Technik · entschieden (Claude) · 2026-10-06 · Claude (Runde 3, Handoff Kalender und Tour) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Handy
+
+**Annahme.** „Zweites Feld antippen: Spanne bis dorthin. Dasselbe Feld: aufheben." steht in der Anlegen-Leiste, bis auf diesem Gerät zum ersten Mal eine Spanne aufgezogen wurde. Gemerkt wird das als `kalender-spanne-gelernt = 1` in `localStorage`; ohne Speicher steht der Hinweis weiter. Beim Abmelden bleibt der Merker.
+
+**Begründung.** Der Handoff verlangt den Hinweis nur bis zum ersten Lernen. `localStorage` statt `sessionStorage`, weil eine gelernte Geste in einem neuen Tab nicht wieder erklärt werden muss. Der Wert trägt keinen Inhalt über Person, Praxis oder Akte (ANN-019 bleibt gewahrt); er ist wie der Startbild-Merker (ANN-243) ein reiner Bedienzustand. Unsicher: ob ein geteiltes Praxisgerät den Hinweis für eine neue Kollegin wieder zeigen sollte.
+
+**Anker.** `GESTEN_MERKER`, `spanneGelernt` und `spanneMerken` in `src/features/appointments/gestenMerker.ts`, gelesen in `src/features/appointments/AnlegenMenue.tsx`.
+
+**Änderungspfad.** Je Sitzung neu: `localStorage` durch `sessionStorage` ersetzen · Aufwand `klein`. Beim Abmelden löschen: den Merker in `raeumen` des `SessionProvider` entfernen wie den Startbild-Merker · Aufwand `klein`.
