@@ -121,8 +121,18 @@ export type GitterFokus = { kachel: string } | { spalte: string };
  * echtes Raster mit Zeilen und Pfeiltasten wäre ein eigener Schritt.
  */
 
-/** Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. */
+/**
+ * Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. Das gilt
+ * für die Teamansicht: Eine Spalte trägt dort den Namen der Person im Kopf.
+ */
 const SPALTEN_MINDESTBREITE = '9rem';
+
+/**
+ * Mindestbreite einer Tagesspalte in der Wochenansicht (Runde 3, Handoff
+ * Kalender und Tour 2026-10-06): Montag bis Freitag passen bei 834 px ohne
+ * Querrollen, fünf Spalten à rund 135 px neben der Stundenachse.
+ */
+const WOCHEN_SPALTEN_MINDESTBREITE = '7.5rem';
 
 /**
  * Mindesthöhe einer Auswahl oder Vorschau im Gitter (BEF-037).
@@ -383,7 +393,13 @@ export function CalendarGrid({
   startSpalte = null,
   wegfrage,
   zeitzone = null,
+  spaltenart = 'team',
 }: {
+  /**
+   * Was eine Spalte ist: eine Person (Teamansicht, 9rem) oder ein Tag
+   * (Wochenansicht, 7.5rem). Ohne Angabe gilt die Teamansicht.
+   */
+  spaltenart?: 'team' | 'woche';
   /**
    * „Passt es?“ zu einer Verschiebung (UBK-013): Die Seite weiß, welche
    * Person, welcher Tag und welcher Ort zu einer Spalte gehören. Ohne Angabe
@@ -653,7 +669,7 @@ export function CalendarGrid({
         <div
           className="grid min-w-max"
           style={{
-            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${SPALTEN_MINDESTBREITE}, 1fr))`,
+            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${spaltenart === 'woche' ? WOCHEN_SPALTEN_MINDESTBREITE : SPALTEN_MINDESTBREITE}, 1fr))`,
           }}
           role="region"
           aria-label={beschriftung}

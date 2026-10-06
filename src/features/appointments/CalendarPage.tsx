@@ -1810,6 +1810,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Termin springt, kommt damit genau hierher zurück.
           rueckweg={kalenderStand}
           spaltenModell={spaltenModell}
+          spaltenart={p.ansicht === 'woche' ? 'woche' : 'team'}
           eintraege={gitterEintraege}
           fenster={fenster}
           raster={user.appointmentGridMinutes}
