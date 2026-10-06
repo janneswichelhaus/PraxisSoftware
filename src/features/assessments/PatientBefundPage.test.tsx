@@ -66,6 +66,7 @@ function erhebung(abweichung: Partial<Api.Erhebung> = {}): Api.Erhebung {
     completed_at: '2026-09-20T08:10:00Z',
     author_name: 'Anna Beispiel',
     completed_by_name: 'Anna Beispiel',
+    source: 'practice',
     ...abweichung,
   };
 }
@@ -203,6 +204,11 @@ describe('Befund der Akte', () => {
       expect(
         await screen.findByText('Erfasst von Anna Beispiel · abgeschlossen am 20.09.2026'),
       ).toBeInTheDocument();
+    });
+
+    it('nennt die Plattform als Herkunft, wenn die Person den Bogen selbst ausgefüllt hat (POR-012)', async () => {
+      seite([erhebung({ source: 'platform', author_name: null, completed_by_name: null })]);
+      expect(await screen.findByText(/Über die Plattform ausgefüllt/)).toBeInTheDocument();
     });
 
     it('erklärt die Behandlungsliege nicht in einem Dauersatz', async () => {

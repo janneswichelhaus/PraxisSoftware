@@ -260,3 +260,88 @@ export async function terminAendernWuenschen(eingabe: {
   }
   return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Befundbogen vorab (POR-012, §7, DSN-001 4.1, ANN-245)
+// -----------------------------------------------------------------------------
+
+const bogenSchema = z.object({
+  id: z.string().uuid(),
+  instrument_id: z.string(),
+  definition_version: z.string(),
+  status: z.enum(['entwurf', 'abgeschlossen']),
+  recorded_on: z.string(),
+  source: z.enum(['practice', 'platform']),
+  /** Nur aus Erhebungen über die Plattform; eine in der Praxis erhobene bleibt Befund. */
+  answers: z.record(z.string(), z.unknown()).nullable(),
+  updated_at: z.string(),
+  completed_at: z.string().nullable(),
+});
+export type Bogenstand = z.infer<typeof bogenSchema>;
+
+export function befundbogenSchluessel(zugangId: string) {
+  return ['platform-questionnaire', zugangId] as const;
+}
+
+/** Der Stand der Bögen, die die Person ausfüllt - nur im Behandlungszugang. */
+export async function ladeBefundbogen(zugangId: string): Promise<Bogenstand[]> {
+  const satz = 'Ihr Befundbogen konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_questionnaire', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(bogenSchema), ergebnis.data ?? [], satz);
+}
+
+function bogenfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('already completed'))
+    return 'Ihr Befundbogen liegt der Praxis schon vor. Änderungen besprechen Sie beim Termin.';
+  if (m.includes('not available'))
+    return 'Dieser Bogen lässt sich zurzeit nicht ausfüllen. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('is completed')) return 'Dieser Bogen ist schon abgeschickt.';
+  return 'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Entwurf anlegen oder überschreiben; der Server prüft jede Antwort gegen die Definition. */
+export async function befundbogenSpeichern(eingabe: {
+  zugangId: string;
+  entwurfId: string | null;
+  instrumentId: string;
+  version: string;
+  antworten: Record<string, unknown>;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('save_platform_questionnaire_response', {
+    p_access_id: eingabe.zugangId,
+    p_response_id: eingabe.entwurfId,
+    p_instrument_id: eingabe.instrumentId,
+    p_definition_version: eingabe.version,
+    p_answers: eingabe.antworten,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(bogenfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, bogenfehler(undefined));
+}
+
+/** Absenden: der Bogen ist abgeschlossen und liegt der Praxis vor. */
+export async function befundbogenAbsenden(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('complete_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error(bogenfehler(ergebnis.error?.message ?? 'not found'));
+  }
+}
+
+/** Den eigenen Entwurf verwerfen. */
+export async function befundbogenVerwerfen(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('discard_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error('Der Entwurf konnte nicht verworfen werden.');
+  }
+}

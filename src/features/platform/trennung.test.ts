@@ -27,6 +27,10 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/auth\/(fokus|fremdeSitzung|sessionContext)$/,
   // Die Kennwortregel (ANN-027) - eine Regel, keine Praxisdaten.
   /^@\/features\/account\/(api|kennwortFehler)$/,
+  // POR-012: der Fragebogen als Baustein und seine Definitionen - Produktinhalt
+  // des Releases (ANN-083), kein Datenzugriff; die Erhebungen selbst kommen
+  // über die Plattformprojektion.
+  /^@\/features\/assessments\/(FragebogenFelder|antworten|darstellung|instrumente|schema)$/,
   /^\.\//,
 ];
 
@@ -72,16 +76,21 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     // beide prüfen den Zugang über app.platform_access_allows.
     expect([...new Set(aufrufe)].sort()).toEqual([
       'function:platform-access',
+      // POR-012: der Befundbogen vorab.
+      'rpc:complete_platform_questionnaire_response',
+      'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
       'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
       'rpc:platform_context',
+      'rpc:platform_questionnaire',
       'rpc:platform_representatives',
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',
+      'rpc:save_platform_questionnaire_response',
       'rpc:withdraw_platform_appointment_request',
     ]);
   });

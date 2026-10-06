@@ -33,6 +33,7 @@ function erhebung(abweichung: Partial<Api.Erhebung> = {}): Api.Erhebung {
     completed_at: '2026-09-20T08:10:00Z',
     author_name: 'Anna Beispiel',
     completed_by_name: 'Anna Beispiel',
+    source: 'practice',
     ...abweichung,
   };
 }

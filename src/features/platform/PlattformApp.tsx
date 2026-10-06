@@ -16,6 +16,7 @@ import {
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import { Befundbogen } from './Befundbogen';
 import { PLATTFORM_PFAD } from './pfade';
 import { Termine } from './Termine';
 import { Terminaenderung } from './Terminaenderung';
@@ -102,6 +103,16 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Terminaenderung zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/befundbogen`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Befundbogen zugang={z} />}
               />
             }
           />

@@ -43,6 +43,14 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Wunsch zurückziehen (POR-009); ohne lesbaren Zugang false',
   'public.request_platform_appointment_change':
     'Termin ändern oder absagen als Wunsch (POR-010); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.platform_questionnaire':
+    'Stand des Befundbogens (POR-012); Negativfälle in platform-questionnaire.test.ts',
+  'public.save_platform_questionnaire_response':
+    'Befundbogen als Entwurf (POR-012); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.complete_platform_questionnaire_response':
+    'Befundbogen absenden (POR-012); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.discard_platform_questionnaire_response':
+    'Eigenen Entwurf verwerfen (POR-012); ohne lesbaren Zugang false',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

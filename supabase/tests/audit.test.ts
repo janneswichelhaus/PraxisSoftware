@@ -295,6 +295,8 @@ describe('Audit-Lesepfad', () => {
       'list_patient_treatment_notes',
       'list_patient_upcoming_appointments',
       'list_payments',
+      // POR-011: Terminwuensche von der Plattform fuer die Praxis.
+      'list_platform_appointment_requests',
       'list_platform_representations',
       'list_practice_revenue_months',
       'list_removed_patient_course_events',
