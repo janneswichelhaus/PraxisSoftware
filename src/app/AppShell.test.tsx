@@ -1,10 +1,12 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation, useNavigate, type NavigateFunction } from 'react-router-dom';
 import { AppShell } from './AppShell';
+import { AbmeldeschutzProvider } from './AbmeldeschutzProvider';
+import { useAbmeldewache } from './abmeldeschutz';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 describe('AppShell', () => {
@@ -174,10 +176,13 @@ describe('AppShell', () => {
 
     // „Abmelden" ist der seltenste Vorgang des Tages: 14 px, leise, nicht
     // fett und nicht in der Hauptfarbe - aber weiter ein Tippziel von 44 px
-    // und weiter ein Knopf, der abmeldet.
+    // und weiter ein Knopf, der abmeldet. Seit RAH-003 gelten Wort und
+    // Farbe ab sm; am Telefon ist es ein Symbolknopf.
     const abmelden = screen.getByRole('button', { name: 'Abmelden' });
     const klassen = abmelden.className.split(/\s+/);
-    expect(klassen).toEqual(expect.arrayContaining(['text-ink-muted', 'text-sm', 'min-h-11']));
+    expect(klassen).toEqual(
+      expect.arrayContaining(['sm:text-ink-muted', 'sm:text-sm', 'sm:min-h-11']),
+    );
     expect(klassen).not.toContain('text-accent');
     expect(klassen).not.toContain('font-bold');
     expect(abmelden).toHaveAttribute('type', 'button');
@@ -529,6 +534,120 @@ describe('AppShell: Seitenleiste und Symbolspalte (RAH-002)', () => {
     expect(eintrag.className).toContain('h-14');
     expect(eintrag.className).toContain('flex-col');
     expect(eintrag.className).toContain('lg:flex-row');
+  });
+});
+
+// -----------------------------------------------------------------------------
+// Handoff Rahmen vom 2026-10-05: Kopfzeile unter 640 px, Variante 1b (RAH-003)
+// -----------------------------------------------------------------------------
+
+/** Eine Seite, die vor dem Abmelden fragt, solange etwas offen ist. */
+function Wache({ ungespeichert }: { ungespeichert: boolean }) {
+  const [fragt, setFragt] = useState(false);
+  const abmelden = useAbmeldewache(() => {
+    if (!ungespeichert) return false;
+    setFragt(true);
+    return true;
+  });
+  if (!fragt) return null;
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        setFragt(false);
+        abmelden?.();
+      }}
+    >
+      Verwerfen und abmelden
+    </button>
+  );
+}
+
+describe('AppShell: Abmelden in der Kopfzeile (RAH-003)', () => {
+  it('ist am Telefon ein Symbolknopf 44 in line-strong, ab sm das Wort in 14/400', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    // Ein Knopf, nicht zwei: Vorlesesoftware hört „Abmelden" genau einmal.
+    const knoepfe = screen.getAllByRole('button', { name: 'Abmelden' });
+    expect(knoepfe).toHaveLength(1);
+    const knopf = knoepfe[0]!;
+    expect(knopf).toHaveAttribute('aria-label', 'Abmelden');
+    expect(knopf).toHaveAttribute('title', 'Abmelden');
+    const klassen = knopf.className.split(/\s+/);
+    expect(klassen).toEqual(
+      expect.arrayContaining(['size-11', 'text-line-strong', 'sm:size-auto', 'sm:ml-5.5']),
+    );
+    expect(knopf.className).not.toMatch(/shadow|ring-/);
+    // Das Symbol nur am Telefon, das Wort nur ab sm - im selben Element.
+    const symbol = knopf.querySelector('svg')!;
+    expect(symbol).toHaveAttribute('aria-hidden', 'true');
+    expect(symbol.getAttribute('viewBox')).toBe('0 0 20 20');
+    expect(symbol.getAttribute('stroke-width')).toBe('1.75');
+    expect(symbol.classList.contains('sm:hidden')).toBe(true);
+    const wort = within(knopf).getByText('Abmelden');
+    expect(wort.className.split(/\s+/)).toEqual(
+      expect.arrayContaining(['sr-only', 'sm:not-sr-only']),
+    );
+  });
+
+  it('sagt „Wird abgemeldet …" unter der Kopfzeile, sobald die Sitzung endet', () => {
+    const onSignOut = vi.fn();
+    const { container } = renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={onSignOut}>
+        <p>Inhalt</p>
+      </AppShell>,
+    );
+    expect(screen.queryByText('Wird abgemeldet …')).toBeNull();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+    const meldung = screen.getByText('Wird abgemeldet …');
+    const status = meldung.closest('[role="status"]')!;
+    expect(status).not.toBeNull();
+    // In der klebenden Hülle unter der Kopfzeile, nicht im Inhalt.
+    expect(container.querySelector('header')!.parentElement).toContainElement(
+      status as HTMLElement,
+    );
+    expect(screen.getByRole('main')).not.toContainElement(status as HTMLElement);
+    // Akzentfläche, Radius 14, 15/600 in der Hauptfarbe, Kreis vorn.
+    expect(meldung.className.split(/\s+/)).toEqual(
+      expect.arrayContaining([
+        'bg-accent-soft',
+        'text-accent',
+        'rounded-card',
+        'min-h-11',
+        'text-liste',
+        'font-semibold',
+      ]),
+    );
+    const kreis = meldung.querySelector('svg')!;
+    expect(kreis).toHaveAttribute('aria-hidden', 'true');
+    expect(kreis.classList.contains('motion-reduce:animate-none')).toBe(true);
+  });
+
+  it('wartet mit der Meldung, solange eine Wache das Abmelden noch anhält (FIX-014)', async () => {
+    const onSignOut = vi.fn();
+    renderWithProviders(
+      <AbmeldeschutzProvider onAbmelden={onSignOut}>
+        <AppShell user={testUser(['therapist'])} onSignOut={onSignOut}>
+          <Wache ungespeichert />
+        </AppShell>
+      </AbmeldeschutzProvider>,
+    );
+    const nutzer = userEvent.setup();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Abmelden' }));
+    // Die Wache fragt; die Sitzung läuft weiter, also keine Meldung.
+    expect(onSignOut).not.toHaveBeenCalled();
+    expect(screen.queryByText('Wird abgemeldet …')).toBeNull();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Verwerfen und abmelden' }));
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Wird abgemeldet …')).toBeInTheDocument();
   });
 });
 

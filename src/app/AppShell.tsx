@@ -12,7 +12,7 @@ import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { type CurrentUser } from '@/features/session/types';
 import { Funktionssuche } from './Funktionssuche';
-import { useAbmeldeanfrage } from './abmeldeschutz';
+import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
 import {
   aktiverBereich,
   arbeitsbereiche,
@@ -123,10 +123,19 @@ const kontoLink =
  * statt `Button`: Dessen Varianten sind alle fett und in der Hauptfarbe, und
  * eine vierte Variante nur für diese eine Stelle wäre ein Baustein ohne
  * zweiten Nutzer.
+ *
+ * Unter 640 px ein Symbolknopf 44 × 44 in `line-strong` (Handoff Rahmen vom
+ * 2026-10-05, Variante 1b, RAH-003): Das Wort nahm dort neben Marke,
+ * Bereichsname, Lupe und „Konto" den Platz, der dem Bereichsnamen fehlte.
+ * **Ein** Knopf für beide Breiten, nicht zwei: Symbol und Wort liegen
+ * nebeneinander im selben Element, und CSS blendet je Breite eines aus. Zwei
+ * Knöpfe desselben Namens hießen für Vorlesesoftware zweimal „Abmelden".
+ * Abstand davor: 8 am Telefon, 24 ab sm (zuzüglich der 2 px der Reihe).
  */
 const abmeldeKnopf =
-  'text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 ' +
-  'items-center px-2.5 text-sm transition-colors';
+  'nicht-drucken text-line-strong hover:text-ink hover:bg-surface-sunken rounded-button ' +
+  'ml-1.5 inline-flex size-11 shrink-0 items-center justify-center transition-colors ' +
+  'sm:text-ink-muted sm:ml-5.5 sm:size-auto sm:min-h-11 sm:px-2.5 sm:text-sm';
 
 /**
  * Die Höhe der klebenden Kopfzeile als CSS-Variable `--kopfzeile-hoehe`
@@ -167,6 +176,23 @@ export function AppShell({
 }) {
   const { pathname } = useLocation();
   const anfordern = useAbmeldeanfrage();
+  /**
+   * „Wird abgemeldet …" (RAH-003): Mit Abmeldeschutz sagt der Schutz, wann
+   * die Sitzung wirklich endet - erst dann, nicht schon beim Tap, den eine
+   * Wache noch anhält. Ohne Schutz (Tests, Vorschauen) meldet die Kopfzeile
+   * selbst unmittelbar ab und merkt es sich selbst.
+   */
+  const abmeldungImSchutz = useAbmeldung();
+  const [abmeldungUnmittelbar, setAbmeldungUnmittelbar] = useState(false);
+  const abmeldung = abmeldungImSchutz || abmeldungUnmittelbar;
+  const abmelden = () => {
+    if (anfordern) {
+      anfordern();
+      return;
+    }
+    setAbmeldungUnmittelbar(true);
+    onSignOut();
+  };
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
@@ -388,12 +414,60 @@ export function AppShell({
                     Rückfrage (FIX-014, NAV-01). Ohne eingerichteten Schutz -
                     in Tests und Vorschauen - bleibt es beim unmittelbaren
                     Abmelden. */}
-                <button type="button" className={abmeldeKnopf} onClick={anfordern ?? onSignOut}>
-                  Abmelden
+                <button
+                  type="button"
+                  aria-label="Abmelden"
+                  title="Abmelden"
+                  className={abmeldeKnopf}
+                  onClick={abmelden}
+                >
+                  {/* Tür mit Pfeil nach rechts, nur unter 640 px. */}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className="size-5 sm:hidden"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8" />
+                    <path d="M11.5 6.5 15 10l-3.5 3.5M15 10H7.5" />
+                  </svg>
+                  <span className="sr-only sm:not-sr-only">Abmelden</span>
                 </button>
               </div>
             </div>
           </header>
+
+          {/* „Wird abgemeldet …" (RAH-003): Unter der Kopfzeile, sobald die
+              Sitzung wirklich endet, bis die Anmeldemaske steht. Bis dahin
+              blieb nach dem Tap alles, wie es war - am Telefon ohne Wort am
+              Knopf doppelt stumm. Akzentfläche, Radius 14, 15/600 in der
+              Hauptfarbe, vorn ein Kreis, der sich dreht, wo Bewegung
+              erlaubt ist. `role="status"`: wird vorgelesen, unterbricht
+              nicht. Auf der Fläche der Seite, weil die Hülle klebt und sonst
+              Inhalt durchschiene. */}
+          {abmeldung ? (
+            <div role="status" className="bg-canvas px-4 pt-2 pb-1 sm:px-6 lg:px-8">
+              <p className="bg-accent-soft text-accent rounded-card text-liste flex min-h-11 items-center gap-2.5 px-4 font-semibold">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <circle cx="10" cy="10" r="7" opacity="0.3" />
+                  <path d="M17 10a7 7 0 0 0-7-7" />
+                </svg>
+                Wird abgemeldet …
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {/* Der Inhalt hält 1200 px und steht mittig in der Fläche neben der
