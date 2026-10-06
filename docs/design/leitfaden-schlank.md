@@ -93,4 +93,12 @@ wählt. Danach ändern sich die Tokens in `src/index.css` und die Kontrastpaare 
 
 ## Löschkandidaten zur Entscheidung
 
-Noch keine. Einträge hier mit Ort, Begründung und dem, was am Löschen hängt.
+Einträge mit Ort, Begründung und dem, was am Löschen hängt. Nichts davon ist entschieden; gelöscht
+wird erst auf Jannes' Wort.
+
+| Kandidat                                                       | Ort                             | Warum                                                                   | Was daran hängt                                                       |
+| -------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| „Telefon (geschäftlich)“ als drittes Telefonfeld               | Stammdaten, Formular der Person | neben Mobil und privat selten gebraucht                                 | Spalte `phone_work`, Formular, Auskunft, Zusammenführen, Seeds, Tests |
+| „Andere Ziel-App prüfen (für die Gerätebewertung)“             | Tour, unter der Liste           | Prüfwerkzeug aus dem Kartendienst-Aufbau, im Praxisalltag ohne Nutzen   | Sichtung Kartendienst (Gerätebewertung), Komponente und Test          |
+| Erklärsatz über dem Abschnitt „Plattform“                      | Stammdaten                      | wiederholt, was der Abschnitt zeigt (L2: Selbstverständliches entfällt) | nur Text und ein Test                                                 |
+| Aufklapper „Organisatorisches und Kommunikation“ am Seitenende | Übersicht                       | Wege, die Seitenleiste und Tableiste schon haben                        | Komponente, Tests der Übersicht                                       |
