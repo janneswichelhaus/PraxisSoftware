@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
@@ -107,7 +107,7 @@ describe('TreatmentNoteAddendumPage', () => {
     const user = userEvent.setup();
     rendern();
 
-    expect(await screen.findByText(INHALT)).toBeInTheDocument();
+    expect(await screen.findByTestId('ursprung')).toHaveTextContent(INHALT);
     await user.type(feld(), 'Synthetisch: Heimprogramm nachgereicht.');
     await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
 
@@ -143,16 +143,19 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     expect(await screen.findByLabelText('Nachtrag')).toHaveAccessibleDescription(
-      /bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis\./,
+      /Bleibt Entwurf bis zur Finalisierung – spätestens mit Ablauf der Dokumentationsfrist\./,
     );
   });
 
-  it('zeigt den Ursprung als Akteninhalt auf Papier, nicht vertieft (DOK-19)', async () => {
+  it('klappt den Ursprung mit seiner ersten Zeile zu, als Akteninhalt ohne Vertiefung (DOK-19, BEF-057)', async () => {
     rendern();
 
-    const ursprung = (await screen.findByText(INHALT)).parentElement!;
-    expect(ursprung).toHaveClass('bg-surface', 'border-line');
-    expect(ursprung).not.toHaveClass('bg-surface-sunken');
+    const ursprung = await screen.findByTestId('ursprung');
+    expect(ursprung).toHaveTextContent(INHALT);
+    const aufklapper = ursprung.closest('details')!;
+    expect(aufklapper.open).toBe(false);
+    expect(aufklapper).not.toHaveClass('bg-surface-sunken');
+    expect(within(aufklapper).getByText('Ursprünglicher Eintrag')).toBeInTheDocument();
   });
 
   it('laesst einen leeren Nachtrag nicht abschicken', async () => {

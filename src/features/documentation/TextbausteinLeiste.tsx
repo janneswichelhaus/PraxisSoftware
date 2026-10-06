@@ -42,9 +42,20 @@ export function TextbausteinLeiste({
     staleTime: 5 * 60 * 1000,
   });
 
-  // Ein Fehler hier darf die Dokumentation nicht blockieren: Bausteine sind
-  // Komfort, der Freitext ist die Aufgabe.
-  if (isPending || isError) return null;
+  // Während des Ladens hält ein Platzhalter die Höhe einer Knopfreihe frei:
+  // Sonst sprang das Textfeld darunter, sobald die Bausteine ankamen
+  // (BEF-057). Ein Fehler hier darf die Dokumentation nicht blockieren:
+  // Bausteine sind Komfort, der Freitext ist die Aufgabe.
+  if (isPending) {
+    return (
+      <div
+        aria-hidden="true"
+        data-testid="bausteine-platzhalter"
+        className={alsChips ? 'min-h-11 w-24 shrink-0' : 'nicht-drucken mb-3 min-h-11'}
+      />
+    );
+  }
+  if (isError) return null;
 
   const bausteine: TextSnippet[] = data;
   if (bausteine.length === 0) return null;
@@ -71,13 +82,21 @@ export function TextbausteinLeiste({
 
   return (
     <div className="nicht-drucken mb-3">
-      <div role="group" aria-label="Textbausteine" className="flex flex-wrap items-center gap-2">
+      {/* Am Handy eine Reihe, die waagerecht läuft (BEF-057 Option 2): Drei
+          Bausteine in zwei bis drei Zeilen schoben das Feld unter den Falz.
+          Ab 640 px umbrechend wie bisher. */}
+      <div
+        role="group"
+        aria-label="Textbausteine"
+        className="-mx-1 flex items-center gap-2 overflow-x-auto px-1 py-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 sm:py-0"
+      >
         {bausteine.map((baustein) => (
           <Button
             key={baustein.id}
             type="button"
             variant="secondary"
             groesse="kompakt"
+            className="max-sm:shrink-0 max-sm:whitespace-nowrap"
             title={baustein.body}
             onClick={() => onEinfuegen(baustein.body, baustein.title)}
           >

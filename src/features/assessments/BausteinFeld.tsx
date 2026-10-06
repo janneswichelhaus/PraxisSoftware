@@ -143,7 +143,9 @@ export function BausteinFeld({
           Seite wählen – sie gilt für alle Tests und Techniken der Region.
         </p>
       ) : (
-        <div className="flex flex-col gap-2">
+        // Blöcke durch Linien getrennt, nicht als Kasten im Kasten
+        // (Leitfaden L2, BEF-057 Option 2).
+        <div className="border-line flex flex-col border-y">
           {region.blocks.map((block) => (
             <Block
               key={`${region.id}.${block.id}`}
@@ -363,16 +365,16 @@ function Block({
   const offen = block.status === 'unvollstaendig';
 
   return (
-    <details className="group/block border-line rounded-card border">
+    <details className="group/block border-line border-b last:border-b-0">
       <summary
-        className={`${aufklappKopfKlassen} text-ink flex-wrap px-3 text-sm font-medium wrap-anywhere`}
+        className={`${aufklappKopfKlassen} text-ink flex-wrap text-sm font-medium wrap-anywhere`}
       >
         <Zeichen gruppe="block" />
         {block.label}
         {zahl > 0 ? <Badge ton="akzent">{String(zahl)}</Badge> : null}
         {offen ? <Badge ton="warnung">Vorlage unvollständig</Badge> : null}
       </summary>
-      <div className="flex flex-col gap-4 px-3 pb-3">
+      <div className="flex flex-col gap-4 pb-3">
         {offen ? (
           <p className="text-ink-muted text-sm">
             In der Vorlage fehlen hier Einträge. Sie werden nicht ergänzt, bis die Praxis sie
@@ -659,55 +661,67 @@ const Eingabe = memo(function Eingabe({
           <Hinweis label={titel} hint={hint} />
         </p>
       ) : null}
-      <div className="flex items-start gap-2">
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:gap-2">
         {seite ? (
-          // Eigene Spalte: Bricht die Zeile auf dem Telefon um, steht der Rest
-          // unter den Schaltflächen und nicht unter „li.".
+          // Am Handy über der Knopfreihe (BEF-057 Option 2): Als eigene
+          // Spalte nahm die Marke den Knöpfen die Breite, und die Zeile brach
+          // in zwei Reihen. Ab 640 px wieder als Spalte davor.
           <span
             aria-hidden="true"
-            className="text-ink-muted flex min-h-11 w-7 shrink-0 items-center text-sm font-medium"
+            className="text-ink-muted flex shrink-0 items-center text-sm font-medium sm:min-h-11 sm:w-7"
           >
             {SEITE_MARKE[seite]}
           </span>
         ) : null}
-        <div ref={knoepfeRef} className="flex flex-wrap items-center gap-2">
-          {ergebnisse.map((ergebnis) => {
-            const gewaehlt = angabe?.ergebnis === ergebnis;
-            const zeichen = ERGEBNIS_ZEICHEN[ergebnis];
-            return (
-              <Button
-                key={ergebnis}
-                type="button"
-                groesse="kompakt"
-                variant={gewaehlt ? 'primary' : 'secondary'}
-                aria-pressed={gewaehlt}
-                onClick={() => {
-                  if (!gewaehlt) {
-                    setAbwaehlenFragen(false);
-                    setzen(schluessel, { ...(angabe ?? {}), ergebnis });
-                    // Ohne Messfeld ist ein unauffälliger Test mit dem Tipp
-                    // erledigt. „positiv" bleibt offen: Dort folgt meist die
-                    // Notiz.
-                    if (ergebnis !== 'positiv' && !item.value_field && !notizSichtbar) {
-                      fokusAufAendern.current = true;
-                      setEingeklappt(true);
+        {/* Am Handy die Ergebnisse gleich breit in einer Reihe, „+ Notiz“
+            darunter; ab 640 px fließend wie bisher. */}
+        <div
+          ref={knoepfeRef}
+          className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2"
+        >
+          <div
+            data-testid="ergebnis-knoepfe"
+            className="grid w-full auto-cols-fr grid-flow-col gap-1 sm:flex sm:w-auto sm:flex-wrap sm:gap-2"
+          >
+            {ergebnisse.map((ergebnis) => {
+              const gewaehlt = angabe?.ergebnis === ergebnis;
+              const zeichen = ERGEBNIS_ZEICHEN[ergebnis];
+              return (
+                <Button
+                  key={ergebnis}
+                  type="button"
+                  groesse="kompakt"
+                  variant={gewaehlt ? 'primary' : 'secondary'}
+                  className="max-sm:px-1.5"
+                  aria-pressed={gewaehlt}
+                  onClick={() => {
+                    if (!gewaehlt) {
+                      setAbwaehlenFragen(false);
+                      setzen(schluessel, { ...(angabe ?? {}), ergebnis });
+                      // Ohne Messfeld ist ein unauffälliger Test mit dem Tipp
+                      // erledigt. „positiv" bleibt offen: Dort folgt meist die
+                      // Notiz.
+                      if (ergebnis !== 'positiv' && !item.value_field && !notizSichtbar) {
+                        fokusAufAendern.current = true;
+                        setEingeklappt(true);
+                      }
+                    } else if (mitEingaben(angabe)) {
+                      setAbwaehlenFragen(true);
+                    } else {
+                      abwaehlen();
                     }
-                  } else if (mitEingaben(angabe)) {
-                    setAbwaehlenFragen(true);
-                  } else {
-                    abwaehlen();
-                  }
-                }}
-              >
-                {/* Ein Textblock: Der Abstand zwischen Zeichen und Wort ist ein
+                  }}
+                >
+                  {/* Ein Textblock: Der Abstand zwischen Zeichen und Wort ist ein
                   Leerzeichen, nicht die Lücke der Schaltfläche. */}
-                <span>
-                  {zeichen ? <span aria-hidden="true">{`${zeichen} `}</span> : null}
-                  {ERGEBNIS_TEXT[ergebnis]}
-                </span>
-              </Button>
-            );
-          })}
+                  <span>
+                    {zeichen ? <span aria-hidden="true">{`${zeichen} `}</span> : null}
+                    {ERGEBNIS_TEXT[ergebnis]}
+                  </span>
+                </Button>
+              );
+            })}
+          </div>
           {angabe && !notizSichtbar ? (
             <Button
               type="button"

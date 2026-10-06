@@ -1,4 +1,4 @@
-import { memo, useId, useRef, type ReactNode, type Ref } from 'react';
+import { memo, useId, useRef, type CSSProperties, type ReactNode, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
@@ -360,6 +360,8 @@ function Skala({
   const skala = item.skala ?? { min: 0, max: 10 };
   const aktuell = antwort && 'wert' in antwort ? antwort.wert : null;
   const stufen = Array.from({ length: skala.max - skala.min + 1 }, (_, i) => skala.min + i);
+  // Mehr als sechs Stufen teilen sich am Handy auf zwei Reihen.
+  const spaltenAmHandy = stufen.length > 6 ? Math.ceil(stufen.length / 2) : stufen.length;
 
   function entfernen() {
     onChange(undefined);
@@ -380,13 +382,18 @@ function Skala({
         />
       }
     >
-      {/* Elf Felder zu je knapp 30 px passen bei 375 px in eine Reihe; die
-          ganze Zelle ist Trefferfläche, 44 px hoch. Ab 640 px nimmt die Reihe
-          die Breite des Bogens ein, jede Stufe mindestens 44 px (RSP-08). Der
-          Rand ist der eines Bedienelements (`line-strong`, BEF-04); der Fokus
-          liegt in der Hauptfarbe mit Abstand um die Stufe - auf der gewählten,
-          gefüllten Stufe wäre ein Ring in Schriftfarbe unsichtbar. */}
-      <div className="grid max-w-md grid-flow-col gap-0.5 sm:max-w-none">
+      {/* Am Handy in zwei Reihen (BEF-057 Option 2 mit der Skala aus Option 3,
+          ANN-258): 0–5 und 6–10, jede Stufe mindestens 44 × 44 px - elf
+          Stufen zu je 29 px in einer Reihe trafen mit Handschuhen leicht die
+          Nachbarin, und der Wert lebt im Verlauf weiter. Ab 640 px eine Reihe
+          über die Breite des Bogens (RSP-08). Der Rand ist der eines
+          Bedienelements (`line-strong`, BEF-04); der Fokus liegt in der
+          Hauptfarbe mit Abstand um die Stufe. */}
+      <div
+        data-testid="skala-stufen"
+        className="grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5"
+        style={{ '--skala-spalten': spaltenAmHandy } as CSSProperties}
+      >
         {stufen.map((stufe) => (
           <label
             key={stufe}
@@ -409,6 +416,11 @@ function Skala({
           <span>{item.anker.max}</span>
         </div>
       ) : null}
+      {/* Der gewählte Wert als Text (BEF-057): Die gefüllte Stufe allein sagt
+          am Handy in der Sonne wenig, und Vorlesesoftware hört ihn. */}
+      <p aria-live="polite" className="text-ink-muted text-sm tabular-nums">
+        {aktuell === null ? '' : `gewählt: ${aktuell}`}
+      </p>
     </Frageblock>
   );
 }
