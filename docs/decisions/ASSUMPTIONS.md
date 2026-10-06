@@ -2919,6 +2919,42 @@ Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (Rückfrage UBK-017:
 
 **Änderungspfad.** Ohne Straße: die zwei Spalten in einer neuen Migration wieder entfernen und `ortDerKachel` am Hausbesuch `null` liefern lassen; der Datensparsamkeitstest nimmt sie zurück in die verbotene Liste · Aufwand `klein`.
 
+### ANN-243 — Startbild einmal je Sitzung, Merker im Sitzungsspeicher des Tabs
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Design-Runde 1, 05.10.2026: „Einmal je Sitzung, auch am Rechner volles Intro“) · erledigt · Wiedervorlage: Jannes in der Sichtung (Rahmen)
+
+**Annahme.** Das Startbild „Speiche wird O“ (Handoff Rahmen vom 2026-10-05, Abschnitt 6) läuft **einmal je Sitzung** in voller Länge (1,8 s) auf jedem Gerät: beim ersten Aufbau der angemeldeten Anwendung nach einem Kaltstart und nach jeder Anmeldung. Nie beim Neuladen, bei Navigation, beim Zurückkehren aus dem Hintergrund oder nach dem Sperrbildschirm (ADR-025). Der Merker ist ein Wahrheitswert `startbild-gezeigt` im `sessionStorage` des Tabs, gesetzt beim **Start** des Intros (ein Abbruch wiederholt nicht), gelöscht beim Wechsel der Identität im `SessionProvider` (Abmelden, Ablauf, anderes Konto). Ein neuer Tab ist ein neuer Start. Ohne Sitzung kein Intro; es folgt nach der Anmeldung. Das Intro wartet auf nichts: Profil und Tagesliste laden darunter. „Überspringen“ und ab Bild 2 ein Tipp auf die Fläche springen zum Abgang; bei `prefers-reduced-motion` steht nur die Marke 0,14 s (0,3 s gesamt). Das Intro liegt in einem `aria-hidden`-Container; der Fokus bleibt auf der Seite.
+
+**Begründung.** Entscheidung Jannes am 2026-10-05 nach dem Entwurf auf der Leinwand (Varianten: nur am Handy, nur beim Kaltstart). `sessionStorage` statt `localStorage`: Der Wert gehört zum Tab, nicht zum Gerät, und trägt keinen Inhalt — ANN-019 (kein klinischer Inhalt im Browserspeicher) bleibt gewahrt. Ohne verfügbaren Speicher (privates Fenster, gesperrter Speicher) gilt „noch nicht gezeigt“: ein Intro zu viel ist kein Schaden, ein Fehler beim Start wäre einer. Unsicher: ob 1,8 s am Praxisrechner nach der dritten Anmeldung des Tages noch erwünscht sind — dann greift der Änderungspfad.
+
+**Anker.** `src/lib/startbildMerker.ts` (`startbildFaellig`, `startbildVormerken`, `startbildZuruecksetzen`); `AuthenticatedApp` in `src/app/App.tsx`; `raeumen` in `src/features/auth/SessionProvider.tsx`; Baustein `src/app/Startbild.tsx` mit `src/app/startbildGeometrie.ts`; Tests `startbildMerker.test.ts`, `Startbild.test.tsx`, `tests/e2e/startbild.spec.ts`; Prüfseite `tests/e2e/fixtures/startbild.html`.
+
+**Änderungspfad.** Nur beim Kaltstart (nicht nach jeder Anmeldung): `startbildZuruecksetzen()` aus `raeumen` herausnehmen · Aufwand `klein`. Nur am Telefon: in `AuthenticatedApp` zusätzlich `window.innerWidth < 640` prüfen · Aufwand `klein`. Ganz abschalten: den Baustein in `AuthenticatedApp` nicht mehr zeichnen · Aufwand `klein`.
+
+### ANN-244 — Tableiste nach Reife: ein Bereich, der ganz Vorschau ist, bekommt keinen Platz in der Tableiste
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (BEF-049, Option 2, 05.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (Rahmen)
+
+**Annahme.** Die Tableiste unter 640 px zeigt die ersten **vier** Bereiche, die **nicht** ganz Vorschau sind, in Seitenleisten-Reihenfolge, dazu „Mehr“; hinter „Mehr“ stehen alle übrigen Bereiche, die Vorschau eingeschlossen, in derselben Reihenfolge, und „Alle Bereiche“. Ganz Vorschau ist heute allein die Kommunikation (`vorschau: true` am Arbeitsbereich). therapist und team_lead sehen damit Übersicht, Kalender, Patienten, Organisation, Mehr; owner und office Übersicht, Kalender, Patienten, **Training**, Mehr — Training ist ein echter Bereich und steht in der Seitenleiste vor Abrechnung; der Handoff nannte für owner und office „Abrechnung“, weil er Training nicht mitzählte. Nur wenn alle Bereiche ohne „Mehr“ passen und keiner Vorschau ist (Patienten-, Trainingskonto), bleibt die Leiste, wie sie ist. Seitenleiste und `/bereiche` zeigen weiter alle Bereiche an ihrem Platz; es entsteht keine neue Vorschau-Kennzeichnung (Festlegung vom 2026-09-22).
+
+**Begründung.** BEF-049: Für therapist und team_lead lag „Nachrichten“ (ein Chat ohne Versand) in der Leiste und der Weg zu Mitarbeitenden und Arbeitszeiten hinter „Mehr“. Die Regel „Reife vor Reihenfolge“ ist die Entscheidung; die Reihenfolge der Seitenleiste hat Jannes am 2026-09-12 festgelegt, und diese Annahme ändert sie nicht. Unsicher: ob owner am Telefon Abrechnung statt Training im vierten Platz will — das wäre eine Änderung der Reihenfolge, nicht der Regel.
+
+**Anker.** `vorschau` am `Arbeitsbereich` und `tableiste` in `src/app/navigation.tsx`; Tests `navigation.test.tsx` („tableiste (BEF-049 …)“), `AppShell.test.tsx` („stellt die Kommunikation am Telefon hinter „Mehr“ …“).
+
+**Änderungspfad.** Abrechnung vor Training am Telefon: Reihenfolge in `arbeitsbereiche` ändern (gilt dann auch in der Seitenleiste) · Aufwand `klein`. Vorschau wieder in der Leiste: `vorschau: true` an der Kommunikation entfernen · Aufwand `klein`.
+
+### ANN-245 — Tab-Titel fest je Route: „Seitenart – Own Motion“, nie ein Name
+
+Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (BEF-050, Option 1, 05.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (Rahmen)
+
+**Annahme.** Jeder Browser-Tab trägt einen festen Titel je Route aus der Tabelle in `src/app/tabtitel.ts` („Übersicht – Own Motion“, „Kalender – …“, „Patient:innen – …“, „Akte – …“ für alle Seiten einer Akte und die Formulare, „Termin – …“, „Dokumentation – …“ für Schreibseite und Abschluss, „Warteliste – …“, „Verordner:innen – …“, „Abrechnung – …“, „Rechnung – …“ für Rechnung, Blatt, Storno und Erinnerung, „Statistiken – …“, „Organisatorisches – …“ für `/praxis` und `/betrieb`, „Kommunikation – …“, „Training – …“, „Mein Konto – …“, „Alle Bereiche – …“, „Vorschau-Protokoll – …“); Anmeldemaske und Vollseiten heißen „Anmelden – Own Motion“; wo keine Regel greift (Plattformoberfläche `/p`), bleibt „Own Motion“. Der Titel wird beim Seitenwechsel im Rahmen gesetzt, mit dem Fokus auf dem Inhalt (NAV-09), damit Vorlesesoftware ihn ansagt. **Nie** aus dem Seitentitel abgeleitet, nie ein Name, eine Kennung oder klinischer Inhalt: Tab-Titel landen in Verlauf, Lesezeichen, Fensterlisten und der Browser-Synchronisation (ADR-011, ADR-013 Punkt 9).
+
+**Begründung.** BEF-050: Alle Tabs hießen „Own Motion“. Option 3 (mit Namen) ist ein externer Datenfluss, den ADR-013 Punkt 9 für die Adresszeile schon ausschließt. Die Titel „Vorschau-Protokoll“ und „Übersicht“ für `/offen` ergänzen die Tabelle des Handoffs, weil diese Routen dort fehlten. Unsicher: ob „Akte“ als Titel aller Aktenseiten im Büro mit vier offenen Akten reicht — mehr darf der Tab nach dieser Annahme nicht sagen.
+
+**Anker.** `src/app/tabtitel.ts` (Tabelle `REGELN`, `tabTitel`); `useSeitenwechsel` in `src/app/seitenwechsel.ts`; `Vollseite.tsx`; Tests `tabtitel.test.ts` (darunter „trägt nie Daten“), `AppShell.test.tsx`, `Vollseite.test.tsx`.
+
+**Änderungspfad.** Andere Wörter oder mehr Stufen („Rechnungen – Abrechnung – Own Motion“): nur die Tabelle `REGELN` und `TAB_NAMEN` · Aufwand `klein`. Ein Titel mit Daten ist kein Änderungspfad, sondern eine ADR-Frage.
+
 ### ANN-246 — Terminwunsch als eigener Datensatz: offen, erledigt, nicht möglich, zurückgezogen; kein neuer Terminzustand; ein Jahr nach Abschluss gelöscht
 
 Praxisprozess · offen · 2026-10-06 · — · — · Wiedervorlage: Jannes in der Sichtung (Plattform, Schritte 13 bis 15)

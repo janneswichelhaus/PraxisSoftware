@@ -4,7 +4,7 @@ import { useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Inhaltsflaeche } from '@/components/ui/Card';
+import { Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -1243,18 +1243,6 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         }
       />
 
-      {darfRaster ? <RasterEinstellung aktuell={user.appointmentGridMinutes} /> : null}
-      {darfRaster ? <FristEinstellung organizationId={user.profile.organization_id} /> : null}
-      {darfRaster ? (
-        <div className="mt-8 space-y-8">
-          <StartortEinstellung />
-          {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
-          <GarageEinstellung />
-          {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
-          <FahrzeitfaktorEinstellung />
-        </div>
-      ) : null}
-
       {therapeuten.isPending ? <LoadingState label="Personen werden geladen …" /> : null}
       {therapeuten.isError && !therapeuten.data ? (
         <ErrorState
@@ -1340,6 +1328,41 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
             </>
           ) : null}
         </>
+      ) : null}
+
+      {/* Die Einstellungen der Praxis - Raster, Frist, Startort, Garage,
+          Fahrzeitfaktor - stehen seit dem Handoff Rahmen vom 2026-10-05
+          (RAH-006) **unter** dem Wochenplan in einem geschlossenen Aufklapper:
+          Bis dahin schoben fünf Formulare, die sich im Jahr ein paarmal ändern,
+          die Arbeitszeiten, derentwegen man kommt, am Telefon um mehr als
+          einen Bildschirm nach unten. Der Weg „Arbeitszeiten" aus dem
+          Mitarbeiterdatensatz landet damit beim Wochenplan der Person. Die
+          Formulare selbst sind unverändert, nur owner sieht sie. */}
+      {darfRaster ? (
+        <div className="mt-10">
+          <Disclosure
+            kopf="label"
+            inKarte
+            summary={
+              <>
+                Praxiseinstellungen
+                <span className="text-ink-muted ml-auto text-sm font-normal tracking-normal normal-case">
+                  Raster · Frist · Startort
+                </span>
+              </>
+            }
+          >
+            <RasterEinstellung aktuell={user.appointmentGridMinutes} />
+            <FristEinstellung organizationId={user.profile.organization_id} />
+            <div className="mt-8 space-y-8">
+              <StartortEinstellung />
+              {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
+              <GarageEinstellung />
+              {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
+              <FahrzeitfaktorEinstellung />
+            </div>
+          </Disclosure>
+        </div>
       ) : null}
 
       <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">

@@ -19,7 +19,9 @@
 # zeigt die Karte ihren Hinweis. Die Einstellungen der Function (Anbieter, Serverschluessel,
 # Schalter `synthetic`, Umgebung `test`; ADR-019 Punkte 35 und 36) setzt
 # Jannes im Supabase-Projekt selbst - dieser Workflow schreibt sie nicht.
-# Ohne sie antwortet die Function "Kein Kartendienst eingerichtet".
+# Ohne sie antwortet die Function "Kein Kartendienst eingerichtet". Scheitert
+# das Ausliefern der Function, laeuft die Auslieferung der Oberflaeche
+# trotzdem weiter und der Lauf traegt eine Warnung (2026-10-06).
 #
 # Seed und Praxiswoche loeschen alles in der Test-Umgebung. Sie laufen deshalb
 # nur auf Knopfdruck (Handstart mit "neu aufsetzen") und beim allerersten Lauf
@@ -204,7 +206,17 @@ jobs:
         # Docker); `verify_jwt` kommt aus supabase/config.toml. Nur
         # synthetische Daten: ADR-015 Punkt 20 und ADR-019 Punkt 15 lassen
         # Edge Functions bis OPS-001 nur so laufen.
+        #
+        # Der Schritt haelt die Auslieferung nicht auf: Der Kartendienst ist
+        # optional, und ein Fehler hier kommt von der Verwaltungs-API des
+        # Anbieters, nicht vom Stand der Anwendung. Am 2026-10-06 blieb die
+        # Test-Umgebung bei einer Stoerung dieser API (500 "FGA Authentication
+        # Error") zweimal auf dem alten Stand, obwohl Build und Migrationen
+        # gruen waren. Die Function behaelt dann ihren bisherigen Stand; der
+        # naechste Schritt macht daraus eine Warnung am Lauf.
+        id: kartendienst
         if: steps.bereit.outputs.bereit == 'true' && steps.karte.outputs.an == 'true'
+        continue-on-error: true
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.TESTENV_SUPABASE_ACCESS_TOKEN }}
           TESTENV_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
@@ -213,6 +225,11 @@ jobs:
           ref=${TESTENV_SUPABASE_URL#https://}
           ref=${ref%%.supabase.co*}
           supabase functions deploy location-provider --project-ref "$ref" --use-api
+
+      - name: Kartendienst nicht ausgeliefert?
+        if: steps.kartendienst.outcome == 'failure'
+        run: |
+          echo "::warning::Kartendienst nicht ausgeliefert - die Function behaelt ihren bisherigen Stand, die Oberflaeche wird trotzdem ausgeliefert. Nach behobener Stoerung den Workflow von Hand starten (Run workflow, ohne 'neu aufsetzen'); scheitert er dann erneut, das Secret TESTENV_SUPABASE_ACCESS_TOKEN pruefen."
 
       - name: Neu aufsetzen - Seed, Praxiswoche, Zugang
         if: steps.bereit.outputs.bereit == 'true'

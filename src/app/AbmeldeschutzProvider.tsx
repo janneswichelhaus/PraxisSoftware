@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, type ReactNode } from 'react';
+import { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AbmeldeschutzKontext, type Abmeldeschutz } from './abmeldeschutz';
 
 /**
@@ -16,7 +16,9 @@ import { AbmeldeschutzKontext, type Abmeldeschutz } from './abmeldeschutz';
  *
  * Wachen und Abmeldefunktion liegen in Referenzen: Beide ändern sich bei jedem
  * Rendern der Anwendung, und ein Kontextwert, der sich mitändert, ließe jede
- * Seite darunter neu rendern.
+ * Seite darunter neu rendern. Die eine Ausnahme ist `laeuft` (RAH-003): Es
+ * kippt genau einmal, wenn die Sitzung wirklich endet - ein Rendern, nach dem
+ * die angemeldete Anwendung ohnehin fällt.
  */
 export function AbmeldeschutzProvider({
   onAbmelden,
@@ -31,6 +33,7 @@ export function AbmeldeschutzProvider({
   const offen = useRef<(() => boolean)[]>([]);
   const abmeldenRef = useRef(onAbmelden);
   abmeldenRef.current = onAbmelden;
+  const [laeuft, setLaeuft] = useState(false);
 
   const meldeWacheAn = useCallback((wache: () => boolean) => {
     wachen.current.add(wache);
@@ -49,6 +52,8 @@ export function AbmeldeschutzProvider({
     // ohnehin fort. Ohne das Zurücknehmen fragten sie bei einem zweiten Tap
     // auf „Abmelden" erneut, während die Anwendung schon abgemeldet wird.
     wachen.current.clear();
+    // Jetzt endet die Sitzung wirklich; die Kopfzeile sagt es (RAH-003).
+    setLaeuft(true);
     abmeldenRef.current();
   }, []);
 
@@ -60,8 +65,8 @@ export function AbmeldeschutzProvider({
   }, [abmelden]);
 
   const wert = useMemo<Abmeldeschutz>(
-    () => ({ anfordern, abmelden, meldeWacheAn }),
-    [anfordern, abmelden, meldeWacheAn],
+    () => ({ anfordern, abmelden, meldeWacheAn, laeuft }),
+    [anfordern, abmelden, meldeWacheAn, laeuft],
   );
 
   return <AbmeldeschutzKontext.Provider value={wert}>{children}</AbmeldeschutzKontext.Provider>;

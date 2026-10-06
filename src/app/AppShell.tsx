@@ -12,7 +12,7 @@ import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { type CurrentUser } from '@/features/session/types';
 import { Funktionssuche } from './Funktionssuche';
-import { useAbmeldeanfrage } from './abmeldeschutz';
+import { useAbmeldeanfrage, useAbmeldung } from './abmeldeschutz';
 import {
   aktiverBereich,
   arbeitsbereiche,
@@ -55,12 +55,36 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
  * (5.86:1). Der ausgewählte Bereich ist mit der Hauptfarbe gefüllt und trägt
  * Papier; das System nennt „Hauptfarbe gefüllt" als Auswahlzustand.
  * Gewichte nach dem Design-Handoff vom 2026-10-01: 500 in Ruhe, 600 aktiv.
+ *
+ * Vier Zustände, jeder an etwas anderem erkennbar (Handoff Rahmen vom
+ * 2026-10-05, RAH-002): Hover hebt nur den Text auf Papier und füllt **keine**
+ * Fläche mehr — bis dahin sahen Hover und Auswahl gleich aus (1,35:1
+ * zwischen beiden). Die Auswahl trägt zusätzlich einen Salbei-Strich 3 px am
+ * linken Rand der Leiste (`auswahlstrich`); `aria-current="page"` bleibt das
+ * Zeichen, der Strich ist Darstellung.
+ *
+ * Zwischen 640 und 1024 px ist derselbe Eintrag ein Feld der beschrifteten
+ * Symbolspalte (Variante 2b): 56 hoch, Symbol oben, darunter die Kurzform aus
+ * der Tableiste in `text-leiste`. Ab lg die Zeile mit vollem Namen in 15 px.
  */
 const seitenLink =
-  'flex min-h-11 items-center gap-3 rounded-button px-3 text-liste font-medium transition-colors ' +
-  'text-salbei hover:bg-accent hover:text-surface ' +
+  'relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-button px-1 ' +
+  'text-leiste font-medium transition-colors text-salbei hover:text-surface ' +
   'aria-[current=page]:bg-accent aria-[current=page]:font-semibold ' +
-  'aria-[current=page]:text-surface';
+  'aria-[current=page]:text-surface ' +
+  'lg:h-auto lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-liste';
+
+/**
+ * Der Strich der Auswahl: 3 px Salbei am linken Rand der Leiste, über die
+ * ganze Höhe des Eintrags. Er steht am Rand der Leiste, nicht am Rand des
+ * Eintrags - in der Symbolspalte fallen beide zusammen (die Einträge nehmen
+ * die ganzen 84 px, 56 × 84 nach dem Handoff), in der Seitenleiste ist er um
+ * deren Innenabstand (20) nach links versetzt. Die rechten Ecken rund: `pill`
+ * auf 3 px Breite ergibt genau die zwei Pixel Radius des Handoffs, und das
+ * System kennt keinen eigenen Radius dafür.
+ */
+const auswahlstrich =
+  'bg-salbei w-auswahlstrich rounded-r-pill pointer-events-none absolute inset-y-0 left-0 lg:-left-5';
 
 /**
  * Ein Ziel der Tableiste am unteren Rand (unter 640 px).
@@ -70,11 +94,12 @@ const seitenLink =
  * einzige Ortsangabe, und ein Unterschied nur im Farbton - ink-muted gegen
  * accent, 1,66:1 - ist am Lenker und in der Sonne kaum zu sehen. Der Strich
  * ist ein Rand, kein Schatten (DS-001); inaktiv ist er durchsichtig, damit
- * beim Wechsel nichts springt. Die Beschriftung bleibt bei 11 px (ANN-111).
+ * beim Wechsel nichts springt. Die Beschriftung bleibt bei 11 px (ANN-111),
+ * seit RAH-001 als Token `text-leiste` (BEF-068, Option 2).
  */
 const tabLink =
   'text-ink-muted aria-[current=page]:text-accent flex min-h-14 flex-col items-center justify-center ' +
-  'gap-0.5 border-t-3 border-transparent px-1 text-[0.6875rem] transition-colors ' +
+  'gap-0.5 border-t-3 border-transparent px-1 text-leiste transition-colors ' +
   'aria-[current=page]:border-accent aria-[current=page]:font-semibold';
 
 /**
@@ -99,10 +124,19 @@ const kontoLink =
  * statt `Button`: Dessen Varianten sind alle fett und in der Hauptfarbe, und
  * eine vierte Variante nur für diese eine Stelle wäre ein Baustein ohne
  * zweiten Nutzer.
+ *
+ * Unter 640 px ein Symbolknopf 44 × 44 in `line-strong` (Handoff Rahmen vom
+ * 2026-10-05, Variante 1b, RAH-003): Das Wort nahm dort neben Marke,
+ * Bereichsname, Lupe und „Konto" den Platz, der dem Bereichsnamen fehlte.
+ * **Ein** Knopf für beide Breiten, nicht zwei: Symbol und Wort liegen
+ * nebeneinander im selben Element, und CSS blendet je Breite eines aus. Zwei
+ * Knöpfe desselben Namens hießen für Vorlesesoftware zweimal „Abmelden".
+ * Abstand davor: 8 am Telefon, 24 ab sm (zuzüglich der 2 px der Reihe).
  */
 const abmeldeKnopf =
-  'text-ink-muted hover:text-ink hover:bg-surface-sunken rounded-button inline-flex min-h-11 ' +
-  'items-center px-2.5 text-sm transition-colors';
+  'nicht-drucken text-line-strong hover:text-ink hover:bg-surface-sunken rounded-button ' +
+  'ml-1.5 inline-flex size-11 shrink-0 items-center justify-center transition-colors ' +
+  'sm:text-ink-muted sm:ml-5.5 sm:size-auto sm:min-h-11 sm:px-2.5 sm:text-sm';
 
 /**
  * Die Höhe der klebenden Kopfzeile als CSS-Variable `--kopfzeile-hoehe`
@@ -143,6 +177,23 @@ export function AppShell({
 }) {
   const { pathname } = useLocation();
   const anfordern = useAbmeldeanfrage();
+  /**
+   * „Wird abgemeldet …" (RAH-003): Mit Abmeldeschutz sagt der Schutz, wann
+   * die Sitzung wirklich endet - erst dann, nicht schon beim Tap, den eine
+   * Wache noch anhält. Ohne Schutz (Tests, Vorschauen) meldet die Kopfzeile
+   * selbst unmittelbar ab und merkt es sich selbst.
+   */
+  const abmeldungImSchutz = useAbmeldung();
+  const [abmeldungUnmittelbar, setAbmeldungUnmittelbar] = useState(false);
+  const abmeldung = abmeldungImSchutz || abmeldungUnmittelbar;
+  const abmelden = () => {
+    if (anfordern) {
+      anfordern();
+      return;
+    }
+    setAbmeldungUnmittelbar(true);
+    onSignOut();
+  };
   const bereiche = arbeitsbereiche(user);
   const aktuell = aktiverBereich(bereiche, pathname);
   const { sichtbar, weitere } = tableiste(bereiche);
@@ -175,17 +226,21 @@ export function AppShell({
       </a>
 
       {/* Seitenleiste (DS-001): 248 px in Tiefgrün, ab sm sichtbar. Zwischen
-          640 und 1024 px bleiben davon 72 px als Symbolspalte — genau der
+          640 und 1024 px bleiben davon 84 px als beschriftete Symbolspalte
+          (Variante 2b, RAH-002; bis dahin 72 ohne Beschriftung) — genau der
           Bereich, in dem ein halbiertes Fenster landet. Darunter tritt die
           Tableiste am unteren Rand an ihre Stelle. */}
       <nav
         aria-label="Arbeitsbereiche"
-        className="bg-surface-inverse sticky top-0 hidden h-dvh w-18 shrink-0 flex-col gap-8 px-3 py-7 sm:flex lg:w-62 lg:px-5"
+        className="bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 py-7 sm:flex lg:w-62 lg:px-5"
       >
         <Link
           to="/"
           aria-label="Own Motion, zur Startseite"
-          className="inline-flex min-h-11 shrink-0 items-center lg:px-3"
+          // Landeplatz des Startbilds (RAH-009, `Startbild.tsx`): Die Marke
+          // des Intros wandert hierher.
+          data-startbild-ziel="seitenleiste"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center lg:justify-start lg:px-3"
         >
           {/* Auf Tiefgrün die Papier-Fassung — die Marke wird nie umgefärbt,
               es gibt für jeden Grund eine eigene Datei (marke/README.md).
@@ -209,11 +264,21 @@ export function AppShell({
               <Link
                 to={bereich.to}
                 aria-current={aktuell?.id === bereich.id ? 'page' : undefined}
+                title={bereich.kurz === bereich.label ? undefined : bereich.kurz}
                 className={seitenLink}
               >
+                {aktuell?.id === bereich.id ? (
+                  <span aria-hidden="true" className={auswahlstrich} />
+                ) : null}
                 {bereich.icon}
-                {/* In der Symbolspalte bleibt die Beschriftung für
-                    Vorlesesoftware erhalten, auch wenn sie niemand sieht. */}
+                {/* Die Symbolspalte zeigt die Kurzform aus der Tableiste
+                    („Patienten"); der volle Name („Patient:innen") bleibt der
+                    zugängliche Name des Links auf jeder Breite, deshalb ist
+                    die Kurzform für Vorlesesoftware ausgeblendet. Der Tooltip
+                    trägt denselben Wortlaut wie der sichtbare Text. */}
+                <span aria-hidden="true" className="max-w-full truncate lg:hidden">
+                  {bereich.kurz}
+                </span>
                 <span className="sr-only truncate lg:not-sr-only">{bereich.label}</span>
               </Link>
             </li>
@@ -263,6 +328,7 @@ export function AppShell({
                 <Link
                   to="/"
                   aria-label="Own Motion, zur Startseite"
+                  data-startbild-ziel="kopfzeile"
                   className="rounded-button inline-flex min-h-11 shrink-0 items-center"
                 >
                   {/* 24 px: die Mindesthöhe der Marke (`markeRegeln.ts`). */}
@@ -353,12 +419,60 @@ export function AppShell({
                     Rückfrage (FIX-014, NAV-01). Ohne eingerichteten Schutz -
                     in Tests und Vorschauen - bleibt es beim unmittelbaren
                     Abmelden. */}
-                <button type="button" className={abmeldeKnopf} onClick={anfordern ?? onSignOut}>
-                  Abmelden
+                <button
+                  type="button"
+                  aria-label="Abmelden"
+                  title="Abmelden"
+                  className={abmeldeKnopf}
+                  onClick={abmelden}
+                >
+                  {/* Tür mit Pfeil nach rechts, nur unter 640 px. */}
+                  <svg
+                    aria-hidden="true"
+                    viewBox="0 0 20 20"
+                    className="size-5 sm:hidden"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M8 3.5H4.5a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1H8" />
+                    <path d="M11.5 6.5 15 10l-3.5 3.5M15 10H7.5" />
+                  </svg>
+                  <span className="sr-only sm:not-sr-only">Abmelden</span>
                 </button>
               </div>
             </div>
           </header>
+
+          {/* „Wird abgemeldet …" (RAH-003): Unter der Kopfzeile, sobald die
+              Sitzung wirklich endet, bis die Anmeldemaske steht. Bis dahin
+              blieb nach dem Tap alles, wie es war - am Telefon ohne Wort am
+              Knopf doppelt stumm. Akzentfläche, Radius 14, 15/600 in der
+              Hauptfarbe, vorn ein Kreis, der sich dreht, wo Bewegung
+              erlaubt ist. `role="status"`: wird vorgelesen, unterbricht
+              nicht. Auf der Fläche der Seite, weil die Hülle klebt und sonst
+              Inhalt durchschiene. */}
+          {abmeldung ? (
+            <div role="status" className="bg-canvas px-4 pt-2 pb-1 sm:px-6 lg:px-8">
+              <p className="bg-accent-soft text-accent rounded-card text-liste flex min-h-11 items-center gap-2.5 px-4 font-semibold">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 20 20"
+                  className="size-5 shrink-0 animate-spin motion-reduce:animate-none"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                >
+                  <circle cx="10" cy="10" r="7" opacity="0.3" />
+                  <path d="M17 10a7 7 0 0 0-7-7" />
+                </svg>
+                Wird abgemeldet …
+              </p>
+            </div>
+          ) : null}
         </div>
 
         {/* Der Inhalt hält 1200 px und steht mittig in der Fläche neben der

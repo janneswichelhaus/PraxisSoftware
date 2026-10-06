@@ -1,5 +1,6 @@
-import { useLayoutEffect, useRef, type RefObject } from 'react';
+import { useEffect, useLayoutEffect, useRef, type RefObject } from 'react';
 import { NavigationType, useLocation, useNavigationType } from 'react-router-dom';
+import { tabTitel } from './tabtitel';
 
 /**
  * Was ein Seitenwechsel im Rahmen auslöst (NAV-09, VER-06).
@@ -27,13 +28,20 @@ import { NavigationType, useLocation, useNavigationType } from 'react-router-dom
  * jedem neuen Suchparameter an den Anfang, und Filtern oder Blättern sprängen
  * nach oben.
  *
- * Der Titel des Browser-Tabs gehörte ebenfalls hierher, ist aber offen:
- * Welche Titel die Tabs tragen, legt Jannes fest (BEF-050).
+ *   3. **Der Tab heißt wie die Seite** (BEF-050, Option 1, RAH-008): ein
+ *      fester Titel je Route aus `tabtitel.ts`, nie aus Daten. Mit dem Fokus
+ *      auf dem Inhalt sagt Vorlesesoftware den neuen Titel an. Gesetzt bei
+ *      jedem Pfad, auch beim ersten - sonst hieße der erste Tab nach dem
+ *      Anmelden weiter „Own Motion".
  */
 export function useSeitenwechsel(inhalt: RefObject<HTMLElement | null>): void {
   const { pathname, hash } = useLocation();
   const art = useNavigationType();
   const bisher = useRef(pathname);
+
+  useEffect(() => {
+    document.title = tabTitel(pathname);
+  }, [pathname]);
 
   // Vor dem Zeichnen: Die neue Seite soll nicht erst auf der alten Höhe
   // erscheinen und dann springen. Eine Seite, die den Fokus in einem

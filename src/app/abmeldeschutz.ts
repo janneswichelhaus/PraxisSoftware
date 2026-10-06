@@ -49,6 +49,13 @@ export interface Abmeldeschutz {
    * übernimmt `useAbmeldewache` beim Verlassen der Seite.
    */
   meldeWacheAn: (wache: () => boolean) => () => void;
+  /**
+   * Ob die Sitzung gerade beendet wird: wahr vom Augenblick an, in dem keine
+   * Wache mehr etwas zu sagen hat und die Anwendung wirklich abmeldet. Die
+   * Kopfzeile zeigt daraufhin „Wird abgemeldet …" (RAH-003), bis die
+   * Anmeldemaske steht. Ein Tap, den eine Wache noch anhält, zählt nicht.
+   */
+  laeuft: boolean;
 }
 
 export const AbmeldeschutzKontext = createContext<Abmeldeschutz | null>(null);
@@ -62,6 +69,14 @@ export const AbmeldeschutzKontext = createContext<Abmeldeschutz | null>(null);
  */
 export function useAbmeldeanfrage(): (() => void) | null {
   return useContext(AbmeldeschutzKontext)?.anfordern ?? null;
+}
+
+/**
+ * Ob die Anwendung gerade abmeldet (`Abmeldeschutz.laeuft`); ohne Schutz
+ * `false` - dann weiß es die Kopfzeile selbst, weil sie unmittelbar abmeldet.
+ */
+export function useAbmeldung(): boolean {
+  return useContext(AbmeldeschutzKontext)?.laeuft ?? false;
 }
 
 /**

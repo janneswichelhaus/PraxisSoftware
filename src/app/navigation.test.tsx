@@ -226,7 +226,11 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
 
   it('nennt Menüpunkte wie die Seiten, die sie öffnen (ABR-26, ORG-07)', () => {
     expect(punkt(['owner'], 'abrechnung', '/abrechnung/katalog')?.label).toBe('Leistungskatalog');
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe('Protokoll');
+    // Seit RAH-005 ein Punkt für Protokoll und Aufbewahrung; die Seite dahinter
+    // heißt weiter „Protokoll", der Reiter nennt sie so.
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.label).toBe(
+      'Sicherheit und Aufbewahrung',
+    );
     expect(punkt(['owner'], 'betrieb', '/praxis/planung')?.label).toBe('Arbeitszeiten');
   });
 
@@ -235,11 +239,18 @@ describe('Untermenü auf Detailseiten (UXR-002)', () => {
       expect.arrayContaining(['Planung', 'Praxisraster', 'Dokumentationsfrist', 'Startort']),
     );
     expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit')?.stichworte).toEqual(
-      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit']),
+      expect.arrayContaining(['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung']),
     );
-    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')?.stichworte).toEqual(
-      expect.arrayContaining(['Löschung', 'Löschsperre']),
-    );
+  });
+
+  it('führt Protokoll und Aufbewahrung als einen Punkt, aktiv auf beiden Seiten (RAH-005)', () => {
+    expect(punkt(['owner'], 'betrieb', '/praxis/sicherheit/aufbewahrung')).toBeUndefined();
+    const sicherheit = punkt(['owner'], 'betrieb', '/praxis/sicherheit/audit');
+    expect(sicherheit?.pfade).toEqual(['/praxis/sicherheit']);
+    const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
+    expect(
+      betrieb?.unterpunkte.filter((eintrag) => eintrag.to.startsWith('/praxis/sicherheit')),
+    ).toHaveLength(1);
   });
 
   it('verspricht Raster, Frist und Startort nur der Rolle, die sie auf der Seite sieht', () => {
@@ -300,20 +311,66 @@ describe('zeigtUnterleiste', () => {
   });
 });
 
-describe('tableiste', () => {
-  it('zeigt bis zu fuenf Bereiche unveraendert', () => {
-    const wenige = bereicheFuer(['therapist']);
-    expect(wenige.length).toBeLessThanOrEqual(5);
-    expect(tableiste(wenige).weitere).toEqual([]);
+describe('tableiste (BEF-049, Option 2: Reife vor Reihenfolge)', () => {
+  it('zeigt bis zu fuenf reife Bereiche unveraendert', () => {
+    // Ein Patientenkonto hat nur die Uebersicht; ein Trainingskonto Uebersicht,
+    // Kalender, Training. Nichts davon ist Vorschau: keine Leiste mit „Mehr".
+    const patient = bereicheFuer(['patient']);
+    expect(patient.every((bereich) => !bereich.vorschau)).toBe(true);
+    expect(tableiste(patient)).toEqual({ sichtbar: patient, weitere: [] });
   });
 
-  it('schiebt bei mehr als fuenf Bereichen den Rest hinter "Mehr"', () => {
+  it('stellt einen Bereich, der ganz Vorschau ist, hinter „Mehr" - auch wenn alles passte', () => {
+    // therapist: Uebersicht, Kalender, Patient:innen, Kommunikation,
+    // Organisatorisches - fuenf, die bis zum Handoff vom 2026-10-05 alle in
+    // der Leiste standen. Die Kommunikation speichert nichts; ihren Platz
+    // bekommt niemand, und sie steht mit „Mehr" weiter zur Verfuegung.
+    const alle = bereicheFuer(['therapist']);
+    const { sichtbar, weitere } = tableiste(alle);
+    expect(sichtbar.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'betrieb',
+    ]);
+    expect(weitere.map((bereich) => bereich.id)).toEqual(['team']);
+    expect(alle.find((bereich) => bereich.id === 'team')?.vorschau).toBe(true);
+  });
+
+  it('schiebt bei mehr als fuenf Bereichen den Rest hinter "Mehr", in Seitenleisten-Reihenfolge', () => {
     const alle = bereicheFuer(['owner']);
     const { sichtbar, weitere } = tableiste(alle);
     // Vier Bereiche plus der Eintrag "Mehr" - mehr Ziele sind mit dem Daumen
-    // nicht mehr sicher zu treffen.
+    // nicht mehr sicher zu treffen. Die ersten vier reifen Bereiche; dahinter
+    // alle uebrigen, die Vorschau eingeschlossen, in der Reihenfolge der
+    // Seitenleiste.
     expect(sichtbar).toHaveLength(4);
+    expect(sichtbar.every((bereich) => !bereich.vorschau)).toBe(true);
+    expect(sichtbar.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'training',
+    ]);
+    expect(weitere.map((bereich) => bereich.id)).toEqual([
+      'team',
+      'betrieb',
+      'abrechnung',
+      'statistik',
+    ]);
     expect(weitere.length).toBe(alle.length - 4);
-    expect([...sichtbar, ...weitere]).toEqual(alle);
+  });
+
+  it('laesst die Seitenleiste und die Bereichsuebersicht unberuehrt', () => {
+    // Nur die Tableiste sortiert nach Reife; `arbeitsbereiche` behaelt die
+    // Reihenfolge mit der Kommunikation an ihrem Platz.
+    const alle = bereicheFuer(['therapist']);
+    expect(alle.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'team',
+      'betrieb',
+    ]);
   });
 });

@@ -1,0 +1,34 @@
+# Sichtung — Rahmen (Seitenleiste, Kopfzeile, Tableiste, Akte, Startbild)
+
+Stand 2026-10-06 · Handoff Rahmen vom 2026-10-05
+([`../design/handoff-2026-10-05-rahmen.md`](../design/handoff-2026-10-05-rahmen.md)), gebaut in
+RAH-EPIC-001 (RAH-001 bis RAH-010), ein Branch, eine Pull Request.
+
+**Deckt ab:** Design-Runde 1 (Rahmen): Tokens und Manifest, Seitenleiste und beschriftete
+Symbolspalte (2b), Kopfzeile am Handy (1b), Tableiste nach Reife, Untermenü „Sicherheit und
+Aufbewahrung“ mit Verlauf am Rand, „Praxiseinstellungen“ unter den Arbeitszeiten, Rückweg-Pfeil in
+der Akte (4b), Tab-Titel je Route, Startbild „Speiche wird O“.
+**Wo:** auf der Test-Umgebung am Handy, am Tablet (oder im Fenster zwischen 640 und 1023 px) und am
+Rechner; nach dem Merge auf `main`.
+**Dauer:** rund 10 Minuten.
+
+| #   | Rolle     | Tun                                                                                                                                                                                                                                                                 | Erwartung                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | therapist | Am Handy (~375 px) als Anna **anmelden** und zusehen; danach die Seite **neu laden**. Dann die Akte von **Max Mustermann** öffnen, den **Pfeil** vor dem Namen antippen; in der **Tableiste** nachsehen; oben rechts das **Tür-Symbol** antippen.                   | Nach dem Anmelden das Startbild: ein Laufrad rollt herein, wird das O, „OWN MOTION“ steht, die Marke wandert in die Kopfzeile, die Seite blendet ein (1,8 s; „Überspringen“ oben rechts). Beim Neuladen kein Intro. In der Akte kein Untermenü „Patient:innen \| Verordner:innen“, kein „← Zurück“ über der Karte; der Pfeil vor dem Namen führt zu den Patient:innen. Tableiste: Übersicht, Kalender, Patienten, Organisation, Mehr — „Nachrichten“ hinter „Mehr“. Das Tür-Symbol meldet ab, darunter kurz „Wird abgemeldet …“. Browser-Tab: „Akte – Own Motion“, nie ein Name.                    |
+| 2   | owner     | Am Tablet (oder Fenster ~834 px) als Jannes anmelden; **Organisatorisches** → **Sicherheit und Aufbewahrung**, dort den Reiter **Aufbewahrung**; dann **Arbeitszeiten**.                                                                                            | Das Intro endet mit O und M in der Monogramm-Kachel oben in der Symbolspalte. Die Symbolspalte ist beschriftet (Übersicht, Kalender, Patienten, Training, Nachrichten, Organisation, Abrechnung, Statistiken), der aktive Bereich hat eine gefüllte Fläche mit Salbei-Strich links, ein Hover ändert nur die Textfarbe. Das Untermenü hat **einen** Punkt für Sicherheit und Aufbewahrung; Protokoll und Aufbewahrung sind Reiter darüber. Unter dem Wochenplan steht „Praxiseinstellungen · Raster · Frist · Startort“ zu; aufgeklappt Raster, Frist, Startort, Garage, Fahrzeitfaktor wie bisher. |
+| 3   | office    | Am Rechner (≥ 1024 px) als Olivia anmelden, dabei einmal **„Überspringen“** antippen. Am Handy als Olivia **Organisatorisches** öffnen und das Untermenü nach rechts wischen. In den **Systemeinstellungen** „Bewegung reduzieren“ einschalten und erneut anmelden. | Am Rechner schiebt sich die Seitenleiste von links unter die Marke, die Marke wird zur Papier-Fassung in der Leiste; „Überspringen“ springt direkt zum Abgang. Am Handy zeigt das Untermenü rechts einen Verlauf mit „›“, solange Punkte außer Sicht liegen; am Ende verschwindet er. Mit reduzierter Bewegung steht nur kurz die Marke, dann die Seite — kein Rad.                                                                                                                                                                                                                                 |
+
+**Zu bestätigen (RAH-EPIC-001):** **ANN-243** (Startbild einmal je Sitzung, auch am Rechner),
+**ANN-244** (Tableiste nach Reife; für owner und office steht **Training**, nicht Abrechnung, im
+vierten Platz — Training ist ein echter Bereich vor Abrechnung), **ANN-245** (Tab-Titel fest je
+Route).
+
+**Anders als im Handoff:** Die Symbolspalte trägt an den Einträgen keinen `aria-label`, sondern den
+vollen Bereichsnamen als für Vorlesesoftware sichtbaren Text neben der Kurzform (ein Link, ein
+Name); der Tooltip trägt die Kurzform nur, wo sie vom Namen abweicht. Der Salbei-Strich hat runde
+rechte Ecken aus dem Pill-Radius statt „0 2 2 0“ — bei 3 px dasselbe Bild, ohne fremden Radius.
+„Abmelden“ ist ein Knopf für beide Breiten (Symbol unter 640 px, Wort darüber), nicht zwei. Die
+Symbole der Symbolspalte bleiben 20 px wie in der Tableiste (Handoff: 22). Die Monogramm-Kachel
+nimmt O (erste Zeile) und M (MOTION) — das sind die Buchstaben des Monogramms. Die Seitenleiste
+landet bei 32/32 (gemessen am Rahmen), nicht bei 20/24. „Wird abgemeldet …“ steht auf jeder Breite.
+Die Aufbewahrung bleibt als Seite in der Kopfsuche („Aufbewahrung und Löschung“).

@@ -55,6 +55,13 @@ export interface Arbeitsbereich {
   pfade: string[];
   icon: ReactNode;
   unterpunkte: Unterpunkt[];
+  /**
+   * Der ganze Bereich ist Vorschau - bedienbar, aber ohne Hintergrundfunktion
+   * (`docs/development/ARBEITSBEREICHE.md`). Die Tableiste am Telefon stellt
+   * solche Bereiche hinter „Mehr" (BEF-049, Option 2, RAH-004); Seitenleiste
+   * und `/bereiche` zeigen sie weiter an ihrem Platz.
+   */
+  vorschau?: boolean;
 }
 
 /**
@@ -228,20 +235,19 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
   if (isOwner(roles)) {
-    // Menüpunkt und Seitentitel tragen dasselbe Wort (ORG-07): bis UXR-002
-    // öffnete „Sicherheit" eine Seite namens „Audit". Das alte Wort findet
-    // die Suche weiter.
+    // Protokoll und Aufbewahrung sind **ein** Punkt (Handoff Rahmen vom
+    // 2026-10-05, RAH-005): Beides sind Nachweise der Praxisleitung, keine
+    // Arbeitsvorräte (LOE-002b, ADR-008), und zwei Punkte dafür machten das
+    // Untermenü am Telefon um einen Bildschirm länger. Der Punkt öffnet das
+    // Protokoll; die Aufbewahrung ist dort der zweite Reiter
+    // (`SicherheitReiter`), die Routen bleiben. `pfade`: aktiv auf beiden
+    // Seiten. Die alten Wörter - Audit, Protokoll, Löschung - findet die
+    // Suche weiter (ORG-07).
     eintraege.push({
       to: '/praxis/sicherheit/audit',
-      label: 'Protokoll',
-      stichworte: ['Audit', 'Zugriffe', 'Sicherheit'],
-    });
-    // Aufbewahrung und Loeschung gehoeren zur Praxisleitung wie das Auditlog:
-    // beides sind Nachweise, keine Arbeitsvorraete (LOE-002b, ADR-008).
-    eintraege.push({
-      to: '/praxis/sicherheit/aufbewahrung',
-      label: 'Aufbewahrung',
-      stichworte: ['Löschung', 'Löschsperre'],
+      label: 'Sicherheit und Aufbewahrung',
+      pfade: ['/praxis/sicherheit'],
+      stichworte: ['Audit', 'Zugriffe', 'Sicherheit', 'Protokoll', 'Löschung', 'Löschsperre'],
     });
   }
   eintraege.push(
@@ -332,6 +338,9 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       to: '/team',
       pfade: ['/team'],
       icon: symbole.team,
+      // Der Teamchat speichert nichts; der Bereich ist ganz Vorschau (ANN-112,
+      // BEF-049). Am Telefon steht er deshalb hinter „Mehr".
+      vorschau: true,
       // Kein Unterpunkt „Verzeichnis": wer im Team ist und wie man die Person
       // erreicht, steht in der echten Mitarbeiterverwaltung unter
       // Organisatorisches
@@ -456,11 +465,25 @@ export function aktiverBereich(
  *
  * Mehr als fünf Ziele sind mit dem Daumen nicht mehr sicher zu treffen. Passen
  * die Bereiche nicht, rücken die restlichen hinter „Mehr".
+ *
+ * **Reife vor Reihenfolge** (BEF-049, Option 2, Handoff Rahmen vom
+ * 2026-10-05, ANN-244): Ein Bereich, der ganz Vorschau ist (`vorschau`, heute nur die
+ * Kommunikation), bekommt keinen der vier Plätze - bis dahin stand bei
+ * therapist und team_lead „Nachrichten" in der Leiste, und der Weg zu
+ * Mitarbeitenden und Arbeitszeiten lag hinter „Mehr". Sichtbar sind die ersten
+ * vier übrigen Bereiche in Seitenleisten-Reihenfolge; hinter „Mehr" stehen
+ * alle anderen, die Vorschau eingeschlossen, in derselben Reihenfolge. Nur
+ * wenn alles ohne „Mehr" passt und nichts Vorschau ist, bleibt die Leiste,
+ * wie sie ist (ein Patienten- oder Trainingskonto).
  */
 export function tableiste(bereiche: Arbeitsbereich[]): {
   sichtbar: Arbeitsbereich[];
   weitere: Arbeitsbereich[];
 } {
-  if (bereiche.length <= 5) return { sichtbar: bereiche, weitere: [] };
-  return { sichtbar: bereiche.slice(0, 4), weitere: bereiche.slice(4) };
+  const reife = bereiche.filter((bereich) => !bereich.vorschau);
+  if (reife.length === bereiche.length && bereiche.length <= 5) {
+    return { sichtbar: bereiche, weitere: [] };
+  }
+  const sichtbar = reife.slice(0, 4);
+  return { sichtbar, weitere: bereiche.filter((bereich) => !sichtbar.includes(bereich)) };
 }

@@ -5,6 +5,8 @@
   "start_url": "/",
   "scope": "/",
   "display": "minimal-ui",
+  "theme_color": "#ffffff",
+  "background_color": "#eceee8",
   "icons": [
     {
       "src": "/marke/own-motion-app-1024.png",

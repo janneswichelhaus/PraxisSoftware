@@ -252,13 +252,15 @@ describe('AuthenticatedRoutes', () => {
 
   // Der Sicherheitsbereich sitzt im Untermenue des Arbeitsbereichs
   // "Organisatorisches";
-  // geprueft wird deshalb auf einer Seite dieses Bereichs. Der Menuepunkt
-  // heisst seit UXR-002 wie die Seite: „Protokoll" (ORG-07, BEF-080).
+  // geprueft wird deshalb auf einer Seite dieses Bereichs. Seit RAH-005 ist
+  // es ein Punkt, „Sicherheit und Aufbewahrung"; Protokoll und Aufbewahrung
+  // sind dahinter zwei Reiter (ORG-07, BEF-080).
   it('blendet den Sicherheitsbereich fuer Nicht-owner aus der Navigation aus', () => {
     renderWithProviders(
       <AuthenticatedRoutes user={testUser(['therapist', 'team_lead'])} onSignOut={vi.fn()} />,
       FLOTTE,
     );
+    expect(screen.queryByRole('link', { name: 'Sicherheit und Aufbewahrung' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Protokoll' })).toBeNull();
     expect(screen.queryByRole('link', { name: 'Aufbewahrung' })).toBeNull();
   });
@@ -268,8 +270,9 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['owner'], 'Jannes Test')} onSignOut={vi.fn()} />,
       FLOTTE,
     );
-    expect(screen.getAllByRole('link', { name: 'Protokoll' }).length).toBeGreaterThan(0);
-    expect(screen.getAllByRole('link', { name: 'Aufbewahrung' }).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByRole('link', { name: 'Sicherheit und Aufbewahrung' }).length,
+    ).toBeGreaterThan(0);
   });
 
   it('haelt ein Patientenkonto aus den Betriebsbereichen heraus', async () => {

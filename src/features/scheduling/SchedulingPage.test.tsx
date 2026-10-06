@@ -129,6 +129,38 @@ describe('SchedulingPage', () => {
     expect(screen.queryByText(/Praxisraster, Dokumentationsfrist/)).not.toBeInTheDocument();
   });
 
+  it('stellt die Praxiseinstellungen geschlossen unter den Wochenplan (RAH-006)', async () => {
+    const user = userEvent.setup();
+    rendern(['owner']);
+    const wochenplan = await wochenplanAbwarten();
+
+    // Ein Aufklapper in Karte, Kopf als Abschnittstitel, Zusatz rechts; zu
+    // beim Oeffnen der Seite. Darin Raster, Frist, Startort, Garage und
+    // Fahrzeitfaktor mit ihren bisherigen Formularen.
+    const kopf = screen.getByText('Praxiseinstellungen');
+    const aufklapper = kopf.closest('details')!;
+    expect(aufklapper).not.toBeNull();
+    expect(aufklapper.open).toBe(false);
+    expect(aufklapper.className).toContain('rounded-card');
+    expect(kopf.closest('summary')).toHaveTextContent('Raster · Frist · Startort');
+    expect(within(aufklapper).getByLabelText('Minutenraster')).toBeInTheDocument();
+    expect(within(aufklapper).getByLabelText('Frist')).toBeInTheDocument();
+    expect(within(aufklapper).getByRole('heading', { name: 'Praxisraster' })).toBeInTheDocument();
+    // Unter dem Wochenplan, nicht mehr darueber.
+    expect(
+      wochenplan.compareDocumentPosition(aufklapper) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    await user.click(kopf);
+    expect(aufklapper.open).toBe(true);
+  });
+
+  it('zeigt anderen Rollen keine Praxiseinstellungen', async () => {
+    rendern(['office']);
+    await wochenplanAbwarten();
+    expect(screen.queryByText('Praxiseinstellungen')).not.toBeInTheDocument();
+  });
+
   describe('Praxisraster', () => {
     it('bietet owner die drei zulaessigen Werte an', async () => {
       rendern(['owner']);

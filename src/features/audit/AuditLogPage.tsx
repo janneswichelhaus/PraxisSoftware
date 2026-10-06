@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
+import { SicherheitReiter } from './SicherheitReiter';
 import {
   AUDIT_ACTIONS,
   auditActionLabels,
@@ -143,8 +144,11 @@ export function AuditLogPage() {
 
   return (
     <>
-      {/* Der Titel ist das Wort des Menüpunkts (ORG-07): bis UXR-011 öffnete
-          „Sicherheit" eine Seite namens „Audit". */}
+      {/* Der Titel ist das Wort des Reiters (ORG-07): bis UXR-011 öffnete
+          „Sicherheit" eine Seite namens „Audit". Seit RAH-005 heißt der
+          Menüpunkt „Sicherheit und Aufbewahrung" und führt hierher; die
+          Aufbewahrung ist der zweite Reiter. */}
+      <SicherheitReiter />
       <PageHeader
         title="Protokoll"
         description="Protokollierte Zugriffe und sicherheitsrelevante Vorgänge dieser Praxis."

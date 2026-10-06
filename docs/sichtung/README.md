@@ -35,6 +35,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [training.md](training.md)                   | Block 3 — Trainingsbereich          | offen; seit TRN-EPIC-001, Schritte 4–6 TRN-EPIC-002, 7–9 TRN-EPIC-003                                          |
 | [plattform.md](plattform.md)                 | Block 4 — Plattformzugang           | offen; seit POR-EPIC-001, 4–6 POR-EPIC-001b, 7–9 ABN-EPIC-001, 10–12 ABR-EPIC-007, 13–15 POR-EPIC-002          |
 | [ui-redesign.md](ui-redesign.md)             | UI-Redesign Übersicht, Termin, Akte | offen; 1 bis 12 seit 2026-10-01/02, 3, 13 und 14 UBK-EPIC-001, 14 und 15 UBK-EPIC-002                          |
+| [rahmen.md](rahmen.md)                       | Design-Runde 1 — Rahmen             | offen; 1 bis 3 seit RAH-EPIC-001 (2026-10-06)                                                                  |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum
