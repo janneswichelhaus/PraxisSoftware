@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
@@ -16,6 +16,14 @@ import {
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import { Befundbogen } from './Befundbogen';
+import { Dokumente } from './Dokumente';
+import { PLATTFORM_PFAD } from './pfade';
+import { Rechnung, Rechnungen } from './Rechnungen';
+import { Termine } from './Termine';
+import { Uebersicht } from './Uebersicht';
+import { Terminaenderung } from './Terminaenderung';
+import { Terminwunsch } from './Terminwunsch';
 
 /**
  * Das Gerüst der Plattform (POR-004, DSN-001 Abschnitt 3, ADR-023 Punkt 25).
@@ -30,11 +38,14 @@ import {
  * Die Weiche im Router dient der Bedienung; der Schutz liegt in den
  * Projektionen (Punkte 19 bis 21). Alles unter dem Präfix `/p`.
  *
+ * Seit POR-EPIC-002 füllt der Reiter „Termine" (POR-008); Rechnungen und
+ * Dokumente liegen unter „Ich".
+ *
  * Seit POR-EPIC-001b kann ein Konto auch für andere handeln (ADR-023 Punkt
  * 13). Jede Vertretung ist ein eigener Eintrag im Schalter, und solange sie
  * gewählt ist, steht oben dauerhaft „Sie handeln für …" (Punkt 14).
  */
-export const PLATTFORM_PFAD = '/p';
+export { PLATTFORM_PFAD };
 
 export function PlattformApp({
   zugaenge,
@@ -62,10 +73,90 @@ export function PlattformApp({
             path={PLATTFORM_PFAD}
             element={
               lesbar.length > 0 ? (
-                <Uebersicht praxis={praxis} bereiche={lesbar} />
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => (
+                    <Uebersicht
+                      praxis={praxis}
+                      zugang={z}
+                      eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
+                    />
+                  )}
+                />
               ) : (
                 <OhneLesbarenZugang zugaenge={zugaenge} />
               )
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/termine`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Termine zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/termine/wunsch`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Terminwunsch zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/termine/:terminId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Terminaenderung zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/befundbogen`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Befundbogen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/rechnungen`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Rechnungen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/rechnungen/:rechnungId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Rechnung zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/dokumente`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Dokumente zugang={z} />}
+              />
             }
           />
           <Route
@@ -80,6 +171,24 @@ export function PlattformApp({
       <Reiterleiste />
     </div>
   );
+}
+
+/**
+ * Eine Seite, die einen gewählten lesbaren Zugang braucht (POR-008): ohne
+ * einen solchen steht dort, was los ist - wie auf der Übersicht.
+ */
+function MitZugang({
+  bereiche,
+  zugaenge,
+  seite,
+}: {
+  bereiche: Plattformzugang[];
+  zugaenge: Plattformzugang[];
+  seite: (zugang: Plattformzugang) => ReactNode;
+}) {
+  const zugang = useWahl(bereiche);
+  if (!zugang) return <OhneLesbarenZugang zugaenge={zugaenge} />;
+  return <>{seite(zugang)}</>;
 }
 
 /**
@@ -113,6 +222,13 @@ function wahlName(z: Plattformzugang): string {
   if (z.access_kind === 'self') return BEREICHSNAME[z.relationship_kind];
   return `Für ${z.represented_name ?? 'eine andere Person'}`;
 }
+
+/** Seiten, die je Bereich etwas anderes zeigen - dort steht der Schalter (D6). */
+const MIT_SCHALTER = new Set([
+  PLATTFORM_PFAD,
+  `${PLATTFORM_PFAD}/termine`,
+  `${PLATTFORM_PFAD}/rechnungen`,
+]);
 
 function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
   const { pathname } = useLocation();
@@ -152,7 +268,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
       </div>
       {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
           und Vertretungen (POR-006). */}
-      {bereiche.length > 1 && pathname === PLATTFORM_PFAD ? (
+      {bereiche.length > 1 && MIT_SCHALTER.has(pathname) ? (
         <nav aria-label="Bereich" className="mx-auto max-w-xl px-5 pb-3">
           <ul className="bg-surface-sunken rounded-button flex flex-wrap gap-1 p-1">
             {bereiche.map((z) => (
@@ -193,55 +309,6 @@ function HandelnFuer({ bereiche }: { bereiche: Plattformzugang[] }) {
       </p>
     </div>
   );
-}
-
-/**
- * Die Übersicht - „Was ist jetzt dran?" (DSN-001 Abschnitt 3).
- *
- * Heute ohne Inhalt aus dem Verhältnis: Termine, Rechnungen und Dokumente
- * kommen mit POR-EPIC-002. Kein „kommt bald" (ANN-112): Die Seite sagt, was
- * gilt, und wie die Person die Praxis erreicht.
- */
-function Uebersicht({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
-  const zugang = useWahl(bereiche);
-  const eigen = zugang?.access_kind === 'self';
-  const name = zugang?.represented_name ?? 'die Person';
-  const bereich = zugang ? BEREICHSNAME[zugang.relationship_kind] : null;
-  const eigeneBereiche = bereiche.filter((z) => z.access_kind === 'self');
-  return (
-    <>
-      <h1 className="text-accent text-h3 font-bold">Guten Tag</h1>
-      {eigen ? (
-        <p className="text-ink mt-2 text-base leading-relaxed">
-          Sie sind bei {praxis || 'Ihrer Praxis'} angemeldet
-          {eigeneBereiche.length > 1 && bereich ? ` – Bereich ${bereich}` : ''}.
-        </p>
-      ) : (
-        <p className="text-ink mt-2 text-base leading-relaxed">
-          Sie sehen hier, was {praxis || 'die Praxis'} für {name} bereitstellt.{' '}
-          {zugang?.access_kind === 'companion'
-            ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
-            : `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`}
-        </p>
-      )}
-      {zugang?.read_until ? (
-        <Statusmeldung className="mt-4" ton="warnung">
-          {eigen
-            ? `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
-            : `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`}
-        </Statusmeldung>
-      ) : null}
-      <Section titel="Fragen an die Praxis">
-        <p className="text-ink max-w-prose text-base leading-relaxed">
-          Wenden Sie sich bitte wie gewohnt direkt an die Praxis. In einem Notfall rufen Sie 112 an.
-        </p>
-      </Section>
-    </>
-  );
-}
-
-function datum(wert: string): string {
-  return new Date(wert).toLocaleDateString('de-DE');
 }
 
 /** Gesperrt oder Lesefrist vorbei: sagen, was los ist (§13), und nur „Ich" anbieten (D2). */
@@ -310,6 +377,31 @@ function Ich({
           </Rueckfrage>
         </div>
       </Section>
+      {/* POR-013/014: Rechnungen und Dokumente je Bereich. Ob
+          eine Begleitung Rechnungen sieht, entscheidet der Server (billing). */}
+      {zugaenge.length > 0 ? (
+        <Section titel="Unterlagen" rahmen>
+          <ul className="flex flex-col gap-2">
+            {zugaenge.map((z) => (
+              <li key={z.access_id} className="flex flex-col gap-2">
+                <Textlink to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}>
+                  Rechnungen
+                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                </Textlink>
+                {/* POR-014: Dokumente gibt es nur in der Behandlung. */}
+                {z.relationship_kind === 'treatment' ? (
+                  <Textlink
+                    to={`${PLATTFORM_PFAD}/dokumente?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                  >
+                    Dokumente
+                    {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                  </Textlink>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
       {mitVertretungen.map((z) => (
         <WerZugangHat key={z.access_id} zugang={z} mehrere={mitVertretungen.length > 1} />
       ))}
@@ -400,6 +492,9 @@ function VertretungZeile({
  * Symbol und Wort. Heute steht nur die Übersicht - ein Reiter erscheint erst
  * mit dem Loop, der ihn füllt (ANN-112).
  */
+const REITER =
+  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold';
+
 function Reiterleiste() {
   const { pathname, search } = useLocation();
   return (
@@ -412,7 +507,7 @@ function Reiterleiste() {
           <Link
             to={`${PLATTFORM_PFAD}${search}`}
             aria-current={pathname === PLATTFORM_PFAD ? 'page' : undefined}
-            className="text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold"
+            className={REITER}
           >
             <svg
               aria-hidden="true"
@@ -425,6 +520,26 @@ function Reiterleiste() {
               <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
             </svg>
             Übersicht
+          </Link>
+        </li>
+        <li className="flex-1">
+          <Link
+            to={`${PLATTFORM_PFAD}/termine${search}`}
+            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/termine`) ? 'page' : undefined}
+            className={REITER}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+            Termine
           </Link>
         </li>
       </ul>

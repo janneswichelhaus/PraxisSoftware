@@ -61,6 +61,7 @@ function erhebung(id: string, datum: string, wert: number): Erhebung {
     completed_at: `${datum}T08:00:00Z`,
     author_name: 'Anna Beispiel',
     completed_by_name: 'Anna Beispiel',
+    source: 'practice',
   };
 }
 

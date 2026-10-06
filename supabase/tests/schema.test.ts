@@ -119,6 +119,7 @@ describe('Schema-Invarianten', () => {
       'platform_access_invitations',
       // ABN-011: Löschaufträge für Plattformkonten, Organisation fürs Journal.
       'platform_account_deletions',
+      'platform_appointment_requests',
       // ABN-EPIC-001b: gesicherte Befundangaben, Vermerk des Zusammenführens,
       // Nachtrag am Trainingsprotokoll.
       'treatment_draft_findings',

@@ -99,3 +99,481 @@ export async function begleitungBeenden(zugangId: string, begleitungId: string):
   })) as { data: unknown; error: unknown };
   if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
 }
+
+// -----------------------------------------------------------------------------
+// Reiter „Termine": die eigenen Termine (POR-008, DSN-001 4.1)
+// -----------------------------------------------------------------------------
+
+const terminSchema = z.object({
+  id: z.string().uuid(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  /** Für die Person: dokumentiert und abgerechnet sind „durchgeführt". */
+  status: z.enum(['confirmed', 'cancelled', 'no_show', 'completed']),
+  staff_name: z.string().nullable(),
+  location_name: z.string().nullable(),
+  visit_street: z.string().nullable(),
+  visit_house_number: z.string().nullable(),
+  visit_postal_code: z.string().nullable(),
+  visit_city: z.string().nullable(),
+  /**
+   * POR-010: Ein Absagewunsch jetzt läge unter 24 Stunden - gerechnet vom
+   * Server (ADR-018 Punkt 8), nur am bestätigten künftigen Termin.
+   */
+  late_notice: z.boolean().nullable(),
+  /** POR-010: der offene Wunsch an diesem Termin. */
+  open_request_kind: z.enum(['change', 'cancel']).nullable(),
+});
+export type Termin = z.infer<typeof terminSchema>;
+
+export function termineSchluessel(zugangId: string) {
+  return ['platform-appointments', zugangId] as const;
+}
+
+/**
+ * Die eigenen Termine des gewählten Bereichs: künftige und die der letzten
+ * zwölf Monate (ANN-251). Welche Zeilen, entscheidet der Server über den
+ * Zugang; die Kennung wählt nur unter den eigenen aus (ADR-023 Punkt 19).
+ */
+export async function ladeTermine(zugangId: string): Promise<Termin[]> {
+  const satz = 'Ihre Termine konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointments', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(terminSchema), ergebnis.data ?? [], satz);
+}
+
+// -----------------------------------------------------------------------------
+// Terminwünsche (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001 4.1, ANN-246)
+// -----------------------------------------------------------------------------
+
+export const TAGESZEITEN = ['morning', 'midday', 'afternoon'] as const;
+export type Tageszeit = (typeof TAGESZEITEN)[number];
+export const TAGESZEIT_NAME: Record<Tageszeit, string> = {
+  morning: 'Vormittag',
+  midday: 'Mittag',
+  afternoon: 'Nachmittag',
+};
+
+const wunschSchema = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(['new', 'change', 'cancel']),
+  appointment_id: z.string().uuid().nullable(),
+  /** Kalendertage `YYYY-MM-DD`. */
+  preferred_days: z.array(z.string()),
+  preferred_times: z.array(z.enum(TAGESZEITEN)),
+  note: z.string().nullable(),
+  status: z.enum(['open', 'done', 'declined', 'withdrawn']),
+  created_at: z.string(),
+  resolved_at: z.string().nullable(),
+  answer: z.string().nullable(),
+});
+export type Terminwunsch = z.infer<typeof wunschSchema>;
+
+export function wuenscheSchluessel(zugangId: string) {
+  return ['platform-appointment-requests', zugangId] as const;
+}
+
+/** Die eigenen Wünsche des Bereichs, offene zuerst. */
+export async function ladeWuensche(zugangId: string): Promise<Terminwunsch[]> {
+  const satz = 'Ihre Terminwünsche konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointment_requests', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(wunschSchema), ergebnis.data ?? [], satz);
+}
+
+/**
+ * Einen Termin wünschen: Tage, Tageszeiten, eine freie Zeile. Ein Wunsch, kein
+ * Termin - einen Termin macht daraus die Praxis (§8). Die Grenzen prüft der
+ * Server; die Meldungen hier sagen, was zu tun ist (§13).
+ */
+export async function terminWuenschen(eingabe: {
+  zugangId: string;
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment', {
+    p_access_id: eingabe.zugangId,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(wunschfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers, ohne interne Details. */
+export function wunschfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('at least one day')) return 'Bitte wählen Sie mindestens einen Tag.';
+  if (m.includes('too many days')) return 'Bitte wählen Sie höchstens 14 Tage.';
+  if (m.includes('day out of range'))
+    return 'Bitte wählen Sie Tage ab heute, höchstens ein Jahr voraus.';
+  if (m.includes('note too long')) return 'Ihre Nachricht darf höchstens 500 Zeichen lang sein.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  return 'Ihr Wunsch konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Einen offenen Wunsch zurückziehen. */
+export async function wunschZurueckziehen(zugangId: string, wunschId: string): Promise<void> {
+  const satz = 'Der Wunsch konnte nicht zurückgezogen werden.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_appointment_request', {
+    p_access_id: zugangId,
+    p_request_id: wunschId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
+}
+
+/**
+ * Termin ändern oder absagen - als Wunsch (POR-010, D4). Die Absage trägt
+ * das Büro ein; als Eingang gilt der Zeitpunkt dieses Wunsches (ANN-247).
+ */
+export async function terminAendernWuenschen(eingabe: {
+  zugangId: string;
+  terminId: string;
+  art: 'change' | 'cancel';
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment_change', {
+    p_access_id: eingabe.zugangId,
+    p_appointment_id: eingabe.terminId,
+    p_kind: eingabe.art,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) {
+    const m = ergebnis.error.message ?? '';
+    if (m.includes('request already open'))
+      throw new Error('Zu diesem Termin liegt schon ein Wunsch vor. Die Praxis meldet sich.');
+    if (m.includes('not confirmed') || m.includes('has started') || m.includes('not found'))
+      throw new Error('Dieser Termin lässt sich nicht mehr ändern. Bitte rufen Sie die Praxis an.');
+    throw new Error(wunschfehler(m));
+  }
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Befundbogen vorab (POR-012, §7, DSN-001 4.1, ANN-248)
+// -----------------------------------------------------------------------------
+
+const bogenSchema = z.object({
+  id: z.string().uuid(),
+  instrument_id: z.string(),
+  definition_version: z.string(),
+  status: z.enum(['entwurf', 'abgeschlossen']),
+  recorded_on: z.string(),
+  source: z.enum(['practice', 'platform']),
+  /** Nur aus Erhebungen über die Plattform; eine in der Praxis erhobene bleibt Befund. */
+  answers: z.record(z.string(), z.unknown()).nullable(),
+  updated_at: z.string(),
+  completed_at: z.string().nullable(),
+});
+export type Bogenstand = z.infer<typeof bogenSchema>;
+
+export function befundbogenSchluessel(zugangId: string) {
+  return ['platform-questionnaire', zugangId] as const;
+}
+
+/** Der Stand der Bögen, die die Person ausfüllt - nur im Behandlungszugang. */
+export async function ladeBefundbogen(zugangId: string): Promise<Bogenstand[]> {
+  const satz = 'Ihr Befundbogen konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_questionnaire', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(bogenSchema), ergebnis.data ?? [], satz);
+}
+
+function bogenfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('already completed'))
+    return 'Ihr Befundbogen liegt der Praxis schon vor. Änderungen besprechen Sie beim Termin.';
+  if (m.includes('not available'))
+    return 'Dieser Bogen lässt sich zurzeit nicht ausfüllen. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  if (m.includes('is completed')) return 'Dieser Bogen ist schon abgeschickt.';
+  return 'Ihre Angaben konnten nicht gespeichert werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Entwurf anlegen oder überschreiben; der Server prüft jede Antwort gegen die Definition. */
+export async function befundbogenSpeichern(eingabe: {
+  zugangId: string;
+  entwurfId: string | null;
+  instrumentId: string;
+  version: string;
+  antworten: Record<string, unknown>;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('save_platform_questionnaire_response', {
+    p_access_id: eingabe.zugangId,
+    p_response_id: eingabe.entwurfId,
+    p_instrument_id: eingabe.instrumentId,
+    p_definition_version: eingabe.version,
+    p_answers: eingabe.antworten,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(bogenfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, bogenfehler(undefined));
+}
+
+/** Absenden: der Bogen ist abgeschlossen und liegt der Praxis vor. */
+export async function befundbogenAbsenden(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('complete_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error(bogenfehler(ergebnis.error?.message ?? 'not found'));
+  }
+}
+
+/** Den eigenen Entwurf verwerfen. */
+export async function befundbogenVerwerfen(zugangId: string, entwurfId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('discard_platform_questionnaire_response', {
+    p_access_id: zugangId,
+    p_response_id: entwurfId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) {
+    throw new Error('Der Entwurf konnte nicht verworfen werden.');
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Eigene Rechnungen (POR-013, DSN-001 D3, ADR-023 Punkt 16, ANN-250)
+// -----------------------------------------------------------------------------
+
+const rechnungZeileSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  total_cents: z.number(),
+  currency: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
+  cancelled: z.boolean(),
+  cancelled_on: z.string().nullable(),
+  recipient_kind: z.string().nullable(),
+  recipient_name: z.string().nullable(),
+  service_from: z.string().nullable(),
+  service_to: z.string().nullable(),
+});
+export type Rechnungszeile = z.infer<typeof rechnungZeileSchema>;
+
+export function rechnungenSchluessel(zugangId: string) {
+  return ['platform-invoices', zugangId] as const;
+}
+
+/** Die ausgestellten Rechnungen des Bereichs - mit Recht `billing`, sonst leer. */
+export async function ladeRechnungen(zugangId: string): Promise<Rechnungszeile[]> {
+  const satz = 'Ihre Rechnungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoices', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(rechnungZeileSchema), ergebnis.data ?? [], satz);
+}
+
+const positionSchema = z.object({
+  performed_on: z.string(),
+  code: z.string(),
+  label: z.string(),
+  item_kind: z.string(),
+  quantity: z.number(),
+  unit_price_cents: z.number(),
+  line_total_cents: z.number(),
+  currency: z.string(),
+  tax_treatment: z.string(),
+  tax_rate_permille: z.number(),
+});
+export type Rechnungsposition = z.infer<typeof positionSchema>;
+
+/** Das Blatt: der Snapshot der Praxis (ADR-009 Punkt 10), nur was das Blatt zeigt. */
+const rechnungSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  cancellation: z.object({ cancellation_number: z.string(), cancelled_on: z.string() }).nullable(),
+  replaces_invoice_number: z.string().nullable(),
+  correction_invoice_number: z.string().nullable(),
+  document: z.object({
+    schema_version: z.number(),
+    currency: z.string(),
+    service_period: z.object({ from: z.string(), to: z.string() }).nullable().optional(),
+    period_month: z.string(),
+    issuer: z.object({
+      legal_name: z.string(),
+      street: z.string().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().optional(),
+      city: z.string().optional(),
+      phone: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      tax_number: z.string().nullable().optional(),
+      vat_id: z.string().nullable().optional(),
+      bank_name: z.string().nullable().optional(),
+      account_holder: z.string().nullable().optional(),
+      iban: z.string().optional(),
+      bic: z.string().nullable().optional(),
+      payment_term_days: z.number().optional(),
+    }),
+    recipient: z.object({
+      kind: z.string(),
+      name: z.string(),
+      street: z.string().nullable().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+    }),
+    // Geburtsdatum und Behandlungsgrundlage stehen auf dem Blatt der Praxis
+    // (Beihilfe braucht beides) - die Person bekommt dasselbe Blatt (ANN-250).
+    patient: z.object({ name: z.string(), date_of_birth: z.string().nullable().optional() }),
+    treatment_bases: z
+      .array(
+        z.object({
+          kind: z.string(),
+          issued_on: z.string(),
+          prescriber: z.string().nullable().optional(),
+          diagnosis_icd10: z.string().nullable().optional(),
+          diagnosis: z.string().nullable().optional(),
+        }),
+      )
+      .optional(),
+    items: z.array(positionSchema),
+    tax_groups: z
+      .array(
+        z.object({
+          tax_treatment: z.string(),
+          tax_rate_permille: z.number(),
+          exemption_reason: z.string().nullable().optional(),
+          gross_cents: z.number(),
+          tax_cents: z.number(),
+          net_cents: z.number(),
+        }),
+      )
+      .optional(),
+    totals: z.object({ total_cents: z.number(), tax_total_cents: z.number() }),
+  }),
+});
+export type Rechnungsblatt = z.infer<typeof rechnungSchema>;
+
+export function rechnungSchluessel(zugangId: string, rechnungId: string) {
+  return ['platform-invoice', zugangId, rechnungId] as const;
+}
+
+/** Eine eigene Rechnung als Blatt; `null`, wenn es sie für diesen Zugang nicht gibt. */
+export async function ladeRechnung(
+  zugangId: string,
+  rechnungId: string,
+): Promise<Rechnungsblatt | null> {
+  const satz = 'Die Rechnung konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoice', {
+    p_access_id: zugangId,
+    p_invoice_id: rechnungId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null || ergebnis.data === undefined) return null;
+  return antwort(rechnungSchema, ergebnis.data, satz);
+}
+
+// -----------------------------------------------------------------------------
+// Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 54, 55, ANN-249)
+// -----------------------------------------------------------------------------
+
+const dokumentSchema = z.object({
+  id: z.string().uuid(),
+  document_type: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+  byte_size: z.coerce.number(),
+  released_at: z.string(),
+});
+export type Dokument = z.infer<typeof dokumentSchema>;
+
+export function dokumenteSchluessel(zugangId: string) {
+  return ['platform-files', zugangId] as const;
+}
+
+/** Die einzeln freigegebenen Dokumente der Akte - nur im Behandlungszugang. */
+export async function ladeDokumente(zugangId: string): Promise<Dokument[]> {
+  const satz = 'Ihre Dokumente konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_files', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(dokumentSchema), ergebnis.data ?? [], satz);
+}
+
+const verweisSchema = z.object({
+  bucket_id: z.string(),
+  object_key: z.string(),
+  display_name: z.string(),
+  mime_type: z.string(),
+});
+
+/** Gültigkeit eines signierten Verweises in Sekunden (ADR-017 Punkt 15). */
+const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
+
+/**
+ * Der Verweis auf genau ein freigegebenes Dokument: erst die einmalige
+ * Freigabe des Servers (protokolliert als Abruf, ADR-023 Punkt 24), dann die
+ * Unterschrift der Ablage, die sie verbraucht (ADR-017 Punkte 15, 20, 21).
+ * Der Verweis verlässt dieses Modul nicht.
+ */
+async function dokumentVerweis(
+  zugangId: string,
+  dokumentId: string,
+  herunterladen: boolean,
+): Promise<{ url: string; mimeType: string; name: string }> {
+  const satz = 'Das Dokument konnte nicht geöffnet werden.';
+  const ergebnis = (await getSupabase().rpc('issue_platform_file_link', {
+    p_access_id: zugangId,
+    p_file_id: dokumentId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  const freigabe = antwort(z.array(verweisSchema), ergebnis.data ?? [], satz)[0];
+  if (!freigabe) throw new Error(satz);
+  const ablage = getSupabase().storage.from(freigabe.bucket_id);
+  const { data: signiert, error } = herunterladen
+    ? await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN, {
+        download: freigabe.display_name,
+      })
+    : await ablage.createSignedUrl(freigabe.object_key, VERWEIS_GUELTIGKEIT_SEKUNDEN);
+  if (error || !signiert?.signedUrl) throw new Error(satz);
+  return { url: signiert.signedUrl, mimeType: freigabe.mime_type, name: freigabe.display_name };
+}
+
+/** Ein Bild zum Ansehen in der Anwendung (ADR-017 Punkt 54). */
+export async function ladeDokumentZumAnzeigen(
+  zugangId: string,
+  dokumentId: string,
+): Promise<{ bild: Blob; name: string }> {
+  const { url, mimeType, name } = await dokumentVerweis(zugangId, dokumentId, false);
+  const antwortDerAblage = await fetch(url, { cache: 'no-store' });
+  if (!antwortDerAblage.ok) throw new Error('Das Dokument konnte nicht geladen werden.');
+  return { bild: new Blob([await antwortDerAblage.arrayBuffer()], { type: mimeType }), name };
+}
+
+/** Ein Dokument auf das Gerät holen (ADR-017 Punkt 55), etwa ein PDF. */
+export async function ladeDokumentHerunter(zugangId: string, dokumentId: string): Promise<void> {
+  const { url } = await dokumentVerweis(zugangId, dokumentId, true);
+  const link = document.createElement('a');
+  link.href = url;
+  link.rel = 'noopener noreferrer';
+  link.download = '';
+  link.click();
+}

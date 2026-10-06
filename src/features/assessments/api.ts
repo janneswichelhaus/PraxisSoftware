@@ -31,6 +31,8 @@ const erhebungSchema = z.object({
   completed_at: z.string().nullable(),
   author_name: z.string().nullable(),
   completed_by_name: z.string().nullable(),
+  /** POR-012: in der Praxis erhoben oder von der Person über die Plattform ausgefüllt. */
+  source: z.enum(['practice', 'platform']).default('practice'),
 });
 
 export interface Erhebung extends Omit<z.infer<typeof erhebungSchema>, 'answers'> {

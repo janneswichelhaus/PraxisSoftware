@@ -33,6 +33,31 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Wer für die Person Zugang hat (POR-007); Negativfälle in platform-own-representatives.test.ts',
   'public.end_platform_companion':
     'Begleitung beenden (POR-007); Negativfälle in platform-own-representatives.test.ts',
+  'public.platform_appointments':
+    'Eigene Termine (POR-008); Negativfälle in platform-appointments.test.ts',
+  'public.platform_appointment_requests':
+    'Eigene Terminwünsche (POR-009); Negativfälle in platform-appointment-requests.test.ts',
+  'public.request_platform_appointment':
+    'Termin wünschen (POR-009); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.withdraw_platform_appointment_request':
+    'Wunsch zurückziehen (POR-009); ohne lesbaren Zugang false',
+  'public.request_platform_appointment_change':
+    'Termin ändern oder absagen als Wunsch (POR-010); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.platform_questionnaire':
+    'Stand des Befundbogens (POR-012); Negativfälle in platform-questionnaire.test.ts',
+  'public.save_platform_questionnaire_response':
+    'Befundbogen als Entwurf (POR-012); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.complete_platform_questionnaire_response':
+    'Befundbogen absenden (POR-012); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.discard_platform_questionnaire_response':
+    'Eigenen Entwurf verwerfen (POR-012); ohne lesbaren Zugang false',
+  'public.platform_invoices':
+    'Eigene Rechnungen (POR-013); Negativfälle in platform-invoices.test.ts',
+  'public.platform_invoice': 'Eine eigene Rechnung als Blatt (POR-013); ohne Recht null',
+  'public.platform_files':
+    'Freigegebene Dokumente (POR-014); Negativfälle in platform-files.test.ts',
+  'public.issue_platform_file_link':
+    'Verweis auf eine freigegebene Datei (POR-014); ohne lesbaren Zugang abgewiesen (42501)',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

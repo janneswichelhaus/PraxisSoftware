@@ -22,6 +22,7 @@ function erhebung(abweichung: Partial<Erhebung>): Erhebung {
     completed_at: '2026-09-20T08:00:00Z',
     author_name: null,
     completed_by_name: null,
+    source: 'practice',
     ...abweichung,
   };
 }

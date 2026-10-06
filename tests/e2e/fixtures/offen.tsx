@@ -16,6 +16,10 @@ import {
   type CareWithoutConclusion,
   type EndingPrescription,
 } from '@/features/open-points/reminders-api';
+import {
+  PLATFORM_REQUESTS_KEY,
+  type PlatformRequest,
+} from '@/features/open-points/platform-requests-api';
 import { TASKS_KEY, type Task } from '@/features/open-points/tasks-api';
 import type { CurrentUser } from '@/features/session/types';
 import type { StaffMember } from '@/features/staff/api';
@@ -274,6 +278,59 @@ const zuPruefen: WaitlistEntry[] = [
   },
 ];
 client.setQueryData(WAITLIST_REVIEW_KEY, zuPruefen);
+// POR-011: Terminwünsche von der Plattform - ein neuer Wunsch, ein Absagewunsch
+// durch eine Begleitung.
+const terminwuensche: PlatformRequest[] = [
+  {
+    id: 'dddddddd-dddd-4ddd-8ddd-0000000000e1',
+    kind: 'new',
+    relationship_kind: 'treatment',
+    patient_id: ERIKA,
+    training_relationship_id: null,
+    given_name: 'Erika',
+    family_name: 'Beispiel',
+    appointment_id: null,
+    appointment_starts_at: null,
+    appointment_ends_at: null,
+    appointment_updated_at: null,
+    appointment_status: null,
+    preferred_days: [tagPlus(5), tagPlus(7)],
+    preferred_times: ['morning'],
+    note: 'Bitte nicht vor 9 Uhr, ich bin schlecht zu Fuß.',
+    status: 'open',
+    created_at: `${HEUTE}T07:12:00.000Z`,
+    requested_by: 'self',
+    representative_name: null,
+    resolved_at: null,
+    answer: null,
+    resulting_appointment_id: null,
+  },
+  {
+    id: 'dddddddd-dddd-4ddd-8ddd-0000000000e2',
+    kind: 'cancel',
+    relationship_kind: 'treatment',
+    patient_id: MAX,
+    training_relationship_id: null,
+    given_name: 'Max',
+    family_name: 'Mustermann',
+    appointment_id: 'aaaaaaaa-aaaa-4aaa-8aaa-000000000001',
+    appointment_starts_at: `${MORGEN}T07:00:00.000Z`,
+    appointment_ends_at: `${MORGEN}T08:00:00.000Z`,
+    appointment_updated_at: `${HEUTE}T06:00:00.000Z`,
+    appointment_status: 'confirmed',
+    preferred_days: [],
+    preferred_times: [],
+    note: 'Max liegt mit Fieber im Bett.',
+    status: 'open',
+    created_at: `${HEUTE}T06:40:00.000Z`,
+    requested_by: 'companion',
+    representative_name: 'Paula Mustermann',
+    resolved_at: null,
+    answer: null,
+    resulting_appointment_id: null,
+  },
+];
+client.setQueryData(PLATFORM_REQUESTS_KEY, terminwuensche);
 client.setQueryData(['patient', MAX], {
   id: MAX,
   given_name: 'Max',

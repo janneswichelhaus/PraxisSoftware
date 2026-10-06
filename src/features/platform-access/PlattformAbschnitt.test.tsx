@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as ZugangApi from './api';
+import type * as FilesApi from '@/features/files/api';
 import type { Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
 
@@ -22,6 +23,13 @@ const sendPlatformInvitation = vi.fn();
 const setPlatformAccessLocked = vi.fn();
 const revokePlatformAccess = vi.fn();
 const listPlatformRepresentations = vi.fn();
+
+// POR-014: die Zeile „Freigegeben" zählt die Dateien der Akte.
+const fetchPatientFiles = vi.fn().mockResolvedValue([]);
+vi.mock('@/features/files/api', async (importOriginal) => ({
+  ...(await importOriginal<typeof FilesApi>()),
+  fetchPatientFiles: (...args: unknown[]) => fetchPatientFiles(...args) as Promise<unknown>,
+}));
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof ZugangApi>();

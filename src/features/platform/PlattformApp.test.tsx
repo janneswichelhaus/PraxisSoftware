@@ -16,12 +16,22 @@ import { renderWithProviders } from '@/test-utils';
 const ueberallAbmelden = vi.fn();
 const ladeMeineVertretungen = vi.fn();
 const begleitungBeenden = vi.fn();
+// POR-EPIC-002: die Übersicht fragt Termine, Wünsche, Rechnungen und den
+// Befundbogen ab - hier ohne Inhalt.
+const ladeTermine = vi.fn();
+const ladeWuensche = vi.fn();
+const ladeRechnungen = vi.fn();
+const ladeBefundbogen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ueberallAbmelden: () => ueberallAbmelden() as Promise<void>,
   ladeMeineVertretungen: (...args: unknown[]) => ladeMeineVertretungen(...args) as Promise<unknown>,
   begleitungBeenden: (...args: unknown[]) => begleitungBeenden(...args) as Promise<void>,
+  ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<unknown[]>,
+  ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
+  ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
+  ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
 }));
 
 const { PlattformApp } = await import('./PlattformApp');
@@ -60,6 +70,10 @@ beforeEach(() => {
   ueberallAbmelden.mockResolvedValue(undefined);
   ladeMeineVertretungen.mockResolvedValue([]);
   begleitungBeenden.mockResolvedValue(undefined);
+  ladeTermine.mockResolvedValue([]);
+  ladeWuensche.mockResolvedValue([]);
+  ladeRechnungen.mockResolvedValue([]);
+  ladeBefundbogen.mockResolvedValue([]);
 });
 
 describe('PlattformApp', () => {
@@ -68,9 +82,12 @@ describe('PlattformApp', () => {
     expect(screen.getByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
     expect(screen.getByText(/Test Praxis Tuebingen angemeldet/)).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Bereich' })).not.toBeInTheDocument();
-    // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112).
+    // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
+    // POR-008 die Termine, noch keine Übungen und keine Nachrichten.
     expect(screen.getByRole('link', { name: 'Übersicht' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Termine' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Termine' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Übungen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nachrichten' })).not.toBeInTheDocument();
   });
 
   it('schaltet bei zwei Verhaeltnissen zwischen Behandlung und Training (D6)', async () => {

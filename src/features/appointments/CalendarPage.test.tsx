@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import type * as AppointmentsApi from './api';
 import type * as SchedulingApi from '@/features/scheduling/api';
+import type * as PlatformRequestsApi from '@/features/open-points/platform-requests-api';
 import type * as RouterModul from 'react-router-dom';
 import type * as TagesrouteModul from '@/features/tours/tagesroute';
 import type * as StartortModul from '@/features/tours/startort';
@@ -96,6 +97,38 @@ vi.mock('./api', async (importOriginal) => {
     todayInTimeZone: () => HEUTE,
   };
 });
+
+// POR-011: Terminwünsche von der Plattform - ohne Wünsche im Regelfall.
+const fetchPlatformRequests = vi.fn();
+const WUNSCH: PlatformRequestsApi.PlatformRequest = {
+  id: 'w-0',
+  kind: 'new',
+  relationship_kind: 'treatment',
+  patient_id: PATIENT,
+  training_relationship_id: null,
+  given_name: 'Max',
+  family_name: 'Mustermann',
+  appointment_id: null,
+  appointment_starts_at: null,
+  appointment_ends_at: null,
+  appointment_updated_at: null,
+  appointment_status: null,
+  preferred_days: [],
+  preferred_times: [],
+  note: null,
+  status: 'open',
+  created_at: '2027-05-10T08:00:00.000Z',
+  requested_by: 'self',
+  representative_name: null,
+  resolved_at: null,
+  answer: null,
+  resulting_appointment_id: null,
+};
+vi.mock('@/features/open-points/platform-requests-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PlatformRequestsApi>()),
+  fetchPlatformRequests: () =>
+    fetchPlatformRequests() as Promise<PlatformRequestsApi.PlatformRequest[]>,
+}));
 
 vi.mock('@/features/scheduling/api', async (importOriginal) => {
   const actual = await importOriginal<typeof SchedulingApi>();
@@ -212,6 +245,8 @@ describe('CalendarPage', () => {
     updateAppointment.mockReset();
     fetchWorkingHours.mockReset();
     fetchWorkingHourExceptions.mockReset();
+    fetchPlatformRequests.mockReset();
+    fetchPlatformRequests.mockResolvedValue([]);
     navigate.mockReset();
 
     fetchWorkingHours.mockResolvedValue([]);
@@ -2608,6 +2643,35 @@ describe('CalendarPage: Doku offen und Terminpanel', () => {
     const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
     expect(within(kachel).getByTestId('kachel-status')).toHaveTextContent('! Doku offen');
     expect(kachel.className).toContain('border-l-warnung');
+  });
+
+  it('kennzeichnet einen offenen Absagewunsch von der Plattform am Termin (POR-011)', async () => {
+    fetchAppointments.mockResolvedValue([eintrag()]);
+    fetchPlatformRequests.mockResolvedValue([
+      { ...WUNSCH, id: 'w-1', kind: 'cancel', appointment_id: eintrag().id, preferred_days: [] },
+    ]);
+    renderWithProviders(
+      <CalendarPage user={testUser(['office'], 'Olivia Office')} />,
+      '/kalender?ansicht=tag&datum=2027-05-12&status=all',
+    );
+    const kachel = await screen.findByRole('button', { name: /Max Mustermann/ });
+    expect(within(kachel).getByTestId('kachel-status')).toHaveTextContent('! Absage angefragt');
+  });
+
+  it('schreibt „angefragt" in den Kopf eines Wunschtags der Woche (POR-011)', async () => {
+    fetchAppointments.mockResolvedValue([]);
+    fetchPlatformRequests.mockResolvedValue([
+      { ...WUNSCH, id: 'w-2', kind: 'new', appointment_id: null, preferred_days: ['2027-05-13'] },
+    ]);
+    renderWithProviders(
+      <CalendarPage user={testUser(['office'], 'Olivia Office')} />,
+      `/kalender?ansicht=woche&datum=2027-05-12&person=${STAFF_ANNA}`,
+    );
+    const kopf = await screen.findByRole('link', { name: /Tagesansicht .* Do\.? 13/ });
+    expect(kopf).toHaveTextContent('angefragt');
+    expect(screen.getByRole('link', { name: /Tagesansicht .* Mi\.? 12/ })).not.toHaveTextContent(
+      'angefragt',
+    );
   });
 
   it('zeigt auch dem Büro „Doku offen" - es liest Dokumentation (ABN-005, ANN-201 Fassung 2)', async () => {

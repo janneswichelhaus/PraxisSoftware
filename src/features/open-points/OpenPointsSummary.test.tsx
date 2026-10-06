@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import type * as TasksApi from './tasks-api';
 import type * as FilesApi from '@/features/files/api';
+import type * as PlatformRequestsApi from './platform-requests-api';
 import { renderWithProviders, testUser } from '@/test-utils';
 
 const fetchTasks = vi.fn();
@@ -14,6 +15,13 @@ vi.mock('./tasks-api', async (importOriginal) => ({
 vi.mock('@/features/files/api', async (importOriginal) => ({
   ...(await importOriginal<typeof FilesApi>()),
   fetchOffeneScans: () => fetchOffeneScans() as Promise<FilesApi.OffenerScan[]>,
+}));
+// POR-011: Terminwünsche von der Plattform.
+const fetchPlatformRequests = vi.fn();
+vi.mock('./platform-requests-api', async (importOriginal) => ({
+  ...(await importOriginal<typeof PlatformRequestsApi>()),
+  fetchPlatformRequests: () =>
+    fetchPlatformRequests() as Promise<PlatformRequestsApi.PlatformRequest[]>,
 }));
 
 const { OpenPointsSummary } = await import('./OpenPointsSummary');
@@ -28,6 +36,8 @@ describe('OpenPointsSummary', () => {
   beforeEach(() => {
     fetchTasks.mockReset();
     fetchOffeneScans.mockReset();
+    fetchPlatformRequests.mockReset();
+    fetchPlatformRequests.mockResolvedValue([]);
   });
 
   it('zaehlt Ueberfaelliges, heute Faelliges und Fotos in einer Zeile', async () => {

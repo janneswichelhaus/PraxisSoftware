@@ -25,6 +25,10 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { fetchWorkingHourExceptions, fetchWorkingHours } from '@/features/scheduling/api';
 import {
+  PLATFORM_REQUESTS_KEY,
+  fetchPlatformRequests,
+} from '@/features/open-points/platform-requests-api';
+import {
   dayKey,
   fetchAppointment,
   fetchAppointments,
@@ -470,6 +474,34 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     placeholderData: keepPreviousData,
   });
   const belegtDaten = belegt.data ?? [];
+
+  // POR-011 (DSN-001 Abschnitt 6): offene Terminwünsche von der Plattform -
+  // ein Wunschtag steht im Spaltenkopf als „angefragt", ein Änderungs- oder
+  // Absagewunsch am Termin auf der Kachel. Welche Wünsche eine Rolle sieht,
+  // entscheidet der Server je Kontext; hier wird nur gezeichnet.
+  const wuensche = useQuery({
+    queryKey: PLATFORM_REQUESTS_KEY,
+    queryFn: () => fetchPlatformRequests('open'),
+    enabled: Boolean(zone),
+    retry: false,
+  });
+  const wunschTage = useMemo(
+    () =>
+      new Set(
+        (wuensche.data ?? []).filter((w) => w.kind === 'new').flatMap((w) => w.preferred_days),
+      ),
+    [wuensche.data],
+  );
+  const wunschAmTermin = useMemo(
+    () =>
+      new Map(
+        (wuensche.data ?? [])
+          .filter((w): w is typeof w & { appointment_id: string } => w.appointment_id !== null)
+          .filter((w) => w.kind !== 'new')
+          .map((w) => [w.appointment_id, w.kind as 'change' | 'cancel'] as const),
+      ),
+    [wuensche.data],
+  );
   const belegtFuer = (staffMemberId: string, tag: string) =>
     zone ? belegtBaender(belegtDaten, staffMemberId, tag, zone, minutesOfDay, dayKey) : [];
 
@@ -804,9 +836,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           id: tag,
           titel: wochentagKurz(tag),
           unterTitel: tagesZahl(tag),
-          // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01).
+          // Heute als Wort und für Vorlesesoftware, nicht nur als Farbton (KAL-B01);
+          // ein Wunschtag von der Plattform als „angefragt" (POR-011).
           hervorgehoben: tag === heute,
-          zusatz: tag === heute ? 'heute' : undefined,
+          zusatz:
+            [tag === heute ? 'heute' : null, wunschTage.has(tag) ? 'angefragt' : null]
+              .filter(Boolean)
+              .join(' · ') || undefined,
           aktuellesDatum: tag === heute,
           baender:
             wochenPerson && arbeitszeitBekannt
@@ -839,6 +875,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     ? (nachPerson.find((e) => e.patient_id === p.patient) ?? null)
     : null;
 
+  const wunschAm = (terminId: string): Pick<GitterEintrag, 'wunsch'> => {
+    const wunsch = wunschAmTermin.get(terminId);
+    return wunsch ? { wunsch } : {};
+  };
   const gitterEintraege: GitterEintrag[] = sichtbar.map((e) => ({
     eintrag: e,
     spalteId: p.ansicht === 'tag' ? e.staff_member_id : dayKey(e.starts_at, zone),
@@ -852,6 +892,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     ziehbar: e.status === 'confirmed' && e.kind !== 'training' && darfAendern,
     ...(e.id === neuerTermin ? { neu: true } : {}),
     ...(p.patient && e.patient_id !== p.patient ? { zurueckgenommen: true } : {}),
+    // POR-011: der offene Wunsch der Person an diesem Termin.
+    ...wunschAm(e.id),
   }));
 
   /**

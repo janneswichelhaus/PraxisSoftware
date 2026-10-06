@@ -632,7 +632,10 @@
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "POR-008 bis POR-015, Zweitreview",
+          "vermerk": "Sichtung: Plattform Schritte 13 bis 15"
         },
         {
           "id": "por-epic-003",

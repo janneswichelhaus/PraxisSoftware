@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-05.
+Zuletzt aktualisiert: 2026-10-06.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 80 Einträge):
+Zusatz `Prüfpaket` (heute 90 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -2954,3 +2954,75 @@ Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (BEF-050, Option 1, 
 **Anker.** `src/app/tabtitel.ts` (Tabelle `REGELN`, `tabTitel`); `useSeitenwechsel` in `src/app/seitenwechsel.ts`; `Vollseite.tsx`; Tests `tabtitel.test.ts` (darunter „trägt nie Daten“), `AppShell.test.tsx`, `Vollseite.test.tsx`.
 
 **Änderungspfad.** Andere Wörter oder mehr Stufen („Rechnungen – Abrechnung – Own Motion“): nur die Tabelle `REGELN` und `TAB_NAMEN` · Aufwand `klein`. Ein Titel mit Daten ist kein Änderungspfad, sondern eine ADR-Frage.
+
+### ANN-246 — Terminwunsch als eigener Datensatz: offen, erledigt, nicht möglich, zurückgezogen; kein neuer Terminzustand; ein Jahr nach Abschluss gelöscht
+
+Praxisprozess · offen · 2026-10-06 · — · — · Wiedervorlage: Jannes in der Sichtung (Plattform, Schritte 13 bis 15)
+
+**Annahme.** Ein Terminwunsch von der Plattform (neuer Termin, Änderung, Absage) ist ein eigener Datensatz `platform_appointment_requests` mit bis zu 14 Wunschtagen, Tageszeiten Vormittag/Mittag/Nachmittag und einer freiwilligen Notiz bis 500 Zeichen; die Zustände sind `open`, `done`, `declined`, `withdrawn`. Er erzeugt keinen Termin und keinen Terminzustand – ADR-018 kennt `requested`/`tentative`, beide bleiben ungebaut; erst die Praxis legt einen Termin an, bestätigt ihn und schließt den Wunsch mit „erledigt“ oder „nicht möglich“ (Antwort bis 300 Zeichen). Je Termin ist nur ein offener Änderungs- oder Absagewunsch möglich. Die Person kann einen offenen Wunsch zurückziehen. Datenklasse `terminwunsch` (Aufbewahrung: ein Jahr nach Abschluss des Wunsches, `apply_retention`), keine Protokollierung (ADR-010 Fassung 3: der Datensatz trägt Urheber, Zeitpunkt und Ausgang selbst).
+
+**Begründung.** DSN-001 D4 und PROJECT_PRINCIPLES.md 8.2: Die Plattform bietet eine Anfrage, keinen Kalenderzugriff; ein vereinbarter Termin entsteht nur durch die Praxis. Ein eigener Datensatz hält den Kalender frei von unbestätigten Einträgen und macht den Wunsch mit Urheber (Person, Begleitung, Vertretung) nachvollziehbar. 14 Tage sind der Horizont, in dem eine Praxis realistisch Termine vergibt; längere Wünsche gehören in die Notiz. Ein Jahr ist die kürzeste Frist, mit der ein Wunsch für Rückfragen zum Ausfallhonorar (Absagewunsch, ANN-247) erhalten bleibt. Unsicher: ob die Praxis einen Wunsch lieber an den angelegten Termin heften möchte (`resulting_appointment_id` ist dafür da, aber die Oberfläche fragt nicht danach).
+
+**Anker.** `supabase/migrations/20261010110000_por_009_platform_appointment_requests.sql` (Tabelle, `request_platform_appointment`, `platform_appointment_requests`, `withdraw_platform_appointment_request`, Klasse `terminwunsch` in `apply_retention`); `WUNSCHTAGE` in `src/features/platform/Wunschfelder.tsx`; `terminwunsch` in `src/features/retention/klassen.ts`; Tests `supabase/tests/platform-appointment-requests.test.ts`, `retention-run.test.ts`, `Terminwunsch.test.tsx`.
+
+**Änderungspfad.** Anderer Horizont: `WUNSCHTAGE` und der Check `cardinality(preferred_days) <= 14` in einer neuen Migration · Aufwand `klein`. Längere oder kürzere Frist: die Regel `terminwunsch` in `apply_retention` · Aufwand `klein`. Wunsch als Terminzustand `requested`: eigenes Epic mit ADR-018-Änderung · Aufwand `groß`.
+
+### ANN-247 — Absagewunsch über die Plattform: Eingang ist die Wunschzeit, die Frist rechnet der Server, der Hinweis zum Ausfallhonorar hat einen Wortlaut
+
+Recht · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutz- und Rechtsberatung vor echten Daten (Prüfpaket); Jannes in der Sichtung
+
+**Annahme.** Trägt die Praxis eine Absage aus einem Absagewunsch ein (`cancel_appointment_from_request`), gilt als Eingang der Absage der Zeitpunkt, zu dem die Person den Wunsch abgeschickt hat – nicht der Zeitpunkt, an dem die Praxis ihn bearbeitet (DSN-001 D4). Ob eine Absage „zu spät“ ist, rechnet allein der Server mit `app.cancellation_notice_period()` (24 Stunden, ADR-018 Punkt 8) und liefert es als `late_notice` an die Plattform; die Oberfläche zeigt davor den Hinweis in einem Wortlaut, der auch in der Patienteninformation steht (`AUSFALLHONORAR_REGEL`, `AUSFALLHONORAR_SPAET`, `AUSFALLHONORAR_RECHTZEITIG`). Die Plattform entscheidet nicht über das Honorar; Grund `patient_request`, Verzicht und Erfassung bleiben bei der Praxis (ABN-EPIC-001). Der Eingang wird für `cancel_appointment` in Datum und Uhrzeit der Praxiszeitzone übersetzt; in der doppelten Stunde der Zeitumstellung kann er dadurch um eine Stunde verrutschen (Zweitreview, hingenommen).
+
+**Begründung.** Wer rechtzeitig absagt, darf nicht dafür zahlen, dass das Büro den Wunsch erst am nächsten Morgen liest – das ist der Sinn eines Absagewegs rund um die Uhr (PROJECT_PRINCIPLES.md 4.6). Ein Hinweis vor dem Abschicken ist Transparenzpflicht gegenüber der Person (§ 630c BGB sinngemäß, AGB-Recht); er muss mit dem Wortlaut übereinstimmen, den die Person bei der Aufnahme gelesen hat, sonst widerspricht sich die Praxis. Unsicher: ob eine Absage über die Plattform rechtlich als „Zugang“ beim Praxisinhaber gilt, bevor jemand sie liest (§ 130 BGB: Zugang bei Abrufbarkeit unter gewöhnlichen Umständen – spricht dafür), und ob die Frist am Wochenende anders gelten müsste.
+
+**Anker.** `supabase/migrations/20261010130000_por_011_practice_requests.sql` (`cancel_appointment_from_request`: `received_on`/`received_at` aus `created_at` des Wunsches); `late_notice` in `20261010120000_por_010_platform_appointment_change.sql`; `src/lib/ausfallhonorar.ts` (ein Wortlaut für Plattform und `src/features/datenschutz/patienteninformation.ts`); Tests `supabase/tests/platform-requests-practice.test.ts` („D4“), `platform-appointment-change.test.ts`, `Terminaenderung.test.tsx`, `PlatformRequests.test.tsx`.
+
+**Änderungspfad.** Eingang = Bearbeitungszeit: in `cancel_appointment_from_request` `now()` statt `created_at` · Aufwand `klein`. Anderer Wortlaut: nur `src/lib/ausfallhonorar.ts` · Aufwand `klein`. Frist mit Wochenendregel: `app.cancellation_notice_period` / `app.is_late_cancellation` (ADR-018-Änderung) · Aufwand `mittel`.
+
+### ANN-248 — Befundbogen vorab: nur die Person selbst oder die rechtliche Vertretung, nur Instrumente mit `ausgefuellt_von: patient`, Absenden heißt abgeschlossen mit Herkunft `platform`
+
+Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+
+**Annahme.** Über die Plattform füllt eine Person einen Befundbogen vorab aus, wenn ihr Zugang das Recht `questionnaire` hat: die Person selbst und eine rechtliche Vertretung, nie eine Begleitung. Angeboten werden nur aktive Instrumente, deren Definition `ausgefuellt_von: 'patient'` trägt (heute der Anamnesebogen); die Erhebung trägt `source = 'platform'` und `source_access_id`. Ein Entwurf bleibt speicherbar; **Absenden schließt die Erhebung ab** – danach kann die Person sie weder ändern noch löschen, die Praxis sieht sie in der Akte mit dem Vermerk „Über die Plattform ausgefüllt“. Die Plattform sieht nur ihre eigenen Erhebungen (`source = 'platform'`), nie die der Praxis. Die Prüfung gegen die Definition läuft dieselbe wie in der Praxis (ANN-219); Auswertungen (Scores) rechnet weiter nur die Praxisseite.
+
+**Begründung.** DSN-001 4.1: „Befundbogen vorab, etwa 10 Minuten“. Eine Begleitung liest mit und schreibt Terminwünsche, aber Angaben zur eigenen Gesundheit macht die Person selbst (ADR-023 Punkt 19, ANN-206). Herkunft am Datensatz statt im Protokoll (ADR-010 Fassung 3). Abschluss beim Absenden, weil eine Erhebung, die die Person nachträglich ändern kann, für die Therapeut:in keine verlässliche Grundlage ist; wer sich vertippt hat, sagt es beim Termin (Dokumentationsgrundsatz wie ANN-119). Unsicher: ob die Vorabangaben eine eigene Information nach Art. 13 DSGVO brauchen (die Patienteninformation nennt die Plattform bereits).
+
+**Anker.** `supabase/migrations/20261010140000_por_012_platform_questionnaire.sql` (`source`, `source_access_id`, Recht `questionnaire` in `app.platform_access_allows`, `app.platform_questionnaire_instrument`, `platform_questionnaire`, `save_platform_questionnaire_response`, `complete_platform_questionnaire_response`, `discard_platform_questionnaire_response`); `fuerDiePlattform` in `src/features/platform/instrumentwahl.ts`; Vermerk in `src/features/assessments/PatientBefundPage.tsx`; Tests `supabase/tests/platform-questionnaire.test.ts`, `Befundbogen.test.tsx`, `PatientBefundPage.test.tsx`.
+
+**Änderungspfad.** Auch für Begleitungen: `questionnaire` in `app.platform_access_allows` zur Gruppe `request` · Aufwand `klein`. Änderbar nach dem Absenden: `complete_platform_questionnaire_response` setzt `entwurf` statt `abgeschlossen`, Akte zeigt den Stand · Aufwand `mittel`. Weitere Instrumente: `ausgefuellt_von: 'patient'` in der Definition, keine Codeänderung · Aufwand `klein`.
+
+### ANN-249 — Freigegebene Dokumente: Freigabe einzeln am Datensatz durch owner, Therapeut:in oder Teamleitung; nie Fotos; Abruf über die Plattform protokolliert als `patient_file.downloaded`
+
+Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+
+**Annahme.** Eine Datei der Akte erscheint auf der Plattform erst, wenn die Praxis sie **einzeln** freigibt (`released_at`, `released_by`); das dürfen die Rollen, die klinische Dateien schreiben (`app.can_write_clinical_patient_files`: owner, therapist, team_lead), nicht das Büro. Patientenfotos und Dokumentationsfotos sind nie freigebbar (Constraint). Die Freigabe ist jederzeit widerrufbar; danach ist auch ein ausgegebener Verweis wertlos, weil der Lesepfad der Ablage (`app.may_read_patient_file_object`) die Freigabe beim Abruf prüft. Die Plattform zeigt Bilder in der Anwendung und gibt PDFs auf das Gerät; jeder Abruf über die Plattform wird als bestehende Aktion `patient_file.downloaded` mit `actor_kind = platform` bzw. `representative` protokolliert – keine neue Auditaktion. Im Training gibt es keine Dokumente. Rechte: `read` des Zugangs (Begleitung liest mit).
+
+**Begründung.** DSN-001 D3: „freigegebene Dokumente“, nicht die Akte. Freigabe statt Übergabe-Kopie, weil das Original in der Ablage bleibt (ADR-017 Punkt 10) und der Widerruf sonst wirkungslos wäre. Fotos ausgeschlossen, weil ihre Einwilligung einen anderen Zweck hat (ADR-017 Fassung 3, ANN-216) und ein Foto ohne Kontext der Person nicht hilft. `patient_file.downloaded` steht schon im Katalog; die Plattform ist nur ein weiterer Akteur (ADR-010 Fassung 3, ADR-023 Punkt 24). Unsicher: ob ein Arztbrief Dritter (der Ärzt:in) ohne Weiteres an die Person herausgegeben werden darf – § 630g BGB gibt der Person Einsicht in die vollständige Akte, spricht dafür.
+
+**Anker.** `supabase/migrations/20261010160000_por_014_platform_files.sql` (`released_at`/`released_by`, Constraints `patient_files_release_stamp`, `patient_files_release_not_photo`, `set_patient_file_release`, `platform_files`, `issue_platform_file_link`, Plattformzweig in `app.may_read_patient_file_object`); `setzeFreigabe` in `src/features/files/api.ts`; `darfFreigeben`/`istFoto` in `Dateiliste.tsx`; `ladeDokumentHerunter`/`ladeDokumentZumAnzeigen` in `src/features/platform/api.ts`; Tests `supabase/tests/platform-files.test.ts`, `Dateiliste.test.tsx`, `Dokumente.test.tsx`.
+
+**Änderungspfad.** Büro darf freigeben: Rollenprüfung in `set_patient_file_release` · Aufwand `klein`. Freigabe je Dokumentart statt je Datei: eigene Regel in `platform_files` · Aufwand `mittel`. Ohne Protokoll des Abrufs: `issue_platform_file_link` ohne Audit-Insert – nur mit ADR-010-Änderung · Aufwand `klein`.
+
+### ANN-250 — Eigene Rechnungen auf der Plattform: nur ausgestellte, als Snapshot der Praxis, mit Zahlungsstand und Storno-Kette; Recht `billing`
+
+Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+
+**Annahme.** Die Plattform zeigt Rechnungen des eigenen Verhältnisses, sobald sie **ausgestellt** sind – nie Entwürfe –, als dasselbe Blatt, das die Praxis druckt (Snapshot, ADR-009 Punkt 10), dazu den vom Server gerechneten Zahlungsstand (bezahlt, teilweise, offen, überfällig, storniert) und die Nummern von Storno, Vorgänger und Korrekturrechnung. Auch Rechnungen an einen anderen Adressaten (Beihilfestelle, Angehörige) sieht die behandelte Person – mit dem Adressaten aus dem Snapshot –, weil es ihre Behandlung ist (ADR-023 Punkt 16); der Adressat selbst hat keinen Zugang. Recht `billing` (ABN-010): die Person selbst, eine Begleitung nur mit dem Häkchen „Rechnungen und Zahlungen sind sichtbar“, eine Vertretung mit Vermögenssorge. Steuernummer und Bankverbindung der Praxis stehen mit auf dem Blatt, ebenso Geburtsdatum und Behandlungsgrundlage mit Diagnose, wie auf dem Druck der Praxis – eine Beihilfe verlangt beides (Zweitreview). Keine Zahlfunktion.
+
+**Begründung.** DSN-001 D3: eigene Rechnungen ohne eigenen Schritt. Der Snapshot ist der Beleg, den die Person auch auf Papier bekäme – eine zweite Darstellung widerspräche ADR-009 Punkt 12 (Beträge nur vom Server). Entwürfe sind interne Arbeit der Praxis. Zahlungsstand aus denselben Funktionen wie die Praxisseite (`app.invoice_paid_cents`, `app.invoice_payment_state`), damit die Person nichts anderes liest als das Büro. Unsicher: ob eine Beihilferechnung die Person verwirrt, wenn sie nicht zahlen soll – die Zeile „an Beihilfestelle“ sagt es, erklärt es aber nicht.
+
+**Anker.** `supabase/migrations/20261010150000_por_013_platform_invoices.sql` (`platform_invoices`, `platform_invoice`); `zahlungsstand`, `anJemandAnderen`, `positionen` in `src/features/platform/zahlungsstand.ts`; Tests `supabase/tests/platform-invoices.test.ts`, `Rechnungen.test.tsx`.
+
+**Änderungspfad.** Rechnung nur für den Adressaten: Filter `recipient.kind = 'self'` in beiden Funktionen · Aufwand `klein`. Ohne Diagnose oder Geburtsdatum auf der Plattform: die Schlüssel in `platform_invoice` aus `document` entfernen (`- 'treatment_bases'`) · Aufwand `klein`. Ohne Bankverbindung auf der Plattform: Schlüssel aus `document` in `platform_invoice` entfernen · Aufwand `klein`. Online bezahlen: eigenes Epic nach Anbieterprüfung (ADR-002) · Aufwand `groß`.
+
+### ANN-251 — Eigene Termine auf der Plattform: künftige und die der letzten zwölf Monate, feste Spaltenliste ohne Dokumentation
+
+Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+
+**Annahme.** Die Projektion `platform_appointments` liefert die Termine des eigenen Verhältnisses: alle künftigen und die vergangenen der letzten zwölf Monate (`app.platform_appointment_history()`), mit Beginn, Ende, Terminart, Zustand in den Worten der Person (bestätigt, durchgeführt, nicht erschienen, abgesagt), Name der behandelnden Person, Standort bzw. Besuchsadresse, Fristkennzeichen und offenem Wunsch – und nichts aus der Dokumentation, kein Honorar, keine Notiz der Praxis (feste Spaltenliste, ADR-023 Punkt 22). Dokumentierte und abgerechnete Termine erscheinen als „durchgeführt“ bzw. „nicht erschienen“ nach `fee_basis`; interne Termine und Fehlzeiten nie. Über eine Vertretung ist das Lesen protokolliert (Punkt 24), das eigene nicht.
+
+**Begründung.** DSN-001 4.1 und D3: „nächster Termin“, „alle Termine“. Zwölf Monate decken eine Verordnungsserie und die Rückfrage zur letzten Rechnung ab; ältere Termine stehen auf den Rechnungen (ANN-250). Zustände werden übersetzt, weil `documented`/`invoiced` Begriffe der Praxis sind, die Person aber wissen will, ob der Termin stattgefunden hat. Datensparsamkeit (PROJECT_PRINCIPLES.md 3.2): Was die Person nicht braucht, verlässt den Server nicht. Unsicher: ob zwölf Monate zu kurz sind, wenn eine Behandlung pausiert und wieder aufgenommen wird.
+
+**Anker.** `supabase/migrations/20261010100000_por_008_platform_appointments.sql` (`app.platform_appointment_history`, `platform_appointments`; neu gefasst in `20261010120000_por_010_platform_appointment_change.sql`); `terminBeschreibung` in `src/features/platform/terminbeschreibung.ts`; Tests `supabase/tests/platform-appointments.test.ts` (Spaltenliste, Fremdzugriff), `Termine.test.tsx`.
+
+**Änderungspfad.** Anderer Zeitraum: `app.platform_appointment_history` in einer neuen Migration · Aufwand `klein`. Weitere Spalten (etwa das Honorar): Spaltenliste in `platform_appointments` und Test der Datensparsamkeit · Aufwand `klein`, vorher ADR-023 Punkt 22 prüfen.

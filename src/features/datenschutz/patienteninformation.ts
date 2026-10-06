@@ -1,3 +1,4 @@
+import { AUSFALLHONORAR_REGEL } from '@/lib/ausfallhonorar';
 /**
  * Die zwei Blätter für die Aufnahme (PAT-006): Datenschutzinformation nach
  * Art. 13 DSGVO und die Regel zum Ausfallhonorar.
@@ -92,12 +93,7 @@ export function datenschutzinformation(praxis: string): Abschnitt[] {
 export function ausfallhonorarRegel(): Abschnitt {
   return {
     titel: 'Absagen und Ausfallhonorar',
-    absaetze: [
-      'Einen Termin, den Sie nicht wahrnehmen können, sagen Sie bitte spätestens 24 Stunden vor Beginn ab. Maßgeblich ist, wann Ihre Absage bei uns eingeht — auch auf dem Anrufbeantworter.',
-      'Geht die Absage weniger als 24 Stunden vor Beginn ein, berechnen wir ein Ausfallhonorar. Genau 24 Stunden vorher genügt.',
-      'Bei einem Hausbesuch gilt dasselbe, wenn wir Sie nicht antreffen: Wir warten 15 Minuten, klingeln und rufen Sie an. Erreichen wir Sie so nicht, berechnen wir ein Ausfallhonorar.',
-      'Sagen wir einen Termin ab, entsteht für Sie selbstverständlich keine Gebühr.',
-      'Die Höhe des Ausfallhonorars steht in unserer aktuellen Preisliste.',
-    ],
+    // Ein Wortlaut für Praxis und Plattform (POR-010, ANN-247).
+    absaetze: [...AUSFALLHONORAR_REGEL],
   };
 }
