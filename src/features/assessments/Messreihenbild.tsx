@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
 import { beschriftung } from './darstellung';
+import { BILD_BREITE, schriftInEinheiten } from './messreihenSchrift';
 import {
   ereignisartTexte,
   tagZahl,
@@ -22,30 +23,12 @@ import {
  * Unter dem Bild stehen die Werte als Text — die Rohdaten, lesbar auch ohne
  * Bild und für Vorlesesoftware.
  */
-const BREITE = 320;
+const BREITE = BILD_BREITE;
 const HOEHE = 150;
 const LINKS = 26;
 const RECHTS = 8;
 const OBEN = 18;
 const UNTEN = 26;
-
-/**
- * Schriftgröße im Bild, in Bildeinheiten (RSP-09; Runde 2, BEF-068 Option 2).
- * Das Bild ist 320 Einheiten breit und skaliert mit. 13 Einheiten ergeben erst
- * ab rund 295 px Bildbreite 12 px am Schirm; am Telefon ist das Bild schmaler.
- * Seit Runde 2 rechnet die Schrift aus der gerenderten Breite, sodass sie nie
- * unter 12 px fällt (Handoff Schrift und Knöpfe, Abschnitt 3). Nach oben
- * begrenzt, damit Nummern über dem Bild nicht angeschnitten werden.
- */
-const SCHRIFT_MIN = 13;
-const SCHRIFT_MAX = 18;
-
-/** Bildeinheiten, die bei `breitePx` Bildbreite 12 px am Schirm ergeben. */
-export function schriftInEinheiten(breitePx: number | null): number {
-  if (!breitePx || breitePx <= 0) return SCHRIFT_MIN;
-  const noetig = Math.ceil(((12 * BREITE) / breitePx) * 10) / 10;
-  return Math.min(SCHRIFT_MAX, Math.max(SCHRIFT_MIN, noetig));
-}
 
 /** Die gerenderte Breite des Bildes; ohne ResizeObserver (jsdom) `null`. */
 function useBildbreite() {
