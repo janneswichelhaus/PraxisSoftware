@@ -927,4 +927,119 @@ describe('Rechnung', () => {
       await expect(asUser(fremd.owner, ENTWURF, [patients.erika, await monat()])).rejects.toThrow();
     });
   });
+
+  describe('Rechnungsliste mit Suche, Filter und Gesamtzahl (ABR-033, BEF-061)', () => {
+    interface Zeile {
+      id: string;
+      status: string;
+      invoice_number: string | null;
+      patient_name: string;
+      total_count: number;
+    }
+    const SUCHE =
+      'select * from public.list_invoices(p_limit => $1, p_offset => $2, p_search => $3, p_status => $4)';
+
+    /** Ein ausgestellter Posten für Erika, ein Entwurf für Petra. */
+    async function zweiRechnungen(): Promise<{
+      ausgestellt: string;
+      nummer: string;
+      entwurf: string;
+    }> {
+      await leistung(KATALOG.kg, { stundeImMonat: 30 });
+      await leistung(KATALOG.kg, { stundeImMonat: 32, patient: patients.petra, grundlage: null });
+      const m = await monat();
+      const { rows: a } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        m,
+      ]);
+      const { rows: n } = await asUserCommitted<{ nummer: string }>(users.office, AUSSTELLEN, [
+        a[0]!.id,
+      ]);
+      const { rows: e } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.petra,
+        m,
+      ]);
+      return { ausgestellt: a[0]!.id, nummer: n[0]!.nummer, entwurf: e[0]!.id };
+    }
+
+    async function suche(
+      limit: number,
+      offset: number,
+      text: string | null,
+      zustand: string | null,
+    ): Promise<Zeile[]> {
+      const { rows } = await asUser<Zeile>(users.office, SUCHE, [limit, offset, text, zustand]);
+      return rows;
+    }
+
+    it('nennt die Treffer vor dem Kürzen und blättert weiter', async () => {
+      const { ausgestellt, entwurf } = await zweiRechnungen();
+      const erste = await suche(1, 0, null, null);
+      expect(erste).toHaveLength(1);
+      expect(erste[0]!.total_count).toBe(2);
+      const zweite = await suche(1, 1, null, null);
+      expect(zweite).toHaveLength(1);
+      expect([erste[0]!.id, zweite[0]!.id].sort()).toEqual([ausgestellt, entwurf].sort());
+      expect(await suche(1, 2, null, null)).toEqual([]);
+    });
+
+    it('filtert nach Zustand', async () => {
+      const { ausgestellt, entwurf } = await zweiRechnungen();
+      expect((await suche(100, 0, null, 'draft')).map((z) => z.id)).toEqual([entwurf]);
+      expect((await suche(100, 0, null, 'open')).map((z) => z.id)).toEqual([ausgestellt]);
+      expect(await suche(100, 0, null, 'paid')).toEqual([]);
+      expect(await suche(100, 0, null, 'cancelled')).toEqual([]);
+      const offen = await suche(100, 0, null, 'open');
+      expect(offen[0]!.total_count).toBe(1);
+    });
+
+    it('sucht nach Nummer und Name, ohne Platzhalter', async () => {
+      const { ausgestellt, nummer, entwurf } = await zweiRechnungen();
+      expect((await suche(100, 0, nummer, null)).map((z) => z.id)).toEqual([ausgestellt]);
+      const petra = await suche(100, 0, '  PETRA ', null);
+      expect(petra.map((z) => z.id)).toEqual([entwurf]);
+      expect(await suche(100, 0, '%', null)).toEqual([]);
+      expect(await suche(100, 0, 'gibt-es-nicht', null)).toEqual([]);
+    });
+
+    it('weist einen unbekannten Filter und eine zu lange Suche ab', async () => {
+      await expect(asUser(users.office, SUCHE, [100, 0, null, 'alles'])).rejects.toMatchObject({
+        code: '22023',
+      });
+      await expect(
+        asUser(users.office, SUCHE, [100, 0, 'x'.repeat(101), null]),
+      ).rejects.toMatchObject({ code: '22023' });
+    });
+
+    it('zählt offene Posten und Zahlungen vor dem Kürzen', async () => {
+      const { ausgestellt } = await zweiRechnungen();
+      const { rows: offen } = await asUser<{ total_count: number }>(
+        users.office,
+        'select * from public.list_open_items(1)',
+      );
+      expect(offen[0]!.total_count).toBe(1);
+      await asUserCommitted(
+        users.office,
+        `select public.record_payment($1::uuid, 1000, current_date, 'bank_transfer', 'incoming', null)`,
+        [ausgestellt],
+      );
+      const { rows: zahlungen } = await asUser<{ total_count: number }>(
+        users.office,
+        'select * from public.list_payments(1, 0)',
+      );
+      expect(zahlungen[0]!.total_count).toBe(1);
+      // Die Zahlung hält die Rechnung fest; das Aufräumen davor kennt sie nicht.
+      await asPostgres('delete from public.payments');
+    });
+
+    it('weist die Therapeutin ab, auch mit Suche', async () => {
+      await zweiRechnungen();
+      await erwarteAbgewiesenenLeseversuch(
+        users.therapist,
+        SUCHE,
+        [100, 0, 'Erika', null],
+        'invoicing.read',
+      );
+    });
+  });
 });

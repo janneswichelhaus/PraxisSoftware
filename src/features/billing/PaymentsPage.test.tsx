@@ -34,6 +34,7 @@ function zahlung(rest: Partial<BillingApi.ZahlungMitRechnung> = {}): BillingApi.
     note: null,
     voided_at: null,
     void_reason: null,
+    total_count: 1,
     ...rest,
   };
 }
@@ -174,5 +175,13 @@ describe('PaymentsPage', () => {
 
       expect(await screen.findByRole('link', { name: 'RG-2026-0001' })).toBeInTheDocument();
     });
+  });
+});
+
+describe('PaymentsPage: gekürzte Liste (ABR-034, BEF-061)', () => {
+  it('sagt, dass nur die neuesten Zahlungen stehen', async () => {
+    fetchZahlungen.mockResolvedValue([zahlung({ total_count: 250 })]);
+    renderWithProviders(<PaymentsPage user={testUser(['office'])} />, '/abrechnung/zahlungen');
+    expect(await screen.findByText('Die 1 neuesten von 250 Zahlungen')).toBeInTheDocument();
   });
 });

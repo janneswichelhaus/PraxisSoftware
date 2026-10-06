@@ -163,6 +163,7 @@ const rechnungen: Rechnung[] = [
     treatment_basis_id: null,
     basis_kind: null,
     basis_issued_on: null,
+    total_count: 2,
   },
   {
     id: AUSGESTELLT,
@@ -188,6 +189,7 @@ const rechnungen: Rechnung[] = [
     treatment_basis_id: null,
     basis_kind: null,
     basis_issued_on: null,
+    total_count: 2,
   },
 ];
 
@@ -209,6 +211,7 @@ const offenePosten: OffenerPosten[] = [
     currency: 'EUR',
     overdue: false,
     open_total_cents: 15_000,
+    total_count: 1,
   },
 ];
 
@@ -262,7 +265,9 @@ client.setQueryData(['abrechnung-offene-termine'], offeneTermine);
 client.setQueryData(['abrechnung-leistungen'], leistungen);
 client.setQueryData(['abrechnung-vorschlag', offeneTermine[0]!.appointment_id], vorschlag);
 client.setQueryData(['rechnungs-kandidaten'], kandidaten);
-client.setQueryData(['rechnungen'], rechnungen);
+// Die Rechnungsliste blättert seit ABR-034: Schlüssel mit Suche, Filter
+// und Monat, Daten als Seiten.
+client.setQueryData(['rechnungen', '', '', ''], { pages: [rechnungen], pageParams: [0] });
 client.setQueryData(['offene-posten'], offenePosten);
 client.setQueryData(
   ['rechnung', ENTWURF],

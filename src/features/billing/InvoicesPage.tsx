@@ -8,7 +8,6 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { Textlink } from '@/components/ui/Textlink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
@@ -16,16 +15,14 @@ import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
   bereichLabels,
   createEntwurf,
-  empfaengerartLabels,
   fetchKandidaten,
   fetchOffenePosten,
-  fetchRechnungen,
-  zahlungsstandLabels,
   type Kandidat,
   type OffenerPosten,
 } from './api';
-import { klammerText, monatsname, zahlungsTon, zeitraumText } from './anzeige';
+import { klammerText, monatsname, zeitraumText } from './anzeige';
 import { Zahlungsformular, type Buchung } from './Zahlungsformular';
+import { Rechnungsliste } from './Rechnungsliste';
 
 /**
  * Rechnungen (ABR-003).
@@ -49,6 +46,21 @@ import { Zahlungsformular, type Buchung } from './Zahlungsformular';
  * der Einstiegsseite"). Gebucht wird an derselben Zeile — die Rechnung, um
  * die es geht, steht dabei im Blick.
  */
+
+/**
+ * Anzahl und Summe der offenen Posten - beide vom Server, über alle Posten,
+ * auch wenn die Liste gekürzt ist (ABR-033, BEF-061 Option 1). Bis hierher
+ * stand die gekürzte Anzahl neben der ungekürzten Summe.
+ */
+function postenHinweis(posten: OffenerPosten[]): string {
+  const erster = posten[0]!;
+  const gesamt = erster.total_count ?? posten.length;
+  const anzahl = gesamt === 1 ? 'Eine Rechnung' : `${gesamt} Rechnungen`;
+  const summe = `${formatEuro(erster.open_total_cents, erster.currency)} offen`;
+  return posten.length < gesamt
+    ? `${anzahl} · ${summe} · die ${posten.length} am frühesten fälligen stehen hier`
+    : `${anzahl} · ${summe}`;
+}
 
 /** Die Meldung nach einer Buchung am Posten - dort, wo das Formular stand. */
 interface Buchungsmeldung {
@@ -74,12 +86,6 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
     retry: false,
   });
 
-  const rechnungen = useQuery({
-    queryKey: ['rechnungen'],
-    queryFn: fetchRechnungen,
-    retry: false,
-  });
-
   // Nach der Buchung schließt das Formular, und ein vollständig bezahlter
   // Posten verschwindet ganz. Ohne Meldung am Ort fiele der Fokus an den
   // Seitenanfang, und ob die Buchung ankam, wäre zu erschließen (ABR-10).
@@ -101,10 +107,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
           // alle offenen Posten, auch wenn die Liste gekürzt ist. Hier wird
           // deshalb nichts aufaddiert.
           posten.data && posten.data.length > 0
-            ? `${posten.data.length === 1 ? 'Eine Rechnung' : `${posten.data.length} Rechnungen`} · ${formatEuro(
-                posten.data[0]!.open_total_cents,
-                posten.data[0]!.currency,
-              )} offen`
+            ? postenHinweis(posten.data)
             : // Ohne offene Posten erklärt die Leermeldung den Abschnitt (UX-005i).
               undefined
         }
@@ -172,92 +175,7 @@ export function InvoicesPage({ user }: { user: CurrentUser }) {
         </ul>
       </Section>
 
-      <Section titel="Rechnungen" rahmen>
-        {rechnungen.isPending ? <LoadingState label="Rechnungen werden geladen …" /> : null}
-        {rechnungen.isError ? (
-          <ErrorState
-            title="Die Rechnungen konnten nicht geladen werden."
-            description="Bitte die Verbindung prüfen und erneut versuchen."
-            onErneut={() => rechnungen.refetch()}
-          />
-        ) : null}
-        {rechnungen.data && rechnungen.data.length === 0 ? (
-          <EmptyState title="Noch keine Rechnung" />
-        ) : null}
-
-        <ul className="divide-line divide-y">
-          {(rechnungen.data ?? []).map((rechnung) => (
-            <li key={rechnung.id} className="py-3">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                {/* Die Nummer ist der Weg zur Rechnung; ein eigener Knopf je
-                    Zeile entfällt. Der Name sagt Vorlesesoftware, wohin
-                    (UX-005i). */}
-                <Textlink
-                  to={`/abrechnung/rechnungen/${rechnung.id}`}
-                  alleinstehend
-                  className="text-liste font-medium"
-                  aria-label={
-                    rechnung.invoice_number
-                      ? `Rechnung ${rechnung.invoice_number} ansehen`
-                      : 'Entwurf ohne Nummer öffnen'
-                  }
-                >
-                  {rechnung.invoice_number ?? 'Ohne Nummer'}
-                </Textlink>
-                {/* „Ausgestellt" ist der Regelfall und trägt kein Abzeichen;
-                    nur der Entwurf steht dran (UX-005i). */}
-                {rechnung.status === 'draft' ? <Badge ton="neutral">Entwurf</Badge> : null}
-                {/* Storniert steht neben dem Zustand, nicht an seiner Stelle:
-                    Die Rechnung ist ausgestellt gewesen, und das bleibt sie
-                    (ABR-003c, ANN-079). */}
-                {rechnung.cancelled ? <Badge ton="neutral">Storniert</Badge> : null}
-                <span className="text-ink-muted text-sm">
-                  {klammerText(rechnung)} · {bereichLabels[rechnung.service_area]} ·{' '}
-                  {rechnung.patient_name}
-                </span>
-                <span className="text-ink text-liste ml-auto font-medium tabular-nums">
-                  {formatEuro(rechnung.total_cents, rechnung.currency)}
-                </span>
-              </div>
-
-              <p className="text-ink-muted mt-1 text-sm">
-                An {rechnung.recipient_name}
-                {rechnung.recipient_kind === 'self'
-                  ? ''
-                  : ` (${empfaengerartLabels[rechnung.recipient_kind] ?? 'Kostenträger'})`}
-                {rechnung.issued_on ? ` · ausgestellt am ${formatDate(rechnung.issued_on)}` : null}
-                {/* Eine stornierte Rechnung ist keine Forderung mehr; eine
-                    Zahlungsfrist an ihr wäre eine falsche Aussage (ABR-06). */}
-                {rechnung.due_on && !rechnung.cancelled
-                  ? ` · zahlbar bis ${formatDate(rechnung.due_on)}`
-                  : null}
-              </p>
-
-              {rechnung.status === 'issued' && !rechnung.cancelled ? (
-                <p className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-                  <Badge ton={zahlungsTon[rechnung.payment_state]}>
-                    {zahlungsstandLabels[rechnung.payment_state]}
-                  </Badge>
-                  {rechnung.overdue ? <Badge ton="kritisch">Überfällig</Badge> : null}
-                  {/* An einer bezahlten Rechnung sagt „Bezahlt" alles; der
-                      Betrag steht schon rechts (UX-005i). */}
-                  {rechnung.payment_state === 'paid' ? null : (
-                    <span className="text-ink-muted tabular-nums">
-                      {formatEuro(rechnung.paid_cents, rechnung.currency)} bezahlt
-                      {rechnung.outstanding_cents > 0
-                        ? ` · ${formatEuro(rechnung.outstanding_cents, rechnung.currency)} offen`
-                        : ''}
-                      {rechnung.outstanding_cents < 0
-                        ? ` · ${formatEuro(-rechnung.outstanding_cents, rechnung.currency)} zu viel`
-                        : ''}
-                    </span>
-                  )}
-                </p>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      </Section>
+      <Rechnungsliste />
     </>
   );
 }
