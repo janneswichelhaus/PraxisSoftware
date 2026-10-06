@@ -294,7 +294,7 @@ function OrtFormular({ standort, art }: { standort: Standort; art: Ortsart }) {
       </div>
 
       {treffer ? (
-        <div className="border-line rounded-card max-w-xl space-y-2 border p-3 text-sm">
+        <div className="border-line-strong max-w-xl space-y-2 border-l-2 py-1 pl-3 text-sm">
           <p>
             Treffer {GENAUIGKEIT_TEXT[treffer.wert.precision]}
             {treffer.wert.matchLabel ? `: ${treffer.wert.matchLabel}` : ''}.

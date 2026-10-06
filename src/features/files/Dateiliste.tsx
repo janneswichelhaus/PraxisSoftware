@@ -418,7 +418,9 @@ function Artkorrektur({
     <div
       role="group"
       aria-label={`Art von „${datei.display_name}“ korrigieren`}
-      className="border-line-strong bg-surface-sunken rounded-card mt-2 w-full border p-6"
+      // Wie eine Rückfrage: vertieft mit Linie links, kein Kasten in der
+      // Liste (Leitfaden L2).
+      className="border-line-strong bg-surface-sunken mt-2 w-full border-l-4 py-4 pr-4 pl-5"
     >
       <Dokumentartauswahl
         feldId={auswahlId}

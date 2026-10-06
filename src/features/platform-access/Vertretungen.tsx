@@ -87,7 +87,7 @@ export function Vertretungen({
           {laufend.length === 0 && !formularOffen ? (
             <p className="text-ink-muted mt-1 text-sm">Niemand handelt für diese Person.</p>
           ) : null}
-          <ul className="mt-2 flex flex-col gap-3">
+          <ul className="divide-line mt-2 flex flex-col divide-y">
             {laufend.map((v) => (
               <VertretungsEintrag
                 key={v.id}
@@ -200,7 +200,9 @@ function VertretungsEintrag({
     .join(', ');
 
   return (
-    <li className="rounded-card border-line border px-4 py-3">
+    // Zeilen mit Linien statt eigener Karten - der Abschnitt ist schon eine
+    // (Leitfaden L2).
+    <li className="py-3">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-ink font-medium">{v.representative_name}</span>
         <span className="text-ink-muted text-sm">{artText(v)}</span>
@@ -384,7 +386,7 @@ function VertretungEinrichten({
     <form
       onSubmit={absenden}
       aria-label="Vertretung einrichten"
-      className="rounded-card border-line bg-surface-sunken mt-3 flex flex-col gap-4 border p-4"
+      className="border-line-strong bg-surface-sunken mt-3 flex flex-col gap-4 border-l-4 py-4 pr-4 pl-5"
     >
       <fieldset className="flex flex-col gap-1">
         <legend className="text-ink text-sm font-medium">Art</legend>
@@ -509,7 +511,7 @@ function VertretungEinrichten({
               setEingewilligt(false);
             }}
           />
-          <div className="bg-surface border-line rounded-card border p-3 text-sm">
+          <div className="border-line-strong border-l-2 py-1 pl-3 text-sm">
             <p className="text-ink-muted mb-2">Bitte der Person zum Lesen geben.</p>
             {einwilligungBegleitung({
               begleitung: name,

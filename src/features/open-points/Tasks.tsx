@@ -142,7 +142,7 @@ function TaskForm({
       onSubmit={absenden}
       noValidate
       aria-label={task ? 'Aufgabe ändern' : 'Aufgabe anlegen'}
-      className="border-line-strong bg-surface-sunken rounded-card flex flex-col gap-4 border p-4 sm:p-6"
+      className="border-line-strong bg-surface-sunken flex flex-col gap-4 border-l-4 py-4 pr-4 pl-5 sm:py-6 sm:pr-6"
     >
       <Field
         feldId={titleId}

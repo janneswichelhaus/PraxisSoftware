@@ -121,7 +121,9 @@ export function AbrechnungAbschnitt({ appointmentId }: { appointmentId: string }
   // Abschnitt 6), und eine Spalte von 176 px für die Beschriftung ließe dem
   // Wert dort kaum Platz.
   return (
-    <Section titel="Abrechnung" rahmen>
+    // Ohne Rahmen: Der Abschnitt steht im Fenster der Terminaktionen
+    // (Leitfaden L2).
+    <Section titel="Abrechnung">
       <dl className="divide-line divide-y">
         <div className="py-2.5 first:pt-0">
           <dt className="text-ink-muted text-sm">Rechnung an</dt>

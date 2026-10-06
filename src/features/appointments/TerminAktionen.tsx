@@ -9,7 +9,6 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
 import { TerminMetazeile, TerminZeilen, Zeile } from './TerminKompakt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
-import { Card } from '@/components/ui/Card';
 import { MitteilungVermerken } from './MitteilungVermerken';
 import { AbrechnungAbschnitt } from './Abrechnungslage';
 import { useAbrechnungslage } from './useAbrechnungslage';
@@ -210,11 +209,12 @@ function ZustandKarte({
     return wiederOeffnen ? <div className="mt-6 flex">{wiederOeffnen}</div> : null;
   }
   return (
-    <Card className="mt-6">
+    // Im Fenster ohne eigene Karte, mit einer Linie darüber (Leitfaden L2).
+    <section className="border-line mt-6 border-t pt-4">
       <h2 className="text-ink text-h4 font-bold">{titel}</h2>
       <DetailList>{zeilen}</DetailList>
       {wiederOeffnen ? <div className="mt-3 flex">{wiederOeffnen}</div> : null}
-    </Card>
+    </section>
   );
 }
 
