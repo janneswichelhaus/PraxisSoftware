@@ -210,11 +210,21 @@
 
   /* Beschriftung in Leisten: Tableiste unter 640 px und die beschriftete
      Symbolspalte zwischen 640 und 1023 px (Handoff Rahmen 2026-10-05,
-     Abschnitt 2). 11 px ist der heutige Wert der Tableiste (ANN-111); das
-     Token benennt ihn, damit kein freier Wert mehr im Code steht. Ob er auf
-     12 px wandert, entscheidet Runde 2 (BEF-068, Option 2). Wie `text-liste`
-     bewusst ohne Unter-Token für die Zeilenhöhe. */
-  --text-leiste: 0.6875rem;
+     Abschnitt 2). Seit Runde 2 (Handoff Schrift und Knöpfe 2026-10-06,
+     Variante L-B) 12 px statt 11: „Organisation“ in 12/600 ist 69 px breit,
+     bei 360 px stehen der Tableiste ohne seitlichen Innenabstand 72 px je
+     Ziel zur Verfügung. Wie `text-liste` bewusst ohne Unter-Token für die
+     Zeilenhöhe. */
+  --text-leiste: 0.75rem;
+
+  /* Kleingedrucktes am Seitenende, nur im Baustein `Kleingedrucktes`
+     (BEF-068 Option 2, Variante K-A): so groß wie der Hinweis am Feld. */
+  --text-kleingedruckt: 0.875rem;
+
+  /* Die Absenderzeile über dem Anschriftfeld in Briefkopf und Berichtsblatt -
+     nur auf Papier, dort rund 8 pt, die übliche Größe der Rücksendeangabe.
+     Die einzige Schrift unter 12 px (Handoff Schrift und Knöpfe, Abschnitt 0). */
+  --text-absenderzeile: 0.6875rem;
 
   /* Der Strich der Auswahl am linken Rand von Seitenleiste und Symbolspalte
      (BEF-048, Option 1): Er trägt die Auswahl auch dort, wo die gefüllte

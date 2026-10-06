@@ -379,14 +379,23 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   });
 });
 
+describe('Tokens aus dem Handoff Schrift und Knöpfe vom 2026-10-06 (SKN-001)', () => {
+  it('fuehrt Kleingedrucktes (14 px) und Absenderzeile (11 px) als Token ohne eigene Zeilenhoehe', () => {
+    expect(css).toMatch(/--text-kleingedruckt:\s*0\.875rem;/);
+    expect(css).toMatch(/--text-absenderzeile:\s*0\.6875rem;/);
+    expect(css).not.toMatch(/--text-kleingedruckt--line-height\s*:/);
+    expect(css).not.toMatch(/--text-absenderzeile--line-height\s*:/);
+  });
+});
+
 describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
   /**
    * Spezifikation Abschnitt 2, `docs/design/handoff-2026-10-05-rahmen.md`:
    * drei Masse, dazu die Farben der installierten App. Die 11 px der
    * Tableiste sind seit BEF-068 ein benannter Wert, kein freier mehr.
    */
-  it('fuehrt die Beschriftung der Leisten mit 11 px als Token, ohne eigene Zeilenhoehe', () => {
-    expect(css).toMatch(/--text-leiste:\s*0\.6875rem;/);
+  it('fuehrt die Beschriftung der Leisten mit 12 px als Token, ohne eigene Zeilenhoehe (Runde 2, L-B)', () => {
+    expect(css).toMatch(/--text-leiste:\s*0\.75rem;/);
     expect(css).not.toMatch(/--text-leiste--line-height\s*:/);
     // Die Tableiste liest das Token statt des freien Werts.
     const geruest = readFileSync(join(stamm, 'src/app/AppShell.tsx'), 'utf8');
