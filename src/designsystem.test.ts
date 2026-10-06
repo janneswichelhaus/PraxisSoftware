@@ -388,6 +388,31 @@ describe('Tokens aus dem Handoff Schrift und Knöpfe vom 2026-10-06 (SKN-001)', 
   });
 });
 
+describe('Kein Lesetext unter 12 px (BEF-068 Option 2, SKN-007)', () => {
+  /**
+   * Seit Runde 2 gilt im Design-System: keine Schrift unter 12 px. Die einzige
+   * Ausnahme, die Absenderzeile im Briefkopf auf Papier, hat ihr Token
+   * `text-absenderzeile`. Der Waechter haelt freie Werte in eckigen Klammern
+   * fern - in rem und in px.
+   */
+  const FREIE_GROESSE = /text-\[(\d*\.?\d+)(rem|px)\]/g;
+  const zuKlein = (zeile: string) =>
+    Array.from(zeile.matchAll(FREIE_GROESSE), (f) => f)
+      .filter((f) => (f[2] === 'rem' ? Number(f[1]) * 16 : Number(f[1])) < 12)
+      .map((f) => f[0]);
+
+  it('setzt keine freie Schriftgroesse unter 12 px', () => {
+    expect(funde(zuKlein)).toEqual([]);
+  });
+
+  it('erkennt zu kleine freie Werte (Gegenprobe)', () => {
+    expect(zuKlein('className="text-[0.6875rem] font-medium"')).toEqual(['text-[0.6875rem]']);
+    expect(zuKlein('className="text-[10px] leading-none"')).toEqual(['text-[10px]']);
+    expect(zuKlein('className="text-[0.75rem] text-[15px]"')).toEqual([]);
+    expect(zuKlein('className="text-absenderzeile text-xs"')).toEqual([]);
+  });
+});
+
 describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
   /**
    * Spezifikation Abschnitt 2, `docs/design/handoff-2026-10-05-rahmen.md`:

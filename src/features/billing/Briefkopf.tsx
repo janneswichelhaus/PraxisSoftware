@@ -66,7 +66,7 @@ export function Briefkopf({
           {/* Die Absenderzeile über dem Anschriftenfeld: klein, einzeilig,
               im Fenster sichtbar. Schwarz auf Papier: Grau bricht beim Fax
               und in der Kopie auf (ABR-28). */}
-          <p className="text-ink-muted print:text-ink border-line border-b pb-1 text-[0.6875rem]">
+          <p className="text-ink-muted print:text-ink border-line text-absenderzeile border-b pb-1">
             {absender.legal_name} · {strasse} · {absender.postal_code} {absender.city}
           </p>
           <address className="mt-3 leading-relaxed not-italic">

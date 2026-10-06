@@ -80,7 +80,7 @@ export function Berichtsblatt({
 
       <div className="mt-10 flex flex-wrap justify-between gap-8">
         <div className="min-w-[70mm]">
-          <p className="text-ink-muted border-line border-b pb-1 text-[0.6875rem]">
+          <p className="text-ink-muted border-line text-absenderzeile border-b pb-1">
             {absenderzeile}
           </p>
           {empfaenger ? (
