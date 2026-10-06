@@ -40,7 +40,8 @@ const ZIEL_APPS: readonly { readonly wert: NavigationApp; readonly label: string
 ];
 
 const stoppKnopf = kartenAktionKlassen();
-const tagKnopf = kartenAktionKlassen('primary');
+// Am Handy über die ganze Breite (Runde 3, Handoff Kalender und Tour).
+const tagKnopf = kartenAktionKlassen('primary', 'max-sm:w-full');
 
 function anschrift(stopp: Stopp): string {
   const t = stopp.termin;
