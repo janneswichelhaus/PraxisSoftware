@@ -439,9 +439,10 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       await screen.findByRole('heading', { name: 'Max Mustermann' });
 
       const beschriftung = rueckwegBeschriftung('/patienten');
-      expect(
-        screen.getByRole('link', { name: (name) => name.includes(beschriftung) }),
-      ).toHaveAttribute('href', '/patienten');
+      // Zeile und Pfeil (RAH-007) tragen dasselbe Wort und dasselbe Ziel.
+      const wege = screen.getAllByRole('link', { name: (name) => name.includes(beschriftung) });
+      expect(wege).toHaveLength(2);
+      for (const weg of wege) expect(weg).toHaveAttribute('href', '/patienten');
     });
 
     it('zeigt beim Ladefehler Überschrift, Handlung und einen neuen Versuch', async () => {
@@ -492,8 +493,36 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
     it('nimmt den Rueckweg mit', async () => {
       akteRendern(['office'], `/patienten/${PATIENT_ID}?zurueck=%2Fkalender%3Fansicht%3Dtag`);
 
-      const zurueck = await screen.findByRole('link', { name: /Zurück/ });
-      expect(zurueck).toHaveAttribute('href', '/kalender?ansicht=tag');
+      // Zwei Wege zum selben Ziel: die Zeile ab 640 px, der Pfeil in der
+      // Kopfkarte darunter (RAH-007).
+      await screen.findByRole('heading', { name: 'Max Mustermann' });
+      const wege = screen.getAllByRole('link', { name: /Zurück zum Kalender/ });
+      expect(wege).toHaveLength(2);
+      for (const weg of wege) expect(weg).toHaveAttribute('href', '/kalender?ansicht=tag');
+    });
+
+    it('fuehrt am Telefon mit einem Pfeil vor dem Namen zurueck (RAH-007, Variante 4b)', async () => {
+      akteRendern(['office']);
+
+      const name = await screen.findByRole('heading', { name: 'Max Mustermann' });
+      const wege = screen.getAllByRole('link', { name: /Zurück zu den Patient:innen/ });
+      expect(wege).toHaveLength(2);
+      const [zeile, pfeil] = wege as [HTMLElement, HTMLElement];
+      // Die Zeile ueber der Karte nur ab 640 px; der Pfeil nur darunter, als
+      // 40-px-Ziel in der Hauptfarbe, Chevron mit Strich 2, Name und Tooltip
+      // mit demselben Wortlaut.
+      expect(zeile.className.split(/\s+/)).toContain('max-sm:hidden');
+      expect(pfeil.className.split(/\s+/)).toEqual(
+        expect.arrayContaining(['size-10', 'sm:hidden', 'text-accent', 'rounded-button']),
+      );
+      expect(pfeil).toHaveAttribute('title', 'Zurück zu den Patient:innen');
+      expect(pfeil).toHaveAttribute('href', '/patienten');
+      expect(pfeil.querySelector('svg')).toHaveAttribute('stroke-width', '2');
+      expect(pfeil.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      // In der Kopfkarte, in der ersten Zeile vor dem Namen.
+      expect(pfeil.closest('header')).not.toBeNull();
+      expect(pfeil.compareDocumentPosition(name) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(pfeil.parentElement).toBe(name.parentElement);
     });
   });
 

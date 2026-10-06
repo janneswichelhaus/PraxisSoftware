@@ -31,7 +31,13 @@ import {
 } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
-import { istInternerPfad, mitRueckweg, RUECKWEG_PARAM } from '@/lib/rueckweg';
+import {
+  istInternerPfad,
+  leseRueckweg,
+  mitRueckweg,
+  RUECKWEG_PARAM,
+  rueckwegBeschriftung,
+} from '@/lib/rueckweg';
 import {
   ALTE_AKTENBEREICHE,
   aktenBereiche,
@@ -297,6 +303,18 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
   const hier = `${ort.pathname}${ort.search}`;
   const zeigtTermin = darfTerminePlanen && aktiv;
 
+  // Der Rückweg unter 640 px als Pfeil vor dem Namen (Handoff Rahmen vom
+  // 2026-10-05, Variante 4b, RAH-007): Die Zeile „← Zurück zu den
+  // Patient:innen" über der Kopfkarte kostete am Telefon eine Zeile, bevor
+  // der Name kam. Dasselbe Ziel wie die Zeile - der Rückweg aus der
+  // Adresszeile gewinnt (UX-012) -, derselbe Wortlaut als Name und Tooltip.
+  // 40 px in einer Karte mit 12 px Innenabstand: das Tippziel zählt mit dem
+  // Rand (Handoff 2026-10-01, Abschnitt 9). Ab 640 px bleibt die Zeile, der
+  // Pfeil geht.
+  const [suche] = useSearchParams();
+  const rueckwegZiel = leseRueckweg(suche, '/patienten');
+  const rueckwegText = rueckwegBeschriftung(rueckwegZiel);
+
   // Ein Knopf allein nutzt am Telefon die ganze Breite, zwei teilen sie sich;
   // ein zweizeiliger Text steht mittig (PAT-18, RSP-18).
   const knopf = 'flex-1 text-center sm:flex-none';
@@ -304,11 +322,34 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
   return (
     <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 px-4 py-3 sm:px-5 sm:py-4">
       <div className="min-w-0">
-        {/* Der Name als Seitentitel: 26 px am Telefon, 32 ab 640 px, in 800
-            (Design-Handoff 2026-10-01, Abschnitt 7). */}
-        <h1 className="text-accent text-h2-mobil sm:text-h2 tracking-display font-extrabold">
-          {fullName(patient)}
-        </h1>
+        {/* Die Namenszeile beginnt am Telefon 10 px vom Rand (Pfeil), alles
+            darunter bleibt auf den 16 der Karte. */}
+        <div className="-ml-1.5 flex items-center gap-1 sm:ml-0 sm:block">
+          <Link
+            to={rueckwegZiel}
+            aria-label={rueckwegText}
+            title={rueckwegText}
+            className="text-accent hover:bg-surface-sunken rounded-button inline-flex size-10 shrink-0 items-center justify-center transition-colors sm:hidden"
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 20 20"
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="m12.5 4.5-5.5 5.5 5.5 5.5" />
+            </svg>
+          </Link>
+          {/* Der Name als Seitentitel: 26 px am Telefon, 32 ab 640 px, in 800
+              (Design-Handoff 2026-10-01, Abschnitt 7). */}
+          <h1 className="text-accent text-h2-mobil sm:text-h2 tracking-display min-w-0 font-extrabold">
+            {fullName(patient)}
+          </h1>
+        </div>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
           <p className="text-ink-muted text-sm">
             {patient.date_of_birth
@@ -470,8 +511,10 @@ export function PatientRecordLayout({ user }: { user: CurrentUser }) {
       {/* Wer aus dem Kalender oder von einem Termin kommt, kommt dorthin
           zurück - mit allem, was dort eingestellt war (UX-012). Ohne Rückweg
           führt er in die Liste; die Beschriftung kommt dann aus demselben
-          Wortschatz wie jeder andere Rückweg dorthin (PAT-08, NAV-16). */}
-      <Rueckweg standard="/patienten" className="mb-3" />
+          Wortschatz wie jeder andere Rückweg dorthin (PAT-08, NAV-16).
+          Unter 640 px steht derselbe Weg als Pfeil in der Kopfkarte
+          (`PatientKopf`, RAH-007); die Zeile bleibt ab 640 px. */}
+      <Rueckweg standard="/patienten" className="mb-3 max-sm:hidden" />
 
       {/* Solange der Kopf mit dem Namen fehlt, trägt die Seite ihre Gattung
           als Überschrift - im Laden wie im Fehler (UIK-16, PAT-22). */}
