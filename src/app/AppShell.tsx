@@ -55,12 +55,35 @@ import { Verbindungsanzeige } from './Verbindungsanzeige';
  * (5.86:1). Der ausgewählte Bereich ist mit der Hauptfarbe gefüllt und trägt
  * Papier; das System nennt „Hauptfarbe gefüllt" als Auswahlzustand.
  * Gewichte nach dem Design-Handoff vom 2026-10-01: 500 in Ruhe, 600 aktiv.
+ *
+ * Vier Zustände, jeder an etwas anderem erkennbar (Handoff Rahmen vom
+ * 2026-10-05, RAH-002): Hover hebt nur den Text auf Papier und füllt **keine**
+ * Fläche mehr — bis dahin sahen Hover und Auswahl gleich aus (1,35:1
+ * zwischen beiden). Die Auswahl trägt zusätzlich einen Salbei-Strich 3 px am
+ * linken Rand der Leiste (`auswahlstrich`); `aria-current="page"` bleibt das
+ * Zeichen, der Strich ist Darstellung.
+ *
+ * Zwischen 640 und 1024 px ist derselbe Eintrag ein Feld der beschrifteten
+ * Symbolspalte (Variante 2b): 56 hoch, Symbol oben, darunter die Kurzform aus
+ * der Tableiste in `text-leiste`. Ab lg die Zeile mit vollem Namen in 15 px.
  */
 const seitenLink =
-  'flex min-h-11 items-center gap-3 rounded-button px-3 text-liste font-medium transition-colors ' +
-  'text-salbei hover:bg-accent hover:text-surface ' +
+  'relative flex h-14 flex-col items-center justify-center gap-0.5 rounded-button px-1 ' +
+  'text-leiste font-medium transition-colors text-salbei hover:text-surface ' +
   'aria-[current=page]:bg-accent aria-[current=page]:font-semibold ' +
-  'aria-[current=page]:text-surface';
+  'aria-[current=page]:text-surface ' +
+  'lg:h-auto lg:min-h-11 lg:flex-row lg:justify-start lg:gap-3 lg:px-3 lg:text-liste';
+
+/**
+ * Der Strich der Auswahl: 3 px Salbei am linken Rand der Leiste, über die
+ * ganze Höhe des Eintrags. Er steht am Rand der Leiste, nicht am Rand des
+ * Eintrags, deshalb um den Innenabstand der Leiste nach links versetzt (12
+ * in der Symbolspalte, 20 in der Seitenleiste). Die rechten Ecken rund:
+ * `pill` auf 3 px Breite ergibt genau die zwei Pixel Radius des Handoffs, und
+ * das System kennt keinen eigenen Radius dafür.
+ */
+const auswahlstrich =
+  'bg-salbei w-auswahlstrich rounded-r-pill pointer-events-none absolute inset-y-0 -left-3 lg:-left-5';
 
 /**
  * Ein Ziel der Tableiste am unteren Rand (unter 640 px).
@@ -176,12 +199,13 @@ export function AppShell({
       </a>
 
       {/* Seitenleiste (DS-001): 248 px in Tiefgrün, ab sm sichtbar. Zwischen
-          640 und 1024 px bleiben davon 72 px als Symbolspalte — genau der
+          640 und 1024 px bleiben davon 84 px als beschriftete Symbolspalte
+          (Variante 2b, RAH-002; bis dahin 72 ohne Beschriftung) — genau der
           Bereich, in dem ein halbiertes Fenster landet. Darunter tritt die
           Tableiste am unteren Rand an ihre Stelle. */}
       <nav
         aria-label="Arbeitsbereiche"
-        className="bg-surface-inverse sticky top-0 hidden h-dvh w-18 shrink-0 flex-col gap-8 px-3 py-7 sm:flex lg:w-62 lg:px-5"
+        className="bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 px-3 py-7 sm:flex lg:w-62 lg:px-5"
       >
         <Link
           to="/"
@@ -210,11 +234,21 @@ export function AppShell({
               <Link
                 to={bereich.to}
                 aria-current={aktuell?.id === bereich.id ? 'page' : undefined}
+                title={bereich.kurz === bereich.label ? undefined : bereich.kurz}
                 className={seitenLink}
               >
+                {aktuell?.id === bereich.id ? (
+                  <span aria-hidden="true" className={auswahlstrich} />
+                ) : null}
                 {bereich.icon}
-                {/* In der Symbolspalte bleibt die Beschriftung für
-                    Vorlesesoftware erhalten, auch wenn sie niemand sieht. */}
+                {/* Die Symbolspalte zeigt die Kurzform aus der Tableiste
+                    („Patienten"); der volle Name („Patient:innen") bleibt der
+                    zugängliche Name des Links auf jeder Breite, deshalb ist
+                    die Kurzform für Vorlesesoftware ausgeblendet. Der Tooltip
+                    trägt denselben Wortlaut wie der sichtbare Text. */}
+                <span aria-hidden="true" className="max-w-full truncate lg:hidden">
+                  {bereich.kurz}
+                </span>
                 <span className="sr-only truncate lg:not-sr-only">{bereich.label}</span>
               </Link>
             </li>

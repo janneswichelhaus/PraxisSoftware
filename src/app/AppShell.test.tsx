@@ -456,6 +456,83 @@ describe('AppShell: Orientierung (UXR-002)', () => {
 });
 
 // -----------------------------------------------------------------------------
+// Handoff Rahmen vom 2026-10-05: Seitenleiste und Symbolspalte (RAH-002)
+// -----------------------------------------------------------------------------
+
+/** Die Seitenleiste ab sm - die erste Navigation dieses Namens. */
+function seitenleiste() {
+  return screen.getAllByRole('navigation', { name: 'Arbeitsbereiche' })[0]!;
+}
+
+describe('AppShell: Seitenleiste und Symbolspalte (RAH-002)', () => {
+  it('zeichnet den aktiven Bereich mit Fläche und Salbei-Strich aus, den Hover ohne Fläche', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/kalender',
+    );
+    const leiste = seitenleiste();
+    const aktiv = within(leiste).getByRole('link', { name: 'Kalender' });
+    const ruhig = within(leiste).getByRole('link', { name: 'Patient:innen' });
+    expect(aktiv).toHaveAttribute('aria-current', 'page');
+    expect(ruhig).not.toHaveAttribute('aria-current');
+    // Auswahl: Hauptfarbe gefüllt, Papier, 600 - und der Strich am linken
+    // Rand der Leiste. Er ist Darstellung, `aria-current` bleibt das Zeichen.
+    expect(aktiv.className).toContain('aria-[current=page]:bg-accent');
+    expect(aktiv.className).toContain('aria-[current=page]:font-semibold');
+    const strich = aktiv.querySelector('[aria-hidden="true"].w-auswahlstrich');
+    expect(strich).not.toBeNull();
+    expect(strich!.className).toContain('bg-salbei');
+    expect(strich!.className).toContain('absolute');
+    expect(ruhig.querySelector('.w-auswahlstrich')).toBeNull();
+    // Hover hebt nur den Text; bis zum Handoff sahen Hover und Auswahl
+    // gleich aus (beide Hauptfarbe gefüllt, 1,35:1 zwischen beiden).
+    expect(ruhig.className).toContain('hover:text-surface');
+    expect(ruhig.className).not.toContain('hover:bg-accent');
+    // Ruhe in Salbei, 500.
+    expect(ruhig.className).toContain('text-salbei');
+    expect(ruhig.className).toContain('font-medium');
+  });
+
+  it('beschriftet die Symbolspalte mit der Kurzform und hält den vollen Namen als zugänglichen Namen', () => {
+    renderWithProviders(
+      <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
+        <p>Inhalt</p>
+      </AppShell>,
+      '/patienten',
+    );
+    const leiste = seitenleiste();
+    // 84 statt 72 breit (Variante 2b), ab lg die Seitenleiste mit 248.
+    expect(leiste.className).toContain('w-symbolspalte');
+    expect(leiste.className).toContain('lg:w-62');
+    const eintrag = within(leiste).getByRole('link', { name: 'Patient:innen' });
+    // Die Kurzform ist sichtbarer Text in `text-leiste` (11 px), nur unter lg;
+    // für Vorlesesoftware ausgeblendet, damit der Link nicht zweimal heißt.
+    const kurz = eintrag.querySelector('[aria-hidden="true"].lg\\:hidden');
+    expect(kurz).not.toBeNull();
+    expect(kurz).toHaveTextContent('Patienten');
+    expect(kurz!.className).not.toContain('sr-only');
+    expect(eintrag.className).toContain('text-leiste');
+    expect(eintrag.className).toContain('lg:text-liste');
+    // Der Tooltip trägt denselben Wortlaut wie der sichtbare Text; kein
+    // `aria-label`, der Name kommt aus dem Text.
+    expect(eintrag).toHaveAttribute('title', 'Patienten');
+    expect(eintrag).not.toHaveAttribute('aria-label');
+    // Der volle Name bleibt für Vorlesesoftware da und wird ab lg sichtbar.
+    const voll = eintrag.querySelector('.sr-only');
+    expect(voll).toHaveTextContent('Patient:innen');
+    expect(voll!.className).toContain('lg:not-sr-only');
+    // Wo Kurzform und Name gleich lauten, gibt es keinen Tooltip.
+    expect(within(leiste).getByRole('link', { name: 'Kalender' })).not.toHaveAttribute('title');
+    // Jeder Eintrag der Symbolspalte ist 56 hoch, Symbol über Beschriftung.
+    expect(eintrag.className).toContain('h-14');
+    expect(eintrag.className).toContain('flex-col');
+    expect(eintrag.className).toContain('lg:flex-row');
+  });
+});
+
+// -----------------------------------------------------------------------------
 // Seitenwechsel: Bildlauf und Fokus (NAV-09, VER-06)
 //
 // Ein `MemoryRouter` statt des Data Routers aus `renderWithProviders`: Hier
