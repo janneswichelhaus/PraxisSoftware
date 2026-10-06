@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -16,6 +16,7 @@ import {
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import { Termine } from './Termine';
 
 /**
  * Das Gerüst der Plattform (POR-004, DSN-001 Abschnitt 3, ADR-023 Punkt 25).
@@ -29,6 +30,9 @@ import {
  *
  * Die Weiche im Router dient der Bedienung; der Schutz liegt in den
  * Projektionen (Punkte 19 bis 21). Alles unter dem Präfix `/p`.
+ *
+ * Seit POR-EPIC-002 füllt der Reiter „Termine" (POR-008); Rechnungen und
+ * Dokumente liegen unter „Ich".
  *
  * Seit POR-EPIC-001b kann ein Konto auch für andere handeln (ADR-023 Punkt
  * 13). Jede Vertretung ist ein eigener Eintrag im Schalter, und solange sie
@@ -69,6 +73,16 @@ export function PlattformApp({
             }
           />
           <Route
+            path={`${PLATTFORM_PFAD}/termine`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Termine zugang={z} />}
+              />
+            }
+          />
+          <Route
             path={`${PLATTFORM_PFAD}/ich`}
             element={
               <Ich email={email} praxis={praxis} zugaenge={lesbar} onAbmelden={onAbmelden} />
@@ -80,6 +94,24 @@ export function PlattformApp({
       <Reiterleiste />
     </div>
   );
+}
+
+/**
+ * Eine Seite, die einen gewählten lesbaren Zugang braucht (POR-008): ohne
+ * einen solchen steht dort, was los ist - wie auf der Übersicht.
+ */
+function MitZugang({
+  bereiche,
+  zugaenge,
+  seite,
+}: {
+  bereiche: Plattformzugang[];
+  zugaenge: Plattformzugang[];
+  seite: (zugang: Plattformzugang) => ReactNode;
+}) {
+  const zugang = useWahl(bereiche);
+  if (!zugang) return <OhneLesbarenZugang zugaenge={zugaenge} />;
+  return <>{seite(zugang)}</>;
 }
 
 /**
@@ -113,6 +145,9 @@ function wahlName(z: Plattformzugang): string {
   if (z.access_kind === 'self') return BEREICHSNAME[z.relationship_kind];
   return `Für ${z.represented_name ?? 'eine andere Person'}`;
 }
+
+/** Seiten, die je Bereich etwas anderes zeigen - dort steht der Schalter (D6). */
+const MIT_SCHALTER = new Set([PLATTFORM_PFAD, `${PLATTFORM_PFAD}/termine`]);
 
 function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
   const { pathname } = useLocation();
@@ -152,7 +187,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
       </div>
       {/* D6: der Schalter nur bei zwei lesbaren Zugängen - eigene Bereiche
           und Vertretungen (POR-006). */}
-      {bereiche.length > 1 && pathname === PLATTFORM_PFAD ? (
+      {bereiche.length > 1 && MIT_SCHALTER.has(pathname) ? (
         <nav aria-label="Bereich" className="mx-auto max-w-xl px-5 pb-3">
           <ul className="bg-surface-sunken rounded-button flex flex-wrap gap-1 p-1">
             {bereiche.map((z) => (
@@ -400,6 +435,9 @@ function VertretungZeile({
  * Symbol und Wort. Heute steht nur die Übersicht - ein Reiter erscheint erst
  * mit dem Loop, der ihn füllt (ANN-112).
  */
+const REITER =
+  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold';
+
 function Reiterleiste() {
   const { pathname, search } = useLocation();
   return (
@@ -412,7 +450,7 @@ function Reiterleiste() {
           <Link
             to={`${PLATTFORM_PFAD}${search}`}
             aria-current={pathname === PLATTFORM_PFAD ? 'page' : undefined}
-            className="text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold"
+            className={REITER}
           >
             <svg
               aria-hidden="true"
@@ -425,6 +463,26 @@ function Reiterleiste() {
               <path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />
             </svg>
             Übersicht
+          </Link>
+        </li>
+        <li className="flex-1">
+          <Link
+            to={`${PLATTFORM_PFAD}/termine${search}`}
+            aria-current={pathname === `${PLATTFORM_PFAD}/termine` ? 'page' : undefined}
+            className={REITER}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <rect x="3" y="5" width="18" height="16" rx="2" />
+              <path d="M3 10h18M8 3v4M16 3v4" />
+            </svg>
+            Termine
           </Link>
         </li>
       </ul>

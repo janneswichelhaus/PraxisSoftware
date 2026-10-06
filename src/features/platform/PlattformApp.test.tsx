@@ -68,9 +68,12 @@ describe('PlattformApp', () => {
     expect(screen.getByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
     expect(screen.getByText(/Test Praxis Tuebingen angemeldet/)).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Bereich' })).not.toBeInTheDocument();
-    // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112).
+    // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
+    // POR-008 die Termine, noch keine Übungen und keine Nachrichten.
     expect(screen.getByRole('link', { name: 'Übersicht' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Termine' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Termine' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Übungen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Nachrichten' })).not.toBeInTheDocument();
   });
 
   it('schaltet bei zwei Verhaeltnissen zwischen Behandlung und Training (D6)', async () => {

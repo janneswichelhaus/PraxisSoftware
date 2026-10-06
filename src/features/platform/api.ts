@@ -99,3 +99,41 @@ export async function begleitungBeenden(zugangId: string, begleitungId: string):
   })) as { data: unknown; error: unknown };
   if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
 }
+
+// -----------------------------------------------------------------------------
+// Reiter „Termine": die eigenen Termine (POR-008, DSN-001 4.1)
+// -----------------------------------------------------------------------------
+
+const terminSchema = z.object({
+  id: z.string().uuid(),
+  starts_at: z.string(),
+  ends_at: z.string(),
+  appointment_type: z.enum(['home_visit', 'practice', 'video']),
+  /** Für die Person: dokumentiert und abgerechnet sind „durchgeführt". */
+  status: z.enum(['confirmed', 'cancelled', 'no_show', 'completed']),
+  staff_name: z.string().nullable(),
+  location_name: z.string().nullable(),
+  visit_street: z.string().nullable(),
+  visit_house_number: z.string().nullable(),
+  visit_postal_code: z.string().nullable(),
+  visit_city: z.string().nullable(),
+});
+export type Termin = z.infer<typeof terminSchema>;
+
+export function termineSchluessel(zugangId: string) {
+  return ['platform-appointments', zugangId] as const;
+}
+
+/**
+ * Die eigenen Termine des gewählten Bereichs: künftige und die der letzten
+ * zwölf Monate (ANN-248). Welche Zeilen, entscheidet der Server über den
+ * Zugang; die Kennung wählt nur unter den eigenen aus (ADR-023 Punkt 19).
+ */
+export async function ladeTermine(zugangId: string): Promise<Termin[]> {
+  const satz = 'Ihre Termine konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointments', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(terminSchema), ergebnis.data ?? [], satz);
+}
