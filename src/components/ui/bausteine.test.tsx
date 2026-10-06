@@ -288,7 +288,7 @@ describe('Symbolknopf', () => {
     // der Beschriftung.
     expect(screen.getByText('‹')).toHaveAttribute('aria-hidden', 'true');
     // Ohne Angabe leise: Hauptfarbe ohne Flaeche.
-    expect(knopf).toHaveClass('text-accent', 'hover:bg-surface-sunken');
+    expect(knopf).toHaveClass('text-accent', 'not-disabled:hover:bg-surface-sunken');
   });
 
   it('kennt die Varianten des Buttons und den abgeschalteten Zustand', async () => {
@@ -310,7 +310,9 @@ describe('Symbolknopf', () => {
 
     const gesperrt = screen.getByRole('button', { name: 'Naechster Zeitraum' });
     expect(gesperrt).toBeDisabled();
-    expect(gesperrt).toHaveClass('disabled:bg-surface-sunken', 'disabled:text-ink-muted');
+    // Leise gesperrt: keine Fläche, nur leiser Text (Runde 2, BEF-069).
+    expect(gesperrt).toHaveClass('disabled:text-ink-muted');
+    expect(gesperrt.className).not.toContain('disabled:bg-');
     await user.click(gesperrt);
     expect(onClick).not.toHaveBeenCalled();
   });
@@ -1841,5 +1843,46 @@ describe('LoadingState und EmptyState in der Karte (Design-Handoff 2026-10-01)',
     const { container } = renderWithProviders(<EmptyState title="Noch keine Termine" inKarte />);
     expect(container.firstElementChild).toHaveClass('rounded-card', 'bg-surface');
     expect(screen.getByText('Noch keine Termine')).toBeInTheDocument();
+  });
+});
+
+describe('Gesperrter Knopf (BEF-069 Option 1, Variante B; SKN-002)', () => {
+  it('zeigt gesperrt eine gestrichelte Kontur ohne Flaeche, Hover nur ungesperrt', () => {
+    render(
+      <>
+        <Button disabled>Speichern</Button>
+        <Button variant="secondary" disabled>
+          Zweitens
+        </Button>
+        <Button variant="quiet" disabled>
+          Abbrechen
+        </Button>
+      </>,
+    );
+    const haupt = screen.getByRole('button', { name: 'Speichern' });
+    expect(haupt).toBeDisabled();
+    // Der Rand ist immer da (durchsichtig) - die Breite springt beim Sperren nicht.
+    expect(haupt).toHaveClass(
+      'border',
+      'border-transparent',
+      'disabled:border-dashed',
+      'disabled:border-line-strong',
+      'disabled:bg-transparent',
+      'disabled:text-ink-muted',
+    );
+    expect(screen.getByRole('button', { name: 'Zweitens' })).toHaveClass(
+      'border-line-strong',
+      'disabled:border-dashed',
+      'disabled:text-ink-muted',
+    );
+    const leise = screen.getByRole('button', { name: 'Abbrechen' });
+    expect(leise).toHaveClass('disabled:text-ink-muted');
+    expect(leise.className).not.toContain('disabled:bg-');
+    expect(leise.className).not.toMatch(/(^| )border( |$)/);
+
+    // Kein Hover-Stil, der auch gesperrt greift.
+    for (const knopf of [haupt, leise, screen.getByRole('button', { name: 'Zweitens' })]) {
+      expect(knopf.className).not.toMatch(/(^| )hover:/);
+    }
   });
 });

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { NowMarker } from '@/components/ui/NowMarker';
@@ -52,6 +53,29 @@ export function Seite() {
       <h1 className="text-accent text-h2-mobil sm:text-h2 tracking-display mb-6 font-extrabold">
         Oberflächen-Bausteine
       </h1>
+
+      <Abschnitt titel="Gesperrte Knöpfe - Fläche, Papier, vertieft (BEF-069)">
+        <div className="flex flex-col gap-3">
+          {(
+            [
+              '',
+              'bg-surface border-line rounded-card border',
+              'bg-surface-sunken rounded-card',
+            ] as const
+          ).map((grund) => (
+            <div key={grund || 'flaeche'} className={`flex flex-wrap gap-3 p-4 ${grund}`}>
+              <Button disabled>Als Entwurf speichern</Button>
+              <Button variant="secondary" disabled>
+                Zweitens
+              </Button>
+              <Button variant="quiet" disabled>
+                Abbrechen
+              </Button>
+              <Button variant="secondary">Aktiv daneben</Button>
+            </div>
+          ))}
+        </div>
+      </Abschnitt>
 
       <Abschnitt titel="Fortschrittspunkte">
         <ProgressDots punkte={['erledigt', 'nicht_angetroffen', 'naechster', 'offen', 'abgesagt']}>

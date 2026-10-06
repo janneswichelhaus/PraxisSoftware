@@ -86,6 +86,12 @@ export function KeyPage({ user }: { user: CurrentUser }) {
     setRadId('');
   }
 
+  const fehlt = !rad
+    ? 'Erst ein Rad wählen.'
+    : !bereitsEntnommen && name.trim() === ''
+      ? 'Erst einen Namen eintragen.'
+      : null;
+
   return (
     <>
       <Rueckweg standard="/betrieb/flotte" beschriftung="Zurück zur Radflotte" />
@@ -122,8 +128,16 @@ export function KeyPage({ user }: { user: CurrentUser }) {
           onChange={(event) => setName(event.target.value)}
         />
 
+        {/* Gesperrt steht der Knopf gestrichelt da (BEF-069); hier ist der
+            Grund nicht offensichtlich, also sagt ein Satz, was fehlt (Handoff
+            Schrift und Knöpfe, Abschnitt 3). Ist der Schlüssel schon
+            entnommen, sagt es die Warnung darüber - kein zweiter Satz. */}
         <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={bestaetigen} disabled={!rad || bereitsEntnommen || name.trim() === ''}>
+          <Button
+            onClick={bestaetigen}
+            disabled={!rad || bereitsEntnommen || name.trim() === ''}
+            aria-describedby={fehlt ? 'entnahme-fehlt' : undefined}
+          >
             Entnahme bestätigen
           </Button>
           <Link
@@ -132,6 +146,11 @@ export function KeyPage({ user }: { user: CurrentUser }) {
           >
             Zurück zur Radflotte
           </Link>
+          {fehlt ? (
+            <p id="entnahme-fehlt" className="text-ink-muted basis-full text-sm">
+              {fehlt}
+            </p>
+          ) : null}
         </div>
       </div>
     </>
