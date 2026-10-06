@@ -3105,6 +3105,8 @@ Technik · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 P
 
 **Änderungspfad.** Ungesicherten Text verwerfen statt halten: in `sperren` immer `gesperrt` wählen · Aufwand `klein`. Passkey: hinter einem Schalter in `Sperrseite` `signInWithPasskey` anbieten, sobald OPS-001 ihn bestätigt · Aufwand `mittel`. Längerer Vorlauf: `VORLAUF_MS` · Aufwand `klein`.
 
+**Nach dem Zweitreview (2026-10-06).** Behoben: ein zweiter Faktor zählt nicht als Anmeldung (nur `password`, `otp`, `magiclink`, `recovery`, `invite`, `email/signup`, `oauth`, `sso/saml`); Fenster und Kamera verschwinden mit der Seite; der Vorlauf sperrt, solange der Server offen ist; festgehaltene Seiten fallen bei einem Kontowechsel weg; beim Festhalten verlassen fremde Abfragen den Speicher. **Verbleibende Lücken, für OPS-001 und die Datenschutzprüfung:** (1) Wer ein gesperrtes Token aus dem Speicher des Geräts holt, kann beim Anmeldedienst das Kennwort ändern, solange die letzte Anmeldung jünger als 24 Stunden ist (`secure_password_change` greift erst danach) — dafür braucht es das entsperrte Gerät und Entwicklerwerkzeuge. (2) Die Server-Functions (`location-provider`, `patient-file-verify`) prüfen nur die Anmeldung, nicht die Sperre; sie liefern keine Patientendaten, lösen aber Routing oder Prüfungen aus. (3) „Bedienung“ meldet die Anwendung selbst; ein Skript mit dem Token könnte die Inaktivitätsfrist offen halten, nicht die Höchstdauer (Folge von W2 (a)).
+
 ### ANN-258 — Skala am Handy in zwei Reihen, Befund aus Bausteinen ohne Kasten im Kasten
 
 Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Dokumentation, BEF-057 Option 2 nach Entscheidung Jannes 2026-10-05; Auftrag Jannes „Design konsequent auf jeden Bereich anwenden“) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Handy
@@ -3116,3 +3118,15 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Doku
 **Anker.** `spaltenAmHandy` in `Skala` (`src/features/assessments/FragebogenFelder.tsx`); `ergebnis-knoepfe` und die Blockklassen in `src/features/assessments/BausteinFeld.tsx`; `src/features/documentation/TextbausteinLeiste.tsx`; `src/features/documentation/TreatmentNoteAddendumPage.tsx`. Geprüft in `tests/e2e/befund.spec.ts` und `tests/e2e/bausteine.spec.ts`.
 
 **Änderungspfad.** Skala einreihig: `spaltenAmHandy` auf `stufen.length` · Aufwand `klein`. Blockrahmen zurück: die Klassen am `<details>` des Blocks · Aufwand `klein`.
+
+### ANN-259 — Rechnungsliste: Suche als Teilstring ohne Platzhalter, „unbezahlt“ schließt überfällige ein, Seiten zu 100
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (BEF-061 Option 1 und 3 nach Entscheidung Jannes 2026-10-05) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Rechner
+
+**Annahme.** Die Rechnungsliste sucht auf dem Server in Rechnungsnummer, Name der Person und Name der Empfänger:in, ohne Groß- und Kleinschreibung, als Teilstring; `%` und `_` sind gewöhnliche Zeichen, höchstens 100 Zeichen. Filter: „Nur Entwürfe“, „Nur unbezahlte“ (ausgestellt, nicht storniert, nicht voll bezahlt — überfällige eingeschlossen), „Nur überfällige“, „Nur bezahlte“, „Nur stornierte“; dazu ein Monat (Abrechnungsmonat der Rechnung). „Weitere laden“ holt Seiten zu 100. Jede Liste nennt die Zahl vor dem Kürzen; die offenen Posten bleiben bei 100 in Fälligkeitsfolge und sagen es, die Zahlungen ebenso.
+
+**Begründung.** BEF-061: Ab der 101. Rechnung verschwanden die ältesten still, und eine Rechnung ist sonst nirgends erreichbar (ANN-061, nicht über die Kopfsuche). Teilstring ohne Platzhalter, weil Büros Nummern stückweise tippen („0042“) und ein `%` im Namen nie gemeint ist. „Unbezahlt“ mit überfälligen, weil beides offene Forderungen sind; „überfällig“ ist die engere Auswahl. Der Monat ist der der Klammer, nicht das Ausstellungsdatum — so steht er auch auf der Rechnung. Unsicher: ob die Praxis eher nach Ausstellungsdatum filtern will.
+
+**Anker.** `public.list_invoices` in `supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`; `rechnungsfilterLabels` und `RECHNUNGEN_JE_SEITE` in `src/features/billing/api.ts`; `Rechnungsliste` in `src/features/billing/Rechnungsliste.tsx`. Geprüft in `supabase/tests/invoices.test.ts` („Rechnungsliste mit Suche …“).
+
+**Änderungspfad.** Monat nach Ausstellungsdatum: Bedingung in `list_invoices` auf `issued_on` umstellen · Aufwand `klein`. Größere Seiten: `RECHNUNGEN_JE_SEITE` (Server begrenzt auf 200) · Aufwand `klein`.

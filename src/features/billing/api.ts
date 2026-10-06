@@ -467,7 +467,7 @@ export const RECHNUNGEN_JE_SEITE = 100;
 /** Die Filter der Rechnungsliste; der Server kennt dieselben Werte. */
 export type Rechnungsfilter = 'draft' | 'open' | 'overdue' | 'paid' | 'cancelled';
 
-/** Wie im Statusfilter des Kalenders: „Nur …“ (CAL-011). */
+/** Wie im Statusfilter des Kalenders: „Nur …“ (CAL-011); „unbezahlt“ schließt überfällige ein (ANN-259). */
 export const rechnungsfilterLabels: Record<Rechnungsfilter, string> = {
   draft: 'Nur Entwürfe',
   open: 'Nur unbezahlte',

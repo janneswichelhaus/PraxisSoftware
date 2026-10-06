@@ -647,6 +647,15 @@
           "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7"
         },
         {
+          "id": "abr-epic-008",
+          "name": "ABR-EPIC-008 Design-Runde Abrechnung: Rechnungsliste mit Suche, Filter, Monat und Weitere laden, Gesamtzahl, Spalten ab 1024 px",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "ABR-033/034, Migration 20261012110000_abr_033_rechnungsliste_suche.sql, supabase/tests/invoices.test.ts, src/features/billing/Rechnungsliste.tsx",
+          "vermerk": "BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12"
+        },
+        {
           "id": "dok-epic-001",
           "name": "DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt",
           "gewicht": 1,
