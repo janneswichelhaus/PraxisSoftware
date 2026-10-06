@@ -168,7 +168,7 @@ function herkunftszeile(
 ): string | null {
   const teile: string[] = [];
   // POR-012: Die Person hat den Bogen selbst über die Plattform ausgefüllt -
-  // ihre Angabe, geprüft beim Termin (ANN-245).
+  // ihre Angabe, geprüft beim Termin (ANN-248).
   if (erhebung.source === 'platform') teile.push('Über die Plattform ausgefüllt');
   const abschlusstag = erhebung.completed_at?.slice(0, 10) ?? null;
   const andererTag = abschlusstag !== null && abschlusstag !== erhebung.recorded_on;

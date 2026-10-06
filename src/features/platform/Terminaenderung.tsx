@@ -20,7 +20,7 @@ import {
   type Termin,
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
-import { terminBeschreibung } from './termine';
+import { terminBeschreibung } from './terminbeschreibung';
 import { Wunschfelder } from './Wunschfelder';
 import { tagLang, zeitraum } from './zeit';
 

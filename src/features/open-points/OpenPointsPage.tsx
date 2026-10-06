@@ -16,7 +16,7 @@ import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
 import { Tasks } from './Tasks';
-import { Terminwuensche } from './Terminwuensche';
+import { PlatformRequests } from './PlatformRequests';
 import { WaitlistReview } from './WaitlistReview';
 
 /** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */
@@ -58,7 +58,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {canWriteTreatmentBases(user.roles) ? <PrescriptionsToCapture timeZone={timeZone} /> : null}
         {canReadPatientDirectory(user.roles) ? <OpenIntakes /> : null}
         {canManageAppointments(user.roles) || canReadTrainingClients(user.roles) ? (
-          <Terminwuensche timeZone={timeZone} />
+          <PlatformRequests timeZone={timeZone} />
         ) : null}
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
         {canManageAppointments(user.roles) ? <WaitlistReview timeZone={timeZone} /> : null}

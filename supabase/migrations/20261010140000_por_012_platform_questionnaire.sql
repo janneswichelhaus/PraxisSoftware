@@ -10,7 +10,7 @@
 -- Weg wie in der Praxis.
 --
 -- Nur Instrumente, die laut Definition die Patient:in ausfuellt
--- (`ausgefuellt_von: patient`) und die aktiv sind (ANN-245). Die Plattform
+-- (`ausgefuellt_von: patient`) und die aktiv sind (ANN-248). Die Plattform
 -- liefert Antworten nur aus Erhebungen, die ueber die Plattform entstanden
 -- sind; eine in der Praxis erhobene Anamnese ist Befund und bleibt dort
 -- (DSN-001 Abschnitt 2 Satz 3) - sichtbar ist nur, DASS sie vorliegt.
@@ -33,12 +33,12 @@ alter table public.patient_questionnaire_responses
   );
 
 comment on column public.patient_questionnaire_responses.source is
-  'POR-012: practice (in der Praxis erhoben) oder platform (von der Person ueber die Plattform ausgefuellt, ANN-245).';
+  'POR-012: practice (in der Praxis erhoben) oder platform (von der Person ueber die Plattform ausgefuellt, ANN-248).';
 comment on column public.patient_questionnaire_responses.source_access_id is
   'POR-012: der Plattformzugang, ueber den die Erhebung entstand (Person oder Vertretung, ADR-023 Punkt 14).';
 
 -- -----------------------------------------------------------------------------
--- 2. Recht `questionnaire` (ADR-023 Punkt 13; ANN-245). Rumpf sonst
+-- 2. Recht `questionnaire` (ADR-023 Punkt 13; ANN-248). Rumpf sonst
 --    unveraendert aus 20261002134000_abn_010_representation_scopes.sql.
 -- -----------------------------------------------------------------------------
 create or replace function app.platform_access_allows(p_access_id uuid, p_capability text)
@@ -57,7 +57,7 @@ as $$
       -- nachgewiesener Vermoegenssorge bzw. Einwilligung (ABN-010).
       when p_capability = 'billing'
         then a.access_kind = 'self' or coalesce(a.finance_scope, false)
-      -- POR-012 (ANN-245): den Befundbogen fuellt die Person selbst oder ihre
+      -- POR-012 (ANN-248): den Befundbogen fuellt die Person selbst oder ihre
       -- rechtliche Vertretung aus - eine Angabe zur Gesundheit, die eine
       -- Begleitung nicht fuer sie macht.
       when p_capability in ('consent', 'export', 'manage_companions', 'questionnaire')
@@ -80,7 +80,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  -- ANN-245: nur, was laut Definition die Patient:in ausfuellt und aktiv ist.
+  -- ANN-248: nur, was laut Definition die Patient:in ausfuellt und aktiv ist.
   select exists (
     select 1 from public.questionnaire_definitions d
     where d.instrument_id = p_instrument_id
@@ -134,7 +134,9 @@ begin
   from public.patient_questionnaire_responses r
   where r.patient_id = v_zugang.relationship_id
     and r.organization_id = v_zugang.organization_id
-    -- Nur Boegen, die die Person ausfuellt (ANN-245); eine durch Korrektur
+    -- Ein Entwurf der Praxis ist deren Arbeit, keine Tatsache fuer die Person.
+    and (r.source = 'platform' or r.status = 'abgeschlossen')
+    -- Nur Boegen, die die Person ausfuellt (ANN-248); eine durch Korrektur
     -- ersetzte Erhebung gilt nicht mehr.
     and exists (
       select 1 from public.questionnaire_definitions d
@@ -153,7 +155,7 @@ revoke all on function public.platform_questionnaire(uuid) from public, anon;
 grant execute on function public.platform_questionnaire(uuid) to authenticated;
 
 comment on function public.platform_questionnaire(uuid) is
-  'POR-012: Plattformprojektion "Befundbogen": Stand der Boegen, die die Person ausfuellt (ANN-245) - eigene Entwuerfe und Abschluesse mit Antworten, in der Praxis erhobene nur als Tatsache. Nur Behandlungszugang; Vertretung protokolliert (ADR-023 Punkt 24).';
+  'POR-012: Plattformprojektion "Befundbogen": Stand der Boegen, die die Person ausfuellt (ANN-248) - eigene Entwuerfe und Abschluesse mit Antworten, in der Praxis erhobene nur als Tatsache. Nur Behandlungszugang; Vertretung protokolliert (ADR-023 Punkt 24).';
 
 -- -----------------------------------------------------------------------------
 -- 5. Schreiben: Entwurf anlegen oder ueberschreiben
@@ -234,7 +236,9 @@ begin
     v_id := p_response_id;
   else
     -- Hoechstens ein Plattform-Entwurf je Bogen: ein zweiter ueberschreibt ihn.
-    select r.id into v_id
+    -- Seine Fassung steht fest (Trigger guard_questionnaire_response); eine
+    -- neue Fassung heisst Entwurf verwerfen und neu beginnen (Zweitreview).
+    select r.id, r.definition_version into v_alt
     from public.patient_questionnaire_responses r
     where r.patient_id = v_zugang.relationship_id
       and r.organization_id = v_zugang.organization_id
@@ -242,10 +246,13 @@ begin
       and r.source = 'platform'
       and r.status = 'entwurf'
     for update;
-    if v_id is not null then
+    if found then
+      if v_alt.definition_version <> p_definition_version then
+        raise exception 'draft identity is fixed' using errcode = '22023';
+      end if;
+      v_id := v_alt.id;
       update public.patient_questionnaire_responses
-         set answers = p_answers, definition_version = p_definition_version, recorded_on = v_heute,
-             updated_at = now(), updated_by = auth.uid()
+         set answers = p_answers, recorded_on = v_heute, updated_at = now(), updated_by = auth.uid()
        where id = v_id;
     else
       insert into public.patient_questionnaire_responses (
@@ -271,7 +278,7 @@ revoke all on function public.save_platform_questionnaire_response(uuid, uuid, t
 grant execute on function public.save_platform_questionnaire_response(uuid, uuid, text, text, jsonb) to authenticated;
 
 comment on function public.save_platform_questionnaire_response(uuid, uuid, text, text, jsonb) is
-  'POR-012 (ANN-245): Die Person legt ueber die Plattform einen Entwurf ihres Befundbogens an oder ueberschreibt ihn; nur Instrumente fuer die Patient:in, Antworten gegen die Definition geprueft (ABN-014); kein zweiter Bogen, wenn einer abgeschlossen vorliegt. Recht questionnaire (Person, rechtliche Vertretung).';
+  'POR-012 (ANN-248): Die Person legt ueber die Plattform einen Entwurf ihres Befundbogens an oder ueberschreibt ihn; nur Instrumente fuer die Patient:in, Antworten gegen die Definition geprueft (ABN-014); kein zweiter Bogen, wenn einer abgeschlossen vorliegt. Recht questionnaire (Person, rechtliche Vertretung).';
 
 -- -----------------------------------------------------------------------------
 -- 6. Absenden = abschliessen
@@ -324,7 +331,7 @@ revoke all on function public.complete_platform_questionnaire_response(uuid, uui
 grant execute on function public.complete_platform_questionnaire_response(uuid, uuid) to authenticated;
 
 comment on function public.complete_platform_questionnaire_response(uuid, uuid) is
-  'POR-012: Absenden des Befundbogens ueber die Plattform = abgeschlossen (ANN-245); danach aendert die Praxis nur per Korrektur (ANN-103). Nur eigene Plattform-Entwuerfe.';
+  'POR-012: Absenden des Befundbogens ueber die Plattform = abgeschlossen (ANN-248); danach aendert die Praxis nur per Korrektur (ANN-103). Nur eigene Plattform-Entwuerfe.';
 
 -- -----------------------------------------------------------------------------
 -- 7. Einen eigenen Entwurf verwerfen

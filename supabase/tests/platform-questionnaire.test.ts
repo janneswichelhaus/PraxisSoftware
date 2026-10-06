@@ -11,7 +11,7 @@ import {
 } from './helpers/db';
 
 /**
- * Befundbogen vorab über die Plattform (POR-012, §7, DSN-001 4.1, ANN-245).
+ * Befundbogen vorab über die Plattform (POR-012, §7, DSN-001 4.1, ANN-248).
  *
  * Die Person füllt den Anamnesebogen selbst aus; absenden heißt abgeschlossen,
  * der Server prüft jede Antwort gegen die Definition (ABN-014). Nur
@@ -33,6 +33,7 @@ const ANTWORTEN = { beruf: { text: 'Lehrerin' }, schmerzen_aktuell: { auswahl: '
 interface Zeile {
   id: string;
   instrument_id: string;
+  definition_version: string;
   status: string;
   source: string;
   answers: Record<string, unknown> | null;
@@ -168,6 +169,27 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     expect(unbekannt?.message).toContain('not available on the platform');
   });
 
+  it('haelt die Fassung eines Entwurfs fest - eine neue Fassung heisst neu beginnen (Zweitreview)', async () => {
+    const id = await speichern(users.plattformErika, ERIKA);
+    await asPostgres(
+      `insert into public.questionnaire_definitions (instrument_id, version, definition)
+       select instrument_id, '9.9.9', jsonb_set(definition, '{meta,version}', '"9.9.9"')
+       from public.questionnaire_definitions where instrument_id = 'anamnese_v8' and version = '1.0.0'`,
+    );
+    const andereFassung = await abgefangen(
+      asUser(users.plattformErika, SPEICHERN, [
+        ERIKA,
+        null,
+        'anamnese_v8',
+        '9.9.9',
+        JSON.stringify(ANTWORTEN),
+      ]),
+    );
+    expect(andereFassung?.message).toContain('draft identity is fixed');
+    const stand = (await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows;
+    expect(stand.map((z) => [z.id, z.definition_version])).toEqual([[id, '1.0.0']]);
+  });
+
   it('nimmt keinen zweiten Bogen an, wenn einer abgeschlossen vorliegt', async () => {
     const id = await speichern(users.plattformErika, ERIKA);
     await asUserCommitted(users.plattformErika, ABSENDEN, [ERIKA, id]);
@@ -197,6 +219,14 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
                'abgeschlossen', now(), $4, $4, $4)`,
       [SEED.organizationId, patients.erika, JSON.stringify(ANTWORTEN), users.therapist],
     );
+    // Ein Entwurf der Praxis bleibt deren Arbeit und erscheint nicht (Zweitreview).
+    await asPostgres(
+      `insert into public.patient_questionnaire_responses
+         (organization_id, patient_id, instrument_id, definition_version, recorded_on, answers,
+          status, created_by, updated_by)
+       values ($1, $2, 'anamnese_v8', '1.0.0', current_date, '{}'::jsonb, 'entwurf', $3, $3)`,
+      [SEED.organizationId, patients.erika, users.therapist],
+    );
     const stand = (await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows;
     expect(stand).toEqual([
       expect.objectContaining({ status: 'abgeschlossen', source: 'practice', answers: null }),
@@ -215,6 +245,11 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
 
   it('verwirft nur den eigenen Entwurf', async () => {
     const id = await speichern(users.plattformErika, ERIKA);
+    // Abschliessen kann ihn auch nur die Person selbst (Zweitreview).
+    const fremdAbsenden = await abgefangen(
+      asUser(users.plattformTina, ABSENDEN, [platformAccesses.tinaTraining, id]),
+    );
+    expect(fremdAbsenden).not.toBeNull();
     const fremd = await asUser<{ ok: boolean }>(users.plattformTina, VERWERFEN, [
       platformAccesses.tinaTraining,
       id,
@@ -228,7 +263,7 @@ describe('Befundbogen ueber die Plattform (POR-012)', () => {
     expect((await asUser<Zeile>(users.plattformErika, STAND, [ERIKA])).rows).toEqual([]);
   });
 
-  it('Begleitung, Training, fremde Person, gesperrt, Praxiskonto: abgewiesen (ANN-245)', async () => {
+  it('Begleitung, Training, fremde Person, gesperrt, Praxiskonto: abgewiesen (ANN-248)', async () => {
     expect(
       await erlaubt(users.plattformPaula, platformAccesses.paulaBegleitungMax, 'questionnaire'),
     ).toBe(false);

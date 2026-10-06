@@ -11,7 +11,7 @@ import {
 } from './helpers/db';
 
 /**
- * Terminwünsche in der Praxis (POR-011, DSN-001 Abschnitt 6, D4, ANN-244).
+ * Terminwünsche in der Praxis (POR-011, DSN-001 Abschnitt 6, D4, ANN-247).
  *
  * Wer Termine eines Kontexts verwaltet, sieht und beantwortet die Wünsche
  * dieses Kontexts; die Absage aus einem Absagewunsch trägt den Zeitpunkt des
@@ -199,6 +199,12 @@ describe('resolve_platform_appointment_request (POR-011)', () => {
       asUser(users.trainer, ANTWORT, [training, 'declined', null, IN_DREI_TAGEN]),
     );
     expect(ergebnisOhneDone?.message).toContain('needs outcome done');
+    // Der Ergebnistermin muss zum Verhaeltnis des Wunsches gehoeren (Zweitreview):
+    // Erikas Behandlungstermin passt nicht an Tinas Trainingswunsch.
+    const fremderTermin = await abgefangen(
+      asUser(users.trainer, ANTWORT, [training, 'done', null, IN_DREI_TAGEN]),
+    );
+    expect(fremderTermin?.message).toContain('appointment not found');
   });
 });
 

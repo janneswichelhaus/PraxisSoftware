@@ -7,7 +7,7 @@
 -- team_lead, dieselben Rollen, die klinische Dateien ablegen (ADR-017 Punkt
 -- 13). Nichts ist voreingestellt sichtbar; die Freigabe laesst sich jederzeit
 -- zuruecknehmen. Fotos (Arbeitshilfe, Dokumentationsfoto) sind nie
--- freigebbar (Punkt 37; ANN-246).
+-- freigebbar (Punkt 37; ANN-249).
 --
 -- Nachweis der Freigabe am Datensatz (released_at, released_by; ADR-010
 -- Fassung 3). Der Abruf durch die Person steht im Protokoll als
@@ -28,13 +28,13 @@ alter table public.patient_files
   add column released_at timestamptz,
   add column released_by uuid,
   add constraint patient_files_release_stamp check ((released_at is null) = (released_by is null)),
-  -- Fotos nie (ADR-017 Punkt 37, ANN-246).
+  -- Fotos nie (ADR-017 Punkt 37, ANN-249).
   add constraint patient_files_release_not_photo check (
     released_at is null or document_type not in ('patientenfoto', 'dokumentationsfoto')
   );
 
 comment on column public.patient_files.released_at is
-  'POR-014 (DSN-001 D3, ANN-246): seit wann die Datei fuer die Person auf der Plattform sichtbar ist; null = nicht freigegeben.';
+  'POR-014 (DSN-001 D3, ANN-249): seit wann die Datei fuer die Person auf der Plattform sichtbar ist; null = nicht freigegeben.';
 comment on column public.patient_files.released_by is
   'POR-014: wer die Datei freigegeben hat (owner, therapist, team_lead).';
 
@@ -59,7 +59,7 @@ begin
   if v_actor is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
-  -- ANN-246: die Behandlungsrollen, die klinische Dateien ablegen (Punkt 13).
+  -- ANN-249: die Behandlungsrollen, die klinische Dateien ablegen (Punkt 13).
   if not app.can_write_clinical_patient_files() then
     raise exception 'not allowed to release files' using errcode = '42501';
   end if;
@@ -95,7 +95,7 @@ revoke all on function public.set_patient_file_release(uuid, boolean) from publi
 grant execute on function public.set_patient_file_release(uuid, boolean) to authenticated;
 
 comment on function public.set_patient_file_release(uuid, boolean) is
-  'POR-014 (DSN-001 D3, ANN-246): eine Datei der Akte fuer die Person auf der Plattform freigeben oder die Freigabe zuruecknehmen. owner, therapist, team_lead; nie Fotos. Nachweis am Datensatz.';
+  'POR-014 (DSN-001 D3, ANN-249): eine Datei der Akte fuer die Person auf der Plattform freigeben oder die Freigabe zuruecknehmen. owner, therapist, team_lead; nie Fotos. Nachweis am Datensatz.';
 
 -- -----------------------------------------------------------------------------
 -- 3. Die Praxis sieht die Freigabe in der Dateiliste. Rumpf sonst unveraendert

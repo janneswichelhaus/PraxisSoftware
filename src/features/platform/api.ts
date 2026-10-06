@@ -133,7 +133,7 @@ export function termineSchluessel(zugangId: string) {
 
 /**
  * Die eigenen Termine des gewählten Bereichs: künftige und die der letzten
- * zwölf Monate (ANN-248). Welche Zeilen, entscheidet der Server über den
+ * zwölf Monate (ANN-251). Welche Zeilen, entscheidet der Server über den
  * Zugang; die Kennung wählt nur unter den eigenen aus (ADR-023 Punkt 19).
  */
 export async function ladeTermine(zugangId: string): Promise<Termin[]> {
@@ -146,7 +146,7 @@ export async function ladeTermine(zugangId: string): Promise<Termin[]> {
 }
 
 // -----------------------------------------------------------------------------
-// Terminwünsche (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001 4.1, ANN-243)
+// Terminwünsche (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001 4.1, ANN-246)
 // -----------------------------------------------------------------------------
 
 export const TAGESZEITEN = ['morning', 'midday', 'afternoon'] as const;
@@ -232,7 +232,7 @@ export async function wunschZurueckziehen(zugangId: string, wunschId: string): P
 
 /**
  * Termin ändern oder absagen - als Wunsch (POR-010, D4). Die Absage trägt
- * das Büro ein; als Eingang gilt der Zeitpunkt dieses Wunsches (ANN-244).
+ * das Büro ein; als Eingang gilt der Zeitpunkt dieses Wunsches (ANN-247).
  */
 export async function terminAendernWuenschen(eingabe: {
   zugangId: string;
@@ -262,7 +262,7 @@ export async function terminAendernWuenschen(eingabe: {
 }
 
 // -----------------------------------------------------------------------------
-// Befundbogen vorab (POR-012, §7, DSN-001 4.1, ANN-245)
+// Befundbogen vorab (POR-012, §7, DSN-001 4.1, ANN-248)
 // -----------------------------------------------------------------------------
 
 const bogenSchema = z.object({
@@ -347,7 +347,7 @@ export async function befundbogenVerwerfen(zugangId: string, entwurfId: string):
 }
 
 // -----------------------------------------------------------------------------
-// Eigene Rechnungen (POR-013, DSN-001 D3, ADR-023 Punkt 16, ANN-247)
+// Eigene Rechnungen (POR-013, DSN-001 D3, ADR-023 Punkt 16, ANN-250)
 // -----------------------------------------------------------------------------
 
 const rechnungZeileSchema = z.object({
@@ -439,7 +439,20 @@ const rechnungSchema = z.object({
       postal_code: z.string().nullable().optional(),
       city: z.string().nullable().optional(),
     }),
-    patient: z.object({ name: z.string() }),
+    // Geburtsdatum und Behandlungsgrundlage stehen auf dem Blatt der Praxis
+    // (Beihilfe braucht beides) - die Person bekommt dasselbe Blatt (ANN-250).
+    patient: z.object({ name: z.string(), date_of_birth: z.string().nullable().optional() }),
+    treatment_bases: z
+      .array(
+        z.object({
+          kind: z.string(),
+          issued_on: z.string(),
+          prescriber: z.string().nullable().optional(),
+          diagnosis_icd10: z.string().nullable().optional(),
+          diagnosis: z.string().nullable().optional(),
+        }),
+      )
+      .optional(),
     items: z.array(positionSchema),
     tax_groups: z
       .array(
@@ -478,7 +491,7 @@ export async function ladeRechnung(
 }
 
 // -----------------------------------------------------------------------------
-// Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 54, 55, ANN-246)
+// Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 54, 55, ANN-249)
 // -----------------------------------------------------------------------------
 
 const dokumentSchema = z.object({

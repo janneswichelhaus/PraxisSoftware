@@ -10,7 +10,7 @@
 -- Was die Person sieht, ist der SNAPSHOT der ausgestellten Rechnung (ADR-009
 -- Punkt 10) - dasselbe Dokument, das die Praxis druckt -, dazu der
 -- Zahlungsstand, den der Server rechnet (ABR-004), und der Storno-Vermerk.
--- Entwuerfe nie (ANN-247).
+-- Entwuerfe nie (ANN-250).
 --
 -- Recht `billing` (ABN-010): die Person selbst, eine Vertretung nur mit
 -- nachgewiesener Vermoegenssorge bzw. Einwilligung. Das eigene Lesen bleibt
@@ -94,7 +94,7 @@ revoke all on function public.platform_invoices(uuid) from public, anon;
 grant execute on function public.platform_invoices(uuid) to authenticated;
 
 comment on function public.platform_invoices(uuid) is
-  'POR-013: Plattformprojektion "Rechnungen" (DSN-001 D3, ANN-247): die ausgestellten Rechnungen des Verhaeltnisses mit Zahlungsstand, Storno-Vermerk und Adressat aus dem Snapshot; nie Entwuerfe. Recht billing (ABN-010); Vertretung protokolliert (ADR-023 Punkt 24).';
+  'POR-013: Plattformprojektion "Rechnungen" (DSN-001 D3, ANN-250): die ausgestellten Rechnungen des Verhaeltnisses mit Zahlungsstand, Storno-Vermerk und Adressat aus dem Snapshot; nie Entwuerfe. Recht billing (ABN-010); Vertretung protokolliert (ADR-023 Punkt 24).';
 
 create function public.platform_invoice(p_access_id uuid, p_invoice_id uuid)
 returns jsonb

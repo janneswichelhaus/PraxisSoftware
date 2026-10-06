@@ -766,6 +766,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | ABR-EPIC-007 Terminhonorar | fertig | 2026-10-05 | ABR-030 bis ABR-032, ADR-009 Fassung 5 (B17 entschieden), Zweitreview | — | ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 10 bis 12 |
 | B | UBK-EPIC-001 Übersicht nach der Uhr, Tageswechsel, Tageskarte, Fahrwege im Kalender (BEF-051) | fertig | 2026-10-05 | UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv` | — | Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14 |
 | B | UBK-EPIC-002 Fahrzeiten im Alltag: Fahrzeitfaktor, Passt es?, Lückenfinder, Garage und Rückweg, Fahrweg antippbar, Ort auf der Kachel | fertig | 2026-10-06 | UBK-010 bis UBK-017, Branch `claude/friendly-wright-4r8083`, vier Migrationen, Zweitreview | — | Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15 |
+| B | POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente | fertig | 2026-10-06 | POR-008 bis POR-015, Zweitreview | — | Sichtung: Plattform Schritte 13 bis 15 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |

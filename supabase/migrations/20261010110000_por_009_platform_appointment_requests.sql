@@ -4,7 +4,7 @@
 --
 -- Ein Wunsch ist ein Wunsch: Einen Termin daraus macht das Buero (8). Der
 -- Wunsch ist ein EIGENER Datensatz und kein Termin im Zustand "angefragt"
--- (ANN-243): Er nennt Tage und Tageszeiten, keinen Zeitraum, und darf
+-- (ANN-246): Er nennt Tage und Tageszeiten, keinen Zeitraum, und darf
 -- deshalb weder Belegung noch Raster beruehren. Die Terminzustaende
 -- `requested` und `tentative` aus ADR-018 bleiben beschrieben und nicht
 -- gebaut - sie entstehen, wenn eine Person aus angebotenen Zeitfenstern
@@ -17,7 +17,7 @@
 -- Auditeintrag. Ueber eine Vertretung ist der Aufruf protokolliert
 -- (ADR-023 Punkt 24, ANN-209).
 --
--- Datenklasse `terminwunsch` (ANN-243): zwoelf Monate nach der Antwort, wie
+-- Datenklasse `terminwunsch` (ANN-246): zwoelf Monate nach der Antwort, wie
 -- Terminanfragen in ADR-008 (ANN-001); offene Wuensche bleiben, mit dem
 -- Verhaeltnis fallen sie. Regel im Loeschlauf unten.
 -- =============================================================================
@@ -85,7 +85,7 @@ create table public.platform_appointment_requests (
 );
 
 comment on table public.platform_appointment_requests is
-  'Terminwunsch ueber die Plattform (POR-009, ANN-243): Tage und Tageszeiten oder eine Aenderung bzw. Absage am eigenen Termin; einen Termin macht daraus das Buero (PROJECT_PRINCIPLES.md 8). Datenklasse: Terminwunsch, zwoelf Monate nach der Antwort.';
+  'Terminwunsch ueber die Plattform (POR-009, ANN-246): Tage und Tageszeiten oder eine Aenderung bzw. Absage am eigenen Termin; einen Termin macht daraus das Buero (PROJECT_PRINCIPLES.md 8). Datenklasse: Terminwunsch, zwoelf Monate nach der Antwort.';
 comment on column public.platform_appointment_requests.created_by is
   'auth.users.id des schreibenden Kontos; bei einer Vertretung das Konto der vertretenden Person (ADR-023 Punkt 14).';
 
@@ -109,12 +109,12 @@ alter table public.platform_appointment_requests enable row level security;
 revoke all on public.platform_appointment_requests from public, anon, authenticated;
 
 -- -----------------------------------------------------------------------------
--- 2. Datenklasse (ADR-008; ANN-243)
+-- 2. Datenklasse (ADR-008; ANN-246)
 -- -----------------------------------------------------------------------------
 insert into public.retention_classes
   (key, basis, legal_reference, anchor, retention_interval, assumption_key, note, sort_order)
 values
-  ('terminwunsch', 'intern', null, 'case_closed', interval '1 year', 'ANN-243',
+  ('terminwunsch', 'intern', null, 'case_closed', interval '1 year', 'ANN-246',
    'Terminwunsch ueber die Plattform: zwoelf Monate nach der Antwort der Praxis bzw. dem Zurueckziehen, wie Terminanfragen (ANN-001). Offene Wuensche bleiben; mit dem Verhaeltnis fallen sie.',
    76);
 
@@ -197,7 +197,7 @@ revoke all on function public.request_platform_appointment(uuid, date[], text[],
 grant execute on function public.request_platform_appointment(uuid, date[], text[], text) to authenticated;
 
 comment on function public.request_platform_appointment(uuid, date[], text[], text) is
-  'POR-009: Termin wuenschen ueber die Plattform (PROJECT_PRINCIPLES.md 8, ANN-243): Tage, Tageszeiten, freie Zeile. Ein Wunsch, kein Termin; Recht request (alle Arten des Zugangs). Nachweis am Datensatz, Vertretung protokolliert.';
+  'POR-009: Termin wuenschen ueber die Plattform (PROJECT_PRINCIPLES.md 8, ANN-246): Tage, Tageszeiten, freie Zeile. Ein Wunsch, kein Termin; Recht request (alle Arten des Zugangs). Nachweis am Datensatz, Vertretung protokolliert.';
 
 -- -----------------------------------------------------------------------------
 -- 4. Die eigenen Wuensche lesen
@@ -287,7 +287,7 @@ revoke all on function public.withdraw_platform_appointment_request(uuid, uuid) 
 grant execute on function public.withdraw_platform_appointment_request(uuid, uuid) to authenticated;
 
 comment on function public.withdraw_platform_appointment_request(uuid, uuid) is
-  'POR-009: Die Person zieht einen offenen Terminwunsch zurueck; der Vorgang bleibt als zurueckgezogen stehen (Frist ANN-243). Nur ueber einen lesbaren Zugang des eigenen Verhaeltnisses.';
+  'POR-009: Die Person zieht einen offenen Terminwunsch zurueck; der Vorgang bleibt als zurueckgezogen stehen (Frist ANN-246). Nur ueber einen lesbaren Zugang des eigenen Verhaeltnisses.';
 
 -- -----------------------------------------------------------------------------
 -- 6. Loeschlauf: Regel fuer die Klasse terminwunsch. Rumpf sonst unveraendert
@@ -646,7 +646,7 @@ begin
     get diagnostics v_anrufe = row_count;
 
     -- -------------------------------------------------------------------
-    -- Terminwuensche der Plattform (POR-009, ANN-243): zwoelf Monate nach
+    -- Terminwuensche der Plattform (POR-009, ANN-246): zwoelf Monate nach
     -- der Antwort der Praxis bzw. dem Zurueckziehen. Offene Wuensche
     -- bleiben; mit dem Verhaeltnis fallen sie ohnehin (cascade). Ein Legal
     -- Hold an der Akte haelt auch den beantworteten Wunsch.

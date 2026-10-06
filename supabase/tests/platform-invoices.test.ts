@@ -3,7 +3,7 @@ import { SEED, asPostgres, asUser, asUserCommitted, resetDatabase } from './help
 
 /**
  * Eigene Rechnungen auf der Plattform (POR-013, DSN-001 D3, ADR-023 Punkt 16,
- * ANN-247).
+ * ANN-250).
  *
  * Nur ausgestellte Rechnungen des Verhältnisses, mit Snapshot, Zahlungsstand
  * und Storno-Vermerk; Entwürfe nie. Recht `billing`: die Person selbst, eine

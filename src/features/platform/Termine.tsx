@@ -18,7 +18,7 @@ import {
   type Terminwunsch,
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
-import { terminBeschreibung, wunschText } from './termine';
+import { terminBeschreibung, wunschText } from './terminbeschreibung';
 import { datum, kuenftig, tagKurz, zeitraum } from './zeit';
 
 /**

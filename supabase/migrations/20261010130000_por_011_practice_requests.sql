@@ -13,7 +13,7 @@
 --                                        kurzer Antwort an die Person
 --   cancel_appointment_from_request      die Absage aus dem Absagewunsch:
 --                                        Grund patient_request, EINGANG =
---                                        Zeitpunkt des Wunsches (D4, ANN-244),
+--                                        Zeitpunkt des Wunsches (D4, ANN-247),
 --                                        dieselbe Fristenrechnung wie heute
 --
 -- Die Antwort ist Nachweis am Datensatz (resolved_by), kein Auditeintrag
@@ -129,7 +129,7 @@ begin
     raise exception 'answer too long' using errcode = '22023';
   end if;
 
-  select w.id, w.relationship_kind, w.kind into v_wunsch
+  select w.id, w.relationship_kind, w.kind, w.patient_id, w.training_relationship_id into v_wunsch
   from public.platform_appointment_requests w
   where w.id = p_request_id and w.organization_id = v_org and w.status = 'open'
   for update;
@@ -147,8 +147,16 @@ begin
     if p_outcome <> 'done' then
       raise exception 'resulting appointment needs outcome done' using errcode = '22023';
     end if;
+    -- Der Termin gehoert zum Verhaeltnis des Wunsches (Zweitreview).
     perform 1 from public.appointments a
-    where a.id = p_resulting_appointment_id and a.organization_id = v_org;
+    where a.id = p_resulting_appointment_id
+      and a.organization_id = v_org
+      and (
+        (v_wunsch.relationship_kind = 'treatment' and a.patient_id = v_wunsch.patient_id)
+        or
+        (v_wunsch.relationship_kind = 'training'
+           and a.training_relationship_id = v_wunsch.training_relationship_id)
+      );
     if not found then
       raise exception 'appointment not found' using errcode = 'P0002';
     end if;
@@ -208,7 +216,7 @@ begin
     raise exception 'request is not a cancellation' using errcode = '22023';
   end if;
 
-  -- D4, ANN-244: Als Eingang gilt der Zeitpunkt des Wunsches. cancel_appointment
+  -- D4, ANN-247: Als Eingang gilt der Zeitpunkt des Wunsches. cancel_appointment
   -- rechnet daraus die Frist (ADR-018 Punkt 8) und prueft Rolle, Zustand und
   -- Gleichzeitigkeit wie bei jeder Absage. Der Eingang geht als Datum und
   -- Uhrzeit in Ortszeit hinein - dieselbe Schnittstelle wie die Oberflaeche.
@@ -235,4 +243,4 @@ revoke all on function public.cancel_appointment_from_request(uuid, timestamptz)
 grant execute on function public.cancel_appointment_from_request(uuid, timestamptz) to authenticated;
 
 comment on function public.cancel_appointment_from_request(uuid, timestamptz) is
-  'POR-011 (DSN-001 D4, ANN-244): Die Praxis traegt die Absage aus einem Absagewunsch ein: Grund patient_request, Eingang = Zeitpunkt des Wunsches, Frist und Protokoll wie cancel_appointment. Der Wunsch wird erledigt.';
+  'POR-011 (DSN-001 D4, ANN-247): Die Praxis traegt die Absage aus einem Absagewunsch ein: Grund patient_request, Eingang = Zeitpunkt des Wunsches, Frist und Protokoll wie cancel_appointment. Der Wunsch wird erledigt.';

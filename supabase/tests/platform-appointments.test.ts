@@ -122,7 +122,7 @@ describe('platform_appointments (POR-008)', () => {
     );
   });
 
-  it('laesst Termine aelter als zwoelf Monate weg (ANN-248)', async () => {
+  it('laesst Termine aelter als zwoelf Monate weg (ANN-251)', async () => {
     await asPostgres(
       `update public.appointments set starts_at = starts_at - interval '13 months',
               ends_at = ends_at - interval '13 months', completed_at = null, completed_by = null,
@@ -153,7 +153,7 @@ describe('platform_appointments (POR-008)', () => {
         actor_user_id: users.plattformPaula,
         context: expect.objectContaining({
           platform_access_id: platformAccesses.paulaBegleitungMax,
-        }),
+        }) as unknown,
       }),
     ]);
   });

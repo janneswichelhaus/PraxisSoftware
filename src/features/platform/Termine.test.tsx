@@ -22,7 +22,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Termine } = await import('./Termine');
-const { terminBeschreibung } = await import('./termine');
+const { terminBeschreibung } = await import('./terminbeschreibung');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',

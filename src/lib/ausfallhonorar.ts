@@ -3,7 +3,7 @@
  * ADR-018 Punkt 8 und 9; DSN-001 4.1).
  *
  * Dieselben Sätze stehen in der Datenschutzinformation der Praxis und auf der
- * Plattform vor dem Absagewunsch (POR-010, ANN-244). Die Praxisstammdaten
+ * Plattform vor dem Absagewunsch (POR-010, ANN-247). Die Praxisstammdaten
  * haben kein Feld dafür; bis eine Praxis eigene Sätze pflegen kann, gilt
  * dieser eine Wortlaut. **Kein Betrag**: Die Höhe steht im Leistungskatalog
  * (ABR-001), der Text verweist auf die Preisliste.

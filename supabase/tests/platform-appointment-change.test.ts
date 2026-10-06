@@ -10,7 +10,7 @@ import {
 } from './helpers/db';
 
 /**
- * Termin ändern oder absagen als Wunsch (POR-010, DSN-001 D4, ANN-244).
+ * Termin ändern oder absagen als Wunsch (POR-010, DSN-001 D4, ANN-247).
  *
  * Nur am eigenen bestätigten, künftigen Termin, höchstens ein offener Wunsch
  * je Termin. Die Frist des Ausfallhonorars rechnet der Server und liefert sie
@@ -25,6 +25,8 @@ const TERMINE = 'select * from public.platform_appointments($1::uuid)';
 const ERIKA = platformAccesses.erikaBehandlung;
 const MORGEN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000009f1';
 const IN_DREI_TAGEN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000009f2';
+// Max' Termin in drei Tagen - der Seed-Termin von heute 16:00 Uhr waere nachmittags vorbei.
+const MAX_IN_DREI_TAGEN = 'aaaaaaaa-aaaa-4aaa-8aaa-0000000009f3';
 
 /** Zwei bestaetigte kuenftige Hausbesuche fuer Erika: in 20 Stunden und in drei Tagen. */
 async function kuenftigeTermine() {
@@ -36,8 +38,18 @@ async function kuenftigeTermine() {
        ($1, $3, 'therapy', $4, '55555555-5555-4555-8555-000000000002', 'home_visit', 'confirmed',
         now() + interval '20 hours', now() + interval '21 hours', 'Testweg', '7', '72072', 'Tuebingen', $5),
        ($2, $3, 'therapy', $4, '55555555-5555-4555-8555-000000000002', 'home_visit', 'confirmed',
-        now() + interval '3 days', now() + interval '3 days 1 hour', 'Testweg', '7', '72072', 'Tuebingen', $5)`,
-    [MORGEN, IN_DREI_TAGEN, organizationId, patients.erika, users.office],
+        now() + interval '3 days', now() + interval '3 days 1 hour', 'Testweg', '7', '72072', 'Tuebingen', $5),
+       ($6, $3, 'therapy', $7, '55555555-5555-4555-8555-000000000002', 'home_visit', 'confirmed',
+        now() + interval '3 days 2 hours', now() + interval '3 days 3 hours', 'Testweg', '7', '72072', 'Tuebingen', $5)`,
+    [
+      MORGEN,
+      IN_DREI_TAGEN,
+      organizationId,
+      patients.erika,
+      users.office,
+      MAX_IN_DREI_TAGEN,
+      patients.max,
+    ],
   );
 }
 
@@ -207,7 +219,7 @@ describe('request_platform_appointment_change (POR-010)', () => {
   it('Begleitung darf fuer die Person absagen wollen; der Aufruf steht im Protokoll', async () => {
     const { rows } = await asUserCommitted<{ id: string }>(users.plattformPaula, AENDERN, [
       platformAccesses.paulaBegleitungMax,
-      'aaaaaaaa-aaaa-4aaa-8aaa-000000000004',
+      MAX_IN_DREI_TAGEN,
       'cancel',
       [],
       [],

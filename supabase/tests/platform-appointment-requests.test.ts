@@ -11,7 +11,7 @@ import {
 
 /**
  * Terminwunsch über die Plattform (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001
- * 4.1, ANN-243).
+ * 4.1, ANN-246).
  *
  * Ein Wunsch ist ein eigener Datensatz, kein Termin. Schreiben dürfen alle
  * drei Arten des Zugangs (Recht `request`), lesen nur das eigene Verhältnis;
@@ -98,7 +98,7 @@ describe('request_platform_appointment (POR-009)', () => {
       (await asPostgres(`select 1 from public.audit_log where subject_type = 'platform_access'`))
         .rows,
     ).toEqual([]);
-    // Kein Termin ist entstanden (ANN-243).
+    // Kein Termin ist entstanden (ANN-246).
     expect(
       (
         await asPostgres(`select 1 from public.appointments where status not in
@@ -193,7 +193,7 @@ describe('request_platform_appointment (POR-009)', () => {
   });
 });
 
-describe('Loeschlauf: Terminwuensche (ANN-243)', () => {
+describe('Loeschlauf: Terminwuensche (ANN-246)', () => {
   beforeEach(async () => {
     await resetDatabase();
   }, 120_000);

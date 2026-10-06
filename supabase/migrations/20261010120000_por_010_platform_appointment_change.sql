@@ -3,7 +3,7 @@
 -- PROJECT_PRINCIPLES.md 8; ADR-018 Punkt 8; ADR-023 Punkte 19, 23, 24)
 --
 -- Am eigenen bestaetigten Termin kann die Person einen Aenderungs- oder
--- Absagewunsch hinterlassen (ANN-244). Beides ist ein Wunsch (8, D4): Die
+-- Absagewunsch hinterlassen (ANN-247). Beides ist ein Wunsch (8, D4): Die
 -- Absage traegt das Buero ein, und als Eingang der Absage (ADR-018 Punkt 8
 -- Nr. 1) gilt der Zeitpunkt des Wunsches - das macht POR-011 mit
 -- `cancel_appointment_from_request`. Hier entsteht nur der Datensatz.
@@ -129,7 +129,7 @@ grant execute on function public.request_platform_appointment_change(uuid, uuid,
   to authenticated;
 
 comment on function public.request_platform_appointment_change(uuid, uuid, text, date[], text[], text) is
-  'POR-010: Aenderungs- oder Absagewunsch am eigenen bestaetigten, kuenftigen Termin (DSN-001 D4, ANN-244). Ein Wunsch, keine Absage; als Eingang gilt spaeter der Zeitpunkt des Wunsches. Hoechstens ein offener Wunsch je Termin (23505).';
+  'POR-010: Aenderungs- oder Absagewunsch am eigenen bestaetigten, kuenftigen Termin (DSN-001 D4, ANN-247). Ein Wunsch, keine Absage; als Eingang gilt spaeter der Zeitpunkt des Wunsches. Hoechstens ein offener Wunsch je Termin (23505).';
 
 -- -----------------------------------------------------------------------------
 -- 2. platform_appointments mit Frist und offenem Wunsch
@@ -221,4 +221,4 @@ revoke all on function public.platform_appointments(uuid) from public, anon;
 grant execute on function public.platform_appointments(uuid) to authenticated;
 
 comment on function public.platform_appointments(uuid) is
-  'POR-008/POR-010: Plattformprojektion "Termine" (DSN-001 4.1): die eigenen Termine des Verhaeltnisses hinter einem lesbaren Zugang, kuenftige und die der letzten zwoelf Monate (ANN-248), mit Frist des Ausfallhonorars (late_notice, ADR-018 Punkt 8) und offenem Wunsch. Feste Spaltenliste (ADR-023 Punkt 22). Ueber eine Vertretung protokolliert (Punkt 24).';
+  'POR-008/POR-010: Plattformprojektion "Termine" (DSN-001 4.1): die eigenen Termine des Verhaeltnisses hinter einem lesbaren Zugang, kuenftige und die der letzten zwoelf Monate (ANN-251), mit Frist des Ausfallhonorars (late_notice, ADR-018 Punkt 8) und offenem Wunsch. Feste Spaltenliste (ADR-023 Punkt 22). Ueber eine Vertretung protokolliert (Punkt 24).';

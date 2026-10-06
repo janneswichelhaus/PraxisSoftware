@@ -20,7 +20,7 @@ import {
   type Bogenstand,
   type Plattformzugang,
 } from './api';
-import { fuerDiePlattform } from './befundbogen';
+import { fuerDiePlattform } from './instrumentwahl';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 
@@ -32,7 +32,7 @@ import { datum } from './zeit';
  * `FragebogenFelder`, geprüft mit denselben Regeln (`antwortFehler`); was
  * die Person absendet, prüft der Server noch einmal gegen die Definition
  * (ABN-014). Absenden heißt abgeschlossen: Die Therapeut:in liest den Bogen
- * beim Termin und korrigiert dort, wenn nötig (ANN-245).
+ * beim Termin und korrigiert dort, wenn nötig (ANN-248).
  *
  * Welche Bögen hier stehen, sagt die Definition (`ausgefuellt_von: patient`,
  * aktiv); heute ist das der Anamnesebogen. Ein Entwurf wird auf dem Server
@@ -71,6 +71,16 @@ export function Befundbogen({ zugang }: { zugang: Plattformzugang }) {
           <h1 className="text-accent text-h3 font-bold">Befundbogen</h1>
           <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
             Hier gibt es zurzeit nichts auszufüllen.
+          </p>
+        </>
+      ) : zugang.access_kind === 'companion' ? (
+        // ANN-248: Angaben zur eigenen Gesundheit macht die Person selbst; der
+        // Server weist eine Begleitung ab, hier steht der Grund als Satz.
+        <>
+          <h1 className="text-accent text-h3 font-bold">{instrument.meta.name_de}</h1>
+          <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
+            Den Befundbogen füllt {zugang.represented_name ?? 'die Person'} selbst aus. Als
+            Begleitung lesen Sie mit, machen aber keine Angaben zur Gesundheit.
           </p>
         </>
       ) : (

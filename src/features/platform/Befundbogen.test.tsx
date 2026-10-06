@@ -23,7 +23,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Befundbogen } = await import('./Befundbogen');
-const { fuerDiePlattform } = await import('./befundbogen');
+const { fuerDiePlattform } = await import('./instrumentwahl');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -43,7 +43,7 @@ beforeEach(() => {
 });
 
 describe('Befundbogen (POR-012)', () => {
-  it('bietet genau die Boegen an, die die Person ausfuellt (ANN-245)', () => {
+  it('bietet genau die Boegen an, die die Person ausfuellt (ANN-248)', () => {
     const boegen = fuerDiePlattform();
     expect(boegen.map((b) => b.meta.id)).toEqual(['anamnese_v8']);
     expect(boegen.every((b) => b.meta.ausgefuellt_von === 'patient' && b.meta.aktiv)).toBe(true);
@@ -136,6 +136,20 @@ describe('Befundbogen (POR-012)', () => {
       expect(screen.queryByLabelText(/^Beruf/)).not.toBeInTheDocument();
     },
   );
+
+  it('sagt einer Begleitung, dass die Person den Bogen selbst ausfuellt (ANN-248)', async () => {
+    ladeBefundbogen.mockResolvedValue([]);
+    renderWithProviders(
+      <Befundbogen
+        zugang={{ ...ZUGANG, access_kind: 'companion', represented_name: 'Max Mustermann' }}
+      />,
+      '/p/befundbogen?bereich=treatment',
+    );
+    expect(
+      await screen.findByText(/Den Befundbogen füllt Max Mustermann selbst aus/),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Absenden' })).not.toBeInTheDocument();
+  });
 
   it('zeigt im Training nichts zum Ausfuellen', async () => {
     ladeBefundbogen.mockResolvedValue([]);

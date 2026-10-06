@@ -679,7 +679,7 @@ describe('Dateiliste — Freigabe für die Plattform (POR-014, DSN-001 D3)', () 
     expect(screen.getByRole('button', { name: 'Freigabe zurücknehmen' })).toBeInTheDocument();
   });
 
-  it('bietet dem Buero keine Freigabe an (ANN-246)', async () => {
+  it('bietet dem Buero keine Freigabe an (ANN-249)', async () => {
     fetchPatientFiles.mockResolvedValue([datei({ document_type: 'vertrag', is_clinical: false })]);
     renderWithProviders(
       <Dateiliste patientId={PATIENT} user={testUser(['office'])} darfHinzufuegen />,

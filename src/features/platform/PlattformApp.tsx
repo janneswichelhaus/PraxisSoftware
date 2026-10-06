@@ -4,7 +4,6 @@ import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'rea
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
-import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Textlink } from '@/components/ui/Textlink';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
@@ -22,6 +21,7 @@ import { Dokumente } from './Dokumente';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { Termine } from './Termine';
+import { Uebersicht } from './Uebersicht';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
 
@@ -73,7 +73,17 @@ export function PlattformApp({
             path={PLATTFORM_PFAD}
             element={
               lesbar.length > 0 ? (
-                <Uebersicht praxis={praxis} bereiche={lesbar} />
+                <MitZugang
+                  bereiche={lesbar}
+                  zugaenge={zugaenge}
+                  seite={(z) => (
+                    <Uebersicht
+                      praxis={praxis}
+                      zugang={z}
+                      eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
+                    />
+                  )}
+                />
               ) : (
                 <OhneLesbarenZugang zugaenge={zugaenge} />
               )
@@ -299,55 +309,6 @@ function HandelnFuer({ bereiche }: { bereiche: Plattformzugang[] }) {
       </p>
     </div>
   );
-}
-
-/**
- * Die Übersicht - „Was ist jetzt dran?" (DSN-001 Abschnitt 3).
- *
- * Heute ohne Inhalt aus dem Verhältnis: Termine, Rechnungen und Dokumente
- * kommen mit POR-EPIC-002. Kein „kommt bald" (ANN-112): Die Seite sagt, was
- * gilt, und wie die Person die Praxis erreicht.
- */
-function Uebersicht({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
-  const zugang = useWahl(bereiche);
-  const eigen = zugang?.access_kind === 'self';
-  const name = zugang?.represented_name ?? 'die Person';
-  const bereich = zugang ? BEREICHSNAME[zugang.relationship_kind] : null;
-  const eigeneBereiche = bereiche.filter((z) => z.access_kind === 'self');
-  return (
-    <>
-      <h1 className="text-accent text-h3 font-bold">Guten Tag</h1>
-      {eigen ? (
-        <p className="text-ink mt-2 text-base leading-relaxed">
-          Sie sind bei {praxis || 'Ihrer Praxis'} angemeldet
-          {eigeneBereiche.length > 1 && bereich ? ` – Bereich ${bereich}` : ''}.
-        </p>
-      ) : (
-        <p className="text-ink mt-2 text-base leading-relaxed">
-          Sie sehen hier, was {praxis || 'die Praxis'} für {name} bereitstellt.{' '}
-          {zugang?.access_kind === 'companion'
-            ? `Als Begleitung lesen Sie mit und können Terminwünsche und Nachrichten schreiben. Einwilligungen gibt nur ${name} selbst.`
-            : `Als rechtliche Vertretung handeln Sie in allem, was ${name} hier tun kann.`}
-        </p>
-      )}
-      {zugang?.read_until ? (
-        <Statusmeldung className="mt-4" ton="warnung">
-          {eigen
-            ? `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
-            : `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`}
-        </Statusmeldung>
-      ) : null}
-      <Section titel="Fragen an die Praxis">
-        <p className="text-ink max-w-prose text-base leading-relaxed">
-          Wenden Sie sich bitte wie gewohnt direkt an die Praxis. In einem Notfall rufen Sie 112 an.
-        </p>
-      </Section>
-    </>
-  );
-}
-
-function datum(wert: string): string {
-  return new Date(wert).toLocaleDateString('de-DE');
 }
 
 /** Gesperrt oder Lesefrist vorbei: sagen, was los ist (§13), und nur „Ich" anbieten (D2). */

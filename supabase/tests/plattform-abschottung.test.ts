@@ -54,6 +54,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   'public.platform_invoices':
     'Eigene Rechnungen (POR-013); Negativfälle in platform-invoices.test.ts',
   'public.platform_invoice': 'Eine eigene Rechnung als Blatt (POR-013); ohne Recht null',
+  'public.platform_files':
+    'Freigegebene Dokumente (POR-014); Negativfälle in platform-files.test.ts',
+  'public.issue_platform_file_link':
+    'Verweis auf eine freigegebene Datei (POR-014); ohne lesbaren Zugang abgewiesen (42501)',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

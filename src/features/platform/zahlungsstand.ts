@@ -1,5 +1,6 @@
 import type { Ton } from '@/components/ui/Badge';
-import type { Rechnungsposition, Rechnungszeile } from './api';
+import { formatDate } from '@/lib/datum';
+import type { Rechnungsblatt, Rechnungsposition, Rechnungszeile } from './api';
 
 /**
  * Anzeigehilfen der eigenen Rechnungen (POR-013). Nur Form, kein Wert: Beträge
@@ -27,6 +28,30 @@ export function anJemandAnderen(z: {
   recipient_name: string | null;
 }) {
   return z.recipient_kind && z.recipient_kind !== 'self' ? z.recipient_name : null;
+}
+
+/**
+ * Die Behandlungsgrundlage auf dem Blatt - dieselben Wörter wie auf dem Druck
+ * der Praxis (`grundlageText` in billing/anzeige.ts, hier ohne dessen Import,
+ * weil das Plattformmodul keine Praxisdaten lädt): „Erstverordnung vom …“,
+ * „Folgeverordnung vom …“, „Selbstzahler seit …“, dazu Ärzt:in und Diagnose.
+ */
+export function grundlageZeile(
+  basis: NonNullable<Rechnungsblatt['document']['treatment_bases']>[number],
+): { kopf: string; diagnose: string | null } {
+  const art =
+    basis.kind === 'first'
+      ? 'Erstverordnung vom'
+      : basis.kind === 'follow_up'
+        ? 'Folgeverordnung vom'
+        : basis.kind === 'self_pay'
+          ? 'Selbstzahler seit'
+          : `${basis.kind} vom`;
+  const diagnose = [basis.diagnosis_icd10, basis.diagnosis].filter(Boolean).join(' ');
+  return {
+    kopf: `${art} ${formatDate(basis.issued_on)}${basis.prescriber ? ` · ${basis.prescriber}` : ''}`,
+    diagnose: diagnose.length > 0 ? `Diagnose: ${diagnose}` : null,
+  };
 }
 
 export interface Positionsgruppe {

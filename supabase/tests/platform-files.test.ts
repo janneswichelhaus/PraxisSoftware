@@ -7,11 +7,12 @@ import {
   asUser,
   asUserCommitted,
   resetDatabase,
+  fremdeOrganisation,
 } from './helpers/db';
 
 /**
  * Freigegebene Dokumente (POR-014, DSN-001 D3, ADR-017 Punkte 15, 20, 21, 37,
- * ANN-246).
+ * ANN-249).
  *
  * Nur einzeln freigegebene Dateien, nie Fotos; die Freigabe setzen owner,
  * therapist und team_lead; der Abruf steht als `patient_file.downloaded` im
@@ -106,13 +107,17 @@ describe('Freigegebene Dokumente (POR-014)', () => {
     expect((await asUser(users.plattformErika, LISTE, [ERIKA])).rows).toEqual([]);
   });
 
-  it('laesst Fotos nie freigeben und das Buero nicht freigeben (ANN-246)', async () => {
+  it('laesst Fotos nie freigeben und das Buero nicht freigeben (ANN-249)', async () => {
     const foto = await abgefangen(asUser(users.therapist, FREIGEBEN, [FOTO, true]));
     expect(foto?.message).toContain('photos cannot be released');
     const buero = await abgefangen(asUser(users.office, FREIGEBEN, [ARZTBRIEF, true]));
     expect(buero?.message).toContain('not allowed');
     const plattform = await abgefangen(asUser(users.plattformErika, FREIGEBEN, [ARZTBRIEF, true]));
     expect(plattform?.message).toContain('not allowed');
+    // Eine fremde Organisation findet die Datei nicht (Zweitreview).
+    const fremd = await fremdeOrganisation();
+    const fremdeOwner = await abgefangen(asUser(fremd.owner, FREIGEBEN, [ARZTBRIEF, true]));
+    expect(fremdeOwner).not.toBeNull();
     // Auch direkt in der Tabelle haelt die Constraint.
     const direkt = await abgefangen(
       asPostgres(
@@ -149,7 +154,10 @@ describe('Freigegebene Dokumente (POR-014)', () => {
       expect.objectContaining({
         actor_kind: 'platform',
         actor_user_id: users.plattformErika,
-        context: expect.objectContaining({ surface: 'platform', platform_access_id: ERIKA }),
+        context: expect.objectContaining({
+          surface: 'platform',
+          platform_access_id: ERIKA,
+        }) as unknown,
       }),
     ]);
   });

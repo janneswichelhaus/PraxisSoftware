@@ -19,7 +19,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Rechnungen, Rechnung } = await import('./Rechnungen');
-const { zahlungsstand, positionen } = await import('./rechnungen');
+const { zahlungsstand, positionen } = await import('./zahlungsstand');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -85,7 +85,16 @@ const BLATT: Rechnungsblatt = {
       postal_code: '72070',
       city: 'Tuebingen',
     },
-    patient: { name: 'Erika Beispiel' },
+    patient: { name: 'Erika Beispiel', date_of_birth: '1961-04-12' },
+    treatment_bases: [
+      {
+        kind: 'follow_up',
+        issued_on: '2026-08-20',
+        prescriber: 'Dr. med. Petra Probst',
+        diagnosis_icd10: 'M54.2',
+        diagnosis: 'Zervikalsyndrom',
+      },
+    ],
     items: [
       {
         performed_on: '2026-09-02',
@@ -203,6 +212,12 @@ describe('Rechnungen (POR-013)', () => {
     expect(screen.getByText(/IBAN DE02 1203 0000 0000 2020 51/)).toBeInTheDocument();
     expect(screen.getByText(/Umsatzsteuerfrei nach § 4 Nr. 14 UStG/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Drucken/ })).toBeInTheDocument();
+    // Geburtsdatum und Behandlungsgrundlage wie auf dem Druck der Praxis (Zweitreview).
+    expect(screen.getByText('12.04.1961')).toBeInTheDocument();
+    expect(
+      screen.getByText('Folgeverordnung vom 20.08.2026 · Dr. med. Petra Probst'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Diagnose: M54.2 Zervikalsyndrom')).toBeInTheDocument();
   });
 
   it('sagt bei einer fremden oder fehlenden Rechnung, dass es sie nicht gibt', async () => {

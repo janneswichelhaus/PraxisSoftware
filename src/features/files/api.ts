@@ -53,7 +53,7 @@ export type PatientFile = z.infer<typeof patientFileSchema>;
 
 /**
  * Eine Datei für die Person auf der Plattform freigeben oder die Freigabe
- * zurücknehmen (POR-014, ANN-246). Nur Behandlungsrollen, nie Fotos; prüft
+ * zurücknehmen (POR-014, ANN-249). Nur Behandlungsrollen, nie Fotos; prüft
  * der Server.
  */
 export async function setzeFreigabe(fileId: string, freigegeben: boolean): Promise<void> {

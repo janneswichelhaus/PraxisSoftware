@@ -17,7 +17,7 @@ import {
   type Rechnungsblatt,
 } from './api';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
-import { anJemandAnderen, positionen, zahlungsstand } from './rechnungen';
+import { anJemandAnderen, grundlageZeile, positionen, zahlungsstand } from './zahlungsstand';
 
 /**
  * „Ich → Rechnungen" (POR-013, DSN-001 D3): die eigenen Rechnungen des
@@ -200,6 +200,14 @@ function Blatt({ rechnung: r }: { rechnung: Rechnungsblatt }) {
           </dt>
           <dd className="text-base">{zeitraum ?? 'siehe Positionen'}</dd>
         </div>
+        {d.patient.date_of_birth ? (
+          <div>
+            <dt className="text-ink-muted text-xs font-semibold tracking-wide uppercase">
+              Geburtsdatum
+            </dt>
+            <dd className="text-base tabular-nums">{formatDate(d.patient.date_of_birth)}</dd>
+          </div>
+        ) : null}
       </dl>
 
       <div
@@ -269,6 +277,24 @@ function Blatt({ rechnung: r }: { rechnung: Rechnungsblatt }) {
             {g.exemption_reason}
           </p>
         ))}
+
+      {d.treatment_bases && d.treatment_bases.length > 0 ? (
+        <Section titel="Behandlungsgrundlage" ebene={2}>
+          <ul className="text-ink text-base">
+            {d.treatment_bases.map((basis, i) => {
+              const zeile = grundlageZeile(basis);
+              return (
+                <li key={`${basis.issued_on}-${i}`}>
+                  {zeile.kopf}
+                  {zeile.diagnose ? (
+                    <span className="text-ink-muted block text-sm">{zeile.diagnose}</span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      ) : null}
 
       {d.issuer.iban ? (
         <Section titel="Zahlung" ebene={2}>

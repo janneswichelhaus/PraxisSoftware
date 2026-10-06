@@ -17,7 +17,7 @@
 -- "abgerechnet" sind fuer die Person "durchgefuehrt"; eine abgerechnete
 -- Absage oder ein abgerechnetes Nichtantreffen bleibt, was es war.
 --
--- Zeitraum (ANN-248): alle kuenftigen Termine und die der letzten zwoelf
+-- Zeitraum (ANN-251): alle kuenftigen Termine und die der letzten zwoelf
 -- Monate. Eine Zahl an einer Stelle (app.platform_appointment_history).
 --
 -- Ueber eine Vertretung ist das Lesen protokolliert (Punkt 24, ANN-209), das
@@ -30,14 +30,14 @@ language sql
 immutable
 set search_path = ''
 as $$
-  -- ANN-248: wie weit die eigene Terminliste zurueckreicht.
+  -- ANN-251: wie weit die eigene Terminliste zurueckreicht.
   select interval '12 months'
 $$;
 
 revoke all on function app.platform_appointment_history() from public, anon, authenticated;
 
 comment on function app.platform_appointment_history() is
-  'POR-008 (ANN-248): Zeitraum der vergangenen Termine in der eigenen Terminliste der Plattform.';
+  'POR-008 (ANN-251): Zeitraum der vergangenen Termine in der eigenen Terminliste der Plattform.';
 
 create function public.platform_appointments(p_access_id uuid)
 returns table (
@@ -115,4 +115,4 @@ revoke all on function public.platform_appointments(uuid) from public, anon;
 grant execute on function public.platform_appointments(uuid) to authenticated;
 
 comment on function public.platform_appointments(uuid) is
-  'POR-008: Plattformprojektion "Termine" (DSN-001 4.1): die eigenen Termine des Verhaeltnisses hinter einem lesbaren Zugang, kuenftige und die der letzten zwoelf Monate (ANN-248). Feste Spaltenliste ohne Notizen, Grundlage oder Gebuehrenanlass (ADR-023 Punkt 22). Ueber eine Vertretung protokolliert (Punkt 24).';
+  'POR-008: Plattformprojektion "Termine" (DSN-001 4.1): die eigenen Termine des Verhaeltnisses hinter einem lesbaren Zugang, kuenftige und die der letzten zwoelf Monate (ANN-251). Feste Spaltenliste ohne Notizen, Grundlage oder Gebuehrenanlass (ADR-023 Punkt 22). Ueber eine Vertretung protokolliert (Punkt 24).';

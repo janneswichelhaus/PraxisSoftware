@@ -11,11 +11,11 @@ import { formatLocalDate, formatLocalTimeRange } from '@/features/appointments/a
 import { mitRueckweg } from '@/lib/rueckweg';
 import {
   PLATFORM_REQUESTS_KEY,
-  WUNSCHART_LABEL,
+  REQUEST_KIND_LABEL,
   cancelFromRequest,
   fetchPlatformRequests,
   resolvePlatformRequest,
-  wunschText,
+  requestText,
   type PlatformRequest,
 } from './platform-requests-api';
 import { formatDay } from './format';
@@ -30,7 +30,7 @@ const ANTWORT_MAX = 300;
  * antworten. Welche Wünsche eine Rolle sieht, entscheidet der Server je
  * Kontext.
  */
-export function Terminwuensche({ timeZone }: { timeZone: string }) {
+export function PlatformRequests({ timeZone }: { timeZone: string }) {
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: PLATFORM_REQUESTS_KEY,
     queryFn: () => fetchPlatformRequests('open'),
@@ -111,7 +111,7 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
   const name = [w.family_name, w.given_name].filter(Boolean).join(', ') || 'Unbekannte Person';
   const person = personPfad(w);
   const hier = '/offen';
-  const text = wunschText(w);
+  const text = requestText(w);
   const termin = terminPfad(w);
   const terminAbgesagt = w.appointment_status === 'cancelled';
   const antwortfeld = (
@@ -141,7 +141,7 @@ function Zeile({ wunsch: w, timeZone }: { wunsch: PlatformRequest; timeZone: str
             ) : null}
           </p>
           <p className="text-ink-muted text-sm">
-            {WUNSCHART_LABEL[w.kind]} vom {formatDay(w.created_at, timeZone)}
+            {REQUEST_KIND_LABEL[w.kind]} vom {formatDay(w.created_at, timeZone)}
             {w.representative_name ? ` · durch ${w.representative_name} (Vertretung)` : ''}
           </p>
         </div>

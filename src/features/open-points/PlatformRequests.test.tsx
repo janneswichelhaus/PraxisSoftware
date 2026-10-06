@@ -22,7 +22,7 @@ vi.mock('./platform-requests-api', async (importOriginal) => ({
   cancelFromRequest: (...args: unknown[]) => cancelFromRequest(...args) as Promise<void>,
 }));
 
-const { Terminwuensche } = await import('./Terminwuensche');
+const { PlatformRequests } = await import('./PlatformRequests');
 
 const NEU: PlatformRequestsApi.PlatformRequest = {
   id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
@@ -87,10 +87,10 @@ beforeEach(() => {
   cancelFromRequest.mockResolvedValue(undefined);
 });
 
-describe('Terminwuensche (POR-011)', () => {
+describe('PlatformRequests (POR-011)', () => {
   it('zeigt je Wunsch Person, Inhalt, Urheber und den Weg zum Termin', async () => {
     fetchPlatformRequests.mockResolvedValue([NEU, ABSAGE, TRAINING]);
-    renderWithProviders(<Terminwuensche timeZone="Europe/Berlin" />, '/offen');
+    renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
     expect(await screen.findByRole('heading', { name: 'Terminwünsche (3)' })).toBeInTheDocument();
 
     expect(screen.getByRole('link', { name: 'Beispiel, Erika' })).toHaveAttribute(
@@ -131,7 +131,7 @@ describe('Terminwuensche (POR-011)', () => {
   it('traegt die Absage aus dem Absagewunsch ein - mit dem Zeitpunkt des Wunsches als Eingang (D4)', async () => {
     const nutzer = userEvent.setup();
     fetchPlatformRequests.mockResolvedValue([ABSAGE]);
-    renderWithProviders(<Terminwuensche timeZone="Europe/Berlin" />, '/offen');
+    renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
     await nutzer.click(await screen.findByRole('button', { name: 'Absage eintragen' }));
     expect(
       screen.getByText(/Als Eingang der Absage gilt der Zeitpunkt des Wunsches/),
@@ -145,7 +145,7 @@ describe('Terminwuensche (POR-011)', () => {
   it('beantwortet einen Wunsch als nicht moeglich mit Antwort an die Person', async () => {
     const nutzer = userEvent.setup();
     fetchPlatformRequests.mockResolvedValue([NEU]);
-    renderWithProviders(<Terminwuensche timeZone="Europe/Berlin" />, '/offen');
+    renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
     await nutzer.click(await screen.findByRole('button', { name: 'Nicht möglich' }));
     await nutzer.type(
       screen.getByLabelText(/Antwort an die Person/),
@@ -163,7 +163,7 @@ describe('Terminwuensche (POR-011)', () => {
 
   it('sagt ohne Wuensche, dass nichts offen ist', async () => {
     fetchPlatformRequests.mockResolvedValue([]);
-    renderWithProviders(<Terminwuensche timeZone="Europe/Berlin" />, '/offen');
+    renderWithProviders(<PlatformRequests timeZone="Europe/Berlin" />, '/offen');
     expect(await screen.findByText('Kein offener Wunsch von der Plattform.')).toBeInTheDocument();
   });
 });

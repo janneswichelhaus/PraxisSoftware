@@ -41,13 +41,13 @@ export type PlatformRequest = z.infer<typeof wunschSchema>;
 
 export const PLATFORM_REQUESTS_KEY = ['open-points', 'platform-requests'] as const;
 
-export const TAGESZEIT_LABEL: Record<PlatformRequest['preferred_times'][number], string> = {
+export const TIME_OF_DAY_LABEL: Record<PlatformRequest['preferred_times'][number], string> = {
   morning: 'Vormittag',
   midday: 'Mittag',
   afternoon: 'Nachmittag',
 };
 
-export const WUNSCHART_LABEL: Record<PlatformRequest['kind'], string> = {
+export const REQUEST_KIND_LABEL: Record<PlatformRequest['kind'], string> = {
   new: 'Terminwunsch',
   change: 'Änderungswunsch',
   cancel: 'Absagewunsch',
@@ -108,8 +108,8 @@ export async function cancelFromRequest(id: string, expectedUpdatedAt: string): 
 }
 
 /** Was die Person gewünscht hat, in einem Satz. */
-export function wunschText(w: PlatformRequest): string {
+export function requestText(w: PlatformRequest): string {
   const tage = w.preferred_days.map((t) => formatDate(t)).join(', ');
-  const zeiten = w.preferred_times.map((z) => TAGESZEIT_LABEL[z]).join(', ');
+  const zeiten = w.preferred_times.map((z) => TIME_OF_DAY_LABEL[z]).join(', ');
   return [tage, zeiten].filter((teil) => teil.length > 0).join(' · ');
 }

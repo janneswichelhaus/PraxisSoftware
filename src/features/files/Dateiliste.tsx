@@ -482,7 +482,7 @@ function Artkorrektur({
  * Datei ist weg, und das lässt sich nicht rückgängig machen (DAT-23). Sie
  * wartet auf das Ergebnis und zeigt einen Fehlschlag im Kasten (ZST-06).
  */
-/** Fotos erscheinen nie auf der Plattform (ADR-017 Punkt 37, ANN-246). */
+/** Fotos erscheinen nie auf der Plattform (ADR-017 Punkt 37, ANN-249). */
 function istFoto(art: string): boolean {
   return art === 'patientenfoto' || art === 'dokumentationsfoto';
 }

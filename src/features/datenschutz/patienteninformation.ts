@@ -93,7 +93,7 @@ export function datenschutzinformation(praxis: string): Abschnitt[] {
 export function ausfallhonorarRegel(): Abschnitt {
   return {
     titel: 'Absagen und Ausfallhonorar',
-    // Ein Wortlaut für Praxis und Plattform (POR-010, ANN-244).
+    // Ein Wortlaut für Praxis und Plattform (POR-010, ANN-247).
     absaetze: [...AUSFALLHONORAR_REGEL],
   };
 }
