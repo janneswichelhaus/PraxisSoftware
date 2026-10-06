@@ -16,9 +16,12 @@ export function SearchField({
   label = 'Suche',
   placeholder,
   value,
+  maxLength,
   onChange,
 }: {
   label?: string;
+  /** Höchstlänge, wenn der Server eine setzt. */
+  maxLength?: number;
   /** Was durchsucht wird, etwa „Name, Ort, Telefon". */
   placeholder?: string;
   value: string;
@@ -30,6 +33,7 @@ export function SearchField({
       type="search"
       autoComplete="off"
       {...(placeholder === undefined ? {} : { placeholder })}
+      {...(maxLength === undefined ? {} : { maxLength })}
       value={value}
       onChange={(event) => onChange(event.target.value)}
     />

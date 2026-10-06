@@ -1002,6 +1002,75 @@ describe('Rechnung', () => {
       expect(await suche(100, 0, 'gibt-es-nicht', null)).toEqual([]);
     });
 
+    it('trennt überfällig, bezahlt und storniert', async () => {
+      const { ausgestellt } = await zweiRechnungen();
+      // Das Zahlungsziel zurückdatieren - über den Trigger hinweg wie in
+      // payment-reminders.test.ts.
+      await asPostgres('alter table public.invoices disable trigger invoices_frozen');
+      await asPostgres(
+        `update public.invoices set due_on = (now() at time zone 'Europe/Berlin')::date - 3
+          where id = $1`,
+        [ausgestellt],
+      );
+      await asPostgres('alter table public.invoices enable trigger invoices_frozen');
+      expect((await suche(100, 0, null, 'overdue')).map((z) => z.id)).toEqual([ausgestellt]);
+      expect((await suche(100, 0, null, 'open')).map((z) => z.id)).toEqual([ausgestellt]);
+
+      // Storniert ist nie überfällig und nie offen.
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2::text)', [
+        ausgestellt,
+        'Synthetischer Storno',
+      ]);
+      expect((await suche(100, 0, null, 'cancelled')).map((z) => z.id)).toEqual([ausgestellt]);
+      expect(await suche(100, 0, null, 'overdue')).toEqual([]);
+      expect(await suche(100, 0, null, 'open')).toEqual([]);
+      // Das Stornodokument hält die Rechnung fest; das Aufräumen davor kennt es nicht.
+      await asPostgres('delete from public.invoice_cancellations');
+    });
+
+    it('zählt eine voll bezahlte Rechnung als bezahlt', async () => {
+      const { ausgestellt } = await zweiRechnungen();
+      const { rows } = await asUser<{ total_cents: number }>(
+        users.office,
+        'select total_cents from public.list_invoices() where id = $1',
+        [ausgestellt],
+      );
+      await asUserCommitted(
+        users.office,
+        `select public.record_payment($1::uuid, $2::int, current_date, 'bank_transfer', 'incoming', null)`,
+        [ausgestellt, rows[0]!.total_cents],
+      );
+      expect((await suche(100, 0, null, 'paid')).map((z) => z.id)).toEqual([ausgestellt]);
+      expect(await suche(100, 0, null, 'open')).toEqual([]);
+      await asPostgres('delete from public.payments');
+    });
+
+    it('filtert nach Monat und findet die Empfänger:in', async () => {
+      const { entwurf } = await zweiRechnungen();
+      const { rows: monate } = await asUser<{ treffer: number }>(
+        users.office,
+        `select count(*)::int as treffer from public.list_invoices(p_month => $1::date)`,
+        [await monat()],
+      );
+      expect(monate[0]!.treffer).toBe(2);
+      const { rows: vorjahr } = await asUser<{ treffer: number }>(
+        users.office,
+        `select count(*)::int as treffer
+           from public.list_invoices(p_month => ($1::date - interval '1 year')::date)`,
+        [await monat()],
+      );
+      expect(vorjahr[0]!.treffer).toBe(0);
+      const { rows: petra } = await asUser<{ recipient_name: string }>(
+        users.office,
+        'select recipient_name from public.list_invoices() where id = $1',
+        [entwurf],
+      );
+      const empfaenger = petra[0]!.recipient_name;
+      expect((await suche(100, 0, empfaenger.slice(1, 6), null)).map((z) => z.id)).toContain(
+        entwurf,
+      );
+    });
+
     it('weist einen unbekannten Filter und eine zu lange Suche ab', async () => {
       await expect(asUser(users.office, SUCHE, [100, 0, null, 'alles'])).rejects.toMatchObject({
         code: '22023',

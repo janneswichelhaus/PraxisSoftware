@@ -3119,13 +3119,13 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Doku
 
 **Änderungspfad.** Skala einreihig: `spaltenAmHandy` auf `stufen.length` · Aufwand `klein`. Blockrahmen zurück: die Klassen am `<details>` des Blocks · Aufwand `klein`.
 
-### ANN-259 — Rechnungsliste: Suche als Teilstring ohne Platzhalter, „unbezahlt“ schließt überfällige ein, Seiten zu 100
+### ANN-259 — Rechnungsliste: Suche als Teilstring ohne Platzhalter, „offen“ schließt überfällige ein, Seiten zu 100
 
 Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (BEF-061 Option 1 und 3 nach Entscheidung Jannes 2026-10-05) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Rechner
 
-**Annahme.** Die Rechnungsliste sucht auf dem Server in Rechnungsnummer, Name der Person und Name der Empfänger:in, ohne Groß- und Kleinschreibung, als Teilstring; `%` und `_` sind gewöhnliche Zeichen, höchstens 100 Zeichen. Filter: „Nur Entwürfe“, „Nur unbezahlte“ (ausgestellt, nicht storniert, nicht voll bezahlt — überfällige eingeschlossen), „Nur überfällige“, „Nur bezahlte“, „Nur stornierte“; dazu ein Monat (Abrechnungsmonat der Rechnung). „Weitere laden“ holt Seiten zu 100. Jede Liste nennt die Zahl vor dem Kürzen; die offenen Posten bleiben bei 100 in Fälligkeitsfolge und sagen es, die Zahlungen ebenso.
+**Annahme.** Die Rechnungsliste sucht auf dem Server in Rechnungsnummer, Name der Person und Name der Empfänger:in, ohne Groß- und Kleinschreibung, als Teilstring; `%` und `_` sind gewöhnliche Zeichen, höchstens 100 Zeichen. Filter: „Nur Entwürfe“, „Nur offene“ (ausgestellt, nicht storniert, nicht voll bezahlt — überfällige eingeschlossen), „Nur überfällige“, „Nur bezahlte“, „Nur stornierte“; dazu ein Monat (Abrechnungsmonat der Rechnung). „Weitere laden“ holt Seiten zu 100. Jede Liste nennt die Zahl vor dem Kürzen; die offenen Posten bleiben bei 100 in Fälligkeitsfolge und sagen es, die Zahlungen ebenso.
 
-**Begründung.** BEF-061: Ab der 101. Rechnung verschwanden die ältesten still, und eine Rechnung ist sonst nirgends erreichbar (ANN-061, nicht über die Kopfsuche). Teilstring ohne Platzhalter, weil Büros Nummern stückweise tippen („0042“) und ein `%` im Namen nie gemeint ist. „Unbezahlt“ mit überfälligen, weil beides offene Forderungen sind; „überfällig“ ist die engere Auswahl. Der Monat ist der der Klammer, nicht das Ausstellungsdatum — so steht er auch auf der Rechnung. Unsicher: ob die Praxis eher nach Ausstellungsdatum filtern will.
+**Begründung.** BEF-061: Ab der 101. Rechnung verschwanden die ältesten still, und eine Rechnung ist sonst nirgends erreichbar (ANN-061, nicht über die Kopfsuche). Teilstring ohne Platzhalter, weil Büros Nummern stückweise tippen („0042“) und ein `%` im Namen nie gemeint ist. „Offen“ mit überfälligen, weil beides offene Forderungen sind; „überfällig“ ist die engere Auswahl. Der Monat ist der der Klammer, nicht das Ausstellungsdatum — so steht er auch auf der Rechnung. Unsicher: ob die Praxis eher nach Ausstellungsdatum filtern will.
 
 **Anker.** `public.list_invoices` in `supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`; `rechnungsfilterLabels` und `RECHNUNGEN_JE_SEITE` in `src/features/billing/api.ts`; `Rechnungsliste` in `src/features/billing/Rechnungsliste.tsx`. Geprüft in `supabase/tests/invoices.test.ts` („Rechnungsliste mit Suche …“).
 

@@ -33,6 +33,9 @@ import { klammerText, zahlungsTon } from './anzeige';
  * Zustand, Betrag rechtsbündig - nicht als gestreckte Handy-Karten.
  */
 
+/** So lang darf die Suche sein; der Server weist längere ab (ANN-259). */
+const SUCHE_HOECHSTENS = 100;
+
 /** Getippte Suche geht erst nach einer kurzen Pause an den Server. */
 const SUCHPAUSE_MS = 300;
 
@@ -97,6 +100,7 @@ export function Rechnungsliste() {
             label="Suche"
             placeholder="Nummer oder Name"
             value={suche}
+            maxLength={SUCHE_HOECHSTENS}
             onChange={setSuche}
           />
         </div>

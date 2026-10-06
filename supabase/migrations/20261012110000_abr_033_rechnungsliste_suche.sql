@@ -20,7 +20,11 @@
 -- null Zeilen und ein denied-Eintrag (G6b). Die neuen Signaturen ersetzen die
 -- alten (drop/create): PostgREST soll keine zwei Fassungen zur Auswahl haben.
 -- Reihenfolge, Spalten und Rechenwege sind die der letzten Fassung
--- (ABR-032, TRN-008); neu ist nur die Auswahl davor.
+-- (ABR-032, TRN-008); neu ist nur die Auswahl davor. Anders als bisher
+-- ("erst begrenzen, dann anreichern", R3-016) werden Name, Empfaenger und
+-- Zahlungsstand jetzt fuer alle Rechnungen der Praxis gerechnet: Suche,
+-- Filter und Gesamtzahl brauchen sie vor dem Kuerzen. Bei der Groesse einer
+-- Praxis traegt das (Index `payments_invoice_idx`), ANN-259.
 -- =============================================================================
 
 drop function public.list_invoices(integer);
@@ -113,8 +117,9 @@ begin
     from gefiltert g
     where case p_status
             when 'draft'     then g.status = 'draft'
-            when 'open'      then g.status = 'issued' and not g.storniert
-                                  and g.bezahlt < g.total_cents
+            -- Offen heisst, was `app.open_invoices` offen nennt - die Regel
+            -- steht dort einmal (Zweitreview ABR-033).
+            when 'open'      then g.id in (select o.invoice_id from app.open_invoices(v_org) o)
             when 'overdue'   then g.ueberfaellig
             when 'paid'      then g.status = 'issued' and not g.storniert
                                   and g.bezahlt >= g.total_cents
