@@ -77,13 +77,14 @@ const seitenLink =
 /**
  * Der Strich der Auswahl: 3 px Salbei am linken Rand der Leiste, über die
  * ganze Höhe des Eintrags. Er steht am Rand der Leiste, nicht am Rand des
- * Eintrags, deshalb um den Innenabstand der Leiste nach links versetzt (12
- * in der Symbolspalte, 20 in der Seitenleiste). Die rechten Ecken rund:
- * `pill` auf 3 px Breite ergibt genau die zwei Pixel Radius des Handoffs, und
- * das System kennt keinen eigenen Radius dafür.
+ * Eintrags - in der Symbolspalte fallen beide zusammen (die Einträge nehmen
+ * die ganzen 84 px, 56 × 84 nach dem Handoff), in der Seitenleiste ist er um
+ * deren Innenabstand (20) nach links versetzt. Die rechten Ecken rund: `pill`
+ * auf 3 px Breite ergibt genau die zwei Pixel Radius des Handoffs, und das
+ * System kennt keinen eigenen Radius dafür.
  */
 const auswahlstrich =
-  'bg-salbei w-auswahlstrich rounded-r-pill pointer-events-none absolute inset-y-0 -left-3 lg:-left-5';
+  'bg-salbei w-auswahlstrich rounded-r-pill pointer-events-none absolute inset-y-0 left-0 lg:-left-5';
 
 /**
  * Ein Ziel der Tableiste am unteren Rand (unter 640 px).
@@ -231,12 +232,15 @@ export function AppShell({
           Tableiste am unteren Rand an ihre Stelle. */}
       <nav
         aria-label="Arbeitsbereiche"
-        className="bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 px-3 py-7 sm:flex lg:w-62 lg:px-5"
+        className="bg-surface-inverse w-symbolspalte sticky top-0 hidden h-dvh shrink-0 flex-col gap-8 py-7 sm:flex lg:w-62 lg:px-5"
       >
         <Link
           to="/"
           aria-label="Own Motion, zur Startseite"
-          className="inline-flex min-h-11 shrink-0 items-center lg:px-3"
+          // Landeplatz des Startbilds (RAH-009, `Startbild.tsx`): Die Marke
+          // des Intros wandert hierher.
+          data-startbild-ziel="seitenleiste"
+          className="inline-flex min-h-11 shrink-0 items-center justify-center lg:justify-start lg:px-3"
         >
           {/* Auf Tiefgrün die Papier-Fassung — die Marke wird nie umgefärbt,
               es gibt für jeden Grund eine eigene Datei (marke/README.md).
@@ -324,6 +328,7 @@ export function AppShell({
                 <Link
                   to="/"
                   aria-label="Own Motion, zur Startseite"
+                  data-startbild-ziel="kopfzeile"
                   className="rounded-button inline-flex min-h-11 shrink-0 items-center"
                 >
                   {/* 24 px: die Mindesthöhe der Marke (`markeRegeln.ts`). */}

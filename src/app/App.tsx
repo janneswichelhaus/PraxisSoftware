@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
@@ -26,7 +26,9 @@ import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { Absturzseite, Startfehlergrenze } from './Absturz';
+import { Startbild } from './Startbild';
 import { Vollseite } from './Vollseite';
+import { startbildFaellig } from '@/lib/startbildMerker';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -38,7 +40,28 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Die angemeldete Anwendung, davor einmal je Sitzung das Startbild (RAH-009,
+ * ANN-243).
+ *
+ * Das Intro liegt **über** der Anwendung und hält nichts an: Profil und
+ * Tagesliste laden darunter weiter, und steht die Seite nach 1,8 s noch nicht,
+ * erscheint der Ladezustand wie bisher. Ob es fällig ist, sagt der Merker der
+ * Sitzung; ohne Sitzung kommt diese Stelle nie dran - die Anmeldemaske zeigt
+ * kein Intro, es folgt nach der Anmeldung.
+ */
 function AuthenticatedApp() {
+  const [startbild, setStartbild] = useState(startbildFaellig);
+  const startbildFertig = useCallback(() => setStartbild(false), []);
+  return (
+    <>
+      {startbild ? <Startbild onFertig={startbildFertig} /> : null}
+      <AngemeldeterInhalt />
+    </>
+  );
+}
+
+function AngemeldeterInhalt() {
   const { session, signOut } = useSession();
   const queryClient = useQueryClient();
   const userId = session?.user.id;
