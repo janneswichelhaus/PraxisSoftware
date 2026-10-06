@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
@@ -18,6 +19,7 @@ import {
 } from './api';
 import { Befundbogen } from './Befundbogen';
 import { PLATTFORM_PFAD } from './pfade';
+import { Rechnung, Rechnungen } from './Rechnungen';
 import { Termine } from './Termine';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
@@ -117,6 +119,26 @@ export function PlattformApp({
             }
           />
           <Route
+            path={`${PLATTFORM_PFAD}/rechnungen`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Rechnungen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/rechnungen/:rechnungId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Rechnung zugang={z} />}
+              />
+            }
+          />
+          <Route
             path={`${PLATTFORM_PFAD}/ich`}
             element={
               <Ich email={email} praxis={praxis} zugaenge={lesbar} onAbmelden={onAbmelden} />
@@ -181,7 +203,11 @@ function wahlName(z: Plattformzugang): string {
 }
 
 /** Seiten, die je Bereich etwas anderes zeigen - dort steht der Schalter (D6). */
-const MIT_SCHALTER = new Set([PLATTFORM_PFAD, `${PLATTFORM_PFAD}/termine`]);
+const MIT_SCHALTER = new Set([
+  PLATTFORM_PFAD,
+  `${PLATTFORM_PFAD}/termine`,
+  `${PLATTFORM_PFAD}/rechnungen`,
+]);
 
 function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[] }) {
   const { pathname } = useLocation();
@@ -379,6 +405,22 @@ function Ich({
           </Rueckfrage>
         </div>
       </Section>
+      {/* POR-013: Rechnungen je Bereich; Dokumente folgen mit POR-014. Ob
+          eine Begleitung Rechnungen sieht, entscheidet der Server (billing). */}
+      {zugaenge.length > 0 ? (
+        <Section titel="Unterlagen" rahmen>
+          <ul className="flex flex-col gap-2">
+            {zugaenge.map((z) => (
+              <li key={z.access_id}>
+                <Textlink to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}>
+                  Rechnungen
+                  {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
+                </Textlink>
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
       {mitVertretungen.map((z) => (
         <WerZugangHat key={z.access_id} zugang={z} mehrere={mitVertretungen.length > 1} />
       ))}

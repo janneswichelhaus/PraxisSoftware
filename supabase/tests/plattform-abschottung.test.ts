@@ -51,6 +51,9 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Befundbogen absenden (POR-012); ohne lesbaren Zugang abgewiesen (42501)',
   'public.discard_platform_questionnaire_response':
     'Eigenen Entwurf verwerfen (POR-012); ohne lesbaren Zugang false',
+  'public.platform_invoices':
+    'Eigene Rechnungen (POR-013); Negativfälle in platform-invoices.test.ts',
+  'public.platform_invoice': 'Eine eigene Rechnung als Blatt (POR-013); ohne Recht null',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

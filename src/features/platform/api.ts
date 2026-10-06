@@ -345,3 +345,134 @@ export async function befundbogenVerwerfen(zugangId: string, entwurfId: string):
     throw new Error('Der Entwurf konnte nicht verworfen werden.');
   }
 }
+
+// -----------------------------------------------------------------------------
+// Eigene Rechnungen (POR-013, DSN-001 D3, ADR-023 Punkt 16, ANN-247)
+// -----------------------------------------------------------------------------
+
+const rechnungZeileSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  total_cents: z.number(),
+  currency: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  overdue: z.boolean(),
+  cancelled: z.boolean(),
+  cancelled_on: z.string().nullable(),
+  recipient_kind: z.string().nullable(),
+  recipient_name: z.string().nullable(),
+  service_from: z.string().nullable(),
+  service_to: z.string().nullable(),
+});
+export type Rechnungszeile = z.infer<typeof rechnungZeileSchema>;
+
+export function rechnungenSchluessel(zugangId: string) {
+  return ['platform-invoices', zugangId] as const;
+}
+
+/** Die ausgestellten Rechnungen des Bereichs - mit Recht `billing`, sonst leer. */
+export async function ladeRechnungen(zugangId: string): Promise<Rechnungszeile[]> {
+  const satz = 'Ihre Rechnungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoices', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(rechnungZeileSchema), ergebnis.data ?? [], satz);
+}
+
+const positionSchema = z.object({
+  performed_on: z.string(),
+  code: z.string(),
+  label: z.string(),
+  item_kind: z.string(),
+  quantity: z.number(),
+  unit_price_cents: z.number(),
+  line_total_cents: z.number(),
+  currency: z.string(),
+  tax_treatment: z.string(),
+  tax_rate_permille: z.number(),
+});
+export type Rechnungsposition = z.infer<typeof positionSchema>;
+
+/** Das Blatt: der Snapshot der Praxis (ADR-009 Punkt 10), nur was das Blatt zeigt. */
+const rechnungSchema = z.object({
+  id: z.string().uuid(),
+  invoice_number: z.string(),
+  issued_on: z.string(),
+  due_on: z.string(),
+  paid_cents: z.number(),
+  outstanding_cents: z.number(),
+  payment_state: z.enum(['unpaid', 'partially_paid', 'paid', 'overpaid']),
+  cancellation: z.object({ cancellation_number: z.string(), cancelled_on: z.string() }).nullable(),
+  replaces_invoice_number: z.string().nullable(),
+  correction_invoice_number: z.string().nullable(),
+  document: z.object({
+    schema_version: z.number(),
+    currency: z.string(),
+    service_period: z.object({ from: z.string(), to: z.string() }).nullable().optional(),
+    period_month: z.string(),
+    issuer: z.object({
+      legal_name: z.string(),
+      street: z.string().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().optional(),
+      city: z.string().optional(),
+      phone: z.string().nullable().optional(),
+      email: z.string().nullable().optional(),
+      tax_number: z.string().nullable().optional(),
+      vat_id: z.string().nullable().optional(),
+      bank_name: z.string().nullable().optional(),
+      account_holder: z.string().nullable().optional(),
+      iban: z.string().optional(),
+      bic: z.string().nullable().optional(),
+      payment_term_days: z.number().optional(),
+    }),
+    recipient: z.object({
+      kind: z.string(),
+      name: z.string(),
+      street: z.string().nullable().optional(),
+      house_number: z.string().nullable().optional(),
+      postal_code: z.string().nullable().optional(),
+      city: z.string().nullable().optional(),
+    }),
+    patient: z.object({ name: z.string() }),
+    items: z.array(positionSchema),
+    tax_groups: z
+      .array(
+        z.object({
+          tax_treatment: z.string(),
+          tax_rate_permille: z.number(),
+          exemption_reason: z.string().nullable().optional(),
+          gross_cents: z.number(),
+          tax_cents: z.number(),
+          net_cents: z.number(),
+        }),
+      )
+      .optional(),
+    totals: z.object({ total_cents: z.number(), tax_total_cents: z.number() }),
+  }),
+});
+export type Rechnungsblatt = z.infer<typeof rechnungSchema>;
+
+export function rechnungSchluessel(zugangId: string, rechnungId: string) {
+  return ['platform-invoice', zugangId, rechnungId] as const;
+}
+
+/** Eine eigene Rechnung als Blatt; `null`, wenn es sie für diesen Zugang nicht gibt. */
+export async function ladeRechnung(
+  zugangId: string,
+  rechnungId: string,
+): Promise<Rechnungsblatt | null> {
+  const satz = 'Die Rechnung konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_invoice', {
+    p_access_id: zugangId,
+    p_invoice_id: rechnungId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  if (ergebnis.data === null || ergebnis.data === undefined) return null;
+  return antwort(rechnungSchema, ergebnis.data, satz);
+}

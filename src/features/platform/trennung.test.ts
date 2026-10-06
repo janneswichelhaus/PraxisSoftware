@@ -85,6 +85,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
       'rpc:platform_context',
+      // POR-013: eigene Rechnungen.
+      'rpc:platform_invoice',
+      'rpc:platform_invoices',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
       'rpc:request_platform_appointment',
