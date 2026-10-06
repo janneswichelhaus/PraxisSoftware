@@ -420,7 +420,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
       />
 
       <div className="mt-8 max-w-xl">
-        <Section titel="Zugang" rahmen>
+        {/* Eine Zeile braucht keinen Rahmen (Leitfaden L2). */}
+        <Section titel="Zugang">
           {/* Name und Praxis stehen in der Kopfzeile der Anwendung; hier nur,
               was die Seite sonst nirgends sagt - die Rollen (UX-005i). */}
           <DetailList>
