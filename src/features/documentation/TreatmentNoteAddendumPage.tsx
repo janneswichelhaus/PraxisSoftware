@@ -19,6 +19,7 @@ import { FREITEXT } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { NochEinEntwurf } from './Zustaende';
 import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type TreatmentNote } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Nachtrag zu einem finalisierten Eintrag (DOK-002, ADR-016 Punkt 6).
@@ -144,10 +145,10 @@ function Formular({
         </div>
       </form>
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
         wird protokolliert.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

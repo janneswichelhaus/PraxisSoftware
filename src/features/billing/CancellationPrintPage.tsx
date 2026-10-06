@@ -10,6 +10,7 @@ import { formatEuro } from '@/lib/geld';
 import { KeineStammdaten, fetchRechnung, type Rechnungsansicht } from './api';
 import { personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Das Stornodokument als Blatt zum Verschicken (ABR-003c).
@@ -178,10 +179,10 @@ function Stornoblatt({
             Stornodokument drucken
           </Button>
         </div>
-        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes>
           Wie bei der Rechnung entsteht die Datei im Druckdialog auf diesem Gerät; die Anwendung
           legt sie nicht ab. Aufbewahrt wird das Storno in der Anwendung, mit Nummer, Tag und Grund.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

@@ -17,6 +17,7 @@ import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
 import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 
@@ -305,12 +306,12 @@ export function TourenPage({ user }: { user: CurrentUser }) {
 
       {/* Ohne Projekt- und Technikwörter (WRT-03, TER-07): Was das Gerät
           verlässt und unter welcher Bedingung echte Adressen dazukommen. */}
-      <p className="text-ink-muted mt-8 max-w-prose text-xs leading-relaxed print:hidden">
+      <Kleingedrucktes className="mt-8 print:hidden">
         Zur Route gehen nur Koordinaten in Fahrtreihenfolge an den Kartendienst – kein Name, keine
         Uhrzeit. Gespeichert wird davon nichts. Echte Patientenadressen erreichen den Kartendienst
         erst, wenn Vertrag, Schweigepflicht (§ 203 StGB) und Datenschutz-Folgenabschätzung geklärt
         sind.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

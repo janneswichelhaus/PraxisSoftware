@@ -25,6 +25,7 @@ import {
 } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
 import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 const TITEL = 'Stammdaten bearbeiten';
 
@@ -163,9 +164,9 @@ function EditStaffForm({ staff, privat }: { staff: StaffMember; privat: boolean 
         </Hinweisfenster>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Der Beschäftigungsstatus wird hier nicht verändert.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

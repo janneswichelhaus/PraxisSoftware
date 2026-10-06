@@ -26,6 +26,7 @@ import {
 } from './api';
 import { TrainingClientFields } from './TrainingClientFields';
 import { TRAINING_ANLEGEN } from './TrainingClientsPage';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 function geboren(treffer: TrainingDuplicate): string {
   return treffer.date_of_birth ? `, geb. ${formatDate(treffer.date_of_birth)}` : '';
@@ -240,10 +241,10 @@ export function NewTrainingClientPage() {
         </Hinweisfenster>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Erfasst werden Name, Kontakt und Vertrag. Angaben zur Gesundheit gehören nicht hierher – sie
         brauchen eine eigene Einwilligung und kommen später.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

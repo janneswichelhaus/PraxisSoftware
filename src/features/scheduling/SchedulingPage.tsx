@@ -60,6 +60,7 @@ import {
   type AbweichungsTag,
   type Blockfehler,
 } from './zeitbloecke';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Arbeitszeiten und Planungseinstellungen der Praxis (CAL-005).
@@ -1365,11 +1366,11 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         </div>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Alle Zeiten gelten in der Zeitzone der Praxis{zone ? ` (${zone})` : ''}. Arbeitszeiten sind
         organisatorische Angaben zur Planung – keine Arbeitszeiterfassung und keine
         Urlaubsverwaltung.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

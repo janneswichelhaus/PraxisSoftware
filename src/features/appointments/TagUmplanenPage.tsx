@@ -29,6 +29,7 @@ import {
   type CancellationReason,
 } from './api';
 import { tageslageNeuLaden } from './tageslage';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Tag umplanen mit Anrufliste (CAL-009, IDEA-PRX-004).
@@ -386,9 +387,9 @@ function Umplanung({
                 ))}
               </CardGrid>
 
-              <p className="text-ink-muted mt-4 max-w-prose text-xs leading-relaxed">
+              <Kleingedrucktes className="mt-4">
                 Die Haken gelten nur, solange diese Seite offen ist – sie werden nicht gespeichert.
-              </p>
+              </Kleingedrucktes>
 
               {/* Nach dem letzten Anruf der Weg zum freien Tag (KAL-19). */}
               <div className="mt-4">

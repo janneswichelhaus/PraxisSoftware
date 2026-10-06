@@ -14,6 +14,7 @@ import {
 import { DocumentationShell } from './DocumentationShell';
 import { FREITEXT } from './format';
 import { fetchTreatmentNoteVersions, findeEintrag, type TreatmentNote } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Änderungsverlauf einer Behandlungsdokumentation (DOK-002, ADR-016 Punkt 5).
@@ -111,10 +112,10 @@ function Verlauf({ appointment, note }: { appointment: Appointment; note: Treatm
         </ol>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Frühere Versionen werden nicht überschrieben und nicht gelöscht. Das Lesen des Verlaufs wird
         gesondert protokolliert.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

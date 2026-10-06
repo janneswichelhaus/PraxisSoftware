@@ -22,6 +22,7 @@ import {
   type MfaEinrichtung,
 } from './api';
 import { kennwortFehler, type Kennwortfehler } from './kennwortFehler';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
 const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';
@@ -428,11 +429,11 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <ZweiterFaktor user={user} />
         <Sitzungen />
 
-        <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-10">
           {/* Wer Rollen ändert, sagt der Kopf der Seite (UX-005i). */}
           Kennwortänderung, zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne
           Kennwort, ohne Einmalkennwort und ohne Gerätekennung.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

@@ -14,6 +14,7 @@ import {
   loeseLinkEin,
   traegtEinmalCode,
 } from './linkEinloesen';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Anmelden über den Link aus der Zugangsmail (FIX-002).
@@ -140,11 +141,11 @@ export function ZugangPage() {
       {/* Solange die bisherige Sitzung besteht, im Präsens (AUTH-04): Der
           Link hat sie nicht ersetzt, sie ist weiter angemeldet. */}
       {fremdeSitzungBeimOeffnen.current && zustand !== 'fremde-sitzung' && session ? (
-        <p className="text-ink-muted mt-6 text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-6">
           {konto
             ? `Hinweis: Auf diesem Gerät ist weiterhin ${konto} angemeldet.`
             : 'Hinweis: Auf diesem Gerät ist weiterhin das bisherige Konto angemeldet.'}
-        </p>
+        </Kleingedrucktes>
       ) : null}
     </Vollseite>
   );

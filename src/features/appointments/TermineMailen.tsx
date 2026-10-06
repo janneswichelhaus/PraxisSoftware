@@ -9,6 +9,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { addAppointmentNotification, type AppointmentSlipEntry } from './api';
 import { Rueckmeldung } from './Rueckmeldungen';
 import { mailOeffnen, terminmailEntwurf, type Terminmail } from './terminmail';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die Termine per E-Mail zukommen lassen (CAL-013, ANN-041).
@@ -52,7 +53,7 @@ export function TermineMailen({
   // vielleicht-Adresse.
   if (!patient.email) {
     return (
-      <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes>
         Für eine E-Mail fehlt die Adresse – eintragen darf sie nur, wer sie von der Patient:in
         selbst hat.{' '}
         {/* Der Abstecher in die Stammdaten und zurück auf diese Seite (UX-012).
@@ -66,7 +67,7 @@ export function TermineMailen({
         >
           Adresse in den Stammdaten ergänzen
         </Textlink>
-      </p>
+      </Kleingedrucktes>
     );
   }
 
@@ -194,12 +195,12 @@ function Mailentwurf({
               </Statusmeldung>
             ) : null}
 
-            <p className="text-ink-muted mt-3 text-xs leading-relaxed">
+            <Kleingedrucktes className="mt-3">
               Eine E-Mail ist unterwegs nicht verschlüsselt. Senden Sie die Termine nur, wenn die
               Patient:in das ausdrücklich wünscht und weiß, dass die Nachricht unverschlüsselt geht.
               Die Anwendung verschickt nichts selbst: Sie öffnet die Nachricht in Ihrem
               Mailprogramm, gesendet wird sie dort von Ihnen.
-            </p>
+            </Kleingedrucktes>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
               <Button type="button" onClick={() => uebergabeStarten(entwurf)}>

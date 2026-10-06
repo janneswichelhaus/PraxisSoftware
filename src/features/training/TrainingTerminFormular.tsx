@@ -26,6 +26,7 @@ import {
   terminFehlerliste,
   terminFeldfehler,
 } from '@/features/appointments/terminformular';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Die Felder, an denen sich eine Eingabe von der Vorbelegung unterscheiden kann. */
 const FELDER: readonly AppointmentFormField[] = [
@@ -303,10 +304,10 @@ export function TrainingTerminFormular({
         </ButtonLink>
       </div>
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Am Termin stehen nur organisatorische Angaben. Was in der Einheit passiert, gehört nicht
         hierher.
-      </p>
+      </Kleingedrucktes>
     </form>
   );
 }

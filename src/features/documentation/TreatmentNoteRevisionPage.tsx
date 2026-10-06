@@ -30,6 +30,7 @@ import {
   reviseTreatmentNote,
   type TreatmentNote,
 } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die Sätze des Schutzes für die Korrektur (DOK-05).
@@ -210,10 +211,10 @@ function Formular({
         </div>
       </form>
 
-      <p id={folgeId} className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes id={folgeId} className="mt-10">
         Jede Korrektur wird als neue Version festgeschrieben und protokolliert. Frühere Versionen
         werden nicht überschrieben.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

@@ -19,6 +19,7 @@ import { SearchCombobox, type Suchtreffer } from './SearchCombobox';
 import { SearchField } from './SearchField';
 import { Feldgruppe, Section } from './Section';
 import { Statusmeldung } from './Statusmeldung';
+import { Kleingedrucktes } from './Kleingedrucktes';
 import { SubNav, type SubNavEintrag } from './SubNav';
 import { Symbolknopf } from './Symbolknopf';
 import { HakenSymbol } from './HakenSymbol';
@@ -1884,5 +1885,20 @@ describe('Gesperrter Knopf (BEF-069 Option 1, Variante B; SKN-002)', () => {
     for (const knopf of [haupt, leise, screen.getByRole('button', { name: 'Zweitens' })]) {
       expect(knopf.className).not.toMatch(/(^| )hover:/);
     }
+  });
+});
+
+describe('Kleingedrucktes (BEF-068 Option 2, Variante K-A; SKN-004)', () => {
+  it('setzt den Satz in 14 px Leise ueber das Token, mit Abstand und Kennung der Seite', () => {
+    render(
+      <Kleingedrucktes id="hinweis" className="mt-10">
+        Das Öffnen der Akte wird protokolliert.
+      </Kleingedrucktes>,
+    );
+    const satz = screen.getByText('Das Öffnen der Akte wird protokolliert.');
+    expect(satz.tagName).toBe('P');
+    expect(satz).toHaveAttribute('id', 'hinweis');
+    expect(satz).toHaveClass('text-kleingedruckt', 'text-ink-muted', 'leading-relaxed', 'mt-10');
+    expect(satz.className).not.toContain('text-xs');
   });
 });

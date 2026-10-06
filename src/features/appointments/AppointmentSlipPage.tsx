@@ -16,6 +16,7 @@ import {
   slipOrt,
   staffName,
 } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die Termine der Patient:in mitteilen (CAL-011, CAL-013, `IDEA-PRX-006`).
@@ -183,9 +184,9 @@ export function AppointmentSlipPage() {
           </ul>
         )}
 
-        <p className="text-ink-muted mt-6 text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-6">
           Bitte sagen Sie einen Termin rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können.
-        </p>
+        </Kleingedrucktes>
       </section>
 
       {eintraege.length > 0 ? (
