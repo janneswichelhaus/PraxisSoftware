@@ -746,6 +746,24 @@ describe('AppShell: Seitenwechsel (NAV-09, VER-06)', () => {
     expect(screen.getByRole('main')).toHaveFocus();
   });
 
+  it('nennt den Tab wie die Seite - fest je Route, nie mit Daten (BEF-050, RAH-008)', async () => {
+    const user = userEvent.setup();
+    mitRouter(
+      <AppShell user={testUser(['therapist'], 'Anna Beispiel')} onSignOut={vi.fn()}>
+        <Seite />
+      </AppShell>,
+    );
+    // Schon beim ersten Zeichnen, nicht erst nach einem Wechsel.
+    expect(document.title).toBe('Übersicht – Own Motion');
+
+    await user.click(screen.getAllByRole('link', { name: 'Kalender' })[0]!);
+    expect(document.title).toBe('Kalender – Own Motion');
+
+    await user.click(screen.getAllByRole('link', { name: 'Patient:innen' })[0]!);
+    expect(document.title).toBe('Patient:innen – Own Motion');
+    expect(document.title).not.toContain('Anna');
+  });
+
   it('lässt den Fokus, den die neue Seite selbst setzt', async () => {
     const user = userEvent.setup();
     mitRouter(
