@@ -734,7 +734,7 @@ export function CalendarGrid({
               // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
               <div
                 key={m}
-                className="text-ink-muted absolute right-1 pt-0.5 text-[0.6875rem]"
+                className="text-ink-muted absolute right-1 pt-0.5 text-xs"
                 style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
               >
                 {minuteZuZeit(m)}
@@ -748,7 +748,7 @@ export function CalendarGrid({
               ? halbe.map((m) => (
                   <div
                     key={m}
-                    className="text-ink-muted absolute right-1 pt-0.5 text-[0.625rem]"
+                    className="text-ink-muted absolute right-1 pt-0.5 text-xs"
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   >
                     {minuteZuZeit(m)}

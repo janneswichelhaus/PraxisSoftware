@@ -305,7 +305,7 @@ export function Funktionssuche({ user }: { user: CurrentUser }) {
           Strg-Taste. Am Mac heißt sie ⌘ (NAV-16). */}
       <kbd
         aria-hidden="true"
-        className="border-line text-ink-muted bg-surface rounded-pill pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 border px-1.5 py-0.5 text-[0.6875rem] sm:pointer-fine:block"
+        className="border-line text-ink-muted bg-surface rounded-pill pointer-events-none absolute top-1/2 right-3 hidden -translate-y-1/2 border px-1.5 py-0.5 text-xs sm:pointer-fine:block"
       >
         {TASTENKUERZEL}
       </kbd>

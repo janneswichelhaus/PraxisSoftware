@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
 import { beschriftung } from './darstellung';
@@ -30,15 +30,38 @@ const OBEN = 18;
 const UNTEN = 26;
 
 /**
- * Schriftgröße im Bild, in Bildeinheiten (RSP-09). Das Bild ist 320 Einheiten
- * breit und skaliert mit: Ab 300 px Bildbreite ergibt das mindestens 12 px am
- * Schirm. Bis UXR-009 waren es 9 Einheiten, am Telefon rund 10 px.
+ * Schriftgröße im Bild, in Bildeinheiten (RSP-09; Runde 2, BEF-068 Option 2).
+ * Das Bild ist 320 Einheiten breit und skaliert mit. 13 Einheiten ergeben erst
+ * ab rund 295 px Bildbreite 12 px am Schirm; am Telefon ist das Bild schmaler.
+ * Seit Runde 2 rechnet die Schrift aus der gerenderten Breite, sodass sie nie
+ * unter 12 px fällt (Handoff Schrift und Knöpfe, Abschnitt 3). Nach oben
+ * begrenzt, damit Nummern über dem Bild nicht angeschnitten werden.
  */
-const SCHRIFT = 13;
+const SCHRIFT_MIN = 13;
+const SCHRIFT_MAX = 18;
 
-/** So nah beieinander überlagern sich zwei Wertebeschriftungen (Breite zweier Ziffern, Zeilenhöhe). */
-const ABSTAND_X = SCHRIFT * 1.3;
-const ABSTAND_Y = SCHRIFT;
+/** Bildeinheiten, die bei `breitePx` Bildbreite 12 px am Schirm ergeben. */
+export function schriftInEinheiten(breitePx: number | null): number {
+  if (!breitePx || breitePx <= 0) return SCHRIFT_MIN;
+  const noetig = Math.ceil(((12 * BREITE) / breitePx) * 10) / 10;
+  return Math.min(SCHRIFT_MAX, Math.max(SCHRIFT_MIN, noetig));
+}
+
+/** Die gerenderte Breite des Bildes; ohne ResizeObserver (jsdom) `null`. */
+function useBildbreite() {
+  const ref = useRef<SVGSVGElement>(null);
+  const [breite, setBreite] = useState<number | null>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const beobachter = new ResizeObserver(([eintrag]) => {
+      if (eintrag) setBreite(Math.round(eintrag.contentRect.width));
+    });
+    beobachter.observe(element);
+    return () => beobachter.disconnect();
+  }, []);
+  return { ref, breite };
+}
 
 export function Messreihenbild({
   reihe,
@@ -50,6 +73,11 @@ export function Messreihenbild({
   /** Tage durchgeführter Termine. */
   termine: readonly string[];
 }) {
+  const { ref: bildRef, breite } = useBildbreite();
+  const SCHRIFT = schriftInEinheiten(breite);
+  /** So nah beieinander überlagern sich zwei Wertebeschriftungen (Breite zweier Ziffern, Zeilenhöhe). */
+  const ABSTAND_X = SCHRIFT * 1.3;
+  const ABSTAND_Y = SCHRIFT;
   const skala = reihe.item.skala ?? { min: 0, max: 10 };
   const bereich = zeitraum([
     ...reihe.punkte.map((p) => p.datum),
@@ -102,7 +130,12 @@ export function Messreihenbild({
           </span>
         ) : null}
       </figcaption>
-      <svg viewBox={`0 0 ${BREITE} ${HOEHE}`} className="h-auto w-full max-w-lg" aria-hidden="true">
+      <svg
+        ref={bildRef}
+        viewBox={`0 0 ${BREITE} ${HOEHE}`}
+        className="h-auto w-full max-w-lg"
+        aria-hidden="true"
+      >
         {[skala.min, mitte, skala.max].map((wert) => (
           <g key={wert}>
             <line
