@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as StaffApi from '@/features/staff/api';
@@ -87,6 +88,16 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   useParams: () => ({ appointmentId: TERMIN_ID }),
 }));
 
+// UBK-012: hier zählt, welche Frage die Seite stellt.
+const wegfragen = vi.hoisted((): { letzte: unknown } => ({ letzte: null }));
+vi.mock('./wegpruefung', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useWegpruefung: (frage: unknown) => {
+    wegfragen.letzte = frage;
+    return { stand: 'aus' };
+  },
+}));
+
 const { EditAppointmentPage } = await import('./EditAppointmentPage');
 
 function rendern() {
@@ -150,6 +161,7 @@ describe('EditAppointmentPage', () => {
 
   it('speichert gegen den gelesenen Stand', async () => {
     const user = userEvent.setup();
+    const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
     rendern();
     await formularAbwarten();
 
@@ -175,6 +187,10 @@ describe('EditAppointmentPage', () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
+    // UBK-011: auch Tagesroute und Fahrpuffer.
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] });
+    expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+    neuLaden.mockRestore();
   });
 
   it('wechselt die behandelnde Person', async () => {
@@ -219,6 +235,14 @@ describe('EditAppointmentPage', () => {
     expect(await screen.findByText('Festgehaltene Anschrift')).toBeInTheDocument();
     expect(screen.getByText('Sicherungsweg 5, 12345 Alteswohnort')).toBeInTheDocument();
     expect(screen.queryByText('Altstrasse 1, 72070 Tuebingen')).not.toBeInTheDocument();
+    // UBK-012: „Passt es?“ rechnet mit der Position dieses Termins, nicht mit
+    // der Akte - und der Termin ist nicht sein eigener Nachbar.
+    await waitFor(() =>
+      expect(wegfragen.letzte).toMatchObject({
+        ort: { art: 'bestehend', terminId: TERMIN_ID, person: STAFF_ANNA },
+        ohneTermin: TERMIN_ID,
+      }),
+    );
   });
 
   it('blendet beim Wechsel zu Video Standort und Adresse aus', async () => {

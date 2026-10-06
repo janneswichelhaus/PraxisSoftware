@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, screen, within } from '@testing-library/react';
+import { fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as TodayApi from '@/features/today/api';
@@ -40,6 +40,17 @@ vi.mock('./startort', async (importOriginal) => {
   const actual = await importOriginal<typeof Startort>();
   return { ...actual, fetchStandorte: () => fetchStandorte() as unknown };
 });
+
+// UBK-015: Route über die eigene Function; ohne Angabe bleibt sie offen.
+const rufeFunktionAuf = vi.fn((): Promise<unknown> => new Promise(() => {}));
+vi.mock('@/lib/location/funktion', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  rufeFunktionAuf: () => rufeFunktionAuf(),
+}));
+vi.mock('./fahrzeitfaktor-api', () => ({
+  fetchFahrzeitfaktor: () => Promise.resolve(1),
+  saveFahrzeitfaktor: () => Promise.resolve(),
+}));
 
 vi.mock('./TagesrouteKarte', () => ({
   default: (props: { stopps: unknown[] }) => {
@@ -101,6 +112,8 @@ beforeEach(() => {
     { staff_member_id: 'jannes', display_name: 'Jannes Test' },
   ]);
   fetchStandorte.mockResolvedValue([]);
+  rufeFunktionAuf.mockReset();
+  rufeFunktionAuf.mockImplementation(() => new Promise(() => {}));
 });
 
 describe('TourenPage', () => {
@@ -158,8 +171,93 @@ describe('TourenPage', () => {
 
   it('bietet die Praxis als Start nicht an, solange sie keine Kartenposition hat', async () => {
     renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
-    const option = await screen.findByRole('option', { name: 'Praxis (ohne Kartenposition)' });
-    expect(option).toBeDisabled();
+    // Start und Ende (UBK-015) - beide bieten sie nicht an.
+    const optionen = await screen.findAllByRole('option', { name: 'Praxis (ohne Kartenposition)' });
+    expect(optionen).toHaveLength(2);
+    for (const option of optionen) expect(option).toBeDisabled();
+  });
+});
+
+describe('TourenPage: Garage und Rueckweg (UBK-015, ANN-240)', () => {
+  const PRAXIS = {
+    id: 'ort',
+    name: 'Praxis',
+    street: 'Praxisweg',
+    house_number: '1',
+    postal_code: '72070',
+    city: 'Tuebingen',
+    lat: 48.5,
+    lon: 9.05,
+    geocode_precision: 'address',
+  };
+
+  it('beginnt und endet voreingestellt an der Garage und zeigt den Rueckweg', async () => {
+    fetchStandorte.mockResolvedValue([
+      { ...PRAXIS, garage_street: 'Radweg', garage_lat: 48.49, garage_lon: 9.04 },
+    ]);
+    rufeFunktionAuf.mockResolvedValue({
+      ok: true,
+      quelle: 'anbieter',
+      value: {
+        distanceMeters: 7000,
+        durationSeconds: 28 * 60,
+        legs: [
+          { distanceMeters: 3000, durationSeconds: 10 * 60 },
+          { distanceMeters: 4000, durationSeconds: 18 * 60 },
+        ],
+        geometry: [],
+      },
+    });
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+
+    await screen.findByText('Max Mustermann');
+    expect(screen.getByLabelText('Start')).toHaveValue('garage');
+    expect(screen.getByLabelText('Ende')).toHaveValue('garage');
+    expect(screen.getByText('Start an der Garage')).toBeInTheDocument();
+    const ende = await screen.findByTestId('tour-ende');
+    expect(ende).toHaveTextContent('Ende an der Garage');
+    expect(ende).toHaveTextContent(/Rückweg 18 Min\. · 4,0 km/);
+  });
+
+  it('zeigt keinen Rueckweg, wenn der letzte Besuch an der Garage liegt - nur das Ende', async () => {
+    fetchStandorte.mockResolvedValue([
+      { ...PRAXIS, garage_street: 'Radweg', garage_lat: 48.49, garage_lon: 9.04 },
+    ]);
+    rufeFunktionAuf.mockResolvedValue({
+      ok: true,
+      quelle: 'anbieter',
+      value: {
+        distanceMeters: 3000,
+        durationSeconds: 10 * 60,
+        legs: [
+          { distanceMeters: 3000, durationSeconds: 10 * 60 },
+          { distanceMeters: 0, durationSeconds: 0 },
+        ],
+        geometry: [],
+      },
+    });
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+
+    const ende = await screen.findByTestId('tour-ende');
+    // Erst wenn die Route da ist, steht fest, dass kein Rückweg kommt.
+    await waitFor(() => expect(rufeFunktionAuf).toHaveBeenCalled());
+    await waitFor(() =>
+      expect(screen.queryByText('Route und Fahrzeiten werden berechnet …')).toBeNull(),
+    );
+    expect(ende).toHaveTextContent('Ende an der Garage');
+    expect(ende).not.toHaveTextContent('Gleicher Ort');
+  });
+
+  it('nimmt ohne Garage die Praxis und laesst das Ende am letzten Besuch zu', async () => {
+    const user = userEvent.setup();
+    fetchStandorte.mockResolvedValue([PRAXIS]);
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+    await screen.findByText('Max Mustermann');
+    expect(screen.getByLabelText('Start')).toHaveValue('standort');
+    expect(screen.getAllByRole('option', { name: 'Garage (nicht gesetzt)' })[0]).toBeDisabled();
+
+    await user.selectOptions(screen.getByLabelText('Ende'), 'besuch');
+    expect(screen.queryByTestId('tour-ende')).toBeNull();
   });
 });
 
@@ -233,14 +331,18 @@ describe('TourenPage nach dem UX-Review (UXR-003)', () => {
   it('behauptet vor dem Laden der Standorte nichts ueber den Startort (TER-11, ZST-09)', async () => {
     fetchStandorte.mockReturnValue(new Promise(() => {}));
     const { unmount } = renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
-    expect(await screen.findByRole('option', { name: 'Praxis' })).toBeDisabled();
+    for (const option of await screen.findAllByRole('option', { name: 'Praxis' })) {
+      expect(option).toBeDisabled();
+    }
     unmount();
 
     fetchStandorte.mockRejectedValue(new Error('Funkloch'));
     renderWithProviders(<TourenPage user={jannes} />, '/touren?tag=2026-09-10');
-    expect(
-      await screen.findByRole('option', { name: 'Praxis (Startort nicht geladen)' }),
-    ).toBeDisabled();
+    for (const option of await screen.findAllByRole('option', {
+      name: 'Praxis (Startort nicht geladen)',
+    })) {
+      expect(option).toBeDisabled();
+    }
   });
 
   it('erklaert den Datenweg ohne Projekt- und Technikwoerter (WRT-03, TER-07)', async () => {

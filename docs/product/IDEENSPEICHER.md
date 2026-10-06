@@ -239,6 +239,11 @@ einem Verwurf. Neue Einträge hängen hinten an.
   (`IDEA-PRX-055`, neu). Weg über das AI Gateway, Anbieterwahl ist ein
   Stopp nach ADR-002. **Kein Auftrag.**
 
+- **2026-10-05** — Jannes wünscht sich im Loop UBK-EPIC-002 eine
+  Optimierung der Tagesreihenfolge; den Lückenfinder über die ganze Woche
+  will er nicht. Als `IDEA-PRX-056` (Reihenfolgevorschlag für den Tag)
+  abgelegt; vor jedem Bau eine neue Fassung von ADR-019. **Kein Auftrag.**
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -267,5 +272,4 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-10-01 (`IDEA-PRX-046`, `-053`, `IDEA-KOM-008`, eingetragen vom Branch
-vom 2026-09-28). Ältere Stände: `git log -- docs/product/`.
+Zuletzt aktualisiert: 2026-10-05 (`IDEA-PRX-056`). Ältere Stände: `git log -- docs/product/`.

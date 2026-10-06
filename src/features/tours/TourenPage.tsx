@@ -13,7 +13,7 @@ import { Select } from '@/components/ui/Select';
 import { formatDate } from '@/lib/datum';
 import { fetchAssignableTherapists, todayInTimeZone } from '@/features/appointments/api';
 import type { CurrentUser } from '@/features/session/types';
-import { fetchStandorte, startpunkt } from './startort';
+import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
 import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
@@ -40,17 +40,27 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * ein Blatt von gestern sähe sonst aus wie eins von heute.
  */
 
-type Startwahl = 'standort' | 'erster';
+/**
+ * UBK-015, ANN-240: Wo die Tour beginnt und endet - Garage, Praxis oder der
+ * erste bzw. letzte Besuch. `null` ist die Voreinstellung: die Garage, falls
+ * gesetzt, sonst die Praxis.
+ */
+type Ortswahl = 'garage' | 'standort' | 'besuch';
 
 /** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
 const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
+
+function alsOrtswahl(wert: string): Ortswahl {
+  return wert === 'garage' || wert === 'besuch' ? wert : 'standort';
+}
 
 export function TourenPage({ user }: { user: CurrentUser }) {
   const zeitzone = user.organizationTimeZone ?? 'Europe/Berlin';
   const [suche, setSuche] = useSearchParams();
   const tag = suche.get('tag') ?? todayInTimeZone(zeitzone);
   const gewuenscht = suche.get('person');
-  const [startwahl, setStartwahl] = useState<Startwahl>('standort');
+  const [startwahl, setStartwahl] = useState<Ortswahl | null>(null);
+  const [endwahl, setEndwahl] = useState<Ortswahl | null>(null);
   // UBK-009: Die Karte steht am Telefon zugeklappt, am Rechner offen - die
   // Liste ist das, wofür man die Tour öffnet. Gezeichnet (und damit Kacheln
   // geladen) wird sie erst, wenn sie offen ist.
@@ -88,8 +98,15 @@ export function TourenPage({ user }: { user: CurrentUser }) {
 
   const { stopps, laedt, fehler, erneut } = useTagesstopps(tag, person);
   const praxisstart = startpunkt(standorte.data?.[0]);
-  const start = startwahl === 'standort' ? praxisstart : null;
-  const fahrten = useFahrten(start, stopps);
+  const garage = garagenpunkt(standorte.data?.[0]);
+  const voreinstellung: Ortswahl = garage ? 'garage' : 'standort';
+  const startArt = startwahl ?? voreinstellung;
+  const endArt = endwahl ?? voreinstellung;
+  const ortDer = (art: Ortswahl) =>
+    art === 'garage' ? garage : art === 'standort' ? praxisstart : null;
+  const start = ortDer(startArt);
+  const ende = ortDer(endArt);
+  const fahrten = useFahrten(start, stopps, ende);
   const personName = personen.data?.find((p) => p.staff_member_id === person)?.display_name;
   // Der Weg zurück aus einem Termin führt in diese Tour, mit Tag und Person -
   // auch wenn die Adresszeile sie noch nicht trägt (TER-03).
@@ -188,7 +205,7 @@ export function TourenPage({ user }: { user: CurrentUser }) {
             >
               {karteOffen ? (
                 <Suspense fallback={<LoadingState label="Karte wird geladen …" />}>
-                  <TagesrouteKarte start={start} stopps={stopps} />
+                  <TagesrouteKarte start={start} stopps={stopps} ende={ende} />
                 </Suspense>
               ) : null}
             </Disclosure>
@@ -201,18 +218,35 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               {/* Start und Drucken in einer Zeile: Am Telefon steht die Liste
                   so ohne Scrollen im Blick (UBK-009). */}
               <div className="flex items-end gap-3">
-                <div className="w-56 min-w-0">
+                <div className="w-40 min-w-0">
                   <Select
                     label="Start"
-                    value={startwahl}
-                    onChange={(e) =>
-                      setStartwahl(e.target.value === 'erster' ? 'erster' : 'standort')
-                    }
+                    value={startArt}
+                    onChange={(e) => setStartwahl(alsOrtswahl(e.target.value))}
                   >
+                    <option value="garage" disabled={garage === null}>
+                      {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
+                    </option>
                     <option value="standort" disabled={praxisstart === null}>
                       {praxisOption}
                     </option>
-                    <option value="erster">Erster Besuch</option>
+                    <option value="besuch">Erster Besuch</option>
+                  </Select>
+                </div>
+                {/* UBK-015: das Ende der Tour - der Rückweg steht als letzte Zeile. */}
+                <div className="w-40 min-w-0">
+                  <Select
+                    label="Ende"
+                    value={endArt}
+                    onChange={(e) => setEndwahl(alsOrtswahl(e.target.value))}
+                  >
+                    <option value="garage" disabled={garage === null}>
+                      {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
+                    </option>
+                    <option value="standort" disabled={praxisstart === null}>
+                      {praxisOption}
+                    </option>
+                    <option value="besuch">Letzter Besuch</option>
                   </Select>
                 </div>
                 <Button type="button" variant="secondary" onClick={() => window.print()}>
@@ -234,6 +268,26 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               stopps={stopps}
               zeitzone={zeitzone}
               startGewaehlt={start !== null}
+              startText={startArt === 'garage' ? 'Start an der Garage' : 'Start an der Praxis'}
+              ende={
+                ende && fahrten.rueckweg
+                  ? {
+                      text: endArt === 'garage' ? 'Ende an der Garage' : 'Ende an der Praxis',
+                      // Endet der Tag am Ort des letzten Besuchs, gibt es
+                      // keinen Rückweg - nur das Ende.
+                      fahrt:
+                        fahrten.rueckweg.sekunden === 0 ? null : (
+                          <Fahrtabschnitt
+                            titel="Rückweg"
+                            sekunden={fahrten.rueckweg.sekunden}
+                            meter={fahrten.rueckweg.meter}
+                            pruefung={null}
+                            zeitzone={zeitzone}
+                          />
+                        ),
+                    }
+                  : null
+              }
               rueckweg={rueckweg}
               zwischen={(index) => (
                 <Fahrtabschnitt

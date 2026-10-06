@@ -1,5 +1,8 @@
 import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
-import { useFahrwege, type FahrwegSpalte } from './fahrwege';
+import { useFahrwege, type Fahrweg, type FahrwegSpalte } from './fahrwege';
+import { tageslageNeuLaden } from './tageslage';
+import type { Terminort, Wegfrage } from './wegpruefung';
+import { useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -29,6 +32,8 @@ import {
   fetchAssignableTherapists,
   fetchAssignableTrainers,
   fetchLocations,
+  formatLocalTime,
+  terminBezeichnung,
   istAusserhalbArbeitszeit,
   istVergangenheit,
   liegtInVergangenheit,
@@ -47,6 +52,7 @@ import {
   type GitterAuswahl,
   type GitterEintrag,
   type GitterFokus,
+  type GitterLuecke,
   type GitterSpalte,
 } from './CalendarGrid';
 import { TerminPanel } from './TerminPanel';
@@ -528,8 +534,8 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       // Nach dem Verschieben steht der Fokus auf „Rückgängig" (KAL-01).
       if (auftrag.zurueck) rueckgaengigFokussieren.current = true;
       // Erst jetzt wandert die Kachel - vorher hat der Server nichts zugesagt.
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      await queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+      // UBK-011: mit Tagesroute und Fahrpuffer - die Fahrwege wandern mit.
+      await tageslageNeuLaden(queryClient);
       // Nach dem Zurückholen gibt es keine Leiste mehr: Der Fokus geht an die
       // Kachel, die zurückgewandert ist (KAL-21).
       if (!auftrag.zurueck) setRasterFokus({ kachel: auftrag.v.terminId });
@@ -670,6 +676,110 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     aktiv: isTherapyStaff(user.roles),
   });
 
+  // UBK-014, ANN-239: Lückenfinder - mit gewählter Patient:in färbt die
+  // Tagesansicht die freien Lücken. Nur ab heute, nur in der Tagesansicht,
+  // nur für die Praxisrollen (Tagesroute und Adresse der Akte).
+  const lueckenSpalten = useMemo((): LueckenSpalte[] => {
+    if (p.ansicht !== 'tag' || !p.patient || !zone || bereich.von < heute) return [];
+    return tagesPersonen.map((t) => ({
+      id: t.staff_member_id,
+      person: t.staff_member_id,
+      baender: arbeitszeitBekannt
+        ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
+        : null,
+      belegt: [
+        ...eintraege
+          .filter(
+            (e) =>
+              e.staff_member_id === t.staff_member_id &&
+              e.status !== 'cancelled' &&
+              dayKey(e.starts_at, zone) === bereich.von,
+          )
+          .map((e) => ({
+            vonMinute: minutesOfDay(e.starts_at, zone),
+            bisMinute: minutesOfDay(e.ends_at, zone),
+          })),
+        ...belegtFuer(t.staff_member_id, bereich.von),
+      ],
+    }));
+    // Die Bänder hängen an den geladenen Arbeitszeiten und Belegungen.
+  }, [
+    p.ansicht,
+    p.patient,
+    zone,
+    bereich.von,
+    heute,
+    tagesPersonen,
+    arbeitszeitBekannt,
+    wochenplanDaten,
+    ausnahmenDaten,
+    eintraege,
+    belegtDaten,
+  ]);
+  const luecken = useLueckenfinder({
+    spalten: lueckenSpalten,
+    datum: bereich.von,
+    patientId: p.patient,
+    zeitzone: zone ?? null,
+    dauer: TERMINFENSTER_MINUTEN,
+    aktiv: isTherapyStaff(user.roles),
+    abMinute: bereich.von === heute && jetztMinute !== null ? jetztMinute : 0,
+  });
+  const lueckenHinweis =
+    p.ansicht !== 'tag'
+      ? 'Freie Lücken mit Fahrweg zeigt die Tagesansicht.'
+      : bereich.von < heute
+        ? null
+        : luecken.stand === 'nicht_verortet'
+          ? 'Die Adresse ist nicht verortet – Lücken nicht geprüft.'
+          : luecken.stand === 'laedt'
+            ? 'Freie Lücken werden geprüft …'
+            : luecken.stand === 'bereit'
+              ? `Freie Lücken: ✓ passt, ! knapp, × passt nicht – mit Fahrweg vom Termin davor und zum Termin danach, ${TERMINFENSTER_MINUTEN} Minuten Termin. Nur Auskunft.${
+                  luecken.ungeprueft ? ' Einige Lücken ließen sich nicht prüfen.' : ''
+                }`
+              : null;
+  const lueckenDer = (spalte: string): GitterLuecke[] | undefined =>
+    luecken.stand === 'bereit'
+      ? (luecken.jeSpalte.get(spalte) ?? []).map((l) => ({
+          vonMinute: l.vonMinute,
+          bisMinute: l.bisMinute,
+          stufe: l.stufe,
+          ab: l.ab && zone ? formatLocalTime(l.ab, zone) : null,
+        }))
+      : undefined;
+
+  /**
+   * UBK-016, ANN-241: Was das Menü an einem Fahrweg sagt - von → nach mit den
+   * Namen aus den geladenen Terminen (keine neue Abfrage), Minuten, Kilometer,
+   * das Ziel für „Navigation starten" und der Weg in die Tour. Ein Warnblock
+   * (ANN-236) bleibt Darstellung.
+   */
+  function mitAuskunft(wege: readonly Fahrweg[], datum: string, person: string | null) {
+    if (!person) return wege;
+    const name = (id: string) => {
+      const termin = eintraege.find((e) => e.id === id);
+      return termin ? terminBezeichnung(termin) : 'Termin';
+    };
+    const tourZiel = `/touren?${new URLSearchParams({ tag: datum, person }).toString()}`;
+    return wege.map((w) =>
+      w.veraltet
+        ? w
+        : {
+            ...w,
+            auskunft: {
+              von: w.vonTerminId ? name(w.vonTerminId) : (w.ort ?? 'Praxis'),
+              nach: w.rueckweg ? (w.ort ?? 'Praxis') : name(w.terminId),
+              minuten: w.minuten,
+              meter: w.meter ?? null,
+              ziel: w.ziel ? { kind: 'coordinate' as const, position: w.ziel } : null,
+              rueckweg: w.rueckweg === true,
+              tourZiel,
+            },
+          },
+    );
+  }
+
   const spaltenModell: GitterSpalte[] =
     p.ansicht === 'tag'
       ? tagesPersonen.map((t) => ({
@@ -682,7 +792,12 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             ? arbeitszeitBaender(t.staff_member_id, bereich.von, wochenplanDaten, ausnahmenDaten)
             : null,
           belegt: belegtFuer(t.staff_member_id, bereich.von),
-          fahrwege: fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
+          fahrwege: mitAuskunft(
+            fahrwege.jeSpalte.get(t.staff_member_id) ?? [],
+            bereich.von,
+            t.staff_member_id,
+          ),
+          luecken: lueckenDer(t.staff_member_id),
           ziel: zumWochenplan(t.staff_member_id, t.display_name),
         }))
       : wochenTage.map((tag) => ({
@@ -698,7 +813,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               ? arbeitszeitBaender(wochenPerson, tag, wochenplanDaten, ausnahmenDaten)
               : null,
           belegt: wochenPerson ? belegtFuer(wochenPerson, tag) : [],
-          fahrwege: fahrwege.jeSpalte.get(tag) ?? [],
+          fahrwege: mitAuskunft(fahrwege.jeSpalte.get(tag) ?? [], tag, wochenPerson),
           ziel: zumTag(tag),
         }));
 
@@ -711,7 +826,10 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   // ohnehin vollständig, und eine eigene Serverabfrage je Patient:in wäre ein
   // zweiter Weg zu denselben Daten. Was sichtbar ist, entscheidet unverändert
   // die RLS (ADR-004).
-  const sichtbar = p.patient ? nachPerson.filter((e) => e.patient_id === p.patient) : nachPerson;
+  //
+  // BEF-053 Punkt 1 (ANN-239): Die übrigen Termine bleiben als „belegt“
+  // stehen, statt zu verschwinden - sonst sähe beim Planen jede Zeit frei aus.
+  const sichtbar = nachPerson;
 
   // Der Name für die Filteranzeige stammt aus den geladenen Terminen und nicht
   // aus einer zusätzlichen Abfrage: Wer aus der Akte kommt, landet auf einem
@@ -733,6 +851,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     // gezogen: Die Geste liest den Termin über die Sicht der Praxis.
     ziehbar: e.status === 'confirmed' && e.kind !== 'training' && darfAendern,
     ...(e.id === neuerTermin ? { neu: true } : {}),
+    ...(p.patient && e.patient_id !== p.patient ? { zurueckgenommen: true } : {}),
   }));
 
   /**
@@ -759,6 +878,38 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
   );
 
   /** Übersetzt eine Zielspalte zurück in Person und Datum. */
+  /**
+   * „Passt es?“ zu einer Verschiebung (UBK-013): dieselbe Frage wie im
+   * Terminformular (UBK-012). Ein Hausbesuch behält seine Anschrift; seine
+   * Position steht in der Route seines bisherigen Tages. Ohne Recht auf die
+   * Tagesroute fragt das Ziehen nicht - die Trainingsbetreuung zieht ihre
+   * Termine ohne Auskunft, statt Abweisungen zu sammeln.
+   */
+  function wegfrageFuer(ziel: {
+    terminId: string;
+    spalteId: string;
+    startMinute: number;
+  }): Wegfrage | null {
+    const g = bekannt.current.get(ziel.terminId);
+    if (!g || !zone || g.eintrag.kind === 'internal') return null;
+    const e = g.eintrag;
+    const ort: Terminort =
+      e.appointment_type === 'home_visit'
+        ? { art: 'bestehend', terminId: e.id, datum: g.datum, person: e.staff_member_id }
+        : e.appointment_type === 'practice' && e.location_id
+          ? { art: 'practice', standortId: e.location_id }
+          : { art: 'video' };
+    return {
+      person: p.ansicht === 'tag' ? ziel.spalteId : e.staff_member_id,
+      datum: p.ansicht === 'tag' ? bereich.von : ziel.spalteId,
+      beginnMinute: ziel.startMinute,
+      endeMinute: ziel.startMinute + (g.endeMinute - g.beginnMinute),
+      ort,
+      ohneTermin: e.id,
+      zeitzone: zone,
+    };
+  }
+
   function ablegen(ziel: { terminId: string; spalteId: string; startMinute: number }) {
     // Nach dem Blaettern waehrend der Geste steht der Termin nicht mehr im
     // gezeigten Ausschnitt; sein Ursprung kommt dann aus dem Gedaechtnis
@@ -1498,15 +1649,23 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           role="status"
           className="border-line-strong bg-surface-sunken rounded-card mt-4 flex flex-wrap items-center justify-between gap-3 border px-4 py-3"
         >
-          <p className="text-ink text-sm">
-            Nur die Termine von{' '}
-            <strong>
-              {gefilterterName
-                ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
-                : 'einer Patient:in'}
-            </strong>
-            . Andere Termine dieses Zeitraums sind ausgeblendet.
-          </p>
+          <div className="min-w-0 space-y-1">
+            <p className="text-ink text-sm">
+              Termine von{' '}
+              <strong>
+                {gefilterterName
+                  ? `${gefilterterName.patient_given_name} ${gefilterterName.patient_family_name}`
+                  : 'einer Patient:in'}
+              </strong>{' '}
+              sind hervorgehoben; andere Zeiten sind als belegt markiert.
+            </p>
+            {/* UBK-014: was die Farben der Lücken heißen - und wann es keine gibt. */}
+            {lueckenHinweis ? (
+              <p className="text-ink-muted text-sm" data-testid="lueckenfinder-hinweis">
+                {lueckenHinweis}
+              </p>
+            ) : null}
+          </div>
           <div className="flex flex-wrap gap-2">
             <ButtonLink to={`/patienten/${p.patient}/termine`} variant="secondary">
               Zur Akte
@@ -1591,7 +1750,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {/* Der Leerzustand steht über dem Raster und nennt den Filter
           (KAL-26) - unter 1 250 px Raster sah ihn niemand. Nicht während
           ein neuer Ausschnitt lädt: Dann stünde der alte Zustand da. */}
-      {rasterDa && !laedtNach && gitterEintraege.length === 0 ? (
+      {rasterDa && !laedtNach && gitterEintraege.every((g) => g.zurueckgenommen === true) ? (
         <EmptyState title={leerTitel(p)} />
       ) : null}
 
@@ -1616,6 +1775,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Auch bei offener Rückfrage darf weitergezogen werden (BEF-015):
           // Die nächste Geste ersetzt den Vorschlag, statt gesperrt zu sein.
           ziehbarErlaubt={darfAendern && !verschieben.isPending}
+          // UBK-013: „Passt es?“ in Ziehvorschau und Rückfrage.
+          wegfrage={isTherapyStaff(user.roles) ? wegfrageFuer : undefined}
+          zeitzone={zone}
           // Rückfrage beim Verschieben (CAL-023, FIX-017): immer, auch bei
           // freier Zielzeit, gezeichnet im Gitter - und der Hinweis auf die
           // Arbeitszeit steht in ihr, nicht in einem zweiten Kasten dahinter.

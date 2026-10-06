@@ -33,7 +33,8 @@ import {
   fristLabel,
   saveDocumentationDeadline,
 } from '@/features/documentation/api';
-import { StartortEinstellung } from '@/features/tours/StartortEinstellung';
+import { FahrzeitfaktorEinstellung } from '@/features/tours/FahrzeitfaktorEinstellung';
+import { GarageEinstellung, StartortEinstellung } from '@/features/tours/StartortEinstellung';
 import {
   RASTER_WERTE,
   WOCHENTAGE,
@@ -1237,7 +1238,7 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
         title={BEGRIFFE.arbeitszeiten}
         description={
           darfRaster
-            ? 'Arbeitszeiten der behandelnden Personen, dazu Praxisraster, Dokumentationsfrist und Startort der Touren. Grundlage für Terminvergabe und Akte.'
+            ? 'Arbeitszeiten der behandelnden Personen, dazu Praxisraster, Dokumentationsfrist, Startort der Touren und Fahrzeitfaktor. Grundlage für Terminvergabe und Akte.'
             : 'Wochenplan und Abweichungen der behandelnden Personen. Grundlage für die Terminvergabe.'
         }
       />
@@ -1245,8 +1246,12 @@ export function SchedulingPage({ user }: { user: CurrentUser }) {
       {darfRaster ? <RasterEinstellung aktuell={user.appointmentGridMinutes} /> : null}
       {darfRaster ? <FristEinstellung organizationId={user.profile.organization_id} /> : null}
       {darfRaster ? (
-        <div className="mt-8">
+        <div className="mt-8 space-y-8">
           <StartortEinstellung />
+          {/* UBK-015: Beginn und Ende der Tour, getrennt vom Ort der Praxistermine. */}
+          <GarageEinstellung />
+          {/* UBK-010: neben dem Startort - beides bestimmt die Fahrzeiten. */}
+          <FahrzeitfaktorEinstellung />
         </div>
       ) : null}
 

@@ -131,23 +131,30 @@ const punkte: Tagesstopp[] = plan.map((t) => ({
 
 const stopps = stoppsDesTages(plan, punkte);
 const start = startpunkt(standort);
-const { punkte: wegpunkte, index } = routenplan(start, stopps);
-// Start = Praxis = Ben; dann Friedrich und zurück in die Praxis.
-const legs = [
-  { distanceMeters: 1600, durationSeconds: 240 },
-  { distanceMeters: 1600, durationSeconds: 240 },
-];
+// UBK-015: Ohne Garage beginnt und endet die Tour an der Praxis - der
+// Rückweg ist der letzte Abschnitt derselben Route.
+const { punkte: wegpunkte, index } = routenplan(start, [...stopps, { position: start }]);
+// Start = Praxis = Ben; dann Friedrich und zurück in die Praxis, je 4 Minuten.
+const legs = wegpunkte.slice(1).map(() => ({ distanceMeters: 1600, durationSeconds: 240 }));
 const route: Routenergebnis = {
   ok: true,
   value: {
     quelle: 'anbieter',
-    route: { distanceMeters: 3200, durationSeconds: 480, legs, geometry: wegpunkte },
+    route: {
+      distanceMeters: legs.length * 1600,
+      durationSeconds: legs.length * 240,
+      legs,
+      geometry: wegpunkte,
+    },
   },
 };
 
 const client = new QueryClient({
   defaultOptions: { queries: { staleTime: Infinity, retry: false } },
 });
+// UBK-010: Fahrzeitfaktor 1,0 - die Minuten der Prüfseite stehen, wie sie
+// eingetragen sind (ANN-237).
+client.setQueryData(['travel-time-factor'], 1);
 client.setQueryData(
   ['assignable-therapists'],
   [{ staff_member_id: STAFF, display_name: 'Jannes Test' }],

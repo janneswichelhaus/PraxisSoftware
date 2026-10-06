@@ -41,25 +41,38 @@ export async function fordereRouteAn(
 }
 
 /**
- * Die Route zu einer Folge von Stopps (MAP-003b).
+ * Die Abfrage einer Route, wie alle Verbraucher sie stellen (MAP-003b).
  *
  * `staleTime: Infinity` hält das Ergebnis für die Sitzung: Dieselben Stopps
  * ergeben dieselbe Route, und jeder erneute Abruf kostet Geld beim Anbieter.
  * `gcTime` ist kurz, damit nichts länger im Speicher steht als nötig — wer
  * die Seite verlässt, lässt nichts zurück.
+ *
+ * Seit UBK-010 steht die Abfrage einmal hier: Der Fachcode stellt sie über
+ * `usePlanungsroute` (`src/features/tours/fahrzeitfaktor.ts`), das den
+ * Fahrzeitfaktor der Praxis anwendet; Übersicht, Tour und Kalender teilen
+ * dieselbe Antwort, weil der Schlüssel derselbe ist - seit UBK-015 mit dem
+ * Ende des Tages als letztem Punkt, auch wo der Rückweg nicht gezeigt wird.
  */
+export function routenAbfrage(waypoints: readonly Coordinate[], profile: TravelProfile) {
+  return {
+    queryKey: ['route', profile, waypoints] as const,
+    queryFn: ({ signal }: { signal: AbortSignal }) => fordereRouteAn(waypoints, profile, signal),
+    staleTime: Infinity,
+    gcTime: 30_000,
+    retry: false,
+  };
+}
+
+/** Die Route zu einer Folge von Stopps, ohne Fahrzeitfaktor (Kartenprototyp). */
 export function useRoute(
   waypoints: readonly Coordinate[],
   profile: TravelProfile,
   { aktiv = true }: { aktiv?: boolean } = {},
 ) {
   return useQuery({
-    queryKey: ['route', profile, waypoints],
-    queryFn: ({ signal }) => fordereRouteAn(waypoints, profile, signal),
+    ...routenAbfrage(waypoints, profile),
     enabled: aktiv && waypoints.length >= 2,
-    staleTime: Infinity,
-    gcTime: 30_000,
-    retry: false,
   });
 }
 

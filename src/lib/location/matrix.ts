@@ -84,18 +84,42 @@ export function useMatrix(
   { aktiv = true }: { aktiv?: boolean } = {},
 ) {
   return useQuery({
-    queryKey: ['matrix', profile, origins, destinations],
-    queryFn: ({ signal }) => fordereMatrixAn(origins, destinations, profile, signal),
-    enabled:
-      aktiv &&
-      origins.length > 0 &&
-      destinations.length > 0 &&
-      origins.length <= MAX_MATRIX_PUNKTE &&
-      destinations.length <= MAX_MATRIX_PUNKTE,
+    ...matrixAbfrage(origins, destinations, profile),
+    enabled: aktiv && matrixZulaessig(origins, destinations),
+  });
+}
+
+/**
+ * Die Abfrage einer Matrix, wie alle Verbraucher sie stellen. Der Fachcode
+ * stellt sie seit UBK-010 über `usePlanungsmatrix`
+ * (`src/features/tours/fahrzeitfaktor.ts`), das den Fahrzeitfaktor anwendet.
+ */
+export function matrixAbfrage(
+  origins: readonly Coordinate[],
+  destinations: readonly Coordinate[],
+  profile: TravelProfile,
+) {
+  return {
+    queryKey: ['matrix', profile, origins, destinations] as const,
+    queryFn: ({ signal }: { signal: AbortSignal }) =>
+      fordereMatrixAn(origins, destinations, profile, signal),
     staleTime: Infinity,
     gcTime: 30_000,
     retry: false,
-  });
+  };
+}
+
+/** Ob eine Matrix überhaupt losgeschickt wird (ANN-091). */
+export function matrixZulaessig(
+  origins: readonly Coordinate[],
+  destinations: readonly Coordinate[],
+): boolean {
+  return (
+    origins.length > 0 &&
+    destinations.length > 0 &&
+    origins.length <= MAX_MATRIX_PUNKTE &&
+    destinations.length <= MAX_MATRIX_PUNKTE
+  );
 }
 
 /**

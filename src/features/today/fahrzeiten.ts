@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { Coordinate } from '@/lib/location/contract';
-import { useRoute, type Routenquelle } from '@/lib/location/route';
-import { fetchStandorte, startpunkt } from '@/features/tours/startort';
+import type { Routenquelle } from '@/lib/location/route';
+import { fetchStandorte, tagesorte } from '@/features/tours/startort';
+import { usePlanungsroute } from '@/features/tours/fahrzeitfaktor';
 import {
-  PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
   routenplan,
@@ -148,9 +148,20 @@ export function useTagesfahrzeiten({
   );
   // Erst wenn feststeht, ob es einen Startort gibt: Sonst gingen zwei Routen
   // hinaus - eine ohne und gleich darauf eine mit Startpunkt.
-  const start = useMemo(() => startpunkt(standorte.data?.[0]), [standorte.data]);
-  const punkte = useMemo(() => routenplan(start, stopps).punkte, [start, stopps]);
-  const route = useRoute(punkte, PRAXISPROFIL, { aktiv: fragen && !standorte.isPending });
+  // UBK-015, ANN-240: Der Tag beginnt an der Garage, falls gesetzt, und endet
+  // dort. Den Rückweg zeigt die Übersicht nicht; sie fragt ihn mit, damit
+  // Übersicht, Tour und Kalender dieselbe Route teilen (ein Abruf beim Anbieter).
+  const orte = useMemo(() => tagesorte(standorte.data), [standorte.data]);
+  const start = orte.start;
+  const punkte = useMemo(
+    () =>
+      routenplan(
+        start,
+        orte.ende && stopps.length > 0 ? [...stopps, { position: orte.ende }] : stopps,
+      ).punkte,
+    [start, orte.ende, stopps],
+  );
+  const route = usePlanungsroute(punkte, { aktiv: fragen && !standorte.isPending });
 
   return useMemo(() => {
     const veraltet = new Set(stopps.filter((s) => s.veraltet).map((s) => s.termin.id));

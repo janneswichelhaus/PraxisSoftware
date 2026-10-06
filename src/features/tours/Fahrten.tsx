@@ -87,7 +87,10 @@ export function Fahrtabschnitt({
   pruefung,
   zeitzone,
   naechsterBeginn,
+  titel = 'Fahrt',
 }: {
+  /** „Fahrt“ zwischen zwei Stopps, „Rückweg“ zum Ende der Tour (UBK-015). */
+  readonly titel?: string;
   readonly sekunden: number | null;
   /**
    * Die Strecke des Abschnitts (UBK-008, Wunsch Jannes): zum Vergleich mit
@@ -118,8 +121,8 @@ export function Fahrtabschnitt({
   }
   const fahrt =
     meter === null || meter <= 0
-      ? `Fahrt ${formatiereFahrzeit(sekunden)}`
-      : `Fahrt ${formatiereFahrzeit(sekunden)} · ${formatiereStrecke(meter)}`;
+      ? `${titel} ${formatiereFahrzeit(sekunden)}`
+      : `${titel} ${formatiereFahrzeit(sekunden)} · ${formatiereStrecke(meter)}`;
   if (pruefung === null) {
     return <p className="text-ink-muted border-line ml-10 border-l-2 pl-3 text-sm">{fahrt}</p>;
   }

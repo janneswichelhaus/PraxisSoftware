@@ -23,10 +23,9 @@ import {
 import { DAUER_PARAM } from '@/features/appointments/terminformular';
 import { fetchPatient, fullName } from '@/features/patients/api';
 import type { CurrentUser } from '@/features/session/types';
-import { PRAXISPROFIL } from '@/features/tours/tagesroute';
 import { fetchWaitlist, windowsText, type TimeWindow } from '@/features/waitlist/api';
 import { formatDate } from '@/lib/datum';
-import { useMatrix } from '@/lib/location/matrix';
+import { usePlanungsmatrix } from '@/features/tours/fahrzeitfaktor';
 import { leseRueckweg, mitRueckweg } from '@/lib/rueckweg';
 import {
   MAX_DAYS,
@@ -91,7 +90,7 @@ function TerritoryBadge({ status }: { status: Slot['territory_status'] }) {
 function useTravelRatings(slots: readonly Slot[], active: boolean) {
   const checked = useMemo(() => slots.slice(0, TRAVEL_CHECK_LIMIT), [slots]);
   const request = useMemo(() => (active ? travelMatrixRequest(checked) : null), [active, checked]);
-  const matrix = useMatrix(request?.origins ?? [], request?.destinations ?? [], PRAXISPROFIL, {
+  const matrix = usePlanungsmatrix(request?.origins ?? [], request?.destinations ?? [], {
     aktiv: request !== null,
   });
   const matrixSettled = request === null || matrix.isSuccess || matrix.isError;

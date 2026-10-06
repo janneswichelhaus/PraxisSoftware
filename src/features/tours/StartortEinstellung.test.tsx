@@ -9,6 +9,8 @@ import { renderWithProviders } from '@/test-utils';
 
 const geocodiere = vi.fn();
 const saveTourStart = vi.fn();
+const saveGarage = vi.fn();
+const clearGarage = vi.fn();
 const fetchStandorte = vi.fn();
 
 vi.mock('@/lib/location/geocode', async (importOriginal) => {
@@ -22,10 +24,12 @@ vi.mock('./startort', async (importOriginal) => {
     ...actual,
     fetchStandorte: () => fetchStandorte() as unknown,
     saveTourStart: (...a: unknown[]) => saveTourStart(...a) as Promise<void>,
+    saveGarage: (...a: unknown[]) => saveGarage(...a) as Promise<void>,
+    clearGarage: (...a: unknown[]) => clearGarage(...a) as Promise<void>,
   };
 });
 
-const { StartortEinstellung } = await import('./StartortEinstellung');
+const { GarageEinstellung, StartortEinstellung } = await import('./StartortEinstellung');
 
 const HAUPTSTANDORT = {
   id: 'loc',
@@ -50,7 +54,55 @@ beforeEach(() => {
   saveTourStart.mockReset();
   fetchStandorte.mockReset();
   saveTourStart.mockResolvedValue(undefined);
+  saveGarage.mockReset();
+  saveGarage.mockResolvedValue(undefined);
+  clearGarage.mockReset();
+  clearGarage.mockResolvedValue(undefined);
   fetchStandorte.mockResolvedValue([HAUPTSTANDORT]);
+});
+
+describe('GarageEinstellung (UBK-015, ANN-240)', { timeout: 20_000 }, () => {
+  it('sagt ohne Garage, dass die Tour an der Praxis beginnt, und speichert eine', async () => {
+    geocodiere.mockResolvedValue({
+      ...TREFFER,
+      value: { ...TREFFER.value, precision: 'address' },
+    });
+    renderWithProviders(<GarageEinstellung />);
+    expect(
+      await screen.findByText('Noch keine Garage – die Tour beginnt und endet an der Praxis.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/keine Wohnadresse/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Garage entfernen' })).toBeNull();
+
+    await ausfuellen();
+    await userEvent.click(screen.getByRole('button', { name: 'Adresse verorten' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Als Garage speichern' }));
+    await waitFor(() => expect(saveGarage).toHaveBeenCalledTimes(1));
+    expect(saveTourStart).not.toHaveBeenCalled();
+    expect(saveGarage.mock.calls[0]![1]).toMatchObject({ street: 'Praxisplatz', city: 'Tübingen' });
+    expect(await screen.findByText('Die Garage ist gespeichert.')).toBeInTheDocument();
+  });
+
+  it('entfernt eine gesetzte Garage', async () => {
+    fetchStandorte.mockResolvedValue([
+      {
+        ...HAUPTSTANDORT,
+        garage_street: 'Radweg',
+        garage_house_number: '7',
+        garage_postal_code: '72072',
+        garage_city: 'Tuebingen',
+        garage_lat: 48.49,
+        garage_lon: 9.04,
+        garage_geocode_precision: 'address',
+      },
+    ]);
+    renderWithProviders(<GarageEinstellung />);
+    expect(await screen.findByText(/^Garage: verortet/)).toBeInTheDocument();
+    expect(screen.getByLabelText('Straße')).toHaveValue('Radweg');
+    await userEvent.click(screen.getByRole('button', { name: 'Garage entfernen' }));
+    await waitFor(() => expect(clearGarage).toHaveBeenCalledWith('loc'));
+    expect(await screen.findByText(/Die Garage ist entfernt/)).toBeInTheDocument();
+  });
 });
 
 /** Füllt die Pflichtfelder aus - die Hausnummer bleibt frei. */

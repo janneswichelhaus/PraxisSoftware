@@ -12,6 +12,7 @@ import {
 } from '@/features/appointments/api';
 import { getTrainingAppointment } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
+import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 
 /**
  * Einen Trainingstermin verschieben (TRN-004).
@@ -97,8 +98,8 @@ export function EditTrainingAppointmentPage({ user }: { user: CurrentUser }) {
         }}
         onGespeichert={() => {
           void queryClient.invalidateQueries({ queryKey: ['training-appointment', t.id] });
-          void queryClient.invalidateQueries({ queryKey: ['appointments'] });
-          void queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+          // UBK-011: Trainingstermine stehen in derselben Tagesroute (ADR-022).
+          void tageslageNeuLaden(queryClient);
           void queryClient.invalidateQueries({ queryKey: ['training-client-appointments'] });
           void navigate(zurueck, { replace: true });
         }}

@@ -220,6 +220,12 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+// UBK-010: Fahrzeitfaktor 1,0 - die Zahlen des Kartendienstes bleiben
+// stehen; der Faktor selbst ist in `fahrzeitfaktor.test.tsx` geprüft.
+vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
+  fetchFahrzeitfaktor: () => Promise.resolve(1),
+  saveFahrzeitfaktor: () => Promise.resolve(),
+}));
 
 /** Ein Punkt der Tagesroute zu einem Eintrag der Tagesliste. */
 function routenpunkt(
@@ -939,13 +945,15 @@ describe('Übersicht', () => {
       expect(screen.queryByText(/Nachbildung/)).toBeNull();
 
       // Genau ein Aufruf, und hinaus gehen nur Punkte und das Fahrprofil:
-      // kein Name, keine Kennung, keine Uhrzeit.
+      // kein Name, keine Kennung, keine Uhrzeit. Der letzte Punkt ist das Ende
+      // des Tages - dieselbe Route wie in Tour und Kalender (UBK-015).
       expect(rufeFunktionAuf).toHaveBeenCalledTimes(1);
       expect(rufeFunktionAuf).toHaveBeenCalledWith('route', {
         waypoints: [
           { lat: 48.52, lon: 9.05 },
           { lat: 48.521, lon: 9.057 },
           { lat: 48.526, lon: 9.064 },
+          { lat: 48.52, lon: 9.05 },
         ],
         profile: 'cargo_bicycle',
       });

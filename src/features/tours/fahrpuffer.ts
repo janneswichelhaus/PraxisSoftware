@@ -3,10 +3,9 @@ import { useQuery } from '@tanstack/react-query';
 import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 import type { Coordinate } from '@/lib/location/contract';
-import { useRoute } from '@/lib/location/route';
 import { fetchDayPlan } from '@/features/today/api';
+import { usePlanungsroute } from './fahrzeitfaktor';
 import {
-  PRAXISPROFIL,
   fahrzeitZwischen,
   fetchDayRoute,
   streckeZwischen,
@@ -87,10 +86,21 @@ export function useTagesstopps(tag: string, person: string, stand = '') {
  * `zwischen[i]` gehört zum Übergang von Stopp i zu Stopp i+1: die Fahrzeit
  * (oder `null`, wenn sie unbekannt ist) und, sobald geprüft, das Ergebnis des
  * Servers.
+ *
+ * UBK-015: Mit `ende` führt die Route nach dem letzten Stopp dorthin zurück -
+ * zur Garage oder zur Praxis; `rueckweg` ist dieser letzte Abschnitt. Er hat
+ * keinen Folgetermin und wird deshalb nicht geprüft.
  */
-export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
-  const plan = useMemo(() => routenplan(start, stopps), [start, stopps]);
-  const route = useRoute(plan.punkte, PRAXISPROFIL);
+export function useFahrten(
+  start: Coordinate | null,
+  stopps: readonly Stopp[],
+  ende: Coordinate | null = null,
+) {
+  const plan = useMemo(
+    () => routenplan(start, ende ? [...stopps, { position: ende }] : stopps),
+    [start, stopps, ende],
+  );
+  const route = usePlanungsroute(plan.punkte);
   const abschnitte = route.data?.ok === true ? route.data.value.route.legs : null;
 
   const fahrzeiten = useMemo(
@@ -123,9 +133,27 @@ export function useFahrten(start: Coordinate | null, stopps: readonly Stopp[]) {
     pruefung: nachVon.get(f.from) ?? null,
   }));
 
+  const letzter = stopps.length - 1;
+  const rueckweg =
+    ende && letzter >= 0
+      ? {
+          sekunden: fahrzeitZwischen(
+            plan.index[letzter] ?? null,
+            plan.index[letzter + 1] ?? null,
+            abschnitte,
+          ),
+          meter: streckeZwischen(
+            plan.index[letzter] ?? null,
+            plan.index[letzter + 1] ?? null,
+            abschnitte,
+          ),
+        }
+      : null;
+
   return {
     route,
     zwischen,
+    rueckweg,
     pruefungLaedt: paare.length > 0 && pruefung.isPending,
     pruefungFehler: pruefung.isError,
   };

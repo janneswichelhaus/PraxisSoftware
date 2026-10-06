@@ -150,6 +150,20 @@ vi.mock('@/lib/location/funktion', async (importOriginal) => ({
   rufeFunktionAuf: (aufgabe: string, koerper: unknown) =>
     rufeFunktionAuf(aufgabe, koerper) as Promise<unknown>,
 }));
+// UBK-013: die Serverrechnung von „Passt es?“.
+const checkTravelFit = vi.fn();
+const fetchVisitPosition = vi.fn(() => Promise.resolve(null as unknown));
+vi.mock('./wegpruefung-api', () => ({
+  checkTravelFit: (fragen: unknown) => checkTravelFit(fragen) as Promise<unknown>,
+  fetchVisitPosition: () => fetchVisitPosition(),
+}));
+// UBK-010: Der Fahrzeitfaktor der Praxis. 1,0 lässt die Zahlen des
+// Kartendienstes stehen; der eigene Fall unten setzt ihn.
+const fahrzeitfaktor = { wert: 1 };
+vi.mock('@/features/tours/fahrzeitfaktor-api', () => ({
+  fetchFahrzeitfaktor: () => Promise.resolve(fahrzeitfaktor.wert),
+  saveFahrzeitfaktor: () => Promise.resolve(),
+}));
 
 const { CalendarPage } = await import('./CalendarPage');
 const { AusserhalbArbeitszeitError, VergangenheitError } = await import('./api');
@@ -879,12 +893,17 @@ describe('CalendarPage', () => {
     }
 
     it('verschiebt einen Termin auf eine andere Uhrzeit', async () => {
+      const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
       const kachel = await tagesansicht();
 
       ziehen(kachel, { dy: EINE_STUNDE });
       await bestaetigen();
 
       await waitFor(() => expect(updateAppointment).toHaveBeenCalled());
+      // UBK-011: Die Fahrwege wandern mit, ohne Neuladen.
+      await waitFor(() => expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['day-route'] }));
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey: ['travel-buffers'] });
+      neuLaden.mockRestore();
       const { werte, bestaetigt } = letzterSchreibvorgang();
       expect(werte).toMatchObject({
         staff_member_id: STAFF_ANNA,
@@ -1059,6 +1078,54 @@ describe('CalendarPage', () => {
         expect(kasten).not.toHaveTextContent(/außerhalb/);
         expect(updateAppointment).not.toHaveBeenCalled();
         expect(fetchAppointment).not.toHaveBeenCalled();
+      });
+
+      it('zeigt beim Ziehen und in der Rueckfrage „Passt es?“ - nur als Auskunft (UBK-013)', async () => {
+        fetchStandorte.mockResolvedValue([
+          {
+            id: ORT,
+            name: 'Hauptstandort Tuebingen',
+            street: 'Praxisweg',
+            house_number: '1',
+            postal_code: '72070',
+            city: 'Tuebingen',
+            lat: 48.5,
+            lon: 9.05,
+            geocode_precision: 'address',
+          },
+        ]);
+        fetchDayRoute.mockResolvedValue([]);
+        checkTravelFit.mockReset();
+        checkTravelFit.mockResolvedValue([
+          {
+            item_index: 0,
+            starts_at: '2027-05-12T08:00:00Z',
+            arrival_earliest_start: '2027-05-12T05:00:00Z',
+            arrival_slack_minutes: 180,
+            next_earliest_start: '2027-05-12T09:00:00Z',
+            departure_slack_minutes: 420,
+          },
+        ]);
+        const kachel = await tagesansicht();
+
+        // Ziehen, ohne loszulassen: Die Leiste unten nennt die neue Zeit.
+        fireEvent.pointerDown(kachel, { clientX: 150, clientY: 200, button: 0 });
+        fireEvent.pointerMove(window, { clientX: 150, clientY: 200 + EINE_STUNDE, button: 0 });
+        const leiste = await screen.findByTestId('zieh-auskunft');
+        expect(leiste).toHaveTextContent('Neu · 10:00–11:00 Uhr · Passt es?');
+        // Gefragt wird erst, wenn die Vorschau stillsteht - dann mit der neuen Zeit.
+        await waitFor(() => expect(leiste).toHaveTextContent('Anfahrt: passt · 180 Min. Luft'));
+        expect(checkTravelFit.mock.calls[0]![0]).toEqual([
+          expect.objectContaining({ starts_at: '2027-05-12T08:00:00.000Z', duration_minutes: 60 }),
+        ]);
+
+        fireEvent.pointerUp(window, { clientX: 150, clientY: 200 + EINE_STUNDE });
+        expect(screen.queryByTestId('zieh-auskunft')).toBeNull();
+        // In der Rückfrage steht dieselbe Auskunft; verschieben lässt es sich trotzdem.
+        const kasten = await rueckfrage();
+        await waitFor(() => expect(kasten).toHaveTextContent('Anfahrt: passt · 180 Min. Luft'));
+        expect(kasten).toHaveTextContent('Rückfahrt: passt · 420 Min. Luft');
+        expect(within(kasten).getByRole('button', { name: 'Verschieben' })).toBeEnabled();
       });
 
       it('zeichnet den alten Platz als Umriss und den neuen als Kachel im Gitter (FIX-017)', async () => {
@@ -1959,7 +2026,7 @@ describe('CalendarPage', () => {
   describe('AKTE-003: Patientenfilter aus der Akte', () => {
     const ANDERE = '66666666-6666-4666-8666-000000000002';
 
-    it('zeigt nur die Termine der uebergebenen Patient:in', async () => {
+    it('hebt die Termine der Patient:in hervor und zeigt andere als belegt (BEF-053, ANN-239)', async () => {
       fetchAppointments.mockResolvedValue([
         eintrag(),
         eintrag({
@@ -1973,15 +2040,21 @@ describe('CalendarPage', () => {
       ]);
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
 
-      expect(await screen.findByRole('button', { name: /Max Mustermann/ })).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /Erika Beispiel/ })).toBeNull();
+      const eigene = await screen.findByRole('button', { name: /Max Mustermann/ });
+      expect(eigene.className).not.toContain('border-dashed');
+      // Bis BEF-053 verschwand dieser Termin - und seine Zeit sah frei aus.
+      const andere = screen.getByRole('button', { name: /Erika Beispiel/ });
+      expect(andere.className).toContain('border-dashed');
+      expect(andere).toHaveAttribute('title', expect.stringMatching(/^Belegt/));
     });
 
     it('nennt den Filter und den Namen aus den geladenen Terminen', async () => {
       rendern(`/kalender?ansicht=tag&datum=2027-05-12&patient=${PATIENT}`);
 
       const hinweis = await screen.findByRole('status');
-      expect(hinweis).toHaveTextContent('Nur die Termine von Max Mustermann');
+      expect(hinweis).toHaveTextContent(
+        'Termine von Max Mustermann sind hervorgehoben; andere Zeiten sind als belegt markiert.',
+      );
       expect(within(hinweis).getByRole('link', { name: 'Zur Akte' })).toHaveAttribute(
         'href',
         `/patienten/${PATIENT}/termine`,
@@ -1994,7 +2067,7 @@ describe('CalendarPage', () => {
 
       await user.click(await screen.findByRole('button', { name: 'Filter aufheben' }));
 
-      await waitFor(() => expect(screen.queryByText(/Nur die Termine von/)).toBeNull());
+      await waitFor(() => expect(screen.queryByText(/sind hervorgehoben/)).toBeNull());
     });
 
     it('erklaert eine leere Ansicht mit dem Filter statt mit dem Tag', async () => {
@@ -2625,6 +2698,7 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
     fetchStandorte.mockReset();
     fetchStandorte.mockResolvedValue([]);
     rufeFunktionAuf.mockReset();
+    fahrzeitfaktor.wert = 1;
   });
 
   /** Ein Punkt der Tagesroute: Kennung, Zeit, Koordinate - mehr gibt es nicht. */
@@ -2697,10 +2771,11 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       await waitFor(() => expect(within(anna).getAllByTestId('fahrweg')).toHaveLength(2));
       const [erster, zweiter] = within(anna).getAllByTestId('fahrweg');
       expect(erster).toHaveTextContent('Weg ≈ 12 min');
-      expect(erster).toHaveTextContent('Fahrweg etwa 12 Minuten, 08:48 bis 09:00');
-      expect(zweiter).toHaveTextContent('Fahrweg etwa 20 Minuten, 10:40 bis 11:00');
-      // Nicht antippbar: Die freie Fläche darunter bleibt eine Auswahl.
-      expect(erster).toHaveClass('pointer-events-none');
+      // Vom Startort der Praxis (ohne Garage) - der Name kommt aus den Terminen.
+      expect(erster).toHaveTextContent(
+        /Fahrweg von Praxis nach .+, etwa 12 Minuten, 08:48 bis 09:00/,
+      );
+      expect(zweiter).toHaveTextContent(/etwa 20 Minuten, 10:40 bis 11:00/);
       // Die andere Spalte hat keine Besuche mit Ort - keine Blöcke.
       const tim = screen.getByRole('group', { name: /^Tim Teamleitung/ });
       expect(within(tim).queryByTestId('fahrweg')).toBeNull();
@@ -2709,6 +2784,147 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       const [, koerper] = rufeFunktionAuf.mock.calls[0] as [string, Record<string, unknown>];
       expect(Object.keys(koerper).sort()).toEqual(['profile', 'waypoints']);
       expect(JSON.stringify(koerper)).not.toMatch(/Mustermann|2027|"a"/);
+    });
+  });
+
+  it('rechnet die Bloecke mit dem Fahrzeitfaktor der Praxis (UBK-010, ANN-237)', async () => {
+    await mitUhr(async () => {
+      fahrzeitfaktor.wert = 1.5;
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockResolvedValue([
+        punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12));
+      rendern('/kalender?ansicht=tag&datum=2027-05-12&person=' + STAFF_ANNA);
+
+      // 12 Minuten des Kartendienstes mal 1,5.
+      const block = await screen.findByTestId('fahrweg');
+      expect(block).toHaveTextContent(/etwa 18 Minuten, 08:42 bis 09:00/);
+    });
+  });
+
+  it('faerbt mit gewaehlter Patient:in die freien Luecken (UBK-014, ANN-239)', async () => {
+    await mitUhr(async () => {
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchWorkingHours.mockResolvedValue([
+        { id: 'w', staff_member_id: STAFF_ANNA, weekday: 3, starts_at: '08:00', ends_at: '13:00' },
+      ]);
+      fetchVisitPosition.mockResolvedValue({ lat: 48.53, lon: 9.07 });
+      fetchAppointments.mockResolvedValue([
+        eintrag({ appointment_type: 'home_visit', location_id: null }),
+      ]);
+      fetchDayRoute.mockImplementation((_datum: string, person: string) =>
+        Promise.resolve(
+          person === STAFF_ANNA
+            ? [
+                punkt(
+                  '77777777-7777-4777-8777-000000000001',
+                  '2027-05-12T07:00:00.000Z',
+                  '2027-05-12T08:00:00.000Z',
+                  48.51,
+                ),
+              ]
+            : [],
+        ),
+      );
+      rufeFunktionAuf.mockImplementation(
+        (aufgabe: string, koerper: { origins?: unknown[]; destinations?: unknown[] }) =>
+          Promise.resolve(
+            aufgabe === 'matrix'
+              ? {
+                  ok: true,
+                  quelle: 'anbieter',
+                  value: {
+                    durationsSeconds: (koerper.origins ?? []).map(() =>
+                      (koerper.destinations ?? []).map(() => 900),
+                    ),
+                  },
+                }
+              : route('anbieter', 12),
+          ),
+      );
+      checkTravelFit.mockReset();
+      checkTravelFit.mockImplementation((items: { index: number }[]) =>
+        Promise.resolve(
+          items.map((it) => ({
+            item_index: it.index,
+            starts_at: it.index === 0 ? '2027-05-12T06:20:00Z' : '2027-05-12T08:20:00Z',
+            arrival_earliest_start: null,
+            arrival_slack_minutes: 0,
+            next_earliest_start: null,
+            departure_slack_minutes: it.index === 0 ? -15 : 40,
+          })),
+        ),
+      );
+      rendern(
+        `/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}&patient=66666666-6666-4666-8666-0000000000aa`,
+      );
+
+      const anna = await screen.findByRole('group', { name: /^Anna Beispiel/ });
+      await waitFor(() => expect(within(anna).getAllByTestId('luecke')).toHaveLength(2));
+      const [frueh, spaeter] = within(anna).getAllByTestId('luecke');
+      // 08:00-09:00 vor dem Besuch: Der Weg vom Startort reicht nicht.
+      expect(frueh).toHaveAttribute('data-stufe', 'nicht');
+      expect(frueh).toHaveTextContent('× passt nicht');
+      // 10:00-13:00: passt ab 10:20.
+      expect(spaeter).toHaveAttribute('data-stufe', 'passt');
+      expect(spaeter).toHaveTextContent('✓ passt ab 10:20');
+      expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
+        /Freie Lücken: ✓ passt, ! knapp, × passt nicht/,
+      );
+      // ADR-011: In der Adresse steht nur die Kennung.
+      expect(window.location.search).not.toMatch(/Mustermann/);
+    });
+  });
+
+  it('oeffnet am angetippten Fahrweg ein Menue - und keine Auswahl darunter (UBK-016, ANN-241)', async () => {
+    await mitUhr(async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime.bind(vi) });
+      fetchStandorte.mockResolvedValue([STANDORT]);
+      fetchDayRoute.mockImplementation((_datum: string, person: string) =>
+        Promise.resolve(
+          person === STAFF_ANNA
+            ? [
+                punkt('a', '2027-05-12T07:00:00.000Z', '2027-05-12T08:00:00.000Z', 48.51),
+                punkt('b', '2027-05-12T09:00:00.000Z', '2027-05-12T10:00:00.000Z', 48.52),
+              ]
+            : [],
+        ),
+      );
+      fetchAppointments.mockResolvedValue([
+        eintrag({ id: 'a' }),
+        eintrag({
+          id: 'b',
+          patient_given_name: 'Erika',
+          patient_family_name: 'Beispiel',
+          starts_at: '2027-05-12T09:00:00.000Z',
+          ends_at: '2027-05-12T10:00:00.000Z',
+        }),
+      ]);
+      rufeFunktionAuf.mockResolvedValue(route('anbieter', 12, 20));
+      rendern(`/kalender?ansicht=tag&datum=2027-05-12&person=${STAFF_ANNA}`);
+
+      await waitFor(() => expect(screen.getAllByTestId('fahrweg')).toHaveLength(2));
+      const zweiter = screen.getAllByTestId('fahrweg')[1]!;
+      expect(zweiter.tagName).toBe('BUTTON');
+      await user.click(zweiter);
+
+      // Der ganze Block ist markiert, das Menü nennt den Weg.
+      expect(zweiter).toHaveAttribute('aria-expanded', 'true');
+      expect(zweiter).toHaveClass('border-solid', 'border-2');
+      const menue = screen.getByRole('group', { name: 'Fahrweg' });
+      expect(menue).toHaveTextContent('Max Mustermann → nach Erika Beispiel');
+      expect(menue).toHaveTextContent('≈ 20 Min. · 4,0 km');
+      expect(within(menue).getByRole('button', { name: 'Navigation starten' })).toHaveFocus();
+      expect(within(menue).getByRole('link', { name: 'Zur Tour' })).toHaveAttribute(
+        'href',
+        `/touren?tag=2027-05-12&person=${STAFF_ANNA}`,
+      );
+      // Kein Anlegen-Menü: Der Tipp galt dem Weg, nicht der Zeile darunter.
+      expect(screen.queryByRole('group', { name: 'Was soll hier entstehen?' })).toBeNull();
+
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('group', { name: 'Fahrweg' })).toBeNull();
     });
   });
 
