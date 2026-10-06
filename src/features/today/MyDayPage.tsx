@@ -368,9 +368,9 @@ function Ladegeruest() {
         <div className="border-line bg-surface rounded-card h-13 border" />
         <div className="border-line bg-surface rounded-card h-30 border" />
       </div>
-      <Card className="mt-4">
+      <div className="mt-4">
         <LoadingState label="Tagesliste wird geladen …" />
-      </Card>
+      </div>
     </>
   );
 }

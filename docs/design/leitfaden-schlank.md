@@ -27,7 +27,7 @@ gelöscht werden, um die Anwendung schlanker zu machen.“
 - Was für eine **andere** Personengruppe Nutzen hat, bleibt dort: Das Telefax der Verordner:innen
   bleibt, weil Arztpraxen es als Kontaktweg führen.
 
-**Umgesetzt:** SLK-001 (Telefax der Patient:innen).
+**Umgesetzt:** SLK-001 (Telefax der Patient:innen), SLK-009 (Erklärsatz über „Plattform“, ANN-260).
 
 ## L2 · Ein Kasten je Aufgabe, nicht je Thema
 
@@ -44,7 +44,7 @@ in einen Block; „Rechnung an“ und „Anschrift“ sind überflüssig.
   Patient:in selbst geht (etwa an die Eltern eines Kindes).
 - Ein Bearbeiten-Weg je Block, nicht je Zeilengruppe.
 
-**Umgesetzt:** SLK-003 (Stammdaten: Person, Kontakt, Adresse und Versicherung in einem Block).
+**Umgesetzt:** SLK-003 (Stammdaten: Person, Kontakt, Adresse und Versicherung in einem Block); SLK-005 bis SLK-008 (Bestandsaufnahme 06.10.2026: Meldung und Rückfrage mit Linie statt Karte, Eintragstext, Aktenkopf, Terminaktionen, Dateiliste, Vertretungen, Fotos, Radflotte, Urlaub, Erstattungen u. a.); DOK-002 (Befund aus Bausteinen).
 
 ## L3 · Jede Arbeit hat ihren Knopf an Ort und Stelle
 
@@ -91,12 +91,12 @@ Tiefgrün der Seitenleiste) und Bedeutung (Warnung, Fehler, erledigt).
 
 ## Löschkandidaten zur Entscheidung
 
-Einträge mit Ort, Begründung und dem, was am Löschen hängt. Nichts davon ist entschieden; gelöscht
-wird erst auf Jannes' Wort.
+Einträge mit Ort, Begründung und dem, was am Löschen hängt. Gelöscht wird erst auf Jannes' Wort; der
+Erklärsatz über „Plattform“ ist als reiner Text auf seinen Auftrag „Arbeite selbstständig … triff
+Annahmen“ vom 06.10.2026 hin entfallen (ANN-260).
 
-| Kandidat                                                       | Ort                             | Warum                                                                   | Was daran hängt                                                       |
-| -------------------------------------------------------------- | ------------------------------- | ----------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| „Telefon (geschäftlich)“ als drittes Telefonfeld               | Stammdaten, Formular der Person | neben Mobil und privat selten gebraucht                                 | Spalte `phone_work`, Formular, Auskunft, Zusammenführen, Seeds, Tests |
-| „Andere Ziel-App prüfen (für die Gerätebewertung)“             | Tour, unter der Liste           | Prüfwerkzeug aus dem Kartendienst-Aufbau, im Praxisalltag ohne Nutzen   | Sichtung Kartendienst (Gerätebewertung), Komponente und Test          |
-| Erklärsatz über dem Abschnitt „Plattform“                      | Stammdaten                      | wiederholt, was der Abschnitt zeigt (L2: Selbstverständliches entfällt) | nur Text und ein Test                                                 |
-| Aufklapper „Organisatorisches und Kommunikation“ am Seitenende | Übersicht                       | Wege, die Seitenleiste und Tableiste schon haben                        | Komponente, Tests der Übersicht                                       |
+| Kandidat                                                       | Ort                             | Warum                                                                 | Was daran hängt                                                       |
+| -------------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| „Telefon (geschäftlich)“ als drittes Telefonfeld               | Stammdaten, Formular der Person | neben Mobil und privat selten gebraucht                               | Spalte `phone_work`, Formular, Auskunft, Zusammenführen, Seeds, Tests |
+| „Andere Ziel-App prüfen (für die Gerätebewertung)“             | Tour, unter der Liste           | Prüfwerkzeug aus dem Kartendienst-Aufbau, im Praxisalltag ohne Nutzen | Sichtung Kartendienst (Gerätebewertung), Komponente und Test          |
+| Aufklapper „Organisatorisches und Kommunikation“ am Seitenende | Übersicht                       | Wege, die Seitenleiste und Tableiste schon haben                      | Komponente, Tests der Übersicht                                       |

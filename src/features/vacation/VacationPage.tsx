@@ -236,7 +236,7 @@ function Antragskarte({
       ) : null}
 
       {zeitgleich.length > 0 ? (
-        <p className="text-warnung bg-warnung-soft rounded-card mt-2 px-3 py-2 text-sm">
+        <p className="text-warnung bg-warnung-soft border-warnung mt-2 border-l-4 py-2 pr-3 pl-3 text-sm">
           Zeitgleich abwesend:{' '}
           {zeitgleich.map((eintrag) => mitarbeiterName(zustand, eintrag.mitarbeiterId)).join(', ')}
         </p>

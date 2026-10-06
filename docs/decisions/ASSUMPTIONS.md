@@ -3130,3 +3130,15 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (BEF-061 Option 1 
 **Anker.** `public.list_invoices` in `supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`; `rechnungsfilterLabels` und `RECHNUNGEN_JE_SEITE` in `src/features/billing/api.ts`; `Rechnungsliste` in `src/features/billing/Rechnungsliste.tsx`. Geprüft in `supabase/tests/invoices.test.ts` („Rechnungsliste mit Suche …“).
 
 **Änderungspfad.** Monat nach Ausstellungsdatum: Bedingung in `list_invoices` auf `issued_on` umstellen · Aufwand `klein`. Größere Seiten: `RECHNUNGEN_JE_SEITE` (Server begrenzt auf 200) · Aufwand `klein`.
+
+### ANN-260 — Leitfaden L2 im ganzen Code: Meldungen und Rückfragen mit Linie links statt als Karte; Erklärsatz über „Plattform“ entfällt
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: „Ich möchte das Design konsequent auf jeden Bereich anwenden … Triff Annahmen, wenn nötig“) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen
+
+**Annahme.** Eine Fehlermeldung (`ErrorState`) und eine geöffnete Rückfrage (`Rueckfrage`) sind keine Karten mehr, sondern Flächen mit einer 4 px breiten Linie links, ohne Rahmen und Radius; Rot bzw. die vertiefte Fläche bleiben. Auskünfte in einer Karte (Eintragstext, Treffer der Verortung, hervorgehobene Angaben, Vorschlag aus Bausteinen, Hinweise) stehen mit einer 2 px Linie links. Formulare, die sich in einer Liste öffnen (Art korrigieren, Vertretung einrichten, Bericht korrigieren, Aufgabe), sehen aus wie eine Rückfrage. Abschnitte mit nur einer Zeile oder einem Bedienelement (Behandlungsliege, Zugang in „Mein Konto“) und Abschnitte in einem Fenster (Abrechnung, Zustand in den Terminaktionen) haben keinen Rahmen. Der Erklärsatz über „Plattform“ in Stammdaten und Trainingskund:in entfällt.
+
+**Begründung.** Leitfaden L2 „Kein Kasten im Kasten“, Beispiel Jannes (Stammdaten). Eine Bestandsaufnahme am 06.10.2026 fand rund 60 Stellen; die meisten entstanden durch zwei gemeinsame Bausteine, die selbst Karten waren und fast immer in einer Karte stehen. Die Linie links trennt eine Meldung weiter sichtbar vom Inhalt, ohne einen weiteren Rahmen. Der Erklärsatz war Löschkandidat 3 (reiner Text, kein Verhalten). Unsicher: ob Jannes die rote Fehlerfläche lieber ganz ohne Füllung hätte.
+
+**Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
+
+**Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.
