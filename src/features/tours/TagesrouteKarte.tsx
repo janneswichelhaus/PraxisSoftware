@@ -2,9 +2,9 @@ import { useMemo } from 'react';
 import type { Coordinate } from '@/lib/location/contract';
 import { createMapDisplayConfig } from '@/lib/location/display';
 import { useKartenfreigabe } from '@/lib/location/kartenfreigabe';
-import { useRoute } from '@/lib/location/route';
 import { Karte } from './karte/Karte';
-import { PRAXISPROFIL, kartenmarker, routenplan, type Stopp } from './tagesroute';
+import { usePlanungsroute } from './fahrzeitfaktor';
+import { kartenmarker, routenplan, type Stopp } from './tagesroute';
 
 /**
  * Die Tagesroute auf der Karte (MAP-006b/c).
@@ -19,16 +19,23 @@ import { PRAXISPROFIL, kartenmarker, routenplan, type Stopp } from './tagesroute
 export default function TagesrouteKarte({
   start,
   stopps,
+  ende = null,
 }: {
   readonly start: Coordinate | null;
   readonly stopps: readonly Stopp[];
+  /** Das Ende der Tour (UBK-015): Die Linie führt nach dem letzten Besuch dorthin. */
+  readonly ende?: Coordinate | null;
 }) {
   const config = useMemo(() => createMapDisplayConfig(), []);
   // ADR-019 Punkt 35: Kacheln erst, wenn die Function den Schalter offen meldet.
   const freigegeben = useKartenfreigabe(config !== null);
-  const marker = useMemo(() => kartenmarker(start, stopps), [start, stopps]);
-  const { punkte } = useMemo(() => routenplan(start, stopps), [start, stopps]);
-  const route = useRoute(punkte, PRAXISPROFIL);
+  const marker = useMemo(() => kartenmarker(start, stopps, ende), [start, stopps, ende]);
+  // Dieselben Wegpunkte wie die Fahrtabschnitte der Liste - eine Abfrage.
+  const { punkte } = useMemo(
+    () => routenplan(start, ende ? [...stopps, { position: ende }] : stopps),
+    [start, stopps, ende],
+  );
+  const route = usePlanungsroute(punkte);
   const linie = route.data?.ok === true ? route.data.value.route.geometry : undefined;
 
   const ohnePosition = stopps.filter((stopp) => stopp.position === null).length;

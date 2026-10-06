@@ -41,6 +41,7 @@ import {
   type SlotConflict,
   type TerminVorbelegung,
 } from './api';
+import { tageslageNeuLaden } from './tageslage';
 import {
   SERIE_HOECHSTZAHL,
   rhythmen,
@@ -315,7 +316,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
       // Termine" heißt `patient-upcoming-appointments` und blieb deshalb nach
       // dem Anlegen auf dem alten Stand — die eben erzeugte Serie fehlte dort,
       // bis jemand neu lud.
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      await tageslageNeuLaden(queryClient);
       await queryClient.invalidateQueries({ queryKey: ['patient-upcoming-appointments'] });
       await queryClient.invalidateQueries({ queryKey: ['patient-appointments', patientId] });
       await queryClient.invalidateQueries({ queryKey: ['patient-next-appointment', patientId] });

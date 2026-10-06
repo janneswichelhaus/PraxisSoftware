@@ -604,7 +604,7 @@ damit fortgeschrieben: Die Anschriften stehen dann ausdrücklich auf dem Papier.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                            |
 | Bereich | Kalender (`/kalender`): Planen aus Akte und Verordnung (`?patient=…&verordnung=…`), Anlegen-Leiste                                                                                                                                                                                                                                                                                                    |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs KAL-04, KAL-12, RSP-17                                                                                                                                                                                                                                                                                    |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Status  | offen — (1) erledigt mit UBK-014 (2026-10-05, Option 1: andere Termine als „belegt“, ANN-239); (2) Anlegen-Leiste offen                                                                                                                                                                                                                                                                                |
 | Berührt | `src/features/appointments/CalendarPage.tsx` (Z. 466, 618–625, 1028), `src/features/appointments/calendar.ts` (Z. 146), `src/features/treatment-bases/PatientTreatmentBasesPage.tsx` (Z. 296), `src/features/appointments/CalendarGrid.tsx` (Z. 709), `src/features/appointments/AnlegenMenue.tsx` (Z. 54–97), `tests/e2e/kalender.spec.ts` (Z. 42); ANN-050, ANN-108; AKTE-003; `ARBEITSBEREICHE.md` |
 
 **Beobachtung.**
@@ -1693,3 +1693,15 @@ ohnehin nicht nebenbei angefasst werden.
 | Berührt | `public.delete_treatment_basis`, `public.update_treatment_basis`, `public.transfer_appointments_to_treatment_basis`, `public.treatment_bases` |
 
 **Beobachtet:** Seit LOG-EPIC-001 steht das Ändern, Löschen und Umhängen einer Behandlungsgrundlage nicht mehr im Auditlog. Das Datenmodell hält nur den letzten Stand (`updated_by`, `updated_at`); eine gelöschte Grundlage verschwindet ganz, auch wenn Termine an ihr hingen. Den Inhalt einer Änderung hat schon das alte Auditlog nicht gehalten. **Erwartet:** Eine Verordnung ist Teil der Akte. Sobald Termine an ihr hängen, wird sie nicht mehr hart gelöscht; ihre Änderungen bleiben mit ursprünglichem Inhalt und Zeitpunkt erkennbar (§ 630f Abs. 1 BGB), etwa über eine Versionstabelle wie bei der Dokumentation (ADR-016). Zu prüfen: welche Felder fachlich änderbar bleiben müssen und ob ADR-020 dafür eine Fassung braucht.
+
+### BEF-127 — Die Koordinaten-Constraints lassen eine Breite ohne Länge durch
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-05 |
+| Bereich | Datenmodell, Kartendienst |
+| Quelle  | UBK-EPIC-002, Zweitreview (Testlücke am Garagen-Constraint) |
+| Status  | offen (eigenes Ticket; der Garagen-Constraint aus UBK-015 ist bereits dicht) |
+| Berührt | `patient_contact_details_coordinate_check`, `appointments_visit_coordinate_check`, `locations_coordinate_check` (Migration `20260925100000_map_006a_coordinates.sql`) |
+
+**Beobachtet:** Die drei Constraints prüfen `lat between …`, `lon between …` und `geocode_precision in (…)` ohne ausdrückliches `is not null`. Ein CHECK, der NULL ergibt, gilt als erfüllt: Eine Breite ohne Länge oder eine Genauigkeit ohne Koordinate kommt durch, sobald die Adresse vollständig ist. Geschrieben wird heute nur über die Funktionen, die beides zusammen setzen, und der Trigger verwirft die Koordinate mit der Adresse - ein Fehler entsteht deshalb erst mit einem neuen Schreibweg. **Erwartet:** Eine neue Migration ersetzt die drei Constraints durch die dichte Form aus `locations_garage_coordinate_check` (UBK-015); vorher prüft sie, dass keine Zeile die engere Regel verletzt. Ein Test je Tabelle wie in `supabase/tests/garage.test.ts`. Klein, Pfad A (Migration).

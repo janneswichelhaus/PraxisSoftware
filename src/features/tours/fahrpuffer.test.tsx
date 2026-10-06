@@ -10,10 +10,21 @@ import type { Stopp } from './tagesroute';
  * aufeinanderfolgende Paar vom Server.
  */
 
-const { rpc, invoke } = vi.hoisted(() => ({ rpc: vi.fn(), invoke: vi.fn() }));
+const { rpc, invoke, faktor } = vi.hoisted(() => ({
+  rpc: vi.fn(),
+  invoke: vi.fn(),
+  faktor: { wert: 2 },
+}));
+
+// UBK-010: Der Fahrzeitfaktor der Praxis kommt aus der Organisation.
+const organisation = {
+  select: () => ({
+    maybeSingle: () => Promise.resolve({ data: { travel_time_factor: faktor.wert }, error: null }),
+  }),
+};
 
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ rpc, functions: { invoke } }),
+  getSupabase: () => ({ rpc, functions: { invoke }, from: () => organisation }),
 }));
 
 const { useFahrten, useTagesstopps } = await import('./fahrpuffer');
@@ -60,7 +71,7 @@ describe('useFahrten', () => {
         {
           from_appointment_id: 't1',
           to_appointment_id: 't2',
-          travel_seconds: 300,
+          travel_seconds: 600,
           earliest_start: '2026-09-10T08:10:00Z',
           shortfall_minutes: 0,
         },
@@ -77,9 +88,12 @@ describe('useFahrten', () => {
     const koerper = (invoke.mock.calls[0]![1] as { body: { waypoints: unknown[] } }).body;
     expect(koerper.waypoints).toHaveLength(3);
 
-    expect(result.current.zwischen.map((z) => z.sekunden)).toEqual([300, null, null]);
+    // UBK-010: 300 s des Kartendienstes mal Faktor 2 - angezeigt und geprüft
+    // wird dieselbe Zahl.
+    expect(result.current.zwischen.map((z) => z.sekunden)).toEqual([600, null, null]);
+    expect(result.current.zwischen[0]!.meter).toBe(1000);
     expect(rpc).toHaveBeenCalledWith('check_travel_buffers', {
-      p_legs: [{ from: 't1', to: 't2', travel_seconds: 300 }],
+      p_legs: [{ from: 't1', to: 't2', travel_seconds: 600 }],
     });
   });
 

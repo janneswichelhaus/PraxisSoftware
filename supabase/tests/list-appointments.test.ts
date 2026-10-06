@@ -453,21 +453,27 @@ describe('list_appointments: Datensparsamkeit', () => {
         // UI-Redesign Zyklen 2-4: der Bearbeitungsstand der Dokumentation, kein
         // Inhalt - "! Doku offen" an der Kachel (wie list_day_plan).
         'documentation_status',
+        // UBK-017, ANN-242 (Entscheidung Jannes 2026-10-06): der Ort auf der
+        // Kachel - Strasse und Hausnummer nur am Hausbesuch.
+        'visit_street',
+        'visit_house_number',
       ].sort(),
     );
   });
 
-  it('liefert keine Kontaktdaten und keinen Adress-Snapshot mit', async () => {
+  it('liefert keine Kontaktdaten und vom Adress-Snapshot nur Strasse und Hausnummer', async () => {
     const { rows } = await lesen(users.office, '2027-05-12', '2027-05-13');
     const schluessel = Object.keys(rows[0]!);
+    // Seit UBK-017 (ANN-242) stehen Strasse und Hausnummer auf der Kachel;
+    // Postleitzahl, Ort und Kontaktdaten bleiben draussen.
     for (const feld of [
       'date_of_birth',
       'email',
       'phone',
-      'visit_street',
-      'visit_house_number',
       'visit_postal_code',
       'visit_city',
+      'visit_lat',
+      'visit_lon',
     ]) {
       expect(schluessel).not.toContain(feld);
     }
@@ -561,5 +567,66 @@ describe('list_appointments: Doku-Stand', () => {
       [organizationId, STAFF.anna],
     );
     expect((await stand(users.therapist)).get(rows[0]!.id)).toBeNull();
+  });
+});
+
+describe('list_appointments: Ort auf der Kachel (UBK-017, ANN-242)', () => {
+  beforeEach(async () => {
+    await resetDatabaseOhneTermine();
+  }, 120_000);
+
+  interface Ort {
+    id: string;
+    appointment_type: string;
+    location_name: string | null;
+    visit_street: string | null;
+    visit_house_number: string | null;
+  }
+
+  async function orte(userId: string): Promise<Ort[]> {
+    const { rows } = await asUser<Ort>(userId, LESEN, [
+      '2027-05-12',
+      '2027-05-13',
+      null,
+      null,
+      'all',
+    ]);
+    return rows;
+  }
+
+  it('nennt am Hausbesuch Strasse und Hausnummer, am Praxistermin den Standort - nicht mehr', async () => {
+    const besuch = await termin({
+      tag: '2027-05-12',
+      von: '09:00',
+      bis: '10:00',
+      typ: 'home_visit',
+    });
+    const praxis = await termin({ tag: '2027-05-12', von: '11:00', bis: '12:00', typ: 'practice' });
+    const video = await termin({ tag: '2027-05-12', von: '13:00', bis: '14:00', typ: 'video' });
+
+    const zeilen = await orte(users.office);
+    expect(zeilen.find((z) => z.id === besuch)).toMatchObject({
+      visit_street: 'Teststrasse',
+      visit_house_number: '1',
+    });
+    expect(zeilen.find((z) => z.id === praxis)).toMatchObject({
+      visit_street: null,
+      visit_house_number: null,
+    });
+    expect(zeilen.find((z) => z.id === praxis)?.location_name).not.toBeNull();
+    expect(zeilen.find((z) => z.id === video)).toMatchObject({ visit_street: null });
+    // Datenminimierung: Postleitzahl und Ort gehören nicht auf die Kachel.
+    expect(Object.keys(zeilen[0]!)).not.toContain('visit_postal_code');
+    expect(Object.keys(zeilen[0]!)).not.toContain('visit_city');
+  });
+
+  it('zeigt die Strasse nur, wer die Zeile ohnehin sieht', async () => {
+    await termin({ tag: '2027-05-12', von: '09:00', bis: '10:00', typ: 'home_visit' });
+    for (const konto of [users.ownerTherapist, users.therapist, users.teamLead]) {
+      expect((await orte(konto)).map((z) => z.visit_street)).toEqual(['Teststrasse']);
+    }
+    // Die Trainingsbetreuung sieht den Behandlungstermin nicht (anderer Leistungsbereich).
+    expect(await orte(users.trainer)).toEqual([]);
+    expect(await orte(users.patientMax)).toEqual([]);
   });
 });

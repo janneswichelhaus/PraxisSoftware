@@ -120,11 +120,13 @@ test.describe('AKTE-003: Termine mit Historie', () => {
 
     await expect(page).toHaveURL(/\/kalender\?/);
     expect(page.url()).toContain(`patient=${PATIENTEN.max}`);
-    await expect(page.getByText(/Nur die Termine von/)).toBeVisible();
+    // Seit UBK-014 (ANN-239) bleiben die übrigen Termine als „belegt“ stehen:
+    // Der Filter hebt hervor, statt auszublenden.
+    await expect(page.getByText(/sind hervorgehoben/)).toBeVisible();
 
     // Der Filter laesst sich aufheben, ohne die Ansicht zu verlassen.
     await page.getByRole('button', { name: 'Filter aufheben' }).click();
-    await expect(page.getByText(/Nur die Termine von/)).toHaveCount(0);
+    await expect(page.getByText(/sind hervorgehoben/)).toHaveCount(0);
   });
 });
 

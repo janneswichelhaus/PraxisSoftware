@@ -13,7 +13,7 @@ import {
   geocodiere,
   trefferanzahlText,
 } from '@/lib/location/geocode';
-import { fetchStandorte, saveTourStart, type Standort } from './startort';
+import { clearGarage, fetchStandorte, saveGarage, saveTourStart, type Standort } from './startort';
 
 /**
  * Startort der Touren (MAP-006a): Adresse des Standorts und ihre Position.
@@ -44,13 +44,63 @@ export function StartortEinstellung() {
           onErneut={() => standorte.refetch()}
         />
       ) : standort ? (
-        <StartortFormular key={standort.id} standort={standort} />
+        <OrtFormular key={standort.id} standort={standort} art="startort" />
       ) : (
         <p className="text-ink-muted text-sm">Für die Praxis ist noch kein Standort angelegt.</p>
       )}
     </Section>
   );
 }
+
+/**
+ * Garage (Abstellort der Räder, UBK-015, ANN-240): Beginn und Ende der Tour,
+ * wenn gesetzt. Getrennt vom Startort - der ist zugleich der Ort der
+ * Praxistermine und bleibt, wo die Praxis ist. Eine Adresse der Praxis, keine
+ * Wohnadresse (§20).
+ */
+export function GarageEinstellung() {
+  const standorte = useQuery({ queryKey: ['standorte'], queryFn: fetchStandorte, retry: false });
+  const standort = standorte.data?.[0];
+
+  return (
+    <Section
+      titel="Garage (Abstellort der Räder)"
+      hinweis="Hier beginnt und endet die Tour, wenn eine Garage gesetzt ist – sonst an der Praxis. Der Startort oben bleibt der Ort der Praxistermine. Eine Adresse der Praxis, keine Wohnadresse."
+    >
+      {standorte.isPending ? (
+        <LoadingState label="Standorte werden geladen …" />
+      ) : standorte.isError ? (
+        <ErrorState
+          title="Die Standorte konnten nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen."
+          onErneut={() => standorte.refetch()}
+        />
+      ) : standort ? (
+        <OrtFormular key={`${standort.id}-garage`} standort={standort} art="garage" />
+      ) : (
+        <p className="text-ink-muted text-sm">Für die Praxis ist noch kein Standort angelegt.</p>
+      )}
+    </Section>
+  );
+}
+
+/** Was an Startort und Garage verschieden ist: Felder, Wörter, Speicherweg. */
+const ORTSARTEN = {
+  startort: {
+    wer: 'Der Startort',
+    knopf: 'Als Startort speichern',
+    gespeichert: 'Der Startort ist gespeichert.',
+    speichern: saveTourStart,
+  },
+  garage: {
+    wer: 'Die Garage',
+    knopf: 'Als Garage speichern',
+    gespeichert: 'Die Garage ist gespeichert.',
+    speichern: saveGarage,
+  },
+} as const;
+
+type Ortsart = keyof typeof ORTSARTEN;
 
 interface Anschrift {
   street: string;
@@ -77,7 +127,7 @@ const PFLICHTFELDER: readonly { feld: keyof Anschrift; fehler: string }[] = [
  * (ADR-011), und keiner schiebt dem Kartendienst zu, was die eigene
  * Funktion war (BEF-027).
  */
-function verortungsfehler(code: LocationErrorCode): string {
+function verortungsfehler(code: LocationErrorCode, wer = 'Der Startort'): string {
   switch (code) {
     case 'not_found':
       return 'Zu dieser Adresse hat der Kartendienst keinen Treffer gefunden. Bitte die Schreibweise prüfen.';
@@ -86,9 +136,9 @@ function verortungsfehler(code: LocationErrorCode): string {
     case 'rate_limited':
       return 'Der Kartendienst ist gerade nicht erreichbar. Bitte später erneut verorten.';
     case 'not_configured':
-      return 'Für die Praxis ist kein Kartendienst eingerichtet. Der Startort bleibt vorerst ohne Kartenposition.';
+      return `Für die Praxis ist kein Kartendienst eingerichtet. ${wer} bleibt vorerst ohne Kartenposition.`;
     case 'unauthorized':
-      return 'Der Kartendienst nimmt die Anfrage der Praxis nicht an – das ist ein Einrichtungsschritt. Der Startort bleibt vorerst ohne Kartenposition.';
+      return `Der Kartendienst nimmt die Anfrage der Praxis nicht an – das ist ein Einrichtungsschritt. ${wer} bleibt vorerst ohne Kartenposition.`;
     case 'session_invalid':
       return 'Die Anmeldung gilt nicht mehr. Bitte neu anmelden und dann erneut verorten.';
     case 'function_unavailable':
@@ -97,16 +147,28 @@ function verortungsfehler(code: LocationErrorCode): string {
   }
 }
 
-function StartortFormular({ standort }: { standort: Standort }) {
+function OrtFormular({ standort, art }: { standort: Standort; art: Ortsart }) {
   const queryClient = useQueryClient();
   const kennung = useId();
   const feldId = (feld: keyof Anschrift) => `${kennung}-${feld}`;
-  const [werte, setWerte] = useState<Anschrift>({
-    street: standort.street ?? '',
-    houseNumber: standort.house_number ?? '',
-    postalCode: standort.postal_code ?? '',
-    city: standort.city ?? '',
-  });
+  const texte = ORTSARTEN[art];
+  const garage = art === 'garage';
+  const [werte, setWerte] = useState<Anschrift>(
+    garage
+      ? {
+          street: standort.garage_street ?? '',
+          houseNumber: standort.garage_house_number ?? '',
+          postalCode: standort.garage_postal_code ?? '',
+          city: standort.garage_city ?? '',
+        }
+      : {
+          street: standort.street ?? '',
+          houseNumber: standort.house_number ?? '',
+          postalCode: standort.postal_code ?? '',
+          city: standort.city ?? '',
+        },
+  );
+  const genauigkeit = garage ? standort.garage_geocode_precision : standort.geocode_precision;
   const [pflichtfehler, setPflichtfehler] = useState<Partial<Record<keyof Anschrift, string>>>({});
   // Der Treffer trägt die Anschrift, die geocodiert wurde; gespeichert wird
   // genau diese, auch wenn die Felder inzwischen anders aussehen.
@@ -121,7 +183,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
 
   const speichern = useMutation({
     mutationFn: (gefunden: { wert: GeocodeResult; anschrift: Anschrift }) =>
-      saveTourStart(
+      texte.speichern(
         standort.id,
         gefunden.anschrift,
         gefunden.wert,
@@ -129,7 +191,21 @@ function StartortFormular({ standort }: { standort: Standort }) {
       ),
     onSuccess: async () => {
       setTreffer(null);
-      setMeldung({ ton: 'erfolg', text: 'Der Startort ist gespeichert.' });
+      setMeldung({ ton: 'erfolg', text: texte.gespeichert });
+      await queryClient.invalidateQueries({ queryKey: ['standorte'] });
+    },
+  });
+
+  // UBK-015: Ohne Garage beginnt und endet die Tour wieder an der Praxis.
+  const entfernen = useMutation({
+    mutationFn: () => clearGarage(standort.id),
+    onSuccess: async () => {
+      setWerte({ street: '', houseNumber: '', postalCode: '', city: '' });
+      setTreffer(null);
+      setMeldung({
+        ton: 'erfolg',
+        text: 'Die Garage ist entfernt. Die Tour beginnt und endet an der Praxis.',
+      });
       await queryClient.invalidateQueries({ queryKey: ['standorte'] });
     },
   });
@@ -138,7 +214,7 @@ function StartortFormular({ standort }: { standort: Standort }) {
     mutationFn: (zu: Anschrift) => geocodiere({ ...zu, countryCode: 'DE' }),
     onSuccess: (ergebnis, zu) => {
       if (!ergebnis.ok) {
-        setMeldung({ ton: 'fehler', text: verortungsfehler(ergebnis.error.code) });
+        setMeldung({ ton: 'fehler', text: verortungsfehler(ergebnis.error.code, texte.wer) });
         return;
       }
       setMeldung(null);
@@ -170,9 +246,13 @@ function StartortFormular({ standort }: { standort: Standort }) {
   return (
     <form className="space-y-4" onSubmit={absenden} noValidate>
       <p className="text-sm">
-        {standort.geocode_precision
-          ? `${standort.name}: verortet, ${GENAUIGKEIT_TEXT[standort.geocode_precision]}.`
-          : `${standort.name}: noch ohne Startort.`}
+        {garage
+          ? genauigkeit
+            ? `Garage: verortet, ${GENAUIGKEIT_TEXT[genauigkeit]}.`
+            : 'Noch keine Garage – die Tour beginnt und endet an der Praxis.'
+          : genauigkeit
+            ? `${standort.name}: verortet, ${GENAUIGKEIT_TEXT[genauigkeit]}.`
+            : `${standort.name}: noch ohne Startort.`}
       </p>
       {/* Straße und Hausnummer, darunter Postleitzahl und Ort - die schmale
           Spalte jeweils für die kurze Angabe (TER-18, RSP-12), wie im
@@ -232,14 +312,24 @@ function StartortFormular({ standort }: { standort: Standort }) {
             disabled={speichern.isPending}
             onClick={() => speichern.mutate(treffer)}
           >
-            {speichern.isPending ? 'Wird gespeichert …' : 'Als Startort speichern'}
+            {speichern.isPending ? 'Wird gespeichert …' : texte.knopf}
           </Button>
         </div>
       ) : (
-        <div>
+        <div className="flex flex-wrap gap-3">
           <Button type="submit" variant="secondary" disabled={suchen.isPending}>
             {suchen.isPending ? 'Wird verortet …' : 'Adresse verorten'}
           </Button>
+          {garage && standort.garage_street ? (
+            <Button
+              type="button"
+              variant="quiet"
+              disabled={entfernen.isPending}
+              onClick={() => entfernen.mutate()}
+            >
+              {entfernen.isPending ? 'Wird entfernt …' : 'Garage entfernen'}
+            </Button>
+          ) : null}
         </div>
       )}
 
@@ -252,8 +342,13 @@ function StartortFormular({ standort }: { standort: Standort }) {
       ) : null}
       {speichern.isError ? (
         <Statusmeldung ton="fehler">
-          Der Startort konnte nicht gespeichert werden. Bitte die Verbindung prüfen und erneut
+          {texte.wer} konnte nicht gespeichert werden. Bitte die Verbindung prüfen und erneut
           speichern.
+        </Statusmeldung>
+      ) : null}
+      {entfernen.isError ? (
+        <Statusmeldung ton="fehler">
+          Die Garage konnte nicht entfernt werden. Bitte die Verbindung prüfen und erneut versuchen.
         </Statusmeldung>
       ) : null}
     </form>

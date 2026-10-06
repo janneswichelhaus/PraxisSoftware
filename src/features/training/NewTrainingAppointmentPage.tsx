@@ -24,6 +24,7 @@ import {
   vereinbarungText,
 } from './api';
 import { TrainingTerminFormular } from './TrainingTerminFormular';
+import { tageslageNeuLaden } from '@/features/appointments/tageslage';
 
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -110,8 +111,8 @@ export function NewTrainingAppointmentPage({ user }: { user: CurrentUser }) {
           createTrainingAppointment(kunde, werte, basis || null, b.bestaetigt, b.vergangenheit)
         }
         onGespeichert={(id) => {
-          void queryClient.invalidateQueries({ queryKey: ['appointments'] });
-          void queryClient.invalidateQueries({ queryKey: ['day-plan'] });
+          // UBK-011: Trainingstermine stehen in derselben Tagesroute (ADR-022).
+          void tageslageNeuLaden(queryClient);
           void queryClient.invalidateQueries({ queryKey: ['training-bases'] });
           void queryClient.invalidateQueries({ queryKey: ['training-client-appointments'] });
           void navigate(

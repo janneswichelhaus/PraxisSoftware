@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties, type Ref } from 'react';
+import { useEffect, useRef, type CSSProperties, type ReactNode, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 
@@ -53,9 +53,12 @@ export function VerschiebenRueckfrage({
   className = '',
   style,
   ref,
+  auskunft,
 }: {
   frage: VerschiebenFrage;
   laeuft: boolean;
+  /** „Passt es?“ für die neue Zeit (UBK-013) - Auskunft, keine Sperre. */
+  auskunft?: ReactNode;
   /** Warum das Verschieben gescheitert ist; als `role="alert"` vorgelesen. */
   fehler?: string | undefined;
   onBestaetigen: () => void;
@@ -102,6 +105,7 @@ export function VerschiebenRueckfrage({
           </>
         ) : null}
       </dl>
+      {auskunft}
       {frage.vergangenheit ? (
         <p className="text-ink mt-3 text-sm">
           <span aria-hidden="true">! </span>

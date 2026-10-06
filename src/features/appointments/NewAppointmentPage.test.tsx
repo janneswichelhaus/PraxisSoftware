@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient } from '@tanstack/react-query';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as GrundlagenApi from '@/features/treatment-bases/api';
@@ -78,6 +79,31 @@ vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,
   useParams: () => ({ patientId: PATIENT_ID }),
+}));
+
+// UBK-012: Die Prüfung selbst steht in `wegpruefung.test.tsx`; hier zählt,
+// welche Frage das Formular stellt und was es dazu zeigt.
+const wegfragen = vi.hoisted((): { letzte: unknown } => ({ letzte: null }));
+vi.mock('./wegpruefung', async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  useWegpruefung: (frage: unknown) => {
+    wegfragen.letzte = frage;
+    return frage === null
+      ? { stand: 'aus' }
+      : {
+          stand: 'bereit',
+          an: {
+            stand: 'geprueft',
+            luft: -5,
+            stufe: 'nicht',
+            fruehester: '2027-05-12T07:20:00Z',
+            fahrtMinuten: 18,
+            nachbar: 'termin',
+            nachbarZeit: '2027-05-12T06:45:00Z',
+          },
+          weiter: { stand: 'offen' },
+        };
+  },
 }));
 
 const { NewAppointmentPage } = await import('./NewAppointmentPage');
@@ -365,6 +391,7 @@ describe('NewAppointmentPage', () => {
 
   it('legt einen Praxistermin mit Standort an und wechselt zur Detailansicht', async () => {
     const user = userEvent.setup();
+    const neuLaden = vi.spyOn(QueryClient.prototype, 'invalidateQueries');
     rendern();
     await formularAbwarten();
 
@@ -393,6 +420,38 @@ describe('NewAppointmentPage', () => {
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, { replace: true }),
     );
+    // UBK-011: Tour, Übersicht und Fahrwege stimmen ohne Neuladen.
+    for (const queryKey of [['appointments'], ['day-plan'], ['day-route'], ['travel-buffers']]) {
+      expect(neuLaden).toHaveBeenCalledWith({ queryKey });
+    }
+    neuLaden.mockRestore();
+  });
+
+  it('sagt „Passt es?“, sobald Person, Zeit und Ort feststehen - ohne zu sperren (UBK-012)', async () => {
+    const user = userEvent.setup();
+    rendern();
+    await formularAbwarten();
+    expect(screen.queryByText('Passt es?')).toBeNull();
+
+    await user.selectOptions(screen.getByLabelText('Behandelnde Person *'), STAFF_ANNA);
+    await user.selectOptions(screen.getByLabelText('Terminart *'), 'practice');
+    await zeitenSetzen(user);
+
+    expect(await screen.findByText('Passt es?')).toBeInTheDocument();
+    expect(
+      screen.getByText('Anfahrt: zu knapp um 5 Min., frühester Beginn 09:20 Uhr'),
+    ).toBeInTheDocument();
+    expect(wegfragen.letzte).toMatchObject({
+      person: STAFF_ANNA,
+      datum: '2027-05-12',
+      beginnMinute: 9 * 60,
+      endeMinute: 10 * 60,
+      ort: { art: 'practice', standortId: ORT_HAUPT },
+    });
+
+    // Nur Auskunft: Anlegen geht trotzdem.
+    await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));
+    await waitFor(() => expect(createAppointment).toHaveBeenCalledTimes(1));
   });
 
   it('kehrt nach dem Anlegen dorthin zurueck, wo es begann - mit dem neuen Termin (FIX-016)', async () => {

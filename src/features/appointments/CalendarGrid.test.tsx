@@ -142,6 +142,8 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
               { vonMinute: 470, bisMinute: 485, minuten: 15 },
               // ANN-236: veraltete Anschrift - ein Warnblock, keine Zahl.
               { vonMinute: 585, bisMinute: 600, minuten: 0, veraltet: true },
+              // UBK-015: der Rückweg nach dem letzten Besuch.
+              { vonMinute: 660, bisMinute: 678, minuten: 18, rueckweg: true },
             ],
           },
         ]}
@@ -174,5 +176,121 @@ describe('Belegt-Block (ABN-021, BEF-112)', () => {
     );
     expect(veraltet).toHaveClass('border-warnung', 'pointer-events-none');
     expect(veraltet).not.toHaveTextContent('Weg ≈');
+
+    const rueck = screen.getAllByTestId('fahrweg')[2]!;
+    expect(rueck).toHaveTextContent('Rückweg ≈ 18 min');
+    expect(rueck).toHaveTextContent('Rückweg etwa 18 Minuten, 11:00 bis 11:18');
+  });
+});
+
+describe('Lückenfinder im Gitter (UBK-014)', () => {
+  it('setzt das Wort der letzten Lücke unter den Rückweg, sonst läge es darunter', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Anna Beispiel',
+            baender: [],
+            fahrwege: [{ vonMinute: 600, bisMinute: 615, minuten: 15, rueckweg: true }],
+            luecken: [
+              { vonMinute: 540, bisMinute: 570, stufe: 'zu_kurz', ab: null },
+              { vonMinute: 600, bisMinute: 660, stufe: 'nicht', ab: null },
+            ],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+
+    const [frueh, letzte] = screen.getAllByTestId('luecke-wort');
+    expect(frueh).toHaveTextContent('× zu kurz');
+    expect(frueh!.style.marginTop).toBe('');
+    // 15 Minuten Rückweg bei 80 px je Stunde.
+    expect(letzte).toHaveTextContent('× passt nicht');
+    expect(letzte!.style.marginTop).toBe('20px');
+    expect(letzte).toHaveClass('block');
+  });
+});
+
+describe('Ort auf der Kachel (UBK-017, ANN-242)', () => {
+  function kachel(teil: Partial<CalendarEntry>, hoeheMinuten = 60) {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[
+          {
+            eintrag: termin(teil),
+            spalteId: 'st-1',
+            beginnMinute: 540,
+            endeMinute: 540 + hoeheMinuten,
+            ziehbar: false,
+          },
+        ]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    return screen.getAllByRole('link')[0]!;
+  }
+
+  it('nennt am Hausbesuch Straße und Hausnummer in der dritten Zeile', () => {
+    const link = kachel({ visit_street: 'Musterweg', visit_house_number: '12' });
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Musterweg 12');
+    expect(link).toHaveAttribute('title', expect.stringContaining('Musterweg 12'));
+  });
+
+  it('nennt am Praxistermin den Standort', () => {
+    const link = kachel({
+      appointment_type: 'practice',
+      location_name: 'Hauptstandort Tuebingen',
+      visit_street: null,
+    });
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Hauptstandort Tuebingen');
+  });
+
+  it('setzt den Ort unter den Zustand, wenn die Kachel vier Zeilen hat', () => {
+    const link = kachel(
+      { status: 'no_show', visit_street: 'Musterweg', visit_house_number: '12' },
+      60,
+    );
+    expect(within(link).getByTestId('kachel-status')).toHaveTextContent('! Nicht angetroffen');
+    expect(within(link).getByTestId('kachel-ort')).toHaveTextContent('Musterweg 12');
+  });
+
+  it('laesst den Ort weg, wo die Zeile nicht ganz passt', () => {
+    // 30 Minuten bei 80 px je Stunde: 40 px, eine Zeile.
+    const kurz = kachel({ visit_street: 'Musterweg', visit_house_number: '12' }, 30);
+    expect(within(kurz).queryByTestId('kachel-ort')).toBeNull();
+  });
+
+  it('zeigt mit Zustand bei drei Zeilen keinen angeschnittenen Ort - der Tooltip nennt ihn', () => {
+    // 45 Minuten: 60 px, drei Zeilen - die dritte trägt den Zustand (BEF-072).
+    const link = kachel(
+      { status: 'no_show', visit_street: 'Musterweg', visit_house_number: '12' },
+      45,
+    );
+    expect(within(link).getByTestId('kachel-status')).toHaveTextContent('! Nicht angetroffen');
+    expect(within(link).queryByTestId('kachel-ort')).toBeNull();
+    expect(link).toHaveAttribute('title', expect.stringContaining('Musterweg 12'));
+  });
+
+  it('nennt ohne Straße am Hausbesuch keinen Ort', () => {
+    const link = kachel({ visit_street: null, visit_house_number: null });
+    expect(within(link).queryByTestId('kachel-ort')).toBeNull();
   });
 });

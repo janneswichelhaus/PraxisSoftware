@@ -51,6 +51,22 @@ const FAELLE: Fall[] = [
     'appointments.read',
   ],
   [
+    // UBK-012: dieselbe Abweisung wie check_travel_buffers.
+    'check_travel_fit',
+    users.patientMax,
+    'select * from public.check_travel_fit($1::jsonb)',
+    ['[]'],
+    'appointments.read',
+  ],
+  [
+    // UBK-012: Rechte wie die Terminsuche; die Trainingsbetreuung plant keine Behandlung.
+    'get_visit_position',
+    users.trainer,
+    'select * from public.get_visit_position($1::uuid)',
+    [patients.max],
+    'appointments.read',
+  ],
+  [
     'list_event_participants',
     users.patientMax,
     'select * from public.list_event_participants($1::uuid)',

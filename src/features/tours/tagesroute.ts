@@ -96,16 +96,27 @@ export const PRAXISPROFIL: TravelProfile = 'cargo_bicycle';
 /** Beschriftung des Startpunkts auf der Karte. */
 export const START_LABEL = 'S';
 
+/** Beschriftung des Endpunkts, wenn er nicht der Start ist (UBK-015). */
+export const ZIEL_LABEL = 'Z';
+
 /**
  * Die Marker der Karte — Koordinate und Nummer, **nie ein Name** (ANN-096).
  *
  * `MapOverlayStop` hat kein Feld für mehr; was hier nicht steht, kann die
  * Karte nicht zeigen und der Anbieter nicht sehen (ADR-019 Punkt 2 und 12).
  */
-export function kartenmarker(start: Coordinate | null, stopps: readonly Stopp[]): MapOverlayStop[] {
+export function kartenmarker(
+  start: Coordinate | null,
+  stopps: readonly Stopp[],
+  ende: Coordinate | null = null,
+): MapOverlayStop[] {
   const marker: MapOverlayStop[] = start ? [{ position: start, label: START_LABEL }] : [];
   for (const stopp of stopps) {
     if (stopp.position) marker.push({ position: stopp.position, label: String(stopp.nummer) });
+  }
+  // UBK-015: Ein Ende an einem anderen Ort als dem Start bekommt sein Zeichen.
+  if (ende && !(start && start.lat === ende.lat && start.lon === ende.lon)) {
+    marker.push({ position: ende, label: ZIEL_LABEL });
   }
   return marker;
 }

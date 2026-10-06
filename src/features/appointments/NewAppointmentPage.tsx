@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -42,6 +42,9 @@ import {
   type AppointmentType,
   type TerminVorbelegung,
 } from './api';
+import { tageslageNeuLaden } from './tageslage';
+import { Wegauskunft } from './Wegauskunft';
+import { frageAusFormular, useWegpruefung } from './wegpruefung';
 import {
   DAUER_PARAM,
   leseDauer,
@@ -279,7 +282,9 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
         wartelisteId,
       ),
     onSuccess: async (appointmentId) => {
-      await queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      // UBK-011: Kalender, Tagesliste, Tour und Fahrpuffer - sonst stehen
+      // Fahrwege und Fahrzeiten bis zum Neuladen auf dem alten Tag.
+      await tageslageNeuLaden(queryClient);
       if (wartelisteId) await queryClient.invalidateQueries({ queryKey: ['waitlist'] });
       // Zurück, wo das Anlegen begann (BEF-016): Wer aus dem Kalender kam,
       // landet wieder im Kalender, mit dem neuen Termin hervorgehoben; wer vom
@@ -388,6 +393,17 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
     if (istInternerPfad(eingehend)) teile.set(RUECKWEG_PARAM, eingehend);
     return `${akte}/termine/neu?${teile.toString()}`;
   }
+
+  // UBK-012: „Passt es?“ - sobald Person, Zeit und Ort feststehen.
+  const wegfrage = useMemo(
+    () =>
+      frageAusFormular(werte, {
+        patientId: patientId ?? null,
+        zeitzone: user.organizationTimeZone,
+      }),
+    [werte, patientId, user.organizationTimeZone],
+  );
+  const weg = useWegpruefung(wegfrage);
 
   // Der Rückweg steht in jedem Zustand der Seite - auch beim Laden und im
   // Fehlerfall, wo er sonst der einzige Weg zurück wäre (ZST-08).
@@ -557,6 +573,11 @@ export function NewAppointmentPage({ user }: { user: CurrentUser }) {
             </>
           }
         />
+
+        {/* UBK-012: An- und Weiterfahrt, nur Auskunft. */}
+        {user.organizationTimeZone ? (
+          <Wegauskunft pruefung={weg} zeitzone={user.organizationTimeZone} />
+        ) : null}
 
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -
             über den Knöpfen (TER-05). */}

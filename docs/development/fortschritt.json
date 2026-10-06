@@ -608,7 +608,16 @@
           "status": "fertig",
           "fertig_am": "2026-10-05",
           "nachweis": "UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv`",
-          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 14 und 15"
+          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14"
+        },
+        {
+          "id": "ubk-epic-002",
+          "name": "UBK-EPIC-002 Fahrzeiten im Alltag: Fahrzeitfaktor, Passt es?, Lückenfinder, Garage und Rückweg, Fahrweg antippbar, Ort auf der Kachel",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "UBK-010 bis UBK-017, Branch `claude/friendly-wright-4r8083`, vier Migrationen, Zweitreview",
+          "vermerk": "Auftrag Jannes, eingeschoben; Sichtung: Kartendienst Schritte 8, 9 und 13, UI-Redesign Schritte 14 und 15"
         },
         {
           "id": "por-epic-002",

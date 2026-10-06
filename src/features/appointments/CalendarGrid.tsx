@@ -1,4 +1,5 @@
 import {
+  Fragment,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -37,6 +38,10 @@ import {
 } from './api';
 import { Laengenzeichen } from './Laengenzeichen';
 import { useTerminZiehen, type ZiehZustand } from './useTerminZiehen';
+import { WegauskunftFuer } from './Wegauskunft';
+import type { Wegfrage } from './wegpruefung';
+import { FahrwegMenue, type FahrwegAuskunft } from './FahrwegMenue';
+import type { Lueckenstufe } from './lueckenfinder';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
@@ -186,8 +191,8 @@ function statusLinie(eintrag: CalendarEntry): string {
 /**
  * Die dritte Zeile der Kachel (Design-Handoff 2026-10-01, Abschnitt 7a):
  * Zeichen und Wort für einen abweichenden Zustand - „! Doku offen",
- * „✓ Dokumentiert", „× Abgesagt" -, sonst der Ort, wenn er vom Regelfall
- * abweicht (ANN-192).
+ * „✓ Dokumentiert", „× Abgesagt" -, sonst der Ort: am Hausbesuch Straße und
+ * Hausnummer (UBK-017), am Praxistermin der Standort (ANN-192).
  */
 function unterzeile(
   eintrag: CalendarEntry,
@@ -201,8 +206,24 @@ function unterzeile(
       farbe: ton in STATUS_FARBE ? STATUS_FARBE[ton] : 'text-ink-muted',
     };
   }
-  const ort = ortsHinweis(eintrag);
+  const ort = ortDerKachel(eintrag);
   return ort ? { zeichen: null, text: ort, farbe: 'text-ink-muted' } : null;
+}
+
+/**
+ * Der Ort auf der Kachel (UBK-017, ANN-242): am Hausbesuch Straße und
+ * Hausnummer, am Praxistermin der Standort, sonst das Wort der Terminart.
+ * Postleitzahl und Ort liefert der Kalender nicht - auf der Kachel steht der
+ * Weg zur Tür, nicht die Anschrift.
+ */
+function ortDerKachel(eintrag: CalendarEntry): string | null {
+  if (eintrag.appointment_type === 'home_visit') {
+    const strasse = eintrag.visit_street?.trim();
+    if (!strasse) return null;
+    const nummer = eintrag.visit_house_number?.trim();
+    return nummer ? `${strasse} ${nummer}` : strasse;
+  }
+  return ortsHinweis(eintrag);
 }
 
 export interface GitterSpalte {
@@ -236,7 +257,19 @@ export interface GitterSpalte {
    * lang wie die Fahrzeit, endend am Beginn des Besuchs. Darstellung, keine
    * Prüfung - ob es zu knapp ist, sagt der Fahrpuffer (ANN-097).
    */
-  fahrwege?: readonly (Zeitband & { minuten: number; veraltet?: boolean })[];
+  fahrwege?: readonly (Zeitband & {
+    minuten: number;
+    veraltet?: boolean;
+    /** UBK-015: der Rückweg nach dem letzten Besuch. */
+    rueckweg?: boolean;
+    /**
+     * UBK-016: Was das Menü zum Weg sagt. Mit Angabe ist der Block eine
+     * Fläche, die einen Tipp annimmt; ohne bleibt er Darstellung.
+     */
+    auskunft?: FahrwegAuskunft | undefined;
+  })[];
+  /** Lückenfinder (UBK-014): die freien Lücken, eingefärbt. Ohne Angabe keine. */
+  luecken?: readonly GitterLuecke[] | undefined;
   /**
    * Wohin ein Tippen auf den Spaltenkopf führt (CAL-012).
    *
@@ -245,6 +278,35 @@ export interface GitterSpalte {
    * Ohne Ziel bleibt der Kopf eine Beschriftung.
    */
   ziel?: { to: string; beschriftung: string };
+}
+
+/**
+ * Farbe, Zeichen und Wort je Stufe des Lückenfinders. Farbe trägt nie allein
+ * (WCAG 1.4.1): Das Wort steht immer dabei. Dieselben Grenzen wie der
+ * Wegbalken (ANN-195, `luftStufe`).
+ */
+const lueckenDarstellung: Record<
+  Exclude<Lueckenstufe, 'laedt'>,
+  { flaeche: string; zeichen: string; text: string }
+> = {
+  passt: { flaeche: 'bg-accent-soft/70 text-accent', zeichen: '✓', text: 'passt' },
+  knapp: { flaeche: 'bg-warnung-soft text-warnung', zeichen: '!', text: 'knapp' },
+  nicht: { flaeche: 'bg-danger-soft/70 text-danger', zeichen: '×', text: 'passt nicht' },
+  zu_kurz: { flaeche: 'bg-danger-soft/70 text-danger', zeichen: '×', text: 'zu kurz' },
+  ungeprueft: { flaeche: 'bg-surface-sunken text-ink-muted', zeichen: '?', text: 'nicht geprüft' },
+};
+
+/**
+ * Eine freie Lücke, eingefärbt vom Lückenfinder (UBK-014, ANN-239): passt,
+ * knapp oder passt nicht - mit Fahrweg vom Termin davor und zum Termin
+ * danach. Nur Auskunft: Die Fläche darunter bleibt antippbar.
+ */
+export interface GitterLuecke {
+  vonMinute: number;
+  bisMinute: number;
+  stufe: Lueckenstufe;
+  /** Frühester Beginn als „hh:mm“. */
+  ab: string | null;
 }
 
 export interface GitterEintrag {
@@ -256,6 +318,12 @@ export interface GitterEintrag {
   ziehbar: boolean;
   /** Gerade angelegt - beim Zurückkommen aus dem Formular hervorgehoben (FIX-016). */
   neu?: boolean;
+  /**
+   * Belegt, aber nicht gemeint: Mit Patientenfilter stehen die übrigen
+   * Termine als neutrale, gestrichelte Kachel da, statt zu verschwinden
+   * (BEF-053 Punkt 1, ANN-239) - eine Lücke sieht nur frei aus, wenn sie es ist.
+   */
+  zurueckgenommen?: boolean;
 }
 
 /**
@@ -297,7 +365,19 @@ export function CalendarGrid({
   laedtNach = false,
   fokus = null,
   startSpalte = null,
+  wegfrage,
+  zeitzone = null,
 }: {
+  /**
+   * „Passt es?“ zu einer Verschiebung (UBK-013): Die Seite weiß, welche
+   * Person, welcher Tag und welcher Ort zu einer Spalte gehören. Ohne Angabe
+   * zeigt das Ziehen keine Auskunft.
+   */
+  wegfrage?:
+    | ((ziel: { terminId: string; spalteId: string; startMinute: number }) => Wegfrage | null)
+    | undefined;
+  /** Zeitzone der Praxis - für die Uhrzeiten der Auskunft. */
+  zeitzone?: string | null;
   /**
    * Was in der Ecke über der Zeitachse steht (BEF-039): der Knopf zu Ansicht
    * und Filter. Die Ecke bleibt beim waagerechten Bildlauf stehen - damit ist
@@ -503,6 +583,8 @@ export function CalendarGrid({
   // dem Zeichnen gemessen, damit er nicht erst an der falschen Stelle
   // aufblitzt.
   const [rueckfrageLage, setRueckfrageLage] = useState<number | null>(null);
+  // UBK-016: der angetippte Fahrweg - markiert als Ganzes, mit Menü daneben.
+  const [gewaehlterWeg, setGewaehlterWeg] = useState<string | null>(null);
   useLayoutEffect(() => {
     if (!vorschlag) {
       if (rueckfrageLage !== null) setRueckfrageLage(null);
@@ -808,33 +890,129 @@ export function CalendarGrid({
                     freie Fläche darunter bleibt eine Auswahl. Ragt der Weg in
                     den Termin davor, liegt die Kachel darüber; was sichtbar
                     bleibt, ist der Rest der Fahrt. */}
+                {/* UBK-014: Lücken unter Fahrwegen und Kacheln - eine Auskunft,
+                  die den Tipp auf die freie Fläche nicht abfängt. */}
+                {(s.luecken ?? []).map((l) => {
+                  const von = Math.max(l.vonMinute, fenster.vonMinute);
+                  const bis = Math.min(l.bisMinute, fenster.bisMinute);
+                  if (bis <= von || l.stufe === 'laedt') return null;
+                  const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
+                  const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
+                  const darstellung = lueckenDarstellung[l.stufe];
+                  // Die letzte Lücke beginnt mit dem Rückweg: Ihr Wort steht
+                  // darunter, sonst läge es unter dem Block.
+                  const rueckweg = (s.fahrwege ?? []).find(
+                    (w) => w.rueckweg === true && w.vonMinute <= von && w.bisMinute > von,
+                  );
+                  const versatz = rueckweg
+                    ? minuteZuPixel(
+                        Math.min(rueckweg.bisMinute, bis),
+                        fenster.vonMinute,
+                        stundenHoehe,
+                      ) - oben
+                    : 0;
+                  const text =
+                    l.ab && (l.stufe === 'passt' || l.stufe === 'knapp')
+                      ? `${darstellung.text} ab ${l.ab}`
+                      : darstellung.text;
+                  return (
+                    <div
+                      key={`luecke-${l.vonMinute}`}
+                      data-testid="luecke"
+                      data-stufe={l.stufe}
+                      className={`${darstellung.flaeche} pointer-events-none absolute inset-x-0 overflow-hidden px-1.5 pt-0.5 text-xs leading-4 font-semibold`}
+                      style={{ top: `${oben}px`, height: `${hoehe}px` }}
+                    >
+                      <span
+                        aria-hidden="true"
+                        data-testid="luecke-wort"
+                        className={hoehe - versatz >= 16 ? 'block' : 'hidden'}
+                        style={versatz > 0 ? { marginTop: `${versatz}px` } : undefined}
+                      >
+                        {darstellung.zeichen} {text}
+                      </span>
+                      <span className="sr-only">
+                        {`Lücke ${minuteZuZeit(l.vonMinute)} bis ${minuteZuZeit(l.bisMinute)}: ${text}`}
+                      </span>
+                    </div>
+                  );
+                })}
+
                 {(s.fahrwege ?? []).map((w) => {
                   const von = Math.max(w.vonMinute, fenster.vonMinute);
                   const bis = Math.min(w.bisMinute, fenster.bisMinute);
                   if (bis <= von) return null;
                   const oben = minuteZuPixel(von, fenster.vonMinute, stundenHoehe);
                   const hoehe = minuteZuPixel(bis, fenster.vonMinute, stundenHoehe) - oben;
-                  return (
-                    <div
-                      key={`weg-${w.vonMinute}-${w.bisMinute}`}
-                      data-testid={w.veraltet ? 'fahrweg-veraltet' : 'fahrweg'}
-                      className={`${
-                        w.veraltet
-                          ? 'border-warnung bg-warnung-soft text-warnung'
-                          : 'border-accent/40 bg-accent-soft text-accent'
-                      } rounded-button pointer-events-none absolute inset-x-1 overflow-hidden border border-dashed px-1.5 text-xs leading-4 font-semibold`}
-                      style={{ top: `${oben}px`, height: `${hoehe}px` }}
-                    >
+                  const schluessel = `${s.id}-${w.vonMinute}-${w.bisMinute}`;
+                  const gewaehlt = gewaehlterWeg === schluessel && w.auskunft !== undefined;
+                  const inhalt = (
+                    <>
                       {/* Die Zahl nur, wo sie hineinpasst; vorgelesen wird sie immer. */}
                       <span aria-hidden="true" className={hoehe >= 16 ? '' : 'hidden'}>
-                        {w.veraltet ? '! Adresse veraltet' : `Weg ≈ ${w.minuten} min`}
+                        {w.veraltet
+                          ? '! Adresse veraltet'
+                          : `${w.rueckweg ? 'Rückweg' : 'Weg'} ≈ ${w.minuten} min`}
                       </span>
                       <span className="sr-only">
                         {w.veraltet
                           ? `Fahrzeit nicht verfügbar: Die Adresse am Termin um ${minuteZuZeit(w.bisMinute)} ist veraltet`
-                          : `Fahrweg etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
+                          : `${w.rueckweg ? 'Rückweg' : 'Fahrweg'}${
+                              w.auskunft ? ` von ${w.auskunft.von} nach ${w.auskunft.nach},` : ''
+                            } etwa ${w.minuten} Minuten, ${minuteZuZeit(w.vonMinute)} bis ${minuteZuZeit(w.bisMinute)}`}
                       </span>
-                    </div>
+                    </>
+                  );
+                  const flaeche = w.veraltet
+                    ? 'border-warnung bg-warnung-soft text-warnung'
+                    : gewaehlt
+                      ? 'border-accent bg-accent-soft text-accent border-2 border-solid'
+                      : 'border-accent/40 bg-accent-soft text-accent border border-dashed';
+                  const lage =
+                    'rounded-button absolute inset-x-1 overflow-hidden px-1.5 text-left text-xs leading-4 font-semibold';
+                  if (!w.auskunft || w.veraltet) {
+                    return (
+                      <div
+                        key={`weg-${w.vonMinute}-${w.bisMinute}`}
+                        data-testid={w.veraltet ? 'fahrweg-veraltet' : 'fahrweg'}
+                        className={`${flaeche} ${lage} pointer-events-none ${w.veraltet ? 'border border-dashed' : ''}`}
+                        style={{ top: `${oben}px`, height: `${hoehe}px` }}
+                      >
+                        {inhalt}
+                      </div>
+                    );
+                  }
+                  // UBK-016: Der ganze Block ist eine Fläche. Ein Tipp markiert
+                  // ihn und öffnet das Menü - und keine Zeile darunter. Ohne
+                  // z-index: über Linien und Lücken, unter den Kacheln - ragt
+                  // der Weg in den Termin davor, gehört der Tipp dem Termin.
+                  const spalteIndex = spaltenModell.findIndex((x) => x.id === s.id);
+                  const rechts =
+                    spalteIndex >= spaltenModell.length / 2 && spaltenModell.length > 1;
+                  return (
+                    <Fragment key={`weg-${w.vonMinute}-${w.bisMinute}`}>
+                      <button
+                        type="button"
+                        data-testid="fahrweg"
+                        aria-expanded={gewaehlt}
+                        className={`${flaeche} ${lage} cursor-pointer`}
+                        style={{ top: `${oben}px`, height: `${Math.max(hoehe, 1)}px` }}
+                        onClick={() => setGewaehlterWeg(gewaehlt ? null : schluessel)}
+                      >
+                        {inhalt}
+                      </button>
+                      {gewaehlt && w.auskunft ? (
+                        <FahrwegMenue
+                          weg={w.auskunft}
+                          onSchliessen={() => setGewaehlterWeg(null)}
+                          className={[
+                            'absolute z-50 w-64 max-w-[calc(100vw-5rem)]',
+                            rechts ? 'right-1' : 'left-1',
+                          ].join(' ')}
+                          style={{ top: `${oben + Math.max(hoehe, 1) + 4}px` }}
+                        />
+                      ) : null}
+                    </Fragment>
                   );
                 })}
 
@@ -942,6 +1120,19 @@ export function CalendarGrid({
                             fehler={vorschlag.fehler}
                             onBestaetigen={vorschlag.onBestaetigen}
                             onAbbrechen={vorschlag.onAbbrechen}
+                            auskunft={
+                              wegfrage && zeitzone ? (
+                                <WegauskunftFuer
+                                  frage={wegfrage({
+                                    terminId: vorschlag.terminId,
+                                    spalteId: vorschlag.spalteId,
+                                    startMinute: vorschlag.startMinute,
+                                  })}
+                                  zeitzone={zeitzone}
+                                  variante="rueckfrage"
+                                />
+                              ) : undefined
+                            }
                             className={[
                               'absolute z-50 w-72 max-w-[calc(100vw-5rem)]',
                               rechts ? 'right-1' : 'left-1',
@@ -1018,6 +1209,32 @@ export function CalendarGrid({
         Telefons, und lässt die Spalte der Auswahl frei. Außerhalb des
         Gitters, weil dessen waagerechter Bildlauf ein `sticky` darin an
         den Kasten statt an das Fenster bände. */}
+      {/* UBK-013: Beim Ziehen steht „Passt es?“ am unteren Rand - der Finger
+          deckt die Vorschau selbst zu. Gefragt wird, wenn die Vorschau einen
+          Augenblick stillsteht. */}
+      {ziehen.vorschau && wegfrage && zeitzone ? (
+        <div
+          data-testid="zieh-auskunft"
+          aria-hidden="true"
+          className="border-line-strong bg-surface rounded-card sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 border-2 px-3 py-2 sm:bottom-4"
+        >
+          <p className="text-ink text-sm font-semibold tabular-nums">
+            Neu · {minuteZuZeit(ziehen.vorschau.startMinute)}–
+            {minuteZuZeit(ziehen.vorschau.startMinute + ziehen.vorschau.dauer)} Uhr · Passt es?
+          </p>
+          <WegauskunftFuer
+            frage={wegfrage({
+              terminId: ziehen.vorschau.terminId,
+              spalteId: ziehen.vorschau.spalteId,
+              startMinute: ziehen.vorschau.startMinute,
+            })}
+            zeitzone={zeitzone}
+            variante="ziehen"
+            verzoegerung={250}
+          />
+        </div>
+      ) : null}
+
       {auswahl ? (
         <AnlegenMenue
           auswahl={auswahl}
@@ -1079,21 +1296,26 @@ function Kachel({
   const abweichung = abweichendeLaengeMinuten(eintrag);
   // Drei Zeilen (Design-Handoff 2026-10-01, Abschnitt 7a): Zeit, Name,
   // Unterzeile mit Zeichen und Wort - „! Doku offen", „✓ Dokumentiert",
-  // „× Abgesagt" - oder dem Ort, wenn er vom Regelfall abweicht.
+  // „× Abgesagt" - oder dem Ort; mit Zustand steht der Ort in Zeile vier.
   //
   // Zustände mit eigenen Flächen statt Deckkraft (KAL-18): Abgesagt, nicht
   // angetroffen, eine Fehlzeit und der alte Platz einer Verschiebung stehen
   // auf dem Seitengrund; abgesagt und der alte Platz zusätzlich gestrichelt.
   const abgesagt = eintrag.status === 'cancelled';
-  const zurueckgelassen = gedimmt || bisher;
+  const zurueckgelassen = gedimmt || bisher || gitter.zurueckgenommen === true;
   const aufGrund = abgesagt || eintrag.status === 'no_show' || eintrag.kind === 'internal';
   const zeile3 = unterzeile(eintrag);
+  // UBK-017: Trägt die dritte Zeile den Zustand, steht der Ort in der
+  // vierten - wenn die Kachel hoch genug ist.
+  const ort = ortDerKachel(eintrag);
+  const zeile4 = zeile3 && ort && zeile3.text !== ort ? ort : null;
   // BEF-072: So viele Zeilen, wie ganz hineinpassen - eine halb
   // angeschnittene Zeile entfällt lieber. Jede Zeile ist 16 px hoch.
   const zeilen = kachelZeilen(hoehe);
 
   const titel = [
     bisher ? 'Bisher' : null,
+    gitter.zurueckgenommen ? 'Belegt' : null,
     `${minuteZuZeit(beginnMinute)}–${minuteZuZeit(endeMinute)}`,
     // Warum eine Kachel nicht zieht, steht dran - eine stumme Kachel sieht
     // aus wie ein Fehler (BEF-015).
@@ -1103,7 +1325,7 @@ function Kachel({
     abweichung === null ? null : abweichendeLaengeText(abweichung),
     vermerk,
     dokuOffen(eintrag) ? 'Doku offen' : null,
-    ortsHinweis(eintrag),
+    ortDerKachel(eintrag),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -1128,8 +1350,8 @@ function Kachel({
         ? 'border-line-strong'
         : 'border-line',
     // Nach der Randfarbe: Die Linie links behält ihre Statusfarbe, auch an
-    // einer hervorgehobenen Kachel.
-    statusLinie(eintrag),
+    // einer hervorgehobenen Kachel. Eine zurückgenommene Kachel ist neutral.
+    gitter.zurueckgenommen ? 'border-l-line-strong' : statusLinie(eintrag),
     // Bewusst NICHT `touch-none` (UX-010): Der Bildlauf bleibt beim Browser;
     // das Verschieben beginnt erst nach dem langen Druck.
     ziehbar ? 'cursor-grab touch-pan-x touch-pan-y' : '',
@@ -1185,7 +1407,13 @@ function Kachel({
       {zeile3 && zeilen >= 3 ? (
         <span
           className={`block truncate text-xs leading-4 font-medium ${zeile3.farbe}`}
-          data-testid={zeile3.farbe === 'text-ink-muted' ? undefined : 'kachel-status'}
+          data-testid={
+            zeile3.text === ort
+              ? 'kachel-ort'
+              : zeile3.farbe === 'text-ink-muted'
+                ? undefined
+                : 'kachel-status'
+          }
         >
           {zeile3.zeichen ? <span aria-hidden="true">{zeile3.zeichen} </span> : null}
           {zeile3.text}
@@ -1193,6 +1421,11 @@ function Kachel({
       ) : zeile3 && zeile3.farbe !== 'text-ink-muted' ? (
         // Zu niedrig für die dritte Zeile: Der Zustand bleibt vorgelesen.
         <span className="sr-only">{zeile3.text}</span>
+      ) : null}
+      {zeile4 && zeilen >= 4 ? (
+        <span className="text-ink-muted block truncate text-xs leading-4" data-testid="kachel-ort">
+          {zeile4}
+        </span>
       ) : null}
     </>
   );
