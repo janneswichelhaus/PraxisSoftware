@@ -104,14 +104,23 @@ test.describe('Kalender', () => {
     await expect(page.getByRole('navigation', { name: /^Bereich / })).toHaveCount(0);
   });
 
-  test('fuehrt ueber „Tour" mit Tag und Person auf die Tourenseite', async ({ page }) => {
-    await page.goto(PRUEFSEITE);
-    await expect(annaSpalte(page)).toBeVisible();
-    await page.getByRole('button', { name: /Ansicht und Filter/ }).click();
+  // Runde 3: „Tour" steht im Kopf neben „Tag | Team" bzw. „Woche | Team",
+  // auf jeder Breite sichtbar, ohne „Ansicht und Filter" zu öffnen.
+  for (const breite of [375, 834, 1280]) {
+    test(`fuehrt ueber „Tour" im Kopf mit Tag auf die Tourenseite (${breite} px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(PRUEFSEITE);
+      await expect(page.getByRole('group', { name: 'Ansicht', exact: true })).toBeVisible();
 
-    const tour = page.getByRole('link', { name: 'Tour', exact: true });
-    await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
-  });
+      const tour = page.getByRole('link', { name: 'Tour', exact: true });
+      await expect(tour).toBeVisible();
+      await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
+      const hoehe = (await tour.boundingBox())!.height;
+      expect(hoehe).toBeGreaterThanOrEqual(44);
+    });
+  }
 
   // TRN-006: Die Trainingsbetreuung sieht ihre Trainingstermine und sonst nichts.
   for (const breite of [375, 1280]) {
