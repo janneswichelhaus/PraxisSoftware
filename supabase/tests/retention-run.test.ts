@@ -623,6 +623,8 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
       'plattformzugang',
       'termin_ohne_nachweis',
+      // POR-009: Regel in apply_retention, Tests in platform-appointment-requests.test.ts.
+      'terminwunsch',
       'trainingsverhaeltnis',
       'warteliste',
       'zugangseinladung',

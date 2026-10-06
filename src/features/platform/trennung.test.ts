@@ -73,10 +73,14 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     expect([...new Set(aufrufe)].sort()).toEqual([
       'function:platform-access',
       'rpc:end_platform_companion',
+      // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
+      'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
       'rpc:platform_context',
       'rpc:platform_representatives',
+      'rpc:request_platform_appointment',
+      'rpc:withdraw_platform_appointment_request',
     ]);
   });
 

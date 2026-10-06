@@ -16,7 +16,9 @@ import {
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import { PLATTFORM_PFAD } from './pfade';
 import { Termine } from './Termine';
+import { Terminwunsch } from './Terminwunsch';
 
 /**
  * Das Gerüst der Plattform (POR-004, DSN-001 Abschnitt 3, ADR-023 Punkt 25).
@@ -38,7 +40,7 @@ import { Termine } from './Termine';
  * 13). Jede Vertretung ist ein eigener Eintrag im Schalter, und solange sie
  * gewählt ist, steht oben dauerhaft „Sie handeln für …" (Punkt 14).
  */
-export const PLATTFORM_PFAD = '/p';
+export { PLATTFORM_PFAD };
 
 export function PlattformApp({
   zugaenge,
@@ -79,6 +81,16 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Termine zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/termine/wunsch`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Terminwunsch zugang={z} />}
               />
             }
           />

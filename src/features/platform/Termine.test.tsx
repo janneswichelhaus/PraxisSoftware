@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
-import type { Plattformzugang, Termin } from './api';
+import type { Plattformzugang, Termin, Terminwunsch } from './api';
 import { renderWithProviders } from '@/test-utils';
 
 /**
@@ -10,10 +11,14 @@ import { renderWithProviders } from '@/test-utils';
  */
 
 const ladeTermine = vi.fn();
+const ladeWuensche = vi.fn();
+const wunschZurueckziehen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
+  ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<Terminwunsch[]>,
+  wunschZurueckziehen: (...args: unknown[]) => wunschZurueckziehen(...args) as Promise<void>,
 }));
 
 const { Termine } = await import('./Termine');
@@ -73,6 +78,8 @@ const ABGESAGT: Termin = {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  ladeWuensche.mockResolvedValue([]);
+  wunschZurueckziehen.mockResolvedValue(undefined);
 });
 
 describe('Termine (POR-008)', () => {
@@ -106,6 +113,50 @@ describe('Termine (POR-008)', () => {
       expect(screen.getByText('Ihre Termine konnten nicht geladen werden.')).toBeInTheDocument(),
     );
     expect(screen.getByRole('button', { name: /erneut/i })).toBeInTheDocument();
+  });
+
+  it('fuehrt zum Wunschformular und zeigt einen offenen Wunsch als angefragt (POR-009)', async () => {
+    const nutzer = userEvent.setup();
+    ladeTermine.mockResolvedValue([HAUSBESUCH]);
+    const offen: Terminwunsch = {
+      id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+      kind: 'new',
+      appointment_id: null,
+      preferred_days: ['2026-10-20', '2026-10-22'],
+      preferred_times: ['morning'],
+      note: 'Bitte nicht vor 9 Uhr.',
+      status: 'open',
+      created_at: new Date().toISOString(),
+      resolved_at: null,
+      answer: null,
+    };
+    const alt: Terminwunsch = {
+      ...offen,
+      id: 'dddddddd-dddd-4ddd-8ddd-000000000002',
+      status: 'declined',
+      resolved_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+      answer: 'Leider voll.',
+    };
+    ladeWuensche.mockResolvedValue([offen, alt]);
+    renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine?bereich=treatment');
+
+    expect(await screen.findByText('angefragt')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Termin wünschen' })).toHaveAttribute(
+      'href',
+      '/p/termine/wunsch?bereich=treatment',
+    );
+    expect(
+      screen.getByText(/Dienstag, 20\.10\., Donnerstag, 22\.10\. · Vormittag/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Ein vereinbarter Termin ist das noch nicht/)).toBeInTheDocument();
+    // Ein vor 30 Tagen beantworteter Wunsch ist keine Auskunft mehr.
+    expect(screen.queryByText('Leider voll.')).not.toBeInTheDocument();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Wunsch zurückziehen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, zurückziehen' }));
+    await waitFor(() =>
+      expect(wunschZurueckziehen).toHaveBeenCalledWith(ZUGANG.access_id, offen.id),
+    );
   });
 
   it('beschreibt einen Videotermin ohne Ort und einen Hausbesuch mit Anschrift', () => {

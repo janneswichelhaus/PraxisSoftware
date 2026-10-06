@@ -57,6 +57,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Zugänge von Patient:innen und Kund:innen zur Plattform mit ihren Einladungen als Nachweis. Das Konto fällt 30 Tage nach dem Ende des letzten Zugangs, der Nachweis nach drei Jahren.',
   },
+  terminwunsch: {
+    label: 'Terminwünsche',
+    beschreibung:
+      'Terminwünsche über die Plattform, beantwortet oder zurückgezogen. Offene Wünsche bleiben, bis die Praxis antwortet oder sie mit dem Verhältnis fallen.',
+  },
   warteliste: {
     label: 'Warteliste',
     beschreibung:

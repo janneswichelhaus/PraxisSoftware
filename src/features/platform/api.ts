@@ -137,3 +137,88 @@ export async function ladeTermine(zugangId: string): Promise<Termin[]> {
   if (ergebnis.error) throw new Error(satz);
   return antwort(z.array(terminSchema), ergebnis.data ?? [], satz);
 }
+
+// -----------------------------------------------------------------------------
+// Terminwünsche (POR-009, PROJECT_PRINCIPLES.md 8, DSN-001 4.1, ANN-243)
+// -----------------------------------------------------------------------------
+
+export const TAGESZEITEN = ['morning', 'midday', 'afternoon'] as const;
+export type Tageszeit = (typeof TAGESZEITEN)[number];
+export const TAGESZEIT_NAME: Record<Tageszeit, string> = {
+  morning: 'Vormittag',
+  midday: 'Mittag',
+  afternoon: 'Nachmittag',
+};
+
+const wunschSchema = z.object({
+  id: z.string().uuid(),
+  kind: z.enum(['new', 'change', 'cancel']),
+  appointment_id: z.string().uuid().nullable(),
+  /** Kalendertage `YYYY-MM-DD`. */
+  preferred_days: z.array(z.string()),
+  preferred_times: z.array(z.enum(TAGESZEITEN)),
+  note: z.string().nullable(),
+  status: z.enum(['open', 'done', 'declined', 'withdrawn']),
+  created_at: z.string(),
+  resolved_at: z.string().nullable(),
+  answer: z.string().nullable(),
+});
+export type Terminwunsch = z.infer<typeof wunschSchema>;
+
+export function wuenscheSchluessel(zugangId: string) {
+  return ['platform-appointment-requests', zugangId] as const;
+}
+
+/** Die eigenen Wünsche des Bereichs, offene zuerst. */
+export async function ladeWuensche(zugangId: string): Promise<Terminwunsch[]> {
+  const satz = 'Ihre Terminwünsche konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_appointment_requests', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(wunschSchema), ergebnis.data ?? [], satz);
+}
+
+/**
+ * Einen Termin wünschen: Tage, Tageszeiten, eine freie Zeile. Ein Wunsch, kein
+ * Termin - einen Termin macht daraus die Praxis (§8). Die Grenzen prüft der
+ * Server; die Meldungen hier sagen, was zu tun ist (§13).
+ */
+export async function terminWuenschen(eingabe: {
+  zugangId: string;
+  tage: string[];
+  zeiten: Tageszeit[];
+  notiz: string;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('request_platform_appointment', {
+    p_access_id: eingabe.zugangId,
+    p_days: eingabe.tage,
+    p_times: eingabe.zeiten,
+    p_note: eingabe.notiz.trim() === '' ? null : eingabe.notiz.trim(),
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(wunschfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihr Wunsch konnte nicht gesendet werden.');
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers, ohne interne Details. */
+export function wunschfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('at least one day')) return 'Bitte wählen Sie mindestens einen Tag.';
+  if (m.includes('too many days')) return 'Bitte wählen Sie höchstens 14 Tage.';
+  if (m.includes('day out of range'))
+    return 'Bitte wählen Sie Tage ab heute, höchstens ein Jahr voraus.';
+  if (m.includes('note too long')) return 'Ihre Nachricht darf höchstens 500 Zeichen lang sein.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  return 'Ihr Wunsch konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Einen offenen Wunsch zurückziehen. */
+export async function wunschZurueckziehen(zugangId: string, wunschId: string): Promise<void> {
+  const satz = 'Der Wunsch konnte nicht zurückgezogen werden.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_appointment_request', {
+    p_access_id: zugangId,
+    p_request_id: wunschId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data !== true) throw new Error(satz);
+}

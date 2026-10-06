@@ -35,6 +35,12 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Begleitung beenden (POR-007); Negativfälle in platform-own-representatives.test.ts',
   'public.platform_appointments':
     'Eigene Termine (POR-008); Negativfälle in platform-appointments.test.ts',
+  'public.platform_appointment_requests':
+    'Eigene Terminwünsche (POR-009); Negativfälle in platform-appointment-requests.test.ts',
+  'public.request_platform_appointment':
+    'Termin wünschen (POR-009); ohne lesbaren Zugang abgewiesen (42501)',
+  'public.withdraw_platform_appointment_request':
+    'Wunsch zurückziehen (POR-009); ohne lesbaren Zugang false',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',
