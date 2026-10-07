@@ -3611,3 +3611,27 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** Spalten und Prüfungen von `public.exercise_plan_items` und `public.save_exercise_plan_item` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `src/features/exercise-plans/dosierung.ts`.
 
 **Änderungspfad.** Andere Grenzen oder Felder: Constraint, Funktion und Formular `src/features/exercise-plans/PositionFormular.tsx` · Aufwand `klein`.
+
+### ANN-300 — Mit der Zuweisung wird der Plan eingefroren; danach ändern sich nur Laufzeit und Ende
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Beim Zuweisen hält der Plan je Position die Bezeichnungen beider Sprachebenen, die Körperregion, die Kurzanleitung und die Ausrüstung der Variante fest, dazu die Dosierung. Danach ändert eine Änderung der Bibliothek nichts mehr daran, und am Plan ändern sich nur noch das Ende der Laufzeit, das Beenden und das Ablösen durch eine neue Fassung. Ein Entwurf darf verworfen werden; ein zugewiesener Plan wird nie gelöscht, nur beendet – er fällt erst mit seinem Verhältnis.
+
+**Begründung.** IDEA-TRN-011: Was die Person bekommen hat, muss im Nachhinein feststellbar sein – bei einer Beschwerde oder einem Zwischenfall ist genau das die Frage. Dieselbe Unveränderlichkeit legen ADR-009 für die ausgestellte Rechnung und §5 für die finalisierte Dokumentation fest. Hinweise für die Praxis und Ausweichbewegungen gehören nicht in den Schnappschuss: Sie sind Fachwissen der Praxis, nicht Inhalt des Plans.
+
+**Anker.** Die Riegel `public.exercise_plans_guard` und `public.exercise_plan_items_guard` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; der Schnappschuss in `public.assign_exercise_plan` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Weitere Felder einfrieren: Spalte und Zeile im Schnappschuss ergänzen · Aufwand `klein`. Korrektur eines zugewiesenen Plans ohne neue Fassung: ein eigener Korrekturweg mit Fassungskette wie in ADR-016 · Aufwand `mittel`.
+
+### ANN-302 — Laufzeit voreingestellt sechs Wochen, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne, nach den ersten Wochen mit echten Plänen)
+
+**Annahme.** Jeder zugewiesene Plan hat ein Ende: beim Zuweisen Pflicht, voreingestellt sechs Wochen, höchstens 26 Wochen ab dem Tag. Sieben Tage vor dem Ende erscheint der Plan unter „Offene Punkte“ bei den Rollen, die ihn schreiben dürfen – nicht beim Büro –, und bleibt dort, auch nach dem Ende, bis jemand verlängert (wieder höchstens 26 Wochen ab heute; das erste Ende bleibt festgehalten), eine neue Fassung zuweist oder den Plan beendet.
+
+**Begründung.** IDEA-ORG-006: Pläne ohne Ablaufdatum laufen ewig weiter; ein Ende erzwingt eine bewusste Entscheidung je Zyklus. Sechs Wochen entsprechen einem üblichen Behandlungs- und Trainingsblock; 26 Wochen sind die Grenze, ab der eine Übungsfolge kaum noch zur Lage passt. Die Wiedervorlage hängt nur am Datum – sie wertet keine Angabe der Person aus (ADR-006 Punkt 11). Das Büro schreibt keine Pläne und entscheidet deshalb nicht darüber.
+
+**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.

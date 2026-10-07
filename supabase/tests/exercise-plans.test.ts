@@ -636,3 +636,182 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
     });
   });
 });
+
+const ZUWEISEN = 'select public.assign_exercise_plan($1::uuid, $2::date)';
+
+/** Kalendertag `n` Tage von heute in der Zeitzone der Testpraxis. */
+export async function praxistag(n: number): Promise<string> {
+  const { rows } = await asPostgres<{ tag: string }>(
+    `select to_char(app.training_today($1::uuid) + $2::int, 'YYYY-MM-DD') as tag`,
+    [organizationId, n],
+  );
+  return rows[0]!.tag;
+}
+
+export async function zuweisen(
+  plan: string,
+  tage = 42,
+  konto: string = users.therapist,
+): Promise<void> {
+  await asUserCommitted(konto, ZUWEISEN, [plan, await praxistag(tage)]);
+}
+
+describe('Übungspläne: Zuweisen und Schnappschuss (UEB-005)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres(`
+      alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
+      alter table public.exercise_plans disable trigger exercise_plans_guard;
+      delete from public.exercise_plans;
+      alter table public.exercise_plans enable trigger exercise_plans_guard;
+      alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
+    `);
+  });
+
+  it('weist zu: Laufzeit ab heute, Stempel an der Zeile', async () => {
+    const plan = await planAnlegen();
+    await positionAnlegen(plan);
+    await zuweisen(plan, 42);
+    const p = await planLesen(plan);
+    expect(p).toMatchObject({
+      status: 'assigned',
+      runs_from: await praxistag(0),
+      runs_until: await praxistag(42),
+      original_runs_until: await praxistag(42),
+    });
+    const { rows } = await asPostgres<{ assigned_by: string }>(
+      'select assigned_by from public.exercise_plans where id = $1',
+      [plan],
+    );
+    expect(rows[0]!.assigned_by).toBe(users.therapist);
+  });
+
+  it('friert die Bibliothek ein: eine spätere Änderung ändert den Plan nicht (ANN-300)', async () => {
+    const plan = await planAnlegen();
+    await positionAnlegen(plan, VARIANTE.kniebeugeGelaender);
+    await zuweisen(plan);
+    const vorher = (await planLesen(plan))!.items[0]!;
+    await asPostgres(
+      `update public.exercise_variants set name = 'Umbenannt', lay_name = 'Umbenannt',
+         instruction = 'Neu', equipment = '{Stuhl}' where id = $1`,
+      [VARIANTE.kniebeugeGelaender],
+    );
+    await asPostgres(
+      `update public.exercises set name = 'Umbenannt' where id = (
+      select exercise_id from public.exercise_variants where id = $1)`,
+      [VARIANTE.kniebeugeGelaender],
+    );
+    try {
+      const nachher = (await planLesen(plan))!.items[0]!;
+      expect(nachher).toEqual(vorher);
+      expect(nachher).toMatchObject({
+        variant_name: 'Kniebeuge am Gelaender, halbe Tiefe',
+        exercise_name: 'Kniebeuge',
+        equipment: ['Gelaender'],
+      });
+    } finally {
+      await resetDatabase();
+    }
+  });
+
+  it('ist nach der Zuweisung unveränderlich - für jeden Schreibweg (ANN-300)', async () => {
+    const plan = await planAnlegen();
+    const item = await positionAnlegen(plan);
+    await zuweisen(plan);
+
+    await expect(
+      asUserCommitted(users.therapist, PLAN_SPEICHERN, [plan, 'Neu', 2]),
+    ).rejects.toThrow(/not a draft/);
+    await expect(
+      asUserCommitted(
+        users.therapist,
+        POSITION,
+        positionParameter(item, null, VARIANTE.kniebeugeGelaender, { sets: 5 }),
+      ),
+    ).rejects.toThrow(/not a draft/);
+    await expect(positionAnlegen(plan)).rejects.toThrow(/not a draft/);
+    await expect(asUserCommitted(users.therapist, ENTFERNEN, [item])).rejects.toThrow(
+      /not a draft/,
+    );
+    await expect(asUserCommitted(users.therapist, VERSCHIEBEN, [item, 'down'])).rejects.toThrow(
+      /not a draft/,
+    );
+    await expect(asUserCommitted(users.therapist, VERWERFEN, [plan])).rejects.toThrow(
+      /only a draft/,
+    );
+    await expect(
+      asUserCommitted(users.therapist, ZUWEISEN, [plan, await praxistag(10)]),
+    ).rejects.toThrow(/not a draft/);
+    // Auch am Riegel vorbei über die Tabelle nicht.
+    await expect(
+      asPostgres(`update public.exercise_plan_items set sets = 9 where id = $1`, [item]),
+    ).rejects.toThrow(/not a draft/);
+    await expect(
+      asPostgres(`update public.exercise_plans set title = 'Neu' where id = $1`, [plan]),
+    ).rejects.toThrow(/cannot be changed/);
+    await expect(
+      asPostgres(`delete from public.exercise_plans where id = $1`, [plan]),
+    ).rejects.toThrow(/only a draft/);
+  });
+
+  it.each([
+    ['gestern', -1],
+    ['länger als 26 Wochen', 183],
+  ])('weist eine Laufzeit ab: %s (ANN-302)', async (_fall, tage) => {
+    const plan = await planAnlegen();
+    await positionAnlegen(plan);
+    await expect(zuweisen(plan, tage)).rejects.toThrow(/runs until is invalid/);
+  });
+
+  it('lässt 26 Wochen und heute gerade noch zu (ANN-302)', async () => {
+    for (const tage of [0, 182]) {
+      const plan = await planAnlegen();
+      await positionAnlegen(plan);
+      await zuweisen(plan, tage);
+    }
+  });
+
+  it('weist einen leeren Plan nicht zu', async () => {
+    const plan = await planAnlegen();
+    await expect(zuweisen(plan)).rejects.toThrow(/has no exercises/);
+  });
+
+  it('lässt nur die schreibenden Rollen des Bereichs zuweisen (ANN-298)', async () => {
+    const behandlung = await planAnlegen();
+    await positionAnlegen(behandlung);
+    const training = await planAnlegen('training');
+    await positionAnlegen(training, VARIANTE.rudernGelb, {}, users.trainer);
+
+    await expect(zuweisen(behandlung, 42, users.office)).rejects.toThrow(/not allowed/);
+    await expect(zuweisen(behandlung, 42, users.trainer)).rejects.toThrow(
+      /exercise plan not found/,
+    );
+    await expect(zuweisen(training, 42, users.therapist)).rejects.toThrow(
+      /exercise plan not found/,
+    );
+    await zuweisen(training, 42, users.trainer);
+    await zuweisen(behandlung, 42, users.teamLead);
+  });
+
+  it('steht in der Auskunft nach Art. 15 - nur der Behandlungsplan', async () => {
+    const plan = await planAnlegen('therapy', patients.erika);
+    await positionAnlegen(plan, VARIANTE.kniebeugeGelaender, { hinweis: 'Langsam.' });
+    await zuweisen(plan);
+    await planAnlegen('training', trainingRelationships.erika);
+    const { rows } = await asUser<{ daten: { tabellen: Record<string, unknown[]> } }>(
+      users.ownerTherapist,
+      'select public.export_patient_record($1::uuid) as daten',
+      [patients.erika],
+    );
+    const plaene = rows[0]!.daten.tabellen['exercise_plans'] as Record<string, unknown>[];
+    expect(plaene).toHaveLength(1);
+    expect(plaene[0]).toMatchObject({ title: 'Heimprogramm Knie', status: 'assigned' });
+    expect((plaene[0]!['items'] as Record<string, unknown>[])[0]).toMatchObject({
+      variant_name: 'Kniebeuge am Gelaender, halbe Tiefe',
+      note: 'Langsam.',
+    });
+  });
+});

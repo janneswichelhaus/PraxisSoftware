@@ -13,6 +13,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek } from '@/features/exercises/api';
 import {
   PLAENE_SCHLUESSEL,
+  assignPlan,
   deletePosition,
   discardPlan,
   fetchPlan,
@@ -22,7 +23,9 @@ import {
   type Plan,
   type Position,
 } from './api';
-import { dosierungFachlich } from './dosierung';
+import { dosierungAlltag, dosierungFachlich } from './dosierung';
+import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
+import { formatDate } from '@/lib/datum';
 import { verhaeltnisPfad } from './api';
 import { PositionFormular } from './PositionFormular';
 
@@ -88,7 +91,14 @@ function Ansicht({ plan }: { plan: Plan }) {
         description={name}
         actions={<Badge ton={entwurf ? 'neutral' : 'akzent'}>{STATUS_TEXT[plan.status]}</Badge>}
       />
-      {bearbeitbar ? <Entwurf plan={plan} /> : <Positionsliste plan={plan} />}
+      {bearbeitbar ? (
+        <Entwurf plan={plan} />
+      ) : (
+        <>
+          {entwurf ? null : <Laufzeit plan={plan} />}
+          <Positionsliste plan={plan} />
+        </>
+      )}
     </>
   );
 }
@@ -173,6 +183,8 @@ function Entwurf({ plan }: { plan: Plan }) {
           </Button>
         ) : null}
       </Section>
+
+      <Zuweisung plan={plan} />
 
       <Section titel="Entwurf">
         <Rueckfrage
@@ -352,20 +364,169 @@ export function Positionskarte({
   );
 }
 
+type Sprache = 'fachlich' | 'alltag';
+
 function Positionsliste({ plan }: { plan: Plan }) {
+  // Der zugewiesene Plan in beiden Sprachebenen (IDEA-QSN-002): fachlich für
+  // die Praxis, in Alltagssprache so, wie die Person ihn liest.
+  const [sprache, setSprache] = useState<Sprache>('fachlich');
   return (
-    <Section titel="Übungen">
+    <Section
+      titel="Übungen"
+      aktion={
+        plan.items.length > 0 ? (
+          <div role="group" aria-label="Ansicht" className="flex gap-1">
+            {(['fachlich', 'alltag'] as const).map((wert) => (
+              <Button
+                key={wert}
+                variant={sprache === wert ? 'secondary' : 'quiet'}
+                groesse="kompakt"
+                aria-pressed={sprache === wert}
+                onClick={() => setSprache(wert)}
+              >
+                {wert === 'fachlich' ? 'Fachlich' : 'In Alltagssprache'}
+              </Button>
+            ))}
+          </div>
+        ) : null
+      }
+    >
       {plan.items.length === 0 ? (
         <p className="text-ink-muted text-sm">Noch keine Übung.</p>
       ) : (
         <ol className="flex flex-col gap-3">
           {plan.items.map((position) => (
             <li key={position.id}>
-              <Positionskarte position={position} />
+              {sprache === 'fachlich' ? (
+                <Positionskarte position={position} />
+              ) : (
+                <AlltagsKarte position={position} />
+              )}
             </li>
           ))}
         </ol>
       )}
+    </Section>
+  );
+}
+
+function AlltagsKarte({ position }: { position: Position }) {
+  return (
+    <article className="rounded-card border-line bg-surface border p-4">
+      <h3 className="font-semibold">
+        {position.position}. {position.variant_lay_name}
+      </h3>
+      <p className="mt-2 text-sm">{dosierungAlltag(position)}</p>
+      {position.instruction ? <p className="mt-2 text-sm">{position.instruction}</p> : null}
+      {position.equipment.length > 0 ? (
+        <p className="text-ink-muted mt-2 text-sm">Sie brauchen: {position.equipment.join(', ')}</p>
+      ) : null}
+      {position.note ? <p className="mt-2 text-sm">{position.note}</p> : null}
+    </article>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Zuweisen und Laufzeit (UEB-005, ANN-300, ANN-302)
+// -----------------------------------------------------------------------------
+
+function Zuweisung({ plan }: { plan: Plan }) {
+  const queryClient = useQueryClient();
+  const [bis, setBis] = useState(() => tagPlus(plan.today, LAUFZEIT_VORSCHLAG_TAGE));
+  const [fehler, setFehler] = useState<string | undefined>();
+  const spaetestens = tagPlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
+
+  const zuweisen = useMutation({
+    mutationFn: () => assignPlan(plan.id, bis),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL }),
+  });
+
+  return (
+    <Section
+      titel="Zuweisen"
+      hinweis="Mit dem Zuweisen wird der Plan festgehalten, wie er ist. Ändern lässt er sich danach nur als neue Fassung."
+    >
+      <div className="flex max-w-xl flex-col gap-4">
+        <Field
+          label="Läuft bis *"
+          type="date"
+          min={plan.today}
+          max={spaetestens}
+          className="max-w-48"
+          hint={`Höchstens 26 Wochen, also bis ${formatDate(spaetestens)}. Vor dem Ende fragt die Praxis nach: verlängern, ändern oder beenden.`}
+          value={bis}
+          error={fehler}
+          onChange={(event) => setBis(event.target.value)}
+        />
+        <div>
+          <Rueckfrage
+            ausloeser="Zuweisen"
+            ausloeserVariante="primary"
+            bestaetigen="Zuweisen"
+            bestaetigenLaeuft="Wird zugewiesen …"
+            fehler={zuweisen.error?.message}
+            onBestaetigen={() => {
+              if (!bis || bis < plan.today || bis > spaetestens) {
+                setFehler('Bitte ein Ende zwischen heute und 26 Wochen ab heute wählen.');
+                return;
+              }
+              if (plan.items.length === 0) {
+                setFehler('Bitte zuerst mindestens eine Übung hinzufügen.');
+                return;
+              }
+              setFehler(undefined);
+              return zuweisen.mutateAsync();
+            }}
+          >
+            <p>
+              Den Plan mit{' '}
+              {plan.items.length === 1 ? 'einer Übung' : `${plan.items.length} Übungen`} bis{' '}
+              {formatDate(bis)} zuweisen? Danach lässt er sich nicht mehr ändern.
+            </p>
+          </Rueckfrage>
+        </div>
+      </div>
+    </Section>
+  );
+}
+
+function Laufzeit({ plan }: { plan: Plan }) {
+  const abgelaufen =
+    plan.status === 'assigned' && plan.runs_until !== null && plan.runs_until < plan.today;
+  return (
+    <Section titel="Laufzeit" rahmen>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+        <dt className="text-ink-muted">Zugewiesen</dt>
+        <dd>
+          {formatDate(plan.runs_from)}
+          {plan.assigned_by_name ? ` von ${plan.assigned_by_name}` : ''}
+        </dd>
+        <dt className="text-ink-muted">Läuft bis</dt>
+        <dd>
+          {formatDate(plan.runs_until)}
+          {plan.extended_at && plan.original_runs_until
+            ? ` (verlängert, zuerst bis ${formatDate(plan.original_runs_until)})`
+            : ''}
+          {abgelaufen ? ' – abgelaufen' : ''}
+        </dd>
+        {plan.sessions_per_week ? (
+          <>
+            <dt className="text-ink-muted">Einheiten je Woche</dt>
+            <dd>{plan.sessions_per_week}</dd>
+          </>
+        ) : null}
+        {plan.ended_at ? (
+          <>
+            <dt className="text-ink-muted">
+              {plan.status === 'superseded' ? 'Abgelöst' : 'Beendet'}
+            </dt>
+            <dd>
+              {formatDate(plan.ended_on)}
+              {plan.ended_by_name ? ` von ${plan.ended_by_name}` : ''}
+            </dd>
+          </>
+        ) : null}
+      </dl>
     </Section>
   );
 }

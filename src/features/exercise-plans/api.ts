@@ -68,6 +68,8 @@ const planSchema = z.object({
   original_runs_until: z.string().nullable(),
   extended_at: z.string().nullable(),
   ended_at: z.string().nullable(),
+  /** Der Tag des Endes in der Zeitzone der Praxis. */
+  ended_on: z.string().nullable(),
   ended_by_name: z.string().nullable(),
   created_at: z.string(),
   created_by_name: z.string().nullable(),
@@ -190,6 +192,8 @@ function meldung(error: Fehler, rest: string): Error {
     ],
     ['is too long', 'Ein Eintrag ist zu lang.'],
     ['sessions per week', 'Bitte die Einheiten je Woche prüfen (1 bis 14).'],
+    ['has no exercises', 'Bitte zuerst mindestens eine Übung hinzufügen.'],
+    ['runs until is invalid', 'Bitte ein Ende zwischen heute und 26 Wochen ab heute wählen.'],
   ];
   const treffer = saetze.find(([schluessel]) => text.includes(schluessel));
   return new Error(treffer ? treffer[1] : rest);
@@ -298,5 +302,14 @@ export async function discardPlan(planId: string): Promise<void> {
     'discard_exercise_plan',
     { p_plan_id: planId },
     'Der Entwurf konnte nicht verworfen werden.',
+  );
+}
+
+/** UEB-005: zuweisen und einfrieren, mit Ende der Laufzeit (ANN-300, ANN-302). */
+export async function assignPlan(planId: string, laeuftBis: string): Promise<void> {
+  await rufe(
+    'assign_exercise_plan',
+    { p_plan_id: planId, p_runs_until: laeuftBis },
+    'Der Plan konnte nicht zugewiesen werden.',
   );
 }

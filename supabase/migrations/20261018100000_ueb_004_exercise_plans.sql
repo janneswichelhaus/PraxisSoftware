@@ -1152,6 +1152,8 @@ begin
     'original_runs_until', v_plan.original_runs_until,
     'extended_at', v_plan.extended_at,
     'ended_at', v_plan.ended_at,
+    'ended_on', (select (v_plan.ended_at at time zone o.time_zone)::date
+                 from public.organizations o where o.id = v_org),
     'ended_by_name', (select up.display_name from public.user_profiles up where up.id = v_plan.ended_by),
     'created_at', v_plan.created_at,
     'created_by_name', (select up.display_name from public.user_profiles up where up.id = v_plan.created_by),

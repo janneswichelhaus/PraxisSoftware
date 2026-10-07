@@ -35,6 +35,10 @@ const AUFBEWAHRUNG = 'select public.patient_retention_status($1::uuid) as stand'
  */
 const BEWUSST_AUSSEN = new Map<string, string>([
   [
+    'exercise_plan_items',
+    'Die Positionen eines Uebungsplans stehen als `items` in `exercise_plans` (UEB-005).',
+  ],
+  [
     'patient_file_access_grants',
     'Technische Freigabe eines signierten Verweises, hoechstens 60 Sekunden gueltig; sie sagt etwas ueber das lesende Konto, nicht ueber die Patientin (ADR-017).',
   ],

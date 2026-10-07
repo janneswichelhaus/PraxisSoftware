@@ -14,6 +14,7 @@ const savePosition = vi.fn();
 const movePosition = vi.fn();
 const deletePosition = vi.fn();
 const discardPlan = vi.fn();
+const assignPlan = vi.fn();
 const fetchBibliothek = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -28,6 +29,7 @@ vi.mock('./api', async (importOriginal) => {
     movePosition: (...a: unknown[]) => movePosition(...a) as Promise<void>,
     deletePosition: (...a: unknown[]) => deletePosition(...a) as Promise<void>,
     discardPlan: (...a: unknown[]) => discardPlan(...a) as Promise<void>,
+    assignPlan: (...a: unknown[]) => assignPlan(...a) as Promise<void>,
   };
 });
 
@@ -145,6 +147,7 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
     original_runs_until: null,
     extended_at: null,
     ended_at: null,
+    ended_on: null,
     ended_by_name: null,
     created_at: '2026-10-07T08:00:00Z',
     created_by_name: 'Anna Beispiel',
@@ -167,6 +170,7 @@ beforeEach(() => {
     movePosition,
     deletePosition,
     discardPlan,
+    assignPlan,
     fetchBibliothek,
   ]) {
     f.mockReset();
@@ -179,6 +183,7 @@ beforeEach(() => {
   movePosition.mockResolvedValue(undefined);
   deletePosition.mockResolvedValue(undefined);
   discardPlan.mockResolvedValue(undefined);
+  assignPlan.mockResolvedValue(undefined);
 });
 
 describe('Dosierung in Worten (ANN-299)', () => {
@@ -349,5 +354,59 @@ describe('PlanPage: Entwurf (UEB-004)', () => {
     fetchPlan.mockResolvedValue(null);
     renderWithProviders(<PlanPage />);
     expect(await screen.findByText('Plan nicht gefunden')).toBeInTheDocument();
+  });
+});
+
+describe('PlanPage: Zuweisen und Schnappschuss (UEB-005)', () => {
+  it('weist mit sechs Wochen als Vorschlag zu, nach Rückfrage (ANN-302)', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    const feld = await screen.findByLabelText('Läuft bis *');
+    expect(feld).toHaveValue('2026-11-18');
+    expect(feld).toHaveAttribute('max', '2027-04-07');
+    await user.click(screen.getByRole('button', { name: 'Zuweisen' }));
+    expect(screen.getByText(/Danach lässt er sich nicht mehr ändern/)).toBeInTheDocument();
+    const knoepfe = screen.getAllByRole('button', { name: 'Zuweisen' });
+    await user.click(knoepfe[knoepfe.length - 1]!);
+    await waitFor(() => expect(assignPlan).toHaveBeenCalledWith('p1', '2026-11-18'));
+  });
+
+  it('zeigt den zugewiesenen Plan ohne Bearbeitung, fachlich und in Alltagssprache', async () => {
+    fetchPlan.mockResolvedValue(
+      plan({
+        status: 'assigned',
+        runs_from: '2026-10-01',
+        runs_until: '2026-11-12',
+        original_runs_until: '2026-11-12',
+        assigned_by_name: 'Anna Beispiel',
+        items: [position({ note: 'Langsam runter.' })],
+      }),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByText(/von Anna Beispiel/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Übung hinzufügen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ändern' })).not.toBeInTheDocument();
+    expect(screen.getByRole('article')).toHaveTextContent('Kniebeuge am Geländer');
+
+    await user.click(screen.getByRole('button', { name: 'In Alltagssprache' }));
+    const karte = screen.getByRole('article');
+    expect(karte).toHaveTextContent('1. Am Geländer in die Hocke');
+    expect(karte).toHaveTextContent('3 Durchgänge mit je 8 bis 12 Wiederholungen.');
+    expect(karte).toHaveTextContent('Sie brauchen: Geländer');
+    expect(karte).toHaveTextContent('Langsam runter.');
+  });
+
+  it('kennzeichnet einen abgelaufenen Plan', async () => {
+    fetchPlan.mockResolvedValue(
+      plan({
+        status: 'assigned',
+        runs_from: '2026-08-01',
+        runs_until: '2026-10-01',
+        original_runs_until: '2026-10-01',
+      }),
+    );
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByText(/– abgelaufen/)).toBeInTheDocument();
   });
 });
