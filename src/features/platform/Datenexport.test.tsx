@@ -61,6 +61,8 @@ const DATEN: Daten = {
       visit_house_number: null,
       visit_postal_code: null,
       visit_city: null,
+      late_notice: false,
+      open_request_kind: null,
     },
   ],
   appointment_requests: [],
