@@ -28,6 +28,8 @@ const { users, patients, organizationId } = SEED;
 /** Abo-Monat aus der Preisliste 2026 (supabase/seed.sql). */
 const NSA = 'cccccccc-cccc-4ccc-8ccc-000000000010';
 const KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+/** Erika, Krankengymnastik, 10 Termine (supabase/seed.sql). */
+const GRUNDLAGE = '88888888-8888-4888-8888-000000000004';
 
 const ERFASSEN = 'select public.record_aftercare_month($1::uuid, $2::date) as id';
 const ZURUECK = 'select public.delete_aftercare_month($1::uuid)';
@@ -67,11 +69,41 @@ async function abschliessen(patientId: string, tagX: string | null) {
   );
 }
 
+/**
+ * Ein Abo direkt angelegt: Die Monatslogik braucht Beginne, die weiter
+ * zurückliegen, als das Anlegen erlaubt (14 Tage, ANN-268 - geprüft in
+ * aftercare-subscriptions.test.ts).
+ */
 async function abo(beginn: string): Promise<string> {
-  const { rows } = await asUserCommitted<{ id: string }>(
-    users.office,
-    'select public.create_aftercare_subscription($1::uuid, $2::date) as id',
-    [patients.erika, beginn],
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into public.aftercare_subscriptions (organization_id, patient_id, starts_on, created_by)
+     values ($1, $2, $3::date, $4) returning id`,
+    [organizationId, patients.erika, beginn, users.office],
+  );
+  return rows[0]!.id;
+}
+
+/** Ein Behandlungstermin Erikas, `stundenZurueck` vor jetzt. */
+async function termin(
+  stundenZurueck: number,
+  status = 'documented',
+  grundlage: string | null = null,
+) {
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into public.appointments (
+       organization_id, patient_id, staff_member_id, location_id, appointment_type, status,
+       starts_at, ends_at, completed_at, completed_by, treatment_basis_id,
+       cancelled_at, cancelled_by, cancellation_reason
+     ) values ($1, $2, '55555555-5555-4555-8555-000000000002',
+               '33333333-3333-4333-8333-000000000001', 'practice', $3,
+               now() - make_interval(hours => $4), now() - make_interval(hours => $4 - 1),
+               case when $3 = 'documented' then now() end,
+               case when $3 = 'documented' then $5::uuid end, $6,
+               case when $3 = 'cancelled' then now() end,
+               case when $3 = 'cancelled' then $5::uuid end,
+               case when $3 = 'cancelled' then 'patient_request' end)
+     returning id`,
+    [organizationId, patients.erika, status, stundenZurueck, users.ownerTherapist, grundlage],
   );
   return rows[0]!.id;
 }
@@ -95,10 +127,14 @@ describe('Abo-Monate (ANG-002)', () => {
   }, 120_000);
 
   beforeEach(async () => {
+    await asPostgres('delete from public.invoice_cancellations');
     await asPostgres('delete from public.invoice_items');
     await asPostgres('delete from public.invoices');
+    await asPostgres('delete from public.invoice_number_series');
     await asPostgres('delete from public.billable_services');
     await asPostgres('delete from public.aftercare_subscriptions');
+    await asPostgres('delete from public.appointments');
+    await asPostgres('update public.treatment_base_items set used_quantity = 0');
     await abschliessen(patients.erika, vormonat);
   });
 
@@ -165,6 +201,21 @@ describe('Abo-Monate (ANG-002)', () => {
       const id = await abo(vormonat);
       await abschliessen(patients.erika, null);
       await expect(erfassen(id, vormonat)).rejects.toThrow(/care_open/);
+    });
+
+    it('berechnet keinen Monat, in dem behandelt wurde – auch nach dem nächsten Abschluss (Zweitreview B1)', async () => {
+      const id = await abo(vormonat);
+      // Wiederaufnahme, ein Termin heute, dann wieder abgeschlossen.
+      await termin(2);
+      await expect(erfassen(id, diesermonat)).rejects.toThrow(/care_during_month/);
+      // Der Vormonat ohne Termin bleibt erfassbar.
+      await expect(erfassen(id, vormonat)).resolves.toBeTruthy();
+    });
+
+    it('zählt einen abgesagten Termin nicht als Behandlung', async () => {
+      const id = await abo(vormonat);
+      await termin(2, 'cancelled');
+      await expect(erfassen(id, diesermonat)).resolves.toBeTruthy();
     });
 
     it('weist einen Monat ab, für den keine Preisliste einen Abo-Monat nennt', async () => {
@@ -338,6 +389,89 @@ describe('Abo-Monate (ANG-002)', () => {
         [id],
       );
       expect(stand[0]!.status).toBe('invoiced');
+    });
+  });
+
+  describe('Storno und Verordnung (Zweitreview H6)', () => {
+    it('nimmt den Abo-Monat in die Korrekturrechnung nach einem Storno', async () => {
+      const id = await abo(vormonat);
+      await erfassen(id, vormonat);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        vormonat,
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2)', [
+        entwurf[0]!.id,
+        'Falscher Empfänger',
+      ]);
+      const { rows: korrektur } = await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.create_correction_draft($1::uuid) as id',
+        [entwurf[0]!.id],
+      );
+      const { rows } = await asPostgres<{ code: string }>(
+        `select c.code from public.invoice_items it
+           join public.billable_services b on b.id = it.billable_service_id
+           join public.service_catalog_items c on c.id = b.catalog_item_id
+          where it.invoice_id = $1`,
+        [korrektur[0]!.id],
+      );
+      expect(rows.map((r) => r.code)).toEqual(['NSA']);
+    });
+
+    it('hält Abo-Monat und Verordnung auf getrennten Rechnungen', async () => {
+      await asPostgres(
+        `update public.patients set care_concluded_on = null,
+                          care_concluded_at = null, care_concluded_by = null where id = $1`,
+        [patients.erika],
+      );
+      const behandlung = await termin(24 * 40, 'documented', GRUNDLAGE);
+      await asPostgres(
+        `insert into public.billable_services
+           (organization_id, patient_id, appointment_id, catalog_item_id, performed_on)
+         select organization_id, patient_id, id, $2, (starts_at at time zone 'Europe/Berlin')::date
+           from public.appointments where id = $1`,
+        [behandlung, KG],
+      );
+      await abschliessen(patients.erika, vormonat);
+      const id = await abo(vormonat);
+      await erfassen(id, vormonat);
+
+      const { rows: basis } = await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.create_invoice_draft_for_basis($1::uuid) as id',
+        [GRUNDLAGE],
+      );
+      const codes = async (rechnung: string) =>
+        (
+          await asPostgres<{ code: string }>(
+            `select c.code from public.invoice_items it
+               join public.billable_services b on b.id = it.billable_service_id
+               join public.service_catalog_items c on c.id = b.catalog_item_id
+              where it.invoice_id = $1`,
+            [rechnung],
+          )
+        ).rows.map((r) => r.code);
+      expect(await codes(basis[0]!.id)).toEqual(['KG']);
+
+      const { rows: monat } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        vormonat,
+      ]);
+      expect(await codes(monat[0]!.id)).toEqual(['NSA']);
+
+      // Ein Abo-Monat auf der Rechnung einer Verordnung wird abgewiesen.
+      await asPostgres('delete from public.invoice_items where invoice_id = $1', [monat[0]!.id]);
+      await asPostgres(
+        `insert into public.invoice_items (organization_id, invoice_id, billable_service_id, sort_order)
+         select organization_id, $1, id, 9 from public.billable_services
+          where aftercare_subscription_id = $2`,
+        [basis[0]!.id, id],
+      );
+      await expect(
+        asPostgres('select app.assert_invoice_items_match_basis($1::uuid)', [basis[0]!.id]),
+      ).rejects.toThrow(/do not belong to the treatment basis/);
     });
   });
 

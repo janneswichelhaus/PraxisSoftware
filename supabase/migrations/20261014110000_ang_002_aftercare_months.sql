@@ -208,6 +208,7 @@ revoke all on function app.aftercare_month_price(uuid, date) from public, anon, 
 --   not_due       der Monat hat noch nicht begonnen (ANN-270)
 --   after_end     der Monat beginnt nach dem Ende des Abos
 --   care_open     die Behandlung laeuft wieder (ANN-271)
+--   care_during_month  im Abo-Monat lag ein Behandlungstermin (ANN-271)
 --   no_price      die geltende Preisliste nennt keinen Abo-Monat
 create function app.aftercare_month_blocker(p_subscription_id uuid, p_month_start date)
 returns text
@@ -243,6 +244,20 @@ begin
   if app.aftercare_earliest_start(v_abo.patient_id) is null then
     return 'care_open';
   end if;
+  -- Zweitreview: Auch nach dem naechsten Abschluss bleibt ein Monat frei,
+  -- in dem behandelt wurde - jeder Behandlungstermin, der nicht abgesagt ist.
+  if exists (
+    select 1
+    from public.appointments a
+    join public.organizations o on o.id = a.organization_id
+    where a.patient_id = v_abo.patient_id
+      and a.kind = 'therapy'
+      and a.status <> 'cancelled'
+      and (a.starts_at at time zone o.time_zone)::date
+          between p_month_start and app.aftercare_month_end(v_abo.starts_on, v_index)
+  ) then
+    return 'care_during_month';
+  end if;
   if not exists (select 1 from app.aftercare_month_price(v_abo.organization_id, p_month_start)) then
     return 'no_price';
   end if;
@@ -253,7 +268,7 @@ $$;
 revoke all on function app.aftercare_month_blocker(uuid, date) from public, anon, authenticated;
 
 comment on function app.aftercare_month_blocker(uuid, date) is
-  'ANG-002: warum ein Abo-Monat nicht erfasst werden kann (not_a_month, after_end, not_due, care_open, no_price) oder null. Zu Beginn faellig (ANN-270), nicht waehrend einer neuen Behandlung (ANN-271).';
+  'ANG-002: warum ein Abo-Monat nicht erfasst werden kann (not_a_month, after_end, not_due, care_open, care_during_month, no_price) oder null. Zu Beginn faellig (ANN-270), nicht waehrend und nicht fuer die Zeit einer neuen Behandlung (ANN-271).';
 
 -- -----------------------------------------------------------------------------
 -- 4. Faellige Abo-Monate
@@ -409,6 +424,17 @@ begin
   end if;
   v_org := app.current_organization_id();
 
+  -- Zweitreview: erst die eigene Praxis, dann der Zustand - eine fremde
+  -- Kennung erfaehrt nichts ueber ihren Datensatz.
+  perform 1 from public.billable_services b
+  where b.id = p_billable_service_id
+    and b.organization_id = v_org
+    and b.aftercare_subscription_id is not null
+  for update;
+  if not found then
+    raise exception 'aftercare month not found' using errcode = '42501';
+  end if;
+
   if exists (
     select 1 from public.invoice_items it
     where it.billable_service_id = p_billable_service_id and it.released_at is null
@@ -417,12 +443,9 @@ begin
   end if;
 
   delete from public.billable_services b
-  where b.id = p_billable_service_id
-    and b.organization_id = v_org
-    and b.aftercare_subscription_id is not null
-    and b.status = 'billable';
+  where b.id = p_billable_service_id and b.status = 'billable';
   if not found then
-    raise exception 'aftercare month not found' using errcode = '42501';
+    raise exception 'aftercare month is on an invoice' using errcode = '23514';
   end if;
 end;
 $$;
@@ -452,6 +475,14 @@ begin
   end if;
   v_org := app.current_organization_id();
 
+  -- Zweitreview: erst die eigene Praxis, dann der Zustand.
+  perform 1 from public.aftercare_subscriptions s
+  where s.id = p_subscription_id and s.organization_id = v_org
+  for update;
+  if not found then
+    raise exception 'aftercare subscription not found' using errcode = '42501';
+  end if;
+
   if exists (
     select 1 from public.billable_services b
     where b.aftercare_subscription_id = p_subscription_id
@@ -459,11 +490,16 @@ begin
     raise exception 'aftercare subscription has recorded months' using errcode = '23514';
   end if;
 
-  delete from public.aftercare_subscriptions s
-  where s.id = p_subscription_id and s.organization_id = v_org;
-  if not found then
-    raise exception 'aftercare subscription not found' using errcode = '42501';
+  -- Zweitreview: Eine Kuendigung ist ein Nachweis (ANN-272); ein gekuendigtes
+  -- Abo ist keine Fehlanlage mehr.
+  if exists (
+    select 1 from public.aftercare_subscriptions s
+    where s.id = p_subscription_id and s.cancelled_at is not null
+  ) then
+    raise exception 'aftercare subscription is cancelled' using errcode = '23514';
   end if;
+
+  delete from public.aftercare_subscriptions s where s.id = p_subscription_id;
 end;
 $$;
 

@@ -41,14 +41,18 @@ as $$
   select case
     when p_ended_on is null then null
     when p_kind <> 'treatment' then p_ended_on
+    -- Zweitreview: Ein Abo zaehlt erst ab seinem Beginn, und eines, das vor
+    -- dem Beginn gekuendigt wurde, zaehlt nie.
     when exists (
       select 1 from public.aftercare_subscriptions s
       where s.patient_id = p_relationship_id and s.ends_on is null
+        and s.starts_on <= app.training_today(s.organization_id)
     ) then null
     else greatest(
       p_ended_on,
       (select max(s.ends_on) from public.aftercare_subscriptions s
-        where s.patient_id = p_relationship_id)
+        where s.patient_id = p_relationship_id and s.ends_on >= s.starts_on
+          and s.ends_on is not null)
     )
   end
 $$;

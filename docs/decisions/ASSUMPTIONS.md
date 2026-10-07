@@ -3227,13 +3227,13 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 **Änderungspfad.** Andere Grundgröße: die Tokens in `.plattform-schrift` · Aufwand `klein`. Ziele 48 px: Mindesthöhe der Textlinks im Gerüst · Aufwand `klein`. Größe am Konto speichern: Spalte und Projektion · Aufwand `mittel`.
 
-### ANN-268 — Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung
+### ANN-268 — Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung und höchstens 14 Tage rückwirkend
 
 Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
 
-**Annahme.** „Ende der Behandlungsgrundlage“ (ADR-009 Punkt 21) heißt im Modell: Abschluss der Versorgung in der Akte (`care_concluded_on`). Vorher lässt sich kein Abo anlegen; es beginnt frühestens an diesem Tag und nach dem Ende jedes früheren Abos. Je Person läuft höchstens eines.
+**Annahme.** „Ende der Behandlungsgrundlage“ (ADR-009 Punkt 21) heißt im Modell: Abschluss der Versorgung in der Akte (`care_concluded_on`). Vorher lässt sich kein Abo anlegen; es beginnt frühestens an diesem Tag, höchstens 14 Tage vor dem Anlegen und nach dem Ende jedes früheren Abos. Je Person läuft höchstens eines.
 
-**Begründung.** Eine Grundlage hat kein eigenes Ende; sie endet faktisch mit ihrem Kontingent (ADR-020, Folgefragen). Der Abschluss der Versorgung ist der eine ausdrückliche, rücknehmbare Vorgang, der alle Grundlagen zugleich beendet, und er steuert schon Lesefrist und Aufbewahrung. Er ist strenger als das Ende eines Kontingents und schließt aus, dass Behandlung und Abo nebeneinander berechnet werden (§19). Unsicher: ob Jannes nach jeder Verordnung abschließt, auch wenn eine Folgeverordnung offen ist.
+**Begründung.** Eine Grundlage hat kein eigenes Ende; sie endet faktisch mit ihrem Kontingent (ADR-020, Folgefragen). Der Abschluss der Versorgung ist der eine ausdrückliche, rücknehmbare Vorgang, der alle Grundlagen zugleich beendet, und er steuert schon Lesefrist und Aufbewahrung. Er ist strenger als das Ende eines Kontingents und schließt aus, dass Behandlung und Abo nebeneinander berechnet werden (§19). Die 14 Tage fangen ein Abo auf, das nach dem Abschlussgespräch erst später eingetragen wird, ohne Monate für eine Zeit fällig zu machen, in der niemand die Nachsorge nutzte (Zweitreview). Unsicher: ob Jannes nach jeder Verordnung abschließt, auch wenn eine Folgeverordnung offen ist.
 
 **Anker.** `app.aftercare_earliest_start` in `supabase/migrations/20261014100000_ang_001_aftercare_subscriptions.sql`; Hinweis in `src/features/billing/Nachsorgeabo.tsx`. Geprüft in `supabase/tests/aftercare-subscriptions.test.ts`.
 
@@ -3255,7 +3255,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Abos); Jannes mit dem Preis
 
-**Annahme.** Ein Abo-Monat läuft vom Tag des Beginns bis zum Vortag desselben Tags im Folgemonat, immer vom Beginn aus gerechnet (Beginn 31.01.: 31.01.–27.02., 28.02.–30.03.). Er wird zu seinem Beginn berechnet: Ab dem ersten Tag steht er zum Erfassen bereit. Eine Kündigung wirkt zum Ende des laufenden Abo-Monats, ohne weitere Frist; vor dem Beginn beendet sie das Abo, bevor ein Monat entsteht.
+**Annahme.** Ein Abo-Monat läuft vom Tag des Beginns bis zum Vortag desselben Tags im Folgemonat; fehlt der Tag, bis zum Monatsletzten (§ 188 Abs. 2 und 3 BGB), immer vom Beginn aus gerechnet (Beginn 31.01.: 31.01.–28.02., 01.03.–30.03., 31.03.–30.04.). Er wird zu seinem Beginn berechnet: Ab dem ersten Tag steht er zum Erfassen bereit. Eine Kündigung wirkt zum Ende des laufenden Abo-Monats, ohne weitere Frist; vor dem Beginn beendet sie das Abo, bevor ein Monat entsteht.
 
 **Begründung.** „Monatlich kündbar“ (§4.6, ADR-009 Punkt 21) ohne Bindung über den laufenden Monat hinaus liegt innerhalb von § 309 Nr. 9 BGB; Vorauszahlung je Monat ist bei Abos üblich und vermeidet eine Abrechnung nach Tagen. Vom Beginn aus gerechnet, damit der Tag nicht dauerhaft auf den 28. springt. Unsicher: ob ein Widerruf nach § 312g BGB (Vertrag beim Hausbesuch) eine Erstattung des ersten Monats verlangt – das liefe heute über Storno.
 
@@ -3267,11 +3267,11 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
 
-**Annahme.** Ist die Versorgung wieder aufgenommen (Abschluss zurückgenommen), lässt sich kein Abo-Monat erfassen; die Liste der fälligen Monate nennt den Grund. Das Abo endet dadurch nicht von selbst: Die Praxis kündigt es oder erfasst die Monate, sobald die Versorgung wieder abgeschlossen ist.
+**Annahme.** Ist die Versorgung wieder aufgenommen (Abschluss zurückgenommen), lässt sich kein Abo-Monat erfassen; ebenso nie ein Monat, in dem ein Behandlungstermin lag, der nicht abgesagt ist – auch nach dem nächsten Abschluss. Die Liste der fälligen Monate nennt den Grund. Das Abo endet dadurch nicht von selbst: Die Praxis kündigt es oder erfasst die Monate, sobald die Versorgung wieder abgeschlossen ist.
 
-**Begründung.** Während der Behandlung ist die Plattform Teil der Heilbehandlung und kostenlos (§4.6); ADR-009 Punkt 21 will verhindern, dass während der Behandlung etwas doppelt berechnet wird. Ein automatisches Ende wäre eine Kündigung, die niemand erklärt hat; ein automatisches Ruhen bräuchte einen eigenen Zustand. Geprüft wird beim Erfassen, nicht rückwirkend: Ein Monat vor der Wiederaufnahme, der noch offen ist, geht erst wieder nach dem nächsten Abschluss. Unsicher: ob Jannes das Abo bei einer neuen Verordnung lieber ruhen lassen will.
+**Begründung.** Während der Behandlung ist die Plattform Teil der Heilbehandlung und kostenlos (§4.6); ADR-009 Punkt 21 will verhindern, dass während der Behandlung etwas doppelt berechnet wird. Ein automatisches Ende wäre eine Kündigung, die niemand erklärt hat; ein automatisches Ruhen bräuchte einen eigenen Zustand. Die Termine im Monat sind der Nachweis, dass behandelt wurde (Zweitreview); ein Monat vor der Wiederaufnahme ohne Termin bleibt erfassbar, sobald wieder abgeschlossen ist. Unsicher: ob Jannes das Abo bei einer neuen Verordnung lieber ruhen lassen will.
 
-**Anker.** `care_open` in `app.aftercare_month_blocker` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; `MONATSHINDERNIS` in `src/features/billing/nachsorge-api.ts`. Geprüft in `supabase/tests/aftercare-months.test.ts`.
+**Anker.** `care_open` und `care_during_month` in `app.aftercare_month_blocker` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; `MONATSHINDERNIS` in `src/features/billing/nachsorge-api.ts`. Geprüft in `supabase/tests/aftercare-months.test.ts`.
 
 **Änderungspfad.** Abo ruht während der Behandlung: Zeitraum der Behandlung am Abo und Prüfung je Monat · Aufwand `mittel`.
 

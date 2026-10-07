@@ -223,7 +223,7 @@ function Anlegen({ patientId, sicht }: { patientId: string; sicht: Nachsorgesich
     geprueft && beginn === ''
       ? 'Bitte angeben, ab wann das Abo läuft.'
       : geprueft && beginn < sicht.earliest_start
-        ? `Frühestens ab ${formatDate(sicht.earliest_start)}, dem Abschluss der Versorgung.`
+        ? `Frühestens ab ${formatDate(sicht.earliest_start)}: nach dem Abschluss der Versorgung und höchstens 14 Tage zurück.`
         : undefined;
 
   return (

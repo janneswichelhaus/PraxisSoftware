@@ -34,7 +34,7 @@ export type Nachsorgeabo = z.infer<typeof aboSchema>;
 
 const sichtSchema = z.object({
   today: z.string(),
-  /** Abschluss der Versorgung; vorher gibt es kein Abo (ANN-268). */
+  /** Frühester Beginn: Abschluss der Versorgung, höchstens 14 Tage zurück (ANN-268); vorher kein Abo. */
   earliest_start: z.string().nullable(),
   subscriptions: z.array(aboSchema),
 });
@@ -67,6 +67,9 @@ export async function createNachsorge(patientId: string, beginn: string): Promis
   if (error?.message?.includes('before care is concluded')) {
     throw new Error('Das Abo beginnt frühestens am Tag des Abschlusses der Versorgung.');
   }
+  if (error?.message?.includes('more than 14 days ago')) {
+    throw new Error('Ein Abo beginnt höchstens 14 Tage rückwirkend.');
+  }
   if (error?.message?.includes('already covers')) {
     throw new Error('Für diesen Tag besteht schon ein Abo.');
   }
@@ -78,6 +81,9 @@ export async function deleteNachsorge(id: string): Promise<void> {
     p_subscription_id: id,
   })) as { error: { message?: string } | null };
 
+  if (error?.message?.includes('is cancelled')) {
+    throw new Error('Das Abo ist gekündigt; die Kündigung bleibt als Nachweis stehen.');
+  }
   if (error?.message?.includes('has recorded months')) {
     throw new Error('Aus dem Abo ist schon ein Monat erfasst; es endet nur durch Kündigung.');
   }
@@ -95,6 +101,7 @@ export const MONATSHINDERNIS = {
   after_end: 'Der Monat liegt nach dem Ende des Abos.',
   // ANN-271: während einer neuen Behandlung wird kein Abo-Monat berechnet.
   care_open: 'Die Behandlung läuft wieder – kein Abo-Monat, solange sie dauert.',
+  care_during_month: 'In diesem Monat wurde behandelt – dafür gibt es keinen Abo-Monat.',
   no_price: 'Die geltende Preisliste nennt keinen Abo-Monat.',
 } as const;
 
@@ -106,7 +113,9 @@ const faelligSchema = z.object({
   month_end: z.string(),
   unit_price_cents: z.number().nullable(),
   currency: z.string().nullable(),
-  blocker: z.enum(['not_a_month', 'not_due', 'after_end', 'care_open', 'no_price']).nullable(),
+  blocker: z
+    .enum(['not_a_month', 'not_due', 'after_end', 'care_open', 'care_during_month', 'no_price'])
+    .nullable(),
 });
 
 export type FaelligerMonat = z.infer<typeof faelligSchema>;

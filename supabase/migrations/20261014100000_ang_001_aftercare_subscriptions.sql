@@ -138,39 +138,53 @@ stable
 security definer
 set search_path = ''
 as $$
-  -- ANN-268: der Abschluss der Versorgung ist das Ende der Behandlung.
-  select p.care_concluded_on from public.patients p where p.id = p_patient_id
+  -- ANN-268: der Abschluss der Versorgung ist das Ende der Behandlung; ein
+  -- Abo wird hoechstens 14 Tage rueckwirkend angelegt, sonst entstuenden
+  -- faellige Monate fuer eine Zeit, in der niemand die Nachsorge nutzte.
+  select greatest(p.care_concluded_on, app.training_today(p.organization_id) - 14)
+  from public.patients p
+  where p.id = p_patient_id and p.care_concluded_on is not null
 $$;
 
 revoke all on function app.aftercare_earliest_start(uuid) from public, anon, authenticated;
 
 comment on function app.aftercare_earliest_start(uuid) is
-  'ANG-001 (ANN-268): fruehester Beginn eines Nachsorge-Abos - der Abschluss der Versorgung. null, solange die Behandlung laeuft.';
+  'ANG-001 (ANN-268): fruehester Beginn eines Nachsorge-Abos - der Abschluss der Versorgung, hoechstens 14 Tage zurueck. null, solange die Behandlung laeuft.';
 
 -- -----------------------------------------------------------------------------
 -- 5. Abo-Monate (ANN-270)
 --
--- Ein Abo-Monat laeuft vom Tag des Beginns bis zum Vortag desselben Tags im
--- Folgemonat. Gerechnet wird immer vom Beginn aus, nie von Monat zu Monat:
--- Ein Abo ab 31. Januar hat die Monate 31.01.-27.02., 28.02.-30.03.,
--- 31.03.-29.04. - der Tag springt nicht dauerhaft auf den 28.
+-- Ein Abo-Monat endet nach Paragraf 188 Abs. 2 und 3 BGB: mit dem Vortag des
+-- Tags, der dem Beginn im Folgemonat entspricht; fehlt dieser Tag, mit dem
+-- letzten Tag des Monats. Gerechnet wird immer vom Beginn aus, nie von Monat
+-- zu Monat: Ein Abo ab 31. Januar hat die Monate 31.01.-28.02.,
+-- 01.03.-30.03., 31.03.-30.04. - der Tag springt nicht dauerhaft auf den 28.
+-- Der naechste Monat beginnt am Tag nach dem Ende des vorigen.
 -- -----------------------------------------------------------------------------
-create function app.aftercare_month_start(p_starts_on date, p_index integer)
-returns date
-language sql
-immutable
-set search_path = ''
-as $$
-  select (p_starts_on + make_interval(months => p_index))::date
-$$;
-
 create function app.aftercare_month_end(p_starts_on date, p_index integer)
 returns date
 language sql
 immutable
 set search_path = ''
 as $$
-  select (p_starts_on + make_interval(months => p_index + 1))::date - 1
+  select case
+    -- Paragraf 188 Abs. 3 BGB: Der entsprechende Tag fehlt im Monat, die
+    -- Rechnung landet auf dessen letztem Tag - der ist das Ende.
+    when extract(day from (p_starts_on + make_interval(months => p_index + 1)))
+         < extract(day from p_starts_on)
+      then (p_starts_on + make_interval(months => p_index + 1))::date
+    else (p_starts_on + make_interval(months => p_index + 1))::date - 1
+  end
+$$;
+
+create function app.aftercare_month_start(p_starts_on date, p_index integer)
+returns date
+language sql
+immutable
+set search_path = ''
+as $$
+  select case when p_index <= 0 then p_starts_on
+              else app.aftercare_month_end(p_starts_on, p_index - 1) + 1 end
 $$;
 
 -- Der Abo-Monat, in dem ein Tag liegt; vor dem Beginn -1.
@@ -245,8 +259,11 @@ begin
   if v_frueh is null then
     raise exception 'care is not concluded' using errcode = '22023';
   end if;
-  if p_starts_on < v_frueh then
+  if p_starts_on < (select p.care_concluded_on from public.patients p where p.id = p_patient_id) then
     raise exception 'aftercare cannot start before care is concluded' using errcode = '22023';
+  end if;
+  if p_starts_on < v_frueh then
+    raise exception 'aftercare cannot start more than 14 days ago' using errcode = '22023';
   end if;
 
   if exists (
@@ -269,7 +286,7 @@ revoke all on function public.create_aftercare_subscription(uuid, date) from pub
 grant execute on function public.create_aftercare_subscription(uuid, date) to authenticated;
 
 comment on function public.create_aftercare_subscription(uuid, date) is
-  'ANG-001: Nachsorge-Abo anlegen (owner, office). Beginn fruehestens am Abschluss der Versorgung (ANN-268), nach dem Ende jedes frueheren Abos; je Person hoechstens ein laufendes.';
+  'ANG-001: Nachsorge-Abo anlegen (owner, office). Beginn fruehestens am Abschluss der Versorgung und hoechstens 14 Tage zurueck (ANN-268), nach dem Ende jedes frueheren Abos; je Person hoechstens ein laufendes.';
 
 -- -----------------------------------------------------------------------------
 -- 7. Eine Fehlanlage entfernen

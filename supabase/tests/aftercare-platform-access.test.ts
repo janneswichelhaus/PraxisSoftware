@@ -128,4 +128,43 @@ describe('Zugang folgt dem Nachsorge-Abo (ANG-004)', () => {
     expect((await kontext(ERIKA_TRAINING))?.readable).toBe(false);
     expect((await kontext(ERIKA))?.readable).toBe(true);
   });
+
+  it('ein Abo zählt erst ab seinem Beginn; vor dem Beginn gekündigt zählt es nie (Zweitreview H1)', async () => {
+    await abschliessenVor(40);
+    // Beginnt erst in zehn Tagen: kein Grund, den Zugang jetzt offen zu halten.
+    await abo(-10, null);
+    expect((await kontext(ERIKA))?.readable).toBe(false);
+    await asPostgres('delete from public.aftercare_subscriptions');
+    // Vor dem Beginn gekündigt: Ende ist der Vortag des Beginns, in der Zukunft.
+    await abo(-60, -59);
+    expect((await kontext(ERIKA))?.readable).toBe(false);
+  });
+
+  it('eine Vertretung aus dem Sorgerecht endet mit 18, auch wenn ein Abo läuft (Zweitreview H6c)', async () => {
+    await abschliessenVor(40);
+    await abo(40, null);
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ('99999999-9999-4999-8999-0000000000f7', 'authenticated', 'authenticated',
+               'sabine.sorge@patient.invalid')`,
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, status,
+          account_user_id, activated_at,
+          access_kind, legal_basis, representative_name, proof_documents, health_scope,
+          finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ('cafecafe-cafe-4afe-8afe-0000000000f7', $1, 'treatment', $2, $2, 'active',
+               '99999999-9999-4999-8999-0000000000f7', now(),
+               'legal_representative', 'custody', 'Sabine Sorge',
+               array['identity_document', 'custody_proof'], null, true, $3, now(), $3)`,
+      [SEED.organizationId, patients.erika, users.office],
+    );
+    const { rows } = await asPostgres<{ beendet: boolean }>(
+      `select app.platform_access_ended_at('cafecafe-cafe-4afe-8afe-0000000000f7') <= now() as beendet`,
+    );
+    expect(rows[0]!.beendet).toBe(true);
+    // Der eigene Zugang läuft mit dem Abo weiter.
+    expect((await kontext(ERIKA))?.readable).toBe(true);
+  });
 });
