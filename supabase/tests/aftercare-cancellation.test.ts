@@ -49,9 +49,16 @@ interface Abo {
   can_cancel: boolean;
 }
 
+/**
+ * Ein Kalendertag als `YYYY-MM-DD`. `current_date` im Ausdruck ist der Tag der
+ * Praxis (Europe/Berlin), nicht der UTC-Tag der Sitzung - sonst ist der Test
+ * kurz nach Mitternacht rot (BEF-130).
+ */
 async function tag(ausdruck: string): Promise<string> {
+  const praxis = ausdruck.replaceAll('current_date', 'app.training_today(p.org)');
   const { rows } = await asPostgres<{ tag: string }>(
-    `select to_char((${ausdruck})::date, 'YYYY-MM-DD') as tag`,
+    `select to_char((${praxis})::date, 'YYYY-MM-DD') as tag from (select $1::uuid as org) p`,
+    [organizationId],
   );
   return rows[0]!.tag;
 }

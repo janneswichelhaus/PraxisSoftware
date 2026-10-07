@@ -609,4 +609,15 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
     await waitFor(() => expect(fetchFaellige).toHaveBeenCalled());
     expect(container).toBeEmptyDOMElement();
   });
+
+  it('meldet einen Ladefehler auf einer Gastseite als Zeile, ohne zweiten Knopf', async () => {
+    fetchFaellige.mockRejectedValue(new Error('kaputt'));
+    renderWithProviders(
+      <PlanWiedervorlage bereiche={['training']} rueckweg="/training" nurWennVorhanden />,
+    );
+    expect(
+      await screen.findByText('Die auslaufenden Pläne konnten nicht geladen werden.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).not.toBeInTheDocument();
+  });
 });

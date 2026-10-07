@@ -46,11 +46,14 @@ async function anlegen(
   return rows[0]!.id;
 }
 
-/** Ein Kalendertag relativ zu heute, als `YYYY-MM-DD` (die Tests veralten nicht). */
+/**
+ * Ein Kalendertag relativ zu heute, als `YYYY-MM-DD` (die Tests veralten nicht).
+ * Heute ist der Tag der Praxis, nicht der UTC-Tag der Sitzung (BEF-130).
+ */
 async function tag(tage: number): Promise<string> {
   const { rows } = await asPostgres<{ tag: string }>(
-    `select to_char(current_date + $1::int, 'YYYY-MM-DD') as tag`,
-    [tage],
+    `select to_char(app.training_today($2::uuid) + $1::int, 'YYYY-MM-DD') as tag`,
+    [tage, SEED.organizationId],
   );
   return rows[0]!.tag;
 }
@@ -117,7 +120,8 @@ describe('Nachsorge-Abo anlegen (ANG-001)', () => {
     const alt = await anlegen(DANACH);
     await asPostgres(
       `update public.aftercare_subscriptions
-          set ends_on = current_date + 40, cancelled_at = now(), cancelled_on = current_date,
+          set ends_on = app.training_today(organization_id) + 40, cancelled_at = now(),
+              cancelled_on = app.training_today(organization_id),
               cancelled_via = 'practice', cancelled_by = $2
         where id = $1`,
       [alt, users.office],

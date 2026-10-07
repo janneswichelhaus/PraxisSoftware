@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/Badge';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { Section } from '@/components/ui/Section';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { FAELLIG_SCHLUESSEL, fetchFaellige, planPfad, type Bereich } from './api';
@@ -43,7 +44,14 @@ export function PlanWiedervorlage({
       hinweis="Verlängern, als neue Fassung ändern oder beenden – der Plan bleibt hier, bis entschieden ist."
     >
       {isPending ? <LoadingState label="Pläne werden geladen …" /> : null}
-      {isError ? (
+      {isError && nurWennVorhanden ? (
+        // Als Gast eine Zeile, kein zweiter „Erneut versuchen“: Den Weg hinaus
+        // bietet die Seite, auf der die Liste steht.
+        <Statusmeldung ton="fehler">
+          Die auslaufenden Pläne konnten nicht geladen werden.
+        </Statusmeldung>
+      ) : null}
+      {isError && !nurWennVorhanden ? (
         <ErrorState
           title="Die auslaufenden Pläne konnten nicht geladen werden."
           description="Bitte die Verbindung prüfen und erneut versuchen."
