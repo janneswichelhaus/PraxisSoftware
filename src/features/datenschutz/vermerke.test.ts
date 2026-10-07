@@ -5,7 +5,12 @@ import {
   datenschutzinformation,
   DATENSCHUTZINFORMATION_FASSUNG,
 } from './patienteninformation';
-import { datenschutzstand, EINWILLIGUNGSZWECKE, type Datenschutzvermerk } from './vermerke';
+import {
+  datenschutzstand,
+  EINWILLIGUNGSZWECKE,
+  herkunftText,
+  type Datenschutzvermerk,
+} from './vermerke';
 
 /**
  * Die jüngste Migration, die den Constraint der Zwecke setzt - seit DOK-006b
@@ -64,6 +69,7 @@ describe('datenschutzstand', () => {
       erteilt: true,
       abgelehnt: false,
       seit: '2026-09-03',
+      ueberPlattform: false,
     });
   });
 
@@ -82,6 +88,7 @@ describe('datenschutzstand', () => {
       erteilt: false,
       abgelehnt: false,
       seit: '2026-09-10',
+      ueberPlattform: false,
     });
   });
 
@@ -94,6 +101,7 @@ describe('datenschutzstand', () => {
       erteilt: false,
       abgelehnt: true,
       seit: '2026-09-01',
+      ueberPlattform: false,
     });
   });
 
@@ -174,5 +182,27 @@ describe('Ausfallhonorar-Regel', () => {
 
   it('erfindet keinen Betrag', () => {
     expect(text).not.toMatch(/€|EUR|\d+,\d{2}/);
+  });
+});
+
+describe('herkunftText (POR-016)', () => {
+  it('leer für die Praxis, sonst wer auf der Plattform gehandelt hat', () => {
+    expect(herkunftText({ source: 'practice', representative_name: null })).toBe('');
+    expect(herkunftText({})).toBe('');
+    expect(herkunftText({ source: 'platform', representative_name: null })).toBe(
+      'über die Plattform, von der Person selbst',
+    );
+    expect(herkunftText({ source: 'platform', representative_name: 'Bernd Betreuer' })).toBe(
+      'über die Plattform, von Bernd Betreuer (rechtliche Vertretung)',
+    );
+  });
+
+  it('der Stand merkt sich, dass der jüngste Vermerk von der Plattform kam', () => {
+    const stand = datenschutzstand([
+      vermerk({ record_kind: 'consent_granted', purpose: 'email_contact', source: 'platform' }),
+    ]);
+    expect(stand.einwilligungen.find((e) => e.zweck === 'email_contact')!.ueberPlattform).toBe(
+      true,
+    );
   });
 });

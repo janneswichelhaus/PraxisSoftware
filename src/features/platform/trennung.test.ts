@@ -88,6 +88,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',
+      // POR-016: Einwilligungen lesen und schreiben.
+      'rpc:platform_consents',
       'rpc:platform_context',
       'rpc:platform_files',
       // POR-013: eigene Rechnungen.
@@ -95,6 +97,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_invoices',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
+      'rpc:record_platform_consent',
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',

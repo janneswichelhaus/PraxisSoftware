@@ -69,6 +69,12 @@ const vermerkSchema = z.object({
   notice_version: z.string().nullable(),
   occurred_on: z.string(),
   recorded_at: z.string(),
+  // POR-016: Herkunft - ein Papier der Praxis oder die Person auf der
+  // Plattform, bei einer rechtlichen Vertretung mit ihrem Namen.
+  // Ohne Angabe (ältere Aufrufer, Prüfseiten) ist es ein Vermerk der Praxis.
+  source: z.enum(['practice', 'platform']).optional(),
+  platform_access_kind: z.enum(['self', 'legal_representative']).nullable().optional(),
+  representative_name: z.string().nullable().optional(),
 });
 
 export type Datenschutzvermerk = z.infer<typeof vermerkSchema>;
@@ -76,7 +82,9 @@ export type Datenschutzvermerk = z.infer<typeof vermerkSchema>;
 export async function fetchDatenschutzvermerke(patientId: string): Promise<Datenschutzvermerk[]> {
   const { data, error } = (await getSupabase()
     .from('patient_privacy_records')
-    .select('id, record_kind, purpose, notice_version, occurred_on, recorded_at')
+    .select(
+      'id, record_kind, purpose, notice_version, occurred_on, recorded_at, source, platform_access_kind, representative_name',
+    )
     .eq('patient_id', patientId)
     .order('recorded_at', { ascending: true })) as { data: unknown; error: unknown };
 
@@ -127,6 +135,8 @@ export interface Einwilligungsstand {
   abgelehnt: boolean;
   /** Datum des jüngsten Vermerks zu diesem Zweck. */
   seit: string | null;
+  /** POR-016: Der jüngste Vermerk kam von der Plattform. */
+  ueberPlattform: boolean;
 }
 
 export interface Datenschutzstand {
@@ -152,7 +162,7 @@ export function datenschutzstand(vermerke: readonly Datenschutzvermerk[]): Daten
   const zwecke = new Map<Einwilligungszweck, Einwilligungsstand>(
     EINWILLIGUNGSZWECKE.map((zweck) => [
       zweck,
-      { zweck, erteilt: false, abgelehnt: false, seit: null },
+      { zweck, erteilt: false, abgelehnt: false, seit: null, ueberPlattform: false },
     ]),
   );
 
@@ -167,6 +177,7 @@ export function datenschutzstand(vermerke: readonly Datenschutzvermerk[]): Daten
         erteilt: v.record_kind === 'consent_granted',
         abgelehnt: v.record_kind === 'consent_refused',
         seit: v.occurred_on,
+        ueberPlattform: v.source === 'platform',
       });
     }
   }
@@ -176,6 +187,20 @@ export function datenschutzstand(vermerke: readonly Datenschutzvermerk[]): Daten
     behandlungsvertrag,
     einwilligungen: EINWILLIGUNGSZWECKE.map((zweck) => zwecke.get(zweck)!),
   };
+}
+
+/**
+ * Woher ein Vermerk kommt, als Zusatz in der Akte (POR-016): leer für die
+ * Praxis, sonst „über die Plattform" und bei einer rechtlichen Vertretung
+ * deren Name.
+ */
+export function herkunftText(
+  v: Pick<Datenschutzvermerk, 'source' | 'representative_name'>,
+): string {
+  if (v.source !== 'platform') return '';
+  return v.representative_name
+    ? `über die Plattform, von ${v.representative_name} (rechtliche Vertretung)`
+    : 'über die Plattform, von der Person selbst';
 }
 
 export const vermerkartTexte: Record<Vermerkart, string> = {

@@ -19,6 +19,7 @@ import type { CurrentUser } from '@/features/session/types';
 import {
   datenschutzstand,
   fetchDatenschutzvermerke,
+  herkunftText,
   vermerkartTexte,
   vermerkeSpeichern,
   zweckTexte,
@@ -164,9 +165,23 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
 
 /** Etiketten beginnen groß, wie überall (WRT-16). */
 function Einwilligungszeichen({ stand }: { stand: Einwilligungsstand }) {
-  if (stand.erteilt) return <Badge ton="positiv">Erteilt am {formatDate(stand.seit)}</Badge>;
+  // POR-016: Was die Person selbst auf der Plattform gesetzt hat, sagt es dazu.
+  const plattform = stand.ueberPlattform ? ' (Plattform)' : '';
+  if (stand.erteilt)
+    return (
+      <Badge ton="positiv">
+        Erteilt am {formatDate(stand.seit)}
+        {plattform}
+      </Badge>
+    );
   if (stand.abgelehnt) return <Badge ton="neutral">Abgelehnt am {formatDate(stand.seit)}</Badge>;
-  if (stand.seit) return <Badge ton="warnung">Widerrufen am {formatDate(stand.seit)}</Badge>;
+  if (stand.seit)
+    return (
+      <Badge ton="warnung">
+        Widerrufen am {formatDate(stand.seit)}
+        {plattform}
+      </Badge>
+    );
   return <Badge ton="neutral">Nicht erteilt</Badge>;
 }
 
@@ -335,6 +350,7 @@ function Verlauf({ vermerke }: { vermerke: Datenschutzvermerk[] }) {
               {vermerkartTexte[v.record_kind]}
               {v.purpose ? ` · ${zweckTexte[v.purpose].label}` : ''}
               {v.notice_version ? ` · Fassung ${v.notice_version}` : ''}
+              {herkunftText(v) ? ` · ${herkunftText(v)}` : ''}
             </span>
           </li>
         ))}

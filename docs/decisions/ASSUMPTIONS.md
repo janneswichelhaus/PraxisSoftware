@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-06.
+Zuletzt aktualisiert: 2026-10-07.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 90 Einträge):
+Zusatz `Prüfpaket` (heute 92 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3142,3 +3142,39 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: �
 **Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
 
 **Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.
+
+### ANN-261 — Nach der Lesefrist widerruft und exportiert die Person selbst weiter, eine Vertretung nicht
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung Plattform
+
+**Annahme.** Ist die Lesefrist (D2, 30 Tage nach dem Ende des Verhältnisses) vorbei, kann die Person selbst über ihren weiter aktiven Zugang unter „Ich" Einwilligungen widerrufen und ihre Daten herunterladen, aber nicht mehr neu einwilligen. Eine Vertretung kann nach ihrem Ende nichts mehr, auch nicht widerrufen. Gesperrte und entzogene Zugänge können nichts.
+
+**Begründung.** DSN-001 D2: „Ich" bleibt, „weil Widerruf und Auskunft nicht an einem Abo hängen dürfen“; Art. 7 Abs. 3 DSGVO verlangt, dass der Widerruf so einfach ist wie die Erteilung, Art. 15 und 20 enden nicht mit dem Vertrag. Eine neue Einwilligung nach dem Ende hätte keinen Zweck. Das Ende einer Vertretung kann auch aus der Volljährigkeit kommen (`app.platform_access_ended_at`), dann ist sie zu Ende und nicht nur ihre Lesezeit. Unsicher: ob die Prüfung den Export nach dem Ende an eine neue Identitätsprüfung binden will.
+
+**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` („nach der Lesefrist …“).
+
+**Änderungspfad.** Nach dem Ende nichts mehr: die Funktion aus `record_platform_consent`, `platform_consents` und dem Export streichen · Aufwand `klein`.
+
+### ANN-262 — Eine Einwilligung auf der Plattform speichert die Fassung ihres Texts; ein alter Text wird abgewiesen
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Wortlaut)
+
+**Annahme.** Jede Erteilung und jeder Widerruf auf der Plattform speichert die Fassung des Einwilligungstexts (`2026-10`), den die Person gesehen hat. Der Server kennt nur die aktuelle Fassung und weist eine Seite mit älterem Text ab. Die Texte stehen in kurzen Sätzen je Zweck, mit dem Satz zum Widerruf (Art. 7 Abs. 3) und dazu, dass Behandlung bzw. Vertrag nicht davon abhängen (Art. 7 Abs. 4). Die Einwilligung geht über eine Rückfrage („Ja, ich willige ein“).
+
+**Begründung.** Art. 7 Abs. 1 DSGVO: Die Praxis muss nachweisen, worin eingewilligt wurde; ohne Fassung zeigte ein späterer Text eine andere Einwilligung. Die Rückfrage macht sie ausdrücklich (Art. 9 Abs. 2 lit. a). Der Wortlaut ist ein Entwurf und wird in B2 geprüft. Unsicher: ob eine Textänderung bestehende Einwilligungen berührt (heute nicht).
+
+**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/platform/einwilligungen.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/platform/einwilligungen.test.ts`.
+
+**Änderungspfad.** Neuer Wortlaut: Text und Fassung an beiden Stellen anheben · Aufwand `klein`. Bestehende Einwilligungen neu einholen: eigener Loop · Aufwand `mittel`.
+
+### ANN-263 — Widerrufe über die Plattform stehen 14 Tage in Offene Punkte, ohne „gesehen“
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+
+**Annahme.** Widerruft die Person oder ihre rechtliche Vertretung eine Einwilligung auf der Plattform, steht der Widerruf 14 Tage in Offene Punkte („Widerrufen über die Plattform“), mit Person, Zweck, Datum und wer gehandelt hat. Es gibt keinen Zustand „gesehen“. Sehen dürfen ihn die Rollen, die die Kartei bzw. das Trainingsverhältnis lesen. Die Akte zeigt jeden Vermerk mit „über die Plattform“.
+
+**Begründung.** DSN-001 Abschnitt 6 legt Widerrufe in die Übersicht. Wer ihn nicht erfährt, schickt den nächsten Bericht oder die nächste Mail ohne Grundlage. Ein Haken „gesehen“ wäre eine Aufgabe mehr, und das Datenmodell zeigt den Widerruf ohnehin dauerhaft. 14 Tage decken Urlaub und Wochenende. Unsicher: ob Jannes eine Quittung will.
+
+**Anker.** `app.platform_withdrawal_notice_days` und `list_platform_consent_withdrawals` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `src/features/open-points/consent-withdrawals-api.ts`.
+
+**Änderungspfad.** Andere Frist: die Zahl · Aufwand `klein`. Quittung: Spalte und Funktion · Aufwand `mittel`.

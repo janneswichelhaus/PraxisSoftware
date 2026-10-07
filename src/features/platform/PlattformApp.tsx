@@ -18,6 +18,7 @@ import {
 } from './api';
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
+import { Einwilligungen } from './Einwilligungen';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { Termine } from './Termine';
@@ -57,6 +58,15 @@ export function PlattformApp({
   onAbmelden: () => void;
 }) {
   const lesbar = zugaenge.filter((z) => z.readable);
+  // POR-016 (D2, ANN-261): Einwilligungen und Export entscheidet die Person
+  // selbst oder ihre rechtliche Vertretung - die Person auch nach der
+  // Lesefrist, solange ihr Zugang aktiv ist. Verbindlich ist der Server.
+  const entscheidend = zugaenge.filter(
+    (z) =>
+      z.status === 'active' &&
+      z.access_kind !== 'companion' &&
+      (z.readable || z.access_kind === 'self'),
+  );
   const praxis = zugaenge[0]?.organization_name ?? '';
 
   return (
@@ -160,9 +170,25 @@ export function PlattformApp({
             }
           />
           <Route
+            path={`${PLATTFORM_PFAD}/einwilligungen`}
+            element={
+              <MitZugang
+                bereiche={entscheidend}
+                zugaenge={zugaenge}
+                seite={(z) => <Einwilligungen zugang={z} />}
+              />
+            }
+          />
+          <Route
             path={`${PLATTFORM_PFAD}/ich`}
             element={
-              <Ich email={email} praxis={praxis} zugaenge={lesbar} onAbmelden={onAbmelden} />
+              <Ich
+                email={email}
+                praxis={praxis}
+                zugaenge={lesbar}
+                entscheidend={entscheidend}
+                onAbmelden={onAbmelden}
+              />
             }
           />
           <Route path="*" element={<Navigate to={PLATTFORM_PFAD} replace />} />
@@ -337,11 +363,14 @@ function Ich({
   email,
   praxis,
   zugaenge,
+  entscheidend,
   onAbmelden,
 }: {
   email: string | undefined;
   praxis: string;
   zugaenge: Plattformzugang[];
+  /** Zugänge, über die Einwilligungen und Export gehen (POR-016, ANN-261). */
+  entscheidend: Plattformzugang[];
   onAbmelden: () => void;
 }) {
   // Die Person selbst und eine rechtliche Vertretung sehen, wer Zugang hat;
@@ -397,6 +426,24 @@ function Ich({
                     {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
                   </Textlink>
                 ) : null}
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+      {/* POR-016: Einwilligungen je Zugang - die eigenen und die einer
+          rechtlichen Vertretung, nie die einer Begleitung. */}
+      {entscheidend.length > 0 ? (
+        <Section titel="Einwilligungen und Daten" rahmen>
+          <ul className="flex flex-col gap-2">
+            {entscheidend.map((z) => (
+              <li key={z.access_id} className="flex flex-col gap-2">
+                <Textlink
+                  to={`${PLATTFORM_PFAD}/einwilligungen?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                >
+                  Einwilligungen
+                  {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
+                </Textlink>
               </li>
             ))}
           </ul>
