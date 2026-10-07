@@ -695,7 +695,10 @@
           "id": "ang-epic-001",
           "name": "ANG-EPIC-001 Nachsorge-Abo als Monatsrechnung",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-07",
+          "nachweis": "ANG-001 bis ANG-004, Zweitreview",
+          "vermerk": "Sichtung: Angebote Schritte 1 bis 3"
         },
         {
           "id": "ang-epic-002",

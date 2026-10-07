@@ -147,7 +147,7 @@ in den Etappen darunter.
 | 2 | **Kern fertig** | MAP-006 → FRB-EPIC-001 → FRB-EPIC-002 → FRB-EPIC-003 → DOK-005 → DOK-006 → PRX-EPIC-001 → PRX-EPIC-002 → UX-EPIC-004 → PRX-EPIC-003 → PRX-EPIC-003b → STA-EPIC-001 | — | D2/D3 aus dem FRB-Plan; Sichtung |
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | ~~POR-EPIC-001~~ (gebaut 2026-09-30) → ~~-001b~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) → ~~**ABR-EPIC-007**~~ (gebaut 2026-10-05) → ~~POR-EPIC-002~~ (gebaut 2026-10-06) → ~~-003~~ (gebaut 2026-10-07) | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
-| 5 | **Angebote** | ANG-EPIC-001 → ANG-EPIC-002 → KND-EPIC-001 | — | Abo- und Paketpreise (bis dahin synthetisch) |
+| 5 | **Angebote** | ~~ANG-EPIC-001~~ (gebaut 2026-10-07) → ANG-EPIC-002 → KND-EPIC-001 | — | Abo- und Paketpreise (bis dahin synthetisch) |
 | 6 | **Pläne und Rückfragen** | UEB-EPIC-001 → -002 → -003 → KOM-EPIC-001 → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
 | 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
 | 8 | **Praxisbetrieb** | FLT-EPIC-001 → TEAM-001 → URL-001 → ZK-001 → ERS-001 | — | Tübinger Standortvorlage (Depot, Werkstatt) |
@@ -774,6 +774,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern | fertig | 2026-10-06 | KUT-001 bis KUT-006, Handoff docs/design/handoff-2026-10-06-kalender-und-tour.md, E2E tests/e2e/kalender.spec.ts (Tipp im unteren Drittel, Tour im Kopf) | — | Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10 |
 | B | POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente | fertig | 2026-10-06 | POR-008 bis POR-015, Zweitreview | — | Sichtung: Plattform Schritte 10 bis 12 |
 | B | POR-EPIC-003 Einwilligungen, Export, Einstellungen | fertig | 2026-10-07 | POR-016 bis POR-020, Zweitreview | — | Sichtung: Plattform Schritte 13 bis 15 |
+| B | ANG-EPIC-001 Nachsorge-Abo als Monatsrechnung | fertig | 2026-10-07 | ANG-001 bis ANG-004, Zweitreview | — | Sichtung: Angebote Schritte 1 bis 3 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
