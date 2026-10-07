@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 98 Einträge):
+Zusatz `Prüfpaket` (heute 99 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3298,3 +3298,15 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** Recht `contract` in `app.platform_access_allows` in `supabase/migrations/20261014120000_ang_003_aftercare_cancellation.sql`. Geprüft in `supabase/tests/aftercare-cancellation.test.ts`.
 
 **Änderungspfad.** Andere Regel: der eine Zweig in `app.platform_access_allows` · Aufwand `klein`.
+
+### ANN-274 — Ein Nachsorge-Abo hält den Plattformzugang offen; die Lesezeit von 30 Tagen zählt ab seinem Ende
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Speicherbegrenzung, ADR-023 Punkt 5)
+
+**Annahme.** In der Behandlung zählt die Lesezeit vom Abschluss der Versorgung oder vom letzten Tag des letzten Nachsorge-Abos, was später liegt; solange ein Abo läuft, endet der Zugang nicht. Danach gelten dieselben 30 Tage wie ohne Abo. Ein Abo im Behandlungsverhältnis verlängert den Zugang zum Training nicht. Die Frist des Zugangs (drei Jahre) und die Löschung des Kontos (30 Tage) rechnen ab demselben Ende.
+
+**Begründung.** §4.6: Das Abo ist der Zweck, die Plattform nach der Behandlung weiter zu nutzen; nach einer Kündigung bleibt der Zugriff 30 Tage lesend (DSN-001 4.3). Eine Stelle (`app.platform_access_ended_at`) trägt das Ende für Projektionen, Löschlauf und Konto, deshalb ändert sich nur der Tag, ab dem gezählt wird. Getrennte Verhältnisse bleiben getrennt (§4.8, ADR-021). Die Inhalte der Stufe 2 (Verlauf, Rückfragen, Plan als PDF) gibt es noch nicht; sie kommen mit ihren Loops. Unsicher: ob die Prüfung für die Zeit des Abos eine eigene Rechtsgrundlage für die Plattform verlangt (Vertrag über die Nachsorge, Art. 9 Abs. 2 lit. h).
+
+**Anker.** `app.platform_read_from` und `app.platform_access_ended_at` in `supabase/migrations/20261014130000_ang_004_platform_follows_aftercare.sql`; Hinweis in `src/features/platform/Uebersicht.tsx`. Geprüft in `supabase/tests/aftercare-platform-access.test.ts`.
+
+**Änderungspfad.** Andere Lesezeit nach dem Abo: der Tag in der einen Funktion · Aufwand `klein`.

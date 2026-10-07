@@ -9,7 +9,9 @@ import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
   BEREICHSNAME,
+  aboSchluessel,
   befundbogenSchluessel,
+  ladeAbo,
   ladeBefundbogen,
   ladeRechnungen,
   ladeTermine,
@@ -71,6 +73,14 @@ export function Uebersicht({
     enabled: behandlung,
   });
 
+  // ANG-004 (ANN-274): Nach einem Nachsorge-Abo zählt die Lesezeit vom Ende des Abos.
+  const abo = useQuery({
+    queryKey: aboSchluessel(zugang.access_id),
+    queryFn: () => ladeAbo(zugang.access_id),
+    enabled: behandlung,
+  });
+  const aboEndet = abo.data && abo.data.state !== 'running' ? abo.data : null;
+
   const jetzt = new Date();
   // Ein laufender Termin ist noch „nächster“ - wie unter Termine „kommend“.
   const naechster = (termine.data ?? []).find(
@@ -130,9 +140,11 @@ export function Uebersicht({
       )}
       {zugang.read_until ? (
         <Statusmeldung className="mt-4" ton="warnung">
-          {eigen
-            ? `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
-            : `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`}
+          {!eigen
+            ? `Ihr Zugang für ${name} endet am ${datum(zugang.read_until)}.`
+            : aboEndet?.ends_on
+              ? `Ihr Nachsorge-Abo ${aboEndet.state === 'ending' ? 'endet' : 'endete'} am ${datum(aboEndet.ends_on)}. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`
+              : `Ihre ${zugang.relationship_kind === 'training' ? 'Trainingszeit' : 'Behandlung'} ist beendet. Sie können hier noch bis ${datum(zugang.read_until)} lesen.`}
         </Statusmeldung>
       ) : null}
       {suche.get('bogen') === '1' ? (
