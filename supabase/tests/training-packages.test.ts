@@ -1,7 +1,10 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { Client } from 'pg';
 import {
   SEED,
   asPostgres,
+  jwtClaims,
+  testDatabaseUrl,
   asUser,
   asUserCommitted,
   fremdeOrganisation,
@@ -443,6 +446,39 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
   });
 
   describe('Entfernen einer Fehlanlage', () => {
+    it('entfernt das Paket nach einem Storno (Zweitreview, ANN-280)', async () => {
+      const id = await anlegen(trainingRelationships.tina, TP3, heute);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(
+        users.office,
+        TRAININGSENTWURF,
+        [trainingRelationships.tina, heute],
+      );
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2::text)', [
+        entwurf[0]!.id,
+        'Kulanz',
+      ]);
+      const { rows: sicht } = await asUser<{
+        sicht: { packages: Array<{ invoiced: boolean }> };
+      }>(users.office, SICHT, [trainingRelationships.tina]);
+      expect(sicht[0]!.sicht.packages[0]!.invoiced).toBe(false);
+
+      await asUserCommitted(users.office, ENTFERNEN, [id]);
+      const { rows } = await asPostgres<{ n: string }>(
+        `select (select count(*) from public.training_packages where id = $1)
+              + (select count(*) from public.billable_services where training_package_id = $1) as n`,
+        [id],
+      );
+      expect(rows[0]!.n).toBe('0');
+      // Das stornierte Dokument bleibt in seiner damaligen Form (ADR-009 Punkt 11).
+      const { rows: rechnung } = await asPostgres<{ status: string; n: number }>(
+        `select i.status, jsonb_array_length(i.snapshot -> 'items') as n
+           from public.invoices i where i.id = $1`,
+        [entwurf[0]!.id],
+      );
+      expect(rechnung[0]!.n).toBe(1);
+    });
+
     it('entfernt Paket und Leistung, solange nichts abgerechnet ist', async () => {
       const id = await anlegen(trainingRelationships.tina, TP3, heute);
       await asUserCommitted(users.office, ENTFERNEN, [id]);
@@ -469,6 +505,29 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
       const fremd = await fremdeOrganisation();
       await expect(asUser(fremd.owner, ENTFERNEN, [id])).rejects.toThrow(
         /training package not found/,
+      );
+    });
+  });
+
+  describe('Vertragsbeginn (Zweitreview)', () => {
+    it('laesst sich nicht hinter den Beginn eines Pakets schieben', async () => {
+      await anlegen(trainingRelationships.tina, TP3, heute);
+      await expect(
+        asPostgres(
+          `update public.training_relationships set contract_started_on = $2::date + 1 where id = $1`,
+          [trainingRelationships.tina, heute],
+        ),
+      ).rejects.toThrow(/package starts before the contract start/);
+      // Frueher geht.
+      await expect(
+        asPostgres(
+          `update public.training_relationships set contract_started_on = '2026-01-02' where id = $1`,
+          [trainingRelationships.tina],
+        ),
+      ).resolves.toBeDefined();
+      await asPostgres(
+        `update public.training_relationships set contract_started_on = '2026-03-02' where id = $1`,
+        [trainingRelationships.tina],
       );
     });
   });
@@ -673,6 +732,51 @@ describe('Termine im Paket (ANG-007, BEF-114)', () => {
     ).resolves.toBeTruthy();
   });
 
+  it('laesst Paket und Erfassung am Termin nicht gleichzeitig durch (Zweitreview)', async () => {
+    const termin = await trainingstermin(trainingRelationships.tina, 2);
+    const erste = new Client({ connectionString: testDatabaseUrl() });
+    const zweite = new Client({ connectionString: testDatabaseUrl() });
+    await erste.connect();
+    await zweite.connect();
+    async function alsOffice(client: Client) {
+      await client.query('begin');
+      await client.query("select set_config('role', 'authenticated', true)");
+      await client.query("select set_config('request.jwt.claims', $1, true)", [
+        jwtClaims(users.office),
+      ]);
+    }
+    try {
+      await alsOffice(erste);
+      await alsOffice(zweite);
+      await erste.query(ANLEGEN, [trainingRelationships.tina, TP3, await tag('heute - 5')]);
+
+      const laeuft = zweite
+        .query(ERFASSEN, [
+          termin,
+          JSON.stringify([{ catalog_item_id: PERSONAL_TRAINING, quantity: 1 }]),
+        ])
+        .then(() => null)
+        .catch((fehler: unknown) => fehler as Error);
+
+      await new Promise((fertig) => setTimeout(fertig, 200));
+      await erste.query('commit');
+
+      const fehler = await laeuft;
+      await zweite.query(fehler === null ? 'commit' : 'rollback');
+      expect(fehler?.message).toMatch(/covered by a training package/);
+    } finally {
+      await erste.query('rollback').catch(() => undefined);
+      await zweite.query('rollback').catch(() => undefined);
+      await erste.end();
+      await zweite.end();
+    }
+    const { rows } = await asPostgres<{ n: string }>(
+      'select count(*) as n from public.billable_services where appointment_id = $1',
+      [termin],
+    );
+    expect(rows[0]!.n).toBe('0');
+  });
+
   it('rechnet eine Behandlung waehrend des Pakets daneben ab (ANN-280)', async () => {
     await asPostgres(
       `update public.patients
@@ -831,6 +935,62 @@ describe('Paket und Preise in der Plattform (ANG-008)', () => {
       await plattform(users.plattformTina, ANGEBOTE, platformAccesses.tinaTraining),
     ).toBeNull();
     expect(await plattform(users.plattformTina, MEINE, platformAccesses.tinaTraining)).toBeNull();
+  });
+
+  it('Vertretung ohne Vermoegenssorge: Preise ja, eigenes Paket nein; jedes Lesen protokolliert', async () => {
+    const BERND = 'cafecafe-cafe-4afe-8afe-0000000000e2';
+    const KONTO_BERND = '99999999-9999-4999-8999-0000000000e2';
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ($1, 'authenticated', 'authenticated', 'bernd.paket@patient.invalid')`,
+      [KONTO_BERND],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, training_relationship_id,
+          account_user_id, status, activated_at, access_kind, legal_basis, representative_name,
+          proof_documents, health_scope, finance_scope, proof_recorded_by, proof_recorded_at,
+          created_by)
+       values ($1, $2, 'training', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+               true, false, $5, now(), $5)`,
+      [BERND, organizationId, trainingRelationships.tina, KONTO_BERND, users.office],
+    );
+    // Ohne Geburtsdatum gilt eine Vertretung als die einer Minderjaehrigen
+    // und endet (ADR-023 Punkt 15); Tina ist volljaehrig.
+    await asPostgres(
+      `update public.training_contact_details set date_of_birth = '1985-04-12'
+        where training_relationship_id = $1`,
+      [trainingRelationships.tina],
+    );
+    await anlegen(trainingRelationships.tina, TP3, heute);
+
+    const { rows: preise } = await asUserCommitted<{ sicht: { offers: unknown[] } | null }>(
+      KONTO_BERND,
+      ANGEBOTE,
+      [BERND],
+    );
+    expect(preise[0]!.sicht?.offers).toHaveLength(2);
+    const { rows: meine } = await asUserCommitted<{ sicht: unknown }>(KONTO_BERND, MEINE, [BERND]);
+    expect(meine[0]!.sicht).toBeNull();
+
+    const { rows: protokoll } = await asPostgres<{ action: string; view: string }>(
+      `select action, context ->> 'view' as view from public.audit_log
+        where actor_user_id = $1 order by occurred_at`,
+      [KONTO_BERND],
+    );
+    expect(protokoll).toEqual([
+      { action: 'platform_representation.read', view: 'training_offers' },
+    ]);
+
+    // Die Person selbst wird beim Lesen nicht protokolliert (ADR-023 Punkt 24).
+    await asUserCommitted(users.plattformTina, MEINE, [platformAccesses.tinaTraining]);
+    const { rows: selbst } = await asPostgres<{ n: string }>(
+      `select count(*) as n from public.audit_log
+        where actor_user_id = $1 and action = 'platform_representation.read'`,
+      [users.plattformTina],
+    );
+    expect(selbst[0]!.n).toBe('0');
   });
 
   it('Zugang eingeladen: nichts', async () => {

@@ -140,9 +140,16 @@ begin
 
   -- ANG-007 (ANN-279, BEF-114): Ein Trainingstermin im Zeitraum eines Pakets
   -- ist mit dem Paket bezahlt und traegt keine eigene Forderung.
-  if v_kind = 'training'
-     and app.training_package_covering(v_training, app.appointment_performed_on(new.appointment_id)) is not null then
-    raise exception 'training appointment is covered by a training package' using errcode = '23514';
+  if v_kind = 'training' then
+    -- Zweitreview: unter Sperre des Verhaeltnisses. create_training_package
+    -- haelt es FOR UPDATE; FOR SHARE wartet darauf, und die Abfrage danach
+    -- sieht das neue Paket (READ COMMITTED, neuer Snapshot je Anweisung).
+    -- Umgekehrt wartet die Paketanlage, bis diese Erfassung feststeht, und
+    -- ihr Guard sieht sie. Sonst liefen beide an der Pruefung vorbei.
+    perform 1 from public.training_relationships t where t.id = v_training for share;
+    if app.training_package_covering(v_training, app.appointment_performed_on(new.appointment_id)) is not null then
+      raise exception 'training appointment is covered by a training package' using errcode = '23514';
+    end if;
   end if;
 
   return new;

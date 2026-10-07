@@ -298,8 +298,10 @@ function Bearbeiten({
       {schutz}
       {mutation.isError ? (
         <Statusmeldung ton="fehler" className="mt-6">
-          Die Angaben konnten nicht gespeichert werden. Bitte die Verbindung prüfen und erneut
-          versuchen.
+          {/* ANG-006: der Grund, wenn ein Paket vor dem neuen Vertragsbeginn liegt. */}
+          {mutation.error.message.includes('Trainingspaket')
+            ? mutation.error.message
+            : 'Die Angaben konnten nicht gespeichert werden. Bitte die Verbindung prüfen und erneut versuchen.'}
         </Statusmeldung>
       ) : null}
       <div className="mt-8 flex flex-wrap gap-3">

@@ -122,6 +122,19 @@ describe('Trainingspaket am Trainingsverhältnis (ANG-006)', () => {
     ).toBeInTheDocument();
   });
 
+  it('sagt, was zu tun ist, wenn im Zeitraum schon eine Stunde erfasst ist (ANN-279)', async () => {
+    fetchPakete.mockResolvedValue(sicht());
+    fetchPaketpositionen.mockResolvedValue(POSITIONEN);
+    createPaket.mockRejectedValue(
+      new Error('Im Zeitraum ist schon eine Trainingsstunde als Leistung erfasst.'),
+    );
+    renderWithProviders(<Trainingspaket verhaeltnisId="t1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Paket anlegen' }));
+    await userEvent.selectOptions(await screen.findByLabelText('Paket'), 'c3');
+    await userEvent.click(screen.getAllByRole('button', { name: 'Paket anlegen' }).at(-1)!);
+    expect(await screen.findByText(/schon eine Trainingsstunde/)).toBeInTheDocument();
+  });
+
   it('entfernt eine Fehlanlage nur ohne Rechnung', async () => {
     fetchPakete.mockResolvedValue(
       sicht({ packages: [LAUFEND, { ...LAUFEND, id: 'k2', invoiced: true, state: 'ended' }] }),

@@ -107,6 +107,12 @@ export async function createPaket(
   if (error?.message?.includes('already covers')) {
     throw new Error('In diesem Zeitraum läuft schon ein Paket. Pakete überschneiden sich nicht.');
   }
+  // ANN-279: Im Zeitraum ist schon eine Trainingsstunde erfasst.
+  if (error?.message?.includes('already carry billable services')) {
+    throw new Error(
+      'Im Zeitraum ist schon eine Trainingsstunde als Leistung erfasst. Erst die Erfassung zurücknehmen oder das Paket danach beginnen lassen.',
+    );
+  }
   if (error?.message?.includes('not in the price list')) {
     throw new Error(
       'Am gewählten Beginn gilt eine andere Preisliste. Bitte das Paket aus dieser Liste wählen.',

@@ -282,6 +282,13 @@ export async function updateTrainingClient(id: string, werte: TrainingWerte): Pr
     p_relationship_id: id,
     ...rpcWerte(werte),
   });
+  // ANG-006 (Zweitreview): Ein Paket beginnt nie vor dem Vertrag.
+  const meldung = (ergebnis.error as { message?: string } | null)?.message ?? '';
+  if (meldung.includes('package starts before the contract start')) {
+    throw new Error(
+      'Ein Trainingspaket beginnt vor diesem Tag. Der Vertragsbeginn liegt spätestens am Beginn des ersten Pakets.',
+    );
+  }
   if (abgewiesen(ergebnis) || ergebnis.data === null) {
     throw new Error('Die Angaben konnten nicht gespeichert werden.');
   }

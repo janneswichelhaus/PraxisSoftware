@@ -516,6 +516,16 @@ begin
     raise exception 'training package is on an invoice' using errcode = '23514';
   end if;
 
+  -- Zweitreview: Freigegebene Rechnungszeilen fallen mit ihrer Leistung,
+  -- wie in delete_billable_services. Sie zeigen mit RESTRICT auf sie, und was
+  -- die stornierte Rechnung ausgewiesen hat, steht in ihrem Snapshot (ADR-009
+  -- Punkt 10). Eine nicht freigegebene Zeile hat der Block darueber abgewiesen.
+  delete from public.invoice_items it
+   using public.billable_services b
+   where it.billable_service_id = b.id
+     and b.training_package_id = p_package_id
+     and it.released_at is not null;
+
   delete from public.billable_services b where b.training_package_id = p_package_id;
   delete from public.training_packages k where k.id = p_package_id;
 end;
@@ -672,3 +682,36 @@ begin
   return v_tag;
 end;
 $function$;
+
+-- -----------------------------------------------------------------------------
+-- 11. Der Vertragsbeginn nicht hinter ein Paket (Zweitreview)
+--
+-- create_training_package prueft "before_contract"; ohne diese Regel liesse
+-- sich der Vertragsbeginn danach hinter den Paketbeginn schieben
+-- (update_training_client). Als Invariante am Verhaeltnis, wie das Vertragsende
+-- in Abschnitt 10.
+-- -----------------------------------------------------------------------------
+create function app.training_contract_start_guard()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.contract_started_on is not null and exists (
+    select 1 from public.training_packages k
+    where k.training_relationship_id = new.id and k.starts_on < new.contract_started_on
+  ) then
+    raise exception 'a training package starts before the contract start' using errcode = '22023';
+  end if;
+  return new;
+end;
+$$;
+
+revoke all on function app.training_contract_start_guard() from public, anon, authenticated;
+
+create trigger training_relationships_contract_start_guard
+  before update of contract_started_on on public.training_relationships
+  for each row execute function app.training_contract_start_guard();
+
+comment on function app.training_contract_start_guard() is
+  'ANG-006 (Zweitreview): Der Vertragsbeginn eines Trainingsverhaeltnisses liegt nie nach dem Beginn eines seiner Pakete.';
