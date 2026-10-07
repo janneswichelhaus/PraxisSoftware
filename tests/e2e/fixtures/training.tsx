@@ -78,6 +78,52 @@ const client = new QueryClient({
 });
 client.setQueryData(['training-clients'], liste);
 client.setQueryData(['training-client', TINA], tina);
+// KND-005: Voraussetzungen mit einer Übernahme aus der Behandlung.
+client.setQueryData(['training-profil', TINA], {
+  health_consent: true,
+  profile: {
+    goals: 'Wieder ohne Geländer Treppen steigen und im Frühjahr die Hüttenwanderung schaffen.',
+    equipment: 'Theraband gelb und rot, Kurzhanteln 2 kg',
+    time_budget: 'Zweimal 20 Minuten je Woche',
+    places: 'Zu Hause, im Sommer im Park',
+    limits: null,
+    history: null,
+    preferences: 'Geht gern draußen, mag keine Geräte',
+    updated_at: '2026-10-07T10:00:00.000000+00:00',
+    updated_by_name: 'Tom Trainingsbetreuung',
+  },
+  takeovers: [
+    {
+      title: 'Belastungsgrenzen',
+      body: 'Kniebeuge bis 90 Grad, keine Sprünge bis Dezember.',
+      offered_on: '2026-10-01',
+      released_at: '2026-10-03T08:00:00Z',
+      released_on: '2026-10-03',
+    },
+  ],
+});
+// KND-004: ein im Konto geschlossener Vertrag in der Widerrufsfrist.
+client.setQueryData(
+  ['training-contracts', TINA],
+  [
+    {
+      id: 'abababab-abab-4bab-8bab-000000000021',
+      concluded_at: '2026-10-03T08:00:00Z',
+      concluded_on: '2026-10-03',
+      package_label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+      price_cents: 39000,
+      currency: 'EUR',
+      starts_on: '2026-10-20',
+      ends_on: '2027-01-19',
+      wording_version: '2026-10',
+      early_start_requested: false,
+      withdrawal_ends_on: '2026-10-17',
+      withdrawn_on: null,
+      withdrawn_access_kind: null,
+      withdrawn_representative_name: null,
+    },
+  ],
+);
 // POR-002: der Abschnitt „Plattform" an der Kundin - hier mit aktivem Zugang.
 client.setQueryData(['platform-access', 'training', TINA], {
   id: 'cafecafe-cafe-4afe-8afe-000000000001',

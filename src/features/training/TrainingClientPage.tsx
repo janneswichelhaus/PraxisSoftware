@@ -21,6 +21,7 @@ import {
   canManageInvoicing,
   canWriteTrainingClients,
   canReadTrainingProtocols,
+  canWriteTrainingProtocols,
   type CurrentUser,
 } from '@/features/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
@@ -44,6 +45,8 @@ import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSection
 import { TrainingEinheiten } from './TrainingProtocol';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
+import { TrainingProfil } from './TrainingProfil';
+import { TrainingVertraege } from './TrainingVertraege';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -206,12 +209,22 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
           {/* ANG-006: das Paket nach Zeitraum - owner und office (ANN-071). */}
           {canManageInvoicing(user.roles) ? <Trainingspaket verhaeltnisId={kundin.id} /> : null}
+          {/* KND-004: im Konto geschlossene Verträge und ihr Widerruf (owner, office). */}
+          {canManageInvoicing(user.roles) ? <TrainingVertraege relationshipId={kundin.id} /> : null}
           {/* POR-017: Einwilligung zu Gesundheitsangaben (ADR-021 Punkt 4). */}
           {user.organizationTimeZone ? (
             <TrainingEinwilligung
               relationshipId={kundin.id}
               darfSchreiben={darfSchreiben}
               zeitzone={user.organizationTimeZone}
+            />
+          ) : null}
+          {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung - nur
+              owner und Trainingsbetreuung (ANN-287), nicht das Büro. */}
+          {canWriteTrainingProtocols(user.roles) ? (
+            <TrainingProfil
+              relationshipId={kundin.id}
+              darfSchreiben={kundin.contract_ended_on === null}
             />
           ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und

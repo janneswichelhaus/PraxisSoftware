@@ -3394,3 +3394,124 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.platform_training_offers` und `public.platform_training_packages` in `supabase/migrations/20261015130000_ang_008_platform_training_package.sql`; Wortlaut in `src/features/platform/paketbedingungen.ts`, Seite `src/features/platform/Paket.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/platform/Paket.test.tsx`.
 
 **Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung (KND-EPIC-001) · Aufwand `groß`. Preise auch für die Behandlung: eine Bedingung in der einen Funktion · Aufwand `klein`.
+
+### ANN-282 — Ein Trainingsangebot halten die Rollen der Akte fest; ob die Person schon trainiert, prüft erst ihr eigenes Konto
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (B2, §4.8)
+
+**Annahme.** Ein Trainingsangebot legen owner, Therapeut:in, Teamleitung und Büro in der Akte an und ziehen es zurück – dieselben Rollen, die die Akte schreiben. Die Trainingsbetreuung sieht kein Angebot. Beim Anbieten fragt der Server nicht, ob die Person schon ein Trainingsverhältnis hat; das zeigt erst die Seite in ihrem eigenen Konto („Sie haben schon einen Trainingsvertrag“).
+
+**Begründung.** §4.10: Das Abschlussgespräch führt die behandelnde Person, und angeboten wird mündlich. §4.8 verbietet den Schluss von einer Rolle des einen Bereichs auf den anderen, „auch nicht mittelbar über die gemeinsame Identität“; eine Fehlermeldung „hat schon ein Trainingsverhältnis“ wäre genau so ein Schluss für eine Therapeut:in. Das Angebot hängt an der Akte (ADR-021 Punkt 5) und enthält Angaben aus der Behandlung, also gehört es den Rollen der Akte. Unsicher: ob Jannes das Anbieten auf owner und Büro beschränken will, weil es ein Angebot über Geld ist.
+
+**Anker.** `app.can_update_patient()` in `public.create_training_offer` und `public.withdraw_training_offer` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; Abschnitt `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Nur owner und Büro: `app.can_manage_training_packages()` statt `app.can_update_patient()` in den beiden Funktionen, die Oberfläche folgt `canManageInvoicing` · Aufwand `klein`.
+
+### ANN-283 — Aus der Behandlung wandern nur wörtlich formulierte Übergabeangaben, keine Felder der Akte
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 7)
+
+**Annahme.** Was aus der Akte ins Training mitgehen soll, formuliert die Praxis im Angebot als bis zu fünf Angaben mit Überschrift (bis 80 Zeichen) und Text (bis 600 Zeichen), etwa „Belastungsgrenzen“ oder „Vorgeschichte“. Dazu kann sie die Kontaktdaten der Akte anbieten. Die Person sieht jede Angabe wörtlich und gibt sie einzeln frei; nur Freigegebenes wird beim Annehmen als Kopie mit Herkunftsvermerk ins Training geschrieben. Eine Auswahl beliebiger Felder aus Befund oder Dokumentation gibt es nicht.
+
+**Begründung.** ADR-021 Punkt 7 verlangt eine dokumentierte Kopie mit Einwilligung, nie eine Referenz; `IDEA-LZK-003` nennt als Beispiele Kontraindikationen, Belastungsgrenzen und Verletzungshistorie – Zusammenfassungen, die eine Therapeut:in schreibt, keine Rohfelder. Eine Einwilligung ist nur informiert (Art. 4 Nr. 11, Art. 7 DSGVO), wenn die Person genau sieht, was weitergeht; bei einem Befundfeld voller Fachbegriffe sähe sie das nicht. Fünf Angaben genügen für die Beispiele und halten die Seite am Telefon lesbar. Unsicher: ob die Prüfung eine Übernahme von Befundzahlen (etwa Bewegungsausmaß) verlangt.
+
+**Anker.** `app.training_offer_handover_valid` und die Spalte `handover_items` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `UEBERGABE_HOECHSTENS` in `src/features/training-offers/api.ts`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Mehr oder längere Angaben: die Zahlen in der einen Funktion und in `api.ts` · Aufwand `klein`. Befundfelder zur Auswahl: eigene Kopierfunktion je Feld · Aufwand `groß`.
+
+### ANN-284 — Ein Trainingsangebot gilt 14 Tage, höchstens bis zum Beginn; je Akte eines offen
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** Ein Angebot kann die Person 14 Tage lang annehmen, längstens bis zum Tag, an dem das Training beginnt. Der Beginn liegt zwischen heute und 90 Tagen voraus und nicht vor dem Abschluss der Versorgung. Je Akte ist höchstens ein Angebot offen; ein neues setzt voraus, dass das alte zurückgezogen, angenommen oder abgelaufen ist. Beim Zusammenführen zweier Akten sperren zwei offene Angebote.
+
+**Begründung.** Ein Angebot ohne Frist bliebe als Bindung der Praxis an einen alten Preis stehen (§ 145 BGB); 14 Tage decken die Zeit nach dem Abschlussgespräch, in der die Person überlegt. Ein Beginn in der Vergangenheit kommt bei einem Vertrag, der erst im Konto geschlossen wird, nicht in Frage; 90 Tage reichen für eine Pause zwischen Behandlung und Training. Der Beginn nach dem Abschluss folgt §4.10 und ANN-278. Unsicher: ob Jannes längere Bedenkzeiten will.
+
+**Anker.** `app.training_offer_state`, die Prüfungen in `public.create_training_offer` und der Block `training_offer_overlap` in `app.patient_merge_plan` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Andere Frist: `v_heute + 14` und `v_heute + 90` in der einen Funktion · Aufwand `klein`.
+
+### ANN-285 — Die Akte erfährt nicht, ob ein Angebot angenommen wurde
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, §4.8)
+
+**Annahme.** Ein Angebot steht in der Akte als „offen“ bis zum Ende seiner Gültigkeit, danach als „abgelaufen“, oder als „zurückgezogen“ – gleich, ob die Person gebucht hat. Den Zeitpunkt der Annahme speichert das Angebot nur, damit es nicht zweimal angenommen wird; ihn liest allein die Projektion der Person, weder die Akte noch die Auskunft der Akte. Zurückziehen geht auch nach einer Annahme und berührt den Vertrag nicht. Die Seite zum Buchen sagt: „In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben.“
+
+**Begründung.** §4.8 (Rang 1): Aus einer Rolle der Behandlung folgt kein Wissen über das Training, auch nicht über die gemeinsame Identität. „Angenommen am …“ hätte einer Therapeut:in ohne Trainingsrolle einen Vertrag gezeigt; auch „nicht mehr offen“ vor dem Ende der Gültigkeit verriete ihn. Die erste Fassung dieser Annahme (die Akte sieht dass und wann) fiel im Zweitreview gegen §4.8 und wurde nach Rang aufgelöst. Owner und Büro sehen das Trainingsverhältnis ohnehin über ihre Trainingsrolle. Unsicher: ob die behandelnde Person den Ausgang des Abschlussgesprächs für ihre Dokumentation braucht.
+
+**Anker.** `app.training_offer_practice_state` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `AKTE_ERFAEHRT` in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-offers.test.ts` und `supabase/tests/training-contracts.test.ts`.
+
+**Änderungspfad.** Annahme mit Einwilligung der Person zurück in die Akte: Zeitpunkt in `get_patient_training_offers`, ein Satz auf der Seite zum Buchen und ein Häkchen dafür · Aufwand `klein`.
+
+### ANN-286 — Ans Abschlussgespräch erinnert die Karte der letzten zwei Termine, bis ein Angebot in der Akte steht
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** An den letzten zwei Terminen einer Behandlungsgrundlage mit Terminzahl (Position mindestens Terminzahl minus eins) zeigt die Tageskarte die Pille „Abschlussgespräch“ und die Terminansicht einen Satz mit dem Weg „Training in der Akte anbieten“. Das gilt für Verordnung und Selbstzahler, solange die Versorgung offen ist, keine jüngere Grundlage folgt und seit dem Beginn der Grundlage kein Trainingsangebot in der Akte steht, das nicht zurückgezogen ist. Eine Mitteilung, ein Zähler oder ein Eintrag in Offene Punkte entsteht nicht.
+
+**Begründung.** §4.10 und E-3: „In den letzten ein bis zwei Terminen einer Verordnung erinnert die App an das Abschlussgespräch.“ Am Termin sieht die behandelnde Person den Hinweis dann, wenn das Gespräch ansteht; die Erinnerung „Verordnungen, die enden“ gibt es schon für die Folgeverordnung. Eine jüngere Grundlage heißt: Die Behandlung geht weiter. Ob die Person schon trainiert, fragt die Erinnerung nicht – das wäre ein Schluss von der Behandlung aufs Training (§4.8). Unsicher: ob Jannes auch ohne Terminzahl erinnert werden will, etwa beim Selbstzahler mit offener Anzahl.
+
+**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/TerminKompakt.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
+
+**Änderungspfad.** Nur der letzte Termin oder drei: die Zahl `- 1` in der einen Funktion · Aufwand `klein`.
+
+### ANN-287 — Das Voraussetzungsprofil führen owner und Trainingsbetreuung; das Büro sieht es nicht
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
+
+**Annahme.** Am Trainingsverhältnis steht ein Profil aus sieben Freitexten – Ziele, Ausrüstung, Zeitbudget, Orte, Belastungsgrenzen, Vorgeschichte, Vorlieben – und darunter, schreibgeschützt, was die Person aus der Behandlung freigegeben hat, mit Tag des Angebots und der Freigabe. Lesen und schreiben owner und Trainingsbetreuung; Büro, Behandlung und Plattform nicht. Jedes Lesen steht als `training_relationship.viewed` mit `view: profile` im Protokoll. Gespeichert wird mit dem erwarteten Stand, nach dem Vertragsende nicht mehr. Ohne Einwilligung bleibt das Profil bedienbar und sagt es (wie ANN-264). Die Person sieht ihr Profil auf der Plattform noch nicht.
+
+**Begründung.** `IDEA-LZK-004`: Ausrüstung und Zeit sind die häufigsten Gründe, warum ein Plan scheitert. Belastungsgrenzen und Vorgeschichte sind Gesundheitsangaben des Trainings; ADR-021 Punkt 10 lässt das Büro nur das Protokoll lesen und sperrt ihm die übrigen. Freitext statt Auswahllisten, weil Jannes die Kategorien noch nicht festgelegt hat (ADR-014: nicht vorbauen). Unsicher: ob die Person ihr Profil selbst pflegen soll (§4.10 nennt „Profil“ in ihrer Sicht).
+
+**Anker.** `public.get_training_profile` und `public.save_training_profile` mit `app.can_access_training_protocols()` in `supabase/migrations/20261016120000_knd_005_training_profile.sql`; `PROFILFELDER` in `src/features/training/profil-api.ts`. Geprüft in `supabase/tests/training-profile.test.ts`.
+
+**Änderungspfad.** Profil in der Plattform: eigene Projektion mit Recht `read` · Aufwand `mittel`. Büro lesend: eigene Rollenfunktion statt `can_access_training_protocols` · Aufwand `klein`.
+
+### ANN-288 — Der Trainingsvertrag entsteht im Konto mit Musterbelehrung, „Zahlungspflichtig buchen“ und einer Bestätigung zum Speichern
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, Fernabsatz); B13 für die Bestätigung per Mail
+
+**Annahme.** Die Seite „Training nach Ihrer Behandlung“ zeigt Paket, Zeitraum, Gesamtpreis, die Paketbedingungen und die Widerrufsbelehrung nach dem Muster der Anlage 1 zu Art. 246a § 1 Abs. 2 EGBGB mit Muster-Widerrufsformular und dem Hinweis auf die Widerrufsfunktion im Konto. Der Vertrag entsteht mit „Zahlungspflichtig buchen“. Beginnt das Paket innerhalb von 14 Tagen nach dem Abschluss, muss die Person ausdrücklich verlangen, dass vorher begonnen wird. Gespeichert werden Paket und Preis als Wert, die Fassung von Belehrung und Bedingungen, der frühe Beginn, die Freigaben und die Einwilligung; die Bestätigung steht sofort und dauerhaft unter „Ich → Trainingsvertrag“ zum Drucken.
+
+**Begründung.** §4.10: Geschlossen wird über das eigene Konto, mit Widerrufsbelehrung. Ob ein Vertrag nach einem Gespräch beim Hausbesuch und einem Klick im Konto Fernabsatz oder außerhalb von Geschäftsräumen ist (§§ 312b, 312c BGB), ändert am Widerrufsrecht nichts; die Musterbelehrung erfüllt die Pflicht (Art. 246a § 1 Abs. 2 Satz 2 EGBGB). § 312j Abs. 3 verlangt die Beschriftung des Knopfs, §§ 356 Abs. 4 und 357a Abs. 2 das ausdrückliche Verlangen für den frühen Beginn, § 312f Abs. 2 eine Bestätigung auf einem dauerhaften Datenträger – bis B13 die Seite zum Speichern wie bei ANN-272. Unsicher: ob die Seite zum Speichern als dauerhafter Datenträger genügt.
+
+**Anker.** `app.training_contract_wording_version` und `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`; Wortlaut in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-contracts.test.ts`, `src/features/platform/vertragstexte.test.ts` und `src/features/platform/Angebot.test.tsx`.
+
+**Änderungspfad.** Anderer Wortlaut: Text und `VERTRAGSFASSUNG` mit der Funktion anheben · Aufwand `klein`. Bestätigung per Mail: Versand mit B13 · Aufwand `klein`.
+
+### ANN-289 — Den Trainingsvertrag im Konto schließt nur die Person selbst
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
+
+**Annahme.** Annehmen kann nur der eigene Zugang der Person zu ihrer Behandlung. Eine rechtliche Vertretung mit Vermögenssorge sieht das Angebot und die Seite, aber keinen Knopf („Den Vertrag schließt … selbst in ihrem Konto oder in der Praxis“); eine Begleitung sieht nichts. Mit dem Vertrag bekommt das Konto der Person einen eigenen Zugang zum Training; eine Vertretung im Training richtet die Praxis bei Bedarf eigens ein.
+
+**Begründung.** Der Nachweis einer Vertretung (Ausweis, Vollmacht, Aufgabenkreis) ist für die Behandlung angesehen worden (ADR-023 Punkt 13); ihn still auf ein neues Verhältnis zu übertragen, wäre genau der Schluss über die gemeinsame Identität, den §4.8 verbietet. Eine Vertretung beim Training richtet die Praxis mit eigenem Nachweis ein, wie bisher (ANN-173). Unsicher: ob eine Betreuung oder Vollmacht den Abschluss im Konto braucht, weil die vertretene Person selbst kein Konto hat.
+
+**Anker.** Die Prüfung `v_zugang.access_kind <> 'self'` in `public.accept_platform_training_offer` und `can_accept` in `public.platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`. Geprüft in `supabase/tests/training-contracts.test.ts`.
+
+**Änderungspfad.** Rechtliche Vertretung schließt ab: Vertretungszugang zum neuen Verhältnis mit übernommenem Nachweis anlegen · Aufwand `mittel`.
+
+### ANN-290 — Der Widerruf im Konto ist die Erklärung; die Praxis wickelt ab
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); Jannes in der Sichtung Angebote
+
+**Annahme.** Unter „Ich → Trainingsvertrag“ steht bis zum Ende der Widerrufsfrist (14 Tage ab Abschluss) der Knopf „Vertrag widerrufen“, danach eine Seite mit „Widerruf bestätigen“ und sofort der Eingang mit Datum und Uhrzeit zum Drucken. Widerrufen können die Person selbst und eine rechtliche Vertretung mit Vermögenssorge am Trainingszugang, nie die Begleitung. Der Widerruf steht am Vertragsnachweis, 14 Tage in Offene Punkte und dauerhaft am Trainingsverhältnis (owner, Büro). Er löscht und storniert nichts selbst: Paket entfernen oder stornieren, zurückzahlen und den Vertrag beenden macht die Praxis mit den vorhandenen Funktionen. Ein Widerruf auf anderem Weg (Brief, E-Mail) vermerkt die Praxis heute nicht in der Anwendung.
+
+**Begründung.** § 356a BGB verlangt seit dem 19. Juni 2026 bei Verträgen über eine Online-Oberfläche eine Widerrufsfunktion mit Bestätigungsschritt und Eingangsbestätigung auf einem dauerhaften Datenträger. Was bei frühem Beginn als Wertersatz bleibt (§ 357a Abs. 2 BGB), hängt an den schon erbrachten Einheiten und ist eine Einzelfallrechnung; eine automatische Stornierung wäre ein Beleg ohne Regel für die Höhe. Unsicher: ob die Praxis Widerrufe per Brief ebenfalls in der Anwendung vermerken will.
+
+**Anker.** `public.withdraw_platform_training_contract` und `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; Knopf in `src/features/platform/Vertrag.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` und `src/features/platform/Vertrag.test.tsx`.
+
+**Änderungspfad.** Widerruf per Brief vermerken: Praxisfunktion mit Herkunft `practice` wie bei der Abo-Kündigung · Aufwand `klein`. Automatische Rückabwicklung ohne frühen Beginn: Paket entfernen bzw. stornieren im selben Aufruf · Aufwand `mittel`.
+
+### ANN-291 — Mit dem Vertrag entsteht der Zugang zum Training ohne eigene Einladung
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, ADR-023 Punkte 6, 7, 11)
+
+**Annahme.** Bucht die Person im Konto, bekommt dasselbe Konto im selben Aufruf einen aktiven eigenen Zugang zum neuen Trainingsverhältnis – ohne Einladung, ohne Code und ohne Praxisrolle. Der Wächter am Zugang prüft wie bei jeder Einladung, dass Konto und Person zusammengehören und kein Praxiskonto ist. Im Protokoll steht `platform_access.activated` mit `via: training_contract`. Vertretungen im Training richtet weiter die Praxis ein.
+
+**Begründung.** ADR-023 (Rang 2) lässt Zugänge nur aus einer Einladung der Praxis entstehen, weil die Einladung die Identität prüft (Punkt 11). §4.10 (Rang 1) verlangt, dass der Trainingsvertrag über das eigene Konto geschlossen wird – und dieses Konto hat die Praxis bei der Einladung zur Behandlung schon geprüft. Eine zweite Einladung prüfte dieselbe Person noch einmal und hielte den Abschluss an einen Termin. Aufgelöst nach Rang; ADR-023 bleibt für alle anderen Zugänge unverändert. Unsicher: ob die Prüfung eine eigene Bestätigung im Training verlangt.
+
+**Anker.** Das `insert into public.platform_accesses` in `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`. Geprüft in `supabase/tests/training-contracts.test.ts`.
+
+**Änderungspfad.** Zugang zum Training nur per Einladung: im Aufruf einen Zugang `invited` mit Einladung vor Ort anlegen statt `active` · Aufwand `klein`. Mit Folgen für ADR-023: neue Fassung, die diesen Weg aufnimmt · Aufwand `klein`.
+

@@ -331,6 +331,24 @@ const terminwuensche: PlatformRequest[] = [
   },
 ];
 client.setQueryData(PLATFORM_REQUESTS_KEY, terminwuensche);
+// KND-004: ein Widerruf eines Trainingsvertrags über die Plattform.
+client.setQueryData(
+  ['open-points', 'training-withdrawals'],
+  ansicht === 'widerruf'
+    ? [
+        {
+          contract_id: 'abababab-abab-4bab-8bab-000000000022',
+          training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000002',
+          given_name: 'Erika',
+          family_name: 'Beispiel',
+          withdrawn_on: todayInTimeZone('Europe/Berlin'),
+          package_label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+          withdrawn_access_kind: 'self',
+          withdrawn_representative_name: null,
+        },
+      ]
+    : [],
+);
 client.setQueryData(['patient', MAX], {
   id: MAX,
   given_name: 'Max',

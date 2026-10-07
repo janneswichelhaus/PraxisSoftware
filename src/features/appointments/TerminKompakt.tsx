@@ -172,6 +172,22 @@ export function TerminMetazeile({
           Auf andere Grundlage übertragen
         </Textlink>
       ) : null}
+      {/* KND-001: In den letzten Terminen der Grundlage - Zeit für das
+          Abschlussgespräch (4.10, ANN-286). Eine Auskunft, kein Vorgang. */}
+      {lage?.closing_talk_due && appointment.patient_id ? (
+        <div className="mt-2 flex flex-col gap-1">
+          <p className="text-ink">
+            Einer der letzten Termine: Zeit für das Abschlussgespräch – wie geht es nach der
+            Behandlung weiter?
+          </p>
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
+          >
+            Training in der Akte anbieten
+          </Textlink>
+        </div>
+      ) : null}
       {hinweis ? <p className="mt-1">{hinweis}</p> : null}
     </div>
   );

@@ -163,6 +163,8 @@ const lage: Abrechnungslage = {
   open_invoice_count: buero ? 1 : null,
   open_outstanding_cents: buero ? 9000 : null,
   open_overdue: buero ? true : null,
+  // KND-001: ?abschluss zeigt die Erinnerung an das Abschlussgespräch.
+  closing_talk_due: new URLSearchParams(window.location.search).has('abschluss'),
 };
 
 const bestaetigt = ansicht === 'bestaetigt';

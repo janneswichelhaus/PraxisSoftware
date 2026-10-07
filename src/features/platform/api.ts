@@ -722,6 +722,11 @@ const exportSchema = z.object({
   consents: z.array(einwilligungSchema.omit({ can_grant: true })),
   /** ANG-008: die eigenen Trainingspakete; ältere Exporte tragen sie nicht. */
   training_packages: z.array(meinPaketSchema).default([]),
+  /** KND-003: der im Konto geschlossene Trainingsvertrag; sonst null. */
+  training_contract: z
+    .lazy(() => vertragSchema)
+    .nullable()
+    .default(null),
 });
 export type Datenexport = z.infer<typeof exportSchema>;
 
@@ -832,4 +837,199 @@ export async function aboKuendigen(
     throw new Error('Ihr Abo ist schon gekündigt.');
   if (ergebnis.error) throw new Error(satz);
   return antwort(kuendigungSchema, ergebnis.data, satz);
+}
+
+// -----------------------------------------------------------------------------
+// Trainingsvertrag im eigenen Konto (KND-003, KND-004; PROJECT_PRINCIPLES.md
+// 4.10, ANN-288, ANN-289)
+// -----------------------------------------------------------------------------
+
+const praxisSchema = z.object({
+  name: z.string(),
+  street: z.string().nullable(),
+  house_number: z.string().nullable(),
+  postal_code: z.string().nullable(),
+  city: z.string().nullable(),
+  phone: z.string().nullable(),
+  email: z.string().nullable(),
+});
+
+const trainingsangebotSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  tax_rate_permille: z.number(),
+  /** Enthält der Preis Umsatzsteuer? Unter § 19 UStG nicht. */
+  vat_included: z.boolean(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  valid_until: z.string(),
+  offered_on: z.string(),
+  handover_items: z.array(z.object({ title: z.string(), body: z.string() })),
+  /** Die Kontaktdaten der Akte, wenn die Praxis sie zur Übernahme anbietet. */
+  contact: z
+    .object({
+      date_of_birth: z.string().nullable(),
+      street: z.string().nullable(),
+      house_number: z.string().nullable(),
+      postal_code: z.string().nullable(),
+      city: z.string().nullable(),
+      phone: z.string().nullable(),
+      email: z.string().nullable(),
+    })
+    .nullable(),
+  /** Beginnt das Training innerhalb der Widerrufsfrist? */
+  early_start: z.boolean(),
+  withdrawal_days: z.number(),
+  wording_version: z.string(),
+  /** Warum (noch) nicht angenommen werden kann; null: es geht. */
+  blocker: z.string().nullable(),
+  /** Nur der eigene Zugang nimmt an (ANN-289). */
+  can_accept: z.boolean(),
+  practice: praxisSchema,
+});
+export type Trainingsangebot = z.infer<typeof trainingsangebotSchema>;
+
+export function trainingsangebotSchluessel(zugangId: string) {
+  return ['platform-training-offer', zugangId] as const;
+}
+
+/** Das offene Angebot der Praxis; `null`: keins, oder für diesen Zugang nicht sichtbar. */
+export async function ladeTrainingsangebot(zugangId: string): Promise<Trainingsangebot | null> {
+  const satz = 'Das Angebot konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_offer', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(trainingsangebotSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const buchungSchema = z.object({
+  contract_id: z.string().uuid(),
+  training_access_id: z.string().uuid(),
+  concluded_at: z.string(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  withdrawal_ends_on: z.string(),
+  early_start_requested: z.boolean(),
+  contact_released: z.boolean(),
+  health_consent_granted: z.boolean(),
+  released_titles: z.array(z.string()),
+});
+export type Buchungsbestaetigung = z.infer<typeof buchungSchema>;
+
+export interface Buchung {
+  angebotId: string;
+  freigaben: number[];
+  kontakt: boolean;
+  einwilligung: boolean;
+  fruehBeginnen: boolean;
+  fassung: string;
+}
+
+/** „Zahlungspflichtig buchen": liefert die Bestätigung (ANN-288). */
+export async function angebotAnnehmen(
+  zugangId: string,
+  buchung: Buchung,
+): Promise<Buchungsbestaetigung> {
+  const satz = 'Die Buchung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('accept_platform_training_offer', {
+    p_access_id: zugangId,
+    p_offer_id: buchung.angebotId,
+    p_release_items: buchung.freigaben,
+    p_release_contact: buchung.kontakt,
+    p_health_consent: buchung.einwilligung,
+    p_early_start: buchung.fruehBeginnen,
+    p_wording_version: buchung.fassung,
+  })) as { data: unknown; error: { message?: string } | null };
+  const meldung = ergebnis.error?.message ?? '';
+  if (meldung.includes('not open'))
+    throw new Error('Das Angebot gilt nicht mehr. Bitte sprechen Sie die Praxis an.');
+  if (meldung.includes('wording outdated'))
+    throw new Error('Die Bedingungen haben sich geändert. Bitte laden Sie die Seite neu.');
+  if (meldung.includes('health consent required'))
+    throw new Error(
+      'Angaben aus der Behandlung gehen nur mit Ihrer Einwilligung zu Gesundheitsangaben ins Training.',
+    );
+  if (meldung.includes('early start must be requested'))
+    throw new Error(
+      'Bitte bestätigen Sie, dass das Training vor dem Ende der Frist beginnen soll.',
+    );
+  if (meldung.includes('cannot be accepted'))
+    throw new Error(
+      'Das Angebot kann gerade nicht angenommen werden. Bitte laden Sie die Seite neu.',
+    );
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(buchungSchema, ergebnis.data, satz);
+}
+
+const vertragSchema = z.object({
+  id: z.string().uuid(),
+  concluded_at: z.string(),
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  tax_rate_permille: z.number(),
+  vat_included: z.boolean(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  offered_on: z.string(),
+  wording_version: z.string(),
+  early_start_requested: z.boolean(),
+  contact_released: z.boolean(),
+  health_consent_granted: z.boolean(),
+  withdrawal_ends_on: z.string(),
+  released_titles: z.array(z.string()),
+  /** KND-004: Eingang des Widerrufs; null: nicht widerrufen. */
+  withdrawn_at: z.string().nullable().default(null),
+  /** KND-004: Knopf da? In der Frist, nicht widerrufen, Recht contract. */
+  can_withdraw: z.boolean().default(false),
+});
+export type Trainingsvertrag = z.infer<typeof vertragSchema>;
+
+export function vertragSchluessel(zugangId: string) {
+  return ['platform-training-contract', zugangId] as const;
+}
+
+/** Der eigene Trainingsvertrag; `null`: keiner, oder für diesen Zugang nicht sichtbar. */
+export async function ladeVertrag(zugangId: string): Promise<Trainingsvertrag | null> {
+  const satz = 'Ihr Vertrag konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_contract', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(vertragSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const widerrufSchema = z.object({
+  withdrawn_at: z.string(),
+  withdrawn_on: z.string(),
+  label: z.string(),
+  concluded_at: z.string(),
+});
+export type Widerrufseingang = z.infer<typeof widerrufSchema>;
+
+/** Die Widerrufsfunktion (§ 356a BGB, KND-004): liefert den Eingang mit Zeitpunkt. */
+export async function vertragWiderrufen(
+  zugangId: string,
+  vertragId: string,
+): Promise<Widerrufseingang> {
+  const satz = 'Der Widerruf ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_training_contract', {
+    p_access_id: zugangId,
+    p_contract_id: vertragId,
+  })) as { data: unknown; error: { message?: string } | null };
+  const meldung = ergebnis.error?.message ?? '';
+  if (meldung.includes('already withdrawn')) throw new Error('Sie haben schon widerrufen.');
+  if (meldung.includes('period has ended'))
+    throw new Error('Die Widerrufsfrist ist abgelaufen. Bitte wenden Sie sich an die Praxis.');
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(widerrufSchema, ergebnis.data, satz);
 }

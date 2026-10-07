@@ -78,6 +78,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     // beide prüfen den Zugang über app.platform_access_allows.
     expect([...new Set(aufrufe)].sort()).toEqual([
       'function:platform-access',
+      // KND-003: den Trainingsvertrag im eigenen Konto schließen.
+      'rpc:accept_platform_training_offer',
       // ANG-003: das eigene Nachsorge-Abo kündigen.
       'rpc:cancel_platform_aftercare',
       // POR-012: der Befundbogen vorab.
@@ -107,6 +109,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
       // ANG-008: Pakete der Preisliste und die eigenen Pakete.
+      // KND-003: das Angebot aus der Akte und der eigene Vertrag.
+      'rpc:platform_training_contract',
+      'rpc:platform_training_offer',
       'rpc:platform_training_offers',
       'rpc:platform_training_packages',
       'rpc:record_platform_consent',
@@ -115,6 +120,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_questionnaire_response',
       'rpc:withdraw_platform_appointment_request',
+      // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
+      'rpc:withdraw_platform_training_contract',
     ]);
   });
 

@@ -45,6 +45,12 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string }[] = [
   // ANG-EPIC-002: das eigene Trainingspaket mit Preisen, und die Preise ohne Paket.
   { seite: 'paket', merkmal: 'Trainingspaket' },
   { seite: 'preise', merkmal: 'Trainingspaket' },
+  // KND-EPIC-001: Angebot der Praxis, früher Beginn, Wartezeit, Kachel, Vertrag.
+  { seite: 'angebot', merkmal: 'Training nach Ihrer Behandlung' },
+  { seite: 'angebot-frueh', merkmal: 'Training nach Ihrer Behandlung' },
+  { seite: 'angebot-wartet', merkmal: 'Training nach Ihrer Behandlung' },
+  { seite: 'angebot-uebersicht', merkmal: 'Guten Tag' },
+  { seite: 'vertrag', merkmal: 'Trainingsvertrag' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string) {

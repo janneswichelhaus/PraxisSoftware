@@ -13,6 +13,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { AftercareCancellations } from './AftercareCancellations';
+import { TrainingWithdrawals } from './TrainingWithdrawals';
 import { CallsSummary } from './CallsSummary';
 import { ConsentWithdrawals } from './ConsentWithdrawals';
 import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
@@ -70,6 +71,8 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {/* ANG-003: Kündigungen des Nachsorge-Abos über die Plattform
             (owner, office - wer das Abo führt). */}
         {canManageInvoicing(user.roles) ? <AftercareCancellations /> : null}
+        {/* KND-004: Widerrufe von Trainingsverträgen (owner, office). */}
+        {canManageInvoicing(user.roles) ? <TrainingWithdrawals /> : null}
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
         {canManageAppointments(user.roles) ? <WaitlistReview timeZone={timeZone} /> : null}
         {canReadTreatmentBases(user.roles) ? <EndingPrescriptions timeZone={timeZone} /> : null}

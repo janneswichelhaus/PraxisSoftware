@@ -641,6 +641,7 @@ function MeinTag({
         kicker={kicker}
         relativ={fokus.art === 'besuch' ? bisBeginn(termin, jetzt) : null}
         position={lage && lage.appointment_id === termin.id ? positionText(lage) : null}
+        abschlussgespraech={!!lage && lage.appointment_id === termin.id && lage.closing_talk_due}
         erstaufnahme={
           erstaufnahmen?.find((eintrag) => eintrag.patient_id === termin.patient_id)?.open_items
         }

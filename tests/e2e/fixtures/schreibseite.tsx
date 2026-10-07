@@ -129,6 +129,7 @@ const lage: Abrechnungslage = {
   open_invoice_count: null,
   open_outstanding_cents: null,
   open_overdue: null,
+  closing_talk_due: false,
 };
 
 const bausteine: TextSnippet[] = [

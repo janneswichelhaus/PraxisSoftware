@@ -713,7 +713,10 @@
           "id": "knd-epic-001",
           "name": "KND-EPIC-001 Betreuung nach der Behandlung",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-07",
+          "nachweis": "KND-001 bis KND-005, Zweitreview",
+          "vermerk": "Sichtung: Angebote Schritte 7 bis 9"
         },
         {
           "id": "ueb-epic-001",

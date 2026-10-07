@@ -29,6 +29,7 @@ export const ZAEHLER = [
   'invoice_recipients',
   'fee_agreements',
   'aftercare_subscriptions',
+  'training_offers',
   'patient_files',
   'privacy_records',
   'questionnaire_responses',
@@ -63,6 +64,7 @@ const BEREICHE: Record<Zaehler, [string, string]> = {
   invoice_recipients: ['Rechnungsempfänger', 'Rechnungsempfänger'],
   fee_agreements: ['Honorarvereinbarung', 'Honorarvereinbarungen'],
   aftercare_subscriptions: ['Nachsorge-Abo', 'Nachsorge-Abos'],
+  training_offers: ['Trainingsangebot', 'Trainingsangebote'],
   patient_files: ['Datei', 'Dateien'],
   privacy_records: ['Datenschutzvermerk', 'Datenschutzvermerke'],
   questionnaire_responses: ['Bogen', 'Bögen'],
@@ -116,6 +118,8 @@ const SPERREN: Record<string, string> = {
     'Beide Akten haben eine Honorarvereinbarung ab demselben Tag. Bitte eine davon entfernen; ist sie schon an einem Termin angewandt, vorher die Erfassung dieser Termine im Büro zurücknehmen.',
   aftercare_overlap:
     'Beide Akten haben ein Nachsorge-Abo für dieselbe Zeit. Bitte das irrtümlich angelegte entfernen – zwei Verträge über dieselbe Nachsorge gibt es nicht.',
+  training_offer_overlap:
+    'Beide Akten haben ein offenes Trainingsangebot. Bitte eines davon zurückziehen.',
   open_waitlist_overlap:
     'Beide Akten stehen ohne Grundlage auf der Warteliste. Bitte einen der beiden Einträge schließen.',
   note_too_long:

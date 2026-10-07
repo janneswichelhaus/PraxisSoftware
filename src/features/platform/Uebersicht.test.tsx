@@ -14,6 +14,7 @@ const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
 const ladeBefundbogen = vi.fn();
 const ladeAbo = vi.fn();
+const ladeTrainingsangebot = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -22,6 +23,7 @@ vi.mock('./api', async (importOriginal) => ({
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
   ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<unknown>,
+  ladeTrainingsangebot: (...args: unknown[]) => ladeTrainingsangebot(...args) as Promise<unknown>,
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
@@ -74,9 +76,31 @@ beforeEach(() => {
   ladeRechnungen.mockResolvedValue([]);
   ladeBefundbogen.mockResolvedValue([]);
   ladeAbo.mockResolvedValue(null);
+  ladeTrainingsangebot.mockResolvedValue(null);
 });
 
 describe('Uebersicht (POR-015)', () => {
+  // KND-003: das Angebot aus dem Abschlussgespräch als eigene Kachel.
+  it('zeigt das Trainingsangebot der Praxis mit dem Weg dorthin', async () => {
+    ladeTrainingsangebot.mockResolvedValue({
+      label: 'Trainingspaket 3 Monate',
+      valid_until: '2026-10-21',
+    });
+    zeige();
+    expect(await screen.findByText('Trainingspaket 3 Monate')).toBeInTheDocument();
+    expect(screen.getByText(/gilt bis 21.10.2026/)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Angebot ansehen →' })).toHaveAttribute(
+      'href',
+      '/p/angebot?bereich=treatment',
+    );
+  });
+
+  it('fragt für eine Begleitung kein Angebot an', async () => {
+    zeige({ ...ZUGANG, access_kind: 'companion', represented_name: 'Max Mustermann' });
+    expect(await screen.findByText(/Als Begleitung/)).toBeInTheDocument();
+    expect(ladeTrainingsangebot).not.toHaveBeenCalled();
+  });
+
   it('zeigt Befundbogen, naechsten Termin und offene Rechnung in der Reihenfolge aus DSN-001', async () => {
     ladeTermine.mockResolvedValue([TERMIN]);
     ladeRechnungen.mockResolvedValue([

@@ -305,6 +305,22 @@ describe('Tageskarte', () => {
       expect(pille.querySelector('.sr-only')).toHaveTextContent(': Verordnungsfoto · Anmeldebogen');
     });
 
+    it('erinnert in den letzten Terminen an das Abschlussgespräch und führt in die Akte (KND-001)', () => {
+      renderWithProviders(<Tageskarte termin={eintrag()} kicker="Jetzt" abschlussgespraech />);
+      const pille = screen.getByRole('link', {
+        name: 'Abschlussgespräch: Wie geht es nach der Behandlung weiter?',
+      });
+      expect(pille).toHaveAttribute('href', `/patienten/p1?zurueck=${encodeURIComponent('/')}`);
+      expect(pille).toHaveClass('bg-accent-soft', 'text-accent', 'min-h-9');
+    });
+
+    it('erinnert an einem Trainingstermin nie an das Abschlussgespräch', () => {
+      renderWithProviders(
+        <Tageskarte termin={eintrag({ kind: 'training' })} kicker="Jetzt" abschlussgespraech />,
+      );
+      expect(screen.queryByText(/Abschlussgespräch/)).toBeNull();
+    });
+
     it('zeigt ohne Stockwerk, Liege und offene Erstaufnahme keine Pillenreihe', () => {
       renderWithProviders(
         <Tageskarte

@@ -264,6 +264,57 @@ client.setQueryData(['patient-appointments', PATIENT, false, null], {
 });
 client.setQueryData(['waitlist', 'open', PATIENT], []);
 client.setQueryData(['platform-access', 'treatment', PATIENT], null);
+// KND-002: Training nach der Behandlung - ?angebot=offen zeigt ein offenes Angebot.
+client.setQueryData(['trainingsangebot', PATIENT], {
+  today: todayInTimeZone('Europe/Berlin'),
+  care_concluded_on: null,
+  has_own_access: suche.get('angebot') === 'offen',
+  offers:
+    suche.get('angebot') === 'offen'
+      ? [
+          {
+            id: 'abababab-abab-4bab-8bab-000000000020',
+            state: 'open',
+            label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+            package_months: 3,
+            price_cents: 39000,
+            currency: 'EUR',
+            starts_on: tagePlus(todayInTimeZone('Europe/Berlin'), 20),
+            valid_until: tagePlus(todayInTimeZone('Europe/Berlin'), 14),
+            handover_items: [
+              {
+                title: 'Belastungsgrenzen',
+                body: 'Kniebeuge bis 90 Grad, keine Sprünge bis Dezember.',
+              },
+              { title: 'Vorgeschichte', body: 'Vordere Kreuzbandplastik links im März.' },
+            ],
+            offers_contact: true,
+            created_at: new Date().toISOString(),
+            created_by_name: 'Anna Beispiel',
+            withdrawn_at: null,
+          },
+        ]
+      : [],
+});
+client.setQueryData(
+  ['trainingsangebot', 'pakete', todayInTimeZone('Europe/Berlin')],
+  [
+    {
+      catalog_item_id: 'cccccccc-cccc-4ccc-8ccc-000000000014',
+      label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+      package_months: 3,
+      unit_price_cents: 39000,
+      currency: 'EUR',
+    },
+    {
+      catalog_item_id: 'cccccccc-cccc-4ccc-8ccc-000000000015',
+      label: 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)',
+      package_months: 6,
+      unit_price_cents: 72000,
+      currency: 'EUR',
+    },
+  ],
+);
 
 /** Der Behandlungsverlauf über drei Monate (Design-Handoff 2026-10-01, Abschnitt 7). */
 function eintrag(

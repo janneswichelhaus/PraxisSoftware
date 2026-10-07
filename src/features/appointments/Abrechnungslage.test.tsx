@@ -18,6 +18,7 @@ const lage: LageApi.Abrechnungslage = {
   open_invoice_count: 2,
   open_outstanding_cents: 12345,
   open_overdue: true,
+  closing_talk_due: false,
 };
 
 const fetchAbrechnungslage = vi.fn();
