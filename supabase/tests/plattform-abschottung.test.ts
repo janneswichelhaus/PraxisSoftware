@@ -70,6 +70,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigenen Einstieg beenden (POR-019); ohne lesbaren Zugang abgewiesen (42501)',
   'public.platform_export':
     'Eigene Daten herunterladen (POR-018); ohne Recht export abgewiesen (42501), Negativfälle in platform-export.test.ts',
+  'public.platform_aftercare':
+    'Eigenes Nachsorge-Abo (ANG-003); Negativfälle in aftercare-cancellation.test.ts',
+  'public.cancel_platform_aftercare':
+    'Nachsorge-Abo kündigen (ANG-003); ohne Recht contract abgewiesen (42501), Negativfälle in aftercare-cancellation.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

@@ -7,6 +7,7 @@ import { renderWithProviders } from '@/test-utils';
 const fetchNachsorge = vi.fn();
 const createNachsorge = vi.fn();
 const deleteNachsorge = vi.fn();
+const cancelNachsorge = vi.fn();
 
 vi.mock('./nachsorge-api', async (importOriginal) => {
   const actual = await importOriginal<typeof NachsorgeApi>();
@@ -16,6 +17,7 @@ vi.mock('./nachsorge-api', async (importOriginal) => {
       fetchNachsorge(id) as Promise<NachsorgeApi.Nachsorgesicht | null>,
     createNachsorge: (...args: unknown[]) => createNachsorge(...args) as Promise<void>,
     deleteNachsorge: (id: string) => deleteNachsorge(id) as Promise<void>,
+    cancelNachsorge: (id: string) => cancelNachsorge(id) as Promise<void>,
   };
 });
 
@@ -46,6 +48,7 @@ describe('Nachsorge-Abo in der Akte (ANG-001)', () => {
     fetchNachsorge.mockReset();
     createNachsorge.mockReset();
     deleteNachsorge.mockReset();
+    cancelNachsorge.mockReset();
   });
 
   it('sagt vor dem Abschluss der Versorgung, was zu tun ist (ANN-268)', async () => {
@@ -88,6 +91,25 @@ describe('Nachsorge-Abo in der Akte (ANG-001)', () => {
     expect(screen.getByText(/Nächster Abo-Monat ab 01.11.2026, 39,00/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Irrtümlich angelegt' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Abo anlegen' })).not.toBeInTheDocument();
+  });
+
+  it('trägt eine Kündigung zum Ende des laufenden Abo-Monats ein (ANG-003)', async () => {
+    fetchNachsorge.mockResolvedValue(sicht({ subscriptions: [LAUFEND] }));
+    cancelNachsorge.mockResolvedValue(undefined);
+    renderWithProviders(<Nachsorgeabo patientId="p1" />);
+    await userEvent.click(await screen.findByRole('button', { name: 'Kündigung eintragen' }));
+    expect(screen.getByText(/endet am 31.10.2026/)).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Kündigung eintragen' }).at(-1)!);
+    expect(cancelNachsorge).toHaveBeenCalledWith('a1');
+  });
+
+  it('bietet nach dem ersten erfassten Monat kein Entfernen mehr an', async () => {
+    fetchNachsorge.mockResolvedValue(
+      sicht({ subscriptions: [{ ...LAUFEND, recorded_months: 1 }] }),
+    );
+    renderWithProviders(<Nachsorgeabo patientId="p1" />);
+    expect(await screen.findByRole('button', { name: 'Kündigung eintragen' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Irrtümlich angelegt' })).toBeNull();
   });
 
   it('nennt eine Kündigung über die Plattform mit ihrer Herkunft', async () => {

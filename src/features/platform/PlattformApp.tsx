@@ -9,8 +9,10 @@ import { Wortmarke } from '@/components/ui/Wortmarke';
 import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
+  aboSchluessel,
   begleitungBeenden,
   einstiegSchluessel,
+  ladeAbo,
   ladeEinstieg,
   ladeMeineVertretungen,
   ueberallAbmelden,
@@ -18,6 +20,7 @@ import {
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
+import { Abo } from './Abo';
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
@@ -29,6 +32,7 @@ import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Uebersicht } from './Uebersicht';
+import { datum } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
 
@@ -196,6 +200,16 @@ export function PlattformApp({
                 bereiche={exportierbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Datenexport zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/abo`}
+            element={
+              <MitZugang
+                bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
+                zugaenge={zugaenge}
+                seite={(z) => <Abo zugang={z} />}
               />
             }
           />
@@ -485,6 +499,12 @@ function Ich({
           </ul>
         </Section>
       ) : null}
+      {/* ANG-003: das Nachsorge-Abo je Behandlungszugang; ohne Abo steht nichts. */}
+      {zugaenge
+        .filter((z) => z.relationship_kind === 'treatment')
+        .map((z) => (
+          <AboKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
+        ))}
       {/* POR-016: Einwilligungen je Zugang - die eigenen und die einer
           rechtlichen Vertretung, nie die einer Begleitung. */}
       {entscheidend.length > 0 ? (
@@ -535,6 +555,41 @@ function Ich({
         </p>
       </Section>
     </>
+  );
+}
+
+/**
+ * Der Abo-Stand unter „Ich" (ANG-003, DSN-001 4.2): seit wann, bis wann, und
+ * der Weg zum Kündigen. Ohne Abo – oder ohne Recht, es zu sehen – bleibt der
+ * Abschnitt weg.
+ */
+function AboKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+  const { data } = useQuery({
+    queryKey: aboSchluessel(zugang.access_id),
+    queryFn: () => ladeAbo(zugang.access_id),
+  });
+  if (!data) return null;
+  const titel = `Nachsorge-Abo${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
+  return (
+    <Section titel={titel} rahmen>
+      <p className="text-ink text-base">
+        {data.state === 'running'
+          ? `Läuft seit ${datum(data.starts_on)}.`
+          : data.state === 'ending'
+            ? `Gekündigt, endet am ${datum(data.ends_on ?? '')}.`
+            : `Beendet am ${datum(data.ends_on ?? '')}.`}
+      </p>
+      <div className="mt-2">
+        <Textlink
+          alleinstehend
+          to={`${PLATTFORM_PFAD}/abo?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
+        >
+          {data.state === 'running' && data.can_cancel
+            ? 'Abo ansehen oder kündigen'
+            : 'Abo ansehen'}
+        </Textlink>
+      </div>
+    </Section>
   );
 }
 

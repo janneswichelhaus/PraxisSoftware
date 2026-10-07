@@ -713,3 +713,61 @@ export async function einstiegBeenden(zugangId: string): Promise<void> {
   if (ergebnis.error)
     throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
 }
+
+// -----------------------------------------------------------------------------
+// Nachsorge-Abo (ANG-003, ANG-004; PROJECT_PRINCIPLES.md 4.6, ADR-009 Punkt 21)
+// -----------------------------------------------------------------------------
+
+const aboSchema = z.object({
+  id: z.string().uuid(),
+  starts_on: z.string(),
+  ends_on: z.string().nullable(),
+  /** Läuft, ist gekündigt und läuft noch, oder ist beendet. */
+  state: z.enum(['running', 'ending', 'ended']),
+  next_month_start: z.string().nullable(),
+  next_month_price_cents: z.number().nullable(),
+  /** Laufend: das Ende, auf das eine Kündigung heute fiele (ANN-270). */
+  cancel_effective_on: z.string().nullable(),
+  cancelled_at: z.string().nullable(),
+  cancelled_via: z.enum(['practice', 'platform']).nullable(),
+  /** Den Knopf haben die Person selbst und ihre rechtliche Vertretung (ANN-273). */
+  can_cancel: z.boolean(),
+});
+export type Nachsorgeabo = z.infer<typeof aboSchema>;
+
+export function aboSchluessel(zugangId: string) {
+  return ['platform-aftercare', zugangId] as const;
+}
+
+/** Das eigene Abo; `null` heißt: keins, oder für diesen Zugang nicht sichtbar. */
+export async function ladeAbo(zugangId: string): Promise<Nachsorgeabo | null> {
+  const satz = 'Ihr Abo konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_aftercare', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(aboSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const kuendigungSchema = z.object({
+  ends_on: z.string(),
+  cancelled_at: z.string(),
+  cancelled_on: z.string(),
+});
+export type Kuendigungsbestaetigung = z.infer<typeof kuendigungSchema>;
+
+/** Der Kündigungsknopf (ANN-272): liefert die Bestätigung mit Zeitpunkt. */
+export async function aboKuendigen(
+  zugangId: string,
+  aboId: string,
+): Promise<Kuendigungsbestaetigung> {
+  const satz = 'Die Kündigung ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('cancel_platform_aftercare', {
+    p_access_id: zugangId,
+    p_subscription_id: aboId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error?.message?.includes('already cancelled'))
+    throw new Error('Ihr Abo ist schon gekündigt.');
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(kuendigungSchema, ergebnis.data, satz);
+}

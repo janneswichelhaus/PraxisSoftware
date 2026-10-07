@@ -151,3 +151,19 @@ export async function deleteMonat(leistungId: string): Promise<void> {
   }
   if (error) throw new Error('Die Erfassung konnte nicht zurückgenommen werden.');
 }
+
+// -----------------------------------------------------------------------------
+// Kündigung (ANG-003)
+// -----------------------------------------------------------------------------
+
+/** Eine Kündigung eintragen, die bei der Praxis einging; liefert das Ende. */
+export async function cancelNachsorge(id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('cancel_aftercare_subscription', {
+    p_subscription_id: id,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('already cancelled')) {
+    throw new Error('Das Abo ist schon gekündigt.');
+  }
+  if (error) throw new Error('Die Kündigung konnte nicht eingetragen werden.');
+}

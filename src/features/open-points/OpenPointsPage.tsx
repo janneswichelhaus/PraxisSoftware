@@ -4,6 +4,7 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import {
   canConcludePatientCare,
   canManageAppointments,
+  canManageInvoicing,
   canManageTasks,
   canReadPatientDirectory,
   canReadTrainingClients,
@@ -11,6 +12,7 @@ import {
   canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
+import { AftercareCancellations } from './AftercareCancellations';
 import { CallsSummary } from './CallsSummary';
 import { ConsentWithdrawals } from './ConsentWithdrawals';
 import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
@@ -30,7 +32,8 @@ const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * da sind, Aufgaben und Wiedervorlagen, offene Erstaufnahmen, die Anrufe für
  * morgen, Wartelisteneinträge, die lange keiner angefasst hat (ABN-018), und
  * Verordnungen, die bald enden, seit POR-011 die Terminwünsche von der
- * Plattform und seit POR-016 die Widerrufe über die Plattform. Jede Liste hat ihren eigenen
+ * Plattform, seit POR-016 die Widerrufe und seit ANG-003 die Kündigungen des
+ * Nachsorge-Abos über die Plattform. Jede Liste hat ihren eigenen
  * Lesepfad; was eine Rolle nicht sehen darf, fragt die Seite gar nicht erst ab
  * - verbindlich prüft der Server (ADR-004).
  *
@@ -64,6 +67,9 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {canReadPatientDirectory(user.roles) || canReadTrainingClients(user.roles) ? (
           <ConsentWithdrawals />
         ) : null}
+        {/* ANG-003: Kündigungen des Nachsorge-Abos über die Plattform
+            (owner, office - wer das Abo führt). */}
+        {canManageInvoicing(user.roles) ? <AftercareCancellations /> : null}
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
         {canManageAppointments(user.roles) ? <WaitlistReview timeZone={timeZone} /> : null}
         {canReadTreatmentBases(user.roles) ? <EndingPrescriptions timeZone={timeZone} /> : null}

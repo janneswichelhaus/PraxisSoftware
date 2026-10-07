@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 96 Einträge):
+Zusatz `Prüfpaket` (heute 98 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3274,3 +3274,27 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `care_open` in `app.aftercare_month_blocker` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; `MONATSHINDERNIS` in `src/features/billing/nachsorge-api.ts`. Geprüft in `supabase/tests/aftercare-months.test.ts`.
 
 **Änderungspfad.** Abo ruht während der Behandlung: Zeitraum der Behandlung am Abo und Prüfung je Monat · Aufwand `mittel`.
+
+### ANN-272 — Das Abo wird in der Praxis geschlossen; gekündigt wird über einen Knopf nach dem Muster des § 312k BGB
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); B13 für die Bestätigung per Mail
+
+**Annahme.** Das Nachsorge-Abo wird im Abschlussgespräch geschlossen und von owner oder Büro in der Akte angelegt; einen Abschluss über die Plattform gibt es nicht. Gekündigt wird über „Abo kündigen“ unter „Ich“, eine Seite zur Bestätigung mit dem Enddatum und „Jetzt kündigen“; danach steht sofort die Bestätigung mit Datum und Uhrzeit da, zum Ausdrucken oder Speichern, und dauerhaft unter „Ich“. Die Praxis kann eine Kündigung per Telefon oder Brief eintragen. Kündigungen über die Plattform stehen 14 Tage in Offene Punkte.
+
+**Begründung.** § 312k BGB verlangt den Knopf nur, wenn sich der Vertrag auf der Website schließen lässt; die Praxis baut ihn trotzdem, weil „monatlich kündbar mit Kündigungsknopf“ die Vorgabe ist (Roadmap) und der Weg einfach sein soll. Ein Abschluss über die Plattform brächte Widerrufsbelehrung und Informationspflichten mit sich (`IDEA-ANG-004`: „ein eigenes Feature, kein Knopf“). Die Bestätigung in Textform per Mail hängt an B13; bis dahin ist die Seite zum Speichern der dauerhafte Datenträger. Nur die ordentliche Kündigung; eine außerordentliche läuft über die Praxis. Unsicher: ob ein Vertrag beim Hausbesuch ein Widerrufsrecht nach § 312g BGB auslöst, das eine Belehrung im Gespräch verlangt.
+
+**Anker.** `public.cancel_platform_aftercare`, `public.list_platform_aftercare_cancellations` in `supabase/migrations/20261014120000_ang_003_aftercare_cancellation.sql`; `src/features/platform/Abo.tsx`. Geprüft in `supabase/tests/aftercare-cancellation.test.ts` und `src/features/platform/Abo.test.tsx`.
+
+**Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung · Aufwand `groß`. Bestätigung per Mail: Versand mit B13 · Aufwand `klein`.
+
+### ANN-273 — Kündigen dürfen die Person selbst und ihre rechtliche Vertretung mit Vermögenssorge, nie die Begleitung
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
+
+**Annahme.** Den Kündigungsknopf haben der eigene Zugang und eine rechtliche Vertretung mit nachgewiesener Vermögenssorge (`finance_scope`). Den Abo-Stand sieht, wer Rechnungen sieht (Recht `billing`); eine Begleitung mit Einwilligung zu Rechnungen sieht ihn also, kündigt aber nicht. Die Kündigung trägt Zugang, Art und bei einer Vertretung deren Namen.
+
+**Begründung.** Eine Kündigung ist eine Willenserklärung über einen entgeltlichen Vertrag – Vermögenssorge, nicht Gesundheitssorge. ADR-023 Punkt 13 lässt die Begleitung lesen und Wünsche schreiben, aber keine Erklärungen für die Person abgeben. Der Name der Vertretung bleibt am Abo, weil ihr Konto nach 30 Tagen fällt (ADR-023 Punkt 5). Unsicher: ob eine Vorsorgevollmacht ohne ausdrückliche Vermögenssorge genügt.
+
+**Anker.** Recht `contract` in `app.platform_access_allows` in `supabase/migrations/20261014120000_ang_003_aftercare_cancellation.sql`. Geprüft in `supabase/tests/aftercare-cancellation.test.ts`.
+
+**Änderungspfad.** Andere Regel: der eine Zweig in `app.platform_access_allows` · Aufwand `klein`.

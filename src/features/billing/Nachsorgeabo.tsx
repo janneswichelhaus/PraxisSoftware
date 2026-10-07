@@ -8,6 +8,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import {
+  cancelNachsorge,
   createNachsorge,
   deleteNachsorge,
   fetchNachsorge,
@@ -99,12 +100,45 @@ function AboZeile({ abo, patientId }: { abo: Abo; patientId: string }) {
       ) : null}
       {/* Eine Fehlanlage geht nur ohne erfassten Monat; danach endet das
           Abo nur durch Kündigung (ANG-002). */}
-      {abo.ends_on === null && abo.recorded_months === 0 ? (
-        <div className="mt-1">
-          <Entfernen id={abo.id} patientId={patientId} beginn={abo.starts_on} />
+      {abo.ends_on === null ? (
+        <div className="mt-1 flex flex-wrap gap-2">
+          {abo.current_month_end ? (
+            <Kuendigen id={abo.id} patientId={patientId} ende={abo.current_month_end} />
+          ) : null}
+          {abo.recorded_months === 0 ? (
+            <Entfernen id={abo.id} patientId={patientId} beginn={abo.starts_on} />
+          ) : null}
         </div>
       ) : null}
     </li>
+  );
+}
+
+/**
+ * Eine Kündigung eintragen, die per Telefon oder Brief kam (ANG-003). Sie
+ * wirkt zum Ende des laufenden Abo-Monats (ANN-270); die Rückfrage nennt das
+ * Datum, bevor sie entsteht.
+ */
+function Kuendigen({ id, patientId, ende }: { id: string; patientId: string; ende: string }) {
+  const queryClient = useQueryClient();
+  const kuendigen = useMutation({
+    mutationFn: () => cancelNachsorge(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: nachsorgeSchluessel(patientId) }),
+  });
+  return (
+    <Rueckfrage
+      ausloeser="Kündigung eintragen"
+      ausloeserVariante="secondary"
+      ausloeserGroesse="kompakt"
+      bestaetigen="Kündigung eintragen"
+      bestaetigenLaeuft="Wird eingetragen …"
+      fehler={kuendigen.isError ? kuendigen.error.message : undefined}
+      onBestaetigen={() => kuendigen.mutateAsync()}
+      onAbbrechen={() => kuendigen.reset()}
+    >
+      Die Kündigung gilt als heute eingegangen. Das Abo endet am {formatDate(ende)}, dem Ende des
+      laufenden Abo-Monats.
+    </Rueckfrage>
   );
 }
 
