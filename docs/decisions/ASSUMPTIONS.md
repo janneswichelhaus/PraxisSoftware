@@ -3575,3 +3575,39 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `public.set_exercise_archived`, `public.set_exercise_variant_archived`, `public.delete_exercise` und `public.delete_exercise_variant` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Datenklasse `betriebsdaten` in `public.retention_assignments`.
 
 **Änderungspfad.** Löschen auch mit Abhängigen: Fremdschlüssel auf `cascade` und eine Rückfrage, was mitgeht · Aufwand `mittel`.
+
+### ANN-297 — Ein Plan in einer Tabelle für beide Bereiche, genau ein Verhältnis
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
+
+**Annahme.** Übungspläne beider Leistungsbereiche stehen in **einer** Tabelle `exercise_plans` (Positionen in `exercise_plan_items`). Ein Plan trägt `service_area` und hängt an **genau einem** Verhältnis: an der Akte (`therapy`, `patient_id`) oder am Trainingsverhältnis (`training`, `training_relationship_id`) – eine Constraint verbietet beides und keines. Datenklasse und Frist werden je Zeile am Bereich zugeordnet: Behandlungspläne sind Patientenakte, Trainingspläne Trainingsverhältnis; beide fallen mit ihrem Verhältnis.
+
+**Begründung.** ADR-022 Punkt 3 hat dieselbe Form für den Kalender gewählt; die Trennung erzwingt die Constraint, nicht eine zweite Tabelle (ADR-021 Punkt 1: „erzwingt“). Zwei Tabellen verdoppelten jede Funktion für Entwurf, Schnappschuss, Fassung und Wiedervorlage, ohne etwas zu schützen, das Policy und Funktionen je Bereich nicht schon schützen. Der Retention Schedule nennt „Therapiepläne“ ausdrücklich in der Klasse der Patientenakte (ADR-008). Unsicher: ob die Datenschutzprüfung zwei Tabellen als die sauberere Trennung verlangt.
+
+**Anker.** Constraint `exercise_plans_one_relationship` und die vier Zeilen in `public.retention_assignments` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Zwei Tabellen: `training_exercise_plans` abspalten, Funktionen je Bereich verdoppeln, Daten umziehen · Aufwand `mittel`.
+
+### ANN-298 — Behandlungspläne schreiben Therapeut:innen, Trainingspläne owner und Trainingsbetreuung; das Büro liest nur Behandlungspläne
+
+Praxisprozess · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Pläne), Datenschutzprüfung (B2)
+
+**Annahme.** Behandlungspläne stellen therapist und team_lead zusammen, weisen sie zu, steigern, verlängern und beenden sie; lesen dürfen dazu owner und das Büro. Trainingspläne lesen und schreiben owner und die Trainingsbetreuung; das Büro sieht sie nicht. Ein Plan des anderen Bereichs ist für jede Rolle „nicht gefunden“.
+
+**Begründung.** Ein Behandlungsplan ist Teil der Behandlung: Schreiben folgt der Behandlungsdokumentation (`app.can_write_treatment_note`, owner ohne Therapierolle schreibt nicht), Lesen ADR-004 Punkt 3 (das Büro liest alle klinischen Inhalte der Akte). Im Training öffnet ADR-021 Punkt 10 dem Büro **nur** das Protokoll; ein Plan gehört nicht dazu. Die Trainingsrollen folgen Profil und Protokoll (ANN-184, ANN-287). Kein Durchgriff nach ADR-021 Punkt 6.
+
+**Anker.** `app.can_read_exercise_plans(text)` und `app.can_write_exercise_plans(text)` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `canReadExercisePlans` in `src/features/session/types.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Andere Rollen: die Listen in beiden Funktionen und in `canReadExercisePlans` ändern · Aufwand `klein`.
+
+### ANN-299 — Dosierung je Position: Sätze, Wiederholungen oder Dauer, Last und Tempo frei
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Position trägt Sätze (1–20), **entweder** Wiederholungen von–bis (1–100; gleich für eine feste Zahl) **oder** eine Dauer in Sekunden (1–3600), dazu Last und Tempo als freien Text (je höchstens 40 Zeichen, etwa „Theraband rot“), eine Pause in Sekunden (0–600), das Kennzeichen „doppelte Progression“ (nur mit Wiederholungsbereich und Last) und einen Hinweis an die Person (höchstens 500 Zeichen). Die Einheiten je Woche (1–14) stehen am Plan. Höchstens 30 Positionen je Plan.
+
+**Begründung.** Die Felder decken die Achsen aus IDEA-TRN-004 ab, die eine Dosis sind (Last, Wiederholungen, Sätze, Tempo, Dichte, Frequenz); die übrigen Achsen ändern die Variante. Last als Text, weil Bänder, Rucksack und Körpergewicht keine Zahl in kg sind. Die doppelte Progression (IDEA-TRN-007) braucht einen Bereich und eine Last, sonst gibt es nichts zu steigern.
+
+**Anker.** Spalten und Prüfungen von `public.exercise_plan_items` und `public.save_exercise_plan_item` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `src/features/exercise-plans/dosierung.ts`.
+
+**Änderungspfad.** Andere Grenzen oder Felder: Constraint, Funktion und Formular `src/features/exercise-plans/PositionFormular.tsx` · Aufwand `klein`.

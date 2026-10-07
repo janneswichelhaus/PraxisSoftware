@@ -24,6 +24,14 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+-- Zugewiesene Plaene sind unveraenderlich und werden nie einzeln geloescht
+-- (UEB-004, ANN-300); wie bei der Preisliste hebt nur der Seed die Sperre auf.
+-- Sie muessen vor der Bibliothek fallen: Positionen zeigen auf Varianten.
+alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
+alter table public.exercise_plans      disable trigger exercise_plans_guard;
+delete from public.exercise_plans;
+alter table public.exercise_plans      enable trigger exercise_plans_guard;
+alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
 delete from public.exercise_variant_links;
 delete from public.exercise_variants;
 delete from public.exercises;

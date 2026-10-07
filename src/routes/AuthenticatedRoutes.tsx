@@ -79,6 +79,7 @@ import { CheckupPage } from '@/features/fleet/CheckupPage';
 import { BreakdownPage } from '@/features/fleet/BreakdownPage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
+import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { TourenPage } from '@/features/tours/TourenPage';
@@ -105,6 +106,7 @@ import {
   canManageAppointments,
   canManageStaffMasterData,
   canReadExerciseLibrary,
+  canReadExercisePlans,
   canReadPatientDirectory,
   canReadTrainingClients,
   canSeeCalendar,
@@ -228,6 +230,10 @@ export function AuthenticatedRoutes({
                     ))}
                   </Route>
                   <Route path="/patienten/:patientId/bearbeiten" element={<EditPatientPage />} />
+                  {/* UEB-EPIC-002: ein Übungsplan der Akte - neben dem Rahmen, wie
+                  die Formulare (UX-009). Lesen alle vier Praxisrollen, schreiben
+                  therapist und team_lead (ANN-298); verbindlich prüft der Server. */}
+                  <Route path="/patienten/:patientId/plaene/:planId" element={<PlanPage />} />
                   {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
                   <Route
                     path="/patienten/:patientId/befund/erheben"
@@ -554,6 +560,11 @@ export function AuthenticatedRoutes({
                     path="/training/:relationshipId"
                     element={<TrainingClientPage user={user} />}
                   />
+                  {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung,
+                  nicht das Büro (ANN-298). Verbindlich prüft der Server. */}
+                  {canReadExercisePlans(user.roles, 'training') ? (
+                    <Route path="/training/:relationshipId/plaene/:planId" element={<PlanPage />} />
+                  ) : null}
                 </>
               ) : null}
               <Route path="*" element={<Navigate to="/" replace />} />
