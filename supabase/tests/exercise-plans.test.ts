@@ -6,6 +6,7 @@ import {
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  planeEntfernen,
   resetDatabase,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
@@ -193,13 +194,7 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
   }, 120_000);
 
   beforeEach(async () => {
-    await asPostgres(`
-      alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
-      alter table public.exercise_plans disable trigger exercise_plans_guard;
-      delete from public.exercise_plans;
-      alter table public.exercise_plans enable trigger exercise_plans_guard;
-      alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
-    `);
+    await planeEntfernen();
   });
 
   describe('Zusammenstellen', () => {
@@ -662,13 +657,7 @@ describe('Übungspläne: Zuweisen und Schnappschuss (UEB-005)', () => {
   }, 120_000);
 
   beforeEach(async () => {
-    await asPostgres(`
-      alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
-      alter table public.exercise_plans disable trigger exercise_plans_guard;
-      delete from public.exercise_plans;
-      alter table public.exercise_plans enable trigger exercise_plans_guard;
-      alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
-    `);
+    await planeEntfernen();
   });
 
   it('weist zu: Laufzeit ab heute, Stempel an der Zeile', async () => {
@@ -833,13 +822,7 @@ describe('Übungspläne: Progression von Hand (UEB-006)', () => {
   }, 120_000);
 
   beforeEach(async () => {
-    await asPostgres(`
-      alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
-      alter table public.exercise_plans disable trigger exercise_plans_guard;
-      delete from public.exercise_plans;
-      alter table public.exercise_plans enable trigger exercise_plans_guard;
-      alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
-    `);
+    await planeEntfernen();
     vorige = await planAnlegen();
     await asUserCommitted(users.therapist, PLAN_SPEICHERN, [vorige, 'Heimprogramm Knie', 2]);
     kniebeuge = await positionAnlegen(vorige, VARIANTE.kniebeugeGelaender, {
@@ -1072,5 +1055,189 @@ describe('Übungspläne: Progression von Hand (UEB-006)', () => {
     await expect(neueFassung(entwurf)).rejects.toThrow(/only an assigned/);
     await expect(neueFassung(vorige, users.trainer)).rejects.toThrow(/exercise plan not found/);
     await expect(neueFassung(vorige, users.office)).rejects.toThrow(/not allowed/);
+  });
+});
+
+const VERLAENGERN = 'select public.extend_exercise_plan($1::uuid, $2::date)';
+const BEENDEN = 'select public.end_exercise_plan($1::uuid)';
+const FAELLIG = 'select public.list_due_exercise_plans() as liste';
+
+interface Faellig {
+  today: string;
+  plans: {
+    id: string;
+    service_area: string;
+    given_name: string;
+    title: string;
+    runs_until: string;
+    follow_up_draft: boolean;
+  }[];
+}
+
+async function faellig(konto: string): Promise<Faellig | null> {
+  const { rows } = await asUser<{ liste: Faellig | null }>(konto, FAELLIG);
+  return rows[0]!.liste;
+}
+
+/** Verschiebt die Laufzeit eines zugewiesenen Plans in die Vergangenheit - nur für den Test. */
+async function laufzeitSetzen(plan: string, von: number, bis: number): Promise<void> {
+  await asPostgres(
+    `alter table public.exercise_plans disable trigger exercise_plans_guard;
+     update public.exercise_plans
+        set runs_from = app.training_today(organization_id) + ${von},
+            runs_until = app.training_today(organization_id) + ${bis},
+            original_runs_until = app.training_today(organization_id) + ${bis}
+      where id = '${plan}';
+     alter table public.exercise_plans enable trigger exercise_plans_guard;`,
+  );
+}
+
+describe('Übungspläne: Laufzeit und Wiedervorlage (UEB-007)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await planeEntfernen();
+  });
+
+  async function zugewiesen(
+    bereich: 'therapy' | 'training' = 'therapy',
+    tage = 42,
+  ): Promise<string> {
+    const konto = bereich === 'therapy' ? users.therapist : users.trainer;
+    const plan = await planAnlegen(bereich);
+    await positionAnlegen(plan, VARIANTE.rudernGelb, {}, konto);
+    await zuweisen(plan, tage, konto);
+    return plan;
+  }
+
+  it('legt sieben Tage vor dem Ende wieder vor - und nach dem Ende weiter (ANN-302)', async () => {
+    const spaeter = await zugewiesen('therapy', 8);
+    const bald = await zugewiesen('therapy', 7);
+    const vorbei = await zugewiesen('therapy', 30);
+    await laufzeitSetzen(vorbei, -40, -1);
+
+    const liste = (await faellig(users.therapist))!;
+    expect(liste.plans.map((p) => p.id)).toEqual([vorbei, bald]);
+    expect(liste.plans[0]).toMatchObject({ service_area: 'therapy', given_name: 'Erika' });
+    expect(liste.plans.map((p) => p.id)).not.toContain(spaeter);
+
+    const l = await asUser<{ liste: { plans: { id: string; review_due: boolean }[] } }>(
+      users.therapist,
+      LISTE,
+      ['therapy', patients.erika],
+    );
+    const due = Object.fromEntries(l.rows[0]!.liste.plans.map((p) => [p.id, p.review_due]));
+    expect(due).toEqual({ [spaeter]: false, [bald]: true, [vorbei]: true });
+    expect((await planLesen(bald))!).toMatchObject({ review_due: true });
+  });
+
+  it('verlängert: das erste Ende bleibt festgehalten, die Wiedervorlage entfällt', async () => {
+    const plan = await zugewiesen('therapy', 5);
+    await asUserCommitted(users.therapist, VERLAENGERN, [plan, await praxistag(60)]);
+    const p = (await planLesen(plan))!;
+    expect(p).toMatchObject({
+      status: 'assigned',
+      runs_until: await praxistag(60),
+      original_runs_until: await praxistag(5),
+    });
+    expect((await faellig(users.therapist))!.plans).toEqual([]);
+    const { rows } = await asPostgres<{ extended_by: string }>(
+      'select extended_by from public.exercise_plans where id = $1',
+      [plan],
+    );
+    expect(rows[0]!.extended_by).toBe(users.therapist);
+  });
+
+  it.each([
+    ['nicht später als bisher', 5],
+    ['länger als 26 Wochen ab heute', 183],
+  ])('weist eine Verlängerung ab: %s', async (_fall, tage) => {
+    const plan = await zugewiesen('therapy', 5);
+    await expect(
+      asUserCommitted(users.therapist, VERLAENGERN, [plan, await praxistag(tage)]),
+    ).rejects.toThrow(/runs until is invalid/);
+  });
+
+  it('beendet einen Plan - danach ist nichts mehr zu ändern', async () => {
+    const plan = await zugewiesen('therapy', 3);
+    await asUserCommitted(users.therapist, BEENDEN, [plan]);
+    expect((await planLesen(plan))!.status).toBe('ended');
+    expect((await faellig(users.therapist))!.plans).toEqual([]);
+    await expect(asUserCommitted(users.therapist, BEENDEN, [plan])).rejects.toThrow(
+      /only an assigned/,
+    );
+    await expect(
+      asUserCommitted(users.therapist, VERLAENGERN, [plan, await praxistag(20)]),
+    ).rejects.toThrow(/only an assigned/);
+    await expect(
+      asUserCommitted(users.therapist, 'select public.create_exercise_plan_version($1::uuid)', [
+        plan,
+      ]),
+    ).rejects.toThrow(/only an assigned/);
+    await expect(
+      asPostgres(`update public.exercise_plans set status = 'assigned' where id = $1`, [plan]),
+    ).rejects.toThrow(/cannot be changed/);
+  });
+
+  it('beantwortet die Wiedervorlage mit einer zugewiesenen neuen Fassung, nicht mit einem Entwurf', async () => {
+    const plan = await zugewiesen('therapy', 3);
+    const { rows } = await asUserCommitted<{ id: string }>(
+      users.therapist,
+      'select public.create_exercise_plan_version($1::uuid) as id',
+      [plan],
+    );
+    expect((await faellig(users.therapist))!.plans).toEqual([
+      expect.objectContaining({ id: plan, follow_up_draft: true }),
+    ]);
+    await zuweisen(rows[0]!.id, 42);
+    expect((await faellig(users.therapist))!.plans).toEqual([]);
+  });
+
+  it('zeigt je Bereich nur die eigenen Pläne; das Büro bekommt keine Liste (ANN-302)', async () => {
+    const behandlung = await zugewiesen('therapy', 2);
+    const training = await zugewiesen('training', 2);
+    expect((await faellig(users.therapist))!.plans.map((p) => p.id)).toEqual([behandlung]);
+    expect((await faellig(users.trainer))!.plans.map((p) => p.id)).toEqual([training]);
+    expect(await faellig(users.office)).toBeNull();
+
+    await expect(asUserCommitted(users.trainer, BEENDEN, [behandlung])).rejects.toThrow(
+      /exercise plan not found/,
+    );
+    await expect(
+      asUserCommitted(users.therapist, VERLAENGERN, [training, await praxistag(20)]),
+    ).rejects.toThrow(/exercise plan not found/);
+    await expect(asUserCommitted(users.office, BEENDEN, [behandlung])).rejects.toThrow(
+      /not allowed/,
+    );
+  });
+
+  it('protokolliert die Abweisung der Liste (access.denied)', async () => {
+    await erwarteAbgewiesenenLeseversuch(
+      users.office,
+      `select l from public.list_due_exercise_plans() l where l is not null`,
+      [],
+      'exercise_plans.read',
+    );
+  });
+
+  it('beendet einen Trainingsplan auch nach dem Vertragsende, verlängert ihn aber nicht', async () => {
+    const plan = await zugewiesen('training', 20);
+    await asPostgres(
+      `update public.training_relationships set contract_ended_on = current_date, status = 'inactive' where id = $1`,
+      [trainingRelationships.tina],
+    );
+    try {
+      await expect(
+        asUserCommitted(users.trainer, VERLAENGERN, [plan, await praxistag(40)]),
+      ).rejects.toThrow(/training relationship has ended/);
+      await asUserCommitted(users.trainer, BEENDEN, [plan]);
+    } finally {
+      await asPostgres(
+        `update public.training_relationships set contract_ended_on = null, status = 'active' where id = $1`,
+        [trainingRelationships.tina],
+      );
+    }
   });
 });

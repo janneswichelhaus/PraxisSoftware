@@ -75,6 +75,8 @@ const planSchema = z.object({
   created_by_name: z.string().nullable(),
   today: z.string(),
   can_write: z.boolean(),
+  /** UEB-007: Die Wiedervorlage steht an (ANN-302) - der Server rechnet. */
+  review_due: z.boolean(),
   relationship_open: z.boolean(),
   previous: z
     .object({
@@ -104,7 +106,7 @@ const planZeileSchema = z.object({
   created_at: z.string(),
   item_count: z.coerce.number(),
   /** UEB-007: Die Wiedervorlage steht an (ANN-302) - der Server rechnet. */
-  review_due: z.boolean().optional(),
+  review_due: z.boolean(),
 });
 
 export type PlanZeile = z.infer<typeof planZeileSchema>;
@@ -208,7 +210,12 @@ function meldung(error: Fehler, rest: string): Error {
       'not a single step',
       'Wiederholungen und Dauer zu tauschen ist kein Schritt – bitte die Übung entfernen und neu hinzufügen.',
     ],
-    ['runs until is invalid', 'Bitte ein Ende zwischen heute und 26 Wochen ab heute wählen.'],
+    [
+      'runs until is invalid',
+      'Bitte ein Ende zwischen heute und 26 Wochen ab heute wählen – beim Verlängern später als bisher.',
+    ],
+    ['can be extended', 'Nur ein zugewiesener Plan lässt sich verlängern.'],
+    ['can be ended', 'Nur ein zugewiesener Plan lässt sich beenden.'],
   ];
   const treffer = saetze.find(([schluessel]) => text.includes(schluessel));
   return new Error(treffer ? treffer[1] : rest);
@@ -334,4 +341,49 @@ export async function createVersion(planId: string): Promise<string> {
   const rest = 'Die neue Fassung konnte nicht angelegt werden.';
   const data = await rufe('create_exercise_plan_version', { p_plan_id: planId }, rest);
   return antwort(z.string(), data, rest);
+}
+
+/** UEB-007: verlängern - der Inhalt bleibt (ANN-302). */
+export async function extendPlan(planId: string, laeuftBis: string): Promise<void> {
+  await rufe(
+    'extend_exercise_plan',
+    { p_plan_id: planId, p_runs_until: laeuftBis },
+    'Der Plan konnte nicht verlängert werden.',
+  );
+}
+
+/** UEB-007: beenden - ein zugewiesener Plan wird nie gelöscht (ANN-300). */
+export async function endPlan(planId: string): Promise<void> {
+  await rufe('end_exercise_plan', { p_plan_id: planId }, 'Der Plan konnte nicht beendet werden.');
+}
+
+const faelligSchema = z.object({
+  today: z.string(),
+  plans: z.array(
+    z.object({
+      id: z.string(),
+      service_area: z.enum(BEREICHE),
+      relationship_id: z.string(),
+      given_name: z.string(),
+      family_name: z.string(),
+      title: z.string(),
+      runs_until: z.string(),
+      follow_up_draft: z.boolean(),
+    }),
+  ),
+});
+
+export type Faellige = z.infer<typeof faelligSchema>;
+
+export const FAELLIG_SCHLUESSEL = [...PLAENE_SCHLUESSEL, 'faellig'] as const;
+
+/** UEB-007: Pläne, deren Wiedervorlage ansteht - nur für schreibende Rollen (ANN-302). */
+export async function fetchFaellige(): Promise<Faellige | null> {
+  const satz = 'Die auslaufenden Pläne konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_due_exercise_plans')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error(satz);
+  return antwort(faelligSchema.nullable(), data ?? null, satz);
 }

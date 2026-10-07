@@ -16,6 +16,8 @@ import {
   assignPlan,
   createVersion,
   deletePosition,
+  endPlan,
+  extendPlan,
   discardPlan,
   fetchPlan,
   movePosition,
@@ -503,9 +505,18 @@ function Zuweisung({ plan }: { plan: Plan }) {
 function Laufzeit({ plan }: { plan: Plan }) {
   const abgelaufen =
     plan.status === 'assigned' && plan.runs_until !== null && plan.runs_until < plan.today;
+  const entscheiden = plan.can_write && plan.status === 'assigned';
   return (
-    <Section titel="Laufzeit" rahmen>
-      <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+    <Section titel="Laufzeit">
+      {plan.review_due && entscheiden ? (
+        <Statusmeldung ton="warnung" className="mb-3">
+          {abgelaufen
+            ? `Die Laufzeit ist am ${formatDate(plan.runs_until)} abgelaufen.`
+            : `Die Laufzeit endet am ${formatDate(plan.runs_until)}.`}{' '}
+          Bitte entscheiden: verlängern, als neue Fassung ändern oder beenden.
+        </Statusmeldung>
+      ) : null}
+      <dl className="rounded-card border-line bg-surface grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 border p-4 text-sm">
         <dt className="text-ink-muted">Zugewiesen</dt>
         <dd>
           {formatDate(plan.runs_from)}
@@ -537,7 +548,73 @@ function Laufzeit({ plan }: { plan: Plan }) {
           </>
         ) : null}
       </dl>
+      {entscheiden ? <Entscheiden plan={plan} /> : null}
     </Section>
+  );
+}
+
+/** Verlängern oder beenden (UEB-007, ANN-302) - ändern geht über „Neue Fassung". */
+function Entscheiden({ plan }: { plan: Plan }) {
+  const queryClient = useQueryClient();
+  const spaetestens = tagPlus(plan.today, LAUFZEIT_HOECHSTENS_TAGE);
+  const ab = plan.runs_until && plan.runs_until > plan.today ? plan.runs_until : plan.today;
+  const vorschlag = tagPlus(ab, LAUFZEIT_VORSCHLAG_TAGE);
+  const [bis, setBis] = useState(vorschlag > spaetestens ? spaetestens : vorschlag);
+  const [fehler, setFehler] = useState<string | undefined>();
+  const fertig = () => queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
+  const verlaengern = useMutation({
+    mutationFn: () => extendPlan(plan.id, bis),
+    onSuccess: fertig,
+  });
+  const beenden = useMutation({ mutationFn: () => endPlan(plan.id), onSuccess: fertig });
+
+  return (
+    <div className="mt-4 flex max-w-xl flex-col gap-4">
+      {plan.relationship_open ? (
+        <form
+          noValidate
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            if (!bis || (plan.runs_until !== null && bis <= plan.runs_until) || bis > spaetestens) {
+              setFehler('Bitte ein Ende nach dem bisherigen wählen, höchstens 26 Wochen ab heute.');
+              return;
+            }
+            setFehler(undefined);
+            if (!verlaengern.isPending) verlaengern.mutate();
+          }}
+        >
+          <Field
+            label="Verlängern bis"
+            type="date"
+            min={plan.runs_until ?? plan.today}
+            max={spaetestens}
+            className="max-w-48"
+            value={bis}
+            error={fehler}
+            onChange={(event) => setBis(event.target.value)}
+          />
+          <Button type="submit" variant="secondary" disabled={verlaengern.isPending}>
+            {verlaengern.isPending ? 'Wird verlängert …' : 'Verlängern'}
+          </Button>
+        </form>
+      ) : null}
+      {verlaengern.isError ? (
+        <Statusmeldung ton="fehler">{verlaengern.error.message}</Statusmeldung>
+      ) : null}
+      <div>
+        <Rueckfrage
+          ausloeser="Plan beenden"
+          ausloeserVariante="quiet"
+          bestaetigen="Beenden"
+          bestaetigenLaeuft="Wird beendet …"
+          fehler={beenden.error?.message}
+          onBestaetigen={() => beenden.mutateAsync()}
+        >
+          <p>Den Plan beenden? Er bleibt lesbar, läuft aber nicht weiter.</p>
+        </Rueckfrage>
+      </div>
+    </div>
   );
 }
 

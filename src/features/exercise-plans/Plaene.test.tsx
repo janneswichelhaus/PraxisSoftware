@@ -16,6 +16,9 @@ const deletePosition = vi.fn();
 const discardPlan = vi.fn();
 const assignPlan = vi.fn();
 const createVersion = vi.fn();
+const extendPlan = vi.fn();
+const endPlan = vi.fn();
+const fetchFaellige = vi.fn();
 const fetchBibliothek = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -32,6 +35,9 @@ vi.mock('./api', async (importOriginal) => {
     discardPlan: (...a: unknown[]) => discardPlan(...a) as Promise<void>,
     assignPlan: (...a: unknown[]) => assignPlan(...a) as Promise<void>,
     createVersion: (...a: unknown[]) => createVersion(...a) as Promise<string>,
+    extendPlan: (...a: unknown[]) => extendPlan(...a) as Promise<void>,
+    endPlan: (...a: unknown[]) => endPlan(...a) as Promise<void>,
+    fetchFaellige: () => fetchFaellige() as Promise<Api.Faellige | null>,
   };
 });
 
@@ -45,6 +51,7 @@ vi.mock('@/features/exercises/api', async (importOriginal) => {
 
 const { PlanAbschnitt } = await import('./PlanAbschnitt');
 const { PlanPage } = await import('./PlanPage');
+const { PlanWiedervorlage } = await import('./Wiedervorlage');
 
 export const BIBLIOTHEK: BibliothekApi.Bibliothek = {
   can_manage: false,
@@ -155,6 +162,7 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
     created_by_name: 'Anna Beispiel',
     today: '2026-10-07',
     can_write: true,
+    review_due: false,
     relationship_open: true,
     previous: null,
     items: [position()],
@@ -174,6 +182,9 @@ beforeEach(() => {
     discardPlan,
     assignPlan,
     createVersion,
+    extendPlan,
+    endPlan,
+    fetchFaellige,
     fetchBibliothek,
   ]) {
     f.mockReset();
@@ -188,6 +199,8 @@ beforeEach(() => {
   discardPlan.mockResolvedValue(undefined);
   assignPlan.mockResolvedValue(undefined);
   createVersion.mockResolvedValue('p2');
+  extendPlan.mockResolvedValue(undefined);
+  endPlan.mockResolvedValue(undefined);
 });
 
 describe('Dosierung in Worten (ANN-299)', () => {
@@ -245,6 +258,7 @@ describe('PlanAbschnitt (UEB-004)', () => {
           ended_at: null,
           created_at: '2026-10-07T08:00:00Z',
           item_count: 2,
+          review_due: false,
         },
       ],
     });
@@ -509,5 +523,90 @@ describe('PlanPage: Progression von Hand (UEB-006)', () => {
     await user.click(screen.getByLabelText('Schwerer'));
     await user.selectOptions(screen.getByLabelText('Achse'), 'last');
     expect(screen.getByText(/keine Variante verbunden/)).toBeInTheDocument();
+  });
+});
+
+describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
+  const auslaufend = () =>
+    plan({
+      status: 'assigned',
+      runs_from: '2026-08-27',
+      runs_until: '2026-10-10',
+      original_runs_until: '2026-10-10',
+      review_due: true,
+    });
+
+  it('fordert zur Entscheidung auf und verlängert um sechs Wochen ab dem bisherigen Ende', async () => {
+    fetchPlan.mockResolvedValue(auslaufend());
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByText(/Die Laufzeit endet am/)).toHaveTextContent(
+      'Bitte entscheiden: verlängern, als neue Fassung ändern oder beenden.',
+    );
+    expect(screen.getByLabelText('Verlängern bis')).toHaveValue('2026-11-21');
+    await user.click(screen.getByRole('button', { name: 'Verlängern' }));
+    await waitFor(() => expect(extendPlan).toHaveBeenCalledWith('p1', '2026-11-21'));
+  });
+
+  it('beendet nach Rückfrage', async () => {
+    fetchPlan.mockResolvedValue(auslaufend());
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    await user.click(await screen.findByRole('button', { name: 'Plan beenden' }));
+    await user.click(screen.getByRole('button', { name: 'Beenden' }));
+    await waitFor(() => expect(endPlan).toHaveBeenCalledWith('p1'));
+  });
+
+  it('bietet ohne Schreibrecht nichts zu entscheiden an (ANN-298)', async () => {
+    fetchPlan.mockResolvedValue({ ...auslaufend(), can_write: false });
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByText('Läuft bis')).toBeInTheDocument();
+    expect(screen.queryByText(/Bitte entscheiden/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verlängern' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Plan beenden' })).not.toBeInTheDocument();
+  });
+
+  it('listet auslaufende Pläne der eigenen Bereiche, abgelaufene gekennzeichnet', async () => {
+    fetchFaellige.mockResolvedValue({
+      today: '2026-10-07',
+      plans: [
+        {
+          id: 'p1',
+          service_area: 'therapy',
+          relationship_id: 'pat1',
+          given_name: 'Erika',
+          family_name: 'Beispiel',
+          title: 'Heimprogramm Knie',
+          runs_until: '2026-10-01',
+          follow_up_draft: true,
+        },
+        {
+          id: 'p9',
+          service_area: 'training',
+          relationship_id: 't1',
+          given_name: 'Tina',
+          family_name: 'Training',
+          title: 'Kraft',
+          runs_until: '2026-10-10',
+          follow_up_draft: false,
+        },
+      ],
+    });
+    renderWithProviders(<PlanWiedervorlage bereiche={['therapy']} rueckweg="/offen" />);
+    const zeile = await screen.findByRole('link', { name: /Beispiel, Erika/ });
+    expect(zeile).toHaveTextContent('Heimprogramm Knie · Behandlung · bis');
+    expect(zeile).toHaveTextContent('neue Fassung im Entwurf');
+    expect(zeile).toHaveTextContent('abgelaufen');
+    expect(screen.queryByText(/Training, Tina/)).not.toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pläne laufen aus (1)' })).toBeInTheDocument();
+  });
+
+  it('bleibt auf einer Gastseite ohne Eintrag unsichtbar', async () => {
+    fetchFaellige.mockResolvedValue({ today: '2026-10-07', plans: [] });
+    const { container } = renderWithProviders(
+      <PlanWiedervorlage bereiche={['training']} rueckweg="/training" nurWennVorhanden />,
+    );
+    await waitFor(() => expect(fetchFaellige).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
   });
 });

@@ -562,3 +562,17 @@ export async function fremdeOrganisation(): Promise<typeof FREMDE_ORGANISATION> 
   `);
   return f;
 }
+
+/**
+ * Die Seed-Pläne (UEB-EPIC-002) zeigen auf Varianten; ein zugewiesener Plan
+ * wird nie einzeln gelöscht. Wie im Seed hebt nur dieser Test die Sperre auf.
+ */
+export async function planeEntfernen(): Promise<void> {
+  await asPostgres(`
+    alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
+    alter table public.exercise_plans disable trigger exercise_plans_guard;
+    delete from public.exercise_plans;
+    alter table public.exercise_plans enable trigger exercise_plans_guard;
+    alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
+  `);
+}

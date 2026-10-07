@@ -456,6 +456,20 @@ export function canReadExercisePlans(
 }
 
 /**
+ * Wer Übungspläne schreibt (UEB-004, ANN-298) - je Bereich. Behandlung:
+ * therapist und team_lead (wie die Behandlungsdokumentation); Training:
+ * owner und Trainingsbetreuung. Verbindlich ist app.can_write_exercise_plans().
+ */
+export function canWriteExercisePlans(
+  roles: readonly RoleKey[],
+  bereich: 'therapy' | 'training',
+): boolean {
+  return bereich === 'therapy'
+    ? canWriteTreatmentNote(roles)
+    : roles.some((role) => role === 'owner' || role === 'trainer');
+}
+
+/**
  * Wer den Kalender öffnet (TRN-006): die Praxisrollen und die Rollen des
  * Trainingsbereichs. Welche Termine darin stehen, entscheidet der Server je
  * Termin nach Kontext (ADR-022 Punkt 11) - die Trainingsbetreuung sieht dort

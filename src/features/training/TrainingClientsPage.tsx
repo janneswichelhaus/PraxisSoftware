@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -8,7 +9,11 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { SearchField } from '@/components/ui/SearchField';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { formatDate } from '@/lib/datum';
-import { canWriteTrainingClients, type CurrentUser } from '@/features/session/types';
+import {
+  canWriteExercisePlans,
+  canWriteTrainingClients,
+  type CurrentUser,
+} from '@/features/session/types';
 import { listTrainingClients, type TrainingClientListItem } from './api';
 
 export const TRAINING_ANLEGEN = `${BEGRIFFE.trainingskundIn} anlegen`;
@@ -55,6 +60,14 @@ export function TrainingClientsPage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
+
+      {/* UEB-007: auslaufende Trainingspläne - die Trainingsbetreuung öffnet
+          „Offene Punkte" nicht, also stehen sie hier (ANN-302). */}
+      {canWriteExercisePlans(user.roles, 'training') ? (
+        <div className="mb-6">
+          <PlanWiedervorlage bereiche={['training']} rueckweg="/training" nurWennVorhanden />
+        </div>
+      ) : null}
 
       <div className="mb-5 max-w-sm">
         <SearchField label="Liste filtern" placeholder="Name" value={suche} onChange={setSuche} />

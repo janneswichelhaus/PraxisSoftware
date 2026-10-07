@@ -6,6 +6,7 @@ import {
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  planeEntfernen,
   resetDatabase,
 } from './helpers/db';
 import { ACHSEN } from '@/features/exercises/types';
@@ -70,6 +71,7 @@ describe('Übungsbibliothek: Verbindungen (UEB-002)', () => {
   }, 120_000);
 
   beforeEach(async () => {
+    await planeEntfernen();
     await asPostgres('delete from public.exercise_variant_links');
     await asPostgres('delete from public.exercise_variants');
     await asPostgres('delete from public.exercises');

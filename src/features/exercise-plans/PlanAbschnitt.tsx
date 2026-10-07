@@ -131,7 +131,7 @@ function planMeta(plan: PlanZeile): string {
 function planMarke(plan: PlanZeile, heute: string) {
   if (plan.status === 'draft') return <Badge>Entwurf</Badge>;
   if (plan.status !== 'assigned' || !plan.runs_until) return null;
-  const stand = laufzeitStand(plan.runs_until, heute, plan.review_due ?? false);
+  const stand = laufzeitStand(plan.runs_until, heute, plan.review_due);
   if (stand === 'abgelaufen') return <Badge ton="warnung">abgelaufen</Badge>;
   if (stand === 'laeuft_aus') return <Badge ton="warnung">läuft aus</Badge>;
   return <Badge ton="positiv">zugewiesen</Badge>;
