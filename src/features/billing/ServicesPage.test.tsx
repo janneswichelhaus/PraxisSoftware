@@ -598,5 +598,27 @@ describe('ServicesPage', () => {
       expect(deleteMonat).toHaveBeenCalledWith('l-abo');
       expect(deleteLeistungen).not.toHaveBeenCalled();
     });
+
+    it('verweist bei einem Trainingspaket auf das Trainingsverhältnis (ANG-006)', async () => {
+      fetchLeistungen.mockResolvedValue([
+        leistung({
+          id: 'l-paket',
+          appointment_id: null,
+          patient_id: null,
+          training_relationship_id: 't1',
+          service_area: 'training',
+          code: 'TP3',
+          label: 'Trainingspaket 3 Monate',
+          item_kind: 'training_package',
+          unit_price_cents: 39000,
+          tax_treatment: 'taxable',
+          tax_rate_permille: 190,
+        }),
+      ]);
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+      expect(await screen.findByText('(TP3)')).toBeInTheDocument();
+      expect(screen.getByText(/am Trainingsverhältnis entfernt/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Erfassung zurücknehmen' })).toBeNull();
+    });
   });
 });

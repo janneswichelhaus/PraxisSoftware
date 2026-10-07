@@ -21,6 +21,10 @@ import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
  *     Liste. Laufzeit nach Paragraf 188 BGB, keine Ueberschneidung, kein
  *     Vertragsende vor dem Paketende (ANN-277), nicht waehrend einer
  *     laufenden Behandlung derselben Person (ANN-278). Nur owner und office.
+ *   * ANG-007 (BEF-114): Ein Trainingstermin im Zeitraum eines Pakets traegt
+ *     keine eigene Forderung (ANN-279) - weder offen gelistet noch erfassbar;
+ *     ein Paket entsteht nicht ueber schon erfasste Termine. Eine Behandlung
+ *     waehrend des Pakets wird daneben abgerechnet (ANN-280).
  */
 
 const { users, organizationId, patients, trainingRelationships } = SEED;
@@ -555,5 +559,150 @@ describe('Trainingspaket am Trainingsverhaeltnis (ANG-006)', () => {
         'training_packages.read',
       );
     });
+  });
+});
+
+const STAFF_TOM = '55555555-5555-4555-8555-000000000006';
+const STAFF_ANNA = '55555555-5555-4555-8555-000000000002';
+const LOCATION = '33333333-3333-4333-8333-000000000001';
+const PERSONAL_TRAINING = 'cccccccc-cccc-4ccc-8ccc-000000000009';
+const KG = 'cccccccc-cccc-4ccc-8ccc-000000000001';
+const ERFASSEN = 'select public.record_billable_services($1::uuid, $2::jsonb) as n';
+const OFFEN = 'select appointment_id from public.list_open_billable_appointments(200)';
+
+/** Ein durchgefuehrter Trainingstermin, `tage` vor heute um 10 Uhr Praxiszeit. */
+async function trainingstermin(verhaeltnis: string, tage: number): Promise<string> {
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into public.appointments (
+       organization_id, kind, training_relationship_id, staff_member_id, location_id,
+       appointment_type, status, starts_at, ends_at, completed_at, completed_by
+     ) values (
+       $1, 'training', $2, $3, $4, 'practice', 'completed',
+       ((now() at time zone 'Europe/Berlin')::date - $5::int + time '10:00') at time zone 'Europe/Berlin',
+       ((now() at time zone 'Europe/Berlin')::date - $5::int + time '11:00') at time zone 'Europe/Berlin',
+       now(), $6
+     ) returning id`,
+    [organizationId, verhaeltnis, STAFF_TOM, LOCATION, tage, users.trainer],
+  );
+  return rows[0]!.id;
+}
+
+describe('Termine im Paket (ANG-007, BEF-114)', () => {
+  let heute: string;
+
+  beforeAll(async () => {
+    await resetDatabaseOhneTermine();
+    heute = await tag('heute');
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres('delete from public.invoice_cancellations');
+    await asPostgres('delete from public.invoice_items');
+    await asPostgres('delete from public.invoices');
+    await asPostgres('delete from public.invoice_number_series');
+    await asPostgres('delete from public.billable_services');
+    await asPostgres('delete from public.training_packages');
+    await asPostgres('delete from public.appointments');
+    await asPostgres(
+      'update public.patients set care_concluded_on = null, care_concluded_at = null, care_concluded_by = null',
+    );
+  });
+
+  it('listet einen Trainingstermin im Paket nicht als offen und weist die Erfassung ab (ANN-279)', async () => {
+    const imPaket = await trainingstermin(trainingRelationships.tina, 2);
+    const davor = await trainingstermin(trainingRelationships.tina, 12);
+    await anlegen(trainingRelationships.tina, TP3, await tag('heute - 5'));
+
+    const { rows } = await asUser<{ appointment_id: string }>(users.office, OFFEN);
+    const offen = rows.map((r) => r.appointment_id);
+    expect(offen).not.toContain(imPaket);
+    // Vor dem Paket bleibt die Einzelstunde abrechenbar (ANN-181).
+    expect(offen).toContain(davor);
+
+    await expect(
+      asUser(users.office, ERFASSEN, [
+        imPaket,
+        JSON.stringify([{ catalog_item_id: PERSONAL_TRAINING, quantity: 1 }]),
+      ]),
+    ).rejects.toThrow(/covered by a training package/);
+    await expect(
+      asUserCommitted(users.office, ERFASSEN, [
+        davor,
+        JSON.stringify([{ catalog_item_id: PERSONAL_TRAINING, quantity: 1 }]),
+      ]),
+    ).resolves.toBeDefined();
+  });
+
+  it('haelt die Regel auch an den Funktionen vorbei', async () => {
+    const imPaket = await trainingstermin(trainingRelationships.tina, 1);
+    await anlegen(trainingRelationships.tina, TP3, await tag('heute - 3'));
+    await expect(
+      asPostgres(
+        `insert into public.billable_services
+           (organization_id, training_relationship_id, appointment_id, catalog_item_id, performed_on)
+         values ($1, $2, $3, $4, $5::date - 1)`,
+        [organizationId, trainingRelationships.tina, imPaket, PERSONAL_TRAINING, heute],
+      ),
+    ).rejects.toThrow(/covered by a training package/);
+  });
+
+  it('gilt nur fuer das Verhaeltnis des Pakets', async () => {
+    // Erika hat kein Paket; ihre Stunde bleibt abrechenbar, obwohl Tina eins hat.
+    await anlegen(trainingRelationships.tina, TP3, await tag('heute - 3'));
+    const erika = await trainingstermin(trainingRelationships.erika, 1);
+    const { rows } = await asUser<{ appointment_id: string }>(users.office, OFFEN);
+    expect(rows.map((r) => r.appointment_id)).toContain(erika);
+  });
+
+  it('legt kein Paket ueber schon erfasste Trainingstermine', async () => {
+    const termin = await trainingstermin(trainingRelationships.tina, 2);
+    await asUserCommitted(users.office, ERFASSEN, [
+      termin,
+      JSON.stringify([{ catalog_item_id: PERSONAL_TRAINING, quantity: 1 }]),
+    ]);
+    await expect(
+      asUser(users.office, ANLEGEN, [trainingRelationships.tina, TP3, await tag('heute - 5')]),
+    ).rejects.toThrow(/already carry billable services/);
+    // Nach dem erfassten Tag geht es.
+    await expect(
+      anlegen(trainingRelationships.tina, TP3, await tag('heute - 1')),
+    ).resolves.toBeTruthy();
+  });
+
+  it('rechnet eine Behandlung waehrend des Pakets daneben ab (ANN-280)', async () => {
+    await asPostgres(
+      `update public.patients
+          set care_concluded_on = $2::date, care_concluded_at = now(), care_concluded_by = $3
+        where id = $1`,
+      [patients.erika, await tag('heute - 10'), users.ownerTherapist],
+    );
+    await anlegen(trainingRelationships.erika, TP3, await tag('heute - 10'));
+    // Die Versorgung wird wieder aufgenommen: neue Verordnung, Rueckfall.
+    await asPostgres(
+      `update public.patients set care_concluded_on = null, care_concluded_at = null,
+              care_concluded_by = null where id = $1`,
+      [patients.erika],
+    );
+    const { rows: behandlung } = await asPostgres<{ id: string }>(
+      `insert into public.appointments (
+         organization_id, patient_id, staff_member_id, location_id,
+         appointment_type, status, starts_at, ends_at, completed_at, completed_by
+       ) values ($1, $2, $3, $4, 'practice', 'documented',
+                 now() - interval '26 hours', now() - interval '25 hours', now(), $5)
+       returning id`,
+      [organizationId, patients.erika, STAFF_ANNA, LOCATION, users.ownerTherapist],
+    );
+    await expect(
+      asUserCommitted(users.office, ERFASSEN, [
+        behandlung[0]!.id,
+        JSON.stringify([{ catalog_item_id: KG, quantity: 1 }]),
+      ]),
+    ).resolves.toBeDefined();
+    // Das Paket laeuft weiter; nichts daran hat sich geaendert.
+    const { rows } = await asPostgres<{ n: string }>(
+      `select count(*) as n from public.training_packages where training_relationship_id = $1`,
+      [trainingRelationships.erika],
+    );
+    expect(rows[0]!.n).toBe('1');
   });
 });

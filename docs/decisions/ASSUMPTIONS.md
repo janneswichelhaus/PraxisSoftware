@@ -3358,3 +3358,27 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `care_open` und `before_care_end` in `app.training_package_start_blocker` in `supabase/migrations/20261015110000_ang_006_training_packages.sql`; `STARTHINDERNIS` in `src/features/billing/trainingspaket-api.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
 
 **Änderungspfad.** Paket auch während einer Behandlung: die zwei Zweige entfernen · Aufwand `klein`.
+
+### ANN-279 — Jeder Trainingstermin im Zeitraum eines Pakets ist mit dem Paket bezahlt
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit dem Umfang (BEF-114)
+
+**Annahme.** Ein Trainingstermin, dessen Tag zwischen Beginn und Ende eines Pakets desselben Verhältnisses liegt, trägt keine eigene Leistung: Er steht nicht unter den offenen Leistungen, und eine Erfassung wird abgewiesen, auch an den Funktionen vorbei. Umgekehrt entsteht kein Paket über Tage, an denen schon eine Trainingsleistung am Termin erfasst ist. Außerhalb eines Pakets bleibt es bei der Einzelstunde (ANN-181). Gezählt wird nicht: Auch eine zusätzliche Einheit im Zeitraum ist abgegolten.
+
+**Begründung.** BEF-114 (Jannes, 2026-10-02): „Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung.“ Als Invariante in beiden Richtungen verhindert die Regel, dass dieselbe Zeit zweimal bezahlt wird (ADR-009 Punkt 4). Der Umfang steht nur in der Bezeichnung (ANN-275); eine Zählung bräuchte eine Regel, die Jannes noch nicht festgelegt hat. Unsicher: ob Einheiten über den Umfang hinaus extra berechnet werden sollen.
+
+**Anker.** `app.training_package_covering` in `supabase/migrations/20261015120000_ang_007_package_covers_appointments.sql`, gelesen vom Trigger an `billable_services`, von `app.training_package_guard` und von `public.list_open_billable_appointments`. Geprüft in `supabase/tests/training-packages.test.ts`.
+
+**Änderungspfad.** Einheiten über den Umfang extra: Zählung je Paket in der einen Funktion · Aufwand `mittel`.
+
+### ANN-280 — Bei einem Rückfall in die Heilbehandlung läuft das Paket weiter; die Software erstattet nichts
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
+
+**Annahme.** Beginnt während eines Pakets eine neue Behandlung derselben Person, läuft das Paket unverändert weiter: kein Pausieren, kein automatisches Ende, keine Erstattung. Die Behandlung wird daneben als Heilbehandlung an ihren Terminen abgerechnet, im eigenen Bereich und Nummernkreis. Will die Praxis aus Kulanz etwas erstatten, läuft das über Storno und eine neue Rechnung. Die Bedingungen in der Plattform sagen das vorher.
+
+**Begründung.** §4.10 und §19: Das Paket ist nicht pausierbar; von den drei denkbaren Antworten in `IDEA-ANG-003` bleiben „läuft parallel weiter“ und „Restguthaben wird erstattet“. Parallel ist die einfache und die vorhersehbare: Die Bereiche teilen keine Forderung (ADR-009 Punkt 16), und die Person weiß vor dem Kauf, was gilt. Eine automatische Erstattung wäre ein Korrekturbeleg ohne Regel für die Höhe. Unsicher: ob § 627 BGB eine Kündigung mit anteiliger Rückzahlung erzwingt (siehe ANN-277).
+
+**Anker.** Keine Sperre in `app.training_package_start_blocker` für eine Behandlung nach dem Beginn, Kopf von `supabase/migrations/20261015120000_ang_007_package_covers_appointments.sql`; Bedingungen in `src/features/platform/paketbedingungen.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
+
+**Änderungspfad.** Erstattung des Restes: Korrekturrechnung über den nicht genutzten Teil · Aufwand `mittel`.
