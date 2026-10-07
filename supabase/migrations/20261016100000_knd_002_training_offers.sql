@@ -10,7 +10,9 @@
 --
 --   public.training_offers               das Angebot an der Akte
 --   app.training_offer_state             offen, angenommen, zurueckgezogen,
---                                        abgelaufen
+--                                        abgelaufen - fuer die Person (KND-003)
+--   app.training_offer_practice_state    offen, zurueckgezogen, abgelaufen -
+--                                        was die Akte sieht (ANN-285)
 --   app.training_offer_handover_valid    Form der Uebergabeangaben
 --   public.list_training_offer_packages  die Pakete, die angeboten werden
 --                                        koennen
@@ -26,7 +28,8 @@
 -- enthaelt Angaben aus der Behandlung und gehoert deshalb zur Akte mit ihrer
 -- Frist. Was die Person annimmt, wird beim Annehmen ins Training KOPIERT
 -- (ADR-021 Punkt 7, KND-003); das Angebot bleibt als Nachweis, was angeboten
--- und freigegeben werden konnte.
+-- und freigegeben werden konnte. Ob sie angenommen hat, erfaehrt die Akte
+-- nicht (ANN-285, 4.8): Sie sieht offen, zurueckgezogen, abgelaufen.
 --
 -- WER (ANN-282): die Rollen, die die Akte schreiben (owner, therapist,
 -- team_lead, office). Das Abschlussgespraech fuehrt die behandelnde Person.
@@ -65,17 +68,17 @@ create table public.training_offers (
   withdrawn_at     timestamptz,
   withdrawn_by     uuid,
   -- Wann die Person in ihrem Konto angenommen hat (KND-003). Bewusst ohne
-  -- Verweis auf das Trainingsverhaeltnis (ADR-021 Punkt 3).
+  -- Verweis auf das Trainingsverhaeltnis (ADR-021 Punkt 3). Nur fuer die
+  -- Projektion der Person; die Akte liest es nie (ANN-285, 4.8).
   accepted_at      timestamptz,
   constraint training_offers_valid_until check (valid_until <= starts_on),
   constraint training_offers_handover_shape check (
     jsonb_typeof(handover_items) = 'array' and jsonb_array_length(handover_items) <= 5
   ),
+  -- Zurueckziehen geht auch nach einer Annahme, die die Akte nicht kennt
+  -- (ANN-285); den geschlossenen Vertrag beruehrt es nicht.
   constraint training_offers_withdrawn_stamp check (
     (withdrawn_at is null) = (withdrawn_by is null)
-  ),
-  constraint training_offers_one_outcome check (
-    withdrawn_at is null or accepted_at is null
   )
 );
 
@@ -88,7 +91,7 @@ comment on column public.training_offers.offers_contact is
 comment on column public.training_offers.valid_until is
   'ANN-284: letzter Tag, an dem die Person annehmen kann - 14 Tage nach dem Angebot, hoechstens der Beginn.';
 comment on column public.training_offers.accepted_at is
-  'KND-003: wann die Person das Angebot in ihrem Konto angenommen hat. Die Akte sieht nur das; was im Training daraus wird, nicht (ANN-285).';
+  'KND-003: wann die Person das Angebot in ihrem Konto angenommen hat. Nur die Projektion der Person liest es, damit ein Angebot nicht zweimal angenommen wird; die Akte sieht es nie (ANN-285, PROJECT_PRINCIPLES.md 4.8).';
 
 create index training_offers_patient_idx
   on public.training_offers (organization_id, patient_id, created_at desc);
@@ -124,7 +127,29 @@ $$;
 revoke all on function app.training_offer_state(public.training_offers, date) from public, anon, authenticated;
 
 comment on function app.training_offer_state(public.training_offers, date) is
-  'KND-002: Stand eines Trainingsangebots am Tag - accepted, withdrawn, expired (nach valid_until) oder open (ANN-284).';
+  'KND-002: Stand eines Trainingsangebots am Tag fuer die Person - accepted, withdrawn, expired (nach valid_until) oder open (ANN-284). Nie fuer die Akte (app.training_offer_practice_state).';
+
+-- ANN-285 (4.8): Was die Akte sieht, kennt die Annahme nicht. Ein angenommenes
+-- Angebot steht dort bis zum Ende seiner Gueltigkeit als offen, danach als
+-- abgelaufen - genau wie eines, das nicht angenommen wurde. Sonst verriete
+-- die Akte einer Rolle ohne Training, dass die Person trainiert.
+create function app.training_offer_practice_state(p_offer public.training_offers, p_today date)
+returns text
+language sql
+immutable
+set search_path = ''
+as $$
+  select case
+    when p_offer.withdrawn_at is not null then 'withdrawn'
+    when p_today > p_offer.valid_until then 'expired'
+    else 'open'
+  end
+$$;
+
+revoke all on function app.training_offer_practice_state(public.training_offers, date) from public, anon, authenticated;
+
+comment on function app.training_offer_practice_state(public.training_offers, date) is
+  'KND-002 (ANN-285): Stand eines Trainingsangebots, wie die Akte ihn sieht - withdrawn, expired oder open, ohne die Annahme (PROJECT_PRINCIPLES.md 4.8).';
 
 -- -----------------------------------------------------------------------------
 -- 3. Die Form der Uebergabeangaben (ANN-283)
@@ -274,7 +299,7 @@ begin
   if exists (
     select 1 from public.training_offers o
     where o.patient_id = p_patient_id
-      and app.training_offer_state(o, v_heute) = 'open'
+      and app.training_offer_practice_state(o, v_heute) = 'open'
   ) then
     raise exception 'an open training offer exists' using errcode = '23505';
   end if;
@@ -335,7 +360,9 @@ begin
   if not found then
     raise exception 'training offer not found' using errcode = '42501';
   end if;
-  if app.training_offer_state(v_offer, app.training_today(v_org)) <> 'open' then
+  -- ANN-285: dieselbe Sicht wie die Akte - eine Annahme hindert nicht und
+  -- verraet sich nicht.
+  if app.training_offer_practice_state(v_offer, app.training_today(v_org)) <> 'open' then
     raise exception 'training offer is not open' using errcode = '23514';
   end if;
 
@@ -391,7 +418,7 @@ begin
     'offers', coalesce((
       select jsonb_agg(jsonb_build_object(
                'id', o.id,
-               'state', app.training_offer_state(o, v_heute),
+               'state', app.training_offer_practice_state(o, v_heute),
                'label', c.label,
                'package_months', c.package_months,
                'price_cents', c.unit_price_cents,
@@ -402,8 +429,7 @@ begin
                'offers_contact', o.offers_contact,
                'created_at', o.created_at,
                'created_by_name', up.display_name,
-               'withdrawn_at', o.withdrawn_at,
-               'accepted_at', o.accepted_at
+               'withdrawn_at', o.withdrawn_at
              ) order by o.created_at desc)
       from public.training_offers o
       join public.service_catalog_items c on c.id = o.catalog_item_id
@@ -418,7 +444,7 @@ revoke all on function public.get_patient_training_offers(uuid) from public, ano
 grant execute on function public.get_patient_training_offers(uuid) to authenticated;
 
 comment on function public.get_patient_training_offers(uuid) is
-  'KND-002: Trainingsangebote einer Akte mit Stand, Paket und Uebergabeangaben, dazu ob die Person einen aktiven eigenen Plattformzugang hat (Rollen der Akte). Ob angenommen wurde, steht als Zeitpunkt - nichts aus dem Training (ANN-285). Andere: null.';
+  'KND-002: Trainingsangebote einer Akte mit Stand, Paket und Uebergabeangaben, dazu ob die Person einen aktiven eigenen Plattformzugang hat (Rollen der Akte). Ob angenommen wurde, steht nicht da - nichts aus dem Training (ANN-285, 4.8). Andere: null.';
 
 -- -----------------------------------------------------------------------------
 -- 8. Zusammenfuehren und Auskunft
@@ -598,9 +624,9 @@ begin
     from public.training_offers q
     join public.training_offers z
       on z.patient_id = p_target
-     and app.training_offer_state(z, app.training_today(p_organization_id)) = 'open'
+     and app.training_offer_practice_state(z, app.training_today(p_organization_id)) = 'open'
     where q.patient_id = p_source
-      and app.training_offer_state(q, app.training_today(p_organization_id)) = 'open'
+      and app.training_offer_practice_state(q, app.training_today(p_organization_id)) = 'open'
   ) then
     v_sperren := v_sperren || 'training_offer_overlap'::text;
   end if;
@@ -1251,8 +1277,7 @@ begin
         'handover_items', o.handover_items,
         'offers_contact', o.offers_contact,
         'created_at', o.created_at,
-        'withdrawn_at', o.withdrawn_at,
-        'accepted_at', o.accepted_at
+        'withdrawn_at', o.withdrawn_at
       ) order by o.created_at)
       from public.training_offers o
       join public.service_catalog_items c on c.id = o.catalog_item_id

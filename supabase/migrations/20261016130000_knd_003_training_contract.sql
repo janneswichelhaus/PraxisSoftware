@@ -26,7 +26,13 @@
 -- create_training_package, ANN-276), die Kopien der freigegebenen Angaben und
 -- den Vertragsnachweis. Scheitert ein Schritt, entsteht nichts. Zwischen den
 -- Verhaeltnissen entsteht kein Verweis: Das Angebot bekommt nur den
--- Zeitpunkt, der Vertrag nur den Tag des Angebots.
+-- Zeitpunkt, den allein die Projektion der Person liest (ANN-285), der
+-- Vertrag nur den Tag des Angebots.
+--
+-- ZUGANG OHNE EINLADUNG (ANN-291): Der Zugang zum Training entsteht mit dem
+-- Vertrag am Konto, das schon den eigenen Zugang zur Behandlung traegt -
+-- die Identitaet hat die Praxis dort geprueft (ADR-023 Punkt 11), und der
+-- Waechter am Zugang prueft Person und Konto wie bei jeder Einladung.
 --
 -- WER (ANN-289): nur der eigene Zugang der Person zur Behandlung. Eine
 -- rechtliche Vertretung sieht das Angebot (Recht contract), schliesst aber
@@ -246,7 +252,12 @@ begin
     v_zugang.id, 'platform_representation.read', jsonb_build_object('view', 'training_offer')
   );
 
-  v_grund := app.training_offer_blocker(v_offer.id);
+  -- Zweitreview (4.8): Der Grund liest ueber die gemeinsame Identitaet
+  -- (Training, andere Akten). Nur die Person selbst sieht ihn; einer
+  -- Vertretung der Behandlung verriete er ein Trainingsverhaeltnis.
+  if v_zugang.access_kind = 'self' then
+    v_grund := app.training_offer_blocker(v_offer.id);
+  end if;
 
   return (
     select jsonb_build_object(
@@ -508,7 +519,8 @@ begin
   )
   returning id into v_vertrag;
 
-  -- ANN-285: Die Akte erfaehrt nur, dass und wann.
+  -- Damit das Angebot nicht zweimal angenommen wird. Die Akte liest den
+  -- Zeitpunkt nie (ANN-285).
   update public.training_offers set accepted_at = now() where id = v_offer.id;
 
   return (

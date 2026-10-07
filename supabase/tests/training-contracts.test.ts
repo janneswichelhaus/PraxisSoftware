@@ -354,7 +354,11 @@ describe('Trainingsvertrag im eigenen Konto (KND-003)', () => {
         [BERND, organizationId, patients.erika, KONTO_BERND, users.office],
       );
       const id = await anbieten(await tag('heute + 20'));
-      expect(await sicht(KONTO_BERND, BERND)).toMatchObject({ id, can_accept: false });
+      expect(await sicht(KONTO_BERND, BERND)).toMatchObject({
+        id,
+        can_accept: false,
+        blocker: null,
+      });
       await expect(annehmen(id, { konto: KONTO_BERND, zugang: BERND })).rejects.toThrow(
         /not allowed/,
       );
@@ -423,16 +427,25 @@ describe('Trainingsvertrag im eigenen Konto (KND-003)', () => {
       expect(e[0]!.daten.training_contract).toMatchObject({ price_cents: 39000 });
     });
 
-    it('zeigt der Akte das Angebot als angenommen (ANN-285)', async () => {
+    it('verrät der Akte die Annahme nicht (ANN-285, 4.8)', async () => {
       await vorbereiten();
       const id = await anbieten(await tag('heute + 20'));
       await annehmen(id);
-      const { rows } = await asUser<{ sicht: { offers: Array<{ state: string }> } }>(
+      const { rows } = await asUser<{ sicht: { offers: Array<Record<string, unknown>> } }>(
         users.therapist,
         'select public.get_patient_training_offers($1::uuid) as sicht',
         [patients.erika],
       );
-      expect(rows[0]!.sicht.offers[0]!.state).toBe('accepted');
+      expect(rows[0]!.sicht.offers[0]!['state']).toBe('open');
+      expect(rows[0]!.sicht.offers[0]).not.toHaveProperty('accepted_at');
+      // Zurückziehen geht und lässt den Vertrag stehen.
+      await asUserCommitted(users.therapist, 'select public.withdraw_training_offer($1::uuid)', [
+        id,
+      ]);
+      const { rows: k } = await asPostgres<{ n: number }>(
+        'select count(*)::int as n from public.training_contracts',
+      );
+      expect(k[0]!.n).toBe(1);
     });
   });
 });
@@ -552,5 +565,187 @@ describe('Widerruf über die Plattform (KND-004)', () => {
     const fremd = await fremdeOrganisation();
     const { rows: f } = await asUser<{ vertraege: unknown }>(fremd.owner, NACHWEIS, [rel]);
     expect(f[0]!.vertraege).toBeNull();
+  });
+});
+
+/**
+ * Zweitreview KND-EPIC-001: die Negativfälle aus ADR-023 Punkt 23 für den
+ * eigenen Vertrag und den Widerruf, die Vertretung im Training und die
+ * Praxissichten für Rollen der Behandlung; dazu kein Grund für eine
+ * Vertretung der Behandlung (4.8).
+ */
+describe('Vertrag und Widerruf: Negativfälle (KND-003, KND-004)', () => {
+  const WIDERRUFEN =
+    'select public.withdraw_platform_training_contract($1::uuid, $2::uuid) as eingang';
+  const OFFEN = 'select * from public.list_platform_training_withdrawals()';
+  const NACHWEIS = 'select public.get_training_contracts($1::uuid) as vertraege';
+  const KONTO_VERTRETUNG = '99999999-9999-4999-8999-0000000000e3';
+  const VERTRETUNG = 'cafecafe-cafe-4afe-8afe-0000000000e3';
+
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function gebucht(): Promise<{ zugang: string; vertrag: string; rel: string }> {
+    await vorbereiten();
+    const id = await anbieten(await tag('heute + 20'));
+    const { rows } = await annehmen(id);
+    const b = rows[0]!.bestaetigung;
+    return {
+      zugang: b['training_access_id'] as string,
+      vertrag: b['contract_id'] as string,
+      rel: (await neuesVerhaeltnis())!,
+    };
+  }
+
+  /** Ein zweites Konto vertritt Erika im Training: rechtlich oder als Begleitung. */
+  async function vertretungImTraining(
+    rel: string,
+    art: 'legal' | 'companion',
+    vermoegen: boolean,
+  ): Promise<void> {
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email)
+       values ($1, 'authenticated', 'authenticated', 'vertretung.knd@patient.invalid')`,
+      [KONTO_VERTRETUNG],
+    );
+    if (art === 'legal') {
+      await asPostgres(
+        `insert into public.platform_accesses
+           (id, organization_id, relationship_kind, relationship_id, training_relationship_id,
+            account_user_id, status, activated_at, access_kind, legal_basis, representative_name,
+            proof_documents, health_scope, finance_scope, proof_recorded_by, proof_recorded_at,
+            created_by)
+         values ($1, $2, 'training', $3, $3, $4, 'active', now(), 'legal_representative',
+                 'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+                 true, $6, $5, now(), $5)`,
+        [VERTRETUNG, organizationId, rel, KONTO_VERTRETUNG, users.office, vermoegen],
+      );
+    } else {
+      await asPostgres(
+        `insert into public.platform_accesses
+           (id, organization_id, relationship_kind, relationship_id, training_relationship_id,
+            account_user_id, status, activated_at, access_kind, representative_name,
+            proof_documents, finance_scope, proof_recorded_by, proof_recorded_at,
+            consent_text_version, consent_recorded_by, consent_recorded_at,
+            consent_earlier_messages, created_by)
+         values ($1, $2, 'training', $3, $3, $4, 'active', now(), 'companion', 'Paula Begleitung',
+                 array['identity_document'], true, $5, now(), 'begleitung-2026-10-02b', $5, now(),
+                 false, $5)`,
+        [VERTRETUNG, organizationId, rel, KONTO_VERTRETUNG, users.office],
+      );
+    }
+  }
+
+  it('zeigt einer Vertretung der Behandlung kein Trainingsverhältnis (4.8)', async () => {
+    await vorbereiten(true);
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'bernd.knd2@patient.invalid')`,
+      [KONTO_BERND],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+               true, true, $5, now(), $5)`,
+      [BERND, organizationId, patients.erika, KONTO_BERND, users.office],
+    );
+    await anbieten(await tag('heute + 20'));
+    // Die Person selbst sieht den Grund, die Vertretung nicht.
+    expect((await sicht(users.plattformErika, ERIKA))!.blocker).toBe('has_training');
+    expect((await sicht(KONTO_BERND, BERND))!.blocker).toBeNull();
+  });
+
+  it('zeigt den eigenen Vertrag keiner fremden Person, keinem Praxiskonto und gesperrt nicht', async () => {
+    const { zugang } = await gebucht();
+    const leer = async (konto: string, z: string) =>
+      (await asUser<{ vertrag: unknown }>(konto, VERTRAG, [z])).rows[0]!.vertrag;
+    expect(await leer(users.plattformTina, zugang)).toBeNull();
+    expect(await leer(users.plattformTina, TINA)).toBeNull();
+    expect(await leer(users.office, zugang)).toBeNull();
+    const fremd = await fremdeOrganisation();
+    expect(await leer(fremd.owner, zugang)).toBeNull();
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [zugang],
+    );
+    expect(await leer(users.plattformErika, zugang)).toBeNull();
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', locked_at = null, revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [zugang],
+    );
+    expect(await leer(users.plattformErika, zugang)).toBeNull();
+  });
+
+  it('lässt gesperrt und entzogen nicht widerrufen', async () => {
+    const { zugang, vertrag } = await gebucht();
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [zugang],
+    );
+    await expect(asUser(users.plattformErika, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+    await asPostgres(
+      `update public.platform_accesses
+          set status = 'revoked', locked_at = null, revoked_at = now(), revoked_reason = 'practice'
+        where id = $1`,
+      [zugang],
+    );
+    await expect(asUser(users.plattformErika, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+  });
+
+  it('lässt die Begleitung den Vertrag weder sehen noch widerrufen', async () => {
+    const { vertrag, rel } = await gebucht();
+    await vertretungImTraining(rel, 'companion', false);
+    const { rows } = await asUser<{ vertrag: unknown }>(KONTO_VERTRETUNG, VERTRAG, [VERTRETUNG]);
+    // Mit Einwilligung zu Rechnungen sieht sie den Vertrag, aber ohne Knopf.
+    expect(rows[0]!.vertrag).toMatchObject({ can_withdraw: false });
+    await expect(asUser(KONTO_VERTRETUNG, WIDERRUFEN, [VERTRETUNG, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+  });
+
+  it('lässt eine rechtliche Vertretung nur mit Vermögenssorge widerrufen (ANN-273)', async () => {
+    const { vertrag, rel } = await gebucht();
+    await vertretungImTraining(rel, 'legal', false);
+    await expect(asUser(KONTO_VERTRETUNG, WIDERRUFEN, [VERTRETUNG, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+    await asPostgres(`delete from public.platform_accesses where id = $1`, [VERTRETUNG]);
+    await asPostgres('delete from auth.users where id = $1', [KONTO_VERTRETUNG]);
+    await vertretungImTraining(rel, 'legal', true);
+    const { rows } = await asUserCommitted<{ eingang: Record<string, unknown> }>(
+      KONTO_VERTRETUNG,
+      WIDERRUFEN,
+      [VERTRETUNG, vertrag],
+    );
+    expect(rows[0]!.eingang['withdrawn_on']).toBe(await tag('heute'));
+    const { rows: k } = await asPostgres<{ art: string; name: string }>(
+      `select withdrawn_access_kind as art, withdrawn_representative_name as name
+         from public.training_contracts where id = $1`,
+      [vertrag],
+    );
+    expect(k[0]).toEqual({ art: 'legal_representative', name: 'Bernd Betreuer' });
+  });
+
+  it.each([
+    ['Therapeut:in', users.therapist],
+    ['Teamleitung', users.teamLead],
+    ['Trainingsbetreuung', users.trainer],
+    ['Plattformkonto', users.plattformErika],
+  ])('zeigt %s weder Widerrufe noch Nachweis (4.8)', async (_wer, konto) => {
+    const { zugang, vertrag, rel } = await gebucht();
+    await asUserCommitted(users.plattformErika, WIDERRUFEN, [zugang, vertrag]);
+    expect((await asUser(konto, OFFEN)).rows).toEqual([]);
+    const { rows } = await asUser<{ vertraege: unknown }>(konto, NACHWEIS, [rel]);
+    expect(rows[0]!.vertraege).toBeNull();
   });
 });

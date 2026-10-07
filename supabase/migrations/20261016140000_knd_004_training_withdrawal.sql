@@ -47,8 +47,7 @@ alter table public.training_contracts
        and withdrawn_access_kind is null and withdrawn_representative_name is null)
     or (withdrawn_at is not null and withdrawn_on is not null
         and withdrawn_platform_access_id is not null and withdrawn_access_kind is not null
-        and (withdrawn_access_kind = 'legal_representative') = (withdrawn_representative_name is not null)
-        and withdrawn_on <= withdrawal_ends_on)
+        and (withdrawn_access_kind = 'legal_representative') = (withdrawn_representative_name is not null))
   );
 
 comment on column public.training_contracts.withdrawn_at is
@@ -281,6 +280,7 @@ begin
     select jsonb_agg(jsonb_build_object(
              'id', k.id,
              'concluded_at', k.concluded_at,
+             'concluded_on', k.concluded_on,
              'package_label', k.package_label,
              'price_cents', k.price_cents,
              'currency', k.currency,

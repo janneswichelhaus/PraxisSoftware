@@ -47,7 +47,8 @@ describe('Voraussetzungen am Trainingsverhältnis (KND-005)', () => {
           title: 'Belastungsgrenzen',
           body: 'Keine Sprünge bis Dezember.',
           offered_on: '2026-10-01',
-          released_at: '2026-10-03T08:00:00Z',
+          released_at: '2026-10-02T22:30:00Z',
+          released_on: '2026-10-03',
         },
       ],
     });

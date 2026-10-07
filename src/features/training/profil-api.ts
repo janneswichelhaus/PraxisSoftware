@@ -44,6 +44,8 @@ const sichtSchema = z.object({
       body: z.string(),
       offered_on: z.string(),
       released_at: z.string(),
+      /** Der Tag der Freigabe in der Zeitzone der Praxis. */
+      released_on: z.string(),
     }),
   ),
 });

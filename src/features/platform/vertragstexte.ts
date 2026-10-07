@@ -93,9 +93,9 @@ export function musterformular(praxis: Praxisangaben): string[] {
 export const FRUEHER_BEGINN =
   'Ich verlange ausdrücklich, dass das Training vor dem Ende der Widerrufsfrist beginnt. Mir ist bekannt, dass ich bei einem Widerruf für die bis dahin erbrachten Leistungen einen anteiligen Betrag zahle.';
 
-/** Was die Akte über das Annehmen erfährt (ANN-285). */
+/** Was die Akte über das Annehmen erfährt: nichts (ANN-285, §4.8). */
 export const AKTE_ERFAEHRT =
-  'Die Praxis sieht in Ihrer Behandlungsakte nur, dass und wann Sie das Angebot angenommen haben. Ihr Training wird getrennt von Ihrer Behandlung geführt.';
+  'Ihr Training wird getrennt von Ihrer Behandlung geführt. In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben.';
 
 /** Warum ein Angebot (noch) nicht angenommen werden kann. */
 export const ANGEBOTSHINDERNIS: Record<string, string> = {

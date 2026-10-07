@@ -21,7 +21,8 @@ export type Uebergabeangabe = z.infer<typeof uebergabeSchema>;
 
 const angebotSchema = z.object({
   id: z.string(),
-  state: z.enum(['open', 'accepted', 'withdrawn', 'expired']),
+  /** ANN-285: Die Akte kennt keine Annahme – nur offen, zurückgezogen, abgelaufen. */
+  state: z.enum(['open', 'withdrawn', 'expired']),
   label: z.string(),
   package_months: z.number(),
   price_cents: z.number(),
@@ -33,7 +34,6 @@ const angebotSchema = z.object({
   created_at: z.string(),
   created_by_name: z.string().nullable(),
   withdrawn_at: z.string().nullable(),
-  accepted_at: z.string().nullable(),
 });
 
 export type Trainingsangebot = z.infer<typeof angebotSchema>;

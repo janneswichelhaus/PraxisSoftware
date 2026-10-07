@@ -98,6 +98,7 @@ client.setQueryData(['training-profil', TINA], {
       body: 'Kniebeuge bis 90 Grad, keine Sprünge bis Dezember.',
       offered_on: '2026-10-01',
       released_at: '2026-10-03T08:00:00Z',
+      released_on: '2026-10-03',
     },
   ],
 });
@@ -108,6 +109,7 @@ client.setQueryData(
     {
       id: 'abababab-abab-4bab-8bab-000000000021',
       concluded_at: '2026-10-03T08:00:00Z',
+      concluded_on: '2026-10-03',
       package_label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
       price_cents: 39000,
       currency: 'EUR',

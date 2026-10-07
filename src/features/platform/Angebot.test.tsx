@@ -113,7 +113,7 @@ describe('Trainingsangebot auf der Plattform (KND-003)', () => {
     expect(screen.getByLabelText('Belastungsgrenzen')).not.toBeChecked();
     expect(screen.getByLabelText('Kontaktdaten')).not.toBeChecked();
     expect(
-      screen.getByText(/sieht in Ihrer Behandlungsakte nur, dass und wann/),
+      screen.getByText(/In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben/),
     ).toBeInTheDocument();
     await pruefeBarrierefreiheit(container);
   });

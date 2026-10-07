@@ -292,7 +292,6 @@ client.setQueryData(['trainingsangebot', PATIENT], {
             created_at: new Date().toISOString(),
             created_by_name: 'Anna Beispiel',
             withdrawn_at: null,
-            accepted_at: null,
           },
         ]
       : [],

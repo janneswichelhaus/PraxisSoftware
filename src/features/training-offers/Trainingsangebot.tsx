@@ -79,8 +79,6 @@ function standSatz(angebot: Angebot): string {
   switch (angebot.state) {
     case 'open':
       return `Offen bis ${formatDate(angebot.valid_until)}`;
-    case 'accepted':
-      return `Angenommen am ${formatDate(angebot.accepted_at!.slice(0, 10))}`;
     case 'withdrawn':
       return 'Zurückgezogen';
     case 'expired':
@@ -134,7 +132,8 @@ function Zurueckziehen({ id, patientId }: { id: string; patientId: string }) {
       onBestaetigen={() => zurueck.mutateAsync()}
       onAbbrechen={() => zurueck.reset()}
     >
-      Die Person sieht das Angebot danach nicht mehr und kann es nicht mehr annehmen.
+      Die Person sieht das Angebot danach nicht mehr und kann es nicht mehr annehmen. Hat sie schon
+      gebucht, bleibt ihr Vertrag davon unberührt.
     </Rueckfrage>
   );
 }

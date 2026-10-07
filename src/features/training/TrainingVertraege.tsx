@@ -40,7 +40,7 @@ function Zeile({ vertrag: v }: { vertrag: Kontovertrag }) {
         {formatEuro(v.price_cents, v.currency)}
       </p>
       <p className="text-ink-muted text-sm">
-        Gebucht am {formatDate(v.concluded_at.slice(0, 10))} · Belehrung Fassung {v.wording_version}
+        Gebucht am {formatDate(v.concluded_on)} · Belehrung Fassung {v.wording_version}
         {v.early_start_requested ? ' · früher Beginn verlangt' : ''}
       </p>
       {v.withdrawn_on ? (

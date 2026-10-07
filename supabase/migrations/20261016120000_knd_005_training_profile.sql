@@ -190,9 +190,12 @@ begin
                'title', k.title,
                'body', k.body,
                'offered_on', k.offered_on,
-               'released_at', k.released_at
+               'released_at', k.released_at,
+               -- Der Tag in der Zeitzone der Praxis, nicht in UTC (Zweitreview).
+               'released_on', (k.released_at at time zone o.time_zone)::date
              ) order by k.position)
       from public.training_takeovers k
+      join public.organizations o on o.id = k.organization_id
       where k.training_relationship_id = p_relationship_id
     ), '[]'::jsonb)
   );

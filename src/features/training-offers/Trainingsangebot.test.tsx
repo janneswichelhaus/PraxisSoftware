@@ -37,7 +37,6 @@ const OFFEN: AngebotApi.Trainingsangebot = {
   created_at: '2026-10-07T10:00:00Z',
   created_by_name: 'Anna Beispiel',
   withdrawn_at: null,
-  accepted_at: null,
 };
 
 function sicht(teil: Partial<AngebotApi.Angebotssicht> = {}): AngebotApi.Angebotssicht {
@@ -135,12 +134,11 @@ describe('Training nach der Behandlung in der Akte (KND-002)', () => {
     expect(withdrawAngebot).toHaveBeenCalledWith('o1');
   });
 
-  it('nennt ein angenommenes Angebot mit Tag und nichts aus dem Training (ANN-285)', async () => {
-    fetchAngebote.mockResolvedValue(
-      sicht({ offers: [{ ...OFFEN, state: 'accepted', accepted_at: '2026-10-09T08:00:00Z' }] }),
-    );
+  it('nennt ein abgelaufenes Angebot ohne Knopf (ANN-285: keine Annahme in der Akte)', async () => {
+    fetchAngebote.mockResolvedValue(sicht({ offers: [{ ...OFFEN, state: 'expired' }] }));
     renderWithProviders(<Trainingsangebot patientId="p1" />);
-    expect(await screen.findByText(/Angenommen am 09.10.2026/)).toBeInTheDocument();
+    expect(await screen.findByText(/Abgelaufen am 20.10.2026/)).toBeInTheDocument();
+    expect(screen.queryByText(/Angenommen/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Zurückziehen' })).not.toBeInTheDocument();
   });
 

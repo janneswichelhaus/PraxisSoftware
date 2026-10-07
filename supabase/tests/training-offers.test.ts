@@ -51,7 +51,6 @@ interface Sicht {
     handover_items: Array<{ title: string; body: string }>;
     offers_contact: boolean;
     created_by_name: string | null;
-    accepted_at: string | null;
     withdrawn_at: string | null;
   }>;
 }
@@ -119,9 +118,10 @@ describe('Trainingsangebot aus der Akte (KND-002)', () => {
         valid_until: await tag('heute + 14'),
         handover_items: UEBERGABE,
         offers_contact: true,
-        accepted_at: null,
         withdrawn_at: null,
       });
+      // ANN-285 (4.8): Die Akte kennt keine Annahme.
+      expect(s!.offers[0]).not.toHaveProperty('accepted_at');
       expect(s!.offers[0]!.label).toMatch(/3 Monate/);
     });
 
@@ -212,10 +212,30 @@ describe('Trainingsangebot aus der Akte (KND-002)', () => {
       await expect(asUser(users.office, ZURUECKZIEHEN, [id])).rejects.toThrow(/not open/);
     });
 
-    it('lässt ein angenommenes Angebot stehen', async () => {
+    it('verrät eine Annahme weder in der Sicht noch beim Zurückziehen (ANN-285)', async () => {
       const id = await anbieten(await tag('heute + 30'));
       await asPostgres('update public.training_offers set accepted_at = now() where id = $1', [id]);
-      await expect(asUser(users.office, ZURUECKZIEHEN, [id])).rejects.toThrow(/not open/);
+      expect((await sicht(users.therapist))!.offers[0]!.state).toBe('open');
+      await expect(anbieten(await tag('heute + 31'))).rejects.toThrow(/open training offer exists/);
+      await expect(asUserCommitted(users.therapist, ZURUECKZIEHEN, [id])).resolves.toBeDefined();
+      expect((await sicht(users.therapist))!.offers[0]!.state).toBe('withdrawn');
+    });
+
+    it('steht nach der Gültigkeit als abgelaufen, angenommen oder nicht', async () => {
+      const id = await anbieten(await tag('heute + 30'));
+      await asPostgres(
+        `update public.training_offers
+            set accepted_at = now(), valid_until = (now() at time zone 'Europe/Berlin')::date - 1
+          where id = $1`,
+        [id],
+      );
+      expect((await sicht(users.therapist))!.offers[0]!.state).toBe('expired');
+      const { rows } = await asUser<{ daten: { tabellen: { training_offers: object[] } } }>(
+        users.ownerTherapist,
+        'select public.export_patient_record($1::uuid) as daten',
+        [patients.erika],
+      );
+      expect(rows[0]!.daten.tabellen.training_offers[0]).not.toHaveProperty('accepted_at');
     });
 
     it('weist Trainingsbetreuung und fremde Praxis ab', async () => {

@@ -10,6 +10,8 @@ import { getSupabase } from '@/lib/supabase';
 const vertragSchema = z.object({
   id: z.string(),
   concluded_at: z.string(),
+  /** Der Tag des Abschlusses in der Zeitzone der Praxis. */
+  concluded_on: z.string(),
   package_label: z.string(),
   price_cents: z.number(),
   currency: z.string(),

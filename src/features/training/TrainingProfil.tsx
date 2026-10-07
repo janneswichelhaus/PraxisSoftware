@@ -121,7 +121,7 @@ function Anzeige({ sicht, gespeichert }: { sicht: Profilsicht; gespeichert: bool
                 <p className="text-ink text-sm whitespace-pre-line">{angabe.body}</p>
                 <p className="text-ink-muted text-sm">
                   Angeboten am {formatDate(angabe.offered_on)}, von der Person freigegeben am{' '}
-                  {formatDate(angabe.released_at.slice(0, 10))}
+                  {formatDate(angabe.released_on)}
                 </p>
               </li>
             ))}

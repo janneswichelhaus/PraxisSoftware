@@ -3431,17 +3431,17 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 **Änderungspfad.** Andere Frist: `v_heute + 14` und `v_heute + 90` in der einen Funktion · Aufwand `klein`.
 
-### ANN-285 — Die Akte sieht, dass und wann ein Angebot angenommen wurde, sonst nichts aus dem Training
+### ANN-285 — Die Akte erfährt nicht, ob ein Angebot angenommen wurde
 
 Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, §4.8)
 
-**Annahme.** Nimmt die Person ein Angebot an, steht am Angebot in der Akte „Angenommen am …“. Ein Verweis auf das Trainingsverhältnis entsteht nicht, und die Akte zeigt weder Vertrag, Paketstand, Einwilligung noch Widerruf. Die Person liest auf der Seite zum Annehmen, dass die Praxis in der Akte sieht, dass sie angenommen hat.
+**Annahme.** Ein Angebot steht in der Akte als „offen“ bis zum Ende seiner Gültigkeit, danach als „abgelaufen“, oder als „zurückgezogen“ – gleich, ob die Person gebucht hat. Den Zeitpunkt der Annahme speichert das Angebot nur, damit es nicht zweimal angenommen wird; ihn liest allein die Projektion der Person, weder die Akte noch die Auskunft der Akte. Zurückziehen geht auch nach einer Annahme und berührt den Vertrag nicht. Die Seite zum Buchen sagt: „In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben.“
 
-**Begründung.** Das Angebot entsteht in der Behandlung; dass es angenommen wurde, ist die Antwort darauf und für die behandelnde Person das Ende des Vorgangs („Abschlussgespräch erledigt“). ADR-021 Punkt 3 verbietet Fremdschlüssel zwischen den Verhältnissen, §4.8 den Schluss auf Inhalte des Trainings; ein Zeitpunkt ohne Verweis und mit Hinweis an die Person hält beides ein. Unsicher: ob die Prüfung auch diesen Zeitpunkt als Trainingsdatum sieht.
+**Begründung.** §4.8 (Rang 1): Aus einer Rolle der Behandlung folgt kein Wissen über das Training, auch nicht über die gemeinsame Identität. „Angenommen am …“ hätte einer Therapeut:in ohne Trainingsrolle einen Vertrag gezeigt; auch „nicht mehr offen“ vor dem Ende der Gültigkeit verriete ihn. Die erste Fassung dieser Annahme (die Akte sieht dass und wann) fiel im Zweitreview gegen §4.8 und wurde nach Rang aufgelöst. Owner und Büro sehen das Trainingsverhältnis ohnehin über ihre Trainingsrolle. Unsicher: ob die behandelnde Person den Ausgang des Abschlussgesprächs für ihre Dokumentation braucht.
 
-**Anker.** Die Spalte `accepted_at` an `public.training_offers` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `standSatz` in `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
+**Anker.** `app.training_offer_practice_state` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `AKTE_ERFAEHRT` in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-offers.test.ts` und `supabase/tests/training-contracts.test.ts`.
 
-**Änderungspfad.** Gar kein Rückfluss: `accepted_at` nur für die Prüfung „offen“ benutzen und in `get_patient_training_offers` als „nicht mehr offen“ ausgeben · Aufwand `klein`.
+**Änderungspfad.** Annahme mit Einwilligung der Person zurück in die Akte: Zeitpunkt in `get_patient_training_offers`, ein Satz auf der Seite zum Buchen und ein Häkchen dafür · Aufwand `klein`.
 
 ### ANN-286 — Ans Abschlussgespräch erinnert die Karte der letzten zwei Termine, bis ein Angebot in der Akte steht
 
@@ -3502,3 +3502,16 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.withdraw_platform_training_contract` und `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; Knopf in `src/features/platform/Vertrag.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` und `src/features/platform/Vertrag.test.tsx`.
 
 **Änderungspfad.** Widerruf per Brief vermerken: Praxisfunktion mit Herkunft `practice` wie bei der Abo-Kündigung · Aufwand `klein`. Automatische Rückabwicklung ohne frühen Beginn: Paket entfernen bzw. stornieren im selben Aufruf · Aufwand `mittel`.
+
+### ANN-291 — Mit dem Vertrag entsteht der Zugang zum Training ohne eigene Einladung
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, ADR-023 Punkte 6, 7, 11)
+
+**Annahme.** Bucht die Person im Konto, bekommt dasselbe Konto im selben Aufruf einen aktiven eigenen Zugang zum neuen Trainingsverhältnis – ohne Einladung, ohne Code und ohne Praxisrolle. Der Wächter am Zugang prüft wie bei jeder Einladung, dass Konto und Person zusammengehören und kein Praxiskonto ist. Im Protokoll steht `platform_access.activated` mit `via: training_contract`. Vertretungen im Training richtet weiter die Praxis ein.
+
+**Begründung.** ADR-023 (Rang 2) lässt Zugänge nur aus einer Einladung der Praxis entstehen, weil die Einladung die Identität prüft (Punkt 11). §4.10 (Rang 1) verlangt, dass der Trainingsvertrag über das eigene Konto geschlossen wird – und dieses Konto hat die Praxis bei der Einladung zur Behandlung schon geprüft. Eine zweite Einladung prüfte dieselbe Person noch einmal und hielte den Abschluss an einen Termin. Aufgelöst nach Rang; ADR-023 bleibt für alle anderen Zugänge unverändert. Unsicher: ob die Prüfung eine eigene Bestätigung im Training verlangt.
+
+**Anker.** Das `insert into public.platform_accesses` in `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`. Geprüft in `supabase/tests/training-contracts.test.ts`.
+
+**Änderungspfad.** Zugang zum Training nur per Einladung: im Aufruf einen Zugang `invited` mit Einladung vor Ort anlegen statt `active` · Aufwand `klein`. Mit Folgen für ADR-023: neue Fassung, die diesen Weg aufnimmt · Aufwand `klein`.
+

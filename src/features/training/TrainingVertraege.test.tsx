@@ -14,7 +14,8 @@ const { TrainingVertraege } = await import('./TrainingVertraege');
 
 const VERTRAG: Api.Kontovertrag = {
   id: 'k1',
-  concluded_at: '2026-10-07T10:15:00Z',
+  concluded_at: '2026-10-06T22:15:00Z',
+  concluded_on: '2026-10-07',
   package_label: 'Trainingspaket 3 Monate',
   price_cents: 39000,
   currency: 'EUR',
