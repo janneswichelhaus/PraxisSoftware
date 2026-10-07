@@ -364,7 +364,7 @@ const einstiegSchema = z.object({
 export type Einstieg = z.infer<typeof einstiegSchema>;
 
 export function einstiegsschluessel(zugangId: string) {
-  return ['platform-onboarding', zugangId] as const;
+  return ['platform-access-onboarding', zugangId] as const;
 }
 
 /** Ob die Person ihren Einstieg beendet hat oder die Praxis ihn übersprungen hat. */

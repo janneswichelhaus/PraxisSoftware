@@ -22,9 +22,11 @@ import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
 import { Einstieg } from './Einstieg';
+import { Einstellungen } from './Einstellungen';
 import { Einwilligungen } from './Einwilligungen';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
+import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Uebersicht } from './Uebersicht';
 import { Terminaenderung } from './Terminaenderung';
@@ -74,9 +76,11 @@ export function PlattformApp({
   );
   const exportierbar = entscheidend.filter((z) => z.readable);
   const praxis = zugaenge[0]?.organization_name ?? '';
+  // POR-020 (ANN-267): Schriftgröße des Geräts; mindestens 18 px am Gerüst.
+  useSchriftgroesseAnwenden();
 
   return (
-    <div className="bg-canvas flex min-h-dvh flex-col">
+    <div className="plattform-schrift bg-canvas flex min-h-dvh flex-col">
       <Kopf praxis={praxis} bereiche={lesbar} />
       <HandelnFuer bereiche={lesbar} />
       <main
@@ -196,6 +200,10 @@ export function PlattformApp({
             }
           />
           <Route
+            path={`${PLATTFORM_PFAD}/einstellungen`}
+            element={<Einstellungen zugaenge={lesbar} />}
+          />
+          <Route
             path={`${PLATTFORM_PFAD}/ich`}
             element={
               <Ich
@@ -312,7 +320,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
         <Link
           to={`${PLATTFORM_PFAD}/ich`}
           aria-current={pathname === `${PLATTFORM_PFAD}/ich` ? 'page' : undefined}
-          className="text-ink hover:text-accent aria-[current=page]:text-accent aria-[current=page]:border-accent inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-2 text-base font-medium"
+          className="text-ink hover:text-accent aria-[current=page]:text-accent aria-[current=page]:border-accent inline-flex min-h-11 items-center gap-2 border-b-2 border-transparent px-2 text-base font-medium whitespace-nowrap"
         >
           <span
             aria-hidden="true"
@@ -338,7 +346,9 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
         <nav aria-label="Bereich" className="mx-auto max-w-xl px-5 pb-3">
           <ul className="bg-surface-sunken rounded-button flex flex-wrap gap-1 p-1">
             {bereiche.map((z) => (
-              <li key={z.access_id} className="min-w-0 flex-1">
+              // POR-020: Bei 200 % am Telefon stehen die Bereiche untereinander,
+              // statt mitten im Wort zu trennen.
+              <li key={z.access_id} className="min-w-0 flex-1 max-[23rem]:basis-full">
                 <Link
                   to={wahlAdresse(z)}
                   replace
@@ -422,7 +432,7 @@ function Ich({
       <h1 className="text-accent text-h3 font-bold">Ich</h1>
       <Section titel="Konto" rahmen>
         <p className="text-ink text-base">
-          Angemeldet als <span className="font-medium">{email ?? 'Ihr Konto'}</span>
+          Angemeldet als <span className="font-medium wrap-anywhere">{email ?? 'Ihr Konto'}</span>
         </p>
         {praxis ? <p className="text-ink-muted mt-1 text-sm">Zugang von {praxis}</p> : null}
         <div className="mt-4 flex flex-col gap-3 sm:flex-row">
@@ -453,13 +463,17 @@ function Ich({
           <ul className="flex flex-col gap-2">
             {zugaenge.map((z) => (
               <li key={z.access_id} className="flex flex-col gap-2">
-                <Textlink to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}>
+                <Textlink
+                  alleinstehend
+                  to={`${PLATTFORM_PFAD}/rechnungen?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                >
                   Rechnungen
                   {zugaenge.length > 1 ? ` – ${wahlName(z)}` : ''}
                 </Textlink>
                 {/* POR-014: Dokumente gibt es nur in der Behandlung. */}
                 {z.relationship_kind === 'treatment' ? (
                   <Textlink
+                    alleinstehend
                     to={`${PLATTFORM_PFAD}/dokumente?${wahlAdresse(z).split('?')[1] ?? ''}`}
                   >
                     Dokumente
@@ -479,6 +493,7 @@ function Ich({
             {entscheidend.map((z) => (
               <li key={z.access_id} className="flex flex-col gap-2">
                 <Textlink
+                  alleinstehend
                   to={`${PLATTFORM_PFAD}/einwilligungen?${wahlAdresse(z).split('?')[1] ?? ''}`}
                 >
                   Einwilligungen
@@ -486,7 +501,10 @@ function Ich({
                 </Textlink>
                 {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
                 {z.readable ? (
-                  <Textlink to={`${PLATTFORM_PFAD}/daten?${wahlAdresse(z).split('?')[1] ?? ''}`}>
+                  <Textlink
+                    alleinstehend
+                    to={`${PLATTFORM_PFAD}/daten?${wahlAdresse(z).split('?')[1] ?? ''}`}
+                  >
                     Meine Daten herunterladen
                     {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
                   </Textlink>
@@ -501,6 +519,12 @@ function Ich({
           </ul>
         </Section>
       ) : null}
+      {/* POR-020: Schriftgröße und was die Praxis eingestellt hat. */}
+      <Section titel="Einstellungen" rahmen>
+        <Textlink alleinstehend to={`${PLATTFORM_PFAD}/einstellungen`}>
+          Schriftgröße und Einstellungen
+        </Textlink>
+      </Section>
       {mitVertretungen.map((z) => (
         <WerZugangHat key={z.access_id} zugang={z} mehrere={mitVertretungen.length > 1} />
       ))}

@@ -213,7 +213,7 @@ export function KoerperschemaBild({
           );
         })}
       </svg>
-      <div className="text-ink-muted flex justify-around text-xs">
+      <div className="text-ink-muted flex flex-wrap justify-around gap-x-2 text-xs">
         <span>Vorderansicht</span>
         <span>Rückansicht</span>
       </div>

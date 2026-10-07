@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Einwilligung, Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
 /**
  * „Ich → Einwilligungen" (POR-016; ADR-023 Punkt 13; DSN-001 D2): Stand in
@@ -143,5 +144,17 @@ describe('Einwilligungen (POR-016)', () => {
     expect(
       await screen.findByText(/entscheiden die Person selbst oder ihre rechtliche Vertretung/),
     ).toBeInTheDocument();
+  });
+});
+
+describe('Einwilligungen - Barrierefreiheit (POR-020)', () => {
+  it('besteht die automatische Prüfung', async () => {
+    ladeEinwilligungen.mockResolvedValue([
+      stand('email_contact', 'granted'),
+      stand('patient_photos', 'open'),
+    ]);
+    const { container } = renderWithProviders(<Einwilligungen zugang={ZUGANG} />);
+    await screen.findByText('Nachrichten per E-Mail');
+    await pruefeBarrierefreiheit(container);
   });
 });

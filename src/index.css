@@ -273,6 +273,83 @@
   --container-zweispaltig: 900px;
 }
 
+/* Schrift der Plattform (POR-020, DSN-001 Abschnitt 7 Punkt 1,
+   `IDEA-QSN-006`, ANN-267): Keine Schrift unter 18 px - die kleinen Stufen
+   des Systems (Beschriftung 12, Hinweis 14, Liste 15, Fließtext 16 px)
+   werden im Plattformgerüst auf 18 px gehoben. Die Rangfolge tragen dort
+   Gewicht, Farbe und Abstand, nicht die Größe. Als Tokens am Gerüst, nicht
+   je Seite: Jede neue Plattformseite erbt die Regel. Die Laufweite der
+   Versalien wird kleiner, weil 18 px in 0.14em zu breit laufen.
+
+   Die Einstellung „Schriftgröße" (Ich → Einstellungen) skaliert darüber
+   hinaus die Wurzelschrift: `data-schrift` an `<html>`, gesetzt nur,
+   solange die Plattform zu sehen ist (`src/features/platform/schriftgroesse.ts`). */
+.plattform-schrift {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  /* Lange deutsche Wörter („Lendenwirbelsäule") brechen bei großer Schrift
+     um, statt die Seite zu verbreitern - mit Trennstrich, wo der Browser
+     ihn kennt. */
+  overflow-wrap: anywhere;
+  hyphens: auto;
+  --text-xs: 1.125rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 1.125rem;
+  --text-sm--line-height: 1.45;
+  --text-base: 1.125rem;
+  --text-base--line-height: 1.5;
+  --text-liste: 1.125rem;
+  --text-leiste: 1.125rem;
+  --text-kleingedruckt: 1.125rem;
+  --tracking-label: 0.06em;
+}
+/* Bei 200 % Vergrößerung bleibt am Telefon kaum Breite (375 px werden
+   188): Knöpfe brechen um statt hinauszuragen, Gruppen schrumpfen mit
+   (`fieldset` ist sonst so breit wie sein Inhalt). */
+.plattform-schrift :is(button, a) {
+  max-width: 100%;
+}
+/* Zeit, Titel und Zustand nebeneinander brauchen Platz (ListRow trägt dafür
+   `listenzeile`): Am Telefon steht der Zustand unter dem Titel, bei sehr
+   wenig Breite (200 %) steht alles untereinander. */
+@media (max-width: 40rem) {
+  .plattform-schrift .listenzeile {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .plattform-schrift .listenzeile > :nth-child(3) {
+    grid-column: 2;
+  }
+}
+@media (max-width: 23rem) {
+  .plattform-schrift .listenzeile {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.25rem;
+    justify-items: start;
+  }
+  .plattform-schrift .listenzeile > :nth-child(3) {
+    grid-column: 1;
+  }
+  /* Eine Skala (0–10) mit so vielen Stufen je Reihe, wie 44 px breit
+     hineinpassen - Reihenfolge und Anker bleiben (ANN-258). */
+  .plattform-schrift .skala {
+    grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
+  }
+}
+.plattform-schrift .h-12 {
+  height: auto;
+  min-height: 3rem;
+  padding-block: 0.5rem;
+}
+.plattform-schrift fieldset {
+  min-width: 0;
+}
+html[data-schrift='gross'] {
+  font-size: 112.5%;
+}
+html[data-schrift='sehr-gross'] {
+  font-size: 125%;
+}
+
 /* Schraffur für Flächen, die nicht zur Verfügung stehen - im Kalender die
    Zeit außerhalb der Arbeitszeit (UX-005c). Feine Linien in `line` auf der
    vertieften Fläche: Die Fläche liest sich als „hier nicht", ohne dass die

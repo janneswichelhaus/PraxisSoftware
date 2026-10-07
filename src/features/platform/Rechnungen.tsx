@@ -154,7 +154,7 @@ function Blatt({ rechnung: r }: { rechnung: Rechnungsblatt }) {
     : null;
 
   return (
-    <article className="text-ink mx-auto max-w-[210mm]">
+    <article className="text-ink mx-auto max-w-[210mm] wrap-anywhere">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h1 className="text-accent text-h3 font-bold">Rechnung {r.invoice_number}</h1>
         <Badge ton={stand.ton}>{stand.wort}</Badge>

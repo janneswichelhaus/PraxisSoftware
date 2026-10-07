@@ -3214,3 +3214,15 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `skip_platform_onboarding` und `platform_onboarding` in `supabase/migrations/20261013130000_por_019_platform_onboarding.sql`; `UebersichtOderEinstieg` in `src/features/platform/PlattformApp.tsx`; `src/features/platform/Einstieg.tsx`.
 
 **Änderungspfad.** Einstieg je Konto: Stand an `user_profiles` statt am Zugang · Aufwand `mittel`. Benachrichtigungen: Schritt mit ADR-024 · Aufwand `klein`.
+
+### ANN-267 — Plattform: keine Schrift unter 18 px, Schriftgröße nur auf dem Gerät, Ziele mindestens 44 px
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (am Handy, auch mit „Sehr groß")
+
+**Annahme.** Im Plattformgerüst ist jede Schrift mindestens 18 px: Die kleinen Stufen des Systems werden dort auf 18 px gehoben, die Rangfolge tragen Gewicht und Farbe. Unter „Ich → Einstellungen" wählt die Person „Normal", „Groß" (112,5 %) oder „Sehr groß" (125 %), gespeichert nur im Browser des Geräts. Bei wenig Breite brechen lange Wörter und Knöpfe um, Listenzeilen stellen den Zustand unter den Titel. Berührflächen sind mindestens 44 px hoch; Knöpfe haben 48, Textlinks 44. Geprüft automatisch auf jeder Plattformansicht: Schrift, Ziele, axe mit Kontrast, kein waagerechtes Scrollen bei 375 und 188 px (200 %).
+
+**Begründung.** DSN-001 Abschnitt 7 und `IDEA-QSN-006`: 18 px, 200 % ohne waagerechtes Scrollen, Kontrast 4,5 : 1. Die Schriftgröße im Browser zu speichern ist Datenminimierung (Art. 5 Abs. 1 lit. c) und passt zu Geräten, die sich Angehörige teilen. Für die Ziele nennt DSN-001 48 px; WCAG 2.5.5 verlangt 44, und Textlinks auf 48 zu heben hätte die Praxisbausteine verändert. Unsicher: ob Jannes die Versalien der Abschnittstitel in 18 px zu laut findet.
+
+**Anker.** `.plattform-schrift` und `html[data-schrift]` in `src/index.css`; `src/features/platform/schriftgroesse.ts`; `listenzeile` in `src/components/ui/ListRow.tsx`. Geprüft in `tests/e2e/plattform-barrierefreiheit.spec.ts`.
+
+**Änderungspfad.** Andere Grundgröße: die Tokens in `.plattform-schrift` · Aufwand `klein`. Ziele 48 px: Mindesthöhe der Textlinks im Gerüst · Aufwand `klein`. Größe am Konto speichern: Spalte und Projektion · Aufwand `mittel`.
