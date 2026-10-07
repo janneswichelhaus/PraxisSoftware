@@ -3515,3 +3515,63 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Zugang zum Training nur per Einladung: im Aufruf einen Zugang `invited` mit Einladung vor Ort anlegen statt `active` · Aufwand `klein`. Mit Folgen für ADR-023: neue Fassung, die diesen Weg aufnimmt · Aufwand `klein`.
 
+
+### ANN-292 — Eine Übungsbibliothek für Behandlung und Training
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
+
+**Annahme.** Die Praxis führt **eine** Übungsbibliothek für beide Leistungsbereiche. Übung und Variante tragen keinen Leistungsbereich und keinen Personenbezug; therapist und team_lead lesen dieselbe Bibliothek wie die Trainingsbetreuung. Personenbezogen wird eine Übung erst im Plan (UEB-EPIC-002), der an seinem Verhältnis hängt.
+
+**Begründung.** §4.8 und ADR-021 Punkt 6 trennen **Daten einer Person** nach Rechtsverhältnis; eine Übung ist Fachwissen der Praxis wie ein Textbaustein (ANN-020) und kein Datum über jemanden. Zwei Bibliotheken verdoppelten die Pflege, ohne etwas zu schützen. Die Roadmap verlangt ausdrücklich eine Bibliothek, „die für Therapie und Training trägt“. Unsicher: ob die Prüfung schon im Namen oder in der Kurzanleitung einer Übung einen mittelbaren Personenbezug sieht, wenn eine Praxis Übungen für Einzelne anlegt; die Oberfläche sagt deshalb „für die Praxis“, nicht „für eine Person“.
+
+**Anker.** Die Tabellen `public.exercises` und `public.exercise_variants` ohne Spalte `service_area` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`. Geprüft in `supabase/tests/exercise-library.test.ts`.
+
+**Änderungspfad.** Getrennte Bibliotheken: Spalte `service_area` an der Übung und Filter in `public.list_exercise_library` nach der Rolle · Aufwand `mittel`.
+
+### ANN-293 — Die Übungsbibliothek pflegt die Praxisinhaber:in; das Büro sieht sie nicht
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Lesen dürfen owner, therapist, team_lead und die Trainingsbetreuung; anlegen, ändern, archivieren und löschen nur owner. Das Büro sieht die Bibliothek nicht.
+
+**Begründung.** IDEA-TRN-005 beschreibt die Bibliothek als „kuratierte fachliche Leistung“: Wer sie ändert, ändert, was alle Pläne der Praxis später anbieten – dieselbe Überlegung wie bei den praxisweiten Textbausteinen (`app.can_manage_shared_text_snippets`). Das Büro leitet keine Übung an; was es nicht braucht, sieht es nicht (§3.5 Datenminimierung). Offen ist, ob Therapeut:innen und Trainingsbetreuung selbst Übungen anlegen sollen – das fragt die Freigabe des Epics.
+
+**Anker.** `app.can_read_exercise_library()` und `app.can_manage_exercise_library()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Darstellung `canReadExerciseLibrary` in `src/features/session/types.ts`. Geprüft in `supabase/tests/exercise-library.test.ts`.
+
+**Änderungspfad.** Mehr Rollen pflegen lassen: die Rollenliste in `app.can_manage_exercise_library()` erweitern · Aufwand `klein`. Das Büro lesen lassen: dasselbe in `app.can_read_exercise_library()` und `canReadExerciseLibrary` · Aufwand `klein`.
+
+### ANN-294 — Eine Verbindung: von leichter nach schwerer, genau eine Achse
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Zwei Varianten verbindet höchstens eine Verbindung. Sie führt immer von der leichteren zur schwereren und trägt genau eine der zwölf Achsen aus IDEA-TRN-004 (Last, Wiederholungen, Sätze, Bewegungsausmaß, Hebel, Unterstützung, Unterstützungsfläche, Tempo, Dichte, Komplexität, Geschwindigkeit, Frequenz). Kreise sind ausgeschlossen, archivierte Varianten werden nicht neu verbunden; verbinden lassen sich Varianten auch über Übungen hinweg.
+
+**Begründung.** IDEA-TRN-004 verlangt, je Schritt **eine** Achse zu ändern, damit eine Reaktion zuzuordnen bleibt; zwei Varianten, die sich in zwei Achsen unterscheiden, sind zwei Schritte. IDEA-TRN-005 nennt Regression und Progression als Richtung – „leichter“ und „schwerer“ sagen dasselbe ohne Fachwort. Die Verbindungen werden nur angezeigt; eine Funktion, die sich entlang der Kanten bewegt, wäre nach ADR-006 Punkt 10 eine Vorauswahl und entsteht nicht.
+
+**Anker.** `app.exercise_axes()`, der eindeutige Index `exercise_variant_links_pair_unique` und die Kreisprüfung in `public.link_exercise_variants` in `supabase/migrations/20261017110000_ueb_002_variant_links.sql`; `ACHSEN` in `src/features/exercises/types.ts`. Geprüft in `supabase/tests/exercise-variant-links.test.ts`.
+
+**Änderungspfad.** Andere oder weitere Achsen: beide Listen und eine Migration mit der neuen Funktion · Aufwand `klein`. Mehrere Achsen je Verbindung: Spalte als Feld, Index und Prüfung anpassen · Aufwand `mittel`.
+
+### ANN-295 — Feste Körperregionen, Ausrüstung als freie Schlagworte
+
+Technik · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Übung trägt genau eine Körperregion aus einer festen, groben Liste ohne Seite (HWS, BWS, LWS, Schulter, Ellenbogen, Hand, Hüfte, Knie, Fuß, Rumpf, ganzer Körper). Die Ausrüstung einer Variante sind höchstens acht freie Schlagworte zu je höchstens 40 Zeichen, ohne Doppelte.
+
+**Begründung.** Region und Gerät sind die beiden Ordnungen, die ADR-006 Punkt 10 ausdrücklich als keine klinische Vorauswahl nennt. Eine feste Regionsliste macht den Filter verlässlich; das Körperschema der Fragebögen (`app.questionnaire_body_regions`) ist mit Seiten und 40 Feldern für eine Übung zu fein. Für Geräte gibt es keine Liste, die eine Praxis vorab kennt.
+
+**Anker.** `app.exercise_body_regions()` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql` und `KOERPERREGIONEN` in `src/features/exercises/types.ts`; `supabase/tests/exercise-library.test.ts` hält beide gleich.
+
+**Änderungspfad.** Region ändern oder ergänzen: beide Listen und eine Migration mit der neuen Funktion · Aufwand `klein`. Mehrere Regionen je Übung: Spalte als Feld statt Text · Aufwand `mittel`.
+
+### ANN-296 — Übungen werden archiviert; Löschen nur ohne Abhängige
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Übung oder Variante, die nicht mehr angeboten werden soll, wird archiviert: Sie verschwindet aus der Bibliothek, bleibt aber nachlesbar und lässt sich zurückholen. Löschen ist für Versehen da – eine Übung erst ohne Varianten, eine Variante nur, solange nichts auf sie zeigt (Verbindung, später Plan).
+
+**Begründung.** ADR-008 Punkt 10 verbietet das dauerhafte Soft-Delete für **personenbezogene** Daten; die Bibliothek ist keins, und Archivieren erhält, was spätere Pläne als Vorlage hatten (der Plan friert ohnehin einen Schnappschuss ein, UEB-EPIC-002). Die Fremdschlüssel halten das Löschen auf, statt eine Prüfung im Code zu verlangen.
+
+**Anker.** `public.set_exercise_archived`, `public.set_exercise_variant_archived`, `public.delete_exercise` und `public.delete_exercise_variant` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Datenklasse `betriebsdaten` in `public.retention_assignments`.
+
+**Änderungspfad.** Löschen auch mit Abhängigen: Fremdschlüssel auf `cascade` und eine Rückfrage, was mitgeht · Aufwand `mittel`.

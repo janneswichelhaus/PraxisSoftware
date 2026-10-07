@@ -428,6 +428,19 @@ export function canReadTrainingProtocols(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Wer die Übungsbibliothek liest (UEB-001, ANN-293): wer Übungen anleitet -
+ * owner, therapist, team_lead, Trainingsbetreuung; nicht das Büro. Pflegen
+ * darf nur owner. Verbindlich sind app.can_read_exercise_library() und
+ * app.can_manage_exercise_library().
+ */
+export function canReadExerciseLibrary(roles: readonly RoleKey[]): boolean {
+  return roles.some(
+    (role) =>
+      role === 'owner' || role === 'therapist' || role === 'team_lead' || role === 'trainer',
+  );
+}
+
+/**
  * Wer den Kalender öffnet (TRN-006): die Praxisrollen und die Rollen des
  * Trainingsbereichs. Welche Termine darin stehen, entscheidet der Server je
  * Termin nach Kontext (ADR-022 Punkt 11) - die Trainingsbetreuung sieht dort

@@ -24,6 +24,9 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+delete from public.exercise_variant_links;
+delete from public.exercise_variants;
+delete from public.exercises;
 delete from public.staff_working_hour_exceptions;
 delete from public.staff_working_hours;
 delete from public.appointment_notifications;
@@ -520,6 +523,89 @@ insert into public.treatment_text_snippets (organization_id, staff_member_id, ti
   ('22222222-2222-4222-8222-000000000001', '55555555-5555-4555-8555-000000000002', 'Manuelle Therapie',
    'Manuelle Techniken angewendet, Reaktion im Verlauf der Behandlung beobachtet.',
    '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002');
+
+-- -----------------------------------------------------------------------------
+-- Uebungsbibliothek (UEB-EPIC-001)
+--
+-- Erfundene, allgemeine Uebungen ohne Bezug auf eine Diagnose - Katalog, keine
+-- Empfehlung (ADR-006 Punkt 10). Ketten von leichter nach schwerer entlang je
+-- einer Achse (ANN-294), eine ueber zwei Uebungen hinweg (Kniebeuge ->
+-- Ausfallschritt) und eine archivierte Uebung (ANN-296). Umlaute bewusst
+-- umschrieben wie im Rest dieser Datei.
+-- -----------------------------------------------------------------------------
+insert into public.exercises
+  (id, organization_id, name, lay_name, body_region, archived_at, archived_by, created_by, updated_by) values
+  ('abababab-abab-4bab-8bab-000000000001', '22222222-2222-4222-8222-000000000001', 'Kniebeuge', 'In die Hocke gehen', 'knie', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000002', '22222222-2222-4222-8222-000000000001', 'Bruecke', 'Becken heben', 'lws', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000003', '22222222-2222-4222-8222-000000000001', 'Wadenheben', 'Auf die Zehen stellen', 'fuss', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000004', '22222222-2222-4222-8222-000000000001', 'Rudern mit Band', 'Arme zum Koerper ziehen', 'bws', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000005', '22222222-2222-4222-8222-000000000001', 'Ausfallschritt', 'Grosser Schritt nach vorn', 'knie', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000006', '22222222-2222-4222-8222-000000000001', 'Aussenrotation mit Band', 'Arm nach aussen drehen', 'schulter', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000007', '22222222-2222-4222-8222-000000000001', 'Vierfuesslerstand mit Strecken', 'Im Vierfuessler Arm und Bein strecken', 'rumpf', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000008', '22222222-2222-4222-8222-000000000001', 'Kinn-Nicken', 'Kinn sanft Richtung Brust', 'hws', null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('abababab-abab-4bab-8bab-000000000009', '22222222-2222-4222-8222-000000000001', 'Beinpresse', 'Beine gegen die Platte druecken', 'knie', now(), '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001');
+
+insert into public.exercise_variants
+  (id, organization_id, exercise_id, name, lay_name, instruction, equipment, common_faults, practice_notes, created_by, updated_by) values
+  ('acacacac-acac-4cac-8cac-000000000001', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000001', 'Kniebeuge am Gelaender, halbe Tiefe', 'Am Gelaender halb in die Hocke',
+   'Mit beiden Haenden am Gelaender festhalten. Langsam halb in die Hocke gehen, kurz halten, wieder aufrichten.',
+   array['Gelaender']::text[], 'Knie fallen nach innen; Fersen heben ab.', 'Hoehe des Griffs vor Ort zeigen.', '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000002', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000001', 'Kniebeuge freistehend, halbe Tiefe', 'Frei halb in die Hocke',
+   'Fuesse hueftbreit. Arme nach vorn, langsam halb in die Hocke, wieder aufrichten.',
+   '{}'::text[], 'Oberkoerper kippt weit nach vorn.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000003', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000001', 'Kniebeuge freistehend, volle Tiefe', 'Frei tief in die Hocke',
+   'Fuesse hueftbreit. So tief in die Hocke, wie es ruhig geht, dann wieder aufrichten.',
+   '{}'::text[], 'Ruecken rundet sich in der Tiefe.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000004', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000001', 'Kniebeuge einbeinig an der Wand', 'Auf einem Bein in die Hocke, Ruecken an der Wand',
+   'Mit dem Ruecken an die Wand lehnen, ein Bein anheben und langsam etwas in die Knie gehen.',
+   array['Wand']::text[], 'Becken kippt zur Seite.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000005', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000002', 'Bruecke beidbeinig', 'Becken anheben, beide Fuesse am Boden',
+   'Auf dem Ruecken liegen, Fuesse aufstellen. Becken heben, bis Oberkoerper und Oberschenkel eine Linie bilden. Langsam ablegen.',
+   array['Matte']::text[], 'Hohlkreuz statt Gesaess anspannen.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000006', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000002', 'Bruecke einbeinig', 'Becken anheben, ein Bein gestreckt',
+   'Wie die beidbeinige Bruecke, ein Bein bleibt gestreckt in der Luft.',
+   array['Matte']::text[], 'Becken sinkt auf einer Seite ab.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000007', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000003', 'Wadenheben beidbeinig am Stuhl', 'Am Stuhl auf die Zehen',
+   'Hinter einem Stuhl stehen, Lehne halten. Auf die Zehen hoch und langsam wieder ab.',
+   array['Stuhl']::text[], 'Gewicht auf den Aussenkanten der Fuesse.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000008', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000003', 'Wadenheben einbeinig am Stuhl', 'Am Stuhl auf einem Bein auf die Zehen',
+   'Wie beidbeinig, aber nur auf einem Bein. Langsam wieder absenken.',
+   array['Stuhl']::text[], null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000009', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000004', 'Rudern im Sitzen, Theraband gelb', 'Im Sitzen das gelbe Band heranziehen',
+   'Band um die Fuesse legen, Enden greifen. Ellenbogen nah am Koerper nach hinten ziehen, Schulterblaetter zusammen.',
+   array['Theraband gelb']::text[], 'Schultern ziehen zu den Ohren.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000010', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000004', 'Rudern im Sitzen, Theraband rot', 'Im Sitzen das rote Band heranziehen',
+   'Wie mit dem gelben Band, das rote ist fester.',
+   array['Theraband rot']::text[], 'Schultern ziehen zu den Ohren.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000011', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000005', 'Ausfallschritt am Stuhl', 'Grosser Schritt nach vorn, Hand am Stuhl',
+   'Eine Hand an der Stuhllehne. Grossen Schritt nach vorn, hinteres Knie Richtung Boden, zurueck in den Stand.',
+   array['Stuhl']::text[], 'Vorderes Knie schiebt weit ueber die Zehen.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000012', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000006', 'Aussenrotation im Stehen, Theraband gelb', 'Im Stehen den Arm mit dem gelben Band nach aussen drehen',
+   'Ellenbogen am Koerper, Unterarm nach vorn. Band nach aussen ziehen, langsam zurueck.',
+   array['Theraband gelb']::text[], 'Ellenbogen loest sich vom Koerper.', 'Handtuchrolle zwischen Ellenbogen und Koerper zeigen.', '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000013', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000007', 'Vierfuesslerstand, Arm strecken', 'Im Vierfuessler einen Arm nach vorn strecken',
+   'Auf Haenden und Knien. Einen Arm nach vorn strecken, Ruecken bleibt ruhig, wieder absetzen.',
+   array['Matte']::text[], 'Becken dreht mit.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000014', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000007', 'Vierfuesslerstand, Arm und Bein gegengleich', 'Im Vierfuessler Arm und gegenueberliegendes Bein strecken',
+   'Wie mit dem Arm, dazu das gegenueberliegende Bein nach hinten strecken.',
+   array['Matte']::text[], 'Hohlkreuz beim Strecken des Beins.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000015', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000008', 'Kinn-Nicken im Liegen', 'Im Liegen das Kinn sanft nicken',
+   'Auf dem Ruecken liegen, Kopf auf einem flachen Kissen. Kinn sanft Richtung Brust nicken, kurz halten.',
+   array['Kissen']::text[], 'Kopf hebt vom Kissen ab.', null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001'),
+  ('acacacac-acac-4cac-8cac-000000000016', '22222222-2222-4222-8222-000000000001', 'abababab-abab-4bab-8bab-000000000009', 'Beinpresse am Geraet', 'An der Beinpresse druecken',
+   'Fuesse hueftbreit auf die Platte, Platte wegdruecken, langsam zurueck.',
+   array['Beinpresse']::text[], null, null, '11111111-1111-4111-8111-000000000001', '11111111-1111-4111-8111-000000000001');
+
+insert into public.exercise_variant_links
+  (id, organization_id, easier_variant_id, harder_variant_id, axis, created_by) values
+  ('adadadad-adad-4dad-8dad-000000000001', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000001', 'acacacac-acac-4cac-8cac-000000000002', 'unterstuetzung', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000002', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000002', 'acacacac-acac-4cac-8cac-000000000003', 'bewegungsausmass', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000003', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000003', 'acacacac-acac-4cac-8cac-000000000004', 'unterstuetzungsflaeche', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000004', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000005', 'acacacac-acac-4cac-8cac-000000000006', 'unterstuetzungsflaeche', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000005', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000007', 'acacacac-acac-4cac-8cac-000000000008', 'unterstuetzungsflaeche', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000006', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000009', 'acacacac-acac-4cac-8cac-000000000010', 'last', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000007', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000013', 'acacacac-acac-4cac-8cac-000000000014', 'komplexitaet', '11111111-1111-4111-8111-000000000001'),
+  ('adadadad-adad-4dad-8dad-000000000008', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000003', 'acacacac-acac-4cac-8cac-000000000011', 'komplexitaet', '11111111-1111-4111-8111-000000000001');
 
 -- -----------------------------------------------------------------------------
 -- Arbeitszeiten (CAL-005)

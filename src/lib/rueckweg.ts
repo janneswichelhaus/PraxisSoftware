@@ -134,5 +134,8 @@ export function rueckwegBeschriftung(pfad: string): string {
   if (ohneSuche === '/mein-konto') return 'Zurück zu „Mein Konto“';
   if (ohneSuche === '/training') return `Zurück zu den ${BEGRIFFE.trainingskundInnen}`;
   if (ohneSuche.startsWith('/training/')) return `Zurück zur ${BEGRIFFE.trainingskundIn}`;
+  // UEB-EPIC-001: die Übungsbibliothek und eine Übung darin.
+  if (ohneSuche === '/uebungen') return `Zurück zu den ${BEGRIFFE.uebungen}`;
+  if (ohneSuche.startsWith('/uebungen/')) return `Zurück zur ${BEGRIFFE.uebung}`;
   return 'Zurück';
 }

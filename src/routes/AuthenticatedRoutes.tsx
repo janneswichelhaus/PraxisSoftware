@@ -98,10 +98,13 @@ import { NewTrainingAppointmentPage } from '@/features/training/NewTrainingAppoi
 import { EditTrainingAppointmentPage } from '@/features/training/EditTrainingAppointmentPage';
 import { TrainingAppointmentPage } from '@/features/training/TrainingAppointmentPage';
 import { TrainingClientsPage } from '@/features/training/TrainingClientsPage';
+import { UebungenPage } from '@/features/exercises/UebungenPage';
+import { UebungPage } from '@/features/exercises/UebungPage';
 import { ServicesPage } from '@/features/billing/ServicesPage';
 import {
   canManageAppointments,
   canManageStaffMasterData,
+  canReadExerciseLibrary,
   canReadPatientDirectory,
   canReadTrainingClients,
   canSeeCalendar,
@@ -167,6 +170,9 @@ export function AuthenticatedRoutes({
   // und team_lead (ADR-021 Punkt 6). Verbindlich prüft der Server.
   const showTraining = canReadTrainingClients(user.roles);
   const showCalendar = canSeeCalendar(user.roles);
+  // Übungsbibliothek (UEB-EPIC-001): wer Übungen anleitet, in Behandlung und
+  // Training; nicht das Büro (ANN-293). Verbindlich prüft der Server.
+  const showExercises = canReadExerciseLibrary(user.roles);
 
   return (
     <VorschauProvider>
@@ -514,6 +520,12 @@ export function AuthenticatedRoutes({
                 // Kennzahlen der Praxisfuehrung (STA-EPIC-001); fuer eine Person
                 // mit Umsatzbeteiligung nur der eigene Umsatz (STA-006).
                 <Route path="/statistiken" element={<StatisticsPage user={user} />} />
+              ) : null}
+              {showExercises ? (
+                <>
+                  <Route path="/uebungen" element={<UebungenPage user={user} />} />
+                  <Route path="/uebungen/:uebungId" element={<UebungPage user={user} />} />
+                </>
               ) : null}
               {showTraining ? (
                 <>
