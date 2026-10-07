@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -8,10 +8,18 @@ import { SearchField } from '@/components/ui/SearchField';
 import { Feldgruppe } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
-import { KOERPERREGION_LABEL } from '@/features/exercises/types';
+import { ACHSE_LABEL, KOERPERREGION_LABEL, type Achse } from '@/features/exercises/types';
+import { Select } from '@/components/ui/Select';
 import { filtere, KEIN_FILTER } from '@/features/exercises/suche';
 import type { Bibliothek } from '@/features/exercises/api';
-import { PLAENE_SCHLUESSEL, savePosition, type Position, type PositionEingabe } from './api';
+import {
+  PLAENE_SCHLUESSEL,
+  POSITIONSACHSEN,
+  savePosition,
+  type Position,
+  type PositionEingabe,
+} from './api';
+import { dosierungFachlich } from './dosierung';
 
 /**
  * Eine Position anlegen oder ändern (UEB-004): Übung aus der Bibliothek und
@@ -21,11 +29,15 @@ import { PLAENE_SCHLUESSEL, savePosition, type Position, type PositionEingabe } 
  * Bezeichnung geordnet (ADR-006 Punkt 10). Archivierte Varianten stehen nicht
  * zur Wahl; eine schon gewählte bleibt (ANN-296).
  *
- * `schritt` (UEB-006) erscheint nur an einer Position, die aus der vorigen
- * Fassung stammt.
+ * An einer Position aus der vorigen Fassung (UEB-006, ANN-301) gibt es
+ * höchstens einen Schritt in genau einer Achse: eine andere Variante nur über
+ * eine Verbindung der Bibliothek, sonst ein anderer Wert der Dosierung. Die
+ * Verbindungen erscheinen erst, wenn die Fachperson Richtung und Achse wählt -
+ * nichts schlägt einen Schritt vor (ADR-006 Punkt 10).
  */
 
-type Feld = 'variante' | 'saetze' | 'wdhVon' | 'wdhBis' | 'dauer' | 'pause' | 'last' | 'doppelt';
+type Feld =
+  'variante' | 'saetze' | 'wdhVon' | 'wdhBis' | 'dauer' | 'pause' | 'last' | 'doppelt' | 'achse';
 
 const FELDNAMEN: Readonly<Record<Feld, string>> = {
   variante: 'Übung',
@@ -36,6 +48,7 @@ const FELDNAMEN: Readonly<Record<Feld, string>> = {
   pause: 'Pause',
   last: 'Last',
   doppelt: 'Doppelte Progression',
+  achse: 'Achse',
 };
 
 interface Werte {
@@ -77,8 +90,8 @@ function ganz(text: string): number | null {
 export function PositionFormular({
   planId,
   position,
+  vorige,
   bibliothek,
-  schritt,
   idPraefix,
   onFertig,
   onAbbrechen,
@@ -86,13 +99,8 @@ export function PositionFormular({
   planId: string;
   position?: Position;
   bibliothek: Bibliothek;
-  /** UEB-006: Auswahl des einen Schritts - liefert Achse und Richtung. */
-  schritt?: (werte: { variantId: string }) => {
-    feld: ReactNode;
-    achse: string | null;
-    richtung: 'harder' | 'easier' | null;
-    fehler?: string;
-  };
+  /** UEB-006: die Position der vorigen Fassung, gegen die der Schritt gilt. */
+  vorige?: Position | undefined;
   idPraefix: string;
   onFertig: () => void;
   onAbbrechen: () => void;
@@ -102,6 +110,10 @@ export function PositionFormular({
   const [suche, setSuche] = useState('');
   const [waehlen, setWaehlen] = useState(!position);
   const [fehler, setFehler] = useState<Partial<Record<Feld, string>>>({});
+  const [richtung, setRichtung] = useState<'' | 'harder' | 'easier'>(
+    position?.step_direction ?? '',
+  );
+  const [achse, setAchse] = useState<string>(position?.step_axis ?? '');
 
   const varianten = useMemo(() => {
     const karte = new Map<
@@ -132,7 +144,29 @@ export function PositionFormular({
   );
 
   const gewaehlt = varianten.get(werte.variantId);
-  const schrittWahl = schritt?.({ variantId: werte.variantId });
+
+  // Die Nachbarn der vorigen Variante entlang der gewählten Achse in der
+  // gewählten Richtung - so, wie die Praxis sie verbunden hat (UEB-002).
+  const nachbarn = useMemo(() => {
+    if (!vorige || !richtung || !achse) return [];
+    return bibliothek.links
+      .filter(
+        (link) =>
+          link.axis === achse &&
+          (richtung === 'harder'
+            ? link.easier_variant_id === vorige.variant_id
+            : link.harder_variant_id === vorige.variant_id),
+      )
+      .map((link) => (richtung === 'harder' ? link.harder_variant_id : link.easier_variant_id))
+      .filter((id) => {
+        const uebung = bibliothek.exercises.find((u) => u.variants.some((v) => v.id === id));
+        const v = uebung?.variants.find((x) => x.id === id);
+        return uebung !== undefined && v !== undefined && !uebung.archived && !v.archived;
+      })
+      .sort((a, b) =>
+        (varianten.get(a)?.name ?? '').localeCompare(varianten.get(b)?.name ?? '', 'de'),
+      );
+  }, [vorige, richtung, achse, bibliothek, varianten]);
 
   const speichern = useMutation({
     mutationFn: (eingabe: PositionEingabe) => savePosition(eingabe),
@@ -177,8 +211,9 @@ export function PositionFormular({
         gefunden.last = 'Doppelte Progression braucht eine Last.';
       }
     }
+    if (vorige && richtung && !achse) gefunden.achse = 'Bitte die Achse wählen.';
     setFehler(gefunden);
-    if (Object.keys(gefunden).length > 0 || schrittWahl?.fehler) return;
+    if (Object.keys(gefunden).length > 0) return;
     speichern.mutate({
       ...(position ? { id: position.id } : {}),
       planId,
@@ -192,8 +227,8 @@ export function PositionFormular({
       pause,
       doppelt: werte.doppelt,
       hinweis: werte.hinweis,
-      achse: schrittWahl?.achse ?? null,
-      richtung: schrittWahl?.richtung ?? null,
+      achse: vorige && richtung ? achse : null,
+      richtung: vorige && richtung ? richtung : null,
     });
   }
 
@@ -226,7 +261,7 @@ export function PositionFormular({
                   {gewaehlt.uebung} · {gewaehlt.region}
                 </span>
               </p>
-              {!waehlen && !schritt ? (
+              {!waehlen && !vorige ? (
                 <Button
                   type="button"
                   variant="quiet"
@@ -238,8 +273,7 @@ export function PositionFormular({
               ) : null}
             </div>
           ) : null}
-          {schrittWahl ? schrittWahl.feld : null}
-          {waehlen && !schritt ? (
+          {waehlen && !vorige ? (
             <div className="flex flex-col gap-2">
               <SearchField
                 label="Übung suchen"
@@ -285,6 +319,97 @@ export function PositionFormular({
             </p>
           ) : null}
         </fieldset>
+
+        {vorige ? (
+          <fieldset id={id('achse')} tabIndex={-1} className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium">
+              Schritt gegenüber der vorigen Fassung
+            </legend>
+            <p className="text-ink-muted text-sm">
+              Vorher: {vorige.variant_name} · {dosierungFachlich(vorige)}. Je Übung höchstens ein
+              Schritt in genau einer Achse.
+            </p>
+            <div className="flex flex-wrap gap-x-6">
+              {(
+                [
+                  ['', 'Kein Schritt'],
+                  ['harder', 'Schwerer'],
+                  ['easier', 'Leichter'],
+                ] as const
+              ).map(([wert, text]) => (
+                <label key={wert} className="flex min-h-11 items-center gap-2">
+                  <input
+                    type="radio"
+                    name={id('richtung')}
+                    checked={richtung === wert}
+                    onChange={() => {
+                      setRichtung(wert);
+                      if (!wert) {
+                        setAchse('');
+                        setze('variantId', vorige.variant_id);
+                      }
+                    }}
+                  />
+                  {text}
+                </label>
+              ))}
+            </div>
+            {richtung ? (
+              <Select
+                label="Achse"
+                className="max-w-64"
+                value={achse}
+                error={fehler.achse}
+                onChange={(event) => {
+                  setAchse(event.target.value);
+                  setze('variantId', vorige.variant_id);
+                }}
+              >
+                <option value="">Bitte wählen</option>
+                {POSITIONSACHSEN.map((a) => (
+                  <option key={a} value={a}>
+                    {ACHSE_LABEL[a as Achse]}
+                  </option>
+                ))}
+              </Select>
+            ) : null}
+            {richtung && achse ? (
+              nachbarn.length > 0 ? (
+                <div className="flex flex-col gap-1">
+                  <p className="text-sm">
+                    {richtung === 'harder' ? 'Schwerer' : 'Leichter'} laut Bibliothek – oder den
+                    Wert unten ändern:
+                  </p>
+                  <ul className="flex flex-col gap-1">
+                    {nachbarn.map((nachbar) => (
+                      <li key={nachbar}>
+                        <Button
+                          type="button"
+                          variant={werte.variantId === nachbar ? 'secondary' : 'quiet'}
+                          groesse="kompakt"
+                          aria-pressed={werte.variantId === nachbar}
+                          onClick={() =>
+                            setze(
+                              'variantId',
+                              werte.variantId === nachbar ? vorige.variant_id : nachbar,
+                            )
+                          }
+                        >
+                          {varianten.get(nachbar)?.name ?? nachbar}
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="text-ink-muted text-sm">
+                  In der Bibliothek ist in diese Richtung keine Variante verbunden. Für Last,
+                  Wiederholungen, Sätze, Tempo und Dichte den Wert unten ändern.
+                </p>
+              )
+            ) : null}
+          </fieldset>
+        ) : null}
 
         <Field
           label="Sätze *"

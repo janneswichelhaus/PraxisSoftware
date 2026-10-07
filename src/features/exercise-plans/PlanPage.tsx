@@ -14,16 +14,20 @@ import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek } from '@/features/exercises/api
 import {
   PLAENE_SCHLUESSEL,
   assignPlan,
+  createVersion,
   deletePosition,
   discardPlan,
   fetchPlan,
   movePosition,
+  planPfad,
   planSchluessel,
   savePlan,
   type Plan,
   type Position,
 } from './api';
-import { dosierungAlltag, dosierungFachlich } from './dosierung';
+import { dosierungAlltag, dosierungFachlich, unterschiede } from './dosierung';
+import { ACHSE_LABEL } from '@/features/exercises/types';
+import { ButtonLink } from '@/components/ui/ButtonLink';
 import { LAUFZEIT_HOECHSTENS_TAGE, LAUFZEIT_VORSCHLAG_TAGE, tagPlus } from './laufzeit';
 import { formatDate } from '@/lib/datum';
 import { verhaeltnisPfad } from './api';
@@ -99,6 +103,7 @@ function Ansicht({ plan }: { plan: Plan }) {
           <Positionsliste plan={plan} />
         </>
       )}
+      <Fassungen plan={plan} />
     </>
   );
 }
@@ -143,6 +148,7 @@ function Entwurf({ plan }: { plan: Plan }) {
                   <PositionFormular
                     planId={plan.id}
                     position={position}
+                    vorige={vorigePosition(plan, position)}
                     bibliothek={bibliothek.data}
                     idPraefix={`position-${position.id}`}
                     onFertig={() => setOffen(null)}
@@ -152,6 +158,7 @@ function Entwurf({ plan }: { plan: Plan }) {
               ) : (
                 <Positionskarte
                   position={position}
+                  zusatz={<Schritt position={position} vorige={vorigePosition(plan, position)} />}
                   aktionen={
                     <PositionAktionen
                       position={position}
@@ -398,7 +405,10 @@ function Positionsliste({ plan }: { plan: Plan }) {
           {plan.items.map((position) => (
             <li key={position.id}>
               {sprache === 'fachlich' ? (
-                <Positionskarte position={position} />
+                <Positionskarte
+                  position={position}
+                  zusatz={<Schritt position={position} vorige={vorigePosition(plan, position)} />}
+                />
               ) : (
                 <AlltagsKarte position={position} />
               )}
@@ -527,6 +537,91 @@ function Laufzeit({ plan }: { plan: Plan }) {
           </>
         ) : null}
       </dl>
+    </Section>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Fassungen (UEB-006, ANN-301)
+// -----------------------------------------------------------------------------
+
+function vorigePosition(plan: Plan, position: Position): Position | undefined {
+  if (!position.previous_item_id || !plan.previous) return undefined;
+  return plan.previous.items.find((p) => p.id === position.previous_item_id);
+}
+
+/** Der Schritt einer Position und was sich gegenüber der vorigen Fassung geändert hat. */
+function Schritt({ position, vorige }: { position: Position; vorige: Position | undefined }) {
+  if (!vorige) return null;
+  const zeilen = unterschiede(vorige, position);
+  return (
+    <div className="text-ink-muted mt-2 text-sm">
+      {position.step_axis && position.step_direction ? (
+        <p className="text-ink font-medium">
+          {position.step_direction === 'harder' ? 'Schwerer' : 'Leichter'}:{' '}
+          {ACHSE_LABEL[position.step_axis]}
+        </p>
+      ) : (
+        <p>Wie in der vorigen Fassung.</p>
+      )}
+      {zeilen.map((zeile) => (
+        <p key={zeile}>{zeile}</p>
+      ))}
+    </div>
+  );
+}
+
+function Fassungen({ plan }: { plan: Plan }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const neu = useMutation({
+    mutationFn: () => createVersion(plan.id),
+    onSuccess: async (id) => {
+      await queryClient.invalidateQueries({ queryKey: PLAENE_SCHLUESSEL });
+      void navigate(planPfad(plan.service_area, plan.relationship_id, id));
+    },
+  });
+  const darfNeu =
+    plan.can_write && plan.relationship_open && plan.status === 'assigned' && !plan.follow_up;
+  if (!darfNeu && !plan.follow_up && !plan.previous_plan_id) return null;
+
+  return (
+    <Section
+      titel="Fassungen"
+      hinweis={
+        darfNeu
+          ? 'Steigern oder zurücknehmen: Die neue Fassung übernimmt alle Übungen; je Übung ein Schritt in genau einer Achse. Mit dem Zuweisen löst sie diesen Plan ab.'
+          : undefined
+      }
+    >
+      <div className="flex flex-wrap gap-3">
+        {darfNeu ? (
+          <Button variant="secondary" disabled={neu.isPending} onClick={() => neu.mutate()}>
+            {neu.isPending ? 'Wird angelegt …' : 'Neue Fassung'}
+          </Button>
+        ) : null}
+        {plan.follow_up ? (
+          <ButtonLink
+            variant="secondary"
+            to={planPfad(plan.service_area, plan.relationship_id, plan.follow_up.id)}
+          >
+            {plan.follow_up.status === 'draft' ? 'Neue Fassung (Entwurf)' : 'Neue Fassung'}
+          </ButtonLink>
+        ) : null}
+        {plan.previous_plan_id ? (
+          <ButtonLink
+            variant="quiet"
+            to={planPfad(plan.service_area, plan.relationship_id, plan.previous_plan_id)}
+          >
+            Vorige Fassung
+          </ButtonLink>
+        ) : null}
+      </div>
+      {neu.isError ? (
+        <Statusmeldung ton="fehler" className="mt-3">
+          {neu.error.message}
+        </Statusmeldung>
+      ) : null}
     </Section>
   );
 }

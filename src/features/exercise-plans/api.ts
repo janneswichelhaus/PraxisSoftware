@@ -193,6 +193,21 @@ function meldung(error: Fehler, rest: string): Error {
     ['is too long', 'Ein Eintrag ist zu lang.'],
     ['sessions per week', 'Bitte die Einheiten je Woche prüfen (1 bis 14).'],
     ['has no exercises', 'Bitte zuerst mindestens eine Übung hinzufügen.'],
+    ['already has a new version', 'Zu diesem Plan gibt es schon eine neue Fassung.'],
+    [
+      'only one axis per step',
+      'Je Schritt ändert sich genau eine Achse – bitte nur einen Wert ändern.',
+    ],
+    [
+      'step axis is required',
+      'Bitte angeben, ob und in welcher Achse gesteigert oder zurückgenommen wird.',
+    ],
+    ['step direction does not match', 'Die Richtung passt nicht zur Änderung.'],
+    ['step does not match', 'Achse und Richtung passen nicht zur Änderung.'],
+    [
+      'not a single step',
+      'Wiederholungen und Dauer zu tauschen ist kein Schritt – bitte die Übung entfernen und neu hinzufügen.',
+    ],
     ['runs until is invalid', 'Bitte ein Ende zwischen heute und 26 Wochen ab heute wählen.'],
   ];
   const treffer = saetze.find(([schluessel]) => text.includes(schluessel));
@@ -312,4 +327,11 @@ export async function assignPlan(planId: string, laeuftBis: string): Promise<voi
     { p_plan_id: planId, p_runs_until: laeuftBis },
     'Der Plan konnte nicht zugewiesen werden.',
   );
+}
+
+/** UEB-006: neue Fassung eines zugewiesenen Plans als Entwurf (ANN-301). */
+export async function createVersion(planId: string): Promise<string> {
+  const rest = 'Die neue Fassung konnte nicht angelegt werden.';
+  const data = await rufe('create_exercise_plan_version', { p_plan_id: planId }, rest);
+  return antwort(z.string(), data, rest);
 }

@@ -15,6 +15,7 @@ const movePosition = vi.fn();
 const deletePosition = vi.fn();
 const discardPlan = vi.fn();
 const assignPlan = vi.fn();
+const createVersion = vi.fn();
 const fetchBibliothek = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -30,6 +31,7 @@ vi.mock('./api', async (importOriginal) => {
     deletePosition: (...a: unknown[]) => deletePosition(...a) as Promise<void>,
     discardPlan: (...a: unknown[]) => discardPlan(...a) as Promise<void>,
     assignPlan: (...a: unknown[]) => assignPlan(...a) as Promise<void>,
+    createVersion: (...a: unknown[]) => createVersion(...a) as Promise<string>,
   };
 });
 
@@ -171,6 +173,7 @@ beforeEach(() => {
     deletePosition,
     discardPlan,
     assignPlan,
+    createVersion,
     fetchBibliothek,
   ]) {
     f.mockReset();
@@ -184,6 +187,7 @@ beforeEach(() => {
   deletePosition.mockResolvedValue(undefined);
   discardPlan.mockResolvedValue(undefined);
   assignPlan.mockResolvedValue(undefined);
+  createVersion.mockResolvedValue('p2');
 });
 
 describe('Dosierung in Worten (ANN-299)', () => {
@@ -408,5 +412,102 @@ describe('PlanPage: Zuweisen und Schnappschuss (UEB-005)', () => {
     );
     renderWithProviders(<PlanPage />);
     expect(await screen.findByText(/– abgelaufen/)).toBeInTheDocument();
+  });
+});
+
+describe('PlanPage: Progression von Hand (UEB-006)', () => {
+  const zugewiesen = () =>
+    plan({
+      status: 'assigned',
+      runs_from: '2026-10-01',
+      runs_until: '2026-11-12',
+      original_runs_until: '2026-11-12',
+    });
+
+  const fassung = (teil: Partial<Api.Position> = {}) =>
+    plan({
+      id: 'p2',
+      previous_plan_id: 'p1',
+      previous: {
+        id: 'p1',
+        title: 'Heimprogramm Knie',
+        sessions_per_week: 3,
+        runs_from: '2026-10-01',
+        runs_until: '2026-11-12',
+        items: [position({ id: 'alt1' })],
+      },
+      items: [position({ id: 'i2', previous_item_id: 'alt1', ...teil })],
+    });
+
+  it('legt aus einem zugewiesenen Plan eine neue Fassung an', async () => {
+    fetchPlan.mockResolvedValue(zugewiesen());
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    await user.click(await screen.findByRole('button', { name: 'Neue Fassung' }));
+    await waitFor(() => expect(createVersion).toHaveBeenCalledWith('p1'));
+  });
+
+  it('bietet ohne Schreibrecht keine neue Fassung an, zeigt aber den Weg zur vorhandenen', async () => {
+    fetchPlan.mockResolvedValue({
+      ...zugewiesen(),
+      can_write: false,
+      follow_up: { id: 'p2', status: 'draft' },
+    });
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByRole('link', { name: 'Neue Fassung (Entwurf)' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Neue Fassung' })).not.toBeInTheDocument();
+  });
+
+  it('zeigt Schritt und Unterschied zur vorigen Fassung', async () => {
+    fetchPlan.mockResolvedValue(
+      fassung({ load: '7 kg', step_axis: 'last', step_direction: 'harder' }),
+    );
+    renderWithProviders(<PlanPage />);
+    const karte = await screen.findByRole('article');
+    expect(karte).toHaveTextContent('Schwerer: Last');
+    expect(karte).toHaveTextContent('Last: 5 kg → 7 kg');
+    expect(screen.getByRole('link', { name: 'Vorige Fassung' })).toBeInTheDocument();
+  });
+
+  it('wählt den Schritt von Hand - die Nachbarn erst nach Richtung und Achse (ADR-006 Punkt 10)', async () => {
+    fetchPlan.mockResolvedValue(fassung());
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    await user.click(await screen.findByRole('button', { name: 'Ändern' }));
+    const formular = screen.getByRole('form', { name: 'Übung im Plan ändern' });
+    expect(
+      within(formular).queryByRole('button', { name: 'Kniebeuge frei' }),
+    ).not.toBeInTheDocument();
+    expect(
+      within(formular).queryByRole('button', { name: 'Andere Übung wählen' }),
+    ).not.toBeInTheDocument();
+
+    await user.click(within(formular).getByLabelText('Schwerer'));
+    await user.click(within(formular).getByRole('button', { name: 'Speichern' }));
+    expect(within(formular).getAllByText('Bitte die Achse wählen.').length).toBeGreaterThan(0);
+
+    await user.selectOptions(within(formular).getByLabelText('Achse'), 'unterstuetzung');
+    await user.click(within(formular).getByRole('button', { name: 'Kniebeuge frei' }));
+    await user.click(within(formular).getByRole('button', { name: 'Speichern' }));
+    await waitFor(() =>
+      expect(savePosition).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'i2',
+          variantId: 'v2',
+          achse: 'unterstuetzung',
+          richtung: 'harder',
+        }),
+      ),
+    );
+  });
+
+  it('nennt ohne Verbindung den Weg über den Wert', async () => {
+    fetchPlan.mockResolvedValue(fassung());
+    const user = userEvent.setup();
+    renderWithProviders(<PlanPage />);
+    await user.click(await screen.findByRole('button', { name: 'Ändern' }));
+    await user.click(screen.getByLabelText('Schwerer'));
+    await user.selectOptions(screen.getByLabelText('Achse'), 'last');
+    expect(screen.getByText(/keine Variante verbunden/)).toBeInTheDocument();
   });
 });

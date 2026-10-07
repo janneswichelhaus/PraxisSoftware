@@ -815,3 +815,262 @@ describe('Übungspläne: Zuweisen und Schnappschuss (UEB-005)', () => {
     });
   });
 });
+
+const FASSUNG = 'select public.create_exercise_plan_version($1::uuid) as id';
+
+async function neueFassung(plan: string, konto: string = users.therapist): Promise<string> {
+  const { rows } = await asUserCommitted<{ id: string }>(konto, FASSUNG, [plan]);
+  return rows[0]!.id;
+}
+
+describe('Übungspläne: Progression von Hand (UEB-006)', () => {
+  let vorige: string;
+  let kniebeuge: string;
+  let rudern: string;
+
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await asPostgres(`
+      alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
+      alter table public.exercise_plans disable trigger exercise_plans_guard;
+      delete from public.exercise_plans;
+      alter table public.exercise_plans enable trigger exercise_plans_guard;
+      alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
+    `);
+    vorige = await planAnlegen();
+    await asUserCommitted(users.therapist, PLAN_SPEICHERN, [vorige, 'Heimprogramm Knie', 2]);
+    kniebeuge = await positionAnlegen(vorige, VARIANTE.kniebeugeGelaender, {
+      repsMin: 8,
+      repsMax: 12,
+      last: '3 kg',
+      doppelt: true,
+      pause: 60,
+    });
+    rudern = await positionAnlegen(vorige, VARIANTE.rudernGelb, { sets: 2 });
+    await zuweisen(vorige);
+  });
+
+  async function schritt(item: string, variante: string, d: Dosierung) {
+    return asUserCommitted(users.therapist, POSITION, positionParameter(item, null, variante, d));
+  }
+
+  it('übernimmt Titel, Frequenz und Positionen als Entwurf mit Verweis auf die vorige', async () => {
+    const neu = await neueFassung(vorige);
+    const p = (await planLesen(neu))!;
+    expect(p).toMatchObject({
+      status: 'draft',
+      previous_plan_id: vorige,
+      title: 'Heimprogramm Knie',
+      sessions_per_week: 2,
+    });
+    expect(p.items.map((i) => [i.variant_id, i.previous_item_id, i.step_axis])).toEqual([
+      [VARIANTE.kniebeugeGelaender, kniebeuge, null],
+      [VARIANTE.rudernGelb, rudern, null],
+    ]);
+    expect(p.previous!.id).toBe(vorige);
+    expect((await planLesen(vorige))!.follow_up).toEqual({ id: neu, status: 'draft' });
+    await expect(neueFassung(vorige)).rejects.toThrow(/already has a new version/);
+  });
+
+  it('doppelte Progression: ein Schritt auf der Achse Last, der Bereich bleibt (IDEA-TRN-007)', async () => {
+    const neu = await neueFassung(vorige);
+    const item = (await planLesen(neu))!.items[0]!;
+    await schritt(item.id, VARIANTE.kniebeugeGelaender, {
+      repsMin: 8,
+      repsMax: 12,
+      last: '5 kg',
+      doppelt: true,
+      pause: 60,
+      achse: 'last',
+      richtung: 'harder',
+    });
+    expect((await planLesen(neu))!.items[0]).toMatchObject({
+      load: '5 kg',
+      reps_min: 8,
+      reps_max: 12,
+      step_axis: 'last',
+      step_direction: 'harder',
+    });
+  });
+
+  it('wechselt die Variante nur über eine Verbindung der Bibliothek (UEB-002)', async () => {
+    const neu = await neueFassung(vorige);
+    const item = (await planLesen(neu))!.items[0]!;
+    const basis = { repsMin: 8, repsMax: 12, last: '3 kg', doppelt: true, pause: 60 };
+    // Gelaender -> frei: Achse Unterstuetzung, schwerer.
+    await expect(
+      schritt(item.id, VARIANTE.kniebeugeFrei, { ...basis, achse: 'hebel', richtung: 'harder' }),
+    ).rejects.toThrow(/does not match/);
+    await expect(
+      schritt(item.id, VARIANTE.kniebeugeFrei, {
+        ...basis,
+        achse: 'unterstuetzung',
+        richtung: 'easier',
+      }),
+    ).rejects.toThrow(/does not match/);
+    // Ohne Verbindung (Gelaender -> tief) geht es nicht.
+    await expect(
+      schritt(item.id, VARIANTE.kniebeugeTief, {
+        ...basis,
+        achse: 'bewegungsausmass',
+        richtung: 'harder',
+      }),
+    ).rejects.toThrow(/does not match/);
+    await schritt(item.id, VARIANTE.kniebeugeFrei, {
+      ...basis,
+      achse: 'unterstuetzung',
+      richtung: 'harder',
+    });
+    expect((await planLesen(neu))!.items[0]).toMatchObject({
+      variant_id: VARIANTE.kniebeugeFrei,
+      step_axis: 'unterstuetzung',
+    });
+  });
+
+  it.each([
+    [
+      'zwei Achsen',
+      {
+        repsMin: 10,
+        repsMax: 12,
+        last: '5 kg',
+        doppelt: true,
+        pause: 60,
+        achse: 'last',
+        richtung: 'harder',
+      },
+      /only one axis/,
+    ],
+    [
+      'ohne Achse',
+      { repsMin: 8, repsMax: 12, last: '5 kg', doppelt: true, pause: 60 },
+      /step axis is required/,
+    ],
+    [
+      'falsche Achse',
+      {
+        repsMin: 8,
+        repsMax: 12,
+        last: '5 kg',
+        doppelt: true,
+        pause: 60,
+        achse: 'tempo',
+        richtung: 'harder',
+      },
+      /does not match/,
+    ],
+    [
+      'Achse ohne Änderung',
+      {
+        repsMin: 8,
+        repsMax: 12,
+        last: '3 kg',
+        doppelt: true,
+        pause: 60,
+        achse: 'last',
+        richtung: 'harder',
+      },
+      /does not match/,
+    ],
+    [
+      'Frequenz an der Position',
+      {
+        repsMin: 8,
+        repsMax: 12,
+        last: '3 kg',
+        doppelt: true,
+        pause: 60,
+        achse: 'frequenz',
+        richtung: 'harder',
+      },
+      /step is invalid/,
+    ],
+    [
+      'kürzere Pause ist nicht leichter',
+      {
+        repsMin: 8,
+        repsMax: 12,
+        last: '3 kg',
+        doppelt: true,
+        pause: 45,
+        achse: 'dichte',
+        richtung: 'easier',
+      },
+      /direction does not match/,
+    ],
+    [
+      'mehr Wiederholungen sind nicht leichter',
+      {
+        repsMin: 10,
+        repsMax: 14,
+        last: '3 kg',
+        doppelt: true,
+        pause: 60,
+        achse: 'wiederholungen',
+        richtung: 'easier',
+      },
+      /direction does not match/,
+    ],
+    [
+      'Wechsel zur Dauer',
+      {
+        repsMin: null,
+        repsMax: null,
+        dauer: 30,
+        last: '3 kg',
+        pause: 60,
+        achse: 'wiederholungen',
+        richtung: 'harder',
+      },
+      /not a single step/,
+    ],
+  ])('weist ab: %s (ANN-301)', async (_fall, d, fehler) => {
+    const neu = await neueFassung(vorige);
+    const item = (await planLesen(neu))!.items[0]!;
+    await expect(schritt(item.id, VARIANTE.kniebeugeGelaender, d as Dosierung)).rejects.toThrow(
+      fehler,
+    );
+  });
+
+  it('lässt Hinweis und Sätze-Schritt zu; eine neue Position trägt keinen Schritt', async () => {
+    const neu = await neueFassung(vorige);
+    const item = (await planLesen(neu))!.items[1]!;
+    await schritt(item.id, VARIANTE.rudernGelb, {
+      sets: 3,
+      hinweis: 'Schultern unten lassen.',
+      achse: 'saetze',
+      richtung: 'harder',
+    });
+    await expect(
+      positionAnlegen(neu, VARIANTE.brueckeBeidbeinig, { achse: 'saetze', richtung: 'harder' }),
+    ).rejects.toThrow(/previous version/);
+    await positionAnlegen(neu, VARIANTE.brueckeBeidbeinig);
+    expect((await planLesen(neu))!.items.map((i) => i.step_axis)).toEqual([null, 'saetze', null]);
+  });
+
+  it('löst mit der Zuweisung die vorige Fassung ab; die vorige bleibt lesbar', async () => {
+    const neu = await neueFassung(vorige);
+    await zuweisen(neu);
+    const alt = (await planLesen(vorige))!;
+    expect(alt).toMatchObject({ status: 'superseded', follow_up: { id: neu, status: 'assigned' } });
+    expect(alt.items).toHaveLength(2);
+    expect((await planLesen(neu))!.status).toBe('assigned');
+  });
+
+  it('verwirft eine neue Fassung und legt sie wieder an', async () => {
+    const neu = await neueFassung(vorige);
+    await asUserCommitted(users.therapist, VERWERFEN, [neu]);
+    expect((await planLesen(vorige))!.follow_up).toBeNull();
+    await neueFassung(vorige);
+  });
+
+  it('gibt nur einem zugewiesenen Plan eine neue Fassung, nur im eigenen Bereich', async () => {
+    const entwurf = await planAnlegen();
+    await expect(neueFassung(entwurf)).rejects.toThrow(/only an assigned/);
+    await expect(neueFassung(vorige, users.trainer)).rejects.toThrow(/exercise plan not found/);
+    await expect(neueFassung(vorige, users.office)).rejects.toThrow(/not allowed/);
+  });
+});
