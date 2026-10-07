@@ -148,7 +148,7 @@ in den Etappen darunter.
 | 3 | **Training** | TRN-EPIC-001 → -002 → -003 → -004 | — | Sichtung |
 | 4 | **Plattformzugang** | ~~POR-EPIC-001~~ (gebaut 2026-09-30) → ~~-001b~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001b**~~ (gebaut 2026-10-02) → ~~**ABN-EPIC-001c**~~ (gebaut 2026-10-02) → ~~**ABR-EPIC-007**~~ (gebaut 2026-10-05) → ~~POR-EPIC-002~~ (gebaut 2026-10-06) → ~~-003~~ (gebaut 2026-10-07) | **DSN-001** Ansichten für Patient:innen und Betreuung · **ADR-023** Plattformzugang (beide vor POR-EPIC-001) | ~~DSN-001 bestätigen~~ (2026-09-30: wie empfohlen) · ~~ADR-023 bestätigen~~ (2026-09-30: wie empfohlen) |
 | 5 | **Angebote** | ~~ANG-EPIC-001~~ (gebaut 2026-10-07) → ~~ANG-EPIC-002~~ (gebaut 2026-10-07) → ~~KND-EPIC-001~~ (gebaut 2026-10-07) | — | Abo- und Paketpreise (bis dahin synthetisch) |
-| 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → -002 → -003 → KOM-EPIC-001 → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
+| 6 | **Pläne und Rückfragen** | ~~UEB-EPIC-001~~ (gebaut 2026-10-07) → ~~-002~~ (gebaut 2026-10-07) → -003 → KOM-EPIC-001 → -002 → -003 | **ADR-024** Offline-Erfassung und Benachrichtigungen (vor KOM-EPIC-003) | ADR-024 bestätigen |
 | 7 | **Verlauf und Alltag** | TRK-EPIC-001 → -002 → -003 → OUT-EPIC-001 → ALT-EPIC-001 → ALT-EPIC-002 → ORG-EPIC-001 | — | Sichtung |
 | 8 | **Praxisbetrieb** | FLT-EPIC-001 → TEAM-001 → URL-001 → ZK-001 → ERS-001 | — | Tübinger Standortvorlage (Depot, Werkstatt) |
 | 9 | **Assistenz und Komfort** | KI-EPIC-001 → KI-EPIC-002 → MAP-007 → PRX-EPIC-004 → UI-003 | — | Sichtung |
