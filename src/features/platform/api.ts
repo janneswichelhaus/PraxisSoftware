@@ -646,6 +646,66 @@ export function einwilligungsfehler(meldung: string | undefined): string {
 // Datenexport (POR-018, IDEA-QSN-003, ANN-265)
 // -----------------------------------------------------------------------------
 
+// -----------------------------------------------------------------------------
+// Trainingspaket und Preise (ANG-008, IDEA-ANG-004, PROJECT_PRINCIPLES.md 4.10)
+// -----------------------------------------------------------------------------
+
+const meinPaketSchema = z.object({
+  label: z.string(),
+  package_months: z.number(),
+  price_cents: z.number(),
+  currency: z.string(),
+  starts_on: z.string(),
+  ends_on: z.string(),
+  /** Aus dem Tag: beginnt bald, läuft, vorbei. Kein Pausieren (ANN-277). */
+  state: z.enum(['planned', 'running', 'ended']),
+});
+export type MeinPaket = z.infer<typeof meinPaketSchema>;
+
+export function paketeSchluessel(zugangId: string) {
+  return ['platform-training-packages', zugangId] as const;
+}
+
+/** Die eigenen Pakete; `null` heißt: für diesen Zugang nicht sichtbar (Recht billing). */
+export async function ladeMeinePakete(zugangId: string): Promise<MeinPaket[] | null> {
+  const satz = 'Ihr Paket konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_packages', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(meinPaketSchema).nullable(), ergebnis.data ?? null, satz);
+}
+
+const angeboteSchema = z.object({
+  /** Enthält der Preis Umsatzsteuer? Unter § 19 UStG nicht. */
+  vat_included: z.boolean(),
+  offers: z.array(
+    z.object({
+      code: z.string(),
+      label: z.string(),
+      package_months: z.number(),
+      price_cents: z.number(),
+      currency: z.string(),
+      tax_rate_permille: z.number(),
+    }),
+  ),
+});
+export type Paketangebote = z.infer<typeof angeboteSchema>;
+
+export function angeboteSchluessel(zugangId: string) {
+  return ['platform-training-offers', zugangId] as const;
+}
+
+/** Die Pakete der geltenden Preisliste; `null`: für diesen Zugang keine (nur Training). */
+export async function ladeAngebote(zugangId: string): Promise<Paketangebote | null> {
+  const satz = 'Die Preise konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_training_offers', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(angeboteSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
 const exportSchema = z.object({
   format: z.literal('plattform-export'),
   format_version: z.number(),
@@ -660,6 +720,8 @@ const exportSchema = z.object({
   invoices: z.array(rechnungZeileSchema),
   documents: z.array(dokumentSchema),
   consents: z.array(einwilligungSchema.omit({ can_grant: true })),
+  /** ANG-008: die eigenen Trainingspakete; ältere Exporte tragen sie nicht. */
+  training_packages: z.array(meinPaketSchema).default([]),
 });
 export type Datenexport = z.infer<typeof exportSchema>;
 

@@ -74,6 +74,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigenes Nachsorge-Abo (ANG-003); Negativfälle in aftercare-cancellation.test.ts',
   'public.cancel_platform_aftercare':
     'Nachsorge-Abo kündigen (ANG-003); ohne Recht contract abgewiesen (42501), Negativfälle in aftercare-cancellation.test.ts',
+  'public.platform_training_offers':
+    'Trainingspakete der geltenden Preisliste (ANG-008); Negativfälle in training-packages.test.ts',
+  'public.platform_training_packages':
+    'Eigene Trainingspakete (ANG-008); Negativfälle in training-packages.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

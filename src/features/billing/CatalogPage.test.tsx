@@ -63,6 +63,7 @@ function position(
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     service_area: 'therapy',
+    package_months: null,
     ...rest,
   };
 }
@@ -176,6 +177,59 @@ describe('CatalogPage', () => {
     expect(writeKatalogPositionen).toHaveBeenCalledWith('v2', [
       expect.objectContaining({ service_area: 'training', tax_treatment: 'taxable' }),
     ]);
+  });
+
+  it('speichert ein Trainingspaket mit Laufzeit, Bereich und Regelsatz (ANG-005)', async () => {
+    const nutzer = userEvent.setup();
+    fetchKatalogVersionen.mockResolvedValue([version('v2', { published_at: null })]);
+    writeKatalogPositionen.mockResolvedValue(undefined);
+
+    renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+    // Die Art setzt Bereich und Steuer (ANN-275); die Laufzeit fehlt noch.
+    await nutzer.selectOptions(await screen.findByLabelText(/Art/), 'training_package');
+    expect(screen.getByLabelText(/Bereich/)).toHaveValue('training');
+    expect(screen.getByLabelText(/Steuer/)).toHaveValue('taxable');
+    await nutzer.click(screen.getByRole('button', { name: 'Entwurf speichern' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Position 1, Laufzeit: Bitte die Laufzeit in Monaten eingeben, 1 bis 24.',
+    );
+    expect(writeKatalogPositionen).not.toHaveBeenCalled();
+
+    await nutzer.type(screen.getByLabelText(/Laufzeit/), '3');
+    await nutzer.click(screen.getByRole('button', { name: 'Entwurf speichern' }));
+
+    expect(writeKatalogPositionen).toHaveBeenCalledWith('v2', [
+      expect.objectContaining({
+        item_kind: 'training_package',
+        package_months: 3,
+        service_area: 'training',
+        tax_treatment: 'taxable',
+        tax_rate_permille: 190,
+        remedy: null,
+      }),
+    ]);
+  });
+
+  it('zeigt ein Trainingspaket in der gueltigen Liste mit seiner Laufzeit (ANG-005)', async () => {
+    fetchKatalogVersionen.mockResolvedValue([version('v1')]);
+    fetchKatalogPositionen.mockResolvedValue([
+      position('p1', {
+        code: 'TP3',
+        label: 'Trainingspaket 3 Monate',
+        item_kind: 'training_package',
+        remedy: null,
+        unit_price_cents: 39000,
+        tax_treatment: 'taxable',
+        tax_rate_permille: 190,
+        service_area: 'training',
+        package_months: 3,
+      }),
+    ]);
+
+    renderWithProviders(<CatalogPage user={testUser(['owner'])} />, '/abrechnung/katalog');
+
+    expect(await screen.findByText(/Trainingspaket, 3 Monate/)).toBeInTheDocument();
   });
 
   it('weist eine Position ohne gueltigen Preis zurueck, bevor gespeichert wird', async () => {

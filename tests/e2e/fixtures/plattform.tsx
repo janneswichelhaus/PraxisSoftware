@@ -10,17 +10,21 @@ import type {
 import { EinladungVorOrt, PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import {
   aboSchluessel,
+  angeboteSchluessel,
   befundbogenSchluessel,
   dokumenteSchluessel,
   einstiegSchluessel,
   einwilligungenSchluessel,
+  paketeSchluessel,
   rechnungSchluessel,
   rechnungenSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
   type Dokument,
   type Einwilligung,
+  type MeinPaket,
   type Nachsorgeabo,
+  type Paketangebote,
   type Plattformzugang,
   type Rechnungsblatt,
   type Rechnungszeile,
@@ -44,7 +48,8 @@ import '@/index.css';
  * `daten`, `einstellungen`, `einstieg` (Einstieg steht aus) und
  * `ende` (Lesefrist vorbei, „Ich"). Seit ANG-EPIC-001 `abo` (laufendes
  * Nachsorge-Abo mit Kündigungsknopf) und `abo-gekuendigt` (Übersicht nach
- * der Kündigung). Die Daten liegen vorab im Cache;
+ * der Kündigung). Seit ANG-EPIC-002 `paket` (laufendes Trainingspaket mit
+ * Preisen) und `preise` (Preise ohne Paket). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -521,6 +526,39 @@ client.setQueryData(
     : abo,
 );
 client.setQueryData(aboSchluessel(begleitung.access_id), null);
+// ANG-EPIC-002: das Trainingspaket und die Preise im Training.
+const paket: MeinPaket = {
+  label: 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)',
+  package_months: 6,
+  price_cents: 72000,
+  currency: 'EUR',
+  starts_on: inTagen(-20, 0).slice(0, 10),
+  ends_on: inTagen(160, 0).slice(0, 10),
+  state: 'running',
+};
+const angebote: Paketangebote = {
+  vat_included: true,
+  offers: [
+    {
+      code: 'TP3',
+      label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+      package_months: 3,
+      price_cents: 39000,
+      currency: 'EUR',
+      tax_rate_permille: 190,
+    },
+    {
+      code: 'TP6',
+      label: 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)',
+      package_months: 6,
+      price_cents: 72000,
+      currency: 'EUR',
+      tax_rate_permille: 190,
+    },
+  ],
+};
+client.setQueryData(paketeSchluessel(zugaenge[1]!.access_id), seite === 'paket' ? [paket] : []);
+client.setQueryData(angeboteSchluessel(zugaenge[1]!.access_id), angebote);
 client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
@@ -603,9 +641,13 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'rechnung':
     case 'dokumente':
     case 'befundbogen':
+    case 'paket':
+    case 'preise':
     case 'abo': {
       const pfade: Record<string, string> = {
         abo: '/p/abo?bereich=treatment',
+        paket: '/p/paket?bereich=training',
+        preise: '/p/paket?bereich=training',
         termine: '/p/termine?bereich=treatment',
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,

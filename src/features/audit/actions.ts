@@ -123,6 +123,8 @@ export const auditOperationLabels: Record<string, string> = {
   'training_basis.concluded': 'Vereinbarung im Training abgeschlossen',
   'training_basis.created': 'Vereinbarung im Training angelegt',
   'training_basis.reopened': 'Vereinbarung im Training wieder geöffnet',
+  // ANG-006: Trainingspakete eines Verhältnisses und der Preisliste (owner, office).
+  'training_packages.read': 'Trainingspakete gelesen',
   'training_protocol.finalized': 'Trainingsprotokoll abgeschlossen',
   'training_protocol.updated': 'Trainingsprotokoll geändert',
   'training_protocol.viewed': 'Trainingsprotokoll gelesen',

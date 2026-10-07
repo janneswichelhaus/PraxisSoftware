@@ -282,6 +282,13 @@ export async function updateTrainingClient(id: string, werte: TrainingWerte): Pr
     p_relationship_id: id,
     ...rpcWerte(werte),
   });
+  // ANG-006 (Zweitreview): Ein Paket beginnt nie vor dem Vertrag.
+  const meldung = (ergebnis.error as { message?: string } | null)?.message ?? '';
+  if (meldung.includes('package starts before the contract start')) {
+    throw new Error(
+      'Ein Trainingspaket beginnt vor diesem Tag. Der Vertragsbeginn liegt spätestens am Beginn des ersten Pakets.',
+    );
+  }
   if (abgewiesen(ergebnis) || ergebnis.data === null) {
     throw new Error('Die Angaben konnten nicht gespeichert werden.');
   }
@@ -292,8 +299,16 @@ export async function endTrainingRelationship(id: string, endedOn: string): Prom
     p_relationship_id: id,
     p_ended_on: endedOn,
   });
+  // ANG-006 (ANN-277): Ein Paket ist nicht kündbar; der Vertrag endet
+  // frühestens mit seinem letzten Tag.
+  const meldung = (ergebnis.error as { message?: string } | null)?.message ?? '';
+  if (meldung.includes('runs beyond the contract end')) {
+    throw new Error(
+      'Ein Trainingspaket läuft noch über diesen Tag hinaus. Der Vertrag endet frühestens mit dem letzten Tag des Pakets.',
+    );
+  }
   if (abgewiesen(ergebnis) || ergebnis.data === null) {
-    throw new Error('Der Vertrag konnte nicht beendet werden.');
+    throw new Error('Der Vertrag konnte nicht beendet werden. Prüfen Sie das Datum.');
   }
 }
 

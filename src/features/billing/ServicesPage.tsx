@@ -121,6 +121,8 @@ export function ServicesPage() {
               Dokumentierte Behandlungstermine, Termine mit Ausfallhonorar und durchgeführte
               Trainingstermine. Andere stehen hier nicht: Eine Behandlung ohne finalisierte
               Dokumentation wird nicht abgerechnet, und einen Weg daran vorbei gibt es nicht.
+              Trainingstermine im Zeitraum eines Trainingspakets sind mit dem Paket bezahlt und
+              stehen hier ebenfalls nicht.
             </p>
           </Disclosure>
         </div>
@@ -156,6 +158,12 @@ export function ServicesPage() {
                 <div className="mt-2">
                   {gruppe.appointmentId ? (
                     <Zuruecknehmen appointmentId={gruppe.appointmentId} bereich={gruppe.bereich} />
+                  ) : gruppe.zeilen[0]?.item_kind === 'training_package' ? (
+                    // ANG-006: Die Leistung gehört zum Paket; eine Fehlanlage
+                    // entfernt das Paket mit ihr, am Trainingsverhältnis.
+                    <p className="text-ink-muted text-sm">
+                      Trainingspaket – eine Fehlanlage wird am Trainingsverhältnis entfernt.
+                    </p>
                   ) : (
                     // ANG-002: Ein Abo-Monat hat keinen Termin; zurückgenommen
                     // wird die eine Leistung.

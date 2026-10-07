@@ -64,6 +64,7 @@ function position(id: string, code: string, label: string, preis: number): Katal
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     service_area: 'therapy',
+    package_months: null,
   };
 }
 

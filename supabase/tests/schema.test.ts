@@ -129,6 +129,8 @@ describe('Schema-Invarianten', () => {
       'training_protocol_addenda',
       // POR-017: Einwilligung zu Gesundheitsangaben im Training.
       'training_consent_records',
+      // ANG-006: das Trainingspaket am Trainingsverhaeltnis.
+      'training_packages',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

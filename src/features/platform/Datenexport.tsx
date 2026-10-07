@@ -174,6 +174,18 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         ))}
       </Abschnitt>
 
+      {/* ANG-008: die eigenen Trainingspakete. */}
+      {daten.relationship === 'training' ? (
+        <Abschnitt titel={`Trainingspakete (${daten.training_packages.length})`}>
+          {daten.training_packages.length === 0 ? <Leer /> : null}
+          {daten.training_packages.map((k) => (
+            <Zeile key={k.starts_on} label={`${datum(k.starts_on)} bis ${datum(k.ends_on)}`}>
+              {k.label} · {formatEuro(k.price_cents, k.currency)}
+            </Zeile>
+          ))}
+        </Abschnitt>
+      ) : null}
+
       {daten.relationship === 'treatment' ? (
         <Abschnitt titel={`Dokumente (${daten.documents.length})`}>
           {daten.documents.length === 0 ? <Leer /> : null}

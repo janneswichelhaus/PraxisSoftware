@@ -42,6 +42,9 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string }[] = [
   // ANG-EPIC-001: das Nachsorge-Abo mit Kündigungsknopf und die Übersicht danach.
   { seite: 'abo', merkmal: 'Nachsorge-Abo' },
   { seite: 'abo-gekuendigt', merkmal: 'Guten Tag' },
+  // ANG-EPIC-002: das eigene Trainingspaket mit Preisen, und die Preise ohne Paket.
+  { seite: 'paket', merkmal: 'Trainingspaket' },
+  { seite: 'preise', merkmal: 'Trainingspaket' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string) {

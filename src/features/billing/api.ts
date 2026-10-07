@@ -42,13 +42,15 @@ export const katalogPositionSchema = z.object({
   sort_order: z.number(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
   remedy: z.string().nullable(),
   unit_price_cents: z.number(),
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
   tax_rate_permille: z.number(),
   service_area: z.enum(['therapy', 'training']),
+  /** ANG-005: Laufzeit eines Trainingspakets in Monaten; sonst leer. */
+  package_months: z.number().nullable(),
 });
 
 export type KatalogPosition = z.infer<typeof katalogPositionSchema>;
@@ -72,7 +74,14 @@ export const artLabels: Record<KatalogPosition['item_kind'], string> = {
   absence_fee: 'Ausfallhonorar',
   // ANG-002: der Abo-Monat des Nachsorge-Abos (ADR-009 Punkt 21).
   aftercare_month: 'Nachsorge-Abo (Monat)',
+  // ANG-005: das Trainingspaket nach Zeitraum (ADR-009 Punkt 21).
+  training_package: 'Trainingspaket',
 };
+
+/** ANG-005: eine Laufzeit in Monaten, ausgeschrieben („1 Monat", „3 Monate"). */
+export function monateText(monate: number): string {
+  return monate === 1 ? '1 Monat' : `${monate} Monate`;
+}
 
 export async function fetchKatalogVersionen(): Promise<KatalogVersion[]> {
   const { data, error } = await getSupabase()
@@ -88,7 +97,7 @@ export async function fetchKatalogPositionen(versionId: string): Promise<Katalog
   const { data, error } = await getSupabase()
     .from('service_catalog_items')
     .select(
-      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille, service_area',
+      'id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, currency, tax_treatment, tax_rate_permille, service_area, package_months',
     )
     .eq('catalog_version_id', versionId)
     .order('sort_order', { ascending: true });
@@ -107,6 +116,8 @@ export interface PositionsEingabe {
   tax_treatment: KatalogPosition['tax_treatment'];
   tax_rate_permille: number;
   service_area: Leistungsbereich;
+  /** ANG-005: Laufzeit eines Trainingspakets in Monaten, als Eingabetext. */
+  laufzeit: string;
 }
 
 export async function createKatalogVersion(
@@ -137,6 +148,7 @@ export async function writeKatalogPositionen(
     tax_treatment: string;
     tax_rate_permille: number;
     service_area: string;
+    package_months: number | null;
   }[],
 ): Promise<void> {
   const { error } = await getSupabase().rpc('write_service_catalog_items', {
@@ -571,7 +583,7 @@ const dokumentSchema = z.object({
       performed_on: z.string(),
       code: z.string(),
       label: z.string(),
-      item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
+      item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
       quantity: z.number(),
       unit_price_cents: z.number(),
       line_total_cents: z.number(),
@@ -1088,7 +1100,7 @@ const vorschlagSchema = z.object({
   catalog_item_id: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
   unit_price_cents: z.number(),
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
@@ -1127,7 +1139,7 @@ const leistungSchema = z.object({
   performed_on: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month', 'training_package']),
   quantity: z.number(),
   unit_price_cents: z.number(),
   currency: z.string(),

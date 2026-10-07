@@ -51,3 +51,15 @@ als kompakte Liste erscheinen?
 
 **Empfehlung.** Option 1 sofort, Option 3 im nächsten Loop der Abrechnung — vor
 dem ersten echten Rechnungslauf, weil die Grenze danach still erreicht wird.
+
+### BEF-114 — Training: Paketpreise für drei oder sechs Monate
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-02 |
+| Bereich | Abrechnung im Training |
+| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-181) |
+| Status  | erledigt 2026-10-07 mit ANG-EPIC-002 (ANG-005 bis ANG-007): Paket als Position der Preisliste, eine Leistung je Paket zum Beginn, Termine im Zeitraum ohne eigene Forderung; Preis, Umfang und Zahlungsweise synthetisch als ANN-275, ANN-276, ANN-279, bis Jannes sie festlegt |
+| Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
+
+**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden). **2026-10-05:** aus ABR-EPIC-007 herausgelöst, eigener kleiner Loop, sobald die drei Angaben feststehen.

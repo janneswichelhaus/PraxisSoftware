@@ -82,6 +82,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'person',
         'questionnaires',
         'relationship',
+        // ANG-008: die eigenen Trainingspakete (in der Behandlung leer).
+        'training_packages',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(
