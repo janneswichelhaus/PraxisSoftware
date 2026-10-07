@@ -9,6 +9,8 @@ const saveUebung = vi.fn();
 const saveVariante = vi.fn();
 const archiviereUebung = vi.fn();
 const archiviereVariante = vi.fn();
+const verbinde = vi.fn();
+const loeseVerbindung = vi.fn();
 const loescheUebung = vi.fn();
 const loescheVariante = vi.fn();
 
@@ -21,6 +23,8 @@ vi.mock('./api', async (importOriginal) => {
     saveVariante: (...args: unknown[]) => saveVariante(...args) as Promise<string>,
     archiviereUebung: (...args: unknown[]) => archiviereUebung(...args) as Promise<void>,
     archiviereVariante: (...args: unknown[]) => archiviereVariante(...args) as Promise<void>,
+    verbinde: (...args: unknown[]) => verbinde(...args) as Promise<void>,
+    loeseVerbindung: (...args: unknown[]) => loeseVerbindung(...args) as Promise<void>,
     loescheUebung: (...args: unknown[]) => loescheUebung(...args) as Promise<void>,
     loescheVariante: (...args: unknown[]) => loescheVariante(...args) as Promise<void>,
   };
@@ -69,8 +73,40 @@ const BRUECKE: Api.Uebung = {
   variants: [],
 };
 
+const VORWAERTS: Api.Variante = {
+  id: 'v3',
+  name: 'Ausfallschritt vorwärts',
+  lay_name: 'Großer Schritt nach vorn',
+  instruction: null,
+  equipment: [],
+  common_faults: null,
+  practice_notes: null,
+  archived: false,
+};
+
+const AUSFALLSCHRITT: Api.Uebung = {
+  id: 'u3',
+  name: 'Ausfallschritt',
+  lay_name: 'Großer Schritt',
+  body_region: 'knie',
+  archived: false,
+  variants: [VORWAERTS],
+};
+
+/** UEB-002: Am Geländer → Ausfallschritt vorwärts, schwerer in der Komplexität. */
+const VERBINDUNG: Api.Verbindung = {
+  id: 'l1',
+  easier_variant_id: 'v1',
+  harder_variant_id: 'v3',
+  axis: 'komplexitaet',
+};
+
 function bibliothek(canManage: boolean): Api.Bibliothek {
-  return { can_manage: canManage, exercises: [BRUECKE, KNIEBEUGE] };
+  return {
+    can_manage: canManage,
+    exercises: [AUSFALLSCHRITT, BRUECKE, KNIEBEUGE],
+    links: [VERBINDUNG],
+  };
 }
 
 beforeEach(() => {
@@ -82,6 +118,8 @@ beforeEach(() => {
     archiviereVariante,
     loescheUebung,
     loescheVariante,
+    verbinde,
+    loeseVerbindung,
   ]) {
     f.mockReset();
   }
@@ -92,6 +130,8 @@ beforeEach(() => {
   archiviereVariante.mockResolvedValue(undefined);
   loescheUebung.mockResolvedValue(undefined);
   loescheVariante.mockResolvedValue(undefined);
+  verbinde.mockResolvedValue(undefined);
+  loeseVerbindung.mockResolvedValue(undefined);
 });
 
 describe('UebungenPage (UEB-001)', () => {
@@ -247,5 +287,81 @@ describe('UebungAnsicht (UEB-001)', () => {
   it('meldet eine unbekannte Übung', async () => {
     renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="fehlt" />);
     expect(await screen.findByText('Übung nicht gefunden')).toBeInTheDocument();
+  });
+});
+
+describe('Leichter und schwerer (UEB-002)', () => {
+  it('zeigt die Nachbarn beider Richtungen mit Achse und Weg dorthin', async () => {
+    fetchBibliothek.mockResolvedValue(bibliothek(false));
+    renderWithProviders(<UebungAnsicht user={testUser(['trainer'])} uebungId="u1" />);
+    const ziel = await screen.findByRole('link', {
+      name: 'Ausfallschritt: Ausfallschritt vorwärts',
+    });
+    expect(ziel).toHaveAttribute('href', '/uebungen/u3#variante-v3');
+    expect(ziel.closest('li')).toHaveTextContent('Achse: Komplexität');
+    expect(ziel.closest('div')).toHaveTextContent('Schwerer');
+    // Ohne Pflegerecht kein Lösen und kein Verbinden.
+    expect(screen.queryByRole('button', { name: /lösen/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verbinden' })).not.toBeInTheDocument();
+  });
+
+  it('zeigt dieselbe Verbindung von der anderen Seite als leichter', async () => {
+    renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u3" />);
+    const ziel = await screen.findByRole('link', {
+      name: 'Kniebeuge: Kniebeuge am Geländer, halbe Tiefe',
+    });
+    expect(ziel.closest('div')).toHaveTextContent('Leichter');
+  });
+
+  it('schlägt nichts vor - keine Empfehlung, kein nächster Schritt (ADR-006 Punkt 10)', async () => {
+    renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+    expect(document.body).not.toHaveTextContent(/empfohlen|Empfehlung|nächster Schritt|passend/i);
+  });
+
+  it('verbindet eine Variante als leichter, mit der richtigen Richtung zum Server', async () => {
+    const STUHL: Api.Variante = { ...VORWAERTS, id: 'v4', name: 'Aufstehen vom Stuhl' };
+    fetchBibliothek.mockResolvedValue({
+      ...bibliothek(true),
+      exercises: [
+        ...bibliothek(true).exercises,
+        { ...AUSFALLSCHRITT, id: 'u4', name: 'Aufstehen', variants: [STUHL] },
+      ],
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u1" />);
+    const karte = (
+      await screen.findByRole('heading', { level: 3, name: 'Kniebeuge am Geländer, halbe Tiefe' })
+    ).closest('div')!.parentElement!;
+    await user.click(within(karte).getByRole('button', { name: 'Verbinden' }));
+
+    await user.click(within(karte).getByRole('button', { name: 'Verbinden' }));
+    expect(within(karte).getByText('Bitte eine Variante wählen.')).toBeInTheDocument();
+    expect(within(karte).getByText('Bitte eine Achse wählen.')).toBeInTheDocument();
+
+    const andere = within(karte).getByLabelText('Andere Variante *');
+    // Schon verbunden (v3), archiviert (v2) und sie selbst stehen nicht zur Wahl.
+    expect(
+      within(andere)
+        .getAllByRole('option')
+        .map((o) => o.textContent),
+    ).toEqual(['Bitte wählen', 'Aufstehen vom Stuhl']);
+
+    await user.selectOptions(within(karte).getByLabelText('Die andere Variante ist'), 'leichter');
+    await user.selectOptions(andere, 'v4');
+    await user.selectOptions(within(karte).getByLabelText('Achse *'), 'hebel');
+    await user.click(within(karte).getByRole('button', { name: 'Verbinden' }));
+    await waitFor(() => expect(verbinde).toHaveBeenCalledWith('v4', 'v1', 'hebel'));
+  });
+
+  it('löst eine Verbindung', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u1" />);
+    await user.click(
+      await screen.findByRole('button', {
+        name: 'Verbindung zu „Ausfallschritt: Ausfallschritt vorwärts“ lösen',
+      }),
+    );
+    await waitFor(() => expect(loeseVerbindung).toHaveBeenCalledWith('l1'));
   });
 });

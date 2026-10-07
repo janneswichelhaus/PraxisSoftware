@@ -41,3 +41,42 @@ export const NAME_HOECHSTENS = 120;
 export const TEXT_HOECHSTENS = 1000;
 export const AUSRUESTUNG_HOECHSTENS = 8;
 export const SCHLAGWORT_HOECHSTENS = 40;
+
+/**
+ * Die Achsen einer Verbindung zwischen zwei Varianten (UEB-002, IDEA-TRN-004,
+ * ANN-294). Eine Verbindung führt von der leichteren zur schwereren Variante
+ * und unterscheidet sie in genau einer Achse. Gegenstück in der Datenbank:
+ * `app.exercise_axes()` in
+ * `supabase/migrations/20261017110000_ueb_002_variant_links.sql`.
+ */
+export const ACHSEN = [
+  'last',
+  'wiederholungen',
+  'saetze',
+  'bewegungsausmass',
+  'hebel',
+  'unterstuetzung',
+  'unterstuetzungsflaeche',
+  'tempo',
+  'dichte',
+  'komplexitaet',
+  'geschwindigkeit',
+  'frequenz',
+] as const;
+
+export type Achse = (typeof ACHSEN)[number];
+
+export const ACHSE_LABEL: Readonly<Record<Achse, string>> = {
+  last: 'Last',
+  wiederholungen: 'Wiederholungen',
+  saetze: 'Sätze',
+  bewegungsausmass: 'Bewegungsausmaß',
+  hebel: 'Hebel',
+  unterstuetzung: 'Unterstützung',
+  unterstuetzungsflaeche: 'Unterstützungsfläche',
+  tempo: 'Tempo',
+  dichte: 'Dichte',
+  komplexitaet: 'Komplexität',
+  geschwindigkeit: 'Geschwindigkeit',
+  frequenz: 'Frequenz',
+};

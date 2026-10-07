@@ -98,6 +98,7 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
   }, 120_000);
 
   beforeEach(async () => {
+    await asPostgres('delete from public.exercise_variant_links');
     await asPostgres('delete from public.exercise_variants');
     await asPostgres('delete from public.exercises');
   });

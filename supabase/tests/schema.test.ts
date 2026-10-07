@@ -141,6 +141,8 @@ describe('Schema-Invarianten', () => {
       // UEB-001: die Übungsbibliothek der Praxis.
       'exercises',
       'exercise_variants',
+      // UEB-002: Verbindungen zwischen Varianten.
+      'exercise_variant_links',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

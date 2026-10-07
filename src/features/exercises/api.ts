@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
-import { KOERPERREGIONEN } from './types';
+import { ACHSEN, KOERPERREGIONEN } from './types';
 
 /**
  * Die Übungsbibliothek der Praxis (UEB-EPIC-001, IDEA-TRN-005).
@@ -35,9 +35,24 @@ const uebungSchema = z.object({
 
 export type Uebung = z.infer<typeof uebungSchema>;
 
+/**
+ * UEB-002: Verbindung von der leichteren zur schwereren Variante entlang
+ * genau einer Achse (ANN-294). Zum Nachschlagen; nichts wählt daraus aus
+ * (ADR-006 Punkt 10).
+ */
+const verbindungSchema = z.object({
+  id: z.string(),
+  easier_variant_id: z.string(),
+  harder_variant_id: z.string(),
+  axis: z.enum(ACHSEN),
+});
+
+export type Verbindung = z.infer<typeof verbindungSchema>;
+
 const bibliothekSchema = z.object({
   can_manage: z.boolean(),
   exercises: z.array(uebungSchema),
+  links: z.array(verbindungSchema),
 });
 
 export type Bibliothek = z.infer<typeof bibliothekSchema>;
@@ -176,6 +191,42 @@ export async function loescheVariante(id: string): Promise<void> {
       );
     }
     throw new Error('Die Variante konnte nicht gelöscht werden.');
+  }
+}
+
+export async function verbinde(leichter: string, schwerer: string, achse: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('link_exercise_variants', {
+    p_easier_variant_id: leichter,
+    p_harder_variant_id: schwerer,
+    p_axis: achse,
+  })) as { error: Fehler };
+  if (error) {
+    gemeinsam(error);
+    const text = error.message ?? '';
+    if (text.includes('already linked')) {
+      throw new Error('Diese beiden Varianten sind schon verbunden.');
+    }
+    if (text.includes('cycle')) {
+      throw new Error(
+        'Die andere Variante ist über bestehende Verbindungen schon leichter oder schwerer – so entstünde ein Kreis.',
+      );
+    }
+    if (text.includes('archived'))
+      throw new Error('Archivierte Varianten lassen sich nicht verbinden.');
+    if (text.includes('axis')) throw new Error('Bitte eine Achse wählen.');
+    if (text.includes('itself'))
+      throw new Error('Eine Variante lässt sich nicht mit sich selbst verbinden.');
+    throw new Error('Die Verbindung konnte nicht angelegt werden.');
+  }
+}
+
+export async function loeseVerbindung(id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('unlink_exercise_variants', {
+    p_link_id: id,
+  })) as { error: Fehler };
+  if (error) {
+    gemeinsam(error);
+    throw new Error('Die Verbindung konnte nicht gelöst werden.');
   }
 }
 

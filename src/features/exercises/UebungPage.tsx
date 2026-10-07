@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card, Disclosure } from '@/components/ui/Card';
@@ -20,10 +20,13 @@ import {
   fetchBibliothek,
   loescheUebung,
   loescheVariante,
+  type Bibliothek,
   type Uebung,
   type Variante,
 } from './api';
 import { UebungFormular, VarianteFormular } from './Formulare';
+import { variantenOrte, type Ort } from './orte';
+import { VerbindungFormular, VerbindungenAnzeige } from './Verbindungen';
 import { KOERPERREGION_LABEL } from './types';
 import { useFormularschutz } from './useFormularschutz';
 
@@ -50,16 +53,20 @@ function Angabe({ label, children }: { label: string; children: ReactNode }) {
 function VarianteKarte({
   uebungId,
   variante,
-  darfPflegen,
+  bibliothek,
+  orte,
   schutz,
 }: {
   uebungId: string;
   variante: Variante;
-  darfPflegen: boolean;
+  bibliothek: Bibliothek;
+  orte: Map<string, Ort>;
   schutz: Schutz;
 }) {
+  const darfPflegen = bibliothek.can_manage;
   const queryClient = useQueryClient();
   const [bearbeiten, setBearbeiten] = useState(false);
+  const [verbinden, setVerbinden] = useState(false);
   const aktualisieren = () => queryClient.invalidateQueries({ queryKey: BIBLIOTHEK_SCHLUESSEL });
 
   const archivieren = useMutation({
@@ -111,7 +118,25 @@ function VarianteKarte({
               ) : null}
             </dl>
 
-            {darfPflegen ? (
+            {/* UEB-002: leichter und schwerer - zum Nachschlagen. */}
+            <VerbindungenAnzeige
+              variante={variante}
+              uebungId={uebungId}
+              bibliothek={bibliothek}
+              orte={orte}
+            />
+            {verbinden ? (
+              <VerbindungFormular
+                variante={variante}
+                bibliothek={bibliothek}
+                formularId={`verbindung-${variante.id}`}
+                onFertig={() => setVerbinden(false)}
+                onUngespeichert={schutz.melden}
+                schutz={schutz.schutzFuer(`verbindung-${variante.id}`)}
+              />
+            ) : null}
+
+            {darfPflegen && !verbinden ? (
               <div className="mt-4 flex flex-wrap items-start gap-3">
                 <Button
                   type="button"
@@ -130,6 +155,16 @@ function VarianteKarte({
                 >
                   {variante.archived ? 'Zurückholen' : 'Archivieren'}
                 </Button>
+                {variante.archived ? null : (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    groesse="kompakt"
+                    onClick={() => setVerbinden(true)}
+                  >
+                    Verbinden
+                  </Button>
+                )}
                 <Rueckfrage
                   ausloeser="Löschen"
                   ausloeserGroesse="kompakt"
@@ -226,6 +261,15 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
     enabled: darf,
     retry: false,
   });
+  const orte = useMemo(() => (data ? variantenOrte(data) : new Map<string, Ort>()), [data]);
+
+  // Ein Sprung von einer verbundenen Variante zielt auf ihre Karte (UEB-002);
+  // der Router scrollt zu einem Anker nicht von selbst.
+  const { hash } = useLocation();
+  useEffect(() => {
+    if (!data || !hash) return;
+    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView?.();
+  }, [data, hash]);
 
   if (!darf) {
     return (
@@ -343,7 +387,8 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
                 key={variante.id}
                 uebungId={uebung.id}
                 variante={variante}
-                darfPflegen={darfPflegen}
+                bibliothek={data}
+                orte={orte}
                 schutz={schutz}
               />
             ))}
@@ -358,7 +403,8 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
                   key={variante.id}
                   uebungId={uebung.id}
                   variante={variante}
-                  darfPflegen={darfPflegen}
+                  bibliothek={data}
+                  orte={orte}
                   schutz={schutz}
                 />
               ))}

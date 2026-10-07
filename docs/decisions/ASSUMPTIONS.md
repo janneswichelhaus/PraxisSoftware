@@ -3540,6 +3540,18 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Mehr Rollen pflegen lassen: die Rollenliste in `app.can_manage_exercise_library()` erweitern · Aufwand `klein`. Das Büro lesen lassen: dasselbe in `app.can_read_exercise_library()` und `canReadExerciseLibrary` · Aufwand `klein`.
 
+### ANN-294 — Eine Verbindung: von leichter nach schwerer, genau eine Achse
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Zwei Varianten verbindet höchstens eine Verbindung. Sie führt immer von der leichteren zur schwereren und trägt genau eine der zwölf Achsen aus IDEA-TRN-004 (Last, Wiederholungen, Sätze, Bewegungsausmaß, Hebel, Unterstützung, Unterstützungsfläche, Tempo, Dichte, Komplexität, Geschwindigkeit, Frequenz). Kreise sind ausgeschlossen, archivierte Varianten werden nicht neu verbunden; verbinden lassen sich Varianten auch über Übungen hinweg.
+
+**Begründung.** IDEA-TRN-004 verlangt, je Schritt **eine** Achse zu ändern, damit eine Reaktion zuzuordnen bleibt; zwei Varianten, die sich in zwei Achsen unterscheiden, sind zwei Schritte. IDEA-TRN-005 nennt Regression und Progression als Richtung – „leichter“ und „schwerer“ sagen dasselbe ohne Fachwort. Die Verbindungen werden nur angezeigt; eine Funktion, die sich entlang der Kanten bewegt, wäre nach ADR-006 Punkt 10 eine Vorauswahl und entsteht nicht.
+
+**Anker.** `app.exercise_axes()`, der eindeutige Index `exercise_variant_links_pair_unique` und die Kreisprüfung in `public.link_exercise_variants` in `supabase/migrations/20261017110000_ueb_002_variant_links.sql`; `ACHSEN` in `src/features/exercises/types.ts`. Geprüft in `supabase/tests/exercise-variant-links.test.ts`.
+
+**Änderungspfad.** Andere oder weitere Achsen: beide Listen und eine Migration mit der neuen Funktion · Aufwand `klein`. Mehrere Achsen je Verbindung: Spalte als Feld, Index und Prüfung anpassen · Aufwand `mittel`.
+
 ### ANN-295 — Feste Körperregionen, Ausrüstung als freie Schlagworte
 
 Technik · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
