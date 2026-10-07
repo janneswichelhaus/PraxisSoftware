@@ -47,18 +47,20 @@ function Nachbar({
       : `${ort.uebung.name}: ${ort.variante.name}`;
 
   return (
-    <li className="flex flex-wrap items-center justify-between gap-x-3">
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1">
+      {/* Name als Ziel, die Achse darunter: Am Telefon bricht eine
+          gemeinsame Zeile sonst mitten im „Achse: …“ um. */}
       <span className="min-w-0">
         <Link
           to={`/uebungen/${ort.uebung.id}#variante-${ort.variante.id}`}
-          className="text-accent inline-flex min-h-11 items-center font-medium underline underline-offset-2"
+          className="text-accent inline-flex min-h-11 items-center font-medium break-words underline underline-offset-2"
         >
           {name}
         </Link>
-        <span className="text-ink-muted text-sm"> · Achse: {ACHSE_LABEL[verbindung.axis]}</span>
-        {ort.variante.archived ? (
-          <span className="text-ink-muted text-sm"> · archiviert</span>
-        ) : null}
+        <span className="text-ink-muted block text-sm">
+          Achse: {ACHSE_LABEL[verbindung.axis]}
+          {ort.variante.archived ? ' · archiviert' : ''}
+        </span>
       </span>
       {darfPflegen ? (
         <Button
@@ -73,7 +75,7 @@ function Nachbar({
         </Button>
       ) : null}
       {loesen.isError ? (
-        <Statusmeldung ton="fehler" className="w-full">
+        <Statusmeldung ton="fehler" className="col-span-2">
           {loesen.error.message}
         </Statusmeldung>
       ) : null}

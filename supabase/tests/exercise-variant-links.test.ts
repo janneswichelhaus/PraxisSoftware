@@ -229,3 +229,31 @@ describe('Übungsbibliothek: Verbindungen (UEB-002)', () => {
     });
   });
 });
+
+describe('Übungsbibliothek im Seed (UEB-003)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('bringt Übungen, Varianten und Ketten mit, eine Kette über zwei Übungen', async () => {
+    const { rows } = await asUser<{
+      bibliothek: {
+        exercises: Array<{ name: string; archived: boolean; variants: Array<{ id: string }> }>;
+        links: Verbindung[];
+      };
+    }>(users.trainer, LISTE);
+    const b = rows[0]!.bibliothek;
+    expect(b.exercises).toHaveLength(9);
+    expect(b.exercises.filter((u) => u.archived).map((u) => u.name)).toEqual(['Beinpresse']);
+    expect(b.links).toHaveLength(8);
+
+    const uebungDerVariante = new Map(
+      b.exercises.flatMap((u) => u.variants.map((v) => [v.id, u.name] as const)),
+    );
+    const ueberUebungen = b.links.filter(
+      (l) =>
+        uebungDerVariante.get(l.easier_variant_id) !== uebungDerVariante.get(l.harder_variant_id),
+    );
+    expect(ueberUebungen).toHaveLength(1);
+  });
+});

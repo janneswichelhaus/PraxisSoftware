@@ -52,12 +52,15 @@ function Angabe({ label, children }: { label: string; children: ReactNode }) {
 
 function VarianteKarte({
   uebungId,
+  uebungLaie,
   variante,
   bibliothek,
   orte,
   schutz,
 }: {
   uebungId: string;
+  /** Die Übung in Alltagssprache - Überschrift der Ansicht für Patient:innen. */
+  uebungLaie: string;
   variante: Variante;
   bibliothek: Bibliothek;
   orte: Map<string, Ort>;
@@ -117,6 +120,24 @@ function VarianteKarte({
                 <Angabe label="Hinweise für die Praxis">{variante.practice_notes}</Angabe>
               ) : null}
             </dl>
+
+            {/* UEB-003 (IDEA-QSN-002): nur die zweite Sprachebene, so wie sie
+                Patient:innen und Kund:innen später lesen - ohne die fachlichen
+                Angaben der Praxis. Eine Vorschau, kein Versand. */}
+            <Disclosure summary={`Ansicht in ${BEGRIFFE.alltagssprache}`}>
+              <div className="bg-surface-sunken rounded-card max-w-prose p-4">
+                <p className="text-ink-muted text-sm">{uebungLaie}</p>
+                <p className="text-ink text-liste font-semibold">{variante.lay_name}</p>
+                <p className={`text-ink text-liste mt-2 ${FREITEXT}`}>
+                  {variante.instruction ?? 'Noch keine Kurzanleitung.'}
+                </p>
+                {variante.equipment.length > 0 ? (
+                  <p className="text-ink-muted mt-2 text-sm">
+                    Ausrüstung: {variante.equipment.join(', ')}
+                  </p>
+                ) : null}
+              </div>
+            </Disclosure>
 
             {/* UEB-002: leichter und schwerer - zum Nachschlagen. */}
             <VerbindungenAnzeige
@@ -386,6 +407,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
               <VarianteKarte
                 key={variante.id}
                 uebungId={uebung.id}
+                uebungLaie={uebung.lay_name}
                 variante={variante}
                 bibliothek={data}
                 orte={orte}
@@ -402,6 +424,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
                 <VarianteKarte
                   key={variante.id}
                   uebungId={uebung.id}
+                  uebungLaie={uebung.lay_name}
                   variante={variante}
                   bibliothek={data}
                   orte={orte}

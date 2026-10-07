@@ -5,13 +5,24 @@ import { Disclosure } from '@/components/ui/Card';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { SearchField } from '@/components/ui/SearchField';
 import { Section } from '@/components/ui/Section';
+import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canReadExerciseLibrary, type CurrentUser } from '@/features/session/types';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { BIBLIOTHEK_SCHLUESSEL, fetchBibliothek, type Uebung } from './api';
 import { UebungFormular } from './Formulare';
-import { KOERPERREGION_LABEL } from './types';
+import {
+  KEIN_FILTER,
+  OHNE_AUSRUESTUNG,
+  ausruestungen,
+  filtere,
+  gesetzteFilter,
+  type Filter,
+  type Treffer,
+} from './suche';
+import { KOERPERREGIONEN, KOERPERREGION_LABEL } from './types';
 import { useFormularschutz } from './useFormularschutz';
 
 /**
@@ -20,6 +31,9 @@ import { useFormularschutz } from './useFormularschutz';
  * Ein Katalog zum Nachschlagen - sortiert nach Bezeichnung, nach nichts
  * sonst. Keine Liste „passend zu" einer Diagnose, einem Befund oder einem
  * Verlauf (ADR-006 Punkt 10): Die Auswahl trifft die Person, die anleitet.
+ *
+ * Suche in beiden Sprachebenen, Filter nach Körperregion und Ausrüstung
+ * (UEB-003); die Filter sind eingeklappt, bis jemand sie braucht.
  */
 
 function anzahlVarianten(uebung: Uebung): string {
@@ -27,13 +41,85 @@ function anzahlVarianten(uebung: Uebung): string {
   return n === 1 ? `1 ${BEGRIFFE.variante}` : `${n} ${BEGRIFFE.varianten}`;
 }
 
-function Zeile({ uebung }: { uebung: Uebung }) {
+function Zeile({ treffer: { uebung, variantenTreffer } }: { treffer: Treffer }) {
   return (
     <ListRow
       titel={uebung.name}
-      meta={`${uebung.lay_name} · ${KOERPERREGION_LABEL[uebung.body_region]} · ${anzahlVarianten(uebung)}`}
+      meta={
+        <>
+          {uebung.lay_name} · {KOERPERREGION_LABEL[uebung.body_region]} · {anzahlVarianten(uebung)}
+          {variantenTreffer.length > 0 ? (
+            <span className="block">Gefunden in: {variantenTreffer.join(', ')}</span>
+          ) : null}
+        </>
+      }
       to={`/uebungen/${uebung.id}`}
     />
+  );
+}
+
+function Filterleiste({
+  filter,
+  setFilter,
+  uebungen,
+}: {
+  filter: Filter;
+  setFilter: (filter: Filter) => void;
+  uebungen: readonly Uebung[];
+}) {
+  const geraete = ausruestungen(uebungen);
+  const anzahl = gesetzteFilter(filter);
+  return (
+    <div className="mb-6 flex flex-col gap-2">
+      <div className="max-w-xl">
+        <SearchField
+          label="Suche"
+          placeholder="Bezeichnung, auch in Alltagssprache"
+          value={filter.text}
+          onChange={(text) => setFilter({ ...filter, text })}
+        />
+      </div>
+      <Disclosure summary="Filter" {...(anzahl > 0 ? { anzahl } : {})} offen={anzahl > 0}>
+        <div className="grid max-w-xl gap-4 sm:grid-cols-2">
+          <Select
+            label="Körperregion"
+            value={filter.region}
+            onChange={(event) => setFilter({ ...filter, region: event.target.value })}
+          >
+            <option value="">Alle</option>
+            {KOERPERREGIONEN.map((kennung) => (
+              <option key={kennung} value={kennung}>
+                {KOERPERREGION_LABEL[kennung]}
+              </option>
+            ))}
+          </Select>
+          <Select
+            label="Ausrüstung"
+            value={filter.ausruestung}
+            onChange={(event) => setFilter({ ...filter, ausruestung: event.target.value })}
+          >
+            <option value="">Alle</option>
+            <option value={OHNE_AUSRUESTUNG}>Ohne Ausrüstung</option>
+            {geraete.map((geraet) => (
+              <option key={geraet} value={geraet}>
+                {geraet}
+              </option>
+            ))}
+          </Select>
+        </div>
+        {anzahl > 0 ? (
+          <Button
+            type="button"
+            variant="quiet"
+            groesse="kompakt"
+            className="mt-2"
+            onClick={() => setFilter({ ...filter, region: '', ausruestung: '' })}
+          >
+            Filter zurücksetzen
+          </Button>
+        ) : null}
+      </Disclosure>
+    </div>
   );
 }
 
@@ -43,6 +129,7 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
   const [angelegt, setAngelegt] = useState<{ name: string; id: string } | null>(null);
   const bestaetigung = useRef<HTMLDivElement>(null);
   const { melden, schutzFuer } = useFormularschutz();
+  const [filter, setFilter] = useState<Filter>(KEIN_FILTER);
 
   useEffect(() => {
     if (angelegt) bestaetigung.current?.focus();
@@ -64,8 +151,14 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
     );
   }
 
-  const aktiv = (data?.exercises ?? []).filter((uebung) => !uebung.archived);
-  const archiviert = (data?.exercises ?? []).filter((uebung) => uebung.archived);
+  const alle = data?.exercises ?? [];
+  const aktivAlle = alle.filter((uebung) => !uebung.archived);
+  const aktiv = filtere(aktivAlle, filter);
+  const archiviert = filtere(
+    alle.filter((uebung) => uebung.archived),
+    filter,
+  );
+  const gefiltert = filter.text.trim() !== '' || gesetzteFilter(filter) > 0;
 
   return (
     <>
@@ -120,7 +213,7 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
       ) : null}
 
       {data ? (
-        aktiv.length === 0 && archiviert.length === 0 ? (
+        alle.length === 0 ? (
           <EmptyState
             title="Noch keine Übungen"
             description={
@@ -131,13 +224,23 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
           />
         ) : (
           <>
+            <Filterleiste filter={filter} setFilter={setFilter} uebungen={aktivAlle} />
             <Section titel={BEGRIFFE.uebungen}>
+              {/* Wie viele die Suche zeigt, sagt eine Zeile, die Vorlesesoftware
+                  beim Tippen mitliest. */}
+              <p role="status" className="text-ink-muted mb-2 text-sm">
+                {gefiltert ? `${aktiv.length} von ${aktivAlle.length} Übungen` : null}
+              </p>
               {aktiv.length === 0 ? (
-                <p className="text-ink-muted text-liste">Alle Übungen sind archiviert.</p>
+                <p className="text-ink-muted text-liste">
+                  {gefiltert
+                    ? 'Keine Übung passt zu Suche und Filter.'
+                    : 'Alle Übungen sind archiviert.'}
+                </p>
               ) : (
                 <ListRows>
-                  {aktiv.map((uebung) => (
-                    <Zeile key={uebung.id} uebung={uebung} />
+                  {aktiv.map((treffer) => (
+                    <Zeile key={treffer.uebung.id} treffer={treffer} />
                   ))}
                 </ListRows>
               )}
@@ -146,8 +249,8 @@ export function UebungenPage({ user }: { user: CurrentUser }) {
               <div className="mt-8">
                 <Disclosure summary="Archiviert" anzahl={archiviert.length} kopf="label">
                   <ListRows>
-                    {archiviert.map((uebung) => (
-                      <Zeile key={uebung.id} uebung={uebung} />
+                    {archiviert.map((treffer) => (
+                      <Zeile key={treffer.uebung.id} treffer={treffer} />
                     ))}
                   </ListRows>
                 </Disclosure>

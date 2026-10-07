@@ -145,7 +145,9 @@ describe('UebungenPage (UEB-001)', () => {
   it('legt archivierte Übungen in einen eigenen, zugeklappten Bereich', async () => {
     renderWithProviders(<UebungenPage user={testUser(['therapist'])} />);
     await screen.findByRole('link', { name: /Kniebeuge/ });
-    const archiv = document.querySelector('details')!;
+    const archiv = [...document.querySelectorAll('details')].find((d) =>
+      d.querySelector('summary')?.textContent?.startsWith('Archiviert'),
+    )!;
     expect(archiv.querySelector('summary')).toHaveTextContent('Archiviert (1)');
     expect(archiv).not.toHaveAttribute('open');
     expect(within(archiv).getByRole('link', { name: /Brücke/ })).toBeInTheDocument();
@@ -211,10 +213,11 @@ describe('UebungAnsicht (UEB-001)', () => {
     expect(
       within(karte).getByText('Alltagssprache: Am Geländer halb in die Hocke gehen'),
     ).toBeInTheDocument();
-    expect(within(karte).getByText('Mit beiden Händen festhalten.')).toBeInTheDocument();
-    expect(within(karte).getByText('Geländer')).toBeInTheDocument();
-    expect(within(karte).getByText('Knie fallen nach innen.')).toBeInTheDocument();
-    expect(within(karte).getByText('Nicht unter Schmerz über 5.')).toBeInTheDocument();
+    const angaben = karte.querySelector('dl')!;
+    expect(within(angaben).getByText('Mit beiden Händen festhalten.')).toBeInTheDocument();
+    expect(within(angaben).getByText('Geländer')).toBeInTheDocument();
+    expect(within(angaben).getByText('Knie fallen nach innen.')).toBeInTheDocument();
+    expect(within(angaben).getByText('Nicht unter Schmerz über 5.')).toBeInTheDocument();
   });
 
   it('bietet ohne Pflegerecht keine Änderung an (ANN-293)', async () => {
@@ -363,5 +366,51 @@ describe('Leichter und schwerer (UEB-002)', () => {
       }),
     );
     await waitFor(() => expect(loeseVerbindung).toHaveBeenCalledWith('l1'));
+  });
+});
+
+describe('Katalog und Suche (UEB-003)', () => {
+  it('sucht in der Alltagssprache und nennt die Variante, in der der Text stand', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UebungenPage user={testUser(['therapist'])} />);
+    await screen.findByRole('link', { name: /Kniebeuge/ });
+
+    await user.type(screen.getByRole('searchbox', { name: 'Suche' }), 'halb in die hocke');
+    expect(screen.getByRole('status')).toHaveTextContent('1 von 2 Übungen');
+    const treffer = screen.getByRole('link', { name: /Kniebeuge/ });
+    expect(treffer).toHaveTextContent('Gefunden in: Kniebeuge am Geländer, halbe Tiefe');
+    expect(screen.queryByRole('link', { name: /Ausfallschritt/ })).not.toBeInTheDocument();
+  });
+
+  it('filtert nach Körperregion und Ausrüstung hinter einem Aufklapper', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<UebungenPage user={testUser(['trainer'])} />);
+    await screen.findByRole('link', { name: /Kniebeuge/ });
+
+    const filter = screen.getByText('Filter').closest('details')!;
+    expect(filter).not.toHaveAttribute('open');
+
+    await user.selectOptions(within(filter).getByLabelText('Ausrüstung'), 'Geländer');
+    expect(screen.getByRole('status')).toHaveTextContent('1 von 2 Übungen');
+    expect(screen.getByRole('link', { name: /Kniebeuge/ })).toBeInTheDocument();
+
+    await user.selectOptions(within(filter).getByLabelText('Körperregion'), 'lws');
+    expect(screen.getByText('Keine Übung passt zu Suche und Filter.')).toBeInTheDocument();
+
+    await user.click(within(filter).getByRole('button', { name: 'Filter zurücksetzen' }));
+    expect(screen.getAllByRole('link', { name: /Kniebeuge|Ausfallschritt/ })).toHaveLength(2);
+  });
+
+  it('zeigt eine Variante so, wie Patient:innen sie lesen - ohne fachliche Angaben', async () => {
+    renderWithProviders(<UebungAnsicht user={testUser(['therapist'])} uebungId="u1" />);
+    await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+    const ansicht = screen.getAllByText('Ansicht in Alltagssprache')[0]!.closest('details')!;
+    expect(ansicht).not.toHaveAttribute('open');
+    expect(ansicht).toHaveTextContent('In die Hocke gehen');
+    expect(ansicht).toHaveTextContent('Am Geländer halb in die Hocke gehen');
+    expect(ansicht).toHaveTextContent('Mit beiden Händen festhalten.');
+    expect(ansicht).toHaveTextContent('Ausrüstung: Geländer');
+    expect(ansicht).not.toHaveTextContent('Knie fallen nach innen.');
+    expect(ansicht).not.toHaveTextContent('Nicht unter Schmerz über 5.');
   });
 });
