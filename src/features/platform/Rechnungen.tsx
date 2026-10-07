@@ -243,8 +243,14 @@ function Blatt({ rechnung: r }: { rechnung: Rechnungsblatt }) {
                   {g.label}
                   {g.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
                   <span className="text-ink-muted block text-xs tabular-nums">
-                    {g.tage.length === 1 ? 'Tag' : 'Tage'}:{' '}
-                    {g.tage.map((t) => formatDate(t)).join(', ')}
+                    {/* ANG-002: Ein Abo-Monat nennt seinen Zeitraum. */}
+                    {g.zeitraeume.length > 0
+                      ? `Zeitraum: ${g.zeitraeume
+                          .map((r) => `${formatDate(r.von)} bis ${formatDate(r.bis)}`)
+                          .join(', ')}`
+                      : `${g.tage.length === 1 ? 'Tag' : 'Tage'}: ${g.tage
+                          .map((t) => formatDate(t))
+                          .join(', ')}`}
                   </span>
                 </td>
                 <td className="py-1 pr-3 text-right tabular-nums">

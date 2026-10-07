@@ -13,6 +13,7 @@ const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
 const ladeBefundbogen = vi.fn();
+const ladeAbo = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -20,6 +21,7 @@ vi.mock('./api', async (importOriginal) => ({
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
+  ladeAbo: (...args: unknown[]) => ladeAbo(...args) as Promise<unknown>,
 }));
 
 const { Uebersicht } = await import('./Uebersicht');
@@ -71,6 +73,7 @@ beforeEach(() => {
   ladeWuensche.mockResolvedValue([]);
   ladeRechnungen.mockResolvedValue([]);
   ladeBefundbogen.mockResolvedValue([]);
+  ladeAbo.mockResolvedValue(null);
 });
 
 describe('Uebersicht (POR-015)', () => {
@@ -178,5 +181,24 @@ describe('Uebersicht (POR-015)', () => {
   it('bestaetigt den abgeschickten Befundbogen', async () => {
     zeige(ZUGANG, '/p?bereich=treatment&bogen=1');
     expect(await screen.findByText(/Ihr Befundbogen ist bei der Praxis/)).toBeInTheDocument();
+  });
+
+  it('nennt nach einem gekündigten Nachsorge-Abo dessen Ende und die Lesezeit (ANG-004)', async () => {
+    ladeAbo.mockResolvedValue({
+      id: 'abababab-abab-4bab-8bab-000000000001',
+      starts_on: '2026-09-05',
+      ends_on: '2026-11-04',
+      state: 'ending',
+      next_month_start: null,
+      next_month_price_cents: null,
+      cancel_effective_on: null,
+      cancelled_at: '2026-10-07T09:30:00Z',
+      cancelled_via: 'platform',
+      can_cancel: false,
+    });
+    zeige({ ...ZUGANG, read_until: '2026-12-05T00:00:00+01:00' });
+    expect(
+      await screen.findByText(/Ihr Nachsorge-Abo endet am 04\.11\.2026\. Sie können hier noch bis/),
+    ).toBeInTheDocument();
   });
 });

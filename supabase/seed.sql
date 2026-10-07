@@ -284,8 +284,13 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   -- Schreibweg des Trainings kommt mit E18 Schritt 7. Genau das haelt ein
   -- Test fest, statt es zu behaupten.
   ('cccccccc-cccc-4ccc-8ccc-000000000009', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 9, 'PT',    'Personal Training (Einzelstunde)',    'treatment',   null,                                      7500, 'taxable',           190, 'training'),
+  -- ANG-002: der Abo-Monat des Nachsorge-Abos (ADR-009 Punkt 21), steuer-
+  -- pflichtig bis zur Antwort der Steuerberatung (ANN-269). Der Preis ist
+  -- synthetisch, bis Jannes ihn festlegt (Blocker vor Block 5).
+  ('cccccccc-cccc-4ccc-8ccc-000000000010', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 10, 'NSA',  'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  3900, 'taxable',           190, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000011', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 1, 'KG',    'Krankengymnastik',                    'treatment',   'Krankengymnastik',                        4800, 'exempt_healthcare',   0, 'therapy'),
-  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy');
+  ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy'),
+  ('cccccccc-cccc-4ccc-8ccc-000000000013', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 3, 'NSA',   'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  4200, 'taxable',           190, 'therapy');
 
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',

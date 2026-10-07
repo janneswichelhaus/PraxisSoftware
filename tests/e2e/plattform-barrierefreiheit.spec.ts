@@ -39,6 +39,9 @@ const ANSICHTEN: { seite: string; merkmal: RegExp | string }[] = [
   { seite: 'handeln-fuer', merkmal: 'Guten Tag' },
   { seite: 'gesperrt', merkmal: 'Ihr Zugang ist gesperrt' },
   { seite: 'ende', merkmal: 'Ich' },
+  // ANG-EPIC-001: das Nachsorge-Abo mit Kündigungsknopf und die Übersicht danach.
+  { seite: 'abo', merkmal: 'Nachsorge-Abo' },
+  { seite: 'abo-gekuendigt', merkmal: 'Guten Tag' },
 ];
 
 async function oeffne(page: Page, seite: string, merkmal: RegExp | string) {

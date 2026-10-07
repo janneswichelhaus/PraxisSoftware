@@ -78,6 +78,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     // beide prüfen den Zugang über app.platform_access_allows.
     expect([...new Set(aufrufe)].sort()).toEqual([
       'function:platform-access',
+      // ANG-003: das eigene Nachsorge-Abo kündigen.
+      'rpc:cancel_platform_aftercare',
       // POR-012: der Befundbogen vorab.
       'rpc:complete_platform_questionnaire_response',
       'rpc:discard_platform_questionnaire_response',
@@ -87,6 +89,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
+      // ANG-003: das eigene Nachsorge-Abo.
+      'rpc:platform_aftercare',
       'rpc:platform_appointment_requests',
       // POR-008: die eigenen Termine.
       'rpc:platform_appointments',

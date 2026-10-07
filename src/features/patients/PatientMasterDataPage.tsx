@@ -28,6 +28,8 @@ import { ANMELDEBOGEN_ANKER, EINWILLIGUNGEN_ANKER, usePatientRecord } from './ak
 import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebogen';
 import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
 import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
+import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
+import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
 import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
 import { zugangMitStockwerk } from '@/features/today/stockwerk';
 import {
@@ -158,6 +160,8 @@ function VersorgungAbschliessen({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['patients'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      // ANG-001: Der Abschluss ist der früheste Beginn des Nachsorge-Abos (ANN-268).
+      await queryClient.invalidateQueries({ queryKey: nachsorgeSchluessel(patient.id) });
     },
   });
 
@@ -563,6 +567,10 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               heute={user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : null}
             />
           ) : null}
+          {/* ANG-EPIC-001: Das Nachsorge-Abo nach der Behandlung (ADR-009
+              Punkt 21) legen owner und office an - dieselben Rollen wie
+              Leistungen und Rechnungen. Verbindlich prüft der Server. */}
+          {canManageInvoicing(user.roles) ? <Nachsorgeabo patientId={patient.id} /> : null}
         </Karte>
       </div>
 

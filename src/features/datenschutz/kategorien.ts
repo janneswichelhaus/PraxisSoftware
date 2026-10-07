@@ -139,6 +139,10 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Das mit der Person vereinbarte Honorar je Behandlungstermin und ab wann es gilt.',
   },
+  aftercare_subscriptions: {
+    label: 'Nachsorge-Abo',
+    beschreibung: 'Beginn, Ende und Kündigung des Nachsorge-Abos nach der Behandlung.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',

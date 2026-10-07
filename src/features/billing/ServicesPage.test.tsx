@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as BillingApi from './api';
+import type * as NachsorgeApi from './nachsorge-api';
 import { renderWithProviders } from '@/test-utils';
 
 const fetchOffeneTermine = vi.fn();
@@ -9,6 +10,19 @@ const fetchLeistungen = vi.fn();
 const fetchVorschlag = vi.fn();
 const recordLeistungen = vi.fn();
 const deleteLeistungen = vi.fn();
+const fetchFaelligeMonate = vi.fn();
+const recordMonat = vi.fn();
+const deleteMonat = vi.fn();
+
+vi.mock('./nachsorge-api', async (importOriginal) => {
+  const actual = await importOriginal<typeof NachsorgeApi>();
+  return {
+    ...actual,
+    fetchFaelligeMonate: () => fetchFaelligeMonate() as Promise<NachsorgeApi.FaelligerMonat[]>,
+    recordMonat: (...args: unknown[]) => recordMonat(...args) as Promise<void>,
+    deleteMonat: (id: string) => deleteMonat(id) as Promise<void>,
+  };
+});
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof BillingApi>();
@@ -91,6 +105,10 @@ describe('ServicesPage', () => {
     deleteLeistungen.mockReset();
     fetchOffeneTermine.mockResolvedValue([]);
     fetchLeistungen.mockResolvedValue([]);
+    fetchFaelligeMonate.mockReset();
+    recordMonat.mockReset();
+    deleteMonat.mockReset();
+    fetchFaelligeMonate.mockResolvedValue([]);
   });
 
   it('sagt, dass ohne finalisierte Dokumentation nicht abgerechnet wird', async () => {
@@ -521,6 +539,64 @@ describe('ServicesPage', () => {
       ).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
+    });
+  });
+
+  describe('Nachsorge-Abo (ANG-002)', () => {
+    const monat: NachsorgeApi.FaelligerMonat = {
+      subscription_id: 'a1',
+      patient_id: 'p2',
+      patient_name: 'Erika Beispiel',
+      month_start: '2026-10-01',
+      month_end: '2026-10-31',
+      unit_price_cents: 3900,
+      currency: 'EUR',
+      blocker: null,
+    };
+
+    it('zeigt ohne fälligen Abo-Monat keinen Abschnitt', async () => {
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+      await vi.waitFor(() => expect(fetchFaelligeMonate).toHaveBeenCalled());
+      expect(screen.queryByRole('heading', { name: 'Nachsorge-Abo' })).toBeNull();
+    });
+
+    it('erfasst einen fälligen Abo-Monat', async () => {
+      fetchFaelligeMonate.mockResolvedValue([monat]);
+      recordMonat.mockResolvedValue(undefined);
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+      expect(await screen.findByText('01.10.2026 bis 31.10.2026')).toBeInTheDocument();
+      expect(screen.getByText('39,00 €')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Abo-Monat erfassen' }));
+      expect(recordMonat).toHaveBeenCalledWith('a1', '2026-10-01');
+    });
+
+    it('nennt den Grund, wenn ein Monat nicht geht (ANN-271)', async () => {
+      fetchFaelligeMonate.mockResolvedValue([{ ...monat, blocker: 'care_open' }]);
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+      expect(await screen.findByText(/Die Behandlung läuft wieder/)).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Abo-Monat erfassen' })).toBeNull();
+    });
+
+    it('nimmt einen erfassten Abo-Monat ohne Termin zurück', async () => {
+      fetchLeistungen.mockResolvedValue([
+        leistung({
+          id: 'l-abo',
+          appointment_id: null,
+          code: 'NSA',
+          label: 'Nachsorge-Abo (Monat)',
+          item_kind: 'aftercare_month',
+          unit_price_cents: 3900,
+          tax_treatment: 'taxable',
+          tax_rate_permille: 190,
+        }),
+      ]);
+      deleteMonat.mockResolvedValue(undefined);
+      renderWithProviders(<ServicesPage />, '/abrechnung/leistungen');
+      expect(await screen.findByText('(NSA)')).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Erfassung zurücknehmen' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Zurücknehmen' }));
+      expect(deleteMonat).toHaveBeenCalledWith('l-abo');
+      expect(deleteLeistungen).not.toHaveBeenCalled();
     });
   });
 });

@@ -98,8 +98,9 @@ describe('Leistungsbereich', () => {
         `select service_area, count(*) as anzahl from public.service_catalog_items
           group by service_area order by service_area`,
       );
+      // Seit ANG-002 je Preisliste der Abo-Monat dazu (12 statt 10).
       expect(rows).toEqual([
-        { service_area: 'therapy', anzahl: '10' },
+        { service_area: 'therapy', anzahl: '12' },
         { service_area: 'training', anzahl: '1' },
       ]);
     });

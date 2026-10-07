@@ -144,7 +144,13 @@ function Positionstabelle({ dokument }: { dokument: Rechnungsansicht['document']
               {position.label} ({position.code})
               {position.item_kind === 'absence_fee' ? ' · Ausfallhonorar' : ''}
               <span className="text-ink-muted print:text-ink block text-xs tabular-nums">
-                Behandlungstage: {position.tage.map((tag) => formatDate(tag)).join(', ')}
+                {/* ANG-002: Ein Abo-Monat nennt seinen Zeitraum (§ 14 Abs. 4
+                    Nr. 6 UStG), nicht nur den ersten Tag. */}
+                {position.zeitraeume.length > 0
+                  ? `Zeitraum: ${position.zeitraeume
+                      .map((r) => `${formatDate(r.von)} bis ${formatDate(r.bis)}`)
+                      .join(', ')}`
+                  : `Behandlungstage: ${position.tage.map((tag) => formatDate(tag)).join(', ')}`}
               </span>
             </td>
             <td className="py-1 pr-3 text-right tabular-nums">

@@ -9,6 +9,7 @@ import type {
 } from '@/features/platform-access/api';
 import { EinladungVorOrt, PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import {
+  aboSchluessel,
   befundbogenSchluessel,
   dokumenteSchluessel,
   einstiegSchluessel,
@@ -19,6 +20,7 @@ import {
   wuenscheSchluessel,
   type Dokument,
   type Einwilligung,
+  type Nachsorgeabo,
   type Plattformzugang,
   type Rechnungsblatt,
   type Rechnungszeile,
@@ -40,7 +42,9 @@ import '@/index.css';
  * `dokumente`, `befundbogen`; die Übersicht (`geruest`) trägt Befundbogen,
  * nächsten Termin und offene Rechnung. Seit POR-EPIC-003 `einwilligungen`,
  * `daten`, `einstellungen`, `einstieg` (Einstieg steht aus) und
- * `ende` (Lesefrist vorbei, „Ich"). Die Daten liegen vorab im Cache;
+ * `ende` (Lesefrist vorbei, „Ich"). Seit ANG-EPIC-001 `abo` (laufendes
+ * Nachsorge-Abo mit Kündigungsknopf) und `abo-gekuendigt` (Übersicht nach
+ * der Kündigung). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -488,6 +492,35 @@ client.setQueryData(['platform-access-onboarding', aktiv.id], {
   skipped_at: inTagen(-5, 9),
   skipped_by_name: 'Olivia Office',
 });
+// ANG-EPIC-001: das Nachsorge-Abo der Behandlung - laufend, oder gekündigt.
+const abo: Nachsorgeabo = {
+  id: 'abababab-abab-4bab-8bab-000000000001',
+  starts_on: inTagen(-32, 0).slice(0, 10),
+  ends_on: null,
+  state: 'running',
+  next_month_start: inTagen(-1, 0).slice(0, 10),
+  next_month_price_cents: 3900,
+  cancel_effective_on: inTagen(-2, 0).slice(0, 10),
+  cancelled_at: null,
+  cancelled_via: null,
+  can_cancel: true,
+};
+client.setQueryData(
+  aboSchluessel(zugaenge[0]!.access_id),
+  seite === 'abo-gekuendigt'
+    ? {
+        ...abo,
+        state: 'ending',
+        ends_on: inTagen(27, 0).slice(0, 10),
+        next_month_start: null,
+        cancel_effective_on: null,
+        cancelled_at: inTagen(-1, 9),
+        cancelled_via: 'platform',
+        can_cancel: false,
+      }
+    : abo,
+);
+client.setQueryData(aboSchluessel(begleitung.access_id), null);
 client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
@@ -569,8 +602,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'rechnungen':
     case 'rechnung':
     case 'dokumente':
-    case 'befundbogen': {
+    case 'befundbogen':
+    case 'abo': {
       const pfade: Record<string, string> = {
+        abo: '/p/abo?bereich=treatment',
         termine: '/p/termine?bereich=treatment',
         wunsch: '/p/termine/wunsch?bereich=treatment',
         termin: `/p/termine/${TERMIN_HAUSBESUCH}?bereich=treatment`,
@@ -600,6 +635,17 @@ function inhalt(): { pfad: string; element: ReactNode } {
         element: (
           <PlattformApp
             zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
+    case 'abo-gekuendigt':
+      return {
+        pfad: '/p?bereich=treatment',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, read_until: inTagen(58, 0) }]}
             email="erika.plattform@patient.invalid"
             onAbmelden={() => undefined}
           />

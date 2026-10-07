@@ -239,6 +239,8 @@ describe('Audit-Lesepfad', () => {
       'get_billable_service_draft',
       'get_intake_checklist',
       'get_invoice',
+      // ANG-001: die Nachsorge-Abos der Akte (owner, office).
+      'get_patient_aftercare',
       'get_patient_session_fee',
       'get_payment_reminder',
       'get_platform_access',
@@ -264,6 +266,8 @@ describe('Audit-Lesepfad', () => {
       'list_day_plan',
       'list_day_route',
       'list_deletion_runs',
+      // ANG-002: faellige Abo-Monate (owner, office).
+      'list_due_aftercare_months',
       'list_ending_prescriptions',
       'list_event_participants',
       'list_event_series',

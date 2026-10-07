@@ -348,7 +348,12 @@ function Rechnungsbild({
           {dokument.items.map((zeile, index) => (
             <Listenzeile
               key={`${zeile.performed_on}-${zeile.code}-${index}`}
-              datum={formatDate(zeile.performed_on)}
+              datum={
+                // ANG-002: Ein Abo-Monat nennt seinen Zeitraum.
+                zeile.period_until
+                  ? `${formatDate(zeile.performed_on)} bis ${formatDate(zeile.period_until)}`
+                  : formatDate(zeile.performed_on)
+              }
               betrag={
                 <span className="text-ink text-liste tabular-nums">
                   {formatEuro(zeile.line_total_cents, zeile.currency)}

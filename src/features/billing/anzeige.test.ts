@@ -99,6 +99,23 @@ describe('Anzeigehilfen der Abrechnung (UXR-010)', () => {
       expect(positionen.map((p) => p.summe_cents)).toEqual([14000, 10000]);
     });
 
+    it('nennt am Abo-Monat den Zeitraum statt eines Behandlungstags (ANG-002)', () => {
+      const [position] = positionenMitTagen([
+        {
+          ...zeile('2026-10-01', 'NSA', 3900),
+          label: 'Nachsorge-Abo (Monat)',
+          item_kind: 'aftercare_month',
+          period_until: '2026-10-31',
+        },
+      ]);
+      expect(position).toMatchObject({
+        tage: ['2026-10-01'],
+        zeitraeume: [{ von: '2026-10-01', bis: '2026-10-31' }],
+      });
+      // Positionen vom Termin tragen keinen Zeitraum.
+      expect(positionenMitTagen([zeile('2026-10-02', 'KG', 4500)])[0]!.zeitraeume).toEqual([]);
+    });
+
     it('nennt die Verordnung als Klammer, ohne sie den Monat', () => {
       expect(
         klammerText({
