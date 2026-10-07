@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 95 Einträge):
+Zusatz `Prüfpaket` (heute 96 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3239,6 +3239,18 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 **Änderungspfad.** Beginn ab dem letzten Termin der letzten Grundlage: die eine Funktion · Aufwand `klein`.
 
+### ANN-269 — Das Nachsorge-Abo ist bis zur Antwort der Steuerberatung umsatzsteuerpflichtig zum Regelsatz
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4, Anfrage Frage 7)
+
+**Annahme.** Die Position „Nachsorge-Abo (Monat)“ der Preisliste trägt `taxable` mit 19 %. Die Datenbank lässt für diese Positionsart kein anderes Kennzeichen zu; auf der Rechnung steht die enthaltene Umsatzsteuer (39,00 € brutto, 6,23 € Steuer).
+
+**Begründung.** Ob die Nachsorge eine steuerfreie Heilbehandlung nach § 4 Nr. 14 lit. a UStG ist, hängt am therapeutischen Zweck; ohne ärztliche Verordnung lässt er sich kaum belegen (UStAE 4.14.1, präventive Leistungen sind nicht befreit). Im Zweifel gilt für die Steuer nicht das strengere Regime (§1.2): Ein falsches „steuerfrei“ wäre eine falsche Angabe, ein Ausweis ohne Pflicht wird nach § 14c UStG geschuldet – beide Fehler kosten, der zweite ist der ohne Nachforderung. Das Kennzeichen hängt am Posten (ADR-009 Punkt 15). Unsicher: die Einordnung selbst; sie entscheidet die Steuerberatung.
+
+**Anker.** `app.aftercare_tax_allowed` und die Constraint `service_catalog_items_aftercare_month` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; Prüfung in `src/features/billing/CatalogPage.tsx`. Geprüft in `supabase/tests/aftercare-months.test.ts`.
+
+**Änderungspfad.** Anderes Kennzeichen: die eine Funktion und die Prüfung der Preisliste, danach eine neue Preisliste; ausgestellte Rechnungen bleiben und werden bei Bedarf storniert (ADR-009 Punkt 9) · Aufwand `klein`.
+
 ### ANN-270 — Abo-Monate laufen ab dem Beginn, werden zu ihrem Beginn berechnet und enden mit der Kündigung zum Ende des laufenden Monats
 
 Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Abos); Jannes mit dem Preis
@@ -3250,3 +3262,15 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `app.aftercare_month_start`, `app.aftercare_month_end`, `app.aftercare_month_index` in `supabase/migrations/20261014100000_ang_001_aftercare_subscriptions.sql`. Geprüft in `supabase/tests/aftercare-subscriptions.test.ts`.
 
 **Änderungspfad.** Kalendermonate oder Abrechnung am Monatsende: die drei Funktionen und die fälligen Monate · Aufwand `klein`.
+
+### ANN-271 — Läuft die Behandlung wieder, wird kein Abo-Monat berechnet
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** Ist die Versorgung wieder aufgenommen (Abschluss zurückgenommen), lässt sich kein Abo-Monat erfassen; die Liste der fälligen Monate nennt den Grund. Das Abo endet dadurch nicht von selbst: Die Praxis kündigt es oder erfasst die Monate, sobald die Versorgung wieder abgeschlossen ist.
+
+**Begründung.** Während der Behandlung ist die Plattform Teil der Heilbehandlung und kostenlos (§4.6); ADR-009 Punkt 21 will verhindern, dass während der Behandlung etwas doppelt berechnet wird. Ein automatisches Ende wäre eine Kündigung, die niemand erklärt hat; ein automatisches Ruhen bräuchte einen eigenen Zustand. Geprüft wird beim Erfassen, nicht rückwirkend: Ein Monat vor der Wiederaufnahme, der noch offen ist, geht erst wieder nach dem nächsten Abschluss. Unsicher: ob Jannes das Abo bei einer neuen Verordnung lieber ruhen lassen will.
+
+**Anker.** `care_open` in `app.aftercare_month_blocker` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; `MONATSHINDERNIS` in `src/features/billing/nachsorge-api.ts`. Geprüft in `supabase/tests/aftercare-months.test.ts`.
+
+**Änderungspfad.** Abo ruht während der Behandlung: Zeitraum der Behandlung am Abo und Prüfung je Monat · Aufwand `mittel`.

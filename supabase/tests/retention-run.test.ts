@@ -157,16 +157,28 @@ describe('Loeschlauf: klinische Patientenakte', () => {
     ).toBe(1);
   });
 
-  it('loescht das Nachsorge-Abo mit der Akte (ANG-001)', async () => {
+  it('loescht das Nachsorge-Abo mit der Akte, samt erfasstem Abo-Monat (ANG-001, ANG-002)', async () => {
     await abgeschlossenVor(patients.max, 11);
     await asPostgres(
-      `insert into public.aftercare_subscriptions (organization_id, patient_id, starts_on, created_by)
-       select organization_id, id, care_concluded_on, $2::uuid from public.patients where id = $1`,
+      `with abo as (
+         insert into public.aftercare_subscriptions (organization_id, patient_id, starts_on, created_by)
+         select organization_id, id, care_concluded_on, $2::uuid from public.patients where id = $1
+         returning id, organization_id, patient_id, starts_on
+       )
+       insert into public.billable_services
+         (organization_id, patient_id, aftercare_subscription_id, catalog_item_id, performed_on)
+       select organization_id, patient_id, id, 'cccccccc-cccc-4ccc-8ccc-000000000010'::uuid, starts_on
+       from abo`,
       [patients.max, users.office],
     );
 
     await lauf();
 
+    expect(
+      await anzahl(
+        'select count(*) from public.billable_services where aftercare_subscription_id is not null',
+      ),
+    ).toBe(0);
     expect(
       await anzahl('select count(*) from public.aftercare_subscriptions where patient_id = $1', [
         patients.max,

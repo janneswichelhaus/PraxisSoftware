@@ -266,6 +266,8 @@ describe('Audit-Lesepfad', () => {
       'list_day_plan',
       'list_day_route',
       'list_deletion_runs',
+      // ANG-002: faellige Abo-Monate (owner, office).
+      'list_due_aftercare_months',
       'list_ending_prescriptions',
       'list_event_participants',
       'list_event_series',

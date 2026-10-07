@@ -395,6 +395,8 @@ const positionSchema = z.object({
   currency: z.string(),
   tax_treatment: z.string(),
   tax_rate_permille: z.number(),
+  /** ANG-002: letzter Tag eines Abo-Monats; ältere Snapshots tragen ihn nicht. */
+  period_until: z.string().nullable().optional(),
 });
 export type Rechnungsposition = z.infer<typeof positionSchema>;
 

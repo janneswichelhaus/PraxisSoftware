@@ -159,6 +159,19 @@ function pruefe(zeile: PositionsEingabe): Zeilenfehler[] {
     fehler.push({ feld: 'preis', meldung: 'Bitte einen Preis wie 45,00 eingeben.' });
   if (zeile.item_kind === 'absence_fee' && zeile.remedy !== '')
     fehler.push({ feld: 'remedy', meldung: 'Ein Ausfallhonorar hängt an keinem Heilmittel.' });
+  // ANG-002 (ANN-269): Der Abo-Monat ist Behandlung, ohne Heilmittel und bis
+  // zur Antwort der Steuerberatung steuerpflichtig zum Regelsatz.
+  if (
+    zeile.item_kind === 'aftercare_month' &&
+    (zeile.service_area !== 'therapy' ||
+      zeile.tax_treatment !== 'taxable' ||
+      zeile.tax_rate_permille !== STEUERSATZ_VORGABE)
+  )
+    fehler.push({
+      feld: 'tax_treatment',
+      meldung:
+        'Das Nachsorge-Abo gehört zur Behandlung und ist bis zur Klärung mit der Steuerberatung umsatzsteuerpflichtig.',
+    });
   // ADR-021: Training ist keine Heilbehandlung. Verbindlich ist die Constraint
   // in der Datenbank; diese Zeile nennt den Grund, bevor der Server abweist.
   if (zeile.service_area === 'training' && zeile.tax_treatment === 'exempt_healthcare')
@@ -999,16 +1012,27 @@ function Positionszeile({
                 label="Art"
                 value={zeile.item_kind}
                 onChange={(event) => {
+                  const art = event.target.value as PositionsEingabe['item_kind'];
                   onChange({
                     ...zeile,
-                    item_kind: event.target.value as PositionsEingabe['item_kind'],
-                    remedy: event.target.value === 'absence_fee' ? '' : zeile.remedy,
+                    item_kind: art,
+                    remedy: art === 'treatment' ? zeile.remedy : '',
+                    // ANG-002 (ANN-269): Der Abo-Monat ist Behandlung und
+                    // steuerpflichtig; verbindlich prüft die Datenbank.
+                    ...(art === 'aftercare_month'
+                      ? {
+                          service_area: 'therapy' as const,
+                          tax_treatment: 'taxable' as const,
+                          tax_rate_permille: STEUERSATZ_VORGABE,
+                        }
+                      : {}),
                   });
                   onVerlassen('item_kind');
                 }}
               >
                 <option value="treatment">{artLabels.treatment}</option>
                 <option value="absence_fee">{artLabels.absence_fee}</option>
+                <option value="aftercare_month">{artLabels.aftercare_month}</option>
               </Select>
             </div>
             <div className="sm:w-56">
@@ -1017,7 +1041,7 @@ function Positionszeile({
                 feldId={feldIdFuer(index, 'remedy')}
                 value={zeile.remedy}
                 error={fehler.remedy}
-                disabled={zeile.item_kind === 'absence_fee'}
+                disabled={zeile.item_kind !== 'treatment'}
                 onChange={(event) => {
                   onChange({ ...zeile, remedy: event.target.value });
                   onVerlassen('remedy');

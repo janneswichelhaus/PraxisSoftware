@@ -33,6 +33,8 @@ const LAUFEND: NachsorgeApi.Nachsorgeabo = {
   cancelled_representative_name: null,
   current_month_end: '2026-10-31',
   next_month_start: '2026-11-01',
+  recorded_months: 0,
+  next_month_price_cents: 3900,
 };
 
 function sicht(teil: Partial<NachsorgeApi.Nachsorgesicht> = {}): NachsorgeApi.Nachsorgesicht {
@@ -83,7 +85,8 @@ describe('Nachsorge-Abo in der Akte (ANG-001)', () => {
     fetchNachsorge.mockResolvedValue(sicht({ subscriptions: [LAUFEND] }));
     renderWithProviders(<Nachsorgeabo patientId="p1" />);
     expect(await screen.findByText(/Läuft seit 01.10.2026/)).toBeInTheDocument();
-    expect(screen.getByText(/Nächster Abo-Monat ab 01.11.2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Nächster Abo-Monat ab 01.11.2026, 39,00/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Irrtümlich angelegt' })).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Abo anlegen' })).not.toBeInTheDocument();
   });
 

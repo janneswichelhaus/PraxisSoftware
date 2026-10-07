@@ -24,6 +24,10 @@ const aboSchema = z.object({
   current_month_end: z.string().nullable(),
   /** Laufend: der Beginn des nächsten Abo-Monats. */
   next_month_start: z.string().nullable(),
+  /** ANG-002: wie viele Abo-Monate als Leistung erfasst sind. */
+  recorded_months: z.number(),
+  /** ANG-002: Preis des nächsten Abo-Monats laut Preisliste; null: keiner. */
+  next_month_price_cents: z.number().nullable(),
 });
 
 export type Nachsorgeabo = z.infer<typeof aboSchema>;
@@ -72,12 +76,78 @@ export async function createNachsorge(patientId: string, beginn: string): Promis
 export async function deleteNachsorge(id: string): Promise<void> {
   const { error } = (await getSupabase().rpc('delete_aftercare_subscription', {
     p_subscription_id: id,
-  })) as { error: { message?: string; code?: string } | null };
+  })) as { error: { message?: string } | null };
 
-  if (error?.code === '23503') {
-    throw new Error(
-      'Aus dem Abo ist schon eine Leistung entstanden; es endet nur durch Kündigung.',
-    );
+  if (error?.message?.includes('has recorded months')) {
+    throw new Error('Aus dem Abo ist schon ein Monat erfasst; es endet nur durch Kündigung.');
   }
   if (error) throw new Error('Das Abo konnte nicht entfernt werden.');
+}
+
+// -----------------------------------------------------------------------------
+// Abo-Monate als Leistung (ANG-002, ADR-009 Punkt 21)
+// -----------------------------------------------------------------------------
+
+/** Warum ein Monat nicht erfasst werden kann (`app.aftercare_month_blocker`). */
+export const MONATSHINDERNIS = {
+  not_a_month: 'Kein Beginn eines Abo-Monats.',
+  not_due: 'Der Monat hat noch nicht begonnen.',
+  after_end: 'Der Monat liegt nach dem Ende des Abos.',
+  // ANN-271: während einer neuen Behandlung wird kein Abo-Monat berechnet.
+  care_open: 'Die Behandlung läuft wieder – kein Abo-Monat, solange sie dauert.',
+  no_price: 'Die geltende Preisliste nennt keinen Abo-Monat.',
+} as const;
+
+const faelligSchema = z.object({
+  subscription_id: z.string(),
+  patient_id: z.string(),
+  patient_name: z.string(),
+  month_start: z.string(),
+  month_end: z.string(),
+  unit_price_cents: z.number().nullable(),
+  currency: z.string().nullable(),
+  blocker: z.enum(['not_a_month', 'not_due', 'after_end', 'care_open', 'no_price']).nullable(),
+});
+
+export type FaelligerMonat = z.infer<typeof faelligSchema>;
+
+export const FAELLIGE_MONATE_SCHLUESSEL = ['nachsorge', 'faellig'] as const;
+
+export async function fetchFaelligeMonate(): Promise<FaelligerMonat[]> {
+  const satz = 'Die Abo-Monate konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_due_aftercare_months')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (error) throw new Error(satz);
+  return antwort(z.array(faelligSchema), data ?? [], satz);
+}
+
+export async function recordMonat(aboId: string, monat: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('record_aftercare_month', {
+    p_subscription_id: aboId,
+    p_month_start: monat,
+  })) as { error: { message?: string } | null };
+
+  const grund = Object.entries(MONATSHINDERNIS).find(([schluessel]) =>
+    error?.message?.includes(schluessel),
+  );
+  if (grund) throw new Error(grund[1]);
+  if (error?.message?.includes('already recorded')) {
+    throw new Error('Dieser Abo-Monat ist schon erfasst.');
+  }
+  if (error) throw new Error('Der Abo-Monat konnte nicht erfasst werden.');
+}
+
+export async function deleteMonat(leistungId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_aftercare_month', {
+    p_billable_service_id: leistungId,
+  })) as { error: { message?: string } | null };
+
+  if (error?.message?.includes('on an invoice')) {
+    throw new Error(
+      'Der Abo-Monat steht auf einem Rechnungsentwurf. Bitte erst den Entwurf verwerfen.',
+    );
+  }
+  if (error) throw new Error('Die Erfassung konnte nicht zurückgenommen werden.');
 }

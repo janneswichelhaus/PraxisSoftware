@@ -42,7 +42,7 @@ export const katalogPositionSchema = z.object({
   sort_order: z.number(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
   remedy: z.string().nullable(),
   unit_price_cents: z.number(),
   currency: z.string(),
@@ -70,6 +70,8 @@ export const steuerLabels: Record<KatalogPosition['tax_treatment'], string> = {
 export const artLabels: Record<KatalogPosition['item_kind'], string> = {
   treatment: 'Behandlung',
   absence_fee: 'Ausfallhonorar',
+  // ANG-002: der Abo-Monat des Nachsorge-Abos (ADR-009 Punkt 21).
+  aftercare_month: 'Nachsorge-Abo (Monat)',
 };
 
 export async function fetchKatalogVersionen(): Promise<KatalogVersion[]> {
@@ -569,7 +571,7 @@ const dokumentSchema = z.object({
       performed_on: z.string(),
       code: z.string(),
       label: z.string(),
-      item_kind: z.enum(['treatment', 'absence_fee']),
+      item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
       quantity: z.number(),
       unit_price_cents: z.number(),
       line_total_cents: z.number(),
@@ -578,6 +580,8 @@ const dokumentSchema = z.object({
       tax_rate_permille: z.number(),
       // ABR-032 (schema_version 5): Anteil am Terminhonorar (ANN-233).
       session_fee: z.boolean().optional(),
+      // ANG-002: letzter Tag eines Abo-Monats; ältere Snapshots tragen ihn nicht.
+      period_until: z.string().nullable().optional(),
     }),
   ),
   tax_groups: z.array(
@@ -1084,7 +1088,7 @@ const vorschlagSchema = z.object({
   catalog_item_id: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
   unit_price_cents: z.number(),
   currency: z.string(),
   tax_treatment: z.enum(['exempt_healthcare', 'taxable', 'not_taxable']),
@@ -1114,7 +1118,8 @@ export async function fetchVorschlag(appointmentId: string): Promise<Vorschlag[]
 
 const leistungSchema = z.object({
   id: z.string(),
-  appointment_id: z.string(),
+  /** Leer an einem Abo-Monat (ANG-002): Er entsteht ohne Termin. */
+  appointment_id: z.string().nullable(),
   patient_id: z.string().nullable(),
   training_relationship_id: z.string().nullable(),
   service_area: z.enum(['therapy', 'training']),
@@ -1122,7 +1127,7 @@ const leistungSchema = z.object({
   performed_on: z.string(),
   code: z.string(),
   label: z.string(),
-  item_kind: z.enum(['treatment', 'absence_fee']),
+  item_kind: z.enum(['treatment', 'absence_fee', 'aftercare_month']),
   quantity: z.number(),
   unit_price_cents: z.number(),
   currency: z.string(),
@@ -1181,7 +1186,10 @@ export async function deleteLeistungen(appointmentId: string): Promise<void> {
  * Vorgang betrifft.
  */
 export interface Terminleistungen {
-  appointmentId: string;
+  /** Der Termin; leer an einem Abo-Monat (ANG-002). */
+  appointmentId: string | null;
+  /** Schlüssel der Gruppe: der Termin oder die eine Leistung des Abo-Monats. */
+  schluessel: string;
   patientName: string;
   bereich: Leistungsbereich;
   performedOn: string;
@@ -1194,9 +1202,12 @@ export function nachTerminen(leistungen: Leistung[]): Terminleistungen[] {
   const gruppen = new Map<string, Terminleistungen>();
 
   for (const zeile of leistungen) {
-    const vorhanden = gruppen.get(zeile.appointment_id);
+    // ANG-002: Ein Abo-Monat hat keinen Termin und steht für sich.
+    const schluessel = zeile.appointment_id ?? zeile.id;
+    const vorhanden = gruppen.get(schluessel);
     const gruppe = vorhanden ?? {
       appointmentId: zeile.appointment_id,
+      schluessel,
       patientName: zeile.patient_name,
       bereich: zeile.service_area,
       performedOn: zeile.performed_on,
@@ -1208,7 +1219,7 @@ export function nachTerminen(leistungen: Leistung[]): Terminleistungen[] {
     gruppe.zeilen.push(zeile);
     gruppe.summeCent += zeile.unit_price_cents * zeile.quantity;
     gruppe.abgerechnet = gruppe.abgerechnet || zeile.status === 'invoiced';
-    if (!vorhanden) gruppen.set(zeile.appointment_id, gruppe);
+    if (!vorhanden) gruppen.set(schluessel, gruppe);
   }
 
   return [...gruppen.values()];

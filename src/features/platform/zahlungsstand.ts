@@ -63,6 +63,8 @@ export interface Positionsgruppe {
   menge: number;
   summe_cents: number;
   tage: string[];
+  /** ANG-002: Zeiträume der Abo-Monate, aufsteigend; leer an anderen Positionen. */
+  zeitraeume: { von: string; bis: string }[];
 }
 
 /**
@@ -83,11 +85,18 @@ export function positionen(zeilen: readonly Rechnungsposition[]): Positionsgrupp
       menge: 0,
       summe_cents: 0,
       tage: [],
+      zeitraeume: [],
     };
     gruppe.menge += z.quantity;
     gruppe.summe_cents += z.line_total_cents;
     if (!gruppe.tage.includes(z.performed_on)) gruppe.tage.push(z.performed_on);
+    if (z.period_until && !gruppe.zeitraeume.some((r) => r.von === z.performed_on))
+      gruppe.zeitraeume.push({ von: z.performed_on, bis: z.period_until });
     gruppen.set(schluessel, gruppe);
   }
-  return [...gruppen.values()].map((g) => ({ ...g, tage: [...g.tage].sort() }));
+  return [...gruppen.values()].map((g) => ({
+    ...g,
+    tage: [...g.tage].sort(),
+    zeitraeume: [...g.zeitraeume].sort((a, b) => a.von.localeCompare(b.von)),
+  }));
 }

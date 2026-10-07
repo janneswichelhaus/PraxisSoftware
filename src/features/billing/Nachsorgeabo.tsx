@@ -6,6 +6,7 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatDate } from '@/lib/datum';
+import { formatEuro } from '@/lib/geld';
 import {
   createNachsorge,
   deleteNachsorge,
@@ -86,6 +87,9 @@ function AboZeile({ abo, patientId }: { abo: Abo; patientId: string }) {
       {abo.ends_on === null && abo.next_month_start ? (
         <p className="text-ink-muted text-sm">
           Nächster Abo-Monat ab {formatDate(abo.next_month_start)}
+          {abo.next_month_price_cents !== null
+            ? `, ${formatEuro(abo.next_month_price_cents)}`
+            : ' – die Preisliste nennt dafür keinen Preis'}
         </p>
       ) : null}
       {abo.cancelled_on ? (
@@ -93,7 +97,9 @@ function AboZeile({ abo, patientId }: { abo: Abo; patientId: string }) {
           Gekündigt am {formatDate(abo.cancelled_on)}, {kuendigungVon(abo)}
         </p>
       ) : null}
-      {abo.ends_on === null ? (
+      {/* Eine Fehlanlage geht nur ohne erfassten Monat; danach endet das
+          Abo nur durch Kündigung (ANG-002). */}
+      {abo.ends_on === null && abo.recorded_months === 0 ? (
         <div className="mt-1">
           <Entfernen id={abo.id} patientId={patientId} beginn={abo.starts_on} />
         </div>

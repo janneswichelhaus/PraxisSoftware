@@ -32,6 +32,7 @@ import {
   type Terminleistungen,
   type Vorschlag,
 } from './api';
+import { AbomonatZuruecknehmen, FaelligeAbomonate } from './Abomonate';
 
 /**
  * Leistungen (ABR-002).
@@ -85,7 +86,7 @@ export function ServicesPage() {
     <>
       <PageHeader
         title="Leistungen"
-        description="Erbrachte Leistungen aus durchgeführten Terminen und Ausfallhonorare."
+        description="Erbrachte Leistungen aus durchgeführten Terminen, Ausfallhonorare und Abo-Monate."
       />
 
       <Section titel="Zu erfassen">
@@ -125,6 +126,9 @@ export function ServicesPage() {
         </div>
       </Section>
 
+      {/* ANG-002: die fälligen Monate des Nachsorge-Abos; ohne Abo steht hier nichts. */}
+      <FaelligeAbomonate />
+
       {/* Ein Satz: Was Zurücknehmen verhindert, sagt die Abweisung (UX-005i). */}
       <Section titel="Erfasst" hinweis="Noch nicht abgerechnet." rahmen>
         {leistungen.isPending ? <LoadingState label="Leistungen werden geladen …" /> : null}
@@ -148,9 +152,15 @@ export function ServicesPage() {
         {offen.length > 0 ? (
           <ul className="divide-line divide-y">
             {offen.map((gruppe) => (
-              <Leistungsgruppe key={gruppe.appointmentId} gruppe={gruppe}>
+              <Leistungsgruppe key={gruppe.schluessel} gruppe={gruppe}>
                 <div className="mt-2">
-                  <Zuruecknehmen appointmentId={gruppe.appointmentId} bereich={gruppe.bereich} />
+                  {gruppe.appointmentId ? (
+                    <Zuruecknehmen appointmentId={gruppe.appointmentId} bereich={gruppe.bereich} />
+                  ) : (
+                    // ANG-002: Ein Abo-Monat hat keinen Termin; zurückgenommen
+                    // wird die eine Leistung.
+                    <AbomonatZuruecknehmen leistungId={gruppe.zeilen[0]?.id ?? ''} />
+                  )}
                 </div>
               </Leistungsgruppe>
             ))}
@@ -168,7 +178,7 @@ export function ServicesPage() {
             </p>
             <ul className="divide-line divide-y">
               {abgerechnet.map((gruppe) => (
-                <Leistungsgruppe key={gruppe.appointmentId} gruppe={gruppe} />
+                <Leistungsgruppe key={gruppe.schluessel} gruppe={gruppe} />
               ))}
             </ul>
           </Disclosure>
@@ -211,6 +221,9 @@ function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; child
             {/* Eine Art, kein Warnzustand (ABR-16): ohne „!". */}
             {zeile.item_kind === 'absence_fee' ? (
               <Badge ton="neutral">{artLabels.absence_fee}</Badge>
+            ) : null}
+            {zeile.item_kind === 'aftercare_month' ? (
+              <Badge ton="neutral">{artLabels.aftercare_month}</Badge>
             ) : null}
           </li>
         ))}
