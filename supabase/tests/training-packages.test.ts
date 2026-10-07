@@ -5,6 +5,7 @@ import {
   asUser,
   asUserCommitted,
   fremdeOrganisation,
+  resetDatabase,
   resetDatabaseOhneTermine,
 } from './helpers/db';
 import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
@@ -25,9 +26,12 @@ import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
  *     keine eigene Forderung (ANN-279) - weder offen gelistet noch erfassbar;
  *     ein Paket entsteht nicht ueber schon erfasste Termine. Eine Behandlung
  *     waehrend des Pakets wird daneben abgerechnet (ANN-280).
+ *   * ANG-008: Die Plattform zeigt Zugaengen zum Training die Pakete der
+ *     geltenden Preisliste (Recht read) und die eigenen Pakete (Recht
+ *     billing), mit den Negativfaellen aus ADR-023 Punkt 23 (ANN-281).
  */
 
-const { users, organizationId, patients, trainingRelationships } = SEED;
+const { users, organizationId, patients, trainingRelationships, platformAccesses } = SEED;
 
 /** Preisliste 2026 (in Kraft) und 2027 (Entwurf), supabase/seed.sql. */
 const LISTE_2026 = 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001';
@@ -704,5 +708,151 @@ describe('Termine im Paket (ANG-007, BEF-114)', () => {
       [trainingRelationships.erika],
     );
     expect(rows[0]!.n).toBe('1');
+  });
+});
+
+const ANGEBOTE = 'select public.platform_training_offers($1::uuid) as sicht';
+const MEINE = 'select public.platform_training_packages($1::uuid) as sicht';
+const EXPORT = 'select public.platform_export($1::uuid) as daten';
+
+async function plattform<T>(konto: string, sql: string, zugang: string): Promise<T | null> {
+  const { rows } = await asUser<{ sicht: T | null }>(konto, sql, [zugang]);
+  return rows[0]!.sicht;
+}
+
+describe('Paket und Preise in der Plattform (ANG-008)', () => {
+  let heute: string;
+
+  beforeEach(async () => {
+    await resetDatabase();
+    heute = await tag('heute');
+  }, 120_000);
+
+  it('zeigt Tina die Pakete der geltenden Preisliste mit Gesamtpreis', async () => {
+    const sicht = await plattform<{ vat_included: boolean; offers: unknown[] }>(
+      users.plattformTina,
+      ANGEBOTE,
+      platformAccesses.tinaTraining,
+    );
+    expect(sicht).toEqual({
+      vat_included: true,
+      offers: [
+        expect.objectContaining({
+          code: 'TP3',
+          package_months: 3,
+          price_cents: 39000,
+          tax_rate_permille: 190,
+        }),
+        expect.objectContaining({ code: 'TP6', package_months: 6, price_cents: 72000 }),
+      ],
+    });
+  });
+
+  it('zeigt Tina ihr eigenes Paket mit Zeitraum, Preis und Stand', async () => {
+    expect(await plattform(users.plattformTina, MEINE, platformAccesses.tinaTraining)).toEqual([]);
+    await anlegen(trainingRelationships.tina, TP6, heute);
+    const pakete = await plattform<Array<Record<string, unknown>>>(
+      users.plattformTina,
+      MEINE,
+      platformAccesses.tinaTraining,
+    );
+    expect(pakete).toEqual([
+      {
+        label: expect.stringContaining('6 Monate') as unknown,
+        package_months: 6,
+        price_cents: 72000,
+        currency: 'EUR',
+        starts_on: heute,
+        ends_on: await tag('app.training_package_ends_on(heute, 6)'),
+        state: 'running',
+      },
+    ]);
+    // Feste Feldliste (ADR-023 Punkt 22): keine Kennung, kein Anleger.
+    expect(Object.keys(pakete![0]!).sort()).toEqual([
+      'currency',
+      'ends_on',
+      'label',
+      'package_months',
+      'price_cents',
+      'starts_on',
+      'state',
+    ]);
+  });
+
+  it('nimmt die eigenen Pakete in den Export', async () => {
+    await anlegen(trainingRelationships.tina, TP3, heute);
+    const { rows } = await asUser<{ daten: { training_packages: unknown[] } }>(
+      users.plattformTina,
+      EXPORT,
+      [platformAccesses.tinaTraining],
+    );
+    expect(rows[0]!.daten.training_packages).toHaveLength(1);
+  });
+
+  it('zeigt der Behandlung keine Trainingspreise und kein Paket (anderer Bereich)', async () => {
+    await asPostgres(
+      `update public.patients set care_concluded_on = current_date - 3,
+              care_concluded_at = now(), care_concluded_by = $2 where id = $1`,
+      [patients.erika, users.ownerTherapist],
+    );
+    await anlegen(trainingRelationships.erika, TP3, await tag('heute - 3'));
+    expect(
+      await plattform(users.plattformErika, ANGEBOTE, platformAccesses.erikaBehandlung),
+    ).toBeNull();
+    expect(
+      await plattform(users.plattformErika, MEINE, platformAccesses.erikaBehandlung),
+    ).toBeNull();
+    // Ueber ihren Trainingszugang sieht Erika beides.
+    expect(
+      await plattform(users.plattformErika, MEINE, platformAccesses.erikaTraining),
+    ).toHaveLength(1);
+  });
+
+  it('fremde Person, Praxiskonto, andere Organisation: nichts', async () => {
+    await anlegen(trainingRelationships.tina, TP3, heute);
+    for (const sql of [ANGEBOTE, MEINE]) {
+      expect(await plattform(users.plattformErika, sql, platformAccesses.tinaTraining)).toBeNull();
+      expect(await plattform(users.office, sql, platformAccesses.tinaTraining)).toBeNull();
+      expect(await plattform(users.trainer, sql, platformAccesses.tinaTraining)).toBeNull();
+      const fremd = await fremdeOrganisation();
+      expect(await plattform(fremd.owner, sql, platformAccesses.tinaTraining)).toBeNull();
+    }
+  });
+
+  it.each([
+    ['gesperrt', `status = 'locked', locked_at = now()`],
+    ['entzogen', `status = 'revoked', revoked_at = now(), revoked_reason = 'practice'`],
+  ])('Zugang %s: nichts', async (_name, setzen) => {
+    await anlegen(trainingRelationships.tina, TP3, heute);
+    await asPostgres(`update public.platform_accesses set ${setzen} where id = $1`, [
+      platformAccesses.tinaTraining,
+    ]);
+    expect(
+      await plattform(users.plattformTina, ANGEBOTE, platformAccesses.tinaTraining),
+    ).toBeNull();
+    expect(await plattform(users.plattformTina, MEINE, platformAccesses.tinaTraining)).toBeNull();
+  });
+
+  it('Zugang eingeladen: nichts', async () => {
+    await asPostgres(
+      `update public.platform_accesses set status = 'invited', account_user_id = null,
+              activated_at = null where id = $1`,
+      [platformAccesses.tinaTraining],
+    );
+    expect(
+      await plattform(users.plattformTina, ANGEBOTE, platformAccesses.tinaTraining),
+    ).toBeNull();
+  });
+
+  it('nach der Lesefrist: nichts', async () => {
+    await asPostgres(
+      `update public.training_relationships
+          set contract_ended_on = current_date - 40, status = 'inactive' where id = $1`,
+      [trainingRelationships.tina],
+    );
+    expect(
+      await plattform(users.plattformTina, ANGEBOTE, platformAccesses.tinaTraining),
+    ).toBeNull();
+    expect(await plattform(users.plattformTina, MEINE, platformAccesses.tinaTraining)).toBeNull();
   });
 });

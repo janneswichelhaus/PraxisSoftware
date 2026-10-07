@@ -106,6 +106,9 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_onboarding',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
+      // ANG-008: Pakete der Preisliste und die eigenen Pakete.
+      'rpc:platform_training_offers',
+      'rpc:platform_training_packages',
       'rpc:record_platform_consent',
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.

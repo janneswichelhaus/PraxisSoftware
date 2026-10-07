@@ -3382,3 +3382,15 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in de
 **Anker.** Keine Sperre in `app.training_package_start_blocker` für eine Behandlung nach dem Beginn, Kopf von `supabase/migrations/20261015120000_ang_007_package_covers_appointments.sql`; Bedingungen in `src/features/platform/paketbedingungen.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
 
 **Änderungspfad.** Erstattung des Restes: Korrekturrechnung über den nicht genutzten Teil · Aufwand `mittel`.
+
+### ANN-281 — Preise und Bedingungen der Pakete sieht jeder Zugang zum Training; geschlossen wird in der Praxis
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Fernabsatz, Preisangaben); KND-EPIC-001
+
+**Annahme.** Unter „Ich → Trainingspaket“ sieht jeder lesbare Zugang zu einem Trainingsverhältnis die Pakete der heute geltenden Preisliste mit Bezeichnung und Umfang, Laufzeit, Gesamtpreis und dem Satz zur Umsatzsteuer, darunter die Bedingungen. Das eigene Paket mit Zeitraum und Preis sieht, wer Rechnungen sieht (Recht `billing`). Zugänge zur Behandlung sehen keine Trainingspreise. Einen Kaufknopf gibt es nicht: Das Paket wird in der Praxis geschlossen und dort angelegt.
+
+**Begründung.** `IDEA-ANG-004`: Der Preis steht vollständig da, mit Laufzeit, Umfang und Bedingungen, ohne Beratungsgespräch als Zwischenschritt. Die Preisangabenverordnung verlangt gegenüber Verbrauchern den Gesamtpreis einschließlich Umsatzsteuer (§ 3 PAngV); unter § 19 UStG wird keine ausgewiesen. Ein Abschluss über die Plattform brächte Widerrufsbelehrung und Informationspflichten des Fernabsatzes mit (§ 312d BGB) und gehört nach §4.10 zum Übergang aus der Behandlung (KND-EPIC-001). Die Bereiche bleiben getrennt (§4.8). Unsicher: ob die Praxis die Preise auch Patient:innen am Ende der Behandlung zeigen will; das gehört zu KND-EPIC-001.
+
+**Anker.** `public.platform_training_offers` und `public.platform_training_packages` in `supabase/migrations/20261015130000_ang_008_platform_training_package.sql`; Wortlaut in `src/features/platform/paketbedingungen.ts`, Seite `src/features/platform/Paket.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/platform/Paket.test.tsx`.
+
+**Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung (KND-EPIC-001) · Aufwand `groß`. Preise auch für die Behandlung: eine Bedingung in der einen Funktion · Aufwand `klein`.

@@ -72,6 +72,7 @@ const DATEN: Daten = {
   consents: [
     { purpose: 'email_contact', state: 'granted', occurred_on: '2026-10-06', source: 'platform' },
   ],
+  training_packages: [],
 };
 
 const objektUrl = vi.fn((_blob: Blob) => 'blob:test');

@@ -14,13 +14,16 @@ import {
   einstiegSchluessel,
   ladeAbo,
   ladeEinstieg,
+  ladeMeinePakete,
   ladeMeineVertretungen,
+  paketeSchluessel,
   ueberallAbmelden,
   vertretungenSchluessel,
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
 import { Abo } from './Abo';
+import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
@@ -210,6 +213,16 @@ export function PlattformApp({
                 bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
                 zugaenge={zugaenge}
                 seite={(z) => <Abo zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/paket`}
+            element={
+              <MitZugang
+                bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
+                zugaenge={zugaenge}
+                seite={(z) => <Paket zugang={z} />}
               />
             }
           />
@@ -505,6 +518,12 @@ function Ich({
         .map((z) => (
           <AboKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
         ))}
+      {/* ANG-008: Paket und Preise je Trainingszugang (IDEA-ANG-004). */}
+      {zugaenge
+        .filter((z) => z.relationship_kind === 'training')
+        .map((z) => (
+          <PaketKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
+        ))}
       {/* POR-016: Einwilligungen je Zugang - die eigenen und die einer
           rechtlichen Vertretung, nie die einer Begleitung. */}
       {entscheidend.length > 0 ? (
@@ -589,6 +608,40 @@ function AboKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolea
           {data.state === 'running' && data.can_cancel
             ? 'Abo ansehen oder kündigen'
             : 'Abo ansehen'}
+        </Textlink>
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Das Trainingspaket unter „Ich" (ANG-008, PROJECT_PRINCIPLES.md 4.10): ein
+ * laufendes Paket in einem Satz, und immer der Weg zu Paket und Preisen –
+ * die Preise stehen da, bevor jemand fragt (IDEA-ANG-004). Den eigenen Stand
+ * sieht nur, wer Rechnungen sieht; das sagt der Server.
+ */
+function PaketKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+  const { data } = useQuery({
+    queryKey: paketeSchluessel(zugang.access_id),
+    queryFn: () => ladeMeinePakete(zugang.access_id),
+  });
+  const aktuell = data?.find((k) => k.state !== 'ended');
+  const titel = `Trainingspaket${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
+  return (
+    <Section titel={titel} rahmen>
+      {aktuell ? (
+        <p className="text-ink text-base">
+          {aktuell.state === 'planned'
+            ? `Beginnt am ${datum(aktuell.starts_on)}.`
+            : `Läuft bis ${datum(aktuell.ends_on)}.`}
+        </p>
+      ) : null}
+      <div className={aktuell ? 'mt-2' : undefined}>
+        <Textlink
+          alleinstehend
+          to={`${PLATTFORM_PFAD}/paket?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
+        >
+          {aktuell ? 'Paket und Preise ansehen' : 'Pakete und Preise ansehen'}
         </Textlink>
       </div>
     </Section>
