@@ -639,3 +639,41 @@ export function einwilligungsfehler(meldung: string | undefined): string {
     return 'Das ist mit diesem Zugang nicht möglich. Bitte wenden Sie sich an die Praxis.';
   return 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.';
 }
+
+// -----------------------------------------------------------------------------
+// Datenexport (POR-018, IDEA-QSN-003, ANN-265)
+// -----------------------------------------------------------------------------
+
+const exportSchema = z.object({
+  format: z.literal('plattform-export'),
+  format_version: z.number(),
+  exported_at: z.string(),
+  organization: z.string(),
+  relationship: z.enum(['treatment', 'training']),
+  exported_by: z.enum(['self', 'legal_representative']),
+  person: z.record(z.string(), z.unknown()),
+  appointments: z.array(terminSchema),
+  appointment_requests: z.array(wunschSchema),
+  questionnaires: z.array(bogenSchema),
+  invoices: z.array(rechnungZeileSchema),
+  documents: z.array(dokumentSchema),
+  consents: z.array(einwilligungSchema.omit({ can_grant: true })),
+});
+export type Datenexport = z.infer<typeof exportSchema>;
+
+/**
+ * Die eigenen Daten der Plattform, wie der Server sie zusammensetzt. Jeder
+ * Aufruf steht im Protokoll der Praxis (ADR-023 Punkt 24) - die Seite ruft
+ * deshalb nur auf Knopfdruck auf und nie von selbst.
+ */
+export async function ladeDatenexport(
+  zugangId: string,
+): Promise<{ daten: Datenexport; roh: unknown }> {
+  const satz =
+    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('platform_export', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return { daten: antwort(exportSchema, ergebnis.data, satz), roh: ergebnis.data };
+}

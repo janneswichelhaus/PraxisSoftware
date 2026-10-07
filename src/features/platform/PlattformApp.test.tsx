@@ -235,4 +235,30 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     await waitFor(() => expect(ladeMeineVertretungen).toHaveBeenCalled());
     expect(screen.queryByRole('heading', { name: /Wer für Sie Zugang hat/ })).toBeNull();
   });
+
+  // POR-016, POR-018 (ANN-261): Einwilligungen und Export unter „Ich".
+  it('bietet unter Ich Einwilligungen und den Export an', () => {
+    zeige([BEHANDLUNG], '/p/ich');
+    expect(screen.getByRole('link', { name: 'Einwilligungen' })).toHaveAttribute(
+      'href',
+      '/p/einwilligungen?bereich=treatment',
+    );
+    expect(screen.getByRole('link', { name: 'Meine Daten herunterladen' })).toBeInTheDocument();
+  });
+
+  it('nach der Lesefrist: Einwilligungen ja, Export bei der Praxis', () => {
+    zeige([{ ...BEHANDLUNG, readable: false, read_until: '2026-09-01T00:00:00Z' }], '/p/ich');
+    expect(screen.getByRole('link', { name: 'Einwilligungen' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Meine Daten/ })).toBeNull();
+    expect(screen.getByText(/bekommen Sie\s+jetzt bei der Praxis/)).toBeInTheDocument();
+  });
+
+  it('einer Begleitung weder Einwilligungen noch Export', () => {
+    zeige(
+      [{ ...BEHANDLUNG, access_kind: 'companion', represented_name: 'Max Mustermann' }],
+      '/p/ich',
+    );
+    expect(screen.queryByRole('link', { name: /Einwilligungen/ })).toBeNull();
+    expect(screen.queryByRole('link', { name: /Meine Daten/ })).toBeNull();
+  });
 });

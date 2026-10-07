@@ -91,6 +91,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-016: Einwilligungen lesen und schreiben.
       'rpc:platform_consents',
       'rpc:platform_context',
+      // POR-018: die eigenen Daten herunterladen.
+      'rpc:platform_export',
       'rpc:platform_files',
       // POR-013: eigene Rechnungen.
       'rpc:platform_invoice',

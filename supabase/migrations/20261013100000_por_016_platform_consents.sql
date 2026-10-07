@@ -126,7 +126,7 @@ $$;
 revoke all on function app.platform_own_access_after_reading(uuid) from public, anon, authenticated;
 
 comment on function app.platform_own_access_after_reading(uuid) is
-  'POR-016 (D2, ANN-261): ob ein eigener, aktiver Zugang mit lebendem Verhaeltnis vorliegt - auch nach der Lesefrist. Nur fuer Widerruf und Export, nie fuer Lesen oder Erteilen.';
+  'POR-016 (D2, ANN-261): ob ein eigener, aktiver Zugang mit lebendem Verhaeltnis vorliegt - auch nach der Lesefrist. Nur fuer den Widerruf (und den Stand, den er braucht), nie fuer Lesen, Erteilen oder Export.';
 
 -- -----------------------------------------------------------------------------
 -- 4. Die Zwecke je Verhaeltnis

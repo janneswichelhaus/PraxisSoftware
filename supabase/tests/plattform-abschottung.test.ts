@@ -64,6 +64,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigene Einwilligungen (POR-016); Negativfälle in platform-consents.test.ts',
   'public.record_platform_consent':
     'Einwilligung erteilen oder widerrufen (POR-016); ohne Recht consent abgewiesen (42501)',
+  'public.platform_export':
+    'Eigene Daten herunterladen (POR-018); ohne Recht export abgewiesen (42501), Negativfälle in platform-export.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

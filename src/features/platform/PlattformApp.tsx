@@ -18,6 +18,7 @@ import {
 } from './api';
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
+import { Datenexport } from './Datenexport';
 import { Einwilligungen } from './Einwilligungen';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
@@ -58,15 +59,17 @@ export function PlattformApp({
   onAbmelden: () => void;
 }) {
   const lesbar = zugaenge.filter((z) => z.readable);
-  // POR-016 (D2, ANN-261): Einwilligungen und Export entscheidet die Person
-  // selbst oder ihre rechtliche Vertretung - die Person auch nach der
-  // Lesefrist, solange ihr Zugang aktiv ist. Verbindlich ist der Server.
+  // POR-016 (D2, ANN-261): Einwilligungen entscheidet die Person selbst oder
+  // ihre rechtliche Vertretung - die Person auch nach der Lesefrist, solange
+  // ihr Zugang aktiv ist (dann nur noch widerrufen). Den Export (POR-018) nur
+  // in der Lesezeit. Verbindlich ist der Server.
   const entscheidend = zugaenge.filter(
     (z) =>
       z.status === 'active' &&
       z.access_kind !== 'companion' &&
       (z.readable || z.access_kind === 'self'),
   );
+  const exportierbar = entscheidend.filter((z) => z.readable);
   const praxis = zugaenge[0]?.organization_name ?? '';
 
   return (
@@ -176,6 +179,16 @@ export function PlattformApp({
                 bereiche={entscheidend}
                 zugaenge={zugaenge}
                 seite={(z) => <Einwilligungen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/daten`}
+            element={
+              <MitZugang
+                bereiche={exportierbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Datenexport zugang={z} />}
               />
             }
           />
@@ -348,7 +361,7 @@ function OhneLesbarenZugang({ zugaenge }: { zugaenge: Plattformzugang[] }) {
       <p className="text-ink mt-2 max-w-prose text-base leading-relaxed">
         {gesperrt
           ? 'Hier ist gerade nichts zu sehen. Bitte wenden Sie sich an die Praxis.'
-          : 'Die Zeit, in der Sie hier noch lesen konnten, ist abgelaufen. Unter „Ich" können Sie sich abmelden.'}
+          : 'Die Zeit, in der Sie hier noch lesen konnten, ist abgelaufen. Unter „Ich" können Sie Einwilligungen widerrufen und sich abmelden.'}
       </p>
     </>
   );
@@ -444,6 +457,18 @@ function Ich({
                   Einwilligungen
                   {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
                 </Textlink>
+                {/* POR-018 (ANN-261): der Export nur in der Lesezeit. */}
+                {z.readable ? (
+                  <Textlink to={`${PLATTFORM_PFAD}/daten?${wahlAdresse(z).split('?')[1] ?? ''}`}>
+                    Meine Daten herunterladen
+                    {entscheidend.length > 1 ? ` – ${wahlName(z)}` : ''}
+                  </Textlink>
+                ) : (
+                  <p className="text-ink-muted text-sm">
+                    Ihre Daten{entscheidend.length > 1 ? ` (${wahlName(z)})` : ''} bekommen Sie
+                    jetzt bei der Praxis.
+                  </p>
+                )}
               </li>
             ))}
           </ul>

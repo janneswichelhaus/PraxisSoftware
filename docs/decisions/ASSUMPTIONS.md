@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 93 Einträge):
+Zusatz `Prüfpaket` (heute 94 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3143,17 +3143,17 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: �
 
 **Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.
 
-### ANN-261 — Nach der Lesefrist widerruft und exportiert die Person selbst weiter, eine Vertretung nicht
+### ANN-261 — Nach der Lesefrist widerruft die Person selbst weiter; Export und Vertretung enden mit der Lesezeit
 
 Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung Plattform
 
-**Annahme.** Ist die Lesefrist (D2, 30 Tage nach dem Ende des Verhältnisses) vorbei, kann die Person selbst über ihren weiter aktiven Zugang unter „Ich" Einwilligungen widerrufen und ihre Daten herunterladen, aber nicht mehr neu einwilligen. Eine Vertretung kann nach ihrem Ende nichts mehr, auch nicht widerrufen. Gesperrte und entzogene Zugänge können nichts.
+**Annahme.** Ist die Lesefrist (D2, 30 Tage nach dem Ende des Verhältnisses) vorbei, kann die Person selbst über ihren weiter aktiven Zugang unter „Ich" Einwilligungen widerrufen, aber nicht neu einwilligen. Der Export geht nur in der Lesezeit; danach gibt die Praxis Auskunft (Art. 15, OPS-006), und „Ich" sagt das. Eine Vertretung kann nach ihrem Ende nichts mehr. Gesperrte und entzogene Zugänge können nichts.
 
-**Begründung.** DSN-001 D2: „Ich" bleibt, „weil Widerruf und Auskunft nicht an einem Abo hängen dürfen“; Art. 7 Abs. 3 DSGVO verlangt, dass der Widerruf so einfach ist wie die Erteilung, Art. 15 und 20 enden nicht mit dem Vertrag. Eine neue Einwilligung nach dem Ende hätte keinen Zweck. Das Ende einer Vertretung kann auch aus der Volljährigkeit kommen (`app.platform_access_ended_at`), dann ist sie zu Ende und nicht nur ihre Lesezeit. Unsicher: ob die Prüfung den Export nach dem Ende an eine neue Identitätsprüfung binden will.
+**Begründung.** Art. 7 Abs. 3 DSGVO: Der Widerruf muss so einfach sein wie die Erteilung, auch nach dem Vertrag; eine neue Einwilligung nach dem Ende hätte keinen Zweck. Der Export setzt sich aus den Plattformprojektionen zusammen, die nach der Lesefrist nichts zeigen; eine zweite Feldliste nur für danach widerspräche ADR-023 Punkt 22. Das weicht von DSN-001 D2 ab („Ich" behält den Export) — Rechnungen und Dokumente fehlen dort schon seit POR-EPIC-002. Das Ende einer Vertretung kann aus der Volljährigkeit kommen. Unsicher: ob die Prüfung den Export nach dem Ende auf der Plattform verlangt.
 
-**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` („nach der Lesefrist …“).
+**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` und `supabase/tests/platform-export.test.ts`.
 
-**Änderungspfad.** Nach dem Ende nichts mehr: die Funktion aus `record_platform_consent`, `platform_consents` und dem Export streichen · Aufwand `klein`.
+**Änderungspfad.** D2 vollständig („Ich" mit Rechnungen, Dokumenten, Export nach der Lesefrist): Projektionen mit eigenem Zweig für den eigenen Zugang · Aufwand `mittel`.
 
 ### ANN-262 — Eine Einwilligung auf der Plattform speichert die Fassung ihres Texts; ein alter Text wird abgewiesen
 
@@ -3190,3 +3190,15 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `training_consent_records` und `record_training_consent_entry` in `supabase/migrations/20261013110000_por_017_training_consent.sql`; `TrainingEinwilligung` in `src/features/training/TrainingEinwilligung.tsx`.
 
 **Änderungspfad.** Protokoll nur mit Einwilligung: Prüfung in den Schreibfunktionen des Protokolls · Aufwand `mittel`. Löschen nach Widerruf: Regel im Löschlauf · Aufwand `mittel`.
+
+### ANN-265 — Der Export der Plattform ist eine Auskunft nach Art. 15: dieselbe Aktion im Protokoll, Inhalt nur aus den Projektionen
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket)
+
+**Annahme.** „Meine Daten herunterladen" liefert eine JSON-Datei (und eine lesbare Fassung zum Drucken) mit genau dem, was die Plattform zeigt: Stammdaten des Verhältnisses, Termine, Terminwünsche, Befundbogen, Rechnungen (nur mit Recht auf Rechnungen), die Liste der freigegebenen Dokumente, Einwilligungen. Jeder Export steht als `patient_record.exported` im Protokoll, mit Akteur Plattformkonto oder Vertretung und Zweck `platform_export`. Die Person selbst und ihre rechtliche Vertretung exportieren, die Begleitung nicht.
+
+**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln, je Abruf protokolliert).
+
+**Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
+
+**Änderungspfad.** Eigene Aktion: ADR-010 ändern, Katalog, Freigabe · Aufwand `mittel`. Dokumente im Export: ZIP im Browser · Aufwand `mittel`.
