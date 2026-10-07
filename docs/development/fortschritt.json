@@ -704,7 +704,10 @@
           "id": "ang-epic-002",
           "name": "ANG-EPIC-002 Trainingspaket nach Zeitraum",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-07",
+          "nachweis": "ANG-005 bis ANG-008, BEF-114, Zweitreview",
+          "vermerk": "Sichtung: Angebote Schritte 4 bis 6"
         },
         {
           "id": "knd-epic-001",

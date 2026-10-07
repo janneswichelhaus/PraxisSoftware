@@ -1291,19 +1291,6 @@ ohnehin nicht nebenbei angefasst werden.
 
 **Erwartet.** Eine Migration, die die sechzehn Funktionen auf `VOLATILE` stellt (`alter function … volatile`, kein Neuschreiben), danach die Liste im Test leeren. Lokal mit `supabase start` als therapist gegenprüfen, dass ein abgewiesener Aufruf 200 mit leerer Antwort liefert und im Protokoll steht.
 
-### BEF-114 — Training: Paketpreise für drei oder sechs Monate
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-02 |
-| Bereich | Abrechnung im Training |
-| Quelle  | Jannes, Abnahme der Annahmen Block 8 (ANN-181) |
-| Status  | offen |
-| Berührt | ANN-181 (`app.appointment_is_billable`); ADR-009 Punkt 21 (Trainingspaket); ABR-EPIC-007 |
-
-**Erwartet** (Jannes, 2026-10-02): Langfristig feste Paketpreise für drei oder sechs Monate Betreuung. Das Terminhonorar der Behandlung (140 €, ADR-009 Punkt 22) wird nicht übernommen. Bei einem Paket entsteht die Forderung aus der Paketvereinbarung; Termine im Paket erzeugen keine weitere Forderung. Preis, Leistungsumfang und Zahlungsweise legt Jannes noch fest; bis dahin bleibt es bei ANN-181 (Leistung aus dem durchgeführten Termin, für Einzelstunden). **2026-10-05:** aus ABR-EPIC-007 herausgelöst, eigener kleiner Loop, sobald die drei Angaben feststehen.
-
-
 ### BEF-120 — Ein Übersichtstest hängt an der Uhrzeit des Laufs
 
 |         |   |
