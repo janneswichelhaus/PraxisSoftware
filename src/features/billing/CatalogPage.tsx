@@ -25,6 +25,7 @@ import {
   deleteKatalogVersion,
   fetchKatalogPositionen,
   fetchKatalogVersionen,
+  monateText,
   publishKatalogVersion,
   setTarif,
   steuerLabels,
@@ -64,6 +65,7 @@ function leereZeile(): PositionsEingabe {
     tax_treatment: 'exempt_healthcare',
     tax_rate_permille: 0,
     service_area: 'therapy',
+    laufzeit: '',
   };
 }
 
@@ -77,6 +79,7 @@ function alsEingabe(position: KatalogPosition): PositionsEingabe {
     tax_treatment: position.tax_treatment,
     tax_rate_permille: position.tax_rate_permille,
     service_area: position.service_area,
+    laufzeit: position.package_months === null ? '' : String(position.package_months),
   };
 }
 
@@ -106,7 +109,16 @@ function vergleichswert(zeile: PositionsEingabe) {
     tax_treatment: zeile.tax_treatment,
     tax_rate_permille: zeile.tax_rate_permille,
     service_area: zeile.service_area,
+    laufzeit: zeile.laufzeit.trim(),
   };
+}
+
+/** ANG-005: die Laufzeit eines Trainingspakets in ganzen Monaten, 1 bis 24; sonst null. */
+function laufzeitMonate(text: string): number | null {
+  const wert = text.trim();
+  if (!/^\d{1,2}$/.test(wert)) return null;
+  const monate = Number(wert);
+  return monate >= 1 && monate <= 24 ? monate : null;
 }
 
 function gleich(a: readonly PositionsEingabe[], b: readonly PositionsEingabe[]): boolean {
@@ -114,7 +126,7 @@ function gleich(a: readonly PositionsEingabe[], b: readonly PositionsEingabe[]):
 }
 
 /** Die Felder einer Position, an denen eine Meldung stehen kann. */
-type Positionsfeld = 'code' | 'label' | 'preis' | 'remedy' | 'tax_treatment';
+type Positionsfeld = 'code' | 'label' | 'preis' | 'remedy' | 'tax_treatment' | 'laufzeit';
 /** Dazu die Felder, deren Änderung eine Meldung anderswo auslöst. */
 type Feldschluessel = Positionsfeld | 'service_area' | 'item_kind';
 
@@ -124,6 +136,7 @@ const FELDNAMEN: Record<Positionsfeld, string> = {
   preis: 'Preis',
   remedy: 'Heilmittel',
   tax_treatment: 'Steuer',
+  laufzeit: 'Laufzeit',
 };
 
 /**
@@ -137,6 +150,7 @@ const AUSLOESER: Record<Positionsfeld, readonly Feldschluessel[]> = {
   preis: ['preis'],
   remedy: ['remedy', 'item_kind'],
   tax_treatment: ['tax_treatment', 'service_area'],
+  laufzeit: ['laufzeit'],
 };
 
 interface Zeilenfehler {
@@ -171,6 +185,21 @@ function pruefe(zeile: PositionsEingabe): Zeilenfehler[] {
       feld: 'tax_treatment',
       meldung:
         'Das Nachsorge-Abo gehört zur Behandlung und ist bis zur Klärung mit der Steuerberatung umsatzsteuerpflichtig.',
+    });
+  // ANG-005 (ANN-275): Das Trainingspaket ist Training mit Laufzeit und bis zur
+  // Antwort der Steuerberatung steuerpflichtig zum Regelsatz.
+  if (zeile.item_kind === 'training_package' && laufzeitMonate(zeile.laufzeit) === null)
+    fehler.push({ feld: 'laufzeit', meldung: 'Bitte die Laufzeit in Monaten eingeben, 1 bis 24.' });
+  if (
+    zeile.item_kind === 'training_package' &&
+    (zeile.service_area !== 'training' ||
+      zeile.tax_treatment !== 'taxable' ||
+      zeile.tax_rate_permille !== STEUERSATZ_VORGABE)
+  )
+    fehler.push({
+      feld: 'tax_treatment',
+      meldung:
+        'Das Trainingspaket gehört zum Training und ist bis zur Klärung mit der Steuerberatung umsatzsteuerpflichtig.',
     });
   // ADR-021: Training ist keine Heilbehandlung. Verbindlich ist die Constraint
   // in der Datenbank; diese Zeile nennt den Grund, bevor der Server abweist.
@@ -562,6 +591,8 @@ function Preisliste({
           tax_treatment: zeile.tax_treatment,
           tax_rate_permille: zeile.tax_rate_permille,
           service_area: zeile.service_area,
+          package_months:
+            zeile.item_kind === 'training_package' ? laufzeitMonate(zeile.laufzeit) : null,
         })),
       ),
     onSuccess: async () => {
@@ -688,8 +719,11 @@ function Preisliste({
                   {bereichLabels[position.service_area]}
                   {/* Die Art nur, wo sie etwas unterscheidet (ABR-B06): Sonst
                       stand da „Behandlung · Behandlung". */}
-                  {position.item_kind === 'absence_fee' ? ` · ${artLabels.absence_fee}` : ''} ·{' '}
-                  {steuerLabels[position.tax_treatment]}
+                  {position.item_kind === 'absence_fee' ? ` · ${artLabels.absence_fee}` : ''}
+                  {position.item_kind === 'training_package'
+                    ? ` · ${artLabels.training_package}, ${monateText(position.package_months ?? 0)}`
+                    : ''}{' '}
+                  · {steuerLabels[position.tax_treatment]}
                   {position.tax_treatment === 'taxable'
                     ? ` (${position.tax_rate_permille / 10} %)`
                     : ''}
@@ -1017,11 +1051,20 @@ function Positionszeile({
                     ...zeile,
                     item_kind: art,
                     remedy: art === 'treatment' ? zeile.remedy : '',
+                    laufzeit: art === 'training_package' ? zeile.laufzeit : '',
                     // ANG-002 (ANN-269): Der Abo-Monat ist Behandlung und
                     // steuerpflichtig; verbindlich prüft die Datenbank.
                     ...(art === 'aftercare_month'
                       ? {
                           service_area: 'therapy' as const,
+                          tax_treatment: 'taxable' as const,
+                          tax_rate_permille: STEUERSATZ_VORGABE,
+                        }
+                      : {}),
+                    // ANG-005 (ANN-275): Das Paket ist Training und steuerpflichtig.
+                    ...(art === 'training_package'
+                      ? {
+                          service_area: 'training' as const,
                           tax_treatment: 'taxable' as const,
                           tax_rate_permille: STEUERSATZ_VORGABE,
                         }
@@ -1033,8 +1076,23 @@ function Positionszeile({
                 <option value="treatment">{artLabels.treatment}</option>
                 <option value="absence_fee">{artLabels.absence_fee}</option>
                 <option value="aftercare_month">{artLabels.aftercare_month}</option>
+                <option value="training_package">{artLabels.training_package}</option>
               </Select>
             </div>
+            {zeile.item_kind === 'training_package' ? (
+              <div className="sm:w-32">
+                <Field
+                  label="Laufzeit"
+                  feldId={feldIdFuer(index, 'laufzeit')}
+                  inputMode="numeric"
+                  value={zeile.laufzeit}
+                  error={fehler.laufzeit}
+                  onChange={(event) => onChange({ ...zeile, laufzeit: event.target.value })}
+                  onBlur={() => onVerlassen('laufzeit')}
+                  hint="in Monaten"
+                />
+              </div>
+            ) : null}
             <div className="sm:w-56">
               <Select
                 label="Heilmittel"

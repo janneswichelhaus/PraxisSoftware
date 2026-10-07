@@ -3310,3 +3310,15 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.platform_read_from` und `app.platform_access_ended_at` in `supabase/migrations/20261014130000_ang_004_platform_follows_aftercare.sql`; Hinweis in `src/features/platform/Uebersicht.tsx`. Geprüft in `supabase/tests/aftercare-platform-access.test.ts`.
 
 **Änderungspfad.** Andere Lesezeit nach dem Abo: der Tag in der einen Funktion · Aufwand `klein`.
+
+### ANN-275 — Ein Trainingspaket hat eine Laufzeit in Monaten, seinen Umfang in der Bezeichnung und bis zur Antwort der Steuerberatung 19 % Umsatzsteuer
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes mit Preis und Umfang (BEF-114); Steuerberatung (B4)
+
+**Annahme.** Ein Trainingspaket ist eine eigene Positionsart der Preisliste mit einer Laufzeit von 1 bis 24 Monaten, Bereich `training`, ohne Heilmittel und mit `taxable` 19 %. Der Umfang (etwa „eine Einheit je Woche, Plattform inklusive“) steht in der Bezeichnung; ein Kontingent mit Zählung gibt es nicht. Eine Preisliste darf mehrere Pakete führen, im Seed synthetisch 3 Monate für 390 € und 6 Monate für 720 €.
+
+**Begründung.** ADR-009 Punkt 21 und §19: ein Paket gilt für einen festen Zeitraum und wird als eine Leistung des Bereichs `training` berechnet; der Preis ist versioniert wie jeder andere (Punkt 5). Training ist keine Heilbehandlung (ADR-021), also steuerpflichtig zum Regelsatz (ADR-009 Punkt 15); ob die Vorauszahlung etwas daran ändert, klärt B4 – die Steuer entsteht bei Anzahlungen schon mit der Zahlung (§ 13 Abs. 1 Nr. 1 lit. a Satz 4 UStG), was die Auswertung nach Zufluss ohnehin zeigt. Jannes hat Preis, Umfang und Zahlungsweise noch nicht festgelegt (BEF-114); eine Zählung ohne Regel wäre ein Feature auf Vorrat (ADR-014). Unsicher: ob die Praxis Pakete mit fester Einheitenzahl will.
+
+**Anker.** `app.training_package_tax_allowed`, die Spalte `package_months` und die Constraint `service_catalog_items_training_package` in `supabase/migrations/20261015100000_ang_005_training_package_catalog.sql`; Prüfung in `src/features/billing/CatalogPage.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/billing/CatalogPage.test.tsx`.
+
+**Änderungspfad.** Anderes Kennzeichen: die eine Funktion, danach eine neue Preisliste · Aufwand `klein`. Kontingent statt Zeitraum: Zählung am Paket und an der Abgeltung (ANN-279) · Aufwand `mittel`.

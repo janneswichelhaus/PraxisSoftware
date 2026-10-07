@@ -292,6 +292,16 @@ insert into public.service_catalog_items (id, organization_id, catalog_version_i
   ('cccccccc-cccc-4ccc-8ccc-000000000012', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 2, 'AUS',   'Ausfallhonorar',                      'absence_fee', null,                                      4800, 'not_taxable',         0, 'therapy'),
   ('cccccccc-cccc-4ccc-8ccc-000000000013', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 3, 'NSA',   'Nachsorge-Abo (Monat)',               'aftercare_month', null,                                  4200, 'taxable',           190, 'therapy');
 
+-- ANG-005: zwei Trainingspakete je Preisliste (ADR-009 Punkt 21), steuer-
+-- pflichtig zum Regelsatz bis zur Antwort der Steuerberatung (ANN-275). Der
+-- Umfang steht in der Bezeichnung. Preise synthetisch, bis Jannes Preis,
+-- Umfang und Zahlungsweise festlegt (BEF-114, Blocker vor Block 5).
+insert into public.service_catalog_items (id, organization_id, catalog_version_id, sort_order, code, label, item_kind, remedy, unit_price_cents, tax_treatment, tax_rate_permille, service_area, package_months) values
+  ('cccccccc-cccc-4ccc-8ccc-000000000014', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 11, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 39000, 'taxable', 190, 'training', 3),
+  ('cccccccc-cccc-4ccc-8ccc-000000000015', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000001', 12, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 72000, 'taxable', 190, 'training', 6),
+  ('cccccccc-cccc-4ccc-8ccc-000000000016', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 4, 'TP3', 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 41000, 'taxable', 190, 'training', 3),
+  ('cccccccc-cccc-4ccc-8ccc-000000000017', '22222222-2222-4222-8222-000000000001', 'bbbbbbbb-bbbb-4bbb-8bbb-000000000002', 5, 'TP6', 'Trainingspaket 6 Monate (eine Einheit je Woche, Plattform inklusive)', 'training_package', null, 76000, 'taxable', 190, 'training', 6);
+
 update public.service_catalog_versions
    set published_at = timestamptz '2025-12-20 09:00:00+01',
        published_by = '11111111-1111-4111-8111-000000000001'
