@@ -3454,3 +3454,15 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/Abrechnungslage.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
 
 **Änderungspfad.** Nur der letzte Termin oder drei: die Zahl `- 1` in der einen Funktion · Aufwand `klein`.
+
+### ANN-287 — Das Voraussetzungsprofil führen owner und Trainingsbetreuung; das Büro sieht es nicht
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
+
+**Annahme.** Am Trainingsverhältnis steht ein Profil aus sieben Freitexten – Ziele, Ausrüstung, Zeitbudget, Orte, Belastungsgrenzen, Vorgeschichte, Vorlieben – und darunter, schreibgeschützt, was die Person aus der Behandlung freigegeben hat, mit Tag des Angebots und der Freigabe. Lesen und schreiben owner und Trainingsbetreuung; Büro, Behandlung und Plattform nicht. Jedes Lesen steht als `training_relationship.viewed` mit `view: profile` im Protokoll. Gespeichert wird mit dem erwarteten Stand, nach dem Vertragsende nicht mehr. Ohne Einwilligung bleibt das Profil bedienbar und sagt es (wie ANN-264). Die Person sieht ihr Profil auf der Plattform noch nicht.
+
+**Begründung.** `IDEA-LZK-004`: Ausrüstung und Zeit sind die häufigsten Gründe, warum ein Plan scheitert. Belastungsgrenzen und Vorgeschichte sind Gesundheitsangaben des Trainings; ADR-021 Punkt 10 lässt das Büro nur das Protokoll lesen und sperrt ihm die übrigen. Freitext statt Auswahllisten, weil Jannes die Kategorien noch nicht festgelegt hat (ADR-014: nicht vorbauen). Unsicher: ob die Person ihr Profil selbst pflegen soll (§4.10 nennt „Profil“ in ihrer Sicht).
+
+**Anker.** `public.get_training_profile` und `public.save_training_profile` mit `app.can_access_training_protocols()` in `supabase/migrations/20261016120000_knd_005_training_profile.sql`; `PROFILFELDER` in `src/features/training/profil-api.ts`. Geprüft in `supabase/tests/training-profile.test.ts`.
+
+**Änderungspfad.** Profil in der Plattform: eigene Projektion mit Recht `read` · Aufwand `mittel`. Büro lesend: eigene Rollenfunktion statt `can_access_training_protocols` · Aufwand `klein`.

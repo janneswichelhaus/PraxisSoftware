@@ -133,6 +133,9 @@ describe('Schema-Invarianten', () => {
       'training_packages',
       // KND-002: das Trainingsangebot aus der Akte.
       'training_offers',
+      // KND-005: Voraussetzungsprofil und Uebernahmen aus der Behandlung.
+      'training_profiles',
+      'training_takeovers',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

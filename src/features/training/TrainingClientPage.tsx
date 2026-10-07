@@ -21,6 +21,7 @@ import {
   canManageInvoicing,
   canWriteTrainingClients,
   canReadTrainingProtocols,
+  canWriteTrainingProtocols,
   type CurrentUser,
 } from '@/features/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
@@ -44,6 +45,7 @@ import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSection
 import { TrainingEinheiten } from './TrainingProtocol';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
+import { TrainingProfil } from './TrainingProfil';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -212,6 +214,14 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               relationshipId={kundin.id}
               darfSchreiben={darfSchreiben}
               zeitzone={user.organizationTimeZone}
+            />
+          ) : null}
+          {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung - nur
+              owner und Trainingsbetreuung (ANN-287), nicht das Büro. */}
+          {canWriteTrainingProtocols(user.roles) ? (
+            <TrainingProfil
+              relationshipId={kundin.id}
+              darfSchreiben={kundin.contract_ended_on === null}
             />
           ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und
