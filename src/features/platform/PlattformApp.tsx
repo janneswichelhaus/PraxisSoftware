@@ -32,7 +32,7 @@ import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Uebersicht } from './Uebersicht';
-import { datum } from './zeit';
+import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
 
@@ -574,7 +574,9 @@ function AboKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolea
     <Section titel={titel} rahmen>
       <p className="text-ink text-base">
         {data.state === 'running'
-          ? `Läuft seit ${datum(data.starts_on)}.`
+          ? data.starts_on > kalendertag(new Date())
+            ? `Beginnt am ${datum(data.starts_on)}.`
+            : `Läuft seit ${datum(data.starts_on)}.`
           : data.state === 'ending'
             ? `Gekündigt, endet am ${datum(data.ends_on ?? '')}.`
             : `Beendet am ${datum(data.ends_on ?? '')}.`}

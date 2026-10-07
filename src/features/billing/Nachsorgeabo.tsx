@@ -77,7 +77,9 @@ function AboZeile({ abo, patientId }: { abo: Abo; patientId: string }) {
     <li className="flex flex-col gap-1 py-2">
       <p className="text-ink text-sm">
         {abo.ends_on === null
-          ? `Läuft seit ${formatDate(abo.starts_on)}`
+          ? abo.next_month_start === abo.starts_on
+            ? `Beginnt am ${formatDate(abo.starts_on)}`
+            : `Läuft seit ${formatDate(abo.starts_on)}`
           : abo.ends_on < abo.starts_on
             ? `Vor dem Beginn am ${formatDate(abo.starts_on)} gekündigt`
             : `${formatDate(abo.starts_on)} bis ${formatDate(abo.ends_on)}`}

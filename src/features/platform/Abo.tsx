@@ -16,7 +16,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
-import { datum, uhrzeit } from './zeit';
+import { datum, kalendertag, uhrzeit } from './zeit';
 
 /**
  * „Ich → Nachsorge-Abo" (ANG-003, PROJECT_PRINCIPLES.md 4.6, DSN-001 4.2).
@@ -83,7 +83,9 @@ function Stand({ zugang, abo }: { zugang: Plattformzugang; abo: Nachsorgeabo }) 
       <Section titel="Ihr Abo" rahmen>
         <p className="text-ink text-base">
           {abo.state === 'running'
-            ? `Läuft seit ${datum(abo.starts_on)}.`
+            ? abo.starts_on > kalendertag(new Date())
+              ? `Beginnt am ${datum(abo.starts_on)}.`
+              : `Läuft seit ${datum(abo.starts_on)}.`
             : abo.state === 'ending'
               ? `Gekündigt. Ihr Abo endet am ${datum(abo.ends_on ?? '')}.`
               : `Beendet am ${datum(abo.ends_on ?? '')}.`}
