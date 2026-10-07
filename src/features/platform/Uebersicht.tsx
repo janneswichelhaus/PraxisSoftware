@@ -170,7 +170,7 @@ export function Uebersicht({
                   : 'Vor Ihrem ersten Termin · etwa 10 Minuten'
               }
               aktion={
-                <Textlink to={mit('/befundbogen')}>
+                <Textlink alleinstehend to={mit('/befundbogen')}>
                   {bogenEntwurf ? 'Weiter ausfüllen →' : 'Jetzt ausfüllen →'}
                 </Textlink>
               }
@@ -182,7 +182,11 @@ export function Uebersicht({
             <Tile
               label="Nächster Termin"
               zusatz={terminBeschreibung(naechster).ort ?? undefined}
-              aktion={<Textlink to={mit('/termine')}>Alle Termine →</Textlink>}
+              aktion={
+                <Textlink alleinstehend to={mit('/termine')}>
+                  Alle Termine →
+                </Textlink>
+              }
             >
               {tagLang(naechster.starts_at)}, {zeitraum(naechster.starts_at, naechster.ends_at)}
               <span className="text-ink-muted block text-sm font-normal">
@@ -195,7 +199,11 @@ export function Uebersicht({
               label="Antwort der Praxis"
               ton={antwort.status === 'done' ? 'akzent' : 'warnung'}
               zusatz={antwort.answer ?? undefined}
-              aktion={<Textlink to={mit('/termine')}>Zu den Terminen →</Textlink>}
+              aktion={
+                <Textlink alleinstehend to={mit('/termine')}>
+                  Zu den Terminen →
+                </Textlink>
+              }
             >
               {antwort.status === 'done'
                 ? 'Ihr Terminwunsch ist erledigt.'
@@ -205,7 +213,11 @@ export function Uebersicht({
             <Tile
               label="Terminwunsch"
               zusatz="Die Praxis meldet sich bei Ihnen."
-              aktion={<Textlink to={mit('/termine')}>Zu den Terminen →</Textlink>}
+              aktion={
+                <Textlink alleinstehend to={mit('/termine')}>
+                  Zu den Terminen →
+                </Textlink>
+              }
             >
               Angefragt am {formatDate(offenerWunsch.created_at.slice(0, 10))}
             </Tile>
@@ -216,7 +228,9 @@ export function Uebersicht({
               ton={offeneRechnung.overdue ? 'warnung' : 'neutral'}
               zusatz={`Rechnung ${offeneRechnung.invoice_number} · fällig am ${formatDate(offeneRechnung.due_on)}`}
               aktion={
-                <Textlink to={mit(`/rechnungen/${offeneRechnung.id}`)}>Zur Rechnung →</Textlink>
+                <Textlink alleinstehend to={mit(`/rechnungen/${offeneRechnung.id}`)}>
+                  Zur Rechnung →
+                </Textlink>
               }
             >
               {formatEuro(offeneRechnung.outstanding_cents, offeneRechnung.currency)}

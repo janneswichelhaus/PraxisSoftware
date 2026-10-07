@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-06.
+Zuletzt aktualisiert: 2026-10-07.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 90 Einträge):
+Zusatz `Prüfpaket` (heute 94 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3142,3 +3142,87 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: �
 **Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
 
 **Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.
+
+### ANN-261 — Nach der Lesefrist widerruft die Person selbst weiter; Export und Vertretung enden mit der Lesezeit
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung Plattform
+
+**Annahme.** Ist die Lesefrist (D2, 30 Tage nach dem Ende des Verhältnisses) vorbei, kann die Person selbst über ihren weiter aktiven Zugang unter „Ich" Einwilligungen widerrufen, aber nicht neu einwilligen. Der Export geht nur in der Lesezeit; danach gibt die Praxis Auskunft (Art. 15, OPS-006), und „Ich" sagt das. Eine Vertretung kann nach ihrem Ende nichts mehr. Gesperrte und entzogene Zugänge können nichts.
+
+**Begründung.** Art. 7 Abs. 3 DSGVO: Der Widerruf muss so einfach sein wie die Erteilung, auch nach dem Vertrag; eine neue Einwilligung nach dem Ende hätte keinen Zweck. Der Export setzt sich aus den Plattformprojektionen zusammen, die nach der Lesefrist nichts zeigen; eine zweite Feldliste nur für danach widerspräche ADR-023 Punkt 22. Das weicht von DSN-001 D2 ab („Ich" behält den Export) — Rechnungen und Dokumente fehlen dort schon seit POR-EPIC-002. Das Ende einer Vertretung kann aus der Volljährigkeit kommen. Unsicher: ob die Prüfung den Export nach dem Ende auf der Plattform verlangt.
+
+**Anker.** `app.platform_own_access_after_reading` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `entscheidend` in `src/features/platform/PlattformApp.tsx`. Geprüft in `supabase/tests/platform-consents.test.ts` und `supabase/tests/platform-export.test.ts`.
+
+**Änderungspfad.** D2 vollständig („Ich" mit Rechnungen, Dokumenten, Export nach der Lesefrist): Projektionen mit eigenem Zweig für den eigenen Zugang · Aufwand `mittel`.
+
+### ANN-262 — Eine Einwilligung auf der Plattform speichert die Fassung ihres Texts; ein alter Text wird abgewiesen
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Wortlaut)
+
+**Annahme.** Jede Erteilung und jeder Widerruf auf der Plattform speichert die Fassung des Einwilligungstexts (`2026-10`), den die Person gesehen hat. Der Server kennt nur die aktuelle Fassung und weist eine Seite mit älterem Text ab. Die Texte stehen in kurzen Sätzen je Zweck, mit dem Satz zum Widerruf (Art. 7 Abs. 3) und dazu, dass Behandlung bzw. Vertrag nicht davon abhängen (Art. 7 Abs. 4). Die Einwilligung geht über eine Rückfrage („Ja, ich willige ein“).
+
+**Begründung.** Art. 7 Abs. 1 DSGVO: Die Praxis muss nachweisen, worin eingewilligt wurde; ohne Fassung zeigte ein späterer Text eine andere Einwilligung. Die Rückfrage macht sie ausdrücklich (Art. 9 Abs. 2 lit. a). Der Wortlaut ist ein Entwurf und wird in B2 geprüft. Unsicher: ob eine Textänderung bestehende Einwilligungen berührt (heute nicht).
+
+**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/platform/einwilligungstexte.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/platform/einwilligungstexte.test.ts`.
+
+**Änderungspfad.** Neuer Wortlaut: Text und Fassung an beiden Stellen anheben · Aufwand `klein`. Bestehende Einwilligungen neu einholen: eigener Loop · Aufwand `mittel`.
+
+### ANN-263 — Widerrufe über die Plattform stehen 14 Tage in Offene Punkte, ohne „gesehen“
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+
+**Annahme.** Widerruft die Person oder ihre rechtliche Vertretung eine Einwilligung auf der Plattform, steht der Widerruf 14 Tage in Offene Punkte („Widerrufen über die Plattform“), mit Person, Zweck, Datum und wer gehandelt hat. Es gibt keinen Zustand „gesehen“. Sehen dürfen ihn die Rollen, die die Kartei bzw. das Trainingsverhältnis lesen. Die Akte zeigt jeden Vermerk mit „über die Plattform“.
+
+**Begründung.** DSN-001 Abschnitt 6 legt Widerrufe in die Übersicht. Wer ihn nicht erfährt, schickt den nächsten Bericht oder die nächste Mail ohne Grundlage. Ein Haken „gesehen“ wäre eine Aufgabe mehr, und das Datenmodell zeigt den Widerruf ohnehin dauerhaft. 14 Tage decken Urlaub und Wochenende. Unsicher: ob Jannes eine Quittung will.
+
+**Anker.** `app.platform_withdrawal_notice_days` und `list_platform_consent_withdrawals` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `src/features/open-points/consent-withdrawals-api.ts`.
+
+**Änderungspfad.** Andere Frist: die Zahl · Aufwand `klein`. Quittung: Spalte und Funktion · Aufwand `mittel`.
+
+### ANN-264 — Einwilligung im Training: eigener Vermerk am Verhältnis, ein Widerruf löscht nichts selbst
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Folgefrage)
+
+**Annahme.** Die Einwilligung zu Angaben zur Gesundheit im Training (Art. 9 Abs. 2 lit. a) ist ein Vermerk je Trainingsverhältnis mit einem Zweck, `training_health_data`, nur anhängend wie in PAT-006. Die Praxis vermerkt sie vom Papier (owner, Trainingsbetreuung, Büro), die Kund:in oder ihre rechtliche Vertretung erteilt und widerruft auf der Plattform. Ein Widerruf löscht keine Angaben selbst: Die Seite sagt „keine neuen Angaben“, und was mit den bisherigen geschieht, klärt die Praxis mit der Person. Ohne Einwilligung bleibt das Trainingsprotokoll heute bedienbar.
+
+**Begründung.** ADR-021 Punkt 4 verlangt die ausdrückliche Einwilligung, Punkt 5 eine Tabelle am Verhältnis, Punkt 6 kein Lesen aus der Behandlung. Art. 17 Abs. 1 lit. b DSGVO verlangt nach einem Widerruf das Löschen, wenn keine andere Grundlage besteht; ob Vertrag oder Abrechnung Teile tragen, ist die offene Folgefrage von ADR-021 (B2). Ein automatisches Löschen wäre nicht rücknehmbar. Unsicher: ob die Prüfung eine Frist für das Löschen nach dem Widerruf setzt und das Protokoll ohne Einwilligung sperren will.
+
+**Anker.** `training_consent_records` und `record_training_consent_entry` in `supabase/migrations/20261013110000_por_017_training_consent.sql`; `TrainingEinwilligung` in `src/features/training/TrainingEinwilligung.tsx`.
+
+**Änderungspfad.** Protokoll nur mit Einwilligung: Prüfung in den Schreibfunktionen des Protokolls · Aufwand `mittel`. Löschen nach Widerruf: Regel im Löschlauf · Aufwand `mittel`.
+
+### ANN-265 — Der Export der Plattform ist eine Auskunft nach Art. 15: dieselbe Aktion im Protokoll, Inhalt nur aus den Projektionen
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket)
+
+**Annahme.** „Meine Daten herunterladen" liefert eine JSON-Datei (und eine lesbare Fassung zum Drucken) mit genau dem, was die Plattform zeigt: Stammdaten des Verhältnisses, Termine, Terminwünsche, Befundbogen, Rechnungen (nur mit Recht auf Rechnungen), die Liste der freigegebenen Dokumente, Einwilligungen. Jeder Export steht als `patient_record.exported` im Protokoll, mit Akteur Plattformkonto oder Vertretung und Zweck `platform_export`. Die Person selbst und ihre rechtliche Vertretung exportieren, die Begleitung nicht.
+
+**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln, je Abruf protokolliert).
+
+**Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
+
+**Änderungspfad.** Eigene Aktion: ADR-010 ändern, Katalog, Freigabe · Aufwand `mittel`. Dokumente im Export: ZIP im Browser · Aufwand `mittel`.
+
+### ANN-266 — Der Einstieg gilt je Zugang, „Später" beendet ihn, Überspringen berührt keine Einwilligung
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+
+**Annahme.** Den Einstieg (Willkommen, Einwilligungen, fertig) sieht jede Person einmal je Zugang vor ihrer Übersicht: Wer Behandlung und Training hat, sieht ihn zweimal; eine Begleitung ohne den Schritt Einwilligungen. „Später" beendet ihn wie „Zur Übersicht“. Die Praxis kann ihn im Abschnitt Plattform überspringen (wer den Zugang verwaltet); er steht dann als „übersprungen am … (Name)“ dort und für die Person ohne Namen unter „Ich“. Einwilligungen bleiben dabei offen. Benachrichtigungen fehlen bis ADR-024. Lädt der Stand nicht, gilt die Übersicht.
+
+**Begründung.** DSN-001 4.3 und `IDEA-LZK-005`: Beim Hausbesuch sitzt die Therapeutin daneben, ein erzwungener Einstieg wäre ein Hindernis; eine Einwilligung, die jemand anders klickt, ist keine (Art. 7 Abs. 1). Je Zugang, weil jeder Zugang seine eigenen Einwilligungen hat (§4.8). Ein Einstieg darf nie den Weg zu den eigenen Daten versperren. Nachweis am Zugang statt im Protokoll (ADR-010 Fassung 3). Unsicher: ob zwei Einstiege bei zwei Verhältnissen stören.
+
+**Anker.** `skip_platform_onboarding` und `platform_onboarding` in `supabase/migrations/20261013130000_por_019_platform_onboarding.sql`; `UebersichtOderEinstieg` in `src/features/platform/PlattformApp.tsx`; `src/features/platform/Einstieg.tsx`.
+
+**Änderungspfad.** Einstieg je Konto: Stand an `user_profiles` statt am Zugang · Aufwand `mittel`. Benachrichtigungen: Schritt mit ADR-024 · Aufwand `klein`.
+
+### ANN-267 — Plattform: keine Schrift unter 18 px, Schriftgröße nur auf dem Gerät, Ziele mindestens 44 px
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (am Handy, auch mit „Sehr groß")
+
+**Annahme.** Im Plattformgerüst ist jede Schrift mindestens 18 px: Die kleinen Stufen des Systems werden dort auf 18 px gehoben, die Rangfolge tragen Gewicht und Farbe. Unter „Ich → Einstellungen" wählt die Person „Normal", „Groß" (112,5 %) oder „Sehr groß" (125 %), gespeichert nur im Browser des Geräts. Bei wenig Breite brechen lange Wörter und Knöpfe um, Listenzeilen stellen den Zustand unter den Titel. Berührflächen sind mindestens 44 px hoch; Knöpfe haben 48, Textlinks 44. Geprüft automatisch auf jeder Plattformansicht: Schrift, Ziele, axe mit Kontrast, kein waagerechtes Scrollen bei 375 und 188 px (200 %).
+
+**Begründung.** DSN-001 Abschnitt 7 und `IDEA-QSN-006`: 18 px, 200 % ohne waagerechtes Scrollen, Kontrast 4,5 : 1. Die Schriftgröße im Browser zu speichern ist Datenminimierung (Art. 5 Abs. 1 lit. c) und passt zu Geräten, die sich Angehörige teilen. Für die Ziele nennt DSN-001 48 px; WCAG 2.5.5 verlangt 44, und Textlinks auf 48 zu heben hätte die Praxisbausteine verändert. Unsicher: ob Jannes die Versalien der Abschnittstitel in 18 px zu laut findet.
+
+**Anker.** `.plattform-schrift` und `html[data-schrift]` in `src/index.css`; `src/features/platform/schriftgroesse.ts`; `listenzeile` in `src/components/ui/ListRow.tsx`. Geprüft in `tests/e2e/plattform-barrierefreiheit.spec.ts`.
+
+**Änderungspfad.** Andere Grundgröße: die Tokens in `.plattform-schrift` · Aufwand `klein`. Ziele 48 px: Mindesthöhe der Textlinks im Gerüst · Aufwand `klein`. Größe am Konto speichern: Spalte und Projektion · Aufwand `mittel`.

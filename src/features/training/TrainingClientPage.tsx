@@ -41,6 +41,7 @@ import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
 import { TrainingEinheiten } from './TrainingProtocol';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+import { TrainingEinwilligung } from './TrainingEinwilligung';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -201,6 +202,14 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
             />
           ) : null}
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
+          {/* POR-017: Einwilligung zu Gesundheitsangaben (ADR-021 Punkt 4). */}
+          {user.organizationTimeZone ? (
+            <TrainingEinwilligung
+              relationshipId={kundin.id}
+              darfSchreiben={darfSchreiben}
+              zeitzone={user.organizationTimeZone}
+            />
+          ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und
               Trainingsbetreuung (ANN-184). */}
           {/* ABN-022 (BEF-113): auch das Büro sieht die Einheiten. */}

@@ -11,11 +11,14 @@ import { EinladungVorOrt, PlattformAbschnitt } from '@/features/platform-access/
 import {
   befundbogenSchluessel,
   dokumenteSchluessel,
+  einstiegSchluessel,
+  einwilligungenSchluessel,
   rechnungSchluessel,
   rechnungenSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
   type Dokument,
+  type Einwilligung,
   type Plattformzugang,
   type Rechnungsblatt,
   type Rechnungszeile,
@@ -35,7 +38,9 @@ import '@/index.css';
  * Begleitung). `abschnitt-aktiv` und `ich` zeigen Vertretungen. Seit
  * POR-EPIC-002: `termine`, `wunsch`, `termin`, `rechnungen`, `rechnung`,
  * `dokumente`, `befundbogen`; die Übersicht (`geruest`) trägt Befundbogen,
- * nächsten Termin und offene Rechnung. Die Daten liegen vorab im Cache;
+ * nächsten Termin und offene Rechnung. Seit POR-EPIC-003 `einwilligungen`,
+ * `daten`, `einstellungen`, `einstieg` (Einstieg steht aus) und
+ * `ende` (Lesefrist vorbei, „Ich"). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -435,6 +440,54 @@ for (const z of zugaenge) {
   client.setQueryData(befundbogenSchluessel(z.access_id), []);
 }
 client.setQueryData(rechnungSchluessel(zugaenge[0]!.access_id, RECHNUNG), blatt);
+// POR-016 bis POR-019: Einwilligungen, Einstieg.
+const einwilligungenBehandlung: Einwilligung[] = [
+  {
+    purpose: 'email_contact',
+    state: 'granted',
+    occurred_on: inTagen(-3, 12).slice(0, 10),
+    source: 'platform',
+    can_grant: true,
+  },
+  { purpose: 'prescriber_report', state: 'open', occurred_on: null, source: null, can_grant: true },
+  {
+    purpose: 'patient_photos',
+    state: 'refused',
+    occurred_on: inTagen(-30, 12).slice(0, 10),
+    source: 'practice',
+    can_grant: true,
+  },
+];
+client.setQueryData(einwilligungenSchluessel(zugaenge[0]!.access_id), einwilligungenBehandlung);
+client.setQueryData(einwilligungenSchluessel(zugaenge[1]!.access_id), [
+  {
+    purpose: 'training_health_data',
+    state: 'open',
+    occurred_on: null,
+    source: null,
+    can_grant: true,
+  },
+]);
+client.setQueryData(einstiegSchluessel(zugaenge[0]!.access_id), {
+  pending: seite === 'einstieg',
+  finished_at: null,
+  skipped_at: seite === 'einstieg' ? null : inTagen(-5, 9),
+});
+client.setQueryData(einstiegSchluessel(zugaenge[1]!.access_id), {
+  pending: false,
+  finished_at: inTagen(-4, 9),
+  skipped_at: null,
+});
+client.setQueryData(einstiegSchluessel(begleitung.access_id), {
+  pending: false,
+  finished_at: inTagen(-4, 9),
+  skipped_at: null,
+});
+client.setQueryData(['platform-access-onboarding', aktiv.id], {
+  finished_at: null,
+  skipped_at: inTagen(-5, 9),
+  skipped_by_name: 'Olivia Office',
+});
 client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
@@ -506,6 +559,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
           />
         ),
       };
+    case 'einwilligungen':
+    case 'daten':
+    case 'einstellungen':
+    case 'einstieg':
     case 'termine':
     case 'wunsch':
     case 'termin':
@@ -521,6 +578,10 @@ function inhalt(): { pfad: string; element: ReactNode } {
         rechnung: `/p/rechnungen/${RECHNUNG}?bereich=treatment`,
         dokumente: '/p/dokumente?bereich=treatment',
         befundbogen: '/p/befundbogen?bereich=treatment',
+        einwilligungen: '/p/einwilligungen?bereich=treatment',
+        daten: '/p/daten?bereich=treatment',
+        einstellungen: '/p/einstellungen',
+        einstieg: '/p?bereich=treatment',
       };
       return {
         pfad: pfade[seite]!,
@@ -533,6 +594,17 @@ function inhalt(): { pfad: string; element: ReactNode } {
         ),
       };
     }
+    case 'ende':
+      return {
+        pfad: '/p/ich',
+        element: (
+          <PlattformApp
+            zugaenge={[{ ...zugaenge[0]!, readable: false, read_until: inTagen(-2, 12) }]}
+            email="erika.plattform@patient.invalid"
+            onAbmelden={() => undefined}
+          />
+        ),
+      };
     case 'gesperrt':
       return {
         pfad: '/p',

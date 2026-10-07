@@ -46,6 +46,8 @@ vi.mock('./api', async (importOriginal) => {
       listTrainingClientAppointments(id) as Promise<unknown>,
     // TRN-009: Die Einheiten haben eigene Tests (training-protokoll.test.tsx).
     listTrainingProtocols: () => Promise.resolve([]),
+    // POR-017: Die Einwilligung hat eigene Tests (TrainingEinwilligung.test.tsx).
+    listTrainingConsents: () => Promise.resolve([]),
   };
 });
 

@@ -65,7 +65,9 @@ export function ListRow({
   gedaempft?: boolean;
   dicht?: boolean;
 }) {
-  const raster = `grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left ${
+  // `listenzeile`: Haken für die Plattform, die die Zeile bei sehr wenig
+  // Breite untereinander stellt (POR-020, `src/index.css`).
+  const raster = `listenzeile grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left ${
     dicht ? 'min-h-12 py-1.5' : 'min-h-14 py-2'
   }`;
   // Ein Ziel reicht über den Innenabstand der Karte hinaus; `w-[calc(…)]`

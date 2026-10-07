@@ -391,7 +391,9 @@ function Skala({
           Hauptfarbe mit Abstand um die Stufe. */}
       <div
         data-testid="skala-stufen"
-        className="grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5"
+        // `skala`: Haken für die Plattform, die bei sehr wenig Breite
+        // (200 % am Telefon) weniger Stufen je Reihe setzt (POR-020).
+        className="skala grid max-w-md grid-cols-[repeat(var(--skala-spalten),minmax(2.75rem,1fr))] gap-1 sm:max-w-none sm:grid-flow-col sm:grid-cols-none sm:gap-0.5"
         style={{ '--skala-spalten': spaltenAmHandy } as CSSProperties}
       >
         {stufen.map((stufe) => (

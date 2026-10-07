@@ -125,6 +125,8 @@ describe('Schema-Invarianten', () => {
       'treatment_draft_findings',
       'patient_merge_records',
       'training_protocol_addenda',
+      // POR-017: Einwilligung zu Gesundheitsangaben im Training.
+      'training_consent_records',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

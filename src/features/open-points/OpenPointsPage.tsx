@@ -12,6 +12,7 @@ import {
   type CurrentUser,
 } from '@/features/session/types';
 import { CallsSummary } from './CallsSummary';
+import { ConsentWithdrawals } from './ConsentWithdrawals';
 import { CareWithoutConclusionList, EndingPrescriptions } from './Reminders';
 import { OpenIntakes } from './OpenIntakes';
 import { PrescriptionsToCapture } from './PrescriptionsToCapture';
@@ -28,8 +29,8 @@ const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * Hier läuft zusammen, was sonst liegen bliebe: Verordnungen, die nur als Foto
  * da sind, Aufgaben und Wiedervorlagen, offene Erstaufnahmen, die Anrufe für
  * morgen, Wartelisteneinträge, die lange keiner angefasst hat (ABN-018), und
- * Verordnungen, die bald enden, und seit POR-011 die Terminwünsche von der
- * Plattform. Jede Liste hat ihren eigenen
+ * Verordnungen, die bald enden, seit POR-011 die Terminwünsche von der
+ * Plattform und seit POR-016 die Widerrufe über die Plattform. Jede Liste hat ihren eigenen
  * Lesepfad; was eine Rolle nicht sehen darf, fragt die Seite gar nicht erst ab
  * - verbindlich prüft der Server (ADR-004).
  *
@@ -59,6 +60,9 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {canReadPatientDirectory(user.roles) ? <OpenIntakes /> : null}
         {canManageAppointments(user.roles) || canReadTrainingClients(user.roles) ? (
           <PlatformRequests timeZone={timeZone} />
+        ) : null}
+        {canReadPatientDirectory(user.roles) || canReadTrainingClients(user.roles) ? (
+          <ConsentWithdrawals />
         ) : null}
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
         {canManageAppointments(user.roles) ? <WaitlistReview timeZone={timeZone} /> : null}

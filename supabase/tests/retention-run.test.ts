@@ -663,6 +663,13 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
        on conflict (training_relationship_id) do update set email = excluded.email`,
       [trainingRelationships.tina, organizationId],
     );
+    // POR-017: Die Einwilligung haengt am Verhaeltnis und faellt mit ihm.
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date - 1500)`,
+      [organizationId, trainingRelationships.tina],
+    );
 
     await lauf();
 
@@ -670,6 +677,12 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
       await anzahl('select count(*) from public.training_relationships where id = $1', [
         trainingRelationships.tina,
       ]),
+    ).toBe(0);
+    expect(
+      await anzahl(
+        'select count(*) from public.training_consent_records where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      ),
     ).toBe(0);
     expect(
       await anzahl(

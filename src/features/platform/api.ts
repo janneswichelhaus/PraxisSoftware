@@ -577,3 +577,137 @@ export async function ladeDokumentHerunter(zugangId: string, dokumentId: string)
   link.download = '';
   link.click();
 }
+
+// -----------------------------------------------------------------------------
+// Einwilligungen (POR-016, POR-017; ADR-023 Punkt 13; ANN-261, ANN-262)
+// -----------------------------------------------------------------------------
+
+const einwilligungSchema = z.object({
+  purpose: z.enum(['email_contact', 'prescriber_report', 'patient_photos', 'training_health_data']),
+  /** open: noch nie etwas; refused: in der Praxis abgelehnt (ADR-017 Punkt 35). */
+  state: z.enum(['open', 'granted', 'withdrawn', 'refused']),
+  occurred_on: z.string().nullable(),
+  /** Wer den Stand gesetzt hat: die Plattform oder ein Papier in der Praxis. */
+  source: z.enum(['practice', 'platform']).nullable(),
+  /** Nach der Lesefrist nur noch widerrufen (D2, ANN-261). */
+  can_grant: z.boolean(),
+});
+export type Einwilligung = z.infer<typeof einwilligungSchema>;
+
+export function einwilligungenSchluessel(zugangId: string) {
+  return ['platform-consents', zugangId] as const;
+}
+
+/**
+ * Der Stand je Zweck. Leer für eine Begleitung: Sie erteilt nichts, und der
+ * Stand geht sie nichts an (Punkt 13).
+ */
+export async function ladeEinwilligungen(zugangId: string): Promise<Einwilligung[]> {
+  const satz = 'Ihre Einwilligungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_consents', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einwilligungSchema), ergebnis.data ?? [], satz);
+}
+
+/** Erteilen oder widerrufen, mit der Fassung des Texts, den die Person sah. */
+export async function einwilligungSchreiben(eingabe: {
+  zugangId: string;
+  zweck: Einwilligung['purpose'];
+  erteilen: boolean;
+  fassung: string;
+}): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('record_platform_consent', {
+    p_access_id: eingabe.zugangId,
+    p_purpose: eingabe.zweck,
+    p_grant: eingabe.erteilen,
+    p_wording_version: eingabe.fassung,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(einwilligungsfehler(ergebnis.error.message));
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers (§13). */
+export function einwilligungsfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('already granted')) return 'Diese Einwilligung ist schon erteilt.';
+  if (m.includes('no consent to withdraw'))
+    return 'Diese Einwilligung ist nicht erteilt. Es gibt nichts zu widerrufen.';
+  if (m.includes('wording outdated'))
+    return 'Der Text hat sich geändert. Bitte laden Sie die Seite neu und lesen Sie ihn noch einmal.';
+  if (m.includes('not allowed'))
+    return 'Das ist mit diesem Zugang nicht möglich. Bitte wenden Sie sich an die Praxis.';
+  return 'Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.';
+}
+
+// -----------------------------------------------------------------------------
+// Datenexport (POR-018, IDEA-QSN-003, ANN-265)
+// -----------------------------------------------------------------------------
+
+const exportSchema = z.object({
+  format: z.literal('plattform-export'),
+  format_version: z.number(),
+  exported_at: z.string(),
+  organization: z.string(),
+  relationship: z.enum(['treatment', 'training']),
+  exported_by: z.enum(['self', 'legal_representative']),
+  person: z.record(z.string(), z.unknown()),
+  appointments: z.array(terminSchema),
+  appointment_requests: z.array(wunschSchema),
+  questionnaires: z.array(bogenSchema),
+  invoices: z.array(rechnungZeileSchema),
+  documents: z.array(dokumentSchema),
+  consents: z.array(einwilligungSchema.omit({ can_grant: true })),
+});
+export type Datenexport = z.infer<typeof exportSchema>;
+
+/**
+ * Die eigenen Daten der Plattform, wie der Server sie zusammensetzt. Jeder
+ * Aufruf steht im Protokoll der Praxis (ADR-023 Punkt 24) - die Seite ruft
+ * deshalb nur auf Knopfdruck auf und nie von selbst.
+ */
+export async function ladeDatenexport(
+  zugangId: string,
+): Promise<{ daten: Datenexport; roh: unknown }> {
+  const satz =
+    'Ihre Daten konnten nicht zusammengestellt werden. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('platform_export', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return { daten: antwort(exportSchema, ergebnis.data, satz), roh: ergebnis.data };
+}
+
+// -----------------------------------------------------------------------------
+// Einstieg (POR-019, IDEA-LZK-005, ANN-266)
+// -----------------------------------------------------------------------------
+
+const einstiegSchema = z.object({
+  pending: z.boolean(),
+  finished_at: z.string().nullable(),
+  /** Von der Praxis übersprungen - ohne Namen (ADR-023 Punkt 22). */
+  skipped_at: z.string().nullable(),
+});
+export type Einstiegsstand = z.infer<typeof einstiegSchema>;
+
+export function einstiegSchluessel(zugangId: string) {
+  return ['platform-onboarding', zugangId] as const;
+}
+
+export async function ladeEinstieg(zugangId: string): Promise<Einstiegsstand | null> {
+  const satz = 'Der Einstieg konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einstiegSchema), ergebnis.data ?? [], satz)[0] ?? null;
+}
+
+/** Den Einstieg beenden - auch mit „Später"; danach kommt er nicht wieder. */
+export async function einstiegBeenden(zugangId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('finish_platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error)
+    throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}
