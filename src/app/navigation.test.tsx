@@ -202,6 +202,26 @@ describe('Arbeitsbereiche je Rolle', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     expect(betrieb?.unterpunkte.map((punkt) => punkt.to)).toContain('/praxis/planung');
   });
+
+  it('führt die Übungen genau einem Bereich zu, nie dem Büro (UEB-001, ANN-293)', () => {
+    function bereichDerUebungen(roles: RoleKey[]) {
+      const bereiche = bereicheFuer(roles);
+      const mitPunkt = bereiche.filter((bereich) =>
+        bereich.unterpunkte.some((eintrag) => eintrag.to === '/uebungen'),
+      );
+      expect(mitPunkt.length).toBeLessThanOrEqual(1);
+      expect(aktiverBereich(bereiche, '/uebungen/u1')?.id).toBe(mitPunkt[0]?.id);
+      return mitPunkt[0]?.id;
+    }
+    expect(bereichDerUebungen(['owner'])).toBe('betrieb');
+    expect(bereichDerUebungen(['therapist'])).toBe('betrieb');
+    expect(bereichDerUebungen(['team_lead'])).toBe('betrieb');
+    expect(bereichDerUebungen(['therapist', 'trainer'])).toBe('betrieb');
+    // Die Trainingsbetreuung hat kein Organisatorisches - sie findet die
+    // Bibliothek im Training.
+    expect(bereichDerUebungen(['trainer'])).toBe('training');
+    expect(bereichDerUebungen(['office'])).toBeUndefined();
+  });
 });
 
 describe('Untermenü auf Detailseiten (UXR-002)', () => {

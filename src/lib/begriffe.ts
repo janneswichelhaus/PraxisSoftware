@@ -104,6 +104,16 @@ export const BEGRIFFE = {
    * klinisch und steht in der Doku.
    */
   anmeldebogen: 'Anmeldebogen',
+  /**
+   * Übungsbibliothek (UEB-EPIC-001, IDEA-TRN-005): die Übung und die Form, in
+   * der geübt wird. Nie „Workout", nie „Drill" (IDEA-QSN-007).
+   */
+  uebung: 'Übung',
+  uebungen: 'Übungen',
+  variante: 'Variante',
+  varianten: 'Varianten',
+  /** Die zweite Bezeichnung für Patient:innen und Kund:innen (IDEA-QSN-002). */
+  alltagssprache: 'Alltagssprache',
 } as const;
 
 /**

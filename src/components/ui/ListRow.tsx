@@ -53,8 +53,11 @@ export function ListRow({
   gedaempft = false,
   dicht = false,
 }: {
-  /** Uhrzeit oder zwei Zeilen (Datum über Uhrzeit). */
-  zeit: ReactNode;
+  /**
+   * Uhrzeit oder zwei Zeilen (Datum über Uhrzeit). Ohne Angabe entfällt die
+   * Spalte - für Listen ohne Zeitbezug wie die Übungsbibliothek (UEB-001).
+   */
+  zeit?: ReactNode;
   titel: ReactNode;
   /** Nebenzeile unter dem Titel. */
   meta?: ReactNode;
@@ -67,7 +70,9 @@ export function ListRow({
 }) {
   // `listenzeile`: Haken für die Plattform, die die Zeile bei sehr wenig
   // Breite untereinander stellt (POR-020, `src/index.css`).
-  const raster = `listenzeile grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-left ${
+  const spalten =
+    zeit === undefined ? 'grid-cols-[minmax(0,1fr)_auto]' : 'grid-cols-[auto_minmax(0,1fr)_auto]';
+  const raster = `listenzeile grid ${spalten} items-center gap-3 text-left ${
     dicht ? 'min-h-12 py-1.5' : 'min-h-14 py-2'
   }`;
   // Ein Ziel reicht über den Innenabstand der Karte hinaus; `w-[calc(…)]`
@@ -76,13 +81,15 @@ export function ListRow({
 
   const inhalt = (
     <>
-      <span
-        className={`font-semibold tabular-nums ${dicht ? 'text-sm' : 'text-liste'} ${
-          gedaempft ? 'text-ink-muted' : 'text-ink'
-        }`}
-      >
-        {zeit}
-      </span>
+      {zeit === undefined ? null : (
+        <span
+          className={`font-semibold tabular-nums ${dicht ? 'text-sm' : 'text-liste'} ${
+            gedaempft ? 'text-ink-muted' : 'text-ink'
+          }`}
+        >
+          {zeit}
+        </span>
+      )}
       <span className="min-w-0">
         <span
           className={`block ${dicht ? 'text-liste truncate' : 'text-base'} ${

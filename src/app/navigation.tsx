@@ -3,6 +3,7 @@ import type { SubNavEintrag } from '@/components/ui/SubNav';
 import { BEGRIFFE, BEREICHE } from '@/lib/begriffe';
 import {
   canManageAppointments,
+  canReadExerciseLibrary,
   canReadPatientDirectory,
   canReadTrainingClients,
   canSeeCalendar,
@@ -234,6 +235,18 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     // Personenbezug, gebraucht von denen, die messen und dokumentieren.
     eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
+  // Die Übungsbibliothek (UEB-EPIC-001): Fachwissen der Praxis ohne
+  // Personenbezug, gebraucht von denen, die Übungen anleiten - nicht vom Büro
+  // (ANN-293). Eine Trainingsbetreuung ohne Behandlungsrolle findet sie im
+  // Training.
+  if (canReadExerciseLibrary(roles)) {
+    eintraege.push({
+      to: '/uebungen',
+      label: BEGRIFFE.uebungen,
+      end: false,
+      stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Heimübung', 'Übung'],
+    });
+  }
   if (isOwner(roles)) {
     // Protokoll und Aufbewahrung sind **ein** Punkt (Handoff Rahmen vom
     // 2026-10-05, RAH-005): Beides sind Nachweise der Praxisleitung, keine
@@ -318,13 +331,27 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
   // und team_lead nicht - der offene Zugriff auf alle Akten gilt innerhalb der
   // Behandlung (ADR-021 Punkt 6). Der Server liefert ihnen ohnehin nichts.
   if (canReadTrainingClients(roles)) {
+    // Die Übungsbibliothek gehört zu Organisatorisches; wer dort keinen Zugang
+    // hat - die Trainingsbetreuung ohne Behandlungsrolle -, findet sie hier
+    // (UEB-EPIC-001). Ein Pfad gehört immer zu genau einem Bereich.
+    const uebungenHier = canReadExerciseLibrary(roles) && !isTherapyStaff(roles);
     bereiche.push({
       id: 'training',
       ...BEREICHE.training,
       to: '/training',
-      pfade: ['/training'],
+      pfade: uebungenHier ? ['/training', '/uebungen'] : ['/training'],
       icon: symbole.training,
-      unterpunkte: [],
+      unterpunkte: uebungenHier
+        ? [
+            { to: '/training', label: BEGRIFFE.trainingskundInnen, end: false },
+            {
+              to: '/uebungen',
+              label: BEGRIFFE.uebungen,
+              end: false,
+              stichworte: ['Übungsbibliothek', BEGRIFFE.varianten, 'Übung'],
+            },
+          ]
+        : [],
     });
   }
 
@@ -355,7 +382,9 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
       // Der Bereich oeffnet auf dem ersten Punkt, der wirklich wirkt, nicht
       // auf einer Vorschau (ANN-112, Bedienprinzipien).
       to: '/praxis/team',
-      pfade: ['/betrieb', '/praxis'],
+      pfade: canReadExerciseLibrary(roles)
+        ? ['/betrieb', '/praxis', '/uebungen']
+        : ['/betrieb', '/praxis'],
       icon: symbole.betrieb,
       unterpunkte: betriebUnterpunkte(roles),
     });

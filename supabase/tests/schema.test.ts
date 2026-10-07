@@ -138,6 +138,9 @@ describe('Schema-Invarianten', () => {
       'training_takeovers',
       // KND-003: Nachweis des im Konto geschlossenen Trainingsvertrags.
       'training_contracts',
+      // UEB-001: die Übungsbibliothek der Praxis.
+      'exercises',
+      'exercise_variants',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name
