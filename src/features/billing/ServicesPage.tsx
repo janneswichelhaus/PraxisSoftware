@@ -222,9 +222,6 @@ function Leistungsgruppe({ gruppe, children }: { gruppe: Terminleistungen; child
             {zeile.item_kind === 'absence_fee' ? (
               <Badge ton="neutral">{artLabels.absence_fee}</Badge>
             ) : null}
-            {zeile.item_kind === 'aftercare_month' ? (
-              <Badge ton="neutral">{artLabels.aftercare_month}</Badge>
-            ) : null}
           </li>
         ))}
       </ul>

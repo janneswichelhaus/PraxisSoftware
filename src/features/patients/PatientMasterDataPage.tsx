@@ -29,6 +29,7 @@ import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebog
 import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
 import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
 import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
+import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
 import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
 import { zugangMitStockwerk } from '@/features/today/stockwerk';
 import {
@@ -159,6 +160,8 @@ function VersorgungAbschliessen({
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['patients'] });
       await queryClient.invalidateQueries({ queryKey: ['patient', patient.id] });
+      // ANG-001: Der Abschluss ist der früheste Beginn des Nachsorge-Abos (ANN-268).
+      await queryClient.invalidateQueries({ queryKey: nachsorgeSchluessel(patient.id) });
     },
   });
 
