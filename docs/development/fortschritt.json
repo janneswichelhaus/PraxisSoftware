@@ -722,7 +722,10 @@
           "id": "ueb-epic-001",
           "name": "UEB-EPIC-001 Übungsbibliothek",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-07",
+          "nachweis": "UEB-001 bis UEB-003, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 1 bis 3"
         },
         {
           "id": "ueb-epic-002",
