@@ -133,6 +133,7 @@ const rechnungen: Rechnung[] = [
     treatment_basis_id: GRUNDLAGE,
     basis_kind: 'first',
     basis_issued_on: '2026-07-01',
+    total_count: 1,
   },
 ];
 
@@ -197,7 +198,9 @@ client.setQueryData(
 );
 client.setQueryData(['honorar', ERIKA], honorar);
 client.setQueryData(['rechnungs-kandidaten'], kandidaten);
-client.setQueryData(['rechnungen'], rechnungen);
+// Die Rechnungsliste blättert seit ABR-034: Schlüssel mit Suche, Filter
+// und Monat, Daten als Seiten.
+client.setQueryData(['rechnungen', '', '', ''], { pages: [rechnungen], pageParams: [0] });
 client.setQueryData(['offene-posten'], []);
 client.setQueryData(
   ['rechnung', AUSGESTELLT],

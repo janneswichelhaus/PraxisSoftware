@@ -8,6 +8,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 import { Client } from 'pg';
 
@@ -213,7 +214,7 @@ describe('Nachrücken: Übernahme in einer Transaktion (PRX-004)', () => {
         await c.query('begin');
         await c.query("select set_config('role', 'authenticated', true)");
         await c.query("select set_config('request.jwt.claims', $1, true)", [
-          JSON.stringify({ sub: users.office, role: 'authenticated' }),
+          jwtClaims(users.office),
         ]);
       }
       await a.query(UEBERNEHMEN, [id, ANNA, MONTAG, '09:00', '10:00']);

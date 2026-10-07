@@ -54,3 +54,37 @@ test.describe('Bausteine', () => {
     );
   });
 });
+
+// BEF-057 Option 2: Bei 375 px stehen die drei Ergebnisse eines Tests in einer
+// Reihe, die Seite steht darüber, und kein Block hat einen eigenen Rahmen.
+test('stellt die Ergebnisse eines Tests bei 375 px in eine Reihe', async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 800 });
+  await page.goto(PRUEFSEITE);
+  await page.getByText('Befund aus Bausteinen').click();
+  await page.getByRole('button', { name: 'Ellenbogen' }).click();
+  await page
+    .getByRole('group', { name: 'Seite Ellenbogen' })
+    .getByRole('button', { name: 'beidseits' })
+    .click();
+  for (const zusammenfassung of await page.locator('details details > summary').all()) {
+    await zusammenfassung.click();
+  }
+  const reihen = await page
+    .getByTestId('ergebnis-knoepfe')
+    .evaluateAll((gruppen) =>
+      gruppen.map(
+        (g) =>
+          new Set(
+            [...g.querySelectorAll('button')].map((b) => Math.round(b.getBoundingClientRect().top)),
+          ).size,
+      ),
+    );
+  expect(reihen.length).toBeGreaterThan(0);
+  for (const r of reihen) expect(r).toBe(1);
+  const gerahmt = await page
+    .locator('details details')
+    .evaluateAll(
+      (bloecke) => bloecke.filter((b) => getComputedStyle(b).borderLeftWidth !== '0px').length,
+    );
+  expect(gerahmt).toBe(0);
+});

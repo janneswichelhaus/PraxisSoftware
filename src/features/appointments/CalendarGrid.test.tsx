@@ -294,3 +294,36 @@ describe('Ort auf der Kachel (UBK-017, ANN-242)', () => {
     expect(within(link).queryByTestId('kachel-ort')).toBeNull();
   });
 });
+
+describe('Spaltenbreite je Ansicht (Runde 3, Handoff Kalender und Tour 2026-10-06)', () => {
+  function zeichne(spaltenart?: 'team' | 'woche') {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[{ id: 'st-1', titel: 'Anna Beispiel', baender: [] }]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Gitter"
+        {...(spaltenart ? { spaltenart } : {})}
+      />,
+    );
+    return screen.getByRole('region', { name: 'Gitter' }).style.gridTemplateColumns;
+  }
+
+  it('gibt der Woche 7.5rem je Tag, damit Montag bis Freitag am Tablet passen', () => {
+    expect(zeichne('woche')).toContain('minmax(7.5rem, 1fr)');
+  });
+
+  it('lässt der Teamansicht 9rem je Person', () => {
+    expect(zeichne('team')).toContain('minmax(9rem, 1fr)');
+  });
+
+  it('nimmt ohne Angabe die Breite der Teamansicht', () => {
+    expect(zeichne()).toContain('minmax(9rem, 1fr)');
+  });
+});

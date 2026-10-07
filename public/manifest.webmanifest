@@ -6,7 +6,7 @@
   "scope": "/",
   "display": "minimal-ui",
   "theme_color": "#ffffff",
-  "background_color": "#eceee8",
+  "background_color": "#ffffff",
   "icons": [
     {
       "src": "/marke/own-motion-app-1024.png",

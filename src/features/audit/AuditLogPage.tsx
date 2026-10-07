@@ -25,6 +25,7 @@ import {
   shortReference,
   type AuditEvent,
 } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 const PAGE_SIZE = 25;
 
@@ -283,13 +284,13 @@ export function AuditLogPage() {
           <Aufklappzeichen />
           Was wird protokolliert?
         </summary>
-        <p className="text-ink-muted mt-2 text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-2">
           Protokolliert wird nur, was die Daten selbst nicht zeigen: das Öffnen einer Akte (einmal
           am Tag je Person), Herunterladen und Herausgeben, Zugänge und abgewiesene Zugriffe.
           Angezeigt werden ausschließlich Metadaten; Inhalte der Patientenakte sind nicht
           Bestandteil des Protokolls. Das Protokoll dient Datenschutz und Sicherheit, nie der
           Kontrolle von Mitarbeitenden.
-        </p>
+        </Kleingedrucktes>
       </details>
     </>
   );

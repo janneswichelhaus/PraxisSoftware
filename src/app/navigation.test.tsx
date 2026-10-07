@@ -75,12 +75,12 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('kuerzt fuer die Tableiste nur, wo die volle Bezeichnung nicht passt', () => {
-    // Bei 375 px bleiben je Ziel 67 px fuer die Beschriftung. Gemessen in
-    // Hanken Grotesk bei 11 px passen bis zu rund 13 Zeichen; "Kommunikation"
-    // (76 px) und "Organisatorisches" (89 px) passen nicht und wuerden die
-    // Seite waagerecht scrollen lassen. Das Mass selbst prueft
-    // tests/e2e/authenticated/navigation-workflows.spec.ts im Browser -
-    // jsdom kennt keine Breiten.
+    // Bei 360 px bleiben je Ziel 72 px fuer die Beschriftung (seit Runde 2
+    // ohne seitlichen Innenabstand, 12 px). Gemessen in Hanken Grotesk passt
+    // "Organisation" (69 px in 12/600); "Kommunikation" und
+    // "Organisatorisches" passen nicht und wuerden die Seite waagerecht
+    // scrollen lassen. Das Mass selbst prueft tests/e2e/tableiste.spec.ts im
+    // Browser - jsdom kennt keine Breiten.
     const kurzformen = Object.fromEntries(
       bereicheFuer(['owner']).map((bereich) => [bereich.id, bereich.kurz]),
     );

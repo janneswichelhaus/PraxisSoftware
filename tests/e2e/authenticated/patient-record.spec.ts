@@ -54,7 +54,8 @@ test.describe('AKTE-000: Rahmen und Bereiche', () => {
     // Stammdaten: die Anschrift steht nicht mehr auf der Uebersicht.
     await navigation.getByRole('link', { name: 'Stammdaten' }).click();
     await expect(page).toHaveURL(`${AKTE}/stammdaten`);
-    await expect(page.getByText('Kontakt', { exact: true })).toBeVisible();
+    // Seit SLK-003 ein Block „Person“ statt Kontakt, Hausbesuch, Abrechnung.
+    await expect(page.getByRole('heading', { name: 'Person', exact: true })).toBeVisible();
     await expect(kopf).toBeVisible();
 
     // Behandlungsgrundlagen: der Bereich liest denselben rollenabhaengigen Lesepfad

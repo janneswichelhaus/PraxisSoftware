@@ -18,6 +18,7 @@ import {
   zeitraumText,
 } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die Rechnung als Blatt zum Verschicken (ABR-003b).
@@ -413,12 +414,12 @@ function Rechnungsblatt({ ansicht }: { ansicht: Rechnungsansicht }) {
             {entwurf ? 'Entwurf drucken' : 'Rechnung drucken'}
           </Button>
         </div>
-        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes>
           Der Druckdialog des Browsers führt zu Papier oder zu einer PDF-Datei. Diese Datei entsteht
           auf diesem Gerät; die Anwendung legt sie nicht ab und kann sie später nicht vorlegen –
           aufbewahrt werden die Angaben der Rechnung in der Anwendung. Ein Dokument, das die
           Anwendung selbst erzeugt und ablegt, kommt mit dem serverseitigen Weg.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

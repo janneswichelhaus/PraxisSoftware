@@ -104,14 +104,87 @@ test.describe('Kalender', () => {
     await expect(page.getByRole('navigation', { name: /^Bereich / })).toHaveCount(0);
   });
 
-  test('fuehrt ueber „Tour" mit Tag und Person auf die Tourenseite', async ({ page }) => {
+  // Runde 3 (Handoff Kalender und Tour, Abschnitt 6): Ein Tipp im unteren
+  // Drittel lag hinter der Leiste. Jetzt rollt das Raster selbst - der Test
+  // rollt nicht.
+  test('rollt eine Auswahl im unteren Drittel ueber die Leiste, mit Platz fuer den zweiten Tipp', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 740 });
     await page.goto(PRUEFSEITE);
-    await expect(annaSpalte(page)).toBeVisible();
-    await page.getByRole('button', { name: /Ansicht und Filter/ }).click();
+    const spalte = annaSpalte(page);
+    await expect(spalte).toBeVisible();
+    const rahmen = (await spalte.boundingBox())!;
+    const x = rahmen.x + 20;
 
-    const tour = page.getByRole('link', { name: 'Tour', exact: true });
-    await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
+    // Eine freie Stelle im unteren Drittel des Fensters: die Spalte selbst,
+    // keine Kachel und kein Fahrweg.
+    const y = await page.evaluate(
+      ({ x, oben }) => {
+        for (let y = Math.round((740 * 2) / 3); y < 740 - 90; y += 8) {
+          const el = document.elementFromPoint(x, y);
+          if (
+            el?.closest('[role=group]')?.getAttribute('aria-label')?.startsWith('Anna') &&
+            !el.closest('a, button, [data-testid]')
+          ) {
+            if (y > oben) return y;
+          }
+        }
+        return null;
+      },
+      { x, oben: rahmen.y },
+    );
+    expect(y, 'freie Stelle im unteren Drittel').not.toBeNull();
+    const vorher = await page.evaluate(() => window.scrollY);
+    await page.mouse.click(x, y!);
+
+    const flaeche = page.getByTestId('auswahl-flaeche');
+    const leiste = page.getByRole('group', { name: 'Was soll hier entstehen?' });
+    await expect(leiste).toBeVisible();
+    await expect
+      .poll(async () => {
+        const a = (await flaeche.boundingBox())!;
+        const l = (await leiste.boundingBox())!;
+        return a.y + a.height <= l.y;
+      })
+      .toBe(true);
+    // Das Rollen ist animiert; gemessen wird, wenn es steht.
+    await page.waitForFunction(
+      () =>
+        new Promise<boolean>((fertig) => {
+          const y = window.scrollY;
+          setTimeout(() => fertig(window.scrollY === y), 150);
+        }),
+    );
+    const stand = await page.evaluate(() => ({
+      y: window.scrollY,
+      max: document.documentElement.scrollHeight - window.innerHeight,
+    }));
+    expect(stand.y).toBeGreaterThan(vorher);
+    const a = (await flaeche.boundingBox())!;
+    const l = (await leiste.boundingBox())!;
+    // Im oberen Teil des freien Bereichs, darunter Platz fuer den zweiten Tipp.
+    expect(a.y, JSON.stringify({ stand, a, l })).toBeLessThan(l.y / 2);
+    expect(l.y - (a.y + a.height)).toBeGreaterThanOrEqual(96);
   });
+
+  // Runde 3: „Tour" steht im Kopf neben „Tag | Team" bzw. „Woche | Team",
+  // auf jeder Breite sichtbar, ohne „Ansicht und Filter" zu öffnen.
+  for (const breite of [375, 834, 1280]) {
+    test(`fuehrt ueber „Tour" im Kopf mit Tag auf die Tourenseite (${breite} px)`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(PRUEFSEITE);
+      await expect(page.getByRole('group', { name: 'Ansicht', exact: true })).toBeVisible();
+
+      const tour = page.getByRole('link', { name: 'Tour', exact: true });
+      await expect(tour).toBeVisible();
+      await expect(tour).toHaveAttribute('href', /^\/touren\?tag=\d{4}-\d{2}-\d{2}/);
+      const hoehe = (await tour.boundingBox())!.height;
+      expect(hoehe).toBeGreaterThanOrEqual(44);
+    });
+  }
 
   // TRN-006: Die Trainingsbetreuung sieht ihre Trainingstermine und sonst nichts.
   for (const breite of [375, 1280]) {

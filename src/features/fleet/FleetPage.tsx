@@ -356,7 +356,7 @@ function Radkarte({
       </div>
 
       {falschesDepot ? (
-        <p className="rounded-card border-warnung/30 bg-warnung-soft text-warnung mt-2 border px-3 py-2 text-sm">
+        <p className="border-warnung bg-warnung-soft text-warnung mt-2 border-l-4 py-2 pr-3 pl-3 text-sm">
           Steht nicht im Stammdepot. Gehört zu {depotName(zustand, rad, 'stamm')}.
         </p>
       ) : null}
@@ -373,15 +373,12 @@ function Radkarte({
         ) : null}
       </DataList>
 
-      {rad.notiz ? (
-        <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 px-3 py-2 text-sm">
-          {rad.notiz}
-        </p>
-      ) : null}
+      {rad.notiz ? <p className="text-ink-muted mt-2 text-sm">{rad.notiz}</p> : null}
 
       {/* Schlüsselstand neutral (VOR-13): Ein ausgegebener Schlüssel ist Alltag,
           keine Warnung. Knopf und Link darin gleich groß (VOR-12). */}
-      <div className="rounded-card bg-surface-sunken text-ink mt-3 flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
+      {/* Eine Zeile mit Linie darüber statt eines Feldes in der Karte (Leitfaden L2). */}
+      <div className="border-line text-ink mt-3 flex flex-wrap items-center justify-between gap-2 border-t pt-3 text-sm">
         <span>
           {rad.schluesselInhaber ? `Schlüssel bei ${rad.schluesselInhaber}` : 'Schlüssel im Tresor'}
           {rad.schluesselSeit ? (

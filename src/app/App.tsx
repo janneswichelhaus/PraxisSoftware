@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
+import { Sitzungssperre } from '@/features/auth/sitzungssperre/Sitzungssperre';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
 import { KennwortNeuPage } from '@/features/auth/KennwortNeuPage';
@@ -258,7 +259,15 @@ function Gate() {
     );
   }
   if (!session || istEinloesePfad(pathname)) return <OeffentlicheRouten />;
-  return <AuthenticatedApp />;
+  // Die Sitzungssperre steht vor allem, was angemeldet zu sehen ist - Praxis
+  // wie Plattform (SEC-EPIC-001, ADR-025): erst prüfen, dann zeigen.
+  return (
+    // Je Konto eine eigene Sperre: Meldet sich in einem zweiten Tab ein
+    // anderes Konto an, fällt eine festgehaltene Seite weg (Zweitreview).
+    <Sitzungssperre key={session.user.id}>
+      <AuthenticatedApp />
+    </Sitzungssperre>
+  );
 }
 
 /**

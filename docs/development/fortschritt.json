@@ -629,6 +629,51 @@
           "vermerk": "Auftrag Jannes (Design-Runde 1, 05.10.2026), eingeschoben; Sichtung: Rahmen Schritte 1 bis 3"
         },
         {
+          "id": "slk-epic-001",
+          "name": "SLK-EPIC-001 Schlank und klar, erste Runde: Telefax der Patient:innen gelöscht, Doku an jeder Zeile der Übersicht, Stammdaten in einem Block, Grundton B",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "SLK-001 bis SLK-004, Branch `claude/confident-wozniak-vj9h7h`, Leitfaden docs/design/leitfaden-schlank.md, eine Migration, Zweitreview ohne blockierenden Befund",
+          "vermerk": "Auftrag Jannes (06.10.2026), eingeschoben; Sichtung: Rahmen Schritte 4 bis 6"
+        },
+        {
+          "id": "skn-epic-001",
+          "name": "SKN-EPIC-001 Design-Runde 2 Schrift und Knöpfe: Leiste 12 px, Kleingedrucktes 14 px, gesperrter Knopf gestrichelt, dichte Angaben auf 12 px, Zeitstrahl-Symbol",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "SKN-001 bis SKN-007 (SKN-008 wartet auf die Zwei-Faktor-Frage), Handoff docs/design/handoff-2026-10-06-schrift-und-knoepfe.md, Prüfseite tests/e2e/fixtures/ui-bausteine.html, E2E tests/e2e/tableiste.spec.ts",
+          "vermerk": "Auftrag Jannes (Design-Runde 2, Freigabe 06.10.2026); Sichtung: Rahmen Schritt 7"
+        },
+        {
+          "id": "abr-epic-008",
+          "name": "ABR-EPIC-008 Design-Runde Abrechnung: Rechnungsliste mit Suche, Filter, Monat und Weitere laden, Gesamtzahl, Spalten ab 1024 px",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "ABR-033/034, Migration 20261012110000_abr_033_rechnungsliste_suche.sql, supabase/tests/invoices.test.ts, src/features/billing/Rechnungsliste.tsx",
+          "vermerk": "BEF-061 Option 1 und 3 (Entscheidung Jannes 2026-10-05), ANN-259; Sichtung: Rahmen Schritt 12"
+        },
+        {
+          "id": "dok-epic-001",
+          "name": "DOK-EPIC-001 Design-Runde Dokumentation: Skala zweireihig mit gewähltem Wert, Bausteinfeld ohne Kasten im Kasten, Bausteinleiste einreihig, Ursprung im Nachtrag zugeklappt",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "DOK-001 bis DOK-004, E2E tests/e2e/befund.spec.ts (Skala 44 px, zwei Reihen) und tests/e2e/bausteine.spec.ts (Testzeile eine Reihe)",
+          "vermerk": "BEF-057 Option 2 (Entscheidung Jannes 2026-10-05) mit der Skala aus Option 3 (ANN-258); Sichtung: Rahmen Schritt 11"
+        },
+        {
+          "id": "kut-epic-001",
+          "name": "KUT-EPIC-001 Design-Runde 3 Kalender und Tour: Woche 7.5rem, Tour im Kopf, Anlegen-Leiste dichter mit Bildlauf, Tour am Handy Liste vor Karte, zwei Spalten am Rechner, Karte mit zwei Fingern",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "KUT-001 bis KUT-006, Handoff docs/design/handoff-2026-10-06-kalender-und-tour.md, E2E tests/e2e/kalender.spec.ts (Tipp im unteren Drittel, Tour im Kopf)",
+          "vermerk": "Auftrag Jannes (Design-Runde 3 alles A, Freigabe 06.10.2026); BEF-053, BEF-054 erledigt; Sichtung: Rahmen Schritte 8 bis 10"
+        },
+        {
           "id": "por-epic-002",
           "name": "POR-EPIC-002 Eigene Termine, Rechnungen, Dokumente",
           "gewicht": 2,
@@ -949,6 +994,15 @@
           "status": "fertig",
           "fertig_am": "2026-09-22",
           "nachweis": "`7b95c22`, PR #102"
+        },
+        {
+          "id": "g20",
+          "name": "G20 SEC-EPIC-001 Sitzungssperre (ADR-025)",
+          "gewicht": 2,
+          "status": "fertig",
+          "fertig_am": "2026-10-06",
+          "nachweis": "SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html",
+          "vermerk": "Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); Passkey (W3) offen bis OPS-001; Sichtung: Betriebsreife Schritt 15"
         }
       ]
     },

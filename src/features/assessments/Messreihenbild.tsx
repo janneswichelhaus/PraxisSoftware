@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { formatDate } from '@/lib/datum';
 import { beschriftung } from './darstellung';
+import { BILD_BREITE, schriftInEinheiten } from './messreihenSchrift';
 import {
   ereignisartTexte,
   tagZahl,
@@ -22,23 +23,28 @@ import {
  * Unter dem Bild stehen die Werte als Text — die Rohdaten, lesbar auch ohne
  * Bild und für Vorlesesoftware.
  */
-const BREITE = 320;
+const BREITE = BILD_BREITE;
 const HOEHE = 150;
 const LINKS = 26;
 const RECHTS = 8;
 const OBEN = 18;
 const UNTEN = 26;
 
-/**
- * Schriftgröße im Bild, in Bildeinheiten (RSP-09). Das Bild ist 320 Einheiten
- * breit und skaliert mit: Ab 300 px Bildbreite ergibt das mindestens 12 px am
- * Schirm. Bis UXR-009 waren es 9 Einheiten, am Telefon rund 10 px.
- */
-const SCHRIFT = 13;
-
-/** So nah beieinander überlagern sich zwei Wertebeschriftungen (Breite zweier Ziffern, Zeilenhöhe). */
-const ABSTAND_X = SCHRIFT * 1.3;
-const ABSTAND_Y = SCHRIFT;
+/** Die gerenderte Breite des Bildes; ohne ResizeObserver (jsdom) `null`. */
+function useBildbreite() {
+  const ref = useRef<SVGSVGElement>(null);
+  const [breite, setBreite] = useState<number | null>(null);
+  useEffect(() => {
+    const element = ref.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+    const beobachter = new ResizeObserver(([eintrag]) => {
+      if (eintrag) setBreite(Math.round(eintrag.contentRect.width));
+    });
+    beobachter.observe(element);
+    return () => beobachter.disconnect();
+  }, []);
+  return { ref, breite };
+}
 
 export function Messreihenbild({
   reihe,
@@ -50,6 +56,11 @@ export function Messreihenbild({
   /** Tage durchgeführter Termine. */
   termine: readonly string[];
 }) {
+  const { ref: bildRef, breite } = useBildbreite();
+  const SCHRIFT = schriftInEinheiten(breite);
+  /** So nah beieinander überlagern sich zwei Wertebeschriftungen (Breite zweier Ziffern, Zeilenhöhe). */
+  const ABSTAND_X = SCHRIFT * 1.3;
+  const ABSTAND_Y = SCHRIFT;
   const skala = reihe.item.skala ?? { min: 0, max: 10 };
   const bereich = zeitraum([
     ...reihe.punkte.map((p) => p.datum),
@@ -102,7 +113,12 @@ export function Messreihenbild({
           </span>
         ) : null}
       </figcaption>
-      <svg viewBox={`0 0 ${BREITE} ${HOEHE}`} className="h-auto w-full max-w-lg" aria-hidden="true">
+      <svg
+        ref={bildRef}
+        viewBox={`0 0 ${BREITE} ${HOEHE}`}
+        className="h-auto w-full max-w-lg"
+        aria-hidden="true"
+      >
         {[skala.min, mitte, skala.max].map((wert) => (
           <g key={wert}>
             <line

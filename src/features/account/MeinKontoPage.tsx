@@ -22,6 +22,7 @@ import {
   type MfaEinrichtung,
 } from './api';
 import { kennwortFehler, type Kennwortfehler } from './kennwortFehler';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
 const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';
@@ -291,8 +292,17 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
                 alt="QR-Code zum Einrichten des zweiten Faktors"
                 className="border-line rounded-image bg-surface mt-4 w-44 border p-2"
               />
-              <p className="text-ink-muted mt-2 text-xs break-all">
-                Zum Abtippen: <code>{einrichtung.secret}</code>
+              {/* 14 px in Festbreite (Runde 2, SKN-008): Wer abtippt, muss
+                  0 und O, 1 und l auseinanderhalten - in 12 px Leise ging
+                  das kaum. Der zweite Faktor bleibt einrichtbar (ANN-028). */}
+              <p className="text-ink-muted mt-2 text-sm">
+                Zum Abtippen:{' '}
+                <code
+                  data-testid="totp-geheimnis"
+                  className="text-ink font-mono text-sm tracking-wide break-all"
+                >
+                  {einrichtung.secret}
+                </code>
               </p>
 
               <div className="mt-4 flex max-w-xs flex-col gap-3">
@@ -410,7 +420,8 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
       />
 
       <div className="mt-8 max-w-xl">
-        <Section titel="Zugang" rahmen>
+        {/* Eine Zeile braucht keinen Rahmen (Leitfaden L2). */}
+        <Section titel="Zugang">
           {/* Name und Praxis stehen in der Kopfzeile der Anwendung; hier nur,
               was die Seite sonst nirgends sagt - die Rollen (UX-005i). */}
           <DetailList>
@@ -428,11 +439,11 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
         <ZweiterFaktor user={user} />
         <Sitzungen />
 
-        <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-10">
           {/* Wer Rollen ändert, sagt der Kopf der Seite (UX-005i). */}
           Kennwortänderung, zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne
           Kennwort, ohne Einmalkennwort und ohne Gerätekennung.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

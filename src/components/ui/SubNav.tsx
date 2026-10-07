@@ -154,7 +154,7 @@ export function SubNav({ eintraege, label }: { eintraege: SubNavEintrag[]; label
             >
               {eintrag.label}
               {eintrag.vorschau ? (
-                <span className="bg-surface-sunken text-ink-muted rounded-pill px-1.5 py-0.5 text-[0.6875rem] font-medium">
+                <span className="bg-surface-sunken text-ink-muted rounded-pill px-1.5 py-0.5 text-xs font-medium">
                   Vorschau
                 </span>
               ) : null}

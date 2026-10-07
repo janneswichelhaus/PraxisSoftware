@@ -26,6 +26,12 @@ import { Zahlungsstorno } from './Zahlungsstorno';
  * Vorgänge stehen dort, wo ihr Gegenstand steht — am offenen Posten auf der
  * Einstiegsseite und an der Rechnung selbst.
  */
+function zahlungsHinweis(gezeigt: number, gesamt: number | undefined): string {
+  const alle = gesamt ?? gezeigt;
+  if (gezeigt < alle) return `Die ${gezeigt} neuesten von ${alle} Zahlungen`;
+  return alle === 1 ? 'Eine Zahlung' : `${alle} Zahlungen`;
+}
+
 export function PaymentsPage({ user }: { user: CurrentUser }) {
   const darfBuchen = canManageInvoicing(user.roles);
 
@@ -42,7 +48,17 @@ export function PaymentsPage({ user }: { user: CurrentUser }) {
         description="Eingänge, Teilzahlungen und Rückzahlungen zu ausgestellten Rechnungen."
       />
 
-      <Section titel="Erfasste Zahlungen" rahmen>
+      <Section
+        titel="Erfasste Zahlungen"
+        rahmen
+        // Gekürzt sagt die Liste es (ABR-034, BEF-061 Option 1): Bis hierher
+        // endete sie stumm bei 100 Zahlungen.
+        hinweis={
+          zahlungen.data && zahlungen.data.length > 0
+            ? zahlungsHinweis(zahlungen.data.length, zahlungen.data[0]!.total_count)
+            : undefined
+        }
+      >
         {zahlungen.isPending ? <LoadingState label="Zahlungen werden geladen …" /> : null}
         {zahlungen.isError ? (
           <ErrorState

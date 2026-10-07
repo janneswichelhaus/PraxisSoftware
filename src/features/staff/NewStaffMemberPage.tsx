@@ -15,6 +15,7 @@ import { canManageStaffPrivateDetails, type CurrentUser } from '@/features/sessi
 import { createStaffMember, leereStammdaten, staffMasterDataSchema, type StaffFeld } from './api';
 import { StaffMasterDataFields } from './StaffMasterDataFields';
 import { STAFF_BESCHRIFTUNG, staffFeldId, staffReihenfolge } from './mitarbeiterfelder';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Anlage eines Mitarbeiterdatensatzes.
@@ -168,11 +169,11 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
         </Hinweisfenster>
       ) : null}
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Es entstehen die Stammdaten, aber noch kein Zugang zur Anwendung. Für eigene Termine als
         behandelnde Person ist zusätzlich ein Zugang mit der Rolle Therapeut:in oder Teamleitung
         nötig – ihn lädt die Praxisinhaber:in anschließend bei der Person unter „Zugang“ ein.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

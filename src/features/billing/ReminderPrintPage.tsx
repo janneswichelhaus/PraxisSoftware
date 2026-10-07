@@ -8,6 +8,7 @@ import { formatEuro } from '@/lib/geld';
 import { fetchErinnerung, type Erinnerungsdokument } from './api';
 import { ibanInGruppen, personLabel } from './anzeige';
 import { Angabe, Angaben, Briefkopf } from './Briefkopf';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die Zahlungserinnerung als Blatt (ABR-003d, `IDEA-PRX-012`).
@@ -133,11 +134,11 @@ function Erinnerungsblatt({ erinnerung }: { erinnerung: Erinnerungsdokument }) {
             Zahlungserinnerung drucken
           </Button>
         </div>
-        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes>
           Keine Mahnung, keine Stufe, keine Gebühr: Dieses Blatt erinnert an eine fällige Rechnung.
           Der Betrag darauf ist der vom Tag der Ausstellung und ändert sich nicht mehr – eine
           spätere Zahlung steht an der Rechnung.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

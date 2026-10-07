@@ -47,3 +47,31 @@ test.describe('Befund', () => {
     await expect(page.locator('figure svg polyline, figure svg path')).toHaveCount(0);
   });
 });
+
+// BEF-057 (ANN-258): Die 0–10-Skala steht am Handy in zwei Reihen, jede Stufe
+// mindestens 44 × 44 px; ab 640 px in einer Reihe.
+for (const [breite, reihen] of [
+  [375, 2],
+  [1280, 1],
+] as const) {
+  test(`setzt die Skala bei ${breite} px in ${reihen} Reihe(n) mit Stufen ab 44 px`, async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: breite, height: 900 });
+    await page.goto('/tests/e2e/fixtures/befund.html');
+    const stufen = page.getByTestId('skala-stufen').first();
+    await stufen.scrollIntoViewIfNeeded();
+    const masse = await stufen.locator('label').evaluateAll((labels) =>
+      labels.map((l) => {
+        const r = l.getBoundingClientRect();
+        return { oben: Math.round(r.top), breite: r.width, hoehe: r.height };
+      }),
+    );
+    expect(masse.length).toBe(11);
+    for (const m of masse) {
+      expect(m.breite).toBeGreaterThanOrEqual(44);
+      expect(m.hoehe).toBeGreaterThanOrEqual(44);
+    }
+    expect(new Set(masse.map((m) => m.oben)).size).toBe(reihen);
+  });
+}

@@ -3057,3 +3057,38 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
     });
   });
 });
+
+describe('CalendarPage: Tour im Kopf, Feld kürzer (Runde 3, Handoff Kalender und Tour)', () => {
+  it('führt mit einem Tipp vom Kopf in die Tour - Tag und Person reisen mit', async () => {
+    rendern('/kalender?ansicht=woche&datum=2027-05-12&person=' + STAFF_ANNA);
+    const tour = await screen.findByRole('link', { name: 'Tour' });
+    // Ohne „Ansicht und Filter" zu öffnen: neben „Woche | Team".
+    expect(screen.queryByRole('group', { name: 'Ansicht und Filter' })).toBeNull();
+    const ziel = new URL(String(tour.getAttribute('href')), 'http://test');
+    expect(ziel.pathname).toBe('/touren');
+    expect(ziel.searchParams.get('tag')).toBe('2027-05-12');
+    expect(ziel.searchParams.get('person')).toBe(STAFF_ANNA);
+  });
+
+  it('nennt die Tour im Feld nicht mehr und klappt „Ohne Raster anlegen" zu', async () => {
+    rendern('/kalender?ansicht=tag&datum=2027-05-12');
+    await optionenOeffnen();
+    const feld = screen.getByRole('group', { name: 'Ansicht und Filter' });
+    expect(within(feld).queryByRole('link', { name: 'Tour' })).toBeNull();
+    const aufklapper = within(feld).getByText('Ohne Raster anlegen').closest('details');
+    expect(aufklapper).not.toBeNull();
+    expect(aufklapper!.open).toBe(false);
+    expect(
+      within(aufklapper!).getByRole('link', { name: 'Termin anlegen', hidden: true }),
+    ).toBeInTheDocument();
+  });
+
+  it('zeigt der Trainingsbetreuung keine Tour', async () => {
+    renderWithProviders(
+      <CalendarPage user={testUser(['trainer'], 'Tom Trainingsbetreuung')} />,
+      '/kalender?ansicht=tag&datum=2027-05-12',
+    );
+    await screen.findByRole('group', { name: 'Ansicht' });
+    expect(screen.queryByRole('link', { name: 'Tour' })).toBeNull();
+  });
+});

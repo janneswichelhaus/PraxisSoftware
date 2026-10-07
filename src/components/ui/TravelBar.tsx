@@ -9,10 +9,14 @@ import { pufferText, travelPlan, type TravelLevel } from './travelPlan';
  * Orange-Stufen steht in `warnung`.
  */
 const stufen: Record<TravelLevel, { spur: string; fahrt: string; text: string }> = {
-  late: { spur: 'bg-danger-soft', fahrt: 'bg-danger', text: 'text-danger' },
-  tight: { spur: 'bg-warnung-soft', fahrt: 'bg-warnung', text: 'text-warnung' },
-  narrow: { spur: 'bg-warnung-soft', fahrt: 'bg-warnung-mittel', text: 'text-warnung' },
-  clear: { spur: 'bg-accent-soft', fahrt: 'bg-accent', text: 'text-accent' },
+  // Die Spur ist seit Grundton B in jeder Stufe dieselbe sichtbare Spur
+  // (Leitfaden L4, `--color-spur`, mindestens 3:1): Die Stufe sagt die Fahrt
+  // in ihrer Farbe und der Text daneben, nicht ein getönter Grund, der auf
+  // Weiß verschwindet.
+  late: { spur: 'bg-spur', fahrt: 'bg-danger', text: 'text-danger' },
+  tight: { spur: 'bg-spur', fahrt: 'bg-warnung', text: 'text-warnung' },
+  narrow: { spur: 'bg-spur', fahrt: 'bg-warnung-mittel', text: 'text-warnung' },
+  clear: { spur: 'bg-spur', fahrt: 'bg-accent', text: 'text-accent' },
 };
 
 /**

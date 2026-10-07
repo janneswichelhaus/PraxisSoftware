@@ -1,5 +1,13 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { SEED, asAnon, asPostgres, asUser, asUserCommitted, resetDatabase } from './helpers/db';
+import {
+  SEED,
+  asAnon,
+  asPostgres,
+  asUser,
+  asUserCommitted,
+  resetDatabase,
+  jwtClaims,
+} from './helpers/db';
 import { uuidParameter } from './helpers/signature';
 
 const { users, organizationId } = SEED;
@@ -265,7 +273,7 @@ describe('create_patient: Atomaritaet', () => {
       asPostgres(
         `begin;
          select set_config('role', 'authenticated', true);
-         select set_config('request.jwt.claims', '{"sub":"${users.office}","role":"authenticated"}', true);
+         select set_config('request.jwt.claims', '${jwtClaims(users.office)}', true);
          select public.create_patient('Ruth', 'Rollbacktest', '1980-03-14'::date,
            'ungueltige-adresse', null, null, null, null, null);
          commit;`,

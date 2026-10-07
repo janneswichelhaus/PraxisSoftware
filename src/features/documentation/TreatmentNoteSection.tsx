@@ -116,9 +116,12 @@ function Eintrag({
         </p>
       ) : null}
 
-      {/* Der Text auf Papier mit Linie (Design-Handoff 2026-10-01, Abschnitt 6). */}
+      {/* Der Text mit einer Linie links statt eines Kastens (Leitfaden L2):
+          Er steht meist schon in einer Karte - Termin, Akte -, und ein
+          Kasten darin war der Kasten im Kasten. */}
       <p
-        className={`border-line bg-surface text-ink text-liste rounded-button mt-2 max-w-prose border px-3.5 py-3 leading-relaxed ${FREITEXT}`}
+        data-testid="eintragstext"
+        className={`border-line-strong text-ink text-liste mt-2 max-w-prose border-l-2 py-0.5 pl-3.5 leading-relaxed ${FREITEXT}`}
       >
         {note.content}
       </p>

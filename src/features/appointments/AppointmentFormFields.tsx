@@ -18,6 +18,7 @@ import {
 } from './api';
 import { Listenfehler } from './Rueckmeldungen';
 import { DAUER_AUSWAHL_ID, TERMINFELD_IDS } from './terminformular';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Zustand einer Auswahlliste, die das Formular nachlädt (ZST-07).
@@ -223,10 +224,10 @@ export function AppointmentFormFields({
               <p className="text-ink text-liste mt-1 font-medium">
                 {werte.end_time ? `${werte.end_time} Uhr` : '—'}
               </p>
-              <p className="text-ink-muted mt-1 text-xs leading-relaxed">
+              <Kleingedrucktes className="mt-1">
                 {laengeHinweis ??
                   `Terminfenster: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
-              </p>
+              </Kleingedrucktes>
               {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
                   Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
               {fehler.end_time ? (
@@ -267,9 +268,8 @@ export function AppointmentFormFields({
       {art === 'home_visit' ? hausbesuch : null}
 
       {art === 'video' ? (
-        <div className="border-line bg-surface-sunken rounded-card border p-4">
-          <p className="text-ink text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
-        </div>
+        // Ein Satz, kein Kasten (Leitfaden L2).
+        <p className="text-ink-muted text-sm">Für Videotermine wird noch kein Videolink erzeugt.</p>
       ) : null}
     </Feldgruppe>
   );
@@ -501,11 +501,11 @@ export function ArbeitszeitRueckfrage({
           <p className={`text-ink text-sm ${vergangenheit ? 'mt-2' : ''}`}>
             Dieser Zeitraum liegt außerhalb der hinterlegten Arbeitszeit der behandelnden Person.
           </p>
-          <p className="text-ink-muted mt-2 text-xs leading-relaxed">
+          <Kleingedrucktes className="mt-2">
             Ist für die Person an diesem Tag keine Arbeitszeit hinterlegt, gilt der Termin ebenfalls
             als außerhalb. {BEGRIFFE.arbeitszeiten} pflegen Sie unter {BEREICHE.betrieb.label} →{' '}
             {BEGRIFFE.arbeitszeiten}.
-          </p>
+          </Kleingedrucktes>
         </>
       ) : null}
       <p className="text-ink-muted mt-2 text-xs">Der Termin wurde noch nicht gespeichert.</p>

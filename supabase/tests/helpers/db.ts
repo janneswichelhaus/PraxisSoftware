@@ -242,6 +242,23 @@ export async function resetDatabaseOhneTermine(): Promise<void> {
   await asPostgres('delete from public.appointments');
 }
 
+/**
+ * Die Claims eines Tokens, wie der Anmeldedienst sie ausstellt (SEC-001,
+ * ADR-025): mit `session_id` und `amr`. Ohne beide gilt eine Sitzung als
+ * gesperrt. Die Anmeldung liegt einen Augenblick zurück, die Sitzungskennung
+ * ist die Kontokennung - eindeutig je Konto und ohne Vermerk der letzten
+ * Bedienung, also offen. Eigene Zeitpunkte setzen die Tests der Sperre.
+ */
+export function jwtClaims(userId: string, zusatz: Record<string, unknown> = {}): string {
+  return JSON.stringify({
+    sub: userId,
+    role: 'authenticated',
+    session_id: userId,
+    amr: [{ method: 'password', timestamp: Math.floor(Date.now() / 1000) - 5 }],
+    ...zusatz,
+  });
+}
+
 export interface QueryResultRows<T> {
   rows: T[];
 }
@@ -261,7 +278,7 @@ export async function asUser<T = Record<string, unknown>>(
     await client.query('begin');
     await client.query("select set_config('role', 'authenticated', true)");
     await client.query("select set_config('request.jwt.claims', $1, true)", [
-      userId === null ? '{}' : JSON.stringify({ sub: userId, role: 'authenticated' }),
+      userId === null ? '{}' : jwtClaims(userId),
     ]);
     const result = await client.query(sql, params as never[]);
     await client.query('rollback');
@@ -290,9 +307,7 @@ export async function asUserCommitted<T = Record<string, unknown>>(
   try {
     await client.query('begin');
     await client.query("select set_config('role', 'authenticated', true)");
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(userId)]);
     const result = await client.query(sql, params as never[]);
     await client.query('commit');
     return { rows: result.rows as T[] };
@@ -319,9 +334,7 @@ export async function asUserCommittedMitStatus<T = Record<string, unknown>>(
   try {
     await client.query('begin');
     await client.query("select set_config('role', 'authenticated', true)");
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(userId)]);
     const result = await client.query(sql, params as never[]);
     const status = await client.query<{ status: string | null }>(
       "select nullif(current_setting('response.status', true), '') as status",
@@ -352,9 +365,7 @@ export async function asStorageApi<T = Record<string, unknown>>(
   try {
     await client.query('begin');
     await client.query("select set_config('role', 'authenticated', true)");
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(userId)]);
     await client.query("select set_config('storage.operation', $1, true)", [operation]);
     const result = await client.query(sql, params as never[]);
     await client.query('commit');

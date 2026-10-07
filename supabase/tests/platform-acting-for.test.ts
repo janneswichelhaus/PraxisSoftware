@@ -7,6 +7,7 @@ import {
   asUserCommitted,
   resetDatabase,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 
 /**
@@ -28,9 +29,7 @@ async function erlaubt(konto: string, zugang: string, recht: string): Promise<bo
   await client.connect();
   try {
     await client.query('begin');
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: konto, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(konto)]);
     const { rows } = await client.query<{ ok: boolean }>(
       'select app.platform_access_allows($1::uuid, $2) as ok',
       [zugang, recht],

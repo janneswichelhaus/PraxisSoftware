@@ -22,6 +22,27 @@ describe('Schlüsselentnahme', () => {
     expect(screen.getByRole('button', { name: 'Entnahme bestätigen' })).toBeDisabled();
   });
 
+  it('sagt am gesperrten Knopf, was fehlt (BEF-069, Handoff Schrift und Knoepfe)', async () => {
+    const user = userEvent.setup();
+    oeffne();
+    const knopf = screen.getByRole('button', { name: 'Entnahme bestätigen' });
+    expect(knopf).toHaveAccessibleDescription('Erst ein Rad wählen.');
+
+    const rad = screen.getByRole('combobox', { name: 'Rad' });
+    const frei = within(rad)
+      .getAllByRole('option')
+      .find(
+        (o) => o.textContent && !o.textContent.includes('vergeben') && o.getAttribute('value'),
+      )!;
+    await user.selectOptions(rad, frei);
+    await user.clear(screen.getByRole('textbox', { name: 'Name' }));
+    expect(knopf).toHaveAccessibleDescription('Erst einen Namen eintragen.');
+
+    await user.type(screen.getByRole('textbox', { name: 'Name' }), 'Anna Beispiel');
+    expect(knopf).toBeEnabled();
+    expect(knopf).not.toHaveAccessibleDescription();
+  });
+
   it('stellt Raeder mit vergebenem Schluessel ans Ende und sagt es vorn im Text', () => {
     oeffne();
     const optionen = within(screen.getByRole('combobox', { name: 'Rad' }))

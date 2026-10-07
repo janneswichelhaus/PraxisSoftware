@@ -1,6 +1,7 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
 import { minuteZuZeit } from './calendar';
+import { spanneGelernt, spanneMerken } from './gestenMerker';
 import type { Spanne } from './useSpanneAufziehen';
 
 /**
@@ -43,11 +44,21 @@ export interface AnlegenEintrag {
  * am unteren Rand. Nannte sie nur die Uhrzeit, fiele ein Tipp in die
  * Nachbarspalte erst im Formular auf; `kopf` nennt deshalb Person und Tag vor
  * der Zeit - „Tim Teamleitung · Mo 28.09. · 12:00–12:40 Uhr".
+ *
+ * **Dichter am Handy** (Runde 3, Handoff Kalender und Tour 2026-10-06). Unter
+ * 640 px entfallen die Hinweiszeilen der Wahlen, je zwei Wahlen stehen in
+ * einer Reihe, 44 px hoch - die Leiste verdeckte sonst ein Drittel des
+ * Rasters (ANN-108). Der Grund einer gesperrten Wahl bleibt stehen: Er sagt,
+ * was vorher fehlt. Der Gesten-Hinweis steht nur, bis zum ersten Mal eine
+ * Spanne aufgezogen wurde (`gestenMerker`, ANN-255).
  */
 export function AnlegenMenue({
   auswahl,
   className = '',
+  ref,
 }: {
+  /** Die Leiste selbst - das Gitter misst, ob sie die Auswahl verdeckt. */
+  ref?: Ref<HTMLDivElement>;
   auswahl: Spanne & {
     eintraege: AnlegenEintrag[];
     onSchliessen: () => void;
@@ -58,6 +69,13 @@ export function AnlegenMenue({
 }) {
   const ersterRef = useRef<HTMLButtonElement>(null);
   const spanne = auswahl.bisMinute > auswahl.vonMinute;
+  // Einmal beim Öffnen gelesen: Wer gerade die erste Spanne zieht, sieht den
+  // Hinweis bis zum Ende dieser Auswahl nicht verschwinden und wieder kommen.
+  const [gelernt] = useState(spanneGelernt);
+
+  useEffect(() => {
+    if (spanne) spanneMerken();
+  }, [spanne]);
 
   useEffect(() => {
     // Ohne Bildlauf: Die Leiste steht ohnehin im Sichtfeld, und ein Sprung
@@ -67,6 +85,7 @@ export function AnlegenMenue({
 
   return (
     <div
+      ref={ref}
       role="group"
       aria-label="Was soll hier entstehen?"
       className={`border-line-strong bg-surface rounded-card border-2 p-2 ${className}`}
@@ -82,8 +101,9 @@ export function AnlegenMenue({
             {spanne ? `–${minuteZuZeit(auswahl.bisMinute)}` : ''} Uhr
           </span>
           {/* Der Hinweis sagt die Geste, die man sonst nicht sieht (BEF-035,
-              BEF-036). Nach einer fertigen Spanne ist er erledigt. */}
-          {spanne ? null : (
+              BEF-036). Nach einer fertigen Spanne ist er erledigt - hier
+              und, einmal gelernt, auf diesem Gerät überhaupt. */}
+          {spanne || gelernt ? null : (
             <span className="text-ink-muted block text-xs">
               Zweites Feld antippen: Spanne bis dorthin. Dasselbe Feld: aufheben.
             </span>
@@ -111,7 +131,7 @@ export function AnlegenMenue({
                 // Der Rand ist `line-strong`: Er umrandet ein Bedienelement
                 // (DS-001); mit `line` (1,4:1) waren die Einträge kaum als
                 // Knöpfe zu erkennen (KAL-24).
-                'rounded-button border-line-strong flex min-h-11 w-full flex-col gap-0.5 border px-3 py-1.5 text-left',
+                'rounded-button border-line-strong flex min-h-11 w-full flex-col justify-center gap-0.5 border px-3 py-1.5 text-left',
                 eintrag.deaktiviert
                   ? 'text-ink-muted cursor-not-allowed'
                   : 'text-ink hover:bg-surface-sunken',
@@ -119,7 +139,11 @@ export function AnlegenMenue({
             >
               <span className="text-liste font-medium">{eintrag.beschriftung}</span>
               {eintrag.hinweis ? (
-                <span className="text-ink-muted text-xs">{eintrag.hinweis}</span>
+                <span
+                  className={`text-ink-muted text-xs ${eintrag.deaktiviert ? '' : 'max-sm:hidden'}`}
+                >
+                  {eintrag.hinweis}
+                </span>
               ) : null}
             </button>
           </li>

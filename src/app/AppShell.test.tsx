@@ -538,7 +538,7 @@ describe('AppShell: Seitenleiste und Symbolspalte (RAH-002)', () => {
     expect(leiste.className).toContain('w-symbolspalte');
     expect(leiste.className).toContain('lg:w-62');
     const eintrag = within(leiste).getByRole('link', { name: 'Patient:innen' });
-    // Die Kurzform ist sichtbarer Text in `text-leiste` (11 px), nur unter lg;
+    // Die Kurzform ist sichtbarer Text in `text-leiste` (12 px), nur unter lg;
     // für Vorlesesoftware ausgeblendet, damit der Link nicht zweimal heißt.
     const kurz = eintrag.querySelector('[aria-hidden="true"].lg\\:hidden');
     expect(kurz).not.toBeNull();

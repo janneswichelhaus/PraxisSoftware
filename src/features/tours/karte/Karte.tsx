@@ -186,8 +186,17 @@ function Kartenflaeche({
       ...(config.authorizeRequest === undefined
         ? {}
         : { transformRequest: erlaubeAnfrage(config.authorizeRequest) }),
+      // Ein Finger rollt die Seite, zwei Finger verschieben die Karte; am
+      // Rechner zoomt Strg plus Mausrad (Runde 3, Handoff Kalender und Tour
+      // 2026-10-06). Vorher fing die Karte jeden Wisch ab, und am Handy kam
+      // man über sie nicht hinweg zur Liste.
+      cooperativeGestures: true,
       // MapLibres eigene Bedienelemente sprechen sonst Englisch.
       locale: {
+        'CooperativeGesturesHandler.WindowsHelpText': 'Zum Zoomen Strg und Mausrad verwenden',
+        'CooperativeGesturesHandler.MacHelpText': 'Zum Zoomen ⌘ und Mausrad verwenden',
+        'CooperativeGesturesHandler.MobileHelpText':
+          'Zum Verschieben der Karte zwei Finger verwenden',
         'Map.Title': 'Karte',
         'NavigationControl.ZoomIn': 'Hineinzoomen',
         'NavigationControl.ZoomOut': 'Herauszoomen',

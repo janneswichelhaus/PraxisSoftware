@@ -292,11 +292,7 @@ function Erstattungskarte({
         </ul>
       ) : null}
 
-      {erstattung.notiz ? (
-        <p className="text-ink-muted bg-surface-sunken rounded-card mt-2 px-3 py-2 text-sm">
-          {erstattung.notiz}
-        </p>
-      ) : null}
+      {erstattung.notiz ? <p className="text-ink-muted mt-2 text-sm">{erstattung.notiz}</p> : null}
 
       {erstattung.stand === 'abgelehnt' && erstattung.ablehnungsgrund ? (
         <p className="text-danger mt-2 text-sm">Ablehnung: {erstattung.ablehnungsgrund}</p>

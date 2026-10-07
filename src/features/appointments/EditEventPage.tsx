@@ -42,6 +42,7 @@ import {
   zurueckZumTermin,
 } from './api';
 import { formatDate } from '@/lib/datum';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Die ganze Fehlzeit bearbeiten (CAL-017).
@@ -426,9 +427,9 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                   </ul>
                 )}
                 {/* Ein Satz statt dreier: Der Weg steht an jedem Namen (UX-005g). */}
-                <p className="text-ink-muted mt-3 text-xs leading-relaxed">
+                <Kleingedrucktes className="mt-3">
                   Teilnahme am jeweiligen Termin ändern.
-                </p>
+                </Kleingedrucktes>
               </div>
             }
           />

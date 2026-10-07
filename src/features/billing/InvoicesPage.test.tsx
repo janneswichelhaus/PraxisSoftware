@@ -17,7 +17,8 @@ vi.mock('./api', async (importOriginal) => {
   return {
     ...actual,
     fetchKandidaten: () => fetchKandidaten() as Promise<BillingApi.Kandidat[]>,
-    fetchRechnungen: () => fetchRechnungen() as Promise<BillingApi.Rechnung[]>,
+    fetchRechnungen: (...args: unknown[]) =>
+      fetchRechnungen(...args) as Promise<BillingApi.Rechnung[]>,
     fetchOffenePosten: () => fetchOffenePosten() as Promise<BillingApi.OffenerPosten[]>,
     createEntwurf: (...args: unknown[]) => createEntwurf(...args) as Promise<string>,
     bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
@@ -72,6 +73,7 @@ function rechnung(rest: Partial<BillingApi.Rechnung> = {}): BillingApi.Rechnung 
     treatment_basis_id: null,
     basis_kind: null,
     basis_issued_on: null,
+    total_count: 1,
     ...rest,
   };
 }
@@ -94,6 +96,7 @@ function posten(rest: Partial<BillingApi.OffenerPosten> = {}): BillingApi.Offene
     currency: 'EUR',
     overdue: false,
     open_total_cents: 13_500,
+    total_count: 1,
     ...rest,
   };
 }
@@ -274,12 +277,13 @@ describe('InvoicesPage', () => {
     it('stehen ohne einen einzigen Tap auf der Seite, mit ihrer Summe', async () => {
       // OPTIMIERUNG.md: "Offene Posten sehen: 0 Taps auf der Einstiegsseite".
       fetchOffenePosten.mockResolvedValue([
-        posten({ outstanding_cents: 4500, open_total_cents: 9000 }),
+        posten({ outstanding_cents: 4500, open_total_cents: 9000, total_count: 2 }),
         posten({
           id: 'r2',
           invoice_number: 'RG-2026-0002',
           outstanding_cents: 4500,
           open_total_cents: 9000,
+          total_count: 2,
         }),
       ]);
 
@@ -540,5 +544,72 @@ describe('InvoicesPage', () => {
       expect(screen.getByRole('button', { name: 'Erneut versuchen' })).toBeInTheDocument();
       expect(screen.queryByText(/angemeldet/)).toBeNull();
     });
+  });
+});
+
+describe('Rechnungsliste mit Suche, Filter und Weitere laden (ABR-034, BEF-061)', () => {
+  beforeEach(() => {
+    fetchKandidaten.mockReset();
+    fetchRechnungen.mockReset();
+    fetchOffenePosten.mockReset();
+    fetchKandidaten.mockResolvedValue([]);
+    fetchOffenePosten.mockResolvedValue([]);
+  });
+
+  function seite(anzahl: number, gesamt: number, ab = 0): BillingApi.Rechnung[] {
+    return Array.from({ length: anzahl }, (_, i) =>
+      rechnung({
+        id: `r${ab + i}`,
+        invoice_number: `RG-2026-${String(ab + i + 1).padStart(4, '0')}`,
+        total_count: gesamt,
+      }),
+    );
+  }
+
+  it('sagt, wie viele es sind, und lädt weitere nach', async () => {
+    fetchRechnungen.mockImplementation((auswahl: { offset?: number }) =>
+      Promise.resolve((auswahl.offset ?? 0) === 0 ? seite(100, 130) : seite(30, 130, 100)),
+    );
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(await screen.findByText('100 von 130 Rechnungen gezeigt')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Weitere laden' }));
+    expect(await screen.findByText('130 Rechnungen')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Weitere laden' })).toBeNull();
+    expect(fetchRechnungen).toHaveBeenLastCalledWith(expect.objectContaining({ offset: 100 }));
+  });
+
+  it('sucht auf dem Server nach dem Getippten, mit Filter', async () => {
+    fetchRechnungen.mockResolvedValue(seite(1, 1));
+    const user = userEvent.setup();
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+    await screen.findByText('1 Rechnung');
+
+    await user.type(screen.getByRole('searchbox', { name: 'Suche' }), 'Erika');
+    await user.selectOptions(screen.getByLabelText('Zustand'), 'overdue');
+    await waitFor(() =>
+      expect(fetchRechnungen).toHaveBeenLastCalledWith(
+        expect.objectContaining({ suche: 'Erika', filter: 'overdue', offset: 0 }),
+      ),
+    );
+    expect(await screen.findByText('1 Treffer')).toBeInTheDocument();
+  });
+
+  it('sagt ohne Treffer, wo gesucht wird', async () => {
+    fetchRechnungen.mockResolvedValue([]);
+    const user = userEvent.setup();
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+    await screen.findByText('Noch keine Rechnung');
+    await user.type(screen.getByRole('searchbox', { name: 'Suche' }), 'xyz');
+    expect(await screen.findByText('Keine passende Rechnung')).toBeInTheDocument();
+  });
+
+  it('nennt bei gekürzten offenen Posten die volle Zahl', async () => {
+    fetchRechnungen.mockResolvedValue([]);
+    fetchOffenePosten.mockResolvedValue([posten({ total_count: 140, open_total_cents: 900_000 })]);
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+    expect(
+      await screen.findByText(/140 Rechnungen · 9\.000,00 € offen · die 1 am frühesten fälligen/),
+    ).toBeInTheDocument();
   });
 });

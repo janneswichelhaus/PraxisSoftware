@@ -9,6 +9,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { canWriteTreatmentNote, type CurrentUser } from '@/features/session/types';
 import { berichtQueryKey, druckVermerken, fetchBericht } from './api';
 import { Berichtsblatt } from './Berichtsblatt';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Der Therapiebericht als Blatt zum Verschicken (DOK-005, B14 Weg 1).
@@ -116,12 +117,12 @@ export function TherapieberichtDruckPage({ user }: { user: CurrentUser }) {
           ) : null}
         </div>
         {druckfehler ? <Statusmeldung ton="fehler">{druckfehler}</Statusmeldung> : null}
-        <p className="text-ink-muted max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes>
           Der Druckdialog des Browsers führt zu Papier, Fax oder einer PDF-Datei. Diese Datei
           entsteht auf diesem Gerät; aufbewahrt wird der Bericht in der Anwendung
           {entwurf ? ', sobald er abgeschlossen ist' : ' – so, wie er abgeschlossen wurde'}. Die
           Anwendung verschickt nichts.
-        </p>
+        </Kleingedrucktes>
       </div>
     </>
   );

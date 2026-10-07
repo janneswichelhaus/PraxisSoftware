@@ -1349,46 +1349,80 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           die eigenen Termine, der Tag am Telefon ebenso; „Team" ist der Tag mit
           einer Spalte je Person. Dieselben Ansichten wie bisher - der Weg
           dorthin steht jetzt sichtbar statt hinter „Ansicht und Filter". */}
-      <div role="group" aria-label="Ansicht" className="mt-2 flex">
-        {(
-          [
-            {
-              wert: 'woche',
-              text: 'Woche',
-              klasse: 'rounded-l-button max-sm:hidden',
-              aktiv: p.ansicht === 'woche',
-              ziel: { ansicht: 'woche' as const, person: user.staffMemberId ?? p.person },
-            },
-            {
-              wert: 'tag-eigen',
-              text: 'Tag',
-              klasse: 'rounded-l-button sm:hidden',
-              aktiv: p.ansicht === 'tag' && p.person !== null,
-              ziel: { ansicht: 'tag' as const, person: user.staffMemberId ?? null },
-            },
-            {
-              wert: 'team',
-              text: 'Team',
-              klasse: 'rounded-r-button',
-              aktiv: p.ansicht === 'tag' && p.person === null,
-              ziel: { ansicht: 'tag' as const, person: null },
-            },
-          ] as const
-        ).map((wahl) => (
-          <button
-            key={wahl.wert}
-            type="button"
-            aria-pressed={wahl.aktiv}
-            onClick={() => setze(wahl.ziel)}
-            className={`border-line-strong inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors [&+&]:-ml-px ${
-              wahl.aktiv
-                ? 'bg-accent text-surface border-accent'
-                : 'text-accent hover:bg-accent-soft'
-            } ${wahl.klasse}`}
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div role="group" aria-label="Ansicht" className="flex">
+          {(
+            [
+              {
+                wert: 'woche',
+                text: 'Woche',
+                klasse: 'rounded-l-button max-sm:hidden',
+                aktiv: p.ansicht === 'woche',
+                ziel: { ansicht: 'woche' as const, person: user.staffMemberId ?? p.person },
+              },
+              {
+                wert: 'tag-eigen',
+                text: 'Tag',
+                klasse: 'rounded-l-button sm:hidden',
+                aktiv: p.ansicht === 'tag' && p.person !== null,
+                ziel: { ansicht: 'tag' as const, person: user.staffMemberId ?? null },
+              },
+              {
+                wert: 'team',
+                text: 'Team',
+                klasse: 'rounded-r-button',
+                aktiv: p.ansicht === 'tag' && p.person === null,
+                ziel: { ansicht: 'tag' as const, person: null },
+              },
+            ] as const
+          ).map((wahl) => (
+            <button
+              key={wahl.wert}
+              type="button"
+              aria-pressed={wahl.aktiv}
+              onClick={() => setze(wahl.ziel)}
+              className={`border-line-strong inline-flex min-h-11 items-center border px-4 text-sm font-semibold transition-colors [&+&]:-ml-px ${
+                wahl.aktiv
+                  ? 'bg-accent text-surface border-accent'
+                  : 'text-accent hover:bg-accent-soft'
+              } ${wahl.klasse}`}
+            >
+              {wahl.text}
+            </button>
+          ))}
+        </div>
+        {/* Die Tour neben „Tag | Team" bzw. „Woche | Team", auf jeder Breite
+            (Runde 3, Handoff Kalender und Tour 2026-10-06; ANN-113 Fassung 2).
+            Bis dahin stand sie im Feld „Ansicht und Filter" - ein Tipp mehr
+            für den häufigsten Wechsel am Handy. Tag und Person reisen mit
+            (BEF-044). Die Tourenseite gehört zur Praxis; die
+            Trainingsbetreuung hat sie nicht (TRN-006). */}
+        {darfAendern ? (
+          <ButtonLink
+            to={`/touren?${new URLSearchParams({
+              tag: p.datum,
+              ...(tourPerson ? { person: tourPerson } : {}),
+            }).toString()}`}
+            variant="secondary"
+            groesse="kompakt"
           >
-            {wahl.text}
-          </button>
-        ))}
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="mr-1.5 size-[18px] shrink-0"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="6" cy="19" r="2" />
+              <circle cx="18" cy="5" r="2" />
+              <path d="M8 19h8.5a3.5 3.5 0 0 0 0-7h-9a3.5 3.5 0 0 1 0-7H16" />
+            </svg>
+            Tour
+          </ButtonLink>
+        ) : null}
       </div>
 
       {monatOffen ? (
@@ -1425,28 +1459,6 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           }}
         >
           <div className="flex flex-wrap items-center gap-2">
-            <div className="flex gap-1">
-              {/* „Woche | Team" steht seit dem Design-Handoff vom 2026-10-01
-                  im Kopf; hier bleibt die Tour. */}
-              {/* Die Tour als dritte Ansicht (BEF-044, ANN-113): dieselben
-                  Fragen wie hier - Tag und Person -, deshalb reisen beide
-                  mit. Die eigene Zeile „Kalender · Touren" über dem Raster
-                  ist dafür entfallen; `/touren` bleibt als Adresse. */}
-              {/* Die Tourenseite gehört zur Praxis; die Trainingsbetreuung
-                  hat sie nicht (TRN-006). */}
-              {darfAendern ? (
-                <ButtonLink
-                  to={`/touren?${new URLSearchParams({
-                    tag: p.datum,
-                    ...(tourPerson ? { person: tourPerson } : {}),
-                  }).toString()}`}
-                  variant="secondary"
-                >
-                  Tour
-                </ButtonLink>
-              ) : null}
-            </div>
-
             {/* Zoom (CAL-011). Beschriftet wird nicht die Pixelzahl, sondern
                 was sie bewirkt - das Raster, das dabei sichtbar ist.
                 `aria-live` sagt die Änderung an, weil sonst nur ein Bild sich
@@ -1479,7 +1491,9 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {/* Ab 640 px nebeneinander, je höchstens 20rem - nicht über die
+              ganze Zeile (Runde 3). */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[repeat(2,minmax(0,20rem))]">
             {/* Scheitert die Liste, sagt das der Kasten - eine Auswahl nur
                 mit „Alle" sähe aus wie eine Praxis ohne Standorte (KAL-07). */}
             {standorte.isError ? (
@@ -1522,7 +1536,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
               mit der Tastatur auf. Ohne Uhrzeit: die waehlt das Formular.
               „Dauertermin" fragt nach Person und Grundlage (BEF-042). */}
           {darfAendern ? (
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-col gap-2">
               {/* Tag umplanen bei einem Ausfall (CAL-009). Nur dort, wo Person
                   UND Tag feststehen: in der Tagesansicht mit Personenfilter.
                   Ohne beides wäre der Knopf eine Einladung zum teuersten
@@ -1535,59 +1549,68 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     kalenderStand,
                   )}
                   variant="secondary"
+                  className="self-start"
                 >
                   Tag umplanen
                 </ButtonLink>
               ) : null}
-              <ButtonLink
-                to={mitRueckweg(
-                  `/termine/neu${schreibeTerminVorbelegung({
-                    datum: p.datum,
-                    art: 'home_visit',
-                    ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
-                    ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
-                  })}`,
-                  kalenderStand,
-                )}
-                variant="secondary"
-              >
-                Termin anlegen
-              </ButtonLink>
-              {/* Eine Fehlzeit des Praxisbetriebs - Besprechung, Teamtermin
+              {/* Die Anlegewege ohne Raster zugeklappt (Runde 3, Handoff
+                  Kalender und Tour 2026-10-06): Sie sind der Weg für die
+                  Tastatur und für Termine ohne feste Uhrzeit; offen machten
+                  sie das Feld am Handy rund 480 px hoch. */}
+              <Disclosure summary="Ohne Raster anlegen">
+                <div className="flex flex-wrap gap-2 pt-2">
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/neu${schreibeTerminVorbelegung({
+                        datum: p.datum,
+                        art: 'home_visit',
+                        ...(p.ansicht === 'woche' && wochenPerson ? { person: wochenPerson } : {}),
+                        ...(p.ansicht === 'tag' && p.person ? { person: p.person } : {}),
+                      })}`,
+                      kalenderStand,
+                    )}
+                    variant="secondary"
+                  >
+                    Termin anlegen
+                  </ButtonLink>
+                  {/* Eine Fehlzeit des Praxisbetriebs - Besprechung, Teamtermin
                   (CAL-015b). Eigener Weg neben dem Termin: Er kennt weder
                   Patient:in noch Grundlage, und seine Länge ist frei. */}
-              <ButtonLink
-                to={mitRueckweg(
-                  `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
-                  kalenderStand,
-                )}
-                variant="secondary"
-              >
-                {BEGRIFFE.fehlzeit} eintragen
-              </ButtonLink>
-              <ButtonLink
-                to={mitRueckweg(
-                  `/termine/dauerfehlzeit${schreibeTerminVorbelegung({ datum: p.datum })}`,
-                  kalenderStand,
-                )}
-                variant="secondary"
-              >
-                {BEGRIFFE.dauerfehlzeit} eintragen
-              </ButtonLink>
-              <ButtonLink
-                to={mitRueckweg(
-                  `/termine/dauertermin${schreibeTerminVorbelegung({ datum: p.datum })}`,
-                  kalenderStand,
-                )}
-                variant="secondary"
-              >
-                {BEGRIFFE.dauertermin} anlegen
-              </ButtonLink>
-              {/* Wer auf einen Termin wartet (PRX-001). */}
-              <ButtonLink to={mitRueckweg('/warteliste', kalenderStand)} variant="secondary">
-                Warteliste
-              </ButtonLink>
-              {darfTraining ? trainingsterminAnlegen : null}
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/ereignis${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                      kalenderStand,
+                    )}
+                    variant="secondary"
+                  >
+                    {BEGRIFFE.fehlzeit} eintragen
+                  </ButtonLink>
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/dauerfehlzeit${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                      kalenderStand,
+                    )}
+                    variant="secondary"
+                  >
+                    {BEGRIFFE.dauerfehlzeit} eintragen
+                  </ButtonLink>
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/dauertermin${schreibeTerminVorbelegung({ datum: p.datum })}`,
+                      kalenderStand,
+                    )}
+                    variant="secondary"
+                  >
+                    {BEGRIFFE.dauertermin} anlegen
+                  </ButtonLink>
+                  {/* Wer auf einen Termin wartet (PRX-001). */}
+                  <ButtonLink to={mitRueckweg('/warteliste', kalenderStand)} variant="secondary">
+                    Warteliste
+                  </ButtonLink>
+                  {darfTraining ? trainingsterminAnlegen : null}
+                </div>
+              </Disclosure>
             </div>
           ) : darfTraining ? (
             <div className="flex flex-wrap gap-2">{trainingsterminAnlegen}</div>
@@ -1810,6 +1833,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           // Termin springt, kommt damit genau hierher zurück.
           rueckweg={kalenderStand}
           spaltenModell={spaltenModell}
+          spaltenart={p.ansicht === 'woche' ? 'woche' : 'team'}
           eintraege={gitterEintraege}
           fenster={fenster}
           raster={user.appointmentGridMinutes}

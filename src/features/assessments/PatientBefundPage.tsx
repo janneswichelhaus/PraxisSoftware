@@ -54,7 +54,8 @@ export function Befund(props: BefundProps) {
       {canReadPatientDirectory(props.user.roles) ? (
         // UX-005e: Ohne erklärenden Satz - die Überschrift und die beiden
         // Knöpfe sagen, worum es geht.
-        <Section titel="Behandlungsliege" rahmen>
+        // Ein Bedienelement braucht keinen Rahmen (Leitfaden L2).
+        <Section titel="Behandlungsliege">
           <Behandlungsliege patient={props.patient} darfAendern />
         </Section>
       ) : null}

@@ -225,7 +225,7 @@ function Korrigieren({
   return (
     <form
       noValidate
-      className="border-line rounded-card mt-1 mb-2 flex flex-col gap-2 border p-3"
+      className="border-line-strong bg-surface-sunken mt-1 mb-2 flex flex-col gap-2 border-l-4 py-3 pr-3 pl-4"
       aria-label={`Bericht vom ${datum} korrigieren`}
       onSubmit={(e) => {
         e.preventDefault();

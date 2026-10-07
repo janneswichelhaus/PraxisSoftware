@@ -755,6 +755,35 @@ describe('Übersicht', () => {
       expect(screen.getAllByRole('button', { name: /^Termin abschließen/ })).toHaveLength(1);
     });
 
+    it('traegt nach dem Abschliessen an jedem Behandlungstermin einen eigenen Doku-Knopf (L3)', async () => {
+      fetchDayPlan.mockResolvedValue([
+        tagesEintrag({ id: 't1', status: 'documented', documentation_status: 'final' }),
+        zweiterBesuch({ status: 'completed', documentation_status: 'final' }),
+        tagesEintrag({
+          id: 't3',
+          patient_id: 'p3',
+          patient_given_name: 'Petra',
+          patient_family_name: 'Platzhalter',
+          starts_at: inMinuten(240),
+          ends_at: inMinuten(300),
+          status: 'cancelled',
+        }),
+      ]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { level: 2, name: 'Alle Besuche erledigt' });
+
+      const dokus = screen.getAllByRole('link', { name: /^Doku zum Termin um / });
+      expect(dokus.map((l) => l.getAttribute('href'))).toEqual([
+        `/patienten/p1/doku?termin=t1&zurueck=${encodeURIComponent('/')}`,
+        `/patienten/p2/doku?termin=t2&zurueck=${encodeURIComponent('/')}`,
+      ]);
+      // Das sichtbare Wort ist „Doku" (WCAG 2.5.3); die Uhrzeit unterscheidet
+      // die Zeilen, ohne den Namen ein weiteres Mal zu nennen. Zum abgesagten
+      // Termin gibt es keinen Knopf: Es entsteht keine Dokumentation (ADR-018).
+      expect(dokus[0]).toHaveAccessibleName(/^Doku zum Termin um \d{2}:\d{2} Uhr$/);
+      expect(dokus).toHaveLength(2);
+    });
+
     it('fuehrt mit einem Tipp zur Doku des Termins, mit Rueckweg - auch das Buero', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
       const karte = await findeKarte();

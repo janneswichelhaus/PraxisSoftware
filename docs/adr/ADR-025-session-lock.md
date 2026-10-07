@@ -9,6 +9,11 @@ Zeile G20; Kriterium von M3). Löst keinen ADR ab. Ergänzt ADR-023 Punkte 17 un
 Konten gleich) um eine Sperre, die der Anmeldedienst allein nicht leistet. ADR-024 ist für Offline und
 Benachrichtigungen vergeben.
 
+**Stand 2026-10-06 (SEC-EPIC-001):** W1 (a) entschieden — Jannes: „Wichtiger ist, dass Nutzer nach
+30/60 min automatisch ausgeloggt werden.“ W2 (a) gebaut (ANN-256). Punkte 1 bis 6 und 8 sind gebaut;
+Punkt 7 mit dem Kennwort als Weg, der Passkey (W3) bleibt offen bis OPS-001 (ANN-257). Ein kürzeres
+`jwt_expiry` ist nicht gesetzt: Die Sperre hängt nicht daran.
+
 ## Datum
 
 2026-10-02

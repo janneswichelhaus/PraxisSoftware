@@ -19,6 +19,7 @@ import { SearchCombobox, type Suchtreffer } from './SearchCombobox';
 import { SearchField } from './SearchField';
 import { Feldgruppe, Section } from './Section';
 import { Statusmeldung } from './Statusmeldung';
+import { Kleingedrucktes } from './Kleingedrucktes';
 import { SubNav, type SubNavEintrag } from './SubNav';
 import { Symbolknopf } from './Symbolknopf';
 import { HakenSymbol } from './HakenSymbol';
@@ -288,7 +289,7 @@ describe('Symbolknopf', () => {
     // der Beschriftung.
     expect(screen.getByText('‹')).toHaveAttribute('aria-hidden', 'true');
     // Ohne Angabe leise: Hauptfarbe ohne Flaeche.
-    expect(knopf).toHaveClass('text-accent', 'hover:bg-surface-sunken');
+    expect(knopf).toHaveClass('text-accent', 'not-disabled:hover:bg-surface-sunken');
   });
 
   it('kennt die Varianten des Buttons und den abgeschalteten Zustand', async () => {
@@ -310,7 +311,9 @@ describe('Symbolknopf', () => {
 
     const gesperrt = screen.getByRole('button', { name: 'Naechster Zeitraum' });
     expect(gesperrt).toBeDisabled();
-    expect(gesperrt).toHaveClass('disabled:bg-surface-sunken', 'disabled:text-ink-muted');
+    // Leise gesperrt: keine Fläche, nur leiser Text (Runde 2, BEF-069).
+    expect(gesperrt).toHaveClass('disabled:text-ink-muted');
+    expect(gesperrt.className).not.toContain('disabled:bg-');
     await user.click(gesperrt);
     expect(onClick).not.toHaveBeenCalled();
   });
@@ -1275,7 +1278,7 @@ describe('Wegbalken (TravelBar)', () => {
     expect(klassenVon(fahrt)).toEqual(
       expect.arrayContaining(['bg-accent', 'left-1/2', '-translate-x-1/2', 'rounded-pill']),
     );
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-accent-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
     expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
     // Keine Marker, keine Kreise, keine Bewegung, kein Schatten.
     expect(fahrt.parentElement!.children).toHaveLength(2);
@@ -1300,7 +1303,7 @@ describe('Wegbalken (TravelBar)', () => {
     expect(klassenVon(screen.getByText('3 min Puffer'))).toContain('text-warnung');
     let fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
     expect(klassenVon(fahrt)).toContain('bg-warnung');
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-warnung-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
     unmount();
 
     renderWithProviders(
@@ -1320,7 +1323,7 @@ describe('Wegbalken (TravelBar)', () => {
     fahrt = screen.getByRole('region').querySelector<HTMLElement>('[style]')!;
     expect(fahrt.style.width).toBe('100%');
     expect(klassenVon(fahrt)).toContain('bg-danger');
-    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-danger-soft');
+    expect(klassenVon(fahrt.previousElementSibling)).toContain('bg-spur');
   });
 
   it('nimmt das hellere Orange nur als Flaeche, nie als Textfarbe', () => {
@@ -1380,7 +1383,7 @@ describe('Wegbalken (TravelBar)', () => {
     // Spur 4 px, Fahrt 6 px.
     expect(klassenVon(fahrt)).toEqual(expect.arrayContaining(['h-1.5', 'bg-accent']));
     expect(klassenVon(fahrt.previousElementSibling)).toEqual(
-      expect.arrayContaining(['h-1', 'bg-accent-soft']),
+      expect.arrayContaining(['h-1', 'bg-spur']),
     );
     expect(fahrt.parentElement).toHaveAttribute('aria-hidden', 'true');
     unmount();
@@ -1804,7 +1807,7 @@ describe('ProgressBar', () => {
     const { container } = renderWithProviders(<ProgressBar wert={1} von={6} />);
     const balken = container.firstElementChild as HTMLElement;
     expect(balken).toHaveAttribute('aria-hidden', 'true');
-    expect(balken).toHaveClass('h-1.5', 'bg-line');
+    expect(balken).toHaveClass('h-1.5', 'bg-spur');
     const fuellung = balken.querySelector<HTMLElement>('[data-fortschritt]')!;
     expect(fuellung).toHaveClass('bg-accent');
     expect(fuellung.style.width).toBe('17%');
@@ -1841,5 +1844,84 @@ describe('LoadingState und EmptyState in der Karte (Design-Handoff 2026-10-01)',
     const { container } = renderWithProviders(<EmptyState title="Noch keine Termine" inKarte />);
     expect(container.firstElementChild).toHaveClass('rounded-card', 'bg-surface');
     expect(screen.getByText('Noch keine Termine')).toBeInTheDocument();
+  });
+});
+
+describe('Gesperrter Knopf (BEF-069 Option 1, Variante B; SKN-002)', () => {
+  it('zeigt gesperrt eine gestrichelte Kontur ohne Flaeche, Hover nur ungesperrt', () => {
+    render(
+      <>
+        <Button disabled>Speichern</Button>
+        <Button variant="secondary" disabled>
+          Zweitens
+        </Button>
+        <Button variant="quiet" disabled>
+          Abbrechen
+        </Button>
+      </>,
+    );
+    const haupt = screen.getByRole('button', { name: 'Speichern' });
+    expect(haupt).toBeDisabled();
+    // Der Rand ist immer da (durchsichtig) - die Breite springt beim Sperren nicht.
+    expect(haupt).toHaveClass(
+      'border',
+      'border-transparent',
+      'disabled:border-dashed',
+      'disabled:border-line-strong',
+      'disabled:bg-transparent',
+      'disabled:text-ink-muted',
+    );
+    expect(screen.getByRole('button', { name: 'Zweitens' })).toHaveClass(
+      'border-line-strong',
+      'disabled:border-dashed',
+      'disabled:text-ink-muted',
+    );
+    const leise = screen.getByRole('button', { name: 'Abbrechen' });
+    expect(leise).toHaveClass('disabled:text-ink-muted');
+    expect(leise.className).not.toContain('disabled:bg-');
+    expect(leise.className).not.toMatch(/(^| )border( |$)/);
+
+    // Kein Hover-Stil, der auch gesperrt greift.
+    for (const knopf of [haupt, leise, screen.getByRole('button', { name: 'Zweitens' })]) {
+      expect(knopf.className).not.toMatch(/(^| )hover:/);
+    }
+  });
+});
+
+describe('Kleingedrucktes (BEF-068 Option 2, Variante K-A; SKN-004)', () => {
+  it('setzt den Satz in 14 px Leise ueber das Token, mit Abstand und Kennung der Seite', () => {
+    render(
+      <Kleingedrucktes id="hinweis" className="mt-10">
+        Das Öffnen der Akte wird protokolliert.
+      </Kleingedrucktes>,
+    );
+    const satz = screen.getByText('Das Öffnen der Akte wird protokolliert.');
+    expect(satz.tagName).toBe('P');
+    expect(satz).toHaveAttribute('id', 'hinweis');
+    expect(satz).toHaveClass('text-kleingedruckt', 'text-ink-muted', 'leading-relaxed', 'mt-10');
+    expect(satz.className).not.toContain('text-xs');
+  });
+});
+
+describe('Kein Kasten im Kasten: Meldung und Rückfrage (Leitfaden L2)', () => {
+  it('setzt die Fehlermeldung als Fläche mit Linie links, ohne Rahmen und Radius', () => {
+    renderWithProviders(<ErrorState title="Nicht geladen." />);
+    const meldung = screen.getByRole('alert');
+    expect(meldung).toHaveClass('border-l-4', 'border-danger');
+    expect(meldung).not.toHaveClass('rounded-card');
+    expect(meldung).not.toHaveClass('border');
+  });
+
+  it('setzt die offene Rückfrage ebenso', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(
+      <Rueckfrage ausloeser="Löschen" bestaetigen="Ja, löschen" onBestaetigen={() => undefined}>
+        Wirklich?
+      </Rueckfrage>,
+    );
+    await user.click(screen.getByRole('button', { name: 'Löschen' }));
+    const gruppe = screen.getByRole('group', { name: 'Löschen' });
+    expect(gruppe).toHaveClass('border-l-4');
+    expect(gruppe).not.toHaveClass('rounded-card');
   });
 });

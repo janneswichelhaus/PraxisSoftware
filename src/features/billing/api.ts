@@ -455,12 +455,47 @@ const rechnungSchema = z.object({
   treatment_basis_id: z.string().nullable().default(null),
   basis_kind: z.string().nullable().default(null),
   basis_issued_on: z.string().nullable().default(null),
+  /** Treffer vor dem Kürzen (ABR-033, BEF-061). */
+  total_count: z.number(),
 });
 
 export type Rechnung = z.infer<typeof rechnungSchema>;
 
-export async function fetchRechnungen(): Promise<Rechnung[]> {
-  const { data, error } = (await getSupabase().rpc('list_invoices', { p_limit: 100 })) as {
+/** Wie viele Rechnungen eine Seite der Liste lädt (ABR-033). */
+export const RECHNUNGEN_JE_SEITE = 100;
+
+/** Die Filter der Rechnungsliste; der Server kennt dieselben Werte. */
+export type Rechnungsfilter = 'draft' | 'open' | 'overdue' | 'paid' | 'cancelled';
+
+/** Wie im Statusfilter des Kalenders: „Nur …“ (CAL-011); „offen“ schließt teilweise bezahlte und überfällige ein (ANN-259). */
+export const rechnungsfilterLabels: Record<Rechnungsfilter, string> = {
+  draft: 'Nur Entwürfe',
+  open: 'Nur offene',
+  overdue: 'Nur überfällige',
+  paid: 'Nur bezahlte',
+  cancelled: 'Nur stornierte',
+};
+
+/**
+ * Rechnungen mit Suche, Filter und Blättern (ABR-033, BEF-061). Ohne Angaben
+ * die ersten 100 in der gewohnten Reihenfolge: Entwürfe zuerst, dann nach
+ * Monat absteigend.
+ */
+export async function fetchRechnungen(
+  auswahl: {
+    suche?: string;
+    filter?: Rechnungsfilter | null;
+    monat?: string | null;
+    offset?: number;
+  } = {},
+): Promise<Rechnung[]> {
+  const { data, error } = (await getSupabase().rpc('list_invoices', {
+    p_limit: RECHNUNGEN_JE_SEITE,
+    p_offset: auswahl.offset ?? 0,
+    p_search: auswahl.suche?.trim() ? auswahl.suche.trim() : null,
+    p_status: auswahl.filter ?? null,
+    p_month: auswahl.monat ? `${auswahl.monat}-01` : null,
+  })) as {
     data: unknown;
     error: unknown;
   };
@@ -916,6 +951,8 @@ const offenerPostenSchema = z.object({
    * sie an jeder Zeile und wird hier nicht aufaddiert.
    */
   open_total_cents: z.number(),
+  /** Wie viele Posten offen sind, vor dem Kürzen (ABR-033). */
+  total_count: z.number(),
 });
 
 export type OffenerPosten = z.infer<typeof offenerPostenSchema>;
@@ -949,12 +986,17 @@ const zahlungMitRechnungSchema = zahlungSchema.extend({
   invoice_number: z.string().nullable(),
   patient_name: z.string(),
   recipient_name: z.string(),
+  /** Zahlungen vor dem Kürzen (ABR-033). */
+  total_count: z.number(),
 });
 
 export type ZahlungMitRechnung = z.infer<typeof zahlungMitRechnungSchema>;
 
 export async function fetchZahlungen(): Promise<ZahlungMitRechnung[]> {
-  const { data, error } = (await getSupabase().rpc('list_payments', { p_limit: 100 })) as {
+  const { data, error } = (await getSupabase().rpc('list_payments', {
+    p_limit: 100,
+    p_offset: 0,
+  })) as {
     data: unknown;
     error: unknown;
   };

@@ -368,9 +368,9 @@ function Ladegeruest() {
         <div className="border-line bg-surface rounded-card h-13 border" />
         <div className="border-line bg-surface rounded-card h-30 border" />
       </div>
-      <Card className="mt-4">
+      <div className="mt-4">
         <LoadingState label="Tagesliste wird geladen …" />
-      </Card>
+      </div>
     </>
   );
 }
@@ -456,6 +456,45 @@ function MeinTag({
         }
         onFehler={(text) => setMeldung({ ton: 'fehler', text })}
       />
+    );
+  }
+
+  /**
+   * „Doku" an jeder Zeile des Zeitstrahls (Leitfaden schlank und klar, L3;
+   * Jannes 2026-10-06): an jedem Behandlungstermin des Tages, auch nach dem
+   * Abschließen und nach dem Festschreiben - erledigt heißt nicht
+   * unerreichbar. Das Ziel ist dasselbe wie an der Karte, der Reiter „Doku"
+   * der Akte mit diesem Termin oben (AKTE-008, ANN-225); er zeigt je nach
+   * Stand Schreibseite, Entwurf oder den festgeschriebenen Eintrag mit dem Weg
+   * zum Nachtrag (ADR-016). Abgesagt und nicht angetroffen bekommen keinen
+   * Knopf: Zu ihnen entsteht keine Dokumentation (ADR-018).
+   */
+  function zeilenAktionen(termin: DayPlanEntry): ReactNode {
+    const mitDoku =
+      termin.kind === 'therapy' &&
+      termin.patient_id !== null &&
+      (darfDokuLesen || darfDokumentieren) &&
+      termin.status !== 'cancelled' &&
+      termin.status !== 'no_show';
+    const knopf = haken(termin);
+    if (!mitDoku && !knopf) return null;
+    return (
+      <>
+        {mitDoku ? (
+          <ButtonLink
+            to={mitRueckweg(`/patienten/${termin.patient_id}/doku?termin=${termin.id}`, '/')}
+            variant="secondary"
+            groesse="kompakt"
+            className="shrink-0"
+          >
+            Doku{' '}
+            <span className="sr-only">
+              zum Termin um {formatLocalTime(termin.starts_at, zeitzone)} Uhr
+            </span>
+          </ButtonLink>
+        ) : null}
+        {knopf}
+      </>
     );
   }
 
@@ -653,9 +692,8 @@ function MeinTag({
       {besuche.length === 0 && !stehtBesuchAus ? (
         // Der Titel sagt, was der Fall ist (UEB-11): An einem Tag ohne Besuch
         // ist nichts „erledigt". Eine Fehlzeit steht darunter im Zeitstrahl.
-        <Card>
-          <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
-        </Card>
+        // Ohne Karte drumherum: ein Satz ist kein Kasten (Leitfaden L2).
+        <EmptyState title={`${TagesWort(datum, heute)} sind Ihnen keine Besuche zugeordnet`} />
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
@@ -695,7 +733,7 @@ function MeinTag({
           anfahrten={fahrzeiten.anfahrten}
           veraltet={fahrzeiten.veraltet}
           karte={karte()}
-          haken={haken}
+          aktionen={zeilenAktionen}
         />
       ) : null}
     </>

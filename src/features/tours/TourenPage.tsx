@@ -17,6 +17,8 @@ import { fetchStandorte, garagenpunkt, startpunkt } from './startort';
 import { Fahrtabschnitt, Routenzusammenfassung } from './Fahrten';
 import { useFahrten, useTagesstopps } from './fahrpuffer';
 import { Tourenliste } from './Tourenliste';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { ortsZeile, tagKurz, type Ortswahl } from './tourKopf';
 
 const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
 
@@ -40,12 +42,11 @@ const TagesrouteKarte = lazy(() => import('./TagesrouteKarte'));
  * ein Blatt von gestern sähe sonst aus wie eins von heute.
  */
 
-/**
+/*
  * UBK-015, ANN-240: Wo die Tour beginnt und endet - Garage, Praxis oder der
- * erste bzw. letzte Besuch. `null` ist die Voreinstellung: die Garage, falls
- * gesetzt, sonst die Praxis.
+ * erste bzw. letzte Besuch (`Ortswahl`). `null` ist die Voreinstellung: die
+ * Garage, falls gesetzt, sonst die Praxis.
  */
-type Ortswahl = 'garage' | 'standort' | 'besuch';
 
 /** Der nächste Schritt nach einem Ladefehler (WRT-01) - ohne Ratefrage. */
 const NACH_LADEFEHLER = 'Bitte die Verbindung prüfen und erneut versuchen.';
@@ -61,6 +62,9 @@ export function TourenPage({ user }: { user: CurrentUser }) {
   const gewuenscht = suche.get('person');
   const [startwahl, setStartwahl] = useState<Ortswahl | null>(null);
   const [endwahl, setEndwahl] = useState<Ortswahl | null>(null);
+  // Runde 3: Am Handy stehen Person, Tag, Start und Ende hinter „ändern" -
+  // die Zeile darüber sagt, was gilt. Ab 640 px stehen die Felder offen.
+  const [felderOffen, setFelderOffen] = useState(false);
   // UBK-009: Die Karte steht am Telefon zugeklappt, am Rechner offen - die
   // Liste ist das, wofür man die Tour öffnet. Gezeichnet (und damit Kacheln
   // geladen) wird sie erst, wenn sie offen ist.
@@ -136,7 +140,15 @@ export function TourenPage({ user }: { user: CurrentUser }) {
       <PageHeader
         title="Tour"
         actions={
-          <span className="print:hidden">
+          <span className="flex gap-2 print:hidden">
+            <Button
+              type="button"
+              variant="secondary"
+              className="max-sm:hidden"
+              onClick={() => window.print()}
+            >
+              Drucken
+            </Button>
             <ButtonLink
               to={`/kalender?${new URLSearchParams({
                 ansicht: 'tag',
@@ -151,9 +163,34 @@ export function TourenPage({ user }: { user: CurrentUser }) {
         }
       />
 
-      {/* Person und Tag in einer Zeile, auch am Telefon (UBK-009); der Start
-          steht an der Liste, wo er wirkt. */}
-      <div className="mb-4 grid max-w-xl grid-cols-2 gap-3 print:hidden">
+      {/* Runde 3 (Handoff Kalender und Tour 2026-10-06): Am Handy eine Zeile
+          mit dem, was gilt, und „ändern"; die Felder klappen darunter auf.
+          Ab 640 px stehen Person, Tag, Start und Ende in einer Zeile. */}
+      <div className="mb-4 flex items-start justify-between gap-3 sm:hidden print:hidden">
+        <div className="min-w-0">
+          <p className="text-ink truncate text-base font-semibold">
+            {[personName, tagKurz(tag)].filter(Boolean).join(' · ')}
+          </p>
+          <p className="text-ink-muted text-sm">{ortsZeile(startArt, endArt)}</p>
+        </div>
+        <Button
+          type="button"
+          variant="quiet"
+          groesse="kompakt"
+          className="shrink-0"
+          aria-expanded={felderOffen}
+          aria-controls="tour-felder"
+          onClick={() => setFelderOffen((offen) => !offen)}
+        >
+          {felderOffen ? 'fertig' : 'ändern'}
+        </Button>
+      </div>
+      <div
+        id="tour-felder"
+        className={`mb-4 grid-cols-2 gap-3 sm:grid sm:grid-cols-[minmax(0,14rem)_minmax(0,11rem)_minmax(0,10rem)_minmax(0,10rem)] print:hidden ${
+          felderOffen ? 'grid' : 'hidden'
+        }`}
+      >
         <Select label="Person" value={person} onChange={(e) => setzen('person', e.target.value)}>
           {(personen.data ?? []).map((p) => (
             <option key={p.staff_member_id} value={p.staff_member_id}>
@@ -167,6 +204,33 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           value={tag}
           onChange={(e) => setzen('tag', e.target.value)}
         />
+        <Select
+          label="Start"
+          value={startArt}
+          onChange={(e) => setStartwahl(alsOrtswahl(e.target.value))}
+        >
+          <option value="garage" disabled={garage === null}>
+            {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
+          </option>
+          <option value="standort" disabled={praxisstart === null}>
+            {praxisOption}
+          </option>
+          <option value="besuch">Erster Besuch</option>
+        </Select>
+        {/* UBK-015: das Ende der Tour - der Rückweg steht als letzte Zeile. */}
+        <Select
+          label="Ende"
+          value={endArt}
+          onChange={(e) => setEndwahl(alsOrtswahl(e.target.value))}
+        >
+          <option value="garage" disabled={garage === null}>
+            {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
+          </option>
+          <option value="standort" disabled={praxisstart === null}>
+            {praxisOption}
+          </option>
+          <option value="besuch">Letzter Besuch</option>
+        </Select>
       </div>
 
       {/* Ohne Personen gibt es keine Tour - das sagt die Seite, statt eine
@@ -195,8 +259,78 @@ export function TourenPage({ user }: { user: CurrentUser }) {
           description="Videotermine und Fehlzeiten haben keinen Weg und stehen deshalb nicht in der Tour."
         />
       ) : (
-        <>
-          <div className="mb-4 print:hidden">
+        // Runde 3: Am Handy die Liste zuerst, die Karte zugeklappt darunter
+        // (ANN-254); am Tablet die Karte zugeklappt darüber; ab 1024 px zwei
+        // Spalten - links Liste (5 Teile), rechts die Karte offen und beim
+        // Rollen oben stehend (6 Teile). In der Reihenfolge des Dokuments
+        // kommt die Liste immer zuerst.
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[5fr_6fr] lg:items-start lg:gap-6">
+          <div className="lg:col-start-1 lg:row-start-1">
+            <Section
+              titel={['Tourenliste', personName, formatDate(tag)].filter(Boolean).join(' · ')}
+            >
+              {/* Routensumme und ihre Meldungen gehören zur Bedienung, nicht
+                aufs Papier (TER-12). */}
+              <div className="mb-4 space-y-3 print:hidden">
+                <Routenzusammenfassung
+                  laedt={fahrten.route.isFetching}
+                  ergebnis={fahrten.route.data}
+                  erneutVersuchen={() => void fahrten.route.refetch()}
+                />
+                {fahrten.pruefungFehler ? (
+                  <Statusmeldung ton="warnung" className="mt-2">
+                    Der Fahrpuffer ließ sich gerade nicht prüfen.
+                  </Statusmeldung>
+                ) : null}
+              </div>
+              <Tourenliste
+                stopps={stopps}
+                zeitzone={zeitzone}
+                startGewaehlt={start !== null}
+                startText={startArt === 'garage' ? 'Start an der Garage' : 'Start an der Praxis'}
+                ende={
+                  ende && fahrten.rueckweg
+                    ? {
+                        text: endArt === 'garage' ? 'Ende an der Garage' : 'Ende an der Praxis',
+                        // Endet der Tag am Ort des letzten Besuchs, gibt es
+                        // keinen Rückweg - nur das Ende.
+                        fahrt:
+                          fahrten.rueckweg.sekunden === 0 ? null : (
+                            <Fahrtabschnitt
+                              titel="Rückweg"
+                              sekunden={fahrten.rueckweg.sekunden}
+                              meter={fahrten.rueckweg.meter}
+                              pruefung={null}
+                              zeitzone={zeitzone}
+                            />
+                          ),
+                      }
+                    : null
+                }
+                rueckweg={rueckweg}
+                zwischen={(index) => (
+                  <Fahrtabschnitt
+                    sekunden={fahrten.zwischen[index]?.sekunden ?? null}
+                    meter={fahrten.zwischen[index]?.meter ?? null}
+                    pruefung={fahrten.zwischen[index]?.pruefung ?? null}
+                    zeitzone={zeitzone}
+                    naechsterBeginn={stopps[index + 1]?.termin.starts_at}
+                  />
+                )}
+              />
+              {/* Drucken am Handy leise unter der Liste; ab 640 px oben rechts. */}
+              <Button
+                type="button"
+                variant="quiet"
+                className="mt-3 sm:hidden print:hidden"
+                onClick={() => window.print()}
+              >
+                Tourenliste drucken
+              </Button>
+            </Section>
+          </div>
+
+          <div className="sm:order-first lg:sticky lg:top-4 lg:order-none lg:col-start-2 lg:row-start-1 print:hidden">
             <Disclosure
               kopf="label"
               offen={karteOffen}
@@ -210,107 +344,17 @@ export function TourenPage({ user }: { user: CurrentUser }) {
               ) : null}
             </Disclosure>
           </div>
-
-          <Section titel={['Tourenliste', personName, formatDate(tag)].filter(Boolean).join(' · ')}>
-            {/* Routensumme und ihre Meldungen gehören zur Bedienung, nicht
-                aufs Papier (TER-12). */}
-            <div className="mb-4 space-y-3 print:hidden">
-              {/* Start und Drucken in einer Zeile: Am Telefon steht die Liste
-                  so ohne Scrollen im Blick (UBK-009). */}
-              <div className="flex items-end gap-3">
-                <div className="w-40 min-w-0">
-                  <Select
-                    label="Start"
-                    value={startArt}
-                    onChange={(e) => setStartwahl(alsOrtswahl(e.target.value))}
-                  >
-                    <option value="garage" disabled={garage === null}>
-                      {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
-                    </option>
-                    <option value="standort" disabled={praxisstart === null}>
-                      {praxisOption}
-                    </option>
-                    <option value="besuch">Erster Besuch</option>
-                  </Select>
-                </div>
-                {/* UBK-015: das Ende der Tour - der Rückweg steht als letzte Zeile. */}
-                <div className="w-40 min-w-0">
-                  <Select
-                    label="Ende"
-                    value={endArt}
-                    onChange={(e) => setEndwahl(alsOrtswahl(e.target.value))}
-                  >
-                    <option value="garage" disabled={garage === null}>
-                      {garage === null ? 'Garage (nicht gesetzt)' : 'Garage'}
-                    </option>
-                    <option value="standort" disabled={praxisstart === null}>
-                      {praxisOption}
-                    </option>
-                    <option value="besuch">Letzter Besuch</option>
-                  </Select>
-                </div>
-                <Button type="button" variant="secondary" onClick={() => window.print()}>
-                  Drucken
-                </Button>
-              </div>
-              <Routenzusammenfassung
-                laedt={fahrten.route.isFetching}
-                ergebnis={fahrten.route.data}
-                erneutVersuchen={() => void fahrten.route.refetch()}
-              />
-              {fahrten.pruefungFehler ? (
-                <Statusmeldung ton="warnung" className="mt-2">
-                  Der Fahrpuffer ließ sich gerade nicht prüfen.
-                </Statusmeldung>
-              ) : null}
-            </div>
-            <Tourenliste
-              stopps={stopps}
-              zeitzone={zeitzone}
-              startGewaehlt={start !== null}
-              startText={startArt === 'garage' ? 'Start an der Garage' : 'Start an der Praxis'}
-              ende={
-                ende && fahrten.rueckweg
-                  ? {
-                      text: endArt === 'garage' ? 'Ende an der Garage' : 'Ende an der Praxis',
-                      // Endet der Tag am Ort des letzten Besuchs, gibt es
-                      // keinen Rückweg - nur das Ende.
-                      fahrt:
-                        fahrten.rueckweg.sekunden === 0 ? null : (
-                          <Fahrtabschnitt
-                            titel="Rückweg"
-                            sekunden={fahrten.rueckweg.sekunden}
-                            meter={fahrten.rueckweg.meter}
-                            pruefung={null}
-                            zeitzone={zeitzone}
-                          />
-                        ),
-                    }
-                  : null
-              }
-              rueckweg={rueckweg}
-              zwischen={(index) => (
-                <Fahrtabschnitt
-                  sekunden={fahrten.zwischen[index]?.sekunden ?? null}
-                  meter={fahrten.zwischen[index]?.meter ?? null}
-                  pruefung={fahrten.zwischen[index]?.pruefung ?? null}
-                  zeitzone={zeitzone}
-                  naechsterBeginn={stopps[index + 1]?.termin.starts_at}
-                />
-              )}
-            />
-          </Section>
-        </>
+        </div>
       )}
 
       {/* Ohne Projekt- und Technikwörter (WRT-03, TER-07): Was das Gerät
           verlässt und unter welcher Bedingung echte Adressen dazukommen. */}
-      <p className="text-ink-muted mt-8 max-w-prose text-xs leading-relaxed print:hidden">
+      <Kleingedrucktes className="mt-8 print:hidden">
         Zur Route gehen nur Koordinaten in Fahrtreihenfolge an den Kartendienst – kein Name, keine
         Uhrzeit. Gespeichert wird davon nichts. Echte Patientenadressen erreichen den Kartendienst
         erst, wenn Vertrag, Schweigepflicht (§ 203 StGB) und Datenschutz-Folgenabschätzung geklärt
         sind.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

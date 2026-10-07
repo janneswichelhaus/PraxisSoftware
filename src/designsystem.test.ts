@@ -379,14 +379,48 @@ describe('Tokens aus dem Design-Handoff vom 2026-10-01', () => {
   });
 });
 
+describe('Tokens aus dem Handoff Schrift und Knöpfe vom 2026-10-06 (SKN-001)', () => {
+  it('fuehrt Kleingedrucktes (14 px) und Absenderzeile (11 px) als Token ohne eigene Zeilenhoehe', () => {
+    expect(css).toMatch(/--text-kleingedruckt:\s*0\.875rem;/);
+    expect(css).toMatch(/--text-absenderzeile:\s*0\.6875rem;/);
+    expect(css).not.toMatch(/--text-kleingedruckt--line-height\s*:/);
+    expect(css).not.toMatch(/--text-absenderzeile--line-height\s*:/);
+  });
+});
+
+describe('Kein Lesetext unter 12 px (BEF-068 Option 2, SKN-007)', () => {
+  /**
+   * Seit Runde 2 gilt im Design-System: keine Schrift unter 12 px. Die einzige
+   * Ausnahme, die Absenderzeile im Briefkopf auf Papier, hat ihr Token
+   * `text-absenderzeile`. Der Waechter haelt freie Werte in eckigen Klammern
+   * fern - in rem und in px.
+   */
+  const FREIE_GROESSE = /text-\[(\d*\.?\d+)(rem|px)\]/g;
+  const zuKlein = (zeile: string) =>
+    Array.from(zeile.matchAll(FREIE_GROESSE), (f) => f)
+      .filter((f) => (f[2] === 'rem' ? Number(f[1]) * 16 : Number(f[1])) < 12)
+      .map((f) => f[0]);
+
+  it('setzt keine freie Schriftgroesse unter 12 px', () => {
+    expect(funde(zuKlein)).toEqual([]);
+  });
+
+  it('erkennt zu kleine freie Werte (Gegenprobe)', () => {
+    expect(zuKlein('className="text-[0.6875rem] font-medium"')).toEqual(['text-[0.6875rem]']);
+    expect(zuKlein('className="text-[10px] leading-none"')).toEqual(['text-[10px]']);
+    expect(zuKlein('className="text-[0.75rem] text-[15px]"')).toEqual([]);
+    expect(zuKlein('className="text-absenderzeile text-xs"')).toEqual([]);
+  });
+});
+
 describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
   /**
    * Spezifikation Abschnitt 2, `docs/design/handoff-2026-10-05-rahmen.md`:
    * drei Masse, dazu die Farben der installierten App. Die 11 px der
    * Tableiste sind seit BEF-068 ein benannter Wert, kein freier mehr.
    */
-  it('fuehrt die Beschriftung der Leisten mit 11 px als Token, ohne eigene Zeilenhoehe', () => {
-    expect(css).toMatch(/--text-leiste:\s*0\.6875rem;/);
+  it('fuehrt die Beschriftung der Leisten mit 12 px als Token, ohne eigene Zeilenhoehe (Runde 2, L-B)', () => {
+    expect(css).toMatch(/--text-leiste:\s*0\.75rem;/);
     expect(css).not.toMatch(/--text-leiste--line-height\s*:/);
     // Die Tableiste liest das Token statt des freien Werts.
     const geruest = readFileSync(join(stamm, 'src/app/AppShell.tsx'), 'utf8');
@@ -406,10 +440,10 @@ describe('Tokens aus dem Handoff Rahmen vom 2026-10-05 (RAH-001)', () => {
       readFileSync(join(stamm, 'public/manifest.webmanifest'), 'utf8'),
     ) as { theme_color: string; background_color: string };
     expect(manifest.theme_color).toBe('#ffffff');
-    expect(manifest.background_color).toBe('#eceee8');
-    // #eceee8 ist die Flaeche - derselbe Wert, den `--color-canvas` als
-    // Oklch traegt (Kommentar in index.css).
-    expect(css).toMatch(/Fläche #eceee8 — Grund der Seite/);
+    expect(manifest.background_color).toBe('#ffffff');
+    // #ffffff ist seit Grundton B die Flaeche - derselbe Wert, den
+    // `--color-canvas` als Oklch traegt (Kommentar in index.css).
+    expect(css).toMatch(/Fläche #ffffff — Grund der Seite/);
     const html = readFileSync(join(stamm, 'index.html'), 'utf8');
     expect(html).toContain('<meta name="theme-color" content="#ffffff" />');
   });

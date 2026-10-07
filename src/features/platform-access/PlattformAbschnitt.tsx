@@ -65,11 +65,9 @@ export function PlattformAbschnitt({
   const [einladung, setEinladung] = useState<{ einladung: Einladung; fuer?: string } | null>(null);
 
   return (
-    <Section
-      titel="Plattform"
-      hinweis="Eigener Zugang der Person und ihrer Vertretung zu Terminen und Unterlagen. Er ändert nichts an diesem Verhältnis."
-      rahmen
-    >
+    // Ohne Erklärsatz: Zustand und Knöpfe sagen, worum es geht (Leitfaden
+    // L1 und L2, Löschkandidat 3, ANN-260).
+    <Section titel="Plattform" rahmen>
       {isPending ? (
         <LoadingState label="Zugang wird geladen …" />
       ) : isError ? (

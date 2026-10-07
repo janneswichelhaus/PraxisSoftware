@@ -10,6 +10,7 @@ import {
   resetDatabase,
   tagInTagen,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 
 const { users, organizationId, patients } = SEED;
@@ -223,7 +224,7 @@ describe('create_appointment: Zeitzone der Praxis', () => {
       await client.query('begin');
       await client.query("select set_config('role', 'authenticated', true)");
       await client.query("select set_config('request.jwt.claims', $1, true)", [
-        JSON.stringify({ sub: users.office, role: 'authenticated' }),
+        jwtClaims(users.office),
       ]);
       await client.query("set local timezone to 'Pacific/Kiritimati'");
       const res = await client.query(
@@ -421,9 +422,7 @@ describe('create_appointment: Ueberschneidungen', () => {
     async function beginne(c: Client) {
       await c.query('begin');
       await c.query("select set_config('role', 'authenticated', true)");
-      await c.query("select set_config('request.jwt.claims', $1, true)", [
-        JSON.stringify({ sub: users.office, role: 'authenticated' }),
-      ]);
+      await c.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(users.office)]);
     }
 
     try {

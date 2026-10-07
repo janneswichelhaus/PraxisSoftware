@@ -150,9 +150,11 @@ export function Rueckfrage({
     <div
       role="group"
       aria-label={bezeichnung ?? ausloeser}
-      // Radius 14 und 16 innen wie die Karte (Design-Handoff 2026-10-01): die
-      // Rueckfrage ist eine Karte, keine Schaltflaeche (DS-001).
-      className="border-line-strong bg-surface-sunken rounded-card w-full border p-4"
+      // Eine vertiefte Fläche mit Linie links (Leitfaden L2): Die Rückfrage
+      // öffnet sich meist in einem Abschnitt, der schon eine Karte ist; als
+      // eigene Karte war sie der Kasten im Kasten. Sie bleibt keine
+      // Schaltfläche (DS-001).
+      className="border-line-strong bg-surface-sunken w-full border-l-4 py-3 pr-4 pl-4"
     >
       <div className="text-ink text-sm">{children}</div>
       {meldung ? (

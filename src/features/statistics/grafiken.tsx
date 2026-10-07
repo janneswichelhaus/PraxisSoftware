@@ -121,7 +121,7 @@ export function Saeulendiagramm({
                 y={y(wert)}
                 dy="0.32em"
                 textAnchor="end"
-                className="fill-ink-muted text-[11px] tabular-nums"
+                className="fill-ink-muted text-xs tabular-nums"
               >
                 {achsenformat(wert)}
               </text>
@@ -196,7 +196,7 @@ export function Saeulendiagramm({
                     x={mitte}
                     y={hoehe - 8}
                     textAnchor="middle"
-                    className="fill-ink-muted text-[11px]"
+                    className="fill-ink-muted text-xs"
                   >
                     {eng ? (kategorie.kurz ?? kategorie.label) : kategorie.label}
                   </text>

@@ -2,7 +2,6 @@ import { EINWILLIGUNGEN_ANKER } from '@/features/patients/akte';
 import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
-import { Inhaltsflaeche } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -737,7 +736,9 @@ export function Patientenfotos({
         />
       ) : null}
 
-      <Inhaltsflaeche className="mt-4">
+      {/* Die Liste steht in der Karte „Fotos und Dateien“, ohne eigenen
+          Kasten darin (Leitfaden L2). */}
+      <div className="mt-4">
         {fotos.isPending ? <LoadingState label="Fotos werden geladen …" /> : null}
         {fotos.isError ? (
           <ErrorState
@@ -811,7 +812,7 @@ export function Patientenfotos({
         {ansicht ? (
           <Ansicht ref={ansichtRef} fotos={ansicht} zeitzone={zeitzone} onSchliessen={schliessen} />
         ) : null}
-      </Inhaltsflaeche>
+      </div>
 
       {/* Die Größe des Kleingedruckten entscheidet Jannes für alle Stellen
           zugleich (TOK-04); bis dahin bleibt sie hier, wie sie ist. */}

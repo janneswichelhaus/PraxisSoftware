@@ -72,7 +72,9 @@ for (const breite of [375, 1280]) {
 }
 
 // Akte entschlacken (2026-10-03, Entwurf 5i/5j): Karten ab 340 px
-// nebeneinander - lesbar bleiben sie dabei (PAT-B01).
+// nebeneinander - lesbar bleiben sie dabei (PAT-B01). Seit SLK-003 (Leitfaden
+// L2) sind Person, Kontakt, Adresse und Hausbesuch EIN Block „Person";
+// daneben steht „Praxis".
 for (const [breite, nebeneinander] of [
   [375, false],
   [1280, true],
@@ -83,17 +85,16 @@ for (const [breite, nebeneinander] of [
     await page.setViewportSize({ width: breite, height: 900 });
     await page.goto(`${PRUEFSEITE}?bereich=stammdaten`);
     const person = (await page.getByRole('heading', { name: 'Person' }).boundingBox())!;
-    const kontakt = (await page.getByRole('heading', { name: 'Kontakt' }).boundingBox())!;
-    const hausbesuch = (await page.getByRole('heading', { name: 'Hausbesuch' }).boundingBox())!;
+    const praxis = (await page.getByRole('heading', { name: 'Praxis' }).boundingBox())!;
+    await expect(page.getByRole('heading', { name: 'Kontakt' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Hausbesuch' })).toHaveCount(0);
     if (nebeneinander) {
-      // Person und Kontakt in derselben Reihe, Kanten auf einer Höhe; der
-      // Hausbesuch beginnt die nächste.
-      expect(Math.abs(person.y - kontakt.y)).toBeLessThan(2);
-      expect(kontakt.x).toBeGreaterThan(person.x + 300);
-      expect(hausbesuch.y).toBeGreaterThan(person.y);
+      // Person und Praxis in derselben Reihe, Kanten auf einer Höhe.
+      expect(Math.abs(person.y - praxis.y)).toBeLessThan(2);
+      expect(praxis.x).toBeGreaterThan(person.x + 300);
     } else {
-      expect(kontakt.y).toBeGreaterThan(person.y);
-      expect(Math.abs(kontakt.x - person.x)).toBeLessThan(2);
+      expect(praxis.y).toBeGreaterThan(person.y);
+      expect(Math.abs(praxis.x - person.x)).toBeLessThan(2);
     }
     // Die Anschrift steht nicht Silbe für Silbe.
     const adresse = (await page.getByText('Beispielstrasse 12, 72070 Tuebingen').boundingBox())!;

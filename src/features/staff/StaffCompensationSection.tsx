@@ -39,7 +39,7 @@ export function StaffCompensationSection({ staff }: { staff: StaffMember }) {
 
   if (modell.isError) {
     return (
-      <Section titel="Vergütung" rahmen>
+      <Section titel="Vergütung">
         <ErrorState
           title="Das Vergütungsmodell konnte nicht geladen werden."
           onErneut={() => modell.refetch()}

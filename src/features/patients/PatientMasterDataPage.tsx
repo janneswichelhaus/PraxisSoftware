@@ -303,22 +303,18 @@ function AnmeldebogenKarte({ patient, user }: { patient: Patient; user: CurrentU
 }
 
 /**
- * Abrechnung (Akte entschlacken, 2026-10-03). An der Person gibt es kein Feld
- * für die Versicherung; sie folgt der jüngsten Grundlage wie das Abzeichen im
- * Kopf. „Rechnung an" ist die Standard-Empfänger:in aus den Rechnungsempfängern
- * (ABR-003a), sonst die Person selbst - und steht nur für die Rollen, die
- * Empfänger lesen dürfen (`app.can_read_invoicing`, owner und office).
- * Gepflegt werden Empfänger am Rechnungsentwurf; deshalb kein „Bearbeiten".
+ * Die Abrechnungszeilen im Block „Person" (Leitfaden schlank und klar, L2;
+ * Jannes 2026-10-06). An der Person gibt es kein Feld für die Versicherung;
+ * sie folgt der jüngsten Grundlage wie das Abzeichen im Kopf.
+ *
+ * „Rechnung an" steht **nur bei Abweichung**: wenn die Standard-Empfänger:in
+ * aus den Rechnungsempfängern (ABR-003a) nicht die Person selbst ist - etwa
+ * die Eltern eines Kindes oder eine Beihilfestelle -, dann mit ihrer Anschrift.
+ * Geht die Rechnung an die Person, wiederholte die Zeile nur Name und Adresse
+ * von oben. Empfänger lesen nur owner und office (`app.can_read_invoicing`);
+ * gepflegt werden sie am Rechnungsentwurf, deshalb hier kein eigener Weg.
  */
-function AbrechnungKarte({
-  patient,
-  user,
-  address,
-}: {
-  patient: Patient;
-  user: CurrentUser;
-  address: string;
-}) {
+function AbrechnungZeilen({ patient, user }: { patient: Patient; user: CurrentUser }) {
   const aktuell = useAktuelleGrundlage(patient.id, user);
   const darfEmpfaenger = canManageInvoicing(user.roles);
   const empfaenger = useQuery({
@@ -327,50 +323,35 @@ function AbrechnungKarte({
     enabled: darfEmpfaenger,
     retry: false,
   });
-  const standard = empfaenger.data?.find((e) => e.is_default) ?? null;
-  const anschrift = standard
+  // Eine gespeicherte Empfänger:in ist nie die Person selbst: `self` lässt
+  // die Tabelle nicht zu (ABR-003a), es entsteht nur in Leseabfragen als
+  // Ersatz. Jede Standard-Empfänger:in ist also eine Abweichung.
+  const abweichend = empfaenger.data?.find((e) => e.is_default) ?? null;
+  const anschrift = abweichend
     ? [
-        [standard.street, standard.house_number].filter(Boolean).join(' '),
-        [standard.postal_code, standard.city].filter(Boolean).join(' '),
+        [abweichend.street, abweichend.house_number].filter(Boolean).join(' '),
+        [abweichend.postal_code, abweichend.city].filter(Boolean).join(' '),
       ]
         .filter(Boolean)
         .join(', ')
     : null;
 
-  if (!aktuell && !darfEmpfaenger) return null;
-
   return (
-    <Karte titel="Abrechnung">
-      <DetailList schmal>
-        {aktuell ? (
-          <DetailRow label="Versicherung">
-            {versicherungsart(aktuell.grundlage.treatment_basis_kind)}
-          </DetailRow>
-        ) : null}
-        {darfEmpfaenger && empfaenger.isSuccess ? (
-          <>
-            <DetailRow label="Rechnung an">
-              {standard
-                ? `${standard.name} (${empfaengerartLabels[standard.recipient_kind] ?? standard.recipient_kind})`
-                : `${patient.given_name} ${patient.family_name}`}
-            </DetailRow>
-            <DetailRow label="Anschrift">
-              {standard ? anschrift || '—' : address ? 'wie Hausbesuch' : '—'}
-            </DetailRow>
-          </>
-        ) : null}
-      </DetailList>
-      {/* ABR-030: Das Terminhonorar sehen dieselben Rollen wie den
-          Empfänger (owner, office); festlegen darf nur owner (ANN-231).
-          Verbindlich prüft der Server. */}
-      {darfEmpfaenger ? (
-        <Honorarvereinbarung
-          patientId={patient.id}
-          darfFestlegen={canManageServiceCatalog(user.roles)}
-          heute={user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : null}
-        />
+    <>
+      {aktuell ? (
+        <DetailRow label="Versicherung">
+          {versicherungsart(aktuell.grundlage.treatment_basis_kind)}
+        </DetailRow>
       ) : null}
-    </Karte>
+      {abweichend ? (
+        <>
+          <DetailRow label="Rechnung an">
+            {`${abweichend.name} (${empfaengerartLabels[abweichend.recipient_kind] ?? abweichend.recipient_kind})`}
+          </DetailRow>
+          {anschrift ? <DetailRow label="Rechnungsanschrift">{anschrift}</DetailRow> : null}
+        </>
+      ) : null}
+    </>
   );
 }
 
@@ -408,11 +389,8 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
   const [ebenVerortet, setEbenVerortet] = useState(false);
   const kartenpositionOffen = darfVerorten && (!patient.geocode_precision || ebenVerortet);
   const zugang = zugangMitStockwerk(patient.home_visit_access_note);
-  const hatHausbesuchsangaben = Boolean(
-    address || kartenpositionOffen || zugang.stockwerk || zugang.rest || patient.special_note,
-  );
   const hatKontaktdaten = Boolean(
-    patient.phone_mobile || patient.phone || patient.phone_work || patient.fax || patient.email,
+    patient.phone_mobile || patient.phone || patient.phone_work || patient.email,
   );
 
   // Formulare und Auskunft kehren hierher zurück - samt dem Rückweg der Akte,
@@ -460,6 +438,12 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           </div>
         ) : null}
 
+        {/* Leitfaden schlank und klar, L2 (Jannes 2026-10-06): Person,
+            Kontakt, Adresse mit den Angaben für den Hausbesuch und die
+            Versicherung stehen in EINEM Block mit einem „Bearbeiten" - das
+            Formular bearbeitet sie ohnehin zusammen. Bis dahin waren es vier
+            Karten mit je zwei bis vier Zeilen. UX-005e gilt weiter: Ein
+            leerer Wert bekommt keine Zeile. */}
         <Karte titel="Person" bearbeiten={bearbeiten}>
           <DetailList schmal>
             <DetailRow label="Name">
@@ -469,64 +453,53 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             {patient.institution ? (
               <DetailRow label="Einrichtung">{patient.institution}</DetailRow>
             ) : null}
+            {hatKontaktdaten ? (
+              <>
+                <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
+                <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
+                <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
+                {patient.email ? (
+                  <DetailRow label="E-Mail">
+                    <Textlink
+                      href={`mailto:${patient.email}`}
+                      alleinstehend
+                      className={KONTAKT_IN_DER_ZEILE}
+                    >
+                      {patient.email}
+                    </Textlink>
+                  </DetailRow>
+                ) : null}
+              </>
+            ) : (
+              // Fehlt jeder Kontaktweg, sagt das eine Zeile statt vier
+              // Gedankenstriche (UX-005e).
+              <DetailRow label="Kontakt">
+                <span className="text-ink-muted">Keine Kontaktdaten hinterlegt</span>
+              </DetailRow>
+            )}
+            {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
+            {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
+                Verorten darf, wer die Stammdaten ändern darf; verbindlich
+                prüft set_patient_address_coordinate (ADR-004). */}
+            {kartenpositionOffen ? (
+              <DetailRow label="Kartenposition">
+                <AdresseVerorten
+                  patient={patient}
+                  user={user}
+                  onVerortet={() => setEbenVerortet(true)}
+                />
+              </DetailRow>
+            ) : null}
+            {/* ANN-197: Die Etage ist der Anfang des Zugangshinweises, bis es
+                ein eigenes Feld gibt - dieselbe Regel wie auf der Tageskarte. */}
+            {zugang.stockwerk ? <DetailRow label="Etage">{zugang.stockwerk}</DetailRow> : null}
+            {zugang.rest ? <DetailRow label="Zugang">{zugang.rest}</DetailRow> : null}
+            {patient.special_note ? (
+              <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
+            ) : null}
+            <AbrechnungZeilen patient={patient} user={user} />
           </DetailList>
         </Karte>
-
-        <Karte titel="Kontakt" bearbeiten={bearbeiten}>
-          {/* UX-005e: Leere Kontaktwege bekommen keine Zeile; fehlt alles,
-              sagt das ein Satz statt vier Gedankenstriche. */}
-          {hatKontaktdaten ? (
-            <DetailList schmal>
-              <TelefonZeile label="Mobil" nummer={patient.phone_mobile} />
-              <TelefonZeile label="Telefon (privat)" nummer={patient.phone} />
-              <TelefonZeile label="Telefon (geschäftlich)" nummer={patient.phone_work} />
-              {patient.fax ? <DetailRow label="Telefax">{patient.fax}</DetailRow> : null}
-              {patient.email ? (
-                <DetailRow label="E-Mail">
-                  <Textlink
-                    href={`mailto:${patient.email}`}
-                    alleinstehend
-                    className={KONTAKT_IN_DER_ZEILE}
-                  >
-                    {patient.email}
-                  </Textlink>
-                </DetailRow>
-              ) : null}
-            </DetailList>
-          ) : (
-            <p className="text-ink-muted text-sm">Keine Kontaktdaten hinterlegt</p>
-          )}
-        </Karte>
-
-        {/* UX-005e: ohne Zeile keine Karte. */}
-        {hatHausbesuchsangaben ? (
-          <Karte titel="Hausbesuch" bearbeiten={bearbeiten}>
-            <DetailList schmal>
-              {address ? <DetailRow label="Adresse">{address}</DetailRow> : null}
-              {/* MAP-006a: Die Kartenposition ist Teil der Adresse (ANN-016).
-                  Verorten darf, wer die Stammdaten ändern darf; verbindlich
-                  prüft set_patient_address_coordinate (ADR-004). */}
-              {kartenpositionOffen ? (
-                <DetailRow label="Kartenposition">
-                  <AdresseVerorten
-                    patient={patient}
-                    user={user}
-                    onVerortet={() => setEbenVerortet(true)}
-                  />
-                </DetailRow>
-              ) : null}
-              {/* ANN-197: Die Etage ist der Anfang des Zugangshinweises, bis es
-                  ein eigenes Feld gibt - dieselbe Regel wie auf der Tageskarte. */}
-              {zugang.stockwerk ? <DetailRow label="Etage">{zugang.stockwerk}</DetailRow> : null}
-              {zugang.rest ? <DetailRow label="Zugang">{zugang.rest}</DetailRow> : null}
-              {patient.special_note ? (
-                <DetailRow label="Besonderheit">{patient.special_note}</DetailRow>
-              ) : null}
-            </DetailList>
-          </Karte>
-        ) : null}
-
-        <AbrechnungKarte patient={patient} user={user} address={address} />
 
         {/* PAT-005: interne Angaben der Praxis. Für ein Patientenkonto liefert
             die Sicht sie gar nicht erst (ANN-010, ADR-004). UX-003a: Die
@@ -578,6 +551,18 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
             </div>
           ) : null}
           <Zusammenfuehrungsvermerke patientId={patient.id} zeitzone={user.organizationTimeZone} />
+          {/* ABR-030: Das Terminhonorar sehen dieselben Rollen wie die
+              Rechnungsempfänger (owner, office); festlegen darf nur owner
+              (ANN-231). Verbindlich prüft der Server. Seit SLK-003 in der
+              Verwaltung, weil die Karte „Abrechnung" im Block „Person"
+              aufgegangen ist. */}
+          {canManageInvoicing(user.roles) ? (
+            <Honorarvereinbarung
+              patientId={patient.id}
+              darfFestlegen={canManageServiceCatalog(user.roles)}
+              heute={user.organizationTimeZone ? todayInTimeZone(user.organizationTimeZone) : null}
+            />
+          ) : null}
         </Karte>
       </div>
 

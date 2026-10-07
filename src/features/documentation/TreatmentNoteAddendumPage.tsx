@@ -2,6 +2,8 @@ import { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { TextArea } from '@/components/ui/TextArea';
@@ -19,6 +21,7 @@ import { FREITEXT } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { NochEinEntwurf } from './Zustaende';
 import { createTreatmentNoteAddendum, findeEintrag, inhaltFehler, type TreatmentNote } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Nachtrag zu einem finalisierten Eintrag (DOK-002, ADR-016 Punkt 6).
@@ -101,24 +104,34 @@ function Formular({
         kompakt
       />
 
-      {/* Der Ursprungseintrag ist Akteninhalt, keine Nebensache: auf Papier
-          mit Trennlinie wie jede Auskunft (UI-002c, DOK-19), nicht vertieft
-          wie ein Hinweis. Die Beschriftung im Label-Stil (TOK-05). */}
-      <div className="border-line bg-surface rounded-card mb-6 max-w-2xl border p-4">
-        <p className="text-ink-muted tracking-label text-xs font-semibold uppercase">
-          Ursprünglicher Eintrag
-        </p>
-        <p className={`text-ink text-liste mt-2 max-w-prose leading-relaxed ${FREITEXT}`}>
+      {/* Der Ursprungseintrag zugeklappt mit seiner ersten Zeile (BEF-057
+          Option 2): Ausgeklappt stand er ganz vor dem Feld, und am Handy
+          begann der Nachtrag unter dem Falz. Ein Tipp zeigt ihn vollständig;
+          er bleibt Akteninhalt, kein Hinweis (UI-002c, DOK-19). */}
+      <details className="group border-line mb-6 max-w-2xl border-y">
+        <summary className={`${aufklappKopfKlassen} text-ink min-h-12 text-sm`}>
+          <Aufklappzeichen />
+          <span className="tracking-label text-ink-muted shrink-0 text-xs font-semibold uppercase">
+            Ursprünglicher Eintrag
+          </span>
+          <span aria-hidden="true" className="text-ink-muted min-w-0 truncate group-open:hidden">
+            {parent.content}
+          </span>
+        </summary>
+        <p
+          data-testid="ursprung"
+          className={`text-ink text-liste max-w-prose pb-4 leading-relaxed ${FREITEXT}`}
+        >
           {parent.content}
         </p>
-      </div>
+      </details>
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
         <TextArea
           label="Nachtrag"
           // Auch der Nachtrag wird mit der Frist der Praxis von selbst Version 1
           // (ADR-016 Punkt 7, DOK-02).
-          hint="Der Nachtrag ergänzt den Eintrag oben und ändert ihn nicht. Er bleibt ein Entwurf, bis jemand ihn finalisiert – spätestens automatisch mit Ablauf der Dokumentationsfrist der Praxis."
+          hint="Ergänzt den Eintrag, ohne ihn zu ändern. Bleibt Entwurf bis zur Finalisierung – spätestens mit Ablauf der Dokumentationsfrist."
           rows={12}
           value={inhalt}
           error={fehler}
@@ -144,10 +157,10 @@ function Formular({
         </div>
       </form>
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Der Nachtrag wird auf dem Server gespeichert, nicht auf diesem Gerät. Das Öffnen der Akte
         wird protokolliert.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }

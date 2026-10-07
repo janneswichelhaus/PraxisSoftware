@@ -94,12 +94,14 @@ const auswahlstrich =
  * einzige Ortsangabe, und ein Unterschied nur im Farbton - ink-muted gegen
  * accent, 1,66:1 - ist am Lenker und in der Sonne kaum zu sehen. Der Strich
  * ist ein Rand, kein Schatten (DS-001); inaktiv ist er durchsichtig, damit
- * beim Wechsel nichts springt. Die Beschriftung bleibt bei 11 px (ANN-111),
- * seit RAH-001 als Token `text-leiste` (BEF-068, Option 2).
+ * beim Wechsel nichts springt. Die Beschriftung steht seit Runde 2 in 12 px
+ * (`text-leiste`, Variante L-B, ANN-252); dafür hat die Zelle keinen
+ * seitlichen Innenabstand - „Organisation" in 12/600 ist 69 px breit, bei
+ * 360 px hat jedes der fünf Ziele 72 px.
  */
 const tabLink =
   'text-ink-muted aria-[current=page]:text-accent flex min-h-14 flex-col items-center justify-center ' +
-  'gap-0.5 border-t-3 border-transparent px-1 text-leiste transition-colors ' +
+  'gap-0.5 border-t-3 border-transparent px-0 text-leiste transition-colors ' +
   'aria-[current=page]:border-accent aria-[current=page]:font-semibold';
 
 /**

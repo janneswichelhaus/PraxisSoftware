@@ -622,6 +622,9 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       // POR-002: Regel in app.delete_due_platform_accesses und
       // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
       'plattformzugang',
+      // SEC-001: Regel in public.session_status (Vermerke älter als ein Tag),
+      // Tests in sitzungssperre.test.ts.
+      'sitzungsvermerk',
       'termin_ohne_nachweis',
       // POR-009: Regel in apply_retention, Tests in platform-appointment-requests.test.ts.
       'terminwunsch',

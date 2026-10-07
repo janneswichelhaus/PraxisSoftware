@@ -1,6 +1,7 @@
 import { useEffect, type ReactNode } from 'react';
 import { Wortmarke } from '@/components/ui/Wortmarke';
 import { ANMELDEN_TITEL } from './tabtitel';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /**
  * Eine Seite außerhalb des Anwendungsrahmens (AUTH-12, AUTH-13).
@@ -21,9 +22,8 @@ import { ANMELDEN_TITEL } from './tabtitel';
  *     Hauptfarbe wie jeder Seitentitel. Nur Ladezustände haben keinen Titel -
  *     sie stehen einen Augenblick da und sagen, was geschieht.
  *   * **Ein `main`**, senkrecht zentriert, höchstens `max-w-sm` breit.
- *   * **Kleingedrucktes** unten in der heutigen Größe. Ob Hinweise dieser Art
- *     14 oder 12 px tragen, entscheidet Jannes (TOK-04); die Hülle hält den
- *     Wert an einer Stelle.
+ *   * **Kleingedrucktes** unten über den Baustein `Kleingedrucktes`, 14 px
+ *     (Jannes 2026-10-06, Variante K-A; TOK-04 entschieden).
  *
  * Eigentlich ein Baustein für `src/components/ui`; er steht hier, weil der
  * Bereich des Rahmens ihn zuerst braucht.
@@ -60,7 +60,7 @@ export function Vollseite({
       {children}
 
       {kleingedrucktes ? (
-        <p className="text-ink-muted mt-8 text-xs leading-relaxed">{kleingedrucktes}</p>
+        <Kleingedrucktes className="mt-8">{kleingedrucktes}</Kleingedrucktes>
       ) : null}
     </main>
   );

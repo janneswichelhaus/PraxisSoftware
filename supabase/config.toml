@@ -88,6 +88,12 @@ otp_expiry = 3600
 enable_signup = true
 enable_confirmations = false
 double_confirm_changes = true
+# SEC-EPIC-001 (ANN-257, Zweitreview): Ein Kennwortwechsel verlangt eine
+# frische Anmeldung (juenger als 24 Stunden) oder einen Bestaetigungscode.
+# Sonst koennte ein gesperrtes Token das Kennwort neu setzen und sich damit
+# selbst freigeben. Dieselbe Einstellung gehoert im Cloudprojekt unter
+# Authentication > Providers > Email ("Secure password change", OPS-001).
+secure_password_change = true
 
 # Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-043). Die
 # Begruendung steht vollstaendig in der Datei selbst: Der Link uebergibt nur

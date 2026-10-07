@@ -28,6 +28,7 @@ import {
   type CallEntry,
   type CallOutcome,
 } from './call-list-api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 const TAG = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -254,11 +255,11 @@ export function CallListPage({ user }: { user: CurrentUser }) {
             <Aufklappzeichen />
             Was wird gespeichert?
           </summary>
-          <p className="text-ink-muted mt-1 text-xs leading-relaxed">
+          <Kleingedrucktes className="mt-1">
             „Erreicht, bestätigt“ vermerkt am Termin „telefonisch mitgeteilt“. „Nicht erreicht“ und
             „Nachricht hinterlassen“ gelten nur für diesen Termin und werden zwei Wochen danach
             gelöscht. Die Anwendung ruft nicht an und versendet nichts.
-          </p>
+          </Kleingedrucktes>
         </details>
       </div>
     </>

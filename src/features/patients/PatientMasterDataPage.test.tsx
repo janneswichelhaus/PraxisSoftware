@@ -98,9 +98,11 @@ vi.mock('@/features/open-points/intake-api', async (importOriginal) => ({
     fetchIntakeChecklist(id) as Promise<IntakeApi.IntakeChecklist>,
 }));
 const fetchEmpfaenger = vi.fn();
+const fetchHonorar = vi.fn();
 vi.mock('@/features/billing/api', async (importOriginal) => ({
   ...(await importOriginal<typeof BillingApi>()),
   fetchEmpfaenger: (id: string) => fetchEmpfaenger(id) as Promise<BillingApi.Empfaenger[]>,
+  fetchHonorar: (id: string) => fetchHonorar(id) as Promise<BillingApi.Honorarstand | null>,
 }));
 
 const { Stammdaten } = await import('./PatientMasterDataPage');
@@ -137,6 +139,7 @@ describe('Stammdaten der Akte', () => {
     fetchPatientFiles.mockReset().mockResolvedValue([]);
     fetchIntakeChecklist.mockReset().mockResolvedValue([]);
     fetchEmpfaenger.mockReset().mockResolvedValue([]);
+    fetchHonorar.mockReset().mockResolvedValue(null);
   });
 
   describe('Karten (Akte entschlacken, 2026-10-03)', () => {
@@ -176,14 +179,43 @@ describe('Stammdaten der Akte', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
       expect(await screen.findByText('Beihilfestelle Fiktiv (Beihilfestelle)')).toBeInTheDocument();
-      expect(screen.getByText('Amtsweg 3, 70173 Stuttgart')).toBeInTheDocument();
+      expect(screen.getByText('Rechnungsanschrift').nextElementSibling).toHaveTextContent(
+        'Amtsweg 3, 70173 Stuttgart',
+      );
     });
 
-    it('rechnet ohne Empfänger:in an die Person selbst, Anschrift wie Hausbesuch', async () => {
+    it('nennt „Rechnung an" nur, wenn die Rechnung nicht an die Person selbst geht (L2)', async () => {
+      // Ohne Empfänger:in und mit der Person als Standard wiederholte die
+      // Zeile nur Name und Adresse von oben (Jannes 2026-10-06).
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-      const zeile = (await screen.findByText('Rechnung an')).nextElementSibling;
-      expect(zeile).toHaveTextContent(`${aktiv.given_name} ${aktiv.family_name}`);
-      expect(screen.getByText('wie Hausbesuch')).toBeInTheDocument();
+      await waitFor(() => expect(fetchEmpfaenger).toHaveBeenCalled());
+      expect(screen.queryByText('Rechnung an')).toBeNull();
+      expect(screen.queryByText('Rechnungsanschrift')).toBeNull();
+      expect(screen.queryByText('wie Hausbesuch')).toBeNull();
+    });
+
+    it('zeigt das Terminhonorar in der Verwaltung nur owner und office (ABR-030)', async () => {
+      // Seit SLK-003 steht die Vereinbarung in der Karte „Verwaltung", die
+      // alle Praxisrollen sehen - das Honorar aber weiter nur die Rollen der
+      // Rechnungsempfänger (Zweitreview SLK, Negativtest).
+      fetchHonorar.mockResolvedValue({
+        current_cents: null,
+        current_source: null,
+        current_valid_from: null,
+        agreements: [],
+      });
+      const { unmount } = renderWithProviders(
+        <Stammdaten patient={aktiv} user={testUser(['office'])} />,
+      );
+      const verwaltung = screen.getByRole('heading', { name: 'Verwaltung' }).closest('section')!;
+      expect(await within(verwaltung).findByText(/Kein Terminhonorar/)).toBeInTheDocument();
+      unmount();
+
+      fetchHonorar.mockClear();
+      renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
+      await screen.findByRole('heading', { name: 'Verwaltung' });
+      expect(screen.queryByText(/Terminhonorar/)).toBeNull();
+      expect(fetchHonorar).not.toHaveBeenCalled();
     });
 
     it('fragt für die Behandlung keine Rechnungsempfänger ab', async () => {
@@ -260,11 +292,12 @@ describe('Stammdaten der Akte', () => {
   // Akte entschlacken (2026-10-03): Jede Karte führt ins Formular - mit
   // Rückweg in die Stammdaten samt dem der Akte (PAT-08).
   it.each([['owner'], ['therapist'], ['team_lead'], ['office']] as const)(
-    'bietet %s an jeder Karte „Bearbeiten" an',
+    'bietet %s an jedem Block „Bearbeiten" an',
     (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />, STAMMDATEN);
 
-      for (const karte of ['Person', 'Kontakt', 'Hausbesuch']) {
+      // Seit SLK-003 zwei Blöcke statt vier Karten: Person und Praxis (L2).
+      for (const karte of ['Person', 'Praxis']) {
         expect(linkZiel(screen.getByRole('link', { name: `${karte} bearbeiten` }))).toEqual({
           pfad: `/patienten/${PATIENT_ID}/bearbeiten`,
           zurueck: STAMMDATEN,
@@ -328,11 +361,22 @@ describe('Stammdaten der Akte', () => {
       expect(screen.queryByText(/Verortet/)).not.toBeInTheDocument();
     });
 
-    it('laesst die Karte „Hausbesuch" weg, wenn sie keine Zeile haette', () => {
+    it('fasst Person, Kontakt, Adresse und Hausbesuch in einem Block mit einem „Bearbeiten" (L2)', () => {
       renderWithProviders(
-        <Stammdaten patient={testPatient({ id: PATIENT_ID })} user={testUser(['patient'])} />,
+        <Stammdaten
+          patient={{ ...aktiv, home_visit_access_note: 'EG, Klingel oben.' }}
+          user={testUser(['office'])}
+        />,
       );
-      expect(screen.queryByText('Hausbesuch')).not.toBeInTheDocument();
+      const person = screen.getByRole('heading', { name: 'Person' }).closest('section')!;
+      for (const zeile of ['Name', 'Geboren', 'Telefon (privat)', 'E-Mail', 'Adresse', 'Etage']) {
+        expect(within(person).getByText(zeile)).toBeInTheDocument();
+      }
+      // Keine eigenen Kästen mehr für Kontakt, Hausbesuch und Abrechnung.
+      for (const titel of ['Kontakt', 'Hausbesuch', 'Abrechnung']) {
+        expect(screen.queryByRole('heading', { name: titel })).toBeNull();
+      }
+      expect(screen.getAllByRole('link', { name: /bearbeiten$/ })).toHaveLength(2);
     });
 
     it('schreibt keinen Protokollhinweis unter die Stammdaten', () => {
@@ -358,8 +402,8 @@ describe('Stammdaten der Akte', () => {
 
       expect(screen.getByText('Anna Beispiel')).toBeInTheDocument();
       expect(screen.getByText('Bevorzugt Vormittage.')).toBeInTheDocument();
-      // Seit 2026-10-03 trägt die Karte „Hausbesuch" sie; die Etage ist der
-      // Anfang des Zugangshinweises (ANN-197).
+      // Seit SLK-003 stehen sie im Block „Person" unter der Adresse; die Etage
+      // ist der Anfang des Zugangshinweises (ANN-197).
       expect(screen.getByText('Etage').nextElementSibling).toHaveTextContent('2. OG links');
       expect(screen.getByText('Zugang').nextElementSibling).toHaveTextContent(
         'Klingel "Mustermann".',
@@ -468,7 +512,7 @@ describe('Stammdaten der Akte', () => {
     it('blendet die Aktion fuer therapist aus, obwohl die Akte lesbar ist', () => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['therapist'])} />);
 
-      expect(screen.getByText('Kontakt')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Person' })).toBeInTheDocument();
       expect(
         screen.queryByRole('button', { name: 'Als inaktiv markieren' }),
       ).not.toBeInTheDocument();

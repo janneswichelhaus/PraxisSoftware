@@ -18,19 +18,37 @@ export type Variant = 'primary' | 'secondary' | 'quiet';
 // Farben statt einer Deckkraft von 55 % - das Design System verlangt
 // ausdruecklich "Text bleibt lesbar, 4.5:1", und eine halbdurchsichtige
 // Schrift erfuellt das nicht.
+//
+// Gesperrt heisst seit Runde 2 (BEF-069 Option 1, Variante B, Handoff Schrift
+// und Knoepfe Abschnitt 3): Die Form bleibt als **gestrichelte** Kontur in
+// `line-strong` sichtbar, die Flaeche verschwindet, der Text wird leise.
+// Vorher war die Flaeche `surface-sunken` - auf der Seitenflaeche derselbe
+// Wert, die Knopfform verschwand. Gestrichelt statt durchgezogen, weil ein
+// gesperrter Hauptknopf sonst neben einem aktiven Sekundaerknopf fast
+// gleich aussah; gestrichelt heisst in der App schon „nicht bedienbar,
+// Platzhalter" (belegte Zeit im Kalender, leere Karte). Der Zustand haengt
+// deshalb an der Variante, nicht an der Basis (ANN-252).
 const basis =
   'nicht-drucken inline-flex h-12 items-center justify-center gap-2 rounded-button px-5 ' +
-  'text-base font-bold transition-colors disabled:cursor-not-allowed ' +
-  'disabled:bg-surface-sunken disabled:text-ink-muted';
+  'text-base font-bold transition-colors disabled:cursor-not-allowed';
 
 const varianten: Record<Variant, string> = {
   // Der helle Text auf der Hauptfarbe ist Papier, nicht Weiss
-  // (`--action-primary-text`) - 10.5:1.
-  primary: 'bg-accent text-surface hover:bg-accent-hover',
+  // (`--action-primary-text`) - 10.5:1. Der durchsichtige Rand haelt die
+  // Breite fest, wenn der gesperrte Zustand ihn sichtbar macht. Hover nur
+  // ungesperrt (`not-disabled`, gilt auch fuer ButtonLink, den `:enabled`
+  // als Link nicht traefe).
+  primary:
+    'border border-transparent bg-accent text-surface not-disabled:hover:bg-accent-hover ' +
+    'disabled:border-dashed disabled:border-line-strong disabled:bg-transparent disabled:text-ink-muted',
   // Sekundaer traegt keinen eigenen Grund, nur Rahmen und Hauptfarbe; der
   // Rahmen ist `line-strong`, weil er ein Bedienelement umrandet (3:1).
-  secondary: 'border border-line-strong bg-transparent text-accent hover:bg-accent-soft',
-  quiet: 'text-accent hover:bg-surface-sunken',
+  secondary:
+    'border border-line-strong bg-transparent text-accent not-disabled:hover:bg-accent-soft ' +
+    'disabled:border-dashed disabled:text-ink-muted',
+  // Leise gesperrt: keine Flaeche - sonst bekaeme „Abbrechen" neben einem
+  // gesperrten Hauptknopf ploetzlich einen Kasten.
+  quiet: 'text-accent not-disabled:hover:bg-surface-sunken disabled:text-ink-muted',
 };
 
 export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string {
@@ -52,8 +70,7 @@ export function buttonKlassen(variant: Variant = 'primary', zusatz = ''): string
  */
 const kompakt =
   'nicht-drucken inline-flex min-h-11 items-center justify-center gap-2 rounded-button px-4 ' +
-  'text-sm font-bold transition-colors disabled:cursor-not-allowed ' +
-  'disabled:bg-surface-sunken disabled:text-ink-muted';
+  'text-sm font-bold transition-colors disabled:cursor-not-allowed';
 
 export function kartenAktionKlassen(variant: Variant = 'secondary', zusatz = ''): string {
   return `${kompakt} ${varianten[variant]} ${zusatz}`.trim();
@@ -83,8 +100,7 @@ export function knopfKlassen(variant: Variant, groesse: Groesse = 'normal', zusa
  */
 const symbol =
   'nicht-drucken inline-flex shrink-0 items-center justify-center rounded-button ' +
-  'transition-colors disabled:cursor-not-allowed disabled:bg-surface-sunken ' +
-  'disabled:text-ink-muted';
+  'transition-colors disabled:cursor-not-allowed';
 
 /**
  * `gross` (48 px) nur für den Hauptknopf einer Karte - den Haken neben

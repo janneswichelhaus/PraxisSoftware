@@ -287,13 +287,16 @@ describe('Zeitstrahl', () => {
       container.querySelector(`[data-termin="${id}"] [data-punkt]`) as HTMLElement;
 
     expect(punkt('a')).toHaveAttribute('data-punkt', 'erledigt');
-    expect(punkt('a')).toHaveTextContent('✓');
+    // Gezeichnet, nicht gesetzt (Runde 2): ein Symbol, kein Text im Punkt.
+    expect(punkt('a').querySelector('svg[data-zeichen="haken"]')).not.toBeNull();
+    expect(punkt('a').textContent).toBe('');
     expect(punkt('a')).toHaveClass('bg-accent', 'border-accent');
     // Eine Fehlzeit hat man hinter sich, wenn ihr Ende erreicht ist (UEB-02).
     expect(punkt('f')).toHaveAttribute('data-punkt', 'erledigt');
     expect(punkt('n')).toHaveAttribute('data-punkt', 'ausgefallen');
-    expect(punkt('n')).toHaveTextContent('×');
-    expect(punkt('x')).toHaveTextContent('×');
+    expect(punkt('n').querySelector('svg[data-zeichen="kreuz"]')).not.toBeNull();
+    expect(punkt('x').querySelector('svg[data-zeichen="kreuz"]')).not.toBeNull();
+    expect(punkt('n').textContent).toBe('');
     // Der nächste: hohl in der Hauptfarbe, solange er nicht bald beginnt.
     expect(punkt('b')).toHaveAttribute('data-punkt', 'naechster');
     expect(punkt('b')).toHaveClass('border-accent', 'bg-surface');

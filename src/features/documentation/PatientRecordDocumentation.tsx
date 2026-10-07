@@ -308,10 +308,12 @@ function AkteEintrag({
         {note.visit_without_treatment ? <Badge>Ohne Behandlung</Badge> : null}
       </div>
 
-      {/* BEF-078: Der Eintrag steht in einem eigenen, abgesetzten Feld -
-          vorher lief er im gleichen Grau wie Kopf und Herkunft durch. */}
+      {/* BEF-078: Der Eintrag ist abgesetzt - vorher lief er im gleichen
+          Grau wie Kopf und Herkunft durch. Seit Leitfaden L2 mit einer Linie
+          links statt eines vertieften Feldes: Er steht in einer Karte oder
+          einem Fenster, und ein Feld darin war der Kasten im Kasten. */}
       <p
-        className={`text-ink text-liste bg-surface-sunken rounded-card mt-2 max-w-prose p-3 leading-relaxed ${FREITEXT}`}
+        className={`text-ink text-liste border-line-strong mt-2 max-w-prose border-l-2 py-0.5 pl-3.5 leading-relaxed ${FREITEXT}`}
       >
         {note.content}
       </p>

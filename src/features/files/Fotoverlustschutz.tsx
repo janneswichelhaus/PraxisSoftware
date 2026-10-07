@@ -3,6 +3,7 @@ import { useBlocker } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 import { useAbmeldewache } from '@/app/abmeldeschutz';
+import { useSperrsicherung } from '@/features/auth/sitzungssperre/sperrsicherung';
 
 /**
  * Ein aufgenommenes Foto geht nicht unbemerkt verloren (DOK-006, ADR-017
@@ -43,6 +44,11 @@ export function Fotoverlustschutz() {
   const sperre = useBlocker(
     ({ currentLocation, nextLocation }) => currentLocation.pathname !== nextLocation.pathname,
   );
+
+  // Vor der Sitzungssperre (ADR-025 Punkt 4): Ein ausstehendes Foto lässt
+  // sich nicht ohne die Person sichern. Die Sperre hält die Seite deshalb
+  // verborgen fest, und nach der Freigabe steht das Foto wieder da (ANN-257).
+  useSperrsicherung(() => Promise.resolve(false));
 
   // Solange die Komponente eingehängt ist, steht ein Foto aus: Die Wache
   // übernimmt die Rückfrage immer.

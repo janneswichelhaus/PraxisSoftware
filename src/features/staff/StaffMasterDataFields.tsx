@@ -5,6 +5,7 @@ import { Listenfehler } from '@/features/appointments/Rueckmeldungen';
 import type { StaffFeld } from './api';
 import { staffFeldId } from './mitarbeiterfelder';
 import { Feldgruppe, Section } from '@/components/ui/Section';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Stand der Standortliste für die Auswahl des Hauptstandorts (ORG-14). */
 export type StandorteStand = 'laedt' | 'fehler' | 'bereit';
@@ -150,10 +151,10 @@ export function StaffMasterDataFields({
       </Section>
 
       {!privat ? (
-        <p className="text-ink-muted mt-6 max-w-prose text-xs leading-relaxed">
+        <Kleingedrucktes className="mt-6">
           Die Privatangaben (Geburtsdatum, private Erreichbarkeit, Privatanschrift) pflegt
           ausschließlich die Praxisinhaber:in. Sie bleiben beim Speichern unverändert.
-        </p>
+        </Kleingedrucktes>
       ) : null}
 
       {privat ? (

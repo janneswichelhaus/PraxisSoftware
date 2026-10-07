@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
   testDatabaseUrl,
+  jwtClaims,
 } from './helpers/db';
 
 /**
@@ -49,9 +50,7 @@ async function lesbar(konto: string, zugang: string): Promise<boolean> {
   await client.connect();
   try {
     await client.query('begin');
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: konto, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(konto)]);
     const { rows } = await client.query<{ n: number }>(LESBAR, [zugang]);
     await client.query('rollback');
     return Number(rows[0]?.n) > 0;

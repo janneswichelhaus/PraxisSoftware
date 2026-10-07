@@ -82,10 +82,36 @@ function Punkt({
       data-punkt={
         hinter || stand === 'liegengeblieben' ? stand : istFokus ? 'naechster' : 'spaeter'
       }
-      className={`rounded-pill relative flex size-3.5 items-center justify-center border-2 text-[10px] leading-none font-bold transition-colors duration-200 ${farbe}`}
+      className={`rounded-pill relative flex size-3.5 items-center justify-center border-2 transition-colors duration-200 ${farbe}`}
     >
-      {stand === 'erledigt' ? '✓' : stand === 'ausgefallen' ? '×' : null}
+      {stand === 'erledigt' || stand === 'ausgefallen' ? <PunktZeichen art={stand} /> : null}
     </span>
+  );
+}
+
+/**
+ * Haken oder Kreuz im Punkt, gezeichnet statt gesetzt (Runde 2, Handoff
+ * Schrift und Knöpfe Abschnitt 3; Hinweis Jannes 2026-10-06): Das
+ * Schriftzeichen in 10 px saß rund 0,3 px zu hoch, weil Schriften Haken und
+ * Kreuz nicht auf ihre Mitte setzen. 8 × 8 Einheiten, geometrisch mittig im
+ * 14-px-Punkt, in der Textfarbe des Punkts. Schmuck wie der Punkt selbst.
+ */
+function PunktZeichen({ art }: { art: 'erledigt' | 'ausgefallen' }) {
+  return (
+    <svg
+      data-zeichen={art === 'erledigt' ? 'haken' : 'kreuz'}
+      width="8"
+      height="8"
+      viewBox="0 0 8 8"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={art === 'erledigt' ? 'M1.2 4.2 3.1 6 6.8 2' : 'M1.8 1.8 6.2 6.2M6.2 1.8 1.8 6.2'} />
+    </svg>
   );
 }
 
@@ -116,7 +142,7 @@ export function Zeitstrahl({
   anfahrten,
   veraltet,
   karte,
-  haken,
+  aktionen,
 }: {
   /** Die Tagesliste, nach Uhrzeit sortiert. */
   plan: readonly DayPlanEntry[];
@@ -135,10 +161,11 @@ export function Zeitstrahl({
   /** Die Karte des ausgeklappten Termins. */
   karte: ReactNode;
   /**
-   * Der Haken einer Zeile (Design-Handoff 2026-10-01, Abschnitt 6a): rechts
-   * neben der Zeile, nicht in ihr - ein Knopf darf nicht in einem Link liegen.
+   * Die Knöpfe einer Zeile - „Doku" und der Haken (Design-Handoff 2026-10-01,
+   * Abschnitt 6a; Leitfaden schlank und klar, L3): rechts neben der Zeile,
+   * nicht in ihr - ein Knopf darf nicht in einem Link liegen.
    */
-  haken?: (termin: DayPlanEntry) => ReactNode;
+  aktionen?: (termin: DayPlanEntry) => ReactNode;
 }) {
   const jetztText = jetztMarke ? formatLocalTime(new Date(jetzt).toISOString(), zeitzone) : '';
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
@@ -258,7 +285,7 @@ export function Zeitstrahl({
                           )}
                         </span>
                       </Link>
-                      {haken?.(termin)}
+                      {aktionen?.(termin)}
                     </div>
                   )}
                 </div>

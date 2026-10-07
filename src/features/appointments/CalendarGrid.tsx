@@ -44,6 +44,7 @@ import { FahrwegMenue, type FahrwegAuskunft } from './FahrwegMenue';
 import type { Lueckenstufe } from './lueckenfinder';
 import { useSpanneAufziehen, type Spanne } from './useSpanneAufziehen';
 import { AnlegenMenue, type AnlegenEintrag } from './AnlegenMenue';
+import { auswahlBildlauf } from './auswahlBildlauf';
 import { VerschiebenRueckfrage, type VerschiebenFrage } from './VerschiebenRueckfrage';
 import { useZweiFingerZoom } from './useZweiFingerZoom';
 
@@ -121,8 +122,18 @@ export type GitterFokus = { kachel: string } | { spalte: string };
  * echtes Raster mit Zeilen und Pfeiltasten wäre ein eigener Schritt.
  */
 
-/** Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. */
+/**
+ * Unter dieser Breite wird eine Spalte unlesbar. Dann lieber scrollen. Das gilt
+ * für die Teamansicht: Eine Spalte trägt dort den Namen der Person im Kopf.
+ */
 const SPALTEN_MINDESTBREITE = '9rem';
+
+/**
+ * Mindestbreite einer Tagesspalte in der Wochenansicht (Runde 3, Handoff
+ * Kalender und Tour 2026-10-06): Montag bis Freitag passen bei 834 px ohne
+ * Querrollen, fünf Spalten à rund 135 px neben der Stundenachse.
+ */
+const WOCHEN_SPALTEN_MINDESTBREITE = '7.5rem';
 
 /**
  * Mindesthöhe einer Auswahl oder Vorschau im Gitter (BEF-037).
@@ -383,7 +394,13 @@ export function CalendarGrid({
   startSpalte = null,
   wegfrage,
   zeitzone = null,
+  spaltenart = 'team',
 }: {
+  /**
+   * Was eine Spalte ist: eine Person (Teamansicht, 9rem) oder ein Tag
+   * (Wochenansicht, 7.5rem). Ohne Angabe gilt die Teamansicht.
+   */
+  spaltenart?: 'team' | 'woche';
   /**
    * „Passt es?“ zu einer Verschiebung (UBK-013): Die Seite weiß, welche
    * Person, welcher Tag und welcher Ort zu einer Spalte gehören. Ohne Angabe
@@ -595,6 +612,31 @@ export function CalendarGrid({
     (ziel ?? ersatz)?.focus({ preventScroll: true });
   }, [fokus]);
 
+  // Die Auswahl rollt über die Anlegen-Leiste, wenn diese sie verdeckt
+  // (Runde 3, Handoff Kalender und Tour 2026-10-06): danach im oberen Drittel
+  // des freien Bereichs, darunter Platz für den zweiten Tipp. Als Layout-
+  // Effekt vor dem Fokus in der Leiste, damit Vorlesesoftware nicht an einer
+  // verdeckten Stelle landet. Reduzierte Bewegung: ohne Animation.
+  const auswahlFlaecheRef = useRef<HTMLDivElement>(null);
+  const anlegenLeisteRef = useRef<HTMLDivElement>(null);
+  const auswahlSchluessel = auswahl
+    ? `${auswahl.spalteId}|${auswahl.vonMinute}|${auswahl.bisMinute}`
+    : null;
+  useLayoutEffect(() => {
+    const flaeche = auswahlFlaecheRef.current;
+    const leiste = anlegenLeisteRef.current;
+    if (!auswahlSchluessel || !flaeche || !leiste) return;
+    const a = flaeche.getBoundingClientRect();
+    const weg = auswahlBildlauf({
+      auswahlOben: a.top,
+      auswahlUnten: a.bottom,
+      leisteOben: leiste.getBoundingClientRect().top,
+    });
+    if (weg === 0) return;
+    const ruhig = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? true;
+    window.scrollBy({ top: weg, behavior: ruhig ? 'auto' : 'smooth' });
+  }, [auswahlSchluessel]);
+
   // Die Lage des Rückfragekastens aus seiner gemessenen Höhe (KAL-13). Vor
   // dem Zeichnen gemessen, damit er nicht erst an der falschen Stelle
   // aufblitzt.
@@ -653,7 +695,7 @@ export function CalendarGrid({
         <div
           className="grid min-w-max"
           style={{
-            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${SPALTEN_MINDESTBREITE}, 1fr))`,
+            gridTemplateColumns: `3.25rem repeat(${spaltenModell.length}, minmax(${spaltenart === 'woche' ? WOCHEN_SPALTEN_MINDESTBREITE : SPALTEN_MINDESTBREITE}, 1fr))`,
           }}
           role="region"
           aria-label={beschriftung}
@@ -734,7 +776,7 @@ export function CalendarGrid({
               // waere die oberste Stunde am Rand des Gitters halb abgeschnitten.
               <div
                 key={m}
-                className="text-ink-muted absolute right-1 pt-0.5 text-[0.6875rem]"
+                className="text-ink-muted absolute right-1 pt-0.5 text-xs"
                 style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
               >
                 {minuteZuZeit(m)}
@@ -748,7 +790,7 @@ export function CalendarGrid({
               ? halbe.map((m) => (
                   <div
                     key={m}
-                    className="text-ink-muted absolute right-1 pt-0.5 text-[0.625rem]"
+                    className="text-ink-muted absolute right-1 pt-0.5 text-xs"
                     style={{ top: `${minuteZuPixel(m, fenster.vonMinute, stundenHoehe)}px` }}
                   >
                     {minuteZuZeit(m)}
@@ -1185,6 +1227,7 @@ export function CalendarGrid({
                   dem Gitter, damit die Spalte frei bleibt (BEF-035). */}
                 {auswahl && auswahl.spalteId === s.id ? (
                   <div
+                    ref={auswahlFlaecheRef}
                     data-testid="auswahl-flaeche"
                     className="border-accent bg-accent-soft text-accent rounded-button pointer-events-none absolute inset-x-1 z-40 overflow-hidden border-2 px-2 py-1 text-xs leading-4 font-semibold"
                     style={{
@@ -1253,6 +1296,7 @@ export function CalendarGrid({
 
       {auswahl ? (
         <AnlegenMenue
+          ref={anlegenLeisteRef}
           auswahl={auswahl}
           className="sticky bottom-[calc(4rem+env(safe-area-inset-bottom))] z-40 mt-2 sm:bottom-4"
         />

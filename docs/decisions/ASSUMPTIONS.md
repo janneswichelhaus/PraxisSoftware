@@ -433,6 +433,8 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Änderungspfad.** Durchsetzung einschalten, sobald mindestens zwei `owner`-Zugänge einen bestätigten Faktor haben: `app.has_strong_authentication()` in die Policies der Zugangsverwaltung aufnehmen und den genannten Test umdrehen · Aufwand `klein`. Vorher nicht — die Rücknahme wäre ein privilegierter Produktionszugriff und damit `groß`.
 
+**Bestätigt (Jannes, 2026-10-06):** „Behalten, aber erstmal nicht einrichten. Wichtiger ist, dass Nutzer nach 30/60 min automatisch ausgeloggt werden.“ Der zweite Faktor bleibt einrichtbar und wird nicht erzwungen; Jannes richtet ihn vorerst nicht ein. Vorrang hat die Sitzungssperre nach ADR-025 (SEC-EPIC-001). Das Geheimnis „Zum Abtippen“ steht seit SKN-008 in 14 px Festbreite.
+
 ### ANN-029 — Auditeinträge folgen ihrer eigenen Frist, nicht der der Akte
 
 Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wiedervorlage: Datenschutzprüfung / DSFA-Prozess vor Produktivstart · **LOG-EPIC-001:** eigene Fristen bleiben, jetzt zwei – Lesen und Sicherheit 12 Monate, übrige 3 Jahre (ADR-010 Fassung 3, ANN-230).
@@ -1445,6 +1447,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 **Änderungspfad.** Das zweite Feld mitzählen: in `naechsteAuswahl` das Ende um das Praxisraster verlängern · Aufwand `klein`. Menü zurück an die Auswahl, aber seitlich oder oberhalb: den Platz in `CalendarGrid` ändern · Aufwand `klein`.
 
+**Beantwortet (Jannes, Runde 3, 2026-10-06):** Die Leiste verdeckte am Handy zu viel. Seitdem ist sie unter 640 px dichter (keine Hinweiszeilen, je zwei Wahlen in einer Reihe), der Gesten-Hinweis steht nur bis zur ersten Spanne (ANN-255), und die Seite rollt eine verdeckte Auswahl ins obere Drittel über der Leiste (`auswahlBildlauf` in `src/features/appointments/auswahlBildlauf.ts`).
+
 ### ANN-109 — Über dem Kalender stehen Monat, Person mit Woche und „Jetzt"; alles Übrige liegt hinter der Ecke des Rasters
 
 Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernprozess, Schritt 2) · erledigt · Wiedervorlage: —
@@ -1506,6 +1510,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 **Anker.** `unterpunkte` des Bereichs `termine` in `src/app/navigation.tsx`; der Knopf „Tour" in der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
 
 **Änderungspfad.** Ein Tipp: den Knopf aus der Gruppe in den Kopf über dem Raster ziehen (ab `sm`, am Handy neben „Jetzt") · Aufwand `klein`. Zeile zurück: `unterpunkte` wieder füllen · Aufwand `klein`. Die Tour als echte Ansicht im Raster (ohne Seitenwechsel) · Aufwand `mittel`.
+
+**Fassung 2 (Jannes, Runde 3, 2026-10-06):** „Tour" steht mit einem Tipp im Kopf, rechts neben „Tag | Team" bzw. „Woche | Team", auf allen Breiten; im Feld „Ansicht und Filter" entfällt sie, die Anlegewege stehen dort zugeklappt unter „Ohne Raster anlegen". Anker jetzt: der Link „Tour" nach der Gruppe „Ansicht" in `src/features/appointments/CalendarPage.tsx`.
 
 ### ANN-114 — Flächen-Ansichten reichen bis an den Rand, Listen und Texte behalten die Kappung
 
@@ -3026,3 +3032,113 @@ Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `supabase/migrations/20261010100000_por_008_platform_appointments.sql` (`app.platform_appointment_history`, `platform_appointments`; neu gefasst in `20261010120000_por_010_platform_appointment_change.sql`); `terminBeschreibung` in `src/features/platform/terminbeschreibung.ts`; Tests `supabase/tests/platform-appointments.test.ts` (Spaltenliste, Fremdzugriff), `Termine.test.tsx`.
 
 **Änderungspfad.** Anderer Zeitraum: `app.platform_appointment_history` in einer neuen Migration · Aufwand `klein`. Weitere Spalten (etwa das Honorar): Spaltenliste in `platform_appointments` und Test der Datensparsamkeit · Aufwand `klein`, vorher ADR-023 Punkt 22 prüfen.
+
+### ANN-252 — Schrift und Knöpfe nach Runde 2: nichts unter 12 px außer der Absenderzeile, Kleingedrucktes 14 px, gesperrt heißt gestrichelt
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 5) · erledigt · Wiedervorlage: —
+
+**Annahme.** Kein Lesetext unter 12 px; die Tableiste steht in 12 px ohne seitlichen Innenabstand (statt 11 px, Variante L-B), die Symbolspalte ebenso. Kleingedrucktes am Seitenende hat 14 px über den Baustein `Kleingedrucktes` (Variante K-A). Ein gesperrter Haupt- oder Sekundärknopf zeigt eine gestrichelte Kontur in `line-strong` ohne Fläche, der leise Knopf nur leisen Text (Variante B). Einzige Schrift unter 12 px ist die Absenderzeile auf Papier (`--text-absenderzeile`); Haken und Kreuz im Zeitstrahl sind gezeichnet.
+
+**Begründung.** BEF-068 Option 2 und BEF-069 Option 1 (Jannes 2026-10-05), Varianten auf der Leinwand am 2026-10-06 gewählt. Gemessen: „Organisation“ in 12/600 ist 69 px breit, bei 360 px hat jedes Ziel 72 px (vorher mit 11 px und Innenabstand 0,8 px Luft). Gestrichelt statt durchgezogen, weil ein gesperrter Hauptknopf neben einem aktiven Sekundärknopf sonst fast gleich aussah. Handoff `docs/design/handoff-2026-10-06-schrift-und-knoepfe.md`.
+
+**Anker.** `--text-leiste`, `--text-kleingedruckt`, `--text-absenderzeile` in `src/index.css`; die Varianten in `src/components/ui/buttonStile.ts`; Wächter „Kein Lesetext unter 12 px“ in `src/designsystem.test.ts`; E2E `tests/e2e/tableiste.spec.ts`.
+
+**Änderungspfad.** Andere Größe: das Token ändern · Aufwand `klein`. Gesperrt anders zeigen: die drei Varianten in `buttonStile.ts` · Aufwand `klein`.
+
+### ANN-253 — Grundton B: weiße Fläche, neutrale Grautöne, sichtbare Spur der Balken
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 7) · erledigt · Wiedervorlage: —
+
+**Annahme.** Die Seitenfläche ist Weiß wie Papier; die Vertiefung (Hover, Rückfrage, Arbeitszeit im Kalender) ist #f4f5f7; Tinte, Leise und beide Linien sind neutral ohne Grünstich (#14181b, #5a6169, #e6e8eb, #767c84). Die leere Spur von Wegbalken und Fortschrittsbalken trägt `--color-spur` (#8c939b) mit mindestens 3:1. Hauptfarbe, Tiefgrün der Seitenleiste, Salbei hell für „erledigt“, Warnung und Fehler bleiben. Manifest und Startbild beginnen auf Weiß.
+
+**Begründung.** Jannes am 2026-10-06: Der Hintergrund sei zu grau-grünlich, „das Ganze sieht etwas öko aus“, die leere Spur des Fahrzeit-Balkens war nicht zu sehen (gemessen 1,01:1). Von drei Varianten (Hellgrau, Weiß, gebrochenes Weiß) gewählt: B. Leitfaden `docs/design/leitfaden-schlank.md`, L4 und L5. Unsicher: ob Karten mit der hellen Linie auf Weiß am Handy in der Sonne genug abgrenzen; das prüft die Sichtung.
+
+**Anker.** `--color-canvas`, `--color-surface-sunken`, `--color-ink`, `--color-ink-muted`, `--color-line`, `--color-line-strong`, `--color-spur` in `src/index.css`; Kontrastpaare in `src/lib/kontrast.test.ts`; `public/manifest.webmanifest`.
+
+**Änderungspfad.** Anderer Grundton: die Tokens ändern, `kontrast.test.ts` rechnet nach · Aufwand `klein`.
+
+### ANN-254 — Tour am Handy: Liste vor Karte, Felder hinter „ändern"; ab 1024 px zwei Spalten
+
+Praxisprozess · entschieden (Jannes) · 2026-10-06 · Jannes (Leinwand, Reihe 6, Runde 3 „alles A") · erledigt · Wiedervorlage: —
+
+**Annahme.** Unter 640 px zeigt die Tour oben eine Zeile „Name · Tag" mit „Start und Ende: …" und dem Textknopf „ändern", der Person, Tag, Start und Ende aufklappt; danach Summe, „Navigation: ganzer Tag" über die ganze Breite, die Stopps, „Tourenliste drucken" und zuletzt die zugeklappte Karte. Zwischen 640 und 1023 px stehen die vier Felder offen in einer Zeile und die Karte zugeklappt über der Liste; ab 1024 px links die Liste, rechts die Karte offen und beim Rollen oben stehend. Im Dokument steht die Liste immer vor der Karte.
+
+**Begründung.** BEF-054: Am Handy kamen zuerst Filter und Karte, die Liste - wofür man die Tour öffnet - erst nach zwei Bildschirmen. Variante A der Runde 3, gewählt von Jannes. Unsicher: ob die Karte am Tablet über oder unter der Liste besser steht.
+
+**Anker.** Felder `tour-felder`, `felderOffen` und das Raster der zwei Spalten in `src/features/tours/TourenPage.tsx`; Kopfzeile aus `src/features/tours/tourKopf.ts`.
+
+**Änderungspfad.** Karte am Tablet unter die Liste: `sm:order-first` am Kartenbereich streichen · Aufwand `klein`. Felder auch am Handy offen: `felderOffen` mit `true` beginnen · Aufwand `klein`.
+
+### ANN-255 — Der Gesten-Hinweis im Kalender steht bis zur ersten Spanne; der Merker ist ein Wahrheitswert in `localStorage`
+
+Technik · entschieden (Claude) · 2026-10-06 · Claude (Runde 3, Handoff Kalender und Tour) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Handy
+
+**Annahme.** „Zweites Feld antippen: Spanne bis dorthin. Dasselbe Feld: aufheben." steht in der Anlegen-Leiste, bis auf diesem Gerät zum ersten Mal eine Spanne aufgezogen wurde. Gemerkt wird das als `kalender-spanne-gelernt = 1` in `localStorage`; ohne Speicher steht der Hinweis weiter. Beim Abmelden bleibt der Merker.
+
+**Begründung.** Der Handoff verlangt den Hinweis nur bis zum ersten Lernen. `localStorage` statt `sessionStorage`, weil eine gelernte Geste in einem neuen Tab nicht wieder erklärt werden muss. Der Wert trägt keinen Inhalt über Person, Praxis oder Akte (ANN-019 bleibt gewahrt); er ist wie der Startbild-Merker (ANN-243) ein reiner Bedienzustand. Unsicher: ob ein geteiltes Praxisgerät den Hinweis für eine neue Kollegin wieder zeigen sollte.
+
+**Anker.** `GESTEN_MERKER`, `spanneGelernt` und `spanneMerken` in `src/features/appointments/gestenMerker.ts`, gelesen in `src/features/appointments/AnlegenMenue.tsx`.
+
+**Änderungspfad.** Je Sitzung neu: `localStorage` durch `sessionStorage` ersetzen · Aufwand `klein`. Beim Abmelden löschen: den Merker in `raeumen` des `SessionProvider` entfernen wie den Startbild-Merker · Aufwand `klein`.
+
+### ANN-256 — Sitzungssperre im Server: letzte Anmeldung aus `amr`, letzte Bedienung als Vermerk je Sitzung, höchstens einmal je Minute
+
+Datenschutz · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 W1 und W2; Auftrag Jannes „nach 30/60 min automatisch ausloggen“) · erledigt · Wiedervorlage: Datenschutzprüfung vor dem Go-live (M3)
+
+**Annahme.** Die Datenbank sperrt jede Anfrage einer Sitzung, deren letzte Anmeldung (jüngster Zeitstempel im Claim `amr`) 60 Minuten oder deren letzte Bedienung 30 Minuten zurückliegt (W1 (a), Jannes). Die letzte Bedienung ist ein Vermerk je `session_id` in `public.session_activity` (W2 (a)): Konto und Zeitpunkt, kein Inhalt, keine Seite. Die Anwendung schreibt ihn bei einem Tipp, Klick oder Tastendruck höchstens einmal je Minute über `session_status(true)`; eine gesperrte Sitzung bekommt keinen Vermerk mehr. Ein Token ohne `amr` oder `session_id` gilt als gesperrt. Datenklasse `sitzungsvermerk`: ein Tag nach der letzten Bedienung, die Löschung macht `session_status` selbst; fällt mit dem Konto.
+
+**Begründung.** ADR-025 Punkt 6 verlangt die Prüfung an einer Stelle in der Datenbank; sie steht in `app.session_open()` und hängt an den vier Funktionen, über die jede Policy, Projektion und RPC liest (`current_organization_id`, `current_person_id`, `has_any_role`, `platform_readable_access`). W2 (b), die Token-Erneuerung, misst Netzwerkverkehr statt Bedienung. Einmal je Minute hält die Schreiblast klein; die Oberfläche rechnet ihre Frist ab dem letzten Vermerk und sperrt deshalb höchstens eine Minute früher als nach der letzten Bedienung, nie später als der Server. Ein Tag Aufbewahrung: Nach 60 Minuten ist die Sitzung ohnehin gesperrt, der Rest ist Spielraum. Unsicher: ob die Datenschutzprüfung den Vermerk als Leistungs- oder Verhaltenskontrolle (§20) sehen könnte — er steht nur dem Server zur Verfügung, kein Konto kann ihn lesen, und er wird nach einem Tag gelöscht.
+
+**Anker.** `app.session_open()`, `app.session_max_duration()`, `app.session_idle_timeout()` und `public.session_status` in `supabase/migrations/20261012100000_sec_001_sitzungssperre.sql`; geprüft in `supabase/tests/sitzungssperre.test.ts`.
+
+**Änderungspfad.** Andere Fristen: die beiden Konstanten-Funktionen und `SPERRFRISTEN` in der Oberfläche ändern · Aufwand `klein`. Je Kontoart verschieden (W1 (c)): `app.session_idle_timeout()` nach `user_profiles` unterscheiden · Aufwand `klein`. Ohne Vermerk (W2 (b)): `session_activity` entfernen und die Inaktivität aus `iat` lesen · Aufwand `mittel`.
+
+### ANN-257 — Sitzungssperre der Oberfläche: Vorlauf 20 Sekunden, Seite mit ungesichertem Text bleibt verborgen stehen, Freigabe mit Kennwort
+
+Technik · entschieden (Claude) · 2026-10-06 · Claude (SEC-EPIC-001, ADR-025 Punkte 3, 4, 5 und 7) · erledigt · Wiedervorlage: Jannes in der Sichtung Betriebsreife; W3 (Passkey) mit OPS-001
+
+**Annahme.** Die Oberfläche sperrt 20 Sekunden vor der früheren Frist, die der Server meldet; in dieser Zeit sichert sie offene Texte als Entwurf auf dem Weg von „Speichern“ (ANN-046), höchstens 10 Sekunden lang. Gelingt das für alle Seiten, gibt sie die Seiten frei und leert den Abfragespeicher. Gelingt es für eine nicht (kein Netz, kein Entwurfsweg wie bei Korrektur oder Formularen, ein ausstehendes Foto), bleibt die angemeldete Anwendung **verborgen und unbedienbar** (`hidden`, `inert`) im Speicher der Seite stehen, und nach der Freigabe steht sie mit dem Text wieder da; dann werden alle Abfragen neu geholt. Bei Rückkehr mit abgelaufener Frist verschwindet der Inhalt sofort, noch vor der Antwort des Servers. Freigegeben wird mit dem Kennwort des eigenen Kontos (neue Anmeldung, dieselbe Kennung, kein Kontowechsel); „Mit anderem Konto anmelden“ meldet ab. Ein Passkey (W3) ist nicht gebaut.
+
+**Begründung.** ADR-025 Punkt 4 verlangt beides: sichern, und wenn das nicht gelingt, den Text im Speicher halten und nach der Freigabe zeigen. Ein Merker je Seite für den Text hieße, in jede der rund zwanzig geschützten Seiten einzugreifen; die verborgen stehende Seite hält ihn ohne Umbau. Der Preis: In diesem Fall bleiben die Daten dieser Seite bis zur Freigabe im Arbeitsspeicher, unsichtbar und nicht bedienbar; der Server gibt keine neue Zeile heraus. Der Vorlauf, weil ein Entwurf nur angenommen wird, solange der Server die Sitzung noch offen sieht. Kennwort ohne zweiten Faktor, weil die Anmeldung ihn heute auch nicht verlangt (ANN-028, bestätigt 2026-10-06). Passkeys stehen beim Anmeldedienst als Beta und brauchen Einstellungen im Dashboard (OPS-001); bis dahin genügt das Kennwort. `jwt_expiry` bleibt 3600 Sekunden: Die Sperre hängt nicht daran, sie liegt in der Datenbank. Unsicher: ob Jannes am Hausbesuch nach 60 Minuten das Kennwort tippen mag — dafür ist der Passkey gedacht.
+
+**Anker.** `VORLAUF_MS`, `SICHERUNG_HOECHSTENS_MS` in `src/features/auth/sitzungssperre/sperrstand.ts`; Phasen `gesperrt` und `halten` in `src/features/auth/sitzungssperre/Sitzungssperre.tsx`; Freigabe in `Sperrseite.tsx`; Sicherungen über `useSperrsicherung` in `Textverlustschutz.tsx` und `Fotoverlustschutz.tsx`.
+
+**Änderungspfad.** Ungesicherten Text verwerfen statt halten: in `sperren` immer `gesperrt` wählen · Aufwand `klein`. Passkey: hinter einem Schalter in `Sperrseite` `signInWithPasskey` anbieten, sobald OPS-001 ihn bestätigt · Aufwand `mittel`. Längerer Vorlauf: `VORLAUF_MS` · Aufwand `klein`.
+
+**Nach dem Zweitreview (2026-10-06).** Behoben: ein zweiter Faktor zählt nicht als Anmeldung (nur `password`, `otp`, `magiclink`, `recovery`, `invite`, `email/signup`, `oauth`, `sso/saml`); Fenster und Kamera verschwinden mit der Seite; der Vorlauf sperrt, solange der Server offen ist; festgehaltene Seiten fallen bei einem Kontowechsel weg; beim Festhalten verlassen fremde Abfragen den Speicher. **Verbleibende Lücken, für OPS-001 und die Datenschutzprüfung:** (1) Wer ein gesperrtes Token aus dem Speicher des Geräts holt, kann beim Anmeldedienst das Kennwort ändern, solange die letzte Anmeldung jünger als 24 Stunden ist (`secure_password_change` greift erst danach) — dafür braucht es das entsperrte Gerät und Entwicklerwerkzeuge. (2) Die Server-Functions (`location-provider`, `patient-file-verify`) prüfen nur die Anmeldung, nicht die Sperre; sie liefern keine Patientendaten, lösen aber Routing oder Prüfungen aus. (3) „Bedienung“ meldet die Anwendung selbst; ein Skript mit dem Token könnte die Inaktivitätsfrist offen halten, nicht die Höchstdauer (Folge von W2 (a)).
+
+### ANN-258 — Skala am Handy in zwei Reihen, Befund aus Bausteinen ohne Kasten im Kasten
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Design-Runde Dokumentation, BEF-057 Option 2 nach Entscheidung Jannes 2026-10-05; Auftrag Jannes „Design konsequent auf jeden Bereich anwenden“) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Handy
+
+**Annahme.** Eine Skala mit mehr als sechs Stufen steht unter 640 px in zwei Reihen (0–5 und 6–10), jede Stufe mindestens 44 × 44 px; ab 640 px in einer Reihe. Darunter steht der gewählte Wert als Text („gewählt: 6“). Im Befund aus Bausteinen trennen Linien die Blöcke statt eigener Rahmen; die Seitenmarke steht am Handy über der Knopfreihe, die drei Ergebnisse gleich breit in einer Reihe, „+ Notiz“ darunter. Die Bausteinleiste über dem Freitext läuft am Handy waagerecht und hält beim Laden ihre Höhe frei. Im Nachtrag ist der Ursprungseintrag zugeklappt und zeigt seine erste Zeile.
+
+**Begründung.** Jannes hat für BEF-057 Option 2 gewählt („dichter am Handy“). Die Skala aus Option 3 kommt dazu, weil elf Stufen zu je 29 px die Mindestgröße von 44 px (Oberflächen-Checkliste Punkt 1) verfehlen und ein Fehltipp einen Messwert verfälscht, der im Verlauf weiterlebt; die Empfehlung im Befund nannte genau diese Verbindung. Die zweireihige Skala sieht am Handy anders aus als der Papierbogen — Inhalt, Reihenfolge und Anker bleiben gleich. Unsicher: ob Jannes die Skala lieber einreihig mit kleineren Stufen hätte.
+
+**Anker.** `spaltenAmHandy` in `Skala` (`src/features/assessments/FragebogenFelder.tsx`); `ergebnis-knoepfe` und die Blockklassen in `src/features/assessments/BausteinFeld.tsx`; `src/features/documentation/TextbausteinLeiste.tsx`; `src/features/documentation/TreatmentNoteAddendumPage.tsx`. Geprüft in `tests/e2e/befund.spec.ts` und `tests/e2e/bausteine.spec.ts`.
+
+**Änderungspfad.** Skala einreihig: `spaltenAmHandy` auf `stufen.length` · Aufwand `klein`. Blockrahmen zurück: die Klassen am `<details>` des Blocks · Aufwand `klein`.
+
+### ANN-259 — Rechnungsliste: Suche als Teilstring ohne Platzhalter, „offen“ schließt überfällige ein, Seiten zu 100
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (BEF-061 Option 1 und 3 nach Entscheidung Jannes 2026-10-05) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen am Rechner
+
+**Annahme.** Die Rechnungsliste sucht auf dem Server in Rechnungsnummer, Name der Person und Name der Empfänger:in, ohne Groß- und Kleinschreibung, als Teilstring; `%` und `_` sind gewöhnliche Zeichen, höchstens 100 Zeichen. Filter: „Nur Entwürfe“, „Nur offene“ (ausgestellt, nicht storniert, nicht voll bezahlt — überfällige eingeschlossen), „Nur überfällige“, „Nur bezahlte“, „Nur stornierte“; dazu ein Monat (Abrechnungsmonat der Rechnung). „Weitere laden“ holt Seiten zu 100. Jede Liste nennt die Zahl vor dem Kürzen; die offenen Posten bleiben bei 100 in Fälligkeitsfolge und sagen es, die Zahlungen ebenso.
+
+**Begründung.** BEF-061: Ab der 101. Rechnung verschwanden die ältesten still, und eine Rechnung ist sonst nirgends erreichbar (ANN-061, nicht über die Kopfsuche). Teilstring ohne Platzhalter, weil Büros Nummern stückweise tippen („0042“) und ein `%` im Namen nie gemeint ist. „Offen“ mit überfälligen, weil beides offene Forderungen sind; „überfällig“ ist die engere Auswahl. Der Monat ist der der Klammer, nicht das Ausstellungsdatum — so steht er auch auf der Rechnung. Unsicher: ob die Praxis eher nach Ausstellungsdatum filtern will.
+
+**Anker.** `public.list_invoices` in `supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`; `rechnungsfilterLabels` und `RECHNUNGEN_JE_SEITE` in `src/features/billing/api.ts`; `Rechnungsliste` in `src/features/billing/Rechnungsliste.tsx`. Geprüft in `supabase/tests/invoices.test.ts` („Rechnungsliste mit Suche …“).
+
+**Änderungspfad.** Monat nach Ausstellungsdatum: Bedingung in `list_invoices` auf `issued_on` umstellen · Aufwand `klein`. Größere Seiten: `RECHNUNGEN_JE_SEITE` (Server begrenzt auf 200) · Aufwand `klein`.
+
+### ANN-260 — Leitfaden L2 im ganzen Code: Meldungen und Rückfragen mit Linie links statt als Karte; Erklärsatz über „Plattform“ entfällt
+
+Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: „Ich möchte das Design konsequent auf jeden Bereich anwenden … Triff Annahmen, wenn nötig“) · erledigt · Wiedervorlage: Jannes in der Sichtung Rahmen
+
+**Annahme.** Eine Fehlermeldung (`ErrorState`) und eine geöffnete Rückfrage (`Rueckfrage`) sind keine Karten mehr, sondern Flächen mit einer 4 px breiten Linie links, ohne Rahmen und Radius; Rot bzw. die vertiefte Fläche bleiben. Auskünfte in einer Karte (Eintragstext, Treffer der Verortung, hervorgehobene Angaben, Vorschlag aus Bausteinen, Hinweise) stehen mit einer 2 px Linie links. Formulare, die sich in einer Liste öffnen (Art korrigieren, Vertretung einrichten, Bericht korrigieren, Aufgabe), sehen aus wie eine Rückfrage. Abschnitte mit nur einer Zeile oder einem Bedienelement (Behandlungsliege, Zugang in „Mein Konto“) und Abschnitte in einem Fenster (Abrechnung, Zustand in den Terminaktionen) haben keinen Rahmen. Der Erklärsatz über „Plattform“ in Stammdaten und Trainingskund:in entfällt.
+
+**Begründung.** Leitfaden L2 „Kein Kasten im Kasten“, Beispiel Jannes (Stammdaten). Eine Bestandsaufnahme am 06.10.2026 fand rund 60 Stellen; die meisten entstanden durch zwei gemeinsame Bausteine, die selbst Karten waren und fast immer in einer Karte stehen. Die Linie links trennt eine Meldung weiter sichtbar vom Inhalt, ohne einen weiteren Rahmen. Der Erklärsatz war Löschkandidat 3 (reiner Text, kein Verhalten). Unsicher: ob Jannes die rote Fehlerfläche lieber ganz ohne Füllung hätte.
+
+**Anker.** `ErrorState` in `src/components/ui/Feedback.tsx`, `Rueckfrage` in `src/components/ui/Rueckfrage.tsx` (Test „Kein Kasten im Kasten“ in `src/components/ui/bausteine.test.tsx`); `PlattformAbschnitt` in `src/features/platform-access/PlattformAbschnitt.tsx`; Liste in `docs/design/leitfaden-schlank.md`.
+
+**Änderungspfad.** Karte zurück: die Klassen der beiden Bausteine · Aufwand `klein`. Erklärsatz zurück: `hinweis` am Abschnitt · Aufwand `klein`.

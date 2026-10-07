@@ -100,7 +100,8 @@ describe('Begriffe', () => {
   });
 
   it('hält die Kurzform jedes Bereichs bei höchstens 13 Zeichen', () => {
-    // Tableiste bei 375 px: 67 px je Ziel (navigation.test.tsx).
+    // Tableiste bei 360 px: 72 px je Ziel ohne Innenabstand, 12 px Schrift
+    // (navigation.test.tsx, Runde 2).
     for (const bereich of Object.values(BEREICHE)) {
       expect(bereich.kurz.length).toBeLessThanOrEqual(13);
     }

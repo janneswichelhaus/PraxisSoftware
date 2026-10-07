@@ -1,6 +1,6 @@
 import { Client } from 'pg';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { SEED, asPostgres, resetDatabase, testDatabaseUrl } from './helpers/db';
+import { SEED, asPostgres, resetDatabase, testDatabaseUrl, jwtClaims } from './helpers/db';
 
 /**
  * Praxispfade verweigern Plattformkonten, bewiesen für alle (ADR-023 Punkt 21).
@@ -27,6 +27,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   // Plattformprojektionen (Punkt 19): Sie zeigen nur, was aus auth.uid() über
   // einen Zugang folgt. Ihre Negativfälle stehen je Projektion in einer
   // eigenen Datei (Punkt 23).
+  'public.session_status':
+    'Stand der eigenen Sitzungssperre (SEC-001, ADR-025): Zeitpunkte, kein Inhalt; Negativfälle in sitzungssperre.test.ts',
   'public.platform_context':
     'Praxisname und eigene Zugänge; Negativfälle in platform-context.test.ts',
   'public.platform_representatives':
@@ -160,9 +162,7 @@ async function pruefe(
   try {
     await client.query('begin');
     await client.query("select set_config('role', 'authenticated', true)");
-    await client.query("select set_config('request.jwt.claims', $1, true)", [
-      JSON.stringify({ sub: userId, role: 'authenticated' }),
-    ]);
+    await client.query("select set_config('request.jwt.claims', $1, true)", [jwtClaims(userId)]);
 
     for (const tabelle of alleTabellen) {
       if (tabelle in TABELLEN_AUSNAHMEN) continue;

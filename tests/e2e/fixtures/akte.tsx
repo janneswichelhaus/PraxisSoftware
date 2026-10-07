@@ -81,7 +81,6 @@ const patient: Patient = {
   phone: null,
   phone_work: null,
   phone_mobile: leer ? null : '+49 160 0000005',
-  fax: null,
   institution: null,
   street: leer ? null : 'Beispielstrasse',
   house_number: leer ? null : '12',

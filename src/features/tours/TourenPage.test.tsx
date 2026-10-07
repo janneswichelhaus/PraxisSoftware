@@ -132,20 +132,50 @@ describe('TourenPage', () => {
     expect(screen.getByRole('button', { name: 'Drucken' })).toBeInTheDocument();
   });
 
-  it('stellt Person und Tag in eine Zeile und den Start an die Liste (UBK-009)', async () => {
+  it('fasst am Handy Person, Tag und Orte in einer Zeile mit „ändern" zusammen (Runde 3)', async () => {
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-10-06');
+    await screen.findByText('Max Mustermann');
+    expect(screen.getByText(/· Di, 06\.10\.$/)).toBeInTheDocument();
+    expect(screen.getByText(/^Start und Ende: |^Start: /)).toBeInTheDocument();
+
+    const aendern = screen.getByRole('button', { name: 'ändern' });
+    expect(aendern).toHaveAttribute('aria-expanded', 'false');
+    const felder = document.getElementById(aendern.getAttribute('aria-controls')!)!;
+    // Zu am Handy, offen ab 640 px; Person, Tag, Start und Ende in einem Bereich.
+    expect(felder).toHaveClass('hidden', 'sm:grid');
+    for (const name of ['Person', 'Tag', 'Start', 'Ende']) {
+      expect(felder).toContainElement(screen.getByLabelText(name));
+    }
+    fireEvent.click(aendern);
+    expect(aendern).toHaveAttribute('aria-expanded', 'true');
+    expect(felder).toHaveClass('grid');
+    expect(felder).not.toHaveClass('hidden');
+    expect(screen.queryByText(/Die Besuche eines Tages in Fahrtreihenfolge/)).toBeNull();
+  });
+
+  it('stellt die Liste vor die Karte und das Drucken am Handy darunter (Runde 3, ANN-254)', async () => {
     renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
     await screen.findByText('Max Mustermann');
-    const person = screen.getByLabelText('Person');
-    const tag = screen.getByLabelText('Tag');
-    expect(person.closest('.grid')).toBe(tag.closest('.grid'));
-    expect(person.closest('.grid')).toHaveClass('grid-cols-2');
-    // Der Start steht in der Liste, nach ihrer Überschrift.
     const liste = screen.getByRole('heading', { name: /^Tourenliste/ });
+    const karte = screen.getByRole('heading', { name: 'Karte' });
+    expect(liste.compareDocumentPosition(karte) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    const drucken = screen.getByRole('button', { name: 'Tourenliste drucken' });
+    expect(drucken).toHaveClass('sm:hidden');
     expect(
-      liste.compareDocumentPosition(screen.getByLabelText('Start')) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      screen
+        .getByRole('list', { name: 'Stopps in Fahrtreihenfolge' })
+        .compareDocumentPosition(drucken) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(screen.queryByText(/Die Besuche eines Tages in Fahrtreihenfolge/)).toBeNull();
+    // Ab 640 px steht „Drucken" oben rechts.
+    expect(screen.getByRole('button', { name: 'Drucken' })).toHaveClass('max-sm:hidden');
+  });
+
+  it('teilt ab 1024 px in zwei Spalten, die Karte rechts und mitlaufend (Runde 3)', async () => {
+    renderWithProviders(<TourenPage user={testUser(['therapist'])} />, '/touren?tag=2026-09-10');
+    await screen.findByText('Max Mustermann');
+    const karte = screen.getByRole('heading', { name: 'Karte' }).closest('details')!.parentElement!;
+    expect(karte).toHaveClass('lg:col-start-2', 'lg:sticky');
+    expect(karte.parentElement).toHaveClass('lg:grid', 'lg:grid-cols-[5fr_6fr]');
   });
 
   it('nimmt die Person aus der Adresse', async () => {

@@ -33,6 +33,7 @@ import {
   type PrescriberFeld,
   type PrescriberValues,
 } from './api';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Die Kartei der Verordner:innen - das Ziel, wenn kein gültiger Rückweg mitkam. */
 const KARTEI = '/verordner';
@@ -244,10 +245,10 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
         </div>
       </form>
 
-      <p className="text-ink-muted mt-10 max-w-prose text-xs leading-relaxed">
+      <Kleingedrucktes className="mt-10">
         Erfasst werden ausschließlich berufliche Kontaktdaten. Kassenmerkmale wie die Arztnummer
         werden nicht gespeichert.
-      </p>
+      </Kleingedrucktes>
     </>
   );
 }
