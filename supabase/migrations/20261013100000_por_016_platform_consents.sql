@@ -72,13 +72,13 @@ comment on column public.patient_privacy_records.platform_access_id is
 comment on column public.patient_privacy_records.representative_name is
   'POR-016: bei einer rechtlichen Vertretung ihr Name als Teil des Nachweises (ADR-023 Konsequenzen), weil Konto und Zugang frueher fallen.';
 comment on column public.patient_privacy_records.wording_version is
-  'POR-016 (ANN-262): die Fassung des Einwilligungstexts, die die Person auf der Plattform gesehen hat (src/features/platform/einwilligungen.ts).';
+  'POR-016 (ANN-262): die Fassung des Einwilligungstexts, die die Person auf der Plattform gesehen hat (src/features/platform/einwilligungstexte.ts).';
 
 -- -----------------------------------------------------------------------------
 -- 2. Die aktuelle Fassung der Einwilligungstexte (ANN-262)
 --
--- Eine Stelle. Der Text selbst steht in src/features/platform/einwilligungen.ts
--- (EINWILLIGUNGSFASSUNG); einwilligungen.test.ts prueft, dass beide gleich
+-- Eine Stelle. Der Text selbst steht in src/features/platform/einwilligungstexte.ts
+-- (EINWILLIGUNGSFASSUNG); einwilligungstexte.test.ts prueft, dass beide gleich
 -- sind. Aendert sich ein Text, aendert sich die Fassung, und eine Seite mit
 -- altem Text wird abgewiesen, statt eine Einwilligung zu einem Text zu
 -- speichern, den es nicht mehr gibt.

@@ -10,7 +10,7 @@
  * widerruft, speichert der Server die Fassung, die sie gesehen hat. Ändert
  * sich ein Text, steigt `EINWILLIGUNGSFASSUNG` - und
  * `app.platform_consent_wording_version()` in der Migration mit ihr;
- * `einwilligungen.test.ts` prüft, dass beide gleich sind. Eine Seite mit
+ * `einwilligungstexte.test.ts` prüft, dass beide gleich sind. Eine Seite mit
  * altem Text wird dann abgewiesen, statt eine Einwilligung zu einem Text zu
  * speichern, den es nicht mehr gibt.
  *

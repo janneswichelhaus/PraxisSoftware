@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, PLATTFORM_ZWECKE } from './einwilligungen';
+import { EINWILLIGUNGSFASSUNG, EINWILLIGUNGSTEXTE, PLATTFORM_ZWECKE } from './einwilligungstexte';
 
 /**
  * Die Fassung der Einwilligungstexte steht an zwei Stellen: hier für die

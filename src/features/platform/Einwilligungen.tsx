@@ -15,7 +15,7 @@ import {
   EINWILLIGUNGSTEXTE,
   FREIWILLIG,
   OHNE_NACHTEIL,
-} from './einwilligungen';
+} from './einwilligungstexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { datum } from './zeit';
 

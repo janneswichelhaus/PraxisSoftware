@@ -33,8 +33,8 @@ create table public.training_consent_records (
                              references public.training_relationships (id) on delete cascade,
   record_kind              text not null check (record_kind in ('consent_granted', 'consent_withdrawn')),
   -- Muss deckungsgleich mit PLATTFORM_ZWECKE.training in
-  -- src/features/platform/einwilligungen.ts bleiben.
-  purpose                  text not null check (purpose in ('training_health_data')),
+  -- src/features/platform/einwilligungstexte.ts bleiben.
+  purpose                  text not null check (purpose = 'training_health_data'),
   -- Der Tag auf dem Papier bzw. der Tag auf der Plattform.
   occurred_on              date not null,
   recorded_at              timestamptz not null default now(),

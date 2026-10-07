@@ -3163,7 +3163,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Begründung.** Art. 7 Abs. 1 DSGVO: Die Praxis muss nachweisen, worin eingewilligt wurde; ohne Fassung zeigte ein späterer Text eine andere Einwilligung. Die Rückfrage macht sie ausdrücklich (Art. 9 Abs. 2 lit. a). Der Wortlaut ist ein Entwurf und wird in B2 geprüft. Unsicher: ob eine Textänderung bestehende Einwilligungen berührt (heute nicht).
 
-**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/platform/einwilligungen.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/platform/einwilligungen.test.ts`.
+**Anker.** `EINWILLIGUNGSFASSUNG` und `EINWILLIGUNGSTEXTE` in `src/features/platform/einwilligungstexte.ts`; `app.platform_consent_wording_version` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`. Gleichlauf geprüft in `src/features/platform/einwilligungstexte.test.ts`.
 
 **Änderungspfad.** Neuer Wortlaut: Text und Fassung an beiden Stellen anheben · Aufwand `klein`. Bestehende Einwilligungen neu einholen: eigener Loop · Aufwand `mittel`.
 

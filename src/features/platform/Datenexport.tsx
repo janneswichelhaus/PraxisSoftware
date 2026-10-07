@@ -6,7 +6,7 @@ import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatEuro } from '@/lib/geld';
 import { ladeDatenexport, type Datenexport as Daten, type Plattformzugang } from './api';
-import { EINWILLIGUNGSTEXTE } from './einwilligungen';
+import { EINWILLIGUNGSTEXTE } from './einwilligungstexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
 import { datum, tagLang, zeitraum } from './zeit';
