@@ -31,7 +31,7 @@ export type ConsentWithdrawal = z.infer<typeof widerrufSchema>;
 
 export const CONSENT_WITHDRAWALS_KEY = ['open-points', 'consent-withdrawals'] as const;
 
-/** Die Zwecke in der Sprache der Praxis; Training kommt mit POR-017 hinzu. */
+/** Die Zwecke in der Sprache der Praxis, Behandlung und Training (POR-017). */
 export function purposeLabel(purpose: string): string {
   if (purpose in zweckTexte) return zweckTexte[purpose as keyof typeof zweckTexte].label;
   if (purpose === 'training_health_data') return 'Gesundheitsangaben im Training';

@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 92 Einträge):
+Zusatz `Prüfpaket` (heute 93 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3178,3 +3178,15 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `app.platform_withdrawal_notice_days` und `list_platform_consent_withdrawals` in `supabase/migrations/20261013100000_por_016_platform_consents.sql`; `src/features/open-points/consent-withdrawals-api.ts`.
 
 **Änderungspfad.** Andere Frist: die Zahl · Aufwand `klein`. Quittung: Spalte und Funktion · Aufwand `mittel`.
+
+### ANN-264 — Einwilligung im Training: eigener Vermerk am Verhältnis, ein Widerruf löscht nichts selbst
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Folgefrage)
+
+**Annahme.** Die Einwilligung zu Angaben zur Gesundheit im Training (Art. 9 Abs. 2 lit. a) ist ein Vermerk je Trainingsverhältnis mit einem Zweck, `training_health_data`, nur anhängend wie in PAT-006. Die Praxis vermerkt sie vom Papier (owner, Trainingsbetreuung, Büro), die Kund:in oder ihre rechtliche Vertretung erteilt und widerruft auf der Plattform. Ein Widerruf löscht keine Angaben selbst: Die Seite sagt „keine neuen Angaben“, und was mit den bisherigen geschieht, klärt die Praxis mit der Person. Ohne Einwilligung bleibt das Trainingsprotokoll heute bedienbar.
+
+**Begründung.** ADR-021 Punkt 4 verlangt die ausdrückliche Einwilligung, Punkt 5 eine Tabelle am Verhältnis, Punkt 6 kein Lesen aus der Behandlung. Art. 17 Abs. 1 lit. b DSGVO verlangt nach einem Widerruf das Löschen, wenn keine andere Grundlage besteht; ob Vertrag oder Abrechnung Teile tragen, ist die offene Folgefrage von ADR-021 (B2). Ein automatisches Löschen wäre nicht rücknehmbar. Unsicher: ob die Prüfung eine Frist für das Löschen nach dem Widerruf setzt und das Protokoll ohne Einwilligung sperren will.
+
+**Anker.** `training_consent_records` und `record_training_consent_entry` in `supabase/migrations/20261013110000_por_017_training_consent.sql`; `TrainingEinwilligung` in `src/features/training/TrainingEinwilligung.tsx`.
+
+**Änderungspfad.** Protokoll nur mit Einwilligung: Prüfung in den Schreibfunktionen des Protokolls · Aufwand `mittel`. Löschen nach Widerruf: Regel im Löschlauf · Aufwand `mittel`.

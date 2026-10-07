@@ -668,3 +668,69 @@ export function anschriftZurPruefung(
 ): boolean {
   return !kundin.house_number && /\d/.test(kundin.street ?? '');
 }
+
+// -----------------------------------------------------------------------------
+// Einwilligung zu Gesundheitsangaben (POR-017, ADR-021 Punkt 4)
+// -----------------------------------------------------------------------------
+
+const einwilligungSchema = z.object({
+  id: z.string().uuid(),
+  record_kind: z.enum(['consent_granted', 'consent_withdrawn']),
+  occurred_on: datum,
+  recorded_at: z.string(),
+  source: z.enum(['practice', 'platform']),
+  platform_access_kind: z.enum(['self', 'legal_representative']).nullable(),
+  representative_name: z.string().nullable(),
+});
+export type TrainingConsentRecord = z.infer<typeof einwilligungSchema>;
+
+export function trainingConsentKey(relationshipId: string) {
+  return ['training-consents', relationshipId] as const;
+}
+
+/**
+ * Alle Vermerke, älteste zuerst. Gelesen direkt aus der Tabelle - die RLS
+ * lässt owner, Trainingsbetreuung und Büro lesen (ADR-021 Punkt 6).
+ */
+export async function listTrainingConsents(
+  relationshipId: string,
+): Promise<TrainingConsentRecord[]> {
+  const satz = 'Die Einwilligung konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase()
+    .from('training_consent_records')
+    .select(
+      'id, record_kind, occurred_on, recorded_at, source, platform_access_kind, representative_name',
+    )
+    .eq('training_relationship_id', relationshipId)
+    .order('recorded_at', { ascending: true })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(einwilligungSchema), data ?? [], satz);
+}
+
+/** Der Stand ist die jüngste Zeile (wie bei PAT-006). */
+export function trainingConsentState(
+  vermerke: readonly TrainingConsentRecord[],
+): TrainingConsentRecord | null {
+  return [...vermerke].sort((a, b) => a.recorded_at.localeCompare(b.recorded_at)).at(-1) ?? null;
+}
+
+/** Eine Einwilligung oder ihren Widerruf vom Papier vermerken. */
+export async function recordTrainingConsent(
+  relationshipId: string,
+  art: TrainingConsentRecord['record_kind'],
+  tag: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('record_training_consent_entry', {
+    p_training_relationship_id: relationshipId,
+    p_record_kind: art,
+    p_occurred_on: tag,
+  })) as { error: { message?: string } | null };
+  if (!error) return;
+  const m = error.message ?? '';
+  if (m.includes('future')) throw new Error('Das Datum darf nicht in der Zukunft liegen.');
+  if (m.includes('already granted')) throw new Error('Die Einwilligung ist bereits vermerkt.');
+  if (m.includes('withdrawal before consent'))
+    throw new Error('Der Widerruf kann nicht vor der Einwilligung liegen.');
+  if (m.includes('not allowed')) throw new Error('Für diesen Vermerk fehlt die Berechtigung.');
+  throw new Error('Der Vermerk konnte nicht gespeichert werden.');
+}

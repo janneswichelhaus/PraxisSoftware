@@ -20,7 +20,7 @@ import {
  * nach der Lesefrist.
  */
 
-const { users, platformAccesses, patients, organizationId } = SEED;
+const { users, platformAccesses, patients, organizationId, trainingRelationships } = SEED;
 const ERIKA = platformAccesses.erikaBehandlung;
 const PAULA = platformAccesses.paulaBegleitungMax;
 const FASSUNG = '2026-10';
@@ -345,5 +345,140 @@ describe('Einwilligungen in der Behandlung über die Plattform (POR-016)', () =>
       ),
     );
     expect(vertretungOhneName).not.toBeNull();
+  });
+});
+
+const TINA = platformAccesses.tinaTraining;
+const VERMERKEN = 'select public.record_training_consent_entry($1::uuid, $2::text, $3::date) as id';
+
+describe('Einwilligung im Training (POR-017)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  it('die Kundin erteilt und widerruft; das Training liest den Stand, die Behandlung nicht', async () => {
+    expect((await stand(users.plattformTina, TINA)).map((s) => [s.purpose, s.state])).toEqual([
+      ['training_health_data', 'open'],
+    ]);
+    await schreiben(users.plattformTina, TINA, 'training_health_data', true);
+    expect((await stand(users.plattformTina, TINA))[0]).toEqual(
+      expect.objectContaining({ state: 'granted', source: 'platform' }),
+    );
+
+    const lesen = `select record_kind, source, platform_access_kind, wording_version
+                     from public.training_consent_records where training_relationship_id = $1`;
+    for (const konto of [users.trainer, users.office, users.ownerTherapist]) {
+      expect((await asUser(konto, lesen, [trainingRelationships.tina])).rows).toEqual([
+        {
+          record_kind: 'consent_granted',
+          source: 'platform',
+          platform_access_kind: 'self',
+          wording_version: FASSUNG,
+        },
+      ]);
+    }
+    // Kein Durchgriff (ADR-021 Punkt 6): Behandlungsrollen ohne Training sehen nichts.
+    for (const konto of [users.therapist, users.teamLead, users.plattformTina]) {
+      expect((await asUser(konto, lesen, [trainingRelationships.tina])).rows).toEqual([]);
+    }
+
+    await schreiben(users.plattformTina, TINA, 'training_health_data', false);
+    const trainer = await asUser<{ relationship_kind: string; training_relationship_id: string }>(
+      users.trainer,
+      WIDERRUFE,
+    );
+    expect(trainer.rows).toEqual([
+      expect.objectContaining({
+        relationship_kind: 'training',
+        training_relationship_id: trainingRelationships.tina,
+        purpose: 'training_health_data',
+      }),
+    ]);
+    // Die Behandlungsseite erfährt vom Widerruf im Training nichts.
+    expect((await asUser(users.therapist, WIDERRUFE)).rows).toEqual([]);
+  });
+
+  it('Zwecke bleiben im eigenen Bereich (§4.8)', async () => {
+    const imTraining = await abgefangen(
+      schreiben(users.plattformErika, platformAccesses.erikaTraining, 'email_contact', true),
+    );
+    expect(imTraining?.message).toContain('unknown purpose');
+    const inDerBehandlung = await abgefangen(
+      schreiben(users.plattformErika, ERIKA, 'training_health_data', true),
+    );
+    expect(inDerBehandlung?.message).toContain('unknown purpose');
+    // Erikas Training und Erikas Behandlung haben je ihren eigenen Stand.
+    await schreiben(
+      users.plattformErika,
+      platformAccesses.erikaTraining,
+      'training_health_data',
+      true,
+    );
+    expect((await stand(users.plattformErika, ERIKA)).map((s) => s.state)).toEqual([
+      'open',
+      'open',
+      'open',
+    ]);
+  });
+
+  it('die Praxis vermerkt vom Papier: wer das Training schreibt, und nur nach den Regeln', async () => {
+    await asUserCommitted(users.trainer, VERMERKEN, [
+      trainingRelationships.tina,
+      'consent_granted',
+      '2026-10-01',
+    ]);
+    expect((await stand(users.plattformTina, TINA))[0]).toEqual(
+      expect.objectContaining({ state: 'granted', source: 'practice' }),
+    );
+    const doppelt = await abgefangen(
+      asUser(users.office, VERMERKEN, [
+        trainingRelationships.tina,
+        'consent_granted',
+        '2026-10-02',
+      ]),
+    );
+    expect(doppelt?.message).toContain('consent already granted');
+    const zukunft = await abgefangen(
+      asUser(users.office, VERMERKEN, [
+        trainingRelationships.tina,
+        'consent_withdrawn',
+        '2999-01-01',
+      ]),
+    );
+    expect(zukunft?.message).toContain('future');
+    const vorher = await abgefangen(
+      asUser(users.office, VERMERKEN, [
+        trainingRelationships.tina,
+        'consent_withdrawn',
+        '2026-09-01',
+      ]),
+    );
+    expect(vorher?.message).toContain('withdrawal before consent');
+    for (const konto of [users.therapist, users.teamLead, users.plattformTina]) {
+      const fehler = await abgefangen(
+        asUser(konto, VERMERKEN, [trainingRelationships.tina, 'consent_withdrawn', '2026-10-05']),
+      );
+      expect(fehler?.message).toMatch(/not allowed|not found/);
+    }
+    const fremd = await fremdeOrganisation();
+    const fremdOwner = await abgefangen(
+      asUser(fremd.owner, VERMERKEN, [
+        trainingRelationships.tina,
+        'consent_withdrawn',
+        '2026-10-05',
+      ]),
+    );
+    expect(fremdOwner).not.toBeNull();
+  });
+
+  it('fällt mit dem Trainingsverhältnis (Datenklasse Trainingsverhältnis)', async () => {
+    await schreiben(users.plattformTina, TINA, 'training_health_data', true);
+    const { rows } = await asPostgres<{ class_key: string; deletion_mode: string }>(
+      `select class_key, deletion_mode from public.retention_assignments
+        where table_name = 'training_consent_records'`,
+    );
+    expect(rows).toEqual([
+      { class_key: 'trainingsverhaeltnis', deletion_mode: 'ueber_elterndatensatz' },
+    ]);
   });
 });

@@ -43,10 +43,7 @@ describe('Einwilligungstexte (ANN-262)', () => {
 
   it('die Zwecke je Bereich sind die des Servers', () => {
     const sql = letzteDefinition('app.platform_consent_purposes');
-    // POR-016: Behandlung. Training kommt mit POR-017.
-    for (const [bereich, zwecke] of Object.entries(PLATTFORM_ZWECKE).filter(
-      ([b]) => b === 'treatment',
-    )) {
+    for (const [bereich, zwecke] of Object.entries(PLATTFORM_ZWECKE)) {
       const liste = zwecke.map((z) => `'${z}'`).join(', ');
       expect(sql).toContain(`when '${bereich}' then array[${liste}]`);
     }
