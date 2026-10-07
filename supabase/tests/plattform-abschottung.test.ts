@@ -82,6 +82,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Offenes Trainingsangebot der Akte (KND-003); Negativfälle in training-contracts.test.ts',
   'public.accept_platform_training_offer':
     'Trainingsvertrag im eigenen Konto schließen (KND-003); nur der eigene Zugang, sonst abgewiesen (42501), Negativfälle in training-contracts.test.ts',
+  'public.withdraw_platform_training_contract':
+    'Trainingsvertrag widerrufen (KND-004, Par. 356a BGB); ohne Recht contract abgewiesen (42501), Negativfälle in training-contracts.test.ts',
   'public.platform_training_contract':
     'Eigener Trainingsvertrag mit Bestätigung (KND-003); Negativfälle in training-contracts.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.

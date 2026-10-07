@@ -46,6 +46,7 @@ import { TrainingEinheiten } from './TrainingProtocol';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
+import { TrainingVertraege } from './TrainingVertraege';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -208,6 +209,8 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
           {/* ANG-006: das Paket nach Zeitraum - owner und office (ANN-071). */}
           {canManageInvoicing(user.roles) ? <Trainingspaket verhaeltnisId={kundin.id} /> : null}
+          {/* KND-004: im Konto geschlossene Verträge und ihr Widerruf (owner, office). */}
+          {canManageInvoicing(user.roles) ? <TrainingVertraege relationshipId={kundin.id} /> : null}
           {/* POR-017: Einwilligung zu Gesundheitsangaben (ADR-021 Punkt 4). */}
           {user.organizationTimeZone ? (
             <TrainingEinwilligung

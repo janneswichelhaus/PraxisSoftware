@@ -120,6 +120,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_questionnaire_response',
       'rpc:withdraw_platform_appointment_request',
+      // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
+      'rpc:withdraw_platform_training_contract',
     ]);
   });
 

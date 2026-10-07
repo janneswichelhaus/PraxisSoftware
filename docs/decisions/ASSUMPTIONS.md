@@ -3490,3 +3490,15 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** Die Prüfung `v_zugang.access_kind <> 'self'` in `public.accept_platform_training_offer` und `can_accept` in `public.platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`. Geprüft in `supabase/tests/training-contracts.test.ts`.
 
 **Änderungspfad.** Rechtliche Vertretung schließt ab: Vertretungszugang zum neuen Verhältnis mit übernommenem Nachweis anlegen · Aufwand `mittel`.
+
+### ANN-290 — Der Widerruf im Konto ist die Erklärung; die Praxis wickelt ab
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); Jannes in der Sichtung Angebote
+
+**Annahme.** Unter „Ich → Trainingsvertrag“ steht bis zum Ende der Widerrufsfrist (14 Tage ab Abschluss) der Knopf „Vertrag widerrufen“, danach eine Seite mit „Widerruf bestätigen“ und sofort der Eingang mit Datum und Uhrzeit zum Drucken. Widerrufen können die Person selbst und eine rechtliche Vertretung mit Vermögenssorge am Trainingszugang, nie die Begleitung. Der Widerruf steht am Vertragsnachweis, 14 Tage in Offene Punkte und dauerhaft am Trainingsverhältnis (owner, Büro). Er löscht und storniert nichts selbst: Paket entfernen oder stornieren, zurückzahlen und den Vertrag beenden macht die Praxis mit den vorhandenen Funktionen. Ein Widerruf auf anderem Weg (Brief, E-Mail) vermerkt die Praxis heute nicht in der Anwendung.
+
+**Begründung.** § 356a BGB verlangt seit dem 19. Juni 2026 bei Verträgen über eine Online-Oberfläche eine Widerrufsfunktion mit Bestätigungsschritt und Eingangsbestätigung auf einem dauerhaften Datenträger. Was bei frühem Beginn als Wertersatz bleibt (§ 357a Abs. 2 BGB), hängt an den schon erbrachten Einheiten und ist eine Einzelfallrechnung; eine automatische Stornierung wäre ein Beleg ohne Regel für die Höhe. Unsicher: ob die Praxis Widerrufe per Brief ebenfalls in der Anwendung vermerken will.
+
+**Anker.** `public.withdraw_platform_training_contract` und `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; Knopf in `src/features/platform/Vertrag.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` und `src/features/platform/Vertrag.test.tsx`.
+
+**Änderungspfad.** Widerruf per Brief vermerken: Praxisfunktion mit Herkunft `practice` wie bei der Abo-Kündigung · Aufwand `klein`. Automatische Rückabwicklung ohne frühen Beginn: Paket entfernen bzw. stornieren im selben Aufruf · Aufwand `mittel`.

@@ -695,13 +695,22 @@ function VertragKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: bo
   const titel = `Trainingsvertrag${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
   return (
     <Section titel={titel} rahmen>
-      <p className="text-ink text-base">Gebucht am {datum(data.concluded_at)}.</p>
+      <p className="text-ink text-base">
+        Gebucht am {datum(data.concluded_at)}.
+        {data.withdrawn_at
+          ? ` Widerrufen am ${datum(data.withdrawn_at)}.`
+          : data.can_withdraw
+            ? ` Widerruf möglich bis ${datum(data.withdrawal_ends_on)}.`
+            : ''}
+      </p>
       <div className="mt-2">
         <Textlink
           alleinstehend
           to={`${PLATTFORM_PFAD}/vertrag?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
         >
-          Vertrag und Bestätigung ansehen
+          {data.can_withdraw
+            ? 'Vertrag ansehen oder widerrufen'
+            : 'Vertrag und Bestätigung ansehen'}
         </Textlink>
       </div>
     </Section>

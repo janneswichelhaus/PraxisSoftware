@@ -436,3 +436,121 @@ describe('Trainingsvertrag im eigenen Konto (KND-003)', () => {
     });
   });
 });
+
+/**
+ * Den Trainingsvertrag widerrufen (KND-004, Par. 356a BGB, ANN-290): Knopf
+ * im Konto, Eingangsbestätigung, nur in der Frist und einmal; die Praxis
+ * sieht den Widerruf in Offene Punkte und am Verhältnis.
+ */
+describe('Widerruf über die Plattform (KND-004)', () => {
+  const WIDERRUFEN =
+    'select public.withdraw_platform_training_contract($1::uuid, $2::uuid) as eingang';
+  const OFFEN = 'select * from public.list_platform_training_withdrawals()';
+  const NACHWEIS = 'select public.get_training_contracts($1::uuid) as vertraege';
+
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function gebucht(): Promise<{ zugang: string; vertrag: string; rel: string }> {
+    await vorbereiten();
+    const id = await anbieten(await tag('heute + 20'));
+    const { rows } = await annehmen(id);
+    const b = rows[0]!.bestaetigung;
+    return {
+      zugang: b['training_access_id'] as string,
+      vertrag: b['contract_id'] as string,
+      rel: (await neuesVerhaeltnis())!,
+    };
+  }
+
+  it('nimmt den Widerruf an, bestätigt den Eingang und zeigt ihn der Praxis', async () => {
+    const { zugang, vertrag, rel } = await gebucht();
+    const { rows: vorher } = await asUser<{ vertrag: { can_withdraw: boolean } }>(
+      users.plattformErika,
+      VERTRAG,
+      [zugang],
+    );
+    expect(vorher[0]!.vertrag.can_withdraw).toBe(true);
+
+    const { rows } = await asUserCommitted<{ eingang: Record<string, unknown> }>(
+      users.plattformErika,
+      WIDERRUFEN,
+      [zugang, vertrag],
+    );
+    expect(rows[0]!.eingang).toMatchObject({ withdrawn_on: await tag('heute') });
+    expect(rows[0]!.eingang['withdrawn_at']).toBeTruthy();
+
+    const { rows: nachher } = await asUser<{
+      vertrag: { can_withdraw: boolean; withdrawn_at: string };
+    }>(users.plattformErika, VERTRAG, [zugang]);
+    expect(nachher[0]!.vertrag).toMatchObject({ can_withdraw: false });
+    expect(nachher[0]!.vertrag.withdrawn_at).toBeTruthy();
+    await expect(asUser(users.plattformErika, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /already withdrawn/,
+    );
+
+    const { rows: offen } = await asUser<{ contract_id: string; withdrawn_access_kind: string }>(
+      users.office,
+      OFFEN,
+    );
+    expect(offen).toEqual([
+      expect.objectContaining({ contract_id: vertrag, withdrawn_access_kind: 'self' }),
+    ]);
+    const { rows: n } = await asUser<{ vertraege: Array<{ withdrawn_on: string }> }>(
+      users.ownerTherapist,
+      NACHWEIS,
+      [rel],
+    );
+    expect(n[0]!.vertraege[0]!.withdrawn_on).toBe(await tag('heute'));
+
+    // Der Widerruf löscht und storniert nichts selbst (ANN-290).
+    const { rows: paket } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.training_packages where training_relationship_id = $1',
+      [rel],
+    );
+    expect(paket[0]!.n).toBe(1);
+  });
+
+  it('lässt nach dem Ende der Frist nicht mehr widerrufen', async () => {
+    const { zugang, vertrag } = await gebucht();
+    await asPostgres(
+      `update public.training_contracts
+          set concluded_on = concluded_on - 20, withdrawal_ends_on = concluded_on - 6
+        where id = $1`,
+      [vertrag],
+    );
+    const { rows } = await asUser<{ vertrag: { can_withdraw: boolean } }>(
+      users.plattformErika,
+      VERTRAG,
+      [zugang],
+    );
+    expect(rows[0]!.vertrag.can_withdraw).toBe(false);
+    await expect(asUser(users.plattformErika, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /period has ended/,
+    );
+  });
+
+  it('weist Behandlungszugang, fremde Konten und die Praxis ab', async () => {
+    const { zugang, vertrag, rel } = await gebucht();
+    await expect(asUser(users.plattformErika, WIDERRUFEN, [ERIKA, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+    await expect(asUser(users.plattformTina, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+    await expect(asUser(users.plattformTina, WIDERRUFEN, [TINA, vertrag])).rejects.toThrow(
+      /not found/,
+    );
+    await expect(asUser(users.office, WIDERRUFEN, [zugang, vertrag])).rejects.toThrow(
+      /not allowed/,
+    );
+    // Die Trainingsbetreuung sieht weder Offene Punkte noch Nachweis.
+    expect((await asUser(users.trainer, OFFEN)).rows).toEqual([]);
+    const { rows } = await asUser<{ vertraege: unknown }>(users.trainer, NACHWEIS, [rel]);
+    expect(rows[0]!.vertraege).toBeNull();
+    const fremd = await fremdeOrganisation();
+    const { rows: f } = await asUser<{ vertraege: unknown }>(fremd.owner, NACHWEIS, [rel]);
+    expect(f[0]!.vertraege).toBeNull();
+  });
+});

@@ -987,6 +987,10 @@ const vertragSchema = z.object({
   health_consent_granted: z.boolean(),
   withdrawal_ends_on: z.string(),
   released_titles: z.array(z.string()),
+  /** KND-004: Eingang des Widerrufs; null: nicht widerrufen. */
+  withdrawn_at: z.string().nullable().default(null),
+  /** KND-004: Knopf da? In der Frist, nicht widerrufen, Recht contract. */
+  can_withdraw: z.boolean().default(false),
 });
 export type Trainingsvertrag = z.infer<typeof vertragSchema>;
 
@@ -1002,4 +1006,30 @@ export async function ladeVertrag(zugangId: string): Promise<Trainingsvertrag | 
   })) as { data: unknown; error: unknown };
   if (ergebnis.error) throw new Error(satz);
   return antwort(vertragSchema.nullable(), ergebnis.data ?? null, satz);
+}
+
+const widerrufSchema = z.object({
+  withdrawn_at: z.string(),
+  withdrawn_on: z.string(),
+  label: z.string(),
+  concluded_at: z.string(),
+});
+export type Widerrufseingang = z.infer<typeof widerrufSchema>;
+
+/** Die Widerrufsfunktion (§ 356a BGB, KND-004): liefert den Eingang mit Zeitpunkt. */
+export async function vertragWiderrufen(
+  zugangId: string,
+  vertragId: string,
+): Promise<Widerrufseingang> {
+  const satz = 'Der Widerruf ist nicht angekommen. Bitte versuchen Sie es noch einmal.';
+  const ergebnis = (await getSupabase().rpc('withdraw_platform_training_contract', {
+    p_access_id: zugangId,
+    p_contract_id: vertragId,
+  })) as { data: unknown; error: { message?: string } | null };
+  const meldung = ergebnis.error?.message ?? '';
+  if (meldung.includes('already withdrawn')) throw new Error('Sie haben schon widerrufen.');
+  if (meldung.includes('period has ended'))
+    throw new Error('Die Widerrufsfrist ist abgelaufen. Bitte wenden Sie sich an die Praxis.');
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(widerrufSchema, ergebnis.data, satz);
 }
