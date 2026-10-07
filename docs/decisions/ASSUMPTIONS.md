@@ -3394,3 +3394,51 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 **Anker.** `public.platform_training_offers` und `public.platform_training_packages` in `supabase/migrations/20261015130000_ang_008_platform_training_package.sql`; Wortlaut in `src/features/platform/paketbedingungen.ts`, Seite `src/features/platform/Paket.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/platform/Paket.test.tsx`.
 
 **Änderungspfad.** Abschluss über die Plattform: eigener Loop mit Widerrufsbelehrung (KND-EPIC-001) · Aufwand `groß`. Preise auch für die Behandlung: eine Bedingung in der einen Funktion · Aufwand `klein`.
+
+### ANN-282 — Ein Trainingsangebot halten die Rollen der Akte fest; ob die Person schon trainiert, prüft erst ihr eigenes Konto
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (B2, §4.8)
+
+**Annahme.** Ein Trainingsangebot legen owner, Therapeut:in, Teamleitung und Büro in der Akte an und ziehen es zurück – dieselben Rollen, die die Akte schreiben. Die Trainingsbetreuung sieht kein Angebot. Beim Anbieten fragt der Server nicht, ob die Person schon ein Trainingsverhältnis hat; das zeigt erst die Seite in ihrem eigenen Konto („Sie haben schon einen Trainingsvertrag“).
+
+**Begründung.** §4.10: Das Abschlussgespräch führt die behandelnde Person, und angeboten wird mündlich. §4.8 verbietet den Schluss von einer Rolle des einen Bereichs auf den anderen, „auch nicht mittelbar über die gemeinsame Identität“; eine Fehlermeldung „hat schon ein Trainingsverhältnis“ wäre genau so ein Schluss für eine Therapeut:in. Das Angebot hängt an der Akte (ADR-021 Punkt 5) und enthält Angaben aus der Behandlung, also gehört es den Rollen der Akte. Unsicher: ob Jannes das Anbieten auf owner und Büro beschränken will, weil es ein Angebot über Geld ist.
+
+**Anker.** `app.can_update_patient()` in `public.create_training_offer` und `public.withdraw_training_offer` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; Abschnitt `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Nur owner und Büro: `app.can_manage_training_packages()` statt `app.can_update_patient()` in den beiden Funktionen, die Oberfläche folgt `canManageInvoicing` · Aufwand `klein`.
+
+### ANN-283 — Aus der Behandlung wandern nur wörtlich formulierte Übergabeangaben, keine Felder der Akte
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 7)
+
+**Annahme.** Was aus der Akte ins Training mitgehen soll, formuliert die Praxis im Angebot als bis zu fünf Angaben mit Überschrift (bis 80 Zeichen) und Text (bis 600 Zeichen), etwa „Belastungsgrenzen“ oder „Vorgeschichte“. Dazu kann sie die Kontaktdaten der Akte anbieten. Die Person sieht jede Angabe wörtlich und gibt sie einzeln frei; nur Freigegebenes wird beim Annehmen als Kopie mit Herkunftsvermerk ins Training geschrieben. Eine Auswahl beliebiger Felder aus Befund oder Dokumentation gibt es nicht.
+
+**Begründung.** ADR-021 Punkt 7 verlangt eine dokumentierte Kopie mit Einwilligung, nie eine Referenz; `IDEA-LZK-003` nennt als Beispiele Kontraindikationen, Belastungsgrenzen und Verletzungshistorie – Zusammenfassungen, die eine Therapeut:in schreibt, keine Rohfelder. Eine Einwilligung ist nur informiert (Art. 4 Nr. 11, Art. 7 DSGVO), wenn die Person genau sieht, was weitergeht; bei einem Befundfeld voller Fachbegriffe sähe sie das nicht. Fünf Angaben genügen für die Beispiele und halten die Seite am Telefon lesbar. Unsicher: ob die Prüfung eine Übernahme von Befundzahlen (etwa Bewegungsausmaß) verlangt.
+
+**Anker.** `app.training_offer_handover_valid` und die Spalte `handover_items` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `UEBERGABE_HOECHSTENS` in `src/features/training-offers/api.ts`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Mehr oder längere Angaben: die Zahlen in der einen Funktion und in `api.ts` · Aufwand `klein`. Befundfelder zur Auswahl: eigene Kopierfunktion je Feld · Aufwand `groß`.
+
+### ANN-284 — Ein Trainingsangebot gilt 14 Tage, höchstens bis zum Beginn; je Akte eines offen
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** Ein Angebot kann die Person 14 Tage lang annehmen, längstens bis zum Tag, an dem das Training beginnt. Der Beginn liegt zwischen heute und 90 Tagen voraus und nicht vor dem Abschluss der Versorgung. Je Akte ist höchstens ein Angebot offen; ein neues setzt voraus, dass das alte zurückgezogen, angenommen oder abgelaufen ist. Beim Zusammenführen zweier Akten sperren zwei offene Angebote.
+
+**Begründung.** Ein Angebot ohne Frist bliebe als Bindung der Praxis an einen alten Preis stehen (§ 145 BGB); 14 Tage decken die Zeit nach dem Abschlussgespräch, in der die Person überlegt. Ein Beginn in der Vergangenheit kommt bei einem Vertrag, der erst im Konto geschlossen wird, nicht in Frage; 90 Tage reichen für eine Pause zwischen Behandlung und Training. Der Beginn nach dem Abschluss folgt §4.10 und ANN-278. Unsicher: ob Jannes längere Bedenkzeiten will.
+
+**Anker.** `app.training_offer_state`, die Prüfungen in `public.create_training_offer` und der Block `training_offer_overlap` in `app.patient_merge_plan` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Andere Frist: `v_heute + 14` und `v_heute + 90` in der einen Funktion · Aufwand `klein`.
+
+### ANN-285 — Die Akte sieht, dass und wann ein Angebot angenommen wurde, sonst nichts aus dem Training
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, §4.8)
+
+**Annahme.** Nimmt die Person ein Angebot an, steht am Angebot in der Akte „Angenommen am …“. Ein Verweis auf das Trainingsverhältnis entsteht nicht, und die Akte zeigt weder Vertrag, Paketstand, Einwilligung noch Widerruf. Die Person liest auf der Seite zum Annehmen, dass die Praxis in der Akte sieht, dass sie angenommen hat.
+
+**Begründung.** Das Angebot entsteht in der Behandlung; dass es angenommen wurde, ist die Antwort darauf und für die behandelnde Person das Ende des Vorgangs („Abschlussgespräch erledigt“). ADR-021 Punkt 3 verbietet Fremdschlüssel zwischen den Verhältnissen, §4.8 den Schluss auf Inhalte des Trainings; ein Zeitpunkt ohne Verweis und mit Hinweis an die Person hält beides ein. Unsicher: ob die Prüfung auch diesen Zeitpunkt als Trainingsdatum sieht.
+
+**Anker.** Die Spalte `accepted_at` an `public.training_offers` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `standSatz` in `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
+
+**Änderungspfad.** Gar kein Rückfluss: `accepted_at` nur für die Prüfung „offen“ benutzen und in `get_patient_training_offers` als „nicht mehr offen“ ausgeben · Aufwand `klein`.

@@ -29,6 +29,7 @@ import { AnmeldebogenFoto, Datenschutz } from '@/features/datenschutz/Anmeldebog
 import { empfaengerartLabels, fetchEmpfaenger } from '@/features/billing/api';
 import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
 import { Nachsorgeabo } from '@/features/billing/Nachsorgeabo';
+import { Trainingsangebot } from '@/features/training-offers/Trainingsangebot';
 import { nachsorgeSchluessel } from '@/features/billing/nachsorge-api';
 import { fetchIntakeChecklist } from '@/features/open-points/intake-api';
 import { zugangMitStockwerk } from '@/features/today/stockwerk';
@@ -571,6 +572,10 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
               Punkt 21) legen owner und office an - dieselben Rollen wie
               Leistungen und Rechnungen. Verbindlich prüft der Server. */}
           {canManageInvoicing(user.roles) ? <Nachsorgeabo patientId={patient.id} /> : null}
+          {/* KND-EPIC-001: Training nach der Behandlung anbieten - die Rollen
+              der Akte (ANN-282). Angenommen wird im eigenen Konto; verbindlich
+              prüft der Server. */}
+          {darfVerorten ? <Trainingsangebot patientId={patient.id} /> : null}
         </Karte>
       </div>
 

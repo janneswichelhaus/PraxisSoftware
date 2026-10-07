@@ -131,6 +131,8 @@ describe('Schema-Invarianten', () => {
       'training_consent_records',
       // ANG-006: das Trainingspaket am Trainingsverhaeltnis.
       'training_packages',
+      // KND-002: das Trainingsangebot aus der Akte.
+      'training_offers',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

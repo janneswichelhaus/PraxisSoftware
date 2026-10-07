@@ -143,6 +143,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     label: 'Nachsorge-Abo',
     beschreibung: 'Beginn, Ende und Kündigung des Nachsorge-Abos nach der Behandlung.',
   },
+  training_offers: {
+    label: 'Trainingsangebote',
+    beschreibung:
+      'Welches Trainingspaket die Praxis nach der Behandlung angeboten hat, mit den Angaben, die sie mitgeben wollte, und ob es angenommen wurde.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',
