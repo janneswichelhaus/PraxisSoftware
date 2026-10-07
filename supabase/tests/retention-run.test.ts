@@ -157,6 +157,26 @@ describe('Loeschlauf: klinische Patientenakte', () => {
     ).toBe(1);
   });
 
+  it('loescht das Nachsorge-Abo mit der Akte (ANG-001)', async () => {
+    await abgeschlossenVor(patients.max, 11);
+    await asPostgres(
+      `insert into public.aftercare_subscriptions (organization_id, patient_id, starts_on, created_by)
+       select organization_id, id, care_concluded_on, $2::uuid from public.patients where id = $1`,
+      [patients.max, users.office],
+    );
+
+    await lauf();
+
+    expect(
+      await anzahl('select count(*) from public.aftercare_subscriptions where patient_id = $1', [
+        patients.max,
+      ]),
+    ).toBe(0);
+    expect(await anzahl('select count(*) from public.patients where id = $1', [patients.max])).toBe(
+      0,
+    );
+  });
+
   it('loescht die Dokumentation der Akte samt ihrer festgeschriebenen Versionen', async () => {
     await dokumentationAnlegen(patients.max);
     await abgeschlossenVor(patients.max, 11);

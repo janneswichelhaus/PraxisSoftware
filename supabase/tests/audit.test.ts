@@ -239,6 +239,8 @@ describe('Audit-Lesepfad', () => {
       'get_billable_service_draft',
       'get_intake_checklist',
       'get_invoice',
+      // ANG-001: die Nachsorge-Abos der Akte (owner, office).
+      'get_patient_aftercare',
       'get_patient_session_fee',
       'get_payment_reminder',
       'get_platform_access',

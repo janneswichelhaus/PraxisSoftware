@@ -108,6 +108,8 @@ describe('Schema-Invarianten', () => {
       'patient_questionnaire_responses',
       'patient_course_events',
       'patient_fee_agreements',
+      // ANG-001: das Nachsorge-Abo an der Akte.
+      'aftercare_subscriptions',
       'appointment_session_fees',
       'therapy_reports',
       'waitlist_entries',

@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 94 Einträge):
+Zusatz `Prüfpaket` (heute 95 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3226,3 +3226,27 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 **Anker.** `.plattform-schrift` und `html[data-schrift]` in `src/index.css`; `src/features/platform/schriftgroesse.ts`; `listenzeile` in `src/components/ui/ListRow.tsx`. Geprüft in `tests/e2e/plattform-barrierefreiheit.spec.ts`.
 
 **Änderungspfad.** Andere Grundgröße: die Tokens in `.plattform-schrift` · Aufwand `klein`. Ziele 48 px: Mindesthöhe der Textlinks im Gerüst · Aufwand `klein`. Größe am Konto speichern: Spalte und Projektion · Aufwand `mittel`.
+
+### ANN-268 — Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** „Ende der Behandlungsgrundlage“ (ADR-009 Punkt 21) heißt im Modell: Abschluss der Versorgung in der Akte (`care_concluded_on`). Vorher lässt sich kein Abo anlegen; es beginnt frühestens an diesem Tag und nach dem Ende jedes früheren Abos. Je Person läuft höchstens eines.
+
+**Begründung.** Eine Grundlage hat kein eigenes Ende; sie endet faktisch mit ihrem Kontingent (ADR-020, Folgefragen). Der Abschluss der Versorgung ist der eine ausdrückliche, rücknehmbare Vorgang, der alle Grundlagen zugleich beendet, und er steuert schon Lesefrist und Aufbewahrung. Er ist strenger als das Ende eines Kontingents und schließt aus, dass Behandlung und Abo nebeneinander berechnet werden (§19). Unsicher: ob Jannes nach jeder Verordnung abschließt, auch wenn eine Folgeverordnung offen ist.
+
+**Anker.** `app.aftercare_earliest_start` in `supabase/migrations/20261014100000_ang_001_aftercare_subscriptions.sql`; Hinweis in `src/features/billing/Nachsorgeabo.tsx`. Geprüft in `supabase/tests/aftercare-subscriptions.test.ts`.
+
+**Änderungspfad.** Beginn ab dem letzten Termin der letzten Grundlage: die eine Funktion · Aufwand `klein`.
+
+### ANN-270 — Abo-Monate laufen ab dem Beginn, werden zu ihrem Beginn berechnet und enden mit der Kündigung zum Ende des laufenden Monats
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Abos); Jannes mit dem Preis
+
+**Annahme.** Ein Abo-Monat läuft vom Tag des Beginns bis zum Vortag desselben Tags im Folgemonat, immer vom Beginn aus gerechnet (Beginn 31.01.: 31.01.–27.02., 28.02.–30.03.). Er wird zu seinem Beginn berechnet: Ab dem ersten Tag steht er zum Erfassen bereit. Eine Kündigung wirkt zum Ende des laufenden Abo-Monats, ohne weitere Frist; vor dem Beginn beendet sie das Abo, bevor ein Monat entsteht.
+
+**Begründung.** „Monatlich kündbar“ (§4.6, ADR-009 Punkt 21) ohne Bindung über den laufenden Monat hinaus liegt innerhalb von § 309 Nr. 9 BGB; Vorauszahlung je Monat ist bei Abos üblich und vermeidet eine Abrechnung nach Tagen. Vom Beginn aus gerechnet, damit der Tag nicht dauerhaft auf den 28. springt. Unsicher: ob ein Widerruf nach § 312g BGB (Vertrag beim Hausbesuch) eine Erstattung des ersten Monats verlangt – das liefe heute über Storno.
+
+**Anker.** `app.aftercare_month_start`, `app.aftercare_month_end`, `app.aftercare_month_index` in `supabase/migrations/20261014100000_ang_001_aftercare_subscriptions.sql`. Geprüft in `supabase/tests/aftercare-subscriptions.test.ts`.
+
+**Änderungspfad.** Kalendermonate oder Abrechnung am Monatsende: die drei Funktionen und die fälligen Monate · Aufwand `klein`.
