@@ -83,6 +83,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
  * dass jeder Aufruf von `app.record_denied_*` hier eine Beschriftung hat.
  */
 export const auditOperationLabels: Record<string, string> = {
+  // ANG-001: Nachsorge-Abo der Akte und fällige Abo-Monate (owner, office).
+  'aftercare.read': 'Nachsorge-Abo gelesen',
   'appointment.created': 'Termin angelegt',
   'appointment_brief.viewed': 'Kurzblick am Termin geöffnet',
   'appointments.read': 'Termine gelesen',
