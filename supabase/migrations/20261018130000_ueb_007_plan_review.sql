@@ -230,6 +230,12 @@ begin
   if v_actor is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
+  -- Erst die Rolle, dann die Eingabe: Wer gar nicht liest, erfaehrt auch
+  -- nichts ueber die Form des Aufrufs (ADR-023 Punkt 21).
+  if not (app.can_read_exercise_plans('therapy') or app.can_read_exercise_plans('training')) then
+    perform app.record_denied_read(v_actor, 'exercise_plans.read', 'not allowed to read exercise plans');
+    return null;
+  end if;
   if p_area is null or p_area not in ('therapy', 'training') then
     raise exception 'service area is invalid' using errcode = '22023';
   end if;
