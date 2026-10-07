@@ -3624,6 +3624,18 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Weitere Felder einfrieren: Spalte und Zeile im Schnappschuss ergänzen · Aufwand `klein`. Korrektur eines zugewiesenen Plans ohne neue Fassung: ein eigener Korrekturweg mit Fassungskette wie in ADR-016 · Aufwand `mittel`.
 
+### ANN-301 — Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Gesteigert oder zurückgenommen wird ein zugewiesener Plan in einer **neuen Fassung**: Sie übernimmt Titel, Einheiten je Woche und alle Positionen als Entwurf; je Plan gibt es höchstens eine Folgefassung. An einer übernommenen Position ändert sich gegenüber der vorigen höchstens eines von Variante, Wiederholungen bzw. Dauer, Sätze, Last, Tempo, Pause – und die Fachperson nennt Achse und Richtung dazu. Eine andere Variante nur über eine Verbindung der Bibliothek entlang dieser Achse; bei Sätzen, Wiederholungen und Pause prüft die Datenbank die Richtung – bei der Pause nur, wenn vorher und nachher eine steht; kommt eine hinzu oder fällt weg, gilt die genannte Richtung. Hinweis und Kennzeichen der doppelten Progression ändern sich frei; neue Positionen tragen keinen Schritt – wer eine Übung entfernt und neu hinzufügt, wechselt sie also ohne Verbindung (gewollt, zur Sichtung). Mit der Zuweisung löst die neue Fassung die vorige ab, die lesbar bleibt.
+
+**Begründung.** IDEA-TRN-004: Nur eine Achse je Schritt macht eine Reaktion zuordenbar; IDEA-TRN-007: doppelte Progression ist ein Schritt auf der Achse Last bei gleichem Bereich. Der Schnappschuss (ANN-300) verbietet das Ändern des zugewiesenen Plans; die Fassungskette hält fest, was wann galt. Keine Funktion wählt den Schritt aus (ADR-006 Punkt 10); die Verbindungen der Bibliothek erscheinen erst, wenn die Fachperson Richtung und Achse gewählt hat.
+
+**Anker.** `app.exercise_plan_step_check` und `public.create_exercise_plan_version` in `supabase/migrations/20261018120000_ueb_006_plan_versions.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Mehrere Achsen je Schritt zulassen: die Zählung in `app.exercise_plan_step_check` lockern · Aufwand `klein`. Freie Änderung ohne Schritt: die Prüfung entfernen · Aufwand `klein`.
+
 ### ANN-302 — Laufzeit voreingestellt sechs Wochen, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist
 
 Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne, nach den ersten Wochen mit echten Plänen)
@@ -3632,18 +3644,6 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 **Begründung.** IDEA-ORG-006: Pläne ohne Ablaufdatum laufen ewig weiter; ein Ende erzwingt eine bewusste Entscheidung je Zyklus. Sechs Wochen entsprechen einem üblichen Behandlungs- und Trainingsblock; 26 Wochen sind die Grenze, ab der eine Übungsfolge kaum noch zur Lage passt. Die Wiedervorlage hängt nur am Datum – sie wertet keine Angabe der Person aus (ADR-006 Punkt 11). Das Büro schreibt keine Pläne und entscheidet deshalb nicht darüber.
 
-**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
 
 **Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.
-
-### ANN-301 — Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse
-
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
-
-**Annahme.** Gesteigert oder zurückgenommen wird ein zugewiesener Plan in einer **neuen Fassung**: Sie übernimmt Titel, Einheiten je Woche und alle Positionen als Entwurf; je Plan gibt es höchstens eine Folgefassung. An einer übernommenen Position ändert sich gegenüber der vorigen höchstens eines von Variante, Wiederholungen bzw. Dauer, Sätze, Last, Tempo, Pause – und die Fachperson nennt Achse und Richtung dazu. Eine andere Variante nur über eine Verbindung der Bibliothek entlang dieser Achse; bei Sätzen, Wiederholungen und Pause prüft die Datenbank die Richtung. Hinweis und Kennzeichen der doppelten Progression ändern sich frei; neue Positionen tragen keinen Schritt. Mit der Zuweisung löst die neue Fassung die vorige ab, die lesbar bleibt.
-
-**Begründung.** IDEA-TRN-004: Nur eine Achse je Schritt macht eine Reaktion zuordenbar; IDEA-TRN-007: doppelte Progression ist ein Schritt auf der Achse Last bei gleichem Bereich. Der Schnappschuss (ANN-300) verbietet das Ändern des zugewiesenen Plans; die Fassungskette hält fest, was wann galt. Keine Funktion wählt den Schritt aus (ADR-006 Punkt 10); die Verbindungen der Bibliothek erscheinen erst, wenn die Fachperson Richtung und Achse gewählt hat.
-
-**Anker.** `app.exercise_plan_step_check` und `public.create_exercise_plan_version` in `supabase/migrations/20261018120000_ueb_006_plan_versions.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
-
-**Änderungspfad.** Mehrere Achsen je Schritt zulassen: die Zählung in `app.exercise_plan_step_check` lockern · Aufwand `klein`. Freie Änderung ohne Schritt: die Prüfung entfernen · Aufwand `klein`.

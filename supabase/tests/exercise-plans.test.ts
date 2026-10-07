@@ -1241,3 +1241,114 @@ describe('Übungspläne: Laufzeit und Wiedervorlage (UEB-007)', () => {
     }
   });
 });
+
+describe('Übungspläne: Kette aus Fassungen und Mandantengrenze (Zweitreview)', () => {
+  beforeAll(async () => {
+    await resetDatabase();
+    await fremdeOrganisation();
+  }, 120_000);
+
+  beforeEach(async () => {
+    await planeEntfernen();
+  });
+
+  /** Abgelöst → zugewiesen → Entwurf an einem Verhältnis. */
+  async function kette(bereich: 'therapy' | 'training', verhaeltnis: string): Promise<string[]> {
+    const konto = bereich === 'therapy' ? users.therapist : users.trainer;
+    const erste = await planAnlegen(bereich, verhaeltnis, konto);
+    await positionAnlegen(erste, VARIANTE.rudernGelb, {}, konto);
+    await zuweisen(erste, 42, konto);
+    const zweite = (await asUserCommitted<{ id: string }>(konto, FASSUNG, [erste])).rows[0]!.id;
+    await zuweisen(zweite, 42, konto);
+    const dritte = (await asUserCommitted<{ id: string }>(konto, FASSUNG, [zweite])).rows[0]!.id;
+    return [erste, zweite, dritte];
+  }
+
+  async function anzahl(): Promise<number> {
+    const { rows } = await asPostgres<{ n: number }>(
+      'select (select count(*) from public.exercise_plans)::int + (select count(*) from public.exercise_plan_items)::int as n',
+    );
+    return rows[0]!.n;
+  }
+
+  it('fällt samt zugewiesener und abgelöster Fassungen mit der Akte', async () => {
+    const [erste] = await kette('therapy', patients.petra);
+    expect((await planLesen(erste!))!.status).toBe('superseded');
+    await asPostgres(
+      'select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())',
+      [patients.petra],
+    );
+    expect(await anzahl()).toBe(0);
+    await resetDatabase();
+    await fremdeOrganisation();
+  });
+
+  it('fällt samt Kette mit dem Trainingsverhältnis', async () => {
+    const neu = 'eeeeeeee-eeee-4eee-8eee-0000000000f2';
+    await asPostgres(
+      `insert into public.training_relationships (id, organization_id, person_id, status, contract_started_on)
+       values ($1, $2, $3, 'active', current_date)`,
+      [neu, organizationId, SEED.persons.max],
+    );
+    await kette('training', neu);
+    await asPostgres(
+      'select app.delete_training_relationship($1::uuid, extensions.gen_random_uuid(), now())',
+      [neu],
+    );
+    expect(await anzahl()).toBe(0);
+  });
+
+  it('zieht die ganze Kette beim Zusammenführen mit, unverändert bis auf die Akte', async () => {
+    const plaene = await kette('therapy', patients.petra);
+    const vorher = await Promise.all(plaene.map((p) => planLesen(p)));
+    await asUserCommitted(
+      users.ownerTherapist,
+      'select public.merge_patients($1::uuid, $2::uuid)',
+      [patients.petra, patients.erika],
+    );
+    const nachher = await Promise.all(plaene.map((p) => planLesen(p)));
+    for (const [i, plan] of nachher.entries()) {
+      expect(plan).toEqual({
+        ...vorher[i]!,
+        relationship_id: patients.erika,
+        given_name: 'Erika',
+        family_name: plan!.family_name,
+      });
+    }
+    await resetDatabase();
+    await fremdeOrganisation();
+  });
+
+  it('lässt die fremde Organisation keinen späteren Pfad nutzen (ADR-003)', async () => {
+    const [, zugewiesen, entwurf] = await kette('therapy', patients.erika);
+    await laufzeitSetzen(zugewiesen!, -40, 2);
+    expect((await faellig(users.therapist))!.plans.map((p) => p.id)).toEqual([zugewiesen]);
+    const fremd = await fremdeOrganisation();
+    await asPostgres(
+      `insert into public.user_roles (user_id, organization_id, role_key) values ($1, $2, 'therapist')
+       on conflict do nothing`,
+      [fremd.owner, fremd.organizationId],
+    );
+    try {
+      const item = (await planLesen(entwurf!))!.items[0]!.id;
+      for (const [sql, params] of [
+        [ZUWEISEN, [entwurf, await praxistag(20)]],
+        [FASSUNG, [zugewiesen]],
+        [VERLAENGERN, [zugewiesen, await praxistag(60)]],
+        [BEENDEN, [zugewiesen]],
+        [VERSCHIEBEN, [item, 'down']],
+      ] as const) {
+        await expect(asUserCommitted(fremd.owner, sql, [...params])).rejects.toThrow(
+          /exercise plan not found/,
+        );
+      }
+      expect((await faellig(fremd.owner))!.plans).toEqual([]);
+    } finally {
+      await asPostgres(
+        `delete from public.user_roles where user_id = $1 and role_key = 'therapist'`,
+        [fremd.owner],
+      );
+    }
+    expect((await planLesen(zugewiesen!))!.status).toBe('assigned');
+  });
+});

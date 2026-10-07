@@ -35,7 +35,7 @@ export function PlanWiedervorlage({
   });
   const plaene = (data?.plans ?? []).filter((p) => bereiche.includes(p.service_area));
 
-  if (nurWennVorhanden && plaene.length === 0) return null;
+  if (nurWennVorhanden && plaene.length === 0 && !isError) return null;
 
   return (
     <Section
@@ -51,7 +51,7 @@ export function PlanWiedervorlage({
         />
       ) : null}
       {data && plaene.length === 0 ? (
-        <p className="text-ink-muted text-sm">Kein Plan läuft in den nächsten sieben Tagen aus.</p>
+        <p className="text-ink-muted text-sm">Kein Plan läuft in Kürze aus.</p>
       ) : null}
       {plaene.length > 0 ? (
         <ListRows>
