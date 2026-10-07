@@ -251,7 +251,8 @@ $$;
 
 revoke all on function app.exercise_optional_text(text, text) from public, anon, authenticated;
 
--- Bezeichnung: getrimmt, Pflicht, hoechstens 120 Zeichen.
+-- Bezeichnung: getrimmt (auch Tabulator und Zeilenumbruch), Pflicht,
+-- hoechstens 120 Zeichen.
 create function app.exercise_required_name(p_text text, p_field text)
 returns text
 language plpgsql
@@ -259,7 +260,7 @@ immutable
 set search_path = ''
 as $$
 declare
-  v_text text := btrim(coalesce(p_text, ''));
+  v_text text := btrim(coalesce(p_text, ''), E' \t\r\n');
 begin
   if v_text = '' then
     raise exception '% is required', p_field using errcode = '22023';
@@ -446,10 +447,10 @@ begin
   select coalesce(array_agg(eintrag order by erste), '{}'::text[])
     into v_equipment
   from (
-    select (array_agg(btrim(e) order by nr))[1] as eintrag, min(nr) as erste
+    select (array_agg(btrim(e, E' \t\r\n') order by nr))[1] as eintrag, min(nr) as erste
     from unnest(coalesce(p_equipment, '{}'::text[])) with ordinality as t(e, nr)
-    where btrim(coalesce(e, '')) <> ''
-    group by lower(btrim(e))
+    where btrim(coalesce(e, ''), E' \t\r\n') <> ''
+    group by lower(btrim(e, E' \t\r\n'))
   ) s;
   if cardinality(v_equipment) > 8 then
     raise exception 'too many equipment tags' using errcode = '22023';
@@ -610,6 +611,11 @@ begin
   end if;
 
   delete from public.exercises where id = p_exercise_id and organization_id = v_org;
+exception
+  -- Entsteht zwischen Pruefung und Loeschen eine Variante, haelt der
+  -- Fremdschluessel das Loeschen auf - mit derselben Meldung (ANN-296).
+  when foreign_key_violation then
+    raise exception 'exercise has variants' using errcode = '23503';
 end;
 $$;
 

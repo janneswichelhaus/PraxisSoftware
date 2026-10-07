@@ -135,9 +135,14 @@ begin
     raise exception 'exercise variant not found' using errcode = 'P0002';
   end if;
 
+  -- Archiviert ist auch eine Variante, deren Uebung archiviert ist: Beide
+  -- stehen nicht mehr in der Bibliothek (ANN-296).
   if exists (
-    select 1 from public.exercise_variants v
-    where v.id in (p_easier_variant_id, p_harder_variant_id) and v.archived_at is not null
+    select 1
+    from public.exercise_variants v
+    join public.exercises e on e.id = v.exercise_id
+    where v.id in (p_easier_variant_id, p_harder_variant_id)
+      and (v.archived_at is not null or e.archived_at is not null)
   ) then
     raise exception 'archived variant cannot be linked' using errcode = '22023';
   end if;

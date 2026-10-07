@@ -271,7 +271,7 @@ export function VarianteFormular({
         />
         <TextArea
           label={`Kurzanleitung in ${BEGRIFFE.alltagssprache}`}
-          hint="Was die Person liest, wenn sie übt."
+          hint="Was die Person liest, wenn sie übt. Für alle gleich – keine Angaben zu einzelnen Patient:innen oder Kund:innen (ANN-292)."
           rows={4}
           maxLength={TEXT_HOECHSTENS}
           value={werte.anleitung}
@@ -294,7 +294,7 @@ export function VarianteFormular({
         />
         <TextArea
           label="Hinweise für die Praxis"
-          hint="Zum Nachlesen. Die Bibliothek gleicht sie mit keiner Angabe einer Person ab."
+          hint="Zum Nachlesen, ohne Angaben zu einzelnen Personen. Die Bibliothek gleicht sie mit keiner Angabe einer Person ab."
           rows={3}
           maxLength={TEXT_HOECHSTENS}
           value={werte.hinweise}

@@ -41,6 +41,16 @@ import { useFormularschutz } from './useFormularschutz';
 
 type Schutz = ReturnType<typeof useFormularschutz>;
 
+/** Die Kennung hinter `#`; ein kaputter Anker ist keiner. */
+function ankerZiel(hash: string): string | null {
+  if (!hash) return null;
+  try {
+    return decodeURIComponent(hash.slice(1));
+  } catch {
+    return null;
+  }
+}
+
 function Angabe({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div>
@@ -287,10 +297,11 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
   // Ein Sprung von einer verbundenen Variante zielt auf ihre Karte (UEB-002);
   // der Router scrollt zu einem Anker nicht von selbst.
   const { hash } = useLocation();
+  const ziel = ankerZiel(hash);
   useEffect(() => {
-    if (!data || !hash) return;
-    document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView?.();
-  }, [data, hash]);
+    if (!data || !ziel) return;
+    document.getElementById(ziel)?.scrollIntoView?.();
+  }, [data, ziel]);
 
   if (!darf) {
     return (
@@ -418,7 +429,12 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
         )}
 
         {archiviert.length > 0 ? (
-          <Disclosure summary="Archivierte Varianten" anzahl={archiviert.length}>
+          <Disclosure
+            summary="Archivierte Varianten"
+            anzahl={archiviert.length}
+            // Zielt ein Sprung auf eine archivierte Variante, steht sie offen da.
+            offen={archiviert.some((variante) => ziel === `variante-${variante.id}`)}
+          >
             <div className="flex flex-col gap-3">
               {archiviert.map((variante) => (
                 <VarianteKarte
@@ -443,5 +459,7 @@ export function UebungAnsicht({ user, uebungId }: { user: CurrentUser; uebungId:
 
 export function UebungPage({ user }: { user: CurrentUser }) {
   const { uebungId = '' } = useParams<{ uebungId: string }>();
-  return <UebungAnsicht user={user} uebungId={uebungId} />;
+  // Ein Sprung zu einer verbundenen Übung ist eine neue Übung: Offene
+  // Formulare der alten dürfen nicht mitwandern (Zweitreview H1).
+  return <UebungAnsicht key={uebungId} user={user} uebungId={uebungId} />;
 }

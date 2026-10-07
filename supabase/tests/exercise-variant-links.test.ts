@@ -152,6 +152,17 @@ describe('Übungsbibliothek: Verbindungen (UEB-002)', () => {
       expect(await verbindungen(users.ownerTherapist)).toHaveLength(2);
     });
 
+    it('verbindet keine Variante einer archivierten Übung', async () => {
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.set_exercise_archived($1::uuid, true)',
+        [kniebeuge],
+      );
+      await expect(verbinden(einbeinig, ausfallschritt, 'komplexitaet')).rejects.toThrow(
+        /archived variant cannot be linked/,
+      );
+    });
+
     it('verbindet keine archivierte Variante', async () => {
       await asUserCommitted(users.ownerTherapist, VARIANTE_ARCHIV, [frei, true]);
       await expect(verbinden(gelaender, frei)).rejects.toThrow(/archived variant cannot be linked/);

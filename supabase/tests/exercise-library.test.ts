@@ -275,6 +275,8 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
   describe('Eingaben', () => {
     it.each([
       ['leere Bezeichnung', ['  ', 'Laie', 'knie'], /name is required/],
+      ['Bezeichnung nur aus Tabulator', ['\t', 'Laie', 'knie'], /name is required/],
+      ['Alltagssprache nur aus Zeilenumbruch', ['Fach', '\n', 'knie'], /lay name is required/],
       ['leere Alltagssprache', ['Fach', '', 'knie'], /lay name is required/],
       ['zu lange Bezeichnung', ['x'.repeat(121), 'Laie', 'knie'], /name is too long/],
       ['unbekannte Region', ['Fach', 'Laie', 'knie_links'], /body region is invalid/],
@@ -308,7 +310,8 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
       await varianteAnlegen(uebung, 'Mit Band', [
         ' Theraband gelb ',
         '',
-        'Stuhl',
+        '\t',
+        'Stuhl\n',
         'theraband gelb',
       ]);
       const v = (await bibliothek(users.therapist)).exercises[0]!.variants[0]!;

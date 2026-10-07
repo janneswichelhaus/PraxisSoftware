@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Feldgruppe } from '@/components/ui/Section';
 import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -47,10 +48,11 @@ function Nachbar({
       : `${ort.uebung.name}: ${ort.variante.name}`;
 
   return (
-    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 py-1">
+    <li className="flex flex-wrap items-center justify-between gap-x-3 py-1">
       {/* Name als Ziel, die Achse darunter: Am Telefon bricht eine
-          gemeinsame Zeile sonst mitten im „Achse: …“ um. */}
-      <span className="min-w-0">
+          gemeinsame Zeile sonst mitten im „Achse: …“ um. Die Rückfrage zum
+          Lösen öffnet in voller Breite darunter. */}
+      <span className="min-w-0 flex-1">
         <Link
           to={`/uebungen/${ort.uebung.id}#variante-${ort.variante.id}`}
           className="text-accent inline-flex min-h-11 items-center font-medium break-words underline underline-offset-2"
@@ -63,21 +65,20 @@ function Nachbar({
         </span>
       </span>
       {darfPflegen ? (
-        <Button
-          type="button"
-          variant="quiet"
-          groesse="kompakt"
-          disabled={loesen.isPending}
-          aria-label={`Verbindung zu „${name}“ lösen`}
-          onClick={() => loesen.mutate()}
+        <Rueckfrage
+          ausloeser="Lösen"
+          ausloeserVariante="quiet"
+          ausloeserGroesse="kompakt"
+          bezeichnung={`Verbindung zu „${name}“ lösen`}
+          bestaetigen="Ja, Verbindung lösen"
+          bestaetigenLaeuft="Wird gelöst …"
+          fehler={loesen.isError ? loesen.error.message : undefined}
+          laeuft={loesen.isPending}
+          onBestaetigen={() => loesen.mutateAsync()}
+          onAbbrechen={() => loesen.reset()}
         >
-          Lösen
-        </Button>
-      ) : null}
-      {loesen.isError ? (
-        <Statusmeldung ton="fehler" className="col-span-2">
-          {loesen.error.message}
-        </Statusmeldung>
+          Die Verbindung zu „{name}“ wird gelöst. Beide Varianten bleiben in der Bibliothek.
+        </Rueckfrage>
       ) : null}
     </li>
   );

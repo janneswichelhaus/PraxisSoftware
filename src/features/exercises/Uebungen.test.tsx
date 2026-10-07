@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createMemoryRouter } from 'react-router-dom';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -31,7 +33,7 @@ vi.mock('./api', async (importOriginal) => {
 });
 
 const { UebungenPage } = await import('./UebungenPage');
-const { UebungAnsicht } = await import('./UebungPage');
+const { UebungAnsicht, UebungPage } = await import('./UebungPage');
 
 const GELAENDER: Api.Variante = {
   id: 'v1',
@@ -360,11 +362,13 @@ describe('Leichter und schwerer (UEB-002)', () => {
   it('löst eine Verbindung', async () => {
     const user = userEvent.setup();
     renderWithProviders(<UebungAnsicht user={testUser(['owner'])} uebungId="u1" />);
-    await user.click(
-      await screen.findByRole('button', {
-        name: 'Verbindung zu „Ausfallschritt: Ausfallschritt vorwärts“ lösen',
-      }),
-    );
+    await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+    await user.click(screen.getByRole('button', { name: 'Lösen' }));
+    expect(loeseVerbindung).not.toHaveBeenCalled();
+    const frage = screen.getByRole('group', {
+      name: 'Verbindung zu „Ausfallschritt: Ausfallschritt vorwärts“ lösen',
+    });
+    await user.click(within(frage).getByRole('button', { name: 'Ja, Verbindung lösen' }));
     await waitFor(() => expect(loeseVerbindung).toHaveBeenCalledWith('l1'));
   });
 });
@@ -412,5 +416,30 @@ describe('Katalog und Suche (UEB-003)', () => {
     expect(ansicht).toHaveTextContent('Ausrüstung: Geländer');
     expect(ansicht).not.toHaveTextContent('Knie fallen nach innen.');
     expect(ansicht).not.toHaveTextContent('Nicht unter Schmerz über 5.');
+  });
+});
+
+describe('Sprung zwischen Übungen (Zweitreview H1)', () => {
+  it('nimmt ein offenes Formular nicht in die nächste Übung mit', async () => {
+    const user = userEvent.setup();
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const router = createMemoryRouter(
+      [{ path: '/uebungen/:uebungId', element: <UebungPage user={testUser(['owner'])} /> }],
+      { initialEntries: ['/uebungen/u1'] },
+    );
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>,
+    );
+    await screen.findByRole('heading', { level: 1, name: 'Kniebeuge' });
+    await user.click(screen.getAllByRole('button', { name: 'Bearbeiten' })[0]!);
+    expect(screen.getByRole('heading', { name: 'Übung bearbeiten' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('link', { name: 'Ausfallschritt: Ausfallschritt vorwärts' }));
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Ausfallschritt' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Übung bearbeiten' })).not.toBeInTheDocument();
   });
 });
