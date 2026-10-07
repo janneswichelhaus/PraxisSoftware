@@ -3451,7 +3451,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 **Begründung.** §4.10 und E-3: „In den letzten ein bis zwei Terminen einer Verordnung erinnert die App an das Abschlussgespräch.“ Am Termin sieht die behandelnde Person den Hinweis dann, wenn das Gespräch ansteht; die Erinnerung „Verordnungen, die enden“ gibt es schon für die Folgeverordnung. Eine jüngere Grundlage heißt: Die Behandlung geht weiter. Ob die Person schon trainiert, fragt die Erinnerung nicht – das wäre ein Schluss von der Behandlung aufs Training (§4.8). Unsicher: ob Jannes auch ohne Terminzahl erinnert werden will, etwa beim Selbstzahler mit offener Anzahl.
 
-**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/Abrechnungslage.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
+**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/TerminKompakt.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
 
 **Änderungspfad.** Nur der letzte Termin oder drei: die Zahl `- 1` in der einen Funktion · Aufwand `klein`.
 

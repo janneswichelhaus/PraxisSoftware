@@ -79,24 +79,6 @@ describe('Verordnungszähler und Abrechnungslage (PRX-008)', () => {
     );
   });
 
-  // KND-001: In den letzten Terminen erinnert die Kachel an das
-  // Abschlussgespräch, mit dem Weg zur Akte (ANN-286).
-  it('erinnert in den letzten Terminen an das Abschlussgespräch', async () => {
-    fetchAbrechnungslage.mockResolvedValue({ ...lage, closing_talk_due: true });
-    rendern();
-    expect(await screen.findByText(/Zeit für das Abschlussgespräch/)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Training in der Akte anbieten' })).toHaveAttribute(
-      'href',
-      `/patienten/66666666-6666-4666-8666-000000000001?zurueck=${encodeURIComponent(`/termine/${TERMIN_ID}`)}`,
-    );
-  });
-
-  it('erinnert nicht, wenn der Server nichts meldet', async () => {
-    rendern();
-    expect(await screen.findByText('Termin 8 von 10')).toBeInTheDocument();
-    expect(screen.queryByText(/Abschlussgespräch/)).toBeNull();
-  });
-
   it('zeigt owner und office Empfänger und offene Rechnungen im Abschnitt „Abrechnung" (BEF-081)', async () => {
     abschnittRendern();
     expect(await screen.findByRole('heading', { name: 'Abrechnung' })).toBeInTheDocument();

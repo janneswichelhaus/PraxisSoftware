@@ -19,6 +19,8 @@ import {
   rechnungSchluessel,
   rechnungenSchluessel,
   termineSchluessel,
+  trainingsangebotSchluessel,
+  vertragSchluessel,
   wuenscheSchluessel,
   type Dokument,
   type Einwilligung,
@@ -30,6 +32,8 @@ import {
   type Rechnungszeile,
   type Termin,
   type Terminwunsch,
+  type Trainingsangebot,
+  type Trainingsvertrag,
 } from '@/features/platform/api';
 import { EinladungPage } from '@/features/platform/EinladungPage';
 import { PlattformApp } from '@/features/platform/PlattformApp';
@@ -49,7 +53,11 @@ import '@/index.css';
  * `ende` (Lesefrist vorbei, „Ich"). Seit ANG-EPIC-001 `abo` (laufendes
  * Nachsorge-Abo mit Kündigungsknopf) und `abo-gekuendigt` (Übersicht nach
  * der Kündigung). Seit ANG-EPIC-002 `paket` (laufendes Trainingspaket mit
- * Preisen) und `preise` (Preise ohne Paket). Die Daten liegen vorab im Cache;
+ * Preisen) und `preise` (Preise ohne Paket). Seit KND-EPIC-001 `angebot`
+ * (Angebot der Praxis zum Buchen), `angebot-frueh` (Beginn in der
+ * Widerrufsfrist), `angebot-wartet` (Behandlung läuft noch),
+ * `angebot-uebersicht` (Kachel auf der Übersicht) und `vertrag` (eigener
+ * Vertrag mit Widerrufsknopf). Die Daten liegen vorab im Cache;
  * gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'abschnitt';
@@ -559,6 +567,76 @@ const angebote: Paketangebote = {
 };
 client.setQueryData(paketeSchluessel(zugaenge[1]!.access_id), seite === 'paket' ? [paket] : []);
 client.setQueryData(angeboteSchluessel(zugaenge[1]!.access_id), angebote);
+// KND-EPIC-001: das Angebot aus der Akte und der eigene Vertrag im Training.
+const trainingsangebot: Trainingsangebot = {
+  id: 'abababab-abab-4bab-8bab-000000000020',
+  label: 'Trainingspaket 3 Monate (eine Einheit je Woche, Plattform inklusive)',
+  package_months: 3,
+  price_cents: 39000,
+  currency: 'EUR',
+  tax_rate_permille: 190,
+  vat_included: true,
+  starts_on: inTagen(seite === 'angebot-frueh' ? 5 : 20, 0).slice(0, 10),
+  ends_on: inTagen(seite === 'angebot-frueh' ? 96 : 111, 0).slice(0, 10),
+  valid_until: inTagen(seite === 'angebot-frueh' ? 5 : 14, 0).slice(0, 10),
+  offered_on: inTagen(0, 0).slice(0, 10),
+  handover_items: [
+    { title: 'Belastungsgrenzen', body: 'Kniebeuge bis 90 Grad, keine Sprünge bis Dezember.' },
+    { title: 'Vorgeschichte', body: 'Vordere Kreuzbandplastik links im März.' },
+  ],
+  contact: {
+    date_of_birth: '1963-09-17',
+    street: 'Testweg',
+    house_number: '7',
+    postal_code: '72072',
+    city: 'Tuebingen',
+    phone: '+49 160 0000006',
+    email: 'erika.beispiel@patient.invalid',
+  },
+  early_start: seite === 'angebot-frueh',
+  withdrawal_days: 14,
+  wording_version: '2026-10',
+  blocker: seite === 'angebot-wartet' ? 'care_open' : null,
+  can_accept: seite !== 'angebot-wartet',
+  practice: {
+    name: 'Test Praxis Tuebingen',
+    street: 'Praxisweg',
+    house_number: '1',
+    postal_code: '72070',
+    city: 'Tübingen',
+    phone: '+49 7071 000000',
+    email: 'praxis@praxis.invalid',
+  },
+};
+client.setQueryData(
+  trainingsangebotSchluessel(zugaenge[0]!.access_id),
+  seite.startsWith('angebot') ? trainingsangebot : null,
+);
+const trainingsvertrag: Trainingsvertrag = {
+  id: 'abababab-abab-4bab-8bab-000000000021',
+  concluded_at: inTagen(-2, 10),
+  label: trainingsangebot.label,
+  package_months: 3,
+  price_cents: 39000,
+  currency: 'EUR',
+  tax_rate_permille: 190,
+  vat_included: true,
+  starts_on: inTagen(18, 0).slice(0, 10),
+  ends_on: inTagen(109, 0).slice(0, 10),
+  offered_on: inTagen(-3, 0).slice(0, 10),
+  wording_version: '2026-10',
+  early_start_requested: false,
+  contact_released: true,
+  health_consent_granted: true,
+  withdrawal_ends_on: inTagen(12, 0).slice(0, 10),
+  released_titles: ['Belastungsgrenzen'],
+  withdrawn_at: null,
+  can_withdraw: true,
+};
+client.setQueryData(
+  vertragSchluessel(zugaenge[1]!.access_id),
+  seite === 'vertrag' ? trainingsvertrag : null,
+);
 client.setQueryData(termineSchluessel(begleitung.access_id), [termine[0]!]);
 client.setQueryData(wuenscheSchluessel(begleitung.access_id), []);
 client.setQueryData(rechnungenSchluessel(begleitung.access_id), []);
@@ -643,8 +721,18 @@ function inhalt(): { pfad: string; element: ReactNode } {
     case 'befundbogen':
     case 'paket':
     case 'preise':
-    case 'abo': {
+    case 'abo':
+    case 'angebot':
+    case 'angebot-frueh':
+    case 'angebot-wartet':
+    case 'angebot-uebersicht':
+    case 'vertrag': {
       const pfade: Record<string, string> = {
+        angebot: '/p/angebot?bereich=treatment',
+        'angebot-frueh': '/p/angebot?bereich=treatment',
+        'angebot-wartet': '/p/angebot?bereich=treatment',
+        'angebot-uebersicht': '/p?bereich=treatment',
+        vertrag: '/p/vertrag?bereich=training',
         abo: '/p/abo?bereich=treatment',
         paket: '/p/paket?bereich=training',
         preise: '/p/paket?bereich=training',
