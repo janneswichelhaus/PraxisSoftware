@@ -23,6 +23,8 @@ const sendPlatformInvitation = vi.fn();
 const setPlatformAccessLocked = vi.fn();
 const revokePlatformAccess = vi.fn();
 const listPlatformRepresentations = vi.fn();
+const getPlatformOnboarding = vi.fn();
+const skipPlatformOnboarding = vi.fn();
 
 // POR-014: die Zeile „Freigegeben" zählt die Dateien der Akte.
 const fetchPatientFiles = vi.fn().mockResolvedValue([]);
@@ -44,6 +46,10 @@ vi.mock('./api', async (importOriginal) => {
     revokePlatformAccess: (...args: unknown[]) => revokePlatformAccess(...args) as Promise<void>,
     listPlatformRepresentations: (...args: unknown[]) =>
       listPlatformRepresentations(...args) as Promise<unknown>,
+    getPlatformOnboarding: (...args: unknown[]) =>
+      getPlatformOnboarding(...args) as Promise<unknown>,
+    skipPlatformOnboarding: (...args: unknown[]) =>
+      skipPlatformOnboarding(...args) as Promise<void>,
   };
 });
 
@@ -102,6 +108,12 @@ describe('Abschnitt Plattform', () => {
     sendPlatformInvitation.mockResolvedValue(undefined);
     setPlatformAccessLocked.mockResolvedValue(undefined);
     revokePlatformAccess.mockResolvedValue(undefined);
+    getPlatformOnboarding.mockResolvedValue({
+      finished_at: '2026-10-02T09:00:00+00:00',
+      skipped_at: null,
+      skipped_by_name: null,
+    });
+    skipPlatformOnboarding.mockResolvedValue(undefined);
   });
 
   it('bietet ohne Zugang nur das Einladen an', async () => {
@@ -208,5 +220,35 @@ describe('Abschnitt Plattform', () => {
     zeige(false);
     expect(await screen.findByText('Aktiv')).toBeInTheDocument();
     expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+
+  // POR-019 (IDEA-LZK-005, DSN-001 Abschnitt 6): Einstieg und Überspringen.
+  it('zeigt den Einstieg und lässt ihn überspringen, solange er aussteht', async () => {
+    const nutzer = userEvent.setup();
+    getPlatformAccess.mockResolvedValue(AKTIV);
+    getPlatformOnboarding.mockResolvedValue({
+      finished_at: null,
+      skipped_at: null,
+      skipped_by_name: null,
+    });
+    zeige();
+    expect(await screen.findByText('steht noch aus')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Einstieg überspringen' }));
+    expect(screen.getByText(/Einwilligungen bleiben offen/)).toBeInTheDocument();
+    const knoepfe = screen.getAllByRole('button', { name: 'Einstieg überspringen' });
+    await nutzer.click(knoepfe.at(-1)!);
+    await waitFor(() => expect(skipPlatformOnboarding).toHaveBeenCalledWith(ZUGANG));
+  });
+
+  it('nennt, wer den Einstieg übersprungen hat, und bietet ihn nicht mehr an', async () => {
+    getPlatformAccess.mockResolvedValue(AKTIV);
+    getPlatformOnboarding.mockResolvedValue({
+      finished_at: null,
+      skipped_at: '2026-10-03T09:00:00+00:00',
+      skipped_by_name: 'Olivia Office',
+    });
+    zeige();
+    expect(await screen.findByText(/übersprungen am .* \(Olivia Office\)/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Einstieg überspringen' })).toBeNull();
   });
 });

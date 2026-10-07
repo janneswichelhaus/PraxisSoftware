@@ -22,6 +22,10 @@ const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const ladeRechnungen = vi.fn();
 const ladeBefundbogen = vi.fn();
+// POR-019: der Einstieg - hier ohne, außer im eigenen Test.
+const ladeEinstieg = vi.fn();
+const einstiegBeenden = vi.fn();
+const ladeEinwilligungen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -32,6 +36,9 @@ vi.mock('./api', async (importOriginal) => ({
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<unknown[]>,
   ladeRechnungen: (...args: unknown[]) => ladeRechnungen(...args) as Promise<unknown[]>,
   ladeBefundbogen: (...args: unknown[]) => ladeBefundbogen(...args) as Promise<unknown[]>,
+  ladeEinstieg: (...args: unknown[]) => ladeEinstieg(...args) as Promise<unknown>,
+  einstiegBeenden: (...args: unknown[]) => einstiegBeenden(...args) as Promise<void>,
+  ladeEinwilligungen: (...args: unknown[]) => ladeEinwilligungen(...args) as Promise<unknown[]>,
 }));
 
 const { PlattformApp } = await import('./PlattformApp');
@@ -74,12 +81,15 @@ beforeEach(() => {
   ladeWuensche.mockResolvedValue([]);
   ladeRechnungen.mockResolvedValue([]);
   ladeBefundbogen.mockResolvedValue([]);
+  ladeEinstieg.mockResolvedValue({ pending: false, finished_at: '2026-10-01', skipped_at: null });
+  einstiegBeenden.mockResolvedValue(undefined);
+  ladeEinwilligungen.mockResolvedValue([]);
 });
 
 describe('PlattformApp', () => {
-  it('zeigt die Uebersicht ohne Bereichsschalter bei einem Verhaeltnis', () => {
+  it('zeigt die Uebersicht ohne Bereichsschalter bei einem Verhaeltnis', async () => {
     zeige([TRAINING]);
-    expect(screen.getByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
     expect(screen.getByText(/Test Praxis Tuebingen angemeldet/)).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Bereich' })).not.toBeInTheDocument();
     // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
@@ -119,9 +129,9 @@ describe('PlattformApp', () => {
     expect(screen.getByRole('heading', { name: 'Ihr Zugang ist beendet' })).toBeInTheDocument();
   });
 
-  it('nennt in der Lesefrist, bis wann gelesen werden kann', () => {
+  it('nennt in der Lesefrist, bis wann gelesen werden kann', async () => {
     zeige([{ ...TRAINING, read_until: '2026-10-30T22:00:00Z' }]);
-    expect(screen.getByText(/noch bis/)).toBeInTheDocument();
+    expect(await screen.findByText(/noch bis/)).toBeInTheDocument();
   });
 
   it('meldet unter "Ich" ab, auf Wunsch ueberall', async () => {
@@ -137,13 +147,14 @@ describe('PlattformApp', () => {
     await waitFor(() => expect(ueberallAbmelden).toHaveBeenCalled());
   });
 
-  it('fuehrt jeden anderen Pfad auf die Uebersicht', () => {
+  it('fuehrt jeden anderen Pfad auf die Uebersicht', async () => {
     zeige([TRAINING], '/patienten/66666666-6666-4666-8666-000000000001');
-    expect(screen.getByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Guten Tag' })).toBeInTheDocument();
   });
 
-  it('kennt keine Praxisbegriffe', () => {
+  it('kennt keine Praxisbegriffe', async () => {
     const { container } = zeige([BEHANDLUNG, TRAINING]);
+    await screen.findByRole('heading', { name: 'Guten Tag' });
     for (const wort of ['Patient', 'Akte', 'Kalender', 'Dokumentation', 'Befund']) {
       expect(container.textContent).not.toContain(wort);
     }
@@ -159,8 +170,11 @@ const BEGLEITUNG: Plattformzugang = {
 };
 
 describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
-  it('sagt dauerhaft, fuer wen die Begleitung handelt (ADR-023 Punkt 14)', () => {
+  it('sagt dauerhaft, fuer wen die Begleitung handelt (ADR-023 Punkt 14)', async () => {
     zeige([BEGLEITUNG]);
+    expect(
+      await screen.findByText(/Einwilligungen gibt nur Max Mustermann selbst/),
+    ).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(
       'Sie handeln für Max Mustermann · Begleitung',
     );
@@ -260,5 +274,30 @@ describe('Vertretung auf der Plattform (POR-006, POR-007)', () => {
     );
     expect(screen.queryByRole('link', { name: /Einwilligungen/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Meine Daten/ })).toBeNull();
+  });
+
+  // POR-019 (IDEA-LZK-005): der Einstieg vor der Übersicht.
+  it('zeigt den ausstehenden Einstieg vor der Übersicht; Später beendet ihn', async () => {
+    const nutzer = userEvent.setup();
+    ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
+    zeige([BEHANDLUNG]);
+    expect(await screen.findByRole('heading', { name: 'Willkommen' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Guten Tag' })).toBeNull();
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    expect(screen.getByRole('heading', { name: 'Ihre Einwilligungen' })).toBeInTheDocument();
+    expect(screen.getByText(/Sie müssen hier nichts entscheiden/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Später' }));
+    await waitFor(() => expect(einstiegBeenden).toHaveBeenCalledWith(BEHANDLUNG.access_id));
+  });
+
+  it('einer Begleitung ohne den Schritt Einwilligungen', async () => {
+    const nutzer = userEvent.setup();
+    ladeEinstieg.mockResolvedValue({ pending: true, finished_at: null, skipped_at: null });
+    zeige([{ ...BEHANDLUNG, access_kind: 'companion', represented_name: 'Max Mustermann' }]);
+    expect(await screen.findByText('Schritt 1 von 2')).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+    expect(screen.getByRole('heading', { name: 'Fertig' })).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Zur Übersicht' }));
+    await waitFor(() => expect(einstiegBeenden).toHaveBeenCalled());
   });
 });

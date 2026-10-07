@@ -12,11 +12,14 @@ import { formatLocalDate } from '@/features/appointments/api';
 import { fetchPatientFiles } from '@/features/files/api';
 import {
   einloeseadresse,
+  einstiegsschluessel,
   getPlatformAccess,
+  getPlatformOnboarding,
   invitePlatformAccess,
   revokePlatformAccess,
   sendPlatformInvitation,
   setPlatformAccessLocked,
+  skipPlatformOnboarding,
   zugangsschluessel,
   type Einladung,
   type Plattformzugang,
@@ -186,6 +189,10 @@ function Zustand({
         {zustand === 'revoked' ? (
           <DetailRow label="Entzogen am">{datum(zugang?.revoked_at ?? null)}</DetailRow>
         ) : null}
+        {/* POR-019 (DSN-001 Abschnitt 6): der Einstieg - Coach-Kontrolle. */}
+        {zugang?.id && (aktiv || gesperrt || eingeladen) ? (
+          <EinstiegZeile zugangId={zugang.id} zeitzone={zeitzone} />
+        ) : null}
         {/* POR-014 (DSN-001 Abschnitt 6): was die Person unter „Dokumente" sieht. */}
         {art === 'treatment' && (aktiv || gesperrt) ? (
           <FreigegebeneDokumente patientId={verhaeltnisId} />
@@ -246,6 +253,9 @@ function Zustand({
                 Telefon ein neues. Ihr Zugang bleibt derselbe.
               </p>
             </Rueckfrage>
+          ) : null}
+          {zugang?.id && (aktiv || eingeladen) ? (
+            <EinstiegUeberspringen zugangId={zugang.id} />
           ) : null}
           {aktiv || gesperrt ? (
             <Rueckfrage
@@ -371,5 +381,61 @@ function FreigegebeneDokumente({ patientId }: { patientId: string }) {
     <DetailRow label="Freigegeben">
       {anzahl === 0 ? 'kein Dokument' : anzahl === 1 ? '1 Dokument' : `${anzahl} Dokumente`}
     </DetailRow>
+  );
+}
+
+/**
+ * „Einstieg: übersprungen (Name)" (POR-019, DSN-001 Abschnitt 6): ob die
+ * Person den Einstieg hinter sich hat oder die Praxis ihn übersprungen hat.
+ */
+function EinstiegZeile({ zugangId, zeitzone }: { zugangId: string; zeitzone: string }) {
+  const { data } = useQuery({
+    queryKey: einstiegsschluessel(zugangId),
+    queryFn: () => getPlatformOnboarding(zugangId),
+    retry: false,
+  });
+  if (!data) return null;
+  return (
+    <DetailRow label="Einstieg">
+      {data.skipped_at
+        ? `übersprungen am ${formatLocalDate(data.skipped_at, zeitzone)}${
+            data.skipped_by_name ? ` (${data.skipped_by_name})` : ''
+          }`
+        : data.finished_at
+          ? `beendet am ${formatLocalDate(data.finished_at, zeitzone)}`
+          : 'steht noch aus'}
+    </DetailRow>
+  );
+}
+
+/**
+ * Den Einstieg für die Person überspringen (IDEA-LZK-005) - nur, solange er
+ * aussteht. Einwilligungen bleiben offen; das sagt die Rückfrage.
+ */
+function EinstiegUeberspringen({ zugangId }: { zugangId: string }) {
+  const queryClient = useQueryClient();
+  const { data } = useQuery({
+    queryKey: einstiegsschluessel(zugangId),
+    queryFn: () => getPlatformOnboarding(zugangId),
+    retry: false,
+  });
+  const ueberspringen = useMutation({
+    mutationFn: () => skipPlatformOnboarding(zugangId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: einstiegsschluessel(zugangId) }),
+  });
+  if (!data || data.finished_at || data.skipped_at) return null;
+  return (
+    <Rueckfrage
+      ausloeser="Einstieg überspringen"
+      bestaetigen="Einstieg überspringen"
+      bestaetigenLaeuft="Wird übersprungen …"
+      fehler={ueberspringen.error?.message}
+      onBestaetigen={() => ueberspringen.mutateAsync()}
+    >
+      <p>
+        Die Person sieht beim Anmelden gleich ihre Übersicht. Einwilligungen bleiben offen: Über sie
+        entscheidet sie selbst, unter „Ich“.
+      </p>
+    </Rueckfrage>
   );
 }

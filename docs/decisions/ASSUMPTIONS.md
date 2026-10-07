@@ -3202,3 +3202,15 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
 
 **Änderungspfad.** Eigene Aktion: ADR-010 ändern, Katalog, Freigabe · Aufwand `mittel`. Dokumente im Export: ZIP im Browser · Aufwand `mittel`.
+
+### ANN-266 — Der Einstieg gilt je Zugang, „Später" beendet ihn, Überspringen berührt keine Einwilligung
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+
+**Annahme.** Den Einstieg (Willkommen, Einwilligungen, fertig) sieht jede Person einmal je Zugang vor ihrer Übersicht: Wer Behandlung und Training hat, sieht ihn zweimal; eine Begleitung ohne den Schritt Einwilligungen. „Später" beendet ihn wie „Zur Übersicht“. Die Praxis kann ihn im Abschnitt Plattform überspringen (wer den Zugang verwaltet); er steht dann als „übersprungen am … (Name)“ dort und für die Person ohne Namen unter „Ich“. Einwilligungen bleiben dabei offen. Benachrichtigungen fehlen bis ADR-024. Lädt der Stand nicht, gilt die Übersicht.
+
+**Begründung.** DSN-001 4.3 und `IDEA-LZK-005`: Beim Hausbesuch sitzt die Therapeutin daneben, ein erzwungener Einstieg wäre ein Hindernis; eine Einwilligung, die jemand anders klickt, ist keine (Art. 7 Abs. 1). Je Zugang, weil jeder Zugang seine eigenen Einwilligungen hat (§4.8). Ein Einstieg darf nie den Weg zu den eigenen Daten versperren. Nachweis am Zugang statt im Protokoll (ADR-010 Fassung 3). Unsicher: ob zwei Einstiege bei zwei Verhältnissen stören.
+
+**Anker.** `skip_platform_onboarding` und `platform_onboarding` in `supabase/migrations/20261013130000_por_019_platform_onboarding.sql`; `UebersichtOderEinstieg` in `src/features/platform/PlattformApp.tsx`; `src/features/platform/Einstieg.tsx`.
+
+**Änderungspfad.** Einstieg je Konto: Stand an `user_profiles` statt am Zugang · Aufwand `mittel`. Benachrichtigungen: Schritt mit ADR-024 · Aufwand `klein`.

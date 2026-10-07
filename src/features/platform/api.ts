@@ -677,3 +677,37 @@ export async function ladeDatenexport(
   if (ergebnis.error) throw new Error(satz);
   return { daten: antwort(exportSchema, ergebnis.data, satz), roh: ergebnis.data };
 }
+
+// -----------------------------------------------------------------------------
+// Einstieg (POR-019, IDEA-LZK-005, ANN-266)
+// -----------------------------------------------------------------------------
+
+const einstiegSchema = z.object({
+  pending: z.boolean(),
+  finished_at: z.string().nullable(),
+  /** Von der Praxis übersprungen - ohne Namen (ADR-023 Punkt 22). */
+  skipped_at: z.string().nullable(),
+});
+export type Einstiegsstand = z.infer<typeof einstiegSchema>;
+
+export function einstiegSchluessel(zugangId: string) {
+  return ['platform-onboarding', zugangId] as const;
+}
+
+export async function ladeEinstieg(zugangId: string): Promise<Einstiegsstand | null> {
+  const satz = 'Der Einstieg konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einstiegSchema), ergebnis.data ?? [], satz)[0] ?? null;
+}
+
+/** Den Einstieg beenden - auch mit „Später"; danach kommt er nicht wieder. */
+export async function einstiegBeenden(zugangId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('finish_platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error)
+    throw new Error('Das hat nicht geklappt. Bitte versuchen Sie es noch einmal.');
+}

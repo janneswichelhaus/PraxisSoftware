@@ -82,6 +82,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:complete_platform_questionnaire_response',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
+      // POR-019: der eigene Einstieg.
+      'rpc:finish_platform_onboarding',
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
@@ -97,6 +99,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-013: eigene Rechnungen.
       'rpc:platform_invoice',
       'rpc:platform_invoices',
+      'rpc:platform_onboarding',
       'rpc:platform_questionnaire',
       'rpc:platform_representatives',
       'rpc:record_platform_consent',

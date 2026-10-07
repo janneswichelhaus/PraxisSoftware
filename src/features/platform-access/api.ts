@@ -351,3 +351,39 @@ export async function recordCompanionConsentWithdrawn(zugangId: string): Promise
   })) as { data: unknown; error: unknown; status?: number };
   if (ergebnis.error || abgewiesen(ergebnis) || ergebnis.data === null) throw new Error(satz);
 }
+
+// -----------------------------------------------------------------------------
+// Einstieg (POR-019, IDEA-LZK-005)
+// -----------------------------------------------------------------------------
+
+const einstiegSchema = z.object({
+  finished_at: zeitpunkt.nullable(),
+  skipped_at: zeitpunkt.nullable(),
+  skipped_by_name: z.string().nullable(),
+});
+export type Einstieg = z.infer<typeof einstiegSchema>;
+
+export function einstiegsschluessel(zugangId: string) {
+  return ['platform-onboarding', zugangId] as const;
+}
+
+/** Ob die Person ihren Einstieg beendet hat oder die Praxis ihn übersprungen hat. */
+export async function getPlatformOnboarding(zugangId: string): Promise<Einstieg | null> {
+  const satz = 'Der Einstieg konnte nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('get_platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(z.array(einstiegSchema), ergebnis.data ?? [], satz)[0] ?? null;
+}
+
+/**
+ * Den Einstieg für die Person überspringen (IDEA-LZK-005). Einwilligungen
+ * berührt das nie - sie bleiben offen, bis die Person selbst entscheidet.
+ */
+export async function skipPlatformOnboarding(zugangId: string): Promise<void> {
+  const ergebnis = (await getSupabase().rpc('skip_platform_onboarding', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (abgewiesen(ergebnis)) throw new Error('Der Einstieg konnte nicht übersprungen werden.');
+}

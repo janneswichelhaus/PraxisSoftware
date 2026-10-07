@@ -10,6 +10,8 @@ import { RECHTSGRUNDLAGE, VERTRETUNGSART } from '@/lib/vertretung';
 import {
   BEREICHSNAME,
   begleitungBeenden,
+  einstiegSchluessel,
+  ladeEinstieg,
   ladeMeineVertretungen,
   ueberallAbmelden,
   vertretungenSchluessel,
@@ -19,6 +21,7 @@ import {
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
 import { Datenexport } from './Datenexport';
+import { Einstieg } from './Einstieg';
 import { Einwilligungen } from './Einwilligungen';
 import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
@@ -90,7 +93,7 @@ export function PlattformApp({
                   bereiche={lesbar}
                   zugaenge={zugaenge}
                   seite={(z) => (
-                    <Uebersicht
+                    <UebersichtOderEinstieg
                       praxis={praxis}
                       zugang={z}
                       eigeneBereiche={lesbar.filter((x) => x.access_kind === 'self').length}
@@ -210,6 +213,30 @@ export function PlattformApp({
       <Reiterleiste />
     </div>
   );
+}
+
+/**
+ * POR-019: Steht der Einstieg für den gewählten Zugang aus, kommt er vor der
+ * Übersicht - sonst die Übersicht. Lädt der Stand nicht, gilt die Übersicht:
+ * Ein Einstieg darf nie den Zugang zu den eigenen Daten versperren.
+ */
+function UebersichtOderEinstieg({
+  praxis,
+  zugang,
+  eigeneBereiche,
+}: {
+  praxis: string;
+  zugang: Plattformzugang;
+  eigeneBereiche: number;
+}) {
+  const einstieg = useQuery({
+    queryKey: einstiegSchluessel(zugang.access_id),
+    queryFn: () => ladeEinstieg(zugang.access_id),
+    retry: false,
+  });
+  if (einstieg.isPending) return null;
+  if (einstieg.data?.pending) return <Einstieg zugang={zugang} praxis={praxis} />;
+  return <Uebersicht praxis={praxis} zugang={zugang} eigeneBereiche={eigeneBereiche} />;
 }
 
 /**

@@ -632,3 +632,9 @@ insert into public.platform_accesses
    'begleitung-2026-10-02b', '11111111-1111-4111-8111-000000000003', now(), false,
    -- ABN-010: Rechnungen nur mit ausdruecklicher Einwilligung; Max hat sie nicht gegeben.
    false);
+
+-- POR-019: Tina und Paula haben den Einstieg hinter sich; Erika sieht ihn bei
+-- der naechsten Anmeldung (Sichtung Plattform).
+update public.platform_accesses
+   set onboarding_finished_at = now()
+ where id in ('cafecafe-cafe-4afe-8afe-000000000001', 'cafecafe-cafe-4afe-8afe-000000000004');
