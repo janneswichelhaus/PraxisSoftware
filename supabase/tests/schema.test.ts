@@ -136,6 +136,8 @@ describe('Schema-Invarianten', () => {
       // KND-005: Voraussetzungsprofil und Uebernahmen aus der Behandlung.
       'training_profiles',
       'training_takeovers',
+      // KND-003: Nachweis des im Konto geschlossenen Trainingsvertrags.
+      'training_contracts',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

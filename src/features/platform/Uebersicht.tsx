@@ -15,8 +15,10 @@ import {
   ladeBefundbogen,
   ladeRechnungen,
   ladeTermine,
+  ladeTrainingsangebot,
   ladeWuensche,
   rechnungenSchluessel,
+  trainingsangebotSchluessel,
   termineSchluessel,
   wuenscheSchluessel,
   type Plattformzugang,
@@ -81,6 +83,14 @@ export function Uebersicht({
   });
   const aboEndet = abo.data && abo.data.state !== 'running' ? abo.data : null;
 
+  // KND-003: das Angebot aus dem Abschlussgespräch. Eine Begleitung sieht es
+  // nicht - der Server liefert ihr nichts (Recht contract).
+  const angebot = useQuery({
+    queryKey: trainingsangebotSchluessel(zugang.access_id),
+    queryFn: () => ladeTrainingsangebot(zugang.access_id),
+    enabled: behandlung && zugang.access_kind !== 'companion',
+  });
+
   const jetzt = new Date();
   // Ein laufender Termin ist noch „nächster“ - wie unter Termine „kommend“.
   const naechster = (termine.data ?? []).find(
@@ -113,6 +123,7 @@ export function Uebersicht({
 
   const kacheln = [
     bogenOffen,
+    Boolean(angebot.data),
     Boolean(naechster),
     Boolean(antwort),
     Boolean(offenerWunsch),
@@ -188,6 +199,20 @@ export function Uebersicht({
               }
             >
               {instrument?.meta.name_de ?? 'Befundbogen'}
+            </Tile>
+          ) : null}
+          {angebot.data ? (
+            <Tile
+              label="Training nach der Behandlung"
+              ton="akzent"
+              zusatz={`Angebot der Praxis, gilt bis ${datum(angebot.data.valid_until)}`}
+              aktion={
+                <Textlink alleinstehend to={mit('/angebot')}>
+                  Angebot ansehen →
+                </Textlink>
+              }
+            >
+              {angebot.data.label}
             </Tile>
           ) : null}
           {naechster ? (

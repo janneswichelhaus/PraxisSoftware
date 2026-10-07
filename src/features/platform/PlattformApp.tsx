@@ -16,13 +16,17 @@ import {
   ladeEinstieg,
   ladeMeinePakete,
   ladeMeineVertretungen,
+  ladeVertrag,
   paketeSchluessel,
   ueberallAbmelden,
+  vertragSchluessel,
   vertretungenSchluessel,
   type MeineVertretung,
   type Plattformzugang,
 } from './api';
 import { Abo } from './Abo';
+import { Angebot } from './Angebot';
+import { Vertrag } from './Vertrag';
 import { Paket } from './Paket';
 import { Befundbogen } from './Befundbogen';
 import { Dokumente } from './Dokumente';
@@ -213,6 +217,29 @@ export function PlattformApp({
                 bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
                 zugaenge={zugaenge}
                 seite={(z) => <Abo zugang={z} />}
+              />
+            }
+          />
+          {/* KND-003: das Angebot aus dem Abschlussgespräch - nur über einen
+              Zugang zur Behandlung; ob er es sieht, sagt der Server. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/angebot`}
+            element={
+              <MitZugang
+                bereiche={lesbar.filter((z) => z.relationship_kind === 'treatment')}
+                zugaenge={zugaenge}
+                seite={(z) => <Angebot zugang={z} />}
+              />
+            }
+          />
+          {/* KND-003: der im Konto geschlossene Vertrag - nur im Training. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/vertrag`}
+            element={
+              <MitZugang
+                bereiche={lesbar.filter((z) => z.relationship_kind === 'training')}
+                zugaenge={zugaenge}
+                seite={(z) => <Vertrag zugang={z} />}
               />
             }
           />
@@ -524,6 +551,12 @@ function Ich({
         .map((z) => (
           <PaketKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
         ))}
+      {/* KND-003: der im Konto geschlossene Trainingsvertrag; ohne ihn nichts. */}
+      {zugaenge
+        .filter((z) => z.relationship_kind === 'training')
+        .map((z) => (
+          <VertragKurz key={z.access_id} zugang={z} mehrere={zugaenge.length > 1} />
+        ))}
       {/* POR-016: Einwilligungen je Zugang - die eigenen und die einer
           rechtlichen Vertretung, nie die einer Begleitung. */}
       {entscheidend.length > 0 ? (
@@ -642,6 +675,33 @@ function PaketKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: bool
           to={`${PLATTFORM_PFAD}/paket?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
         >
           {aktuell ? 'Paket und Preise ansehen' : 'Pakete und Preise ansehen'}
+        </Textlink>
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Der Trainingsvertrag unter „Ich" (KND-003): gebucht am, und der Weg zur
+ * Bestätigung - solange die Frist läuft, auch zum Widerruf (KND-004). Ohne
+ * Vertrag im Konto bleibt der Abschnitt weg.
+ */
+function VertragKurz({ zugang, mehrere }: { zugang: Plattformzugang; mehrere: boolean }) {
+  const { data } = useQuery({
+    queryKey: vertragSchluessel(zugang.access_id),
+    queryFn: () => ladeVertrag(zugang.access_id),
+  });
+  if (!data) return null;
+  const titel = `Trainingsvertrag${mehrere ? ` – ${wahlName(zugang)}` : ''}`;
+  return (
+    <Section titel={titel} rahmen>
+      <p className="text-ink text-base">Gebucht am {datum(data.concluded_at)}.</p>
+      <div className="mt-2">
+        <Textlink
+          alleinstehend
+          to={`${PLATTFORM_PFAD}/vertrag?${wahlAdresse(zugang).split('?')[1] ?? ''}`}
+        >
+          Vertrag und Bestätigung ansehen
         </Textlink>
       </div>
     </Section>

@@ -251,6 +251,8 @@ describe('Audit-Lesepfad', () => {
       'get_training_client',
       // ANG-006: die Trainingspakete eines Verhaeltnisses (owner, office).
       'get_training_packages',
+      // KND-005: das Voraussetzungsprofil (owner, Trainingsbetreuung).
+      'get_training_profile',
       'get_training_protocol',
       'get_treatment_basis',
       'get_treatment_basis_slots',

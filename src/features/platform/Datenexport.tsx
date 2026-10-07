@@ -186,6 +186,16 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
         </Abschnitt>
       ) : null}
 
+      {/* KND-003: der im Konto geschlossene Trainingsvertrag. */}
+      {daten.training_contract ? (
+        <Abschnitt titel="Trainingsvertrag">
+          <Zeile label={`Geschlossen am ${datum(daten.training_contract.concluded_at)}`}>
+            {daten.training_contract.label} ·{' '}
+            {formatEuro(daten.training_contract.price_cents, daten.training_contract.currency)}
+          </Zeile>
+        </Abschnitt>
+      ) : null}
+
       {daten.relationship === 'treatment' ? (
         <Abschnitt titel={`Dokumente (${daten.documents.length})`}>
           {daten.documents.length === 0 ? <Leer /> : null}

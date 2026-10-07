@@ -3466,3 +3466,27 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.get_training_profile` und `public.save_training_profile` mit `app.can_access_training_protocols()` in `supabase/migrations/20261016120000_knd_005_training_profile.sql`; `PROFILFELDER` in `src/features/training/profil-api.ts`. Geprüft in `supabase/tests/training-profile.test.ts`.
 
 **Änderungspfad.** Profil in der Plattform: eigene Projektion mit Recht `read` · Aufwand `mittel`. Büro lesend: eigene Rollenfunktion statt `can_access_training_protocols` · Aufwand `klein`.
+
+### ANN-288 — Der Trainingsvertrag entsteht im Konto mit Musterbelehrung, „Zahlungspflichtig buchen“ und einer Bestätigung zum Speichern
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, Fernabsatz); B13 für die Bestätigung per Mail
+
+**Annahme.** Die Seite „Training nach Ihrer Behandlung“ zeigt Paket, Zeitraum, Gesamtpreis, die Paketbedingungen und die Widerrufsbelehrung nach dem Muster der Anlage 1 zu Art. 246a § 1 Abs. 2 EGBGB mit Muster-Widerrufsformular und dem Hinweis auf die Widerrufsfunktion im Konto. Der Vertrag entsteht mit „Zahlungspflichtig buchen“. Beginnt das Paket innerhalb von 14 Tagen nach dem Abschluss, muss die Person ausdrücklich verlangen, dass vorher begonnen wird. Gespeichert werden Paket und Preis als Wert, die Fassung von Belehrung und Bedingungen, der frühe Beginn, die Freigaben und die Einwilligung; die Bestätigung steht sofort und dauerhaft unter „Ich → Trainingsvertrag“ zum Drucken.
+
+**Begründung.** §4.10: Geschlossen wird über das eigene Konto, mit Widerrufsbelehrung. Ob ein Vertrag nach einem Gespräch beim Hausbesuch und einem Klick im Konto Fernabsatz oder außerhalb von Geschäftsräumen ist (§§ 312b, 312c BGB), ändert am Widerrufsrecht nichts; die Musterbelehrung erfüllt die Pflicht (Art. 246a § 1 Abs. 2 Satz 2 EGBGB). § 312j Abs. 3 verlangt die Beschriftung des Knopfs, §§ 356 Abs. 4 und 357a Abs. 2 das ausdrückliche Verlangen für den frühen Beginn, § 312f Abs. 2 eine Bestätigung auf einem dauerhaften Datenträger – bis B13 die Seite zum Speichern wie bei ANN-272. Unsicher: ob die Seite zum Speichern als dauerhafter Datenträger genügt.
+
+**Anker.** `app.training_contract_wording_version` und `public.accept_platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`; Wortlaut in `src/features/platform/vertragstexte.ts`. Geprüft in `supabase/tests/training-contracts.test.ts`, `src/features/platform/vertragstexte.test.ts` und `src/features/platform/Angebot.test.tsx`.
+
+**Änderungspfad.** Anderer Wortlaut: Text und `VERTRAGSFASSUNG` mit der Funktion anheben · Aufwand `klein`. Bestätigung per Mail: Versand mit B13 · Aufwand `klein`.
+
+### ANN-289 — Den Trainingsvertrag im Konto schließt nur die Person selbst
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
+
+**Annahme.** Annehmen kann nur der eigene Zugang der Person zu ihrer Behandlung. Eine rechtliche Vertretung mit Vermögenssorge sieht das Angebot und die Seite, aber keinen Knopf („Den Vertrag schließt … selbst in ihrem Konto oder in der Praxis“); eine Begleitung sieht nichts. Mit dem Vertrag bekommt das Konto der Person einen eigenen Zugang zum Training; eine Vertretung im Training richtet die Praxis bei Bedarf eigens ein.
+
+**Begründung.** Der Nachweis einer Vertretung (Ausweis, Vollmacht, Aufgabenkreis) ist für die Behandlung angesehen worden (ADR-023 Punkt 13); ihn still auf ein neues Verhältnis zu übertragen, wäre genau der Schluss über die gemeinsame Identität, den §4.8 verbietet. Eine Vertretung beim Training richtet die Praxis mit eigenem Nachweis ein, wie bisher (ANN-173). Unsicher: ob eine Betreuung oder Vollmacht den Abschluss im Konto braucht, weil die vertretene Person selbst kein Konto hat.
+
+**Anker.** Die Prüfung `v_zugang.access_kind <> 'self'` in `public.accept_platform_training_offer` und `can_accept` in `public.platform_training_offer` in `supabase/migrations/20261016130000_knd_003_training_contract.sql`. Geprüft in `supabase/tests/training-contracts.test.ts`.
+
+**Änderungspfad.** Rechtliche Vertretung schließt ab: Vertretungszugang zum neuen Verhältnis mit übernommenem Nachweis anlegen · Aufwand `mittel`.
