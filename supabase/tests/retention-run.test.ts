@@ -736,6 +736,45 @@ describe('Loeschlauf: Trainingsverhaeltnis', () => {
     );
   });
 
+  it('loescht das Trainingspaket mit dem Verhaeltnis, samt seiner Leistung (ANG-006)', async () => {
+    await beendetVor(trainingRelationships.tina, 4);
+    // Das Paket lag im Vertrag; die Leistung zeigt mit RESTRICT darauf und
+    // faellt zuerst, das Paket per Kaskade mit dem Verhaeltnis.
+    await asPostgres(
+      `with paket as (
+         insert into public.training_packages
+           (organization_id, training_relationship_id, catalog_item_id, starts_on, ends_on, created_by)
+         select organization_id, id, 'cccccccc-cccc-4ccc-8ccc-000000000014'::uuid,
+                contract_started_on, contract_started_on + 89, $2::uuid
+         from public.training_relationships where id = $1
+         returning id, organization_id, training_relationship_id, catalog_item_id, starts_on
+       )
+       insert into public.billable_services
+         (organization_id, training_relationship_id, training_package_id, catalog_item_id, performed_on)
+       select organization_id, training_relationship_id, id, catalog_item_id, starts_on from paket`,
+      [trainingRelationships.tina, users.office],
+    );
+
+    await lauf();
+
+    expect(
+      await anzahl(
+        'select count(*) from public.billable_services where training_package_id is not null',
+      ),
+    ).toBe(0);
+    expect(
+      await anzahl(
+        'select count(*) from public.training_packages where training_relationship_id = $1',
+        [trainingRelationships.tina],
+      ),
+    ).toBe(0);
+    expect(
+      await anzahl('select count(*) from public.training_relationships where id = $1', [
+        trainingRelationships.tina,
+      ]),
+    ).toBe(0);
+  });
+
   it('laesst ein laufendes und ein noch nicht faelliges Verhaeltnis stehen', async () => {
     // Ohne Vertragsende laeuft keine Frist - genau wie ohne Abschluss der
     // Versorgung in der Akte.

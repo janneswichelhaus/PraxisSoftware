@@ -3322,3 +3322,39 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes mit P
 **Anker.** `app.training_package_tax_allowed`, die Spalte `package_months` und die Constraint `service_catalog_items_training_package` in `supabase/migrations/20261015100000_ang_005_training_package_catalog.sql`; Prüfung in `src/features/billing/CatalogPage.tsx`. Geprüft in `supabase/tests/training-packages.test.ts` und `src/features/billing/CatalogPage.test.tsx`.
 
 **Änderungspfad.** Anderes Kennzeichen: die eine Funktion, danach eine neue Preisliste · Aufwand `klein`. Kontingent statt Zeitraum: Zählung am Paket und an der Abgeltung (ANN-279) · Aufwand `mittel`.
+
+### ANN-276 — Ein Trainingspaket wird einmal im Voraus berechnet: eine Leistung zum Beginn, eine Rechnung
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit der Zahlungsweise (BEF-114)
+
+**Annahme.** Mit dem Paket entsteht im selben Schritt genau eine Leistung des Bereichs `training`, ohne Termin, am Tag des Beginns, zum Preis der Paketposition der am Beginn geltenden Preisliste. Die Rechnung entsteht über den Monatsentwurf des Trainings; das Blatt nennt den ganzen Zeitraum des Pakets. Raten gibt es nicht. Eine Fehlanlage lässt sich mit ihrer Leistung entfernen, solange sie auf keiner Rechnung und keinem Entwurf steht.
+
+**Begründung.** ADR-009 Punkt 21: das Paket „wird als eine Leistung des Bereichs `training` berechnet“; §19 nennt es ein abrechenbares Ereignis. Eine Leistung je Paket macht die Doppelabrechnung zur Invariante (Punkt 4, eindeutiger Index). Der Preis bleibt fest, weil die Leistung auf die unveränderliche Position zeigt (Punkt 5). Den Zeitraum verlangt § 14 Abs. 4 Nr. 6 UStG. Unsicher: ob Jannes Monatsraten will; dann wäre das Paket wie das Abo in Monate zu teilen.
+
+**Anker.** `public.create_training_package`, der dritte Zweig von `billable_services_source` und `billable_services_training_package_key` in `supabase/migrations/20261015110000_ang_006_training_packages.sql`. Geprüft in `supabase/tests/training-packages.test.ts`.
+
+**Änderungspfad.** Monatsraten: eine Leistung je Paketmonat mit den Monatsfunktionen des Abos (ANN-270) · Aufwand `mittel`.
+
+### ANN-277 — Ein Trainingspaket läuft nach § 188 BGB, lässt sich weder pausieren noch kündigen, und der Vertrag endet nicht vor ihm
+
+Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
+
+**Annahme.** Ein Paket über n Monate endet am Ende des n-ten Monats vom Beginn aus (§ 188 Abs. 2 und 3 BGB, wie ANN-270). Es hat keinen Zustand, keine Pause und keine Kündigung; ob es geplant ist, läuft oder vorbei ist, ergibt sich aus dem Tag. Zwei Pakete desselben Verhältnisses überschneiden sich nie. Das Trainingsverhältnis lässt sich nicht vor dem letzten Tag eines Pakets beenden – damit bleibt auch der Plattformzugang bis dahin offen.
+
+**Begründung.** §4.10 und §19: „ein Paket gilt für einen Zeitraum und ist nicht pausierbar“; „die Plattform ist im Paketpreis enthalten“. Die Lesefrist von 30 Tagen zählt vom Vertragsende (ADR-023 Punkt 5); hält das Vertragsende das Paket ein, braucht der Zugang keine eigene Regel. Unsicher: ob bei Personal Training als Dienst höherer Art eine jederzeitige Kündigung nach § 627 BGB möglich bleibt und eine anteilige Erstattung verlangt; das klärt die Prüfung, bis dahin läuft eine Erstattung über Storno.
+
+**Anker.** `app.training_package_ends_on`, die Constraint `training_packages_no_overlap` und die Prüfung in `public.end_training_relationship` in `supabase/migrations/20261015110000_ang_006_training_packages.sql`. Geprüft in `supabase/tests/training-packages.test.ts`.
+
+**Änderungspfad.** Kündigung mit anteiliger Erstattung: Ende am Paket, Korrekturrechnung · Aufwand `mittel`.
+
+### ANN-278 — Ein Trainingspaket beginnt nicht während einer laufenden Behandlung derselben Person
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** Hat dieselbe Person in der Praxis eine Akte ohne Abschluss der Versorgung, lässt sich kein Paket anlegen; nach dem Abschluss beginnt es frühestens an dessen Tag. Wie beim Abo höchstens 14 Tage rückwirkend und nicht vor dem Vertragsbeginn. Eine Behandlung, die während eines Pakets beginnt, hält es nicht an (ANN-280).
+
+**Begründung.** §4.10: „Das Paket beginnt nach dem Ende der Behandlung.“ Gelesen wird über die gemeinsame Identität (ADR-021 Punkt 3) und nur der Abschluss, kein Inhalt der Akte; anlegen dürfen nur owner und office, die beide Bereiche tragen – die Meldung erreicht niemanden, der die Akte nicht ohnehin sieht (ADR-021 Punkt 6). Unsicher: ob Jannes einem Paket neben einer laufenden Verordnung doch zustimmen würde, etwa bei einer Behandlung an einer anderen Region.
+
+**Anker.** `care_open` und `before_care_end` in `app.training_package_start_blocker` in `supabase/migrations/20261015110000_ang_006_training_packages.sql`; `STARTHINDERNIS` in `src/features/billing/trainingspaket-api.ts`. Geprüft in `supabase/tests/training-packages.test.ts`.
+
+**Änderungspfad.** Paket auch während einer Behandlung: die zwei Zweige entfernen · Aufwand `klein`.

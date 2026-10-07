@@ -249,6 +249,8 @@ describe('Audit-Lesepfad', () => {
       'get_therapy_report',
       'get_training_appointment',
       'get_training_client',
+      // ANG-006: die Trainingspakete eines Verhaeltnisses (owner, office).
+      'get_training_packages',
       'get_training_protocol',
       'get_treatment_basis',
       'get_treatment_basis_slots',
@@ -316,6 +318,8 @@ describe('Audit-Lesepfad', () => {
       'list_training_bases',
       'list_training_client_appointments',
       'list_training_clients',
+      // ANG-006: die Pakete der Preisliste eines Tags (owner, office).
+      'list_training_package_items',
       'list_training_protocols',
       'list_waitlist_entries',
       'list_waitlist_matches',

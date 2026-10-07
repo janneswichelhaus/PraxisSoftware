@@ -18,10 +18,12 @@ import { alsFormularfehler } from '@/lib/formularfehler';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { EINGABETEXTE, useTextverlustschutz } from '@/features/documentation/Textverlustschutz';
 import {
+  canManageInvoicing,
   canWriteTrainingClients,
   canReadTrainingProtocols,
   type CurrentUser,
 } from '@/features/session/types';
+import { Trainingspaket } from '@/features/billing/Trainingspaket';
 import {
   TRAINING_BESCHRIFTUNG,
   TRAINING_FELDER,
@@ -202,6 +204,8 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
             />
           ) : null}
           <TrainingVereinbarungen kundin={kundin} darfSchreiben={darfSchreiben} />
+          {/* ANG-006: das Paket nach Zeitraum - owner und office (ANN-071). */}
+          {canManageInvoicing(user.roles) ? <Trainingspaket verhaeltnisId={kundin.id} /> : null}
           {/* POR-017: Einwilligung zu Gesundheitsangaben (ADR-021 Punkt 4). */}
           {user.organizationTimeZone ? (
             <TrainingEinwilligung
@@ -364,11 +368,7 @@ function VertragBeenden({ kundin, zeitzone }: { kundin: TrainingClient; zeitzone
       ausloeser="Vertrag beenden"
       bestaetigen="Vertrag beenden"
       bestaetigenLaeuft="Wird beendet …"
-      fehler={
-        mutation.isError
-          ? 'Das Vertragsende konnte nicht gespeichert werden. Prüfen Sie das Datum.'
-          : undefined
-      }
+      fehler={mutation.isError ? mutation.error.message : undefined}
       laeuft={mutation.isPending}
       onBestaetigen={() => mutation.mutateAsync()}
       onAbbrechen={() => setTag(heute)}

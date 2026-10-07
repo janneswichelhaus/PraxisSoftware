@@ -292,8 +292,16 @@ export async function endTrainingRelationship(id: string, endedOn: string): Prom
     p_relationship_id: id,
     p_ended_on: endedOn,
   });
+  // ANG-006 (ANN-277): Ein Paket ist nicht kündbar; der Vertrag endet
+  // frühestens mit seinem letzten Tag.
+  const meldung = (ergebnis.error as { message?: string } | null)?.message ?? '';
+  if (meldung.includes('runs beyond the contract end')) {
+    throw new Error(
+      'Ein Trainingspaket läuft noch über diesen Tag hinaus. Der Vertrag endet frühestens mit dem letzten Tag des Pakets.',
+    );
+  }
   if (abgewiesen(ergebnis) || ergebnis.data === null) {
-    throw new Error('Der Vertrag konnte nicht beendet werden.');
+    throw new Error('Der Vertrag konnte nicht beendet werden. Prüfen Sie das Datum.');
   }
 }
 
