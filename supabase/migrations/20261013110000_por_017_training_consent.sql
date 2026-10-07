@@ -106,6 +106,7 @@ declare
   v_org    uuid;
   v_zone   text;
   v_letzte record;
+  v_zeit   timestamptz;
   v_id     uuid;
 begin
   v_actor := auth.uid();
@@ -155,11 +156,19 @@ begin
     end if;
   end if;
 
+  -- Der juengste Vermerk, auch neben einem gleichzeitigen (Zweitreview).
+  select greatest(now(), max(r.recorded_at) + interval '1 microsecond') into v_zeit
+  from public.training_consent_records r
+  where r.training_relationship_id = p_training_relationship_id;
+  v_zeit := coalesce(v_zeit, now());
+
   insert into public.training_consent_records (
-    organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by
+    organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by,
+    recorded_at
   )
   values (
-    v_org, p_training_relationship_id, p_record_kind, 'training_health_data', p_occurred_on, v_actor
+    v_org, p_training_relationship_id, p_record_kind, 'training_health_data', p_occurred_on, v_actor,
+    v_zeit
   )
   returning id into v_id;
   return v_id;
@@ -289,6 +298,7 @@ declare
   v_zone    text;
   v_heute   date;
   v_letzte  text;
+  v_zeit    timestamptz;
   v_art     text;
   v_name    text;
   v_id      uuid;
@@ -341,6 +351,19 @@ begin
     limit 1;
   end if;
 
+  -- Der neue Vermerk ist der juengste, auch wenn ein gleichzeitiger Aufruf
+  -- spaeter begann und vorher schrieb (Zweitreview): now(), mindestens aber
+  -- eine Mikrosekunde nach dem bisher juengsten.
+  if v_zugang.relationship_kind = 'treatment' then
+    select greatest(now(), max(r.recorded_at) + interval '1 microsecond') into v_zeit
+    from public.patient_privacy_records r where r.patient_id = v_zugang.relationship_id;
+  else
+    select greatest(now(), max(r.recorded_at) + interval '1 microsecond') into v_zeit
+    from public.training_consent_records r
+    where r.training_relationship_id = v_zugang.relationship_id;
+  end if;
+  v_zeit := coalesce(v_zeit, now());
+
   if p_grant then
     if v_letzte is not distinct from 'consent_granted' then
       raise exception 'consent already granted' using errcode = '23514';
@@ -360,11 +383,12 @@ begin
 
   if v_zugang.relationship_kind = 'treatment' then
     insert into public.patient_privacy_records (
-      organization_id, patient_id, record_kind, purpose, occurred_on, recorded_by,
+      organization_id, patient_id, record_kind, purpose, occurred_on, recorded_by, recorded_at,
       source, platform_access_id, platform_access_kind, representative_name, wording_version
     )
     values (
       v_zugang.organization_id, v_zugang.relationship_id, v_art, p_purpose, v_heute, auth.uid(),
+      v_zeit,
       'platform', v_zugang.id, v_zugang.access_kind, v_name, p_wording_version
     )
     returning id into v_id;
@@ -379,10 +403,12 @@ begin
   else
     insert into public.training_consent_records (
       organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_by,
-      source, platform_access_id, platform_access_kind, representative_name, wording_version
+      recorded_at, source, platform_access_id, platform_access_kind, representative_name,
+      wording_version
     )
     values (
       v_zugang.organization_id, v_zugang.relationship_id, v_art, p_purpose, v_heute, auth.uid(),
+      v_zeit,
       'platform', v_zugang.id, v_zugang.access_kind, v_name, p_wording_version
     )
     returning id into v_id;

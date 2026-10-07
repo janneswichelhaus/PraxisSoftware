@@ -75,7 +75,9 @@ function speichern(roh: unknown, daten: Daten) {
   link.href = url;
   link.download = `meine-daten-${daten.exported_at.slice(0, 10)}.json`;
   link.click();
-  URL.revokeObjectURL(url);
+  // Erst später freigeben: Manche Browser (älteres Safari) brechen den
+  // Download sonst ab (Zweitreview).
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 const STATUS: Record<Daten['appointments'][number]['status'], string> = {

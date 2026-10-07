@@ -306,8 +306,14 @@
 /* Bei 200 % Vergrößerung bleibt am Telefon kaum Breite (375 px werden
    188): Knöpfe brechen um statt hinauszuragen, Gruppen schrumpfen mit
    (`fieldset` ist sonst so breit wie sein Inhalt). */
-.plattform-schrift :is(button, a) {
-  max-width: 100%;
+/* In der Basisschicht: Eine `max-w-*`-Angabe am Element geht vor. */
+@layer base {
+  .plattform-schrift :is(button, a) {
+    max-width: 100%;
+  }
+  .plattform-schrift fieldset {
+    min-width: 0;
+  }
 }
 /* Zeit, Titel und Zustand nebeneinander brauchen Platz (ListRow trägt dafür
    `listenzeile`): Am Telefon steht der Zustand unter dem Titel, bei sehr
@@ -335,13 +341,12 @@
     grid-template-columns: repeat(auto-fill, minmax(2.75rem, 1fr));
   }
 }
+/* Bewusst außerhalb der Schichten: Die feste Knopfhöhe `h-12` soll im
+   Plattformgerüst wachsen dürfen, wenn der Text umbricht. */
 .plattform-schrift .h-12 {
   height: auto;
   min-height: 3rem;
   padding-block: 0.5rem;
-}
-.plattform-schrift fieldset {
-  min-width: 0;
 }
 html[data-schrift='gross'] {
   font-size: 112.5%;

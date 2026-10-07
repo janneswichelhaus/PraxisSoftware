@@ -238,6 +238,7 @@ declare
   v_zone    text;
   v_heute   date;
   v_letzte  text;
+  v_zeit    timestamptz;
   v_art     text;
   v_id      uuid;
 begin
@@ -278,6 +279,14 @@ begin
   order by r.recorded_at desc, r.id desc
   limit 1;
 
+  -- Der neue Vermerk ist der juengste, auch wenn ein gleichzeitiger Aufruf
+  -- spaeter begann und vorher schrieb (Zweitreview): now(), mindestens aber
+  -- eine Mikrosekunde nach dem bisher juengsten.
+  select greatest(now(), max(r.recorded_at) + interval '1 microsecond') into v_zeit
+  from public.patient_privacy_records r
+  where r.patient_id = v_zugang.relationship_id;
+  v_zeit := coalesce(v_zeit, now());
+
   if p_grant then
     if v_letzte is not distinct from 'consent_granted' then
       raise exception 'consent already granted' using errcode = '23514';
@@ -294,11 +303,12 @@ begin
   v_heute := (now() at time zone coalesce(v_zone, 'Europe/Berlin'))::date;
 
   insert into public.patient_privacy_records (
-    organization_id, patient_id, record_kind, purpose, occurred_on, recorded_by,
+    organization_id, patient_id, record_kind, purpose, occurred_on, recorded_by, recorded_at,
     source, platform_access_id, platform_access_kind, representative_name, wording_version
   )
   values (
     v_zugang.organization_id, v_zugang.relationship_id, v_art, p_purpose, v_heute, auth.uid(),
+    v_zeit,
     'platform', v_zugang.id, v_zugang.access_kind,
     case when v_zugang.access_kind = 'legal_representative' then v_zugang.representative_name end,
     p_wording_version

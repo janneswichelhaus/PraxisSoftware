@@ -482,3 +482,176 @@ describe('Einwilligung im Training (POR-017)', () => {
     ]);
   });
 });
+
+/**
+ * Befunde aus dem Zweitreview: der Widerruf in allen Negativfällen
+ * (ADR-023 Punkt 23), das Training gesperrt und nach der Lesefrist, die
+ * fremde Organisation an der Trainingstabelle, die Zeit nach der Sperre und
+ * die Herkunft in der Kopie nach Art. 15.
+ */
+describe('Widerruf und Training: Negativfälle und Nachweis (Zweitreview)', () => {
+  beforeEach(async () => {
+    await resetDatabase();
+  }, 120_000);
+
+  async function praxisErteilt(patientId: string, zweck = 'email_contact') {
+    await asUserCommitted(
+      users.office,
+      `select public.record_patient_privacy_entry($1::uuid, 'consent_granted', $2::text, null, current_date)`,
+      [patientId, zweck],
+    );
+  }
+
+  async function standDerAkte(patientId: string): Promise<string | undefined> {
+    const { rows } = await asPostgres<{ record_kind: string }>(
+      `select record_kind from public.patient_privacy_records
+        where patient_id = $1 and purpose = 'email_contact'
+        order by recorded_at desc, id desc limit 1`,
+      [patientId],
+    );
+    return rows[0]?.record_kind;
+  }
+
+  it('Begleitung, fremde Person, Praxiskonto, andere Organisation widerrufen nicht', async () => {
+    await praxisErteilt(patients.max);
+    await praxisErteilt(patients.erika);
+    const fremd = await fremdeOrganisation();
+    for (const [konto, zugang] of [
+      [users.plattformPaula, PAULA],
+      [users.plattformTina, ERIKA],
+      [users.office, ERIKA],
+      [fremd.owner, ERIKA],
+    ] as const) {
+      const fehler = await abgefangen(schreiben(konto, zugang, 'email_contact', false));
+      expect(fehler?.message, konto).toContain('not allowed');
+    }
+    expect(await standDerAkte(patients.max)).toBe('consent_granted');
+    expect(await standDerAkte(patients.erika)).toBe('consent_granted');
+  });
+
+  it('eingeladen, gesperrt, entzogen widerrufen nicht', async () => {
+    for (const fall of [
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      `update public.platform_accesses set status = 'revoked', revoked_at = now(),
+              revoked_reason = 'practice', revoked_by = created_by where id = $1`,
+      `update public.platform_accesses set status = 'invited', account_user_id = null where id = $1`,
+    ]) {
+      await resetDatabase();
+      await praxisErteilt(patients.erika);
+      await asPostgres(fall, [ERIKA]);
+      const fehler = await abgefangen(
+        schreiben(users.plattformErika, ERIKA, 'email_contact', false),
+      );
+      expect(fehler?.message).toContain('not allowed');
+      expect(await standDerAkte(patients.erika)).toBe('consent_granted');
+    }
+  }, 360_000);
+
+  it('Training gesperrt: nichts; nach der Lesefrist: widerrufen ja, erteilen nein', async () => {
+    await schreiben(users.plattformTina, TINA, 'training_health_data', true);
+    await asPostgres(
+      `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+      [TINA],
+    );
+    expect(await stand(users.plattformTina, TINA)).toEqual([]);
+    const gesperrt = await abgefangen(
+      schreiben(users.plattformTina, TINA, 'training_health_data', false),
+    );
+    expect(gesperrt?.message).toContain('not allowed');
+
+    await asPostgres(
+      `update public.platform_accesses set status = 'active', locked_at = null where id = $1`,
+      [TINA],
+    );
+    await asPostgres(
+      `update public.training_relationships set contract_ended_on = current_date - 40 where id = $1`,
+      [trainingRelationships.tina],
+    );
+    expect((await stand(users.plattformTina, TINA))[0]).toEqual(
+      expect.objectContaining({ state: 'granted', can_grant: false }),
+    );
+    await schreiben(users.plattformTina, TINA, 'training_health_data', false);
+    const erteilen = await abgefangen(
+      schreiben(users.plattformTina, TINA, 'training_health_data', true),
+    );
+    expect(erteilen?.message).toContain('not allowed');
+  });
+
+  it('die Trainingstabelle bleibt in ihrer Organisation (RLS)', async () => {
+    await schreiben(users.plattformTina, TINA, 'training_health_data', true);
+    const fremd = await fremdeOrganisation();
+    const { rows } = await asUser(
+      fremd.owner,
+      'select 1 from public.training_consent_records where training_relationship_id = $1',
+      [trainingRelationships.tina],
+    );
+    expect(rows).toEqual([]);
+  });
+
+  it('ein neuer Vermerk ist der jüngste, auch neben einem später begonnenen (Wettlauf)', async () => {
+    // Ein gleichzeitiger Aufruf, der später begann und vorher schrieb, trägt
+    // eine Zeit nach dem Beginn dieser Transaktion - hier als Zeile in der
+    // Zukunft nachgestellt, je Tabelle.
+    await asPostgres(
+      `insert into public.patient_privacy_records
+         (organization_id, patient_id, record_kind, purpose, occurred_on, recorded_at)
+       values ($1, $2, 'consent_granted', 'email_contact', current_date, now() + interval '2 seconds')`,
+      [organizationId, patients.erika],
+    );
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_at)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date,
+               now() + interval '2 seconds')`,
+      [organizationId, trainingRelationships.tina],
+    );
+    await schreiben(users.plattformErika, ERIKA, 'email_contact', false);
+    await schreiben(users.plattformTina, TINA, 'training_health_data', false);
+    expect(await standDerAkte(patients.erika)).toBe('consent_withdrawn');
+    expect((await stand(users.plattformTina, TINA))[0]!.state).toBe('withdrawn');
+
+    // Ebenso der Weg der Praxis (record_patient_privacy_entry, record_training_consent_entry).
+    await asPostgres(
+      `insert into public.patient_privacy_records
+         (organization_id, patient_id, record_kind, purpose, occurred_on, recorded_at)
+       values ($1, $2, 'consent_granted', 'email_contact', current_date, now() + interval '4 seconds')`,
+      [organizationId, patients.erika],
+    );
+    await asUserCommitted(
+      users.office,
+      `select public.record_patient_privacy_entry($1::uuid, 'consent_withdrawn', 'email_contact', null, current_date)`,
+      [patients.erika],
+    );
+    expect(await standDerAkte(patients.erika)).toBe('consent_withdrawn');
+    await asPostgres(
+      `insert into public.training_consent_records
+         (organization_id, training_relationship_id, record_kind, purpose, occurred_on, recorded_at)
+       values ($1, $2, 'consent_granted', 'training_health_data', current_date,
+               now() + interval '4 seconds')`,
+      [organizationId, trainingRelationships.tina],
+    );
+    await asUserCommitted(
+      users.trainer,
+      `select public.record_training_consent_entry($1::uuid, 'consent_withdrawn', current_date)`,
+      [trainingRelationships.tina],
+    );
+    expect((await stand(users.plattformTina, TINA))[0]!.state).toBe('withdrawn');
+  });
+
+  it('die Kopie der Akte nach Art. 15 nennt Herkunft, Vertretung und Textfassung', async () => {
+    await schreiben(users.plattformErika, ERIKA, 'email_contact', true);
+    const { rows } = await asUserCommitted<{ akte: { tabellen: Record<string, unknown[]> } }>(
+      users.ownerTherapist,
+      'select public.export_patient_record($1::uuid) as akte',
+      [patients.erika],
+    );
+    expect(rows[0]!.akte.tabellen['patient_privacy_records']).toContainEqual(
+      expect.objectContaining({
+        source: 'platform',
+        platform_access_kind: 'self',
+        representative_name: null,
+        wording_version: FASSUNG,
+      }),
+    );
+  });
+});
