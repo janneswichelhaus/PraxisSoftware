@@ -58,6 +58,9 @@ export function TreatmentBasisTile({
   // wenn der Zähler nicht lädt: Sie ist die Abrechnungsfrage, nicht der Zähler.
   if (!data && !ungedeckt) return null;
   const position = data ? positionText(data) : null;
+  // KND-001: einer der letzten Termine - Zeit für das Abschlussgespräch
+  // (4.10, ANN-286). Eine Auskunft, kein Vorgang.
+  const abschluss = data?.closing_talk_due === true;
   const grundlage =
     data?.treatment_basis_kind && data.treatment_basis_issued_on
       ? (() => {
@@ -87,6 +90,13 @@ export function TreatmentBasisTile({
           >
             Auf andere Grundlage übertragen
           </Textlink>
+        ) : abschluss && appointment.patient_id ? (
+          <Textlink
+            alleinstehend
+            to={mitRueckweg(`/patienten/${appointment.patient_id}`, zumTermin)}
+          >
+            Training in der Akte anbieten
+          </Textlink>
         ) : undefined
       }
     >
@@ -97,6 +107,12 @@ export function TreatmentBasisTile({
           <span className="text-ink-muted text-sm">
             Die Behandlungsgrundlage deckt diesen Termin nicht.
           </span>
+        </span>
+      ) : null}
+      {abschluss ? (
+        <span className="text-ink mt-2 block text-sm font-normal">
+          Einer der letzten Termine: Zeit für das Abschlussgespräch – wie geht es nach der
+          Behandlung weiter?
         </span>
       ) : null}
     </Tile>

@@ -72,6 +72,7 @@ export function Tageskarte({
   hauptaktion,
   aktionen,
   hinweis,
+  abschlussgespraech,
 }: {
   termin: DayPlanEntry;
   /** Die Zeile über dem Namen: „Erster Weg · ≈ 12 min", „Jetzt · bis 10:10". */
@@ -88,6 +89,8 @@ export function Tageskarte({
   aktionen?: ReactNode;
   /** Eine Warnung zum Weg, etwa die veraltete Anschrift am Termin (ANN-236). */
   hinweis?: string | null;
+  /** KND-001: einer der letzten Termine - Zeit für das Abschlussgespräch (ANN-286). */
+  abschlussgespraech?: boolean;
 }) {
   const [infoOffen, setInfoOffen] = useState(false);
   const infoId = useId();
@@ -104,6 +107,7 @@ export function Tageskarte({
   const liege =
     termin.treatment_table_required === true && termin.appointment_type === 'home_visit';
   const fehlt = termin.kind === 'therapy' && termin.patient_id ? (erstaufnahme ?? []) : [];
+  const abschluss = abschlussgespraech === true && termin.kind === 'therapy' && !!termin.patient_id;
   const terminZiel = mitRueckweg(
     termin.kind === 'training' ? `/training/termine/${termin.id}` : kalenderZumTermin(termin.id),
     '/',
@@ -212,7 +216,7 @@ export function Tageskarte({
         </address>
       ) : null}
 
-      {liege || fehlt.length > 0 ? (
+      {liege || fehlt.length > 0 || abschluss ? (
         <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
           {/* UX-003a: Die Liege gehört zur Person, nicht zum Termin (ANN-116). */}
           {liege ? (
@@ -231,6 +235,19 @@ export function Tageskarte({
               <span aria-hidden="true">!</span>
               Erstaufnahme offen
               <span className="sr-only">: {openItemsText(fehlt)}</span>
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+          {/* KND-001: In den letzten Terminen erinnert die Karte an das
+              Abschlussgespräch (4.10, ANN-286). Angeboten wird mündlich; das
+              Angebot hält die Akte fest. */}
+          {abschluss && termin.patient_id ? (
+            <Link
+              to={mitRueckweg(`/patienten/${termin.patient_id}`, '/')}
+              className={`${pille} ${darueber} bg-accent-soft text-accent hover:border-accent border border-transparent transition-colors duration-120`}
+            >
+              Abschlussgespräch
+              <span className="sr-only">: Wie geht es nach der Behandlung weiter?</span>
               <span aria-hidden="true">→</span>
             </Link>
           ) : null}

@@ -24,6 +24,8 @@ const abrechnungslageSchema = z.object({
   open_invoice_count: z.number().nullable(),
   open_outstanding_cents: z.number().nullable(),
   open_overdue: z.boolean().nullable(),
+  /** KND-001: einer der letzten Termine seiner Grundlage - Zeit für das Abschlussgespräch (ANN-286). */
+  closing_talk_due: z.boolean(),
 });
 export type Abrechnungslage = z.infer<typeof abrechnungslageSchema>;
 

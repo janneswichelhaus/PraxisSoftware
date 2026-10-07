@@ -3442,3 +3442,15 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Die Spalte `accepted_at` an `public.training_offers` in `supabase/migrations/20261016100000_knd_002_training_offers.sql`; `standSatz` in `src/features/training-offers/Trainingsangebot.tsx`. Geprüft in `supabase/tests/training-offers.test.ts`.
 
 **Änderungspfad.** Gar kein Rückfluss: `accepted_at` nur für die Prüfung „offen“ benutzen und in `get_patient_training_offers` als „nicht mehr offen“ ausgeben · Aufwand `klein`.
+
+### ANN-286 — Ans Abschlussgespräch erinnert die Karte der letzten zwei Termine, bis ein Angebot in der Akte steht
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+
+**Annahme.** An den letzten zwei Terminen einer Behandlungsgrundlage mit Terminzahl (Position mindestens Terminzahl minus eins) zeigt die Tageskarte die Pille „Abschlussgespräch“ und die Terminansicht einen Satz mit dem Weg „Training in der Akte anbieten“. Das gilt für Verordnung und Selbstzahler, solange die Versorgung offen ist, keine jüngere Grundlage folgt und seit dem Beginn der Grundlage kein Trainingsangebot in der Akte steht, das nicht zurückgezogen ist. Eine Mitteilung, ein Zähler oder ein Eintrag in Offene Punkte entsteht nicht.
+
+**Begründung.** §4.10 und E-3: „In den letzten ein bis zwei Terminen einer Verordnung erinnert die App an das Abschlussgespräch.“ Am Termin sieht die behandelnde Person den Hinweis dann, wenn das Gespräch ansteht; die Erinnerung „Verordnungen, die enden“ gibt es schon für die Folgeverordnung. Eine jüngere Grundlage heißt: Die Behandlung geht weiter. Ob die Person schon trainiert, fragt die Erinnerung nicht – das wäre ein Schluss von der Behandlung aufs Training (§4.8). Unsicher: ob Jannes auch ohne Terminzahl erinnert werden will, etwa beim Selbstzahler mit offener Anzahl.
+
+**Anker.** `app.closing_talk_due` in `supabase/migrations/20261016110000_knd_001_closing_talk.sql`; Pille in `src/features/today/Tagesliste.tsx`, Satz in `src/features/appointments/Abrechnungslage.tsx`. Geprüft in `supabase/tests/closing-talk.test.ts`.
+
+**Änderungspfad.** Nur der letzte Termin oder drei: die Zahl `- 1` in der einen Funktion · Aufwand `klein`.
