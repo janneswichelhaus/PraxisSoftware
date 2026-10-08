@@ -195,7 +195,7 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
         {index > 0 ? (
           <Button
             variant="secondary"
-            className="min-h-14 flex-1"
+            className="flex-1"
             onClick={() => {
               setPause(null);
               setIndex(index - 1);
@@ -205,7 +205,7 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
           </Button>
         ) : null}
         <Button
-          className="min-h-14 flex-1"
+          className="flex-1"
           onClick={() => {
             setPause(null);
             if (letzte) setFertig(true);
@@ -309,10 +309,10 @@ function Abschluss({
         {beenden.isError ? (
           <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
         ) : null}
-        <Button type="submit" className="min-h-14" disabled={beenden.isPending}>
+        <Button type="submit" disabled={beenden.isPending}>
           {beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden'}
         </Button>
-        <Button type="button" variant="secondary" className="min-h-14" onClick={onZurueck}>
+        <Button type="button" variant="secondary" onClick={onZurueck}>
           Zurück zu den Übungen
         </Button>
         <ButtonLink variant="quiet" to={zurueck}>

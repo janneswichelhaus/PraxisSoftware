@@ -123,8 +123,10 @@ function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlae
               ) : (
                 <ul className="mt-1 flex flex-col gap-1">
                   {amTag.map((t) => (
-                    <li key={t.id} className="flex items-center gap-2">
-                      <Badge ton="akzent">Termin</Badge>
+                    <li key={t.id} className="flex items-start gap-2">
+                      <span className="shrink-0">
+                        <Badge ton="akzent">Termin</Badge>
+                      </span>
                       <span>
                         {zeitraum(t.starts_at, t.ends_at)} · {terminBeschreibung(t).titel}
                       </span>
@@ -135,8 +137,10 @@ function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlae
                       (s) => s.performed_on === tag && s.finished,
                     );
                     return (
-                      <li key={p.id} className="flex items-center gap-2">
-                        <Badge ton="neutral">Übungstag</Badge>
+                      <li key={p.id} className="flex items-start gap-2">
+                        <span className="shrink-0">
+                          <Badge ton="neutral">Übungstag</Badge>
+                        </span>
                         <span>
                           {p.title}
                           {geuebt ? ' · geübt' : ''}
