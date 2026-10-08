@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Plattformzugang } from './api';
@@ -109,9 +109,20 @@ describe('PlattformApp', () => {
       'aria-current',
       'page',
     );
-    await nutzer.click(screen.getByRole('link', { name: 'Training' }));
-    expect(screen.getByRole('link', { name: 'Training' })).toHaveAttribute('aria-current', 'page');
+    // UEB-009: Im Training heißt auch der Reiter unten „Training" (DSN-001
+    // Abschnitt 5) - der Schalter ist der im Bereich-Menü.
+    await nutzer.click(within(schalter).getByRole('link', { name: 'Training' }));
+    expect(
+      within(screen.getByRole('navigation', { name: 'Bereich' })).getByRole('link', {
+        name: 'Training',
+      }),
+    ).toHaveAttribute('aria-current', 'page');
     expect(screen.getByText(/Bereich Training/)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Plattform' })).getByRole('link', {
+        name: 'Training',
+      }),
+    ).toBeInTheDocument();
   });
 
   it('zeigt einen gesperrten Bereich nicht im Schalter', () => {

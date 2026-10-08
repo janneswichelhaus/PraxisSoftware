@@ -33,6 +33,9 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/features\/assessments\/(FragebogenFelder|antworten|darstellung|instrumente|schema)$/,
   // POR-014: die Bildansicht - ein Baustein ohne Datenzugriff (ADR-017 Punkt 54).
   /^@\/features\/files\/Dateiansicht$/,
+  // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
+  // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
+  /^@\/features\/exercise-plans\/(Planblatt|dosierung)$/,
   /^\.\//,
 ];
 
@@ -99,6 +102,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-016: Einwilligungen lesen und schreiben.
       'rpc:platform_consents',
       'rpc:platform_context',
+      // UEB-009: die eigenen Pläne.
+      'rpc:platform_exercise_plans',
       // POR-018: die eigenen Daten herunterladen.
       'rpc:platform_export',
       'rpc:platform_files',

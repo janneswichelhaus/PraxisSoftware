@@ -3659,3 +3659,15 @@ Technik · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** `Planblatt` in `src/features/exercise-plans/Planblatt.tsx`; Seite der Praxis `PlanblattSeite.tsx`. Geprüft in `src/features/exercise-plans/Plaene.test.tsx`.
 
 **Änderungspfad.** Ein abgelegtes PDF: serverseitige Erzeugung mit Ablage nach ADR-017, sobald der Dokumentweg der Rechnung (Weg 3) steht · Aufwand `mittel`. Andere Inhalte auf dem Blatt: die eine Komponente · Aufwand `klein`.
+
+### ANN-304 — Die Plattform zeigt die zugewiesenen Pläne, ohne laufenden Plan den zuletzt beendeten
+
+Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Übungen)
+
+**Annahme.** Der Reiter „Übungen“ (Behandlung) bzw. „Training“ zeigt alle zugewiesenen Pläne des Verhältnisses hinter dem gewählten Zugang, auch einen, der erst später beginnt („Ab …“). Läuft keiner, zeigt er den zuletzt beendeten Plan zum Lesen und als Blatt. Entwürfe und abgelöste Fassungen zeigt er nie. Gezeigt wird nur der Schnappschuss in Alltagssprache (Bezeichnung, Dosierung, Anleitung, Ausrüstung, Hinweis), ohne fachliche Namen und ohne den Namen der Fachperson. In der Behandlung gibt es den Plan ohne Abo (§4.6); er bleibt so lange sichtbar, wie der Zugang lesbar ist, also auch in der Lesefrist (DSN-001 D2).
+
+**Begründung.** ADR-023 Punkt 22: Ein Plan ist sichtbar, weil er der Person zugewiesen ist. DSN-001 D2 verlangt „Plan als PDF“ nach dem Ende der Behandlung; wird der Plan dabei beendet, hätte die Person sonst nichts mehr mitzunehmen. Eine abgelöste Fassung hat immer eine gültige Nachfolgerin – zwei Fassungen nebeneinander würden verwirren. Die fachliche Sprachebene ist für die Praxis (IDEA-QSN-002).
+
+**Anker.** `app.platform_visible_exercise_plans` in `supabase/migrations/20261019100000_ueb_009_platform_exercise_plans.sql`. Geprüft in `supabase/tests/platform-exercise-plans.test.ts`.
+
+**Änderungspfad.** Auch ältere beendete Pläne zeigen oder den beendeten nie: die eine Funktion · Aufwand `klein`. Den Plan erst ab Laufzeitbeginn zeigen: eine Bedingung dort · Aufwand `klein`.

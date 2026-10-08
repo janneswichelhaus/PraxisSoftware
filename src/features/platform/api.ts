@@ -1033,3 +1033,64 @@ export async function vertragWiderrufen(
   if (ergebnis.error) throw new Error(satz);
   return antwort(widerrufSchema, ergebnis.data, satz);
 }
+
+// -----------------------------------------------------------------------------
+// Übungen und Training (UEB-009, DSN-001 4.1 und 5)
+// -----------------------------------------------------------------------------
+
+const planPositionSchema = z.object({
+  id: z.string().uuid(),
+  position: z.number(),
+  variant_lay_name: z.string(),
+  instruction: z.string().nullable(),
+  equipment: z.array(z.string()),
+  sets: z.number(),
+  reps_min: z.number().nullable(),
+  reps_max: z.number().nullable(),
+  duration_seconds: z.number().nullable(),
+  load: z.string().nullable(),
+  tempo: z.string().nullable(),
+  rest_seconds: z.number().nullable(),
+  double_progression: z.boolean(),
+  note: z.string().nullable(),
+});
+export type PlanPosition = z.infer<typeof planPositionSchema>;
+
+const eigenerPlanSchema = z.object({
+  id: z.string().uuid(),
+  service_area: z.enum(['therapy', 'training']),
+  title: z.string(),
+  status: z.enum(['assigned', 'ended']),
+  sessions_per_week: z.number().nullable(),
+  assigned_on: z.string().nullable(),
+  runs_from: z.string().nullable(),
+  runs_until: z.string().nullable(),
+  ended_on: z.string().nullable(),
+  items: z.array(planPositionSchema),
+});
+export type EigenerPlan = z.infer<typeof eigenerPlanSchema>;
+
+const eigenePlaeneSchema = z.object({
+  /** Der Tag in der Zeitzone der Praxis. */
+  today: z.string(),
+  plans: z.array(eigenerPlanSchema),
+});
+export type EigenePlaene = z.infer<typeof eigenePlaeneSchema>;
+
+export function plaeneSchluessel(zugangId: string) {
+  return ['platform-exercise-plans', zugangId] as const;
+}
+
+/**
+ * Die zugewiesenen Pläne des gewählten Bereichs, sonst der zuletzt beendete
+ * (ANN-304) - als Schnappschuss in Alltagssprache. Welche, entscheidet der
+ * Server über den Zugang (ADR-023 Punkt 22).
+ */
+export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
+  const satz = 'Ihre Übungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_exercise_plans', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
+}

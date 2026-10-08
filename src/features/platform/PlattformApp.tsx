@@ -39,6 +39,7 @@ import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Uebersicht } from './Uebersicht';
+import { PlanblattPlattform, Uebungen } from './Uebungen';
 import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
@@ -57,7 +58,8 @@ import { Terminwunsch } from './Terminwunsch';
  * Projektionen (Punkte 19 bis 21). Alles unter dem Präfix `/p`.
  *
  * Seit POR-EPIC-002 füllt der Reiter „Termine" (POR-008); Rechnungen und
- * Dokumente liegen unter „Ich".
+ * Dokumente liegen unter „Ich". Seit UEB-EPIC-003 füllt der Reiter „Übungen"
+ * bzw. „Training" (UEB-009).
  *
  * Seit POR-EPIC-001b kann ein Konto auch für andere handeln (ADR-023 Punkt
  * 13). Jede Vertretung ist ein eigener Eintrag im Schalter, und solange sie
@@ -147,6 +149,27 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Terminaenderung zugang={z} />}
+              />
+            }
+          />
+          {/* UEB-009: Reiter „Übungen" bzw. „Training" und der Plan als Blatt. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/uebungen`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Uebungen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/uebungen/blatt/:planId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <PlanblattPlattform zugang={z} praxis={praxis} />}
               />
             }
           />
@@ -272,7 +295,7 @@ export function PlattformApp({
           <Route path="*" element={<Navigate to={PLATTFORM_PFAD} replace />} />
         </Routes>
       </main>
-      <Reiterleiste />
+      <Reiterleiste bereiche={lesbar} />
     </div>
   );
 }
@@ -362,7 +385,7 @@ function Kopf({ praxis, bereiche }: { praxis: string; bereiche: Plattformzugang[
   const { pathname } = useLocation();
   const gewaehlt = useWahl(bereiche);
   return (
-    <header className="border-line bg-surface border-b">
+    <header className="nicht-drucken border-line bg-surface border-b">
       <div className="mx-auto flex max-w-xl items-center justify-between gap-3 px-5 py-2">
         <Link
           to={PLATTFORM_PFAD}
@@ -791,14 +814,17 @@ function VertretungZeile({
 
 /**
  * Die Reiterleiste unten (DSN-001 Abschnitt 3): höchstens fünf, jeder mit
- * Symbol und Wort. Heute steht nur die Übersicht - ein Reiter erscheint erst
- * mit dem Loop, der ihn füllt (ANN-112).
+ * Symbol und Wort. Ein Reiter erscheint erst mit dem Loop, der ihn füllt
+ * (ANN-112): Übersicht, Termine (POR-008), Übungen bzw. Training (UEB-009).
  */
 const REITER =
   'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold';
 
-function Reiterleiste() {
+function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   const { pathname, search } = useLocation();
+  // DSN-001 Abschnitt 5: im Training heißt der Reiter „Training", weil dort
+  // Einheiten und Plan zusammenkommen.
+  const training = useWahl(bereiche)?.relationship_kind === 'training';
   return (
     <nav
       aria-label="Plattform"
@@ -842,6 +868,25 @@ function Reiterleiste() {
               <path d="M3 10h18M8 3v4M16 3v4" />
             </svg>
             Termine
+          </Link>
+        </li>
+        <li className="flex-1">
+          <Link
+            to={`${PLATTFORM_PFAD}/uebungen${search}`}
+            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/uebungen`) ? 'page' : undefined}
+            className={REITER}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11" />
+            </svg>
+            {training ? 'Training' : 'Übungen'}
           </Link>
         </li>
       </ul>
