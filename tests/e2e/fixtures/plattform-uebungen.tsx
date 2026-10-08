@@ -90,6 +90,7 @@ const plan: EigenerPlan = {
   runs_until: '2099-11-12',
   ended_on: null,
   can_exercise: true,
+  can_choose_days: true,
   note_allowed: true,
   open_session: {
     id: 'cccccccc-0000-4000-8000-000000000001',

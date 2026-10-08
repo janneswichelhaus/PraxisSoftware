@@ -86,6 +86,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'training_packages',
         // KND-003: der im Konto geschlossene Trainingsvertrag (sonst null).
         'training_contract',
+        // UEB-009 bis UEB-011: die eigenen Pläne, wie die Plattform sie zeigt.
+        'exercise_plans',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(

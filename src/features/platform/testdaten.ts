@@ -18,6 +18,7 @@ export function eigenerPlan(teil: Partial<EigenerPlan> = {}): EigenerPlan {
     can_exercise: true,
     note_allowed: true,
     open_session: null,
+    can_choose_days: true,
     weekdays: [],
     recent_sessions: [],
     items: [

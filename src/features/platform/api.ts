@@ -1077,6 +1077,8 @@ const eigenerPlanSchema = z.object({
       sets: z.array(z.object({ item_id: z.string().uuid(), set_number: z.number() })),
     })
     .nullable(),
+  /** UEB-011: Darf dieser Zugang Übungstage wählen - auch vor dem Beginn? */
+  can_choose_days: z.boolean(),
   /** UEB-011: die gewählten Übungstage, ISO 1 Montag bis 7 Sonntag (ANN-307). */
   weekdays: z.array(z.number().int().min(1).max(7)),
   /** Die Tage der letzten vier Wochen, an denen geübt wurde. */
@@ -1125,6 +1127,17 @@ export async function einheitBeginnen(zugangId: string, planId: string): Promise
   return data;
 }
 
+/**
+ * Die Einheit ist nicht mehr offen - anderswo beendet (zweites Gerät,
+ * Vertretung) oder von gestern. Die Ansicht beginnt dann eine neue, statt
+ * „Verbindung prüfen" zu sagen (Zweitreview).
+ */
+export class EinheitNichtOffen extends Error {
+  constructor() {
+    super('Diese Einheit ist nicht mehr offen.');
+  }
+}
+
 /** Einen Durchgang abhaken oder den Haken zurücknehmen - sofort gespeichert. */
 export async function durchgangSetzen(
   zugangId: string,
@@ -1140,6 +1153,7 @@ export async function durchgangSetzen(
     p_set_number: durchgang,
     p_done: erledigt,
   });
+  if ((error as { code?: string } | null)?.code === 'P0002') throw new EinheitNichtOffen();
   if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
 }
 

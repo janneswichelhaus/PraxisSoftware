@@ -752,7 +752,10 @@ function EinheitZeile({ einheit }: { einheit: Einheit }) {
         {' · '}
         {einheit.sets_done} von {einheit.sets_total} Durchgängen
         {einheit.finished_at ? '' : ' · nicht beendet'}
-        {einheit.recorded_by_kind === 'legal_representative' ? ' · erfasst von der Vertretung' : ''}
+        {einheit.recorded_by_kind === 'legal_representative' ||
+        einheit.finished_by_kind === 'legal_representative'
+          ? ' · erfasst von der Vertretung'
+          : ''}
       </p>
       {einheit.difficulty_note ? (
         <p className="mt-1">Schwierig, weil: {einheit.difficulty_note}</p>

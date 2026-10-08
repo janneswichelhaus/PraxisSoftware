@@ -100,7 +100,8 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
  * trägt „geübt"; keine Serie, keine Quote (DSN-001 4.1).
  */
 function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlaene }) {
-  const heute = kalendertag(new Date());
+  // Der Tag der Praxis, wie bei den Plänen - nicht der des Geräts.
+  const heute = plaene.today;
   const tage = tageAb(heute, 7);
   const hatUebungstage = plaene.plans.some((p) => p.weekdays.length > 0);
   if (!hatUebungstage) return null;

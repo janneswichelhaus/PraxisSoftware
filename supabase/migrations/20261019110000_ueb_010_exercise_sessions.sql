@@ -44,6 +44,12 @@ create table public.exercise_plan_sessions (
   platform_access_id   uuid not null,
   platform_access_kind text not null check (platform_access_kind in ('self', 'legal_representative')),
   recorded_by          uuid not null,
+  -- Wer beendet hat - mit dem Freitext kann das jemand anderes sein als der,
+  -- der begonnen hat (Zweitreview; ADR-010 Fassung 3: das Datenmodell weist
+  -- nach).
+  finished_access_id   uuid,
+  finished_access_kind text check (finished_access_kind in ('self', 'legal_representative')),
+  finished_by          uuid,
   updated_at           timestamptz not null default now(),
 
   constraint exercise_plan_sessions_id_organization unique (id, organization_id),
@@ -52,6 +58,11 @@ create table public.exercise_plan_sessions (
     references public.exercise_plans (id, organization_id) on delete cascade,
   constraint exercise_plan_sessions_note_when_finished check (
     difficulty_note is null or finished_at is not null
+  ),
+  constraint exercise_plan_sessions_finished_stamp check (
+    (finished_at is null) = (finished_by is null)
+    and (finished_at is null) = (finished_access_id is null)
+    and (finished_at is null) = (finished_access_kind is null)
   )
 );
 
@@ -352,6 +363,9 @@ as $$
   from public.exercise_plan_sessions s
   where s.id = p_session_id
     and s.finished_at is null
+    -- Eine liegengebliebene Einheit eines frueheren Tages bleibt so stehen
+    -- (ANN-305, Zweitreview).
+    and s.performed_on = app.training_today(s.organization_id)
     and (app.platform_exercise_plan(p_access_id, s.plan_id)).id is not null
 $$;
 
@@ -441,7 +455,9 @@ begin
   end if;
 
   update public.exercise_plan_sessions
-     set finished_at = now(), difficulty_note = v_notiz, updated_at = now()
+     set finished_at = now(), difficulty_note = v_notiz, updated_at = now(),
+         finished_access_id = v_zugang.id, finished_access_kind = v_zugang.access_kind,
+         finished_by = auth.uid()
    where id = v_einheit.id;
 
   perform app.log_platform_representation(
@@ -561,7 +577,9 @@ as $$
     'sets_total', (select coalesce(sum(i.sets), 0) from public.exercise_plan_items i
                    where i.plan_id = s.plan_id),
     'difficulty_note', s.difficulty_note,
-    'recorded_by_kind', s.platform_access_kind
+    'recorded_by_kind', s.platform_access_kind,
+    -- Wer beendet und damit "schwierig, weil ..." geschrieben hat.
+    'finished_by_kind', s.finished_access_kind
   ) order by s.performed_on desc, s.started_at desc), '[]'::jsonb)
   from public.exercise_plan_sessions s
   where s.plan_id = p_plan_id

@@ -25,6 +25,7 @@ vi.mock('./api', async (importOriginal) => ({
 }));
 
 const { Durchfuehrung } = await import('./Durchfuehrung');
+const { EinheitNichtOffen } = await import('./api');
 
 const ZUGANG: Plattformzugang = {
   access_id: 'cafecafe-cafe-4afe-8afe-000000000002',
@@ -170,7 +171,8 @@ describe('Durchführungsansicht (UEB-010)', () => {
       <Durchfuehrung zugang={{ ...ZUGANG, relationship_kind: 'training' }} />,
       PFAD,
     );
-    await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Nächste Übung' }));
     await user.click(screen.getByRole('button', { name: 'Fertig' }));
     expect(screen.queryByLabelText(/schwierig/)).not.toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Einheit beenden' }));
@@ -193,5 +195,53 @@ describe('Durchführungsansicht (UEB-010)', () => {
       await screen.findByText('Mit diesem Plan können Sie hier gerade nicht üben.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Durchgang/ })).not.toBeInTheDocument();
+  });
+});
+
+describe('Durchführung nach dem Zweitreview', () => {
+  it('bietet ohne einen Haken kein Beenden an', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Durchfuehrung zugang={ZUGANG} />, PFAD);
+    await user.click(await screen.findByRole('button', { name: 'Nächste Übung' }));
+    await user.click(screen.getByRole('button', { name: 'Fertig' }));
+    expect(screen.getByText(/noch keinen Durchgang abgehakt/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Einheit beenden' })).not.toBeInTheDocument();
+  });
+
+  it('beginnt neu, wenn die Einheit anderswo beendet wurde', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [
+        {
+          ...ZWEI,
+          open_session: { id: 'cccccccc-0000-4000-8000-000000000009', sets: [] },
+        },
+      ],
+    });
+    durchgangSetzen.mockRejectedValueOnce(new EinheitNichtOffen());
+    const user = userEvent.setup();
+    renderWithProviders(<Durchfuehrung zugang={ZUGANG} />, PFAD);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await waitFor(() => expect(durchgangSetzen).toHaveBeenCalledTimes(2));
+    expect(einheitBeginnen).toHaveBeenCalledTimes(1);
+    expect(durchgangSetzen).toHaveBeenLastCalledWith(
+      ZUGANG.access_id,
+      'cccccccc-0000-4000-8000-000000000001',
+      PLAN.items[0]!.id,
+      1,
+      true,
+    );
+    expect(screen.queryByText(/Nicht gespeichert/)).not.toBeInTheDocument();
+  });
+
+  it('startet die Pause beim nächsten Durchgang neu', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<Durchfuehrung zugang={ZUGANG} />, PFAD);
+    await user.click(await screen.findByRole('button', { name: '1. Durchgang' }));
+    await user.click(screen.getByRole('button', { name: 'Pause überspringen' }));
+    expect(screen.queryByRole('button', { name: 'Pause überspringen' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: '2. Durchgang' }));
+    expect(screen.getByRole('button', { name: 'Pause überspringen' })).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Pause: 30 Sekunden.');
   });
 });

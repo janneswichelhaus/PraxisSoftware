@@ -222,7 +222,7 @@ describe('Meine Übungstage (UEB-011)', () => {
   it('zeigt ohne Recht zum Üben nur die gewählten Tage', async () => {
     ladePlaene.mockResolvedValue({
       today: '2026-10-08',
-      plans: [eigenerPlan({ can_exercise: false, weekdays: [1, 3] })],
+      plans: [eigenerPlan({ can_exercise: false, can_choose_days: false, weekdays: [1, 3] })],
     });
     renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
     expect(await screen.findByText('Meine Übungstage: Mo, Mi')).toBeInTheDocument();

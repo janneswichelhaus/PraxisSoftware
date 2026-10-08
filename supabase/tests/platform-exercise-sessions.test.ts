@@ -260,14 +260,110 @@ describe('Einheiten am Plan (UEB-010)', () => {
     expect(sessions[0]).not.toHaveProperty('id');
   });
 
+  it('hält fest, wer beendet hat (ADR-010 Fassung 3, Zweitreview)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    // Als hätte die rechtliche Vertretung begonnen: Die Person selbst beendet.
+    await asPostgres(
+      `update public.exercise_plan_sessions set platform_access_kind = 'legal_representative'
+        where id = $1`,
+      [einheit],
+    );
+    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Knie']);
+    const { rows } = await asUser<{ plan: { sessions: Record<string, unknown>[] } }>(
+      users.therapist,
+      PLAN,
+      [plan],
+    );
+    expect(rows[0]!.plan.sessions[0]).toMatchObject({
+      recorded_by_kind: 'legal_representative',
+      finished_by_kind: 'self',
+    });
+    const stempel = await asPostgres<{ finished_by: string; finished_access_id: string }>(
+      'select finished_by, finished_access_id from public.exercise_plan_sessions where id = $1',
+      [einheit],
+    );
+    expect(stempel.rows[0]).toEqual({
+      finished_by: users.plattformErika,
+      finished_access_id: erika.zugang,
+    });
+  });
+
+  it('eine liegengebliebene Einheit eines früheren Tages bleibt stehen (ANN-305)', async () => {
+    const plan = await zugewiesenerPlan();
+    const [position] = await positionen(plan);
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    await asPostgres(
+      'update public.exercise_plan_sessions set performed_on = performed_on - 1 where id = $1',
+      [einheit],
+    );
+    expect(
+      await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true])),
+    ).toBe('P0002');
+    expect(await fehler(asUser(erika.konto, BEENDEN, [erika.zugang, einheit, '']))).toBe('P0002');
+    // Heute beginnt eine neue.
+    expect(await beginnen(erika.konto, erika.zugang, plan)).not.toBe(einheit);
+  });
+
+  it('gesperrt oder entzogen: kein Haken, kein Beenden (Punkt 18)', async () => {
+    const plan = await zugewiesenerPlan();
+    const [position] = await positionen(plan);
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    try {
+      await asPostgres(
+        `update public.platform_accesses set status = 'locked', locked_at = now() where id = $1`,
+        [erika.zugang],
+      );
+      expect(
+        await fehler(asUser(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true])),
+      ).toBe('42501');
+      expect(await fehler(asUser(erika.konto, BEENDEN, [erika.zugang, einheit, '']))).toBe('42501');
+      await asPostgres(
+        `update public.platform_accesses
+            set status = 'revoked', locked_at = null, revoked_at = now(), revoked_reason = 'practice'
+          where id = $1`,
+        [erika.zugang],
+      );
+      expect(await fehler(asUser(erika.konto, BEGINNEN, [erika.zugang, plan]))).toBe('42501');
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('steht im Export der Plattform, wie die Plattform ihn zeigt (POR-018)', async () => {
+    const plan = await zugewiesenerPlan();
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    await asUserCommitted(erika.konto, BEENDEN, [erika.zugang, einheit, 'Rücken zwickt']);
+    const { rows } = await asUser<{
+      daten: { exercise_plans: { id: string; recent_sessions: unknown[] }[] };
+    }>(erika.konto, 'select public.platform_export($1::uuid) as daten', [erika.zugang]);
+    expect(rows[0]!.daten.exercise_plans.map((p) => p.id)).toEqual([plan]);
+    expect(rows[0]!.daten.exercise_plans[0]!.recent_sessions).toHaveLength(1);
+    // Der Freitext steht nicht auf der Plattform, also auch nicht im Export.
+    expect(JSON.stringify(rows[0]!.daten.exercise_plans)).not.toContain('Rücken zwickt');
+  });
+
   it('fällt mit dem Plan und der Akte (ADR-008)', async () => {
     const plan = await zugewiesenerPlan();
-    await beginnen(erika.konto, erika.zugang, plan);
-    await planeEntfernen();
-    const { rows } = await asPostgres<{ n: number }>(
-      'select count(*)::int as n from public.exercise_plan_sessions',
-    );
-    expect(rows[0]!.n).toBe(0);
+    const einheit = await beginnen(erika.konto, erika.zugang, plan);
+    const [position] = await positionen(plan);
+    await asUserCommitted(erika.konto, HAKEN, [erika.zugang, einheit, position, 1, true]);
+    try {
+      // Der echte Löschlauf der Akte, nicht das Entfernen im Test.
+      await asPostgres(
+        'select app.delete_patient_record($1::uuid, extensions.gen_random_uuid(), now())',
+        [patients.erika],
+      );
+      const { rows } = await asPostgres<{ n: number }>(
+        `select (select count(*) from public.exercise_plan_sessions)
+              + (select count(*) from public.exercise_plan_session_sets) as n`,
+      );
+      expect(Number(rows[0]!.n)).toBe(0);
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
   });
 
   it('in der Lesefrist wird nicht mehr erfasst (ANN-305), gelesen schon', async () => {

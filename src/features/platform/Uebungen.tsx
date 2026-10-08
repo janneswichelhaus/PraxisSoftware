@@ -108,7 +108,7 @@ function PlanKarte({
           Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
         </p>
       ) : null}
-      {plan.can_exercise ? (
+      {plan.can_choose_days ? (
         <Uebungstage zugang={zugang} plan={plan} />
       ) : plan.weekdays.length > 0 ? (
         <p className="text-ink-muted mt-1">Meine Übungstage: {tageText(plan.weekdays)}</p>
@@ -245,6 +245,8 @@ function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerP
   const queryClient = useQueryClient();
   const [tage, setTage] = useState<number[]>(plan.weekdays);
   const speichern = useMutation({
+    // Der Reihe nach, damit der letzte Tipp auch der letzte Stand am Server ist.
+    scope: { id: `tage-${plan.id}` },
     mutationFn: (neu: number[]) => uebungstageSetzen(zugang.access_id, plan.id, neu),
     onMutate: (neu) => {
       const vorher = tage;

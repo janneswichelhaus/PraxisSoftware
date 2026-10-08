@@ -54,6 +54,8 @@ describe('platform_exercise_plans (UEB-009)', () => {
     expect(daten!.plans.map((p) => p.id)).toEqual([plan]);
     expect(Object.keys(daten!.plans[0]!).sort()).toEqual([
       'assigned_on',
+      // UEB-011: Tage wählen, auch vor dem Beginn.
+      'can_choose_days',
       // UEB-010: ob heute geübt werden darf, die offene Einheit, die letzten Tage.
       'can_exercise',
       'ended_on',

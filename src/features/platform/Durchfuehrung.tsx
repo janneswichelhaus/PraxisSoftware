@@ -9,6 +9,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { dosierungAlltag } from '@/features/exercise-plans/dosierung';
 import {
+  EinheitNichtOffen,
   durchgangSetzen,
   einheitBeenden,
   einheitBeginnen,
@@ -80,7 +81,8 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
     () => new Set((plan.open_session?.sets ?? []).map((s) => schluessel(s.item_id, s.set_number))),
   );
   const [fehler, setFehler] = useState<string | null>(null);
-  const [pause, setPause] = useState<number | null>(null);
+  // Die laufende Pause; `nummer` startet die Uhr auch bei gleicher Dauer neu.
+  const [pause, setPause] = useState<{ sekunden: number; nummer: number } | null>(null);
   // Eine Einheit entsteht mit dem ersten Haken; parallele Haken warten auf
   // dieselbe (der Server lässt ohnehin nur eine offene je Tag zu).
   const einheit = useRef<Promise<string> | null>(
@@ -97,9 +99,26 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
   useBildschirmWach();
 
   const setzen = useMutation({
+    // Haken laufen der Reihe nach zum Server: An und Aus desselben Durchgangs
+    // kommen in der Reihenfolge an, in der getippt wurde (Zweitreview).
+    scope: { id: `einheit-${plan.id}` },
     mutationFn: async (v: { position: PlanPosition; durchgang: number; erledigt: boolean }) => {
-      const id = await einheitHolen();
-      await durchgangSetzen(zugang.access_id, id, v.position.id, v.durchgang, v.erledigt);
+      const senden = async () =>
+        durchgangSetzen(
+          zugang.access_id,
+          await einheitHolen(),
+          v.position.id,
+          v.durchgang,
+          v.erledigt,
+        );
+      try {
+        await senden();
+      } catch (e) {
+        if (!(e instanceof EinheitNichtOffen)) throw e;
+        // Anderswo beendet oder von gestern: eine neue beginnen, einmal.
+        einheit.current = null;
+        await senden();
+      }
     },
     onMutate: (v) => {
       setFehler(null);
@@ -122,6 +141,7 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
         zugang={zugang}
         plan={plan}
         einheitHolen={einheitHolen}
+        abgehakt={haken.size}
         zurueck={zurueck}
         onZurueck={() => setFertig(false)}
         onBeendet={async () => {
@@ -166,7 +186,8 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
                 onClick={() => {
                   setzen.mutate({ position, durchgang, erledigt: !erledigt });
                   if (!erledigt && position.rest_seconds && durchgang < position.sets) {
-                    setPause(position.rest_seconds);
+                    const sekunden = position.rest_seconds;
+                    setPause((alt) => ({ sekunden, nummer: (alt?.nummer ?? 0) + 1 }));
                   }
                 }}
                 className="rounded-card border-line bg-surface aria-pressed:border-accent aria-pressed:bg-accent-soft flex min-h-16 w-full items-center justify-between gap-3 border-2 px-5 text-left text-lg font-medium"
@@ -174,7 +195,7 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
                 <span>{durchgang}. Durchgang</span>
                 <span
                   aria-hidden="true"
-                  className="border-line-strong text-accent inline-flex size-9 items-center justify-center rounded-full border-2"
+                  className="border-line-strong text-accent rounded-pill inline-flex size-9 items-center justify-center border-2"
                 >
                   {erledigt ? <HakenSymbol className="size-6" /> : null}
                 </span>
@@ -189,7 +210,14 @@ function Einheit({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan 
           {fehler}
         </Statusmeldung>
       ) : null}
-      {pause !== null ? <Pause sekunden={pause} onEnde={() => setPause(null)} /> : null}
+      {/* Eine dauerhafte Live-Region: Vorgelesen wird der Anfang der Pause,
+          nicht jede Sekunde. */}
+      <p role="status" className="sr-only">
+        {pause ? `Pause: ${pause.sekunden} Sekunden.` : ''}
+      </p>
+      {pause ? (
+        <Pause key={pause.nummer} sekunden={pause.sekunden} onEnde={() => setPause(null)} />
+      ) : null}
 
       <div className="mt-8 flex gap-3">
         {index > 0 ? (
@@ -233,16 +261,11 @@ function umschalten(alt: ReadonlySet<string>, schluessel: string, an: boolean): 
 function Pause({ sekunden, onEnde }: { sekunden: number; onEnde: () => void }) {
   const [rest, setRest] = useState(sekunden);
   useEffect(() => {
-    setRest(sekunden);
     const uhr = window.setInterval(() => setRest((r) => Math.max(0, r - 1)), 1000);
     return () => window.clearInterval(uhr);
   }, [sekunden]);
   return (
     <div className="rounded-card border-line bg-surface mt-4 flex items-center justify-between gap-3 border p-4">
-      {/* Vorgelesen wird nur der Anfang, nicht jede Sekunde. */}
-      <p role="status" className="sr-only">
-        Pause: {sekunden} Sekunden.
-      </p>
       <p className="text-lg" aria-hidden="true">
         {rest > 0 ? (
           <>
@@ -263,6 +286,7 @@ function Abschluss({
   zugang,
   plan,
   einheitHolen,
+  abgehakt,
   zurueck,
   onZurueck,
   onBeendet,
@@ -270,6 +294,8 @@ function Abschluss({
   zugang: Plattformzugang;
   plan: EigenerPlan;
   einheitHolen: () => Promise<string>;
+  /** Ohne einen Haken gibt es nichts zu beenden - „geübt" hieße sonst nichts. */
+  abgehakt: number;
   zurueck: string;
   onZurueck: () => void;
   onBeendet: () => Promise<void>;
@@ -294,12 +320,12 @@ function Abschluss({
           beenden.mutate();
         }}
       >
-        {plan.note_allowed ? (
+        {plan.note_allowed && abgehakt > 0 ? (
           <TextArea
             label="Das war schwierig, weil … (freiwillig)"
             hint={`${
               plan.service_area === 'therapy' ? 'Ihre Therapeut:in' : 'Ihre Trainingsbetreuung'
-            } liest das beim nächsten Termin. Bei akuten Beschwerden: 112 oder 116117.`}
+            } sieht diesen Satz. Er wird nicht laufend gelesen – bei akuten Beschwerden: 112 oder 116117.`}
             maxLength={500}
             rows={3}
             value={notiz}
@@ -309,9 +335,15 @@ function Abschluss({
         {beenden.isError ? (
           <Statusmeldung ton="fehler">{beenden.error.message}</Statusmeldung>
         ) : null}
-        <Button type="submit" disabled={beenden.isPending}>
-          {beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden'}
-        </Button>
+        {abgehakt > 0 ? (
+          <Button type="submit" disabled={beenden.isPending}>
+            {beenden.isPending ? 'Wird gespeichert …' : 'Einheit beenden'}
+          </Button>
+        ) : (
+          <Statusmeldung>
+            Sie haben noch keinen Durchgang abgehakt. Ohne Haken gibt es nichts zu speichern.
+          </Statusmeldung>
+        )}
         <Button type="button" variant="secondary" onClick={onZurueck}>
           Zurück zu den Übungen
         </Button>

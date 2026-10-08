@@ -100,6 +100,8 @@ const planSchema = z.object({
       sets_total: z.coerce.number(),
       difficulty_note: z.string().nullable(),
       recorded_by_kind: z.enum(['self', 'legal_representative']),
+      /** Wer beendet und damit „schwierig, weil …" geschrieben hat. */
+      finished_by_kind: z.enum(['self', 'legal_representative']).nullable(),
     }),
   ),
 });

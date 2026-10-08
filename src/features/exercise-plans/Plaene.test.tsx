@@ -684,6 +684,7 @@ describe('Durchgeführt (UEB-010)', () => {
             sets_total: 3,
             difficulty_note: 'Knie zieht',
             recorded_by_kind: 'self',
+            finished_by_kind: 'self',
           },
           {
             id: 's2',
@@ -694,6 +695,7 @@ describe('Durchgeführt (UEB-010)', () => {
             sets_total: 3,
             difficulty_note: null,
             recorded_by_kind: 'legal_representative',
+            finished_by_kind: null,
           },
         ],
       }),
