@@ -740,7 +740,10 @@
           "id": "ueb-epic-003",
           "name": "UEB-EPIC-003 Plan als PDF und im Portal",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-08",
+          "nachweis": "UEB-008 bis UEB-011, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 7 bis 9"
         },
         {
           "id": "kom-epic-001",

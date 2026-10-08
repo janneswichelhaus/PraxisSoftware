@@ -779,6 +779,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | KND-EPIC-001 Betreuung nach der Behandlung | fertig | 2026-10-07 | KND-001 bis KND-005, Zweitreview | — | Sichtung: Angebote Schritte 7 bis 9 |
 | B | UEB-EPIC-001 Übungsbibliothek | fertig | 2026-10-07 | UEB-001 bis UEB-003, Zweitreview | — | Sichtung: Pläne Schritte 1 bis 3 |
 | B | UEB-EPIC-002 Plan und Schnappschuss | fertig | 2026-10-07 | UEB-004 bis UEB-007, Zweitreview | — | Sichtung: Pläne Schritte 4 bis 6 |
+| B | UEB-EPIC-003 Plan als PDF und im Portal | fertig | 2026-10-08 | UEB-008 bis UEB-011, Zweitreview | — | Sichtung: Pläne Schritte 7 bis 9 |
 | C | G1 ADR-017 Dateiablage (Dokument) | gesichtet | 2026-09-11 | PR #35 | 2026-09-11 | — |
 | C | G2 STAFF-EPIC-002 Konten und Rollen | gesichtet | 2026-09-11 | PR #20 | 2026-09-11 | — |
 | C | G3 OPS-001 Providerprüfung und Cloudprojekt | entwurf | 2026-09-21 | `e7fcb00`, PR #87 | — | Dokument steht, nichts bestanden |
