@@ -1,6 +1,6 @@
 # Roadmap
 
-Version 7.8 · Stand 2026-10-02 · **in Kraft**
+Version 7.11 · Stand 2026-10-08 · **in Kraft**
 
 Reihenfolge der Umsetzung. Beantwortet die Frage **„was als Nächstes"** — und
 sonst nichts. Fassung 7.0 arbeitet das Produktgespräch vom 2026-09-23 ein
@@ -446,7 +446,7 @@ Leistungskontrolle (§20, B6).
 
 | Loop | Ergebnis | Ersetzt Vorschau | Voraussetzung |
 | --- | --- | --- | --- |
-| **FLT-EPIC-001** | Räder sind eine Planungsressource: Depot, Schlüssel, Check-Up, Pannenassistent | `/betrieb/flotte…` | Tübinger Standortvorlage (Jannes); Rad im Kalender |
+| **FLT-EPIC-001** | Räder sind eine Planungsressource: Depot, Schlüssel, Check-Up, Pannenassistent; **Schäden am 3D-Rad markieren** in Check-Up und Panne, Seite „Stellen am Rad", PDF für die Werkstatt | `/betrieb/flotte…` | Tübinger Standortvorlage (Jannes); Rad im Kalender; Entwurf, Entscheidungen und AC aus dem [Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md), Abschnitte 0 und 8 (`IDEA-PRX-057`, Jannes 2026-10-08) |
 | **TEAM-001** | Das Team spricht in der Anwendung: Kanäle, Direktnachrichten, Threads, Erwähnungen | `/team` | Nachrichtenmechanik aus KOM-EPIC-001; Speicherfrist als Annahme (ANN-001); Anhänge nach ADR-017 |
 | **URL-001** | Urlaub mit Antrag und Genehmigung wirkt auf Kalender und Kapazität | `/betrieb/urlaub` | Beschäftigtenangaben (`IDEA-QSN-010`) als Teil des Loops |
 | **ZK-001** | Zeitkonto mit Buchungen und Saldo je Person, ohne Auswertung über Beschäftigte | `/betrieb/zeitkonto` | B6 |
@@ -815,6 +815,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 
 | Version | Datum | Änderung |
 | --- | --- | --- |
+| 7.11 | 2026-10-08 | **FLT-EPIC-001** um das Markieren am 3D-Rad ergänzt (Jannes: an der Stelle der Roadmap umsetzen, nicht vorziehen): Check-Up und Pannenmeldung mit Stellen am 3D-Modell, Seite „Stellen am Rad", PDF für die Werkstatt. Entwurf, Entscheidungen, Leinwand-Dateien und Akzeptanzkriterien im [Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md), `IDEA-PRX-057`. Reihenfolge der Blöcke unverändert. |
 | 7.10 | 2026-10-05 | **UBK-EPIC-001** eingeschoben und gebaut (Auftrag Jannes): Übersicht nach der Uhr statt nach dem Haken (ANN-117 Fassung 2), Tageswechsel (ANN-234), Tageskarte als Ganzes zum Termin mit „i“ am Namen, Fahrwege als Blöcke im Kalender (ANN-235); BEF-051 mitgenommen. Reihenfolge der Blöcke unverändert; POR-EPIC-002 bleibt der nächste Bau-Loop. |
 | 7.9 | 2026-10-05 | **ABR-EPIC-007 gebaut** (Freigabe Jannes, „wie empfohlen“): Terminhonorar mit Tarif und Honorarvereinbarung; B17 entschieden mit ADR-009 Fassung 5 (Einzelpositionen je Heilmittel, eine Rechnung je Verordnung). **BEF-114 Paketpreise im Training** herausgelöst: eigener kleiner Loop, sobald Preis, Umfang und Zahlungsweise feststehen. Reihenfolge der Blöcke unverändert. |
 | 7.8 | 2026-10-02 | **ABN-EPIC-001b geschnitten und gebaut** (Freigabe Jannes): gebaut sind BEF-101 bis -104, -107, -108, -110 bis -113 (ABN-013 bis ABN-022). **BEF-105, -106 und -109 folgen als ABN-EPIC-001c** vor ABR-EPIC-007: Sie brauchen neue Fassungen von ADR-017 und ADR-019, die Jannes entscheidet, und Edge Functions, die in der Cloud nicht prüfbar sind. Die Empfängeranschrift prüft `issue_invoice` auf Entscheidung von Jannes für alle Rechnungen. Reihenfolge der Blöcke unverändert. |

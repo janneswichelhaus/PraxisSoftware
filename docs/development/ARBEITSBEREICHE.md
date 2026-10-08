@@ -161,6 +161,12 @@ Die Bereiche in der Tabelle oben sind **Bestand** aus dem Umbau vom
 2026-09-05 und keine Sandbox-Prototypen: Sie haben keine Ablauffrist, werden
 aber auch nicht erweitert, bis ihr Loop sie ersetzt.
 
+Für die **Radflotte** liegt der Entwurf ihres Ersatzes schon vor: Stellen am
+3D-Rad in Check-Up und Pannenmeldung, die Seite „Stellen am Rad“ und die PDF
+für die Werkstatt, eingespielt mit FLT-EPIC-001 (Jannes, 2026-10-08;
+[Handoff Lastenrad 3D](../design/handoff-2026-10-08-lastenrad-3d.md)). In der
+Vorschau wird davon nichts vorgebaut.
+
 ### Entfallen: Teamverzeichnis und Personalakte
 
 Beide waren in diesem Umbau als Vorschau angelegt. Beim Zusammenführen mit
