@@ -127,6 +127,8 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_questionnaire_response',
+      // UEB-011: die eigenen Übungstage.
+      'rpc:set_platform_exercise_days',
       'rpc:start_platform_exercise_session',
       'rpc:withdraw_platform_appointment_request',
       // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).

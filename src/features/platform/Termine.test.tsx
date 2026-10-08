@@ -4,6 +4,9 @@ import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { Plattformzugang, Termin, Terminwunsch } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { eigenerPlan } from './testdaten';
+import { kalendertag } from './zeit';
+import { isoWochentag } from './uebungstage';
 
 /**
  * Reiter „Termine" (POR-008, DSN-001 4.1): kommende oben, vergangene darunter,
@@ -13,12 +16,14 @@ import { renderWithProviders } from '@/test-utils';
 const ladeTermine = vi.fn();
 const ladeWuensche = vi.fn();
 const wunschZurueckziehen = vi.fn();
+const ladePlaene = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladeTermine: (...args: unknown[]) => ladeTermine(...args) as Promise<Termin[]>,
   ladeWuensche: (...args: unknown[]) => ladeWuensche(...args) as Promise<Terminwunsch[]>,
   wunschZurueckziehen: (...args: unknown[]) => wunschZurueckziehen(...args) as Promise<void>,
+  ladePlaene: (...args: unknown[]) => ladePlaene(...args) as Promise<PlattformApi.EigenePlaene>,
 }));
 
 const { Termine } = await import('./Termine');
@@ -83,6 +88,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   ladeWuensche.mockResolvedValue([]);
   wunschZurueckziehen.mockResolvedValue(undefined);
+  ladePlaene.mockResolvedValue({ today: '2026-10-08', plans: [] });
 });
 
 describe('Termine (POR-008)', () => {
@@ -171,5 +177,38 @@ describe('Termine (POR-008)', () => {
       titel: 'Hausbesuch · Ihre Praxis kommt zu Ihnen',
       ort: 'Testweg 7, 72072 Tuebingen',
     });
+  });
+});
+
+describe('Diese Woche: Termine und Übungstage (UEB-011)', () => {
+  it('zeigt Übungstage neben den Terminen, klar unterschieden', async () => {
+    const heute = kalendertag(new Date());
+    ladeTermine.mockResolvedValue([HAUSBESUCH]);
+    ladePlaene.mockResolvedValue({
+      today: heute,
+      plans: [
+        eigenerPlan({
+          runs_from: '2000-01-01',
+          runs_until: '2999-12-31',
+          weekdays: [isoWochentag(heute)],
+          recent_sessions: [{ performed_on: heute, finished: true }],
+        }),
+      ],
+    });
+    renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
+    const woche = (await screen.findByRole('heading', { name: 'Diese Woche' })).closest('section')!;
+    expect(screen.getByRole('list', { name: 'Die nächsten sieben Tage' }).children).toHaveLength(7);
+    expect(woche).toHaveTextContent('Übungstag');
+    expect(woche).toHaveTextContent('Heimprogramm Knie · geübt');
+    expect(woche).toHaveTextContent('Termin');
+    expect(woche).toHaveTextContent('Nichts geplant.');
+  });
+
+  it('zeigt die Woche nicht, solange keine Übungstage gewählt sind', async () => {
+    ladeTermine.mockResolvedValue([HAUSBESUCH]);
+    ladePlaene.mockResolvedValue({ today: '2026-10-08', plans: [eigenerPlan()] });
+    renderWithProviders(<Termine zugang={ZUGANG} />, '/p/termine');
+    await screen.findByRole('heading', { name: 'Kommende Termine' });
+    expect(screen.queryByRole('heading', { name: 'Diese Woche' })).not.toBeInTheDocument();
   });
 });

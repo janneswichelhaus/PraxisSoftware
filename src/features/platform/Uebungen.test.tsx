@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
 import type { EigenePlaene, Plattformzugang } from './api';
@@ -12,10 +12,12 @@ import { eigenerPlan } from './testdaten';
  */
 
 const ladePlaene = vi.fn();
+const uebungstageSetzen = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
   ladePlaene: (...args: unknown[]) => ladePlaene(...args) as Promise<EigenePlaene>,
+  uebungstageSetzen: (...args: unknown[]) => uebungstageSetzen(...args) as Promise<void>,
 }));
 
 const { Uebungen, PlanblattPlattform } = await import('./Uebungen');
@@ -33,6 +35,8 @@ const ZUGANG: Plattformzugang = {
 
 beforeEach(() => {
   ladePlaene.mockReset();
+  uebungstageSetzen.mockReset();
+  uebungstageSetzen.mockResolvedValue(undefined);
   ladePlaene.mockResolvedValue({ today: '2026-10-08', plans: [eigenerPlan()] });
 });
 
@@ -172,5 +176,56 @@ describe('Einstieg in die Einheit (UEB-010)', () => {
   it('bestätigt eine gespeicherte Einheit ohne Lob', async () => {
     renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen?gespeichert=1');
     expect(await screen.findByText('Ihre Einheit ist gespeichert.')).toBeInTheDocument();
+  });
+});
+
+describe('Meine Übungstage (UEB-011)', () => {
+  it('wählt Tage und speichert sofort', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [eigenerPlan({ weekdays: [1] })],
+    });
+    const user = userEvent.setup();
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    const gruppe = await screen.findByRole('group', { name: /Meine Übungstage/ });
+    expect(within(gruppe).getByRole('button', { name: 'Montag' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await user.click(within(gruppe).getByRole('button', { name: 'Donnerstag' }));
+    await waitFor(() =>
+      expect(uebungstageSetzen).toHaveBeenCalledWith(ZUGANG.access_id, eigenerPlan().id, [1, 4]),
+    );
+    expect(within(gruppe).getByRole('button', { name: 'Donnerstag' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('nimmt die Wahl ohne Verbindung zurück', async () => {
+    uebungstageSetzen.mockRejectedValue(
+      new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.'),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    const gruppe = await screen.findByRole('group', { name: /Meine Übungstage/ });
+    await user.click(within(gruppe).getByRole('button', { name: 'Freitag' }));
+    expect(
+      await screen.findByText('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.'),
+    ).toBeInTheDocument();
+    expect(within(gruppe).getByRole('button', { name: 'Freitag' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('zeigt ohne Recht zum Üben nur die gewählten Tage', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [eigenerPlan({ can_exercise: false, weekdays: [1, 3] })],
+    });
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    expect(await screen.findByText('Meine Übungstage: Mo, Mi')).toBeInTheDocument();
+    expect(screen.queryByRole('group', { name: /Meine Übungstage/ })).not.toBeInTheDocument();
   });
 });

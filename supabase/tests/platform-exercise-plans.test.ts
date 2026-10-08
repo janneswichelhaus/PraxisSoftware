@@ -68,6 +68,8 @@ describe('platform_exercise_plans (UEB-009)', () => {
       'sessions_per_week',
       'status',
       'title',
+      // UEB-011: die gewählten Übungstage.
+      'weekdays',
     ]);
     // Keine fachlichen Namen, keine Kennung der Bibliothek, kein Schritt.
     expect(Object.keys(daten!.plans[0]!.items[0]!).sort()).toEqual([

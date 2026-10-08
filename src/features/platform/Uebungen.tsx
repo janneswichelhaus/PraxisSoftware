@@ -1,4 +1,5 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -11,11 +12,13 @@ import { formatDate } from '@/lib/datum';
 import {
   ladePlaene,
   plaeneSchluessel,
+  uebungstageSetzen,
   type EigenerPlan,
   type PlanPosition,
   type Plattformzugang,
 } from './api';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
+import { WOCHENTAGE, tageText } from './uebungstage';
 
 /**
  * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5): „Was mache
@@ -65,7 +68,13 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
         />
       ) : (
         plaene.data.plans.map((plan) => (
-          <PlanKarte key={plan.id} plan={plan} heute={plaene.data.today} bereich={bereich} />
+          <PlanKarte
+            key={plan.id}
+            zugang={zugang}
+            plan={plan}
+            heute={plaene.data.today}
+            bereich={bereich}
+          />
         ))
       )}
     </>
@@ -73,10 +82,12 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
 }
 
 function PlanKarte({
+  zugang,
   plan,
   heute,
   bereich,
 }: {
+  zugang: Plattformzugang;
   plan: EigenerPlan;
   heute: string;
   bereich: string;
@@ -96,6 +107,11 @@ function PlanKarte({
         <p className="text-ink-muted mt-1">
           Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
         </p>
+      ) : null}
+      {plan.can_exercise ? (
+        <Uebungstage zugang={zugang} plan={plan} />
+      ) : plan.weekdays.length > 0 ? (
+        <p className="text-ink-muted mt-1">Meine Übungstage: {tageText(plan.weekdays)}</p>
       ) : null}
       {plan.can_exercise && plan.items.length > 0 ? (
         // UEB-010: die Durchführungsansicht (IDEA-ORG-003).
@@ -216,5 +232,74 @@ export function PlanblattPlattform({
         </>
       )}
     </>
+  );
+}
+
+/**
+ * „Meine Übungstage" (UEB-011, ANN-307): Die Person legt selbst fest, an
+ * welchen Tagen sie übt; die Tage erscheinen unter „Termine" neben den
+ * Terminen. Jeder Tipp wird sofort gespeichert und ohne Verbindung
+ * zurückgenommen (ANN-305). Die Praxis sieht die Tage nicht.
+ */
+function Uebungstage({ zugang, plan }: { zugang: Plattformzugang; plan: EigenerPlan }) {
+  const queryClient = useQueryClient();
+  const [tage, setTage] = useState<number[]>(plan.weekdays);
+  const speichern = useMutation({
+    mutationFn: (neu: number[]) => uebungstageSetzen(zugang.access_id, plan.id, neu),
+    onMutate: (neu) => {
+      const vorher = tage;
+      setTage(neu);
+      return { vorher };
+    },
+    onError: (_e, _neu, kontext) => {
+      if (kontext) setTage(kontext.vorher);
+    },
+    onSettled: () =>
+      queryClient.invalidateQueries({ queryKey: plaeneSchluessel(zugang.access_id) }),
+  });
+  const gruppe = `tage-${plan.id}`;
+  return (
+    <div className="mt-4">
+      <p id={gruppe} className="font-medium">
+        Meine Übungstage
+        {plan.sessions_per_week ? (
+          <span className="text-ink-muted font-normal">
+            {' '}
+            – empfohlen: {plan.sessions_per_week === 1
+              ? 'einmal'
+              : `${plan.sessions_per_week}-mal`}{' '}
+            pro Woche
+          </span>
+        ) : null}
+      </p>
+      <div role="group" aria-labelledby={gruppe} className="mt-2 flex flex-wrap gap-2">
+        {WOCHENTAGE.map((w) => {
+          const an = tage.includes(w.nummer);
+          return (
+            <button
+              key={w.nummer}
+              type="button"
+              aria-pressed={an}
+              aria-label={w.lang}
+              onClick={() =>
+                speichern.mutate(
+                  an
+                    ? tage.filter((t) => t !== w.nummer)
+                    : [...tage, w.nummer].sort((a, b) => a - b),
+                )
+              }
+              className="rounded-button border-line bg-surface aria-pressed:border-accent aria-pressed:bg-accent aria-pressed:text-surface min-h-12 min-w-12 border-2 px-2 text-base font-semibold"
+            >
+              {w.kurz}
+            </button>
+          );
+        })}
+      </div>
+      {speichern.isError ? (
+        <Statusmeldung ton="fehler" className="mt-2">
+          {speichern.error.message}
+        </Statusmeldung>
+      ) : null}
+    </div>
   );
 }

@@ -43,6 +43,10 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'Die durchgefuehrten Einheiten stehen als `sessions` an ihrem Plan in `exercise_plans` (UEB-010).',
   ],
   [
+    'exercise_plan_days',
+    'Die gewaehlten Uebungstage stehen als `weekdays` an ihrem Plan in `exercise_plans` (UEB-011).',
+  ],
+  [
     'exercise_plan_session_sets',
     'Die abgehakten Saetze stehen als `sets_done` an ihrer Einheit in `exercise_plans` (UEB-010).',
   ],

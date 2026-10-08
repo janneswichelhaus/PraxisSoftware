@@ -149,6 +149,8 @@ describe('Schema-Invarianten', () => {
       // UEB-010: durchgeführte Einheiten und abgehakte Sätze.
       'exercise_plan_sessions',
       'exercise_plan_session_sets',
+      // UEB-011: die Übungstage, die die Person wählt.
+      'exercise_plan_days',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

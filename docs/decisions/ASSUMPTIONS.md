@@ -3695,3 +3695,15 @@ Datenschutz · offen · 2026-10-08 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** Zweig `exercise` in `app.platform_access_allows` und `app.platform_exercise_note_allowed` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts`.
 
 **Änderungspfad.** Begleitung darf abhaken: `exercise` in den ersten Zweig von `app.platform_access_allows` · Aufwand `klein`. Freitext im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest die Einheiten nicht: eigene Leseregel in `get_exercise_plan` · Aufwand `klein`.
+
+### ANN-307 — Übungstage wählt die Person selbst; sie stehen nur in ihrer eigenen Woche
+
+Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Termine)
+
+**Annahme.** Die Übungstage eines Plans wählt die Person (oder ihre rechtliche Vertretung) auf der Plattform als Wochentage; die Einheiten je Woche der Fachperson stehen daneben als Empfehlung. Die Wahl gilt auch für die nächste Fassung des Plans, bis sie neu getroffen wird; eine leere Wahl heißt „keine Tage“. Unter „Termine“ erscheint „Diese Woche“: heute und die sechs Tage danach, Termine und Übungstage nebeneinander, durch Wort und Zeichen unterschieden, ein Übungstag mit beendeter Einheit als „geübt“. Die Praxis sieht die Tage nicht und ihr Kalender bleibt unverändert; nur die Auskunft nach Art. 15 nennt sie. Es gibt keine Weitergabe an fremde Kalender.
+
+**Begründung.** IDEA-ORG-004: Aus Sicht der Person ist beides „was diese Woche ansteht“; für die Praxis bleibt der bestehende Kalender die Arbeitsansicht. Der zugewiesene Plan ist eingefroren (ANN-300), feste Tage der Fachperson müssten in den Schnappschuss und machten jede Verschiebung zu einer neuen Fassung; die Person kennt ihre Woche selbst. Die Praxis braucht die Tage für keinen Zweck (Art. 5 Abs. 1 lit. c DSGVO). Eine Kalenderweitergabe nach außen wäre eine eigene Entscheidung nach ADR-002 (IDEA-ORG-004, „Vorsicht“).
+
+**Anker.** `public.exercise_plan_days`, `app.exercise_plan_weekdays` und `public.set_platform_exercise_days` in `supabase/migrations/20261019120000_ueb_011_exercise_days.sql`; `src/features/platform/uebungstage.ts`. Geprüft in `supabase/tests/platform-exercise-days.test.ts`.
+
+**Änderungspfad.** Tage legt die Fachperson fest: Spalte am Plan, Feld im Entwurf, Wahl der Person entfällt · Aufwand `mittel`. Die Praxis sieht die Tage am Plan: ein Schlüssel in `get_exercise_plan` · Aufwand `klein`.

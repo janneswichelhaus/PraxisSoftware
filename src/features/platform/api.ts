@@ -1077,6 +1077,8 @@ const eigenerPlanSchema = z.object({
       sets: z.array(z.object({ item_id: z.string().uuid(), set_number: z.number() })),
     })
     .nullable(),
+  /** UEB-011: die gewählten Übungstage, ISO 1 Montag bis 7 Sonntag (ANN-307). */
+  weekdays: z.array(z.number().int().min(1).max(7)),
   /** Die Tage der letzten vier Wochen, an denen geübt wurde. */
   recent_sessions: z.array(z.object({ performed_on: z.string(), finished: z.boolean() })),
   items: z.array(planPositionSchema),
@@ -1154,4 +1156,18 @@ export async function einheitBeenden(
   });
   if (error)
     throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** UEB-011: die eigenen Übungstage eines Plans wählen (ANN-307). */
+export async function uebungstageSetzen(
+  zugangId: string,
+  planId: string,
+  wochentage: number[],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_platform_exercise_days', {
+    p_access_id: zugangId,
+    p_plan_id: planId,
+    p_weekdays: wochentage,
+  });
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
 }
