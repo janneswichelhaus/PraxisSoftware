@@ -244,6 +244,13 @@ einem Verwurf. Neue Einträge hängen hinten an.
   will er nicht. Als `IDEA-PRX-056` (Reihenfolgevorschlag für den Tag)
   abgelegt; vor jedem Bau eine neue Fassung von ADR-019. **Kein Auftrag.**
 
+- **2026-10-08** — Jannes will Schäden am Lastenrad im 3D-Modell markieren:
+  im Check-Up, in der Pannenmeldung, auf einer Seite je Rad und in einer PDF
+  für die Werkstatt. Als `IDEA-PRX-057` bestätigt; `IDEA-PRX-048` bleibt
+  Abgrenzung nur noch für das Rad als Schmuck. Eingespielt wird es an seiner
+  Stelle in FLT-EPIC-001; Entwurf und Dateien im
+  [Handoff](../design/handoff-2026-10-08-lastenrad-3d.md).
+
 ## Index — welche Datei wofür
 
 | Datei                                                                       | Lesen, wenn es um … geht                                                                   | Präfix |
@@ -272,4 +279,4 @@ einem Verwurf. Neue Einträge hängen hinten an.
 - Der Ordner ist von Prettier ausgenommen (wie `docs/adr/` und
   `docs/decisions/`) und wird von Hand gepflegt.
 
-Zuletzt aktualisiert: 2026-10-05 (`IDEA-PRX-056`). Ältere Stände: `git log -- docs/product/`.
+Zuletzt aktualisiert: 2026-10-08 (`IDEA-PRX-057`). Ältere Stände: `git log -- docs/product/`.

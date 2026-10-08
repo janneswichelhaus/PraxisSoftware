@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Panne melden</title>
+<script src="./support.js"></script>
+<script src="/_blob/e48c087ce852d236e276adba35423f19"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:100 900;font-display:swap;src:url(/_blob/439ec7841140c360c7bdf553824a2c42) format('woff2')}
+body{margin:0}
+a{color:#004429}a:hover{color:#042c1b}
+:focus-visible{outline:2px solid #004429;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1700px; box-sizing: border-box; background: #ffffff; color: #14181b; font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased">
+<header style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e6e8eb">
+<a href="#" aria-label="Own Motion, zur Startseite" style="display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; border-radius: 10px"><img src="/_blob/92ff458aa08837262b30d129491dea43" alt="" style="display: block; width: auto; height: 24px"></a>
+<p style="flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; color: #5a6169">Organisatorisches</p>
+<button type="button" aria-label="Suche öffnen" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #5a6169; cursor: pointer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>
+<a href="#" style="flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 14px; font-weight: 600; color: #5a6169; text-decoration: none">Konto</a>
+<button type="button" aria-label="Abmelden" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #767c84; cursor: pointer"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8"></path><path d="M13 6.5 16.5 10 13 13.5"></path><path d="M16.5 10H8"></path></svg></button>
+</header>
+<main style="display: flex; flex-direction: column; padding: 16px 16px 48px">
+<a href="#" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 16px; font-size: 14px; color: #5a6169; text-decoration: none">← Zurück zur Radflotte</a>
+<header style="margin-bottom: 24px">
+<h1 style="margin: 0; font-size: 26px; line-height: 1.05; font-weight: 800; letter-spacing: -0.03em; color: #004429">Panne melden</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #5a6169">{{headerText}}</p>
+</header>
+
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="margin-bottom: 20px; padding: 12px 16px; border: 1px solid rgba(0, 68, 41, 0.25); border-radius: 14px; background: #e1f0e4">
+<p style="margin: 0; font-size: 15px; font-weight: 500; color: #004429">Vorschau: Panne gemeldet: Lastenrad 3</p>
+<p style="margin: 8px 0 0; font-size: 14px; font-weight: 500; color: #5a6169">In der Vorschau übernommen:</p>
+<ul style="margin: 4px 0 0; padding-left: 20px; font-size: 14px; color: #5a6169">
+<sc-for list="{{doneLines}}" as="t" hint-placeholder-count="3">
+<li>{{t.text}}</li>
+</sc-for>
+</ul>
+<p style="margin: 8px 0 0; font-size: 14px; font-weight: 500; color: #5a6169">Nicht passiert:</p>
+<ul style="margin: 4px 0 0; padding-left: 20px; font-size: 14px; color: #5a6169">
+<li>Keine Benachrichtigung an Werkstatt, Teamleitung oder Praxismanagement versendet</li>
+<li>Keine Termine abgesagt oder verschoben</li>
+<li>Keine Ersatzradzuordnung geändert</li>
+</ul>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 12px">
+<a href="#" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid transparent; border-radius: 10px; background: #004429; color: #ffffff; font-size: 16px; font-weight: 700; text-decoration: none">Zurück zur Radflotte</a>
+<button type="button" onClick="{{restart}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Weitere Panne melden</button>
+</div>
+</sc-if>
+
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 20px; border: 1px solid #e6e8eb; border-radius: 14px; background: #ffffff">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px">
+<span style="display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; background: #f3ead6; color: #5a4300; font-size: 14px; font-weight: 600"><span aria-hidden="true">!</span>Köln-Vorlage</span>
+<span style="font-size: 14px; color: #5a6169">Standortvorlage Köln – für Tübingen noch zu prüfen. Werkstatt, Ruhetag, Depot, Transportoptionen und Zuständigkeiten sind Platzhalter und keine freigegebene Betriebsanweisung.</span>
+</div>
+<h2 style="margin: 0 0 16px; font-size: 17px; line-height: 1.35; font-weight: 600; color: #14181b">{{question}}</h2>
+
+<sc-if value="{{stepSchaden}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0 0 12px; font-size: 14px; color: #5a6169">Tippen Sie am Rad auf die betroffene Stelle. Das hilft der Werkstatt. Wenn es schnell gehen muss, geht es auch ohne.</p>
+<dc-import name="Lastenrad3D" height="300" markers="{{viewerMarkers}}" draft="{{viewerDraft}}" active-marker="{{activeMarker}}" highlight="{{highlight}}" hint="{{viewerHint}}" on-pick="{{onPick}}" hint-size="100%,300px"></dc-import>
+
+<sc-if value="{{hasDraft}}" hint-placeholder-val="{{ false }}">
+<div role="group" aria-labelledby="panne-stelle-titel" style="display: flex; flex-direction: column; gap: 16px; margin-top: 12px; padding: 16px; border: 1px solid #004429; border-radius: 14px; background: #ffffff">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<span aria-hidden="true" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #004429; color: #ffffff; font-size: 15px; font-weight: 800">{{draftNumber}}</span>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<p id="panne-stelle-titel" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 700; color: #14181b">{{draftTitle}}</p>
+<p style="margin: 0; font-size: 14px; color: #5a6169">{{draftCheckText}}</p>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="panne-bauteil" style="font-size: 14px; font-weight: 500; color: #14181b">Bauteil</label>
+<select id="panne-bauteil" value="{{draftZone}}" onChange="{{setDraftZone}}" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 12px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+<option value="">Bauteil wählen</option>
+<optgroup label="Mit Prüfpunkt">
+<option value="reifen-vorne">Reifen vorne</option>
+<option value="reifen-hinten">Reifen hinten</option>
+<option value="laufrad-vorne">Speichen und Felge vorne</option>
+<option value="laufrad-hinten">Speichen und Felge hinten</option>
+<option value="bremse-vorne">Bremse vorne</option>
+<option value="bremse-hinten">Bremse hinten</option>
+<option value="bremsgriffe">Bremsgriffe</option>
+<option value="riemen">Riemen und Riemenscheiben</option>
+<option value="nabenschaltung">Nabenschaltung</option>
+<option value="kurbeln">Kurbeln und Pedale</option>
+<option value="motor">Motor</option>
+<option value="licht-vorne">Licht vorne</option>
+<option value="licht-hinten">Licht hinten</option>
+<option value="akku">Akku</option>
+<option value="sattel">Sattel und Sattelstütze</option>
+<option value="klingel">Klingel</option>
+<option value="schutzblech-vorne">Schutzblech vorne</option>
+<option value="schutzblech-hinten">Schutzblech hinten</option>
+<option value="staender">Ständer</option>
+<option value="transportbox">Transportbox</option>
+</optgroup>
+<optgroup label="Weitere Stellen">
+<option value="rahmen">Rahmen</option>
+<option value="lenker">Lenker und Griffe</option>
+<option value="display">Display</option>
+<option value="lenkung">Lenkstange</option>
+<option value="gabel">Federgabel</option>
+<option value="daempfer">Dämpfer hinten</option>
+<option value="gepaecktraeger">Gepäckträger</option>
+</optgroup>
+</select>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="panne-notiz" style="font-size: 14px; font-weight: 500; color: #14181b">Was ist passiert?</label>
+<input id="panne-notiz" type="text" value="{{draftNote}}" onChange="{{setDraftNote}}" placeholder="z. B. Riemen gerissen, Platten" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 14px; font-weight: 500; color: #14181b">Fotos zur Stelle</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{draftPhotos}}" as="f" hint-placeholder-count="1">
+<span role="img" aria-label="{{f.label}}" style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 64px; height: 64px; border-radius: 10px; background: #f4f5f7; color: #5a6169; font-size: 12px; font-weight: 600"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2l1.2-2h4.6l1.2 2h2A1.5 1.5 0 0 1 17 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"></path><circle cx="10" cy="10.5" r="3"></circle></svg>{{f.short}}</span>
+</sc-for>
+<button type="button" onClick="{{addDraftPhoto}}" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Foto hinzufügen</button>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" onClick="{{saveDraft}}" disabled="{{saveDisabled}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: {{saveBorder}}; border-radius: 10px; background: {{saveBg}}; color: {{saveFg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: {{saveCursor}}">{{saveLabel}}</button>
+<button type="button" onClick="{{cancelDraft}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Abbrechen</button>
+<sc-if value="{{isEditing}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{removeMarker}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #7a2418; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Entfernen</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{noDraft}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px">
+<button type="button" onClick="{{openWithoutModel}}" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Bauteil aus Liste wählen</button>
+</div>
+</sc-if>
+
+<sc-if value="{{hasMarkers}}" hint-placeholder-val="{{ true }}">
+<ol aria-label="Markierte Stellen" style="list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid #e6e8eb; border-radius: 14px">
+<sc-for list="{{markerRows}}" as="m" hint-placeholder-count="1">
+<li style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-top: {{m.divider}}">
+<span aria-hidden="true" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-top: 2px; border-radius: 999px; background: #b3261e; color: #ffffff; font-size: 14px; font-weight: 800">{{m.n}}</span>
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 15px; font-weight: 600; color: #14181b">{{m.label}}</span>
+<span style="font-size: 14px; color: {{m.noteColor}}">{{m.note}}</span>
+<sc-if value="{{m.hasPhotos}}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #5a6169"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2l1.2-2h4.6l1.2 2h2A1.5 1.5 0 0 1 17 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"></path><circle cx="10" cy="10.5" r="3"></circle></svg>{{m.photoText}}</span>
+</sc-if>
+</div>
+<button type="button" onClick="{{m.edit}}" aria-label="{{m.editLabel}}" style="flex-shrink: 0; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer">Ändern</button>
+</li>
+</sc-for>
+</ol>
+</sc-if>
+
+<div style="margin-top: 16px">
+<button type="button" onClick="{{goWeiterfahrt}}" disabled="{{weiterDisabled}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: {{weiterBorder}}; border-radius: 10px; background: {{weiterBg}}; color: {{weiterFg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: {{weiterCursor}}">Weiter</button>
+</div>
+<sc-if value="{{hasDraft}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 8px 0 0; font-size: 14px; color: #5a6169">Setzen oder verwerfen Sie zuerst die offene Stelle.</p>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{stepWeiterfahrt}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{hasMarkers}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0 0 12px; padding: 8px 12px; border-radius: 14px; background: #f4f5f7; font-size: 14px; color: #5a6169">{{markedSummary}}</p>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" onClick="{{goGroesse}}" style="display: inline-flex; align-items: center; justify-content: flex-start; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Ja</button>
+<button type="button" onClick="{{goMoeglich}}" style="display: inline-flex; align-items: center; justify-content: flex-start; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Nein</button>
+</div>
+</sc-if>
+
+<sc-if value="{{stepMoeglich}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="panne-freitext" style="font-size: 14px; font-weight: 500; color: #14181b">Was ist auffällig?</label>
+<textarea id="panne-freitext" rows="3" value="{{freitext}}" onChange="{{setFreitext}}" placeholder="z. B. Klingel klemmt, Licht flackert" style="box-sizing: border-box; width: 100%; padding: 12px 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px; line-height: 1.5; resize: vertical"></textarea>
+</div>
+<sc-if value="{{hasMarkers}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 14px; color: #5a6169">Aus den markierten Stellen vorausgefüllt. Sie können den Text ändern.</p>
+</sc-if>
+<div>
+<button type="button" onClick="{{report}}" disabled="{{reportDisabled}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: {{reportBorder}}; border-radius: 10px; background: {{reportBg}}; color: {{reportFg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: {{reportCursor}}">Melden</button>
+</div>
+<p style="margin: 0; font-size: 14px; color: #5a6169">Diese Meldung sperrt das Rad nicht. Es bleibt in der Planung verfügbar.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{stepGroesse}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0 0 16px; font-size: 14px; color: #5a6169">Klein: Reifen, Gangschaltung. Groß: Elektronik, Riemenriss, Ausfall beider Bremsen.</p>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<button type="button" onClick="{{goAusgelassen}}" style="display: inline-flex; align-items: center; justify-content: flex-start; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Klein</button>
+<button type="button" onClick="{{goAusgelassen}}" style="display: inline-flex; align-items: center; justify-content: flex-start; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Groß</button>
+</div>
+</sc-if>
+
+<sc-if value="{{stepAusgelassen}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 12px 16px; border: 1px solid rgba(0, 68, 41, 0.25); border-radius: 14px; background: #e1f0e4; font-size: 14px; color: #004429">Ab hier geht der Pannenassistent unverändert weiter: Werkstatt, Ruhetag, Depot und Ersatzrad. Die markierten Stellen stehen mit in der Meldung. In diesem Entwurf ausgelassen.</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e6e8eb">
+<a href="#" style="display: inline-flex; align-items: center; min-height: 44px; font-size: 15px; color: #5a6169; text-decoration: none">Abbrechen</a>
+<sc-if value="{{canBack}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{back}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">← Zurück</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"beispiel":{"editor":"boolean","default":true,"section":"Vorschau"},"$preview":{"width":390,"height":1700}}'>
+// Bauteile am Modell: Kennung, Name, Prüfpunkt (null = kein eigener Prüfpunkt).
+var PARTS = [
+  ['reifen-vorne', 'Reifen vorne', 'Reifen und Luftdruck'],
+  ['reifen-hinten', 'Reifen hinten', 'Reifen und Luftdruck'],
+  ['laufrad-vorne', 'Speichen und Felge vorne', 'Speichen'],
+  ['laufrad-hinten', 'Speichen und Felge hinten', 'Speichen'],
+  ['bremse-vorne', 'Bremse vorne', 'Bremsen'],
+  ['bremse-hinten', 'Bremse hinten', 'Bremsen'],
+  ['bremsgriffe', 'Bremsgriffe', 'Bremsen'],
+  ['riemen', 'Riemen und Riemenscheiben', 'Riemen und Antrieb'],
+  ['nabenschaltung', 'Nabenschaltung', 'Riemen und Antrieb'],
+  ['kurbeln', 'Kurbeln und Pedale', 'Riemen und Antrieb'],
+  ['motor', 'Motor', 'Riemen und Antrieb'],
+  ['licht-vorne', 'Licht vorne', 'Licht vorne'],
+  ['licht-hinten', 'Licht hinten', 'Licht hinten'],
+  ['akku', 'Akku', 'Akku-Zustand'],
+  ['sattel', 'Sattel und Sattelstütze', 'Schrauben und Sattel fest'],
+  ['klingel', 'Klingel', 'Klingel'],
+  ['schutzblech-vorne', 'Schutzblech vorne', 'Schutzbleche'],
+  ['schutzblech-hinten', 'Schutzblech hinten', 'Schutzbleche'],
+  ['staender', 'Ständer', 'Ständer'],
+  ['transportbox', 'Transportbox', 'Transportbox'],
+  ['rahmen', 'Rahmen', null],
+  ['lenker', 'Lenker und Griffe', null],
+  ['display', 'Display', null],
+  ['lenkung', 'Lenkstange', null],
+  ['gabel', 'Federgabel', null],
+  ['daempfer', 'Dämpfer hinten', null],
+  ['gepaecktraeger', 'Gepäckträger', null],
+];
+var PART = {};
+PARTS.forEach(function (p) {
+  PART[p[0]] = { label: p[1], check: p[2] };
+});
+
+var QUESTIONS = {
+  schaden: 'Wo ist der Schaden?',
+  weiterfahrt: 'Ist die Weiterfahrt gehindert?',
+  moeglich: 'Rad ist weiter fahrbar. Was genau ist auffällig?',
+  groesse: 'Wie groß ist der Schaden?',
+  ausgelassen: 'Weiter wie bisher',
+};
+
+// Beispiel für die Leinwand: eine Stelle am Riemen.
+var EXAMPLE_MARKERS = [{ id: 'p1', zone: 'riemen', point: [-0.55, 0.397, 0.09], note: 'Riemen springt über', photos: 1 }];
+
+function startState(example) {
+  return {
+    step: 'schaden',
+    history: [],
+    markers: example
+      ? EXAMPLE_MARKERS.map(function (m) {
+          return Object.assign({}, m);
+        })
+      : [],
+    draft: null,
+    freitext: '',
+    done: false,
+  };
+}
+
+function plural(n, one, many) {
+  return n + ' ' + (n === 1 ? one : many);
+}
+
+function primaryLook(disabled) {
+  return disabled
+    ? { border: '1px dashed #767c84', bg: 'transparent', fg: '#5a6169', cursor: 'not-allowed' }
+    : { border: '1px solid transparent', bg: '#004429', fg: '#ffffff', cursor: 'pointer' };
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var self = this;
+    this.example = props.beispiel !== false;
+    this.state = startState(this.example);
+    this.seq = 0;
+
+    this.onPick = function (hit) {
+      self.pick(hit);
+    };
+    this.setDraftZone = function (e) {
+      var d = self.state.draft;
+      if (d) self.setState({ draft: Object.assign({}, d, { zone: e.target.value, point: null }) });
+    };
+    this.setDraftNote = function (e) {
+      var d = self.state.draft;
+      if (d) self.setState({ draft: Object.assign({}, d, { note: e.target.value }) });
+    };
+    this.addDraftPhoto = function () {
+      var d = self.state.draft;
+      if (d) self.setState({ draft: Object.assign({}, d, { photos: (d.photos || 0) + 1 }) });
+    };
+    this.saveDraft = function () {
+      self.commitDraft();
+    };
+    this.cancelDraft = function () {
+      self.setState({ draft: null });
+    };
+    this.removeMarker = function () {
+      var d = self.state.draft;
+      if (!d || !d.editingId) return;
+      self.setState({
+        markers: self.state.markers.filter(function (m) {
+          return m.id !== d.editingId;
+        }),
+        draft: null,
+      });
+    };
+    this.openWithoutModel = function () {
+      self.setState({ draft: { zone: '', point: null, note: '', photos: 0, editingId: null } });
+    };
+    this.goWeiterfahrt = function () {
+      self.goTo('weiterfahrt');
+    };
+    this.goGroesse = function () {
+      self.goTo('groesse');
+    };
+    this.goMoeglich = function () {
+      self.goTo('moeglich');
+    };
+    this.goAusgelassen = function () {
+      self.goTo('ausgelassen');
+    };
+    this.back = function () {
+      var h = self.state.history.slice();
+      var prev = h.pop();
+      if (prev) self.setState({ step: prev, history: h, draft: null });
+    };
+    this.setFreitext = function (e) {
+      self.setState({ freitext: e.target.value });
+    };
+    this.report = function () {
+      self.setState({ done: true });
+    };
+    this.restart = function () {
+      self.setState(startState(false));
+    };
+  }
+
+  componentDidUpdate() {
+    var ex = this.props.beispiel !== false;
+    if (ex !== this.example) {
+      this.example = ex;
+      this.setState(startState(ex));
+    }
+  }
+
+  goTo(step) {
+    var s = this.state;
+    var next = { step: step, history: s.history.concat([s.step]), draft: null };
+    if (step === 'moeglich' && !s.freitext.trim()) {
+      next.freitext = s.markers
+        .map(function (m) {
+          var p = PART[m.zone];
+          return (p ? p.label : m.zone) + (m.note ? ': ' + m.note : '');
+        })
+        .join('; ');
+    }
+    this.setState(next);
+  }
+
+  pick(hit) {
+    if (!hit || !PART[hit.zone]) return;
+    var s = this.state;
+    if (hit.markerId) {
+      var m = s.markers.filter(function (x) {
+        return x.id === hit.markerId;
+      })[0];
+      if (m) this.setState({ draft: { zone: m.zone, point: m.point, note: m.note, photos: m.photos || 0, editingId: m.id } });
+      return;
+    }
+    var d = s.draft;
+    this.setState({
+      draft: { zone: hit.zone, point: hit.point, note: d ? d.note : '', photos: d ? d.photos || 0 : 0, editingId: d ? d.editingId : null },
+    });
+  }
+
+  commitDraft() {
+    var s = this.state;
+    var d = s.draft;
+    if (!d || !PART[d.zone]) return;
+    var entry = { zone: d.zone, point: d.point, note: (d.note || '').trim(), photos: d.photos || 0 };
+    var markers;
+    if (d.editingId) {
+      markers = s.markers.map(function (m) {
+        return m.id === d.editingId ? Object.assign({ id: m.id }, entry) : m;
+      });
+    } else {
+      this.seq += 1;
+      markers = s.markers.concat([Object.assign({ id: 'p' + Date.now().toString(36) + this.seq }, entry)]);
+    }
+    this.setState({ markers: markers, draft: null });
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var d = s.draft;
+    var markers = s.markers;
+    var editIndex = -1;
+    markers.forEach(function (m, i) {
+      if (d && d.editingId === m.id) editIndex = i;
+    });
+    var part = d && PART[d.zone] ? PART[d.zone] : null;
+    var draftNumber = d ? (editIndex >= 0 ? editIndex + 1 : markers.length + 1) : '';
+    var photoTiles = [];
+    for (var i = 1; d && i <= (d.photos || 0); i++) {
+      photoTiles.push({ short: 'Foto ' + i, label: 'Foto ' + i + ' zu Stelle ' + draftNumber });
+    }
+    var saveDisabled = !part;
+    var save = primaryLook(saveDisabled);
+    var weiter = primaryLook(!!d);
+    var reportDisabled = s.freitext.trim() === '';
+    var rep = primaryLook(reportDisabled);
+
+    var doneLines = [{ text: 'Pannenverlauf ergänzt: Weiterfahrt möglich: ' + (s.freitext.trim() || 'ohne nähere Angabe') }];
+    doneLines.push({
+      text: markers.length
+        ? plural(markers.length, 'Stelle', 'Stellen') + ' am Rad markiert, im Verlauf von Lastenrad 3 zu sehen'
+        : 'Keine Stelle am Rad markiert',
+    });
+    doneLines.push({ text: 'Lastenrad 3 bleibt nutzbar – die Meldung sperrt es nicht' });
+
+    return {
+      headerText: s.done ? 'Meldung abgeschlossen.' : 'Lastenrad 3 · Load 60 · Riemenantrieb',
+      done: s.done,
+      notDone: !s.done,
+      doneLines: doneLines,
+      restart: this.restart,
+      question: QUESTIONS[s.step],
+      stepSchaden: s.step === 'schaden',
+      stepWeiterfahrt: s.step === 'weiterfahrt',
+      stepMoeglich: s.step === 'moeglich',
+      stepGroesse: s.step === 'groesse',
+      stepAusgelassen: s.step === 'ausgelassen',
+      canBack: s.history.length > 0,
+      back: this.back,
+
+      viewerMarkers: markers.map(function (m) {
+        var src = d && d.editingId === m.id ? d : m;
+        return { id: m.id, zone: src.zone, point: src.point, severity: 'problem' };
+      }),
+      viewerDraft: d && !d.editingId && d.zone ? { zone: d.zone, point: d.point } : null,
+      activeMarker: d && d.editingId ? d.editingId : null,
+      highlight: d && d.zone ? [d.zone] : [],
+      viewerHint: d ? 'Antippen versetzt den Pin' : 'Ziehen dreht · Antippen markiert',
+      onPick: this.onPick,
+
+      hasDraft: !!d,
+      noDraft: !d,
+      draftNumber: draftNumber,
+      draftTitle: part ? part.label : 'Neue Stelle',
+      draftCheckText: !d ? '' : !part ? 'Wählen Sie das Bauteil am Rad oder in der Liste.' : part.check ? 'Prüfpunkt: ' + part.check : 'Weitere Stelle, kein eigener Prüfpunkt',
+      draftZone: d ? d.zone : '',
+      setDraftZone: this.setDraftZone,
+      draftNote: d ? d.note : '',
+      setDraftNote: this.setDraftNote,
+      draftPhotos: photoTiles,
+      addDraftPhoto: this.addDraftPhoto,
+      saveLabel: d && d.editingId ? 'Änderung übernehmen' : 'Stelle setzen',
+      saveDisabled: saveDisabled,
+      saveBorder: save.border,
+      saveBg: save.bg,
+      saveFg: save.fg,
+      saveCursor: save.cursor,
+      saveDraft: this.saveDraft,
+      cancelDraft: this.cancelDraft,
+      isEditing: !!(d && d.editingId),
+      removeMarker: this.removeMarker,
+      openWithoutModel: this.openWithoutModel,
+
+      hasMarkers: markers.length > 0,
+      markerRows: markers.map(function (m, i) {
+        var p = PART[m.zone] || { label: m.zone };
+        var photos = m.photos || 0;
+        return {
+          n: i + 1,
+          label: p.label,
+          note: m.note || 'Ohne Notiz',
+          noteColor: m.note ? '#14181b' : '#5a6169',
+          hasPhotos: photos > 0,
+          photoText: photos === 1 ? '1 Foto' : photos + ' Fotos',
+          divider: i === 0 ? 'none' : '1px solid #e6e8eb',
+          editLabel: 'Stelle ' + (i + 1) + ' ändern: ' + p.label,
+          edit: function () {
+            self.setState({ draft: { zone: m.zone, point: m.point, note: m.note, photos: m.photos || 0, editingId: m.id } });
+          },
+        };
+      }),
+      markedSummary:
+        'Markiert: ' +
+        markers
+          .map(function (m, i) {
+            var p = PART[m.zone];
+            return 'Stelle ' + (i + 1) + ' · ' + (p ? p.label : m.zone);
+          })
+          .join(', '),
+
+      goWeiterfahrt: this.goWeiterfahrt,
+      weiterDisabled: !!d,
+      weiterBorder: weiter.border,
+      weiterBg: weiter.bg,
+      weiterFg: weiter.fg,
+      weiterCursor: weiter.cursor,
+      goGroesse: this.goGroesse,
+      goMoeglich: this.goMoeglich,
+      goAusgelassen: this.goAusgelassen,
+
+      freitext: s.freitext,
+      setFreitext: this.setFreitext,
+      report: this.report,
+      reportDisabled: reportDisabled,
+      reportBorder: rep.border,
+      reportBg: rep.bg,
+      reportFg: rep.fg,
+      reportCursor: rep.cursor,
+    };
+  }
+}
+</script>
+</body>
+</html>

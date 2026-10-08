@@ -1,0 +1,86 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Lastenrad3D.dc.html": {
+      "h": 640,
+      "is_interactive": true,
+      "title": "3D-Modell Load 60 mit Riemen",
+      "w": 960,
+      "x": 940,
+      "y": 1160
+    },
+    "Main.dc.html": {
+      "h": 3700,
+      "is_interactive": true,
+      "title": "Check-Up am Telefon",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Panne.dc.html": {
+      "h": 1700,
+      "is_interactive": true,
+      "title": "Panne melden am Telefon",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Verlauf.dc.html": {
+      "expand": "fill",
+      "h": 1040,
+      "is_interactive": true,
+      "title": "Stellen am Rad (Radflotte)",
+      "w": 1280,
+      "x": 940,
+      "y": 0
+    },
+    "Werkstatt-PDF-1.dc.html": {
+      "h": 1123,
+      "page": "werkstatt-pdf",
+      "title": "PDF für die Werkstatt · Seite 1",
+      "w": 794,
+      "x": 0,
+      "y": 0
+    },
+    "Werkstatt-PDF-2.dc.html": {
+      "h": 1123,
+      "page": "werkstatt-pdf",
+      "title": "PDF für die Werkstatt · Seite 2",
+      "w": 794,
+      "x": 874,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-10-07T21:05:44Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "titel": {
+      "kind": "title1",
+      "maxW": 2220,
+      "text": "Fahrrad-Check-Up mit 3D-Lastenrad",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Panne.dc.html",
+    "Verlauf.dc.html",
+    "Lastenrad3D.dc.html",
+    "Werkstatt-PDF-1.dc.html",
+    "Werkstatt-PDF-2.dc.html"
+  ],
+  "pages": [
+    { "id": "app", "name": "Check-Up, Panne, Radflotte" },
+    { "id": "werkstatt-pdf", "name": "PDF für die Werkstatt" }
+  ],
+  "title": "Lastenrad-Checkup 3D"
+}

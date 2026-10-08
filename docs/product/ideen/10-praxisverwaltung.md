@@ -1124,6 +1124,11 @@ eigenes Epic, nicht vorgebaut (ADR-014).
 | Quelle | Jannes, 2026-09-30 (Claude-Design-Export „Lastenrad") |
 | Berührt | ADR-015, CLAUDE.md „Harte Regeln" (Dependencies), Own Motion Design System (Ikonografie, Website-Ebene) |
 
+**Stand.** Für das Rad als **Werkzeug** überholt: Jannes will Schäden am
+3D-Modell markieren, im Check-Up, in der Pannenmeldung und für die Werkstatt
+(2026-10-08, `IDEA-PRX-057`, FLT-EPIC-001). Für das Rad als Schmuck und
+Website-Objekt gilt die Abgrenzung weiter.
+
 **Idee.** Ein drehbares 3D-Modell des Praxis-Lastenrads: Riese & Müller
 Load 60 mit MoreCargoBox in Papier, Wortmarke mit Unterzeile auf Seiten und
 Deckel, Rahmen in Tiefgrün und Hauptfarbe. Der Entwurf liegt als Export aus
@@ -1418,3 +1423,38 @@ wie schnell fährt (§20).
 Anwendung erlaubt (Punkt 3 bleibt: kein `optimizeRoute()` beim Anbieter); welche
 Termine als fest gelten; ob der Vorschlag auch Lücken für neue Besuche
 berücksichtigt.
+
+---
+
+### IDEA-PRX-057 — Schäden am Lastenrad im 3D-Modell markieren
+
+| | |
+|---|---|
+| Status | bestätigt · ausgearbeitet |
+| Quelle | Jannes, 2026-10-07 (Leinwand „Lastenrad-Checkup 3D"), Entscheidungen 2026-10-08 |
+| Berührt | FLT-EPIC-001; ADR-015 (three.js), ADR-017 (Fotos am Rad), ADR-008, ADR-004; §20; `marke/README.md` (Aufkleber); `IDEA-PRX-048` |
+
+**Stand.** Nicht gebaut. Jannes hat am 2026-10-08 entschieden, es an seiner
+Stelle in FLT-EPIC-001 (Roadmap Block 8) einzuspielen, nicht vorgezogen.
+Entwurf, Entscheidungen, Dateien und Akzeptanzkriterien stehen im
+[Handoff](../../design/handoff-2026-10-08-lastenrad-3d.md).
+
+**Idee.** Ein drehbares 3D-Modell des Praxis-Lastenrads (Load 60 mit Riemen,
+Transportbox mit dem Aufkleber aus `marke/README.md`) im Fahrrad-Check-Up, in
+der Pannenmeldung und auf einer Seite je Rad. Antippen markiert die Stelle
+eines Schadens mit Bauteil, Einstufung, Notiz und Fotos; die Werkstatt
+bekommt daraus eine PDF mit beiden Seitenansichten, nummerierten Stellen und
+Ausschnitten.
+
+**Warum.** „Hinten links schleift was" ist schwer zu beschreiben; eine Nadel
+am Bauteil ist eindeutig – für das Team, für die Teamleitung beim Freigeben
+und für die Werkstatt, die nicht in der Anwendung arbeitet.
+
+**Vorsicht.** three.js wird eine neue Abhängigkeit (rund 600 KB, nur auf den
+Seiten der Radflotte zu laden); das Markieren muss auch ohne 3D über eine
+Bauteil-Liste gehen. Fotos nur von Gegenständen, nie von Personen; Freitext
+kann Patientenbezug tragen (Pannenort beim Hausbesuch). Kein Versand aus der
+Anwendung; das Rad nie als Bild neben der Wortmarke.
+
+**Offen.** Handoff, Abschnitt 7: weitere Bauarten, Unterschrift im Check-Up,
+Rollen, Fristen, Ablage der Fotos, offene Stellen beim nächsten Check-Up.

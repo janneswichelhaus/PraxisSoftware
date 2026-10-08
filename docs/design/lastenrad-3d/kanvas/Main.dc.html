@@ -1,0 +1,845 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Fahrrad-Check-Up</title>
+<script src="./support.js"></script>
+<script src="/_blob/e48c087ce852d236e276adba35423f19"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:100 900;font-display:swap;src:url(/_blob/439ec7841140c360c7bdf553824a2c42) format('woff2')}
+body{margin:0}
+a{color:#004429}a:hover{color:#042c1b}
+:focus-visible{outline:2px solid #004429;outline-offset:2px}
+label:has(input:focus-visible){outline:2px solid #004429;outline-offset:2px}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 3700px; box-sizing: border-box; background: #ffffff; color: #14181b; font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased">
+<header style="display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 6px 12px 6px 16px; box-sizing: border-box; background: #ffffff; border-bottom: 1px solid #e6e8eb">
+<a href="#" aria-label="Own Motion, zur Startseite" style="display: inline-flex; align-items: center; flex-shrink: 0; min-height: 44px; border-radius: 10px"><img src="/_blob/92ff458aa08837262b30d129491dea43" alt="" style="display: block; width: auto; height: 24px"></a>
+<p style="flex: 1 1 auto; min-width: 0; margin: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: 14px; color: #5a6169">Organisatorisches</p>
+<button type="button" aria-label="Suche öffnen" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #5a6169; cursor: pointer"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="m16 16 4.5 4.5"></path></svg></button>
+<a href="#" style="flex-shrink: 0; display: inline-flex; align-items: center; min-height: 44px; padding: 0 8px; font-size: 14px; font-weight: 600; color: #5a6169; text-decoration: none">Konto</a>
+<button type="button" aria-label="Abmelden" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px; background: transparent; color: #767c84; cursor: pointer"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3.5H5.5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2H8"></path><path d="M13 6.5 16.5 10 13 13.5"></path><path d="M16.5 10H8"></path></svg></button>
+</header>
+<main style="display: flex; flex-direction: column; padding: 16px 16px 48px">
+<a href="#" style="align-self: flex-start; display: inline-flex; align-items: center; min-height: 44px; margin-bottom: 16px; font-size: 14px; color: #5a6169; text-decoration: none">← Zurück zur Radflotte</a>
+<header style="margin-bottom: 24px">
+<h1 style="margin: 0; font-size: 26px; line-height: 1.05; font-weight: 800; letter-spacing: -0.03em; color: #004429">Fahrrad-Check-Up</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #5a6169">Sicherheitsprüfung mit Bestätigung durch die prüfende Person.</p>
+</header>
+<sc-if value="{{submitted}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="margin-bottom: 20px; padding: 12px 16px; border: 1px solid rgba(0, 68, 41, 0.25); border-radius: 14px; background: #e1f0e4">
+<p style="margin: 0; font-size: 15px; font-weight: 500; color: #004429">Vorschau: Check-Up erfasst: Lastenrad 3</p>
+<p style="margin: 8px 0 0; font-size: 14px; font-weight: 500; color: #5a6169">In der Vorschau übernommen:</p>
+<ul style="margin: 4px 0 0; padding-left: 20px; font-size: 14px; color: #5a6169">
+<sc-for list="{{submittedDone}}" as="t" hint-placeholder-count="3">
+<li>{{t.text}}</li>
+</sc-for>
+</ul>
+<p style="margin: 8px 0 0; font-size: 14px; font-weight: 500; color: #5a6169">Nicht passiert:</p>
+<ul style="margin: 4px 0 0; padding-left: 20px; font-size: 14px; color: #5a6169">
+<li>Keine E-Mail an Werkstatt oder Praxis versendet – der Meldeweg ist noch nicht entschieden</li>
+<li>Fotos und Unterschrift verlassen diese Sitzung nicht und werden nicht gespeichert</li>
+<li>Das Rad wurde NICHT automatisch gesperrt – dafür ist der Pannenassistent zuständig</li>
+</ul>
+</div>
+</sc-if>
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div>
+<p style="margin: 0; font-size: 15px; font-weight: 500; color: #14181b">Lastenrad 3</p>
+<p style="margin: 0; font-size: 14px; color: #5a6169">Load 60 · Riemenantrieb</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="pruefer" style="font-size: 14px; font-weight: 500; color: #14181b">Prüfende Person</label>
+<input id="pruefer" type="text" value="{{examiner}}" onChange="{{setExaminer}}" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+</div>
+
+<section aria-labelledby="am-rad-titel" style="display: flex; flex-direction: column">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; min-height: 32px">
+<h2 id="am-rad-titel" style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: #5a6169">Am Rad markieren</h2>
+<span style="font-size: 14px; color: #5a6169">{{markerCount}}</span>
+</div>
+<p style="margin: 4px 0 0; font-size: 14px; color: #5a6169">Rad drehen und die Stelle antippen, an der etwas nicht stimmt. Die Markierung landet beim passenden Prüfpunkt.</p>
+<div ref="{{setViewerRef}}" style="margin-top: 12px">
+<dc-import name="Lastenrad3D" height="{{viewerHeight}}" markers="{{viewerMarkers}}" draft="{{viewerDraft}}" active-marker="{{activeMarker}}" highlight="{{highlight}}" focus="{{focus}}" hint="{{viewerHint}}" on-pick="{{onPick}}" hint-size="100%,340px"></dc-import>
+</div>
+
+<sc-if value="{{hasDraft}}" hint-placeholder-val="{{ false }}">
+<div role="group" aria-labelledby="stelle-titel" style="display: flex; flex-direction: column; gap: 16px; margin-top: 12px; padding: 16px; border: 1px solid #004429; border-radius: 14px; background: #ffffff">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<span aria-hidden="true" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 999px; background: #004429; color: #ffffff; font-size: 15px; font-weight: 800">{{draftNumber}}</span>
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<p id="stelle-titel" style="margin: 0; font-size: 20px; line-height: 1.25; font-weight: 700; color: #14181b">{{draftTitle}}</p>
+<p style="margin: 0; font-size: 14px; color: #5a6169">{{draftCheckText}}</p>
+</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="stelle-bauteil" style="font-size: 14px; font-weight: 500; color: #14181b">Bauteil</label>
+<select id="stelle-bauteil" value="{{draftZone}}" onChange="{{setDraftZone}}" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 12px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+<option value="">Bauteil wählen</option>
+<optgroup label="Mit Prüfpunkt">
+<option value="reifen-vorne">Reifen vorne</option>
+<option value="reifen-hinten">Reifen hinten</option>
+<option value="laufrad-vorne">Speichen und Felge vorne</option>
+<option value="laufrad-hinten">Speichen und Felge hinten</option>
+<option value="bremse-vorne">Bremse vorne</option>
+<option value="bremse-hinten">Bremse hinten</option>
+<option value="bremsgriffe">Bremsgriffe</option>
+<option value="riemen">Riemen und Riemenscheiben</option>
+<option value="nabenschaltung">Nabenschaltung</option>
+<option value="kurbeln">Kurbeln und Pedale</option>
+<option value="motor">Motor</option>
+<option value="licht-vorne">Licht vorne</option>
+<option value="licht-hinten">Licht hinten</option>
+<option value="akku">Akku</option>
+<option value="sattel">Sattel und Sattelstütze</option>
+<option value="klingel">Klingel</option>
+<option value="schutzblech-vorne">Schutzblech vorne</option>
+<option value="schutzblech-hinten">Schutzblech hinten</option>
+<option value="staender">Ständer</option>
+<option value="transportbox">Transportbox</option>
+</optgroup>
+<optgroup label="Weitere Stellen">
+<option value="rahmen">Rahmen</option>
+<option value="lenker">Lenker und Griffe</option>
+<option value="display">Display</option>
+<option value="lenkung">Lenkstange</option>
+<option value="gabel">Federgabel</option>
+<option value="daempfer">Dämpfer hinten</option>
+<option value="gepaecktraeger">Gepäckträger</option>
+</optgroup>
+</select>
+</div>
+<fieldset style="min-width: 0; margin: 0; padding: 0; border: 0">
+<legend style="margin-bottom: 8px; padding: 0; font-size: 14px; font-weight: 500; color: #14181b">Bewertung der Stelle</legend>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{severityChips}}" as="c" hint-placeholder-count="2">
+<label style="position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; box-sizing: border-box; border: 1px solid {{c.border}}; border-radius: 10px; background: {{c.bg}}; color: {{c.fg}}; font-size: 14px; font-weight: {{c.weight}}; cursor: pointer">
+<input type="radio" name="stelle-bewertung" value="{{c.value}}" checked="{{c.selected}}" onChange="{{c.pick}}" style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0">
+<sc-if value="{{c.selected}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true">✓</span></sc-if>
+<span>{{c.label}}</span>
+</label>
+</sc-for>
+</div>
+</fieldset>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="stelle-notiz" style="font-size: 14px; font-weight: 500; color: #14181b">Notiz zur Stelle</label>
+<input id="stelle-notiz" type="text" value="{{draftNote}}" onChange="{{setDraftNote}}" placeholder="Was ist aufgefallen?" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p style="margin: 0; font-size: 14px; font-weight: 500; color: #14181b">Fotos zur Stelle</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-for list="{{draftPhotos}}" as="f" hint-placeholder-count="1">
+<span role="img" aria-label="{{f.label}}" style="display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 64px; height: 64px; border-radius: 10px; background: #f4f5f7; color: #5a6169; font-size: 12px; font-weight: 600"><svg viewBox="0 0 20 20" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2l1.2-2h4.6l1.2 2h2A1.5 1.5 0 0 1 17 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"></path><circle cx="10" cy="10.5" r="3"></circle></svg>{{f.short}}</span>
+</sc-for>
+<button type="button" onClick="{{addDraftPhoto}}" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Foto hinzufügen</button>
+</div>
+<p style="margin: 0; font-size: 14px; color: #5a6169">In der Vorschau wird nur die Anzahl mitgeführt. Es wird nichts hochgeladen.</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" onClick="{{saveDraft}}" disabled="{{saveDisabled}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: {{saveBorder}}; border-radius: 10px; background: {{saveBg}}; color: {{saveFg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: {{saveCursor}}">{{saveLabel}}</button>
+<button type="button" onClick="{{cancelDraft}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Abbrechen</button>
+<sc-if value="{{isEditing}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{removeMarker}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #7a2418; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Entfernen</button>
+</sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{noDraft}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 12px">
+<button type="button" onClick="{{openWithoutModel}}" style="display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">Bauteil aus Liste wählen</button>
+</div>
+</sc-if>
+
+<sc-if value="{{hasMarkers}}" hint-placeholder-val="{{ true }}">
+<ol aria-label="Markierte Stellen" style="list-style: none; margin: 12px 0 0; padding: 0; border: 1px solid #e6e8eb; border-radius: 14px">
+<sc-for list="{{markerRows}}" as="m" hint-placeholder-count="2">
+<li style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-top: {{m.divider}}">
+<span aria-hidden="true" style="flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; margin-top: 2px; border-radius: {{m.pinRadius}}; background: {{m.pinBg}}; color: {{m.pinFg}}; font-size: 14px; font-weight: 800">{{m.n}}</span>
+<div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px">
+<span style="font-size: 15px; font-weight: 600; color: #14181b">{{m.label}}</span>
+<span style="display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 0 12px; box-sizing: border-box; border-radius: 999px; background: {{m.sevBg}}; color: {{m.sevFg}}; font-size: 14px; font-weight: 600"><span aria-hidden="true">{{m.sevSymbol}}</span>{{m.sevLabel}}</span>
+</div>
+<span style="font-size: 14px; color: #5a6169">{{m.checkText}}</span>
+<span style="font-size: 14px; color: {{m.noteColor}}">{{m.note}}</span>
+<sc-if value="{{m.hasPhotos}}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: #5a6169"><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h2l1.2-2h4.6l1.2 2h2A1.5 1.5 0 0 1 17 7.5v7a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z"></path><circle cx="10" cy="10.5" r="3"></circle></svg>{{m.photoText}}</span>
+</sc-if>
+</div>
+<button type="button" onClick="{{m.edit}}" aria-label="{{m.editLabel}}" style="flex-shrink: 0; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer">Ändern</button>
+</li>
+</sc-for>
+</ol>
+</sc-if>
+</section>
+
+<fieldset style="min-width: 0; margin: 0; padding: 16px; border: 1px solid #e6e8eb; border-radius: 14px">
+<legend style="padding: 0 4px; font-size: 14px; font-weight: 500; color: #14181b">Prüfpunkte</legend>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{checkRows}}" as="r" hint-placeholder-count="12">
+<li style="padding: {{r.pad}}; border-top: {{r.divider}}">
+<p style="margin: 0; font-size: 15px; color: #14181b">{{r.check}}</p>
+<div role="radiogroup" aria-label="{{r.check}}" style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px">
+<sc-for list="{{r.chips}}" as="c" hint-placeholder-count="3">
+<label style="position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; box-sizing: border-box; border: 1px solid {{c.border}}; border-radius: 10px; background: {{c.bg}}; color: {{c.fg}}; font-size: 14px; font-weight: {{c.weight}}; cursor: pointer">
+<input type="radio" name="{{c.name}}" value="{{c.value}}" checked="{{c.selected}}" onChange="{{c.pick}}" style="position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0">
+<sc-if value="{{c.selected}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true">✓</span></sc-if>
+<span>{{c.label}}</span>
+</label>
+</sc-for>
+</div>
+<sc-if value="{{r.hasMarkers}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 0 12px; margin-top: 4px">
+<span style="font-size: 14px; color: #5a6169">{{r.markerText}}</span>
+<button type="button" onClick="{{r.show}}" style="min-height: 44px; padding: 0; border: 0; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer">Am Rad zeigen</button>
+</div>
+</sc-if>
+<sc-if value="{{r.offerMark}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{r.show}}" style="min-height: 44px; margin-top: 4px; padding: 0; border: 0; background: transparent; color: #004429; font-family: inherit; font-size: 14px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; cursor: pointer">Stelle am Rad markieren</button>
+</sc-if>
+<sc-if value="{{r.focused}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 14px; color: #004429">Oben am Rad hervorgehoben. Tippen Sie dort auf die betroffene Stelle.</p>
+</sc-if>
+<sc-if value="{{r.notOk}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px">
+<label for="{{r.noteId}}" style="font-size: 14px; font-weight: 500; color: #14181b">{{r.noteLabel}}</label>
+<input id="{{r.noteId}}" type="text" value="{{r.note}}" onChange="{{r.onNote}}" placeholder="Was ist aufgefallen?" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+</div>
+</sc-if>
+</li>
+</sc-for>
+</ul>
+</fieldset>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="notiz" style="font-size: 14px; font-weight: 500; color: #14181b">Notiz</label>
+<textarea id="notiz" rows="3" value="{{note}}" onChange="{{setNote}}" placeholder="Weitere Auffälligkeiten" style="box-sizing: border-box; width: 100%; padding: 12px 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px; line-height: 1.5; resize: vertical"></textarea>
+</div>
+
+<div>
+<p style="margin: 0; font-size: 14px; font-weight: 500; color: #14181b">Weitere Fotos</p>
+<p style="margin: 0 0 8px; font-size: 14px; color: #5a6169">Für Fotos vom ganzen Rad. Fotos zu einer Stelle hängen an der Stelle. In der Vorschau wird nur die Anzahl mitgeführt.</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" onClick="{{addPhoto}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Foto hinzufügen</button>
+<sc-if value="{{hasPhotos}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 14px; color: #5a6169">{{photoText}}</span>
+<button type="button" onClick="{{resetPhotos}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Zurücksetzen</button>
+</sc-if>
+</div>
+</div>
+
+<fieldset style="min-width: 0; margin: 8px 0 0; padding: 16px; border: 1px solid #e6e8eb; border-radius: 14px">
+<legend style="padding: 0 4px; font-size: 14px; font-weight: 500; color: #14181b">Bestätigung</legend>
+<p style="margin: 0; padding: 8px 12px; border-radius: 14px; background: #f4f5f7; font-size: 14px; color: #5a6169">Ich bestätige, dass ich das gesamte Fahrrad gründlich auf Sicherheit geprüft habe.</p>
+<canvas ref="{{setSig}}" aria-label="Unterschriftsfeld – mit Finger oder Maus unterschreiben" onPointerDown="{{sigDown}}" onPointerMove="{{sigMove}}" onPointerUp="{{sigUp}}" onPointerLeave="{{sigUp}}" style="display: block; box-sizing: border-box; width: 100%; max-width: 384px; height: 128px; margin-top: 12px; border: 1px solid #767c84; border-radius: 14px; background: #ffffff; touch-action: none"></canvas>
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; margin-top: 8px">
+<button type="button" onClick="{{clearSig}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: 1px solid #767c84; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Unterschrift löschen</button>
+<div style="flex: 1 1 224px; min-width: 0; display: flex; flex-direction: column; gap: 6px">
+<label for="unterschrift-name" style="font-size: 14px; font-weight: 500; color: #14181b">Oder Namen tippen</label>
+<input id="unterschrift-name" type="text" value="{{signedName}}" onChange="{{setSignedName}}" placeholder="Vorname Nachname" style="box-sizing: border-box; width: 100%; height: 48px; padding: 0 16px; border: 1px solid #767c84; border-radius: 10px; background: #ffffff; color: #14181b; font-family: inherit; font-size: 16px">
+</div>
+</div>
+</fieldset>
+
+<div style="display: flex; flex-direction: column; gap: 12px; padding-top: 16px; border-top: 1px solid #e6e8eb">
+<p style="margin: 0; font-size: 14px; color: #5a6169">{{summaryText}}</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" onClick="{{submit}}" disabled="{{submitDisabled}}" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; box-sizing: border-box; border: {{submitBorder}}; border-radius: 10px; background: {{submitBg}}; color: {{submitFg}}; font-family: inherit; font-size: 16px; font-weight: 700; cursor: {{submitCursor}}">Check-Up in die Vorschau übernehmen</button>
+<button type="button" style="display: inline-flex; align-items: center; justify-content: center; height: 48px; padding: 0 20px; border: 0; border-radius: 10px; background: transparent; color: #004429; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer">Zurück</button>
+</div>
+<sc-if value="{{showSubmitHint}}" hint-placeholder-val="{{ true }}">
+<p style="margin: 0; font-size: 14px; color: #5a6169">{{submitHint}}</p>
+</sc-if>
+</div>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"beispiel":{"editor":"boolean","default":true,"section":"Vorschau"},"$preview":{"width":390,"height":3700}}'>
+// Prüfpunkte für die Bauart Load 60 mit Riemen. Eine andere Bauart bringt
+// ihre eigene Liste mit (etwa „Kette und Antrieb" statt „Riemen und Antrieb").
+var CHECKS = [
+  'Reifen und Luftdruck',
+  'Speichen',
+  'Bremsen',
+  'Riemen und Antrieb',
+  'Licht vorne',
+  'Licht hinten',
+  'Akku-Zustand',
+  'Schrauben und Sattel fest',
+  'Klingel',
+  'Schutzbleche',
+  'Ständer',
+  'Transportbox',
+];
+
+// Bauteile am Modell: Kennung, Name, Prüfpunkt (null = kein eigener Prüfpunkt).
+var PARTS = [
+  ['reifen-vorne', 'Reifen vorne', 'Reifen und Luftdruck'],
+  ['reifen-hinten', 'Reifen hinten', 'Reifen und Luftdruck'],
+  ['laufrad-vorne', 'Speichen und Felge vorne', 'Speichen'],
+  ['laufrad-hinten', 'Speichen und Felge hinten', 'Speichen'],
+  ['bremse-vorne', 'Bremse vorne', 'Bremsen'],
+  ['bremse-hinten', 'Bremse hinten', 'Bremsen'],
+  ['bremsgriffe', 'Bremsgriffe', 'Bremsen'],
+  ['riemen', 'Riemen und Riemenscheiben', 'Riemen und Antrieb'],
+  ['nabenschaltung', 'Nabenschaltung', 'Riemen und Antrieb'],
+  ['kurbeln', 'Kurbeln und Pedale', 'Riemen und Antrieb'],
+  ['motor', 'Motor', 'Riemen und Antrieb'],
+  ['licht-vorne', 'Licht vorne', 'Licht vorne'],
+  ['licht-hinten', 'Licht hinten', 'Licht hinten'],
+  ['akku', 'Akku', 'Akku-Zustand'],
+  ['sattel', 'Sattel und Sattelstütze', 'Schrauben und Sattel fest'],
+  ['klingel', 'Klingel', 'Klingel'],
+  ['schutzblech-vorne', 'Schutzblech vorne', 'Schutzbleche'],
+  ['schutzblech-hinten', 'Schutzblech hinten', 'Schutzbleche'],
+  ['staender', 'Ständer', 'Ständer'],
+  ['transportbox', 'Transportbox', 'Transportbox'],
+  ['rahmen', 'Rahmen', null],
+  ['lenker', 'Lenker und Griffe', null],
+  ['display', 'Display', null],
+  ['lenkung', 'Lenkstange', null],
+  ['gabel', 'Federgabel', null],
+  ['daempfer', 'Dämpfer hinten', null],
+  ['gepaecktraeger', 'Gepäckträger', null],
+];
+var PART = {};
+var CHECK_PARTS = {};
+PARTS.forEach(function (p) {
+  PART[p[0]] = { label: p[1], check: p[2] };
+  if (p[2]) {
+    if (!CHECK_PARTS[p[2]]) CHECK_PARTS[p[2]] = [];
+    CHECK_PARTS[p[2]].push(p[0]);
+  }
+});
+// Blickwinkel für Prüfpunkte mit mehreren Bauteilen: [Azimut, Neigung, Abstand].
+var CHECK_VIEWS = {
+  'Reifen und Luftdruck': [12, 80, null],
+  Speichen: [12, 80, null],
+  Bremsen: [180, 80, null],
+  'Riemen und Antrieb': [-10, 82, 2.4],
+  Schutzbleche: [10, 74, null],
+};
+var RATINGS = [
+  { value: 'ok', label: 'In Ordnung' },
+  { value: 'beobachten', label: 'Beobachten' },
+  { value: 'problem', label: 'Problem' },
+];
+var SEVERITIES = [
+  { value: 'beobachten', label: 'Beobachten' },
+  { value: 'problem', label: 'Problem' },
+];
+var RANK = { ok: 0, beobachten: 1, problem: 2 };
+
+// Beispiel für die Leinwand. Ein echter Check-Up beginnt leer (VOR-03).
+var EXAMPLE = {
+  markers: [
+    { id: 'm1', zone: 'bremse-vorne', point: [1.05, 0.31, -0.06], severity: 'problem', note: 'Scheibe schleift beim Drehen', photos: 1 },
+    { id: 'm2', zone: 'reifen-hinten', point: [-1.151, 0.119, 0.027], severity: 'beobachten', note: 'Profil hinten fast abgefahren', photos: 0 },
+  ],
+  ratings: { Bremsen: 'problem', 'Reifen und Luftdruck': 'beobachten' },
+};
+
+function startState(example) {
+  return {
+    examiner: 'Lena Hartmann',
+    ratings: example ? Object.assign({}, EXAMPLE.ratings) : {},
+    notes: {},
+    markers: example
+      ? EXAMPLE.markers.map(function (m) {
+          return Object.assign({}, m);
+        })
+      : [],
+    draft: null,
+    focus: null,
+    focusCheck: null,
+    note: '',
+    photos: 0,
+    signedDrawn: false,
+    signedName: '',
+    submitted: false,
+  };
+}
+
+function chipLook(selected) {
+  return selected
+    ? { border: '#004429', bg: '#e1f0e4', fg: '#004429', weight: 500 }
+    : { border: '#767c84', bg: '#ffffff', fg: '#5a6169', weight: 400 };
+}
+
+function plural(n, one, many) {
+  return n + ' ' + (n === 1 ? one : many);
+}
+
+function photoTiles(count, stelle) {
+  var out = [];
+  for (var i = 1; i <= count; i++) {
+    out.push({ short: 'Foto ' + i, label: 'Foto ' + i + (stelle ? ' zu Stelle ' + stelle : '') });
+  }
+  return out;
+}
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var self = this;
+    this.example = props.beispiel !== false;
+    this.state = startState(this.example);
+    this.seq = 0;
+    this.sig = null;
+    this.drawing = false;
+    this.viewerEl = null;
+
+    this.setExaminer = function (e) {
+      self.setState({ examiner: e.target.value, submitted: false });
+    };
+    this.onPick = function (hit) {
+      self.pick(hit);
+    };
+    this.setDraftZone = function (e) {
+      var zone = e.target.value;
+      var d = self.state.draft;
+      if (!d) return;
+      // Aus der Liste gewählt: Der Pin springt an die Mitte des Bauteils.
+      self.setState({ draft: Object.assign({}, d, { zone: zone, point: null }) });
+    };
+    this.setDraftNote = function (e) {
+      var d = self.state.draft;
+      if (d) self.setState({ draft: Object.assign({}, d, { note: e.target.value }) });
+    };
+    this.addDraftPhoto = function () {
+      var d = self.state.draft;
+      if (d) self.setState({ draft: Object.assign({}, d, { photos: (d.photos || 0) + 1 }) });
+    };
+    this.saveDraft = function () {
+      self.commitDraft();
+    };
+    this.cancelDraft = function () {
+      self.setState({ draft: null });
+    };
+    this.removeMarker = function () {
+      var d = self.state.draft;
+      if (!d || !d.editingId) return;
+      self.setState({
+        markers: self.state.markers.filter(function (m) {
+          return m.id !== d.editingId;
+        }),
+        draft: null,
+        submitted: false,
+      });
+    };
+    this.openWithoutModel = function () {
+      self.setState({ draft: { zone: '', point: null, severity: 'problem', note: '', photos: 0, editingId: null }, focusCheck: null });
+    };
+    this.setNote = function (e) {
+      self.setState({ note: e.target.value });
+    };
+    this.addPhoto = function () {
+      self.setState({ photos: self.state.photos + 1 });
+    };
+    this.resetPhotos = function () {
+      self.setState({ photos: 0 });
+    };
+    this.setViewerRef = function (el) {
+      self.viewerEl = el;
+    };
+    this.setSig = function (el) {
+      self.sig = el;
+      if (el) self.fitSig();
+    };
+    this.sigDown = function (e) {
+      self.sigStart(e);
+    };
+    this.sigMove = function (e) {
+      self.sigDraw(e);
+    };
+    this.sigUp = function () {
+      self.drawing = false;
+    };
+    this.clearSig = function () {
+      self.sigClear();
+    };
+    this.setSignedName = function (e) {
+      self.setState({ signedName: e.target.value, submitted: false });
+    };
+    this.submit = function () {
+      self.setState({ submitted: true });
+    };
+  }
+
+  componentDidUpdate() {
+    var ex = this.props.beispiel !== false;
+    if (ex !== this.example) {
+      this.example = ex;
+      this.setState(startState(ex));
+    }
+  }
+
+  pick(hit) {
+    if (!hit || !PART[hit.zone]) return;
+    var s = this.state;
+    if (hit.markerId) {
+      var m = s.markers.filter(function (x) {
+        return x.id === hit.markerId;
+      })[0];
+      if (m) {
+        this.setState({
+          draft: { zone: m.zone, point: m.point, severity: m.severity, note: m.note, photos: m.photos || 0, editingId: m.id },
+          focusCheck: null,
+        });
+      }
+      return;
+    }
+    // Eine offene Stelle wandert mit: Notiz, Fotos und Bewertung bleiben erhalten.
+    var d = s.draft;
+    this.setState({
+      draft: {
+        zone: hit.zone,
+        point: hit.point,
+        severity: d ? d.severity : 'problem',
+        note: d ? d.note : '',
+        photos: d ? d.photos || 0 : 0,
+        editingId: d ? d.editingId : null,
+      },
+      focusCheck: null,
+      submitted: false,
+    });
+  }
+
+  commitDraft() {
+    var s = this.state;
+    var d = s.draft;
+    if (!d || !PART[d.zone]) return;
+    var note = (d.note || '').trim();
+    var entry = { zone: d.zone, point: d.point, severity: d.severity, note: note, photos: d.photos || 0 };
+    var markers;
+    if (d.editingId) {
+      markers = s.markers.map(function (m) {
+        return m.id === d.editingId ? Object.assign({ id: m.id }, entry) : m;
+      });
+    } else {
+      this.seq += 1;
+      markers = s.markers.concat([Object.assign({ id: 'm' + Date.now().toString(36) + this.seq }, entry)]);
+    }
+    // Die Markierung hebt die Bewertung ihres Prüfpunkts an, nie ab.
+    var ratings = Object.assign({}, s.ratings);
+    var check = PART[d.zone].check;
+    if (check && RANK[d.severity] > RANK[ratings[check] || 'ok']) ratings[check] = d.severity;
+    this.setState({ markers: markers, ratings: ratings, draft: null, submitted: false });
+  }
+
+  showOnBike(zones, view, check, editId) {
+    this.seq += 1;
+    var next = { focus: { zones: zones, view: view || null, token: this.seq }, focusCheck: check || null };
+    if (editId) {
+      var m = this.state.markers.filter(function (x) {
+        return x.id === editId;
+      })[0];
+      if (m) next.draft = { zone: m.zone, point: m.point, severity: m.severity, note: m.note, photos: m.photos || 0, editingId: m.id };
+    } else {
+      next.draft = null;
+    }
+    this.setState(next);
+    var el = this.viewerEl;
+    if (el && el.getBoundingClientRect) {
+      var r = el.getBoundingClientRect();
+      if (r.top < 0 || r.bottom > window.innerHeight) {
+        try {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } catch (err) {
+          /* ohne Rollen bleibt der Hinweis am Prüfpunkt */
+        }
+      }
+    }
+  }
+
+  fitSig() {
+    var el = this.sig;
+    if (!el) return;
+    var f = window.devicePixelRatio || 1;
+    var w = Math.max(1, Math.round(el.clientWidth * f));
+    var h = Math.max(1, Math.round(el.clientHeight * f));
+    if (el.width === w && el.height === h) return;
+    el.width = w;
+    el.height = h;
+    var g = el.getContext('2d');
+    g.setTransform(f, 0, 0, f, 0, 0);
+    g.lineWidth = 2;
+    g.lineCap = 'round';
+    g.lineJoin = 'round';
+    g.strokeStyle = '#14181b';
+  }
+
+  sigPos(e) {
+    var el = this.sig;
+    var r = el.getBoundingClientRect();
+    var sx = el.clientWidth / (r.width || 1);
+    var sy = el.clientHeight / (r.height || 1);
+    return { x: (e.clientX - r.left) * sx, y: (e.clientY - r.top) * sy };
+  }
+
+  sigStart(e) {
+    if (!this.sig) return;
+    if (!this.state.signedDrawn) this.fitSig();
+    try {
+      this.sig.setPointerCapture(e.pointerId);
+    } catch (err) {
+      /* ohne Capture geht es auch */
+    }
+    this.drawing = true;
+    var p = this.sigPos(e);
+    var g = this.sig.getContext('2d');
+    g.beginPath();
+    g.moveTo(p.x, p.y);
+  }
+
+  sigDraw(e) {
+    if (!this.drawing || !this.sig) return;
+    var p = this.sigPos(e);
+    var g = this.sig.getContext('2d');
+    g.lineTo(p.x, p.y);
+    g.stroke();
+    if (!this.state.signedDrawn) this.setState({ signedDrawn: true, submitted: false });
+  }
+
+  sigClear() {
+    var el = this.sig;
+    if (el) {
+      var g = el.getContext('2d');
+      g.save();
+      g.setTransform(1, 0, 0, 1, 0, 0);
+      g.clearRect(0, 0, el.width, el.height);
+      g.restore();
+    }
+    this.setState({ signedDrawn: false, signedName: '', submitted: false });
+  }
+
+  renderVals() {
+    var self = this;
+    var s = this.state;
+    var d = s.draft;
+    var markers = s.markers;
+
+    var viewerMarkers = markers.map(function (m) {
+      var src = d && d.editingId === m.id ? d : m;
+      return { id: m.id, zone: src.zone, point: src.point, severity: src.severity };
+    });
+    var editIndex = -1;
+    markers.forEach(function (m, i) {
+      if (d && d.editingId === m.id) editIndex = i;
+    });
+    var part = d && PART[d.zone] ? PART[d.zone] : null;
+    var draftNumber = d ? (editIndex >= 0 ? editIndex + 1 : markers.length + 1) : '';
+
+    var markerRows = markers.map(function (m, i) {
+      var p = PART[m.zone] || { label: m.zone, check: null };
+      var problem = m.severity === 'problem';
+      var photos = m.photos || 0;
+      return {
+        n: i + 1,
+        label: p.label,
+        checkText: p.check ? 'Prüfpunkt: ' + p.check : 'Weitere Stelle, kein eigener Prüfpunkt',
+        sevLabel: problem ? 'Problem' : 'Beobachten',
+        sevSymbol: problem ? '×' : '!',
+        sevBg: problem ? '#f4e3e0' : '#f3ead6',
+        sevFg: problem ? '#7a2418' : '#5a4300',
+        pinBg: problem ? '#b3261e' : '#f0b43c',
+        pinFg: problem ? '#ffffff' : '#2a1e00',
+        pinRadius: problem ? '999px' : '7px',
+        note: m.note || 'Ohne Notiz',
+        noteColor: m.note ? '#14181b' : '#5a6169',
+        hasPhotos: photos > 0,
+        photoText: photos === 1 ? '1 Foto' : photos + ' Fotos',
+        divider: i === 0 ? 'none' : '1px solid #e6e8eb',
+        editLabel: 'Stelle ' + (i + 1) + ' ändern: ' + p.label,
+        edit: function () {
+          self.showOnBike([m.zone], null, null, m.id);
+        },
+      };
+    });
+
+    var problems = [];
+    var watch = [];
+    var checkRows = CHECKS.map(function (check, ci) {
+      var rating = s.ratings[check] || 'ok';
+      if (rating === 'problem') problems.push(check);
+      if (rating === 'beobachten') watch.push(check);
+      var mine = [];
+      markers.forEach(function (m, i) {
+        if (PART[m.zone] && PART[m.zone].check === check) mine.push(i + 1);
+      });
+      return {
+        check: check,
+        pad: ci === 0 ? '0 0 12px' : ci === CHECKS.length - 1 ? '12px 0 0' : '12px 0',
+        divider: ci === 0 ? 'none' : '1px solid #e6e8eb',
+        chips: RATINGS.map(function (r) {
+          var on = rating === r.value;
+          var look = chipLook(on);
+          return {
+            name: 'pruefpunkt-' + ci,
+            value: r.value,
+            label: r.label,
+            selected: on,
+            border: look.border,
+            bg: look.bg,
+            fg: look.fg,
+            weight: look.weight,
+            pick: function () {
+              var ratings = Object.assign({}, self.state.ratings);
+              ratings[check] = r.value;
+              self.setState({ ratings: ratings, submitted: false });
+            },
+          };
+        }),
+        hasMarkers: mine.length > 0,
+        markerText: mine.length === 1 ? 'Am Rad markiert: Stelle ' + mine[0] : 'Am Rad markiert: Stellen ' + mine.join(', '),
+        offerMark: rating !== 'ok' && mine.length === 0,
+        focused: s.focusCheck === check && !d,
+        show: function () {
+          self.showOnBike(CHECK_PARTS[check] || [], CHECK_VIEWS[check] || null, check, null);
+        },
+        notOk: rating !== 'ok',
+        noteId: 'notiz-pruefpunkt-' + ci,
+        noteLabel: 'Notiz zu ' + check,
+        note: s.notes[check] || '',
+        onNote: function (e) {
+          var notes = Object.assign({}, self.state.notes);
+          notes[check] = e.target.value;
+          self.setState({ notes: notes });
+        },
+      };
+    });
+
+    var extraProblem = 0;
+    var extraWatch = 0;
+    markers.forEach(function (m) {
+      if (PART[m.zone] && !PART[m.zone].check) {
+        if (m.severity === 'problem') extraProblem += 1;
+        else extraWatch += 1;
+      }
+    });
+    var nProblem = problems.length + extraProblem;
+    var nWatch = watch.length + extraWatch;
+    var summaryText =
+      plural(nProblem, 'Problem', 'Probleme') + ' · ' + nWatch + ' zu beobachten · ' + plural(markers.length, 'Stelle', 'Stellen') + ' am Rad markiert';
+
+    var submittedDone = [{ text: 'Check-Up im Verlauf von Lastenrad 3 ergänzt' }];
+    submittedDone.push({
+      text: problems.length > 0 ? plural(problems.length, 'Problem', 'Probleme') + ' festgehalten: ' + problems.join(', ') : 'Keine Probleme festgehalten',
+    });
+    if (watch.length > 0) submittedDone.push({ text: 'Zu beobachten: ' + watch.join(', ') });
+    if (markers.length > 0) submittedDone.push({ text: plural(markers.length, 'Stelle', 'Stellen') + ' am Rad markiert, im Verlauf des Rads zu sehen' });
+
+    var signed = s.signedDrawn || s.signedName.trim().length > 0;
+    var named = s.examiner.trim().length > 0;
+    var submitDisabled = !named || !signed || !!d || s.submitted;
+    var submitHint = '';
+    if (s.submitted) submitHint = '';
+    else if (d) submitHint = 'Eine Markierung ist noch offen. Setzen oder verwerfen Sie sie zuerst.';
+    else if (!named) submitHint = 'Die prüfende Person fehlt noch.';
+    else if (!signed) submitHint = 'Die Bestätigung fehlt noch. Sie können unterschreiben oder Ihren Namen tippen.';
+
+    var saveDisabled = !part;
+    var draftCheckText = !d
+      ? ''
+      : !part
+        ? 'Wählen Sie das Bauteil am Rad oder in der Liste.'
+        : part.check
+          ? 'Gehört zum Prüfpunkt „' + part.check + '“.'
+          : 'Kein eigener Prüfpunkt. Wird als weitere Stelle festgehalten.';
+
+    return {
+      examiner: s.examiner,
+      setExaminer: this.setExaminer,
+      markerCount: markers.length ? plural(markers.length, 'Stelle', 'Stellen') : '',
+      setViewerRef: this.setViewerRef,
+      viewerHeight: 340,
+      viewerMarkers: viewerMarkers,
+      viewerDraft: d && !d.editingId && d.zone ? { zone: d.zone, point: d.point } : null,
+      activeMarker: d && d.editingId ? d.editingId : null,
+      highlight: d && d.zone ? [d.zone] : s.focusCheck ? CHECK_PARTS[s.focusCheck] || [] : [],
+      focus: s.focus,
+      viewerHint: d ? 'Antippen versetzt den Pin' : s.focusCheck ? 'Betroffene Stelle antippen' : 'Ziehen dreht · Antippen markiert',
+      onPick: this.onPick,
+
+      hasDraft: !!d,
+      noDraft: !d,
+      draftNumber: draftNumber,
+      draftTitle: part ? part.label : 'Neue Stelle',
+      draftCheckText: draftCheckText,
+      draftZone: d ? d.zone : '',
+      setDraftZone: this.setDraftZone,
+      severityChips: SEVERITIES.map(function (v) {
+        var on = !!d && d.severity === v.value;
+        var look = chipLook(on);
+        return {
+          value: v.value,
+          label: v.label,
+          selected: on,
+          border: look.border,
+          bg: look.bg,
+          fg: look.fg,
+          weight: look.weight,
+          pick: function () {
+            var cur = self.state.draft;
+            if (cur) self.setState({ draft: Object.assign({}, cur, { severity: v.value }) });
+          },
+        };
+      }),
+      draftNote: d ? d.note : '',
+      setDraftNote: this.setDraftNote,
+      draftPhotos: d ? photoTiles(d.photos || 0, draftNumber) : [],
+      addDraftPhoto: this.addDraftPhoto,
+      saveLabel: d && d.editingId ? 'Änderung übernehmen' : 'Markierung setzen',
+      saveDisabled: saveDisabled,
+      saveBorder: saveDisabled ? '1px dashed #767c84' : '1px solid transparent',
+      saveBg: saveDisabled ? 'transparent' : '#004429',
+      saveFg: saveDisabled ? '#5a6169' : '#ffffff',
+      saveCursor: saveDisabled ? 'not-allowed' : 'pointer',
+      saveDraft: this.saveDraft,
+      cancelDraft: this.cancelDraft,
+      isEditing: !!(d && d.editingId),
+      removeMarker: this.removeMarker,
+      openWithoutModel: this.openWithoutModel,
+      hasMarkers: markers.length > 0,
+      markerRows: markerRows,
+
+      checkRows: checkRows,
+      note: s.note,
+      setNote: this.setNote,
+      hasPhotos: s.photos > 0,
+      photoText: s.photos === 1 ? '1 Foto vorgemerkt' : s.photos + ' Fotos vorgemerkt',
+      addPhoto: this.addPhoto,
+      resetPhotos: this.resetPhotos,
+
+      setSig: this.setSig,
+      sigDown: this.sigDown,
+      sigMove: this.sigMove,
+      sigUp: this.sigUp,
+      clearSig: this.clearSig,
+      signedName: s.signedName,
+      setSignedName: this.setSignedName,
+
+      summaryText: summaryText,
+      submit: this.submit,
+      submitDisabled: submitDisabled,
+      submitBorder: submitDisabled ? '1px dashed #767c84' : '1px solid transparent',
+      submitBg: submitDisabled ? 'transparent' : '#004429',
+      submitFg: submitDisabled ? '#5a6169' : '#ffffff',
+      submitCursor: submitDisabled ? 'not-allowed' : 'pointer',
+      showSubmitHint: submitHint.length > 0,
+      submitHint: submitHint,
+      submitted: s.submitted,
+      submittedDone: submittedDone,
+    };
+  }
+}
+</script>
+</body>
+</html>

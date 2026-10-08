@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Lastenrad 3D</title>
+<script src="./support.js"></script>
+<script src="/_blob/e48c087ce852d236e276adba35423f19"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:'Hanken Grotesk';font-style:normal;font-weight:100 900;font-display:swap;src:url(/_blob/439ec7841140c360c7bdf553824a2c42) format('woff2')}
+body{margin:0}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: {{height}}px; border-radius: 16px; overflow: hidden; background: #f4f5f7; font-family: 'Hanken Grotesk', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #14181b">
+<canvas ref="{{setCanvas}}" role="img" aria-label="{{canvasLabel}}" style="position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab"></canvas>
+<div style="position: absolute; left: 12px; top: 12px; right: 72px; display: flex; pointer-events: none">
+<p style="margin: 0; display: inline-flex; align-items: center; min-height: 32px; padding: 5px 12px; box-sizing: border-box; border-radius: 999px; background: {{infoBg}}; color: {{infoFg}}; font-size: 14px; font-weight: 600; line-height: 1.3">{{infoText}}</p>
+</div>
+<div role="group" aria-label="Zoom" style="position: absolute; right: 12px; top: 12px; display: flex; flex-direction: column; gap: 2px; padding: 3px; background: #ffffff; border: 1px solid #e6e8eb; border-radius: 12px">
+<button type="button" aria-label="Vergrößern" onClick="{{zoomIn}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 9px; background: transparent; color: #004429; cursor: pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M10 4v12M4 10h12"></path></svg></button>
+<button type="button" aria-label="Verkleinern" onClick="{{zoomOut}}" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; padding: 0; border: 0; border-radius: 9px; background: transparent; color: #004429; cursor: pointer"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 10h12"></path></svg></button>
+</div>
+<div style="position: absolute; left: 8px; right: 8px; bottom: 8px; display: flex; justify-content: center; pointer-events: none">
+<div role="group" aria-label="Ansicht" style="display: flex; gap: 2px; max-width: 100%; overflow-x: auto; padding: 3px; background: #ffffff; border: 1px solid #e6e8eb; border-radius: 12px; pointer-events: auto">
+<sc-for list="{{views}}" as="v" hint-placeholder-count="5">
+<button type="button" aria-pressed="{{v.pressed}}" onClick="{{v.pick}}" style="flex: 0 0 auto; min-width: 44px; height: 44px; padding: 0 10px; border: 0; border-radius: 9px; background: {{v.bg}}; color: {{v.fg}}; font-family: inherit; font-size: 14px; font-weight: 700; cursor: pointer">{{v.label}}</button>
+</sc-for>
+</div>
+</div>
+<sc-if value="{{failed}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box; background: #f4f5f7; text-align: center; color: #5a6169; font-size: 15px; line-height: 1.5">Das 3D-Modell lässt sich in diesem Browser nicht anzeigen. Bauteile können Sie weiter über die Liste wählen.</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"height":{"editor":null},"markers":{"editor":null},"draft":{"editor":null},"activeMarker":{"editor":null},"highlight":{"editor":null},"focus":{"editor":null},"hint":{"editor":null},"onPick":{"editor":null},"$preview":{"width":960,"height":640}}'>
+// ---------------------------------------------------------------------------
+// Lastenrad Bauart Load 60 mit Riemenantrieb und Nabenschaltung, mit
+// Transportbox. Einheiten in Metern. x zeigt nach vorn (Vorderrad), y nach
+// oben, z nach rechts (Antriebsseite). Boden bei y = 0.
+// ---------------------------------------------------------------------------
+
+var BIKE_ZONES = {
+  'reifen-vorne': { label: 'Reifen vorne', check: 'Reifen und Luftdruck', view: [60, 76, 1.6] },
+  'reifen-hinten': { label: 'Reifen hinten', check: 'Reifen und Luftdruck', view: [-40, 76, 1.8] },
+  'laufrad-vorne': { label: 'Speichen und Felge vorne', check: 'Speichen', view: [60, 78, 1.5] },
+  'laufrad-hinten': { label: 'Speichen und Felge hinten', check: 'Speichen', view: [-40, 78, 1.7] },
+  'bremse-vorne': { label: 'Bremse vorne', check: 'Bremsen', view: [150, 80, 1.5] },
+  'bremse-hinten': { label: 'Bremse hinten', check: 'Bremsen', view: [-150, 80, 1.5] },
+  bremsgriffe: { label: 'Bremsgriffe', check: 'Bremsen', view: [-90, 48, 1.3] },
+  riemen: { label: 'Riemen und Riemenscheiben', check: 'Riemen und Antrieb', view: [-6, 82, 1.8] },
+  nabenschaltung: { label: 'Nabenschaltung', check: 'Riemen und Antrieb', view: [-30, 80, 1.2] },
+  kurbeln: { label: 'Kurbeln und Pedale', check: 'Riemen und Antrieb', view: [25, 80, 1.4] },
+  motor: { label: 'Motor', check: 'Riemen und Antrieb', view: [20, 82, 1.3] },
+  akku: { label: 'Akku', check: 'Akku-Zustand', view: [15, 74, 1.3] },
+  'licht-vorne': { label: 'Licht vorne', check: 'Licht vorne', view: [70, 72, 1.3] },
+  'licht-hinten': { label: 'Licht hinten', check: 'Licht hinten', view: [-110, 72, 1.3] },
+  sattel: { label: 'Sattel und Sattelstütze', check: 'Schrauben und Sattel fest', view: [-35, 62, 1.4] },
+  klingel: { label: 'Klingel', check: 'Klingel', view: [-140, 50, 1.1] },
+  'schutzblech-vorne': { label: 'Schutzblech vorne', check: 'Schutzbleche', view: [65, 66, 1.5] },
+  'schutzblech-hinten': { label: 'Schutzblech hinten', check: 'Schutzbleche', view: [-60, 66, 1.8] },
+  staender: { label: 'Ständer', check: 'Ständer', view: [30, 84, 1.8] },
+  transportbox: { label: 'Transportbox', check: 'Transportbox', view: [45, 64, 2.2] },
+  rahmen: { label: 'Rahmen', check: null, view: [20, 74, 3.0] },
+  lenker: { label: 'Lenker und Griffe', check: null, view: [-110, 52, 1.4] },
+  display: { label: 'Display', check: null, view: [-90, 42, 1.0] },
+  lenkung: { label: 'Lenkstange', check: null, view: [25, 86, 2.0] },
+  gabel: { label: 'Federgabel', check: null, view: [70, 78, 1.5] },
+  daempfer: { label: 'Dämpfer hinten', check: null, view: [10, 72, 1.3] },
+  gepaecktraeger: { label: 'Gepäckträger', check: null, view: [-55, 55, 1.7] },
+};
+
+// Wortmarke „Own Motion" mit Unterzeile, Pfad unverändert aus
+// marke/logo/own-motion-block-unterzeile-papier.svg (viewBox 58.07 -8.87 5330.93 2492.83).
+var OM_LOGO_VIEWBOX = [58.07, -8.87, 5330.93, 2492.83];
+var OM_LOGO_D = 'M58.07 581.49Q58.07 405.67 126.62 271.79Q195.17 137.91 318.57 64.52Q441.96 -8.87 601.65 -8.87Q762.95 -8.87 886.34 64.52Q1009.74 137.91 1078.29 271.79Q1146.84 405.67 1146.84 581.49Q1146.84 755.69 1078.29 889.57Q1009.74 1023.45 885.54 1096.84Q761.34 1170.23 601.65 1170.23Q441.96 1170.23 318.57 1096.03Q195.17 1021.84 126.62 888.76Q58.07 755.69 58.07 581.49ZM914.57 581.49Q914.57 410.51 829.89 311.31Q745.21 212.11 601.65 212.11Q458.09 212.11 373.41 310.5Q288.73 408.9 288.73 581.49Q288.73 752.46 373.41 850.86Q458.09 949.25 601.65 949.25Q745.21 949.25 829.89 850.05Q914.57 750.85 914.57 581.49ZM1222.86 18.55L1464.81 18.55L1689.02 787.95L1889.03 84.68L2116.46 84.68L2316.47 787.95L2540.68 18.55L2781.02 18.55L2440.67 1142.81L2218.08 1142.81L1984.2 360.51L2021.29 360.51L1787.41 1142.81L1563.2 1142.81L1222.86 18.55ZM2902.2 18.55L3139.31 18.55L3645.79 839.57L3586.11 839.57L3586.11 18.55L3818.38 18.55L3818.38 1142.81L3579.66 1142.81L3074.79 320.18L3132.86 320.18L3132.86 1142.81L2902.2 1142.81L2902.2 18.55ZM1313 1312.86L1522 1312.86L1694 1803.86L1668 1803.86L1840 1312.86L2049 1312.86L2049 2009.86L1906 2009.86L1906 1480.86L1919 1482.86L1751 1947.86L1612 1947.86L1443 1482.86L1456 1480.86L1456 2009.86L1313 2009.86L1313 1312.86ZM2208 1661.86Q2208 1552.86 2250.5 1469.86Q2293 1386.86 2369.5 1341.36Q2446 1295.86 2545 1295.86Q2645 1295.86 2721.5 1341.36Q2798 1386.86 2840.5 1469.86Q2883 1552.86 2883 1661.86Q2883 1769.86 2840.5 1852.86Q2798 1935.86 2721 1981.36Q2644 2026.86 2545 2026.86Q2446 2026.86 2369.5 1980.86Q2293 1934.86 2250.5 1852.36Q2208 1769.86 2208 1661.86ZM2739 1661.86Q2739 1555.86 2686.5 1494.36Q2634 1432.86 2545 1432.86Q2456 1432.86 2403.5 1493.86Q2351 1554.86 2351 1661.86Q2351 1767.86 2403.5 1828.86Q2456 1889.86 2545 1889.86Q2634 1889.86 2686.5 1828.36Q2739 1766.86 2739 1661.86ZM3198 1440.86L2988 1440.86L2988 1312.86L3552 1312.86L3552 1440.86L3343 1440.86L3343 2009.86L3198 2009.86L3198 1440.86ZM3685 1312.86L3828 1312.86L3828 2009.86L3685 2009.86L3685 1312.86ZM3987 1661.86Q3987 1552.86 4029.5 1469.86Q4072 1386.86 4148.5 1341.36Q4225 1295.86 4324 1295.86Q4424 1295.86 4500.5 1341.36Q4577 1386.86 4619.5 1469.86Q4662 1552.86 4662 1661.86Q4662 1769.86 4619.5 1852.86Q4577 1935.86 4500 1981.36Q4423 2026.86 4324 2026.86Q4225 2026.86 4148.5 1980.86Q4072 1934.86 4029.5 1852.36Q3987 1769.86 3987 1661.86ZM4518 1661.86Q4518 1555.86 4465.5 1494.36Q4413 1432.86 4324 1432.86Q4235 1432.86 4182.5 1493.86Q4130 1554.86 4130 1661.86Q4130 1767.86 4182.5 1828.86Q4235 1889.86 4324 1889.86Q4413 1889.86 4465.5 1828.36Q4518 1766.86 4518 1661.86ZM4821 1312.86L4968 1312.86L5282 1821.86L5245 1821.86L5245 1312.86L5389 1312.86L5389 2009.86L5241 2009.86L4928 1499.86L4964 1499.86L4964 2009.86L4821 2009.86L4821 1312.86ZM58.07 2341.36L104.07 2341.36Q151.67 2341.36 151.67 2381.76Q151.67 2401.96 139.47 2412.56Q127.27 2423.16 104.07 2423.16L83.67 2423.16L83.67 2480.76L58.07 2480.76L58.07 2341.36ZM125.87 2381.96Q125.87 2372.56 119.87 2368.56Q113.87 2364.56 101.47 2364.56L83.67 2364.56L83.67 2400.16L101.47 2400.16Q113.47 2400.16 119.67 2395.96Q125.87 2391.76 125.87 2381.96ZM251.33 2341.36L277.13 2341.36L277.13 2397.16L337.33 2397.16L337.33 2341.36L363.13 2341.36L363.13 2480.76L337.33 2480.76L337.33 2420.96L277.13 2420.96L277.13 2480.76L251.33 2480.76L251.33 2341.36ZM507.2 2426.16L458.2 2341.36L487.8 2341.36L519.4 2400.56L552.2 2341.36L581.6 2341.36L533 2426.16L533 2480.76L507.2 2480.76L507.2 2426.16ZM668.86 2440.96L694.06 2434.76Q696.06 2447.36 703.86 2453.86Q711.66 2460.36 723.66 2460.36Q733.06 2460.36 739.26 2455.46Q745.46 2450.56 745.46 2442.36Q745.46 2434.76 739.16 2430.06Q732.86 2425.36 718.06 2419.76Q697.46 2411.76 687.86 2401.86Q678.26 2391.96 678.26 2376.56Q678.26 2365.36 683.76 2356.66Q689.26 2347.96 699.26 2343.06Q709.26 2338.16 722.26 2338.16Q736.26 2338.16 747.16 2344.76Q758.06 2351.36 764.66 2363.96L744.06 2376.56Q735.26 2361.16 721.46 2361.16Q714.06 2361.16 709.06 2365.36Q704.06 2369.56 704.06 2375.96Q704.06 2382.76 710.16 2387.46Q716.26 2392.16 731.46 2397.96Q751.86 2405.76 761.46 2415.46Q771.06 2425.16 771.06 2440.76Q771.06 2453.16 764.96 2462.76Q758.86 2472.36 747.86 2477.86Q736.86 2483.36 722.66 2483.36Q700.46 2483.36 686.16 2471.96Q671.86 2460.56 668.86 2440.96ZM872.52 2341.36L898.32 2341.36L898.32 2480.76L872.52 2480.76L872.52 2341.36ZM1000.39 2411.16Q1000.39 2389.56 1008.79 2372.96Q1017.19 2356.36 1032.39 2347.26Q1047.59 2338.16 1067.19 2338.16Q1086.99 2338.16 1102.19 2347.26Q1117.39 2356.36 1125.79 2372.86Q1134.19 2389.36 1134.19 2411.16Q1134.19 2432.76 1125.69 2449.26Q1117.19 2465.76 1101.99 2474.86Q1086.79 2483.96 1067.19 2483.96Q1047.39 2483.96 1032.29 2474.86Q1017.19 2465.76 1008.79 2449.26Q1000.39 2432.76 1000.39 2411.16ZM1107.99 2411.16Q1107.99 2388.96 1096.99 2375.96Q1085.99 2362.96 1067.19 2362.96Q1048.39 2362.96 1037.39 2375.86Q1026.39 2388.76 1026.39 2411.16Q1026.39 2433.36 1037.39 2446.26Q1048.39 2459.16 1067.19 2459.16Q1085.99 2459.16 1096.99 2446.16Q1107.99 2433.16 1107.99 2411.16ZM1268.25 2364.56L1225.05 2364.56L1225.05 2341.36L1337.45 2341.36L1337.45 2364.56L1294.45 2364.56L1294.45 2480.76L1268.25 2480.76L1268.25 2364.56ZM1433.92 2341.36L1459.72 2341.36L1459.72 2397.16L1519.92 2397.16L1519.92 2341.36L1545.72 2341.36L1545.72 2480.76L1519.92 2480.76L1519.92 2420.96L1459.72 2420.96L1459.72 2480.76L1433.92 2480.76L1433.92 2341.36ZM1653.38 2341.36L1746.18 2341.36L1746.18 2364.56L1679.18 2364.56L1679.18 2397.76L1741.78 2397.76L1741.78 2420.76L1679.18 2420.76L1679.18 2457.56L1746.18 2457.56L1746.18 2480.76L1653.38 2480.76L1653.38 2341.36ZM1849.85 2341.36L1895.85 2341.36Q1920.25 2341.36 1931.85 2351.96Q1943.45 2362.56 1943.45 2381.76Q1943.45 2400.76 1932.65 2411.26Q1921.85 2421.76 1901.45 2423.16Q1895.25 2423.36 1883.85 2423.36L1875.65 2423.36L1875.65 2480.76L1849.85 2480.76L1849.85 2341.36ZM1890.65 2420.36L1917.05 2417.16L1955.45 2480.76L1925.65 2480.76L1890.65 2420.36ZM1917.65 2382.16Q1917.65 2371.96 1911.15 2368.26Q1904.65 2364.56 1893.25 2364.56L1875.65 2364.56L1875.65 2400.16L1893.25 2400.16Q1904.45 2400.16 1911.05 2396.26Q1917.65 2392.36 1917.65 2382.16ZM2097.31 2341.36L2116.71 2341.36L2172.71 2480.76L2144.51 2480.76L2107.31 2379.56L2069.51 2480.76L2041.31 2480.76L2097.31 2341.36ZM2086.11 2430.36L2128.11 2430.36L2136.51 2453.56L2078.11 2453.56L2086.11 2430.36ZM2268.77 2341.36L2314.77 2341.36Q2362.37 2341.36 2362.37 2381.76Q2362.37 2401.96 2350.17 2412.56Q2337.97 2423.16 2314.77 2423.16L2294.37 2423.16L2294.37 2480.76L2268.77 2480.76L2268.77 2341.36ZM2336.57 2381.96Q2336.57 2372.56 2330.57 2368.56Q2324.57 2364.56 2312.17 2364.56L2294.37 2364.56L2294.37 2400.16L2312.17 2400.16Q2324.17 2400.16 2330.37 2395.96Q2336.57 2391.76 2336.57 2381.96ZM2462.04 2341.36L2487.84 2341.36L2487.84 2480.76L2462.04 2480.76L2462.04 2341.36ZM2595.5 2341.36L2688.3 2341.36L2688.3 2364.56L2621.3 2364.56L2621.3 2397.76L2683.9 2397.76L2683.9 2420.76L2621.3 2420.76L2621.3 2457.56L2688.3 2457.56L2688.3 2480.76L2595.5 2480.76L2595.5 2341.36ZM2924.83 2341.36L2970.83 2341.36Q3018.43 2341.36 3018.43 2381.76Q3018.43 2401.96 3006.23 2412.56Q2994.03 2423.16 2970.83 2423.16L2950.43 2423.16L2950.43 2480.76L2924.83 2480.76L2924.83 2341.36ZM2992.63 2381.96Q2992.63 2372.56 2986.63 2368.56Q2980.63 2364.56 2968.23 2364.56L2950.43 2364.56L2950.43 2400.16L2968.23 2400.16Q2980.23 2400.16 2986.43 2395.96Q2992.63 2391.76 2992.63 2381.96ZM3118.09 2341.36L3210.89 2341.36L3210.89 2364.56L3143.89 2364.56L3143.89 2397.76L3206.49 2397.76L3206.49 2420.76L3143.89 2420.76L3143.89 2457.56L3210.89 2457.56L3210.89 2480.76L3118.09 2480.76L3118.09 2341.36ZM3314.56 2341.36L3360.56 2341.36Q3384.96 2341.36 3396.56 2351.96Q3408.16 2362.56 3408.16 2381.76Q3408.16 2400.76 3397.36 2411.26Q3386.56 2421.76 3366.16 2423.16Q3359.96 2423.36 3348.56 2423.36L3340.36 2423.36L3340.36 2480.76L3314.56 2480.76L3314.56 2341.36ZM3355.36 2420.36L3381.76 2417.16L3420.16 2480.76L3390.36 2480.76L3355.36 2420.36ZM3382.36 2382.16Q3382.36 2371.96 3375.86 2368.26Q3369.36 2364.56 3357.96 2364.56L3340.36 2364.56L3340.36 2400.16L3357.96 2400.16Q3369.16 2400.16 3375.76 2396.26Q3382.36 2392.36 3382.36 2382.16ZM3650.69 2341.36L3676.49 2341.36L3676.49 2457.56L3735.89 2457.56L3735.89 2480.76L3650.69 2480.76L3650.69 2341.36ZM3876.55 2341.36L3895.95 2341.36L3951.95 2480.76L3923.75 2480.76L3886.55 2379.56L3848.75 2480.76L3820.55 2480.76L3876.55 2341.36ZM3865.35 2430.36L3907.35 2430.36L3915.75 2453.56L3857.35 2453.56L3865.35 2430.36ZM4040.22 2440.96L4065.42 2434.76Q4067.42 2447.36 4075.22 2453.86Q4083.02 2460.36 4095.02 2460.36Q4104.42 2460.36 4110.62 2455.46Q4116.82 2450.56 4116.82 2442.36Q4116.82 2434.76 4110.52 2430.06Q4104.22 2425.36 4089.42 2419.76Q4068.82 2411.76 4059.22 2401.86Q4049.62 2391.96 4049.62 2376.56Q4049.62 2365.36 4055.12 2356.66Q4060.62 2347.96 4070.62 2343.06Q4080.62 2338.16 4093.62 2338.16Q4107.62 2338.16 4118.52 2344.76Q4129.42 2351.36 4136.02 2363.96L4115.42 2376.56Q4106.62 2361.16 4092.82 2361.16Q4085.42 2361.16 4080.42 2365.36Q4075.42 2369.56 4075.42 2375.96Q4075.42 2382.76 4081.52 2387.46Q4087.62 2392.16 4102.82 2397.96Q4123.22 2405.76 4132.82 2415.46Q4142.42 2425.16 4142.42 2440.76Q4142.42 2453.16 4136.32 2462.76Q4130.22 2472.36 4119.22 2477.86Q4108.22 2483.36 4094.02 2483.36Q4071.82 2483.36 4057.52 2471.96Q4043.22 2460.56 4040.22 2440.96ZM4275.88 2364.56L4232.68 2364.56L4232.68 2341.36L4345.08 2341.36L4345.08 2364.56L4302.08 2364.56L4302.08 2480.76L4275.88 2480.76L4275.88 2364.56ZM4441.54 2341.36L4534.34 2341.36L4534.34 2364.56L4467.34 2364.56L4467.34 2397.76L4529.94 2397.76L4529.94 2420.76L4467.34 2420.76L4467.34 2457.56L4534.34 2457.56L4534.34 2480.76L4441.54 2480.76L4441.54 2341.36ZM4638.01 2341.36L4664.61 2341.36L4729.61 2446.96L4723.21 2446.96L4723.21 2341.36L4749.01 2341.36L4749.01 2480.76L4722.21 2480.76L4657.41 2374.96L4663.81 2374.96L4663.81 2480.76L4638.01 2480.76L4638.01 2341.36ZM4856.67 2341.36L4902.67 2341.36Q4927.07 2341.36 4938.67 2351.96Q4950.27 2362.56 4950.27 2381.76Q4950.27 2400.76 4939.47 2411.26Q4928.67 2421.76 4908.27 2423.16Q4902.07 2423.36 4890.67 2423.36L4882.47 2423.36L4882.47 2480.76L4856.67 2480.76L4856.67 2341.36ZM4897.47 2420.36L4923.87 2417.16L4962.27 2480.76L4932.47 2480.76L4897.47 2420.36ZM4924.47 2382.16Q4924.47 2371.96 4917.97 2368.26Q4911.47 2364.56 4900.07 2364.56L4882.47 2364.56L4882.47 2400.16L4900.07 2400.16Q4911.27 2400.16 4917.87 2396.26Q4924.47 2392.36 4924.47 2382.16ZM5104.14 2341.36L5123.54 2341.36L5179.54 2480.76L5151.34 2480.76L5114.14 2379.56L5076.34 2480.76L5048.14 2480.76L5104.14 2341.36ZM5092.94 2430.36L5134.94 2430.36L5143.34 2453.56L5084.94 2453.56L5092.94 2430.36ZM5275.6 2341.36L5316.2 2341.36Q5351 2341.36 5370 2359.86Q5389 2378.36 5389 2412.16Q5389 2445.36 5370.2 2463.06Q5351.4 2480.76 5316 2480.76L5275.6 2480.76L5275.6 2341.36ZM5363 2411.16Q5363 2386.36 5351 2375.76Q5339 2365.16 5315.8 2365.16L5301.4 2365.16L5301.4 2456.96L5313.4 2456.96Q5338.4 2456.96 5350.7 2446.76Q5363 2436.56 5363 2411.16Z';
+
+// Aufkleber am Lastenrad nach marke/README.md: Tiefgrün, 40 × 17 cm, Radius 16
+// (bei 800 × 340), Block mit Unterzeile in Papier, 230 von 340 hoch.
+function makeStickerCanvas() {
+  var k = 2;
+  var w = 800 * k;
+  var h = 340 * k;
+  var c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  var g = c.getContext('2d');
+  var r = 16 * k;
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = '#042c1b';
+  g.beginPath();
+  g.moveTo(r, 0);
+  g.lineTo(w - r, 0);
+  g.quadraticCurveTo(w, 0, w, r);
+  g.lineTo(w, h - r);
+  g.quadraticCurveTo(w, h, w - r, h);
+  g.lineTo(r, h);
+  g.quadraticCurveTo(0, h, 0, h - r);
+  g.lineTo(0, r);
+  g.quadraticCurveTo(0, 0, r, 0);
+  g.closePath();
+  g.fill();
+  var logoH = 230 * k;
+  var s = logoH / OM_LOGO_VIEWBOX[3];
+  var logoW = OM_LOGO_VIEWBOX[2] * s;
+  g.save();
+  g.translate((w - logoW) / 2, (h - logoH) / 2);
+  g.scale(s, s);
+  g.translate(-OM_LOGO_VIEWBOX[0], -OM_LOGO_VIEWBOX[1]);
+  g.fillStyle = '#f6f7f4';
+  g.fill(new Path2D(OM_LOGO_D));
+  g.restore();
+  return c;
+}
+
+// Riemenverlauf um zwei Scheiben (außen herum, gegen den Uhrzeigersinn):
+// oben nach hinten, um die hintere Scheibe, unten nach vorn, um die vordere.
+function beltLoop(c1, r1, c2, r2) {
+  var dx = c2.x - c1.x;
+  var dy = c2.y - c1.y;
+  var d = Math.hypot(dx, dy);
+  var base = Math.atan2(dy, dx);
+  var a = Math.acos((r1 - r2) / d);
+  var top = base - a;
+  var bot = base + a;
+  var pts = [];
+  function line(p, q, n) {
+    for (var i = 0; i < n; i++) {
+      var t = i / n;
+      pts.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
+    }
+  }
+  function arc(c, r, from, to, n) {
+    for (var i = 0; i < n; i++) {
+      var t = from + ((to - from) * i) / n;
+      pts.push([c.x + Math.cos(t) * r, c.y + Math.sin(t) * r]);
+    }
+  }
+  var t1top = [c1.x + Math.cos(top) * r1, c1.y + Math.sin(top) * r1];
+  var t2top = [c2.x + Math.cos(top) * r2, c2.y + Math.sin(top) * r2];
+  var t2bot = [c2.x + Math.cos(bot) * r2, c2.y + Math.sin(bot) * r2];
+  var t1bot = [c1.x + Math.cos(bot) * r1, c1.y + Math.sin(bot) * r1];
+  line(t1top, t2top, 24);
+  arc(c2, r2, top, bot, 28);
+  line(t2bot, t1bot, 24);
+  arc(c1, r1, bot, top + 2 * Math.PI, 40);
+  return pts;
+}
+
+// Flacher Riemen: rechteckiger Querschnitt entlang einer geschlossenen Linie.
+function beltGeometry(THREE, pts, z, w, th) {
+  var n = pts.length;
+  var q = [];
+  for (var i = 0; i < n; i++) {
+    var a = pts[(i - 1 + n) % n];
+    var b = pts[(i + 1) % n];
+    var tx = b[0] - a[0];
+    var ty = b[1] - a[1];
+    var l = Math.hypot(tx, ty) || 1;
+    q.push([ty / l, -tx / l]);
+  }
+  var h = th / 2;
+  var sides = [
+    [[h, -w / 2], [h, w / 2], 'out'],
+    [[-h, w / 2], [-h, -w / 2], 'in'],
+    [[h, w / 2], [-h, w / 2], 'r'],
+    [[-h, -w / 2], [h, -w / 2], 'l'],
+  ];
+  var pos = [];
+  var nor = [];
+  var idx = [];
+  sides.forEach(function (side) {
+    var start = pos.length / 3;
+    for (var i = 0; i < n; i++) {
+      var p = pts[i];
+      var nn = q[i];
+      [side[0], side[1]].forEach(function (c) {
+        pos.push(p[0] + nn[0] * c[0], p[1] + nn[1] * c[0], z + c[1]);
+        if (side[2] === 'out') nor.push(nn[0], nn[1], 0);
+        else if (side[2] === 'in') nor.push(-nn[0], -nn[1], 0);
+        else if (side[2] === 'r') nor.push(0, 0, 1);
+        else nor.push(0, 0, -1);
+      });
+    }
+    for (var j = 0; j < n; j++) {
+      var k = (j + 1) % n;
+      var a0 = start + j * 2;
+      var a1 = start + j * 2 + 1;
+      var b0 = start + k * 2;
+      var b1 = start + k * 2 + 1;
+      idx.push(a0, a1, b1, a0, b1, b0);
+    }
+  });
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  geo.setAttribute('normal', new THREE.Float32BufferAttribute(nor, 3));
+  geo.setIndex(idx);
+  return geo;
+}
+
+function buildCargoBike(THREE, opts) {
+  opts = opts || {};
+  var root = new THREE.Group();
+  var zones = {};
+  var UP = new THREE.Vector3(0, 1, 0);
+  var ZAX = new THREE.Vector3(0, 0, 1);
+  function V(x, y, z) {
+    return new THREE.Vector3(x, y, z || 0);
+  }
+
+  var stickerTex = new THREE.CanvasTexture(makeStickerCanvas());
+  stickerTex.encoding = THREE.sRGBEncoding;
+  stickerTex.anisotropy = opts.anisotropy || 4;
+
+  var base = {
+    frame: { color: 0x3a4046, roughness: 0.46, metalness: 0.45 },
+    black: { color: 0x1d1f21, roughness: 0.5, metalness: 0.3 },
+    satin: { color: 0x26292c, roughness: 0.38, metalness: 0.55 },
+    rubber: { color: 0x19191a, roughness: 0.92, metalness: 0 },
+    plastic: { color: 0x1c1e20, roughness: 0.78, metalness: 0, envMapIntensity: 0.6 },
+    belt: { color: 0x141516, roughness: 0.62, metalness: 0.1, side: THREE.DoubleSide },
+    saddle: { color: 0x212325, roughness: 0.72, metalness: 0.05 },
+    steel: { color: 0xb9bec3, roughness: 0.28, metalness: 0.95 },
+    white: { color: 0xf4f5f2, roughness: 0.62, metalness: 0 },
+    edge: { color: 0x1f2123, roughness: 0.42, metalness: 0.4 },
+    reflex: { color: 0xc9cdd1, roughness: 0.45, metalness: 0.25 },
+    chrome: { color: 0xdfe3e6, roughness: 0.16, metalness: 1 },
+    lensFront: { color: 0xfff8e6, roughness: 0.15, metalness: 0, emissive: 0xfff1c2, emissiveIntensity: 0.6 },
+    lensRear: { color: 0xa8231b, roughness: 0.3, metalness: 0, emissive: 0xff2a14, emissiveIntensity: 0.6 },
+    led: { color: 0x2f8f5c, roughness: 0.3, metalness: 0, emissive: 0x39c27a, emissiveIntensity: 0.9 },
+    screen: { color: 0x0d1012, roughness: 0.12, metalness: 0.3 },
+    sticker: { map: stickerTex, roughness: 0.75, metalness: 0, envMapIntensity: 0.25, alphaTest: 0.5, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 },
+  };
+  var matCache = {};
+  function zoneEntry(zone) {
+    if (!zones[zone]) zones[zone] = { meshes: [], materials: [] };
+    return zones[zone];
+  }
+  function mat(zone, key) {
+    var id = zone + '|' + key;
+    if (!matCache[id]) {
+      var m = new THREE.MeshStandardMaterial(base[key]);
+      m.userData.baseEmissive = m.emissive.clone();
+      m.userData.baseEmissiveIntensity = m.emissiveIntensity;
+      matCache[id] = m;
+      zoneEntry(zone).materials.push(m);
+    }
+    return matCache[id];
+  }
+  function add(zone, geo, key, pos, rot) {
+    var mesh = new THREE.Mesh(geo, mat(zone, key));
+    if (pos) mesh.position.copy(pos);
+    if (rot) mesh.rotation.set(rot[0], rot[1], rot[2]);
+    mesh.userData.zone = zone;
+    zoneEntry(zone).meshes.push(mesh);
+    root.add(mesh);
+    return mesh;
+  }
+  function joint(zone, p, r, key) {
+    return add(zone, new THREE.SphereGeometry(r, 14, 10), key, p);
+  }
+  function rod(zone, a, b, r, key, caps, r2) {
+    var dir = new THREE.Vector3().subVectors(b, a);
+    var len = dir.length();
+    var geo = new THREE.CylinderGeometry(r2 == null ? r : r2, r, len, 16, 1, false);
+    var mesh = add(zone, geo, key);
+    mesh.position.copy(a).addScaledVector(dir, 0.5);
+    mesh.quaternion.setFromUnitVectors(UP, dir.normalize());
+    if (caps) {
+      joint(zone, a, r, key);
+      joint(zone, b, r2 == null ? r : r2, key);
+    }
+    return mesh;
+  }
+  function tube(zone, pts, r, key, closed, type, segs) {
+    var curve = new THREE.CatmullRomCurve3(pts, !!closed, type || 'centripetal', 0.5);
+    var geo = new THREE.TubeGeometry(curve, segs || Math.max(32, pts.length * 14), r, 12, !!closed);
+    return add(zone, geo, key);
+  }
+  // Unsichtbare Trefferflächen für dünne Teile (Speichen, Riemen, Hebel):
+  // nicht gezeichnet, aber beim Antippen getroffen.
+  var proxyMat = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  function proxy(zone, geo, pos, rot) {
+    var m = new THREE.Mesh(geo, proxyMat);
+    m.visible = false;
+    if (pos) m.position.copy(pos);
+    if (rot) m.rotation.set(rot[0], rot[1], rot[2]);
+    m.userData.zone = zone;
+    zoneEntry(zone).meshes.push(m);
+    root.add(m);
+    return m;
+  }
+  function proxyRod(zone, a, b, r) {
+    var dir = new THREE.Vector3().subVectors(b, a);
+    var m = proxy(zone, new THREE.CylinderGeometry(r, r, dir.length(), 8));
+    m.position.copy(a).addScaledVector(dir, 0.5);
+    m.quaternion.setFromUnitVectors(UP, dir.normalize());
+    return m;
+  }
+  function disc(zone, c, r, thick, key, z) {
+    return add(zone, new THREE.CylinderGeometry(r, r, thick, 48), key, V(c.x, c.y, z), [Math.PI / 2, 0, 0]);
+  }
+  function box(zone, size, pos, key, rotZ) {
+    var m = add(zone, new THREE.BoxGeometry(size[0], size[1], size[2]), key, pos);
+    if (rotZ) m.rotation.z = rotZ;
+    return m;
+  }
+  function roundedSlab(zone, w, h, r, depth, bevel, key, pos) {
+    var s = new THREE.Shape();
+    var x0 = -w / 2;
+    var y0 = -h / 2;
+    s.moveTo(x0 + r, y0);
+    s.lineTo(x0 + w - r, y0);
+    s.quadraticCurveTo(x0 + w, y0, x0 + w, y0 + r);
+    s.lineTo(x0 + w, y0 + h - r);
+    s.quadraticCurveTo(x0 + w, y0 + h, x0 + w - r, y0 + h);
+    s.lineTo(x0 + r, y0 + h);
+    s.quadraticCurveTo(x0, y0 + h, x0, y0 + h - r);
+    s.lineTo(x0, y0 + r);
+    s.quadraticCurveTo(x0, y0, x0 + r, y0);
+    var geo = new THREE.ExtrudeGeometry(s, {
+      depth: depth,
+      bevelEnabled: true,
+      bevelThickness: bevel,
+      bevelSize: bevel,
+      bevelSegments: 3,
+      curveSegments: 10,
+    });
+    geo.translate(0, 0, -depth / 2);
+    return add(zone, geo, key, pos);
+  }
+  // Ein Bogenstück (Schutzblech): Mittelpunkt c, Radius r, Breite w,
+  // Winkel in Grad von +x gegen den Uhrzeigersinn in der Radebene.
+  function arcBand(zone, c, r, w, fromDeg, toDeg, key) {
+    var a0 = ((fromDeg + 90) * Math.PI) / 180;
+    var len = ((toDeg - fromDeg) * Math.PI) / 180;
+    var geo = new THREE.CylinderGeometry(r, r, w, 48, 1, true, a0, len);
+    var m = add(zone, geo, key, V(c.x, c.y, 0), [Math.PI / 2, 0, 0]);
+    m.material.side = THREE.DoubleSide;
+    return m;
+  }
+
+  // --- Eckpunkte ------------------------------------------------------------
+  var RA = V(-0.93, 0.34); // Hinterachse
+  var FA = V(0.99, 0.26); // Vorderachse
+  var BB = V(-0.27, 0.29); // Tretlager / Motor
+  var stBot = V(-0.29, 0.33);
+  var stTop = V(-0.56, 0.88);
+  var stDir = new THREE.Vector3().subVectors(stTop, stBot).normalize();
+  function onSeatTube(y) {
+    var t = (y - stBot.y) / stDir.y;
+    return V(stBot.x + stDir.x * t, y);
+  }
+  var DZ = 0.084; // Ebene von Riemen und Riemenscheiben
+
+  // --- Laufräder --------------------------------------------------------------
+  function wheel(suffix, c, R, spokes, hubR) {
+    var t = 0.028;
+    var tire = 'reifen-' + suffix;
+    var hub = 'laufrad-' + suffix;
+    add(tire, new THREE.TorusGeometry(R - t, t, 20, 120), 'rubber', c);
+    [-1, 1].forEach(function (s) {
+      add(tire, new THREE.TorusGeometry(R - t - 0.006, 0.0034, 6, 120), 'reflex', V(c.x, c.y, s * 0.021));
+    });
+    var rimR = R - 2 * t + 0.004;
+    var rim = add(hub, new THREE.TorusGeometry(rimR, 0.0115, 10, 120), 'satin', c);
+    rim.scale.set(1, 1, 1.45);
+    [-1, 1].forEach(function (s) {
+      add(hub, new THREE.CylinderGeometry(hubR + 0.004, hubR + 0.004, 0.004, 28), 'satin', V(c.x, c.y, s * 0.032), [Math.PI / 2, 0, 0]);
+    });
+    var geo = new THREE.CylinderGeometry(0.0012, 0.0012, 1, 5);
+    var inst = new THREE.InstancedMesh(geo, mat(hub, 'steel'), spokes);
+    var m4 = new THREE.Matrix4();
+    var q = new THREE.Quaternion();
+    var sc = new THREE.Vector3();
+    for (var i = 0; i < spokes; i++) {
+      var side = i % 2 ? 1 : -1;
+      var a = (i / spokes) * Math.PI * 2;
+      var p0 = V(Math.cos(a) * hubR, Math.sin(a) * hubR, side * 0.032);
+      var b = a + (((i >> 1) % 2 ? 1 : -1) * 0.5);
+      var p1 = V(Math.cos(b) * (rimR - 0.006), Math.sin(b) * (rimR - 0.006), side * 0.003);
+      var d = new THREE.Vector3().subVectors(p1, p0);
+      var L = d.length();
+      q.setFromUnitVectors(UP, d.clone().normalize());
+      sc.set(1, L, 1);
+      m4.compose(p0.clone().addScaledVector(d, 0.5).add(c), q, sc);
+      inst.setMatrixAt(i, m4);
+    }
+    inst.instanceMatrix.needsUpdate = true;
+    inst.frustumCulled = false;
+    inst.userData.zone = hub;
+    zoneEntry(hub).meshes.push(inst);
+    root.add(inst);
+    // Ring statt Scheibe: Bremsscheibe, Nabe und Riemenscheibe bleiben antippbar.
+    proxy(hub, new THREE.RingGeometry(0.1, rimR - 0.008, 48), c);
+    return rimR;
+  }
+  wheel('hinten', RA, 0.34, 32, 0.052);
+  wheel('vorne', FA, 0.26, 28, 0.031);
+  add('laufrad-vorne', new THREE.CylinderGeometry(0.022, 0.022, 0.1, 20), 'satin', FA, [Math.PI / 2, 0, 0]);
+
+  // --- Bremsen (Scheiben links, also -z) -------------------------------------
+  function brake(suffix, c, caliperDeg) {
+    var z = 'bremse-' + suffix;
+    disc(z, c, 0.09, 0.0022, 'steel', -0.058);
+    disc(z, c, 0.05, 0.004, 'black', -0.058);
+    var a = (caliperDeg * Math.PI) / 180;
+    var p = V(c.x + Math.cos(a) * 0.082, c.y + Math.sin(a) * 0.082, -0.062);
+    var cal = box(z, [0.07, 0.032, 0.034], p, 'black');
+    cal.rotation.z = a + Math.PI / 2;
+    box(z, [0.05, 0.014, 0.012], V(p.x, p.y, -0.081), 'satin', a + Math.PI / 2);
+  }
+  brake('hinten', RA, 28);
+  brake('vorne', FA, 150);
+
+  // --- Hinterbau, Rahmen ----------------------------------------------------
+  var J = onSeatTube(0.8);
+  rod('rahmen', stBot, stTop, 0.024, 'frame', true);
+  rod('rahmen', J, V(0.02, 0.72), 0.026, 'frame', true);
+  var lowRear = onSeatTube(0.4);
+  rod('rahmen', V(0.02, 0.4), lowRear, 0.03, 'frame', true);
+  // Lenkkopf hinten (Lenksäule)
+  rod('rahmen', V(0.02, 0.35), V(0.02, 0.785), 0.034, 'frame', false);
+  joint('rahmen', V(0.02, 0.785), 0.034, 'frame');
+  // Schwinge: Kettenstreben unten, Sitzstreben setzen über dem Riemen an.
+  var PV = V(-0.37, 0.33);
+  var K = V(-0.6, 0.645);
+  var SS = V(RA.x - 0.025, RA.y + 0.075);
+  [-1, 1].forEach(function (s) {
+    rod('rahmen', V(PV.x, PV.y, s * 0.05), V(RA.x, RA.y, s * 0.068), 0.016, 'frame', true, 0.013);
+    rod('rahmen', V(SS.x, SS.y, s * 0.068), V(K.x, K.y, s * 0.042), 0.014, 'frame', true);
+    // Ausfallende, nach oben verlängert bis zur Sitzstrebe
+    box('rahmen', [0.05, 0.035, 0.008], V(RA.x, RA.y, s * 0.072), 'frame');
+    box('rahmen', [0.03, 0.09, 0.008], V(RA.x - 0.014, RA.y + 0.04, s * 0.072), 'frame', 0.3);
+  });
+  rod('rahmen', V(PV.x, PV.y, -0.05), V(PV.x, PV.y, 0.05), 0.02, 'frame', false);
+
+  // Dämpfer mit Umlenkhebel
+  var RP = onSeatTube(0.655);
+  var RF = V(-0.38, 0.665);
+  var SF = V(-0.14, 0.675);
+  [-1, 1].forEach(function (s) {
+    rod('daempfer', V(K.x, K.y, s * 0.036), V(RF.x, RF.y, s * 0.036), 0.012, 'black', true);
+  });
+  rod('daempfer', V(K.x, K.y, -0.042), V(K.x, K.y, 0.042), 0.009, 'satin', false);
+  rod('daempfer', V(RP.x, RP.y, -0.04), V(RP.x, RP.y, 0.04), 0.012, 'satin', false);
+  rod('daempfer', V(RF.x, RF.y, -0.04), V(RF.x, RF.y, 0.04), 0.009, 'satin', false);
+  // Dämpferkörper, Kolbenstange, Feder
+  var shockDir = new THREE.Vector3().subVectors(SF, RF);
+  var shockMid = RF.clone().addScaledVector(shockDir, 0.55);
+  rod('daempfer', RF, shockMid, 0.017, 'black', true);
+  rod('daempfer', shockMid, SF, 0.009, 'steel', false);
+  joint('daempfer', SF, 0.014, 'black');
+  var coilPts = [];
+  var turns = 7;
+  var n = turns * 24;
+  var coilA = RF.clone().addScaledVector(shockDir, 0.18);
+  var coilB = RF.clone().addScaledVector(shockDir, 0.88);
+  var cd = new THREE.Vector3().subVectors(coilB, coilA);
+  for (var i = 0; i <= n; i++) {
+    var tt = i / n;
+    var ang = tt * turns * Math.PI * 2;
+    var p = coilA.clone().addScaledVector(cd, tt);
+    p.y += Math.cos(ang) * 0.027;
+    p.z += Math.sin(ang) * 0.027;
+    coilPts.push(p);
+  }
+  tube('daempfer', coilPts, 0.0042, 'black', false, 'centripetal', n * 2);
+  // Aufnahme am Oberrohr
+  box('rahmen', [0.03, 0.06, 0.03], V(SF.x, SF.y + 0.035, 0), 'frame');
+
+  // --- Motor, Akku ------------------------------------------------------------
+  roundedSlab('motor', 0.2, 0.18, 0.04, 0.1, 0.01, 'black', V(BB.x, BB.y, 0));
+  disc('motor', BB, 0.05, 0.012, 'satin', 0.058);
+  disc('motor', BB, 0.05, 0.012, 'satin', -0.058);
+  roundedSlab('akku', 0.27, 0.09, 0.032, 0.072, 0.009, 'black', V(-0.165, 0.478, 0));
+  for (var li = 0; li < 5; li++) {
+    box('akku', [0.006, 0.006, 0.003], V(-0.215 + li * 0.012, 0.462, 0.046), 'led');
+  }
+  box('akku', [0.05, 0.012, 0.003], V(-0.085, 0.5, 0.046), 'satin');
+
+  // --- Riemenantrieb: Riemenscheiben, Riemen, Nabenschaltung ------------------
+  var fR = 0.094;
+  var rR = 0.056;
+  add('riemen', new THREE.TorusGeometry(fR, 0.009, 8, 96), 'steel', V(BB.x, BB.y, DZ));
+  for (var sa = 0; sa < 5; sa++) {
+    var aa = (sa / 5) * Math.PI * 2 + 0.3;
+    rod('riemen', V(BB.x, BB.y, DZ), V(BB.x + Math.cos(aa) * (fR - 0.006), BB.y + Math.sin(aa) * (fR - 0.006), DZ), 0.008, 'black', false);
+  }
+  disc('riemen', BB, 0.032, 0.012, 'black', DZ);
+  disc('riemen', RA, rR, 0.012, 'steel', DZ);
+  disc('riemen', RA, 0.03, 0.016, 'black', DZ);
+  var loop = beltLoop(BB, fR + 0.0115, RA, rR + 0.0025);
+  add('riemen', beltGeometry(THREE, loop, DZ, 0.012, 0.005), 'belt');
+  proxy(
+    'riemen',
+    new THREE.TubeGeometry(
+      new THREE.CatmullRomCurve3(
+        loop.map(function (p) {
+          return V(p[0], p[1], DZ);
+        }),
+        true,
+        'centripetal',
+        0.5
+      ),
+      140,
+      0.016,
+      6,
+      true
+    )
+  );
+  // Nabenschaltung: großes Nabengehäuse, Schaltbox rechts, Zug nach vorn
+  add('nabenschaltung', new THREE.CylinderGeometry(0.044, 0.044, 0.072, 32), 'steel', RA, [Math.PI / 2, 0, 0]);
+  [-1, 1].forEach(function (s) {
+    disc('nabenschaltung', RA, 0.047, 0.006, 'satin', s * 0.02);
+  });
+  box('nabenschaltung', [0.05, 0.03, 0.02], V(RA.x + 0.006, RA.y - 0.036, DZ + 0.018), 'black', 0.2);
+  tube('nabenschaltung', [V(RA.x + 0.03, RA.y - 0.042, DZ + 0.018), V(RA.x + 0.12, RA.y - 0.03, 0.08), V(RA.x + 0.3, RA.y - 0.012, 0.07), V(PV.x - 0.02, PV.y + 0.002, 0.066)], 0.0026, 'black');
+
+  // Kurbeln und Pedale (außerhalb der Riemenebene)
+  disc('kurbeln', BB, 0.022, 0.03, 'satin', 0.098);
+  rod('kurbeln', V(BB.x, BB.y, 0.104), V(BB.x + 0.17, BB.y, 0.108), 0.011, 'black', true);
+  rod('kurbeln', V(BB.x, BB.y, -0.086), V(BB.x - 0.17, BB.y, -0.09), 0.011, 'black', true);
+  [
+    [BB.x + 0.17, 1, 0.108],
+    [BB.x - 0.17, -1, 0.09],
+  ].forEach(function (pp) {
+    rod('kurbeln', V(pp[0], BB.y, pp[1] * pp[2]), V(pp[0], BB.y, pp[1] * (pp[2] + 0.02)), 0.006, 'steel', false);
+    box('kurbeln', [0.095, 0.02, 0.078], V(pp[0], BB.y, pp[1] * (pp[2] + 0.062)), 'black');
+  });
+
+  // --- Sattel ------------------------------------------------------------------
+  var postTop = stTop.clone().addScaledVector(stDir, 0.165);
+  rod('sattel', stTop, postTop, 0.0155, 'black', false);
+  var clamp = add('sattel', new THREE.TorusGeometry(0.026, 0.006, 8, 24), 'black', stTop);
+  clamp.quaternion.setFromUnitVectors(ZAX, stDir);
+  box('sattel', [0.07, 0.016, 0.045], V(postTop.x - 0.005, postTop.y + 0.006, 0), 'black');
+  var ss = new THREE.Shape();
+  ss.moveTo(0.14, 0);
+  ss.bezierCurveTo(0.14, 0.022, 0.1, 0.028, 0.05, 0.03);
+  ss.bezierCurveTo(0.0, 0.032, -0.05, 0.074, -0.1, 0.084);
+  ss.bezierCurveTo(-0.142, 0.09, -0.152, 0.04, -0.152, 0);
+  ss.bezierCurveTo(-0.152, -0.04, -0.142, -0.09, -0.1, -0.084);
+  ss.bezierCurveTo(-0.05, -0.074, 0.0, -0.032, 0.05, -0.03);
+  ss.bezierCurveTo(0.1, -0.028, 0.14, -0.022, 0.14, 0);
+  var sg = new THREE.ExtrudeGeometry(ss, { depth: 0.028, bevelEnabled: true, bevelThickness: 0.014, bevelSize: 0.012, bevelSegments: 5, curveSegments: 24 });
+  sg.rotateX(-Math.PI / 2);
+  add('sattel', sg, 'saddle', V(postTop.x - 0.01, postTop.y + 0.028, 0));
+
+  // --- Lenksäule, Lenker, Klingel, Display -------------------------------------
+  rod('lenker', V(0.02, 0.785), V(0.0, 1.065), 0.018, 'black', false);
+  var barPts = [
+    V(-0.135, 1.1, -0.33),
+    V(-0.07, 1.095, -0.22),
+    V(-0.008, 1.076, -0.09),
+    V(0.0, 1.07, 0),
+    V(-0.008, 1.076, 0.09),
+    V(-0.07, 1.095, 0.22),
+    V(-0.135, 1.1, 0.33),
+  ];
+  tube('lenker', barPts, 0.011, 'black', false, 'catmullrom', 80);
+  box('lenker', [0.04, 0.045, 0.06], V(0.0, 1.07, 0), 'black');
+  // Griffe; rechts innen der Drehgriff der Nabenschaltung
+  rod('lenker', V(-0.074, 1.095, -0.215), V(-0.137, 1.1, -0.335), 0.017, 'rubber', true);
+  rod('lenker', V(-0.088, 1.096, 0.24), V(-0.137, 1.1, 0.335), 0.017, 'rubber', true);
+  rod('lenker', V(-0.072, 1.095, 0.212), V(-0.088, 1.096, 0.24), 0.02, 'satin', false);
+  [-1, 1].forEach(function (s) {
+    // Bremsgriffe
+    box('bremsgriffe', [0.034, 0.026, 0.03], V(-0.058, 1.094, s * 0.192), 'black');
+    rod('bremsgriffe', V(-0.048, 1.09, s * 0.2), V(0.03, 1.066, s * 0.3), 0.0055, 'satin', true);
+    proxyRod('bremsgriffe', V(-0.06, 1.092, s * 0.19), V(0.035, 1.064, s * 0.305), 0.018);
+  });
+  // Klingel links
+  var bellBase = V(-0.038, 1.1, -0.155);
+  add('klingel', new THREE.CylinderGeometry(0.011, 0.011, 0.014, 16), 'black', bellBase);
+  var dome = add('klingel', new THREE.SphereGeometry(0.021, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), 'chrome', V(bellBase.x, bellBase.y + 0.007, bellBase.z));
+  dome.scale.set(1, 0.8, 1);
+  proxy('klingel', new THREE.SphereGeometry(0.036, 10, 8), V(bellBase.x, bellBase.y + 0.008, bellBase.z));
+  add('klingel', new THREE.CylinderGeometry(0.021, 0.021, 0.004, 20), 'chrome', V(bellBase.x, bellBase.y + 0.007, bellBase.z));
+  // Display
+  box('display', [0.05, 0.012, 0.078], V(0.028, 1.108, 0), 'black', 0.55);
+  box('display', [0.04, 0.003, 0.064], V(0.025, 1.114, 0), 'screen', 0.55);
+  rod('display', V(0.0, 1.07, 0), V(0.025, 1.1, 0), 0.006, 'black', false);
+  // Züge
+  [-1, 1].forEach(function (s) {
+    tube('lenker', [V(-0.012, 1.066, s * 0.05), V(0.06, 1.0, s * 0.072), V(0.086, 0.885, s * 0.06), V(0.055, 0.795, s * 0.032), V(0.035, 0.74, s * 0.02)], 0.0034, 'black');
+  });
+  // Lenksäule unten mit Lenkhebel
+  rod('lenkung', V(0.02, 0.35), V(0.02, 0.155), 0.016, 'black', false);
+  rod('lenkung', V(0.02, 0.155), V(0.075, 0.155), 0.01, 'black', true);
+
+  // --- Ladefläche (60 cm): Seitenrahmen, Boden ----------------------------------
+  [-1, 1].forEach(function (s) {
+    tube('rahmen', [V(0.02, 0.47, s * 0.325), V(0.35, 0.47, s * 0.325), V(0.65, 0.47, s * 0.325), V(0.75, 0.53, s * 0.24), V(0.802, 0.62, s * 0.1), V(0.812, 0.66, s * 0.03)], 0.019, 'frame', false, 'centripetal', 90);
+    tube('rahmen', [V(0.03, 0.22, s * 0.3), V(0.35, 0.22, s * 0.3), V(0.59, 0.22, s * 0.3), V(0.71, 0.27, s * 0.27), V(0.79, 0.4, s * 0.17), V(0.835, 0.54, s * 0.05)], 0.019, 'frame', false, 'centripetal', 90);
+    rod('rahmen', V(0.03, 0.22, s * 0.3), V(0.02, 0.47, s * 0.325), 0.016, 'frame', true);
+    var bx = [0.12, 0.355, 0.59];
+    var tx = [0.24, 0.47];
+    rod('rahmen', V(bx[0], 0.22, s * 0.3), V(tx[0], 0.47, s * 0.325), 0.012, 'frame', true);
+    rod('rahmen', V(tx[0], 0.47, s * 0.325), V(bx[1], 0.22, s * 0.3), 0.012, 'frame', true);
+    rod('rahmen', V(bx[1], 0.22, s * 0.3), V(tx[1], 0.47, s * 0.325), 0.012, 'frame', true);
+    rod('rahmen', V(tx[1], 0.47, s * 0.325), V(bx[2], 0.22, s * 0.3), 0.012, 'frame', true);
+  });
+  rod('rahmen', V(0.02, 0.47, -0.325), V(0.02, 0.47, 0.325), 0.017, 'frame', false);
+  [0.03, 0.355, 0.59].forEach(function (x) {
+    rod('rahmen', V(x, 0.22, -0.3), V(x, 0.22, 0.3), 0.015, 'frame', false);
+  });
+  box('rahmen', [0.59, 0.012, 0.58], V(0.345, 0.236, 0), 'black');
+  // Lenkkopf vorn
+  var HB = V(0.838, 0.56);
+  var HT = V(0.766, 0.76);
+  rod('rahmen', HB, HT, 0.03, 'frame', false);
+  joint('rahmen', HT, 0.03, 'frame');
+
+  // --- Federgabel -------------------------------------------------------------
+  box('gabel', [0.055, 0.032, 0.165], V(0.862, 0.538, 0), 'black', 0.35);
+  [-1, 1].forEach(function (s) {
+    rod('gabel', V(0.88, 0.535, s * 0.066), V(0.922, 0.42, s * 0.066), 0.016, 'satin', false);
+    rod('gabel', V(0.916, 0.44, s * 0.066), V(FA.x, FA.y + 0.006, s * 0.066), 0.021, 'black', true, 0.019);
+  });
+
+  // --- Lenkstange --------------------------------------------------------------
+  var rodPts = [V(0.075, 0.155, 0), V(0.61, 0.155, 0), V(0.78, 0.53, 0), V(0.836, 0.552, 0)];
+  for (var ri = 0; ri < rodPts.length - 1; ri++) {
+    rod('lenkung', rodPts[ri], rodPts[ri + 1], ri === 2 ? 0.009 : 0.008, 'satin', true);
+    proxyRod('lenkung', rodPts[ri], rodPts[ri + 1], 0.02);
+  }
+
+  // --- Schutzbleche -------------------------------------------------------------
+  arcBand('schutzblech-hinten', RA, 0.372, 0.074, 25, 205, 'plastic');
+  arcBand('schutzblech-vorne', FA, 0.288, 0.07, 15, 135, 'plastic');
+  [-1, 1].forEach(function (s) {
+    var a = (200 * Math.PI) / 180;
+    rod('schutzblech-hinten', V(RA.x, RA.y, s * 0.06), V(RA.x + Math.cos(a) * 0.37, RA.y + Math.sin(a) * 0.37, s * 0.034), 0.003, 'satin', false);
+    var b = (25 * Math.PI) / 180;
+    rod('schutzblech-vorne', V(FA.x, FA.y, s * 0.07), V(FA.x + Math.cos(b) * 0.286, FA.y + Math.sin(b) * 0.286, s * 0.033), 0.003, 'satin', false);
+  });
+
+  // --- Gepäckträger, Rücklicht ------------------------------------------------
+  var rackY = 0.78;
+  [-1, 1].forEach(function (s) {
+    rod('gepaecktraeger', V(-0.545, rackY, s * 0.085), V(-1.2, rackY, s * 0.085), 0.0085, 'black', true);
+    rod('gepaecktraeger', V(-1.18, rackY, s * 0.085), V(RA.x - 0.012, RA.y + 0.02, s * 0.098), 0.0075, 'black', true);
+    rod('gepaecktraeger', V(-0.86, rackY, s * 0.085), V(RA.x + 0.005, RA.y + 0.03, s * 0.098), 0.0075, 'black', true);
+  });
+  [-0.545, -0.7, -0.87, -1.04, -1.2].forEach(function (x) {
+    rod('gepaecktraeger', V(x, rackY, -0.085), V(x, rackY, 0.085), 0.0075, 'black', false);
+  });
+  proxy('gepaecktraeger', new THREE.BoxGeometry(0.66, 0.025, 0.19), V(-0.872, rackY, 0));
+  box('licht-hinten', [0.03, 0.04, 0.09], V(-1.214, 0.752, 0), 'black');
+  proxy('licht-hinten', new THREE.BoxGeometry(0.06, 0.07, 0.13), V(-1.218, 0.752, 0));
+  box('licht-hinten', [0.004, 0.028, 0.074], V(-1.231, 0.752, 0), 'lensRear');
+
+  // --- Licht vorn ---------------------------------------------------------------
+  rod('licht-vorne', V(0.78, 0.745, 0), V(0.818, 0.79, 0), 0.006, 'black', false);
+  var lamp = add('licht-vorne', new THREE.CylinderGeometry(0.026, 0.022, 0.06, 24), 'black', V(0.835, 0.792, 0));
+  lamp.rotation.z = -Math.PI / 2;
+  var lens = add('licht-vorne', new THREE.CylinderGeometry(0.022, 0.022, 0.004, 24), 'lensFront', V(0.866, 0.792, 0));
+  lens.rotation.z = -Math.PI / 2;
+  proxy('licht-vorne', new THREE.SphereGeometry(0.05, 10, 8), V(0.838, 0.792, 0));
+
+  // --- Ständer -------------------------------------------------------------------
+  rod('staender', V(0.36, 0.205, -0.13), V(0.36, 0.205, 0.13), 0.012, 'black', false);
+  [-1, 1].forEach(function (s) {
+    rod('staender', V(0.36, 0.205, s * 0.12), V(0.3, 0.014, s * 0.3), 0.011, 'black', true);
+    proxyRod('staender', V(0.36, 0.205, s * 0.12), V(0.3, 0.014, s * 0.3), 0.026);
+    box('staender', [0.07, 0.012, 0.045], V(0.3, 0.006, s * 0.3), 'rubber');
+  });
+  rod('staender', V(0.36, 0.205, 0), V(0.34, 0.229, 0), 0.01, 'black', false);
+
+  // --- Transportbox -----------------------------------------------------------
+  var bw = 0.29;
+  var prof = [V(0.12, 0.25), V(0.59, 0.25), V(0.71, 0.4), V(0.71, 0.8), V(0.07, 0.8), V(0.07, 0.34)];
+  var bs = new THREE.Shape();
+  bs.moveTo(prof[0].x, prof[0].y);
+  for (var pi = 1; pi < prof.length; pi++) bs.lineTo(prof[pi].x, prof[pi].y);
+  bs.closePath();
+  var bgeo = new THREE.ExtrudeGeometry(bs, { depth: bw * 2, bevelEnabled: true, bevelThickness: 0.004, bevelSize: 0.004, bevelSegments: 2 });
+  bgeo.translate(0, 0, -bw);
+  add('transportbox', bgeo, 'white');
+  var er = 0.011;
+  for (var ei = 0; ei < prof.length; ei++) {
+    var a0 = prof[ei];
+    var a1 = prof[(ei + 1) % prof.length];
+    [-1, 1].forEach(function (s) {
+      rod('transportbox', V(a0.x, a0.y, s * (bw + 0.003)), V(a1.x, a1.y, s * (bw + 0.003)), er, 'edge', true);
+    });
+    rod('transportbox', V(a0.x, a0.y, -bw - 0.003), V(a0.x, a0.y, bw + 0.003), er, 'edge', false);
+  }
+  // Deckel: schwarzer Rahmen, weiße Fläche
+  box('transportbox', [0.66, 0.022, 0.61], V(0.39, 0.813, 0), 'edge');
+  box('transportbox', [0.59, 0.006, 0.54], V(0.39, 0.826, 0), 'white');
+  [-0.16, 0.16].forEach(function (z) {
+    rod('transportbox', V(0.075, 0.81, z - 0.04), V(0.075, 0.81, z + 0.04), 0.008, 'satin', false);
+  });
+  box('transportbox', [0.012, 0.05, 0.08], V(0.718, 0.765, 0), 'satin');
+  box('transportbox', [0.006, 0.018, 0.03], V(0.726, 0.765, 0), 'black');
+  // Aufkleber: beide Seiten und Front
+  var stG = new THREE.PlaneGeometry(0.4, 0.17);
+  add('transportbox', stG, 'sticker', V(0.39, 0.65, bw + 0.0045));
+  add('transportbox', stG, 'sticker', V(0.39, 0.65, -bw - 0.0045), [0, Math.PI, 0]);
+  add('transportbox', stG, 'sticker', V(0.7145, 0.6, 0), [0, Math.PI / 2, 0]);
+
+  // --- Zonen: Mittelpunkte ----------------------------------------------------
+  root.updateMatrixWorld(true);
+  Object.keys(zones).forEach(function (id) {
+    var bb = new THREE.Box3();
+    zones[id].meshes.forEach(function (m) {
+      if (!m.isInstancedMesh) bb.expandByObject(m);
+    });
+    zones[id].center = bb.getCenter(new THREE.Vector3());
+    zones[id].box = bb;
+  });
+  return { root: root, zones: zones, sticker: stickerTex };
+}
+
+// Sanftes Studiolicht als Umgebung (für Glanz an Metallteilen).
+function makeStudioEnvironment(THREE, renderer) {
+  var scene = new THREE.Scene();
+  var geo = new THREE.SphereGeometry(10, 32, 16);
+  var col = [];
+  var pos = geo.attributes.position;
+  for (var i = 0; i < pos.count; i++) {
+    var y = pos.getY(i) / 10;
+    var v = y > 0 ? 0.92 + 0.08 * y : 0.78 + 0.14 * (1 + y);
+    col.push(v, v, v);
+  }
+  geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+  scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide })));
+  function softbox(w, h, p, intensity) {
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ side: THREE.DoubleSide }));
+    m.material.color.setScalar(intensity);
+    m.position.copy(p);
+    m.lookAt(0, 0, 0);
+    scene.add(m);
+  }
+  softbox(6, 3, new THREE.Vector3(3, 6, 4), 3);
+  softbox(4, 4, new THREE.Vector3(-6, 3, -2), 1.6);
+  softbox(5, 2, new THREE.Vector3(0, 4, -6), 1.4);
+  var pm = new THREE.PMREMGenerator(renderer);
+  var env = pm.fromScene(scene, 0.04).texture;
+  pm.dispose();
+  scene.traverse(function (o) {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) o.material.dispose();
+  });
+  return env;
+}
+
+// Weicher Boden unter dem Rad.
+function makeFloor(THREE) {
+  var c = document.createElement('canvas');
+  c.width = 512;
+  c.height = 512;
+  var g = c.getContext('2d');
+  var grd = g.createRadialGradient(256, 256, 4, 256, 256, 252);
+  grd.addColorStop(0, 'rgba(20,24,27,0.13)');
+  grd.addColorStop(0.5, 'rgba(20,24,27,0.06)');
+  grd.addColorStop(1, 'rgba(20,24,27,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 512, 512);
+  var tex = new THREE.CanvasTexture(c);
+  var m = new THREE.Mesh(
+    new THREE.PlaneGeometry(3.3, 1.3),
+    new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false })
+  );
+  m.rotation.x = -Math.PI / 2;
+  m.position.set(0.0, 0.0005, 0);
+  m.renderOrder = -1;
+  return m;
+}
+
+// ---------------------------------------------------------------------------
+// Betrachter: Kamera um das Rad, Antippen wählt ein Bauteil, Stecknadeln für
+// markierte Stellen. Rendert nur, wenn sich etwas ändert.
+// ---------------------------------------------------------------------------
+
+var DEG = Math.PI / 180;
+var BIKE_CENTER = [0.0, 0.53, 0];
+var VIEW_PRESETS = [
+  { id: 'schraeg', label: 'Schräg', theta: 38, phi: 70 },
+  { id: 'rechts', label: 'Rechts', theta: 0, phi: 84 },
+  { id: 'links', label: 'Links', theta: 180, phi: 84 },
+  { id: 'vorne', label: 'Vorne', theta: 90, phi: 76 },
+  { id: 'hinten', label: 'Hinten', theta: -90, phi: 72 },
+];
+var PIN_COLORS = {
+  problem: { fill: '#b3261e', ink: '#ffffff' },
+  beobachten: { fill: '#f0b43c', ink: '#2a1e00' },
+  neu: { fill: '#004429', ink: '#ffffff' },
+};
+
+function lrClamp(v, a, b) {
+  return Math.max(a, Math.min(b, v));
+}
+
+function lrFitRadius(aspect) {
+  var t = Math.tan(15 * DEG);
+  return 1.12 * Math.max(1.27 / (t * aspect), 0.74 / t);
+}
+
+// Stecknadel: weißer Rand, farbige Fläche (Problem rund, Beobachten eckig),
+// Nummer in der Mitte. Unten die Spitze, die auf die Stelle zeigt.
+function lrPinCanvas(label, kind, active) {
+  var w = 128;
+  var h = 160;
+  var c = document.createElement('canvas');
+  c.width = w;
+  c.height = h;
+  var g = c.getContext('2d');
+  var cx = 64;
+  var cy = 62;
+  var r = 44;
+  var col = PIN_COLORS[kind] || PIN_COLORS.neu;
+  if (active) {
+    g.fillStyle = '#004429';
+    g.beginPath();
+    g.arc(cx, cy, r + 14, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.moveTo(cx - 20, cy + 34);
+  g.lineTo(cx, h - 2);
+  g.lineTo(cx + 20, cy + 34);
+  g.closePath();
+  g.fill();
+  g.beginPath();
+  g.arc(cx, cy, r + 7, 0, Math.PI * 2);
+  g.fill();
+  g.fillStyle = col.fill;
+  g.beginPath();
+  if (kind === 'beobachten') {
+    var s = r * 0.86;
+    var k = 14;
+    g.moveTo(cx - s + k, cy - s);
+    g.lineTo(cx + s - k, cy - s);
+    g.quadraticCurveTo(cx + s, cy - s, cx + s, cy - s + k);
+    g.lineTo(cx + s, cy + s - k);
+    g.quadraticCurveTo(cx + s, cy + s, cx + s - k, cy + s);
+    g.lineTo(cx - s + k, cy + s);
+    g.quadraticCurveTo(cx - s, cy + s, cx - s, cy + s - k);
+    g.lineTo(cx - s, cy - s + k);
+    g.quadraticCurveTo(cx - s, cy - s, cx - s + k, cy - s);
+  } else {
+    g.arc(cx, cy, r, 0, Math.PI * 2);
+  }
+  g.fill();
+  g.fillStyle = col.ink;
+  g.font = '800 50px "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif';
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(label, cx, cy + 3);
+  return c;
+}
+
+function LrViewer(canvas, opts) {
+  this.canvas = canvas;
+  this.opts = opts || {};
+  this.markers = [];
+  this.draft = null;
+  this.activeId = null;
+  this.highlight = [];
+  this.hover = null;
+  this.hoverAt = null;
+  this.anim = null;
+  this.dirty = true;
+  this.disposed = false;
+  this.pointers = new Map();
+  this.press = null;
+  this.pinch = null;
+  this.reduced = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+LrViewer.prototype.init = function (THREE) {
+  var self = this;
+  this.THREE = THREE;
+  THREE.ColorManagement.legacyMode = false;
+  var renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: false, powerPreference: 'low-power' });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.setClearColor(this.opts.background || 0xf4f5f7, 1);
+  this.renderer = renderer;
+  var scene = new THREE.Scene();
+  scene.environment = makeStudioEnvironment(THREE, renderer);
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xdfe2e5, 0.35));
+  var key = new THREE.DirectionalLight(0xffffff, 0.9);
+  key.position.set(2, 4, 3);
+  scene.add(key);
+  var fill = new THREE.DirectionalLight(0xffffff, 0.3);
+  fill.position.set(-3, 2, -2);
+  scene.add(fill);
+  this.bike = buildCargoBike(THREE, { anisotropy: renderer.capabilities.getMaxAnisotropy() });
+  scene.add(this.bike.root);
+  scene.add(makeFloor(THREE));
+  this.pins = new THREE.Group();
+  scene.add(this.pins);
+  this.scene = scene;
+  this.camera = new THREE.PerspectiveCamera(30, 1, 0.03, 60);
+  this.raycaster = new THREE.Raycaster();
+  this.pickables = [];
+  this.bike.root.traverse(function (o) {
+    if (o.isMesh && o.userData.zone) self.pickables.push(o);
+  });
+  var v = VIEW_PRESETS[0];
+  this.orbit = {
+    theta: v.theta * DEG,
+    phi: v.phi * DEG,
+    radius: 4,
+    target: new THREE.Vector3(BIKE_CENTER[0], BIKE_CENTER[1], BIKE_CENTER[2]),
+    auto: true,
+  };
+  this.size = { w: 0, h: 0 };
+  this.resize();
+
+  this.on = {
+    down: function (e) {
+      self.onDown(e);
+    },
+    move: function (e) {
+      self.onMove(e);
+    },
+    up: function (e) {
+      self.onUp(e);
+    },
+    cancel: function (e) {
+      self.onCancel(e);
+    },
+    leave: function (e) {
+      if (e.pointerType === 'mouse' && !self.pointers.size) self.setHover(null);
+    },
+    wheel: function (e) {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      self.zoomBy(Math.exp(e.deltaY * 0.0025));
+    },
+  };
+  var cv = this.canvas;
+  cv.addEventListener('pointerdown', this.on.down);
+  cv.addEventListener('pointermove', this.on.move);
+  cv.addEventListener('pointerup', this.on.up);
+  cv.addEventListener('pointercancel', this.on.cancel);
+  cv.addEventListener('pointerleave', this.on.leave);
+  cv.addEventListener('wheel', this.on.wheel, { passive: false });
+  if (window.ResizeObserver) {
+    this.ro = new ResizeObserver(function () {
+      self.resize();
+    });
+    this.ro.observe(cv);
+  }
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(function () {
+      if (!self.disposed) self.buildPins();
+    });
+  }
+  this.loop = this.loop.bind(this);
+  this.raf = requestAnimationFrame(this.loop);
+};
+
+LrViewer.prototype.aspect = function () {
+  return this.size.w / Math.max(1, this.size.h);
+};
+
+LrViewer.prototype.resize = function () {
+  var w = Math.max(1, this.canvas.clientWidth);
+  var h = Math.max(1, this.canvas.clientHeight);
+  if (w === this.size.w && h === this.size.h) return;
+  this.size = { w: w, h: h };
+  this.renderer.setSize(w, h, false);
+  this.camera.aspect = w / h;
+  this.camera.updateProjectionMatrix();
+  if (this.orbit.auto) this.orbit.radius = lrFitRadius(w / h);
+  this.scalePins();
+  this.dirty = true;
+};
+
+LrViewer.prototype.loop = function () {
+  if (this.disposed) return;
+  this.raf = requestAnimationFrame(this.loop);
+  var now = performance.now();
+  var busy = false;
+  if (this.anim) {
+    var a = this.anim;
+    var k = a.ms > 0 ? lrClamp((now - a.t0) / a.ms, 0, 1) : 1;
+    var e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+    var o = this.orbit;
+    o.theta = a.from.theta + (a.to.theta - a.from.theta) * e;
+    o.phi = a.from.phi + (a.to.phi - a.from.phi) * e;
+    o.radius = a.from.radius + (a.to.radius - a.from.radius) * e;
+    o.target.lerpVectors(a.from.target, a.to.target, e);
+    if (k >= 1) this.anim = null;
+    busy = true;
+  }
+  if (this.hoverAt) {
+    var at = this.hoverAt;
+    this.hoverAt = null;
+    var hit = this.raycast(at.x, at.y);
+    this.setHover(hit && !hit.markerId ? hit.zone : null);
+  }
+  var pulsing = this.highlight.length > 0 && !this.reduced;
+  if (pulsing || this.glowDirty) {
+    this.applyGlow(now);
+    this.glowDirty = false;
+    busy = true;
+  }
+  if (this.dirty || busy) {
+    var ob = this.orbit;
+    var sp = Math.sin(ob.phi);
+    this.camera.position.set(
+      ob.target.x + ob.radius * sp * Math.sin(ob.theta),
+      ob.target.y + ob.radius * Math.cos(ob.phi),
+      ob.target.z + ob.radius * sp * Math.cos(ob.theta)
+    );
+    this.camera.lookAt(ob.target);
+    this.renderer.render(this.scene, this.camera);
+    this.dirty = false;
+  }
+};
+
+LrViewer.prototype.applyGlow = function (now) {
+  var hl = {};
+  this.highlight.forEach(function (z) {
+    hl[z] = true;
+  });
+  var pulse = this.reduced ? 0.6 : 0.42 + 0.3 * (0.5 + 0.5 * Math.sin(now / 260));
+  var hover = this.hover;
+  var zones = this.bike.zones;
+  Object.keys(zones).forEach(function (id) {
+    var mode = hl[id] ? 'sel' : hover === id ? 'hover' : null;
+    zones[id].materials.forEach(function (m) {
+      if (m.map) return;
+      if (mode === 'sel') {
+        m.emissive.setHex(0x1f9d63);
+        m.emissiveIntensity = pulse;
+      } else if (mode === 'hover') {
+        m.emissive.setHex(0x2a8a5c);
+        m.emissiveIntensity = 0.3;
+      } else {
+        m.emissive.copy(m.userData.baseEmissive);
+        m.emissiveIntensity = m.userData.baseEmissiveIntensity;
+      }
+    });
+  });
+};
+
+LrViewer.prototype.setHover = function (zone) {
+  if (zone === this.hover) return;
+  this.hover = zone;
+  this.glowDirty = true;
+  this.canvas.style.cursor = zone ? 'pointer' : 'grab';
+  if (this.opts.onHover) this.opts.onHover(zone);
+};
+
+LrViewer.prototype.setHighlight = function (zones) {
+  this.highlight = (zones || []).filter(Boolean);
+  this.glowDirty = true;
+};
+
+LrViewer.prototype.raycast = function (x, y) {
+  var THREE = this.THREE;
+  var rect = this.canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  var ndc = new THREE.Vector2(((x - rect.left) / rect.width) * 2 - 1, -((y - rect.top) / rect.height) * 2 + 1);
+  this.raycaster.setFromCamera(ndc, this.camera);
+  var ph = this.raycaster.intersectObjects(this.pins.children, false);
+  for (var i = 0; i < ph.length; i++) {
+    var u = ph[i].object.userData;
+    if (u.markerId) return { zone: u.zone, markerId: u.markerId, point: u.point };
+  }
+  var hits = this.raycaster.intersectObjects(this.pickables, false);
+  for (var j = 0; j < hits.length; j++) {
+    var z = hits[j].object.userData.zone;
+    if (z) {
+      var p = hits[j].point;
+      return { zone: z, point: [Math.round(p.x * 1000) / 1000, Math.round(p.y * 1000) / 1000, Math.round(p.z * 1000) / 1000] };
+    }
+  }
+  return null;
+};
+
+LrViewer.prototype.onDown = function (e) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return;
+  try {
+    this.canvas.setPointerCapture(e.pointerId);
+  } catch (err) {
+    /* ohne Capture geht es auch */
+  }
+  this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (this.pointers.size === 1) {
+    this.press = { id: e.pointerId, x: e.clientX, y: e.clientY, t: performance.now(), moved: 0 };
+  } else if (this.pointers.size === 2) {
+    this.press = null;
+    this.pinch = { d: this.pinchDistance(), r: this.orbit.radius };
+  }
+  this.anim = null;
+  this.canvas.style.cursor = 'grabbing';
+  e.preventDefault();
+};
+
+LrViewer.prototype.pinchDistance = function () {
+  var pts = Array.from(this.pointers.values());
+  if (pts.length < 2) return 1;
+  return Math.max(1, Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y));
+};
+
+LrViewer.prototype.onMove = function (e) {
+  if (!this.pointers.has(e.pointerId)) {
+    if (e.pointerType === 'mouse') this.hoverAt = { x: e.clientX, y: e.clientY };
+    return;
+  }
+  var p = this.pointers.get(e.pointerId);
+  var dx = e.clientX - p.x;
+  var dy = e.clientY - p.y;
+  p.x = e.clientX;
+  p.y = e.clientY;
+  if (this.pointers.size === 1) {
+    if (this.press) this.press.moved += Math.abs(dx) + Math.abs(dy);
+    if (!this.press || this.press.moved > 5) {
+      this.orbit.theta -= dx * 0.009;
+      this.orbit.phi = lrClamp(this.orbit.phi - dy * 0.007, 0.18, 1.54);
+      this.dirty = true;
+      if (this.opts.onViewChange) this.opts.onViewChange(null);
+    }
+  } else if (this.pointers.size === 2 && this.pinch) {
+    var fit = lrFitRadius(this.aspect());
+    this.orbit.radius = lrClamp((this.pinch.r * this.pinch.d) / this.pinchDistance(), 0.55, fit * 1.6);
+    this.orbit.auto = false;
+    this.dirty = true;
+  }
+};
+
+LrViewer.prototype.onUp = function (e) {
+  var pr = this.press;
+  var tap = pr && pr.id === e.pointerId && pr.moved <= 6 && performance.now() - pr.t < 700;
+  this.pointers.delete(e.pointerId);
+  if (this.pointers.size < 2) this.pinch = null;
+  this.press = null;
+  this.canvas.style.cursor = this.hover ? 'pointer' : 'grab';
+  if (tap) {
+    var hit = this.raycast(e.clientX, e.clientY);
+    if (this.opts.onPick) this.opts.onPick(hit);
+  }
+};
+
+LrViewer.prototype.onCancel = function (e) {
+  this.pointers.delete(e.pointerId);
+  this.press = null;
+  this.pinch = null;
+};
+
+LrViewer.prototype.flyTo = function (theta, phi, radius, target, ms) {
+  var o = this.orbit;
+  var d = theta - o.theta;
+  d = ((((d + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
+  this.anim = {
+    t0: performance.now(),
+    ms: this.reduced ? 0 : ms,
+    from: { theta: o.theta, phi: o.phi, radius: o.radius, target: o.target.clone() },
+    to: { theta: o.theta + d, phi: phi, radius: radius, target: target.clone() },
+  };
+};
+
+LrViewer.prototype.setView = function (id) {
+  var v = VIEW_PRESETS.filter(function (p) {
+    return p.id === id;
+  })[0];
+  if (!v) return;
+  this.orbit.auto = true;
+  var THREE = this.THREE;
+  this.flyTo(v.theta * DEG, v.phi * DEG, lrFitRadius(this.aspect()), new THREE.Vector3(BIKE_CENTER[0], BIKE_CENTER[1], BIKE_CENTER[2]), 650);
+};
+
+LrViewer.prototype.focusZones = function (ids, view) {
+  var THREE = this.THREE;
+  var zones = this.bike.zones;
+  var box = new THREE.Box3();
+  (ids || []).forEach(function (id) {
+    if (zones[id] && zones[id].box) box.union(zones[id].box);
+  });
+  if (box.isEmpty()) return;
+  var c = box.getCenter(new THREE.Vector3());
+  var v = view || (ids.length === 1 && BIKE_ZONES[ids[0]] ? BIKE_ZONES[ids[0]].view : [20, 80, null]);
+  var a = this.aspect();
+  var r = v[2] ? v[2] * Math.max(1, 1.35 / a) : lrFitRadius(a) * 0.95;
+  this.orbit.auto = false;
+  this.flyTo(v[0] * DEG, v[1] * DEG, r, c, 700);
+};
+
+LrViewer.prototype.zoomBy = function (f) {
+  var fit = lrFitRadius(this.aspect());
+  this.anim = null;
+  this.orbit.radius = lrClamp(this.orbit.radius * f, 0.55, fit * 1.6);
+  this.orbit.auto = false;
+  this.dirty = true;
+};
+
+LrViewer.prototype.zoneCenter = function (zone) {
+  var z = this.bike.zones[zone];
+  return z && z.center ? [z.center.x, z.center.y, z.center.z] : null;
+};
+
+// markers: [{ id, zone, point, severity }], draft: { zone, point } für eine
+// neue Stelle, activeId: die Stelle, die gerade bearbeitet wird.
+LrViewer.prototype.setMarkers = function (markers, draft, activeId) {
+  this.markers = markers || [];
+  this.draft = draft || null;
+  this.activeId = activeId || null;
+  this.buildPins();
+};
+
+LrViewer.prototype.buildPins = function () {
+  var THREE = this.THREE;
+  var self = this;
+  this.pins.children.slice().forEach(function (s) {
+    self.pins.remove(s);
+    s.material.map.dispose();
+    s.material.dispose();
+  });
+  function pin(label, kind, active, point, data, order) {
+    var tex = new THREE.CanvasTexture(lrPinCanvas(label, kind, active));
+    tex.encoding = THREE.sRGBEncoding;
+    var mat = new THREE.SpriteMaterial({ map: tex, depthTest: false, depthWrite: false, sizeAttenuation: false, transparent: true });
+    var s = new THREE.Sprite(mat);
+    s.center.set(0.5, 0.0);
+    s.position.set(point[0], point[1], point[2]);
+    s.renderOrder = 100 + order;
+    s.userData = data;
+    s.userData.px = active ? 40 : 32;
+    self.pins.add(s);
+  }
+  this.markers.forEach(function (m, i) {
+    var point = m.point || self.zoneCenter(m.zone);
+    if (!point) return;
+    var active = m.id === self.activeId;
+    pin(String(i + 1), m.severity, active, point, { markerId: m.id, zone: m.zone, point: point }, active ? 90 : i);
+  });
+  if (this.draft && this.draft.zone) {
+    var dp = this.draft.point || this.zoneCenter(this.draft.zone);
+    if (dp) pin(String(this.markers.length + 1), 'neu', true, dp, { zone: this.draft.zone, point: dp }, 95);
+  }
+  this.scalePins();
+  this.dirty = true;
+};
+
+LrViewer.prototype.scalePins = function () {
+  var h = Math.max(1, this.size.h);
+  var t = Math.tan((this.camera.fov * DEG) / 2);
+  this.pins.children.forEach(function (s) {
+    var sy = (s.userData.px * 1.25 * 2 * t) / h;
+    s.scale.set(sy / 1.25, sy, 1);
+  });
+};
+
+LrViewer.prototype.dispose = function () {
+  this.disposed = true;
+  cancelAnimationFrame(this.raf);
+  if (this.ro) this.ro.disconnect();
+  var cv = this.canvas;
+  if (this.on) {
+    cv.removeEventListener('pointerdown', this.on.down);
+    cv.removeEventListener('pointermove', this.on.move);
+    cv.removeEventListener('pointerup', this.on.up);
+    cv.removeEventListener('pointercancel', this.on.cancel);
+    cv.removeEventListener('pointerleave', this.on.leave);
+    cv.removeEventListener('wheel', this.on.wheel);
+  }
+  if (this.scene) {
+    this.scene.traverse(function (o) {
+      if (o.geometry) o.geometry.dispose();
+      if (o.material) {
+        [].concat(o.material).forEach(function (m) {
+          if (m.map) m.map.dispose();
+          m.dispose();
+        });
+      }
+    });
+    if (this.scene.environment) this.scene.environment.dispose();
+  }
+  if (this.renderer) {
+    this.renderer.dispose();
+    if (this.renderer.forceContextLoss) this.renderer.forceContextLoss();
+  }
+};
+
+// ---------------------------------------------------------------------------
+// Baustein: allein ein Schaufenster für das Modell, eingebunden im Check-Up,
+// in der Pannenmeldung und im Verlauf meldet er jedes Antippen über onPick.
+// ---------------------------------------------------------------------------
+
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    var self = this;
+    this.state = { view: 'schraeg', hover: null, selected: null, failed: false };
+    this.viewer = null;
+    this.canvasEl = null;
+    this.tries = 0;
+    this.synced = {};
+    this.setCanvas = function (el) {
+      if (el === self.canvasEl) return;
+      self.teardown();
+      self.canvasEl = el || null;
+      if (el) self.tryInit();
+    };
+    this.viewPick = {};
+    VIEW_PRESETS.forEach(function (v) {
+      self.viewPick[v.id] = function () {
+        if (self.viewer) self.viewer.setView(v.id);
+        self.setState({ view: v.id });
+      };
+    });
+    this.zoomIn = function () {
+      if (self.viewer) self.viewer.zoomBy(0.8);
+    };
+    this.zoomOut = function () {
+      if (self.viewer) self.viewer.zoomBy(1.25);
+    };
+  }
+
+  componentDidMount() {
+    this.tryInit();
+  }
+
+  componentDidUpdate() {
+    this.sync();
+  }
+
+  componentWillUnmount() {
+    this.teardown();
+    this.canvasEl = null;
+  }
+
+  tryInit() {
+    var self = this;
+    if (this.viewer || !this.canvasEl || this.state.failed) return;
+    if (!window.THREE) {
+      clearTimeout(this.retry);
+      if (this.tries++ < 80) {
+        this.retry = setTimeout(function () {
+          self.tryInit();
+        }, 125);
+      } else {
+        this.setState({ failed: true });
+      }
+      return;
+    }
+    try {
+      var viewer = new LrViewer(this.canvasEl, {
+        onPick: function (hit) {
+          self.handlePick(hit);
+        },
+        onHover: function (zone) {
+          if (self.state.hover !== zone) self.setState({ hover: zone });
+        },
+        onViewChange: function (id) {
+          if (self.state.view !== id) self.setState({ view: id });
+        },
+      });
+      viewer.init(window.THREE);
+      this.viewer = viewer;
+      this.synced = {};
+      this.sync();
+    } catch (err) {
+      console.error(err);
+      this.setState({ failed: true });
+    }
+  }
+
+  teardown() {
+    clearTimeout(this.retry);
+    if (this.viewer) {
+      this.viewer.dispose();
+      this.viewer = null;
+    }
+  }
+
+  standalone() {
+    return typeof this.props.onPick !== 'function';
+  }
+
+  handlePick(hit) {
+    if (!this.standalone()) {
+      this.props.onPick(hit);
+      return;
+    }
+    this.setState({ selected: hit ? hit.zone : null });
+  }
+
+  sync() {
+    var v = this.viewer;
+    if (!v) return;
+    var p = this.props;
+    var markers = Array.isArray(p.markers) ? p.markers : [];
+    var draft = p.draft && p.draft.zone ? p.draft : null;
+    var mk = JSON.stringify([markers, draft, p.activeMarker || null]);
+    if (mk !== this.synced.markers) {
+      this.synced.markers = mk;
+      v.setMarkers(markers, draft, p.activeMarker || null);
+    }
+    var hl = Array.isArray(p.highlight) ? p.highlight.slice() : [];
+    if (this.standalone() && this.state.selected) hl.push(this.state.selected);
+    var hk = hl.join(',');
+    if (hk !== this.synced.highlight) {
+      this.synced.highlight = hk;
+      v.setHighlight(hl);
+    }
+    var f = p.focus;
+    var fk = f && f.token != null ? String(f.token) : '';
+    if (fk !== this.synced.focus) {
+      this.synced.focus = fk;
+      if (fk && f.zones && f.zones.length) {
+        v.focusZones(f.zones, f.view || null);
+        if (this.state.view !== null) this.setState({ view: null });
+      }
+    }
+  }
+
+  renderVals() {
+    var self = this;
+    var p = this.props;
+    var zone = this.state.hover || (this.standalone() ? this.state.selected : null);
+    var info = zone ? BIKE_ZONES[zone] : null;
+    var text = info
+      ? info.label + ' · ' + (info.check ? 'Prüfpunkt „' + info.check + '“' : 'kein eigener Prüfpunkt')
+      : p.hint || 'Ziehen dreht das Rad · Antippen wählt ein Bauteil';
+    var markers = Array.isArray(p.markers) ? p.markers : [];
+    var count = markers.length === 1 ? 'Eine Stelle markiert.' : markers.length ? markers.length + ' Stellen markiert.' : 'Keine Stelle markiert.';
+    return {
+      setCanvas: this.setCanvas,
+      height: Number(p.height) || 640,
+      infoText: text,
+      infoBg: info ? '#042c1b' : 'rgba(255,255,255,0.94)',
+      infoFg: info ? '#f6f7f4' : '#5a6169',
+      canvasLabel: '3D-Modell des Lastenrads Load 60 mit Riemen und Transportbox. ' + count,
+      views: VIEW_PRESETS.map(function (v) {
+        var on = self.state.view === v.id;
+        return {
+          id: v.id,
+          label: v.label,
+          pick: self.viewPick[v.id],
+          pressed: on ? 'true' : 'false',
+          bg: on ? '#004429' : 'transparent',
+          fg: on ? '#ffffff' : '#14181b',
+        };
+      }),
+      zoomIn: this.zoomIn,
+      zoomOut: this.zoomOut,
+      failed: this.state.failed,
+    };
+  }
+}
+</script>
+</body>
+</html>

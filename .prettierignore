@@ -11,6 +11,11 @@ pnpm-lock.yaml
 # halben Megabyte Diff erzeugen.
 marke/kanvas/
 
+# Dasselbe fuer die Leinwand „Lastenrad-Checkup 3D": byte-gleiche Kopien der
+# Leinwanddateien als Vorlage fuer FLT-EPIC-001 (Handoff vom 2026-10-08).
+# Umformatiert waeren sie keine Kopie der Leinwand mehr.
+docs/design/lastenrad-3d/kanvas/
+
 # Prinzipien, ADRs und Ideenspeicher werden bewusst von Hand gepflegt.
 # Automatische Umformatierung wuerde Diffs erzeugen, die keine inhaltliche
 # Aenderung sind.
