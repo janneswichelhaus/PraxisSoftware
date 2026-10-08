@@ -1066,6 +1066,19 @@ const eigenerPlanSchema = z.object({
   runs_from: z.string().nullable(),
   runs_until: z.string().nullable(),
   ended_on: z.string().nullable(),
+  /** UEB-010: Darf dieser Zugang heute an diesem Plan üben? Der Server rechnet. */
+  can_exercise: z.boolean(),
+  /** Im Training nur mit Einwilligung zu Gesundheitsangaben (ANN-306). */
+  note_allowed: z.boolean(),
+  /** Die heute begonnene, nicht beendete Einheit mit ihren Haken (ANN-305). */
+  open_session: z
+    .object({
+      id: z.string().uuid(),
+      sets: z.array(z.object({ item_id: z.string().uuid(), set_number: z.number() })),
+    })
+    .nullable(),
+  /** Die Tage der letzten vier Wochen, an denen geübt wurde. */
+  recent_sessions: z.array(z.object({ performed_on: z.string(), finished: z.boolean() })),
   items: z.array(planPositionSchema),
 });
 export type EigenerPlan = z.infer<typeof eigenerPlanSchema>;
@@ -1093,4 +1106,52 @@ export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
   })) as { data: unknown; error: unknown };
   if (ergebnis.error) throw new Error(satz);
   return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
+}
+
+/**
+ * UEB-010: eine Einheit beginnen oder die heute begonnene fortsetzen
+ * (ANN-305). Liefert ihre Kennung.
+ */
+export async function einheitBeginnen(zugangId: string, planId: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('start_platform_exercise_session', {
+    p_access_id: zugangId,
+    p_plan_id: planId,
+  })) as { data: unknown; error: unknown };
+  if (error || typeof data !== 'string') {
+    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+  }
+  return data;
+}
+
+/** Einen Durchgang abhaken oder den Haken zurücknehmen - sofort gespeichert. */
+export async function durchgangSetzen(
+  zugangId: string,
+  einheitId: string,
+  positionId: string,
+  durchgang: number,
+  erledigt: boolean,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('mark_platform_exercise_set', {
+    p_access_id: zugangId,
+    p_session_id: einheitId,
+    p_item_id: positionId,
+    p_set_number: durchgang,
+    p_done: erledigt,
+  });
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}
+
+/** Die Einheit beenden, wahlweise mit „Das war schwierig, weil …". */
+export async function einheitBeenden(
+  zugangId: string,
+  einheitId: string,
+  notiz: string,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('finish_platform_exercise_session', {
+    p_access_id: zugangId,
+    p_session_id: einheitId,
+    p_note: notiz,
+  });
+  if (error)
+    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
 }

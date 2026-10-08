@@ -167,6 +167,7 @@ export function plan(teil: Partial<Api.Plan> = {}): Api.Plan {
     relationship_open: true,
     previous: null,
     items: [position()],
+    sessions: [],
     ...teil,
   };
 }
@@ -663,5 +664,54 @@ describe('Plan als Blatt (UEB-008, ANN-303)', () => {
       'href',
       '/patienten/pat1/plaene/p1/blatt',
     );
+  });
+});
+
+describe('Durchgeführt (UEB-010)', () => {
+  it('zeigt die Einheiten der Person am zugewiesenen Plan', async () => {
+    fetchPlan.mockResolvedValue(
+      plan({
+        status: 'assigned',
+        runs_from: '2026-10-07',
+        runs_until: '2026-11-18',
+        sessions: [
+          {
+            id: 's1',
+            performed_on: '2026-10-08',
+            started_at: '2026-10-08T07:00:00Z',
+            finished_at: '2026-10-08T07:20:00Z',
+            sets_done: 3,
+            sets_total: 3,
+            difficulty_note: 'Knie zieht',
+            recorded_by_kind: 'self',
+          },
+          {
+            id: 's2',
+            performed_on: '2026-10-07',
+            started_at: '2026-10-07T07:00:00Z',
+            finished_at: null,
+            sets_done: 1,
+            sets_total: 3,
+            difficulty_note: null,
+            recorded_by_kind: 'legal_representative',
+          },
+        ],
+      }),
+    );
+    renderWithProviders(<PlanPage />);
+    const abschnitt = (await screen.findByRole('heading', { name: 'Durchgeführt' })).closest(
+      'section',
+    )!;
+    expect(abschnitt).toHaveTextContent('08.10.2026 · 3 von 3 Durchgängen');
+    expect(abschnitt).toHaveTextContent('Schwierig, weil: Knie zieht');
+    expect(abschnitt).toHaveTextContent(
+      '07.10.2026 · 1 von 3 Durchgängen · nicht beendet · erfasst von der Vertretung',
+    );
+  });
+
+  it('zeigt im Entwurf keinen Abschnitt', async () => {
+    renderWithProviders(<PlanPage />);
+    await screen.findByRole('heading', { name: 'Heimprogramm Knie' });
+    expect(screen.queryByText('Durchgeführt')).not.toBeInTheDocument();
   });
 });

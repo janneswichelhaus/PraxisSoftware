@@ -40,6 +40,12 @@ export function Uebungen({ zugang }: { zugang: Plattformzugang }) {
   return (
     <>
       <h1 className="text-accent text-h3 font-bold">{training ? 'Training' : 'Übungen'}</h1>
+      {suche.get('gespeichert') === '1' ? (
+        // Eine Bestätigung, kein Lob (DSN-001 4.1).
+        <Statusmeldung ton="erfolg" className="mt-4">
+          Ihre Einheit ist gespeichert.
+        </Statusmeldung>
+      ) : null}
       {plaene.isPending ? (
         <LoadingState label="Ihre Übungen werden geladen …" />
       ) : plaene.data === undefined ? (
@@ -76,6 +82,7 @@ function PlanKarte({
   bereich: string;
 }) {
   const ueberschrift = `plan-${plan.id}`;
+  const zuletzt = plan.recent_sessions[0]?.performed_on;
   return (
     <section aria-labelledby={ueberschrift} className="mt-6">
       <h2 id={ueberschrift} className="text-h4 font-semibold">
@@ -85,6 +92,22 @@ function PlanKarte({
         {laufzeitText(plan, heute)}
         {plan.sessions_per_week ? ` · ${haeufigkeit(plan.sessions_per_week)}` : ''}
       </p>
+      {zuletzt ? (
+        <p className="text-ink-muted mt-1">
+          Zuletzt geübt: {zuletzt === heute ? 'heute' : formatDate(zuletzt)}
+        </p>
+      ) : null}
+      {plan.can_exercise && plan.items.length > 0 ? (
+        // UEB-010: die Durchführungsansicht (IDEA-ORG-003).
+        <div className="mt-4">
+          <ButtonLink
+            className="w-full"
+            to={`${PLATTFORM_PFAD}/uebungen/einheit/${plan.id}${bereich ? `?${bereich}` : ''}`}
+          >
+            {plan.open_session ? 'Weiter üben' : 'Jetzt üben'}
+          </ButtonLink>
+        </div>
+      ) : null}
       {plan.status === 'ended' ? (
         <Statusmeldung ton="neutral" className="mt-3">
           Dieser Plan ist beendet. Sie können ihn hier noch lesen und als PDF mitnehmen.

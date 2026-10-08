@@ -54,9 +54,14 @@ describe('platform_exercise_plans (UEB-009)', () => {
     expect(daten!.plans.map((p) => p.id)).toEqual([plan]);
     expect(Object.keys(daten!.plans[0]!).sort()).toEqual([
       'assigned_on',
+      // UEB-010: ob heute geübt werden darf, die offene Einheit, die letzten Tage.
+      'can_exercise',
       'ended_on',
       'id',
       'items',
+      'note_allowed',
+      'open_session',
+      'recent_sessions',
       'runs_from',
       'runs_until',
       'service_area',

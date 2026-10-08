@@ -88,6 +88,12 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigener Trainingsvertrag mit Bestätigung (KND-003); Negativfälle in training-contracts.test.ts',
   'public.platform_exercise_plans':
     'Eigene zugewiesene Pläne als Schnappschuss (UEB-009); Negativfälle in platform-exercise-plans.test.ts',
+  'public.start_platform_exercise_session':
+    'Einheit am eigenen Plan beginnen (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
+  'public.mark_platform_exercise_set':
+    'Satz abhaken (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
+  'public.finish_platform_exercise_session':
+    'Einheit beenden (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

@@ -146,6 +146,9 @@ describe('Schema-Invarianten', () => {
       // UEB-004: Übungspläne und ihre Positionen.
       'exercise_plans',
       'exercise_plan_items',
+      // UEB-010: durchgeführte Einheiten und abgehakte Sätze.
+      'exercise_plan_sessions',
+      'exercise_plan_session_sets',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

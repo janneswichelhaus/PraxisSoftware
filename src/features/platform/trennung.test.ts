@@ -89,10 +89,13 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:complete_platform_questionnaire_response',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
+      // UEB-010: eine Einheit am eigenen Plan.
+      'rpc:finish_platform_exercise_session',
       // POR-019: der eigene Einstieg.
       'rpc:finish_platform_onboarding',
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
+      'rpc:mark_platform_exercise_set',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
       // ANG-003: das eigene Nachsorge-Abo.
       'rpc:platform_aftercare',
@@ -124,6 +127,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       // POR-010: Termin ändern oder absagen als Wunsch.
       'rpc:request_platform_appointment_change',
       'rpc:save_platform_questionnaire_response',
+      'rpc:start_platform_exercise_session',
       'rpc:withdraw_platform_appointment_request',
       // KND-004: den Trainingsvertrag widerrufen (§ 356a BGB).
       'rpc:withdraw_platform_training_contract',

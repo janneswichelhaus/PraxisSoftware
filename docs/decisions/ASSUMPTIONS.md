@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 99 Einträge):
+Zusatz `Prüfpaket` (heute 100 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3671,3 +3671,27 @@ Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `app.platform_visible_exercise_plans` in `supabase/migrations/20261019100000_ueb_009_platform_exercise_plans.sql`. Geprüft in `supabase/tests/platform-exercise-plans.test.ts`.
 
 **Änderungspfad.** Auch ältere beendete Pläne zeigen oder den beendeten nie: die eine Funktion · Aufwand `klein`. Den Plan erst ab Laufzeitbeginn zeigen: eine Bedingung dort · Aufwand `klein`.
+
+### ANN-305 — Jeder Haken der Durchführung geht sofort an den Server; in der Lesefrist wird nicht mehr erfasst
+
+Technik · offen · 2026-10-08 · — · — · Wiedervorlage: ADR-024 (Offline-Erfassung); Jannes (Sichtung Plattform)
+
+**Annahme.** Die Durchführungsansicht speichert jeden abgehakten Durchgang sofort als Zeile am Server; eine Einheit entsteht mit dem ersten Haken, höchstens eine offene je Plan und Tag, und wer abbricht und wieder anfängt, setzt sie fort. Ohne Verbindung nimmt die Ansicht den Haken zurück und sagt „Nicht gespeichert“ – auf dem Gerät liegt nichts. Eine nicht beendete Einheit eines früheren Tages bleibt so stehen („nicht beendet“). Erfasst wird nur am zugewiesenen Plan ab seinem Beginn und nicht in der Lesefrist nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos (DSN-001 4.3: „alle Knöpfe, die schreiben, fallen weg“). Erfasst werden Durchgänge, keine Ist-Werte (Last, Wiederholungen).
+
+**Begründung.** IDEA-ORG-003 verlangt „Abbrechen ohne Datenverlust“ und nennt „keine Verbindung“ als Lage. ADR-015 Punkt 16 schließt einen Service Worker aus, ADR-024 steht aus; Gesundheitsdaten im Browser abzulegen wäre eine Offline-Erfassung, die ADR-001 erst mit Geräteregeln zulässt. ADR-001 verlangt, dass niemand glaubt, gespeichert zu haben, was nur lokal liegt. Ist-Werte gehören zu Verlauf und Tracking (Block 7, §17 Verbot 2).
+
+**Anker.** `public.start_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/platform/Durchfuehrung.test.tsx`.
+
+**Änderungspfad.** Offline-Erfassung mit späterem Abgleich: nach ADR-024, Warteschlange im Gerät und additive Übertragung · Aufwand `groß`. Erfassen auch in der Lesefrist: `app.platform_access_writable` aus der Prüfung nehmen · Aufwand `klein`. Ist-Werte je Durchgang: Spalten an `exercise_plan_session_sets` und Felder in der Ansicht · Aufwand `mittel`.
+
+### ANN-306 — Eine Einheit erfassen die Person und ihre rechtliche Vertretung; im Training „schwierig, weil …“ nur mit Einwilligung
+
+Datenschutz · offen · 2026-10-08 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264)
+
+**Annahme.** Eine Einheit beginnen, Durchgänge abhaken und beenden dürfen die Person selbst und ihre rechtliche Vertretung (Fähigkeit `exercise`), nicht die Begleitung. Das freiwillige „Das war schwierig, weil …“ (höchstens 500 Zeichen) gibt es in der Behandlung immer, im Training nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist. Die Praxis liest die Einheiten am Plan mit denselben Rollen wie den Plan (ANN-298): in der Behandlung owner, Therapeut:innen, Teamleitung und Büro (ADR-004 Fassung 2 Punkt 3), im Training owner und Trainingsbetreuung. Die Einheiten stehen in der Auskunft nach Art. 15 am Plan.
+
+**Begründung.** ADR-023 Punkt 13 erlaubt der Begleitung Lesen, Wünsche und Nachrichten – eine Angabe zur Gesundheit für die Person ist keines davon, wie beim Befundbogen (ANN-248). Ein Freitext über Beschwerden im Training ist eine Angabe zur Gesundheit, die ADR-021 Punkt 4 an die ausdrückliche Einwilligung bindet; das bloße Abhaken sagt nur, dass trainiert wurde. Die Einheiten haben die Datenklasse ihres Plans und fallen mit ihm (ADR-008).
+
+**Anker.** Zweig `exercise` in `app.platform_access_allows` und `app.platform_exercise_note_allowed` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts`.
+
+**Änderungspfad.** Begleitung darf abhaken: `exercise` in den ersten Zweig von `app.platform_access_allows` · Aufwand `klein`. Freitext im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest die Einheiten nicht: eigene Leseregel in `get_exercise_plan` · Aufwand `klein`.

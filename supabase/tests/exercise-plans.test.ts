@@ -574,6 +574,11 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
       expect(rows).toEqual([
         { table_name: 'exercise_plan_items', class_key: 'patientenakte' },
         { table_name: 'exercise_plan_items', class_key: 'trainingsverhaeltnis' },
+        // UEB-010: Einheiten und Sätze folgen ihrem Plan.
+        { table_name: 'exercise_plan_session_sets', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_session_sets', class_key: 'trainingsverhaeltnis' },
+        { table_name: 'exercise_plan_sessions', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_sessions', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plans', class_key: 'patientenakte' },
         { table_name: 'exercise_plans', class_key: 'trainingsverhaeltnis' },
       ]);

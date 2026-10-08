@@ -40,6 +40,7 @@ import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
 import { Uebersicht } from './Uebersicht';
 import { PlanblattPlattform, Uebungen } from './Uebungen';
+import { Durchfuehrung } from './Durchfuehrung';
 import { datum, kalendertag } from './zeit';
 import { Terminaenderung } from './Terminaenderung';
 import { Terminwunsch } from './Terminwunsch';
@@ -160,6 +161,16 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Uebungen zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/uebungen/einheit/:planId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Durchfuehrung zugang={z} />}
               />
             }
           />

@@ -24,6 +24,7 @@ import {
   planPfad,
   planSchluessel,
   savePlan,
+  type Einheit,
   type Plan,
   type Position,
 } from './api';
@@ -103,6 +104,7 @@ function Ansicht({ plan }: { plan: Plan }) {
         <>
           {entwurf ? null : <Laufzeit plan={plan} />}
           <Positionsliste plan={plan} />
+          {entwurf ? null : <Durchgefuehrt plan={plan} />}
         </>
       )}
       <Fassungen plan={plan} />
@@ -712,5 +714,49 @@ function Fassungen({ plan }: { plan: Plan }) {
         </Statusmeldung>
       ) : null}
     </Section>
+  );
+}
+
+// -----------------------------------------------------------------------------
+// Durchgeführt (UEB-010)
+// -----------------------------------------------------------------------------
+
+/**
+ * Was die Person auf der Plattform an diesem Plan gemacht hat - Tag,
+ * Durchgänge, „schwierig, weil …". Darstellung dessen, was sie erfasst hat;
+ * keine Quote, keine Bewertung, kein Vorschlag (ADR-006 Punkt 10, §17).
+ */
+function Durchgefuehrt({ plan }: { plan: Plan }) {
+  return (
+    <Section titel="Durchgeführt" hinweis="Was die Person auf der Plattform abgehakt hat.">
+      {plan.sessions.length === 0 ? (
+        <p className="text-ink-muted text-sm">Noch keine Einheit erfasst.</p>
+      ) : (
+        <ul className="flex flex-col gap-2">
+          {plan.sessions.map((einheit) => (
+            <li key={einheit.id} className="rounded-card border-line bg-surface border p-3 text-sm">
+              <EinheitZeile einheit={einheit} />
+            </li>
+          ))}
+        </ul>
+      )}
+    </Section>
+  );
+}
+
+function EinheitZeile({ einheit }: { einheit: Einheit }) {
+  return (
+    <>
+      <p>
+        <span className="font-semibold">{formatDate(einheit.performed_on)}</span>
+        {' · '}
+        {einheit.sets_done} von {einheit.sets_total} Durchgängen
+        {einheit.finished_at ? '' : ' · nicht beendet'}
+        {einheit.recorded_by_kind === 'legal_representative' ? ' · erfasst von der Vertretung' : ''}
+      </p>
+      {einheit.difficulty_note ? (
+        <p className="mt-1">Schwierig, weil: {einheit.difficulty_note}</p>
+      ) : null}
+    </>
   );
 }

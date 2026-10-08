@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as PlattformApi from './api';
-import type { EigenePlaene, EigenerPlan, Plattformzugang } from './api';
+import type { EigenePlaene, Plattformzugang } from './api';
 import { renderWithProviders } from '@/test-utils';
+import { eigenerPlan } from './testdaten';
 
 /**
  * Reiter „Übungen" bzw. „Training" (UEB-009, DSN-001 4.1 und 5) und der Plan
@@ -29,39 +30,6 @@ const ZUGANG: Plattformzugang = {
   access_kind: 'self',
   represented_name: null,
 };
-
-export function eigenerPlan(teil: Partial<EigenerPlan> = {}): EigenerPlan {
-  return {
-    id: 'aaaaaaaa-0000-4000-8000-000000000001',
-    service_area: 'therapy',
-    title: 'Heimprogramm Knie',
-    status: 'assigned',
-    sessions_per_week: 3,
-    assigned_on: '2026-10-07',
-    runs_from: '2026-10-07',
-    runs_until: '2026-11-18',
-    ended_on: null,
-    items: [
-      {
-        id: 'bbbbbbbb-0000-4000-8000-000000000001',
-        position: 1,
-        variant_lay_name: 'Am Geländer in die Hocke',
-        instruction: 'Festhalten.',
-        equipment: ['Geländer'],
-        sets: 3,
-        reps_min: 10,
-        reps_max: 12,
-        duration_seconds: null,
-        load: null,
-        tempo: null,
-        rest_seconds: 30,
-        double_progression: false,
-        note: 'Langsam ablassen.',
-      },
-    ],
-    ...teil,
-  };
-}
 
 beforeEach(() => {
   ladePlaene.mockReset();
@@ -159,5 +127,50 @@ describe('Plan als Blatt auf der Plattform (ANN-303)', () => {
     expect(
       screen.queryByRole('button', { name: 'Drucken oder als PDF sichern' }),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('Einstieg in die Einheit (UEB-010)', () => {
+  it('bietet „Jetzt üben" an und nennt den letzten Tag', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [eigenerPlan({ recent_sessions: [{ performed_on: '2026-10-06', finished: true }] })],
+    });
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    expect(await screen.findByRole('link', { name: 'Jetzt üben' })).toHaveAttribute(
+      'href',
+      `/p/uebungen/einheit/${eigenerPlan().id}`,
+    );
+    expect(screen.getByText('Zuletzt geübt: 06.10.2026')).toBeInTheDocument();
+  });
+
+  it('sagt „Weiter üben", wenn heute eine Einheit offen ist', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [
+        eigenerPlan({
+          open_session: { id: 'cccccccc-0000-4000-8000-000000000001', sets: [] },
+          recent_sessions: [{ performed_on: '2026-10-08', finished: false }],
+        }),
+      ],
+    });
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    expect(await screen.findByRole('link', { name: 'Weiter üben' })).toBeInTheDocument();
+    expect(screen.getByText('Zuletzt geübt: heute')).toBeInTheDocument();
+  });
+
+  it('bietet ohne Recht zum Üben keinen Knopf (Begleitung, Lesefrist)', async () => {
+    ladePlaene.mockResolvedValue({
+      today: '2026-10-08',
+      plans: [eigenerPlan({ can_exercise: false })],
+    });
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen');
+    await screen.findByRole('heading', { name: 'Heimprogramm Knie' });
+    expect(screen.queryByRole('link', { name: 'Jetzt üben' })).not.toBeInTheDocument();
+  });
+
+  it('bestätigt eine gespeicherte Einheit ohne Lob', async () => {
+    renderWithProviders(<Uebungen zugang={ZUGANG} />, '/p/uebungen?gespeichert=1');
+    expect(await screen.findByText('Ihre Einheit ist gespeichert.')).toBeInTheDocument();
   });
 });
