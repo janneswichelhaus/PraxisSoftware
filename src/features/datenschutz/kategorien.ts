@@ -148,6 +148,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Welches Trainingspaket die Praxis nach der Behandlung angeboten hat, mit den Angaben, die sie mitgeben wollte, und ob es angenommen wurde.',
   },
+  exercise_plans: {
+    label: 'Übungspläne',
+    beschreibung:
+      'Die zusammengestellten und zugewiesenen Übungspläne mit Übungen, Dosierung und Laufzeit.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',

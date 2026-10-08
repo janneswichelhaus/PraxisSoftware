@@ -731,7 +731,10 @@
           "id": "ueb-epic-002",
           "name": "UEB-EPIC-002 Plan und Schnappschuss",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-07",
+          "nachweis": "UEB-004 bis UEB-007, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 4 bis 6"
         },
         {
           "id": "ueb-epic-003",

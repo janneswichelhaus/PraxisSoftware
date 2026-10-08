@@ -91,6 +91,8 @@ export const auditOperationLabels: Record<string, string> = {
   'audit_log.read': 'Protokoll gelesen',
   'billable_services.read': 'Leistungen gelesen',
   'deletion_runs.read': 'Löschläufe gelesen',
+  // UEB-EPIC-002: Übungspläne einer Akte oder Trainingskund:in (ANN-298).
+  'exercise_plans.read': 'Übungspläne gelesen',
   'invoicing.read': 'Abrechnung gelesen',
   'legal_hold.placed': 'Löschsperre gesetzt',
   'legal_hold.released': 'Löschsperre aufgehoben',

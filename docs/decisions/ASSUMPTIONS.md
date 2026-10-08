@@ -3575,3 +3575,75 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `public.set_exercise_archived`, `public.set_exercise_variant_archived`, `public.delete_exercise` und `public.delete_exercise_variant` in `supabase/migrations/20261017100000_ueb_001_exercise_library.sql`; Datenklasse `betriebsdaten` in `public.retention_assignments`.
 
 **Änderungspfad.** Löschen auch mit Abhängigen: Fremdschlüssel auf `cascade` und eine Rückfrage, was mitgeht · Aufwand `mittel`.
+
+### ANN-297 — Ein Plan in einer Tabelle für beide Bereiche, genau ein Verhältnis
+
+Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
+
+**Annahme.** Übungspläne beider Leistungsbereiche stehen in **einer** Tabelle `exercise_plans` (Positionen in `exercise_plan_items`). Ein Plan trägt `service_area` und hängt an **genau einem** Verhältnis: an der Akte (`therapy`, `patient_id`) oder am Trainingsverhältnis (`training`, `training_relationship_id`) – eine Constraint verbietet beides und keines. Datenklasse und Frist werden je Zeile am Bereich zugeordnet: Behandlungspläne sind Patientenakte, Trainingspläne Trainingsverhältnis; beide fallen mit ihrem Verhältnis.
+
+**Begründung.** ADR-022 Punkt 3 hat dieselbe Form für den Kalender gewählt; die Trennung erzwingt die Constraint, nicht eine zweite Tabelle (ADR-021 Punkt 1: „erzwingt“). Zwei Tabellen verdoppelten jede Funktion für Entwurf, Schnappschuss, Fassung und Wiedervorlage, ohne etwas zu schützen, das Policy und Funktionen je Bereich nicht schon schützen. Der Retention Schedule nennt „Therapiepläne“ ausdrücklich in der Klasse der Patientenakte (ADR-008). Unsicher: ob die Datenschutzprüfung zwei Tabellen als die sauberere Trennung verlangt.
+
+**Anker.** Constraint `exercise_plans_one_relationship` und die vier Zeilen in `public.retention_assignments` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Zwei Tabellen: `training_exercise_plans` abspalten, Funktionen je Bereich verdoppeln, Daten umziehen · Aufwand `mittel`.
+
+### ANN-298 — Behandlungspläne schreiben Therapeut:innen, Trainingspläne owner und Trainingsbetreuung; das Büro liest nur Behandlungspläne
+
+Praxisprozess · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Pläne), Datenschutzprüfung (B2)
+
+**Annahme.** Behandlungspläne stellen therapist und team_lead zusammen, weisen sie zu, steigern, verlängern und beenden sie; lesen dürfen dazu owner und das Büro. Trainingspläne lesen und schreiben owner und die Trainingsbetreuung; das Büro sieht sie nicht. Ein Plan des anderen Bereichs ist für jede Rolle „nicht gefunden“.
+
+**Begründung.** Ein Behandlungsplan ist Teil der Behandlung: Schreiben folgt der Behandlungsdokumentation (`app.can_write_treatment_note`, owner ohne Therapierolle schreibt nicht), Lesen ADR-004 Punkt 3 (das Büro liest alle klinischen Inhalte der Akte). Im Training öffnet ADR-021 Punkt 10 dem Büro **nur** das Protokoll; ein Plan gehört nicht dazu. Die Trainingsrollen folgen Profil und Protokoll (ANN-184, ANN-287). Kein Durchgriff nach ADR-021 Punkt 6.
+
+**Anker.** `app.can_read_exercise_plans(text)` und `app.can_write_exercise_plans(text)` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `canReadExercisePlans` in `src/features/session/types.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Andere Rollen: die Listen in beiden Funktionen und in `canReadExercisePlans` ändern · Aufwand `klein`.
+
+### ANN-299 — Dosierung je Position: Sätze, Wiederholungen oder Dauer, Last und Tempo frei
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Eine Position trägt Sätze (1–20), **entweder** Wiederholungen von–bis (1–100; gleich für eine feste Zahl) **oder** eine Dauer in Sekunden (1–3600), dazu Last und Tempo als freien Text (je höchstens 40 Zeichen, etwa „Theraband rot“), eine Pause in Sekunden (0–600), das Kennzeichen „doppelte Progression“ (nur mit Wiederholungsbereich und Last) und einen Hinweis an die Person (höchstens 500 Zeichen). Die Einheiten je Woche (1–14) stehen am Plan. Höchstens 30 Positionen je Plan.
+
+**Begründung.** Die Felder decken die Achsen aus IDEA-TRN-004 ab, die eine Dosis sind (Last, Wiederholungen, Sätze, Tempo, Dichte, Frequenz); die übrigen Achsen ändern die Variante. Last als Text, weil Bänder, Rucksack und Körpergewicht keine Zahl in kg sind. Die doppelte Progression (IDEA-TRN-007) braucht einen Bereich und eine Last, sonst gibt es nichts zu steigern.
+
+**Anker.** Spalten und Prüfungen von `public.exercise_plan_items` und `public.save_exercise_plan_item` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; Darstellung `src/features/exercise-plans/dosierung.ts`.
+
+**Änderungspfad.** Andere Grenzen oder Felder: Constraint, Funktion und Formular `src/features/exercise-plans/PositionFormular.tsx` · Aufwand `klein`.
+
+### ANN-300 — Mit der Zuweisung wird der Plan eingefroren; danach ändern sich nur Laufzeit und Ende
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Beim Zuweisen hält der Plan je Position die Bezeichnungen beider Sprachebenen, die Körperregion, die Kurzanleitung und die Ausrüstung der Variante fest, dazu die Dosierung. Danach ändert eine Änderung der Bibliothek nichts mehr daran, und am Plan ändern sich nur noch das Ende der Laufzeit, das Beenden und das Ablösen durch eine neue Fassung. Ein Entwurf darf verworfen werden; ein zugewiesener Plan wird nie gelöscht, nur beendet – er fällt erst mit seinem Verhältnis.
+
+**Begründung.** IDEA-TRN-011: Was die Person bekommen hat, muss im Nachhinein feststellbar sein – bei einer Beschwerde oder einem Zwischenfall ist genau das die Frage. Dieselbe Unveränderlichkeit legen ADR-009 für die ausgestellte Rechnung und §5 für die finalisierte Dokumentation fest. Hinweise für die Praxis und Ausweichbewegungen gehören nicht in den Schnappschuss: Sie sind Fachwissen der Praxis, nicht Inhalt des Plans.
+
+**Anker.** Die Riegel `public.exercise_plans_guard` und `public.exercise_plan_items_guard` in `supabase/migrations/20261018100000_ueb_004_exercise_plans.sql`; der Schnappschuss in `public.assign_exercise_plan` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Weitere Felder einfrieren: Spalte und Zeile im Schnappschuss ergänzen · Aufwand `klein`. Korrektur eines zugewiesenen Plans ohne neue Fassung: ein eigener Korrekturweg mit Fassungskette wie in ADR-016 · Aufwand `mittel`.
+
+### ANN-301 — Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+
+**Annahme.** Gesteigert oder zurückgenommen wird ein zugewiesener Plan in einer **neuen Fassung**: Sie übernimmt Titel, Einheiten je Woche und alle Positionen als Entwurf; je Plan gibt es höchstens eine Folgefassung. An einer übernommenen Position ändert sich gegenüber der vorigen höchstens eines von Variante, Wiederholungen bzw. Dauer, Sätze, Last, Tempo, Pause – und die Fachperson nennt Achse und Richtung dazu. Eine andere Variante nur über eine Verbindung der Bibliothek entlang dieser Achse; bei Sätzen, Wiederholungen und Pause prüft die Datenbank die Richtung – bei der Pause nur, wenn vorher und nachher eine steht; kommt eine hinzu oder fällt weg, gilt die genannte Richtung. Hinweis und Kennzeichen der doppelten Progression ändern sich frei; neue Positionen tragen keinen Schritt – wer eine Übung entfernt und neu hinzufügt, wechselt sie also ohne Verbindung (gewollt, zur Sichtung). Mit der Zuweisung löst die neue Fassung die vorige ab, die lesbar bleibt.
+
+**Begründung.** IDEA-TRN-004: Nur eine Achse je Schritt macht eine Reaktion zuordenbar; IDEA-TRN-007: doppelte Progression ist ein Schritt auf der Achse Last bei gleichem Bereich. Der Schnappschuss (ANN-300) verbietet das Ändern des zugewiesenen Plans; die Fassungskette hält fest, was wann galt. Keine Funktion wählt den Schritt aus (ADR-006 Punkt 10); die Verbindungen der Bibliothek erscheinen erst, wenn die Fachperson Richtung und Achse gewählt hat.
+
+**Anker.** `app.exercise_plan_step_check` und `public.create_exercise_plan_version` in `supabase/migrations/20261018120000_ueb_006_plan_versions.sql`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Mehrere Achsen je Schritt zulassen: die Zählung in `app.exercise_plan_step_check` lockern · Aufwand `klein`. Freie Änderung ohne Schritt: die Prüfung entfernen · Aufwand `klein`.
+
+### ANN-302 — Laufzeit voreingestellt sechs Wochen, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist
+
+Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne, nach den ersten Wochen mit echten Plänen)
+
+**Annahme.** Jeder zugewiesene Plan hat ein Ende: beim Zuweisen Pflicht, voreingestellt sechs Wochen, höchstens 26 Wochen ab dem Tag. Sieben Tage vor dem Ende erscheint der Plan unter „Offene Punkte“ bei den Rollen, die ihn schreiben dürfen – nicht beim Büro –, und bleibt dort, auch nach dem Ende, bis jemand verlängert (wieder höchstens 26 Wochen ab heute; das erste Ende bleibt festgehalten), eine neue Fassung zuweist oder den Plan beendet.
+
+**Begründung.** IDEA-ORG-006: Pläne ohne Ablaufdatum laufen ewig weiter; ein Ende erzwingt eine bewusste Entscheidung je Zyklus. Sechs Wochen entsprechen einem üblichen Behandlungs- und Trainingsblock; 26 Wochen sind die Grenze, ab der eine Übungsfolge kaum noch zur Lage passt. Die Wiedervorlage hängt nur am Datum – sie wertet keine Angabe der Person aus (ADR-006 Punkt 11). Das Büro schreibt keine Pläne und entscheidet deshalb nicht darüber.
+
+**Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
+
+**Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.

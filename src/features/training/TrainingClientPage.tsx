@@ -22,6 +22,7 @@ import {
   canWriteTrainingClients,
   canReadTrainingProtocols,
   canWriteTrainingProtocols,
+  canReadExercisePlans,
   type CurrentUser,
 } from '@/features/session/types';
 import { Trainingspaket } from '@/features/billing/Trainingspaket';
@@ -47,6 +48,7 @@ import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnit
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
+import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 
 /**
  * Eine Trainingskund:in (TRN-002).
@@ -225,6 +227,15 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
             <TrainingProfil
               relationshipId={kundin.id}
               darfSchreiben={kundin.contract_ended_on === null}
+            />
+          ) : null}
+          {/* UEB-EPIC-002: die Trainingspläne - owner und Trainingsbetreuung,
+              nicht das Büro (ANN-298). */}
+          {canReadExercisePlans(user.roles, 'training') ? (
+            <PlanAbschnitt
+              bereich="training"
+              verhaeltnisId={kundin.id}
+              rueckweg={`/training/${kundin.id}`}
             />
           ) : null}
           {/* TRN-009: die protokollierten Einheiten - nur owner und

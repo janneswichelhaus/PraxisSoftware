@@ -489,3 +489,31 @@ Progressionsschema (IDEA-TRN-014).
 **Offen.** Ob das Format vor der Übungsbibliothek mit Freitext-Übungen
 starten darf oder UEB-EPIC-001 voraussetzt; Aufnahme in welchen Loop.
 
+
+---
+
+### IDEA-TRN-016 — Planvorlagen der Praxis ohne Person
+
+| | |
+|---|---|
+| Status | vorschlag |
+| Quelle | Claude, 2026-10-07 (Zuschnitt UEB-EPIC-002) |
+| Berührt | IDEA-TRN-011, UEB-EPIC-002, ADR-006 Punkt 10 |
+
+**Idee.** Eine Zusammenstellung von Übungen mit Dosierung, die keiner Person
+gehört – etwa „Knie Woche 1–3“ –, aus der ein Plan für eine Person entsteht.
+Die Vorlage ist Fachwissen der Praxis wie die Bibliothek; personenbezogen
+wird erst die Kopie im Plan, die beim Zuweisen eingefroren wird.
+
+**Warum.** IDEA-TRN-011 trennt Vorlage, Zuweisung und Durchführung; gebaut
+ist mit UEB-EPIC-002 nur der Plan je Person. Wer dieselbe Folge oft gibt,
+stellt sie heute jedes Mal neu zusammen.
+
+**Vorsicht.** ADR-006 Punkt 10 erlaubt Vorlagen und gespeicherte
+Zusammenstellungen, solange keine aus Diagnose oder Befund vorgeschlagen,
+vorsortiert oder vorbelegt wird – also Auswahl nach Name, nicht „passend zu“.
+Eine Vorlage darf nie aus dem Plan einer anderen Person entstehen, ohne den
+Personenbezug zu verlieren.
+
+**Offen.** Wer Vorlagen pflegt (wie die Bibliothek nur owner?); ob eine
+Änderung der Vorlage bestehende Entwürfe mitändert (Vorschlag: nein, Kopie).

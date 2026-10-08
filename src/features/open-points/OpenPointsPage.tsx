@@ -9,6 +9,7 @@ import {
   canReadPatientDirectory,
   canReadTrainingClients,
   canReadTreatmentBases,
+  canWriteExercisePlans,
   canWriteTreatmentBases,
   type CurrentUser,
 } from '@/features/session/types';
@@ -22,6 +23,7 @@ import { PrescriptionsToCapture } from './PrescriptionsToCapture';
 import { Tasks } from './Tasks';
 import { PlatformRequests } from './PlatformRequests';
 import { WaitlistReview } from './WaitlistReview';
+import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
 
 /** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -33,8 +35,8 @@ const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * da sind, Aufgaben und Wiedervorlagen, offene Erstaufnahmen, die Anrufe für
  * morgen, Wartelisteneinträge, die lange keiner angefasst hat (ABN-018), und
  * Verordnungen, die bald enden, seit POR-011 die Terminwünsche von der
- * Plattform, seit POR-016 die Widerrufe und seit ANG-003 die Kündigungen des
- * Nachsorge-Abos über die Plattform. Jede Liste hat ihren eigenen
+ * Plattform, seit POR-016 die Widerrufe, seit ANG-003 die Kündigungen des
+ * Nachsorge-Abos über die Plattform und seit UEB-007 die auslaufenden Pläne. Jede Liste hat ihren eigenen
  * Lesepfad; was eine Rolle nicht sehen darf, fragt die Seite gar nicht erst ab
  * - verbindlich prüft der Server (ADR-004).
  *
@@ -49,6 +51,10 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
   const neueAufgabe = suche.get('aufgabe') === 'neu';
   const patientParam = suche.get('patient');
   const aufgabePatient = patientParam && KENNUNG.test(patientParam) ? patientParam : null;
+  // UEB-007: die Pläne der Bereiche, die die Person schreibt (ANN-302).
+  const planBereiche = (['therapy', 'training'] as const).filter((bereich) =>
+    canWriteExercisePlans(user.roles, bereich),
+  );
 
   return (
     <>
@@ -76,6 +82,9 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         {canManageAppointments(user.roles) ? <CallsSummary today={today} /> : null}
         {canManageAppointments(user.roles) ? <WaitlistReview timeZone={timeZone} /> : null}
         {canReadTreatmentBases(user.roles) ? <EndingPrescriptions timeZone={timeZone} /> : null}
+        {planBereiche.length > 0 ? (
+          <PlanWiedervorlage bereiche={planBereiche} rueckweg="/offen" />
+        ) : null}
         {canConcludePatientCare(user.roles) ? (
           <CareWithoutConclusionList timeZone={timeZone} />
         ) : null}

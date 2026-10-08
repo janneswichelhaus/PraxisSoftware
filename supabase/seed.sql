@@ -24,6 +24,14 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+-- Zugewiesene Plaene sind unveraenderlich und werden nie einzeln geloescht
+-- (UEB-004, ANN-300); wie bei der Preisliste hebt nur der Seed die Sperre auf.
+-- Sie muessen vor der Bibliothek fallen: Positionen zeigen auf Varianten.
+alter table public.exercise_plan_items disable trigger exercise_plan_items_guard;
+alter table public.exercise_plans      disable trigger exercise_plans_guard;
+delete from public.exercise_plans;
+alter table public.exercise_plans      enable trigger exercise_plans_guard;
+alter table public.exercise_plan_items enable trigger exercise_plan_items_guard;
 delete from public.exercise_variant_links;
 delete from public.exercise_variants;
 delete from public.exercises;
@@ -606,6 +614,46 @@ insert into public.exercise_variant_links
   ('adadadad-adad-4dad-8dad-000000000006', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000009', 'acacacac-acac-4cac-8cac-000000000010', 'last', '11111111-1111-4111-8111-000000000001'),
   ('adadadad-adad-4dad-8dad-000000000007', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000013', 'acacacac-acac-4cac-8cac-000000000014', 'komplexitaet', '11111111-1111-4111-8111-000000000001'),
   ('adadadad-adad-4dad-8dad-000000000008', '22222222-2222-4222-8222-000000000001', 'acacacac-acac-4cac-8cac-000000000003', 'acacacac-acac-4cac-8cac-000000000011', 'komplexitaet', '11111111-1111-4111-8111-000000000001');
+
+-- -----------------------------------------------------------------------------
+-- Uebungsplaene (UEB-EPIC-002)
+--
+-- Erfunden: ein Heimprogramm fuer Erika in der Behandlung, das in fuenf Tagen
+-- auslaeuft (Wiedervorlage, ANN-302), und ein Trainingsplan fuer Tina. Beide
+-- entstehen wie in der Anwendung als Entwurf, bekommen ihren Schnappschuss
+-- (ANN-300) und werden dann zugewiesen - der Riegel laesst genau diesen Weg zu.
+-- -----------------------------------------------------------------------------
+insert into public.exercise_plans
+  (id, organization_id, service_area, patient_id, training_relationship_id, title, sessions_per_week, created_by, updated_by) values
+  ('aeaeaeae-aeae-4eae-8eae-000000000001', '22222222-2222-4222-8222-000000000001', 'therapy', '66666666-6666-4666-8666-000000000002', null, 'Heimprogramm Knie', 3, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('aeaeaeae-aeae-4eae-8eae-000000000002', '22222222-2222-4222-8222-000000000001', 'training', null, 'eeeeeeee-eeee-4eee-8eee-000000000001', 'Kraft Grundlagen', 2, '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007');
+
+insert into public.exercise_plan_items
+  (organization_id, plan_id, position, variant_id, sets, reps_min, reps_max, duration_seconds, load, tempo, rest_seconds, double_progression, note, created_by, updated_by) values
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 1, 'acacacac-acac-4cac-8cac-000000000001', 3, 8, 12, null, 'Rucksack 3 kg', null, 60, true, 'Langsam runter, zügig hoch.', '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 2, 'acacacac-acac-4cac-8cac-000000000005', 2, null, null, 30, null, null, 45, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000001', 3, 'acacacac-acac-4cac-8cac-000000000007', 3, 12, 15, null, null, null, 30, false, null, '11111111-1111-4111-8111-000000000002', '11111111-1111-4111-8111-000000000002'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 1, 'acacacac-acac-4cac-8cac-000000000009', 3, 10, 15, null, 'Theraband gelb', '2 s ziehen, 2 s zurück', 60, true, null, '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007'),
+  ('22222222-2222-4222-8222-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002', 2, 'acacacac-acac-4cac-8cac-000000000011', 3, 8, 8, null, null, null, 90, false, 'Vorderes Knie bleibt über dem Fuß.', '11111111-1111-4111-8111-000000000007', '11111111-1111-4111-8111-000000000007');
+
+update public.exercise_plan_items i
+   set exercise_name = e.name, exercise_lay_name = e.lay_name, variant_name = v.name,
+       variant_lay_name = v.lay_name, body_region = e.body_region, instruction = v.instruction,
+       equipment = v.equipment
+  from public.exercise_variants v
+  join public.exercises e on e.id = v.exercise_id
+ where v.id = i.variant_id
+   and i.plan_id in ('aeaeaeae-aeae-4eae-8eae-000000000001', 'aeaeaeae-aeae-4eae-8eae-000000000002');
+
+update public.exercise_plans
+   set status = 'assigned', assigned_at = now() - interval '37 days', assigned_by = created_by,
+       runs_from = current_date - 37, runs_until = current_date + 5, original_runs_until = current_date + 5
+ where id = 'aeaeaeae-aeae-4eae-8eae-000000000001';
+
+update public.exercise_plans
+   set status = 'assigned', assigned_at = now() - interval '14 days', assigned_by = created_by,
+       runs_from = current_date - 14, runs_until = current_date + 28, original_runs_until = current_date + 28
+ where id = 'aeaeaeae-aeae-4eae-8eae-000000000002';
 
 -- -----------------------------------------------------------------------------
 -- Arbeitszeiten (CAL-005)

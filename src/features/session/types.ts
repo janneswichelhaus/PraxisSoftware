@@ -441,6 +441,35 @@ export function canReadExerciseLibrary(roles: readonly RoleKey[]): boolean {
 }
 
 /**
+ * Wer Übungspläne liest (UEB-004, ANN-298) - je Bereich. Behandlung: owner,
+ * therapist, team_lead und das Büro (ADR-004 Punkt 3); Training: owner und
+ * Trainingsbetreuung, das Büro nicht (ADR-021 Punkt 10). Steuert nur die
+ * Darstellung; verbindlich ist app.can_read_exercise_plans().
+ */
+export function canReadExercisePlans(
+  roles: readonly RoleKey[],
+  bereich: 'therapy' | 'training',
+): boolean {
+  return bereich === 'therapy'
+    ? roles.some((role) => directoryRoles.includes(role))
+    : roles.some((role) => role === 'owner' || role === 'trainer');
+}
+
+/**
+ * Wer Übungspläne schreibt (UEB-004, ANN-298) - je Bereich. Behandlung:
+ * therapist und team_lead (wie die Behandlungsdokumentation); Training:
+ * owner und Trainingsbetreuung. Verbindlich ist app.can_write_exercise_plans().
+ */
+export function canWriteExercisePlans(
+  roles: readonly RoleKey[],
+  bereich: 'therapy' | 'training',
+): boolean {
+  return bereich === 'therapy'
+    ? canWriteTreatmentNote(roles)
+    : roles.some((role) => role === 'owner' || role === 'trainer');
+}
+
+/**
  * Wer den Kalender öffnet (TRN-006): die Praxisrollen und die Rollen des
  * Trainingsbereichs. Welche Termine darin stehen, entscheidet der Server je
  * Termin nach Kontext (ADR-022 Punkt 11) - die Trainingsbetreuung sieht dort

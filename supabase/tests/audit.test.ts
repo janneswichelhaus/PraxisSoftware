@@ -237,6 +237,8 @@ describe('Audit-Lesepfad', () => {
       'get_appointment_brief',
       'get_appointment_services',
       'get_billable_service_draft',
+      // UEB-004: ein Übungsplan (Rollen je Bereich, ANN-298).
+      'get_exercise_plan',
       'get_intake_checklist',
       'get_invoice',
       // ANG-001: die Nachsorge-Abos der Akte (owner, office).
@@ -272,9 +274,13 @@ describe('Audit-Lesepfad', () => {
       'list_deletion_runs',
       // ANG-002: faellige Abo-Monate (owner, office).
       'list_due_aftercare_months',
+      // UEB-007: auslaufende Pläne (schreibende Rollen je Bereich, ANN-302).
+      'list_due_exercise_plans',
       'list_ending_prescriptions',
       'list_event_participants',
       'list_event_series',
+      // UEB-004: die Pläne einer Akte oder eines Trainingsverhältnisses.
+      'list_exercise_plans',
       // ABN-004: die kuenftigen Hausbesuche mit alter Adresse (owner, office).
       'list_home_visits_with_outdated_address',
       'list_invoice_candidates',
