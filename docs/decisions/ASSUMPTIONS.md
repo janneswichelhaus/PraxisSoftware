@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-07.
+Zuletzt aktualisiert: 2026-10-08.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -3647,3 +3647,15 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
 
 **Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.
+
+### ANN-303 — Der Plan als PDF ist ein Blatt aus dem Schnappschuss, gedruckt über den Browser
+
+Technik · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Pläne); mit dem serverseitigen Dokumentweg (OPS-001)
+
+**Annahme.** „Plan als PDF“ ist eine Druckseite des zugewiesenen Plans, die der Browser zu Papier oder zu einer PDF-Datei macht – dieselbe Technik wie Rechnung, Vertrag und Terminzettel (B14 Weg 1). Das Blatt zeigt nur den Schnappschuss der Zuweisung in Alltagssprache (Bezeichnung, Dosierung in Worten, Anleitung, Ausrüstung, Hinweis, Laufzeit, Einheiten je Woche), nie die fachlichen Namen und nie die Bibliothek von heute; ein Entwurf hat kein Blatt. Die Praxis druckt es mit Namen der Person, die Plattform ohne.
+
+**Begründung.** §4.6 und DSN-001 D2 verlangen den Plan als PDF, auch nach dem Ende der Behandlung; ADR-023 Punkt 7 versorgt Personen ohne Konto mit Plänen als PDF. Ein PDF-Generator wäre eine neue Abhängigkeit oder ein neuer Ausführungsort (ADR-015, OPS-001); der Browserdruck braucht keines von beiden. Die Datei entsteht auf dem Gerät und wird nicht abgelegt – aufbewahrt wird der Plan selbst (ANN-300).
+
+**Anker.** `Planblatt` in `src/features/exercise-plans/Planblatt.tsx`; Seite der Praxis `PlanblattSeite.tsx`. Geprüft in `src/features/exercise-plans/Plaene.test.tsx`.
+
+**Änderungspfad.** Ein abgelegtes PDF: serverseitige Erzeugung mit Ablage nach ADR-017, sobald der Dokumentweg der Rechnung (Weg 3) steht · Aufwand `mittel`. Andere Inhalte auf dem Blatt: die eine Komponente · Aufwand `klein`.

@@ -507,7 +507,19 @@ function Laufzeit({ plan }: { plan: Plan }) {
     plan.status === 'assigned' && plan.runs_until !== null && plan.runs_until < plan.today;
   const entscheiden = plan.can_write && plan.status === 'assigned';
   return (
-    <Section titel="Laufzeit">
+    <Section
+      titel="Laufzeit"
+      aktion={
+        // UEB-008 (ANN-303): der Plan als Blatt - auch ohne Plattform.
+        <ButtonLink
+          variant="secondary"
+          groesse="kompakt"
+          to={`${planPfad(plan.service_area, plan.relationship_id, plan.id)}/blatt`}
+        >
+          Als PDF oder drucken
+        </ButtonLink>
+      }
+    >
       {plan.review_due && entscheiden ? (
         <Statusmeldung ton="warnung" className="mb-3">
           {abgelaufen

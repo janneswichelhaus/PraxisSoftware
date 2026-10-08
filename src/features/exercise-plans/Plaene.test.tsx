@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import type * as BibliothekApi from '@/features/exercises/api';
-import { renderWithProviders } from '@/test-utils';
+import { renderWithProviders, testUser } from '@/test-utils';
 import { dosierungAlltag, dosierungFachlich, unterschiede } from './dosierung';
 
 const fetchPlanliste = vi.fn();
@@ -52,6 +52,7 @@ vi.mock('@/features/exercises/api', async (importOriginal) => {
 const { PlanAbschnitt } = await import('./PlanAbschnitt');
 const { PlanPage } = await import('./PlanPage');
 const { PlanWiedervorlage } = await import('./Wiedervorlage');
+const { PlanblattSeite } = await import('./PlanblattSeite');
 
 export const BIBLIOTHEK: BibliothekApi.Bibliothek = {
   can_manage: false,
@@ -619,5 +620,48 @@ describe('Laufzeit und Wiedervorlage (UEB-007)', () => {
       await screen.findByText('Die auslaufenden Pläne konnten nicht geladen werden.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Erneut versuchen' })).not.toBeInTheDocument();
+  });
+});
+
+describe('Plan als Blatt (UEB-008, ANN-303)', () => {
+  const zugewiesen = () =>
+    plan({
+      status: 'assigned',
+      runs_from: '2026-10-07',
+      runs_until: '2026-11-18',
+      items: [position({ note: 'Langsam ablassen.' })],
+    });
+
+  it('druckt den Schnappschuss in Alltagssprache, ohne fachliche Bezeichnung', async () => {
+    fetchPlan.mockResolvedValue(zugewiesen());
+    const print = vi.spyOn(window, 'print').mockImplementation(() => undefined);
+    const user = userEvent.setup();
+    renderWithProviders(<PlanblattSeite user={testUser(['therapist'])} />);
+    const blatt = await screen.findByRole('article', { name: 'Planblatt' });
+    expect(blatt).toHaveTextContent('Ihr Übungsplan für Erika Beispiel');
+    expect(blatt).toHaveTextContent('1. Am Geländer in die Hocke');
+    expect(blatt).toHaveTextContent('3 Durchgänge mit je 8 bis 12 Wiederholungen.');
+    expect(blatt).toHaveTextContent('Sie brauchen: Geländer');
+    expect(blatt).toHaveTextContent('Hinweis: Langsam ablassen.');
+    expect(blatt).toHaveTextContent('3-mal pro Woche');
+    expect(blatt).not.toHaveTextContent('Kniebeuge am Geländer');
+    await user.click(screen.getByRole('button', { name: 'Drucken oder als PDF sichern' }));
+    expect(print).toHaveBeenCalled();
+    print.mockRestore();
+  });
+
+  it('hat für einen Entwurf kein Blatt', async () => {
+    renderWithProviders(<PlanblattSeite user={testUser(['therapist'])} />);
+    expect(await screen.findByText('Kein Blatt')).toBeInTheDocument();
+    expect(screen.queryByRole('article', { name: 'Planblatt' })).not.toBeInTheDocument();
+  });
+
+  it('bietet das Blatt am zugewiesenen Plan an, nicht im Entwurf', async () => {
+    fetchPlan.mockResolvedValue(zugewiesen());
+    renderWithProviders(<PlanPage />);
+    expect(await screen.findByRole('link', { name: 'Als PDF oder drucken' })).toHaveAttribute(
+      'href',
+      '/patienten/pat1/plaene/p1/blatt',
+    );
   });
 });
