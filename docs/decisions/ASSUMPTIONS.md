@@ -3726,7 +3726,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 ### ANN-308 — Eine Frage ist ein Vorgang aus unveränderlichen Einträgen
 
-Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Nachrichten)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Nachrichten)
 
 **Annahme.** Eine Nachricht auf der Plattform ist kein Chatverlauf, sondern ein Vorgang: Thema (Übung · Beschwerden · Termin oder Rechnung · Sonstiges), optional ein Bezug auf einen zugewiesenen Plan und eine Übung daraus (als Schnappschuss der Bezeichnung), Zustand offen · beantwortet · erledigt. Er besteht aus Einträgen – Frage, Antwort der Praxis, Nachtrag –, die nie geändert und nur mit dem Vorgang gelöscht werden; jeder Eintrag trägt, wer ihn geschrieben hat (bei einer Vertretung ihr Name als Schnappschuss, in der Praxis der Anzeigename). Nachtragen geht, solange der Vorgang nicht erledigt ist; danach ist eine neue Frage ein neuer Vorgang. Erledigen dürfen die Person (jede Art des Zugangs) und die Praxis. Auf der Plattform steht die Antwort als „Praxis“, ohne Namen der Fachperson.
 
@@ -3738,7 +3738,7 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-309 — Antwortfrist in Werktagen aus den Praxisstammdaten, überwacht über die Fälligkeit
 
-Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform und Kommunikation, nach den ersten Praxiswochen)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Plattform und Kommunikation, nach den ersten Praxiswochen)
 
 **Annahme.** Über jedem Eingabefeld steht „Antwort in der Regel innerhalb von zwei Werktagen.“ und der Notfallhinweis aus DSN-001 4.1, für alle gleich. Die Zahl steht in den Praxisstammdaten (`organizations.message_response_workdays`, 1 bis 10, voreingestellt 2) und ändert nur `owner`. Werktage sind Montag bis Freitag; Feiertage kennt die Anwendung nicht. Fällig ist eine Frage am n-ten Werktag nach dem Tag ihres Eingangs (Samstag zählt ab Montag); ein Nachtrag nach einer Antwort setzt eine neue Frist, ein Nachtrag vor der Antwort nicht. Eingehalten wird die Zusage über die Sicht der Praxis: „Antwort fällig bis …“ an jedem offenen Vorgang und unter „Offene Punkte“ die Zahl der offenen und der überfälligen, die überfälligen mit Wort. Es gibt keine Benachrichtigung und keine Eskalation.
 
@@ -3750,7 +3750,7 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-310 — In der Behandlung liest das Büro alle Rückfragen, antwortet aber nur auf Termin, Rechnung und Sonstiges
 
-Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Kommunikation)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Kommunikation)
 
 **Annahme.** Rückfragen aus der Behandlung lesen `owner`, Therapeut:innen, Teamleitung und Büro (E15). Antworten und erledigen dürfen `owner`, Therapeut:innen und Teamleitung jede Rückfrage, das Büro nur „Termin oder Rechnung“ und „Sonstiges“. Bei „Übung“ und „Beschwerden“ sagt die Seite dem Büro, dass Therapeut:innen antworten. Die Liste unter Kommunikation → Rückfragen trägt keinen Text; erst das Öffnen liest den Inhalt und steht als „Akte geöffnet“ im Protokoll (einmal je Tag und Akte, ADR-010 Fassung 3).
 
@@ -3762,7 +3762,7 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-311 — Im Training: Gesundheitsthemen nur mit Einwilligung, das Büro nur bei Termin und Rechnung
 
-Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264 und ANN-306)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-137 · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264 und ANN-306)
 
 **Annahme.** Im Training gibt es die Themen „Übung“ und „Beschwerden“ nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist; nach einem Widerruf kein Nachtrag mehr dazu, bestehende Vorgänge bleiben lesbar. „Termin oder Rechnung“ und „Sonstiges“ gehen immer. Die Praxis liest Nachrichten aus dem Training im Bereich Training (DSN-001 D1 b): `owner` und Trainingsbetreuung alle, das Büro nur „Termin oder Rechnung“ – und beantwortet nur diese.
 
@@ -3772,9 +3772,11 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest im Training alle Rückfragen (Regel BEF-137, scharf nach B2); antworten darf es weiter nur bei „Termin oder Rechnung“. Umsetzung: BEF-137.
+
 ### ANN-312 — Klinisch Relevantes kommt als Verweis am Vorgang in die Akte, endgültig
 
-Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Kommunikation); Datenschutzprüfung (B2, Fristen nach ADR-008)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Jannes (Sichtung Kommunikation); Datenschutzprüfung (B2, Fristen nach ADR-008)
 
 **Annahme.** Eine Rückfrage aus der Behandlung ordnen `owner`, Therapeut:innen und Teamleitung mit „In die Akte übernehmen“ der Akte zu; das Büro nicht, im Training gibt es keine Akte. Zugeordnet wird der ganze Vorgang mit allen Einträgen, auch späteren. Die Zuordnung ist ein Verweis am Vorgang (wer, wann, unter welchem Namen), keine Kopie; der Text bleibt unverändert, und die Zuordnung ist endgültig – auch am Schreibpfad vorbei verhindert ein Trigger das Zurücknehmen. Danach steht der Vorgang im Reiter „Doku“ der Akte unter „Nachrichten in der Akte“ mit Herkunft und gehört zur Datenklasse der Akte (zehn Jahre ab Abschluss der Versorgung); nicht zugeordnete Vorgänge der Behandlung fallen drei Jahre nach Ende des Jahres, in dem sie erledigt oder – ohne weitere Frage der Person – zuletzt beantwortet wurden (ADR-008, „Organisatorische Patientenkommunikation“; Zweitreview S1). Beim Zusammenführen zweier Akten ziehen alle Rückfragen mit. Im Training fallen sie mit dem Verhältnis nach drei Jahren, auch wenn Belege länger bleiben. Auskunft nach Art. 15 und Plattformexport nennen alle Rückfragen.
 
@@ -3786,7 +3788,7 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes
 
 ### ANN-313 — In der Lesefrist werden keine Fragen mehr gestellt
 
-Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Plattform)
 
 **Annahme.** Nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos sind die Nachrichten 30 Tage lang lesbar; eine neue Frage, ein Nachtrag oder „Hat sich erledigt“ gehen dann nicht mehr. Die Seite sagt, dass neue Fragen direkt an die Praxis gehen.
 
@@ -3798,7 +3800,7 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-314 — Kommunikation ist mit den Rückfragen nicht mehr ganz Vorschau
 
-Technik · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung am Handy)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung am Handy)
 
 **Annahme.** Der Bereich Kommunikation öffnet auf „Rückfragen“ (`/rueckfragen`), dem ersten Punkt, der wirkt; der Teamchat steht als zweiter Unterpunkt und bleibt als Vorschau gekennzeichnet. Damit ist der Bereich nicht mehr ganz Vorschau und steht bei Therapeut:innen, Teamleitung und Büro am Telefon wieder in der Leiste („Nachrichten“); bei `owner` bleibt er wegen der Zahl der Bereiche hinter „Mehr“.
 

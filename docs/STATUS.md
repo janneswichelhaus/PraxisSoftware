@@ -1,4 +1,4 @@
-# Status · Stand 2026-10-09 · letzte Session: Abnahme der Annahmen (ANN-073 bis ANN-307 entschieden, BEF-133 bis BEF-138); davor KOM-EPIC-001 (Eine Frage kommt strukturiert an), UEB-EPIC-003
+# Status · Stand 2026-10-09 · letzte Session: Abnahme der Annahmen und UX-Review (alle Annahmen bis ANN-314 entschieden, BEF-046 bis BEF-070 entschieden); davor KOM-EPIC-001, UEB-EPIC-003
 
 Livestand, sonst nichts. Die **Reihenfolge** legt [`development/ROADMAP.md`](development/ROADMAP.md)
 fest (Kette in 15 Blöcken), Befunde sammelt [`development/BEFUNDE.md`](development/BEFUNDE.md),
@@ -11,8 +11,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ## Danach — Bauen
 
 1. **ABN-EPIC-002**: Was die Abnahme vom 09.10.2026 anders entschieden hat (BEF-133 bis BEF-138, Roadmap-Zeile) – zuerst die neuen Fassungen von §4.3, ADR-021, ADR-017, ADR-010 und ADR-023, dann der Bau; **BEF-137 (das Büro liest alles, auch im Training) gilt ab sofort für jeden neuen Loop.** BEF-138 als eigener Pull Request mit Label `freigabe-audit`. `/weiter`
-2. **KOM-EPIC-002** (Block 6): Ein Foto oder Video hilft bei der Antwort, ohne liegen zu bleiben – Anhänge als eigene Datenklasse mit kurzer Frist und Metadatenentfernung (ADR-017), nach der Roadmap-Zeile.
-3. **BEF-129** (Widerruf bleibt in Offene Punkte, bis abgewickelt), **BEF-128** (Abo-Monat nach Storno), **BEF-131** (Terminwünsche fallen beim Zusammenführen mit der Dublette) und **BEF-132** (Plattformzugang an der Dublette) – je ein Einzel-Story-Loop. **ADR-024** (Docs-Session, vor KOM-EPIC-003): Offline-Erfassung und Benachrichtigungen. Vorschläge auf Zuruf: „Ich“ nach der Lesefrist mit Rechnungen und Dokumenten (D2, ANN-261), Abschluss des Nachsorge-Abos über die Plattform (ANN-272), Profil in der Plattform (ANN-287).
+2. **UX-EPIC-006 bis UX-EPIC-009** (UX-Review, entschieden 2026-10-09, Roadmap Etappe P): zuerst UX-EPIC-006 (Funkloch und Fehlertexte), dann -007 (Dokumentation und Akte), -008 (Rückfragen vor Unumkehrbarem, Korrekturrechnung), -009 (Druck, Nachweise, Begriffe).
+3. **KOM-EPIC-002** (Block 6): Ein Foto oder Video hilft bei der Antwort, ohne liegen zu bleiben – Anhänge als eigene Datenklasse mit kurzer Frist und Metadatenentfernung (ADR-017), nach der Roadmap-Zeile.
+4. **BEF-129** (Widerruf bleibt in Offene Punkte, bis abgewickelt), **BEF-128** (Abo-Monat nach Storno), **BEF-131** (Terminwünsche fallen beim Zusammenführen mit der Dublette) und **BEF-132** (Plattformzugang an der Dublette) – je ein Einzel-Story-Loop. **ADR-024** (Docs-Session, vor KOM-EPIC-003): Offline-Erfassung und Benachrichtigungen. Vorschläge auf Zuruf: „Ich“ nach der Lesefrist mit Rechnungen und Dokumenten (D2, ANN-261), Abschluss des Nachsorge-Abos über die Plattform (ANN-272), Profil in der Plattform (ANN-287).
 
 ## Prüfverfahren
 
@@ -22,7 +23,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Blocker (Jannes-seitig)
 
-**Alle Annahmen bis ANN-307 sind entschieden** (Abnahme 2026-10-09, `decisions/ASSUMPTIONS.md`); Änderungen daraus stehen als BEF-133 bis BEF-138 in ABN-EPIC-002. Offen sind nur **ANN-308 bis ANN-314** aus KOM-EPIC-001 (gemergt PR #205). Es gibt keinen offenen Pull Request. Was bleibt, nach Art geordnet:
+**Alle Annahmen bis ANN-314 sind entschieden** (Abnahme 2026-10-09, `decisions/ASSUMPTIONS.md`); Änderungen daraus stehen als BEF-133 bis BEF-138 in ABN-EPIC-002. Der **UX-Review** (BEF-046 bis BEF-070) ist entschieden und als UX-EPIC-006 bis -009 eingeplant; BEF-066 ist Vorgabe für FLT-EPIC-001, URL-001, ZK-001 und ERS-001. Was bleibt, nach Art geordnet:
 
 ### Sichten – am Handy und am Rechner auf der Test-Umgebung, Start mit `/sichtung <Datei>`
 
@@ -38,7 +39,6 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 - **Preise:** Abo-Monat (heute synthetisch 39 €) und Trainingspakete mit Preis, Umfang und Zahlungsweise (BEF-114; heute 390 € und 720 €); in der Preisliste als „Nachsorge-Abo (Monat)“ und „Trainingspaket“ eintragen. **G13** (Umsatzsteuer-Status, Befreiungshinweis, Kürzel `RG`/`TR`) vor M3; **B8:** schriftlicher Lizenzbeleg bis M3. Vor dem Scharfschalten **§ 630c Abs. 3 BGB**: Kosteninformation in Textform, wenn das Honorar über der Erstattung liegt (ADR-009, Folgefragen Fassung 5).
 - **Löschkandidaten** im [Leitfaden](design/leitfaden-schlank.md): „Telefon (geschäftlich)“, „Andere Ziel-App prüfen“, Aufklapper „Organisatorisches und Kommunikation“ der Übersicht (enthält „Panne melden“).
-- **UX-Review entscheiden:** BEF-046 bis BEF-070, je Eintrag Frage, Optionen und Empfehlung. Codestand und Umsetzungspfad je offenem Befund: [`development/BEFUNDE-LOESUNGEN.md`](development/BEFUNDE-LOESUNGEN.md) (2026-10-02; BEF-001, -005, -006, -025 geschlossen, BEF-017 nachgetragen). Zuerst BEF-046 (ein gescheitertes Nachladen des Profils ersetzt die App, Eingaben gehen verloren) und BEF-047 (Sitzungsende und Anmeldemaske).
 - **Bilder zu den Tests** starten FRB-EPIC-005. (NRS und Veränderungsfrage sind freigegeben, 2026-09-29; FRB-EPIC-004 kann starten.) **D2/D3 aus dem FRB-Plan** gelten wie vorgeschlagen (ANN-118, ANN-119); die drei Lücken (Schulter „Untersuchung ACG", LWS „Behandlung", HWS „Therapie Hochzervikal") und Korrekturen jederzeit nachliefern.
 - **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
 - **BEF-026 / B13 (wieder offen):** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
@@ -56,4 +56,4 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 ## Letzte Session
 
-**Docs-Session 09.10.2026 (Abnahme der Annahmen, Branch `ccr-d0a715db-ksf03h`):** alle 73 offenen Annahmen bis ANN-307 mit Jannes durchgegangen, 65 wie gebaut bestätigt, acht geändert oder entschieden (ANN-214, -221, -223, -239, -249, -287, -293, -298 → BEF-133 bis BEF-138, Roadmap ABN-EPIC-002). Regel ab jetzt: Das Büro liest alle Informationen, auch im Training (BEF-137). Der Feature-Loop wartet nicht mehr auf „Freigabe“ nach Schritt A (Skills `feature-loop` und `weiter`). Kein Code, keine Migration. **Lokale Schritte:** `git pull`. Davor Session 09.10.2026: KOM-EPIC-001 (gemergt PR #205), `pnpm dlx supabase@2.116.0 db reset` (drei Migrationen `20261020100000` bis `20261020120000`, Seed mit vier Rückfragen).
+**Docs-Session 09.10.2026, Teil 2 (UX-Review und KOM-Annahmen, Branch `ccr-d0a715db-ksf03h`):** BEF-046 bis BEF-070 mit Jannes entschieden, alle wie empfohlen (BEF-047 nur noch die Anmeldeseite, die Höchstdauer trägt die Sitzungssperre; BEF-066 eng, das Büro wie owner), eingeplant als UX-EPIC-006 bis -009. ANN-308 bis ANN-314 bestätigt, ANN-311 geändert (das Büro liest im Training alle Rückfragen, BEF-137). Kein Code. **Lokale Schritte:** `git pull`. Davor Teil 1 (gemergt PR #206): alle 73 offenen Annahmen bis ANN-307 mit Jannes durchgegangen, 65 wie gebaut bestätigt, acht geändert oder entschieden (ANN-214, -221, -223, -239, -249, -287, -293, -298 → BEF-133 bis BEF-138, Roadmap ABN-EPIC-002). Regel ab jetzt: Das Büro liest alle Informationen, auch im Training (BEF-137). Der Feature-Loop wartet nicht mehr auf „Freigabe“ nach Schritt A (Skills `feature-loop` und `weiter`). Kein Code, keine Migration. **Lokale Schritte:** `git pull`. Davor Session 09.10.2026: KOM-EPIC-001 (gemergt PR #205), `pnpm dlx supabase@2.116.0 db reset` (drei Migrationen `20261020100000` bis `20261020120000`, Seed mit vier Rückfragen).
