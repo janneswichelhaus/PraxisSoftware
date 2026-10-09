@@ -7,6 +7,7 @@ import {
   THEMA_LABEL,
   VON_LABEL,
   fetchRueckfragen,
+  rueckfragePfad,
   rueckfragenKey,
   type Rueckfragezeile,
   type Verhaeltnisart,
@@ -82,13 +83,6 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
       gedaempft={zeile.status === 'closed'}
     />
   );
-}
-
-/** Die Seite eines Vorgangs - im Bereich, zu dem er gehört (DSN-001 D1). */
-export function rueckfragePfad(z: Pick<Rueckfragezeile, 'id' | 'relationship_kind'>): string {
-  return z.relationship_kind === 'training'
-    ? `/training/rueckfragen/${z.id}`
-    : `/rueckfragen/${z.id}`;
 }
 
 export function Zustand({

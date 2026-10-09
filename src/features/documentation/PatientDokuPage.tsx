@@ -6,6 +6,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { PlanAbschnitt } from '@/features/exercise-plans/PlanAbschnitt';
 import { canReadExercisePlans } from '@/features/session/types';
 import { DieserTermin, PatientRecordDocumentation } from './PatientRecordDocumentation';
+import { NachrichtenInDerAkte } from '@/features/messages/InDieAkte';
 
 /**
  * Der Reiter „Doku" der Akte (AKTE-007; Anordnung seit Akte entschlacken,
@@ -42,6 +43,11 @@ export function PatientDokuPage() {
           </div>
           <div className="@zweispaltig:col-start-1 @zweispaltig:row-span-3 @zweispaltig:row-start-1 min-w-0">
             <PatientRecordDocumentation patient={patient} user={user} ohneTermin={terminId} />
+            {/* KOM-004: der Akte zugeordnete Nachrichten von der Plattform (§10). */}
+            <NachrichtenInDerAkte
+              patientId={patient.id}
+              zeitzone={user.organizationTimeZone ?? 'Europe/Berlin'}
+            />
           </div>
           {/* UEB-EPIC-002: die Übungspläne der Akte (ANN-297). */}
           {canReadExercisePlans(user.roles, 'therapy') ? (

@@ -21,6 +21,8 @@ const answerRueckfrage = vi.fn();
 const closeRueckfrage = vi.fn();
 const fetchAntwortfrist = vi.fn<() => Promise<number | null>>();
 const saveAntwortfrist = vi.fn();
+const assignRueckfrage = vi.fn();
+const fetchAktenNachrichten = vi.fn<() => Promise<MessagesApi.Aktenvorgang[]>>();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof MessagesApi>()),
@@ -30,6 +32,8 @@ vi.mock('./api', async (importOriginal) => ({
   closeRueckfrage: (...a: unknown[]) => closeRueckfrage(...a) as Promise<void>,
   fetchAntwortfrist: () => fetchAntwortfrist(),
   saveAntwortfrist: (...a: unknown[]) => saveAntwortfrist(...a) as Promise<void>,
+  assignRueckfrage: (...a: unknown[]) => assignRueckfrage(...a) as Promise<void>,
+  fetchAktenNachrichten: () => fetchAktenNachrichten(),
 }));
 
 const { RueckfragenPage, RueckfragePage } = await import('./RueckfragenPage');
@@ -241,5 +245,71 @@ describe('Rückfragen im Training (KOM-003, DSN-001 D1 b)', () => {
     const { container } = renderWithProviders(<TrainingRueckfragen />, '/training');
     await waitFor(() => expect(fetchRueckfragen).toHaveBeenCalled());
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe('In die Akte (KOM-004, ANN-312)', () => {
+  function zeige(vorgang: Rueckfrage) {
+    fetchRueckfrage.mockResolvedValue(vorgang);
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/rueckfragen/:messageId"
+          element={<RueckfragePage user={testUser(['therapist'])} />}
+        />
+      </Routes>,
+      `/rueckfragen/${vorgang.id}`,
+    );
+  }
+
+  it('fragt nach und ordnet zu, wenn der Server es erlaubt', async () => {
+    const nutzer = userEvent.setup();
+    assignRueckfrage.mockResolvedValue(undefined);
+    zeige({ ...VORGANG, can_assign: true });
+    await nutzer.click(await screen.findByRole('button', { name: 'In die Akte übernehmen' }));
+    expect(screen.getByText(/lässt sich nicht rückgängig machen/)).toBeInTheDocument();
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, in die Akte' }));
+    await waitFor(() => expect(assignRueckfrage).toHaveBeenCalledWith(VORGANG.id));
+  });
+
+  it('ohne Recht kein Knopf; zugeordnet steht wann und von wem', async () => {
+    zeige({
+      ...VORGANG,
+      can_assign: false,
+      record_assigned_at: '2026-10-06T10:00:00Z',
+      record_assigned_by_label: 'Anna Beispiel',
+    });
+    expect(
+      await screen.findByText(/In der Akte seit 06.10.2026, übernommen von Anna Beispiel/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'In die Akte übernehmen' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zur Doku' })).toHaveAttribute(
+      'href',
+      `/patienten/${VORGANG.patient_id}/doku`,
+    );
+  });
+
+  it('zeigt die zugeordneten Nachrichten in der Doku mit Herkunft', async () => {
+    fetchAktenNachrichten.mockResolvedValue([
+      {
+        id: VORGANG.id,
+        topic: 'complaint',
+        reference_label: null,
+        status: 'answered',
+        created_at: '2026-10-05T08:00:00Z',
+        record_assigned_at: '2026-10-06T10:00:00Z',
+        record_assigned_by_label: 'Anna Beispiel',
+        entries: VORGANG.entries,
+      },
+    ]);
+    const { NachrichtenInDerAkte } = await import('./InDieAkte');
+    renderWithProviders(
+      <NachrichtenInDerAkte patientId={VORGANG.patient_id!} zeitzone="Europe/Berlin" />,
+      '/patienten/x/doku',
+    );
+    expect(await screen.findByText('Knie schmerzt seit gestern.')).toBeInTheDocument();
+    expect(screen.getByText(/übernommen am 06.10.2026 von Anna Beispiel/)).toBeInTheDocument();
   });
 });

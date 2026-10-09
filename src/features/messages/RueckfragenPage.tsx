@@ -10,7 +10,7 @@ import { Select } from '@/components/ui/Select';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TextArea } from '@/components/ui/TextArea';
 import { formatDate } from '@/lib/datum';
-import { formatLocalDate, formatLocalTime } from '@/features/appointments/api';
+import { formatLocalTime } from '@/features/appointments/api';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
   ANTWORTFRIST_KEY,
@@ -23,10 +23,12 @@ import {
   personPfad,
   rueckfrageKey,
   saveAntwortfrist,
+  kurzesDatum,
   verfasser,
   type Rueckfrage,
 } from './api';
 import { RueckfragenListe, Zustand } from './RueckfragenListe';
+import { InDieAkte } from './InDieAkte';
 
 /** Höchstlänge einer Antwort - zugleich die Grenze des Servers. */
 const ANTWORT_MAX = 2000;
@@ -199,7 +201,7 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
             >
               <p className="text-ink-muted text-sm">
                 <span className="text-ink font-semibold">{verfasser(e, name)}</span> ·{' '}
-                {formatLocalDate(e.created_at, zone)}, {formatLocalTime(e.created_at, zone)}
+                {kurzesDatum(e.created_at, zone)}, {formatLocalTime(e.created_at, zone)}
               </p>
               <p className="text-ink mt-1 leading-relaxed whitespace-pre-line">{e.body}</p>
             </li>
@@ -211,6 +213,7 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
             {data.closed_by_side === 'person' ? ' von der Person selbst' : ' durch die Praxis'}.
           </p>
         ) : null}
+        <InDieAkte vorgang={data} zeitzone={zone} />
         {data.status !== 'closed' ? <Antworten vorgang={data} /> : null}
       </div>
     </>

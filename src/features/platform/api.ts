@@ -727,6 +727,8 @@ const exportSchema = z.object({
     .lazy(() => vertragSchema)
     .nullable()
     .default(null),
+  /** KOM-004: die eigenen Nachrichten; ältere Exporte tragen sie nicht. */
+  messages: z.lazy(() => z.array(nachrichtSchema)).default([]),
 });
 export type Datenexport = z.infer<typeof exportSchema>;
 

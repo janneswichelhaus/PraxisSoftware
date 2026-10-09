@@ -3756,6 +3756,18 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
 
+### ANN-312 — Klinisch Relevantes kommt als Verweis am Vorgang in die Akte, endgültig
+
+Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Kommunikation); Datenschutzprüfung (B2, Fristen nach ADR-008)
+
+**Annahme.** Eine Rückfrage aus der Behandlung ordnen `owner`, Therapeut:innen und Teamleitung mit „In die Akte übernehmen“ der Akte zu; das Büro nicht, im Training gibt es keine Akte. Zugeordnet wird der ganze Vorgang mit allen Einträgen, auch späteren. Die Zuordnung ist ein Verweis am Vorgang (wer, wann, unter welchem Namen), keine Kopie; der Text bleibt unverändert, und die Zuordnung ist endgültig – auch am Schreibpfad vorbei verhindert ein Trigger das Zurücknehmen. Danach steht der Vorgang im Reiter „Doku“ der Akte unter „Nachrichten in der Akte“ mit Herkunft und gehört zur Datenklasse der Akte (zehn Jahre ab Abschluss der Versorgung); nicht zugeordnete Vorgänge der Behandlung fallen drei Jahre nach Ende des Jahres, in dem sie erledigt wurden (ADR-008, „Organisatorische Patientenkommunikation“). Beim Zusammenführen zweier Akten ziehen alle Rückfragen mit. Im Training fallen sie mit dem Verhältnis nach drei Jahren, auch wenn Belege länger bleiben. Auskunft nach Art. 15 und Plattformexport nennen alle Rückfragen.
+
+**Begründung.** §10 verlangt die Zuordnung durch die Therapeut:in, §5 und § 630f BGB Nachvollziehbarkeit ohne Überschreiben; IDEA-KOM-007 verlangt sichtbare Herkunft ohne Veränderung. Der Vorgang liegt schon im Behandlungsverhältnis und ist unveränderlich (ANN-308) – eine Kopie wäre ein zweiter Datensatz desselben Inhalts mit eigener Frist, ohne Gewinn. Das Büro schreibt keine klinische Dokumentation (ADR-004 Punkt 3); die Zuordnung ist eine klinische Einordnung. Endgültig, weil eine Akte nicht nachträglich verkleinert wird (ADR-016 Punkt 5). Unsicher: ob die drei Jahre für nicht zugeordnete Nachrichten mit klinischem Inhalt genügen, wenn die Zuordnung unterbleibt – der Pflichtsatz aus §10 liegt bei der Praxis.
+
+**Anker.** `app.can_assign_platform_message`, `public.assign_platform_message_to_record`, Trigger `platform_messages_record_final` und `public.list_record_platform_messages` in `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`; die Regel im Löschlauf in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Oberfläche `src/features/messages/InDieAkte.tsx`. Geprüft in `supabase/tests/record-messages.test.ts`.
+
+**Änderungspfad.** Zuordnung als Kopie in einen Dokumentationseintrag: eigener Eintragstyp nach ADR-016 · Aufwand `mittel`. Zuordnung rücknehmbar: Trigger und eine Funktion · Aufwand `klein`. Büro ordnet zu: ein Zweig in `app.can_assign_platform_message` · Aufwand `klein`. Alle Nachrichten der Behandlung wie die Akte aufbewahren: Klasse `patientenkommunikation` auf die Frist der Akte · Aufwand `klein`.
+
 ### ANN-313 — In der Lesefrist werden keine Fragen mehr gestellt
 
 Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)

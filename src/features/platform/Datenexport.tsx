@@ -7,6 +7,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { formatEuro } from '@/lib/geld';
 import { ladeDatenexport, type Datenexport as Daten, type Plattformzugang } from './api';
 import { EINWILLIGUNGSTEXTE } from './einwilligungstexte';
+import { THEMA_NAME } from './nachrichtentexte';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
 import { datum, tagLang, zeitraum } from './zeit';
@@ -149,6 +150,17 @@ function Ergebnis({ daten, roh }: { daten: Daten; roh: unknown }) {
           <Zeile key={w.id} label={datum(w.created_at)}>
             {w.kind === 'new' ? 'Termin gewünscht' : w.kind === 'change' ? 'Änderung' : 'Absage'}
             {w.answer ? ` · Antwort: ${w.answer}` : ''}
+          </Zeile>
+        ))}
+      </Abschnitt>
+
+      {/* KOM-004: die eigenen Nachrichten mit Antworten. */}
+      <Abschnitt titel={`Nachrichten (${daten.messages.length})`}>
+        {daten.messages.length === 0 ? <Leer /> : null}
+        {daten.messages.map((m) => (
+          <Zeile key={m.id} label={datum(m.created_at)}>
+            {THEMA_NAME[m.topic]} · {m.entries.length}{' '}
+            {m.entries.length === 1 ? 'Eintrag' : 'Einträge'}
           </Zeile>
         ))}
       </Abschnitt>

@@ -200,3 +200,66 @@ export function verfasser(e: Rueckfrageeintrag, name: string): string {
       return `${e.author_label ?? 'Begleitung'} (Begleitung)`;
   }
 }
+
+// -----------------------------------------------------------------------------
+// In die Akte (KOM-004, §10, IDEA-KOM-007, ANN-312)
+// -----------------------------------------------------------------------------
+
+/** Einen Vorgang der Akte zuordnen - endgültig, der Inhalt bleibt unverändert. */
+export async function assignRueckfrage(id: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('assign_platform_message_to_record', {
+    p_message_id: id,
+  })) as { error: { message?: string } | null };
+  if (error) {
+    if ((error.message ?? '').includes('already assigned')) {
+      throw new Error('Diese Rückfrage steht schon in der Akte.');
+    }
+    if ((error.message ?? '').includes('not allowed')) {
+      throw new Error('In die Akte übernehmen Therapeut:innen, Teamleitung und Inhaber:in.');
+    }
+    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+  }
+}
+
+const aktenvorgangSchema = z.object({
+  id: z.string(),
+  topic: themaSchema,
+  reference_label: z.string().nullable(),
+  status: zustandSchema,
+  created_at: z.string(),
+  record_assigned_at: z.string(),
+  record_assigned_by_label: z.string(),
+  entries: z.array(eintragSchema),
+});
+export type Aktenvorgang = z.infer<typeof aktenvorgangSchema>;
+
+export function aktenNachrichtenKey(patientId: string) {
+  return [...RUECKFRAGEN_KEY, 'record', patientId] as const;
+}
+
+/** Die der Akte zugeordneten Vorgänge mit Text; Lesen ist „Akte geöffnet". */
+export async function fetchAktenNachrichten(patientId: string): Promise<Aktenvorgang[]> {
+  const satz = 'Die Nachrichten der Akte konnten nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('list_record_platform_messages', {
+    p_patient_id: patientId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  return antwort(z.array(aktenvorgangSchema), data ?? [], satz);
+}
+
+/** Die Seite eines Vorgangs - im Bereich, zu dem er gehört (DSN-001 D1). */
+export function rueckfragePfad(z: { id: string; relationship_kind: Verhaeltnisart }): string {
+  return z.relationship_kind === 'training'
+    ? `/training/rueckfragen/${z.id}`
+    : `/rueckfragen/${z.id}`;
+}
+
+/** „06.10.2026" in der Zeitzone der Praxis - kurz, für Verlauf und Herkunft. */
+export function kurzesDatum(iso: string, zeitzone: string): string {
+  return new Intl.DateTimeFormat('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    timeZone: zeitzone,
+  }).format(new Date(iso));
+}

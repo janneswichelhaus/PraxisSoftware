@@ -51,6 +51,10 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'Die abgehakten Saetze stehen als `sets_done` an ihrer Einheit in `exercise_plans` (UEB-010).',
   ],
   [
+    'platform_message_entries',
+    'Die Eintraege einer Rueckfrage stehen als `entries` an ihrem Vorgang in `platform_messages` (KOM-004).',
+  ],
+  [
     'patient_file_access_grants',
     'Technische Freigabe eines signierten Verweises, hoechstens 60 Sekunden gueltig; sie sagt etwas ueber das lesende Konto, nicht ueber die Patientin (ADR-017).',
   ],

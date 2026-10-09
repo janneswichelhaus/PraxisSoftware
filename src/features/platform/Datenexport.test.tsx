@@ -73,6 +73,20 @@ const DATEN: Daten = {
     { purpose: 'email_contact', state: 'granted', occurred_on: '2026-10-06', source: 'platform' },
   ],
   training_packages: [],
+  messages: [
+    {
+      id: 'dddddddd-dddd-4ddd-8ddd-000000000001',
+      topic: 'complaint',
+      reference_label: null,
+      status: 'answered',
+      due_on: null,
+      created_at: '2026-10-06T08:00:00.000Z',
+      last_entry_at: '2026-10-06T09:00:00.000Z',
+      closed_at: null,
+      closed_by_side: null,
+      entries: [],
+    },
+  ],
   training_contract: null,
 };
 

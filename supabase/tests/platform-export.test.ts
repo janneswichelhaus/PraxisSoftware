@@ -88,6 +88,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
         'training_contract',
         // UEB-009 bis UEB-011: die eigenen Pläne, wie die Plattform sie zeigt.
         'exercise_plans',
+        // KOM-004: die eigenen Nachrichten, wie die Plattform sie zeigt.
+        'messages',
       ].sort(),
     );
     expect(Object.keys(daten.person as object).sort()).toEqual(
