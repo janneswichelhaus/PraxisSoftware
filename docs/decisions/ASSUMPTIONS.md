@@ -3732,6 +3732,18 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Andere Frist: die Zahl in den Praxisstammdaten · Aufwand `klein`. Feiertage berücksichtigen: Kalendertabelle und `app.add_workdays` · Aufwand `mittel`. Erinnerung an die Praxis bei Überschreitung: mit KOM-EPIC-003 nach ADR-024 · Aufwand `mittel`.
 
+### ANN-310 — In der Behandlung liest das Büro alle Rückfragen, antwortet aber nur auf Termin, Rechnung und Sonstiges
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Kommunikation)
+
+**Annahme.** Rückfragen aus der Behandlung lesen `owner`, Therapeut:innen, Teamleitung und Büro (E15). Antworten und erledigen dürfen `owner`, Therapeut:innen und Teamleitung jede Rückfrage, das Büro nur „Termin oder Rechnung“ und „Sonstiges“. Bei „Übung“ und „Beschwerden“ sagt die Seite dem Büro, dass Therapeut:innen antworten. Die Liste unter Kommunikation → Rückfragen trägt keinen Text; erst das Öffnen liest den Inhalt und steht als „Akte geöffnet“ im Protokoll (einmal je Tag und Akte, ADR-010 Fassung 3).
+
+**Begründung.** ADR-004 Punkt 3: Das Büro liest klinische Inhalte wie Therapeut:innen, schreibt aber keine klinische Dokumentation. Eine Antwort auf eine Frage zu Beschwerden oder zur Ausführung einer Übung ist eine fachliche Auskunft und gehört zu den therapeutischen Rollen (§4.2); Termine und Rechnungen sind Sache des Büros (§4.3). Eine Trefferliste ohne Inhalt ist kein Lesen (ADR-010 Konsequenzen).
+
+**Anker.** `app.can_read_platform_message` und `app.can_answer_platform_message` in `supabase/migrations/20261020110000_kom_002_practice_messages.sql`; Seite `src/features/messages/RueckfragenPage.tsx`. Geprüft in `supabase/tests/practice-messages.test.ts`.
+
+**Änderungspfad.** Büro antwortet auf alles: ein Zweig in `app.can_answer_platform_message` · Aufwand `klein`. Büro liest Übung und Beschwerden nicht: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
+
 ### ANN-311 — Im Training: Gesundheitsthemen nur mit Einwilligung, das Büro nur bei Termin und Rechnung
 
 Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264 und ANN-306)
@@ -3755,3 +3767,15 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `app.assert_platform_message` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`. Geprüft in `supabase/tests/platform-messages.test.ts`.
 
 **Änderungspfad.** Fragen auch in der Lesefrist (etwa zur letzten Rechnung): `app.platform_access_writable` aus der Prüfung nehmen oder nur für „Termin oder Rechnung“ · Aufwand `klein`.
+
+### ANN-314 — Kommunikation ist mit den Rückfragen nicht mehr ganz Vorschau
+
+Technik · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung am Handy)
+
+**Annahme.** Der Bereich Kommunikation öffnet auf „Rückfragen“ (`/rueckfragen`), dem ersten Punkt, der wirkt; der Teamchat steht als zweiter Unterpunkt und bleibt als Vorschau gekennzeichnet. Damit ist der Bereich nicht mehr ganz Vorschau und steht bei Therapeut:innen, Teamleitung und Büro am Telefon wieder in der Leiste („Nachrichten“); bei `owner` bleibt er wegen der Zahl der Bereiche hinter „Mehr“.
+
+**Begründung.** ANN-244 („Reife vor Reihenfolge“) stellte nur Bereiche hinter „Mehr“, die ganz Vorschau sind – damals allein die Kommunikation. DSN-001 Abschnitt 6 legt die Rückfragen der Behandlung genau dorthin. Eine Rückfrage mit Antwortzusage muss so schnell erreichbar sein wie die Übersicht.
+
+**Anker.** Eintrag `team` in `src/app/navigation.tsx`. Geprüft in `src/app/navigation.test.tsx` und `src/app/AppShell.test.tsx`.
+
+**Änderungspfad.** Rückfragen als eigener Bereich oder nur in der Übersicht: Eintrag in `navigation.tsx` · Aufwand `klein`. Kommunikation wieder hinter „Mehr“: `vorschau: true` zurück · Aufwand `klein`.

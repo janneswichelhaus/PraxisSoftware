@@ -320,25 +320,25 @@ describe('AppShell: Orientierung (UXR-002)', () => {
     expect(aktiv.className).not.toMatch(/shadow|ring-/);
   });
 
-  it('stellt die Kommunikation am Telefon hinter „Mehr" und markiert „Mehr" dort (BEF-049)', () => {
+  it('stellt die Kommunikation seit den Rückfragen wieder in die Leiste (ANN-314)', () => {
     renderWithProviders(
       <AppShell user={testUser(['therapist'])} onSignOut={vi.fn()}>
         <p>Inhalt</p>
       </AppShell>,
-      '/team',
+      '/rueckfragen',
     );
     const leiste = tableiste();
-    // Übersicht, Kalender, Patienten, Organisation, Mehr - nicht Nachrichten.
+    // Fünf reife Bereiche passen ohne „Mehr" (BEF-049): die Kommunikation ist
+    // mit den Rückfragen nicht mehr ganz Vorschau (KOM-002).
     expect(
       within(leiste)
         .getAllByRole('link')
         .map((link) => link.textContent),
-    ).toEqual(['Übersicht', 'Kalender', 'Patienten', 'Organisation', 'Mehr']);
-    expect(within(leiste).getByRole('link', { name: 'Mehr' })).toHaveAttribute(
+    ).toEqual(['Übersicht', 'Kalender', 'Patienten', 'Nachrichten', 'Organisation']);
+    expect(within(leiste).getByRole('link', { name: 'Nachrichten' })).toHaveAttribute(
       'aria-current',
       'page',
     );
-    // In der Seitenleiste bleibt die Kommunikation an ihrem Platz und aktiv.
     const seite = screen.getAllByRole('navigation', { name: 'Arbeitsbereiche' })[0]!;
     expect(within(seite).getByRole('link', { name: 'Kommunikation' })).toHaveAttribute(
       'aria-current',

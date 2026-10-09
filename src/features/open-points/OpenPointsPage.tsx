@@ -11,6 +11,7 @@ import {
   canReadTreatmentBases,
   canWriteExercisePlans,
   canWriteTreatmentBases,
+  isTherapyStaff,
   type CurrentUser,
 } from '@/features/session/types';
 import { AftercareCancellations } from './AftercareCancellations';
@@ -24,6 +25,7 @@ import { Tasks } from './Tasks';
 import { PlatformRequests } from './PlatformRequests';
 import { WaitlistReview } from './WaitlistReview';
 import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
+import { OffeneRueckfragen } from '@/features/messages/RueckfragenAbschnitt';
 
 /** Eine Kennung aus der Adresszeile, wie die Datenbank sie vergibt. */
 const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -36,7 +38,8 @@ const KENNUNG = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
  * morgen, Wartelisteneinträge, die lange keiner angefasst hat (ABN-018), und
  * Verordnungen, die bald enden, seit POR-011 die Terminwünsche von der
  * Plattform, seit POR-016 die Widerrufe, seit ANG-003 die Kündigungen des
- * Nachsorge-Abos über die Plattform und seit UEB-007 die auslaufenden Pläne. Jede Liste hat ihren eigenen
+ * Nachsorge-Abos über die Plattform, seit UEB-007 die auslaufenden Pläne und
+ * seit KOM-002 die Rückfragen mit ihrer Antwortfrist. Jede Liste hat ihren eigenen
  * Lesepfad; was eine Rolle nicht sehen darf, fragt die Seite gar nicht erst ab
  * - verbindlich prüft der Server (ADR-004).
  *
@@ -55,6 +58,11 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
   const planBereiche = (['therapy', 'training'] as const).filter((bereich) =>
     canWriteExercisePlans(user.roles, bereich),
   );
+  // KOM-002 (ANN-309): die Rückfragen der Bereiche, die die Person liest.
+  const rueckfrageBereiche = [
+    ...(isTherapyStaff(user.roles) ? (['treatment'] as const) : []),
+    ...(canReadTrainingClients(user.roles) ? (['training'] as const) : []),
+  ];
 
   return (
     <>
@@ -63,6 +71,7 @@ export function OpenPointsPage({ user }: { user: CurrentUser }) {
         description="Was noch zu erledigen ist, bis es erledigt ist."
       />
       <div className="lg:max-w-3xl">
+        {rueckfrageBereiche.length > 0 ? <OffeneRueckfragen bereiche={rueckfrageBereiche} /> : null}
         {canManageTasks(user.roles) ? (
           <Tasks today={today} openForm={neueAufgabe} patientId={aufgabePatient} />
         ) : null}

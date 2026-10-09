@@ -24,6 +24,8 @@ delete from public.invoice_number_series;
 delete from public.practice_billing_profiles;
 delete from public.billable_services;
 delete from public.treatment_text_snippets;
+-- KOM-001: Rueckfragen von der Plattform; ihre Eintraege fallen mit ihnen.
+delete from public.platform_messages;
 -- Zugewiesene Plaene sind unveraenderlich und werden nie einzeln geloescht
 -- (UEB-004, ANN-300); wie bei der Preisliste hebt nur der Seed die Sperre auf.
 -- Sie muessen vor der Bibliothek fallen: Positionen zeigen auf Varianten.
@@ -787,3 +789,59 @@ insert into public.platform_accesses
 update public.platform_accesses
    set onboarding_finished_at = now()
  where id in ('cafecafe-cafe-4afe-8afe-000000000001', 'cafecafe-cafe-4afe-8afe-000000000004');
+
+-- -----------------------------------------------------------------------------
+-- KOM-EPIC-001: Rueckfragen ueber die Plattform (Sichtung Plattform und
+-- Kommunikation). Erika fragt zu Beschwerden (offen, ueberfaellig) und zu einem
+-- Termin (beantwortet vom Buero); Paula fragt fuer Max (offen); Tina fragt im
+-- Training nach ihrer Rechnung (offen). Antwortfrist zwei Werktage (ANN-309).
+-- -----------------------------------------------------------------------------
+insert into public.platform_messages
+  (id, organization_id, relationship_kind, relationship_id, patient_id, training_relationship_id,
+   topic, status, due_on, created_by_access_id, created_by, created_at, last_entry_at) values
+  ('d1d1d1d1-d1d1-4d1d-8d1d-000000000001', '22222222-2222-4222-8222-000000000001',
+   'treatment', '66666666-6666-4666-8666-000000000002', '66666666-6666-4666-8666-000000000002', null,
+   'complaint', 'open', app.add_workdays(current_date - 5, 2),
+   'cafecafe-cafe-4afe-8afe-000000000002', '11111111-1111-4111-8111-000000000009',
+   now() - interval '5 days', now() - interval '5 days'),
+  ('d1d1d1d1-d1d1-4d1d-8d1d-000000000002', '22222222-2222-4222-8222-000000000001',
+   'treatment', '66666666-6666-4666-8666-000000000002', '66666666-6666-4666-8666-000000000002', null,
+   'organisational', 'answered', null,
+   'cafecafe-cafe-4afe-8afe-000000000002', '11111111-1111-4111-8111-000000000009',
+   now() - interval '2 days', now() - interval '1 day'),
+  ('d1d1d1d1-d1d1-4d1d-8d1d-000000000003', '22222222-2222-4222-8222-000000000001',
+   'treatment', '66666666-6666-4666-8666-000000000001', '66666666-6666-4666-8666-000000000001', null,
+   'other', 'open', app.add_workdays(current_date, 2),
+   -- Nicht vor der Einwilligung der Begleitung (consent_recorded_at = now()),
+   -- sonst saehe Paula ihre eigene Frage nicht (ADR-023 Punkt 13).
+   'cafecafe-cafe-4afe-8afe-000000000004', '11111111-1111-4111-8111-000000000010',
+   now(), now()),
+  ('d1d1d1d1-d1d1-4d1d-8d1d-000000000004', '22222222-2222-4222-8222-000000000001',
+   'training', 'eeeeeeee-eeee-4eee-8eee-000000000001', null, 'eeeeeeee-eeee-4eee-8eee-000000000001',
+   'organisational', 'open', app.add_workdays(current_date - 1, 2),
+   'cafecafe-cafe-4afe-8afe-000000000001', '11111111-1111-4111-8111-000000000008',
+   now() - interval '1 day', now() - interval '1 day');
+
+insert into public.platform_message_entries
+  (organization_id, message_id, side, body, access_id, author_kind, author_label, created_by,
+   created_at) values
+  ('22222222-2222-4222-8222-000000000001', 'd1d1d1d1-d1d1-4d1d-8d1d-000000000001', 'person',
+   'Seit dem letzten Termin zieht es im rechten Knie, wenn ich Treppen gehe. Soll ich die Kniebeugen trotzdem machen?',
+   'cafecafe-cafe-4afe-8afe-000000000002', 'self', null, '11111111-1111-4111-8111-000000000009',
+   now() - interval '5 days'),
+  ('22222222-2222-4222-8222-000000000001', 'd1d1d1d1-d1d1-4d1d-8d1d-000000000002', 'person',
+   'Kann ich den Termin am Freitag auf den Nachmittag legen?',
+   'cafecafe-cafe-4afe-8afe-000000000002', 'self', null, '11111111-1111-4111-8111-000000000009',
+   now() - interval '2 days'),
+  ('22222222-2222-4222-8222-000000000001', 'd1d1d1d1-d1d1-4d1d-8d1d-000000000002', 'practice',
+   'Ja, Freitag um 15 Uhr geht. Wir haben den Termin verschoben.',
+   null, 'staff', 'Olivia Office', '11111111-1111-4111-8111-000000000003',
+   now() - interval '1 day'),
+  ('22222222-2222-4222-8222-000000000001', 'd1d1d1d1-d1d1-4d1d-8d1d-000000000003', 'person',
+   'Mein Vater fragt, ob er zum naechsten Termin die Gehhilfe bereitlegen soll.',
+   'cafecafe-cafe-4afe-8afe-000000000004', 'companion', 'Paula Mustermann',
+   '11111111-1111-4111-8111-000000000010', now()),
+  ('22222222-2222-4222-8222-000000000001', 'd1d1d1d1-d1d1-4d1d-8d1d-000000000004', 'person',
+   'Auf meiner letzten Rechnung steht das Paket zweimal. Ist das richtig?',
+   'cafecafe-cafe-4afe-8afe-000000000001', 'self', null, '11111111-1111-4111-8111-000000000008',
+   now() - interval '1 day');

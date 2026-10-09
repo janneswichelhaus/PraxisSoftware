@@ -146,8 +146,14 @@ describe('Arbeitsbereiche je Rolle', () => {
   });
 
   it('fuehrt kein zweites, synthetisches Teamverzeichnis', () => {
+    // KOM-002 (ANN-314): Rückfragen und der Teamchat als Vorschau - kein
+    // Verzeichnis neben der Mitarbeiterverwaltung.
     const team = bereicheFuer(['owner']).find((bereich) => bereich.id === 'team');
-    expect(team?.unterpunkte).toHaveLength(0);
+    expect(team?.to).toBe('/rueckfragen');
+    expect(team?.unterpunkte.map((punkt) => [punkt.to, Boolean(punkt.vorschau)])).toEqual([
+      ['/rueckfragen', false],
+      ['/team', true],
+    ]);
   });
 
   it('zeigt den Sicherheitsbereich nur der administrativen Praxisrolle', () => {
@@ -291,6 +297,8 @@ describe('aktiverBereich', () => {
     ['/patienten', 'patienten'],
     ['/patienten/abc/bearbeiten', 'patienten'],
     ['/team', 'team'],
+    ['/rueckfragen', 'team'],
+    ['/rueckfragen/abc', 'team'],
     ['/praxis/team', 'betrieb'],
     ['/praxis/team/abc/bearbeiten', 'betrieb'],
     ['/betrieb/flotte', 'betrieb'],
@@ -340,12 +348,28 @@ describe('tableiste (BEF-049, Option 2: Reife vor Reihenfolge)', () => {
     expect(tableiste(patient)).toEqual({ sichtbar: patient, weitere: [] });
   });
 
-  it('stellt einen Bereich, der ganz Vorschau ist, hinter „Mehr" - auch wenn alles passte', () => {
+  it('stellt fuenf reife Bereiche ohne „Mehr" in die Leiste - die Kommunikation ist seit KOM-002 reif', () => {
     // therapist: Uebersicht, Kalender, Patient:innen, Kommunikation,
-    // Organisatorisches - fuenf, die bis zum Handoff vom 2026-10-05 alle in
-    // der Leiste standen. Die Kommunikation speichert nichts; ihren Platz
-    // bekommt niemand, und sie steht mit „Mehr" weiter zur Verfuegung.
+    // Organisatorisches. Bis KOM-002 war die Kommunikation ganz Vorschau und
+    // stand hinter „Mehr" (BEF-049); mit den Rückfragen steht sie wieder an
+    // ihrem Platz (ANN-314).
     const alle = bereicheFuer(['therapist']);
+    const { sichtbar, weitere } = tableiste(alle);
+    expect(sichtbar.map((bereich) => bereich.id)).toEqual([
+      'heute',
+      'termine',
+      'patienten',
+      'team',
+      'betrieb',
+    ]);
+    expect(weitere).toEqual([]);
+    expect(alle.find((bereich) => bereich.id === 'team')?.vorschau).toBeUndefined();
+  });
+
+  it('stellt einen Bereich, der ganz Vorschau ist, hinter „Mehr" - auch wenn alles passte', () => {
+    const alle = bereicheFuer(['therapist']).map((bereich) =>
+      bereich.id === 'team' ? { ...bereich, vorschau: true } : bereich,
+    );
     const { sichtbar, weitere } = tableiste(alle);
     expect(sichtbar.map((bereich) => bereich.id)).toEqual([
       'heute',
@@ -354,7 +378,6 @@ describe('tableiste (BEF-049, Option 2: Reife vor Reihenfolge)', () => {
       'betrieb',
     ]);
     expect(weitere.map((bereich) => bereich.id)).toEqual(['team']);
-    expect(alle.find((bereich) => bereich.id === 'team')?.vorschau).toBe(true);
   });
 
   it('schiebt bei mehr als fuenf Bereichen den Rest hinter "Mehr", in Seitenleisten-Reihenfolge', () => {

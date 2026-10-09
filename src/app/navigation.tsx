@@ -362,18 +362,27 @@ export function arbeitsbereiche(user: CurrentUser): Arbeitsbereich[] {
     bereiche.push({
       id: 'team',
       ...BEREICHE.team,
-      to: '/team',
-      pfade: ['/team'],
+      // KOM-002 (ANN-314): Der Bereich oeffnet auf den Rueckfragen, dem
+      // ersten Punkt, der wirklich wirkt. Seitdem ist er nicht mehr ganz
+      // Vorschau und steht am Telefon wieder in der Leiste; der Teamchat
+      // speichert weiter nichts (ANN-112) und bleibt als Vorschau gekennzeichnet.
+      to: '/rueckfragen',
+      pfade: ['/rueckfragen', '/team'],
       icon: symbole.team,
-      // Der Teamchat speichert nichts; der Bereich ist ganz Vorschau (ANN-112,
-      // BEF-049). Am Telefon steht er deshalb hinter „Mehr".
-      vorschau: true,
       // Kein Unterpunkt „Verzeichnis": wer im Team ist und wie man die Person
       // erreicht, steht in der echten Mitarbeiterverwaltung unter
       // Organisatorisches
       // (STAFF-001). Ein zweites, synthetisches Verzeichnis daneben waere eine
       // vorgetaeuschte Funktion.
-      unterpunkte: [],
+      unterpunkte: [
+        {
+          to: '/rueckfragen',
+          label: 'Rückfragen',
+          end: false,
+          stichworte: ['Nachrichten', 'Fragen von Patient:innen', 'Plattform'],
+        },
+        { to: '/team', label: 'Teamchat', vorschau: true },
+      ],
     });
 
     bereiche.push({
@@ -496,8 +505,8 @@ export function aktiverBereich(
  * die Bereiche nicht, rücken die restlichen hinter „Mehr".
  *
  * **Reife vor Reihenfolge** (BEF-049, Option 2, Handoff Rahmen vom
- * 2026-10-05, ANN-244): Ein Bereich, der ganz Vorschau ist (`vorschau`, heute nur die
- * Kommunikation), bekommt keinen der vier Plätze - bis dahin stand bei
+ * 2026-10-05, ANN-244): Ein Bereich, der ganz Vorschau ist (`vorschau`; bis KOM-002
+ * die Kommunikation, ANN-314), bekommt keinen der vier Plätze - bis dahin stand bei
  * therapist und team_lead „Nachrichten" in der Leiste, und der Weg zu
  * Mitarbeitenden und Arbeitszeiten lag hinter „Mehr". Sichtbar sind die ersten
  * vier übrigen Bereiche in Seitenleisten-Reihenfolge; hinter „Mehr" stehen

@@ -83,6 +83,7 @@ import { PlanPage } from '@/features/exercise-plans/PlanPage';
 import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
+import { RueckfragePage, RueckfragenPage } from '@/features/messages/RueckfragenPage';
 import { TourenPage } from '@/features/tours/TourenPage';
 import { PaymentsPage } from '@/features/billing/PaymentsPage';
 import { CatalogPage } from '@/features/billing/CatalogPage';
@@ -450,6 +451,8 @@ export function AuthenticatedRoutes({
                     element={<StaffMemberDetailPage user={user} />}
                   />
                   <Route path="/team" element={<TeamChatPage user={user} />} />
+                  {/* KOM-002: Rückfragen aus der Behandlung (DSN-001 Abschnitt 6). */}
+                  <Route path="/rueckfragen" element={<RueckfragenPage user={user} />} />
                   <Route path="/betrieb/flotte" element={<FleetPage user={user} />} />
                   <Route path="/betrieb/flotte/rad/:radId" element={<BikeEditPage user={user} />} />
                   <Route path="/betrieb/flotte/schluessel" element={<KeyPage user={user} />} />
@@ -537,6 +540,11 @@ export function AuthenticatedRoutes({
                   <Route path="/uebungen" element={<UebungenPage user={user} />} />
                   <Route path="/uebungen/:uebungId" element={<UebungPage user={user} />} />
                 </>
+              ) : null}
+              {/* KOM-002/-003: eine Rückfrage aus Behandlung oder Training. Wer
+                  welche liest, entscheidet der Server (ANN-310, ANN-311). */}
+              {showOperations || showTraining ? (
+                <Route path="/rueckfragen/:messageId" element={<RueckfragePage user={user} />} />
               ) : null}
               {showTraining ? (
                 <>
