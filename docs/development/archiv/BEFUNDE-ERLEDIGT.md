@@ -144,3 +144,5 @@ Das widerspricht ADR-017 in der heutigen Fassung (zwei Fotoarten, Wahl vor dem K
 - Mit echten Daten erst, wenn die DSFA es bewertet hat (Anfrage B2, ADR-007).
 
 Die Akte erfährt weiterhin nicht, ob eine Person das Training gebucht hat (ANN-285 bestätigt). Der Loop schreibt zuerst die neue Fassung von §4.3 und ADR-021 Punkt 10 und öffnet dann RLS und Oberfläche, mit Negativfällen in `pnpm test:db` (Büro schreibt nicht).
+
+**Nachtrag (Jannes, 2026-10-09, UX-Review).** Die Regel gilt auch für die Rückfragen im Training (ANN-311: das Büro liest alle, antwortet weiter nur bei „Termin oder Rechnung“; umgesetzt mit ABN-030 über `app.can_read_platform_message`) und für die Instrumente-Bibliothek (BEF-064, eingeplant in UX-EPIC-008). Für Daten über Beschäftigte gilt sie nicht; dort gilt BEF-066.

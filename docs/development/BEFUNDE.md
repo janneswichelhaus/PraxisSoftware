@@ -241,7 +241,7 @@ an beiden Abfragen; danach kann der Pfad denselben Ausgang bekommen wie die
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                         |
 | Bereich | Rahmen aller Seiten hinter der Anmeldung (`App.tsx`): Vollseite „Zugang nicht vollständig eingerichtet“                                                                                                                                                            |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs AUTH-02, ZST-01, dazu NAV-12                                                                                                                                           |
-| Status  | offen                                                                                                                                                                                                                                                              |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-006                                                                                                                                                                                                                                                              |
 | Berührt | `src/app/App.tsx` (Z. 101–121), `src/features/session/useCurrentUser.ts` (`staleTime`, `retry: false`), `src/features/scheduling/SchedulingPage.tsx` (Z. 82); §13; ANN-021, ANN-044, ANN-046; Oberflächen-Checkliste Punkt 5; ADR-013 Punkt 9 (Sitzungen); BEF-070 |
 
 **Beobachtung.** `App.tsx:104` ersetzt die Anwendung bei `isError || !user`
@@ -299,6 +299,8 @@ auf der Erstlade-Seite statt `error.message` und dem Profilweg aus BEF-070.
 Test: Ein Nachladefehler lässt `AuthenticatedRoutes` eingehängt; „Zugang
 gesperrt“ ersetzt weiter sofort.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Ist das Profil geladen, läuft die Anwendung bei einem gescheiterten Nachladen weiter, mit Statusmeldung und „Erneut versuchen“; nur das Erstladen zeigt eine Vollseite mit „Erneut versuchen“. „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort.
+
 ### BEF-047 — Die Anmeldemaske sagt nie, warum sie erscheint, und am Praxisrechner endet keine Sitzung von selbst
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -306,7 +308,7 @@ gesperrt“ ersetzt weiter sofort.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                 |
 | Bereich | Anmeldung (jede Adresse ohne Sitzung); Sitzung auf allen Seiten, besonders am Praxisrechner                                                                                                                                                                                                                                                                                                |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs AUTH-01, AUTH-03, ZST-23, AUTH-09                                                                                                                                                                                                                                                              |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                      |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-006                                                                                                                                                                                                                                                                                                                                                                                      |
 | Berührt | `src/features/auth/LoginPage.tsx` (Z. 134–138), `src/features/auth/SessionProvider.tsx` (Z. 74 ff., 85), `src/app/abmeldeschutz.ts` (Z. 23), `src/features/documentation/Textverlustschutz.tsx` (Z. 27–29), `src/lib/supabase.ts` (Z. 21), `supabase/config.toml` (kein Abschnitt `[auth.sessions]`); §3.4, §13; ANN-044, ANN-045; OPS-001; ADR-013 Punkt 9 (Authentifizierung, Sitzungen) |
 
 **Beobachtung.**
@@ -363,6 +365,8 @@ erzeugte genau das unerklärte Sitzungsende, das Option 2 behebt. Den Sonderfall
 „Seite startet ohne Netz mit abgelaufenem Zugriffstoken“ (dann erscheint die
 Maske, obwohl eine Sitzung gespeichert ist, `SessionProvider.tsx:85`) nimmt der
 Loop nur mit eigenem Zweitreview mit.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Die Anmeldeseite nennt die Ursache (keine Verbindung, zu viele Versuche, Sitzung von außen beendet); falsches Kennwort und unbekanntes Konto bleiben ununterscheidbar. Die Höchstdauer (Option 3) entfällt: Die vergessene Sitzung am Praxisrechner begrenzt seit SEC-EPIC-001 die Sitzungssperre nach ADR-025.
 
 ### BEF-048 — Rahmen: Am Tablet nennt nichts den Bereich, „Abmelden“ ist das auffälligste Element der Kopfzeile, über der Akte stehen drei Navigationsebenen
 
@@ -545,7 +549,7 @@ Marke vorsieht.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Bereich | Übersicht (`/`, Browserdruck als Papierweg); Aufnahmeblätter (`/patienten/:id/aufnahmeblaetter`); Terminzettel (`/patienten/:id/terminzettel`)                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs UEB-01, UEB-09, TER-19                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-009                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | Berührt | `src/index.css` (Druck-Basis, Z. 255–260), `src/features/today/MyDayPage.tsx` (Z. 326–347, 461–464), `src/features/today/Tagesliste.tsx` (Z. 118), `src/components/ui/buttonStile.ts` (Z. 53), `src/features/datenschutz/AufnahmeblaetterPage.tsx` (Z. 25–53), `src/features/datenschutz/patienteninformation.ts` (Z. 37), `src/features/appointments/AppointmentSlipPage.tsx` (Z. 39–42, 144–152), `tests/e2e/bericht.spec.ts` (Muster für einen Drucktest); ANN-021, ANN-039, ANN-041, ANN-123; ADR-012 Punkt 8 und 9; `marke/README.md`; B2 |
 
 **Beobachtung.**
@@ -597,6 +601,8 @@ und Anschrift hilft im Ausfall nicht, und es enthält nur die eigenen Besuche
 eines Tages — dieselben Angaben, die ohnehin auf dem Handy stehen. ANN-021 wird
 damit fortgeschrieben: Die Anschriften stehen dann ausdrücklich auf dem Papier.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 1: Die Übersicht druckt alle eigenen Besuche des Tages mit Anschrift und Rufnummer (ANN-021 wird fortgeschrieben); Aufnahmeblatt und Terminzettel tragen einen Absender aus den Praxis-Stammdaten.
+
 ### BEF-055 — Am Termin schließt „Finalisieren“ einen offenen Besuch mit ab, ohne es zu sagen; dazu drei ähnliche Abschlusswege und zwei Hauptknöpfe
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -604,7 +610,7 @@ damit fortgeschrieben: Die Anschriften stehen dann ausdrücklich auf dem Papier.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Bereich | Termin (`/termine/:id`): geführter Ablauf „Was ist passiert?“, Abschnitt Behandlungsdokumentation; Schreibseiten der Dokumentation                                                                                                                                                                                                                                                                                                                                         |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs DOK-04, TER-02, dazu DOK-02                                                                                                                                                                                                                                                                                                                                                             |
-| Status  | Teil 1 erledigt (PRX-005, 2026-09-28): Die Rückfrage am offenen Termin nennt die Folge für den Termin; der Hinweis auf die automatische Finalisierung stand schon an den Schreibseiten. Offen: Option 2 und 3 mit AKTE-006 |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-007 |
 | Berührt | `src/features/documentation/TreatmentNoteSection.tsx` (Z. 103–166, 224), `src/features/appointments/AppointmentDetailPage.tsx` (Z. 637–653, 770, 874, 1013–1050), `src/features/documentation/TreatmentNotePage.tsx` (Z. 168), `src/features/documentation/TreatmentNoteAddendumPage.tsx` (Z. 103), `app.mark_appointment_documented()` (Migration `20260912130000_appointment_documented.sql`); ADR-016 Punkt 4 und 7; ADR-018 Punkt 2 und 9; ANN-036; BEF-006 (AKTE-006) |
 
 **Beobachtung.**
@@ -659,6 +665,8 @@ Hinweis auf die automatische Finalisierung an den Schreibseiten gleich mitnehmen
 konkretes Datum am Eintrag bräuchte einen geänderten Lesepfad und bliebe eine
 eigene Entscheidung.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 3: Am offenen Hausbesuch kein „Finalisieren“, sondern „Was ist passiert?“; je Ansicht ein Hauptknopf, „Nur Termin abschließen“ eingeklappt.
+
 ### BEF-056 — Ungesicherter Text: kein Zwischenstand ohne Verlassen, kein Ausweg im Konfliktfall, Nachtrag festschreiben nur über den Termin
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -666,7 +674,7 @@ eigene Entscheidung.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Bereich | Behandlungsdokumentation (Abschluss, Entwurf, Nachtrag, Korrektur), Therapiebericht, Erhebung (`/patienten/:id/befund/erheben`)                                                                                                                                                                                                                                                                                                                                                              |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs DOK-06, BEF-10, DOK-07, DOK-17                                                                                                                                                                                                                                                                                                                                                                            |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-007                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Berührt | `src/features/documentation/Textverlustschutz.tsx` (Z. 31, 112–124, 223), `src/features/documentation/api.ts` (Z. 140–174, 306), `src/features/therapy-reports/api.ts` (Z. 140), `src/features/assessments/ErhebungPage.tsx` (Z. 277–343), `src/features/documentation/TreatmentNoteAddendumPage.tsx` (Z. 91–119), `src/features/documentation/TreatmentNotePage.tsx` (Z. 147–164); ADR-001, ADR-015, ADR-016 Punkt 4, 6, 7 und 9; ANN-015, ANN-046, ANN-120; Oberflächen-Checkliste Punkt 5 |
 
 **Beobachtung.**
@@ -729,6 +737,8 @@ Bausteinleiste auch beim Anlegen eines Nachtrags; Ursprung beim Bearbeiten
 zugeklappt. Davon getrennt, ebenfalls ohne Entscheidung: Der Therapiebericht und
 mehrere Formulare haben gar keinen Schutz vor Verlust (Review ZST-02, NAV-01).
 
+**Entscheidung (Jannes, 2026-10-09).** Zu (1) Option 2: Der eigene Text wird nach einer Pause im Tippen von selbst als Entwurf gesichert, mit sichtbarem Stand (ANN-046 wird fortgeschrieben). Zu (2) beides: Übernahme in Nachtrag oder Korrektur im Konfliktfall, Nachtrag auf seiner eigenen Seite festschreiben.
+
 ### BEF-058 — Der Fotobereich steht vor dem Behandlungsverlauf, auch ohne Einwilligung und ohne Fotos
 
 |         |                                                                                                                                                                                                                                                                                                   |
@@ -736,7 +746,7 @@ mehrere Formulare haben gar keinen Schutz vor Verlust (Review ZST-02, NAV-01).
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                        |
 | Bereich | Akte → Verlauf (`/patienten/:id/verlauf`), Einstieg „Bisherige Doku“ auf der Tageskarte der Übersicht                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 820 px, Gegenprüfung; Review-IDs DAT-16, DOK-16                                                                                                                                                                                         |
-| Status  | offen                                                                                                                                                                                                                                                                                             |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-007                                                                                                                                                                                                                                                                                             |
 | Berührt | `src/features/documentation/PatientCoursePage.tsx` (Z. 17–21), `src/features/files/FotosImVerlauf.tsx` (Z. 485–563), `src/features/documentation/PatientRecordDocumentation.tsx` (Z. 159–166), `src/features/today/MyDayPage.tsx` (Z. 243); DOK-006; UX-EPIC-003; Oberflächen-Checkliste Punkt 11 |
 
 **Beobachtung.** Die Seite stellt „Patientenfotos“ vor die Dokumentation (so
@@ -769,6 +779,8 @@ die Fotos danach oder zugeklappt zeigen?
 Festlegung, und der erste Eintrag steht bei 390 px wieder im ersten oder zweiten
 Bildschirm. Nach der Umsetzung neu messen.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 1 mit dem Anker aus Option 3: ohne Fotos eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen; „Bisherige Doku“ springt zum ersten Eintrag. Seit BEF-135 gibt es keine Einwilligungsfotos mehr, die Zeile nennt deshalb keine Einwilligung.
+
 ### BEF-059 — Dateien: „Öffnen“ lädt herunter, die Art ist mit „Befund“ vorbelegt, und die vorgeschlagenen Namen unterscheiden nichts
 
 |         |                                                                                                                                                                                                                                                                                                                                  |
@@ -776,7 +788,7 @@ Bildschirm. Nach der Umsetzung neu messen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                       |
 | Bereich | Akte → Dateien (`/patienten/:id/dateien`); Behandlungsgrundlagen → „Scan des Rezepts“; Verlauf → Fotos                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs DAT-02, DAT-07, DAT-18                                                                                                                                                                                                                        |
-| Status  | offen — Teil (1) „Öffnen heißt Anzeigen“ erledigt in ABN-EPIC-001c (ABN-027; PDF in der App offen, ANN-223); Teile (2) und (3) offen |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-007 |
 | Berührt | `src/features/files/api.ts` (Z. 235–237), `src/features/files/Dateiliste.tsx` (Z. 64, 100, 126, 213, 362–400), `src/features/files/dokumentarten.ts` (Z. 77–78), `src/features/files/kamera.ts` (Z. 16–22), `src/features/files/FotosImVerlauf.tsx` (Z. 160, 190); ADR-017 Punkt 12, 15, 17, 19 und 40; ANN-129; ADR-013 Punkt 9 |
 
 **Beobachtung.**
@@ -836,6 +848,8 @@ Namensfeldern kein Autofill, Enter löst Hinzufügen bzw. Speichern aus; der
 gleichbleibende Satz „sichtbar für alle Praxisrollen“ entfällt, die artabhängige
 Erläuterung steht unter der Auswahl.
 
+**Entscheidung (Jannes, 2026-10-09).** (1) entschieden über ANN-223 (BEF-133). (2) b: Dokumentart ohne Vorauswahl, Hinzufügen erst mit gewählter Art. (3) a: Namensvorschlag „‹Art› vom ‹Datum›“, Fotos mit Uhrzeit.
+
 ### BEF-060 — Behandlungsgrundlage: Bauart mit „Erstverordnung“ vorbelegt, Karte ohne Hauptaktion, Kontakt der Verordner:innen nur im Formular
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
@@ -843,7 +857,7 @@ Erläuterung steht unter der Auswahl.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | Bereich | Akte → Behandlungsgrundlagen (`/patienten/:id/verordnungen`), Grundlage erfassen und bearbeiten; Verordner:innen (`/verordner`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VER-07, DAT-17, VER-18, VER-10                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| Status  | Teile 1 und 2 erledigt in PRX-EPIC-003 (PRX-010, PRX-011, 2026-09-29): Art ohne Vorbelegung, „Weiteren Scan hinzufügen“ neben einem vorhandenen Scan; offen: Hauptaktion je Zustand der Karte (Rest von 2) und Kontaktwege der Verordner:innen (3) |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-007 |
 | Berührt | `src/features/treatment-bases/api.ts` (Z. 532), `src/features/treatment-bases/TreatmentBasisFormFields.tsx` (Z. 78–93, 266–268), `src/features/treatment-bases/TreatmentBasisFormPage.tsx` (Z. 172–187), `update_treatment_basis` (Migration `20260918130000_appointment_count.sql`, Z. 498–503), `src/features/treatment-bases/PatientTreatmentBasesPage.tsx` (Z. 146, 310–361, 396–401), `src/features/files/Dateiliste.tsx` (Z. 174, 505, 527), `src/features/therapy-reports/BerichteDerVerordnung.tsx` (Z. 113), `src/features/treatment-bases/PrescribersListPage.tsx` (Z. 81–92), `src/features/treatment-bases/PrescriberFormFields.tsx` (Z. 117–144), `src/features/billing/InvoicePrintPage.tsx` (Z. 341); ADR-017 Punkt 10; ADR-020 Punkt 3 und 4; ANN-074; Oberflächen-Checkliste Punkte 8 und 11 |
 
 **Beobachtung.**
@@ -902,6 +916,8 @@ nur nicht senden, der sichtbare Satz „Verordner:in und Diagnose entfallen beim
 Selbstzahler.“, der Kasten „Aus dem Bestand“ sagt „werden beim Speichern
 entfernt“, und das Speichern fragt nach.
 
+**Entscheidung (Jannes, 2026-10-09).** (2) b: je Zustand eine Hauptaktion, Bearbeiten, Bericht und Scan ruhig. (3) a: Kontaktwege der Verordner:in als Links in der Liste und an der Verordnungskarte.
+
 ### BEF-062 — Nach einem Storno führen zwei Wege zur neuen Rechnung, und nur einer behält den Bezug; Empfänger lassen sich nur anlegen
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                       |
@@ -909,7 +925,7 @@ entfernt“, und das Speichern fragt nach.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | Bereich | Abrechnung: „Abzurechnen“ (`/abrechnung`), stornierte Rechnung und Rechnungsentwurf (`/abrechnung/rechnungen/:id`), Abschnitt „Empfänger“                                                                                                                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs ABR-08, ABR-19                                                                                                                                                                                                                                                                                                                                     |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-008                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Berührt | `create_invoice_draft`, `create_correction_draft` (Migration `20260921140000_invoice_service_area.sql`, Z. 627–629), `list_invoice_candidates`, `save_invoice_recipient`; `src/features/billing/api.ts` (Z. 263, 592–594), `src/features/billing/InvoicesPage.tsx` (Z. 336–358), `src/features/billing/InvoiceDetailPage.tsx` (Z. 566, 682–733, 807); ADR-009 Punkt 9 und 10; ANN-079; BEF-018; ADR-013 Punkt 9 (Rechnungsdaten, RPC) |
 
 **Beobachtung.**
@@ -962,6 +978,8 @@ verwerfen und hier neu anlegen.“). Ohne Entscheidung: Knopfzeile umbrechen, di
 Art ohne Vorbelegung („Bitte wählen …“), der Grund am gesperrten Knopf („Name
 oder Stelle fehlt“).
 
+**Entscheidung (Jannes, 2026-10-09).** (1) b: Nach einem Storno führt nur der sichtbare Weg „Korrekturrechnung erstellen“ mit Herkunft zur neuen Rechnung. (2) b: Empfänger bearbeitbar, einer je Person als Standard; ausgestellte Rechnungen bleiben unverändert.
+
 ### BEF-063 — „Rechnung ausstellen“ geschieht mit einem Tipp, während folgenlose Schritte nachfragen
 
 |         |                                                                                                                                                                                                                                                                                                                                                             |
@@ -969,7 +987,7 @@ oder Stelle fehlt“).
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Rechnungsentwurf (`/abrechnung/rechnungen/:id`); Datenschutz der Akte (`/patienten/:id/datenschutz`), Widerruf der Fotoeinwilligung                                                                                                                                                                                                                         |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 px, Gegenprüfung; Review-IDs ABR-15, ZST-15                                                                                                                                                                                                                                                           |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-008                                                                                                                                                                                                                                                                                                                                                       |
 | Berührt | `src/features/billing/InvoiceDetailPage.tsx` (Z. 847–869), `src/features/billing/CatalogPage.tsx` (Z. 423), `src/features/datenschutz/PatientDatenschutzPage.tsx` (Z. 245, 270), `src/features/files/FotosImVerlauf.tsx` (Z. 394); ADR-009 Punkt 9; ADR-016 Punkt 4 (Muster „Folge vor dem Knopf“); ANN-127; `OPTIMIERUNG.md` (Messgrößen Z und F); BEF-064 |
 
 **Stand nach UXR-006.** Der Foto-Widerruf fragt inzwischen nach (Review PAT-04,
@@ -1014,6 +1032,8 @@ Bestätigung nicht unter „Rechnung ausstellen“ steht. Dieselbe Frage stellt 
 beim Entziehen einer Rolle (BEF-064). Die Umsetzung ändert keinen Aufruf, liegt
 aber im Ausstellungs- und Löschweg; ADR-013 Punkt 9 dabei prüfen.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Rückfrage mit Kontrollwerten bei „Rechnung ausstellen“ und beim unwiderruflichen Löschen von Fotos; ebenso beim Entziehen einer Rolle (BEF-064).
+
 ### BEF-064 — Zugang und Rollen: Die Trainingsbetreuung erscheint rollenlos, Rollen wirken ohne Rückfrage, und die Praxisleitung findet die Instrumente nicht
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
@@ -1021,7 +1041,7 @@ aber im Ausstellungs- und Löschweg; ADR-013 Punkt 9 dabei prüfen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | Bereich | Organisatorisches → Mitarbeitende → Datensatz (`/praxis/team/:id`), Abschnitt „Zugang“; Organisatorisches → Instrumente (`/praxis/instrumente`); Befund der Akte                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs ORG-09, ORG-18, BEF-19                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| Status | offen — Trainingsbetreuung erledigt in TRN-003 (`trainer` in `WAEHLBARE_ROLLEN`, Server nimmt ihn an); Rückfragen und Instrumente offen, Lösung in `BEFUNDE-LOESUNGEN.md` |
+| Status | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-008 |
 | Berührt | `src/features/staff/StaffAccountSection.tsx` (Z. 34, 270, 290, 354–410), `src/features/staff/StaffMemberDetailPage.tsx` (Z. 149–176, 284–288), `src/app/navigation.tsx` (`betriebUnterpunkte`), `src/routes/AuthenticatedRoutes.tsx` (Z. 135, 326), `src/features/assessments/PatientBefundPage.tsx` (Z. 111), `src/features/assessments/VerlaufAbschnitt.tsx` (Z. 105); `app.assert_staff_role_keys` (Migration `20260911110000_staff_account_invitations.sql`), Migration `20260920132000_training_role.sql`; ADR-004; ADR-021; ANN-103; STAFF-001; ADR-013 Punkt 9 (Rollen, Sichtbarkeit zwischen Rollen) |
 
 **Beobachtung.**
@@ -1071,6 +1091,8 @@ Deaktivieren gleich beim Öffnen laden und in einem Schritt bestätigen lassen
 (die Prüfung auf dem Server aus STAFF-001 bleibt); für Leserollen am Bogen
 „Erhoben wird von den behandelnden Rollen.“
 
+**Entscheidung (Jannes, 2026-10-09).** (1) b: Rückfrage beim Entziehen einer Rolle. (2) b: Die Instrumente-Bibliothek sehen alle Praxisrollen, auch das Büro (Regel BEF-137).
+
 ### BEF-065 — Audit, Aufbewahrung und MDR-Sperre: Die Nachweisseiten sprechen Projektsprache und stellen die Arbeit nach hinten
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
@@ -1078,7 +1100,7 @@ Deaktivieren gleich beim Öffnen laden und in einem Schritt bestätigen lassen
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Bereich | Organisatorisches → Sicherheit → Audit (`/praxis/sicherheit/audit`) und Aufbewahrung (`/praxis/sicherheit/aufbewahrung`); MDR-Sperrseite (reservierte Adressen, etwa `/training/ki-analyse`)                                                                                                                                                                                                                                                               |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs ORG-13, ORG-19, ORG-23, ORG-B02, NAV-23                                                                                                                                                                                                                                                                                                                        |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-009                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Berührt | `src/features/audit/AuditLogPage.tsx` (Z. 50–83, 164–207), `src/features/audit/api.ts` (Z. 97), `list_audit_events` (Migration `20260922120000_abgewiesene_zugriffe.sql`, Z. 256), `src/features/retention/AufbewahrungPage.tsx` (Z. 72, 231–421), `src/features/retention/klassen.ts`, `src/app/MdrSperre.tsx` (Z. 24–33), `tests/e2e/mdr-sperre.spec.ts` (Z. 21–25); ADR-006; ADR-008; ADR-010 Punkt 3 und 13; ANN-089; ADR-013 Punkt 9 (Audit-Lesepfad) |
 
 **Beobachtung.**
@@ -1139,6 +1161,8 @@ den Termin öffnen können?
 verlieren. Option 3 erst mit der Datenschutzprüfung (B2), weil sie ADR-010
 berührt.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Die Nachweisseiten sind für die Praxisleitung im Alltag geschrieben, der Nachweis steht als Zusatz. Den geänderten Satz im E2E-Test der MDR-Sperre (gleich streng, Kennung bleibt geprüft) gibt Jannes hiermit frei.
+
 ### BEF-066 — Vorschauen des Praxisbetriebs: Jede Rolle sieht Salden, IBAN und Urlaubsgründe aller und darf Räder anlegen und entfernen
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -1146,7 +1170,7 @@ berührt.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                  |
 | Bereich | Organisatorisches → Vorschau: Zeitkonto (`/betrieb/zeitkonto`), Erstattungen (`/betrieb/erstattungen`), Urlaub (`/betrieb/urlaub`), Radflotte (`/betrieb/flotte`)                                                                                                                                                                                                                                           |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs VOR-14, VOR-22                                                                                                                                                                                                                                                                                                  |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                       |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in FLT-EPIC-001, URL-001, ZK-001, ERS-001                                                                                                                                                                                                                                                                                                                                                                                                       |
 | Berührt | `src/features/timeaccount/TimeAccountPage.tsx` (Z. 77, 96), `src/features/reimbursements/ReimbursementsPage.tsx` (Z. 68, 254, 337), `src/features/vacation/VacationPage.tsx` (Z. 158, 214, 490), `src/features/fleet/FleetPage.tsx` (Z. 193–229, 343), `src/features/fleet/BikeEditPage.tsx` (Z. 294); §4.3, §4.5, §16, §20; B6; ANN-024; ADR-004; Roadmap Block 8 (FLT-EPIC-001, URL-001, ZK-001, ERS-001) |
 
 **Beobachtung.** Als therapist angemeldet: „Saldo über alle Personen: −3,25 h“
@@ -1187,6 +1211,8 @@ ersetzt. Dort auch: der Hauptknopf nach Rolle (Behandelnde „Schlüssel
 entnehmen“, „Rad hinzufügen“ nachrangig für owner), Suche und Filter
 eingeklappt.
 
+**Entscheidung (Jannes, 2026-10-09).** Option 2 mit Büro: Eigenes sieht jede Person; Fremdes in Zeitkonto und Erstattungen sehen owner und Büro; im Urlaub sehen andere nur den Zeitraum, nie den Grund; IBAN maskiert; keine Summe über alle Personen; Räder anlegen und entfernen nur owner, Schlüssel, Panne und Check-up alle. Verbindlich über RLS; Vorgabe für den Zuschnitt der genannten Loops.
+
 ### BEF-067 — Begriffe: Dieselbe Sache heißt an verschiedenen Stellen verschieden
 
 |         |                                                                                                                                                                     |
@@ -1194,7 +1220,7 @@ eingeklappt.
 | Datum   | 2026-09-27                                                                                                                                                          |
 | Bereich | Querschnitt: Kalender, Termin, Übersicht, Akte, Patient:innen, Anmeldung, Mein Konto, Anlegeseiten                                                                  |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs WRT-04, WRT-05, WRT-18, KAL-28, UEB-14, AUTH-14, NAV-21, PAT-06, PAT-10 |
-| Status  | offen                                                                                                                                                               |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-009                                                                                                                                                               |
 | Berührt | `src/lib/begriffe.ts`, `src/lib/begriffe.test.ts`; Fundstellen je Zeile unten; ANN-002, ANN-023, ANN-025, ANN-032, ANN-111; BEF-035; Oberflächen-Checkliste Punkt 9 |
 
 **Beobachtung.** Checkliste Punkt 9 verlangt „gleiche Sache, gleiches Wort“,
@@ -1238,6 +1264,8 @@ Organisationsnamen nicht an), „Laufende Versorgung“ in den Stammdaten durch
 „nicht abgeschlossen“ ersetzen, Gedankenstrich statt Bindestrich, Namen in der
 Patientenliste umbrechen statt kürzen.
 
+**Entscheidung (Jannes, 2026-10-09).** Spalte „Vorschlag“ in allen Zeilen: „Dauertermin“, „Dauer“, „Fehlzeit“ bleibt, „Tag umplanen“ bleibt, „Steht aus“, Verben in Titeln, Konto/Zugang mit „Anmeldemail“ und „Anmeldeseite“, „in Versorgung“, „Nachname, Vorname“.
+
 ### BEF-070 — Unerwartete Serverantworten erscheinen als englischer Prüftext
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -1245,7 +1273,7 @@ Patientenliste umbrechen statt kürzen.
 | Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | Bereich | Akte → Dateien und Fotos; Organisatorisches → Sicherheit → Aufbewahrung (Löschaufträge); Therapiebericht; Erhebung; Start der Anwendung (Profil)                                                                                                                                                                                                                                                                                  |
 | Quelle  | UX-Review Claude 2026-09-26/27: Code, Gegenprüfung (nicht im Browser ausgelöst); Review-ID WRT-20                                                                                                                                                                                                                                                                                                                                 |
-| Status  | offen                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Status  | entschieden 2026-10-09 (Jannes); eingeplant in UX-EPIC-006                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | Berührt | `src/lib/antwort.ts`; `src/features/files/api.ts` (Z. 141, 230, 327), `src/features/files/patientenfotos.ts` (Z. 101, 140), `src/features/files/dateien.ts` (Z. 162), `src/features/therapy-reports/api.ts` (Z. 200, 225), `src/features/assessments/api.ts` (Z. 90), `src/features/session/useCurrentUser.ts` (Z. 63); R3-023; ADR-008; ADR-013 Punkt 9 (Löschpfad, Sitzungen); Oberflächen-Checkliste Punkt 6; BEF-010, BEF-046 |
 
 **Beobachtung.** Seit R3-023 gibt es `antwort(schema, data, satz)`: Passt eine
@@ -1276,6 +1304,8 @@ kleiner Loop oder je Spur, wenn ein Loop das Modul ohnehin anfasst?
 
 **Empfehlung.** Option 2 — die Änderung ist klein, und der Löschpfad soll
 ohnehin nicht nebenbei angefasst werden.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2: ein kleiner Loop für alle neun Wege, gemeinsam mit BEF-046.
 
 ### BEF-082 — Sechzehn Lesepfade verlieren ihren Abweisungseintrag hinter PostgREST
 
