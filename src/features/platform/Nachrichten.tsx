@@ -157,6 +157,11 @@ function Nachrichtzeile({
 }) {
   const erste = nachricht.entries[0];
   const zustand = ZUSTAND[nachricht.status];
+  // Die Frist steht in der Nebenzeile, die Marke bleibt ein Wort (375 px).
+  const frist =
+    nachricht.status === 'open' && nachricht.due_on
+      ? `Antwort bis ${datum(nachricht.due_on)}. `
+      : '';
   return (
     <ListRow
       zeit={tagKurz(nachricht.last_entry_at)}
@@ -164,15 +169,8 @@ function Nachrichtzeile({
         THEMA_NAME[nachricht.topic] +
         (nachricht.reference_label ? ` · ${nachricht.reference_label}` : '')
       }
-      meta={erste ? kuerzen(erste.body, 80) : undefined}
-      status={
-        <Badge ton={zustand.ton}>
-          {zustand.wort}
-          {nachricht.status === 'open' && nachricht.due_on
-            ? ` · Antwort bis ${datum(nachricht.due_on)}`
-            : ''}
-        </Badge>
-      }
+      meta={`${frist}${erste ? kuerzen(erste.body, 80) : ''}`}
+      status={<Badge ton={zustand.ton}>{zustand.wort}</Badge>}
       to={to}
       gedaempft={gedaempft}
     />

@@ -311,9 +311,12 @@ export function Uebersicht({
 
       <Section titel="Fragen an die Praxis">
         <p className="text-ink max-w-prose text-base leading-relaxed">
-          Schreiben Sie der Praxis unter <Textlink to={mit('/nachrichten')}>Nachrichten</Textlink>.{' '}
           <strong>{NICHT_AKUT}</strong> {NOTFALL}
         </p>
+        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7). */}
+        <Textlink alleinstehend to={mit('/nachrichten')}>
+          Der Praxis schreiben →
+        </Textlink>
       </Section>
     </>
   );

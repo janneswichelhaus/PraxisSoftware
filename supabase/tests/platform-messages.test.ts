@@ -415,6 +415,83 @@ describe('Eine Frage an die Praxis (KOM-001)', () => {
     }
   });
 
+  it('eingeladen: das Konto ist nicht gebunden - nichts (Punkt 23, Zweitreview S2)', async () => {
+    const id = await fragen(erika);
+    try {
+      await asPostgres(
+        `update public.platform_accesses
+            set status = 'invited', account_user_id = null, activated_at = null
+          where id = $1`,
+        [erika.zugang],
+      );
+      expect(await ansicht(erika.konto, erika.zugang)).toBeNull();
+      expect(
+        await fehler(asUser(erika.konto, FRAGEN, [erika.zugang, 'other', 'x', null, null])),
+      ).toBe('42501');
+      expect(await fehler(asUser(erika.konto, NACHTRAGEN, [erika.zugang, id, 'x']))).toBe('42501');
+      expect(await fehler(asUser(erika.konto, ERLEDIGEN, [erika.zugang, id]))).toBe('42501');
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('nach der Lesefrist: nichts mehr (D2, Zweitreview S3)', async () => {
+    const id = await fragen(erika);
+    try {
+      await asPostgres(
+        `update public.patients
+            set care_concluded_on = current_date - 45, care_concluded_at = now() - interval '45 days',
+                care_concluded_by = $2::uuid
+          where id = $1`,
+        [patients.erika, users.therapist],
+      );
+      expect(await ansicht(erika.konto, erika.zugang)).toBeNull();
+      expect(
+        await fehler(asUser(erika.konto, FRAGEN, [erika.zugang, 'other', 'x', null, null])),
+      ).toBe('42501');
+      expect(await fehler(asUser(erika.konto, NACHTRAGEN, [erika.zugang, id, 'x']))).toBe('42501');
+    } finally {
+      await resetDatabase();
+      await fremdeOrganisation();
+    }
+  });
+
+  it('Einträge fallen nur mit ihrem Vorgang (Zweitreview H1)', async () => {
+    const id = await fragen(erika);
+    expect(
+      await fehler(
+        asPostgres('delete from public.platform_message_entries where message_id = $1', [id]),
+      ),
+    ).toBe('42501');
+    await asPostgres('delete from public.platform_messages where id = $1', [id]);
+    const { rows } = await asPostgres<{ n: number }>(
+      'select count(*)::int as n from public.platform_message_entries where message_id = $1',
+      [id],
+    );
+    expect(rows[0]!.n).toBe(0);
+  });
+
+  it('Löschlauf: beantwortet und danach still - drei Jahre ab der Antwort (Zweitreview S1)', async () => {
+    const alt = await fragen(erika);
+    const jung = await fragen(erika);
+    for (const [id, jahre] of [
+      [alt, 4],
+      [jung, 1],
+    ] as const) {
+      await asPostgres(
+        `update public.platform_messages
+            set status = 'answered', due_on = null,
+                last_entry_at = now() - ($2::int * interval '1 year')
+          where id = $1`,
+        [id, jahre],
+      );
+    }
+    await asPostgres('select public.apply_retention()');
+    const { rows } = await asPostgres<{ id: string }>('select id from public.platform_messages');
+    expect(rows.map((r) => r.id)).toEqual([jung]);
+  });
+
   it('Löschlauf: erledigt und nicht zugeordnet, drei Jahre nach Jahresende (ADR-008)', async () => {
     const alt = await fragen(erika);
     const jung = await fragen(erika);

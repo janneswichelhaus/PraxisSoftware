@@ -110,8 +110,10 @@ describe('Rückfragen (KOM-002)', () => {
       '/rueckfragen',
     );
     expect(await screen.findByText('Erika Beispiel')).toBeInTheDocument();
-    expect(screen.getByText('überfällig seit 07.10.2026')).toBeInTheDocument();
-    expect(screen.getByText('offen · Antwort bis 13.10.2026')).toBeInTheDocument();
+    expect(screen.getByText('überfällig')).toBeInTheDocument();
+    expect(screen.getByText(/fällig war 07\.10\.2026/)).toBeInTheDocument();
+    expect(screen.getByText('offen')).toBeInTheDocument();
+    expect(screen.getByText(/Antwort bis 13\.10\.2026/)).toBeInTheDocument();
     expect(screen.getByText(/über Begleitung Paula Mustermann/)).toBeInTheDocument();
     expect(screen.queryByText(/Knie schmerzt/)).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toHaveAttribute(

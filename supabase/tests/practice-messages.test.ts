@@ -113,6 +113,9 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     // Die Trainingsbetreuung sieht die Behandlung nicht (ADR-021 Punkt 6).
     expect(await liste(users.trainer, 'treatment')).toEqual([]);
     expect(await liste(users.trainer)).toEqual([]);
+    expect(await fehler(asUser(users.trainer, OEFFNEN, [id]))).toBe('P0002');
+    expect(await fehler(asUser(users.trainer, ANTWORTEN, [id, 'x']))).toBe('P0002');
+    expect(await fehler(asUser(users.trainer, ERLEDIGEN, [id]))).toBe('P0002');
   });
 
   it('antworten: therapeutische Rollen auf alles, das Büro nur organisatorisch (ANN-310)', async () => {
@@ -127,6 +130,8 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(await fehler(asUser(users.office, ANTWORTEN, [beschwerde, 'Bitte kühlen']))).toBe(
       '42501',
     );
+    // Erledigen folgt demselben Recht wie Antworten (Zweitreview H3).
+    expect(await fehler(asUser(users.office, ERLEDIGEN, [beschwerde]))).toBe('42501');
     await asUserCommitted(users.office, ANTWORTEN, [termin, 'Freitag geht.']);
     await asUserCommitted(users.therapist, ANTWORTEN, [beschwerde, 'Ich rufe Sie an.']);
 

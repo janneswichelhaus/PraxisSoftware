@@ -180,7 +180,8 @@ describe('Nachrichten (KOM-001)', () => {
       'href',
       '/p/nachrichten/neu',
     );
-    expect(screen.getByText('bei der Praxis · Antwort bis 13.10.2026')).toBeInTheDocument();
+    expect(screen.getByText('bei der Praxis')).toBeInTheDocument();
+    expect(screen.getByText(/^Antwort bis 13\.10\.2026\./)).toBeInTheDocument();
     expect(screen.getByText('Übung · Kniebeuge am Geländer')).toBeInTheDocument();
     expect(screen.getByText('beantwortet')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Erledigt' })).toBeInTheDocument();

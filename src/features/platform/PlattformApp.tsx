@@ -861,8 +861,9 @@ function VertretungZeile({
  * (ANN-112): Übersicht, Termine (POR-008), Übungen bzw. Training (UEB-009),
  * Nachrichten (KOM-001).
  */
+// KOM-001: vier Reiter bei 375 px - das Wort bricht nie um („Nachrichten").
 const REITER =
-  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold';
+  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-0.5 text-xs whitespace-nowrap aria-[current=page]:font-semibold';
 
 function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   const { pathname, search } = useLocation();

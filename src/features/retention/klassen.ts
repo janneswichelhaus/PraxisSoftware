@@ -60,7 +60,7 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   patientenkommunikation: {
     label: 'Nachrichten der Behandlung',
     beschreibung:
-      'Fragen über die Plattform und die Antworten der Praxis, die nicht der Akte zugeordnet sind. Drei Jahre ab Ende des Jahres, in dem der Vorgang erledigt wurde; offene bleiben. Der Akte zugeordnete Nachrichten haben die Frist der Akte.',
+      'Fragen über die Plattform und die Antworten der Praxis, die nicht der Akte zugeordnet sind. Drei Jahre ab Ende des Jahres, in dem der Vorgang erledigt oder zuletzt beantwortet wurde; offene bleiben. Der Akte zugeordnete Nachrichten haben die Frist der Akte.',
   },
   terminwunsch: {
     label: 'Terminwünsche',

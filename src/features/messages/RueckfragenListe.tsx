@@ -71,14 +71,22 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
     zeile.asked_by && zeile.asked_by !== 'self'
       ? ` · über ${VON_LABEL[zeile.asked_by]}${zeile.representative_name ? ` ${zeile.representative_name}` : ''}`
       : '';
+  // Die Frist steht in der Nebenzeile, die Marke bleibt kurz: Am Telefon
+  // überdeckte eine lange Marke sonst den Namen.
+  const frist =
+    zeile.status === 'open' && zeile.due_on
+      ? zeile.overdue
+        ? ` · fällig war ${formatDate(zeile.due_on)}`
+        : ` · Antwort bis ${formatDate(zeile.due_on)}`
+      : '';
   return (
     <ListRow
-      zeit={formatDate(zeile.last_entry_at.slice(0, 10))}
+      zeit={formatDate(zeile.last_entry_at.slice(0, 10)).slice(0, 6)}
       titel={mitName ? name : thema}
-      meta={`${mitName ? thema : `${zeile.entry_count} Einträge`}${von}${
+      meta={`${mitName ? thema : `${zeile.entry_count} Einträge`}${frist}${von}${
         zeile.record_assigned_at ? ' · in der Akte' : ''
       }`}
-      status={<Zustand zeile={zeile} />}
+      status={<Zustand zeile={zeile} kurz />}
       to={rueckfragePfad(zeile)}
       gedaempft={zeile.status === 'closed'}
     />
@@ -87,11 +95,21 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
 
 export function Zustand({
   zeile,
+  kurz = false,
 }: {
   zeile: Pick<Rueckfragezeile, 'status' | 'due_on' | 'overdue' | 'can_answer'>;
+  /** Nur das Wort - in Listen steht die Frist in der Nebenzeile. */
+  kurz?: boolean;
 }) {
   if (zeile.status === 'closed') return <Badge ton="positiv">erledigt</Badge>;
   if (zeile.status === 'answered') return <Badge ton="neutral">beantwortet</Badge>;
+  if (kurz) {
+    return zeile.overdue ? (
+      <Badge ton="warnung">überfällig</Badge>
+    ) : (
+      <Badge ton="akzent">offen</Badge>
+    );
+  }
   if (zeile.overdue) {
     return (
       <Badge ton="warnung">

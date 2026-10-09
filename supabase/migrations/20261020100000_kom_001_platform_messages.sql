@@ -228,6 +228,27 @@ create trigger platform_message_entries_guard
   before update on public.platform_message_entries
   for each row execute function app.platform_message_entries_immutable();
 
+-- Geloescht wird ein Eintrag nur mit seinem Vorgang (Kaskade; Zweitreview
+-- H1): Steht der Vorgang noch, ist ein einzelnes Loeschen ein Eingriff in
+-- das, was geschrieben wurde - auch auf einem privilegierten Weg.
+create function app.platform_message_entries_only_with_message()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if exists (select 1 from public.platform_messages m where m.id = old.message_id) then
+    raise exception 'platform message entries are deleted only with their message'
+      using errcode = '42501';
+  end if;
+  return old;
+end;
+$$;
+
+create trigger platform_message_entries_delete_guard
+  before delete on public.platform_message_entries
+  for each row execute function app.platform_message_entries_only_with_message();
+
 -- -----------------------------------------------------------------------------
 -- 4. Datenklasse (ADR-008: "Organisatorische Patientenkommunikation", ANN-001)
 -- -----------------------------------------------------------------------------
@@ -235,13 +256,13 @@ insert into public.retention_classes
   (key, basis, legal_reference, anchor, retention_interval, assumption_key, note, sort_order)
 values
   ('patientenkommunikation', 'intern', null, 'calendar_year_end', interval '3 years', 'ANN-001',
-   'Nachrichten der Behandlung ueber die Plattform, die nicht der Akte zugeordnet sind: drei Jahre ab Ende des Kalenderjahres, in dem der Vorgang erledigt wurde (ADR-008). Offene und beantwortete Vorgaenge bleiben; mit der Akte fallen sie. Zugeordnete Vorgaenge haben die Frist der Akte (KOM-004, ANN-312).',
+   'Nachrichten der Behandlung ueber die Plattform, die nicht der Akte zugeordnet sind: drei Jahre ab Ende des Kalenderjahres, in dem der Vorgang erledigt oder zuletzt beantwortet wurde (ADR-008). Offene Vorgaenge bleiben; mit der Akte fallen sie. Zugeordnete Vorgaenge haben die Frist der Akte (KOM-004, ANN-312).',
    77);
 
 insert into public.retention_assignments (table_name, class_key, deletion_mode, scope_note, sort_order)
 values
   ('platform_messages', 'patientenkommunikation', 'automatisch',
-   'Erledigte Vorgaenge der Behandlung ohne Zuordnung zur Akte, drei Jahre ab Jahresende. Ein Legal Hold an der Akte haelt.', 77),
+   'Erledigte und beantwortete Vorgaenge der Behandlung ohne Zuordnung zur Akte, drei Jahre ab Jahresende. Ein Legal Hold an der Akte haelt.', 77),
   ('platform_messages', 'patientenakte', 'ueber_elterndatensatz',
    'Der Akte zugeordnete Vorgaenge (KOM-004). Fallen mit der Akte (cascade).', 77),
   ('platform_messages', 'trainingsverhaeltnis', 'ueber_elterndatensatz',
@@ -1026,16 +1047,18 @@ begin
     -- -------------------------------------------------------------------
     -- Nachrichten der Behandlung (KOM-001, ADR-008 "Organisatorische
     -- Patientenkommunikation", ANN-001): drei Jahre ab Ende des
-    -- Kalenderjahres, in dem der Vorgang erledigt wurde. Offene und
-    -- beantwortete bleiben; der Akte zugeordnete (KOM-004, ANN-312) fallen
-    -- erst mit ihr; im Training fallen sie mit dem Verhaeltnis (cascade).
-    -- Ein Legal Hold an der Akte haelt.
+    -- Kalenderjahres, in dem der Vorgang abgeschlossen wurde: erledigt, oder
+    -- beantwortet und danach nichts mehr von der Person (Anker: die letzte
+    -- Antwort; Zweitreview S1, ANN-308). Offene bleiben; der Akte
+    -- zugeordnete (KOM-004, ANN-312) fallen erst mit ihr; im Training fallen
+    -- sie mit dem Verhaeltnis (cascade). Ein Legal Hold an der Akte haelt.
     -- -------------------------------------------------------------------
     with faellig as (
       select m.id,
              m.organization_id,
              app.retention_due_at(
-               (date_trunc('year', m.closed_at at time zone v_org.time_zone)
+               (date_trunc('year', coalesce(m.closed_at, m.last_entry_at)
+                                     at time zone v_org.time_zone)
                  + interval '1 year' - interval '1 day')::date,
                app.retention_interval('patientenkommunikation'),
                v_org.time_zone
@@ -1043,8 +1066,7 @@ begin
       from public.platform_messages m
       where m.organization_id = v_org.id
         and m.relationship_kind = 'treatment'
-        and m.status = 'closed'
-        and m.closed_at is not null
+        and m.status in ('closed', 'answered')
         and m.record_assigned_at is null
         and not app.under_legal_hold(v_org.id, 'patient', m.patient_id)
     ),
