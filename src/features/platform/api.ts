@@ -1185,3 +1185,118 @@ export async function uebungstageSetzen(
   });
   if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
 }
+
+// -----------------------------------------------------------------------------
+// Nachrichten (KOM-001, IDEA-KOM-001, DSN-001 4.1)
+// -----------------------------------------------------------------------------
+
+const nachrichtEintragSchema = z.object({
+  id: z.string().uuid(),
+  side: z.enum(['person', 'practice']),
+  body: z.string(),
+  created_at: z.string(),
+  /** Wer geschrieben hat: dieser Zugang, die Person selbst, eine Vertretung, die Praxis. */
+  author: z.enum(['you', 'person', 'representative', 'practice']),
+  /** Nur bei einer Vertretung: ihr Name (ADR-023 Punkt 14). */
+  author_label: z.string().nullable(),
+});
+export type NachrichtEintrag = z.infer<typeof nachrichtEintragSchema>;
+
+const nachrichtSchema = z.object({
+  id: z.string().uuid(),
+  topic: z.enum(['exercise', 'complaint', 'organisational', 'other']),
+  /** Plan oder Übung, auf die sich die Frage bezieht - als Schnappschuss. */
+  reference_label: z.string().nullable(),
+  status: z.enum(['open', 'answered', 'closed']),
+  /** Antwort fällig bis (ANN-309); nur solange die Praxis am Zug ist. */
+  due_on: z.string().nullable(),
+  created_at: z.string(),
+  last_entry_at: z.string(),
+  closed_at: z.string().nullable(),
+  closed_by_side: z.enum(['person', 'practice']).nullable(),
+  entries: z.array(nachrichtEintragSchema),
+});
+export type Nachricht = z.infer<typeof nachrichtSchema>;
+
+const nachrichtenSchema = z.object({
+  /** Antwortfrist der Praxis in Werktagen (ANN-309). */
+  response_workdays: z.number().int(),
+  /** Darf dieser Zugang schreiben? Nicht in der Lesefrist (ANN-313). */
+  can_write: z.boolean(),
+  /** Im Training Übung und Beschwerden nur mit Einwilligung (ANN-311). */
+  health_topics: z.boolean(),
+  messages: z.array(nachrichtSchema),
+});
+export type Nachrichten = z.infer<typeof nachrichtenSchema>;
+
+export function nachrichtenSchluessel(zugangId: string) {
+  return ['platform-messages', zugangId] as const;
+}
+
+/** Die Vorgänge des gewählten Bereichs mit ihren Einträgen, offene zuerst. */
+export async function ladeNachrichten(zugangId: string): Promise<Nachrichten> {
+  const satz = 'Ihre Nachrichten konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_messages', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error || ergebnis.data === null) throw new Error(satz);
+  return antwort(nachrichtenSchema, ergebnis.data, satz);
+}
+
+/** Verständliche Sätze für die Abweisungen des Servers, ohne interne Details. */
+export function nachrichtenfehler(meldung: string | undefined): string {
+  const m = meldung ?? '';
+  if (m.includes('text is required')) return 'Bitte schreiben Sie Ihre Frage.';
+  if (m.includes('text too long')) return 'Ihre Nachricht darf höchstens 2000 Zeichen lang sein.';
+  if (m.includes('needs consent'))
+    return 'Fragen zu Übungen und Beschwerden brauchen Ihre Einwilligung. Bitte wählen Sie ein anderes Thema oder willigen Sie unter „Ich“ ein.';
+  if (m.includes('is closed'))
+    return 'Diese Nachricht ist erledigt. Bitte schreiben Sie eine neue.';
+  if (m.includes('not found'))
+    return 'Diese Übung ist nicht mehr in Ihrem Plan. Bitte wählen Sie neu.';
+  if (m.includes('not allowed'))
+    return 'Ihr Zugang erlaubt das gerade nicht. Bitte wenden Sie sich an die Praxis.';
+  return 'Ihre Nachricht konnte nicht gesendet werden. Bitte versuchen Sie es erneut.';
+}
+
+/** Eine Frage stellen. Liefert die Kennung des Vorgangs. */
+export async function nachrichtStellen(eingabe: {
+  zugangId: string;
+  thema: Nachricht['topic'];
+  text: string;
+  planId: string | null;
+  positionId: string | null;
+}): Promise<string> {
+  const ergebnis = (await getSupabase().rpc('start_platform_message', {
+    p_access_id: eingabe.zugangId,
+    p_topic: eingabe.thema,
+    p_body: eingabe.text,
+    p_plan_id: eingabe.planId,
+    p_item_id: eingabe.positionId,
+  })) as { data: unknown; error: { message?: string } | null };
+  if (ergebnis.error) throw new Error(nachrichtenfehler(ergebnis.error.message));
+  return antwort(z.string().uuid(), ergebnis.data, 'Ihre Nachricht konnte nicht gesendet werden.');
+}
+
+/** Zu einer offenen oder beantworteten Nachricht nachtragen. */
+export async function nachrichtNachtragen(
+  zugangId: string,
+  nachrichtId: string,
+  text: string,
+): Promise<void> {
+  const { error } = (await getSupabase().rpc('add_platform_message_entry', {
+    p_access_id: zugangId,
+    p_message_id: nachrichtId,
+    p_body: text,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error(nachrichtenfehler(error.message));
+}
+
+/** Eine Nachricht als erledigt markieren. */
+export async function nachrichtErledigen(zugangId: string, nachrichtId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('close_platform_message', {
+    p_access_id: zugangId,
+    p_message_id: nachrichtId,
+  })) as { error: { message?: string } | null };
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}
