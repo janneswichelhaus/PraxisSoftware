@@ -13,7 +13,6 @@ import {
   canManageAppointments,
   canReadClinicalPatientFiles,
   canWriteTreatmentBases,
-  canWriteTreatmentNote,
   type CurrentUser,
 } from '@/features/session/types';
 import { GrundlagenKacheln } from './GrundlagenKacheln';
@@ -539,9 +538,11 @@ function LaufendeVerordnung({
 
         {(() => {
           const klinisch = klinischeFelder(verordnung);
+          // ANN-214 (BEF-134): alle Praxisrollen, die die Grundlage schreiben,
+          // auch das Büro; verbindlich ist app.can_write_treatment_bases().
           return klinisch &&
             istVerordnung(verordnung.treatment_basis_kind) &&
-            canWriteTreatmentNote(user.roles) ? (
+            canWriteTreatmentBases(user.roles) ? (
             <KlinischerHinweis verordnung={klinisch} patientId={patient.id} />
           ) : null;
         })()}

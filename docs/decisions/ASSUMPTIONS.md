@@ -2585,7 +2585,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Den behandlungsrelevanten Hinweis aus der Verordnung erfassen alle Praxisrollen außer einer reinen Trainingsbetreuung, also auch das Büro. Umsetzung: BEF-134.
+**Abnahme (Jannes, 2026-10-09).** geändert: Den behandlungsrelevanten Hinweis aus der Verordnung erfassen alle Praxisrollen außer einer reinen Trainingsbetreuung, also auch das Büro. Umsetzung: BEF-134. **Umgesetzt (ABN-031, 2026-10-09):** `set_treatment_basis_clinical_note` prüft `app.can_write_treatment_bases()` (owner, Therapeut:innen, Teamleitung, Büro) in `supabase/migrations/20261021110000_abn_031_prescriber_note_all_roles.sql`, der Knopf an der Verordnung `canWriteTreatmentBases`; Lesen unverändert.
 
 ### ANN-215 — Ein Betrag an einer stornierten Rechnung wird nur mit ihrer ausgestellten Ersatzrechnung verrechnet, als verbundenes Paar
 

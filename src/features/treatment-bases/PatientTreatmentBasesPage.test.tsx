@@ -165,7 +165,7 @@ describe('Verordnungsbereich der Akte', () => {
       expect(await screen.findByText('Hinweis gespeichert.')).toBeInTheDocument();
     });
 
-    it('zeigt office den Hinweis, getrennt von den Anmerkungen, ohne ihn ändern zu lassen', async () => {
+    it('zeigt office den Hinweis, getrennt von den Anmerkungen, und lässt ihn ändern (BEF-134)', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([
         verordnung({
           prescriber_note: 'Synthetisch: Belastungsgrenze.',
@@ -179,8 +179,8 @@ describe('Verordnungsbereich der Akte', () => {
       expect(screen.getByText('Behandlungsrelevanter Hinweis')).toBeInTheDocument();
       expect(screen.getByText('Synthetisch: Rezept liegt im Büro.')).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', { name: /Behandlungsrelevanten Hinweis/ }),
-      ).not.toBeInTheDocument();
+        screen.getByRole('button', { name: /Behandlungsrelevanten Hinweis/ }),
+      ).toBeInTheDocument();
     });
 
     it('bietet am Selbstzahler keinen Hinweis an', async () => {
