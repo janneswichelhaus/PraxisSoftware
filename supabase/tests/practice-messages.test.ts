@@ -15,8 +15,8 @@ import {
  *     auf Übung und Beschwerden antworten nur die therapeutischen Rollen,
  *     das Büro auf Termin, Rechnung und Sonstiges (ANN-310).
  *   * Training: owner, Trainingsbetreuung und Büro lesen alles (ABN-030,
- *     BEF-137); das Büro antwortet wie in der Behandlung auf Termin, Rechnung
- *     und Sonstiges (ANN-311 Fassung 2). Kein Durchgriff (ADR-021 Punkt 6).
+ *     BEF-137); das Büro antwortet nur auf „Termin oder Rechnung" (ANN-311
+ *     Fassung 2). Kein Durchgriff (ADR-021 Punkt 6).
  *   * Die Liste trägt keinen Text; das Öffnen steht als „Akte geöffnet" im
  *     Protokoll (ADR-010 Fassung 3).
  */
@@ -204,7 +204,7 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(leer.rows).toHaveLength(0);
   });
 
-  it('Training: alle drei lesen alles, das Büro antwortet nur organisatorisch (ANN-311, BEF-137)', async () => {
+  it('Training: alle drei lesen alles, das Büro antwortet nur auf Termin oder Rechnung (ANN-311, BEF-137)', async () => {
     await gesundheitImTraining();
     const beschwerde = await fragen(tina, 'complaint', 'Schulter zwickt');
     const rechnung = await fragen(tina, 'organisational');
@@ -217,13 +217,15 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     }
     const buero = await liste(users.office, 'training');
     const darf = Object.fromEntries(buero.map((z) => [z.id, z.can_answer]));
-    expect(darf).toEqual({ [beschwerde]: false, [rechnung]: true, [sonst]: true });
-    // Lesen ja (BEF-137), antworten und erledigen auf Beschwerden nicht.
+    expect(darf).toEqual({ [beschwerde]: false, [rechnung]: true, [sonst]: false });
+    // Lesen ja (BEF-137), antworten und erledigen nur organisatorisch.
     await asUserCommitted(users.office, OEFFNEN, [beschwerde]);
-    expect(await fehler(asUser(users.office, ANTWORTEN, [beschwerde, 'x']))).toBe('42501');
-    expect(await fehler(asUser(users.office, ERLEDIGEN, [beschwerde]))).toBe('42501');
+    await asUserCommitted(users.office, OEFFNEN, [sonst]);
+    for (const id of [beschwerde, sonst]) {
+      expect(await fehler(asUser(users.office, ANTWORTEN, [id, 'x']))).toBe('42501');
+      expect(await fehler(asUser(users.office, ERLEDIGEN, [id]))).toBe('42501');
+    }
     await asUserCommitted(users.office, ANTWORTEN, [rechnung, 'Ist korrigiert.']);
-    await asUserCommitted(users.office, ANTWORTEN, [sonst, 'Gern.']);
 
     // Therapeut:innen und Teamleitung sehen im Training nichts.
     for (const konto of [users.therapist, users.teamLead]) {

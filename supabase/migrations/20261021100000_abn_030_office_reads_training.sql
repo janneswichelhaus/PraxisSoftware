@@ -16,7 +16,6 @@
 --   app.can_read_training_protocols    ruft sie auf
 --   app.can_read_exercise_plans        Zweig training ruft sie auf
 --   app.can_read_platform_message      Zweig training ruft sie auf
---   app.can_answer_platform_message    Buero im Training wie in der Behandlung
 --   app.can_read_exercise_library      dazu office
 --   public.get_training_profile        liest mit der Leseregel
 -- =============================================================================
@@ -104,27 +103,9 @@ $$;
 comment on function app.can_read_platform_message(text, text) is
   'KOM-002 (ANN-310, ANN-311), ABN-030 (BEF-137): wer einen Vorgang der Plattform liest. Behandlung: owner, Therapeut:innen, Teamleitung, Buero. Training: app.can_read_training_content() (owner, Trainingsbetreuung, Buero) - jedes Thema.';
 
--- ANN-311 Fassung 2: Im Training antwortet das Buero wie in der Behandlung auf
--- Termin, Rechnung und Sonstiges; Uebung und Beschwerden bleiben bei owner und
--- Trainingsbetreuung (es schreibt nichts Fachliches).
-create or replace function app.can_answer_platform_message(p_kind text, p_topic text)
-returns boolean
-language sql
-stable
-security definer
-set search_path = ''
-as $$
-  select case p_kind
-    when 'treatment' then app.has_any_role('owner', 'therapist', 'team_lead')
-                          or (p_topic in ('organisational', 'other') and app.has_any_role('office'))
-    when 'training' then app.has_any_role('owner', 'trainer')
-                         or (p_topic in ('organisational', 'other') and app.has_any_role('office'))
-    else false
-  end
-$$;
-
-comment on function app.can_answer_platform_message(text, text) is
-  'KOM-002 (ANN-310, ANN-311 Fassung 2): wer auf einen Vorgang antwortet und ihn erledigt. Behandlung: owner, Therapeut:innen, Teamleitung; Training: owner, Trainingsbetreuung; in beiden das Buero bei Termin, Rechnung und Sonstiges.';
+-- Antworten bleibt unveraendert (app.can_answer_platform_message, KOM-002):
+-- Im Training antwortet das Buero nur auf "Termin oder Rechnung" - BEF-137
+-- oeffnet das Lesen, nicht das Schreiben (ADR-021 Fassung 3 Punkt 10).
 
 -- -----------------------------------------------------------------------------
 -- 3. Das Voraussetzungsprofil

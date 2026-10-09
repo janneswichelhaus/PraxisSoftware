@@ -241,7 +241,7 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
     return (
       <Statusmeldung ton="neutral">
         {vorgang.relationship_kind === 'training'
-          ? 'Auf Fragen zu Übungen und Beschwerden antworten Inhaber:in und Trainingsbetreuung. Bitte gib die Rückfrage weiter.'
+          ? 'Auf diese Rückfrage antworten Inhaber:in und Trainingsbetreuung. Bitte gib sie weiter.'
           : 'Auf Fragen zu Übungen und Beschwerden antworten Therapeut:innen. Bitte gib die Rückfrage weiter.'}
       </Statusmeldung>
     );

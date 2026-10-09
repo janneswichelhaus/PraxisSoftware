@@ -424,8 +424,10 @@ export function canWriteTrainingProtocols(roles: readonly RoleKey[]): boolean {
  * Büro; schreiben tut das Büro dort nichts. Verbindlich ist
  * app.can_read_training_content(); jedes Lesen protokolliert der Server.
  */
+const trainingContentReaders: RoleKey[] = ['owner', 'trainer', 'office'];
+
 export function canReadTrainingContent(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => trainingRoles.includes(role));
+  return roles.some((role) => trainingContentReaders.includes(role));
 }
 
 /**

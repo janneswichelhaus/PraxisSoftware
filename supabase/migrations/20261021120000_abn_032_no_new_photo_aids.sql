@@ -71,6 +71,8 @@ begin
     if p_mime_type is distinct from 'image/jpeg' then
       raise exception 'unsupported media type' using errcode = '22023';
     end if;
+    -- Seit ABN-032 unerreichbar (Abweisung oben); bleibt fuer die Ruecknahme
+    -- nach ANN-316.
     if p_document_type = 'patientenfoto'
        and not app.patient_photo_accessible(p_patient_id, null) then
       raise exception 'no consent to patient photos' using errcode = '42501';

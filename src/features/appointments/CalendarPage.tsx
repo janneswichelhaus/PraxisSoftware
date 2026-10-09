@@ -781,7 +781,13 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           bisMinute: l.bisMinute,
           stufe: l.stufe,
           ab: l.ab && zone ? formatLocalTime(l.ab, zone) : null,
-          kuerzer: l.dauer !== null && l.dauer < TERMINFENSTER_MINUTEN ? l.dauer : null,
+          // Gekennzeichnet nur, was für den kürzeren Termin passt (ANN-317).
+          kuerzer:
+            (l.stufe === 'passt' || l.stufe === 'knapp') &&
+            l.dauer !== null &&
+            l.dauer < TERMINFENSTER_MINUTEN
+              ? l.dauer
+              : null,
         }))
       : undefined;
 
