@@ -89,9 +89,25 @@ const planSchema = z.object({
     })
     .nullable(),
   items: z.array(positionSchema),
+  /** UEB-010: was die Person an diesem Plan durchgeführt hat, jüngste zuerst. */
+  sessions: z.array(
+    z.object({
+      id: z.string(),
+      performed_on: z.string(),
+      started_at: z.string(),
+      finished_at: z.string().nullable(),
+      sets_done: z.coerce.number(),
+      sets_total: z.coerce.number(),
+      difficulty_note: z.string().nullable(),
+      recorded_by_kind: z.enum(['self', 'legal_representative']),
+      /** Wer beendet und damit „schwierig, weil …" geschrieben hat. */
+      finished_by_kind: z.enum(['self', 'legal_representative']).nullable(),
+    }),
+  ),
 });
 
 export type Plan = z.infer<typeof planSchema>;
+export type Einheit = Plan['sessions'][number];
 
 const planZeileSchema = z.object({
   id: z.string(),

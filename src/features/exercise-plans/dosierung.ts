@@ -1,5 +1,3 @@
-import type { Position } from './api';
-
 /**
  * Die Dosierung einer Position in Worten (ANN-299) - einmal fachlich für die
  * Praxis, einmal in Alltagssprache für die Person (IDEA-QSN-002).
@@ -8,17 +6,22 @@ import type { Position } from './api';
  * rechnet eine Steigerung aus oder schlägt eine vor (ADR-006 Punkt 10).
  */
 
-type Dosis = Pick<
-  Position,
-  | 'sets'
-  | 'reps_min'
-  | 'reps_max'
-  | 'duration_seconds'
-  | 'load'
-  | 'tempo'
-  | 'rest_seconds'
-  | 'double_progression'
->;
+/**
+ * Die Felder der Dosierung - ohne Bezug auf die Datenzugriffe der Praxis, damit
+ * auch die Plattform diese Wörter benutzt (UEB-009, ADR-023 Punkt 26).
+ */
+export interface Dosis {
+  sets: number;
+  reps_min: number | null;
+  reps_max: number | null;
+  duration_seconds: number | null;
+  load: string | null;
+  tempo: string | null;
+  rest_seconds: number | null;
+  double_progression: boolean;
+}
+
+type Variante = { variant_id: string; variant_name: string };
 
 function wiederholungen(d: Dosis, trenner: string): string | null {
   if (d.reps_min === null || d.reps_max === null) return null;
@@ -69,10 +72,7 @@ export function dosierungAlltag(d: Dosis): string {
  * Was sich an einer Position gegenüber der vorigen Fassung geändert hat
  * (UEB-006) - als Zeilen „Last: 5 kg → 7 kg".
  */
-export function unterschiede(
-  vorher: Position,
-  nachher: Pick<Position, 'variant_id' | 'variant_name'> & Dosis,
-): string[] {
+export function unterschiede(vorher: Variante & Dosis, nachher: Variante & Dosis): string[] {
   const zeilen: string[] = [];
   if (vorher.variant_id !== nachher.variant_id) {
     zeilen.push(`Übung: ${vorher.variant_name} → ${nachher.variant_name}`);
@@ -96,4 +96,9 @@ export function unterschiede(
     zeilen.push(`Pause: ${s(vorher.rest_seconds)} → ${s(nachher.rest_seconds)}`);
   }
   return zeilen;
+}
+
+/** „3-mal pro Woche" - die Zahl der Fachperson, in Worten (ANN-299). */
+export function haeufigkeit(proWoche: number): string {
+  return proWoche === 1 ? 'Einmal pro Woche' : `${proWoche}-mal pro Woche`;
 }

@@ -154,12 +154,27 @@ function plan(teil: Partial<Plan>): Plan {
     relationship_open: true,
     previous: null,
     items: [position('i1', 1, {}), rudern('i2')],
+    sessions: [],
     ...teil,
   };
 }
 
 const zugewiesen = plan({
   status: 'assigned',
+  // UEB-010: was die Person auf der Plattform abgehakt hat.
+  sessions: [
+    {
+      id: 's1',
+      performed_on: '2026-10-06',
+      started_at: '2026-10-06T07:00:00Z',
+      finished_at: '2026-10-06T07:20:00Z',
+      sets_done: 5,
+      sets_total: 6,
+      difficulty_note: 'Beim Aufstehen aus der Hocke zieht es im rechten Knie.',
+      recorded_by_kind: 'self',
+      finished_by_kind: 'self',
+    },
+  ],
   assigned_at: '2026-08-31T08:00:00Z',
   assigned_by_name: 'Anna Beispiel',
   runs_from: '2026-08-31',

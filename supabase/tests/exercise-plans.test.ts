@@ -569,11 +569,21 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
     it('ordnet beide Tabellen beiden Datenklassen zu (ANN-297)', async () => {
       const { rows } = await asPostgres<{ table_name: string; class_key: string }>(
         `select table_name, class_key from public.retention_assignments
-         where table_name like 'exercise_plan%' order by table_name, class_key`,
+         where table_name like 'exercise_plan%'
+         -- Byteweise sortiert: Unter en_US.UTF-8 (CI) zählen die Unterstriche
+         -- nicht, und die Reihenfolge hinge von der Datenbank ab.
+         order by table_name collate "C", class_key collate "C"`,
       );
       expect(rows).toEqual([
+        // UEB-010/011: Tage, Einheiten und Sätze folgen ihrem Plan.
+        { table_name: 'exercise_plan_days', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_days', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plan_items', class_key: 'patientenakte' },
         { table_name: 'exercise_plan_items', class_key: 'trainingsverhaeltnis' },
+        { table_name: 'exercise_plan_session_sets', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_session_sets', class_key: 'trainingsverhaeltnis' },
+        { table_name: 'exercise_plan_sessions', class_key: 'patientenakte' },
+        { table_name: 'exercise_plan_sessions', class_key: 'trainingsverhaeltnis' },
         { table_name: 'exercise_plans', class_key: 'patientenakte' },
         { table_name: 'exercise_plans', class_key: 'trainingsverhaeltnis' },
       ]);

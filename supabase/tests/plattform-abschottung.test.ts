@@ -86,6 +86,16 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Trainingsvertrag widerrufen (KND-004, Par. 356a BGB); ohne Recht contract abgewiesen (42501), Negativfälle in training-contracts.test.ts',
   'public.platform_training_contract':
     'Eigener Trainingsvertrag mit Bestätigung (KND-003); Negativfälle in training-contracts.test.ts',
+  'public.platform_exercise_plans':
+    'Eigene zugewiesene Pläne als Schnappschuss (UEB-009); Negativfälle in platform-exercise-plans.test.ts',
+  'public.start_platform_exercise_session':
+    'Einheit am eigenen Plan beginnen (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
+  'public.mark_platform_exercise_set':
+    'Satz abhaken (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
+  'public.set_platform_exercise_days':
+    'Eigene Übungstage wählen (UEB-011); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-days.test.ts',
+  'public.finish_platform_exercise_session':
+    'Einheit beenden (UEB-010); ohne Recht exercise abgewiesen (42501), Negativfälle in platform-exercise-sessions.test.ts',
   // Für jedes Konto, nicht nur für die Praxis.
   'public.claim_staff_invitation':
     'Annahme einer Praxiseinladung (ANN-025); ohne offene Einladung abgewiesen (P0002)',

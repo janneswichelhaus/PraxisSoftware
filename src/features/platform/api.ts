@@ -1033,3 +1033,155 @@ export async function vertragWiderrufen(
   if (ergebnis.error) throw new Error(satz);
   return antwort(widerrufSchema, ergebnis.data, satz);
 }
+
+// -----------------------------------------------------------------------------
+// Übungen und Training (UEB-009, DSN-001 4.1 und 5)
+// -----------------------------------------------------------------------------
+
+const planPositionSchema = z.object({
+  id: z.string().uuid(),
+  position: z.number(),
+  variant_lay_name: z.string(),
+  instruction: z.string().nullable(),
+  equipment: z.array(z.string()),
+  sets: z.number(),
+  reps_min: z.number().nullable(),
+  reps_max: z.number().nullable(),
+  duration_seconds: z.number().nullable(),
+  load: z.string().nullable(),
+  tempo: z.string().nullable(),
+  rest_seconds: z.number().nullable(),
+  double_progression: z.boolean(),
+  note: z.string().nullable(),
+});
+export type PlanPosition = z.infer<typeof planPositionSchema>;
+
+const eigenerPlanSchema = z.object({
+  id: z.string().uuid(),
+  service_area: z.enum(['therapy', 'training']),
+  title: z.string(),
+  status: z.enum(['assigned', 'ended']),
+  sessions_per_week: z.number().nullable(),
+  assigned_on: z.string().nullable(),
+  runs_from: z.string().nullable(),
+  runs_until: z.string().nullable(),
+  ended_on: z.string().nullable(),
+  /** UEB-010: Darf dieser Zugang heute an diesem Plan üben? Der Server rechnet. */
+  can_exercise: z.boolean(),
+  /** Im Training nur mit Einwilligung zu Gesundheitsangaben (ANN-306). */
+  note_allowed: z.boolean(),
+  /** Die heute begonnene, nicht beendete Einheit mit ihren Haken (ANN-305). */
+  open_session: z
+    .object({
+      id: z.string().uuid(),
+      sets: z.array(z.object({ item_id: z.string().uuid(), set_number: z.number() })),
+    })
+    .nullable(),
+  /** UEB-011: Darf dieser Zugang Übungstage wählen - auch vor dem Beginn? */
+  can_choose_days: z.boolean(),
+  /** UEB-011: die gewählten Übungstage, ISO 1 Montag bis 7 Sonntag (ANN-307). */
+  weekdays: z.array(z.number().int().min(1).max(7)),
+  /** Die Tage der letzten vier Wochen, an denen geübt wurde. */
+  recent_sessions: z.array(z.object({ performed_on: z.string(), finished: z.boolean() })),
+  items: z.array(planPositionSchema),
+});
+export type EigenerPlan = z.infer<typeof eigenerPlanSchema>;
+
+const eigenePlaeneSchema = z.object({
+  /** Der Tag in der Zeitzone der Praxis. */
+  today: z.string(),
+  plans: z.array(eigenerPlanSchema),
+});
+export type EigenePlaene = z.infer<typeof eigenePlaeneSchema>;
+
+export function plaeneSchluessel(zugangId: string) {
+  return ['platform-exercise-plans', zugangId] as const;
+}
+
+/**
+ * Die zugewiesenen Pläne des gewählten Bereichs, sonst der zuletzt beendete
+ * (ANN-304) - als Schnappschuss in Alltagssprache. Welche, entscheidet der
+ * Server über den Zugang (ADR-023 Punkt 22).
+ */
+export async function ladePlaene(zugangId: string): Promise<EigenePlaene> {
+  const satz = 'Ihre Übungen konnten nicht geladen werden.';
+  const ergebnis = (await getSupabase().rpc('platform_exercise_plans', {
+    p_access_id: zugangId,
+  })) as { data: unknown; error: unknown };
+  if (ergebnis.error) throw new Error(satz);
+  return antwort(eigenePlaeneSchema, ergebnis.data ?? { today: '', plans: [] }, satz);
+}
+
+/**
+ * UEB-010: eine Einheit beginnen oder die heute begonnene fortsetzen
+ * (ANN-305). Liefert ihre Kennung.
+ */
+export async function einheitBeginnen(zugangId: string, planId: string): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('start_platform_exercise_session', {
+    p_access_id: zugangId,
+    p_plan_id: planId,
+  })) as { data: unknown; error: unknown };
+  if (error || typeof data !== 'string') {
+    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+  }
+  return data;
+}
+
+/**
+ * Die Einheit ist nicht mehr offen - anderswo beendet (zweites Gerät,
+ * Vertretung) oder von gestern. Die Ansicht beginnt dann eine neue, statt
+ * „Verbindung prüfen" zu sagen (Zweitreview).
+ */
+export class EinheitNichtOffen extends Error {
+  constructor() {
+    super('Diese Einheit ist nicht mehr offen.');
+  }
+}
+
+/** Einen Durchgang abhaken oder den Haken zurücknehmen - sofort gespeichert. */
+export async function durchgangSetzen(
+  zugangId: string,
+  einheitId: string,
+  positionId: string,
+  durchgang: number,
+  erledigt: boolean,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('mark_platform_exercise_set', {
+    p_access_id: zugangId,
+    p_session_id: einheitId,
+    p_item_id: positionId,
+    p_set_number: durchgang,
+    p_done: erledigt,
+  });
+  if ((error as { code?: string } | null)?.code === 'P0002') throw new EinheitNichtOffen();
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}
+
+/** Die Einheit beenden, wahlweise mit „Das war schwierig, weil …". */
+export async function einheitBeenden(
+  zugangId: string,
+  einheitId: string,
+  notiz: string,
+): Promise<void> {
+  const { error } = await getSupabase().rpc('finish_platform_exercise_session', {
+    p_access_id: zugangId,
+    p_session_id: einheitId,
+    p_note: notiz,
+  });
+  if (error)
+    throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.');
+}
+
+/** UEB-011: die eigenen Übungstage eines Plans wählen (ANN-307). */
+export async function uebungstageSetzen(
+  zugangId: string,
+  planId: string,
+  wochentage: number[],
+): Promise<void> {
+  const { error } = await getSupabase().rpc('set_platform_exercise_days', {
+    p_access_id: zugangId,
+    p_plan_id: planId,
+    p_weekdays: wochentage,
+  });
+  if (error) throw new Error('Nicht gespeichert. Bitte die Verbindung prüfen und erneut tippen.');
+}

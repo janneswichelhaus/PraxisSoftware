@@ -8,8 +8,11 @@ import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import {
+  ladePlaene,
   ladeTermine,
   ladeWuensche,
+  plaeneSchluessel,
+  type EigenePlaene,
   termineSchluessel,
   wuenscheSchluessel,
   wunschZurueckziehen,
@@ -19,7 +22,8 @@ import {
 } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import { terminBeschreibung, wunschText } from './terminbeschreibung';
-import { datum, kuenftig, tagKurz, zeitraum } from './zeit';
+import { datum, kalendertag, kuenftig, tagKurz, wochentagMitDatum, zeitraum } from './zeit';
+import { tageAb, uebungstageAm } from './uebungstage';
 
 /**
  * Reiter „Termine" (POR-008, DSN-001 4.1): „Wann komme ich dran, und was
@@ -45,6 +49,12 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
     queryKey: wuenscheSchluessel(zugang.access_id),
     queryFn: () => ladeWuensche(zugang.access_id),
   });
+  // UEB-011: die Übungstage neben den Terminen (IDEA-ORG-004). Lädt der Plan
+  // nicht, bleiben die Termine - die Woche fehlt dann einfach.
+  const plaene = useQuery({
+    queryKey: plaeneSchluessel(zugang.access_id),
+    queryFn: () => ladePlaene(zugang.access_id),
+  });
   // Der gewählte Bereich reist in jeden Link mit (D6).
   const bereich = new URLSearchParams(
     Object.fromEntries([...suche.entries()].filter(([k]) => k === 'bereich' || k === 'zugang')),
@@ -65,6 +75,9 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
       {wuensche.data && wuensche.data.length > 0 ? (
         <Wuensche zugang={zugang} wuensche={wuensche.data} />
       ) : null}
+      {termine.data && plaene.data ? (
+        <DieseWoche termine={termine.data} plaene={plaene.data} />
+      ) : null}
       {termine.isPending ? (
         <LoadingState label="Ihre Termine werden geladen …" />
       ) : termine.data === undefined ? (
@@ -77,6 +90,72 @@ export function Termine({ zugang }: { zugang: Plattformzugang }) {
         <Terminlisten termine={termine.data} bereich={bereich} />
       )}
     </>
+  );
+}
+
+/**
+ * „Diese Woche" (UEB-011, IDEA-ORG-004): heute und die sechs Tage danach,
+ * Termine und Übungstage nebeneinander - klar unterschieden durch Wort und
+ * Zeichen, nicht durch Farbe allein. Ein Übungstag, an dem schon geübt wurde,
+ * trägt „geübt"; keine Serie, keine Quote (DSN-001 4.1).
+ */
+function DieseWoche({ termine, plaene }: { termine: Termin[]; plaene: EigenePlaene }) {
+  // Der Tag der Praxis, wie bei den Plänen - nicht der des Geräts.
+  const heute = plaene.today;
+  const tage = tageAb(heute, 7);
+  const hatUebungstage = plaene.plans.some((p) => p.weekdays.length > 0);
+  if (!hatUebungstage) return null;
+  return (
+    <Section titel="Diese Woche">
+      <ul aria-label="Die nächsten sieben Tage" className="flex flex-col gap-2">
+        {tage.map((tag) => {
+          const amTag = termine.filter(
+            (t) => t.status !== 'cancelled' && kalendertag(new Date(t.starts_at)) === tag,
+          );
+          const uebungen = uebungstageAm(plaene.plans, tag);
+          return (
+            <li key={tag} className="rounded-card border-line bg-surface border p-3">
+              <p className="font-semibold">
+                {tag === heute ? 'Heute, ' : ''}
+                {wochentagMitDatum(tag)}
+              </p>
+              {amTag.length === 0 && uebungen.length === 0 ? (
+                <p className="text-ink-muted mt-1">Nichts geplant.</p>
+              ) : (
+                <ul className="mt-1 flex flex-col gap-1">
+                  {amTag.map((t) => (
+                    <li key={t.id} className="flex items-start gap-2">
+                      <span className="shrink-0">
+                        <Badge ton="akzent">Termin</Badge>
+                      </span>
+                      <span>
+                        {zeitraum(t.starts_at, t.ends_at)} · {terminBeschreibung(t).titel}
+                      </span>
+                    </li>
+                  ))}
+                  {uebungen.map((p) => {
+                    const geuebt = p.recent_sessions.some(
+                      (s) => s.performed_on === tag && s.finished,
+                    );
+                    return (
+                      <li key={p.id} className="flex items-start gap-2">
+                        <span className="shrink-0">
+                          <Badge ton="neutral">Übungstag</Badge>
+                        </span>
+                        <span>
+                          {p.title}
+                          {geuebt ? ' · geübt' : ''}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </Section>
   );
 }
 

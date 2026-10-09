@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-07.
+Zuletzt aktualisiert: 2026-10-08.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -64,7 +64,7 @@ keine Kennung trägt — ist ein Mangel, der im Review auffallen muss.
 
 Arbeitsliste sind die Einträge der Kategorien `Datenschutz` und `Recht` mit
 Status `offen` oder `entschieden (Jannes)`; ihre Statuszeile trägt dafür den
-Zusatz `Prüfpaket` (heute 99 Einträge):
+Zusatz `Prüfpaket` (heute 100 Einträge):
 `grep -n -A2 '^### ANN-' docs/decisions/ASSUMPTIONS.md | grep 'Prüfpaket'`.
 Welche Stelle prüft, nennt die Wiedervorlage — meist die Datenschutzprüfung,
 bei Steuerfragen die Steuerberatung (B4), bei Lizenzen der Lizenzgeber (B8).
@@ -3647,3 +3647,63 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `app.exercise_plan_max_days()` in `supabase/migrations/20261018110000_ueb_005_assign_exercise_plan.sql` und `app.exercise_plan_review_days()` in `supabase/migrations/20261018130000_ueb_007_plan_review.sql`; `LAUFZEIT_VORSCHLAG_TAGE` in `src/features/exercise-plans/laufzeit.ts`. Geprüft in `supabase/tests/exercise-plans.test.ts`.
 
 **Änderungspfad.** Andere Zahlen: die Funktion bzw. die Konstante ändern · Aufwand `klein`. Wiedervorlage auch für das Büro: Rollenprüfung der Liste erweitern · Aufwand `klein`.
+
+### ANN-303 — Der Plan als PDF ist ein Blatt aus dem Schnappschuss, gedruckt über den Browser
+
+Technik · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Pläne); mit dem serverseitigen Dokumentweg (OPS-001)
+
+**Annahme.** „Plan als PDF“ ist eine Druckseite des zugewiesenen Plans, die der Browser zu Papier oder zu einer PDF-Datei macht – dieselbe Technik wie Rechnung, Vertrag und Terminzettel (B14 Weg 1). Das Blatt zeigt nur den Schnappschuss der Zuweisung in Alltagssprache (Bezeichnung, Dosierung in Worten, Anleitung, Ausrüstung, Hinweis, Laufzeit, Einheiten je Woche), nie die fachlichen Namen und nie die Bibliothek von heute; ein Entwurf hat kein Blatt. Die Praxis druckt es mit Namen der Person, die Plattform ohne.
+
+**Begründung.** §4.6 und DSN-001 D2 verlangen den Plan als PDF, auch nach dem Ende der Behandlung; ADR-023 Punkt 7 versorgt Personen ohne Konto mit Plänen als PDF. Ein PDF-Generator wäre eine neue Abhängigkeit oder ein neuer Ausführungsort (ADR-015, OPS-001); der Browserdruck braucht keines von beiden. Die Datei entsteht auf dem Gerät und wird nicht abgelegt – aufbewahrt wird der Plan selbst (ANN-300).
+
+**Anker.** `Planblatt` in `src/features/exercise-plans/Planblatt.tsx`; Seite der Praxis `PlanblattSeite.tsx`. Geprüft in `src/features/exercise-plans/Plaene.test.tsx`.
+
+**Änderungspfad.** Ein abgelegtes PDF: serverseitige Erzeugung mit Ablage nach ADR-017, sobald der Dokumentweg der Rechnung (Weg 3) steht · Aufwand `mittel`. Andere Inhalte auf dem Blatt: die eine Komponente · Aufwand `klein`.
+
+### ANN-304 — Die Plattform zeigt die zugewiesenen Pläne, ohne laufenden Plan den zuletzt beendeten
+
+Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Übungen)
+
+**Annahme.** Der Reiter „Übungen“ (Behandlung) bzw. „Training“ zeigt alle zugewiesenen Pläne des Verhältnisses hinter dem gewählten Zugang, auch einen, der erst später beginnt („Ab …“). Läuft keiner, zeigt er den zuletzt beendeten Plan zum Lesen und als Blatt. Entwürfe und abgelöste Fassungen zeigt er nie. Gezeigt wird nur der Schnappschuss in Alltagssprache (Bezeichnung, Dosierung, Anleitung, Ausrüstung, Hinweis), ohne fachliche Namen und ohne den Namen der Fachperson. In der Behandlung gibt es den Plan ohne Abo (§4.6); er bleibt so lange sichtbar, wie der Zugang lesbar ist, also auch in der Lesefrist (DSN-001 D2).
+
+**Begründung.** ADR-023 Punkt 22: Ein Plan ist sichtbar, weil er der Person zugewiesen ist. DSN-001 D2 verlangt „Plan als PDF“ nach dem Ende der Behandlung; wird der Plan dabei beendet, hätte die Person sonst nichts mehr mitzunehmen. Eine abgelöste Fassung hat immer eine gültige Nachfolgerin – zwei Fassungen nebeneinander würden verwirren. Die fachliche Sprachebene ist für die Praxis (IDEA-QSN-002).
+
+**Anker.** `app.platform_visible_exercise_plans` in `supabase/migrations/20261019100000_ueb_009_platform_exercise_plans.sql`. Geprüft in `supabase/tests/platform-exercise-plans.test.ts`.
+
+**Änderungspfad.** Auch ältere beendete Pläne zeigen oder den beendeten nie: die eine Funktion · Aufwand `klein`. Den Plan erst ab Laufzeitbeginn zeigen: eine Bedingung dort · Aufwand `klein`.
+
+### ANN-305 — Jeder Haken der Durchführung geht sofort an den Server; in der Lesefrist wird nicht mehr erfasst
+
+Technik · offen · 2026-10-08 · — · — · Wiedervorlage: ADR-024 (Offline-Erfassung); Jannes (Sichtung Plattform)
+
+**Annahme.** Die Durchführungsansicht speichert jeden abgehakten Durchgang sofort als Zeile am Server; eine Einheit entsteht mit dem ersten Haken, höchstens eine offene je Plan und Tag, und wer abbricht und wieder anfängt, setzt sie fort. Ohne Verbindung nimmt die Ansicht den Haken zurück und sagt „Nicht gespeichert“ – auf dem Gerät liegt nichts. Eine nicht beendete Einheit eines früheren Tages bleibt so stehen („nicht beendet“) und nimmt keinen Haken mehr an. Beenden geht erst nach mindestens einem Haken; an der Einheit steht, wer begonnen und wer beendet hat. Erfasst wird nur am zugewiesenen Plan ab seinem Beginn und nicht in der Lesefrist nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos (DSN-001 4.3: „alle Knöpfe, die schreiben, fallen weg“). Erfasst werden Durchgänge, keine Ist-Werte (Last, Wiederholungen).
+
+**Begründung.** IDEA-ORG-003 verlangt „Abbrechen ohne Datenverlust“ und nennt „keine Verbindung“ als Lage. ADR-015 Punkt 16 schließt einen Service Worker aus, ADR-024 steht aus; Gesundheitsdaten im Browser abzulegen wäre eine Offline-Erfassung, die ADR-001 erst mit Geräteregeln zulässt. ADR-001 verlangt, dass niemand glaubt, gespeichert zu haben, was nur lokal liegt. Ist-Werte gehören zu Verlauf und Tracking (Block 7, §17 Verbot 2).
+
+**Anker.** `public.start_platform_exercise_session`, `app.platform_access_writable` und der Index `exercise_plan_sessions_one_open` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`; Ansicht `src/features/platform/Durchfuehrung.tsx`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts` und `src/features/platform/Durchfuehrung.test.tsx`.
+
+**Änderungspfad.** Offline-Erfassung mit späterem Abgleich: nach ADR-024, Warteschlange im Gerät und additive Übertragung · Aufwand `groß`. Erfassen auch in der Lesefrist: `app.platform_access_writable` aus der Prüfung nehmen · Aufwand `klein`. Ist-Werte je Durchgang: Spalten an `exercise_plan_session_sets` und Felder in der Ansicht · Aufwand `mittel`.
+
+### ANN-306 — Eine Einheit erfassen die Person und ihre rechtliche Vertretung; im Training „schwierig, weil …“ nur mit Einwilligung
+
+Datenschutz · offen · 2026-10-08 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264)
+
+**Annahme.** Eine Einheit beginnen, Durchgänge abhaken und beenden dürfen die Person selbst und ihre rechtliche Vertretung (Fähigkeit `exercise`), nicht die Begleitung. Das freiwillige „Das war schwierig, weil …“ (höchstens 500 Zeichen) gibt es in der Behandlung immer, im Training nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist. Die Praxis liest die Einheiten am Plan mit denselben Rollen wie den Plan (ANN-298): in der Behandlung owner, Therapeut:innen, Teamleitung und Büro (ADR-004 Fassung 2 Punkt 3), im Training owner und Trainingsbetreuung. Die Einheiten stehen in der Auskunft nach Art. 15 am Plan.
+
+**Begründung.** ADR-023 Punkt 13 erlaubt der Begleitung Lesen, Wünsche und Nachrichten – eine Angabe zur Gesundheit für die Person ist keines davon, wie beim Befundbogen (ANN-248). Ein Freitext über Beschwerden im Training ist eine Angabe zur Gesundheit, die ADR-021 Punkt 4 an die ausdrückliche Einwilligung bindet; das bloße Abhaken sagt nur, dass trainiert wurde. Die Einheiten haben die Datenklasse ihres Plans und fallen mit ihm (ADR-008).
+
+**Anker.** Zweig `exercise` in `app.platform_access_allows` und `app.platform_exercise_note_allowed` in `supabase/migrations/20261019110000_ueb_010_exercise_sessions.sql`. Geprüft in `supabase/tests/platform-exercise-sessions.test.ts`.
+
+**Änderungspfad.** Begleitung darf abhaken: `exercise` in den ersten Zweig von `app.platform_access_allows` · Aufwand `klein`. Freitext im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest die Einheiten nicht: eigene Leseregel in `get_exercise_plan` · Aufwand `klein`.
+
+### ANN-307 — Übungstage wählt die Person selbst; sie stehen nur in ihrer eigenen Woche
+
+Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Termine)
+
+**Annahme.** Die Übungstage eines Plans wählt die Person (oder ihre rechtliche Vertretung) auf der Plattform als Wochentage; die Einheiten je Woche der Fachperson stehen daneben als Empfehlung. Die Wahl gilt auch für die nächste Fassung des Plans, bis sie neu getroffen wird; eine leere Wahl heißt „keine Tage“. Unter „Termine“ erscheint „Diese Woche“: heute und die sechs Tage danach, Termine und Übungstage nebeneinander, durch Wort und Zeichen unterschieden, ein Übungstag mit beendeter Einheit als „geübt“. Die Praxis sieht die Tage nicht und ihr Kalender bleibt unverändert; nur die Auskunft nach Art. 15 nennt sie. Es gibt keine Weitergabe an fremde Kalender.
+
+**Begründung.** IDEA-ORG-004: Aus Sicht der Person ist beides „was diese Woche ansteht“; für die Praxis bleibt der bestehende Kalender die Arbeitsansicht. Der zugewiesene Plan ist eingefroren (ANN-300), feste Tage der Fachperson müssten in den Schnappschuss und machten jede Verschiebung zu einer neuen Fassung; die Person kennt ihre Woche selbst. Die Praxis braucht die Tage für keinen Zweck (Art. 5 Abs. 1 lit. c DSGVO). Eine Kalenderweitergabe nach außen wäre eine eigene Entscheidung nach ADR-002 (IDEA-ORG-004, „Vorsicht“).
+
+**Anker.** `public.exercise_plan_days`, `app.exercise_plan_weekdays` und `public.set_platform_exercise_days` in `supabase/migrations/20261019120000_ueb_011_exercise_days.sql`; `src/features/platform/uebungstage.ts`. Geprüft in `supabase/tests/platform-exercise-days.test.ts`.
+
+**Änderungspfad.** Tage legt die Fachperson fest: Spalte am Plan, Feld im Entwurf, Wahl der Person entfällt · Aufwand `mittel`. Die Praxis sieht die Tage am Plan: ein Schlüssel in `get_exercise_plan` · Aufwand `klein`.

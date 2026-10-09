@@ -80,6 +80,7 @@ import { BreakdownPage } from '@/features/fleet/BreakdownPage';
 import { VacationPage } from '@/features/vacation/VacationPage';
 import { TimeAccountPage } from '@/features/timeaccount/TimeAccountPage';
 import { PlanPage } from '@/features/exercise-plans/PlanPage';
+import { PlanblattSeite } from '@/features/exercise-plans/PlanblattSeite';
 import { ReimbursementsPage } from '@/features/reimbursements/ReimbursementsPage';
 import { TeamChatPage } from '@/features/teamchat/TeamChatPage';
 import { TourenPage } from '@/features/tours/TourenPage';
@@ -234,6 +235,10 @@ export function AuthenticatedRoutes({
                   die Formulare (UX-009). Lesen alle vier Praxisrollen, schreiben
                   therapist und team_lead (ANN-298); verbindlich prüft der Server. */}
                   <Route path="/patienten/:patientId/plaene/:planId" element={<PlanPage />} />
+                  <Route
+                    path="/patienten/:patientId/plaene/:planId/blatt"
+                    element={<PlanblattSeite user={user} />}
+                  />
                   {/* FRB-002b: Fragebogen erheben - ausserhalb des Rahmens (UX-009). */}
                   <Route
                     path="/patienten/:patientId/befund/erheben"
@@ -563,7 +568,16 @@ export function AuthenticatedRoutes({
                   {/* UEB-EPIC-002: ein Trainingsplan - owner und Trainingsbetreuung,
                   nicht das Büro (ANN-298). Verbindlich prüft der Server. */}
                   {canReadExercisePlans(user.roles, 'training') ? (
-                    <Route path="/training/:relationshipId/plaene/:planId" element={<PlanPage />} />
+                    <>
+                      <Route
+                        path="/training/:relationshipId/plaene/:planId"
+                        element={<PlanPage />}
+                      />
+                      <Route
+                        path="/training/:relationshipId/plaene/:planId/blatt"
+                        element={<PlanblattSeite user={user} />}
+                      />
+                    </>
                   ) : null}
                 </>
               ) : null}
