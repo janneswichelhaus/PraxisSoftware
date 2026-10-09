@@ -61,7 +61,7 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
           {bereiche.map((art) => {
             const offen = data.filter((z) => z.relationship_kind === art && z.status === 'open');
             const ueberfaellig = offen.filter((z) => z.overdue).length;
-            const ziel = art === 'treatment' ? '/rueckfragen' : '/training/rueckfragen';
+            const ziel = art === 'treatment' ? '/rueckfragen' : '/training';
             return (
               <li key={art} className="text-ink">
                 {bereiche.length > 1 ? (
@@ -83,5 +83,26 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
         </ul>
       ) : null}
     </Section>
+  );
+}
+
+/**
+ * Offene Rückfragen aus dem Training bei den Trainingskund:innen (KOM-003,
+ * DSN-001 D1 b): Die Trainingsbetreuung öffnet „Offene Punkte" nicht, also
+ * stehen sie hier - nur, wenn es welche gibt. Das Büro sieht nur „Termin oder
+ * Rechnung" (ANN-311); verbindlich filtert der Server.
+ */
+export function TrainingRueckfragen() {
+  const { data } = useQuery({
+    queryKey: rueckfragenKey('training', null, false),
+    queryFn: () => fetchRueckfragen('training'),
+    retry: false,
+  });
+  if (!data || data.length === 0) return null;
+  return (
+    <div className="mb-6">
+      <h2 className="text-h4 mb-2 font-semibold">Rückfragen von der Plattform ({data.length})</h2>
+      <RueckfragenListe art="training" leer="" nurWennVorhanden />
+    </div>
   );
 }

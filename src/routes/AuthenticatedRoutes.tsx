@@ -549,6 +549,11 @@ export function AuthenticatedRoutes({
               {showTraining ? (
                 <>
                   <Route path="/training" element={<TrainingClientsPage user={user} />} />
+                  {/* KOM-003: eine Rückfrage aus dem Training (DSN-001 D1 b). */}
+                  <Route
+                    path="/training/rueckfragen/:messageId"
+                    element={<RueckfragePage user={user} />}
+                  />
                   {canWriteTrainingClients(user.roles) ? (
                     <Route path="/training/neu" element={<NewTrainingClientPage />} />
                   ) : null}

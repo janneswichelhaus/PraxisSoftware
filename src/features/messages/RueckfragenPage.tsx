@@ -167,7 +167,8 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
   }
   const name = [data.given_name, data.family_name].filter(Boolean).join(' ') || 'Ohne Namen';
   const pfad = personPfad(data);
-  const zurueck = data.relationship_kind === 'training' ? '/training/rueckfragen' : '/rueckfragen';
+  // Im Training steht die Liste bei den Trainingskund:innen (DSN-001 D1).
+  const zurueck = data.relationship_kind === 'training' ? '/training' : '/rueckfragen';
 
   return (
     <>

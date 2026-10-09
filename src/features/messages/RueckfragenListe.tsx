@@ -24,19 +24,23 @@ export function RueckfragenListe({
   mitErledigten = false,
   mitName = true,
   leer,
+  nurWennVorhanden = false,
 }: {
   art: Verhaeltnisart | null;
   verhaeltnisId?: string | null;
   mitErledigten?: boolean;
   mitName?: boolean;
   leer: string;
+  /** Ohne Rückfrage gar nichts zeigen - für Seiten, auf denen sie nur dazukommen. */
+  nurWennVorhanden?: boolean;
 }) {
   const { data, isPending, isError, refetch } = useQuery({
     queryKey: rueckfragenKey(art, verhaeltnisId, mitErledigten),
     queryFn: () => fetchRueckfragen(art, verhaeltnisId, mitErledigten),
     retry: false,
   });
-  if (isPending) return <LoadingState label="Rückfragen werden geladen …" />;
+  if (isPending)
+    return nurWennVorhanden ? null : <LoadingState label="Rückfragen werden geladen …" />;
   if (isError) {
     return (
       <ErrorState
@@ -46,7 +50,9 @@ export function RueckfragenListe({
       />
     );
   }
-  if (data.length === 0) return <p className="text-ink-muted text-sm">{leer}</p>;
+  if (data.length === 0) {
+    return nurWennVorhanden ? null : <p className="text-ink-muted text-sm">{leer}</p>;
+  }
   return (
     <ListRows>
       {data.map((z) => (
@@ -72,10 +78,17 @@ function Rueckfragezeile({ zeile, mitName }: { zeile: Rueckfragezeile; mitName: 
         zeile.record_assigned_at ? ' · in der Akte' : ''
       }`}
       status={<Zustand zeile={zeile} />}
-      to={`/rueckfragen/${zeile.id}`}
+      to={rueckfragePfad(zeile)}
       gedaempft={zeile.status === 'closed'}
     />
   );
+}
+
+/** Die Seite eines Vorgangs - im Bereich, zu dem er gehört (DSN-001 D1). */
+export function rueckfragePfad(z: Pick<Rueckfragezeile, 'id' | 'relationship_kind'>): string {
+  return z.relationship_kind === 'training'
+    ? `/training/rueckfragen/${z.id}`
+    : `/rueckfragen/${z.id}`;
 }
 
 export function Zustand({

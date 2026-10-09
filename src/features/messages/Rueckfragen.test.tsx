@@ -197,3 +197,49 @@ describe('Rückfragen (KOM-002)', () => {
     );
   });
 });
+
+describe('Rückfragen im Training (KOM-003, DSN-001 D1 b)', () => {
+  it('führen in den Bereich Training und zurück zu den Trainingskund:innen', async () => {
+    const training: Rueckfragezeile = {
+      ...ZEILE,
+      relationship_kind: 'training',
+      patient_id: null,
+      training_relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+      relationship_id: 'eeeeeeee-eeee-4eee-8eee-000000000001',
+      given_name: 'Tina',
+      family_name: 'Training',
+      topic: 'organisational',
+    };
+    fetchRueckfragen.mockResolvedValue([training]);
+    const { TrainingRueckfragen } = await import('./RueckfragenAbschnitt');
+    renderWithProviders(<TrainingRueckfragen />, '/training');
+    expect(await screen.findByText('Rückfragen von der Plattform (1)')).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Tina Training/ })).toHaveAttribute(
+      'href',
+      `/training/rueckfragen/${ZEILE.id}`,
+    );
+
+    fetchRueckfrage.mockResolvedValue({ ...VORGANG, ...training });
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/training/rueckfragen/:messageId"
+          element={<RueckfragePage user={testUser(['trainer'], 'Tom Training')} />}
+        />
+      </Routes>,
+      `/training/rueckfragen/${ZEILE.id}`,
+    );
+    expect(await screen.findByRole('link', { name: '← Zu den Rückfragen' })).toHaveAttribute(
+      'href',
+      '/training',
+    );
+  });
+
+  it('ohne Rückfrage steht bei den Trainingskund:innen nichts', async () => {
+    fetchRueckfragen.mockResolvedValue([]);
+    const { TrainingRueckfragen } = await import('./RueckfragenAbschnitt');
+    const { container } = renderWithProviders(<TrainingRueckfragen />, '/training');
+    await waitFor(() => expect(fetchRueckfragen).toHaveBeenCalled());
+    expect(container).toBeEmptyDOMElement();
+  });
+});

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { TrainingRueckfragen } from '@/features/messages/RueckfragenAbschnitt';
 import { PlanWiedervorlage } from '@/features/exercise-plans/Wiedervorlage';
 import { Badge } from '@/components/ui/Badge';
 import { ButtonLink } from '@/components/ui/ButtonLink';
@@ -60,6 +61,9 @@ export function TrainingClientsPage({ user }: { user: CurrentUser }) {
           ) : null
         }
       />
+
+      {/* KOM-003: offene Rückfragen aus dem Training (DSN-001 D1 b). */}
+      <TrainingRueckfragen />
 
       {/* UEB-007: auslaufende Trainingspläne - die Trainingsbetreuung öffnet
           „Offene Punkte" nicht, also stehen sie hier (ANN-302). */}
