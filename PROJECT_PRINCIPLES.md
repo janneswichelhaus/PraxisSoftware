@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.21** |
-| **Änderungsdatum** | **2026-10-03** |
-| Vorversion | 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| **Dokumentversion** | **0.22** |
+| **Änderungsdatum** | **2026-10-09** |
+| Vorversion | 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -421,6 +421,18 @@ Kompensationsmaßnahme. Die
 datenschutzrechtliche Bewertung dieser Öffnung (Need-to-know, DSFA) gehört in
 die Anfrage B2 ([ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md)).
 
+**Training (Projektinhaber, 2026-10-09).** Office liest auch im Training alle
+Informationen eines Trainingsverhältnisses: Trainingsprotokoll,
+Voraussetzungsprofil, Screening- und Gesundheitsangaben, Trainingspläne und
+ihre Einheiten, Rückfragen — und was künftig hinzukommt —, dazu die
+Übungsbibliothek. Office **schreibt** keine Trainingsinhalte: Pläne, Profil,
+Protokoll und Bibliothek bleiben bei den Fachrollen (§4.1, §4.9). Jeder
+lesende Zugriff ist auditpflichtig wie in der Behandlung (§4.8, ADR-010). Mit
+echten Daten gilt das erst, wenn die DSFA es bewertet hat (Anfrage B2,
+[ADR-007](docs/adr/ADR-007-data-protection-impact-assessment.md)); bis dahin
+wird es mit synthetischen Daten gebaut und geprüft. Ob eine Person das
+Training gebucht hat, erfährt die Akte weiterhin nicht (§4.8).
+
 **Mitarbeiterorganisation (E10).** Office DARF die
 **Stammdaten** einer beschäftigten Person anlegen und ändern: Name, dienstliche
 Erreichbarkeit, Hauptstandort. Liefe jede Adressänderung über den
@@ -583,7 +595,7 @@ Für die vorhandenen Rollen gilt damit:
 |---|---|---|
 | §4.1 Praxisinhaber | `therapy` und `training` | Vertragspartner beider Verhältnisse; die einzige Rolle, die beide Bereiche aus sich heraus trägt |
 | §4.2 Therapeut | `therapy` | Der offene Zugriff auf alle Patientenakten gilt **innerhalb** der Behandlung und begründet keinen Zugriff auf Trainingsdaten |
-| §4.3 Office | `therapy`; im `training` organisatorisch, dazu lesend das Trainingsprotokoll | Termin, Vertragsstatus, erbrachte Leistung, Rechnung, Zahlung. Das **Trainingsprotokoll** und seinen Zustand DARF Office lesen, nicht schreiben und nicht abschließen (Projektinhaber, 2026-10-02; ADR-021 Punkt 10); mit echten Daten erst, wenn die DSFA es bewertet hat (Anfrage B2, ADR-007). Übrige Screening- und Gesundheitsangaben des Trainings bleiben für Office **gesperrt**, bis die DSFA sie bewertet — §16: im Zweifel restriktiver, später zu öffnen ist billig |
+| §4.3 Office | `therapy`; im `training` organisatorisch und lesend alles | Termin, Vertragsstatus, erbrachte Leistung, Rechnung, Zahlung. **Alle Informationen des Trainings** DARF Office lesen — Protokoll, Profil, Screening- und Gesundheitsangaben, Pläne, Rückfragen —, aber keine Trainingsinhalte schreiben (Projektinhaber, 2026-10-09; ADR-021 Punkt 10 Fassung 3); mit echten Daten erst, wenn die DSFA es bewertet hat (Anfrage B2, ADR-007) |
 | §4.5 Teamleitung | wie §4.2, dazu die organisatorischen Zusatzrechte | keine Trainingsdaten, solange ihr nicht zusätzlich §4.9 zugewiesen ist |
 | §4.6 Patient | `therapy` | eigene Daten des Behandlungsverhältnisses |
 | §4.9 Trainingsbetreuung | `training` | die Rolle, die diese Ziffer auf der Trainingsseite besetzt |
@@ -691,16 +703,17 @@ Antippen oder über Text.
 Akte ([ADR-017](docs/adr/ADR-017-file-storage.md)). Fotos, die das Praxisteam
 aufnimmt, SOLLTEN über die Kamera der Anwendung entstehen und nicht in der
 Mediathek des Geräts liegen bleiben. **Fotos von Patient:innen** MÜSSEN über
-die Kamera der Anwendung entstehen, und ihr Zweck wird vor der Aufnahme
-gewählt. Ein **Dokumentationsfoto** ist für die Dokumentation der Behandlung
-erforderlich und Teil der Akte, mit deren Grundlage und Frist. Eine
-**Arbeitshilfe** für Übergabe und Vergleich setzt eine eigene, ausdrückliche
-Einwilligung voraus; wer sie nicht gibt, wird genauso behandelt. Kein Foto
+die Kamera der Anwendung entstehen. Ein Foto, das aus der Dokumentation heraus
+entsteht, ist ein **Dokumentationsfoto**: Teil der Akte, mit deren Grundlage
+und Frist; gefragt wird nach dem Zweck nicht. Andere Zwecke gibt es nicht —
+eine Arbeitshilfe mit eigener Einwilligung entsteht nicht mehr (Projektinhaber,
+2026-10-09). An die Fotos von Anmeldebogen und Rezept erinnert die Anwendung
+an der Stelle, an der sie fehlen. Kein Foto
 **ersetzt einen Eintrag**: Was es zeigt, steht in Worten in der
 Dokumentation, und den Unterschied zweier Fotos bewertet die Therapeut:in,
 nicht die Anwendung (§17). Grundlage, Frist, Widerruf, Aufnahmemetadaten und
 Anzeige regelt [ADR-017](docs/adr/ADR-017-file-storage.md) in den Abschnitten
-G und H.
+G, H und K.
 
 **Erstaufnahme.** Was zur Aufnahme einer neuen Person gehört — Verordnung,
 Befundbogen, Einwilligungen, Befund —, SOLLTE die Anwendung sichtbar offen
