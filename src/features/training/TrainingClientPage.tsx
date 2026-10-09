@@ -45,6 +45,7 @@ import { TrainingClientFields } from './TrainingClientFields';
 import { TrainingTermine, TrainingVereinbarungen } from './TrainingClientSections';
 import { TrainingEinheiten } from './TrainingProtocol';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
 import { TrainingEinwilligung } from './TrainingEinwilligung';
 import { TrainingProfil } from './TrainingProfil';
 import { TrainingVertraege } from './TrainingVertraege';
@@ -253,6 +254,9 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               praxis={user.organizationName ?? 'der Praxis'}
             />
           ) : null}
+          {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro sieht
+              nur „Termin oder Rechnung" (ANN-311), verbindlich filtert der Server. */}
+          <RueckfragenAbschnitt art="training" verhaeltnisId={kundin.id} />
         </>
       )}
     </>

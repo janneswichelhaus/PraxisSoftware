@@ -15,6 +15,7 @@ import { mitRueckweg } from '@/lib/rueckweg';
 import { telHref } from '@/lib/telefon';
 import { todayInTimeZone } from '@/features/appointments/api';
 import { PlattformAbschnitt } from '@/features/platform-access/PlattformAbschnitt';
+import { RueckfragenAbschnitt } from '@/features/messages/RueckfragenAbschnitt';
 import {
   canChangePatientStatus,
   canConcludePatientCare,
@@ -593,6 +594,12 @@ export function Stammdaten({ patient, user }: { patient: Patient; user: CurrentU
           zeitzone={user.organizationTimeZone}
           praxis={user.organizationName ?? 'der Praxis'}
         />
+      ) : null}
+
+      {/* KOM-002: Rückfragen dieser Akte; lesen die vier Praxisrollen (E15),
+          verbindlich prüft der Server (ANN-310). */}
+      {canReadPatientDirectory(user.roles) ? (
+        <RueckfragenAbschnitt art="treatment" verhaeltnisId={patient.id} />
       ) : null}
 
       {/* PRX-018: Eine zweite Akte derselben Person hierher übernehmen. Nur

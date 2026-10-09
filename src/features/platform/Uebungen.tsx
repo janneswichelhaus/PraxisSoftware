@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { Planblatt } from '@/features/exercise-plans/Planblatt';
 import { dosierungAlltag, haeufigkeit } from '@/features/exercise-plans/dosierung';
 import { formatDate } from '@/lib/datum';
@@ -136,13 +137,25 @@ function PlanKarte({
           </li>
         ))}
       </ol>
-      <div className="mt-4">
+      <div className="mt-4 flex flex-col items-start gap-3">
         <ButtonLink
           variant="secondary"
           to={`${PLATTFORM_PFAD}/uebungen/blatt/${plan.id}${bereich ? `?${bereich}` : ''}`}
         >
           Plan als PDF
         </ButtonLink>
+        {plan.status === 'assigned' ? (
+          // KOM-001: eine Frage mit dem Plan als Bezug (IDEA-KOM-001).
+          <Textlink
+            alleinstehend
+            to={`${PLATTFORM_PFAD}/nachrichten/neu?${new URLSearchParams([
+              ...new URLSearchParams(bereich).entries(),
+              ['plan', plan.id],
+            ]).toString()}`}
+          >
+            Frage zu diesem Plan stellen →
+          </Textlink>
+        ) : null}
       </div>
     </section>
   );

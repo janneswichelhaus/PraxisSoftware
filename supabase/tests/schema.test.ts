@@ -151,6 +151,9 @@ describe('Schema-Invarianten', () => {
       'exercise_plan_session_sets',
       // UEB-011: die Übungstage, die die Person wählt.
       'exercise_plan_days',
+      // KOM-001: Rückfragen über die Plattform und ihre Einträge.
+      'platform_messages',
+      'platform_message_entries',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

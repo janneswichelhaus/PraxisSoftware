@@ -93,11 +93,16 @@ describe('PlattformApp', () => {
     expect(screen.getByText(/Test Praxis Tuebingen angemeldet/)).toBeInTheDocument();
     expect(screen.queryByRole('navigation', { name: 'Bereich' })).not.toBeInTheDocument();
     // Ein Reiter erscheint erst mit dem Loop, der ihn füllt (ANN-112): seit
-    // POR-008 die Termine, noch keine Übungen und keine Nachrichten.
+    // POR-008 die Termine, seit UEB-009 das Training (hier statt „Übungen"),
+    // seit KOM-001 die Nachrichten.
     expect(screen.getByRole('link', { name: 'Übersicht' })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Termine' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Übungen' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Nachrichten' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('navigation', { name: 'Plattform' })).getByRole('link', {
+        name: 'Nachrichten',
+      }),
+    ).toHaveAttribute('href', '/p/nachrichten');
   });
 
   it('schaltet bei zwei Verhaeltnissen zwischen Behandlung und Training (D6)', async () => {
