@@ -6,6 +6,18 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.22
+
+Nachzug nach der **Abnahme der Annahmen vom 2026-10-09**, Entscheidungen des Projektinhabers
+(BEF-137, BEF-135; ABN-EPIC-002). **§4.3** — neuer Absatz „Training“: Office liest alle
+Informationen eines Trainingsverhältnisses und die Übungsbibliothek, schreibt keine
+Trainingsinhalte, jedes Lesen auditpflichtig, mit echten Daten erst nach der DSFA (B2). **§4.8** —
+die Zeile Office in der Tabelle entsprechend; die bisherige Sperre der übrigen Screening- und
+Gesundheitsangaben für Office entfällt. **§5**, Absatz „Fotos“: Ein Foto aus der Dokumentation ist
+immer ein Dokumentationsfoto, ohne Wahl des Zwecks; die Arbeitshilfe mit eigener Einwilligung
+entsteht nicht mehr; an Anmeldebogen und Rezept erinnert die Anwendung. Rang 2 dazu: ADR-021
+Fassung 3 (Punkt 10), ADR-017 Fassung 4 (Abschnitt K).
+
 ### Änderungsvermerk 0.21
 
 Nachzug an Rang 2 nach **ADR-010 Fassung 3** und **ADR-016 Fassung 3**, entschieden vom

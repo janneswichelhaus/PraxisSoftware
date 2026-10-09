@@ -153,7 +153,7 @@ describe('useLueckenfinder', () => {
     datum: TAG,
     patientId: 'p1',
     zeitzone: ZONE,
-    dauer: 60,
+    dauern: [60],
     aktiv: true,
   };
 
@@ -224,6 +224,68 @@ describe('useLueckenfinder', () => {
       travel_from_seconds: 600,
     });
     expect(items[0]).not.toHaveProperty('starts_at');
+  });
+
+  it('bevorzugt 60 Minuten und kennzeichnet eine Luecke, die nur fuer 45 reicht (ANN-317)', async () => {
+    // Lücken 08:00-09:00 (60), 10:00-10:50 (50), 12:00-14:00 (120).
+    fetchDayRoute.mockResolvedValue([
+      stopp('a', '09:00', '10:00', 48.51),
+      stopp('b', '10:50', '12:00', 48.52),
+      stopp('c', '14:00', '17:00', 48.53),
+    ]);
+    rufeFunktionAuf.mockImplementation(
+      (_: string, koerper: { origins: unknown[]; destinations: unknown[] }) =>
+        Promise.resolve(matrixAntwort(koerper, 600)),
+    );
+    // Nummer = Lücke * 2 + Dauer (0: 60, 1: 45). Die erste Lücke passt für 60,
+    // die dritte nicht für 60, aber für 45; die zweite gibt es nur für 45.
+    const luft: Record<number, number> = { 0: 20, 1: 20, 3: 8, 4: -5, 5: 6 };
+    checkTravelFit.mockImplementation((items: { index: number }[]) =>
+      Promise.resolve(
+        items.map((it) => ({
+          item_index: it.index,
+          starts_at: '2027-05-12T07:00:00Z',
+          arrival_earliest_start: '2027-05-12T07:00:00Z',
+          arrival_slack_minutes: 0,
+          next_earliest_start: null,
+          departure_slack_minutes: luft[it.index] ?? 0,
+        })),
+      ),
+    );
+    const { result } = renderHook(
+      () =>
+        useLueckenfinder({
+          ...EINGABE,
+          dauern: [60, 45],
+          spalten: [
+            {
+              ...SPALTE,
+              baender: [band('08:00', '17:00')],
+              belegt: [band('09:00', '10:00'), band('10:50', '12:00'), band('14:00', '17:00')],
+            },
+          ],
+        }),
+      { wrapper },
+    );
+    await waitFor(() => {
+      const r = result.current;
+      expect(
+        r.stand === 'bereit' ? r.jeSpalte.get('anna')?.map((l) => [l.stufe, l.dauer]) : r.stand,
+      ).toEqual([
+        ['passt', 60],
+        ['passt', 45],
+        ['passt', 45],
+      ]);
+    });
+    const items = checkTravelFit.mock.calls[0]![0] as { index: number; duration_minutes: number }[];
+    // Die 50-Minuten-Lücke wird für 60 gar nicht gefragt.
+    expect(items.map((it) => [it.index, it.duration_minutes])).toEqual([
+      [0, 60],
+      [1, 45],
+      [3, 45],
+      [4, 60],
+      [5, 45],
+    ]);
   });
 
   it('rechnet heute ab jetzt, nicht ab dem vergangenen Beginn der Luecke', async () => {

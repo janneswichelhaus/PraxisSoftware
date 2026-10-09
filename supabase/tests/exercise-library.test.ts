@@ -15,8 +15,8 @@ import { KOERPERREGIONEN } from '@/features/exercises/types';
  * Übung und Variante (UEB-001, IDEA-TRN-005, IDEA-QSN-002).
  *
  *   * Eine Bibliothek je Praxis für Behandlung und Training (ANN-292).
- *   * Lesen owner, therapist, team_lead, trainer; pflegen nur owner; das Büro
- *     und jedes Plattformkonto nichts (ANN-293).
+ *   * Lesen owner, therapist, team_lead, trainer und seit ABN-030 das Büro
+ *     (BEF-137); pflegen nur owner; jedes Plattformkonto nichts (ANN-293).
  *   * Feste Körperregionen, Ausrüstung als Schlagworte (ANN-295).
  *   * Archivieren statt Löschen; Löschen nur ohne Abhängige (ANN-296).
  *   * Kein Tabellenrecht: erreichbar nur über die Funktionen (ADR-004).
@@ -160,6 +160,7 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
       ['Therapeut:in', users.therapist],
       ['Teamleitung', users.teamLead],
       ['Trainingsbetreuung', users.trainer],
+      ['Büro (ABN-030, BEF-137)', users.office],
     ])('liest die Bibliothek und pflegt nicht: %s (ANN-293)', async (_rolle, konto) => {
       const uebung = await uebungAnlegen();
       const b = await bibliothek(konto);
@@ -187,7 +188,6 @@ describe('Übungsbibliothek: Übung und Variante (UEB-001)', () => {
 
   describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
     it.each([
-      ['Büro (Rolle ohne Recht)', users.office],
       ['Profil ohne Praxisrolle', users.patientMax],
       ['Plattformkonto Kund:in', users.plattformTina],
       ['Plattformkonto Patient:in und Kund:in', users.plattformErika],

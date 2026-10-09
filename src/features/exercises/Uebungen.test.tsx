@@ -187,8 +187,8 @@ describe('UebungenPage (UEB-001)', () => {
     expect(await screen.findByText(/Übung „Ausfallschritt“ angelegt/)).toBeInTheDocument();
   });
 
-  it('weist das Büro ab, ohne zu laden (ANN-293)', () => {
-    renderWithProviders(<UebungenPage user={testUser(['office'])} />);
+  it('weist ein Konto ohne Praxisrolle ab, ohne zu laden (ANN-293)', () => {
+    renderWithProviders(<UebungenPage user={testUser([])} />);
     expect(screen.getByText('Nicht freigegeben')).toBeInTheDocument();
     expect(fetchBibliothek).not.toHaveBeenCalled();
   });

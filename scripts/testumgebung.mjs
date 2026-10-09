@@ -130,7 +130,8 @@ export const KARTENDIENST_HOSTS = [
  *
  * Skripte nur vom eigenen Ursprung; Verbindungen nur dorthin und zum
  * Supabase-Projekt. `style-src 'unsafe-inline'`, weil MapLibre und einzelne
- * Bausteine Stilattribute setzen; `blob:` für den Worker von MapLibre. Nur mit
+ * Bausteine Stilattribute setzen; `blob:` für den Worker von MapLibre und für
+ * den Rahmen eines PDF (ADR-017 Punkt 58). Nur mit
  * `kartendienst` kommen die Hosts des Kartendienstes dazu - ohne
  * Kachelschlüssel lädt die Karte nichts und braucht sie nicht.
  */
@@ -147,6 +148,9 @@ export function inhaltsrichtlinie(supabaseUrl, { kartendienst = false } = {}) {
     "font-src 'self'",
     `connect-src 'self' ${supabase} ${websocket}${karte}`,
     "worker-src 'self' blob:",
+    // ADR-017 Fassung 4 Punkt 58 (BEF-133): ein PDF aus einer Objekt-URL im
+    // Rahmen der Anwendung - nur blob:, kein fremder Ursprung.
+    'frame-src blob:',
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",

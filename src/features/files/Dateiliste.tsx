@@ -476,8 +476,7 @@ function Artkorrektur({
  * der Zeile. „Herunterladen" ist eine eigene Aktion mit eigenem Verweis und
  * Kennzeichen im Protokoll (Punkt 55). Ein Verweis lebt 60 Sekunden und ist
  * nicht widerrufbar (Punkt 17) — deshalb steht er nirgendwo im Markup und
- * wird nirgends gemerkt. Ein PDF zeigt die Anwendung noch nicht selbst
- * (ANN-223); es hat nur „Herunterladen".
+ * wird nirgends gemerkt. Ein PDF steht im Rahmen (Punkt 58, ANN-223).
  *
  * „Löschen" nimmt die Datei sofort aus der Akte; das Objekt folgt über den
  * Löschauftrag (Punkt 25). Die Rückfrage sagt, was für die Person zählt: Die

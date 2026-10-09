@@ -209,7 +209,7 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(betrieb?.unterpunkte.map((punkt) => punkt.to)).toContain('/praxis/planung');
   });
 
-  it('führt die Übungen genau einem Bereich zu, nie dem Büro (UEB-001, ANN-293)', () => {
+  it('führt die Übungen genau einem Bereich zu, auch dem Büro (UEB-001, ANN-293, BEF-137)', () => {
     function bereichDerUebungen(roles: RoleKey[]) {
       const bereiche = bereicheFuer(roles);
       const mitPunkt = bereiche.filter((bereich) =>
@@ -226,7 +226,8 @@ describe('Arbeitsbereiche je Rolle', () => {
     // Die Trainingsbetreuung hat kein Organisatorisches - sie findet die
     // Bibliothek im Training.
     expect(bereichDerUebungen(['trainer'])).toBe('training');
-    expect(bereichDerUebungen(['office'])).toBeUndefined();
+    // Das Büro liest mit (ABN-030, BEF-137) - unter Organisatorisches.
+    expect(bereichDerUebungen(['office'])).toBe('betrieb');
   });
 });
 

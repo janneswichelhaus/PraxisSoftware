@@ -180,13 +180,45 @@ describe('Dateiliste', () => {
     );
 
     await screen.findByText('Befund Schulter.pdf');
-    // Ein PDF zeigt die Anwendung noch nicht selbst (ANN-223): kein „Öffnen".
-    expect(screen.queryByRole('button', { name: /^Öffnen/ })).not.toBeInTheDocument();
     await userEvent.click(
       screen.getByRole('button', { name: 'Herunterladen: Befund Schulter.pdf' }),
     );
     await waitFor(() => expect(ladeDateiHerunter).toHaveBeenCalledWith('d1'));
     expect(ladeDateiZumAnzeigen).not.toHaveBeenCalled();
+  });
+
+  it('zeigt ein PDF im Rahmen ohne sandbox, aus einer Objekt-URL mit festem Typ (BEF-133)', async () => {
+    fetchPatientFiles.mockResolvedValue([datei()]);
+    // Der Speicher behauptet einen anderen Typ - gezeigt wird trotzdem als PDF.
+    ladeDateiZumAnzeigen.mockResolvedValue({
+      bild: new Blob(['%PDF-1.7'], { type: 'application/pdf' }),
+      mimeType: 'application/pdf',
+      name: 'Befund Schulter.pdf',
+    });
+    const erzeugt: Blob[] = [];
+    URL.createObjectURL = vi.fn((b: Blob) => {
+      erzeugt.push(b);
+      return 'blob:pdf';
+    });
+    URL.revokeObjectURL = vi.fn();
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['office'])}
+        darfHinzufuegen={false}
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Öffnen: Befund Schulter.pdf' }),
+    );
+    const rahmen = await screen.findByTitle('Befund Schulter.pdf');
+    expect(rahmen.tagName).toBe('IFRAME');
+    expect(rahmen).toHaveAttribute('src', 'blob:pdf');
+    expect(rahmen).not.toHaveAttribute('sandbox');
+    expect(erzeugt.map((b) => b.type)).toEqual(['application/pdf']);
+    expect(ladeDateiHerunter).not.toHaveBeenCalled();
   });
 
   it('meldet eine fehlende Datei als Fehler und bietet sie nicht zum Öffnen an', async () => {

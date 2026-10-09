@@ -13,9 +13,9 @@ const HOECHSTLAENGE = 2000;
  * (ABN-007, BEF-098).
  *
  * Ein klinisches Feld, getrennt von den organisatorischen „Anmerkungen“ des
- * Formulars: etwa „keine Belastung über 20 kg“. Erfassen dürfen die
- * behandelnden Rollen; lesen alle, die die Dokumentation lesen, auch das Büro
- * (ANN-214). Der Knopf ist nur Darstellung — verbindlich prüft
+ * Formulars: etwa „keine Belastung über 20 kg“. Erfassen dürfen alle
+ * Praxisrollen, auch das Büro, das die Verordnung abtippt (ANN-214, BEF-134);
+ * lesen alle, die die Dokumentation lesen. Der Knopf ist nur Darstellung — verbindlich prüft
  * `set_treatment_basis_clinical_note`.
  */
 export function KlinischerHinweis({

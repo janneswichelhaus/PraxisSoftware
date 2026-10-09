@@ -73,16 +73,11 @@ test.describe('Fotos', () => {
   }) => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
-    // Die Wahl steht im Fenster „Foto aufnehmen" (Akte entschlacken, 2026-10-03).
+    // ADR-017 Fassung 4 Punkt 56 (ANN-316): ohne Wahl, die Kamera öffnet sofort.
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
-    const wahl = page.getByRole('dialog', { name: 'Foto aufnehmen' });
-    await expect(wahl.getByText(/Einwilligung erteilt am 27.08.2026/)).toBeVisible();
-
-    // ADR-017 Punkt 44: ohne Vorauswahl, erst die Wahl öffnet die Kamera.
-    await expect(wahl.getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
-    await wahl.getByRole('radio', { name: /^Teil der Dokumentation/ }).check();
-    await wahl.getByRole('button', { name: 'Foto aufnehmen' }).click();
     const dialog = page.getByRole('dialog', { name: 'Foto aufnehmen' });
+    await expect(dialog.getByRole('radio')).toHaveCount(0);
+    await expect(dialog.getByText(/Teil der Dokumentation \(Akte, zehn Jahre\)/)).toBeVisible();
     await expect(dialog.getByText(/Gesicht nur, wenn es selbst/)).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Auslösen' })).toBeVisible();
     // Das Kamerabild läuft, bevor ausgelöst wird.
@@ -130,14 +125,6 @@ test.describe('Fotos', () => {
   }) => {
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
-    await page
-      .getByRole('dialog', { name: 'Foto aufnehmen' })
-      .getByRole('radio', { name: /^Arbeitshilfe \(/ })
-      .check();
-    await page
-      .getByRole('dialog', { name: 'Foto aufnehmen' })
-      .getByRole('button', { name: 'Foto aufnehmen' })
-      .click();
     await page.getByRole('button', { name: 'Auslösen' }).click();
     await page.getByRole('button', { name: 'Foto verwenden' }).click();
     await page.getByRole('button', { name: 'Foto speichern' }).click();
@@ -150,14 +137,6 @@ test.describe('Fotos', () => {
     await kameraBeobachten(page);
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
     await page.getByRole('button', { name: 'Foto aufnehmen' }).click();
-    await page
-      .getByRole('dialog', { name: 'Foto aufnehmen' })
-      .getByRole('radio', { name: /^Arbeitshilfe \(/ })
-      .check();
-    await page
-      .getByRole('dialog', { name: 'Foto aufnehmen' })
-      .getByRole('button', { name: 'Foto aufnehmen' })
-      .click();
     await expect(page.getByRole('button', { name: 'Auslösen' })).toBeVisible();
     expect(await laufendeSpuren(page)).toBeGreaterThan(0);
 
@@ -170,7 +149,8 @@ test.describe('Fotos', () => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
     await expect(page.getByText('Testgegenstand, erste Aufnahme', { exact: true })).toBeVisible();
-    // ABN-023: beide Fotoarten in einer Liste, das Dokumentationsfoto ohne Löschdatum.
+    // ABN-023: beide Fotoarten in einer Liste, das Dokumentationsfoto ohne
+    // Löschdatum; eine vorhandene Arbeitshilfe bleibt bis zur Frist (ABN-032).
     await expect(page.getByText('Dokumentationsfoto · Teil der Akte')).toBeVisible();
     await expect(page.getByText(/^Arbeitshilfe · wird spätestens am/).first()).toBeVisible();
     await expect(page.locator('main img')).toHaveCount(0);

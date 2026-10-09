@@ -155,6 +155,9 @@ describe('inhaltsrichtlinie', () => {
     expect(csp).toContain(`connect-src 'self' ${SUPABASE_URL} wss://${REF}.supabase.co;`);
     expect(csp).toContain("frame-ancestors 'none'");
     expect(csp).toContain("object-src 'none'");
+    // ADR-017 Punkt 58: Rahmen nur aus einer Objekt-URL (PDF), sonst keiner.
+    expect(csp).toContain('frame-src blob:;');
+    expect(csp).not.toMatch(/frame-src[^;]*(https?:|\*|'self')/);
     expect(csp).not.toContain('unsafe-eval');
     expect(csp).not.toContain('"');
   });

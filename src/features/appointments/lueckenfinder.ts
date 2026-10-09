@@ -29,6 +29,13 @@ import { checkTravelFit, fetchVisitPosition, type Passfrage } from './wegpruefun
 /** Kürzer zeigt der Lückenfinder keine Lücke - ein Streifen wäre nicht lesbar. */
 export const MIN_LUECKE_MINUTEN = 15;
 
+/**
+ * ANN-317 (BEF-136): Auch 45 Minuten sind eine mögliche Termindauer. Gesucht
+ * wird zuerst für die bevorzugte Dauer (das Terminfenster, 60 Minuten); passt
+ * eine Lücke nur für diese kürzere, steht sie gekennzeichnet da.
+ */
+export const KURZE_TERMINDAUER_MINUTEN = 45;
+
 export interface LueckenSpalte {
   /** Kennung der Spalte im Gitter. */
   readonly id: string;
@@ -47,6 +54,11 @@ export interface BewerteteLuecke {
   readonly stufe: Lueckenstufe;
   /** Frühester Beginn nach der Anfahrt, als Zeitpunkt. */
   readonly ab: string | null;
+  /**
+   * Für welche Termindauer die Stufe gilt - die bevorzugte oder eine kürzere
+   * (ANN-317); `null`, wenn keine geprüft wurde (zu kurz, lädt).
+   */
+  readonly dauer: number | null;
 }
 
 export type Lueckenfinder =
@@ -139,7 +151,7 @@ export function useLueckenfinder({
   datum,
   patientId,
   zeitzone,
-  dauer,
+  dauern,
   aktiv,
   abMinute = 0,
 }: {
@@ -147,8 +159,12 @@ export function useLueckenfinder({
   datum: string;
   patientId: string | null;
   zeitzone: string | null;
-  /** Länge des Termins, für den eine Lücke gesucht wird. */
-  dauer: number;
+  /**
+   * Längen des Termins, für die eine Lücke gesucht wird - die bevorzugte
+   * zuerst (ANN-317). Eine Lücke bekommt die Stufe der ersten Dauer, für die
+   * sie passt oder knapp ist.
+   */
+  dauern: readonly number[];
   /** Rolle darf die Tagesroute lesen, Tag ab heute, Tagesansicht. */
   aktiv: boolean;
   /** Heute: Eine Lücke beginnt frühestens in dieser Minute; was davor endet, entfällt. */
@@ -248,22 +264,26 @@ export function useLueckenfinder({
       const items: Passfrage[] = [];
       p.luecken.forEach((l, i) => {
         const { vor, nach } = p.umfeld[i]!;
-        if (l.bisMinute - l.vonMinute < dauer || !vor || !nach) return;
+        if (!vor || !nach) return;
         const hinSek = zuIhr[index.get(schluessel(vor)) ?? -1]?.[0] ?? null;
         const zurueckSek = vonIhr[index.get(schluessel(nach)) ?? -1] ?? null;
         if (hinSek === null || zurueckSek === null) return;
-        items.push({
-          index: i,
-          duration_minutes: dauer,
-          previous_end: zeitpunktIn(datum, l.vonMinute, zeitzone),
-          travel_to_seconds: Math.round(hinSek),
-          next_start: zeitpunktIn(datum, l.bisMinute, zeitzone),
-          travel_from_seconds: Math.round(zurueckSek),
+        // Je Dauer eine Frage; die Nummer trägt Lücke und Dauer.
+        dauern.forEach((dauer, d) => {
+          if (l.bisMinute - l.vonMinute < dauer) return;
+          items.push({
+            index: i * dauern.length + d,
+            duration_minutes: dauer,
+            previous_end: zeitpunktIn(datum, l.vonMinute, zeitzone),
+            travel_to_seconds: Math.round(hinSek),
+            next_start: zeitpunktIn(datum, l.bisMinute, zeitzone),
+            travel_from_seconds: Math.round(zurueckSek),
+          });
         });
       });
       return { items };
     });
-  }, [plan, matrizen, dauer, datum, zeitzone]);
+  }, [plan, matrizen, dauern, datum, zeitzone]);
 
   const pruefungen = useQueries({
     queries: fragen.map((f) => ({
@@ -292,28 +312,46 @@ export function useLueckenfinder({
     const fehler =
       (frage !== null && frage !== undefined && 'fehler' in frage) || pruefung?.isError === true;
     const antworten = new Map((pruefung?.data ?? []).map((a) => [a.item_index, a]));
-    const bewertet = p.luecken.map((l, k): BewerteteLuecke => {
-      if (l.bisMinute - l.vonMinute < dauer) {
-        return { ...l, stufe: 'zu_kurz', ab: null };
-      }
-      const antwort = antworten.get(k);
+    /** Die Stufe einer Lücke für eine Dauer - ohne Rücksicht auf die anderen. */
+    const stufeFuer = (l: Zeitband, k: number, d: number): BewerteteLuecke => {
+      const dauer = dauern[d]!;
       if (fehler || !p.umfeld[k]!.vor || !p.umfeld[k]!.nach) {
-        ungeprueft = true;
-        return { ...l, stufe: 'ungeprueft', ab: null };
+        return { ...l, stufe: 'ungeprueft', ab: null, dauer };
       }
-      const gefragt = frage && 'items' in frage && frage.items.some((it) => it.index === k);
+      const nummer = k * dauern.length + d;
+      const gefragt = frage && 'items' in frage && frage.items.some((it) => it.index === nummer);
       // Gefragt wird nicht, wenn eine Fahrzeit fehlt (Ersatzschätzung, ADR-019
       // Punkt 38): Diese Lücke bleibt ungeprüft.
       if (frage && 'items' in frage && !gefragt) {
-        ungeprueft = true;
-        return { ...l, stufe: 'ungeprueft', ab: null };
+        return { ...l, stufe: 'ungeprueft', ab: null, dauer };
       }
-      if (!antwort) return { ...l, stufe: 'laedt', ab: null };
+      const antwort = antworten.get(nummer);
+      if (!antwort) return { ...l, stufe: 'laedt', ab: null, dauer: null };
       if (antwort.departure_slack_minutes === null) {
-        ungeprueft = true;
-        return { ...l, stufe: 'ungeprueft', ab: null };
+        return { ...l, stufe: 'ungeprueft', ab: null, dauer };
       }
-      return { ...l, stufe: luftStufe(antwort.departure_slack_minutes), ab: antwort.starts_at };
+      return {
+        ...l,
+        stufe: luftStufe(antwort.departure_slack_minutes),
+        ab: antwort.starts_at,
+        dauer,
+      };
+    };
+    const bewertet = p.luecken.map((l, k): BewerteteLuecke => {
+      // Die bevorzugte Dauer zuerst (ANN-317): Die erste, für die die Lücke
+      // passt oder knapp ist, gilt. Lädt eine bevorzugte noch, wartet die
+      // Lücke - sonst spränge sie von „nur 45" auf „passt".
+      let erste: BewerteteLuecke | null = null;
+      for (let d = 0; d < dauern.length; d++) {
+        if (l.bisMinute - l.vonMinute < dauern[d]!) continue;
+        const ergebnis = stufeFuer(l, k, d);
+        if (ergebnis.stufe === 'laedt') return ergebnis;
+        if (ergebnis.stufe === 'passt' || ergebnis.stufe === 'knapp') return ergebnis;
+        erste ??= ergebnis;
+      }
+      if (!erste) return { ...l, stufe: 'zu_kurz', ab: null, dauer: null };
+      if (erste.stufe === 'ungeprueft') ungeprueft = true;
+      return erste;
     });
     jeSpalte.set(p.spalte, bewertet);
   });

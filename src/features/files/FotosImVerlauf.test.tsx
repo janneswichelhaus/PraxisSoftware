@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as FotoApi from './patientenfotos';
-import type * as VermerkeApi from '@/features/datenschutz/vermerke';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -13,8 +12,10 @@ import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
  * kann: kein Dateiwähler für Fotos (Punkt 33), kein Verweis auf Vorrat und
  * keine Vorschau in der Liste (Punkte 15 und 40), die Ansicht aus dem
  * Speicher, die beim Schließen frei wird, und der Vergleich ohne Bewertung
- * (Punkt 39). Ob Einwilligung und Rolle reichen, entscheidet die Datenbank
- * (`supabase/tests/patient-photos.test.ts`).
+ * (Punkt 39). Seit ABN-032 fragt die Aufnahme nicht nach dem Zweck: Jedes
+ * neue Foto ist ein Dokumentationsfoto (ADR-017 Fassung 4 Punkt 56). Ob die
+ * Rolle reicht, entscheidet die Datenbank
+ * (`supabase/tests/documentation-photos.test.ts`).
  */
 
 const PATIENT = '66666666-6666-4666-8666-000000000001';
@@ -22,7 +23,6 @@ const PATIENT = '66666666-6666-4666-8666-000000000001';
 const fetchPatientenfotos = vi.fn();
 const ladePatientenfoto = vi.fn();
 const speicherePatientenfoto = vi.fn();
-const fetchDatenschutzvermerke = vi.fn();
 const loescheDatei = vi.fn();
 
 vi.mock('./patientenfotos', async (importOriginal) => {
@@ -34,15 +34,6 @@ vi.mock('./patientenfotos', async (importOriginal) => {
     ladePatientenfoto: (id: string) => ladePatientenfoto(id) as Promise<Blob>,
     speicherePatientenfoto: (auftrag: unknown) =>
       speicherePatientenfoto(auftrag) as Promise<string>,
-  };
-});
-
-vi.mock('@/features/datenschutz/vermerke', async (importOriginal) => {
-  const actual = await importOriginal<typeof VermerkeApi>();
-  return {
-    ...actual,
-    fetchDatenschutzvermerke: (id: string) =>
-      fetchDatenschutzvermerke(id) as Promise<VermerkeApi.Datenschutzvermerk[]>,
   };
 });
 
@@ -68,15 +59,6 @@ function foto(rest: Partial<FotoApi.Patientenfoto> = {}): FotoApi.Patientenfoto 
   };
 }
 
-const ERTEILT: VermerkeApi.Datenschutzvermerk = {
-  id: 'v1',
-  record_kind: 'consent_granted',
-  purpose: 'patient_photos',
-  notice_version: null,
-  occurred_on: '2026-08-30',
-  recorded_at: '2026-08-30T08:00:00Z',
-};
-
 const erzeugt = vi.fn((_blob: Blob) => 'blob:foto');
 const freigegeben = vi.fn((_adresse: string) => undefined);
 
@@ -96,30 +78,11 @@ function kameraEinbauen() {
   );
 }
 
-const DOKU = /^Teil der Dokumentation/;
-const HILFE = /^Arbeitshilfe \(/;
-
 type Nutzer = ReturnType<typeof userEvent.setup>;
 
-/**
- * Öffnet das Fenster „Foto aufnehmen" (Akte entschlacken, 2026-10-03): Die
- * Wahl der Art steht dort, nicht mehr in der Karte.
- */
-async function wahlOeffnen(user: Nutzer): Promise<HTMLElement> {
+/** „Foto aufnehmen" öffnet die Kamera sofort - ohne Wahl der Art (Punkt 56). */
+async function aufnehmen(user: Nutzer): Promise<void> {
   await user.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
-  return screen.findByRole('dialog', { name: 'Foto aufnehmen' });
-}
-
-async function waehlen(user: Nutzer, art: RegExp = DOKU): Promise<HTMLElement> {
-  const fenster = await wahlOeffnen(user);
-  await user.click(within(fenster).getByRole('radio', { name: art }));
-  return fenster;
-}
-
-/** Wählt die Art und öffnet die Kamera. */
-async function aufnehmen(user: Nutzer, art: RegExp = DOKU): Promise<void> {
-  const fenster = await waehlen(user, art);
-  await user.click(within(fenster).getByRole('button', { name: 'Foto aufnehmen' }));
 }
 
 function seite(rollen: Parameters<typeof testUser>[0] = ['therapist']) {
@@ -130,7 +93,6 @@ describe('Patientenfotos', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     fetchPatientenfotos.mockResolvedValue([]);
-    fetchDatenschutzvermerke.mockResolvedValue([ERTEILT]);
     ladePatientenfoto.mockResolvedValue(new Blob(['jpeg'], { type: 'image/jpeg' }));
     speicherePatientenfoto.mockResolvedValue('neu');
     loescheDatei.mockResolvedValue(undefined);
@@ -144,58 +106,33 @@ describe('Patientenfotos', () => {
     Object.defineProperty(navigator, 'mediaDevices', { configurable: true, value: undefined });
   });
 
-  it('bietet ohne Einwilligung nur das Dokumentationsfoto an und sagt, warum (ADR-017 Punkt 44)', async () => {
+  it('fragt nicht nach dem Zweck: jedes neue Foto ist ein Dokumentationsfoto (Punkt 56, ANN-316)', async () => {
     const user = userEvent.setup();
-    fetchDatenschutzvermerke.mockResolvedValue([]);
     seite();
 
-    const fenster = await wahlOeffnen(user);
-    expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
-    expect(within(fenster).getByRole('radio', { name: DOKU })).toBeEnabled();
-    expect(within(fenster).getByText(/Nicht möglich: Es ist keine Einwilligung/)).toBeVisible();
-    expect(within(fenster).getByRole('link', { name: 'Zu den Einwilligungen' })).toHaveAttribute(
-      'href',
-      `/patienten/${PATIENT}/stammdaten#einwilligungen`,
+    await aufnehmen(user);
+    const dialog = await screen.findByRole('dialog', { name: 'Foto aufnehmen' });
+    expect(within(dialog).queryByRole('radio')).toBeNull();
+    expect(dialog).toHaveTextContent(
+      'Teil der Dokumentation (Akte, zehn Jahre); löschen nur heute',
     );
-    expect(fenster).toHaveTextContent('Kein Foto ersetzt einen Eintrag');
-  });
+    expect(dialog).toHaveTextContent('Kein Foto ersetzt einen Eintrag');
+    expect(screen.queryByText(/Arbeitshilfe/)).toBeNull();
 
-  it('nennt eine Ablehnung als erledigten Stand', async () => {
-    const user = userEvent.setup();
-    fetchDatenschutzvermerke.mockResolvedValue([
-      { ...ERTEILT, record_kind: 'consent_refused', occurred_on: '2026-09-02' },
-    ]);
-    seite();
-    const fenster = await wahlOeffnen(user);
-    expect(fenster).toHaveTextContent(
-      'Nicht möglich: Die Einwilligung zu Arbeitshilfen wurde am 02.09.2026 abgelehnt.',
-    );
-    expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
-  });
-
-  it('startet ohne Vorauswahl: Aufnehmen erst nach der Wahl, danach wieder ohne (Punkt 44)', async () => {
-    const user = userEvent.setup();
-    seite();
-
-    let fenster = await wahlOeffnen(user);
-    const weiter = within(fenster).getByRole('button', { name: 'Foto aufnehmen' });
-    expect(within(fenster).getByRole('radio', { name: DOKU })).not.toBeChecked();
-    expect(within(fenster).getByRole('radio', { name: HILFE })).not.toBeChecked();
-    expect(weiter).toBeDisabled();
-
-    await user.click(within(fenster).getByRole('radio', { name: HILFE }));
-    expect(weiter).toBeEnabled();
-    await user.click(weiter);
-    await user.click(await screen.findByRole('button', { name: 'Auslösen' }));
-    await user.click(screen.getByRole('button', { name: 'Foto verwenden' }));
+    await user.click(await within(dialog).findByRole('button', { name: 'Auslösen' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Foto verwenden' }));
     await user.click(screen.getByRole('button', { name: 'Foto speichern' }));
-
     await waitFor(() => expect(speicherePatientenfoto).toHaveBeenCalledTimes(1));
-    expect((speicherePatientenfoto.mock.calls[0]![0] as { art: string }).art).toBe('patientenfoto');
-    expect(await screen.findByText(/ist gespeichert/)).toBeInTheDocument();
-    fenster = await wahlOeffnen(user);
-    expect(within(fenster).getByRole('radio', { name: HILFE })).not.toBeChecked();
-    expect(within(fenster).getByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
+    expect((speicherePatientenfoto.mock.calls[0]![0] as { art: string }).art).toBe(
+      'dokumentationsfoto',
+    );
+  });
+
+  it('führt eine vorhandene Arbeitshilfe weiter in der Liste (Punkt 57)', async () => {
+    fetchPatientenfotos.mockResolvedValue([foto()]);
+    seite();
+    expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
+    expect(screen.getByText(/Arbeitshilfe/)).toBeInTheDocument();
   });
 
   it('nimmt ein Foto nur über die Kamera auf - nirgends ein Dateiwähler (Punkt 33)', async () => {
@@ -395,43 +332,6 @@ describe('Patientenfotos', () => {
   });
 
   describe('Zustände (UXR-009)', () => {
-    it('behauptet ohne geladene Vermerke keine fehlende Einwilligung (DAT-03)', async () => {
-      const user = userEvent.setup();
-      fetchDatenschutzvermerke.mockRejectedValueOnce(new Error('synthetisch'));
-      fetchPatientenfotos.mockResolvedValue([foto()]);
-      seite();
-
-      expect(
-        await screen.findByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/Es ist keine Einwilligung/)).toBeNull();
-      // Das Dokumentationsfoto braucht keine Einwilligung; die Arbeitshilfe
-      // bleibt zu, bis der Stand geladen ist.
-      let fenster = await wahlOeffnen(user);
-      expect(within(fenster).getByRole('radio', { name: HILFE })).toBeDisabled();
-      expect(within(fenster).getByRole('radio', { name: DOKU })).toBeEnabled();
-      expect(fenster).not.toHaveTextContent('Es ist keine Einwilligung');
-      await user.click(within(fenster).getByRole('button', { name: 'Abbrechen' }));
-
-      fetchDatenschutzvermerke.mockResolvedValue([ERTEILT]);
-      await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
-      await waitFor(() =>
-        expect(
-          screen.queryByText('Der Stand der Einwilligung konnte nicht geladen werden.'),
-        ).toBeNull(),
-      );
-      fenster = await wahlOeffnen(user);
-      expect(fenster).toHaveTextContent('Einwilligung erteilt am 30.08.2026');
-      expect(within(fenster).getByRole('radio', { name: HILFE })).toBeEnabled();
-    });
-
-    it('lässt, solange die Einwilligung lädt, noch nicht aufnehmen', async () => {
-      fetchDatenschutzvermerke.mockReturnValue(new Promise(() => undefined));
-      seite();
-      expect(await screen.findByRole('button', { name: 'Foto aufnehmen' })).toBeDisabled();
-      expect(screen.queryByText(/Keine Einwilligung vermerkt/)).toBeNull();
-    });
-
     it('meldet einen Ladefehler der Liste mit einem neuen Versuch (DAT-13)', async () => {
       const user = userEvent.setup();
       fetchPatientenfotos.mockRejectedValueOnce(new Error('synthetisch'));
