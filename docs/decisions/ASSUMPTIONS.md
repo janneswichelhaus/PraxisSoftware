@@ -1001,7 +1001,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-073 — Die genutzte Menge der Grundlage schreibt die Leistungserfassung fort
 
-Praxisprozess · offen · 2026-09-19 · — · — · Wiedervorlage: Probewoche 1 · löst die Wiedervorlage von ANN-012, ANN-038 und ANN-064 ein
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Probewoche 1 · löst die Wiedervorlage von ANN-012, ANN-038 und ANN-064 ein
 
 **Ablösung.** löst die Wiedervorlage „automatischer Verbrauch mit ABR-002" aus ANN-012, ANN-038 und ANN-064 ein; die dort beschriebene Handpflege entfällt
 
@@ -2539,7 +2539,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 ### ANN-211 — Durchgeführte Termine lassen sich übertragen, stehen aber zugeklappt und nicht vorgewählt
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001)
 
 **Annahme.** Die Seite „Termine übertragen“ bietet neben den ungedeckten künftigen Terminen auch die **durchgeführten** Termine der Patient:in an (`completed`, `documented`, nicht am Ziel), als eigenen, zugeklappten Abschnitt „Vergangene Termine“ ohne Vorauswahl, mit dem Hinweis, dass erfasste Leistungen mitziehen. Abgesagte, nicht angetroffene und abgerechnete Termine werden nicht angeboten.
 
@@ -2551,7 +2551,7 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 
 ### ANN-212 — Eine Verlegung mit Gebühr ist eine Absage „Patient:in hat verlegt“; das Verschieben eines Termins bleibt gebührenfrei
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
 
 **Annahme.** Die 24-Stunden-Regel einer Verlegung durch die Patient:in (BEF-094) greift am Weg **Absagen → „Patient:in hat verlegt“**: Der vereinbarte Termin wird abgesagt, der Server merkt bei weniger als 24 Stunden die Gebühr vor, der neue Termin wird wie jeder Folgetermin angelegt. Ändert das Büro dagegen nur Datum oder Uhrzeit eines bestätigten Termins (`update_appointment`, Auditereignis `appointment.rescheduled`), entsteht **keine** Gebühr — der Termin besteht weiter, es gibt keinen ausgefallenen Termin, an dem ein Gebührenanlass hängen könnte (ADR-018 Punkt 4: Anlass nur an `cancelled` und `no_show`).
 
@@ -2563,7 +2563,7 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 
 ### ANN-213 — Auf eine Gebühr verzichten owner und office, endgültig und nur vor der Erfassung
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung der Praxisverwaltung (ABN-EPIC-001)
 
 **Annahme.** Den Verzicht auf eine Gebühr (BEF-094) vermerken **owner und office** — dieselben Rollen, die ein Ausfallhonorar als Leistung erfassen (ANN-140). Er ist möglich, solange aus dem Anlass weder eine Leistung erfasst noch eine Rechnung ausgestellt ist; danach führt der Weg über das Entfernen der Leistung beziehungsweise das Storno. Er ist **endgültig**: Es gibt keinen Rückweg „Verzicht zurücknehmen“. Der Anlass (`fee_basis`) bleibt stehen, daneben `fee_waived_at` und `fee_waived_by`; die Terminsicht zeigt nur den Zeitpunkt, die Person steht im Auditlog (`appointment.fee_waived`). Kein Freitext zum Grund. Fällt der Anlass weg (Wiederöffnen eines Nichtantreffens), fällt der Verzicht mit. Ein Termin mit Verzicht bleibt unter dem Löschschutz der Termine mit Gebührenanlass (ANN-035): Der Vermerk ist der Nachweis, warum keine Forderung entstand.
 
@@ -2575,7 +2575,7 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 
 ### ANN-214 — Den behandlungsrelevanten Hinweis pflegen die behandelnden Rollen in der Akte, nicht im Formular der Grundlage
 
-Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001); Datenschutzprüfung mit ANN-065
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-132 · Wiedervorlage: Jannes in der Sichtung der Grundlagen (ABN-EPIC-001); Datenschutzprüfung mit ANN-065
 
 **Annahme.** Der klinische Hinweis aus einer Verordnung (`treatment_bases.prescriber_note`, BEF-098) wird **an der Verordnung in der Akte** erfasst und geändert, mit einem eigenen Knopf „Behandlungsrelevanten Hinweis erfassen“ — nicht im Formular der Grundlage, das auch das Büro ausfüllt. Schreiben dürfen **therapist und team_lead** (`app.can_write_treatment_note`, wie die Dokumentation); ein reiner owner-Zugang und das Büro lesen ihn nur. Lesen dürfen alle mit dem Leserecht der Dokumentation (`app.can_read_treatment_note`); `app.can_read_treatment_basis_clinical` ruft es seitdem auf, statt die Rollen ein zweites Mal zu führen. Nur an einer Verordnung, nie am Selbstzahler (ADR-020 Punkt 4). Das Auditlog hält fest, dass das Feld geändert oder geleert wurde, nie den Text.
 
@@ -2585,9 +2585,11 @@ Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Janne
 
 **Änderungspfad.** Das Büro schreiben lassen: die Rollenprüfung auf `app.can_write_treatment_bases()` umstellen und `canWriteTreatmentBases` im Client · Aufwand `klein`. Ins Formular legen: das Feld im Formular wieder aufnehmen und den Parameter an beide Schreibpfade geben · Aufwand `mittel`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Den behandlungsrelevanten Hinweis aus der Verordnung erfassen alle Praxisrollen außer einer reinen Trainingsbetreuung, also auch das Büro. Umsetzung: BEF-132.
+
 ### ANN-215 — Ein Betrag an einer stornierten Rechnung wird nur mit ihrer ausgestellten Ersatzrechnung verrechnet, als verbundenes Paar
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung der Abrechnung (ABN-EPIC-001); Steuerberatung mit B9
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung der Abrechnung (ABN-EPIC-001); Steuerberatung mit B9
 
 **Annahme.** „Mit der Ersatzrechnung verrechnen“ (BEF-100) heißt: Der Betrag geht von der stornierten Rechnung auf **die** Rechnung über, die sie ersetzt (`replaces_invoice_id`), sobald diese **ausgestellt** ist — nicht auf eine beliebige offene Rechnung derselben Person und nicht auf einen Entwurf. Gebucht wird ein **Paar**: an der stornierten Rechnung eine Rückzahlung, an der Ersatzrechnung ein Eingang, beide mit dem Weg „Verrechnung“ (`method = 'offset'`), verbunden über `offset_group`, datiert auf den Tag der Verrechnung. Höchstens der eingegangene Betrag; ein Teilbetrag ist möglich. Storniert wird eine Verrechnung nur als Paar. In der Auswertung nach Zufluss heben sich die beiden Hälften in der Summe auf; verteilt wird jede nach den Steuergruppen ihrer Rechnung. Rechte wie beim Buchen einer Zahlung (owner, office). Ein Überschuss der Zahlung über die Ersatzrechnung bleibt dort als Überzahlung stehen und wird von dort zurückgezahlt.
 
@@ -2599,7 +2601,7 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 
 ### ANN-216 — Eine Vertretung trägt zwei Bereiche: Gesundheit immer, Rechnungen nur nachgewiesen
 
-Datenschutz · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: B2 und B5 mit ANN-205 und ANN-206; Jannes in der Sichtung der Plattform (ABN-EPIC-001)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: B2 und B5 mit ANN-205 und ANN-206; Jannes in der Sichtung der Plattform (ABN-EPIC-001)
 
 **Annahme.** Freigegeben werden nur nachgewiesene bzw. eingewilligte Bereiche (BEF-119). Die Plattform kennt dafür zwei: **Gesundheit** (Termine, Wünsche, Nachrichten, Befundbogen, freigegebene Unterlagen) und **Rechnungen** (Rechnungen und Zahlungen). Gesundheit ist Voraussetzung jeder Vertretung — die Plattform zeigt Gesundheitsdaten, eine Vollmacht nur für Finanzen begründet hier keinen Zugang. Rechnungen sind immer eine ausdrückliche Ja/Nein-Angabe (`finance_scope`): bei der rechtlichen Vertretung das Häkchen „umfasst die Vermögenssorge“ für Sorgerecht, Betreuung und Vollmacht gleichermaßen, bei der Begleitung ein Satz der Einwilligung. `app.platform_access_allows` ist die eine Stelle: `billing` für den eigenen Zugang und nur mit `finance_scope`; `consent`, `export` und `manage_companions` weiter nur eigener Zugang und rechtliche Vertretung. Bestehende Vertretungen: rechtliche ohne Rechnungen, Begleitungen der alten Fassung mit (ihr Wortlaut nannte sie); eine Vollmacht ohne Vermerk der Gesundheitssorge wird entzogen (`scope_unproven`) und neu eingerichtet, statt den Nachweis zu unterstellen.
 
@@ -2611,7 +2613,7 @@ Datenschutz · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: B2 
 
 ### ANN-217 — Den Zugangsdienst ruft nach dem Löschlauf der Zeitplan des Betriebs; bis OPS-001 bleiben fällige Konten gesperrt stehen
 
-Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: OPS-001 (Edge Runtime am Testprojekt prüfen)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: OPS-001 (Edge Runtime am Testprojekt prüfen)
 
 **Annahme.** Die Aufgabe `konten_loeschen` des Zugangsdienstes ruft der Zeitplan des Betriebs nach jedem Löschlauf auf, mit dem Admin-Schlüssel als Bearer; ein anderer Aufruf wird abgewiesen. Ein abgeholter Auftrag ist 15 Minuten vergeben; was scheitert, kommt beim nächsten Aufruf wieder. Ein Konto, das beim Anmeldedienst schon fehlt (404), gilt als entfernt. Ein Konto, das seit dem Auftrag wieder einen laufenden Zugang hat, wird nicht gelöscht, der Auftrag fällt — außer nach einem Restore: Dann verliert das Konto seine Zugänge, und der Auftrag bleibt. Restrisiko: Bindet jemand das Konto genau zwischen Abholen und Löschen neu, zeigt der neue Zugang auf ein gelöschtes Konto; er ist dann wie jeder ohne Konto neu einzuladen. Solange die Edge Runtime nicht freigegeben ist (OPS-001), läuft der Aufruf nicht: Fällige Konten stehen dann ohne jeden Zugang beim Anmeldedienst, bis der Dienst scharf ist.
 
@@ -2623,7 +2625,7 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: OPS-001 (
 
 ### ANN-218 — Die Sperre der Wiederherstellung wirkt im Anmeldedienst über einen Mail-Hook; bis B13 bestätigt kein Plattformkonto sein Postfach
 
-Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 und OPS-001 (Hook einschalten); Jannes in der Sichtung der Plattform
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: B13 und OPS-001 (Hook einschalten); Jannes in der Sichtung der Plattform
 
 **Annahme.** Ein Plattformkonto bekommt einen Wiederherstellungslink per Mail nur mit einem per Link bestätigten Postfach für seine heutige Adresse (BEF-118). Die eine Regel ist `public.auth_email_allowed`: Praxiskonten unverändert; Plattformkonten nur `recovery` und nur mit Merkmal, nie einen Anmeldelink. Im Anmeldedienst wirkt sie über dessen **Mail-Hook**: Eingeschaltet verschickt der Anmeldedienst keine Mail mehr selbst, sondern ruft den Zugangsdienst (signiert nach „Standard Webhooks“). Der fragt die Regel und verschickt über den Versandweg oder verwirft **stumm** mit Erfolg, damit die Antwort nicht verrät, ob es ein Plattformkonto ist. Eine wiederholte Nachricht (dieselbe `webhook-id`) geht nicht ein zweites Mal hinaus; das Merkmal fällt mit jeder Adressänderung, auch bei der Rückkehr zu einer früheren Adresse. Der Hook ist abgeschaltet, bis der Versanddienst aus B13 steht und OPS-001 die Edge Runtime freigibt. Bis dahin gilt: Mails an Patient:innen erreichen niemanden (der eingebaute Versand stellt nur an das Projektteam zu, BEF-026), und die Plattform ist nicht scharf. Den Weg, ein Postfach per Link zu bestätigen, baut der Loop, der B13 umsetzt; bis dahin trägt kein Konto das Merkmal, und ein vergessenes Kennwort heißt: neuer Code vor Ort (ADR-023 Punkt 10).
 
@@ -2635,7 +2637,7 @@ Datenschutz · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: B13 u
 
 ### ANN-219 — Die Definitionen der Fragebögen kommen als erzeugte Migration auf den Server, nicht als zweite Fassung von Hand
 
-Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002) oder dem nächsten neuen Instrument
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: mit dem Patientenlink (POR-EPIC-002) oder dem nächsten neuen Instrument
 
 **Annahme.** Der Server prüft Antworten gegen `public.questionnaire_definitions`, eine Zeile je Fassung (Kennung@Version) mit der Definitionsdatei als jsonb, dazu `app.questionnaire_body_regions()` mit den Kennungen der Körperbereiche. Beides schreibt eine Migration, die `pnpm definitionen:sql --schreiben` aus den Dateien unter `src/features/assessments/definitionen/scores/` (samt `archiv/`) und `koerperschema.ts` erzeugt; jede Fassung trägt einen Marker mit Prüfsumme. Eine eingetragene Fassung ändert sich nie: Das Skript weist eine geänderte Datei derselben Version ab, ein Trigger sperrt Update und Löschen. Die Regeln der Prüfung stehen in plpgsql (`app.assert_questionnaire_answers`) und folgen `antwortSchema`.
 
@@ -2647,7 +2649,7 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit dem P
 
 ### ANN-220 — Ein Wartelisteneintrag ist nach acht Wochen ohne Änderung zu prüfen
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: nach drei Monaten Betrieb mit der Warteliste; Jannes in der Sichtung
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: nach drei Monaten Betrieb mit der Warteliste; Jannes in der Sichtung
 
 **Annahme.** Ein offener Wartelisteneintrag, den acht Wochen niemand geändert oder bestätigt hat, steht unter „Warteliste prüfen“ in Offene Punkte. „Noch aktuell“ bestätigt ihn, ohne etwas zu ändern, und die acht Wochen beginnen neu; „Bearbeiten“ führt ins Formular.
 
@@ -2659,7 +2661,7 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: nac
 
 ### ANN-221 — Die Fotoart wird im Fotobereich vor dem Kamerastart gewählt, mit Frist und Einwilligung im Wortlaut
 
-Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jannes in der Sichtung (Befund); Wortlaut mit B2
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-133 · Wiedervorlage: Jannes in der Sichtung (Befund); Wortlaut mit B2
 
 **Annahme.** Über „Foto aufnehmen“ fragt der Fotobereich „Wofür ist das Foto?“ mit zwei Optionen ohne Vorauswahl: „Teil der Dokumentation (Akte, zehn Jahre)“ — „Für die Dokumentation der Behandlung erforderlich. Keine Einwilligung nötig; löschen nur heute.“ — und „Arbeitshilfe (höchstens zwölf Monate, nur mit Einwilligung)“ — „Für Übergabe und Vergleich. Ein Widerruf löscht sie sofort.“ Erst eine Wahl gibt „Foto aufnehmen“ frei; nach dem Speichern oder Verwerfen ist die Wahl wieder leer. Ohne Einwilligung ist die Arbeitshilfe gesperrt und sagt warum; solange der Stand nicht geladen ist, ebenso, ohne eine fehlende Einwilligung zu behaupten.
 
@@ -2669,9 +2671,11 @@ Praxisprozess · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: Jan
 
 **Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`. Wahl im Kameradialog selbst: eine Stufe vor dem Kamerastart in `Kameradialog.tsx` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil der Dokumentation – keine Frage vor der Aufnahme. An das Foto von Anmeldebogen und Rezept erinnert die App an der passenden Stelle; andere Zwecke gibt es nicht. Umsetzung: BEF-133.
+
 ### ANN-222 — Die Anwendung löst die Prüfung am Server nach der Bestätigung aus; fehlt die Function, bleibt die Datei ungeprüft
 
-Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit OPS-001 (Scharfschalten der Edge Runtime und des Schalters)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: mit OPS-001 (Scharfschalten der Edge Runtime und des Schalters)
 
 **Annahme.** Nach der Bestätigung ruft die Anwendung die Edge Function `patient-file-verify` mit der Datei-Kennung auf. Die Function prüft die Sitzung, findet nur bestätigte Dateien der eigenen Organisation, liest das Objekt mit einem eigenen Dienstschlüssel (`PATIENT_FILE_VERIFY_SERVICE_KEY`) und trägt das Ergebnis ein. Antwortet sie nicht, bleibt die Datei „nicht serverseitig geprüft“, und der Upload gilt als gelungen; nur ein ausdrückliches „verworfen“ meldet die Anwendung der Person. Eine einmal geprüfte Datei wird nicht noch einmal gelesen. Auslösen kann nur die hochladende Person in den ersten 24 Stunden; unter Legal Hold verwirft ein Befund nicht, er steht nur im Protokoll (`held`), und eine bestätigte, wartende Datei lässt sich nicht von Hand verwerfen (Zweitreview).
 
@@ -2683,7 +2687,7 @@ Technik · offen · 2026-10-02 · Claude · erledigt · Wiedervorlage: mit OPS-0
 
 ### ANN-223 — „Öffnen“ zeigt Bilder in der Anwendung; ein PDF hat bis zur Entscheidung nur „Herunterladen“
 
-Technik · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: Jannes (Sicherheitsmaßnahme, §15.1); am echten iPhone mit Sichtung Befund
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-131 · Wiedervorlage: Jannes (Sicherheitsmaßnahme, §15.1); am echten iPhone mit Sichtung Befund
 
 **Annahme.** „Öffnen“ lädt eine Datei ohne Downloadnamen per `fetch` mit `cache: 'no-store'` in den Speicher der Seite und zeigt sie unter der Zeile — für JPEG und PNG. Ein PDF bekommt kein „Öffnen“, sondern nur „Herunterladen“: eigener Verweis mit Downloadnamen, im Protokoll `link_issued` mit `download: true`; für beide Fotoarten weist die Datenbank das Herunterladen ab. Beim Verordnungsfoto neben dem Formular gilt dasselbe.
 
@@ -2692,6 +2696,8 @@ Technik · offen · 2026-10-02 · Claude · Prüfpaket · Wiedervorlage: Jannes 
 **Anker.** `istAnzeigbar` in `src/features/files/dokumentarten.ts`; `ladeDateiZumAnzeigen`, `ladeDateiHerunter` in `src/features/files/api.ts`; `issue_patient_file_link(uuid, boolean)` in `supabase/migrations/20261004102000_abn_027_open_means_display.sql`.
 
 **Änderungspfad.** PDF in der Anwendung: Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf` (der PDF-Betrachter des Browsers läuft in eigenem Ursprung) und `frame-src blob:` in `inhaltsrichtlinie` (`scripts/testumgebung.mjs`), dazu `istAnzeigbar` um PDF erweitern · Aufwand `klein`, braucht die Entscheidung von Jannes und einen Vermerk an ADR-017 Punkt 54.
+
+**Abnahme (Jannes, 2026-10-09).** entschieden: Option (a) – die App zeigt PDFs selbst (Rahmen ohne `sandbox`, `frame-src blob:`, Vermerk an ADR-017 Punkt 54). Umsetzung: BEF-131.
 
 ### ANN-224 — Erstaufnahme: nur Verordnungsfoto und Anmeldebogen; der Anmeldebogen sind die Vermerke zu Datenschutzinformation und Vertrag
 
@@ -2747,7 +2753,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-03 · Jannes (Akte entschlacken
 
 ### ANN-228 — Ohne eigene Angabe sind die Termine einer Verordnung die größte Anzahl ihrer Positionen
 
-Praxisprozess · offen · 2026-10-03 · Claude (Akte entschlacken: Daten übertragen) · erledigt · Wiedervorlage: Jannes in der Sichtung der Behandlungsgrundlagen
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung der Behandlungsgrundlagen
 
 **Annahme.** Im Fenster „Daten übertragen“ trägt jede Position ihre eigene Anzahl („6 × KG“). Die Zahl möglicher Termine der Grundlage ist dann ohne eigene Angabe die größte Anzahl einer Position; das Feld „Termine“ bleibt im Fenster änderbar. „Hausbesuch je Termin“ legt die Position Hausbesuch mit dieser Terminzahl an – kein eigenes Kennzeichen, keine Migration. Die Pos.-Nr. steht nur zur Orientierung neben dem Heilmittel und kommt aus der gültigen Preisliste.
 
@@ -2831,7 +2837,7 @@ Oberfläche · entschieden (Jannes) · 2026-10-05 · Jannes (Auftrag UBK-EPIC-00
 
 ### ANN-235 — Fahrwege im Kalender: beim Anzeigen abgerufen, ab heute, vom Startort der Praxis
 
-Technik · offen · 2026-10-05 · Claude (UBK-EPIC-001) · — · Wiedervorlage: Jannes in der Sichtung; Gate aus ADR-019 Punkt 9 vor echten Adressen
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung; Gate aus ADR-019 Punkt 9 vor echten Adressen
 
 **Annahme.** Der Kalender zeigt vor jedem Termin mit Ort einen gestrichelten Block „Weg ≈ n min“, so lang wie die Fahrzeit und endend am Beginn des Termins – in der Tagesansicht in jeder Spalte einer Person, in der Woche an jedem gezeigten Tag der Person. Der erste Weg des Tages beginnt am Startort der Praxis (erster Standort, wie Übersicht und Tour). Abgerufen wird beim Anzeigen, nur für Tage ab heute und nur für die Praxisrollen: je Spalte `list_day_route` und eine Route über die eigene Function, mit denselben Schlüsseln wie Übersicht und Tour, sodass dieselben Stopps nur einmal beim Anbieter landen. Ohne Fahrzeit (Position, Route oder Startort fehlt, Ersatzschätzung) gibt es keinen Block. Der Block ist Darstellung: Er nimmt keinen Tipp an, und ob ein Übergang zu knapp ist, sagt weiter allein der Fahrpuffer (ANN-097). *Seit UBK-016 (ANN-241) nimmt der Block einen Tipp an und öffnet ein Menü; die Prüfung bleibt beim Fahrpuffer.*
 
@@ -2867,7 +2873,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-05 · Jannes (Faktor 1,5, Wiede
 
 ### ANN-238 — „Passt es?“: Luft nach §8.1, Nachbarn aus der Tagesroute, Tagesrand am Startort, Koordinate wie in der Terminsuche
 
-Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in der Sichtung (UI-Redesign; Kartendienst)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (UI-Redesign; Kartendienst)
 
 **Annahme.** Im Anlegen- und Ändern-Formular eines Behandlungstermins steht, sobald Person, Tag, Zeit und Ort feststehen, „Passt es?“ mit Anfahrt und Weiterfahrt: „passt · X Min. Luft“ oder „zu knapp um X Min., frühester Beginn …“. Luft ist der Beginn des Folgetermins minus (Ende plus Fahrzeit, aufgerundet aufs Raster) in ganzen Minuten, gerechnet allein im Server (`check_travel_fit`, dieselbe Rundung wie `check_travel_buffers`). Nachbarn sind die Termine mit Ort derselben Person an diesem Tag (`list_day_route`, ohne den bearbeiteten Termin); fehlt einer, zählt der Arbeitsbeginn bzw. das Arbeitsende am Startort (ohne Arbeitszeit bleibt die Seite leer). Stufen wie der Wegbalken (ANN-195): ab 5 Minuten passt es, 0 bis 4 ist knapp, darunter zu knapp. Ein neuer Hausbesuch nimmt die Koordinate der Akte über `get_visit_position` (Rechte wie die Terminsuche: owner, therapist, team_lead, office), ein bestehender behält seine (ANN-003) und ist bei veralteter Anschrift ungeprüft (ANN-236); ohne Koordinate steht „nicht verortet“ statt einer Zeit. Video prüft nichts. Nichts sperrt; „Passt es?“ steht nicht am Trainingsformular.
 
@@ -2879,7 +2885,7 @@ Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-239 — Lückenfinder: Tagesansicht mit Patientenfilter, eine Stufe je Lücke, 60 Minuten, andere Termine als „belegt“
 
-Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in der Sichtung (Kartendienst: Matrix gegen den echten Dienst)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-134 · Wiedervorlage: Jannes in der Sichtung (Kartendienst: Matrix gegen den echten Dienst)
 
 **Annahme.** Ist im Kalender eine Patient:in gewählt (`?patient=`, nur die Kennung), färbt die **Tagesansicht** ab heute jede freie Lücke in der Arbeitszeit (ab 15 Minuten): **passt** (ab 5 Min. Luft, Wort „passt ab 10:20“), **knapp** (0 bis 4), **passt nicht** (darunter) oder **zu kurz** (kürzer als der Termin). Gerechnet wird für einen Termin von 60 Minuten (Terminfenster), mit dem frühesten Beginn nach der Anfahrt und der Weiterfahrt bis zum Ende der Lücke — vom Ort davor (letzter Termin mit Ort, sonst der Startort) zur Anschrift der Akte und weiter zum Ort danach (nächster Termin, sonst der Startort zum Feierabend); die Zeitgrenzen sind die Lücke selbst, also auch eine Fehlzeit davor oder danach. Fahrzeiten aus zwei Matrizen je Spalte, gerundet im Server (`check_travel_fit`). Scheitert eine Matrix oder fehlt eine Koordinate, steht „nicht geprüft“ statt einer Farbe; ohne verortete Adresse sagt der Hinweis „nicht verortet“. Mit Patientenfilter bleiben die übrigen Termine als gestrichelte Kachel „belegt“ stehen (BEF-053 Punkt 1, Option 1), statt zu verschwinden. Nur Auskunft: jede Lücke bleibt antippbar.
 
@@ -2889,9 +2895,11 @@ Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in d
 
 **Änderungspfad.** Andere Dauer, etwa aus der Verordnung: `dauer` in `useLueckenfinder` aus dem Kalenderstand · Aufwand `klein`. Ein Band je Tag statt je Lücke: Darstellung in `CalendarGrid.tsx` · Aufwand `klein`. Auch in der Woche: `lueckenSpalten` für Tage statt Personen · Aufwand `klein`, kostet zwei Matrizen je Tag. Andere Termine wieder ausblenden: `zurueckgenommen` in `CalendarPage.tsx` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Der Lückenfinder rechnet auch mit 45 Minuten Termindauer; bevorzugt bleiben 60 Minuten. Umsetzung: BEF-134.
+
 ### ANN-240 — Garage je Standort: Beginn und Ende der Tour, getrennt vom Startort; Rückweg in Tour und Kalender
 
-Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in der Sichtung (Kartendienst)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (Kartendienst)
 
 **Annahme.** Jeder Standort kann eine Garage (Abstellort der Räder) tragen — eigene Spalten neben dem Startort, gesetzt und entfernt nur von owner unter Organisatorisches → Planung, mit derselben Verortung wie der Startort (eindeutiger Treffer, sonst Bestätigung). Der Startort bleibt die Koordinate der Praxistermine. Wo der Tag am Rad beginnt und endet, ist die Garage, falls gesetzt, sonst die Praxis (`tagesorte`): so rechnen Übersicht, Kalender-Fahrwege, „Passt es?“ und der Lückenfinder. Die Tour bietet für den Start Garage / Praxis / erster Besuch und für das Ende Garage / Praxis / letzter Besuch, voreingestellt wie oben; die Wahl gilt für den Besuch der Seite. Der Rückweg steht als letzte Fahrzeile der Tour („Rückweg 18 Min. · 4,0 km“, „Ende an der Garage“) und im Kalender als Block „Rückweg ≈ n min“ ab dem Ende des letzten Besuchs; die Übersicht zeigt ihn nicht. Der Rückweg wird nicht gegen den Fahrpuffer geprüft — es folgt kein Termin.
 
@@ -2903,7 +2911,7 @@ Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-241 — Fahrweg im Kalender antippbar: ganzer Block als Fläche, Menü mit Navigation und Tour
 
-Praxisprozess · offen · 2026-10-05 · — · — · Wiedervorlage: Jannes in der Sichtung (UI-Redesign)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (UI-Redesign)
 
 **Annahme.** Ein Fahrweg-Block im Kalender ist eine Fläche: Ein Tipp markiert ihn als Ganzes (durchgezogener Rand) und öffnet daneben ein Menü — „Fahrweg“ bzw. „Rückweg“, von → nach (der Termin davor oder Garage/Praxis, der Termin danach oder Garage/Praxis; Namen aus den geladenen Terminen, keine neue Abfrage), „≈ n Min. · x km“, „Navigation starten“ und „Zur Tour“ (Tag und Person). Der Tipp gilt dem Weg und markiert keine Zeile darunter. „Navigation starten“ ist der vorhandene Handoff: URL erst beim Tippen, nur die Koordinate des Ziels und der Fahrradmodus, Ziel-App Google Maps wie am Termin. Ein Warnblock „Adresse veraltet“ (ANN-236) bleibt Darstellung. Escape oder „Schließen“ schließt.
 
@@ -2963,7 +2971,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-06 · Jannes (BEF-050, Option 1, 
 
 ### ANN-246 — Terminwunsch als eigener Datensatz: offen, erledigt, nicht möglich, zurückgezogen; kein neuer Terminzustand; ein Jahr nach Abschluss gelöscht
 
-Praxisprozess · offen · 2026-10-06 · — · — · Wiedervorlage: Jannes in der Sichtung (Plattform, Schritte 13 bis 15)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung (Plattform, Schritte 13 bis 15)
 
 **Annahme.** Ein Terminwunsch von der Plattform (neuer Termin, Änderung, Absage) ist ein eigener Datensatz `platform_appointment_requests` mit bis zu 14 Wunschtagen, Tageszeiten Vormittag/Mittag/Nachmittag und einer freiwilligen Notiz bis 500 Zeichen; die Zustände sind `open`, `done`, `declined`, `withdrawn`. Er erzeugt keinen Termin und keinen Terminzustand – ADR-018 kennt `requested`/`tentative`, beide bleiben ungebaut; erst die Praxis legt einen Termin an, bestätigt ihn und schließt den Wunsch mit „erledigt“ oder „nicht möglich“ (Antwort bis 300 Zeichen). Je Termin ist nur ein offener Änderungs- oder Absagewunsch möglich. Die Person kann einen offenen Wunsch zurückziehen. Datenklasse `terminwunsch` (Aufbewahrung: ein Jahr nach Abschluss des Wunsches, `apply_retention`), keine Protokollierung (ADR-010 Fassung 3: der Datensatz trägt Urheber, Zeitpunkt und Ausgang selbst).
 
@@ -2975,7 +2983,7 @@ Praxisprozess · offen · 2026-10-06 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-247 — Absagewunsch über die Plattform: Eingang ist die Wunschzeit, die Frist rechnet der Server, der Hinweis zum Ausfallhonorar hat einen Wortlaut
 
-Recht · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutz- und Rechtsberatung vor echten Daten (Prüfpaket); Jannes in der Sichtung
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutz- und Rechtsberatung vor echten Daten (Prüfpaket); Jannes in der Sichtung
 
 **Annahme.** Trägt die Praxis eine Absage aus einem Absagewunsch ein (`cancel_appointment_from_request`), gilt als Eingang der Absage der Zeitpunkt, zu dem die Person den Wunsch abgeschickt hat – nicht der Zeitpunkt, an dem die Praxis ihn bearbeitet (DSN-001 D4). Ob eine Absage „zu spät“ ist, rechnet allein der Server mit `app.cancellation_notice_period()` (24 Stunden, ADR-018 Punkt 8) und liefert es als `late_notice` an die Plattform; die Oberfläche zeigt davor den Hinweis in einem Wortlaut, der auch in der Patienteninformation steht (`AUSFALLHONORAR_REGEL`, `AUSFALLHONORAR_SPAET`, `AUSFALLHONORAR_RECHTZEITIG`). Die Plattform entscheidet nicht über das Honorar; Grund `patient_request`, Verzicht und Erfassung bleiben bei der Praxis (ABN-EPIC-001). Der Eingang wird für `cancel_appointment` in Datum und Uhrzeit der Praxiszeitzone übersetzt; in der doppelten Stunde der Zeitumstellung kann er dadurch um eine Stunde verrutschen (Zweitreview, hingenommen).
 
@@ -2987,7 +2995,7 @@ Recht · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutz-
 
 ### ANN-248 — Befundbogen vorab: nur die Person selbst oder die rechtliche Vertretung, nur Instrumente mit `ausgefuellt_von: patient`, Absenden heißt abgeschlossen mit Herkunft `platform`
 
-Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
 
 **Annahme.** Über die Plattform füllt eine Person einen Befundbogen vorab aus, wenn ihr Zugang das Recht `questionnaire` hat: die Person selbst und eine rechtliche Vertretung, nie eine Begleitung. Angeboten werden nur aktive Instrumente, deren Definition `ausgefuellt_von: 'patient'` trägt (heute der Anamnesebogen); die Erhebung trägt `source = 'platform'` und `source_access_id`. Ein Entwurf bleibt speicherbar; **Absenden schließt die Erhebung ab** – danach kann die Person sie weder ändern noch löschen, die Praxis sieht sie in der Akte mit dem Vermerk „Über die Plattform ausgefüllt“. Die Plattform sieht nur ihre eigenen Erhebungen (`source = 'platform'`), nie die der Praxis. Die Prüfung gegen die Definition läuft dieselbe wie in der Praxis (ANN-219); Auswertungen (Scores) rechnet weiter nur die Praxisseite.
 
@@ -2999,7 +3007,7 @@ Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-249 — Freigegebene Dokumente: Freigabe einzeln am Datensatz durch owner, Therapeut:in oder Teamleitung; nie Fotos; Abruf über die Plattform protokolliert als `patient_file.downloaded`
 
-Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-136 · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
 
 **Annahme.** Eine Datei der Akte erscheint auf der Plattform erst, wenn die Praxis sie **einzeln** freigibt (`released_at`, `released_by`); das dürfen die Rollen, die klinische Dateien schreiben (`app.can_write_clinical_patient_files`: owner, therapist, team_lead), nicht das Büro. Patientenfotos und Dokumentationsfotos sind nie freigebbar (Constraint). Die Freigabe ist jederzeit widerrufbar; danach ist auch ein ausgegebener Verweis wertlos, weil der Lesepfad der Ablage (`app.may_read_patient_file_object`) die Freigabe beim Abruf prüft. Die Plattform zeigt Bilder in der Anwendung und gibt PDFs auf das Gerät; jeder Abruf über die Plattform wird als bestehende Aktion `patient_file.downloaded` mit `actor_kind = platform` bzw. `representative` protokolliert – keine neue Auditaktion. Im Training gibt es keine Dokumente. Rechte: `read` des Zugangs (Begleitung liest mit).
 
@@ -3009,9 +3017,11 @@ Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Büro darf freigeben: Rollenprüfung in `set_patient_file_release` · Aufwand `klein`. Freigabe je Dokumentart statt je Datei: eigene Regel in `platform_files` · Aufwand `mittel`. Ohne Protokoll des Abrufs: `issue_platform_file_link` ohne Audit-Insert – nur mit ADR-010-Änderung · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert. Braucht neue Fassungen von ADR-023 Punkt 24, ADR-010 und PROJECT_PRINCIPLES §4 und das Label `freigabe-audit`. Umsetzung: BEF-136.
+
 ### ANN-250 — Eigene Rechnungen auf der Plattform: nur ausgestellte, als Snapshot der Praxis, mit Zahlungsstand und Storno-Kette; Recht `billing`
 
-Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
 
 **Annahme.** Die Plattform zeigt Rechnungen des eigenen Verhältnisses, sobald sie **ausgestellt** sind – nie Entwürfe –, als dasselbe Blatt, das die Praxis druckt (Snapshot, ADR-009 Punkt 10), dazu den vom Server gerechneten Zahlungsstand (bezahlt, teilweise, offen, überfällig, storniert) und die Nummern von Storno, Vorgänger und Korrekturrechnung. Auch Rechnungen an einen anderen Adressaten (Beihilfestelle, Angehörige) sieht die behandelte Person – mit dem Adressaten aus dem Snapshot –, weil es ihre Behandlung ist (ADR-023 Punkt 16); der Adressat selbst hat keinen Zugang. Recht `billing` (ABN-010): die Person selbst, eine Begleitung nur mit dem Häkchen „Rechnungen und Zahlungen sind sichtbar“, eine Vertretung mit Vermögenssorge. Steuernummer und Bankverbindung der Praxis stehen mit auf dem Blatt, ebenso Geburtsdatum und Behandlungsgrundlage mit Diagnose, wie auf dem Druck der Praxis – eine Beihilfe verlangt beides (Zweitreview). Keine Zahlfunktion.
 
@@ -3023,7 +3033,7 @@ Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-251 — Eigene Termine auf der Plattform: künftige und die der letzten zwölf Monate, feste Spaltenliste ohne Dokumentation
 
-Datenschutz · offen · 2026-10-06 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung
 
 **Annahme.** Die Projektion `platform_appointments` liefert die Termine des eigenen Verhältnisses: alle künftigen und die vergangenen der letzten zwölf Monate (`app.platform_appointment_history()`), mit Beginn, Ende, Terminart, Zustand in den Worten der Person (bestätigt, durchgeführt, nicht erschienen, abgesagt), Name der behandelnden Person, Standort bzw. Besuchsadresse, Fristkennzeichen und offenem Wunsch – und nichts aus der Dokumentation, kein Honorar, keine Notiz der Praxis (feste Spaltenliste, ADR-023 Punkt 22). Dokumentierte und abgerechnete Termine erscheinen als „durchgeführt“ bzw. „nicht erschienen“ nach `fee_basis`; interne Termine und Fehlzeiten nie. Über eine Vertretung ist das Lesen protokolliert (Punkt 24), das eigene nicht.
 
@@ -3145,7 +3155,7 @@ Praxisprozess · entschieden (Claude) · 2026-10-06 · Claude (Auftrag Jannes: �
 
 ### ANN-261 — Nach der Lesefrist widerruft die Person selbst weiter; Export und Vertretung enden mit der Lesezeit
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung Plattform
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket); Jannes in der Sichtung Plattform
 
 **Annahme.** Ist die Lesefrist (D2, 30 Tage nach dem Ende des Verhältnisses) vorbei, kann die Person selbst über ihren weiter aktiven Zugang unter „Ich" Einwilligungen widerrufen, aber nicht neu einwilligen. Der Export geht nur in der Lesezeit; danach gibt die Praxis Auskunft (Art. 15, OPS-006), und „Ich" sagt das. Eine Vertretung kann nach ihrem Ende nichts mehr. Gesperrte und entzogene Zugänge können nichts.
 
@@ -3157,7 +3167,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-262 — Eine Einwilligung auf der Plattform speichert die Fassung ihres Texts; ein alter Text wird abgewiesen
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Wortlaut)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Wortlaut)
 
 **Annahme.** Jede Erteilung und jeder Widerruf auf der Plattform speichert die Fassung des Einwilligungstexts (`2026-10`), den die Person gesehen hat. Der Server kennt nur die aktuelle Fassung und weist eine Seite mit älterem Text ab. Die Texte stehen in kurzen Sätzen je Zweck, mit dem Satz zum Widerruf (Art. 7 Abs. 3) und dazu, dass Behandlung bzw. Vertrag nicht davon abhängen (Art. 7 Abs. 4). Die Einwilligung geht über eine Rückfrage („Ja, ich willige ein“).
 
@@ -3169,7 +3179,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-263 — Widerrufe über die Plattform stehen 14 Tage in Offene Punkte, ohne „gesehen“
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Plattform
 
 **Annahme.** Widerruft die Person oder ihre rechtliche Vertretung eine Einwilligung auf der Plattform, steht der Widerruf 14 Tage in Offene Punkte („Widerrufen über die Plattform“), mit Person, Zweck, Datum und wer gehandelt hat. Es gibt keinen Zustand „gesehen“. Sehen dürfen ihn die Rollen, die die Kartei bzw. das Trainingsverhältnis lesen. Die Akte zeigt jeden Vermerk mit „über die Plattform“.
 
@@ -3181,7 +3191,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-264 — Einwilligung im Training: eigener Vermerk am Verhältnis, ein Widerruf löscht nichts selbst
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Folgefrage)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Folgefrage)
 
 **Annahme.** Die Einwilligung zu Angaben zur Gesundheit im Training (Art. 9 Abs. 2 lit. a) ist ein Vermerk je Trainingsverhältnis mit einem Zweck, `training_health_data`, nur anhängend wie in PAT-006. Die Praxis vermerkt sie vom Papier (owner, Trainingsbetreuung, Büro), die Kund:in oder ihre rechtliche Vertretung erteilt und widerruft auf der Plattform. Ein Widerruf löscht keine Angaben selbst: Die Seite sagt „keine neuen Angaben“, und was mit den bisherigen geschieht, klärt die Praxis mit der Person. Ohne Einwilligung bleibt das Trainingsprotokoll heute bedienbar.
 
@@ -3193,7 +3203,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-265 — Der Export der Plattform ist eine Auskunft nach Art. 15: dieselbe Aktion im Protokoll, Inhalt nur aus den Projektionen
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Prüfpaket)
 
 **Annahme.** „Meine Daten herunterladen" liefert eine JSON-Datei (und eine lesbare Fassung zum Drucken) mit genau dem, was die Plattform zeigt: Stammdaten des Verhältnisses, Termine, Terminwünsche, Befundbogen, Rechnungen (nur mit Recht auf Rechnungen), die Liste der freigegebenen Dokumente, Einwilligungen. Jeder Export steht als `patient_record.exported` im Protokoll, mit Akteur Plattformkonto oder Vertretung und Zweck `platform_export`. Die Person selbst und ihre rechtliche Vertretung exportieren, die Begleitung nicht.
 
@@ -3205,7 +3215,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-266 — Der Einstieg gilt je Zugang, „Später" beendet ihn, Überspringen berührt keine Einwilligung
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Plattform
 
 **Annahme.** Den Einstieg (Willkommen, Einwilligungen, fertig) sieht jede Person einmal je Zugang vor ihrer Übersicht: Wer Behandlung und Training hat, sieht ihn zweimal; eine Begleitung ohne den Schritt Einwilligungen. „Später" beendet ihn wie „Zur Übersicht“. Die Praxis kann ihn im Abschnitt Plattform überspringen (wer den Zugang verwaltet); er steht dann als „übersprungen am … (Name)“ dort und für die Person ohne Namen unter „Ich“. Einwilligungen bleiben dabei offen. Benachrichtigungen fehlen bis ADR-024. Lädt der Stand nicht, gilt die Übersicht.
 
@@ -3217,7 +3227,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-267 — Plattform: keine Schrift unter 18 px, Schriftgröße nur auf dem Gerät, Ziele mindestens 44 px
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Plattform (am Handy, auch mit „Sehr groß")
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Plattform (am Handy, auch mit „Sehr groß")
 
 **Annahme.** Im Plattformgerüst ist jede Schrift mindestens 18 px: Die kleinen Stufen des Systems werden dort auf 18 px gehoben, die Rangfolge tragen Gewicht und Farbe. Unter „Ich → Einstellungen" wählt die Person „Normal", „Groß" (112,5 %) oder „Sehr groß" (125 %), gespeichert nur im Browser des Geräts. Bei wenig Breite brechen lange Wörter und Knöpfe um, Listenzeilen stellen den Zustand unter den Titel. Berührflächen sind mindestens 44 px hoch; Knöpfe haben 48, Textlinks 44. Geprüft automatisch auf jeder Plattformansicht: Schrift, Ziele, axe mit Kontrast, kein waagerechtes Scrollen bei 375 und 188 px (200 %).
 
@@ -3229,7 +3239,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-268 — Das Nachsorge-Abo beginnt frühestens am Abschluss der Versorgung und höchstens 14 Tage rückwirkend
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Angebote
 
 **Annahme.** „Ende der Behandlungsgrundlage“ (ADR-009 Punkt 21) heißt im Modell: Abschluss der Versorgung in der Akte (`care_concluded_on`). Vorher lässt sich kein Abo anlegen; es beginnt frühestens an diesem Tag, höchstens 14 Tage vor dem Anlegen und nach dem Ende jedes früheren Abos. Je Person läuft höchstens eines.
 
@@ -3241,7 +3251,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-269 — Das Nachsorge-Abo ist bis zur Antwort der Steuerberatung umsatzsteuerpflichtig zum Regelsatz
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Steuerberatung (B4, Anfrage Frage 7)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Steuerberatung (B4, Anfrage Frage 7)
 
 **Annahme.** Die Position „Nachsorge-Abo (Monat)“ der Preisliste trägt `taxable` mit 19 %. Die Datenbank lässt für diese Positionsart kein anderes Kennzeichen zu; auf der Rechnung steht die enthaltene Umsatzsteuer (39,00 € brutto, 6,23 € Steuer).
 
@@ -3253,7 +3263,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Steuerberatu
 
 ### ANN-270 — Abo-Monate laufen ab dem Beginn, werden zu ihrem Beginn berechnet und enden mit der Kündigung zum Ende des laufenden Monats
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Abos); Jannes mit dem Preis
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Abos); Jannes mit dem Preis
 
 **Annahme.** Ein Abo-Monat läuft vom Tag des Beginns bis zum Vortag desselben Tags im Folgemonat; fehlt der Tag, bis zum Monatsletzten (§ 188 Abs. 2 und 3 BGB), immer vom Beginn aus gerechnet (Beginn 31.01.: 31.01.–28.02., 01.03.–30.03., 31.03.–30.04.). Er wird zu seinem Beginn berechnet: Ab dem ersten Tag steht er zum Erfassen bereit. Eine Kündigung wirkt zum Ende des laufenden Abo-Monats, ohne weitere Frist; vor dem Beginn beendet sie das Abo, bevor ein Monat entsteht.
 
@@ -3265,7 +3275,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-271 — Läuft die Behandlung wieder, wird kein Abo-Monat berechnet
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Angebote
 
 **Annahme.** Ist die Versorgung wieder aufgenommen (Abschluss zurückgenommen), lässt sich kein Abo-Monat erfassen; ebenso nie ein Monat, in dem ein Behandlungstermin lag, der nicht abgesagt ist – auch nach dem nächsten Abschluss. Die Liste der fälligen Monate nennt den Grund. Das Abo endet dadurch nicht von selbst: Die Praxis kündigt es oder erfasst die Monate, sobald die Versorgung wieder abgeschlossen ist.
 
@@ -3277,7 +3287,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-272 — Das Abo wird in der Praxis geschlossen; gekündigt wird über einen Knopf nach dem Muster des § 312k BGB
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); B13 für die Bestätigung per Mail
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); B13 für die Bestätigung per Mail
 
 **Annahme.** Das Nachsorge-Abo wird im Abschlussgespräch geschlossen und von owner oder Büro in der Akte angelegt; einen Abschluss über die Plattform gibt es nicht. Gekündigt wird über „Abo kündigen“ unter „Ich“, eine Seite zur Bestätigung mit dem Enddatum und „Jetzt kündigen“; danach steht sofort die Bestätigung mit Datum und Uhrzeit da, zum Ausdrucken oder Speichern, und dauerhaft unter „Ich“. Die Praxis kann eine Kündigung per Telefon oder Brief eintragen. Kündigungen über die Plattform stehen 14 Tage in Offene Punkte.
 
@@ -3289,7 +3299,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-273 — Kündigen dürfen die Person selbst und ihre rechtliche Vertretung mit Vermögenssorge, nie die Begleitung
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
 
 **Annahme.** Den Kündigungsknopf haben der eigene Zugang und eine rechtliche Vertretung mit nachgewiesener Vermögenssorge (`finance_scope`). Den Abo-Stand sieht, wer Rechnungen sieht (Recht `billing`); eine Begleitung mit Einwilligung zu Rechnungen sieht ihn also, kündigt aber nicht. Die Kündigung trägt Zugang, Art und bei einer Vertretung deren Namen.
 
@@ -3301,7 +3311,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-274 — Ein Nachsorge-Abo hält den Plattformzugang offen; die Lesezeit von 30 Tagen zählt ab seinem Ende
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Speicherbegrenzung, ADR-023 Punkt 5)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Speicherbegrenzung, ADR-023 Punkt 5)
 
 **Annahme.** In der Behandlung zählt die Lesezeit vom Abschluss der Versorgung oder vom letzten Tag des letzten Nachsorge-Abos, was später liegt; solange ein Abo läuft, endet der Zugang nicht. Danach gelten dieselben 30 Tage wie ohne Abo. Ein Abo im Behandlungsverhältnis verlängert den Zugang zum Training nicht. Die Frist des Zugangs (drei Jahre) und die Löschung des Kontos (30 Tage) rechnen ab demselben Ende.
 
@@ -3313,7 +3323,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-275 — Ein Trainingspaket hat eine Laufzeit in Monaten, seinen Umfang in der Bezeichnung und bis zur Antwort der Steuerberatung 19 % Umsatzsteuer
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes mit Preis und Umfang (BEF-114); Steuerberatung (B4)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Jannes mit Preis und Umfang (BEF-114); Steuerberatung (B4)
 
 **Annahme.** Ein Trainingspaket ist eine eigene Positionsart der Preisliste mit einer Laufzeit von 1 bis 24 Monaten, Bereich `training`, ohne Heilmittel und mit `taxable` 19 %. Der Umfang (etwa „eine Einheit je Woche, Plattform inklusive“) steht in der Bezeichnung; ein Kontingent mit Zählung gibt es nicht. Eine Preisliste darf mehrere Pakete führen, im Seed synthetisch 3 Monate für 390 € und 6 Monate für 720 €.
 
@@ -3325,7 +3335,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes mit P
 
 ### ANN-276 — Ein Trainingspaket wird einmal im Voraus berechnet: eine Leistung zum Beginn, eine Rechnung
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit der Zahlungsweise (BEF-114)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes mit der Zahlungsweise (BEF-114)
 
 **Annahme.** Mit dem Paket entsteht im selben Schritt genau eine Leistung des Bereichs `training`, ohne Termin, am Tag des Beginns, zum Preis der Paketposition der am Beginn geltenden Preisliste. Die Rechnung entsteht über den Monatsentwurf des Trainings; das Blatt nennt den ganzen Zeitraum des Pakets. Raten gibt es nicht. Eine Fehlanlage lässt sich mit ihrer Leistung entfernen, solange sie auf keiner Rechnung und keinem Entwurf steht.
 
@@ -3337,7 +3347,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit 
 
 ### ANN-277 — Ein Trainingspaket läuft nach § 188 BGB, lässt sich weder pausieren noch kündigen, und der Vertrag endet nicht vor ihm
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
 
 **Annahme.** Ein Paket über n Monate endet am Ende des n-ten Monats vom Beginn aus (§ 188 Abs. 2 und 3 BGB, wie ANN-270). Es hat keinen Zustand, keine Pause und keine Kündigung; ob es geplant ist, läuft oder vorbei ist, ergibt sich aus dem Tag. Zwei Pakete desselben Verhältnisses überschneiden sich nie. Das Trainingsverhältnis lässt sich nicht vor dem letzten Tag eines Pakets beenden – damit bleibt auch der Plattformzugang bis dahin offen.
 
@@ -3349,7 +3359,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-278 — Ein Trainingspaket beginnt nicht während einer laufenden Behandlung derselben Person
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Angebote
 
 **Annahme.** Hat dieselbe Person in der Praxis eine Akte ohne Abschluss der Versorgung, lässt sich kein Paket anlegen; nach dem Abschluss beginnt es frühestens an dessen Tag. Wie beim Abo höchstens 14 Tage rückwirkend und nicht vor dem Vertragsbeginn. Eine Behandlung, die während eines Pakets beginnt, hält es nicht an (ANN-280).
 
@@ -3361,7 +3371,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-279 — Jeder Trainingstermin im Zeitraum eines Pakets ist mit dem Paket bezahlt
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit dem Umfang (BEF-114)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes mit dem Umfang (BEF-114)
 
 **Annahme.** Ein Trainingstermin, dessen Tag zwischen Beginn und Ende eines Pakets desselben Verhältnisses liegt, trägt keine eigene Leistung: Er steht nicht unter den offenen Leistungen, und eine Erfassung wird abgewiesen, auch an den Funktionen vorbei. Umgekehrt entsteht kein Paket über Tage, an denen schon eine Trainingsleistung am Termin erfasst ist. Außerhalb eines Pakets bleibt es bei der Einzelstunde (ANN-181). Gezählt wird nicht: Auch eine zusätzliche Einheit im Zeitraum ist abgegolten.
 
@@ -3373,7 +3383,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes mit 
 
 ### ANN-280 — Bei einem Rückfall in die Heilbehandlung läuft das Paket weiter; die Software erstattet nichts
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (Vertragsrecht, AGB des Pakets)
 
 **Annahme.** Beginnt während eines Pakets eine neue Behandlung derselben Person, läuft das Paket unverändert weiter: kein Pausieren, kein automatisches Ende, keine Erstattung. Die Behandlung wird daneben als Heilbehandlung an ihren Terminen abgerechnet, im eigenen Bereich und Nummernkreis. Will die Praxis aus Kulanz etwas erstatten, läuft das über Storno und eine neue Rechnung. Die Bedingungen in der Plattform sagen das vorher.
 
@@ -3385,7 +3395,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in de
 
 ### ANN-281 — Preise und Bedingungen der Pakete sieht jeder Zugang zum Training; geschlossen wird in der Praxis
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Fernabsatz, Preisangaben); KND-EPIC-001
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Fernabsatz, Preisangaben); KND-EPIC-001
 
 **Annahme.** Unter „Ich → Trainingspaket“ sieht jeder lesbare Zugang zu einem Trainingsverhältnis die Pakete der heute geltenden Preisliste mit Bezeichnung und Umfang, Laufzeit, Gesamtpreis und dem Satz zur Umsatzsteuer, darunter die Bedingungen. Das eigene Paket mit Zeitraum und Preis sieht, wer Rechnungen sieht (Recht `billing`). Zugänge zur Behandlung sehen keine Trainingspreise. Einen Kaufknopf gibt es nicht: Das Paket wird in der Praxis geschlossen und dort angelegt.
 
@@ -3397,7 +3407,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-282 — Ein Trainingsangebot halten die Rollen der Akte fest; ob die Person schon trainiert, prüft erst ihr eigenes Konto
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (B2, §4.8)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Angebote; Datenschutzprüfung (B2, §4.8)
 
 **Annahme.** Ein Trainingsangebot legen owner, Therapeut:in, Teamleitung und Büro in der Akte an und ziehen es zurück – dieselben Rollen, die die Akte schreiben. Die Trainingsbetreuung sieht kein Angebot. Beim Anbieten fragt der Server nicht, ob die Person schon ein Trainingsverhältnis hat; das zeigt erst die Seite in ihrem eigenen Konto („Sie haben schon einen Trainingsvertrag“).
 
@@ -3409,7 +3419,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes
 
 ### ANN-283 — Aus der Behandlung wandern nur wörtlich formulierte Übergabeangaben, keine Felder der Akte
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 7)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 7)
 
 **Annahme.** Was aus der Akte ins Training mitgehen soll, formuliert die Praxis im Angebot als bis zu fünf Angaben mit Überschrift (bis 80 Zeichen) und Text (bis 600 Zeichen), etwa „Belastungsgrenzen“ oder „Vorgeschichte“. Dazu kann sie die Kontaktdaten der Akte anbieten. Die Person sieht jede Angabe wörtlich und gibt sie einzeln frei; nur Freigegebenes wird beim Annehmen als Kopie mit Herkunftsvermerk ins Training geschrieben. Eine Auswahl beliebiger Felder aus Befund oder Dokumentation gibt es nicht.
 
@@ -3421,7 +3431,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-284 — Ein Trainingsangebot gilt 14 Tage, höchstens bis zum Beginn; je Akte eines offen
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Angebote
 
 **Annahme.** Ein Angebot kann die Person 14 Tage lang annehmen, längstens bis zum Tag, an dem das Training beginnt. Der Beginn liegt zwischen heute und 90 Tagen voraus und nicht vor dem Abschluss der Versorgung. Je Akte ist höchstens ein Angebot offen; ein neues setzt voraus, dass das alte zurückgezogen, angenommen oder abgelaufen ist. Beim Zusammenführen zweier Akten sperren zwei offene Angebote.
 
@@ -3433,7 +3443,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-285 — Die Akte erfährt nicht, ob ein Angebot angenommen wurde
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, §4.8)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, §4.8)
 
 **Annahme.** Ein Angebot steht in der Akte als „offen“ bis zum Ende seiner Gültigkeit, danach als „abgelaufen“, oder als „zurückgezogen“ – gleich, ob die Person gebucht hat. Den Zeitpunkt der Annahme speichert das Angebot nur, damit es nicht zweimal angenommen wird; ihn liest allein die Projektion der Person, weder die Akte noch die Auskunft der Akte. Zurückziehen geht auch nach einer Annahme und berührt den Vertrag nicht. Die Seite zum Buchen sagt: „In Ihrer Behandlungsakte steht nicht, ob Sie gebucht haben.“
 
@@ -3445,7 +3455,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-286 — Ans Abschlussgespräch erinnert die Karte der letzten zwei Termine, bis ein Angebot in der Akte steht
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes in der Sichtung Angebote
 
 **Annahme.** An den letzten zwei Terminen einer Behandlungsgrundlage mit Terminzahl (Position mindestens Terminzahl minus eins) zeigt die Tageskarte die Pille „Abschlussgespräch“ und die Terminansicht einen Satz mit dem Weg „Training in der Akte anbieten“. Das gilt für Verordnung und Selbstzahler, solange die Versorgung offen ist, keine jüngere Grundlage folgt und seit dem Beginn der Grundlage kein Trainingsangebot in der Akte steht, das nicht zurückgezogen ist. Eine Mitteilung, ein Zähler oder ein Eintrag in Offene Punkte entsteht nicht.
 
@@ -3457,7 +3467,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes in d
 
 ### ANN-287 — Das Voraussetzungsprofil führen owner und Trainingsbetreuung; das Büro sieht es nicht
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-135 · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
 
 **Annahme.** Am Trainingsverhältnis steht ein Profil aus sieben Freitexten – Ziele, Ausrüstung, Zeitbudget, Orte, Belastungsgrenzen, Vorgeschichte, Vorlieben – und darunter, schreibgeschützt, was die Person aus der Behandlung freigegeben hat, mit Tag des Angebots und der Freigabe. Lesen und schreiben owner und Trainingsbetreuung; Büro, Behandlung und Plattform nicht. Jedes Lesen steht als `training_relationship.viewed` mit `view: profile` im Protokoll. Gespeichert wird mit dem erwarteten Stand, nach dem Vertragsende nicht mehr. Ohne Einwilligung bleibt das Profil bedienbar und sagt es (wie ANN-264). Die Person sieht ihr Profil auf der Plattform noch nicht.
 
@@ -3467,9 +3477,11 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Profil in der Plattform: eigene Projektion mit Recht `read` · Aufwand `mittel`. Büro lesend: eigene Rollenfunktion statt `can_access_training_protocols` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Voraussetzungsprofil sieht auch das Büro (lesend). Die Akte erfährt weiter nicht, ob gebucht wurde (ANN-285 bestätigt). Umsetzung: BEF-135.
+
 ### ANN-288 — Der Trainingsvertrag entsteht im Konto mit Musterbelehrung, „Zahlungspflichtig buchen“ und einer Bestätigung zum Speichern
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, Fernabsatz); B13 für die Bestätigung per Mail
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht, Fernabsatz); B13 für die Bestätigung per Mail
 
 **Annahme.** Die Seite „Training nach Ihrer Behandlung“ zeigt Paket, Zeitraum, Gesamtpreis, die Paketbedingungen und die Widerrufsbelehrung nach dem Muster der Anlage 1 zu Art. 246a § 1 Abs. 2 EGBGB mit Muster-Widerrufsformular und dem Hinweis auf die Widerrufsfunktion im Konto. Der Vertrag entsteht mit „Zahlungspflichtig buchen“. Beginnt das Paket innerhalb von 14 Tagen nach dem Abschluss, muss die Person ausdrücklich verlangen, dass vorher begonnen wird. Gespeichert werden Paket und Preis als Wert, die Fassung von Belehrung und Bedingungen, der frühe Beginn, die Freigaben und die Einwilligung; die Bestätigung steht sofort und dauerhaft unter „Ich → Trainingsvertrag“ zum Drucken.
 
@@ -3481,7 +3493,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-289 — Den Trainingsvertrag im Konto schließt nur die Person selbst
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, Vertretung)
 
 **Annahme.** Annehmen kann nur der eigene Zugang der Person zu ihrer Behandlung. Eine rechtliche Vertretung mit Vermögenssorge sieht das Angebot und die Seite, aber keinen Knopf („Den Vertrag schließt … selbst in ihrem Konto oder in der Praxis“); eine Begleitung sieht nichts. Mit dem Vertrag bekommt das Konto der Person einen eigenen Zugang zum Training; eine Vertretung im Training richtet die Praxis bei Bedarf eigens ein.
 
@@ -3493,7 +3505,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-290 — Der Widerruf im Konto ist die Erklärung; die Praxis wickelt ab
 
-Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); Jannes in der Sichtung Angebote
+Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); Jannes in der Sichtung Angebote
 
 **Annahme.** Unter „Ich → Trainingsvertrag“ steht bis zum Ende der Widerrufsfrist (14 Tage ab Abschluss) der Knopf „Vertrag widerrufen“, danach eine Seite mit „Widerruf bestätigen“ und sofort der Eingang mit Datum und Uhrzeit zum Drucken. Widerrufen können die Person selbst und eine rechtliche Vertretung mit Vermögenssorge am Trainingszugang, nie die Begleitung. Der Widerruf steht am Vertragsnachweis, 14 Tage in Offene Punkte und dauerhaft am Trainingsverhältnis (owner, Büro). Er löscht und storniert nichts selbst: Paket entfernen oder stornieren, zurückzahlen und den Vertrag beenden macht die Praxis mit den vorhandenen Funktionen. Ein Widerruf auf anderem Weg (Brief, E-Mail) vermerkt die Praxis heute nicht in der Anwendung.
 
@@ -3505,7 +3517,7 @@ Recht · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzp
 
 ### ANN-291 — Mit dem Vertrag entsteht der Zugang zum Training ohne eigene Einladung
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, ADR-023 Punkte 6, 7, 11)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B5, ADR-023 Punkte 6, 7, 11)
 
 **Annahme.** Bucht die Person im Konto, bekommt dasselbe Konto im selben Aufruf einen aktiven eigenen Zugang zum neuen Trainingsverhältnis – ohne Einladung, ohne Code und ohne Praxisrolle. Der Wächter am Zugang prüft wie bei jeder Einladung, dass Konto und Person zusammengehören und kein Praxiskonto ist. Im Protokoll steht `platform_access.activated` mit `via: training_contract`. Vertretungen im Training richtet weiter die Praxis ein.
 
@@ -3518,7 +3530,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-292 — Eine Übungsbibliothek für Behandlung und Training
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
 
 **Annahme.** Die Praxis führt **eine** Übungsbibliothek für beide Leistungsbereiche. Übung und Variante tragen keinen Leistungsbereich und keinen Personenbezug; therapist und team_lead lesen dieselbe Bibliothek wie die Trainingsbetreuung. Personenbezogen wird eine Übung erst im Plan (UEB-EPIC-002), der an seinem Verhältnis hängt.
 
@@ -3530,7 +3542,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-293 — Die Übungsbibliothek pflegt die Praxisinhaber:in; das Büro sieht sie nicht
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-135 · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Lesen dürfen owner, therapist, team_lead und die Trainingsbetreuung; anlegen, ändern, archivieren und löschen nur owner. Das Büro sieht die Bibliothek nicht.
 
@@ -3540,9 +3552,11 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 **Änderungspfad.** Mehr Rollen pflegen lassen: die Rollenliste in `app.can_manage_exercise_library()` erweitern · Aufwand `klein`. Das Büro lesen lassen: dasselbe in `app.can_read_exercise_library()` und `canReadExerciseLibrary` · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest die Übungsbibliothek; pflegen bleibt bei owner. Umsetzung: BEF-135.
+
 ### ANN-294 — Eine Verbindung: von leichter nach schwerer, genau eine Achse
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Zwei Varianten verbindet höchstens eine Verbindung. Sie führt immer von der leichteren zur schwereren und trägt genau eine der zwölf Achsen aus IDEA-TRN-004 (Last, Wiederholungen, Sätze, Bewegungsausmaß, Hebel, Unterstützung, Unterstützungsfläche, Tempo, Dichte, Komplexität, Geschwindigkeit, Frequenz). Kreise sind ausgeschlossen, archivierte Varianten werden nicht neu verbunden; verbinden lassen sich Varianten auch über Übungen hinweg.
 
@@ -3554,7 +3568,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-295 — Feste Körperregionen, Ausrüstung als freie Schlagworte
 
-Technik · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Eine Übung trägt genau eine Körperregion aus einer festen, groben Liste ohne Seite (HWS, BWS, LWS, Schulter, Ellenbogen, Hand, Hüfte, Knie, Fuß, Rumpf, ganzer Körper). Die Ausrüstung einer Variante sind höchstens acht freie Schlagworte zu je höchstens 40 Zeichen, ohne Doppelte.
 
@@ -3566,7 +3580,7 @@ Technik · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung 
 
 ### ANN-296 — Übungen werden archiviert; Löschen nur ohne Abhängige
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Eine Übung oder Variante, die nicht mehr angeboten werden soll, wird archiviert: Sie verschwindet aus der Bibliothek, bleibt aber nachlesbar und lässt sich zurückholen. Löschen ist für Versehen da – eine Übung erst ohne Varianten, eine Variante nur, solange nichts auf sie zeigt (Verbindung, später Plan).
 
@@ -3578,7 +3592,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-297 — Ein Plan in einer Tabelle für beide Bereiche, genau ein Verhältnis
 
-Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, Trennung der Leistungsbereiche)
 
 **Annahme.** Übungspläne beider Leistungsbereiche stehen in **einer** Tabelle `exercise_plans` (Positionen in `exercise_plan_items`). Ein Plan trägt `service_area` und hängt an **genau einem** Verhältnis: an der Akte (`therapy`, `patient_id`) oder am Trainingsverhältnis (`training`, `training_relationship_id`) – eine Constraint verbietet beides und keines. Datenklasse und Frist werden je Zeile am Bereich zugeordnet: Behandlungspläne sind Patientenakte, Trainingspläne Trainingsverhältnis; beide fallen mit ihrem Verhältnis.
 
@@ -3590,7 +3604,7 @@ Datenschutz · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-298 — Behandlungspläne schreiben Therapeut:innen, Trainingspläne owner und Trainingsbetreuung; das Büro liest nur Behandlungspläne
 
-Praxisprozess · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Pläne), Datenschutzprüfung (B2)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-135 · Wiedervorlage: Jannes (Sichtung Pläne), Datenschutzprüfung (B2)
 
 **Annahme.** Behandlungspläne stellen therapist und team_lead zusammen, weisen sie zu, steigern, verlängern und beenden sie; lesen dürfen dazu owner und das Büro. Trainingspläne lesen und schreiben owner und die Trainingsbetreuung; das Büro sieht sie nicht. Ein Plan des anderen Bereichs ist für jede Rolle „nicht gefunden“.
 
@@ -3600,9 +3614,11 @@ Praxisprozess · offen · 2026-10-07 · — · Prüfpaket · Wiedervorlage: Jann
 
 **Änderungspfad.** Andere Rollen: die Listen in beiden Funktionen und in `canReadExercisePlans` ändern · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest auch Trainingspläne; schreiben bleibt wie gebaut. Umsetzung: BEF-135.
+
 ### ANN-299 — Dosierung je Position: Sätze, Wiederholungen oder Dauer, Last und Tempo frei
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Eine Position trägt Sätze (1–20), **entweder** Wiederholungen von–bis (1–100; gleich für eine feste Zahl) **oder** eine Dauer in Sekunden (1–3600), dazu Last und Tempo als freien Text (je höchstens 40 Zeichen, etwa „Theraband rot“), eine Pause in Sekunden (0–600), das Kennzeichen „doppelte Progression“ (nur mit Wiederholungsbereich und Last) und einen Hinweis an die Person (höchstens 500 Zeichen). Die Einheiten je Woche (1–14) stehen am Plan. Höchstens 30 Positionen je Plan.
 
@@ -3614,7 +3630,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-300 — Mit der Zuweisung wird der Plan eingefroren; danach ändern sich nur Laufzeit und Ende
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Beim Zuweisen hält der Plan je Position die Bezeichnungen beider Sprachebenen, die Körperregion, die Kurzanleitung und die Ausrüstung der Variante fest, dazu die Dosierung. Danach ändert eine Änderung der Bibliothek nichts mehr daran, und am Plan ändern sich nur noch das Ende der Laufzeit, das Beenden und das Ablösen durch eine neue Fassung. Ein Entwurf darf verworfen werden; ein zugewiesener Plan wird nie gelöscht, nur beendet – er fällt erst mit seinem Verhältnis.
 
@@ -3626,7 +3642,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-301 — Progression von Hand als neue Fassung: je Position höchstens ein Schritt in genau einer Achse
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne)
 
 **Annahme.** Gesteigert oder zurückgenommen wird ein zugewiesener Plan in einer **neuen Fassung**: Sie übernimmt Titel, Einheiten je Woche und alle Positionen als Entwurf; je Plan gibt es höchstens eine Folgefassung. An einer übernommenen Position ändert sich gegenüber der vorigen höchstens eines von Variante, Wiederholungen bzw. Dauer, Sätze, Last, Tempo, Pause – und die Fachperson nennt Achse und Richtung dazu. Eine andere Variante nur über eine Verbindung der Bibliothek entlang dieser Achse; bei Sätzen, Wiederholungen und Pause prüft die Datenbank die Richtung – bei der Pause nur, wenn vorher und nachher eine steht; kommt eine hinzu oder fällt weg, gilt die genannte Richtung. Hinweis und Kennzeichen der doppelten Progression ändern sich frei; neue Positionen tragen keinen Schritt – wer eine Übung entfernt und neu hinzufügt, wechselt sie also ohne Verbindung (gewollt, zur Sichtung). Mit der Zuweisung löst die neue Fassung die vorige ab, die lesbar bleibt.
 
@@ -3638,7 +3654,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-302 — Laufzeit voreingestellt sechs Wochen, höchstens 26; Wiedervorlage sieben Tage vorher, bis entschieden ist
 
-Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sichtung Pläne, nach den ersten Wochen mit echten Plänen)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne, nach den ersten Wochen mit echten Plänen)
 
 **Annahme.** Jeder zugewiesene Plan hat ein Ende: beim Zuweisen Pflicht, voreingestellt sechs Wochen, höchstens 26 Wochen ab dem Tag. Sieben Tage vor dem Ende erscheint der Plan unter „Offene Punkte“ bei den Rollen, die ihn schreiben dürfen – nicht beim Büro –, und bleibt dort, auch nach dem Ende, bis jemand verlängert (wieder höchstens 26 Wochen ab heute; das erste Ende bleibt festgehalten), eine neue Fassung zuweist oder den Plan beendet.
 
@@ -3650,7 +3666,7 @@ Praxisprozess · offen · 2026-10-07 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-303 — Der Plan als PDF ist ein Blatt aus dem Schnappschuss, gedruckt über den Browser
 
-Technik · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Pläne); mit dem serverseitigen Dokumentweg (OPS-001)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Pläne); mit dem serverseitigen Dokumentweg (OPS-001)
 
 **Annahme.** „Plan als PDF“ ist eine Druckseite des zugewiesenen Plans, die der Browser zu Papier oder zu einer PDF-Datei macht – dieselbe Technik wie Rechnung, Vertrag und Terminzettel (B14 Weg 1). Das Blatt zeigt nur den Schnappschuss der Zuweisung in Alltagssprache (Bezeichnung, Dosierung in Worten, Anleitung, Ausrüstung, Hinweis, Laufzeit, Einheiten je Woche), nie die fachlichen Namen und nie die Bibliothek von heute; ein Entwurf hat kein Blatt. Die Praxis druckt es mit Namen der Person, die Plattform ohne.
 
@@ -3662,7 +3678,7 @@ Technik · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung 
 
 ### ANN-304 — Die Plattform zeigt die zugewiesenen Pläne, ohne laufenden Plan den zuletzt beendeten
 
-Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Übungen)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Übungen)
 
 **Annahme.** Der Reiter „Übungen“ (Behandlung) bzw. „Training“ zeigt alle zugewiesenen Pläne des Verhältnisses hinter dem gewählten Zugang, auch einen, der erst später beginnt („Ab …“). Läuft keiner, zeigt er den zuletzt beendeten Plan zum Lesen und als Blatt. Entwürfe und abgelöste Fassungen zeigt er nie. Gezeigt wird nur der Schnappschuss in Alltagssprache (Bezeichnung, Dosierung, Anleitung, Ausrüstung, Hinweis), ohne fachliche Namen und ohne den Namen der Fachperson. In der Behandlung gibt es den Plan ohne Abo (§4.6); er bleibt so lange sichtbar, wie der Zugang lesbar ist, also auch in der Lesefrist (DSN-001 D2).
 
@@ -3674,7 +3690,7 @@ Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sic
 
 ### ANN-305 — Jeder Haken der Durchführung geht sofort an den Server; in der Lesefrist wird nicht mehr erfasst
 
-Technik · offen · 2026-10-08 · — · — · Wiedervorlage: ADR-024 (Offline-Erfassung); Jannes (Sichtung Plattform)
+Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: ADR-024 (Offline-Erfassung); Jannes (Sichtung Plattform)
 
 **Annahme.** Die Durchführungsansicht speichert jeden abgehakten Durchgang sofort als Zeile am Server; eine Einheit entsteht mit dem ersten Haken, höchstens eine offene je Plan und Tag, und wer abbricht und wieder anfängt, setzt sie fort. Ohne Verbindung nimmt die Ansicht den Haken zurück und sagt „Nicht gespeichert“ – auf dem Gerät liegt nichts. Eine nicht beendete Einheit eines früheren Tages bleibt so stehen („nicht beendet“) und nimmt keinen Haken mehr an. Beenden geht erst nach mindestens einem Haken; an der Einheit steht, wer begonnen und wer beendet hat. Erfasst wird nur am zugewiesenen Plan ab seinem Beginn und nicht in der Lesefrist nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos (DSN-001 4.3: „alle Knöpfe, die schreiben, fallen weg“). Erfasst werden Durchgänge, keine Ist-Werte (Last, Wiederholungen).
 
@@ -3686,7 +3702,7 @@ Technik · offen · 2026-10-08 · — · — · Wiedervorlage: ADR-024 (Offline-
 
 ### ANN-306 — Eine Einheit erfassen die Person und ihre rechtliche Vertretung; im Training „schwierig, weil …“ nur mit Einwilligung
 
-Datenschutz · offen · 2026-10-08 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264)
 
 **Annahme.** Eine Einheit beginnen, Durchgänge abhaken und beenden dürfen die Person selbst und ihre rechtliche Vertretung (Fähigkeit `exercise`), nicht die Begleitung. Das freiwillige „Das war schwierig, weil …“ (höchstens 500 Zeichen) gibt es in der Behandlung immer, im Training nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist. Die Praxis liest die Einheiten am Plan mit denselben Rollen wie den Plan (ANN-298): in der Behandlung owner, Therapeut:innen, Teamleitung und Büro (ADR-004 Fassung 2 Punkt 3), im Training owner und Trainingsbetreuung. Die Einheiten stehen in der Auskunft nach Art. 15 am Plan.
 
@@ -3698,7 +3714,7 @@ Datenschutz · offen · 2026-10-08 · — · Prüfpaket · Wiedervorlage: Datens
 
 ### ANN-307 — Übungstage wählt die Person selbst; sie stehen nur in ihrer eigenen Woche
 
-Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Termine)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Termine)
 
 **Annahme.** Die Übungstage eines Plans wählt die Person (oder ihre rechtliche Vertretung) auf der Plattform als Wochentage; die Einheiten je Woche der Fachperson stehen daneben als Empfehlung. Die Wahl gilt auch für die nächste Fassung des Plans, bis sie neu getroffen wird; eine leere Wahl heißt „keine Tage“. Unter „Termine“ erscheint „Diese Woche“: heute und die sechs Tage danach, Termine und Übungstage nebeneinander, durch Wort und Zeichen unterschieden, ein Übungstag mit beendeter Einheit als „geübt“. Die Praxis sieht die Tage nicht und ihr Kalender bleibt unverändert; nur die Auskunft nach Art. 15 nennt sie. Es gibt keine Weitergabe an fremde Kalender.
 

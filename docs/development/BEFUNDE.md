@@ -1,6 +1,6 @@
 # Befunde an der laufenden Anwendung
 
-Stand: 2026-10-02
+Stand: 2026-10-09
 
 ## Zweck
 
@@ -1405,3 +1405,100 @@ ohnehin nicht nebenbei angefasst werden.
 **Beobachtung.** Drei Tests („trägt eine Kündigung zum Ende des laufenden Abo-Monats ein“, „kündigt über den Knopf …“, „legt ein Abo höchstens 14 Tage rückwirkend an“) vergleichen einen Kalendertag aus `current_date` der Datenbanksitzung (UTC) mit dem Tag der Praxis (Europe/Berlin). Kurz nach Mitternacht in Berlin liegt UTC noch am Vortag: erwartet `2026-10-07`, geliefert `2026-10-08`. Der Code ist richtig, die Erwartung nicht.
 
 **Erwartet.** Die Tests leiten „heute“ aus `app.training_today(organization_id)` ab statt aus UTC – wie `praxistag()` in `supabase/tests/exercise-plans.test.ts`; keine Prüfung wird schwächer. **Erledigt** in PR #202, weil die CI dort nach Mitternacht rot wurde: beide Hilfsfunktionen und ein Update rechnen mit dem Tag der Praxis, um 00:40 Uhr Berliner Zeit reproduziert und grün.
+
+### BEF-131 — PDFs in der Anwendung anzeigen statt nur herunterladen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Akte, Dateien und Dokumente |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-223, Option a) |
+| Status  | offen |
+| Berührt | ANN-223; ADR-017 Punkt 54; Content-Security-Policy der Test-Umgebung |
+
+**Beobachtung.** „Öffnen“ zeigt heute nur JPEG und PNG; ein PDF hat nur „Herunterladen“, weil Chromium ein PDF im abgeschotteten Rahmen nicht zeigt und die CSP keinen Rahmen aus einer Objekt-URL zulässt.
+
+**Erwartet** (Jannes, 2026-10-09): Option (a) – ein PDF öffnet in der Anwendung in einem Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf`, CSP mit `frame-src blob:`; der PDF-Betrachter des Browsers läuft in eigenem Ursprung. Vermerk an ADR-017 Punkt 54 als neue Fassung. Einzel-Story-Loop.
+
+### BEF-132 — Den Hinweis aus der Verordnung erfassen alle Praxisrollen außer der reinen Trainingsbetreuung
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Akte, Behandlungsgrundlage |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-214) |
+| Status  | offen |
+| Berührt | ANN-214; `treatment_bases.prescriber_note` |
+
+**Beobachtung.** Den behandlungsrelevanten Hinweis aus der Verordnung erfassen heute nur die behandelnden Rollen in der Akte.
+
+**Erwartet** (Jannes, 2026-10-09): Jede Praxisrolle darf ihn erfassen und ändern, auch das Büro – nur eine Person, die ausschließlich die Trainingsbetreuung hat, nicht. Der Änderungspfad steht in ANN-214 (`app.can_write_treatment_bases()`).
+
+### BEF-133 — Fotos aus der Dokumentation ohne Rückfrage; Erinnerung an Anmeldebogen und Rezept
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Akte, Fotos und Dokumente |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-221) |
+| Status  | offen |
+| Berührt | ANN-221; ADR-017 (Punkt 44 und die Fotoart „Arbeitshilfe“); `src/features/files/FotosImVerlauf.tsx` |
+
+**Beobachtung.** Vor jeder Aufnahme fragt die App „Wofür ist das Foto?“: Teil der Dokumentation (zehn Jahre) oder Arbeitshilfe mit Einwilligung (höchstens zwölf Monate).
+
+**Erwartet** (Jannes, 2026-10-09):
+- Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil der Dokumentation; es wird nicht gefragt.
+- An das Foto vom Anmeldebogen und vom Rezept erinnert die App automatisch an der passenden Stelle; dort ist der Zweck ebenfalls klar.
+- Andere Zwecke gibt es nicht. Die Arbeitshilfe mit Einwilligung entfällt.
+
+Das widerspricht ADR-017 in der heutigen Fassung (zwei Fotoarten, Wahl vor dem Kamerastart). Der Loop schreibt zuerst die neue Fassung von ADR-017 nach Jannes' Entscheidung und baut dann; bestehende Daten der Fotoart „Arbeitshilfe“ gibt es nur synthetisch.
+
+### BEF-134 — Lückenfinder auch für 45 Minuten, 60 bevorzugt
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Kalender, Lückenfinder |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-239) |
+| Status  | offen |
+| Berührt | ANN-239; `useLueckenfinder` |
+
+**Beobachtung.** Der Lückenfinder rechnet fest mit 60 Minuten Termindauer.
+
+**Erwartet** (Jannes, 2026-10-09): 45 Minuten sind ebenfalls eine mögliche Termindauer. Bevorzugt werden immer 60 Minuten: Eine Lücke, die nur für 45 Minuten reicht, ist erkennbar als solche gekennzeichnet.
+
+### BEF-135 — Das Büro liest alle Informationen, auch im Training
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Rollen, Training, Übungen und Pläne |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-287, ANN-293, ANN-298; allgemeine Regel) |
+| Status  | offen |
+| Berührt | `PROJECT_PRINCIPLES.md` §4.3 und Tabelle der Rollen je Bereich; ADR-021 Punkt 10; ADR-004; ANN-287, ANN-293, ANN-298 |
+
+**Beobachtung.** In der Behandlung liest das Büro schon alle klinischen Inhalte (§4.3, E15). Im Training sperren die Grundsätze Gesundheits- und Screeningangaben für das Büro, bis die DSFA sie bewertet; die Übungsbibliothek, Trainingspläne und das Voraussetzungsprofil sind für das Büro nicht sichtbar.
+
+**Erwartet** (Jannes, 2026-10-09), als Regel für alle weiteren Loops:
+- Das Büro **liest** alle Informationen, auch im Training: Voraussetzungsprofil, Übungsbibliothek, Trainingspläne und was künftig hinzukommt.
+- Es **schreibt** keine klinischen oder Trainingsinhalte (Pläne, Profile, Bibliothek bleiben bei den Fachrollen).
+- Jeder lesende Zugriff bleibt protokolliert wie heute (§4.3, ADR-010).
+- Mit echten Daten erst, wenn die DSFA es bewertet hat (Anfrage B2, ADR-007).
+
+Die Akte erfährt weiterhin nicht, ob eine Person das Training gebucht hat (ANN-285 bestätigt). Der Loop schreibt zuerst die neue Fassung von §4.3 und ADR-021 Punkt 10 und öffnet dann RLS und Oberfläche, mit Negativfällen in `pnpm test:db` (Büro schreibt nicht).
+
+### BEF-136 — Abruf freigegebener Dokumente über die Plattform nicht protokollieren
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Plattform, Unterlagen; Protokoll |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-249) |
+| Status  | offen |
+| Berührt | ANN-249; ADR-023 Punkt 24 („jeder Dokumentabruf“); ADR-010 Punkt 16; `PROJECT_PRINCIPLES.md` §4 (Protokollkatalog); Audit-Aktion `patient_file.downloaded` über die Plattform; Workflow `audit-katalog.yml` |
+
+**Beobachtung.** Ruft eine Person ein freigegebenes Dokument über die Plattform ab, entsteht ein Auditeintrag `patient_file.downloaded` (wer, welches Dokument, wann).
+
+**Erwartet** (Jannes, 2026-10-09): Dieser Abruf wird nicht protokolliert. Die Freigabe selbst und Abrufe durch Praxisrollen bleiben, wie sie sind.
+
+Das ist eine Änderung der Protokollierung nach ADR-010: Der Loop schreibt die neuen Fassungen von ADR-023 Punkt 24, ADR-010 und des Protokollkatalogs in §4, entfernt den Eintrag in `supabase/migrations/20261010160000_por_014_platform_files.sql` per neuer Migration und passt die Tests an, die ihn heute verlangen. Der Pull Request braucht vor dem Merge das Label `freigabe-audit`, das nur Jannes setzt.
