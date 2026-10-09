@@ -1,5 +1,6 @@
 import { useEffect, useState, type Ref } from 'react';
 import { Button } from '@/components/ui/Button';
+import { istPdf } from './dokumentarten';
 
 /**
  * Eine Datei der Akte, angezeigt im eigenen Rahmen der Anwendung (ABN-027,
@@ -10,12 +11,8 @@ import { Button } from '@/components/ui/Button';
  * den Verweis, kein Downloadname — wer die Datei auf dem Gerät braucht, tippt
  * „Herunterladen" (Punkt 55).
  *
- * **Nur Bilder.** Ein PDF im abgeschotteten Rahmen ohne Skriptrechte, wie
- * Punkt 54 es vorsieht, zeigt Chromium nicht an, und die
- * Content-Security-Policy der Test-Umgebung lässt keinen Rahmen aus einer
- * Objekt-URL zu. Beides zu öffnen ist eine Entscheidung über eine
- * Sicherheitsmaßnahme (ANN-223); bis dahin bleibt für PDF der Weg aus
- * Punkt 55.
+ * Ein Bild als Bild, ein PDF im Rahmen (`PdfRahmen`, ADR-017 Fassung 4
+ * Punkt 58).
  */
 export function Dateiansicht({
   bild,
@@ -32,6 +29,8 @@ export function Dateiansicht({
   const [adresse, setAdresse] = useState<string | null>(null);
 
   useEffect(() => {
+    // Ein PDF bekommt seine eigene Objekt-URL mit festem Typ (`PdfRahmen`).
+    if (istPdf(bild)) return;
     const neu = URL.createObjectURL(bild);
     setAdresse(neu);
     return () => URL.revokeObjectURL(neu);
@@ -39,7 +38,9 @@ export function Dateiansicht({
 
   return (
     <section ref={ref} tabIndex={-1} aria-label={`Ansicht: ${name}`} className="mt-3 outline-none">
-      {adresse ? (
+      {istPdf(bild) ? (
+        <PdfRahmen daten={bild} titel={name} />
+      ) : adresse ? (
         <img
           src={adresse}
           alt={name}
@@ -53,4 +54,34 @@ export function Dateiansicht({
       </div>
     </section>
   );
+}
+
+/**
+ * Ein PDF in der Anwendung (ANN-223 Option a, BEF-133, ADR-017 Fassung 4
+ * Punkt 58).
+ *
+ * Ein Rahmen **ohne** `sandbox`: Chromium zeigt ein PDF im abgeschotteten
+ * Rahmen nicht. Die Objekt-URL entsteht aus den geladenen Bytes mit **festem
+ * Typ `application/pdf`**, nie mit dem Typ des Speichers - so öffnet der
+ * Rahmen den PDF-Betrachter des Browsers, der in eigenem Ursprung läuft, und
+ * nie ein Dokument, das Skripte der Anwendung ausführen könnte. Die
+ * Content-Security-Policy erlaubt dafür nur `frame-src blob:`. Zeigt ein Gerät
+ * das PDF nicht vollständig, bleibt „Herunterladen" (Punkt 55).
+ */
+export function PdfRahmen({ daten, titel }: { daten: Blob; titel: string }) {
+  const [adresse, setAdresse] = useState<string | null>(null);
+
+  useEffect(() => {
+    const neu = URL.createObjectURL(new Blob([daten], { type: 'application/pdf' }));
+    setAdresse(neu);
+    return () => URL.revokeObjectURL(neu);
+  }, [daten]);
+
+  return adresse ? (
+    <iframe
+      src={adresse}
+      title={titel}
+      className="border-line rounded-image block h-[70vh] w-full max-w-2xl border bg-white"
+    />
+  ) : null;
 }

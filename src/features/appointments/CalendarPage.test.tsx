@@ -2912,11 +2912,12 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
         Promise.resolve(
           items.map((it) => ({
             item_index: it.index,
-            starts_at: it.index === 0 ? '2027-05-12T06:20:00Z' : '2027-05-12T08:20:00Z',
+            // Nummer = Lücke * 2 + Dauer (60, dann 45; ANN-317).
+            starts_at: it.index < 2 ? '2027-05-12T06:20:00Z' : '2027-05-12T08:20:00Z',
             arrival_earliest_start: null,
             arrival_slack_minutes: 0,
             next_earliest_start: null,
-            departure_slack_minutes: it.index === 0 ? -15 : 40,
+            departure_slack_minutes: it.index < 2 ? -15 : 40,
           })),
         ),
       );
@@ -2935,6 +2936,9 @@ describe('CalendarPage: Fahrwege als Bloecke (UBK-005, ANN-235)', () => {
       expect(spaeter).toHaveTextContent('✓ passt ab 10:20');
       expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
         /Freie Lücken: ✓ passt, ! knapp, × passt nicht/,
+      );
+      expect(screen.getByTestId('lueckenfinder-hinweis')).toHaveTextContent(
+        /reicht es nur für 45, steht „nur 45 Min\.“ dabei/,
       );
       // ADR-011: In der Adresse steht nur die Kennung.
       expect(window.location.search).not.toMatch(/Mustermann/);

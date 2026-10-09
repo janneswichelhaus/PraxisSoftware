@@ -10,8 +10,9 @@ import {
 
 /**
  * ABN-007 (BEF-098): Der behandlungsrelevante Hinweis aus einer Verordnung hat
- * wieder einen klinischen Ort. Schreiben die behandelnden Rollen, lesen alle,
- * die Dokumentation lesen - auch das Büro (ADR-004 Fassung 2).
+ * wieder einen klinischen Ort. Schreiben seit ABN-031 (BEF-134, ANN-214) alle
+ * Praxisrollen, auch das Büro und ein reiner owner-Zugang - nicht die reine
+ * Trainingsbetreuung; lesen alle, die Dokumentation lesen (ADR-004 Fassung 2).
  */
 
 const { users, patients } = SEED;
@@ -79,26 +80,28 @@ describe('Behandlungsrelevanter Hinweis an der Verordnung', () => {
   });
 
   it.each([['office'], ['ownerOhneBehandlung']] as const)(
-    'lässt %s nicht schreiben',
+    'lässt %s schreiben (ABN-031, BEF-134)',
     async (wer) => {
-      const vorher = await hinweis(VERORDNUNG);
       let konto: string = users.office;
       if (wer === 'ownerOhneBehandlung') {
-        // Ein reiner owner-Zugang liest die Akte, schreibt aber nicht klinisch.
+        // Ein reiner owner-Zugang tippt die Verordnung ab wie das Büro.
         await asPostgres(
           `delete from public.user_roles where user_id = $1 and role_key <> 'owner'`,
           [users.ownerTherapist],
         );
         konto = users.ownerTherapist;
       }
-      await expect(
-        asUser(konto, SETZEN, [VERORDNUNG, 'Synthetisch.', await stand(VERORDNUNG)]),
-      ).rejects.toThrow(/not allowed to write clinical treatment basis notes/);
-      expect(await hinweis(VERORDNUNG)).toBe(vorher);
+      await asUserCommitted(konto, SETZEN, [
+        VERORDNUNG,
+        'Synthetisch: vom Rezept.',
+        await stand(VERORDNUNG),
+      ]);
+      expect(await hinweis(VERORDNUNG)).toBe('Synthetisch: vom Rezept.');
     },
   );
 
   it('weist Trainingsbetreuung, Plattformkonto und fremde Organisation ab (Zweitreview B8)', async () => {
+    const vorher = await hinweis(VERORDNUNG);
     for (const konto of [users.trainer, users.plattformErika]) {
       await expect(
         asUser(konto, SETZEN, [VERORDNUNG, 'Synthetisch.', await stand(VERORDNUNG)]),
@@ -110,6 +113,7 @@ describe('Behandlungsrelevanter Hinweis an der Verordnung', () => {
     ).rejects.toThrow(
       /not allowed to write clinical treatment basis notes|treatment basis not found/,
     );
+    expect(await hinweis(VERORDNUNG)).toBe(vorher);
   });
 
   it('setzt am Selbstzahler keinen Hinweis', async () => {

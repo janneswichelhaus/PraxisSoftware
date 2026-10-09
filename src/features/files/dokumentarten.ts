@@ -107,11 +107,17 @@ export function sichtbarkeitHinweis(art: Dokumentart): string {
 export const NICHT_SERVERSEITIG_GEPRUEFT = 'nicht serverseitig geprüft';
 
 /**
- * Lässt sich die Datei in der Anwendung zeigen (ADR-017 Punkt 54)? Bis ANN-223
- * entschieden ist: nur Bilder; ein PDF hat „Herunterladen" (Punkt 55).
+ * Lässt sich die Datei in der Anwendung zeigen (ADR-017 Punkte 54 und 58)?
+ * Bilder und seit BEF-133 auch PDF (ANN-223, Option a); daneben bleibt
+ * „Herunterladen" (Punkt 55).
  */
+/** Ein geladenes PDF - der Typ des Blobs ist der geprüfte der Datei (`ladeDateiZumAnzeigen`). */
+export function istPdf(daten: Blob): boolean {
+  return daten.type === 'application/pdf';
+}
+
 export function istAnzeigbar(mimeType: string): boolean {
-  return mimeType === 'image/jpeg' || mimeType === 'image/png';
+  return mimeType === 'image/jpeg' || mimeType === 'image/png' || mimeType === 'application/pdf';
 }
 
 /**

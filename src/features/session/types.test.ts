@@ -9,6 +9,11 @@ import {
   canManageStaffMasterData,
   canManageStaffPrivateDetails,
   canReadClinicalPatientFiles,
+  canReadExerciseLibrary,
+  canReadExercisePlans,
+  canReadTrainingContent,
+  canWriteExercisePlans,
+  canWriteTrainingProtocols,
   canReadPatientDirectory,
   canReadTreatmentBasisClinical,
   canReadTreatmentNote,
@@ -275,5 +280,22 @@ describe('canRecordAtAppointment (PRX-009, ANN-140)', () => {
   it('lässt Trainingsbetreuung und Patientenkonto nie', () => {
     expect(canRecordAtAppointment(['trainer'], ANNA, ANNA)).toBe(false);
     expect(canRecordAtAppointment(['patient'], ANNA, null)).toBe(false);
+  });
+});
+
+describe('Das Büro liest im Training mit (ABN-030, BEF-137)', () => {
+  it('liest Inhalte, Pläne und Bibliothek, schreibt aber keine Trainingsinhalte', () => {
+    expect(canReadTrainingContent(['office'])).toBe(true);
+    expect(canReadExercisePlans(['office'], 'training')).toBe(true);
+    expect(canReadExerciseLibrary(['office'])).toBe(true);
+    expect(canWriteExercisePlans(['office'], 'training')).toBe(false);
+    expect(canWriteTrainingProtocols(['office'])).toBe(false);
+  });
+
+  it('öffnet das Training nicht für die Behandlungsrollen (ADR-021 Punkt 6)', () => {
+    for (const rolle of ['therapist', 'team_lead'] as const) {
+      expect(canReadTrainingContent([rolle])).toBe(false);
+      expect(canReadExercisePlans([rolle], 'training')).toBe(false);
+    }
   });
 });

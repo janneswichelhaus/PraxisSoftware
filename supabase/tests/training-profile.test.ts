@@ -13,8 +13,9 @@ import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
  * Das Voraussetzungsprofil im Training (KND-005, IDEA-LZK-004, ADR-021
  * Punkte 4, 6, 7 und 10).
  *
- *   * Lesen und schreiben owner und Trainingsbetreuung, nie Büro, Behandlung
- *     oder Plattform (ANN-287). Jedes Lesen steht im Auditlog.
+ *   * Schreiben owner und Trainingsbetreuung, lesen dazu das Büro (ANN-287,
+ *     seit ABN-030 BEF-137); nie Behandlung oder Plattform. Jedes Lesen steht
+ *     im Auditlog.
  *   * Gespeichert wird mit dem erwarteten Stand (§13).
  *   * Übernahmen aus der Behandlung sind Kopien und ändern sich nicht.
  */
@@ -117,9 +118,9 @@ describe('Voraussetzungsprofil (KND-005)', () => {
   });
 
   it.each([
-    ['Büro', users.office],
     ['Therapeut:in', users.therapist],
-  ])('weist %s beim Lesen mit Eintrag ab (ADR-021 Punkt 10)', async (_wer, konto) => {
+    ['Teamleitung', users.teamLead],
+  ])('weist %s beim Lesen mit Eintrag ab (ADR-021 Punkt 6)', async (_wer, konto) => {
     await erwarteAbgewiesenenLeseversuch(
       konto,
       'select p from public.get_training_profile($1::uuid) p where p is not null',
@@ -134,13 +135,19 @@ describe('Voraussetzungsprofil (KND-005)', () => {
     expect(await lesen(fremd.owner)).toBeNull();
   });
 
-  it('protokolliert jedes Lesen (ADR-021 Punkt 8)', async () => {
-    await asUserCommitted(users.trainer, LESEN, [TINA]);
+  it.each([
+    ['Trainingsbetreuung', users.trainer],
+    ['Büro (ABN-030, BEF-137)', users.office],
+  ])('protokolliert jedes Lesen: %s (ADR-021 Punkt 8)', async (_wer, konto) => {
+    const { rows: gelesen } = await asUserCommitted<{ profil: Profil | null }>(konto, LESEN, [
+      TINA,
+    ]);
+    expect(gelesen[0]!.profil).not.toBeNull();
     const { rows } = await asPostgres<{ context: { view: string } }>(
       `select context from public.audit_log
         where action = 'training_relationship.viewed' and subject_id = $1 and actor_user_id = $2
         order by occurred_at desc limit 1`,
-      [TINA, users.trainer],
+      [TINA, konto],
     );
     expect(rows[0]!.context.view).toBe('profile');
   });

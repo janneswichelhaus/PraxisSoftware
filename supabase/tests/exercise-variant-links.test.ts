@@ -108,6 +108,7 @@ describe('Übungsbibliothek: Verbindungen (UEB-002)', () => {
       ['Therapeut:in', users.therapist],
       ['Teamleitung', users.teamLead],
       ['Trainingsbetreuung', users.trainer],
+      ['Büro (ABN-030, BEF-137)', users.office],
     ])('liest die Verbindungen und legt keine an: %s (ANN-293)', async (_rolle, konto) => {
       const id = await verbinden(gelaender, frei);
       expect((await verbindungen(konto)).map((v) => v.id)).toEqual([id]);
@@ -195,7 +196,6 @@ describe('Übungsbibliothek: Verbindungen (UEB-002)', () => {
 
   describe('Negativfälle (ADR-013 Punkt 9 Nr. 1)', () => {
     it.each([
-      ['Büro (Rolle ohne Recht)', users.office],
       ['Profil ohne Praxisrolle', users.patientMax],
       ['Plattformkonto Kund:in', users.plattformTina],
       ['Plattformkonto Patient:in und Kund:in', users.plattformErika],

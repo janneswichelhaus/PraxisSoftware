@@ -40,8 +40,23 @@ const VORBEREITEN = `
 
 async function vorbereiten(
   userId: string = users.therapist,
-  optionen: { art?: string; mime?: string; grundlage?: string | null } = {},
+  optionen: { art?: string; mime?: string; grundlage?: string | null; ueberApi?: boolean } = {},
 ): Promise<Vorbereitet> {
+  // Eine Arbeitshilfe entsteht seit ABN-032 nicht mehr (ANN-316); der
+  // Altbestand wird angelegt wie früher von der Vorbereitung.
+  if (optionen.art === 'patientenfoto' && !optionen.ueberApi) {
+    const alt = await asPostgres<Vorbereitet>(
+      `insert into public.patient_files (
+         organization_id, patient_id, treatment_basis_id, document_type,
+         display_name, mime_type, byte_size, checksum_sha256, uploaded_by
+       )
+       select p.organization_id, p.id, null, 'patientenfoto', 'Arbeitshilfe', 'image/jpeg', 54321, $2, $3
+       from public.patients p where p.id = $1
+       returning id as file_id, app.patient_file_bucket_for(document_type) as bucket_id, object_key`,
+      [patients.max, PRUEFSUMME, userId],
+    );
+    return alt.rows[0]!;
+  }
   const { rows } = await asUserCommitted<Vorbereitet>(userId, VORBEREITEN, [
     patients.max,
     optionen.grundlage ?? null,
@@ -170,9 +185,12 @@ describe('Dokumentationsfotos (ABN-023)', () => {
     expect(anGrundlage?.message).toMatch(/belongs to the patient/);
   });
 
-  it('verlangt fuer die Arbeitshilfe weiter die Einwilligung', async () => {
-    const fehler = await abgefangen(vorbereiten(users.therapist, { art: 'patientenfoto' }));
-    expect(fehler?.message).toMatch(/no consent/);
+  it('nimmt keine neue Arbeitshilfe mehr an, auch mit Einwilligung (ABN-032, ANN-316)', async () => {
+    await vermerken('consent_granted');
+    const fehler = await abgefangen(
+      vorbereiten(users.therapist, { art: 'patientenfoto', ueberApi: true }),
+    );
+    expect(fehler?.message).toMatch(/photo aids are no longer taken/);
   });
 
   it('erscheint nicht in der Dateiliste der Akte', async () => {

@@ -2,10 +2,12 @@
 
 ## Status
 
-**Angenommen — Fassung 2** (2026-10-02). Fassung 1 am 2026-09-20, alle neun
+**Angenommen — Fassung 3** (2026-10-09). Fassung 1 am 2026-09-20, alle neun
 Punkte wie vorgeschlagen; fachlich entschieden vom Projektinhaber am 2026-09-17
 (E18). Fassung 2 ergänzt Punkt 10 (Büro im Training) aus der Abnahme der
-Annahmen, Block 8. Die Punkte 1 bis 9 gelten unverändert. Löst keinen ADR ab.
+Annahmen, Block 8. Fassung 3 weitet Punkt 10 aus: Das Büro liest im Training
+alles (Abnahme der Annahmen vom 2026-10-09, BEF-137). Die Punkte 1 bis 9
+gelten unverändert. Löst keinen ADR ab.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.*
 
@@ -106,18 +108,24 @@ Aussage nicht, er wendet sie an.
 als Abkürzung benutzt. Es heißt **Physiotherapie** oder **Personal Training**,
 ausgeschrieben.
 
-**10. Das Büro liest im Training mit, schreibt aber nicht (Fassung 2).** Das
-Büro (`office`) ist im Training organisatorisch tätig (`PROJECT_PRINCIPLES.md`
-§4.8). Es liest zusätzlich das **Trainingsprotokoll** und dessen Zustand, damit
-es Rückfragen zu Terminen und Rechnungen ohne Umweg beantworten kann.
-Schreiben, Abschließen und Nachtragen bleiben bei Inhaber:in und
-Trainingsbetreuung. Jedes Lesen ist auditpflichtig nach Punkt 8. Übrige
-Screening- und Gesundheitsangaben des Trainings bleiben für das Büro gesperrt.
+**10. Das Büro liest im Training alles, schreibt aber nichts Fachliches
+(Fassung 3).** Das Büro (`office`) ist im Training organisatorisch tätig
+(`PROJECT_PRINCIPLES.md` §4.3, §4.8). Es liest **alle Informationen** eines
+Trainingsverhältnisses — Trainingsprotokoll und Zustand, Voraussetzungsprofil
+mit den freigegebenen Angaben aus der Behandlung, Screening- und
+Gesundheitsangaben, Trainingspläne und ihre Einheiten, Rückfragen — und die
+Übungsbibliothek, auch was künftig hinzukommt. Schreiben, Abschließen und
+Nachtragen von Trainingsinhalten bleiben bei Inhaber:in und
+Trainingsbetreuung; organisatorisch (Termin, Vertrag, Rechnung) schreibt das
+Büro wie bisher. Jedes Lesen ist auditpflichtig nach Punkt 8, mit den
+Aktionen, die ADR-010 schon führt. *Fassung 2 lautete: Das Büro liest nur das
+Trainingsprotokoll; übrige Screening- und Gesundheitsangaben bleiben gesperrt.*
 Mit echten Daten gilt das Leserecht erst, wenn die DSFA es bewertet hat
 (Anfrage B2, ADR-007); bis dahin wird es mit synthetischen Daten gebaut und
 geprüft. Das ist **kein Durchgriff** im Sinne von Punkt 6: Das Büro trägt eine
 Rolle in beiden Bereichen, und gelesen wird innerhalb des Trainingsverhältnisses.
-Entschieden vom Projektinhaber am 2026-10-02 (ANN-184).
+Entschieden vom Projektinhaber am 2026-10-02 (ANN-184), ausgeweitet am
+2026-10-09 (BEF-137; ANN-287, ANN-293, ANN-298).
 
 ## Konsequenzen
 
@@ -216,3 +224,4 @@ Entschieden vom Projektinhaber am 2026-10-02 (ANN-184).
 | 1 | 2026-09-20 | Erstfassung, vorgeschlagen nach E18 (Projektinhaber, 2026-09-17); Schritt 1 von sieben. |
 | 2 | 2026-10-02 | **Punkt 10 ergänzt:** Das Büro liest Trainingsprotokolle und ihren Zustand; Schreiben und Abschließen bleiben bei Inhaber:in und Trainingsbetreuung; mit echten Daten erst nach der DSFA (B2). Nachgezogen in `PROJECT_PRINCIPLES.md` 0.19 §4.8. Anlass: Abnahme der Annahmen, Block 8 (ANN-184). Punkte 1 bis 9 unverändert. |
 </content>
+| 3 | 2026-10-09 | **Punkt 10 ausgeweitet:** Das Büro liest im Training alle Informationen und die Übungsbibliothek, schreibt keine Trainingsinhalte; die Sperre der übrigen Screening- und Gesundheitsangaben entfällt. Nachgezogen in `PROJECT_PRINCIPLES.md` 0.22 §4.3 und §4.8. Anlass: Abnahme der Annahmen vom 2026-10-09 (BEF-137). Punkte 1 bis 9 unverändert. |

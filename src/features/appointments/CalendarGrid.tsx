@@ -329,6 +329,11 @@ export interface GitterLuecke {
   stufe: Lueckenstufe;
   /** Frühester Beginn als „hh:mm“. */
   ab: string | null;
+  /**
+   * Reicht es nur für einen kürzeren Termin, dessen Minuten - die Lücke trägt
+   * dann „nur 45 Min.“ (ANN-317, BEF-136).
+   */
+  kuerzer?: number | null;
 }
 
 export interface GitterEintrag {
@@ -969,15 +974,17 @@ export function CalendarGrid({
                         stundenHoehe,
                       ) - oben
                     : 0;
-                  const text =
+                  const grundtext =
                     l.ab && (l.stufe === 'passt' || l.stufe === 'knapp')
                       ? `${darstellung.text} ab ${l.ab}`
                       : darstellung.text;
+                  const text = l.kuerzer ? `${grundtext} · nur ${l.kuerzer} Min.` : grundtext;
                   return (
                     <div
                       key={`luecke-${l.vonMinute}`}
                       data-testid="luecke"
                       data-stufe={l.stufe}
+                      data-kuerzer={l.kuerzer ?? undefined}
                       className={`${darstellung.flaeche} pointer-events-none absolute inset-x-0 overflow-hidden px-1.5 pt-0.5 text-xs leading-4 font-semibold`}
                       style={{ top: `${oben}px`, height: `${hoehe}px` }}
                     >

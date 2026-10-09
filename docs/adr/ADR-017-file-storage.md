@@ -2,10 +2,21 @@
 
 ## Status
 
-**Angenommen, Fassung 3** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 4** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
-Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende).
+Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
+2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K).
+
+**Fassung 4 (2026-10-09).** Anlass ist die Abnahme der Annahmen vom 2026-10-09
+(BEF-135 zu ANN-221, BEF-133 zu ANN-223). **Abschnitt K (Punkte 56 bis 58)**:
+Ein Foto aus der Dokumentation ist immer ein Dokumentationsfoto, gefragt wird
+nicht; eine neue Arbeitshilfe entsteht nicht mehr, bestehende laufen nach
+ihrer Frist aus; ein PDF öffnet im Rahmen ohne `sandbox`. Das ist die
+**Umkehr einzelner Punkte** nach der Fassungsregel in `README.md`: Punkt 44
+(Wahl vor der Aufnahme) entfällt, Punkt 43 verliert die Arbeitshilfe für neue
+Aufnahmen, Punkt 54 den „abgeschotteten Rahmen ohne Skriptrechte" für PDF. Die
+Punkte 1 bis 55 bleiben sonst stehen; 43, 44 und 54 tragen einen Vermerk.
 
 Fassung 2 ergänzt **Abschnitt G** (Punkte 31 bis 42): **Fotos von
 Patient:innen** mit eigener Einwilligung als Rechtsgrundlage, eigener
@@ -680,6 +691,8 @@ dort zitierten Quellen. Fassung 3 führt sie nicht als Ersatz ein, sondern
       Oberfläche künftig „Arbeitshilfe": ein Foto für Übergabe und Vergleich,
       das die Dokumentation nicht braucht. Für sie gelten die Punkte 35 bis 38
       unverändert.
+      *Vermerk 2026-10-09 (Fassung 4): Eine neue Arbeitshilfe entsteht nicht
+      mehr; Punkt 57.*
 
     Die Grenze ist der Zweck, nicht das Motiv: Dieselbe Narbe kann
     Dokumentationsfoto oder Arbeitshilfe sein. Ob ein Foto für die
@@ -693,6 +706,8 @@ dort zitierten Quellen. Fassung 3 führt sie nicht als Ersatz ein, sondern
     ANN-129 und BEF-059). Ohne erteilte Foto-Einwilligung ist nur die erste
     Wahl möglich; die zweite steht mit dem Grund da, nicht ausgeblendet. Den
     Wortlaut legt der Bau als Annahme fest.
+    *Vermerk 2026-10-09 (Fassung 4): Entfällt; es wird nicht gefragt
+    (Punkt 56).*
 45. **Das Dokumentationsfoto folgt der Akte.**
     - **Grundlage** ist die Behandlung: Art. 9 Abs. 2 lit. h DSGVO in
       Verbindung mit § 22 Abs. 1 Nr. 1 lit. b BDSG — wie die Behandlung
@@ -817,6 +832,8 @@ Dateien schon meint.
     Ausstellung (Punkt 20, 21). Eine neue Bibliothek zum Darstellen von PDF
     gehört nicht dazu (§15.1); zeigt ein Gerät ein PDF im Rahmen nicht
     vollständig, bleibt dafür Punkt 55.
+    *Vermerk 2026-10-09 (Fassung 4): Ein PDF zeigt der Rahmen ohne `sandbox`;
+    Punkt 58.*
 55. **Herunterladen ist eine eigene, ausdrückliche Aktion.** Für alle Arten
     **außer den beiden Fotoarten** gibt es neben „Öffnen" den Knopf
     „Herunterladen": Er stellt einen eigenen Verweis **mit** Downloadnamen
@@ -825,6 +842,39 @@ Dateien schon meint.
     Gerät — für einen Arztbrief, der gedruckt werden soll. Fotos von
     Patient:innen bleiben bei Punkt 40: kein Download, einzige Herausgabe
     an die Person selbst durch `owner` (ANN-128).
+
+### K. Ein Zweck für Fotos der Person, PDF im Rahmen (Fassung 4)
+
+**Anlass.** In der Abnahme vom 2026-10-09 hat Jannes ANN-221 und ANN-223
+geändert: Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil
+der Dokumentation; an Anmeldebogen und Rezept erinnert die Anwendung; andere
+Zwecke gibt es nicht (BEF-135). Ein PDF öffnet in der Anwendung (BEF-133).
+Das ist die Alternative, die Bestätigungsfrage 15 selbst benannt hat („nur
+noch Dokumentationsfotos und keine Arbeitshilfe mehr").
+
+56. **Ein Foto aus der Dokumentation ist ein Dokumentationsfoto.** Der
+    Kameradialog im Verlauf fragt nicht nach dem Zweck; was er aufnimmt, ist
+    ein Dokumentationsfoto nach Punkt 45. Fotos von Anmeldebogen und Rezept
+    entstehen an ihrer eigenen Stelle (Anmeldebogen, Verordnung) als Foto
+    eines Dokuments nach Punkt 31; dort erinnert die Anwendung, solange sie
+    fehlen. Punkt 44 entfällt.
+57. **Keine neue Arbeitshilfe.** Die Vorbereitung eines Uploads weist die Art
+    `patientenfoto` ab, an genau einer Stelle; die Einwilligung zu Fotos wird
+    nicht mehr angeboten. Was als Arbeitshilfe schon liegt (in der
+    Entwicklung nur synthetisch), bleibt nach den Punkten 35 bis 38 bestehen,
+    bis Frist oder Widerruf es löschen — Widerruf und Löschlauf bleiben
+    deshalb, ebenso Art, Klasse und Bucket. Den Schlüssel zu entfernen
+    kostete eine Migration über Katalog, Klassen und Funktionen und gewönne
+    nichts, solange noch eine Arbeitshilfe liegen kann.
+58. **Ein PDF öffnet im Rahmen ohne `sandbox`.** Punkt 54 gilt, aber der
+    Rahmen eines PDF trägt kein `sandbox`: Chromium zeigt ein PDF im
+    abgeschotteten Rahmen nicht (geprüft 2026-10-02, ANN-223). Die Objekt-URL
+    entsteht aus den geladenen Bytes mit **festem Typ `application/pdf`**,
+    nie mit dem Typ des Speichers; der PDF-Betrachter des Browsers läuft in
+    eigenem Ursprung und führt kein Skript der Anwendung aus. Die
+    Content-Security-Policy erlaubt dafür `frame-src blob:` und sonst nichts
+    Neues; `object-src 'none'` bleibt. Punkt 55 bleibt der Ausweg, wenn ein
+    Gerät das PDF im Rahmen nicht vollständig zeigt.
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1336,3 +1386,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 1 | 2026-09-12 | angenommen, alle acht Bestätigungsfragen wie empfohlen |
 | 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
 | 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
+| 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |

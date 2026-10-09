@@ -93,8 +93,9 @@ describe('Datenschutz der Akte', () => {
     seite();
 
     // Etiketten beginnen groß (WRT-16).
-    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(3);
-    expect(screen.getByText('Fotos im Behandlungsverlauf')).toBeInTheDocument();
+    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(2);
+    // ANN-316: Die Einwilligung zu Fotos wird nicht mehr angeboten.
+    expect(screen.queryByText('Fotos im Behandlungsverlauf')).toBeNull();
   });
 
   // ANN-227: Datenschutzinformation und Behandlungsvertrag belegt das Foto
@@ -103,7 +104,7 @@ describe('Datenschutz der Akte', () => {
     seite();
 
     const user = userEvent.setup();
-    expect(await screen.findAllByRole('button', { name: /Nicht erteilt/ })).toHaveLength(3);
+    expect(await screen.findAllByRole('button', { name: /Nicht erteilt/ })).toHaveLength(2);
     const fenster = await fensterOeffnen(user, 'email_contact');
     expect(
       within(fenster)
@@ -234,10 +235,10 @@ describe('Datenschutz der Akte', () => {
     const user = userEvent.setup();
     const { unmount } = seite();
 
-    await vermerken(user, 'patient_photos', 'Einwilligung abgelehnt');
+    await vermerken(user, 'prescriber_report', 'Einwilligung abgelehnt');
     await waitFor(() =>
       expect(vermerkeSpeichern).toHaveBeenCalledWith(
-        expect.objectContaining({ art: 'consent_refused', zweck: 'patient_photos' }),
+        expect.objectContaining({ art: 'consent_refused', zweck: 'prescriber_report' }),
       ),
     );
     unmount();
@@ -246,14 +247,14 @@ describe('Datenschutz der Akte', () => {
       {
         id: 'v1',
         record_kind: 'consent_refused',
-        purpose: 'patient_photos',
+        purpose: 'prescriber_report',
         notice_version: null,
         occurred_on: '2026-09-01',
         recorded_at: '2026-09-01T08:00:00Z',
       },
     ]);
     expect(await screen.findByText('Abgelehnt am 01.09.2026')).toBeInTheDocument();
-    const fenster = await fensterOeffnen(userEvent.setup(), 'patient_photos');
+    const fenster = await fensterOeffnen(userEvent.setup(), 'prescriber_report');
     expect(within(fenster).queryByRole('radio', { name: 'Einwilligung abgelehnt' })).toBeNull();
     expect(
       within(fenster).getByRole('radio', { name: 'Einwilligung erteilt' }),
@@ -325,7 +326,7 @@ describe('Datenschutz der Akte', () => {
     expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
-    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(3);
+    expect(await screen.findAllByText('Nicht erteilt')).toHaveLength(2);
   });
 
   it('klappt den Verlauf mit Anzahl ein und zeigt die Beschreibung erst im Fenster', async () => {
@@ -351,7 +352,7 @@ describe('Datenschutz der Akte', () => {
 
   it('besteht die Barrierefreiheitspruefung', async () => {
     const { container } = seite();
-    await screen.findByText('Fotos im Behandlungsverlauf');
+    await screen.findByText('Kontakt per E-Mail');
     await pruefeBarrierefreiheit(container);
   });
 });

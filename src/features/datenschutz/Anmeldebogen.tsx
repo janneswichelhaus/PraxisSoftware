@@ -1,3 +1,4 @@
+import { einwilligungAngeboten } from '@/lib/einwilligung';
 import { useId, useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/Badge';
@@ -113,26 +114,30 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
     inhalt = (
       <>
         <ul className="divide-line -my-1 flex flex-col divide-y">
-          {stand.einwilligungen.map((e) => (
-            <li key={e.zweck}>
-              <button
-                type="button"
-                className="hover:bg-surface-sunken rounded-button -mx-2 flex min-h-11 w-[calc(100%+1rem)] flex-wrap items-center justify-between gap-2 px-2 py-2 text-left"
-                onClick={() => {
-                  setGespeichert(null);
-                  setOffen(e.zweck);
-                }}
-              >
-                <span className="text-ink text-liste font-medium">{zweckTexte[e.zweck].label}</span>
-                <span className="flex items-center gap-2">
-                  <Einwilligungszeichen stand={e} />
-                  <span aria-hidden="true" className="text-ink-muted">
-                    ›
+          {stand.einwilligungen
+            .filter((e) => einwilligungAngeboten(e.zweck, e.erteilt))
+            .map((e) => (
+              <li key={e.zweck}>
+                <button
+                  type="button"
+                  className="hover:bg-surface-sunken rounded-button -mx-2 flex min-h-11 w-[calc(100%+1rem)] flex-wrap items-center justify-between gap-2 px-2 py-2 text-left"
+                  onClick={() => {
+                    setGespeichert(null);
+                    setOffen(e.zweck);
+                  }}
+                >
+                  <span className="text-ink text-liste font-medium">
+                    {zweckTexte[e.zweck].label}
                   </span>
-                </span>
-              </button>
-            </li>
-          ))}
+                  <span className="flex items-center gap-2">
+                    <Einwilligungszeichen stand={e} />
+                    <span aria-hidden="true" className="text-ink-muted">
+                      ›
+                    </span>
+                  </span>
+                </button>
+              </li>
+            ))}
         </ul>
         {gespeichert ? (
           <Statusmeldung ton="erfolg" className="mt-3">
