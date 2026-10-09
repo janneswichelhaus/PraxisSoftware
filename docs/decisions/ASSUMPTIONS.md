@@ -2697,7 +2697,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 **Änderungspfad.** PDF in der Anwendung: Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ `application/pdf` (der PDF-Betrachter des Browsers läuft in eigenem Ursprung) und `frame-src blob:` in `inhaltsrichtlinie` (`scripts/testumgebung.mjs`), dazu `istAnzeigbar` um PDF erweitern · Aufwand `klein`, braucht die Entscheidung von Jannes und einen Vermerk an ADR-017 Punkt 54.
 
-**Abnahme (Jannes, 2026-10-09).** entschieden: Option (a) – die App zeigt PDFs selbst (Rahmen ohne `sandbox`, `frame-src blob:`, Vermerk an ADR-017 Punkt 54). Umsetzung: BEF-133.
+**Abnahme (Jannes, 2026-10-09).** entschieden: Option (a) – die App zeigt PDFs selbst (Rahmen ohne `sandbox`, `frame-src blob:`, Vermerk an ADR-017 Punkt 54). Umsetzung: BEF-133. **Umgesetzt (ABN-034, 2026-10-09):** `istAnzeigbar` nimmt PDF auf, `PdfRahmen` in `src/features/files/Dateiansicht.tsx` (Objekt-URL mit festem Typ `application/pdf`, kein `sandbox`), auch neben dem Formular (`ScanBesideForm`); `frame-src blob:` in `inhaltsrichtlinie`; ADR-017 Fassung 4 Punkt 58. Die Plattform gibt PDFs weiter auf das Gerät (ANN-249).
 
 ### ANN-224 — Erstaufnahme: nur Verordnungsfoto und Anmeldebogen; der Anmeldebogen sind die Vermerke zu Datenschutzinformation und Vertrag
 

@@ -2,42 +2,39 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { ladeDateiHerunter, ladeDateiZumAnzeigen } from '@/features/files/api';
-import { istAnzeigbar } from '@/features/files/dokumentarten';
+import { istAnzeigbar, istPdf } from '@/features/files/dokumentarten';
+import { PdfRahmen } from '@/features/files/Dateiansicht';
 
 /**
  * Das Foto der Verordnung neben dem Formular (PRX-011): Das Büro tippt ab,
  * was die Therapeut:in am Termin fotografiert hat.
  *
- * Das Bild erscheint erst auf Tipp - jeder Verweis ist ein Auditeintrag und
- * lebt 60 Sekunden (ADR-017 Punkte 15 und 20). Es wird in den Speicher der
- * Seite geladen und aus einer Objekt-URL gezeigt, ohne Downloadnamen (Punkt
- * 54); es bleibt stehen, solange die Seite offen ist. Ein PDF zeigt die
- * Anwendung noch nicht selbst (ANN-223): Dort steht „Herunterladen" (Punkt 55).
+ * Das Bild erscheint erst auf Tipp - jeder Verweis lebt 60 Sekunden (ADR-017
+ * Punkt 15). Es wird in den Speicher der Seite geladen und aus einer
+ * Objekt-URL gezeigt, ohne Downloadnamen (Punkt 54); es bleibt stehen, solange
+ * die Seite offen ist. Ein PDF steht im Rahmen (Punkt 58, BEF-133).
  */
 export function ScanBesideForm({ fileId }: { fileId: string }) {
+  const [ansicht, setAnsicht] = useState<Blob | null>(null);
   const [bild, setBild] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
   const [fehler, setFehler] = useState<string | null>(null);
-  // Erst nach dem Laden bekannt: Der Scan ist ein PDF.
-  const [nurHerunterladen, setNurHerunterladen] = useState(false);
 
-  // Die Objekt-URL lebt so lange wie die Ansicht.
+  // Die Objekt-URL eines Bildes lebt so lange wie die Ansicht.
   useEffect(() => {
-    if (!bild) return;
-    return () => URL.revokeObjectURL(bild);
-  }, [bild]);
+    if (!ansicht || istPdf(ansicht)) return;
+    const neu = URL.createObjectURL(ansicht);
+    setBild(neu);
+    return () => URL.revokeObjectURL(neu);
+  }, [ansicht]);
 
   async function zeigen() {
     setFehler(null);
     setLaeuft(true);
     try {
-      if (nurHerunterladen) {
-        await ladeDateiHerunter(fileId);
-        return;
-      }
       const geladen = await ladeDateiZumAnzeigen(fileId);
-      if (istAnzeigbar(geladen.mimeType)) setBild(URL.createObjectURL(geladen.bild));
-      else setNurHerunterladen(true);
+      if (istAnzeigbar(geladen.mimeType)) setAnsicht(geladen.bild);
+      else await ladeDateiHerunter(fileId);
     } catch (ursache) {
       setFehler((ursache as Error).message);
     } finally {
@@ -54,7 +51,11 @@ export function ScanBesideForm({ fileId }: { fileId: string }) {
       <p className="text-ink-muted mt-1 text-sm">
         Beim Speichern hängt das Foto an dieser Grundlage und verlässt die offenen Punkte.
       </p>
-      {bild ? (
+      {ansicht && istPdf(ansicht) ? (
+        <div className="mt-3">
+          <PdfRahmen daten={ansicht} titel="Foto der Verordnung" />
+        </div>
+      ) : bild ? (
         <img
           src={bild}
           alt="Foto der Verordnung"
@@ -68,15 +69,9 @@ export function ScanBesideForm({ fileId }: { fileId: string }) {
           disabled={laeuft}
           onClick={() => void zeigen()}
         >
-          {laeuft ? 'Wird geöffnet …' : nurHerunterladen ? 'Herunterladen' : 'Foto anzeigen'}
+          {laeuft ? 'Wird geöffnet …' : 'Foto anzeigen'}
         </Button>
       )}
-      {nurHerunterladen ? (
-        <p className="text-ink-muted mt-2 text-sm">
-          Der Scan ist ein PDF. Die Anwendung zeigt PDFs noch nicht selbst an; „Herunterladen“ holt
-          ihn auf dieses Gerät.
-        </p>
-      ) : null}
       {fehler ? (
         <Statusmeldung ton="fehler" className="mt-3">
           {fehler}
