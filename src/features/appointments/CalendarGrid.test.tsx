@@ -221,6 +221,41 @@ describe('Lückenfinder im Gitter (UBK-014)', () => {
   });
 });
 
+describe('Lückenfinder: nur für 45 Minuten (ABN-033, BEF-136)', () => {
+  it('kennzeichnet eine Lücke, die nur für den kürzeren Termin reicht, sichtbar und vorgelesen', () => {
+    renderWithProviders(
+      <CalendarGrid
+        spaltenModell={[
+          {
+            id: 'st-1',
+            titel: 'Anna Beispiel',
+            baender: [],
+            luecken: [
+              { vonMinute: 540, bisMinute: 600, stufe: 'passt', ab: '09:10' },
+              { vonMinute: 620, bisMinute: 680, stufe: 'passt', ab: '10:30', kuerzer: 45 },
+            ],
+          },
+        ]}
+        eintraege={[]}
+        fenster={{ vonMinute: 480, bisMinute: 720 }}
+        raster={5}
+        stundenHoehe={80}
+        onVerschieben={() => {}}
+        onAuswahl={() => {}}
+        kontext="2027-05-12"
+        ziehbarErlaubt
+        beschriftung="Tagesansicht nach behandelnder Person"
+      />,
+    );
+    const [voll, kurz] = screen.getAllByTestId('luecke');
+    expect(voll).toHaveTextContent('✓ passt ab 09:10');
+    expect(voll).not.toHaveTextContent('nur 45');
+    expect(kurz).toHaveAttribute('data-kuerzer', '45');
+    expect(kurz).toHaveTextContent('✓ passt ab 10:30 · nur 45 Min.');
+    expect(kurz).toHaveTextContent('Lücke 10:20 bis 11:20: passt ab 10:30 · nur 45 Min.');
+  });
+});
+
 describe('Ort auf der Kachel (UBK-017, ANN-242)', () => {
   function kachel(teil: Partial<CalendarEntry>, hoeheMinuten = 60) {
     renderWithProviders(

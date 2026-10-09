@@ -2,7 +2,7 @@ import { FahrpufferHinweis } from '@/features/tours/FahrpufferHinweis';
 import { useFahrwege, type Fahrweg, type FahrwegSpalte } from './fahrwege';
 import { tageslageNeuLaden } from './tageslage';
 import type { Terminort, Wegfrage } from './wegpruefung';
-import { useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
+import { KURZE_TERMINDAUER_MINUTEN, useLueckenfinder, type LueckenSpalte } from './lueckenfinder';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
@@ -91,6 +91,9 @@ import {
   type StatusFilter,
   type Zeitband,
 } from './calendar';
+
+/** Bevorzugt das Terminfenster, sonst die kürzere Dauer (ANN-317, BEF-136). */
+const LUECKEN_DAUERN = [TERMINFENSTER_MINUTEN, KURZE_TERMINDAUER_MINUTEN] as const;
 
 /**
  * Zentrale Kalenderansicht (CAL-002, CAL-006).
@@ -753,7 +756,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
     datum: bereich.von,
     patientId: p.patient,
     zeitzone: zone ?? null,
-    dauer: TERMINFENSTER_MINUTEN,
+    dauern: LUECKEN_DAUERN,
     aktiv: isTherapyStaff(user.roles),
     abMinute: bereich.von === heute && jetztMinute !== null ? jetztMinute : 0,
   });
@@ -767,7 +770,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           : luecken.stand === 'laedt'
             ? 'Freie Lücken werden geprüft …'
             : luecken.stand === 'bereit'
-              ? `Freie Lücken: ✓ passt, ! knapp, × passt nicht – mit Fahrweg vom Termin davor und zum Termin danach, ${TERMINFENSTER_MINUTEN} Minuten Termin. Nur Auskunft.${
+              ? `Freie Lücken: ✓ passt, ! knapp, × passt nicht – mit Fahrweg vom Termin davor und zum Termin danach, ${TERMINFENSTER_MINUTEN} Minuten Termin; reicht es nur für ${KURZE_TERMINDAUER_MINUTEN}, steht „nur ${KURZE_TERMINDAUER_MINUTEN} Min.“ dabei. Nur Auskunft.${
                   luecken.ungeprueft ? ' Einige Lücken ließen sich nicht prüfen.' : ''
                 }`
               : null;
@@ -778,6 +781,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
           bisMinute: l.bisMinute,
           stufe: l.stufe,
           ab: l.ab && zone ? formatLocalTime(l.ab, zone) : null,
+          kuerzer: l.dauer !== null && l.dauer < TERMINFENSTER_MINUTEN ? l.dauer : null,
         }))
       : undefined;
 

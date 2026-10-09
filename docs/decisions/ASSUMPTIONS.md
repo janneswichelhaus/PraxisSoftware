@@ -2895,7 +2895,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Änderungspfad.** Andere Dauer, etwa aus der Verordnung: `dauer` in `useLueckenfinder` aus dem Kalenderstand · Aufwand `klein`. Ein Band je Tag statt je Lücke: Darstellung in `CalendarGrid.tsx` · Aufwand `klein`. Auch in der Woche: `lueckenSpalten` für Tage statt Personen · Aufwand `klein`, kostet zwei Matrizen je Tag. Andere Termine wieder ausblenden: `zurueckgenommen` in `CalendarPage.tsx` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Der Lückenfinder rechnet auch mit 45 Minuten Termindauer; bevorzugt bleiben 60 Minuten. Umsetzung: BEF-136.
+**Abnahme (Jannes, 2026-10-09).** geändert: Der Lückenfinder rechnet auch mit 45 Minuten Termindauer; bevorzugt bleiben 60 Minuten. Umsetzung: BEF-136. **Umgesetzt (ABN-033, 2026-10-09):** ANN-317.
 
 ### ANN-240 — Garage je Standort: Beginn und Ende der Tour, getrennt vom Startort; Rückweg in Tour und Kalender
 
@@ -3831,3 +3831,15 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes
 **Anker.** `prepare_patient_file_upload` in `supabase/migrations/20261021120000_abn_032_no_new_photo_aids.sql`; `HINWEIS_DOKUMENTATION` und `Aufnahme` in `src/features/files/FotosImVerlauf.tsx`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`. Geprüft in `supabase/tests/patient-photos.test.ts`, `documentation-photos.test.ts`, `FotosImVerlauf.test.tsx`, `src/lib/einwilligung.test.ts`.
 
 **Änderungspfad.** Arbeitshilfe wieder zulassen: die Abweisung in `prepare_patient_file_upload` streichen, `einwilligungAngeboten` leeren und die Wahl in `Aufnahme` zurückholen (Git-Verlauf) · Aufwand `mittel`. Arbeitshilfe ganz entfernen, wenn keine mehr liegt: Art, Klasse, Bucket und Einwilligungszweck per Migration · Aufwand `groß`.
+
+### ANN-317 — Lückenfinder: erst 60 Minuten, sonst 45, gekennzeichnet „nur 45 Min.“
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Kartendienst, Lückenfinder)
+
+**Annahme.** Der Lückenfinder fragt je Lücke zuerst für 60 Minuten (Terminfenster), dann für 45. Es gilt die erste Dauer, für die die Lücke **passt** oder **knapp** ist; dann steht hinter dem Wort „· nur 45 Min.“, auch vorgelesen. Passt sie für keine, steht die Stufe der längsten geprüften Dauer da; kürzer als 45 Minuten heißt „zu kurz“. Lädt die Antwort für 60 noch, wartet die Lücke, damit sie nicht von „nur 45“ auf „passt“ springt.
+
+**Begründung.** BEF-136: 45 Minuten sind eine mögliche Termindauer, 60 bevorzugt. Eine Lücke, die nur 45 trägt, soll man auf einen Blick von einer vollen unterscheiden, ohne eine neue Farbe einzuführen (die Farben sagen die Fahrzeit, ANN-195). Zwei Fragen je Lücke in einem Aufruf von `check_travel_fit` statt zweier Aufrufe.
+
+**Anker.** `KURZE_TERMINDAUER_MINUTEN` und die Auswahl in `useLueckenfinder` in `src/features/appointments/lueckenfinder.ts`; `LUECKEN_DAUERN` in `CalendarPage.tsx`; `kuerzer` in `CalendarGrid.tsx`. Geprüft in `lueckenfinder.test.tsx`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx`.
+
+**Änderungspfad.** Andere oder weitere Dauern: `LUECKEN_DAUERN` · Aufwand `klein`. Die Dauer aus der Verordnung: siehe ANN-239 · Aufwand `klein`.
