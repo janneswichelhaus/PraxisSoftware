@@ -14,8 +14,9 @@ import {
  *   * Behandlung: owner, Therapeut:innen, Teamleitung und Büro lesen (E15);
  *     auf Übung und Beschwerden antworten nur die therapeutischen Rollen,
  *     das Büro auf Termin, Rechnung und Sonstiges (ANN-310).
- *   * Training: owner und Trainingsbetreuung; das Büro nur „Termin oder
- *     Rechnung" (ANN-311). Kein Durchgriff (ADR-021 Punkt 6).
+ *   * Training: owner, Trainingsbetreuung und Büro lesen alles (ABN-030,
+ *     BEF-137); das Büro antwortet wie in der Behandlung auf Termin, Rechnung
+ *     und Sonstiges (ANN-311 Fassung 2). Kein Durchgriff (ADR-021 Punkt 6).
  *   * Die Liste trägt keinen Text; das Öffnen steht als „Akte geöffnet" im
  *     Protokoll (ADR-010 Fassung 3).
  */
@@ -203,24 +204,26 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(leer.rows).toHaveLength(0);
   });
 
-  it('Training: owner und Trainingsbetreuung alles, das Büro nur Termin oder Rechnung (ANN-311)', async () => {
+  it('Training: alle drei lesen alles, das Büro antwortet nur organisatorisch (ANN-311, BEF-137)', async () => {
     await gesundheitImTraining();
     const beschwerde = await fragen(tina, 'complaint', 'Schulter zwickt');
     const rechnung = await fragen(tina, 'organisational');
     const sonst = await fragen(tina, 'other');
 
-    for (const konto of [users.ownerTherapist, users.trainer]) {
+    for (const konto of [users.ownerTherapist, users.trainer, users.office]) {
       expect((await liste(konto, 'training')).map((z) => z.id).sort()).toEqual(
         [beschwerde, rechnung, sonst].sort(),
       );
     }
     const buero = await liste(users.office, 'training');
-    expect(buero.map((z) => z.id)).toEqual([rechnung]);
-    expect(buero[0]!.can_answer).toBe(true);
-    expect(await fehler(asUser(users.office, OEFFNEN, [beschwerde]))).toBe('P0002');
-    expect(await fehler(asUser(users.office, OEFFNEN, [sonst]))).toBe('P0002');
-    expect(await fehler(asUser(users.office, ANTWORTEN, [sonst, 'x']))).toBe('P0002');
+    const darf = Object.fromEntries(buero.map((z) => [z.id, z.can_answer]));
+    expect(darf).toEqual({ [beschwerde]: false, [rechnung]: true, [sonst]: true });
+    // Lesen ja (BEF-137), antworten und erledigen auf Beschwerden nicht.
+    await asUserCommitted(users.office, OEFFNEN, [beschwerde]);
+    expect(await fehler(asUser(users.office, ANTWORTEN, [beschwerde, 'x']))).toBe('42501');
+    expect(await fehler(asUser(users.office, ERLEDIGEN, [beschwerde]))).toBe('42501');
     await asUserCommitted(users.office, ANTWORTEN, [rechnung, 'Ist korrigiert.']);
+    await asUserCommitted(users.office, ANTWORTEN, [sonst, 'Gern.']);
 
     // Therapeut:innen und Teamleitung sehen im Training nichts.
     for (const konto of [users.therapist, users.teamLead]) {

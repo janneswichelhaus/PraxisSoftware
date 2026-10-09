@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-08.
+Zuletzt aktualisiert: 2026-10-09.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -3477,7 +3477,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Profil in der Plattform: eigene Projektion mit Recht `read` · Aufwand `mittel`. Büro lesend: eigene Rollenfunktion statt `can_access_training_protocols` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Das Voraussetzungsprofil sieht auch das Büro (lesend). Die Akte erfährt weiter nicht, ob gebucht wurde (ANN-285 bestätigt). Umsetzung: BEF-137.
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Voraussetzungsprofil sieht auch das Büro (lesend). Die Akte erfährt weiter nicht, ob gebucht wurde (ANN-285 bestätigt). Umsetzung: BEF-137. **Umsetzung (ABN-030, 2026-10-09, BEF-137).** `get_training_profile` liest mit `app.can_read_training_content()` (owner, Trainingsbetreuung, Büro; ANN-315), jedes Lesen weiter als `training_relationship.viewed` mit `view: profile`. Schreiben bleibt bei `app.can_access_training_protocols()`. Das Büro sieht das Profil ohne „Bearbeiten“. Scharf mit echten Daten erst nach B2.
 
 ### ANN-288 — Der Trainingsvertrag entsteht im Konto mit Musterbelehrung, „Zahlungspflichtig buchen“ und einer Bestätigung zum Speichern
 
@@ -3552,7 +3552,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Änderungspfad.** Mehr Rollen pflegen lassen: die Rollenliste in `app.can_manage_exercise_library()` erweitern · Aufwand `klein`. Das Büro lesen lassen: dasselbe in `app.can_read_exercise_library()` und `canReadExerciseLibrary` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest die Übungsbibliothek; pflegen bleibt bei owner. Umsetzung: BEF-137.
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest die Übungsbibliothek; pflegen bleibt bei owner. Umsetzung: BEF-137. **Umsetzung (ABN-030, 2026-10-09, BEF-137).** `app.can_read_exercise_library()` und `canReadExerciseLibrary` nehmen `office` auf; das Büro findet die Bibliothek unter Organisatorisches. Pflegen bleibt bei owner.
 
 ### ANN-294 — Eine Verbindung: von leichter nach schwerer, genau eine Achse
 
@@ -3614,7 +3614,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Änderungspfad.** Andere Rollen: die Listen in beiden Funktionen und in `canReadExercisePlans` ändern · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest auch Trainingspläne; schreiben bleibt wie gebaut. Umsetzung: BEF-137.
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest auch Trainingspläne; schreiben bleibt wie gebaut. Umsetzung: BEF-137. **Umsetzung (ABN-030, 2026-10-09, BEF-137).** Der Zweig `training` von `app.can_read_exercise_plans` ruft `app.can_read_training_content()` (ANN-315); damit liest das Büro Trainingspläne und ihre Einheiten. `app.can_write_exercise_plans` ist unverändert. Scharf mit echten Daten erst nach B2.
 
 ### ANN-299 — Dosierung je Position: Sätze, Wiederholungen oder Dauer, Last und Tempo frei
 
@@ -3770,7 +3770,7 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Anker.** `app.platform_message_topic_allowed` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; die Sicht der Praxis in `app.can_read_platform_message` (KOM-002). Geprüft in `supabase/tests/platform-messages.test.ts` und `supabase/tests/practice-messages.test.ts`.
 
-**Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
+**Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`. **Fassung 2 (ABN-030, 2026-10-09, BEF-137).** Das Büro liest im Training alle Rückfragen (`app.can_read_platform_message` → `app.can_read_training_content()`, ANN-315) und antwortet wie in der Behandlung auf „Termin oder Rechnung“ und „Sonstiges“ (ANN-310); auf Übung und Beschwerden antworten owner und Trainingsbetreuung. Der Grund für „nur Termin oder Rechnung“ – „Sonstiges“ kann Gesundheitliches enthalten – trägt nicht mehr, seit das Büro alles liest. Die Einwilligungsregel für Gesundheitsthemen bleibt.
 
 ### ANN-312 — Klinisch Relevantes kommt als Verweis am Vorgang in die Akte, endgültig
 
@@ -3807,3 +3807,15 @@ Technik · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** Eintrag `team` in `src/app/navigation.tsx`. Geprüft in `src/app/navigation.test.tsx` und `src/app/AppShell.test.tsx`.
 
 **Änderungspfad.** Rückfragen als eigener Bereich oder nur in der Übersicht: Eintrag in `navigation.tsx` · Aufwand `klein`. Kommunikation wieder hinter „Mehr“: `vorschau: true` zurück · Aufwand `klein`.
+
+### ANN-315 — Eine Leseregel für das Training: owner, Trainingsbetreuung und Büro
+
+Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
+
+**Annahme.** Was ein Trainingsverhältnis an Inhalt trägt – Protokoll, Voraussetzungsprofil mit Übernahmen, Pläne und Einheiten, Rückfragen –, lesen genau `owner`, Trainingsbetreuung und Büro, nach einer Funktion `app.can_read_training_content()`; was künftig hinzukommt, liest nach derselben. Schreiben regelt je Inhalt eine eigene Funktion, in der das Büro nicht steht. Die Übungsbibliothek ist kein Inhalt eines Verhältnisses und liest zusätzlich die Behandlung.
+
+**Begründung.** BEF-137 macht aus vier einzelnen Lesegrenzen eine Regel (§4.3, ADR-021 Fassung 3 Punkt 10). Eine Regel an einer Stelle hält sie für die nächsten Loops gleich und macht die Rücknahme nach der DSFA klein. Therapeut:innen und Teamleitung stehen nicht darin (kein Durchgriff, Punkt 6).
+
+**Anker.** `app.can_read_training_content` in `supabase/migrations/20261021100000_abn_030_office_reads_training.sql`; `canReadTrainingContent` in `src/features/session/types.ts`. Geprüft in `supabase/tests/training-profile.test.ts`, `exercise-plans.test.ts`, `practice-messages.test.ts`, `exercise-library.test.ts` und `src/features/session/types.test.ts`.
+
+**Änderungspfad.** Das Büro im Training wieder ausnehmen (etwa nach der DSFA): `office` aus `app.can_read_training_content` und `canReadTrainingContent` nehmen, dazu `app.can_read_exercise_library` · Aufwand `klein`. Einen Inhalt einzeln ausnehmen: dessen Leseprüfung auf eine eigene Funktion stellen · Aufwand `klein`.

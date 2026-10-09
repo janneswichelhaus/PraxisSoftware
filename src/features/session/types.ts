@@ -419,32 +419,46 @@ export function canWriteTrainingProtocols(roles: readonly RoleKey[]): boolean {
 }
 
 /**
- * Wer Trainingsprotokolle liest (ABN-022, BEF-113, ANN-184 Fassung 2): dazu
- * das Büro - für Rückfragen zur Rechnung. Verbindlich ist
- * app.can_read_training_protocols(); jedes Lesen protokolliert der Server.
+ * Wer Inhalte eines Trainingsverhältnisses liest - Protokoll, Profil, Pläne,
+ * Rückfragen (ABN-030, BEF-137, ANN-315): owner, Trainingsbetreuung und das
+ * Büro; schreiben tut das Büro dort nichts. Verbindlich ist
+ * app.can_read_training_content(); jedes Lesen protokolliert der Server.
  */
-export function canReadTrainingProtocols(roles: readonly RoleKey[]): boolean {
-  return roles.some((role) => role === 'owner' || role === 'trainer' || role === 'office');
+export function canReadTrainingContent(roles: readonly RoleKey[]): boolean {
+  return roles.some((role) => trainingRoles.includes(role));
 }
 
 /**
- * Wer die Übungsbibliothek liest (UEB-001, ANN-293): wer Übungen anleitet -
- * owner, therapist, team_lead, Trainingsbetreuung; nicht das Büro. Pflegen
- * darf nur owner. Verbindlich sind app.can_read_exercise_library() und
+ * Wer Trainingsprotokolle liest (ABN-022, BEF-113, ANN-184 Fassung 2) - nach
+ * der einen Leseregel des Trainings. Verbindlich ist
+ * app.can_read_training_protocols().
+ */
+export function canReadTrainingProtocols(roles: readonly RoleKey[]): boolean {
+  return canReadTrainingContent(roles);
+}
+
+/**
+ * Wer die Übungsbibliothek liest (UEB-001, ANN-293; ABN-030, BEF-137): alle
+ * Praxisrollen - owner, therapist, team_lead, Trainingsbetreuung und das Büro.
+ * Pflegen darf nur owner. Verbindlich sind app.can_read_exercise_library() und
  * app.can_manage_exercise_library().
  */
 export function canReadExerciseLibrary(roles: readonly RoleKey[]): boolean {
   return roles.some(
     (role) =>
-      role === 'owner' || role === 'therapist' || role === 'team_lead' || role === 'trainer',
+      role === 'owner' ||
+      role === 'therapist' ||
+      role === 'team_lead' ||
+      role === 'trainer' ||
+      role === 'office',
   );
 }
 
 /**
  * Wer Übungspläne liest (UEB-004, ANN-298) - je Bereich. Behandlung: owner,
- * therapist, team_lead und das Büro (ADR-004 Punkt 3); Training: owner und
- * Trainingsbetreuung, das Büro nicht (ADR-021 Punkt 10). Steuert nur die
- * Darstellung; verbindlich ist app.can_read_exercise_plans().
+ * therapist, team_lead und das Büro (ADR-004 Punkt 3); Training: owner,
+ * Trainingsbetreuung und das Büro (ADR-021 Fassung 3 Punkt 10, BEF-137).
+ * Steuert nur die Darstellung; verbindlich ist app.can_read_exercise_plans().
  */
 export function canReadExercisePlans(
   roles: readonly RoleKey[],
@@ -452,7 +466,7 @@ export function canReadExercisePlans(
 ): boolean {
   return bereich === 'therapy'
     ? roles.some((role) => directoryRoles.includes(role))
-    : roles.some((role) => role === 'owner' || role === 'trainer');
+    : canReadTrainingContent(roles);
 }
 
 /**

@@ -236,9 +236,9 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
     eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
   // Die Übungsbibliothek (UEB-EPIC-001): Fachwissen der Praxis ohne
-  // Personenbezug, gebraucht von denen, die Übungen anleiten - nicht vom Büro
-  // (ANN-293). Eine Trainingsbetreuung ohne Behandlungsrolle findet sie im
-  // Training.
+  // Personenbezug, gebraucht von denen, die Übungen anleiten; das Büro liest
+  // mit (ANN-293, BEF-137). Eine Trainingsbetreuung ohne Behandlungsrolle
+  // findet sie im Training.
   if (canReadExerciseLibrary(roles)) {
     eintraege.push({
       to: '/uebungen',

@@ -21,6 +21,7 @@ import {
   canManageInvoicing,
   canWriteTrainingClients,
   canReadTrainingProtocols,
+  canReadTrainingContent,
   canWriteTrainingProtocols,
   canReadExercisePlans,
   type CurrentUser,
@@ -222,16 +223,20 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               zeitzone={user.organizationTimeZone}
             />
           ) : null}
-          {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung - nur
-              owner und Trainingsbetreuung (ANN-287), nicht das Büro. */}
-          {canWriteTrainingProtocols(user.roles) ? (
+          {/* KND-005: Voraussetzungen und Übernahmen aus der Behandlung.
+              Schreiben owner und Trainingsbetreuung (ANN-287), lesen dazu das
+              Büro (ABN-030, BEF-137). */}
+          {canReadTrainingContent(user.roles) ? (
             <TrainingProfil
               relationshipId={kundin.id}
-              darfSchreiben={kundin.contract_ended_on === null}
+              darfSchreiben={
+                canWriteTrainingProtocols(user.roles) && kundin.contract_ended_on === null
+              }
             />
           ) : null}
-          {/* UEB-EPIC-002: die Trainingspläne - owner und Trainingsbetreuung,
-              nicht das Büro (ANN-298). */}
+          {/* UEB-EPIC-002: die Trainingspläne - schreiben owner und
+              Trainingsbetreuung, lesen dazu das Büro (ANN-298, BEF-137); ob
+              geschrieben werden darf, sagt der Server (can_write). */}
           {canReadExercisePlans(user.roles, 'training') ? (
             <PlanAbschnitt
               bereich="training"
@@ -254,8 +259,9 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
               praxis={user.organizationName ?? 'der Praxis'}
             />
           ) : null}
-          {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro sieht
-              nur „Termin oder Rechnung" (ANN-311), verbindlich filtert der Server. */}
+          {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro liest
+              alle und antwortet auf Termin, Rechnung und Sonstiges (ANN-311
+              Fassung 2), verbindlich entscheidet der Server. */}
           <RueckfragenAbschnitt art="training" verhaeltnisId={kundin.id} />
         </>
       )}

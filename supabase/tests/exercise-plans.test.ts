@@ -17,7 +17,8 @@ import { erwarteAbgewiesenenLeseversuch } from './helpers/abgewiesen';
  *   * Ein Plan hängt an genau einem Verhältnis: Akte (`therapy`) oder
  *     Trainingsverhältnis (`training`) - ANN-297, ADR-021 Punkt 3.
  *   * Behandlung: schreiben therapist und team_lead, lesen dazu owner und
- *     Büro; Training: owner und Trainingsbetreuung, das Büro nicht (ANN-298).
+ *     Büro; Training: schreiben owner und Trainingsbetreuung, lesen dazu das
+ *     Büro (ANN-298, seit ABN-030 BEF-137).
  *   * Kein Durchgriff: Ein Plan des anderen Bereichs ist „nicht gefunden"
  *     (ADR-021 Punkt 6).
  *   * Positionen ändern sich nur im Entwurf (ANN-300), Dosierung nach ANN-299.
@@ -448,8 +449,28 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
       await expect(
         asUserCommitted(users.therapist, ANLEGEN, ['training', trainingRelationships.erika, 'X']),
       ).rejects.toThrow(/not allowed/);
-      // Das Büro sieht keine Trainingspläne (ANN-298, ADR-021 Punkt 10).
-      expect(await planLesen(training, users.office)).toBeNull();
+      // Das Büro liest Trainingspläne, schreibt aber nicht (ABN-030, BEF-137,
+      // ADR-021 Fassung 3 Punkt 10).
+      expect((await planLesen(training, users.office))!.can_write).toBe(false);
+      expect(
+        (await liste('training', trainingRelationships.erika, users.office))!.plans,
+      ).toHaveLength(1);
+      await expect(
+        asUserCommitted(users.office, ANLEGEN, ['training', trainingRelationships.erika, 'X']),
+      ).rejects.toThrow(/not allowed/);
+      await expect(
+        asUserCommitted(users.office, PLAN_SPEICHERN, [training, 'Büro', null]),
+      ).rejects.toThrow(/not allowed/);
+      await expect(
+        asUserCommitted(
+          users.office,
+          POSITION,
+          positionParameter(null, training, VARIANTE.rudernGelb),
+        ),
+      ).rejects.toThrow(/not allowed/);
+      await expect(asUserCommitted(users.office, VERWERFEN, [training])).rejects.toThrow(
+        /not allowed/,
+      );
 
       // Der Bereich und das Verhältnis passen zusammen - schemaseitig.
       await expect(
@@ -469,7 +490,7 @@ describe('Übungspläne: Entwurf (UEB-004)', () => {
         'exercise_plans.read',
       );
       await erwarteAbgewiesenenLeseversuch(
-        users.office,
+        users.therapist,
         `select l from public.list_exercise_plans('training', $1::uuid) l where l is not null`,
         [trainingRelationships.tina],
         'exercise_plans.read',
