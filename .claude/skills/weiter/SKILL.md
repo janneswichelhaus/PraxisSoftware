@@ -29,8 +29,8 @@ Branch liegt.
 
 - **Code** (Migration, Policy, RPC, Oberfläche …): Klassifikation K1 nach
   `docs/development/GRAPH-ENGINEERING-WORKFLOW.md`. Pfad A läuft ab Schritt K1
-  nach `.claude/skills/feature-loop/SKILL.md` — einschließlich der Freigabe am
-  Ende von A. Pfad S: stoppen und `/sandbox <Thema>` vorschlagen.
+  nach `.claude/skills/feature-loop/SKILL.md`, ohne auf eine Freigabe zu
+  warten. Pfad S: stoppen und `/sandbox <Thema>` vorschlagen.
 - **Dokumentation** (ADR, Umbau-Schritt, Providerprüfung, Antworten
   einarbeiten): als Docs-Session nach der Vorgabe, auf die die Zeile zeigt.
   Kein Produktivcode; Prüfung wie unten.

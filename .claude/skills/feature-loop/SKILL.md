@@ -77,11 +77,13 @@ Index und Regeln in `docs/product/IDEENSPEICHER.md`. Zweck: bessere Rückfragen
 und Benennung; nie Scope, nie Vorbauen. Würde ein Hinweis Mehrarbeit oder eine
 Entscheidung bedeuten, wird er in Schritt I als offene Frage genannt.
 
-### Freigabe
+### Zuschnitt festhalten
 
-A endet mit drei Sätzen an Jannes: was gebaut wird, was bewusst nicht, welche
-Prüfungen betroffen sind. **Dann auf „Freigabe" warten.** Ab B läuft der Loop
-ohne Zwischenstopp bis zum Bericht.
+A endet mit drei Sätzen: was gebaut wird, was bewusst nicht, welche Prüfungen
+betroffen sind. Sie gehen in den Bericht (Schritt I), **es wird nicht auf eine
+Freigabe gewartet** (Jannes, 2026-10-09). Der Loop läuft ohne Zwischenstopp
+bis zum Bericht; anhalten darf ihn nur ein Punkt der Hard-Stop-Liste
+(`PROJECT_PRINCIPLES.md` §15.1, Schritt G).
 
 ## B. INSPECT
 
@@ -237,7 +239,7 @@ Information.
 
 Kompakt berichten:
 
-1. Was wurde umgesetzt — je Story
+1. Der Zuschnitt aus A (drei Sätze) und was davon umgesetzt wurde — je Story
 2. Wesentlich geänderte Dateien und Datenbankbereiche
 3. Erfüllte Akzeptanzkriterien; unvollständige Stories mit Ursache
 4. Gelaufene Tests und Checks mit Ergebnis
