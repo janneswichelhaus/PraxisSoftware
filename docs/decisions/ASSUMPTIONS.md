@@ -2671,7 +2671,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Änderungspfad.** Anderer Wortlaut: die Konstante · Aufwand `klein`. Wahl im Kameradialog selbst: eine Stufe vor dem Kamerastart in `Kameradialog.tsx` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil der Dokumentation – keine Frage vor der Aufnahme. An das Foto von Anmeldebogen und Rezept erinnert die App an der passenden Stelle; andere Zwecke gibt es nicht. Umsetzung: BEF-135.
+**Abnahme (Jannes, 2026-10-09).** geändert: Ein Foto, das aus der Dokumentation heraus entsteht, ist immer Teil der Dokumentation – keine Frage vor der Aufnahme. An das Foto von Anmeldebogen und Rezept erinnert die App an der passenden Stelle; andere Zwecke gibt es nicht. Umsetzung: BEF-135. **Abgelöst durch ANN-316** (ABN-032, 2026-10-09).
 
 ### ANN-222 — Die Anwendung löst die Prüfung am Server nach der Bestätigung aus; fehlt die Function, bleibt die Datei ungeprüft
 
@@ -3819,3 +3819,15 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `app.can_read_training_content` in `supabase/migrations/20261021100000_abn_030_office_reads_training.sql`; `canReadTrainingContent` in `src/features/session/types.ts`. Geprüft in `supabase/tests/training-profile.test.ts`, `exercise-plans.test.ts`, `practice-messages.test.ts`, `exercise-library.test.ts` und `src/features/session/types.test.ts`.
 
 **Änderungspfad.** Das Büro im Training wieder ausnehmen (etwa nach der DSFA): `office` aus `app.can_read_training_content` und `canReadTrainingContent` nehmen, dazu `app.can_read_exercise_library` · Aufwand `klein`. Einen Inhalt einzeln ausnehmen: dessen Leseprüfung auf eine eigene Funktion stellen · Aufwand `klein`.
+
+### ANN-316 — Fotos aus dem Verlauf ohne Wahl; keine neue Arbeitshilfe, die Fotoeinwilligung nur noch zum Widerruf
+
+Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Befund, Schritt 10); Datenschutzprüfung (B2, ADR-017 Punkt 45)
+
+**Annahme.** „Foto aufnehmen“ im Verlauf öffnet die Kamera ohne Wahl; jedes Foto ist ein Dokumentationsfoto, über dem Bild steht „Teil der Dokumentation (Akte, zehn Jahre); löschen nur heute“. Die Vorbereitung eines Uploads weist die Art `patientenfoto` ab; vorhandene Arbeitshilfen bleiben bis Frist oder Widerruf. Die Einwilligung zu Fotos zeigen Akte und Plattform nur noch, solange sie erteilt ist – zum Widerruf; angeboten wird sie nicht mehr. An Anmeldebogen und Rezept erinnern die bestehenden Stellen (Kopfzeile der Akte, Offene Punkte „Erstaufnahme“, Verordnungsfoto am Termin); eine neue Erinnerung kommt nicht dazu. **Ablösung:** ersetzt ANN-221.
+
+**Begründung.** BEF-135, ADR-017 Fassung 4 Punkte 56 und 57. Den Schlüssel `patientenfoto` zu entfernen, kostete eine Migration über Katalog, Klassen, Löschlauf und Herausgabe, solange noch eine Arbeitshilfe liegen kann. Eine Einwilligung, die nichts mehr erlaubt, soll niemand neu erteilen; der Widerruf muss bleiben, weil er vorhandene Arbeitshilfen löscht. Der Server nimmt eine Erteilung noch an – sie bleibt ohne Wirkung, weil keine Arbeitshilfe mehr entsteht.
+
+**Anker.** `prepare_patient_file_upload` in `supabase/migrations/20261021120000_abn_032_no_new_photo_aids.sql`; `HINWEIS_DOKUMENTATION` und `Aufnahme` in `src/features/files/FotosImVerlauf.tsx`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`. Geprüft in `supabase/tests/patient-photos.test.ts`, `documentation-photos.test.ts`, `FotosImVerlauf.test.tsx`, `src/lib/einwilligung.test.ts`.
+
+**Änderungspfad.** Arbeitshilfe wieder zulassen: die Abweisung in `prepare_patient_file_upload` streichen, `einwilligungAngeboten` leeren und die Wahl in `Aufnahme` zurückholen (Git-Verlauf) · Aufwand `mittel`. Arbeitshilfe ganz entfernen, wenn keine mehr liegt: Art, Klasse, Bucket und Einwilligungszweck per Migration · Aufwand `groß`.

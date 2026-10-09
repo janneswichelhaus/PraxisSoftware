@@ -11,16 +11,27 @@ const { users, patients } = SEED;
 const PRUEFSUMME = 'a'.repeat(64);
 
 async function datei(art: string, mime: string): Promise<string> {
-  const { rows } = await asUserCommitted<{
-    file_id: string;
-    bucket_id: string;
-    object_key: string;
-  }>(
-    users.therapist,
-    `select file_id, bucket_id, object_key from public.prepare_patient_file_upload(
-       $1::uuid, null, $2, 'Datei', $3, 1000, $4)`,
-    [patients.max, art, mime, PRUEFSUMME],
-  );
+  type Vorbereitet = { file_id: string; bucket_id: string; object_key: string };
+  // Eine Arbeitshilfe entsteht seit ABN-032 nicht mehr (ANN-316); geprüft wird
+  // der Altbestand, angelegt wie früher von der Vorbereitung.
+  const { rows } =
+    art === 'patientenfoto'
+      ? await asPostgres<Vorbereitet>(
+          `insert into public.patient_files (
+         organization_id, patient_id, treatment_basis_id, document_type,
+         display_name, mime_type, byte_size, checksum_sha256, uploaded_by
+       )
+       select p.organization_id, p.id, null, 'patientenfoto', 'Datei', 'image/jpeg', 1000, $2, $3
+       from public.patients p where p.id = $1
+       returning id as file_id, app.patient_file_bucket_for(document_type) as bucket_id, object_key`,
+          [patients.max, PRUEFSUMME, users.therapist],
+        )
+      : await asUserCommitted<Vorbereitet>(
+          users.therapist,
+          `select file_id, bucket_id, object_key from public.prepare_patient_file_upload(
+             $1::uuid, null, $2, 'Datei', $3, 1000, $4)`,
+          [patients.max, art, mime, PRUEFSUMME],
+        );
   const d = rows[0]!;
   await asPostgres(
     `insert into storage.objects (bucket_id, name, metadata)

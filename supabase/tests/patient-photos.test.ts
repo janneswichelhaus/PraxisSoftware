@@ -57,6 +57,15 @@ const VORBEREITEN = `
   )
 `;
 
+/**
+ * Eine Arbeitshilfe entsteht seit ABN-032 nicht mehr (ADR-017 Fassung 4
+ * Punkt 57, ANN-316): Die Vorbereitung weist die Art ab. Was als Arbeitshilfe
+ * schon liegt, bleibt bis Frist oder Widerruf - die Tests dieser Datei prüfen
+ * genau diesen Altbestand. `vorbereiten` legt eine Arbeitshilfe deshalb als
+ * Zeile an, wie sie die Vorbereitung früher anlegte; alles danach
+ * (Ablegen, Bestätigen, Widerruf, Frist) läuft über die echten Wege. Andere
+ * Arten und `ueberApi` gehen über die Vorbereitung selbst.
+ */
 async function vorbereiten(
   userId: string = users.therapist,
   optionen: {
@@ -64,8 +73,23 @@ async function vorbereiten(
     grundlage?: string | null;
     art?: string;
     mime?: string;
+    ueberApi?: boolean;
   } = {},
 ): Promise<Vorbereitet> {
+  if ((optionen.art ?? 'patientenfoto') === 'patientenfoto' && !optionen.ueberApi) {
+    const { rows } = await asPostgres<Vorbereitet>(
+      `insert into public.patient_files (
+         organization_id, patient_id, treatment_basis_id, document_type,
+         display_name, mime_type, byte_size, checksum_sha256, uploaded_by
+       )
+       select p.organization_id, p.id, null, 'patientenfoto',
+              'Foto vom 26.09.2026', 'image/jpeg', 54321, $2, $3
+       from public.patients p where p.id = $1
+       returning id as file_id, app.patient_file_bucket_for(document_type) as bucket_id, object_key`,
+      [optionen.patientId ?? patients.max, PRUEFSUMME, userId],
+    );
+    return rows[0]!;
+  }
   const { rows } = await asUserCommitted<Vorbereitet>(userId, VORBEREITEN, [
     optionen.patientId ?? patients.max,
     optionen.grundlage ?? null,
@@ -219,16 +243,13 @@ describe('Patientenfotos (DOK-006b)', () => {
   });
 
   describe('Einwilligung auf allen Wegen (Punkt 36)', () => {
-    it('weist die Vorbereitung ohne Einwilligung ab, bevor eine Zeile entsteht', async () => {
-      const fehler = await abgefangen(vorbereiten());
-      expect(fehler?.message).toMatch(/no consent/);
+    it('nimmt keine neue Arbeitshilfe an - ohne, nach Ablehnung und mit Einwilligung (ABN-032, ANN-316)', async () => {
+      for (const vorher of [null, 'consent_refused', 'consent_granted'] as const) {
+        if (vorher) await vermerken(vorher);
+        const fehler = await abgefangen(vorbereiten(users.therapist, { ueberApi: true }));
+        expect(fehler?.message).toMatch(/photo aids are no longer taken/);
+      }
       expect(await anzahl('select count(*) from public.patient_files')).toBe(0);
-    });
-
-    it('weist sie nach einer Ablehnung ebenso ab', async () => {
-      await vermerken('consent_refused');
-      const fehler = await abgefangen(vorbereiten());
-      expect(fehler?.message).toMatch(/no consent/);
     });
 
     it('legt nach der Erteilung das Foto im eigenen Bucket an der Patient:in ab', async () => {
@@ -332,12 +353,18 @@ describe('Patientenfotos (DOK-006b)', () => {
     });
 
     it('nimmt nur JPEG und nur an der Patient:in, nicht an einer Verordnung', async () => {
-      await vermerken('consent_granted');
-      const png = await abgefangen(vorbereiten(users.therapist, { mime: 'image/png' }));
+      // Seit ABN-032 gilt das für das Dokumentationsfoto, die einzige Fotoart,
+      // die noch entsteht.
+      const png = await abgefangen(
+        vorbereiten(users.therapist, { art: 'dokumentationsfoto', mime: 'image/png' }),
+      );
       expect(png?.message).toMatch(/unsupported media type/);
 
       const anVerordnung = await abgefangen(
-        vorbereiten(users.therapist, { grundlage: '88888888-8888-4888-8888-000000000001' }),
+        vorbereiten(users.therapist, {
+          art: 'dokumentationsfoto',
+          grundlage: '88888888-8888-4888-8888-000000000001',
+        }),
       );
       expect(anVerordnung?.message).toMatch(/belongs to the patient/);
     });
@@ -440,7 +467,11 @@ describe('Patientenfotos (DOK-006b)', () => {
     it('verlangt nach dem Widerruf eine neue Erteilung; die gilt nur fuer neue Fotos', async () => {
       await vermerken('consent_granted');
       await vermerken('consent_withdrawn');
-      expect((await abgefangen(vorbereiten()))?.message).toMatch(/no consent/);
+      // Ein Altbestand im Upload bestätigt nach dem Widerruf nicht mehr.
+      const offen = await vorbereiten();
+      await objektAblegen(BUCKET, offen.object_key);
+      expect((await abgefangen(bestaetigen(offen.file_id)))?.message).toMatch(/no consent/);
+      await asPostgres('delete from public.patient_files where id = $1', [offen.file_id]);
 
       await vermerken('consent_granted');
       const neu = await foto();
@@ -763,7 +794,7 @@ describe('Patientenfotos (DOK-006b)', () => {
     });
 
     it('laesst die Verwaltung nicht aufnehmen, wohl aber sehen und oeffnen (§4.3)', async () => {
-      const fehler = await abgefangen(vorbereiten(users.office));
+      const fehler = await abgefangen(vorbereiten(users.office, { art: 'dokumentationsfoto' }));
       expect(fehler?.message).toMatch(/not allowed/);
 
       const datei = await foto();
@@ -813,7 +844,9 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect((await abgefangen(asUser(users.trainer, VERWEIS, [datei.file_id])))?.message).toMatch(
         /not accessible/,
       );
-      expect((await abgefangen(vorbereiten(users.trainer)))?.message).toBeTruthy();
+      expect(
+        (await abgefangen(vorbereiten(users.trainer, { art: 'dokumentationsfoto' })))?.message,
+      ).toBeTruthy();
     });
 
     it('zeigt einem Patientenkonto nichts - auch nicht die eigenen Fotos (Punkt 37)', async () => {
@@ -822,7 +855,9 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect(
         (await abgefangen(asUser(users.patientMax, VERWEIS, [datei.file_id])))?.message,
       ).toMatch(/not accessible/);
-      expect((await abgefangen(vorbereiten(users.patientMax)))?.message).toBeTruthy();
+      expect(
+        (await abgefangen(vorbereiten(users.patientMax, { art: 'dokumentationsfoto' })))?.message,
+      ).toBeTruthy();
     });
 
     it('zeigt einer fremden Person nichts von einer anderen Patient:in', async () => {
@@ -842,7 +877,9 @@ describe('Patientenfotos (DOK-006b)', () => {
       expect((await abgefangen(asUser(owner, VERWEIS, [datei.file_id])))?.message).toMatch(
         /not accessible/,
       );
-      expect((await abgefangen(vorbereiten(owner)))?.message).toMatch(/not accessible/);
+      expect(
+        (await abgefangen(vorbereiten(owner, { art: 'dokumentationsfoto' })))?.message,
+      ).toMatch(/not accessible/);
     });
 
     it('laesst niemanden ohne Anmeldung heran', async () => {
@@ -1026,8 +1063,12 @@ describe('Patientenfotos (DOK-006b)', () => {
     it('B2: nimmt kein neues Foto mehr an, wenn die Versorgung vor mehr als drei Monaten abgeschlossen wurde', async () => {
       await abschliessenVor(5);
       await vermerken('consent_granted');
-      expect((await abgefangen(vorbereiten()))?.message).toMatch(/no consent/);
-      expect(await anzahl('select count(*) from public.patient_files')).toBe(0);
+      // Ein Altbestand im Upload bestätigt dann nicht mehr (ABN-032: neu
+      // vorbereitet wird ohnehin keine Arbeitshilfe).
+      const offen = await vorbereiten();
+      await objektAblegen(BUCKET, offen.object_key);
+      expect((await abgefangen(bestaetigen(offen.file_id)))?.message).toMatch(/no consent/);
+      expect(await fotoliste()).toEqual([]);
     });
 
     it('B3: laesst eine Wiederaufnahme ein faelliges Foto nicht wieder frei - ohne Hold geloescht', async () => {

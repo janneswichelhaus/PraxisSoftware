@@ -68,11 +68,12 @@ describe('Einwilligungen (POR-016)', () => {
     expect(await screen.findByText('Nachrichten per E-Mail')).toBeInTheDocument();
     expect(screen.getByText('Noch nicht entschieden')).toBeInTheDocument();
     expect(screen.getByText(/Erteilt am .* \(in der Praxis vermerkt\)/)).toBeInTheDocument();
-    expect(screen.getByText(/Abgelehnt am/)).toBeInTheDocument();
+    // ANN-316: Die Einwilligung zu Fotos wird nicht mehr angeboten.
+    expect(screen.queryByText('Fotos während der Behandlung')).toBeNull();
     expect(screen.getByText(/Ihre Behandlung hängt nicht davon ab/)).toBeInTheDocument();
 
     const knoepfe = screen.getAllByRole('button', { name: 'Einwilligen' });
-    expect(knoepfe).toHaveLength(2);
+    expect(knoepfe).toHaveLength(1);
     await nutzer.click(knoepfe[0]!);
     expect(einwilligungSchreiben).not.toHaveBeenCalled();
     await nutzer.click(screen.getByRole('button', { name: 'Ja, ich willige ein' }));
@@ -84,6 +85,14 @@ describe('Einwilligungen (POR-016)', () => {
         fassung: '2026-10',
       }),
     );
+  });
+
+  it('nennt eine Ablehnung aus der Praxis mit Datum', async () => {
+    ladeEinwilligungen.mockResolvedValue([
+      stand('prescriber_report', 'refused', { source: 'practice' }),
+    ]);
+    renderWithProviders(<Einwilligungen zugang={ZUGANG} />);
+    expect(await screen.findByText(/Abgelehnt am/)).toBeInTheDocument();
   });
 
   it('sagt beim Widerruf der Fotos, dass sie sofort gelöscht werden', async () => {

@@ -1,3 +1,4 @@
+import { einwilligungAngeboten } from '@/lib/einwilligung';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
@@ -78,9 +79,11 @@ export function Einwilligungen({
         </p>
       ) : (
         <div className="mt-6">
-          {einwilligungen.data.map((e) => (
-            <Zweck key={e.purpose} zugang={zugang} einwilligung={e} />
-          ))}
+          {einwilligungen.data
+            .filter((e) => einwilligungAngeboten(e.purpose, e.state === 'granted'))
+            .map((e) => (
+              <Zweck key={e.purpose} zugang={zugang} einwilligung={e} />
+            ))}
           <p className="text-ink-muted mt-6 max-w-prose text-sm leading-relaxed">{FREIWILLIG}</p>
         </div>
       )}
