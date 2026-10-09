@@ -38,6 +38,7 @@ import { PLATTFORM_PFAD } from './pfade';
 import { Rechnung, Rechnungen } from './Rechnungen';
 import { useSchriftgroesseAnwenden } from './schriftgroesse';
 import { Termine } from './Termine';
+import { NachrichtDetail, Nachrichten, NeueNachricht } from './Nachrichten';
 import { Uebersicht } from './Uebersicht';
 import { PlanblattPlattform, Uebungen } from './Uebungen';
 import { Durchfuehrung } from './Durchfuehrung';
@@ -150,6 +151,37 @@ export function PlattformApp({
                 bereiche={lesbar}
                 zugaenge={zugaenge}
                 seite={(z) => <Terminaenderung zugang={z} />}
+              />
+            }
+          />
+          {/* KOM-001: Reiter „Nachrichten" - Fragen an die Praxis. */}
+          <Route
+            path={`${PLATTFORM_PFAD}/nachrichten`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <Nachrichten zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/nachrichten/neu`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <NeueNachricht zugang={z} />}
+              />
+            }
+          />
+          <Route
+            path={`${PLATTFORM_PFAD}/nachrichten/:nachrichtId`}
+            element={
+              <MitZugang
+                bereiche={lesbar}
+                zugaenge={zugaenge}
+                seite={(z) => <NachrichtDetail zugang={z} />}
               />
             }
           />
@@ -826,10 +858,12 @@ function VertretungZeile({
 /**
  * Die Reiterleiste unten (DSN-001 Abschnitt 3): höchstens fünf, jeder mit
  * Symbol und Wort. Ein Reiter erscheint erst mit dem Loop, der ihn füllt
- * (ANN-112): Übersicht, Termine (POR-008), Übungen bzw. Training (UEB-009).
+ * (ANN-112): Übersicht, Termine (POR-008), Übungen bzw. Training (UEB-009),
+ * Nachrichten (KOM-001).
  */
+// KOM-001: vier Reiter bei 375 px - das Wort bricht nie um („Nachrichten").
 const REITER =
-  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-1 text-xs aria-[current=page]:font-semibold';
+  'text-ink-muted aria-[current=page]:text-accent aria-[current=page]:border-accent flex min-h-14 flex-col items-center justify-center gap-0.5 border-t-3 border-transparent px-0.5 text-xs whitespace-nowrap aria-[current=page]:font-semibold';
 
 function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
   const { pathname, search } = useLocation();
@@ -898,6 +932,25 @@ function Reiterleiste({ bereiche }: { bereiche: Plattformzugang[] }) {
               <path d="M6.5 6.5v11M17.5 6.5v11M3 9.5v5M21 9.5v5M6.5 12h11" />
             </svg>
             {training ? 'Training' : 'Übungen'}
+          </Link>
+        </li>
+        <li className="flex-1">
+          <Link
+            to={`${PLATTFORM_PFAD}/nachrichten${search}`}
+            aria-current={pathname.startsWith(`${PLATTFORM_PFAD}/nachrichten`) ? 'page' : undefined}
+            className={REITER}
+          >
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              className="size-6"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z" />
+            </svg>
+            Nachrichten
           </Link>
         </li>
       </ul>

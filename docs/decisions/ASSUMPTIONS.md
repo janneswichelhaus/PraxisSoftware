@@ -3707,3 +3707,87 @@ Praxisprozess · offen · 2026-10-08 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `public.exercise_plan_days`, `app.exercise_plan_weekdays` und `public.set_platform_exercise_days` in `supabase/migrations/20261019120000_ueb_011_exercise_days.sql`; `src/features/platform/uebungstage.ts`. Geprüft in `supabase/tests/platform-exercise-days.test.ts`.
 
 **Änderungspfad.** Tage legt die Fachperson fest: Spalte am Plan, Feld im Entwurf, Wahl der Person entfällt · Aufwand `mittel`. Die Praxis sieht die Tage am Plan: ein Schlüssel in `get_exercise_plan` · Aufwand `klein`.
+
+### ANN-308 — Eine Frage ist ein Vorgang aus unveränderlichen Einträgen
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform, Reiter Nachrichten)
+
+**Annahme.** Eine Nachricht auf der Plattform ist kein Chatverlauf, sondern ein Vorgang: Thema (Übung · Beschwerden · Termin oder Rechnung · Sonstiges), optional ein Bezug auf einen zugewiesenen Plan und eine Übung daraus (als Schnappschuss der Bezeichnung), Zustand offen · beantwortet · erledigt. Er besteht aus Einträgen – Frage, Antwort der Praxis, Nachtrag –, die nie geändert und nur mit dem Vorgang gelöscht werden; jeder Eintrag trägt, wer ihn geschrieben hat (bei einer Vertretung ihr Name als Schnappschuss, in der Praxis der Anzeigename). Nachtragen geht, solange der Vorgang nicht erledigt ist; danach ist eine neue Frage ein neuer Vorgang. Erledigen dürfen die Person (jede Art des Zugangs) und die Praxis. Auf der Plattform steht die Antwort als „Praxis“, ohne Namen der Fachperson.
+
+**Begründung.** IDEA-KOM-001: Ein offener Chat hat keine Erledigungslogik, lässt sich nicht nach Zuständigkeit ordnen und ist der Akte nicht zuordenbar (§10). Unveränderliche Einträge sind die Voraussetzung dafür, dass in der Akte steht, was geschrieben wurde (IDEA-KOM-007, ADR-006 Punkt 3, § 630f BGB), und machen den Nachweis am Datensatz statt im Auditlog möglich (ADR-010 Fassung 3 Punkt 15). Ohne Namen der Fachperson wie beim Plan (UEB-009, ADR-023 Punkt 22).
+
+**Anker.** `public.platform_messages`, `public.platform_message_entries` mit dem Trigger `platform_message_entries_guard` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Ansicht `src/features/platform/Nachrichten.tsx`. Geprüft in `supabase/tests/platform-messages.test.ts`.
+
+**Änderungspfad.** Offener Chat ohne Vorgang: anderes Datenmodell · Aufwand `groß`. Namen der Fachperson auf der Plattform: ein Schlüssel in `public.platform_messages(uuid)` · Aufwand `klein`. Nur die Praxis erledigt: ein Zweig weniger in `close_platform_message` · Aufwand `klein`.
+
+### ANN-309 — Antwortfrist in Werktagen aus den Praxisstammdaten, überwacht über die Fälligkeit
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform und Kommunikation, nach den ersten Praxiswochen)
+
+**Annahme.** Über jedem Eingabefeld steht „Antwort in der Regel innerhalb von zwei Werktagen.“ und der Notfallhinweis aus DSN-001 4.1, für alle gleich. Die Zahl steht in den Praxisstammdaten (`organizations.message_response_workdays`, 1 bis 10, voreingestellt 2) und ändert nur `owner`. Werktage sind Montag bis Freitag; Feiertage kennt die Anwendung nicht. Fällig ist eine Frage am n-ten Werktag nach dem Tag ihres Eingangs (Samstag zählt ab Montag); ein Nachtrag nach einer Antwort setzt eine neue Frist, ein Nachtrag vor der Antwort nicht. Eingehalten wird die Zusage über die Sicht der Praxis: „Antwort fällig bis …“ an jedem offenen Vorgang und unter „Offene Punkte“ die Zahl der offenen und der überfälligen, die überfälligen mit Wort. Es gibt keine Benachrichtigung und keine Eskalation.
+
+**Begründung.** IDEA-KOM-002: „Eine Zusage ohne Überwachung ist schlechter als keine“ – die Praxis muss sehen, was fällig ist. DSN-001 4.1 nennt die Frist einen Platzhalter aus Praxisstammdaten. Benachrichtigungen regelt erst ADR-024 (KOM-EPIC-003). Ein Feiertagskalender wäre eine eigene Datenquelle je Bundesland für eine Zusage „in der Regel“.
+
+**Anker.** Spalte `organizations.message_response_workdays`, `app.add_workdays` und `app.message_due_on` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; der Wortlaut in `src/features/platform/nachrichtentexte.ts`. Geprüft in `supabase/tests/platform-messages.test.ts`.
+
+**Änderungspfad.** Andere Frist: die Zahl in den Praxisstammdaten · Aufwand `klein`. Feiertage berücksichtigen: Kalendertabelle und `app.add_workdays` · Aufwand `mittel`. Erinnerung an die Praxis bei Überschreitung: mit KOM-EPIC-003 nach ADR-024 · Aufwand `mittel`.
+
+### ANN-310 — In der Behandlung liest das Büro alle Rückfragen, antwortet aber nur auf Termin, Rechnung und Sonstiges
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Kommunikation)
+
+**Annahme.** Rückfragen aus der Behandlung lesen `owner`, Therapeut:innen, Teamleitung und Büro (E15). Antworten und erledigen dürfen `owner`, Therapeut:innen und Teamleitung jede Rückfrage, das Büro nur „Termin oder Rechnung“ und „Sonstiges“. Bei „Übung“ und „Beschwerden“ sagt die Seite dem Büro, dass Therapeut:innen antworten. Die Liste unter Kommunikation → Rückfragen trägt keinen Text; erst das Öffnen liest den Inhalt und steht als „Akte geöffnet“ im Protokoll (einmal je Tag und Akte, ADR-010 Fassung 3).
+
+**Begründung.** ADR-004 Punkt 3: Das Büro liest klinische Inhalte wie Therapeut:innen, schreibt aber keine klinische Dokumentation. Eine Antwort auf eine Frage zu Beschwerden oder zur Ausführung einer Übung ist eine fachliche Auskunft und gehört zu den therapeutischen Rollen (§4.2); Termine und Rechnungen sind Sache des Büros (§4.3). Eine Trefferliste ohne Inhalt ist kein Lesen (ADR-010 Konsequenzen).
+
+**Anker.** `app.can_read_platform_message` und `app.can_answer_platform_message` in `supabase/migrations/20261020110000_kom_002_practice_messages.sql`; Seite `src/features/messages/RueckfragenPage.tsx`. Geprüft in `supabase/tests/practice-messages.test.ts`.
+
+**Änderungspfad.** Büro antwortet auf alles: ein Zweig in `app.can_answer_platform_message` · Aufwand `klein`. Büro liest Übung und Beschwerden nicht: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
+
+### ANN-311 — Im Training: Gesundheitsthemen nur mit Einwilligung, das Büro nur bei Termin und Rechnung
+
+Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264 und ANN-306)
+
+**Annahme.** Im Training gibt es die Themen „Übung“ und „Beschwerden“ nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist; nach einem Widerruf kein Nachtrag mehr dazu, bestehende Vorgänge bleiben lesbar. „Termin oder Rechnung“ und „Sonstiges“ gehen immer. Die Praxis liest Nachrichten aus dem Training im Bereich Training (DSN-001 D1 b): `owner` und Trainingsbetreuung alle, das Büro nur „Termin oder Rechnung“ – und beantwortet nur diese.
+
+**Begründung.** ADR-021 Punkt 4: Gesundheitsangaben im Training brauchen die ausdrückliche Einwilligung; dieselbe Stelle wie „Das war schwierig, weil …“ (ANN-306). DSN-001 D1 überlässt die Sicht des Büros diesem Loop und nennt „Termin oder Rechnung“ als den organisatorischen Teil (wie ANN-184). „Sonstiges“ kann Gesundheitliches enthalten; deshalb liest das Büro es im Training nicht.
+
+**Anker.** `app.platform_message_topic_allowed` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; die Sicht der Praxis in `app.can_read_platform_message` (KOM-002). Geprüft in `supabase/tests/platform-messages.test.ts` und `supabase/tests/practice-messages.test.ts`.
+
+**Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
+
+### ANN-312 — Klinisch Relevantes kommt als Verweis am Vorgang in die Akte, endgültig
+
+Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Kommunikation); Datenschutzprüfung (B2, Fristen nach ADR-008)
+
+**Annahme.** Eine Rückfrage aus der Behandlung ordnen `owner`, Therapeut:innen und Teamleitung mit „In die Akte übernehmen“ der Akte zu; das Büro nicht, im Training gibt es keine Akte. Zugeordnet wird der ganze Vorgang mit allen Einträgen, auch späteren. Die Zuordnung ist ein Verweis am Vorgang (wer, wann, unter welchem Namen), keine Kopie; der Text bleibt unverändert, und die Zuordnung ist endgültig – auch am Schreibpfad vorbei verhindert ein Trigger das Zurücknehmen. Danach steht der Vorgang im Reiter „Doku“ der Akte unter „Nachrichten in der Akte“ mit Herkunft und gehört zur Datenklasse der Akte (zehn Jahre ab Abschluss der Versorgung); nicht zugeordnete Vorgänge der Behandlung fallen drei Jahre nach Ende des Jahres, in dem sie erledigt oder – ohne weitere Frage der Person – zuletzt beantwortet wurden (ADR-008, „Organisatorische Patientenkommunikation“; Zweitreview S1). Beim Zusammenführen zweier Akten ziehen alle Rückfragen mit. Im Training fallen sie mit dem Verhältnis nach drei Jahren, auch wenn Belege länger bleiben. Auskunft nach Art. 15 und Plattformexport nennen alle Rückfragen.
+
+**Begründung.** §10 verlangt die Zuordnung durch die Therapeut:in, §5 und § 630f BGB Nachvollziehbarkeit ohne Überschreiben; IDEA-KOM-007 verlangt sichtbare Herkunft ohne Veränderung. Der Vorgang liegt schon im Behandlungsverhältnis und ist unveränderlich (ANN-308) – eine Kopie wäre ein zweiter Datensatz desselben Inhalts mit eigener Frist, ohne Gewinn. Das Büro schreibt keine klinische Dokumentation (ADR-004 Punkt 3); die Zuordnung ist eine klinische Einordnung. Endgültig, weil eine Akte nicht nachträglich verkleinert wird (ADR-016 Punkt 5). Unsicher: ob die drei Jahre für nicht zugeordnete Nachrichten mit klinischem Inhalt genügen, wenn die Zuordnung unterbleibt – der Pflichtsatz aus §10 liegt bei der Praxis.
+
+**Anker.** `app.can_assign_platform_message`, `public.assign_platform_message_to_record`, Trigger `platform_messages_record_final` und `public.list_record_platform_messages` in `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`; die Regel im Löschlauf in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`; Oberfläche `src/features/messages/InDieAkte.tsx`. Geprüft in `supabase/tests/record-messages.test.ts`.
+
+**Änderungspfad.** Zuordnung als Kopie in einen Dokumentationseintrag: eigener Eintragstyp nach ADR-016 · Aufwand `mittel`. Zuordnung rücknehmbar: Trigger und eine Funktion · Aufwand `klein`. Büro ordnet zu: ein Zweig in `app.can_assign_platform_message` · Aufwand `klein`. Alle Nachrichten der Behandlung wie die Akte aufbewahren: Klasse `patientenkommunikation` auf die Frist der Akte · Aufwand `klein`.
+
+### ANN-313 — In der Lesefrist werden keine Fragen mehr gestellt
+
+Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Plattform)
+
+**Annahme.** Nach dem Ende des Verhältnisses bzw. des Nachsorge-Abos sind die Nachrichten 30 Tage lang lesbar; eine neue Frage, ein Nachtrag oder „Hat sich erledigt“ gehen dann nicht mehr. Die Seite sagt, dass neue Fragen direkt an die Praxis gehen.
+
+**Begründung.** DSN-001 4.3: In der Lesefrist „fallen alle Knöpfe weg, die schreiben“ – dieselbe Regel wie beim Üben (ANN-305), an derselben Stelle (`app.platform_access_writable`). Eine Antwortzusage für ein beendetes Verhältnis setzte eine Betreuung voraus, die es nicht mehr gibt.
+
+**Anker.** `app.assert_platform_message` in `supabase/migrations/20261020100000_kom_001_platform_messages.sql`. Geprüft in `supabase/tests/platform-messages.test.ts`.
+
+**Änderungspfad.** Fragen auch in der Lesefrist (etwa zur letzten Rechnung): `app.platform_access_writable` aus der Prüfung nehmen oder nur für „Termin oder Rechnung“ · Aufwand `klein`.
+
+### ANN-314 — Kommunikation ist mit den Rückfragen nicht mehr ganz Vorschau
+
+Technik · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung am Handy)
+
+**Annahme.** Der Bereich Kommunikation öffnet auf „Rückfragen“ (`/rueckfragen`), dem ersten Punkt, der wirkt; der Teamchat steht als zweiter Unterpunkt und bleibt als Vorschau gekennzeichnet. Damit ist der Bereich nicht mehr ganz Vorschau und steht bei Therapeut:innen, Teamleitung und Büro am Telefon wieder in der Leiste („Nachrichten“); bei `owner` bleibt er wegen der Zahl der Bereiche hinter „Mehr“.
+
+**Begründung.** ANN-244 („Reife vor Reihenfolge“) stellte nur Bereiche hinter „Mehr“, die ganz Vorschau sind – damals allein die Kommunikation. DSN-001 Abschnitt 6 legt die Rückfragen der Behandlung genau dorthin. Eine Rückfrage mit Antwortzusage muss so schnell erreichbar sein wie die Übersicht.
+
+**Anker.** Eintrag `team` in `src/app/navigation.tsx`. Geprüft in `src/app/navigation.test.tsx` und `src/app/AppShell.test.tsx`.
+
+**Änderungspfad.** Rückfragen als eigener Bereich oder nur in der Übersicht: Eintrag in `navigation.tsx` · Aufwand `klein`. Kommunikation wieder hinter „Mehr“: `vorschau: true` zurück · Aufwand `klein`.

@@ -93,6 +93,8 @@ export const auditOperationLabels: Record<string, string> = {
   'deletion_runs.read': 'Löschläufe gelesen',
   // UEB-EPIC-002: Übungspläne einer Akte oder Trainingskund:in (ANN-298).
   'exercise_plans.read': 'Übungspläne gelesen',
+  // KOM-002: Abweisung der Liste der Rückfragen (keine neue Aktion, ADR-010).
+  'platform_messages.read': 'Rückfragen gelesen',
   'invoicing.read': 'Abrechnung gelesen',
   'legal_hold.placed': 'Löschsperre gesetzt',
   'legal_hold.released': 'Löschsperre aufgehoben',

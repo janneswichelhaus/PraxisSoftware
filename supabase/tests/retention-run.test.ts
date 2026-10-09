@@ -651,6 +651,8 @@ describe('Loeschlauf: Klassen ohne automatische Loeschung', () => {
       'loeschjournal',
       'patientenakte',
       'patientenfoto',
+      // KOM-001: Regel in apply_retention, Tests in platform-messages.test.ts.
+      'patientenkommunikation',
       // POR-002: Regel in app.delete_due_platform_accesses und
       // app.delete_due_platform_accounts, Tests in platform-accesses.test.ts.
       'plattformzugang',

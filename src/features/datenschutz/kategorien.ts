@@ -153,6 +153,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Die zusammengestellten und zugewiesenen Übungspläne mit Übungen, Dosierung und Laufzeit.',
   },
+  platform_messages: {
+    label: 'Nachrichten über die Plattform',
+    beschreibung:
+      'Fragen der Person und die Antworten der Praxis, mit Thema, Zeitpunkt, wer geschrieben hat und ob die Nachricht der Akte zugeordnet ist.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',

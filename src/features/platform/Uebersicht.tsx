@@ -15,8 +15,10 @@ import {
   ladeBefundbogen,
   ladeRechnungen,
   ladeTermine,
+  ladeNachrichten,
   ladeTrainingsangebot,
   ladeWuensche,
+  nachrichtenSchluessel,
   rechnungenSchluessel,
   trainingsangebotSchluessel,
   termineSchluessel,
@@ -24,6 +26,7 @@ import {
   type Plattformzugang,
 } from './api';
 import { fuerDiePlattform } from './instrumentwahl';
+import { NICHT_AKUT, NOTFALL, THEMA_NAME } from './nachrichtentexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { terminBeschreibung } from './terminbeschreibung';
 import { datum, kuenftig, tagLang, zeitraum } from './zeit';
@@ -69,6 +72,11 @@ export function Uebersicht({
     queryKey: rechnungenSchluessel(zugang.access_id),
     queryFn: () => ladeRechnungen(zugang.access_id),
   });
+  // KOM-001: eine Antwort der Praxis auf eine Nachricht (DSN-001 4.1 Punkt 5).
+  const nachrichten = useQuery({
+    queryKey: nachrichtenSchluessel(zugang.access_id),
+    queryFn: () => ladeNachrichten(zugang.access_id),
+  });
   const bogen = useQuery({
     queryKey: befundbogenSchluessel(zugang.access_id),
     queryFn: () => ladeBefundbogen(zugang.access_id),
@@ -108,6 +116,7 @@ export function Uebersicht({
       new Date(w.resolved_at).getTime() > grenze,
   );
   const offenerWunsch = (wuensche.data ?? []).find((w) => w.status === 'open');
+  const beantwortet = (nachrichten.data?.messages ?? []).filter((m) => m.status === 'answered');
   const instrument = fuerDiePlattform()[0];
   // Eine Begleitung füllt den Bogen nicht aus (ANN-248) - der Server weist sie
   // ab, die Kachel führt sie gar nicht erst hin.
@@ -128,6 +137,7 @@ export function Uebersicht({
     Boolean(antwort),
     Boolean(offenerWunsch),
     Boolean(offeneRechnung),
+    beantwortet.length > 0,
   ].filter(Boolean).length;
   const abfragen = [termine, wuensche, rechnungen, bogen];
   const gescheitert = abfragen.some((a) => a.isError);
@@ -259,6 +269,29 @@ export function Uebersicht({
               Angefragt am {formatDate(offenerWunsch.created_at.slice(0, 10))}
             </Tile>
           ) : null}
+          {beantwortet.length > 0 ? (
+            <Tile
+              label="Antwort der Praxis"
+              ton="akzent"
+              zusatz={beantwortet.map((m) => THEMA_NAME[m.topic]).join(' · ')}
+              aktion={
+                <Textlink
+                  alleinstehend
+                  to={mit(
+                    beantwortet.length === 1
+                      ? `/nachrichten/${beantwortet[0]!.id}`
+                      : '/nachrichten',
+                  )}
+                >
+                  {beantwortet.length === 1 ? 'Antwort lesen →' : 'Zu den Nachrichten →'}
+                </Textlink>
+              }
+            >
+              {beantwortet.length === 1
+                ? 'Die Praxis hat auf Ihre Nachricht geantwortet.'
+                : `Die Praxis hat auf ${beantwortet.length} Nachrichten geantwortet.`}
+            </Tile>
+          ) : null}
           {offeneRechnung ? (
             <Tile
               label="Offene Rechnung"
@@ -278,8 +311,12 @@ export function Uebersicht({
 
       <Section titel="Fragen an die Praxis">
         <p className="text-ink max-w-prose text-base leading-relaxed">
-          Wenden Sie sich bitte wie gewohnt direkt an die Praxis. In einem Notfall rufen Sie 112 an.
+          <strong>{NICHT_AKUT}</strong> {NOTFALL}
         </p>
+        {/* Ein eigenes Ziel mit 44 px, kein Link im Fließtext (DSN-001 Abschnitt 7). */}
+        <Textlink alleinstehend to={mit('/nachrichten')}>
+          Der Praxis schreiben →
+        </Textlink>
       </Section>
     </>
   );

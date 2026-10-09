@@ -749,7 +749,10 @@
           "id": "kom-epic-001",
           "name": "KOM-EPIC-001 Strukturierte Rückfrage",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-09",
+          "nachweis": "KOM-001 bis KOM-004, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 10 bis 12"
         },
         {
           "id": "kom-epic-002",
