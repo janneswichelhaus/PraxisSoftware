@@ -267,8 +267,8 @@ werden.
 App-PIN, die eine gesperrte Sitzung auf demselben Gerät wieder freigibt
 ([ADR-025](docs/adr/ADR-025-session-lock.md) Punkt 11). Sie meldet nie an.
 Gehasht und verglichen wird mit der Datenbankerweiterung `pgcrypto` (bcrypt),
-geprüft nur in der Datenbank; selbst gebaut sind allein Fehlversuchszähler,
-Frist und Freigabevermerk. Anmeldung, Sitzungen und Passkeys bleiben beim
+geprüft nur in der Datenbank; selbst gebaut sind allein Fehlversuchszähler
+und Freigabevermerk. Anmeldung, Sitzungen und Passkeys bleiben beim
 Anmeldedienst. Eine weitere Ausnahme braucht eine neue Version dieses
 Dokuments.
 

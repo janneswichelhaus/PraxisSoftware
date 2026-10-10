@@ -123,14 +123,14 @@ Anmeldeart `passkey` im Claim `amr` als Anmeldung.
   nach dem Abmelden und für ein anderes Konto gilt sie nicht;
 - wird nur in der Datenbank geprüft und dort nur als bcrypt-Hash aus `pgcrypto` gehalten (§3.4,
   Ausnahme). Nie im Klartext, nie im Log, nie auf dem Gerät;
-- trägt höchstens bis zu einer Frist nach der letzten Passkey-Anmeldung. Danach verlangt die Freigabe
-  den Passkey;
+- hat **keine Frist** (Jannes, 2026-10-10): Sie gibt frei, solange die Sitzung besteht, auch Tage nach
+  der letzten Passkey-Anmeldung;
 - ist nach wenigen Fehlversuchen in Folge verbraucht: Die Sitzung wird beendet, weiter geht es nur per
   Passkey;
 - darf keine triviale Folge sein (gleiche Ziffern, auf- oder absteigende Reihe).
 
-Länge, Zahl der Fehlversuche und Frist sind Konstanten an einer Stelle; das Arbeitspaket legt sie fest
-(Vorschlag: sechs Ziffern, fünf Fehlversuche, zwölf Stunden). Eine Freigabe per PIN startet die Uhr
+Länge und Zahl der Fehlversuche sind Konstanten an einer Stelle; das Arbeitspaket legt sie fest
+(Vorschlag: sechs Ziffern, fünf Fehlversuche). Eine Freigabe per PIN startet die Uhr
 aus Punkt 1 neu wie eine Anmeldung. Sie steht als Vermerk an der Sitzung, wie die letzte Bedienung (W2).
 
 **12. Vergessen, verloren, neues Gerät.** PIN vergessen: Freigabe per Passkey, dann eine neue PIN
@@ -176,11 +176,14 @@ Einstieg Passkey und PIN eingerichtet und wie im Betrieb benutzt.
 **Aus Fassung 2:**
 
 - **Eigenbau in engen Grenzen.** Die App-PIN ist das einzige selbst gebaute Prüfverfahren (§3.4,
-  Ausnahme). Hash, Vergleich und Zufall kommen aus `pgcrypto`; selbst gebaut sind Fehlversuchszähler,
-  Frist und Freigabevermerk. Kritische Änderung nach ADR-013 Punkt 9, mit Zweitreview.
+  Ausnahme). Hash, Vergleich und Zufall kommen aus `pgcrypto`; selbst gebaut sind Fehlversuchszähler
+  und Freigabevermerk. Kritische Änderung nach ADR-013 Punkt 9, mit Zweitreview.
 - **Schwächer als ein Kennwort, begrenzt durch den Zähler.** Bei sechs Ziffern und fünf Versuchen je
   Passkey-Anmeldung trifft ein Dieb mit dem Gerät und einer gesperrten Sitzung mit etwa 1 zu 200 000.
   Ohne Gerät gibt es keine Sitzung und damit keinen Versuch.
+- **Ohne PIN-Frist lebt eine Sitzung, bis sie endet.** Ein liegen gelassenes Gerät bleibt per PIN
+  freigebbar, bis jemand abmeldet, „Alle Sitzungen beenden“ wählt, der Zugang gesperrt wird oder die
+  Fehlversuche verbraucht sind. Wer ein Gerät verliert, beendet deshalb sofort alle Sitzungen.
 - **Beta beim Anbieter.** Die Passkey-Schnittstelle kann sich ändern. Sie liegt hinter einem Modul der
   Anwendung, die Version der Bibliothek steht im Lockfile. Der Anmeldedienst verlangt die Prüfung der
   Person am Gerät nur bevorzugt (`preferred`). Die Anwendung fordert sie an, durchsetzen kann der

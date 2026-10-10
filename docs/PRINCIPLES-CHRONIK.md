@@ -11,7 +11,7 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 Entscheidung des Projektinhabers vom **2026-10-10**: im Alltag Passkey, als Rückweg eine eigene
 App-PIN, **kein Kennwort**. **§3.4** — eine benannte Ausnahme für die App-PIN: Sie gibt nur eine
 gesperrte Sitzung auf demselben Gerät frei und meldet nie an; Hash und Vergleich kommen aus
-`pgcrypto`, selbst gebaut sind Fehlversuchszähler, Frist und Freigabevermerk. Die Liste der
+`pgcrypto`, selbst gebaut sind Fehlversuchszähler und Freigabevermerk, eine Frist gibt es nicht. Die Liste der
 verbotenen Eigenbauten bleibt sonst unverändert. Rang 2 dazu: ADR-025 Fassung 2 (Punkte 7, 9 bis
 15), ADR-023 Fassung 4. Die Empfehlung war Geräte-PIN über den Passkey und das Kennwort als
 Notfallweg, ohne Ausnahme in §3.4; Jannes hat sie in Kenntnis der Folgen verworfen.
