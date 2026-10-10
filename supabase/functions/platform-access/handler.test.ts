@@ -146,6 +146,20 @@ describe('Zugangsdienst: einloesen ohne Kennwort (ADR-025 Fassung 2, Punkt 13)',
     expect(d.anmeldecode).not.toHaveBeenCalled();
   });
 
+  it('bindet mit gesperrter Sitzung nichts (ADR-025 Punkt 6)', async () => {
+    const d = dienst({
+      sitzungskonto: vi.fn(() =>
+        Promise.resolve({ ok: false as const, error: 'session_invalid' as const }),
+      ),
+    });
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(anfrage(EINLOESEN, { Authorization: 'Bearer gesperrt' }));
+    expect(antwort.status).toBe(401);
+    expect(await lies(antwort)).toEqual({ ok: false, error: 'session_invalid' });
+    expect(d.einloesen).not.toHaveBeenCalled();
+    expect(d.kontoAnlegen).not.toHaveBeenCalled();
+  });
+
   it('zaehlt mit Sitzung ein fremdes Konto als Fehlversuch', async () => {
     const d = dienst({
       sitzungskonto: vi.fn(() => Promise.resolve({ ok: true as const, value: KONTO })),

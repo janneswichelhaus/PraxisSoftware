@@ -116,6 +116,7 @@ export function PasskeyAbschnitt({
   });
 
   const liste = passkeys.data ?? [];
+  const freigegeben = liste.filter((p) => p.freigegeben).length;
 
   return (
     <Section
@@ -128,12 +129,12 @@ export function PasskeyAbschnitt({
         <ErrorState title={satzVon(passkeys.error)} onErneut={() => void passkeys.refetch()} />
       ) : null}
 
-      {passkeys.isSuccess && liste.length === 0 ? (
+      {passkeys.isSuccess && freigegeben === 0 ? (
         <Statusmeldung ton="warnung">
           Für dieses Konto ist noch kein Passkey eingerichtet.
         </Statusmeldung>
       ) : null}
-      {passkeys.isSuccess && liste.length === 1 ? (
+      {passkeys.isSuccess && freigegeben === 1 ? (
         <Statusmeldung ton="warnung">
           Nur ein Passkey: Richten Sie einen zweiten ein, etwa auf dem Rechner. Geht der einzige
           verloren, braucht es eine neue Einladung der Praxis.
@@ -150,8 +151,16 @@ export function PasskeyAbschnitt({
                   Eingerichtet am {tag(passkey.angelegtAm)}
                   {passkey.zuletztAm ? ` · zuletzt benutzt am ${tag(passkey.zuletztAm)}` : ''}
                 </p>
+                {passkey.freigegeben ? null : (
+                  <Statusmeldung ton="warnung" className="mt-1">
+                    Nicht freigegeben – öffnet keine Sitzung. Haben Sie ihn nicht selbst
+                    eingerichtet, bitte entfernen.
+                  </Statusmeldung>
+                )}
               </div>
-              {liste.length > 1 ? (
+              {/* Der letzte freigegebene Passkey bleibt (ANN-327); ein nicht
+                  freigegebener lässt sich immer entfernen (ANN-329). */}
+              {!passkey.freigegeben || freigegeben > 1 ? (
                 <Rueckfrage
                   ausloeser="Entfernen"
                   ausloeserVariante="quiet"

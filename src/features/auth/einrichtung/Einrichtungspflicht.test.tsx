@@ -40,6 +40,7 @@ const PASSKEY: PasskeyModul.Passkey = {
   name: null,
   angelegtAm: '2026-10-10T08:00:00Z',
   zuletztAm: null,
+  freigegeben: true,
 };
 
 function zeichne(pflicht: boolean) {

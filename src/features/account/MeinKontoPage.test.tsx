@@ -30,6 +30,7 @@ const EIN_PASSKEY: PasskeyModul.Passkey = {
   name: 'iPhone',
   angelegtAm: '2026-10-10T08:00:00Z',
   zuletztAm: null,
+  freigegeben: true,
 };
 const beendeAlleSitzungen = vi.fn();
 const ladeMfaFaktoren = vi.fn();
@@ -112,7 +113,13 @@ describe('MeinKontoPage', () => {
   it('entfernt einen von zwei Passkeys erst nach der Rückfrage', async () => {
     ladePasskeys.mockResolvedValue([
       EIN_PASSKEY,
-      { id: 'p2', name: null, angelegtAm: '2026-10-09T08:00:00Z', zuletztAm: null },
+      {
+        id: 'p2',
+        name: null,
+        angelegtAm: '2026-10-09T08:00:00Z',
+        zuletztAm: null,
+        freigegeben: true,
+      },
     ]);
     const user = userEvent.setup();
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
@@ -133,6 +140,18 @@ describe('MeinKontoPage', () => {
     await screen.findByText('iPhone');
     await user.click(screen.getByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }));
     expect(await screen.findByLabelText('Code aus der App')).toBeInTheDocument();
+  });
+
+  it('kennzeichnet einen nicht freigegebenen Passkey und lässt ihn entfernen (ANN-329)', async () => {
+    ladePasskeys.mockResolvedValue([
+      EIN_PASSKEY,
+      { ...EIN_PASSKEY, id: 'fremd', name: 'Unbekannt', freigegeben: false },
+    ]);
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(await screen.findByText(/Nicht freigegeben – öffnet keine Sitzung/)).toBeInTheDocument();
+    // Der einzige freigegebene bleibt, der fremde lässt sich entfernen.
+    expect(screen.getAllByRole('button', { name: 'Entfernen' })).toHaveLength(1);
+    expect(screen.getByText(/Nur ein Passkey/)).toBeInTheDocument();
   });
 
   it('legt eine neue PIN fest und sagt es', async () => {

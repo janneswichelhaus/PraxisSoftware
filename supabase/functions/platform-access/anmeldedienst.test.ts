@@ -96,12 +96,29 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
   });
 
   it('prueft die Sitzung mit dem oeffentlichen Schluessel und kennt keine ohne Kopf', async () => {
-    const abrufen = mitAntwort(200, { id: 'eigenes' });
+    const abrufen = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'eigenes' })))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ locked: false }])));
     const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
     expect(await dienst.sitzungskonto('Bearer sitzung')).toEqual({ ok: true, value: 'eigenes' });
     expect(abrufen.mock.calls[0]![0]).toBe('https://instanz.invalid/auth/v1/user');
     expect(kopf(abrufen).apikey).toBe('oeffentlicher-schluessel');
     expect(kopf(abrufen).Authorization).toBe('Bearer sitzung');
+    // Die Sitzungssperre fragt die Datenbank, mit der Sitzung der Person.
+    expect(abrufen.mock.calls[1]![0]).toBe('https://instanz.invalid/rest/v1/rpc/session_status');
+    expect((abrufen.mock.calls[1]![1]!.headers as Record<string, string>).Authorization).toBe(
+      'Bearer sitzung',
+    );
+
+    // Eine gesperrte Sitzung bindet keinen Code (ADR-025 Punkt 6).
+    const gesperrt = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'eigenes' })))
+      .mockResolvedValueOnce(new Response(JSON.stringify([{ locked: true, reason: 'inaktiv' }])));
+    expect(
+      await erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: gesperrt }).sitzungskonto('Bearer s'),
+    ).toEqual({ ok: false, error: 'session_invalid' });
 
     // Ohne Kopf oder nur mit dem öffentlichen Schlüssel wird gar nicht gefragt.
     const still = mitAntwort(200, { id: 'x' });

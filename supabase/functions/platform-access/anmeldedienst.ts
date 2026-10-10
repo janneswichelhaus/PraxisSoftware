@@ -225,6 +225,22 @@ export function erstelleAnmeldedienst({
       });
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status !== 200) return { ok: true, value: null };
+      // Der Anmeldedienst kennt die Sitzungssperre nicht (ADR-025 Punkt 6):
+      // Eine gesperrte Sitzung bindet keinen Code (Zweitreview, Befund 6).
+      const stand = await rufe(
+        '/rest/v1/rpc/session_status',
+        'POST',
+        { apikey: anonKey, Authorization: authorization, 'Content-Type': 'application/json' },
+        { p_bedient: false },
+      );
+      if (stand === null || stand.status >= 500) return { ok: false, error: 'unavailable' };
+      const zeile = (Array.isArray(stand.daten) ? stand.daten[0] : null) as Record<
+        string,
+        unknown
+      > | null;
+      if (stand.status !== 200 || zeile === null || zeile['locked'] !== false) {
+        return { ok: false, error: 'session_invalid' };
+      }
       return { ok: true, value: kennung(r.daten) };
     },
 

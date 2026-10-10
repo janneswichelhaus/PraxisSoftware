@@ -195,6 +195,12 @@ Einstieg Passkey und PIN eingerichtet und wie im Betrieb benutzt.
 - **Einstellungen je Umgebung.** Passkeys einschalten, Relying Party mit Name, Domain und Ursprüngen:
   lokal in `supabase/config.toml`, für die Test-Umgebung im Dashboard von `praxis-test` (Jannes), für
   Produktion mit G3.
+- **Der Anmeldedienst kennt die Sperre nicht** (Zweitreview SEC-EPIC-002). Mit einem gesperrten Token
+  ließe sich dort ein Passkey anlegen oder ein Kennwort setzen. Deshalb zählt ein Passkey nur
+  freigegeben (ANN-329), und ein Kennwort über den Anmeldedienst lehnt ein Trigger ab (ANN-330);
+  Anmeldelinks per Mail gibt es nur mit Anlass (ANN-331). Restlücke: Mit einem gesperrten Token lassen
+  sich eigene Passkeys beim Anmeldedienst löschen - keine Übernahme, aber ein Aussperren bis zur
+  neuen Einladung.
 - **Für die Datenschutzprüfung.** Biometrische Merkmale verlassen das Gerät nicht. Der Anmeldedienst
   speichert nur den öffentlichen Schlüssel. Der PIN-Hash ist ein neues Datum am Konto und fällt mit
   ihm.

@@ -64,6 +64,30 @@ create table if not exists auth.users (
   reauthentication_token      varchar(255) not null default ''
 );
 
+-- SEC-EPIC-002: die Passkeys des Anmeldedienstes (GoTrue-Migration
+-- 20260302000000_add_passkeys, nur die Spalten, die die Migrationen lesen)
+-- und die Rolle, mit der der Anmeldedienst schreibt.
+create table if not exists auth.webauthn_credentials (
+  id            uuid primary key default extensions.gen_random_uuid(),
+  user_id       uuid not null references auth.users (id) on delete cascade,
+  credential_id bytea not null default '\x00',
+  public_key    bytea not null default '\x00',
+  friendly_name text not null default '',
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now(),
+  last_used_at  timestamptz
+);
+
+do $$
+begin
+  if not exists (select 1 from pg_roles where rolname = 'supabase_auth_admin') then
+    create role supabase_auth_admin nologin;
+  end if;
+end
+$$;
+grant usage on schema auth to supabase_auth_admin;
+grant all on auth.users, auth.webauthn_credentials to supabase_auth_admin;
+
 create or replace function auth.jwt()
 returns jsonb
 language sql

@@ -214,7 +214,13 @@ client.setQueryData(
 client.setQueryData(['platform-representatives', zugaenge[1]!.access_id], []);
 // SEC-EPIC-002: Passkeys und PIN in den Einstellungen - ein Passkey, PIN gesetzt.
 client.setQueryData(PASSKEYS_SCHLUESSEL, [
-  { id: 'p1', name: 'iPhone', angelegtAm: '2026-10-10T08:00:00Z', zuletztAm: null },
+  {
+    id: 'p1',
+    name: 'iPhone',
+    angelegtAm: '2026-10-10T08:00:00Z',
+    zuletztAm: null,
+    freigegeben: true,
+  },
 ]);
 client.setQueryData(PIN_SCHLUESSEL, true);
 

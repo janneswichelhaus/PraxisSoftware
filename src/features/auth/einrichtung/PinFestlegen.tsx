@@ -6,6 +6,7 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { useFokusNachWechsel } from '../fokus';
 import { ErneutAnmeldenError, PIN_LAENGE, PIN_SAETZE, pinProblem, setzePin } from '../appPin';
 import { PasskeyFehler, anmeldenMitPasskey } from '../passkey';
+import { getSupabase } from '@/lib/supabase';
 
 const FELD_PIN = 'pin-neu';
 const FELD_WIEDERHOLUNG = 'pin-neu-wiederholung';
@@ -78,10 +79,23 @@ export function PinFestlegen({
   async function mitPasskeyBestaetigen() {
     setLaeuft(true);
     setFehler(null);
+    // Ein Passkey eines anderen Kontos ist ein Kontowechsel, keine Bestätigung
+    // (ADR-025 Punkt 7): Dann wird keine PIN gesetzt (Zweitreview, Befund 5).
+    let vorher: string | undefined;
     try {
+      vorher = (await getSupabase().auth.getSession()).data.session?.user.id;
       await anmeldenMitPasskey();
     } catch (grund) {
       setFehler(grund instanceof PasskeyFehler ? grund.message : PIN_SAETZE.nichtGesetzt);
+      setLaeuft(false);
+      return;
+    }
+    const { data } = await getSupabase().auth.getSession();
+    if (!vorher || data.session?.user.id !== vorher) {
+      setPin('');
+      setWiederholung('');
+      setBestaetigen(false);
+      setFehler(PIN_SAETZE.anderesKonto);
       setLaeuft(false);
       return;
     }
@@ -102,7 +116,7 @@ export function PinFestlegen({
         geheimnis="PIN"
         name="pin-neu"
         inputMode="numeric"
-        autoComplete="new-password"
+        autoComplete="off"
         maxLength={PIN_LAENGE}
         feldId={FELD_PIN}
         value={pin}
@@ -118,7 +132,7 @@ export function PinFestlegen({
         geheimnis="PIN"
         name="pin-neu-wiederholung"
         inputMode="numeric"
-        autoComplete="new-password"
+        autoComplete="off"
         maxLength={PIN_LAENGE}
         feldId={FELD_WIEDERHOLUNG}
         value={wiederholung}

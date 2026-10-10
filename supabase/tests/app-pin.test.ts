@@ -80,6 +80,36 @@ async function pinSetzen(konto: string = users.therapist, pin: string = PIN): Pr
   await alsToken(claims(konto, { sitzung: ANDERE_SITZUNG }), SETZEN, [pin]);
 }
 
+/** Ein Passkey des Anmeldedienstes, angelegt vor `vor` Minuten. */
+async function passkeyAngelegt(konto: string, vor: number): Promise<string> {
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into auth.webauthn_credentials (user_id, created_at)
+     values ($1, now() - make_interval(mins => $2)) returning id`,
+    [konto, vor],
+  );
+  return rows[0]!.id;
+}
+
+/** Ein Passkey, mit dem `vor` Minuten zuvor angemeldet wurde (wie der Anmeldedienst es vermerkt). */
+async function passkeyBenutzt(
+  konto: string,
+  { freigegeben, vor }: { freigegeben: boolean; vor: number },
+): Promise<string> {
+  const { rows } = await asPostgres<{ id: string }>(
+    `insert into auth.webauthn_credentials (user_id, created_at, last_used_at)
+     values ($1, now() - interval '1 day', now() - make_interval(mins => $2)) returning id`,
+    [konto, vor],
+  );
+  const id = rows[0]!.id;
+  if (freigegeben) {
+    await asPostgres(
+      'insert into public.passkey_approvals (credential_id, user_id) values ($1, $2)',
+      [id, konto],
+    );
+  }
+  return id;
+}
+
 async function patienten(token: string): Promise<number> {
   return (await alsToken<{ n: number }>(token, PATIENTEN))[0]!.n;
 }
@@ -93,14 +123,40 @@ describe('App-PIN und Passkey (SEC-004, ADR-025 Fassung 2)', () => {
     await asPostgres('delete from public.session_unlocks');
     await asPostgres('delete from public.account_pins');
     await asPostgres('delete from public.session_activity');
+    await asPostgres('delete from public.passkey_approvals');
+    await asPostgres('delete from auth.webauthn_credentials');
   });
 
-  describe('Der Passkey zählt als Anmeldung (Punkt 10)', () => {
-    it('öffnet die Sitzung mit einer frischen Passkey-Anmeldung', async () => {
+  describe('Der Passkey zählt als Anmeldung - nur freigegeben (Punkt 10, ANN-329)', () => {
+    it('öffnet die Sitzung mit einer frischen Anmeldung über einen freigegebenen Passkey', async () => {
+      await passkeyBenutzt(users.therapist, { freigegeben: true, vor: 1 });
       expect(await patienten(claims(users.therapist, { methode: 'passkey' }))).toBeGreaterThan(0);
     });
 
+    it('öffnet nichts mit einem nicht freigegebenen Passkey - etwa einem mit gesperrtem Token angelegten', async () => {
+      await passkeyBenutzt(users.therapist, { freigegeben: false, vor: 1 });
+      const token = claims(users.therapist, { methode: 'passkey' });
+      expect(await patienten(token)).toBe(0);
+      // Auch keine Versuche mit der PIN: sonst brächte jeder fremde Passkey fünf neue.
+      await pinSetzen();
+      expect(await fehlerVon(alsToken(token, FREIGEBEN, [PIN]))).toBe('42501');
+    });
+
+    it('hält das Urteil an der Sitzung fest, auch wenn der Passkey danach anderswo benutzt wird', async () => {
+      const passkey = await passkeyBenutzt(users.therapist, { freigegeben: true, vor: 1 });
+      const token = claims(users.therapist, { methode: 'passkey' });
+      const [stand] = await alsToken<{ locked: boolean }>(token, STAND);
+      expect(stand!.locked).toBe(false);
+      // Ein zweites Gerät meldet sich mit demselben Passkey an.
+      await asPostgres(
+        "update auth.webauthn_credentials set last_used_at = now() + interval '30 minutes' where id = $1",
+        [passkey],
+      );
+      expect(await patienten(token)).toBeGreaterThan(0);
+    });
+
     it('sperrt 61 Minuten nach der Passkey-Anmeldung', async () => {
+      await passkeyBenutzt(users.therapist, { freigegeben: true, vor: 61 });
       expect(
         await patienten(claims(users.therapist, { methode: 'passkey', angemeldetVor: 61 })),
       ).toBe(0);
@@ -108,6 +164,109 @@ describe('App-PIN und Passkey (SEC-004, ADR-025 Fassung 2)', () => {
 
     it('zählt den zweiten Faktor `webauthn` weiterhin nicht', async () => {
       expect(await patienten(claims(users.therapist, { methode: 'webauthn' }))).toBe(0);
+    });
+  });
+
+  describe('Passkey freigeben (ANN-329)', () => {
+    const FREIGEBEN_PASSKEY = 'select public.approve_own_passkey($1)';
+
+    it('gibt einen gerade angelegten eigenen Passkey in offener Sitzung frei', async () => {
+      const passkey = await passkeyAngelegt(users.therapist, 1);
+      await alsToken(claims(users.therapist, {}), FREIGEBEN_PASSKEY, [passkey]);
+      const [eigen] = await alsToken<{ id: string }>(
+        claims(users.therapist, {}),
+        'select public.own_passkey_approvals() as id',
+      );
+      expect(eigen!.id).toBe(passkey);
+    });
+
+    it('weist eine gesperrte Sitzung ab', async () => {
+      const passkey = await passkeyAngelegt(users.therapist, 1);
+      const gesperrt = claims(users.therapist, { angemeldetVor: 61 });
+      expect(await fehlerVon(alsToken(gesperrt, FREIGEBEN_PASSKEY, [passkey]))).toBe('42501');
+    });
+
+    it('weist einen älteren oder fremden Passkey ab', async () => {
+      const alt = await passkeyAngelegt(users.therapist, 11);
+      expect(await fehlerVon(alsToken(claims(users.therapist, {}), FREIGEBEN_PASSKEY, [alt]))).toBe(
+        'P0001',
+      );
+      const fremd = await passkeyAngelegt(users.office, 1);
+      expect(
+        await fehlerVon(alsToken(claims(users.therapist, {}), FREIGEBEN_PASSKEY, [fremd])),
+      ).toBe('P0001');
+    });
+
+    it('räumt Freigaben zu entfernten Passkeys ab', async () => {
+      const weg = await passkeyBenutzt(users.therapist, { freigegeben: true, vor: 1 });
+      await asPostgres('delete from auth.webauthn_credentials where id = $1', [weg]);
+      const neu = await passkeyAngelegt(users.therapist, 1);
+      await alsToken(claims(users.therapist, {}), FREIGEBEN_PASSKEY, [neu]);
+      const { rows } = await asPostgres<{ credential_id: string }>(
+        'select credential_id from public.passkey_approvals where user_id = $1',
+        [users.therapist],
+      );
+      expect(rows.map((r) => r.credential_id)).toEqual([neu]);
+    });
+  });
+
+  describe('Kein Kennwort über den Anmeldedienst (ANN-330)', () => {
+    async function alsAnmeldedienst(sql: string, params: unknown[]): Promise<string | null> {
+      const client = new Client({ connectionString: testDatabaseUrl() });
+      await client.connect();
+      try {
+        await client.query('begin');
+        await client.query('set local role supabase_auth_admin');
+        await client.query(sql, params as never[]);
+        await client.query('rollback');
+        return null;
+      } catch (fehler) {
+        await client.query('rollback').catch(() => undefined);
+        return (fehler as { code?: string }).code ?? 'unbekannt';
+      } finally {
+        await client.end();
+      }
+    }
+
+    it('lehnt ein Kennwort ab, das der Anmeldedienst setzt', async () => {
+      expect(
+        await alsAnmeldedienst(`update auth.users set encrypted_password = 'neu' where id = $1`, [
+          users.therapist,
+        ]),
+      ).toBe('42501');
+      expect(
+        await alsAnmeldedienst(
+          `insert into auth.users (id, aud, role, email, encrypted_password)
+           values ('99999999-9999-4999-8999-0000000000f2', 'authenticated', 'authenticated',
+                   'mit.kennwort@praxis.invalid', $1)`,
+          ['x'],
+        ),
+      ).toBe('42501');
+    });
+
+    it('lässt Konten ohne Kennwort und andere Änderungen zu', async () => {
+      expect(
+        await alsAnmeldedienst(
+          `insert into auth.users (id, aud, role, email, encrypted_password)
+           values ('99999999-9999-4999-8999-0000000000f3', 'authenticated', 'authenticated',
+                   'ohne.kennwort@praxis.invalid', '')`,
+          [],
+        ),
+      ).toBeNull();
+      expect(
+        await alsAnmeldedienst(`update auth.users set updated_at = now() where id = $1`, [
+          users.therapist,
+        ]),
+      ).toBeNull();
+    });
+
+    it('lässt das Kennwort eines Testkontos per SQL zu (Seed, Test-Umgebung)', async () => {
+      await expect(
+        asPostgres(
+          `update auth.users set encrypted_password = encrypted_password || '' where id = $1`,
+          [users.therapist],
+        ),
+      ).resolves.toBeDefined();
     });
   });
 
@@ -271,6 +430,42 @@ describe('App-PIN und Passkey (SEC-004, ADR-025 Fassung 2)', () => {
       expect(
         await patienten(claims(users.therapist, { angemeldetVor: 1, sitzung: ANDERE_SITZUNG })),
       ).toBeGreaterThan(0);
+    });
+
+    it('verbraucht die Sitzung auch, wenn der Anmeldedienst sie nicht löschen lässt (Befund 3)', async () => {
+      await asPostgres(`
+        create table auth.sessions (id uuid primary key);
+        create function auth.sessions_abweisen() returns trigger language plpgsql as
+          $f$ begin raise exception 'nicht erlaubt'; end $f$;
+        create trigger abweisen before delete on auth.sessions
+          for each row execute function auth.sessions_abweisen();
+      `);
+      try {
+        await asPostgres('insert into auth.sessions (id) values ($1)', [SITZUNG]);
+        await pinSetzen();
+        const gesperrt = claims(users.therapist, { angemeldetVor: 61 });
+        for (let i = 0; i < 4; i += 1) await alsToken(gesperrt, FREIGEBEN, ['111222']);
+        const [fuenfter] = await alsToken<Versuch>(gesperrt, FREIGEBEN, ['111222']);
+        expect(fuenfter).toEqual({ unlocked: false, attempts_left: 0, consumed: true });
+        const [richtig] = await alsToken<Versuch>(gesperrt, FREIGEBEN, [PIN]);
+        expect(richtig!.unlocked).toBe(false);
+      } finally {
+        await asPostgres('drop table auth.sessions; drop function auth.sessions_abweisen();');
+      }
+    });
+
+    it('beendet die Sitzung beim Anmeldedienst nach dem fünften Fehlversuch', async () => {
+      await asPostgres('create table auth.sessions (id uuid primary key)');
+      try {
+        await asPostgres('insert into auth.sessions (id) values ($1)', [SITZUNG]);
+        await pinSetzen();
+        const gesperrt = claims(users.therapist, { angemeldetVor: 61 });
+        for (let i = 0; i < 5; i += 1) await alsToken(gesperrt, FREIGEBEN, ['111222']);
+        const { rows } = await asPostgres('select 1 from auth.sessions where id = $1', [SITZUNG]);
+        expect(rows).toEqual([]);
+      } finally {
+        await asPostgres('drop table auth.sessions');
+      }
     });
 
     it('setzt den Zähler mit der richtigen PIN zurück', async () => {

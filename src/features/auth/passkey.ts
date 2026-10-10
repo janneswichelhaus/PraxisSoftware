@@ -38,6 +38,8 @@ export const PASSKEY_SAETZE = {
   zweiterFaktor: 'Bitte zuerst den zweiten Faktor bestätigen, dann den Passkey einrichten.',
   hoechstzahl: 'Für dieses Konto sind schon so viele Passkeys eingerichtet, wie möglich sind.',
   geraet: 'Der Passkey ließ sich auf diesem Gerät nicht verwenden. Bitte erneut versuchen.',
+  nichtFreigegeben:
+    'Der Passkey ist angelegt, aber nicht freigegeben und öffnet deshalb nichts. Bitte in „Mein Konto“ entfernen und neu einrichten.',
 } as const;
 
 /** Kann dieser Browser überhaupt Passkeys? Ohne WebAuthn bietet die Seite sie nicht an. */
@@ -131,7 +133,13 @@ export async function anmeldenMitPasskey(): Promise<void> {
   if (ergebnis.error) throw alsPasskeyFehler(ergebnis.error);
 }
 
-/** Einen Passkey für das angemeldete Konto auf diesem Gerät einrichten. Wirft `PasskeyFehler`. */
+/**
+ * Einen Passkey für das angemeldete Konto auf diesem Gerät einrichten und
+ * sofort freigeben (ANN-329): Erst ein freigegebener Passkey öffnet eine
+ * Sitzung, und freigeben lässt er sich nur in offener Sitzung kurz nach dem
+ * Anlegen. So öffnet ein Passkey, den jemand mit einem gesperrten Token beim
+ * Anmeldedienst anlegt, nichts. Wirft `PasskeyFehler`.
+ */
 export async function passkeyEinrichten(): Promise<void> {
   if (!passkeyMoeglich()) throw new PasskeyFehler(PASSKEY_SAETZE.nichtUnterstuetzt);
   let ergebnis: Awaited<ReturnType<ReturnType<typeof getSupabase>['auth']['registerPasskey']>>;
@@ -141,6 +149,21 @@ export async function passkeyEinrichten(): Promise<void> {
     throw new PasskeyFehler(ANMELDESAETZE.keineVerbindung);
   }
   if (ergebnis.error) throw alsPasskeyFehler(ergebnis.error);
+  await gibPasskeyFrei(ergebnis.data.id);
+}
+
+/** Freigabe in der Datenbank; ein Funkloch bekommt einen zweiten Versuch. */
+async function gibPasskeyFrei(id: string): Promise<void> {
+  for (let versuch = 0; versuch < 2; versuch += 1) {
+    try {
+      const { error } = await getSupabase().rpc('approve_own_passkey', { p_credential_id: id });
+      if (!error) return;
+      break;
+    } catch {
+      // erneut
+    }
+  }
+  throw new PasskeyFehler(PASSKEY_SAETZE.nichtFreigegeben);
 }
 
 export interface Passkey {
@@ -148,6 +171,8 @@ export interface Passkey {
   name: string | null;
   angelegtAm: string;
   zuletztAm: string | null;
+  /** Nur ein freigegebener Passkey öffnet eine Sitzung (ANN-329). */
+  freigegeben: boolean;
 }
 
 /** Die Passkeys des eigenen Kontos. Wirft `PasskeyFehler`. */
@@ -159,11 +184,20 @@ export async function ladePasskeys(): Promise<Passkey[]> {
     throw new PasskeyFehler(ANMELDESAETZE.keineVerbindung);
   }
   if (ergebnis.error) throw alsPasskeyFehler(ergebnis.error);
+  const freigaben = (await getSupabase().rpc('own_passkey_approvals')) as {
+    data: unknown;
+    error: unknown;
+  };
+  if (freigaben.error || !Array.isArray(freigaben.data)) {
+    throw new PasskeyFehler(ANMELDESAETZE.keineVerbindung);
+  }
+  const frei = new Set(freigaben.data.filter((id): id is string => typeof id === 'string'));
   return ergebnis.data.map((p) => ({
     id: p.id,
     name: p.friendly_name ?? null,
     angelegtAm: p.created_at,
     zuletztAm: p.last_used_at ?? null,
+    freigegeben: frei.has(p.id),
   }));
 }
 

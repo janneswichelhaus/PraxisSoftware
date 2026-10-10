@@ -30,6 +30,7 @@ export type Einloesefehler =
   | 'account_conflict'
   | 'invalid_request'
   | 'sign_in_not_created'
+  | 'session_invalid'
   | 'unavailable';
 
 export class EinloeseError extends Error {
@@ -59,6 +60,7 @@ const BEKANNT: readonly Einloesefehler[] = [
   'account_conflict',
   'invalid_request',
   'sign_in_not_created',
+  'session_invalid',
 ];
 
 export interface Eingeloest {

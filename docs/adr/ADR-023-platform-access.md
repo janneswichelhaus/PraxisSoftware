@@ -183,7 +183,9 @@ Versanddienst: B13, Anbieterprüfung nach ADR-002 in Block 11, eigener ADR bei d
 Plattform muss **ohne Mail benutzbar** sein. Das leistet der Weg vor Ort, und zwar auch für einen
 verlorenen Passkey: Die Praxis übergibt eine neue Einladung für das bestehende Konto, und die
 Person richtet damit einen neuen Passkey ein (*Fassung 4*; vorher „vergessenes Kennwort“, „neues
-Kennwort“). Der Wiederherstellungslink per Mail kommt mit B13 hinzu.
+Kennwort“). ~~Der Wiederherstellungslink per Mail kommt mit B13 hinzu.~~ *Fassung 4: Einen
+Wiederherstellungslink gibt es nicht; Plattformkonten bekommen keine Mail des Anmeldedienstes
+(ANN-331).*
 
 ### C. Identität und Vertretung
 

@@ -9,8 +9,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const signInWithPasskey = vi.fn();
 const registerPasskey = vi.fn();
 const list = vi.fn();
+const rpc = vi.fn();
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ auth: { signInWithPasskey, registerPasskey, passkey: { list } } }),
+  getSupabase: () => ({ rpc, auth: { signInWithPasskey, registerPasskey, passkey: { list } } }),
 }));
 
 const { anmeldenMitPasskey, passkeyEinrichten, ladePasskeys, PASSKEY_SAETZE, PasskeyFehler } =
@@ -23,6 +24,7 @@ beforeEach(() => {
   signInWithPasskey.mockReset();
   registerPasskey.mockReset();
   list.mockReset();
+  rpc.mockReset().mockResolvedValue({ data: null, error: null });
   holenImBrowser.mockClear();
   anlegenImBrowser.mockClear();
   vi.stubGlobal('PublicKeyCredential', function PublicKeyCredential() {});
@@ -59,9 +61,11 @@ describe('Prüfung am Gerät (userVerification: required)', () => {
           authenticatorSelection: { residentKey: 'required', userVerification: 'preferred' },
         },
       });
-      return { data: {}, error: null };
+      return { data: { id: 'neu' }, error: null };
     });
     await passkeyEinrichten();
+    // Sofort freigegeben (ANN-329).
+    expect(rpc).toHaveBeenCalledWith('approve_own_passkey', { p_credential_id: 'neu' });
     const auswahl = anlegenImBrowser.mock.calls[0]![0]!.publicKey!.authenticatorSelection!;
     expect(auswahl.userVerification).toBe('required');
     expect(auswahl.residentKey).toBe('required');
@@ -126,11 +130,34 @@ describe('Fehler als Satz', () => {
 describe('Liste der Passkeys', () => {
   it('liefert nur, was die Seite zeigt', async () => {
     list.mockResolvedValue({
-      data: [{ id: 'p1', friendly_name: 'iPhone', created_at: '2026-10-10T08:00:00Z' }],
+      data: [
+        { id: 'p1', friendly_name: 'iPhone', created_at: '2026-10-10T08:00:00Z' },
+        { id: 'p2', created_at: '2026-10-10T09:00:00Z' },
+      ],
       error: null,
     });
+    rpc.mockResolvedValue({ data: ['p1'], error: null });
     expect(await ladePasskeys()).toEqual([
-      { id: 'p1', name: 'iPhone', angelegtAm: '2026-10-10T08:00:00Z', zuletztAm: null },
+      {
+        id: 'p1',
+        name: 'iPhone',
+        angelegtAm: '2026-10-10T08:00:00Z',
+        zuletztAm: null,
+        freigegeben: true,
+      },
+      {
+        id: 'p2',
+        name: null,
+        angelegtAm: '2026-10-10T09:00:00Z',
+        zuletztAm: null,
+        freigegeben: false,
+      },
     ]);
+  });
+
+  it('meldet einen nicht freigegebenen Passkey nach dem Einrichten', async () => {
+    registerPasskey.mockResolvedValue({ data: { id: 'neu' }, error: null });
+    rpc.mockResolvedValue({ data: null, error: { message: 'passkey not approvable' } });
+    await expect(passkeyEinrichten()).rejects.toThrow(PASSKEY_SAETZE.nichtFreigegeben);
   });
 });

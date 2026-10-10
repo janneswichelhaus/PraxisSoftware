@@ -3930,7 +3930,7 @@ Datenschutz · offen · 2026-10-10 · — · Prüfpaket · Wiedervorlage: Datens
 
 Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkt 11, Vorschlag aus Fassung 2) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Betriebsreife; Datenschutzprüfung (B2)
 
-**Annahme.** Die App-PIN hat sechs Ziffern; abgelehnt werden gleiche Ziffern und auf- oder absteigende Reihen. Gezählt wird je Sitzung des Anmeldedienstes (`session_id`), nicht je Konto: Nach fünf Fehlversuchen in Folge ist diese Sitzung verbraucht. Die Datenbank sieht sie nie wieder offen, beendet sie beim Anmeldedienst (`auth.sessions`), und weiter geht es nur mit einer neuen Anmeldung per Passkey. Die richtige PIN setzt den Zähler zurück. Eine Zeile mit offenem Fehlversuch bleibt stehen, bis die PIN stimmt; erledigte und verbrauchte fallen einen Tag nach der letzten Änderung.
+**Annahme.** Die App-PIN hat sechs Ziffern; abgelehnt werden gleiche Ziffern und auf- oder absteigende Reihen. Gezählt wird je Sitzung des Anmeldedienstes (`session_id`), nicht je Konto: Nach fünf Fehlversuchen in Folge ist diese Sitzung verbraucht. Die Datenbank sieht sie nie wieder offen, beendet sie beim Anmeldedienst (`auth.sessions`), und weiter geht es nur mit einer neuen Anmeldung per Passkey. Die richtige PIN setzt den Zähler zurück. Scheitert das Löschen beim Anmeldedienst, bleibt der Verbrauch trotzdem stehen (Zweitreview). Eine Zeile mit offenem Fehlversuch bleibt, bis die PIN stimmt oder es die Sitzung beim Anmeldedienst nicht mehr gibt; erledigte und verbrauchte fallen einen Tag nach der letzten Änderung.
 
 **Begründung.** Sechs Ziffern und fünf Versuche halten die Trefferchance eines Diebs mit Gerät bei etwa 1 zu 200 000 je Passkey-Anmeldung (ADR-025, Konsequenzen); vier Ziffern läge bei 1 zu 2 000. Je Sitzung, weil die PIN nur eine bestehende Sitzung freigibt: Eine neue Sitzung gibt es nur mit Passkey, ein Zähler je Konto sperrte dagegen das Telefon, wenn am Rechner fünfmal falsch getippt wird. Der Zähler darf nicht nach Zeit verfallen, sonst begänne er täglich von vorn. Unsicher: ob die Datenschutzprüfung eine längere PIN oder eine Wartezeit zwischen Versuchen verlangt.
 
@@ -3944,7 +3944,7 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 
 **Annahme.** `set_own_pin` verlangt eine offene Sitzung und eine Anmeldung (Passkey, Einladungslink oder in Entwicklung und Test das Kennwort), die höchstens zehn Minuten zurückliegt. Eine Freigabe per PIN zählt dafür nicht. Wer die PIN später ändert, bestätigt sich in „Mein Konto“ zuerst mit dem Passkey.
 
-**Begründung.** Ohne diese Regel könnte, wer ein entsperrtes Telefon findet, sich eine eigene PIN setzen und die Sitzung damit auf Dauer halten; ADR-025 Punkt 11 kennt keine Frist für die PIN. Zehn Minuten reichen für die Einrichtung nach der Einladung und für eine Änderung direkt nach der Bestätigung. Das ist das übliche Muster einer erneuten Bestätigung vor einer Änderung am Zugang. Unsicher: nichts Wesentliches; Restlücke ist das Anlegen eines Passkeys mit einem gesperrten Token direkt beim Anmeldedienst (OPS-001, Bericht SEC-EPIC-002).
+**Begründung.** Ohne diese Regel könnte, wer ein entsperrtes Telefon findet, sich eine eigene PIN setzen und die Sitzung damit auf Dauer halten; ADR-025 Punkt 11 kennt keine Frist für die PIN. Zehn Minuten reichen für die Einrichtung nach der Einladung und für eine Änderung direkt nach der Bestätigung. Das ist das übliche Muster einer erneuten Bestätigung vor einer Änderung am Zugang. Unsicher: nichts Wesentliches; das Anlegen eines Passkeys mit gesperrtem Token schließt ANN-329.
 
 **Anker.** `app.pin_fresh_authentication()` und `public.set_own_pin()` in `supabase/migrations/20261025100000_sec_004_app_pin.sql`.
 
@@ -3970,7 +3970,7 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 
 **Begründung.** ADR-025 Punkt 13 verlangt Passkey und PIN beim Einlösen der Einladung; die Pflicht vor der Anwendung fängt auch eine abgebrochene Einrichtung. Eine Pflicht in der Test-Umgebung bräche die Tests hinter der Anmeldung, die mit Kennwort anmelden (Punkt 15). Ohne Kennwort sperrte das Entfernen des letzten Passkeys das Konto selbst aus; der Rückweg wäre eine neue Einladung oder beim Inhaber Break Glass (Punkt 14). Unsicher: ob Jannes die Pflicht auch in der Test-Umgebung sehen will, um sie zu sichten.
 
-**Anker.** `Einrichtungspflicht` in `src/features/auth/einrichtung/Einrichtungspflicht.tsx`; `liste.length > 1` in `PasskeyAbschnitt`, `src/features/account/Anmeldung.tsx`.
+**Anker.** `Einrichtungspflicht` in `src/features/auth/einrichtung/Einrichtungspflicht.tsx`; `freigegeben > 1` in `PasskeyAbschnitt`, `src/features/auth/einrichtung/AnmeldungVerwalten.tsx`.
 
 **Änderungspfad.** Pflicht auch in der Test-Umgebung: `pflicht` an `readAppUmgebung() !== 'development'` binden und den Anmeldehelfer der E2E-Tests um „Später einrichten“ ergänzen · Aufwand `klein`. Letzten Passkey doch entfernbar: die Bedingung streichen · Aufwand `klein`.
 
@@ -3985,3 +3985,40 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 **Anker.** `sendeNeuenAnmeldelink` in `src/features/staff/konto-api.ts`; Beschriftung in `src/features/audit/actions.ts`.
 
 **Änderungspfad.** Eigene Auditaktion `staff_account.sign_in_link_requested`: ADR-010 ändern, Migration und Katalog · Aufwand `mittel`, nur mit Freigabe.
+
+### ANN-329 — Ein Passkey öffnet eine Sitzung nur, wenn er in offener Sitzung freigegeben wurde
+
+Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweitreview Befund 1; ADR-025 Punkte 6 und 10) · Prüfpaket · Wiedervorlage: OPS-001 (Verhalten des Anmeldedienstes in der Beta prüfen)
+
+**Annahme.** Der Anmeldedienst legt einen Passkey mit jedem gültigen Token an, auch mit einem gesperrten. Deshalb zählt eine Passkey-Anmeldung für die Sitzungssperre nur, wenn der benutzte Passkey in `passkey_approvals` steht. Freigeben lässt er sich nur in offener Sitzung, für das eigene Konto und höchstens zehn Minuten nach dem Anlegen; die Anwendung tut das gleich nach dem Einrichten. Welcher Passkey benutzt wurde, zeigt `last_used_at`, das der Anmeldedienst in derselben Transaktion wie die Sitzung setzt (höchstens zwei Minuten Abstand). Das Urteil hält `session_status` beim ersten Aufruf an der Sitzung fest. Eine Sitzung aus einem nicht freigegebenen Passkey hat auch keine PIN-Versuche. Ein nicht freigegebener Passkey steht in „Mein Konto“ markiert und lässt sich entfernen.
+
+**Begründung.** ADR-025 Punkt 6 verlangt die Durchsetzung in der Datenbank. In die Tabellen des Anmeldedienstes greift die Migration nicht ein (kein Trigger dort); gelesen wird nur `auth.webauthn_credentials`. Ohne diese Tabelle oder bei einem Fehler zählt der Passkey nicht (fail-closed). Unsicher: ob `last_used_at` beim Anbieter so gesetzt wird wie im Quelltext (`passkey_authentication.go`); Restlücke: Mit einem gesperrten Token lassen sich fremde Passkeys beim Anmeldedienst löschen (keine Übernahme, aber Aussperren bis zur neuen Einladung).
+
+**Anker.** `app.passkey_sign_in_approved`, `app.last_first_factor` und `public.approve_own_passkey` in `supabase/migrations/20261025120000_sec_009_passkey_freigabe.sql`; `gibPasskeyFrei` in `src/features/auth/passkey.ts`.
+
+**Änderungspfad.** Bietet der Anmeldedienst einen Hook für die Registrierung, dort sperren und die Freigabe entfallen lassen · Aufwand `mittel`. Längeres Freigabefenster: `app.pin_fresh_authentication()` · Aufwand `klein`.
+
+### ANN-330 — Kein Kennwort über den Anmeldedienst: ein Trigger an `auth.users`
+
+Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweitreview Befund 2; ADR-025 Punkt 9) · Prüfpaket · Wiedervorlage: OPS-001 (Trigger im Cloudprojekt prüfen)
+
+**Annahme.** Ein Trigger an `auth.users` lehnt jedes Kennwort ab, das der Anmeldedienst (`supabase_auth_admin`) setzt: Selbstbedienung (`updateUser`), Admin-API, Wiederherstellung. Die Kennwörter der synthetischen Testkonten kommen per SQL als `postgres` (Seed, `supabase/testumgebung/zugang.sql`). Damit gibt es in keiner Umgebung einen Weg, über den Anmeldedienst ein Kennwort zu setzen; den Kennwortweg der Anmeldeseite (ANN-326) braucht es nur für diese Testkonten.
+
+**Begründung.** Die Oberfläche allein ist keine Zugriffskontrolle (ADR-004). Mit einem gesperrten Token ließ sich sonst innerhalb von 24 Stunden nach der Anmeldung ein Kennwort setzen und damit eine offene Sitzung holen (Restlücke 1 aus ANN-257). Eine Umgebungskennung in der Datenbank wäre eine zweite Stelle; die Rolle des Schreibenden unterscheidet ohne sie. Vorbild ist der Trigger an `auth.users` aus ABN-012. Unsicher: ob der Anbieter im Cloudprojekt Trigger an `auth.users` weiter zulässt.
+
+**Anker.** `app.reject_password_via_auth_service` in `supabase/migrations/20261025120000_sec_009_passkey_freigabe.sql`; Test in `supabase/tests/app-pin.test.ts`.
+
+**Änderungspfad.** Kennwörter wieder zulassen: den Trigger entfernen · Aufwand `klein`, gegen ADR-025 Punkt 9.
+
+### ANN-331 — Mails des Anmeldedienstes: keine Wiederherstellung, Anmeldelinks nur mit Anlass
+
+Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweitreview Befund 4; ADR-025 Punkte 9 und 12) · Prüfpaket · Wiedervorlage: OPS-001 und B13 (Mail-Hook einschalten)
+
+**Annahme.** `auth_email_allowed` erlaubt keinen Wiederherstellungslink mehr, für kein Konto. Plattformkonten bekommen keine Mail des Anmeldedienstes. Ein Praxiskonto bekommt einen Anmeldelink nur zu einer offenen Mitarbeitereinladung an seine Adresse oder innerhalb einer Stunde, nachdem die Inhaberin „Neuen Anmeldelink senden“ ausgelöst hat (Vermerk `staff_account.password_reset_requested`). Andere Mails an Praxiskonten bleiben wie bisher.
+
+**Begründung.** Ein Anmeldelink, den jeder für jede Adresse anfordern kann, wäre eine Anmeldung allein per Mail und ginge an Sperre und PIN vorbei. Der Anlass steht schon im Datenmodell (Einladung) bzw. im Auditlog (Auslösung durch die Inhaberin); eine eigene Tabelle dafür wäre ein zweites Merkmal desselben Vorgangs. Wirksam ist die Regel erst mit dem Mail-Hook (OPS-001, ANN-218); bis dahin verschickt der Anmeldedienst in Entwicklung und Test selbst, an synthetische Adressen. Unsicher: ob das Lesen des Auditlogs für die Regel der Prüfung recht ist (ADR-010 Punkt 15).
+
+**Anker.** `public.auth_email_allowed` in `supabase/migrations/20261025120000_sec_009_passkey_freigabe.sql`; Test in `supabase/tests/platform-mailbox.test.ts`.
+
+**Änderungspfad.** Eigenes Merkmal statt Auditlog: Spalte am Profil, von `request_staff_password_reset` gesetzt · Aufwand `klein`. Ganz ohne Mail-Anmeldung: STAFF-005 mit Einladungscode wie bei der Plattform · Aufwand `mittel`.
+

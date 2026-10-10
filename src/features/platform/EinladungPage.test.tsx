@@ -212,7 +212,9 @@ describe('EinladungPage', () => {
       error: null,
     });
     oeffne(`#code=${CODE}`);
-    expect(await screen.findByText(/max@patient.invalid angemeldet/)).toBeVisible();
+    // Ohne Adresse: Die Seite liegt vor der Sitzungssperre (ADR-025 Punkt 3).
+    expect(await screen.findByText(/bereits ein Konto angemeldet/)).toBeVisible();
+    expect(screen.queryByText(/max@patient.invalid/)).toBeNull();
     expect(
       screen.getByRole('button', { name: 'Abmelden und neues Konto einrichten' }),
     ).toBeInTheDocument();
@@ -220,6 +222,17 @@ describe('EinladungPage', () => {
       .setup()
       .click(screen.getByRole('button', { name: 'Für dieses Konto einlösen' }));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
+  });
+
+  it('löst mit gesperrter Sitzung nicht ein und sagt warum (ADR-025 Punkt 6)', async () => {
+    sitzung = { user: { id: 'x', email: 'max@patient.invalid' } };
+    invoke.mockResolvedValue(antwort({ ok: false, error: 'session_invalid' }, 401));
+    oeffne(`#code=${CODE}`);
+    await userEvent
+      .setup()
+      .click(await screen.findByRole('button', { name: 'Für dieses Konto einlösen' }));
+    expect(await screen.findByText(/auf diesem Gerät gesperrt/)).toBeVisible();
+    expect(navigate).not.toHaveBeenCalled();
   });
 
   it('kennt eine Fehlerklasse als Eigenschaft', () => {

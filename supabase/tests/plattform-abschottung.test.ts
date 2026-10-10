@@ -33,6 +33,10 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
     'Eigene App-PIN festlegen (SEC-004, ADR-025 Punkt 11): nur das eigene Konto; Negativfälle in app-pin.test.ts',
   'public.own_pin_status':
     'Ob das eigene Konto eine App-PIN hat (SEC-004); kein Inhalt, Negativfälle in app-pin.test.ts',
+  'public.approve_own_passkey':
+    'Eigenen, gerade angelegten Passkey freigeben (SEC-009, ANN-329); Negativfälle in app-pin.test.ts',
+  'public.own_passkey_approvals':
+    'Freigegebene Passkeys des eigenen Kontos (SEC-009); nur Kennungen, Negativfälle in app-pin.test.ts',
   'public.unlock_with_pin':
     'Eigene gesperrte Sitzung freigeben (SEC-004); Negativfälle in app-pin.test.ts',
   'public.platform_context':

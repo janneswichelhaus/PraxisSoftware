@@ -87,6 +87,10 @@ export function EinladungPage() {
       );
     } else if (art === 'sign_in_not_created') {
       setZustand('nicht-angemeldet');
+    } else if (art === 'session_invalid') {
+      setMeldung(
+        'Die Anwendung ist auf diesem Gerät gesperrt. Bitte zuerst dort entsperren – oder abmelden und ein neues Konto einrichten.',
+      );
     } else {
       setMeldung(
         'Der Zugang lässt sich gerade nicht einrichten. Ihr Code ist deswegen nicht verbraucht – bitte später erneut versuchen.',
@@ -195,7 +199,9 @@ export function EinladungPage() {
 
       {zustand === 'angemeldet' ? (
         <div ref={auskunft} tabIndex={-1}>
-          <Statusmeldung ton="warnung">{hinweisAngemeldet(session?.user.email)}</Statusmeldung>
+          {/* Ohne Adresse: Die Seite liegt vor der Sitzungssperre, und eine
+              gesperrte Sitzung zeigt keine Angaben zum Konto (ADR-025 Punkt 3). */}
+          <Statusmeldung ton="warnung">{hinweisAngemeldet(undefined)}</Statusmeldung>
           <div className="mt-4 flex flex-col gap-3">
             <Button disabled={laeuft} onClick={() => void mitSitzungEinloesen()}>
               {laeuft ? 'Wird eingelöst …' : 'Für dieses Konto einlösen'}
