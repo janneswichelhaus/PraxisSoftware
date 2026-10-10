@@ -15,8 +15,9 @@ import {
  *     auf Übung und Beschwerden antworten nur die therapeutischen Rollen,
  *     das Büro auf Termin, Rechnung und Sonstiges (ANN-310).
  *   * Training: owner, Trainingsbetreuung und Büro lesen alles (ABN-030,
- *     BEF-137); das Büro antwortet nur auf „Termin oder Rechnung" (ANN-311
- *     Fassung 2). Kein Durchgriff (ADR-021 Punkt 6).
+ *     BEF-137); das Büro antwortet wie in der Behandlung auf Termin, Rechnung
+ *     und Sonstiges (ANN-311 Fassung 3, BEF-139). Kein Durchgriff (ADR-021
+ *     Punkt 6).
  *   * Die Liste trägt keinen Text; das Öffnen steht als „Akte geöffnet" im
  *     Protokoll (ADR-010 Fassung 3).
  */
@@ -204,28 +205,39 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(leer.rows).toHaveLength(0);
   });
 
-  it('Training: alle drei lesen alles, das Büro antwortet nur auf Termin oder Rechnung (ANN-311, BEF-137)', async () => {
+  it('Training: alle drei lesen alles, das Büro antwortet auf Termin, Rechnung und Sonstiges (ANN-311, BEF-137, BEF-139)', async () => {
     await gesundheitImTraining();
     const beschwerde = await fragen(tina, 'complaint', 'Schulter zwickt');
+    const uebung = await fragen(tina, 'exercise', 'Wie oft die Brücke?');
     const rechnung = await fragen(tina, 'organisational');
     const sonst = await fragen(tina, 'other');
 
     for (const konto of [users.ownerTherapist, users.trainer, users.office]) {
       expect((await liste(konto, 'training')).map((z) => z.id).sort()).toEqual(
-        [beschwerde, rechnung, sonst].sort(),
+        [beschwerde, uebung, rechnung, sonst].sort(),
       );
     }
     const buero = await liste(users.office, 'training');
     const darf = Object.fromEntries(buero.map((z) => [z.id, z.can_answer]));
-    expect(darf).toEqual({ [beschwerde]: false, [rechnung]: true, [sonst]: false });
-    // Lesen ja (BEF-137), antworten und erledigen nur organisatorisch.
+    expect(darf).toEqual({
+      [beschwerde]: false,
+      [uebung]: false,
+      [rechnung]: true,
+      [sonst]: true,
+    });
+    // Lesen ja (BEF-137); antworten und erledigen wie in der Behandlung (BEF-139).
     await asUserCommitted(users.office, OEFFNEN, [beschwerde]);
-    await asUserCommitted(users.office, OEFFNEN, [sonst]);
-    for (const id of [beschwerde, sonst]) {
+    await asUserCommitted(users.office, OEFFNEN, [uebung]);
+    for (const id of [beschwerde, uebung]) {
       expect(await fehler(asUser(users.office, ANTWORTEN, [id, 'x']))).toBe('42501');
       expect(await fehler(asUser(users.office, ERLEDIGEN, [id]))).toBe('42501');
     }
     await asUserCommitted(users.office, ANTWORTEN, [rechnung, 'Ist korrigiert.']);
+    await asUserCommitted(users.office, ANTWORTEN, [sonst, 'Parken geht im Hof.']);
+    await asUserCommitted(users.office, ERLEDIGEN, [sonst]);
+    expect((await liste(users.office, 'training')).map((z) => z.id).sort()).toEqual(
+      [beschwerde, uebung, rechnung].sort(),
+    );
 
     // Therapeut:innen und Teamleitung sehen im Training nichts.
     for (const konto of [users.therapist, users.teamLead]) {
