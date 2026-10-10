@@ -15,13 +15,17 @@ selbst. **Punkte 11 und 13 werden geschärft**: Mail nur an eine persönlich bes
 Ausweis und Vollmacht bei Vertretungen ansehen, Bedingungen der Einwilligung zur Begleitung. Die
 übrigen 23 Punkte und W1 bis W6 bleiben unverändert.
 
+**Fassung 3 (2026-10-09, BEF-138)**: Jannes hat in der Abnahme der Annahmen entschieden, dass
+der Abruf eines freigegebenen Dokuments über die Plattform nicht protokolliert wird. Geändert ist
+nur **Punkt 24** (mit Vermerk an W5); Rang 2 dazu ist ADR-010 Fassung 4.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
 
 ## Datum
 
-2026-09-30 · Fassung 2: 2026-09-30
+2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09
 
 ## Kontext
 
@@ -309,9 +313,12 @@ Abschnitt 2 Satz 3, ADR-017 Punkt 37).
 - bei Einwilligung, Widerruf und Export zusätzlich die Begleitung
 
 **24. Protokolliert wird, was nachzuweisen ist** (**W5**). In jedem Fall: jede Änderung an einem
-Zugang, jeder Schreibvorgang der Person (Wunsch, Nachricht, Einwilligung, Widerruf), jeder
-Dokumentabruf (Verweis als Download, ADR-010 Punkt 14), jeder Datenexport und **jeder Zugriff
-über eine Vertretung, auch lesend**. Das bloße Lesen der eigenen Daten durch die Person selbst
+Zugang, jeder Schreibvorgang der Person (Wunsch, Nachricht, Einwilligung, Widerruf),
+~~jeder Dokumentabruf (Verweis als Download, ADR-010 Punkt 14),~~ jeder Datenexport und **jeder
+Zugriff über eine Vertretung, auch lesend**. *(Fassung 3)* Der Abruf eines freigegebenen
+Dokuments wird nicht protokolliert; die Freigabe steht am Datensatz. Ruft eine Vertretung ab,
+zählt das als ihr Lesen, höchstens ein Eintrag je Tag und Akte
+([ADR-010](ADR-010-audit-and-privileged-access.md) Punkt 22). Das bloße Lesen der eigenen Daten durch die Person selbst
 wird nicht einzeln protokolliert. Ein solcher Eintrag würde nur zeigen, dass jemand seine eigenen
 Termine gesehen hat, und das wiegt die Menge der Einträge nicht auf (Art. 5 Abs. 1 lit. c DSGVO).
 Die Vorschau der Praxis (DSN-001 D7) ist davon getrennt und wird wie ein Lesezugriff auf die Akte
@@ -436,7 +443,7 @@ Art. 8 DSGVO.
 Informationsgesellschaft, nicht den Zugang zu Behandlungsdaten. Rücknahme `klein`: eine Zahl.
 
 **W5 — Was protokolliert wird.** (a) Wie Punkt 24: alles Schreibende, Downloads, Export, jede
-Vertretung, das eigene Lesen nicht. (b) Zusätzlich jedes Öffnen einer Plattformansicht durch die
+Vertretung, das eigene Lesen nicht. *(Fassung 3: Downloads nicht mehr, Punkt 24.)* (b) Zusätzlich jedes Öffnen einer Plattformansicht durch die
 Person selbst.
 **Empfehlung (a).** Nachvollziehbarkeit ist die Kompensation für fremde Zugriffe (ADR-004), und
 fremd ist hier nur die Vertretung. Rücknahme `klein`: ein Ereignis mehr in den Projektionen.
@@ -455,3 +462,4 @@ muss sie stehen, denn ab dort gibt es etwas zu sehen. Rücknahme `klein`: Reihen
 | --- | --- | --- |
 | 1 | 2026-09-30 | Erstfassung nach DSN-001 (bestätigt 2026-09-30); 26 Punkte, Wahlpunkte W1 bis W6; am selben Tag angenommen, W1 bis W6 wie empfohlen. |
 | 2 | 2026-09-30 | **Punkt 5 geändert** (Jannes): Konto 30 Tage nach dem letzten Zugang, Zugang mit Nachweis drei Jahre wie das Auditlog statt zwölf Monate; Wortlaut der Fassung 1 im Punkt. Punkt 11: Mail nur an eine von der Person selbst bestätigte Adresse. Punkt 13: Ausweis und Vollmacht ansehen, nichts speichern; Einwilligung zur Begleitung nach Art. 9 Abs. 2 lit. a mit vier Bedingungen. Erledigungsvermerk in den Folgefragen. Übrige Punkte und W1 bis W6 unverändert. |
+| 3 | 2026-10-09 | BEF-138, Entscheidung von Jannes in der Abnahme vom 2026-10-09 (ANN-249): **Punkt 24** ohne „jeder Dokumentabruf"; der Abruf eines freigegebenen Dokuments wird nicht protokolliert, bei einer Vertretung zählt er als Lesen (ADR-010 Fassung 4, Punkt 22). W5 mit Vermerk. Übrige Punkte unverändert. |

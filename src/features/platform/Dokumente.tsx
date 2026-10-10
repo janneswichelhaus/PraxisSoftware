@@ -37,7 +37,8 @@ function groesse(bytes: number): string {
  * „Ich → Dokumente" (POR-014, DSN-001 D3): was die Praxis einzeln für die
  * Person freigegeben hat - nichts ist voreingestellt sichtbar, Fotos nie.
  * Bilder öffnen sich in der Anwendung, ein PDF wird heruntergeladen
- * (ADR-017 Punkte 54, 55); jeder Abruf steht im Protokoll der Praxis.
+ * (ADR-017 Punkte 54, 55). Der Abruf steht nicht im Protokoll (BEF-138,
+ * ADR-010 Punkt 22); nachgewiesen ist die Freigabe.
  */
 export function Dokumente({ zugang }: { zugang: Plattformzugang }) {
   const dokumente = useQuery({

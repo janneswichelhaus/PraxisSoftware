@@ -532,7 +532,7 @@ const VERWEIS_GUELTIGKEIT_SEKUNDEN = 60;
 
 /**
  * Der Verweis auf genau ein freigegebenes Dokument: erst die einmalige
- * Freigabe des Servers (protokolliert als Abruf, ADR-023 Punkt 24), dann die
+ * Freigabe des Servers (ohne Protokoll, ADR-010 Punkt 22), dann die
  * Unterschrift der Ablage, die sie verbraucht (ADR-017 Punkte 15, 20, 21).
  * Der Verweis verlässt dieses Modul nicht.
  */

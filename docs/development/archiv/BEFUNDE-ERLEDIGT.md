@@ -1,5 +1,25 @@
 
 
+### BEF-138 — Abruf freigegebener Dokumente über die Plattform nicht protokollieren
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Plattform, Unterlagen; Protokoll |
+| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-249) |
+| Status  | erledigt 2026-10-10 (BEF-138: ADR-010 Fassung 4 Punkt 22, ADR-023 Fassung 3, Prinzipien 0.23, Migration `20261022100000_bef_138_platform_file_retrieval.sql`) |
+| Berührt | ANN-249; ADR-023 Punkt 24 („jeder Dokumentabruf“); ADR-010 Punkt 16; `PROJECT_PRINCIPLES.md` §4 (Protokollkatalog); Audit-Aktion `patient_file.downloaded` über die Plattform; Workflow `audit-katalog.yml` |
+
+**Beobachtung.** Ruft eine Person ein freigegebenes Dokument über die Plattform ab, entsteht ein Auditeintrag `patient_file.downloaded` (wer, welches Dokument, wann).
+
+**Erwartet** (Jannes, 2026-10-09): Dieser Abruf wird nicht protokolliert. Die Freigabe selbst und Abrufe durch Praxisrollen bleiben, wie sie sind.
+
+Das ist eine Änderung der Protokollierung nach ADR-010: Der Loop schreibt die neuen Fassungen von ADR-023 Punkt 24, ADR-010 und des Protokollkatalogs in §4, entfernt den Eintrag in `supabase/migrations/20261010160000_por_014_platform_files.sql` per neuer Migration und passt die Tests an, die ihn heute verlangen. Der Pull Request braucht vor dem Merge das Label `freigabe-audit`, das nur Jannes setzt.
+
+*Stand 2026-10-09 (ABN-EPIC-002):* nicht in diesem Loop gebaut – er braucht einen eigenen Branch und Pull Request, die Session durfte nur auf ihren einen Branch pushen. Nächster Einzel-Story-Loop.
+
+*Erledigt 2026-10-10 (Einzel-Story-Loop BEF-138):* `issue_platform_file_link` schreibt keinen Eintrag `patient_file.downloaded` mehr. Eine Vertretung liest damit höchstens einmal am Tag (`platform_representation.read`, ADR-010 Punkt 22), von Jannes in der Session bestätigt. Die Aktionsmenge ist unverändert, das Label `freigabe-audit` setzt Jannes als Freigabe der Änderung.
+
 ### BEF-061 — Die Rechnungsliste endet stumm bei 100 Rechnungen, es gibt keine Suche, und am Rechner sind Rechnungen gestreckte Handy-Karten
 
 |         |                                                                                                                                                                                                                                                                                                                                                                                                                                          |

@@ -15,8 +15,9 @@ import {
  * ANN-249).
  *
  * Nur einzeln freigegebene Dateien, nie Fotos; die Freigabe setzen owner,
- * therapist und team_lead; der Abruf steht als `patient_file.downloaded` im
- * Protokoll; die Ablage gibt das Objekt nur mit der einmaligen Freigabe her.
+ * therapist und team_lead; der Abruf steht nicht im Protokoll, eine Vertretung
+ * liest damit einmal am Tag (BEF-138, ADR-010 Punkt 22); die Ablage gibt das
+ * Objekt nur mit der einmaligen Freigabe her.
  */
 
 const { users, platformAccesses, patients, organizationId } = SEED;
@@ -128,7 +129,7 @@ describe('Freigegebene Dokumente (POR-014)', () => {
     expect(direkt).not.toBeNull();
   });
 
-  it('gibt den Verweis nur fuer die eigene freigegebene Datei heraus und protokolliert den Abruf', async () => {
+  it('gibt den Verweis nur fuer die eigene freigegebene Datei heraus, ohne Protokoll (BEF-138)', async () => {
     await asUserCommitted(users.therapist, FREIGEBEN, [ARZTBRIEF, true]);
     await asUserCommitted(users.therapist, FREIGEBEN, [MAX_BRIEF, true]);
     const { rows } = await asUserCommitted<{ bucket_id: string; object_key: string }>(
@@ -141,25 +142,19 @@ describe('Freigegebene Dokumente (POR-014)', () => {
     // Max' freigegebener Brief ist fuer Erika fremd.
     const fremd = await abgefangen(asUser(users.plattformErika, VERWEIS, [ERIKA, MAX_BRIEF]));
     expect(fremd?.message).toContain('not accessible');
-    const protokoll = await asPostgres<{
-      actor_kind: string;
-      actor_user_id: string;
-      context: Record<string, unknown>;
-    }>(
-      `select actor_kind, actor_user_id, context from public.audit_log
-        where action = 'patient_file.downloaded' and subject_id = $1`,
+    // ADR-010 Punkt 22: Der Abruf durch die Person selbst hinterlaesst keinen
+    // Eintrag, weder zur Datei noch zum Konto. Die Freigabe steht am Datensatz.
+    const protokoll = await asPostgres(
+      `select action from public.audit_log
+        where subject_id = $1 or actor_user_id = $2`,
+      [ARZTBRIEF, users.plattformErika],
+    );
+    expect(protokoll.rows).toEqual([]);
+    const freigabe = await asPostgres<{ released_by: string }>(
+      'select released_by from public.patient_files where id = $1',
       [ARZTBRIEF],
     );
-    expect(protokoll.rows).toEqual([
-      expect.objectContaining({
-        actor_kind: 'platform',
-        actor_user_id: users.plattformErika,
-        context: expect.objectContaining({
-          surface: 'platform',
-          platform_access_id: ERIKA,
-        }) as unknown,
-      }),
-    ]);
+    expect(freigabe.rows).toEqual([{ released_by: users.therapist }]);
   });
 
   it('die Ablage gibt das Objekt nur mit der einmaligen Freigabe her (ADR-017 Punkte 15, 21)', async () => {
@@ -211,6 +206,18 @@ describe('Freigegebene Dokumente (POR-014)', () => {
 
   it('Begleitung liest freigegebene Dokumente mit, protokolliert als Vertretung', async () => {
     await asUserCommitted(users.therapist, FREIGEBEN, [MAX_BRIEF, true]);
+    // Auch ein Abruf ohne vorherige Liste ist ein Lesen der Vertretung.
+    await asUserCommitted(users.plattformPaula, VERWEIS, [
+      platformAccesses.paulaBegleitungMax,
+      MAX_BRIEF,
+    ]);
+    const vorher = await asPostgres<{ action: string; actor_kind: string }>(
+      `select action, actor_kind from public.audit_log where actor_user_id = $1`,
+      [users.plattformPaula],
+    );
+    expect(vorher.rows).toEqual([
+      { action: 'platform_representation.read', actor_kind: 'representative' },
+    ]);
     const liste = await asUserCommitted<{ id: string }>(users.plattformPaula, LISTE, [
       platformAccesses.paulaBegleitungMax,
     ]);
@@ -219,10 +226,25 @@ describe('Freigegebene Dokumente (POR-014)', () => {
       platformAccesses.paulaBegleitungMax,
       MAX_BRIEF,
     ]);
-    const protokoll = await asPostgres<{ actor_kind: string }>(
-      `select actor_kind from public.audit_log where action = 'patient_file.downloaded' and subject_id = $1`,
-      [MAX_BRIEF],
+    // BEF-138: kein Eintrag zur Datei; Liste und zweiter Abruf am selben Tag
+    // bleiben bei dem einen Eintrag „Vertretung liest" (ADR-010 Punkt 22).
+    const datei = await asPostgres(`select id from public.audit_log where subject_id = $1`, [
+      MAX_BRIEF,
+    ]);
+    expect(datei.rows).toEqual([]);
+    const protokoll = await asPostgres<{ action: string; subject_id: string; context: unknown }>(
+      `select action, subject_id, context from public.audit_log where actor_user_id = $1`,
+      [users.plattformPaula],
     );
-    expect(protokoll.rows).toEqual([{ actor_kind: 'representative' }]);
+    expect(protokoll.rows).toEqual([
+      expect.objectContaining({
+        action: 'platform_representation.read',
+        subject_id: patients.max,
+        context: expect.objectContaining({
+          surface: 'platform',
+          platform_access_id: platformAccesses.paulaBegleitungMax,
+        }) as unknown,
+      }),
+    ]);
   });
 });

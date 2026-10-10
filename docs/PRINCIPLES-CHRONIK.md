@@ -6,6 +6,15 @@ werden nicht nachträglich geändert; wer den damaligen Wortlaut braucht, findet
 
 ## Änderungsvermerke
 
+### Änderungsvermerk 0.23
+
+Nachzug nach der **Abnahme der Annahmen vom 2026-10-09**, Entscheidung des Projektinhabers zu
+ANN-249 (BEF-138). **§4.2** — im Katalog des Auditlogs heißt es „Herunterladen durch die Praxis“.
+**§4.6** — ein Satz: Der Abruf eines freigegebenen Dokuments durch die Person wird nicht
+protokolliert, nachgewiesen ist die Freigabe. Rang 2 dazu: ADR-010 Fassung 4 (Punkt 22), ADR-023
+Fassung 3 (Punkt 24). Unverändert bleiben das Lesen über eine Vertretung (einmal je Tag und Akte)
+und das Herunterladen durch die Praxis.
+
 ### Änderungsvermerk 0.22
 
 Nachzug nach der **Abnahme der Annahmen vom 2026-10-09**, Entscheidungen des Projektinhabers
