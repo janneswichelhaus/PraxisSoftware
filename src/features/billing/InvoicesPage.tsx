@@ -289,7 +289,7 @@ function KandidatenKarte({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
-  // UX-008b (BEF-062): Stammen die Leistungen aus einer stornierten
+  // UX-008b (BEF-062, ANN-321): Stammen die Leistungen aus einer stornierten
   // Rechnung, ist ihre Korrekturrechnung der einzige Weg - mit Bezug.
   const storno = kandidat.cancelled_invoice_id;
 

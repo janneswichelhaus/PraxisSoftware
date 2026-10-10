@@ -1087,7 +1087,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Änderungspfad.** Eigener Nummernkreis fürs Storno: `cancel_invoice` und eine weitere Zeile im Nummernkreis · Aufwand `mittel`. Teilstorno einzelner Zeilen: widerspricht ANN-077 und wäre eine eigene Aufgabe · Aufwand `groß`. Storno trotz Zahlung: die Prüfung in `cancel_invoice`, dann aber mit einem Weg für den Geldeingang · Aufwand `mittel`. **Abnahme (Jannes, 2026-10-02):** eigenes Stornodokument und Korrekturkette bestätigt. Geändert: Eine Zahlung sperrt das Storno nicht mehr; der eingegangene Betrag bleibt und wird mit der Ersatzrechnung verrechnet oder tatsächlich zurückgezahlt; ein Zahlungsstorno korrigiert nur eine falsche Buchung — BEF-100. Bis zur Umsetzung gilt die bisherige Regel.
 
-**Umgesetzt (ABN-008, 2026-10-02).** `cancel_invoice` storniert auch mit stehender Zahlung. Der eingegangene Betrag bleibt an der stornierten Rechnung; sie nimmt danach keinen Eingang, aber die Rückzahlung (`record_payment`, Richtung `refund`) und die Verrechnung mit der Ersatzrechnung (`offset_payment`, ANN-215) an. Ein Zahlungsstorno bleibt die Korrektur einer falschen Buchung.
+**Umgesetzt (ABN-008, 2026-10-02).** `cancel_invoice` storniert auch mit stehender Zahlung. Der eingegangene Betrag bleibt an der stornierten Rechnung; sie nimmt danach keinen Eingang, aber die Rückzahlung (`record_payment`, Richtung `refund`) und die Verrechnung mit der Ersatzrechnung (`offset_payment`, ANN-215) an. Ein Zahlungsstorno bleibt die Korrektur einer falschen Buchung. *Seit UX-008b (2026-10-10, BEF-062):* Nach dem Storno führt nur „Korrekturrechnung erstellen“ weiter (ANN-321).
 
 ### ANN-080 — Zahlungserinnerung ohne Stufen, mit festgeschriebenem Betrag
 
@@ -3887,3 +3887,27 @@ Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `textUebergeben`, `nachtragFestschreiben` und `useTextUebernahme` in `src/features/documentation/uebernahme.ts`; `TextUebernehmen` in `Zustaende.tsx`. Geprüft in `TreatmentNotePage.test.tsx` („Übernahme im Konfliktfall“), `CompleteTreatmentPage.test.tsx`, `TreatmentNoteRevisionPage.test.tsx`, `TreatmentNoteAddendumPage.test.tsx`.
 
 **Änderungspfad.** Nachtrag sofort festschreiben: im Hook nach dem Anlegen `nachtragFestschreiben` aufrufen · Aufwand `klein`. Den fremden Entwurf nie ersetzen: im Speicherweg nach einem Konflikt sperren · Aufwand `klein`.
+
+### ANN-321 — Nach einem Storno sperrt das Datenmodell den gewohnten Entwurf nur in derselben Klammer
+
+Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sichtung UX-Review, UX-EPIC-008)
+
+**Annahme.** Eine Leistung, die ein Storno freigegeben hat, kommt nur auf die Korrekturrechnung der stornierten Rechnung – solange diese noch keine Korrektur hat (kein Entwurf und keine Rechnung verweist auf sie) und solange die Leistung zu **derselben Klammer** gehört: Person bzw. Trainingsverhältnis, Bereich und Behandlungsgrundlage, ohne Grundlage der Monat. Liegt ihr Termin inzwischen auf einer anderen Grundlage (CAL-022), geht sie den gewohnten Weg. Ein verworfener Korrekturentwurf öffnet die stornierte Rechnung wieder. Die Zeile unter „Abzurechnen“ nennt die stornierte Rechnung und bietet nur „Korrekturrechnung erstellen“ an; steht schon ein Entwurf ohne Bezug, sagt sie das und führt zu ihm.
+
+**Begründung.** BEF-062 (1) b, Entscheidung Jannes 2026-10-09: nach dem Storno nur der sichtbare Weg mit Bezug (ADR-009 Punkt 9, ANN-079). Die Sperre sitzt als Trigger auf den Rechnungszeilen, damit kein Entwurfsweg – Monat, Grundlage, Training, ein künftiger – an ihr vorbeiführt (ADR-009 Punkt 16 hält es mit dem Bereich ebenso). Die Klammer ist dieselbe, nach der `create_correction_draft` sammelt: Eine Sperre darüber hinaus ließe eine umgehängte Leistung ohne jeden Weg zurück.
+
+**Anker.** `app.invoice_item_not_from_open_cancellation` und die Spalten `cancelled_invoice_*` in `list_invoice_candidates` (`supabase/migrations/20261023100000_ux_008b_correction_path.sql`); `KandidatenKarte` in `src/features/billing/InvoicesPage.tsx`. Geprüft in `supabase/tests/invoice-cancellations.test.ts` („Ein Weg nach dem Storno“).
+
+**Änderungspfad.** Auch über die Klammer hinaus sperren: die Bedingung im Trigger und in der Liste · Aufwand `klein`, dann aber die Korrektur um umgehängte Leistungen erweitern · Aufwand `mittel`. Sperre aufheben (nur Hinweis): Trigger entfernen, die Zeile behält die Herkunft · Aufwand `klein`.
+
+### ANN-322 — „Alle Praxisrollen“ für die Instrumentenbibliothek heißt: die vier Rollen der Behandlungsseite
+
+Technik · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sichtung UX-Review, UX-EPIC-008)
+
+**Annahme.** Menüpunkt und Route „Instrumente“ stehen owner, Therapeut:in, Teamleitung und Büro offen – den Rollen, die den Bereich Organisatorisches haben. Eine Trainingsbetreuung ohne Behandlungsrolle sieht sie nicht; sie erhebt keine Fragebögen und hat diesen Bereich nicht (TRN-003). Die Bibliothek bleibt eine Leseseite ohne Server und ohne Personenbezug.
+
+**Begründung.** BEF-064 (2) b, Entscheidung Jannes 2026-10-09: alle Praxisrollen, auch das Büro (Regel BEF-137). Die Bögen gehören zur Behandlung (ADR-021 Punkt 6 trennt die Bereiche); ein eigener Menüpunkt im Training wäre ein zweiter Weg zu einer Seite, die dort niemand braucht.
+
+**Anker.** `betriebUnterpunkte` in `src/app/navigation.tsx` und die Route `/praxis/instrumente` im Block `showOperations` in `src/routes/AuthenticatedRoutes.tsx`. Geprüft in `src/app/navigation.test.tsx`.
+
+**Änderungspfad.** Auch für die Trainingsbetreuung: einen Unterpunkt im Bereich Training und die Route aus dem Block lösen · Aufwand `klein`.
