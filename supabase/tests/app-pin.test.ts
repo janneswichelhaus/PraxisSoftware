@@ -343,6 +343,40 @@ describe('App-PIN und Passkey (SEC-004, ADR-025 Fassung 2)', () => {
     });
   });
 
+  describe('Datenklasse und Löschung (ADR-008)', () => {
+    it('trägt beide Tabellen im Retention Schedule', async () => {
+      const { rows } = await asPostgres<{ table_name: string; class_key: string }>(
+        `select table_name, class_key from public.retention_assignments
+         where table_name in ('account_pins', 'session_unlocks') order by table_name`,
+      );
+      expect(rows).toEqual([
+        { table_name: 'account_pins', class_key: 'accountdaten' },
+        { table_name: 'session_unlocks', class_key: 'sitzungsvermerk' },
+      ]);
+    });
+
+    it('lässt PIN und Sitzungsstand mit dem Konto fallen', async () => {
+      const konto = '99999999-9999-4999-8999-0000000000f1';
+      await asPostgres(
+        `insert into auth.users (id, aud, role, email)
+         values ($1, 'authenticated', 'authenticated', 'pin.weg@patient.invalid')`,
+        [konto],
+      );
+      await asPostgres(
+        `insert into public.account_pins (user_id, pin_hash) values ($1, 'x');
+         insert into public.session_unlocks (session_id, user_id)
+         values ('bcbcbcbc-bcbc-4cbc-8cbc-0000000000f1', $1)`.replace(/\$1/g, `'${konto}'`),
+      );
+      await asPostgres('delete from auth.users where id = $1', [konto]);
+      const { rows } = await asPostgres<{ n: number }>(
+        `select (select count(*) from public.account_pins where user_id = $1)
+              + (select count(*) from public.session_unlocks where user_id = $1) as n`,
+        [konto],
+      );
+      expect(Number(rows[0]!.n)).toBe(0);
+    });
+  });
+
   describe('Kein direkter Zugriff', () => {
     it('gibt PIN und Sitzungsstand keinem Konto zu lesen oder zu schreiben', async () => {
       await pinSetzen();
