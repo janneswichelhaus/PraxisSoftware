@@ -1464,3 +1464,19 @@ ohnehin nicht nebenbei angefasst werden.
 
 **Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`; für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
 
+
+### BEF-139 — Das Büro antwortet im Training auch auf „Sonstiges“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Kommunikation, Training |
+| Quelle  | Jannes, Abnahme ANN-311 Fassung 2 (2026-10-10) |
+| Status  | offen |
+| Berührt | `app.can_answer_platform_message` (KOM-002), `supabase/tests/practice-messages.test.ts` |
+
+**Beobachtung.** Seit BEF-137 liest das Büro im Training alle Rückfragen, antworten und erledigen darf es dort aber nur bei „Termin oder Rechnung“. In der Behandlung antwortet es auch auf „Sonstiges“.
+
+**Entscheidung (Jannes, 2026-10-10).** Eine Regel für beide Bereiche: Das Büro antwortet im Training wie in der Behandlung auf „Termin oder Rechnung“ und „Sonstiges“, nicht auf „Übung“ und „Beschwerden“.
+
+**Erwartet.** Der Zweig `training` in `app.can_answer_platform_message` nimmt `other` auf (eine Migration), dazu der Positiv- und der Negativfall in `practice-messages.test.ts` und die Oberfläche, falls sie die Regel spiegelt. ANN-311 Fassung 3. Einzel-Story-Loop mit `pnpm test:db`.

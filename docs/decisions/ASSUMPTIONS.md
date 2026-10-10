@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-09.
+Zuletzt aktualisiert: 2026-10-10.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -3772,7 +3772,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Gesundheitsthemen im Training auch ohne Einwilligung oder gar nicht: die eine Funktion · Aufwand `klein`. Büro liest im Training alles oder nichts: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`. **Fassung 2 (ABN-030, 2026-10-09, BEF-137).** Das Büro liest im Training alle Rückfragen (`app.can_read_platform_message` → `app.can_read_training_content()`, ANN-315); antworten und erledigen bleibt bei „Termin oder Rechnung“ – BEF-137 öffnet das Lesen, nicht das Schreiben (Zweitreview S1). Ob das Büro im Training wie in der Behandlung auch auf „Sonstiges“ antworten soll, entscheidet Jannes; Änderungspfad: der Zweig `training` in `app.can_answer_platform_message` · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest im Training alle Rückfragen (Regel BEF-137, scharf nach B2); antworten darf es weiter nur bei „Termin oder Rechnung“. Umsetzung: BEF-137. **Umgesetzt (ABN-030, 2026-10-09):** Fassung 2.
+**Abnahme (Jannes, 2026-10-09).** geändert: Das Büro liest im Training alle Rückfragen (Regel BEF-137, scharf nach B2); antworten darf es weiter nur bei „Termin oder Rechnung“. Umsetzung: BEF-137. **Umgesetzt (ABN-030, 2026-10-09):** Fassung 2. **Entschieden (Jannes, 2026-10-10):** Das Büro antwortet im Training wie in der Behandlung auch auf „Sonstiges“. Umsetzung: BEF-139.
 
 ### ANN-312 — Klinisch Relevantes kommt als Verweis am Vorgang in die Akte, endgültig
 
@@ -3812,7 +3812,7 @@ Technik · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · 
 
 ### ANN-315 — Eine Leseregel für das Training: owner, Trainingsbetreuung und Büro
 
-Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (B2, ADR-021 Punkt 10)
 
 **Annahme.** Was ein Trainingsverhältnis an Inhalt trägt – Protokoll, Voraussetzungsprofil mit Übernahmen, Pläne und Einheiten, Rückfragen –, lesen genau `owner`, Trainingsbetreuung und Büro, nach einer Funktion `app.can_read_training_content()`; was künftig hinzukommt, liest nach derselben. Schreiben regelt je Inhalt eine eigene Funktion, in der das Büro nicht steht. Die Übungsbibliothek ist kein Inhalt eines Verhältnisses und liest zusätzlich die Behandlung.
 
@@ -3822,9 +3822,11 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Datens
 
 **Änderungspfad.** Das Büro im Training wieder ausnehmen (etwa nach der DSFA): `office` aus `app.can_read_training_content` und `canReadTrainingContent` nehmen, dazu `app.can_read_exercise_library` · Aufwand `klein`. Einen Inhalt einzeln ausnehmen: dessen Leseprüfung auf eine eigene Funktion stellen · Aufwand `klein`.
 
+**Abnahme (Jannes, 2026-10-10).** Bestätigt: eine Leseregel für alles, was ein Trainingsverhältnis trägt, auch für künftige Inhalte; das Büro schreibt nichts Fachliches. Bleibt im Prüfpaket (B2).
+
 ### ANN-316 — Fotos aus dem Verlauf ohne Wahl; keine neue Arbeitshilfe, die Fotoeinwilligung nur noch zum Widerruf
 
-Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes (Sichtung Befund, Schritt 10); Datenschutzprüfung (B2, ADR-017 Punkt 45)
+Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.2026) · Prüfpaket · Wiedervorlage: Jannes (Sichtung Befund, Schritt 10); Datenschutzprüfung (B2, ADR-017 Punkt 45)
 
 **Annahme.** „Foto aufnehmen“ im Verlauf öffnet die Kamera ohne Wahl; jedes Foto ist ein Dokumentationsfoto, über dem Bild steht „Teil der Dokumentation (Akte, zehn Jahre); löschen nur heute“. Die Vorbereitung eines Uploads weist die Art `patientenfoto` ab; vorhandene Arbeitshilfen bleiben bis Frist oder Widerruf. Die Einwilligung zu Fotos zeigen Akte und Plattform nur noch, solange sie erteilt ist – zum Widerruf; angeboten wird sie nicht mehr. An Anmeldebogen und Rezept erinnern die bestehenden Stellen (Kopfzeile der Akte, Offene Punkte „Erstaufnahme“, Verordnungsfoto am Termin); eine neue Erinnerung kommt nicht dazu. **Ablösung:** ersetzt ANN-221.
 
@@ -3834,9 +3836,11 @@ Datenschutz · offen · 2026-10-09 · — · Prüfpaket · Wiedervorlage: Jannes
 
 **Änderungspfad.** Arbeitshilfe wieder zulassen: die Abweisung in `prepare_patient_file_upload` streichen, `einwilligungAngeboten` leeren und die Wahl in `Aufnahme` zurückholen (Git-Verlauf) · Aufwand `mittel`. Arbeitshilfe ganz entfernen, wenn keine mehr liegt: Art, Klasse, Bucket und Einwilligungszweck per Migration · Aufwand `groß`.
 
+**Abnahme (Jannes, 2026-10-10).** Bestätigt wie gebaut, auch dass der Server eine Erteilung der Fotoeinwilligung noch ohne Wirkung annimmt; der Zweck entfällt ganz erst, wenn keine Arbeitshilfe mehr liegt. Bleibt im Prüfpaket (B2).
+
 ### ANN-317 — Lückenfinder: erst 60 Minuten, sonst 45, gekennzeichnet „nur 45 Min.“
 
-Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sichtung Kartendienst, Lückenfinder)
+Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.2026) · erledigt · Wiedervorlage: Jannes (Sichtung Kartendienst, Lückenfinder)
 
 **Annahme.** Der Lückenfinder fragt je Lücke zuerst für 60 Minuten (Terminfenster), dann für 45. Es gilt die erste Dauer, für die die Lücke **passt** oder **knapp** ist; dann steht hinter dem Wort „· nur 45 Min.“, auch vorgelesen. Passt sie für keine, steht die Stufe der längsten geprüften Dauer da; kürzer als 45 Minuten heißt „zu kurz“. Lädt die Antwort für 60 noch, wartet die Lücke, damit sie nicht von „nur 45“ auf „passt“ springt.
 
@@ -3845,3 +3849,5 @@ Praxisprozess · offen · 2026-10-09 · — · — · Wiedervorlage: Jannes (Sic
 **Anker.** `KURZE_TERMINDAUER_MINUTEN` und die Auswahl in `useLueckenfinder` in `src/features/appointments/lueckenfinder.ts`; `LUECKEN_DAUERN` in `CalendarPage.tsx`; `kuerzer` in `CalendarGrid.tsx`. Geprüft in `lueckenfinder.test.tsx`, `CalendarGrid.test.tsx`, `CalendarPage.test.tsx`.
 
 **Änderungspfad.** Andere oder weitere Dauern: `LUECKEN_DAUERN` · Aufwand `klein`. Die Dauer aus der Verordnung: siehe ANN-239 · Aufwand `klein`.
+
+**Abnahme (Jannes, 2026-10-10).** Bestätigt. Sichtbar wird es in der Sichtung Kartendienst (Lückenfinder).
