@@ -35,7 +35,7 @@ import { useAbsender } from './useAbsender';
  */
 export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
   const { patientId = '' } = useParams();
-  const { absender, hinweis } = useAbsender(user.organizationName);
+  const { absender, hinweis, laedt } = useAbsender(user.organizationName);
 
   return (
     <>
@@ -46,7 +46,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
           standard={`/patienten/${patientId}/stammdaten`}
           beschriftung="Zurück zum Datenschutz der Akte"
         />
-        <Button type="button" onClick={() => window.print()}>
+        <Button type="button" disabled={laedt} onClick={() => window.print()}>
           Blätter drucken
         </Button>
       </div>
@@ -77,7 +77,7 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
 
       <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
-          <Button type="button" variant="secondary" onClick={() => window.print()}>
+          <Button type="button" variant="secondary" disabled={laedt} onClick={() => window.print()}>
             Blätter drucken
           </Button>
         </div>

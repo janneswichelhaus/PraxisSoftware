@@ -255,13 +255,73 @@ describe('AuditLogPage', () => {
     fetchOrganizationMembers.mockResolvedValue([]);
     const user = userEvent.setup();
 
-    renderWithProviders(<AuditLogPage />, '/praxis/sicherheit/audit?seite=2');
+    // Die Grenze steht in der Adresse - ein Neuladen auf Seite 2 behält sie.
+    renderWithProviders(
+      <AuditLogPage />,
+      '/praxis/sicherheit/audit?seite=2&stand=2026-08-28T09:15:00.001Z',
+    );
     await screen.findByText(/^26–50 von 60/);
+    expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 1, stand: '2026-08-28T09:15:00.001Z' }),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Neu laden' }));
     await waitFor(() => {
       expect(fetchAuditEvents).toHaveBeenLastCalledWith(
         expect.objectContaining({ page: 0, stand: undefined }),
+      );
+    });
+  });
+
+  it('springt von einer Folgeseite ohne Grenze auf Seite 1 (Zweitreview B2)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: [event('1', 'patient_record.viewed', 'Anna Beispiel', 60)],
+      totalCount: 60,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />, '/praxis/sicherheit/audit?seite=3');
+    await screen.findByText(/^1–25 von 60/);
+    // Nie ohne Grenze auf einer Folgeseite gelesen.
+    for (const [aufruf] of fetchAuditEvents.mock.calls as [AuditFilter][]) {
+      expect(aufruf.page).toBe(0);
+    }
+  });
+
+  it('setzt nach Zurueck auf Seite 1 beim naechsten Weiter eine neue Grenze (Zweitreview B1)', async () => {
+    const seite = (juengster: string) => ({
+      events: Array.from({ length: 25 }, (_, index) => ({
+        ...event(String(index), 'patient_record.viewed', 'Anna Beispiel', 60),
+        occurred_at: index === 0 ? juengster : '2026-08-28T08:00:00.000Z',
+      })),
+      totalCount: 60,
+    });
+    fetchAuditEvents.mockResolvedValue(seite('2026-08-28T09:15:00.000Z'));
+    fetchOrganizationMembers.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<AuditLogPage />);
+    await screen.findByText(/^1–25 von 60/);
+    await user.click(screen.getByRole('button', { name: 'Weiter' }));
+    await waitFor(() => {
+      expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, stand: '2026-08-28T09:15:00.001Z' }),
+      );
+    });
+
+    // Inzwischen ist ein neuer Eintrag dazugekommen.
+    fetchAuditEvents.mockResolvedValue(seite('2026-08-28T10:00:00.000Z'));
+    await user.click(await screen.findByRole('button', { name: 'Zurück' }));
+    await waitFor(() => {
+      expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 0, stand: undefined }),
+      );
+    });
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Weiter' })).toBeEnabled());
+    await user.click(screen.getByRole('button', { name: 'Weiter' }));
+    await waitFor(() => {
+      expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, stand: '2026-08-28T10:00:00.001Z' }),
       );
     });
   });

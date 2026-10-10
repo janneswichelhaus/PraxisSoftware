@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
@@ -134,14 +134,19 @@ function grenzeNach(events: readonly AuditEvent[]): string | null {
  * Das Protokoll (ADR-010 Punkt 13), seit UX-009b für die Praxisleitung im
  * Alltag geschrieben (BEF-065, Entscheidung Jannes 2026-10-09):
  *
- *   * **Filter in der Adresse** (`?von=&bis=&person=&aktion=&seite=`): Ein
+ *   * **Filter in der Adresse** (`?von=&bis=&aktion=&seite=&stand=`): Ein
  *     Neuladen oder ein geteilter Link behält sie. Am Telefon stehen sie
- *     zugeklappt unter „Filter", ab 1024 px offen.
+ *     zugeklappt unter „Filter", ab 1024 px offen. Die Person steht bewusst
+ *     **nicht** in der Adresse: Ihre Kontokennung landete sonst in Verlauf,
+ *     Lesezeichen und geteilten Links - ein Protokoll über eine bestimmte
+ *     Beschäftigte gehört nicht in die Adresszeile (§20, Zweitreview B5).
  *   * **Aktionen gruppiert** wie im Katalog (ADR-010 Punkt 16).
  *   * **Blättern auf einem festen Stand:** Ab der zweiten Seite liest die
  *     Seite nur Einträge bis zum jüngsten der ersten Seite. Was danach
  *     entsteht, schiebt nichts um; „Neu laden" holt es ausdrücklich. Die
- *     Serverfunktion ist dieselbe, nur `p_to` ist dann gesetzt.
+ *     Grenze steht als `stand` in der Adresse, damit auch ein Neuladen auf
+ *     Seite 2 sie behält; eine Folgeseite ohne Grenze springt auf Seite 1.
+ *     Die Serverfunktion ist dieselbe, nur `p_to` ist dann gesetzt.
  *   * Beim Blättern bleibt die alte Seite stehen, bis die neue da ist.
  *
  * Das Lesen des Protokolls wird nicht protokolliert (ADR-010 Fassung 3).
@@ -150,22 +155,38 @@ export function AuditLogPage() {
   const [suche, setSuche] = useSearchParams();
   const from = suche.get('von') ?? '';
   const to = suche.get('bis') ?? '';
-  const actorUserId = suche.get('person') ?? '';
+  const [actorUserId, setActorUserId] = useState('');
   const action = suche.get('aktion') ?? '';
   const seite = Number.parseInt(suche.get('seite') ?? '1', 10);
   const page = Number.isFinite(seite) && seite > 1 ? seite - 1 : 0;
-
   // Die Grenze gilt für die Folgeseiten; die erste Seite ist immer der
-  // jüngste Stand. `null`: noch nicht festgelegt.
-  const [stand, setStand] = useState<{ grenze: string; zeit: number } | null>(null);
+  // jüngste Stand. Nur ein lesbarer Zeitpunkt zählt.
+  const standRoh = suche.get('stand');
+  const grenze = standRoh && !Number.isNaN(Date.parse(standRoh)) ? standRoh : null;
+  const ohneGrenze = page > 0 && grenze === null;
+
+  // Eine Folgeseite ohne Grenze (alter Link, abgeschnittene Adresse) springt
+  // auf Seite 1 - sonst blätterte sie doch auf einem wandernden Stand.
+  useEffect(() => {
+    if (ohneGrenze) {
+      setSuche(
+        (alt) => {
+          const neu = new URLSearchParams(alt);
+          neu.delete('seite');
+          return neu;
+        },
+        { replace: true },
+      );
+    }
+  }, [ohneGrenze, setSuche]);
 
   const filter = {
     from: from || undefined,
     to: to || undefined,
     actorUserId: actorUserId || undefined,
     action: action || undefined,
-    stand: page > 0 ? stand?.grenze : undefined,
-    page,
+    stand: page > 0 ? (grenze ?? undefined) : undefined,
+    page: ohneGrenze ? 0 : page,
     pageSize: PAGE_SIZE,
   };
 
@@ -173,6 +194,7 @@ export function AuditLogPage() {
     useQuery({
       queryKey: ['audit-events', filter],
       queryFn: () => fetchAuditEvents(filter),
+      enabled: !ohneGrenze,
       retry: false,
       placeholderData: keepPreviousData,
     });
@@ -208,25 +230,31 @@ export function AuditLogPage() {
   /** Ein Filter ändert die Liste: zurück auf Seite 1, neuer Stand. */
   function filtere(schluessel: string) {
     return (wert: string) => {
-      setStand(null);
-      setze({ [schluessel]: wert, seite: null });
+      setze({ [schluessel]: wert, seite: null, stand: null });
     };
   }
 
+  function filterePerson(wert: string) {
+    setActorUserId(wert);
+    setze({ seite: null, stand: null });
+  }
+
   function blaettere(ziel: number) {
-    // Die Grenze entsteht beim ersten Schritt weg von Seite 1, aus dem
-    // jüngsten Eintrag, den die Seite gerade zeigt.
-    if (page === 0 && ziel > 0 && data && !stand) {
-      const grenze = grenzeNach(data.events);
-      if (grenze) setStand({ grenze, zeit: dataUpdatedAt });
+    if (ziel <= 0) {
+      // Seite 1 ist wieder der jüngste Stand; der nächste Schritt setzt eine
+      // neue Grenze (Zweitreview B1).
+      setze({ seite: null, stand: null });
+      return;
     }
-    setze({ seite: ziel > 0 ? String(ziel + 1) : null });
+    // Die Grenze entsteht beim Schritt weg von Seite 1, aus dem jüngsten
+    // Eintrag, den die Seite gerade zeigt; danach bleibt sie.
+    const neueGrenze = page === 0 && data ? grenzeNach(data.events) : grenze;
+    setze({ seite: String(ziel + 1), stand: neueGrenze });
   }
 
   function neuLaden() {
-    setStand(null);
     if (page === 0) void refetch();
-    else setze({ seite: null });
+    setze({ seite: null, stand: null });
   }
 
   return (
@@ -280,7 +308,7 @@ export function AuditLogPage() {
                 label="Person"
                 feldId="audit-user"
                 value={actorUserId}
-                onChange={(event) => filtere('person')(event.target.value)}
+                onChange={(event) => filterePerson(event.target.value)}
               >
                 <option value="">Alle</option>
                 {(members.data ?? []).map((member) => (
@@ -362,7 +390,7 @@ export function AuditLogPage() {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               <Statusmeldung className="tabular-nums">
                 {first}–{last} von {total}
-                {` · Stand ${standText(page > 0 && stand ? stand.zeit : dataUpdatedAt)}`}
+                {` · Stand ${standText(page > 0 && grenze ? Date.parse(grenze) : dataUpdatedAt)}`}
               </Statusmeldung>
               <Button variant="quiet" groesse="kompakt" disabled={isFetching} onClick={neuLaden}>
                 {isFetching ? 'Wird geladen …' : 'Neu laden'}

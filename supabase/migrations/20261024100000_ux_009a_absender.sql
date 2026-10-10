@@ -36,7 +36,9 @@
 create function public.get_practice_sender()
 returns jsonb
 language plpgsql
-stable
+-- VOLATILE, nicht STABLE: Die protokollierte Abweisung braucht hinter
+-- PostgREST eine schreibende Transaktion (BEF-082).
+volatile
 security definer
 set search_path = ''
 as $$
@@ -76,10 +78,6 @@ begin
   );
 end;
 $$;
-
--- STABLE genuegt nicht fuer die protokollierte Abweisung hinter PostgREST
--- (BEF-082): Eine lesende Transaktion verwirft das INSERT.
-alter function public.get_practice_sender() volatile;
 
 comment on function public.get_practice_sender() is
   'UX-009a, ANN-323 (nach ANN-123): Absender fuer Blaetter an Patient:innen (Aufnahmeblatt, Terminzettel) - Name, Anschrift, Telefon, E-Mail aus practice_billing_profiles, ohne Steuer- und Bankangaben; ohne Stammdaten nur der Name der Organisation. Alle vier Praxisrollen; kein Auditeintrag beim Lesen, Abweisung als access.denied.';

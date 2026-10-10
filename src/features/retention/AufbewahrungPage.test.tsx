@@ -435,11 +435,11 @@ describe('AufbewahrungPage', () => {
 
   describe('Abgleich der Dateiablage (DAT-003, ADR-017 Punkt 27)', () => {
     it('sagt, dass beide Speicher deckungsgleich sind', async () => {
-      // Mit einem offenen Auftrag steht der Abschnitt da; ohne verwaiste und
-      // fehlende Dateien und nach dem Ausführen meldet er deckungsgleich.
-      fetchVerwaisteAnzahl.mockResolvedValue(0);
+      // Nichts offen: Die Zeile „Zu tun“ sagt es (BEF-065).
       renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
-      expect(await screen.findByText(/beide Speicher deckungsgleich/)).toBeInTheDocument();
+      expect(
+        await screen.findByText('Nichts offen, beide Speicher deckungsgleich.'),
+      ).toBeInTheDocument();
     });
 
     it('nennt eine fehlende Datei als Verlust, mit Akte und Weg dorthin', async () => {

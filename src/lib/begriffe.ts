@@ -214,7 +214,7 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
   },
   {
-    muster: /\b(Terminfenster|Länge)\b/,
+    muster: /\b(Terminfenstern?|Längen?|Terminlängen?)\b/,
     statt: BEGRIFFE.dauer,
     quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
     // „Länge" meint anderswo anderes (Textbausteine, Wegstrecken).

@@ -109,6 +109,18 @@ describe('CAL-011: Terminzettel', () => {
     expect(Object.keys(rows[0]!)).not.toContain('visit_street');
   });
 
+  it('laesst einen Videotermin ohne Standortanschrift (UX-009a)', async () => {
+    await anlegen({ tag: tagInTagen(50), typ: 'video', ort: null });
+
+    const { rows } = await lesen(users.office);
+    expect(rows[0]).toMatchObject({
+      appointment_type: 'video',
+      location_street: null,
+      location_postal_code: null,
+      location_city: null,
+    });
+  });
+
   it('liefert weder Status noch Verordnung noch klinische Felder', async () => {
     await anlegen({ tag: tagInTagen(50) });
     const { rows } = await lesen(users.office);

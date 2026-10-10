@@ -99,6 +99,14 @@ describe('Aufnahmeblätter', () => {
     expect(screen.queryByText(/fehlen Anschrift oder Telefon/)).not.toBeInTheDocument();
   });
 
+  it('druckt erst mit geladenem Absender (Zweitreview B6)', () => {
+    fetchPraxisAbsender.mockReturnValue(new Promise(() => undefined));
+    blaetterRendern();
+    for (const knopf of screen.getAllByRole('button', { name: 'Blätter drucken' })) {
+      expect(knopf).toBeDisabled();
+    }
+  });
+
   it('sagt am Bildschirm, wenn die Stammdaten fehlen', async () => {
     fetchPraxisAbsender.mockResolvedValue({ name: 'Test Praxis Tuebingen' });
     blaetterRendern();
@@ -117,6 +125,8 @@ describe('Aufnahmeblätter', () => {
 
   it('besteht die Barrierefreiheitspruefung', async () => {
     const { container } = blaetterRendern();
+    // Erst mit dem geladenen Absender - geprüft wird das Blatt, wie es gedruckt wird.
+    await screen.findAllByText('Musterallee 1, 72070 Tuebingen');
     await pruefeBarrierefreiheit(container);
   });
 });

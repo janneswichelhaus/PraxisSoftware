@@ -56,7 +56,8 @@ import type { CurrentUser } from '@/features/session/types';
 export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
   const queryClient = useQueryClient();
-  const { absender, hinweis } = useAbsender(user.organizationName);
+  // Gedruckt wird erst mit Absender (Zweitreview B6).
+  const { absender, hinweis, laedt: absenderLaedt } = useAbsender(user.organizationName);
   const kontakt = absenderKontakt(absender);
 
   const patient = useQuery({
@@ -205,6 +206,7 @@ export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
           <div className="flex flex-wrap items-center gap-3">
             <Button
               type="button"
+              disabled={absenderLaedt}
               onClick={() => {
                 vermerken.reset();
                 window.print();
