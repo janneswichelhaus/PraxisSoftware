@@ -3207,7 +3207,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Annahme.** „Meine Daten herunterladen" liefert eine JSON-Datei (und eine lesbare Fassung zum Drucken) mit genau dem, was die Plattform zeigt: Stammdaten des Verhältnisses, Termine, Terminwünsche, Befundbogen, Rechnungen (nur mit Recht auf Rechnungen), die Liste der freigegebenen Dokumente, Einwilligungen. Jeder Export steht als `patient_record.exported` im Protokoll, mit Akteur Plattformkonto oder Vertretung und Zweck `platform_export`. Die Person selbst und ihre rechtliche Vertretung exportieren, die Begleitung nicht.
 
-**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln, je Abruf protokolliert).
+**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln abrufbar).
 
 **Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
 

@@ -204,6 +204,23 @@ describe('Freigegebene Dokumente (POR-014)', () => {
     expect(gesperrt?.message).toContain('not accessible');
   });
 
+  it('kein Verweis fuer Praxiskonto, Trainingszugang und andere Organisation, kein Eintrag', async () => {
+    await asUserCommitted(users.therapist, FREIGEBEN, [ARZTBRIEF, true]);
+    const fremd = await fremdeOrganisation();
+    for (const [konto, zugang] of [
+      [users.office, ERIKA],
+      [users.plattformErika, platformAccesses.erikaTraining],
+      [fremd.owner, ERIKA],
+    ] as const) {
+      const fehler = await abgefangen(asUser(konto, VERWEIS, [zugang, ARZTBRIEF]));
+      expect(fehler?.message).toContain('not accessible');
+    }
+    const protokoll = await asPostgres(`select id from public.audit_log where subject_id = $1`, [
+      ARZTBRIEF,
+    ]);
+    expect(protokoll.rows).toEqual([]);
+  });
+
   it('Begleitung liest freigegebene Dokumente mit, protokolliert als Vertretung', async () => {
     await asUserCommitted(users.therapist, FREIGEBEN, [MAX_BRIEF, true]);
     // Auch ein Abruf ohne vorherige Liste ist ein Lesen der Vertretung.

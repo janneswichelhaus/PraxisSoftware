@@ -178,8 +178,9 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
     dieselbe Abwägung, mit der [ADR-023](ADR-023-platform-access.md) Punkt 24
     das eigene Lesen nicht protokolliert (Art. 5 Abs. 1 lit. c DSGVO). Ruft
     eine **Vertretung** ab, bleibt es beim Eintrag „Vertretung liest" aus
-    Punkt 16, höchstens einmal je Tag und Akte: Der Abruf zählt als Lesen,
-    nicht als Herunterladen. Das Herunterladen durch ein Praxiskonto bleibt
+    Punkt 16, höchstens einmal je Person, Akte und Tag: Der Abruf zählt als
+    Lesen, nicht als Herunterladen, und trägt die Frist der Leseereignisse
+    (Punkt 18). Das Herunterladen durch ein Praxiskonto bleibt
     `patient_file.downloaded`.
 
 ## Konsequenzen
