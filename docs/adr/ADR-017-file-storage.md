@@ -2,11 +2,19 @@
 
 ## Status
 
-**Angenommen, Fassung 4** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
+**Angenommen, Fassung 5** — **Fassung 1** von Jannes am 2026-09-12 bestätigt,
 alle acht Fragen wie empfohlen; **Fassung 2** am 2026-09-26 bestätigt, die
 Fragen 9 bis 14 wie empfohlen; **Fassung 3** am 2026-10-02 bestätigt, die
 Fragen 15 bis 22 wie empfohlen (Abschnitte am Ende); **Fassung 4** am
-2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K).
+2026-10-09 von Jannes in der Abnahme der Annahmen entschieden (Abschnitt K);
+**Fassung 5** am 2026-10-10 bestätigt, die Fragen 23 bis 29 wie empfohlen
+(Abschnitt L).
+**Fassung 5 (2026-10-10, am selben Tag angenommen).** Anlass ist KOM-EPIC-002.
+**Abschnitt L (Punkte 59 bis 70)**: Foto und Video an einer Rückfrage auf der
+Plattform, mit eigener Einwilligung, eigener Klasse und 30 Tagen Frist; die
+Virenprüfung wird Bedingung des Scharfschaltens. Das ist eine **Ergänzung**:
+Für diese Anhänge schränkt sie die Punkte 14, 18, 29, 30, 37 und 42 ein, die
+je einen Vermerk tragen; für alle übrigen Dateien gelten sie unverändert.
 
 **Fassung 4 (2026-10-09).** Anlass ist die Abnahme der Annahmen vom 2026-10-09
 (BEF-135 zu ANN-221, BEF-133 zu ANN-223). **Abschnitt K (Punkte 56 bis 58)**:
@@ -75,7 +83,8 @@ ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 ## Datum
 
 2026-09-12 (Fassung 1); 2026-09-26 (Fassung 2, am selben Tag angenommen);
-2026-10-02 (Fassung 3, am selben Tag angenommen)
+2026-10-02 (Fassung 3, am selben Tag angenommen); 2026-10-09 (Fassung 4);
+2026-10-10 (Fassung 5, am selben Tag angenommen)
 
 ## Kontext
 
@@ -261,6 +270,8 @@ tut; Punkt 33 entscheidet es hier.
     wird nicht korrigiert, weder hin noch weg (Punkt 32).*
 14. **Patient:innen laden in V1 nichts hoch und sehen nichts.** Es gibt kein
     Portal (ADR-014, §14), und dieser ADR baut keines vor.
+    *Vermerk 2026-10-10 (Fassung 5): Foto und Video an der eigenen Rückfrage
+    lädt die Person hoch (Punkt 59).*
 15. **Ausgeliefert wird ausschließlich über kurzlebige signierte Verweise:**
     erzeugt **auf ausdrückliche Aktion** („Datei öffnen"), **je Zugriff neu**,
     Gültigkeit **60 Sekunden**, mit dem Anzeigenamen als Downloadnamen. Nie im
@@ -293,6 +304,8 @@ tut; Punkt 33 entscheidet es hier.
     tragen Skript und würden auf der Domäne des Anbieters ausgeliefert; Videos
     sind eine eigene Risikoklasse mit eigener Einwilligung und eigener Frist
     (`IDEA-KOM-003`) und nicht Gegenstand dieses ADR.
+    *Vermerk 2026-10-10 (Fassung 5): Für Anhänge an Rückfragen sind
+    WebM und MP4 ohne Tonspur erlaubt (Punkt 63).*
 19. **Angezeigt wird nur, was sich sicher anzeigen lässt:** PDF und Bild im
     eigenen Rahmen der Anwendung, sonst nichts. Kein eingebettetes HTML, keine
     Bibliothek, die Fremdinhalte ausführt, keine Vorschaubilder, die der
@@ -389,6 +402,9 @@ tut; Punkt 33 entscheidet es hier.
     Meldung an die Praxis. **Der Ausführungsort einer solchen Prüfung ist eine
     neue wesentliche Abhängigkeit** und damit nach §15.1 ein Stopp: eigener
     ADR, eigener Auftrag, eigene Providerprüfung, wenn sie außer Haus läuft.
+    *Vermerk 2026-10-10 (Fassung 5): Die Prüfung ist Bedingung des
+    Scharfschaltens, nicht des Bauens mit synthetischen Testkonten; den
+    Prüfer wählt ein eigener ADR (Punkt 69).*
 30. **Dieser ADR gibt nicht frei:** Fotos und Videos von Patient:innen
     (`IDEA-KOM-003` — eigene Einwilligung, kurze Frist, Entfernung der
     Aufnahmemetadaten), Anhänge im Teamchat (TEAM-001), Uploads aus einem
@@ -397,6 +413,8 @@ tut; Punkt 33 entscheidet es hier.
     gibt Abschnitt G frei — unter genau den drei Bedingungen, die dieser
     Punkt nennt. Für Videos, Teamchat, Portal und Versand gilt er unverändert
     (Punkt 42).
+    *Vermerk 2026-10-10 (Fassung 5): Foto und Video an einer Rückfrage über
+    die Plattform gibt Abschnitt L frei.*
 
 ### G. Fotos (Fassung 2)
 
@@ -573,6 +591,8 @@ tut; Punkt 33 entscheidet es hier.
     Fotos, und eine Übernahme dorthin ist nicht vorgesehen. Auf der Plattform
     für Patient:innen (§4.6) erscheinen Patientenfotos in V1 nicht; das zu
     ändern wäre eine eigene Entscheidung.
+    *Vermerk 2026-10-10 (Fassung 5): Anhänge an Rückfragen gibt es auch im
+    Training; sie sind keine Fotos der Praxis (Punkt 59).*
 38. **Frist: zwölf Monate nach der Aufnahme, spätestens drei Monate nach
     Abschluss der Versorgung.** Die neue Datenklasse **`patientenfoto`**
     steht im Retention Schedule (LOE-001a). Fällig ist ein Foto zum
@@ -666,6 +686,9 @@ tut; Punkt 33 entscheidet es hier.
     schicken**, werden in V1 nicht abgelegt — weder als `patientenfoto`, das
     nur im Kameradialog entsteht, noch als `klinisches_bild`, das aus
     ärztlicher Hand stammt. Was sie zeigen, gehört in den Eintrag.
+    *Vermerk 2026-10-10 (Fassung 5): Ausgenommen sind Foto und Video, die
+    die Person in der Anwendung an ihre Rückfrage hängt (Abschnitt L); für
+    alles andere gilt der Punkt unverändert.*
 
 ### H. Drei Arten von Fotos (Fassung 3)
 
@@ -875,6 +898,128 @@ noch Dokumentationsfotos und keine Arbeitshilfe mehr").
     Content-Security-Policy erlaubt dafür `frame-src blob:` und sonst nichts
     Neues; `object-src 'none'` bleibt. Punkt 55 bleibt der Ausweg, wenn ein
     Gerät das PDF im Rahmen nicht vollständig zeigt.
+
+### L. Foto und Video an einer Rückfrage (Fassung 5)
+
+**Anlass.** KOM-EPIC-002 ([`../development/ROADMAP.md`](../development/ROADMAP.md),
+Block 6) soll eine Rückfrage auf der Plattform um ein Foto oder Video
+ergänzen. §4.6 nennt „Rückfragen mit Foto oder Video“ als Teil des
+Nachsorge-Abos; dieser ADR schließt genau das bisher aus: Patient:innen laden
+nichts hoch (Punkt 14), Videos sind nicht erlaubt (Punkt 18), Uploads über die
+Plattform und Videos sind nicht freigegeben (Punkte 30 und 42), und vor dem
+ersten Upload von außen steht die Virenprüfung (Punkt 29). Den Loop kann
+deshalb keine Annahme freigeben, nur eine Fassung dieses ADR. Sie folgt den
+Mindestanforderungen aus `IDEA-KOM-003` und den Mustern der Abschnitte G bis
+K; neu ist nur, was ein Upload von außen und ein Video verlangen.
+
+59. **Was freigegeben wird.** Die Person — selbst oder ihre gesetzliche
+    Vertretung, nie eine Begleitperson (ADR-023) — hängt an **eine eigene
+    Rückfrage** (KOM-EPIC-001, `platform_messages`) **ein Foto oder ein
+    Video** an, höchstens drei Anhänge je Vorgang. Freigegeben ist das im
+    **Nachsorge-Abo** (§4.6, Stufe 2) und im **Trainingsverhältnis** (§4.10,
+    Rückfragen); **nicht während der Behandlung** (§4.6, Stufe 1: sichere
+    Kommunikation ohne Medien). Die Praxis schickt keine Anhänge zurück; sie
+    antwortet in Worten, auf ein Video auch mit Zeitmarke (Punkt 68). Für
+    diese Anhänge — und nur für sie — sind die Punkte 14, 18, 30, 37 (keine
+    Fotos im Training) und 42 eingeschränkt; für alle übrigen Uploads gelten
+    sie unverändert.
+60. **Eigene Klasse, eigener Bucket, eigene Tabelle — derselbe Weg.** Ein
+    Anhang ist kein Teil der Akte und kein Teil des Trainingsprotokolls,
+    sondern ein Hilfsmittel für eine Antwort. Er bekommt eine eigene
+    Datenklasse **`rueckfrageanhang`**, einen eigenen privaten Bucket (Punkt 3)
+    und eine eigene Fachtabelle; **Bezugsdatensatz ist die Rückfrage**
+    (Punkt 10). Sonst läuft er den Weg jeder Datei: zwei Phasen mit
+    Bestätigung (Punkt 7), unveränderlich (Punkt 8), Prüfsumme (Punkt 9),
+    kurzlebige Verweise ohne Downloadnamen (Punkte 15 bis 17, 54),
+    `cacheControl: '0'`, zweistufige Löschung mit Quittung (Punkt 25),
+    Abgleich (Punkt 27), Prüfung am Server (Punkte 49 bis 52). Der
+    Objektschlüssel trägt nur Kennungen (Punkt 5).
+61. **Grundlage ist eine eigene, ausdrückliche Einwilligung** (Art. 9 Abs. 2
+    lit. a DSGVO) — ein eigener Zweck im vorhandenen Modell
+    (`patient_privacy_records` im Abo, `training_consent_records` im Training;
+    erteilt und widerrufen auf der Plattform wie POR-016), nicht in einer
+    Sammel-Einwilligung. Sie wird angeboten, wenn die Person zum ersten Mal
+    etwas anhängen will; ohne sie bleibt die Rückfrage in Worten möglich
+    (Art. 7 Abs. 4 DSGVO). **Der Widerruf sperrt sofort und löscht alle
+    Anhänge der Person** in derselben Transaktion, mit Löschjournal und
+    Löschaufträgen (Punkt 36 gilt sinngemäß). Den Wortlaut legt der Bau als
+    Annahme fest; er geht in B2.
+62. **Aufnahme nur in der Anwendung, kein Dateiwähler.** Ein Foto entsteht im
+    Kameradialog (Punkt 33), ein Video in einem Aufnahmedialog derselben Art:
+    Live-Bild über `getUserMedia`, Aufnahme mit `MediaRecorder`, **nur Bild,
+    nie Ton** — das Mikrofon bleibt in der Permissions-Policy gesperrt —,
+    **höchstens 30 Sekunden**. Kein Dateiwähler, auch nicht als Ausweg: Er
+    brächte die Mediathek mit ihren Metadaten und fremde Inhalte (Dritte,
+    Bildschirmfotos) in den Weg, und er öffnete die Tür für beliebige
+    Dateien. Bis zum Upload liegt die Aufnahme nur im Arbeitsspeicher der
+    Seite (Punkt 33). Das Gesicht nur, wenn es die Bewegung zeigt; der Dialog
+    sagt das (Punkt 35).
+63. **Formate.** Foto: **JPEG**. Video: was der Browser in `MediaRecorder`
+    liefert — **WebM (VP8/VP9) oder MP4 (H.264)** —, ohne Tonspur.
+    Höchstens **10 MB** je Anhang, durchgesetzt am Bucket und bei der
+    Vorbereitung; die Aufnahme begrenzt die Bitrate, damit 30 Sekunden
+    hineinpassen. Der Server prüft die Signatur (Punkt 49) und lehnt eine
+    Tonspur ab.
+64. **Keine Aufnahmemetadaten.** Ein Foto aus Pixeln trägt keine (Punkt 34).
+    Ein Video aus `MediaRecorder` trägt weder Ort noch Gerät; was der
+    Container an Zeit- oder Programmangaben mitbringt, ist am Bau zu prüfen
+    und, wenn vorhanden, auf dem Gerät zu leeren. **Nachgewiesen wird das
+    durch Tests** an Aufnahmen aus Chromium und, bei der Sichtung, am
+    iPhone (Punkt 34 gilt sinngemäß).
+65. **Frist: 30 Tage nach der Aufnahme.** Die Klasse `rueckfrageanhang` hat
+    einen Anker (Aufnahme) und ein Intervall (30 Tage) und steht im Retention
+    Schedule. Der Löschlauf löscht fällige Anhänge automatisch, ein Legal
+    Hold hält an, jeder Anhang zeigt sein Löschdatum. Wird der Vorgang
+    früher gelöscht, gehen die Anhänge mit. **Keine Verlängerung.** Grund:
+    Die Praxis antwortet in Werktagen (KOM-EPIC-001), und ein Anhang soll
+    „nicht liegen bleiben“ (Roadmap). Der Wert ist eine interne
+    Initialentscheidung nach ADR-008, die die DSFA validiert.
+66. **Kein Weg in die Akte oder ins Trainingsprotokoll.** Wird eine
+    Rückfrage der Akte zugeordnet (KOM-004), gehen nur die Worte mit; die
+    Anhänge behalten Klasse und Frist. Was ein Anhang zeigt und was daraus
+    folgt, schreibt die Therapeut:in in Worten in den Eintrag (Punkt 35:
+    ein Bild ersetzt keinen Eintrag). Aus einem Anhang wird kein
+    Dokumentationsfoto (Punkte 47 und 56: das entsteht nur im Kameradialog
+    der Praxis).
+67. **Wer sieht und wer löscht.** Sehen: die Person und ihre gesetzliche
+    Vertretung, **nicht die Begleitperson**; in der Praxis, wer die Rückfrage
+    lesen darf (`app.can_read_platform_message`, also auch `office` nach §4.3
+    und BEF-137). Öffnen ist Anzeigen (Punkt 54): kein Download, kein Teilen,
+    keine Vorschaubilder in Listen (Punkt 40); protokolliert wird nichts
+    Neues, denn das Öffnen des Vorgangs steht schon als `*.viewed` im
+    Protokoll und Anzeigen ist nach ADR-010 Punkt 14 kein Ereignis.
+    Löschen: die Person **jederzeit**; in der Praxis, wer auf die Rückfrage
+    antworten darf, etwa bei einem Anhang, der Dritte zeigt — nachgewiesen
+    am Löschauftrag (`ordered_by`).
+68. **Antwort mit Zeitmarke, ohne Bewegungsurteil.** Die Antwort der Praxis
+    kann auf eine Stelle im Video zeigen („bei 0:12“); auf der Plattform
+    springt ein Tipp dorthin. Mehr nicht: **keine Zeichnung ins Bild, kein
+    Einzelbild als neue Datei, keine Gegenüberstellung zweier Aufnahmen**,
+    keine automatische Auswertung (Punkt 39 gilt sinngemäß;
+    `IDEA-KOM-005`). Anhänge gehen **nie** an das AI Gateway (ADR-005,
+    ADR-006).
+69. **Virenprüfung: Bedingung des Scharfschaltens, nicht des Bauens.** Punkt
+    29 bleibt MUSS für jede echte Datei von außen: **Ohne Prüfergebnis wird
+    kein Anhang einer echten Person `ready`.** Nach §15.2 der Prinzipien
+    (Rang 1) darf eine offene Anbieterprüfung aber nicht den Bau anhalten.
+    Deshalb: ein benannter Schalter an genau einer Stelle
+    (`app.message_attachment_scan_required()`), heute aus. Ist er aus, wird
+    ein Anhang mit synthetischen Daten nach den Prüfungen aus Punkt 49 `ready`
+    und ist sichtbar als „nicht auf Schadsoftware geprüft“ gekennzeichnet;
+    ist er an, bleibt er `pending`, bis ein Prüfergebnis vorliegt, und ein
+    Befund verwirft ihn (Punkt 52). **Den Prüfer — Ausführungsort, Anbieter,
+    Kosten — wählt ein eigener ADR** mit Providerprüfung nach ADR-002; das
+    bleibt ein Stopp nach §15.1. Schalter und ADR stehen im Go-live-Gate
+    (ADR-007 Punkt 5). Bis dahin mindern den Weg: Aufnahme nur in der
+    Anwendung (Punkt 62), Signatur und Container am Server (Punkt 63),
+    Anzeige nur im Medienelement des Browsers aus einer Objekt-URL, nie ein
+    Download.
+70. **Scharf erst nach** B2 (Einwilligung, Frist, Einordnung des Videos als
+    besonders identifizierend), der DSFA mit dieser Verarbeitung (G14),
+    OPS-001 (Edge Runtime für Punkt 49), OPS-003 (Sicherung des Buckets,
+    Punkt 26) und dem ADR zum Prüfer (Punkt 69). Gebaut wird mit
+    synthetischen Bildern und Videos aus der künstlichen Kamera von Chromium
+    (Punkt 41).
 
 ## Was OPS-001 zusätzlich prüfen muss
 
@@ -1272,6 +1417,49 @@ und die Prüfung am Server wird erst mit OPS-001 scharf.
     *Empfehlung: ja.* Ein Rezept soll man ansehen können, ohne dass es im
     Download-Ordner landet; einen Arztbrief drucken geht weiter.
 
+## Bestätigungsfragen zu Fassung 5 — beantwortet am 2026-10-10
+
+**Alle sieben wie empfohlen bestätigt.** Damit ist KOM-EPIC-002 baubar. Die
+Nummerierung setzt die der Fassung 3
+fort. **Was eine Bestätigung nicht erledigt:** Wortlaut der Einwilligung,
+Frist und Einordnung des Videos gehen in B2; den Prüfer wählt ein eigener ADR
+(Punkt 69).
+
+23. **Anhänge an Rückfragen im Nachsorge-Abo und im Training, nicht während
+    der Behandlung; höchstens drei je Vorgang** (Punkt 59)?
+    *Empfehlung: ja.* So steht es in §4.6; im Training ist eine Aufnahme der
+    Übung der größte Nutzen. *Alternative:* nur im Abo — dann bleibt Punkt 37
+    für das Training unberührt.
+24. **Video ja — nur in der Anwendung aufgenommen, ohne Ton, höchstens
+    30 Sekunden, kein Dateiwähler** (Punkte 62 und 63)?
+    *Empfehlung: ja.* Ohne Ton, ohne Mediathek, ohne fremde Dateien bleibt das
+    Video so klein wie möglich. *Alternative:* nur Fotos — einfacher und
+    ohne Containerprüfung, aber ohne den Nutzen, den die Zeitmarke bringt.
+25. **Frist 30 Tage nach der Aufnahme, keine Verlängerung, kein Weg in die
+    Akte** (Punkte 65 und 66)?
+    *Empfehlung: ja.* *Alternative:* 90 Tage, wenn du über mehrere Wochen
+    vergleichen willst — dann gälte Punkt 68 trotzdem: kein Vergleich in der
+    Anwendung.
+26. **Eigene Einwilligung je Verhältnis, auf der Plattform erteilt; der
+    Widerruf löscht sofort alle Anhänge** (Punkt 61)?
+    *Empfehlung: ja* — die Mindestanforderung aus `IDEA-KOM-003`.
+27. **Virenprüfung als Bedingung des Scharfschaltens mit Schalter, der Prüfer
+    in einem eigenen ADR** (Punkt 69)? Fassung 1 sagte „vor dem ersten
+    Upload“; mit synthetischen Testkonten gälte das nur noch für echte
+    Personen.
+    *Empfehlung: ja* — §15.2 verlangt diesen Schnitt, und keine echte Datei
+    wird ohne Prüfung `ready`. *Alternative:* erst den Prüfer-ADR, dann
+    KOM-EPIC-002 — dann wartet der Loop auf eine Anbieterprüfung.
+28. **Die Begleitperson sieht keine Anhänge; die Person löscht jederzeit, die
+    Praxis mit Antwortrecht auch; nichts Neues im Protokoll** (Punkt 67)?
+    *Empfehlung: ja.* Ein Video zeigt Wohnung und Körper; die Begleitung
+    liest die Worte, nicht die Bilder.
+29. **Antwort mit Zeitmarke, aber keine Zeichnung, kein Einzelbild, keine
+    Gegenüberstellung** (Punkt 68)?
+    *Empfehlung: ja.* Eine Linie im Bild ist der erste Schritt zu einer
+    Messung (Punkt 39). *Alternative:* `IDEA-KOM-004` vollständig — dann als
+    eigene Fassung, nicht nebenbei.
+
 ## Quellen der Recherche vom 2026-09-12
 
 `supabase.com` ist aus dieser Umgebung gesperrt (Egress-Proxy). Abgerufen
@@ -1387,3 +1575,4 @@ Abnahme vom 2026-10-02 aus. Geprüft am Bestand:
 | 2 | 2026-09-26 | **angenommen am selben Tag, Fragen 9 bis 14 wie empfohlen:** Abschnitt G (Punkte 31 bis 42) gibt Fotos von Patient:innen frei — Einwilligung als Rechtsgrundlage, eigene Klasse `patientenfoto` mit zwölf Monaten Frist, Aufnahme nur über den Kameradialog, keine Aufnahmemetadaten, Vergleich ohne Bewertung, Anzeige ohne Download; Fotos von Dokumenten auf demselben Weg. Punkte 1 bis 30 bleiben stehen; für `patientenfoto` eingeschränkt sind Punkt 13 (keine Artkorrektur), 15 (kein Downloadname) und 23 (Klasse nach der Art), je mit Vermerk; weitere Vermerke an Punkt 30, „Bewusst nicht Bestandteil" und der HEIC-Folgefrage. Anlass: DOK-006, Produktgespräch vom 2026-09-23 |
 | 3 | 2026-10-02 | **angenommen am selben Tag, Fragen 15 bis 22 wie empfohlen:** Abschnitt H (Punkte 43 bis 48) — drei Fotoarten, das Dokumentationsfoto gehört zur Akte (lit. h, zehn Jahre, Bucket `patientenakte`), der Widerruf wirkt nur auf Arbeitshilfen; **Umkehr von Punkt 35** für das Dokumentationsfoto (Fassungsregel, Entscheidung Jannes in der Abnahme, BEF-106). Abschnitt I (Punkte 49 bis 53) — Prüfung von Typ, Prüfsumme und Metadaten am Server in einer Edge Function, scharf mit OPS-001; sRGB vor dem Entfernen der Metadaten (BEF-105). Abschnitt J (Punkte 54 und 55) — Öffnen zeigt jede Datei in der Anwendung, Herunterladen ist ein eigener Knopf (BEF-059). Punkte 1 bis 42 bleiben stehen; Vermerke an 7, 15, 31, 32, 35, 36, 38. §5 der Prinzipien mit Version 0.20 nachgezogen |
 | 4 | 2026-10-09 | **Entschieden von Jannes in der Abnahme der Annahmen vom 2026-10-09:** Abschnitt K (Punkte 56 bis 58) — ein Foto aus der Dokumentation ist ohne Wahl ein Dokumentationsfoto, Erinnerung an Anmeldebogen und Rezept an ihrer Stelle (BEF-135); keine neue Arbeitshilfe, bestehende laufen aus, die Einwilligung zu Fotos wird nicht mehr angeboten; ein PDF öffnet im Rahmen ohne `sandbox` aus einer Objekt-URL mit festem Typ, CSP `frame-src blob:` (BEF-133). Umkehr der Punkte 44 und — für PDF — 54, Vermerke an 43, 44, 54. §5 der Prinzipien mit Version 0.22 nachgezogen |
+| 5 | 2026-10-10 | **Angenommen am selben Tag, Fragen 23 bis 29 wie empfohlen:** Abschnitt L (Punkte 59 bis 70) — Foto und Video an einer Rückfrage im Nachsorge-Abo und im Training, eigene Einwilligung, Klasse `rueckfrageanhang` mit 30 Tagen, Aufnahme nur in der Anwendung ohne Ton, Antwort mit Zeitmarke ohne Bewegungsurteil, Virenprüfung als Bedingung des Scharfschaltens mit Schalter und eigenem ADR für den Prüfer. Schränkt für diese Anhänge die Punkte 14, 18, 29, 30, 37 und 42 ein, je mit Vermerk; §5 der Prinzipien mit Version 0.24 nachgezogen. Anlass: KOM-EPIC-002 |
