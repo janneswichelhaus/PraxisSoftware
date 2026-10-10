@@ -1,10 +1,27 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
-import { AufnahmeblaetterPage } from './AufnahmeblaetterPage';
+import type * as AbsenderApi from './absender';
+
+const absender = {
+  name: 'Test Praxis Tuebingen',
+  street: 'Musterallee',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+  phone: '+49 7071 0000000',
+  email: 'praxis@example.invalid',
+};
+const fetchPraxisAbsender = vi.fn();
+vi.mock('./absender', async (importOriginal) => ({
+  ...(await importOriginal<typeof AbsenderApi>()),
+  fetchPraxisAbsender: () => fetchPraxisAbsender() as Promise<AbsenderApi.PraxisAbsender | null>,
+}));
+
+const { AufnahmeblaetterPage } = await import('./AufnahmeblaetterPage');
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -28,12 +45,17 @@ function blaetterRendern() {
  * zeigt, den Entwurfsvermerk trägt und ohne Patientenbezug auskommt.
  */
 describe('Aufnahmeblätter', () => {
+  beforeEach(() => {
+    fetchPraxisAbsender.mockReset();
+    fetchPraxisAbsender.mockResolvedValue(absender);
+  });
+
   it('trägt Entwurfsvermerk, Fassung und beide Blätter', () => {
     renderWithProviders(<AufnahmeblaetterPage user={testUser(['office'])} />);
 
     expect(screen.getByText(/^Entwurf – vor der Verwendung/)).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Datenschutzinformation' })).toBeInTheDocument();
-    expect(screen.getByText(/Fassung 2026-09/)).toBeInTheDocument();
+    expect(screen.getByText(/Fassung 2026-10/)).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { name: 'Hausbesuche und Kartendienst' }),
     ).toBeInTheDocument();
@@ -60,6 +82,28 @@ describe('Aufnahmeblätter', () => {
     } finally {
       drucken.mockRestore();
     }
+  });
+
+  // UX-009a (BEF-052): Art. 13 Abs. 1 lit. a DSGVO - Kontaktdaten des
+  // Verantwortlichen, auf beiden Blättern und im Text.
+  it('nennt Anschrift, Telefon und E-Mail der Praxis', async () => {
+    blaetterRendern();
+
+    expect(
+      await screen.findByText(
+        /Verantwortlich ist Test Praxis Tuebingen, Musterallee 1, 72070 Tuebingen\. Telefon \+49 7071 0000000, E-Mail praxis@example\.invalid\./,
+      ),
+    ).toBeInTheDocument();
+    // Ein Absender je Blatt.
+    expect(screen.getAllByText('Musterallee 1, 72070 Tuebingen')).toHaveLength(2);
+    expect(screen.queryByText(/fehlen Anschrift oder Telefon/)).not.toBeInTheDocument();
+  });
+
+  it('sagt am Bildschirm, wenn die Stammdaten fehlen', async () => {
+    fetchPraxisAbsender.mockResolvedValue({ name: 'Test Praxis Tuebingen' });
+    blaetterRendern();
+
+    expect(await screen.findByText(/fehlen Anschrift oder Telefon/)).toHaveClass('nicht-drucken');
   });
 
   it('führt vom Hinweis dorthin, wo vermerkt wird (UEB-15)', () => {

@@ -95,6 +95,8 @@ export const auditOperationLabels: Record<string, string> = {
   'exercise_plans.read': 'Übungspläne gelesen',
   // KOM-002: Abweisung der Liste der Rückfragen (keine neue Aktion, ADR-010).
   'platform_messages.read': 'Rückfragen gelesen',
+  // UX-009a: Absender der Praxis für Blätter an Patient:innen (ANN-323).
+  'practice_sender.read': 'Absender der Praxis gelesen',
   'invoicing.read': 'Abrechnung gelesen',
   'legal_hold.placed': 'Löschsperre gesetzt',
   'legal_hold.released': 'Löschsperre aufgehoben',

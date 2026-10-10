@@ -1,4 +1,5 @@
 import { AUSFALLHONORAR_REGEL } from '@/lib/ausfallhonorar';
+import { absenderAnschrift, absenderKontakt, type PraxisAbsender } from './absender';
 /**
  * Die zwei Blätter für die Aufnahme (PAT-006): Datenschutzinformation nach
  * Art. 13 DSGVO und die Regel zum Ausfallhonorar.
@@ -13,9 +14,13 @@ import { AUSFALLHONORAR_REGEL } from '@/lib/ausfallhonorar';
  * ausgehändigt" vermerkt, vermerkt diese Fassung. Ändert sich der Text,
  * ändert sich `DATENSCHUTZINFORMATION_FASSUNG`; alte Vermerke behalten ihre.
  * Die Form `JJJJ-MM` prüft auch die Datenbank.
+ *
+ * **Fassung 2026-10 (UX-009a, BEF-052):** Der erste Abschnitt nennt Anschrift,
+ * Telefon und E-Mail des Verantwortlichen aus den Praxis-Stammdaten (Art. 13
+ * Abs. 1 lit. a DSGVO, ANN-323). Vorher stand dort nur der Name.
  */
 
-export const DATENSCHUTZINFORMATION_FASSUNG = '2026-09';
+export const DATENSCHUTZINFORMATION_FASSUNG = '2026-10';
 
 export interface Abschnitt {
   titel: string;
@@ -29,13 +34,20 @@ export interface Abschnitt {
  * geht — keine Namen, keine Termine, keine Gesundheitsangaben) und Punkt 23
  * (die Navigations-App bekommt nur das Ziel, und erst auf Aktion der
  * Therapeutin). Die Fristen folgen dem Aufbewahrungsplan (ADR-008).
+ *
+ * Der Verantwortliche steht mit Anschrift und Kontaktweg da (Art. 13 Abs. 1
+ * lit. a DSGVO); fehlen die Stammdaten, bleibt nur der Name - die Seite sagt
+ * das am Bildschirm (`useAbsender`).
  */
-export function datenschutzinformation(praxis: string): Abschnitt[] {
+export function datenschutzinformation(absender: PraxisAbsender): Abschnitt[] {
+  const anschrift = absenderAnschrift(absender);
+  const kontakt = absenderKontakt(absender);
+  const verantwortlich = [absender.name, anschrift].filter(Boolean).join(', ');
   return [
     {
       titel: 'Wer für Ihre Daten verantwortlich ist',
       absaetze: [
-        `Verantwortlich ist ${praxis}. Bei Fragen zum Datenschutz wenden Sie sich bitte direkt an die Praxis — persönlich, telefonisch oder schriftlich.`,
+        `Verantwortlich ist ${verantwortlich}.${kontakt ? ` ${kontakt}.` : ''} Bei Fragen zum Datenschutz wenden Sie sich bitte direkt an die Praxis — persönlich, telefonisch oder schriftlich.`,
       ],
     },
     {

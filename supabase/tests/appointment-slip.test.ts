@@ -30,6 +30,10 @@ interface Zeile {
   starts_at: string;
   appointment_type: string;
   location_name: string | null;
+  location_street: string | null;
+  location_house_number: string | null;
+  location_postal_code: string | null;
+  location_city: string | null;
   staff_given_name: string;
   staff_family_name: string;
   organization_time_zone: string;
@@ -78,6 +82,11 @@ describe('CAL-011: Terminzettel', () => {
     expect(rows[0]).toMatchObject({
       appointment_type: 'practice',
       location_name: 'Hauptstandort Tuebingen',
+      // UX-009a: Der Zettel sagt beim Praxistermin, wohin (BEF-052).
+      location_street: 'Praxisplatz',
+      location_house_number: '1',
+      location_postal_code: '72072',
+      location_city: 'Tuebingen',
       staff_given_name: 'Anna',
       staff_family_name: 'Beispiel',
       organization_time_zone: 'Europe/Berlin',
@@ -89,6 +98,12 @@ describe('CAL-011: Terminzettel', () => {
 
     const { rows } = await lesen(users.office);
     expect(rows[0]?.location_name).toBeNull();
+    expect(rows[0]).toMatchObject({
+      location_street: null,
+      location_house_number: null,
+      location_postal_code: null,
+      location_city: null,
+    });
     // Die Adresse ist die eigene der Patient:in - auf ihrem Zettel waere sie
     // Fuellstoff, und geliefert wird sie deshalb gar nicht.
     expect(Object.keys(rows[0]!)).not.toContain('visit_street');

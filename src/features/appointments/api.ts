@@ -2007,6 +2007,12 @@ const appointmentSlipSchema = z.object({
   ends_at: z.string(),
   appointment_type: appointmentTypeSchema,
   location_name: z.string().nullable(),
+  // UX-009a: Anschrift des Standorts, nur am Praxistermin (BEF-052).
+  // Optional, damit ein älterer Stand ohne die Spalten weiter gelesen wird.
+  location_street: z.string().nullable().optional(),
+  location_house_number: z.string().nullable().optional(),
+  location_postal_code: z.string().nullable().optional(),
+  location_city: z.string().nullable().optional(),
   staff_given_name: z.string(),
   staff_family_name: z.string(),
   organization_time_zone: z.string(),
@@ -2044,7 +2050,15 @@ export async function fetchAppointmentSlip(
 export function slipOrt(eintrag: AppointmentSlipEntry): string {
   if (eintrag.appointment_type === 'home_visit') return 'bei Ihnen zu Hause';
   if (eintrag.appointment_type === 'video') return 'Videotermin';
-  return eintrag.location_name ?? 'in der Praxis';
+  // UX-009a: Beim Praxistermin sagt der Zettel, wohin (BEF-052) - der
+  // Standortname allein ist ein Wort der Praxis, keine Anschrift.
+  const strasse = [eintrag.location_street, eintrag.location_house_number]
+    .filter(Boolean)
+    .join(' ');
+  const ort = [eintrag.location_postal_code, eintrag.location_city].filter(Boolean).join(' ');
+  const anschrift = [strasse, ort].filter((teil) => teil.length > 0).join(', ');
+  const name = eintrag.location_name ?? 'in der Praxis';
+  return anschrift ? `${name}, ${anschrift}` : name;
 }
 
 // -----------------------------------------------------------------------------

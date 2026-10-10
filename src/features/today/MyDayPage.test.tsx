@@ -155,6 +155,20 @@ function tagesplan(): TodayApiModule.DayPlanEntry[] {
 
 const fetchDayPlan = vi.fn();
 
+/**
+ * Das Druckblatt (BEF-052) ist am Bildschirm `hidden` - jsdom lädt kein CSS
+ * und sähe jede Anschrift doppelt. Hier steht deshalb nur, was die Seite ihm
+ * übergibt; das Blatt selbst prüft `TagesplanDruck.test.tsx`, das Druckbild
+ * `tests/e2e/uebersicht.spec.ts`.
+ */
+const druckblatt = vi.fn();
+vi.mock('./TagesplanDruck', () => ({
+  TagesplanDruck: (props: { termine: readonly unknown[]; standVon: number | null }) => {
+    druckblatt(props);
+    return null;
+  },
+}));
+
 vi.mock('@/features/today/api', async (importOriginal) => {
   const actual = await importOriginal<typeof TodayApiModule>();
   return {
@@ -623,6 +637,19 @@ describe('Übersicht', () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       await screen.findByText('Testweg 7, 72072 Tuebingen');
       expect(screen.queryByText(/Angezeigt wird der Stand von/)).toBeNull();
+    });
+
+    // BEF-052: Das Druckblatt bekommt jeden Termin des Tages, nicht nur die Karte.
+    it('gibt dem Druckblatt den ganzen Tag', async () => {
+      druckblatt.mockClear();
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await screen.findByText('Testweg 7, 72072 Tuebingen');
+      const props = druckblatt.mock.lastCall?.[0] as {
+        termine: readonly unknown[];
+        standVon: number | null;
+      };
+      expect(props.termine).toHaveLength(tagesplan().length);
+      expect(props.standVon).toBeNull();
     });
 
     it('haelt beim Laden den Platz von Liege-Zeile und Wegbalken frei', async () => {

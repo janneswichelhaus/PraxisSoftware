@@ -17,6 +17,10 @@ import {
   staffName,
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { AbsenderBlock } from '@/features/datenschutz/AbsenderBlock';
+import { useAbsender } from '@/features/datenschutz/useAbsender';
+import { absenderKontakt } from '@/features/datenschutz/absender';
+import type { CurrentUser } from '@/features/session/types';
 
 /**
  * Die Termine der Patient:in mitteilen (CAL-011, CAL-013, `IDEA-PRX-006`).
@@ -38,18 +42,22 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
  * und ANN-041 je Fassung 2). Vorher vermerkte schon die Vorbereitung, und ein
  * abgebrochener Druckdialog hinterließ eine Aushändigung, die nie stattfand.
  *
- * **Keine Wortmarke.** `marke/README.md` ist dazu ausdrücklich: Die
- * Druckregeln blenden die Kopfzeile aus, und die Marke auf Papier kommt
- * innerhalb der Anwendung erst mit ABR-000 aus den Praxis-Stammdaten. Hier
- * wird deshalb keine zweite Fassung gebaut.
+ * **Keine Wortmarke.** `marke/README.md` sieht sie auf Papier nur für
+ * Rechnung und Fax vor. **Ein Absender** steht seit UX-009a darauf (BEF-052,
+ * ANN-323): Name, Anschrift, Telefon und E-Mail der Praxis aus den
+ * Stammdaten, damit die Bitte um rechtzeitige Absage sagt, wo - eine zu späte
+ * Absage kann ein Ausfallhonorar auslösen. Beim Praxistermin steht die
+ * Anschrift des Standorts am Termin.
  *
  * Die Druck-Basis aus UI-000 (`@media print` in `src/index.css`) blendet
  * `nav` und jeden `button` von selbst aus; `.nicht-drucken` nimmt die Kopfzeile
  * der Anwendung und zusätzlich aus, was ein Link ist.
  */
-export function AppointmentSlipPage() {
+export function AppointmentSlipPage({ user }: { user: CurrentUser }) {
   const { patientId } = useParams<{ patientId: string }>();
   const queryClient = useQueryClient();
+  const { absender, hinweis } = useAbsender(user.organizationName);
+  const kontakt = absenderKontakt(absender);
 
   const patient = useQuery({
     queryKey: ['patient', patientId],
@@ -147,11 +155,13 @@ export function AppointmentSlipPage() {
   return (
     <>
       {kopf}
+      {hinweis}
 
       {/* Bewusst kein PageHeader: Die Überschrift steht auf dem Papier und ist
           an die Patient:in gerichtet, nicht an die bedienende Person. Die
           Größe ist trotzdem eine des Systems (H4, TER-16). */}
       <section className="max-w-prose">
+        <AbsenderBlock absender={absender} className="mb-6" />
         <h1 className="text-ink text-h4 font-bold">Ihre nächsten Termine</h1>
         <p className="text-ink-muted text-liste mt-1">{fullName(patientDaten)}</p>
 
@@ -185,7 +195,8 @@ export function AppointmentSlipPage() {
         )}
 
         <Kleingedrucktes className="mt-6">
-          Bitte sagen Sie einen Termin rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können.
+          Bitte sagen Sie einen Termin rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können
+          {kontakt ? ` – ${kontakt}` : ''}.
         </Kleingedrucktes>
       </section>
 

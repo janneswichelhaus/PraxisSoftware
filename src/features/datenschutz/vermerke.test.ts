@@ -149,7 +149,15 @@ describe('ANN-093: Zwecke und Datenbank', () => {
 });
 
 describe('Datenschutzinformation', () => {
-  const text = datenschutzinformation('Test Praxis')
+  const text = datenschutzinformation({
+    name: 'Test Praxis',
+    street: 'Musterallee',
+    house_number: '1',
+    postal_code: '72070',
+    city: 'Tuebingen',
+    phone: '+49 7071 0000000',
+    email: null,
+  })
     .flatMap((a) => [a.titel, ...a.absaetze])
     .join('\n');
 
@@ -162,11 +170,21 @@ describe('Datenschutzinformation', () => {
   });
 
   it('nennt die Pflichtangaben nach Art. 13 DSGVO', () => {
-    expect(text).toMatch(/Verantwortlich ist Test Praxis/);
+    // UX-009a (BEF-052): Kontaktdaten des Verantwortlichen, lit. a.
+    expect(text).toMatch(
+      /Verantwortlich ist Test Praxis, Musterallee 1, 72070 Tuebingen\. Telefon \+49 7071 0000000\./,
+    );
     expect(text).toMatch(/Art\. 9 Abs\. 2 lit\. h DSGVO/);
     expect(text).toMatch(/zehn Jahre/);
     expect(text).toMatch(/Art\. 7 Abs\. 3 DSGVO/);
     expect(text).toMatch(/Art\. 77 DSGVO/);
+  });
+});
+
+describe('Datenschutzinformation ohne Stammdaten', () => {
+  it('nennt den Namen ohne leere Angaben', () => {
+    const [verantwortlich] = datenschutzinformation({ name: 'Test Praxis' });
+    expect(verantwortlich?.absaetze[0]).toMatch(/^Verantwortlich ist Test Praxis\. Bei Fragen/);
   });
 });
 
