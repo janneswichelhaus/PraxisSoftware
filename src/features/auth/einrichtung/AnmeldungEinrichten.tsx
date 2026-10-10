@@ -67,7 +67,7 @@ export function AnmeldungEinrichten({
         {passkeyDa ? (
           <Statusmeldung ton="erfolg">Auf diesem Konto ist ein Passkey eingerichtet.</Statusmeldung>
         ) : geht ? (
-          <Button disabled={laeuft} onClick={() => void einrichten()}>
+          <Button className="w-full" disabled={laeuft} onClick={() => void einrichten()}>
             {laeuft ? 'Wird eingerichtet …' : 'Passkey auf diesem Gerät einrichten'}
           </Button>
         ) : (

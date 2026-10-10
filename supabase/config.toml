@@ -45,14 +45,13 @@ enabled = true
 site_url = "http://127.0.0.1:5173"
 # Jedes Ziel, das in einer Auth-Mail vorkommen darf, steht hier - sonst faellt
 # GoTrue stillschweigend auf site_url zurueck und der Link landet wieder auf
-# der Anmeldemaske. /kennwort-neu ist die oeffentliche Seite, die einen
-# Wiederherstellungslink einloest (FIX-001, ANN-043).
+# der Anmeldemaske. /zugang loest den Anmeldelink ein (FIX-002, ANN-043);
+# /kennwort-neu gibt es seit SEC-EPIC-002 nicht mehr (ADR-025 Punkt 9).
 # ACHTUNG: Dieselben Eintraege muessen im spaeteren Cloudprojekt unter
 # Authentication > URL Configuration stehen, sonst laufen lokal und produktiv
 # auseinander (OPS-001).
 additional_redirect_urls = [
   "http://127.0.0.1:5173",
-  "http://127.0.0.1:5173/kennwort-neu",
   "http://127.0.0.1:5173/zugang",
 ]
 jwt_expiry = 3600
@@ -63,7 +62,8 @@ refresh_token_reuse_interval = 10
 # aber nicht selbst vergeben).
 enable_signup = false
 enable_anonymous_sign_ins = false
-# Mindestlaenge des Kennworts (ANN-027, R3-013). Ohne diesen Eintrag gilt der
+# Mindestlaenge des Kennworts (ANN-027, R3-013) - seit SEC-EPIC-002 nur noch
+# fuer die Testkonten ausserhalb der Produktion (ADR-025 Punkt 15). Ohne diesen Eintrag gilt der
 # GoTrue-Standard von sechs Zeichen, und die Zwoelf aus dem Formular haetten
 # nur auf dem Weg durch genau dieses Formular gegolten - nicht beim
 # Wiederherstellungslink und nicht an der API vorbei. Laenge statt
@@ -72,6 +72,21 @@ enable_anonymous_sign_ins = false
 # ACHTUNG: Dieselbe Zahl muss im spaeteren Cloudprojekt unter Authentication >
 # Policies stehen, sonst laufen lokal und produktiv auseinander (OPS-001).
 minimum_password_length = 12
+
+# SEC-EPIC-002 (ADR-025 Fassung 2, Punkt 10): Passkeys als Anmeldung. Beta
+# beim Anbieter; das SDK schaltet sie mit auth.experimental.passkey ein
+# (src/lib/supabase.ts). WebAuthn nimmt keine IP-Adresse als Relying Party:
+# Lokal laeuft der Passkey deshalb nur unter http://localhost:5173, nicht unter
+# 127.0.0.1. Fuer die Test-Umgebung stehen dieselben Felder im Dashboard von
+# praxis-test unter Authentication (Domain prtest.uber.space), fuer
+# Produktion mit G3 (OPS-001) - config.toml wirkt dort nicht.
+[auth.passkey]
+enabled = true
+
+[auth.webauthn]
+rp_display_name = "Praxis"
+rp_id = "localhost"
+rp_origins = ["http://localhost:5173"]
 
 [auth.email]
 # ANN-043 (Fassung 2): Der Einmal-Code aus einer Auth-Mail gilt eine Stunde,
@@ -95,7 +110,10 @@ double_confirm_changes = true
 # Authentication > Providers > Email ("Secure password change", OPS-001).
 secure_password_change = true
 
-# Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-043). Die
+# Eigene Vorlage fuer "Kennwort zuruecksetzen" (FIX-001, ANN-043). Seit
+# SEC-EPIC-002 fordert die Anwendung diese Mail nicht mehr an, und der
+# Mail-Hook verwirft sie (ADR-025 Punkt 9); die Vorlage bleibt, damit ein
+# Aufruf an der Anwendung vorbei keine Sitzung im Adressfragment verschickt. Die
 # Begruendung steht vollstaendig in der Datei selbst: Der Link uebergibt nur
 # den TokenHash, nicht eine fertige Sitzung im Adressfragment.
 # Im Cloudprojekt liegt dieselbe Vorlage unter Authentication > Email

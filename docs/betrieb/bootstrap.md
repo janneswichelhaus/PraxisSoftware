@@ -37,10 +37,21 @@ wer — und committet die Zeile.
 
 ## 1. Das Konto im Anmeldedienst anlegen
 
-Die Anwendung legt keine Konten an (ANN-025, `enable_signup = false`). Deshalb von Hand:
-Dashboard → **Authentication → Users → Add user → Create new user**, dienstliche E-Mail und ein
-starkes Kennwort, **„Auto Confirm User" angehakt**. Das Kennwort geht nicht in eine Notiz, sondern
-direkt in den Kennwortmanager der Inhaberin.
+Die Anwendung legt keine Konten an (ANN-025, `enable_signup = false`), und in Produktion hat kein
+Konto ein Kennwort (ADR-025 Fassung 2, Punkt 9). Deshalb über die Admin-Schnittstelle, im
+Terminal des Infrastrukturkontos; der Schlüssel steht nur in der Umgebung dieses Terminals und
+wird nirgends gespeichert:
+
+```bash
+read -rs SERVICE_KEY   # service_role des Projekts, aus dem Dashboard kopiert
+PROJEKT=https://<projekt>.supabase.co
+curl -sS -X POST "$PROJEKT/auth/v1/admin/users" \
+  -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"<dienstliche E-Mail der Inhaberin>","email_confirm":true}'
+```
+
+Ohne Kennwort. Die erste Anmeldung kommt in Schritt 4 über eine Einmal-Anmeldung (Abschnitt 7).
 
 ## 2. Die Praxis einrichten
 
@@ -107,16 +118,20 @@ und neu anlegen (Schritt 5), nicht reparieren.
 ## 4. Die Konsole schließen — ab hier nur noch die Anwendung
 
 Ab jetzt gilt ADR-010 Punkt 9: kein direkter Datenbankzugriff im Normalbetrieb. Die Inhaberin
-meldet sich in der Anwendung an und richtet der Reihe nach ein:
+meldet sich **einmal** über eine Einmal-Anmeldung an (Abschnitt 7, Schritte 1 bis 3; das
+Terminal bleibt dafür bis dahin offen). Die Anwendung verlangt sofort einen Passkey auf ihrem
+Telefon und eine PIN (ADR-025 Punkt 13). Danach richtet sie der Reihe nach ein:
 
-1. **Mein Konto** (`/mein-konto`) — den zweiten Faktor einrichten.
+1. **Mein Konto** (`/mein-konto`) — einen zweiten Passkey, etwa am Praxisrechner (ADR-025
+   Punkt 14: mindestens zwei).
 2. **Team** (`/praxis/team`) — am eigenen Datensatz unter „Zugang" die Rolle `therapist` ergänzen,
    wenn die Inhaberin selbst behandelt; die Rolle `owner` bleibt.
 3. **Praxis-Stammdaten** (`/abrechnung/stammdaten`) — Absender, Steuerangaben, Bankverbindung.
 4. **Preisliste** (`/abrechnung/katalog`) — anlegen und in Kraft setzen.
 5. **Planung** (`/praxis/planung`) — Terminraster und Dokumentationsfrist.
 6. **Mitarbeitende** (`/praxis/team/neu`) — je Person anlegen, dann Arbeitszeiten und Zugang.
-   Das Konto jeder Person entsteht wie in Schritt 1 von Hand (ANN-025).
+   Das Konto jeder Person entsteht wie in Schritt 1 von Hand (ANN-025), ohne Kennwort; die
+   Zugangsmail bringt sie zur Einrichtung von Passkey und PIN.
 
 Jeder dieser Schritte schreibt seinen eigenen Auditeintrag.
 
@@ -132,3 +147,28 @@ Anwendung).
 
 - Die Zeile in „Durchläufe" oben ausfüllen: Datum, Anlass aus Schritt 0, wer, Ergebnis — und
   committen. Das ist der Nachweis, den ADR-010 Punkt 10 verlangt.
+
+## 7. Einmal-Anmeldung und Notzugang der Inhaberin (ADR-025 Punkt 14)
+
+Für die erste Anmeldung nach Schritt 1 und als **Break Glass**, wenn die Inhaberin keinen
+Passkey mehr hat: Niemand sonst kann sie neu einladen (Bus-Faktor 1). Es gelten ADR-010 Punkte 8
+und 10 — Anlass, Infrastrukturkonto mit MFA, Begründung, Ende — und die Zeile in „Durchläufe“
+oben.
+
+1. Im Terminal des Infrastrukturkontos (Schlüssel wie in Schritt 1, nur in der Umgebung):
+
+   ```bash
+   curl -sS -X POST "$PROJEKT/auth/v1/admin/generate_link" \
+     -H "apikey: $SERVICE_KEY" -H "Authorization: Bearer $SERVICE_KEY" \
+     -H "Content-Type: application/json" \
+     -d '{"type":"magiclink","email":"<E-Mail der Inhaberin>"}' | jq -r .hashed_token
+   ```
+
+   Das verschickt nichts. Der ausgegebene Wert gilt eine Stunde und nur einmal (`otp_expiry`).
+
+2. Auf dem Telefon der Inhaberin öffnen: `https://<Anwendung>/zugang#token_hash=<Wert>&type=magiclink`.
+   Die Anwendung meldet an und nimmt den Wert sofort aus der Adresszeile. Bei der ersten
+   Anmeldung verlangt sie Passkey und PIN; beim Notzugang gleich in „Mein Konto“ einen neuen
+   Passkey auf diesem Gerät einrichten.
+3. Terminal schließen; der Schlüssel war nur dort. In „Mein Konto“ verlorene Passkeys entfernen
+   und einen zweiten einrichten.
