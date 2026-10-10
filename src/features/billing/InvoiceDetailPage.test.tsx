@@ -27,7 +27,7 @@ vi.mock('./api', async (importOriginal) => {
     ...actual,
     fetchRechnung: (id: string) => fetchRechnung(id) as Promise<BillingApi.Rechnungsansicht>,
     fetchEmpfaenger: (id: string) => fetchEmpfaenger(id) as Promise<BillingApi.Empfaenger[]>,
-    saveEmpfaenger: (...args: unknown[]) => saveEmpfaenger(...args) as Promise<void>,
+    saveEmpfaenger: (...args: unknown[]) => saveEmpfaenger(...args) as Promise<string>,
     setzeEmpfaenger: (...args: unknown[]) => setzeEmpfaenger(...args) as Promise<void>,
     stelleRechnungAus: (id: string) => stelleRechnungAus(id) as Promise<string>,
     deleteEntwurf: (id: string) => deleteEntwurf(id) as Promise<void>,
@@ -1200,6 +1200,7 @@ describe('InvoiceDetailPage', () => {
       const speichern = screen.getByRole('button', { name: 'Empfänger speichern' });
       // Nicht mehr ohne Grund gesperrt: Der Grund steht nach dem Tipp am Feld.
       expect(speichern).toBeEnabled();
+      await nutzer.selectOptions(screen.getByLabelText('Art *'), 'aid_authority');
       await nutzer.click(speichern);
 
       const name = screen.getByLabelText('Name oder Stelle *');
@@ -1208,6 +1209,127 @@ describe('InvoiceDetailPage', () => {
       expect(name).toHaveFocus();
       expect(saveEmpfaenger).not.toHaveBeenCalled();
       expect(screen.getByLabelText('PLZ')).toHaveAttribute('inputmode', 'numeric');
+    });
+
+    it('belegt die Art nicht vor und nennt sie am Feld, wenn sie fehlt (BEF-062)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht());
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Empfänger hinterlegen' }));
+      const art = screen.getByLabelText('Art *');
+      expect(art).toHaveValue('');
+      await nutzer.type(screen.getByLabelText('Name oder Stelle *'), 'Beihilfestelle Testland');
+      await nutzer.click(screen.getByRole('button', { name: 'Empfänger speichern' }));
+
+      expect(art).toHaveAccessibleDescription('Bitte die Art wählen.');
+      expect(art).toHaveFocus();
+      expect(saveEmpfaenger).not.toHaveBeenCalled();
+    });
+
+    it('wählt einen neu hinterlegten Empfänger gleich für diese Rechnung (BEF-062)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht({ patient_id: 'p1' }));
+      saveEmpfaenger.mockResolvedValue('neu-e');
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await nutzer.click(await screen.findByRole('button', { name: 'Empfänger hinterlegen' }));
+      await nutzer.selectOptions(screen.getByLabelText('Art *'), 'private_insurer');
+      await nutzer.type(screen.getByLabelText('Name oder Stelle *'), 'Testversicherung AG');
+      await nutzer.click(
+        screen.getByRole('checkbox', { name: /Standard für neue Rechnungen dieser Person/ }),
+      );
+      await nutzer.click(screen.getByRole('button', { name: 'Empfänger speichern' }));
+
+      expect(saveEmpfaenger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: null,
+          patientId: 'p1',
+          recipient_kind: 'private_insurer',
+          name: 'Testversicherung AG',
+          is_default: true,
+        }),
+      );
+      await waitFor(() => expect(setzeEmpfaenger).toHaveBeenCalledWith('r1', 'neu-e'));
+      expect(
+        await screen.findByText('Empfänger hinterlegt und für diese Rechnung gewählt.'),
+      ).toBeInTheDocument();
+    });
+
+    it('korrigiert den gewählten Empfänger und behält seine Kennung (BEF-062)', async () => {
+      const nutzer = userEvent.setup();
+      fetchRechnung.mockResolvedValue(ansicht({ patient_id: 'p1', recipient_id: 'e1' }));
+      fetchEmpfaenger.mockResolvedValue([
+        {
+          id: 'e1',
+          recipient_kind: 'aid_authority',
+          name: 'Beihilfestelle Testland',
+          street: 'Amtsweg',
+          house_number: '1',
+          postal_code: '7207',
+          city: 'Tuebingen',
+          reference: 'AZ 1',
+          is_default: true,
+        },
+      ]);
+      saveEmpfaenger.mockResolvedValue('e1');
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      // Der Standard steht an der Wahl.
+      expect(
+        await screen.findByRole('option', { name: /Beihilfestelle Testland .* · Standard/ }),
+      ).toBeInTheDocument();
+      await nutzer.click(screen.getByRole('button', { name: 'Empfänger bearbeiten' }));
+
+      expect(screen.getByText(/ausgestellte Rechnungen behalten ihre Angaben/)).toBeInTheDocument();
+      const plz = screen.getByLabelText('PLZ');
+      expect(plz).toHaveValue('7207');
+      await nutzer.clear(plz);
+      await nutzer.type(plz, '72072');
+      await nutzer.click(screen.getByRole('button', { name: 'Änderung speichern' }));
+
+      expect(saveEmpfaenger).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 'e1',
+          recipient_kind: 'aid_authority',
+          postal_code: '72072',
+          is_default: true,
+        }),
+      );
+      expect(
+        await screen.findByText(
+          'Empfänger geändert. Ausgestellte Rechnungen behalten ihre Angaben.',
+        ),
+      ).toBeInTheDocument();
+      // Eine Korrektur wählt nichts neu.
+      expect(setzeEmpfaenger).not.toHaveBeenCalled();
+    });
+
+    it('bietet an einer ausgestellten Rechnung kein Bearbeiten an (ADR-009 Punkt 10)', async () => {
+      fetchRechnung.mockResolvedValue(ausgestellt({ recipient_id: 'e1' }));
+
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      await screen.findByText(/1 × Krankengymnastik/);
+      expect(
+        screen.queryByRole('button', { name: 'Empfänger bearbeiten' }),
+      ).not.toBeInTheDocument();
+      expect(fetchEmpfaenger).not.toHaveBeenCalled();
     });
 
     it('ordnet Leistungszeilen am Handy zweizeilig (ABR-B08)', async () => {

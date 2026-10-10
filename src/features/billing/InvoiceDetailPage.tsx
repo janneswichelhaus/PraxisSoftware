@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Aufklappzeichen, Inhaltsflaeche } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
+import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { Select } from '@/components/ui/Select';
 import { Section } from '@/components/ui/Section';
@@ -1050,11 +1051,18 @@ function Stornokette({
  * Auswahl schon die neue Wahl und ist gesperrt - vorher sprang sie bis zum
  * Neuladen auf den alten Wert zurück und nahm einen zweiten Wechsel an; danach
  * sagt eine Meldung, dass er gesetzt ist (ABR-10, ZST-20).
+ *
+ * **Seit UX-008c (BEF-062 Teil 2, Jannes 2026-10-09):** Ein hinterlegter
+ * Empfänger lässt sich korrigieren und als Standard der Person setzen; ein
+ * neu hinterlegter ist danach für diese Rechnung gewählt. Eine Änderung wirkt
+ * auf Entwürfe, nie auf ausgestellte Rechnungen - die tragen ihren Snapshot
+ * (ADR-009 Punkt 10).
  */
 function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; patientId: string }) {
   const queryClient = useQueryClient();
-  const [neu, setNeu] = useState(false);
-  const [gesetzt, setGesetzt] = useState(false);
+  // Welches Formular offen ist: keines, ein neuer oder ein bestehender Empfänger.
+  const [formular, setFormular] = useState<'zu' | 'neu' | Empfaenger>('zu');
+  const [meldung, setMeldung] = useState<string | null>(null);
 
   const empfaenger = useQuery({
     queryKey: ['rechnungsempfaenger', patientId],
@@ -1067,7 +1075,6 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
-      setGesetzt(true);
     },
   });
 
@@ -1088,6 +1095,26 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
   }
 
   const wert = waehlen.isPending ? (waehlen.variables ?? '') : (ansicht.recipient_id ?? '');
+  const gewaehlt = empfaenger.data.find((eintrag) => eintrag.id === ansicht.recipient_id) ?? null;
+
+  async function gespeichert(id: string, neu: boolean) {
+    setFormular('zu');
+    await queryClient.invalidateQueries({ queryKey: ['rechnungsempfaenger', patientId] });
+    if (neu) {
+      // Wer gerade einen Empfänger hinterlegt, meint diese Rechnung (BEF-062).
+      try {
+        await waehlen.mutateAsync(id);
+        setMeldung('Empfänger hinterlegt und für diese Rechnung gewählt.');
+      } catch {
+        // Hinterlegt ist er; dass das Setzen scheiterte, sagt die Meldung
+        // der Auswahl.
+      }
+    } else {
+      // Der Entwurf wird aus den Stammdaten gebaut und zeigt die Änderung.
+      await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
+      setMeldung('Empfänger geändert. Ausgestellte Rechnungen behalten ihre Angaben.');
+    }
+  }
 
   return (
     <div className="mt-4 max-w-xl">
@@ -1095,25 +1122,28 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
         label="Rechnung geht an"
         hint="Ohne hinterlegten Empfänger geht sie an die Patient:in selbst."
         value={wert}
-        disabled={waehlen.isPending}
+        disabled={waehlen.isPending || formular !== 'zu'}
         onChange={(e) => {
-          setGesetzt(false);
-          waehlen.mutate(e.target.value === '' ? null : e.target.value);
+          setMeldung(null);
+          waehlen.mutate(e.target.value === '' ? null : e.target.value, {
+            onSuccess: () => setMeldung('Empfänger gesetzt.'),
+          });
         }}
       >
         <option value="">{empfaengerartLabels.self}</option>
         {empfaenger.data.map((eintrag) => (
           <option key={eintrag.id} value={eintrag.id}>
             {eintrag.name} ({empfaengerartLabels[eintrag.recipient_kind] ?? 'Kostenträger'})
+            {eintrag.is_default ? ' · Standard' : ''}
           </option>
         ))}
       </Select>
 
       {waehlen.isPending ? (
         <Statusmeldung className="mt-2">Wird gesetzt …</Statusmeldung>
-      ) : gesetzt ? (
+      ) : meldung ? (
         <Statusmeldung ton="erfolg" className="mt-2">
-          Empfänger gesetzt.
+          {meldung}
         </Statusmeldung>
       ) : null}
 
@@ -1123,59 +1153,97 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
         </Statusmeldung>
       ) : null}
 
-      {neu ? (
-        <Empfaengerformular
-          patientId={patientId}
-          onFertig={async () => {
-            setNeu(false);
-            await queryClient.invalidateQueries({
-              queryKey: ['rechnungsempfaenger', patientId],
-            });
-          }}
-        />
-      ) : (
-        <div className="mt-2">
-          <Button type="button" variant="quiet" onClick={() => setNeu(true)}>
+      {formular === 'zu' ? (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {gewaehlt ? (
+            <Button
+              type="button"
+              variant="quiet"
+              onClick={() => {
+                setMeldung(null);
+                setFormular(gewaehlt);
+              }}
+            >
+              Empfänger bearbeiten
+            </Button>
+          ) : null}
+          <Button
+            type="button"
+            variant="quiet"
+            onClick={() => {
+              setMeldung(null);
+              setFormular('neu');
+            }}
+          >
             Empfänger hinterlegen
           </Button>
         </div>
+      ) : (
+        <Empfaengerformular
+          // Ein anderer Empfänger ist ein anderes Formular.
+          key={formular === 'neu' ? 'neu' : formular.id}
+          patientId={patientId}
+          bestehend={formular === 'neu' ? null : formular}
+          onGespeichert={gespeichert}
+          onAbbrechen={() => setFormular('zu')}
+        />
       )}
     </div>
   );
 }
 
+/** Die Arten zur Wahl - ohne Vorbelegung (BEF-062): Die Art bestimmt Anrede und Aktenzeichen. */
+const EMPFAENGERARTEN: Empfaenger['recipient_kind'][] = [
+  'aid_authority',
+  'private_insurer',
+  'legal_representative',
+  'guardian',
+  'other',
+];
+
 /**
- * Einen Empfänger hinterlegen.
+ * Einen Empfänger hinterlegen oder korrigieren.
  *
  * **Seit UXR-010:** kein Kasten im Kasten mehr (ABR-33), höchstens so breit
  * wie ein Formular (ABR-23), und „Empfänger speichern" ist nicht mehr ohne
  * Grund gesperrt: Fehlt der Name, steht das am Feld (ABR-20). Die
  * Postleitzahl öffnet am Handy das Ziffernfeld (RSP-12).
+ *
+ * **Seit UX-008c (BEF-062):** Die Art ist nicht mehr mit „Beihilfestelle"
+ * vorbelegt - fehlt sie, steht das am Feld. Ein bestehender Empfänger kommt
+ * mit seinen Angaben ins Formular und behält seine Kennung; „Standard" macht
+ * ihn zur Vorgabe neuer Rechnungen der Person (höchstens einer, ANN-076).
  */
 function Empfaengerformular({
   patientId,
-  onFertig,
+  bestehend,
+  onGespeichert,
+  onAbbrechen,
 }: {
   patientId: string;
-  onFertig: () => void | Promise<void>;
+  bestehend: Empfaenger | null;
+  onGespeichert: (id: string, neu: boolean) => void | Promise<void>;
+  onAbbrechen: () => void;
 }) {
   const namensfeld = useId();
+  const artfeld = useId();
   const [namensfehler, setNamensfehler] = useState<string | undefined>(undefined);
+  const [artfehler, setArtfehler] = useState<string | undefined>(undefined);
   const [eingabe, setEingabe] = useState({
-    recipient_kind: 'aid_authority',
-    name: '',
-    street: '',
-    house_number: '',
-    postal_code: '',
-    city: '',
-    reference: '',
-    is_default: false,
+    recipient_kind: bestehend?.recipient_kind ?? '',
+    name: bestehend?.name ?? '',
+    street: bestehend?.street ?? '',
+    house_number: bestehend?.house_number ?? '',
+    postal_code: bestehend?.postal_code ?? '',
+    city: bestehend?.city ?? '',
+    reference: bestehend?.reference ?? '',
+    is_default: bestehend?.is_default ?? false,
   });
 
   const speichern = useMutation({
     mutationFn: () =>
       saveEmpfaenger({
-        id: null,
+        id: bestehend?.id ?? null,
         patientId,
         recipient_kind: eingabe.recipient_kind,
         name: eingabe.name,
@@ -1186,35 +1254,47 @@ function Empfaengerformular({
         reference: eingabe.reference || null,
         is_default: eingabe.is_default,
       }),
-    onSuccess: onFertig,
+    onSuccess: (id) => onGespeichert(id, bestehend === null),
   });
 
   function absenden() {
     if (speichern.isPending) return;
-    if (eingabe.name.trim() === '') {
-      setNamensfehler('Bitte ausfüllen.');
+    const ohneArt = eingabe.recipient_kind === '';
+    const ohneName = eingabe.name.trim() === '';
+    setArtfehler(ohneArt ? 'Bitte die Art wählen.' : undefined);
+    setNamensfehler(ohneName ? 'Bitte ausfüllen.' : undefined);
+    // Der Fokus geht an das erste Feld mit Fehler.
+    if (ohneArt) {
+      document.getElementById(artfeld)?.focus();
+      return;
+    }
+    if (ohneName) {
       document.getElementById(namensfeld)?.focus();
       return;
     }
     speichern.mutate();
   }
 
-  const arten: Empfaenger['recipient_kind'][] = [
-    'aid_authority',
-    'private_insurer',
-    'legal_representative',
-    'guardian',
-    'other',
-  ];
-
   return (
     <div className="mt-4 flex max-w-xl flex-col gap-4">
+      {bestehend ? (
+        <p className="text-ink-muted text-sm">
+          Die Änderung gilt für alle Entwürfe an diesen Empfänger; ausgestellte Rechnungen behalten
+          ihre Angaben.
+        </p>
+      ) : null}
       <Select
-        label="Art"
+        label="Art *"
+        feldId={artfeld}
         value={eingabe.recipient_kind}
-        onChange={(e) => setEingabe((alt) => ({ ...alt, recipient_kind: e.target.value }))}
+        error={artfehler}
+        onChange={(e) => {
+          setEingabe((alt) => ({ ...alt, recipient_kind: e.target.value }));
+          setArtfehler(undefined);
+        }}
       >
-        {arten.map((art) => (
+        <option value="">Bitte wählen …</option>
+        {EMPFAENGERARTEN.map((art) => (
           <option key={art} value={art}>
             {empfaengerartLabels[art]}
           </option>
@@ -1268,6 +1348,12 @@ function Empfaengerformular({
         value={eingabe.reference}
         onChange={(e) => setEingabe((alt) => ({ ...alt, reference: e.target.value }))}
       />
+      <Checkbox
+        label="Standard für neue Rechnungen dieser Person"
+        hint="Neue Entwürfe gehen dann an diesen Empfänger statt an die Person selbst."
+        checked={eingabe.is_default}
+        onChange={(e) => setEingabe((alt) => ({ ...alt, is_default: e.target.checked }))}
+      />
 
       {speichern.isError ? (
         <Statusmeldung ton="fehler">
@@ -1275,11 +1361,17 @@ function Empfaengerformular({
         </Statusmeldung>
       ) : null}
 
-      <div className="flex gap-2">
+      {/* Umbrechend: Bei 390 px brach „Empfänger speichern" sonst zweizeilig
+          im 48-px-Knopf um (BEF-062). */}
+      <div className="flex flex-wrap gap-2">
         <Button type="button" onClick={absenden} disabled={speichern.isPending}>
-          {speichern.isPending ? 'Wird gespeichert …' : 'Empfänger speichern'}
+          {speichern.isPending
+            ? 'Wird gespeichert …'
+            : bestehend
+              ? 'Änderung speichern'
+              : 'Empfänger speichern'}
         </Button>
-        <Button type="button" variant="quiet" onClick={() => void onFertig()}>
+        <Button type="button" variant="quiet" onClick={onAbbrechen}>
           Abbrechen
         </Button>
       </div>

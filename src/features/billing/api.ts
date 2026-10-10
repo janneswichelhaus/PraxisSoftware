@@ -367,8 +367,8 @@ export async function saveEmpfaenger(eingabe: {
   city: string | null;
   reference: string | null;
   is_default: boolean;
-}): Promise<void> {
-  const { error } = await getSupabase().rpc('save_invoice_recipient', {
+}): Promise<string> {
+  const { data, error } = (await getSupabase().rpc('save_invoice_recipient', {
     p_id: eingabe.id,
     p_patient_id: eingabe.patientId,
     p_recipient_kind: eingabe.recipient_kind,
@@ -379,9 +379,13 @@ export async function saveEmpfaenger(eingabe: {
     p_city: eingabe.city,
     p_reference: eingabe.reference,
     p_is_default: eingabe.is_default,
-  });
+  })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Der Rechnungsempfänger konnte nicht gespeichert werden.');
+  // UX-008c: Die Kennung, damit ein neu hinterlegter Empfänger gleich gewählt wird.
+  const id = z.string().uuid().safeParse(data);
+  if (!id.success) throw new Error('Der Rechnungsempfänger konnte nicht gespeichert werden.');
+  return id.data;
 }
 
 // -----------------------------------------------------------------------------
