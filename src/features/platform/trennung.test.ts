@@ -23,6 +23,9 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/components\//,
   /^@\/lib\//,
   /^@\/app\/Vollseite$/,
+  // BEF-046: die Zeile nach einem gescheiterten Nachladen - Rahmen ohne
+  // Datenzugriff; was nachgeladen wird, entscheidet `App.tsx`.
+  /^@\/app\/Profilhinweis$/,
   // Anmeldung und Sitzung gelten für Praxis- und Plattformkonten gleich (Punkt 17).
   /^@\/features\/auth\/(fokus|fremdeSitzung|sessionContext)$/,
   // Die Kennwortregel (ANN-027) - eine Regel, keine Praxisdaten.

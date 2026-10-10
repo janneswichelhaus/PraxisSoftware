@@ -25,8 +25,8 @@ import { PlattformApp } from '@/features/platform/PlattformApp';
 import { AuthenticatedRoutes } from '@/routes/AuthenticatedRoutes';
 import { Button } from '@/components/ui/Button';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
-import { Wortmarke } from '@/components/ui/Wortmarke';
 import { Absturzseite, Startfehlergrenze } from './Absturz';
+import { NachladefehlerContext } from './nachladefehler';
 import { Startbild } from './Startbild';
 import { Vollseite } from './Vollseite';
 import { startbildFaellig } from '@/lib/startbildMerker';
@@ -66,7 +66,7 @@ function AngemeldeterInhalt() {
   const { session, signOut } = useSession();
   const queryClient = useQueryClient();
   const userId = session?.user.id;
-  const { data: user, isPending, isError, error } = useCurrentUser(userId);
+  const { data: user, isPending, isError, error, refetch } = useCurrentUser(userId);
 
   /**
    * Abmelden räumt den Abfragespeicher mit ab (UX-011, ANN-021) — aber nicht
@@ -135,31 +135,49 @@ function AngemeldeterInhalt() {
     );
   }
 
-  // PROJECT_PRINCIPLES.md 13: Bei unklarem Zustand nichts anzeigen, sondern
-  // verständlich abbrechen. Ohne Profil ist keine Organisationszuordnung und
-  // damit keine Berechtigungsentscheidung möglich.
-  if (isError || !user) {
+  /**
+   * Das Erstladen ist gescheitert (BEF-046). PROJECT_PRINCIPLES.md 13: Ohne
+   * Profil ist keine Organisationszuordnung und damit keine
+   * Berechtigungsentscheidung möglich - hier wird nichts gezeigt, sondern
+   * verständlich abgebrochen.
+   *
+   * Bis UX-006b hieß die Seite „Zugang nicht vollständig eingerichtet" und
+   * zeigte `error.message`; ihr einziger Knopf war „Abmelden". Meist ist aber
+   * nur das Netz weg, und Abmelden löscht dann eine Sitzung, die sich ohne
+   * Netz nicht neu anlegen lässt. Deshalb ein fester Satz ohne Vermutung über
+   * die Ursache, „Erneut versuchen" als Hauptknopf und „Abmelden" darunter.
+   */
+  if (!user) {
     return (
-      <main className="mx-auto max-w-sm px-5 py-16">
-        {/* Die einzige Vollseite außerhalb des Anwendungsrahmens neben der
-            Anmeldemaske - und die einzige, die jemand nach erfolgreicher
-            Anmeldung zu sehen bekommt. Ohne die Marke stünde hier ein nackter
-            Fehlerkasten ohne Absender; 40 px und der Abstand darunter folgen
-            der Anmeldemaske (MARKE-001, marke/README.md). */}
-        <Wortmarke hoehe={40} className="mb-6" />
+      <Vollseite titel="Anwendung nicht geladen">
         <ErrorState
-          title="Zugang nicht vollständig eingerichtet"
-          description={error?.message ?? 'Bitte wenden Sie sich an die Praxisleitung.'}
+          title="Die Anwendung konnte nicht geladen werden."
+          description="Bitte die Verbindung prüfen und erneut versuchen. Sie bleiben angemeldet."
         />
-        <Button variant="secondary" className="mt-4 w-full" onClick={() => void abmelden()}>
+        <Button className="mt-4 w-full" onClick={() => void refetch()}>
+          Erneut versuchen
+        </Button>
+        <Button variant="secondary" className="mt-3 w-full" onClick={() => void abmelden()}>
           Abmelden
         </Button>
-      </main>
+      </Vollseite>
     );
   }
 
-  return <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />;
+  // Ein geladenes Profil bleibt stehen, auch wenn das Nachladen scheitert
+  // (BEF-046): Die Zeile im Rahmen sagt es, die Anwendung läuft weiter.
+  return (
+    <NachladefehlerContext.Provider
+      value={isError ? { satz: PROFIL_NICHT_AKTUALISIERT, erneut: refetch } : null}
+    >
+      <AuthenticatedRoutes user={user} onSignOut={() => void abmelden()} />
+    </NachladefehlerContext.Provider>
+  );
 }
+
+/** Die Zeile über der Anwendung nach einem gescheiterten Nachladen (BEF-046). */
+const PROFIL_NICHT_AKTUALISIERT = 'Ihr Profil ließ sich gerade nicht aktualisieren.';
+const ZUGANG_NICHT_AKTUALISIERT = 'Ihr Zugang ließ sich gerade nicht aktualisieren.';
 
 /**
  * Ein Konto ohne Praxisprofil: Plattformkonto oder Konto mit offener
@@ -194,7 +212,11 @@ function OhneProfil({
       </Vollseite>
     );
   }
-  if (isError) {
+  // Wie beim Praxisprofil (BEF-046): Nur ohne geladenen Zugang ersetzt der
+  // Fehler die Seite. Ein gescheitertes Nachladen - nach jedem Wieder-online -
+  // lässt die Plattform stehen; die Projektionen prüfen den Zugang ohnehin bei
+  // jeder Anfrage (ADR-023 Punkt 18).
+  if (data === undefined) {
     return (
       <Vollseite titel="Zugang nicht geladen">
         <ErrorState
@@ -209,7 +231,13 @@ function OhneProfil({
     );
   }
   if (data.length > 0) {
-    return <PlattformApp zugaenge={data} email={email} onAbmelden={onAbmelden} />;
+    return (
+      <NachladefehlerContext.Provider
+        value={isError ? { satz: ZUGANG_NICHT_AKTUALISIERT, erneut: refetch } : null}
+      >
+        <PlattformApp zugaenge={data} email={email} onAbmelden={onAbmelden} />
+      </NachladefehlerContext.Provider>
+    );
   }
   return <ZugangEinrichtenPage onEingerichtet={onEingerichtet} onAbmelden={onAbmelden} />;
 }
