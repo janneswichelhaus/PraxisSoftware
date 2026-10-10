@@ -913,6 +913,23 @@ describe('Textverlustschutz: Sicherung von selbst (BEF-056, ANN-319)', () => {
     expect(speichern).toHaveBeenLastCalledWith('Eins Zwei Drei');
   });
 
+  it('sichert nicht, solange die Rückfrage vor dem Weggehen offen ist', async () => {
+    const speichern = vi.fn().mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(
+      <>
+        <SelbstPruefseite speichern={speichern} />
+        <Link to="/woanders">Weggehen</Link>
+      </>,
+    );
+
+    await user.type(screen.getByLabelText('Feld'), 'Verwerfen?');
+    await user.click(screen.getByRole('link', { name: 'Weggehen' }));
+    expect(screen.getByRole('group', { name: 'Ungespeicherte Dokumentation' })).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
+    expect(speichern).not.toHaveBeenCalled();
+  });
+
   it('meldet kein „weitergeschrieben“, wenn während der Sicherung getippt wird', async () => {
     let freigeben: () => void = () => undefined;
     const speichern = vi.fn(

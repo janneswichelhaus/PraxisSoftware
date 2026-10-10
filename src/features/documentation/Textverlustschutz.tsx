@@ -430,15 +430,25 @@ export function useTextverlustschutz({
     // Nach jeder Änderung beginnt die Pause neu; erst wenn sie verstreicht,
     // wird gesichert. Ohne Verbindung wartet die Sicherung, bis sie zurück
     // ist - `verbunden` steht deshalb in den Abhängigkeiten. Ebenso `laeuft`:
-    // Was während eines Vorgangs dazukam, sichert die Pause danach.
-    if (!selbstAktiv || !selbstBereit || !ungespeichert || !verbunden || ausgesetzt || laeuft) {
+    // Was während eines Vorgangs dazukam, sichert die Pause danach. Steht
+    // die Rückfrage offen, entscheidet die Person: Ein Sichern von selbst
+    // nähme ihr „Verwerfen“ vorweg.
+    if (
+      !selbstAktiv ||
+      !selbstBereit ||
+      !ungespeichert ||
+      !verbunden ||
+      ausgesetzt ||
+      laeuft ||
+      offen
+    ) {
       return;
     }
     const zeitgeber = window.setTimeout(() => {
       void selbstSichernRef.current();
     }, SELBST_SICHERN_PAUSE_MS);
     return () => window.clearTimeout(zeitgeber);
-  }, [selbstAktiv, selbstStand, selbstBereit, ungespeichert, verbunden, ausgesetzt, laeuft]);
+  }, [selbstAktiv, selbstStand, selbstBereit, ungespeichert, verbunden, ausgesetzt, laeuft, offen]);
 
   function bleiben() {
     setFehler(undefined);
