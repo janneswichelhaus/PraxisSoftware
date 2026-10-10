@@ -66,7 +66,7 @@ function AngemeldeterInhalt() {
   const { session, signOut } = useSession();
   const queryClient = useQueryClient();
   const userId = session?.user.id;
-  const { data: user, isPending, isError, error, refetch } = useCurrentUser(userId);
+  const { data: user, isPending, isError, isFetching, error, refetch } = useCurrentUser(userId);
 
   /**
    * Abmelden räumt den Abfragespeicher mit ab (UX-011, ANN-021) — aber nicht
@@ -154,8 +154,10 @@ function AngemeldeterInhalt() {
           title="Die Anwendung konnte nicht geladen werden."
           description="Bitte die Verbindung prüfen und erneut versuchen. Sie bleiben angemeldet."
         />
-        <Button className="mt-4 w-full" onClick={() => void refetch()}>
-          Erneut versuchen
+        {/* Ohne Daten bleibt ein neuer Versuch im Zustand „Fehler" - nur
+            `isFetching` sagt, dass gerade geladen wird (Zweitreview S3). */}
+        <Button className="mt-4 w-full" disabled={isFetching} onClick={() => void refetch()}>
+          {isFetching ? 'Wird erneut geladen …' : 'Erneut versuchen'}
         </Button>
         <Button variant="secondary" className="mt-3 w-full" onClick={() => void abmelden()}>
           Abmelden
@@ -212,7 +214,7 @@ function OhneProfil({
       </Vollseite>
     );
   }
-  // Wie beim Praxisprofil (BEF-046): Nur ohne geladenen Zugang ersetzt der
+  // ANN-318. Wie beim Praxisprofil (BEF-046): Nur ohne geladenen Zugang ersetzt der
   // Fehler die Seite. Ein gescheitertes Nachladen - nach jedem Wieder-online -
   // lässt die Plattform stehen; die Projektionen prüfen den Zugang ohnehin bei
   // jeder Anfrage (ADR-023 Punkt 18).

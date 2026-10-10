@@ -10,7 +10,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 const { LoginPage } = await import('./LoginPage');
-const { SessionContext } = await import('./sessionContext');
+const { SitzungsendeContext } = await import('./sitzungsende');
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -86,10 +86,15 @@ describe('LoginPage', () => {
     );
   });
 
-  it('nennt eine Störung des Dienstes', async () => {
-    signInWithPassword.mockResolvedValueOnce({
-      error: { name: 'AuthUnknownError', status: 502, message: 'Bad Gateway' },
-    });
+  // Die Formen, die `@supabase/auth-js` (lib/fetch.js) für eine Störung
+  // liefert: 500 als AuthApiError, 502 bis 504 als AuthRetryableFetchError mit
+  // Status, eine Antwort ohne JSON als AuthUnknownError ohne Status.
+  it.each([
+    { name: 'AuthApiError', status: 500, code: 'unexpected_failure' },
+    { name: 'AuthRetryableFetchError', status: 503 },
+    { name: 'AuthUnknownError' },
+  ])('nennt eine Störung des Dienstes ($name)', async (fehler) => {
+    signInWithPassword.mockResolvedValueOnce({ error: { ...fehler, message: 'x' } });
     expect(await anmelden()).toHaveTextContent(
       'Der Anmeldedienst ist gerade nicht erreichbar. Ihre Angaben wurden nicht geprüft.',
     );
@@ -122,11 +127,9 @@ describe('LoginPage', () => {
 
   it('sagt nach einem Sitzungsende von außen, dass Eingaben nicht erhalten sind', () => {
     render(
-      <SessionContext.Provider
-        value={{ session: null, initialising: false, endeVonAussen: true, signOut: vi.fn() }}
-      >
+      <SitzungsendeContext.Provider value={true}>
         <LoginPage />
-      </SessionContext.Provider>,
+      </SitzungsendeContext.Provider>,
     );
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -136,11 +139,9 @@ describe('LoginPage', () => {
 
   it('sagt beim gewöhnlichen Aufruf nichts über eine Sitzung', () => {
     render(
-      <SessionContext.Provider
-        value={{ session: null, initialising: false, endeVonAussen: false, signOut: vi.fn() }}
-      >
+      <SitzungsendeContext.Provider value={false}>
         <LoginPage />
-      </SessionContext.Provider>,
+      </SitzungsendeContext.Provider>,
     );
 
     expect(screen.queryByText(/Sitzung wurde beendet/)).not.toBeInTheDocument();

@@ -6,6 +6,7 @@ import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { SessionContext, type SessionState } from './sessionContext';
+import { SitzungsendeContext } from './sitzungsende';
 
 /**
  * Sitzungszustand und die Grenze zwischen zwei Konten (UX-011, ANN-021).
@@ -115,7 +116,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       initialising,
-      endeVonAussen,
       /**
        * Abmelden verlässt sich auf den Ereignisweg — aber nicht blind.
        *
@@ -144,8 +144,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [session, initialising, endeVonAussen, raeumen],
+    [session, initialising, raeumen],
   );
 
-  return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
+  return (
+    <SessionContext.Provider value={value}>
+      <SitzungsendeContext.Provider value={endeVonAussen}>{children}</SitzungsendeContext.Provider>
+    </SessionContext.Provider>
+  );
 }

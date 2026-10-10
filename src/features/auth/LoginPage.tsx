@@ -1,4 +1,4 @@
-import { useContext, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
@@ -10,7 +10,7 @@ import { fordereKennwortMailAn } from '@/features/account/api';
 import { VerbindungError } from '@/features/auth/linkEinloesen';
 import { ANMELDESAETZE, anmeldesatz } from './anmeldefehler';
 import { useFokusNachWechsel } from './fokus';
-import { SessionContext } from './sessionContext';
+import { useSitzungEndeteVonAussen } from './sitzungsende';
 
 /** Das Feld, in das der Fokus beim Öffnen von „Kennwort vergessen" springt. */
 const ADRESSFELD = 'kennwort-vergessen-adresse';
@@ -191,8 +191,7 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
  * BEF-047 nennt, ist die Lage des Dienstes und ein Sitzungsende von außen.
  */
 export function LoginPage() {
-  // Ohne `SessionProvider` (Tests, Vorschauen) gibt es kein Sitzungsende.
-  const endeVonAussen = useContext(SessionContext)?.endeVonAussen ?? false;
+  const endeVonAussen = useSitzungEndeteVonAussen();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);

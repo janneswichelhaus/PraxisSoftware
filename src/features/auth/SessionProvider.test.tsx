@@ -29,6 +29,7 @@ vi.mock('@/lib/abstecher', async (original) => ({
 
 const { SessionProvider } = await import('./SessionProvider');
 const { useSession } = await import('./sessionContext');
+const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
 /** Der Ereignisrückruf, den der Anbieter beim Anmeldedienst hinterlegt hat. */
 let melde: ((ereignis: string, sitzung: unknown) => void) | undefined;
@@ -198,7 +199,8 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
  */
 describe('SessionProvider — Sitzungsende von außen', () => {
   function EndeProbe() {
-    const { session, endeVonAussen, signOut: abmelden } = useSession();
+    const { session, signOut: abmelden } = useSession();
+    const endeVonAussen = useSitzungEndeteVonAussen();
     return (
       <div>
         <p>{session?.user?.id ?? 'keine Sitzung'}</p>

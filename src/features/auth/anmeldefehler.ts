@@ -18,7 +18,8 @@ export const ANMELDESAETZE = {
  * fordert dann womöglich eine Rücksetzmail an.
  *
  * Unterschieden wird nur, was nichts über ein Konto verrät: keine Verbindung,
- * Störung des Dienstes (5xx), zu viele Versuche (429). Alles andere -
+ * Störung des Dienstes (5xx, Antwort ohne JSON), zu viele Versuche (429). Die
+ * Fehlerformen folgen `lib/fetch.js` von `@supabase/auth-js` 2.112. Alles andere -
  * unbekanntes Konto, falsches Kennwort, nicht bestätigte Adresse - bleibt
  * derselbe Satz (`sonst`), damit die Maske kein Verzeichnis der Konten ist.
  * Geprüft wird der Name wie in `linkEinloesen.ts`, nicht die Klasse.
@@ -35,10 +36,18 @@ export function anmeldesatz(
   },
   sonst: string,
 ): string {
-  if (fehler.name === 'AuthRetryableFetchError') return ANMELDESAETZE.keineVerbindung;
+  // Status 0: die Anfrage kam nicht an. 502 bis 504 meldet die Bibliothek
+  // unter demselben Namen - dann antwortet etwas, nur nicht der Dienst.
+  if (fehler.name === 'AuthRetryableFetchError') {
+    return fehler.status ? ANMELDESAETZE.dienstGestoert : ANMELDESAETZE.keineVerbindung;
+  }
   if (fehler.status === 429 || fehler.code === 'over_request_rate_limit') {
     return ANMELDESAETZE.zuVieleVersuche;
   }
+  // Eine Antwort ohne JSON - etwa die Fehlerseite eines Gateways - kommt als
+  // `AuthUnknownError` ohne Status. Der Anmeldedienst selbst antwortet immer
+  // mit JSON; über ein Konto sagt dieser Fall also nichts.
+  if (fehler.name === 'AuthUnknownError') return ANMELDESAETZE.dienstGestoert;
   if (fehler.status !== undefined && fehler.status >= 500) return ANMELDESAETZE.dienstGestoert;
   return sonst;
 }

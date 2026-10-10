@@ -65,7 +65,7 @@ gesperrt“ ersetzt weiter sofort.
 
 **Entscheidung (Jannes, 2026-10-09).** Option 2: Ist das Profil geladen, läuft die Anwendung bei einem gescheiterten Nachladen weiter, mit Statusmeldung und „Erneut versuchen“; nur das Erstladen zeigt eine Vollseite mit „Erneut versuchen“. „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort.
 
-*Erledigt 2026-10-10 (UX-006b):* `App.tsx` ersetzt nur noch ohne geladenes Profil; „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort. Die Zeile steht im Rahmen unter der Verbindungsanzeige (`src/app/Profilhinweis.tsx`, `nachladefehler.ts`), im Gerüst der Plattform unter dem Kopf. Die Erstlade-Seite heißt „Anwendung nicht geladen“ und zeigt einen festen Satz statt `error.message`. Tests: `App.nachladen.test.tsx`, `App.test.tsx`, `uebersicht.spec.ts` (375 und 1280 px).
+*Erledigt 2026-10-10 (UX-006b):* `App.tsx` ersetzt nur noch ohne geladenes Profil; „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort. Die Zeile steht im Rahmen unter der Verbindungsanzeige (`src/app/Profilhinweis.tsx`, `nachladefehler.ts`), im Gerüst der Plattform unter dem Kopf (ANN-318). Die Erstlade-Seite heißt „Anwendung nicht geladen“ und zeigt einen festen Satz statt `error.message`. Tests: `App.nachladen.test.tsx`, `App.test.tsx`, `uebersicht.spec.ts` (375 und 1280 px).
 
 ### BEF-047 — Die Anmeldemaske sagt nie, warum sie erscheint, und am Praxisrechner endet keine Sitzung von selbst
 
