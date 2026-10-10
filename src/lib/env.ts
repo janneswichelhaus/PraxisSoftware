@@ -65,3 +65,34 @@ export function readMapTileApiKey(source: TileEnvSource = import.meta.env): stri
   const wert = source.VITE_PTV_TILE_API_KEY?.trim();
   return wert ? wert : null;
 }
+
+/** Die Umgebung, in der die Anwendung läuft (ADR-025 Punkt 15, ANN-326). */
+export type AppUmgebung = 'development' | 'test' | 'production';
+
+interface UmgebungsQuelle {
+  VITE_APP_ENVIRONMENT?: string | undefined;
+  DEV?: boolean | undefined;
+}
+
+/**
+ * Die Umgebung aus `VITE_APP_ENVIRONMENT` (ANN-326).
+ *
+ * Fehlt der Wert oder ist er unbekannt, gilt **Produktion** - außer im
+ * Entwicklungsserver von Vite, der nie ausgeliefert wird. Wie beim
+ * Kartendienst (ADR-019 Punkt 36): Was nicht ausdrücklich als Test
+ * gekennzeichnet ist, bekommt den strengeren Weg.
+ *
+ * Der Wert steht im Browser und ist damit keine Zugriffskontrolle (ADR-004).
+ * Er entscheidet nur, ob die Anmeldeseite den Kennwortweg für Testkonten
+ * zeigt; in Produktion haben Konten gar kein Kennwort (ADR-025 Punkt 9).
+ */
+export function readAppUmgebung(source: UmgebungsQuelle = import.meta.env): AppUmgebung {
+  const wert = source.VITE_APP_ENVIRONMENT?.trim();
+  if (wert === 'development' || wert === 'test' || wert === 'production') return wert;
+  return source.DEV === true ? 'development' : 'production';
+}
+
+/** Zeigt die Anmeldeseite den Kennwortweg für Testkonten? Nie in Produktion (Punkt 15). */
+export function kennwortTestzugang(source: UmgebungsQuelle = import.meta.env): boolean {
+  return readAppUmgebung(source) !== 'production';
+}

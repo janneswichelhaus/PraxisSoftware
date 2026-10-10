@@ -186,6 +186,8 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ secrets.TESTENV_SUPABASE_URL }}
           VITE_SUPABASE_ANON_KEY: ${{ secrets.TESTENV_SUPABASE_ANON_KEY }}
+          # Kennwortweg nur für Testkonten, nie in Produktion (ADR-025 Punkt 15, ANN-326).
+          VITE_APP_ENVIRONMENT: test
           VITE_PTV_TILE_API_KEY: ${{ steps.karte.outputs.kacheln == 'true' && secrets.TESTENV_PTV_TILE_API_KEY || '' }}
         run: pnpm build
 

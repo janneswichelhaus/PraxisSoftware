@@ -21,6 +21,10 @@ export function getSupabase(): SupabaseClient {
         persistSession: true,
         autoRefreshToken: true,
         detectSessionInUrl: false,
+        // Passkeys sind beim Anmeldedienst Beta und im SDK ausdrücklich
+        // einzuschalten (ADR-025 Punkt 10, W3 ohne Schalter der Anwendung).
+        // Benutzt werden sie nur über `features/auth/passkey.ts`.
+        experimental: { passkey: true },
       },
     });
   }

@@ -38,7 +38,9 @@ import { Sperrseite } from './Sperrseite';
  *     stehen und kommt nach der Freigabe wieder (ANN-257).
  *
  * Gesperrt ist nicht abgemeldet: Die Sitzung beim Anmeldedienst bleibt, und
- * nach der Freigabe steht dieselbe Adresse da. Wer stattdessen „Mit anderem
+ * nach der Freigabe - per Passkey oder App-PIN (ADR-025 Fassung 2) - steht
+ * dieselbe Adresse da. Nur eine verbrauchte Sitzung (fünf falsche PINs) kommt
+ * nicht wieder; die Sperrseite führt dann zur Anmeldung. Wer stattdessen „Mit anderem
  * Konto anmelden“ wählt, meldet ab; dann räumt der `SessionProvider`.
  */
 
@@ -74,7 +76,7 @@ function mitFrist(sicherung: Sicherung, ms: number): Promise<boolean> {
 }
 
 export function Sitzungssperre({ children }: { children: ReactNode }) {
-  const { session, signOut } = useSession();
+  const { signOut } = useSession();
   const queryClient = useQueryClient();
   const [phase, setPhase] = useState<Phase>('start');
   const [grund, setGrund] = useState<Sperrgrund>('inaktiv');
@@ -290,7 +292,6 @@ export function Sitzungssperre({ children }: { children: ReactNode }) {
         <Sperrseite
           grund={grund}
           haelt={phase === 'halten'}
-          email={session?.user.email}
           onEntsperrt={() => void pruefen()}
           onAbmelden={() => void signOut()}
         />

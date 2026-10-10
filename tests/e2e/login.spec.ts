@@ -17,7 +17,16 @@ test.describe('Anmeldung', () => {
     // Beschriftung ("Kennwort anzeigen") den Feldnamen enthaelt.
     await expect(page.getByLabel('Kennwort', { exact: true })).toBeVisible();
     await expect(page.getByRole('button', { name: 'Kennwort anzeigen' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeEnabled();
+  });
+
+  test('bietet zuerst den Passkey an und kein Kennwort vergessen (ADR-025 Fassung 2)', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await expect(page.getByRole('button', { name: 'Mit Passkey anmelden' })).toBeVisible();
+    await expect(page.getByText(/Die Praxis gibt Ihnen eine neue Einladung/)).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Kennwort vergessen?' })).toHaveCount(0);
   });
 
   test('ist vollstaendig mit der Tastatur bedienbar', async ({ page }) => {
@@ -68,64 +77,13 @@ test.describe('Anmeldung', () => {
 });
 
 /**
- * Kennwort vergessen (STAFF-004a).
+ * Testzugang mit Kennwort (ADR-025 Punkt 15).
  *
- * Der einzige Teil des Epics, der ohne Anmeldung erreichbar ist - und damit
- * der einzige, der hier automatisiert laeuft. Die Vorgaenge hinter der
- * Anmeldung brauchen einen laufenden Anmeldedienst (docs/DEVELOPMENT.md).
+ * Nur ausserhalb der Produktion: Der Entwicklungsserver gilt als Entwicklung
+ * (ANN-326), deshalb steht der Testzugang hier. Ein Kennwort vergessen gibt
+ * es nicht mehr - wer den Passkey verliert, bekommt eine neue Einladung.
  */
-test.describe('Kennwort vergessen', () => {
-  test('ist per Tastatur erreichbar und uebernimmt die getippte Adresse', async ({ page }) => {
-    await page.goto('/');
-
-    await page.getByLabel('E-Mail-Adresse', { exact: true }).fill('anna.beispiel@praxis.invalid');
-    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-
-    await expect(page.getByRole('heading', { name: 'Kennwort vergessen' })).toBeVisible();
-    await expect(page.getByLabel('E-Mail-Adresse des Kontos')).toHaveValue(
-      'anna.beispiel@praxis.invalid',
-    );
-  });
-
-  test('bestaetigt fuer jede Adresse gleich (kein Konto-Orakel)', async ({ page }) => {
-    // Der Anmeldedienst antwortet - und zwar ablehnend, weil es die Adresse
-    // nicht gibt. Genau dann darf die Bestaetigung nichts anderes sagen.
-    // Die Antwort wird hier gesetzt statt dem fehlenden Dienst ueberlassen:
-    // Seit R3-008 unterscheidet die Seite "abgelehnt" von "nicht erreichbar",
-    // und der Test soll sagen, welchen Fall er prueft.
-    await page.route('**/auth/v1/recover**', (route) =>
-      route.fulfill({
-        status: 400,
-        contentType: 'application/json',
-        body: JSON.stringify({ code: 'user_not_found', message: 'User not found' }),
-      }),
-    );
-
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-    await page.getByLabel('E-Mail-Adresse des Kontos').fill('gibt.es.nicht@praxis.invalid');
-    await page.getByRole('button', { name: 'Link anfordern' }).click();
-
-    await expect(page.getByText(/Falls für diese Adresse ein Konto besteht/)).toBeVisible();
-    await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
-  });
-
-  test('nennt den nicht erreichbaren Dienst, ohne etwas zu verraten (R3-008)', async ({ page }) => {
-    // Der andere Fall: Die Anfrage kommt gar nicht an. Dann ist die
-    // Bestaetigung "eine Mail ist unterwegs" schlicht falsch - jemand wartet
-    // auf Post, die nie kommt. Ueber das Konto wird trotzdem nichts gesagt.
-    await page.route('**/auth/v1/recover**', (route) => route.abort('failed'));
-
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-    await page.getByLabel('E-Mail-Adresse des Kontos').fill('anna.beispiel@praxis.invalid');
-    await page.getByRole('button', { name: 'Link anfordern' }).click();
-
-    await expect(page.getByText(/nicht erreichbar/)).toBeVisible();
-    await expect(page.getByText(/Falls für diese Adresse ein Konto besteht/)).toHaveCount(0);
-    await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
-  });
-
+test.describe('Testzugang', () => {
   test('sagt im Funkloch „keine Verbindung" statt „Kennwort pruefen" (BEF-047)', async ({
     page,
   }) => {
@@ -138,7 +96,7 @@ test.describe('Kennwort vergessen', () => {
       await page.goto('/');
       await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
       await page.getByLabel('Kennwort', { exact: true }).fill('LokalerTestzugang!2026');
-      await page.getByRole('button', { name: 'Anmelden' }).click();
+      await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
 
       await expect(page.getByRole('alert')).toHaveText(
         'Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.',
@@ -163,33 +121,16 @@ test.describe('Kennwort vergessen', () => {
     await page.goto('/');
     await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
     await page.getByLabel('Kennwort', { exact: true }).fill('falsch-falsch-falsch');
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText(
       'Zu viele Versuche. Bitte in einigen Minuten erneut versuchen.',
     );
 
     antwort = { status: 400, code: 'invalid_credentials' };
-    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
     await expect(page.getByRole('alert')).toHaveText(
       'Anmeldung nicht möglich. Bitte E-Mail-Adresse und Kennwort prüfen.',
     );
-  });
-
-  test('laeuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 780 });
-    await page.goto('/');
-    await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-    await expect(page.getByRole('heading', { name: 'Kennwort vergessen' })).toBeVisible();
-
-    const ueberbreit = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    );
-    expect(ueberbreit).toBe(false);
-
-    const hoehe = await page
-      .getByRole('button', { name: 'Link anfordern' })
-      .evaluate((el) => el.getBoundingClientRect().height);
-    expect(hoehe).toBeGreaterThanOrEqual(44);
   });
 });
 

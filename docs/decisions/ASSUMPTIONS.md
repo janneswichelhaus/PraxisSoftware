@@ -3949,3 +3949,15 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 **Anker.** `app.pin_fresh_authentication()` und `public.set_own_pin()` in `supabase/migrations/20261025100000_sec_004_app_pin.sql`.
 
 **Änderungspfad.** Andere Frist: eine Konstante · Aufwand `klein`. Ohne die Regel: die Prüfung in `set_own_pin` streichen · Aufwand `klein`, aber gegen den Zweck der PIN.
+
+### ANN-326 — Umgebung im Client: `VITE_APP_ENVIRONMENT`, ohne Wert gilt Produktion
+
+Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkt 15) · erledigt · Wiedervorlage: OPS-002 (Deployment), wenn die Produktion gebaut wird
+
+**Annahme.** Ob die Anmeldeseite den Kennwortweg für Testkonten zeigt, entscheidet `VITE_APP_ENVIRONMENT` (`development`, `test`, `production`). Fehlt der Wert oder ist er unbekannt, gilt Produktion; nur der Entwicklungsserver von Vite gilt ohne Wert als Entwicklung. Die Test-Umgebung baut mit `test`. Die Sperrseite zeigt das Kennwort in keiner Umgebung.
+
+**Begründung.** ADR-025 Punkt 15 verlangt den Kennwortweg nur außerhalb der Produktion und einen Test dafür. Wie beim Kartendienst (ADR-019 Punkt 36) bekommt, was nicht ausdrücklich als Test gekennzeichnet ist, den strengeren Weg: Ein vergessener Wert im Produktionsbau zeigt kein Kennwortfeld. Der Wert steht im Browser und ist keine Zugriffskontrolle; die tragende Sicherung ist, dass Konten in Produktion kein Kennwort haben (Punkt 9). Unsicher: nichts Wesentliches.
+
+**Anker.** `readAppUmgebung` und `kennwortTestzugang` in `src/lib/env.ts`; Test in `src/lib/env.test.ts`; `VITE_APP_ENVIRONMENT: test` in `.github/workflows/test-umgebung.yml`.
+
+**Änderungspfad.** Kennwortweg auch in der Test-Umgebung aus: dort `production` setzen · Aufwand `klein`. Ganz ohne Kennwortweg: `KennwortTestzugang` entfernen, Testkonten über Einladungslinks anmelden · Aufwand `mittel`.
