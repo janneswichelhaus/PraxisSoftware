@@ -59,7 +59,9 @@ und E17 in [`../../decisions/OPEN_DECISIONS.md`](../../decisions/OPEN_DECISIONS.
   Person; Jannes will sie **je Verordnung** gruppiert sehen, und die
   Grundlage kann auch ein Privatrezept oder eine Selbstzahler-Rechnung sein.
   Das ist bei uns eine offene Entscheidung (**E16**), keine Übernahme.
-- **Keine PIN, keine Sammelkonten, keine Symbolnavigation ohne Text.**
+- **Keine PIN, keine Sammelkonten, keine Symbolnavigation ohne Text.** Gemeint ist
+  eine geteilte PIN statt eigener Konten; die App-PIN, die die eigene gesperrte
+  Sitzung freigibt (ADR-025 Punkt 11), ist etwas anderes.
 - **Fehlzeit ist bei uns ein Ereignis**, kein eigener Datentyp — sonst
   entstünde eine zweite Terminart neben der, die es schon gibt.
 
