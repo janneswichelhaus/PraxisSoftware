@@ -94,7 +94,7 @@ zweite Linie hinzu. Ein Test meldet ein Konto mit abgelaufener Frist an und verl
 
 **7. Freigabe per Passkey, Rückweg App-PIN, kein Kennwort** *(Fassung 2)*. Die erneute Freigabe
 läuft über einen Passkey des eigenen Kontos (Gesicht, Finger oder Geräte-PIN). Rückweg ist die
-App-PIN (Punkt 11). Ein Kennwort gibt es nicht (Punkt 9). Ein Passkey wird nur für das eigene Konto
+App-PIN (Punkt 11), nur wenn der Passkey nicht klappt. Ein Kennwort gibt es nicht (Punkt 9). Ein Passkey wird nur für das eigene Konto
 angenommen: Liefert die Freigabe ein anderes Konto, ist das ein Kontowechsel und keine Freigabe.
 *Fassung 1: „Rückweg ist das Kennwort, mit zweitem Faktor, wo einer eingerichtet ist (ANN-028). […]
 Solange der Anmeldedienst Passkeys nur als Beta anbietet, steht ihre Nutzung hinter einem Schalter an
@@ -123,8 +123,9 @@ Anmeldeart `passkey` im Claim `amr` als Anmeldung.
   nach dem Abmelden und für ein anderes Konto gilt sie nicht;
 - wird nur in der Datenbank geprüft und dort nur als bcrypt-Hash aus `pgcrypto` gehalten (§3.4,
   Ausnahme). Nie im Klartext, nie im Log, nie auf dem Gerät;
-- hat **keine Frist** (Jannes, 2026-10-10): Sie gibt frei, solange die Sitzung besteht, auch Tage nach
-  der letzten Passkey-Anmeldung;
+- ist **nur der Rückweg**: Die Sperrseite bietet immer zuerst den Passkey, die PIN erst auf „Passkey
+  klappt nicht“. Keine Uhr wechselt den Weg und keine Frist begrenzt die PIN (Jannes, 2026-10-10).
+  Neu freigegeben wird trotzdem immer, nach den Punkten 1 und 2;
 - ist nach wenigen Fehlversuchen in Folge verbraucht: Die Sitzung wird beendet, weiter geht es nur per
   Passkey;
 - darf keine triviale Folge sein (gleiche Ziffern, auf- oder absteigende Reihe).
