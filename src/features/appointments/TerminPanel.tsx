@@ -17,6 +17,7 @@ import {
 } from '@/features/session/types';
 import { Laengenzeichen } from './Laengenzeichen';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
+import { VERLAUF_ANKER } from '@/features/documentation/PatientRecordDocumentation';
 import {
   appointmentStatusLabels,
   appointmentStatusTon,
@@ -217,7 +218,9 @@ export function TerminPanel({
         {behandlung && canReadTreatmentNote(user.roles) ? (
           <Textlink
             alleinstehend
-            to={mitRueckweg(`/patienten/${eintrag.patient_id}/doku`, rueckweg)}
+            // Mit einem Tipp zur letzten Behandlung, nicht zum Kopf der Akte
+            // (BEF-058).
+            to={mitRueckweg(`/patienten/${eintrag.patient_id}/doku#${VERLAUF_ANKER}`, rueckweg)}
           >
             Bisherige Doku →
           </Textlink>
