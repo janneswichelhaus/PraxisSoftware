@@ -118,6 +118,8 @@ const kandidaten: Kandidat[] = [
     basis_issued_on: null,
     first_performed_on: null,
     last_performed_on: null,
+    cancelled_invoice_id: null,
+    cancelled_invoice_number: null,
   },
   {
     patient_id: null,
@@ -135,6 +137,8 @@ const kandidaten: Kandidat[] = [
     basis_issued_on: null,
     first_performed_on: null,
     last_performed_on: null,
+    cancelled_invoice_id: null,
+    cancelled_invoice_number: null,
   },
 ];
 

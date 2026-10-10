@@ -106,6 +106,8 @@ const kandidaten: Kandidat[] = [
     basis_issued_on: '2026-07-15',
     first_performed_on: '2026-07-22',
     last_performed_on: '2026-08-27',
+    cancelled_invoice_id: null,
+    cancelled_invoice_number: null,
   },
 ];
 
