@@ -12,6 +12,7 @@ import type {
 } from '@/features/billing/api';
 import { CatalogPage } from '@/features/billing/CatalogPage';
 import { Honorarvereinbarung } from '@/features/billing/Honorarvereinbarung';
+import { InvoiceDetailPage } from '@/features/billing/InvoiceDetailPage';
 import { InvoicePrintPage } from '@/features/billing/InvoicePrintPage';
 import { InvoicesPage } from '@/features/billing/InvoicesPage';
 import { rechnungsansicht } from '@/features/billing/testdaten';
@@ -24,7 +25,10 @@ import '@/index.css';
  * `?seite=katalog` (Standard: Preisliste in Kraft und Entwurf mit
  * Terminhonorar), `?seite=akte` (Honorar in der Akte, als owner),
  * `?seite=rechnungen` (Arbeitsliste je Verordnung) und `?seite=blatt`
- * (Rechnung mit Positionen und Behandlungstagen). Die Daten liegen vorab im
+ * (Rechnung mit Positionen und Behandlungstagen). Seit UX-EPIC-008
+ * `?seite=entwurf` (Entwurf an eine Beihilfestelle: Rückfrage vor dem
+ * Ausstellen, Empfänger bearbeiten); die Arbeitsliste trägt dazu eine Zeile
+ * aus einer stornierten Rechnung. Die Daten liegen vorab im
  * Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'katalog';
@@ -32,6 +36,9 @@ const seite = new URLSearchParams(window.location.search).get('seite') ?? 'katal
 const ERIKA = '66666666-6666-4666-8666-000000000002';
 const GRUNDLAGE = '88888888-8888-4888-8888-000000000004';
 const AUSGESTELLT = 'dddddddd-dddd-4ddd-8ddd-000000000003';
+const ENTWURF = 'dddddddd-dddd-4ddd-8ddd-000000000004';
+const STORNIERT = 'dddddddd-dddd-4ddd-8ddd-000000000005';
+const BEIHILFE = 'eeeeeeee-eeee-4eee-8eee-000000000001';
 
 const versionen: KatalogVersion[] = [
   {
@@ -108,6 +115,28 @@ const kandidaten: Kandidat[] = [
     last_performed_on: '2026-08-27',
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
+    draft_replaces_invoice_number: null,
+  },
+  // UX-008b: Leistungen aus einer stornierten Rechnung - nur die Korrektur führt weiter.
+  {
+    patient_id: '66666666-6666-4666-8666-000000000003',
+    training_relationship_id: null,
+    patient_name: 'Max Mustermann',
+    period_month: '2026-08-01',
+    service_area: 'therapy',
+    service_count: 3,
+    total_cents: 42_000,
+    currency: 'EUR',
+    has_draft: false,
+    draft_id: null,
+    treatment_basis_id: null,
+    basis_kind: null,
+    basis_issued_on: null,
+    first_performed_on: null,
+    last_performed_on: null,
+    cancelled_invoice_id: STORNIERT,
+    cancelled_invoice_number: 'RG-2026-0009',
+    draft_replaces_invoice_number: null,
   },
 ];
 
@@ -220,6 +249,43 @@ client.setQueryData(
   ),
 );
 
+// UX-EPIC-008: ein Entwurf an eine hinterlegte Beihilfestelle.
+client.setQueryData(
+  ['rechnung', ENTWURF],
+  rechnungsansicht(
+    { id: ENTWURF, patient_id: ERIKA, recipient_id: BEIHILFE },
+    {
+      ...dokument,
+      recipient: {
+        kind: 'aid_authority',
+        name: 'Beihilfestelle Testland',
+        street: 'Amtsweg',
+        house_number: '1',
+        postal_code: '72072',
+        city: 'Tuebingen',
+        reference: 'BH-2026-0042',
+      },
+      patient: { name: 'Erika Beispiel', date_of_birth: '1963-09-17' },
+    },
+  ),
+);
+client.setQueryData(
+  ['rechnungsempfaenger', ERIKA],
+  [
+    {
+      id: BEIHILFE,
+      recipient_kind: 'aid_authority',
+      name: 'Beihilfestelle Testland',
+      street: 'Amtsweg',
+      house_number: '1',
+      postal_code: '72072',
+      city: 'Tuebingen',
+      reference: 'BH-2026-0042',
+      is_default: true,
+    },
+  ],
+);
+
 const user: CurrentUser = {
   profile: {
     id: '11111111-1111-4111-8111-000000000001',
@@ -244,7 +310,9 @@ const start =
       ? '/abrechnung/rechnungen'
       : seite === 'blatt'
         ? `/abrechnung/rechnungen/${AUSGESTELLT}/blatt`
-        : '/abrechnung/katalog';
+        : seite === 'entwurf'
+          ? `/abrechnung/rechnungen/${ENTWURF}`
+          : '/abrechnung/katalog';
 
 const router = createMemoryRouter(
   [
@@ -259,6 +327,10 @@ const router = createMemoryRouter(
     },
     { path: '/abrechnung/rechnungen', element: rahmen(<InvoicesPage user={user} />) },
     { path: '/abrechnung/rechnungen/:invoiceId/blatt', element: <InvoicePrintPage /> },
+    {
+      path: '/abrechnung/rechnungen/:invoiceId',
+      element: rahmen(<InvoiceDetailPage user={user} />),
+    },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },
   ],
   { initialEntries: [start] },

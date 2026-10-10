@@ -344,6 +344,24 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     await waitFor(() => expect(setzeRollen).toHaveBeenCalledWith(anna.id, ['therapist']));
   });
 
+  it('zeigt einen Fehlschlag beim Entziehen in der offenen Rückfrage (BEF-064)', async () => {
+    const user = userEvent.setup();
+    fetchStaffAccount.mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'owner'] });
+    setzeRollen.mockRejectedValue(new ZugangsError('last_owner_required'));
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Praxisinhaber' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, Rolle entziehen' }));
+
+    const kasten = screen.getByRole('group', { name: 'Rollen speichern – Rückfrage' });
+    await waitFor(() =>
+      expect(kasten).toHaveTextContent(/Die letzte aktive Praxisinhaber:in behält ihre Rolle/),
+    );
+    // Einmal, in der Rückfrage - nicht noch ein zweites Mal darunter.
+    expect(screen.getAllByText(/Die letzte aktive Praxisinhaber:in/)).toHaveLength(1);
+  });
+
   it('entzieht nach „Abbrechen“ nichts (BEF-064)', async () => {
     const user = userEvent.setup();
     fetchStaffAccount.mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'office'] });

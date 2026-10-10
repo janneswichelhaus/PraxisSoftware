@@ -1112,7 +1112,7 @@ function Empfaengerwahl({ ansicht, patientId }: { ansicht: Rechnungsansicht; pat
     } else {
       // Der Entwurf wird aus den Stammdaten gebaut und zeigt die Änderung.
       await queryClient.invalidateQueries({ queryKey: ['rechnung', ansicht.id] });
-      setMeldung('Empfänger geändert. Ausgestellte Rechnungen behalten ihre Angaben.');
+      setMeldung('Empfänger geändert. Das Blatt ausgestellter Rechnungen bleibt, wie es ist.');
     }
   }
 
@@ -1277,10 +1277,12 @@ function Empfaengerformular({
 
   return (
     <div className="mt-4 flex max-w-xl flex-col gap-4">
+      {/* „Das Blatt": Rechnungsliste und offene Posten lesen den Namen noch
+          aus den Stammdaten, nicht aus dem Snapshot (BEF-141). */}
       {bestehend ? (
         <p className="text-ink-muted text-sm">
-          Die Änderung gilt für alle Entwürfe an diesen Empfänger; ausgestellte Rechnungen behalten
-          ihre Angaben.
+          Die Änderung gilt für alle Entwürfe an diesen Empfänger; das Blatt ausgestellter
+          Rechnungen bleibt, wie es ist.
         </p>
       ) : null}
       <Select
@@ -1425,6 +1427,9 @@ function Entwurfsaktionen({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  // Nach einem Fehlschlag ist die Rückfrage zu; der Fokus geht an den
+  // Hinweis, der sagt, was fehlt (Zweitreview H5).
+  const fehlerKasten = useRef<HTMLDivElement>(null);
   const ausstellen = useMutation({
     mutationFn: () => stelleRechnungAus(ansicht.id),
     onSuccess: async (nummer) => {
@@ -1452,34 +1457,36 @@ function Entwurfsaktionen({
     <Section titel="Entwurf" ebene={2}>
       {/* Was das Ausstellen bedeutet, steht in der Rückfrage - dort, wo
           entschieden wird (BEF-063, UX-005i). */}
-      {ausstellen.error instanceof KeineStammdaten ? (
-        <div className="mt-2">
-          <StammdatenFehlen
-            ton="fehler"
-            darfPflegen={darfStammdaten}
-            folge="Ohne sie lässt sich keine Rechnung ausstellen."
-          />
-        </div>
-      ) : ausstellen.error instanceof AnschriftUnvollstaendig ? (
-        // ABN-020 (BEF-111): Der Server nennt, was fehlt; die Seite führt
-        // dorthin, wo es zu ergänzen ist - an der Akte, wenn die Rechnung an
-        // die Person selbst geht.
-        <Statusmeldung ton="fehler" className="mt-2">
-          {ausstellen.error.message}
-          {ansicht.patient_id && !ansicht.recipient_id ? (
-            <>
-              {' '}
-              <Textlink to={`/patienten/${ansicht.patient_id}/stammdaten`}>
-                Zu den Stammdaten
-              </Textlink>
-            </>
-          ) : null}
-        </Statusmeldung>
-      ) : ausstellen.isError ? (
-        <Statusmeldung ton="fehler" className="mt-2">
-          {ausstellen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
-        </Statusmeldung>
-      ) : null}
+      <div ref={fehlerKasten} tabIndex={-1} className="outline-none">
+        {ausstellen.error instanceof KeineStammdaten ? (
+          <div className="mt-2">
+            <StammdatenFehlen
+              ton="fehler"
+              darfPflegen={darfStammdaten}
+              folge="Ohne sie lässt sich keine Rechnung ausstellen."
+            />
+          </div>
+        ) : ausstellen.error instanceof AnschriftUnvollstaendig ? (
+          // ABN-020 (BEF-111): Der Server nennt, was fehlt; die Seite führt
+          // dorthin, wo es zu ergänzen ist - an der Akte, wenn die Rechnung an
+          // die Person selbst geht.
+          <Statusmeldung ton="fehler" className="mt-2">
+            {ausstellen.error.message}
+            {ansicht.patient_id && !ansicht.recipient_id ? (
+              <>
+                {' '}
+                <Textlink to={`/patienten/${ansicht.patient_id}/stammdaten`}>
+                  Zu den Stammdaten
+                </Textlink>
+              </>
+            ) : null}
+          </Statusmeldung>
+        ) : ausstellen.isError ? (
+          <Statusmeldung ton="fehler" className="mt-2">
+            {ausstellen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+          </Statusmeldung>
+        ) : null}
+      </div>
 
       {/* BEF-063 (Jannes 2026-10-09): Ausstellen vergibt eine Nummer und
           macht die Rechnung unveränderlich - deshalb eine Rückfrage mit den
@@ -1494,7 +1501,11 @@ function Entwurfsaktionen({
           bestaetigen="Ja, Rechnung ausstellen"
           bestaetigenLaeuft="Wird ausgestellt …"
           laeuft={ausstellen.isPending}
-          onBestaetigen={() => ausstellen.mutateAsync().catch(() => undefined)}
+          onBestaetigen={() =>
+            ausstellen.mutateAsync().catch(() => {
+              fehlerKasten.current?.focus();
+            })
+          }
           onAbbrechen={() => ausstellen.reset()}
         >
           <Kontrollwerte ansicht={ansicht} />

@@ -48,6 +48,7 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     last_performed_on: null,
     cancelled_invoice_id: null,
     cancelled_invoice_number: null,
+    draft_replaces_invoice_number: null,
     ...rest,
   };
 }
@@ -246,6 +247,7 @@ describe('InvoicesPage', () => {
       kandidat({
         cancelled_invoice_id: 'alt-1',
         cancelled_invoice_number: 'RG-2026-0007',
+        draft_replaces_invoice_number: null,
         has_draft: true,
         draft_id: 'e1',
       }),
@@ -263,6 +265,40 @@ describe('InvoicesPage', () => {
     expect(
       screen.queryByRole('button', { name: 'Korrekturrechnung erstellen' }),
     ).not.toBeInTheDocument();
+  });
+
+  it('nennt die wartende Korrektur, wenn zwei Stornos in einer Klammer liegen (ANN-321)', async () => {
+    fetchKandidaten.mockResolvedValue([
+      kandidat({
+        cancelled_invoice_id: 'alt-1',
+        cancelled_invoice_number: 'RG-2026-0007',
+        has_draft: true,
+        draft_id: 'k2',
+        draft_replaces_invoice_number: 'RG-2026-0008',
+      }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(
+      await screen.findByText(
+        'Für diesen Zeitraum steht die Korrektur zu RG-2026-0008 als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu RG-2026-0007 erstellen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/ohne Bezug/)).not.toBeInTheDocument();
+  });
+
+  it('hängt an einen Hinweis mit eigenem Weg keinen Satz zur Verbindung (UX-008b)', async () => {
+    const nutzer = userEvent.setup();
+    const { WegHinweis } = await import('./api');
+    fetchKandidaten.mockResolvedValue([kandidat()]);
+    createEntwurf.mockRejectedValue(new WegHinweis('Bitte die Liste neu laden.'));
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Entwurf anlegen' }));
+
+    expect(await screen.findByText('Bitte die Liste neu laden.')).toBeInTheDocument();
+    expect(screen.queryByText(/Verbindung prüfen/)).not.toBeInTheDocument();
   });
 
   it('bietet keinen zweiten Entwurf fuer denselben Monat an', async () => {

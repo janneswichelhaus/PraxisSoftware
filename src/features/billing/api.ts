@@ -421,6 +421,8 @@ const kandidatSchema = z.object({
   // weiter - der Server weist jeden anderen Entwurf ab.
   cancelled_invoice_id: z.string().nullable().default(null),
   cancelled_invoice_number: z.string().nullable().default(null),
+  /** Ist der stehende Entwurf eine Korrektur, die Nummer, die er ersetzt. */
+  draft_replaces_invoice_number: z.string().nullable().default(null),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -678,6 +680,17 @@ export async function fetchRechnung(invoiceId: string): Promise<Rechnungsansicht
 }
 
 /**
+ * Ein Fehler, der seinen Weg selbst nennt - kein Verbindungsproblem
+ * (UX-008b). Die Seite hängt daran keinen Satz zur Verbindung an.
+ */
+export class WegHinweis extends Error {
+  constructor(text: string) {
+    super(text);
+    this.name = 'WegHinweis';
+  }
+}
+
+/**
  * Legt den Entwurf zu einer Zeile aus „Abzurechnen" an.
  *
  * Zwei Wege, weil es zwei Verhältnisse sind (TRN-008): Die Behandlung hängt
@@ -710,12 +723,14 @@ export async function createEntwurf(
   ) as { data: unknown; error: { message?: string } | null };
 
   if (error?.message?.includes('already exists')) {
-    throw new Error('Für diese Verordnung steht schon ein Entwurf. Bitte die Liste neu laden.');
+    throw new WegHinweis(
+      'Für diese Verordnung steht schon ein Entwurf. Bitte die Liste neu laden.',
+    );
   }
   // UX-008b: Leistungen einer stornierten Rechnung kommen nur auf deren
   // Korrekturrechnung - die Liste kannte die Herkunft beim Laden noch nicht.
   if (error?.message?.includes('billed on its correction')) {
-    throw new Error(
+    throw new WegHinweis(
       'Diese Leistungen stammen aus einer stornierten Rechnung. Bitte die Liste neu laden und dort die Korrekturrechnung erstellen.',
     );
   }
@@ -850,12 +865,12 @@ export async function erstelleKorrektur(invoiceId: string): Promise<string> {
   // BEF-062: Ehrlich statt „Er ist die Korrektur.“ - der stehende Entwurf
   // hat keinen Bezug zur stornierten Rechnung (UX-008b).
   if (error?.message?.includes('already exists')) {
-    throw new Error(
-      'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen und die Korrekturrechnung hier neu erstellen.',
+    throw new WegHinweis(
+      'Für diesen Zeitraum steht schon ein Entwurf. Ist er die Korrektur einer anderen stornierten Rechnung, bitte erst ihn ausstellen; sonst ihn verwerfen und die Korrekturrechnung hier neu erstellen.',
     );
   }
   if (error?.message?.includes('no billable services')) {
-    throw new Error(
+    throw new WegHinweis(
       'Es gibt keine offenen Leistungen mehr für diesen Zeitraum – die Korrektur hätte keine Zeile.',
     );
   }

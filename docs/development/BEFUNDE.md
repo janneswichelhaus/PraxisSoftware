@@ -988,3 +988,31 @@ Patientenliste umbrechen statt kürzen.
 **Entscheidung (Jannes, 2026-10-10).** (1) Der Aufklapper „Organisatorisches und Kommunikation“ am Ende der Übersicht fällt weg; „Panne melden“ bleibt im Fuhrpark erreichbar. (2) „Telefon (geschäftlich)“ verschwindet aus dem Formular; die Spalte `phone_work` bleibt, damit Auskunft, Zusammenführen und Bestand unberührt sind. (3) „Andere Ziel-App prüfen (für die Gerätebewertung)“ unter der Tourliste fällt weg, sobald die Sichtung Kartendienst die Gerätebewertung abgeschlossen hat.
 
 **Erwartet.** (1) und (2) in einem Loop, nur Oberfläche: Komponenten und Tests anpassen, Sichtprüfung bei 375 und 1280 px. Ob ein vorhandener Wert in `phone_work` noch lesend erscheint, entscheidet der Loop als Annahme. (3) nach der Sichtung Kartendienst, mit der Sichtungsdatei.
+
+### BEF-141 — Rechnungsliste, offene Posten und Zahlungen zeigen bei ausgestellten Rechnungen den heutigen Empfängernamen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Abrechnung: Rechnungsliste, offene Posten, Zahlungen, Suche |
+| Quelle  | Zweitreview UX-EPIC-008 (S3) |
+| Status  | offen |
+| Berührt | `list_invoices`, `list_open_items`, `list_payments` (`supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`); ADR-009 Punkt 10 |
+
+**Beobachtung.** Seit UX-008c lassen sich Empfänger bearbeiten. Das Blatt und die Zahlungserinnerung lesen den Snapshot und bleiben gleich; die drei Listen und die Suche lesen den Namen aber live aus `invoice_recipients` und zeigen bei ausgestellten und stornierten Rechnungen den geänderten Namen.
+
+**Erwartet.** Einzel-Story-Loop im kritischen Pfad: Für `status = 'issued'` den Empfänger aus `snapshot -> 'recipient'` lesen, die Suche ebenso; Datenbanktest „Empfänger geändert, Liste zeigt den alten Namen“. Bis dahin sagt die Oberfläche nur, dass das Blatt bleibt.
+
+### BEF-142 — Der Einwilligungstext der Plattform verspricht beim Widerruf „alle Fotos“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Plattform: Einwilligungen (`src/features/platform/einwilligungstexte.ts`) |
+| Quelle  | UX-008a, beim Prüfen des Foto-Widerrufs |
+| Status  | offen |
+| Berührt | `einwilligungstexte.ts` (Zweck `patient_photos`, Satz zum Widerruf); ADR-017 Punkt 46 |
+
+**Beobachtung.** Der Satz „Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.“ stimmt nicht: Der Widerruf löscht die Arbeitshilfen; Dokumentationsfotos gehören zur Akte und bleiben (ADR-017 Punkt 46). In der Praxis ist der Satz mit UX-008a berichtigt.
+
+**Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.

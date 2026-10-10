@@ -73,6 +73,7 @@ interface Kandidat {
   draft_id: string | null;
   cancelled_invoice_id: string | null;
   cancelled_invoice_number: string | null;
+  draft_replaces_invoice_number: string | null;
 }
 
 interface Ansicht {
@@ -903,6 +904,102 @@ describe('Storno und Korrektur', () => {
       await expect(
         asUserCommitted(users.office, ENTWURF_GRUNDLAGE, [GRUNDLAGE]),
       ).resolves.toBeDefined();
+    });
+
+    /** Zwei Rechnungen derselben Klammer, beide ausgestellt und storniert. */
+    async function zweiStornos(grundlage: string | null) {
+      const auf = async (terminId: string) => {
+        if (grundlage)
+          await asPostgres('update public.appointments set treatment_basis_id = $1 where id = $2', [
+            grundlage,
+            terminId,
+          ]);
+      };
+      const entwurf = async () =>
+        grundlage
+          ? asUserCommitted<{ id: string }>(users.office, ENTWURF_GRUNDLAGE, [grundlage])
+          : asUserCommitted<{ id: string }>(users.office, ENTWURF, [patients.erika, await monat()]);
+
+      await auf(await leistung(KATALOG.kg, 30));
+      const s1 = (await entwurf()).rows[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [s1]);
+      // Eine nachgereichte Leistung: eine zweite Rechnung derselben Klammer.
+      await auf(await leistung(KATALOG.mt, 20));
+      const s2 = (await entwurf()).rows[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [s2]);
+      await storniere(s1);
+      await storniere(s2);
+      return { s1, s2 };
+    }
+
+    async function positionen(invoiceId: string): Promise<string[]> {
+      const { rows } = await asPostgres<{ code: string }>(
+        `select c.code from public.invoice_items it
+           join public.billable_services b on b.id = it.billable_service_id
+           join public.service_catalog_items c on c.id = b.catalog_item_id
+          where it.invoice_id = $1 order by c.code`,
+        [invoiceId],
+      );
+      return rows.map((r) => r.code);
+    }
+
+    for (const fall of ['Monat', 'Verordnung'] as const) {
+      it(`gibt zwei Stornos derselben Klammer je eine eigene Korrektur (${fall}, Zweitreview B1)`, async () => {
+        const grundlage = fall === 'Verordnung' ? GRUNDLAGE : null;
+        const { s1, s2 } = await zweiStornos(grundlage);
+        const nummer = async (id: string) =>
+          (
+            await asPostgres<{ n: string }>(
+              'select invoice_number as n from public.invoices where id = $1',
+              [id],
+            )
+          ).rows[0]!.n;
+
+        // Die Arbeitsliste nennt die zuletzt ausgestellte.
+        const vorher = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+        expect(vorher).toHaveLength(1);
+        expect(vorher[0]!.cancelled_invoice_id).toBe(s2);
+
+        // Die Korrektur von s2 nimmt nur, was s2 freigegeben hat.
+        const c2 = (await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [s2])).rows[0]!
+          .id;
+        expect(await positionen(c2)).toEqual(await positionen(s2));
+
+        // s1 wartet sichtbar, bis die Korrektur von s2 steht.
+        const dazwischen = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+        expect(dazwischen[0]!.cancelled_invoice_id).toBe(s1);
+        expect(dazwischen[0]!.has_draft).toBe(true);
+        expect(dazwischen[0]!.draft_replaces_invoice_number).toBe(await nummer(s2));
+        await expect(asUserCommitted(users.office, KORREKTUR, [s1])).rejects.toThrow(
+          /already exists/,
+        );
+
+        await asUserCommitted(users.office, AUSSTELLEN, [c2]);
+        const c1 = (await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [s1])).rows[0]!
+          .id;
+        expect(await positionen(c1)).toEqual(await positionen(s1));
+        await asUserCommitted(users.office, AUSSTELLEN, [c1]);
+
+        expect((await asUser<Kandidat>(users.office, KANDIDATEN)).rows).toEqual([]);
+        expect((await ansicht(c1)).replaces_invoice_id).toBe(s1);
+        expect((await ansicht(c2)).replaces_invoice_id).toBe(s2);
+      });
+    }
+
+    it('sperrt auch den Entwurf je Verordnung', async () => {
+      await leistung(KATALOG.kg, 30);
+      await asPostgres('update public.appointments set treatment_basis_id = $1', [GRUNDLAGE]);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF_GRUNDLAGE, [
+        GRUNDLAGE,
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+      await storniere(rows[0]!.id);
+
+      await expect(asUserCommitted(users.office, ENTWURF_GRUNDLAGE, [GRUNDLAGE])).rejects.toThrow(
+        /billed on its correction/,
+      );
+      const liste = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+      expect(liste[0]!.cancelled_invoice_id).toBe(rows[0]!.id);
     });
 
     it('zeigt Rolle ohne Recht, Plattformkonto und fremder Praxis keine Herkunft (ADR-004)', async () => {

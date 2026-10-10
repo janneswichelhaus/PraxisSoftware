@@ -15,6 +15,7 @@ import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
   bereichLabels,
+  WegHinweis,
   createEntwurf,
   erstelleKorrektur,
   fetchKandidaten,
@@ -357,8 +358,11 @@ function KandidatenKarte({
       {kandidat.has_draft && storno ? (
         <>
           <Statusmeldung className="mt-2">
-            Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte
-            ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.
+            {kandidat.draft_replaces_invoice_number
+              ? // Zwei Stornos in einer Klammer: Jede bekommt ihre eigene
+                // Korrektur, nacheinander (ANN-321).
+                `Für diesen Zeitraum steht die Korrektur zu ${kandidat.draft_replaces_invoice_number} als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'} erstellen.`
+              : 'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.'}
           </Statusmeldung>
           {kandidat.draft_id ? (
             <div className="mt-3">
@@ -401,7 +405,7 @@ function KandidatenKarte({
         <Statusmeldung ton="fehler" className="mt-2">
           {/* Meldungen mit eigenem Weg sagen ihn selbst; nur eine Störung
               bekommt den Satz zur Verbindung. */}
-          {anlegen.error.message.includes('Bitte')
+          {anlegen.error instanceof WegHinweis
             ? anlegen.error.message
             : `${anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
         </Statusmeldung>

@@ -432,6 +432,9 @@ function BestehenderZugang({
   // den Zugriff - dann fragt „Rollen speichern" nach. Nur hinzufügen nicht.
   const entzogen = gespeichert.filter((rolle) => !rollen.includes(rolle));
   const speichernGesperrt = !geaendert || rollen.length === 0 || rollenSpeichern.isPending;
+  // Die Rückfrage bleibt stehen, solange gespeichert wird - sonst tauschte
+  // sie sich beim Bestätigen gegen den Knopf, und der Fokus ginge verloren.
+  const mitRueckfrage = entzogen.length > 0 && geaendert && rollen.length > 0;
 
   return (
     <div className="max-w-md">
@@ -467,14 +470,14 @@ function BestehenderZugang({
         </div>
       </fieldset>
 
-      {rollenSpeichern.isError ? (
+      {rollenSpeichern.isError && !mitRueckfrage ? (
         <Statusmeldung ton="fehler" className="mt-3">
           {sperrText(rollenSpeichern.error)}
         </Statusmeldung>
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-3">
-        {entzogen.length > 0 && !speichernGesperrt ? (
+        {mitRueckfrage ? (
           <Rueckfrage
             ausloeser="Rollen speichern"
             ausloeserVariante="primary"
@@ -482,8 +485,9 @@ function BestehenderZugang({
             bestaetigen={entzogen.length === 1 ? 'Ja, Rolle entziehen' : 'Ja, Rollen entziehen'}
             bestaetigenLaeuft="Wird gespeichert …"
             laeuft={rollenSpeichern.isPending}
-            // Ein Fehlschlag schließt die Frage; der Satz steht darüber.
-            onBestaetigen={() => rollenSpeichern.mutateAsync(rollen).catch(() => undefined)}
+            // Ein Fehlschlag bleibt in der offenen Frage stehen, mit dem Fokus.
+            fehler={rollenSpeichern.isError ? sperrText(rollenSpeichern.error) : undefined}
+            onBestaetigen={() => rollenSpeichern.mutateAsync(rollen)}
             onAbbrechen={() => rollenSpeichern.reset()}
           >
             <p className="font-medium">

@@ -224,6 +224,12 @@ describe('InvoiceDetailPage', () => {
       screen.queryByRole('group', { name: 'Rechnung ausstellen – Rückfrage' }),
     ).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Rechnung ausstellen' })).toBeInTheDocument();
+    // Der Fokus geht an den Hinweis, nicht verloren (Zweitreview H5).
+    await waitFor(() =>
+      expect(
+        screen.getByText(/In der Anschrift des Empfängers fehlt: PLZ/).closest('[tabindex="-1"]'),
+      ).toHaveFocus(),
+    );
   });
 
   it('fragt vor dem Verwerfen nach und nennt die Folge', async () => {
@@ -1293,7 +1299,9 @@ describe('InvoiceDetailPage', () => {
       ).toBeInTheDocument();
       await nutzer.click(screen.getByRole('button', { name: 'Empfänger bearbeiten' }));
 
-      expect(screen.getByText(/ausgestellte Rechnungen behalten ihre Angaben/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/das Blatt ausgestellter Rechnungen bleibt, wie es ist/),
+      ).toBeInTheDocument();
       const plz = screen.getByLabelText('PLZ');
       expect(plz).toHaveValue('7207');
       await nutzer.clear(plz);
@@ -1310,7 +1318,7 @@ describe('InvoiceDetailPage', () => {
       );
       expect(
         await screen.findByText(
-          'Empfänger geändert. Ausgestellte Rechnungen behalten ihre Angaben.',
+          'Empfänger geändert. Das Blatt ausgestellter Rechnungen bleibt, wie es ist.',
         ),
       ).toBeInTheDocument();
       // Eine Korrektur wählt nichts neu.
