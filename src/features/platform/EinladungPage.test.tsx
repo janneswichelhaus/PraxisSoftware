@@ -4,28 +4,49 @@ import userEvent from '@testing-library/user-event';
 import type * as RouterModul from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { EinloeseError, codeAusFragment } from './einladung';
+import type * as PasskeyModul from '@/features/auth/passkey';
+import type * as PinModul from '@/features/auth/appPin';
 
 /**
- * Eine Einladung zur Plattform einlösen (POR-003, ADR-023 Punkte 7 und 8).
+ * Eine Einladung zur Plattform einlösen (POR-003; ADR-023 Fassung 4,
+ * Punkte 7 und 8; ADR-025 Fassung 2, Punkt 13).
  *
- * Der Zugangsdienst ist hier eingesetzt. Geprüft wird, dass der Code aus
- * der Adresszeile verschwindet, dass jeder ungültige Code dieselbe Auskunft
- * bekommt und dass nach dem Einrichten gewöhnlich angemeldet wird.
+ * Der Zugangsdienst ist hier eingesetzt. Geprüft wird, dass der Code aus der
+ * Adresszeile verschwindet, dass jeder ungültige Code dieselbe Auskunft
+ * bekommt, dass es kein Kennwort gibt und dass nach dem Einlösen mit der
+ * Einmal-Anmeldung angemeldet und Passkey und PIN eingerichtet werden.
  */
 
 const CODE = 'AbCdEfGhIjKlMnOpQrStUvWxYz012345';
 const invoke = vi.fn();
-const signInWithPassword = vi.fn();
+const verifyOtp = vi.fn();
 const signOut = vi.fn();
 const navigate = vi.fn();
 
 vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ functions: { invoke }, auth: { signInWithPassword, signOut } }),
+  getSupabase: () => ({ functions: { invoke }, auth: { verifyOtp, signOut } }),
 }));
 
 vi.mock('react-router-dom', async (importOriginal) => ({
   ...(await importOriginal<typeof RouterModul>()),
   useNavigate: () => navigate,
+}));
+
+const anmeldenMitPasskey = vi.fn<() => Promise<void>>();
+const passkeyEinrichten = vi.fn<() => Promise<void>>();
+vi.mock('@/features/auth/passkey', async (importOriginal) => ({
+  ...(await importOriginal<typeof PasskeyModul>()),
+  anmeldenMitPasskey: () => anmeldenMitPasskey(),
+  passkeyEinrichten: () => passkeyEinrichten(),
+  passkeyMoeglich: () => true,
+}));
+
+const hatPin = vi.fn<() => Promise<boolean>>();
+const setzePin = vi.fn<(pin: string) => Promise<void>>();
+vi.mock('@/features/auth/appPin', async (importOriginal) => ({
+  ...(await importOriginal<typeof PinModul>()),
+  hatPin: () => hatPin(),
+  setzePin: (pin: string) => setzePin(pin),
 }));
 
 let sitzung: { user: { id: string; email?: string } } | null = null;
@@ -41,23 +62,36 @@ function oeffne(fragment: string) {
   return renderWithProviders(<EinladungPage />, `/einladung${fragment}`);
 }
 
-async function ausfuellen(email = 'max@patient.invalid', kennwort = 'ein-langes-kennwort') {
+async function ausfuellen(email = 'max@patient.invalid') {
   const nutzer = userEvent.setup();
   await nutzer.type(screen.getByLabelText('E-Mail-Adresse'), email);
-  await nutzer.type(screen.getByLabelText(/^Kennwort$/), kennwort);
-  await nutzer.type(screen.getByLabelText('Kennwort wiederholen'), kennwort);
-  await nutzer.click(screen.getByRole('button', { name: 'Zugang einrichten' }));
+  await nutzer.click(screen.getByRole('button', { name: 'Weiter' }));
+}
+
+function antwort(koerper: unknown, status: number) {
+  return {
+    data: null,
+    error: new Error(String(status)),
+    response: new Response(JSON.stringify(koerper), { status }),
+  };
 }
 
 beforeEach(() => {
   sitzung = null;
   invoke.mockReset().mockResolvedValue({
-    data: { ok: true, value: { purpose: 'activate', organizationName: 'Testpraxis' } },
+    data: {
+      ok: true,
+      value: { purpose: 'activate', organizationName: 'Testpraxis', tokenHash: 'einmal-hash' },
+    },
     error: null,
   });
-  signInWithPassword.mockReset().mockResolvedValue({ error: null });
+  verifyOtp.mockReset().mockResolvedValue({ error: null });
   signOut.mockReset().mockResolvedValue({ error: null });
   navigate.mockReset();
+  anmeldenMitPasskey.mockReset().mockResolvedValue(undefined);
+  passkeyEinrichten.mockReset().mockResolvedValue(undefined);
+  hatPin.mockReset().mockResolvedValue(false);
+  setzePin.mockReset().mockResolvedValue(undefined);
 });
 
 describe('codeAusFragment', () => {
@@ -70,28 +104,52 @@ describe('codeAusFragment', () => {
 });
 
 describe('EinladungPage', () => {
-  it('nimmt den Code aus der Adresszeile', async () => {
+  it('nimmt den Code aus der Adresszeile und fragt kein Kennwort', async () => {
     oeffne(`#code=${CODE}`);
     await waitFor(() => expect(window.location.hash).toBe(''));
-    expect(screen.getByRole('button', { name: 'Zugang einrichten' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Weiter' })).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Kennwort/)).toBeNull();
   });
 
-  it('richtet den Zugang ein und meldet danach gewoehnlich an', async () => {
+  it('löst ein, meldet mit der Einmal-Anmeldung an und richtet Passkey und PIN ein', async () => {
+    const nutzer = userEvent.setup();
     oeffne(`#code=${CODE}`);
     await ausfuellen(' Max@Patient.invalid ');
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
     expect(invoke).toHaveBeenCalledWith('platform-access', {
-      body: {
-        aufgabe: 'einloesen',
-        code: CODE,
-        email: 'max@patient.invalid',
-        kennwort: 'ein-langes-kennwort',
+      body: { aufgabe: 'einloesen', code: CODE, email: 'max@patient.invalid' },
+    });
+    await waitFor(() =>
+      expect(verifyOtp).toHaveBeenCalledWith({ token_hash: 'einmal-hash', type: 'magiclink' }),
+    );
+
+    await nutzer.click(
+      await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
+    );
+    expect(passkeyEinrichten).toHaveBeenCalledTimes(1);
+    await nutzer.type(await screen.findByLabelText(/^Neue PIN/), '483920');
+    await nutzer.type(screen.getByLabelText('PIN wiederholen'), '483920');
+    await nutzer.click(screen.getByRole('button', { name: 'PIN festlegen und fertig' }));
+    await waitFor(() => expect(setzePin).toHaveBeenCalledWith('483920'));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
+  });
+
+  it('richtet beim verlorenen Passkey einen neuen auf diesem Gerät ein, die PIN bleibt', async () => {
+    hatPin.mockResolvedValue(true);
+    invoke.mockResolvedValue({
+      data: {
+        ok: true,
+        value: { purpose: 'reset', organizationName: 'Testpraxis', tokenHash: 'einmal-hash' },
       },
+      error: null,
     });
-    expect(signInWithPassword).toHaveBeenCalledWith({
-      email: 'max@patient.invalid',
-      password: 'ein-langes-kennwort',
-    });
+    const nutzer = userEvent.setup();
+    oeffne(`#code=${CODE}`);
+    await ausfuellen();
+    await nutzer.click(
+      await screen.findByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
+    );
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
+    expect(setzePin).not.toHaveBeenCalled();
   });
 
   it('sagt ohne Code dasselbe wie bei einem ungueltigen', async () => {
@@ -100,36 +158,44 @@ describe('EinladungPage', () => {
   });
 
   it('zeigt fuer einen abgelehnten Code dieselbe Auskunft', async () => {
-    invoke.mockResolvedValue({
-      data: null,
-      error: new Error('400'),
-      response: new Response(JSON.stringify({ ok: false, error: 'invitation_invalid' }), {
-        status: 400,
-      }),
-    });
+    invoke.mockResolvedValue(antwort({ ok: false, error: 'invitation_invalid' }, 400));
     oeffne(`#code=${CODE}`);
     await ausfuellen();
     expect(await screen.findByText('Diese Einladung lässt sich nicht verwenden.')).toBeVisible();
-    expect(signInWithPassword).not.toHaveBeenCalled();
+    expect(verifyOtp).not.toHaveBeenCalled();
   });
 
-  it('fuehrt bei einer vergebenen Adresse an das Feld zurueck', async () => {
-    invoke.mockResolvedValue({
-      data: null,
-      error: new Error('409'),
-      response: new Response(JSON.stringify({ ok: false, error: 'email_taken' }), {
-        status: 409,
-      }),
-    });
+  it('führt bei einer vergebenen Adresse über den Passkey zum eigenen Konto', async () => {
+    invoke
+      .mockResolvedValueOnce(antwort({ ok: false, error: 'email_taken' }, 409))
+      .mockResolvedValueOnce({
+        data: { ok: true, value: { purpose: 'activate', organizationName: 'T', tokenHash: null } },
+        error: null,
+      });
     oeffne(`#code=${CODE}`);
     await ausfuellen();
     expect(await screen.findByText(/gibt es schon ein Konto/)).toBeVisible();
+    await userEvent
+      .setup()
+      .click(screen.getByRole('button', { name: 'Mit Passkey anmelden und einlösen' }));
+    await waitFor(() => expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1));
+    // Mit Sitzung ohne Adresse: Der Dienst nimmt das angemeldete Konto.
+    await waitFor(() =>
+      expect(invoke).toHaveBeenLastCalledWith('platform-access', {
+        body: { aufgabe: 'einloesen', code: CODE, email: '' },
+      }),
+    );
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
+    expect(verifyOtp).not.toHaveBeenCalled();
   });
 
-  it('prueft das Kennwort vor dem Absenden (ANN-027)', async () => {
+  it('sagt, wenn die Einmal-Anmeldung nicht gelang - der Code ist verbraucht', async () => {
+    invoke.mockResolvedValue(antwort({ ok: false, error: 'sign_in_not_created' }, 502));
     oeffne(`#code=${CODE}`);
-    await ausfuellen('max@patient.invalid', 'kurz');
-    expect(invoke).not.toHaveBeenCalled();
+    await ausfuellen();
+    expect(
+      await screen.findByText('Der Zugang ist eingerichtet, die Anmeldung gelang aber nicht.'),
+    ).toBeVisible();
   });
 
   it('sagt bei einem nicht erreichbaren Dienst, dass der Code nicht verbraucht ist', async () => {
@@ -139,14 +205,21 @@ describe('EinladungPage', () => {
     expect(await screen.findByText(/nicht verbraucht/)).toBeVisible();
   });
 
-  it('fragt erst, wenn schon jemand angemeldet ist', async () => {
-    sitzung = { user: { id: 'x', email: 'olivia.office@praxis.invalid' } };
+  it('löst mit bestehender Sitzung für dieses Konto ein oder meldet ab', async () => {
+    sitzung = { user: { id: 'x', email: 'max@patient.invalid' } };
+    invoke.mockResolvedValue({
+      data: { ok: true, value: { purpose: 'activate', organizationName: 'T', tokenHash: null } },
+      error: null,
+    });
     oeffne(`#code=${CODE}`);
-    expect(await screen.findByText(/olivia.office@praxis.invalid angemeldet/)).toBeVisible();
+    expect(await screen.findByText(/max@patient.invalid angemeldet/)).toBeVisible();
+    expect(
+      screen.getByRole('button', { name: 'Abmelden und neues Konto einrichten' }),
+    ).toBeInTheDocument();
     await userEvent
       .setup()
-      .click(screen.getByRole('button', { name: 'Abmelden und Zugang einrichten' }));
-    await waitFor(() => expect(signOut).toHaveBeenCalledWith({ scope: 'local' }));
+      .click(screen.getByRole('button', { name: 'Für dieses Konto einlösen' }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/', { replace: true }));
   });
 
   it('kennt eine Fehlerklasse als Eigenschaft', () => {

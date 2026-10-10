@@ -2,6 +2,7 @@ import { useId } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Section } from '@/components/ui/Section';
+import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { BEREICHSNAME, einstiegSchluessel, ladeEinstieg, type Plattformzugang } from './api';
 import { PLATTFORM_PFAD } from './pfade';
 import {
@@ -40,6 +41,9 @@ export function Einstellungen({ zugaenge }: { zugaenge: Plattformzugang[] }) {
           Gilt nur auf diesem Gerät. Auf einem anderen Gerät stellen Sie sie dort ein.
         </p>
       </Section>
+      {/* Anmeldung ohne Kennwort (ADR-025 Fassung 2, Punkte 10 bis 12). */}
+      <PasskeyAbschnitt rahmen />
+      <PinAbschnitt rahmen />
       <Section titel="Was die Praxis für Sie eingestellt hat" rahmen>
         <ul className="flex flex-col gap-4">
           <li>

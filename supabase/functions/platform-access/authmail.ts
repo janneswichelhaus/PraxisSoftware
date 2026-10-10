@@ -4,8 +4,9 @@
  * Ist der Hook eingeschaltet, verschickt der Anmeldedienst seine Mails nicht
  * mehr selbst, sondern ruft diese Function: mit dem Konto, der Art der Mail
  * und dem Einmal-Code. Bevor etwas hinausgeht, fragt sie die Datenbank
- * (`public.auth_email_allowed`). Einem Plattformkonto ohne per Link
- * bestätigtes Postfach geht kein Wiederherstellungslink zu — die Sperre sitzt
+ * (`public.auth_email_allowed`). Seit SEC-EPIC-002 geht **kein**
+ * Wiederherstellungslink mehr hinaus: Es gibt kein Kennwort, und ein solcher
+ * Link wäre eine Anmeldung allein per Mail (ADR-025 Punkt 9). Die Sperre sitzt
  * damit im Anmeldedienst und nicht in der Oberfläche. Abgewiesen wird
  * **stumm**: Der Anmeldedienst meldet dem Aufrufer Erfolg, wie bei einer
  * unbekannten Adresse; sonst verriete die Antwort, ob es ein Plattformkonto
@@ -126,25 +127,14 @@ export function liesAuthMail(koerper: string): AuthMail | null {
 }
 
 /**
- * Der Inhalt — dieselben Ziele wie die Vorlagen in `supabase/templates/`:
- * Der Code steht im Fragment und geht an keinen Server (ANN-043).
+ * Der Inhalt des Anmeldelinks — dasselbe Ziel wie die Vorlage in
+ * `supabase/templates/`: Der Code steht im Fragment und geht an keinen Server
+ * (ANN-043). Einen Wiederherstellungslink verschickt der Hook nicht mehr: Es
+ * gibt kein Kennwort, und ein solcher Link wäre eine Anmeldung allein per Mail
+ * (ADR-025 Punkt 9, ADR-023 Punkt 18); `handler.ts` verwirft ihn vorher.
  */
 export function authMailInhalt(mail: AuthMail, appUrl: string): Omit<Nachricht, 'an'> {
   const basis = appUrl.trim().replace(/\/+$/, '');
-  if (mail.art === 'recovery') {
-    return {
-      betreff: 'Neues Kennwort setzen',
-      text: [
-        'Guten Tag,',
-        '',
-        'für Ihren Zugang wurde ein neues Kennwort angefordert. Öffnen Sie diesen Link:',
-        '',
-        `${basis}/kennwort-neu#token_hash=${mail.tokenHash}&type=recovery`,
-        '',
-        'Der Link gilt eine Stunde und nur einmal. Wenn Sie nichts angefordert haben, können Sie diese Mail löschen.',
-      ].join('\n'),
-    };
-  }
   return {
     betreff: 'Anmeldemail für die Praxisanwendung',
     text: [

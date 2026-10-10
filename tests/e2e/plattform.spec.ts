@@ -116,6 +116,8 @@ test.describe('Plattform', () => {
       await page.goto(`${PRUEFSEITE}?seite=einladung#code=AbCdEfGhIjKlMnOpQrStUvWxYz012345`);
       await expect(page.getByRole('heading', { name: 'Ihr Zugang', level: 1 })).toBeVisible();
       await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
+      // Kein Kennwort (ADR-025 Fassung 2, Punkt 13).
+      await expect(page.getByLabel(/Kennwort/)).toHaveCount(0);
       // Der Code verlässt die Adresszeile sofort.
       await expect.poll(() => page.evaluate(() => window.location.hash)).toBe('');
       expect(await ueberlaeuft(page)).toBe(false);

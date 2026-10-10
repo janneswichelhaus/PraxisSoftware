@@ -12,13 +12,14 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
   beendeAlleSitzungen,
+  bestaetigeZweitenFaktor,
   bestaetigeMfa,
   entferneMfa,
   ladeMfaFaktoren,
   starteMfaEinrichtung,
   type MfaEinrichtung,
 } from './api';
-import { PasskeyAbschnitt, PinAbschnitt } from './Anmeldung';
+import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
@@ -319,7 +320,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
           </DetailList>
         </Section>
 
-        <PasskeyAbschnitt />
+        <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
         <PinAbschnitt />
         <ZweiterFaktor user={user} />
         <Sitzungen />

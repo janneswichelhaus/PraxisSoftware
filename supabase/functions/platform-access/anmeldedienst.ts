@@ -6,8 +6,10 @@
  * Kein Client-Paket: Die paar Aufrufe sind hier einzeln ausgeschrieben, und
  * jeder ist ohne Laufzeit prüfbar, weil `abrufen` von außen kommt.
  *
- * **Zwei Schlüssel, klar getrennt.** Der Admin-Schlüssel steht nur an den Aufrufen, die ihn brauchen: Konto anlegen, Kennwort
- * setzen, Konto entfernen und die zwei Funktionen des Zugangsdienstes.
+ * **Zwei Schlüssel, klar getrennt.** Der Admin-Schlüssel steht nur an den Aufrufen, die ihn brauchen: Konto anlegen, Einmal-Anmeldung
+ * erzeugen, Konto entfernen und die Funktionen des Zugangsdienstes. Die
+ * Sitzung der einlösenden Person prüft der Anmeldedienst mit dem
+ * öffentlichen Schlüssel.
  * Der Versand läuft mit der Sitzung der einladenden Person und dem
  * öffentlichen Schlüssel — so prüft die Datenbank ihre Rolle, nicht dieser
  * Dienst.
@@ -22,9 +24,12 @@ export interface Anmeldedienst {
   readonly einloesen: (codeHash: string, kontoId: string) => Promise<Ergebnis<string>>;
   /** Zählt einen Fehlversuch an der Einladung; nach fünf ist sie verbraucht. */
   readonly fehlversuch: (codeHash: string) => Promise<Ergebnis<null>>;
-  readonly kontoAnlegen: (email: string, kennwort: string) => Promise<Ergebnis<string>>;
-  readonly kennwortPruefen: (email: string, kennwort: string) => Promise<Ergebnis<string | null>>;
-  readonly kennwortSetzen: (kontoId: string, kennwort: string) => Promise<Ergebnis<null>>;
+  /** Legt ein Konto **ohne Kennwort** an (ADR-025 Punkt 9). */
+  readonly kontoAnlegen: (email: string) => Promise<Ergebnis<string>>;
+  /** Das Konto hinter einer Sitzung; `null` ohne gültige Sitzung. */
+  readonly sitzungskonto: (authorization: string | null) => Promise<Ergebnis<string | null>>;
+  /** Eine Einmal-Anmeldung (`token_hash`, Art `magiclink`) für das Konto, ohne Mail. */
+  readonly anmeldecode: (kontoId: string) => Promise<Ergebnis<string>>;
   /** Entfernt ein Konto über die Admin-API; ein bereits fehlendes gilt als entfernt. */
   readonly kontoEntfernen: (kontoId: string) => Promise<Ergebnis<null>>;
   /** ABN-011: die fälligen Löschaufträge des Löschlaufs abholen. */
@@ -180,16 +185,15 @@ export function erstelleAnmeldedienst({
       return { ok: false, error: 'invitation_invalid' };
     },
 
-    async kontoAnlegen(email, kennwort) {
-      // Bestätigt für die Anmeldung: Die Übergabe vor Ort bzw. die Mail an die
-      // Adresse im Verhältnis hat die Person geprüft (ADR-023 Punkt 11). Für
-      // die Wiederherstellung per Mail zählt das NICHT - dafür gibt es das
-      // eigene Merkmal eines per Link bestätigten Postfachs (ABN-012, BEF-118).
-      // Die Marke `platform_account` lässt den Löschlauf ein Konto finden,
-      // das nie gebunden wurde (Zweitreview, ANN-189).
+    async kontoAnlegen(email) {
+      // Ohne Kennwort (ADR-025 Punkt 9): Angemeldet wird mit der
+      // Einmal-Anmeldung und danach mit dem Passkey. Bestätigt für die
+      // Anmeldung: Die Übergabe vor Ort bzw. die Mail an die Adresse im
+      // Verhältnis hat die Person geprüft (ADR-023 Punkt 11). Die Marke
+      // `platform_account` lässt den Löschlauf ein Konto finden, das nie
+      // gebunden wurde (Zweitreview, ANN-189).
       const r = await rufe('/auth/v1/admin/users', 'POST', admin, {
         email,
-        password: kennwort,
         email_confirm: true,
         app_metadata: { platform_account: true },
       });
@@ -199,7 +203,6 @@ export function erstelleAnmeldedienst({
         return id === null ? { ok: false, error: 'unavailable' } : { ok: true, value: id };
       }
       const schluessel = fehlerschluessel(r.daten);
-      if (schluessel === 'weak_password') return { ok: false, error: 'weak_password' };
       if (
         schluessel === 'email_exists' ||
         schluessel === 'user_already_exists' ||
@@ -210,39 +213,39 @@ export function erstelleAnmeldedienst({
       return { ok: false, error: 'invalid_request' };
     },
 
-    async kennwortPruefen(email, kennwort) {
-      // Ein bestehendes Konto derselben Person wird mit seinem Kennwort
-      // bestätigt, nicht übernommen (ADR-023 Punkt 4, ANN-191). Mit dem
-      // öffentlichen Schlüssel - wie eine gewöhnliche Anmeldung.
-      const r = await rufe(
-        '/auth/v1/token?grant_type=password',
-        'POST',
-        { apikey: anonKey, 'Content-Type': 'application/json' },
-        { email, password: kennwort },
-      );
+    async sitzungskonto(authorization) {
+      // Ohne Kopf oder nur mit dem öffentlichen Schlüssel: keine Sitzung.
+      if (authorization === null || !/^Bearer \S+$/.test(authorization)) {
+        return { ok: true, value: null };
+      }
+      if (gleich(authorization, `Bearer ${anonKey}`)) return { ok: true, value: null };
+      const r = await rufe('/auth/v1/user', 'GET', {
+        apikey: anonKey,
+        Authorization: authorization,
+      });
       if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
       if (r.status !== 200) return { ok: true, value: null };
-      // Die Prüfung meldet an und erzeugt eine Sitzung. Die wird sofort
-      // wieder beendet (Zweitreview): Sie dient nur der Bestätigung.
-      const token = (r.daten as Record<string, unknown> | null)?.['access_token'];
-      if (typeof token === 'string') {
-        await rufe('/auth/v1/logout?scope=local', 'POST', {
-          apikey: anonKey,
-          Authorization: `Bearer ${token}`,
-        });
-      }
       return { ok: true, value: kennung(r.daten) };
     },
 
-    async kennwortSetzen(kontoId, kennwort) {
-      const r = await rufe(`/auth/v1/admin/users/${encodeURIComponent(kontoId)}`, 'PUT', admin, {
-        password: kennwort,
+    async anmeldecode(kontoId) {
+      const konto = await rufe(`/auth/v1/admin/users/${encodeURIComponent(kontoId)}`, 'GET', admin);
+      if (konto === null || konto.status !== 200) return { ok: false, error: 'unavailable' };
+      const email = (konto.daten as Record<string, unknown> | null)?.['email'];
+      if (typeof email !== 'string' || email === '') return { ok: false, error: 'unavailable' };
+      // `generate_link` verschickt nichts; der Hash geht nur an die Seite, die
+      // den Code gerade eingelöst hat, und steht in keinem Log (ADR-011).
+      const r = await rufe('/auth/v1/admin/generate_link', 'POST', admin, {
+        type: 'magiclink',
+        email,
       });
-      if (r === null || r.status >= 500) return { ok: false, error: 'unavailable' };
-      if (r.status === 200) return { ok: true, value: null };
-      return fehlerschluessel(r.daten) === 'weak_password'
-        ? { ok: false, error: 'weak_password' }
-        : { ok: false, error: 'invitation_invalid' };
+      if (r === null || r.status !== 200) return { ok: false, error: 'unavailable' };
+      const d = (r.daten ?? {}) as Record<string, unknown>;
+      const eigenschaften = (d['properties'] ?? {}) as Record<string, unknown>;
+      const hash = d['hashed_token'] ?? eigenschaften['hashed_token'];
+      return typeof hash === 'string' && hash !== ''
+        ? { ok: true, value: hash }
+        : { ok: false, error: 'unavailable' };
     },
 
     async kontoEntfernen(kontoId) {

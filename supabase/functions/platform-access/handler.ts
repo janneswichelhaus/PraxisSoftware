@@ -19,14 +19,7 @@
 import type { Anmeldedienst } from './anmeldedienst.ts';
 import { authMailInhalt, liesAuthMail, pruefeSignatur } from './authmail.ts';
 import { einladungstext, type Versandweg } from './versand.ts';
-import {
-  codeHash,
-  ADRESS_MUSTER,
-  CODE_MUSTER,
-  MAX_KENNWORT,
-  MIN_KENNWORT,
-  type ZugangsFehler,
-} from './typen.ts';
+import { codeHash, ADRESS_MUSTER, CODE_MUSTER, type ZugangsFehler } from './typen.ts';
 
 /**
  * `*`, weil die Einlöseseite ohne Sitzung aufruft und der Versand die
@@ -44,9 +37,8 @@ const STATUS: Readonly<Record<ZugangsFehler, number>> = {
   invalid_request: 400,
   invitation_invalid: 400,
   email_taken: 409,
-  weak_password: 400,
   account_conflict: 409,
-  password_not_set: 502,
+  sign_in_not_created: 502,
   session_invalid: 401,
   not_allowed: 403,
   address_changed: 409,
@@ -79,8 +71,8 @@ type Auftrag =
   | {
       readonly aufgabe: 'einloesen';
       readonly code: string;
+      /** Leer, wenn mit Sitzung eingelöst wird; dann zählt das Konto der Sitzung. */
       readonly email: string;
-      readonly kennwort: string;
     }
   | { readonly aufgabe: 'versenden'; readonly einladungId: string; readonly code: string }
   | { readonly aufgabe: 'konten_loeschen' };
@@ -103,11 +95,12 @@ async function liesAnfrage(anfrage: Request): Promise<Auftrag | ZugangsFehler> {
 
   if (d['aufgabe'] === 'einloesen') {
     const email = typeof d['email'] === 'string' ? d['email'].trim().toLowerCase() : '';
-    const kennwort = d['kennwort'];
-    if (email.length > 254 || !ADRESS_MUSTER.test(email)) return 'invalid_request';
-    if (typeof kennwort !== 'string' || kennwort.length > MAX_KENNWORT) return 'invalid_request';
-    if (kennwort.length < MIN_KENNWORT) return 'weak_password';
-    return { aufgabe: 'einloesen', code, email, kennwort };
+    if (email !== '' && (email.length > 254 || !ADRESS_MUSTER.test(email))) {
+      return 'invalid_request';
+    }
+    // Ein Kennwort nimmt der Dienst nicht mehr an (ADR-025 Punkt 9).
+    if ('kennwort' in d) return 'invalid_request';
+    return { aufgabe: 'einloesen', code, email };
   }
   if (d['aufgabe'] === 'versenden') {
     const einladungId = d['einladungId'];
@@ -151,7 +144,7 @@ export function erstelleHandler({
 
     const ergebnis =
       auftrag.aufgabe === 'einloesen'
-        ? await einloesen(anmeldedienst, auftrag)
+        ? await einloesen(anmeldedienst, auftrag, anfrage.headers.get('Authorization'))
         : await versenden(anmeldedienst, versand, appUrl, anfrage, auftrag);
 
     if (!ergebnis.ok) return fehler(ergebnis.error);
@@ -161,21 +154,35 @@ export function erstelleHandler({
 
 type Ausgang<T> = { ok: true; value: T } | { ok: false; error: ZugangsFehler };
 
+/** Was das Einlösen zurückgibt: `tokenHash` ist die Einmal-Anmeldung, `null` mit Sitzung. */
+interface Eingeloest {
+  readonly purpose: 'activate' | 'reset';
+  readonly organizationName: string;
+  readonly tokenHash: string | null;
+}
+
 /**
- * Einlösen: nachschlagen, Konto anlegen oder bestätigen, binden.
+ * Einlösen: nachschlagen, Konto anlegen oder das der Sitzung nehmen, binden,
+ * anmelden (ADR-025 Fassung 2, Punkt 13; ADR-023 Fassung 4, Punkte 7 bis 10).
  *
- * Die Datenbank prüft beim Binden alles noch einmal (Code, Zustand,
- * Praxiskonto, Person). An die Datenbank geht nur der Hash des Codes.
+ * Es gibt kein Kennwort mehr. Ein neues Konto entsteht ohne Kennwort, und
+ * zurück kommt eine Einmal-Anmeldung (`token_hash` einer `magiclink`-Anmeldung,
+ * ohne Mail erzeugt), mit der die Seite anmeldet und sofort Passkey und PIN
+ * einrichtet. Der Code ist dabei der Ausweis - so wie er bisher das Kennwort
+ * setzen durfte.
  *
- * **Eine Auskunft für „Adresse vergeben" und „Konto passt nicht"**
- * (Zweitreview): Sonst verriete der Unterschied, ob ein Kennwort zu einer
- * fremden Adresse passt. Jeder solche Fehlversuch zählt an der Einladung;
- * nach fünf ist sie verbraucht.
+ * **Ein bestehendes Konto wird nie über seine Adresse übernommen.** Wer schon
+ * eines hat, meldet sich vorher mit dem Passkey an und löst mit seiner Sitzung
+ * ein; ohne Sitzung heißt eine vergebene Adresse `email_taken`, und der
+ * Versuch zählt an der Einladung. Die Datenbank prüft beim Binden alles noch
+ * einmal (Code, Zustand, Praxiskonto, Person). An die Datenbank geht nur der
+ * Hash des Codes.
  */
 async function einloesen(
   dienst: Anmeldedienst,
   auftrag: Extract<Auftrag, { aufgabe: 'einloesen' }>,
-): Promise<Ausgang<{ purpose: 'activate' | 'reset'; organizationName: string }>> {
+  authorization: string | null,
+): Promise<Ausgang<Eingeloest>> {
   const hash = await codeHash(auftrag.code);
   const gefunden = await dienst.nachschlagen(hash);
   if (!gefunden.ok) return gefunden;
@@ -183,42 +190,37 @@ async function einloesen(
   const { purpose, accountUserId, organizationName } = gefunden.value;
 
   if (purpose === 'reset') {
-    // Ein neues Kennwort für das gebundene Konto (ADR-023 Punkt 10). Erst
-    // einlösen, dann setzen (Zweitreview): So ist der Code verbraucht, bevor
-    // sich etwas am Konto ändert, und ein zweiter Aufruf mit demselben Code
-    // setzt nichts. Die Datenbank beendet dabei die laufenden Sitzungen.
+    // Passkey verloren (ADR-025 Punkt 12, ADR-023 Punkt 10): eine
+    // Einmal-Anmeldung für das gebundene Konto. Erst einlösen, dann anmelden
+    // (Zweitreview POR-003): So ist der Code verbraucht, bevor es eine
+    // Anmeldung gibt. Die Datenbank beendet dabei die laufenden Sitzungen.
     if (accountUserId === null) return { ok: false, error: 'invitation_invalid' };
     const gebunden = await dienst.einloesen(hash, accountUserId);
     if (!gebunden.ok) return gebunden;
-    const gesetzt = await dienst.kennwortSetzen(accountUserId, auftrag.kennwort);
-    if (!gesetzt.ok) {
-      return {
-        ok: false,
-        error: gesetzt.error === 'weak_password' ? 'weak_password' : 'password_not_set',
-      };
-    }
-    return { ok: true, value: { purpose, organizationName } };
+    const anmeldung = await dienst.anmeldecode(accountUserId);
+    if (!anmeldung.ok) return { ok: false, error: 'sign_in_not_created' };
+    return { ok: true, value: { purpose, organizationName, tokenHash: anmeldung.value } };
   }
 
-  let kontoId: string;
-  let neuAngelegt = false;
-  const angelegt = await dienst.kontoAnlegen(auftrag.email, auftrag.kennwort);
-  if (angelegt.ok) {
-    kontoId = angelegt.value;
-    neuAngelegt = true;
-  } else if (angelegt.error === 'email_taken') {
-    // Ein Konto je Person (Punkt 4): Wer schon eines hat, bestätigt es mit
-    // seinem Kennwort. Ob es derselben Person gehört, prüft die Datenbank.
-    const geprueft = await dienst.kennwortPruefen(auftrag.email, auftrag.kennwort);
-    if (!geprueft.ok) return geprueft;
-    if (geprueft.value === null) {
-      await dienst.fehlversuch(hash);
-      return { ok: false, error: 'email_taken' };
+  // Mit Sitzung: das eigene, schon bestehende Konto (Punkt 4).
+  const eigenes = await dienst.sitzungskonto(authorization);
+  if (!eigenes.ok) return eigenes;
+  if (eigenes.value !== null) {
+    const gebunden = await dienst.einloesen(hash, eigenes.value);
+    if (!gebunden.ok) {
+      if (gebunden.error === 'account_conflict') await dienst.fehlversuch(hash);
+      return gebunden;
     }
-    kontoId = geprueft.value;
-  } else {
+    return { ok: true, value: { purpose, organizationName, tokenHash: null } };
+  }
+
+  if (auftrag.email === '') return { ok: false, error: 'invalid_request' };
+  const angelegt = await dienst.kontoAnlegen(auftrag.email);
+  if (!angelegt.ok) {
+    if (angelegt.error === 'email_taken') await dienst.fehlversuch(hash);
     return angelegt;
   }
+  const kontoId = angelegt.value;
 
   const gebunden = await dienst.einloesen(hash, kontoId);
   if (!gebunden.ok) {
@@ -227,14 +229,16 @@ async function einloesen(
     // Konto, und der Löschlauf nimmt es, falls es ungebunden bleibt (ANN-189).
     const abgesagt =
       gebunden.error === 'invitation_invalid' || gebunden.error === 'account_conflict';
-    if (neuAngelegt && abgesagt) await dienst.kontoEntfernen(kontoId);
+    if (abgesagt) await dienst.kontoEntfernen(kontoId);
     if (gebunden.error === 'account_conflict') {
       await dienst.fehlversuch(hash);
       return { ok: false, error: 'email_taken' };
     }
     return gebunden;
   }
-  return { ok: true, value: { purpose, organizationName } };
+  const anmeldung = await dienst.anmeldecode(kontoId);
+  if (!anmeldung.ok) return { ok: false, error: 'sign_in_not_created' };
+  return { ok: true, value: { purpose, organizationName, tokenHash: anmeldung.value } };
 }
 
 /**
@@ -293,6 +297,10 @@ async function authMail(
   const mail = liesAuthMail(koerper);
   if (mail === null) return hookFehler(400, 'invalid_request');
   gesehen.set(nachricht, jetzt);
+  // Kein Kennwort, keine Wiederherstellung per Mail (ADR-025 Punkt 9): Ein
+  // solcher Link wäre eine Anmeldung allein per Mail. Stumm verworfen, für
+  // jedes Konto gleich - die Antwort verrät nichts.
+  if (mail.art === 'recovery') return antwort({}, 200);
 
   const erlaubt = await anmeldedienst.authMailErlaubt(mail.kontoId, mail.art);
   if (!erlaubt.ok) return hookFehler(502, 'unavailable');

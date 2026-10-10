@@ -6,9 +6,9 @@ import { Field } from '@/components/ui/Field';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { hatPin } from '@/features/auth/appPin';
-import { EINRICHTUNG_SCHLUESSEL } from '@/features/auth/einrichtung/einrichtungsstand';
-import { PinFestlegen } from '@/features/auth/einrichtung/PinFestlegen';
+import { hatPin } from '../appPin';
+import { EINRICHTUNG_SCHLUESSEL } from './einrichtungsstand';
+import { PinFestlegen } from './PinFestlegen';
 import {
   PASSKEY_SAETZE,
   PasskeyFehler,
@@ -16,12 +16,10 @@ import {
   ladePasskeys,
   passkeyEinrichten,
   passkeyMoeglich,
-} from '@/features/auth/passkey';
+} from '../passkey';
 
-import { bestaetigeZweitenFaktor } from './api';
-
-const PASSKEYS_SCHLUESSEL = ['passkeys'] as const;
-const PIN_SCHLUESSEL = ['app-pin'] as const;
+export const PASSKEYS_SCHLUESSEL = ['passkeys'] as const;
+export const PIN_SCHLUESSEL = ['app-pin'] as const;
 
 /** Ein Zeitpunkt des Anmeldedienstes als Kalendertag in der Zeitzone der Praxis. */
 function tag(zeitpunkt: string): string {
@@ -42,10 +40,16 @@ function satzVon(fehler: unknown): string {
  * Passkey eingerichtet oder entfernt wird. Hier wird er für diese Sitzung
  * bestätigt; danach versucht die Person es erneut.
  */
-function ZweitenFaktorBestaetigen({ onBestaetigt }: { onBestaetigt: () => void }) {
+function ZweitenFaktorBestaetigen({
+  bestaetige,
+  onBestaetigt,
+}: {
+  bestaetige: (code: string) => Promise<void>;
+  onBestaetigt: () => void;
+}) {
   const [code, setCode] = useState('');
   const bestaetigen = useMutation({
-    mutationFn: () => bestaetigeZweitenFaktor(code),
+    mutationFn: () => bestaetige(code),
     onSuccess: () => {
       setCode('');
       onBestaetigt();
@@ -82,8 +86,20 @@ function brauchtZweitenFaktor(fehler: unknown): boolean {
  * Einrichten auf diesem Gerät, die Liste mit Datum, Entfernen. Der letzte
  * Passkey lässt sich nicht entfernen: Ohne Kennwort sperrte sich das Konto
  * sonst selbst aus (ANN-327). Wer nur einen hat, sieht den Rat zum zweiten.
+ *
+ * Für Praxis- und Plattformkonten gleich (ADR-023 Punkt 17); den zweiten
+ * Faktor kennt nur „Mein Konto“ der Praxis und reicht seine Bestätigung
+ * herein.
  */
-export function PasskeyAbschnitt() {
+export function PasskeyAbschnitt({
+  bestaetigeZweitenFaktor,
+  rahmen = false,
+}: {
+  /** Nur, wo ein zweiter Faktor eingerichtet werden kann. */
+  bestaetigeZweitenFaktor?: ((code: string) => Promise<void>) | undefined;
+  /** Wie die übrigen Abschnitte der Seite (Plattform). */
+  rahmen?: boolean;
+} = {}) {
   const queryClient = useQueryClient();
   const passkeys = useQuery({ queryKey: PASSKEYS_SCHLUESSEL, queryFn: ladePasskeys, retry: false });
   const geht = passkeyMoeglich();
@@ -104,6 +120,7 @@ export function PasskeyAbschnitt() {
   return (
     <Section
       titel="Passkeys"
+      rahmen={rahmen}
       hinweis="Damit melden Sie sich an und entsperren die Anwendung – mit Gesicht, Finger oder der Sperre des Geräts."
     >
       {passkeys.isPending ? <LoadingState label="Passkeys werden geladen …" /> : null}
@@ -163,8 +180,10 @@ export function PasskeyAbschnitt() {
           <ErrorState title={satzVon(einrichten.error)} />
         </div>
       ) : null}
-      {brauchtZweitenFaktor(einrichten.error) || brauchtZweitenFaktor(entfernen.error) ? (
+      {bestaetigeZweitenFaktor &&
+      (brauchtZweitenFaktor(einrichten.error) || brauchtZweitenFaktor(entfernen.error)) ? (
         <ZweitenFaktorBestaetigen
+          bestaetige={bestaetigeZweitenFaktor}
           onBestaetigt={() => {
             einrichten.reset();
             entfernen.reset();
@@ -199,7 +218,7 @@ export function PasskeyAbschnitt() {
  * Festlegen geht nur kurz nach einer Anmeldung; `PinFestlegen` bestätigt
  * dafür mit dem Passkey (ANN-325).
  */
-export function PinAbschnitt() {
+export function PinAbschnitt({ rahmen = false }: { rahmen?: boolean } = {}) {
   const queryClient = useQueryClient();
   const pin = useQuery({ queryKey: PIN_SCHLUESSEL, queryFn: hatPin, retry: false });
   const [gesetzt, setGesetzt] = useState(false);
@@ -207,6 +226,7 @@ export function PinAbschnitt() {
   return (
     <Section
       titel="PIN"
+      rahmen={rahmen}
       hinweis="Der Rückweg, wenn der Passkey einmal nicht klappt. Sie entsperrt nur eine laufende Sitzung auf diesem Gerät und meldet nie neu an."
     >
       {pin.isPending ? <LoadingState label="Stand wird geladen …" /> : null}

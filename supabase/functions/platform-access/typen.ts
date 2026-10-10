@@ -3,10 +3,13 @@
  *
  * Der Dienst hat drei Aufgaben und keine vierte:
  *
- * - `einloesen` — öffentlich, ohne Sitzung: Die eingeladene Person schickt
- *   Code, Adresse und Kennwort. Der Dienst legt das Konto beim Anmeldedienst
- *   an (oder setzt für ein bestehendes ein neues Kennwort) und bindet es an
- *   den Zugang. Den Admin-Schlüssel sieht der Browser nie (Punkt 9).
+ * - `einloesen` — öffentlich: Die eingeladene Person schickt Code und
+ *   Adresse. Der Dienst legt das Konto beim Anmeldedienst **ohne Kennwort** an
+ *   und bindet es an den Zugang; zurück kommt eine Einmal-Anmeldung
+ *   (`token_hash`), mit der die Seite anmeldet und Passkey und PIN einrichtet
+ *   (ADR-025 Fassung 2, Punkt 13; ADR-023 Fassung 4). Wer schon ein Konto
+ *   hat, ist vorher mit dem Passkey angemeldet und löst mit seiner Sitzung
+ *   ein. Den Admin-Schlüssel sieht der Browser nie (Punkt 9).
  * - `versenden` — mit der Sitzung der einladenden Person: Die Einladung
  *   geht per Mail an die Adresse, die der Server bestimmt (Punkt 10, 11).
  * - `konten_loeschen` — nur mit dem Admin-Schlüssel, für den Zeitplan des
@@ -21,14 +24,12 @@ export type ZugangsFehler =
   | 'invalid_request'
   /** Code unbekannt, abgelaufen oder benutzt — immer dieselbe Auskunft (Punkt 8). */
   | 'invitation_invalid'
-  /** Die Adresse hat schon ein Konto, und das Kennwort passt nicht dazu. */
+  /** Die Adresse hat schon ein Konto: erst mit dem Passkey anmelden, dann einlösen. */
   | 'email_taken'
-  /** Das Kennwort erfüllt die Mindestlänge nicht (ANN-027). */
-  | 'weak_password'
   /** Das Konto kann diesen Zugang nicht bekommen: Praxiskonto oder andere Person (Punkte 2, 4). */
   | 'account_conflict'
-  /** Der Code ist verbraucht, das neue Kennwort ließ sich aber nicht setzen. */
-  | 'password_not_set'
+  /** Der Code ist verbraucht, die Einmal-Anmeldung ließ sich aber nicht erzeugen. */
+  | 'sign_in_not_created'
   /** Versenden ohne gültige Sitzung. */
   | 'session_invalid'
   /** Versenden ohne Recht oder für eine Einladung, die nicht per Mail geht. */
@@ -42,10 +43,6 @@ export type ZugangsFehler =
 
 export type Ergebnis<T> =
   { readonly ok: true; readonly value: T } | { readonly ok: false; readonly error: ZugangsFehler };
-
-/** Mindestlänge des Kennworts, wie beim Anmeldedienst eingestellt (ANN-027, Punkt 17). */
-export const MIN_KENNWORT = 12;
-export const MAX_KENNWORT = 128;
 
 /** Der Code aus `invite_platform_access`: 32 Zeichen, URL-tauglich. */
 export const CODE_MUSTER = /^[A-Za-z0-9_-]{20,64}$/;

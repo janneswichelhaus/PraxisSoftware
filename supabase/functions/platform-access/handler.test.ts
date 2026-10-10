@@ -26,8 +26,8 @@ function dienst(ueberschreiben: Partial<Anmeldedienst> = {}): Anmeldedienst {
     ),
     einloesen: vi.fn(() => ok('zugang')),
     kontoAnlegen: vi.fn(() => ok(KONTO)),
-    kennwortPruefen: vi.fn(() => ok<string | null>(null)),
-    kennwortSetzen: vi.fn(() => ok(null)),
+    sitzungskonto: vi.fn(() => ok<string | null>(null)),
+    anmeldecode: vi.fn(() => ok('einmal-hash')),
     kontoEntfernen: vi.fn(() => ok(null)),
     loeschauftraege: vi.fn(() => ok<string[]>([])),
     loeschungBestaetigen: vi.fn(() => ok(null)),
@@ -61,26 +61,40 @@ const EINLOESEN = {
   aufgabe: 'einloesen',
   code: CODE,
   email: ' Max@Patient.invalid ',
-  kennwort: 'ein-langes-kennwort',
 };
 
 async function lies(antwort: Response): Promise<unknown> {
   return JSON.parse(await antwort.text()) as unknown;
 }
 
-describe('Zugangsdienst: einloesen', () => {
-  it('legt das Konto an und bindet es', async () => {
+describe('Zugangsdienst: einloesen ohne Kennwort (ADR-025 Fassung 2, Punkt 13)', () => {
+  const RESET = {
+    purpose: 'reset' as const,
+    accountUserId: KONTO,
+    organizationName: 'Testpraxis',
+  };
+
+  it('legt das Konto ohne Kennwort an, bindet es und gibt eine Einmal-Anmeldung zurueck', async () => {
     const d = dienst();
     const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
     const antwort = await handler(anfrage(EINLOESEN));
     expect(antwort.status).toBe(200);
     expect(await lies(antwort)).toEqual({
       ok: true,
-      value: { purpose: 'activate', organizationName: 'Testpraxis' },
+      value: { purpose: 'activate', organizationName: 'Testpraxis', tokenHash: 'einmal-hash' },
     });
-    expect(d.kontoAnlegen).toHaveBeenCalledWith('max@patient.invalid', 'ein-langes-kennwort');
+    expect(d.kontoAnlegen).toHaveBeenCalledWith('max@patient.invalid');
     expect(d.einloesen).toHaveBeenCalledWith(HASH, KONTO);
+    expect(d.anmeldecode).toHaveBeenCalledWith(KONTO);
     expect(d.kontoEntfernen).not.toHaveBeenCalled();
+  });
+
+  it('nimmt kein Kennwort mehr an', async () => {
+    const d = dienst();
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(anfrage({ ...EINLOESEN, kennwort: 'ein-langes-kennwort' }));
+    expect(await lies(antwort)).toEqual({ ok: false, error: 'invalid_request' });
+    expect(d.nachschlagen).not.toHaveBeenCalled();
   });
 
   it('gibt fuer einen ungueltigen Code dieselbe Auskunft, ohne ein Konto anzulegen', async () => {
@@ -92,35 +106,13 @@ describe('Zugangsdienst: einloesen', () => {
     expect(antwort.status).toBe(400);
     expect(await lies(antwort)).toEqual({ ok: false, error: 'invitation_invalid' });
     expect(d.kontoAnlegen).not.toHaveBeenCalled();
+    expect(d.anmeldecode).not.toHaveBeenCalled();
 
-    // Ein Code in falscher Form kommt gar nicht erst bis zum Nachschlagen.
     const form = await handler(anfrage({ ...EINLOESEN, code: 'kurz' }));
     expect(await lies(form)).toEqual({ ok: false, error: 'invitation_invalid' });
   });
 
-  it('verlangt ein Kennwort mit mindestens zwoelf Zeichen (ANN-027)', async () => {
-    const d = dienst();
-    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
-    const antwort = await handler(anfrage({ ...EINLOESEN, kennwort: 'zu-kurz' }));
-    expect(await lies(antwort)).toEqual({ ok: false, error: 'weak_password' });
-    expect(d.nachschlagen).not.toHaveBeenCalled();
-  });
-
-  it('bestaetigt ein bestehendes Konto mit seinem Kennwort (Punkt 4)', async () => {
-    const d = dienst({
-      kontoAnlegen: vi.fn(() =>
-        Promise.resolve({ ok: false as const, error: 'email_taken' as const }),
-      ),
-      kennwortPruefen: vi.fn(() => Promise.resolve({ ok: true as const, value: KONTO })),
-    });
-    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
-    expect((await handler(anfrage(EINLOESEN))).status).toBe(200);
-    expect(d.einloesen).toHaveBeenCalledWith(HASH, KONTO);
-    // Ein bestehendes Konto wird im Fehlerfall nie entfernt.
-    expect(d.kontoEntfernen).not.toHaveBeenCalled();
-  });
-
-  it('meldet eine vergebene Adresse, wenn das Kennwort nicht passt', async () => {
+  it('uebernimmt ein bestehendes Konto nie ueber seine Adresse (Punkt 4)', async () => {
     const d = dienst({
       kontoAnlegen: vi.fn(() =>
         Promise.resolve({ ok: false as const, error: 'email_taken' as const }),
@@ -131,6 +123,49 @@ describe('Zugangsdienst: einloesen', () => {
     expect(antwort.status).toBe(409);
     expect(await lies(antwort)).toEqual({ ok: false, error: 'email_taken' });
     expect(d.einloesen).not.toHaveBeenCalled();
+    expect(d.anmeldecode).not.toHaveBeenCalled();
+    // Der Versuch zählt an der Einladung.
+    expect(d.fehlversuch).toHaveBeenCalledWith(HASH);
+  });
+
+  it('loest mit Sitzung fuer das eigene Konto ein, ohne Konto und ohne Einmal-Anmeldung', async () => {
+    const d = dienst({
+      sitzungskonto: vi.fn(() => Promise.resolve({ ok: true as const, value: KONTO })),
+    });
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(
+      anfrage({ aufgabe: 'einloesen', code: CODE }, { Authorization: 'Bearer sitzung' }),
+    );
+    expect(await lies(antwort)).toEqual({
+      ok: true,
+      value: { purpose: 'activate', organizationName: 'Testpraxis', tokenHash: null },
+    });
+    expect(d.sitzungskonto).toHaveBeenCalledWith('Bearer sitzung');
+    expect(d.einloesen).toHaveBeenCalledWith(HASH, KONTO);
+    expect(d.kontoAnlegen).not.toHaveBeenCalled();
+    expect(d.anmeldecode).not.toHaveBeenCalled();
+  });
+
+  it('zaehlt mit Sitzung ein fremdes Konto als Fehlversuch', async () => {
+    const d = dienst({
+      sitzungskonto: vi.fn(() => Promise.resolve({ ok: true as const, value: KONTO })),
+      einloesen: vi.fn(() =>
+        Promise.resolve({ ok: false as const, error: 'account_conflict' as const }),
+      ),
+    });
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(anfrage(EINLOESEN, { Authorization: 'Bearer sitzung' }));
+    expect(await lies(antwort)).toEqual({ ok: false, error: 'account_conflict' });
+    expect(d.fehlversuch).toHaveBeenCalledWith(HASH);
+    expect(d.kontoEntfernen).not.toHaveBeenCalled();
+  });
+
+  it('verlangt ohne Sitzung eine Adresse', async () => {
+    const d = dienst();
+    const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
+    const antwort = await handler(anfrage({ aufgabe: 'einloesen', code: CODE }));
+    expect(await lies(antwort)).toEqual({ ok: false, error: 'invalid_request' });
+    expect(d.kontoAnlegen).not.toHaveBeenCalled();
   });
 
   it('entfernt ein gerade angelegtes Konto wieder, wenn das Binden scheitert', async () => {
@@ -141,56 +176,38 @@ describe('Zugangsdienst: einloesen', () => {
     });
     const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
     const antwort = await handler(anfrage(EINLOESEN));
-    // Dieselbe Auskunft wie bei einer vergebenen Adresse, und der Versuch zählt.
     expect(await lies(antwort)).toEqual({ ok: false, error: 'email_taken' });
     expect(d.kontoEntfernen).toHaveBeenCalledWith(KONTO);
     expect(d.fehlversuch).toHaveBeenCalledWith(HASH);
+    expect(d.anmeldecode).not.toHaveBeenCalled();
   });
 
-  it('setzt fuer eine Einladung zum neuen Kennwort nur das Kennwort (Punkt 10)', async () => {
+  it('gibt fuer einen verlorenen Passkey eine Einmal-Anmeldung des gebundenen Kontos (Punkt 12)', async () => {
     const d = dienst({
-      nachschlagen: vi.fn(() =>
-        Promise.resolve({
-          ok: true as const,
-          value: {
-            purpose: 'reset' as const,
-            accountUserId: KONTO,
-            organizationName: 'Testpraxis',
-          },
-        }),
-      ),
+      nachschlagen: vi.fn(() => Promise.resolve({ ok: true as const, value: RESET })),
     });
     const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
-    const antwort = await handler(anfrage(EINLOESEN));
+    const antwort = await handler(anfrage({ aufgabe: 'einloesen', code: CODE }));
     expect(await lies(antwort)).toEqual({
       ok: true,
-      value: { purpose: 'reset', organizationName: 'Testpraxis' },
+      value: { purpose: 'reset', organizationName: 'Testpraxis', tokenHash: 'einmal-hash' },
     });
     expect(d.kontoAnlegen).not.toHaveBeenCalled();
-    expect(d.kennwortSetzen).toHaveBeenCalledWith(KONTO, 'ein-langes-kennwort');
     expect(d.einloesen).toHaveBeenCalledWith(HASH, KONTO);
+    expect(d.anmeldecode).toHaveBeenCalledWith(KONTO);
   });
 
-  it('loest beim neuen Kennwort erst ein und setzt dann (Zweitreview)', async () => {
+  it('loest beim verlorenen Passkey erst ein und meldet dann an (Zweitreview)', async () => {
     const reihenfolge: string[] = [];
     const d = dienst({
-      nachschlagen: vi.fn(() =>
-        Promise.resolve({
-          ok: true as const,
-          value: {
-            purpose: 'reset' as const,
-            accountUserId: KONTO,
-            organizationName: 'Testpraxis',
-          },
-        }),
-      ),
+      nachschlagen: vi.fn(() => Promise.resolve({ ok: true as const, value: RESET })),
       einloesen: vi.fn(() => {
         reihenfolge.push('einloesen');
         return Promise.resolve({ ok: false as const, error: 'invitation_invalid' as const });
       }),
-      kennwortSetzen: vi.fn(() => {
-        reihenfolge.push('setzen');
-        return Promise.resolve({ ok: true as const, value: null });
+      anmeldecode: vi.fn(() => {
+        reihenfolge.push('anmelden');
+        return Promise.resolve({ ok: true as const, value: 'x' });
       }),
     });
     const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
@@ -198,19 +215,20 @@ describe('Zugangsdienst: einloesen', () => {
       ok: false,
       error: 'invitation_invalid',
     });
-    // Ein verbrauchter Code setzt kein Kennwort mehr.
+    // Ein verbrauchter Code meldet niemanden an.
     expect(reihenfolge).toEqual(['einloesen']);
   });
 
-  it('zaehlt ein falsches Kennwort zu einer vergebenen Adresse als Fehlversuch', async () => {
+  it('meldet eine nicht erzeugte Einmal-Anmeldung eigens', async () => {
     const d = dienst({
-      kontoAnlegen: vi.fn(() =>
-        Promise.resolve({ ok: false as const, error: 'email_taken' as const }),
+      anmeldecode: vi.fn(() =>
+        Promise.resolve({ ok: false as const, error: 'unavailable' as const }),
       ),
     });
     const handler = erstelleHandler({ anmeldedienst: d, versand: null, appUrl: '' });
-    await handler(anfrage(EINLOESEN));
-    expect(d.fehlversuch).toHaveBeenCalledWith(HASH);
+    const antwort = await handler(anfrage(EINLOESEN));
+    expect(antwort.status).toBe(502);
+    expect(await lies(antwort)).toEqual({ ok: false, error: 'sign_in_not_created' });
   });
 
   it('laesst ein neues Konto stehen, wenn offen ist, ob es gebunden wurde', async () => {
@@ -244,12 +262,11 @@ describe('Zugangsdienst: einloesen', () => {
     expect(get.status).toBe(405);
   });
 
-  it('gibt weder Code noch Adresse noch Kennwort in einer Antwort zurueck', async () => {
+  it('gibt weder Code noch Adresse in einer Antwort zurueck', async () => {
     const handler = erstelleHandler({ anmeldedienst: dienst(), versand: null, appUrl: '' });
     const text = await (await handler(anfrage(EINLOESEN))).text();
     expect(text).not.toContain(CODE);
     expect(text).not.toContain('max@patient.invalid');
-    expect(text).not.toContain('ein-langes-kennwort');
   });
 });
 

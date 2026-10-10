@@ -73,58 +73,86 @@ describe('Anmeldedienst des Zugangsdienstes', () => {
     expect(await gebunden.einloesen('code', 'konto')).toEqual({ ok: true, value: 'zugang' });
   });
 
-  it('legt Konten mit bestaetigter Adresse an und erkennt eine vergebene', async () => {
+  it('legt Konten ohne Kennwort mit bestaetigter Adresse an und erkennt eine vergebene', async () => {
     const abrufen = mitAntwort(200, { id: 'neu' });
     const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
-    expect(await dienst.kontoAnlegen('a@b.invalid', 'kennwort')).toEqual({
-      ok: true,
-      value: 'neu',
-    });
+    expect(await dienst.kontoAnlegen('a@b.invalid')).toEqual({ ok: true, value: 'neu' });
+    // Kein Kennwort im Aufruf (ADR-025 Punkt 9).
     expect(JSON.parse(abrufen.mock.calls[0]![1]!.body as string)).toEqual({
       email: 'a@b.invalid',
-      password: 'kennwort',
       email_confirm: true,
       app_metadata: { platform_account: true },
     });
+    expect(kopf(abrufen).Authorization).toBe('Bearer dienst-schluessel');
 
     const vergeben = erstelleAnmeldedienst({
       ...EINRICHTUNG,
       abrufen: mitAntwort(422, { error_code: 'email_exists' }),
     });
-    expect(await vergeben.kontoAnlegen('a@b.invalid', 'k')).toEqual({
+    expect(await vergeben.kontoAnlegen('a@b.invalid')).toEqual({
       ok: false,
       error: 'email_taken',
     });
-    const schwach = erstelleAnmeldedienst({
-      ...EINRICHTUNG,
-      abrufen: mitAntwort(422, { error_code: 'weak_password' }),
-    });
-    expect(await schwach.kontoAnlegen('a@b.invalid', 'k')).toEqual({
-      ok: false,
-      error: 'weak_password',
-    });
   });
 
-  it('prueft ein Kennwort mit dem oeffentlichen Schluessel und beendet die Sitzung wieder', async () => {
-    const abrufen = mitAntwort(200, { access_token: 'zugriff', user: { id: 'bestehend' } });
+  it('prueft die Sitzung mit dem oeffentlichen Schluessel und kennt keine ohne Kopf', async () => {
+    const abrufen = mitAntwort(200, { id: 'eigenes' });
     const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
-    expect(await dienst.kennwortPruefen('a@b.invalid', 'k')).toEqual({
-      ok: true,
-      value: 'bestehend',
-    });
+    expect(await dienst.sitzungskonto('Bearer sitzung')).toEqual({ ok: true, value: 'eigenes' });
+    expect(abrufen.mock.calls[0]![0]).toBe('https://instanz.invalid/auth/v1/user');
     expect(kopf(abrufen).apikey).toBe('oeffentlicher-schluessel');
-    expect(kopf(abrufen).Authorization).toBeUndefined();
-    // Zweitreview: Die Sitzung aus der Prüfung wird sofort beendet.
-    expect(abrufen.mock.calls[1]![0]).toBe('https://instanz.invalid/auth/v1/logout?scope=local');
+    expect(kopf(abrufen).Authorization).toBe('Bearer sitzung');
+
+    // Ohne Kopf oder nur mit dem öffentlichen Schlüssel wird gar nicht gefragt.
+    const still = mitAntwort(200, { id: 'x' });
+    const ohne = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: still });
+    expect(await ohne.sitzungskonto(null)).toEqual({ ok: true, value: null });
+    expect(await ohne.sitzungskonto('Bearer oeffentlicher-schluessel')).toEqual({
+      ok: true,
+      value: null,
+    });
+    expect(still).not.toHaveBeenCalled();
+
+    const abgelaufen = erstelleAnmeldedienst({
+      ...EINRICHTUNG,
+      abrufen: mitAntwort(401, { error_code: 'bad_jwt' }),
+    });
+    expect(await abgelaufen.sitzungskonto('Bearer alt')).toEqual({ ok: true, value: null });
+  });
+
+  it('erzeugt eine Einmal-Anmeldung ohne Mail, nur mit dem Admin-Schluessel', async () => {
+    const abrufen = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: 'konto', email: 'a@b.invalid' })))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ hashed_token: 'einmal-hash', action_link: 'x' })),
+      );
+    const dienst = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen });
+    expect(await dienst.anmeldecode('konto')).toEqual({ ok: true, value: 'einmal-hash' });
+    expect(abrufen.mock.calls[0]![0]).toBe('https://instanz.invalid/auth/v1/admin/users/konto');
+    expect(abrufen.mock.calls[1]![0]).toBe('https://instanz.invalid/auth/v1/admin/generate_link');
+    expect(JSON.parse(abrufen.mock.calls[1]![1]!.body as string)).toEqual({
+      type: 'magiclink',
+      email: 'a@b.invalid',
+    });
     expect((abrufen.mock.calls[1]![1]!.headers as Record<string, string>).Authorization).toBe(
-      'Bearer zugriff',
+      'Bearer dienst-schluessel',
     );
 
-    const falsch = erstelleAnmeldedienst({
-      ...EINRICHTUNG,
-      abrufen: mitAntwort(400, { error: 'invalid_grant' }),
+    // Die Form des SDK (`properties`) wird ebenso gelesen.
+    const sdk = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ email: 'a@b.invalid' })))
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ properties: { hashed_token: 'aus-properties' } })),
+      );
+    expect(await erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: sdk }).anmeldecode('k')).toEqual({
+      ok: true,
+      value: 'aus-properties',
     });
-    expect(await falsch.kennwortPruefen('a@b.invalid', 'k')).toEqual({ ok: true, value: null });
+
+    const ohne = erstelleAnmeldedienst({ ...EINRICHTUNG, abrufen: mitAntwort(404, {}) });
+    expect(await ohne.anmeldecode('k')).toEqual({ ok: false, error: 'unavailable' });
   });
 
   it('fragt die Adresse mit der Sitzung der einladenden Person an, nicht mit dem Dienstschluessel', async () => {

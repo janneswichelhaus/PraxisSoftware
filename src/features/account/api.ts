@@ -90,14 +90,6 @@ async function meldeVersuch(ereignis: Sicherheitsereignis): Promise<void> {
  */
 export const KENNWORT_MINDESTLAENGE = 12;
 
-export function kennwortProblem(kennwort: string, wiederholung: string): string | null {
-  if (kennwort.length < KENNWORT_MINDESTLAENGE) {
-    return `Das Kennwort braucht mindestens ${KENNWORT_MINDESTLAENGE} Zeichen.`;
-  }
-  if (kennwort !== wiederholung) return 'Die beiden Eingaben stimmen nicht überein.';
-  return null;
-}
-
 /**
  * Beendet alle Sitzungen dieses Kontos — auch die auf anderen Geräten.
  *

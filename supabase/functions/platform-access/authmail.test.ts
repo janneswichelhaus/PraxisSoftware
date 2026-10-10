@@ -19,10 +19,15 @@ const KONTO = '99999999-9999-4999-8999-000000000001';
 const AUFRUF = {
   user: { id: KONTO, email: 'erika@patient.invalid' },
   email_data: {
-    email_action_type: 'recovery',
+    email_action_type: 'magiclink',
     token_hash: 'pkce_abcdef0123456789',
     site_url: 'https://app.invalid',
   },
+};
+
+const WIEDERHERSTELLUNG = {
+  ...AUFRUF,
+  email_data: { ...AUFRUF.email_data, email_action_type: 'recovery' },
 };
 
 async function signiert(koerper: string, zeit = Math.floor(Date.now() / 1000), id = 'msg_1') {
@@ -56,8 +61,8 @@ function dienst(erlaubt: boolean): Anmeldedienst {
     einloesen: vi.fn(() => ok('')),
     fehlversuch: vi.fn(() => ok(null)),
     kontoAnlegen: vi.fn(() => ok('')),
-    kennwortPruefen: vi.fn(() => ok<string | null>(null)),
-    kennwortSetzen: vi.fn(() => ok(null)),
+    sitzungskonto: vi.fn(() => ok<string | null>(null)),
+    anmeldecode: vi.fn(() => ok('')),
     kontoEntfernen: vi.fn(() => ok(null)),
     loeschauftraege: vi.fn(() => ok<string[]>([])),
     loeschungBestaetigen: vi.fn(() => ok(null)),
@@ -100,7 +105,24 @@ describe('Mail-Hook: Signatur', () => {
 });
 
 describe('Mail-Hook: verschicken oder stumm verwerfen (ABN-012)', () => {
-  it('verwirft den Wiederherstellungslink eines Plattformkontos ohne bestätigtes Postfach stumm', async () => {
+  it('verwirft jeden Wiederherstellungslink stumm - es gibt kein Kennwort (ADR-025 Punkt 9)', async () => {
+    const d = dienst(true);
+    const v = versand();
+    const handler = erstelleHandler({
+      anmeldedienst: d,
+      versand: v,
+      appUrl: 'https://app.invalid',
+      hookGeheimnis: GEHEIMNIS,
+    });
+    const antwort = await rufe(handler, WIEDERHERSTELLUNG);
+    // Erfolg für den Anmeldedienst - wie bei einer unbekannten Adresse.
+    expect(antwort.status).toBe(200);
+    expect(await antwort.json()).toEqual({});
+    expect(d.authMailErlaubt).not.toHaveBeenCalled();
+    expect(v.sende).not.toHaveBeenCalled();
+  });
+
+  it('verwirft einen Anmeldelink stumm, wenn die Datenbank ihn nicht erlaubt (ABN-012)', async () => {
     const d = dienst(false);
     const v = versand();
     const handler = erstelleHandler({
@@ -110,10 +132,8 @@ describe('Mail-Hook: verschicken oder stumm verwerfen (ABN-012)', () => {
       hookGeheimnis: GEHEIMNIS,
     });
     const antwort = await rufe(handler, AUFRUF);
-    // Erfolg für den Anmeldedienst - wie bei einer unbekannten Adresse.
     expect(antwort.status).toBe(200);
-    expect(await antwort.json()).toEqual({});
-    expect(d.authMailErlaubt).toHaveBeenCalledWith(KONTO, 'recovery');
+    expect(d.authMailErlaubt).toHaveBeenCalledWith(KONTO, 'magiclink');
     expect(v.sende).not.toHaveBeenCalled();
   });
 
@@ -131,7 +151,7 @@ describe('Mail-Hook: verschicken oder stumm verwerfen (ABN-012)', () => {
     const nachricht = v.sende.mock.calls[0]![0] as { an: string; text: string };
     expect(nachricht.an).toBe('erika@patient.invalid');
     expect(nachricht.text).toContain(
-      'https://app.invalid/kennwort-neu#token_hash=pkce_abcdef0123456789&type=recovery',
+      'https://app.invalid/zugang#token_hash=pkce_abcdef0123456789&type=magiclink',
     );
   });
 
@@ -177,7 +197,8 @@ describe('Mail-Hook: verschicken oder stumm verwerfen (ABN-012)', () => {
   });
 
   it('kennt nur Wiederherstellung und Anmeldelink', () => {
-    expect(liesAuthMail(JSON.stringify(AUFRUF))?.art).toBe('recovery');
+    expect(liesAuthMail(JSON.stringify(WIEDERHERSTELLUNG))?.art).toBe('recovery');
+    expect(liesAuthMail(JSON.stringify(AUFRUF))?.art).toBe('magiclink');
     expect(
       liesAuthMail(
         JSON.stringify({
