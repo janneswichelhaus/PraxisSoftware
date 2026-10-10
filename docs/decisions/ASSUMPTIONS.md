@@ -3017,7 +3017,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Änderungspfad.** Büro darf freigeben: Rollenprüfung in `set_patient_file_release` · Aufwand `klein`. Freigabe je Dokumentart statt je Datei: eigene Regel in `platform_files` · Aufwand `mittel`. Ohne Protokoll des Abrufs: `issue_platform_file_link` ohne Audit-Insert – nur mit ADR-010-Änderung · Aufwand `klein`.
 
-**Abnahme (Jannes, 2026-10-09).** geändert: Der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert. Braucht neue Fassungen von ADR-023 Punkt 24, ADR-010 und PROJECT_PRINCIPLES §4 und das Label `freigabe-audit`. Umsetzung: BEF-138.
+**Abnahme (Jannes, 2026-10-09).** geändert: Der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert. Braucht neue Fassungen von ADR-023 Punkt 24, ADR-010 und PROJECT_PRINCIPLES §4 und das Label `freigabe-audit`. Umsetzung: BEF-138. **Umgesetzt (BEF-138, 2026-10-10):** ADR-010 Fassung 4 Punkt 22, ADR-023 Fassung 3 Punkt 24, Prinzipien 0.23; `issue_platform_file_link` schreibt keinen Eintrag `patient_file.downloaded` mehr, eine Vertretung liest damit höchstens einmal am Tag (`platform_representation.read`), Migration `supabase/migrations/20261022100000_bef_138_platform_file_retrieval.sql`, Test `supabase/tests/platform-files.test.ts`.
 
 ### ANN-250 — Eigene Rechnungen auf der Plattform: nur ausgestellte, als Snapshot der Praxis, mit Zahlungsstand und Storno-Kette; Recht `billing`
 
@@ -3207,7 +3207,7 @@ Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026)
 
 **Annahme.** „Meine Daten herunterladen" liefert eine JSON-Datei (und eine lesbare Fassung zum Drucken) mit genau dem, was die Plattform zeigt: Stammdaten des Verhältnisses, Termine, Terminwünsche, Befundbogen, Rechnungen (nur mit Recht auf Rechnungen), die Liste der freigegebenen Dokumente, Einwilligungen. Jeder Export steht als `patient_record.exported` im Protokoll, mit Akteur Plattformkonto oder Vertretung und Zweck `platform_export`. Die Person selbst und ihre rechtliche Vertretung exportieren, die Begleitung nicht.
 
-**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln, je Abruf protokolliert).
+**Begründung.** ADR-010 Punkt 16 nennt unter „Exporte“ die Auskunft nach Art. 15; eine neue Aktion bräuchte eine ADR-Änderung, ohne Mehrwert. Art. 15 Abs. 3 und Art. 20 verlangen eine Kopie bzw. ein gängiges maschinenlesbares Format; die Kopie der Akte bleibt der Weg in der Praxis (ADR-023 Punkt 12). Unsicher: ob die Prüfung die Dokumente selbst im Export will (heute einzeln abrufbar).
 
 **Anker.** `public.platform_export` in `supabase/migrations/20261013120000_por_018_platform_export.sql`; `Datenexport` in `src/features/platform/Datenexport.tsx`.
 

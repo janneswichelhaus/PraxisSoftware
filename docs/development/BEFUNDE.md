@@ -1464,20 +1464,3 @@ ohnehin nicht nebenbei angefasst werden.
 
 **Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`; für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
 
-### BEF-138 — Abruf freigegebener Dokumente über die Plattform nicht protokollieren
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-09 |
-| Bereich | Plattform, Unterlagen; Protokoll |
-| Quelle  | Jannes, Abnahme der Annahmen am 2026-10-09 (ANN-249) |
-| Status  | offen |
-| Berührt | ANN-249; ADR-023 Punkt 24 („jeder Dokumentabruf“); ADR-010 Punkt 16; `PROJECT_PRINCIPLES.md` §4 (Protokollkatalog); Audit-Aktion `patient_file.downloaded` über die Plattform; Workflow `audit-katalog.yml` |
-
-**Beobachtung.** Ruft eine Person ein freigegebenes Dokument über die Plattform ab, entsteht ein Auditeintrag `patient_file.downloaded` (wer, welches Dokument, wann).
-
-**Erwartet** (Jannes, 2026-10-09): Dieser Abruf wird nicht protokolliert. Die Freigabe selbst und Abrufe durch Praxisrollen bleiben, wie sie sind.
-
-Das ist eine Änderung der Protokollierung nach ADR-010: Der Loop schreibt die neuen Fassungen von ADR-023 Punkt 24, ADR-010 und des Protokollkatalogs in §4, entfernt den Eintrag in `supabase/migrations/20261010160000_por_014_platform_files.sql` per neuer Migration und passt die Tests an, die ihn heute verlangen. Der Pull Request braucht vor dem Merge das Label `freigabe-audit`, das nur Jannes setzt.
-
-*Stand 2026-10-09 (ABN-EPIC-002):* nicht in diesem Loop gebaut – er braucht einen eigenen Branch und Pull Request, die Session durfte nur auf ihren einen Branch pushen. Nächster Einzel-Story-Loop.

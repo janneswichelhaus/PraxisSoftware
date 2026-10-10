@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.22** |
+| **Dokumentversion** | **0.23** |
 | **Änderungsdatum** | **2026-10-09** |
-| Vorversion | 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -372,8 +372,8 @@ die Nachvollziehbarkeit die tragende Kompensationsmaßnahme und damit
 sicherheitskritisch. **Das Datenmodell ist die Nachweisführung:** Wer was wann
 angelegt, geändert oder finalisiert hat, zeigt die unveränderliche Akte; das
 Auditlog hält nur, was sie nicht abbildet — das Öffnen einer Akte (höchstens
-einmal je Person, Akte und Kalendertag), Herunterladen, Exporte, Zugänge und
-Rechte, abgewiesene Zugriffe. Den abschließenden Katalog, die Beschränkung auf
+einmal je Person, Akte und Kalendertag), Herunterladen durch die Praxis,
+Exporte, Zugänge und Rechte, abgewiesene Zugriffe. Den abschließenden Katalog, die Beschränkung auf
 Metadaten ohne klinische Inhalte, die Unveränderbarkeit über den
 Anwendungspfad und die Fristen regelt
 [ADR-010](docs/adr/ADR-010-audit-and-privileged-access.md); ausgewertet wird
@@ -535,7 +535,9 @@ die Ansicht der Patient:innen im Einzelnen aussieht, legt DSN-001 fest
 (`docs/development/PLATTFORM-ANSICHTEN.md`, ohne eigenen Rang).
 
 Patienten erhalten nicht automatisch Zugriff auf sämtliche internen klinischen
-oder organisatorischen Notizen. Identitätsprüfung sowie Vertretungs- und
+oder organisatorischen Notizen. Ruft die Person ein freigegebenes Dokument ab,
+wird das nicht protokolliert; nachgewiesen ist die Freigabe durch die Praxis
+(Entscheidung des Projektinhabers vom 2026-10-09, ADR-010 Punkt 22). Identitätsprüfung sowie Vertretungs- und
 Angehörigenzugriff regelt
 [ADR-023](docs/adr/ADR-023-platform-access.md): Zugriff folgt dem Zugang zu
 einem Verhältnis, nicht der Person, und Vertretung ist ein eigener Zugang mit

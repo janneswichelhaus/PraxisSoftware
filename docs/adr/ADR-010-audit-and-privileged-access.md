@@ -14,9 +14,15 @@ durch den Projektinhaber: Protokolliert wird nur noch, was das Datenmodell
 nicht abbildet (Punkte 15 bis 21). Der alte Wortlaut bleibt durchgestrichen
 lesbar. Punkte 1, 3 bis 5 und 7 bis 12 gelten unverändert.
 
+**Fassung 4 (2026-10-09, BEF-138)** — Entscheidung des Projektinhabers in der
+Abnahme der Annahmen (ANN-249): Der Abruf eines freigegebenen Dokuments durch
+die Person über die Plattform wird nicht protokolliert (neu Punkt 22, Punkt 16
+eingeschränkt). Die Menge der Aktionen bleibt gleich; alles Übrige gilt
+unverändert.
+
 ## Datum
 
-2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-10-03
+2026-08-28 · Fassung 2: 2026-09-13 · Fassung 3: 2026-10-03 · Fassung 4: 2026-10-09
 
 ## Kontext
 
@@ -124,7 +130,8 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
     - Akte geöffnet: höchstens ein Eintrag je Person, Akte und Kalendertag der
       Praxis (`patient_record.viewed`); ebenso für Trainingskund:innen
       (`training_relationship.viewed`).
-    - Datei heruntergeladen (`patient_file.downloaded`).
+    - Datei heruntergeladen (`patient_file.downloaded`), durch ein
+      Praxiskonto; der Abruf über die Plattform nicht (Punkt 22, Fassung 4).
     - Exporte: Auskunft nach Art. 15 DSGVO, Therapiebericht drucken oder
       exportieren, Foto an die Person herausgeben.
     - Portal: Vertretung liest (einmal je Tag und Akte); Zugang eingeladen,
@@ -159,6 +166,22 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
     Kontoereignisse bleiben, weil nur sie Angriffe und Fehlbedienung sichtbar
     machen. Weniger Protokoll senkt zugleich das Risiko des Protokolls selbst
     (Art. 5 Abs. 1 lit. c DSGVO).
+
+### Abruf über die Plattform (Fassung 4, 2026-10-09)
+
+22. **Ruft die Person ein freigegebenes Dokument über die Plattform ab,
+    entsteht dafür kein eigener Auditeintrag.** Nachgewiesen ist, was die
+    Praxis getan hat: Wer welches Dokument wann freigegeben hat, steht am
+    Datensatz (`released_at`, `released_by`; Punkt 15). Der Abruf gibt der
+    Person nur, was die Praxis ihr ausdrücklich zugedacht hat; ein Eintrag
+    zeigte nur, dass jemand den eigenen Arztbrief gelesen hat. Das ist
+    dieselbe Abwägung, mit der [ADR-023](ADR-023-platform-access.md) Punkt 24
+    das eigene Lesen nicht protokolliert (Art. 5 Abs. 1 lit. c DSGVO). Ruft
+    eine **Vertretung** ab, bleibt es beim Eintrag „Vertretung liest" aus
+    Punkt 16, höchstens einmal je Person, Akte und Tag: Der Abruf zählt als
+    Lesen, nicht als Herunterladen, und trägt die Frist der Leseereignisse
+    (Punkt 18). Das Herunterladen durch ein Praxiskonto bleibt
+    `patient_file.downloaded`.
 
 ## Konsequenzen
 
@@ -211,6 +234,10 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
   `storage_deletion_orders.ordered_by`, Zweifel am Zugang nach
   [ADR-023](ADR-023-platform-access.md) Punkt 13); die übrigen sind bewusst
   hingenommen (ANN-230).
+- **Fassung 4:** Ob eine Person ein freigegebenes Dokument tatsächlich
+  abgerufen hat, beantwortet das Protokoll nicht mehr. Wer das wissen muss,
+  etwa im Streit, ob ein Bericht angekommen ist, fragt die Person; die
+  Freigabe selbst ist am Datensatz nachgewiesen.
 
 ## Bewusst nicht Bestandteil dieser Entscheidung
 
@@ -253,3 +280,4 @@ Dieser ADR schließt die offenen Punkte C3, C4, C5 und E4.
 | 1 | 2026-08-28 | Angenommen. |
 | 2 | 2026-09-13 | Punkte 13 (Lesepfad: `owner`, `list_audit_events`, jedes Lesen protokolliert) und 14 (Verweisausstellung gilt als Download) ergänzen eigene Folgefragen; Konsequenz aus E15 (Office) nachgetragen; Erledigungsvermerke. Punkte 1–12 unverändert. |
 | 3 | 2026-10-03 | LOG-EPIC-001, Entscheidung des Projektinhabers: Umkehr der Punkte 2 (Katalog), 6 (Monatsreport), 13 (Lesen des Protokolls protokolliert) und 14 (Verweis gilt als Download); neu Punkte 15–21 (Leitprinzip, Katalog, Freigabe, Fristen, Auswertung bei Anlass, Zweckbindung, Art.-32-Abwägung). Punkte 1, 3–5, 7–12 unverändert. |
+| 4 | 2026-10-09 | BEF-138, Entscheidung des Projektinhabers in der Abnahme vom 2026-10-09 (ANN-249): neu Punkt 22, der Abruf eines freigegebenen Dokuments über die Plattform wird nicht protokolliert; eine Vertretung bleibt beim täglichen Eintrag „Vertretung liest"; Punkt 16 entsprechend eingeschränkt. Aktionsmenge unverändert. |

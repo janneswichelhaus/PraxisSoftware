@@ -590,7 +590,16 @@
           "status": "fertig",
           "fertig_am": "2026-10-09",
           "nachweis": "ABN-029 bis ABN-034, Zweitreview; Prinzipien 0.22, ADR-021 Fassung 3, ADR-017 Fassung 4",
-          "vermerk": "BEF-138 (Abruf über die Plattform ohne Protokoll) offen als eigener Pull Request mit freigabe-audit; Sichtung: Befund Schritte 10 bis 12"
+          "vermerk": "BEF-138 als eigener Pull Request (bef-138); Sichtung: Befund Schritte 10 bis 12"
+        },
+        {
+          "id": "bef-138",
+          "name": "BEF-138 Abruf freigegebener Dokumente über die Plattform ohne Protokoll",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "ADR-010 Fassung 4 (Punkt 22), ADR-023 Fassung 3, Prinzipien 0.23; Migration 20261022100000, platform-files.test.ts; Zweitreview",
+          "vermerk": "Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12"
         },
         {
           "id": "log-epic-001",

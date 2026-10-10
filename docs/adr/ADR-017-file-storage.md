@@ -70,7 +70,7 @@ Die produktive Geltung hängt zusätzlich an **OPS-001**, der Providerprüfung f
 Supabase nach ADR-002 (Roadmap G1: „Erst nach positivem OPS-001"). Warum der
 ADR trotzdem jetzt geschrieben wird, steht im Kontext.
 
-*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Protokolliert wird das Herunterladen einer Datei (`patient_file.downloaded`), nicht das Anzeigen; wer eine Datei gelöscht hat, steht am Löschauftrag (`ordered_by`).*
+*Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Protokolliert wird das Herunterladen einer Datei durch die Praxis (`patient_file.downloaded`), nicht das Anzeigen und nicht der Abruf über die Plattform (ADR-010 Punkt 22); wer eine Datei gelöscht hat, steht am Löschauftrag (`ordered_by`).*
 
 ## Datum
 

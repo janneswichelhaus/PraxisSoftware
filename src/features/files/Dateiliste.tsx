@@ -610,7 +610,7 @@ function Dateizeile({
               <span className="wrap-anywhere">
                 {datei.released_at
                   ? `„${datei.display_name}“ verschwindet sofort von der Plattform der Person.`
-                  : `„${datei.display_name}“ erscheint auf der Plattform der Person unter „Dokumente“. Sie kann die Datei ansehen und herunterladen; jeder Abruf steht im Protokoll.`}
+                  : `„${datei.display_name}“ erscheint auf der Plattform der Person unter „Dokumente“. Sie kann die Datei ansehen und herunterladen.`}
               </span>
             </Rueckfrage>
           ) : null}
