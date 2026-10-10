@@ -29,6 +29,7 @@ vi.mock('@/lib/abstecher', async (original) => ({
 
 const { SessionProvider } = await import('./SessionProvider');
 const { useSession } = await import('./sessionContext');
+const { useSitzungEndeteVonAussen } = await import('./sitzungsende');
 
 /** Der Ereignisrückruf, den der Anbieter beim Anmeldedienst hinterlegt hat. */
 let melde: ((ereignis: string, sitzung: unknown) => void) | undefined;
@@ -188,5 +189,79 @@ describe('SessionProvider — Grenze zwischen zwei Konten', () => {
     await screen.findByText('keine Sitzung');
 
     expect(alleAbstecherVerwerfen).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Sitzungsende von außen (BEF-047): Die Anmeldemaske soll sagen, dass die
+ * Sitzung beendet wurde - aber nur, wenn die Person es nicht selbst auf
+ * dieser Seite ausgelöst hat.
+ */
+describe('SessionProvider — Sitzungsende von außen', () => {
+  function EndeProbe() {
+    const { session, signOut: abmelden } = useSession();
+    const endeVonAussen = useSitzungEndeteVonAussen();
+    return (
+      <div>
+        <p>{session?.user?.id ?? 'keine Sitzung'}</p>
+        <p>{endeVonAussen ? 'von außen beendet' : 'kein Ende von außen'}</p>
+        <button type="button" onClick={() => void abmelden()}>
+          Abmelden
+        </button>
+      </div>
+    );
+  }
+
+  async function zeigen() {
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <EndeProbe />
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+    await screen.findByText('anna');
+  }
+
+  it('meldet ein Ende von außen - anderer Tab, anderes Gerät, abgelehnte Erneuerung', async () => {
+    await zeigen();
+    expect(screen.getByText('kein Ende von außen')).toBeInTheDocument();
+
+    act(() => melde?.('SIGNED_OUT', null));
+
+    expect(screen.getByText('von außen beendet')).toBeInTheDocument();
+  });
+
+  it('meldet nichts, wenn die Person selbst abmeldet', async () => {
+    await zeigen();
+
+    await userEvent.click(screen.getByRole('button', { name: 'Abmelden' }));
+
+    expect(await screen.findByText('keine Sitzung')).toBeInTheDocument();
+    expect(screen.getByText('kein Ende von außen')).toBeInTheDocument();
+  });
+
+  it('nimmt die Meldung mit der nächsten Anmeldung zurück', async () => {
+    await zeigen();
+    act(() => melde?.('SIGNED_OUT', null));
+    expect(screen.getByText('von außen beendet')).toBeInTheDocument();
+
+    act(() => melde?.('SIGNED_IN', sitzung('anna')));
+
+    expect(screen.getByText('kein Ende von außen')).toBeInTheDocument();
+  });
+
+  it('meldet beim ersten Blick auf eine leere Sitzung nichts', async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <SessionProvider>
+          <EndeProbe />
+        </SessionProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(await screen.findByText('keine Sitzung')).toBeInTheDocument();
+    expect(screen.getByText('kein Ende von außen')).toBeInTheDocument();
   });
 });

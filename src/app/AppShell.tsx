@@ -22,6 +22,7 @@ import {
   zeigtUnterleiste,
 } from './navigation';
 import { useSeitenwechsel } from './seitenwechsel';
+import { Profilhinweis } from './Profilhinweis';
 import { Verbindungsanzeige } from './Verbindungsanzeige';
 
 /**
@@ -297,6 +298,9 @@ export function AppShell({
             Messung der Suche in `Funktionssuche.tsx` gilt unverändert. */}
         <div ref={kopf} className="sticky top-0 z-30">
           <Verbindungsanzeige />
+          {/* Gescheitertes Nachladen des Profils (BEF-046): dieselbe Stelle,
+              damit der Hinweis mit der Kopfzeile klebt. */}
+          <Profilhinweis />
 
           <header className="nicht-drucken border-line bg-surface border-b">
             {/* Ab sm eine Zeile, auf dem Telefon zwei — durch Umbruch, nicht

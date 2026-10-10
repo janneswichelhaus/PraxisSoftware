@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { dateiAblehnungsgrund, dateiInhaltAblehnungsgrund } from './dokumentarten';
 import { nachSrgb } from './farbe';
@@ -82,7 +83,11 @@ export async function fetchPatientFiles(
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Dateien konnten nicht geladen werden.');
-  return z.array(patientFileSchema).parse(data ?? []);
+  return antwort(
+    z.array(patientFileSchema),
+    data ?? [],
+    'Die Dateien konnten nicht geladen werden.',
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -168,7 +173,11 @@ export async function ladeDateiHoch(auftrag: UploadAuftrag): Promise<string> {
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Datei konnte nicht angenommen werden. Fehlt die Berechtigung?');
-  const vorbereitet = z.array(vorbereitetSchema).parse(data ?? [])[0];
+  const vorbereitet = antwort(
+    z.array(vorbereitetSchema),
+    data ?? [],
+    'Die Datei konnte nicht angenommen werden.',
+  )[0];
   if (!vorbereitet) throw new Error('Die Datei konnte nicht angenommen werden.');
 
   try {
@@ -229,8 +238,8 @@ async function pruefeAmServer(fileId: string): Promise<string | null> {
       body: { file_id: fileId },
     })) as { data: unknown; error: unknown };
     if (error) return null;
-    const antwort = pruefantwortSchema.safeParse(data);
-    return antwort.success ? antwort.data.ergebnis : null;
+    const pruefung = pruefantwortSchema.safeParse(data);
+    return pruefung.success ? pruefung.data.ergebnis : null;
   } catch {
     return null;
   }
@@ -297,7 +306,11 @@ async function verweis(
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Datei konnte nicht geöffnet werden. Fehlt die Berechtigung?');
-  const freigabe = z.array(verweisSchema).parse(data ?? [])[0];
+  const freigabe = antwort(
+    z.array(verweisSchema),
+    data ?? [],
+    'Die Datei konnte nicht geöffnet werden.',
+  )[0];
   if (!freigabe) throw new Error('Die Datei konnte nicht geöffnet werden.');
 
   const ablage = getSupabase().storage.from(freigabe.bucket_id);
@@ -323,9 +336,9 @@ export async function ladeDateiZumAnzeigen(
   fileId: string,
 ): Promise<{ bild: Blob; mimeType: string; name: string }> {
   const { url, mimeType, name } = await verweis(fileId, false);
-  const antwort = await fetch(url, { cache: 'no-store' });
-  if (!antwort.ok) throw new Error('Die Datei konnte nicht geladen werden.');
-  const bild = new Blob([await antwort.arrayBuffer()], { type: mimeType });
+  const abruf = await fetch(url, { cache: 'no-store' });
+  if (!abruf.ok) throw new Error('Die Datei konnte nicht geladen werden.');
+  const bild = new Blob([await abruf.arrayBuffer()], { type: mimeType });
   return { bild, mimeType, name };
 }
 
@@ -401,7 +414,11 @@ export async function fetchLoeschauftraege(): Promise<Loeschauftrag[]> {
   };
 
   if (error) throw new Error('Die offenen Löschaufträge konnten nicht geladen werden.');
-  return z.array(loeschauftragSchema).parse(data ?? []);
+  return antwort(
+    z.array(loeschauftragSchema),
+    data ?? [],
+    'Die offenen Löschaufträge konnten nicht geladen werden.',
+  );
 }
 
 const auftragsschluesselSchema = z.object({
@@ -426,7 +443,11 @@ export async function fuehreLoeschauftragAus(orderId: string): Promise<void> {
   })) as { data: unknown; error: unknown; status: number };
 
   if (abgewiesen(freigabe)) throw new Error('Der Löschauftrag konnte nicht ausgeführt werden.');
-  const auftrag = z.array(auftragsschluesselSchema).parse(freigabe.data ?? [])[0];
+  const auftrag = antwort(
+    z.array(auftragsschluesselSchema),
+    freigabe.data ?? [],
+    'Der Löschauftrag konnte nicht ausgeführt werden.',
+  )[0];
   if (!auftrag) throw new Error('Der Löschauftrag ist nicht mehr offen.');
 
   const { error: entfernenFehler } = await getSupabase()
@@ -470,7 +491,11 @@ export async function fetchFehlendeDateien(): Promise<FehlendeDatei[]> {
   };
 
   if (error) throw new Error('Der Abgleich der Dateiablage konnte nicht geladen werden.');
-  return z.array(fehlendeDateiSchema).parse(data ?? []);
+  return antwort(
+    z.array(fehlendeDateiSchema),
+    data ?? [],
+    'Der Abgleich der Dateiablage konnte nicht geladen werden.',
+  );
 }
 
 export async function fetchVerwaisteAnzahl(): Promise<number> {
@@ -480,7 +505,11 @@ export async function fetchVerwaisteAnzahl(): Promise<number> {
   };
 
   if (error) throw new Error('Der Abgleich der Dateiablage konnte nicht geladen werden.');
-  return z.coerce.number().parse(data ?? 0);
+  return antwort(
+    z.coerce.number(),
+    data ?? 0,
+    'Der Abgleich der Dateiablage konnte nicht geladen werden.',
+  );
 }
 
 /**
@@ -490,7 +519,7 @@ export async function fetchVerwaisteAnzahl(): Promise<number> {
  * ausgeführt und quittiert werden wie alle anderen (ADR-017 Punkt 25 und 27).
  */
 export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
-  const antwort = (await getSupabase().rpc('order_orphaned_object_deletion')) as {
+  const ergebnis = (await getSupabase().rpc('order_orphaned_object_deletion')) as {
     data: unknown;
     error: unknown;
     status: number;
@@ -498,10 +527,14 @@ export async function merkeVerwaisteZurLoeschungVor(): Promise<number> {
 
   // Sonst meldete eine Abweisung „0 vorgemerkt" (ANN-115).
   // Zweite Sicherung: Ein gelungenes Vormerken liefert immer eine Anzahl.
-  if (abgewiesen(antwort) || antwort.data == null) {
+  if (abgewiesen(ergebnis) || ergebnis.data == null) {
     throw new Error('Die verwaisten Objekte konnten nicht vorgemerkt werden.');
   }
-  return z.coerce.number().parse(antwort.data);
+  return antwort(
+    z.coerce.number(),
+    ergebnis.data,
+    'Die verwaisten Objekte konnten nicht vorgemerkt werden.',
+  );
 }
 
 // -----------------------------------------------------------------------------
@@ -530,7 +563,11 @@ export async function fetchOffeneScans(): Promise<OffenerScan[]> {
     error: unknown;
   };
   if (error) throw new Error('Die Verordnungen zum Erfassen konnten nicht geladen werden.');
-  return z.array(offenerScanSchema).parse(data ?? []);
+  return antwort(
+    z.array(offenerScanSchema),
+    data ?? [],
+    'Die Verordnungen zum Erfassen konnten nicht geladen werden.',
+  );
 }
 
 /** Hängt den offenen Scan an die gerade erfasste Grundlage (PRX-011). */

@@ -9,6 +9,7 @@ import { Vollseite } from '@/app/Vollseite';
 import { KENNWORT_MINDESTLAENGE } from '@/features/account/api';
 import { kennwortFehler, type Kennwortfehler } from '@/features/account/kennwortFehler';
 import { useFokusNachWechsel } from '@/features/auth/fokus';
+import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 import { hinweisAngemeldet } from '@/features/auth/fremdeSitzung';
 import { useSession } from '@/features/auth/sessionContext';
 import { getSupabase } from '@/lib/supabase';
@@ -147,9 +148,11 @@ export function EinladungPage() {
           <div className="mt-4 flex flex-col gap-3">
             <Button
               onClick={() => {
-                void getSupabase()
-                  .auth.signOut({ scope: 'local' })
-                  .then(() => setZustand('formular'));
+                // Selbst ausgelöst (BEF-047): Die Seite bleibt, ohne
+                // „Ihre Sitzung wurde beendet".
+                void meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'local' })).then(() =>
+                  setZustand('formular'),
+                );
               }}
             >
               Abmelden und Zugang einrichten

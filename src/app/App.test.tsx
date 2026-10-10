@@ -6,11 +6,12 @@ import type * as KontoApi from '@/features/staff/konto-api';
 import type * as PlattformApi from '@/features/platform/api';
 
 /**
- * Die Seite „Zugang nicht vollständig eingerichtet" (MARKE-001).
+ * Die Vollseiten nach der Anmeldung (MARKE-001): Erstladen gescheitert
+ * (bis BEF-046 „Zugang nicht vollständig eingerichtet"), kein Profil, Zugang
+ * gesperrt.
  *
- * Sie ist neben der Anmeldemaske die einzige Vollseite außerhalb des
- * Anwendungsrahmens — und die einzige, die jemand **nach** erfolgreicher
- * Anmeldung zu sehen bekommt. Ohne die Marke stünde dort ein Fehlerkasten ohne
+ * Sie sind neben der Anmeldemaske die einzigen Vollseiten, die jemand
+ * **nach** erfolgreicher Anmeldung zu sehen bekommt. Ohne die Marke stünde dort ein Fehlerkasten ohne
  * Absender; wer gerade sein Kennwort eingegeben hat, sieht dann eine Seite, die
  * nicht mehr nach derselben Anwendung aussieht.
  *
@@ -56,6 +57,7 @@ vi.mock('@/features/session/useCurrentUser', async (importOriginal) => {
       isPending: false,
       isError: true,
       error: fehler,
+      refetch: vi.fn(),
     }),
   };
 });
@@ -75,21 +77,30 @@ vi.mock('@/features/platform/api', async (importOriginal) => ({
 
 const { App } = await import('./App');
 
-describe('App: Zugang nicht vollständig eingerichtet', () => {
+describe('App: Erstladen gescheitert (BEF-046)', () => {
   it('zeigt die Marke über dem Fehler, nicht nur einen nackten Kasten', () => {
     fehler = new Error('Profil konnte nicht geladen werden.');
     render(<App />);
 
     expect(screen.getByRole('img', { name: 'Own Motion' })).toBeInTheDocument();
-    expect(screen.getByText('Zugang nicht vollständig eingerichtet')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Anwendung nicht geladen' }),
+    ).toBeInTheDocument();
   });
 
-  it('nennt den Grund und bietet den Weg zurück an', () => {
-    fehler = new Error('Profil konnte nicht geladen werden.');
+  it('sagt einen festen Satz statt der Fehlermeldung und bietet zuerst „Erneut versuchen"', () => {
+    // Bis UX-006b stand hier `error.message` unter „Zugang nicht vollständig
+    // eingerichtet" - eine falsche Ursache, meist war nur das Netz weg.
+    fehler = new Error('[{"code":"invalid_type"}]');
     render(<App />);
 
-    expect(screen.getByText(/Profil konnte nicht geladen werden/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Abmelden' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Die Anwendung konnte nicht geladen werden.',
+    );
+    expect(screen.queryByText(/invalid_type/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Zugang nicht vollständig eingerichtet')).not.toBeInTheDocument();
+    const knoepfe = screen.getAllByRole('button').map((knopf) => knopf.textContent);
+    expect(knoepfe).toEqual(['Erneut versuchen', 'Abmelden']);
   });
 });
 

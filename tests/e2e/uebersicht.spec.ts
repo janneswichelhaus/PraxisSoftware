@@ -379,3 +379,27 @@ test('oeffnet mit einem Tipp auf die Karte den Termin, das „i" steht neben dem
   expect(await ziel('Testweg 7, 72072 Tuebingen')).toMatch(/^\/kalender\?termin=/);
   expect(await ziel('Erika Beispiel')).toMatch(/^\/patienten\//);
 });
+
+for (const breite of [375, 1280]) {
+  test(`laesst die Uebersicht nach einem gescheiterten Nachladen stehen und sagt es (${breite} px, BEF-046)`, async ({
+    page,
+  }) => {
+    await oeffne(page, '07:30', breite, '?ansicht=nachladefehler');
+
+    const zeile = page.getByRole('status').filter({ hasText: 'nicht aktualisieren' });
+    await expect(zeile).toHaveText(
+      /Ihr Profil ließ sich gerade nicht aktualisieren\. Eingaben bleiben erhalten\./,
+    );
+    // Die Anwendung bleibt: Kopfzeile und Tag stehen weiter da.
+    await expect(page.getByRole('button', { name: 'Abmelden' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const knopf = page.getByRole('button', { name: 'Erneut versuchen' });
+    const hoehe = await knopf.evaluate((el) => el.getBoundingClientRect().height);
+    expect(hoehe).toBeGreaterThanOrEqual(44);
+    await ohneUeberlauf(page);
+
+    await knopf.click();
+    await expect(page.getByRole('button', { name: 'Wird erneut geladen …' })).toBeDisabled();
+  });
+}

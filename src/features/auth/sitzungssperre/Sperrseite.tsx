@@ -4,6 +4,7 @@ import { ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Vollseite } from '@/app/Vollseite';
 import { getSupabase } from '@/lib/supabase';
+import { ANMELDESAETZE, anmeldesatz } from '../anmeldefehler';
 import { useFokusNachWechsel } from '../fokus';
 import { SPERRFRISTEN, type Sperrgrund } from './sperrstand';
 
@@ -57,13 +58,14 @@ export function Sperrseite({
         password: kennwort,
       });
       if (error) {
-        setFehler('Das Kennwort passt nicht. Bitte erneut eingeben.');
+        // Ein Funkloch ist kein falsches Kennwort (BEF-047).
+        setFehler(anmeldesatz(error, 'Das Kennwort passt nicht. Bitte erneut eingeben.'));
         return;
       }
       setKennwort('');
       onEntsperrt();
     } catch {
-      setFehler('Der Anmeldedienst ist derzeit nicht erreichbar.');
+      setFehler(ANMELDESAETZE.keineVerbindung);
     } finally {
       setLaeuft(false);
     }

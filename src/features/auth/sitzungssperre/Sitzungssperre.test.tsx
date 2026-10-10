@@ -285,6 +285,23 @@ describe('Sperrseite: entsperren', () => {
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
   });
 
+  it('sagt im Funkloch „keine Verbindung" statt „Kennwort passt nicht" (BEF-047)', async () => {
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+    zeichne();
+    await warte();
+    signInWithPassword.mockResolvedValue({
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' },
+    });
+    fireEvent.change(screen.getByLabelText('Kennwort'), { target: { value: 'richtig' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    await warte();
+    expect(
+      screen.getByText('Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Kennwort passt nicht/)).toBeNull();
+    expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
+  });
+
   it('kehrt nach der Freigabe zurück, mit frischem Inhalt', async () => {
     ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'hoechstdauer' });
     zeichne();
