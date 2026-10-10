@@ -296,10 +296,10 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
   it('bietet zuerst den Passkey an, die PIN erst auf Nachfrage', async () => {
     await gesperrt();
     expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
-    expect(screen.queryByLabelText(/^PIN/)).toBeNull();
+    expect(screen.queryByLabelText('PIN', { exact: true })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
     await warte();
-    expect(screen.getByLabelText(/^PIN/)).toHaveFocus();
+    expect(screen.getByLabelText('PIN', { exact: true })).toHaveFocus();
   });
 
   it('kehrt nach der Freigabe per Passkey zurück, mit frischem Inhalt', async () => {
@@ -328,7 +328,9 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
     await warte();
     gibMitPinFrei.mockResolvedValue({ art: 'frei' });
     ladeSperrstand.mockResolvedValue(offen());
-    fireEvent.change(screen.getByLabelText(/^PIN/), { target: { value: '48 39 20' } });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '48 39 20' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
     await warte();
     expect(gibMitPinFrei).toHaveBeenCalledWith('483920');
@@ -341,11 +343,13 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
     await warte();
     expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeDisabled();
     gibMitPinFrei.mockResolvedValue({ art: 'falsch', versucheUebrig: 3 });
-    fireEvent.change(screen.getByLabelText(/^PIN/), { target: { value: '111222' } });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '111222' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
     await warte();
     expect(screen.getByText('Die PIN passt nicht. Noch 3 Versuche.')).toBeInTheDocument();
-    expect(screen.getByLabelText(/^PIN/)).toHaveValue('');
+    expect(screen.getByLabelText('PIN', { exact: true })).toHaveValue('');
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
   });
 
@@ -354,7 +358,9 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
     fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
     await warte();
     gibMitPinFrei.mockResolvedValue({ art: 'verbraucht' });
-    fireEvent.change(screen.getByLabelText(/^PIN/), { target: { value: '111222' } });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '111222' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
     await warte();
     expect(screen.getByText('Zu viele falsche PINs. Die Sitzung ist beendet.')).toBeInTheDocument();
@@ -373,7 +379,9 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
     fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
     await warte();
     gibMitPinFrei.mockRejectedValue(new Error('offline'));
-    fireEvent.change(screen.getByLabelText(/^PIN/), { target: { value: '483920' } });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '483920' },
+    });
     fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
     await warte();
     expect(
@@ -394,7 +402,7 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
     await gesperrt();
     await warte();
     expect(screen.getByText(/Dieser Browser unterstützt keine Passkeys/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^PIN/)).toBeInTheDocument();
+    expect(screen.getByLabelText('PIN', { exact: true })).toBeInTheDocument();
   });
 });
 

@@ -1,22 +1,22 @@
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
-import { VerbindungError, WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 
 /**
  * Das eigene Konto (STAFF-004).
  *
- * Kennwort, Sitzungen und zweiter Faktor liegen vollständig beim Anmeldedienst
- * des Providers (§3.4: nichts davon wird selbst gebaut). Diese Datei ruft
+ * Sitzungen und zweiter Faktor liegen vollständig beim Anmeldedienst des
+ * Providers (§3.4: nichts davon wird selbst gebaut); Passkeys stehen in
+ * `features/auth/passkey.ts`, die App-PIN in `features/auth/appPin.ts`. Diese Datei ruft
  * dessen Funktionen auf und meldet anschließend ins Auditlog, **dass** der
- * Vorgang stattgefunden hat — nie mit Kennwort, Token oder Geheimnis.
+ * Vorgang stattgefunden hat — nie mit PIN, Token oder Geheimnis.
  *
  * Die Reihenfolge ist **fast** überall dieselbe: erst der Vorgang beim
  * Provider, dann die Meldung. Scheitert der Vorgang, wird nichts gemeldet;
  * scheitert die Meldung, ist der Vorgang trotzdem passiert — deshalb bricht
- * sie den Ablauf nicht ab, sondern bleibt still. Eine Fehlermeldung, die ein
- * erfolgreich geändertes Kennwort als Misserfolg darstellt, wäre die
- * schlechtere Auskunft (Oberflächen-Checkliste Punkt 6).
+ * sie den Ablauf nicht ab, sondern bleibt still. Eine Fehlermeldung, die einen
+ * erfolgreichen Vorgang als Misserfolg darstellt, wäre die schlechtere
+ * Auskunft (Oberflächen-Checkliste Punkt 6).
  *
  * **Die eine Ausnahme ist `sessions_ended`** (ANN-044). Dieser Vorgang nimmt
  * dem Konto die eigene Sitzung — danach gibt es kein `auth.uid()` mehr, und
@@ -40,7 +40,9 @@ import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
  * durchlief. Ihn aufzulösen braucht einen serverseitigen Vermerk und damit
  * eine Migration; der Änderungspfad steht im Register.
  */
-type Sicherheitsereignis = 'password_changed' | 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
+// `password_changed` gibt es seit SEC-EPIC-002 nicht mehr: Kein Konto hat ein
+// Kennwort, das sich ändern ließe (ADR-025 Punkt 9).
+type Sicherheitsereignis = 'sessions_ended' | 'mfa_enrolled' | 'mfa_removed';
 
 /**
  * Meldet im Nachhinein und hält den Ablauf nicht auf.
@@ -96,12 +98,6 @@ export function kennwortProblem(kennwort: string, wiederholung: string): string 
   return null;
 }
 
-export async function aendereKennwort(neuesKennwort: string): Promise<void> {
-  const { error } = await getSupabase().auth.updateUser({ password: neuesKennwort });
-  if (error) throw new Error('Das Kennwort konnte nicht geändert werden.');
-  await melde('password_changed');
-}
-
 /**
  * Beendet alle Sitzungen dieses Kontos — auch die auf anderen Geräten.
  *
@@ -129,32 +125,6 @@ export async function beendeAlleSitzungen(): Promise<void> {
   // „Ihre Sitzung wurde beendet" (BEF-047); die anderen Geräte sagen es.
   const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'global' }));
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');
-}
-
-/**
- * Fordert eine Mail zum Zurücksetzen des Kennworts an.
- *
- * Läuft ohne Anmeldung und meldet deshalb nichts ins Auditlog: Es gibt kein
- * Konto, dem der Vorgang zuzuordnen wäre, und ein Eintrag „für diese Adresse
- * wurde zurückgesetzt" wäre selbst eine Auskunft darüber, wer ein Konto hat.
- * Der Anmeldedienst führt den Vorgang; die Änderung des Kennworts wird beim
- * Setzen protokolliert.
- *
- * Das Ziel war `/mein-konto` — eine Seite hinter der Anmeldung, und damit für
- * genau die Person unerreichbar, die den Link braucht (FIX-001). Es ist jetzt
- * die öffentliche Seite, die den Link auch einlösen kann.
- */
-export async function fordereKennwortMailAn(email: string): Promise<void> {
-  const { error } = await getSupabase().auth.resetPasswordForEmail(email.trim(), {
-    redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
-  });
-
-  // Dass es zu einer Adresse kein Konto gibt, bleibt unbeantwortet — das ist
-  // die Zusage „kein Konto-Orakel". Ein **Netzfehler** ist aber keine Auskunft
-  // über ein Konto, sondern über den Dienst; ihn als Erfolg zu melden lässt
-  // jemanden auf eine Mail warten, die nie kommt (R3-008). Geprüft wird der
-  // Name wie in `linkEinloesen.ts`.
-  if (error?.name === 'AuthRetryableFetchError') throw new VerbindungError();
 }
 
 // -----------------------------------------------------------------------------
@@ -221,4 +191,22 @@ export async function entferneMfa(factorId: string): Promise<void> {
   const { error } = await getSupabase().auth.mfa.unenroll({ factorId });
   if (error) throw new Error('Der zweite Faktor konnte nicht entfernt werden.');
   await melde('mfa_removed');
+}
+
+/**
+ * Bestätigt den eingerichteten zweiten Faktor für diese Sitzung (AAL2).
+ *
+ * Der Anmeldedienst verlangt ihn beim Einrichten und Entfernen eines
+ * Passkeys, wenn das Konto einen hat (ADR-025 Fassung 2). Kein Auditeintrag:
+ * Es ändert sich nichts am Konto, nur an dieser Sitzung.
+ */
+export async function bestaetigeZweitenFaktor(code: string): Promise<void> {
+  const faktoren = await ladeMfaFaktoren();
+  const faktor = faktoren.find((f) => f.bestaetigt);
+  if (!faktor) throw new Error('Für dieses Konto ist kein zweiter Faktor eingerichtet.');
+  const { error } = await getSupabase().auth.mfa.challengeAndVerify({
+    factorId: faktor.id,
+    code: code.replace(/\s/g, ''),
+  });
+  if (error) throw new Error('Der Code wurde nicht angenommen. Bitte erneut versuchen.');
 }

@@ -12,6 +12,11 @@ interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id'> {
    * `useId` erzeugte ist es nicht. Ohne Angabe bleibt alles wie bisher.
    */
   feldId?: string | undefined;
+  /**
+   * Was der Sichtbar-Schalter eines Passwortfelds zeigt oder verbirgt -
+   * „Kennwort“ oder „PIN“ (SEC-EPIC-002). Ohne Angabe „Kennwort“.
+   */
+  geheimnis?: string | undefined;
 }
 
 function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
@@ -44,7 +49,16 @@ function EyeIcon({ crossedOut }: { crossedOut: boolean }) {
  * (type="password") erhält zusätzlich einen Sichtbar-Schalter, damit
  * Tippfehler bei der Eingabe auffallen.
  */
-export function Field({ label, hint, error, feldId, className = '', type, ...props }: FieldProps) {
+export function Field({
+  label,
+  hint,
+  error,
+  feldId,
+  geheimnis = 'Kennwort',
+  className = '',
+  type,
+  ...props
+}: FieldProps) {
   const erzeugt = useId();
   const id = feldId ?? erzeugt;
   const hintId = hint ? `${id}-hint` : undefined;
@@ -92,7 +106,7 @@ export function Field({ label, hint, error, feldId, className = '', type, ...pro
           <button
             type="button"
             onClick={() => setVisible((current) => !current)}
-            aria-label={visible ? 'Kennwort verbergen' : 'Kennwort anzeigen'}
+            aria-label={visible ? `${geheimnis} verbergen` : `${geheimnis} anzeigen`}
             className="text-ink-muted hover:text-ink absolute inset-y-0 right-0 flex w-11 items-center justify-center"
           >
             <EyeIcon crossedOut={!visible} />

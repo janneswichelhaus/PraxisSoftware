@@ -201,6 +201,7 @@ export function Sperrseite({
             label="PIN"
             hint="Die PIN der Anwendung, nicht die des Telefons."
             type="password"
+            geheimnis="PIN"
             name="pin"
             inputMode="numeric"
             autoComplete="off"

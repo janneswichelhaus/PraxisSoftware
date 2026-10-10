@@ -417,7 +417,7 @@ Datenschutz · entschieden (Jannes) · 2026-09-11 · Jannes · Prüfpaket · Wie
 
 **Begründung.** Das BSI hat die Empfehlung zum regelmäßigen Kennwortwechsel 2020 aus dem IT-Grundschutz gestrichen, und NIST SP 800-63B rät von erzwungener Komplexität und periodischem Wechsel ab: Beides führt zu vorhersehbaren Mustern und aufgeschriebenen Kennwörtern. Länge trägt, und 12 Zeichen sind der von beiden Quellen genannte untere Wert für Konten ohne zweiten Faktor; gegen mehr spricht die Eingabe auf dem Telefon am Hausbesuch (§16). Unsicher: ob die TOM-Prüfung mehr verlangt und ob der Anmeldedienst die Regel serverseitig in derselben Höhe durchsetzt — verbindlich ist die Einstellung beim Provider (OPS-001).
 
-**Anker.** `KENNWORT_MINDESTLAENGE` in `src/features/account/api.ts` — eine Zahl; `kennwortProblem` daneben ist die einzige Prüfung; Test in `src/features/account/MeinKontoPage.test.tsx`.
+**Anker.** `KENNWORT_MINDESTLAENGE` in `src/features/account/api.ts` — eine Zahl, mit `minimum_password_length` in `supabase/config.toml` zusammengehalten durch `src/features/account/api.test.ts` (seit SEC-EPIC-002 nur noch für Testkonten).
 
 **Änderungspfad.** Andere Länge: eine Zahl · Aufwand `klein`, zusätzlich die Provider-Einstellung nachziehen. Zeichenklassen oder Wechselzwang: eine Regel in `kennwortProblem` und eine Provider-Einstellung · Aufwand `klein`, inhaltlich aber gegen die genannten Quellen und deshalb nur auf ausdrückliches Verlangen der Prüfung.
 
@@ -3961,3 +3961,27 @@ Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 P
 **Anker.** `readAppUmgebung` und `kennwortTestzugang` in `src/lib/env.ts`; Test in `src/lib/env.test.ts`; `VITE_APP_ENVIRONMENT: test` in `.github/workflows/test-umgebung.yml`.
 
 **Änderungspfad.** Kennwortweg auch in der Test-Umgebung aus: dort `production` setzen · Aufwand `klein`. Ganz ohne Kennwortweg: `KennwortTestzugang` entfernen, Testkonten über Einladungslinks anmelden · Aufwand `mittel`.
+
+### ANN-327 — Einrichtung von Passkey und PIN: Pflicht nur in Produktion; der letzte Passkey bleibt
+
+Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkte 12, 13 und 15) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Betriebsreife
+
+**Annahme.** In Produktion steht vor der Anwendung die Seite „Anmeldung einrichten“, solange das Konto keinen Passkey oder keine PIN hat; ohne Antwort des Servers bleibt sie zu. Außerhalb der Produktion fehlt diese Pflicht: Testkonten melden sich mit Kennwort an, automatisierte Tests haben keinen Passkey, eingerichtet wird freiwillig in „Mein Konto“. In „Mein Konto“ lässt sich der letzte Passkey eines Kontos nicht entfernen.
+
+**Begründung.** ADR-025 Punkt 13 verlangt Passkey und PIN beim Einlösen der Einladung; die Pflicht vor der Anwendung fängt auch eine abgebrochene Einrichtung. Eine Pflicht in der Test-Umgebung bräche die Tests hinter der Anmeldung, die mit Kennwort anmelden (Punkt 15). Ohne Kennwort sperrte das Entfernen des letzten Passkeys das Konto selbst aus; der Rückweg wäre eine neue Einladung oder beim Inhaber Break Glass (Punkt 14). Unsicher: ob Jannes die Pflicht auch in der Test-Umgebung sehen will, um sie zu sichten.
+
+**Anker.** `Einrichtungspflicht` in `src/features/auth/einrichtung/Einrichtungspflicht.tsx`; `liste.length > 1` in `PasskeyAbschnitt`, `src/features/account/Anmeldung.tsx`.
+
+**Änderungspfad.** Pflicht auch in der Test-Umgebung: `pflicht` an `readAppUmgebung() !== 'development'` binden und den Anmeldehelfer der E2E-Tests um „Später einrichten“ ergänzen · Aufwand `klein`. Letzten Passkey doch entfernbar: die Bedingung streichen · Aufwand `klein`.
+
+### ANN-328 — Mitarbeitende: „Neuen Anmeldelink senden“ statt „Kennwort zurücksetzen“, im Protokoll unter dem alten Namen
+
+Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkt 12) · Prüfpaket · Wiedervorlage: Jannes; ADR-010 bei der nächsten Änderung des Auditkatalogs
+
+**Annahme.** Am Mitarbeiterdatensatz schickt die Praxisinhaber:in für einen verlorenen Passkey einen neuen Anmeldelink (Mail wie die Zugangsmail, Ziel `/zugang`). Den Vorgang hält weiter `request_staff_password_reset` fest, im Protokoll als `staff_account.password_reset_requested`; die Oberfläche beschriftet ihn „Neuen Anmeldelink angestoßen (früher: Kennwort zurücksetzen)“. Bisherige Passkeys bleiben gültig; einen verlorenen entfernt die Person danach in „Mein Konto“.
+
+**Begründung.** ADR-025 Punkt 12: verloren heißt neue Einladung für das bestehende Konto; für Praxiskonten ist das heute der Anmeldelink des Anmeldedienstes (STAFF-005 löst ihn später ab). Den Namen der Auditaktion zu ändern wäre neue Protokollierung und braucht eine Änderung von ADR-010 mit Jannes' Freigabe (`freigabe-audit`); die Beschriftung ändert nur die Anzeige. Unsicher: ob der Anmeldelink per Mail für Praxiskonten nach B13 so bleiben soll (ADR-023 Punkt 18 schließt ihn nur für Plattformkonten aus).
+
+**Anker.** `sendeNeuenAnmeldelink` in `src/features/staff/konto-api.ts`; Beschriftung in `src/features/audit/actions.ts`.
+
+**Änderungspfad.** Eigene Auditaktion `staff_account.sign_in_link_requested`: ADR-010 ändern, Migration und Katalog · Aufwand `mittel`, nur mit Freigabe.

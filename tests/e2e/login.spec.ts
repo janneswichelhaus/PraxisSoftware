@@ -135,83 +135,20 @@ test.describe('Testzugang', () => {
 });
 
 /**
- * Neues Kennwort ueber den Link aus der Mail (FIX-001).
- *
- * Die zweite Seite, die ohne Anmeldung erreichbar ist. Bis FIX-001 gab es sie
- * nicht: Die Mails verwiesen auf /kennwort-neu, und diese Adresse hatte keine
- * Route - wer den Link oeffnete, landete auf der Anmeldemaske zurueck.
- *
- * Der vollstaendige Durchlauf mit einem echten Link braucht GoTrue und den
- * Mailfaenger und steht deshalb als manueller Schritt in
- * docs/sichtung/betriebsreife.md. Was hier laeuft, ist der Teil, der
- * ohne Anmeldedienst aussagekraeftig ist - und das ist gerade der
- * Fehlerfall.
+ * Kein Kennwort setzen (ADR-025 Punkt 9): `/kennwort-neu` gibt es seit
+ * SEC-EPIC-002 nicht mehr. Ein alter Link führt auf die Anmeldemaske und löst
+ * nichts ein.
  */
-test.describe('Neues Kennwort setzen', () => {
-  test('ist ohne Anmeldung erreichbar und nicht die Anmeldemaske', async ({ page }) => {
-    await page.goto('/kennwort-neu');
-
-    await expect(page.getByRole('heading', { name: 'Neues Kennwort setzen' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Anmelden' })).toHaveCount(0);
+test('fuehrt einen alten Link zum Kennwort auf die Anmeldemaske', async ({ page }) => {
+  let eingeloest = false;
+  await page.route('**/auth/v1/verify**', (route) => {
+    eingeloest = true;
+    return route.abort('failed');
   });
-
-  test('sagt bei einem Link ohne Kennung, was zu tun ist, statt ein Formular anzubieten', async ({
-    page,
-  }) => {
-    await page.goto('/kennwort-neu');
-
-    await expect(page.getByText('Dieser Link lässt sich nicht mehr verwenden.')).toBeVisible();
-    await expect(page.getByLabel('Neues Kennwort', { exact: true })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Zur Anmeldung' })).toBeVisible();
-  });
-
-  test('gibt bei einer unbrauchbaren Kennung kein Formular und keine Auskunft ueber das Konto', async ({
-    page,
-  }) => {
-    // Diese Datei laeuft in BEIDEN E2E-Jobs - einmal ohne Anmeldedienst
-    // ("End-to-End") und einmal mit laufendem Stack ("End-to-End hinter der
-    // Anmeldung"). Der Fehlschlag hat deshalb je Job eine andere Ursache:
-    // ohne Dienst einen Netzwerkfehler, mit Dienst eine saubere Ablehnung der
-    // Kennung. Die Seite unterscheidet die beiden bewusst (FIX-007) - der
-    // Test darf sich aber auf keine der beiden festlegen, sonst prueft er die
-    // Umgebung und nicht die Anwendung.
-    //
-    // Geprueft wird hier also, was in beiden Faellen gelten MUSS. Dass die
-    // Unterscheidung selbst stimmt, halten die Komponententests in beide
-    // Richtungen fest (KennwortNeuPage.test.tsx, ZugangPage.test.tsx), und
-    // am laufenden Stack prueft es Schritt 19 in
-    // docs/sichtung/betriebsreife.md.
-    await page.goto('/kennwort-neu?token_hash=unbrauchbar&type=recovery');
-
-    // Einer der beiden Abbrueche steht da - und zwar genau einer.
-    await expect(
-      page.getByText(
-        /Dieser Link lässt sich nicht mehr verwenden\.|Der Anmeldedienst ist gerade nicht erreichbar\./,
-      ),
-    ).toHaveCount(1);
-
-    // Kein Formular: ohne eingeloesten Link wird kein Kennwort gesetzt.
-    await expect(page.getByLabel('Neues Kennwort', { exact: true })).toHaveCount(0);
-
-    // Und kein Wort darueber, ob es zu dieser Kennung ein Konto gibt.
-    await expect(page.getByText(/unbekannt|nicht gefunden|existiert|kein Konto/i)).toHaveCount(0);
-  });
-
-  test('laeuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 780 });
-    await page.goto('/kennwort-neu');
-    await expect(page.getByRole('heading', { name: 'Neues Kennwort setzen' })).toBeVisible();
-
-    const ueberbreit = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
-    );
-    expect(ueberbreit).toBe(false);
-
-    const hoehe = await page
-      .getByRole('button', { name: 'Zur Anmeldung' })
-      .evaluate((el) => el.getBoundingClientRect().height);
-    expect(hoehe).toBeGreaterThanOrEqual(44);
-  });
+  await page.goto('/kennwort-neu#token_hash=alt&type=recovery');
+  await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Neues Kennwort setzen' })).toHaveCount(0);
+  expect(eingeloest).toBe(false);
 });
 
 test.describe('Geschuetzte Sonderbereiche', () => {

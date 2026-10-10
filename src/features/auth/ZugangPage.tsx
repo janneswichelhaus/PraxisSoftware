@@ -19,9 +19,9 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 /**
  * Anmelden über den Link aus der Zugangsmail (FIX-002).
  *
- * Die Zugangsmail geht an ein Konto, dessen Einladung offen ist — sie ist der
- * Weg hinein, wenn jemand sein Kennwort nicht zur Hand hat oder noch keines
- * gesetzt hat. Bis FIX-002 zeigte sie auf die Wurzel der Anwendung, wo die
+ * Die Zugangsmail geht an ein Konto, dessen Einladung offen ist, oder als
+ * neuer Anmeldelink an ein Konto, dessen Passkey verloren ist (ADR-025
+ * Punkt 12) - sie ist der Weg hinein ohne Passkey. Bis FIX-002 zeigte sie auf die Wurzel der Anwendung, wo die
  * Kennung im Adressfragment ungelesen liegen blieb: Die Person sah die
  * Anmeldemaske, an der sie gerade vorbeikommen wollte.
  *

@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { abgewiesen } from '@/lib/abgewiesen';
 import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, type RoleKey } from '@/features/session/types';
-import { WIEDERHERSTELLUNG_PFAD, ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
+import { ZUGANG_PFAD } from '@/features/auth/linkEinloesen';
 
 /**
  * Zugänge zur Anwendung (STAFF-002b).
@@ -258,26 +258,25 @@ export async function setzeZugangAktiv(staffMemberId: string, aktiv: boolean): P
 }
 
 /**
- * Stößt das Zurücksetzen des Kennworts an.
+ * Schickt einem bestehenden Zugang einen neuen Anmeldelink (ADR-025 Punkt 12,
+ * ANN-328): für einen verlorenen Passkey oder ein neues Telefon. Ersetzt das
+ * Zurücksetzen des Kennworts - es gibt keins mehr.
  *
  * Zwei Schritte, weil zwei Systeme beteiligt sind: Die Datenbank hält den
- * Vorgang fest und nennt die Anmeldeadresse; die Mail verschickt der
- * Anmeldedienst (B13). Diese Anwendung sieht das Kennwort nie - weder das
- * alte noch das neue.
+ * Vorgang der Praxisinhaber:in fest und nennt die Anmeldeadresse
+ * (`request_staff_password_reset`, im Protokoll unter dem bisherigen Namen);
+ * den Link verschickt der Anmeldedienst wie die Zugangsmail (B13).
  */
-export async function stosseKennwortZuruecksetzenAn(staffMemberId: string): Promise<void> {
+export async function sendeNeuenAnmeldelink(staffMemberId: string): Promise<void> {
   const antwort = (await getSupabase().rpc('request_staff_password_reset', {
     p_staff_member_id: staffMemberId,
   })) as { data: unknown; error: unknown; status: number };
 
-  if (abgewiesen(antwort)) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
+  if (abgewiesen(antwort)) throw new Error('Der Anmeldelink konnte nicht angestoßen werden.');
   const email = z.string().safeParse(antwort.data);
-  if (!email.success) throw new Error('Das Zurücksetzen konnte nicht angestoßen werden.');
+  if (!email.success) throw new Error('Der Anmeldelink konnte nicht angestoßen werden.');
 
-  // Der Pfad kommt aus einer Konstante, nicht aus einer zweiten Zeichenkette:
-  // Bis FIX-001 zeigte er auf eine Route, die es nirgends gab.
-  const { error: mailError } = await getSupabase().auth.resetPasswordForEmail(email.data, {
-    redirectTo: `${window.location.origin}${WIEDERHERSTELLUNG_PFAD}`,
-  });
-  if (mailError) throw new Error('Die Mail zum Zurücksetzen konnte nicht zugestellt werden.');
+  if ((await sendeZugangsMail(email.data)) !== 'gesendet') {
+    throw new Error('Der Anmeldelink konnte nicht zugestellt werden.');
+  }
 }
