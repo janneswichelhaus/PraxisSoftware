@@ -65,12 +65,12 @@ test.describe('PAT-003: Versorgungsstatus wechseln', () => {
     await expect(page.getByRole('heading', { name: 'Max Mustermann' })).toBeVisible();
     // UX-005e: Der Status steht nur noch im Kopf der Akte - und dort nur als
     // Ausnahme. Eine laufende Versorgung trägt weder Zeile noch Etikett.
-    const etikett = page.getByText('!Nicht in laufender Versorgung', { exact: true });
+    const etikett = page.getByText('!Nicht in Versorgung', { exact: true });
     await expect(etikett).toHaveCount(0);
 
     // Der Wechsel verlangt eine Rückfrage; erst der zweite Klick schreibt.
-    await page.getByRole('button', { name: 'Als inaktiv markieren' }).click();
-    await page.getByRole('button', { name: 'Als inaktiv markieren' }).last().click();
+    await page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }).click();
+    await page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }).last().click();
 
     // Das Etikett trägt seit UIK-18 das Zeichen „!“ (für Vorlesesoftware
     // ausgeblendet); exact grenzt es gegen den Hinweis „Keine neuen
@@ -81,10 +81,12 @@ test.describe('PAT-003: Versorgungsstatus wechseln', () => {
     await expect(etikett).toBeVisible();
 
     // Zurück auf den Seed-Zustand.
-    await page.getByRole('button', { name: 'Wieder als aktiv führen' }).click();
-    await page.getByRole('button', { name: 'Wieder als aktiv führen' }).last().click();
+    await page.getByRole('button', { name: 'Wieder in Versorgung führen' }).click();
+    await page.getByRole('button', { name: 'Wieder in Versorgung führen' }).last().click();
     await expect(etikett).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Als inaktiv markieren' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
+    ).toBeVisible();
   });
 });
 
