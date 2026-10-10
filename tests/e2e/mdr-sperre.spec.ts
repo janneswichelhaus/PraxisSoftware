@@ -14,15 +14,23 @@ import { expect, test } from '@playwright/test';
 const PRUEFSEITE = '/tests/e2e/fixtures/mdr-sperre.html';
 
 test.describe('MDR-Sperre', () => {
-  test('nennt die Klassifikation, die Fundstelle und den Rueckweg', async ({ page }) => {
+  test('nennt die Sperre, die Kennung, die Fundstelle und den Rueckweg', async ({ page }) => {
     await page.goto(PRUEFSEITE);
 
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     // Die Kennung steht ausgeschrieben da: Wer die Adresse aufruft, soll den
     // Begriff finden, unter dem die Entscheidung in ADR-006 und im Register
-    // geführt wird.
+    // geführt wird. Seit BEF-065 als Fußzeile; der Haupttext spricht
+    // Praxissprache (Satz freigegeben von Jannes, 2026-10-09).
     await expect(page.getByText(/MDR_REVIEW_REQUIRED/)).toBeVisible();
-    await expect(page.getByText(/Ein Feature-Flag ersetzt diese Prüfung nicht/)).toBeVisible();
+    await expect(
+      page.getByText(
+        'Diese Funktion bleibt gesperrt, bis eine Prüfung nach dem Medizinprodukterecht dokumentiert ist.',
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Einen Schalter, der sie vor der Prüfung freigibt, gibt es bewusst nicht/),
+    ).toBeVisible();
     await expect(page.getByText('Grundlage')).toBeVisible();
     await expect(page.getByRole('link', { name: 'Zur Übersicht' })).toBeVisible();
   });

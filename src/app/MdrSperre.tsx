@@ -2,6 +2,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Inhaltsflaeche } from '@/components/ui/Card';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
+import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 import type { MdrEintrag } from './mdr';
 
 /**
@@ -16,22 +17,27 @@ import type { MdrEintrag } from './mdr';
  *
  * Sie nennt aus demselben Grund die Fundstelle und den Satz, welche Ausgabe
  * nicht entsteht. Beides steht im Eintrag; die Seite erfindet nichts dazu.
+ *
+ * **Praxissprache (UX-009b, BEF-065, Entscheidung Jannes 2026-10-09).** Der
+ * Haupttext sagt, was gilt, ohne Projektwörter; die Kennung
+ * `MDR_REVIEW_REQUIRED` steht als Fußzeile - auffindbar für ADR-006 und das
+ * Register, aber nicht als erster Satz. Der E2E-Test prüft Kennung und neuen
+ * Satz gleich streng (freigegeben von Jannes am 2026-10-09).
  */
 export function MdrSperre({ eintrag }: { eintrag: MdrEintrag }) {
   return (
     <>
       <PageHeader
         title={eintrag.bezeichnung}
-        description="Diese Funktion ist nicht erreichbar. Sie ist als MDR_REVIEW_REQUIRED klassifiziert."
+        description="Diese Funktion bleibt gesperrt, bis eine Prüfung nach dem Medizinprodukterecht dokumentiert ist."
       />
 
       <Inhaltsflaeche className="max-w-prose">
         <p className="text-ink text-liste">{eintrag.keineAusgabe}</p>
 
         <p className="text-ink-muted mt-4 text-sm">
-          Features an der Grenze zur Medizinprodukte-Software dürfen vor einer dokumentierten
-          regulatorischen Prüfung nicht produktiv aktiviert werden. Ein Feature-Flag ersetzt diese
-          Prüfung nicht – deshalb gibt es hier keinen Schalter, sondern nur diese Auskunft.
+          Die Funktion liegt an der Grenze zu einem Medizinprodukt. Einen Schalter, der sie vor der
+          Prüfung freigibt, gibt es bewusst nicht – deshalb steht hier nur diese Auskunft.
         </p>
 
         {/* Die Fundstellen als beschriftete Angabe wie auf jeder Detailseite
@@ -48,6 +54,8 @@ export function MdrSperre({ eintrag }: { eintrag: MdrEintrag }) {
             </DetailRow>
           </DetailList>
         </div>
+
+        <Kleingedrucktes className="mt-4">Kennung: MDR_REVIEW_REQUIRED (ADR-006)</Kleingedrucktes>
       </Inhaltsflaeche>
 
       <div className="mt-6">

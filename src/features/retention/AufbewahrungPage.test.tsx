@@ -150,8 +150,9 @@ describe('AufbewahrungPage', () => {
     renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
 
     // Die Datenschutzprüfung muss am Bildschirm erkennen, welche Frist noch
-    // niemand bestätigt hat.
+    // niemand bestätigt hat. Seit BEF-065 in Praxissprache, die Kennung daneben.
     expect(await screen.findByText('ANN-030')).toBeInTheDocument();
+    expect(screen.getAllByText('Annahme – Prüfung offen')).toHaveLength(1);
   });
 
   it('zeigt die betroffenen Tabellen erst auf Wunsch', async () => {
@@ -273,9 +274,35 @@ describe('AufbewahrungPage', () => {
   });
 
   describe('Offene Löschaufträge (DAT-002, ADR-017 Punkt 25)', () => {
-    it('sagt, dass nichts offen ist, wenn nichts offen ist', async () => {
+    // BEF-065: Ist nichts zu tun, steht oben genau eine Zeile.
+    it('sagt in einer Zeile, dass nichts offen ist, wenn nichts offen ist', async () => {
       renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
-      expect(await screen.findByText('Nichts offen')).toBeInTheDocument();
+      expect(
+        await screen.findByText('Nichts offen, beide Speicher deckungsgleich.'),
+      ).toBeInTheDocument();
+      expect(screen.queryByRole('heading', { name: 'Offene Löschaufträge' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: 'Abgleich der Dateiablage' })).toBeNull();
+    });
+
+    it('stellt die Arbeit vor Plan und Journal (BEF-065)', async () => {
+      fetchLoeschauftraege.mockResolvedValue([auftrag()]);
+      renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
+
+      await screen.findByText(/Eine Datei ist aus der Akte entfernt/);
+      const ueberschriften = screen
+        .getAllByRole('heading', { level: 2 })
+        .map((ueberschrift) => ueberschrift.textContent);
+      expect(ueberschriften).toEqual([
+        'Offene Löschaufträge',
+        'Abgleich der Dateiablage',
+        'Löschsperren',
+        'Aufbewahrungsplan',
+        'Löschjournal',
+      ]);
+      // Keine Projektwörter im Kopf; die Verweise liegen unter „Grundlagen“.
+      expect(screen.queryByText(/Migration/)).toBeNull();
+      expect(screen.getByText('Grundlagen')).toBeInTheDocument();
+      expect(screen.getByText(/ADR-017 Punkte 25 und 27/)).not.toBeVisible();
     });
 
     it('nennt offene Aufträge als noch nicht abgeschlossene Löschung', async () => {
@@ -408,8 +435,11 @@ describe('AufbewahrungPage', () => {
 
   describe('Abgleich der Dateiablage (DAT-003, ADR-017 Punkt 27)', () => {
     it('sagt, dass beide Speicher deckungsgleich sind', async () => {
+      // Mit einem offenen Auftrag steht der Abschnitt da; ohne verwaiste und
+      // fehlende Dateien und nach dem Ausführen meldet er deckungsgleich.
+      fetchVerwaisteAnzahl.mockResolvedValue(0);
       renderWithProviders(<AufbewahrungPage user={testUser(['owner'])} />);
-      expect(await screen.findByText('Beide Speicher sind deckungsgleich')).toBeInTheDocument();
+      expect(await screen.findByText(/beide Speicher deckungsgleich/)).toBeInTheDocument();
     });
 
     it('nennt eine fehlende Datei als Verlust, mit Akte und Weg dorthin', async () => {

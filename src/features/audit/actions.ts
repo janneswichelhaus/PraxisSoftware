@@ -45,6 +45,59 @@ export const AUDIT_ACTIONS = [
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 
+/**
+ * Die Aktionen in Gruppen für den Filter (UX-009b, BEF-065): dieselben
+ * Gruppen wie im Katalog von ADR-010 Punkt 16, damit die Praxisleitung nicht
+ * eine Liste in technischer Reihenfolge durchgehen muss. `actions.test.ts`
+ * hält fest, dass jede Aktion in genau einer Gruppe steht.
+ */
+export const AUDIT_ACTION_GROUPS: readonly { titel: string; aktionen: readonly AuditAction[] }[] = [
+  {
+    titel: 'Akten und Dateien',
+    aktionen: [
+      'patient_record.viewed',
+      'training_relationship.viewed',
+      'platform_representation.read',
+      'patient_file.downloaded',
+    ],
+  },
+  {
+    titel: 'Herausgabe',
+    aktionen: ['patient_record.exported', 'therapy_report.exported', 'patient_file.handed_out'],
+  },
+  {
+    titel: 'Abweisungen und Löschlauf',
+    aktionen: ['access.denied', 'retention.applied'],
+  },
+  {
+    titel: 'Plattformzugang',
+    aktionen: [
+      'platform_access.invited',
+      'platform_access.activated',
+      'platform_access.locked',
+      'platform_access.unlocked',
+      'platform_access.revoked',
+    ],
+  },
+  {
+    titel: 'Zugänge und Rechte',
+    aktionen: [
+      'staff_account.invited',
+      'staff_account.invitation_revoked',
+      'staff_account.invitation_accepted',
+      'staff_account.roles_changed',
+      'staff_account.locked',
+      'staff_account.unlocked',
+      'staff_account.password_reset_requested',
+      'account.password_changed',
+      'account.sessions_ended',
+      'account.mfa_enrolled',
+      'account.mfa_removed',
+      'organization.bootstrapped',
+    ],
+  },
+];
+
 export const auditActionLabels: Record<AuditAction, string> = {
   'patient_record.viewed': 'Patientenakte geöffnet',
   'training_relationship.viewed': 'Trainingskund:in geöffnet',

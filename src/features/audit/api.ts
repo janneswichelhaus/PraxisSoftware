@@ -33,6 +33,12 @@ export interface AuditFilter {
   to?: string | undefined;
   actorUserId?: string | undefined;
   action?: string | undefined;
+  /**
+   * Fester Zeitpunkt, bis zu dem geblättert wird (BEF-065): Was danach
+   * entsteht, schiebt die Seiten nicht um eine Zeile. Neu geladen wird
+   * ausdrücklich („Neu laden").
+   */
+  stand?: string | undefined;
   page: number;
   pageSize: number;
 }
@@ -58,12 +64,19 @@ function startOfNextDay(value: string | undefined): string | null {
   return date.toISOString();
 }
 
+/** Der frühere zweier Zeitpunkte; `null` steht für „offen". */
+function frueheres(a: string | null, b: string | null): string | null {
+  if (a === null) return b;
+  if (b === null) return a;
+  return Date.parse(a) <= Date.parse(b) ? a : b;
+}
+
 export async function fetchAuditEvents(filter: AuditFilter): Promise<AuditPage> {
   // Ohne generierte Datenbanktypen liefert rpc() `any`. Die Antwort wird
   // deshalb als `unknown` behandelt und ausschliesslich ueber Zod validiert.
   const { data, error } = (await getSupabase().rpc('list_audit_events', {
     p_from: startOfDay(filter.from),
-    p_to: startOfNextDay(filter.to),
+    p_to: frueheres(startOfNextDay(filter.to), filter.stand ?? null),
     p_actor_user_id: filter.actorUserId ?? null,
     p_action: filter.action ?? null,
     p_limit: filter.pageSize,

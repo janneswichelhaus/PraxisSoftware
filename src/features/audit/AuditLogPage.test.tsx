@@ -55,6 +55,7 @@ describe('AuditLogPage', () => {
     const zeile = screen.getByRole('listitem');
     expect(zeile).toHaveTextContent('Patientenakte geöffnet');
     expect(screen.getByText('Erfolgreich')).toBeInTheDocument();
+    expect(screen.getByText('Erfolgreich').closest('.rounded-pill')).toBeNull();
     // Objektreferenz gekuerzt, vollstaendige ID nur als Titel.
     expect(screen.getByTitle('66666666-6666-4666-8666-000000000001')).toHaveTextContent(
       '…000000000001',
@@ -80,7 +81,10 @@ describe('AuditLogPage', () => {
 
     const zeile = await screen.findByRole('listitem');
     expect(zeile).toHaveTextContent('Zugriff abgewiesen: Termine gelesen · 3×');
-    expect(within(zeile).getByText('Abgewiesen')).toBeInTheDocument();
+    // BEF-065: kritisches Abzeichen statt grauer Zeile.
+    expect(within(zeile).getByText('Abgewiesen').closest('span.rounded-pill')).toHaveClass(
+      'text-danger',
+    );
   });
 
   it('traegt das Wort des Menuepunkts als Titel (ORG-07)', async () => {
@@ -223,14 +227,89 @@ describe('AuditLogPage', () => {
 
     renderWithProviders(<AuditLogPage />);
 
-    expect(await screen.findByText('1–25 von 60')).toBeInTheDocument();
+    expect(await screen.findByText(/^1–25 von 60 · Stand \d\d:\d\d$/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Zurück' })).toBeDisabled();
+    // Die erste Seite ist immer der jüngste Stand.
+    expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+      expect.objectContaining({ page: 0, stand: undefined }),
+    );
 
     await user.click(screen.getByRole('button', { name: 'Weiter' }));
 
+    // BEF-065: Ab Seite 2 nur bis zum jüngsten Eintrag der ersten Seite -
+    // was danach entsteht, schiebt nichts um.
     await waitFor(() => {
-      expect(fetchAuditEvents).toHaveBeenLastCalledWith(expect.objectContaining({ page: 1 }));
+      expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 1, stand: '2026-08-28T09:15:00.001Z' }),
+      );
     });
+  });
+
+  it('laedt auf Wunsch neu und beginnt dann wieder beim juengsten Stand (BEF-065)', async () => {
+    fetchAuditEvents.mockResolvedValue({
+      events: Array.from({ length: 25 }, (_, index) =>
+        event(String(index), 'patient_record.viewed', 'Anna Beispiel', 60),
+      ),
+      totalCount: 60,
+    });
+    fetchOrganizationMembers.mockResolvedValue([]);
+    const user = userEvent.setup();
+
+    renderWithProviders(<AuditLogPage />, '/praxis/sicherheit/audit?seite=2');
+    await screen.findByText(/^26–50 von 60/);
+
+    await user.click(screen.getByRole('button', { name: 'Neu laden' }));
+    await waitFor(() => {
+      expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ page: 0, stand: undefined }),
+      );
+    });
+  });
+
+  it('liest die Filter aus der Adresse und klappt sie dann auf (BEF-065)', async () => {
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(
+      <AuditLogPage />,
+      '/praxis/sicherheit/audit?aktion=access.denied&von=2026-08-01',
+    );
+    await screen.findByText('Keine Einträge im gewählten Zeitraum');
+
+    expect(fetchAuditEvents).toHaveBeenLastCalledWith(
+      expect.objectContaining({ action: 'access.denied', from: '2026-08-01', page: 0 }),
+    );
+    expect(screen.getByText('Filter (2 gesetzt)').closest('details')).toHaveAttribute('open');
+    expect(screen.getByLabelText('Aktion')).toHaveValue('access.denied');
+  });
+
+  it('klappt die Filter am Telefon ohne gesetzten Filter zu (BEF-065)', async () => {
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+    await screen.findByText('Keine Einträge im gewählten Zeitraum');
+
+    // jsdom ist schmal wie ein Telefon (keine Breite ab 1024 px).
+    expect(screen.getByText('Filter').closest('details')).not.toHaveAttribute('open');
+  });
+
+  it('gruppiert die Aktionen im Filter wie der Katalog (BEF-065)', async () => {
+    fetchAuditEvents.mockResolvedValue({ events: [], totalCount: 0 });
+    fetchOrganizationMembers.mockResolvedValue([]);
+
+    renderWithProviders(<AuditLogPage />);
+    await screen.findByText('Keine Einträge im gewählten Zeitraum');
+
+    const auswahl = screen.getByLabelText('Aktion');
+    const gruppen = [...auswahl.querySelectorAll('optgroup')].map((gruppe) => gruppe.label);
+    expect(gruppen).toEqual([
+      'Akten und Dateien',
+      'Herausgabe',
+      'Abweisungen und Löschlauf',
+      'Plattformzugang',
+      'Zugänge und Rechte',
+    ]);
   });
 
   it('zeigt bei fehlender Berechtigung eine verstaendliche Meldung ohne Details', async () => {

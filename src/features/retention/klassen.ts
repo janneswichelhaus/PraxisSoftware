@@ -25,12 +25,12 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
   patientenfoto: {
     label: 'Foto-Arbeitshilfen',
     beschreibung:
-      'Fotos für Übergabe und Vergleich, die die Praxis mit Einwilligung von der Person aufnimmt. Neben der Akte, nicht Teil von ihr; beim Widerruf sofort gelöscht. Dokumentationsfotos gehören zur Akte (ADR-017).',
+      'Fotos für Übergabe und Vergleich, die die Praxis mit Einwilligung von der Person aufnimmt. Neben der Akte, nicht Teil von ihr; beim Widerruf sofort gelöscht. Dokumentationsfotos gehören zur Akte.',
   },
   trainingsverhaeltnis: {
     label: 'Trainingsverhältnis',
     beschreibung:
-      'Vertragsdaten des Trainings. Eigene Frist neben der Patientenakte: Training ist keine Heilbehandlung (ADR-021).',
+      'Vertragsdaten des Trainings. Eigene Frist neben der Patientenakte: Training ist keine Heilbehandlung.',
   },
   termin_ohne_nachweis: {
     label: 'Abgesagte Termine ohne Nachweis',
