@@ -8,13 +8,16 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { Card } from '@/components/ui/Card';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
+import { Textlink } from '@/components/ui/Textlink';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { formatDate } from '@/lib/datum';
 import { formatEuro } from '@/lib/geld';
 import { canManageInvoicing, type CurrentUser } from '@/features/session/types';
 import {
   bereichLabels,
+  WegHinweis,
   createEntwurf,
+  erstelleKorrektur,
   fetchKandidaten,
   fetchOffenePosten,
   type Kandidat,
@@ -287,8 +290,12 @@ function KandidatenKarte({
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
+  // UX-008b (BEF-062, ANN-321): Stammen die Leistungen aus einer stornierten
+  // Rechnung, ist ihre Korrekturrechnung der einzige Weg - mit Bezug.
+  const storno = kandidat.cancelled_invoice_id;
+
   const anlegen = useMutation({
-    mutationFn: () => createEntwurf(kandidat),
+    mutationFn: () => (storno ? erstelleKorrektur(storno) : createEntwurf(kandidat)),
     onSuccess: async (id) => {
       await queryClient.invalidateQueries({ queryKey: ['rechnungs-kandidaten'] });
       await queryClient.invalidateQueries({ queryKey: ['rechnungen'] });
@@ -326,13 +333,50 @@ function KandidatenKarte({
               onClick={() => anlegen.mutate()}
               disabled={anlegen.isPending}
             >
-              {anlegen.isPending ? 'Wird angelegt …' : 'Entwurf anlegen'}
+              {anlegen.isPending
+                ? 'Wird angelegt …'
+                : storno
+                  ? 'Korrekturrechnung erstellen'
+                  : 'Entwurf anlegen'}
             </Button>
           </span>
         ) : null}
       </div>
 
-      {kandidat.has_draft ? (
+      {/* Die Herkunft steht an der Zeile (BEF-062): Wer die Leistungen sieht,
+          sieht auch, welche Rechnung sie ersetzen. */}
+      {storno ? (
+        <p className="text-ink-muted mt-1 text-sm">
+          Aus der stornierten Rechnung{' '}
+          <Textlink to={`/abrechnung/rechnungen/${storno}`}>
+            {kandidat.cancelled_invoice_number ?? 'ohne Nummer'}
+          </Textlink>
+          {kandidat.has_draft ? '' : ' – die neue Rechnung wird ihre Korrekturrechnung.'}
+        </p>
+      ) : null}
+
+      {kandidat.has_draft && storno ? (
+        <>
+          <Statusmeldung className="mt-2">
+            {kandidat.draft_replaces_invoice_number
+              ? // Zwei Stornos in einer Klammer: Jede bekommt ihre eigene
+                // Korrektur, nacheinander (ANN-321).
+                `Für diesen Zeitraum steht die Korrektur zu ${kandidat.draft_replaces_invoice_number} als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu ${kandidat.cancelled_invoice_number ?? 'der stornierten Rechnung'} erstellen.`
+              : 'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen; danach lässt sich hier die Korrekturrechnung erstellen.'}
+          </Statusmeldung>
+          {kandidat.draft_id ? (
+            <div className="mt-3">
+              <ButtonLink
+                to={`/abrechnung/rechnungen/${kandidat.draft_id}`}
+                variant="secondary"
+                groesse="kompakt"
+              >
+                Zum Entwurf
+              </ButtonLink>
+            </div>
+          ) : null}
+        </>
+      ) : kandidat.has_draft ? (
         <>
           <Statusmeldung className="mt-2">
             {kandidat.treatment_basis_id
@@ -359,7 +403,11 @@ function KandidatenKarte({
 
       {anlegen.isError ? (
         <Statusmeldung ton="fehler" className="mt-2">
-          {anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.
+          {/* Meldungen mit eigenem Weg sagen ihn selbst; nur eine Störung
+              bekommt den Satz zur Verbindung. */}
+          {anlegen.error instanceof WegHinweis
+            ? anlegen.error.message
+            : `${anlegen.error.message} Bitte die Verbindung prüfen und erneut versuchen.`}
         </Statusmeldung>
       ) : null}
     </Card>

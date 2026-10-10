@@ -323,6 +323,44 @@ describe('Rechnung', () => {
       ).rejects.toThrow();
     });
 
+    it('wirkt mit einer Korrektur am Empfaenger auf Entwuerfe, nie auf Ausgestelltes (UX-008c)', async () => {
+      // BEF-062 Teil 2: Empfaenger sind bearbeitbar. Die ausgestellte Rechnung
+      // traegt ihren Snapshot (ADR-009 Punkt 10); der naechste Entwurf wird aus
+      // den Stammdaten gebaut und zeigt die Korrektur.
+      await leistung(KATALOG.kg, { stundeImMonat: 30, patient: patients.petra, grundlage: null });
+      const { rows: erste } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.petra,
+        await monat(),
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [erste[0]!.id]);
+
+      const { rows: alt } = await asPostgres<{ name: string }>(
+        'select name from public.invoice_recipients where id = $1',
+        [BETREUUNG],
+      );
+      await asUserCommitted(
+        users.office,
+        `select public.save_invoice_recipient($1::uuid, $2::uuid, 'guardian', 'Betreuung korrigiert',
+           'Amtsweg', '2', '72072', 'Tuebingen', 'BT-2026-0042', true)`,
+        [BETREUUNG, patients.petra],
+      );
+
+      const { rows: ausgestellt } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        erste[0]!.id,
+      ]);
+      expect(ausgestellt[0]!.rechnung.document.recipient.name).toBe(alt[0]!.name);
+
+      await leistung(KATALOG.kg, { stundeImMonat: 40, patient: patients.petra, grundlage: null });
+      const { rows: zweite } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.petra,
+        await monat(),
+      ]);
+      const { rows: entwurf } = await asUser<{ rechnung: Dokument }>(users.office, DOKUMENT, [
+        zweite[0]!.id,
+      ]);
+      expect(entwurf[0]!.rechnung.document.recipient.name).toBe('Betreuung korrigiert');
+    });
+
     it('weist einen Empfaenger einer anderen Patientin ab (PROJECT_PRINCIPLES.md 13)', async () => {
       await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [

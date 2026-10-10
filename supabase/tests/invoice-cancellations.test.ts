@@ -71,6 +71,9 @@ interface Kandidat {
   service_count: number;
   has_draft: boolean;
   draft_id: string | null;
+  cancelled_invoice_id: string | null;
+  cancelled_invoice_number: string | null;
+  draft_replaces_invoice_number: string | null;
 }
 
 interface Ansicht {
@@ -251,9 +254,9 @@ describe('Storno und Korrektur', () => {
       const stornonummer = await storniere(erste.id);
 
       await leistung(KATALOG.mt, 20);
-      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
-        patients.erika,
-        await monat(),
+      // Seit UX-008b fuehrt nach dem Storno nur die Korrekturrechnung weiter.
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [
+        erste.id,
       ]);
       const { rows: zweite } = await asUserCommitted<{ nummer: string }>(users.office, AUSSTELLEN, [
         entwurf[0]!.id,
@@ -779,6 +782,238 @@ describe('Storno und Korrektur', () => {
       await expect(asUserCommitted(users.therapist, KORREKTUR, [id])).rejects.toThrow(
         /not allowed to manage invoices/,
       );
+    });
+  });
+
+  /**
+   * UX-008b (BEF-062, Entscheidung Jannes 2026-10-09): Nach einem Storno
+   * fuehrt genau ein Weg zur neuen Rechnung - die Korrekturrechnung mit ihrem
+   * Bezug. Die Arbeitsliste nennt die Herkunft, das Datenmodell weist jeden
+   * anderen Entwurf ueber dieselben Leistungen ab.
+   */
+  describe('Ein Weg nach dem Storno (UX-008b)', () => {
+    const GRUNDLAGE = '88888888-8888-4888-8888-000000000004';
+    const ENTWURF_GRUNDLAGE = 'select public.create_invoice_draft_for_basis($1::uuid) as id';
+
+    it('nennt an der Zeile unter „Abzurechnen" die stornierte Rechnung', async () => {
+      const { id, nummer } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const { rows } = await asUser<Kandidat>(users.office, KANDIDATEN);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.cancelled_invoice_id).toBe(id);
+      expect(rows[0]!.cancelled_invoice_number).toBe(nummer);
+    });
+
+    it('weist den gewohnten Entwurf ueber dieselben Leistungen ab und legt nichts an', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const fehler = await asUserCommitted(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]).catch((e: unknown) => e as { message: string; detail?: string });
+      expect((fehler as { message: string }).message).toMatch(
+        /services of a cancelled invoice are billed on its correction/,
+      );
+      // Das DETAIL nennt die stornierte Rechnung, zu der es weitergeht.
+      expect((fehler as { detail?: string }).detail).toBe(id);
+
+      const { rows } = await asPostgres<{ anzahl: string }>(
+        "select count(*) as anzahl from public.invoices where status = 'draft'",
+      );
+      expect(Number(rows[0]!.anzahl)).toBe(0);
+    });
+
+    it('weist auch postgres ab - die Sperre sitzt im Datenmodell, nicht in der Funktion', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const { rows: entwurf } = await asPostgres<{ id: string }>(
+        `insert into public.invoices (organization_id, patient_id, period_month, service_area)
+         values ($1, $2, $3, 'therapy') returning id`,
+        [organizationId, patients.erika, await monat()],
+      );
+      await expect(
+        asPostgres(
+          `insert into public.invoice_items (organization_id, invoice_id, billable_service_id, sort_order)
+           select $1, $2, b.id, 1 from public.billable_services b limit 1`,
+          [organizationId, entwurf[0]!.id],
+        ),
+      ).rejects.toThrow(/billed on its correction/);
+    });
+
+    it('fuehrt ueber die Korrekturrechnung weiter, und die Zeile verschwindet', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      const korrektur = await ansicht(rows[0]!.id);
+      expect(korrektur.replaces_invoice_id).toBe(id);
+
+      const { rows: liste } = await asUser<Kandidat>(users.office, KANDIDATEN);
+      expect(liste).toHaveLength(0);
+    });
+
+    it('nennt die Herkunft wieder, wenn der Korrekturentwurf verworfen ist', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      await asUserCommitted(users.office, 'select public.delete_invoice_draft($1::uuid)', [
+        rows[0]!.id,
+      ]);
+
+      const { rows: liste } = await asUser<Kandidat>(users.office, KANDIDATEN);
+      expect(liste[0]!.cancelled_invoice_id).toBe(id);
+      await expect(
+        asUserCommitted(users.office, ENTWURF, [patients.erika, await monat()]),
+      ).rejects.toThrow(/billed on its correction/);
+    });
+
+    it('laesst nach ausgestellter Korrektur neue Leistungen wieder den gewohnten Weg gehen', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+
+      // Eine nachgereichte Leistung desselben Monats stammt aus keiner
+      // stornierten Rechnung.
+      await leistung(KATALOG.mt, 20);
+      const { rows: liste } = await asUser<Kandidat>(users.office, KANDIDATEN);
+      expect(liste).toHaveLength(1);
+      expect(liste[0]!.cancelled_invoice_id).toBeNull();
+      await expect(
+        asUserCommitted(users.office, ENTWURF, [patients.erika, await monat()]),
+      ).resolves.toBeDefined();
+    });
+
+    it('haelt eine Leistung nicht fest, deren Termin inzwischen auf einer Verordnung liegt', async () => {
+      // Die Korrektur sammelt nach der Klammer der stornierten Rechnung; eine
+      // Leistung, die nicht mehr dazugehoert, muss ihren Weg behalten (CAL-022).
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+      await asPostgres('update public.appointments set treatment_basis_id = $1', [GRUNDLAGE]);
+
+      const { rows: liste } = await asUser<Kandidat & { treatment_basis_id: string | null }>(
+        users.office,
+        KANDIDATEN,
+      );
+      expect(liste).toHaveLength(1);
+      expect(liste[0]!.treatment_basis_id).toBe(GRUNDLAGE);
+      expect(liste[0]!.cancelled_invoice_id).toBeNull();
+      await expect(
+        asUserCommitted(users.office, ENTWURF_GRUNDLAGE, [GRUNDLAGE]),
+      ).resolves.toBeDefined();
+    });
+
+    /** Zwei Rechnungen derselben Klammer, beide ausgestellt und storniert. */
+    async function zweiStornos(grundlage: string | null) {
+      const auf = async (terminId: string) => {
+        if (grundlage)
+          await asPostgres('update public.appointments set treatment_basis_id = $1 where id = $2', [
+            grundlage,
+            terminId,
+          ]);
+      };
+      const entwurf = async () =>
+        grundlage
+          ? asUserCommitted<{ id: string }>(users.office, ENTWURF_GRUNDLAGE, [grundlage])
+          : asUserCommitted<{ id: string }>(users.office, ENTWURF, [patients.erika, await monat()]);
+
+      await auf(await leistung(KATALOG.kg, 30));
+      const s1 = (await entwurf()).rows[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [s1]);
+      // Eine nachgereichte Leistung: eine zweite Rechnung derselben Klammer.
+      await auf(await leistung(KATALOG.mt, 20));
+      const s2 = (await entwurf()).rows[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [s2]);
+      await storniere(s1);
+      await storniere(s2);
+      return { s1, s2 };
+    }
+
+    async function positionen(invoiceId: string): Promise<string[]> {
+      const { rows } = await asPostgres<{ code: string }>(
+        `select c.code from public.invoice_items it
+           join public.billable_services b on b.id = it.billable_service_id
+           join public.service_catalog_items c on c.id = b.catalog_item_id
+          where it.invoice_id = $1 order by c.code`,
+        [invoiceId],
+      );
+      return rows.map((r) => r.code);
+    }
+
+    for (const fall of ['Monat', 'Verordnung'] as const) {
+      it(`gibt zwei Stornos derselben Klammer je eine eigene Korrektur (${fall}, Zweitreview B1)`, async () => {
+        const grundlage = fall === 'Verordnung' ? GRUNDLAGE : null;
+        const { s1, s2 } = await zweiStornos(grundlage);
+        const nummer = async (id: string) =>
+          (
+            await asPostgres<{ n: string }>(
+              'select invoice_number as n from public.invoices where id = $1',
+              [id],
+            )
+          ).rows[0]!.n;
+
+        // Die Arbeitsliste nennt die zuletzt ausgestellte.
+        const vorher = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+        expect(vorher).toHaveLength(1);
+        expect(vorher[0]!.cancelled_invoice_id).toBe(s2);
+
+        // Die Korrektur von s2 nimmt nur, was s2 freigegeben hat.
+        const c2 = (await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [s2])).rows[0]!
+          .id;
+        expect(await positionen(c2)).toEqual(await positionen(s2));
+
+        // s1 wartet sichtbar, bis die Korrektur von s2 steht.
+        const dazwischen = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+        expect(dazwischen[0]!.cancelled_invoice_id).toBe(s1);
+        expect(dazwischen[0]!.has_draft).toBe(true);
+        expect(dazwischen[0]!.draft_replaces_invoice_number).toBe(await nummer(s2));
+        await expect(asUserCommitted(users.office, KORREKTUR, [s1])).rejects.toThrow(
+          /already exists/,
+        );
+
+        await asUserCommitted(users.office, AUSSTELLEN, [c2]);
+        const c1 = (await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [s1])).rows[0]!
+          .id;
+        expect(await positionen(c1)).toEqual(await positionen(s1));
+        await asUserCommitted(users.office, AUSSTELLEN, [c1]);
+
+        expect((await asUser<Kandidat>(users.office, KANDIDATEN)).rows).toEqual([]);
+        expect((await ansicht(c1)).replaces_invoice_id).toBe(s1);
+        expect((await ansicht(c2)).replaces_invoice_id).toBe(s2);
+      });
+    }
+
+    it('sperrt auch den Entwurf je Verordnung', async () => {
+      await leistung(KATALOG.kg, 30);
+      await asPostgres('update public.appointments set treatment_basis_id = $1', [GRUNDLAGE]);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF_GRUNDLAGE, [
+        GRUNDLAGE,
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [rows[0]!.id]);
+      await storniere(rows[0]!.id);
+
+      await expect(asUserCommitted(users.office, ENTWURF_GRUNDLAGE, [GRUNDLAGE])).rejects.toThrow(
+        /billed on its correction/,
+      );
+      const liste = (await asUser<Kandidat>(users.office, KANDIDATEN)).rows;
+      expect(liste[0]!.cancelled_invoice_id).toBe(rows[0]!.id);
+    });
+
+    it('zeigt Rolle ohne Recht, Plattformkonto und fremder Praxis keine Herkunft (ADR-004)', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+
+      expect((await asUser<Kandidat>(users.therapist, KANDIDATEN)).rows).toEqual([]);
+      // Ein Plattformkonto gehoert keiner Praxisrolle an und wird abgewiesen.
+      await expect(asUser(users.plattformErika, KANDIDATEN)).rejects.toThrow(
+        /not allowed to read invoices/,
+      );
+      const fremd = await fremdeOrganisation();
+      expect((await asUser<Kandidat>(fremd.owner, KANDIDATEN)).rows).toEqual([]);
+      await expect(asUser(fremd.owner, KORREKTUR, [id])).rejects.toThrow(/invoice not found/);
     });
   });
 

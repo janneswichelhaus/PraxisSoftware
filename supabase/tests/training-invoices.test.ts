@@ -563,6 +563,40 @@ describe('TRN-008: Rechnung am Trainingsverhaeltnis', () => {
       }
     });
 
+    it('fuehrt nach dem Storno auch im Training nur ueber die Korrektur weiter (UX-008b, ANN-321)', async () => {
+      await trainingsleistung(trainingRelationships.tina);
+      const id = await trainingsentwurf();
+      await asUserCommitted(users.office, AUSSTELLEN, [id]);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2)', [
+        id,
+        'Probe',
+      ]);
+
+      // Die Zeile im Bereich Training nennt die Herkunft ...
+      const { rows } = await asUser<{
+        training_relationship_id: string | null;
+        service_area: string;
+        cancelled_invoice_id: string | null;
+      }>(users.office, KANDIDATEN);
+      const zeile = rows.find((r) => r.training_relationship_id === trainingRelationships.tina)!;
+      expect(zeile.service_area).toBe('training');
+      expect(zeile.cancelled_invoice_id).toBe(id);
+      // ... und der gewohnte Trainingsentwurf ist gesperrt.
+      await expect(
+        asUserCommitted(users.office, TRAININGSENTWURF, [
+          trainingRelationships.tina,
+          await monat(),
+        ]),
+      ).rejects.toThrow(/billed on its correction/);
+
+      const { rows: korrektur } = await asUserCommitted<{ id: string }>(
+        users.office,
+        'select public.create_correction_draft($1::uuid) as id',
+        [id],
+      );
+      expect(korrektur[0]!.id).toBeTruthy();
+    });
+
     it('weist ein Patientenkonto an Entwurf und Listen ab', async () => {
       await trainingsleistung(trainingRelationships.tina);
       await expect(

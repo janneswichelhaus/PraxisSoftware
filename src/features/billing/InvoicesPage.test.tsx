@@ -10,6 +10,7 @@ const fetchKandidaten = vi.fn();
 const fetchRechnungen = vi.fn();
 const fetchOffenePosten = vi.fn();
 const createEntwurf = vi.fn();
+const erstelleKorrektur = vi.fn();
 const bucheZahlung = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
@@ -21,6 +22,7 @@ vi.mock('./api', async (importOriginal) => {
       fetchRechnungen(...args) as Promise<BillingApi.Rechnung[]>,
     fetchOffenePosten: () => fetchOffenePosten() as Promise<BillingApi.OffenerPosten[]>,
     createEntwurf: (...args: unknown[]) => createEntwurf(...args) as Promise<string>,
+    erstelleKorrektur: (id: string) => erstelleKorrektur(id) as Promise<string>,
     bucheZahlung: (...args: unknown[]) => bucheZahlung(...args) as Promise<void>,
   };
 });
@@ -44,6 +46,9 @@ function kandidat(rest: Partial<BillingApi.Kandidat> = {}): BillingApi.Kandidat 
     basis_issued_on: null,
     first_performed_on: null,
     last_performed_on: null,
+    cancelled_invoice_id: null,
+    cancelled_invoice_number: null,
+    draft_replaces_invoice_number: null,
     ...rest,
   };
 }
@@ -104,6 +109,7 @@ function posten(rest: Partial<BillingApi.OffenerPosten> = {}): BillingApi.Offene
 describe('InvoicesPage', () => {
   beforeEach(() => {
     fetchKandidaten.mockReset();
+    erstelleKorrektur.mockReset();
     fetchRechnungen.mockReset();
     fetchOffenePosten.mockReset();
     createEntwurf.mockReset();
@@ -214,6 +220,85 @@ describe('InvoicesPage', () => {
     expect(
       await screen.findByText(/Erstverordnung vom 15.07.2026 · Behandlung/),
     ).toBeInTheDocument();
+  });
+
+  it('führt nach einem Storno nur über die Korrekturrechnung weiter (BEF-062)', async () => {
+    const nutzer = userEvent.setup();
+    fetchKandidaten.mockResolvedValue([
+      kandidat({ cancelled_invoice_id: 'alt-1', cancelled_invoice_number: 'RG-2026-0007' }),
+    ]);
+    erstelleKorrektur.mockResolvedValue('neu-3');
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    // Die Herkunft steht an der Zeile, mit dem Weg zur stornierten Rechnung.
+    const link = await screen.findByRole('link', { name: 'RG-2026-0007' });
+    expect(link).toHaveAttribute('href', '/abrechnung/rechnungen/alt-1');
+    expect(screen.getByText(/wird ihre Korrekturrechnung/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Entwurf anlegen' })).not.toBeInTheDocument();
+
+    await nutzer.click(screen.getByRole('button', { name: 'Korrekturrechnung erstellen' }));
+    expect(erstelleKorrektur).toHaveBeenCalledWith('alt-1');
+    expect(createEntwurf).not.toHaveBeenCalled();
+  });
+
+  it('sagt ehrlich, wenn ein Entwurf ohne Bezug im Weg steht (BEF-062)', async () => {
+    fetchKandidaten.mockResolvedValue([
+      kandidat({
+        cancelled_invoice_id: 'alt-1',
+        cancelled_invoice_number: 'RG-2026-0007',
+        draft_replaces_invoice_number: null,
+        has_draft: true,
+        draft_id: 'e1',
+      }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(
+      await screen.findByText(/Entwurf ohne Bezug zur stornierten Rechnung/),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Zum Entwurf' })).toHaveAttribute(
+      'href',
+      '/abrechnung/rechnungen/e1',
+    );
+    expect(
+      screen.queryByRole('button', { name: 'Korrekturrechnung erstellen' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('nennt die wartende Korrektur, wenn zwei Stornos in einer Klammer liegen (ANN-321)', async () => {
+    fetchKandidaten.mockResolvedValue([
+      kandidat({
+        cancelled_invoice_id: 'alt-1',
+        cancelled_invoice_number: 'RG-2026-0007',
+        has_draft: true,
+        draft_id: 'k2',
+        draft_replaces_invoice_number: 'RG-2026-0008',
+      }),
+    ]);
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+
+    expect(
+      await screen.findByText(
+        'Für diesen Zeitraum steht die Korrektur zu RG-2026-0008 als Entwurf. Ist sie ausgestellt, lässt sich hier die Korrekturrechnung zu RG-2026-0007 erstellen.',
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/ohne Bezug/)).not.toBeInTheDocument();
+  });
+
+  it('hängt an einen Hinweis mit eigenem Weg keinen Satz zur Verbindung (UX-008b)', async () => {
+    const nutzer = userEvent.setup();
+    const { WegHinweis } = await import('./api');
+    fetchKandidaten.mockResolvedValue([kandidat()]);
+    createEntwurf.mockRejectedValue(new WegHinweis('Bitte die Liste neu laden.'));
+
+    renderWithProviders(<InvoicesPage user={testUser(['office'])} />, '/abrechnung');
+    await nutzer.click(await screen.findByRole('button', { name: 'Entwurf anlegen' }));
+
+    expect(await screen.findByText('Bitte die Liste neu laden.')).toBeInTheDocument();
+    expect(screen.queryByText(/Verbindung prüfen/)).not.toBeInTheDocument();
   });
 
   it('bietet keinen zweiten Entwurf fuer denselben Monat an', async () => {

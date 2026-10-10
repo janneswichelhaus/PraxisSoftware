@@ -84,6 +84,13 @@ describe('Befund der Akte', () => {
     fetchEreignisse.mockReset().mockResolvedValue([]);
   });
 
+  it('sagt einer Leserolle, wer erhebt (BEF-064)', async () => {
+    seite([], ['office']);
+    expect(
+      await screen.findByText('Noch nicht erhoben. Erhoben wird von den behandelnden Rollen.'),
+    ).toBeInTheDocument();
+  });
+
   it('bietet das Erheben an, solange nichts erhoben ist', async () => {
     seite([]);
     expect(await screen.findByText('Noch nicht erhoben.')).toBeInTheDocument();

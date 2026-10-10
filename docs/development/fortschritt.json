@@ -485,6 +485,15 @@
           "vermerk": "Sichtung: UX-Review Schritte 1 bis 3"
         },
         {
+          "id": "ux-epic-008",
+          "name": "UX-EPIC-008 Unumkehrbares fragt nach, Korrekturen finden ihren Weg (BEF-062, BEF-063, BEF-064)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "UX-008a bis UX-008d, Branch `claude/lucid-fermi-t262t6`, Zweitreview",
+          "vermerk": "Sichtung: UX-Review Schritte 4 bis 6"
+        },
+        {
           "id": "prx-epic-003",
           "name": "PRX-EPIC-003 Nichts fällt durch",
           "gewicht": 2,

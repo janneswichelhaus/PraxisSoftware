@@ -210,3 +210,23 @@ export const vermerkartTexte: Record<Vermerkart, string> = {
   consent_withdrawn: 'Einwilligung widerrufen',
   consent_refused: 'Einwilligung abgelehnt',
 };
+
+/**
+ * Der Kontrollwert der Rückfrage beim Foto-Widerruf (BEF-063): wie viele Fotos
+ * gelöscht werden. Der Widerruf löscht nur die Arbeitshilfen; das
+ * Dokumentationsfoto folgt der Akte (ADR-017 Punkt 46). Ohne geladene Liste -
+ * oder ohne das Recht, sie zu sehen - bleibt es beim Satz ohne Zahl.
+ */
+export function loeschumfang(fotos: readonly { document_type: string }[] | undefined): string {
+  const sperre = ' – außer eine Löschsperre hält sie.';
+  if (!fotos) return `Alle Fotos als Arbeitshilfe werden sofort gelöscht${sperre}`;
+  const n = fotos.filter((f) => f.document_type === 'patientenfoto').length;
+  const doku = fotos.length - n;
+  const bleiben =
+    doku === 0
+      ? ''
+      : ` ${doku === 1 ? 'Ein Dokumentationsfoto bleibt' : `${doku} Dokumentationsfotos bleiben`} in der Akte.`;
+  if (n === 0) return `Es liegt kein Foto als Arbeitshilfe vor; gelöscht wird nichts.${bleiben}`;
+  const anzahl = n === 1 ? 'Ein Foto als Arbeitshilfe wird' : `${n} Fotos als Arbeitshilfe werden`;
+  return `${anzahl} sofort gelöscht${sperre}${bleiben}`;
+}

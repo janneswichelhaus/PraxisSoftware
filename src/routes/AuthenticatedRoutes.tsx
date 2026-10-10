@@ -417,7 +417,6 @@ export function AuthenticatedRoutes({
                   {/* Ohne Pflege bliebe die Bausteinleiste dauerhaft leer -
                   die Seite gehoert zur Story (UX-008). */}
                   <Route path="/praxis/textbausteine" element={<TextbausteinePage user={user} />} />
-                  <Route path="/praxis/instrumente" element={<InstrumentePage />} />
                   {/* DOK-005: Therapiebericht schreiben - ausserhalb des Rahmens
                   wie jedes Formular (UX-009). */}
                   <Route
@@ -446,6 +445,10 @@ export function AuthenticatedRoutes({
               {showOperations ? (
                 <>
                   <Route path="/praxis/team" element={<StaffListPage user={user} />} />
+                  {/* UX-008d (BEF-064, ANN-322): Die Instrumentenbibliothek hat
+                  keinen Personenbezug und steht allen Rollen der
+                  Behandlungsseite offen, wie ihr Menüpunkt. */}
+                  <Route path="/praxis/instrumente" element={<InstrumentePage />} />
                   <Route
                     path="/praxis/team/:staffMemberId"
                     element={<StaffMemberDetailPage user={user} />}

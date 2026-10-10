@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as KontoApi from './konto-api';
 import { renderWithProviders, testStaffMember } from '@/test-utils';
@@ -37,6 +37,9 @@ vi.mock('./konto-api', async (importOriginal) => {
 });
 
 const { StaffAccountSection } = await import('./StaffAccountSection');
+/** Die angemeldete Praxisinhaber:in - nicht Anna, deren Zugang hier verwaltet wird. */
+const OWNER = '11111111-1111-4111-8111-000000000001';
+
 const { EinladungsError, ZugangsError } = await import('./konto-api');
 
 const offeneEinladung: KontoApi.StaffInvitation = {
@@ -88,7 +91,7 @@ describe('StaffAccountSection', () => {
   });
 
   it('belegt die Adresse aus der dienstlichen E-Mail vor, die Rollen aber nicht', async () => {
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     expect(await screen.findByLabelText('E-Mail-Adresse für den Zugang')).toHaveValue(
       'anna.beispiel@praxis.invalid',
@@ -107,7 +110,7 @@ describe('StaffAccountSection', () => {
   });
 
   it('beschreibt das Praxismanagement, wie es seit E15 ist (ORG-01)', async () => {
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     const office = await screen.findByRole('checkbox', { name: 'Praxismanagement' });
     expect(office).toHaveAccessibleDescription(
@@ -118,7 +121,7 @@ describe('StaffAccountSection', () => {
 
   it('verlangt mindestens eine Rolle - am Feld (ORG-15)', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Zugang einladen' }));
 
@@ -132,7 +135,7 @@ describe('StaffAccountSection', () => {
 
   it('verlangt eine brauchbare Adresse - am Feld (ORG-15)', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     const feld = await screen.findByLabelText('E-Mail-Adresse für den Zugang');
     await user.clear(feld);
@@ -150,7 +153,7 @@ describe('StaffAccountSection', () => {
 
   it('lädt mit den gewählten Rollen ein', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Therapeut:in' }));
     await user.click(screen.getByRole('checkbox', { name: 'Teamleitung' }));
@@ -166,7 +169,7 @@ describe('StaffAccountSection', () => {
   it('erklärt eine abgewiesene Einladung, statt nur zu scheitern', async () => {
     const user = userEvent.setup();
     ladeZugangEin.mockRejectedValue(new EinladungsError('email_already_in_use'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Praxismanagement' }));
     await user.click(screen.getByRole('button', { name: 'Zugang einladen' }));
@@ -178,7 +181,7 @@ describe('StaffAccountSection', () => {
 
   it('zeigt eine offene Einladung mit Adresse, Rollen und Frist', async () => {
     fetchStaffInvitations.mockResolvedValue([offeneEinladung]);
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     expect(await screen.findByText('nina.neu@praxis.invalid')).toBeInTheDocument();
     expect(screen.getByText('Therapeut:in')).toBeInTheDocument();
@@ -190,7 +193,7 @@ describe('StaffAccountSection', () => {
   it('nimmt eine Einladung erst nach der Rückfrage zurück und bestätigt es', async () => {
     const user = userEvent.setup();
     fetchStaffInvitations.mockResolvedValueOnce([offeneEinladung]).mockResolvedValue([]);
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Einladung zurücknehmen' }));
     expect(widerrufeEinladung).not.toHaveBeenCalled();
@@ -204,7 +207,7 @@ describe('StaffAccountSection', () => {
     fetchStaffInvitations.mockResolvedValue([
       { ...offeneEinladung, expires_at: new Date(Date.now() - 86_400_000).toISOString() },
     ]);
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     expect(await screen.findByText(/Diese Einladung gilt nicht mehr/)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Anmeldemail senden' })).not.toBeInTheDocument();
@@ -212,7 +215,7 @@ describe('StaffAccountSection', () => {
 
   it('zeigt bei bestehendem Zugang die Verwaltung statt eines Einladungsformulars', async () => {
     fetchStaffAccount.mockResolvedValue(mitZugang);
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     // Eingerichtet ist der Regelfall und steht nicht als Zeile da (UX-005i).
     expect(await screen.findByRole('checkbox', { name: 'Therapeut:in' })).toBeChecked();
@@ -222,7 +225,12 @@ describe('StaffAccountSection', () => {
   });
 
   it('lädt für eine inaktive Person niemanden ein', async () => {
-    renderWithProviders(<StaffAccountSection staff={{ ...anna, employment_status: 'inactive' }} />);
+    renderWithProviders(
+      <StaffAccountSection
+        staff={{ ...anna, employment_status: 'inactive' }}
+        eigeneUserId={OWNER}
+      />,
+    );
 
     expect(
       await screen.findByText(/Für eine inaktive Person wird kein Zugang eingeladen/),
@@ -233,7 +241,7 @@ describe('StaffAccountSection', () => {
   it('meldet einen Ladefehler verständlich und bietet einen neuen Versuch an', async () => {
     const user = userEvent.setup();
     fetchStaffInvitations.mockRejectedValueOnce(new Error('kaputt'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     expect(
       await screen.findByText('Der Zugangsstand konnte nicht geladen werden.'),
@@ -266,7 +274,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('speichert Rollen erst nach einer Änderung', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     // Unverändert: nichts zu speichern.
     expect(await screen.findByRole('button', { name: 'Rollen speichern' })).toBeDisabled();
@@ -284,7 +292,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     fetchStaffAccount
       .mockResolvedValueOnce(mitZugang)
       .mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'team_lead'] });
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
@@ -297,7 +305,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('lässt eine Änderung verwerfen', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
     await user.click(screen.getByRole('button', { name: 'Verwerfen' }));
@@ -308,7 +316,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('speichert keine leere Rollenliste', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Therapeut:in' }));
 
@@ -317,10 +325,71 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     expect(document.body.textContent).not.toMatch(/entrechtet/);
   });
 
+  it('fragt vor dem Entziehen einer Rolle nach und nennt, was wegfällt (BEF-064)', async () => {
+    const user = userEvent.setup();
+    fetchStaffAccount.mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'team_lead'] });
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+
+    // Ein Häkchen weniger wirkt sofort - erst die Rückfrage.
+    expect(setzeRollen).not.toHaveBeenCalled();
+    const kasten = screen.getByRole('group', { name: 'Rollen speichern – Rückfrage' });
+    expect(kasten).toHaveTextContent(/verliert sofort die Rolle/);
+    expect(kasten).toHaveTextContent('Teamleitung – Wie Therapeut:in, dazu Arbeitszeiten pflegen.');
+    expect(kasten).toHaveTextContent('Danach gilt nur noch: Therapeut:in.');
+
+    await user.click(within(kasten).getByRole('button', { name: 'Ja, Rolle entziehen' }));
+    await waitFor(() => expect(setzeRollen).toHaveBeenCalledWith(anna.id, ['therapist']));
+  });
+
+  it('zeigt einen Fehlschlag beim Entziehen in der offenen Rückfrage (BEF-064)', async () => {
+    const user = userEvent.setup();
+    fetchStaffAccount.mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'owner'] });
+    setzeRollen.mockRejectedValue(new ZugangsError('last_owner_required'));
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Praxisinhaber' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Ja, Rolle entziehen' }));
+
+    const kasten = screen.getByRole('group', { name: 'Rollen speichern – Rückfrage' });
+    await waitFor(() =>
+      expect(kasten).toHaveTextContent(/Die letzte aktive Praxisinhaber:in behält ihre Rolle/),
+    );
+    // Einmal, in der Rückfrage - nicht noch ein zweites Mal darunter.
+    expect(screen.getAllByText(/Die letzte aktive Praxisinhaber:in/)).toHaveLength(1);
+  });
+
+  it('entzieht nach „Abbrechen“ nichts (BEF-064)', async () => {
+    const user = userEvent.setup();
+    fetchStaffAccount.mockResolvedValue({ ...mitZugang, role_keys: ['therapist', 'office'] });
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
+
+    await user.click(await screen.findByRole('checkbox', { name: 'Praxismanagement' }));
+    await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(setzeRollen).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Rollen speichern' })).toHaveFocus();
+  });
+
+  it('bietet am eigenen Zugang kein Sperren an (BEF-064)', async () => {
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={mitZugang.user_id!} />);
+
+    expect(
+      await screen.findByText('Den eigenen Zugang können Sie nicht sperren.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Zugang sperren' })).not.toBeInTheDocument();
+    // Das Kennwort lässt sich weiter zurücksetzen.
+    expect(screen.getByRole('button', { name: 'Kennwort zurücksetzen' })).toBeInTheDocument();
+  });
+
   it('erklärt den Aussperrschutz, statt nur zu scheitern', async () => {
     const user = userEvent.setup();
     setzeRollen.mockRejectedValue(new ZugangsError('last_owner_required'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Praxisinhaber' }));
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
@@ -332,7 +401,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('sperrt erst nach der Rückfrage und bestätigt es', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
     expect(setzeZugangAktiv).not.toHaveBeenCalled();
@@ -344,7 +413,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('bietet bei gesperrtem Zugang das Entsperren an und sagt, was gilt', async () => {
     fetchStaffAccount.mockResolvedValue({ ...mitZugang, account_active: false });
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     // Die Sperre sagt allein die Warnung, keine Zeile „Stand" (UX-005i).
     expect(
@@ -356,7 +425,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
   it('nennt beim eigenen Zugang den Grund der Ablehnung', async () => {
     const user = userEvent.setup();
     setzeZugangAktiv.mockRejectedValue(new ZugangsError('cannot_lock_own_account'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
     await user.click(screen.getByRole('button', { name: 'Sperren' }));
@@ -369,7 +438,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
   it('sagt bei einem unbekannten Fehler, was zu tun ist (ORG-15)', async () => {
     const user = userEvent.setup();
     setzeZugangAktiv.mockRejectedValue(new ZugangsError('unbekannt'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Zugang sperren' }));
     await user.click(screen.getByRole('button', { name: 'Sperren' }));
@@ -383,7 +452,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
 
   it('stößt das Zurücksetzen des Kennworts erst nach der Rückfrage an', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Kennwort zurücksetzen' }));
     expect(stosseKennwortZuruecksetzenAn).not.toHaveBeenCalled();
@@ -398,7 +467,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
   it('behält die Rollenwahl, wenn das Nachladen scheitert (ZST-03)', async () => {
     const user = userEvent.setup();
     fetchStaffAccount.mockResolvedValueOnce(mitZugang).mockRejectedValue(new Error('Funkloch'));
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('checkbox', { name: 'Teamleitung' }));
     await user.click(screen.getByRole('button', { name: 'Rollen speichern' }));
@@ -436,7 +505,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
   });
 
   it('nennt bei einer offenen Einladung den nächsten Schritt - wer und wo', async () => {
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     // Zugeklappt hinter einem Aufklapper (UX-005i); der Text steht im Dokument.
     expect(
@@ -453,7 +522,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
 
   it('bestätigt die zugestellte Anmeldemail', async () => {
     const user = userEvent.setup();
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
 
@@ -471,7 +540,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
     // und schickte jemanden los, eines anzulegen, das laengst existiert.
     const user = userEvent.setup();
     sendeZugangsMail.mockResolvedValue('dienst_nicht_erreichbar');
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
 
@@ -482,7 +551,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
   it('erklärt ein fehlendes Konto, statt einen Fehler zu melden', async () => {
     const user = userEvent.setup();
     sendeZugangsMail.mockResolvedValue('kein_konto');
-    renderWithProviders(<StaffAccountSection staff={anna} />);
+    renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
     await user.click(await screen.findByRole('button', { name: 'Anmeldemail senden' }));
 
@@ -507,7 +576,7 @@ describe('StaffAccountSection - Zustellung der Anmeldemail', () => {
         .mockResolvedValueOnce([])
         .mockResolvedValue([{ ...offeneEinladung, email: 'nina.neu@praxis.invalid' }]);
       ladeZugangEin.mockResolvedValue(zustellung);
-      renderWithProviders(<StaffAccountSection staff={anna} />);
+      renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
       const feld = await screen.findByLabelText('E-Mail-Adresse für den Zugang');
       await user.clear(feld);
