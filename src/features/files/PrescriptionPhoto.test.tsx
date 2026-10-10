@@ -74,7 +74,8 @@ describe('PrescriptionPhoto mit Kamera', () => {
       grundlageId: null,
       documentType: 'verordnungsscan',
     });
-    expect(auftrag.displayName).toMatch(/^Verordnung, Foto vom \d{2}\.\d{2}\.\d{4}$/);
+    // Mit Uhrzeit: zwei Fotos eines Tages heißen nicht gleich (BEF-059).
+    expect(auftrag.displayName).toMatch(/^Verordnung, Foto vom \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/);
     expect(await screen.findByText(/wartet aufs Erfassen/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Offene Punkte' })).toHaveAttribute('href', '/offen');
   });

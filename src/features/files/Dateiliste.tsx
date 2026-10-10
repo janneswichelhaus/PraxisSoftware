@@ -20,6 +20,7 @@ import {
   dateiAblehnungsgrund,
   dokumentartHinweise,
   dokumentartLabels,
+  namensvorschlag,
   formatBytes,
   istAnzeigbar,
   istKlinisch,
@@ -68,6 +69,16 @@ function tagDerPraxis(zeitpunkt: string, zeitzone: string): string {
   }).format(new Date(zeitpunkt));
 }
 
+/**
+ * Die Art einer Datei wählen.
+ *
+ * Ohne Wert beginnt die Auswahl mit „Bitte wählen …“ (BEF-059, Entscheidung
+ * Jannes 2026-10-09): Die Art bestimmt, wer die Datei löschen darf, und ist
+ * eine Sichtbarkeitsgrenze (ADR-017 Punkt 12) - vorbelegt wird sie nur aus dem
+ * Kontext, nie mit der ersten Art der Liste. Die Erläuterung zur gewählten
+ * Art steht **unter** der Auswahl: Darüber ließ sie das Feld bei jedem
+ * Wechsel springen.
+ */
 function Dokumentartauswahl({
   wert,
   onChange,
@@ -75,27 +86,42 @@ function Dokumentartauswahl({
   feldId,
   disabled = false,
 }: {
-  wert: Dokumentart;
+  wert: Dokumentart | null;
   onChange: (art: Dokumentart) => void;
   arten: readonly Dokumentart[];
   feldId?: string | undefined;
   disabled?: boolean;
 }) {
+  const hinweisId = useId();
   return (
-    <Select
-      feldId={feldId}
-      label="Art des Dokuments"
-      hint={`${dokumentartHinweise[wert]} ${sichtbarkeitHinweis(wert)}`}
-      value={wert}
-      disabled={disabled}
-      onChange={(e) => onChange(e.target.value as Dokumentart)}
-    >
-      {arten.map((art) => (
-        <option key={art} value={art}>
-          {dokumentartLabels[art]}
-        </option>
-      ))}
-    </Select>
+    <div>
+      <Select
+        feldId={feldId}
+        label="Art des Dokuments"
+        value={wert ?? ''}
+        disabled={disabled}
+        aria-describedby={wert ? hinweisId : undefined}
+        onChange={(e) => {
+          if (e.target.value !== '') onChange(e.target.value as Dokumentart);
+        }}
+      >
+        {wert ? null : (
+          <option value="" disabled>
+            Bitte wählen …
+          </option>
+        )}
+        {arten.map((art) => (
+          <option key={art} value={art}>
+            {dokumentartLabels[art]}
+          </option>
+        ))}
+      </Select>
+      {wert ? (
+        <p id={hinweisId} className="text-ink-muted mt-1.5 text-sm">
+          {dokumentartHinweise[wert]} {sichtbarkeitHinweis(wert)}
+        </p>
+      ) : null}
+    </div>
   );
 }
 
@@ -127,9 +153,14 @@ interface UploadfeldProps {
  */
 function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   const dateifeldId = useId();
-  const [art, setArt] = useState<Dokumentart>(arten[0]!);
+  // Vorbelegt nur aus dem Kontext - an der Verordnung gibt es genau eine Art
+  // (ADR-017 Punkt 12); sonst wählt die Person (BEF-059).
+  const [art, setArt] = useState<Dokumentart | null>(arten.length === 1 ? arten[0]! : null);
   const [datei, setDatei] = useState<File | null>(null);
-  const [name, setName] = useState('');
+  // Der Name folgt dem Vorschlag „‹Art› vom ‹Datum›“, bis die Person ihn
+  // selbst ändert (BEF-059); `null` heißt: noch der Vorschlag.
+  const [eigenerName, setEigenerName] = useState<string | null>(null);
+  const [gewaehltUm, setGewaehltUm] = useState(() => new Date());
   const [ablehnung, setAblehnung] = useState<string | null>(null);
   const [erfolg, setErfolg] = useState<string | null>(null);
   const [kameraOffen, setKameraOffen] = useState(false);
@@ -166,47 +197,59 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
     const grund = dateiAblehnungsgrund(gewaehlt);
     setAblehnung(grund);
     setDatei(grund ? null : gewaehlt);
-    if (!grund) setName(gewaehlt.name);
+    setEigenerName(null);
+    setGewaehltUm(new Date());
   }
 
   function fotoAufgenommen(foto: Blob) {
     setKameraOffen(false);
     setErfolg(null);
     upload.reset();
-    const vorschlag = fotoVomHeutigenTag();
-    const aufnahme = new File([foto], `${vorschlag}.jpg`, { type: 'image/jpeg' });
+    const jetzt = new Date();
+    const aufnahme = new File([foto], `${fotoVomHeutigenTag(jetzt)}.jpg`, { type: 'image/jpeg' });
     const grund = dateiAblehnungsgrund(aufnahme);
     setAblehnung(grund);
     setDatei(grund ? null : aufnahme);
     setAusKamera(!grund);
     setVorschau(grund ? null : URL.createObjectURL(aufnahme));
-    setName(vorschlag);
+    setEigenerName(null);
+    setGewaehltUm(jetzt);
     // Eine vorher gewählte Datei stünde sonst weiter im Feld.
     setDurchgang((n) => n + 1);
   }
 
   function zuruecksetzen() {
     setDatei(null);
-    setName('');
+    setEigenerName(null);
     setAblehnung(null);
     setAusKamera(false);
     setVorschau(null);
     setDurchgang((n) => n + 1);
   }
 
+  // Fotos aus der Kamera mit Uhrzeit: Zwei Aufnahmen eines Tages trügen sonst
+  // denselben Namen (BEF-059).
+  const vorschlag = art
+    ? namensvorschlag(art, ausKamera, gewaehltUm)
+    : ausKamera
+      ? fotoVomHeutigenTag(gewaehltUm)
+      : '';
+  const name = eigenerName ?? vorschlag;
+
   function hinzufuegen() {
-    if (!datei) return;
+    if (!datei || !art) return;
+    const anzeigename = name.trim() || vorschlag;
     upload.mutate(
       {
         patientId,
         grundlageId,
         documentType: art,
-        displayName: name.trim() || datei.name,
+        displayName: anzeigename,
         datei,
       },
       {
         onSuccess: () => {
-          setErfolg(`„${name.trim() || datei.name}“ ist in der Akte.`);
+          setErfolg(`„${anzeigename}“ ist in der Akte.`);
           zuruecksetzen();
         },
       },
@@ -272,8 +315,10 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
           <Dokumentartauswahl wert={art} onChange={setArt} arten={arten} disabled={laeuft} />
         ) : (
           <div>
-            <p className="text-ink text-sm font-medium">{dokumentartLabels[art]}</p>
-            <p className="text-ink-muted mt-1 max-w-prose text-sm">{sichtbarkeitHinweis(art)}</p>
+            <p className="text-ink text-sm font-medium">{dokumentartLabels[arten[0]!]}</p>
+            <p className="text-ink-muted mt-1 max-w-prose text-sm">
+              {sichtbarkeitHinweis(arten[0]!)}
+            </p>
           </div>
         )}
 
@@ -284,15 +329,26 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
             maxLength={200}
             hint="Unter diesem Namen steht die Datei in der Akte."
             disabled={laeuft}
-            onChange={(e) => setName(e.target.value)}
+            autoComplete="off"
+            onChange={(e) => setEigenerName(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter fügt hinzu, statt nichts zu tun (BEF-059).
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                hinzufuegen();
+              }
+            }}
           />
         ) : null}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" onClick={hinzufuegen} disabled={!datei || laeuft}>
+        <Button type="button" onClick={hinzufuegen} disabled={!datei || !art || laeuft}>
           {laeuft ? 'Wird hinzugefügt …' : 'Datei hinzufügen'}
         </Button>
+        {datei && !art ? (
+          <span className="text-ink-muted text-sm">Zuerst die Art des Dokuments wählen.</span>
+        ) : null}
         {datei ? (
           <Button type="button" variant="secondary" disabled={laeuft} onClick={zuruecksetzen}>
             Verwerfen

@@ -286,3 +286,19 @@ export function aktenortDerDatei(patientId: string, art: string): string {
   };
   return `/patienten/${patientId}/${ort[dateibereich(art)]}`;
 }
+
+/**
+ * Der vorgeschlagene Name einer neuen Datei (BEF-059, Entscheidung Jannes
+ * 2026-10-09): „Befund vom 10.10.2026“, ein Foto aus der Kamera mit Uhrzeit
+ * („Befund vom 10.10.2026, 10:42“). Ohne Dateiendung - `IMG_4711.jpg`
+ * unterscheidet nichts. Der Name bleibt änderbar.
+ */
+export function namensvorschlag(art: Dokumentart, mitUhrzeit: boolean, zeitpunkt: Date): string {
+  const tag = zeitpunkt.toLocaleDateString('de-DE', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+  const uhrzeit = zeitpunkt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+  return `${dokumentartLabels[art]} vom ${tag}${mitUhrzeit ? `, ${uhrzeit}` : ''}`;
+}
