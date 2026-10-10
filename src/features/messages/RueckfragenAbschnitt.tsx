@@ -89,8 +89,9 @@ export function OffeneRueckfragen({ bereiche }: { bereiche: Verhaeltnisart[] }) 
 /**
  * Offene Rückfragen aus dem Training bei den Trainingskund:innen (KOM-003,
  * DSN-001 D1 b): Die Trainingsbetreuung öffnet „Offene Punkte" nicht, also
- * stehen sie hier - nur, wenn es welche gibt. Das Büro sieht nur „Termin oder
- * Rechnung" (ANN-311); verbindlich filtert der Server.
+ * stehen sie hier - nur, wenn es welche gibt. Das Büro sieht alle (BEF-137)
+ * und antwortet auf Termin, Rechnung und Sonstiges (ANN-311 Fassung 3);
+ * verbindlich entscheidet der Server.
  */
 export function TrainingRueckfragen() {
   const { data } = useQuery({

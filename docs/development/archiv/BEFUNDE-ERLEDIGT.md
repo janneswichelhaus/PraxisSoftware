@@ -166,3 +166,19 @@ Das widerspricht ADR-017 in der heutigen Fassung (zwei Fotoarten, Wahl vor dem K
 Die Akte erfährt weiterhin nicht, ob eine Person das Training gebucht hat (ANN-285 bestätigt). Der Loop schreibt zuerst die neue Fassung von §4.3 und ADR-021 Punkt 10 und öffnet dann RLS und Oberfläche, mit Negativfällen in `pnpm test:db` (Büro schreibt nicht).
 
 **Nachtrag (Jannes, 2026-10-09, UX-Review).** Die Regel gilt auch für die Rückfragen im Training (ANN-311: das Büro liest alle, antwortet weiter nur bei „Termin oder Rechnung“; umgesetzt mit ABN-030 über `app.can_read_platform_message`) und für die Instrumente-Bibliothek (BEF-064, eingeplant in UX-EPIC-008). Für Daten über Beschäftigte gilt sie nicht; dort gilt BEF-066.
+
+### BEF-139 — Das Büro antwortet im Training auch auf „Sonstiges“
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Kommunikation, Training |
+| Quelle  | Jannes, Abnahme ANN-311 Fassung 2 (2026-10-10) |
+| Status  | erledigt in BEF-139 (2026-10-10) |
+| Berührt | `app.can_answer_platform_message` (KOM-002), `supabase/tests/practice-messages.test.ts` |
+
+**Beobachtung.** Seit BEF-137 liest das Büro im Training alle Rückfragen, antworten und erledigen darf es dort aber nur bei „Termin oder Rechnung“. In der Behandlung antwortet es auch auf „Sonstiges“.
+
+**Entscheidung (Jannes, 2026-10-10).** Eine Regel für beide Bereiche: Das Büro antwortet im Training wie in der Behandlung auf „Termin oder Rechnung“ und „Sonstiges“, nicht auf „Übung“ und „Beschwerden“.
+
+**Erwartet.** Der Zweig `training` in `app.can_answer_platform_message` nimmt `other` auf (eine Migration), dazu der Positiv- und der Negativfall in `practice-messages.test.ts` und die Oberfläche, falls sie die Regel spiegelt. ANN-311 Fassung 3. Einzel-Story-Loop mit `pnpm test:db`.

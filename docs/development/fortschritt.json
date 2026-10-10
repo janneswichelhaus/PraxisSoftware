@@ -602,6 +602,15 @@
           "vermerk": "Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12"
         },
         {
+          "id": "bef-139",
+          "name": "BEF-139 Das Büro antwortet im Training auch auf „Sonstiges“",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-10-10",
+          "nachweis": "ANN-311 Fassung 3; Migration 20261022130000, practice-messages.test.ts (Gegenprobe ohne Migration rot); Zweitreview",
+          "vermerk": "ohne Oberfläche; Sichtung Pläne Schritt 12 angepasst"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,

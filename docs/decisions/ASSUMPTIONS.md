@@ -3760,11 +3760,11 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.202
 
 **Änderungspfad.** Büro antwortet auf alles: ein Zweig in `app.can_answer_platform_message` · Aufwand `klein`. Büro liest Übung und Beschwerden nicht: ein Zweig in `app.can_read_platform_message` · Aufwand `klein`.
 
-### ANN-311 — Im Training: Gesundheitsthemen nur mit Einwilligung, das Büro nur bei Termin und Rechnung
+### ANN-311 — Im Training: Gesundheitsthemen nur mit Einwilligung, das Büro liest alles und antwortet wie in der Behandlung
 
 Datenschutz · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Änderung BEF-137 · Wiedervorlage: Datenschutzprüfung (B2, mit ANN-264 und ANN-306)
 
-**Annahme.** Im Training gibt es die Themen „Übung“ und „Beschwerden“ nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist; nach einem Widerruf kein Nachtrag mehr dazu, bestehende Vorgänge bleiben lesbar. „Termin oder Rechnung“ und „Sonstiges“ gehen immer. Die Praxis liest Nachrichten aus dem Training im Bereich Training (DSN-001 D1 b): `owner` und Trainingsbetreuung alle, das Büro nur „Termin oder Rechnung“ – und beantwortet nur diese.
+**Annahme.** Im Training gibt es die Themen „Übung“ und „Beschwerden“ nur, solange die Einwilligung zu Gesundheitsangaben (`training_health_data`) erteilt ist; nach einem Widerruf kein Nachtrag mehr dazu, bestehende Vorgänge bleiben lesbar. „Termin oder Rechnung“ und „Sonstiges“ gehen immer. Die Praxis liest Nachrichten aus dem Training im Bereich Training (DSN-001 D1 b): `owner`, Trainingsbetreuung und Büro alle (Fassung 2); `owner` und Trainingsbetreuung beantworten alle, das Büro „Termin oder Rechnung“ und „Sonstiges“ (Fassung 3). *Fassung 1: Das Büro las und beantwortete nur „Termin oder Rechnung“.*
 
 **Begründung.** ADR-021 Punkt 4: Gesundheitsangaben im Training brauchen die ausdrückliche Einwilligung; dieselbe Stelle wie „Das war schwierig, weil …“ (ANN-306). DSN-001 D1 überlässt die Sicht des Büros diesem Loop und nennt „Termin oder Rechnung“ als den organisatorischen Teil (wie ANN-184). „Sonstiges“ kann Gesundheitliches enthalten; deshalb liest das Büro es im Training nicht.
 
