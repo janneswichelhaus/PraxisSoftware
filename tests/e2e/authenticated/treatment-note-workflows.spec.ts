@@ -18,6 +18,7 @@ import {
   terminNeuLaden,
   TERMIN_IM_KALENDER,
   fensterSchliessen,
+  nurTerminAbschliessen,
 } from './helpers';
 
 /**
@@ -139,7 +140,7 @@ test.describe('DOK-001: Entwurf anlegen und bearbeiten', () => {
 
     // Der Haken schließt ohne Eintrag ab (Design-Handoff 2026-10-01,
     // Abschnitt 6a); dokumentiert wird gleich danach nachtraeglich.
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await nurTerminAbschliessen(page);
     // Der Zustand steht seit UX-005a als Abzeichen in der Kopfzeile, nicht
     // mehr als Satz.
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
@@ -312,7 +313,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     // im Abschnitt „Dokumentation" (Zyklus 3; der Haken schliesst vorher ab).
     await anmelden(page, KONTEN.therapist);
     const terminId = await terminAnlegen(page, laufTag(9));
-    await page.getByRole('button', { name: 'Termin abschließen' }).click();
+    await nurTerminAbschliessen(page);
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
     await page.getByRole('link', { name: 'Doku schreiben' }).click();
     // Der Link traegt den Rueckweg in den Kalender (`?zurueck=`).

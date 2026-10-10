@@ -161,7 +161,7 @@ test.describe('DOK-002: Nachtragen', () => {
     await expect(page.getByText(ENTWURF)).toBeVisible();
 
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
-    await page.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
 
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
@@ -184,7 +184,7 @@ test.describe('DOK-002: Nachtragen', () => {
 
     await page.getByRole('link', { name: 'Nachtrag hinzufügen' }).click();
     await page.getByLabel('Nachtrag').fill(NACHTRAG);
-    await page.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }).click();
+    await page.getByRole('button', { name: 'Als Entwurf speichern' }).click();
     await expect(page).toHaveURL(terminImKalender(terminId));
     await aktionenOeffnen(page);
 
