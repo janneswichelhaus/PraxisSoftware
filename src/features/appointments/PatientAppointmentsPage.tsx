@@ -145,10 +145,15 @@ function Terminzeile({
             Abrechnungsfehler, den §13 ausschließt. */}
         <Deckungszeichen gedeckt={termin.treatment_basis_covered} />
         <Mitteilungszeichen kanaele={termin.notification_channels} />
+        {/* Ein künftiger, bestätigter Termin ist der Regelfall und trägt kein
+            Abzeichen. Ein vorbeigegangener, noch offener „steht aus“ - wie
+            auf Tageskarte und Terminseite (BEF-067). */}
         {termin.status !== 'confirmed' ? (
           <Badge ton={appointmentStatusTon[termin.status]}>
             {appointmentStatusLabels[termin.status]}
           </Badge>
+        ) : Date.parse(termin.ends_at) < Date.now() ? (
+          <Badge ton="warnung">{appointmentStatusLabels.confirmed}</Badge>
         ) : null}
       </div>
     </li>

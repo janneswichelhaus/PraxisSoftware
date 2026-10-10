@@ -66,7 +66,7 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
     return (
       <div ref={bestaetigung} tabIndex={-1} className="mt-6 flex flex-col items-start gap-2">
         <Statusmeldung>
-          Angefordert für {angefordertFuer}. Falls für diese Adresse ein Zugang besteht, ist eine
+          Angefordert für {angefordertFuer}. Falls für diese Adresse ein Konto besteht, ist eine
           Mail zum Zurücksetzen unterwegs. Bitte auch den Spam-Ordner ansehen.
         </Statusmeldung>
         <Button
@@ -146,7 +146,7 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
           className="flex flex-col gap-3"
         >
           <Field
-            label="E-Mail-Adresse des Zugangs"
+            label="E-Mail-Adresse des Kontos"
             feldId={ADRESSFELD}
             hint="Wir schicken einen Link, mit dem ein neues Kennwort gesetzt wird."
             type="email"
@@ -231,7 +231,7 @@ export function LoginPage() {
     <Vollseite
       titel="Anmelden"
       einleitung="Zugang ausschließlich für Mitarbeitende und Patient:innen der Praxis."
-      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig."
+      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig."
     >
       <form
         onSubmit={(event) => void handleSubmit(event)}

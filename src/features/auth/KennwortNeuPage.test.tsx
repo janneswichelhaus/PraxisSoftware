@@ -69,7 +69,7 @@ describe('KennwortNeuPage — den Link einlösen', () => {
     expect(
       await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/Fordern Sie auf der Anmeldemaske einen neuen an/)).toBeInTheDocument();
+    expect(screen.getByText(/Fordern Sie auf der Anmeldeseite einen neuen an/)).toBeInTheDocument();
     expect(screen.queryByLabelText(/Neues Kennwort$/)).not.toBeInTheDocument();
   });
 
@@ -252,7 +252,7 @@ describe('KennwortNeuPage — UXR-002', () => {
     expect(
       await screen.findByText('Dieser Link lässt sich nicht mehr verwenden.'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/nach dem Abmelden auf der Anmeldemaske/)).toBeInTheDocument();
+    expect(screen.getByText(/nach dem Abmelden auf der Anmeldeseite/)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Zurück zur Anwendung' })).toHaveAttribute('href', '/');
     expect(screen.queryByRole('button', { name: 'Zur Anmeldung' })).toBeNull();
   });

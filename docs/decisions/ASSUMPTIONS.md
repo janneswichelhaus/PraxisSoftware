@@ -1483,6 +1483,8 @@ Praxisprozess · entschieden (Jannes) · 2026-09-28 · Jannes (Sichtung Kernproz
 
 Seit 2026-09-29 auch „Auditlog“ → „Protokoll“ (Jannes in der Sichtung, BEF-080).
 
+Seit 2026-10-10 (UX-009c, BEF-067, Entscheidung Jannes 2026-10-09, Spalte „Vorschlag“): „Terminserie“ → „Dauertermin“ (die Vorkommen bleiben „Serie“); „Länge“ und „Terminfenster“ → „Dauer“ in Kalender, Training und Übersicht; „Fehlzeit“ bleibt, ihre Beispiele stehen nur noch in `BEGRIFFE.fehlzeitBeispiele`; „Tag umplanen“ bleibt; ein bestätigter, offener Termin „steht aus“ – auf Tageskarte, Terminseite und in der Akte, dort am vorbeigegangenen offenen Termin; Titel der Anlegeseiten als Verben („Patient:in anlegen“, nie „Neue:r …“); „Konto“ ist die Anmeldung mit E-Mail und Kennwort, „Zugang“ die Freischaltung durch die Praxis, die Mail heißt „Anmeldemail“, auch im Betreff, die Seite „Anmeldeseite“; „in Versorgung“ / „nicht in Versorgung“ statt „Aktiv/Inaktiv“ und „laufender Versorgung“, „abgeschlossen“ nur für den Abschluss, und ist er gesetzt, zeigt der Kopf der Akte nur ihn; die Patientenliste nennt „Nachname, Vorname“ mit hervorgehobenem Nachnamen und bricht um, statt zu kürzen.
+
 **Anker.** `ABGELOESTE_BEGRIFFE` in `src/lib/begriffe.ts`, durchgesetzt von `src/lib/begriffe.test.ts` über jeden Quelltext unter `src/` ohne Kommentare und Tests.
 
 **Änderungspfad.** Ein anderes Wort: den Wert in `BEGRIFFE` bzw. `BEREICHE` ändern, den Eintrag in `ABGELOESTE_BEGRIFFE` umkehren und den Test die übrigen Stellen finden lassen · Aufwand `klein`. Das Gate aufgeben: den Test entfernen, die Datei bleibt als Quelle · Aufwand `klein`.

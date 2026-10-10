@@ -299,10 +299,10 @@ describe('NewAppointmentPage', () => {
 
     await user.type(screen.getByLabelText('Beginn *'), '10:15');
     // Ohne ausdrueckliche Wahl gibt es kein Minutenfeld: 60 bleibt der kurze Weg.
-    expect(screen.queryByLabelText('Länge in Minuten')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Dauer in Minuten')).not.toBeInTheDocument();
 
     await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
-    const feld = screen.getByLabelText('Länge in Minuten');
+    const feld = screen.getByLabelText('Dauer in Minuten');
     expect(feld).toHaveValue(60);
 
     await user.clear(feld);
@@ -324,9 +324,9 @@ describe('NewAppointmentPage', () => {
 
     await user.type(screen.getByLabelText('Beginn *'), '10:15');
     await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
-    await user.clear(screen.getByLabelText('Länge in Minuten'));
+    await user.clear(screen.getByLabelText('Dauer in Minuten'));
 
-    expect(screen.getByText(/Bitte eine Länge in ganzen Minuten/)).toBeInTheDocument();
+    expect(screen.getByText(/Bitte eine Dauer in ganzen Minuten/)).toBeInTheDocument();
     expect(screen.queryByText(/Ende: 11:15 Uhr/)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Termin anlegen' }));

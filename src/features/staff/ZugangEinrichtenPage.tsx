@@ -57,7 +57,7 @@ export function ZugangEinrichtenPage({
   return (
     <Vollseite
       titel="Zugang einrichten"
-      kleingedrucktes="Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig. Der Beitritt wird protokolliert."
+      kleingedrucktes="Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig. Der Beitritt wird protokolliert."
     >
       {ohneEinladung ? (
         <div ref={fehlerkasten} tabIndex={-1} className="outline-none">

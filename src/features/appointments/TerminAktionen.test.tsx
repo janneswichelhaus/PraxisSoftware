@@ -165,7 +165,7 @@ describe('TerminAktionenDialog', () => {
   });
 
   // UX-005a: Der Name steht im Titel und nirgends noch einmal; die
-  // behandelnde Person steht für das Büro da, der Zustand „Bestätigt" nur für
+  // behandelnde Person steht für das Büro da, der Zustand „Steht aus" nur für
   // Vorlesesoftware, und der Praxistermin trägt sein Kennzeichen - der
   // Hausbesuch als Regelfall keins (ANN-192).
   it('zeigt dem Büro die behandelnde Person und das Kennzeichen des Praxistermins', async () => {
@@ -176,9 +176,9 @@ describe('TerminAktionenDialog', () => {
     expect(screen.queryByText('Patient:in')).not.toBeInTheDocument();
     expect(screen.queryByText('Art')).not.toBeInTheDocument();
     expect(screen.getByText('Praxistermin')).toBeInTheDocument();
-    expect(zeile('Status')).toBe('Bestätigt');
+    expect(zeile('Status')).toBe('Steht aus');
     // Sichtbar steht der Regelfall nicht da (sr-only), erst ein anderer Zustand.
-    expect(screen.getByText('Bestätigt')).toHaveClass('sr-only');
+    expect(screen.getByText('Steht aus')).toHaveClass('sr-only');
   });
 
   it('nennt der behandelnden Person an ihrem eigenen Termin nicht sich selbst (ANN-193)', async () => {

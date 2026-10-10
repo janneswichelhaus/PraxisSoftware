@@ -174,7 +174,7 @@ test.describe('STAFF-001: Deaktivieren und Reaktivieren', () => {
     await expect(inaktivHinweis(page)).toBeVisible();
 
     await terminOeffnen(page, terminId);
-    await expect(detailWert(page, 'Status')).toHaveText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toHaveText('Steht aus');
 
     await annaReaktivieren(request);
   });

@@ -362,12 +362,14 @@ function PatientKopf({ patient, user }: { patient: Patient; user: CurrentUser })
           </p>
           {/* UX-005e: Der Regelfall trägt kein Etikett - „In Versorgung" stand
               an jeder Akte und sagte nichts. Nur die Ausnahme ist markiert. */}
-          {!aktiv ? <Badge ton="warnung">Nicht in laufender Versorgung</Badge> : null}
           {/* Der Abschluss ist etwas anderes als der Status und gehört in den
               Kopf: Er sagt, dass die Behandlung beendet ist und die
-              Aufbewahrung läuft (LOE-001b, ADR-008). */}
+              Aufbewahrung läuft (LOE-001b, ADR-008). Ist er gesetzt, steht
+              nur er da - zwei Wörter für dieselbe Lage verwirrten (BEF-067). */}
           {patient.care_concluded_on ? (
             <Badge>Versorgung abgeschlossen am {formatDate(patient.care_concluded_on)}</Badge>
+          ) : !aktiv ? (
+            <Badge ton="warnung">Nicht in Versorgung</Badge>
           ) : null}
         </div>
         {/* AKTE-007: Abrechnungsart und Liege als Abzeichen - die Liege steht

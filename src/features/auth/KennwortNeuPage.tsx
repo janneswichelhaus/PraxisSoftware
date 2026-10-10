@@ -155,7 +155,7 @@ export function KennwortNeuPage() {
   return (
     <Vollseite
       titel="Neues Kennwort setzen"
-      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Zugänge sind nicht zulässig."
+      kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig."
     >
       {zustand === 'fremde-sitzung' ? (
         <div ref={auskunft} tabIndex={-1}>
@@ -197,8 +197,8 @@ export function KennwortNeuPage() {
             title="Dieser Link lässt sich nicht mehr verwenden."
             description={
               session
-                ? 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie nach dem Abmelden auf der Anmeldemaske einen neuen an.'
-                : 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie auf der Anmeldemaske einen neuen an.'
+                ? 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie nach dem Abmelden auf der Anmeldeseite einen neuen an.'
+                : 'Links aus der Mail gelten einmalig und nur für kurze Zeit. Fordern Sie auf der Anmeldeseite einen neuen an.'
             }
           />
           {session ? (

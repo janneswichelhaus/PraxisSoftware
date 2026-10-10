@@ -67,6 +67,6 @@ describe('Unerwartete Antwortform', () => {
         [],
       ),
     );
-    expect(serie).toBe('Die Terminserie konnte nicht angelegt werden.');
+    expect(serie).toBe('Der Dauertermin konnte nicht angelegt werden.');
   });
 });

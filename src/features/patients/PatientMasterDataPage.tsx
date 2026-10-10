@@ -115,7 +115,7 @@ function StatusAktion({ patient }: { patient: Patient }) {
   });
 
   const beschriftung =
-    zielStatus === 'inactive' ? 'Als inaktiv markieren' : 'Wieder als aktiv führen';
+    zielStatus === 'inactive' ? 'Nicht mehr in Versorgung führen' : 'Wieder in Versorgung führen';
 
   return (
     <Rueckfrage
@@ -127,8 +127,8 @@ function StatusAktion({ patient }: { patient: Patient }) {
       onBestaetigen={() => mutation.mutateAsync()}
     >
       {zielStatus === 'inactive'
-        ? 'Diese Person wird als nicht in laufender Versorgung geführt. Die Akte bleibt vollständig erhalten.'
-        : 'Diese Person wird wieder als in laufender Versorgung geführt.'}
+        ? 'Diese Person wird als nicht in Versorgung geführt. Die Akte bleibt vollständig erhalten.'
+        : 'Diese Person wird wieder als in Versorgung geführt.'}
     </Rueckfrage>
   );
 }
@@ -182,8 +182,8 @@ function VersorgungAbschliessen({
         onBestaetigen={() => mutation.mutateAsync()}
       >
         <p>
-          Die Versorgung gilt wieder als laufend. Die Aufbewahrungsfrist beginnt erst mit einem
-          neuen Abschluss – sie läuft nicht weiter.
+          Die Versorgung gilt wieder als nicht abgeschlossen. Die Aufbewahrungsfrist beginnt erst
+          mit einem neuen Abschluss – sie läuft nicht weiter.
         </p>
       </Rueckfrage>
     );

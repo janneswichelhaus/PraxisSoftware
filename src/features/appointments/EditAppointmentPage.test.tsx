@@ -290,7 +290,7 @@ describe('EditAppointmentPage', () => {
       await formularAbwarten();
 
       expect(screen.getByLabelText('Dauer')).toHaveValue('frei');
-      expect(screen.getByLabelText('Länge in Minuten')).toHaveValue(30);
+      expect(screen.getByLabelText('Dauer in Minuten')).toHaveValue(30);
       expect(screen.getByText('Ende: 09:30 Uhr')).toBeInTheDocument();
       // Die Abweichung wird angekuendigt, nicht verhindert (8.1).
       expect(screen.getByText(/Weicht von 45 und 60 Minuten ab/)).toBeInTheDocument();
@@ -336,7 +336,7 @@ describe('EditAppointmentPage', () => {
       expect(screen.getByText('Ende: 10:00 Uhr')).toBeInTheDocument();
       // Der Hinweis ist danach gegenstandslos, das Minutenfeld auch.
       expect(screen.queryByText(/Weicht von 45 und 60 Minuten ab/)).not.toBeInTheDocument();
-      expect(screen.queryByLabelText('Länge in Minuten')).not.toBeInTheDocument();
+      expect(screen.queryByLabelText('Dauer in Minuten')).not.toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
       await waitFor(() => expect(updateAppointment).toHaveBeenCalledTimes(1));
@@ -361,8 +361,8 @@ describe('EditAppointmentPage', () => {
       await formularAbwarten();
 
       await user.selectOptions(screen.getByLabelText('Dauer'), 'frei');
-      await user.clear(screen.getByLabelText('Länge in Minuten'));
-      await user.type(screen.getByLabelText('Länge in Minuten'), '90');
+      await user.clear(screen.getByLabelText('Dauer in Minuten'));
+      await user.type(screen.getByLabelText('Dauer in Minuten'), '90');
       expect(screen.getByText('Ende: 10:30 Uhr')).toBeInTheDocument();
 
       await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));

@@ -284,7 +284,7 @@ export function TrainingTerminFormular({
           if (fehler.end_time) setFehler(({ end_time: _entfaellt, ...rest }) => rest);
           if (mutation.isError) mutation.reset();
         }}
-        laengeHinweis="Die Länge ist frei im Raster der Praxis."
+        laengeHinweis="Die Dauer ist frei im Raster der Praxis."
         hausbesuch={
           <p className="text-ink-muted text-sm">
             Die Anschrift kommt aus dem Kontakt der Trainingskund:in – Straße mit Hausnummer, PLZ

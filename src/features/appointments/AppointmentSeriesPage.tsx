@@ -89,10 +89,10 @@ function gueltigeAnzahl(text: string): number | null {
 }
 
 /** Der Schutz vor Verlust spricht von der Serie (ANN-046, UXR-001). */
-const SERIENTEXTE = { ...EINGABETEXTE, bezeichnung: 'Ungespeicherte Terminserie' };
+const SERIENTEXTE = { ...EINGABETEXTE, bezeichnung: 'Ungespeicherter Dauertermin' };
 
 /** Der Satz, den die Schnittstelle liefert, wenn sie keinen Grund nennen kann. */
-const SPEICHERFEHLER_TITEL = 'Die Terminserie konnte nicht angelegt werden.';
+const SPEICHERFEHLER_TITEL = 'Der Dauertermin konnte nicht angelegt werden.';
 
 /**
  * Terminserie aus einer Behandlungsgrundlage (CAL-007, seit GRD-001 beide
@@ -481,7 +481,7 @@ export function AppointmentSeriesPage({ user }: { user: CurrentUser }) {
 
       {/* Nur der Name; „alles oder nichts" sagt die Prüfmeldung dort, wo es
           zählt (UX-005g). */}
-      <PageHeader title="Terminserie anlegen" description={`Für ${fullName(patientDaten)}.`} />
+      <PageHeader title="Dauertermin anlegen" description={`Für ${fullName(patientDaten)}.`} />
 
       {patient.isError || kontingent.isError ? (
         <NachladeHinweis

@@ -82,7 +82,7 @@ test.describe('Kennwort vergessen', () => {
     await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
 
     await expect(page.getByRole('heading', { name: 'Kennwort vergessen' })).toBeVisible();
-    await expect(page.getByLabel('E-Mail-Adresse des Zugangs')).toHaveValue(
+    await expect(page.getByLabel('E-Mail-Adresse des Kontos')).toHaveValue(
       'anna.beispiel@praxis.invalid',
     );
   });
@@ -103,10 +103,10 @@ test.describe('Kennwort vergessen', () => {
 
     await page.goto('/');
     await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-    await page.getByLabel('E-Mail-Adresse des Zugangs').fill('gibt.es.nicht@praxis.invalid');
+    await page.getByLabel('E-Mail-Adresse des Kontos').fill('gibt.es.nicht@praxis.invalid');
     await page.getByRole('button', { name: 'Link anfordern' }).click();
 
-    await expect(page.getByText(/Falls für diese Adresse ein Zugang besteht/)).toBeVisible();
+    await expect(page.getByText(/Falls für diese Adresse ein Konto besteht/)).toBeVisible();
     await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
   });
 
@@ -118,11 +118,11 @@ test.describe('Kennwort vergessen', () => {
 
     await page.goto('/');
     await page.getByRole('button', { name: 'Kennwort vergessen?' }).click();
-    await page.getByLabel('E-Mail-Adresse des Zugangs').fill('anna.beispiel@praxis.invalid');
+    await page.getByLabel('E-Mail-Adresse des Kontos').fill('anna.beispiel@praxis.invalid');
     await page.getByRole('button', { name: 'Link anfordern' }).click();
 
     await expect(page.getByText(/nicht erreichbar/)).toBeVisible();
-    await expect(page.getByText(/Falls für diese Adresse ein Zugang besteht/)).toHaveCount(0);
+    await expect(page.getByText(/Falls für diese Adresse ein Konto besteht/)).toHaveCount(0);
     await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
   });
 
@@ -278,7 +278,7 @@ test.describe('Geschuetzte Sonderbereiche', () => {
     await page.goto('/patienten/neu');
 
     await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: 'Neue:r Patient:in' })).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Patient:in anlegen' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Patient anlegen' })).toHaveCount(0);
   });
 

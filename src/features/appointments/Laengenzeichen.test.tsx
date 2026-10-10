@@ -48,7 +48,7 @@ describe('abweichendeLaengeMinuten', () => {
 describe('Laengenzeichen', () => {
   it('traegt die Textfassung fuer Vorlesewerkzeuge', () => {
     render(<Laengenzeichen termin={{ kind: 'therapy', ...um('07:00', '07:30') }} />);
-    expect(screen.getByTestId('laengenzeichen')).toHaveTextContent('Länge weicht ab: 30 Min.');
+    expect(screen.getByTestId('laengenzeichen')).toHaveTextContent('Dauer weicht ab: 30 Min.');
   });
 
   it('traegt sie auch in der knappen Fassung der Kalenderkachel', () => {

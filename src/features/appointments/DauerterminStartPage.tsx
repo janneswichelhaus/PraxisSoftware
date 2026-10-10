@@ -194,8 +194,8 @@ function Grundlagenwahl({
           title="Keine Behandlungsgrundlage"
           description={
             canWriteTreatmentBases(user.roles)
-              ? 'Eine Terminserie hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Zuerst eine erfassen.'
-              : 'Eine Terminserie hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Behandlungsgrundlagen erfasst das Praxisteam.'
+              ? 'Ein Dauertermin hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Zuerst eine erfassen.'
+              : 'Ein Dauertermin hängt an einer Verordnung oder Selbstzahler-Vereinbarung. Behandlungsgrundlagen erfasst das Praxisteam.'
           }
           aktion={
             canWriteTreatmentBases(user.roles) ? (

@@ -157,12 +157,12 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText('E-Mail-Adresse'), 'anna@praxis.invalid');
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
 
-    expect(screen.getByLabelText('E-Mail-Adresse des Zugangs')).toHaveValue('anna@praxis.invalid');
+    expect(screen.getByLabelText('E-Mail-Adresse des Kontos')).toHaveValue('anna@praxis.invalid');
 
     await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
 
     expect(
-      await screen.findByText(/Falls für diese Adresse ein Zugang besteht/),
+      await screen.findByText(/Falls für diese Adresse ein Konto besteht/),
     ).toBeInTheDocument();
     expect(resetPasswordForEmail).toHaveBeenCalledTimes(1);
     expect(resetPasswordForEmail.mock.calls[0]?.[0]).toBe('anna@praxis.invalid');
@@ -179,11 +179,11 @@ describe('LoginPage', () => {
 
     render(<LoginPage />);
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
-    await user.type(screen.getByLabelText('E-Mail-Adresse des Zugangs'), 'anna@praxis.invalid');
+    await user.type(screen.getByLabelText('E-Mail-Adresse des Kontos'), 'anna@praxis.invalid');
     await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
 
     expect(await screen.findByText(/nicht erreichbar/)).toBeInTheDocument();
-    expect(screen.queryByText(/Falls für diese Adresse ein Zugang besteht/)).toBeNull();
+    expect(screen.queryByText(/Falls für diese Adresse ein Konto besteht/)).toBeNull();
     // Und weiterhin kein Wort darueber, ob es das Konto gibt.
     expect(document.body.textContent).not.toMatch(/Failed to fetch/);
     expect(document.body.textContent).not.toMatch(/unbekannt|existiert/i);
@@ -196,11 +196,11 @@ describe('LoginPage', () => {
 
     render(<LoginPage />);
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
-    await user.type(screen.getByLabelText('E-Mail-Adresse des Zugangs'), 'niemand@praxis.invalid');
+    await user.type(screen.getByLabelText('E-Mail-Adresse des Kontos'), 'niemand@praxis.invalid');
     await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
 
     expect(
-      await screen.findByText(/Falls für diese Adresse ein Zugang besteht/),
+      await screen.findByText(/Falls für diese Adresse ein Konto besteht/),
     ).toBeInTheDocument();
     expect(document.body.textContent).not.toMatch(/User not found/);
     expect(document.body.textContent).not.toMatch(/unbekannt/i);
@@ -227,7 +227,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
-    expect(screen.getByLabelText('E-Mail-Adresse des Zugangs')).toHaveFocus();
+    expect(screen.getByLabelText('E-Mail-Adresse des Kontos')).toHaveFocus();
     // Die Überschrift des Abschnitts kommt aus Section (TOK-05).
     expect(
       screen.getByRole('heading', { level: 2, name: 'Kennwort vergessen' }),
@@ -255,7 +255,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
-    const feld = screen.getByLabelText('E-Mail-Adresse des Zugangs');
+    const feld = screen.getByLabelText('E-Mail-Adresse des Kontos');
     await user.type(feld, 'anna@praxis,invalid');
     await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
 
@@ -271,16 +271,16 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     await user.click(screen.getByRole('button', { name: 'Kennwort vergessen?' }));
-    await user.type(screen.getByLabelText('E-Mail-Adresse des Zugangs'), 'anna@praxis.invalid');
+    await user.type(screen.getByLabelText('E-Mail-Adresse des Kontos'), 'anna@praxis.invalid');
     await user.click(screen.getByRole('button', { name: 'Link anfordern' }));
 
-    const bestaetigung = await screen.findByText(/Falls für diese Adresse ein Zugang besteht/);
+    const bestaetigung = await screen.findByText(/Falls für diese Adresse ein Konto besteht/);
     expect(bestaetigung).toHaveTextContent('Angefordert für anna@praxis.invalid.');
     // Der Fokus steht auf der Bestätigung, die das Formular ersetzt (AUTH-06).
     expect(bestaetigung.parentElement).toHaveFocus();
 
     await user.click(screen.getByRole('button', { name: 'Andere Adresse eingeben' }));
-    const feld = screen.getByLabelText('E-Mail-Adresse des Zugangs');
+    const feld = screen.getByLabelText('E-Mail-Adresse des Kontos');
     expect(feld).toHaveValue('anna@praxis.invalid');
     expect(feld).toHaveFocus();
   });

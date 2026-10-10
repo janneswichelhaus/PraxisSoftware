@@ -132,7 +132,7 @@ describe('MeinKontoPage', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
     expect(
-      await screen.findByText('Für diesen Zugang ist ein zweiter Faktor eingerichtet.'),
+      await screen.findByText('Für dieses Konto ist ein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
     expect(screen.getByText(/derzeit noch nicht ab/)).toBeInTheDocument();
   });
@@ -147,7 +147,7 @@ describe('MeinKontoPage', () => {
   it('nennt therapist denselben Stand ohne Warnton', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
     expect(
-      await screen.findByText('Für diesen Zugang ist kein zweiter Faktor eingerichtet.'),
+      await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
     expect(screen.queryByText(/darf Zugänge, Rollen/)).not.toBeInTheDocument();
   });
@@ -217,7 +217,7 @@ describe('MeinKontoPage', () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
     expect(
-      await screen.findByText('Für diesen Zugang ist ein zweiter Faktor eingerichtet.'),
+      await screen.findByText('Für dieses Konto ist ein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: 'Zweiten Faktor entfernen' }));
@@ -384,7 +384,7 @@ describe('MeinKontoPage — UXR-002', () => {
     await user.click(screen.getByRole('button', { name: 'Erneut versuchen' }));
 
     expect(
-      await screen.findByText('Für diesen Zugang ist kein zweiter Faktor eingerichtet.'),
+      await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
     expect(ladeMfaFaktoren).toHaveBeenCalledTimes(2);
   });
@@ -400,7 +400,7 @@ describe('MeinKontoPage — UXR-002', () => {
 
   it('fasst die ganze Seite in die Formularbreite (NAV-20)', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-    await screen.findByText('Für diesen Zugang ist kein zweiter Faktor eingerichtet.');
+    await screen.findByText('Für dieses Konto ist kein zweiter Faktor eingerichtet.');
 
     const breite = screen.getByRole('heading', { name: 'Zugang' }).closest('.max-w-xl');
     expect(breite).not.toBeNull();

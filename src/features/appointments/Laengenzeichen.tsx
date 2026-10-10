@@ -8,7 +8,7 @@ import { abweichendeLaengeMinuten, abweichendeLaengeText, type AppointmentKind }
  * 45 noch 60 Minuten beträgt, wird gekennzeichnet — „in einer Form, die auch
  * ohne Farbe und ohne Bildschirm erfassbar ist". Deshalb trägt das Zeichen
  * immer ein Bild **und** die Minuten als Text, und Vorlesewerkzeuge bekommen
- * den ganzen Satz („Länge weicht ab: 30 Minuten").
+ * den ganzen Satz („Dauer weicht ab: 30 Minuten").
  *
  * Es meldet, es verbietet nichts: neutraler Ton, kein Warnzeichen. Ein
  * Ereignis trägt es nie; ob eins nötig ist, entscheidet
@@ -40,7 +40,7 @@ export function Laengenzeichen({
   return (
     <span data-testid="laengenzeichen" className="inline-flex shrink-0">
       <Badge eigenesZeichen={<SpannenBild />}>
-        <span className="sr-only">Länge weicht ab: </span>
+        <span className="sr-only">Dauer weicht ab: </span>
         {minuten} Min.
       </Badge>
     </span>

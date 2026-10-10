@@ -146,7 +146,7 @@ export function authMailInhalt(mail: AuthMail, appUrl: string): Omit<Nachricht, 
     };
   }
   return {
-    betreff: 'Zugang zur Praxisanwendung',
+    betreff: 'Anmeldemail für die Praxisanwendung',
     text: [
       'Guten Tag,',
       '',

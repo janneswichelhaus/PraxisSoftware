@@ -71,7 +71,7 @@ test.describe('CAL-003: Bearbeiten und Verschieben', () => {
     // Und die Änderung überlebt das Neuladen.
     await terminNeuLaden(page);
     await expect(detailWert(page, 'Zeit')).toContainText(`${neuVon}–${neuBis}`);
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 
   test('wechselt die behandelnde Person und die Terminart', async ({ page }) => {
@@ -193,7 +193,7 @@ test.describe('CAL-003: Absagen', () => {
     // Hinweis daneben ist nur die Erklaerung (CAL-008b).
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
 
     await page.getByLabel('Absagegrund').selectOption('patient_request');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
@@ -238,7 +238,7 @@ test.describe('CAL-003: Absagen', () => {
     // Derselbe Zeitraum ist wieder belegbar.
     const neuer = await terminAnlegen(page, { tag, von, bis });
     expect(neuer).toMatch(/^[0-9a-f-]{36}$/);
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 
   test('weist ein Patientenkonto an beiden Schreibpfaden ab', async ({ request }) => {

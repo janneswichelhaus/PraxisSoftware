@@ -367,7 +367,7 @@ export function EditEventPage({ user }: { user: CurrentUser }) {
                     <span className="text-ink block font-medium">Die ganze Serie</span>
                     <span className="text-ink-muted block text-sm">
                       {kommende.length} kommende von {serienVorkommen.length} Vorkommen. Die Tage
-                      bleiben – geändert werden Bezeichnung, Uhrzeit, Länge, Art und Ort.
+                      bleiben – geändert werden Bezeichnung, Uhrzeit, Dauer, Art und Ort.
                     </span>
                   </span>
                 </label>

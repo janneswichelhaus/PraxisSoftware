@@ -227,7 +227,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
       {faktoren.data && bestaetigt.length > 0 ? (
         <div>
           <Statusmeldung className="mt-4">
-            Für diesen Zugang ist ein zweiter Faktor eingerichtet.
+            Für dieses Konto ist ein zweiter Faktor eingerichtet.
           </Statusmeldung>
           <div className="mt-4">
             <Rueckfrage
@@ -257,12 +257,12 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
         <div>
           {isOwner(user.roles) ? (
             <Statusmeldung className="mt-4">
-              Dieser Zugang darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
+              Dieses Konto darf Zugänge, Rollen und das Protokoll verwalten und hat noch keinen
               zweiten Faktor. Für diese Rechte ist er vorgesehen, sobald die Anmeldung ihn abfragt.
             </Statusmeldung>
           ) : (
             <Statusmeldung className="mt-4">
-              Für diesen Zugang ist kein zweiter Faktor eingerichtet.
+              Für dieses Konto ist kein zweiter Faktor eingerichtet.
             </Statusmeldung>
           )}
 
@@ -416,7 +416,7 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
     <>
       <PageHeader
         title="Mein Konto"
-        description="Anmeldung und Sicherheit dieses Zugangs. Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement."
+        description="Anmeldung und Sicherheit dieses Kontos. Ihre Stammdaten pflegen Praxisinhaber:in und Praxismanagement."
       />
 
       <div className="mt-8 max-w-xl">

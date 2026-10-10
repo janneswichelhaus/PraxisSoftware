@@ -338,7 +338,7 @@ describe('Verordnungsbereich der Akte', () => {
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
 
       expect(await screen.findByText('8, davon 1 genutzt')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
+      expect(screen.getByRole('link', { name: 'Dauertermin anlegen' })).toHaveAttribute(
         'href',
         `/patienten/${patient.id}/verordnungen/sz1/serie`,
       );
@@ -445,7 +445,7 @@ describe('Verordnungsbereich der Akte', () => {
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
-      const serie = await screen.findByRole('link', { name: 'Terminserie anlegen' });
+      const serie = await screen.findByRole('link', { name: 'Dauertermin anlegen' });
       expect(serie).toHaveClass('bg-accent');
       // Die übrigen Wege leise daneben.
       expect(screen.getByRole('link', { name: 'Freie Termine suchen' })).not.toHaveClass(
@@ -471,7 +471,7 @@ describe('Verordnungsbereich der Akte', () => {
       expect(await screen.findByRole('link', { name: 'Termine übertragen' })).toHaveClass(
         'bg-accent',
       );
-      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).not.toHaveClass(
+      expect(screen.getByRole('link', { name: 'Dauertermin anlegen' })).not.toHaveClass(
         'bg-accent',
       );
     });
@@ -514,7 +514,7 @@ describe('Verordnungsbereich der Akte', () => {
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
-      expect(await screen.findByRole('link', { name: 'Terminserie anlegen' })).toHaveAttribute(
+      expect(await screen.findByRole('link', { name: 'Dauertermin anlegen' })).toHaveAttribute(
         'href',
         `/patienten/${patient.id}/verordnungen/v1/serie`,
       );
@@ -540,7 +540,7 @@ describe('Verordnungsbereich der Akte', () => {
       renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
 
       expect(await screen.findByText('Vollständig verplant')).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Dauertermin anlegen' })).toBeInTheDocument();
     });
 
     it('bietet einer inaktiven Person keine Serie an', async () => {
@@ -554,7 +554,7 @@ describe('Verordnungsbereich der Akte', () => {
       );
 
       await screen.findByText('Folgeverordnung vom 18.06.2026');
-      expect(screen.queryByRole('link', { name: 'Terminserie anlegen' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Dauertermin anlegen' })).not.toBeInTheDocument();
     });
 
     it('laesst office die Verordnung bearbeiten (PRX-010), die Trainingsbetreuung nicht', async () => {
@@ -805,7 +805,7 @@ describe('Grundlagenbereich der Akte (UXR-007)', () => {
       expect(screen.queryByText('Offen')).not.toBeInTheDocument();
       // Die Aktionen bleiben (grundlagen.ts): Nichts verschwindet, weil eine
       // Nebenabfrage scheitert.
-      expect(screen.getAllByRole('link', { name: 'Terminserie anlegen' })).not.toHaveLength(0);
+      expect(screen.getAllByRole('link', { name: 'Dauertermin anlegen' })).not.toHaveLength(0);
       expect(screen.queryByText(/interne Ursache/)).not.toBeInTheDocument();
     });
 

@@ -119,15 +119,17 @@ export function PatientsListPage() {
             onChange={updateQuery}
           />
         </div>
-        <div className="w-40">
+        {/* BEF-067: „in Versorgung“ / „nicht in Versorgung“ wie in Suche,
+            Kopf der Akte und Stammdaten; „abgeschlossen“ bleibt dem Abschluss. */}
+        <div className="w-56">
           <Select
-            label="Status"
+            label="Versorgung"
             value={status}
             onChange={(event) => updateStatus(event.target.value as StatusFilter)}
           >
             <option value="all">Alle</option>
-            <option value="active">Aktiv</option>
-            <option value="inactive">Inaktiv</option>
+            <option value="active">In Versorgung</option>
+            <option value="inactive">Nicht in Versorgung</option>
           </Select>
         </div>
       </div>
@@ -163,8 +165,12 @@ export function PatientsListPage() {
                   className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
                 >
                   <span className="min-w-0">
-                    <span className="text-ink text-liste block truncate font-medium">
-                      {fullName(patient)}
+                    {/* BEF-067: „Nachname, Vorname“ wie sortiert, der Nachname
+                        hervorgehoben; am Telefon bricht der Name um, statt
+                        zuerst den Nachnamen abzuschneiden. */}
+                    <span className="text-ink text-liste block wrap-anywhere">
+                      <span className="font-semibold">{patient.family_name}</span>
+                      {patient.given_name ? `, ${patient.given_name}` : ''}
                     </span>
                     <span className="text-ink-muted mt-0.5 block text-sm">
                       {age !== null ? `${age} Jahre` : 'Geburtsdatum unbekannt'}
@@ -173,7 +179,7 @@ export function PatientsListPage() {
                   </span>
                   {/* Das Etikett des Systems statt eines Nachbaus (PAT-14,
                       UIK-18), groß geschrieben wie der Filter (WRT-16). */}
-                  {patient.status === 'inactive' ? <Badge>Inaktiv</Badge> : null}
+                  {patient.status === 'inactive' ? <Badge>Nicht in Versorgung</Badge> : null}
                 </Link>
               </li>
             );

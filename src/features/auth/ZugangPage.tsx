@@ -130,7 +130,7 @@ export function ZugangPage() {
               bisherige Sitzung noch, führt der Weg zurück in sie (AUTH-04). */}
           <ErrorState
             title="Dieser Link lässt sich nicht mehr verwenden."
-            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Die Praxisinhaber:in kann eine neue Zugangsmail schicken."
+            description="Links aus der Mail gelten einmalig und nur für kurze Zeit. Die Praxisinhaber:in kann eine neue Anmeldemail schicken."
           />
           <ButtonLink to="/" variant="secondary" className="mt-4">
             {session ? 'Zurück zur Anwendung' : 'Zur Anmeldung'}

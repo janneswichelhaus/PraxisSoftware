@@ -477,7 +477,7 @@ describe('AppointmentSeriesPage', () => {
 
     await user.click(screen.getByRole('link', { name: '← Zurück zur Akte' }));
 
-    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherte Terminserie' });
+    const rueckfrage = await screen.findByRole('group', { name: 'Ungespeicherter Dauertermin' });
     expect(
       within(rueckfrage).getByRole('button', { name: 'Verwerfen und weitergehen' }),
     ).toBeInTheDocument();
@@ -524,7 +524,7 @@ describe('AppointmentSeriesPage', () => {
 
   it('wiederholt im Fehlerfenster nicht den Titel (ZST-12)', async () => {
     createAppointmentSeries.mockRejectedValue(
-      new Error('Die Terminserie konnte nicht angelegt werden.'),
+      new Error('Der Dauertermin konnte nicht angelegt werden.'),
     );
     const user = userEvent.setup();
     rendern();
@@ -534,7 +534,7 @@ describe('AppointmentSeriesPage', () => {
     await user.click(screen.getByRole('button', { name: '3 Termine anlegen' }));
 
     const fenster = await screen.findByRole('dialog', {
-      name: 'Die Terminserie konnte nicht angelegt werden.',
+      name: 'Der Dauertermin konnte nicht angelegt werden.',
     });
     expect(fenster).toHaveTextContent('Die Eingaben stehen noch im Formular.');
   });

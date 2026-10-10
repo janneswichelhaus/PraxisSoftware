@@ -114,7 +114,7 @@ export function AppointmentFormFields({
    * Text da.
    *
    * Seit `PROJECT_PRINCIPLES.md` 0.11 §8.1 ist die Länge frei: Die Auswahl
-   * führt die beiden Regellängen und den Eintrag „Andere Länge …", der ein
+   * führt die beiden Regellängen und den Eintrag „Andere Dauer …", der ein
    * Minutenfeld öffnet. Eine abweichende Länge wird nicht verhindert, sondern
    * angekündigt — der Termin trägt danach das Abweichungszeichen.
    */
@@ -225,8 +225,7 @@ export function AppointmentFormFields({
                 {werte.end_time ? `${werte.end_time} Uhr` : '—'}
               </p>
               <Kleingedrucktes className="mt-1">
-                {laengeHinweis ??
-                  `Terminfenster: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
+                {laengeHinweis ?? `Dauer: ${fensterMinuten} Minuten, Dokumentation eingeschlossen.`}
               </Kleingedrucktes>
               {/* Ein Fehler hier hat kein Feld, an dem er stehen könnte: als
                   Meldung mit Rolle, in der Größe der Feldfehler (UIK-02). */}
@@ -275,14 +274,14 @@ export function AppointmentFormFields({
   );
 }
 
-/** Wert des Eintrags „Andere Länge …" - keine Zahl, damit er mit keiner Länge kollidiert. */
+/** Wert des Eintrags „Andere Dauer …" - keine Zahl, damit er mit keiner Länge kollidiert. */
 const FREIE_LAENGE = 'frei';
 
 /**
  * Dauer eines Behandlungstermins: Auswahl mit freier Eingabe (CAL-020).
  *
  * Die beiden Regellängen bleiben der kurze Weg - 60 ist vorbelegt, 45 einen
- * Schritt entfernt. „Andere Länge …" öffnet ein Minutenfeld in der Schrittweite
+ * Schritt entfernt. „Andere Dauer …" öffnet ein Minutenfeld in der Schrittweite
  * des Praxisrasters. Ein gespeicherter Termin mit abweichender Länge öffnet
  * sich gleich in dieser Fassung, mit seiner Länge im Feld: Er wird durch das
  * Öffnen weder verlängert noch verkürzt (§8.1, ANN-056).
@@ -320,7 +319,7 @@ function Dauerwahl({
   const istZahl = text.trim().length > 0 && Number.isInteger(zahl) && zahl > 0;
 
   let eingabeFehler: string | undefined;
-  if (!istZahl) eingabeFehler = 'Bitte eine Länge in ganzen Minuten eingeben.';
+  if (!istZahl) eingabeFehler = 'Bitte eine Dauer in ganzen Minuten eingeben.';
   else if (rasterMinuten && zahl % rasterMinuten !== 0) {
     eingabeFehler = `Bitte ein Vielfaches von ${rasterMinuten} Minuten wählen (Praxisraster).`;
   }
@@ -350,12 +349,12 @@ function Dauerwahl({
             {option} Minuten
           </option>
         ))}
-        <option value={FREIE_LAENGE}>Andere Länge …</option>
+        <option value={FREIE_LAENGE}>Andere Dauer …</option>
       </Select>
 
       {frei ? (
         <Field
-          label="Länge in Minuten"
+          label="Dauer in Minuten"
           type="number"
           inputMode="numeric"
           feldId={TERMINFELD_IDS.end_time}

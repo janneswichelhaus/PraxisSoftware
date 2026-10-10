@@ -497,7 +497,9 @@ describe('Stammdaten der Akte', () => {
   describe('Versorgungsstatus', () => {
     it.each([['owner'], ['team_lead'], ['office']] as const)('zeigt %s die Aktion', (role) => {
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser([role])} />);
-      expect(screen.getByRole('button', { name: 'Als inaktiv markieren' })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
+      ).toBeInTheDocument();
     });
 
     // UX-005e: Kein erklärender Satz unter „Verwaltung" - was ein Vorgang tut,
@@ -514,7 +516,7 @@ describe('Stammdaten der Akte', () => {
 
       expect(screen.getByRole('heading', { name: 'Person' })).toBeInTheDocument();
       expect(
-        screen.queryByRole('button', { name: 'Als inaktiv markieren' }),
+        screen.queryByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
       ).not.toBeInTheDocument();
     });
 
@@ -522,10 +524,10 @@ describe('Stammdaten der Akte', () => {
       const user = userEvent.setup();
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
-      await user.click(screen.getByRole('button', { name: 'Als inaktiv markieren' }));
+      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
       expect(setPatientStatus).not.toHaveBeenCalled();
 
-      const buttons = screen.getAllByRole('button', { name: 'Als inaktiv markieren' });
+      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
       await user.click(buttons[buttons.length - 1]!);
 
       await waitFor(() => expect(setPatientStatus).toHaveBeenCalledWith(PATIENT_ID, 'inactive'));
@@ -535,7 +537,7 @@ describe('Stammdaten der Akte', () => {
       const user = userEvent.setup();
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
-      await user.click(screen.getByRole('button', { name: 'Als inaktiv markieren' }));
+      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
       await user.click(screen.getByRole('button', { name: 'Abbrechen' }));
 
       expect(setPatientStatus).not.toHaveBeenCalled();
@@ -548,8 +550,8 @@ describe('Stammdaten der Akte', () => {
         <Stammdaten patient={{ ...aktiv, status: 'inactive' }} user={testUser(['office'])} />,
       );
 
-      await user.click(screen.getByRole('button', { name: 'Wieder als aktiv führen' }));
-      const buttons = screen.getAllByRole('button', { name: 'Wieder als aktiv führen' });
+      await user.click(screen.getByRole('button', { name: 'Wieder in Versorgung führen' }));
+      const buttons = screen.getAllByRole('button', { name: 'Wieder in Versorgung führen' });
       await user.click(buttons[buttons.length - 1]!);
 
       await waitFor(() => expect(setPatientStatus).toHaveBeenCalledWith(PATIENT_ID, 'active'));
@@ -566,8 +568,8 @@ describe('Stammdaten der Akte', () => {
       );
 
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
-      await user.click(screen.getByRole('button', { name: 'Als inaktiv markieren' }));
-      const buttons = screen.getAllByRole('button', { name: 'Als inaktiv markieren' });
+      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
+      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
       await user.click(buttons[buttons.length - 1]!);
 
       const laufend = await screen.findByRole('button', { name: 'Wird geändert …' });
@@ -587,8 +589,8 @@ describe('Stammdaten der Akte', () => {
       setPatientStatus.mockRejectedValue(new Error('boom'));
       renderWithProviders(<Stammdaten patient={aktiv} user={testUser(['office'])} />);
 
-      await user.click(screen.getByRole('button', { name: 'Als inaktiv markieren' }));
-      const buttons = screen.getAllByRole('button', { name: 'Als inaktiv markieren' });
+      await user.click(screen.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }));
+      const buttons = screen.getAllByRole('button', { name: 'Nicht mehr in Versorgung führen' });
       await user.click(buttons[buttons.length - 1]!);
 
       expect(

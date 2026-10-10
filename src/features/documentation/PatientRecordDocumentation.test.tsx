@@ -249,7 +249,7 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
 
     const zeilen = await screen.findAllByRole('listitem');
     expect(zeilen[0]).toHaveTextContent('Nicht angetroffen');
-    expect(zeilen[1]).not.toHaveTextContent('Bestätigt');
+    expect(zeilen[1]).not.toHaveTextContent(/Bestätigt|Steht aus/);
   });
 
   it('zeigt office keinen Behandlungsnachweis mehr, sondern die Dokumentation (ROL-001)', async () => {

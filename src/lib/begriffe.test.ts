@@ -1,7 +1,9 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { appointmentStatusLabels } from '@/features/appointments/api';
 import { FEHLZEIT_BEISPIELE } from '@/features/appointments/calendar';
+import { dayPlanStatusLabels } from '@/features/today/api';
 import { ABGELOESTE_BEGRIFFE, BEGRIFFE, BEREICHE, type AbgeloesterBegriff } from './begriffe';
 
 /**
@@ -108,8 +110,12 @@ describe('Begriffe', () => {
   });
 
   it('führt die Beispiele einer Fehlzeit nur in einer Fassung (KAL-27)', () => {
-    // Der Kalender führt die Reihe noch als eigene Konstante; bis sie auf
-    // BEGRIFFE verweist, hält dieser Vergleich beide Stellen gleich.
+    // Seit BEF-067 verweist der Kalender auf BEGRIFFE.
     expect(FEHLZEIT_BEISPIELE).toBe(BEGRIFFE.fehlzeitBeispiele);
+  });
+
+  it('nennt einen offenen Termin überall „Steht aus“ (BEF-067)', () => {
+    expect(appointmentStatusLabels.confirmed).toBe(BEGRIFFE.stehtAus);
+    expect(dayPlanStatusLabels.confirmed).toBe(BEGRIFFE.stehtAus);
   });
 });

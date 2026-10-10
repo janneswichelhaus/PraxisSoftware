@@ -76,7 +76,23 @@ export const BEGRIFFE = {
   /** Das Team als Liste — so heißt der Menüpunkt. */
   mitarbeitende: 'Mitarbeitende',
   termin: 'Termin',
+  /**
+   * Termine einer Grundlage in festem Rhythmus - in Kalender, Titel, Knopf und
+   * Fehlermeldung (BEF-067). „Serie" bleibt das Wort für die Vorkommen
+   * („Ganze Serie absagen").
+   */
   dauertermin: 'Dauertermin',
+  /** Wie lange ein Termin dauert - nie „Länge" oder „Terminfenster" (BEF-067). */
+  dauer: 'Dauer',
+  /** Ein bestätigter, noch offener Termin - Tageskarte, Terminseite, Akte (BEF-067). */
+  stehtAus: 'Steht aus',
+  /** Ob eine Person laufend behandelt wird; „abgeschlossen" nur für den Abschluss (BEF-067). */
+  inVersorgung: 'in Versorgung',
+  nichtInVersorgung: 'nicht in Versorgung',
+  /** Die Mail, mit der man sich anmeldet - auch im Betreff (BEF-067). */
+  anmeldemail: 'Anmeldemail',
+  /** Die Seite mit E-Mail und Kennwort (BEF-067). */
+  anmeldeseite: 'Anmeldeseite',
   /** Kalendereintrag ohne Patient:in (CAL-021); Beispiele in `fehlzeitBeispiele`. */
   fehlzeit: 'Fehlzeit',
   /**
@@ -190,5 +206,36 @@ export const ABGELOESTE_BEGRIFFE: readonly AbgeloesterBegriff[] = [
     muster: /Datenschutz und Vertrag/,
     statt: BEGRIFFE.anmeldebogen,
     quelle: 'Akte · Kopf, Reiter und Hinweis, Jannes 2026-10-03 (ANN-224)',
+  },
+  // UX-009c, BEF-067 (Entscheidung Jannes 2026-10-09, Spalte „Vorschlag"):
+  {
+    muster: /\bTerminserien?\b/,
+    statt: BEGRIFFE.dauertermin,
+    quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
+  },
+  {
+    muster: /\b(Terminfenster|Länge)\b/,
+    statt: BEGRIFFE.dauer,
+    quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
+    // „Länge" meint anderswo anderes (Textbausteine, Wegstrecken).
+    nurIn: ['src/features/appointments/', 'src/features/training/', 'src/features/today/'],
+  },
+  {
+    // Titel der Anlegeseiten sind Verben wie überall; die Anlegen-Leiste
+    // behält ihre Nomen („Neuer Termin", BEF-035).
+    muster: /\bNeue:r\b/,
+    statt: '‹…› anlegen',
+    quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
+  },
+  {
+    muster: /\b(Zugangsmail|Anmeldemaske)\b/,
+    statt: `${BEGRIFFE.anmeldemail} bzw. ${BEGRIFFE.anmeldeseite}`,
+    quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
+  },
+  {
+    muster: /\b([Ii]naktiv|Aktiv)\b|laufender Versorgung/,
+    statt: `${BEGRIFFE.inVersorgung} / ${BEGRIFFE.nichtInVersorgung}`,
+    quelle: 'BEF-067, Jannes 2026-10-09; ANN-111',
+    nurIn: ['src/features/patients/', 'src/app/Funktionssuche.tsx'],
   },
 ];
