@@ -1,4 +1,4 @@
-import { useId, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -22,6 +22,7 @@ import {
   type Verlustschutztexte,
 } from './Textverlustschutz';
 import { NochEinEntwurf } from './Zustaende';
+import { uebergabeErledigt, uebergebenerText } from './uebernahme';
 import {
   MAX_BEGRUENDUNG,
   begruendungFehler,
@@ -31,6 +32,7 @@ import {
   type TreatmentNote,
 } from './api';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
+import { Statusmeldung } from '@/components/ui/Statusmeldung';
 
 /**
  * Die Sätze des Schutzes für die Korrektur (DOK-05).
@@ -76,7 +78,12 @@ function Formular({
   const zone = appointment.organization_time_zone;
   const folgeId = useId();
 
-  const [inhalt, setInhalt] = useState(note.content);
+  // Aus dem Konfliktfall übernommener Text (BEF-056): Er steht im Feld statt
+  // des bisherigen Wortlauts und ist ungespeichert, bis die Korrektur
+  // festgeschrieben ist.
+  const [uebernommen] = useState(() => uebergebenerText(note.id));
+  const [inhalt, setInhalt] = useState(uebernommen ?? note.content);
+  useEffect(() => uebergabeErledigt(note.id), [note.id]);
   const [begruendung, setBegruendung] = useState('');
   const [inhaltsfehler, setInhaltsfehler] = useState<string | undefined>(undefined);
   const [grundfehler, setGrundfehler] = useState<string | undefined>(undefined);
@@ -108,7 +115,14 @@ function Formular({
    * enthalten, was auf dem Bildschirm stand (FIX-014, ADR-016).
    */
   async function korrekturSchreiben(): Promise<boolean> {
-    await reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung);
+    try {
+      await reviseTreatmentNote(note.id, note.updated_at, inhalt, begruendung);
+    } catch (error) {
+      // Den Stand nachladen statt zum Neuladen aufzufordern (BEF-056): Das
+      // nächste Festschreiben beruht dann auf der jüngsten Version.
+      await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+      throw error;
+    }
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
     await queryClient.invalidateQueries({ queryKey: ['treatment-note-versions', note.id] });
     return true;
@@ -164,6 +178,13 @@ function Formular({
           an.
         </p>
       </div>
+
+      {uebernommen !== undefined ? (
+        <Statusmeldung className="mb-4 max-w-2xl">
+          Ihr Text aus dem Entwurf steht im Feld. Mit Begründung festschreiben – oder abbrechen,
+          dann geht er verloren.
+        </Statusmeldung>
+      ) : null}
 
       <form onSubmit={absenden} noValidate className="max-w-2xl">
         <TextArea

@@ -1,3 +1,4 @@
+import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { EmptyState } from '@/components/ui/Feedback';
 import { mitRueckweg } from '@/lib/rueckweg';
@@ -92,5 +93,59 @@ export function NochEinEntwurf({
         </ButtonLink>
       }
     />
+  );
+}
+
+/**
+ * Konfliktfall: Der Entwurf ist inzwischen finalisiert - von einer Kollegin
+ * oder mit Ablauf der Frist -, der eigene Text steht noch im Feld (BEF-056).
+ *
+ * Bis UX-EPIC-007 riet die Meldung, den Text zu „sichern“ und neu zu laden;
+ * am Handy hieß das Kopieren in die Zwischenablage, und Speichern scheiterte
+ * immer wieder. Jetzt findet der Text einen Weg in die Akte: als Nachtrag -
+ * der Regelfall (ADR-016 Punkt 6), zu einem Nachtrag gibt es keinen weiteren -
+ * oder als Korrektur mit Begründung.
+ */
+export function TextUebernehmen({
+  nachtragMoeglich,
+  gesperrt,
+  onNachtrag,
+  onKorrektur,
+  className = 'mb-4',
+}: {
+  nachtragMoeglich: boolean;
+  gesperrt: boolean;
+  onNachtrag: () => void;
+  onKorrektur: () => void;
+  className?: string;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Text übernehmen"
+      className={`border-line-strong bg-surface-sunken rounded-card border p-4 ${className}`}
+    >
+      <p className="text-ink text-sm leading-relaxed">
+        Ihr Text lässt sich übernehmen:{' '}
+        {nachtragMoeglich
+          ? 'als Nachtrag, der den Eintrag ergänzt, oder als Korrektur mit kurzer Begründung.'
+          : 'als Korrektur des Nachtrags, mit kurzer Begründung.'}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-3">
+        {nachtragMoeglich ? (
+          <Button type="button" disabled={gesperrt} onClick={onNachtrag}>
+            Als Nachtrag übernehmen
+          </Button>
+        ) : null}
+        <Button
+          type="button"
+          variant={nachtragMoeglich ? 'secondary' : 'primary'}
+          disabled={gesperrt}
+          onClick={onKorrektur}
+        >
+          In Korrektur übernehmen
+        </Button>
+      </div>
+    </div>
   );
 }

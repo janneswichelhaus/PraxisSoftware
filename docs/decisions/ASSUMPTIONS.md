@@ -3863,3 +3863,27 @@ Technik · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sichtung 
 **Anker.** `OhneProfil` in `src/app/App.tsx` (`data === undefined`, `ZUGANG_NICHT_AKTUALISIERT`). Geprüft in `App.nachladen.test.tsx`.
 
 **Änderungspfad.** Die Plattform soll wie bisher bei jedem Fehler ersetzen: die Bedingung in `OhneProfil` auf `isError` zurückstellen · Aufwand `klein`.
+
+### ANN-319 — Der Entwurf sichert sich nach drei Sekunden Pause von selbst; nach einem Fehlschlag setzt das aus
+
+Technik · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes nach dem ersten Feldtag mit Dokumentation unterwegs (wie ANN-046)
+
+**Annahme.** Steht der getippte Text drei Sekunden still und ist noch etwas ungespeichert, sichert die Seite ihn als Entwurf auf dem Server – derselbe Weg wie „Als Entwurf speichern“, nie eine Finalisierung. Das gilt an der Schreibseite des Termins, am Nachtrag (anlegen und bearbeiten), am Therapiebericht und an der Erhebung; nicht an der Korrektur (sie kennt keinen Entwurf, ANN-046) und **nicht am Vermerk „Tür geöffnet, nicht behandelt“**. Gesichert wird nur, was sich sichern lässt (nicht leer, nicht zu lang, keine beanstandete Antwort, bei einer Korrektur der Erhebung mit Begründung), nicht ohne Verbindung und nicht, während ein anderer Schreibvorgang läuft. Scheitert die Sicherung, steht der Fehler da und sie setzt aus, bis ein ausdrückliches Speichern gelingt. Der Stand steht als leise Zeile da: „Als Entwurf gesichert um 10:42.“
+
+**Begründung.** BEF-056, Entscheidung Jannes 2026-10-09 (Option 2): Am iPhone fragt beim Wegwischen der App niemand nach; der Schutz soll dort greifen, wo unterwegs am meisten passiert (§13). Drei Sekunden sind eine Pause im Satz, nicht zwischen zwei Buchstaben. Das Aussetzen nach einem Fehlschlag verhindert, dass die Sicherung im Konfliktfall still den Entwurf einer Kollegin überschreibt (ADR-016 Punkt 3 kennt beim Entwurf keine Versionen). Am Vermerk entstünde ein Entwurf ohne `visit_without_treatment`, den die Frist als gewöhnliche Behandlung festschriebe (ADR-016 Punkt 7, ANN-055) – dort bleibt es beim ausdrücklichen „Entwurf“ und „Mit Vermerk festschreiben“. Ein offener Bausteinvorschlag geht nie in den Text (ANN-120); die Befundangaben werden wie bisher daneben gesichert. Folge laut Befund: Entwürfe entstehen früher und laufen früher in die Frist.
+
+**Anker.** `SELBST_SICHERN_PAUSE_MS` und `selbst` in `useTextverlustschutz` (`src/features/documentation/Textverlustschutz.tsx`); die Bedingungen je Seite in `TreatmentNotePage.tsx`, `CompleteTreatmentPage.tsx` (`selbst: ohneBehandlung ? undefined : …`), `TreatmentNoteAddendumPage.tsx`, `TherapieberichtPage.tsx`, `ErhebungPage.tsx`. Geprüft in `Textverlustschutz.test.tsx` („Sicherung von selbst“, sechs Fälle) und den Seitentests.
+
+**Änderungspfad.** Andere Pause: die Konstante · Aufwand `klein`. Abschalten an einer Seite: `selbst` weglassen · Aufwand `klein`. Auch am Vermerk sichern: erst der Entwurfsweg muss den Vermerk tragen (Migration an `create_treatment_note`/`update_treatment_note`) · Aufwand `mittel`.
+
+### ANN-320 — Im Konfliktfall wird der Text ein Nachtrag-Entwurf oder füllt die Korrektur; übergeben wird im Arbeitsspeicher
+
+Praxisprozess · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sichtung Befund, UX-EPIC-007)
+
+**Annahme.** Ist ein Entwurf inzwischen finalisiert – von der Frist oder einer Kollegin – und steht eigener Text im Feld, bietet die Seite „Als Nachtrag übernehmen“ und „In Korrektur übernehmen“ an. Der Nachtrag entsteht als **Entwurf** und öffnet sich zum Weiterschreiben und Festschreiben („Nachtrag festschreiben“ steht jetzt auf der Nachtragsseite, mit der Folge über dem Knopf); die Korrektur öffnet sich mit dem Text im Feld, die Begründung schreibt die Person. Der Text reist zur Korrektur in einer Tabelle im Arbeitsspeicher der Seite, nicht im Navigationszustand des Browsers. Ist der Entwurf nur von einer Kollegin geändert, lädt die Seite den Stand nach, der Text bleibt im Feld, und erst ein ausdrückliches Speichern ersetzt den anderen Stand.
+
+**Begründung.** BEF-056 (2): Der Text soll immer einen Weg in die Akte finden (ADR-016 Punkt 6). Als Entwurf, weil ein Konflikt keine Finalisierung auslösen darf (Punkt 4) – festgeschrieben wird ausdrücklich. `history.state` schreiben Browser für die Sitzungswiederherstellung auf das Gerät; das wäre ein lokaler Zwischenspeicher für Gesundheitsdaten (ADR-015, ANN-015). Für das Ersetzen eines fremden Entwurfs gilt ADR-016 Punkt 3 (Entwurf frei änderbar); dass es nur ausdrücklich geschieht, sichert ANN-319.
+
+**Anker.** `textUebergeben`, `nachtragFestschreiben` und `useTextUebernahme` in `src/features/documentation/uebernahme.ts`; `TextUebernehmen` in `Zustaende.tsx`. Geprüft in `TreatmentNotePage.test.tsx` („Übernahme im Konfliktfall“), `CompleteTreatmentPage.test.tsx`, `TreatmentNoteRevisionPage.test.tsx`, `TreatmentNoteAddendumPage.test.tsx`.
+
+**Änderungspfad.** Nachtrag sofort festschreiben: im Hook nach dem Anlegen `nachtragFestschreiben` aufrufen · Aufwand `klein`. Den fremden Entwurf nie ersetzen: im Speicherweg nach einem Konflikt sperren · Aufwand `klein`.

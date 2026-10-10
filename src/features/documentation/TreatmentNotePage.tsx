@@ -1,7 +1,10 @@
 import { useId, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { leseMeldung } from '@/features/appointments/terminformular';
 import { PageHeader } from '@/components/ui/PageHeader';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
 import { TextArea } from '@/components/ui/TextArea';
@@ -19,11 +22,12 @@ import {
 import { DocumentationShell } from './DocumentationShell';
 import { Einfuegemeldung } from './Einfuegemeldung';
 import { useEinfuegen } from './einfuegen';
-import { statuswechselText, type Statuswechsel } from './format';
+import { FREITEXT, statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
-import { BereitsFinalisiert } from './Zustaende';
+import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
+import { nachtragFestschreiben, useTextUebernahme } from './uebernahme';
 import {
   createTreatmentNote,
   findeEintrag,
@@ -46,16 +50,29 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
  *
  * Der Text wird ausschließlich auf dem Server gehalten. Es gibt bewusst kein
  * automatisches Zwischenspeichern im Browser: ein Entwurf, der nur lokal läge,
- * wäre nicht gespeichert, würde aber so aussehen (ADR-001, ADR-015).
+ * wäre nicht gespeichert, würde aber so aussehen (ADR-001, ADR-015). Seit
+ * UX-EPIC-007 sichert die Seite den Entwurf nach einer Pause im Tippen von
+ * selbst **auf dem Server** (BEF-056, ANN-319).
+ *
+ * Ein Nachtrag wird hier auch festgeschrieben (BEF-056): Bis dahin ging das
+ * nur über den Termin. Im Konfliktfall - der Entwurf ist inzwischen
+ * finalisiert - übernimmt die Seite den getippten Text als Nachtrag oder in
+ * eine Korrektur (ADR-016 Punkt 6), statt ihn nur stehen zu lassen.
  */
 function Editor({
   appointment,
   note,
+  ursprung,
+  eingehend,
   zumTermin,
   inzwischen,
 }: {
   appointment: Appointment;
   note: TreatmentNote | null;
+  /** Bei einem Nachtrag: der Eintrag, den er ergänzt - zugeklappt darüber. */
+  ursprung: TreatmentNote | null;
+  /** Der mitgereiste Rückweg; er reist zur Übernahme mit (DOK-01). */
+  eingehend: string;
   /** Ziel für „Abbrechen“ und nach dem Speichern: der Termin samt Rückweg (DOK-01). */
   zumTermin: string;
   /** Was sich geändert hat, seit die Seite offen ist (DOK-B01). */
@@ -63,14 +80,24 @@ function Editor({
 }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const ortZustand: unknown = useLocation().state;
+  // Was die Übernahme im Konfliktfall angelegt hat, sagt die Seite einmal (BEF-056).
+  const [eingangsmeldung] = useState(() => leseMeldung(ortZustand));
   const zone = appointment.organization_time_zone;
   const feldId = useId();
+  const folgeId = useId();
 
   const istNachtrag = note?.addendum_to_note_id != null;
 
   const gespeichert = note?.content ?? '';
   const [entwurf, setEntwurf] = useState<string | null>(null);
   const [fehler, setFehler] = useState<string | undefined>(undefined);
+  // Während der Nachtrag festgeschrieben wird, ist das Feld unveränderlich:
+  // Festgeschrieben wird, was auf dem Bildschirm steht (FIX-014).
+  const [schreibtFest, setSchreibtFest] = useState(false);
+  // Das eigene Festschreiben finalisiert den Nachtrag; das Nachladen danach
+  // ist kein „inzwischen finalisiert“ (DOK-B01), sondern die eigene Tat.
+  const selbstFestgeschrieben = useRef(false);
 
   const wert = entwurf ?? gespeichert;
   const bausteine = useBausteinAuswahl();
@@ -115,10 +142,19 @@ function Editor({
         setFehler(meldung);
         throw new Error(meldung);
       }
-      if (note) {
-        await updateTreatmentNote(note.id, note.updated_at, zuSichern);
-      } else {
-        await createTreatmentNote(appointment.id, zuSichern);
+      try {
+        if (note) {
+          await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+        } else {
+          await createTreatmentNote(appointment.id, zuSichern);
+        }
+      } catch (error) {
+        // Den Stand nachladen, statt zum Neuladen aufzufordern (BEF-056): Ist
+        // der Eintrag inzwischen finalisiert, bietet die Seite danach die
+        // Übernahme an; ist er ein fremder Entwurf, beruht das nächste
+        // Speichern auf dessen Stand. Der Text bleibt im Feld.
+        await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+        throw error;
       }
     }
     if (befund.ungesichert) await befund.sichern();
@@ -126,9 +162,65 @@ function Editor({
     return wertRef.current === zuSichern;
   }
 
-  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+  const wechsel = inzwischen && !selbstFestgeschrieben.current ? inzwischen : undefined;
+
+  const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert: geaendert,
     speichern: entwurfSichern,
+    // Von selbst nur, was sich sichern lässt: kein leeres oder zu langes Feld,
+    // kein Eintrag, der inzwischen finalisiert oder dessen Termin abgesagt ist
+    // (BEF-056, ANN-319).
+    selbst: {
+      stand: wert,
+      bereit: !wechsel && !schreibtFest && (!textGeaendert || inhaltFehler(wert) === undefined),
+    },
+  });
+
+  /**
+   * Den Nachtrag festschreiben, wo er geschrieben wird (BEF-056).
+   *
+   * Erst sichern, was im Feld steht, dann finalisieren - beides durch den
+   * einen Schreibweg der Seite. Die Folge steht über dem Knopf (ADR-016
+   * Punkt 4).
+   */
+  function nachtragAbschliessen() {
+    if (!note) return;
+    const meldung = inhaltFehler(wert);
+    setFehler(meldung);
+    if (meldung) return;
+    setSchreibtFest(true);
+    void schreiben({
+      ausfuehren: async () => {
+        if (wertRef.current !== gespeichertRef.current || befund.ungesichert) {
+          const vollstaendig = await entwurfSichern();
+          if (!vollstaendig) return false;
+        }
+        selbstFestgeschrieben.current = true;
+        try {
+          await nachtragFestschreiben(queryClient, appointment.id, note.id);
+        } catch (error) {
+          selbstFestgeschrieben.current = false;
+          throw error;
+        }
+        return true;
+      },
+      fehlertitel: 'Nicht festgeschrieben',
+      danach: () => {
+        freigeben();
+        void navigate(zumTermin, {
+          state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+        });
+      },
+    }).finally(() => setSchreibtFest(false));
+  }
+
+  const uebernahme = useTextUebernahme({
+    appointmentId: appointment.id,
+    note,
+    eingehend,
+    wertRef,
+    setFehler,
+    schutz: { schreiben, freigeben },
   });
 
   function absenden(event: React.FormEvent) {
@@ -172,10 +264,53 @@ function Editor({
         {/* Hat sich der Stand geändert, während hier geschrieben wurde, bleibt
             das Feld stehen und sagt es (DOK-B01) - statt samt Text zu
             verschwinden. */}
-        {inzwischen ? (
-          <Statusmeldung ton="warnung" className="mb-3">
-            {statuswechselText(inzwischen, geaendert)}
+        {eingangsmeldung && !geaendert ? (
+          <Statusmeldung ton="erfolg" className="mb-3">
+            {eingangsmeldung}
           </Statusmeldung>
+        ) : null}
+
+        {wechsel ? (
+          <Statusmeldung ton="warnung" className="mb-3">
+            {statuswechselText(wechsel, geaendert)}
+          </Statusmeldung>
+        ) : null}
+
+        {/* Der Text findet einen Weg in die Akte (BEF-056): als Nachtrag -
+            zu einem Nachtrag gibt es keinen weiteren (ADR-016 Punkt 6) - oder
+            als Korrektur mit Begründung. */}
+        {wechsel === 'finalisiert' && textGeaendert && note ? (
+          <TextUebernehmen
+            nachtragMoeglich={!istNachtrag}
+            gesperrt={laeuft}
+            onNachtrag={uebernahme.alsNachtrag}
+            onKorrektur={uebernahme.inKorrektur}
+          />
+        ) : null}
+
+        {/* Beim Bearbeiten eines Nachtrags steht der Ursprung zugeklappt
+            darüber, wie beim Anlegen (BEF-056, BEF-057). */}
+        {istNachtrag && ursprung ? (
+          <details className="group border-line mb-4 border-y">
+            <summary className={`${aufklappKopfKlassen} text-ink min-h-12 text-sm`}>
+              <Aufklappzeichen />
+              <span className="tracking-label text-ink-muted shrink-0 text-xs font-semibold uppercase">
+                Ursprünglicher Eintrag
+              </span>
+              <span
+                aria-hidden="true"
+                className="text-ink-muted min-w-0 truncate group-open:hidden"
+              >
+                {ursprung.content}
+              </span>
+            </summary>
+            <p
+              data-testid="ursprung"
+              className={`text-ink text-liste max-w-prose pb-4 leading-relaxed ${FREITEXT}`}
+            >
+              {ursprung.content}
+            </p>
+          </details>
         ) : null}
 
         <TextbausteinLeiste onEinfuegen={(text, titel) => einfuegen(titel, wert, text)} />
@@ -189,6 +324,7 @@ function Editor({
           feldId={feldId}
           value={wert}
           error={fehler}
+          readOnly={schreibtFest}
           onChange={(event) => {
             setEntwurf(event.target.value);
             vergessen();
@@ -212,11 +348,35 @@ function Editor({
 
         {/* Fehler, Hinweise und Rückfrage stehen seit FIX-014 an einer Stelle:
             Alle Schreibwege dieser Seite laufen durch denselben Vorgang. */}
+        {sicherungsstand}
         {schutz}
 
+        {/* Die Folge des Festschreibens steht über dem Knopf (ADR-016
+            Punkt 4, BEF-056) - nicht in einer zweiten Rückfrage. */}
+        {istNachtrag && !wechsel ? (
+          <p id={folgeId} className="text-ink-muted mt-5 text-sm">
+            „Nachtrag festschreiben“ macht ihn als Version 1 zum Teil der Akte. Danach ist er nur
+            noch mit Begründung änderbar.
+          </p>
+        ) : null}
+
         <div className="mt-5 flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={laeuft || !geaendert}>
-            {laeuft ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
+          {istNachtrag && !wechsel ? (
+            <Button
+              type="button"
+              disabled={laeuft || wert.trim() === ''}
+              aria-describedby={folgeId}
+              onClick={nachtragAbschliessen}
+            >
+              {schreibtFest ? 'Wird festgeschrieben …' : 'Nachtrag festschreiben'}
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            variant={istNachtrag && !wechsel ? 'secondary' : 'primary'}
+            disabled={laeuft || !geaendert}
+          >
+            {laeuft && !schreibtFest ? 'Wird gespeichert …' : 'Als Entwurf speichern'}
           </Button>
 
           {/* „Abbrechen“ ist seit FIX-011 ein gewöhnlicher Weg zurück: Die
@@ -301,6 +461,12 @@ export function TreatmentNotePage({ user }: { user: CurrentUser }) {
               key={schluessel}
               appointment={appointment}
               note={eintrag}
+              ursprung={
+                eintrag?.addendum_to_note_id
+                  ? findeEintrag(dokumentation, eintrag.addendum_to_note_id)
+                  : null
+              }
+              eingehend={eingehend}
               zumTermin={zumTermin}
               inzwischen={zustand === 'editor' ? undefined : zustand}
             />

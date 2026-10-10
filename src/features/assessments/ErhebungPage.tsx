@@ -423,10 +423,20 @@ function Formular({
   const leer = Object.keys(antworten).length === 0 && begruendung.trim() === '';
   const ungespeichert = gesichert === null ? !leer : gesichert !== stand;
 
-  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+  // Von selbst gesichert wird nur ein Bogen, der sich als Entwurf sichern
+  // lässt - ohne beanstandete Angabe, mit Datum und bei einer Korrektur mit
+  // Begründung (BEF-056, ANN-319). Sonst bliebe nach jeder Pause ein
+  // Fehlerkasten stehen, den niemand ausgelöst hat.
+  const sicherbar =
+    antwortFehler(definition, antworten).length === 0 &&
+    datum !== '' &&
+    !(korrigiert && !entwurfId && begruendung.trim().length < 3);
+
+  const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert,
     speichern: entwurfSichern,
     texte: ANTWORTTEXTE,
+    selbst: { stand, bereit: sicherbar && vorgang === null },
   });
 
   function zurueckZurAkte() {
@@ -492,6 +502,15 @@ function Formular({
           onChange={setzen}
           fehler={fehlerJeFrage}
         />
+
+        {/* Der Stand der Sicherung bleibt beim Scrollen am unteren Rand
+            stehen (BEF-056): Der Bogen ist lang, die Knöpfe stehen erst nach
+            der letzten Frage. Am Telefon über der Tableiste. */}
+        {sicherungsstand ? (
+          <div className="bg-canvas sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 py-1 sm:bottom-0">
+            {sicherungsstand}
+          </div>
+        ) : null}
 
         <div className="border-line mt-8 flex flex-col gap-4 border-t pt-6">
           {korrektur ? (

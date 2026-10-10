@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { act, type ReactElement } from 'react';
+import { act, useRef, useState, type ReactElement } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { renderWithProviders } from '@/test-utils';
 import { AbmeldeschutzProvider } from '@/app/AbmeldeschutzProvider';
@@ -13,6 +13,7 @@ import {
 import {
   DOKUMENTATIONSTEXTE,
   EINGABETEXTE,
+  SELBST_SICHERN_PAUSE_MS,
   useTextverlustschutz,
   type Verlustschutztexte,
 } from './Textverlustschutz';
@@ -755,5 +756,189 @@ describe('Textverlustschutz vor der Sitzungssperre (SEC-003, ADR-025 Punkt 4)', 
     const [sicherung] = [...mitSperre(<Pruefseite ungespeichert={false} speichern={speichern} />)];
     await expect(sicherung!()).resolves.toBe(true);
     expect(speichern).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Sicherung von selbst (BEF-056, ANN-319): nach einer Pause im Tippen, auf
+ * demselben Entwurfsweg wie „Speichern“, nie gleichzeitig mit einem anderen
+ * Vorgang, und nach einem Fehlschlag ausgesetzt, bis ausdrücklich gespeichert
+ * wurde.
+ */
+function SelbstPruefseite({
+  speichern,
+  bereit = true,
+}: {
+  speichern: (text: string) => Promise<void>;
+  bereit?: boolean;
+}) {
+  const [text, setText] = useState('');
+  const [gesichert, setGesichert] = useState('');
+  const textRef = useRef(text);
+  textRef.current = text;
+
+  async function sichern(): Promise<boolean> {
+    const zuSichern = textRef.current;
+    await speichern(zuSichern);
+    setGesichert(zuSichern);
+    return textRef.current === zuSichern;
+  }
+
+  const { schreiben, schutz, sicherungsstand } = useTextverlustschutz({
+    ungespeichert: text !== gesichert,
+    speichern: sichern,
+    selbst: { stand: text, bereit },
+  });
+
+  return (
+    <div>
+      <label>
+        Feld
+        <textarea value={text} onChange={(e) => setText(e.target.value)} />
+      </label>
+      {sicherungsstand}
+      {schutz}
+      <button
+        type="button"
+        onClick={() => void schreiben({ ausfuehren: sichern, fehlertitel: 'Nicht gespeichert' })}
+      >
+        Speichern
+      </button>
+    </div>
+  );
+}
+
+describe('Textverlustschutz: Sicherung von selbst (BEF-056, ANN-319)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  function setup() {
+    return userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+  }
+
+  it('sichert erst nach der Pause, dann einmal, und zeigt den Stand', async () => {
+    const speichern = vi.fn().mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Synthetisch');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS - 500));
+    expect(speichern).not.toHaveBeenCalled();
+
+    await act(() => vi.advanceTimersByTimeAsync(600));
+    expect(speichern).toHaveBeenCalledTimes(1);
+    expect(speichern).toHaveBeenCalledWith('Synthetisch');
+    expect(await screen.findByText(/^Als Entwurf gesichert um \d\d:\d\d\.$/)).toBeInTheDocument();
+
+    // Nichts Neues, nichts zu sichern.
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
+    expect(speichern).toHaveBeenCalledTimes(1);
+  });
+
+  it('beginnt die Pause mit jedem Tastendruck neu', async () => {
+    const speichern = vi.fn().mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'A');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS - 1000));
+    await user.type(screen.getByLabelText('Feld'), 'B');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS - 1000));
+    expect(speichern).not.toHaveBeenCalled();
+    await act(() => vi.advanceTimersByTimeAsync(1100));
+    expect(speichern).toHaveBeenCalledWith('AB');
+  });
+
+  it('sichert nicht, solange die Seite es nicht erlaubt', async () => {
+    const speichern = vi.fn().mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} bereit={false} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Synthetisch');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
+    expect(speichern).not.toHaveBeenCalled();
+  });
+
+  it('wartet ohne Verbindung und sichert, sobald sie zurück ist', async () => {
+    const speichern = vi.fn().mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    act(() => {
+      setzeVerbindung(false);
+      window.dispatchEvent(new Event('offline'));
+    });
+    await user.type(screen.getByLabelText('Feld'), 'Synthetisch');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
+    expect(speichern).not.toHaveBeenCalled();
+
+    act(() => {
+      setzeVerbindung(true);
+      window.dispatchEvent(new Event('online'));
+    });
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(speichern).toHaveBeenCalledWith('Synthetisch');
+  });
+
+  it('setzt nach einem Fehlschlag aus, bis ausdrücklich gespeichert wurde', async () => {
+    const speichern = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Synthetischer Konflikt.'))
+      .mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Eins');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(await screen.findByText('Nicht von selbst gesichert')).toBeInTheDocument();
+    expect(screen.getByText('Synthetischer Konflikt.')).toBeInTheDocument();
+    expect(screen.getByLabelText('Feld')).toHaveValue('Eins');
+
+    // Weitertippen löst keine Sicherung mehr aus - im Konfliktfall
+    // überschriebe sie sonst still einen fremden Stand.
+    await user.type(screen.getByLabelText('Feld'), ' Zwei');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
+    expect(speichern).toHaveBeenCalledTimes(1);
+
+    // Ausdrücklich speichern nimmt sie wieder auf.
+    await user.click(screen.getByRole('button', { name: 'Speichern' }));
+    expect(speichern).toHaveBeenCalledTimes(2);
+    await user.type(screen.getByLabelText('Feld'), ' Drei');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(speichern).toHaveBeenCalledTimes(3);
+    expect(speichern).toHaveBeenLastCalledWith('Eins Zwei Drei');
+  });
+
+  it('meldet kein „weitergeschrieben“, wenn während der Sicherung getippt wird', async () => {
+    let freigeben: () => void = () => undefined;
+    const speichern = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          freigeben = resolve;
+        }),
+    );
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Eins');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(screen.getByText('Wird gesichert …')).toBeInTheDocument();
+    await user.type(screen.getByLabelText('Feld'), ' Zwei');
+    await act(async () => {
+      freigeben();
+      await Promise.resolve();
+    });
+
+    expect(screen.queryByText('Noch nicht alles gespeichert')).toBeNull();
+    expect(
+      await screen.findByText(/Als Entwurf gesichert um .* – Neues wird gleich gesichert\./),
+    ).toBeInTheDocument();
+    // Die nächste Pause sichert den Rest.
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(speichern).toHaveBeenLastCalledWith('Eins Zwei');
   });
 });

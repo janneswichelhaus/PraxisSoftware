@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as DokumentationApi from './api';
 import type * as AppointmentsApi from '@/features/appointments/api';
 import type * as RouterModul from 'react-router-dom';
+import type * as Bausteine from './textbausteine';
 import { renderWithProviders, testAppointment, testUser } from '@/test-utils';
 
 /**
@@ -52,7 +53,18 @@ const finalisiert: DokumentationApi.TreatmentNote = {
 const fetchAppointment = vi.fn();
 const fetchTreatmentDocumentation = vi.fn();
 const createTreatmentNoteAddendum = vi.fn();
+const updateTreatmentNote = vi.fn();
+const finalizeTreatmentNote = vi.fn();
+const fetchTextSnippets = vi.fn();
 const navigate = vi.fn();
+
+vi.mock('./textbausteine', async (importOriginal) => {
+  const actual = await importOriginal<typeof Bausteine>();
+  return {
+    ...actual,
+    fetchTextSnippets: () => fetchTextSnippets() as Promise<Bausteine.TextSnippet[]>,
+  };
+});
 
 vi.mock('@/features/appointments/api', async (importOriginal) => {
   const actual = await importOriginal<typeof AppointmentsApi>();
@@ -71,6 +83,10 @@ vi.mock('./api', async (importOriginal) => {
       fetchTreatmentDocumentation(id) as Promise<DokumentationApi.TreatmentDocumentation>,
     createTreatmentNoteAddendum: (id: string, inhalt: string) =>
       createTreatmentNoteAddendum(id, inhalt) as Promise<string>,
+    updateTreatmentNote: (id: string, stand: string, inhalt: string) =>
+      updateTreatmentNote(id, stand, inhalt) as Promise<void>,
+    finalizeTreatmentNote: (id: string, stand: string) =>
+      finalizeTreatmentNote(id, stand) as Promise<void>,
   };
 });
 
@@ -96,7 +112,13 @@ describe('TreatmentNoteAddendumPage', () => {
     fetchAppointment.mockReset();
     fetchTreatmentDocumentation.mockReset();
     createTreatmentNoteAddendum.mockReset();
+    updateTreatmentNote.mockReset();
+    finalizeTreatmentNote.mockReset();
+    fetchTextSnippets.mockReset();
     navigate.mockReset();
+    fetchTextSnippets.mockResolvedValue([]);
+    updateTreatmentNote.mockResolvedValue(undefined);
+    finalizeTreatmentNote.mockResolvedValue(undefined);
 
     fetchAppointment.mockResolvedValue(termin);
     fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [] });
@@ -109,7 +131,7 @@ describe('TreatmentNoteAddendumPage', () => {
 
     expect(await screen.findByTestId('ursprung')).toHaveTextContent(INHALT);
     await user.type(feld(), 'Synthetisch: Heimprogramm nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
     await waitFor(() => {
       expect(createTreatmentNoteAddendum).toHaveBeenCalledWith(
@@ -131,7 +153,7 @@ describe('TreatmentNoteAddendumPage', () => {
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
     expect(screen.getByRole('link', { name: 'Abbrechen' })).toHaveAttribute('href', '/');
-    await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
     await waitFor(() =>
       expect(navigate).toHaveBeenCalledWith('/', {
         state: { meldung: 'Nachtrag als Entwurf gespeichert.' },
@@ -162,7 +184,7 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await waitFor(() => expect(feld()).toHaveValue(''));
-    expect(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Als Entwurf speichern' })).toBeDisabled();
   });
 
   it('verweist bei einem Entwurf auf den Bearbeitungsweg', async () => {
@@ -202,7 +224,7 @@ describe('TreatmentNoteAddendumPage', () => {
     rendern();
 
     await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
-    await user.click(screen.getByRole('button', { name: 'Nachtrag als Entwurf speichern' }));
+    await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
     expect(await screen.findByText('Nicht gespeichert')).toBeInTheDocument();
     expect(navigate).not.toHaveBeenCalled();
@@ -216,5 +238,120 @@ describe('TreatmentNoteAddendumPage', () => {
       expect(fetchTreatmentDocumentation).not.toHaveBeenCalled();
     });
     expect(fetchAppointment).not.toHaveBeenCalled();
+  });
+
+  it('zeigt die Textbausteine auch beim Anlegen (BEF-056)', async () => {
+    fetchTextSnippets.mockResolvedValue([
+      {
+        id: 'b1',
+        title: 'Heimprogramm',
+        body: 'Synthetisch: Heimprogramm besprochen.',
+        shared: true,
+        editable: false,
+      },
+    ]);
+    const user = userEvent.setup();
+    rendern();
+
+    await user.click(await screen.findByRole('button', { name: 'Heimprogramm' }));
+    expect(feld()).toHaveValue('Synthetisch: Heimprogramm besprochen.');
+  });
+
+  it('schreibt den Nachtrag auf seiner eigenen Seite fest: erst anlegen, dann finalisieren (BEF-056)', async () => {
+    const nachtrag: DokumentationApi.TreatmentNote = {
+      ...entwurf,
+      id: NACHTRAG_ID,
+      addendum_to_note_id: DOKU_ID,
+      content: 'Synthetisch: Heimprogramm nachgereicht.',
+      updated_at: '2027-05-13T08:00:00.111111+00:00',
+    };
+    createTreatmentNoteAddendum.mockImplementation(() => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: finalisiert, addenda: [nachtrag] });
+      return Promise.resolve(NACHTRAG_ID);
+    });
+    const user = userEvent.setup();
+    rendern();
+
+    await user.type(await screen.findByLabelText('Nachtrag'), nachtrag.content);
+    const knopf = screen.getByRole('button', { name: 'Nachtrag festschreiben' });
+    // Die Folge steht über dem Knopf und ist mit ihm verbunden (ADR-016 Punkt 4).
+    expect(knopf).toHaveAccessibleDescription(/als Version 1 zum Teil der Akte/);
+    await user.click(knopf);
+
+    await waitFor(() =>
+      expect(finalizeTreatmentNote).toHaveBeenCalledWith(NACHTRAG_ID, nachtrag.updated_at),
+    );
+    expect(createTreatmentNoteAddendum).toHaveBeenCalledTimes(1);
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
+        state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+      }),
+    );
+  });
+
+  it('schreibt nichts fest, wenn das Anlegen scheitert', async () => {
+    createTreatmentNoteAddendum.mockRejectedValue(new Error('Synthetischer Fehler.'));
+    const user = userEvent.setup();
+    rendern();
+
+    await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: nachgereicht.');
+    await user.click(screen.getByRole('button', { name: 'Nachtrag festschreiben' }));
+
+    expect(await screen.findByText('Nicht festgeschrieben')).toBeInTheDocument();
+    expect(finalizeTreatmentNote).not.toHaveBeenCalled();
+    expect(feld()).toHaveValue('Synthetisch: nachgereicht.');
+  });
+
+  describe('Sicherung von selbst (BEF-056, ANN-319)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('legt den Nachtrag nach einer Pause einmal an und ändert danach denselben Entwurf', async () => {
+      const nachtrag: DokumentationApi.TreatmentNote = {
+        ...entwurf,
+        id: NACHTRAG_ID,
+        addendum_to_note_id: DOKU_ID,
+        content: 'Synthetisch: erster Teil.',
+        updated_at: '2027-05-13T08:00:00.111111+00:00',
+      };
+      createTreatmentNoteAddendum.mockImplementation(() => {
+        fetchTreatmentDocumentation.mockResolvedValue({
+          primary: finalisiert,
+          addenda: [nachtrag],
+        });
+        return Promise.resolve(NACHTRAG_ID);
+      });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      rendern();
+
+      await user.type(await screen.findByLabelText('Nachtrag'), 'Synthetisch: erster Teil.');
+      expect(createTreatmentNoteAddendum).not.toHaveBeenCalled();
+      await vi.advanceTimersByTimeAsync(3100);
+      await waitFor(() =>
+        expect(createTreatmentNoteAddendum).toHaveBeenCalledWith(
+          DOKU_ID,
+          'Synthetisch: erster Teil.',
+        ),
+      );
+      expect(await screen.findByText(/Als Entwurf gesichert um/)).toBeInTheDocument();
+
+      await user.type(feld(), ' Zweiter Teil.');
+      await vi.advanceTimersByTimeAsync(3100);
+      await waitFor(() =>
+        expect(updateTreatmentNote).toHaveBeenCalledWith(
+          NACHTRAG_ID,
+          nachtrag.updated_at,
+          'Synthetisch: erster Teil. Zweiter Teil.',
+        ),
+      );
+      expect(createTreatmentNoteAddendum).toHaveBeenCalledTimes(1);
+      // Von selbst wird nie finalisiert (ADR-016 Punkt 4).
+      expect(finalizeTreatmentNote).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+    });
   });
 });

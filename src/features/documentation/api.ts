@@ -138,7 +138,10 @@ export async function fetchTreatmentNoteVersions(noteId: string): Promise<Treatm
 export class DokumentationVeraendertError extends Error {
   constructor() {
     super(
-      'Die Dokumentation wurde zwischenzeitlich von einer anderen Person geändert. Bitte den eigenen Text sichern, die Ansicht neu laden und die Änderung erneut vornehmen.',
+      // Kein „neu laden", solange Text im Feld steht (BEF-056): Neuladen
+      // verwürfe ihn. Die Seite lädt den Stand selbst nach und bietet den
+      // nächsten Schritt an.
+      'Die Dokumentation wurde zwischenzeitlich von einer anderen Person geändert. Ihr Text steht weiter im Feld und ist noch nicht gespeichert.',
     );
     this.name = 'DokumentationVeraendertError';
   }
@@ -303,8 +306,9 @@ export async function completeTreatment(
 
   if (error) {
     if (error.message?.includes('appointment was changed meanwhile')) {
+      // Kein „neu laden" (BEF-056): Die Seite lädt den Termin selbst nach.
       throw new Error(
-        'Der Termin wurde zwischenzeitlich geändert. Bitte den eigenen Text sichern, die Ansicht neu laden und den Abschluss erneut vornehmen.',
+        'Der Termin wurde zwischenzeitlich geändert. Ihr Text steht weiter im Feld. Bitte erneut festschreiben – oder mit „Entwurf“ nur als Entwurf sichern.',
       );
     }
     throw schreibfehler(error, 'Die Behandlung konnte nicht abgeschlossen werden.');
