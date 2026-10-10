@@ -476,6 +476,15 @@
           "vermerk": "Sichtung: Rahmen Schritte 13 bis 15"
         },
         {
+          "id": "ux-epic-007",
+          "name": "UX-EPIC-007 Dokumentation und Akte: nichts geht verloren, der nächste Schritt ist sichtbar (BEF-055, BEF-056, BEF-058, BEF-059, BEF-060)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "UX-007a bis UX-007e, Branch `ccr-fdcd8c84-grfo2u`, Zweitreview",
+          "vermerk": "Sichtung: UX-Review Schritte 1 bis 3"
+        },
+        {
           "id": "prx-epic-003",
           "name": "PRX-EPIC-003 Nichts fällt durch",
           "gewicht": 2,
