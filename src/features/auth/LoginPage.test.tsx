@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -10,6 +10,7 @@ vi.mock('@/lib/supabase', () => ({
 }));
 
 const { LoginPage } = await import('./LoginPage');
+const { SessionContext } = await import('./sessionContext');
 
 describe('LoginPage', () => {
   beforeEach(() => {
@@ -44,6 +45,105 @@ describe('LoginPage', () => {
     expect(meldung).toHaveTextContent('Anmeldung nicht möglich');
     expect(meldung.textContent).not.toMatch(/Invalid login credentials/);
     expect(meldung.textContent).not.toMatch(/existiert/i);
+  });
+
+  // ---------------------------------------------------------------------------
+  // Die Maske nennt die Ursache (BEF-047)
+  // ---------------------------------------------------------------------------
+  async function anmelden() {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+    await user.type(screen.getByLabelText('E-Mail-Adresse'), 'wer@praxis.invalid');
+    await user.type(screen.getByLabelText('Kennwort'), 'irgendeins');
+    await user.click(screen.getByRole('button', { name: 'Anmelden' }));
+    return screen.findByRole('alert');
+  }
+
+  it('sagt im Funkloch, dass die Angaben nicht geprüft wurden - nicht „Kennwort prüfen"', async () => {
+    // So gibt der Anmeldedienst einen Netzfehler zurück, ohne zu werfen.
+    signInWithPassword.mockResolvedValueOnce({
+      error: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' },
+    });
+
+    const meldung = await anmelden();
+    expect(meldung).toHaveTextContent(
+      'Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.',
+    );
+    expect(meldung).not.toHaveTextContent('prüfen.');
+  });
+
+  it('sagt auch bei einer geworfenen Ausnahme „keine Verbindung"', async () => {
+    signInWithPassword.mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    expect(await anmelden()).toHaveTextContent('Keine Verbindung zum Anmeldedienst.');
+  });
+
+  it('nennt zu viele Versuche', async () => {
+    signInWithPassword.mockResolvedValueOnce({
+      error: { name: 'AuthApiError', status: 429, code: 'over_request_rate_limit', message: 'x' },
+    });
+    expect(await anmelden()).toHaveTextContent(
+      'Zu viele Versuche. Bitte in einigen Minuten erneut versuchen.',
+    );
+  });
+
+  it('nennt eine Störung des Dienstes', async () => {
+    signInWithPassword.mockResolvedValueOnce({
+      error: { name: 'AuthUnknownError', status: 502, message: 'Bad Gateway' },
+    });
+    expect(await anmelden()).toHaveTextContent(
+      'Der Anmeldedienst ist gerade nicht erreichbar. Ihre Angaben wurden nicht geprüft.',
+    );
+  });
+
+  it('unterscheidet falsches Kennwort, unbekanntes und unbestätigtes Konto nicht (kein Konto-Orakel)', async () => {
+    const saetze: string[] = [];
+    for (const code of ['invalid_credentials', 'user_not_found', 'email_not_confirmed']) {
+      signInWithPassword.mockResolvedValueOnce({
+        error: { name: 'AuthApiError', status: 400, code, message: code },
+      });
+      const meldung = await anmelden();
+      saetze.push(meldung.textContent ?? '');
+      cleanup();
+    }
+    expect(new Set(saetze).size).toBe(1);
+    expect(saetze[0]).toContain('Bitte E-Mail-Adresse und Kennwort prüfen.');
+  });
+
+  it('fragt leere Felder nicht beim Dienst an', async () => {
+    const user = userEvent.setup();
+    render(<LoginPage />);
+    await user.click(screen.getByRole('button', { name: 'Anmelden' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Bitte E-Mail-Adresse und Kennwort eingeben.',
+    );
+    expect(signInWithPassword).not.toHaveBeenCalled();
+  });
+
+  it('sagt nach einem Sitzungsende von außen, dass Eingaben nicht erhalten sind', () => {
+    render(
+      <SessionContext.Provider
+        value={{ session: null, initialising: false, endeVonAussen: true, signOut: vi.fn() }}
+      >
+        <LoginPage />
+      </SessionContext.Provider>,
+    );
+
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Ihre Sitzung wurde beendet. Nicht gespeicherte Eingaben sind nicht erhalten.',
+    );
+  });
+
+  it('sagt beim gewöhnlichen Aufruf nichts über eine Sitzung', () => {
+    render(
+      <SessionContext.Provider
+        value={{ session: null, initialising: false, endeVonAussen: false, signOut: vi.fn() }}
+      >
+        <LoginPage />
+      </SessionContext.Provider>,
+    );
+
+    expect(screen.queryByText(/Sitzung wurde beendet/)).not.toBeInTheDocument();
   });
 
   // ---------------------------------------------------------------------------

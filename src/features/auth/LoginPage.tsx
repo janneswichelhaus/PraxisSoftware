@@ -1,4 +1,4 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useContext, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
@@ -8,7 +8,9 @@ import { Vollseite } from '@/app/Vollseite';
 import { getSupabase } from '@/lib/supabase';
 import { fordereKennwortMailAn } from '@/features/account/api';
 import { VerbindungError } from '@/features/auth/linkEinloesen';
+import { ANMELDESAETZE, anmeldesatz } from './anmeldefehler';
 import { useFokusNachWechsel } from './fokus';
+import { SessionContext } from './sessionContext';
 
 /** Das Feld, in das der Fokus beim Öffnen von „Kennwort vergessen" springt. */
 const ADRESSFELD = 'kennwort-vergessen-adresse';
@@ -185,9 +187,12 @@ function KennwortVergessen({ voreingestellteAdresse }: { voreingestellteAdresse:
  *
  * Fehlermeldungen sind bewusst unspezifisch: Sie unterscheiden nicht zwischen
  * "Konto existiert nicht" und "Kennwort falsch", damit die Anmeldemaske keine
- * Auskunft darüber gibt, wer ein Konto in dieser Praxis hat.
+ * Auskunft darüber gibt, wer ein Konto in dieser Praxis hat. Was sie seit
+ * BEF-047 nennt, ist die Lage des Dienstes und ein Sitzungsende von außen.
  */
 export function LoginPage() {
+  // Ohne `SessionProvider` (Tests, Vorschauen) gibt es kein Sitzungsende.
+  const endeVonAussen = useContext(SessionContext)?.endeVonAussen ?? false;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -201,17 +206,21 @@ export function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
+    // Leere Felder gehen nicht erst zum Dienst: Seine Antwort darauf hieß
+    // bisher „Kennwort prüfen", obwohl keins eingegeben war.
+    if (email.trim() === '' || password === '') {
+      setError(ANMELDESAETZE.leer);
+      return;
+    }
     setPending(true);
     try {
       const { error: signInError } = await getSupabase().auth.signInWithPassword({
         email: email.trim(),
         password,
       });
-      if (signInError) {
-        setError('Anmeldung nicht möglich. Bitte E-Mail-Adresse und Kennwort prüfen.');
-      }
+      if (signInError) setError(anmeldesatz(signInError, ANMELDESAETZE.pruefen));
     } catch {
-      setError('Der Anmeldedienst ist derzeit nicht erreichbar.');
+      setError(ANMELDESAETZE.keineVerbindung);
     } finally {
       setPending(false);
     }
@@ -230,6 +239,13 @@ export function LoginPage() {
         noValidate
         className="flex flex-col gap-4"
       >
+        {/* Kein Grund, kein Name (BEF-047): Was eine Sperre oder ein
+            anderes Gerät ausgelöst hat, steht nicht auf einer Seite, die
+            jeder am Gerät sieht. */}
+        {endeVonAussen ? (
+          <Statusmeldung ton="warnung">{ANMELDESAETZE.sitzungBeendet}</Statusmeldung>
+        ) : null}
+
         {error ? (
           <div ref={fehlerkasten} tabIndex={-1}>
             <ErrorState title={error} />

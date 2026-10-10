@@ -27,7 +27,7 @@ const ERLAUBT: readonly RegExp[] = [
   // Datenzugriff; was nachgeladen wird, entscheidet `App.tsx`.
   /^@\/app\/Profilhinweis$/,
   // Anmeldung und Sitzung gelten für Praxis- und Plattformkonten gleich (Punkt 17).
-  /^@\/features\/auth\/(fokus|fremdeSitzung|sessionContext)$/,
+  /^@\/features\/auth\/(eigeneAbmeldung|fokus|fremdeSitzung|sessionContext)$/,
   // Die Kennwortregel (ANN-027) - eine Regel, keine Praxisdaten.
   /^@\/features\/account\/(api|kennwortFehler)$/,
   // POR-012: der Fragebogen als Baustein und seine Definitionen - Produktinhalt

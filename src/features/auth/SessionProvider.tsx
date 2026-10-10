@@ -4,6 +4,7 @@ import type { Session } from '@supabase/supabase-js';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { startbildZuruecksetzen } from '@/lib/startbildMerker';
 import { getSupabase } from '@/lib/supabase';
+import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { SessionContext, type SessionState } from './sessionContext';
 
 /**
@@ -37,6 +38,12 @@ import { SessionContext, type SessionState } from './sessionContext';
 export function SessionProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [initialising, setInitialising] = useState(true);
+  /**
+   * Endete die letzte Sitzung von außen? (BEF-047) Dann sagt die
+   * Anmeldemaske es - ohne Grund, damit nichts über eine Sperre verraten
+   * wird. Die nächste Sitzung setzt es zurück.
+   */
+  const [endeVonAussen, setEndeVonAussen] = useState(false);
   const queryClient = useQueryClient();
 
   /**
@@ -82,6 +89,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       letzteKennung.current = kennung;
 
       if (wechsel) raeumen();
+      if (kennung !== null) setEndeVonAussen(false);
+      else if (wechsel && !istEigeneAbmeldung()) setEndeVonAussen(true);
 
       setSession(naechste);
       setInitialising(false);
@@ -106,6 +115,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       initialising,
+      endeVonAussen,
       /**
        * Abmelden verlässt sich auf den Ereignisweg — aber nicht blind.
        *
@@ -126,7 +136,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // angemeldet" auf „Mein Konto" falsch und „Alle Sitzungen beenden"
         // ohne eigenen Zweck. Wer am Praxisrechner Feierabend macht, meldet
         // nicht sein Diensttelefon mit ab.
-        const { error } = await getSupabase().auth.signOut({ scope: 'local' });
+        const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'local' }));
         if (error) {
           raeumen();
           // Ohne Kontoangabe (ADR-011), wie bei den Kontoereignissen.
@@ -134,7 +144,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         }
       },
     }),
-    [session, initialising, raeumen],
+    [session, initialising, endeVonAussen, raeumen],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;
