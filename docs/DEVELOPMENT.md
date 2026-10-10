@@ -49,6 +49,15 @@ Supabase-Instanz eingespielt.
 Der Stand ist jederzeit aus **Migrationen + Seed** reproduzierbar. Es gibt
 keinen manuell gepflegten Zwischenzustand.
 
+In der CI läuft `pnpm test:db` in vier Teilen nebeneinander
+(`pnpm test:db --shard=<n>/4`, Jobs „Migrationen und RLS-Tests (Teil n/4)“),
+jeder mit eigener Datenbank; in einem Stück dauerte es zuletzt 13 bis 20
+Minuten. Der Pflichtcheck „Migrationen und RLS-Policies“ (`database`) ist nur
+grün, wenn alle Teile und das Migrationen-Gate es sind;
+`src/werkzeugkette.test.ts` hält Matrix, Teilzahl und Sammelprüfung zusammen.
+Lokal bleibt es ein Lauf; ein einzelner Teil lässt sich mit `--shard`
+nachstellen.
+
 `scripts/test-db.sh` sucht den Server ausschließlich unter
 `/usr/lib/postgresql/*/bin` — also auf Linux beziehungsweise in WSL. Unter
 Windows (Git Bash) läuft `pnpm db:start` deshalb nicht; dort bleibt
@@ -347,8 +356,9 @@ Markdown-Verweis auf eine vorhandene Datei zeigt; Querverweise und eindeutige
 Nummern (G19); und dass die Fortschrittstabelle der Roadmap genau die ist, die
 `pnpm fortschritt --schreiben` aus `development/fortschritt.json` erzeugt.
 
-`pnpm migrationen:check` läuft im Job „Migrationen und RLS-Policies" vor
-`test:db` (BEF-123). Eine Migration, die auf `main` liegt, ist in der
+`pnpm migrationen:check` läuft im eigenen Job „Ausgelieferte Migrationen
+unveraendert" neben den Teilen von `test:db`; der Pflichtcheck „Migrationen
+und RLS-Policies" wartet auf ihn (BEF-123). Eine Migration, die auf `main` liegt, ist in der
 Test-Umgebung eingespielt; `supabase db push` führt sie dort nie wieder aus.
 Das Gate weist deshalb jede Änderung, Umbenennung oder Löschung einer solchen
 Datei ab, ebenso eine neue Migration, deren Version nicht hinter der jüngsten
