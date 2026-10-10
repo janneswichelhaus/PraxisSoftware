@@ -524,10 +524,10 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 
 - **R14 alt / Logfrist:** (a) ADR-011 Punkt 4 auf das senken, was die
   Plattform hält, oder (b) Ausleitungsweg als zweiter Auftragsverarbeiter.
-  Empfehlung: nach G3 entscheiden. Gebraucht vor echten Daten.
-- **B13 / BEF-026:** eigener SMTP-Anbieter oder kein Mailversand. Mit der
-  Plattform ist „kein Mailversand" praktisch vom Tisch — Empfehlung: SMTP-Anbieter
-  in Block 11 prüfen. STAFF-004 ruht bis dahin.
+  **Entschieden (Jannes, 2026-10-10): nach G3**, wenn Produktivprojekt und
+  Tarif feststehen. Gebraucht vor echten Daten.
+- **B13 / BEF-026:** **Richtung entschieden (Jannes, 2026-10-10): eigener
+  SMTP-Anbieter.** Welcher, prüft Block 11 (ADR-002). STAFF-004 ruht bis dahin.
 - **Sichtung** nach Regel 1: vier Dateien in [`../sichtung/`](../sichtung/README.md),
   darunter der Kartendienst mit MAP-005 Teil B am Telefon (Wegpunktlimit,
   `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).

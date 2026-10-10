@@ -1480,3 +1480,17 @@ ohnehin nicht nebenbei angefasst werden.
 **Entscheidung (Jannes, 2026-10-10).** Eine Regel für beide Bereiche: Das Büro antwortet im Training wie in der Behandlung auf „Termin oder Rechnung“ und „Sonstiges“, nicht auf „Übung“ und „Beschwerden“.
 
 **Erwartet.** Der Zweig `training` in `app.can_answer_platform_message` nimmt `other` auf (eine Migration), dazu der Positiv- und der Negativfall in `practice-messages.test.ts` und die Oberfläche, falls sie die Regel spiegelt. ANN-311 Fassung 3. Einzel-Story-Loop mit `pnpm test:db`.
+
+### BEF-140 — Drei Löschkandidaten aus dem Leitfaden fallen weg
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Übersicht, Stammdaten, Tour |
+| Quelle  | Jannes, Entscheidung zu den Löschkandidaten in `docs/design/leitfaden-schlank.md` (2026-10-10) |
+| Status  | offen |
+| Berührt | Übersicht (`src/features/today/MyDayPage.tsx`), Formular der Person (`phone_work`), `src/features/tours/Tourenliste.tsx` |
+
+**Entscheidung (Jannes, 2026-10-10).** (1) Der Aufklapper „Organisatorisches und Kommunikation“ am Ende der Übersicht fällt weg; „Panne melden“ bleibt im Fuhrpark erreichbar. (2) „Telefon (geschäftlich)“ verschwindet aus dem Formular; die Spalte `phone_work` bleibt, damit Auskunft, Zusammenführen und Bestand unberührt sind. (3) „Andere Ziel-App prüfen (für die Gerätebewertung)“ unter der Tourliste fällt weg, sobald die Sichtung Kartendienst die Gerätebewertung abgeschlossen hat.
+
+**Erwartet.** (1) und (2) in einem Loop, nur Oberfläche: Komponenten und Tests anpassen, Sichtprüfung bei 375 und 1280 px. Ob ein vorhandener Wert in `phone_work` noch lesend erscheint, entscheidet der Loop als Annahme. (3) nach der Sichtung Kartendienst, mit der Sichtungsdatei.

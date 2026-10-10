@@ -100,3 +100,7 @@ Annahmen“ vom 06.10.2026 hin entfallen (ANN-260).
 | „Telefon (geschäftlich)“ als drittes Telefonfeld               | Stammdaten, Formular der Person | neben Mobil und privat selten gebraucht                               | Spalte `phone_work`, Formular, Auskunft, Zusammenführen, Seeds, Tests |
 | „Andere Ziel-App prüfen (für die Gerätebewertung)“             | Tour, unter der Liste           | Prüfwerkzeug aus dem Kartendienst-Aufbau, im Praxisalltag ohne Nutzen | Sichtung Kartendienst (Gerätebewertung), Komponente und Test          |
 | Aufklapper „Organisatorisches und Kommunikation“ am Seitenende | Übersicht                       | Wege, die Seitenleiste und Tableiste schon haben                      | Komponente, Tests der Übersicht                                       |
+
+**Entschieden (Jannes, 2026-10-10): alle drei fallen weg**, umgesetzt als BEF-140. „Telefon
+(geschäftlich)“ verschwindet nur aus dem Formular, die Spalte `phone_work` bleibt. „Andere Ziel-App
+prüfen“ fällt erst nach der Sichtung Kartendienst (Gerätebewertung) weg.

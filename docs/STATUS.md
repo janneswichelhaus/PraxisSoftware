@@ -12,7 +12,7 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 
 1. **UX-EPIC-006 bis UX-EPIC-009** (UX-Review, entschieden 2026-10-09, Roadmap Etappe P): zuerst UX-EPIC-006 (Funkloch und Fehlertexte), dann -007 (Dokumentation und Akte), -008 (Rückfrage vor Unumkehrbarem, Korrekturrechnung), -009 (Druck, Nachweise, Begriffe). `/weiter`
 2. **KOM-EPIC-002** (Block 6): Ein Foto oder Video hilft bei der Antwort, ohne liegen zu bleiben – Anhänge als eigene Datenklasse mit kurzer Frist und Metadatenentfernung (ADR-017), nach der Roadmap-Zeile; das Büro liest sie mit (BEF-137).
-3. **BEF-139** (das Büro antwortet im Training auch auf „Sonstiges“), **BEF-129** (Widerruf bleibt in Offene Punkte, bis abgewickelt), **BEF-128** (Abo-Monat nach Storno), **BEF-131** (Terminwünsche fallen beim Zusammenführen mit der Dublette) und **BEF-132** (Plattformzugang an der Dublette) – je ein Einzel-Story-Loop. **ADR-024** (Docs-Session, vor KOM-EPIC-003). Vorschläge auf Zuruf: „Ich“ nach der Lesefrist mit Rechnungen und Dokumenten (D2, ANN-261), Abschluss des Nachsorge-Abos über die Plattform (ANN-272), Profil in der Plattform (ANN-287).
+3. **BEF-139** (das Büro antwortet im Training auch auf „Sonstiges“), **BEF-140** (Löschkandidaten aus dem Leitfaden, entschieden 2026-10-10), **BEF-129** (Widerruf bleibt in Offene Punkte, bis abgewickelt), **BEF-128** (Abo-Monat nach Storno), **BEF-131** (Terminwünsche fallen beim Zusammenführen mit der Dublette) und **BEF-132** (Plattformzugang an der Dublette) – je ein Einzel-Story-Loop. **ADR-024** (Docs-Session, vor KOM-EPIC-003). Vorschläge auf Zuruf: „Ich“ nach der Lesefrist mit Rechnungen und Dokumenten (D2, ANN-261), Abschluss des Nachsorge-Abos über die Plattform (ANN-272), Profil in der Plattform (ANN-287).
 
 ## Prüfverfahren
 
@@ -39,10 +39,9 @@ Ideen gehören nach [`product/IDEENSPEICHER.md`](product/IDEENSPEICHER.md).
 ### Festlegen – nur du, am Schreibtisch
 
 - **Preise:** Abo-Monat (heute synthetisch 39 €) und Trainingspakete mit Preis, Umfang und Zahlungsweise (BEF-114; heute 390 € und 720 €); in der Preisliste als „Nachsorge-Abo (Monat)“ und „Trainingspaket“ eintragen. **G13** (Umsatzsteuer-Status, Befreiungshinweis, Kürzel `RG`/`TR`) vor M3; **B8:** schriftlicher Lizenzbeleg bis M3. Vor dem Scharfschalten **§ 630c Abs. 3 BGB**: Kosteninformation in Textform, wenn das Honorar über der Erstattung liegt (ADR-009, Folgefragen Fassung 5).
-- **Löschkandidaten** im [Leitfaden](design/leitfaden-schlank.md): „Telefon (geschäftlich)“, „Andere Ziel-App prüfen“, Aufklapper „Organisatorisches und Kommunikation“ der Übersicht (enthält „Panne melden“).
 - **Bilder zu den Tests** starten FRB-EPIC-005. (NRS und Veränderungsfrage sind freigegeben, 2026-09-29; FRB-EPIC-004 kann starten.) **D2/D3 aus dem FRB-Plan** gelten wie vorgeschlagen (ANN-118, ANN-119); die drei Lücken (Schulter „Untersuchung ACG", LWS „Behandlung", HWS „Therapie Hochzervikal") und Korrekturen jederzeit nachliefern.
-- **Logfrist für Betriebslogs (R14 alt, jetzt R9):** (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg. Empfehlung: nach G3. Gebraucht vor echten Daten.
-- **BEF-026 / B13 (wieder offen):** Die Plattform braucht Mails an Patient:innen; Empfehlung: eigener SMTP-Anbieter, geprüft in Block 11. STAFF-004 ruht bis dahin.
+- **Logfrist für Betriebslogs (R9):** entschieden 2026-10-10 – (a) ADR-011 Punkt 4 senken oder (b) Ausleitungsweg wird **nach G3** gewählt, wenn Tarif und Produktivprojekt feststehen. Gebraucht vor echten Daten.
+- **B13:** Richtung entschieden 2026-10-10 – **eigener SMTP-Anbieter**; welcher, prüft Block 11. STAFF-004 ruht bis dahin.
 
 ### Einrichten und prüfen
 
