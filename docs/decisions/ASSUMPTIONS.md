@@ -3925,3 +3925,27 @@ Datenschutz · offen · 2026-10-10 · — · Prüfpaket · Wiedervorlage: Datens
 **Anker.** `public.get_practice_sender()` in `supabase/migrations/20261024100000_ux_009a_absender.sql`; im Client `src/features/datenschutz/absender.ts`. Geprüft in `supabase/tests/practice-sender.test.ts`.
 
 **Änderungspfad.** Nur der Name der Organisation: den Zweig mit `practice_billing_profiles` streichen · Aufwand `klein`. Eigener Absender je Standort: Felder an `locations` und hier lesen · Aufwand `mittel`. Mit Wortmarke: `Wortmarke` in `AbsenderBlock` einsetzen, vorher `marke/README.md` ändern · Aufwand `klein`.
+
+### ANN-324 — App-PIN: sechs Ziffern, fünf Fehlversuche je Sitzung, danach ist die Sitzung verbraucht
+
+Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkt 11, Vorschlag aus Fassung 2) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Betriebsreife; Datenschutzprüfung (B2)
+
+**Annahme.** Die App-PIN hat sechs Ziffern; abgelehnt werden gleiche Ziffern und auf- oder absteigende Reihen. Gezählt wird je Sitzung des Anmeldedienstes (`session_id`), nicht je Konto: Nach fünf Fehlversuchen in Folge ist diese Sitzung verbraucht. Die Datenbank sieht sie nie wieder offen, beendet sie beim Anmeldedienst (`auth.sessions`), und weiter geht es nur mit einer neuen Anmeldung per Passkey. Die richtige PIN setzt den Zähler zurück. Eine Zeile mit offenem Fehlversuch bleibt stehen, bis die PIN stimmt; erledigte und verbrauchte fallen einen Tag nach der letzten Änderung.
+
+**Begründung.** Sechs Ziffern und fünf Versuche halten die Trefferchance eines Diebs mit Gerät bei etwa 1 zu 200 000 je Passkey-Anmeldung (ADR-025, Konsequenzen); vier Ziffern läge bei 1 zu 2 000. Je Sitzung, weil die PIN nur eine bestehende Sitzung freigibt: Eine neue Sitzung gibt es nur mit Passkey, ein Zähler je Konto sperrte dagegen das Telefon, wenn am Rechner fünfmal falsch getippt wird. Der Zähler darf nicht nach Zeit verfallen, sonst begänne er täglich von vorn. Unsicher: ob die Datenschutzprüfung eine längere PIN oder eine Wartezeit zwischen Versuchen verlangt.
+
+**Anker.** `app.pin_max_attempts()`, `app.pin_problem()` und `public.unlock_with_pin()` in `supabase/migrations/20261025100000_sec_004_app_pin.sql`; geprüft in `supabase/tests/app-pin.test.ts`.
+
+**Änderungspfad.** Andere Länge oder Zahl: eine Konstante bzw. das Muster in `app.pin_problem` · Aufwand `klein`, dazu der Satz in der Oberfläche. Zähler je Konto: Spalte an `account_pins` statt an `session_unlocks` · Aufwand `klein`.
+
+### ANN-325 — Eine PIN festlegen geht nur höchstens zehn Minuten nach einer Anmeldung
+
+Technik · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, ADR-025 Punkt 11) · Prüfpaket · Wiedervorlage: Jannes in der Sichtung Betriebsreife
+
+**Annahme.** `set_own_pin` verlangt eine offene Sitzung und eine Anmeldung (Passkey, Einladungslink oder in Entwicklung und Test das Kennwort), die höchstens zehn Minuten zurückliegt. Eine Freigabe per PIN zählt dafür nicht. Wer die PIN später ändert, bestätigt sich in „Mein Konto“ zuerst mit dem Passkey.
+
+**Begründung.** Ohne diese Regel könnte, wer ein entsperrtes Telefon findet, sich eine eigene PIN setzen und die Sitzung damit auf Dauer halten; ADR-025 Punkt 11 kennt keine Frist für die PIN. Zehn Minuten reichen für die Einrichtung nach der Einladung und für eine Änderung direkt nach der Bestätigung. Das ist das übliche Muster einer erneuten Bestätigung vor einer Änderung am Zugang. Unsicher: nichts Wesentliches; Restlücke ist das Anlegen eines Passkeys mit einem gesperrten Token direkt beim Anmeldedienst (OPS-001, Bericht SEC-EPIC-002).
+
+**Anker.** `app.pin_fresh_authentication()` und `public.set_own_pin()` in `supabase/migrations/20261025100000_sec_004_app_pin.sql`.
+
+**Änderungspfad.** Andere Frist: eine Konstante · Aufwand `klein`. Ohne die Regel: die Prüfung in `set_own_pin` streichen · Aufwand `klein`, aber gegen den Zweck der PIN.
