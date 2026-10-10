@@ -524,10 +524,10 @@ genannte Festlegung. Wortlaut der Anfragen: [`../decisions/ANFRAGEN.md`](../deci
 
 - **R14 alt / Logfrist:** (a) ADR-011 Punkt 4 auf das senken, was die
   Plattform hält, oder (b) Ausleitungsweg als zweiter Auftragsverarbeiter.
-  Empfehlung: nach G3 entscheiden. Gebraucht vor echten Daten.
-- **B13 / BEF-026:** eigener SMTP-Anbieter oder kein Mailversand. Mit der
-  Plattform ist „kein Mailversand" praktisch vom Tisch — Empfehlung: SMTP-Anbieter
-  in Block 11 prüfen. STAFF-004 ruht bis dahin.
+  **Entschieden (Jannes, 2026-10-10): nach G3**, wenn Produktivprojekt und
+  Tarif feststehen. Gebraucht vor echten Daten.
+- **B13 / BEF-026:** **Richtung entschieden (Jannes, 2026-10-10): eigener
+  SMTP-Anbieter.** Welcher, prüft Block 11 (ADR-002). STAFF-004 ruht bis dahin.
 - **Sichtung** nach Regel 1: vier Dateien in [`../sichtung/`](../sichtung/README.md),
   darunter der Kartendienst mit MAP-005 Teil B am Telefon (Wegpunktlimit,
   `MAX_ZWISCHENZIELE` bleibt bis dahin bei drei).
@@ -770,6 +770,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | B | ABN-EPIC-001c Dateien, Dokumentationsfotos, Kartendienst (BEF-105, -106, -109) | fertig | 2026-10-02 | ABN-023 bis ABN-028, Zweitreview; vorher ADR-017 Fassung 3, ADR-019 Fassung 5 (PR #170) | — | Edge Function patient-file-verify gebaut, scharf mit OPS-001; PDF in der App offen (ANN-223); Sichtung: Befund Schritte 10 bis 12, Kartendienst Schritt 9 |
 | B | ABN-EPIC-002 Abnahme vom 09.10.2026 (BEF-133 bis BEF-137) | fertig | 2026-10-09 | ABN-029 bis ABN-034, Zweitreview; Prinzipien 0.22, ADR-021 Fassung 3, ADR-017 Fassung 4 | — | BEF-138 als eigener Pull Request (bef-138); Sichtung: Befund Schritte 10 bis 12 |
 | B | BEF-138 Abruf freigegebener Dokumente über die Plattform ohne Protokoll | fertig | 2026-10-10 | ADR-010 Fassung 4 (Punkt 22), ADR-023 Fassung 3, Prinzipien 0.23; Migration 20261022100000, platform-files.test.ts; Zweitreview | — | Merge erst mit Label freigabe-audit (Jannes); Sichtung: Plattform Schritt 12 |
+| B | BEF-139 Das Büro antwortet im Training auch auf „Sonstiges“ | gesichtet | 2026-10-10 | ANN-311 Fassung 3; Migration 20261022130000, practice-messages.test.ts (Gegenprobe ohne Migration rot); Zweitreview | — | ohne Oberfläche; Sichtung Pläne Schritt 12 angepasst |
 | B | LOG-EPIC-001 Protokollierung auf das Mindestmaß | fertig | 2026-10-03 | PRs #177 bis #180 (gestapelt), ADR-010 Fassung 3, PROJECT_PRINCIPLES 0.21 | — | ohne Oberfläche außer Hinweistexten; nach grüner CI mergen (E-6); offen bei Jannes: pg_cron-Nachweis, Backupfrist, AV-Verträge, Plattformlogs |
 | B | ABR-EPIC-007 Terminhonorar | fertig | 2026-10-05 | ABR-030 bis ABR-032, ADR-009 Fassung 5 (B17 entschieden), Zweitreview | — | ohne BEF-114 (Paketpreise Training, wartet auf Preis, Umfang, Zahlungsweise); Sichtung: Plattform Schritte 8 und 9 |
 | B | UBK-EPIC-001 Übersicht nach der Uhr, Tageswechsel, Tageskarte, Fahrwege im Kalender (BEF-051) | fertig | 2026-10-05 | UBK-001 bis UBK-005, Branch `claude/feature-loop-ubersicht-kalender-hy71mv` | — | Auftrag Jannes, eingeschoben; Sichtung: UI-Redesign Schritte 3, 13 und 14 |

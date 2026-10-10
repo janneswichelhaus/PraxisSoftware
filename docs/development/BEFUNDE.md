@@ -1289,3 +1289,17 @@ Patientenliste umbrechen statt kürzen.
 
 **Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`; für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
 
+
+### BEF-140 — Drei Löschkandidaten aus dem Leitfaden fallen weg
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Übersicht, Stammdaten, Tour |
+| Quelle  | Jannes, Entscheidung zu den Löschkandidaten in `docs/design/leitfaden-schlank.md` (2026-10-10) |
+| Status  | offen |
+| Berührt | Übersicht (`src/features/today/MyDayPage.tsx`), Formular der Person (`phone_work`), `src/features/tours/Tourenliste.tsx` |
+
+**Entscheidung (Jannes, 2026-10-10).** (1) Der Aufklapper „Organisatorisches und Kommunikation“ am Ende der Übersicht fällt weg; „Panne melden“ bleibt im Fuhrpark erreichbar. (2) „Telefon (geschäftlich)“ verschwindet aus dem Formular; die Spalte `phone_work` bleibt, damit Auskunft, Zusammenführen und Bestand unberührt sind. (3) „Andere Ziel-App prüfen (für die Gerätebewertung)“ unter der Tourliste fällt weg, sobald die Sichtung Kartendienst die Gerätebewertung abgeschlossen hat.
+
+**Erwartet.** (1) und (2) in einem Loop, nur Oberfläche: Komponenten und Tests anpassen, Sichtprüfung bei 375 und 1280 px. Ob ein vorhandener Wert in `phone_work` noch lesend erscheint, entscheidet der Loop als Annahme. (3) nach der Sichtung Kartendienst, mit der Sichtungsdatei.

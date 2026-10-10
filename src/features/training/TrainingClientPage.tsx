@@ -260,8 +260,8 @@ function Ansicht({ kundin, user }: { kundin: TrainingClient; user: CurrentUser }
             />
           ) : null}
           {/* KOM-003: Rückfragen dieses Trainingsverhältnisses; das Büro liest
-              alle und antwortet nur auf Termin oder Rechnung (ANN-311
-              Fassung 2), verbindlich entscheidet der Server. */}
+              alle und antwortet auf Termin, Rechnung und Sonstiges (ANN-311
+              Fassung 3), verbindlich entscheidet der Server. */}
           <RueckfragenAbschnitt art="training" verhaeltnisId={kundin.id} />
         </>
       )}

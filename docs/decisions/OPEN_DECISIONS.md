@@ -55,7 +55,7 @@ Feature, **P3** später.
 | B10 | Automatisierte Progression: MDR-Grenze | **vorläufig entschieden 2026-09-08**; Bestätigung mit B1 | vor Etappe 9; Volltext: `ANFRAGEN.md` § B10 |
 | B11 | Paketpreise, Vorauszahlung, Anreize | **neu entschieden 2026-09-22**: Training als Paket, Plattform darin enthalten; Portal-Abo der Patient:innen als Monatsrechnung | Roadmap ANG-EPIC-001/002; Steuer mit B4; Volltext: `ANFRAGEN.md` § B11 |
 | B12 | Stichtag der Umstellung und Rechnungsnummernkreis | **erledigt 2026-09-06**: kein Altsystem; Nummernformat → B4 | — |
-| B13 | E-Mail-Versand aus der Plattform (Konten, Patient:innen) | **wieder offen seit 2026-09-21**: Option a (nur Auth-Mails des Providers) trägt nicht (BEF-026); Empfehlung eigener SMTP-Anbieter | unten; Roadmap „Bei Jannes", R8 |
+| B13 | E-Mail-Versand aus der Plattform (Konten, Patient:innen) | **Richtung entschieden 2026-10-10 (Jannes): eigener SMTP-Anbieter**; welcher, klärt die Anbieterprüfung in Block 11 (ADR-002) · Option a (nur Auth-Mails des Providers) trägt nicht (BEF-026) | unten; Roadmap „Bei Jannes", R8 |
 | B14 | PDF-Erzeugung für Rechnungen und Tagesplan | Druckansichten **entschieden 2026-09-06**; Rechnungs-PDF **entschieden 2026-09-19**: Weg 1 jetzt, Weg 3 nach OPS-001 | unten; [`rechnungs-pdf-optionen.md`](rechnungs-pdf-optionen.md) |
 | B15 | Terminerinnerung und Online-Terminbuchung: Kanal, Anbieter | **neu entschieden 2026-09-22**: automatische Erinnerung und Online-Anfrage gehören zu V1, gebaut hinter Adapter; Anbieter offen · Terminmail aus dem eigenen Postfach gebaut (CAL-013, ANN-041) | unten |
 | B16 | Hosting der Oberfläche (Test-Umgebung, später Produktion) | **entschieden 2026-09-23**: Uberspace; Konten stehen seit 2026-09-25 | unten; [`hosting-optionen.md`](hosting-optionen.md) |
@@ -214,15 +214,15 @@ erledigt · 2026-09-06 · Jannes · Kein Altsystem; das Nummernformat geht an B4
 
 ### B13 — E-Mail-Versand aus der Plattform
 
-wieder offen · seit 2026-09-21 (BEF-026) · P1 vor POR-EPIC-001
+Richtung entschieden · 2026-10-10 · Jannes · eigener SMTP-Anbieter; welcher, prüft Block 11 nach ADR-002 (vorher kein Vertrag, keine produktive Nutzung). Davor wieder offen seit 2026-09-21 (BEF-026).
 
 Am 2026-09-06 entschieden war Option a: nur die Auth-Mails des Providers, kein
 zweiter Dienst. Das trägt nicht mehr: Die Providerprüfung (OPS-001) zeigt, dass
 der eingebaute Versand nur an Adressen des Projektteams zustellt, und die
 Plattform (E-4 in `../development/UMBAU.md`) braucht Mails an Patient:innen —
-Einladung, Anmeldung, Hinweise. Offen ist die Wahl zwischen einem eigenen
-SMTP-Anbieter (Empfehlung; neuer Dienstleister, Prüfung nach ADR-002 in Block
-11) und keinem Mailversand. Gebaut wird bis dahin hinter einem Adapter mit
+Einladung, Anmeldung, Hinweise. Zur Wahl standen ein eigener
+SMTP-Anbieter (gewählt; neuer Dienstleister, Prüfung nach ADR-002 in Block
+11) und kein Mailversand. Gebaut wird bis dahin hinter einem Adapter mit
 `mock`-Weg; STAFF-004 ruht. Wo: §3.5, §4, ADR-002; Roadmap R8, „Bei Jannes".
 Annahmen: ANN-025, ANN-043.
 
