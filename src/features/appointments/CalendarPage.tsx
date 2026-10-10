@@ -1128,7 +1128,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
       {
         schluessel: 'dauertermin',
         beschriftung: BEGRIFFE.dauertermin,
-        hinweis: p.verordnung ? 'Terminserie aus der gefilterten Grundlage' : 'Terminserie',
+        hinweis: p.verordnung ? 'Serie aus der gefilterten Grundlage' : 'Serie aus einer Grundlage',
         onWaehlen: () =>
           hin(
             p.patient && p.verordnung
@@ -1667,7 +1667,7 @@ export function CalendarPage({ user }: { user: CurrentUser }) {
                     <span aria-hidden="true" className="text-ink inline-flex align-[-0.1em]">
                       <SpannenBild />
                     </span>{' '}
-                    neben der Zeit: Die Länge weicht ab, weder 45 noch 60 Minuten.
+                    neben der Zeit: Die Dauer weicht ab, weder 45 noch 60 Minuten.
                   </li>
                   <li>
                     Grau schraffiert: außerhalb der Arbeitszeit der Person – auch ein Tag ohne

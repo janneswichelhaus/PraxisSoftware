@@ -193,7 +193,7 @@ function VerordnerFormular({ bestand, zurueck }: { bestand: Prescriber | null; z
       <Rueckwegzeile zurueck={zurueck} />
 
       <PageHeader
-        title={bestand ? 'Verordner:in bearbeiten' : 'Neue:r Verordner:in'}
+        title={bestand ? 'Verordner:in bearbeiten' : 'Verordner:in anlegen'}
         description={
           bestand
             ? `${prescriberName(bestand)} · Mit * markierte Felder sind erforderlich.`

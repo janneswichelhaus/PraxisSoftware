@@ -49,6 +49,7 @@ import { fetchAbrechnungslage, positionText } from '@/features/appointments/abre
 import { tagePlus } from '@/features/appointments/calendar';
 import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntry } from './api';
 import { Tageskarte } from './Tagesliste';
+import { TagesplanDruck } from './TagesplanDruck';
 import { Zeitstrahl } from './Zeitstrahl';
 import { useTagesfahrzeiten } from './fahrzeiten';
 import { TagesWort, bezugszeitpunkt, gewaehlterTag, tagesPfad, tagesWort } from './tageswahl';
@@ -869,9 +870,9 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     <div className="@container">
       <div
         className={
-          zweispaltig
+          (zweispaltig
             ? '@zweispaltig:grid-cols-[minmax(0,1fr)_minmax(300px,380px)] @zweispaltig:gap-x-8 grid items-start gap-6'
-            : 'lg:max-w-3xl'
+            : 'lg:max-w-3xl') + (eigeneTagesliste && tagesliste.data ? ' print:hidden' : '')
         }
       >
         <div className="min-w-0">
@@ -936,7 +937,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
       {/* PRX-EPIC-003: der ruhige Weg zur Büroliste, auch wenn nichts fällig
           ist - die Zeile oben erscheint nur mit Fälligem. */}
       {canReadPatientDirectory(user.roles) ? (
-        <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
           <Textlink alleinstehend to="/offen" className="text-liste gap-1 font-medium">
             Offene Punkte: Aufgaben, Anrufliste, Erstaufnahmen
             <Pfeil />
@@ -948,7 +949,7 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
           sehen - für die Trainingsbetreuung der einzige Arbeitsbereich neben
           dieser Übersicht. */}
       {canReadTrainingClients(user.roles) ? (
-        <p className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
+        <p className="border-line nicht-drucken mt-8 border-t pt-3 lg:max-w-3xl">
           <Textlink alleinstehend to="/training" className="text-liste gap-1 font-medium">
             {BEGRIFFE.trainingskundInnen}
             <Pfeil />
@@ -958,7 +959,24 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
 
       {/* Die Vorschau führt nach Organisatorisches und Kommunikation - Bereiche,
           die ein reines Trainingskonto nicht hat (TRN-003). */}
-      {isTherapyStaff(user.roles) ? <UebersichtVorschau user={user} /> : null}
+      {isTherapyStaff(user.roles) ? (
+        <div className="nicht-drucken">
+          <UebersichtVorschau user={user} />
+        </div>
+      ) : null}
+
+      {/* BEF-052, ANN-021 Fassung 3: Gedruckt wird nur der eigene Tag als
+          Liste mit Anschrift und Rufnummer - die Bildschirmansicht trägt sie
+          hinter Knöpfen und Aufklappern. */}
+      {eigeneTagesliste && tagesliste.data ? (
+        <TagesplanDruck
+          termine={sortiert}
+          name={user.profile.display_name}
+          datum={langesDatum(tag)}
+          zeitzone={zeitzone}
+          standVon={tagesliste.isError ? tagesliste.dataUpdatedAt : null}
+        />
+      ) : null}
     </div>
   );
 }

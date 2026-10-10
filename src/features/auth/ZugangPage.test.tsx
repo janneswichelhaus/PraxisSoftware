@@ -76,7 +76,7 @@ describe('ZugangPage', () => {
     ).toBeInTheDocument();
     // Zugänge verwaltet die Rolle Praxisinhaber (WRT-12).
     expect(
-      screen.getByText(/Praxisinhaber:in kann eine neue Zugangsmail schicken/),
+      screen.getByText(/Praxisinhaber:in kann eine neue Anmeldemail schicken/),
     ).toBeInTheDocument();
   });
 

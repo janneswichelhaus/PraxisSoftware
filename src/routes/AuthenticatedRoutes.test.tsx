@@ -215,7 +215,9 @@ describe('AuthenticatedRoutes', () => {
     'oeffnet das Anlageformular fuer %s',
     async (role) => {
       renderWithProviders(<AuthenticatedRoutes user={testUser([role])} onSignOut={vi.fn()} />, NEU);
-      expect(await screen.findByRole('heading', { name: 'Neue:r Patient:in' })).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { name: 'Patient:in anlegen' }),
+      ).toBeInTheDocument();
     },
   );
 
@@ -224,7 +226,7 @@ describe('AuthenticatedRoutes', () => {
       <AuthenticatedRoutes user={testUser(['patient'], 'Max Mustermann')} onSignOut={vi.fn()} />,
       NEU,
     );
-    expect(screen.queryByRole('heading', { name: 'Neue:r Patient:in' })).toBeNull();
+    expect(screen.queryByRole('heading', { name: 'Patient:in anlegen' })).toBeNull();
     expect(await screen.findByRole('heading', { name: /Guten/ })).toBeInTheDocument();
   });
 

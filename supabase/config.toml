@@ -118,7 +118,7 @@ content_path = "./supabase/templates/recovery.html"
 # Zugangsmail an eine offene Einladung (FIX-002, ANN-043), gleiche Bauart.
 # Im Cloudprojekt: Authentication > Email Templates > Magic Link.
 [auth.email.template.magic_link]
-subject = "Zugang zur Praxisanwendung"
+subject = "Anmeldemail für die Praxisanwendung"
 content_path = "./supabase/templates/magic_link.html"
 
 # Edge Functions sind NICHT fuer produktive Gesundheitsdaten freigegeben

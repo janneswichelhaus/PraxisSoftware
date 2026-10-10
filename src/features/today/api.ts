@@ -3,6 +3,7 @@ import { getSupabase } from '@/lib/supabase';
 import { telHref } from '@/lib/telefon';
 import {
   appointmentKindSchema,
+  appointmentStatusLabels,
   appointmentStatusSchema,
   appointmentTypeSchema,
   type AppointmentStatus,
@@ -207,14 +208,8 @@ export function nachUhrzeit(
   return a.starts_at.localeCompare(b.starts_at) || a.id.localeCompare(b.id);
 }
 
-export const dayPlanStatusLabels: Record<AppointmentStatus, string> = {
-  confirmed: 'Steht aus',
-  cancelled: 'Abgesagt',
-  no_show: 'Nicht angetroffen',
-  completed: 'Abgeschlossen',
-  documented: 'Dokumentiert',
-  invoiced: 'Abgerechnet',
-};
+/** Dieselben Wörter wie überall (BEF-067); der Name bleibt für die Aufrufer. */
+export const dayPlanStatusLabels: Record<AppointmentStatus, string> = appointmentStatusLabels;
 
 /**
  * Ton des Abzeichens in der Tagesliste.

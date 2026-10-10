@@ -32,7 +32,7 @@ export const TERMINFELD_IDS: Readonly<Record<AppointmentFormField, string>> = {
 export const DAUER_AUSWAHL_ID = 'termin-dauer';
 
 /** Dieselbe Meldung wie am Minutenfeld, damit beide Stellen gleich sprechen. */
-export const DAUER_UNGUELTIG = 'Bitte eine Länge in ganzen Minuten eingeben.';
+export const DAUER_UNGUELTIG = 'Bitte eine Dauer in ganzen Minuten eingeben.';
 
 /**
  * Beginn und Dauer ergeben kein Ende am selben Tag (TER-06).
@@ -111,7 +111,7 @@ export function terminFehlerliste(
       appointment_type: 'Terminart',
       date: 'Datum',
       start_time: 'Beginn',
-      end_time: 'Länge in Minuten',
+      end_time: 'Dauer in Minuten',
       location_id: 'Standort',
     },
     fehler,

@@ -84,7 +84,7 @@ test.describe('CAL-007: Terminserie', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(SERIE);
 
-    await expect(page.getByRole('heading', { name: 'Terminserie anlegen' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Dauertermin anlegen' })).toBeVisible();
     // Verordnet steht fest im Seed; offen haengt davon ab, was frühere Laeufe
     // gegen dieselbe Datenbank schon verplant haben. Seit TER-09 heißt die
     // Zeile „Mögliche Termine“ und nennt die Zahl ohne Einheit; „10
@@ -97,7 +97,7 @@ test.describe('CAL-007: Terminserie', () => {
     await anmelden(page, KONTEN.office);
     await page.goto(`/patienten/${PATIENTEN.erika}/verordnungen`);
 
-    await page.getByRole('link', { name: 'Terminserie anlegen' }).first().click();
+    await page.getByRole('link', { name: 'Dauertermin anlegen' }).first().click();
     await expect(page).toHaveURL(/\/verordnungen\/[0-9a-f-]{36}\/serie$/);
   });
 

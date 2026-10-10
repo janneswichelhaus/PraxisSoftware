@@ -198,7 +198,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     // haengt das Verordnungsformular dabei aus. Der Schutz vor
     // Eingabeverlust fragt hier nicht - der Entwurf sichert alles (VER-03).
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
     expect(createTreatmentBasis).not.toHaveBeenCalled();
 
     // Der eigentliche Streitpunkt: die Standard-gcTime waere hier laengst
@@ -248,7 +248,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
 
     jetzt += 6 * 60 * 1000;
 
@@ -279,7 +279,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '8');
 
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
 
     jetzt += 6 * 60 * 1000;
 
@@ -319,7 +319,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.click(screen.getByRole('checkbox', { name: 'Krankengymnastik (KG)' }));
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
 
     fetchPrescribers.mockResolvedValue([
       verordner,
@@ -346,7 +346,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
     await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });
     expect(screen.getByLabelText('Anzahl möglicher Termine *')).toHaveValue('6');
@@ -368,7 +368,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
 
     await user.click(screen.getByRole('checkbox', { name: 'Manuelle Therapie (MT)' }));
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
 
     // Simuliert Abmeldung und Anmeldung als andere Person im selben Tab,
     // ohne Neuladen der Seite - der Entwurf bleibt technisch im Speicher,
@@ -394,7 +394,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await user.type(screen.getByLabelText('Anzahl möglicher Termine *'), '6');
 
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
 
     // Die Verordner-Anlage wird ueber die Hauptnavigation verlassen: weder
     // "Abbrechen" noch Speichern - genau der Fall aus dem Restpunkt. Der
@@ -419,7 +419,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
     await user.type(screen.getByLabelText('Frequenz'), 'Erster Versuch');
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
     erster.unmount();
 
     // Zweiter Anlauf, diesmal bis zum Ende: der zurueckkehrende Entwurf ist
@@ -428,7 +428,7 @@ describe('Entwurf ueber den Abstecher zur Verordner-Anlage (echte Routen)', () =
     await screen.findByRole('option', { name: /Probst/ });
     await user.type(screen.getByLabelText('Frequenz'), 'Zweiter Versuch');
     await user.click(screen.getByRole('link', { name: 'Neue Verordner:in anlegen' }));
-    await screen.findByRole('heading', { name: 'Neue:r Verordner:in' });
+    await screen.findByRole('heading', { name: 'Verordner:in anlegen' });
     await user.click(screen.getByRole('link', { name: 'Abbrechen' }));
 
     await screen.findByRole('heading', { name: 'Grundlage erfassen' });

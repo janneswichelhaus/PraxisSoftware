@@ -55,7 +55,7 @@ test.describe('CAL-008a: Der Zustand heisst bestaetigt', () => {
 
     await anmelden(page, KONTEN.office);
     await terminAnlegen(page, { tag, von: zeit(0), bis: zeit(60) });
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
 
     await page.goto(`/kalender?ansicht=tag&datum=${tag}&status=confirmed`);
     await kalenderOptionenOeffnen(page);
@@ -74,7 +74,7 @@ test.describe('CAL-008b: Absage nur mit Grund', () => {
     const rueckfrage = page.getByRole('group', { name: 'Termin absagen' });
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
     await expect(rueckfrage).toContainText('Bitte einen Absagegrund auswählen.');
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
 
     await page.getByLabel('Absagegrund').selectOption('practice_moved');
     await page.getByRole('button', { name: 'Ja, Termin absagen' }).click();
@@ -115,7 +115,7 @@ test.describe('CAL-014c: Nicht angetroffen ohne Gebuehrenentscheidung', () => {
     await expect(fenster.getByRole('button', { name: 'Termin absagen' })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 });
 

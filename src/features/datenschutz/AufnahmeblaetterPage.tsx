@@ -10,6 +10,8 @@ import {
   DATENSCHUTZINFORMATION_FASSUNG,
   type Abschnitt,
 } from './patienteninformation';
+import { AbsenderBlock } from './AbsenderBlock';
+import { useAbsender } from './useAbsender';
 
 /**
  * Die Blätter für die Aufnahme zum Ausdrucken (PAT-006).
@@ -26,10 +28,14 @@ import {
  * am Telefon nach mehreren Bildschirmhöhen Rechtstext. Jetzt steht er
  * zusätzlich neben dem Rückweg, und Rückweg, Blatt und Knöpfe stehen am
  * Desktop auf einer Fluchtlinie statt auf zweien.
+ *
+ * **Absender (UX-009a, BEF-052).** Beide Blätter tragen oben Name, Anschrift,
+ * Telefon und E-Mail der Praxis aus den Stammdaten (ANN-323) - auch wenn
+ * therapist druckt. Die Datenschutzinformation nennt sie zusätzlich im Text.
  */
 export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
   const { patientId = '' } = useParams();
-  const praxis = user.organizationName ?? 'die Praxis';
+  const { absender, hinweis, laedt } = useAbsender(user.organizationName);
 
   return (
     <>
@@ -40,10 +46,12 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
           standard={`/patienten/${patientId}/stammdaten`}
           beschriftung="Zurück zum Datenschutz der Akte"
         />
-        <Button type="button" onClick={() => window.print()}>
+        <Button type="button" disabled={laedt} onClick={() => window.print()}>
           Blätter drucken
         </Button>
       </div>
+
+      <div className="mx-auto max-w-[210mm]">{hinweis}</div>
 
       <article className="text-ink text-liste mx-auto max-w-[210mm]">
         <p className="text-warnung border-line border-b pb-2 text-sm font-medium">
@@ -51,24 +59,25 @@ export function AufnahmeblaetterPage({ user }: { user: CurrentUser }) {
           prüfen.
         </p>
 
+        <AbsenderBlock absender={absender} className="mt-4" />
         <h1 className="text-h4 mt-6 font-bold">Datenschutzinformation</h1>
         <p className="text-ink-muted mt-1 text-sm">
-          {praxis} · Fassung {DATENSCHUTZINFORMATION_FASSUNG} · nach Art. 13 DSGVO
+          Fassung {DATENSCHUTZINFORMATION_FASSUNG} · nach Art. 13 DSGVO
         </p>
-        {datenschutzinformation(praxis).map((abschnitt) => (
+        {datenschutzinformation(absender).map((abschnitt) => (
           <Blattabschnitt key={abschnitt.titel} abschnitt={abschnitt} />
         ))}
 
         <div className="border-line mt-10 border-t pt-6 print:break-before-page">
-          <h2 className="text-h4 font-bold">{ausfallhonorarRegel().titel}</h2>
-          <p className="text-ink-muted mt-1 text-sm">{praxis}</p>
+          <AbsenderBlock absender={absender} />
+          <h2 className="text-h4 mt-6 font-bold">{ausfallhonorarRegel().titel}</h2>
           <Blattabschnitt abschnitt={{ ...ausfallhonorarRegel(), titel: '' }} />
         </div>
       </article>
 
       <div className="nicht-drucken mx-auto mt-10 flex max-w-[210mm] flex-col gap-3">
         <div>
-          <Button type="button" variant="secondary" onClick={() => window.print()}>
+          <Button type="button" variant="secondary" disabled={laedt} onClick={() => window.print()}>
             Blätter drucken
           </Button>
         </div>

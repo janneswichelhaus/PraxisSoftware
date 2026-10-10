@@ -74,7 +74,7 @@ test.describe('CAL-002: Kalender', () => {
     );
 
     await terminImKalenderOeffnen(page, terminId);
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 
   test('behält Ansicht, Datum und Filter beim Neuladen', async ({ page, request }) => {

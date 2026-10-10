@@ -33,14 +33,22 @@ describe('MdrSperre', () => {
     expect(bezeichnung.closest('dl')).toHaveClass('divide-y', 'border-t');
   });
 
-  it('nennt Kennung, Hinweis und Rückweg unverändert (NAV-23 bleibt bei Jannes)', () => {
+  // BEF-065 (Entscheidung und Freigabe Jannes 2026-10-09): Praxissprache im
+  // Haupttext, die Kennung als Fußzeile - gleich streng geprüft.
+  it('nennt Sperre, Kennung, Hinweis und Rückweg', () => {
     zeige();
 
     expect(screen.getByRole('heading', { level: 1, name: eintrag.bezeichnung })).toBeVisible();
-    expect(screen.getByText(/MDR_REVIEW_REQUIRED/)).toBeInTheDocument();
     expect(
-      screen.getByText(/Ein Feature-Flag ersetzt diese Prüfung nicht – deshalb/),
+      screen.getByText(
+        'Diese Funktion bleibt gesperrt, bis eine Prüfung nach dem Medizinprodukterecht dokumentiert ist.',
+      ),
     ).toBeInTheDocument();
+    expect(screen.getByText(/Kennung: MDR_REVIEW_REQUIRED/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Einen Schalter, der sie vor der Prüfung freigibt, gibt es bewusst nicht/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Feature-Flag|klassifiziert/)).toBeNull();
     expect(screen.getByRole('link', { name: 'Zur Übersicht' })).toHaveAttribute('href', '/');
   });
 

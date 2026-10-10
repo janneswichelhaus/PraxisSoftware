@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
+import { Badge } from '@/components/ui/Badge';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
-import { Aufklappzeichen, Inhaltsflaeche } from '@/components/ui/Card';
+import { Aufklappzeichen, Disclosure, Inhaltsflaeche } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -11,12 +13,11 @@ import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Listenfehler, NachladeHinweis } from '@/features/appointments/Rueckmeldungen';
 import { SicherheitReiter } from './SicherheitReiter';
 import {
-  AUDIT_ACTIONS,
+  AUDIT_ACTION_GROUPS,
   auditActionLabels,
   auditOperationLabels,
   auditOutcomeLabels,
   auditSubjectLabels,
-  type AuditAction,
 } from './actions';
 import {
   fetchAuditEvents,
@@ -94,35 +95,109 @@ function EventRow({ event }: { event: AuditEvent }) {
           </span>
         </span>
       </span>
+      {/* BEF-065: Eine Abweisung ist das, wonach man sucht - sie steht als
+          kritisches Abzeichen da, nicht in derselben grauen Zeile wie
+          „Erfolgreich". */}
       <span className="text-ink-muted mt-0.5 block text-sm lg:mt-0 lg:text-right">
         <span className="sr-only">Ergebnis: </span>
-        {label(auditOutcomeLabels, event.outcome)}
+        {event.outcome === 'denied' ? (
+          <Badge ton="kritisch">{label(auditOutcomeLabels, event.outcome)}</Badge>
+        ) : (
+          label(auditOutcomeLabels, event.outcome)
+        )}
       </span>
     </li>
   );
 }
 
+/** Uhrzeit für „Stand 14:03" in der Zeitzone des Geräts - der Stand ist ein Augenblick der Seite. */
+function standText(zeitpunkt: number): string {
+  return new Intl.DateTimeFormat('de-DE', { hour: '2-digit', minute: '2-digit' }).format(
+    new Date(zeitpunkt),
+  );
+}
+
+/**
+ * Die feste Grenze zum Blättern (BEF-065): eine Millisekunde nach dem
+ * jüngsten Eintrag der ersten Seite. Gerechnet aus dem, was der Server
+ * geliefert hat, nicht aus der Uhr des Geräts - geht die nach, fehlten sonst
+ * die jüngsten Einträge.
+ */
+function grenzeNach(events: readonly AuditEvent[]): string | null {
+  const juengster = events[0]?.occurred_at;
+  if (!juengster) return null;
+  const zeit = Date.parse(juengster);
+  return Number.isNaN(zeit) ? null : new Date(zeit + 1).toISOString();
+}
+
+/**
+ * Das Protokoll (ADR-010 Punkt 13), seit UX-009b für die Praxisleitung im
+ * Alltag geschrieben (BEF-065, Entscheidung Jannes 2026-10-09):
+ *
+ *   * **Filter in der Adresse** (`?von=&bis=&aktion=&seite=&stand=`): Ein
+ *     Neuladen oder ein geteilter Link behält sie. Am Telefon stehen sie
+ *     zugeklappt unter „Filter", ab 1024 px offen. Die Person steht bewusst
+ *     **nicht** in der Adresse: Ihre Kontokennung landete sonst in Verlauf,
+ *     Lesezeichen und geteilten Links - ein Protokoll über eine bestimmte
+ *     Beschäftigte gehört nicht in die Adresszeile (§20, Zweitreview B5).
+ *   * **Aktionen gruppiert** wie im Katalog (ADR-010 Punkt 16).
+ *   * **Blättern auf einem festen Stand:** Ab der zweiten Seite liest die
+ *     Seite nur Einträge bis zum jüngsten der ersten Seite. Was danach
+ *     entsteht, schiebt nichts um; „Neu laden" holt es ausdrücklich. Die
+ *     Grenze steht als `stand` in der Adresse, damit auch ein Neuladen auf
+ *     Seite 2 sie behält; eine Folgeseite ohne Grenze springt auf Seite 1.
+ *     Die Serverfunktion ist dieselbe, nur `p_to` ist dann gesetzt.
+ *   * Beim Blättern bleibt die alte Seite stehen, bis die neue da ist.
+ *
+ * Das Lesen des Protokolls wird nicht protokolliert (ADR-010 Fassung 3).
+ */
 export function AuditLogPage() {
-  const [from, setFrom] = useState('');
-  const [to, setTo] = useState('');
+  const [suche, setSuche] = useSearchParams();
+  const from = suche.get('von') ?? '';
+  const to = suche.get('bis') ?? '';
   const [actorUserId, setActorUserId] = useState('');
-  const [action, setAction] = useState('');
-  const [page, setPage] = useState(0);
+  const action = suche.get('aktion') ?? '';
+  const seite = Number.parseInt(suche.get('seite') ?? '1', 10);
+  const page = Number.isFinite(seite) && seite > 1 ? seite - 1 : 0;
+  // Die Grenze gilt für die Folgeseiten; die erste Seite ist immer der
+  // jüngste Stand. Nur ein lesbarer Zeitpunkt zählt.
+  const standRoh = suche.get('stand');
+  const grenze = standRoh && !Number.isNaN(Date.parse(standRoh)) ? standRoh : null;
+  const ohneGrenze = page > 0 && grenze === null;
+
+  // Eine Folgeseite ohne Grenze (alter Link, abgeschnittene Adresse) springt
+  // auf Seite 1 - sonst blätterte sie doch auf einem wandernden Stand.
+  useEffect(() => {
+    if (ohneGrenze) {
+      setSuche(
+        (alt) => {
+          const neu = new URLSearchParams(alt);
+          neu.delete('seite');
+          return neu;
+        },
+        { replace: true },
+      );
+    }
+  }, [ohneGrenze, setSuche]);
 
   const filter = {
     from: from || undefined,
     to: to || undefined,
     actorUserId: actorUserId || undefined,
     action: action || undefined,
-    page,
+    stand: page > 0 ? (grenze ?? undefined) : undefined,
+    page: ohneGrenze ? 0 : page,
     pageSize: PAGE_SIZE,
   };
 
-  const { data, isPending, isError, isFetching, refetch } = useQuery({
-    queryKey: ['audit-events', filter],
-    queryFn: () => fetchAuditEvents(filter),
-    retry: false,
-  });
+  const { data, isPending, isError, isFetching, isPlaceholderData, dataUpdatedAt, refetch } =
+    useQuery({
+      queryKey: ['audit-events', filter],
+      queryFn: () => fetchAuditEvents(filter),
+      enabled: !ohneGrenze,
+      retry: false,
+      placeholderData: keepPreviousData,
+    });
 
   const members = useQuery({
     queryKey: ['organization-members'],
@@ -135,12 +210,51 @@ export function AuditLogPage() {
   const first = total === 0 ? 0 : page * PAGE_SIZE + 1;
   const last = Math.min((page + 1) * PAGE_SIZE, total);
   const hasNext = last < total;
+  const aktiveFilter = [from, to, actorUserId, action].filter(Boolean).length;
 
-  function reset<T>(setter: (value: T) => void) {
-    return (value: T) => {
-      setter(value);
-      setPage(0);
+  /** Setzt einen Parameter der Adresse; leer heißt: weg. */
+  function setze(werte: Record<string, string | null>) {
+    setSuche(
+      (alt) => {
+        const neu = new URLSearchParams(alt);
+        for (const [schluessel, wert] of Object.entries(werte)) {
+          if (wert) neu.set(schluessel, wert);
+          else neu.delete(schluessel);
+        }
+        return neu;
+      },
+      { replace: true },
+    );
+  }
+
+  /** Ein Filter ändert die Liste: zurück auf Seite 1, neuer Stand. */
+  function filtere(schluessel: string) {
+    return (wert: string) => {
+      setze({ [schluessel]: wert, seite: null, stand: null });
     };
+  }
+
+  function filterePerson(wert: string) {
+    setActorUserId(wert);
+    setze({ seite: null, stand: null });
+  }
+
+  function blaettere(ziel: number) {
+    if (ziel <= 0) {
+      // Seite 1 ist wieder der jüngste Stand; der nächste Schritt setzt eine
+      // neue Grenze (Zweitreview B1).
+      setze({ seite: null, stand: null });
+      return;
+    }
+    // Die Grenze entsteht beim Schritt weg von Seite 1, aus dem jüngsten
+    // Eintrag, den die Seite gerade zeigt; danach bleibt sie.
+    const neueGrenze = page === 0 && data ? grenzeNach(data.events) : grenze;
+    setze({ seite: String(ziel + 1), stand: neueGrenze });
+  }
+
+  function neuLaden() {
+    if (page === 0) void refetch();
+    setze({ seite: null, stand: null });
   }
 
   return (
@@ -162,61 +276,76 @@ export function AuditLogPage() {
           Seite lief bei 390 px 36 px über den Rand. Unter 640 px steht eine
           Spalte ausdrücklich da. Nur die Darstellung ist neu; welche Werte an
           den Server gehen, bleibt gleich. */}
-      <form
-        className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        onSubmit={(event) => event.preventDefault()}
-      >
-        <Field
-          label="Von"
-          feldId="audit-from"
-          type="date"
-          value={from}
-          onChange={(event) => reset(setFrom)(event.target.value)}
-        />
-        <Field
-          label="Bis"
-          feldId="audit-to"
-          type="date"
-          value={to}
-          onChange={(event) => reset(setTo)(event.target.value)}
-        />
-        <div className="flex min-w-0 flex-col gap-2">
-          <Select
-            label="Person"
-            feldId="audit-user"
-            value={actorUserId}
-            onChange={(event) => reset(setActorUserId)(event.target.value)}
-          >
-            <option value="">Alle</option>
-            {(members.data ?? []).map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.display_name}
-              </option>
-            ))}
-          </Select>
-          {/* Ohne Liste steht nur „Alle" zur Wahl - das sagt die Seite, statt
-              es als vollständige Auswahl auszugeben (ORG-14). */}
-          {members.isError ? (
-            <Listenfehler
-              text="Die Liste der Personen konnte nicht geladen werden."
-              onErneut={() => void members.refetch()}
-            />
-          ) : null}
-        </div>
-        <Select
-          label="Aktion"
-          feldId="audit-action"
-          value={action}
-          onChange={(event) => reset(setAction)(event.target.value)}
+      {/* BEF-065: Am Telefon standen alle vier Filter offen über der Liste
+          (rund 330 px). Jetzt zugeklappt, ab 1024 px offen; mit einem
+          gesetzten Filter offen, damit er nicht unsichtbar wirkt. */}
+      <div className="mb-6">
+        <Disclosure
+          summary={aktiveFilter > 0 ? `Filter (${aktiveFilter} gesetzt)` : 'Filter'}
+          offen={aktiveFilter > 0}
+          offenAb="lg"
         >
-          <option value="">Alle</option>
-          {AUDIT_ACTIONS.map((key: AuditAction) => (
-            <option key={key} value={key}>
-              {auditActionLabels[key]}
-            </option>
-          ))}
-        </Select>
-      </form>
+          <form
+            className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
+            onSubmit={(event) => event.preventDefault()}
+          >
+            <Field
+              label="Von"
+              feldId="audit-from"
+              type="date"
+              value={from}
+              onChange={(event) => filtere('von')(event.target.value)}
+            />
+            <Field
+              label="Bis"
+              feldId="audit-to"
+              type="date"
+              value={to}
+              onChange={(event) => filtere('bis')(event.target.value)}
+            />
+            <div className="flex min-w-0 flex-col gap-2">
+              <Select
+                label="Person"
+                feldId="audit-user"
+                value={actorUserId}
+                onChange={(event) => filterePerson(event.target.value)}
+              >
+                <option value="">Alle</option>
+                {(members.data ?? []).map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.display_name}
+                  </option>
+                ))}
+              </Select>
+              {/* Ohne Liste steht nur „Alle" zur Wahl - das sagt die Seite, statt
+              es als vollständige Auswahl auszugeben (ORG-14). */}
+              {members.isError ? (
+                <Listenfehler
+                  text="Die Liste der Personen konnte nicht geladen werden."
+                  onErneut={() => void members.refetch()}
+                />
+              ) : null}
+            </div>
+            <Select
+              label="Aktion"
+              feldId="audit-action"
+              value={action}
+              onChange={(event) => filtere('aktion')(event.target.value)}
+            >
+              <option value="">Alle</option>
+              {AUDIT_ACTION_GROUPS.map((gruppe) => (
+                <optgroup key={gruppe.titel} label={gruppe.titel}>
+                  {gruppe.aktionen.map((key) => (
+                    <option key={key} value={key}>
+                      {auditActionLabels[key]}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </Select>
+          </form>
+        </Disclosure>
+      </div>
 
       {isPending ? <LoadingState label="Auditeinträge werden geladen …" /> : null}
       {/* Wer diese Seite sieht, ist berechtigt: Die Route steht nur der
@@ -247,7 +376,10 @@ export function AuditLogPage() {
           {/* Die Liste ist Auskunft und steht deshalb auf Papier wie jede
               andere Liste der Anwendung (ORG-16). */}
           <Inhaltsflaeche>
-            <ul className="divide-line divide-y">
+            <ul
+              className={`divide-line divide-y transition-opacity ${isPlaceholderData ? 'opacity-60' : ''}`}
+              aria-busy={isPlaceholderData}
+            >
               {data.events.map((event) => (
                 <EventRow key={event.id} event={event} />
               ))}
@@ -255,21 +387,27 @@ export function AuditLogPage() {
           </Inhaltsflaeche>
 
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <Statusmeldung className="tabular-nums">
-              {first}–{last} von {total}
-            </Statusmeldung>
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <Statusmeldung className="tabular-nums">
+                {first}–{last} von {total}
+                {` · Stand ${standText(page > 0 && grenze ? Date.parse(grenze) : dataUpdatedAt)}`}
+              </Statusmeldung>
+              <Button variant="quiet" groesse="kompakt" disabled={isFetching} onClick={neuLaden}>
+                {isFetching ? 'Wird geladen …' : 'Neu laden'}
+              </Button>
+            </div>
             <div className="flex gap-2">
               <Button
                 variant="secondary"
-                disabled={page === 0}
-                onClick={() => setPage((current) => Math.max(0, current - 1))}
+                disabled={page === 0 || isPlaceholderData}
+                onClick={() => blaettere(page - 1)}
               >
                 Zurück
               </Button>
               <Button
                 variant="secondary"
-                disabled={!hasNext}
-                onClick={() => setPage((current) => current + 1)}
+                disabled={!hasNext || isPlaceholderData}
+                onClick={() => blaettere(page + 1)}
               >
                 Weiter
               </Button>

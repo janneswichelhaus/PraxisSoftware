@@ -145,7 +145,9 @@ test.describe('LOE-001b: Abschluss der Versorgung', () => {
     // Der Rollenschnitt ist hier bewusst ein anderer als beim
     // organisatorischen Status: verwalten ja, über den Behandlungsverlauf
     // urteilen nein (ANN-032).
-    await expect(page.getByRole('button', { name: 'Als inaktiv markieren' })).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Nicht mehr in Versorgung führen' }),
+    ).toBeVisible();
     await expect(page.getByRole('button', { name: 'Versorgung abschließen' })).toHaveCount(0);
   });
 

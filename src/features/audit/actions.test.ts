@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
-import { auditSubjectLabels } from './actions';
+import { AUDIT_ACTIONS, AUDIT_ACTION_GROUPS, auditSubjectLabels } from './actions';
 
 /**
  * Die Gegenstände einer Auditzeile, wie die Datenbank sie zulässt (ORG-20).
@@ -36,5 +36,13 @@ describe('auditSubjectLabels', () => {
 
   it('nennt den Zugang in der Sprache der Oberflaeche', () => {
     expect(auditSubjectLabels.user_account).toBe('Zugang');
+  });
+});
+
+describe('AUDIT_ACTION_GROUPS (BEF-065)', () => {
+  it('führt jede Aktion in genau einer Gruppe', () => {
+    const gruppiert = AUDIT_ACTION_GROUPS.flatMap((gruppe) => gruppe.aktionen);
+    expect(new Set(gruppiert).size).toBe(gruppiert.length);
+    expect([...gruppiert].sort()).toEqual([...AUDIT_ACTIONS].sort());
   });
 });

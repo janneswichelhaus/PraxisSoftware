@@ -494,6 +494,15 @@
           "vermerk": "Sichtung: UX-Review Schritte 4 bis 6"
         },
         {
+          "id": "ux-epic-009",
+          "name": "UX-EPIC-009 Papier, Nachweise und Wörter sprechen Praxissprache (BEF-052, BEF-065, BEF-067)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "UX-009a bis UX-009c, Branch `claude/beautiful-ramanujan-3q4yk0`, Zweitreview",
+          "vermerk": "Sichtung: UX-Review Schritte 7 bis 9"
+        },
+        {
           "id": "prx-epic-003",
           "name": "PRX-EPIC-003 Nichts fällt durch",
           "gewicht": 2,

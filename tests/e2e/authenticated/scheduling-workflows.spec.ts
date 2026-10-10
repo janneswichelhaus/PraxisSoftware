@@ -102,14 +102,14 @@ test.describe('CAL-005: Praxisraster', () => {
     await expect(dauer.getByRole('option')).toHaveText([
       '60 Minuten',
       '45 Minuten',
-      'Andere Länge …',
+      'Andere Dauer …',
     ]);
 
     await dauer.selectOption('45');
     await expect(page.getByText('Ende: 09:50 Uhr')).toBeVisible();
 
     await dauer.selectOption('frei');
-    const laenge = page.getByLabel('Länge in Minuten');
+    const laenge = page.getByLabel('Dauer in Minuten');
     await expect(laenge).toHaveAttribute('step', '5');
     await laenge.fill('30');
     await expect(page.getByText('Ende: 09:35 Uhr')).toBeVisible();

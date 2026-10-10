@@ -377,7 +377,7 @@ export function AuthenticatedRoutes({
                   (CAL-011, IDEA-PRX-006). */}
                   <Route
                     path="/patienten/:patientId/terminzettel"
-                    element={<AppointmentSlipPage />}
+                    element={<AppointmentSlipPage user={user} />}
                   />
                   {/* Tagesroute auf der Karte (MAP-006b); ersetzt Vorschau und Kartenprototyp. */}
                   <Route path="/touren" element={<TourenPage user={user} />} />

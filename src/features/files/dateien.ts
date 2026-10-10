@@ -191,8 +191,8 @@ export function useLoeschauftraegeAusfuehren() {
  *
  * Er läuft nicht von allein und meldet sich nicht — er wird gerechnet, wenn
  * jemand „Aufbewahrung und Löschung" öffnet. Einen Benachrichtigungsweg gibt
- * es in dieser Anwendung nicht; deshalb gehört der Abgleich in den monatlichen
- * Bericht (ADR-010 Punkt 6) und nicht in eine stille Warteschlange.
+ * es in dieser Anwendung nicht; deshalb steht der Abgleich oben auf der Seite
+ * unter „Zu tun“ (BEF-065) und nicht in einer stillen Warteschlange.
  */
 export function useDateiabgleich(user: CurrentUser) {
   const darfSehen = user.roles.includes('owner');

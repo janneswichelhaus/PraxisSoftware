@@ -403,3 +403,50 @@ for (const breite of [375, 1280]) {
     await expect(page.getByRole('button', { name: 'Wird erneut geladen …' })).toBeDisabled();
   });
 }
+
+// BEF-052, ANN-021 Fassung 3: Das Papier trägt im Ausfall - jeder eigene
+// Termin des Tages mit Anschrift, Zugangshinweis und Rufnummer, ohne Knöpfe,
+// Links und den Tagesplan des Teams.
+test('druckt den eigenen Tag vollständig mit Anschrift und Rufnummer (BEF-052)', async ({
+  page,
+}) => {
+  await oeffne(page, '08:05', 1280);
+  const blatt = page.getByTestId('tagesplan-druck');
+  // Am Bildschirm unsichtbar.
+  await expect(blatt).toBeHidden();
+
+  await page.emulateMedia({ media: 'print' });
+  await expect(blatt).toBeVisible();
+  // Das Blatt ist `aria-hidden` (am Bildschirm nie da) - deshalb über Elemente,
+  // nicht über Rollen.
+  await expect(blatt.locator('h1')).toHaveText(/^Tagesplan · /);
+  await expect(blatt.locator('li')).toHaveCount(4);
+  for (const text of [
+    'Erika Beispiel',
+    'Testweg 7, 72072 Tuebingen',
+    'Klingel "Beispiel". Schlüssel bei der Nachbarin.',
+    '+49 160 0000006',
+    'Max Mustermann',
+    'Beispielstrasse 12, 72070 Tuebingen',
+    '+49 160 0000005',
+    'Hund im Flur, wird vor dem Termin weggesperrt.',
+    'Petra Platzhalter',
+    'Fiktivgasse 9, 72074 Tuebingen',
+    'Teambesprechung',
+  ]) {
+    await expect(blatt.getByText(text, { exact: true })).toBeVisible();
+  }
+
+  // Nichts außer dem Blatt: kein Knopf, kein Zeitstrahl, kein Plan des Teams.
+  // Der Sprunglink „Zum Inhalt" ist 1 px groß (`sr-only`) und zählt nicht.
+  const sichtbar = await page.evaluate(
+    () =>
+      [...document.querySelectorAll('button, a')].filter((e) => {
+        const r = e.getBoundingClientRect();
+        return r.width > 1 && r.height > 1;
+      }).length,
+  );
+  expect(sichtbar).toBe(0);
+  await expect(page.getByRole('article')).toBeHidden();
+  await expect(page.getByText(/Tagesplan des Teams/)).toBeHidden();
+});

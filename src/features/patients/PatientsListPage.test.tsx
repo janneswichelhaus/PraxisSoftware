@@ -46,13 +46,13 @@ describe('PatientsListPage', () => {
 
     renderWithProviders(<PatientsListPage />);
 
-    expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toHaveAttribute(
+    expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toHaveAttribute(
       'href',
       '/patienten/1',
     );
     // Das Etikett des Systems, groß geschrieben wie der Filter (PAT-14, WRT-16).
-    const erika = screen.getByRole('link', { name: /Erika Beispiel/ });
-    expect(within(erika).getByText('Inaktiv')).toBeInTheDocument();
+    const erika = screen.getByRole('link', { name: /Beispiel, Erika/ });
+    expect(within(erika).getByText('Nicht in Versorgung')).toBeInTheDocument();
   });
 
   it('bietet das Anlegen unter demselben Namen wie die Kopfsuche an (PAT-21)', async () => {
@@ -75,7 +75,7 @@ describe('PatientsListPage', () => {
 
     renderWithProviders(<PatientsListPage />, '/patienten?q=erika&status=inactive');
 
-    const link = await screen.findByRole('link', { name: /Erika Beispiel/ });
+    const link = await screen.findByRole('link', { name: /Beispiel, Erika/ });
     const ziel = new URL(link.getAttribute('href') ?? '', 'http://liste.test');
     expect(ziel.pathname).toBe('/patienten/2');
     expect(ziel.searchParams.get('zurueck')).toBe('/patienten?q=erika&status=inactive');
@@ -85,9 +85,9 @@ describe('PatientsListPage', () => {
     fetchPatients.mockResolvedValue([patient('1', 'Max', 'Mustermann', 'active')]);
     renderWithProviders(<PatientsListPage />);
 
-    await screen.findByRole('link', { name: /Max Mustermann/ });
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
     // 48 px wie das Filterfeld daneben, nicht 44.
-    expect(screen.getByLabelText('Status')).toHaveClass('h-12');
+    expect(screen.getByLabelText('Versorgung')).toHaveClass('h-12');
   });
 
   it('filtert die Anzeige ueber die Suche', async () => {
@@ -98,14 +98,14 @@ describe('PatientsListPage', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
-    await screen.findByRole('link', { name: /Max Mustermann/ });
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
 
     await user.type(screen.getByLabelText('Liste filtern'), 'erika');
 
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
   });
 
   it('zeigt bei einem Fehler eine verstaendliche Meldung statt einer leeren Liste', async () => {
@@ -134,7 +134,7 @@ describe('PatientsListPage', () => {
     const meldung = await screen.findByRole('alert');
     await user.click(within(meldung).getByRole('button', { name: 'Erneut versuchen' }));
 
-    expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
     expect(fetchPatients).toHaveBeenCalledTimes(2);
   });
 
@@ -163,20 +163,20 @@ describe('PatientsListPage', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
-    await screen.findByRole('link', { name: /Max Mustermann/ });
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
 
     await user.type(screen.getByLabelText('Liste filtern'), '555123');
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
 
     await user.clear(screen.getByLabelText('Liste filtern'));
     await user.type(screen.getByLabelText('Liste filtern'), 'hamburg');
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
   });
 
   it('filtert nach Status aktiv/inaktiv', async () => {
@@ -187,20 +187,20 @@ describe('PatientsListPage', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
-    await screen.findByRole('link', { name: /Max Mustermann/ });
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'active');
+    await user.selectOptions(screen.getByLabelText('Versorgung'), 'active');
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Erika Beispiel/ })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Beispiel, Erika/ })).toBeNull();
     });
-    expect(screen.getByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'inactive');
+    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
     await waitFor(() => {
-      expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+      expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     });
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
   });
 
   it('zeigt "Keine Treffer" statt der Leerlauf-Meldung, wenn ein Filter alles ausblendet', async () => {
@@ -208,9 +208,9 @@ describe('PatientsListPage', () => {
     const user = userEvent.setup();
 
     renderWithProviders(<PatientsListPage />);
-    await screen.findByRole('link', { name: /Max Mustermann/ });
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'inactive');
+    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
 
     expect(await screen.findByText('Keine Treffer')).toBeInTheDocument();
     expect(screen.queryByText('Noch keine Patient:innen')).toBeNull();
@@ -229,7 +229,7 @@ describe('PatientsListPage', () => {
         <SearchParamsProbe />
       </>,
     );
-    await screen.findByRole('link', { name: /Max Mustermann/ });
+    await screen.findByRole('link', { name: /Mustermann, Max/ });
     expect(screen.getByTestId('search-params')).toHaveTextContent('');
 
     await user.type(screen.getByLabelText('Liste filtern'), 'erika');
@@ -237,14 +237,14 @@ describe('PatientsListPage', () => {
       expect(screen.getByTestId('search-params')).toHaveTextContent('q=erika');
     });
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'inactive');
+    await user.selectOptions(screen.getByLabelText('Versorgung'), 'inactive');
     await waitFor(() => {
       const params = screen.getByTestId('search-params').textContent ?? '';
       expect(params).toContain('q=erika');
       expect(params).toContain('status=inactive');
     });
 
-    await user.selectOptions(screen.getByLabelText('Status'), 'all');
+    await user.selectOptions(screen.getByLabelText('Versorgung'), 'all');
     await waitFor(() => {
       const params = screen.getByTestId('search-params').textContent ?? '';
       expect(params).toContain('q=erika');
@@ -260,10 +260,10 @@ describe('PatientsListPage', () => {
 
     renderWithProviders(<PatientsListPage />, '/patienten?q=erika&status=inactive');
 
-    expect(await screen.findByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Max Mustermann/ })).toBeNull();
+    expect(await screen.findByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Mustermann, Max/ })).toBeNull();
     expect(screen.getByLabelText('Liste filtern')).toHaveValue('erika');
-    expect(screen.getByLabelText('Status')).toHaveValue('inactive');
+    expect(screen.getByLabelText('Versorgung')).toHaveValue('inactive');
   });
 
   it('ignoriert einen ungueltigen Status-Wert aus der URL statt abzustuerzen', async () => {
@@ -274,9 +274,9 @@ describe('PatientsListPage', () => {
 
     renderWithProviders(<PatientsListPage />, '/patienten?status=geloescht');
 
-    expect(await screen.findByRole('link', { name: /Max Mustermann/ })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
-    expect(screen.getByLabelText('Status')).toHaveValue('all');
+    expect(await screen.findByRole('link', { name: /Mustermann, Max/ })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Beispiel, Erika/ })).toBeInTheDocument();
+    expect(screen.getByLabelText('Versorgung')).toHaveValue('all');
   });
 
   it('beherbergt die serverseitige Namenssuche des Bereichs (UX-013, E17)', async () => {

@@ -149,7 +149,7 @@ test.describe('CAL-004: Termin wieder oeffnen', () => {
     await expect(detailWert(page, 'Status')).toContainText('Abgeschlossen');
 
     await page.getByRole('button', { name: 'Termin wieder öffnen' }).click();
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
     // Der Abschlusszeitpunkt ist mit dem Status verschwunden.
     await expect(page.getByText('Abgeschlossen am')).toHaveCount(0);
 

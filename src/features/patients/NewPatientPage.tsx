@@ -170,7 +170,7 @@ export function NewPatientPage() {
 
       {/* UX-005e: Ohne Erklärsatz - der Titel sagt, was hier entsteht, und
           das Sternchen erklärt sich am Feld. */}
-      <PageHeader title="Neue:r Patient:in" />
+      <PageHeader title="Patient:in anlegen" />
 
       <form onSubmit={(event) => void absenden(event)} noValidate className="max-w-xl">
         <Fehlerzusammenfassung

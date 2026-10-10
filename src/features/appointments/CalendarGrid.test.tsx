@@ -31,7 +31,7 @@ function termin(teil: Partial<CalendarEntry>): CalendarEntry {
 }
 
 const ZUSTAENDE: Array<[CalendarEntry['status'], string, string]> = [
-  ['confirmed', 'Bestätigt', 'border-l-accent'],
+  ['confirmed', 'Steht aus', 'border-l-accent'],
   ['completed', 'Abgeschlossen', 'border-l-line-strong'],
   ['documented', 'Dokumentiert', 'border-l-line-strong'],
   ['no_show', 'Nicht angetroffen', 'border-l-warnung'],

@@ -106,14 +106,14 @@ test.describe('CAL-001: Termin anlegen', () => {
     // UX-005a: Die Terminart steht als Kennzeichen in der Kachel des Ortes,
     // nur wenn sie vom Hausbesuch abweicht (ANN-192).
     await expect(detailWert(page, 'Standort')).toContainText('Praxistermin');
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
     await expect(detailWert(page, 'Standort')).toContainText('Hauptstandort');
 
     // Nach dem Neuladen weiterhin sichtbar - der Termin kommt aus der
     // Datenbank und nicht aus dem Zustand der Anwendung.
     await terminNeuLaden(page);
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
     await expect(detailWert(page, 'Zeit')).toContainText(`${BEGINN}–${ENDE}`);
   });
 

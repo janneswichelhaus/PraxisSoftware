@@ -50,6 +50,13 @@ import type { CurrentUser } from '@/features/session/types';
  *
  * UXR-011 ändert nur die Darstellung: Frist, Löschweg, Aufträge und Abgleich
  * laufen unverändert über dieselben Funktionen.
+ *
+ * **Für die Praxisleitung im Alltag, der Nachweis als Zusatz (UX-009b,
+ * BEF-065, Entscheidung Jannes 2026-10-09).** Oben steht, was zu tun ist:
+ * offene Löschaufträge und der Abgleich der Dateiablage - und wenn beides
+ * leer ist, eine Zeile. Danach Löschsperren, Plan und Journal. Eine Frist auf
+ * Annahme heißt „Annahme – Prüfung offen“, die Kennung steht daneben; die
+ * Verweise auf ADRs liegen in der aufklappbaren Zeile „Grundlagen“ am Ende.
  */
 
 /** Der nächste Schritt nach einem Ladefehler (WRT-01). */
@@ -93,7 +100,14 @@ function Aufbewahrungsplan() {
           <Card key={klasse.key}>
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <h3 className="text-ink text-base font-semibold">{texte.label}</h3>
-              {klasse.assumption_key ? <Badge ton="warnung">{klasse.assumption_key}</Badge> : null}
+              {klasse.assumption_key ? (
+                // BEF-065: das Wort für die Praxisleitung, die Kennung für die
+                // Prüfung daneben.
+                <span className="flex flex-wrap items-center gap-1.5">
+                  <Badge ton="warnung">Annahme – Prüfung offen</Badge>
+                  <span className="text-ink-muted text-sm">{klasse.assumption_key}</span>
+                </span>
+              ) : null}
             </div>
             <p className="text-ink-muted mt-1 text-sm">{texte.beschreibung}</p>
 
@@ -269,10 +283,15 @@ function Loeschjournal() {
  * bestätigt, sie kann aber Wochen zurückliegen und von einer anderen Person
  * stammen. Der Vorgang selbst bleibt derselbe.
  */
-function Loeschauftraege({ user }: { user: CurrentUser }) {
+function Loeschauftraege({
+  user,
+  ausfuehren,
+}: {
+  user: CurrentUser;
+  ausfuehren: ReturnType<typeof useLoeschauftraegeAusfuehren>;
+}) {
   const queryClient = useQueryClient();
   const { auftraege, isPending, isError, verborgen } = useLoeschauftraege(user);
-  const ausfuehren = useLoeschauftraegeAusfuehren();
 
   if (verborgen) return null;
   if (isPending) return <LoadingState label="Löschaufträge werden geladen …" />;
@@ -381,7 +400,7 @@ function Loeschauftraege({ user }: { user: CurrentUser }) {
  * Der Abgleich läuft nicht von allein: Er wird gerechnet, wenn diese Seite
  * geöffnet wird. Die Anwendung verschickt nichts (CAL-013), und einen
  * Meldeweg zu bauen wäre ein eigener Auftrag. Deshalb gehört der Blick hierher
- * in den monatlichen Bericht (ADR-010 Punkt 6).
+ * bei Anlass hierher (ADR-010 Punkt 19).
  *
  * **Deckungsgleich erst nach den Aufträgen (ORG-22).** Vorgemerkte Objekte
  * zählt der Abgleich nicht mehr mit, sie liegen aber noch in der Ablage. Bis
@@ -488,6 +507,96 @@ function Dateiabgleich({ user }: { user: CurrentUser }) {
   );
 }
 
+/**
+ * Was zu tun ist (BEF-065): offene Löschaufträge und der Abgleich der
+ * Dateiablage - die einzigen Arbeitsaufgaben der Seite. Bis UX-009b standen
+ * sie nach 15 Planungskarten, am Telefon nach rund 5 500 px.
+ *
+ * Ist nichts offen, steht eine Zeile da. Nach dem Ausführen bleibt das
+ * Ergebnis in dieser Zeile stehen, auch wenn die Abschnitte darüber mit dem
+ * letzten Auftrag verschwinden.
+ */
+function ZuTun({ user }: { user: CurrentUser }) {
+  const offen = useLoeschauftraege(user);
+  const abgleich = useDateiabgleich(user);
+  const ausfuehren = useLoeschauftraegeAusfuehren();
+
+  if (offen.verborgen) return null;
+
+  const nichtsOffen =
+    !offen.isPending &&
+    !offen.isError &&
+    !abgleich.isPending &&
+    !abgleich.isError &&
+    offen.auftraege.length === 0 &&
+    abgleich.fehlende.length === 0 &&
+    abgleich.verwaiste === 0;
+
+  if (nichtsOffen) {
+    const erledigt = ausfuehren.data?.erledigt ?? 0;
+    return (
+      <Section titel="Zu tun">
+        <Statusmeldung ton="erfolg">
+          {erledigt > 0
+            ? `${erledigt} Löschung${erledigt === 1 ? '' : 'en'} abgeschlossen und quittiert. `
+            : ''}
+          Nichts offen, beide Speicher deckungsgleich.
+        </Statusmeldung>
+      </Section>
+    );
+  }
+
+  return (
+    <>
+      <Section
+        titel="Offene Löschaufträge"
+        hinweis="Dateien, die aus einer Akte entfernt sind, aber noch in der Ablage liegen. Gelöscht sind sie erst mit der Quittung."
+        rahmen
+      >
+        <Loeschauftraege user={user} ausfuehren={ausfuehren} />
+      </Section>
+
+      <Section
+        titel="Abgleich der Dateiablage"
+        hinweis="Akten und Dateiablage können auseinanderlaufen. Hier steht, ob sie es tun – gerechnet beim Öffnen dieser Seite."
+        rahmen
+      >
+        <Dateiabgleich user={user} />
+      </Section>
+    </>
+  );
+}
+
+/**
+ * Die Verweise für die Prüfung, zugeklappt am Ende (BEF-065): Sie belegen,
+ * woher Frist und Löschweg kommen, und sind für die Arbeit an der Seite
+ * nicht nötig.
+ */
+function Grundlagen() {
+  return (
+    <section className="mt-8">
+      <Disclosure summary="Grundlagen">
+        <ul className="text-ink-muted list-inside list-disc space-y-1 text-sm">
+          <li>Datenklassen, Fristen und Löschsperren: ADR-008 (Aufbewahrung und Löschung).</li>
+          <li>
+            Fristen auf Annahme: Annahmenregister (Kennung ANN-NNN), bestätigt erst durch die
+            Datenschutzprüfung (ADR-007).
+          </li>
+          <li>Löschaufträge und Abgleich der Dateiablage: ADR-017 Punkte 25 und 27.</li>
+          <li>
+            Löschjournal und Wiederherstellung: ADR-008 Punkt 8, ADR-012 Punkt 12 (Backups 30 Tage,
+            Journal 60 Tage).
+          </li>
+          <li>
+            Eine Frist ändert sich nur über eine Programmänderung, nicht auf dieser Seite – so
+            bleibt jede Änderung nachvollziehbar (ADR-013).
+          </li>
+        </ul>
+      </Disclosure>
+    </section>
+  );
+}
+
 export function AufbewahrungPage({ user }: { user: CurrentUser }) {
   return (
     <>
@@ -495,19 +604,14 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
       <SicherheitReiter />
       <PageHeader
         title="Aufbewahrung und Löschung"
-        description="Was wie lange bleibt, was gerade zurückgehalten wird und was gelöscht wurde. Fristen ändern sich über eine Migration, nicht hier."
+        description="Was zu tun ist, was gerade zurückgehalten wird, was wie lange bleibt und was gelöscht wurde."
       />
+
+      <ZuTun user={user} />
 
       {/* Plan und Sperren sind Kartenlisten; die Karten sind die Rahmen.
           Bis UXR-011 lag um die Karten ein zweiter Rahmen - bei 390 px blieben
           dem Inhalt rund 270 von 350 px (RSP-16, ORG-16). */}
-      <Section
-        titel="Aufbewahrungsplan"
-        hinweis="Eine Zeile je Datenklasse. Ein Kürzel ANN-NNN bedeutet: Die Frist ist eine begründete Annahme und wartet auf die Datenschutzprüfung."
-      >
-        <Aufbewahrungsplan />
-      </Section>
-
       <Section
         titel="Löschsperren"
         hinweis="Eine gesperrte Akte wird nicht gelöscht, bleibt aber vollständig benutzbar."
@@ -516,19 +620,10 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
       </Section>
 
       <Section
-        titel="Offene Löschaufträge"
-        hinweis="Dateien, die aus einer Akte entfernt sind, deren abgelegte Fassung aber noch existiert. Die Löschung ist erst mit der Quittung abgeschlossen (ADR-017)."
-        rahmen
+        titel="Aufbewahrungsplan"
+        hinweis="Eine Karte je Art von Daten. „Annahme – Prüfung offen“ heißt: Die Frist ist begründet festgelegt und wartet auf die Datenschutzprüfung."
       >
-        <Loeschauftraege user={user} />
-      </Section>
-
-      <Section
-        titel="Abgleich der Dateiablage"
-        hinweis="Datenbank und Objektspeicher können auseinanderlaufen. Hier steht, ob sie es tun – gerechnet beim Öffnen dieser Seite, nicht laufend überwacht."
-        rahmen
-      >
-        <Dateiabgleich user={user} />
+        <Aufbewahrungsplan />
       </Section>
 
       <Section
@@ -538,6 +633,8 @@ export function AufbewahrungPage({ user }: { user: CurrentUser }) {
       >
         <Loeschjournal />
       </Section>
+
+      <Grundlagen />
     </>
   );
 }

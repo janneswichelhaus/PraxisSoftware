@@ -303,7 +303,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await expect(page.getByText(OFFEN)).toBeVisible();
     // Nur der Entwurf wurde gesichert: Der Termin ist nicht abgeschlossen und
     // die Dokumentation nicht festgeschrieben (ADR-016, ADR-018).
-    await expect(detailWert(page, 'Status')).toContainText('Bestätigt');
+    await expect(detailWert(page, 'Status')).toContainText('Steht aus');
   });
 
   test('haelt das Zurueck des Browsers an', async ({ page }) => {

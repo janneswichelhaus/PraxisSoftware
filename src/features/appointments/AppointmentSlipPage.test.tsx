@@ -4,7 +4,8 @@ import userEvent from '@testing-library/user-event';
 import type * as AppointmentsApi from './api';
 import type * as PatientsApi from '@/features/patients/api';
 import type * as RouterModul from 'react-router-dom';
-import { renderWithProviders, testPatient } from '@/test-utils';
+import type * as AbsenderApi from '@/features/datenschutz/absender';
+import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 
 const PATIENT_ID = '66666666-6666-4666-8666-000000000001';
 
@@ -33,11 +34,30 @@ const eintraege: AppointmentsApi.AppointmentSlipEntry[] = [
     ends_at: '2027-05-19T13:00:00.000Z',
     appointment_type: 'practice',
     location_name: 'Hauptstandort Tuebingen',
+    location_street: 'Praxisplatz',
+    location_house_number: '1',
+    location_postal_code: '72072',
+    location_city: 'Tuebingen',
     staff_given_name: 'Anna',
     staff_family_name: 'Beispiel',
     organization_time_zone: 'Europe/Berlin',
   },
 ];
+
+const absender = {
+  name: 'Test Praxis Tuebingen',
+  street: 'Musterallee',
+  house_number: '1',
+  postal_code: '72070',
+  city: 'Tuebingen',
+  phone: '+49 7071 0000000',
+  email: 'praxis@example.invalid',
+};
+const fetchPraxisAbsender = vi.fn();
+vi.mock('@/features/datenschutz/absender', async (importOriginal) => ({
+  ...(await importOriginal<typeof AbsenderApi>()),
+  fetchPraxisAbsender: () => fetchPraxisAbsender() as Promise<AbsenderApi.PraxisAbsender | null>,
+}));
 
 const fetchPatient = vi.fn();
 const fetchAppointmentSlip = vi.fn();
@@ -71,7 +91,10 @@ vi.stubGlobal('print', drucken);
 const { AppointmentSlipPage } = await import('./AppointmentSlipPage');
 
 function rendern() {
-  return renderWithProviders(<AppointmentSlipPage />, `/patienten/${PATIENT_ID}/terminzettel`);
+  return renderWithProviders(
+    <AppointmentSlipPage user={testUser(['therapist'])} />,
+    `/patienten/${PATIENT_ID}/terminzettel`,
+  );
 }
 
 describe('AppointmentSlipPage', () => {
@@ -82,6 +105,8 @@ describe('AppointmentSlipPage', () => {
     fetchPatient.mockResolvedValue(patient);
     fetchAppointmentSlip.mockResolvedValue(eintraege);
     addAppointmentNotification.mockResolvedValue(2);
+    fetchPraxisAbsender.mockReset();
+    fetchPraxisAbsender.mockResolvedValue(absender);
     drucken.mockClear();
   });
 
@@ -94,8 +119,34 @@ describe('AppointmentSlipPage', () => {
     expect(screen.getByText('Max Mustermann')).toBeInTheDocument();
     expect(screen.getByText('Mittwoch, 12. Mai 2027')).toBeInTheDocument();
     expect(screen.getByText(/09:00–10:00 Uhr · bei Ihnen zu Hause/)).toBeInTheDocument();
-    expect(screen.getByText(/14:00–15:00 Uhr · Hauptstandort Tuebingen/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/14:00–15:00 Uhr · Hauptstandort Tuebingen, Praxisplatz 1, 72072 Tuebingen/),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Anna Beispiel')).toHaveLength(2);
+  });
+
+  // UX-009a (BEF-052): Der Zettel nennt die Praxis und sagt, wo man absagt.
+  it('trägt den Absender der Praxis und nennt bei der Bitte um Absage den Weg', async () => {
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(await screen.findByText('Test Praxis Tuebingen')).toBeInTheDocument();
+    expect(screen.getByText('Musterallee 1, 72070 Tuebingen')).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        /rechtzeitig ab, wenn Sie ihn nicht wahrnehmen können – Telefon \+49 7071 0000000, E-Mail praxis@example\.invalid\./,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/fehlen Anschrift oder Telefon/)).not.toBeInTheDocument();
+  });
+
+  it('sagt am Bildschirm, wenn die Stammdaten fehlen', async () => {
+    fetchPraxisAbsender.mockResolvedValue({ name: 'Test Praxis Tuebingen' });
+    rendern();
+    await screen.findByRole('heading', { name: 'Ihre nächsten Termine' });
+
+    expect(await screen.findByText(/fehlen Anschrift oder Telefon/)).toHaveClass('nicht-drucken');
+    expect(screen.getByText(/nicht wahrnehmen können\.$/)).toBeInTheDocument();
   });
 
   it('zeigt weder Status noch Verordnung noch Behandlungsinhalte', async () => {

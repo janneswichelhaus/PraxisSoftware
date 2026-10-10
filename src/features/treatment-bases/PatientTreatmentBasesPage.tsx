@@ -312,7 +312,7 @@ function KlinischeAngaben({
 /**
  * Die Aktionen einer Verordnung - passend zu ihrem Zustand.
  *
- * „Terminserie anlegen" stand bis CAL-022 nur an einer Grundlage, an der sich
+ * „Dauertermin anlegen" stand bis CAL-022 nur an einer Grundlage, an der sich
  * noch etwas planen ließ: An einer ausgeschöpften führte der Knopf auf eine
  * Seite, die „0 Termine" vorschlug — ein Angebot, das keins war
  * (PROJECT_PRINCIPLES.md 13). Seit CAL-022 **ist** es eines: Über das
@@ -374,7 +374,7 @@ function Verordnungsaktionen({
   if (!darfPlanen && !darfSchreiben) return null;
 
   // Je Zustand eine Hauptaktion (BEF-060, Entscheidung Jannes 2026-10-09):
-  // offen „Terminserie anlegen“, verplant mit ungedeckten Terminen „Termine
+  // offen „Dauertermin anlegen“, verplant mit ungedeckten Terminen „Termine
   // übertragen“. Alles andere steht leise daneben.
   const offen = eintrag.zustand === 'offen';
   const serieHaupt = darfPlanen && planbar && offen;
@@ -386,7 +386,7 @@ function Verordnungsaktionen({
     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
       {serieHaupt ? (
         <ButtonLink to={serie} groesse="kompakt">
-          Terminserie anlegen
+          Dauertermin anlegen
         </ButtonLink>
       ) : null}
       {uebertragenHaupt ? (
@@ -399,7 +399,7 @@ function Verordnungsaktionen({
           als das Schreiben der Verordnung (ADR-004). */}
       {darfPlanen && planbar && !serieHaupt ? (
         <Link to={serie} className={textlink}>
-          Terminserie anlegen
+          Dauertermin anlegen
         </Link>
       ) : null}
       {/* Der zweite Weg neben der Serie: in den vollständigen Kalender wechseln,

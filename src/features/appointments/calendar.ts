@@ -12,6 +12,7 @@
  */
 
 // Nur der Typ: `api.ts` liest diese Datei zur Laufzeit, nicht umgekehrt.
+import { BEGRIFFE } from '@/lib/begriffe';
 import type { EreignisFormValues } from './api';
 
 const KALENDER_ANSICHTEN = ['tag', 'woche'] as const;
@@ -253,11 +254,10 @@ export function leseEingetrageneFehlzeit(suche: URLSearchParams): EingetrageneFe
  * Wofür eine Fehlzeit steht, als Aufzählung (KAL-27).
  *
  * Dieselben Beispiele in der Anlegen-Leiste und auf beiden Formularen - bisher
- * standen dort drei verschiedene Reihen. Die Reihe ist die aus dem Kommentar
- * an `BEGRIFFE.fehlzeit` (CAL-021); gehört sie einmal in `begriffe.ts`, zieht
- * dieser Wert dorthin um.
+ * standen dort drei verschiedene Reihen. Seit UX-009c (BEF-067) steht die
+ * Reihe nur noch in `begriffe.ts`; dieser Name bleibt für die Aufrufer.
  */
-export const FEHLZEIT_BEISPIELE = 'Meeting, Puffer, Pause';
+export const FEHLZEIT_BEISPIELE = BEGRIFFE.fehlzeitBeispiele;
 
 /**
  * Die Felder einer Fehlzeit, die einen Fehler tragen können - in der

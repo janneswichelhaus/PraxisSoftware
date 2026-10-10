@@ -175,14 +175,14 @@ describe('Rahmen der Patientenakte (AKTE-000)', () => {
       expect(screen.getByText(/^geb\. 19\.07\.1985 · \d+ Jahre$/)).toBeInTheDocument();
       // Der Regelfall traegt kein Etikett.
       expect(screen.queryByText('In Versorgung')).not.toBeInTheDocument();
-      expect(screen.queryByText('Nicht in laufender Versorgung')).not.toBeInTheDocument();
+      expect(screen.queryByText('Nicht in Versorgung')).not.toBeInTheDocument();
     });
 
     it('kennzeichnet eine nicht laufende Versorgung', async () => {
       fetchPatient.mockResolvedValue({ ...aktiv, status: 'inactive' });
       akteRendern(['office']);
 
-      expect(await screen.findByText('Nicht in laufender Versorgung')).toBeInTheDocument();
+      expect(await screen.findByText('Nicht in Versorgung')).toBeInTheDocument();
     });
 
     it('nennt den Abschluss der Versorgung im Kopf', async () => {

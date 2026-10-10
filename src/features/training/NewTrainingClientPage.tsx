@@ -130,7 +130,7 @@ export function NewTrainingClientPage() {
       <Rueckweg standard="/training" />
 
       <PageHeader
-        title={`Neue:r ${BEGRIFFE.trainingskundIn}`}
+        title={`${BEGRIFFE.trainingskundIn} anlegen`}
         description="Für das Personal Training – ohne Patientenakte. Mit * markierte Felder sind erforderlich."
       />
 

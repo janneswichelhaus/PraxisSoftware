@@ -113,7 +113,7 @@ export function NewStaffMemberPage({ user }: { user: CurrentUser }) {
       <Rueckweg standard="/praxis/team" beschriftung="Zurück zu den Mitarbeitenden" />
 
       <PageHeader
-        title="Neue:r Mitarbeiter:in"
+        title="Mitarbeiter:in anlegen"
         description="Stammdaten für die Praxis. Mit * markierte Felder sind erforderlich."
       />
 

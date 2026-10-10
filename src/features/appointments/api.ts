@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
+import { BEGRIFFE } from '@/lib/begriffe';
 import { getSupabase } from '@/lib/supabase';
 import { minuteZuZeit, type StatusFilter } from './calendar';
 import { formatDate } from '@/lib/datum';
@@ -59,8 +60,13 @@ export function appointmentTypeHint(type: AppointmentType): string | null {
   return type === REGEL_TERMINART ? null : appointmentTypeLabels[type];
 }
 
+/**
+ * Das Wort für den Zustand eines Termins. Ein bestätigter, noch offener
+ * Termin „steht aus" - in Tageskarte, Terminseite und Akte dasselbe Wort
+ * (UX-009c, BEF-067; bis dahin hieß er auf der Terminseite „Bestätigt").
+ */
 export const appointmentStatusLabels: Record<AppointmentStatus, string> = {
-  confirmed: 'Bestätigt',
+  confirmed: BEGRIFFE.stehtAus,
   cancelled: 'Abgesagt',
   no_show: 'Nicht angetroffen',
   completed: 'Abgeschlossen',
@@ -660,7 +666,7 @@ export function abweichendeLaengeMinuten(termin: {
 
 /** Textfassung des Kennzeichens, auch für Vorlesewerkzeuge (§8.1). */
 export function abweichendeLaengeText(minuten: number): string {
-  return `Länge weicht ab: ${minuten} Minuten`;
+  return `Dauer weicht ab: ${minuten} Minuten`;
 }
 
 // -----------------------------------------------------------------------------
@@ -1599,7 +1605,7 @@ export function appointmentToFormValues(
  * Länge frei — abgewiesen wird nur noch, was nicht ins Praxisraster passt.
  */
 const TERMINLAENGE_MELDUNG =
-  'Die Länge passt nicht zum Praxisraster. Bitte eine Länge wählen, die ein Vielfaches des Rasters ist.';
+  'Die Dauer passt nicht zum Praxisraster. Bitte eine Dauer wählen, die ein Vielfaches des Rasters ist.';
 
 export function schreibfehler(error: { message?: string } | null, standard: string): Error {
   if (error?.message?.includes('outside_working_hours')) {
@@ -1993,8 +1999,8 @@ export async function createAppointmentSeries(
     p_allow_outside_working_hours: allowOutsideWorkingHours,
   })) as { data: unknown; error: { message?: string } | null };
 
-  if (error) throw schreibfehler(error, 'Die Terminserie konnte nicht angelegt werden.');
-  return antwort(z.number(), data, 'Die Terminserie konnte nicht angelegt werden.');
+  if (error) throw schreibfehler(error, 'Der Dauertermin konnte nicht angelegt werden.');
+  return antwort(z.number(), data, 'Der Dauertermin konnte nicht angelegt werden.');
 }
 
 // -----------------------------------------------------------------------------
@@ -2007,6 +2013,12 @@ const appointmentSlipSchema = z.object({
   ends_at: z.string(),
   appointment_type: appointmentTypeSchema,
   location_name: z.string().nullable(),
+  // UX-009a: Anschrift des Standorts, nur am Praxistermin (BEF-052).
+  // Optional, damit ein älterer Stand ohne die Spalten weiter gelesen wird.
+  location_street: z.string().nullable().optional(),
+  location_house_number: z.string().nullable().optional(),
+  location_postal_code: z.string().nullable().optional(),
+  location_city: z.string().nullable().optional(),
   staff_given_name: z.string(),
   staff_family_name: z.string(),
   organization_time_zone: z.string(),
@@ -2044,7 +2056,15 @@ export async function fetchAppointmentSlip(
 export function slipOrt(eintrag: AppointmentSlipEntry): string {
   if (eintrag.appointment_type === 'home_visit') return 'bei Ihnen zu Hause';
   if (eintrag.appointment_type === 'video') return 'Videotermin';
-  return eintrag.location_name ?? 'in der Praxis';
+  // UX-009a: Beim Praxistermin sagt der Zettel, wohin (BEF-052) - der
+  // Standortname allein ist ein Wort der Praxis, keine Anschrift.
+  const strasse = [eintrag.location_street, eintrag.location_house_number]
+    .filter(Boolean)
+    .join(' ');
+  const ort = [eintrag.location_postal_code, eintrag.location_city].filter(Boolean).join(' ');
+  const anschrift = [strasse, ort].filter((teil) => teil.length > 0).join(', ');
+  const name = eintrag.location_name ?? 'in der Praxis';
+  return anschrift ? `${name}, ${anschrift}` : name;
 }
 
 // -----------------------------------------------------------------------------

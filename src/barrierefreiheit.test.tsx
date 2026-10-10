@@ -10,6 +10,7 @@ import type * as KontoApi from '@/features/staff/konto-api';
 import type * as AccountApi from '@/features/account/api';
 import { Route, Routes } from 'react-router-dom';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
+import type * as AbsenderModul from '@/features/datenschutz/absender';
 import { pruefeBarrierefreiheit } from './barrierefreiheit';
 
 /**
@@ -63,6 +64,21 @@ vi.mock('@/features/treatment-bases/api', async (importOriginal) => ({
   fetchPrescribers: () => Promise.resolve([]),
   fetchPatientTreatmentBases: () => Promise.resolve([]),
   fetchPatientTreatmentBasesClinical: () => Promise.resolve([]),
+}));
+
+// UX-009a: Absender auf Terminzettel und Aufnahmeblatt.
+vi.mock('@/features/datenschutz/absender', async (importOriginal) => ({
+  ...(await importOriginal<typeof AbsenderModul>()),
+  fetchPraxisAbsender: () =>
+    Promise.resolve({
+      name: 'Test Praxis Tuebingen',
+      street: 'Musterallee',
+      house_number: '1',
+      postal_code: '72070',
+      city: 'Tuebingen',
+      phone: '+49 7071 0000000',
+      email: 'praxis@example.invalid',
+    }),
 }));
 
 vi.mock('@/features/appointments/api', async (importOriginal) => ({
@@ -719,7 +735,10 @@ describe('Barrierefreiheit von Serie und Terminzettel (CAL-EPIC-003b)', () => {
     const { container } = renderWithProviders(
       <main>
         <Routes>
-          <Route path="/patienten/:patientId/terminzettel" element={<AppointmentSlipPage />} />
+          <Route
+            path="/patienten/:patientId/terminzettel"
+            element={<AppointmentSlipPage user={testUser(['therapist'])} />}
+          />
         </Routes>
       </main>,
       '/patienten/pat-1/terminzettel',

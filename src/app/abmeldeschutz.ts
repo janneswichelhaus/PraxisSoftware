@@ -16,7 +16,7 @@ import { createContext, useContext, useEffect, useRef } from 'react';
  *   * Jede Seite mit schützenswerten Eingaben meldet sich als Wache an
  *     (`useAbmeldewache`). Seit UXR-002 dürfen es **mehrere zugleich** sein
  *     (NAV-01, DAT-04): Der Schutz gilt nicht mehr nur der Dokumentation,
- *     sondern auch Formularen wie Neue:r Patient:in, und ein ausstehendes Foto
+ *     sondern auch Formularen wie Patient:in anlegen, und ein ausstehendes Foto
  *     kann neben einem Formular stehen.
  *   * Eine Wache **übernimmt** die Rückfrage (sie gibt `true` zurück) und
  *     schließt sie später mit `abmelden()` ab. Dann fragen die übrigen Wachen
