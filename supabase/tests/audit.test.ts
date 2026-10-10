@@ -246,6 +246,8 @@ describe('Audit-Lesepfad', () => {
       'get_patient_session_fee',
       'get_payment_reminder',
       'get_platform_access',
+      // UX-009a: Absender fuer Blaetter an Patient:innen (ANN-323).
+      'get_practice_sender',
       'get_practice_statistics',
       'get_practice_targets',
       'get_therapy_report',
