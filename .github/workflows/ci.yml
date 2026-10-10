@@ -118,9 +118,13 @@ jobs:
           # Die ganze Geschichte: Das Migrationen-Gate vergleicht mit main.
           fetch-depth: 0
 
+      # Das Gate braucht nur Node und git, kein pnpm. Ohne diese Zeile sucht
+      # setup-node wegen `packageManager` in package.json nach pnpm und bricht
+      # ab, bevor das Gate laeuft.
       - uses: actions/setup-node@v5
         with:
           node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
 
       # BEF-123: Eine Migration, die schon auf main liegt, ist in der
       # Test-Umgebung eingespielt und wird dort nie wieder ausgefuehrt. Wer sie
