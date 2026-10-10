@@ -417,8 +417,10 @@ test('druckt den eigenen Tag vollständig mit Anschrift und Rufnummer (BEF-052)'
 
   await page.emulateMedia({ media: 'print' });
   await expect(blatt).toBeVisible();
-  await expect(blatt.getByRole('heading', { name: /^Tagesplan · / })).toBeVisible();
-  await expect(blatt.getByRole('listitem')).toHaveCount(4);
+  // Das Blatt ist `aria-hidden` (am Bildschirm nie da) - deshalb über Elemente,
+  // nicht über Rollen.
+  await expect(blatt.locator('h1')).toHaveText(/^Tagesplan · /);
+  await expect(blatt.locator('li')).toHaveCount(4);
   for (const text of [
     'Erika Beispiel',
     'Testweg 7, 72072 Tuebingen',
