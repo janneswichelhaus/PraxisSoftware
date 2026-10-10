@@ -16,11 +16,13 @@ import { todayInTimeZone } from '@/features/appointments/api';
 import { DokumentFoto } from '@/features/files/DokumentFoto';
 import { BEGRIFFE } from '@/lib/begriffe';
 import type { Patient } from '@/features/patients/api';
-import type { CurrentUser } from '@/features/session/types';
+import { canReadClinicalPatientFiles, type CurrentUser } from '@/features/session/types';
+import { fetchPatientenfotos } from '@/features/files/patientenfotos';
 import {
   datenschutzstand,
   fetchDatenschutzvermerke,
   herkunftText,
+  loeschumfang,
   vermerkartTexte,
   vermerkeSpeichern,
   zweckTexte,
@@ -150,6 +152,7 @@ export function Datenschutz({ patient, user }: { patient: Patient; user: Current
             stand={gewaehlt}
             patientId={patient.id}
             zeitzone={user.organizationTimeZone}
+            fotosSichtbar={canReadClinicalPatientFiles(user.roles)}
             onGespeichert={(text) => {
               setGespeichert(text);
               setOffen(null);
@@ -215,12 +218,15 @@ function EinwilligungFenster({
   stand,
   patientId,
   zeitzone,
+  fotosSichtbar,
   onGespeichert,
   onSchliessen,
 }: {
   stand: Einwilligungsstand;
   patientId: string;
   zeitzone: string | null;
+  /** Darf die Rolle die Fotos sehen? Nur dann zählt die Rückfrage sie (BEF-063). */
+  fotosSichtbar: boolean;
   onGespeichert: (text: string) => void;
   onSchliessen: () => void;
 }) {
@@ -232,6 +238,14 @@ function EinwilligungFenster({
   const zweck = stand.zweck;
   const fotoWiderruf = zweck === 'patient_photos' && vorgang === 'consent_withdrawn';
   const knopf = fotoWiderruf ? 'Widerruf vermerken und Fotos löschen' : 'Speichern';
+  // BEF-063: Die Rückfrage nennt, was gelöscht wird - dieselbe Liste wie im
+  // Verlauf, erst geladen, wenn der Widerruf gewählt ist.
+  const fotos = useQuery({
+    queryKey: ['patient-photos', patientId],
+    queryFn: () => fetchPatientenfotos(patientId),
+    enabled: fotoWiderruf && fotosSichtbar,
+    retry: false,
+  });
 
   const mutation = useMutation({
     mutationFn: (vermerk: NeuerVermerk) => vermerkeSpeichern(vermerk),
@@ -276,9 +290,9 @@ function EinwilligungFenster({
       </fieldset>
       {fotoWiderruf ? (
         <p className="text-ink mt-2 text-sm">
-          Mit dem Widerruf werden alle Fotos dieser Person sofort gelöscht – außer eine Löschsperre
-          hält sie; dann bleiben sie gesperrt bis zu ihrem Ende. Neue Fotos brauchen eine neue
-          Einwilligung.
+          Mit dem Widerruf werden alle Fotos als Arbeitshilfe sofort gelöscht – außer eine
+          Löschsperre hält sie; dann bleiben sie gesperrt bis zu ihrem Ende. Dokumentationsfotos
+          gehören zur Akte und bleiben. Neue Arbeitshilfen brauchen eine neue Einwilligung.
         </p>
       ) : null}
 
@@ -314,11 +328,7 @@ function EinwilligungFenster({
               Vermerken: {vermerkartTexte[vorgang]} – {zweckTexte[zweck].label}, {formatDate(datum)}
               . Vermerke lassen sich nicht ändern.
             </p>
-            {fotoWiderruf ? (
-              <p className="mt-2 font-medium">
-                Alle Fotos dieser Person werden sofort gelöscht – außer eine Löschsperre hält sie.
-              </p>
-            ) : null}
+            {fotoWiderruf ? <p className="mt-2 font-medium">{loeschumfang(fotos.data)}</p> : null}
           </Rueckfrage>
         ) : (
           // Bis ein Vorgang gewählt ist, gibt es nichts zu vermerken.

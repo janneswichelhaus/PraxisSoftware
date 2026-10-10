@@ -163,7 +163,7 @@ describe('InvoiceDetailPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('stellt den Entwurf auf Wunsch aus', async () => {
+  it('fragt vor dem Ausstellen mit Empfänger, Betrag und Kreis nach (BEF-063)', async () => {
     const nutzer = userEvent.setup();
     fetchRechnung.mockResolvedValue(ansicht());
 
@@ -174,7 +174,56 @@ describe('InvoiceDetailPage', () => {
 
     await nutzer.click(await screen.findByRole('button', { name: 'Rechnung ausstellen' }));
 
+    // Ein Tipp stellt nichts aus: Erst die Rückfrage mit den Kontrollwerten.
+    expect(stelleRechnungAus).not.toHaveBeenCalled();
+    const kasten = screen.getByRole('group', { name: 'Rechnung ausstellen – Rückfrage' });
+    expect(kasten).toHaveTextContent('Erika Beispiel (Patient:in selbst)');
+    expect(kasten).toHaveTextContent('45,00 €');
+    expect(kasten).toHaveTextContent('aus dem Kreis Behandlung');
+    expect(kasten).toHaveTextContent(/unveränderlich/);
+    expect(within(kasten).getByRole('button', { name: 'Ja, Rechnung ausstellen' })).toHaveFocus();
+
+    await nutzer.click(within(kasten).getByRole('button', { name: 'Ja, Rechnung ausstellen' }));
     expect(stelleRechnungAus).toHaveBeenCalledWith('r1');
+  });
+
+  it('stellt nach „Abbrechen“ nichts aus (BEF-063)', async () => {
+    const nutzer = userEvent.setup();
+    fetchRechnung.mockResolvedValue(ansicht());
+
+    renderWithProviders(
+      <InvoiceDetailPage user={testUser(['office'])} />,
+      '/abrechnung/rechnungen/r1',
+    );
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Rechnung ausstellen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Abbrechen' }));
+
+    expect(stelleRechnungAus).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', { name: 'Rechnung ausstellen' })).toHaveFocus();
+  });
+
+  it('schließt die Rückfrage bei einem Fehlschlag und zeigt den Hinweis mit Weg (BEF-063)', async () => {
+    const nutzer = userEvent.setup();
+    const { AnschriftUnvollstaendig } = await import('./api');
+    fetchRechnung.mockResolvedValue(ansicht({ patient_id: 'p1' }));
+    stelleRechnungAus.mockRejectedValue(new AnschriftUnvollstaendig('postal_code'));
+
+    renderWithProviders(
+      <InvoiceDetailPage user={testUser(['office'])} />,
+      '/abrechnung/rechnungen/r1',
+    );
+
+    await nutzer.click(await screen.findByRole('button', { name: 'Rechnung ausstellen' }));
+    await nutzer.click(screen.getByRole('button', { name: 'Ja, Rechnung ausstellen' }));
+
+    expect(
+      await screen.findByText(/In der Anschrift des Empfängers fehlt: PLZ/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('group', { name: 'Rechnung ausstellen – Rückfrage' }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Rechnung ausstellen' })).toBeInTheDocument();
   });
 
   it('fragt vor dem Verwerfen nach und nennt die Folge', async () => {
@@ -947,6 +996,7 @@ describe('InvoiceDetailPage', () => {
       const neuLaden = vi.spyOn(client, 'invalidateQueries');
 
       await nutzer.click(await screen.findByRole('button', { name: 'Rechnung ausstellen' }));
+      await nutzer.click(screen.getByRole('button', { name: 'Ja, Rechnung ausstellen' }));
 
       const meldung = await screen.findByText('Rechnung RG-2026-0001 ausgestellt.');
       expect(meldung).toHaveAttribute('role', 'status');

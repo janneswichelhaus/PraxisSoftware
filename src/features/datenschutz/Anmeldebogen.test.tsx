@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as VermerkeApi from './vermerke';
+import type * as FotoApi from '@/features/files/patientenfotos';
 import { renderWithProviders, testPatient, testUser } from '@/test-utils';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 
@@ -21,7 +22,17 @@ vi.mock('./vermerke', async (importOriginal) => {
   };
 });
 
+const fetchPatientenfotos = vi.fn();
+vi.mock('@/features/files/patientenfotos', async (importOriginal) => {
+  const actual = await importOriginal<typeof FotoApi>();
+  return {
+    ...actual,
+    fetchPatientenfotos: (id: string) => fetchPatientenfotos(id) as Promise<unknown[]>,
+  };
+});
+
 const { Datenschutz } = await import('./Anmeldebogen');
+const { loeschumfang } = await import('./vermerke');
 
 function seite(vermerke: VermerkeApi.Datenschutzvermerk[] = []) {
   fetchDatenschutzvermerke.mockResolvedValue(vermerke);
@@ -274,19 +285,29 @@ describe('Datenschutz der Akte', () => {
       },
     ]);
 
+    fetchPatientenfotos.mockResolvedValue([
+      { document_type: 'patientenfoto' },
+      { document_type: 'patientenfoto' },
+      { document_type: 'dokumentationsfoto' },
+    ]);
     const fenster = await fensterOeffnen(user, 'patient_photos');
     await user.click(within(fenster).getByRole('radio', { name: 'Einwilligung widerrufen' }));
     // Der Hinweis im Fenster nennt dieselbe Sache wie die übrige Anwendung und
     // steht im richtigen Numerus (PAT-17, WRT-19).
-    const hinweis = screen.getByText(/alle Fotos dieser Person sofort gelöscht/);
+    const hinweis = screen.getByText(/alle Fotos als Arbeitshilfe sofort gelöscht/);
     expect(hinweis).toHaveTextContent('außer eine Löschsperre hält sie');
-    expect(hinweis).toHaveTextContent('Neue Fotos brauchen eine neue Einwilligung.');
+    expect(hinweis).toHaveTextContent('Dokumentationsfotos gehören zur Akte und bleiben.');
 
     await user.click(screen.getByRole('button', { name: 'Widerruf vermerken und Fotos löschen' }));
     const kasten = screen.getByRole('group', { name: 'Widerruf vermerken und Fotos löschen' });
-    // Erst die Rückfrage, dann der Widerruf (PAT-04).
+    // Erst die Rückfrage, dann der Widerruf (PAT-04) - mit der Zahl der
+    // Fotos, die gelöscht werden (BEF-063).
     expect(vermerkeSpeichern).not.toHaveBeenCalled();
-    expect(kasten).toHaveTextContent('Alle Fotos dieser Person werden sofort gelöscht');
+    await waitFor(() =>
+      expect(kasten).toHaveTextContent('2 Fotos als Arbeitshilfe werden sofort gelöscht'),
+    );
+    expect(kasten).toHaveTextContent('Ein Dokumentationsfoto bleibt in der Akte.');
+    expect(fetchPatientenfotos).toHaveBeenCalledWith(PATIENT_ID);
 
     await user.click(
       within(kasten).getByRole('button', { name: 'Widerruf vermerken und Fotos löschen' }),
@@ -354,5 +375,25 @@ describe('Datenschutz der Akte', () => {
     const { container } = seite();
     await screen.findByText('Kontakt per E-Mail');
     await pruefeBarrierefreiheit(container);
+  });
+});
+
+describe('loeschumfang (BEF-063)', () => {
+  it('nennt ohne Liste den Satz ohne Zahl', () => {
+    expect(loeschumfang(undefined)).toBe(
+      'Alle Fotos als Arbeitshilfe werden sofort gelöscht – außer eine Löschsperre hält sie.',
+    );
+  });
+
+  it('sagt, wenn nichts gelöscht wird', () => {
+    expect(loeschumfang([{ document_type: 'dokumentationsfoto' }])).toBe(
+      'Es liegt kein Foto als Arbeitshilfe vor; gelöscht wird nichts. Ein Dokumentationsfoto bleibt in der Akte.',
+    );
+  });
+
+  it('zählt ein einzelnes Foto im Singular', () => {
+    expect(loeschumfang([{ document_type: 'patientenfoto' }])).toBe(
+      'Ein Foto als Arbeitshilfe wird sofort gelöscht – außer eine Löschsperre hält sie.',
+    );
   });
 });

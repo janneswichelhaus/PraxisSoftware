@@ -1287,6 +1287,39 @@ function Empfaengerformular({
   );
 }
 
+/**
+ * Die Kontrollwerte der Rückfrage vor dem Ausstellen (BEF-063): an wen, wie
+ * viel, aus welchem Nummernkreis. Alles aus dem Dokument des Entwurfs - dem
+ * Stand, den der Server beim Ausstellen festschreibt (ADR-009 Punkt 10).
+ */
+function Kontrollwerte({ ansicht }: { ansicht: Rechnungsansicht }) {
+  const dokument = ansicht.document;
+  const positionen = dokument.items.length;
+  return (
+    <>
+      <p className="font-medium">Diese Rechnung jetzt ausstellen?</p>
+      <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-ink-muted">An</dt>
+        <dd>
+          {dokument.recipient.name} ({empfaengerart(dokument.recipient.kind, dokument.service_area)}
+          )
+        </dd>
+        <dt className="text-ink-muted">Betrag</dt>
+        <dd className="tabular-nums">
+          {formatEuro(dokument.totals.total_cents, dokument.currency)} ·{' '}
+          {positionen === 1 ? 'eine Position' : `${positionen} Positionen`}
+        </dd>
+        <dt className="text-ink-muted">Nummer</dt>
+        <dd>aus dem Kreis {bereichLabels[dokument.service_area ?? 'therapy']}</dd>
+      </dl>
+      <p className="mt-2">
+        Danach ist die Rechnung unveränderlich; eine Korrektur geht nur über Storno und neue
+        Rechnung.
+      </p>
+    </>
+  );
+}
+
 function Entwurfsaktionen({
   ansicht,
   darfStammdaten,
@@ -1325,12 +1358,8 @@ function Entwurfsaktionen({
 
   return (
     <Section titel="Entwurf" ebene={2}>
-      <p className="text-ink-muted text-sm">
-        Mit dem Ausstellen bekommt die Rechnung ihre Nummer, und alle Angaben werden
-        festgeschrieben. Danach ist sie unveränderlich – eine Korrektur läuft über Storno und
-        Neuausstellung.
-      </p>
-
+      {/* Was das Ausstellen bedeutet, steht in der Rückfrage - dort, wo
+          entschieden wird (BEF-063, UX-005i). */}
       {ausstellen.error instanceof KeineStammdaten ? (
         <div className="mt-2">
           <StammdatenFehlen
@@ -1360,15 +1389,35 @@ function Entwurfsaktionen({
         </Statusmeldung>
       ) : null}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Button type="button" onClick={() => ausstellen.mutate()} disabled={ausstellen.isPending}>
-          {ausstellen.isPending ? 'Wird ausgestellt …' : 'Rechnung ausstellen'}
-        </Button>
+      {/* BEF-063 (Jannes 2026-10-09): Ausstellen vergibt eine Nummer und
+          macht die Rechnung unveränderlich - deshalb eine Rückfrage mit den
+          Werten, die vorher niemand noch einmal ansieht: Empfänger, Betrag,
+          Kreis. Ein Fehlschlag schließt sie; der Hinweis steht darüber, mit
+          dem Weg zur fehlenden Angabe. */}
+      <div className="mt-3">
+        <Rueckfrage
+          ausloeser="Rechnung ausstellen"
+          ausloeserVariante="primary"
+          bezeichnung="Rechnung ausstellen – Rückfrage"
+          bestaetigen="Ja, Rechnung ausstellen"
+          bestaetigenLaeuft="Wird ausgestellt …"
+          laeuft={ausstellen.isPending}
+          onBestaetigen={() => ausstellen.mutateAsync().catch(() => undefined)}
+          onAbbrechen={() => ausstellen.reset()}
+        >
+          <Kontrollwerte ansicht={ansicht} />
+        </Rueckfrage>
+      </div>
 
+      {/* Verwerfen ist folgenlos und steht abgesetzt als ruhige Aktion: Seine
+          Bestätigung stand sonst als zweiter gefüllter Knopf direkt unter
+          „Rechnung ausstellen“ (BEF-063). */}
+      <div className="border-line mt-8 border-t pt-4">
         {/* Mit Versprechen: Der Kasten bleibt offen, bis der Server
             geantwortet hat, und zeigt einen Fehlschlag (ABR-03, ZST-06). */}
         <Rueckfrage
           ausloeser="Entwurf verwerfen"
+          ausloeserVariante="quiet"
           bestaetigen="Ja, Entwurf verwerfen"
           bestaetigenLaeuft="Wird verworfen …"
           laeuft={verwerfen.isPending}
