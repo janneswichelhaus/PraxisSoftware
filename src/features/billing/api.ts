@@ -412,6 +412,11 @@ const kandidatSchema = z.object({
   basis_issued_on: z.string().nullable().default(null),
   first_performed_on: z.string().nullable().default(null),
   last_performed_on: z.string().nullable().default(null),
+  // UX-008b (BEF-062): Stammen die Leistungen aus einer stornierten Rechnung
+  // derselben Klammer ohne Korrektur, führt nur deren Korrekturrechnung
+  // weiter - der Server weist jeden anderen Entwurf ab.
+  cancelled_invoice_id: z.string().nullable().default(null),
+  cancelled_invoice_number: z.string().nullable().default(null),
 });
 
 export type Kandidat = z.infer<typeof kandidatSchema>;
@@ -703,6 +708,13 @@ export async function createEntwurf(
   if (error?.message?.includes('already exists')) {
     throw new Error('Für diese Verordnung steht schon ein Entwurf. Bitte die Liste neu laden.');
   }
+  // UX-008b: Leistungen einer stornierten Rechnung kommen nur auf deren
+  // Korrekturrechnung - die Liste kannte die Herkunft beim Laden noch nicht.
+  if (error?.message?.includes('billed on its correction')) {
+    throw new Error(
+      'Diese Leistungen stammen aus einer stornierten Rechnung. Bitte die Liste neu laden und dort die Korrekturrechnung erstellen.',
+    );
+  }
   if (error) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
   const id = z.string().uuid().safeParse(data);
   if (!id.success) throw new Error('Der Rechnungsentwurf konnte nicht angelegt werden.');
@@ -831,14 +843,16 @@ export async function erstelleKorrektur(invoiceId: string): Promise<string> {
     p_invoice_id: invoiceId,
   })) as { data: unknown; error: { message?: string } | null };
 
+  // BEF-062: Ehrlich statt „Er ist die Korrektur.“ - der stehende Entwurf
+  // hat keinen Bezug zur stornierten Rechnung (UX-008b).
   if (error?.message?.includes('already exists')) {
     throw new Error(
-      'Für diese Patientin und diesen Monat steht bereits ein Entwurf. Er ist die Korrektur.',
+      'Für diesen Zeitraum steht schon ein Entwurf ohne Bezug zur stornierten Rechnung. Bitte ihn verwerfen und die Korrekturrechnung hier neu erstellen.',
     );
   }
   if (error?.message?.includes('no billable services')) {
     throw new Error(
-      'Es gibt keine offenen Leistungen mehr für diesen Monat — die Korrektur hätte keine Zeile.',
+      'Es gibt keine offenen Leistungen mehr für diesen Zeitraum – die Korrektur hätte keine Zeile.',
     );
   }
   if (error) throw new Error('Die Korrekturrechnung konnte nicht angelegt werden.');
