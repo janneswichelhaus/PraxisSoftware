@@ -194,8 +194,11 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
 
   it('rollt mit dem Anker aus „Bisherige Doku →“ zum Verlauf, sobald er geladen ist (BEF-058)', async () => {
     const rollen = vi.fn();
-    const vorher = Element.prototype.scrollIntoView;
-    Element.prototype.scrollIntoView = rollen;
+    const vorher = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: rollen,
+      configurable: true,
+    });
     try {
       renderWithProviders(
         <PatientRecordDocumentation
@@ -210,7 +213,8 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
       await waitFor(() => expect(rollen).toHaveBeenCalledTimes(1));
       expect(rollen.mock.contexts[0]).toBe(abschnitt);
     } finally {
-      Element.prototype.scrollIntoView = vorher;
+      if (vorher) Object.defineProperty(Element.prototype, 'scrollIntoView', vorher);
+      else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
     }
   });
 
