@@ -666,6 +666,22 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
+    it('sichert von selbst nur den getippten Text, nie den offenen Vorschlag (ANN-120, ANN-319)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        rendern();
+        await lachmannPositiv(user);
+        await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Befund:');
+        await act(() => vi.advanceTimersByTimeAsync(3100));
+
+        await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:'));
+        expect(completeTreatment).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('fragt beim Verlassen nach und sichert nur die Angaben, nicht den Vorschlag als Text', async () => {
       const user = userEvent.setup();
       rendern();
@@ -737,5 +753,61 @@ describe('CompleteTreatmentPage', () => {
       expect(screen.queryByRole('button', { name: /^\+ Befund/ })).toBeNull();
       expect(screen.queryByRole('group', { name: 'Befund aus Bausteinen' })).toBeNull();
     });
+  });
+
+  describe('Sicherung von selbst (BEF-056, ANN-319)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('sichert den Text nach einer Pause als Entwurf und schließt nichts ab', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      rendern();
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Synthetisch.');
+      await act(() => vi.advanceTimersByTimeAsync(3100));
+
+      await waitFor(() =>
+        expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Synthetisch.'),
+      );
+      expect(completeTreatment).not.toHaveBeenCalled();
+      expect(navigate).not.toHaveBeenCalled();
+      expect(await screen.findByText(/Als Entwurf gesichert um/)).toBeInTheDocument();
+    });
+
+    it('sichert am Vermerk „ohne Behandlung“ nicht von selbst - der Entwurf trüge den Vermerk nicht', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      rendern(['therapist'], '?ohne-behandlung=1');
+
+      await user.type(await screen.findByLabelText('Eintrag zur Behandlung'), 'Synthetisch.');
+      await act(() => vi.advanceTimersByTimeAsync(3100 * 2));
+
+      expect(createTreatmentNote).not.toHaveBeenCalled();
+    });
+  });
+
+  it('bietet die Übernahme an, wenn der Entwurf inzwischen finalisiert ist (BEF-056)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: entwurf, addenda: [] });
+    updateTreatmentNote.mockImplementation(() => {
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...entwurf, status: 'final', finalisation_kind: 'automatic', version_count: 1 },
+        addenda: [],
+      });
+      return Promise.reject(new Error('Diese Dokumentation ist finalisiert.'));
+    });
+    const user = userEvent.setup();
+    rendern();
+
+    const feld = await screen.findByLabelText('Eintrag zur Behandlung');
+    await user.type(feld, ' Zusatz.');
+    await user.click(screen.getByRole('button', { name: 'Entwurf' }));
+
+    const gruppe = await screen.findByRole('group', { name: 'Text übernehmen' });
+    expect(within(gruppe).getByRole('button', { name: 'Als Nachtrag übernehmen' })).toBeEnabled();
+    expect(within(gruppe).getByRole('button', { name: 'In Korrektur übernehmen' })).toBeEnabled();
+    expect(feld).toHaveValue(`${entwurf.content} Zusatz.`);
   });
 });

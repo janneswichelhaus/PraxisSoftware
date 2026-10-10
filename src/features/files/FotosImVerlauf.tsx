@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -504,6 +506,20 @@ export function Patientenfotos({
     ansichtRef.current?.focus();
   }, [ansicht]);
 
+  // Die Fotos klein (BEF-058, Entscheidung Jannes 2026-10-09): ohne Fotos
+  // eine Zeile, mit Fotos „Fotos (n)“ zum Aufklappen - nach einer Aufnahme
+  // offen, damit das neue Foto zu sehen ist.
+  const anzahl = fotos.data?.length;
+  const [fotosOffen, setFotosOffen] = useState(false);
+  const bisherigeAnzahl = useRef<number | undefined>(undefined);
+  useEffect(() => {
+    if (anzahl === undefined) return;
+    if (bisherigeAnzahl.current !== undefined && anzahl > bisherigeAnzahl.current) {
+      setFotosOffen(true);
+    }
+    bisherigeAnzahl.current = anzahl;
+  }, [anzahl]);
+
   if (!darfSehen) return null;
 
   const laeuft = ladeort !== null;
@@ -574,81 +590,94 @@ export function Patientenfotos({
           />
         ) : null}
         {fotos.data && liste.length === 0 ? (
-          <p className="text-ink text-liste">Für diese Person liegt kein Foto vor.</p>
+          <p className="text-ink text-liste">Fotos: keine.</p>
         ) : null}
 
         {liste.length > 0 ? (
-          <ul className="flex flex-col">
-            {liste.map((foto) => (
-              <Fotozeile
-                key={foto.id}
-                foto={foto}
+          <details
+            className="group"
+            open={fotosOffen || ansicht !== null}
+            onToggle={(event) => setFotosOffen(event.currentTarget.open)}
+          >
+            <summary className={`${aufklappKopfKlassen} text-ink text-liste font-semibold`}>
+              <Aufklappzeichen />
+              Fotos ({liste.length})
+            </summary>
+            <ul className="flex flex-col">
+              {liste.map((foto) => (
+                <Fotozeile
+                  key={foto.id}
+                  foto={foto}
+                  zeitzone={zeitzone}
+                  patientId={patientId}
+                  darfLoeschen={darfAufnehmen && foto.deletable}
+                  ausgewaehlt={gewaehlt.includes(foto.id)}
+                  auswahlVoll={gewaehlt.length >= 2}
+                  laeuft={laeuft}
+                  laedtHier={hierLadend(foto.id)}
+                  fehlerHier={hierFehler(foto.id)}
+                  onAuswahl={(an) =>
+                    setAuswahl((bisher) =>
+                      an ? [...bisher, foto.id] : bisher.filter((id) => id !== foto.id),
+                    )
+                  }
+                  onAnsehen={() => void oeffnen([foto], { art: 'zeile', fotoId: foto.id })}
+                />
+              ))}
+            </ul>
+
+            {liste.length > 1 ? (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={gewaehlt.length !== 2 || laeuft}
+                  onClick={() =>
+                    void oeffnen(
+                      gewaehlt
+                        .map((id) => liste.find((foto) => foto.id === id))
+                        .filter((foto): foto is Patientenfoto => Boolean(foto))
+                        // Das ältere links, das jüngere rechts.
+                        .sort((a, b) => a.taken_at.localeCompare(b.taken_at)),
+                      { art: 'vergleich' },
+                    )
+                  }
+                >
+                  Nebeneinander ansehen
+                </Button>
+                <span className="text-ink-muted text-sm">
+                  {gewaehlt.length === 2
+                    ? 'Zwei Fotos gewählt.'
+                    : 'Zwei Fotos „Zum Vergleich“ wählen.'}
+                </span>
+              </div>
+            ) : null}
+            {ladeort?.art === 'vergleich' ? (
+              <Statusmeldung className="mt-2">Fotos werden geladen …</Statusmeldung>
+            ) : null}
+            {fehler?.ort.art === 'vergleich' ? (
+              <Statusmeldung ton="fehler" className="mt-2">
+                {fehler.text}
+              </Statusmeldung>
+            ) : null}
+
+            {ansicht ? (
+              <Ansicht
+                ref={ansichtRef}
+                fotos={ansicht}
                 zeitzone={zeitzone}
-                patientId={patientId}
-                darfLoeschen={darfAufnehmen && foto.deletable}
-                ausgewaehlt={gewaehlt.includes(foto.id)}
-                auswahlVoll={gewaehlt.length >= 2}
-                laeuft={laeuft}
-                laedtHier={hierLadend(foto.id)}
-                fehlerHier={hierFehler(foto.id)}
-                onAuswahl={(an) =>
-                  setAuswahl((bisher) =>
-                    an ? [...bisher, foto.id] : bisher.filter((id) => id !== foto.id),
-                  )
-                }
-                onAnsehen={() => void oeffnen([foto], { art: 'zeile', fotoId: foto.id })}
+                onSchliessen={schliessen}
               />
-            ))}
-          </ul>
-        ) : null}
-
-        {liste.length > 1 ? (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              disabled={gewaehlt.length !== 2 || laeuft}
-              onClick={() =>
-                void oeffnen(
-                  gewaehlt
-                    .map((id) => liste.find((foto) => foto.id === id))
-                    .filter((foto): foto is Patientenfoto => Boolean(foto))
-                    // Das ältere links, das jüngere rechts.
-                    .sort((a, b) => a.taken_at.localeCompare(b.taken_at)),
-                  { art: 'vergleich' },
-                )
-              }
-            >
-              Nebeneinander ansehen
-            </Button>
-            <span className="text-ink-muted text-sm">
-              {gewaehlt.length === 2 ? 'Zwei Fotos gewählt.' : 'Zwei Fotos „Zum Vergleich“ wählen.'}
-            </span>
-          </div>
-        ) : null}
-        {ladeort?.art === 'vergleich' ? (
-          <Statusmeldung className="mt-2">Fotos werden geladen …</Statusmeldung>
-        ) : null}
-        {fehler?.ort.art === 'vergleich' ? (
-          <Statusmeldung ton="fehler" className="mt-2">
-            {fehler.text}
-          </Statusmeldung>
-        ) : null}
-
-        {ansicht ? (
-          <Ansicht ref={ansichtRef} fotos={ansicht} zeitzone={zeitzone} onSchliessen={schliessen} />
+            ) : null}
+            {/* Das Kleingedruckte gilt den Fotos und steht bei ihnen (BEF-058). */}
+            <p className="text-ink-muted mt-3 max-w-prose text-sm leading-relaxed">
+              Fotos lassen sich hier weder herunterladen noch teilen.
+            </p>
+          </details>
         ) : null}
       </div>
 
-      {/* Die Größe des Kleingedruckten entscheidet Jannes für alle Stellen
-          zugleich (TOK-04); bis dahin bleibt sie hier, wie sie ist. */}
       {dateien ? <div className="mt-4">{dateien}</div> : null}
-
-      <div className="border-line mt-4 border-t pt-3">
-        <p className="text-ink-muted max-w-prose text-sm leading-relaxed">
-          Fotos lassen sich hier weder herunterladen noch teilen.
-        </p>
-      </div>
     </Section>
   );
 }

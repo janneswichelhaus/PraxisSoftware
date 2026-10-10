@@ -138,7 +138,10 @@ export async function fetchTreatmentNoteVersions(noteId: string): Promise<Treatm
 export class DokumentationVeraendertError extends Error {
   constructor() {
     super(
-      'Die Dokumentation wurde zwischenzeitlich von einer anderen Person geändert. Bitte den eigenen Text sichern, die Ansicht neu laden und die Änderung erneut vornehmen.',
+      // Kein „neu laden", solange Text im Feld steht (BEF-056): Neuladen
+      // verwürfe ihn. Die Seite lädt den Stand selbst nach und bietet den
+      // nächsten Schritt an.
+      'Die Dokumentation wurde zwischenzeitlich von einer anderen Person geändert. Ihr Text steht weiter im Feld und ist noch nicht gespeichert.',
     );
     this.name = 'DokumentationVeraendertError';
   }
@@ -146,6 +149,25 @@ export class DokumentationVeraendertError extends Error {
 
 export function istZwischenzeitlichGeaendert(fehler: unknown): boolean {
   return fehler instanceof DokumentationVeraendertError;
+}
+
+/**
+ * Der Eintrag oder sein Termin ist inzwischen in einem Zustand, der den
+ * Entwurfsweg ausschließt - finalisiert, abgesagt, verschwunden. Ein erneuter
+ * Versuch ändert daran nichts (Zweitreview UX-EPIC-007): Die Sicherung von
+ * selbst setzt bei diesen Fehlern aus, bei anderen - etwa einem Funkloch -
+ * versucht sie es nach der nächsten Eingabe wieder (ANN-319).
+ */
+class ZustandGeaendertError extends Error {
+  constructor(meldung: string) {
+    super(meldung);
+    this.name = 'ZustandGeaendertError';
+  }
+}
+
+/** Hilft ein erneuter Versuch nicht? Dann setzt die Sicherung von selbst aus. */
+export function istDauerhafterSchreibfehler(fehler: unknown): boolean {
+  return fehler instanceof DokumentationVeraendertError || fehler instanceof ZustandGeaendertError;
 }
 
 function schreibfehler(error: { message?: string } | null, standard: string): Error {
@@ -159,23 +181,27 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
     return new Error('Die Behandlungsdokumentation ist zu lang. Höchstens 20.000 Zeichen.');
   }
   if (error?.message?.includes('cannot be documented')) {
-    return new Error('Zu einem abgesagten Termin kann keine Behandlungsdokumentation entstehen.');
+    return new ZustandGeaendertError(
+      'Zu einem abgesagten Termin kann keine Behandlungsdokumentation entstehen.',
+    );
   }
   if (error?.message?.includes('already exists')) {
-    return new Error(
+    return new ZustandGeaendertError(
       'Für diesen Termin gibt es bereits eine Behandlungsdokumentation. Bitte die Ansicht neu laden.',
     );
   }
   if (error?.message?.includes('requires a revision')) {
-    return new Error(
+    return new ZustandGeaendertError(
       'Diese Dokumentation ist finalisiert. Eine Änderung ist nur als Korrektur mit Begründung möglich.',
     );
   }
   if (error?.message?.includes('is already final')) {
-    return new Error('Diese Dokumentation ist bereits finalisiert. Bitte die Ansicht neu laden.');
+    return new ZustandGeaendertError(
+      'Diese Dokumentation ist bereits finalisiert. Bitte die Ansicht neu laden.',
+    );
   }
   if (error?.message?.includes('is not final')) {
-    return new Error(
+    return new ZustandGeaendertError(
       'Dieser Eintrag ist noch ein Entwurf. Korrektur und Nachtrag gibt es erst nach der Finalisierung.',
     );
   }
@@ -191,12 +217,12 @@ function schreibfehler(error: { message?: string } | null, standard: string): Er
     );
   }
   if (error?.message?.includes('addendum cannot be extended')) {
-    return new Error(
+    return new ZustandGeaendertError(
       'Zu einem Nachtrag gibt es keinen weiteren Nachtrag. Bitte den ursprünglichen Eintrag ergänzen.',
     );
   }
   if (error?.message?.includes('treatment note not found')) {
-    return new Error('Diese Behandlungsdokumentation wurde nicht gefunden.');
+    return new ZustandGeaendertError('Diese Behandlungsdokumentation wurde nicht gefunden.');
   }
   // Alles Übrige bleibt bewusst unspezifisch, damit keine internen Details nach
   // außen gelangen.
@@ -303,8 +329,9 @@ export async function completeTreatment(
 
   if (error) {
     if (error.message?.includes('appointment was changed meanwhile')) {
+      // Kein „neu laden" (BEF-056): Die Seite lädt den Termin selbst nach.
       throw new Error(
-        'Der Termin wurde zwischenzeitlich geändert. Bitte den eigenen Text sichern, die Ansicht neu laden und den Abschluss erneut vornehmen.',
+        'Der Termin wurde zwischenzeitlich geändert. Ihr Text steht weiter im Feld. Bitte erneut festschreiben – oder mit „Entwurf“ nur als Entwurf sichern.',
       );
     }
     throw schreibfehler(error, 'Die Behandlung konnte nicht abgeschlossen werden.');
@@ -359,6 +386,20 @@ export async function createTreatmentNoteAddendum(
     throw new Error('Der Nachtrag konnte nicht angelegt werden.');
   }
   return id.data;
+}
+
+/**
+ * Der Text, wie der Server ihn speichert: ohne Leerzeichen, Tabulatoren und
+ * Zeilenumbrüche an Anfang und Ende (`btrim(…, E' \t\r\n')` in
+ * `create_treatment_note`/`update_treatment_note`).
+ *
+ * Ob im Feld etwas Ungespeichertes steht, wird an diesem Stand gemessen
+ * (Zweitreview UX-EPIC-007): Ein „Satz.⏎“ wäre sonst nach jedem Sichern
+ * wieder „geändert“, und die Sicherung von selbst liefe alle drei Sekunden
+ * erneut (ANN-319).
+ */
+export function wieGespeichert(text: string): string {
+  return text.replace(/^[ \t\r\n]+|[ \t\r\n]+$/g, '');
 }
 
 /** Höchstlänge des Freitexts. Muss zur Prüfung in der Datenbank passen. */

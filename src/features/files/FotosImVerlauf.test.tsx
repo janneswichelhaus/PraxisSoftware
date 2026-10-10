@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import { focusManager } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
 import type * as FotoApi from './patientenfotos';
 import { renderWithProviders, testUser } from '@/test-utils';
@@ -200,15 +201,43 @@ describe('Patientenfotos', () => {
 
   it('zeigt die Liste ohne Vorschau und ohne Verweis auf Vorrat, mit Löschdatum (Punkt 40)', async () => {
     fetchPatientenfotos.mockResolvedValue([foto()]);
+    const user = userEvent.setup();
     const { container } = seite();
 
     expect(await screen.findByText('Knie rechts')).toBeInTheDocument();
+    // Zugeklappt als „Fotos (1)“ (BEF-058); ein Tipp zeigt die Liste.
+    expect(screen.getByText('01.09.2026 · Anna Beispiel')).not.toBeVisible();
+    await user.click(screen.getByText('Fotos (1)'));
     expect(screen.getByText('01.09.2026 · Anna Beispiel')).toBeVisible();
     expect(
       screen.getByText(/^Arbeitshilfe · wird spätestens am 01.09.2027 gelöscht/),
     ).toBeVisible();
     expect(container.querySelector('img')).toBeNull();
     expect(ladePatientenfoto).not.toHaveBeenCalled();
+  });
+
+  it('steht ohne Fotos als eine Zeile da, ohne Kleingedrucktes (BEF-058)', async () => {
+    fetchPatientenfotos.mockResolvedValue([]);
+    seite();
+
+    expect(await screen.findByText('Fotos: keine.')).toBeInTheDocument();
+    expect(screen.queryByText(/weder herunterladen noch teilen/)).toBeNull();
+    expect(screen.queryByText(/^Fotos \(/)).toBeNull();
+  });
+
+  it('klappt die Fotos auf, sobald ein neues dazukommt (BEF-058)', async () => {
+    focusManager.setFocused(false);
+    fetchPatientenfotos.mockResolvedValue([foto()]);
+    seite();
+    const zusammenfassung = await screen.findByText('Fotos (1)');
+    expect(zusammenfassung.closest('details')).not.toHaveAttribute('open');
+
+    fetchPatientenfotos.mockResolvedValue([foto(), foto({ id: 'f2', display_name: 'Knie links' })]);
+    // Das Nachladen nach einer Aufnahme, hier über den Fensterfokus ausgelöst.
+    act(() => focusManager.setFocused(true));
+    const neu = await screen.findByText('Fotos (2)');
+    expect(neu.closest('details')).toHaveAttribute('open');
+    focusManager.setFocused(undefined);
   });
 
   it('lädt ein Foto erst beim Ansehen, zeigt es aus dem Speicher und gibt es beim Schließen frei', async () => {
@@ -282,9 +311,11 @@ describe('Patientenfotos', () => {
     fetchPatientenfotos.mockResolvedValue([
       foto({ document_type: 'dokumentationsfoto', delete_after: null, deletable: false }),
     ]);
+    const user = userEvent.setup();
     seite();
 
-    expect(await screen.findByText(/^Dokumentationsfoto · Teil der Akte/)).toBeVisible();
+    await user.click(await screen.findByText('Fotos (1)'));
+    expect(screen.getByText(/^Dokumentationsfoto · Teil der Akte/)).toBeVisible();
     expect(screen.queryByText(/wird spätestens/)).toBeNull();
     expect(screen.queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
   });

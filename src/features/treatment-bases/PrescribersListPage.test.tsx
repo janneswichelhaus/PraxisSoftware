@@ -64,6 +64,33 @@ describe('PrescribersListPage', () => {
     );
   });
 
+  it('zeigt Telefon und E-Mail als eigene Links neben der Zeile, das Fax als Text (BEF-060)', async () => {
+    fetchPrescribers.mockResolvedValue([
+      verordner('1', {
+        family_name: 'Probst',
+        phone: '+49 7071 123',
+        fax: '07071 124',
+        email: 'probst@example.invalid',
+      }),
+    ]);
+    renderWithProviders(<PrescribersListPage />);
+
+    expect(await screen.findByRole('link', { name: 'Tel. +49 7071 123' })).toHaveAttribute(
+      'href',
+      'tel:+497071123',
+    );
+    expect(screen.getByRole('link', { name: 'probst@example.invalid' })).toHaveAttribute(
+      'href',
+      'mailto:probst@example.invalid',
+    );
+    expect(screen.getByText('Fax 07071 124')).toBeInTheDocument();
+    // Die Zeile selbst führt weiter zum Bearbeiten.
+    expect(screen.getByRole('link', { name: /Probst/ })).toHaveAttribute(
+      'href',
+      '/verordner/1/bearbeiten',
+    );
+  });
+
   it('filtert ueber Name, Praxis und Ort', async () => {
     fetchPrescribers.mockResolvedValue([
       verordner('1', { family_name: 'Probst', city: 'Tuebingen' }),

@@ -615,10 +615,14 @@ describe('TerminAktionenDialog', () => {
 
       const knopf = await screen.findByRole('button', { name: 'Niemand öffnet?' });
       expect(knopf).toHaveAttribute('aria-expanded', 'false');
-      // Die Auswahl (Akte entschlacken, 2026-10-03): Haken, „Doku",
-      // „Niemand öffnet?", „Ohne Behandlung".
-      expect(screen.getByRole('button', { name: 'Termin abschließen' })).toBeVisible();
-      expect(screen.getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
+      // Ein Hauptknopf (BEF-055): „Doku“, daneben „Niemand öffnet?“ und
+      // „Ohne Behandlung“; der Abschluss ohne Dokumentation liegt eingeklappt
+      // darunter und heißt „Nur Termin abschließen“.
+      const abschluss = screen.getByRole('group', { name: 'Abschluss' });
+      expect(within(abschluss).getAllByRole('link', { name: 'Doku schreiben' })).toHaveLength(1);
+      const nur = within(abschluss).getByRole('button', { name: 'Nur Termin abschließen' });
+      expect(nur.closest('details')).not.toHaveAttribute('open');
+      expect(screen.queryByRole('button', { name: 'Termin abschließen' })).toBeNull();
       expect(screen.getByRole('link', { name: 'Ohne Behandlung' })).toHaveAttribute(
         'href',
         expect.stringContaining(`/termine/${TERMIN_ID}/abschluss?ohne-behandlung=1`),
@@ -1193,6 +1197,44 @@ describe('TerminAktionenDialog', () => {
       );
     });
 
+    it('gibt dem Büro „Termin abschließen“ als Hauptknopf mit seiner Folge (BEF-055)', async () => {
+      rendern(['office']);
+      const abschluss = await screen.findByRole('group', { name: 'Abschluss' });
+      const knopf = within(abschluss).getByRole('button', { name: 'Termin abschließen' });
+      expect(knopf).toHaveClass('bg-accent');
+      expect(within(abschluss).getByText('Der Termin gilt damit als durchgeführt.')).toBeVisible();
+      expect(within(abschluss).queryByRole('link', { name: 'Doku schreiben' })).toBeNull();
+    });
+
+    it('stellt für Behandelnde „Doku“ als einzigen Hauptknopf vor die Zeilen; „Nur Termin abschließen“ schließt ab (BEF-055)', async () => {
+      const user = userEvent.setup();
+      rendern(['therapist']);
+      const abschluss = await screen.findByRole('group', { name: 'Abschluss' });
+      const doku = within(abschluss).getByRole('link', { name: 'Doku schreiben' });
+      expect(doku).toHaveClass('bg-accent');
+      // Ein Hauptknopf je Ansicht.
+      const dialog = abschluss.closest('[role="dialog"]') ?? document.body;
+      expect(
+        Array.from(dialog.querySelectorAll('a.bg-accent, button.bg-accent')).filter(
+          (el) => !el.closest('details:not([open])'),
+        ),
+      ).toEqual([doku]);
+      // Der Abschluss steht vor den Detailzeilen.
+      const zeilen = screen.getByText('Verordnung', { selector: 'dt, span, p, h3' });
+      expect(
+        abschluss.compareDocumentPosition(zeilen) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+
+      await user.click(
+        within(abschluss).getByText('Nur Termin abschließen', { selector: 'summary' }),
+      );
+      await user.click(within(abschluss).getByRole('button', { name: 'Nur Termin abschließen' }));
+      await waitFor(() =>
+        expect(completeAppointment).toHaveBeenCalledWith(TERMIN_ID, praxistermin.updated_at),
+      );
+      expect(await screen.findByText('Termin abgeschlossen. Doku offen.')).toBeInTheDocument();
+    });
+
     it('fragt beim Abschliessen nicht nach einer Behandlungsdokumentation', async () => {
       const user = userEvent.setup();
       rendern();
@@ -1709,8 +1751,11 @@ describe('TerminAktionenDialog', () => {
       rendern(['owner']);
 
       const auswahl = await screen.findByRole('group', { name: 'Aktionen' });
+      // Der Abschluss steht seit BEF-055 als eigene Gruppe vor den Zeilen.
       expect(
-        within(auswahl).getByRole('button', { name: 'Nicht angetroffen' }),
+        within(screen.getByRole('group', { name: 'Abschluss' })).getByRole('button', {
+          name: 'Nicht angetroffen',
+        }),
       ).toBeInTheDocument();
       expect(within(auswahl).getByRole('link', { name: 'Bearbeiten' })).toBeInTheDocument();
       // Die Absage steht nicht in der Auswahl, sondern als letzter Knopf vor

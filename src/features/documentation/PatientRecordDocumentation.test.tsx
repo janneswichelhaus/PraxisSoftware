@@ -192,6 +192,32 @@ describe('PatientRecordDocumentation (DOK-003, ROL-001)', () => {
     expect(abschnitt).not.toHaveTextContent(INHALT);
   });
 
+  it('rollt mit dem Anker aus „Bisherige Doku →“ zum Verlauf, sobald er geladen ist (BEF-058)', async () => {
+    const rollen = vi.fn();
+    const vorher = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollIntoView');
+    Object.defineProperty(Element.prototype, 'scrollIntoView', {
+      value: rollen,
+      configurable: true,
+    });
+    try {
+      renderWithProviders(
+        <PatientRecordDocumentation
+          patient={patient}
+          user={testUser(['therapist'])}
+          ohneTermin={null}
+        />,
+        '/patienten/x/doku#behandlungsverlauf',
+      );
+      const abschnitt = await screen.findByRole('region', { name: 'Behandlungsdokumentation' });
+      await within(abschnitt).findAllByRole('listitem');
+      await waitFor(() => expect(rollen).toHaveBeenCalledTimes(1));
+      expect(rollen.mock.contexts[0]).toBe(abschnitt);
+    } finally {
+      if (vorher) Object.defineProperty(Element.prototype, 'scrollIntoView', vorher);
+      else delete (Element.prototype as { scrollIntoView?: unknown }).scrollIntoView;
+    }
+  });
+
   it('nennt die finalisierende Person nur, wenn sie nicht die behandelnde ist (UX-005e)', async () => {
     fetchPatientTreatmentNotesPage.mockResolvedValue([
       akteTermin(1, [eintrag({ finalized_by_name: 'Tim Teamleitung' })]),

@@ -549,6 +549,17 @@ export function zeitImLauf(lauf: number, minutenAbAcht = 0, stufen = 12): string
  * Standorte geladen sind; wer vorher abschickt, schickt ein leeres Pflichtfeld
  * ab und bleibt stehen. Auf einem belasteten Runner ist genau das passiert.
  */
+/**
+ * Schließt den offenen Termin ohne Dokumentation ab (BEF-055): Für
+ * Behandelnde liegt der Weg seit UX-EPIC-007 eingeklappt unter „Nur Termin
+ * abschließen“; „Doku“ ist der Hauptknopf.
+ */
+export async function nurTerminAbschliessen(page: Page): Promise<void> {
+  const fenster = page.getByRole('dialog');
+  await fenster.locator('summary', { hasText: 'Nur Termin abschließen' }).click();
+  await fenster.getByRole('button', { name: 'Nur Termin abschließen', exact: true }).click();
+}
+
 export async function terminUeberOberflaeche(
   page: Page,
   opts: {

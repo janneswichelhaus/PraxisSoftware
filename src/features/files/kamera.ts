@@ -71,11 +71,32 @@ export function useKamera(): Kamerastand {
   return stand;
 }
 
-/** „Foto vom 26.09.2026" — der vorgeschlagene Name eines Fotos aus dem Kameradialog. */
-export function fotoVomHeutigenTag(): string {
-  return `Foto vom ${new Date().toLocaleDateString('de-DE', {
+/**
+ * „26.09.2026, 10:42" — Tag und Uhrzeit für einen vorgeschlagenen Namen.
+ *
+ * Mit Uhrzeit, weil zwei Aufnahmen eines Tages sonst denselben Namen trügen;
+ * ohne Vorschaubilder (ADR-017 Punkt 40) ist der Name das einzige Merkmal,
+ * und jedes Öffnen zum Unterscheiden wäre ein Protokolleintrag (BEF-059).
+ */
+export function tagUndUhrzeit(zeitpunkt: Date = new Date(), zeitzone?: string): string {
+  return `${tagDerPraxis(zeitpunkt, zeitzone)}, ${zeitpunkt.toLocaleTimeString('de-DE', {
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(zeitzone ? { timeZone: zeitzone } : {}),
+  })}`;
+}
+
+/** „26.09.2026“ - in der Zeit der Praxis, wenn sie bekannt ist, sonst des Geräts. */
+export function tagDerPraxis(zeitpunkt: Date, zeitzone?: string): string {
+  return zeitpunkt.toLocaleDateString('de-DE', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
-  })}`;
+    ...(zeitzone ? { timeZone: zeitzone } : {}),
+  });
+}
+
+/** „Foto vom 26.09.2026, 10:42" — der vorgeschlagene Name eines Fotos aus dem Kameradialog (BEF-059). */
+export function fotoVomHeutigenTag(zeitpunkt: Date = new Date(), zeitzone?: string): string {
+  return `Foto vom ${tagUndUhrzeit(zeitpunkt, zeitzone)}`;
 }

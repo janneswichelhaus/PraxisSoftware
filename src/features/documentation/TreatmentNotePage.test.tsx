@@ -43,6 +43,8 @@ const fetchAppointment = vi.fn();
 const fetchTreatmentDocumentation = vi.fn();
 const createTreatmentNote = vi.fn();
 const updateTreatmentNote = vi.fn();
+const createTreatmentNoteAddendum = vi.fn();
+const finalizeTreatmentNote = vi.fn();
 const navigate = vi.fn();
 const fetchTextSnippets = vi.fn();
 const fetchBefundangaben = vi.fn();
@@ -75,6 +77,10 @@ vi.mock('./api', async (importOriginal) => {
       createTreatmentNote(id, inhalt) as Promise<string>,
     updateTreatmentNote: (id: string, stand: string, inhalt: string) =>
       updateTreatmentNote(id, stand, inhalt) as Promise<void>,
+    createTreatmentNoteAddendum: (id: string, inhalt: string) =>
+      createTreatmentNoteAddendum(id, inhalt) as Promise<string>,
+    finalizeTreatmentNote: (id: string, stand: string) =>
+      finalizeTreatmentNote(id, stand) as Promise<void>,
     fetchBefundangaben: (id: string) => fetchBefundangaben(id) as Promise<unknown>,
     befundangabenSichern: (...args: unknown[]) => befundangabenSichern(...args) as Promise<void>,
   };
@@ -91,6 +97,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { TreatmentNotePage } = await import('./TreatmentNotePage');
 const { DokumentationVeraendertError } = await import('./api');
+const { uebergebenerText, uebergabeErledigt } = await import('./uebernahme');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
@@ -109,6 +116,9 @@ describe('TreatmentNotePage', () => {
     fetchTreatmentDocumentation.mockReset();
     createTreatmentNote.mockReset();
     updateTreatmentNote.mockReset();
+    createTreatmentNoteAddendum.mockReset();
+    finalizeTreatmentNote.mockReset();
+    finalizeTreatmentNote.mockResolvedValue(undefined);
     navigate.mockReset();
 
     params = { appointmentId: TERMIN_ID };
@@ -398,12 +408,26 @@ describe('TreatmentNotePage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(''));
     await user.type(feld(), '   ');
+    // Leerzeichen allein sind kein Text, den der Server speicherte (btrim):
+    // Es gibt nichts zu speichern (Zweitreview UX-EPIC-007).
+    expect(screen.getByRole('button', { name: 'Als Entwurf speichern' })).toBeDisabled();
+    expect(createTreatmentNote).not.toHaveBeenCalled();
+  });
+
+  it('weist einen geleerten Entwurf ab, ohne den Server zu fragen', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    const user = userEvent.setup();
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    await user.clear(feld());
+    await user.type(feld(), '   ');
     await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
     expect(
       await screen.findByText('Die Behandlungsdokumentation darf nicht leer sein.'),
     ).toBeInTheDocument();
-    expect(createTreatmentNote).not.toHaveBeenCalled();
+    expect(updateTreatmentNote).not.toHaveBeenCalled();
   });
 
   it('meldet einen Konflikt und laesst den eigenen Text stehen (PROJECT_PRINCIPLES.md 13)', async () => {
@@ -423,6 +447,155 @@ describe('TreatmentNotePage', () => {
     // Entscheidend: der eigene Text ist noch da.
     expect(feld()).toHaveValue(`${INHALT} Eigener Zusatz.`);
     expect(navigate).not.toHaveBeenCalled();
+    // Kein „neu laden“ mehr (BEF-056): Die Seite lädt den Stand selbst nach.
+    expect(screen.queryByText(/neu laden/)).toBeNull();
+    await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledTimes(2));
+  });
+
+  it('sichert einen Text mit Zeilenumbruch am Ende einmal, nicht alle drei Sekunden wieder (Zweitreview)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      updateTreatmentNote.mockImplementation((_id: string, _stand: string, inhalt: string) => {
+        // Der Server kürzt den Text an den Rändern (btrim).
+        fetchTreatmentDocumentation.mockResolvedValue({
+          primary: {
+            ...doku,
+            content: inhalt.trim(),
+            updated_at: '2027-05-12T09:00:00.000000+00:00',
+          },
+          addenda: [],
+        });
+        return Promise.resolve();
+      });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      rendern();
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.type(feld(), ' Neu.{Enter}');
+      await act(() => vi.advanceTimersByTimeAsync(3100));
+      await waitFor(() => expect(updateTreatmentNote).toHaveBeenCalledTimes(1));
+
+      await act(() => vi.advanceTimersByTimeAsync(3100 * 3));
+      expect(updateTreatmentNote).toHaveBeenCalledTimes(1);
+      expect(feld()).toHaveValue(`${INHALT} Neu.\n`);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  describe('Übernahme im Konfliktfall (BEF-056)', () => {
+    const NACHTRAG_ID = '99999999-9999-4999-8999-000000000002';
+
+    beforeEach(() => {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      updateTreatmentNote.mockImplementation(() => {
+        // Inzwischen von der Frist finalisiert: Der Server weist den
+        // Entwurfsweg ab, das Nachladen zeigt den finalisierten Eintrag.
+        fetchTreatmentDocumentation.mockResolvedValue({
+          primary: { ...doku, status: 'final', finalisation_kind: 'automatic', version_count: 1 },
+          addenda: [],
+        });
+        return Promise.reject(
+          new Error(
+            'Diese Dokumentation ist finalisiert. Eine Änderung ist nur als Korrektur mit Begründung möglich.',
+          ),
+        );
+      });
+    });
+
+    async function konflikt() {
+      const user = userEvent.setup();
+      rendern();
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.type(feld(), ' Eigener Zusatz.');
+      await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
+      await screen.findByRole('group', { name: 'Text übernehmen' });
+      return user;
+    }
+
+    it('übernimmt den Text als Nachtrag und öffnet ihn', async () => {
+      createTreatmentNoteAddendum.mockResolvedValue(NACHTRAG_ID);
+      const user = await konflikt();
+
+      expect(feld()).toHaveValue(`${INHALT} Eigener Zusatz.`);
+      await user.click(screen.getByRole('button', { name: 'Als Nachtrag übernehmen' }));
+
+      await waitFor(() =>
+        expect(createTreatmentNoteAddendum).toHaveBeenCalledWith(
+          DOKU_ID,
+          `${INHALT} Eigener Zusatz.`,
+        ),
+      );
+      await waitFor(() =>
+        expect(navigate).toHaveBeenCalledWith(
+          `/termine/${TERMIN_ID}/dokumentation/${NACHTRAG_ID}/bearbeiten`,
+          { state: { meldung: 'Ihr Text ist als Nachtrag-Entwurf gesichert.' } },
+        ),
+      );
+      expect(finalizeTreatmentNote).not.toHaveBeenCalled();
+    });
+
+    it('übergibt den Text an die Korrektur - im Arbeitsspeicher, nicht im Browserverlauf', async () => {
+      const user = await konflikt();
+
+      await user.click(screen.getByRole('button', { name: 'In Korrektur übernehmen' }));
+
+      expect(navigate).toHaveBeenCalledWith(
+        `/termine/${TERMIN_ID}/dokumentation/${DOKU_ID}/korrektur`,
+      );
+      expect(uebergebenerText(DOKU_ID)).toBe(`${INHALT} Eigener Zusatz.`);
+      uebergabeErledigt(DOKU_ID);
+    });
+  });
+
+  it('schreibt einen Nachtrag auf seiner Seite fest, mit dem Ursprung zugeklappt darüber (BEF-056)', async () => {
+    const NACHTRAG_ID = '99999999-9999-4999-8999-000000000002';
+    const NACHTRAG_TEXT = 'Synthetisch: nachgereicht.';
+    const nachtrag = {
+      ...doku,
+      id: NACHTRAG_ID,
+      addendum_to_note_id: DOKU_ID,
+      content: NACHTRAG_TEXT,
+      updated_at: '2027-05-12T11:00:00.111111+00:00',
+    };
+    const NEUER_STAND = '2027-05-12T11:05:00.222222+00:00';
+    params = { appointmentId: TERMIN_ID, noteId: NACHTRAG_ID };
+    fetchTreatmentDocumentation.mockResolvedValue({
+      primary: { ...doku, status: 'final', version_count: 1 },
+      addenda: [nachtrag],
+    });
+    updateTreatmentNote.mockImplementation((_id: string, _stand: string, inhalt: string) => {
+      fetchTreatmentDocumentation.mockResolvedValue({
+        primary: { ...doku, status: 'final', version_count: 1 },
+        addenda: [{ ...nachtrag, content: inhalt, updated_at: NEUER_STAND }],
+      });
+      return Promise.resolve();
+    });
+    const user = userEvent.setup();
+    rendern();
+
+    const nachtragsfeld = await screen.findByLabelText('Nachtrag');
+    const ursprung = screen.getByTestId('ursprung');
+    expect(ursprung).toHaveTextContent(INHALT);
+    expect(ursprung.closest('details')!.open).toBe(false);
+
+    await user.type(nachtragsfeld, ' Ergaenzt.');
+    await user.click(screen.getByRole('button', { name: 'Nachtrag festschreiben' }));
+
+    // Erst sichern, dann auf dem neuen Stand finalisieren.
+    await waitFor(() =>
+      expect(finalizeTreatmentNote).toHaveBeenCalledWith(NACHTRAG_ID, NEUER_STAND),
+    );
+    expect(updateTreatmentNote).toHaveBeenCalledWith(
+      NACHTRAG_ID,
+      nachtrag.updated_at,
+      `${NACHTRAG_TEXT} Ergaenzt.`,
+    );
+    await waitFor(() =>
+      expect(navigate).toHaveBeenCalledWith(`/kalender?termin=${TERMIN_ID}`, {
+        state: { meldung: 'Nachtrag als Version 1 festgeschrieben.' },
+      }),
+    );
   });
 
   it('fragt vor dem Verwerfen ungespeicherter Eingaben nach', async () => {

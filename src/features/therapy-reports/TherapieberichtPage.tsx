@@ -27,6 +27,7 @@ import {
   berichtAbschliessen,
   berichtQueryKey,
   berichtSpeichern,
+  BerichtVeraendertError,
   berichtVerwerfen,
   berichteQueryKey,
   fetchBericht,
@@ -278,6 +279,8 @@ function Berichtsformular({
   eingabeRef.current = eingabe;
 
   const ungespeichert = !gleicheEingabe(eingabe, gesichert);
+  // Läuft Abschluss oder Verwerfen, sichert nichts von selbst dazwischen.
+  const [beendetGerade, setBeendetGerade] = useState(false);
 
   // Einmal beim ersten Zeichnen: offen, wenn dort schon etwas angekreuzt ist.
   // Danach entscheidet die Person - ein gesteuertes `open` klappte die Liste
@@ -321,14 +324,29 @@ function Berichtsformular({
     return gleicheEingabe(eingabeRef.current, zuSichern);
   }
 
-  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+  const { abwarten, freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert,
     speichern: entwurfSichern,
     texte: BERICHTSTEXTE,
+    // Von selbst nur, solange niemand abschließt oder verwirft und die
+    // Auswahl sich sichern lässt (BEF-056, ANN-319). Abschluss und
+    // Verwerfen laufen neben dem Schreibweg des Schutzes.
+    selbst: {
+      stand: JSON.stringify(eingabe),
+      bereit: eingabe.eintraege.length <= EINTRAEGE_MAX && !inzwischen && !beendetGerade,
+      // Nur ein Konflikt setzt aus; nach einem Funkloch versucht es die
+      // nächste Eingabe wieder (Zweitreview UX-EPIC-007).
+      aussetzenBei: (fehler) => fehler instanceof BerichtVeraendertError,
+    },
   });
 
   const abschliessen = useMutation({
+    onMutate: () => setBeendetGerade(true),
+    onSettled: () => setBeendetGerade(false),
     mutationFn: async () => {
+      // Eine laufende Sicherung von selbst erst zu Ende kommen lassen: Sie
+      // setzt den erwarteten Stand neu (Zweitreview UX-EPIC-007).
+      await abwarten();
       // Was im Formular steht, ist das, was abgeschlossen wird - nicht ein
       // älterer gespeicherter Stand.
       const zuSichern = eingabeRef.current;
@@ -347,7 +365,12 @@ function Berichtsformular({
   });
 
   const verwerfen = useMutation({
-    mutationFn: () => berichtVerwerfen(bericht.id),
+    onMutate: () => setBeendetGerade(true),
+    onSettled: () => setBeendetGerade(false),
+    mutationFn: async () => {
+      await abwarten();
+      await berichtVerwerfen(bericht.id);
+    },
     onSuccess: async () => {
       selbstBeendet.current = true;
       await queryClient.invalidateQueries({ queryKey: berichteQueryKey(patientId) });
@@ -521,6 +544,7 @@ function Berichtsformular({
           {/* Hinweise, Fehler und die Rückfrage vor dem Verlassen stehen über
               den Knöpfen - „Druckansicht“ ist ein Seitenwechsel und läuft
               damit durch dieselbe Rückfrage wie Rückweg und Tableiste. */}
+          {sicherungsstand}
           {schutz}
           <div className="flex flex-wrap items-center gap-3">
             <Button type="submit" disabled={laeuft || zuViele}>

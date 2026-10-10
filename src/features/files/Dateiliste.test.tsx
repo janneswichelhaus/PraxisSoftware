@@ -356,7 +356,10 @@ describe('Dateiliste', () => {
           patientId: PATIENT,
           grundlageId: 'v1',
           documentType: 'verordnungsscan',
-          displayName: 'Rezept.pdf',
+          // „‹Art› vom ‹Datum›“ statt des Dateinamens (BEF-059).
+          displayName: expect.stringMatching(
+            /^Verordnungsscan vom \d{2}\.\d{2}\.\d{4}$/,
+          ) as unknown as string,
         }),
       ),
     );
@@ -375,7 +378,45 @@ describe('Dateiliste', () => {
     await screen.findByText('Nichts da.');
     const auswahl = screen.getByLabelText<HTMLSelectElement>(/Art des Dokuments/);
     const arten = Array.from(auswahl.options).map((o) => o.value);
-    expect(arten).toEqual(['einwilligung', 'vertrag']);
+    // Ohne Vorauswahl (BEF-059): zuerst „Bitte wählen …“.
+    expect(arten).toEqual(['', 'einwilligung', 'vertrag']);
+  });
+
+  it('startet ohne Vorauswahl und fügt erst mit gewählter Art hinzu (BEF-059)', async () => {
+    renderWithProviders(
+      <Dateiliste
+        patientId={PATIENT}
+        user={testUser(['therapist'])}
+        darfHinzufuegen
+        leerHinweis="Nichts da."
+      />,
+    );
+
+    await screen.findByText('Nichts da.');
+    const auswahl = screen.getByLabelText<HTMLSelectElement>(/Art des Dokuments/);
+    expect(auswahl).toHaveValue('');
+    expect(screen.getByRole('option', { name: 'Bitte wählen …' })).toBeDisabled();
+    await userEvent.upload(screen.getByLabelText('Datei'), pdf());
+    expect(screen.getByRole('button', { name: 'Datei hinzufügen' })).toBeDisabled();
+    expect(screen.getByText('Zuerst die Art des Dokuments wählen.')).toBeInTheDocument();
+
+    await userEvent.selectOptions(auswahl, 'arztbrief');
+    // Der Name folgt der Art, bis jemand ihn selbst ändert.
+    expect(screen.getByLabelText<HTMLInputElement>('Name in der Akte').value).toMatch(
+      /^Arztbrief vom \d{2}\.\d{2}\.\d{4}$/,
+    );
+    await userEvent.selectOptions(auswahl, 'befund');
+    expect(screen.getByLabelText<HTMLInputElement>('Name in der Akte').value).toMatch(
+      /^Befund vom /,
+    );
+    await userEvent.clear(screen.getByLabelText('Name in der Akte'));
+    await userEvent.type(screen.getByLabelText('Name in der Akte'), 'Synthetischer Befund{Enter}');
+
+    await waitFor(() =>
+      expect(ladeDateiHoch).toHaveBeenCalledWith(
+        expect.objectContaining({ documentType: 'befund', displayName: 'Synthetischer Befund' }),
+      ),
+    );
   });
 
   it('sagt bei jeder Art, wer sie sieht und wer sie pflegt (E15)', async () => {
@@ -389,6 +430,7 @@ describe('Dateiliste', () => {
     );
 
     await screen.findByText('Nichts da.');
+    await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'befund');
     expect(screen.getByText(/hinzufügen und löschen nur/)).toBeInTheDocument();
 
     await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'einwilligung');
@@ -409,6 +451,7 @@ describe('Dateiliste', () => {
 
     await screen.findByText('Nichts da.');
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
+    await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'befund');
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
 
     expect(
@@ -428,9 +471,12 @@ describe('Dateiliste', () => {
 
     await screen.findByText('Nichts da.');
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
+    await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'befund');
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
 
-    expect(await screen.findByText(/„Rezept.pdf“ ist in der Akte./)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/„Befund vom \d{2}\.\d{2}\.\d{4}“ ist in der Akte\./),
+    ).toBeInTheDocument();
   });
 
   it('hält während des Hochladens fest, was hochgeladen wird (DAT-09)', async () => {
@@ -446,6 +492,7 @@ describe('Dateiliste', () => {
 
     await screen.findByText('Nichts da.');
     await userEvent.upload(screen.getByLabelText('Datei'), pdf());
+    await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'befund');
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
 
     expect(await screen.findByRole('button', { name: 'Wird hinzugefügt …' })).toBeDisabled();
@@ -804,7 +851,7 @@ describe('Dateiliste — Blatt fotografieren', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Foto verwenden' }));
   }
 
-  it('legt ein Foto aus der Kamera als Verordnungsscan ab, mit Datum als Namen', async () => {
+  it('legt ein Foto aus der Kamera als Verordnungsscan ab, mit Datum und Uhrzeit als Namen (BEF-059)', async () => {
     renderWithProviders(
       <Dateiliste
         patientId={PATIENT}
@@ -818,7 +865,9 @@ describe('Dateiliste — Blatt fotografieren', () => {
     await fotografieren('Rezept fotografieren');
     expect(screen.getByText('Foto aus der Kamera – noch nicht hinzugefügt')).toBeInTheDocument();
     const name = screen.getByLabelText('Name in der Akte');
-    expect((name as HTMLInputElement).value).toMatch(/^Foto vom \d{2}\.\d{2}\.\d{4}$/);
+    expect((name as HTMLInputElement).value).toMatch(
+      /^Verordnungsscan vom \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/,
+    );
 
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
 
@@ -827,7 +876,7 @@ describe('Dateiliste — Blatt fotografieren', () => {
     expect(auftrag.documentType).toBe('verordnungsscan');
     expect(auftrag.grundlageId).toBe('v1');
     expect(auftrag.datei.type).toBe('image/jpeg');
-    expect(auftrag.displayName).toMatch(/^Foto vom /);
+    expect(auftrag.displayName).toMatch(/^Verordnungsscan vom /);
   });
 
   it('heißt in der Akte „Dokument fotografieren", nicht wie das Patientenfoto (DAT-01)', async () => {
@@ -881,6 +930,7 @@ describe('Dateiliste — Blatt fotografieren', () => {
     );
 
     await fotografieren('Dokument fotografieren');
+    await userEvent.selectOptions(screen.getByLabelText(/Art des Dokuments/), 'befund');
     await userEvent.click(screen.getByRole('button', { name: 'Datei hinzufügen' }));
     expect(await screen.findByText(/Das Foto ist noch da/)).toBeInTheDocument();
 

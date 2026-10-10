@@ -154,7 +154,7 @@ describe('Dateien je Reiter (AKTE-007)', () => {
     expect(await screen.findByText('Dokument hinzufügen')).toBeInTheDocument();
     const auswahl = screen.getByLabelText('Art des Dokuments');
     const arten = Array.from(auswahl.querySelectorAll('option')).map((o) => o.value);
-    expect(arten).toEqual(['befund', 'arztbrief', 'klinisches_bild']);
+    expect(arten).toEqual(['', 'befund', 'arztbrief', 'klinisches_bild']);
     unmount();
 
     renderWithProviders(<DokuDateien patientId={PATIENT} user={testUser(['office'])} />);
@@ -169,6 +169,6 @@ describe('Dateien je Reiter (AKTE-007)', () => {
     const arten = Array.from(
       screen.getByLabelText('Art des Dokuments').querySelectorAll('option'),
     ).map((o) => o.value);
-    expect(arten).toEqual(['einwilligung', 'vertrag']);
+    expect(arten).toEqual(['', 'einwilligung', 'vertrag']);
   });
 });

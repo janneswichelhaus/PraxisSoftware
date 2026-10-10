@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useLocation } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
@@ -36,6 +36,9 @@ import {
   type TreatmentNote,
 } from './api';
 import { FREITEXT, fristDatum } from './format';
+
+/** Anker des Behandlungsverlaufs in der Akte - Ziel von „Bisherige Doku →“ (BEF-058). */
+export const VERLAUF_ANKER = 'behandlungsverlauf';
 
 /** „28.09.2026" in der Zeit der Praxis. */
 function kurzesDatum(iso: string, zone: string): string {
@@ -441,10 +444,27 @@ function Behandlungsdokumentation({
   const [offen, setOffen] = useState<string | null>(null);
   const offenerTermin = offen ? (termine.find((t) => t.appointment_id === offen) ?? null) : null;
 
+  // „Bisherige Doku →“ springt zum ersten Eintrag (BEF-058): Am Telefon
+  // stehen Befund und Kopf der Akte davor. Gerollt wird, sobald die erste
+  // Seite da ist - vorher stünde der Abschnitt noch nicht an seinem Platz.
+  const { hash } = useLocation();
+  const gesprungen = useRef(false);
+  const ersteSeiteDa = seiten.isSuccess;
+  useEffect(() => {
+    if (gesprungen.current || !ersteSeiteDa || hash !== `#${VERLAUF_ANKER}`) return;
+    gesprungen.current = true;
+    document.getElementById(VERLAUF_ANKER)?.scrollIntoView?.({ block: 'start' });
+  }, [ersteSeiteDa, hash]);
+
   return (
     // Der Abschnitt bleibt ein benannter Bereich für Vorlesesoftware; die
     // Überschrift kommt aus `Section` wie überall sonst (UIK-20, TOK-05).
-    <div role="region" aria-label="Behandlungsdokumentation">
+    <div
+      id={VERLAUF_ANKER}
+      role="region"
+      aria-label="Behandlungsdokumentation"
+      className="scroll-mt-20"
+    >
       {/* Der Hinweis auf das Protokoll steht wieder unter der Überschrift: Der
           Design-Handoff vom 2026-10-01 behält ihn ausdrücklich (Abschnitt 1,
           Entscheidung Jannes), nachdem UX-005e ihn gestrichen hatte. Er steht

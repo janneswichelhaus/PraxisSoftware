@@ -86,6 +86,16 @@ function Eintrag({
 
   const basis = `/termine/${appointment.id}/dokumentation`;
   const mit = (ziel: string) => mitRueckweg(ziel, eingehend);
+  // Am offenen Hausbesuch kein „Finalisieren“ am Haupteintrag (BEF-055,
+  // Entscheidung Jannes 2026-10-09): Es setzte den Termin still auf
+  // „dokumentiert“, und „Niemand öffnet?“ und „Ohne Behandlung“ (ADR-018
+  // Punkt 9) wären danach nicht mehr wählbar. Festgeschrieben wird dort über
+  // „Doku“, die Wege daneben stehen oben im Abschluss. Die automatische
+  // Finalisierung zum Fristende bleibt (ADR-016 Punkt 7).
+  const ueberAbschluss =
+    !istNachtrag &&
+    appointment.status === 'confirmed' &&
+    appointment.appointment_type === 'home_visit';
 
   return (
     <div className={istNachtrag ? 'border-line mt-4 border-t pt-3' : 'mt-2'}>
@@ -161,7 +171,14 @@ function Eintrag({
             gegen den Doppelklick (ZST-16). Steht oben am Termin schon der
             Hauptknopf, ist dieser hier sekundär: ein Hauptknopf je Ansicht
             (DOK-14). */}
-        {darfSchreiben && !final ? (
+        {darfSchreiben && !final && ueberAbschluss ? (
+          <p className="text-ink-muted basis-full text-[13px] leading-relaxed">
+            Festgeschrieben wird über „Doku“ – oder oben über „Niemand öffnet?“ und „Ohne
+            Behandlung“.
+          </p>
+        ) : null}
+
+        {darfSchreiben && !final && !ueberAbschluss ? (
           <Rueckfrage
             ausloeser="Finalisieren"
             ausloeserVariante="secondary"

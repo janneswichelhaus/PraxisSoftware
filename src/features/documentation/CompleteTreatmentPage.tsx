@@ -20,11 +20,14 @@ import { statuswechselText, type Statuswechsel } from './format';
 import { useTextverlustschutz } from './Textverlustschutz';
 import { TextbausteinLeiste } from './TextbausteinLeiste';
 import { entwurfMeldung, useGesicherteBefundangaben } from './befundangaben';
-import { BereitsFinalisiert } from './Zustaende';
+import { BereitsFinalisiert, TextUebernehmen } from './Zustaende';
+import { useTextUebernahme } from './uebernahme';
 import {
   completeTreatment,
   createTreatmentNote,
   inhaltFehler,
+  istDauerhafterSchreibfehler,
+  wieGespeichert,
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
@@ -52,6 +55,7 @@ function Abschluss({
   note,
   ohneBehandlung,
   zumTermin,
+  eingehend,
   inzwischen,
 }: {
   appointment: Appointment;
@@ -60,6 +64,8 @@ function Abschluss({
   ohneBehandlung: boolean;
   /** Ziel für „Abbrechen“ und nach dem Schreiben: der Termin samt Rückweg (DOK-01). */
   zumTermin: string;
+  /** Der mitgereiste Rückweg; er reist zur Übernahme mit (DOK-01). */
+  eingehend: string;
   /** Was sich geändert hat, seit die Seite offen ist (DOK-B01). */
   inzwischen: Statuswechsel | undefined;
 }) {
@@ -101,7 +107,8 @@ function Abschluss({
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
   // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
   const befund = useGesicherteBefundangaben(appointment.id, bausteine, !ohneBehandlung);
-  const textGeaendert = wert !== gespeichert;
+  // Gemessen am Stand, wie der Server ihn speichert (Zweitreview UX-EPIC-007).
+  const textGeaendert = wieGespeichert(wert) !== wieGespeichert(gespeichert);
   const geaendert = textGeaendert || befund.ungesichert;
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
@@ -128,21 +135,29 @@ function Abschluss({
     // `befund` daneben, bis die Person übernimmt oder verwirft (ABN-015,
     // BEF-103 Punkt 1, ANN-120 Fassung 2).
     const zuSichern = wertRef.current;
-    if (zuSichern !== gespeichertRef.current) {
+    if (wieGespeichert(zuSichern) !== wieGespeichert(gespeichertRef.current)) {
       const meldung = inhaltFehler(zuSichern);
       if (meldung) {
         setFehler(meldung);
         throw new Error(meldung);
       }
-      if (note) {
-        await updateTreatmentNote(note.id, note.updated_at, zuSichern);
-      } else {
-        await createTreatmentNote(appointment.id, zuSichern);
+      try {
+        if (note) {
+          await updateTreatmentNote(note.id, note.updated_at, zuSichern);
+        } else {
+          await createTreatmentNote(appointment.id, zuSichern);
+        }
+      } catch (error) {
+        // Den Stand nachladen statt zum Neuladen aufzufordern (BEF-056): Ist
+        // der Eintrag inzwischen finalisiert, bietet die Seite die Übernahme
+        // als Nachtrag oder Korrektur an. Der Text bleibt im Feld.
+        await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
+        throw error;
       }
     }
     if (befund.ungesichert) await befund.sichern();
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern;
+    return wieGespeichert(wertRef.current) === wieGespeichert(zuSichern);
   }
 
   // Die Meldung gilt dem Vorschlag, der sie ausgelöst hat; ist er übernommen
@@ -151,10 +166,34 @@ function Abschluss({
     if (!bausteine.text) setVorschlagOffen(false);
   }, [bausteine.text]);
 
-  const { freigeben, laeuft, schreiben, schutz } = useTextverlustschutz({
+  const wechsel = inzwischen && !selbstAbgeschlossen.current ? inzwischen : undefined;
+
+  const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert: geaendert,
     speichern: entwurfSichern,
     kompakt: true,
+    // Von selbst gesichert wird nur der Text einer Behandlung (BEF-056,
+    // ANN-319). Am Vermerk „Tür geöffnet, nicht behandelt“ nicht: Ein so
+    // entstandener Entwurf trüge den Vermerk nicht, und mit der Frist würde
+    // er als gewöhnliche Behandlung festgeschrieben (ADR-016 Punkt 7) - der
+    // Vermerk entsteht nur mit „Mit Vermerk festschreiben“ (ANN-055).
+    selbst: ohneBehandlung
+      ? undefined
+      : {
+          stand: wert,
+          aussetzenBei: istDauerhafterSchreibfehler,
+          bereit:
+            !wechsel && !schreibtAbschluss && (!textGeaendert || inhaltFehler(wert) === undefined),
+        },
+  });
+
+  const uebernahme = useTextUebernahme({
+    appointmentId: appointment.id,
+    note,
+    eingehend,
+    wertRef,
+    setFehler,
+    schutz: { schreiben, freigeben },
   });
 
   async function nachSchreiben() {
@@ -176,13 +215,20 @@ function Abschluss({
    * erfahren (FIX-014, ADR-016).
    */
   async function abschlussSchreiben(): Promise<boolean> {
-    await completeTreatment(
-      appointment.id,
-      wertRef.current,
-      appointment.updated_at,
-      note?.updated_at ?? null,
-      ohneBehandlung,
-    );
+    try {
+      await completeTreatment(
+        appointment.id,
+        wertRef.current,
+        appointment.updated_at,
+        note?.updated_at ?? null,
+        ohneBehandlung,
+      );
+    } catch (error) {
+      // Termin und Eintrag nachladen statt zum Neuladen aufzufordern
+      // (BEF-056): Das nächste Festschreiben beruht dann auf dem neuen Stand.
+      await nachSchreiben();
+      throw error;
+    }
     selbstAbgeschlossen.current = true;
     await nachSchreiben();
     // Feld, Textbausteine und Bausteinfeld sind währenddessen gesperrt; was
@@ -218,8 +264,6 @@ function Abschluss({
     setFehler(meldung);
     return meldung === undefined;
   }
-
-  const wechsel = inzwischen && !selbstAbgeschlossen.current ? inzwischen : undefined;
 
   // Der Pfeil führt dorthin, woher die Seite kam - sonst zum Termin. Er läuft
   // wie jeder Weg hinaus durch den Textverlustschutz.
@@ -334,6 +378,19 @@ function Abschluss({
             </Statusmeldung>
           ) : null}
 
+          {/* Der Text findet einen Weg in die Akte (BEF-056). */}
+          {wechsel === 'finalisiert' && textGeaendert && note ? (
+            <div className="shrink-0 px-4 py-2">
+              <TextUebernehmen
+                className=""
+                nachtragMoeglich
+                gesperrt={laeuft}
+                onNachtrag={uebernahme.alsNachtrag}
+                onKorrektur={uebernahme.inKorrektur}
+              />
+            </div>
+          ) : null}
+
           {/* Der Fehler steht über dem Feld, nicht darunter (Abschnitt 6a). */}
           {fehler ? (
             <p
@@ -385,6 +442,7 @@ function Abschluss({
               Tableiste. Fehler und Rückfrage des Schutzes stehen als Zeile
               darüber (ANN-046). */}
           <div className="bg-surface sticky bottom-[calc(3.5rem+1px+env(safe-area-inset-bottom))] z-10 shrink-0 sm:bottom-0">
+            {sicherungsstand}
             {schutz}
             <div className="border-line flex items-center gap-2 border-t px-3 py-2">
               <Button
@@ -524,6 +582,7 @@ export function CompleteTreatmentPage({ user }: { user: CurrentUser }) {
                 ohneBehandlungGewaehlt && appointment.appointment_type === 'home_visit'
               }
               zumTermin={zumTermin}
+              eingehend={eingehend}
               inzwischen={zustand === 'abschluss' ? undefined : zustand}
             />
           );

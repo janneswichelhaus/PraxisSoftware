@@ -109,7 +109,10 @@ test.describe('Fotos', () => {
 
     await dialog.getByRole('button', { name: 'Foto verwenden' }).click();
     await expect(page.getByText('Neues Foto · Dokumentationsfoto')).toBeVisible();
-    await expect(page.getByLabel('Name')).toHaveValue(/^Foto vom \d{2}\.\d{2}\.\d{4}$/);
+    // Mit Uhrzeit: zwei Fotos eines Tages heißen nicht gleich (BEF-059).
+    await expect(page.getByLabel('Name')).toHaveValue(
+      /^Foto vom \d{2}\.\d{2}\.\d{4}, \d{2}:\d{2}$/,
+    );
 
     // Nur Bild, nie Ton.
     const anfragen = await page.evaluate(
@@ -148,6 +151,8 @@ test.describe('Fotos', () => {
   test('die Liste zeigt keine Vorschaubilder und läuft bei 375 px nicht über', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await page.goto(`${PRUEFSEITE}?ansicht=fotos`);
+    // Zugeklappt als „Fotos (n)“ (BEF-058); ein Tipp zeigt die Liste.
+    await page.locator('summary', { hasText: /^Fotos \(\d+\)$/ }).click();
     await expect(page.getByText('Testgegenstand, erste Aufnahme', { exact: true })).toBeVisible();
     // ABN-023: beide Fotoarten in einer Liste, das Dokumentationsfoto ohne
     // Löschdatum; eine vorhandene Arbeitshilfe bleibt bis zur Frist (ABN-032).

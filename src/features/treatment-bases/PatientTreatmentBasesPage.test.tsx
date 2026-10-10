@@ -12,6 +12,7 @@ const fetchPatientTreatmentBases = vi.fn();
 const fetchPatientTreatmentBasesClinical = vi.fn();
 const fetchPatientTreatmentBasisSlots = vi.fn();
 const setTreatmentBasisClinicalNote = vi.fn();
+const fetchPrescribers = vi.fn();
 
 vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof TreatmentBasesApi>();
@@ -25,6 +26,7 @@ vi.mock('./api', async (importOriginal) => {
       fetchPatientTreatmentBasisSlots(id) as Promise<TreatmentBasesApi.TreatmentBasisKontingent[]>,
     setTreatmentBasisClinicalNote: (id: string, text: string, stand: string) =>
       setTreatmentBasisClinicalNote(id, text, stand) as Promise<void>,
+    fetchPrescribers: () => fetchPrescribers() as Promise<TreatmentBasesApi.Prescriber[]>,
   };
 });
 
@@ -132,6 +134,8 @@ describe('Verordnungsbereich der Akte', () => {
     fetchPatientTreatmentBasisSlots.mockResolvedValue([]);
     fetchBerichteDerAkte.mockReset();
     fetchBerichteDerAkte.mockResolvedValue([]);
+    fetchPrescribers.mockReset();
+    fetchPrescribers.mockResolvedValue([]);
   });
 
   // ---------------------------------------------------------------------------
@@ -436,6 +440,75 @@ describe('Verordnungsbereich der Akte', () => {
   // AKTE-002: Aktionen passen zum Zustand.
   // ---------------------------------------------------------------------------
   describe('Aktionen passen zum Zustand', () => {
+    it('macht je Zustand eine Aktion zum Hauptknopf und stellt „Bearbeiten“ in den Kopf (BEF-060)', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      const serie = await screen.findByRole('link', { name: 'Terminserie anlegen' });
+      expect(serie).toHaveClass('bg-accent');
+      // Die übrigen Wege leise daneben.
+      expect(screen.getByRole('link', { name: 'Freie Termine suchen' })).not.toHaveClass(
+        'bg-accent',
+      );
+      const bearbeiten = screen.getAllByRole('link', { name: 'Bearbeiten' });
+      expect(bearbeiten).toHaveLength(1);
+      expect(bearbeiten[0]).not.toHaveClass('bg-accent');
+      // „Bearbeiten“ steht im Kopf, vor den Zahlen der Karte.
+      const zahlen = screen.getByText('Mögliche Termine');
+      expect(
+        bearbeiten[0]!.compareDocumentPosition(zahlen) & Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    });
+
+    it('macht an einer verplanten Grundlage mit ungedeckten Terminen „Termine übertragen“ zur Hauptaktion (BEF-060)', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([
+        kontingent({ remaining: 0, planned: 12, covered: 10, uncovered: 2 }),
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['office'])} />);
+
+      expect(await screen.findByRole('link', { name: 'Termine übertragen' })).toHaveClass(
+        'bg-accent',
+      );
+      expect(screen.getByRole('link', { name: 'Terminserie anlegen' })).not.toHaveClass(
+        'bg-accent',
+      );
+    });
+
+    it('nennt Telefon, Fax und E-Mail der Verordner:in an der Karte (BEF-060)', async () => {
+      fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
+      fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent()]);
+      fetchPrescribers.mockResolvedValue([
+        {
+          id: 'p1',
+          title: 'Dr. med.',
+          given_name: 'Petra',
+          family_name: 'Probst',
+          practice_name: 'Praxis Fiktiv',
+          speciality: null,
+          street: null,
+          house_number: null,
+          postal_code: null,
+          city: null,
+          phone: '07071 12 34-5',
+          fax: '07071 12 34-6',
+          email: 'praxis@example.invalid',
+        },
+      ]);
+      renderWithProviders(<Verordnungsbereich patient={patient} user={testUser(['therapist'])} />);
+
+      expect(await screen.findByRole('link', { name: 'Tel. 07071 12 34-5' })).toHaveAttribute(
+        'href',
+        'tel:0707112345',
+      );
+      expect(screen.getByText('Fax 07071 12 34-6')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'praxis@example.invalid' })).toHaveAttribute(
+        'href',
+        'mailto:praxis@example.invalid',
+      );
+    });
+
     it('bietet die Serie an, solange sich etwas planen laesst', async () => {
       fetchPatientTreatmentBasesClinical.mockResolvedValue([verordnung()]);
       fetchPatientTreatmentBasisSlots.mockResolvedValue([kontingent({ remaining: 3 })]);

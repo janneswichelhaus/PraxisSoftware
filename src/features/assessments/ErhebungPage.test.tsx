@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type * as Api from './api';
 import type * as PatientenApi from '@/features/patients/api';
@@ -115,6 +115,30 @@ describe('Erhebung', () => {
       korrigiert: null,
     });
     expect(erhebungAbschliessen).not.toHaveBeenCalled();
+  });
+
+  describe('Sicherung von selbst (BEF-056, ANN-319)', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+    });
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('sichert den Bogen nach einer Pause als Entwurf, ohne ihn zu verlassen oder abzuschließen', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      seite('instrument=anamnese_v8');
+      const frage2 = await screen.findByRole('group', {
+        name: '2. Haben Sie aktuell Schmerzen?',
+      });
+      await user.click(within(frage2).getByLabelText('ja'));
+      await act(() => vi.advanceTimersByTimeAsync(3100));
+
+      await waitFor(() => expect(erhebungSpeichern).toHaveBeenCalledTimes(1));
+      expect(erhebungAbschliessen).not.toHaveBeenCalled();
+      expect(await screen.findByText(/Als Entwurf gesichert um/)).toBeInTheDocument();
+      expect(within(frage2).getByLabelText('ja')).toBeChecked();
+    });
   });
 
   it('überschreibt beim zweiten Sichern den eigenen Entwurf, statt einen zweiten anzulegen', async () => {

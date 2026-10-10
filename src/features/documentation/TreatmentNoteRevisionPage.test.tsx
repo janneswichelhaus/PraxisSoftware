@@ -83,6 +83,7 @@ vi.mock('react-router-dom', async (importOriginal) => ({
 
 const { TreatmentNoteRevisionPage } = await import('./TreatmentNoteRevisionPage');
 const { DokumentationVeraendertError } = await import('./api');
+const { textUebergeben, uebergebenerText } = await import('./uebernahme');
 
 function rendern(rollen: Parameters<typeof testUser>[0] = ['therapist'], suche = '') {
   return renderWithProviders(
@@ -131,6 +132,16 @@ describe('TreatmentNoteRevisionPage', () => {
         state: { meldung: 'Korrektur als Version 2 festgeschrieben.' },
       }),
     );
+  });
+
+  it('übernimmt den Text aus dem Konfliktfall ins Feld und holt ihn einmal ab (BEF-056)', async () => {
+    textUebergeben(DOKU_ID, 'Synthetisch: Text aus dem Entwurf.');
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue('Synthetisch: Text aus dem Entwurf.'));
+    expect(screen.getByText(/Ihr Text aus dem Entwurf steht im Feld/)).toBeInTheDocument();
+    // Abgeholt: Ein späteres Öffnen beginnt wieder mit dem Wortlaut der Akte.
+    expect(uebergebenerText(DOKU_ID)).toBeUndefined();
   });
 
   it('behält den mitgereisten Rückweg für „Abbrechen“, Nachtrag und den Weg danach (DOK-01)', async () => {

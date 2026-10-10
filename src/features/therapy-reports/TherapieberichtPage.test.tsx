@@ -192,6 +192,24 @@ describe('Therapiebericht schreiben', () => {
     expect(await screen.findByText('Entwurf gespeichert.')).toBeInTheDocument();
   });
 
+  it('sichert den Entwurf nach einer Pause von selbst (BEF-056, ANN-319)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      zeigeFormular();
+      await user.type(
+        await screen.findByLabelText('Empfehlung der Therapeut:in zum Verordnungsende'),
+        'Synthetisch.',
+      );
+      await act(() => vi.advanceTimersByTimeAsync(3100));
+      await waitFor(() => expect(berichtSpeichern).toHaveBeenCalledTimes(1));
+      expect(berichtAbschliessen).not.toHaveBeenCalled();
+      expect(await screen.findByText(/Als Entwurf gesichert um/)).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('schließt mit dem Stand im Formular ab und führt auf das Druckblatt', async () => {
     const user = userEvent.setup();
     zeigeFormular();
