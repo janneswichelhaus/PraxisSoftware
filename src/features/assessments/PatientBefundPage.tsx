@@ -109,7 +109,11 @@ function Frageboegen({ patient, user, scores }: BefundProps) {
             }
           >
             {eigene.length === 0 ? (
-              <p className="text-ink-muted text-sm">Noch nicht erhoben.</p>
+              <p className="text-ink-muted text-sm">
+                Noch nicht erhoben.
+                {/* BEF-064: Wer nur liest, erfährt, wer erhebt. */}
+                {darfErheben ? '' : ' Erhoben wird von den behandelnden Rollen.'}
+              </p>
             ) : (
               <ul className="flex flex-col gap-3">
                 {eigene.map((erhebung) => (

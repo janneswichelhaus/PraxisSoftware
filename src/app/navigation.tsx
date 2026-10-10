@@ -231,10 +231,12 @@ function betriebUnterpunkte(roles: readonly RoleKey[]): Unterpunkt[] {
   // (UX-008). Wer nicht dokumentiert, braucht den Punkt nicht.
   if (canWriteTreatmentNote(roles)) {
     eintraege.push({ to: '/praxis/textbausteine', label: 'Textbausteine' });
-    // Die Instrumentenbibliothek zum Nachlesen (FRB-010): Produktinhalt ohne
-    // Personenbezug, gebraucht von denen, die messen und dokumentieren.
-    eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   }
+  // Die Instrumentenbibliothek zum Nachlesen (FRB-010): Produktinhalt ohne
+  // Personenbezug. Seit UX-008d für alle Rollen dieses Bereichs - auch die
+  // Praxisleitung, die erheben darf, und das Büro, das mitliest (BEF-064,
+  // BEF-137, ANN-322).
+  eintraege.push({ to: '/praxis/instrumente', label: 'Instrumente' });
   // Die Übungsbibliothek (UEB-EPIC-001): Fachwissen der Praxis ohne
   // Personenbezug, gebraucht von denen, die Übungen anleiten; das Büro liest
   // mit (ANN-293, BEF-137). Eine Trainingsbetreuung ohne Behandlungsrolle

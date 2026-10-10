@@ -32,6 +32,7 @@ import {
   type Zustellung,
 } from './konto-api';
 import type { StaffMember } from './api';
+import { fullName } from '@/features/patients/api';
 import { ROLLENHINWEISE } from './rollenhinweise';
 
 /**
@@ -368,7 +369,16 @@ interface Bestaetigung {
  * Zurücksetzen des Kennworts ändert an den Berechtigungen gar nichts. Ein
  * gemeinsames „Speichern" würde diesen Unterschied einebnen.
  */
-function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffAccount }) {
+function BestehenderZugang({
+  staff,
+  konto,
+  eigener,
+}: {
+  staff: StaffMember;
+  konto: StaffAccount;
+  /** Der Zugang der angemeldeten Person - sperren lässt er sich nicht (BEF-064). */
+  eigener: boolean;
+}) {
   const queryClient = useQueryClient();
   const aktiv = konto.account_active !== false;
   const [rollen, setRollen] = useState<RoleKey[]>(konto.role_keys ?? []);
@@ -418,6 +428,10 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
   const gespeichert = bestaetigt ?? konto.role_keys ?? [];
   const geaendert =
     rollen.length !== gespeichert.length || rollen.some((r) => !gespeichert.includes(r));
+  // BEF-064 (Jannes 2026-10-09): Eine Rolle zu entziehen wirkt sofort auf
+  // den Zugriff - dann fragt „Rollen speichern" nach. Nur hinzufügen nicht.
+  const entzogen = gespeichert.filter((rolle) => !rollen.includes(rolle));
+  const speichernGesperrt = !geaendert || rollen.length === 0 || rollenSpeichern.isPending;
 
   return (
     <div className="max-w-md">
@@ -460,13 +474,44 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
       ) : null}
 
       <div className="mt-4 flex flex-wrap gap-3">
-        <Button
-          type="button"
-          disabled={!geaendert || rollen.length === 0 || rollenSpeichern.isPending}
-          onClick={() => rollenSpeichern.mutate(rollen)}
-        >
-          {rollenSpeichern.isPending ? 'Wird gespeichert …' : 'Rollen speichern'}
-        </Button>
+        {entzogen.length > 0 && !speichernGesperrt ? (
+          <Rueckfrage
+            ausloeser="Rollen speichern"
+            ausloeserVariante="primary"
+            bezeichnung="Rollen speichern – Rückfrage"
+            bestaetigen={entzogen.length === 1 ? 'Ja, Rolle entziehen' : 'Ja, Rollen entziehen'}
+            bestaetigenLaeuft="Wird gespeichert …"
+            laeuft={rollenSpeichern.isPending}
+            // Ein Fehlschlag schließt die Frage; der Satz steht darüber.
+            onBestaetigen={() => rollenSpeichern.mutateAsync(rollen).catch(() => undefined)}
+            onAbbrechen={() => rollenSpeichern.reset()}
+          >
+            <p className="font-medium">
+              {fullName(staff)} verliert sofort {entzogen.length === 1 ? 'die Rolle' : 'die Rollen'}
+              :
+            </p>
+            <ul className="mt-1 flex flex-col gap-1">
+              {entzogen.map((rolle) => (
+                <li key={rolle}>
+                  {roleLabel(rolle)}
+                  {ROLLENHINWEISE[rolle] ? ` – ${ROLLENHINWEISE[rolle]}` : ''}
+                </li>
+              ))}
+            </ul>
+            <p className="mt-2">
+              Danach gilt nur noch: {rollen.map(roleLabel).join(', ')}. Was an der entzogenen Rolle
+              hängt, ist ab sofort nicht mehr erreichbar.
+            </p>
+          </Rueckfrage>
+        ) : (
+          <Button
+            type="button"
+            disabled={speichernGesperrt}
+            onClick={() => rollenSpeichern.mutate(rollen)}
+          >
+            {rollenSpeichern.isPending ? 'Wird gespeichert …' : 'Rollen speichern'}
+          </Button>
+        )}
         {geaendert ? (
           <Button
             type="button"
@@ -494,21 +539,29 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
       ) : null}
 
       <div className="border-line mt-8 flex flex-wrap items-center gap-3 border-t pt-6">
-        <Rueckfrage
-          ausloeser={aktiv ? 'Zugang sperren' : 'Zugang entsperren'}
-          bestaetigen={aktiv ? 'Sperren' : 'Entsperren'}
-          bestaetigenLaeuft="Wird geändert …"
-          fehler={sperren.isError ? sperrText(sperren.error) : undefined}
-          laeuft={sperren.isPending}
-          onBestaetigen={() => sperren.mutateAsync(!aktiv)}
-          onAbbrechen={() => sperren.reset()}
-        >
-          <p>
-            {aktiv
-              ? 'Die Person kann sich weiterhin anmelden, sieht aber keine Daten der Praxis mehr. Die Stammdaten, bestehende Termine und die Dokumentation bleiben unverändert.'
-              : 'Die Person erhält ihren bisherigen Zugang mit den oben gezeigten Rollen zurück.'}
+        {/* Am eigenen Datensatz kein Sperrknopf, der erst nach der Bestätigung
+            abgewiesen wird (BEF-064); der Server weist es weiter ab. */}
+        {eigener ? (
+          <p className="text-ink-muted w-full text-sm">
+            Den eigenen Zugang können Sie nicht sperren.
           </p>
-        </Rueckfrage>
+        ) : (
+          <Rueckfrage
+            ausloeser={aktiv ? 'Zugang sperren' : 'Zugang entsperren'}
+            bestaetigen={aktiv ? 'Sperren' : 'Entsperren'}
+            bestaetigenLaeuft="Wird geändert …"
+            fehler={sperren.isError ? sperrText(sperren.error) : undefined}
+            laeuft={sperren.isPending}
+            onBestaetigen={() => sperren.mutateAsync(!aktiv)}
+            onAbbrechen={() => sperren.reset()}
+          >
+            <p>
+              {aktiv
+                ? 'Die Person kann sich weiterhin anmelden, sieht aber keine Daten der Praxis mehr. Die Stammdaten, bestehende Termine und die Dokumentation bleiben unverändert.'
+                : 'Die Person erhält ihren bisherigen Zugang mit den oben gezeigten Rollen zurück.'}
+            </p>
+          </Rueckfrage>
+        )}
 
         <Rueckfrage
           ausloeser="Kennwort zurücksetzen"
@@ -546,7 +599,14 @@ function BestehenderZugang({ staff, konto }: { staff: StaffMember; konto: StaffA
  * Darstellungsfrage: Die Policy auf `staff_account_invitations` liefert allen
  * anderen Rollen gar keine Zeilen, und die RPCs weisen sie ab (ADR-004).
  */
-export function StaffAccountSection({ staff }: { staff: StaffMember }) {
+export function StaffAccountSection({
+  staff,
+  eigeneUserId,
+}: {
+  staff: StaffMember;
+  /** Kennung der angemeldeten Person; nur Darstellung, verbindlich prüft der Server. */
+  eigeneUserId: string;
+}) {
   const konto = useQuery({
     queryKey: ['staff-account', staff.id],
     queryFn: () => fetchStaffAccount(staff.id),
@@ -611,7 +671,11 @@ export function StaffAccountSection({ staff }: { staff: StaffMember }) {
       ) : null}
 
       {hatZugang && konto.data ? (
-        <BestehenderZugang staff={staff} konto={konto.data} />
+        <BestehenderZugang
+          staff={staff}
+          konto={konto.data}
+          eigener={konto.data.user_id === eigeneUserId}
+        />
       ) : offen ? (
         <OffeneEinladung
           einladung={offen}

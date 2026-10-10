@@ -137,6 +137,21 @@ describe('Arbeitsbereiche je Rolle', () => {
     expect(mitarbeitende(['owner'])?.vorschau).toBeUndefined();
   });
 
+  it('fuehrt die Instrumente fuer alle Rollen der Behandlungsseite (BEF-064, ANN-322)', () => {
+    function instrumente(roles: RoleKey[]): SubNavEintrag | undefined {
+      const betrieb = bereicheFuer(roles).find((bereich) => bereich.id === 'betrieb');
+      return betrieb?.unterpunkte.find((punkt) => punkt.to === '/praxis/instrumente');
+    }
+    // Bis UX-008d nur, wer dokumentiert - die Praxisleitung erhob Bögen,
+    // fand aber Wortlaut und Lizenz nicht.
+    for (const rolle of ['owner', 'team_lead', 'therapist', 'office'] as RoleKey[]) {
+      expect(instrumente([rolle])).toBeDefined();
+    }
+    // Die Trainingsbetreuung ohne Behandlungsrolle hat keinen Bereich
+    // Organisatorisches.
+    expect(instrumente(['trainer'])).toBeUndefined();
+  });
+
   it('stellt der Vorschau unter Organisatorisches die angebundenen Punkte voran', () => {
     const betrieb = bereicheFuer(['owner']).find((bereich) => bereich.id === 'betrieb');
     const punkte = betrieb?.unterpunkte ?? [];

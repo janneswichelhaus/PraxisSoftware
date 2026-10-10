@@ -326,7 +326,7 @@ function StaffDetail({ staff, user }: { staff: StaffMember; user: CurrentUser })
           selbst einrichtet (ANN-226). Allein owner, wie der Zugang. */}
       {isOwner(user.roles) ? <StaffCalendarSection staff={staff} /> : null}
 
-      {darfZugang ? <StaffAccountSection staff={staff} /> : null}
+      {darfZugang ? <StaffAccountSection staff={staff} eigeneUserId={user.profile.id} /> : null}
 
       {/* Vergütungsmodell (STA-005): allein owner, wie Beschäftigungsstatus. */}
       {isOwner(user.roles) ? <StaffCompensationSection staff={staff} /> : null}

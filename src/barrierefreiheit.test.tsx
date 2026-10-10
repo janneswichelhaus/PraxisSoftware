@@ -610,6 +610,7 @@ describe('Barrierefreiheit der Zugangsverwaltung (STAFF-EPIC-002)', () => {
           schedulable_treatment: false,
           schedulable_training: false,
         }}
+        eigeneUserId="11111111-1111-4111-8111-000000000001"
       />,
     );
     await screen.findByRole('button', { name: 'Zugang einladen' });
