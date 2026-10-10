@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { HakenSymbol } from '@/components/ui/HakenSymbol';
+import { Button } from '@/components/ui/Button';
 import { Symbolknopf } from '@/components/ui/Symbolknopf';
 import type { SymbolGroesse, Variant } from '@/components/ui/buttonStile';
 import { completeAppointment, fetchAppointment } from './api';
@@ -31,6 +32,7 @@ export function TerminAbschliessenKnopf({
   groesse = 'normal',
   onAbgeschlossen,
   onFehler,
+  text,
   className = '',
 }: {
   appointmentId: string;
@@ -50,6 +52,12 @@ export function TerminAbschliessenKnopf({
   groesse?: SymbolGroesse;
   onAbgeschlossen?: () => void;
   onFehler?: (meldung: string) => void;
+  /**
+   * Als Knopf mit Haken und Wort statt als Symbol (BEF-055): im Terminfenster,
+   * wo der Abschluss ohne Dokumentation „Nur Termin abschließen“ heißt bzw.
+   * für Rollen ohne Doku-Recht „Termin abschließen“.
+   */
+  text?: string;
   className?: string;
 }) {
   const queryClient = useQueryClient();
@@ -76,6 +84,26 @@ export function TerminAbschliessenKnopf({
       );
     },
   });
+
+  if (text) {
+    return (
+      <Button
+        type="button"
+        variant={variant === 'primary' ? 'primary' : 'secondary'}
+        groesse="kompakt"
+        disabled={mutation.isPending}
+        aria-busy={mutation.isPending || undefined}
+        className={className}
+        onClick={() => {
+          if (mutation.isPending) return;
+          mutation.mutate();
+        }}
+      >
+        <HakenSymbol />
+        {mutation.isPending ? 'Wird abgeschlossen …' : text}
+      </Button>
+    );
+  }
 
   return (
     <Symbolknopf

@@ -342,6 +342,28 @@ describe('TreatmentNoteSection: Gewichtung der Knöpfe (DOK-14)', () => {
     expect(await screen.findByRole('link', { name: 'Doku schreiben' })).toHaveClass('bg-accent');
   });
 
+  it('bietet am offenen Hausbesuch kein „Finalisieren“ an, sondern verweist auf den Abschluss (BEF-055)', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    rendern(['therapist'], { appointment_type: 'home_visit', location_id: null });
+
+    expect(await screen.findByTestId('eintragstext')).toHaveTextContent(INHALT);
+    expect(screen.queryByRole('button', { name: 'Finalisieren' })).toBeNull();
+    expect(
+      screen.getByText(/Festgeschrieben wird über „Doku“ – oder oben über „Niemand öffnet\?“/),
+    ).toBeInTheDocument();
+  });
+
+  it('bietet „Finalisieren“ am abgeschlossenen Hausbesuch wie sonst an', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    rendern(['therapist'], {
+      appointment_type: 'home_visit',
+      location_id: null,
+      status: 'completed',
+    });
+
+    expect(await screen.findByRole('button', { name: 'Finalisieren' })).toBeInTheDocument();
+  });
+
   it('zeigt „Finalisieren“ am offenen Termin sekundär', async () => {
     fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
     rendern(['therapist']);

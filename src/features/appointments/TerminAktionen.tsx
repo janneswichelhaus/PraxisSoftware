@@ -7,6 +7,8 @@ import { DetailList, DetailRow } from '@/components/ui/DetailList';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { TerminAbschliessenKnopf } from './TerminAbschliessen';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { TerminMetazeile, TerminZeilen, Zeile } from './TerminKompakt';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { MitteilungVermerken } from './MitteilungVermerken';
@@ -979,6 +981,88 @@ function TerminAktionen({
         </Rueckmeldung>
       ) : null}
 
+      {/* Der Abschluss am offenen Termin steht vor Dokumentation und
+          Detailzeilen (BEF-055, Entscheidung Jannes 2026-10-09): ein
+          Hauptknopf je Ansicht. Wer dokumentiert, schließt über „Doku“ ab -
+          dort wird festgeschrieben, und der Termin gilt damit als
+          durchgeführt. Am Hausbesuch stehen „Niemand öffnet?“ und „Ohne
+          Behandlung“ daneben; der Abschluss ohne Dokumentation (ANN-005)
+          heißt „Nur Termin abschließen“ und liegt eingeklappt darunter.
+          Rollen ohne Doku-Recht haben „Termin abschließen“ als Hauptknopf,
+          mit seiner Folge. */}
+      {darfAendern && !istEreignis ? (
+        <div role="group" aria-label="Abschluss" className="mt-4 flex flex-col items-start gap-3">
+          {darfDokumentieren ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <ButtonLink
+                to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
+                groesse="kompakt"
+              >
+                Doku <span className="sr-only">schreiben</span>
+              </ButtonLink>
+              {istHausbesuch ? (
+                <>
+                  <HomeVisitFlow appointment={appointment} melden={melden} />
+                  <ButtonLink
+                    to={mitRueckweg(
+                      `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
+                      eingehend,
+                    )}
+                    variant="quiet"
+                    groesse="kompakt"
+                  >
+                    Ohne Behandlung
+                  </ButtonLink>
+                </>
+              ) : null}
+            </div>
+          ) : (
+            <div className="flex flex-wrap items-center gap-2">
+              <TerminAbschliessenKnopf
+                appointmentId={appointment.id}
+                stand={appointment.updated_at}
+                variant="primary"
+                text="Termin abschließen"
+                onAbgeschlossen={() => melden('Termin abgeschlossen.')}
+                onFehler={setAbschlussFehler}
+              />
+              {istHausbesuch ? <HomeVisitFlow appointment={appointment} melden={melden} /> : null}
+              <p className="text-ink-muted basis-full text-sm">
+                Der Termin gilt damit als durchgeführt.
+              </p>
+            </div>
+          )}
+
+          {istHausbesuch ? null : (
+            <NichtAngetroffenAktion appointment={appointment} melden={melden} />
+          )}
+
+          {darfDokumentieren ? (
+            <details className="group">
+              <summary className={`${aufklappKopfKlassen} text-ink text-sm`}>
+                <Aufklappzeichen />
+                Nur Termin abschließen
+              </summary>
+              <div className="flex flex-col items-start gap-2 pb-1 pl-6">
+                <p className="text-ink-muted max-w-prose text-sm">
+                  Schließt den Termin ab, ohne zu dokumentieren. Die Doku bleibt offen.
+                </p>
+                <TerminAbschliessenKnopf
+                  appointmentId={appointment.id}
+                  stand={appointment.updated_at}
+                  variant="secondary"
+                  text="Nur Termin abschließen"
+                  onAbgeschlossen={() => melden('Termin abgeschlossen. Doku offen.')}
+                  onFehler={setAbschlussFehler}
+                />
+              </div>
+            </details>
+          ) : null}
+
+          {abschlussFehler ? <Statusmeldung ton="fehler">{abschlussFehler}</Statusmeldung> : null}
+        </div>
+      ) : null}
+
       {/* Die Dokumentation dieses Termins, wie bisher auf der Terminseite:
           lesen, finalisieren, Nachtrag und Korrektur (DOK-001, ADR-016).
           Klinische Inhalte kommen über einen eigenen, protokollierten
@@ -1048,62 +1132,6 @@ function TerminAktionen({
       {/* Die Aktionen als Auswahl untereinander: Jede ist ein Knopf, der ihre
           Rückfrage oder ihr Formular öffnet. */}
       <div role="group" aria-label="Aktionen" className="mt-4 flex flex-col items-start gap-3">
-        {/* Haken und „Doku": abschließen ohne Dokumentation (ANN-005,
-            Abschnitt 6a) - für alle, die Termine verwalten, wie bisher auf der
-            Terminseite. Im Panel stehen beide nur am eigenen Termin. */}
-        {darfAendern && !istEreignis ? (
-          <div className="flex flex-wrap items-center gap-2">
-            <TerminAbschliessenKnopf
-              appointmentId={appointment.id}
-              stand={appointment.updated_at}
-              variant="primary"
-              onAbgeschlossen={() =>
-                melden(
-                  darfDokumentieren ? 'Termin abgeschlossen. Doku offen.' : 'Termin abgeschlossen.',
-                )
-              }
-              onFehler={setAbschlussFehler}
-            />
-            {/* „Doku" öffnet die Schreibseite; abschließen und dokumentieren
-                sind getrennt (Abschnitt 6a). */}
-            {darfDokumentieren ? (
-              <ButtonLink
-                to={mitRueckweg(`/termine/${appointment.id}/abschluss`, eingehend)}
-                groesse="kompakt"
-              >
-                Doku <span className="sr-only">schreiben</span>
-              </ButtonLink>
-            ) : null}
-            {abschlussFehler ? (
-              <Statusmeldung ton="fehler" className="basis-full">
-                {abschlussFehler}
-              </Statusmeldung>
-            ) : null}
-          </div>
-        ) : null}
-
-        {darfAendern && !istEreignis ? (
-          istHausbesuch ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <HomeVisitFlow appointment={appointment} melden={melden} />
-              {darfDokumentieren ? (
-                <ButtonLink
-                  to={mitRueckweg(
-                    `/termine/${appointment.id}/abschluss?ohne-behandlung=1`,
-                    eingehend,
-                  )}
-                  variant="quiet"
-                  groesse="kompakt"
-                >
-                  Ohne Behandlung
-                </ButtonLink>
-              ) : null}
-            </div>
-          ) : (
-            <NichtAngetroffenAktion appointment={appointment} melden={melden} />
-          )
-        ) : null}
-
         {darfAendern ? (
           <div className="flex flex-wrap gap-3">
             {/* Zwei Wege an der Fehlzeit, und der Unterschied steht in der
