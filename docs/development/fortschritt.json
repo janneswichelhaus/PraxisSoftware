@@ -1,5 +1,5 @@
 {
-  "stand": "2026-10-09",
+  "stand": "2026-10-10",
   "ziel": {
     "meilenstein": "M5",
     "name": "Eröffnung — erster Behandlungstag mit der Software",
@@ -465,6 +465,15 @@
           "fertig_am": "2026-09-30",
           "nachweis": "UX-005a bis UX-005i, Branch `claude/sleepy-fermi-9ykp3k`",
           "vermerk": "Sichtung: Praxisverwaltung Schritt 9"
+        },
+        {
+          "id": "ux-epic-006",
+          "name": "UX-EPIC-006 Ein Funkloch kostet keinen Text und sagt, was los ist (BEF-046, BEF-047 Teil 2, BEF-070)",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "UX-006a bis UX-006c, Branch `claude/clever-clarke-m3slaf`, Zweitreview",
+          "vermerk": "Sichtung: Rahmen Schritte 13 bis 15"
         },
         {
           "id": "prx-epic-003",

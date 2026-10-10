@@ -2,6 +2,7 @@ import { createRoot } from 'react-dom/client';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { AppShell } from '@/app/AppShell';
+import { NachladefehlerContext } from '@/app/nachladefehler';
 import { VorschauProvider } from '@/features/preview/VorschauProvider';
 import { MyDayPage } from '@/features/today/MyDayPage';
 import type { DayPlanEntry } from '@/features/today/api';
@@ -33,7 +34,8 @@ import '@/index.css';
  * `?ansicht=morgen` zeigt denselben Tag als morgigen über `?tag=` (UBK-003,
  * ANN-234). `?ansicht=abend` zeigt den Tag, wenn alles erledigt ist, `?ansicht=doku`
  * mit einer noch offenen Dokumentation, `?ansicht=akte` die Stammdaten einer
- * Person mit dem Schalter für die Liege.
+ * Person mit dem Schalter für die Liege, `?ansicht=nachladefehler` die Zeile
+ * nach einem gescheiterten Nachladen des Profils (BEF-046).
  */
 const ZONE = 'Europe/Berlin';
 const STAFF = '55555555-5555-4555-8555-000000000002';
@@ -365,15 +367,28 @@ createRoot(document.getElementById('wurzel')!).render(
             : '/',
       ]}
     >
-      <VorschauProvider>
-        <AppShell user={nutzer} onSignOut={() => undefined}>
-          {ansicht === 'akte' ? (
-            <Stammdaten patient={patient} user={nutzer} />
-          ) : (
-            <MyDayPage user={nutzer} />
-          )}
-        </AppShell>
-      </VorschauProvider>
+      {/* `?ansicht=nachladefehler`: das Profil ließ sich nicht aktualisieren,
+          die Übersicht bleibt stehen (BEF-046). */}
+      <NachladefehlerContext.Provider
+        value={
+          ansicht === 'nachladefehler'
+            ? {
+                satz: 'Ihr Profil ließ sich gerade nicht aktualisieren.',
+                erneut: () => new Promise((fertig) => setTimeout(fertig, 800)),
+              }
+            : null
+        }
+      >
+        <VorschauProvider>
+          <AppShell user={nutzer} onSignOut={() => undefined}>
+            {ansicht === 'akte' ? (
+              <Stammdaten patient={patient} user={nutzer} />
+            ) : (
+              <MyDayPage user={nutzer} />
+            )}
+          </AppShell>
+        </VorschauProvider>
+      </NachladefehlerContext.Provider>
     </MemoryRouter>
   </QueryClientProvider>,
 );

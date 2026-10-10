@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, Navigate, Route, Routes, useLocation, useSearchParams } from 'react-router-dom';
+import { Profilhinweis } from '@/app/Profilhinweis';
 import { Button } from '@/components/ui/Button';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
@@ -97,6 +98,9 @@ export function PlattformApp({
   return (
     <div className="plattform-schrift bg-canvas flex min-h-dvh flex-col">
       <Kopf praxis={praxis} bereiche={lesbar} />
+      {/* Gescheitertes Nachladen des Zugangs (BEF-046): Die Plattform bleibt
+          stehen, die Zeile sagt es. */}
+      <Profilhinweis />
       <HandelnFuer bereiche={lesbar} />
       <main
         id="inhalt"

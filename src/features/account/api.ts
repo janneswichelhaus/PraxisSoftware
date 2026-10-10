@@ -1,6 +1,7 @@
 import { getSupabase } from '@/lib/supabase';
 import { protokolliereFehler } from '@/lib/protokoll';
 import { VerbindungError, WIEDERHERSTELLUNG_PFAD } from '@/features/auth/linkEinloesen';
+import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 
 /**
  * Das eigene Konto (STAFF-004).
@@ -124,7 +125,9 @@ export async function beendeAlleSitzungen(): Promise<void> {
   // Vor dem Vorgang, weil danach kein `auth.uid()` mehr existiert - siehe
   // Dateikopf und ANN-044. Scheitert der Vermerk, wird trotzdem abgemeldet.
   await meldeVersuch('sessions_ended');
-  const { error } = await getSupabase().auth.signOut({ scope: 'global' });
+  // Selbst ausgelöst: Die Anmeldemaske dieses Geräts sagt danach nicht
+  // „Ihre Sitzung wurde beendet" (BEF-047); die anderen Geräte sagen es.
+  const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'global' }));
   if (error) throw new Error('Die Sitzungen konnten nicht beendet werden.');
 }
 

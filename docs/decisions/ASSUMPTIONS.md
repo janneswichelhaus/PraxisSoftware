@@ -3851,3 +3851,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 10.10.202
 **Änderungspfad.** Andere oder weitere Dauern: `LUECKEN_DAUERN` · Aufwand `klein`. Die Dauer aus der Verordnung: siehe ANN-239 · Aufwand `klein`.
 
 **Abnahme (Jannes, 2026-10-10).** Bestätigt. Sichtbar wird es in der Sichtung Kartendienst (Lückenfinder).
+
+### ANN-318 — Auch die Plattform bleibt bei einem gescheiterten Nachladen des Zugangs stehen
+
+Technik · offen · 2026-10-10 · — · — · Wiedervorlage: Jannes (Sichtung Rahmen, Schritt 13)
+
+**Annahme.** Wie das Praxisprofil nach BEF-046: Ist der Plattformkontext (`platform_context`) geladen und scheitert nur ein Nachladen, etwa nach dem Wieder-online, bleibt die Plattform stehen. Oben steht „Ihr Zugang ließ sich gerade nicht aktualisieren. Eingaben bleiben erhalten.“ mit „Erneut versuchen“. Nur ohne geladenen Zugang ersetzt die Seite „Zugang nicht geladen“.
+
+**Begründung.** Jannes' Entscheidung zu BEF-046 (2026-10-09) nennt das Praxisprofil; die Plattform hatte denselben Fehler, und eine Nachricht an die Praxis wäre im Funkloch genauso verloren gegangen (§13). Ein Recht erweitert das nicht: Ein gesperrter oder entzogener Zugang kommt aus `platform_context` als Zeile mit Zustand zurück, nicht als Fehler, und jede Plattformprojektion prüft den Zugang bei jeder Anfrage selbst (ADR-023 Punkte 18 und 19). Bis zum nächsten gelungenen Laden zeigt die Plattform höchstens schon Geladenes.
+
+**Anker.** `OhneProfil` in `src/app/App.tsx` (`data === undefined`, `ZUGANG_NICHT_AKTUALISIERT`). Geprüft in `App.nachladen.test.tsx`.
+
+**Änderungspfad.** Die Plattform soll wie bisher bei jedem Fehler ersetzen: die Bedingung in `OhneProfil` auf `isError` zurückstellen · Aufwand `klein`.

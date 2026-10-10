@@ -1,3 +1,184 @@
+### BEF-046 — Ein gescheitertes Nachladen des Profils ersetzt die laufende Anwendung
+
+|         |                                                                                                                                                                                                                                                                    |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                         |
+| Bereich | Rahmen aller Seiten hinter der Anmeldung (`App.tsx`): Vollseite „Zugang nicht vollständig eingerichtet“                                                                                                                                                            |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390/820/1440 px, Gegenprüfung; Review-IDs AUTH-02, ZST-01, dazu NAV-12                                                                                                                                           |
+| Status  | erledigt 2026-10-10 (UX-EPIC-006, UX-006b): Nachladefehler lässt die Anwendung stehen, Zeile im Rahmen mit „Erneut versuchen“; Erstladen als Vollseite mit „Erneut versuchen“; ebenso der Plattformzugang |
+| Berührt | `src/app/App.tsx` (Z. 101–121), `src/features/session/useCurrentUser.ts` (`staleTime`, `retry: false`), `src/features/scheduling/SchedulingPage.tsx` (Z. 82); §13; ANN-021, ANN-044, ANN-046; Oberflächen-Checkliste Punkt 5; ADR-013 Punkt 9 (Sitzungen); BEF-070 |
+
+**Beobachtung.** `App.tsx:104` ersetzt die Anwendung bei `isError || !user`
+durch eine Vollseite, deren einziger Knopf „Abmelden“ ist. `isError` wird aber
+auch wahr, wenn das Profil längst geladen ist und nur ein **Nachladen**
+scheitert. Nachgeladen wird nach jedem Wieder-online, sobald das Profil älter
+als fünf Minuten ist, und nach „Raster speichern“; die Anwendung selbst
+wiederholt die Abfrage nicht (`retry: false`), die Datenbankbibliothek versucht
+es nur kurz dreimal. Im Browser zweimal nachgestellt (therapist und office,
+390 px): Nach dem Wieder-online scheitert die Profilabfrage, nach rund 7,6 s
+steht „Zugang nicht vollständig eingerichtet – Profil konnte nicht geladen
+werden.“ an Stelle der Übersicht. Die vorgehaltene Tagesliste (ANN-021) und ein
+halb ausgefülltes Formular sind weg; der Textverlustschutz greift nicht, weil
+der ganze Baum abgebaut wird. Erholt sich das Netz binnen rund 7 s, bleibt alles
+stehen. Scheitert die Profilabfrage schon beim Start (Serverfehler, keine
+Verbindung), erscheint dieselbe Seite mit derselben falschen Ursache (Review
+NAV-12); „Abmelden“ löscht dort die Sitzung, und ohne Netz gibt es keine neue
+Anmeldung.
+
+Der Kommentar über der Sperre beruft sich auf §13. Dort ist das Blockieren aber
+auf schreibende und offenlegende Vorgänge bezogen, und derselbe Abschnitt
+verlangt, dass ein Fehler niemals unbemerkt Dokumentation verliert; Checkliste
+Punkt 5 verlangt den Schutz ungespeicherter Eingaben „auch bei …
+Sitzungsverlust“.
+
+**Frage an Jannes.** Ist ein Profil, das schon geladen war und nur beim
+Aktualisieren nicht erreichbar ist, ein unsicherer Zustand, der die ganze
+Anwendung sperren muss — oder darf sie weiterlaufen, weil die Datenbank jede
+Anfrage ohnehin selbst prüft?
+
+**Optionen.**
+
+1. **Wie heute:** Jede gescheiterte Profilabfrage sperrt. Folge: Nach einem
+   Funkloch kann getippter Text verloren gehen; die Seite nennt eine falsche
+   Ursache, und ihr einziger Knopf meldet im Funkloch endgültig ab.
+2. **Sperren nur ohne geladenes Profil:** Beim Erstladen eine Vollseite „Die
+   Anwendung konnte nicht geladen werden“ mit „Erneut versuchen“ als Hauptknopf
+   und „Abmelden“ daneben; „kein Profil“ und „Zugang gesperrt“ ersetzen weiter
+   sofort. Scheitert nur das Nachladen, bleibt die Anwendung stehen, oben eine
+   Statusmeldung „Ihr Profil ließ sich gerade nicht aktualisieren. Eingaben
+   bleiben erhalten.“ mit „Erneut versuchen“. Folge: Bis zum nächsten
+   erfolgreichen Laden zeigt die Oberfläche womöglich einen älteren Rollenstand;
+   Rechte und Sperre prüft die Datenbank weiter bei jeder Anfrage (ADR-004;
+   ANN-044: Die Sperre wirkt sofort, weil jede Anfrage `is_active` liest).
+3. **Wie 2, zusätzlich Speichern anhalten,** bis das Profil wieder geladen ist.
+   Folge: Der Text bleibt im Feld, gespeichert wird erst danach — eine zweite
+   Sperre neben der RLS, die kein Recht schützt, das der Server nicht schon
+   schützt.
+
+**Empfehlung.** Option 2. Was §13 blockieren will, prüft der Server bei jeder
+Anfrage selbst; ein älterer Profilstand in der Oberfläche erweitert kein Recht.
+Der stille Verlust getippter Dokumentation ist dagegen genau, was §13
+ausschließt. Ein Loop im kritischen Pfad (Sitzungen), zusammen mit festen Sätzen
+auf der Erstlade-Seite statt `error.message` und dem Profilweg aus BEF-070.
+Test: Ein Nachladefehler lässt `AuthenticatedRoutes` eingehängt; „Zugang
+gesperrt“ ersetzt weiter sofort.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Ist das Profil geladen, läuft die Anwendung bei einem gescheiterten Nachladen weiter, mit Statusmeldung und „Erneut versuchen“; nur das Erstladen zeigt eine Vollseite mit „Erneut versuchen“. „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort.
+
+*Erledigt 2026-10-10 (UX-006b):* `App.tsx` ersetzt nur noch ohne geladenes Profil; „Kein Profil“ und „Zugang gesperrt“ ersetzen weiter sofort. Die Zeile steht im Rahmen unter der Verbindungsanzeige (`src/app/Profilhinweis.tsx`, `nachladefehler.ts`), im Gerüst der Plattform unter dem Kopf (ANN-318). Die Erstlade-Seite heißt „Anwendung nicht geladen“ und zeigt einen festen Satz statt `error.message`. Tests: `App.nachladen.test.tsx`, `App.test.tsx`, `uebersicht.spec.ts` (375 und 1280 px).
+
+### BEF-047 — Die Anmeldemaske sagt nie, warum sie erscheint, und am Praxisrechner endet keine Sitzung von selbst
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                            |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                 |
+| Bereich | Anmeldung (jede Adresse ohne Sitzung); Sitzung auf allen Seiten, besonders am Praxisrechner                                                                                                                                                                                                                                                                                                |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Browser bei 390 und 1440 px, Gegenprüfung; Review-IDs AUTH-01, AUTH-03, ZST-23, AUTH-09                                                                                                                                                                                                                                                              |
+| Status  | erledigt 2026-10-10 (UX-EPIC-006, UX-006c): Teil 2 (Option 2) gebaut; die Höchstdauer entfällt nach Entscheidung |
+| Berührt | `src/features/auth/LoginPage.tsx` (Z. 134–138), `src/features/auth/SessionProvider.tsx` (Z. 74 ff., 85), `src/app/abmeldeschutz.ts` (Z. 23), `src/features/documentation/Textverlustschutz.tsx` (Z. 27–29), `src/lib/supabase.ts` (Z. 21), `supabase/config.toml` (kein Abschnitt `[auth.sessions]`); §3.4, §13; ANN-044, ANN-045; OPS-001; ADR-013 Punkt 9 (Authentifizierung, Sitzungen) |
+
+**Beobachtung.**
+
+- **Funkloch wie falsches Kennwort.** Die Anmeldeseite wertet jeden
+  zurückgegebenen Fehler als falsche Eingabe. Die Anmeldebibliothek wirft bei
+  Netzfehlern nicht, sie gibt einen eigenen Fehler zurück
+  (`AuthRetryableFetchError`); der vorgesehene Satz „derzeit nicht erreichbar“
+  erscheint deshalb nie. Im Browser mit abgebrochener Anfrage (390 px):
+  „Anmeldung nicht möglich. Bitte E-Mail-Adresse und Kennwort prüfen.“ —
+  wortgleich mit einem falschen Kennwort; ebenso bei „zu viele Versuche“ und bei
+  leeren Feldern.
+- **Fremdes Sitzungsende ohne Satz.** Endet die Sitzung von außen — Abmelden in
+  einem zweiten Tab, „Alle Sitzungen beenden“ an einem anderen Gerät, abgelehnte
+  Erneuerung —, zeigt die Seite dieselbe Anmeldemaske wie beim ersten Aufruf
+  (mit zwei Tabs nachgestellt, office, 1440 px). Ungespeicherte Eingaben sind
+  weg; der Abmeldeschutz lässt diesen Fall bewusst durch.
+- **Kein Ablauf.** Die Sitzung wird dauerhaft gespeichert und von einem offenen
+  Tab stündlich erneuert; eine Höchstdauer ist nicht eingestellt, Abmelden
+  bleibt Handarbeit (ANN-045). Der Code kennt die Lage („Auf dem Praxisrechner
+  bleibt schnell eine Sitzung stehen“, `KennwortNeuPage.tsx:55`) und behandelt
+  sie nur beim Einlösen eines Links. Nur an Code und Konfiguration belegt.
+
+**Frage an Jannes.** (1) Soll eine Sitzung nach einer Höchstdauer von selbst
+enden, auch bei offenem Tab? (2) Soll die Anmeldemaske sagen, warum sie
+erscheint?
+
+**Optionen.**
+
+1. **Wie heute.** Folge: Eine am Praxisrechner vergessene Sitzung bleibt über
+   Nacht und Tage offen; wer als Nächstes kommt, dokumentiert unter fremdem
+   Namen, und das Auditlog trägt die falsche Person. Im Funkloch zweifelt man am
+   richtigen Kennwort und fordert womöglich eine Rücksetzmail an.
+2. **Die Maske erklärt sich:** eigene Sätze für „Keine Verbindung zum
+   Anmeldedienst. Ihre Angaben wurden nicht geprüft.“, „Zu viele Versuche. Bitte
+   in einigen Minuten erneut versuchen.“ und nach einem Ende von außen „Ihre
+   Sitzung wurde beendet. Nicht gespeicherte Eingaben sind nicht erhalten.“ —
+   ohne Grund, damit nichts über eine Sperre verraten wird; unbekanntes Konto
+   und falsches Kennwort bleiben ununterscheidbar. Folge: Der Verlust wird
+   bemerkt; die offene Sitzung am Praxisrechner bleibt.
+3. **Wie 2, dazu eine Höchstdauer über den Anmeldedienst** (`timebox` in
+   `[auth.sessions]`), keine eigene Sitzungslogik (§3.4). Folge: jeden Morgen
+   eine neue Anmeldung, auch am Diensthandy. Das begrenzt eine vergessene
+   Sitzung auf einen Tag; gegen die Übergabe am selben Tag hilft weiter nur
+   Abmelden. Eine reine Inaktivitätsgrenze genügt nicht, weil ein offener Tab
+   sich selbst erneuert, und am Handy im Hintergrund würde sie tagsüber
+   abmelden. Ob der Tarif `timebox` bietet, klärt OPS-001; bietet er es nicht,
+   bleibt es bei 2.
+
+**Empfehlung.** Option 3 mit etwa 14 Stunden als Startwert — länger als ein
+Arbeitstag, kürzer als bis zum nächsten Morgen —, als Annahme registriert.
+Beides in einem Loop im kritischen Pfad: Eine Höchstdauer ohne erklärende Maske
+erzeugte genau das unerklärte Sitzungsende, das Option 2 behebt. Den Sonderfall
+„Seite startet ohne Netz mit abgelaufenem Zugriffstoken“ (dann erscheint die
+Maske, obwohl eine Sitzung gespeichert ist, `SessionProvider.tsx:85`) nimmt der
+Loop nur mit eigenem Zweitreview mit.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2: Die Anmeldeseite nennt die Ursache (keine Verbindung, zu viele Versuche, Sitzung von außen beendet); falsches Kennwort und unbekanntes Konto bleiben ununterscheidbar. Die Höchstdauer (Option 3) entfällt: Die vergessene Sitzung am Praxisrechner begrenzt seit SEC-EPIC-001 die Sitzungssperre nach ADR-025.
+
+*Erledigt 2026-10-10 (UX-006c):* Eigene Sätze für keine Verbindung, Störung des Dienstes (5xx) und zu viele Versuche (`src/features/auth/anmeldefehler.ts`); falsches Kennwort, unbekanntes und unbestätigtes Konto bleiben ein Satz; leere Felder gehen nicht zum Dienst. Ein Sitzungsende von außen meldet der `SessionProvider` (`endeVonAussen`), eigene Abmeldewege setzen einen Merker (`eigeneAbmeldung.ts`); die Maske sagt es ohne Grund. Die Sperrseite nutzt dieselbe Unterscheidung. Der Sonderfall „Start ohne Netz mit abgelaufenem Zugriffstoken“ bleibt außen vor.
+
+### BEF-070 — Unerwartete Serverantworten erscheinen als englischer Prüftext
+
+|         |                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Datum   | 2026-09-27                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| Bereich | Akte → Dateien und Fotos; Organisatorisches → Sicherheit → Aufbewahrung (Löschaufträge); Therapiebericht; Erhebung; Start der Anwendung (Profil)                                                                                                                                                                                                                                                                                  |
+| Quelle  | UX-Review Claude 2026-09-26/27: Code, Gegenprüfung (nicht im Browser ausgelöst); Review-ID WRT-20                                                                                                                                                                                                                                                                                                                                 |
+| Status  | erledigt 2026-10-10 (UX-EPIC-006, UX-006a): alle neun Wege über `antwort()`, je Modul ein Test mit verfälschter Antwort |
+| Berührt | `src/lib/antwort.ts`; `src/features/files/api.ts` (Z. 141, 230, 327), `src/features/files/patientenfotos.ts` (Z. 101, 140), `src/features/files/dateien.ts` (Z. 162), `src/features/therapy-reports/api.ts` (Z. 200, 225), `src/features/assessments/api.ts` (Z. 90), `src/features/session/useCurrentUser.ts` (Z. 63); R3-023; ADR-008; ADR-013 Punkt 9 (Löschpfad, Sitzungen); Oberflächen-Checkliste Punkt 6; BEF-010, BEF-046 |
+
+**Beobachtung.** Seit R3-023 gibt es `antwort(schema, data, satz)`: Passt eine
+Serverantwort nicht zum erwarteten Schema, wirft sie einen deutschen Satz statt
+des Prüffehlers, dessen Meldung englisches JSON ist
+(`[{"code":"invalid_type" …`). Benutzt wird sie nur in
+`features/appointments/api.ts`. Neun Wege prüfen die Antwort direkt, und ihre
+Seiten zeigen die Meldung wörtlich: Datei hinzufügen und öffnen, Löschauftrag,
+Foto öffnen und herausgeben, Therapiebericht anlegen und speichern, Erhebung
+speichern, Profil beim Start. Das tritt nur bei einer abweichenden Antwort auf —
+etwa nach einer Datenbankänderung, die eine Oberfläche nicht nachgezogen hat
+(das Muster aus BEF-010). Zwei der neun Stellen liegen im Löschpfad (ADR-008)
+und im Sitzungsprofil; die kleine Änderung ist damit eine kritische nach ADR-013
+Punkt 9.
+
+**Frage an Jannes.** Kein fachlicher Inhalt ist offen, nur der Weg: eigener
+kleiner Loop oder je Spur, wenn ein Loop das Modul ohnehin anfasst?
+
+**Optionen.**
+
+1. **Je Spur mitnehmen,** wenn ein Loop Dateien, Bericht oder Erhebung anfasst.
+   Folge: Bis dahin bleibt Entwicklertext im Bedienbildschirm möglich; drei
+   Zweitreviews statt einem.
+2. **Ein kleiner Loop für alle neun Wege** im kritischen Pfad, je Modul ein Test
+   mit verfälschter Antwort (Muster `appointments/api.antwort.test.ts`); der
+   Profilweg gemeinsam mit BEF-046. Folge: ein Zweitreview, danach überall ein
+   deutscher Satz, der sagt, was zu tun ist.
+
+**Empfehlung.** Option 2 — die Änderung ist klein, und der Löschpfad soll
+ohnehin nicht nebenbei angefasst werden.
+
+**Entscheidung (Jannes, 2026-10-09).** Option 2: ein kleiner Loop für alle neun Wege, gemeinsam mit BEF-046.
+
+*Erledigt 2026-10-10 (UX-006a):* Dateien, Fotos, Löschauftrag, Therapiebericht, Erhebung und Profil prüfen ihre Antwort über `antwort()`; die Lesewege derselben Module gleich mit. Tests: `files/api.antwort.test.ts`, `therapy-reports/api.antwort.test.ts`, `assessments/api.antwort.test.ts`, `session/useCurrentUser.antwort.test.tsx`.
+
 
 
 ### BEF-138 — Abruf freigegebener Dokumente über die Plattform nicht protokollieren

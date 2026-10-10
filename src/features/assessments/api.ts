@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import type { Antworten } from './antworten';
 
@@ -48,7 +49,11 @@ export async function fetchErhebungen(patientId: string): Promise<Erhebung[]> {
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Fragebögen konnten nicht geladen werden.');
-  return z.array(erhebungSchema).parse(data) as Erhebung[];
+  return antwort(
+    z.array(erhebungSchema),
+    data,
+    'Die Fragebögen konnten nicht geladen werden.',
+  ) as Erhebung[];
 }
 
 /** Verständliche Meldungen für die Abweisungen des Servers — ohne interne Details. */
@@ -89,7 +94,7 @@ export async function erhebungSpeichern(eingabe: ErhebungSpeichern): Promise<str
   })) as { data: unknown; error: { message?: string } | null };
 
   if (error) throw new Error(meldungFuer(error.message ?? ''));
-  return z.string().parse(data);
+  return antwort(z.string(), data, 'Der Bogen konnte nicht gespeichert werden.');
 }
 
 export async function erhebungAbschliessen(erhebungId: string): Promise<void> {

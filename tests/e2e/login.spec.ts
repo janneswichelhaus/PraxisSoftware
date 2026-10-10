@@ -126,6 +126,55 @@ test.describe('Kennwort vergessen', () => {
     await expect(page.getByText(/unbekannt|nicht gefunden|existiert/i)).toHaveCount(0);
   });
 
+  test('sagt im Funkloch „keine Verbindung" statt „Kennwort pruefen" (BEF-047)', async ({
+    page,
+  }) => {
+    // Die Anfrage kommt nicht an: Der Anmeldedienst gibt dann einen eigenen
+    // Fehler zurueck, statt zu werfen. Bis UX-006c stand hier derselbe Satz
+    // wie bei einem falschen Kennwort.
+    await page.route('**/auth/v1/token**', (route) => route.abort('failed'));
+    for (const breite of [375, 1280]) {
+      await page.setViewportSize({ width: breite, height: 780 });
+      await page.goto('/');
+      await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
+      await page.getByLabel('Kennwort', { exact: true }).fill('LokalerTestzugang!2026');
+      await page.getByRole('button', { name: 'Anmelden' }).click();
+
+      await expect(page.getByRole('alert')).toHaveText(
+        'Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.',
+      );
+      await expect(page.getByText(/Kennwort prüfen/)).toHaveCount(0);
+      const ueberbreit = await page.evaluate(
+        () => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1,
+      );
+      expect(ueberbreit).toBe(false);
+    }
+  });
+
+  test('nennt zu viele Versuche und verraet bei 400 nichts (BEF-047)', async ({ page }) => {
+    let antwort = { status: 429, code: 'over_request_rate_limit' };
+    await page.route('**/auth/v1/token**', (route) =>
+      route.fulfill({
+        status: antwort.status,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: antwort.status, error_code: antwort.code, msg: 'x' }),
+      }),
+    );
+    await page.goto('/');
+    await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
+    await page.getByLabel('Kennwort', { exact: true }).fill('falsch-falsch-falsch');
+    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Zu viele Versuche. Bitte in einigen Minuten erneut versuchen.',
+    );
+
+    antwort = { status: 400, code: 'invalid_credentials' };
+    await page.getByRole('button', { name: 'Anmelden' }).click();
+    await expect(page.getByRole('alert')).toHaveText(
+      'Anmeldung nicht möglich. Bitte E-Mail-Adresse und Kennwort prüfen.',
+    );
+  });
+
   test('laeuft bei 375 px ohne horizontales Scrollen', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 780 });
     await page.goto('/');

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
+import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 
 /**
  * Die Plattform spricht nur Plattformprojektionen an (ADR-023 Punkte 19, 26).
@@ -54,7 +55,8 @@ export const BEREICHSNAME: Record<Bereich, string> = {
  * Protokoll kennt für die Plattform nur, was Punkt 24 nennt.
  */
 export async function ueberallAbmelden(): Promise<void> {
-  const { error } = await getSupabase().auth.signOut({ scope: 'global' });
+  // Selbst ausgelöst (BEF-047): kein „Ihre Sitzung wurde beendet" auf diesem Gerät.
+  const { error } = await meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'global' }));
   if (error) throw new Error('Die Abmeldung auf allen Geräten ist nicht gelungen.');
 }
 
