@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
 import { formatDate } from '@/lib/datum';
 import { getSupabase } from '@/lib/supabase';
 
@@ -194,7 +195,11 @@ export async function fetchBerichteDerAkte(patientId: string): Promise<Berichtsz
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
   if (error) throw new Error('Die Therapieberichte konnten nicht geladen werden.');
-  return z.array(berichtszeileSchema).parse(data ?? []);
+  return antwort(
+    z.array(berichtszeileSchema),
+    data ?? [],
+    'Die Therapieberichte konnten nicht geladen werden.',
+  );
 }
 
 export async function fetchBericht(berichtId: string): Promise<Bericht | null> {
@@ -202,7 +207,11 @@ export async function fetchBericht(berichtId: string): Promise<Bericht | null> {
     p_report_id: berichtId,
   })) as { data: unknown; error: unknown };
   if (error) throw new Error('Der Therapiebericht konnte nicht geladen werden.');
-  const zeilen = z.array(berichtSchema).parse(data ?? []);
+  const zeilen = antwort(
+    z.array(berichtSchema),
+    data ?? [],
+    'Der Therapiebericht konnte nicht geladen werden.',
+  );
   return zeilen[0] ?? null;
 }
 
@@ -211,7 +220,11 @@ export async function fetchBerichtQuellen(berichtId: string): Promise<Quellenzei
     p_report_id: berichtId,
   })) as { data: unknown; error: unknown };
   if (error) throw new Error('Die Einträge der Akte konnten nicht geladen werden.');
-  return z.array(quellenzeileSchema).parse(data ?? []);
+  return antwort(
+    z.array(quellenzeileSchema),
+    data ?? [],
+    'Die Einträge der Akte konnten nicht geladen werden.',
+  );
 }
 
 export async function berichtAnlegen(verordnungId: string): Promise<string> {
@@ -219,7 +232,7 @@ export async function berichtAnlegen(verordnungId: string): Promise<string> {
     p_treatment_basis_id: verordnungId,
   })) as { data: unknown; error: { message?: string } | null };
   if (error) throw meldungFuer(error, 'Der Therapiebericht konnte nicht angelegt werden.');
-  return z.string().parse(data);
+  return antwort(z.string(), data, 'Der Therapiebericht konnte nicht angelegt werden.');
 }
 
 /** Grenzen des Korrekturgrunds, wie im Server (ABN-016). */
@@ -242,7 +255,7 @@ export async function berichtKorrigieren(
     p_change_reason: grund.trim(),
   })) as { data: unknown; error: { message?: string } | null };
   if (error) throw meldungFuer(error, 'Die Korrektur konnte nicht angelegt werden.');
-  return z.string().parse(data);
+  return antwort(z.string(), data, 'Die Korrektur konnte nicht angelegt werden.');
 }
 
 export interface BerichtEingabe {
@@ -267,7 +280,7 @@ export async function berichtSpeichern(
     p_expected_updated_at: erwarteterStand,
   })) as { data: unknown; error: { message?: string } | null };
   if (error) throw meldungFuer(error, 'Der Bericht konnte nicht gespeichert werden.');
-  return z.string().parse(data);
+  return antwort(z.string(), data, 'Der Bericht konnte nicht gespeichert werden.');
 }
 
 export async function berichtAbschliessen(

@@ -1,4 +1,5 @@
 import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { roleKeySchema, userProfileSchema, type CurrentUser, type RoleKey } from './types';
 
@@ -60,7 +61,11 @@ async function fetchCurrentUser(userId: string): Promise<CurrentUser> {
     throw new KeinProfilError();
   }
 
-  const profile = userProfileSchema.parse(profileResult.data);
+  const profile = antwort(
+    userProfileSchema,
+    profileResult.data,
+    'Profil konnte nicht geladen werden.',
+  );
   if (!profile.is_active) throw new ZugangGesperrtError();
 
   const roles: RoleKey[] = [];

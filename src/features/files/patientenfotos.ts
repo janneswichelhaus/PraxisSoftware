@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { antwort } from '@/lib/antwort';
 import { getSupabase } from '@/lib/supabase';
 import { ladeDateiHoch } from './api';
 import { dokumentartLabels } from './dokumentarten';
@@ -63,7 +64,7 @@ export async function fetchPatientenfotos(patientId: string): Promise<Patientenf
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Die Fotos konnten nicht geladen werden.');
-  return z.array(fotoSchema).parse(data ?? []);
+  return antwort(z.array(fotoSchema), data ?? [], 'Die Fotos konnten nicht geladen werden.');
 }
 
 /**
@@ -127,7 +128,11 @@ export async function ladePatientenfoto(fileId: string): Promise<Blob> {
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Das Foto konnte nicht geöffnet werden. Ist es noch freigegeben?');
-  const verweis = z.array(verweisSchema).parse(data ?? [])[0];
+  const verweis = antwort(
+    z.array(verweisSchema),
+    data ?? [],
+    'Das Foto konnte nicht geöffnet werden.',
+  )[0];
   if (!verweis) throw new Error('Das Foto konnte nicht geöffnet werden.');
 
   // Bewusst ohne `download`: kein Anhang, kein Downloadname (Punkt 40).
@@ -139,9 +144,9 @@ export async function ladePatientenfoto(fileId: string): Promise<Blob> {
     throw new Error('Das Foto ist in der Ablage nicht auffindbar.');
   }
 
-  const antwort = await fetch(signiert.signedUrl, { cache: 'no-store' });
-  if (!antwort.ok) throw new Error('Das Foto konnte nicht geladen werden.');
-  return antwort.blob();
+  const abruf = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!abruf.ok) throw new Error('Das Foto konnte nicht geladen werden.');
+  return abruf.blob();
 }
 
 const herausgabeFotoSchema = z.object({
@@ -163,7 +168,11 @@ export async function fetchFotosZurHerausgabe(patientId: string): Promise<Heraus
     p_patient_id: patientId,
   })) as { data: unknown; error: unknown };
   if (error) throw new Error('Die Fotos konnten nicht geladen werden.');
-  return z.array(herausgabeFotoSchema).parse(data ?? []);
+  return antwort(
+    z.array(herausgabeFotoSchema),
+    data ?? [],
+    'Die Fotos konnten nicht geladen werden.',
+  );
 }
 
 const herausgabeSchema = z.object({
@@ -188,7 +197,11 @@ export async function gibPatientenfotoHeraus(
   })) as { data: unknown; error: unknown };
 
   if (error) throw new Error('Das Foto konnte nicht herausgegeben werden. Fehlt die Berechtigung?');
-  const freigabe = z.array(herausgabeSchema).parse(data ?? [])[0];
+  const freigabe = antwort(
+    z.array(herausgabeSchema),
+    data ?? [],
+    'Das Foto konnte nicht herausgegeben werden.',
+  )[0];
   if (!freigabe) throw new Error('Das Foto konnte nicht herausgegeben werden.');
 
   const { data: signiert, error: signaturFehler } = await getSupabase()
@@ -199,9 +212,9 @@ export async function gibPatientenfotoHeraus(
     throw new Error('Das Foto ist in der Ablage nicht auffindbar.');
   }
 
-  const antwort = await fetch(signiert.signedUrl, { cache: 'no-store' });
-  if (!antwort.ok) throw new Error('Das Foto konnte nicht geladen werden.');
-  return { name: freigabe.display_name, bild: await antwort.blob() };
+  const abruf = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!abruf.ok) throw new Error('Das Foto konnte nicht geladen werden.');
+  return { name: freigabe.display_name, bild: await abruf.blob() };
 }
 
 /** Ein Dateiname aus dem Anzeigenamen: nur Buchstaben, Ziffern und wenige Zeichen. */
