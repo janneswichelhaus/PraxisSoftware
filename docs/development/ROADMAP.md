@@ -807,6 +807,7 @@ stehen in [`ROADMAP-CHRONIK.md`](ROADMAP-CHRONIK.md).
 | C | G12 ADR-019 Kartendienst (Fassung 2, angenommen 2026-09-13) | gesichtet | — | — | — | — |
 | C | G19 Dokumentationsgate erweitern | fertig | 2026-09-22 | `7b95c22`, PR #102 | — | — |
 | C | G20 SEC-EPIC-001 Sitzungssperre (ADR-025) | fertig | 2026-10-06 | SEC-001 bis SEC-003, Migration 20261012100000_sec_001_sitzungssperre.sql, supabase/tests/sitzungssperre.test.ts, src/features/auth/sitzungssperre/, Prüfseite tests/e2e/fixtures/sperre.html | — | Auftrag Jannes (06.10.2026: nach 30/60 min automatisch sperren); W1 (a), W2 (a); W3 entschieden mit ADR-025 Fassung 2 (2026-10-10), Passkey und App-PIN in G22; Sichtung: Betriebsreife Schritt 15 |
+| C | G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2) | fertig | 2026-10-10 | SEC-004 bis SEC-009, Migrationen 20261025100000_sec_004_app_pin.sql und 20261025120000_sec_009_passkey_freigabe.sql, supabase/tests/app-pin.test.ts, src/features/auth/passkey.ts, src/features/auth/einrichtung/, Zweitreview | — | Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1 |
 | E | D → ADR-018 Terminzustände | gesichtet | — | — | — | — |
 | E | E10 Schreibrecht Mitarbeiterdaten | gesichtet | — | — | — | — |
 | E | E8 → ADR-017 Dateiablage | gesichtet | — | — | — | — |

@@ -1095,7 +1095,10 @@
           "id": "g22",
           "name": "G22 SEC-EPIC-002 Anmeldung ohne Kennwort (ADR-025 Fassung 2)",
           "gewicht": 2,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-10",
+          "nachweis": "SEC-004 bis SEC-009, Migrationen 20261025100000_sec_004_app_pin.sql und 20261025120000_sec_009_passkey_freigabe.sql, supabase/tests/app-pin.test.ts, src/features/auth/passkey.ts, src/features/auth/einrichtung/, Zweitreview",
+          "vermerk": "Passkey und App-PIN, kein Kennwort (ADR-025 Fassung 2); scharf auf der Test-Umgebung, sobald Jannes Passkeys im Dashboard von praxis-test einschaltet; Sichtung: Betriebsreife Schritte 12, 15; Plattform Schritt 1"
         }
       ]
     },

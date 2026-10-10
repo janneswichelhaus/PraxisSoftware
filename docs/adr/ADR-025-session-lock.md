@@ -19,7 +19,7 @@ eigene App-PIN, **kein Kennwort**, weder bei der Freigabe noch bei der Anmeldung
 entschieden**: gebaut ohne Schalter und eingeschaltet, sobald der Anmeldedienst einer Umgebung
 Passkeys anbietet. Geändert ist **Punkt 7**, neu sind die **Punkte 9 bis 15** und die Folgen unter
 „Konsequenzen“. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4 (Ausnahme für die App-PIN); dazu
-ADR-023 Fassung 4. Gebaut wird in **SEC-EPIC-002** (Roadmap G22). Empfohlen waren die Geräte-PIN
+ADR-023 Fassung 4. **Gebaut in SEC-EPIC-002** (Roadmap G22, 2026-10-10; ANN-324 bis ANN-331). Empfohlen waren die Geräte-PIN
 über den Passkey und das Kennwort als Notfallweg; Jannes hat das in Kenntnis der Folgen verworfen.
 
 ## Datum
