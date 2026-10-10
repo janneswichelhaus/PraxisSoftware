@@ -51,3 +51,49 @@ describe('Node-Fassung', () => {
     expect(treffer?.[1]).toBe('22');
   });
 });
+
+describe('Datenbanktests in der CI', () => {
+  // Seit 2026-10-10 laufen die Datenbanktests in Teilen nebeneinander. Der
+  // Pflichtcheck der Branch Protection heißt weiter „Migrationen und
+  // RLS-Policies“ und sammelt die Teile ein. Rutscht ein Teil aus der Matrix
+  // oder prüft der Sammeljob ein Ergebnis nicht, liefe ein Teil der Tests
+  // nie - und der Pflichtcheck wäre trotzdem grün.
+  const ci = readFileSync(join(stamm, '.github/workflows/ci.yml'), 'utf8');
+
+  /** Der Abschnitt eines Jobs: von seiner Kopfzeile bis zum nächsten Job. */
+  function job(id: string): string {
+    const start = ci.indexOf(`\n  ${id}:\n`);
+    expect(start, `Job ${id} fehlt`).toBeGreaterThan(-1);
+    const rest = ci.slice(start + 1);
+    const ende = rest.slice(1).search(/\n {2}[a-z][\w-]*:\n/);
+    return ende === -1 ? rest : rest.slice(0, ende + 1);
+  }
+
+  it('teilt in so viele Teile, wie die Matrix startet', () => {
+    const teile = job('database-teil');
+    const matrix = (/teil: \[([\d, ]+)\]/.exec(teile)?.[1] ?? '')
+      .split(',')
+      .map((t) => Number(t.trim()));
+    const anzahl = Number(/--shard=\$\{\{ matrix\.teil \}\}\/(\d+)/.exec(teile)?.[1]);
+    expect(anzahl).toBeGreaterThan(1);
+    expect(matrix).toEqual(Array.from({ length: anzahl }, (_, i) => i + 1));
+    expect(teile).toContain(`(Teil \${{ matrix.teil }}/${anzahl})`);
+    expect(teile).toContain('fail-fast: false');
+  });
+
+  it('hält den Pflichtcheck unter seinem Namen und macht ihn nur mit allen Teilen grün', () => {
+    const sammel = job('database');
+    expect(sammel).toContain('name: Migrationen und RLS-Policies');
+    expect(sammel).toContain('needs: [database-teil, migrationen]');
+    expect(sammel).toContain('if: ${{ !cancelled() }}');
+    expect(sammel).toContain('TEILE: ${{ needs.database-teil.result }}');
+    expect(sammel).toContain('MIGRATIONEN: ${{ needs.migrationen.result }}');
+    expect(sammel).toContain('test "$TEILE" = success && test "$MIGRATIONEN" = success');
+  });
+
+  it('prüft die ausgelieferten Migrationen gegen die ganze Geschichte', () => {
+    const gate = job('migrationen');
+    expect(gate).toContain('fetch-depth: 0');
+    expect(gate).toContain('node scripts/migrationen-check.mjs "$BASIS"');
+  });
+});

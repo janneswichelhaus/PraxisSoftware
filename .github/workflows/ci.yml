@@ -58,9 +58,21 @@ jobs:
       - name: Build
         run: pnpm build
 
-  database:
-    name: Migrationen und RLS-Policies
+  # Die Datenbanktests laufen in vier Teilen nebeneinander, jeder Teil mit
+  # eigener Datenbank. In einem Stueck brauchten sie zuletzt 13 bis 20 Minuten
+  # und bestimmten damit die Dauer jedes Laufs (2026-10-10). Vitest teilt die
+  # Dateien nach `--shard` ohne Ueberschneidung auf; zusammen laufen alle.
+  # Pflichtcheck bleibt der Job `database` weiter unten unter seinem alten
+  # Namen - er ist nur gruen, wenn alle Teile und das Migrationen-Gate es sind.
+  database-teil:
+    name: Migrationen und RLS-Tests (Teil ${{ matrix.teil }}/4)
     runs-on: ubuntu-latest
+    strategy:
+      # Ein roter Teil bricht die anderen nicht ab: Der Lauf soll alle Befunde
+      # auf einmal zeigen, nicht einen je Durchgang.
+      fail-fast: false
+      matrix:
+        teil: [1, 2, 3, 4]
     # Die Berechtigungstests aus ADR-013 laufen gegen eine echte PostgreSQL-
     # Instanz. Ein Mock waere hier wertlos: geprueft wird die Policy selbst.
     services:
@@ -83,9 +95,6 @@ jobs:
       TEST_DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/postgres
     steps:
       - uses: actions/checkout@v5
-        with:
-          # Die ganze Geschichte: Das Migrationen-Gate vergleicht mit main.
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
@@ -97,6 +106,26 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
+      - name: Migrationen und RLS-Tests
+        run: pnpm test:db --shard=${{ matrix.teil }}/4
+
+  migrationen:
+    name: Ausgelieferte Migrationen unveraendert
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Die ganze Geschichte: Das Migrationen-Gate vergleicht mit main.
+          fetch-depth: 0
+
+      # Das Gate braucht nur Node und git, kein pnpm. Ohne diese Zeile sucht
+      # setup-node wegen `packageManager` in package.json nach pnpm und bricht
+      # ab, bevor das Gate laeuft.
+      - uses: actions/setup-node@v5
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          package-manager-cache: false
+
       # BEF-123: Eine Migration, die schon auf main liegt, ist in der
       # Test-Umgebung eingespielt und wird dort nie wieder ausgefuehrt. Wer sie
       # aendert, aendert nur das Repository. Im Pull Request prueft die CI den
@@ -106,8 +135,25 @@ jobs:
           BASIS: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || github.event.before }}
         run: node scripts/migrationen-check.mjs "$BASIS"
 
-      - name: Migrationen und RLS-Tests
-        run: pnpm test:db
+  database:
+    # Der Name ist der Pflichtcheck der Branch Protection (docs/DEVELOPMENT.md,
+    # "Manuelle Schritte") und bleibt deshalb unveraendert. `!cancelled()`
+    # laesst den Job auch laufen, wenn ein Teil rot ist - sonst stuende er als
+    # "uebersprungen" da, und ein uebersprungener Pflichtcheck blockiert den
+    # Merge nicht verlaesslich. Nur ein abgebrochener Lauf (neuer Push) laesst
+    # ihn aus; dann folgt ohnehin ein neuer Lauf.
+    name: Migrationen und RLS-Policies
+    runs-on: ubuntu-latest
+    needs: [database-teil, migrationen]
+    if: ${{ !cancelled() }}
+    steps:
+      - name: Alle Teile und das Migrationen-Gate gruen
+        env:
+          TEILE: ${{ needs.database-teil.result }}
+          MIGRATIONEN: ${{ needs.migrationen.result }}
+        run: |
+          echo "Datenbanktests: $TEILE, Migrationen-Gate: $MIGRATIONEN"
+          test "$TEILE" = success && test "$MIGRATIONEN" = success
 
   security:
     name: Secret Scanning und Dependency Audit
