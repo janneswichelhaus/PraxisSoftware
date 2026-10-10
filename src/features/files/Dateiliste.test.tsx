@@ -402,11 +402,13 @@ describe('Dateiliste', () => {
 
     await userEvent.selectOptions(auswahl, 'arztbrief');
     // Der Name folgt der Art, bis jemand ihn selbst ändert.
-    expect(screen.getByLabelText('Name in der Akte').value).toMatch(
+    expect(screen.getByLabelText<HTMLInputElement>('Name in der Akte').value).toMatch(
       /^Arztbrief vom \d{2}\.\d{2}\.\d{4}$/,
     );
     await userEvent.selectOptions(auswahl, 'befund');
-    expect(screen.getByLabelText('Name in der Akte').value).toMatch(/^Befund vom /);
+    expect(screen.getByLabelText<HTMLInputElement>('Name in der Akte').value).toMatch(
+      /^Befund vom /,
+    );
     await userEvent.clear(screen.getByLabelText('Name in der Akte'));
     await userEvent.type(screen.getByLabelText('Name in der Akte'), 'Synthetischer Befund{Enter}');
 

@@ -890,20 +890,27 @@ export function Dateiliste({
       <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
     ) : null;
 
+  // Eingeklappt steht „Datei hinzufügen“ über der Liste (BEF-060): Das
+  // Ergebnis erscheint oben in der Liste, und darunter begann das Formular
+  // am Handy erst nach allen Dateien.
+  const eingeklappt =
+    uploadfeld && hinzufuegenEingeklappt ? (
+      <Disclosure
+        summary={
+          dateien.length > 0 && hinzufuegenEingeklapptWeitere
+            ? hinzufuegenEingeklapptWeitere
+            : hinzufuegenEingeklappt
+        }
+      >
+        {uploadfeld}
+      </Disclosure>
+    ) : null;
+
   return (
     <>
+      {eingeklappt}
       {rahmen ? <Inhaltsflaeche>{liste}</Inhaltsflaeche> : liste}
-      {uploadfeld && hinzufuegenEingeklappt ? (
-        <Disclosure
-          summary={
-            dateien.length > 0 && hinzufuegenEingeklapptWeitere
-              ? hinzufuegenEingeklapptWeitere
-              : hinzufuegenEingeklappt
-          }
-        >
-          {uploadfeld}
-        </Disclosure>
-      ) : uploadfeld ? (
+      {eingeklappt ? null : uploadfeld ? (
         <Section titel="Datei hinzufügen" ebene={3}>
           {uploadfeld}
         </Section>

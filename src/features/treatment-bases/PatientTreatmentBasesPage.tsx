@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { ButtonLink } from '@/components/ui/ButtonLink';
+import { Kontaktwege } from './Kontaktwege';
 import { Badge } from '@/components/ui/Badge';
 import { Aufklappzeichen, Card } from '@/components/ui/Card';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
@@ -32,6 +35,7 @@ import {
 import { useBerichteDerAkte } from '@/features/therapy-reports/useBerichteDerAkte';
 import { empfehlungDerVerordnung, type Berichtszeile } from '@/features/therapy-reports/api';
 import {
+  fetchPrescribers,
   nachJahr,
   grundlageBezeichnung,
   istVerordnung,
@@ -162,17 +166,53 @@ function Grundlagentitel({ verordnung }: { verordnung: Verordnung }) {
   );
 }
 
-function Verordnungskopf({ verordnung }: { verordnung: Verordnung }) {
+/**
+ * Kopf einer Verordnung: Bauart und Datum, die Verordner:in mit ihren
+ * Kontaktwegen (BEF-060) und, wo es eines gibt, „Bearbeiten“ ruhig daneben.
+ *
+ * Die Kontaktwege kommen aus der Kartei der Verordner:innen - dieselbe
+ * Abfrage wie dort, einmal für alle Karten. Scheitert sie, fehlen nur die
+ * Wege; die Karte steht trotzdem.
+ */
+function Verordnungskopf({
+  verordnung,
+  bearbeiten,
+}: {
+  verordnung: Verordnung;
+  /** Ziel von „Bearbeiten“ - nur für Rollen, die die Grundlage schreiben. */
+  bearbeiten?: string | undefined;
+}) {
   const verordner = [verordnung.prescriber_name, verordnung.prescriber_practice_name]
     .filter(Boolean)
     .join(' · ');
+  const kartei = useQuery({
+    queryKey: ['prescribers'],
+    queryFn: fetchPrescribers,
+    enabled: Boolean(verordnung.prescriber_id),
+    retry: false,
+    staleTime: 60_000,
+  });
+  const kontakt = verordnung.prescriber_id
+    ? kartei.data?.find((eintrag) => eintrag.id === verordnung.prescriber_id)
+    : undefined;
 
   return (
     <div className="min-w-0">
-      <p className="text-ink text-liste font-medium">
-        <Grundlagentitel verordnung={verordnung} />
+      <p className="text-ink text-liste flex flex-wrap items-baseline gap-x-3 font-medium">
+        <span>
+          <Grundlagentitel verordnung={verordnung} />
+        </span>
+        {bearbeiten ? (
+          <Link
+            to={bearbeiten}
+            className="text-accent inline-flex min-h-11 items-center text-sm font-normal hover:underline"
+          >
+            Bearbeiten
+          </Link>
+        ) : null}
       </p>
       {verordner ? <p className="text-ink-muted mt-0.5 text-sm">{verordner}</p> : null}
+      {kontakt ? <Kontaktwege verordner={kontakt} /> : null}
     </div>
   );
 }
@@ -291,12 +331,15 @@ function Verordnungsaktionen({
   patient,
   user,
   ungedecktInDerAkte,
+  bearbeitenImKopf = false,
 }: {
   eintrag: VerordnungMitZahlen;
   patient: Patient;
   user: CurrentUser;
   /** Ungedeckte Termine der ganzen Akte - sonst führte „übernehmen" ins Leere. */
   ungedecktInDerAkte: number;
+  /** „Bearbeiten“ steht im Kopf der Karte (BEF-060) - hier dann nicht noch einmal. */
+  bearbeitenImKopf?: boolean;
 }) {
   const { verordnung, kontingent } = eintrag;
   const darfPlanen = canManageAppointments(user.roles);
@@ -330,16 +373,32 @@ function Verordnungsaktionen({
 
   if (!darfPlanen && !darfSchreiben) return null;
 
+  // Je Zustand eine Hauptaktion (BEF-060, Entscheidung Jannes 2026-10-09):
+  // offen „Terminserie anlegen“, verplant mit ungedeckten Terminen „Termine
+  // übertragen“. Alles andere steht leise daneben.
+  const offen = eintrag.zustand === 'offen';
+  const serieHaupt = darfPlanen && planbar && offen;
+  const uebertragenHaupt = darfPlanen && ungedeckt > 0 && !offen;
+  const textlink = 'text-accent inline-flex min-h-11 items-center text-sm hover:underline';
+  const serie = `/patienten/${patient.id}/verordnungen/${verordnung.id}/serie`;
+
   return (
     <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+      {serieHaupt ? (
+        <ButtonLink to={serie} groesse="kompakt">
+          Terminserie anlegen
+        </ButtonLink>
+      ) : null}
+      {uebertragenHaupt ? (
+        <ButtonLink to={uebertragen} groesse="kompakt">
+          Termine übertragen
+        </ButtonLink>
+      ) : null}
       {/* Die Serie hängt an der Verordnung, weil dort das Kontingent steht
           (CAL-007). Wer Termine plant, sieht sie - das ist ein anderes Recht
           als das Schreiben der Verordnung (ADR-004). */}
-      {darfPlanen && planbar ? (
-        <Link
-          to={`/patienten/${patient.id}/verordnungen/${verordnung.id}/serie`}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-        >
+      {darfPlanen && planbar && !serieHaupt ? (
+        <Link to={serie} className={textlink}>
           Terminserie anlegen
         </Link>
       ) : null}
@@ -371,11 +430,8 @@ function Verordnungsaktionen({
       ) : null}
       {/* Derselbe Vorgang, zwei Richtungen (CAL-022). Ohne Ziel in der Adresse
           fragt die Seite danach; mit Ziel steht diese Grundlage schon da. */}
-      {darfPlanen && ungedeckt > 0 ? (
-        <Link
-          to={uebertragen}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
-        >
+      {darfPlanen && ungedeckt > 0 && !uebertragenHaupt ? (
+        <Link to={uebertragen} className={textlink}>
           Termine übertragen
         </Link>
       ) : null}
@@ -387,10 +443,10 @@ function Verordnungsaktionen({
           Termine übernehmen
         </Link>
       ) : null}
-      {darfSchreiben ? (
+      {darfSchreiben && !bearbeitenImKopf ? (
         <Link
           to={`/patienten/${patient.id}/verordnungen/${verordnung.id}/bearbeiten`}
-          className="text-accent inline-flex min-h-11 items-center text-sm hover:underline"
+          className={textlink}
         >
           Bearbeiten
         </Link>
@@ -491,7 +547,14 @@ function LaufendeVerordnung({
     >
       <Card className="group-data-[angesprungen]/grundlage:border-accent @container">
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <Verordnungskopf verordnung={verordnung} />
+          <Verordnungskopf
+            verordnung={verordnung}
+            bearbeiten={
+              canWriteTreatmentBases(user.roles)
+                ? `/patienten/${patient.id}/verordnungen/${verordnung.id}/bearbeiten`
+                : undefined
+            }
+          />
           {/* Ohne Zahlen kein Zustand: „Offen" wäre dann geraten (VER-14).
               UX-005e: „Offen" ist der Regelfall einer laufenden Grundlage und
               trägt kein Etikett - markiert ist nur, was voll verplant ist. */}
@@ -552,6 +615,7 @@ function LaufendeVerordnung({
           patient={patient}
           user={user}
           ungedecktInDerAkte={ungedecktInDerAkte}
+          bearbeitenImKopf
         />
         {istVerordnung(verordnung.treatment_basis_kind) ? (
           <>

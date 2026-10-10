@@ -6,6 +6,7 @@ import { ButtonLink } from '@/components/ui/ButtonLink';
 import { SearchField } from '@/components/ui/SearchField';
 import { EmptyState, ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { fetchPrescribers, prescriberName, type Prescriber } from './api';
+import { Kontaktwege } from './Kontaktwege';
 
 function trifft(prescriber: Prescriber, suche: string): boolean {
   const gesucht = suche.trim().toLowerCase();
@@ -78,10 +79,15 @@ export function PrescribersListPage() {
       {sichtbar.length > 0 ? (
         <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
           {sichtbar.map((prescriber) => (
-            <li key={prescriber.id}>
+            <li
+              key={prescriber.id}
+              className="flex flex-wrap items-center justify-between gap-x-6 gap-y-1 py-1"
+            >
+              {/* Die Zeile führt weiter zum Bearbeiten; die Kontaktwege stehen
+                  daneben als eigene Links (BEF-060). */}
               <Link
                 to={`/verordner/${prescriber.id}/bearbeiten`}
-                className="hover:bg-surface-sunken flex min-h-16 items-center justify-between gap-4 py-3 transition-colors"
+                className="hover:bg-surface-sunken flex min-h-16 min-w-0 flex-1 basis-60 items-center justify-between gap-4 py-2 transition-colors"
               >
                 <span className="min-w-0">
                   {/* Umbrechen statt abschneiden (VER-09): Gekürzt fiel am
@@ -97,6 +103,7 @@ export function PrescribersListPage() {
                   </span>
                 </span>
               </Link>
+              <Kontaktwege verordner={prescriber} />
             </li>
           ))}
         </ul>
