@@ -38,6 +38,7 @@ Anmeldung laufen in der Cloud-Entwicklungsumgebung **nicht** — dort greifen
 | [plaene.md](plaene.md)                       | Block 6 — Pläne und Rückfragen      | offen; 1–3 UEB-EPIC-001, 4–6 UEB-EPIC-002, 7–9 UEB-EPIC-003, 10–12 KOM-EPIC-001                                |
 | [ui-redesign.md](ui-redesign.md)             | UI-Redesign Übersicht, Termin, Akte | offen; 1 bis 12 seit 2026-10-01/02, 3, 13 und 14 UBK-EPIC-001, 14 und 15 UBK-EPIC-002                          |
 | [rahmen.md](rahmen.md)                       | Design-Runde 1 — Rahmen             | offen; 1 bis 3 RAH-EPIC-001, 4 bis 6 SLK-EPIC-001, 7 SKN-EPIC-001, 8 bis 10 KUT-EPIC-001, 11 DOK-EPIC-001      |
+| [ux-review.md](ux-review.md)                 | UX-Review — UX-EPIC-007 bis -009    | offen; 1 bis 3 UX-EPIC-007                                                                                     |
 
 Die früheren Einzelschritte je Loop liegen unverändert in
 [`../development/archiv/abnahme/`](../development/archiv/abnahme/) — zum

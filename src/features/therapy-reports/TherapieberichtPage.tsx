@@ -27,6 +27,7 @@ import {
   berichtAbschliessen,
   berichtQueryKey,
   berichtSpeichern,
+  BerichtVeraendertError,
   berichtVerwerfen,
   berichteQueryKey,
   fetchBericht,
@@ -323,7 +324,7 @@ function Berichtsformular({
     return gleicheEingabe(eingabeRef.current, zuSichern);
   }
 
-  const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
+  const { abwarten, freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert,
     speichern: entwurfSichern,
     texte: BERICHTSTEXTE,
@@ -333,6 +334,9 @@ function Berichtsformular({
     selbst: {
       stand: JSON.stringify(eingabe),
       bereit: eingabe.eintraege.length <= EINTRAEGE_MAX && !inzwischen && !beendetGerade,
+      // Nur ein Konflikt setzt aus; nach einem Funkloch versucht es die
+      // nächste Eingabe wieder (Zweitreview UX-EPIC-007).
+      aussetzenBei: (fehler) => fehler instanceof BerichtVeraendertError,
     },
   });
 
@@ -340,6 +344,9 @@ function Berichtsformular({
     onMutate: () => setBeendetGerade(true),
     onSettled: () => setBeendetGerade(false),
     mutationFn: async () => {
+      // Eine laufende Sicherung von selbst erst zu Ende kommen lassen: Sie
+      // setzt den erwarteten Stand neu (Zweitreview UX-EPIC-007).
+      await abwarten();
       // Was im Formular steht, ist das, was abgeschlossen wird - nicht ein
       // älterer gespeicherter Stand.
       const zuSichern = eingabeRef.current;
@@ -360,7 +367,10 @@ function Berichtsformular({
   const verwerfen = useMutation({
     onMutate: () => setBeendetGerade(true),
     onSettled: () => setBeendetGerade(false),
-    mutationFn: () => berichtVerwerfen(bericht.id),
+    mutationFn: async () => {
+      await abwarten();
+      await berichtVerwerfen(bericht.id);
+    },
     onSuccess: async () => {
       selbstBeendet.current = true;
       await queryClient.invalidateQueries({ queryKey: berichteQueryKey(patientId) });

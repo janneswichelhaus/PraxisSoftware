@@ -1,4 +1,5 @@
 import { ANMELDEBOGEN_ANKER } from '@/features/patients/akte';
+import { tagDerPraxis, tagUndUhrzeit } from './kamera';
 
 /**
  * Die Dokumentarten der Dateiablage — Beschriftung und Erläuterung (DAT-001).
@@ -293,12 +294,12 @@ export function aktenortDerDatei(patientId: string, art: string): string {
  * („Befund vom 10.10.2026, 10:42“). Ohne Dateiendung - `IMG_4711.jpg`
  * unterscheidet nichts. Der Name bleibt änderbar.
  */
-export function namensvorschlag(art: Dokumentart, mitUhrzeit: boolean, zeitpunkt: Date): string {
-  const tag = zeitpunkt.toLocaleDateString('de-DE', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  });
-  const uhrzeit = zeitpunkt.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-  return `${dokumentartLabels[art]} vom ${tag}${mitUhrzeit ? `, ${uhrzeit}` : ''}`;
+export function namensvorschlag(
+  art: Dokumentart,
+  mitUhrzeit: boolean,
+  zeitpunkt: Date,
+  zeitzone?: string,
+): string {
+  const wann = mitUhrzeit ? tagUndUhrzeit(zeitpunkt, zeitzone) : tagDerPraxis(zeitpunkt, zeitzone);
+  return `${dokumentartLabels[art]} vom ${wann}`;
 }

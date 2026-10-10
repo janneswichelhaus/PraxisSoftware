@@ -28,7 +28,9 @@ import {
   createTreatmentNoteAddendum,
   findeEintrag,
   inhaltFehler,
+  istDauerhafterSchreibfehler,
   updateTreatmentNote,
+  wieGespeichert,
   type TreatmentDocumentation,
   type TreatmentNote,
 } from './api';
@@ -77,7 +79,10 @@ function Formular({
   angelegtIdRef.current = angelegtId;
   const angelegt = angelegtId ? findeEintrag(dokumentation, angelegtId) : null;
   const gespeichert = angelegt?.content ?? '';
-  const ungespeichert = angelegtId ? inhalt !== gespeichert : inhalt.trim().length > 0;
+  // Gemessen am Stand, wie der Server ihn speichert (Zweitreview UX-EPIC-007).
+  const ungespeichert = angelegtId
+    ? wieGespeichert(inhalt) !== wieGespeichert(gespeichert)
+    : inhalt.trim().length > 0;
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setInhalt);
 
   // Der Text, wie er in diesem Augenblick im Feld steht (FIX-014).
@@ -118,7 +123,7 @@ function Formular({
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
     // Wer während des Schreibens weitertippt, hat danach wieder
     // ungespeicherten Text (FIX-014).
-    return inhaltRef.current === zuSichern;
+    return wieGespeichert(inhaltRef.current) === wieGespeichert(zuSichern);
   }
 
   const { freigeben, laeuft, schreiben, schutz, sicherungsstand } = useTextverlustschutz({
@@ -126,6 +131,7 @@ function Formular({
     speichern: entwurfSichern,
     selbst: {
       stand: inhalt,
+      aussetzenBei: istDauerhafterSchreibfehler,
       bereit: !schreibtFest && angelegt?.status !== 'final' && inhaltFehler(inhalt) === undefined,
     },
   });
@@ -156,7 +162,10 @@ function Formular({
     setSchreibtFest(true);
     void schreiben({
       ausfuehren: async () => {
-        if (!angelegtIdRef.current || inhaltRef.current !== gespeichert) {
+        if (
+          !angelegtIdRef.current ||
+          wieGespeichert(inhaltRef.current) !== wieGespeichert(gespeichert)
+        ) {
           const vollstaendig = await entwurfSichern();
           if (!vollstaendig) return false;
         }

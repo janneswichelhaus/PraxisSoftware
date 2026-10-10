@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { act, useRef, useState, type ReactElement } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -768,9 +768,11 @@ describe('Textverlustschutz vor der Sitzungssperre (SEC-003, ADR-025 Punkt 4)', 
 function SelbstPruefseite({
   speichern,
   bereit = true,
+  aussetzenBei,
 }: {
   speichern: (text: string) => Promise<void>;
   bereit?: boolean;
+  aussetzenBei?: (fehler: unknown) => boolean;
 }) {
   const [text, setText] = useState('');
   const [gesichert, setGesichert] = useState('');
@@ -787,7 +789,7 @@ function SelbstPruefseite({
   const { schreiben, schutz, sicherungsstand } = useTextverlustschutz({
     ungespeichert: text !== gesichert,
     speichern: sichern,
-    selbst: { stand: text, bereit },
+    selbst: { stand: text, bereit, ...(aussetzenBei ? { aussetzenBei } : {}) },
   });
 
   return (
@@ -928,6 +930,60 @@ describe('Textverlustschutz: Sicherung von selbst (BEF-056, ANN-319)', () => {
     expect(screen.getByRole('group', { name: 'Ungespeicherte Dokumentation' })).toBeInTheDocument();
     await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 2));
     expect(speichern).not.toHaveBeenCalled();
+  });
+
+  it('versucht es nach einem vorübergehenden Fehler bei der nächsten Eingabe wieder, nicht bei jeder Pause', async () => {
+    const speichern = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('Synthetisches Funkloch.'))
+      .mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} aussetzenBei={() => false} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Eins');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(await screen.findByText('Synthetisches Funkloch.')).toBeInTheDocument();
+    // Für denselben Stand kein neuer Versuch.
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS * 3));
+    expect(speichern).toHaveBeenCalledTimes(1);
+
+    // Die nächste Eingabe versucht es wieder - ohne ausdrückliches Speichern.
+    await user.type(screen.getByLabelText('Feld'), ' Zwei');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(speichern).toHaveBeenCalledTimes(2);
+    expect(speichern).toHaveBeenLastCalledWith('Eins Zwei');
+  });
+
+  it('lässt einen ausdrücklichen Vorgang auf eine laufende Sicherung warten, statt ihn zu verschlucken', async () => {
+    let fertig: () => void = () => undefined;
+    const speichern = vi
+      .fn()
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            fertig = resolve;
+          }),
+      )
+      .mockResolvedValue(undefined);
+    const user = setup();
+    renderWithProviders(<SelbstPruefseite speichern={speichern} />);
+
+    await user.type(screen.getByLabelText('Feld'), 'Eins');
+    await act(() => vi.advanceTimersByTimeAsync(SELBST_SICHERN_PAUSE_MS + 100));
+    expect(speichern).toHaveBeenCalledTimes(1);
+    // Der Knopf ist während der Sicherung gesperrt; der Klick kommt hier
+    // trotzdem durch - wie ein Tipp, der vor dem Neuzeichnen ankommt.
+    const knopf = screen.getByRole('button', { name: 'Speichern' });
+    await act(async () => {
+      knopf.click();
+      await Promise.resolve();
+    });
+    await user.type(screen.getByLabelText('Feld'), ' Zwei');
+    await act(async () => {
+      fertig();
+      await Promise.resolve();
+    });
+    await waitFor(() => expect(speichern).toHaveBeenCalledTimes(2));
   });
 
   it('meldet kein „weitergeschrieben“, wenn während der Sicherung getippt wird', async () => {

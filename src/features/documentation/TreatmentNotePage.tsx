@@ -32,6 +32,8 @@ import {
   createTreatmentNote,
   findeEintrag,
   inhaltFehler,
+  istDauerhafterSchreibfehler,
+  wieGespeichert,
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
@@ -105,7 +107,8 @@ function Editor({
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
   // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
   const befund = useGesicherteBefundangaben(appointment.id, bausteine, !istNachtrag);
-  const textGeaendert = wert !== gespeichert;
+  // Gemessen am Stand, wie der Server ihn speichert (Zweitreview UX-EPIC-007).
+  const textGeaendert = wieGespeichert(wert) !== wieGespeichert(gespeichert);
   const geaendert = textGeaendert || befund.ungesichert;
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
 
@@ -136,7 +139,7 @@ function Editor({
     // `befund` daneben, bis die Person übernimmt oder verwirft (ABN-015,
     // BEF-103 Punkt 1, ANN-120 Fassung 2).
     const zuSichern = wertRef.current;
-    if (zuSichern !== gespeichertRef.current) {
+    if (wieGespeichert(zuSichern) !== wieGespeichert(gespeichertRef.current)) {
       const meldung = inhaltFehler(zuSichern);
       if (meldung) {
         setFehler(meldung);
@@ -159,7 +162,7 @@ function Editor({
     }
     if (befund.ungesichert) await befund.sichern();
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern;
+    return wieGespeichert(wertRef.current) === wieGespeichert(zuSichern);
   }
 
   const wechsel = inzwischen && !selbstFestgeschrieben.current ? inzwischen : undefined;
@@ -172,6 +175,7 @@ function Editor({
     // (BEF-056, ANN-319).
     selbst: {
       stand: wert,
+      aussetzenBei: istDauerhafterSchreibfehler,
       bereit: !wechsel && !schreibtFest && (!textGeaendert || inhaltFehler(wert) === undefined),
     },
   });
@@ -191,7 +195,10 @@ function Editor({
     setSchreibtFest(true);
     void schreiben({
       ausfuehren: async () => {
-        if (wertRef.current !== gespeichertRef.current || befund.ungesichert) {
+        if (
+          wieGespeichert(wertRef.current) !== wieGespeichert(gespeichertRef.current) ||
+          befund.ungesichert
+        ) {
           const vollstaendig = await entwurfSichern();
           if (!vollstaendig) return false;
         }

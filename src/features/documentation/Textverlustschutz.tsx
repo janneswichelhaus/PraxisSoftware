@@ -114,6 +114,12 @@ export interface Textverlustschutz {
   /** Hinweise, Fehler und Rückfrage. Gehört ins Formular, wo gearbeitet wird. */
   schutz: ReactNode;
   /**
+   * Wartet, bis ein laufender Vorgang - auch eine Sicherung von selbst - zu
+   * Ende ist. Für Schreibwege, die nicht durch `schreiben` laufen, etwa den
+   * Abschluss des Therapieberichts (Zweitreview UX-EPIC-007).
+   */
+  abwarten: () => Promise<void>;
+  /**
    * Der Stand der Sicherung von selbst (BEF-056, ANN-319): „Wird gesichert …"
    * oder „Als Entwurf gesichert um 10:42". Leer, solange nichts von selbst
    * gesichert wurde. Die Seite stellt die Zeile dorthin, wo man sie beim
@@ -269,7 +275,18 @@ export function useTextverlustschutz({
    * bis ein ausdrückliches Speichern gelingt: Im Konfliktfall überschriebe
    * sie sonst still den Stand einer Kollegin.
    */
-  selbst?: { stand: string; bereit: boolean } | undefined;
+  selbst?:
+    | {
+        stand: string;
+        bereit: boolean;
+        /**
+         * Hilft ein erneuter Versuch nicht (Konflikt, inzwischen
+         * finalisiert)? Dann setzt die Sicherung aus. Ohne Angabe gilt das
+         * für jeden Fehler.
+         */
+        aussetzenBei?: (fehler: unknown) => boolean;
+      }
+    | undefined;
 }): Textverlustschutz {
   useVerlassenWarnung(ungespeichert);
   const verbunden = useIstVerbunden();
@@ -294,6 +311,15 @@ export function useTextverlustschutz({
   const [selbstGesichertUm, setSelbstGesichertUm] = useState<Date | null>(null);
   const [selbstLaeuft, setSelbstLaeuft] = useState(false);
   const [ausgesetzt, setAusgesetzt] = useState(false);
+  // Der Stand, an dem eine Sicherung von selbst vorübergehend scheiterte
+  // (Funkloch, Zeitüberschreitung). Für ihn wird nicht erneut versucht - die
+  // nächste Eingabe oder die zurückkehrende Verbindung tun es.
+  const [gescheitertBei, setGescheitertBei] = useState<string | null>(null);
+  // Der laufende Vorgang, damit andere auf ihn warten können: ein Tipp auf
+  // „Festschreiben“ während einer Sicherung von selbst, die Sitzungssperre,
+  // der Abschluss des Berichts (Zweitreview UX-EPIC-007).
+  const laufenderVorgang = useRef<Promise<unknown> | null>(null);
+  const selbstLaeuftRef = useRef(false);
 
   const anhalten = useCallback<BlockerFunction>(({ currentLocation, nextLocation }) => {
     // Ein Wechsel der Suchparameter auf derselben Seite ist kein Weggehen:
@@ -332,6 +358,10 @@ export function useTextverlustschutz({
   const speichernRef = useRef(speichern);
   speichernRef.current = speichern;
   useSperrsicherung(async () => {
+    // Eine laufende Sicherung von selbst erst zu Ende kommen lassen: Zwei
+    // gleichzeitige Schreibvorgänge legten auf der Nachtragsseite sonst zwei
+    // Nachträge an (Zweitreview UX-EPIC-007).
+    await laufenderVorgang.current?.catch(() => undefined);
     if (!ungespeichertRef.current) return true;
     const sichern = speichernRef.current;
     if (!sichern) return false;
@@ -355,6 +385,12 @@ export function useTextverlustschutz({
   }, [offen]);
 
   async function schreiben(auftrag: Schreibauftrag): Promise<void> {
+    // Läuft gerade nur eine Sicherung von selbst, wartet ein ausdrücklicher
+    // Vorgang auf sie, statt still verloren zu gehen (Zweitreview
+    // UX-EPIC-007). Gegen den Doppeltipp bleibt die Sperre sonst bestehen.
+    if (laufend.current && selbstLaeuftRef.current) {
+      await laufenderVorgang.current?.catch(() => undefined);
+    }
     if (laufend.current) return;
     laufend.current = true;
     setLaeuft(true);
@@ -362,7 +398,9 @@ export function useTextverlustschutz({
 
     let vollstaendig = false;
     try {
-      vollstaendig = await auftrag.ausfuehren();
+      const vorgang = auftrag.ausfuehren();
+      laufenderVorgang.current = vorgang;
+      vollstaendig = await vorgang;
       if (!vollstaendig) {
         setFehler({
           titel: 'Noch nicht alles gespeichert',
@@ -383,7 +421,10 @@ export function useTextverlustschutz({
 
     // Ein ausdrücklich gelungenes Speichern nimmt die Sicherung von selbst
     // wieder auf (BEF-056).
-    if (vollstaendig) setAusgesetzt(false);
+    if (vollstaendig) {
+      setAusgesetzt(false);
+      setGescheitertBei(null);
+    }
 
     // Außerhalb des `try`: Ein Fehler im Weitergehen ist kein Schreibfehler
     // und darf nicht als solcher im Kasten landen.
@@ -395,27 +436,37 @@ export function useTextverlustschutz({
    *
    * Derselbe Vorgang wie `schreiben`, mit zwei Unterschieden: Wer während
    * der Sicherung weitertippt, bekommt keinen Fehler - die nächste Pause
-   * sichert den Rest -, und ein Fehlschlag setzt die Sicherung aus, statt
-   * sie bei jeder Pause zu wiederholen.
+   * sichert den Rest. Und ein Fehlschlag wird nicht bei jeder Pause
+   * wiederholt: Ein dauerhafter (Konflikt, inzwischen finalisiert) setzt die
+   * Sicherung aus, bis ausdrücklich gespeichert wurde - sonst überschriebe sie
+   * im Konfliktfall still einen fremden Stand -; ein vorübergehender
+   * (Funkloch) wartet auf die nächste Eingabe oder die Verbindung.
    */
   async function selbstSichern(): Promise<void> {
     const sichern = speichernRef.current;
     if (!sichern || laufend.current || !ungespeichertRef.current) return;
+    const stand = selbstStandRef.current;
     laufend.current = true;
+    selbstLaeuftRef.current = true;
     setLaeuft(true);
     setSelbstLaeuft(true);
     setFehler(undefined);
     try {
-      await sichern();
+      const vorgang = sichern();
+      laufenderVorgang.current = vorgang;
+      await vorgang;
       setSelbstGesichertUm(new Date());
+      setGescheitertBei(null);
     } catch (error) {
-      setAusgesetzt(true);
+      if (aussetzenBeiRef.current(error)) setAusgesetzt(true);
+      else setGescheitertBei(stand ?? null);
       setFehler({
         titel: 'Nicht von selbst gesichert',
         text: error instanceof Error ? error.message : 'Sichern nicht möglich.',
       });
     } finally {
       laufend.current = false;
+      selbstLaeuftRef.current = false;
       setLaeuft(false);
       setSelbstLaeuft(false);
     }
@@ -426,6 +477,16 @@ export function useTextverlustschutz({
   const selbstAktiv = selbst !== undefined && speichern !== undefined;
   const selbstStand = selbst?.stand;
   const selbstBereit = selbst?.bereit ?? false;
+  const selbstStandRef = useRef(selbstStand);
+  selbstStandRef.current = selbstStand;
+  const aussetzenBeiRef = useRef(selbst?.aussetzenBei ?? (() => true));
+  aussetzenBeiRef.current = selbst?.aussetzenBei ?? (() => true);
+
+  // Kehrt die Verbindung zurück, gilt ein vorübergehendes Scheitern nicht mehr.
+  useEffect(() => {
+    if (verbunden) setGescheitertBei(null);
+  }, [verbunden]);
+
   useEffect(() => {
     // Nach jeder Änderung beginnt die Pause neu; erst wenn sie verstreicht,
     // wird gesichert. Ohne Verbindung wartet die Sicherung, bis sie zurück
@@ -440,7 +501,8 @@ export function useTextverlustschutz({
       !verbunden ||
       ausgesetzt ||
       laeuft ||
-      offen
+      offen ||
+      selbstStand === gescheitertBei
     ) {
       return;
     }
@@ -448,7 +510,17 @@ export function useTextverlustschutz({
       void selbstSichernRef.current();
     }, SELBST_SICHERN_PAUSE_MS);
     return () => window.clearTimeout(zeitgeber);
-  }, [selbstAktiv, selbstStand, selbstBereit, ungespeichert, verbunden, ausgesetzt, laeuft, offen]);
+  }, [
+    selbstAktiv,
+    selbstStand,
+    selbstBereit,
+    ungespeichert,
+    verbunden,
+    ausgesetzt,
+    laeuft,
+    offen,
+    gescheitertBei,
+  ]);
 
   function bleiben() {
     setFehler(undefined);
@@ -620,5 +692,8 @@ export function useTextverlustschutz({
     },
     schutz,
     sicherungsstand,
+    abwarten: async () => {
+      await laufenderVorgang.current?.catch(() => undefined);
+    },
   };
 }

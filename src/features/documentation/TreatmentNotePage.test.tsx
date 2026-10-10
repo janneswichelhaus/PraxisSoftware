@@ -408,12 +408,26 @@ describe('TreatmentNotePage', () => {
 
     await waitFor(() => expect(feld()).toHaveValue(''));
     await user.type(feld(), '   ');
+    // Leerzeichen allein sind kein Text, den der Server speicherte (btrim):
+    // Es gibt nichts zu speichern (Zweitreview UX-EPIC-007).
+    expect(screen.getByRole('button', { name: 'Als Entwurf speichern' })).toBeDisabled();
+    expect(createTreatmentNote).not.toHaveBeenCalled();
+  });
+
+  it('weist einen geleerten Entwurf ab, ohne den Server zu fragen', async () => {
+    fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+    const user = userEvent.setup();
+    rendern();
+
+    await waitFor(() => expect(feld()).toHaveValue(INHALT));
+    await user.clear(feld());
+    await user.type(feld(), '   ');
     await user.click(screen.getByRole('button', { name: 'Als Entwurf speichern' }));
 
     expect(
       await screen.findByText('Die Behandlungsdokumentation darf nicht leer sein.'),
     ).toBeInTheDocument();
-    expect(createTreatmentNote).not.toHaveBeenCalled();
+    expect(updateTreatmentNote).not.toHaveBeenCalled();
   });
 
   it('meldet einen Konflikt und laesst den eigenen Text stehen (PROJECT_PRINCIPLES.md 13)', async () => {
@@ -436,6 +450,37 @@ describe('TreatmentNotePage', () => {
     // Kein „neu laden“ mehr (BEF-056): Die Seite lädt den Stand selbst nach.
     expect(screen.queryByText(/neu laden/)).toBeNull();
     await waitFor(() => expect(fetchTreatmentDocumentation).toHaveBeenCalledTimes(2));
+  });
+
+  it('sichert einen Text mit Zeilenumbruch am Ende einmal, nicht alle drei Sekunden wieder (Zweitreview)', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      fetchTreatmentDocumentation.mockResolvedValue({ primary: doku, addenda: [] });
+      updateTreatmentNote.mockImplementation((_id: string, _stand: string, inhalt: string) => {
+        // Der Server kürzt den Text an den Rändern (btrim).
+        fetchTreatmentDocumentation.mockResolvedValue({
+          primary: {
+            ...doku,
+            content: inhalt.trim(),
+            updated_at: '2027-05-12T09:00:00.000000+00:00',
+          },
+          addenda: [],
+        });
+        return Promise.resolve();
+      });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      rendern();
+      await waitFor(() => expect(feld()).toHaveValue(INHALT));
+      await user.type(feld(), ' Neu.{Enter}');
+      await act(() => vi.advanceTimersByTimeAsync(3100));
+      await waitFor(() => expect(updateTreatmentNote).toHaveBeenCalledTimes(1));
+
+      await act(() => vi.advanceTimersByTimeAsync(3100 * 3));
+      expect(updateTreatmentNote).toHaveBeenCalledTimes(1);
+      expect(feld()).toHaveValue(`${INHALT} Neu.\n`);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   describe('Übernahme im Konfliktfall (BEF-056)', () => {

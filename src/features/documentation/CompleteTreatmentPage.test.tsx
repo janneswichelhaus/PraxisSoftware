@@ -666,6 +666,22 @@ describe('CompleteTreatmentPage', () => {
       );
     });
 
+    it('sichert von selbst nur den getippten Text, nie den offenen Vorschlag (ANN-120, ANN-319)', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      try {
+        const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+        rendern();
+        await lachmannPositiv(user);
+        await user.type(screen.getByLabelText('Eintrag zur Behandlung'), 'Befund:');
+        await act(() => vi.advanceTimersByTimeAsync(3100));
+
+        await waitFor(() => expect(createTreatmentNote).toHaveBeenCalledWith(TERMIN_ID, 'Befund:'));
+        expect(completeTreatment).not.toHaveBeenCalled();
+      } finally {
+        vi.useRealTimers();
+      }
+    });
+
     it('fragt beim Verlassen nach und sichert nur die Angaben, nicht den Vorschlag als Text', async () => {
       const user = userEvent.setup();
       rendern();

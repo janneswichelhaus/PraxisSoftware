@@ -130,6 +130,8 @@ interface UploadfeldProps {
   grundlageId: string | null;
   /** Auswählbare Arten. Genau eine bedeutet: keine Auswahl, nur ein Hinweis. */
   arten: readonly Dokumentart[];
+  /** Zeitzone der Praxis - der vorgeschlagene Name nennt ihren Tag. */
+  zeitzone: string;
 }
 
 /**
@@ -151,7 +153,7 @@ interface UploadfeldProps {
  * Rechtswege - hier ein Dokument der Akte, dort ein Foto der Person mit
  * Einwilligung und Zwölfmonatsfrist (ADR-017, „scharfe Kante").
  */
-function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
+function Uploadfeld({ patientId, grundlageId, arten, zeitzone }: UploadfeldProps) {
   const dateifeldId = useId();
   // Vorbelegt nur aus dem Kontext - an der Verordnung gibt es genau eine Art
   // (ADR-017 Punkt 12); sonst wählt die Person (BEF-059).
@@ -230,9 +232,9 @@ function Uploadfeld({ patientId, grundlageId, arten }: UploadfeldProps) {
   // Fotos aus der Kamera mit Uhrzeit: Zwei Aufnahmen eines Tages trügen sonst
   // denselben Namen (BEF-059).
   const vorschlag = art
-    ? namensvorschlag(art, ausKamera, gewaehltUm)
+    ? namensvorschlag(art, ausKamera, gewaehltUm, zeitzone)
     : ausKamera
-      ? fotoVomHeutigenTag(gewaehltUm)
+      ? fotoVomHeutigenTag(gewaehltUm, zeitzone)
       : '';
   const name = eigenerName ?? vorschlag;
 
@@ -887,7 +889,12 @@ export function Dateiliste({
 
   const uploadfeld =
     darfHinzufuegen && arten.length > 0 ? (
-      <Uploadfeld patientId={patientId} grundlageId={grundlageId} arten={arten} />
+      <Uploadfeld
+        patientId={patientId}
+        grundlageId={grundlageId}
+        arten={arten}
+        zeitzone={zeitzone}
+      />
     ) : null;
 
   // Eingeklappt steht „Datei hinzufügen“ über der Liste (BEF-060): Das

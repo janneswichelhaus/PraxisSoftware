@@ -26,6 +26,8 @@ import {
   completeTreatment,
   createTreatmentNote,
   inhaltFehler,
+  istDauerhafterSchreibfehler,
+  wieGespeichert,
   updateTreatmentNote,
   type TreatmentNote,
 } from './api';
@@ -105,7 +107,8 @@ function Abschluss({
   // ungespeicherte Arbeit wie getippter Text (§13, FRB-003b). Gesichert werden
   // sie getrennt vom Entwurf, nie in seinen Text (ABN-015, ANN-120).
   const befund = useGesicherteBefundangaben(appointment.id, bausteine, !ohneBehandlung);
-  const textGeaendert = wert !== gespeichert;
+  // Gemessen am Stand, wie der Server ihn speichert (Zweitreview UX-EPIC-007).
+  const textGeaendert = wieGespeichert(wert) !== wieGespeichert(gespeichert);
   const geaendert = textGeaendert || befund.ungesichert;
   const [vorschlagOffen, setVorschlagOffen] = useState(false);
   const { letzte, einfuegen, rueckgaengig, vergessen } = useEinfuegen(feldId, setEntwurf);
@@ -132,7 +135,7 @@ function Abschluss({
     // `befund` daneben, bis die Person übernimmt oder verwirft (ABN-015,
     // BEF-103 Punkt 1, ANN-120 Fassung 2).
     const zuSichern = wertRef.current;
-    if (zuSichern !== gespeichertRef.current) {
+    if (wieGespeichert(zuSichern) !== wieGespeichert(gespeichertRef.current)) {
       const meldung = inhaltFehler(zuSichern);
       if (meldung) {
         setFehler(meldung);
@@ -154,7 +157,7 @@ function Abschluss({
     }
     if (befund.ungesichert) await befund.sichern();
     await queryClient.invalidateQueries({ queryKey: ['treatment-note', appointment.id] });
-    return wertRef.current === zuSichern;
+    return wieGespeichert(wertRef.current) === wieGespeichert(zuSichern);
   }
 
   // Die Meldung gilt dem Vorschlag, der sie ausgelöst hat; ist er übernommen
@@ -178,6 +181,7 @@ function Abschluss({
       ? undefined
       : {
           stand: wert,
+          aussetzenBei: istDauerhafterSchreibfehler,
           bereit:
             !wechsel && !schreibtAbschluss && (!textGeaendert || inhaltFehler(wert) === undefined),
         },

@@ -7,6 +7,7 @@ import { getSupabase } from '@/lib/supabase';
 import { istEigeneAbmeldung, meldeSelbstAb } from './eigeneAbmeldung';
 import { SessionContext, type SessionState } from './sessionContext';
 import { SitzungsendeContext } from './sitzungsende';
+import { uebergabenLeeren } from '@/features/documentation/uebernahme';
 
 /**
  * Sitzungszustand und die Grenze zwischen zwei Konten (UX-011, ANN-021).
@@ -70,6 +71,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
    */
   const raeumen = useCallback(() => {
     queryClient.clear();
+    // Ein nicht abgeholter Text aus dem Konfliktfall der Dokumentation geht
+    // mit (Zweitreview UX-EPIC-007, ANN-320): Er tauchte sonst nach einem
+    // Kontowechsel am selben Gerät in einer Korrektur auf.
+    uebergabenLeeren();
     // Der Merker des Startbilds geht mit (RAH-009, ANN-243): Die nächste
     // Anmeldung in diesem Tab beginnt wieder mit dem Intro - auch die eines
     // anderen Kontos.

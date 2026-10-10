@@ -47,6 +47,11 @@ export function uebergabeErledigt(noteId: string): void {
   uebergaben.delete(noteId);
 }
 
+/** Beim Sitzungsende: nichts bleibt im Arbeitsspeicher liegen. */
+export function uebergabenLeeren(): void {
+  uebergaben.clear();
+}
+
 /**
  * Schreibt einen Nachtrag fest, nachdem sein Text gesichert ist (BEF-056).
  *
