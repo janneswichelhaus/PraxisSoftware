@@ -1085,3 +1085,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Wie in `delete_billable_services` und `delete_training_package`: freigegebene Zeilen der Leistung zuerst löschen, dazu ein Test „Storno → Zurücknehmen“ in `aftercare-months.test.ts`. Einzel-Story-Loop.
 
 **Umsetzung (2026-10-11).** `delete_aftercare_month` löscht freigegebene Rechnungszeilen mit der Leistung, wie die beiden Vorbilder; Entwurf, ausgestellte und Korrekturrechnung halten den Monat weiter fest (Migration `20261029100000`, zwei Tests in `aftercare-months.test.ts`, Gegenprobe ohne Migration rot).
+
+### BEF-131 — Terminwünsche der Plattform fallen beim Zusammenführen mit der Dublette
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Plattform, Dubletten |
+| Quelle  | KOM-EPIC-001, Prüfung von `merge_patients` beim Einbau der Rückfragen |
+| Status  | erledigt 2026-10-11 (BEF-131, Einzel-Story-Loop) |
+| Berührt | `public.merge_patients`, `public.platform_appointment_requests` (POR-009) |
+
+**Beobachtung.** `merge_patients` löscht die Akte der Dublette; `platform_appointment_requests` hängt mit `on delete cascade` an ihr und wird nicht umgehängt. Ein offener oder beantworteter Terminwunsch der Dublette fällt damit beim Zusammenführen still weg. Die Rückfragen (KOM-004) ziehen seit diesem Loop mit; die Terminwünsche wurden bewusst nicht mitgeändert (kein Umbau außerhalb des Auftrags).
+
+**Erwartet.** Eine Zeile in `merge_patients` (`update … set patient_id, relationship_id`) und ein Test in `patient-merge.test.ts`. Einzel-Story-Loop.
+
+**Umsetzung (2026-10-11).** `merge_patients` hängt offene wie beantwortete Terminwünsche an die bleibende Akte um (`patient_id`, `relationship_id`), sonst bleibt der Wunsch unverändert; das Büro sieht ihn unter der bleibenden Akte (Migration `20261030100000`, ein Test in `patient-merge.test.ts`, Gegenprobe ohne Migration rot). Der Zugang der Dublette bleibt BEF-132.

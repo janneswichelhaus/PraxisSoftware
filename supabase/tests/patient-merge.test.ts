@@ -858,66 +858,138 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
   });
 
   describe('Terminwünsche der Plattform (BEF-131)', () => {
-    it('ziehen offene wie beantwortete Wünsche zur bleibenden Akte, sonst unverändert', async () => {
-      const ziel = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch' });
-      const quelle = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch-Dublette' });
-      // Der Zugang der Dublette ist schon beendet; der Nachweis bleibt stehen.
-      const zugang = (
-        await asPostgres<{ id: string }>(
-          `insert into public.platform_accesses
-             (organization_id, relationship_kind, relationship_id, patient_id, status,
-              created_by, revoked_at, revoked_by, revoked_reason)
-           values ($1, 'treatment', $2, $2, 'revoked', $3, now(), $3, 'practice')
-           returning id`,
-          [ORG, quelle.patient, users.office],
-        )
-      ).rows[0]!.id;
-      const { rows: wuensche } = await asPostgres<{ id: string; status: string }>(
-        `insert into public.platform_appointment_requests
-           (organization_id, relationship_kind, relationship_id, patient_id, kind,
-            preferred_days, preferred_times, note, status, created_by_access_id, created_by,
-            resolved_at, resolved_by, answer)
-         values
-           ($1, 'treatment', $2, $2, 'new', array[current_date + 3], array['morning'],
-            'Gern vormittags', 'open', $3, $4, null, null, null),
-           ($1, 'treatment', $2, $2, 'new', array[current_date + 5], '{}',
-            null, 'declined', $3, $4, now(), $5, 'Leider voll')
-         returning id, status`,
-        [ORG, quelle.patient, zugang, users.plattformErika, users.office],
+    const LESEN = `select id, to_jsonb(w) as z from public.platform_appointment_requests w
+                    where id = any($1::uuid[]) order by id`;
+    const WUNSCH = `insert into public.platform_appointment_requests
+        (organization_id, relationship_kind, relationship_id, patient_id,
+         training_relationship_id, kind, preferred_days, preferred_times, note, status,
+         created_by_access_id, created_by, resolved_at, resolved_by, answer)
+      values ($1, $2, $3, $4, $5, 'new', array[current_date + 3], array['morning'], $6, $7,
+              $8, $9, case when $7 = 'open' then null else now() end,
+              case when $7 = 'open' then null::uuid else $10::uuid end,
+              case when $7 = 'declined' then 'Leider voll' end)
+      returning id`;
+    let ziel: { patient: string; person: string };
+    let quelle: { patient: string; person: string };
+    let zielZugang: string;
+    let quelleZugang: string;
+    let mitgezogen: string[];
+    let unberuehrt: string[];
+    let vorherMitgezogen: { id: string; z: Record<string, unknown> }[];
+    let vorherUnberuehrt: { id: string; z: Record<string, unknown> }[];
+
+    async function zugang(patient: string, status: 'active' | 'revoked'): Promise<string> {
+      const { rows } = await asPostgres<{ id: string }>(
+        status === 'active'
+          ? `insert into public.platform_accesses
+               (organization_id, relationship_kind, relationship_id, patient_id, status,
+                account_user_id, activated_at, created_by)
+             values ($1, 'treatment', $2, $2, 'active', $3, now(), $4) returning id`
+          : `insert into public.platform_accesses
+               (organization_id, relationship_kind, relationship_id, patient_id, status,
+                created_by, revoked_at, revoked_by, revoked_reason)
+             values ($1, 'treatment', $2, $2, 'revoked', $4, now(), $4, 'practice')
+             returning id`,
+        [ORG, patient, users.plattformErika, users.office],
       );
-      const ids = wuensche.map((w) => w.id);
-      const LESEN = `select id, to_jsonb(w) - 'patient_id' - 'relationship_id' as z
-                       from public.platform_appointment_requests w
-                      where id = any($1::uuid[]) order by id`;
-      const vorher = (await asPostgres<{ id: string; z: unknown }>(LESEN, [ids])).rows;
+      return rows[0]!.id;
+    }
+
+    async function wunsch(
+      art: 'treatment' | 'training',
+      verhaeltnis: string,
+      zugangId: string,
+      status: 'open' | 'declined',
+      notiz: string | null = null,
+    ): Promise<string> {
+      const { rows } = await asPostgres<{ id: string }>(WUNSCH, [
+        ORG,
+        art,
+        verhaeltnis,
+        art === 'treatment' ? verhaeltnis : null,
+        art === 'training' ? verhaeltnis : null,
+        notiz,
+        status,
+        zugangId,
+        users.plattformErika,
+        users.office,
+      ]);
+      return rows[0]!.id;
+    }
+
+    beforeAll(async () => {
+      ziel = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch' });
+      quelle = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch-Dublette' });
+      zielZugang = await zugang(ziel.patient, 'active');
+      // Der Zugang der Dublette ist schon beendet; der Nachweis bleibt stehen.
+      quelleZugang = await zugang(quelle.patient, 'revoked');
+      mitgezogen = [
+        await wunsch('treatment', quelle.patient, quelleZugang, 'open', 'Gern vormittags'),
+        await wunsch('treatment', quelle.patient, quelleZugang, 'declined'),
+      ];
+      // Gegenproben: der eigene Wunsch der bleibenden Akte, der einer dritten
+      // Akte und ein Trainingswunsch (patient_id null) bleiben, wie sie sind.
+      unberuehrt = [
+        await wunsch('treatment', ziel.patient, zielZugang, 'open', 'Eigener Wunsch'),
+        await wunsch(
+          'treatment',
+          patients.erika,
+          SEED.platformAccesses.erikaBehandlung,
+          'open',
+          'Dritte Akte',
+        ),
+        await wunsch(
+          'training',
+          SEED.trainingRelationships.erika,
+          SEED.platformAccesses.erikaTraining,
+          'open',
+          'Training',
+        ),
+      ];
+      vorherMitgezogen = (
+        await asPostgres<{ id: string; z: Record<string, unknown> }>(LESEN, [mitgezogen])
+      ).rows;
+      vorherUnberuehrt = (
+        await asPostgres<{ id: string; z: Record<string, unknown> }>(LESEN, [unberuehrt])
+      ).rows;
 
       await zusammenfuehren(quelle.patient, ziel.patient);
+    }, 60_000);
 
-      const { rows: bezug } = await asPostgres<{ patient_id: string; relationship_id: string }>(
-        `select patient_id, relationship_id from public.platform_appointment_requests
-          where id = any($1::uuid[])`,
-        [ids],
+    it('ziehen offene wie beantwortete Wünsche zur bleibenden Akte, sonst unverändert', async () => {
+      const nachher = (
+        await asPostgres<{ id: string; z: Record<string, unknown> }>(LESEN, [mitgezogen])
+      ).rows;
+      expect(nachher).toEqual(
+        vorherMitgezogen.map((w) => ({
+          ...w,
+          z: { ...w.z, patient_id: ziel.patient, relationship_id: ziel.patient },
+        })),
       );
-      expect(bezug).toEqual([
-        { patient_id: ziel.patient, relationship_id: ziel.patient },
-        { patient_id: ziel.patient, relationship_id: ziel.patient },
-      ]);
-      expect((await asPostgres(LESEN, [ids])).rows).toEqual(vorher);
+    });
 
-      // Das Büro sieht den offenen Wunsch unter der bleibenden Akte.
+    it('lässt Wünsche der bleibenden Akte, anderer Akten und des Trainings unberührt', async () => {
+      expect((await asPostgres(LESEN, [unberuehrt])).rows).toEqual(vorherUnberuehrt);
+    });
+
+    it('zeigt die Wünsche dem Büro und dem Zugang der bleibenden Akte, nicht dem der Dublette', async () => {
       const { rows: offen } = await asUser<{ id: string; patient_id: string; family_name: string }>(
         users.office,
         `select id, patient_id, family_name from public.list_platform_appointment_requests('open')
           where id = any($1::uuid[])`,
-        [ids],
+        [mitgezogen],
       );
       expect(offen).toEqual([
-        {
-          id: wuensche.find((w) => w.status === 'open')!.id,
-          patient_id: ziel.patient,
-          family_name: 'Wunsch',
-        },
+        { id: mitgezogen[0], patient_id: ziel.patient, family_name: 'Wunsch' },
       ]);
+
+      const LISTE = 'select id from public.platform_appointment_requests($1::uuid) order by id';
+      const { rows: plattform } = await asUser<{ id: string }>(users.plattformErika, LISTE, [
+        zielZugang,
+      ]);
+      expect(plattform.map((w) => w.id)).toEqual([...mitgezogen, unberuehrt[0]].sort());
+      const { rows: dublette } = await asUser(users.plattformErika, LISTE, [quelleZugang]);
+      expect(dublette).toEqual([]);
     });
   });
 

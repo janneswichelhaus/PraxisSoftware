@@ -559,20 +559,6 @@ eingeklappt.
 
 **Erwartet.** Die Tests leiten „heute“ aus `app.training_today(organization_id)` ab statt aus UTC – wie `praxistag()` in `supabase/tests/exercise-plans.test.ts`; keine Prüfung wird schwächer. **Erledigt** in PR #202, weil die CI dort nach Mitternacht rot wurde: beide Hilfsfunktionen und ein Update rechnen mit dem Tag der Praxis, um 00:40 Uhr Berliner Zeit reproduziert und grün.
 
-### BEF-131 — Terminwünsche der Plattform fallen beim Zusammenführen mit der Dublette
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-09 |
-| Bereich | Plattform, Dubletten |
-| Quelle  | KOM-EPIC-001, Prüfung von `merge_patients` beim Einbau der Rückfragen |
-| Status  | offen |
-| Berührt | `public.merge_patients`, `public.platform_appointment_requests` (POR-009) |
-
-**Beobachtung.** `merge_patients` löscht die Akte der Dublette; `platform_appointment_requests` hängt mit `on delete cascade` an ihr und wird nicht umgehängt. Ein offener oder beantworteter Terminwunsch der Dublette fällt damit beim Zusammenführen still weg. Die Rückfragen (KOM-004) ziehen seit diesem Loop mit; die Terminwünsche wurden bewusst nicht mitgeändert (kein Umbau außerhalb des Auftrags).
-
-**Erwartet.** Eine Zeile in `merge_patients` (`update … set patient_id, relationship_id`) und ein Test in `patient-merge.test.ts`. Einzel-Story-Loop.
-
 ### BEF-132 — Plattformzugang an der Dublette: Rückfragen ziehen um, der Zugang nicht
 
 |         |   |
@@ -585,7 +571,7 @@ eingeklappt.
 
 **Beobachtung.** Hat die Dublette einen Plattformzugang, ziehen ihre Rückfragen zur bleibenden Akte, der Zugang aber endet mit der Dublette – die Person sieht die Antwort auf ihre Frage nicht mehr. `patient_merge_plan` kennt keinen Sperrgrund dafür, und `counts` nennt die Rückfragen nicht. Daneben (H5): Erledigen und Nachtragen zur selben Zeit enden statt mit 22023 mit dem Constraint-Fehler 23514 – keine Daten gehen verloren, nur die Meldung ist unschön.
 
-**Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`; für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
+**Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`, ebenso `platform_appointment_requests` (ziehen seit BEF-131 mit, Zweitreview BEF-131 H4); für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
 
 
 ### BEF-140 — Drei Löschkandidaten aus dem Leitfaden fallen weg
@@ -631,3 +617,17 @@ eingeklappt.
 **Beobachtung.** Wird eine Leistung nach einem Storno zurückgenommen, fällt ihre freigegebene Rechnungszeile mit ihr (seit ABR-003c, ANG-006 und BEF-128). `list_invoices` zählt die Positionen aber live über `invoice_items`; die stornierte Rechnung zeigt dann weniger oder null Positionen, der Betrag kommt weiter aus dem Snapshot. War es die einzige Leistung, bleibt das Storno ohne Korrektur „offen“, und `create_correction_draft` meldet „no billable services“.
 
 **Erwartet.** Die Zahl der Positionen ausgestellter Rechnungen aus dem Snapshot lesen (wie den Empfänger seit BEF-141), und ein Storno ohne verbleibende Leistung nicht mehr als wartende Korrektur führen. Einzel-Story-Loop.
+
+### BEF-144 — Die Auskunft aus der Akte nennt keine Terminwünsche der Plattform
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Datenschutz: Auskunft (Art. 15), Plattform |
+| Quelle  | Zweitreview BEF-131 (Hinweis H5), am Code belegt |
+| Status  | offen |
+| Berührt | `public.export_patient_record` (zuletzt `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`), `public.platform_appointment_requests` (POR-009) |
+
+**Beobachtung.** `export_patient_record` liefert seit KOM-004 die Rückfragen der Plattform, aber keine Terminwünsche (`platform_appointment_requests`). Die Auskunft über die Plattform (`platform_export`) nennt sie; die Auskunft, die die Praxis aus der Akte zieht, nicht. Vorbestehend, nicht durch BEF-131 entstanden.
+
+**Erwartet.** `platform_appointment_requests` der Akte in `export_patient_record` (Tage, Tageszeiten, Notiz, Zustand, Antwort), ein Test in der Auskunftsdatei. Einzel-Story-Loop.

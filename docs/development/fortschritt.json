@@ -683,6 +683,15 @@
           "vermerk": "ohne Oberfläche; der vorhandene Knopf „Erfassung zurücknehmen“ trägt jetzt auch nach einem Storno"
         },
         {
+          "id": "bef-131",
+          "name": "BEF-131 Terminwünsche ziehen beim Zusammenführen mit",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-10-11",
+          "nachweis": "Migration 20261030100000, patient-merge.test.ts (Gegenprobe ohne Migration rot); Zweitreview",
+          "vermerk": "ohne Oberfläche; der Plattformzugang der Dublette bleibt BEF-132"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
