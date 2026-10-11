@@ -1300,7 +1300,7 @@ describe('InvoiceDetailPage', () => {
       await nutzer.click(screen.getByRole('button', { name: 'Empfänger bearbeiten' }));
 
       expect(
-        screen.getByText(/das Blatt ausgestellter Rechnungen bleibt, wie es ist/),
+        screen.getByText(/ausgestellte Rechnungen behalten den Empfänger, an den sie gingen/),
       ).toBeInTheDocument();
       const plz = screen.getByLabelText('PLZ');
       expect(plz).toHaveValue('7207');

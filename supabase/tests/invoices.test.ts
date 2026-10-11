@@ -361,6 +361,75 @@ describe('Rechnung', () => {
       expect(entwurf[0]!.rechnung.document.recipient.name).toBe('Betreuung korrigiert');
     });
 
+    it('zeigt in Listen und Suche den Empfaenger der ausgestellten Rechnung, nicht den heutigen (BEF-141)', async () => {
+      await leistung(KATALOG.kg, { stundeImMonat: 30, patient: patients.petra, grundlage: null });
+      const { rows: erste } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.petra,
+        await monat(),
+      ]);
+      const ausgestellt = erste[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [ausgestellt]);
+      await asUserCommitted(
+        users.office,
+        `select public.record_payment($1::uuid, 1000, current_date, 'bank_transfer', 'incoming', null)`,
+        [ausgestellt],
+      );
+
+      const { rows: alt } = await asPostgres<{ name: string }>(
+        'select name from public.invoice_recipients where id = $1',
+        [BETREUUNG],
+      );
+      const alterName = alt[0]!.name;
+      await asUserCommitted(
+        users.office,
+        `select public.save_invoice_recipient($1::uuid, $2::uuid, 'guardian', 'Betreuung Neuname',
+           'Amtsweg', '2', '72072', 'Tuebingen', 'BT-2026-0042', true)`,
+        [BETREUUNG, patients.petra],
+      );
+
+      // Ein neuer Entwurf an denselben Empfaenger liest live.
+      await leistung(KATALOG.kg, { stundeImMonat: 40, patient: patients.petra, grundlage: null });
+      const { rows: zweite } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.petra,
+        await monat(),
+      ]);
+      const entwurf = zweite[0]!.id;
+
+      const { rows: liste } = await asUser<{
+        id: string;
+        recipient_name: string;
+        recipient_kind: string;
+      }>(users.office, 'select id, recipient_name, recipient_kind from public.list_invoices()');
+      const zeile = (id: string) => liste.find((z) => z.id === id)!;
+      expect(zeile(ausgestellt).recipient_name).toBe(alterName);
+      expect(zeile(ausgestellt).recipient_kind).toBe('guardian');
+      expect(zeile(entwurf).recipient_name).toBe('Betreuung Neuname');
+
+      const treffer = async (suche: string) =>
+        (
+          await asUser<{ id: string }>(
+            users.office,
+            'select id from public.list_invoices(p_search => $1)',
+            [suche],
+          )
+        ).rows.map((z) => z.id);
+      expect(await treffer(alterName)).toEqual([ausgestellt]);
+      expect(await treffer('Neuname')).toEqual([entwurf]);
+
+      const { rows: offen } = await asUser<{ id: string; recipient_name: string }>(
+        users.office,
+        'select id, recipient_name from public.list_open_items()',
+      );
+      expect(offen.find((z) => z.id === ausgestellt)!.recipient_name).toBe(alterName);
+
+      const { rows: zahlungen } = await asUser<{ invoice_id: string; recipient_name: string }>(
+        users.office,
+        'select invoice_id, recipient_name from public.list_payments()',
+      );
+      expect(zahlungen.find((z) => z.invoice_id === ausgestellt)!.recipient_name).toBe(alterName);
+      await asPostgres('delete from public.payments');
+    });
+
     it('weist einen Empfaenger einer anderen Patientin ab (PROJECT_PRINCIPLES.md 13)', async () => {
       await leistung(KATALOG.kg, { stundeImMonat: 30 });
       const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [

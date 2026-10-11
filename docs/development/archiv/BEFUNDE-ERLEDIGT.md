@@ -1037,3 +1037,19 @@ Organisationsnamen nicht an), „Laufende Versorgung“ in den Stammdaten durch
 Patientenliste umbrechen statt kürzen.
 
 **Entscheidung (Jannes, 2026-10-09).** Spalte „Vorschlag“ in allen Zeilen: „Dauertermin“, „Dauer“, „Fehlzeit“ bleibt, „Tag umplanen“ bleibt, „Steht aus“, Verben in Titeln, Konto/Zugang mit „Anmeldemail“ und „Anmeldeseite“, „in Versorgung“, „Nachname, Vorname“.
+
+### BEF-141 — Rechnungsliste, offene Posten und Zahlungen zeigen bei ausgestellten Rechnungen den heutigen Empfängernamen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-10 |
+| Bereich | Abrechnung: Rechnungsliste, offene Posten, Zahlungen, Suche |
+| Quelle  | Zweitreview UX-EPIC-008 (S3) |
+| Status  | erledigt in BEF-141 (2026-10-11) |
+| Berührt | `list_invoices`, `list_open_items`, `list_payments` (`supabase/migrations/20261012110000_abr_033_rechnungsliste_suche.sql`); ADR-009 Punkt 10 |
+
+**Beobachtung.** Seit UX-008c lassen sich Empfänger bearbeiten. Das Blatt und die Zahlungserinnerung lesen den Snapshot und bleiben gleich; die drei Listen und die Suche lesen den Namen aber live aus `invoice_recipients` und zeigen bei ausgestellten und stornierten Rechnungen den geänderten Namen.
+
+**Erwartet.** Einzel-Story-Loop im kritischen Pfad: Für `status = 'issued'` den Empfänger aus `snapshot -> 'recipient'` lesen, die Suche ebenso; Datenbanktest „Empfänger geändert, Liste zeigt den alten Namen“. Bis dahin sagt die Oberfläche nur, dass das Blatt bleibt.
+
+**Umsetzung (2026-10-11).** Migration `20261027100000_bef_141_empfaenger_aus_snapshot.sql`: `app.invoice_recipient_name` liest bei ausgestellten Rechnungen Name (und in der Rechnungsliste die Art) aus dem Snapshot; die drei Listen und die Suche nutzen sie. Der Name der Person bleibt der heutige (ANN-339). Test in `supabase/tests/invoices.test.ts`, Gegenprobe ohne Migration rot; der Hinweis am Empfängerformular sagt jetzt, dass auch die Listen den alten Empfänger behalten.
