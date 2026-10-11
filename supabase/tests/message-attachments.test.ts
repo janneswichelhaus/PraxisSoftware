@@ -7,6 +7,7 @@ import {
   asStorageApi,
   asUser,
   asUserCommitted,
+  fremdeOrganisation,
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
@@ -378,6 +379,25 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
         ]),
       ),
     ).toBe('42501');
+  });
+
+  it('eine andere Organisation sieht, öffnet und löscht nichts (ADR-003)', async () => {
+    const fremd = await fremdeOrganisation();
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await anhaengen(tina, vorgang);
+    expect(await code(asUserCommitted(fremd.owner, VERWEIS_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(await code(asUserCommitted(fremd.owner, LOESCHEN_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(await code(asUser(fremd.owner, PRAXIS, [vorgang]))).toBe('P0002');
+    expect(
+      await code(asUserCommitted(fremd.owner, ANTWORTEN, [vorgang, 'Fremd', v.attachment_id, 1])),
+    ).toBe('P0002');
+    // Auch ohne Freigabe im Objektspeicher nichts.
+    expect(await signieren(fremd.owner, v.object_key)).toBe(0);
   });
 
   it('die Begleitung bekommt auch in der Behandlung keine Freigabe', async () => {
