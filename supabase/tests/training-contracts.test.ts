@@ -548,6 +548,22 @@ describe('Widerruf über die Plattform (KND-004)', () => {
     );
     expect(alt).toEqual([expect.objectContaining({ contract_id: vertrag, package_open: true })]);
 
+    // Keine fremde Praxis sieht ihn, auch nicht lange gelistet.
+    const fremd = await fremdeOrganisation();
+    expect((await asUser(fremd.owner, OFFEN)).rows).toEqual([]);
+
+    // Behält die Praxis das Paket, endet der Hinweis mit dem Vertragsende.
+    await asPostgres(
+      `update public.training_relationships set contract_started_on = current_date - 30, contract_ended_on = current_date - 1
+        where id = $1`,
+      [rel],
+    );
+    expect((await asUser(users.office, OFFEN)).rows).toEqual([]);
+    await asPostgres(
+      'update public.training_relationships set contract_ended_on = null where id = $1',
+      [rel],
+    );
+
     // Die Praxis entfernt das Paket: abgewickelt, nach 14 Tagen nicht mehr gelistet.
     const { rows: paket } = await asPostgres<{ id: string }>(
       'select id from public.training_packages where training_relationship_id = $1',

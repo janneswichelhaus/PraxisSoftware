@@ -8,8 +8,12 @@
 -- das Paket konnte trotz Widerruf ueber den Monatsentwurf abgerechnet werden.
 --
 -- Jetzt gilt: Ein Widerruf steht in Offene Punkte, solange sein Paket noch
--- besteht (`training_package_id` ist gesetzt) - und wie bisher mindestens
--- 14 Tage. Abgewickelt ist er, wenn die Praxis das Paket entfernt
+-- besteht (`training_package_id` ist gesetzt) und das Trainingsverhaeltnis
+-- nicht beendet ist - und wie bisher mindestens 14 Tage. Das Vertragsende
+-- laesst sich erst nach dem letzten Pakettag eintragen (ANN-277); es beendet
+-- den Hinweis, wenn die Praxis ein Paket bewusst behaelt (Wertersatz, ein
+-- Widerruf, den sie fuer verspaetet haelt). Ohne diese Grenze stuende er bis
+-- zur Aufbewahrungsloeschung (Zweitreview BEF-129). Abgewickelt ist er, wenn die Praxis das Paket entfernt
 -- (`delete_training_package`, vorher die Rechnung stornieren, wenn es auf
 -- einer stand); der Fremdschluessel setzt die Kennung dann auf null. Eine
 -- Stornierung allein wickelt nicht ab: Danach ist die Leistung wieder
@@ -61,8 +65,11 @@ begin
   join public.persons pe on pe.id = t.person_id
   where k.organization_id = v_org
     and k.withdrawn_at is not null
-    -- ANN-341: bis das Paket entfernt ist, mindestens 14 Tage.
-    and (k.training_package_id is not null
+    -- ANN-341: bis das Paket entfernt oder das Verhaeltnis beendet ist,
+    -- mindestens 14 Tage.
+    and ((k.training_package_id is not null
+          and (t.contract_ended_on is null
+               or t.contract_ended_on >= app.training_today(v_org)))
          or k.withdrawn_at > now() - make_interval(days => app.platform_withdrawal_notice_days()))
   order by k.withdrawn_at desc, k.id;
 end;
@@ -72,4 +79,4 @@ revoke all on function public.list_platform_training_withdrawals() from public, 
 grant execute on function public.list_platform_training_withdrawals() to authenticated;
 
 comment on function public.list_platform_training_withdrawals() is
-  'KND-004, BEF-129 (ANN-341): Widerrufe von Trainingsvertraegen ueber die Plattform fuer Offene Punkte (owner, office) - solange das Paket besteht, mindestens 14 Tage; package_open sagt, ob es noch besteht. Ohne Recht keine Zeile.';
+  'KND-004, BEF-129 (ANN-341): Widerrufe von Trainingsvertraegen ueber die Plattform fuer Offene Punkte (owner, office) - solange das Paket besteht und das Verhaeltnis nicht beendet ist, mindestens 14 Tage; package_open sagt, ob es noch besteht. Ohne Recht keine Zeile.';
