@@ -26,6 +26,7 @@ client.setQueryData(PASSKEYS_SCHLUESSEL, [
     name: 'iPhone',
     angelegtAm: '2026-10-10T08:00:00Z',
     zuletztAm: '2026-10-10T09:30:00Z',
+    freigegeben: true,
   },
 ]);
 client.setQueryData(PIN_SCHLUESSEL, true);
