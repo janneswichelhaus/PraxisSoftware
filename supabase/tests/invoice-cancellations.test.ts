@@ -1139,6 +1139,31 @@ describe('Storno und Korrektur', () => {
       expect(gelesen.correction_invoice_id).toBe(rows[0]!.id);
       expect(gelesen.correction_pending).toBe(false);
     });
+
+    it('wartet wieder, wenn der Korrekturentwurf verworfen ist (Zweitreview S1)', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(false);
+
+      await asUserCommitted(users.office, 'select public.delete_invoice_draft($1::uuid)', [
+        rows[0]!.id,
+      ]);
+
+      const gelesen = await ansicht(id);
+      expect(gelesen.correction_invoice_id).toBeNull();
+      expect(gelesen.correction_pending).toBe(true);
+    });
+
+    it('zeigt Plattformkonto und fremder Praxis den Zustand nicht (Zweitreview S2)', async () => {
+      const { id } = await ausgestellteRechnung();
+      await storniere(id);
+      const fremd = await fremdeOrganisation();
+      await expect(asUser(fremd.owner, ANSICHT, [id])).rejects.toThrow(/invoice not found/);
+      await expect(asUser(users.plattformErika, ANSICHT, [id])).rejects.toThrow(
+        /not allowed to read invoices/,
+      );
+    });
   });
 
   // ---------------------------------------------------------------------------
