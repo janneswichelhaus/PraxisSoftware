@@ -4079,7 +4079,7 @@ Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-0
 
 **Begründung.** Punkt 64 verlangt, Zeit- und Programmangaben des Containers zu prüfen und auf dem Gerät zu leeren. Chromium schreibt „Chrome“ als Programm in den WebM-Kopf, Safari Zeitstempel in den MP4-Kopf. Auffüllen mit Nullbytes und Umbenennen in `free` sind in beiden Formaten zulässig und lassen alle Längen und Verweise unverändert – kein Neukodieren. Unsicher: welche Kästen Safari am iPhone tatsächlich schreibt; das prüft die Sichtung.
 
-**Anker.** `src/features/messages/videometadaten.ts` und die Prüfung in `supabase/functions/patient-file-verify/video.ts`; Aufnahme in `src/features/platform/Videodialog.tsx`.
+**Anker.** `src/features/platform/videometadaten.ts` und die Prüfung in `supabase/functions/patient-file-verify/video.ts`; Aufnahme in `src/features/platform/Videodialog.tsx`.
 
 **Änderungspfad.** Weitere Angaben leeren: eine Regel an beiden Stellen · Aufwand `klein`. Dauer am Server prüfen: Containerauswertung in der Function · Aufwand `mittel`.
 

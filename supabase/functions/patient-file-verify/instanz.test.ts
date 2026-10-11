@@ -96,4 +96,30 @@ describe('Instanz', () => {
     const f = vi.fn<typeof fetch>().mockRejectedValue(new Error('weg'));
     expect(await erstelleInstanz(EINRICHTUNG, f).objekt('b', 'k')).toEqual({ ok: false });
   });
+
+  it('fragt fuer einen Anhang die Funktionen der Anhaenge (KOM-006)', async () => {
+    const f = abruf(Response.json([]));
+    const instanz = erstelleInstanz(EINRICHTUNG, f);
+    await instanz.ankuendigung(DATEI, PERSON, 'anhang');
+    expect(f.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/message_attachment_for_verification',
+    );
+    const g = abruf(Response.json('passed'));
+    const ergebnis = await erstelleInstanz(EINRICHTUNG, g).eintragen(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: true, no_audio_ok: false },
+      'anhang',
+    );
+    expect(ergebnis).toEqual({ ok: true, wert: 'passed' });
+    expect(g.mock.calls[0]![0]).toBe(
+      'http://127.0.0.1:54321/rest/v1/rpc/record_message_attachment_verification',
+    );
+    expect(JSON.parse(g.mock.calls[0]![1]?.body as string)).toEqual({
+      p_attachment_id: DATEI,
+      p_content_type_ok: true,
+      p_checksum_ok: true,
+      p_metadata_ok: true,
+      p_no_audio_ok: false,
+    });
+  });
 });

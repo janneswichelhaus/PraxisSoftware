@@ -37,7 +37,10 @@ const ERLAUBT: readonly RegExp[] = [
   // über die Plattformprojektion.
   /^@\/features\/assessments\/(FragebogenFelder|antworten|darstellung|instrumente|schema)$/,
   // POR-014: die Bildansicht - ein Baustein ohne Datenzugriff (ADR-017 Punkt 54).
-  /^@\/features\/files\/Dateiansicht$/,
+  // KOM-007: der Kameradialog und die Bereinigung der Bytes - Bausteine ohne
+  // Datenzugriff; das Foto an der Rückfrage entsteht wie in der Praxis nur im
+  // eigenen Dialog (ADR-017 Punkte 33, 34, 62).
+  /^@\/features\/files\/(Dateiansicht|Kameradialog|metadaten)$/,
   // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
   // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
   /^@\/features\/exercise-plans\/(Planblatt|dosierung)$/,
