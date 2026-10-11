@@ -3,15 +3,11 @@ import { QueryClient, QueryClientProvider, useQuery, useQueryClient } from '@tan
 import { Route, RouterProvider, Routes, createBrowserRouter, useLocation } from 'react-router-dom';
 import { SessionProvider } from '@/features/auth/SessionProvider';
 import { Sitzungssperre } from '@/features/auth/sitzungssperre/Sitzungssperre';
+import { Einrichtungspflicht } from '@/features/auth/einrichtung/Einrichtungspflicht';
 import { useSession } from '@/features/auth/sessionContext';
 import { LoginPage } from '@/features/auth/LoginPage';
-import { KennwortNeuPage } from '@/features/auth/KennwortNeuPage';
 import { ZugangPage } from '@/features/auth/ZugangPage';
-import {
-  WIEDERHERSTELLUNG_PFAD,
-  ZUGANG_PFAD,
-  istEinloesePfad,
-} from '@/features/auth/linkEinloesen';
+import { ZUGANG_PFAD, istEinloesePfad } from '@/features/auth/linkEinloesen';
 import {
   KeinProfilError,
   ZugangGesperrtError,
@@ -254,7 +250,6 @@ function OhneProfil({
 function OeffentlicheRouten() {
   return (
     <Routes>
-      <Route path={WIEDERHERSTELLUNG_PFAD} element={<KennwortNeuPage />} />
       <Route path={ZUGANG_PFAD} element={<ZugangPage />} />
       <Route path={EINLADUNG_PFAD} element={<EinladungPage />} />
       <Route path="*" element={<LoginPage />} />
@@ -295,7 +290,10 @@ function Gate() {
     // Je Konto eine eigene Sperre: Meldet sich in einem zweiten Tab ein
     // anderes Konto an, fällt eine festgehaltene Seite weg (Zweitreview).
     <Sitzungssperre key={session.user.id}>
-      <AuthenticatedApp />
+      {/* In Produktion erst Passkey und PIN (ADR-025 Fassung 2, Punkt 13). */}
+      <Einrichtungspflicht>
+        <AuthenticatedApp />
+      </Einrichtungspflicht>
     </Sitzungssperre>
   );
 }

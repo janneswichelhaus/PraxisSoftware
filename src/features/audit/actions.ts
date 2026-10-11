@@ -117,7 +117,8 @@ export const auditActionLabels: Record<AuditAction, string> = {
   'staff_account.roles_changed': 'Rollen geändert',
   'staff_account.locked': 'Zugang gesperrt',
   'staff_account.unlocked': 'Zugang entsperrt',
-  'staff_account.password_reset_requested': 'Kennwort zurücksetzen angestoßen',
+  'staff_account.password_reset_requested':
+    'Neuen Anmeldelink angestoßen (früher: Kennwort zurücksetzen)',
   'account.password_changed': 'Eigenes Kennwort geändert',
   'account.sessions_ended': 'Alle eigenen Sitzungen beendet',
   'account.mfa_enrolled': 'Zweiter Faktor eingerichtet',
@@ -168,7 +169,8 @@ export const auditOperationLabels: Record<string, string> = {
   'questionnaire_response.viewed': 'Fragebogen gelesen',
   'staff_account.invitation_revoked': 'Einladung zurückgenommen',
   'staff_account.invited': 'Zugang eingeladen',
-  'staff_account.password_reset_requested': 'Kennwort zurücksetzen angestoßen',
+  'staff_account.password_reset_requested':
+    'Neuen Anmeldelink angestoßen (früher: Kennwort zurücksetzen)',
   'staff_account.roles_changed': 'Rollen geändert',
   'staff_member.updated': 'Mitarbeiterstammdaten geändert',
   'statistics.read': 'Statistiken gelesen',

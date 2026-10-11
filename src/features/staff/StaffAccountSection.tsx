@@ -24,7 +24,7 @@ import {
   sendeZugangsMail,
   setzeRollen,
   setzeZugangAktiv,
-  stosseKennwortZuruecksetzenAn,
+  sendeNeuenAnmeldelink,
   widerrufeEinladung,
   type SperrProblem,
   type StaffAccount,
@@ -361,12 +361,12 @@ interface Bestaetigung {
 }
 
 /**
- * Ein bestehender Zugang: Rollen, Sperre, Kennwort (STAFF-002c, STAFF-003).
+ * Ein bestehender Zugang: Rollen, Sperre, Anmeldelink (STAFF-002c, STAFF-003, SEC-006).
  *
  * Die drei Vorgänge stehen bewusst nebeneinander statt in einem Formular. Sie
  * sind verschieden endgültig: Eine Rolle zu ändern wirkt sofort auf die
- * Sichtbarkeit von Akten, eine Sperre nimmt den Zugang ganz, und das
- * Zurücksetzen des Kennworts ändert an den Berechtigungen gar nichts. Ein
+ * Sichtbarkeit von Akten, eine Sperre nimmt den Zugang ganz, und ein neuer
+ * Anmeldelink ändert an den Berechtigungen gar nichts. Ein
  * gemeinsames „Speichern" würde diesen Unterschied einebnen.
  */
 function BestehenderZugang({
@@ -421,8 +421,8 @@ function BestehenderZugang({
       melden(zielAktiv ? 'Der Zugang ist entsperrt.' : 'Der Zugang ist gesperrt.');
     },
   });
-  const kennwort = useMutation({
-    mutationFn: () => stosseKennwortZuruecksetzenAn(staff.id),
+  const anmeldelink = useMutation({
+    mutationFn: () => sendeNeuenAnmeldelink(staff.id),
   });
 
   const gespeichert = bestaetigt ?? konto.role_keys ?? [];
@@ -568,28 +568,30 @@ function BestehenderZugang({
         )}
 
         <Rueckfrage
-          ausloeser="Kennwort zurücksetzen"
-          bestaetigen="Mail senden"
+          ausloeser="Neuen Anmeldelink senden"
+          bestaetigen="Link senden"
           bestaetigenLaeuft="Wird gesendet …"
           fehler={
-            kennwort.isError
-              ? `Das Zurücksetzen konnte nicht angestoßen werden. ${ERNEUT}`
+            anmeldelink.isError
+              ? `Der Anmeldelink konnte nicht gesendet werden. ${ERNEUT}`
               : undefined
           }
-          laeuft={kennwort.isPending}
-          onBestaetigen={() => kennwort.mutateAsync()}
-          onAbbrechen={() => kennwort.reset()}
+          laeuft={anmeldelink.isPending}
+          onBestaetigen={() => anmeldelink.mutateAsync()}
+          onAbbrechen={() => anmeldelink.reset()}
         >
           <p>
-            Der Anmeldedienst schickt eine Mail an die hinterlegte Adresse. Das bisherige Kennwort
-            bleibt gültig, bis ein neues gesetzt wird – der Zugang wird dadurch nicht gesperrt.
+            Für einen verlorenen Passkey oder ein neues Telefon: Der Anmeldedienst schickt einen
+            einmaligen Anmeldelink an die hinterlegte Adresse. Damit richtet die Person einen neuen
+            Passkey ein. Bisherige Passkeys bleiben gültig – einen verlorenen entfernt die Person
+            danach in „Mein Konto“.
           </p>
         </Rueckfrage>
       </div>
 
-      {kennwort.isSuccess ? (
+      {anmeldelink.isSuccess ? (
         <Statusmeldung ton="erfolg" className="mt-3">
-          Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse geschickt.
+          Der Anmeldelink wurde an die hinterlegte Adresse geschickt.
         </Statusmeldung>
       ) : null}
     </div>

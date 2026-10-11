@@ -23,7 +23,7 @@ vi.mock('@/lib/supabase', () => ({
   getSupabase: () => ({ rpc, auth: { signOut, updateUser } }),
 }));
 
-const { KENNWORT_MINDESTLAENGE, aendereKennwort, beendeAlleSitzungen } = await import('./api');
+const { KENNWORT_MINDESTLAENGE, beendeAlleSitzungen } = await import('./api');
 
 /** Hält fest, in welcher Reihenfolge die beiden Aufrufe tatsächlich fielen. */
 let ablauf: string[] = [];
@@ -78,33 +78,6 @@ describe('beendeAlleSitzungen', () => {
     await expect(beendeAlleSitzungen()).rejects.toThrow(
       'Die Sitzungen konnten nicht beendet werden.',
     );
-  });
-});
-
-describe('aendereKennwort', () => {
-  it('vermerkt erst nach dem Vorgang — hier ist die Sitzung danach noch da', async () => {
-    await aendereKennwort('ein-langes-kennwort');
-
-    expect(ablauf).toEqual(['updateUser', 'rpc:password_changed']);
-  });
-
-  it('stellt ein geändertes Kennwort nicht als Misserfolg dar, wenn nur der Vermerk scheitert', async () => {
-    rpc.mockResolvedValue({ error: { message: 'audit down' } });
-    const konsole = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    await expect(aendereKennwort('ein-langes-kennwort')).resolves.toBeUndefined();
-
-    // Still bleiben darf er trotzdem nicht: der frühere try/catch fing nichts,
-    // weil `rpc` bei einem Serverfehler regulär auflöst.
-    expect(konsole).toHaveBeenCalledOnce();
-    konsole.mockRestore();
-  });
-
-  it('meldet nichts, wenn das Kennwort gar nicht geändert wurde', async () => {
-    updateUser.mockResolvedValue({ error: { message: 'weak password' } });
-
-    await expect(aendereKennwort('kurz')).rejects.toThrow();
-    expect(rpc).not.toHaveBeenCalled();
   });
 });
 

@@ -4,10 +4,11 @@ import { EINLADUNG_PFAD } from '@/features/platform/einladung';
 /**
  * Einlösen eines Links aus einer Auth-Mail (FIX-001, ANN-043).
  *
- * Der Anmeldedienst verschickt zwei Sorten Links: einen zum Setzen eines neuen
- * Kennworts (`recovery`) und einen zum Anmelden ohne Kennwort (`magiclink`,
- * die Zugangsmail an eine offene Einladung). Beide tragen dieselbe Ware — den
- * einmaligen `token_hash` — und werden deshalb hier gemeinsam eingelöst.
+ * Der Anmeldedienst verschickt einen Link zum Anmelden ohne Kennwort
+ * (`magiclink`, die Zugangsmail an eine offene Einladung oder ein neuer
+ * Anmeldelink der Praxis). Er trägt den einmaligen `token_hash`. Den Link zum
+ * Setzen eines Kennworts (`recovery`) löst die Anwendung seit SEC-EPIC-002
+ * nicht mehr ein: Es gibt kein Kennwort (ADR-025 Punkt 9).
  *
  * **Warum `verifyOtp` und nicht die Sitzung aus der Adresszeile.**
  * `src/lib/supabase.ts` setzt `detectSessionInUrl: false`. Diese Anwendung
@@ -23,7 +24,7 @@ import { EINLADUNG_PFAD } from '@/features/platform/einladung';
  * genau im häufigsten Fall — angefordert am Praxisrechner, geöffnet auf dem
  * Telefon.
  */
-type LinkTyp = 'recovery' | 'magiclink';
+type LinkTyp = 'magiclink';
 
 /**
  * Der Link trägt nicht mehr.
@@ -73,9 +74,6 @@ export async function loeseLinkEin(tokenHash: string, typ: LinkTyp): Promise<voi
   throw new LinkUngueltigError();
 }
 
-/** Der Pfad, auf den die Mail „Kennwort zurücksetzen" führt. */
-export const WIEDERHERSTELLUNG_PFAD = '/kennwort-neu';
-
 /** Der Pfad, auf den die Zugangsmail an eine offene Einladung führt. */
 export const ZUGANG_PFAD = '/zugang';
 
@@ -90,7 +88,7 @@ export const ZUGANG_PFAD = '/zugang';
  */
 export function istEinloesePfad(pfad: string): boolean {
   // POR-003: die Einladung zur Plattform (ADR-023 Punkt 8) als dritte Seite.
-  return pfad === WIEDERHERSTELLUNG_PFAD || pfad === ZUGANG_PFAD || pfad === EINLADUNG_PFAD;
+  return pfad === ZUGANG_PFAD || pfad === EINLADUNG_PFAD;
 }
 
 /**

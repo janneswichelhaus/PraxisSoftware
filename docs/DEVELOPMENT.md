@@ -143,7 +143,12 @@ VITE_SUPABASE_ANON_KEY=<anon key>
 pnpm dev                       # http://127.0.0.1:5173
 ```
 
-Anmeldung mit einem Konto aus „Testkonten" und dem Entwicklungskennwort.
+Anmeldung mit einem Konto aus „Testkonten" und dem Entwicklungskennwort über
+den **Testzugang** unter dem Passkey-Knopf (nur außerhalb der Produktion,
+ADR-025 Punkt 15). Passkey und App-PIN richtet „Mein Konto“ ein; ein Passkey
+geht lokal nur unter `http://localhost:5173`, nicht unter `127.0.0.1`: WebAuthn
+nimmt keine IP-Adresse als Relying Party (`[auth.webauthn]` in
+`supabase/config.toml`).
 
 **6. Echte E2E-Tests starten** (zweites Git-Bash-Fenster)
 
@@ -243,6 +248,14 @@ Entwicklungskennwort: Alle Konten bekommen das Kennwort aus dem Secret
 gesperrt. Vor der Seite steht die **zweite Tür** (Benutzer `praxis`, Kennwort
 aus `TESTENV_TUER_PASSWORD`), sofern das Secret gesetzt ist (ANN-101). Die
 beiden Secrets sind optional und liegen wie die übrigen in der Umgebung `test`.
+Das Kennwort ist nur der erste Einstieg über den Testzugang (ADR-025 Punkt 15);
+danach in „Mein Konto“ Passkey und PIN einrichten und wie im Betrieb benutzen.
+
+**Passkeys (SEC-EPIC-002).** Der Workflow baut mit `VITE_APP_ENVIRONMENT=test`
+(ANN-326). Passkeys sind im Dashboard von `praxis-test` unter Authentication
+eingeschaltet (Jannes, 2026-10-11), mit Relying Party Name „Praxis“, Domain
+`prtest.uber.space` und Ursprung `https://prtest.uber.space`; die Werte in
+`supabase/config.toml` gelten nur lokal.
 
 **Kartendienst (optional, 2026-10-04).** Mit dem Secret
 `TESTENV_SUPABASE_ACCESS_TOKEN` liefert der Lauf die Edge Function
@@ -260,7 +273,7 @@ Die Oberfläche wird ausgeliefert, die Function behält ihren bisherigen Stand.
 Danach den Workflow einmal von Hand starten (ohne „neu aufsetzen"); scheitert
 er erneut, das Secret `TESTENV_SUPABASE_ACCESS_TOKEN` prüfen (2026-10-06).
 
-**Grenzen.** Keine Mails (Kennwort vergessen, Einladungen: BEF-026); außer
+**Grenzen.** Keine Mails (Anmeldelinks, Einladungen: BEF-026); außer
 `location-provider` keine Edge Functions (ADR-015 Punkt 20). Ohne Kartendienst
 zeigt die Karte ihren Hinweis. Das kostenlose Supabase-Projekt pausiert nach
 einer Woche ohne Nutzung; im Dashboard wieder starten.
@@ -284,14 +297,16 @@ fremden oder öffentlichen Netz, und wie überall nur mit synthetischen Daten.
 
 Grenzen: Über `http://` und eine IP ist die Seite kein sicherer Kontext —
 Kamera, Standort und Offline-Speicher des Browsers stehen dort nicht zur
-Verfügung. Links aus Mails (Kennwort vergessen, Einladung) zeigen weiter auf
+Verfügung, Passkeys ebenso nicht. Links aus Mails (Anmeldelink, Einladung) zeigen weiter auf
 `127.0.0.1` und öffnen nur am Rechner (`supabase/config.toml`, `site_url`).
 Nach dem Test `VITE_SUPABASE_URL` zurückstellen, wenn E2E-Tests laufen sollen.
 
 ## Testkonten
 
 Alle Konten verwenden das Entwicklungskennwort `LokalerTestzugang!2026`. Das ist
-kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank.
+kein Secret, sondern ein Platzhalter für eine lokale Wegwerf-Datenbank. Ein
+Kennwort haben nur diese synthetischen Testkonten außerhalb der Produktion;
+in Produktion gibt es keins (ADR-025 Punkt 9).
 
 | E-Mail                             | Rollen                                                                     |
 | ---------------------------------- | -------------------------------------------------------------------------- |

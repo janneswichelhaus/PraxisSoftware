@@ -28,8 +28,10 @@ const ERLAUBT: readonly RegExp[] = [
   /^@\/app\/Profilhinweis$/,
   // Anmeldung und Sitzung gelten für Praxis- und Plattformkonten gleich (Punkt 17).
   /^@\/features\/auth\/(eigeneAbmeldung|fokus|fremdeSitzung|sessionContext)$/,
-  // Die Kennwortregel (ANN-027) - eine Regel, keine Praxisdaten.
-  /^@\/features\/account\/(api|kennwortFehler)$/,
+  // SEC-EPIC-002: Passkey, App-PIN und ihre Einrichtung - die Anmeldung ohne
+  // Kennwort gilt ebenso für alle Konten gleich (ADR-025 Punkt 8).
+  /^@\/features\/auth\/(appPin|passkey|linkEinloesen)$/,
+  /^@\/features\/auth\/einrichtung\/(AnmeldungEinrichten|AnmeldungVerwalten)$/,
   // POR-012: der Fragebogen als Baustein und seine Definitionen - Produktinhalt
   // des Releases (ANN-083), kein Datenzugriff; die Erhebungen selbst kommen
   // über die Plattformprojektion.

@@ -2,13 +2,15 @@ import { z } from 'zod';
 import { getSupabase } from '@/lib/supabase';
 
 /**
- * Das Einlösen einer Einladung zur Plattform (POR-003, ADR-023 Punkte 7 bis 9).
+ * Das Einlösen einer Einladung zur Plattform (POR-003, ADR-023 Fassung 4,
+ * Punkte 7 bis 10; ADR-025 Fassung 2, Punkt 13).
  *
- * Die Seite schickt Code, Adresse und Kennwort an den Zugangsdienst (Edge
- * Function `platform-access`). Der legt das Konto an oder bestätigt ein
- * bestehendes und bindet es an den Zugang. Der Browser sieht den
- * Admin-Schlüssel nie. Danach meldet sich die Seite ganz gewöhnlich mit
- * Adresse und Kennwort an (Punkt 18).
+ * Die Seite schickt Code und Adresse an den Zugangsdienst (Edge Function
+ * `platform-access`). Der legt das Konto **ohne Kennwort** an, bindet es an
+ * den Zugang und gibt eine Einmal-Anmeldung zurück; die Seite meldet damit
+ * an und richtet Passkey und PIN ein. Wer schon ein Konto hat, meldet sich
+ * vorher mit dem Passkey an - dann trägt der Aufruf die Sitzung, und es gibt
+ * keine Einmal-Anmeldung. Der Browser sieht den Admin-Schlüssel nie.
  */
 
 /** Der Pfad, auf den der QR-Code und die Mail führen. */
@@ -25,10 +27,10 @@ export function codeAusFragment(fragment: string): string | null {
 export type Einloesefehler =
   | 'invitation_invalid'
   | 'email_taken'
-  | 'weak_password'
   | 'account_conflict'
   | 'invalid_request'
-  | 'password_not_set'
+  | 'sign_in_not_created'
+  | 'session_invalid'
   | 'unavailable';
 
 export class EinloeseError extends Error {
@@ -43,7 +45,11 @@ export class EinloeseError extends Error {
 const antwortSchema = z.union([
   z.object({
     ok: z.literal(true),
-    value: z.object({ purpose: z.enum(['activate', 'reset']), organizationName: z.string() }),
+    value: z.object({
+      purpose: z.enum(['activate', 'reset']),
+      organizationName: z.string(),
+      tokenHash: z.string().min(1).nullable(),
+    }),
   }),
   z.object({ ok: z.literal(false), error: z.string() }),
 ]);
@@ -51,20 +57,27 @@ const antwortSchema = z.union([
 const BEKANNT: readonly Einloesefehler[] = [
   'invitation_invalid',
   'email_taken',
-  'weak_password',
   'account_conflict',
   'invalid_request',
-  'password_not_set',
+  'sign_in_not_created',
+  'session_invalid',
 ];
 
-export async function loeseEinladungEin(
-  code: string,
-  email: string,
-  kennwort: string,
-): Promise<{ purpose: 'activate' | 'reset'; organizationName: string }> {
+export interface Eingeloest {
+  purpose: 'activate' | 'reset';
+  organizationName: string;
+  /** Die Einmal-Anmeldung; `null`, wenn mit bestehender Sitzung eingelöst wurde. */
+  tokenHash: string | null;
+}
+
+/**
+ * Löst die Einladung ein. Ohne Sitzung mit Adresse; mit Sitzung (`email`
+ * leer) für das angemeldete Konto - `functions.invoke` trägt sie dann im Kopf.
+ */
+export async function loeseEinladungEin(code: string, email: string): Promise<Eingeloest> {
   const { data, error, response } = (await getSupabase().functions.invoke<unknown>(
     'platform-access',
-    { body: { aufgabe: 'einloesen', code, email, kennwort } },
+    { body: { aufgabe: 'einloesen', code, email } },
   )) as { data: unknown; error: unknown; response?: Response };
 
   let koerper: unknown = data;

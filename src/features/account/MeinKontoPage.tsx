@@ -1,4 +1,4 @@
-import { useContext, useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/Button';
 import { DetailList, DetailRow } from '@/components/ui/DetailList';
@@ -9,136 +9,21 @@ import { RoleBadge } from '@/components/ui/RoleBadge';
 import { Rueckfrage } from '@/components/ui/Rueckfrage';
 import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
-import { SessionContext } from '@/features/auth/sessionContext';
 import { isOwner, type CurrentUser } from '@/features/session/types';
 import {
-  KENNWORT_MINDESTLAENGE,
-  aendereKennwort,
   beendeAlleSitzungen,
+  bestaetigeZweitenFaktor,
   bestaetigeMfa,
   entferneMfa,
   ladeMfaFaktoren,
   starteMfaEinrichtung,
   type MfaEinrichtung,
 } from './api';
-import { kennwortFehler, type Kennwortfehler } from './kennwortFehler';
+import { PasskeyAbschnitt, PinAbschnitt } from '@/features/auth/einrichtung/AnmeldungVerwalten';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
 
 /** Der nächste Schritt nach einem gescheiterten Vorgang (NAV-13, WRT-01). */
 const ERNEUT = 'Bitte die Verbindung prüfen und erneut versuchen.';
-
-const FELD_KENNWORT = 'mein-konto-kennwort';
-const FELD_WIEDERHOLUNG = 'mein-konto-kennwort-wiederholung';
-
-/**
- * Kennwort ändern — die Selbstbedienung für den Normalfall (STAFF-004a).
- *
- * Seit UXR-002 ein Formular (NAV-13): Die Eingabetaste ändert das Kennwort,
- * ein Fehler steht an dem Feld, das ihn verursacht, und der Fokus geht dorthin.
- * Das Konto steht verborgen dabei, damit ein Passwortmanager das neue
- * Kennwort dem richtigen Eintrag zuordnet (AUTH-05).
- */
-function KennwortAendern() {
-  // Gelesen, nicht verlangt: Ohne Sitzung - in Tests der Seite - fehlt nur
-  // das verborgene Feld für den Passwortmanager.
-  const konto = useContext(SessionContext)?.session?.user.email;
-  const [kennwort, setKennwort] = useState('');
-  const [wiederholung, setWiederholung] = useState('');
-  const [fehler, setFehler] = useState<Kennwortfehler | null>(null);
-
-  const mutation = useMutation({
-    mutationFn: () => aendereKennwort(kennwort),
-    onSuccess: () => {
-      setKennwort('');
-      setWiederholung('');
-    },
-  });
-
-  function absenden(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (mutation.isPending) return;
-    const problem = kennwortFehler(kennwort, wiederholung);
-    if (problem) {
-      setFehler(problem);
-      document
-        .getElementById(problem.feld === 'kennwort' ? FELD_KENNWORT : FELD_WIEDERHOLUNG)
-        ?.focus();
-      return;
-    }
-    setFehler(null);
-    mutation.mutate();
-  }
-
-  return (
-    <Section titel="Kennwort">
-      <form
-        onSubmit={absenden}
-        noValidate
-        aria-label="Kennwort ändern"
-        className="flex flex-col gap-4"
-      >
-        {konto ? (
-          <input
-            type="email"
-            name="username"
-            autoComplete="username"
-            value={konto}
-            readOnly
-            hidden
-          />
-        ) : null}
-        <Field
-          label="Neues Kennwort"
-          feldId={FELD_KENNWORT}
-          // Die Regel am Feld, das sie betrifft (NAV-13): Vorlesesoftware
-          // nennt sie mit dem Feld, nicht nur im Abschnittskopf.
-          hint={`Mindestens ${KENNWORT_MINDESTLAENGE} Zeichen. Ein langer Satz ist sicherer und leichter zu merken als ein kurzes Kennwort mit Sonderzeichen.`}
-          type="password"
-          name="new_password"
-          autoComplete="new-password"
-          value={kennwort}
-          error={fehler?.feld === 'kennwort' ? fehler.text : undefined}
-          onChange={(event) => {
-            setKennwort(event.target.value);
-            setFehler(null);
-          }}
-        />
-        <Field
-          label="Neues Kennwort wiederholen"
-          feldId={FELD_WIEDERHOLUNG}
-          type="password"
-          name="new_password_repeat"
-          autoComplete="new-password"
-          value={wiederholung}
-          error={fehler?.feld === 'wiederholung' ? fehler.text : undefined}
-          onChange={(event) => {
-            setWiederholung(event.target.value);
-            setFehler(null);
-          }}
-        />
-
-        {mutation.isError ? (
-          // Welcher Fehler es war, sagt der Anmeldedienst hier nicht; der
-          // Satz nennt beide Auswege (AUTH-10).
-          <Statusmeldung ton="fehler">
-            Das Kennwort konnte nicht geändert werden. {ERNEUT} Das neue Kennwort muss sich vom
-            bisherigen unterscheiden.
-          </Statusmeldung>
-        ) : null}
-        {mutation.isSuccess ? (
-          <Statusmeldung ton="erfolg">
-            Das Kennwort wurde geändert. Angemeldete Geräte bleiben angemeldet – dafür gibt es unten
-            „Alle Sitzungen beenden“.
-          </Statusmeldung>
-        ) : null}
-
-        <Button type="submit" disabled={mutation.isPending} className="self-start">
-          {mutation.isPending ? 'Wird geändert …' : 'Kennwort ändern'}
-        </Button>
-      </form>
-    </Section>
-  );
-}
 
 /**
  * Zweiter Faktor (STAFF-004b).
@@ -200,14 +85,14 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
     // Ein Satz als Hinweis; was es nicht gibt, steht nicht dran (UX-005i).
     <Section
       titel="Zweiter Faktor"
-      hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Kennwort."
+      hinweis="Ein Einmalkennwort aus einer App auf dem Telefon, zusätzlich zum Passkey."
     >
       {/* UI-002d, ANN-028: Die Auskunft steht ganz oben und unabhängig davon,
           ob schon ein Faktor eingerichtet ist - sie gilt in beiden Fällen. */}
       <Statusmeldung ton="warnung">
-        Die Anmeldung fragt den zweiten Faktor <strong>derzeit noch nicht ab</strong>. Er lässt sich
-        einrichten und bleibt gespeichert, schützt die Anmeldung aber erst, wenn die Anwendung
-        online erreichbar ist. Bis dahin trägt allein das Kennwort.
+        Die Anmeldung fragt den zweiten Faktor <strong>derzeit nicht ab</strong>; der Passkey prüft
+        schon Gerät und Person. Ist er eingerichtet, verlangt der Anmeldedienst ihn beim Einrichten
+        und Entfernen eines Passkeys.
       </Statusmeldung>
 
       {faktoren.isPending ? <LoadingState label="Stand wird geladen …" /> : null}
@@ -267,7 +152,7 @@ function ZweiterFaktor({ user }: { user: CurrentUser }) {
           )}
 
           {!einrichtung ? (
-            // Sekundär: Auf der Seite bleibt „Kennwort ändern" der eine
+            // Sekundär: Auf der Seite bleibt „PIN festlegen" der eine
             // Hauptknopf (NAV-20, Bedienprinzip „ein Hauptknopf je Ansicht").
             <Button
               type="button"
@@ -384,8 +269,8 @@ function Sitzungen() {
       >
         <p>
           Alle angemeldeten Geräte werden abgemeldet, dieses eingeschlossen. Sie melden sich danach
-          neu an. Das Kennwort ändert sich dadurch nicht – wurde es womöglich bekannt, zuerst oben
-          ein neues setzen.
+          neu an. Passkeys und PIN bleiben dabei bestehen – einen Passkey, der nicht mehr in Ihrer
+          Hand ist, oben entfernen.
         </p>
         <p className="mt-3">
           Ein bereits geöffnetes Gerät kann noch bis zu einer Stunde weiterlesen, bevor es sich neu
@@ -435,14 +320,16 @@ export function MeinKontoPage({ user }: { user: CurrentUser }) {
           </DetailList>
         </Section>
 
-        <KennwortAendern />
+        <PasskeyAbschnitt bestaetigeZweitenFaktor={bestaetigeZweitenFaktor} />
+        <PinAbschnitt />
         <ZweiterFaktor user={user} />
         <Sitzungen />
 
         <Kleingedrucktes className="mt-10">
           {/* Wer Rollen ändert, sagt der Kopf der Seite (UX-005i). */}
-          Kennwortänderung, zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne
-          Kennwort, ohne Einmalkennwort und ohne Gerätekennung.
+          Zweiter Faktor und das Beenden der Sitzungen werden protokolliert – ohne Einmalkennwort
+          und ohne Gerätekennung. Einrichten und Entfernen eines Passkeys hält der Anmeldedienst in
+          seinem eigenen Protokoll fest. Die PIN und ihre Verwendung werden nicht protokolliert.
         </Kleingedrucktes>
       </div>
     </>

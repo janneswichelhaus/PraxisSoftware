@@ -4,9 +4,9 @@
 
 | | |
 |---|---|
-| **Dokumentversion** | **0.24** |
+| **Dokumentversion** | **0.25** |
 | **Änderungsdatum** | **2026-10-10** |
-| Vorversion | 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
+| Vorversion | 0.24 (2026-10-10); 0.23 (2026-10-09); 0.22 (2026-10-09); 0.21 (2026-10-03); 0.20 (2026-10-02); 0.19 (2026-10-02); 0.18.1 (2026-09-30); 0.18 (2026-09-26); 0.17 (2026-09-23); 0.16 (2026-09-22); 0.15 (2026-09-22); 0.14 (2026-09-22); 0.13 (2026-09-20); 0.12.2 (2026-09-20); 0.12.1 (2026-09-20); 0.12 (2026-09-16); 0.11.2 (2026-09-17); 0.11.1 (2026-09-16); 0.11 (2026-09-16); 0.10.2 (2026-09-15); 0.10.1 (2026-09-15); 0.10 (2026-09-13); 0.9 (2026-09-12); 0.8 (2026-09-12); 0.7 (2026-09-11); 0.6 (2026-09-11); 0.5 (2026-09-08); 0.4 (2026-09-05); 0.2.2 Korrekturversion; 0.1 Baseline, unverändert im Git-Verlauf erhalten |
 | Verbindliche Architekturentscheidungen | ADR-001 bis ADR-023, siehe `docs/adr/` — Fassungen und Status stehen dort, nicht hier |
 | Offene Entscheidungen | `docs/decisions/OPEN_DECISIONS.md` — ohne Rang, siehe §21 |
 | Vorläufige Annahmen | `docs/decisions/ASSUMPTIONS.md` (§15.1) |
@@ -262,6 +262,15 @@ Folgendes DARF NICHT selbst implementiert werden:
 
 Hierfür MÜSSEN etablierte und professionell betriebene Komponenten verwendet
 werden.
+
+**Ausnahme (Version 0.25, Entscheidung des Projektinhabers 2026-10-10):** die
+App-PIN, die eine gesperrte Sitzung auf demselben Gerät wieder freigibt
+([ADR-025](docs/adr/ADR-025-session-lock.md) Punkt 11). Sie meldet nie an.
+Gehasht und verglichen wird mit der Datenbankerweiterung `pgcrypto` (bcrypt),
+geprüft nur in der Datenbank; selbst gebaut sind allein Fehlversuchszähler
+und Freigabevermerk. Anmeldung, Sitzungen und Passkeys bleiben beim
+Anmeldedienst. Eine weitere Ausnahme braucht eine neue Version dieses
+Dokuments.
 
 ### 3.5 Hosting, Datenstandort und Dienstleister
 

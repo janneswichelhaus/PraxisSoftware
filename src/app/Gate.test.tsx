@@ -13,10 +13,12 @@ import { render, screen } from '@testing-library/react';
  *     `/patienten`. Das hält `tests/e2e/login.spec.ts` ebenfalls fest; hier
  *     steht es zusätzlich als Komponententest, weil E2E hinter der Anmeldung
  *     in der Cloudumgebung nicht läuft.
- *   * `/kennwort-neu` bleibt sichtbar, **auch wenn inzwischen eine Sitzung
+ *   * `/zugang` bleibt sichtbar, **auch wenn inzwischen eine Sitzung
  *     besteht**. Genau das entsteht mitten im Ablauf: Der eingelöste Link
- *     erzeugt eine Sitzung, bevor das Kennwort gesetzt ist. Ohne diese
- *     Ausnahme übernähme die angemeldete Anwendung und leitete auf „/" um.
+ *     erzeugt eine Sitzung, bevor die Seite fertig ist. Ohne diese Ausnahme
+ *     übernähme die angemeldete Anwendung und leitete auf „/" um.
+ *   * `/kennwort-neu` gibt es seit SEC-EPIC-002 nicht mehr (ADR-025 Punkt 9):
+ *     ohne Sitzung die Anmeldemaske wie jede unbekannte Adresse.
  */
 
 let sitzung: { user: { id: string; email?: string } } | null = null;
@@ -89,12 +91,12 @@ describe('Gate ohne Sitzung', () => {
     expect(screen.queryByText('Patient:innen')).not.toBeInTheDocument();
   });
 
-  it('öffnet die Seite zum Setzen eines neuen Kennworts', async () => {
+  it('kennt keine Seite zum Setzen eines Kennworts mehr (ADR-025 Punkt 9)', async () => {
     oeffne('/kennwort-neu?token_hash=abc&type=recovery');
 
-    expect(
-      await screen.findByRole('heading', { name: 'Neues Kennwort setzen' }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Anmelden' })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Neues Kennwort setzen' })).toBeNull();
+    expect(verifyOtp).not.toHaveBeenCalled();
   });
 });
 
@@ -108,17 +110,6 @@ describe('Gate ohne Sitzung, Fortsetzung', () => {
 });
 
 describe('Gate mit Sitzung', () => {
-  it('hält die Wiederherstellungsseite offen, obwohl der eingelöste Link schon eine Sitzung erzeugt hat', async () => {
-    sitzung = { user: { id: '00000000-0000-0000-0000-000000000001' } };
-    oeffne('/kennwort-neu?token_hash=abc&type=recovery');
-
-    // Ohne die Pfadbedingung in Gate stünde hier die angemeldete Anwendung,
-    // deren Auffangroute /kennwort-neu auf "/" umleitet.
-    expect(
-      await screen.findByRole('heading', { name: 'Neues Kennwort setzen' }),
-    ).toBeInTheDocument();
-  });
-
   /**
    * Der Befund aus dem Review, und der Grund, warum die Liste der
    * Einlösepfade bei den Seiten steht und nicht hier: `/zugang` war in der

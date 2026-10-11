@@ -4,6 +4,9 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider, useQueryClient } from '@tanstack/react-query';
 import type * as SperrstandModul from './sperrstand';
 import type { Sperrstand } from './sperrstand';
+import type * as PasskeyModul from '../passkey';
+import type * as PinModul from '../appPin';
+import type { PinErgebnis } from '../appPin';
 import { useSperrsicherung } from './sperrsicherung';
 import { Dialogfenster } from '@/components/ui/Dialogfenster';
 
@@ -13,7 +16,8 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
  * Geprüft wird, was jsdom zeigen kann: erst prüfen, dann zeigen; sperren zur
  * gemeldeten Frist mit Vorlauf; Bedienung höchstens einmal je Minute melden;
  * bei Rückkehr nach Ablauf sofort verbergen; geräumter Speicher; offene Texte
- * vor der Sperre sichern oder festhalten; entsperren mit dem eigenen Kennwort.
+ * vor der Sperre sichern oder festhalten; entsperren mit dem Passkey, als
+ * Rückweg mit der App-PIN (ADR-025 Fassung 2). Ein Kennwortfeld gibt es nicht.
  * Dass der Server dieselben Fristen durchsetzt, prüft
  * `supabase/tests/sitzungssperre.test.ts`.
  */
@@ -33,10 +37,23 @@ vi.mock('../sessionContext', () => ({
   }),
 }));
 
-const signInWithPassword = vi.fn();
-vi.mock('@/lib/supabase', () => ({
-  getSupabase: () => ({ auth: { signInWithPassword } }),
+const anmeldenMitPasskey = vi.fn<() => Promise<void>>();
+const passkeyMoeglich = vi.fn(() => true);
+vi.mock('../passkey', async (importOriginal) => ({
+  ...(await importOriginal<typeof PasskeyModul>()),
+  anmeldenMitPasskey: () => anmeldenMitPasskey(),
+  passkeyMoeglich: () => passkeyMoeglich(),
 }));
+
+const hatPin = vi.fn<() => Promise<boolean>>();
+const gibMitPinFrei = vi.fn<(pin: string) => Promise<PinErgebnis>>();
+vi.mock('../appPin', async (importOriginal) => ({
+  ...(await importOriginal<typeof PinModul>()),
+  hatPin: () => hatPin(),
+  gibMitPinFrei: (pin: string) => gibMitPinFrei(pin),
+}));
+
+vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({}) }));
 
 const { Sitzungssperre } = await import('./Sitzungssperre');
 
@@ -87,7 +104,10 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-10-06T09:00:00Z'));
   ladeSperrstand.mockReset();
   signOut.mockClear();
-  signInWithPassword.mockReset();
+  anmeldenMitPasskey.mockReset();
+  passkeyMoeglich.mockReset().mockReturnValue(true);
+  hatPin.mockReset().mockResolvedValue(true);
+  gibMitPinFrei.mockReset();
 });
 
 afterEach(() => {
@@ -113,9 +133,9 @@ describe('Sitzungssperre: erst prüfen, dann zeigen (Punkt 5)', () => {
     zeichne();
     await warte();
     expect(screen.getByRole('heading', { name: 'Gesperrt' })).toBeInTheDocument();
-    expect(
-      screen.getByText(/Nach 60 Minuten ist eine erneute Anmeldung nötig/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Nach 60 Minuten ist eine erneute Freigabe nötig/)).toBeInTheDocument();
+    // Kein Kennwortfeld, auch nicht als Rückweg (ADR-025 Punkte 7 und 15).
+    expect(screen.queryByLabelText('Kennwort')).toBeNull();
     expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
     // Kein Name, keine E-Mail-Adresse sichtbar (Punkt 3).
     expect(screen.queryByText(/anna@example.test/)).toBeNull();
@@ -246,15 +266,11 @@ describe('Sitzungssperre: offene Texte (Punkt 4)', () => {
     expect(screen.getByTestId('sitzung-inhalt')).toHaveAttribute('inert');
     expect(screen.getByText('Akte von Max Mustermann')).not.toBeVisible();
 
-    signInWithPassword.mockResolvedValue({ error: null });
+    anmeldenMitPasskey.mockResolvedValue(undefined);
     ladeSperrstand.mockResolvedValue(offen());
-    fireEvent.change(screen.getByLabelText('Kennwort'), { target: { value: 'geheim-123456' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
     await warte();
-    expect(signInWithPassword).toHaveBeenCalledWith({
-      email: 'anna@example.test',
-      password: 'geheim-123456',
-    });
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText('Befund')).toHaveValue('Knie frei');
     expect(screen.getByLabelText('Befund')).toBeVisible();
   });
@@ -270,56 +286,123 @@ describe('Sitzungssperre: offene Texte (Punkt 4)', () => {
   });
 });
 
-describe('Sperrseite: entsperren', () => {
-  it('sagt ein falsches Kennwort und bleibt gesperrt', async () => {
-    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
+describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 2)', () => {
+  async function gesperrt(grund: 'inaktiv' | 'hoechstdauer' | 'verbraucht' = 'inaktiv') {
+    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund });
     zeichne();
     await warte();
-    signInWithPassword.mockResolvedValue({ error: { message: 'Invalid login credentials' } });
-    fireEvent.change(screen.getByLabelText('Kennwort'), { target: { value: 'falsch' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+  }
+
+  it('bietet zuerst den Passkey an, die PIN erst auf Nachfrage', async () => {
+    await gesperrt();
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
+    expect(screen.queryByLabelText('PIN', { exact: true })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
     await warte();
-    expect(
-      screen.getByText('Das Kennwort passt nicht. Bitte erneut eingeben.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
+    expect(screen.getByLabelText('PIN', { exact: true })).toHaveFocus();
   });
 
-  it('sagt im Funkloch „keine Verbindung" statt „Kennwort passt nicht" (BEF-047)', async () => {
-    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
-    zeichne();
-    await warte();
-    signInWithPassword.mockResolvedValue({
-      error: { name: 'AuthRetryableFetchError', status: 0, message: 'Failed to fetch' },
-    });
-    fireEvent.change(screen.getByLabelText('Kennwort'), { target: { value: 'richtig' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
-    await warte();
-    expect(
-      screen.getByText('Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.'),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/Kennwort passt nicht/)).toBeNull();
-    expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
-  });
-
-  it('kehrt nach der Freigabe zurück, mit frischem Inhalt', async () => {
-    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'hoechstdauer' });
-    zeichne();
-    await warte();
-    signInWithPassword.mockResolvedValue({ error: null });
+  it('kehrt nach der Freigabe per Passkey zurück, mit frischem Inhalt', async () => {
+    await gesperrt('hoechstdauer');
+    anmeldenMitPasskey.mockResolvedValue(undefined);
     ladeSperrstand.mockResolvedValue(offen());
-    fireEvent.change(screen.getByLabelText('Kennwort'), { target: { value: 'richtig-12345' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Entsperren' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
     await warte();
     expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
     expect(screen.getByText('ohne Daten')).toBeInTheDocument();
   });
 
-  it('sperrt den Knopf ohne Kennwort', async () => {
-    ladeSperrstand.mockResolvedValue({ gesperrt: true, grund: 'inaktiv' });
-    zeichne();
+  it('sagt einen Fehlschlag des Passkeys und bleibt gesperrt', async () => {
+    await gesperrt();
+    const { PasskeyFehler, PASSKEY_SAETZE } = await import('../passkey');
+    anmeldenMitPasskey.mockRejectedValue(new PasskeyFehler(PASSKEY_SAETZE.abgebrochen, true));
+    fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
     await warte();
-    expect(screen.getByRole('button', { name: 'Entsperren' })).toBeDisabled();
+    expect(screen.getByText(PASSKEY_SAETZE.abgebrochen)).toBeInTheDocument();
+    expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
+  });
+
+  it('gibt mit der PIN frei', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
+    await warte();
+    gibMitPinFrei.mockResolvedValue({ art: 'frei' });
+    ladeSperrstand.mockResolvedValue(offen());
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '48 39 20' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    await warte();
+    expect(gibMitPinFrei).toHaveBeenCalledWith('483920');
+    expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
+  });
+
+  it('nennt die übrigen Versuche bei einer falschen PIN', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
+    await warte();
+    expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeDisabled();
+    gibMitPinFrei.mockResolvedValue({ art: 'falsch', versucheUebrig: 3 });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '111222' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    await warte();
+    expect(screen.getByText('Die PIN passt nicht. Noch 3 Versuche.')).toBeInTheDocument();
+    expect(screen.getByLabelText('PIN', { exact: true })).toHaveValue('');
+    expect(screen.queryByText('Akte von Max Mustermann')).toBeNull();
+  });
+
+  it('führt nach fünf falschen PINs zur Anmeldung', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
+    await warte();
+    gibMitPinFrei.mockResolvedValue({ art: 'verbraucht' });
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '111222' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    await warte();
+    expect(screen.getByText('Zu viele falsche PINs. Die Sitzung ist beendet.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Mit Passkey entsperren' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Zur Anmeldung' }));
+    expect(signOut).toHaveBeenCalledTimes(1);
+  });
+
+  it('zeigt eine verbrauchte Sitzung schon beim Öffnen als beendet', async () => {
+    await gesperrt('verbraucht');
+    expect(screen.getByText('Zu viele falsche PINs. Die Sitzung ist beendet.')).toBeInTheDocument();
+  });
+
+  it('sagt im Funkloch „keine Verbindung“ statt „PIN passt nicht“ (BEF-047)', async () => {
+    await gesperrt();
+    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
+    await warte();
+    gibMitPinFrei.mockRejectedValue(new Error('offline'));
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '483920' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: 'Mit PIN entsperren' }));
+    await warte();
+    expect(
+      screen.getByText('Keine Verbindung zum Anmeldedienst. Ihre Angaben wurden nicht geprüft.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/PIN passt nicht/)).toBeNull();
+  });
+
+  it('bietet ohne PIN keinen Rückweg an', async () => {
+    hatPin.mockResolvedValue(false);
+    await gesperrt();
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Passkey klappt nicht?' })).toBeNull();
+  });
+
+  it('geht ohne Passkey-fähigen Browser direkt zur PIN', async () => {
+    passkeyMoeglich.mockReturnValue(false);
+    await gesperrt();
+    await warte();
+    expect(screen.getByText(/Dieser Browser unterstützt keine Passkeys/)).toBeInTheDocument();
+    expect(screen.getByLabelText('PIN', { exact: true })).toBeInTheDocument();
   });
 });
 

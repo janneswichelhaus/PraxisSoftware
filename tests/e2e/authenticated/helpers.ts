@@ -205,7 +205,7 @@ export async function anmelden(page: Page, email: string): Promise<void> {
   await page.getByLabel('E-Mail-Adresse').fill(email);
   // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
   await page.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
-  await page.getByRole('button', { name: 'Anmelden' }).click();
+  await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
   // `exact`: Steht eine Rückfrage des Textverlustschutzes offen, tragen auch
   // „Speichern und abmelden" und „Verwerfen und abmelden" diesen Namen
   // (FIX-014).

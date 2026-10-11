@@ -362,7 +362,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     // Erst gespeichert, dann abgemeldet: Die Anmeldemaske kommt, und der Text
     // liegt auf dem Server.
-    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible();
 
     await anmelden(page, KONTEN.therapist);
     await terminOeffnen(page, terminId);
@@ -375,7 +375,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
 
-    await expect(page.getByRole('button', { name: 'Anmelden' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible();
   });
 
   /**

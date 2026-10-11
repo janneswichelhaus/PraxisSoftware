@@ -1,12 +1,37 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { Session } from '@supabase/supabase-js';
 import type * as AccountApi from './api';
-import { SessionContext } from '@/features/auth/sessionContext';
+import type * as PasskeyModul from '@/features/auth/passkey';
+import type * as PinModul from '@/features/auth/appPin';
 import { renderWithProviders, testUser } from '@/test-utils';
 
-const aendereKennwort = vi.fn();
+const ladePasskeys = vi.fn<() => Promise<PasskeyModul.Passkey[]>>();
+const passkeyEinrichten = vi.fn<() => Promise<void>>();
+const entfernePasskey = vi.fn<(id: string) => Promise<void>>();
+vi.mock('@/features/auth/passkey', async (importOriginal) => ({
+  ...(await importOriginal<typeof PasskeyModul>()),
+  ladePasskeys: () => ladePasskeys(),
+  passkeyEinrichten: () => passkeyEinrichten(),
+  entfernePasskey: (id: string) => entfernePasskey(id),
+  passkeyMoeglich: () => true,
+}));
+
+const hatPin = vi.fn<() => Promise<boolean>>();
+const setzePin = vi.fn<(pin: string) => Promise<void>>();
+vi.mock('@/features/auth/appPin', async (importOriginal) => ({
+  ...(await importOriginal<typeof PinModul>()),
+  hatPin: () => hatPin(),
+  setzePin: (pin: string) => setzePin(pin),
+}));
+
+const EIN_PASSKEY: PasskeyModul.Passkey = {
+  id: 'p1',
+  name: 'iPhone',
+  angelegtAm: '2026-10-10T08:00:00Z',
+  zuletztAm: null,
+  freigegeben: true,
+};
 const beendeAlleSitzungen = vi.fn();
 const ladeMfaFaktoren = vi.fn();
 const starteMfaEinrichtung = vi.fn();
@@ -17,7 +42,6 @@ vi.mock('./api', async (importOriginal) => {
   const actual = await importOriginal<typeof AccountApi>();
   return {
     ...actual,
-    aendereKennwort: (kennwort: string) => aendereKennwort(kennwort) as Promise<void>,
     beendeAlleSitzungen: () => beendeAlleSitzungen() as Promise<void>,
     ladeMfaFaktoren: () => ladeMfaFaktoren() as Promise<AccountApi.MfaFaktor[]>,
     starteMfaEinrichtung: () => starteMfaEinrichtung() as Promise<AccountApi.MfaEinrichtung>,
@@ -37,7 +61,6 @@ const einrichtung: AccountApi.MfaEinrichtung = {
 describe('MeinKontoPage', () => {
   beforeEach(() => {
     for (const mock of [
-      aendereKennwort,
       beendeAlleSitzungen,
       ladeMfaFaktoren,
       starteMfaEinrichtung,
@@ -46,8 +69,12 @@ describe('MeinKontoPage', () => {
     ]) {
       mock.mockReset();
     }
-    aendereKennwort.mockResolvedValue(undefined);
     beendeAlleSitzungen.mockResolvedValue(undefined);
+    ladePasskeys.mockReset().mockResolvedValue([EIN_PASSKEY]);
+    passkeyEinrichten.mockReset().mockResolvedValue(undefined);
+    entfernePasskey.mockReset().mockResolvedValue(undefined);
+    hatPin.mockReset().mockResolvedValue(true);
+    setzePin.mockReset().mockResolvedValue(undefined);
     ladeMfaFaktoren.mockResolvedValue([]);
     starteMfaEinrichtung.mockResolvedValue(einrichtung);
     bestaetigeMfa.mockResolvedValue(undefined);
@@ -55,45 +82,113 @@ describe('MeinKontoPage', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // Kennwort (STAFF-004a)
+  // Passkeys und PIN (SEC-EPIC-002, ADR-025 Fassung 2)
   // ---------------------------------------------------------------------------
-  it('verlangt die Mindestlänge', async () => {
-    const user = userEvent.setup();
+  it('bietet kein Kennwort mehr an', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'kurz');
-    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'kurz');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    expect(await screen.findByText(/mindestens 12 Zeichen/)).toBeInTheDocument();
-    expect(aendereKennwort).not.toHaveBeenCalled();
+    await screen.findByText('iPhone');
+    expect(screen.queryByLabelText(/Kennwort/)).toBeNull();
+    expect(screen.queryByRole('button', { name: /Kennwort/ })).toBeNull();
   });
 
-  it('verlangt zwei gleiche Eingaben', async () => {
+  it('listet die Passkeys und rät bei nur einem zum zweiten', async () => {
+    renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
+    expect(await screen.findByText('iPhone')).toBeInTheDocument();
+    expect(screen.getByText(/Eingerichtet am 10\.10\.2026/)).toBeInTheDocument();
+    expect(screen.getByText(/Nur ein Passkey: Richten Sie einen zweiten ein/)).toBeInTheDocument();
+    // Der letzte Passkey lässt sich nicht entfernen (ANN-327).
+    expect(screen.queryByRole('button', { name: 'Entfernen' })).toBeNull();
+  });
+
+  it('richtet einen Passkey auf diesem Gerät ein und lädt die Liste neu', async () => {
     const user = userEvent.setup();
     renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('iPhone');
+    await user.click(screen.getByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }));
+    expect(passkeyEinrichten).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Der Passkey ist eingerichtet.')).toBeInTheDocument();
+    await waitFor(() => expect(ladePasskeys).toHaveBeenCalledTimes(2));
+  });
 
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
-    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein anderer satz');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
+  it('entfernt einen von zwei Passkeys erst nach der Rückfrage', async () => {
+    ladePasskeys.mockResolvedValue([
+      EIN_PASSKEY,
+      {
+        id: 'p2',
+        name: null,
+        angelegtAm: '2026-10-09T08:00:00Z',
+        zuletztAm: null,
+        freigegeben: true,
+      },
+    ]);
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('iPhone');
+    const knoepfe = screen.getAllByRole('button', { name: 'Entfernen' });
+    expect(knoepfe).toHaveLength(2);
+    await user.click(knoepfe[0]!);
+    expect(entfernePasskey).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: 'Passkey entfernen' }));
+    await waitFor(() => expect(entfernePasskey).toHaveBeenCalledWith('p1'));
+  });
 
+  it('verlangt mit zweitem Faktor dessen Bestätigung, bevor ein Passkey entsteht', async () => {
+    const { PasskeyFehler, PASSKEY_SAETZE } = await import('@/features/auth/passkey');
+    passkeyEinrichten.mockRejectedValueOnce(new PasskeyFehler(PASSKEY_SAETZE.zweiterFaktor));
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('iPhone');
+    await user.click(screen.getByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }));
+    expect(await screen.findByLabelText('Code aus der App')).toBeInTheDocument();
+  });
+
+  it('kennzeichnet einen nicht freigegebenen Passkey und lässt ihn entfernen (ANN-329)', async () => {
+    ladePasskeys.mockResolvedValue([
+      EIN_PASSKEY,
+      { ...EIN_PASSKEY, id: 'fremd', name: 'Unbekannt', freigegeben: false },
+    ]);
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(await screen.findByText(/Nicht freigegeben – öffnet keine Sitzung/)).toBeInTheDocument();
+    // Der einzige freigegebene bleibt, der fremde lässt sich entfernen.
+    expect(screen.getAllByRole('button', { name: 'Entfernen' })).toHaveLength(1);
+    expect(screen.getByText(/Nur ein Passkey/)).toBeInTheDocument();
+  });
+
+  it('legt eine neue PIN fest und sagt es', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    expect(await screen.findByText('Eine PIN ist festgelegt.')).toBeInTheDocument();
+    await user.type(screen.getByLabelText(/^Neue PIN/), '483920');
+    await user.type(screen.getByLabelText('PIN wiederholen'), '483920');
+    await user.click(screen.getByRole('button', { name: 'PIN ändern' }));
+    await waitFor(() => expect(setzePin).toHaveBeenCalledWith('483920'));
+    expect(await screen.findByText('Die neue PIN gilt ab sofort.')).toBeInTheDocument();
+  });
+
+  it('weist eine triviale PIN am Feld ab, ohne den Server zu fragen', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('Eine PIN ist festgelegt.');
+    await user.type(screen.getByLabelText(/^Neue PIN/), '123456');
+    await user.type(screen.getByLabelText('PIN wiederholen'), '123456');
+    await user.click(screen.getByRole('button', { name: 'PIN ändern' }));
+    expect(screen.getByLabelText(/^Neue PIN/)).toHaveFocus();
+    expect(screen.getByText(/zu leicht zu erraten/)).toBeInTheDocument();
+    expect(setzePin).not.toHaveBeenCalled();
+  });
+
+  it('verlangt nach zehn Minuten die Bestätigung mit dem Passkey (ANN-325)', async () => {
+    const { ErneutAnmeldenError } = await import('@/features/auth/appPin');
+    setzePin.mockRejectedValueOnce(new ErneutAnmeldenError());
+    const user = userEvent.setup();
+    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
+    await screen.findByText('Eine PIN ist festgelegt.');
+    await user.type(screen.getByLabelText(/^Neue PIN/), '483920');
+    await user.type(screen.getByLabelText('PIN wiederholen'), '483920');
+    await user.click(screen.getByRole('button', { name: 'PIN ändern' }));
     expect(
-      await screen.findByText('Die beiden Eingaben stimmen nicht überein.'),
+      await screen.findByRole('button', { name: 'Mit Passkey bestätigen' }),
     ).toBeInTheDocument();
-    expect(aendereKennwort).not.toHaveBeenCalled();
-  });
-
-  it('ändert das Kennwort und leert die Felder', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
-    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein langer satz hier');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    await waitFor(() => expect(aendereKennwort).toHaveBeenCalledWith('ein langer satz hier'));
-    expect(await screen.findByText(/Das Kennwort wurde geändert/)).toBeInTheDocument();
-    expect(screen.getByLabelText('Neues Kennwort')).toHaveValue('');
   });
 
   // ---------------------------------------------------------------------------
@@ -116,10 +211,10 @@ describe('MeinKontoPage', () => {
   // UI-002d, ANN-028: Die Anmeldung prueft den Faktor heute nicht. Wer ihn
   // einrichtet, soll das vorher wissen - sonst verspricht die Oberflaeche
   // einen Schutz, den es nicht gibt.
-  it('sagt vor der Einrichtung, dass die Anmeldung den Faktor noch nicht abfragt', async () => {
+  it('sagt vor der Einrichtung, dass die Anmeldung den Faktor nicht abfragt', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
-    const hinweis = await screen.findByText(/derzeit noch nicht ab/);
+    const hinweis = await screen.findByText(/derzeit nicht ab/);
     expect(hinweis).toBeInTheDocument();
     // Vor der Schaltflaeche, nicht dahinter: Die Reihenfolge im Dokument ist
     // die Reihenfolge des Lesens.
@@ -134,7 +229,7 @@ describe('MeinKontoPage', () => {
     expect(
       await screen.findByText('Für dieses Konto ist ein zweiter Faktor eingerichtet.'),
     ).toBeInTheDocument();
-    expect(screen.getByText(/derzeit noch nicht ab/)).toBeInTheDocument();
+    expect(screen.getByText(/derzeit nicht ab/)).toBeInTheDocument();
   });
 
   it('warnt owner deutlicher als andere Rollen, wenn der zweite Faktor fehlt', async () => {
@@ -255,118 +350,13 @@ describe('MeinKontoPage', () => {
  */
 describe('MeinKontoPage — UXR-002', () => {
   beforeEach(() => {
-    for (const mock of [aendereKennwort, ladeMfaFaktoren, starteMfaEinrichtung]) {
+    for (const mock of [ladeMfaFaktoren, starteMfaEinrichtung]) {
       mock.mockReset();
     }
-    aendereKennwort.mockResolvedValue(undefined);
     ladeMfaFaktoren.mockResolvedValue([]);
+    ladePasskeys.mockReset().mockResolvedValue([EIN_PASSKEY]);
+    hatPin.mockReset().mockResolvedValue(true);
     starteMfaEinrichtung.mockResolvedValue(einrichtung);
-  });
-
-  it('hängt die Mindestlänge an das erste Feld und setzt den Fokus dorthin (NAV-13, ORG-B01)', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-    const kennwort = screen.getByLabelText('Neues Kennwort');
-    const wiederholung = screen.getByLabelText('Neues Kennwort wiederholen');
-
-    await user.type(kennwort, 'kurz');
-    await user.type(wiederholung, 'kurz');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    expect(kennwort).toHaveAttribute('aria-invalid', 'true');
-    expect(kennwort).toHaveAccessibleDescription(/braucht mindestens 12 Zeichen/);
-    expect(wiederholung).not.toHaveAttribute('aria-invalid');
-    expect(kennwort).toHaveFocus();
-  });
-
-  it('hängt die Abweichung an das Wiederholungsfeld und setzt den Fokus dorthin', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-    const kennwort = screen.getByLabelText('Neues Kennwort');
-    const wiederholung = screen.getByLabelText('Neues Kennwort wiederholen');
-
-    await user.type(kennwort, 'ein langer satz hier');
-    await user.type(wiederholung, 'ein anderer satz');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    expect(wiederholung).toHaveAttribute('aria-invalid', 'true');
-    expect(wiederholung).toHaveAccessibleDescription('Die beiden Eingaben stimmen nicht überein.');
-    expect(kennwort).not.toHaveAttribute('aria-invalid');
-    expect(wiederholung).toHaveFocus();
-  });
-
-  it('nennt die Mindestlänge am Feld selbst (NAV-13)', () => {
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    expect(screen.getByLabelText('Neues Kennwort')).toHaveAccessibleDescription(
-      /Mindestens 12 Zeichen/,
-    );
-  });
-
-  it('ändert das Kennwort mit der Eingabetaste (NAV-13)', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
-    await user.type(
-      screen.getByLabelText('Neues Kennwort wiederholen'),
-      'ein langer satz hier{Enter}',
-    );
-
-    await waitFor(() => expect(aendereKennwort).toHaveBeenCalledWith('ein langer satz hier'));
-    expect(screen.getByRole('form', { name: 'Kennwort ändern' })).toBeInTheDocument();
-  });
-
-  it('bestätigt die Änderung als Erfolg (UIK-21)', async () => {
-    const user = userEvent.setup();
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
-    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein langer satz hier');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    const meldung = await screen.findByText(/Das Kennwort wurde geändert/);
-    expect(meldung).toHaveAttribute('role', 'status');
-    expect(meldung).toHaveClass('text-positiv');
-    expect(meldung).toHaveTextContent('„Alle Sitzungen beenden“');
-  });
-
-  it('nennt bei einem Fehlschlag den nächsten Schritt (NAV-13, AUTH-10)', async () => {
-    const user = userEvent.setup();
-    aendereKennwort.mockRejectedValue(new Error('same_password'));
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    await user.type(screen.getByLabelText('Neues Kennwort'), 'ein langer satz hier');
-    await user.type(screen.getByLabelText('Neues Kennwort wiederholen'), 'ein langer satz hier');
-    await user.click(screen.getByRole('button', { name: 'Kennwort ändern' }));
-
-    const meldung = await screen.findByRole('alert');
-    expect(meldung).toHaveTextContent('Das Kennwort konnte nicht geändert werden.');
-    expect(meldung).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
-    expect(meldung).toHaveTextContent('muss sich vom bisherigen unterscheiden');
-  });
-
-  it('gibt dem Passwortmanager das angemeldete Konto mit (AUTH-05)', () => {
-    const sitzung = { user: { email: 'tara.therapie@praxis.invalid' } } as Session;
-    renderWithProviders(
-      <SessionContext.Provider
-        value={{ session: sitzung, initialising: false, signOut: vi.fn(() => Promise.resolve()) }}
-      >
-        <MeinKontoPage user={testUser(['therapist'])} />
-      </SessionContext.Provider>,
-    );
-
-    const formular = screen.getByRole('form', { name: 'Kennwort ändern' });
-    const konto = formular.querySelector('input[autocomplete="username"]');
-    expect(konto).toHaveValue('tara.therapie@praxis.invalid');
-    expect(konto).not.toBeVisible();
-  });
-
-  it('kommt ohne Sitzung ohne das verborgene Kontofeld aus', () => {
-    renderWithProviders(<MeinKontoPage user={testUser(['therapist'])} />);
-
-    const formular = screen.getByRole('form', { name: 'Kennwort ändern' });
-    expect(formular.querySelector('input[autocomplete="username"]')).toBeNull();
   });
 
   it('bietet nach einem Ladefehler des zweiten Faktors einen neuen Versuch an (ZST-04)', async () => {
@@ -389,13 +379,16 @@ describe('MeinKontoPage — UXR-002', () => {
     expect(ladeMfaFaktoren).toHaveBeenCalledTimes(2);
   });
 
-  it('lässt „Kennwort ändern“ den einen Hauptknopf sein (NAV-20)', async () => {
+  it('lässt die PIN den einen Hauptknopf sein (NAV-20)', async () => {
     renderWithProviders(<MeinKontoPage user={testUser(['owner'])} />);
 
     const einrichten = await screen.findByRole('button', { name: 'Zweiten Faktor einrichten' });
     expect(einrichten).not.toHaveClass('bg-accent');
     expect(einrichten).toHaveClass('border-line-strong');
-    expect(screen.getByRole('button', { name: 'Kennwort ändern' })).toHaveClass('bg-accent');
+    expect(
+      screen.getByRole('button', { name: 'Passkey auf diesem Gerät einrichten' }),
+    ).not.toHaveClass('bg-accent');
+    expect(await screen.findByRole('button', { name: 'PIN ändern' })).toHaveClass('bg-accent');
   });
 
   it('fasst die ganze Seite in die Formularbreite (NAV-20)', async () => {
@@ -404,7 +397,7 @@ describe('MeinKontoPage — UXR-002', () => {
 
     const breite = screen.getByRole('heading', { name: 'Zugang' }).closest('.max-w-xl');
     expect(breite).not.toBeNull();
-    for (const titel of ['Kennwort', 'Zweiter Faktor', 'Sitzungen']) {
+    for (const titel of ['Passkeys', 'PIN', 'Zweiter Faktor', 'Sitzungen']) {
       expect(breite).toContainElement(screen.getByRole('heading', { name: titel }));
     }
     expect(breite).toContainElement(screen.getByText(/werden protokolliert/));

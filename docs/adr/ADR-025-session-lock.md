@@ -14,9 +14,17 @@ Benachrichtigungen vergeben.
 Punkt 7 mit dem Kennwort als Weg, der Passkey (W3) bleibt offen bis OPS-001 (ANN-257). Ein kürzeres
 `jwt_expiry` ist nicht gesetzt: Die Sperre hängt nicht daran.
 
+**Fassung 2 (2026-10-10, Jannes): Anmeldung ohne Kennwort.** Im Alltag Passkey, als Rückweg eine
+eigene App-PIN, **kein Kennwort**, weder bei der Freigabe noch bei der Anmeldung. Damit ist **W3
+entschieden**: gebaut ohne Schalter und eingeschaltet, sobald der Anmeldedienst einer Umgebung
+Passkeys anbietet. Geändert ist **Punkt 7**, neu sind die **Punkte 9 bis 15** und die Folgen unter
+„Konsequenzen“. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4 (Ausnahme für die App-PIN); dazu
+ADR-023 Fassung 4. **Gebaut in SEC-EPIC-002** (Roadmap G22, 2026-10-10; ANN-324 bis ANN-331). Empfohlen waren die Geräte-PIN
+über den Passkey und das Kennwort als Notfallweg; Jannes hat das in Kenntnis der Folgen verworfen.
+
 ## Datum
 
-2026-10-02
+2026-10-02 · Fassung 2: 2026-10-10
 
 ## Kontext
 
@@ -84,16 +92,70 @@ Einstellungen des Anmeldedienstes (Höchstdauer, Inaktivität) und ein kürzeres
 zweite Linie hinzu. Ein Test meldet ein Konto mit abgelaufener Frist an und verlangt wie in
 `plattform-abschottung.test.ts`: keine Zeile, jeder Aufruf abgewiesen.
 
-**7. Freigabe möglichst per Passkey.** Die erneute Freigabe läuft bevorzugt über einen Passkey
-(Biometrie oder Geräte-PIN des eigenen Geräts). Rückweg ist das Kennwort, mit zweitem Faktor, wo einer
-eingerichtet ist (ANN-028). Ein Passkey wird nur für das eigene Konto angenommen: Liefert die Freigabe
-ein anderes Konto, ist das ein Kontowechsel und keine Freigabe. Solange der Anmeldedienst Passkeys nur
-als Beta anbietet, steht ihre Nutzung hinter einem Schalter an einer Stelle. Freigeschaltet wird sie,
-wenn die Providerprüfung (OPS-001) sie bestätigt (W3).
+**7. Freigabe per Passkey, Rückweg App-PIN, kein Kennwort** *(Fassung 2)*. Die erneute Freigabe
+läuft über einen Passkey des eigenen Kontos (Gesicht, Finger oder Geräte-PIN). Rückweg ist die
+App-PIN (Punkt 11), nur wenn der Passkey nicht klappt. Ein Kennwort gibt es nicht (Punkt 9). Ein Passkey wird nur für das eigene Konto
+angenommen: Liefert die Freigabe ein anderes Konto, ist das ein Kontowechsel und keine Freigabe.
+*Fassung 1: „Rückweg ist das Kennwort, mit zweitem Faktor, wo einer eingerichtet ist (ANN-028). […]
+Solange der Anmeldedienst Passkeys nur als Beta anbietet, steht ihre Nutzung hinter einem Schalter an
+einer Stelle. Freigeschaltet wird sie, wenn die Providerprüfung (OPS-001) sie bestätigt (W3).“*
 
 **8. Für alle Konten.** Die Sperre gilt für Praxis- und Plattformkonten (ADR-023 Punkt 17). Die beiden
 Fristen sind je Kontoart eine Konstante an einer Stelle. Die Werte aus den Punkten 1 und 2 gelten für
 beide, bis das Arbeitspaket etwas anderes begründet.
+
+### Anmeldung ohne Kennwort (Fassung 2)
+
+**9. Kein Kennwort.** Konten haben kein Kennwort, und die Anwendung fragt keins ab: nicht bei der
+Anmeldung, nicht bei der Freigabe, nicht beim Einlösen einer Einladung. `/kennwort-neu` entfällt.
+Einzige Ausnahme sind Entwicklung und Test-Umgebung (Punkt 15).
+
+**10. Der Passkey ist die Anmeldung.** Ein Passkey beim Anmeldedienst (WebAuthn, erster Faktor) meldet
+an und gibt frei. Eingerichtet wird er beim Einlösen der Einladung (Punkt 13). Weitere Geräte bekommen
+einen eigenen Passkey unter „Mein Konto“, oder sie nutzen den des Telefons: über den Schlüsselbund des
+Geräts oder am Rechner per QR-Code vom Telefon. Die Anwendung fordert bei jeder Zeremonie die Prüfung
+der Person am Gerät an (`userVerification: required`). Für die Fristen nach Punkt 6 zählt die
+Anmeldeart `passkey` im Claim `amr` als Anmeldung.
+
+**11. Die App-PIN gibt frei, sie meldet nie an.** Jedes Konto legt beim Einrichten eine PIN fest. Sie:
+
+- gibt nur eine **bestehende, gesperrte Sitzung auf demselben Gerät** frei. Auf einem neuen Gerät,
+  nach dem Abmelden und für ein anderes Konto gilt sie nicht;
+- wird nur in der Datenbank geprüft und dort nur als bcrypt-Hash aus `pgcrypto` gehalten (§3.4,
+  Ausnahme). Nie im Klartext, nie im Log, nie auf dem Gerät;
+- ist **nur der Rückweg**: Die Sperrseite bietet immer zuerst den Passkey, die PIN erst auf „Passkey
+  klappt nicht“. Keine Uhr wechselt den Weg und keine Frist begrenzt die PIN (Jannes, 2026-10-10).
+  Neu freigegeben wird trotzdem immer, nach den Punkten 1 und 2;
+- ist nach wenigen Fehlversuchen in Folge verbraucht: Die Sitzung wird beendet, weiter geht es nur per
+  Passkey;
+- darf keine triviale Folge sein (gleiche Ziffern, auf- oder absteigende Reihe).
+
+Länge und Zahl der Fehlversuche sind Konstanten an einer Stelle; das Arbeitspaket legt sie fest
+(Vorschlag: sechs Ziffern, fünf Fehlversuche). Eine Freigabe per PIN startet die Uhr
+aus Punkt 1 neu wie eine Anmeldung. Sie steht als Vermerk an der Sitzung, wie die letzte Bedienung (W2).
+
+**12. Vergessen, verloren, neues Gerät.** PIN vergessen: Freigabe per Passkey, dann eine neue PIN
+unter „Mein Konto“. Passkey verloren oder kein Gerät mehr: **neue Einladung** für das bestehende Konto
+(ADR-023 Punkt 10), so wie bisher beim vergessenen Kennwort; sie richtet einen neuen Passkey ein.
+Jede Person soll zwei Passkeys haben, etwa Telefon und Rechner. „Mein Konto“ weist darauf hin, solange
+es nur einer ist.
+
+**13. Einrichtung beim Einlösen der Einladung.** Der Einladungscode meldet einmalig an
+(Einmal-Anmeldung des Anmeldedienstes, `token_hash` nach ANN-043). Die Seite verlangt sofort Passkey
+und PIN; ohne Passkey ist die Einrichtung nicht abgeschlossen. Wer abbricht, braucht eine neue
+Einladung. Das gilt für Plattform- und Praxiskonten (ADR-023 Punkt 8, STAFF-005).
+
+**14. Notzugang für den Inhaber.** Für das einzige `owner`-Konto gibt es niemanden, der neu einlädt
+(Bus-Faktor 1, ADR-012). Hat es keinen Passkey mehr, erzeugt das Infrastruktur-Admin-Konto über die
+Verwaltung des Anmeldedienstes eine Einmal-Anmeldung für dieses Konto. Das ist Break Glass nach
+ADR-010 Punkte 8 und 10: Anlass, MFA, Begründung, Ende. Der Ablauf steht in der
+Betriebsdokumentation (ADR-012). Vorbeugend hat `owner` mindestens zwei Passkeys.
+
+**15. Entwicklung und Test-Umgebung.** Lokal und in der Test-Umgebung behalten die Testkonten ihr
+Kennwort, damit automatisierte Tests und der erste Einstieg ohne Passkey möglich sind. Die Anmeldeseite
+bietet diesen Weg nur, wenn `APP_ENVIRONMENT` nicht `production` ist, und nie auf der Sperrseite. In
+Produktion gibt es ihn nicht; ein Test prüft das. Auf der Test-Umgebung werden nach dem ersten
+Einstieg Passkey und PIN eingerichtet und wie im Betrieb benutzt.
 
 ## Konsequenzen
 
@@ -112,7 +174,38 @@ beide, bis das Arbeitspaket etwas anderes begründet.
   Protokoll des Anmeldedienstes. Ein abgewiesener Datenzugriff wegen abgelaufener Frist ist kein
   Berechtigungsfehler und schreibt keinen `denied`-Eintrag (ANN-115 gilt für fehlende Rollen).
 
-## Wahlpunkte — offen bis SEC-EPIC-001
+**Aus Fassung 2:**
+
+- **Eigenbau in engen Grenzen.** Die App-PIN ist das einzige selbst gebaute Prüfverfahren (§3.4,
+  Ausnahme). Hash, Vergleich und Zufall kommen aus `pgcrypto`; selbst gebaut sind Fehlversuchszähler
+  und Freigabevermerk. Kritische Änderung nach ADR-013 Punkt 9, mit Zweitreview.
+- **Schwächer als ein Kennwort, begrenzt durch den Zähler.** Bei sechs Ziffern und fünf Versuchen je
+  Passkey-Anmeldung trifft ein Dieb mit dem Gerät und einer gesperrten Sitzung mit etwa 1 zu 200 000.
+  Ohne Gerät gibt es keine Sitzung und damit keinen Versuch.
+- **Ohne PIN-Frist lebt eine Sitzung, bis sie endet.** Ein liegen gelassenes Gerät bleibt per PIN
+  freigebbar, bis jemand abmeldet, „Alle Sitzungen beenden“ wählt, der Zugang gesperrt wird oder die
+  Fehlversuche verbraucht sind. Wer ein Gerät verliert, beendet deshalb sofort alle Sitzungen.
+- **Beta beim Anbieter.** Die Passkey-Schnittstelle kann sich ändern. Sie liegt hinter einem Modul der
+  Anwendung, die Version der Bibliothek steht im Lockfile. Der Anmeldedienst verlangt die Prüfung der
+  Person am Gerät nur bevorzugt (`preferred`). Die Anwendung fordert sie an, durchsetzen kann der
+  Server es heute nicht. Ein Sicherheitsschlüssel ohne eigene PIN wäre damit Besitz allein:
+  Restrisiko für OPS-001 und die Datenschutzprüfung.
+- **Ohne Gerät mit Passkey kein eigenes Konto**, wie heute ohne Mailadresse (ADR-023 Punkt 7).
+  Versorgt wird dann über eine Vertretung oder mit PDF.
+- **Einstellungen je Umgebung.** Passkeys einschalten, Relying Party mit Name, Domain und Ursprüngen:
+  lokal in `supabase/config.toml`, für die Test-Umgebung im Dashboard von `praxis-test` (Jannes), für
+  Produktion mit G3.
+- **Der Anmeldedienst kennt die Sperre nicht** (Zweitreview SEC-EPIC-002). Mit einem gesperrten Token
+  ließe sich dort ein Passkey anlegen oder ein Kennwort setzen. Deshalb zählt ein Passkey nur
+  freigegeben (ANN-329), und ein Kennwort über den Anmeldedienst lehnt ein Trigger ab (ANN-330);
+  Anmeldelinks per Mail gibt es nur mit Anlass (ANN-331). Restlücke: Mit einem gesperrten Token lassen
+  sich eigene Passkeys beim Anmeldedienst löschen - keine Übernahme, aber ein Aussperren bis zur
+  neuen Einladung.
+- **Für die Datenschutzprüfung.** Biometrische Merkmale verlassen das Gerät nicht. Der Anmeldedienst
+  speichert nur den öffentlichen Schlüssel. Der PIN-Hash ist ein neues Datum am Konto und fällt mit
+  ihm.
+
+## Wahlpunkte — entschieden
 
 **W1 — Inaktivitätsfrist.** (a) 30 Minuten, Vorschlag Jannes. (b) 15 Minuten. (c) Je Kontoart
 verschieden. *Vorschlag (a)*, nach der Probewoche prüfen.
@@ -123,3 +216,6 @@ Token-Erneuerung beim Anmeldedienst. *Vorschlag (a)*: (b) misst Netzwerkverkehr,
 
 **W3 — Passkeys in der Beta.** (a) Bauen hinter einem Schalter, scharf erst nach OPS-001. (b) Erst bauen,
 wenn der Anbieter die Beta beendet. *Vorschlag (a)*: Rücknahme `klein`, ein Schalter.
+*Entschieden mit Fassung 2 (Jannes, 2026-10-10): weder (a) noch (b). Gebaut ohne Schalter, eingeschaltet
+in jeder Umgebung, deren Anmeldedienst Passkeys anbietet. Die Produktion entsteht erst mit G3 und geht
+erst mit M3 in Betrieb; bis dahin läuft der Passkey auf der Test-Umgebung mit synthetischen Daten.*

@@ -2,37 +2,49 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { ErrorState } from '@/components/ui/Feedback';
+import { ErrorState, LoadingState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
-import { KENNWORT_MINDESTLAENGE } from '@/features/account/api';
-import { kennwortFehler, type Kennwortfehler } from '@/features/account/kennwortFehler';
+import { kennwortTestzugang } from '@/lib/env';
+import { getSupabase } from '@/lib/supabase';
+import { hatPin } from '@/features/auth/appPin';
+import { AnmeldungEinrichten } from '@/features/auth/einrichtung/AnmeldungEinrichten';
 import { useFokusNachWechsel } from '@/features/auth/fokus';
 import { meldeSelbstAb } from '@/features/auth/eigeneAbmeldung';
 import { hinweisAngemeldet } from '@/features/auth/fremdeSitzung';
+import { loeseLinkEin } from '@/features/auth/linkEinloesen';
+import { PasskeyFehler, anmeldenMitPasskey } from '@/features/auth/passkey';
 import { useSession } from '@/features/auth/sessionContext';
-import { getSupabase } from '@/lib/supabase';
 import { EinloeseError, codeAusFragment, loeseEinladungEin } from './einladung';
 
 /**
- * Eine Einladung zur Plattform einlösen (POR-003, ADR-023 Punkte 7 und 8).
+ * Eine Einladung zur Plattform einlösen (POR-003; ADR-023 Fassung 4, Punkte 7
+ * und 8; ADR-025 Fassung 2, Punkt 13).
  *
  * Die Person kommt über den QR-Code auf ihrem eigenen Telefon hierher oder
- * über den Link aus der Mail. Sie legt Adresse und Kennwort fest; wer schon
- * ein Konto hat, gibt dessen Adresse und Kennwort ein (ANN-191). Danach ist
- * sie angemeldet.
+ * über den Link aus der Mail. **Es gibt kein Kennwort.** Sie gibt ihre
+ * Adresse an; der Zugangsdienst legt das Konto an und meldet sie einmalig an.
+ * Danach richtet sie hier einen Passkey auf diesem Gerät und eine PIN ein.
+ * Wer schon ein Konto hat, meldet sich zuerst mit dem Passkey an und löst den
+ * Code dann für dieses Konto ein - ein bestehendes Konto wird nie über seine
+ * Adresse übernommen.
  *
  * **Der Code verlässt die Adresszeile sofort.** Er wird beim Öffnen gelesen
  * und aus dem Verlaufseintrag genommen; danach steht er nur noch im Speicher
  * dieser Seite. Für unbekannte, abgelaufene und benutzte Codes gibt es
  * dieselbe Auskunft (Punkt 8, §13).
  */
-type Zustand = 'fremde-sitzung' | 'formular' | 'ungueltig' | 'fertig-anmelden';
+type Zustand =
+  | 'angemeldet'
+  | 'formular'
+  | 'vorhanden'
+  | 'ungueltig'
+  | 'anmelden'
+  | 'einrichten'
+  | 'nicht-angemeldet';
 
 const FELD_EMAIL = 'einladung-email';
-const FELD_KENNWORT = 'einladung-kennwort';
-const FELD_WIEDERHOLUNG = 'einladung-kennwort-wiederholung';
 
 export function EinladungPage() {
   const navigate = useNavigate();
@@ -49,104 +61,153 @@ export function EinladungPage() {
   }, []);
   const [zustand, setZustand] = useState<Zustand>(() => {
     if (code === null) return 'ungueltig';
-    return session !== null ? 'fremde-sitzung' : 'formular';
+    return session !== null ? 'angemeldet' : 'formular';
   });
   const [email, setEmail] = useState('');
-  const [kennwort, setKennwort] = useState('');
-  const [wiederholung, setWiederholung] = useState('');
-  const [feldfehler, setFeldfehler] = useState<Kennwortfehler | null>(null);
   const [emailFehler, setEmailFehler] = useState<string | null>(null);
   const [meldung, setMeldung] = useState<string | null>(null);
   const [laeuft, setLaeuft] = useState(false);
+  const [pinDa, setPinDa] = useState(false);
   const auskunft = useRef<HTMLDivElement>(null);
 
   useFokusNachWechsel(zustand, () =>
     zustand === 'formular' ? document.getElementById(FELD_EMAIL) : auskunft.current,
   );
 
+  /** Die Fehler des Einlösens als Zustand oder Satz - ohne Auskunft über fremde Konten. */
+  function fehlschlag(fehler: unknown) {
+    const art = fehler instanceof EinloeseError ? fehler.art : 'unavailable';
+    if (art === 'invitation_invalid') {
+      setZustand('ungueltig');
+    } else if (art === 'email_taken') {
+      setZustand('vorhanden');
+    } else if (art === 'account_conflict') {
+      setMeldung(
+        'Mit diesem Konto lässt sich der Zugang nicht einrichten. Bitte melden Sie sich ab und nehmen Sie eine andere Adresse.',
+      );
+    } else if (art === 'sign_in_not_created') {
+      setZustand('nicht-angemeldet');
+    } else if (art === 'session_invalid') {
+      setMeldung(
+        'Die Anwendung ist auf diesem Gerät gesperrt. Bitte zuerst dort entsperren – oder abmelden und ein neues Konto einrichten.',
+      );
+    } else {
+      setMeldung(
+        'Der Zugang lässt sich gerade nicht einrichten. Ihr Code ist deswegen nicht verbraucht – bitte später erneut versuchen.',
+      );
+    }
+  }
+
+  /** Mit der Einmal-Anmeldung anmelden, dann Passkey und PIN einrichten. */
+  async function anmeldenUndEinrichten(tokenHash: string) {
+    setZustand('anmelden');
+    try {
+      await loeseLinkEin(tokenHash, 'magiclink');
+    } catch {
+      setZustand('nicht-angemeldet');
+      return;
+    }
+    try {
+      setPinDa(await hatPin());
+    } catch {
+      setPinDa(false);
+    }
+    setZustand('einrichten');
+  }
+
   async function absenden(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (laeuft || code === null) return;
     setMeldung(null);
     setEmailFehler(null);
-
     const adresse = email.trim().toLowerCase();
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(adresse)) {
       setEmailFehler('Bitte eine E-Mail-Adresse eingeben, etwa name@beispiel.de.');
       document.getElementById(FELD_EMAIL)?.focus();
       return;
     }
-    const problem = kennwortFehler(kennwort, wiederholung);
-    if (problem) {
-      setFeldfehler(problem);
-      document
-        .getElementById(problem.feld === 'kennwort' ? FELD_KENNWORT : FELD_WIEDERHOLUNG)
-        ?.focus();
-      return;
-    }
-    setFeldfehler(null);
     setLaeuft(true);
     try {
-      await loeseEinladungEin(code, adresse, kennwort);
+      const ergebnis = await loeseEinladungEin(code, adresse);
+      if (ergebnis.tokenHash === null) {
+        void navigate('/', { replace: true });
+        return;
+      }
+      await anmeldenUndEinrichten(ergebnis.tokenHash);
+    } catch (fehler) {
+      fehlschlag(fehler);
+    } finally {
+      setLaeuft(false);
+    }
+  }
+
+  /** Für das angemeldete Konto einlösen - die Sitzung steht im Kopf des Aufrufs. */
+  async function mitSitzungEinloesen() {
+    if (code === null) return;
+    setMeldung(null);
+    setLaeuft(true);
+    try {
+      await loeseEinladungEin(code, '');
+      void navigate('/', { replace: true });
+    } catch (fehler) {
+      fehlschlag(fehler);
+    } finally {
+      setLaeuft(false);
+    }
+  }
+
+  async function mitPasskeyAnmeldenUndEinloesen() {
+    setMeldung(null);
+    setLaeuft(true);
+    try {
+      await anmeldenMitPasskey();
     } catch (fehler) {
       setLaeuft(false);
-      const art = fehler instanceof EinloeseError ? fehler.art : 'unavailable';
-      if (art === 'invitation_invalid') {
-        setZustand('ungueltig');
-      } else if (art === 'password_not_set') {
-        // Der Code ist verbraucht, das Kennwort blieb das alte (Zweitreview).
-        setMeldung(
-          'Das neue Kennwort ließ sich nicht setzen, und der Code ist verbraucht. Bitte lassen Sie sich von der Praxis einen neuen geben.',
-        );
-      } else if (art === 'email_taken') {
-        setEmailFehler(
-          'Für diese Adresse gibt es schon ein Konto. Mit dessen Kennwort geht es weiter – oder Sie nehmen eine andere Adresse.',
-        );
-        document.getElementById(FELD_EMAIL)?.focus();
-      } else if (art === 'account_conflict') {
-        setEmailFehler(
-          'Mit dieser Adresse lässt sich der Zugang nicht einrichten. Bitte nehmen Sie eine andere Adresse.',
-        );
-        document.getElementById(FELD_EMAIL)?.focus();
-      } else if (art === 'weak_password') {
-        setFeldfehler({
-          feld: 'kennwort',
-          text: `Das Kennwort braucht mindestens ${KENNWORT_MINDESTLAENGE} Zeichen.`,
-        });
-        document.getElementById(FELD_KENNWORT)?.focus();
-      } else {
-        setMeldung(
-          'Der Zugang lässt sich gerade nicht einrichten. Ihr Code ist deswegen nicht verbraucht – bitte später erneut versuchen.',
-        );
-      }
+      setMeldung(fehler instanceof PasskeyFehler ? fehler.message : 'Die Anmeldung gelang nicht.');
       return;
     }
+    await mitSitzungEinloesen();
+  }
 
-    // Eingerichtet: anmelden wie immer, mit Adresse und Kennwort (Punkt 18).
-    const { error } = await getSupabase().auth.signInWithPassword({
-      email: adresse,
-      password: kennwort,
-    });
-    setLaeuft(false);
-    if (error) {
-      // Beim neuen Kennwort gilt die Adresse des bestehenden Kontos. Wer eine
-      // andere eingegeben hat, meldet sich mit der richtigen an.
-      setZustand('fertig-anmelden');
-      return;
-    }
-    void navigate('/', { replace: true });
+  if (zustand === 'einrichten') {
+    return (
+      <AnmeldungEinrichten
+        // Ein Passkey entsteht auf diesem Gerät, auch wenn das Konto schon
+        // einen hat (verlorenes Telefon, Punkt 12).
+        stand={{ passkeys: 0, pin: pinDa }}
+        onFertig={() => void navigate('/', { replace: true })}
+        onAbmelden={() =>
+          void meldeSelbstAb(() => getSupabase().auth.signOut({ scope: 'local' })).then(() =>
+            navigate('/', { replace: true }),
+          )
+        }
+        onSpaeter={kennwortTestzugang() ? () => void navigate('/', { replace: true }) : undefined}
+      />
+    );
   }
 
   return (
     <Vollseite
       titel="Ihr Zugang"
-      kleingedrucktes="Der Zugang gehört nur Ihnen. Bitte geben Sie Adresse und Kennwort nicht weiter – Angehörige bekommen auf Wunsch einen eigenen Zugang von der Praxis."
+      kleingedrucktes="Der Zugang gehört nur Ihnen. Angehörige bekommen auf Wunsch einen eigenen Zugang von der Praxis."
     >
-      {zustand === 'fremde-sitzung' ? (
+      {meldung ? (
+        <div className="mb-4">
+          <Statusmeldung ton="fehler">{meldung}</Statusmeldung>
+        </div>
+      ) : null}
+
+      {zustand === 'angemeldet' ? (
         <div ref={auskunft} tabIndex={-1}>
-          <Statusmeldung ton="warnung">{hinweisAngemeldet(session?.user.email)}</Statusmeldung>
+          {/* Ohne Adresse: Die Seite liegt vor der Sitzungssperre, und eine
+              gesperrte Sitzung zeigt keine Angaben zum Konto (ADR-025 Punkt 3). */}
+          <Statusmeldung ton="warnung">{hinweisAngemeldet(undefined)}</Statusmeldung>
           <div className="mt-4 flex flex-col gap-3">
+            <Button disabled={laeuft} onClick={() => void mitSitzungEinloesen()}>
+              {laeuft ? 'Wird eingelöst …' : 'Für dieses Konto einlösen'}
+            </Button>
             <Button
+              variant="secondary"
               onClick={() => {
                 // Selbst ausgelöst (BEF-047): Die Seite bleibt, ohne
                 // „Ihre Sitzung wurde beendet".
@@ -155,11 +216,25 @@ export function EinladungPage() {
                 );
               }}
             >
-              Abmelden und Zugang einrichten
+              Abmelden und neues Konto einrichten
             </Button>
-            <ButtonLink to="/" replace variant="secondary">
-              Angemeldet bleiben
-            </ButtonLink>
+          </div>
+        </div>
+      ) : null}
+
+      {zustand === 'vorhanden' ? (
+        <div ref={auskunft} tabIndex={-1}>
+          <Statusmeldung ton="warnung">
+            Für diese Adresse gibt es schon ein Konto. Melden Sie sich mit dessen Passkey an – dann
+            gilt der Code für dieses Konto.
+          </Statusmeldung>
+          <div className="mt-4 flex flex-col gap-3">
+            <Button disabled={laeuft} onClick={() => void mitPasskeyAnmeldenUndEinloesen()}>
+              {laeuft ? 'Wird geprüft …' : 'Mit Passkey anmelden und einlösen'}
+            </Button>
+            <Button variant="secondary" onClick={() => setZustand('formular')}>
+              Andere Adresse eingeben
+            </Button>
           </div>
         </div>
       ) : null}
@@ -176,13 +251,15 @@ export function EinladungPage() {
         </div>
       ) : null}
 
-      {zustand === 'fertig-anmelden' ? (
+      {zustand === 'anmelden' ? <LoadingState label="Sie werden angemeldet …" /> : null}
+
+      {zustand === 'nicht-angemeldet' ? (
         <div ref={auskunft} tabIndex={-1}>
-          <Statusmeldung ton="erfolg">Ihr Kennwort ist gesetzt.</Statusmeldung>
-          <p className="text-ink-muted mt-3 text-sm leading-relaxed">
-            Bitte melden Sie sich jetzt mit der Adresse Ihres Kontos und dem neuen Kennwort an.
-          </p>
-          <ButtonLink to="/" className="mt-4">
+          <ErrorState
+            title="Der Zugang ist eingerichtet, die Anmeldung gelang aber nicht."
+            description="Der Code ist verbraucht. Bitte lassen Sie sich von der Praxis einen neuen geben – damit melden Sie sich an und richten Ihren Passkey ein."
+          />
+          <ButtonLink to="/" variant="secondary" className="mt-4">
             Zur Anmeldung
           </ButtonLink>
         </div>
@@ -191,7 +268,8 @@ export function EinladungPage() {
       {zustand === 'formular' ? (
         <form onSubmit={(event) => void absenden(event)} noValidate className="flex flex-col gap-4">
           <p className="text-ink text-sm leading-relaxed">
-            Legen Sie Ihre E-Mail-Adresse und ein Kennwort fest. Damit melden Sie sich künftig an.
+            Geben Sie Ihre E-Mail-Adresse an. Danach richten Sie auf diesem Telefon einen Passkey
+            und eine PIN ein – ein Kennwort gibt es nicht.
           </p>
           <Field
             label="E-Mail-Adresse"
@@ -208,38 +286,8 @@ export function EinladungPage() {
               setEmailFehler(null);
             }}
           />
-          <Field
-            label="Kennwort"
-            feldId={FELD_KENNWORT}
-            hint={`Mindestens ${KENNWORT_MINDESTLAENGE} Zeichen. Eine Wortfolge, die Sie sich merken können, ist besser als ein kurzes Kunstwort.`}
-            type="password"
-            name="new_password"
-            autoComplete="new-password"
-            required
-            value={kennwort}
-            error={feldfehler?.feld === 'kennwort' ? feldfehler.text : undefined}
-            onChange={(event) => {
-              setKennwort(event.target.value);
-              setFeldfehler(null);
-            }}
-          />
-          <Field
-            label="Kennwort wiederholen"
-            feldId={FELD_WIEDERHOLUNG}
-            type="password"
-            name="new_password_repeat"
-            autoComplete="new-password"
-            required
-            value={wiederholung}
-            error={feldfehler?.feld === 'wiederholung' ? feldfehler.text : undefined}
-            onChange={(event) => {
-              setWiederholung(event.target.value);
-              setFeldfehler(null);
-            }}
-          />
-          {meldung ? <Statusmeldung ton="fehler">{meldung}</Statusmeldung> : null}
           <Button type="submit" disabled={laeuft} className="mt-2">
-            {laeuft ? 'Wird eingerichtet …' : 'Zugang einrichten'}
+            {laeuft ? 'Wird eingerichtet …' : 'Weiter'}
           </Button>
         </form>
       ) : null}

@@ -31,3 +31,26 @@ describe('readMapTileApiKey', () => {
     expect(readMapTileApiKey({ VITE_PTV_TILE_API_KEY: '   ' })).toBeNull();
   });
 });
+
+describe('readAppUmgebung (ADR-025 Punkt 15, ANN-326)', () => {
+  it('nimmt einen bekannten Wert', async () => {
+    const { readAppUmgebung } = await import('./env');
+    expect(readAppUmgebung({ VITE_APP_ENVIRONMENT: 'test' })).toBe('test');
+    expect(readAppUmgebung({ VITE_APP_ENVIRONMENT: ' production ', DEV: true })).toBe('production');
+  });
+
+  it('gilt ohne Wert als Produktion - außer im Entwicklungsserver', async () => {
+    const { readAppUmgebung } = await import('./env');
+    expect(readAppUmgebung({})).toBe('production');
+    expect(readAppUmgebung({ VITE_APP_ENVIRONMENT: 'staging' })).toBe('production');
+    expect(readAppUmgebung({ DEV: true })).toBe('development');
+  });
+
+  it('zeigt den Kennwortweg für Testkonten nie in Produktion', async () => {
+    const { kennwortTestzugang } = await import('./env');
+    expect(kennwortTestzugang({})).toBe(false);
+    expect(kennwortTestzugang({ VITE_APP_ENVIRONMENT: 'production', DEV: true })).toBe(false);
+    expect(kennwortTestzugang({ VITE_APP_ENVIRONMENT: 'test' })).toBe(true);
+    expect(kennwortTestzugang({ DEV: true })).toBe(true);
+  });
+});

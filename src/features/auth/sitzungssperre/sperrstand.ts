@@ -32,7 +32,11 @@ export const VORLAUF_MS = 20_000;
 /** Wie lange die Sicherung offener Texte vor der Sperre dauern darf. */
 export const SICHERUNG_HOECHSTENS_MS = 10_000;
 
-export type Sperrgrund = 'inaktiv' | 'hoechstdauer' | 'unbekannt';
+/**
+ * Warum gesperrt ist. `verbraucht`: fünf falsche PINs, die Sitzung ist beendet
+ * und öffnet sich nie wieder (ADR-025 Punkt 11, ANN-324).
+ */
+export type Sperrgrund = 'inaktiv' | 'hoechstdauer' | 'verbraucht' | 'unbekannt';
 
 export type Sperrstand =
   | { gesperrt: true; grund: Sperrgrund }
@@ -41,7 +45,7 @@ export type Sperrstand =
 const zeilenSchema = z.array(
   z.object({
     locked: z.boolean(),
-    reason: z.enum(['inaktiv', 'hoechstdauer', 'unbekannt']).nullable(),
+    reason: z.enum(['inaktiv', 'hoechstdauer', 'verbraucht', 'unbekannt']).nullable(),
     seconds_until_idle: z.number().int().nonnegative(),
     seconds_until_max: z.number().int().nonnegative(),
   }),

@@ -101,7 +101,7 @@ if (anmeldeAdresse) {
     await anmeldeSeite.getByLabel('E-Mail-Adresse').fill(anmeldeAdresse);
     // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
     await anmeldeSeite.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);
-    await anmeldeSeite.getByRole('button', { name: 'Anmelden' }).click();
+    await anmeldeSeite.getByRole('button', { name: 'Anmelden', exact: true }).click();
     await anmeldeSeite
       .getByRole('button', { name: 'Abmelden' })
       .waitFor({ state: 'visible', timeout: 10_000 });

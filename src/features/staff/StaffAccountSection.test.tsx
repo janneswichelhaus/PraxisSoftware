@@ -15,7 +15,7 @@ const widerrufeEinladung = vi.fn();
 const sendeZugangsMail = vi.fn();
 const setzeRollen = vi.fn();
 const setzeZugangAktiv = vi.fn();
-const stosseKennwortZuruecksetzenAn = vi.fn();
+const sendeNeuenAnmeldelink = vi.fn();
 
 vi.mock('./konto-api', async (importOriginal) => {
   const actual = await importOriginal<typeof KontoApi>();
@@ -31,8 +31,7 @@ vi.mock('./konto-api', async (importOriginal) => {
     setzeRollen: (id: string, rollen: readonly string[]) =>
       setzeRollen(id, rollen) as Promise<void>,
     setzeZugangAktiv: (id: string, aktiv: boolean) => setzeZugangAktiv(id, aktiv) as Promise<void>,
-    stosseKennwortZuruecksetzenAn: (id: string) =>
-      stosseKennwortZuruecksetzenAn(id) as Promise<void>,
+    sendeNeuenAnmeldelink: (id: string) => sendeNeuenAnmeldelink(id) as Promise<void>,
   };
 });
 
@@ -76,13 +75,13 @@ describe('StaffAccountSection', () => {
       sendeZugangsMail,
       setzeRollen,
       setzeZugangAktiv,
-      stosseKennwortZuruecksetzenAn,
+      sendeNeuenAnmeldelink,
     ]) {
       mock.mockReset();
     }
     setzeRollen.mockResolvedValue(undefined);
     setzeZugangAktiv.mockResolvedValue(undefined);
-    stosseKennwortZuruecksetzenAn.mockResolvedValue(undefined);
+    sendeNeuenAnmeldelink.mockResolvedValue(undefined);
     fetchStaffAccount.mockResolvedValue(ohneZugang);
     fetchStaffInvitations.mockResolvedValue([]);
     ladeZugangEin.mockResolvedValue('kein_konto');
@@ -252,7 +251,7 @@ describe('StaffAccountSection', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Bestehender Zugang: Rollen, Sperre, Kennwort (STAFF-002c, STAFF-003)
+// Bestehender Zugang: Rollen, Sperre, Anmeldelink (STAFF-002c, STAFF-003, SEC-006)
 // ---------------------------------------------------------------------------
 describe('StaffAccountSection - bestehender Zugang', () => {
   beforeEach(() => {
@@ -261,7 +260,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
       fetchStaffInvitations,
       setzeRollen,
       setzeZugangAktiv,
-      stosseKennwortZuruecksetzenAn,
+      sendeNeuenAnmeldelink,
     ]) {
       mock.mockReset();
     }
@@ -269,7 +268,7 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     fetchStaffInvitations.mockResolvedValue([]);
     setzeRollen.mockResolvedValue(undefined);
     setzeZugangAktiv.mockResolvedValue(undefined);
-    stosseKennwortZuruecksetzenAn.mockResolvedValue(undefined);
+    sendeNeuenAnmeldelink.mockResolvedValue(undefined);
   });
 
   it('speichert Rollen erst nach einer Änderung', async () => {
@@ -382,8 +381,8 @@ describe('StaffAccountSection - bestehender Zugang', () => {
       await screen.findByText('Den eigenen Zugang können Sie nicht sperren.'),
     ).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Zugang sperren' })).not.toBeInTheDocument();
-    // Das Kennwort lässt sich weiter zurücksetzen.
-    expect(screen.getByRole('button', { name: 'Kennwort zurücksetzen' })).toBeInTheDocument();
+    // Ein neuer Anmeldelink lässt sich weiter senden.
+    expect(screen.getByRole('button', { name: 'Neuen Anmeldelink senden' })).toBeInTheDocument();
   });
 
   it('erklärt den Aussperrschutz, statt nur zu scheitern', async () => {
@@ -450,17 +449,18 @@ describe('StaffAccountSection - bestehender Zugang', () => {
     ).toBeInTheDocument();
   });
 
-  it('stößt das Zurücksetzen des Kennworts erst nach der Rückfrage an', async () => {
+  it('schickt einen neuen Anmeldelink erst nach der Rückfrage (ADR-025 Punkt 12)', async () => {
     const user = userEvent.setup();
     renderWithProviders(<StaffAccountSection staff={anna} eigeneUserId={OWNER} />);
 
-    await user.click(await screen.findByRole('button', { name: 'Kennwort zurücksetzen' }));
-    expect(stosseKennwortZuruecksetzenAn).not.toHaveBeenCalled();
+    await user.click(await screen.findByRole('button', { name: 'Neuen Anmeldelink senden' }));
+    expect(sendeNeuenAnmeldelink).not.toHaveBeenCalled();
+    expect(screen.queryByText(/Kennwort/)).toBeNull();
 
-    await user.click(screen.getByRole('button', { name: 'Mail senden' }));
-    await waitFor(() => expect(stosseKennwortZuruecksetzenAn).toHaveBeenCalledWith(anna.id));
+    await user.click(screen.getByRole('button', { name: 'Link senden' }));
+    await waitFor(() => expect(sendeNeuenAnmeldelink).toHaveBeenCalledWith(anna.id));
     expect(
-      await screen.findByText(/Die Mail zum Zurücksetzen wurde an die hinterlegte Adresse/),
+      await screen.findByText('Der Anmeldelink wurde an die hinterlegte Adresse geschickt.'),
     ).toBeInTheDocument();
   });
 

@@ -19,13 +19,18 @@ Ausweis und Vollmacht bei Vertretungen ansehen, Bedingungen der Einwilligung zur
 der Abruf eines freigegebenen Dokuments über die Plattform nicht protokolliert wird. Geändert ist
 nur **Punkt 24** (mit Vermerk an W5); Rang 2 dazu ist ADR-010 Fassung 4.
 
+**Fassung 4 (2026-10-10)**: Anmeldung ohne Kennwort nach [ADR-025](ADR-025-session-lock.md)
+Fassung 2 (Jannes): Passkey als Anmeldung, App-PIN als Rückweg der Freigabe, kein Kennwort. Geändert
+sind die Punkte **1, 7, 8, 10, 13, 17 und 18** und die Liste „Nicht entschieden“, jeweils mit
+Vermerk. Rang 1 dazu: `PROJECT_PRINCIPLES.md` 0.25, §3.4.
+
 **Ergänzt durch [ADR-025](ADR-025-session-lock.md)** (2026-10-02): Die Punkte 17 und 18 bekommen eine Sitzungssperre.
 
 *Vermerk 2026-10-03 (LOG-EPIC-001): Was im Auditlog steht, regelt abschließend [ADR-010](ADR-010-audit-and-privileged-access.md) Fassung 3. Protokollvorgaben dieses ADR gelten nur, soweit sie dort aufgeführt sind; Schreibvorgänge weist das Datenmodell nach.* *Den Zweifel an der Einwilligungsfähigkeit (Punkt 13) vermerkt die Praxis am Zugang der rechtlichen Vertretung (`companion_declined_*`), nicht im Auditlog (ANN-207 Fassung 2).*
 
 ## Datum
 
-2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09
+2026-09-30 · Fassung 2: 2026-09-30 · Fassung 3: 2026-10-09 · Fassung 4: 2026-10-10
 
 ## Kontext
 
@@ -78,7 +83,8 @@ nicht (§2.2, `IDEA-QSN-006`).
 **1. Ein Anmeldedienst für alle Konten.** Konten externer Personen sind Konten bei Supabase Auth,
 wie die der Praxis. Es gibt keine zweite Identitätsinfrastruktur, kein eigenes Kennwortverfahren,
 keine eigene Sitzungsmechanik (§3.4). Die Selbstregistrierung bleibt aus: **Ein Plattformkonto
-entsteht nur aus einer Einladung der Praxis** (Punkte 6 bis 9).
+entsteht nur aus einer Einladung der Praxis** (Punkte 6 bis 9). *Fassung 4: Einzige Ausnahme vom
+eigenen Prüfverfahren ist die App-PIN, die eine gesperrte Sitzung freigibt (ADR-025 Punkt 11, §3.4).*
 
 **2. Ein Konto ist Praxiskonto oder Plattformkonto, nie beides.** Praxiskonten tragen Rollen in
 `user_roles` (ADR-004). Ein Plattformkonto trägt **keine** Zeile in `user_roles`. Die Datenbank
@@ -145,18 +151,21 @@ Abschnitt **Plattform** an Akte und Trainingsverhältnis (DSN-001 Abschnitt 6).
 den Zugang. Die tragende Eigenschaft aus ANN-025 gilt unverändert: Ohne passende offene Einladung
 bleibt ein Konto ohne jeden Zugriff. Die Einladung trägt einen einmaligen Code. Gespeichert wird
 nur dessen Hash, nie der Code selbst, und er steht in keinem Log (ADR-011). Angemeldet wird mit
-**E-Mail-Adresse und Kennwort**. Wer keine E-Mail-Adresse hat, bekommt in V1 kein eigenes Konto.
-Er kann über eine Vertretung (Punkt 13) oder mit Plänen als PDF versorgt werden.
+**Passkey**; die E-Mail-Adresse bleibt die Kennung des Kontos (*Fassung 4*, ADR-025 Punkte 9 bis 11;
+*bis Fassung 3: „E-Mail-Adresse und Kennwort“*). Wer keine E-Mail-Adresse oder kein Gerät mit Passkey
+hat, bekommt in V1 kein eigenes Konto. Er kann über eine Vertretung (Punkt 13) oder mit Plänen als
+PDF versorgt werden.
 
 **8. Zwei Übergabewege, eine Einladung** (**W2**):
 
 - **Vor Ort (Regelweg).** Die Praxis öffnet die Einladung auf ihrem Gerät, die Person scannt den
-  Code als QR mit ihrem eigenen Telefon und legt dort Adresse und Kennwort fest. Das braucht
+  Code als QR mit ihrem eigenen Telefon und legt dort Adresse, Passkey und PIN fest (*Fassung 4*;
+  vorher „Adresse und Kennwort“, ADR-025 Punkt 13). Das braucht
   keinen Mailversand, und die Übergabe selbst ist die Identitätsprüfung (Punkt 11).
 - **Per Mail**, nur an die Adresse, die im Verhältnis steht, über den Zustellweg aus Punkt 10.
 
 Beide Wege enden auf einer öffentlichen Seite der Anwendung, die die Einladung einlöst. Sie
-kommt als dritte zu `/kennwort-neu` und `/zugang` hinzu und folgt ANN-043: `token_hash` statt
+kommt als dritte zu `/kennwort-neu` und `/zugang` hinzu (*Fassung 4: `/kennwort-neu` entfällt*) und folgt ANN-043: `token_hash` statt
 Sitzung in der Adresszeile. Für abgelaufene, benutzte und unbekannte Codes gibt sie dieselbe
 Auskunft (§13).
 
@@ -171,9 +180,12 @@ ist (ADR-015 Punkt 20, OPS-001). Das ist ein Gate für das Scharfschalten, kein 
 **10. Mails laufen über einen Adapter mit `mock`-Weg** (Roadmap R8, Grundsatz 5). `mock` stellt
 lokal und im Test in das Postfach des lokalen Stacks zu. Der produktive Weg ist ein eigener
 Versanddienst: B13, Anbieterprüfung nach ADR-002 in Block 11, eigener ADR bei der Wahl. Die
-Plattform muss **ohne Mail benutzbar** sein. Das leistet der Weg vor Ort, und zwar auch für ein
-vergessenes Kennwort: Die Praxis übergibt eine neue Einladung für das bestehende Konto, und die
-Person setzt damit ein neues Kennwort. Der Wiederherstellungslink per Mail kommt mit B13 hinzu.
+Plattform muss **ohne Mail benutzbar** sein. Das leistet der Weg vor Ort, und zwar auch für einen
+verlorenen Passkey: Die Praxis übergibt eine neue Einladung für das bestehende Konto, und die
+Person richtet damit einen neuen Passkey ein (*Fassung 4*; vorher „vergessenes Kennwort“, „neues
+Kennwort“). ~~Der Wiederherstellungslink per Mail kommt mit B13 hinzu.~~ *Fassung 4: Einen
+Wiederherstellungslink gibt es nicht; Plattformkonten bekommen keine Mail des Anmeldedienstes
+(ANN-331).*
 
 ### C. Identität und Vertretung
 
@@ -197,7 +209,7 @@ Praxis, als Kopie der Akte durch `owner` (OPS-006, `patient_record.exported`), u
 ihn nicht.
 
 **13. Vertretung ist ein Zugang mit eigenem Konto.** Die vertretende Person hat ihr eigenes Konto
-(eigene Person, eigene Adresse, eigenes Kennwort). Ihr Zugang zeigt auf das Verhältnis der
+(eigene Person, eigene Adresse, eigener Passkey; *bis Fassung 3: eigenes Kennwort*). Ihr Zugang zeigt auf das Verhältnis der
 vertretenen Person. Gehört das Konto nicht zur Person des Verhältnisses, ist der Zugang eine
 Vertretung und braucht eine **Art** und einen **Nachweisvermerk**: wer welches Dokument wann
 gesehen hat. *(Fassung 2)* Angesehen werden **der Ausweis der vertretenden Person** und bei
@@ -251,15 +263,18 @@ Frage beantwortet, die D3 hierher verweist.
 ### D. Sitzung
 
 **17. Sitzungen führt der Anmeldedienst, für alle Konten gleich.** Es gibt ein Projekt und eine
-Konfiguration: `jwt_expiry`, Rotation der Erneuerungstoken und Mindestlänge des Kennworts
-(12 Zeichen, ANN-027) gelten für Praxis- und Plattformkonten gleich. Eine eigene Sitzungsregel
-für die Plattform würde Eigenbau bedeuten (§3.4).
+Konfiguration: `jwt_expiry`, Rotation der Erneuerungstoken und die Einstellungen für Passkeys
+gelten für Praxis- und Plattformkonten gleich (*Fassung 4*; die Mindestlänge des Kennworts aus
+ANN-027 entfällt mit dem Kennwort). Eine eigene Sitzungsregel für die Plattform würde Eigenbau
+bedeuten (§3.4); die Sitzungssperre mit App-PIN regelt ADR-025 für alle Konten gleich.
 
 **18. Was an der Plattform anders ist:**
 
-- Anmeldung mit **E-Mail und Kennwort**, keine Anmeldung allein per Mail-Link. Sonst hinge jede
-  Anmeldung an B13.
-- Ein zweiter Faktor ist einrichtbar, wird aber nicht verlangt (wie ANN-028).
+- Anmeldung per **Passkey**, keine Anmeldung allein per Mail-Link. Sonst hinge jede Anmeldung an
+  B13. *Bis Fassung 3: „mit E-Mail und Kennwort“.*
+- Ein zweiter Faktor ist einrichtbar, wird aber nicht verlangt (wie ANN-028). *Fassung 4: Ein
+  Passkey verbindet Besitz und Prüfung am Gerät; der Warnhinweis aus ANN-028 entfällt für Konten mit
+  Passkey.*
 - „Abmelden" unter „Ich" beendet die Sitzung auf diesem Gerät (ANN-045). „Überall abmelden"
   steht daneben.
 - **Sperren und Entziehen wirken bei der nächsten Anfrage.** Jede Plattformprojektion liest den
@@ -396,8 +411,8 @@ Datenzugriffe der Praxisfeatures importiert. Gemeinsam sind nur Komponenten, Beg
 - **Das Einsichtsverfahren nach § 630g BGB** und seine Identitätsprüfung (Punkt 12).
 - **Wortlaut** der Einladung, der Nutzungshinweise und der Hinweise zur Vertretung: im Loop und in
   `src/lib/begriffe.ts`.
-- **Passkeys und Anmeldung per SMS**: erst, wenn der Anmeldedienst sie geprüft anbietet bzw. B15
-  entschieden ist.
+- **Anmeldung per SMS**: erst, wenn B15 entschieden ist. *Passkeys sind mit Fassung 4 entschieden
+  (ADR-025 Fassung 2).*
 
 ## Offene Folgefragen
 
