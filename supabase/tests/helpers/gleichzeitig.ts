@@ -11,7 +11,7 @@ import { abgefangen, asPostgres, jwtClaims, testDatabaseUrl } from './db';
 export async function gleichzeitig(
   erledigen: { konto: string; sql: string; params: unknown[] },
   schreiben: { konto: string; sql: string; params: unknown[] },
-): Promise<{ code?: string; message: string } | null> {
+): Promise<{ code: string | undefined; message: string } | null> {
   const a = new Client({ connectionString: testDatabaseUrl() });
   const b = new Client({ connectionString: testDatabaseUrl() });
   await a.connect();
