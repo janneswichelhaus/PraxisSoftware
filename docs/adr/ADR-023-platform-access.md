@@ -280,7 +280,9 @@ bedeuten (§3.4); die Sitzungssperre mit App-PIN regelt ADR-025 für alle Konten
 - **Sperren und Entziehen wirken bei der nächsten Anfrage.** Jede Plattformprojektion liest den
   Zustand des Zugangs, so wie die Praxispfade `is_active` lesen (ANN-044). Ein ausgestelltes
   Zugriffstoken zeigt danach nichts mehr, obwohl es bis `jwt_expiry` gültig bleibt.
-- Kein Offline-Modus, kein Service Worker (ADR-015 Punkt 16). Das regelt ADR-024.
+- Kein Offline-Modus, kein Service Worker (ADR-015 Punkt 16). Das regelt ADR-024. *Vermerk
+  2026-10-11: ADR-024 angenommen; ohne Netz geht auf der Plattform nur die Durchführung (Punkte 4
+  und 5).*
 
 ### E. Durchsetzung — „nur eigene Daten"
 
