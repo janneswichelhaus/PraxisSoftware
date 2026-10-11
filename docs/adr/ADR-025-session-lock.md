@@ -22,9 +22,15 @@ Passkeys anbietet. Geändert ist **Punkt 7**, neu sind die **Punkte 9 bis 15** u
 ADR-023 Fassung 4. **Gebaut in SEC-EPIC-002** (Roadmap G22, 2026-10-10; ANN-324 bis ANN-331). Empfohlen waren die Geräte-PIN
 über den Passkey und das Kennwort als Notfallweg; Jannes hat das in Kenntnis der Folgen verworfen.
 
+**Fassung 3 (2026-10-11, Jannes): Passkey von selbst, PIN dahinter.** Geändert ist nur Punkt 11,
+dritter Spiegelstrich: Die Sperrseite öffnet das Passkey-Fenster beim Erscheinen von selbst, die
+PIN-Eingabe steht dahinter bereit statt erst auf „Passkey klappt nicht“. Die Anmeldeseite öffnet das
+Passkey-Fenster ebenso von selbst; eine PIN steht dort nicht, weil sie nie anmeldet. Sicherheitlich
+ändert sich nichts: Die PIN war schon vorher einen Tipp entfernt.
+
 ## Datum
 
-2026-10-02 · Fassung 2: 2026-10-10
+2026-10-02 · Fassung 2: 2026-10-10 · Fassung 3: 2026-10-11
 
 ## Kontext
 
@@ -123,9 +129,11 @@ Anmeldeart `passkey` im Claim `amr` als Anmeldung.
   nach dem Abmelden und für ein anderes Konto gilt sie nicht;
 - wird nur in der Datenbank geprüft und dort nur als bcrypt-Hash aus `pgcrypto` gehalten (§3.4,
   Ausnahme). Nie im Klartext, nie im Log, nie auf dem Gerät;
-- ist **nur der Rückweg**: Die Sperrseite bietet immer zuerst den Passkey, die PIN erst auf „Passkey
-  klappt nicht“. Keine Uhr wechselt den Weg und keine Frist begrenzt die PIN (Jannes, 2026-10-10).
-  Neu freigegeben wird trotzdem immer, nach den Punkten 1 und 2;
+- ist **nur der Rückweg** *(Fassung 3)*: Die Sperrseite öffnet beim Erscheinen das Passkey-Fenster
+  von selbst; die PIN-Eingabe steht dahinter bereit, ohne Umweg über eine Nachfrage (Jannes,
+  2026-10-11). Keine Uhr wechselt den Weg und keine Frist begrenzt die PIN. Neu freigegeben wird
+  trotzdem immer, nach den Punkten 1 und 2. *Fassung 2: „Die Sperrseite bietet immer zuerst den
+  Passkey, die PIN erst auf ‚Passkey klappt nicht‘.“*;
 - ist nach wenigen Fehlversuchen in Folge verbraucht: Die Sitzung wird beendet, weiter geht es nur per
   Passkey;
 - darf keine triviale Folge sein (gleiche Ziffern, auf- oder absteigende Reihe).

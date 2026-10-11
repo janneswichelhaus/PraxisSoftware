@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Aufklappzeichen } from '@/components/ui/Card';
 import { aufklappKoepfe, aufklappKopfKlassen } from '@/components/ui/aufklappStile';
@@ -12,6 +12,7 @@ import { getSupabase } from '@/lib/supabase';
 import { ANMELDESAETZE, anmeldesatz } from './anmeldefehler';
 import { useFokusNachWechsel } from './fokus';
 import { PASSKEY_SAETZE, PasskeyFehler, anmeldenMitPasskey, passkeyMoeglich } from './passkey';
+import { usePasskeyVonSelbst } from './passkeyVonSelbst';
 import { useSitzungEndeteVonAussen } from './sitzungsende';
 
 /**
@@ -144,13 +145,7 @@ export function LoginPage({
     }
   }
 
-  // Einmal je Aufruf der Seite, auch wenn React den Effekt doppelt ausführt.
-  const gestartet = useRef(false);
-  useEffect(() => {
-    if (!passkeyGeht || gestartet.current) return;
-    gestartet.current = true;
-    void mitPasskey(true);
-  }, []);
+  usePasskeyVonSelbst(() => mitPasskey(true), passkeyGeht);
 
   return (
     // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
