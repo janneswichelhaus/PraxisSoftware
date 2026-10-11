@@ -10,9 +10,10 @@ import {
 } from './training-withdrawals-api';
 
 /**
- * „Trainingsvertrag widerrufen" in Offene Punkte (KND-004): ein Hinweis für
- * 14 Tage. Die Praxis wickelt ab – Paket entfernen oder stornieren,
- * zurückzahlen, Vertrag beenden (ANN-290). Ohne Widerruf steht hier nichts.
+ * „Trainingsvertrag widerrufen" in Offene Punkte (KND-004). Die Praxis wickelt
+ * ab – Paket entfernen oder stornieren, zurückzahlen, Vertrag beenden
+ * (ANN-290). Der Widerruf bleibt, bis das Paket entfernt ist, mindestens
+ * 14 Tage (BEF-129, ANN-341). Ohne Widerruf steht hier nichts.
  */
 export function TrainingWithdrawals() {
   const { data } = useQuery({
@@ -24,7 +25,7 @@ export function TrainingWithdrawals() {
   return (
     <Section
       titel={`Trainingsvertrag widerrufen (${data.length})`}
-      hinweis="Über die Plattform widerrufen. Bitte Paket und Zahlung abwickeln. Die Liste zeigt die letzten 14 Tage."
+      hinweis="Über die Plattform widerrufen. Bitte Paket und Zahlung abwickeln. Ein Widerruf bleibt hier, bis sein Paket entfernt ist, mindestens 14 Tage."
     >
       <ul className="divide-line border-line bg-surface rounded-card divide-y border px-4 sm:px-5">
         {data.map((w) => (
@@ -53,6 +54,9 @@ function Zeile({ widerruf: w }: { widerruf: Trainingswiderruf }) {
       </p>
       <p className="text-ink-muted text-sm">
         {w.package_label}: widerrufen am {formatDate(w.withdrawn_on)}, {von}
+      </p>
+      <p className={w.package_open ? 'text-warnung text-sm font-medium' : 'text-ink-muted text-sm'}>
+        {w.package_open ? 'Paket besteht noch' : 'Paket entfernt'}
       </p>
     </li>
   );

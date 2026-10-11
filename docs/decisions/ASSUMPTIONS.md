@@ -1,6 +1,6 @@
 # Annahmenregister
 
-Zuletzt aktualisiert: 2026-10-10.
+Zuletzt aktualisiert: 2026-10-11.
 
 Begründete, **vorläufige** Annahmen: Festlegungen, die eine Aufgabe brauchte,
 die aber weder `PROJECT_PRINCIPLES.md` noch ein ADR noch die
@@ -3509,7 +3509,7 @@ Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Pr
 
 Recht · entschieden (Jannes) · 2026-10-09 · Jannes (Abnahme 09.10.2026) · Prüfpaket · Wiedervorlage: Datenschutzprüfung (Vertragsrecht); Jannes in der Sichtung Angebote
 
-**Annahme.** Unter „Ich → Trainingsvertrag“ steht bis zum Ende der Widerrufsfrist (14 Tage ab Abschluss) der Knopf „Vertrag widerrufen“, danach eine Seite mit „Widerruf bestätigen“ und sofort der Eingang mit Datum und Uhrzeit zum Drucken. Widerrufen können die Person selbst und eine rechtliche Vertretung mit Vermögenssorge am Trainingszugang, nie die Begleitung. Der Widerruf steht am Vertragsnachweis, 14 Tage in Offene Punkte und dauerhaft am Trainingsverhältnis (owner, Büro). Er löscht und storniert nichts selbst: Paket entfernen oder stornieren, zurückzahlen und den Vertrag beenden macht die Praxis mit den vorhandenen Funktionen. Ein Widerruf auf anderem Weg (Brief, E-Mail) vermerkt die Praxis heute nicht in der Anwendung.
+**Annahme.** Unter „Ich → Trainingsvertrag“ steht bis zum Ende der Widerrufsfrist (14 Tage ab Abschluss) der Knopf „Vertrag widerrufen“, danach eine Seite mit „Widerruf bestätigen“ und sofort der Eingang mit Datum und Uhrzeit zum Drucken. Widerrufen können die Person selbst und eine rechtliche Vertretung mit Vermögenssorge am Trainingszugang, nie die Begleitung. Der Widerruf steht am Vertragsnachweis, in Offene Punkte (14 Tage; seit BEF-129, bis das Paket entfernt ist: ANN-341) und dauerhaft am Trainingsverhältnis (owner, Büro). Er löscht und storniert nichts selbst: Paket entfernen oder stornieren, zurückzahlen und den Vertrag beenden macht die Praxis mit den vorhandenen Funktionen. Ein Widerruf auf anderem Weg (Brief, E-Mail) vermerkt die Praxis heute nicht in der Anwendung.
 
 **Begründung.** § 356a BGB verlangt seit dem 19. Juni 2026 bei Verträgen über eine Online-Oberfläche eine Widerrufsfunktion mit Bestätigungsschritt und Eingangsbestätigung auf einem dauerhaften Datenträger. Was bei frühem Beginn als Wertersatz bleibt (§ 357a Abs. 2 BGB), hängt an den schon erbrachten Einheiten und ist eine Einzelfallrechnung; eine automatische Stornierung wäre ein Beleg ohne Regel für die Höhe. Unsicher: ob die Praxis Widerrufe per Brief ebenfalls in der Anwendung vermerken will.
 
@@ -4130,3 +4130,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-1
 **Anker.** Eigenschaft `mitGeschaeftlichemTelefon` in `src/features/patients/PatientMasterDataFields.tsx`, gesetzt in `EditPatientPage.tsx`; Tests „Telefon (geschäftlich) (BEF-140)“ in `src/features/patients/EditPatientPage.test.tsx`.
 
 **Änderungspfad.** Vorhandene Nummern auch verbergen: die Eigenschaft nicht mehr setzen und die Zeile in `PatientMasterDataPage.tsx` streichen · Aufwand `klein`. Die Spalte ganz aufgeben: eigene Migration mit Auskunft, Zusammenführen und Seeds · Aufwand `mittel`.
+
+### ANN-341 — Ein Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis sein Paket entfernt ist
+
+Praxisprozess · offen · 2026-10-11 · — · — · Wiedervorlage: Jannes in der Sichtung Angebote (Schritt 10)
+
+**Annahme.** Ein Widerruf über die Plattform steht in Offene Punkte, solange das Paket des Vertrags noch besteht und das Trainingsverhältnis nicht beendet ist, und wie bisher mindestens 14 Tage; jede Zeile sagt „Paket besteht noch“ oder „Paket entfernt“. Abgewickelt ist ein Widerruf erst, wenn die Praxis das Paket entfernt – steht es auf einer Rechnung, wird diese vorher storniert. Eine Stornierung allein wickelt nicht ab, weil die Leistung danach wieder abrechenbar ist. Der Monatsentwurf des Trainings bleibt unverändert und sperrt kein Paket.
+
+**Begründung.** BEF-129 (Zweitreview KND-EPIC-001, H5) bot zwei Wege an: Bedingung statt 14 Tage oder Sperre im Monatsentwurf. Die Bedingung ändert nur eine Lesefunktion und lässt ANN-290 („die Praxis wickelt ab, nichts storniert sich selbst“) stehen; eine Sperre im Entwurf griffe in die Abrechnung (ADR-009) und müsste beim Wertersatz nach § 357a Abs. 2 BGB wieder Ausnahmen kennen. Der Zustand ergibt sich aus dem Paket selbst – kein Vermerk „gesehen“, keine neue Auditaktion (ADR-010). Behält die Praxis ein Paket bewusst (Wertersatz bei frühem Beginn, ein Widerruf, den sie für verspätet hält), endet der Hinweis mit dem Vertragsende am Trainingsverhältnis – das lässt sich erst nach dem letzten Pakettag eintragen (ANN-277); ohne diese Grenze stünde er bis zur Aufbewahrungslöschung (Zweitreview). Unsicher: ob die Praxis einen bewusst behaltenen Widerruf früher aus der Liste nehmen will.
+
+**Anker.** Bedingung in `public.list_platform_training_withdrawals` in `supabase/migrations/20261028100000_bef_129_widerruf_bis_abgewickelt.sql`; Anzeige in `src/features/open-points/TrainingWithdrawals.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` („bleibt nach 14 Tagen in Offene Punkte …“) und `src/features/open-points/TrainingWithdrawals.test.tsx`.
+
+**Änderungspfad.** Zurück zu 14 Tagen: die Bedingung `training_package_id is not null` streichen · Aufwand `klein`. Ein Paket bewusst behalten: Vermerk „abgewickelt“ am Vertrag mit Praxisfunktion · Aufwand `mittel`. Statt des Hinweises den Monatsentwurf sperren: Prüfung in `create_training_invoice_draft` · Aufwand `mittel`.

@@ -4,9 +4,9 @@ import { getSupabase } from '@/lib/supabase';
 
 /**
  * Widerrufe von Trainingsverträgen über die Plattform (KND-004, § 356a BGB).
- * Wie die Kündigungen des Abos ein Hinweis für 14 Tage; danach steht der
- * Widerruf am Trainingsverhältnis. Welche Zeilen eine Rolle sieht,
- * entscheidet der Server (owner, office).
+ * Der Widerruf steht hier, solange sein Paket besteht, mindestens 14 Tage
+ * (BEF-129, ANN-341); `package_open` sagt, ob es noch besteht. Welche Zeilen
+ * eine Rolle sieht, entscheidet der Server (owner, office).
  */
 
 const widerrufSchema = z.object({
@@ -18,6 +18,7 @@ const widerrufSchema = z.object({
   package_label: z.string(),
   withdrawn_access_kind: z.enum(['self', 'legal_representative']),
   withdrawn_representative_name: z.string().nullable(),
+  package_open: z.boolean(),
 });
 
 export type Trainingswiderruf = z.infer<typeof widerrufSchema>;

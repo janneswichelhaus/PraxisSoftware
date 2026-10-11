@@ -665,6 +665,15 @@
           "vermerk": "ohne Oberfläche außer dem Hinweis am Empfängerformular"
         },
         {
+          "id": "bef-129",
+          "name": "BEF-129 Widerruf des Trainingsvertrags bleibt in Offene Punkte, bis das Paket entfernt ist",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-11",
+          "nachweis": "ANN-341; Migration 20261028100000, training-contracts.test.ts, TrainingWithdrawals.test.tsx; Sichtung Angebote Schritt 10; Zweitreview",
+          "vermerk": "Bedingung statt 14 Tage; Monatsentwurf unverändert"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
