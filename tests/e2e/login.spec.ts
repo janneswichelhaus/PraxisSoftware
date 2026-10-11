@@ -12,6 +12,9 @@ test.describe('Anmeldung', () => {
     await page.goto('/');
 
     await expect(page.getByRole('heading', { name: 'Anmelden' })).toBeVisible();
+    // Der Testzugang liegt zugeklappt hinter „Testkonten".
+    await expect(page.getByLabel('E-Mail-Adresse')).toBeHidden();
+    await page.getByText('Testkonten', { exact: true }).click();
     await expect(page.getByLabel('E-Mail-Adresse')).toBeVisible();
     // exact: true grenzt das Feld selbst gegen den Sichtbar-Schalter ab, dessen
     // Beschriftung ("Kennwort anzeigen") den Feldnamen enthaelt.
@@ -31,6 +34,7 @@ test.describe('Anmeldung', () => {
 
   test('ist vollstaendig mit der Tastatur bedienbar', async ({ page }) => {
     await page.goto('/');
+    await page.getByText('Testkonten', { exact: true }).click();
 
     await page.getByLabel('E-Mail-Adresse').focus();
     await page.keyboard.type('jannes.test@praxis.invalid');
@@ -94,6 +98,7 @@ test.describe('Testzugang', () => {
     for (const breite of [375, 1280]) {
       await page.setViewportSize({ width: breite, height: 780 });
       await page.goto('/');
+      await page.getByText('Testkonten', { exact: true }).click();
       await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
       await page.getByLabel('Kennwort', { exact: true }).fill('LokalerTestzugang!2026');
       await page.getByRole('button', { name: 'Anmelden', exact: true }).click();
@@ -119,6 +124,7 @@ test.describe('Testzugang', () => {
       }),
     );
     await page.goto('/');
+    await page.getByText('Testkonten', { exact: true }).click();
     await page.getByLabel('E-Mail-Adresse').fill('anna.beispiel@praxis.invalid');
     await page.getByLabel('Kennwort', { exact: true }).fill('falsch-falsch-falsch');
     await page.getByRole('button', { name: 'Anmelden', exact: true }).click();

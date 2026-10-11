@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { usePasskeyVonSelbst } from '../passkeyVonSelbst';
 import { Button } from '@/components/ui/Button';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Field } from '@/components/ui/Field';
@@ -13,11 +14,11 @@ import { SPERRFRISTEN, type Sperrgrund } from './sperrstand';
  * Die Sperrseite (ADR-025 Fassung 2, Punkte 3, 7 und 11).
  *
  * Ohne Namen, ohne Akte, ohne Termin - auch die E-Mail-Adresse steht nicht da.
- * Freigegeben wird **immer zuerst mit dem Passkey** des eigenen Kontos. Die
- * App-PIN ist nur der Rückweg, wenn der Passkey nicht klappt: Sie erscheint
- * erst auf „Passkey klappt nicht?“, und keine Uhr wechselt den Weg (Jannes,
- * 2026-10-10). Ein Kennwort gibt es hier nicht, auch nicht für Testkonten
- * (Punkt 15).
+ * Freigegeben wird **zuerst mit dem Passkey** des eigenen Kontos: Sein
+ * Fenster öffnet sich beim Erscheinen der Seite von selbst. Dahinter steht
+ * die App-PIN als Rückweg schon bereit, ohne Umweg über eine Nachfrage
+ * (Punkt 11 Fassung 3, Jannes 2026-10-11). Ein Kennwort gibt es hier nicht,
+ * auch nicht für Testkonten (Punkt 15).
  *
  * Liefert der Passkey ein anderes Konto, ist das ein Kontowechsel und keine
  * Freigabe (Punkt 7): Der `SessionProvider` räumt, und `App` hängt die
@@ -26,7 +27,6 @@ import { SPERRFRISTEN, type Sperrgrund } from './sperrstand';
  * Nach fünf falschen PINs ist die Sitzung verbraucht (ANN-324): Die Seite
  * sagt es und führt zur Anmeldung.
  */
-type Ansicht = 'passkey' | 'pin' | 'verbraucht';
 
 const PIN_FELD = 'sperre-pin';
 
@@ -48,13 +48,13 @@ export function Sperrseite({
   onAbmelden: () => void;
 }) {
   const passkeyGeht = passkeyMoeglich();
-  const [ansicht, setAnsicht] = useState<Ansicht>(
-    grund === 'verbraucht' ? 'verbraucht' : 'passkey',
-  );
+  const [verbraucht, setVerbraucht] = useState(grund === 'verbraucht');
   const [pinDa, setPinDa] = useState<boolean | null>(null);
   const [pin, setPin] = useState('');
   const [fehler, setFehler] = useState<string | null>(null);
-  const [laeuft, setLaeuft] = useState(false);
+  // Getrennt: Ein offenes Passkey-Fenster sperrt die PIN dahinter nicht.
+  const [passkeyLaeuft, setPasskeyLaeuft] = useState(false);
+  const [pinLaeuft, setPinLaeuft] = useState(false);
   const fehlerkasten = useRef<HTMLDivElement>(null);
   const passkeyKnopf = useRef<HTMLButtonElement>(null);
   useFokusNachWechsel(fehler, () => (fehler ? fehlerkasten.current : null));
@@ -76,50 +76,51 @@ export function Sperrseite({
     };
   }, []);
 
-  // Ohne Passkey-fähigen Browser geht es direkt zur PIN, sobald es eine gibt.
+  // Der Fokus steht dort, wo es nach dem Passkey-Fenster weitergeht.
   useEffect(() => {
-    if (!passkeyGeht && pinDa && ansicht === 'passkey') setAnsicht('pin');
-  }, [passkeyGeht, pinDa, ansicht]);
+    if (verbraucht || pinDa === null) return;
+    if (pinDa) document.getElementById(PIN_FELD)?.focus();
+    else passkeyKnopf.current?.focus();
+  }, [pinDa, verbraucht]);
 
-  // Der Fokus steht dort, wo es weitergeht.
-  useEffect(() => {
-    if (ansicht === 'pin') document.getElementById(PIN_FELD)?.focus();
-    if (ansicht === 'passkey') passkeyKnopf.current?.focus();
-  }, [ansicht]);
-
-  async function mitPasskey() {
+  async function mitPasskey(vonSelbst = false) {
     setFehler(null);
-    setLaeuft(true);
+    setPasskeyLaeuft(true);
     try {
       await anmeldenMitPasskey();
       onEntsperrt();
     } catch (grundDesFehlers) {
-      setFehler(
-        grundDesFehlers instanceof PasskeyFehler
-          ? grundDesFehlers.message
-          : ANMELDESAETZE.keineVerbindung,
-      );
+      // Den ungefragten Start schließt man einfach; das ist kein Fehler.
+      if (!vonSelbst) {
+        setFehler(
+          grundDesFehlers instanceof PasskeyFehler
+            ? grundDesFehlers.message
+            : ANMELDESAETZE.keineVerbindung,
+        );
+      }
     } finally {
-      setLaeuft(false);
+      setPasskeyLaeuft(false);
     }
   }
+
+  usePasskeyVonSelbst(() => mitPasskey(true), passkeyGeht && !verbraucht);
 
   async function mitPin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (pin.length !== PIN_LAENGE) return;
     setFehler(null);
-    setLaeuft(true);
+    setPinLaeuft(true);
     try {
       const ergebnis = await gibMitPinFrei(pin);
       setPin('');
       if (ergebnis.art === 'frei') onEntsperrt();
-      else if (ergebnis.art === 'verbraucht') setAnsicht('verbraucht');
+      else if (ergebnis.art === 'verbraucht') setVerbraucht(true);
       else setFehler(restSatz(ergebnis.versucheUebrig));
     } catch {
       // Ein Funkloch ist keine falsche PIN (BEF-047) und zählt keinen Versuch.
       setFehler(ANMELDESAETZE.keineVerbindung);
     } finally {
-      setLaeuft(false);
+      setPinLaeuft(false);
     }
   }
 
@@ -130,7 +131,7 @@ export function Sperrseite({
         ? `Nach ${SPERRFRISTEN.inaktivMinuten} Minuten ohne Bedienung hat sich die Anwendung gesperrt.`
         : 'Die Anwendung hat sich gesperrt.';
 
-  if (ansicht === 'verbraucht') {
+  if (verbraucht) {
     return (
       <Vollseite
         titel="Gesperrt"
@@ -153,8 +154,9 @@ export function Sperrseite({
 
   return (
     <Vollseite
+      mittig
       titel="Gesperrt"
-      einleitung={`${anlass} Mit Ihrem Passkey geht es an derselben Stelle weiter.`}
+      einleitung={`${anlass} Mit Passkey oder PIN geht es an derselben Stelle weiter.`}
       kleingedrucktes={
         haelt
           ? 'Eine Eingabe ließ sich nicht sichern. Sie steht nach dem Entsperren wieder da – bitte dann speichern. Wer sich mit einem anderen Konto anmeldet, verwirft sie.'
@@ -167,67 +169,50 @@ export function Sperrseite({
         </div>
       ) : null}
 
-      {ansicht === 'passkey' ? (
-        <div className="flex flex-col gap-3">
-          {passkeyGeht ? (
-            <Button ref={passkeyKnopf} disabled={laeuft} onClick={() => void mitPasskey()}>
-              {laeuft ? 'Wird geprüft …' : 'Mit Passkey entsperren'}
+      <div className="flex flex-col gap-3">
+        {pinDa ? (
+          <form
+            onSubmit={(event) => void mitPin(event)}
+            noValidate
+            className="flex flex-col gap-4 text-left"
+          >
+            <Field
+              label="PIN"
+              hint="Die PIN der Anwendung, nicht die des Telefons."
+              type="password"
+              geheimnis="PIN"
+              name="pin"
+              inputMode="numeric"
+              autoComplete="off"
+              maxLength={PIN_LAENGE}
+              feldId={PIN_FELD}
+              value={pin}
+              onChange={(event) =>
+                setPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LAENGE))
+              }
+            />
+            <Button type="submit" disabled={pinLaeuft || pin.length !== PIN_LAENGE}>
+              {pinLaeuft ? 'Wird geprüft …' : 'Mit PIN entsperren'}
             </Button>
-          ) : (
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Dieser Browser unterstützt keine Passkeys.
-            </p>
-          )}
-          {pinDa ? (
-            <Button
-              variant="quiet"
-              onClick={() => {
-                setFehler(null);
-                setAnsicht('pin');
-              }}
-            >
-              Passkey klappt nicht?
-            </Button>
-          ) : null}
-        </div>
-      ) : (
-        <form onSubmit={(event) => void mitPin(event)} noValidate className="flex flex-col gap-4">
-          {passkeyGeht ? null : (
-            <p className="text-ink-muted text-sm leading-relaxed">
-              Dieser Browser unterstützt keine Passkeys. Entsperren geht hier mit der PIN.
-            </p>
-          )}
-          <Field
-            label="PIN"
-            hint="Die PIN der Anwendung, nicht die des Telefons."
-            type="password"
-            geheimnis="PIN"
-            name="pin"
-            inputMode="numeric"
-            autoComplete="off"
-            maxLength={PIN_LAENGE}
-            feldId={PIN_FELD}
-            value={pin}
-            onChange={(event) => setPin(event.target.value.replace(/\D/g, '').slice(0, PIN_LAENGE))}
-          />
-          <Button type="submit" disabled={laeuft || pin.length !== PIN_LAENGE}>
-            {laeuft ? 'Wird geprüft …' : 'Mit PIN entsperren'}
+          </form>
+        ) : null}
+        {passkeyGeht ? (
+          <Button
+            ref={passkeyKnopf}
+            variant={pinDa ? 'secondary' : 'primary'}
+            disabled={passkeyLaeuft}
+            onClick={() => void mitPasskey()}
+          >
+            {passkeyLaeuft ? 'Wird geprüft …' : 'Mit Passkey entsperren'}
           </Button>
-          {passkeyGeht ? (
-            <Button
-              type="button"
-              variant="quiet"
-              onClick={() => {
-                setFehler(null);
-                setPin('');
-                setAnsicht('passkey');
-              }}
-            >
-              Doch mit Passkey
-            </Button>
-          ) : null}
-        </form>
-      )}
+        ) : (
+          <p className="text-ink-muted text-sm leading-relaxed">
+            {pinDa
+              ? 'Dieser Browser unterstützt keine Passkeys. Entsperren geht hier mit der PIN.'
+              : 'Dieser Browser unterstützt keine Passkeys.'}
+          </p>
+        )}
+      </div>
 
       <Button variant="quiet" className="mt-3 w-full" onClick={onAbmelden}>
         Mit anderem Konto anmelden

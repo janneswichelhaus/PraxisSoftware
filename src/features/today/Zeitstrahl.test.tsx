@@ -351,3 +351,37 @@ describe('Zeitstrahl', () => {
     expect(screen.queryByText('Karte von Erika')).toBeNull();
   });
 });
+
+describe('Zeitstrahl: schlanke Zeilen (Jannes, 2026-10-11)', () => {
+  it('nennt die Liege an einem ausstehenden Hausbesuch, nicht am Praxistermin', () => {
+    const mitLiege = eintrag({
+      id: 'b',
+      um: '08:00',
+      bis: '09:00',
+      treatment_table_required: true,
+    });
+    const praxis = eintrag({
+      id: 'c',
+      um: '09:30',
+      bis: '10:30',
+      appointment_type: 'practice',
+      treatment_table_required: true,
+    });
+    zeichne({ plan: [erika, mitLiege, praxis], anfahrten: new Map() });
+    expect(screen.getByRole('link', { name: /Test b/ })).toHaveTextContent('Testweg 7 · ✓ Liege');
+    expect(screen.getByRole('link', { name: /Test c/ })).not.toHaveTextContent('Liege');
+  });
+
+  it('warnt an der Zeile, wenn zur Person die Erstaufnahme offen ist', () => {
+    zeichne({ erstaufnahmeOffen: (termin) => termin.id === 'c', anfahrten: new Map() });
+    expect(screen.getByRole('link', { name: /Petra/ })).toHaveTextContent('! Erstaufnahme offen');
+    expect(screen.getByRole('link', { name: /Max/ })).not.toHaveTextContent('Erstaufnahme');
+  });
+
+  it('trägt einen eigenen, sichtbaren Titel, wenn ein zweiter Tag auf der Seite steht', () => {
+    zeichne({ titel: 'Heute · Sonntag, 11.10.', titelSichtbar: true });
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Heute · Sonntag, 11.10.' }),
+    ).not.toHaveClass('sr-only');
+  });
+});

@@ -46,16 +46,20 @@ for (const breite of [375, 1280]) {
     await oeffne(page, '08:05', breite);
 
     const liege = page.getByText('Liege heute', { exact: true }).locator('..');
-    await expect(liege).toContainText('Ja · ab 2. Besuch 10:00');
+    await expect(liege).toContainText('Ja');
+    await expect(liege).toContainText('ab 2. Besuch, 10:00');
 
-    // Der Wegbalken: 25 Minuten bis zum Beginn, 12 davon Fahrt.
-    const balken = page.getByRole('region', { name: 'Erster Weg' });
-    await expect(balken).toContainText('Abfahrt spätestens 08:18');
-    await expect(balken).toContainText('13 min Puffer');
-    await expect(balken).toContainText('≈ 12 min Rad');
-    expect((await balken.boundingBox())!.y + (await balken.boundingBox())!.height).toBeLessThan(
-      600,
-    );
+    // Die Kachel „Abfahrt": 25 Minuten bis zum Beginn, 12 davon Fahrt. Der
+    // Puffer reicht und steht deshalb nicht da (Jannes, 2026-10-11).
+    const abfahrt = page.getByText('Abfahrt', { exact: true }).locator('..');
+    await expect(abfahrt).toContainText('spätestens 08:18');
+    await expect(abfahrt).toContainText('≈ 12 min Rad');
+    await expect(abfahrt).not.toContainText('Puffer');
+    // Beide Kacheln in einer Reihe, auch bei 375 px.
+    const l = (await liege.boundingBox())!;
+    const a = (await abfahrt.boundingBox())!;
+    expect(Math.abs(l.y - a.y)).toBeLessThanOrEqual(1);
+    expect(a.y + a.height).toBeLessThan(600);
 
     // Die Karte beginnt auf dem ersten Bildschirm - über der Tableiste.
     const karte = page.getByRole('article');
@@ -88,10 +92,11 @@ test('stellt den Tag als Zeitstrahl dar: Jetzt-Marke, Karte, Zeilen mit Uebergae
   await expect(eintraege.nth(0)).toContainText('Jetzt, 08:05 Uhr');
   await expect(eintraege.nth(1).getByRole('article')).toBeVisible();
 
-  // Die späteren Besuche: eine Zeile mit Ort und Anfahrt, darüber der Übergang.
+  // Die späteren Besuche: eine Zeile mit Ort, Liege und Anfahrt, darüber der
+  // Übergang.
   const zweite = eintraege.nth(2);
   await expect(zweite.getByRole('link', { name: /Mustermann/ })).toContainText(
-    'Beispielstrasse 12 · Anfahrt ≈ 9 min',
+    'Beispielstrasse 12 · ✓ Liege · Anfahrt ≈ 9 min',
   );
   // Daneben ein eigener Knopf „Doku" mit 44 px Tippziel (Leitfaden L3).
   const doku = zweite.getByRole('link', { name: /^Doku zum Termin um / });
@@ -189,9 +194,8 @@ test('wird ab dem Beginn zur Arbeitskarte und zeigt den Weg danach', async ({ pa
   expect(Math.abs(doku.y - haken.y)).toBeLessThanOrEqual(1);
   await expect(page.getByRole('button', { name: 'Navigation starten' })).toHaveCount(0);
 
-  const balken = page.getByRole('region', { name: 'Nächster Weg danach' });
-  await expect(balken).toContainText('Ende Erika Beispiel');
-  await expect(balken).toContainText('Abfahrt spätestens 09:51');
+  const abfahrt = page.getByText('Abfahrt danach', { exact: true }).locator('..');
+  await expect(abfahrt).toContainText('spätestens 09:51');
   // Die Jetzt-Marke steht hinter dem laufenden Besuch.
   const eintraege = page
     .getByRole('heading', { name: 'Tagesablauf' })
@@ -206,11 +210,11 @@ test('zaehlt den Weg herunter, sobald der Termin davor vorbei ist', async ({ pag
   // (ANN-117 Fassung 2) ist der dritte um 11:30 der nächste Weg - 26 Minuten
   // Fahrt, ab jetzt gerechnet.
   await oeffne(page, '11:10', 375);
-  const balken = page.getByRole('region', { name: 'Nächster Weg' });
-  await expect(balken).toContainText('Jetzt');
-  await expect(balken).toContainText('Petra Platzhalter');
-  await expect(balken).toContainText('! Zu spät, Abfahrt sofort');
-  await expect(balken).toContainText('6 min zu knapp');
+  const abfahrt = page.getByText('Abfahrt', { exact: true }).locator('..');
+  await expect(abfahrt).toContainText('! Sofort');
+  await expect(abfahrt).toContainText('≈ 26 min Rad');
+  await expect(abfahrt).toContainText('6 min zu knapp');
+  await expect(page.getByRole('article')).toContainText('Petra Platzhalter');
   // Der liegengebliebene Besuch steht als Zeile mit „Nicht abgeschlossen“ da.
   const zeilen = page
     .getByRole('heading', { name: 'Tagesablauf' })
@@ -225,13 +229,17 @@ for (const breite of [375, 1280]) {
 
     const abschluss = page.getByRole('heading', { name: 'Alle Besuche erledigt' }).locator('..');
     await expect(abschluss).toContainText('3 von 3 Besuchen erledigt · 3 Dokus festgeschrieben');
-    await expect(abschluss.getByRole('link', { name: 'Morgen im Kalender' })).toBeVisible();
     await expect(page.getByText('Liege heute', { exact: true })).toHaveCount(0);
-    await expect(page.getByRole('region', { name: /Weg/ })).toHaveCount(0);
     await expect(page.getByRole('article')).toHaveCount(0);
-    // Der Tag bleibt darunter stehen; die Jetzt-Marke am Ende.
+    // Darunter, was morgen kommt (Jannes, 2026-10-11): Liege und Abfahrt.
+    const morgen = page.getByRole('region', { name: /^Morgen · / });
+    await expect(morgen.getByRole('link', { name: 'Zum Tag' })).toBeVisible();
+    await expect(morgen.getByText('Liege morgen', { exact: true }).locator('..')).toContainText(
+      'ab 2. Besuch, 10:00',
+    );
+    // Der heutige Tag bleibt darunter stehen; die Jetzt-Marke am Ende.
     const eintraege = page
-      .getByRole('heading', { name: 'Tagesablauf' })
+      .getByRole('heading', { name: /^Heute · / })
       .locator('..')
       .getByRole('listitem');
     await expect(eintraege).toHaveCount(5);
@@ -330,11 +338,15 @@ for (const breite of [375, 1280]) {
   }) => {
     await oeffne(page, '20:00', breite, '?ansicht=morgen');
 
-    const nav = page.getByRole('navigation', { name: 'Tag wechseln' });
-    await expect(nav.getByRole('link', { name: 'Heute' })).toBeVisible();
-    await expect(nav).toContainText('Morgen');
+    // Die Wochenleiste: sieben Tage ab heute, morgen gewählt, Punkte je Termin.
+    const nav = page.getByRole('navigation', { name: 'Tag wählen' });
+    const tage = nav.getByRole('listitem');
+    await expect(tage).toHaveCount(7);
+    await expect(tage.nth(1).getByRole('link')).toHaveAttribute('aria-current', 'date');
+    await expect(tage.nth(0).getByRole('link')).toHaveAccessibleName(/, heute: 3 Termine$/);
+    await expect(tage.nth(6).getByRole('link')).toHaveAccessibleName(/: keine Termine$/);
     const liege = page.getByText('Liege morgen', { exact: true }).locator('..');
-    await expect(liege).toContainText('Ja · ab 2. Besuch 10:00');
+    await expect(liege).toContainText('ab 2. Besuch, 10:00');
     const karte = page.getByRole('article');
     await expect(karte.getByRole('heading', { name: /^Erster Weg/ })).toBeVisible();
     // Kein Jetzt am anderen Tag, kein Haken für einen Besuch, der noch nicht war.

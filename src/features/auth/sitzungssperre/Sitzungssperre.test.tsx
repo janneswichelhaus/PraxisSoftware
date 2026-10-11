@@ -17,7 +17,8 @@ import { Dialogfenster } from '@/components/ui/Dialogfenster';
  * gemeldeten Frist mit Vorlauf; Bedienung höchstens einmal je Minute melden;
  * bei Rückkehr nach Ablauf sofort verbergen; geräumter Speicher; offene Texte
  * vor der Sperre sichern oder festhalten; entsperren mit dem Passkey, als
- * Rückweg mit der App-PIN (ADR-025 Fassung 2). Ein Kennwortfeld gibt es nicht.
+ * Rückweg mit der App-PIN (ADR-025 Fassung 2, Punkt 11 Fassung 3). Ein
+ * Kennwortfeld gibt es nicht.
  * Dass der Server dieselben Fristen durchsetzt, prüft
  * `supabase/tests/sitzungssperre.test.ts`.
  */
@@ -56,6 +57,12 @@ vi.mock('../appPin', async (importOriginal) => ({
 vi.mock('@/lib/supabase', () => ({ getSupabase: () => ({}) }));
 
 const { Sitzungssperre } = await import('./Sitzungssperre');
+const { PasskeyFehler, PASSKEY_SAETZE } = await import('../passkey');
+
+/** Das von selbst geöffnete Passkey-Fenster schließt die Person, wenn ein Test nichts anderes will. */
+function fensterGeschlossen() {
+  return Promise.reject(new PasskeyFehler(PASSKEY_SAETZE.abgebrochen, true));
+}
 
 function offen(sekundenBisInaktiv = 30 * 60, sekundenBisHoechstdauer = 60 * 60): Sperrstand {
   return { gesperrt: false, sekundenBisInaktiv, sekundenBisHoechstdauer };
@@ -104,7 +111,7 @@ beforeEach(() => {
   vi.setSystemTime(new Date('2026-10-06T09:00:00Z'));
   ladeSperrstand.mockReset();
   signOut.mockClear();
-  anmeldenMitPasskey.mockReset();
+  anmeldenMitPasskey.mockReset().mockImplementation(fensterGeschlossen);
   passkeyMoeglich.mockReset().mockReturnValue(true);
   hatPin.mockReset().mockResolvedValue(true);
   gibMitPinFrei.mockReset();
@@ -270,7 +277,8 @@ describe('Sitzungssperre: offene Texte (Punkt 4)', () => {
     ladeSperrstand.mockResolvedValue(offen());
     fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
     await warte();
-    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    // Einmal von selbst beim Sperren, einmal auf den Knopf.
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(2);
     expect(screen.getByLabelText('Befund')).toHaveValue('Knie frei');
     expect(screen.getByLabelText('Befund')).toBeVisible();
   });
@@ -286,20 +294,55 @@ describe('Sitzungssperre: offene Texte (Punkt 4)', () => {
   });
 });
 
-describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 2)', () => {
+describe('Sperrseite: Passkey von selbst, App-PIN dahinter (ADR-025 Punkt 11 Fassung 3)', () => {
   async function gesperrt(grund: 'inaktiv' | 'hoechstdauer' | 'verbraucht' = 'inaktiv') {
     ladeSperrstand.mockResolvedValue({ gesperrt: true, grund });
     zeichne();
     await warte();
   }
 
-  it('bietet zuerst den Passkey an, die PIN erst auf Nachfrage', async () => {
+  it('öffnet das Passkey-Fenster von selbst, die PIN steht dahinter bereit', async () => {
     await gesperrt();
-    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
-    expect(screen.queryByLabelText('PIN', { exact: true })).toBeNull();
-    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
-    await warte();
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
     expect(screen.getByLabelText('PIN', { exact: true })).toHaveFocus();
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeEnabled();
+    // Das geschlossene Fenster ist kein Fehler.
+    expect(screen.queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Passkey klappt nicht?' })).toBeNull();
+  });
+
+  it('entsperrt mit dem von selbst geöffneten Passkey', async () => {
+    anmeldenMitPasskey.mockResolvedValue(undefined);
+    ladeSperrstand
+      .mockResolvedValueOnce({ gesperrt: true, grund: 'inaktiv' })
+      .mockResolvedValue(offen());
+    zeichne();
+    await warte();
+    await warte();
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Akte von Max Mustermann')).toBeVisible();
+  });
+
+  it('lässt die PIN offen, solange das Passkey-Fenster offen ist', async () => {
+    anmeldenMitPasskey.mockReturnValue(new Promise<void>(() => undefined));
+    await gesperrt();
+    expect(screen.getByRole('button', { name: 'Wird geprüft …' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
+      target: { value: '483920' },
+    });
+    expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeEnabled();
+  });
+
+  it('fragt bei der Rückkehr in den Tab erneut, aber nie doppelt', async () => {
+    await gesperrt();
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    anmeldenMitPasskey.mockReturnValue(new Promise<void>(() => undefined));
+    await act(async () => {
+      document.dispatchEvent(new Event('visibilitychange'));
+      document.dispatchEvent(new Event('visibilitychange'));
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(2);
   });
 
   it('kehrt nach der Freigabe per Passkey zurück, mit frischem Inhalt', async () => {
@@ -314,7 +357,6 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
 
   it('sagt einen Fehlschlag des Passkeys und bleibt gesperrt', async () => {
     await gesperrt();
-    const { PasskeyFehler, PASSKEY_SAETZE } = await import('../passkey');
     anmeldenMitPasskey.mockRejectedValue(new PasskeyFehler(PASSKEY_SAETZE.abgebrochen, true));
     fireEvent.click(screen.getByRole('button', { name: 'Mit Passkey entsperren' }));
     await warte();
@@ -324,8 +366,6 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
 
   it('gibt mit der PIN frei', async () => {
     await gesperrt();
-    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
-    await warte();
     gibMitPinFrei.mockResolvedValue({ art: 'frei' });
     ladeSperrstand.mockResolvedValue(offen());
     fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
@@ -339,8 +379,6 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
 
   it('nennt die übrigen Versuche bei einer falschen PIN', async () => {
     await gesperrt();
-    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
-    await warte();
     expect(screen.getByRole('button', { name: 'Mit PIN entsperren' })).toBeDisabled();
     gibMitPinFrei.mockResolvedValue({ art: 'falsch', versucheUebrig: 3 });
     fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
@@ -355,8 +393,6 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
 
   it('führt nach fünf falschen PINs zur Anmeldung', async () => {
     await gesperrt();
-    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
-    await warte();
     gibMitPinFrei.mockResolvedValue({ art: 'verbraucht' });
     fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
       target: { value: '111222' },
@@ -376,8 +412,6 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
 
   it('sagt im Funkloch „keine Verbindung“ statt „PIN passt nicht“ (BEF-047)', async () => {
     await gesperrt();
-    fireEvent.click(screen.getByRole('button', { name: 'Passkey klappt nicht?' }));
-    await warte();
     gibMitPinFrei.mockRejectedValue(new Error('offline'));
     fireEvent.change(screen.getByLabelText('PIN', { exact: true }), {
       target: { value: '483920' },
@@ -393,8 +427,8 @@ describe('Sperrseite: entsperren mit Passkey, Rückweg App-PIN (ADR-025 Fassung 
   it('bietet ohne PIN keinen Rückweg an', async () => {
     hatPin.mockResolvedValue(false);
     await gesperrt();
-    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Passkey klappt nicht?' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Mit Passkey entsperren' })).toHaveFocus();
+    expect(screen.queryByLabelText('PIN', { exact: true })).toBeNull();
   });
 
   it('geht ohne Passkey-fähigen Browser direkt zur PIN', async () => {

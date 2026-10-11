@@ -237,6 +237,13 @@ export function liegeText(liege: LiegeHeute): string {
   return `Ja · ab ${liege.besuch}. Besuch ${uhrzeit}`;
 }
 
+/** Die Antwort der Liege-Kachel: „Ja" mit „ab 2. Besuch, 10:00" darunter, oder „Nein". */
+export function liegeAntwort(liege: LiegeHeute): { antwort: string; ab: string | null } {
+  if (!liege.noetig) return { antwort: 'Nein', ab: null };
+  const uhrzeit = formatLocalTime(liege.termin.starts_at, liege.termin.organization_time_zone);
+  return { antwort: 'Ja', ab: `ab ${liege.besuch}. Besuch, ${uhrzeit}` };
+}
+
 /**
  * Die geschätzte Anfahrt zu einem Termin und woher sie kommt (`fahrzeiten.ts`).
  * `vorher` ist der Termin davor in der Fahrtreihenfolge - `null`, wenn die

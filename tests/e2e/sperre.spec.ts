@@ -4,9 +4,10 @@ import { expect, test, type Page } from '@playwright/test';
  * Die Sperrseite der Sitzungssperre im Browser (SEC-002, ADR-025 Fassung 2).
  *
  * Geprüft wird, was jsdom nicht misst: Bei 375 px passt die Seite ohne
- * Querrollen, der Passkey-Knopf hat den Fokus, ein Kennwortfeld gibt es
- * nicht, und weder Name noch E-Mail-Adresse sind zu sehen. Die App-PIN
- * erscheint erst auf „Passkey klappt nicht?“.
+ * Querrollen, ein Kennwortfeld gibt es nicht, und weder Name noch
+ * E-Mail-Adresse sind zu sehen. Das Passkey-Fenster öffnet sich von selbst;
+ * die App-PIN steht dahinter bereit und hat den Fokus (ADR-025 Punkt 11
+ * Fassung 3).
  */
 const PRUEFSEITE = '/tests/e2e/fixtures/sperre.html';
 
@@ -24,19 +25,21 @@ async function ohneQuerrollen(page: Page): Promise<void> {
 }
 
 for (const breite of [375, 1280]) {
-  test(`zeigt die Sperrseite ohne Namen, Passkey zuerst (${breite} px)`, async ({ page }) => {
+  test(`zeigt die Sperrseite ohne Namen, PIN hinter dem Passkey (${breite} px)`, async ({
+    page,
+  }) => {
     await mitPin(page, true);
     await page.setViewportSize({ width: breite, height: 760 });
     await page.goto(`${PRUEFSEITE}?grund=inaktiv`);
     await expect(page.getByRole('heading', { name: 'Gesperrt' })).toBeVisible();
     await expect(page.getByText(/30 Minuten ohne Bedienung/)).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeVisible();
     await expect(page.getByLabel('Kennwort', { exact: true })).toHaveCount(0);
     await expect(page.getByText(/@/)).toHaveCount(0);
     await ohneQuerrollen(page);
     await expect(page).toHaveTitle(/Anmelden/);
+    await expect(page.getByRole('button', { name: 'Passkey klappt nicht?' })).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Passkey klappt nicht?' }).click();
     const feld = page.getByLabel('PIN', { exact: true });
     await expect(feld).toBeFocused();
     await expect(feld).toHaveAttribute('inputmode', 'numeric');
@@ -51,7 +54,7 @@ test('bietet ohne App-PIN keinen Rückweg an', async ({ page }) => {
   await mitPin(page, false);
   await page.goto(`${PRUEFSEITE}?grund=inaktiv`);
   await expect(page.getByRole('button', { name: 'Mit Passkey entsperren' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Passkey klappt nicht?' })).toHaveCount(0);
+  await expect(page.getByLabel('PIN', { exact: true })).toHaveCount(0);
 });
 
 test('nennt eine festgehaltene Eingabe', async ({ page }) => {

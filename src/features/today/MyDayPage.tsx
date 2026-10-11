@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
-import { useQuery, type UseQueryResult } from '@tanstack/react-query';
+import { useQueries, useQuery, type UseQueryResult } from '@tanstack/react-query';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BEGRIFFE } from '@/lib/begriffe';
 import { PageHeader } from '@/components/ui/PageHeader';
@@ -11,7 +11,6 @@ import { ProgressDots } from '@/components/ui/ProgressDots';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
-import { TravelBar } from '@/components/ui/TravelBar';
 import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
@@ -51,8 +50,13 @@ import { fetchDayPlan, nachUhrzeit, TAGESPLAN_VORHALTEDAUER_MS, type DayPlanEntr
 import { Tageskarte } from './Tagesliste';
 import { TagesplanDruck } from './TagesplanDruck';
 import { Zeitstrahl } from './Zeitstrahl';
+import { Wochenleiste } from './Wochenleiste';
+import { fensterTage, kopfDatum, terminAnzahl } from './wochenfenster';
+import { Tageskacheln, type Abfahrt } from './Tageskacheln';
+import { MorgenVorschau } from './MorgenVorschau';
+import { travelPlan } from '@/components/ui/travelPlan';
 import { useTagesfahrzeiten } from './fahrzeiten';
-import { TagesWort, bezugszeitpunkt, gewaehlterTag, tagesPfad, tagesWort } from './tageswahl';
+import { TagesWort, bezugszeitpunkt, gewaehlterTag, tagesWort } from './tageswahl';
 import { navigationsZiel } from '@/lib/location/navigation';
 import {
   besuchsphase,
@@ -63,14 +67,13 @@ import {
   fokusDesTages,
   fortschrittText,
   liegeHeute,
-  liegeText,
   naechsterWeg,
   tagesfortschritt,
   terminName,
   VERALTET_TEXT,
   wegeDesTages,
   type Fokus,
-  type LiegeHeute,
+  type NaechsterWeg,
   type Tagesfortschritt,
 } from './tagesstart';
 import { Laengenzeichen } from '@/features/appointments/Laengenzeichen';
@@ -260,27 +263,6 @@ function Teamplan({
 }
 
 /**
- * Die eine Tagesfrage: Muss die Liege mit (Design-Handoff 2026-10-01)?
- *
- * Eine Zeile auf der Akzentfläche, Beschriftung links, Antwort rechts. Die
- * Antwort steht als Wort da - „Ja · ab 2. Besuch 10:00" oder „Nein" -, das
- * Häkchen davor ist Schmuck.
- */
-function LiegeZeile({ liege, tagWort }: { liege: LiegeHeute; tagWort: string }) {
-  return (
-    <dl className="bg-accent-soft rounded-card flex min-h-13 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-2">
-      <dt className="text-accent tracking-label text-xs font-semibold uppercase">
-        Liege {tagWort}
-      </dt>
-      <dd className="text-accent text-base font-semibold tabular-nums">
-        {liege.noetig ? <span aria-hidden="true">✓ </span> : null}
-        {liegeText(liege)}
-      </dd>
-    </dl>
-  );
-}
-
-/**
  * Der Tagesabschluss in Tiefgrün (Design-Handoff 2026-10-01, Abschnitt 5a
  * Punkt 8): Steht kein Besuch mehr aus, tritt diese Karte an die Stelle von
  * Liege-Zeile und Wegbalken - einmal, über dem Zeitstrahl.
@@ -293,13 +275,11 @@ function LiegeZeile({ liege, tagWort }: { liege: LiegeHeute; tagWort: string }) 
  */
 function Tagesabschluss({
   fortschritt,
-  morgen,
   tagWort,
   istHeute,
   datum,
 }: {
   fortschritt: Tagesfortschritt;
-  morgen: string;
   /** „Heute", „Gestern" … über dem Titel (ANN-234). */
   tagWort: string;
   istHeute: boolean;
@@ -321,44 +301,32 @@ function Tagesabschluss({
       <p className="text-accent-soft mt-1 text-sm tabular-nums">
         {doku ? `${fortschrittText(fortschritt)} · ${doku}` : fortschrittText(fortschritt)}
       </p>
-      {/* Auf Tiefgrün ist der Fokusrahmen Papier, nicht Hauptfarbe. */}
-      <Link
-        to={`/kalender?ansicht=tag&datum=${istHeute ? morgen : datum}`}
-        className="text-surface focus-visible:outline-surface mt-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline underline-offset-3"
-      >
-        {istHeute ? 'Morgen im Kalender' : 'Diesen Tag im Kalender'}
-        <Pfeil />
-      </Link>
+      {/* Auf Tiefgrün ist der Fokusrahmen Papier, nicht Hauptfarbe. Heute
+          steht morgen darunter (Morgen-Vorschau); der Weg in den Kalender
+          bleibt für die anderen Tage. */}
+      {istHeute ? null : (
+        <Link
+          to={`/kalender?ansicht=tag&datum=${datum}`}
+          className="text-surface focus-visible:outline-surface mt-1 inline-flex min-h-11 items-center gap-1 text-sm font-semibold underline underline-offset-3"
+        >
+          Diesen Tag im Kalender
+          <Pfeil />
+        </Link>
+      )}
     </section>
   );
 }
 
-/**
- * Vortag, heute, Folgetag (UBK-003, ANN-234): eine Zeile unter dem Kopf.
- *
- * Links statt Knöpfe - der Tag steht in der Adresse, und „zurück" im Browser
- * führt wieder auf den Tag davor. „Heute" erscheint nur, wenn ein anderer Tag
- * gezeigt wird; dann sagt die Zeile auch, welcher.
- */
-function TagWechsel({ tag, heute, istHeute }: { tag: string; heute: string; istHeute: boolean }) {
-  return (
-    <nav aria-label="Tag wechseln" className="mb-4 flex flex-wrap items-center gap-2">
-      <ButtonLink to={tagesPfad(tagePlus(tag, -1), heute)} variant="secondary" groesse="kompakt">
-        <span aria-hidden="true">‹</span> Vortag
-      </ButtonLink>
-      {istHeute ? null : (
-        <ButtonLink to="/" variant="secondary" groesse="kompakt">
-          Heute
-        </ButtonLink>
-      )}
-      <ButtonLink to={tagesPfad(tagePlus(tag, 1), heute)} variant="secondary" groesse="kompakt">
-        Folgetag <span aria-hidden="true">›</span>
-      </ButtonLink>
-      {istHeute ? null : (
-        <p className="text-accent text-sm font-semibold">{TagesWort(tag, heute)}</p>
-      )}
-    </nav>
-  );
+/** Der nächste Weg als Kachel: späteste Abfahrt, Fahrt, Puffer (`travelPlan`). */
+function alsAbfahrt(weg: NaechsterWeg): Abfahrt {
+  const plan = travelPlan(weg.von.zeit, weg.bis.zeit, weg.fahrtMin);
+  return {
+    titel: weg.titel === 'Nächster Weg danach' ? 'Abfahrt danach' : 'Abfahrt',
+    zeit: plan.abfahrt,
+    fahrtMin: weg.fahrtMin,
+    pufferMin: plan.pufferMin,
+    stufe: plan.stufe,
+  };
 }
 
 /** Leere Flächen in Zielgröße, solange die Tagesliste lädt: Liege-Zeile und Wegbalken. */
@@ -699,13 +667,13 @@ function MeinTag({
       ) : stehtBesuchAus ? (
         <div className="flex flex-col gap-2">
           {/* Die Liege gehört an den Hausbesuch (BEF-051): An einem Tag nur
-              mit Praxisterminen gibt es die Frage nicht. */}
-          {hausbesuche.length > 0 ? (
-            <LiegeZeile liege={liegeHeute(sortiert, jetzt)} tagWort={tagWort} />
-          ) : null}
-          {weg ? (
-            <TravelBar titel={weg.titel} von={weg.von} bis={weg.bis} fahrtMin={weg.fahrtMin} />
-          ) : null}
+              mit Praxisterminen gibt es die Frage nicht. Die Abfahrt steht nur
+              mit bekannter Fahrzeit da (Jannes, 2026-10-11). */}
+          <Tageskacheln
+            liege={hausbesuche.length > 0 ? liegeHeute(sortiert, jetzt) : null}
+            abfahrt={weg ? alsAbfahrt(weg) : null}
+            tagWort={tagWort}
+          />
           {/* Eine Nachbildung ohne Kartendienst sieht aus wie eine Fahrzeit;
               die Seite sagt es dazu, wie die Tour (MAP-006c). */}
           {fahrzeiten.quelle === 'nachbildung' && fahrzeiten.anfahrten.size > 0 ? (
@@ -718,15 +686,34 @@ function MeinTag({
       ) : (
         <Tagesabschluss
           fortschritt={fortschritt}
-          morgen={morgen}
+
           tagWort={TagesWort(datum, heute)}
           istHeute={istHeute}
           datum={datum}
         />
       )}
 
+      {/* Steht heute kein Weg mehr aus, ist morgen das Nächste (Jannes,
+          2026-10-11). */}
+      {istHeute && !stehtBesuchAus ? (
+        <MorgenVorschau
+          morgen={morgen}
+          heute={heute}
+          staffMemberId={staffMemberId}
+          zeitzone={zeitzone}
+          mitBehandlung={mitBehandlung}
+        />
+      ) : null}
+
       {sortiert.length > 0 ? (
         <Zeitstrahl
+          {...(istHeute && !stehtBesuchAus
+            ? { titel: `Heute · ${kopfDatum(heute)}`, titelSichtbar: true }
+            : {})}
+          erstaufnahmeOffen={(termin) =>
+            termin.patient_id !== null &&
+            (erstaufnahmen ?? []).some((eintrag) => eintrag.patient_id === termin.patient_id)
+          }
           plan={sortiert}
           fokusId={fokus?.termin.id ?? null}
           jetzt={jetzt}
@@ -754,7 +741,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
   // ganz hinter ihm.
   const [suche] = useSearchParams();
   const tag = gewaehlterTag(suche.get('tag'), heute);
-  const istHeute = tag === heute;
   const jetzt = bezugszeitpunkt(tag, heute, uhr);
 
   /**
@@ -799,6 +785,24 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
     // auch wenn eine spätere Abfrage scheitert (UX-011, ADR-001, ANN-021).
     gcTime: TAGESPLAN_VORHALTEDAUER_MS,
   });
+
+  // Die Wochenleiste zählt die Termine der sieben Tage über denselben
+  // Lesepfad und Schlüssel wie die Tagesliste: Der gezeigte Tag kommt aus
+  // demselben Eintrag, ein Tipp auf einen anderen Tag zeigt ihn sofort.
+  const wochentage = fensterTage(tag, heute);
+  const woche = useQueries({
+    queries: wochentage.map((t) => ({
+      queryKey: ['day-plan', t, staffMemberId],
+      queryFn: () => fetchDayPlan(t, staffMemberId),
+      enabled: praxisrolle && eigeneTagesliste,
+      retry: false,
+      gcTime: TAGESPLAN_VORHALTEDAUER_MS,
+    })),
+  });
+  const anzahlAm = (t: string): number | undefined => {
+    const daten = woche[wochentage.indexOf(t)]?.data;
+    return daten ? terminAnzahl(daten) : undefined;
+  };
 
   const sortiert = useMemo(() => [...(tagesliste.data ?? [])].sort(nachUhrzeit), [tagesliste.data]);
   const fokus = useMemo(
@@ -890,8 +894,10 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
             }
           />
 
-          {eigeneTagesliste || darfTermine ? (
-            <TagWechsel tag={tag} heute={heute} istHeute={istHeute} />
+          {eigeneTagesliste ? (
+            <Wochenleiste tag={tag} heute={heute} anzahl={anzahlAm} />
+          ) : darfTermine ? (
+            <Wochenleiste tag={tag} heute={heute} anzahl={() => undefined} />
           ) : null}
 
           {teamplanZuerst ? <div className="mb-6">{teamplan}</div> : null}

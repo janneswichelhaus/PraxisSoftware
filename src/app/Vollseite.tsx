@@ -29,11 +29,14 @@ import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
  * Bereich des Rahmens ihn zuerst braucht.
  */
 export function Vollseite({
+  mittig = false,
   titel,
   einleitung,
   kleingedrucktes,
   children,
 }: {
+  /** Marke, Titel und Inhalt waagerecht mittig (Anmeldung, Jannes 2026-10-11). */
+  mittig?: boolean;
   /** Der Seitentitel. Ohne ihn - nur für Ladezustände - steht keine Überschrift da. */
   titel?: string;
   /** Ein Satz unter dem Titel. */
@@ -50,8 +53,10 @@ export function Vollseite({
   }, []);
 
   return (
-    <main className="mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10">
-      <div className="mb-8">
+    <main
+      className={`mx-auto flex min-h-dvh w-full max-w-sm flex-col justify-center px-5 py-10 ${mittig ? 'text-center' : ''}`}
+    >
+      <div className={`mb-8 ${mittig ? 'flex flex-col items-center' : ''}`}>
         <Wortmarke hoehe={40} />
         {titel ? <h1 className="text-accent text-h3 mt-5 font-bold">{titel}</h1> : null}
         {einleitung ? <p className="text-ink-muted mt-2 text-sm">{einleitung}</p> : null}
