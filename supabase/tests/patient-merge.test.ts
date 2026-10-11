@@ -869,28 +869,26 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
               case when $7 = 'open' then null::uuid else $10::uuid end,
               case when $7 = 'declined' then 'Leider voll' end)
       returning id`;
-    let ziel: { patient: string; person: string };
+    // Die bleibende Akte ist Erika mit ihrem Plattformzugang (Seed); ein Konto
+    // gehört genau einer Person.
+    const ziel = { patient: patients.erika };
+    const zielZugang = SEED.platformAccesses.erikaBehandlung;
     let quelle: { patient: string; person: string };
-    let zielZugang: string;
     let quelleZugang: string;
     let mitgezogen: string[];
     let unberuehrt: string[];
     let vorherMitgezogen: { id: string; z: Record<string, unknown> }[];
     let vorherUnberuehrt: { id: string; z: Record<string, unknown> }[];
 
-    async function zugang(patient: string, status: 'active' | 'revoked'): Promise<string> {
+    /** Ein beendeter Zugang der Dublette; der Nachweis bleibt stehen. */
+    async function beendeterZugang(patient: string): Promise<string> {
       const { rows } = await asPostgres<{ id: string }>(
-        status === 'active'
-          ? `insert into public.platform_accesses
-               (organization_id, relationship_kind, relationship_id, patient_id, status,
-                account_user_id, activated_at, created_by)
-             values ($1, 'treatment', $2, $2, 'active', $3, now(), $4) returning id`
-          : `insert into public.platform_accesses
-               (organization_id, relationship_kind, relationship_id, patient_id, status,
-                created_by, revoked_at, revoked_by, revoked_reason)
-             values ($1, 'treatment', $2, $2, 'revoked', $4, now(), $4, 'practice')
-             returning id`,
-        [ORG, patient, users.plattformErika, users.office],
+        `insert into public.platform_accesses
+           (organization_id, relationship_kind, relationship_id, patient_id, status,
+            created_by, revoked_at, revoked_by, revoked_reason)
+         values ($1, 'treatment', $2, $2, 'revoked', $3, now(), $3, 'practice')
+         returning id`,
+        [ORG, patient, users.office],
       );
       return rows[0]!.id;
     }
@@ -918,11 +916,8 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     }
 
     beforeAll(async () => {
-      ziel = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch' });
-      quelle = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch-Dublette' });
-      zielZugang = await zugang(ziel.patient, 'active');
-      // Der Zugang der Dublette ist schon beendet; der Nachweis bleibt stehen.
-      quelleZugang = await zugang(quelle.patient, 'revoked');
+      quelle = await legeAkteAn({ vorname: 'Erika', nachname: 'Beispiel-Dublette' });
+      quelleZugang = await beendeterZugang(quelle.patient);
       mitgezogen = [
         await wunsch('treatment', quelle.patient, quelleZugang, 'open', 'Gern vormittags'),
         await wunsch('treatment', quelle.patient, quelleZugang, 'declined'),
@@ -933,8 +928,8 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         await wunsch('treatment', ziel.patient, zielZugang, 'open', 'Eigener Wunsch'),
         await wunsch(
           'treatment',
-          patients.erika,
-          SEED.platformAccesses.erikaBehandlung,
+          patients.max,
+          SEED.platformAccesses.paulaBegleitungMax,
           'open',
           'Dritte Akte',
         ),
@@ -980,15 +975,18 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
         [mitgezogen],
       );
       expect(offen).toEqual([
-        { id: mitgezogen[0], patient_id: ziel.patient, family_name: 'Wunsch' },
+        { id: mitgezogen[0], patient_id: ziel.patient, family_name: 'Beispiel' },
       ]);
 
-      const LISTE = 'select id from public.platform_appointment_requests($1::uuid) order by id';
+      const LISTE = `select id from public.platform_appointment_requests($1::uuid)
+                      where id = any($2::uuid[]) order by id`;
+      const alle = [...mitgezogen, ...unberuehrt];
       const { rows: plattform } = await asUser<{ id: string }>(users.plattformErika, LISTE, [
         zielZugang,
+        alle,
       ]);
       expect(plattform.map((w) => w.id)).toEqual([...mitgezogen, unberuehrt[0]].sort());
-      const { rows: dublette } = await asUser(users.plattformErika, LISTE, [quelleZugang]);
+      const { rows: dublette } = await asUser(users.plattformErika, LISTE, [quelleZugang, alle]);
       expect(dublette).toEqual([]);
     });
   });
