@@ -545,20 +545,6 @@ eingeklappt.
 
 **Beobachtet:** Die drei Constraints prüfen `lat between …`, `lon between …` und `geocode_precision in (…)` ohne ausdrückliches `is not null`. Ein CHECK, der NULL ergibt, gilt als erfüllt: Eine Breite ohne Länge oder eine Genauigkeit ohne Koordinate kommt durch, sobald die Adresse vollständig ist. Geschrieben wird heute nur über die Funktionen, die beides zusammen setzen, und der Trigger verwirft die Koordinate mit der Adresse - ein Fehler entsteht deshalb erst mit einem neuen Schreibweg. **Erwartet:** Eine neue Migration ersetzt die drei Constraints durch die dichte Form aus `locations_garage_coordinate_check` (UBK-015); vorher prüft sie, dass keine Zeile die engere Regel verletzt. Ein Test je Tabelle wie in `supabase/tests/garage.test.ts`. Klein, Pfad A (Migration).
 
-### BEF-128 — Ein Abo-Monat lässt sich nach einem Storno nicht zurücknehmen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-07 |
-| Bereich | Abrechnung, Nachsorge-Abo |
-| Quelle  | Zweitreview ANG-EPIC-002 (derselbe Fehler am Trainingspaket, dort behoben), am Code belegt |
-| Status  | offen |
-| Berührt | `public.delete_aftercare_month` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; ANN-270 |
-
-**Beobachtung.** Nach einem Storno ist die Rechnungszeile freigegeben (`released_at`), zeigt aber weiter mit RESTRICT auf die Leistung. `delete_aftercare_month` löscht die Leistung, ohne die freigegebenen Zeilen vorher zu entfernen, und scheitert mit `invoice_items_billable_service_id_fkey`; die Oberfläche zeigt „Die Erfassung konnte nicht zurückgenommen werden.“
-
-**Erwartet.** Wie in `delete_billable_services` und `delete_training_package`: freigegebene Zeilen der Leistung zuerst löschen, dazu ein Test „Storno → Zurücknehmen“ in `aftercare-months.test.ts`. Einzel-Story-Loop.
-
 ### BEF-130 — Abo-Tests rechnen „heute“ in UTC und werden zwischen 0 und 2 Uhr Berliner Zeit rot
 
 |         |   |
@@ -631,3 +617,17 @@ eingeklappt.
 **Beobachtung.** Der Satz „Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.“ stimmt nicht: Der Widerruf löscht die Arbeitshilfen; Dokumentationsfotos gehören zur Akte und bleiben (ADR-017 Punkt 46). In der Praxis ist der Satz mit UX-008a berichtigt.
 
 **Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.
+
+### BEF-143 — Nach dem Zurücknehmen nennt eine stornierte Rechnung weniger Positionen, als sie ausweist
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Abrechnung: Rechnungsliste, Storno |
+| Quelle  | Zweitreview BEF-128 (Hinweis H2), am Code belegt |
+| Status  | offen |
+| Berührt | `public.list_invoices` (`item_count` in `supabase/migrations/20261027100000_bef_141_empfaenger_aus_snapshot.sql`); `delete_billable_services`, `delete_training_package`, `delete_aftercare_month`; `create_correction_draft` |
+
+**Beobachtung.** Wird eine Leistung nach einem Storno zurückgenommen, fällt ihre freigegebene Rechnungszeile mit ihr (seit ABR-003c, ANG-006 und BEF-128). `list_invoices` zählt die Positionen aber live über `invoice_items`; die stornierte Rechnung zeigt dann weniger oder null Positionen, der Betrag kommt weiter aus dem Snapshot. War es die einzige Leistung, bleibt das Storno ohne Korrektur „offen“, und `create_correction_draft` meldet „no billable services“.
+
+**Erwartet.** Die Zahl der Positionen ausgestellter Rechnungen aus dem Snapshot lesen (wie den Empfänger seit BEF-141), und ein Storno ohne verbleibende Leistung nicht mehr als wartende Korrektur führen. Einzel-Story-Loop.

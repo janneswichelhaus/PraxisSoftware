@@ -292,6 +292,62 @@ describe('Abo-Monate (ANG-002)', () => {
       expect(rest).toHaveLength(0);
     });
 
+    it('nimmt eine Erfassung nach einem Storno zurück (BEF-128)', async () => {
+      const id = await abo(vormonat);
+      const leistung = await erfassen(id, vormonat);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        vormonat,
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      await expect(asUser(users.office, ZURUECK, [leistung])).rejects.toThrow(/on an invoice/);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2)', [
+        entwurf[0]!.id,
+        'Falscher Empfänger',
+      ]);
+      // Zweitreview H1: Nach dem Storno bleiben andere Rollen, Plattformkonten
+      // und eine andere Praxis abgewiesen, und es fällt nichts.
+      for (const konto of [users.therapist, users.trainer, users.plattformErika]) {
+        await expect(asUser(konto, ZURUECK, [leistung])).rejects.toThrow(/not allowed/);
+      }
+      const fremd = await fremdeOrganisation();
+      await expect(asUser(fremd.owner, ZURUECK, [leistung])).rejects.toThrow(/not found/);
+      const { rows: zeilen } = await asPostgres(
+        'select 1 from public.invoice_items where billable_service_id = $1',
+        [leistung],
+      );
+      expect(zeilen).toHaveLength(1);
+      await asUserCommitted(users.office, ZURUECK, [leistung]);
+      const { rows: rest } = await asPostgres('select 1 from public.billable_services');
+      expect(rest).toHaveLength(0);
+      // Die stornierte Rechnung bleibt mit ihrem Snapshot (ADR-009 Punkt 10).
+      const { rows: rechnung } = await asPostgres<{ code: string; storno: boolean }>(
+        `select i.snapshot -> 'items' -> 0 ->> 'code' as code,
+                exists (select 1 from public.invoice_cancellations c where c.invoice_id = i.id) as storno
+           from public.invoices i where i.id = $1`,
+        [entwurf[0]!.id],
+      );
+      expect(rechnung[0]).toEqual({ code: 'NSA', storno: true });
+    });
+
+    it('nimmt nach einem Storno nicht zurück, was auf der Korrekturrechnung steht', async () => {
+      const id = await abo(vormonat);
+      const leistung = await erfassen(id, vormonat);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        vormonat,
+      ]);
+      await asUserCommitted(users.office, AUSSTELLEN, [entwurf[0]!.id]);
+      await asUserCommitted(users.office, 'select public.cancel_invoice($1::uuid, $2)', [
+        entwurf[0]!.id,
+        'Falscher Empfänger',
+      ]);
+      await asUserCommitted(users.office, 'select public.create_correction_draft($1::uuid)', [
+        entwurf[0]!.id,
+      ]);
+      await expect(asUser(users.office, ZURUECK, [leistung])).rejects.toThrow(/on an invoice/);
+    });
+
     it('entfernt ein Abo mit erfasstem Monat nicht mehr als Fehlanlage', async () => {
       const id = await abo(vormonat);
       await erfassen(id, vormonat);
