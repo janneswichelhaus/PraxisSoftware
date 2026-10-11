@@ -140,14 +140,14 @@ Funktion prüfen, findet `grep -l <funktion> supabase/tests`. In der Cloud
 
 **Nach dem Epic** die für den Umfang passenden CI-äquivalenten Checks:
 
-| Änderung betrifft …         | dann mindestens                                                                        |
-| --------------------------- | -------------------------------------------------------------------------------------- |
-| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`                        |
-| Dokumentation               | `pnpm docs:check`                                                                      |
-| Migrationen, Policies, RPCs | die betroffenen Dateien unter `supabase/tests/` gezielt; das volle `pnpm test:db` in H |
-| Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                                                   |
-| Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`                                   |
-| auslieferbaren Code         | `pnpm build`                                                                           |
+| Änderung betrifft …         | dann mindestens                                                                             |
+| --------------------------- | ------------------------------------------------------------------------------------------- |
+| immer                       | `pnpm format:check`, `pnpm lint`, `pnpm typecheck`, `pnpm test`                             |
+| Dokumentation               | `pnpm docs:check`                                                                           |
+| Migrationen, Policies, RPCs | die betroffenen Dateien unter `supabase/tests/` gezielt; das volle `pnpm test:db` in der CI |
+| Oberfläche                  | `pnpm test:e2e` und visuelle Prüfung                                                        |
+| Abhängigkeiten              | `pnpm audit --audit-level=high`, `pnpm scan:secrets`                                        |
+| auslieferbaren Code         | `pnpm build`                                                                                |
 
 Diese Tabelle sagt, **welche Prüfung wann sinnvoll** ist. Welche Prüfungen die
 CI erzwingt, steht abschließend in ADR-013; weicht sie von dieser Tabelle ab,
@@ -225,11 +225,14 @@ Regeln; `PROJECT_PRINCIPLES.md` §12).
 Die für den Umfang des Epics erforderlichen Checks aus E **einmal** vollständig
 laufen lassen.
 
-`pnpm test:db` läuft **genau hier und genau einmal** vollständig, nach Review
-und Korrekturen, vor dem Push. Es dauert rund 15 Minuten und damit länger als
-ein Werkzeugaufruf: im Hintergrund starten und auf die Meldung warten, nicht
-abbrechen und nicht neu starten. Wird es rot, die betroffene Datei gezielt
-reparieren und prüfen, dann **einmal** erneut voll.
+`pnpm test:db` läuft lokal **gezielt**, nicht vollständig (Jannes,
+2026-10-11): nach Review und Korrekturen einmal alle Dateien, die eine
+geänderte Funktion, Policy oder Tabelle prüfen (`grep -l <name>
+supabase/tests`), dazu die Gegenprobe ohne Migration. **Die volle Suite läuft
+in der CI** (vier parallele Teile) auf der Pull Request; sie ist das Gate vor
+dem Merge, nicht der lokale Lauf. Wird die CI rot, die betroffene Datei lokal
+reparieren und gezielt prüfen, dann pushen. Der Bericht nennt, welche Dateien
+lokal liefen, und dass die volle Suite in der CI steht.
 
 Identische teure Läufe ohne dazwischenliegende Änderung nicht wiederholen —
 ein zweiter Lauf derselben Suite auf demselben Stand liefert keine neue

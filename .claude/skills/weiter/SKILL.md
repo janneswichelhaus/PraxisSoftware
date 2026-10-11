@@ -38,8 +38,10 @@ Branch liegt.
 ## 3. Abschluss
 
 - Prüfungen: `pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check`,
-  dazu `pnpm test:db` bei Datenbank und Policies (Cloud: `CLAUDE.md`,
-  „Cloud-Umgebung"). Nur melden, was tatsächlich gelaufen ist.
+  dazu `pnpm test:db` bei Datenbank und Policies, lokal gezielt auf die
+  betroffenen Dateien; die volle Suite läuft in der CI (Cloud: `CLAUDE.md`,
+  „Cloud-Umgebung"; Feature-Loop Schritt H). Nur melden, was tatsächlich
+  gelaufen ist.
 - Fortschritt: den Posten in `docs/development/fortschritt.json` nachstellen
   (Status, `fertig_am`, `nachweis`), dann `pnpm fortschritt --schreiben` — das
   erzeugt die Tabelle der Roadmap.
