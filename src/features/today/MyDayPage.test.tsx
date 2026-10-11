@@ -307,16 +307,23 @@ function rendernMitCache(queryClient: QueryClient) {
 }
 
 /**
+ * Die Überschrift des eigenen Strahls: „Tagesablauf", oder sichtbar „Heute ·
+ * …", wenn die Morgen-Vorschau darüber steht. Deren Strahl heißt „Termine
+ * morgen" und zählt hier nicht.
+ */
+const STRAHL = /^(Tagesablauf|Heute · )/;
+
+/**
  * Der Zeitstrahl des eigenen Tages. Dieselben Namen stehen auch im Tagesplan
  * des Teams daneben - gesucht wird deshalb im Strahl.
  */
 function imStrahl() {
-  return within(screen.getByRole('heading', { name: 'Tagesablauf' }).closest('section')!);
+  return within(screen.getByRole('heading', { name: STRAHL }).closest('section')!);
 }
 
 /** Eine Zeile im Strahl, sobald sie da ist. */
 async function imStrahlFinden(name: RegExp): Promise<HTMLElement> {
-  await screen.findByRole('heading', { name: 'Tagesablauf' });
+  await screen.findByRole('heading', { name: STRAHL });
   return await waitFor(() => imStrahl().getByRole('link', { name }));
 }
 
@@ -445,7 +452,7 @@ describe('Übersicht', () => {
   it('stellt den eigenen Tag vor den Tagesplan des Teams', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-    const tagesablauf = await screen.findByRole('heading', { name: 'Tagesablauf' });
+    const tagesablauf = await screen.findByRole('heading', { name: STRAHL });
     const teamplan = screen.getByRole('heading', { name: 'Tagesplan des Teams' });
     expect(
       tagesablauf.compareDocumentPosition(teamplan) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -623,7 +630,7 @@ describe('Übersicht', () => {
       expect(fehler).toHaveTextContent('Bitte die Verbindung prüfen und erneut versuchen.');
       expect(fehler).not.toHaveTextContent(/angemeldet/);
       // Ohne Stand weder Zeitstrahl noch Tagesabschluss.
-      expect(screen.queryByRole('heading', { name: 'Tagesablauf' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
       expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
 
       fetchDayPlan.mockResolvedValue(tagesplan());
@@ -692,18 +699,21 @@ describe('Übersicht', () => {
       fetchDayPlan.mockResolvedValue(plan);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const zeile = (await screen.findByText('Liege heute')).closest('dl')!;
-      // Die Antwort als Wort mit der Uhrzeit dabei; das Häkchen ist Schmuck.
-      expect(zeile).toHaveTextContent(`Ja · ab 2. Besuch ${uhr(plan[1]!.starts_at)}`);
-      expect(zeile.querySelector('[aria-hidden="true"]')).toHaveTextContent('✓');
-      expect(zeile).toHaveClass('bg-accent-soft', 'min-h-13');
+      const kachel = (await screen.findByText('Liege heute')).parentElement!;
+      // Die Antwort als Wort mit der Uhrzeit darunter; das Häkchen ist Schmuck.
+      expect(within(kachel).getByText('Ja')).toBeInTheDocument();
+      expect(
+        within(kachel).getByText(`ab 2. Besuch, ${uhr(plan[1]!.starts_at)}`),
+      ).toBeInTheDocument();
+      expect(kachel.querySelector('[aria-hidden="true"]')).toHaveTextContent('✓');
+      expect(kachel).toHaveClass('bg-accent-soft', 'rounded-card');
     });
 
     it('sagt „Nein", wenn heute niemand die Liege braucht - die eine Tagesfrage bleibt', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      const zeile = (await screen.findByText('Liege heute')).closest('dl')!;
-      expect(within(zeile).getByText('Nein')).toBeInTheDocument();
-      expect(zeile.querySelector('[aria-hidden="true"]')).toBeNull();
+      const kachel = (await screen.findByText('Liege heute')).parentElement!;
+      expect(within(kachel).getByText('Nein')).toBeInTheDocument();
+      expect(kachel.querySelector('[aria-hidden="true"]')).toBeNull();
     });
 
     it('zaehlt in der Uebersicht nicht mehr zusammen, was mit muss (Entscheidung Jannes, 2026-10-01)', async () => {
@@ -949,12 +959,15 @@ describe('Übersicht', () => {
       expect(
         within(abschluss).getByText('2 von 2 Besuchen erledigt · 2 Dokus festgeschrieben'),
       ).toBeInTheDocument();
-      const morgen = within(abschluss).getByRole('link', { name: 'Morgen im Kalender' });
-      expect(morgen.getAttribute('href')).toMatch(
-        /^\/kalender\?ansicht=tag&datum=\d{4}-\d{2}-\d{2}$/,
+      // Morgen steht darunter (Morgen-Vorschau); der Kalenderlink entfällt heute.
+      expect(within(abschluss).queryByRole('link')).toBeNull();
+      const vorschau = (await screen.findByRole('heading', { name: /^Morgen · / })).closest(
+        'section',
+      )!;
+      expect(within(vorschau).getByRole('link', { name: 'Zum Tag' })).toHaveAttribute(
+        'href',
+        `/?tag=${tagePlus(todayInTimeZone(ZONE), 1)}`,
       );
-      // Auf Tiefgrün ist der Fokusrahmen Papier.
-      expect(morgen).toHaveClass('focus-visible:outline-surface', 'min-h-11');
 
       expect(screen.queryByText('Liege heute')).toBeNull();
       expect(screen.queryByRole('article')).toBeNull();
@@ -982,12 +995,12 @@ describe('Übersicht', () => {
       rufeFunktionAuf.mockResolvedValue(route('anbieter', 12, 9));
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      const balken = await screen.findByRole('region', { name: 'Erster Weg' });
-      expect(within(balken).getByText('≈ 12 min Rad')).toBeInTheDocument();
-      expect(within(balken).getByText('Jetzt, Start am Rad')).toBeInTheDocument();
-      expect(within(balken).getByText('Erika Beispiel')).toBeInTheDocument();
-      // 60 Minuten bis zum Beginn, 12 davon Fahrt (je nach Sekunde 59).
-      expect(within(balken).getByText(/^(47|48) min Puffer$/)).toBeInTheDocument();
+      // Die Kachel „Abfahrt": späteste Abfahrt und Fahrt. 60 Minuten bis zum
+      // Beginn, 12 davon Fahrt - der Puffer reicht und steht deshalb nicht da.
+      const kachel = (await screen.findByText('Abfahrt', { exact: true })).parentElement!;
+      expect(within(kachel).getByText('≈ 12 min Rad')).toBeInTheDocument();
+      expect(kachel).toHaveTextContent(/spätestens \d\d:\d\d/);
+      expect(kachel).not.toHaveTextContent(/Puffer/);
 
       // Die Karte nennt die Anfahrt im Kicker, die Zeile danach im Ort - und
       // darüber liegt der schmale Übergang.
@@ -1029,7 +1042,7 @@ describe('Übersicht', () => {
       rufeFunktionAuf.mockResolvedValue(route('nachbildung', 12));
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
 
-      await screen.findByRole('region', { name: 'Erster Weg' });
+      await screen.findByText('Abfahrt', { exact: true });
       expect(
         screen.getByText(/Nachbildung ohne Kartendienst: Die Fahrzeiten sind über die Luftlinie/),
       ).toHaveAttribute('role', 'status');
@@ -1118,7 +1131,7 @@ describe('Übersicht', () => {
       expect(container.querySelector('aside')).toBeNull();
       expect(container.innerHTML).not.toContain('@zweispaltig:grid-cols-');
       expect(fetchDayPlan).not.toHaveBeenCalled();
-      expect(screen.queryByRole('heading', { name: 'Tagesablauf' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
     });
   });
 
@@ -1201,7 +1214,7 @@ describe('Übersicht', () => {
       expect(
         await screen.findByText('Heute sind Ihnen keine Besuche zugeordnet'),
       ).toBeInTheDocument();
-      expect(screen.queryByRole('heading', { name: 'Tagesablauf' })).toBeNull();
+      expect(screen.queryByRole('heading', { name: STRAHL })).toBeNull();
       expect(screen.queryByText('Alle Besuche erledigt')).toBeNull();
     });
 
@@ -1518,7 +1531,7 @@ describe('Übersicht', () => {
     it('stellt fuer das Buero den Plan des Teams vor die eigene Liste (BEF-051)', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['office'])} />);
 
-      const tagesablauf = await screen.findByRole('heading', { name: 'Tagesablauf' });
+      const tagesablauf = await screen.findByRole('heading', { name: STRAHL });
       const teamplan = screen.getByRole('heading', { name: 'Tagesplan des Teams' });
       expect(
         teamplan.compareDocumentPosition(tagesablauf) & Node.DOCUMENT_POSITION_FOLLOWING,
@@ -1529,19 +1542,33 @@ describe('Übersicht', () => {
   describe('UBK-003: Tageswechsel (ANN-234)', () => {
     const heute = () => todayInTimeZone(ZONE);
 
-    it('fuehrt heute auf Vortag und Folgetag, ohne „Heute" anzubieten', async () => {
+    it('zeigt die Woche ab heute mit einem Punkt je Termin (Jannes, 2026-10-11)', async () => {
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1' }), zweiterBesuch()]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-      const nav = await screen.findByRole('navigation', { name: 'Tag wechseln' });
-      expect(within(nav).getByRole('link', { name: 'Vortag' })).toHaveAttribute(
-        'href',
-        `/?tag=${tagePlus(heute(), -1)}`,
-      );
-      expect(within(nav).getByRole('link', { name: 'Folgetag' })).toHaveAttribute(
+      const nav = await screen.findByRole('navigation', { name: 'Tag wählen' });
+      const tage = within(nav).getAllByRole('listitem');
+      expect(tage).toHaveLength(7);
+      const heuteLink = within(tage[0]!).getByRole('link');
+      expect(heuteLink).toHaveAttribute('href', '/');
+      expect(heuteLink).toHaveAttribute('aria-current', 'date');
+      await waitFor(() => expect(heuteLink).toHaveAccessibleName(/, heute: 2 Termine$/));
+      expect(heuteLink.querySelectorAll('[data-punkte] > span')).toHaveLength(2);
+      expect(within(tage[1]!).getByRole('link')).toHaveAttribute(
         'href',
         `/?tag=${tagePlus(heute(), 1)}`,
       );
-      expect(within(nav).queryByRole('link', { name: 'Heute' })).toBeNull();
-      expect(fetchDayPlan).toHaveBeenCalledWith(heute(), EIGENE_STAFF_ID);
+      expect(within(nav).getByRole('link', { name: 'Vorige Woche' })).toHaveAttribute(
+        'href',
+        `/?tag=${tagePlus(heute(), -7)}`,
+      );
+      expect(within(nav).getByRole('link', { name: 'Nächste Woche' })).toHaveAttribute(
+        'href',
+        `/?tag=${tagePlus(heute(), 7)}`,
+      );
+      // Jeder Tag der Leiste fragt seine Liste einmal ab - derselbe Lesepfad.
+      for (let abstand = 0; abstand < 7; abstand += 1) {
+        expect(fetchDayPlan).toHaveBeenCalledWith(tagePlus(heute(), abstand), EIGENE_STAFF_ID);
+      }
     });
 
     it('zeigt morgen den Plan von morgen: Liege morgen, erster Weg, kein Jetzt und kein Haken', async () => {
@@ -1554,9 +1581,7 @@ describe('Übersicht', () => {
 
       const karte = await findeKarte();
       expect(fetchDayPlan).toHaveBeenCalledWith(morgen, EIGENE_STAFF_ID);
-      expect(screen.getByText('Liege morgen').closest('dl')).toHaveTextContent(
-        /Ja · ab 2\. Besuch/,
-      );
+      expect(screen.getByText('Liege morgen').parentElement).toHaveTextContent(/Jaab 2\. Besuch, /);
       expect(within(karte).getByRole('heading', { name: 'Erster Weg' })).toBeInTheDocument();
       expect(screen.queryByText(/^Jetzt, /)).toBeNull();
       expect(screen.queryByRole('button', { name: /^Termin abschließen/ })).toBeNull();
@@ -1565,10 +1590,11 @@ describe('Übersicht', () => {
       const query = fetchAppointments.mock.calls.at(-1)?.[0] as AppointmentsApiModule.CalendarQuery;
       expect(query.von).toBe(morgen);
 
-      const nav = screen.getByRole('navigation', { name: 'Tag wechseln' });
-      expect(within(nav).getByRole('link', { name: 'Heute' })).toHaveAttribute('href', '/');
-      expect(within(nav).getByRole('link', { name: 'Vortag' })).toHaveAttribute('href', '/');
-      expect(within(nav).getByText('Morgen')).toBeInTheDocument();
+      // Die Leiste bleibt bei der Woche ab heute; morgen ist gewählt.
+      const nav = screen.getByRole('navigation', { name: 'Tag wählen' });
+      const tage = within(nav).getAllByRole('listitem');
+      expect(within(tage[0]!).getByRole('link')).toHaveAttribute('href', '/');
+      expect(within(tage[1]!).getByRole('link')).toHaveAttribute('aria-current', 'date');
     });
 
     it('zeigt gestern, was liegen blieb, und schliesst den Tag ab', async () => {
@@ -1593,9 +1619,52 @@ describe('Übersicht', () => {
       ).toBeInTheDocument();
     });
 
+    it('zeigt an einem Tag ohne Besuch, was morgen kommt (Jannes, 2026-10-11)', async () => {
+      const morgen = tagePlus(heute(), 1);
+      fetchDayPlan.mockImplementation((datum: string) =>
+        Promise.resolve(
+          datum === morgen
+            ? [tagesEintrag({ id: 't1' }), zweiterBesuch({ treatment_table_required: true })]
+            : [],
+        ),
+      );
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+
+      expect(
+        await screen.findByText('Heute sind Ihnen keine Besuche zugeordnet'),
+      ).toBeInTheDocument();
+      const vorschau = (await screen.findByRole('heading', { name: /^Morgen · / })).closest(
+        'section',
+      )!;
+      expect(within(vorschau).getByRole('link', { name: 'Zum Tag' })).toHaveAttribute(
+        'href',
+        `/?tag=${morgen}`,
+      );
+      expect(within(vorschau).getByText('Liege morgen').parentElement).toHaveTextContent(
+        /Jaab 2\. Besuch, /,
+      );
+      expect(within(vorschau).getByRole('link', { name: /Erika Beispiel/ })).toBeInTheDocument();
+      // Ohne Karte und ohne Knöpfe: Morgen wird nichts abgehakt.
+      expect(within(vorschau).queryByRole('article')).toBeNull();
+      expect(within(vorschau).queryByRole('button')).toBeNull();
+    });
+
+    it('zeigt keine Morgen-Vorschau, solange heute ein Weg aussteht', async () => {
+      // Morgens, damit der Besuch noch aussteht (BEF-120).
+      vi.useFakeTimers({ toFake: ['Date'] });
+      vi.setSystemTime(new Date('2026-08-31T05:00:00Z'));
+      onTestFinished(() => {
+        vi.useRealTimers();
+      });
+      fetchDayPlan.mockResolvedValue([tagesEintrag({ id: 't1' })]);
+      renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
+      await findeKarte();
+      expect(screen.queryByRole('heading', { name: /^Morgen · / })).toBeNull();
+    });
+
     it('faellt bei einem unsinnigen Tag still auf heute zurueck', async () => {
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />, '/?tag=2026-02-30');
-      await screen.findByRole('navigation', { name: 'Tag wechseln' });
+      await screen.findByRole('navigation', { name: 'Tag wählen' });
       expect(fetchDayPlan).toHaveBeenCalledWith(heute(), EIGENE_STAFF_ID);
     });
   });

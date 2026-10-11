@@ -1,0 +1,85 @@
+import { Link } from 'react-router-dom';
+import { tagePlus } from '@/features/appointments/calendar';
+import { tagesPfad } from './tageswahl';
+import { KURZ, alsDatum, fensterTage, tagesName } from './wochenfenster';
+
+// -----------------------------------------------------------------------------
+// Wochenleiste der Übersicht (Jannes, 2026-10-11)
+//
+// Sieben Tage in einer Reihe, ab heute, mit einem Punkt je eigenem Termin:
+// Ein Blick zeigt, wie voll die Woche ist, ein Tipp führt auf den Tag. Sie
+// löst „‹ Vortag · Folgetag ›" ab (UBK-003). Der Tag steht weiter als
+// `?tag=` in der Adresse (ANN-234); die Pfeile schieben das Fenster um eine
+// Woche, auch zurück - etwa zur Doku von gestern.
+//
+// Höchstens sechs Termine am Tag (Jannes): Die Punkte brauchen keine Zahl.
+// -----------------------------------------------------------------------------
+
+export function Wochenleiste({
+  tag,
+  heute,
+  anzahl,
+}: {
+  /** Der gezeigte Tag. */
+  tag: string;
+  heute: string;
+  /** Eigene Termine je Tag; `undefined`, solange nichts geladen ist. */
+  anzahl: (tag: string) => number | undefined;
+}) {
+  const tage = fensterTage(tag, heute);
+  const anfang = tage[0]!;
+  const pfeil =
+    'text-ink-muted hover:text-accent flex min-h-16 w-7 shrink-0 items-center justify-center text-xl';
+
+  return (
+    <nav aria-label="Tag wählen" className="mb-5 flex items-stretch gap-1">
+      <Link to={tagesPfad(tagePlus(anfang, -7), heute)} className={pfeil} aria-label="Vorige Woche">
+        <span aria-hidden="true">‹</span>
+      </Link>
+      <ol className="grid min-w-0 flex-1 grid-cols-7 gap-1">
+        {tage.map((t) => {
+          const gewaehlt = t === tag;
+          const zahl = anzahl(t);
+          return (
+            <li key={t} className="min-w-0">
+              <Link
+                to={tagesPfad(t, heute)}
+                aria-label={tagesName(t, heute, zahl)}
+                aria-current={gewaehlt ? 'date' : undefined}
+                className={`rounded-card flex min-h-16 flex-col items-center justify-center gap-0.5 py-2 ${
+                  gewaehlt ? 'bg-accent text-surface' : 'text-ink hover:bg-surface-sunken'
+                }`}
+              >
+                <span
+                  className={`tracking-label text-xs font-semibold uppercase ${
+                    gewaehlt ? '' : t === heute ? 'text-accent' : 'text-ink-muted'
+                  }`}
+                >
+                  {KURZ.format(alsDatum(t)).replace('.', '')}
+                </span>
+                <span
+                  className={`text-lg leading-tight font-bold tabular-nums ${
+                    !gewaehlt && t === heute ? 'text-accent' : ''
+                  }`}
+                >
+                  {Number(t.slice(8, 10))}
+                </span>
+                <span aria-hidden="true" className="flex h-1.5 gap-[3px]" data-punkte={zahl ?? ''}>
+                  {Array.from({ length: zahl ?? 0 }, (_, index) => (
+                    <span
+                      key={index}
+                      className={`rounded-pill size-1.5 ${gewaehlt ? 'bg-surface' : 'bg-accent'}`}
+                    />
+                  ))}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ol>
+      <Link to={tagesPfad(tagePlus(anfang, 7), heute)} className={pfeil} aria-label="Nächste Woche">
+        <span aria-hidden="true">›</span>
+      </Link>
+    </nav>
+  );
+}

@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { Fragment, useId, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/Badge';
 import { NowMarker } from '@/components/ui/NowMarker';
@@ -45,6 +45,13 @@ function ortText(termin: DayPlanEntry, anfahrt: Anfahrt | undefined, stand: Stan
   return [
     einordnung(termin),
     strasse,
+    // Die Liege nur am Hausbesuch (BEF-051) und nur, solange er aussteht
+    // (Jannes, 2026-10-11): Was mit muss, steht an der Zeile.
+    stand === 'kommt' &&
+    termin.appointment_type === 'home_visit' &&
+    termin.treatment_table_required === true
+      ? '✓ Liege'
+      : null,
     stand === 'kommt' && anfahrt ? `Anfahrt ≈ ${anfahrt.minuten} min` : null,
   ]
     .filter(Boolean)
@@ -134,6 +141,9 @@ function PunktZeichen({ art }: { art: 'erledigt' | 'ausgefallen' }) {
  * `jetzt` kommt von außen und rückt mit der Seite jede Minute nach.
  */
 export function Zeitstrahl({
+  titel = 'Tagesablauf',
+  titelSichtbar = false,
+  erstaufnahmeOffen,
   plan,
   fokusId,
   jetzt,
@@ -144,6 +154,15 @@ export function Zeitstrahl({
   karte,
   aktionen,
 }: {
+  /** Die Überschrift für Vorlesesoftware; die Morgen-Vorschau hat ihre eigene. */
+  titel?: string;
+  /** Steht ein zweiter Tag auf der Seite (Morgen-Vorschau), trägt der Strahl seinen Titel sichtbar. */
+  titelSichtbar?: boolean;
+  /**
+   * Fehlt zur Person noch etwas aus der Erstaufnahme (PRX-013)? Steht als
+   * Warnung an der Zeile, wie an der Karte.
+   */
+  erstaufnahmeOffen?: (termin: DayPlanEntry) => boolean;
   /** Die Tagesliste, nach Uhrzeit sortiert. */
   plan: readonly DayPlanEntry[];
   /** Der ausgeklappte Termin, oder `null`. */
@@ -171,11 +190,19 @@ export function Zeitstrahl({
   const vorIndex = plan.findIndex((termin) => Date.parse(termin.starts_at) > jetzt);
   // Ohne Marke steht sie hinter dem letzten Termin - und wird dort nicht gezeichnet.
   const markeVor = !jetztMarke || vorIndex < 0 ? plan.length : vorIndex;
+  const titelId = useId();
 
   return (
-    <section aria-labelledby="zeitstrahl-titel" className="mt-5">
-      <h2 id="zeitstrahl-titel" className="sr-only">
-        Tagesablauf
+    <section aria-labelledby={titelId} className="mt-5">
+      <h2
+        id={titelId}
+        className={
+          titelSichtbar
+            ? 'text-accent tracking-label mb-3 text-xs font-semibold uppercase'
+            : 'sr-only'
+        }
+      >
+        {titel}
       </h2>
       <ol>
         {plan.map((termin, index) => {
@@ -196,7 +223,8 @@ export function Zeitstrahl({
             stand === 'liegengeblieben'
               ? 'Nicht abgeschlossen'
               : (offenGrund(termin) ??
-                (stand === 'kommt' && veraltet?.has(termin.id) ? VERALTET_TEXT : null));
+                (stand === 'kommt' && veraltet?.has(termin.id) ? VERALTET_TEXT : null) ??
+                (stand === 'kommt' && erstaufnahmeOffen?.(termin) ? 'Erstaufnahme offen' : null));
           const ziel = mitRueckweg(
             termin.kind === 'training'
               ? `/training/termine/${termin.id}`

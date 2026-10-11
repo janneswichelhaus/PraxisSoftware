@@ -315,8 +315,12 @@ client.setQueryData(['appointments', heute, tagePlus(heute, 1), null, null, 'act
 // UBK-003: derselbe Tag, einen Tag später - für den Tageswechsel.
 const morgen = tagePlus(heute, 1);
 const einenTagSpaeter = (iso: string) => new Date(Date.parse(iso) + 86_400_000).toISOString();
+// Morgen ist noch nichts erledigt - auch in der Abendansicht.
 const tagMorgen = tag.map((termin) => ({
   ...termin,
+  ...(termin.kind === 'therapy'
+    ? { status: 'confirmed' as const, documentation_status: null }
+    : {}),
   starts_at: einenTagSpaeter(termin.starts_at),
   ends_at: einenTagSpaeter(termin.ends_at),
 }));
@@ -328,6 +332,26 @@ const punkteMorgen = punkte.map((punkt) => ({
 client.setQueryData(['day-plan', morgen, STAFF], tagMorgen);
 client.setQueryData(['day-route', morgen, STAFF], punkteMorgen);
 client.setQueryData(['appointments', morgen, tagePlus(morgen, 1), null, null, 'active'], []);
+
+// Die übrigen Tage der Wochenleiste: unterschiedlich voll, der letzte frei.
+for (const [abstand, anzahl] of [
+  [2, 3],
+  [3, 2],
+  [4, 4],
+  [5, 1],
+  [6, 0],
+] as const) {
+  const t = tagePlus(heute, abstand);
+  const versatz = abstand * 86_400_000;
+  client.setQueryData(
+    ['day-plan', t, STAFF],
+    tag.slice(0, anzahl).map((termin) => ({
+      ...termin,
+      starts_at: new Date(Date.parse(termin.starts_at) + versatz).toISOString(),
+      ends_at: new Date(Date.parse(termin.ends_at) + versatz).toISOString(),
+    })),
+  );
+}
 
 const patient: Patient = {
   id: '66666666-6666-4666-8666-000000000002',
