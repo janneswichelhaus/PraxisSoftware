@@ -215,6 +215,44 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(rows).toEqual([{ status: 'closed', n: 1 }]);
   });
 
+  it('erledigen Praxis und Person zugleich: der erste Vermerk bleibt (BEF-144)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const fehlerDerPerson = await gleichzeitig(
+      { konto: users.office, sql: ERLEDIGEN, params: [id] },
+      {
+        konto: erika.konto,
+        sql: 'select public.close_platform_message($1::uuid, $2::uuid)',
+        params: [erika.zugang, id],
+      },
+    );
+    expect(fehlerDerPerson).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ closed_by: string; closed_by_side: string }>(
+      'select closed_by, closed_by_side from public.platform_messages where id = $1',
+      [id],
+    );
+    expect(rows).toEqual([{ closed_by: users.office, closed_by_side: 'practice' }]);
+  });
+
+  it('erledigen zwei in der Praxis zugleich: der erste Vermerk bleibt (BEF-144)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const vorher = await asPostgres<{ t: Date }>('select clock_timestamp() as t');
+    const fehlerDesZweiten = await gleichzeitig(
+      { konto: users.office, sql: ERLEDIGEN, params: [id] },
+      { konto: users.ownerTherapist, sql: ERLEDIGEN, params: [id] },
+    );
+    expect(fehlerDesZweiten).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{
+      closed_by: string;
+      closed_by_side: string;
+      frisch: boolean;
+    }>(
+      `select closed_by, closed_by_side, closed_at >= $2 as frisch
+         from public.platform_messages where id = $1`,
+      [id, vorher.rows[0]!.t],
+    );
+    expect(rows).toEqual([{ closed_by: users.office, closed_by_side: 'practice', frisch: true }]);
+  });
+
   it('überfällig, wenn die Frist vorbei ist (ANN-309)', async () => {
     const id = await fragen(erika, 'other');
     await asPostgres(

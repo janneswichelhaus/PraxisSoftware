@@ -710,6 +710,15 @@
           "vermerk": "Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11"
         },
         {
+          "id": "bef-144",
+          "name": "BEF-144 Terminwünsche in der Auskunft aus der Akte",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-10-11",
+          "nachweis": "Migrationen 20261102100000 und 20261102110000, betroffenenrechte.test.ts und practice-messages.test.ts (Gegenprobe ohne Migration rot); Zweitreview",
+          "vermerk": "ohne Oberfläche außer der Beschriftung des Abschnitts; daneben: gleichzeitiges Erledigen überschreibt den Vermerk nicht mehr (Hinweis Zweitreview BEF-132)"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
