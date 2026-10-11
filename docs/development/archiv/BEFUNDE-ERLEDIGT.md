@@ -1069,3 +1069,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Jannes entscheidet, ob ein Widerruf in Offene Punkte bleibt, bis das Paket entfernt oder storniert ist (Bedingung statt 14 Tage), oder ob der Monatsentwurf des Trainings ein Paket mit Widerruf sperrt. Einzel-Story-Loop.
 
 **Umsetzung (2026-10-11).** Bedingung statt 14 Tage – der Widerruf bleibt, bis das Paket entfernt ist, mindestens 14 Tage; jede Zeile sagt, ob das Paket noch besteht (ANN-341, Migration `20261028100000`).
+
+### BEF-128 — Ein Abo-Monat lässt sich nach einem Storno nicht zurücknehmen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-07 |
+| Bereich | Abrechnung, Nachsorge-Abo |
+| Quelle  | Zweitreview ANG-EPIC-002 (derselbe Fehler am Trainingspaket, dort behoben), am Code belegt |
+| Status  | erledigt 2026-10-11 (BEF-128, Einzel-Story-Loop) |
+| Berührt | `public.delete_aftercare_month` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; ANN-270 |
+
+**Beobachtung.** Nach einem Storno ist die Rechnungszeile freigegeben (`released_at`), zeigt aber weiter mit RESTRICT auf die Leistung. `delete_aftercare_month` löscht die Leistung, ohne die freigegebenen Zeilen vorher zu entfernen, und scheitert mit `invoice_items_billable_service_id_fkey`; die Oberfläche zeigt „Die Erfassung konnte nicht zurückgenommen werden.“
+
+**Erwartet.** Wie in `delete_billable_services` und `delete_training_package`: freigegebene Zeilen der Leistung zuerst löschen, dazu ein Test „Storno → Zurücknehmen“ in `aftercare-months.test.ts`. Einzel-Story-Loop.
+
+**Umsetzung (2026-10-11).** `delete_aftercare_month` löscht freigegebene Rechnungszeilen mit der Leistung, wie die beiden Vorbilder; Entwurf, ausgestellte und Korrekturrechnung halten den Monat weiter fest (Migration `20261029100000`, zwei Tests in `aftercare-months.test.ts`, Gegenprobe ohne Migration rot).

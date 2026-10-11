@@ -545,20 +545,6 @@ eingeklappt.
 
 **Beobachtet:** Die drei Constraints prüfen `lat between …`, `lon between …` und `geocode_precision in (…)` ohne ausdrückliches `is not null`. Ein CHECK, der NULL ergibt, gilt als erfüllt: Eine Breite ohne Länge oder eine Genauigkeit ohne Koordinate kommt durch, sobald die Adresse vollständig ist. Geschrieben wird heute nur über die Funktionen, die beides zusammen setzen, und der Trigger verwirft die Koordinate mit der Adresse - ein Fehler entsteht deshalb erst mit einem neuen Schreibweg. **Erwartet:** Eine neue Migration ersetzt die drei Constraints durch die dichte Form aus `locations_garage_coordinate_check` (UBK-015); vorher prüft sie, dass keine Zeile die engere Regel verletzt. Ein Test je Tabelle wie in `supabase/tests/garage.test.ts`. Klein, Pfad A (Migration).
 
-### BEF-128 — Ein Abo-Monat lässt sich nach einem Storno nicht zurücknehmen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-07 |
-| Bereich | Abrechnung, Nachsorge-Abo |
-| Quelle  | Zweitreview ANG-EPIC-002 (derselbe Fehler am Trainingspaket, dort behoben), am Code belegt |
-| Status  | offen |
-| Berührt | `public.delete_aftercare_month` in `supabase/migrations/20261014110000_ang_002_aftercare_months.sql`; ANN-270 |
-
-**Beobachtung.** Nach einem Storno ist die Rechnungszeile freigegeben (`released_at`), zeigt aber weiter mit RESTRICT auf die Leistung. `delete_aftercare_month` löscht die Leistung, ohne die freigegebenen Zeilen vorher zu entfernen, und scheitert mit `invoice_items_billable_service_id_fkey`; die Oberfläche zeigt „Die Erfassung konnte nicht zurückgenommen werden.“
-
-**Erwartet.** Wie in `delete_billable_services` und `delete_training_package`: freigegebene Zeilen der Leistung zuerst löschen, dazu ein Test „Storno → Zurücknehmen“ in `aftercare-months.test.ts`. Einzel-Story-Loop.
-
 ### BEF-130 — Abo-Tests rechnen „heute“ in UTC und werden zwischen 0 und 2 Uhr Berliner Zeit rot
 
 |         |   |
