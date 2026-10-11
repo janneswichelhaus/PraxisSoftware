@@ -4121,7 +4121,7 @@ Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-1
 
 ### ANN-340 — „Telefon (geschäftlich)“: nur noch an einer Akte, die schon eine Nummer trägt
 
-Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (BEF-140, Entscheidung Jannes 2026-10-10) · erledigt · Wiedervorlage: Sichtung UX-Review
+Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-10-11; BEF-140) · erledigt · Wiedervorlage: —
 
 **Annahme.** Seit BEF-140 bietet das Formular beim Anlegen kein Feld „Telefon (geschäftlich)“ mehr an, beim Bearbeiten nur, wenn der gespeicherte Datensatz beim Öffnen schon eine Nummer trägt. Dann lässt sie sich berichtigen und leeren; beim Speichern anderer Angaben bleibt sie unverändert. In den Stammdaten steht eine vorhandene Nummer weiter lesend mit Anruflink, wie bisher nur, wenn sie gesetzt ist. Spalte, Schreibfunktion, Auskunft und Zusammenführen bleiben unberührt.
 
