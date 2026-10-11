@@ -7,6 +7,7 @@ import {
   fremdeOrganisation,
   resetDatabase,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Nachrichten in der Praxis (KOM-002, KOM-003; DSN-001 Abschnitt 6, D1).
@@ -172,6 +173,46 @@ describe('Nachrichten in der Praxis (KOM-002, KOM-003)', () => {
     expect(zeile!.status).toBe('closed');
     expect(await fehler(asUser(users.office, ANTWORTEN, [id, 'Noch was']))).toBe('22023');
     expect(await fehler(asUser(users.office, ERLEDIGEN, [id]))).toBe('22023');
+  });
+
+  it('erledigt die Praxis, während die Person nachträgt: „erledigt“ steht (BEF-132, H5)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const fehlerBeimNachtrag = await gleichzeitig(
+      { konto: users.office, sql: ERLEDIGEN, params: [id] },
+      {
+        konto: erika.konto,
+        sql: 'select public.add_platform_message_entry($1::uuid, $2::uuid, $3)',
+        params: [erika.zugang, id, 'Noch eine Frage'],
+      },
+    );
+    expect(fehlerBeimNachtrag).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ status: string; n: number }>(
+      `select m.status, (select count(*)::int from public.platform_message_entries e
+                          where e.message_id = m.id) as n
+         from public.platform_messages m where m.id = $1`,
+      [id],
+    );
+    expect(rows).toEqual([{ status: 'closed', n: 1 }]);
+  });
+
+  it('erledigt die Person, während die Praxis antwortet: „erledigt“ steht (BEF-132, H5)', async () => {
+    const id = await fragen(erika, 'organisational');
+    const fehlerBeiDerAntwort = await gleichzeitig(
+      {
+        konto: erika.konto,
+        sql: 'select public.close_platform_message($1::uuid, $2::uuid)',
+        params: [erika.zugang, id],
+      },
+      { konto: users.office, sql: ANTWORTEN, params: [id, 'Freitag geht.'] },
+    );
+    expect(fehlerBeiDerAntwort).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ status: string; n: number }>(
+      `select m.status, (select count(*)::int from public.platform_message_entries e
+                          where e.message_id = m.id) as n
+         from public.platform_messages m where m.id = $1`,
+      [id],
+    );
+    expect(rows).toEqual([{ status: 'closed', n: 1 }]);
   });
 
   it('überfällig, wenn die Frist vorbei ist (ANN-309)', async () => {

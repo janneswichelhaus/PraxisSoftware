@@ -559,21 +559,6 @@ eingeklappt.
 
 **Erwartet.** Die Tests leiten „heute“ aus `app.training_today(organization_id)` ab statt aus UTC – wie `praxistag()` in `supabase/tests/exercise-plans.test.ts`; keine Prüfung wird schwächer. **Erledigt** in PR #202, weil die CI dort nach Mitternacht rot wurde: beide Hilfsfunktionen und ein Update rechnen mit dem Tag der Praxis, um 00:40 Uhr Berliner Zeit reproduziert und grün.
 
-### BEF-132 — Plattformzugang an der Dublette: Rückfragen ziehen um, der Zugang nicht
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-09 |
-| Bereich | Plattform, Dubletten |
-| Quelle  | Zweitreview KOM-EPIC-001 (H2, H5) |
-| Status  | offen |
-| Berührt | `app.patient_merge_plan`, `public.merge_patients`, `public.add_platform_message_entry`, `public.answer_platform_message` |
-
-**Beobachtung.** Hat die Dublette einen Plattformzugang, ziehen ihre Rückfragen zur bleibenden Akte, der Zugang aber endet mit der Dublette – die Person sieht die Antwort auf ihre Frage nicht mehr. `patient_merge_plan` kennt keinen Sperrgrund dafür, und `counts` nennt die Rückfragen nicht. Daneben (H5): Erledigen und Nachtragen zur selben Zeit enden statt mit 22023 mit dem Constraint-Fehler 23514 – keine Daten gehen verloren, nur die Meldung ist unschön.
-
-**Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`, ebenso `platform_appointment_requests` (ziehen seit BEF-131 mit, Zweitreview BEF-131 H4); für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
-
-
 ### BEF-140 — Drei Löschkandidaten aus dem Leitfaden fallen weg
 
 |         |   |

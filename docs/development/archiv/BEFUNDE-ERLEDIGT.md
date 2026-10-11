@@ -1101,3 +1101,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Eine Zeile in `merge_patients` (`update … set patient_id, relationship_id`) und ein Test in `patient-merge.test.ts`. Einzel-Story-Loop.
 
 **Umsetzung (2026-10-11).** `merge_patients` hängt offene wie beantwortete Terminwünsche an die bleibende Akte um (`patient_id`, `relationship_id`), sonst bleibt der Wunsch unverändert; das Büro sieht ihn unter der bleibenden Akte (Migration `20261030100000`, ein Test in `patient-merge.test.ts`, Gegenprobe ohne Migration rot). Der Zugang der Dublette bleibt BEF-132.
+
+### BEF-132 — Plattformzugang an der Dublette: Rückfragen ziehen um, der Zugang nicht
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-09 |
+| Bereich | Plattform, Dubletten |
+| Quelle  | Zweitreview KOM-EPIC-001 (H2, H5) |
+| Status  | erledigt 2026-10-11 (BEF-132, Einzel-Story-Loop) |
+| Berührt | `app.patient_merge_plan`, `public.merge_patients`, `public.add_platform_message_entry`, `public.answer_platform_message` |
+
+**Beobachtung.** Hat die Dublette einen Plattformzugang, ziehen ihre Rückfragen zur bleibenden Akte, der Zugang aber endet mit der Dublette – die Person sieht die Antwort auf ihre Frage nicht mehr. `patient_merge_plan` kennt keinen Sperrgrund dafür, und `counts` nennt die Rückfragen nicht. Daneben (H5): Erledigen und Nachtragen zur selben Zeit enden statt mit 22023 mit dem Constraint-Fehler 23514 – keine Daten gehen verloren, nur die Meldung ist unschön.
+
+**Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`, ebenso `platform_appointment_requests` (ziehen seit BEF-131 mit, Zweitreview BEF-131 H4); für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
+
+**Umsetzung (2026-10-11).** `app.patient_merge_plan` sperrt mit `source_has_platform_access`, solange an der Dublette ein Zugang hängt, der nicht entzogen ist (ANN-149, Ergänzung f), und zählt `platform_messages` und `platform_appointment_requests`; beide Zahlen stehen damit auch im Vermerk. `add_platform_message_entry` und `answer_platform_message` sperren die Zeile vor der Zustandsprüfung, nach dem Zweitreview ebenso `confirm_message_attachment_upload`; ein gleichzeitiges Erledigen endet mit 22023 (Migration `20261031100000`, Tests in `patient-merge.test.ts`, `practice-messages.test.ts` und `message-attachments.test.ts`, Helfer `helpers/gleichzeitig.ts`, Gegenprobe ohne Migration rot mit 23514). Die Vorschau nennt Sperre und Zahlen (`zusammenfuehren.ts`, Prüfseite `dublette.html?sperre=plattform`).

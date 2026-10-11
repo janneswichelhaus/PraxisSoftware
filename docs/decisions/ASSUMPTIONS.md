@@ -1953,6 +1953,8 @@ Praxisprozess · entschieden (Jannes) · 2026-10-02 · Jannes · erledigt · Wie
 
 **Änderungspfad.** Entwürfe zusammenlegen statt sperren: Zeilen umhängen und einen Entwurf löschen · Aufwand `mittel`. Konto mitnehmen: `user_profiles.person_id` auf die bleibende Person · Aufwand `mittel` (mit Patientenportal POR-EPIC prüfen). **Abnahme (Jannes, 2026-10-02):** bestätigt.
 
+**Ergänzt (BEF-132, 2026-10-11).** (f) Ein Plattformzugang an der Dublette, der nicht entzogen ist – auch eine offene Einladung oder ein gesperrter Zugang –, sperrt ebenso (`source_has_platform_access`): Er endete mit der Dublette, ihre Rückfragen ziehen aber zur bleibenden Akte. Weg: den Zugang in der Dublette entziehen und an der bleibenden Akte einladen (ADR-023 Punkt 5). Anker: Migration `20261031100000_bef_132_plattformzugang_an_der_dublette.sql`, Test „Plattformzugang an der Dublette (BEF-132)“ in `supabase/tests/patient-merge.test.ts`. Änderungspfad: den Zugang mitnehmen (`patient_id`, `relationship_id` umhängen, wenn die bleibende Akte keinen lebenden eigenen Zugang hat) · Aufwand `klein`.
+
 ### ANN-150 — Zusammenführen: nicht rückgängig, Legal Hold wandert mit, Nachweis ist der Auditeintrag
 
 Datenschutz · entschieden (Jannes) · 2026-10-02 · Jannes · Prüfpaket · Wiedervorlage: OPS-003 (Wiederherstellungsverfahren) und Datenschutzprüfung · **LOG-EPIC-001:** geändert – Nachweis ist `patient_merge_records` mit `merged_by`, kein Auditeintrag.

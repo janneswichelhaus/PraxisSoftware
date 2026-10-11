@@ -692,6 +692,15 @@
           "vermerk": "ohne Oberfläche; der Plattformzugang der Dublette bleibt BEF-132"
         },
         {
+          "id": "bef-132",
+          "name": "BEF-132 Plattformzugang an der Dublette sperrt das Zusammenführen",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-11",
+          "nachweis": "Migration 20261031100000, patient-merge.test.ts, practice-messages.test.ts und message-attachments.test.ts (Gegenprobe ohne Migration rot), dublette.spec.ts; Zweitreview",
+          "vermerk": "ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
