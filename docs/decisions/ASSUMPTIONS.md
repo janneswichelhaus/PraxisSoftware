@@ -4118,3 +4118,15 @@ Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-1
 **Anker.** `app.invoice_recipient_name` und die drei Listen in `supabase/migrations/20261027100000_bef_141_empfaenger_aus_snapshot.sql`; Tests „zeigt in Listen und Suche den Empfaenger der ausgestellten Rechnung“ und „nennt bei einer Rechnung an die Person selbst den Namen von damals“ in `supabase/tests/invoices.test.ts`.
 
 **Änderungspfad.** Auch den Personennamen aus dem Snapshot zeigen oder unter beiden Namen suchen: dieselbe Migration, je eine Spalte in den drei Listen · Aufwand `klein`.
+
+### ANN-340 — „Telefon (geschäftlich)“: nur noch an einer Akte, die schon eine Nummer trägt
+
+Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-10-11; BEF-140) · erledigt · Wiedervorlage: —
+
+**Annahme.** Seit BEF-140 bietet das Formular beim Anlegen kein Feld „Telefon (geschäftlich)“ mehr an, beim Bearbeiten nur, wenn der gespeicherte Datensatz beim Öffnen schon eine Nummer trägt. Dann lässt sie sich berichtigen und leeren; beim Speichern anderer Angaben bleibt sie unverändert. In den Stammdaten steht eine vorhandene Nummer weiter lesend mit Anruflink, wie bisher nur, wenn sie gesetzt ist. Spalte, Schreibfunktion, Auskunft und Zusammenführen bleiben unberührt.
+
+**Begründung.** Jannes hat entschieden, dass das Feld aus dem Formular verschwindet und die Spalte bleibt (BEF-140); offen war nur, was mit einem vorhandenen Wert geschieht. Ihn zu verstecken hieße, eine gespeicherte Angabe zur Person nicht mehr zu zeigen und nicht mehr löschen zu können – gegen die Datenminimierung und die Berichtigung (Art. 16 DSGVO). Ihn nur lesend zu zeigen, ließe eine falsche Nummer stehen. Maßgeblich ist der Stand beim Öffnen, damit das Feld beim Leeren nicht verschwindet.
+
+**Anker.** Eigenschaft `mitGeschaeftlichemTelefon` in `src/features/patients/PatientMasterDataFields.tsx`, gesetzt in `EditPatientPage.tsx`; Tests „Telefon (geschäftlich) (BEF-140)“ in `src/features/patients/EditPatientPage.test.tsx`.
+
+**Änderungspfad.** Vorhandene Nummern auch verbergen: die Eigenschaft nicht mehr setzen und die Zeile in `PatientMasterDataPage.tsx` streichen · Aufwand `klein`. Die Spalte ganz aufgeben: eigene Migration mit Auskunft, Zusammenführen und Seeds · Aufwand `mittel`.

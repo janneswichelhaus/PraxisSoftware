@@ -143,6 +143,7 @@ function EditPatientForm({ patient }: { patient: Patient }) {
             therapeuten.isPending ? 'laedt' : therapeuten.isError ? 'fehler' : 'bereit'
           }
           bisherigeTherapeutin={patient.primary_therapist_name}
+          mitGeschaeftlichemTelefon={Boolean(patient.phone_work)}
         />
 
         {/* Die Rückfrage vor dem Weggehen steht dort, wo gearbeitet wird -

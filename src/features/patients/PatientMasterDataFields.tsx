@@ -64,12 +64,21 @@ export function PatientMasterDataFields({
   therapeutinnen,
   therapeutinnenStand = 'bereit',
   bisherigeTherapeutin = null,
+  mitGeschaeftlichemTelefon = false,
 }: {
   werte: Record<StammdatenFeld, string>;
   fehler: Partial<Record<StammdatenFeld, string>>;
   onChange: (feld: StammdatenFeld, wert: string) => void;
   therapeutinnen: AssignableTherapist[];
   therapeutinnenStand?: TherapeutinnenStand;
+  /**
+   * BEF-140, ANN-340: „Telefon (geschäftlich)" erscheint nur noch, wenn der
+   * gespeicherte Datensatz schon eine Nummer trägt - damit sie sich
+   * berichtigen und leeren lässt. Maßgeblich ist der Stand beim Öffnen, nicht
+   * der getippte Wert: Sonst verschwände das Feld beim Leeren unter dem
+   * Finger.
+   */
+  mitGeschaeftlichemTelefon?: boolean;
   /**
    * Anzeigename der gespeicherten festen Therapeut:in. Fehlt sie in der
    * Liste - weil die Liste nicht geladen werden konnte -, bleibt sie so als
@@ -157,16 +166,18 @@ export function PatientMasterDataFields({
             error={fehler.phone}
             onChange={(event) => onChange('phone', event.target.value)}
           />
-          <Field
-            label="Telefon (geschäftlich)"
-            name="phone_work"
-            feldId={stammdatenFeldId('phone_work')}
-            type="tel"
-            autoComplete="off"
-            value={werte.phone_work}
-            error={fehler.phone_work}
-            onChange={(event) => onChange('phone_work', event.target.value)}
-          />
+          {mitGeschaeftlichemTelefon ? (
+            <Field
+              label="Telefon (geschäftlich)"
+              name="phone_work"
+              feldId={stammdatenFeldId('phone_work')}
+              type="tel"
+              autoComplete="off"
+              value={werte.phone_work}
+              error={fehler.phone_work}
+              onChange={(event) => onChange('phone_work', event.target.value)}
+            />
+          ) : null}
           <Field
             label="E-Mail"
             name="email"

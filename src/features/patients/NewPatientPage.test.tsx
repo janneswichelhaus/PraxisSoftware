@@ -383,9 +383,11 @@ describe('NewPatientPage', () => {
   it('ordnet Kontakt wie die Anzeige und begrenzt die Freitexte', () => {
     renderWithProviders(<NewPatientPage />);
 
-    const kontakt = ['Mobil', 'Telefon (privat)', 'Telefon (geschäftlich)', 'E-Mail'].map((feld) =>
+    const kontakt = ['Mobil', 'Telefon (privat)', 'E-Mail'].map((feld) =>
       screen.getByLabelText(feld),
     );
+    // BEF-140: Ein drittes Telefonfeld gibt es beim Anlegen nicht mehr.
+    expect(screen.queryByLabelText('Telefon (geschäftlich)')).toBeNull();
     for (let i = 1; i < kontakt.length; i += 1) {
       expect(
         kontakt[i - 1]!.compareDocumentPosition(kontakt[i]!) & Node.DOCUMENT_POSITION_FOLLOWING,
