@@ -23,6 +23,8 @@ const fetchAntwortfrist = vi.fn<() => Promise<number | null>>();
 const saveAntwortfrist = vi.fn();
 const assignRueckfrage = vi.fn();
 const fetchAktenNachrichten = vi.fn<() => Promise<MessagesApi.Aktenvorgang[]>>();
+const ladeRueckfrageAnhang = vi.fn();
+const deleteRueckfrageAnhang = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof MessagesApi>()),
@@ -34,6 +36,8 @@ vi.mock('./api', async (importOriginal) => ({
   saveAntwortfrist: (...a: unknown[]) => saveAntwortfrist(...a) as Promise<void>,
   assignRueckfrage: (...a: unknown[]) => assignRueckfrage(...a) as Promise<void>,
   fetchAktenNachrichten: () => fetchAktenNachrichten(),
+  ladeRueckfrageAnhang: (...a: unknown[]) => ladeRueckfrageAnhang(...a) as Promise<Blob>,
+  deleteRueckfrageAnhang: (...a: unknown[]) => deleteRueckfrageAnhang(...a) as Promise<void>,
 }));
 
 const { RueckfragenPage, RueckfragePage } = await import('./RueckfragenPage');
@@ -159,7 +163,7 @@ describe('Rückfragen (KOM-002)', () => {
     await nutzer.type(screen.getByLabelText('Antwort an die Person'), 'Bitte kühlen, ich rufe an.');
     await nutzer.click(screen.getByRole('button', { name: 'Antwort senden' }));
     await waitFor(() =>
-      expect(answerRueckfrage).toHaveBeenCalledWith(ZEILE.id, 'Bitte kühlen, ich rufe an.'),
+      expect(answerRueckfrage).toHaveBeenCalledWith(ZEILE.id, 'Bitte kühlen, ich rufe an.', null),
     );
     await nutzer.click(screen.getByRole('button', { name: 'Als erledigt markieren' }));
     await waitFor(() => expect(closeRueckfrage).toHaveBeenCalledWith(ZEILE.id));
@@ -313,5 +317,126 @@ describe('In die Akte (KOM-004, ANN-312)', () => {
     );
     expect(await screen.findByText('Knie schmerzt seit gestern.')).toBeInTheDocument();
     expect(screen.getByText(/übernommen am 06.10.2026 von Anna Beispiel/)).toBeInTheDocument();
+  });
+});
+
+describe('Fotos und Videos an der Rückfrage (KOM-008, ADR-017 Punkte 65 bis 68)', () => {
+  const VIDEO: MessagesApi.Rueckfrageanhang = {
+    id: 'aaaaaaaa-dddd-4ddd-8ddd-000000000001',
+    media_kind: 'video',
+    mime_type: 'video/webm',
+    duration_seconds: 12,
+    created_at: '2026-10-05T09:00:00Z',
+    delete_on: '2026-11-04',
+    author_kind: 'self',
+    author_label: null,
+    server_verified: false,
+    malware_scanned: false,
+    object_missing: false,
+  };
+
+  function zeige(vorgang: Rueckfrage, rollen: Parameters<typeof testUser>[0] = ['therapist']) {
+    fetchRueckfrage.mockResolvedValue(vorgang);
+    renderWithProviders(
+      <Routes>
+        <Route
+          path="/rueckfragen/:messageId"
+          element={<RueckfragePage user={testUser(rollen)} />}
+        />
+      </Routes>,
+      `/rueckfragen/${ZEILE.id}`,
+    );
+  }
+
+  beforeEach(() => {
+    ladeRueckfrageAnhang.mockResolvedValue(new Blob([new Uint8Array([1])], { type: 'video/webm' }));
+    deleteRueckfrageAnhang.mockResolvedValue(undefined);
+    URL.createObjectURL = vi.fn(() => 'blob:test');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it('listet Anhänge mit Löschdatum, ohne Vorschau; Ansehen lädt erst auf Tippen', async () => {
+    const nutzer = userEvent.setup();
+    zeige({ ...VORGANG, attachments: [VIDEO] });
+    const abschnitt = (await screen.findByRole('heading', { name: 'Fotos und Videos' })).closest(
+      'section',
+    )!;
+    expect(abschnitt).toHaveTextContent('Video, 0:12');
+    expect(abschnitt).toHaveTextContent('gelöscht');
+    expect(abschnitt).toHaveTextContent('nicht serverseitig geprüft');
+    expect(abschnitt).toHaveTextContent('gehen nicht in die Akte');
+    expect(ladeRueckfrageAnhang).not.toHaveBeenCalled();
+    await nutzer.click(within(abschnitt).getByRole('button', { name: 'Ansehen' }));
+    expect(await screen.findByLabelText('Video der Person')).toBeInTheDocument();
+    expect(ladeRueckfrageAnhang).toHaveBeenCalledWith(VIDEO.id);
+    await nutzer.click(within(abschnitt).getByRole('button', { name: 'Löschen' }));
+    await waitFor(() => expect(deleteRueckfrageAnhang).toHaveBeenCalledWith(VIDEO.id));
+  });
+
+  it('wer nicht antworten darf, löscht nicht (Punkt 67)', async () => {
+    zeige({ ...VORGANG, can_answer: false, attachments: [VIDEO] }, ['office']);
+    const abschnitt = (await screen.findByRole('heading', { name: 'Fotos und Videos' })).closest(
+      'section',
+    )!;
+    expect(within(abschnitt).getByRole('button', { name: 'Ansehen' })).toBeInTheDocument();
+    expect(within(abschnitt).queryByRole('button', { name: 'Löschen' })).not.toBeInTheDocument();
+  });
+
+  it('antwortet mit Zeitmarke im Video (Punkt 68)', async () => {
+    const nutzer = userEvent.setup();
+    zeige({ ...VORGANG, attachments: [VIDEO] });
+    await nutzer.type(
+      await screen.findByLabelText('Antwort an die Person'),
+      'Bei 0:07 kippt das Knie.',
+    );
+    await nutzer.selectOptions(
+      screen.getByLabelText('Auf eine Stelle im Video zeigen (freiwillig)'),
+      VIDEO.id,
+    );
+    await nutzer.type(screen.getByLabelText('Sekunde'), '13');
+    await nutzer.click(screen.getByRole('button', { name: 'Antwort senden' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('von 0 bis 12');
+    await nutzer.clear(screen.getByLabelText('Sekunde'));
+    await nutzer.type(screen.getByLabelText('Sekunde'), '7');
+    await nutzer.click(screen.getByRole('button', { name: 'Antwort senden' }));
+    await waitFor(() =>
+      expect(answerRueckfrage).toHaveBeenCalledWith(ZEILE.id, 'Bei 0:07 kippt das Knie.', {
+        anhangId: VIDEO.id,
+        sekunde: 7,
+      }),
+    );
+  });
+
+  it('eine Antwort mit Zeitmarke öffnet das Video; ist es gelöscht, bleibt der Hinweis', async () => {
+    const nutzer = userEvent.setup();
+    const mitMarke: Rueckfrage = {
+      ...VORGANG,
+      attachments: [VIDEO],
+      entries: [
+        ...VORGANG.entries,
+        {
+          id: 'eeeeeeee-dddd-4ddd-8ddd-000000000009',
+          side: 'practice',
+          body: 'Schau mal hier.',
+          author_kind: 'staff',
+          author_label: 'Anna Beispiel',
+          created_at: '2026-10-05T10:00:00Z',
+          attachment_id: VIDEO.id,
+          attachment_mark_seconds: 7,
+        },
+      ],
+    };
+    zeige(mitMarke);
+    await nutzer.click(await screen.findByRole('button', { name: 'Im Video bei 0:07 ansehen' }));
+    expect(await screen.findByLabelText('Video der Person')).toBeInTheDocument();
+  });
+
+  it('ohne Anhänge kein Abschnitt und keine Zeitmarke im Formular', async () => {
+    zeige(VORGANG);
+    await screen.findByLabelText('Antwort an die Person');
+    expect(screen.queryByRole('heading', { name: 'Fotos und Videos' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText('Auf eine Stelle im Video zeigen (freiwillig)'),
+    ).not.toBeInTheDocument();
   });
 });

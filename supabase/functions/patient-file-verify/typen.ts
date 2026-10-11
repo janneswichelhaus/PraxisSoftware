@@ -21,7 +21,16 @@ export interface Pruefergebnis {
   readonly content_type_ok: boolean;
   readonly checksum_ok: boolean;
   readonly metadata_ok: boolean | null;
+  /** KOM-006 (Punkt 63): nur bei Anhängen an Rückfragen - keine Tonspur. */
+  readonly no_audio_ok?: boolean;
 }
+
+/**
+ * Was geprüft wird (ANN-337): eine Datei der Akte (`file_id`) oder ein
+ * Anhang an einer Rückfrage (`attachment_id`) - derselbe Ablauf, je eigene
+ * Datenbankfunktionen.
+ */
+export type Art = 'datei' | 'anhang';
 
 /** Was `record_patient_file_verification` zurückgibt. */
 /** `held`: Befund unter Legal Hold - nichts verworfen, nur protokolliert. */

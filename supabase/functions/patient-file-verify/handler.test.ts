@@ -4,6 +4,9 @@ import { jpegVomHandy } from '../../../src/features/files/testbilder';
 import { erstelleHandler } from './handler';
 import type { Instanz } from './instanz';
 import { sha256 } from './pruefung';
+import { bereinigeVideo } from '../../../src/features/platform/videometadaten';
+import { alleBytes } from '../../../src/features/files/metadaten';
+import { webmAusChromium } from '../../../src/features/platform/testvideos';
 import type { Ankuendigung, Protokolleintrag } from './typen';
 
 /**
@@ -61,11 +64,11 @@ describe('patient-file-verify', () => {
     const { status, rumpf, log } = await lauf(i);
     expect(status).toBe(200);
     expect(rumpf).toEqual({ ergebnis: 'passed' });
-    expect(i.eintragen).toHaveBeenCalledWith(DATEI, {
-      content_type_ok: true,
-      checksum_ok: true,
-      metadata_ok: true,
-    });
+    expect(i.eintragen).toHaveBeenCalledWith(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: true },
+      'datei',
+    );
     expect(log).toHaveLength(1);
     expect(log[0]).toMatchObject({ dateiId: DATEI, klasse: 'passed' });
     expect(typeof log[0]!.dauerMs).toBe('number');
@@ -79,11 +82,11 @@ describe('patient-file-verify', () => {
     });
     const { rumpf } = await lauf(i);
     expect(rumpf).toEqual({ ergebnis: 'rejected' });
-    expect(i.eintragen).toHaveBeenCalledWith(DATEI, {
-      content_type_ok: true,
-      checksum_ok: false,
-      metadata_ok: false,
-    });
+    expect(i.eintragen).toHaveBeenCalledWith(
+      DATEI,
+      { content_type_ok: true, checksum_ok: false, metadata_ok: false },
+      'datei',
+    );
     // Die Function schreibt nur das Ergebnis - kein Upload, kein Ueberschreiben.
     expect(Object.keys(i)).not.toContain('hochladen');
   });
@@ -146,5 +149,63 @@ describe('patient-file-verify', () => {
     expect(status).toBe(502);
     expect(rumpf).toEqual({ ergebnis: 'instance_error' });
     expect(JSON.stringify(log)).not.toContain(SCHLUESSEL);
+  });
+
+  it('prueft einen Anhang an einer Rueckfrage mit eigenen Datenbankfunktionen (KOM-006)', async () => {
+    const ergebnis = await bereinigeVideo(
+      new Blob([webmAusChromium() as BlobPart], { type: 'video/webm' }),
+    );
+    if (!ergebnis.ok) throw new Error('Testvideo');
+    const video = await alleBytes(ergebnis.video);
+    const i = instanz({
+      ankuendigung: vi.fn(async () => ({
+        ok: true as const,
+        wert: await ankuendigung({
+          bucket_id: 'rueckfrageanhang',
+          mime_type: 'video/webm',
+          byte_size: video.length,
+          checksum_sha256: await sha256(video),
+        }),
+      })),
+      objekt: vi.fn().mockResolvedValue({ ok: true, wert: video }),
+    });
+    const { rumpf } = await lauf(i, anfrage({ attachment_id: DATEI }));
+    expect(rumpf).toEqual({ ergebnis: 'passed' });
+    expect(i.ankuendigung).toHaveBeenCalledWith(DATEI, PERSON, 'anhang');
+    expect(i.eintragen).toHaveBeenCalledWith(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: true, no_audio_ok: true },
+      'anhang',
+    );
+  });
+
+  it('ein Anhang mit Ton oder Programmangabe ist ein Befund (Punkte 63, 64)', async () => {
+    const roh = webmAusChromium({ ton: true });
+    const i = instanz({
+      ankuendigung: vi.fn(async () => ({
+        ok: true as const,
+        wert: await ankuendigung({
+          bucket_id: 'rueckfrageanhang',
+          mime_type: 'video/webm',
+          byte_size: roh.length,
+          checksum_sha256: await sha256(roh),
+        }),
+      })),
+      objekt: vi.fn().mockResolvedValue({ ok: true, wert: roh }),
+      eintragen: vi.fn().mockResolvedValue({ ok: true, wert: 'rejected' }),
+    });
+    await lauf(i, anfrage({ attachment_id: DATEI }));
+    expect(i.eintragen).toHaveBeenCalledWith(
+      DATEI,
+      { content_type_ok: true, checksum_ok: true, metadata_ok: false, no_audio_ok: false },
+      'anhang',
+    );
+  });
+
+  it('nimmt genau eine Kennung an: Datei oder Anhang', async () => {
+    expect((await lauf(instanz(), anfrage({ file_id: DATEI, attachment_id: DATEI }))).status).toBe(
+      400,
+    );
+    expect((await lauf(instanz(), anfrage({ attachment_id: 'x' }))).status).toBe(400);
   });
 });

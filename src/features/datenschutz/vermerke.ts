@@ -20,7 +20,7 @@ import { getSupabase } from '@/lib/supabase';
  * Die Zwecke, für die die Praxis eine Einwilligung einholt (ANN-093).
  *
  * Muss deckungsgleich mit dem Constraint an `patient_privacy_records.purpose`
- * bleiben (zuletzt `supabase/migrations/20260926150000_dok_006b_patient_photos.sql`).
+ * bleiben (zuletzt `supabase/migrations/20261026100000_kom_005_message_attachments.sql`).
  * Die Behandlung selbst steht hier bewusst nicht: Sie braucht keine
  * Einwilligung, sondern stützt sich auf den Behandlungsvertrag und
  * Art. 9 Abs. 2 lit. h DSGVO. Fotos dagegen stützen sich auf die Einwilligung
@@ -30,6 +30,7 @@ export const EINWILLIGUNGSZWECKE = [
   'email_contact',
   'prescriber_report',
   'patient_photos',
+  'message_attachments',
 ] as const;
 export type Einwilligungszweck = (typeof EINWILLIGUNGSZWECKE)[number];
 
@@ -48,6 +49,13 @@ export const zweckTexte: Record<Einwilligungszweck, { label: string; beschreibun
     label: 'Fotos im Behandlungsverlauf',
     beschreibung:
       'Fotos, die das Praxisteam während der Behandlung aufnimmt — zur Übergabe und zum Vergleich im Verlauf. Neben der Akte, nicht in ihr; gelöscht nach spätestens zwölf Monaten, beim Widerruf sofort. Keine Weitergabe.',
+  },
+  // KOM-005 (ADR-017 Punkt 61, ANN-333): erteilt wird auf der Plattform;
+  // die Akte vermerkt nur den Widerruf vom Papier.
+  message_attachments: {
+    label: 'Fotos und Videos an Rückfragen',
+    beschreibung:
+      'Fotos und Videos, die die Person im Nachsorge-Abo über die Plattform an ihre Frage hängt. Nicht Teil der Akte; gelöscht nach 30 Tagen, beim Widerruf sofort. Erteilt wird auf der Plattform.',
   },
 };
 

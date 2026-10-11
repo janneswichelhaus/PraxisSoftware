@@ -20,6 +20,10 @@ const ladePlaene = vi.fn<(id: string) => Promise<EigenePlaene>>();
 const nachrichtStellen = vi.fn();
 const nachrichtNachtragen = vi.fn();
 const nachrichtErledigen = vi.fn();
+const anhangSenden = vi.fn();
+const anhangLoeschen = vi.fn();
+const ladeAnhang = vi.fn();
+const einwilligungSchreiben = vi.fn();
 
 vi.mock('./api', async (importOriginal) => ({
   ...(await importOriginal<typeof PlattformApi>()),
@@ -28,6 +32,10 @@ vi.mock('./api', async (importOriginal) => ({
   nachrichtStellen: (...a: unknown[]) => nachrichtStellen(...a) as Promise<string>,
   nachrichtNachtragen: (...a: unknown[]) => nachrichtNachtragen(...a) as Promise<void>,
   nachrichtErledigen: (...a: unknown[]) => nachrichtErledigen(...a) as Promise<void>,
+  anhangSenden: (...a: unknown[]) => anhangSenden(...a) as Promise<void>,
+  anhangLoeschen: (...a: unknown[]) => anhangLoeschen(...a) as Promise<void>,
+  ladeAnhang: (...a: unknown[]) => ladeAnhang(...a) as Promise<Blob>,
+  einwilligungSchreiben: (...a: unknown[]) => einwilligungSchreiben(...a) as Promise<void>,
 }));
 
 const { Nachrichten, NeueNachricht, NachrichtDetail } = await import('./Nachrichten');
@@ -346,5 +354,162 @@ describe('Eine Nachricht (KOM-001)', () => {
     });
     const verlauf = await screen.findByRole('list', { name: 'Verlauf' });
     expect(within(verlauf).getAllByRole('listitem')[2]).toHaveTextContent('Paula Mustermann');
+  });
+});
+
+describe('Foto und Video an der Nachricht (KOM-007, ADR-017 Abschnitt L)', () => {
+  const VIDEO = {
+    id: 'aaaaaaaa-dddd-4ddd-8ddd-000000000001',
+    media_kind: 'video' as const,
+    mime_type: 'video/webm',
+    duration_seconds: 12,
+    created_at: '2026-10-09T09:00:00Z',
+    delete_on: '2026-11-08',
+    author: 'you' as const,
+    author_label: null,
+    server_verified: false,
+    malware_scanned: false,
+  };
+  const MIT_VIDEO: Nachricht = {
+    ...BEANTWORTET,
+    attachment_count: 1,
+    attachments: [VIDEO],
+    entries: [
+      ...BEANTWORTET.entries,
+      {
+        id: 'eeeeeeee-dddd-4ddd-8ddd-000000000009',
+        side: 'practice',
+        body: 'Bei 0:07 kippt das Knie nach innen.',
+        created_at: '2026-10-09T12:00:00Z',
+        author: 'practice',
+        author_label: null,
+        attachment_id: VIDEO.id,
+        attachment_mark_seconds: 7,
+      },
+    ],
+  };
+
+  function zeige(teil: Partial<Daten>, nachricht: Nachricht = MIT_VIDEO) {
+    ladeNachrichten.mockResolvedValue(
+      daten({
+        can_attach: true,
+        attachment_consent: 'granted',
+        attachment_limit: 3,
+        attachment_max_seconds: 30,
+        messages: [nachricht],
+        ...teil,
+      }),
+    );
+    renderWithProviders(
+      <Routes>
+        <Route path="/p/nachrichten/:nachrichtId" element={<NachrichtDetail zugang={ZUGANG} />} />
+      </Routes>,
+      `/p/nachrichten/${nachricht.id}`,
+    );
+  }
+
+  beforeEach(() => {
+    ladeAnhang.mockResolvedValue(new Blob([new Uint8Array([1, 2, 3])], { type: 'video/webm' }));
+    anhangLoeschen.mockResolvedValue(undefined);
+    einwilligungSchreiben.mockResolvedValue(undefined);
+    URL.createObjectURL = vi.fn(() => 'blob:test');
+    URL.revokeObjectURL = vi.fn();
+  });
+
+  it('zeigt jeden Anhang mit Löschdatum, ohne Vorschaubild (Punkte 40, 65)', async () => {
+    zeige({});
+    const abschnitt = await screen.findByRole('region', { name: 'Fotos und Videos' });
+    expect(abschnitt).toHaveTextContent('Video, 0:12');
+    expect(abschnitt).toHaveTextContent('von Ihnen');
+    expect(abschnitt).toHaveTextContent('wird am 08.11.2026 gelöscht');
+    expect(abschnitt).toHaveTextContent('noch nicht auf Schadsoftware geprüft');
+    expect(within(abschnitt).queryByRole('img')).not.toBeInTheDocument();
+    expect(ladeAnhang).not.toHaveBeenCalled();
+  });
+
+  it('Ansehen lädt erst auf Tippen, Löschen löscht', async () => {
+    const nutzer = userEvent.setup();
+    zeige({});
+    await nutzer.click(await screen.findByRole('button', { name: 'Ansehen' }));
+    expect(await screen.findByLabelText(/Video vom/)).toBeInTheDocument();
+    expect(ladeAnhang).toHaveBeenCalledWith(ZUGANG.access_id, VIDEO.id);
+    await nutzer.click(screen.getByRole('button', { name: 'Löschen' }));
+    await waitFor(() => expect(anhangLoeschen).toHaveBeenCalledWith(ZUGANG.access_id, VIDEO.id));
+  });
+
+  it('die Zeitmarke der Praxis öffnet das Video an der Stelle (Punkt 68)', async () => {
+    const nutzer = userEvent.setup();
+    zeige({});
+    await nutzer.click(await screen.findByRole('button', { name: 'Im Video bei 0:07 ansehen' }));
+    expect(await screen.findByLabelText(/Video vom/)).toBeInTheDocument();
+    expect(ladeAnhang).toHaveBeenCalledWith(ZUGANG.access_id, VIDEO.id);
+  });
+
+  it('ist das Video gelöscht, bleibt die Zeitmarke als Text', async () => {
+    zeige({}, { ...MIT_VIDEO, attachment_count: 0, attachments: [] });
+    expect(
+      await screen.findByText(
+        /Bezieht sich auf Ihr Video bei 0:07\. Das Video ist inzwischen gelöscht/,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it('beim ersten Mal steht die Einwilligung vor der Kamera (Punkt 61)', async () => {
+    const nutzer = userEvent.setup();
+    zeige({ attachment_consent: 'open' }, { ...OFFEN, attachment_count: 0, attachments: [] });
+    await nutzer.click(await screen.findByRole('button', { name: 'Foto aufnehmen' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Fotos und Videos an Ihren Fragen' });
+    expect(dialog).toHaveTextContent('nach 30 Tagen gelöscht');
+    expect(dialog).toHaveTextContent(
+      'Ohne Einwilligung können Sie Ihre Frage weiter in Worten stellen.',
+    );
+    await nutzer.click(within(dialog).getByRole('button', { name: 'Einwilligen und aufnehmen' }));
+    await waitFor(() =>
+      expect(einwilligungSchreiben).toHaveBeenCalledWith(
+        expect.objectContaining({ zweck: 'message_attachments', erteilen: true }),
+      ),
+    );
+    expect(await screen.findByRole('dialog', { name: 'Foto aufnehmen' })).toBeInTheDocument();
+  });
+
+  it('„Nicht jetzt" lässt die Frage in Worten (Art. 7 Abs. 4 DSGVO)', async () => {
+    const nutzer = userEvent.setup();
+    zeige({ attachment_consent: 'withdrawn' }, { ...OFFEN, attachment_count: 0, attachments: [] });
+    await nutzer.click(await screen.findByRole('button', { name: 'Video aufnehmen' }));
+    await nutzer.click(await screen.findByRole('button', { name: 'Nicht jetzt' }));
+    expect(einwilligungSchreiben).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Noch etwas ergänzen')).toBeInTheDocument();
+  });
+
+  it('höchstens drei; ohne Abo keine Knöpfe; die Begleitung sieht nichts (Punkte 59, 67)', async () => {
+    zeige({}, { ...MIT_VIDEO, attachment_count: 3 });
+    expect(await screen.findByText(/höchstens 3 Fotos oder Videos/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
+  });
+
+  it('ohne Stufe 2 keine Knöpfe zum Anhängen', async () => {
+    zeige({ can_attach: false }, { ...OFFEN, attachment_count: 0, attachments: [] });
+    await screen.findByLabelText('Noch etwas ergänzen');
+    expect(screen.queryByRole('button', { name: 'Foto aufnehmen' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Fotos und Videos' })).not.toBeInTheDocument();
+  });
+
+  it('die Begleitung: kein Abschnitt, keine Zeitmarke', async () => {
+    zeige(
+      { can_attach: false, attachment_consent: null },
+      {
+        ...MIT_VIDEO,
+        attachment_count: null,
+        attachments: [],
+        entries: MIT_VIDEO.entries.map((e) => ({
+          ...e,
+          attachment_id: null,
+          attachment_mark_seconds: null,
+        })),
+      },
+    );
+    await screen.findByRole('list', { name: 'Verlauf' });
+    expect(screen.queryByRole('region', { name: 'Fotos und Videos' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/bei 0:07 ansehen/)).not.toBeInTheDocument();
   });
 });

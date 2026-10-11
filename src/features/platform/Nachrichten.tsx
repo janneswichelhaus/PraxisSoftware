@@ -31,6 +31,8 @@ import {
   zusage,
   type Thema,
 } from './nachrichtentexte';
+import { AnhaengeAbschnitt } from './Anhaenge';
+import { zeitmarke, type Ansicht } from './anhangtexte';
 import { PLATTFORM_PFAD, bereichParameter } from './pfade';
 import { datum, tagKurz, uhrzeit } from './zeit';
 
@@ -376,6 +378,7 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [pruefung, setPruefung] = useState<string | null>(null);
+  const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
   const daten = useQuery({
     queryKey: nachrichtenSchluessel(zugang.access_id),
     queryFn: () => ladeNachrichten(zugang.access_id),
@@ -476,9 +479,38 @@ export function NachrichtDetail({ zugang }: { zugang: Plattformzugang }) {
               {datum(e.created_at)}, {uhrzeit(e.created_at)}
             </p>
             <p className="text-ink mt-1 text-base leading-relaxed whitespace-pre-line">{e.body}</p>
+            {e.attachment_mark_seconds != null ? (
+              e.attachment_id &&
+              (nachricht.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-2"
+                  onClick={() =>
+                    setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
+                  }
+                >
+                  Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
+                </Button>
+              ) : (
+                <p className="text-ink-muted mt-2 text-sm">
+                  Bezieht sich auf Ihr Video bei {zeitmarke(e.attachment_mark_seconds)}. Das Video
+                  ist inzwischen gelöscht.
+                </p>
+              )
+            ) : null}
           </li>
         ))}
       </ol>
+
+      <AnhaengeAbschnitt
+        zugang={zugang}
+        nachricht={nachricht}
+        daten={daten.data}
+        offen={offen}
+        ansicht={ansicht}
+        setAnsicht={setAnsicht}
+      />
 
       {nachricht.status === 'closed' ? (
         <p className="text-ink mt-6 max-w-prose text-base leading-relaxed">

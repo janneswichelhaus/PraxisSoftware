@@ -14,8 +14,8 @@
  */
 
 import type { Instanz } from './instanz.ts';
-import { pruefeInhalt } from './pruefung.ts';
-import type { Protokolleintrag } from './typen.ts';
+import { pruefeAnhang, pruefeInhalt } from './pruefung.ts';
+import type { Art, Protokolleintrag } from './typen.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -64,9 +64,19 @@ export function erstelleHandler({
     if (anfrage.method !== 'POST') return ende(405, 'bad_request');
     if (!instanz) return ende(503, 'not_configured');
 
+    // KOM-006 (ANN-337): entweder eine Datei der Akte oder ein Anhang an
+    // einer Rückfrage - genau eines von beiden.
+    let art: Art = 'datei';
     try {
-      const rumpf = (await anfrage.json()) as { file_id?: unknown };
-      if (typeof rumpf.file_id === 'string' && UUID.test(rumpf.file_id)) dateiId = rumpf.file_id;
+      const rumpf = (await anfrage.json()) as { file_id?: unknown; attachment_id?: unknown };
+      const datei = typeof rumpf.file_id === 'string' && UUID.test(rumpf.file_id);
+      const anhang = typeof rumpf.attachment_id === 'string' && UUID.test(rumpf.attachment_id);
+      if (datei && !anhang && rumpf.attachment_id === undefined) {
+        dateiId = rumpf.file_id as string;
+      } else if (anhang && !datei && rumpf.file_id === undefined) {
+        dateiId = rumpf.attachment_id as string;
+        art = 'anhang';
+      }
     } catch {
       // unten als bad_request beantwortet
     }
@@ -76,7 +86,7 @@ export function erstelleHandler({
     if (!person.ok) return ende(502, 'instance_error');
     if (!person.wert) return ende(401, 'session_rejected');
 
-    const ankuendigung = await instanz.ankuendigung(dateiId, person.wert);
+    const ankuendigung = await instanz.ankuendigung(dateiId, person.wert, art);
     if (!ankuendigung.ok) return ende(502, 'instance_error');
     // Fremde und unbestätigte Dateien sehen gleich aus: nicht gefunden.
     if (!ankuendigung.wert) return ende(404, 'not_found');
@@ -85,8 +95,23 @@ export function erstelleHandler({
     const objekt = await instanz.objekt(ankuendigung.wert.bucket_id, ankuendigung.wert.object_key);
     if (!objekt.ok) return ende(502, 'instance_error');
 
-    const ergebnis = await pruefeInhalt(objekt.wert, ankuendigung.wert);
-    const eintrag = await instanz.eintragen(dateiId, ergebnis);
+    // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
+    // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
+    let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
+    try {
+      ergebnis =
+        art === 'anhang'
+          ? await pruefeAnhang(objekt.wert, ankuendigung.wert)
+          : await pruefeInhalt(objekt.wert, ankuendigung.wert);
+    } catch {
+      ergebnis = {
+        content_type_ok: false,
+        checksum_ok: false,
+        metadata_ok: ankuendigung.wert.mime_type === 'application/pdf' ? null : false,
+        ...(art === 'anhang' ? { no_audio_ok: false } : {}),
+      };
+    }
+    const eintrag = await instanz.eintragen(dateiId, ergebnis, art);
     if (!eintrag.ok) return ende(502, 'instance_error');
     return ende(eintrag.wert === 'not_found' ? 404 : 200, eintrag.wert);
   };

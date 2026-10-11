@@ -20,7 +20,9 @@ import {
 } from '@/features/platform/api';
 import { PlattformApp } from '@/features/platform/PlattformApp';
 import { kalendertag } from '@/features/platform/zeit';
+import { bereinigeVideo } from '@/features/platform/videometadaten';
 import type { CurrentUser } from '@/features/session/types';
+import { pruefeVideo } from '../../../supabase/functions/patient-file-verify/video';
 import '@/index.css';
 
 /**
@@ -30,6 +32,11 @@ import '@/index.css';
  * `praxisliste` (Kommunikation → Rückfragen) und `praxisverlauf` (eine
  * Rückfrage mit Antwort und „In die Akte übernehmen"). Die Daten liegen
  * vorab im Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
+ *
+ * KOM-EPIC-002: Der Verlauf trägt ein Video und ein Foto mit Löschdatum und
+ * eine Antwort mit Zeitmarke. `window.__videoPruefung` bereinigt eine echte
+ * Aufnahme aus `MediaRecorder` wie das Gerät und prüft sie wie der Server -
+ * vorher und nachher (ADR-017 Punkt 64).
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'liste';
 const heute = kalendertag(new Date());
@@ -63,10 +70,16 @@ const TERMIN = 'd1d1d1d1-d1d1-4d1d-8d1d-000000000002';
 const LANGER_TEXT =
   'Seit dem letzten Termin zieht es im rechten Knie, wenn ich Treppen gehe – besonders morgens und abwärts. Soll ich die Kniebeugen am Treppengeländer trotzdem weiter machen oder lieber pausieren, bis wir uns sehen?';
 
+const VIDEO = 'a1a1a1a1-0000-4000-8000-000000000001';
+
 const plattform: Nachrichten = {
   response_workdays: 2,
   can_write: true,
   health_topics: true,
+  can_attach: true,
+  attachment_consent: 'granted',
+  attachment_limit: 3,
+  attachment_max_seconds: 30,
   messages: [
     {
       id: BESCHWERDE,
@@ -94,6 +107,43 @@ const plattform: Nachrichten = {
           created_at: vorTagen(1),
           author: 'practice',
           author_label: null,
+        },
+        {
+          id: 'e1e1e1e1-0000-4000-8000-000000000004',
+          side: 'practice',
+          body: 'Im Video sieht man es gut: Bei 0:07 kippt das Knie nach innen. Bitte das Knie über dem zweiten Zeh halten.',
+          created_at: vorTagen(1, 11),
+          author: 'practice',
+          author_label: null,
+          attachment_id: VIDEO,
+          attachment_mark_seconds: 7,
+        },
+      ],
+      attachment_count: 2,
+      attachments: [
+        {
+          id: VIDEO,
+          media_kind: 'video',
+          mime_type: 'video/webm',
+          duration_seconds: 12,
+          created_at: vorTagen(2),
+          delete_on: inTagen(28),
+          author: 'you',
+          author_label: null,
+          server_verified: false,
+          malware_scanned: false,
+        },
+        {
+          id: 'a1a1a1a1-0000-4000-8000-000000000002',
+          media_kind: 'photo',
+          mime_type: 'image/jpeg',
+          duration_seconds: null,
+          created_at: vorTagen(2),
+          delete_on: inTagen(28),
+          author: 'you',
+          author_label: null,
+          server_verified: false,
+          malware_scanned: false,
         },
       ],
     },
@@ -195,6 +245,21 @@ const vorgang: Rueckfrage = {
       created_at: vorTagen(5),
     },
   ],
+  attachments: [
+    {
+      id: VIDEO,
+      media_kind: 'video',
+      mime_type: 'video/webm',
+      duration_seconds: 12,
+      created_at: vorTagen(5),
+      delete_on: inTagen(25),
+      author_kind: 'self',
+      author_label: null,
+      server_verified: false,
+      malware_scanned: false,
+      object_missing: false,
+    },
+  ],
 };
 client.setQueryData(rueckfrageKey(BESCHWERDE), vorgang);
 
@@ -259,6 +324,25 @@ const routen = praxis
 const router = createMemoryRouter(routen, {
   initialEntries: [pfade[seite] ?? pfade['liste']!],
 });
+
+(window as unknown as { __videoPruefung: (v: Blob) => Promise<unknown> }).__videoPruefung = async (
+  video: Blob,
+) => {
+  const roh = new Uint8Array(await video.arrayBuffer());
+  const typ = video.type.split(';')[0]!;
+  const sauber = await bereinigeVideo(video);
+  const nachher = sauber.ok ? new Uint8Array(await sauber.video.arrayBuffer()) : null;
+  const text = (b: Uint8Array) => Array.from(b, (z) => String.fromCharCode(z)).join('');
+  return {
+    typ,
+    vorher: pruefeVideo(roh, typ),
+    bereinigt: sauber.ok,
+    nachher: nachher ? pruefeVideo(nachher, typ) : null,
+    gleicheLaenge: nachher?.length === roh.length,
+    programmVorher: text(roh).includes('Chrome'),
+    programmNachher: nachher ? text(nachher).includes('Chrome') : null,
+  };
+};
 
 createRoot(document.getElementById('wurzel')!).render(
   <QueryClientProvider client={client}>

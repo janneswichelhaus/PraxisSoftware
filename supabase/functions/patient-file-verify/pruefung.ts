@@ -25,6 +25,7 @@
  */
 
 import type { Ankuendigung, Pruefergebnis } from './typen.ts';
+import { pruefeVideo } from './video.ts';
 
 const SIGNATUREN: Record<string, readonly number[]> = {
   'application/pdf': [0x25, 0x50, 0x44, 0x46, 0x2d],
@@ -216,5 +217,35 @@ export async function pruefeInhalt(
       : ankuendigung.mime_type === 'application/pdf'
         ? null
         : false,
+  };
+}
+
+/**
+ * Die Prüfung eines Anhangs an einer Rückfrage (KOM-006, ADR-017 Punkte 49,
+ * 63, 64): ein Foto wie jedes JPEG, ein Video an seiner ganzen Struktur, ohne
+ * Tonspur und ohne Angaben im Kopf (`video.ts`). Andere Typen bestehen nie.
+ */
+export async function pruefeAnhang(
+  bytes: Uint8Array,
+  ankuendigung: Pick<Ankuendigung, 'mime_type' | 'byte_size' | 'checksum_sha256'>,
+): Promise<Pruefergebnis> {
+  const checksum_ok =
+    bytes.length === ankuendigung.byte_size &&
+    (await sha256(bytes)) === ankuendigung.checksum_sha256;
+  if (ankuendigung.mime_type === 'image/jpeg') {
+    const typ = typPasst(bytes, 'image/jpeg');
+    return {
+      content_type_ok: typ,
+      checksum_ok,
+      metadata_ok: typ && jpegMetadatenfrei(bytes),
+      no_audio_ok: true,
+    };
+  }
+  const video = pruefeVideo(bytes, ankuendigung.mime_type);
+  return {
+    content_type_ok: video.lesbar,
+    checksum_ok,
+    metadata_ok: video.lesbar && video.ohneAngaben,
+    no_audio_ok: video.lesbar && video.ohneTon,
   };
 }

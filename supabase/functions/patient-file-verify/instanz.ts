@@ -13,7 +13,7 @@
  * Die beiden Datenbankfunktionen sind nur für `service_role` freigegeben.
  */
 
-import type { Ankuendigung, Eintrag, Ergebnis, Pruefergebnis } from './typen.ts';
+import type { Ankuendigung, Art, Eintrag, Ergebnis, Pruefergebnis } from './typen.ts';
 
 const TIMEOUT_MS = 8_000;
 
@@ -23,9 +23,14 @@ export interface Instanz {
   readonly ankuendigung: (
     dateiId: string,
     personId: string,
+    art?: Art,
   ) => Promise<Ergebnis<Ankuendigung | null>>;
   readonly objekt: (bucket: string, schluessel: string) => Promise<Ergebnis<Uint8Array>>;
-  readonly eintragen: (dateiId: string, ergebnis: Pruefergebnis) => Promise<Ergebnis<Eintrag>>;
+  readonly eintragen: (
+    dateiId: string,
+    ergebnis: Pruefergebnis,
+    art?: Art,
+  ) => Promise<Ergebnis<Eintrag>>;
 }
 
 export interface Einrichtung {
@@ -97,11 +102,17 @@ export function erstelleInstanz(
       }
     },
 
-    async ankuendigung(dateiId, personId) {
-      const antwort = await rpc('patient_file_for_verification', {
-        p_file_id: dateiId,
-        p_user_id: personId,
-      });
+    async ankuendigung(dateiId, personId, art = 'datei') {
+      const antwort =
+        art === 'anhang'
+          ? await rpc('message_attachment_for_verification', {
+              p_attachment_id: dateiId,
+              p_user_id: personId,
+            })
+          : await rpc('patient_file_for_verification', {
+              p_file_id: dateiId,
+              p_user_id: personId,
+            });
       if (!antwort.ok) return antwort;
       const zeilen = Array.isArray(antwort.wert) ? (antwort.wert as Ankuendigung[]) : [];
       const zeile = zeilen[0];
@@ -126,13 +137,22 @@ export function erstelleInstanz(
       }
     },
 
-    async eintragen(dateiId, ergebnis) {
-      const antwort = await rpc('record_patient_file_verification', {
-        p_file_id: dateiId,
-        p_content_type_ok: ergebnis.content_type_ok,
-        p_checksum_ok: ergebnis.checksum_ok,
-        p_metadata_ok: ergebnis.metadata_ok,
-      });
+    async eintragen(dateiId, ergebnis, art = 'datei') {
+      const antwort =
+        art === 'anhang'
+          ? await rpc('record_message_attachment_verification', {
+              p_attachment_id: dateiId,
+              p_content_type_ok: ergebnis.content_type_ok,
+              p_checksum_ok: ergebnis.checksum_ok,
+              p_metadata_ok: ergebnis.metadata_ok ?? false,
+              p_no_audio_ok: ergebnis.no_audio_ok ?? false,
+            })
+          : await rpc('record_patient_file_verification', {
+              p_file_id: dateiId,
+              p_content_type_ok: ergebnis.content_type_ok,
+              p_checksum_ok: ergebnis.checksum_ok,
+              p_metadata_ok: ergebnis.metadata_ok,
+            });
       if (!antwort.ok) return antwort;
       const wert = antwort.wert;
       return typeof wert === 'string' &&

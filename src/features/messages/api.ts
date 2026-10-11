@@ -63,6 +63,9 @@ const eintragSchema = z.object({
   author_kind: z.enum(['self', 'legal_representative', 'companion', 'staff']),
   author_label: z.string().nullable(),
   created_at: z.string(),
+  /** KOM-005 (ANN-338): Antwort mit Zeitmarke in einem Video des Vorgangs. */
+  attachment_id: z.string().nullable().optional(),
+  attachment_mark_seconds: z.number().int().nullable().optional(),
 });
 export type Rueckfrageeintrag = z.infer<typeof eintragSchema>;
 
@@ -89,8 +92,27 @@ const vorgangSchema = z.object({
   /** KOM-004: Darf diese Person den Vorgang der Akte zuordnen? */
   can_assign: z.boolean().default(false),
   entries: z.array(eintragSchema),
+  /** KOM-005 (ADR-017 Punkt 67): Fotos und Videos der Person, ohne Objektschlüssel. */
+  attachments: z.lazy(() => z.array(anhangSchema)).optional(),
 });
 export type Rueckfrage = z.infer<typeof vorgangSchema>;
+
+const anhangSchema = z.object({
+  id: z.string(),
+  media_kind: z.enum(['photo', 'video']),
+  mime_type: z.string(),
+  duration_seconds: z.number().int().nullable(),
+  created_at: z.string(),
+  /** Spätestens an diesem Tag gelöscht (ADR-017 Punkt 65). */
+  delete_on: z.string(),
+  author_kind: z.enum(['self', 'legal_representative']),
+  author_label: z.string().nullable(),
+  server_verified: z.boolean(),
+  malware_scanned: z.boolean(),
+  /** Datensatz ohne Objekt: ein sichtbarer Fehler (ADR-017 Punkt 27). */
+  object_missing: z.boolean(),
+});
+export type Rueckfrageanhang = z.infer<typeof anhangSchema>;
 
 export const RUECKFRAGEN_KEY = ['platform-messages'] as const;
 
@@ -142,12 +164,70 @@ function schreibfehler(meldung: string | undefined): string {
   return 'Nicht gespeichert. Bitte die Verbindung prüfen und erneut versuchen.';
 }
 
-export async function answerRueckfrage(id: string, text: string): Promise<void> {
+/**
+ * Antworten, optional mit Zeitmarke in einem Video des Vorgangs (ADR-017
+ * Punkt 68, ANN-338) - mehr nicht: keine Zeichnung, kein Einzelbild.
+ */
+export async function answerRueckfrage(
+  id: string,
+  text: string,
+  marke: { anhangId: string; sekunde: number } | null = null,
+): Promise<void> {
   const { error } = (await getSupabase().rpc('answer_platform_message', {
     p_message_id: id,
     p_body: text,
+    p_attachment_id: marke?.anhangId ?? null,
+    p_mark_seconds: marke?.sekunde ?? null,
   })) as { error: { message?: string } | null };
-  if (error) throw new Error(schreibfehler(error.message));
+  if (error) {
+    if ((error.message ?? '').includes('outside')) {
+      throw new Error('Die Zeitmarke liegt außerhalb des Videos.');
+    }
+    if ((error.message ?? '').includes('video not found')) {
+      throw new Error('Das Video gibt es nicht mehr. Bitte ohne Zeitmarke antworten.');
+    }
+    throw new Error(schreibfehler(error.message));
+  }
+}
+
+/**
+ * Einen Anhang zum Ansehen laden (ADR-017 Punkt 54): einmalige Freigabe,
+ * Unterschrift, `fetch` ohne Cache, gezeigt aus einer Objekt-URL. Kein
+ * Downloadname; das Öffnen des Vorgangs steht schon im Protokoll (Punkt 67).
+ */
+export async function ladeRueckfrageAnhang(anhangId: string): Promise<Blob> {
+  const satz = 'Die Aufnahme konnte nicht geladen werden.';
+  const { data, error } = (await getSupabase().rpc('issue_message_attachment_link', {
+    p_attachment_id: anhangId,
+  })) as { data: unknown; error: unknown };
+  if (error) throw new Error(satz);
+  const freigabe = antwort(
+    z.array(z.object({ bucket_id: z.string(), object_key: z.string(), mime_type: z.string() })),
+    data ?? [],
+    satz,
+  )[0];
+  if (!freigabe) throw new Error(satz);
+  const { data: signiert, error: signaturFehler } = await getSupabase()
+    .storage.from(freigabe.bucket_id)
+    .createSignedUrl(freigabe.object_key, 60);
+  if (signaturFehler || !signiert?.signedUrl) throw new Error(satz);
+  const geladen = await fetch(signiert.signedUrl, { cache: 'no-store' });
+  if (!geladen.ok) throw new Error(satz);
+  return new Blob([await geladen.arrayBuffer()], { type: freigabe.mime_type });
+}
+
+/** Einen Anhang löschen, etwa wenn er Dritte zeigt (Punkt 67) - wer antworten darf. */
+export async function deleteRueckfrageAnhang(anhangId: string): Promise<void> {
+  const { error } = (await getSupabase().rpc('delete_message_attachment', {
+    p_attachment_id: anhangId,
+  })) as { error: { message?: string } | null };
+  if (error) {
+    throw new Error(
+      (error.message ?? '').includes('not allowed')
+        ? 'Löschen darf, wer auf diese Rückfrage antwortet.'
+        : 'Die Aufnahme konnte nicht gelöscht werden.',
+    );
+  }
 }
 
 export async function closeRueckfrage(id: string): Promise<void> {

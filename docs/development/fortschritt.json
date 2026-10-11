@@ -821,7 +821,10 @@
           "id": "kom-epic-002",
           "name": "KOM-EPIC-002 Foto und Video",
           "gewicht": 1,
-          "status": "offen"
+          "status": "fertig",
+          "fertig_am": "2026-10-11",
+          "nachweis": "KOM-005 bis KOM-008, Zweitreview",
+          "vermerk": "Sichtung: Pläne Schritte 13 bis 15"
         },
         {
           "id": "kom-epic-003",
