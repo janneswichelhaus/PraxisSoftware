@@ -697,7 +697,7 @@
           "gewicht": 1,
           "status": "fertig",
           "fertig_am": "2026-10-11",
-          "nachweis": "Migration 20261031100000, patient-merge.test.ts und practice-messages.test.ts (Gegenprobe ohne Migration rot), dublette.spec.ts; Zweitreview",
+          "nachweis": "Migration 20261031100000, patient-merge.test.ts, practice-messages.test.ts und message-attachments.test.ts (Gegenprobe ohne Migration rot), dublette.spec.ts; Zweitreview",
           "vermerk": "ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt"
         },
         {

@@ -16,6 +16,10 @@
 --    "message is closed" statt mit dem Constraint-Fehler 23514. Rumpf sonst
 --    unveraendert aus 20261020100000_kom_001_platform_messages.sql und
 --    20261026110000_kom_005b_attachment_projections.sql; Rechte unveraendert.
+-- 3. public.confirm_message_attachment_upload (Zweitreview BEF-132): dieselbe
+--    Sperre, denn auch das Bestaetigen eines Anhangs setzt den Vorgang wieder
+--    auf "offen". Rumpf sonst unveraendert aus
+--    20261026100000_kom_005_message_attachments.sql.
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION app.patient_merge_plan(p_organization_id uuid, p_source uuid, p_target uuid)
@@ -395,5 +399,78 @@ begin
      set status = 'answered', due_on = null, last_entry_at = now()
    where m.id = v_vorgang.id;
   return v_id;
+end;
+$$;
+
+create or replace function public.confirm_message_attachment_upload(p_access_id uuid, p_attachment_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_anhang   public.platform_message_attachments%rowtype;
+  v_vorgang  public.platform_messages%rowtype;
+  v_metadata jsonb;
+begin
+  perform app.assert_platform_message(p_access_id);
+  if not app.platform_access_allows(p_access_id, 'attach') then
+    raise exception 'platform access not allowed' using errcode = '42501';
+  end if;
+  v_anhang := app.own_pending_attachment(p_access_id, p_attachment_id);
+  -- BEF-132 (Zweitreview): wie der Nachtrag erst den Vorgang sperren, dann
+  -- seinen Zustand lesen - ein gleichzeitiges Erledigen endet mit 22023
+  -- statt mit 23514. Reihenfolge Vorgang vor Anhang wie beim Vorbereiten.
+  perform 1 from public.platform_messages m
+  where m.id = v_anhang.message_id and m.organization_id = v_anhang.organization_id
+  for update;
+  v_vorgang := app.platform_open_message(p_access_id, v_anhang.message_id);
+  -- Ein Widerruf zwischen Vorbereitung und Bestaetigung laesst den Anhang
+  -- nicht mehr sichtbar werden (Punkt 61, wie Punkt 36).
+  if app.message_attachment_consent(v_vorgang.relationship_kind, v_vorgang.relationship_id)
+     is distinct from 'consent_granted' then
+    raise exception 'no consent to attachments' using errcode = '42501';
+  end if;
+
+  perform 1 from public.platform_message_attachments x where x.id = v_anhang.id for update;
+
+  select o.metadata into v_metadata
+  from storage.objects o
+  where o.bucket_id = app.message_attachment_bucket() and o.name = v_anhang.object_key;
+  if not found then
+    raise exception 'object was not uploaded' using errcode = '22023';
+  end if;
+  if nullif(v_metadata ->> 'size', '')::bigint is distinct from v_anhang.byte_size then
+    raise exception 'uploaded size does not match the announced size' using errcode = '22023';
+  end if;
+  if nullif(v_metadata ->> 'mimetype', '') is distinct from v_anhang.mime_type then
+    raise exception 'uploaded media type does not match the announced media type'
+      using errcode = '22023';
+  end if;
+
+  -- Punkte 51 und 69: Ist eine der Pruefungen scharf, wird der Anhang erst
+  -- mit ihrem Ergebnis ready.
+  if app.patient_file_verification_required() or app.message_attachment_scan_required() then
+    update public.platform_message_attachments
+       set confirmation_requested_at = now()
+     where id = v_anhang.id;
+  else
+    update public.platform_message_attachments
+       set status = 'ready', confirmed_at = now()
+     where id = v_anhang.id;
+  end if;
+
+  -- Zweitreview S1: Wie ein Nachtrag (KOM-001) ist die Praxis danach wieder
+  -- am Zug; eine neue Frist nur, wenn sie schon geantwortet hatte (ANN-309).
+  update public.platform_messages m
+     set status = 'open',
+         due_on = case when m.status = 'open' then m.due_on
+                       else app.message_due_on(m.organization_id) end,
+         last_entry_at = now()
+   where m.id = v_anhang.message_id;
+
+  perform app.log_platform_representation(
+    p_access_id, 'platform_representation.read', jsonb_build_object('view', 'message')
+  );
 end;
 $$;

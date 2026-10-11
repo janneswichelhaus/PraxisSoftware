@@ -11,6 +11,7 @@ import {
   resetDatabase,
   tagInTagen,
 } from './helpers/db';
+import { gleichzeitig } from './helpers/gleichzeitig';
 
 /**
  * Foto und Video an einer Rückfrage (KOM-005, ADR-017 Abschnitt L).
@@ -246,6 +247,30 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
     expect(p.attachments).toHaveLength(1);
     expect(p.attachments[0]!.object_missing).toBe(false);
     expect(JSON.stringify(p)).not.toContain(v.object_key);
+  });
+
+  it('erledigt die Praxis, während die Person bestätigt: „erledigt“ steht (BEF-132)', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await vorbereiten(tina, vorgang);
+    await hochladen(tina.konto, v);
+    const fehler = await gleichzeitig(
+      {
+        konto: users.office,
+        sql: 'select public.close_platform_message_by_practice($1::uuid)',
+        params: [vorgang],
+      },
+      { konto: tina.konto, sql: BESTAETIGEN, params: [tina.zugang, v.attachment_id] },
+    );
+    expect(fehler).toMatchObject({ code: '22023', message: 'message is closed' });
+    const { rows } = await asPostgres<{ vorgang: string; anhang: string }>(
+      `select m.status as vorgang, x.status as anhang
+         from public.platform_messages m
+         join public.platform_message_attachments x on x.message_id = m.id
+        where x.id = $1`,
+      [v.attachment_id],
+    );
+    expect(rows).toEqual([{ vorgang: 'closed', anhang: 'pending' }]);
   });
 
   it('Behandlung: nur mit laufendem Nachsorge-Abo, nicht während der Behandlung (Punkt 59)', async () => {
