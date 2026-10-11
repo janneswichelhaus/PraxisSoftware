@@ -96,5 +96,23 @@ test.describe('Terminhonorar', () => {
         fullPage: true,
       });
     });
+
+    test(`Storno ohne verbleibende Leistung bei ${breite} px (BEF-143)`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+
+      await page.goto(`${PRUEFSEITE}?seite=storniert`);
+      await expect(page.getByText(/Stornodokument RG-2026-0010 vom 02.09.2026/)).toBeVisible();
+      await expect(page.getByText(/Von ihren Leistungen ist keine mehr abzurechnen/)).toBeVisible();
+      await expect(page.getByRole('button', { name: 'Korrekturrechnung erstellen' })).toHaveCount(
+        0,
+      );
+      const storno = page.getByRole('link', { name: 'Stornodokument öffnen' });
+      expect((await storno.boundingBox())?.height ?? 0).toBeGreaterThanOrEqual(44);
+      expect(await ueberlaeuft(page)).toBe(false);
+      await page.screenshot({
+        path: `.tmp/screenshots/bef143-storniert-${breite}.png`,
+        fullPage: true,
+      });
+    });
   }
 });

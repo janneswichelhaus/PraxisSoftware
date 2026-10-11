@@ -658,6 +658,12 @@ const rechnungsansichtSchema = z.object({
   replaces_invoice_number: z.string().nullable(),
   correction_invoice_id: z.string().nullable(),
   correction_invoice_number: z.string().nullable(),
+  /**
+   * Wartet die stornierte Rechnung auf ihre Korrektur? Nur, wenn sie keine
+   * hat und die Korrektur eine Zeile hätte (BEF-143) - fiel die einzige
+   * Leistung nach dem Storno weg, ist das Storno abgeschlossen.
+   */
+  correction_pending: z.boolean(),
   document: dokumentSchema,
 });
 

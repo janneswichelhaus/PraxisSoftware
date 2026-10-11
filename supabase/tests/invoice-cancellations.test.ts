@@ -63,6 +63,8 @@ interface Rechnungszeile {
   invoice_number: string | null;
   cancelled: boolean;
   overdue: boolean;
+  item_count: number;
+  total_cents: number;
 }
 
 interface Kandidat {
@@ -82,6 +84,7 @@ interface Ansicht {
   replaces_invoice_id: string | null;
   replaces_invoice_number: string | null;
   correction_invoice_id: string | null;
+  correction_pending: boolean;
   overdue: boolean;
 }
 
@@ -1040,6 +1043,101 @@ describe('Storno und Korrektur', () => {
       const { rows } = await asUser<Kandidat>(users.office, KANDIDATEN);
       expect(rows[0]!.has_draft).toBe(false);
       expect(rows[0]!.draft_id).toBeNull();
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // BEF-143: Faellt nach dem Storno eine Leistung mit ihrer Zeile, nennt die
+  // stornierte Rechnung weiter ihre Positionen, und sie wartet nur auf eine
+  // Korrektur, die eine Zeile haette.
+  // ---------------------------------------------------------------------------
+  describe('Zurueckgenommene Leistung nach dem Storno (BEF-143)', () => {
+    async function zuruecknehmen(terminId: string): Promise<void> {
+      await asUserCommitted(
+        users.ownerTherapist,
+        'select public.delete_billable_services($1::uuid)',
+        [terminId],
+      );
+    }
+
+    it('zaehlt die Positionen der stornierten Rechnung aus dem Snapshot', async () => {
+      const mt = await leistung(KATALOG.mt, 20);
+      const { id, betrag } = await ausgestellteRechnung(KATALOG.kg, 30);
+      expect(await rechnungszeile(id).then((z) => z.item_count)).toBe(2);
+      await storniere(id);
+
+      await zuruecknehmen(mt);
+
+      const { rows: zeilen } = await asPostgres(
+        'select 1 from public.invoice_items where invoice_id = $1',
+        [id],
+      );
+      expect(zeilen).toHaveLength(1);
+      const zeile = await rechnungszeile(id);
+      expect(zeile.item_count).toBe(2);
+      expect(zeile.total_cents).toBe(betrag);
+      // Die verbleibende Leistung wartet weiter auf ihre Korrektur.
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(true);
+    });
+
+    it('zaehlt am Entwurf weiter live', async () => {
+      await leistung(KATALOG.kg, 30);
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      expect(await rechnungszeile(rows[0]!.id).then((z) => z.item_count)).toBe(1);
+      await leistung(KATALOG.mt, 20);
+      await asPostgres(
+        `insert into public.invoice_items (organization_id, invoice_id, billable_service_id, sort_order)
+         select $1, $2, b.id, 2 from public.billable_services b
+          where not exists (select 1 from public.invoice_items it where it.billable_service_id = b.id)`,
+        [organizationId, rows[0]!.id],
+      );
+      expect(await rechnungszeile(rows[0]!.id).then((z) => z.item_count)).toBe(2);
+      expect(await ansicht(rows[0]!.id).then((a) => a.correction_pending)).toBe(false);
+    });
+
+    it('wartet nicht mehr auf eine Korrektur, wenn die einzige Leistung wegfaellt', async () => {
+      const terminId = await leistung(KATALOG.kg, 30);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      const id = entwurf[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [id]);
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(false);
+      await storniere(id);
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(true);
+
+      await zuruecknehmen(terminId);
+
+      const gelesen = await ansicht(id);
+      expect(gelesen.correction_pending).toBe(false);
+      expect(gelesen.cancellation).not.toBeNull();
+      expect(await rechnungszeile(id).then((z) => z.item_count)).toBe(1);
+      await expect(asUser(users.office, KORREKTUR, [id])).rejects.toThrow(/no billable services/);
+    });
+
+    it('wartet wieder, wenn eine Leistung derselben Klammer nachkommt (ANN-077)', async () => {
+      const terminId = await leistung(KATALOG.kg, 30);
+      const { rows: entwurf } = await asUserCommitted<{ id: string }>(users.office, ENTWURF, [
+        patients.erika,
+        await monat(),
+      ]);
+      const id = entwurf[0]!.id;
+      await asUserCommitted(users.office, AUSSTELLEN, [id]);
+      await storniere(id);
+      await zuruecknehmen(terminId);
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(false);
+
+      await leistung(KATALOG.mt, 20);
+      expect(await ansicht(id).then((a) => a.correction_pending)).toBe(true);
+
+      const { rows } = await asUserCommitted<{ id: string }>(users.office, KORREKTUR, [id]);
+      const gelesen = await ansicht(id);
+      expect(gelesen.correction_invoice_id).toBe(rows[0]!.id);
+      expect(gelesen.correction_pending).toBe(false);
     });
   });
 

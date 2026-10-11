@@ -33,6 +33,7 @@ export function rechnungsansicht(
     replaces_invoice_number: null,
     correction_invoice_id: null,
     correction_invoice_number: null,
+    correction_pending: false,
     ...rest,
     document: {
       schema_version: 2,
