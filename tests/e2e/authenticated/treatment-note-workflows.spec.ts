@@ -361,8 +361,9 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
     await rueckfrage(page).getByRole('button', { name: 'Speichern und abmelden' }).click();
 
     // Erst gespeichert, dann abgemeldet: Die Anmeldemaske kommt, und der Text
-    // liegt auf dem Server.
-    await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible();
+    // liegt auf dem Server. Ihr Kennwortknopf liegt zugeklappt hinter
+    // „Testkonten“ - die Überschrift steht immer da.
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmelden' })).toBeVisible();
 
     await anmelden(page, KONTEN.therapist);
     await terminOeffnen(page, terminId);
@@ -375,7 +376,7 @@ test.describe('FIX-014: Ungespeicherte Dokumentation ueberlebt jeden Weg hinaus'
 
     await page.getByRole('button', { name: 'Abmelden', exact: true }).click();
 
-    await expect(page.getByRole('button', { name: 'Anmelden', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmelden' })).toBeVisible();
   });
 
   /**
