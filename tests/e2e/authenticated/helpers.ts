@@ -202,6 +202,8 @@ export function supabaseKonfiguration(): SupabaseKonfiguration {
 /** Meldet über die echte Anmeldemaske an - GoTrue, kein Stub. */
 export async function anmelden(page: Page, email: string): Promise<void> {
   await page.goto('/');
+  // Der Kennwortweg liegt zugeklappt hinter „Testkonten" (ADR-025 Punkt 15).
+  await page.getByText('Testkonten', { exact: true }).click();
   await page.getByLabel('E-Mail-Adresse').fill(email);
   // exact grenzt das Feld gegen den Sichtbar-Schalter ab.
   await page.getByLabel('Kennwort', { exact: true }).fill(TESTKENNWORT);

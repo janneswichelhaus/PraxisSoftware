@@ -1,5 +1,6 @@
+import type { ReactElement } from 'react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { pruefeBarrierefreiheit } from '@/barrierefreiheit';
 import type * as PasskeyModul from './passkey';
@@ -21,16 +22,51 @@ const { LoginPage } = await import('./LoginPage');
 const { SitzungsendeContext } = await import('./sitzungsende');
 const { PasskeyFehler, PASSKEY_SAETZE } = await import('./passkey');
 
+/** Der ungefragte Start beim Aufruf bricht ab, wie wenn die Person das Fenster schließt. */
+function startBrichtAb() {
+  anmeldenMitPasskey.mockRejectedValueOnce(new PasskeyFehler(PASSKEY_SAETZE.abgebrochen, true));
+}
+
+/** Rendert und wartet, bis der ungefragte Start vorbei ist und der Knopf wieder bereitsteht. */
+async function nachDemStart(element: ReactElement) {
+  render(element);
+  return waitFor(() => {
+    const knopf = screen.getByRole('button', { name: 'Mit Passkey anmelden' });
+    expect(knopf).toBeEnabled();
+    return knopf;
+  });
+}
+
 describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
-    anmeldenMitPasskey.mockReset();
+    // Das Fenster bleibt offen, bis ein Test es anders will.
+    anmeldenMitPasskey.mockReset().mockReturnValue(new Promise<void>(() => undefined));
     passkeyMoeglich.mockReset().mockReturnValue(true);
   });
 
-  it('bietet in Produktion nur den Passkey an - kein Kennwort, kein „Kennwort vergessen“', () => {
+  it('öffnet das Passkey-Fenster beim Aufruf von selbst, genau einmal', async () => {
     render(<LoginPage testzugang={false} />);
-    expect(screen.getByRole('button', { name: 'Mit Passkey anmelden' })).toBeInTheDocument();
+    await waitFor(() => expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('zeigt einen Fehlschlag des ungefragten Starts nicht als Fehler, der Knopf bleibt', async () => {
+    anmeldenMitPasskey.mockRejectedValueOnce(new PasskeyFehler(PASSKEY_SAETZE.nichtAngenommen));
+    await nachDemStart(<LoginPage testzugang={false} />);
+    expect(screen.queryByRole('alert')).toBeNull();
+  });
+
+  it('startet ohne Passkey-fähigen Browser nichts', () => {
+    passkeyMoeglich.mockReturnValue(false);
+    render(<LoginPage testzugang={false} />);
+    expect(anmeldenMitPasskey).not.toHaveBeenCalled();
+  });
+
+  it('bietet in Produktion nur den Passkey an - kein Kennwort, kein „Kennwort vergessen“', async () => {
+    startBrichtAb();
+    await nachDemStart(<LoginPage testzugang={false} />);
+    expect(screen.queryByText('Testkonten')).toBeNull();
     expect(screen.queryByLabelText('Kennwort')).toBeNull();
     expect(screen.queryByLabelText('E-Mail-Adresse')).toBeNull();
     expect(screen.queryByText(/Kennwort vergessen/)).toBeNull();
@@ -38,19 +74,17 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
   });
 
   it('meldet mit dem Passkey an', async () => {
-    anmeldenMitPasskey.mockResolvedValue(undefined);
+    startBrichtAb();
     const user = userEvent.setup();
-    render(<LoginPage testzugang={false} />);
-    await user.click(screen.getByRole('button', { name: 'Mit Passkey anmelden' }));
-    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(1);
+    await user.click(await nachDemStart(<LoginPage testzugang={false} />));
+    expect(anmeldenMitPasskey).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('sagt einen Fehlschlag des Passkeys und setzt den Fokus dorthin (AUTH-06)', async () => {
     anmeldenMitPasskey.mockRejectedValue(new PasskeyFehler(PASSKEY_SAETZE.nichtAngenommen));
     const user = userEvent.setup();
-    render(<LoginPage testzugang={false} />);
-    await user.click(screen.getByRole('button', { name: 'Mit Passkey anmelden' }));
+    await user.click(await nachDemStart(<LoginPage testzugang={false} />));
     const meldung = await screen.findByRole('alert');
     expect(meldung).toHaveTextContent(PASSKEY_SAETZE.nichtAngenommen);
     expect(meldung.parentElement).toHaveFocus();
@@ -59,8 +93,7 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
   it('sagt bei einer unerwarteten Ausnahme „keine Verbindung“', async () => {
     anmeldenMitPasskey.mockRejectedValue(new TypeError('Failed to fetch'));
     const user = userEvent.setup();
-    render(<LoginPage testzugang={false} />);
-    await user.click(screen.getByRole('button', { name: 'Mit Passkey anmelden' }));
+    await user.click(await nachDemStart(<LoginPage testzugang={false} />));
     expect(await screen.findByRole('alert')).toHaveTextContent(
       'Keine Verbindung zum Anmeldedienst.',
     );
@@ -118,12 +151,22 @@ describe('LoginPage: Anmeldung per Passkey (ADR-025 Fassung 2)', () => {
 describe('LoginPage: Testzugang mit Kennwort, nur außerhalb der Produktion (Punkt 15)', () => {
   beforeEach(() => {
     signInWithPassword.mockReset();
-    passkeyMoeglich.mockReset().mockReturnValue(true);
+    // Ohne Passkey-Browser startet nichts von selbst; hier geht es nur ums Kennwort.
+    passkeyMoeglich.mockReset().mockReturnValue(false);
+  });
+
+  it('liegt zugeklappt hinter „Testkonten“', async () => {
+    const user = userEvent.setup();
+    render(<LoginPage testzugang />);
+    const kopf = screen.getByText('Testkonten');
+    expect(screen.getByLabelText('E-Mail-Adresse')).not.toBeVisible();
+    await user.click(kopf);
+    expect(screen.getByLabelText('E-Mail-Adresse')).toBeVisible();
   });
 
   it('stellt beschriftete Felder mit passenden Autocomplete-Werten bereit', () => {
     render(<LoginPage testzugang />);
-    expect(screen.getByRole('heading', { level: 2, name: 'Testzugang' })).toBeInTheDocument();
+    expect(screen.getByRole('form', { name: 'Testzugang' })).toBeInTheDocument();
     expect(screen.getByLabelText('E-Mail-Adresse')).toHaveAttribute('autocomplete', 'username');
     expect(screen.getByLabelText('Kennwort')).toHaveAttribute('autocomplete', 'current-password');
     expect(screen.getByRole('button', { name: 'Anmelden' })).toBeInTheDocument();

@@ -1,9 +1,10 @@
-import { useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Button } from '@/components/ui/Button';
+import { Aufklappzeichen } from '@/components/ui/Card';
+import { aufklappKoepfe, aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { Field } from '@/components/ui/Field';
 import { ErrorState } from '@/components/ui/Feedback';
 import { Kleingedrucktes } from '@/components/ui/Kleingedrucktes';
-import { Section } from '@/components/ui/Section';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Vollseite } from '@/app/Vollseite';
 import { kennwortTestzugang } from '@/lib/env';
@@ -54,47 +55,51 @@ function KennwortTestzugang() {
   }
 
   return (
-    <div className="border-line mt-8 border-t pt-6">
-      <Section titel="Testzugang">
-        <p className="text-ink-muted mb-4 text-sm leading-relaxed">
-          Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
-          gibt es diesen Weg nicht.
-        </p>
-        <form
-          onSubmit={(event) => void handleSubmit(event)}
-          noValidate
-          aria-label="Testzugang"
-          className="flex flex-col gap-4"
-        >
-          {error ? (
-            <div ref={fehlerkasten} tabIndex={-1}>
-              <ErrorState title={error} />
-            </div>
-          ) : null}
-          <Field
-            label="E-Mail-Adresse"
-            type="email"
-            name="email"
-            autoComplete="username"
-            required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
-          <Field
-            label="Kennwort"
-            type="password"
-            name="password"
-            autoComplete="current-password"
-            required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
-          <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
-            {pending ? 'Anmeldung läuft …' : 'Anmelden'}
-          </Button>
-        </form>
-      </Section>
-    </div>
+    // Zugeklappt hinter „Testkonten" (Jannes, 2026-10-11): Die Seite zeigt so
+    // schon das Bild des Betriebs, in dem es diesen Weg nicht gibt.
+    <details className="group mt-6">
+      <summary className={`${aufklappKopfKlassen} ${aufklappKoepfe.text} justify-center`}>
+        <Aufklappzeichen />
+        Testkonten
+      </summary>
+      <p className="text-ink-muted mt-2 mb-4 text-sm leading-relaxed">
+        Nur in Entwicklung und Test-Umgebung: Testkonten melden sich mit Kennwort an. Im Betrieb
+        gibt es diesen Weg nicht.
+      </p>
+      <form
+        onSubmit={(event) => void handleSubmit(event)}
+        noValidate
+        aria-label="Testzugang"
+        className="flex flex-col gap-4 text-left"
+      >
+        {error ? (
+          <div ref={fehlerkasten} tabIndex={-1}>
+            <ErrorState title={error} />
+          </div>
+        ) : null}
+        <Field
+          label="E-Mail-Adresse"
+          type="email"
+          name="email"
+          autoComplete="username"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+        />
+        <Field
+          label="Kennwort"
+          type="password"
+          name="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+        />
+        <Button type="submit" variant="secondary" disabled={pending} className="mt-2">
+          {pending ? 'Anmeldung läuft …' : 'Anmelden'}
+        </Button>
+      </form>
+    </details>
   );
 }
 
@@ -105,6 +110,12 @@ function KennwortTestzugang() {
  * verloren hat, bekommt von der Praxis eine neue Einladung (Punkt 12). Ein
  * neues Gerät nutzt den Passkey des Telefons - der Browser bietet dafür im
  * Passkey-Fenster einen QR-Code an.
+ *
+ * Das Passkey-Fenster öffnet sich beim Aufruf von selbst (Jannes,
+ * 2026-10-11); der Knopf bleibt für den zweiten Versuch und für Browser, die
+ * eine Zeremonie ohne Fingertipp nicht beginnen. Ein Fehlschlag dieses
+ * ungefragten Starts steht nicht als Fehler da - die Person hat nichts
+ * ausgelöst, und der Knopf sagt, wie es weitergeht.
  */
 export function LoginPage({
   testzugang = kennwortTestzugang(),
@@ -119,22 +130,33 @@ export function LoginPage({
   const fehlerkasten = useRef<HTMLDivElement>(null);
   useFokusNachWechsel(error, () => (error ? fehlerkasten.current : null));
 
-  async function mitPasskey() {
+  async function mitPasskey(vonSelbst = false) {
     setError(null);
     setPending(true);
     try {
       await anmeldenMitPasskey();
     } catch (fehler) {
-      setError(fehler instanceof PasskeyFehler ? fehler.message : ANMELDESAETZE.keineVerbindung);
+      if (!vonSelbst) {
+        setError(fehler instanceof PasskeyFehler ? fehler.message : ANMELDESAETZE.keineVerbindung);
+      }
     } finally {
       setPending(false);
     }
   }
 
+  // Einmal je Aufruf der Seite, auch wenn React den Effekt doppelt ausführt.
+  const gestartet = useRef(false);
+  useEffect(() => {
+    if (!passkeyGeht || gestartet.current) return;
+    gestartet.current = true;
+    void mitPasskey(true);
+  }, []);
+
   return (
     // Die Anmeldemaske ist die Haustür — hier steht die Marke selbst, nicht
     // ihr Name als Text (`Vollseite`, MARKE-001).
     <Vollseite
+      mittig
       titel="Anmelden"
       einleitung="Zugang ausschließlich für Mitarbeitende und Patient:innen der Praxis."
       kleingedrucktes="Zugänge werden von der Praxis vergeben. Jede Person benötigt ein eigenes Konto; geteilte Konten sind nicht zulässig."
