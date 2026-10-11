@@ -323,6 +323,50 @@ describe('export_patient_record', () => {
     expect(await zugaenge(patients.petra)).toEqual([]);
   });
 
+  it('nennt eine rechtliche Vertretung mit Grundlage, Nachweisarten, Zweifelvermerk und Ende (BEF-145, ANN-342)', async () => {
+    // Betreuung fuer Petra mit Zweifel an der Einwilligungsfaehigkeit (ANN-207),
+    // danach von der Praxis beendet.
+    const { rows } = await asUserCommitted<{ access_id: string }>(
+      users.therapist,
+      `select * from public.invite_platform_representation(
+         'treatment', $1::uuid, 'legal_representative', 'guardianship', 'Bernd Betreuer',
+         array['identity_document', 'guardianship_certificate'], true, null, null, false, true)`,
+      [patients.petra],
+    );
+    await asUserCommitted(users.ownerTherapist, 'select public.revoke_platform_access($1::uuid)', [
+      rows[0]!.access_id,
+    ]);
+
+    const { rows: auskunft } = await asUser<{
+      daten: { tabellen: Record<string, Record<string, unknown>[]> };
+    }>(users.ownerTherapist, AUSKUNFT, [patients.petra]);
+    const zugaenge = auskunft[0]!.daten.tabellen['platform_accesses']!;
+    expect(zugaenge).toEqual([
+      expect.objectContaining({
+        access_kind: 'legal_representative',
+        representative_name: 'Bernd Betreuer',
+        legal_basis: 'guardianship',
+        proof_documents: ['guardianship_certificate', 'identity_document'],
+        health_scope: true,
+        finance_scope: false,
+        companion_declined_reason: 'capacity_doubt',
+        status: 'revoked',
+        revoked_reason: 'practice',
+      }),
+    ]);
+    for (const feld of ['companion_declined_at', 'proof_recorded_at', 'revoked_at']) {
+      expect(zugaenge[0]![feld]).not.toBeNull();
+    }
+    // Wer vermerkt, nachgewiesen oder beendet hat, steht nicht darin.
+    for (const feld of ['companion_declined_by', 'proof_recorded_by', 'revoked_by', 'locked_by']) {
+      expect(Object.keys(zugaenge[0]!)).not.toContain(feld);
+    }
+    const text = JSON.stringify(zugaenge);
+    for (const kennung of [...Object.values(users), rows[0]!.access_id]) {
+      expect(text).not.toContain(kennung);
+    }
+  });
+
   it('nennt das Trainingsverhaeltnis als eigene Auskunft, statt es mitzuliefern', async () => {
     // Erika hat beides zugleich (ADR-021 Punkt 1): Akte und Trainingsvertrag.
     const { rows } = await asUser<{ daten: Record<string, unknown> }>(
