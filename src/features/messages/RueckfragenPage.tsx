@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react';
+import { Field } from '@/components/ui/Field';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@/components/ui/Button';
@@ -28,6 +29,8 @@ import {
   type Rueckfrage,
 } from './api';
 import { RueckfragenListe, Zustand } from './RueckfragenListe';
+import { RueckfrageAnhaenge, type Ansicht } from './RueckfrageAnhaenge';
+import { zeitmarke } from './zeitmarke';
 import { InDieAkte } from './InDieAkte';
 
 /** Höchstlänge einer Antwort - zugleich die Grenze des Servers. */
@@ -148,6 +151,7 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
     retry: false,
   });
   const zone = user.organizationTimeZone ?? 'Europe/Berlin';
+  const [ansicht, setAnsicht] = useState<Ansicht | null>(null);
 
   if (isPending) return <LoadingState label="Die Rückfrage wird geladen …" />;
   if (isError) {
@@ -204,9 +208,35 @@ export function RueckfragePage({ user }: { user: CurrentUser }) {
                 {kurzesDatum(e.created_at, zone)}, {formatLocalTime(e.created_at, zone)}
               </p>
               <p className="text-ink mt-1 leading-relaxed whitespace-pre-line">{e.body}</p>
+              {e.attachment_mark_seconds != null ? (
+                e.attachment_id &&
+                (data.attachments ?? []).some((a) => a.id === e.attachment_id) ? (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="mt-2"
+                    onClick={() =>
+                      setAnsicht({ anhangId: e.attachment_id!, ab: e.attachment_mark_seconds! })
+                    }
+                  >
+                    Im Video bei {zeitmarke(e.attachment_mark_seconds)} ansehen
+                  </Button>
+                ) : (
+                  <p className="text-ink-muted mt-2 text-sm">
+                    Zeitmarke bei {zeitmarke(e.attachment_mark_seconds)} – das Video ist gelöscht.
+                  </p>
+                )
+              ) : null}
             </li>
           ))}
         </ol>
+        <RueckfrageAnhaenge
+          vorgang={data}
+          name={name}
+          zeitzone={zone}
+          ansicht={ansicht}
+          setAnsicht={setAnsicht}
+        />
         {data.status === 'closed' && data.closed_at ? (
           <p className="text-ink-muted text-sm">
             Erledigt am {formatDate(data.closed_at.slice(0, 10))}
@@ -224,11 +254,23 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
   const queryClient = useQueryClient();
   const [text, setText] = useState('');
   const [pruefung, setPruefung] = useState<string | null>(null);
+  // ADR-017 Punkt 68 (ANN-338): optional eine Stelle in einem Video.
+  const videos = (vorgang.attachments ?? []).filter((a) => a.media_kind === 'video');
+  const [videoId, setVideoId] = useState('');
+  const [sekunde, setSekunde] = useState('');
+  const video = videos.find((v) => v.id === videoId);
   const neuLaden = () => queryClient.invalidateQueries({ queryKey: RUECKFRAGEN_KEY });
   const antworten = useMutation({
-    mutationFn: () => answerRueckfrage(vorgang.id, text.trim()),
+    mutationFn: () =>
+      answerRueckfrage(
+        vorgang.id,
+        text.trim(),
+        video ? { anhangId: video.id, sekunde: Number(sekunde) } : null,
+      ),
     onSuccess: async () => {
       setText('');
+      setVideoId('');
+      setSekunde('');
       await neuLaden();
     },
   });
@@ -257,6 +299,13 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
       setPruefung(`Die Antwort darf höchstens ${ANTWORT_MAX} Zeichen lang sein.`);
       return;
     }
+    if (
+      video &&
+      (!/^\d+$/.test(sekunde.trim()) || Number(sekunde) > (video.duration_seconds ?? 0))
+    ) {
+      setPruefung(`Bitte die Sekunde im Video angeben, von 0 bis ${video.duration_seconds ?? 0}.`);
+      return;
+    }
     setPruefung(null);
     antworten.mutate();
   }
@@ -278,6 +327,31 @@ function Antworten({ vorgang }: { vorgang: Rueckfrage }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
         />
+        {videos.length > 0 ? (
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Select
+              label="Auf eine Stelle im Video zeigen (freiwillig)"
+              value={videoId}
+              onChange={(e) => setVideoId(e.target.value)}
+            >
+              <option value="">Ohne Zeitmarke</option>
+              {videos.map((v, i) => (
+                <option key={v.id} value={v.id}>
+                  Video {i + 1} ({zeitmarke(v.duration_seconds ?? 0)})
+                </option>
+              ))}
+            </Select>
+            {video ? (
+              <Field
+                label="Sekunde"
+                inputMode="numeric"
+                hint={`0 bis ${video.duration_seconds ?? 0}`}
+                value={sekunde}
+                onChange={(e) => setSekunde(e.target.value)}
+              />
+            ) : null}
+          </div>
+        ) : null}
         {fehler ? <Statusmeldung ton="fehler">{fehler}</Statusmeldung> : null}
         <div className="flex flex-col gap-3 sm:flex-row">
           <Button type="submit" disabled={antworten.isPending}>

@@ -245,6 +245,21 @@ const vorgang: Rueckfrage = {
       created_at: vorTagen(5),
     },
   ],
+  attachments: [
+    {
+      id: VIDEO,
+      media_kind: 'video',
+      mime_type: 'video/webm',
+      duration_seconds: 12,
+      created_at: vorTagen(5),
+      delete_on: inTagen(25),
+      author_kind: 'self',
+      author_label: null,
+      server_verified: false,
+      malware_scanned: false,
+      object_missing: false,
+    },
+  ],
 };
 client.setQueryData(rueckfrageKey(BESCHWERDE), vorgang);
 

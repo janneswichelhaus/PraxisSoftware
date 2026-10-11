@@ -89,6 +89,21 @@ test.describe('Foto und Video an der Rückfrage', () => {
     });
   }
 
+  for (const breite of [375, 1280]) {
+    test(`Praxis: Anhänge und Zeitmarke in der Antwort bei ${breite} px`, async ({ page }) => {
+      await page.setViewportSize({ width: breite, height: 900 });
+      await page.goto(`${PRUEFSEITE}?seite=praxisverlauf`);
+      await expect(page.getByRole('heading', { name: 'Fotos und Videos' })).toBeVisible();
+      await expect(page.getByText('Video, 0:12')).toBeVisible();
+      await page
+        .getByLabel('Auf eine Stelle im Video zeigen (freiwillig)')
+        .selectOption({ label: 'Video 1 (0:12)' });
+      await expect(page.getByLabel('Sekunde')).toBeVisible();
+      expect(await ueberlaeuft(page)).toBe(false);
+      expect(await axeVerstoesse(page)).toEqual([]);
+    });
+  }
+
   test('Videodialog: nur Bild, Vorschau, die Kamera endet mit der Aufnahme', async ({ page }) => {
     await kameraBeobachten(page);
     await page.setViewportSize({ width: 375, height: 800 });
