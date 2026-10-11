@@ -163,6 +163,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Gewünschte Tage und Tageszeiten, Notiz, wer gewünscht hat, Zustand und die Antwort der Praxis.',
   },
+  platform_accesses: {
+    label: 'Zugänge zur Plattform',
+    beschreibung:
+      'Der eigene Zugang und die Zugänge einer Vertretung oder Begleitung: Name, Grundlage und Umfang, Einwilligung, Zustand und wann der Zugang eingerichtet, gesperrt oder beendet wurde.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',

@@ -719,6 +719,15 @@
           "vermerk": "ohne Oberfläche außer der Beschriftung des Abschnitts; daneben: gleichzeitiges Erledigen überschreibt den Vermerk nicht mehr (Hinweis Zweitreview BEF-132)"
         },
         {
+          "id": "bef-145",
+          "name": "BEF-145 Vollständigkeitstest der Auskunft, Zugänge zur Plattform in der Auskunft",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-10-11",
+          "nachweis": "Migration 20261103100000, betroffenenrechte.test.ts (Gegenprobe ohne Migration rot); Zweitreview",
+          "vermerk": "Test über jede Tabelle des Aufbewahrungsplans mit patient_id; fand platform_accesses (ANN-342); ohne Oberfläche außer der Beschriftung des Abschnitts"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,
