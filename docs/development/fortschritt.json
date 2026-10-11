@@ -647,6 +647,15 @@
           "vermerk": "ohne Oberfläche; Sichtung Pläne Schritt 12 angepasst"
         },
         {
+          "id": "bef-141",
+          "name": "BEF-141 Listen zeigen den Empfänger ausgestellter Rechnungen aus dem Snapshot",
+          "gewicht": 1,
+          "status": "gesichtet",
+          "fertig_am": "2026-10-11",
+          "nachweis": "ANN-339; Migration 20261027100000, invoices.test.ts (Gegenprobe ohne Migration rot); Zweitreview",
+          "vermerk": "ohne Oberfläche außer dem Hinweis am Empfängerformular"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,

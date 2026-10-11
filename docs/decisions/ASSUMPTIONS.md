@@ -4106,3 +4106,15 @@ Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR
 **Anker.** Spalten `attachment_id` und `attachment_mark_seconds` an `platform_message_entries` und `public.answer_platform_message` in den Migrationen von KOM-005; `src/features/platform/Anhaenge.tsx` und `src/features/platform/anhangtexte.ts`.
 
 **Änderungspfad.** Bruchteile von Sekunden oder mehrere Marken je Antwort: Spaltentyp bzw. eigene Tabelle · Aufwand `mittel`.
+
+### ANN-339 — Rechnungslisten: Empfänger wie auf der Rechnung, Name der Person von heute
+
+Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-10-11; BEF-141, ADR-009 Punkt 10) · erledigt · Wiedervorlage: —
+
+**Annahme.** In Rechnungsliste, offenen Posten und Zahlungen stehen Name und Art des Empfängers einer ausgestellten (auch stornierten) Rechnung so, wie sie im Snapshot stehen; die Suche findet die Rechnung unter diesem Namen, nicht unter dem geänderten. Der Name der **Person** bleibt in diesen Listen der heutige, damit eine Person nach einer Namensänderung unter ihrem jetzigen Namen auffindbar bleibt; das Blatt trägt ohnehin den damaligen. Geht die Rechnung an die Person selbst (Art „self“, im Training immer), steht als Empfänger ihr Name von damals neben dem heutigen Personennamen, und die Suche findet die Rechnung unter beiden.
+
+**Begründung.** BEF-141 verlangt den Empfänger aus dem Snapshot: Er ist Teil des Belegs, und ein Zahlungseingang trägt den Namen, an den die Rechnung ging. Die Person dagegen sucht die Praxis unter dem Namen, den sie heute kennt; den Personennamen aus dem Snapshot zu lesen hätte eine Person mit neuem Namen in der Suche verschwinden lassen.
+
+**Anker.** `app.invoice_recipient_name` und die drei Listen in `supabase/migrations/20261027100000_bef_141_empfaenger_aus_snapshot.sql`; Tests „zeigt in Listen und Suche den Empfaenger der ausgestellten Rechnung“ und „nennt bei einer Rechnung an die Person selbst den Namen von damals“ in `supabase/tests/invoices.test.ts`.
+
+**Änderungspfad.** Auch den Personennamen aus dem Snapshot zeigen oder unter beiden Namen suchen: dieselbe Migration, je eine Spalte in den drei Listen · Aufwand `klein`.

@@ -1277,12 +1277,12 @@ function Empfaengerformular({
 
   return (
     <div className="mt-4 flex max-w-xl flex-col gap-4">
-      {/* „Das Blatt": Rechnungsliste und offene Posten lesen den Namen noch
-          aus den Stammdaten, nicht aus dem Snapshot (BEF-141). */}
+      {/* Ausgestellte Rechnungen lesen den Empfänger aus dem Snapshot – das
+          Blatt ebenso wie Rechnungsliste, offene Posten und Zahlungen (BEF-141). */}
       {bestehend ? (
         <p className="text-ink-muted text-sm">
-          Die Änderung gilt für alle Entwürfe an diesen Empfänger; das Blatt ausgestellter
-          Rechnungen bleibt, wie es ist.
+          Die Änderung gilt für alle Entwürfe an diesen Empfänger; ausgestellte Rechnungen behalten
+          den Empfänger, an den sie gingen – auf dem Blatt und in den Listen.
         </p>
       ) : null}
       <Select
