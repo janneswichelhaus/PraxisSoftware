@@ -951,9 +951,19 @@ function Stornokette({
         <p className="text-ink-muted mt-1 text-sm">Grund: {storno.reason}</p>
         <p className="text-ink-muted mt-2 text-sm">
           Die Rechnung bleibt unverändert stehen – sie ist ausgestellt gewesen, und das lässt sich
-          nicht zurücknehmen. Sie steht in keinem offenen Posten mehr, und ihre Leistungen sind
-          wieder abzurechnen.
+          nicht zurücknehmen. Sie steht in keinem offenen Posten mehr
+          {ansicht.correction_invoice_id || ansicht.correction_pending
+            ? ', und ihre Leistungen sind wieder abzurechnen.'
+            : '.'}
         </p>
+        {/* BEF-143: Fiel die einzige Leistung nach dem Storno weg, wartet
+            nichts mehr auf eine Korrektur - der Server sagt es. */}
+        {!ansicht.correction_invoice_id && !ansicht.correction_pending ? (
+          <p className="text-ink-muted mt-2 text-sm">
+            Von ihren Leistungen ist keine mehr abzurechnen – eine Korrekturrechnung braucht es
+            nicht.
+          </p>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap gap-2">
           <ButtonLink to={`/abrechnung/rechnungen/${ansicht.id}/storno`} variant="secondary">
@@ -969,7 +979,7 @@ function Stornokette({
                 ? `Korrekturrechnung ${ansicht.correction_invoice_number} öffnen`
                 : 'Korrekturentwurf öffnen'}
             </ButtonLink>
-          ) : darfStornieren ? (
+          ) : darfStornieren && ansicht.correction_pending ? (
             <Button
               type="button"
               variant="secondary"

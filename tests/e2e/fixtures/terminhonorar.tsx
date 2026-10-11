@@ -28,7 +28,9 @@ import '@/index.css';
  * (Rechnung mit Positionen und Behandlungstagen). Seit UX-EPIC-008
  * `?seite=entwurf` (Entwurf an eine Beihilfestelle: Rückfrage vor dem
  * Ausstellen, Empfänger bearbeiten); die Arbeitsliste trägt dazu eine Zeile
- * aus einer stornierten Rechnung. Die Daten liegen vorab im
+ * aus einer stornierten Rechnung. Seit BEF-143 `?seite=storniert`: eine
+ * stornierte Rechnung, deren einzige Leistung danach zurückgenommen wurde -
+ * sie wartet auf keine Korrektur. Die Daten liegen vorab im
  * Cache; gesprochen wird mit keinem Server. Alles ist synthetisch.
  */
 const seite = new URLSearchParams(window.location.search).get('seite') ?? 'katalog';
@@ -269,6 +271,28 @@ client.setQueryData(
     },
   ),
 );
+// BEF-143: storniert, die Leistung danach zurückgenommen - keine Korrektur offen.
+client.setQueryData(
+  ['rechnung', STORNIERT],
+  rechnungsansicht(
+    {
+      id: STORNIERT,
+      status: 'issued',
+      patient_id: ERIKA,
+      invoice_number: 'RG-2026-0009',
+      issued_on: '2026-08-28',
+      due_on: '2026-09-11',
+      cancellation: {
+        cancellation_number: 'RG-2026-0010',
+        reason: 'Leistung doppelt erfasst',
+        cancelled_on: '2026-09-02',
+      },
+      correction_pending: false,
+    },
+    { ...dokument, invoice_number: 'RG-2026-0009', issued_on: '2026-08-28' },
+  ),
+);
+client.setQueryData(['rechnungszahlungen', STORNIERT], []);
 client.setQueryData(
   ['rechnungsempfaenger', ERIKA],
   [
@@ -312,7 +336,9 @@ const start =
         ? `/abrechnung/rechnungen/${AUSGESTELLT}/blatt`
         : seite === 'entwurf'
           ? `/abrechnung/rechnungen/${ENTWURF}`
-          : '/abrechnung/katalog';
+          : seite === 'storniert'
+            ? `/abrechnung/rechnungen/${STORNIERT}`
+            : '/abrechnung/katalog';
 
 const router = createMemoryRouter(
   [

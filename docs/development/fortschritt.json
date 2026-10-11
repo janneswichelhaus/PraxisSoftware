@@ -701,6 +701,15 @@
           "vermerk": "ein Satz und zwei Zähler in der Vorschau, Prüfseite dublette.html?sperre=plattform; Sichtungsdatei Praxisverwaltung voll, kein neuer Schritt"
         },
         {
+          "id": "bef-143",
+          "name": "BEF-143 Stornierte Rechnung nennt ihre Positionen aus dem Snapshot",
+          "gewicht": 1,
+          "status": "fertig",
+          "fertig_am": "2026-10-11",
+          "nachweis": "Migration 20261101100000, invoice-cancellations.test.ts (Gegenprobe ohne Migration rot), InvoiceDetailPage.test.tsx, terminhonorar.spec.ts; Zweitreview",
+          "vermerk": "Korrektur nur angeboten, wenn sie eine Zeile hätte (correction_pending); Prüfseite terminhonorar.html?seite=storniert; Sichtung UX-Review Schritt 11"
+        },
+        {
           "id": "log-epic-001",
           "name": "LOG-EPIC-001 Protokollierung auf das Mindestmaß",
           "gewicht": 1,

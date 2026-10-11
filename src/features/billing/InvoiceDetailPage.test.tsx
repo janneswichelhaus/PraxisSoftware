@@ -668,6 +668,7 @@ describe('InvoiceDetailPage', () => {
             reason: 'Falscher Empfänger',
             cancelled_on: '2026-09-18',
           },
+          correction_pending: true,
         }),
       );
       renderWithProviders(
@@ -679,6 +680,33 @@ describe('InvoiceDetailPage', () => {
         await screen.findByRole('button', { name: 'Korrekturrechnung erstellen' }),
       );
       expect(erstelleKorrektur).toHaveBeenCalledWith('r1');
+      expect(screen.getByText(/und ihre Leistungen sind wieder abzurechnen/)).toBeInTheDocument();
+    });
+
+    it('bietet keine Korrektur an, wenn keine Leistung mehr abzurechnen ist (BEF-143)', async () => {
+      fetchRechnung.mockResolvedValue(
+        ansicht({
+          status: 'issued',
+          invoice_number: 'RG-2026-0001',
+          cancellation: {
+            cancellation_number: 'RG-2026-0002',
+            reason: 'Leistung doppelt erfasst',
+            cancelled_on: '2026-09-18',
+          },
+          correction_pending: false,
+        }),
+      );
+      renderWithProviders(
+        <InvoiceDetailPage user={testUser(['office'])} />,
+        '/abrechnung/rechnungen/r1',
+      );
+
+      expect(
+        await screen.findByText(/Von ihren Leistungen ist keine mehr abzurechnen/),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/wieder abzurechnen/)).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Korrekturrechnung erstellen' })).toBeNull();
+      expect(screen.getByRole('link', { name: 'Stornodokument öffnen' })).toBeInTheDocument();
     });
 
     it('führt von der Korrektur zurück zur ersetzten Rechnung', async () => {
@@ -1029,6 +1057,7 @@ describe('InvoiceDetailPage', () => {
             reason: 'Falscher Empfänger',
             cancelled_on: '2026-09-18',
           },
+          correction_pending: true,
         }),
       );
 
