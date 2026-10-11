@@ -1342,7 +1342,10 @@
           "id": "adr-024",
           "name": "ADR-024 Offline und Benachrichtigungen",
           "gewicht": 1,
-          "status": "offen"
+          "status": "entwurf",
+          "fertig_am": "2026-10-11",
+          "nachweis": "docs/adr/ADR-024-offline-and-notifications.md",
+          "vermerk": "vorgeschlagen; W1 bis W5 warten auf Jannes"
         },
         {
           "id": "b5-identitaet",

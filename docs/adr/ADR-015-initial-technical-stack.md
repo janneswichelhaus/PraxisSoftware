@@ -4,6 +4,8 @@
 
 Angenommen
 
+*Vermerk 2026-10-11: Punkt 16 wird durch [ADR-024](ADR-024-offline-and-notifications.md) abgelöst, sobald dieser angenommen ist (vorgeschlagen 2026-10-11): ein schmaler Service Worker für Anwendungsgerüst und Push, weiter kein generisches Offline-Caching.*
+
 ## Datum
 
 2026-08-28

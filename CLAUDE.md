@@ -66,6 +66,7 @@ verankert sein — sonst wird aus schnellem Bauen späterer Umbau.
 | 021 | Behandlung und Training getrennt, Rechtsverhältnis, Trainingsdaten, §203    |
 | 022 | Terminkontext, Trainingsgrundlage, Trainingsprotokoll, ein Kalender         |
 | 023 | Plattformzugang: Konten, Einladung, Identität, Vertretung, Sitzung, RLS     |
+| 024 | Service Worker, Offline-Erfassung, Benachrichtigungen, Push, Mailversand    |
 | 025 | Sitzungssperre: Frist, Inaktivität, erneute Freigabe, Passkey, Entwürfe     |
 
 ## Repository
@@ -92,9 +93,8 @@ im Alltag `pnpm install`, `pnpm dev`, `pnpm build`.
 - **`supabase start` ist dort nicht möglich** (Egress-Proxy blockiert Container-Images, 403): kein
   GoTrue, kein E2E hinter der Anmeldung.
 - **`pnpm test:db` läuft trotzdem** (lokales PostgreSQL, kein Docker), das wichtigste Gate — **nicht
-  überspringen.** `pnpm db:start`,
-  `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres` und `pnpm test:db` in
-  **einem** Aufruf; `ECONNREFUSED 127.0.0.1:54329` ist kein Testfehler.
+  überspringen.** `pnpm db:start`, `export TEST_DATABASE_URL=postgresql://postgres@127.0.0.1:54329/postgres`
+  und `pnpm test:db` in **einem** Aufruf; `ECONNREFUSED 127.0.0.1:54329` ist kein Testfehler.
 - `node_modules` und `PLAYWRIGHT_CHROMIUM_EXECUTABLE` setzt `.claude/hooks/session-start.sh`.
 
 ## Harte Regeln
