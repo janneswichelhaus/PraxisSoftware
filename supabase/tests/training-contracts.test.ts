@@ -525,6 +525,56 @@ describe('Widerruf über die Plattform (KND-004)', () => {
     expect(paket[0]!.n).toBe(1);
   });
 
+  it('bleibt nach 14 Tagen in Offene Punkte, bis das Paket entfernt ist (BEF-129, ANN-341)', async () => {
+    const { zugang, vertrag, rel } = await gebucht();
+    await asUserCommitted(users.plattformErika, WIDERRUFEN, [zugang, vertrag]);
+
+    // Frisch widerrufen, Paket besteht.
+    const { rows: frisch } = await asUser<{ contract_id: string; package_open: boolean }>(
+      users.office,
+      OFFEN,
+    );
+    expect(frisch).toEqual([expect.objectContaining({ contract_id: vertrag, package_open: true })]);
+
+    // 20 Tage alt, Paket besteht noch: bleibt.
+    await asPostgres(
+      `update public.training_contracts set withdrawn_at = withdrawn_at - interval '20 days'
+        where id = $1`,
+      [vertrag],
+    );
+    const { rows: alt } = await asUser<{ contract_id: string; package_open: boolean }>(
+      users.ownerTherapist,
+      OFFEN,
+    );
+    expect(alt).toEqual([expect.objectContaining({ contract_id: vertrag, package_open: true })]);
+
+    // Die Praxis entfernt das Paket: abgewickelt, nach 14 Tagen nicht mehr gelistet.
+    const { rows: paket } = await asPostgres<{ id: string }>(
+      'select id from public.training_packages where training_relationship_id = $1',
+      [rel],
+    );
+    await asUserCommitted(users.office, 'select public.delete_training_package($1::uuid)', [
+      paket[0]!.id,
+    ]);
+    expect((await asUser(users.office, OFFEN)).rows).toEqual([]);
+
+    // Innerhalb der 14 Tage steht ein abgewickelter Widerruf weiter da, mit package_open false.
+    await asPostgres(
+      `update public.training_contracts set withdrawn_at = now() - interval '2 days'
+        where id = $1`,
+      [vertrag],
+    );
+    const { rows: erledigt } = await asUser<{ contract_id: string; package_open: boolean }>(
+      users.office,
+      OFFEN,
+    );
+    expect(erledigt).toEqual([
+      expect.objectContaining({ contract_id: vertrag, package_open: false }),
+    ]);
+    // Die Trainingsbetreuung sieht weiter nichts.
+    expect((await asUser(users.trainer, OFFEN)).rows).toEqual([]);
+  });
+
   it('lässt nach dem Ende der Frist nicht mehr widerrufen', async () => {
     const { zugang, vertrag } = await gebucht();
     await asPostgres(

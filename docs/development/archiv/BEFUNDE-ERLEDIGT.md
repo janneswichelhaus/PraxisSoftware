@@ -1053,3 +1053,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Einzel-Story-Loop im kritischen Pfad: Für `status = 'issued'` den Empfänger aus `snapshot -> 'recipient'` lesen, die Suche ebenso; Datenbanktest „Empfänger geändert, Liste zeigt den alten Namen“. Bis dahin sagt die Oberfläche nur, dass das Blatt bleibt.
 
 **Umsetzung (2026-10-11).** Migration `20261027100000_bef_141_empfaenger_aus_snapshot.sql`: `app.invoice_recipient_name` liest bei ausgestellten Rechnungen Name (und in der Rechnungsliste die Art) aus dem Snapshot; die drei Listen und die Suche nutzen sie. Der Name der Person bleibt der heutige (ANN-339). Test in `supabase/tests/invoices.test.ts`, Gegenprobe ohne Migration rot; der Hinweis am Empfängerformular sagt jetzt, dass auch die Listen den alten Empfänger behalten.
+
+### BEF-129 — Ein widerrufener Trainingsvertrag fällt nach 14 Tagen aus Offene Punkte, auch wenn nichts abgewickelt ist
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-07 |
+| Bereich | Training, Angebote |
+| Quelle  | Zweitreview KND-EPIC-001 (Hinweis H5), am Code belegt |
+| Status  | erledigt 2026-10-11 (BEF-129, Einzel-Story-Loop) |
+| Berührt | `public.list_platform_training_withdrawals` in `supabase/migrations/20261016140000_knd_004_training_withdrawal.sql`; ANN-290 |
+
+**Beobachtung.** Nach einem Widerruf bleiben Paket, Leistung und Zugang zum Training bestehen (ANN-290). Offene Punkte zeigt den Widerruf 14 Tage lang; danach steht er nur noch am Trainingsverhältnis („Bitte Paket und Zahlung abwickeln“). Wird er übersehen, kann das Paket trotz Widerruf abgerechnet werden.
+
+**Erwartet.** Jannes entscheidet, ob ein Widerruf in Offene Punkte bleibt, bis das Paket entfernt oder storniert ist (Bedingung statt 14 Tage), oder ob der Monatsentwurf des Trainings ein Paket mit Widerruf sperrt. Einzel-Story-Loop.
+
+**Umsetzung (2026-10-11).** Bedingung statt 14 Tage – der Widerruf bleibt, bis das Paket entfernt ist, mindestens 14 Tage; jede Zeile sagt, ob das Paket noch besteht (ANN-341, Migration `20261028100000`).
