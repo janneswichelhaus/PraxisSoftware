@@ -510,56 +510,28 @@ describe('Übersicht', () => {
   });
 
   /**
-   * Die Kennzeichnung „Vorschau" am Aufklapper ist am 2026-09-22 gefallen. Was
-   * bleibt, ist die Reihenfolge aus UX-001: Der echte Teil des Tages steht
-   * davor, der Rest zugeklappt dahinter — das war nie eine Kennzeichnung,
-   * sondern die Rangfolge auf dem Bildschirm.
+   * BEF-140 (Jannes, 2026-10-10): Der Aufklapper „Organisatorisches und
+   * Kommunikation" am Ende der Übersicht ist weggefallen. Er trug nur
+   * Vorschaudaten; „Panne melden" bleibt im Fuhrpark erreichbar
+   * (`BreakdownPage.test.tsx`).
    */
-  it('haelt den noch nicht angebundenen Teil zusammengefaltet', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-
-    const ueberschrift = await screen.findByRole('heading', {
-      name: 'Organisatorisches und Kommunikation',
-    });
-    expect(ueberschrift).toBeInTheDocument();
-    expect(ueberschrift.closest('details')).not.toHaveAttribute('open');
-    // Hinter dem eigenen Tag und dem Plan des Teams.
-    expect(
-      screen
-        .getByRole('heading', { name: 'Tagesplan des Teams' })
-        .compareDocumentPosition(ueberschrift) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
-  });
-
-  it('benennt die Demoperson, der die Vorschaudaten gehoeren', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
-    expect(screen.getByText(/zur Rolle passend gewählt/)).toBeInTheDocument();
-  });
+  it.each([['therapist'], ['team_lead'], ['office']] as const)(
+    'zeigt %s keinen Aufklapper „Organisatorisches und Kommunikation" mehr (BEF-140)',
+    async (rolle) => {
+      renderMitVorschau(<MyDayPage user={testUser([rolle])} />);
+      await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
+      expect(
+        screen.queryByRole('heading', { name: 'Organisatorisches und Kommunikation' }),
+      ).toBeNull();
+      expect(screen.queryByRole('link', { name: 'Panne melden' })).toBeNull();
+      expect(screen.queryByText('Zu entscheiden')).toBeNull();
+    },
+  );
 
   it('zeigt keine geschaetzten Wegzeiten mehr - die Wege sind seit MAP-006 echt', async () => {
     renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
+    await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
     expect(screen.queryByText(/Wegzeiten sind geschätzt/)).toBeNull();
-  });
-
-  it('bietet den schnellen Weg zur Pannenmeldung', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    expect(await screen.findByRole('link', { name: 'Panne melden' })).toHaveAttribute(
-      'href',
-      '/betrieb/flotte/panne',
-    );
-  });
-
-  it('zeigt Leitungsrollen ihre Freigabeaufgaben', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['team_lead'])} />);
-    expect(await screen.findByText('Zu entscheiden')).toBeInTheDocument();
-  });
-
-  it('zeigt einer behandelnden Rolle keine Freigabeaufgaben', async () => {
-    renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
-    await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
-    expect(screen.queryByText('Zu entscheiden')).toBeNull();
   });
 
   it('zeigt einem Patientenkonto weder Termine noch Betriebsbereiche', async () => {
@@ -1078,7 +1050,7 @@ describe('Übersicht', () => {
       ]);
       renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       await findeKarte();
-      await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
+      await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
       expect(fetchDayRoute).not.toHaveBeenCalled();
       expect(fetchStandorte).not.toHaveBeenCalled();
       expect(rufeFunktionAuf).not.toHaveBeenCalled();
@@ -1399,23 +1371,20 @@ describe('Übersicht', () => {
     it('zeigt an jedem Aufklapper der Übersicht ein Aufklappzeichen (UEB-03, UIK-07)', async () => {
       const { container } = renderMitVorschau(<MyDayPage user={testUser(['therapist'])} />);
       await findeKarte();
-      await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
+      await screen.findByRole('heading', { name: 'Tagesplan des Teams' });
 
       const koepfe = [...container.querySelectorAll('summary')];
-      // Teamplan, Tagesroute, Organisatorisches - „Weitere offene" und
-      // „Erledigt" hat der Zeitstrahl ersetzt.
-      expect(koepfe).toHaveLength(3);
+      // Teamplan und Tagesroute - „Weitere offene" und „Erledigt" hat der
+      // Zeitstrahl ersetzt, „Organisatorisches" ist mit BEF-140 entfallen.
+      expect(koepfe).toHaveLength(2);
       for (const kopf of koepfe) {
         expect(kopf.querySelector('[data-aufklappzeichen]')).not.toBeNull();
         expect(kopf).toHaveClass('min-h-11');
       }
-      // Beide Aufklapp-Überschriften im Label-Stil wie ein Abschnitt (UEB-17):
+      // Die Aufklapp-Überschrift im Label-Stil wie ein Abschnitt (UEB-17):
       // beim Teamplan trägt ihn der Kopf, die Überschrift darin erbt ihn.
       expect(
         screen.getByRole('heading', { name: 'Tagesplan des Teams' }).closest('summary'),
-      ).toHaveClass('tracking-label', 'uppercase');
-      expect(
-        screen.getByRole('heading', { name: 'Organisatorisches und Kommunikation' }),
       ).toHaveClass('tracking-label', 'uppercase');
     });
 
@@ -1444,26 +1413,6 @@ describe('Übersicht', () => {
         'href',
         `/kalender?termin=t2&zurueck=${encodeURIComponent('/')}`,
       );
-    });
-
-    it('gibt den Karten der Vorschau Textlinks mit Tippziel und richtigen Zielen (UEB-18)', async () => {
-      renderMitVorschau(<MyDayPage user={testUser(['team_lead'])} />);
-      await screen.findByRole('heading', { name: 'Organisatorisches und Kommunikation' });
-
-      const panne = screen.getByRole('link', { name: 'Panne melden' });
-      expect(panne).toHaveClass('text-accent', 'min-h-11');
-      expect(panne.className).not.toContain('text-danger');
-      for (const name of ['Zur Radflotte', 'Zum Urlaub', 'Zur Kommunikation']) {
-        expect(screen.getByRole('link', { name })).toHaveClass('min-h-11');
-      }
-      // Erstattungen haben einen eigenen Weg - bisher führte alles zum Urlaub.
-      for (const link of screen.getAllByRole('link', { name: /Erstattungen$/ })) {
-        expect(link).toHaveAttribute('href', '/betrieb/erstattungen');
-      }
-      // Mehrzahl richtig gebildet (UEB-11, WRT-19).
-      expect(screen.queryByText(/Vorgange/)).toBeNull();
-      expect(screen.getByText(/^\d+ Vorg(ang|änge)$/)).toBeInTheDocument();
-      expect(screen.queryByText(/^\d+ offene?$/)).toBeNull();
     });
   });
 

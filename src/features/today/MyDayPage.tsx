@@ -5,13 +5,12 @@ import { BEGRIFFE } from '@/lib/begriffe';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { ButtonLink } from '@/components/ui/ButtonLink';
-import { Aufklappzeichen, Card, CardGrid, Disclosure } from '@/components/ui/Card';
+import { Disclosure } from '@/components/ui/Card';
 import { ListRow, ListRows } from '@/components/ui/ListRow';
 import { ProgressDots } from '@/components/ui/ProgressDots';
 import { Section } from '@/components/ui/Section';
 import { StatusMark } from '@/components/ui/StatusMark';
 import { Textlink } from '@/components/ui/Textlink';
-import { aufklappKopfKlassen } from '@/components/ui/aufklappStile';
 import { mitRueckweg } from '@/lib/rueckweg';
 import { Statusmeldung } from '@/components/ui/Statusmeldung';
 import { Rueckmeldung } from '@/features/appointments/Rueckmeldungen';
@@ -41,8 +40,6 @@ import {
   isStaff,
   type CurrentUser,
 } from '@/features/session/types';
-import { useVorschau } from '@/features/preview/vorschauContext';
-import { vorschauidentitaet, darfEntscheiden } from '@/features/preview/identitaet';
 import { NavigationZumTermin } from '@/features/appointments/NavigationStarten';
 import { fetchAbrechnungslage, positionText } from '@/features/appointments/abrechnungslage-api';
 import { tagePlus } from '@/features/appointments/calendar';
@@ -963,14 +960,6 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         </p>
       ) : null}
 
-      {/* Die Vorschau führt nach Organisatorisches und Kommunikation - Bereiche,
-          die ein reines Trainingskonto nicht hat (TRN-003). */}
-      {isTherapyStaff(user.roles) ? (
-        <div className="nicht-drucken">
-          <UebersichtVorschau user={user} />
-        </div>
-      ) : null}
-
       {/* BEF-052, ANN-021 Fassung 3: Gedruckt wird nur der eigene Tag als
           Liste mit Anschrift und Rufnummer - die Bildschirmansicht trägt sie
           hinter Knöpfen und Aufklappern. */}
@@ -984,154 +973,5 @@ export function MyDayPage({ user }: { user: CurrentUser }) {
         />
       ) : null}
     </div>
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Vorschauteil
-// -----------------------------------------------------------------------------
-
-/**
- * Der Teil der Übersicht, dessen Hintergrundfunktionen noch fehlen.
- *
- * Seit UX-001 zusammengefaltet: Der Tag beginnt mit dem, was echt ist. Die
- * fünf Vorschaukarten standen bisher als erstes im Blickfeld, sobald man die
- * eigene Tagesliste durchgescrollt hatte - auf dem Telefon war die Hälfte der
- * Seite Attrappe. Sie bleiben erreichbar, aber sie drängen sich nicht mehr
- * auf. Die Kennzeichnung „Vorschau" am Aufklapper ist am 2026-09-22 gefallen:
- * Der zugeklappte Block sagt schon durch seine Überschrift, was drin ist.
- *
- * Die Links der Karten sind Textlinks mit 44 px Tippziel (UEB-18, RSP-14,
- * UIK-15). Wo eine Karte Urlaub und Erstattungen zusammen zählt, führt je ein
- * Link zu beiden - vorher landete eine offene Erstattung beim Urlaub.
- */
-function UebersichtVorschau({ user }: { user: CurrentUser }) {
-  const { zustand } = useVorschau();
-  const identitaet = vorschauidentitaet(zustand, user);
-  if (!identitaet) return null;
-
-  const ich = identitaet.person;
-  const meinRad = zustand.raeder.find(
-    (rad) => rad.stammnutzerId === ich.id || rad.aktuellerNutzerId === ich.id,
-  );
-  const meineOffenen =
-    zustand.urlaub.filter(
-      (antrag) => antrag.mitarbeiterId === ich.id && antrag.status === 'beantragt',
-    ).length +
-    zustand.erstattungen.filter(
-      (antrag) =>
-        antrag.mitarbeiterId === ich.id &&
-        (antrag.stand === 'eingereicht' || antrag.stand === 'genehmigt'),
-    ).length;
-  const zuEntscheiden = darfEntscheiden(user)
-    ? zustand.urlaub.filter((antrag) => antrag.status === 'beantragt').length +
-      zustand.erstattungen.filter((antrag) => antrag.stand === 'eingereicht').length
-    : 0;
-  const ungelesen = zustand.nachrichten.filter((nachricht) => !nachricht.gelesen).length;
-  const kartenlink = 'gap-1 text-sm font-medium';
-
-  return (
-    <section className="border-line mt-8 border-t pt-3 lg:max-w-3xl">
-      <details className="group">
-        {/* Die Überschrift bleibt eine Überschrift: `summary` darf nach dem
-            HTML-Inhaltsmodell ein Überschriftenelement enthalten, und nur so
-            steht der Block weiter in der Gliederung, die Vorlesesoftware
-            ansteuert. Gestaltet wie der Tagesplan des Teams (UEB-17). */}
-        <summary className={`${aufklappKopfKlassen} text-ink-muted hover:text-ink`}>
-          <Aufklappzeichen />
-          <h2 className="tracking-label text-xs font-semibold uppercase">
-            Organisatorisches und Kommunikation
-          </h2>
-        </summary>
-
-        {/* „Angezeigt wird der Stand von …" darf hier nicht stehen: Denselben
-            Satzanfang trägt die Altersmeldung der Tagesliste aus UX-011, und
-            zwei gleich beginnende Sätze auf einer Seite lassen sich weder
-            vorlesen noch testen auseinanderhalten. */}
-        {/* Wer über den Namen erkannt ist, braucht den Satz nicht - er steht
-            nur, wenn die Zuordnung über die Rolle geraten ist (UX-005h). */}
-        {identitaet.ueberNamen ? null : (
-          <p className="text-ink-muted mt-4 mb-4 max-w-prose text-sm">
-            Diese Karten gehören zu <strong className="text-ink">{ich.name}</strong> (zur Rolle
-            passend gewählt).
-          </p>
-        )}
-
-        <CardGrid>
-          <Card>
-            <p className="text-ink-muted text-sm">Mein Rad heute</p>
-            <p className="text-ink text-liste mt-1 font-medium">
-              {meinRad ? meinRad.name : 'Kein Rad zugeordnet'}
-            </p>
-            {meinRad ? (
-              <p className="text-ink-muted mt-1 text-sm">
-                {meinRad.schluesselInhaber
-                  ? `Schlüssel bei ${meinRad.schluesselInhaber}`
-                  : 'Schlüssel im Tresor'}
-              </p>
-            ) : null}
-            <div className="mt-2 flex flex-wrap gap-x-4">
-              <Textlink alleinstehend to="/betrieb/flotte" className={kartenlink}>
-                Zur Radflotte
-                <Pfeil />
-              </Textlink>
-              {/* Eine Aktion, keine Störung: Hauptfarbe statt Fehlerfarbe. */}
-              <Textlink alleinstehend to="/betrieb/flotte/panne" className={kartenlink}>
-                Panne melden
-              </Textlink>
-            </div>
-          </Card>
-
-          <Card>
-            <p className="text-ink-muted text-sm">Meine Anträge</p>
-            <p className="text-ink text-liste mt-1 font-medium">
-              {meineOffenen === 0
-                ? 'Nichts offen'
-                : `${meineOffenen} ${meineOffenen === 1 ? 'Antrag' : 'Anträge'} offen`}
-            </p>
-            <div className="mt-2 flex flex-wrap gap-x-4">
-              <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
-                Zum Urlaub
-                <Pfeil />
-              </Textlink>
-              <Textlink alleinstehend to="/betrieb/erstattungen" className={kartenlink}>
-                Zu den Erstattungen
-                <Pfeil />
-              </Textlink>
-            </div>
-          </Card>
-
-          {zuEntscheiden > 0 ? (
-            <Card>
-              <p className="text-ink-muted text-sm">Zu entscheiden</p>
-              <p className="text-ink text-liste mt-1 font-medium">
-                {zuEntscheiden} {zuEntscheiden === 1 ? 'Vorgang' : 'Vorgänge'}
-              </p>
-              <div className="mt-2 flex flex-wrap gap-x-4">
-                <Textlink alleinstehend to="/betrieb/urlaub" className={kartenlink}>
-                  Urlaubsanträge
-                  <Pfeil />
-                </Textlink>
-                <Textlink alleinstehend to="/betrieb/erstattungen" className={kartenlink}>
-                  Erstattungen
-                  <Pfeil />
-                </Textlink>
-              </div>
-            </Card>
-          ) : null}
-
-          <Card>
-            <p className="text-ink-muted text-sm">Kommunikation</p>
-            <p className="text-ink text-liste mt-1 font-medium">
-              {ungelesen === 0 ? 'Nichts Ungelesenes' : `${ungelesen} ungelesen`}
-            </p>
-            <Textlink alleinstehend to="/team" className={`mt-2 ${kartenlink}`}>
-              Zur Kommunikation
-              <Pfeil />
-            </Textlink>
-          </Card>
-        </CardGrid>
-      </details>
-    </section>
   );
 }

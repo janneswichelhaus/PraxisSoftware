@@ -139,6 +139,45 @@ describe('EditPatientPage', () => {
     expect(updatePatient.mock.calls[0]?.[1]).toMatchObject({ email: null, phone: null });
   });
 
+  // BEF-140, ANN-340: kein drittes Telefonfeld mehr - außer, die Akte trägt
+  // schon eine Nummer. Die bleibt beim Speichern erhalten und lässt sich leeren.
+  describe('Telefon (geschäftlich) (BEF-140)', () => {
+    it('bietet das Feld ohne gespeicherte Nummer nicht an', async () => {
+      renderWithProviders(<EditPatientPage />);
+      await formularAbwarten();
+      expect(screen.queryByLabelText('Telefon (geschäftlich)')).toBeNull();
+    });
+
+    it('behaelt eine gespeicherte Nummer beim Speichern', async () => {
+      fetchPatient.mockResolvedValue({ ...bestand, phone_work: '0221 222222' });
+      const user = userEvent.setup();
+      renderWithProviders(<EditPatientPage />);
+      await formularAbwarten();
+
+      expect(screen.getByLabelText('Telefon (geschäftlich)')).toHaveValue('0221 222222');
+      await user.clear(screen.getByLabelText('Ort'));
+      await user.type(screen.getByLabelText('Ort'), 'Bonn');
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      await waitFor(() => expect(updatePatient).toHaveBeenCalledTimes(1));
+      expect(updatePatient.mock.calls[0]?.[1]).toMatchObject({ phone_work: '0221 222222' });
+    });
+
+    it('laesst eine gespeicherte Nummer leeren, ohne dass das Feld verschwindet', async () => {
+      fetchPatient.mockResolvedValue({ ...bestand, phone_work: '0221 222222' });
+      const user = userEvent.setup();
+      renderWithProviders(<EditPatientPage />);
+      await formularAbwarten();
+
+      await user.clear(screen.getByLabelText('Telefon (geschäftlich)'));
+      expect(screen.getByLabelText('Telefon (geschäftlich)')).toHaveValue('');
+      await user.click(screen.getByRole('button', { name: 'Änderungen speichern' }));
+
+      await waitFor(() => expect(updatePatient).toHaveBeenCalledTimes(1));
+      expect(updatePatient.mock.calls[0]?.[1]).toMatchObject({ phone_work: null });
+    });
+  });
+
   it('haelt fehlende Pflichtangaben im Formular auf', async () => {
     const user = userEvent.setup();
     renderWithProviders(<EditPatientPage />);
