@@ -589,16 +589,17 @@ eingeklappt.
 
 **Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.
 
-### BEF-144 — Die Auskunft aus der Akte nennt keine Terminwünsche der Plattform
+### BEF-145 — Der Vollständigkeitstest der Auskunft sieht nur zwei Datenklassen
 
 |         |   |
 | ------- | - |
 | Datum   | 2026-10-11 |
-| Bereich | Datenschutz: Auskunft (Art. 15), Plattform |
-| Quelle  | Zweitreview BEF-131 (Hinweis H5), am Code belegt |
+| Bereich | Datenschutz: Auskunft (Art. 15) |
+| Quelle  | Zweitreview BEF-144 (Hinweis H1), am Code belegt |
 | Status  | offen |
-| Berührt | `public.export_patient_record` (zuletzt `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`), `public.platform_appointment_requests` (POR-009) |
+| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle der Akte aus dem Aufbewahrungsplan“), `public.retention_assignments` |
 
-**Beobachtung.** `export_patient_record` liefert seit KOM-004 die Rückfragen der Plattform, aber keine Terminwünsche (`platform_appointment_requests`). Die Auskunft über die Plattform (`platform_export`) nennt sie; die Auskunft, die die Praxis aus der Akte zieht, nicht. Vorbestehend, nicht durch BEF-131 entstanden.
+**Beobachtung.** Der Test hält die Auskunft nur gegen die Tabellen der Klassen `patientenakte` und `personenstammdaten`. `platform_appointment_requests` trägt die Klasse `terminwunsch` und fehlte deshalb unbemerkt in der Kopie (BEF-144); eine künftige patientenbezogene Tabelle mit eigener Klasse fiele wieder durch.
 
-**Erwartet.** `platform_appointment_requests` der Akte in `export_patient_record` (Tage, Tageszeiten, Notiz, Zustand, Antwort), ein Test in der Auskunftsdatei. Einzel-Story-Loop.
+**Erwartet.** Der Test nimmt jede Tabelle des Aufbewahrungsplans, die eine `patient_id` trägt, gleich welcher Klasse; was bewusst fehlt, steht mit Grund in `BEWUSST_AUSSEN`. Nur Test, ein Einzel-Story-Loop; zeigt er weitere Lücken, kommen sie in denselben Loop.
+

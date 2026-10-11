@@ -1133,3 +1133,20 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Die Zahl der Positionen ausgestellter Rechnungen aus dem Snapshot lesen (wie den Empfänger seit BEF-141), und ein Storno ohne verbleibende Leistung nicht mehr als wartende Korrektur führen. Einzel-Story-Loop.
 
 **Umsetzung (2026-10-11).** `list_invoices` zählt an ausgestellten Rechnungen (storniert eingeschlossen) die Positionen aus `snapshot -> 'items'`, der Entwurf weiter live. Die Auswahl der Korrektur steht unverändert in `app.correction_draft_services`; `get_invoice` liefert daraus `correction_pending` – wahr nur, wenn die stornierte Rechnung keine Korrektur hat und die Korrektur eine Zeile hätte. Die Detailseite bietet „Korrekturrechnung erstellen“ nur dann an und sagt sonst „Von ihren Leistungen ist keine mehr abzurechnen – eine Korrekturrechnung braucht es nicht.“ Kommt eine Leistung derselben Klammer nach, wartet das Storno wieder (ANN-077). Migration `20261101100000`, sechs Tests in `invoice-cancellations.test.ts` (Gegenprobe ohne Migration rot), Prüfseite `terminhonorar.html?seite=storniert`, Sichtung [UX-Review](../../sichtung/ux-review.md) Schritt 11.
+
+### BEF-144 — Die Auskunft aus der Akte nennt keine Terminwünsche der Plattform
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Datenschutz: Auskunft (Art. 15), Plattform |
+| Quelle  | Zweitreview BEF-131 (Hinweis H5), am Code belegt |
+| Status  | erledigt in BEF-144 (2026-10-11) |
+| Berührt | `public.export_patient_record` (zuletzt `supabase/migrations/20261020120000_kom_004_messages_in_record.sql`), `public.platform_appointment_requests` (POR-009) |
+
+**Beobachtung.** `export_patient_record` liefert seit KOM-004 die Rückfragen der Plattform, aber keine Terminwünsche (`platform_appointment_requests`). Die Auskunft über die Plattform (`platform_export`) nennt sie; die Auskunft, die die Praxis aus der Akte zieht, nicht. Vorbestehend, nicht durch BEF-131 entstanden.
+
+**Erwartet.** `platform_appointment_requests` der Akte in `export_patient_record` (Tage, Tageszeiten, Notiz, Zustand, Antwort), ein Test in der Auskunftsdatei. Einzel-Story-Loop.
+
+**Umsetzung (2026-10-11).** `export_patient_record` liefert den Abschnitt `platform_appointment_requests`: offene und beantwortete Wünsche der Akte mit Art, Termin, Tagen, Tageszeiten, Notiz, Zustand, Zeitpunkten, Antwort und Ergebnistermin, dazu wer gewünscht hat (Person oder Vertretung mit Namen, wie die Praxisliste aus POR-011); keine Kennung von Wunsch, Zugang oder Konto, Wünsche eines Trainingsverhältnisses nicht (ADR-021). Beschriftung in `src/features/datenschutz/kategorien.ts`, Test in `betroffenenrechte.test.ts`, Migration `20261102100000`, Gegenprobe ohne Migration rot. Daneben (Hinweis Zweitreview BEF-132): `close_platform_message_by_practice` und `close_platform_message` sperren den Vorgang vor der Zustandsprüfung; ein zweites gleichzeitiges Erledigen endet mit 22023, der erste Vermerk bleibt (Migration `20261102110000`, zwei Tests in `practice-messages.test.ts`, Gegenprobe rot). Der Vollständigkeitstest der Auskunft sah die Lücke nicht – BEF-145.
+
