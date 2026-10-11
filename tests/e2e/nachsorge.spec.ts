@@ -57,6 +57,10 @@ test.describe('Nachsorge-Abo', () => {
 
       await page.goto(`${PRUEFSEITE}?seite=offen`);
       await expect(page.getByText('Nachsorge-Abo gekündigt (1)', { exact: false })).toBeVisible();
+      // BEF-129 (ANN-341): Der Widerruf sagt, ob das Paket noch besteht.
+      await expect(page.getByText('Trainingsvertrag widerrufen (2)')).toBeVisible();
+      await expect(page.getByText('Paket besteht noch')).toBeVisible();
+      await expect(page.getByText('Paket entfernt', { exact: true })).toBeVisible();
       expect(await ueberlaeuft(page)).toBe(false);
     });
 

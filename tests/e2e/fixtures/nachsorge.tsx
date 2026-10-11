@@ -16,6 +16,8 @@ import { ServicesPage } from '@/features/billing/ServicesPage';
 import { rechnungsansicht } from '@/features/billing/testdaten';
 import { AftercareCancellations } from '@/features/open-points/AftercareCancellations';
 import { ABO_KUENDIGUNGEN_KEY } from '@/features/open-points/aftercare-cancellations-api';
+import { TrainingWithdrawals } from '@/features/open-points/TrainingWithdrawals';
+import { TRAININGSWIDERRUFE_KEY } from '@/features/open-points/training-withdrawals-api';
 import '@/index.css';
 
 /**
@@ -25,7 +27,8 @@ import '@/index.css';
  * `?seite=anlegen` (Versorgung abgeschlossen, noch kein Abo),
  * `?seite=leistungen` (fällige Abo-Monate und ein erfasster),
  * `?seite=blatt` (Rechnung über einen Abo-Monat mit Zeitraum und Steuer) und
- * `?seite=offen` (Kündigung über die Plattform in Offene Punkte). Die Daten
+ * `?seite=offen` (Kündigung über die Plattform und Widerrufe des
+ * Trainingsvertrags mit und ohne Paket in Offene Punkte, BEF-129). Die Daten
  * liegen vorab im Cache; gesprochen wird mit keinem Server. Alles ist
  * synthetisch.
  */
@@ -141,6 +144,30 @@ client.setQueryData(ABO_KUENDIGUNGEN_KEY, [
     cancelled_representative_name: null,
   },
 ]);
+client.setQueryData(TRAININGSWIDERRUFE_KEY, [
+  {
+    contract_id: 'w1',
+    training_relationship_id: 't1',
+    given_name: 'Max',
+    family_name: 'Mustermann',
+    withdrawn_on: '2026-09-08',
+    package_label: 'Trainingspaket 3 Monate',
+    withdrawn_access_kind: 'self',
+    withdrawn_representative_name: null,
+    package_open: true,
+  },
+  {
+    contract_id: 'w2',
+    training_relationship_id: 't2',
+    given_name: 'Tina',
+    family_name: 'Training',
+    withdrawn_on: '2026-10-05',
+    package_label: 'Trainingspaket 6 Monate',
+    withdrawn_access_kind: 'legal_representative',
+    withdrawn_representative_name: 'Bernd Betreuer',
+    package_open: false,
+  },
+]);
 client.setQueryData(
   ['rechnung', RECHNUNG],
   rechnungsansicht(
@@ -214,7 +241,15 @@ const router = createMemoryRouter(
     },
     { path: '/abrechnung/leistungen', element: rahmen(<ServicesPage />) },
     { path: '/abrechnung/rechnungen/:invoiceId/blatt', element: <InvoicePrintPage /> },
-    { path: '/offen', element: rahmen(<AftercareCancellations />) },
+    {
+      path: '/offen',
+      element: rahmen(
+        <>
+          <AftercareCancellations />
+          <TrainingWithdrawals />
+        </>,
+      ),
+    },
     { path: '*', element: rahmen(<p>Ende der Prüfseite.</p>) },
   ],
   { initialEntries: [start] },
