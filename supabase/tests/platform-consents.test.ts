@@ -84,6 +84,8 @@ describe('Einwilligungen in der Behandlung über die Plattform (POR-016)', () =>
       ['email_contact', 'open'],
       ['prescriber_report', 'open'],
       ['patient_photos', 'open'],
+      // KOM-005: Fotos und Videos an Rückfragen (ADR-017 Punkt 61).
+      ['message_attachments', 'open'],
     ]);
 
     await schreiben(users.plattformErika, ERIKA, 'email_contact', true);
@@ -359,6 +361,7 @@ describe('Einwilligung im Training (POR-017)', () => {
   it('die Kundin erteilt und widerruft; das Training liest den Stand, die Behandlung nicht', async () => {
     expect((await stand(users.plattformTina, TINA)).map((s) => [s.purpose, s.state])).toEqual([
       ['training_health_data', 'open'],
+      ['message_attachments', 'open'],
     ]);
     await schreiben(users.plattformTina, TINA, 'training_health_data', true);
     expect((await stand(users.plattformTina, TINA))[0]).toEqual(
@@ -415,6 +418,7 @@ describe('Einwilligung im Training (POR-017)', () => {
       true,
     );
     expect((await stand(users.plattformErika, ERIKA)).map((s) => s.state)).toEqual([
+      'open',
       'open',
       'open',
       'open',

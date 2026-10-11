@@ -154,6 +154,9 @@ describe('Schema-Invarianten', () => {
       // KOM-001: Rückfragen über die Plattform und ihre Einträge.
       'platform_messages',
       'platform_message_entries',
+      // KOM-005: Foto und Video an der Rückfrage, einmalige Lesefreigaben.
+      'platform_message_attachments',
+      'message_attachment_access_grants',
     ];
     const { rows } = await asPostgres<{ table_name: string }>(
       `select c.table_name

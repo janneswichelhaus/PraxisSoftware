@@ -587,7 +587,13 @@ export async function ladeDokumentHerunter(zugangId: string, dokumentId: string)
 // -----------------------------------------------------------------------------
 
 const einwilligungSchema = z.object({
-  purpose: z.enum(['email_contact', 'prescriber_report', 'patient_photos', 'training_health_data']),
+  purpose: z.enum([
+    'email_contact',
+    'prescriber_report',
+    'patient_photos',
+    'training_health_data',
+    'message_attachments',
+  ]),
   /** open: noch nie etwas; refused: in der Praxis abgelehnt (ADR-017 Punkt 35). */
   state: z.enum(['open', 'granted', 'withdrawn', 'refused']),
   occurred_on: z.string().nullable(),

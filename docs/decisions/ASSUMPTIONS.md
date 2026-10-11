@@ -4022,3 +4022,87 @@ Datenschutz · entschieden (Claude) · 2026-10-10 · Claude (SEC-EPIC-002, Zweit
 
 **Änderungspfad.** Eigenes Merkmal statt Auditlog: Spalte am Profil, von `request_staff_password_reset` gesetzt · Aufwand `klein`. Ganz ohne Mail-Anmeldung: STAFF-005 mit Einladungscode wie bei der Plattform · Aufwand `mittel`.
 
+
+### ANN-332 — Anhänge an Rückfragen: Stufe 2 heißt laufendes Nachsorge-Abo, Frist 30 Tage
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 59 und 65) · Prüfpaket · Wiedervorlage: B2, DSFA (G14)
+
+**Annahme.** Foto und Video an einer Rückfrage sind im Training immer vorgesehen und in der Behandlung nur, solange ein Nachsorge-Abo läuft: sein Beginn ist erreicht und sein Ende nicht überschritten. Während der Behandlung ohne Abo (Stufe 1) gibt es keine Anhänge. Die Klasse `rueckfrageanhang` hält 30 Tage ab der Aufnahme; ein abgelaufener Anhang ist ab dann unsichtbar, auch wenn der Lauf ihn erst nachts löscht.
+
+**Begründung.** ADR-017 Punkt 59 und §4.6 nennen Rückfragen mit Foto oder Video als Teil des Abos, nicht der Behandlung; das Datenmodell kennt Stufe 2 nur als Abo (`aftercare_subscriptions`). Ein gekündigtes Abo läuft bis zu seinem Ende, danach beginnt die Lesefrist (ANN-274) – Anhängen ist dann ohnehin kein Schreibweg mehr. Die 30 Tage sind die interne Initialfrist aus Punkt 65 (ADR-008).
+
+**Anker.** `app.message_attachments_offered` und die Klasse `rueckfrageanhang` in `supabase/migrations/20261026100000_kom_005_message_attachments.sql`; `app.message_attachment_visible` ebendort; Tests in `supabase/tests/message-attachments.test.ts`.
+
+**Änderungspfad.** Anhänge auch während der Behandlung: ein Zweig in `app.message_attachments_offered` · Aufwand `klein`. Andere Frist: Intervall der Klassenzeile · Aufwand `klein`.
+
+### ANN-333 — Einwilligung zu Anhängen: eigener Zweck, beim ersten Anhängen angeboten, Widerruf auch vom Papier
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkt 61) · Prüfpaket · Wiedervorlage: B2 (Wortlaut)
+
+**Annahme.** Die Einwilligung ist der Zweck `message_attachments` in `patient_privacy_records` (Behandlung) und `training_consent_records` (Training). Die Plattform bietet sie an, wenn die Person zum ersten Mal etwas anhängen will; unter „Ich“ und in der Akte steht sie nur, wenn sie erteilt ist – zum Widerruf. Die Praxis erteilt sie nicht vom Papier und vermerkt keine Ablehnung; einen Widerruf vom Papier vermerkt sie in der Akte, und er löscht wie der auf der Plattform. Die Fassung der Texte bleibt `2026-10`: Ein Zweck kam hinzu, kein Text hat sich geändert.
+
+**Begründung.** Punkt 61 verlangt eine eigene, ausdrückliche Einwilligung ohne Sammelerklärung und „erteilt und widerrufen auf der Plattform wie POR-016“. Ein Widerruf muss so einfach sein wie die Erteilung und darf nicht an einem Kanal scheitern (Art. 7 Abs. 3 DSGVO); deshalb nimmt die Akte ihn an. Im Training vermerkt die Praxis bisher nur Gesundheitsangaben vom Papier (POR-017); der Widerruf zu Anhängen geht dort über die Plattform. Unsicher: ob B2 einen Widerruf vom Papier im Training verlangt.
+
+**Anker.** `public.record_patient_privacy_entry` und `public.record_platform_consent` in `supabase/migrations/20261026110000_kom_005b_attachment_projections.sql`; `einwilligungAngeboten` in `src/lib/einwilligung.ts`; Wortlaut in `src/features/platform/einwilligungstexte.ts`.
+
+**Änderungspfad.** Widerruf vom Papier auch im Training: ein Zweig in `record_training_consent_entry` · Aufwand `klein`. Anderer Wortlaut: Text und Fassung an beiden Stellen · Aufwand `klein`.
+
+### ANN-334 — Anhänge: kein neues Auditereignis, auch nicht beim Verwerfen nach Befund
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 52 und 67, ADR-010 Fassung 3) · Prüfpaket · Wiedervorlage: B2, OPS-001 (Prüfung am Server scharf)
+
+**Annahme.** Öffnen, Anhängen, Löschen und Verwerfen eines Anhangs schreiben keinen Auditeintrag. Nachweis ist das Datenmodell: Zeile mit Zugang und Art, Löschjournal (`rueckfrageanhang`) und Löschauftrag mit `ordered_by`. Verwirft die Prüfung am Server einen Anhang, erfährt die Person es aus der Antwort; ein Ereignis wie `patient_file.verification_failed` gibt es dafür nicht.
+
+**Begründung.** Punkt 67 sagt ausdrücklich „protokolliert wird nichts Neues“. Neue Protokollierung braucht eine Änderung von ADR-010 und Jannes’ Freigabe (`CLAUDE.md`); Punkt 52 nennt den Auditeintrag für Dateien der Akte, bei denen es ihn schon gibt. Ein verworfener Anhang ist eine Aufnahme der Person selbst, die sie sofort wiederholen kann.
+
+**Anker.** `public.record_message_attachment_verification` in `supabase/migrations/20261026100000_kom_005_message_attachments.sql`; Test „Prüfung am Server“ in `supabase/tests/message-attachments.test.ts`.
+
+**Änderungspfad.** Ereignis `message_attachment.verification_failed`: ADR-010-Änderung mit Freigabe, eine Zeile in der Funktion und im Katalog · Aufwand `klein`.
+
+### ANN-335 — Anhänge unter Legal Hold: gesperrt statt gelöscht, im Training kein Hold
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 24, 36, 61, 65, 67) · Prüfpaket · Wiedervorlage: B2
+
+**Annahme.** Steht auf der Akte ein Legal Hold, löschen weder Frist noch Widerruf noch das Löschen durch Person oder Praxis einen Anhang: Er wird gesperrt (`locked_at`), ist für niemanden mehr sichtbar oder abrufbar und fällt im ersten Lauf nach dem Ende des Holds. Im Training gibt es keinen Hold, wie für das Trainingsverhältnis selbst.
+
+**Begründung.** Punkt 65 („ein Legal Hold hält an“) und Punkt 36 sinngemäß (Punkt 61): Art. 17 Abs. 3 lit. e DSGVO geht der Löschung vor, und die Sperre erfüllt die Einschränkung nach Art. 18. Löschsperren stehen heute auf Patientenebene (ANN-033).
+
+**Anker.** `app.remove_message_attachments` in `supabase/migrations/20261026100000_kom_005_message_attachments.sql`; Test „unter Legal Hold gesperrt“ in `supabase/tests/message-attachments.test.ts`.
+
+**Änderungspfad.** Ein Hold soll Anhänge nicht erfassen: Bedingung `gehalten` in derselben Funktion · Aufwand `klein`.
+
+### ANN-336 — Video: nur Bild, 30 Sekunden, begrenzte Bitrate, Containerangaben auf dem Gerät geleert
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 62 bis 64) · Prüfpaket · Wiedervorlage: Sichtung am iPhone, B2
+
+**Annahme.** Der Aufnahmedialog nimmt mit `MediaRecorder` nur Bild auf, bricht nach 30 Sekunden selbst ab und begrenzt die Videobitrate auf 2 Mbit/s (rund 7,5 MB für 30 Sekunden). Bevor ein Video das Gerät verlässt, leert die Anwendung die Programmangaben eines WebM (`MuxingApp`, `WritingApp`, Datum) mit Nullbytes gleicher Länge und setzt in einem MP4 die Zeitstempel von `mvhd`, `tkhd` und `mdhd` auf null und macht aus `udta` und `meta` einen `free`-Block gleicher Größe. Die Dauer meldet das Gerät; der Server prüft Signatur, Prüfsumme, Tonspur und diese Angaben, nicht die Dauer.
+
+**Begründung.** Punkt 64 verlangt, Zeit- und Programmangaben des Containers zu prüfen und auf dem Gerät zu leeren. Chromium schreibt „Chrome“ als Programm in den WebM-Kopf, Safari Zeitstempel in den MP4-Kopf. Auffüllen mit Nullbytes und Umbenennen in `free` sind in beiden Formaten zulässig und lassen alle Längen und Verweise unverändert – kein Neukodieren. Unsicher: welche Kästen Safari am iPhone tatsächlich schreibt; das prüft die Sichtung.
+
+**Anker.** `src/features/messages/videometadaten.ts` und die Prüfung in `supabase/functions/patient-file-verify/video.ts`; Aufnahme in `src/features/platform/Videodialog.tsx`.
+
+**Änderungspfad.** Weitere Angaben leeren: eine Regel an beiden Stellen · Aufwand `klein`. Dauer am Server prüfen: Containerauswertung in der Function · Aufwand `mittel`.
+
+### ANN-337 — Prüfung am Server für Anhänge: derselbe Schalter wie für die Akte, Virenprüfung eigener Schalter
+
+Technik · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkte 49 bis 51 und 69) · erledigt · Wiedervorlage: OPS-001, ADR zum Prüfer
+
+**Annahme.** Ob ein Anhang erst mit dem Ergebnis der Prüfung am Inhalt `ready` wird, entscheidet derselbe Schalter wie bei den Dateien der Akte (`app.patient_file_verification_required`), weil beide an derselben Freigabe der Edge Runtime hängen (OPS-001). Die Virenprüfung hat den eigenen Schalter `app.message_attachment_scan_required` (Punkt 69). Die Prüfung läuft in derselben Function `patient-file-verify` mit einem zweiten Eingang (`attachment_id`).
+
+**Begründung.** Punkt 51 verlangt einen benannten Schalter an genau einer Stelle; zwei Schalter für dieselbe Bedingung wären zwei Stellen. Eine zweite Function hätte einen zweiten Dienstschlüssel und eine zweite Einrichtung gebraucht.
+
+**Anker.** `public.confirm_message_attachment_upload` in `supabase/migrations/20261026100000_kom_005_message_attachments.sql`; `supabase/functions/patient-file-verify/handler.ts`.
+
+**Änderungspfad.** Eigener Schalter für Anhänge: eine Funktion und eine Zeile in der Bestätigung · Aufwand `klein`.
+
+### ANN-338 — Zeitmarke: eine Sekunde in einem Video desselben Vorgangs
+
+Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR-017 Punkt 68) · erledigt · Wiedervorlage: Sichtung
+
+**Annahme.** Eine Antwort der Praxis kann auf genau eine ganze Sekunde in genau einem Video dieses Vorgangs zeigen, innerhalb seiner Dauer. Auf der Plattform steht sie als Knopf „Im Video bei 0:07 ansehen“, der das Video öffnet und dorthin springt. Fällt das Video nach seiner Frist, bleibt die Antwort mit „bei 0:07“ stehen, der Knopf fällt weg.
+
+**Begründung.** Punkt 68 erlaubt die Zeitmarke und nichts darüber hinaus; ganze Sekunden reichen bei 30 Sekunden Länge. Ein Eintrag ist unveränderlich (ANN-308); nur der Verweis auf das Video darf mit ihm fallen.
+
+**Anker.** Spalten `attachment_id` und `attachment_mark_seconds` an `platform_message_entries` und `public.answer_platform_message` in den Migrationen von KOM-005; `src/features/platform/Anhaenge.tsx`.
+
+**Änderungspfad.** Bruchteile von Sekunden oder mehrere Marken je Antwort: Spaltentyp bzw. eigene Tabelle · Aufwand `mittel`.

@@ -20,8 +20,8 @@
 export const EINWILLIGUNGSFASSUNG = '2026-10';
 
 export const PLATTFORM_ZWECKE = {
-  treatment: ['email_contact', 'prescriber_report', 'patient_photos'],
-  training: ['training_health_data'],
+  treatment: ['email_contact', 'prescriber_report', 'patient_photos', 'message_attachments'],
+  training: ['training_health_data', 'message_attachments'],
 } as const;
 
 export type Plattformzweck =
@@ -56,6 +56,16 @@ export const EINWILLIGUNGSTEXTE: Record<Plattformzweck, Einwilligungstext> = {
       'einer Schwellung. Die Fotos dienen dem Vergleich im Verlauf. Sie werden nicht ' +
       'weitergegeben und spätestens nach zwölf Monaten gelöscht.',
     widerruf: 'Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.',
+  },
+  // KOM-005 (ADR-017 Punkte 61 bis 67, ANN-333): angeboten, wenn die Person
+  // zum ersten Mal etwas an eine Frage hängen will.
+  message_attachments: {
+    titel: 'Fotos und Videos an Ihren Fragen',
+    text:
+      'Sie dürfen an eine Frage an die Praxis ein Foto oder ein kurzes Video ohne Ton hängen, ' +
+      'zum Beispiel von einer Übung. Die Praxis sieht es nur, um Ihre Frage zu beantworten. Es ' +
+      'kommt nicht in Ihre Akte, wird nicht weitergegeben und nach 30 Tagen gelöscht.',
+    widerruf: 'Die Praxis löscht dann sofort alle Fotos und Videos an Ihren Fragen.',
   },
   training_health_data: {
     titel: 'Angaben zur Gesundheit im Training',

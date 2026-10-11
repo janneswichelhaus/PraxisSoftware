@@ -62,6 +62,11 @@ export const DATENKLASSEN: Record<string, DatenklasseTexte> = {
     beschreibung:
       'Fragen über die Plattform und die Antworten der Praxis, die nicht der Akte zugeordnet sind. Drei Jahre ab Ende des Jahres, in dem der Vorgang erledigt oder zuletzt beantwortet wurde; offene bleiben. Der Akte zugeordnete Nachrichten haben die Frist der Akte.',
   },
+  rueckfrageanhang: {
+    label: 'Fotos und Videos an Rückfragen',
+    beschreibung:
+      'Fotos und Videos, die Patient:innen und Kund:innen über die Plattform an ihre Frage hängen. 30 Tage nach der Aufnahme gelöscht, früher mit der Frage und sofort beim Widerruf der Einwilligung. Sie gehen nicht in die Akte.',
+  },
   terminwunsch: {
     label: 'Terminwünsche',
     beschreibung:
