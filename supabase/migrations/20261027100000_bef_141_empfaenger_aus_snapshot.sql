@@ -13,11 +13,14 @@
 -- eingeschlossen), kommen Name und Art des Empfaengers aus
 -- `snapshot -> 'recipient'`; die Suche in `list_invoices` sucht dort. Der
 -- Entwurf liest weiter live - er wird beim Ausstellen aus den Stammdaten
--- gebaut. Die Regel steht einmal in `app.invoice_recipient_name`.
+-- gebaut. Der Name steht in `app.invoice_recipient_name` (drei Listen), die
+-- Art nur in `list_invoices` - die beiden anderen Listen liefern keine.
 --
 -- Bewusst nicht: Der Name der **Person** bleibt in allen drei Listen der
--- heutige (ANN-339). Er dient dem Wiederfinden in der Praxis, nicht dem Beleg;
--- das Blatt traegt den damaligen Namen ohnehin im Snapshot.
+-- heutige (ANN-339). Er dient dem Wiederfinden in der Praxis, nicht dem Beleg.
+-- Geht die Rechnung an die Person selbst (`self`, im Training immer), ist der
+-- Empfaenger der Name von damals - so steht er auf dem Blatt; die Suche
+-- findet die Rechnung dann unter beiden Namen.
 --
 -- Signaturen, Rechte, Reihenfolge und Rechenwege unveraendert (ABR-033);
 -- create or replace genuegt.
