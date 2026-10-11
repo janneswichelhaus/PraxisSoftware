@@ -857,6 +857,70 @@ describe('Dubletten zusammenführen (PRX-017)', () => {
     });
   });
 
+  describe('Terminwünsche der Plattform (BEF-131)', () => {
+    it('ziehen offene wie beantwortete Wünsche zur bleibenden Akte, sonst unverändert', async () => {
+      const ziel = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch' });
+      const quelle = await legeAkteAn({ vorname: 'Wanda', nachname: 'Wunsch-Dublette' });
+      // Der Zugang der Dublette ist schon beendet; der Nachweis bleibt stehen.
+      const zugang = (
+        await asPostgres<{ id: string }>(
+          `insert into public.platform_accesses
+             (organization_id, relationship_kind, relationship_id, patient_id, status,
+              created_by, revoked_at, revoked_by, revoked_reason)
+           values ($1, 'treatment', $2, $2, 'revoked', $3, now(), $3, 'practice')
+           returning id`,
+          [ORG, quelle.patient, users.office],
+        )
+      ).rows[0]!.id;
+      const { rows: wuensche } = await asPostgres<{ id: string; status: string }>(
+        `insert into public.platform_appointment_requests
+           (organization_id, relationship_kind, relationship_id, patient_id, kind,
+            preferred_days, preferred_times, note, status, created_by_access_id, created_by,
+            resolved_at, resolved_by, answer)
+         values
+           ($1, 'treatment', $2, $2, 'new', array[current_date + 3], array['morning'],
+            'Gern vormittags', 'open', $3, $4, null, null, null),
+           ($1, 'treatment', $2, $2, 'new', array[current_date + 5], '{}',
+            null, 'declined', $3, $4, now(), $5, 'Leider voll')
+         returning id, status`,
+        [ORG, quelle.patient, zugang, users.plattformErika, users.office],
+      );
+      const ids = wuensche.map((w) => w.id);
+      const LESEN = `select id, to_jsonb(w) - 'patient_id' - 'relationship_id' as z
+                       from public.platform_appointment_requests w
+                      where id = any($1::uuid[]) order by id`;
+      const vorher = (await asPostgres<{ id: string; z: unknown }>(LESEN, [ids])).rows;
+
+      await zusammenfuehren(quelle.patient, ziel.patient);
+
+      const { rows: bezug } = await asPostgres<{ patient_id: string; relationship_id: string }>(
+        `select patient_id, relationship_id from public.platform_appointment_requests
+          where id = any($1::uuid[])`,
+        [ids],
+      );
+      expect(bezug).toEqual([
+        { patient_id: ziel.patient, relationship_id: ziel.patient },
+        { patient_id: ziel.patient, relationship_id: ziel.patient },
+      ]);
+      expect((await asPostgres(LESEN, [ids])).rows).toEqual(vorher);
+
+      // Das Büro sieht den offenen Wunsch unter der bleibenden Akte.
+      const { rows: offen } = await asUser<{ id: string; patient_id: string; family_name: string }>(
+        users.office,
+        `select id, patient_id, family_name from public.list_platform_appointment_requests('open')
+          where id = any($1::uuid[])`,
+        [ids],
+      );
+      expect(offen).toEqual([
+        {
+          id: wuensche.find((w) => w.status === 'open')!.id,
+          patient_id: ziel.patient,
+          family_name: 'Wunsch',
+        },
+      ]);
+    });
+  });
+
   describe('Nachweis an der bleibenden Akte (ABN-018, BEF-108)', () => {
     it('hinterlaesst einen Vermerk, der mit der Akte lebt und weiterzieht', async () => {
       const ziel = await legeAkteAn({ vorname: 'Nora', nachname: 'Nachweis' });
