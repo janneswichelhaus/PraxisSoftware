@@ -4109,7 +4109,7 @@ Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (KOM-EPIC-002; ADR
 
 ### ANN-339 — Rechnungslisten: Empfänger wie auf der Rechnung, Name der Person von heute
 
-Praxisprozess · entschieden (Claude) · 2026-10-11 · Claude (BEF-141; ADR-009 Punkt 10) · erledigt · Wiedervorlage: Sichtung
+Praxisprozess · entschieden (Jannes) · 2026-10-11 · Jannes (bestätigt 2026-10-11; BEF-141, ADR-009 Punkt 10) · erledigt · Wiedervorlage: —
 
 **Annahme.** In Rechnungsliste, offenen Posten und Zahlungen stehen Name und Art des Empfängers einer ausgestellten (auch stornierten) Rechnung so, wie sie im Snapshot stehen; die Suche findet die Rechnung unter diesem Namen, nicht unter dem geänderten. Der Name der **Person** bleibt in diesen Listen der heutige, damit eine Person nach einer Namensänderung unter ihrem jetzigen Namen auffindbar bleibt; das Blatt trägt ohnehin den damaligen. Geht die Rechnung an die Person selbst (Art „self“, im Training immer), steht als Empfänger ihr Name von damals neben dem heutigen Personennamen, und die Suche findet die Rechnung unter beiden.
 
