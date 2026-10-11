@@ -121,6 +121,8 @@ describe('Datenexport der Plattform (POR-018)', () => {
       'email_contact',
       'prescriber_report',
       'patient_photos',
+      // KOM-005: Fotos und Videos an Rückfragen (ADR-017 Punkt 61).
+      'message_attachments',
     ]);
     // Keine Akte: weder Dokumentation noch Koordinaten noch interne Felder.
     const text = JSON.stringify(daten);
