@@ -40,7 +40,10 @@ const ERLAUBT: readonly RegExp[] = [
   // KOM-007: der Kameradialog und die Bereinigung der Bytes - Bausteine ohne
   // Datenzugriff; das Foto an der Rückfrage entsteht wie in der Praxis nur im
   // eigenen Dialog (ADR-017 Punkte 33, 34, 62).
-  /^@\/features\/files\/(Dateiansicht|Kameradialog|metadaten)$/,
+  /^@\/features\/files\/(Dateiansicht|Kameradialog|kamera|metadaten)$/,
+  // KOM-007: der Videodialog schließt vor der Sitzungssperre wie der
+  // Kameradialog - die Sperre gilt für alle Konten gleich (ADR-025).
+  /^@\/features\/auth\/sitzungssperre\/sperrsicherung$/,
   // UEB-009: das Planblatt und die Dosierung in Worten - Darstellung ohne
   // Datenzugriff (ANN-303); die Pläne kommen über die Plattformprojektion.
   /^@\/features\/exercise-plans\/(Planblatt|dosierung)$/,
@@ -88,6 +91,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
     // POR-007: „Wer für mich Zugang hat" und das Beenden einer Begleitung -
     // beide prüfen den Zugang über app.platform_access_allows.
     expect([...new Set(aufrufe)].sort()).toEqual([
+      'function:patient-file-verify',
       'function:platform-access',
       // KND-003: den Trainingsvertrag im eigenen Konto schließen.
       'rpc:accept_platform_training_offer',
@@ -98,6 +102,11 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:close_platform_message',
       // POR-012: der Befundbogen vorab.
       'rpc:complete_platform_questionnaire_response',
+      // KOM-007: Foto und Video an der eigenen Rückfrage (ADR-017 Abschnitt L);
+      // die Prüfung am Server mit attachment_id (ANN-337).
+      'rpc:confirm_message_attachment_upload',
+      'rpc:delete_platform_message_attachment',
+      'rpc:discard_message_attachment_upload',
       'rpc:discard_platform_questionnaire_response',
       'rpc:end_platform_companion',
       // UEB-010: eine Einheit am eigenen Plan.
@@ -106,6 +115,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:finish_platform_onboarding',
       // POR-014: freigegebene Dokumente und ihr Verweis.
       'rpc:issue_platform_file_link',
+      'rpc:issue_platform_message_attachment_link',
       'rpc:mark_platform_exercise_set',
       // POR-009: die eigenen Wünsche, einen Termin wünschen, zurückziehen.
       // ANG-003: das eigene Nachsorge-Abo.
@@ -134,6 +144,7 @@ describe('Trennung des Plattformcodes (ADR-023 Punkt 26)', () => {
       'rpc:platform_training_offer',
       'rpc:platform_training_offers',
       'rpc:platform_training_packages',
+      'rpc:prepare_message_attachment_upload',
       'rpc:record_platform_consent',
       'rpc:request_platform_appointment',
       // POR-010: Termin ändern oder absagen als Wunsch.
