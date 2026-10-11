@@ -81,7 +81,9 @@ begin
         -- einmal, dass es Anhaenge gibt.
         'attachment_count', case when v_anhang then (
           select count(*)::integer from public.platform_message_attachments x
-          where x.message_id = m.id) end,
+          where x.message_id = m.id
+            and x.locked_at is null
+            and x.created_at + app.retention_interval('rueckfrageanhang') > now()) end,
         'attachments', case when not v_anhang then '[]'::jsonb else coalesce((
           select jsonb_agg(jsonb_build_object(
             'id', x.id,

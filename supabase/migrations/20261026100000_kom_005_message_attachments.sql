@@ -611,7 +611,12 @@ begin
 
   -- Hoechstens drei je Vorgang, auch gleichzeitig: der Vorgang ist gesperrt.
   perform 1 from public.platform_messages m where m.id = v_vorgang.id for update;
-  if (select count(*) from public.platform_message_attachments x where x.message_id = v_vorgang.id)
+  -- Zweitreview H4: gezaehlt wird, was einen Platz belegt - unterwegs oder
+  -- sichtbar; gesperrte und abgelaufene nicht.
+  if (select count(*) from public.platform_message_attachments x
+       where x.message_id = v_vorgang.id
+         and x.locked_at is null
+         and x.created_at + app.retention_interval('rueckfrageanhang') > now())
      >= app.message_attachment_limit() then
     raise exception 'too many attachments' using errcode = '23514';
   end if;
@@ -721,7 +726,14 @@ begin
      where id = v_anhang.id;
   end if;
 
-  update public.platform_messages m set last_entry_at = now() where m.id = v_anhang.message_id;
+  -- Zweitreview S1: Wie ein Nachtrag (KOM-001) ist die Praxis danach wieder
+  -- am Zug; eine neue Frist nur, wenn sie schon geantwortet hatte (ANN-309).
+  update public.platform_messages m
+     set status = 'open',
+         due_on = case when m.status = 'open' then m.due_on
+                       else app.message_due_on(m.organization_id) end,
+         last_entry_at = now()
+   where m.id = v_anhang.message_id;
 
   perform app.log_platform_representation(
     p_access_id, 'platform_representation.read', jsonb_build_object('view', 'message')

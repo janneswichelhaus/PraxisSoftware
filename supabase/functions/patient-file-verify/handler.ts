@@ -95,10 +95,22 @@ export function erstelleHandler({
     const objekt = await instanz.objekt(ankuendigung.wert.bucket_id, ankuendigung.wert.object_key);
     if (!objekt.ok) return ende(502, 'instance_error');
 
-    const ergebnis =
-      art === 'anhang'
-        ? await pruefeAnhang(objekt.wert, ankuendigung.wert)
-        : await pruefeInhalt(objekt.wert, ankuendigung.wert);
+    // Zweitreview S2: Was sich nicht prüfen lässt, besteht nicht - ein
+    // Fehler beim Zerlegen heißt verwerfen, nicht 500 ohne Ergebnis.
+    let ergebnis: Awaited<ReturnType<typeof pruefeInhalt>>;
+    try {
+      ergebnis =
+        art === 'anhang'
+          ? await pruefeAnhang(objekt.wert, ankuendigung.wert)
+          : await pruefeInhalt(objekt.wert, ankuendigung.wert);
+    } catch {
+      ergebnis = {
+        content_type_ok: false,
+        checksum_ok: false,
+        metadata_ok: ankuendigung.wert.mime_type === 'application/pdf' ? null : false,
+        ...(art === 'anhang' ? { no_audio_ok: false } : {}),
+      };
+    }
     const eintrag = await instanz.eintragen(dateiId, ergebnis, art);
     if (!eintrag.ok) return ende(502, 'instance_error');
     return ende(eintrag.wert === 'not_found' ? 404 : 200, eintrag.wert);

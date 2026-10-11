@@ -753,4 +753,178 @@ describe('Foto und Video an einer Rückfrage (KOM-005)', () => {
       ),
     ).toContain('immutable');
   });
+
+  // ---------------------------------------------------------------------------
+  // Aus dem Zweitreview (S1, S3, H4)
+  // ---------------------------------------------------------------------------
+
+  it('ein Anhang an einer beantworteten Frage gibt sie der Praxis zurück (S1)', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    await asUserCommitted(users.trainer, ANTWORTEN, [vorgang, 'Bitte filmen.', null, null]);
+    let { rows } = await asPostgres<{ status: string; due_on: string | null }>(
+      'select status, due_on from public.platform_messages where id = $1',
+      [vorgang],
+    );
+    expect(rows[0]).toEqual({ status: 'answered', due_on: null });
+    await anhaengen(tina, vorgang);
+    ({ rows } = await asPostgres<{ status: string; due_on: string | null }>(
+      'select status, due_on from public.platform_messages where id = $1',
+      [vorgang],
+    ));
+    expect(rows[0]!.status).toBe('open');
+    expect(rows[0]!.due_on).not.toBeNull();
+  });
+
+  it('die Trainingsbetreuung sieht keine Anhänge der Behandlung (§4.8)', async () => {
+    await abo();
+    const vorgang = await fragen(erika);
+    await einwilligen(erika);
+    const v = await anhaengen(erika, vorgang);
+    expect(await code(asUserCommitted(users.trainer, VERWEIS_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(await code(asUserCommitted(users.trainer, LOESCHEN_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(
+      await code(asUserCommitted(users.trainer, ANTWORTEN, [vorgang, 'x', v.attachment_id, 1])),
+    ).toBe('P0002');
+  });
+
+  it('lesen ja, löschen nein: das Büro bei Beschwerden (Punkt 67)', async () => {
+    await abo();
+    const { rows } = await asUserCommitted<{ id: string }>(
+      erika.konto,
+      "select public.start_platform_message($1::uuid, 'complaint', $2, null, null) as id",
+      [erika.zugang, 'Das Knie schmerzt beim Treppensteigen.'],
+    );
+    const vorgang = rows[0]!.id;
+    await einwilligen(erika);
+    const v = await anhaengen(erika, vorgang, 'image/jpeg', null);
+    await asUserCommitted(users.office, VERWEIS_PRAXIS, [v.attachment_id]);
+    expect(
+      await meldung(asUserCommitted(users.office, LOESCHEN_PRAXIS, [v.attachment_id])),
+    ).toContain('not allowed to delete');
+  });
+
+  it('Plattformkonten rufen keine Praxiswege, Praxiskonten keine Plattformwege', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await anhaengen(tina, vorgang);
+    expect(await code(asUserCommitted(tina.konto, VERWEIS_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(await code(asUserCommitted(tina.konto, LOESCHEN_PRAXIS, [v.attachment_id]))).toBe(
+      '42501',
+    );
+    expect(await code(asUser(tina.konto, PRAXIS, [vorgang]))).toBe('42501');
+    expect(
+      await code(asUserCommitted(users.trainer, VERWEIS_PLATTFORM, [tina.zugang, v.attachment_id])),
+    ).toBe('42501');
+    expect(
+      await code(
+        asUserCommitted(users.trainer, LOESCHEN_PLATTFORM, [tina.zugang, v.attachment_id]),
+      ),
+    ).toBe('42501');
+    const offen = await vorbereiten(tina, vorgang, 'image/jpeg', null);
+    expect(
+      await code(asUserCommitted(users.trainer, BESTAETIGEN, [tina.zugang, offen.attachment_id])),
+    ).toBe('42501');
+    expect(
+      await code(
+        asUserCommitted(
+          users.trainer,
+          'select public.discard_message_attachment_upload($1::uuid, $2::uuid)',
+          [tina.zugang, offen.attachment_id],
+        ),
+      ),
+    ).toBe('42501');
+  });
+
+  it('die rechtliche Vertretung hängt an, mit ihrem Namen; die Person sieht es', async () => {
+    await abo();
+    const BERND = 'cafecafe-cafe-4afe-8afe-0000000000e1';
+    const KONTO = '99999999-9999-4999-8999-0000000000e1';
+    await asPostgres(
+      `insert into auth.users (id, aud, role, email) values ($1, 'authenticated', 'authenticated', 'bernd.anhang@patient.invalid')`,
+      [KONTO],
+    );
+    await asPostgres(
+      `insert into public.platform_accesses
+         (id, organization_id, relationship_kind, relationship_id, patient_id, account_user_id,
+          status, activated_at, access_kind, legal_basis, representative_name, proof_documents,
+          health_scope, finance_scope, proof_recorded_by, proof_recorded_at, created_by)
+       values ($1, $2, 'treatment', $3, $3, $4, 'active', now(), 'legal_representative',
+               'guardianship', 'Bernd Betreuer', array['identity_document', 'guardianship_certificate'],
+               true, false, $5, now(), $5)`,
+      [BERND, organizationId, patients.erika, KONTO, users.office],
+    );
+    const bernd = { konto: KONTO, zugang: BERND };
+    const vorgang = await fragen(bernd);
+    await einwilligen(bernd);
+    const v = await anhaengen(bernd, vorgang, 'image/jpeg', null);
+    const vonErika = (await ansicht(erika)).messages[0]!.attachments[0]!;
+    expect(vonErika).toEqual(
+      expect.objectContaining({ id: v.attachment_id, author: 'representative' }),
+    );
+    await asUserCommitted(bernd.konto, LOESCHEN_PLATTFORM, [bernd.zugang, v.attachment_id]);
+    expect((await ansicht(erika)).messages[0]!.attachments).toEqual([]);
+  });
+
+  it('der Objektspeicher: kein Upload nach der Bestätigung, nach 24 Stunden oder als Begleitung; kein direktes Löschen', async () => {
+    const vorgang = await fragen(tina);
+    await einwilligen(tina);
+    const v = await anhaengen(tina, vorgang);
+    // Nach der Bestätigung: kein zweites Objekt unter dem Schlüssel.
+    await asPostgres("delete from storage.objects where bucket_id = 'rueckfrageanhang'");
+    expect(await abgefangen(hochladen(tina.konto, v))).not.toBeNull();
+    // Älter als 24 Stunden.
+    const alt = await vorbereiten(tina, vorgang, 'image/jpeg', null);
+    await aufgenommenVor(alt.attachment_id, '25 hours');
+    expect(await abgefangen(hochladen(tina.konto, alt, 'image/jpeg'))).not.toBeNull();
+    // Direktes Löschen der Person am Objektspeicher: nichts.
+    const neu = await vorbereiten(tina, vorgang, 'image/jpeg', null);
+    await hochladen(tina.konto, neu, 'image/jpeg');
+    await asStorageApi(
+      tina.konto,
+      'storage.object.delete',
+      "delete from storage.objects where bucket_id = 'rueckfrageanhang' and name = $1",
+      [neu.object_key],
+    );
+    const { rows } = await asPostgres<{ n: number }>(
+      "select count(*)::integer as n from storage.objects where bucket_id = 'rueckfrageanhang' and name = $1",
+      [neu.object_key],
+    );
+    expect(rows[0]!.n).toBe(1);
+    // Die Begleitung hat keinen Weg zu einer vorbereiteten Zeile.
+    expect(await abgefangen(hochladen(paula.konto, neu, 'image/jpeg'))).not.toBeNull();
+  });
+
+  it('unter Legal Hold sperrt auch das Löschen und ein Befund; gesperrte zählen nicht (H4)', async () => {
+    await abo();
+    const vorgang = await fragen(erika);
+    await einwilligen(erika);
+    const a = await anhaengen(erika, vorgang);
+    const b = await anhaengen(erika, vorgang, 'image/jpeg', null);
+    const c = await anhaengen(erika, vorgang, 'image/jpeg', null);
+    await asUserCommitted(users.ownerTherapist, 'select public.place_legal_hold($1::uuid, $2)', [
+      patients.erika,
+      'Probe',
+    ]);
+    await asUserCommitted(erika.konto, LOESCHEN_PLATTFORM, [erika.zugang, a.attachment_id]);
+    await asUserCommitted(users.therapist, LOESCHEN_PRAXIS, [b.attachment_id]);
+    await asServiceRole(
+      'select public.record_message_attachment_verification($1::uuid, false, true, true, true)',
+      [c.attachment_id],
+    );
+    const { rows } = await asPostgres<{ id: string; locked: boolean }>(
+      'select id, locked_at is not null as locked from public.platform_message_attachments order by id',
+    );
+    expect(rows).toHaveLength(3);
+    expect(rows.every((r) => r.locked)).toBe(true);
+    expect((await ansicht(erika)).messages[0]!.attachment_count).toBe(0);
+    // Gesperrte belegen keinen Platz.
+    await anhaengen(erika, vorgang, 'image/jpeg', null);
+  });
 });

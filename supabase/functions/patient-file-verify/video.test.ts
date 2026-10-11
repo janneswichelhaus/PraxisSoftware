@@ -56,4 +56,28 @@ describe('Video am Server (KOM-006)', () => {
     const sauber = await vomGeraet(webmAusChromium({ tags: true }), 'video/webm');
     expect(enthaelt(sauber, 'Kennwort-Titel')).toBe(false);
   });
+
+  it('eine tief verschachtelte Datei ist nicht lesbar, ohne Stapelüberlauf (Zweitreview S2)', async () => {
+    const kasten = (typ: string, inhalt: Uint8Array) => {
+      const aus = new Uint8Array(8 + inhalt.length);
+      new DataView(aus.buffer).setUint32(0, aus.length);
+      aus.set(
+        [...typ].map((z) => z.charCodeAt(0)),
+        4,
+      );
+      aus.set(inhalt, 8);
+      return aus;
+    };
+    let innen = new Uint8Array(0);
+    for (let i = 0; i < 20_000; i += 1) innen = kasten('moov', innen);
+    const ftyp = kasten('ftyp', new Uint8Array(8));
+    const datei = new Uint8Array(ftyp.length + innen.length);
+    datei.set(ftyp);
+    datei.set(innen, ftyp.length);
+    expect(pruefeVideo(datei, 'video/mp4').lesbar).toBe(false);
+    expect(await bereinigeVideo(new Blob([datei as BlobPart], { type: 'video/mp4' }))).toEqual({
+      ok: false,
+      grund: 'format',
+    });
+  });
 });

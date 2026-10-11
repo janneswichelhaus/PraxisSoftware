@@ -29,6 +29,13 @@ export interface Videobefund {
 
 const NICHT_LESBAR: Videobefund = { lesbar: false, ohneTon: false, ohneAngaben: false };
 
+/**
+ * Zweitreview S2: so tief verschachtelt ist kein Video aus `MediaRecorder`
+ * (WebM: Segment, Tracks, TrackEntry; MP4: moov, trak, mdia, minf). Tiefer
+ * heißt nicht lesbar - statt eines Stapelüberlaufs bei einer gebauten Datei.
+ */
+export const MAX_TIEFE = 8;
+
 // -----------------------------------------------------------------------------
 // WebM (EBML, Matroska)
 // -----------------------------------------------------------------------------
@@ -131,7 +138,8 @@ export function durchlaufeWebm(
 ): boolean {
   const BEHAELTER = new Set<number>([EBML.segment, EBML.info, EBML.tracks, EBML.trackEntry]);
 
-  function bereich(von: number, bis: number, eltern: number): number | null {
+  function bereich(von: number, bis: number, eltern: number, tiefe = 0): number | null {
+    if (tiefe > MAX_TIEFE) return null;
     let pos = von;
     while (pos < bis) {
       const e = leseElement(bytes, pos);
@@ -141,7 +149,7 @@ export function durchlaufeWebm(
       if (e.ende === null) {
         if (e.id === EBML.segment) {
           besuche(e, eltern);
-          return bereich(e.daten, bis, e.id) === null ? null : bis;
+          return bereich(e.daten, bis, e.id, tiefe + 1) === null ? null : bis;
         }
         if (e.id !== EBML.cluster) return null;
         besuche(e, eltern);
@@ -158,7 +166,7 @@ export function durchlaufeWebm(
       }
       if (e.ende > bis) return null;
       besuche(e, eltern);
-      if (BEHAELTER.has(e.id) && bereich(e.daten, e.ende, e.id) === null) return null;
+      if (BEHAELTER.has(e.id) && bereich(e.daten, e.ende, e.id, tiefe + 1) === null) return null;
       pos = e.ende;
     }
     return pos === bis ? pos : null;
@@ -207,7 +215,7 @@ const MP4_BEHAELTER = new Set(['moov', 'trak', 'mdia', 'minf', 'moof', 'traf', '
 /** Kästen mit Zeitstempeln der Aufnahme, die null sein müssen. */
 export const MP4_ZEITEN = new Set(['mvhd', 'tkhd', 'mdhd']);
 /** Kästen für Metadaten - auf dem Gerät zu `free` umbenannt, am Server ein Befund. */
-export const MP4_VERBOTEN = new Set(['udta', 'meta', 'uuid', 'ilst', 'XMP_']);
+export const MP4_VERBOTEN = new Set(['udta', 'meta', 'uuid', 'ilst', 'XMP_', 'prft']);
 
 export function durchlaufeMp4(
   bytes: Uint8Array,
@@ -215,7 +223,8 @@ export function durchlaufeMp4(
 ): boolean {
   const ansicht = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
 
-  function bereich(von: number, bis: number, eltern: string): boolean {
+  function bereich(von: number, bis: number, eltern: string, tiefe = 0): boolean {
+    if (tiefe > MAX_TIEFE) return false;
     let pos = von;
     while (pos < bis) {
       if (pos + 8 > bis) return false;
@@ -240,7 +249,7 @@ export function durchlaufeMp4(
       if (!/^[\x20-\x7e]{4}$/.test(typ) || groesse < inhalt - pos || ende > bis) return false;
       const kasten = { typ, start: pos, inhalt, ende };
       besuche(kasten, eltern);
-      if (MP4_BEHAELTER.has(typ) && !bereich(inhalt, ende, typ)) return false;
+      if (MP4_BEHAELTER.has(typ) && !bereich(inhalt, ende, typ, tiefe + 1)) return false;
       pos = ende;
     }
     return pos === bis;

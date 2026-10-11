@@ -70,6 +70,9 @@ const ZU_VOID = new Set<number>([
 const ZU_LEEREN = new Set<number>([EBML.muxingApp, EBML.writingApp]);
 const BEHAELTER = new Set<number>([EBML.segment, EBML.info, EBML.tracks, EBML.trackEntry]);
 
+/** Zweitreview S2: tiefer verschachtelt ist kein Video aus `MediaRecorder`. */
+const MAX_TIEFE = 8;
+
 interface Element {
   id: number;
   start: number;
@@ -129,13 +132,14 @@ function bereinigeWebm(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
   let ohneTon = true;
   let bildspuren = 0;
 
-  function bereich(von: number, bis: number): boolean {
+  function bereich(von: number, bis: number, tiefe = 0): boolean {
+    if (tiefe > MAX_TIEFE) return false;
     let pos = von;
     while (pos < bis) {
       const e = element(bytes, pos);
       if (!e) return false;
       if (e.ende === null) {
-        if (e.id === EBML.segment) return bereich(e.daten, bis);
+        if (e.id === EBML.segment) return bereich(e.daten, bis, tiefe + 1);
         if (e.id !== EBML.cluster) return false;
         let innen = e.daten;
         while (innen < bis) {
@@ -157,7 +161,7 @@ function bereinigeWebm(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
       if (ZU_LEEREN.has(e.id)) bytes.fill(0, e.daten, e.ende);
       if (ZU_VOID.has(e.id)) {
         if (!zuVoid(bytes, e)) return false;
-      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende)) {
+      } else if (BEHAELTER.has(e.id) && !bereich(e.daten, e.ende, tiefe + 1)) {
         return false;
       }
       pos = e.ende;
@@ -177,7 +181,7 @@ function bereinigeWebm(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
 
 const MP4_BEHAELTER = new Set(['moov', 'trak', 'mdia', 'minf', 'moof', 'traf', 'edts', 'mvex']);
 const MP4_ZEITEN = new Set(['mvhd', 'tkhd', 'mdhd']);
-const MP4_ZU_FREE = new Set(['udta', 'meta', 'uuid', 'ilst', 'XMP_']);
+const MP4_ZU_FREE = new Set(['udta', 'meta', 'uuid', 'ilst', 'XMP_', 'prft']);
 
 function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
   const ansicht = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -187,7 +191,8 @@ function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
     return { ok: false, ohneTon: false };
   }
 
-  function bereich(von: number, bis: number, eltern: string): boolean {
+  function bereich(von: number, bis: number, eltern: string, tiefe = 0): boolean {
+    if (tiefe > MAX_TIEFE) return false;
     let pos = von;
     while (pos < bis) {
       if (pos + 8 > bis) return false;
@@ -218,7 +223,7 @@ function bereinigeMp4(bytes: Uint8Array): { ok: boolean; ohneTon: boolean } {
           if (art === 'vide') bildspuren += 1;
           else ohneTon = false;
         }
-        if (MP4_BEHAELTER.has(typ) && !bereich(inhalt, ende, typ)) return false;
+        if (MP4_BEHAELTER.has(typ) && !bereich(inhalt, ende, typ, tiefe + 1)) return false;
       }
       pos = ende;
     }
