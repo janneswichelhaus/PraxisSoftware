@@ -24,7 +24,8 @@ const AUFBEWAHRUNG = 'select public.patient_retention_status($1::uuid) as stand'
  * Zwei Zusicherungen tragen alles Weitere: Die Auskunft ist **vollstaendig**,
  * und sie ist **eng**. Vollstaendig heisst, dass sie gegen den
  * Aufbewahrungsplan geprueft wird und nicht gegen eine Liste im Test - eine
- * neue Tabelle der Klasse `patientenakte` macht diese Datei rot, bis jemand
+ * neue Tabelle der Klasse `patientenakte` oder eine neue mit `patient_id`,
+ * gleich welcher Klasse (BEF-145), macht diese Datei rot, bis jemand
  * entscheidet, ob sie in die Kopie gehoert. Eng heisst: nur `owner`, nur die
  * eigene Organisation, und jeder Aufruf hinterlaesst eine Spur.
  */
@@ -61,6 +62,12 @@ const BEWUSST_AUSSEN = new Map<string, string>([
     'Technische Freigabe eines signierten Verweises, hoechstens 60 Sekunden gueltig; sie sagt etwas ueber das lesende Konto, nicht ueber die Patientin (ADR-017).',
   ],
 ]);
+
+/**
+ * Tabellen, die in der Kopie unter einem anderen Abschnittsnamen stehen.
+ * Der Vollstaendigkeitstest verlangt dann diesen Abschnitt.
+ */
+const ABSCHNITT_FUER = new Map<string, string>([['patient_fee_agreements', 'fee_agreements']]);
 
 describe('export_patient_record', () => {
   beforeEach(async () => {
@@ -106,11 +113,19 @@ describe('export_patient_record', () => {
     expect(tabellen['appointments']![0]!['staff_member']).toBe('Anna Beispiel');
   });
 
-  it('enthaelt jede Tabelle der Akte aus dem Aufbewahrungsplan', async () => {
+  it('enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id, gleich welcher Klasse (BEF-145)', async () => {
+    // Nicht nur `patientenakte` und `personenstammdaten`: Eine Tabelle mit
+    // eigener Klasse (`terminwunsch`, BEF-144) fiel sonst unbemerkt heraus.
     const { rows: zugeordnet } = await asPostgres<{ table_name: string }>(
-      `select distinct table_name from public.retention_assignments
-       where class_key in ('patientenakte', 'personenstammdaten')
-       order by table_name`,
+      `select distinct ra.table_name from public.retention_assignments ra
+       where ra.class_key in ('patientenakte', 'personenstammdaten')
+          or exists (
+            select 1 from information_schema.columns c
+            where c.table_schema = 'public'
+              and c.table_name = ra.table_name
+              and c.column_name = 'patient_id'
+          )
+       order by ra.table_name`,
     );
 
     const { rows } = await asUser<{ daten: Record<string, unknown> }>(
@@ -122,7 +137,9 @@ describe('export_patient_record', () => {
 
     const fehlend = zugeordnet
       .map((z) => z.table_name)
-      .filter((name) => !tabellen.includes(name) && !BEWUSST_AUSSEN.has(name));
+      .filter(
+        (name) => !tabellen.includes(ABSCHNITT_FUER.get(name) ?? name) && !BEWUSST_AUSSEN.has(name),
+      );
 
     expect(fehlend).toEqual([]);
   });
@@ -252,6 +269,58 @@ describe('export_patient_record', () => {
     ]);
 
     expect(await auskunft(patients.petra)).toEqual([]);
+  });
+
+  it('nennt die Zugaenge zur Plattform mit Zustand und Vertretung, ohne Kennungen (BEF-145)', async () => {
+    const zugaenge = async (patient: string) => {
+      const { rows } = await asUser<{ daten: { tabellen: Record<string, unknown[]> } }>(
+        users.ownerTherapist,
+        AUSKUNFT,
+        [patient],
+      );
+      return rows[0]!.daten.tabellen['platform_accesses'] as Record<string, unknown>[];
+    };
+
+    // Erikas eigener Zugang zur Behandlung; der zum Training gehoert in
+    // dessen eigene Auskunft (ADR-021).
+    const beiErika = await zugaenge(patients.erika);
+    expect(beiErika).toEqual([
+      expect.objectContaining({
+        access_kind: 'self',
+        representative_name: null,
+        status: 'active',
+        revoked_at: null,
+      }),
+    ]);
+    expect(beiErika[0]!['activated_at']).not.toBeNull();
+
+    // Paula begleitet Max: Name und Einwilligung stehen in der Kopie.
+    const beiMax = await zugaenge(patients.max);
+    expect(beiMax).toEqual([
+      expect.objectContaining({
+        access_kind: 'companion',
+        representative_name: 'Paula Mustermann',
+        status: 'active',
+      }),
+    ]);
+    expect(beiMax[0]!['consent_recorded_at']).not.toBeNull();
+
+    // Keine Kennung von Zugang, Konto, Verhaeltnis oder Praxiskonto.
+    for (const zeile of [...beiErika, ...beiMax]) {
+      for (const feld of ['id', 'account_user_id', 'relationship_id', 'patient_id', 'created_by']) {
+        expect(Object.keys(zeile)).not.toContain(feld);
+      }
+    }
+    const text = JSON.stringify([...beiErika, ...beiMax]);
+    for (const kennung of [
+      ...Object.values(users),
+      ...Object.values(platformAccesses),
+      ...Object.values(patients),
+    ]) {
+      expect(text).not.toContain(kennung);
+    }
+
+    expect(await zugaenge(patients.petra)).toEqual([]);
   });
 
   it('nennt das Trainingsverhaeltnis als eigene Auskunft, statt es mitzuliefern', async () => {

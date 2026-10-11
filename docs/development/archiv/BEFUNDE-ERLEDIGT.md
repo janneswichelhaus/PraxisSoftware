@@ -1150,3 +1150,18 @@ Patientenliste umbrechen statt kürzen.
 
 **Umsetzung (2026-10-11).** `export_patient_record` liefert den Abschnitt `platform_appointment_requests`: offene und beantwortete Wünsche der Akte mit Art, Termin, Tagen, Tageszeiten, Notiz, Zustand, Zeitpunkten, Antwort und Ergebnistermin, dazu wer gewünscht hat (Person oder Vertretung mit Namen, wie die Praxisliste aus POR-011); keine Kennung von Wunsch, Zugang oder Konto, Wünsche eines Trainingsverhältnisses nicht (ADR-021). Beschriftung in `src/features/datenschutz/kategorien.ts`, Test in `betroffenenrechte.test.ts`, Migration `20261102100000`, Gegenprobe ohne Migration rot. Daneben (Hinweis Zweitreview BEF-132): `close_platform_message_by_practice` und `close_platform_message` sperren den Vorgang vor der Zustandsprüfung; ein zweites gleichzeitiges Erledigen endet mit 22023, der erste Vermerk bleibt (Migration `20261102110000`, zwei Tests in `practice-messages.test.ts`, Gegenprobe rot). Der Vollständigkeitstest der Auskunft sah die Lücke nicht – BEF-145.
 
+### BEF-145 — Der Vollständigkeitstest der Auskunft sieht nur zwei Datenklassen
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Datenschutz: Auskunft (Art. 15) |
+| Quelle  | Zweitreview BEF-144 (Hinweis H1), am Code belegt |
+| Status  | erledigt in BEF-145 (2026-10-11) |
+| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle der Akte aus dem Aufbewahrungsplan“), `public.retention_assignments`, `public.export_patient_record` |
+
+**Beobachtung.** Der Test hält die Auskunft nur gegen die Tabellen der Klassen `patientenakte` und `personenstammdaten`. `platform_appointment_requests` trägt die Klasse `terminwunsch` und fehlte deshalb unbemerkt in der Kopie (BEF-144); eine künftige patientenbezogene Tabelle mit eigener Klasse fiele wieder durch.
+
+**Erwartet.** Der Test nimmt jede Tabelle des Aufbewahrungsplans, die eine `patient_id` trägt, gleich welcher Klasse; was bewusst fehlt, steht mit Grund in `BEWUSST_AUSSEN`. Nur Test, ein Einzel-Story-Loop; zeigt er weitere Lücken, kommen sie in denselben Loop.
+
+**Umsetzung (2026-10-11).** Der Test nimmt jetzt jede Tabelle des Aufbewahrungsplans mit `patient_id`, gleich welcher Klasse, dazu wie bisher `patientenakte` und `personenstammdaten`; eine Tabelle, die unter anderem Namen in der Kopie steht, nennt `ABSCHNITT_FUER` (`patient_fee_agreements` als `fee_agreements`). Er fand eine echte Lücke: `platform_accesses` (Klasse `plattformzugang`). `export_patient_record` liefert dazu den Abschnitt `platform_accesses` – Art, Vertretung mit Name, Grundlage, Nachweisarten und Umfang, Einwilligung zur Begleitung, Zustand mit Zeitpunkten und Grund, Einstieg; keine Kennung von Zugang, Konto, Verhältnis oder Praxiskonto (ANN-342). Migration `20261103100000`, Beschriftung in `src/features/datenschutz/kategorien.ts`, Test in `betroffenenrechte.test.ts`, Gegenprobe ohne Migration rot.

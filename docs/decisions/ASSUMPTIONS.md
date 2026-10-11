@@ -4144,3 +4144,15 @@ Praxisprozess · offen · 2026-10-11 · — · — · Wiedervorlage: Jannes in d
 **Anker.** Bedingung in `public.list_platform_training_withdrawals` in `supabase/migrations/20261028100000_bef_129_widerruf_bis_abgewickelt.sql`; Anzeige in `src/features/open-points/TrainingWithdrawals.tsx`. Geprüft in `supabase/tests/training-contracts.test.ts` („bleibt nach 14 Tagen in Offene Punkte …“) und `src/features/open-points/TrainingWithdrawals.test.tsx`.
 
 **Änderungspfad.** Zurück zu 14 Tagen: die Bedingung `training_package_id is not null` streichen · Aufwand `klein`. Ein Paket bewusst behalten: Vermerk „abgewickelt“ am Vertrag mit Praxisfunktion · Aufwand `mittel`. Statt des Hinweises den Monatsentwurf sperren: Prüfung in `create_training_invoice_draft` · Aufwand `mittel`.
+
+### ANN-342 — Die Auskunft aus der Akte nennt die Zugänge zur Plattform, auch den Zweifel an der Einwilligungsfähigkeit
+
+Datenschutz · entschieden (Claude) · 2026-10-11 · Claude (BEF-145; ADR-007 Punkt 5, ADR-023) · erledigt · Wiedervorlage: Datenschutzprüfung
+
+**Annahme.** `export_patient_record` liefert den Abschnitt `platform_accesses`: je Zugang der Behandlung Art (selbst, rechtliche Vertretung, Begleitung), Name der Vertretung, Grundlage, Art der angesehenen Nachweise, Umfang (Gesundheit, Finanzen), Einwilligung zur Begleitung mit Textfassung und Zeitpunkt, Zustand mit Einrichtung, Aktivierung, Sperre, Ende und Grund, Einstieg. Auch der feste Vermerk „keine Begleitung wegen Zweifeln an der Einwilligungsfähigkeit“ (`capacity_doubt`, ANN-207) steht darin. Keine Kennung von Zugang, Konto, Verhältnis oder bearbeitendem Praxiskonto; Zugänge eines Trainingsverhältnisses nicht (ADR-021).
+
+**Begründung.** Art. 15 DSGVO umfasst alle Daten zur Person; dass jemand für sie handelt und worauf das beruht, gehört dazu, und der Name der Vertretung steht schon an Terminwünschen und Datenschutzvermerken. Für den Vermerk zur Einwilligungsfähigkeit greift keine Ausnahme nach Art. 15 Abs. 4 – er betrifft die Person selbst, ist ein fester Wert ohne Diagnose und begründet eine Entscheidung über sie. Unsicher: ob die Datenschutzprüfung den Vermerk therapeutisch anders behandelt sehen will (§ 630g BGB kennt eine Einschränkung nur für die Einsicht in die Akte, und nur aus erheblichen therapeutischen Gründen).
+
+**Anker.** Abschnitt `platform_accesses` in `supabase/migrations/20261103100000_bef_145_plattformzugang_in_der_auskunft.sql`; Beschriftung in `src/features/datenschutz/kategorien.ts`; Tests „enthaelt jede Tabelle des Aufbewahrungsplans mit patient_id …“ und „nennt die Zugaenge zur Plattform …“ in `supabase/tests/betroffenenrechte.test.ts`.
+
+**Änderungspfad.** Den Vermerk zur Einwilligungsfähigkeit nur auf Verlangen herausgeben: die zwei Felder streichen und einen Hinweis in `nicht_enthalten` ergänzen · Aufwand `klein`.

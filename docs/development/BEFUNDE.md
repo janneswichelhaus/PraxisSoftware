@@ -588,18 +588,3 @@ eingeklappt.
 **Beobachtung.** Der Satz „Die Praxis löscht dann sofort alle Fotos, die sie von Ihnen hat.“ stimmt nicht: Der Widerruf löscht die Arbeitshilfen; Dokumentationsfotos gehören zur Akte und bleiben (ADR-017 Punkt 46). In der Praxis ist der Satz mit UX-008a berichtigt.
 
 **Frage an Jannes.** Der Text ist ein Einwilligungstext an die Person – soll er lauten „… alle Fotos, die als Arbeitshilfe entstanden sind; Fotos, die zur Behandlungsdokumentation gehören, bleiben in der Akte“? Eine Änderung braucht eine neue Fassung des Textes.
-
-### BEF-145 — Der Vollständigkeitstest der Auskunft sieht nur zwei Datenklassen
-
-|         |   |
-| ------- | - |
-| Datum   | 2026-10-11 |
-| Bereich | Datenschutz: Auskunft (Art. 15) |
-| Quelle  | Zweitreview BEF-144 (Hinweis H1), am Code belegt |
-| Status  | offen |
-| Berührt | `supabase/tests/betroffenenrechte.test.ts` („enthaelt jede Tabelle der Akte aus dem Aufbewahrungsplan“), `public.retention_assignments` |
-
-**Beobachtung.** Der Test hält die Auskunft nur gegen die Tabellen der Klassen `patientenakte` und `personenstammdaten`. `platform_appointment_requests` trägt die Klasse `terminwunsch` und fehlte deshalb unbemerkt in der Kopie (BEF-144); eine künftige patientenbezogene Tabelle mit eigener Klasse fiele wieder durch.
-
-**Erwartet.** Der Test nimmt jede Tabelle des Aufbewahrungsplans, die eine `patient_id` trägt, gleich welcher Klasse; was bewusst fehlt, steht mit Grund in `BEWUSST_AUSSEN`. Nur Test, ein Einzel-Story-Loop; zeigt er weitere Lücken, kommen sie in denselben Loop.
-
