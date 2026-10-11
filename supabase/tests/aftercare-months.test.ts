@@ -305,6 +305,18 @@ describe('Abo-Monate (ANG-002)', () => {
         entwurf[0]!.id,
         'Falscher Empfänger',
       ]);
+      // Zweitreview H1: Nach dem Storno bleiben andere Rollen, Plattformkonten
+      // und eine andere Praxis abgewiesen, und es fällt nichts.
+      for (const konto of [users.therapist, users.trainer, users.plattformErika]) {
+        await expect(asUser(konto, ZURUECK, [leistung])).rejects.toThrow(/not allowed/);
+      }
+      const fremd = await fremdeOrganisation();
+      await expect(asUser(fremd.owner, ZURUECK, [leistung])).rejects.toThrow(/not found/);
+      const { rows: zeilen } = await asPostgres(
+        'select 1 from public.invoice_items where billable_service_id = $1',
+        [leistung],
+      );
+      expect(zeilen).toHaveLength(1);
       await asUserCommitted(users.office, ZURUECK, [leistung]);
       const { rows: rest } = await asPostgres('select 1 from public.billable_services');
       expect(rest).toHaveLength(0);
