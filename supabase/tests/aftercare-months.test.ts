@@ -426,7 +426,9 @@ describe('Abo-Monate (ANG-002)', () => {
                           care_concluded_at = null, care_concluded_by = null where id = $1`,
         [patients.erika],
       );
-      const behandlung = await termin(24 * 40, 'documented', GRUNDLAGE);
+      // Sicher vor dem Vormonat (dessen Beginn liegt höchstens 62 Tage zurück),
+      // sonst sperrt `care_during_month` den Abo-Monat je nach Tag im Monat.
+      const behandlung = await termin(24 * 70, 'documented', GRUNDLAGE);
       await asPostgres(
         `insert into public.billable_services
            (organization_id, patient_id, appointment_id, catalog_item_id, performed_on)
