@@ -9,11 +9,13 @@ import {
   asUserCommitted,
   fremdeOrganisation,
   resetDatabase,
+  tagInTagen,
 } from './helpers/db';
 
-const { users, patients } = SEED;
+const { users, patients, platformAccesses } = SEED;
 
 const AUSKUNFT = 'select public.export_patient_record($1::uuid) as daten';
+const WUNSCH = `select public.request_platform_appointment($1::uuid, $2::date[], $3::text[], $4) as id`;
 const AUFBEWAHRUNG = 'select public.patient_retention_status($1::uuid) as stand';
 
 /**
@@ -179,6 +181,77 @@ describe('export_patient_record', () => {
     const hinweise = rows[0]!.daten['nicht_enthalten'] as { was: string; grund: string }[];
     expect(hinweise.map((h) => h.was)).toContain('Namen der Beschaeftigten im Zugriffsprotokoll');
     expect(hinweise.some((h) => h.grund.includes('ANN-092'))).toBe(true);
+  });
+
+  it('nennt die Terminwuensche der Plattform mit Tagen, Zustand, Antwort und wer gewuenscht hat (BEF-144)', async () => {
+    const wuensche = async (konto: string, zugang: string, notiz: string) =>
+      (
+        await asUserCommitted<{ id: string }>(konto, WUNSCH, [
+          zugang,
+          [tagInTagen(3), tagInTagen(5)],
+          ['afternoon', 'morning'],
+          notiz,
+        ])
+      ).rows[0]!.id;
+    const erika = await wuensche(
+      users.plattformErika,
+      platformAccesses.erikaBehandlung,
+      'Erika in der Behandlung',
+    );
+    await wuensche(users.plattformPaula, platformAccesses.paulaBegleitungMax, 'Paula fuer Max');
+    // Wuensche eines Trainingsverhaeltnisses gehoeren in dessen eigene Auskunft (ADR-021).
+    await wuensche(users.plattformErika, platformAccesses.erikaTraining, 'Erika im Training');
+    await wuensche(users.plattformTina, platformAccesses.tinaTraining, 'Tina im Training');
+    await asUserCommitted(
+      users.ownerTherapist,
+      'select public.resolve_platform_appointment_request($1::uuid, $2, $3)',
+      [erika, 'declined', 'Diese Woche ist voll.'],
+    );
+
+    const auskunft = async (patient: string) => {
+      const { rows } = await asUser<{ daten: { tabellen: Record<string, unknown[]> } }>(
+        users.ownerTherapist,
+        AUSKUNFT,
+        [patient],
+      );
+      return rows[0]!.daten.tabellen['platform_appointment_requests'] as Record<string, unknown>[];
+    };
+
+    const beiErika = await auskunft(patients.erika);
+    expect(beiErika).toHaveLength(1);
+    expect(beiErika[0]).toMatchObject({
+      kind: 'new',
+      appointment_id: null,
+      preferred_days: [tagInTagen(3), tagInTagen(5)],
+      preferred_times: ['afternoon', 'morning'],
+      note: 'Erika in der Behandlung',
+      status: 'declined',
+      requested_by: 'self',
+      representative_name: null,
+      answer: 'Diese Woche ist voll.',
+      resulting_appointment_id: null,
+    });
+    expect(beiErika[0]!['resolved_at']).not.toBeNull();
+    // Keine interne Kennung des Wunsches, des Zugangs oder eines Kontos.
+    expect(Object.keys(beiErika[0]!)).not.toContain('id');
+    const text = JSON.stringify(beiErika);
+    for (const kennung of [...Object.values(users), ...Object.values(platformAccesses)]) {
+      expect(text).not.toContain(kennung);
+    }
+
+    const beiMax = await auskunft(patients.max);
+    expect(beiMax).toEqual([
+      expect.objectContaining({
+        note: 'Paula fuer Max',
+        status: 'open',
+        requested_by: 'companion',
+        representative_name: 'Paula Mustermann',
+        resolved_at: null,
+        answer: null,
+      }),
+    ]);
+
+    expect(await auskunft(patients.petra)).toEqual([]);
   });
 
   it('nennt das Trainingsverhaeltnis als eigene Auskunft, statt es mitzuliefern', async () => {

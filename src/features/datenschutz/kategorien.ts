@@ -158,6 +158,11 @@ export const AUSKUNFT_KATEGORIEN: Record<string, KategorieTexte> = {
     beschreibung:
       'Fragen der Person und die Antworten der Praxis, mit Thema, Zeitpunkt, wer geschrieben hat und ob die Nachricht der Akte zugeordnet ist.',
   },
+  platform_appointment_requests: {
+    label: 'Terminwünsche über die Plattform',
+    beschreibung:
+      'Gewünschte Tage und Tageszeiten, Notiz, wer gewünscht hat, Zustand und die Antwort der Praxis.',
+  },
   invoice_recipients: {
     label: 'Rechnungsempfänger',
     beschreibung: 'An wen Rechnungen gehen, wenn das nicht die Patient:in selbst ist.',
