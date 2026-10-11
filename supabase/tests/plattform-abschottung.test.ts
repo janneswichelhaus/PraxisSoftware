@@ -122,6 +122,8 @@ const AUSNAHMEN: Readonly<Record<string, string>> = {
   'app.patient_file_bucket_for': 'Konstante je Dokumentart',
   'app.patient_file_max_bytes': 'Konstante',
   'app.patient_photo_bucket': 'Konstante',
+  // KOM-005: der Bucket der Anhänge an Rückfragen (ADR-017 Punkt 60).
+  'app.message_attachment_bucket': 'Konstante',
   'app.patient_search_min_length': 'Konstante',
   'app.retention_interval': 'Frist einer Datenklasse aus dem Katalog, ohne Personenbezug',
   'app.timemultirange': 'Wertkonstruktor',
