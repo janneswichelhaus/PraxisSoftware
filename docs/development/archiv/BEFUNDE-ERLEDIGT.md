@@ -1117,3 +1117,19 @@ Patientenliste umbrechen statt kürzen.
 **Erwartet.** Sperrgrund `source_has_platform_access` (die Praxis klärt den Zugang vorher, wie ANN-149) und `platform_messages` in `counts`, ebenso `platform_appointment_requests` (ziehen seit BEF-131 mit, Zweitreview BEF-131 H4); für H5 eine Zeilensperre vor der Zustandsprüfung. Einzel-Story-Loop mit Zweitreview.
 
 **Umsetzung (2026-10-11).** `app.patient_merge_plan` sperrt mit `source_has_platform_access`, solange an der Dublette ein Zugang hängt, der nicht entzogen ist (ANN-149, Ergänzung f), und zählt `platform_messages` und `platform_appointment_requests`; beide Zahlen stehen damit auch im Vermerk. `add_platform_message_entry` und `answer_platform_message` sperren die Zeile vor der Zustandsprüfung, nach dem Zweitreview ebenso `confirm_message_attachment_upload`; ein gleichzeitiges Erledigen endet mit 22023 (Migration `20261031100000`, Tests in `patient-merge.test.ts`, `practice-messages.test.ts` und `message-attachments.test.ts`, Helfer `helpers/gleichzeitig.ts`, Gegenprobe ohne Migration rot mit 23514). Die Vorschau nennt Sperre und Zahlen (`zusammenfuehren.ts`, Prüfseite `dublette.html?sperre=plattform`).
+
+### BEF-143 — Nach dem Zurücknehmen nennt eine stornierte Rechnung weniger Positionen, als sie ausweist
+
+|         |   |
+| ------- | - |
+| Datum   | 2026-10-11 |
+| Bereich | Abrechnung: Rechnungsliste, Storno |
+| Quelle  | Zweitreview BEF-128 (Hinweis H2), am Code belegt |
+| Status  | erledigt 2026-10-11 (BEF-143, Einzel-Story-Loop) |
+| Berührt | `public.list_invoices` (`item_count` in `supabase/migrations/20261027100000_bef_141_empfaenger_aus_snapshot.sql`); `delete_billable_services`, `delete_training_package`, `delete_aftercare_month`; `create_correction_draft` |
+
+**Beobachtung.** Wird eine Leistung nach einem Storno zurückgenommen, fällt ihre freigegebene Rechnungszeile mit ihr (seit ABR-003c, ANG-006 und BEF-128). `list_invoices` zählt die Positionen aber live über `invoice_items`; die stornierte Rechnung zeigt dann weniger oder null Positionen, der Betrag kommt weiter aus dem Snapshot. War es die einzige Leistung, bleibt das Storno ohne Korrektur „offen“, und `create_correction_draft` meldet „no billable services“.
+
+**Erwartet.** Die Zahl der Positionen ausgestellter Rechnungen aus dem Snapshot lesen (wie den Empfänger seit BEF-141), und ein Storno ohne verbleibende Leistung nicht mehr als wartende Korrektur führen. Einzel-Story-Loop.
+
+**Umsetzung (2026-10-11).** `list_invoices` zählt an ausgestellten Rechnungen (storniert eingeschlossen) die Positionen aus `snapshot -> 'items'`, der Entwurf weiter live. Die Auswahl der Korrektur steht unverändert in `app.correction_draft_services`; `get_invoice` liefert daraus `correction_pending` – wahr nur, wenn die stornierte Rechnung keine Korrektur hat und die Korrektur eine Zeile hätte. Die Detailseite bietet „Korrekturrechnung erstellen“ nur dann an und sagt sonst „Von ihren Leistungen ist keine mehr abzurechnen – eine Korrekturrechnung braucht es nicht.“ Kommt eine Leistung derselben Klammer nach, wartet das Storno wieder (ANN-077). Migration `20261101100000`, sechs Tests in `invoice-cancellations.test.ts` (Gegenprobe ohne Migration rot), Prüfseite `terminhonorar.html?seite=storniert`, Sichtung [UX-Review](../../sichtung/ux-review.md) Schritt 11.
